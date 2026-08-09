@@ -33,30 +33,15 @@ import java.util.Queue;
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
 
 /**
- * Encodes the content of the outbound {@link HttpResponse} and {@link HttpContent}.
- * The original content is replaced with the new content encoded by the
- * {@link EmbeddedChannel}, which is created by {@link #beginEncode(HttpResponse, String)}.
- * Once encoding is finished, the value of the <tt>'Content-Encoding'</tt> header
- * is set to the target content encoding, as returned by
- * {@link #beginEncode(HttpResponse, String)}.
- * Also, the <tt>'Content-Length'</tt> header is updated to the length of the
- * encoded content.  If there is no supported or allowed encoding in the
- * corresponding {@link HttpRequest}'s {@code "Accept-Encoding"} header,
- * {@link #beginEncode(HttpResponse, String)} should return {@code null} so that
- * no encoding occurs (i.e. pass-through).
+ * HTTP 响应内容压缩抽象基类，在 {@link HttpObjectEncoder} 之前拦截 {@link HttpObject}。
  * <p>
- * Please note that this is an abstract class.  You have to extend this class
- * and implement {@link #beginEncode(HttpResponse, String)} properly to make
- * this class functional.  For example, refer to the source code of
- * {@link HttpContentCompressor}.
- * <p>
- * This handler must be placed after {@link HttpObjectEncoder} in the pipeline
- * so that this handler can intercept HTTP responses before {@link HttpObjectEncoder}
- * converts them into {@link ByteBuf}s.
+ * 解码侧缓存请求的 Accept-Encoding，编码侧按 {@link #beginEncode} 选择算法；
+ * 不支持时返回 {@code null} 透传。子类参考 {@link HttpContentCompressor}。
  */
 public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpRequest, HttpObject> {
     public static final int DEFAULT_MAX_PIPELINE_DEPTH = 128;
 
+    /** 编码状态：等待响应头 / 等待内容 / 透传当前响应 */
     private enum State {
         PASS_THROUGH,
         AWAIT_HEADERS,
@@ -100,7 +85,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
             acceptEncoding = acceptEncodingHeaders.get(0);
             break;
         default:
-            // Multiple message-header fields https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2
+            // 多个 Accept-Encoding 头合并为逗号分隔字符串
             acceptEncoding = StringUtil.join(",", acceptEncodingHeaders);
             break;
         }
@@ -129,7 +114,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
                 final HttpStatusClass codeClass = res.status().codeClass();
                 final CharSequence acceptEncoding;
                 if (codeClass == HttpStatusClass.INFORMATIONAL) {
-                    // We need to not poll the encoding when response with 1xx codes as another response will follow
+                    // 1xx 响应不 poll Accept-Encoding，后续还有最终响应
                     // for the issued request.
                     // See https://github.com/netty/netty/issues/12904 and https://github.com/netty/netty/issues/4079
                     acceptEncoding = null;
@@ -142,7 +127,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
                 }
 
                 /*
-                 * per rfc2616 4.3 Message Body
+                 * RFC 2616 §4.3：1xx/204/304 及 HEAD/CONNECT 等无正文响应直接透传
                  * All 1xx (informational), 204 (no content), and 304 (not modified) responses MUST NOT include a
                  * message-body. All other responses do include a message-body, although it MAY be of zero length.
                  *
@@ -201,7 +186,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
                     encodeFullResponse(newRes, (HttpContent) res, out);
                     break;
                 } else {
-                    // Make the response chunked to simplify content transformation.
+                    // 压缩时分块输出，移除 Content-Length
                     res.headers().remove(HttpHeaderNames.CONTENT_LENGTH);
                     res.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
 
@@ -220,7 +205,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
                 if (encodeContent((HttpContent) msg, out)) {
                     state = State.AWAIT_HEADERS;
                 } else if (out.isEmpty()) {
-                    // MessageToMessageCodec needs at least one output message
+                    // 须至少输出一条消息，空块占位
                     out.add(new DefaultHttpContent(Unpooled.EMPTY_BUFFER));
                 }
                 break;
@@ -242,7 +227,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
         encodeContent(content, out);
 
         if (HttpUtil.isContentLengthSet(newRes)) {
-            // adjust the content-length header
+            // 完整响应压缩后重新计算 Content-Length
             int messageSize = 0;
             for (int i = existingMessages; i < out.size(); i++) {
                 Object item = out.get(i);
@@ -301,7 +286,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
     }
 
     /**
-     * Prepare to encode the HTTP message content.
+     * 准备压缩：根据 Accept-Encoding 选择算法并创建 {@link EmbeddedChannel}。
      *
      * @param httpResponse
      *        the http response
@@ -330,7 +315,7 @@ public abstract class HttpContentEncoder extends MessageToMessageCodec<HttpReque
 
     private void cleanup() {
         if (encoder != null) {
-            // Clean-up the previous encoder if not cleaned up correctly.
+            // 清理未正常 finish 的上一个 encoder
             encoder.finishAndReleaseAll();
             encoder = null;
         }

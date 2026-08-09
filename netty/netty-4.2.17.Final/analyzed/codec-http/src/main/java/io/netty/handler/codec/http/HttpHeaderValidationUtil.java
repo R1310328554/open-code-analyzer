@@ -20,14 +20,14 @@ import io.netty.util.AsciiString;
 import static io.netty.util.AsciiString.contentEqualsIgnoreCase;
 
 /**
- * Functions used to perform various validations of HTTP header names and values.
+ * HTTP 头名/头值校验工具类，用于防 CRLF 注入及 HTTP/2 连接头规则检查。
  */
 public final class HttpHeaderValidationUtil {
     private HttpHeaderValidationUtil() {
     }
 
     /**
-     * Check if a header name is "connection related".
+     * 判断头名是否为 RFC 9110 定义的“连接相关”头（Connection/Upgrade/TE 等）。
      * <p>
      * The <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-7.6.1">RFC9110</a> only specify an incomplete
      * list of the following headers:
@@ -48,7 +48,7 @@ public final class HttpHeaderValidationUtil {
      */
     @SuppressWarnings("deprecation") // We need to check for deprecated headers as well.
     public static boolean isConnectionHeader(CharSequence name, boolean ignoreTeHeader) {
-        // These are the known standard and non-standard connection related headers:
+        // 按头名长度分桶后精确匹配，避免字符串分配
         // - upgrade (7 chars)
         // - connection (10 chars)
         // - keep-alive (10 chars)
@@ -74,8 +74,7 @@ public final class HttpHeaderValidationUtil {
     }
 
     /**
-     * If the given header is {@link HttpHeaderNames#TE} and the given header value is <em>not</em>
-     * {@link HttpHeaderValues#TRAILERS}, then return {@code true}. Otherwie, {@code false}.
+     * HTTP/2 下 TE 头仅允许值为 trailers，否则返回 {@code true} 表示违规。
      * <p>
      * The string comparisons are case-insensitive.
      * <p>
@@ -95,7 +94,7 @@ public final class HttpHeaderValidationUtil {
     }
 
     /**
-     * Validate the given HTTP header value by searching for any illegal characters.
+     * 校验头值是否符合 field-content 规则，返回首个非法字符索引或 {@code -1}。
      *
      * @param value the HTTP header value to validate.
      * @return the index of the first illegal character found, or {@code -1} if there are none and the header value is
@@ -113,7 +112,7 @@ public final class HttpHeaderValidationUtil {
     }
 
     private static int verifyValidHeaderValueAsciiString(AsciiString value) {
-        // Validate value to field-content rule.
+        // 按 RFC 7230 field-content 规则校验（首字符与后续 VCHAR/obs-text/SP/HTAB）
         //  field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
         //  field-vchar    = VCHAR / obs-text
         //  VCHAR          = %x21-7E ; visible (printing) characters
@@ -163,8 +162,7 @@ public final class HttpHeaderValidationUtil {
     }
 
     /**
-     * Validate a <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> contains only allowed
-     * characters.
+     * 校验 token（头名、方法名、cookie-name 等）是否仅含合法字符。
      * <p>
      * The <a href="https://tools.ietf.org/html/rfc2616#section-2.2">token</a> format is used for variety of HTTP
      * components, like  <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>,

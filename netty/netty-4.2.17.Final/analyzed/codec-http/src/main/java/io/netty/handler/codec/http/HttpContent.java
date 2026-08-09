@@ -20,12 +20,11 @@ import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.ChannelPipeline;
 
 /**
- * An HTTP chunk which is used for HTTP chunked transfer-encoding.
- * {@link HttpObjectDecoder} generates {@link HttpContent} after
- * {@link HttpMessage} when the content is large or the encoding of the content
- * is 'chunked.  If you prefer not to receive {@link HttpContent} in your handler,
- * place {@link HttpObjectAggregator} after {@link HttpObjectDecoder} in the
- * {@link ChannelPipeline}.
+ * HTTP 分块传输中的内容块，继承 {@link HttpObject} 与 {@link ByteBufHolder}。
+ * <p>
+ * {@link HttpObjectDecoder} 在 {@link HttpMessage} 之后、内容较大或使用 chunked 编码时
+ * 逐块产生 {@link HttpContent}；若希望 handler 只收到完整消息，
+ * 可在 {@link HttpObjectDecoder} 后添加 {@link HttpObjectAggregator}。
  */
 public interface HttpContent extends HttpObject, ByteBufHolder {
     @Override

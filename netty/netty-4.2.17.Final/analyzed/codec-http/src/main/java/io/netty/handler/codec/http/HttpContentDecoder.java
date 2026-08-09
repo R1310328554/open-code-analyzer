@@ -27,23 +27,13 @@ import io.netty.util.ReferenceCountUtil;
 import java.util.List;
 
 /**
- * Decodes the content of the received {@link HttpRequest} and {@link HttpContent}.
- * The original content is replaced with the new content decoded by the
- * {@link EmbeddedChannel}, which is created by {@link #newContentDecoder(String)}.
- * Once decoding is finished, the value of the <tt>'Content-Encoding'</tt>
- * header is set to the target content encoding, as returned by {@link #getTargetContentEncoding(String)}.
- * Also, the <tt>'Content-Length'</tt> header is updated to the length of the
- * decoded content.  If the content encoding of the original is not supported
- * by the decoder, {@link #newContentDecoder(String)} should return {@code null}
- * so that no decoding occurs (i.e. pass-through).
+ * HTTP 内容解压缩抽象基类，通过 {@link EmbeddedChannel} 解码 {@link HttpContent}。
  * <p>
- * Please note that this is an abstract class.  You have to extend this class
- * and implement {@link #newContentDecoder(String)} properly to make this class
- * functional.  For example, refer to the source code of {@link HttpContentDecompressor}.
+ * {@link #newContentDecoder(String)} 按 Content-Encoding 创建解码器；
+ * 不支持时返回 {@code null} 透传。解码后更新 Content-Encoding/Length 头。
+ * 须放在 {@link HttpObjectDecoder} 之后。
  * <p>
- * This handler must be placed after {@link HttpObjectDecoder} in the pipeline
- * so that this handler can intercept HTTP requests after {@link HttpObjectDecoder}
- * converts {@link ByteBuf}s into HTTP requests.
+ * 子类实现参考 {@link HttpContentDecompressor}。
  */
 public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObject> {
 
@@ -67,7 +57,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
             if (!(msg instanceof LastHttpContent)) {
                 continueResponse = true;
             }
-            // 100-continue response must be passed through.
+            // 100 Continue 响应须透传，不参与解压
             needRead = false;
             ctx.fireChannelRead(ReferenceCountUtil.retain(msg));
             return;
@@ -88,7 +78,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
             final HttpMessage message = (HttpMessage) msg;
             final HttpHeaders headers = message.headers();
 
-            // Determine the content encoding.
+            // 从 Content-Encoding 或 Transfer-Encoding 确定编码方式
             String contentEncoding = headers.get(HttpHeaderNames.CONTENT_ENCODING);
             if (contentEncoding != null) {
                 contentEncoding = contentEncoding.trim();
@@ -116,7 +106,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
                 return;
             }
             decoder.pipeline().addLast(forwarder);
-            // Remove content-length header:
+            // 解码完成前无法确定长度，移除 Content-Length 并改用 chunked
             // the correct value can be set only after all chunks are processed/decoded.
             // If buffering is not an issue, add HttpObjectAggregator down the chain, it will set the header.
             // Otherwise, rely on LastHttpContent message.
@@ -124,13 +114,13 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
                 headers.remove(HttpHeaderNames.CONTENT_LENGTH);
                 headers.set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
             }
-            // Either it is already chunked or EOF terminated.
+            // 可能已是 chunked 或 EOF 终止
             // See https://github.com/netty/netty/issues/5892
 
             // set new content encoding,
             CharSequence targetContentEncoding = getTargetContentEncoding(contentEncoding);
             if (HttpHeaderValues.IDENTITY.contentEquals(targetContentEncoding)) {
-                // Do NOT set the 'Content-Encoding' header if the target encoding is 'identity'
+                // 目标编码为 identity 时不设置 Content-Encoding（RFC 2616 §14.11）
                 // as per: https://tools.ietf.org/html/rfc2616#section-14.11
                 headers.remove(HttpHeaderNames.CONTENT_ENCODING);
             } else {
@@ -138,7 +128,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
             }
 
             if (message instanceof HttpContent) {
-                // If message is a full request or response object (headers + data), don't copy data part into out.
+                // FullHttpMessage 时先向下游 fire 仅含头的副本，正文随后解码
                 // Output headers only; data part will be decoded below.
                 // Note: "copy" object must not be an instance of LastHttpContent class,
                 // as this would (erroneously) indicate the end of the HttpMessage to other handlers.
@@ -169,7 +159,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
                 needRead = false;
                 ctx.fireChannelRead(c.retain());
             } else {
-                // call retain here as it will call release after its written to the channel
+                // retain 后写入 EmbeddedChannel，写出时由 forwarder 包装为 HttpContent
                 decoder.writeInbound(c.content().retain());
 
                 if (c instanceof LastHttpContent) {
@@ -177,7 +167,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
                     decoder = null;
                     assert !notEmpty;
                     LastHttpContent last = (LastHttpContent) c;
-                    // Generate an additional chunk if the decoder produced
+                    // 最后一个 HttpContent 到达，发出 EMPTY 或带 trailer 的 LastHttpContent
                     // the last product on closure,
                     HttpHeaders headers = last.trailingHeaders();
                     needRead = false;
@@ -206,8 +196,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
     }
 
     /**
-     * Returns a new {@link EmbeddedChannel} that decodes the HTTP message
-     * content encoded in the specified <tt>contentEncoding</tt>.
+     * 按 Content-Encoding 创建解码用 {@link EmbeddedChannel}；不支持则返回 {@code null}。
      *
      * @param contentEncoding the value of the {@code "Content-Encoding"} header
      * @return a new {@link EmbeddedChannel} if the specified encoding is supported.
@@ -250,7 +239,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
 
     private void cleanup() {
         if (decoder != null) {
-            // Clean-up the previous decoder if not cleaned up correctly.
+            // 清理上次未正常关闭的 decoder
             boolean nonEmpty = decoder.finishAndReleaseAll();
             decoder = null;
             assert !nonEmpty;
@@ -277,8 +266,7 @@ public abstract class HttpContentDecoder extends MessageToMessageDecoder<HttpObj
 
         @Override
         public boolean isSharable() {
-            // We need to mark the handler as sharable as we will add it to every EmbeddedChannel that is
-            // generated.
+            // 标记 sharable：同一实例会被加入多个 EmbeddedChannel
             return true;
         }
 

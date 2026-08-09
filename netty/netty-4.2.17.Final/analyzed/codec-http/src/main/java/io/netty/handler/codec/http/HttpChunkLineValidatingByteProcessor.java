@@ -20,7 +20,8 @@ import io.netty.util.ByteProcessor;
 import java.util.BitSet;
 
 /**
- * Validates the chunk start line. That is, the chunk size and chunk extensions, until the CR LF pair.
+ * 校验分块传输编码中每个 chunk 的起始行（chunk-size 与 chunk-ext），直至 CR LF 结束。
+ * 实现 RFC 9112 §7.1 定义的有限状态机逐字节验证。
  * See <a href="https://www.rfc-editor.org/rfc/rfc9112#name-chunked-transfer-coding">RFC 9112 section 7.1</a>.
  *
  * <pre>{@code
@@ -53,7 +54,9 @@ import java.util.BitSet;
  * }</pre>
  */
 final class HttpChunkLineValidatingByteProcessor implements ByteProcessor {
+    /** 状态索引：解析十六进制 chunk-size */
     private static final int SIZE = 0;
+    /** 状态索引：解析 chunk-ext-name */
     private static final int CHUNK_EXT_NAME = 1;
     private static final int CHUNK_EXT_VAL_START = 2;
     private static final int CHUNK_EXT_VAL_QUOTED = 3;
@@ -61,6 +64,7 @@ final class HttpChunkLineValidatingByteProcessor implements ByteProcessor {
     private static final int CHUNK_EXT_VAL_QUOTED_END = 5;
     private static final int CHUNK_EXT_VAL_TOKEN = 6;
 
+    /** 字符匹配表：命中时跳转到 {@code then} 对应的状态 */
     static final class Match extends BitSet {
         private static final long serialVersionUID = 49522994383099834L;
         private final int then;
@@ -93,6 +97,7 @@ final class HttpChunkLineValidatingByteProcessor implements ByteProcessor {
         }
     }
 
+    /** chunk 起始行解析状态机，各状态定义允许的字符集与转移条件 */
     private enum State {
         Size(
                 new Match(SIZE).chars("0123456789abcdefABCDEF \t"),
@@ -144,6 +149,7 @@ final class HttpChunkLineValidatingByteProcessor implements ByteProcessor {
                     return STATES_BY_ORDINAL[match.then];
                 }
             }
+            // Size 状态下遇到非法字符视为 chunk-size 格式错误
             if (this == Size) {
                 throw new NumberFormatException("Invalid chunk size");
             } else {
@@ -154,6 +160,7 @@ final class HttpChunkLineValidatingByteProcessor implements ByteProcessor {
 
     private static final State[] STATES_BY_ORDINAL = State.values();
 
+    /** 当前解析状态，初始为 Size */
     private State state = State.Size;
 
     @Override
@@ -169,7 +176,7 @@ final class HttpChunkLineValidatingByteProcessor implements ByteProcessor {
             case ChunkExtValStart:
                 throw new InvalidChunkExtensionException("Invalid chunk extension");
         }
-        // Exhaustiveness check
+        // 穷尽性检查：结束时须处于合法终止状态
         assert state == State.Size ||
                 state == State.ChunkExtName ||
                 state == State.ChunkExtValQuotedEnd ||

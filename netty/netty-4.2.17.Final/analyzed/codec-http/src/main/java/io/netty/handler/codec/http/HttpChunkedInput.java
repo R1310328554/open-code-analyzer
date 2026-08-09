@@ -21,12 +21,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 
 /**
- * A {@link ChunkedInput} that fetches data chunk by chunk for use with HTTP chunked transfers.
+ * 用于 HTTP 分块传输的 {@link ChunkedInput} 适配器。
  * <p>
- * Each chunk from the input data will be wrapped within a {@link HttpContent}. At the end of the input data,
- * {@link LastHttpContent} will be written.
+ * 将底层 {@link ChunkedInput} 逐块读取并包装为 {@link HttpContent}；
+ * 输入结束后写出 {@link LastHttpContent} 作为终止 chunk。
  * <p>
- * Ensure that your HTTP response header contains {@code Transfer-Encoding: chunked}.
+ * 使用前须在响应头设置 {@code Transfer-Encoding: chunked}。
  * <p>
  * <pre>
  * public void messageReceived(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
@@ -44,10 +44,11 @@ public class HttpChunkedInput implements ChunkedInput<HttpContent> {
 
     private final ChunkedInput<ByteBuf> input;
     private final LastHttpContent lastHttpContent;
+    /** 是否已发送终止 chunk（LastHttpContent） */
     private boolean sentLastChunk;
 
     /**
-     * Creates a new instance using the specified input.
+     * 使用指定 {@link ChunkedInput} 创建实例，终止块为 {@link LastHttpContent#EMPTY_LAST_CONTENT}。
      * @param input {@link ChunkedInput} containing data to write
      */
     public HttpChunkedInput(ChunkedInput<ByteBuf> input) {
@@ -56,8 +57,7 @@ public class HttpChunkedInput implements ChunkedInput<HttpContent> {
     }
 
     /**
-     * Creates a new instance using the specified input. {@code lastHttpContent} will be written as the terminating
-     * chunk.
+     * 创建实例并指定自定义终止块（可携带 trailer 头）。
      * @param input {@link ChunkedInput} containing data to write
      * @param lastHttpContent {@link LastHttpContent} that will be written as the terminating chunk. Use this for
      *            training headers.
@@ -70,7 +70,7 @@ public class HttpChunkedInput implements ChunkedInput<HttpContent> {
     @Override
     public boolean isEndOfInput() throws Exception {
         if (input.isEndOfInput()) {
-            // Only end of input after last HTTP chunk has been sent
+            // 底层输入已结束，但须等 LastHttpContent 发出后才算真正结束
             return sentLastChunk;
         } else {
             return false;
@@ -94,7 +94,7 @@ public class HttpChunkedInput implements ChunkedInput<HttpContent> {
             if (sentLastChunk) {
                 return null;
             } else {
-                // Send last chunk for this input
+                // 底层已无数据，发送终止 chunk
                 sentLastChunk = true;
                 return lastHttpContent;
             }

@@ -35,9 +35,10 @@ import static io.netty.handler.codec.http.HttpHeaderValues.ZSTD;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Decompresses an {@link HttpMessage} and an {@link HttpContent} compressed in
- * {@code gzip} or {@code deflate} encoding.  For more information on how this
- * handler modifies the message, please refer to {@link HttpContentDecoder}.
+ * HTTP 内容解压缩器，支持 gzip/deflate/br/snappy/zstd。
+ * <p>
+ * {@code strict} 控制 deflate 是否严格按 ZLIB 解析；
+ * {@code maxAllocation} 限制解压缓冲区大小。详见 {@link HttpContentDecoder}。
  */
 public class HttpContentDecompressor extends HttpContentDecoder {
 
@@ -103,6 +104,7 @@ public class HttpContentDecompressor extends HttpContentDecoder {
         }
         if (DEFLATE.contentEqualsIgnoreCase(contentEncoding) ||
             X_DEFLATE.contentEqualsIgnoreCase(contentEncoding)) {
+            // strict 模式下 deflate 按 ZLIB；非 strict 兼容 raw deflate
             final ZlibWrapper wrapper = strict ? ZlibWrapper.ZLIB : ZlibWrapper.ZLIB_OR_NONE;
             // To be strict, 'deflate' means ZLIB, but some servers were not implemented correctly.
             return EmbeddedChannel.builder()
@@ -139,7 +141,7 @@ public class HttpContentDecompressor extends HttpContentDecoder {
                     .build();
         }
 
-        // 'identity' or unsupported
+        // identity 或不支持的编码：返回 null 透传
         return null;
     }
 }

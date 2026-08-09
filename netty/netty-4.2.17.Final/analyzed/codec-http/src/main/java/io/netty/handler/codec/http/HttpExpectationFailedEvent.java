@@ -16,10 +16,11 @@
 package io.netty.handler.codec.http;
 
 /**
- * A user event designed to communicate that a expectation has failed and there should be no expectation that a
- * body will follow.
+ * 用户事件：表示 {@code Expect: 100-continue} 期望失败（如 417），
+ * 告知下游不应再等待请求体。
  */
 public final class HttpExpectationFailedEvent {
+    /** 单例实例，通过 {@code fireUserEventTriggered} 传递 */
     public static final HttpExpectationFailedEvent INSTANCE = new HttpExpectationFailedEvent();
     private HttpExpectationFailedEvent() { }
 }

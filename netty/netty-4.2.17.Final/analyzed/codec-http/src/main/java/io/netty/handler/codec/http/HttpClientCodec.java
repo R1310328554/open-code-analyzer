@@ -35,28 +35,13 @@ import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_MAX_INITIAL_
 import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_VALIDATE_HEADERS;
 
 /**
- * A combination of {@link HttpRequestEncoder} and {@link HttpResponseDecoder}
- * which enables easier client side HTTP implementation. {@link HttpClientCodec}
- * provides additional state management for <tt>HEAD</tt> and <tt>CONNECT</tt>
- * requests, which {@link HttpResponseDecoder} lacks.  Please refer to
- * {@link HttpResponseDecoder} to learn what additional state management needs
- * to be done for <tt>HEAD</tt> and <tt>CONNECT</tt> and why
- * {@link HttpResponseDecoder} can not handle it by itself.
+ * 客户端 HTTP 复合编解码器，组合 {@link HttpRequestEncoder} 与 {@link HttpResponseDecoder}。
  * <p>
- * If the {@link Channel} is closed and there are missing responses,
- * a {@link PrematureChannelClosureException} is thrown.
- *
- * <h3>Header Validation</h3>
- *
- * It is recommended to always enable header validation.
+ * 额外维护请求/响应配对队列，处理 {@code HEAD} 与 {@code CONNECT} 等
+ * {@link HttpResponseDecoder} 无法单独完成的状态管理。
+ * 通道关闭时若仍有未收齐的响应，可抛出 {@link PrematureChannelClosureException}。
  * <p>
- * Without header validation, your system can become vulnerable to
- * <a href="https://cwe.mitre.org/data/definitions/113.html">
- *     CWE-113: Improper Neutralization of CRLF Sequences in HTTP Headers ('HTTP Response Splitting')
- * </a>.
- * <p>
- * This recommendation stands even when both peers in the HTTP exchange are trusted,
- * as it helps with defence-in-depth.
+ * 建议始终启用头校验，以防 HTTP 响应拆分（CWE-113）等攻击。
  *
  * @see HttpServerCodec
  */
@@ -65,11 +50,13 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
     public static final boolean DEFAULT_FAIL_ON_MISSING_RESPONSE = false;
     public static final boolean DEFAULT_PARSE_HTTP_AFTER_CONNECT_REQUEST = false;
 
-    /** A queue that is used for correlating a request and a response. */
+    /** 请求方法队列，用于将响应与对应请求（HEAD/CONNECT 等）关联 */
+
     private final Queue<HttpMethod> queue = new ArrayDeque<HttpMethod>();
     private final boolean parseHttpAfterConnectRequest;
 
-    /** If true, decoding stops (i.e. pass-through) */
+    /** CONNECT 成功后若为 true，后续字节透传不再按 HTTP 解码 */
+
     private boolean done;
 
     private final AtomicLong requestResponseCounter = new AtomicLong();
@@ -244,7 +231,7 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
     }
 
     /**
-     * Prepares to upgrade to another protocol from HTTP. Disables the {@link Encoder}.
+     * 准备从 HTTP 升级到另一协议，禁用 {@link Encoder} 的 HTTP 编码。
      */
     @Override
     public void prepareUpgradeFrom(ChannelHandlerContext ctx) {
@@ -252,8 +239,7 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
     }
 
     /**
-     * Upgrades to another protocol from HTTP. Removes the {@link Decoder} and {@link Encoder} from
-     * the pipeline.
+     * 完成协议升级，从 pipeline 移除本编解码器。
      */
     @Override
     public void upgradeFrom(ChannelHandlerContext ctx) {
@@ -278,7 +264,7 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
                 ChannelHandlerContext ctx, Object msg, List<Object> out) throws Exception {
 
             if (upgraded) {
-                // HttpObjectEncoder overrides .write and does not release msg, so we don't need to retain it here
+                // 升级后透传原始消息，Encoder 已禁用 HTTP 编码
                 out.add(msg);
                 return;
             }
@@ -290,7 +276,7 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
             super.encode(ctx, msg, out);
 
             if (failOnMissingResponse && !done) {
-                // check if the request is chunked if so do not increment
+                // failOnMissingResponse 模式下，LastHttpContent 到达时递增计数
                 if (msg instanceof LastHttpContent) {
                     // increment as its the last chunk
                     requestResponseCounter.incrementAndGet();
@@ -310,7 +296,7 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
             if (done) {
                 int readable = actualReadableBytes();
                 if (readable == 0) {
-                    // if non is readable just return null
+                    // done 模式下无剩余可读字节则直接返回
                     // https://github.com/netty/netty/issues/1159
                     return;
                 }
@@ -332,7 +318,7 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
                 return;
             }
 
-            // check if it's an Header and its transfer encoding is not chunked.
+            // LastHttpContent 到达时递减未配对响应计数
             if (msg instanceof LastHttpContent) {
                 requestResponseCounter.decrementAndGet();
             }
@@ -344,25 +330,20 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
             final HttpStatusClass statusClass = status.codeClass();
             final int statusCode = status.code();
             if (statusClass == HttpStatusClass.INFORMATIONAL) {
-                // An informational response should be excluded from paired comparison.
+                // 1xx 信息性响应不参与请求/响应配对
                 // Just delegate to super method which has all the needed handling.
                 return super.isContentAlwaysEmpty(msg);
             }
 
-            // Get the method of the HTTP request that corresponds to the
-            // current response.
+            // 从队列取出与当前响应对应的请求方法
             HttpMethod method = queue.poll();
 
-            // If the remote peer did for example send multiple responses for one request (which is not allowed per
-            // spec but may still be possible) method will be null so guard against it.
+            // 对端可能违规多发响应，method 为 null 时跳过特殊处理
             if (method != null) {
                 char firstChar = method.name().charAt(0);
                 switch (firstChar) {
                     case 'H':
-                        // According to 4.3, RFC2616:
-                        // All responses to the HEAD request method MUST NOT include a
-                        // message-body, even though the presence of entity-header fields
-                        // might lead one to believe they do.
+                        // RFC2616 §4.3：HEAD 响应不得包含消息体
                         if (HttpMethod.HEAD.equals(method)) {
                             return true;
 
@@ -381,7 +362,7 @@ public final class HttpClientCodec extends CombinedChannelDuplexHandler<HttpResp
                         }
                         break;
                     case 'C':
-                        // Successful CONNECT request results in a response with empty body.
+                        // CONNECT 成功（200）时响应体为空，可能切换为透传模式
                         if (statusCode == 200) {
                             if (HttpMethod.CONNECT.equals(method)) {
                                 // Proxy connection established - Parse HTTP only if configured by

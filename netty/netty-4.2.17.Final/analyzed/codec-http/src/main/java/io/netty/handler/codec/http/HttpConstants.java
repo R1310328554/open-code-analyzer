@@ -19,11 +19,13 @@ import io.netty.util.CharsetUtil;
 
 import java.nio.charset.Charset;
 
+/**
+ * HTTP 协议解析常用的 ASCII 字符常量与默认字符集。
+ */
 public final class HttpConstants {
 
-    /**
-     * Horizontal space
-     */
+    /** 水平空格 SP（0x20） */
+
     public static final byte SP = 32;
 
     /**
@@ -31,9 +33,8 @@ public final class HttpConstants {
      */
     public static final byte HT = 9;
 
-    /**
-     * Carriage return
-     */
+    /** 回车 CR（0x0D） */
+
     public static final byte CR = 13;
 
     /**
@@ -41,9 +42,8 @@ public final class HttpConstants {
      */
     public static final byte EQUALS = 61;
 
-    /**
-     * Line feed character
-     */
+    /** 换行 LF（0x0A） */
+
     public static final byte LF = 10;
 
     /**
@@ -76,9 +76,8 @@ public final class HttpConstants {
      */
     public static final byte DEL = 0x7F;
 
-    /**
-     * Default character set (UTF-8)
-     */
+    /** HTTP 文本默认字符集 UTF-8 */
+
     public static final Charset DEFAULT_CHARSET = CharsetUtil.UTF_8;
 
     /**
@@ -87,6 +86,6 @@ public final class HttpConstants {
     public static final char SP_CHAR = (char) SP;
 
     private HttpConstants() {
-        // Unused
+        // 工具类禁止实例化
     }
 }

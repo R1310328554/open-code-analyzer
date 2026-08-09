@@ -19,10 +19,10 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
- * A configuration object for specifying the behaviour of {@link HttpObjectDecoder} and its subclasses.
+ * {@link HttpObjectDecoder} 及其子类的可配置行为对象。
  * <p>
- * The {@link HttpDecoderConfig} objects are mutable to reduce allocation,
- * but also {@link Cloneable} in case a defensive copy is needed.
+ * 可变且 {@link Cloneable}，用于设置行/头/块大小限制、chunked 支持、
+ * 头校验、RFC 9112 严格模式等解码策略。
  */
 public final class HttpDecoderConfig implements Cloneable {
     private int maxChunkSize = HttpObjectDecoder.DEFAULT_MAX_CHUNK_SIZE;
@@ -42,7 +42,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set the initial size of the temporary buffer used when parsing the lines of the HTTP headers.
+     * 设置解析 HTTP 起始行与头字段时的初始临时缓冲区大小。
      *
      * @param initialBufferSize The buffer size in bytes.
      * @return This decoder config.
@@ -58,8 +58,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set the maximum length of the first line of the HTTP header.
-     * This limits how much memory Netty will use when parsed the initial HTTP header line.
+     * 设置 HTTP 起始行（请求行/状态行）最大长度，限制内存占用。
      * You would typically set this to the same value as {@link #setMaxHeaderSize(int)}.
      *
      * @param maxInitialLineLength The maximum length, in bytes.
@@ -76,8 +75,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set the maximum line length of header lines.
-     * This limits how much memory Netty will use when parsing HTTP header key-value pairs.
+     * 设置所有头字段累计最大长度（非单行限制）。
      * The limit applies to the sum of all the headers, so it applies equally to many short header-lines,
      * or fewer but longer header lines.
      * <p>
@@ -97,9 +95,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set the maximum chunk size.
-     * HTTP requests and responses can be quite large, in which case it's better to process the data as a stream of
-     * chunks.
+     * 设置向下游传递的单个 {@link HttpContent} 最大字节数。
      * This sets the limit, in bytes, at which Netty will send a chunk down the pipeline.
      *
      * @param maxChunkSize The maximum chunk size, in bytes.
@@ -116,7 +112,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set whether {@code Transfer-Encoding: Chunked} should be supported.
+     * 是否支持 {@code Transfer-Encoding: chunked} 分块传输。
      *
      * @param chunkedSupported if {@code false}, then a {@code Transfer-Encoding: Chunked} header will produce an error,
      * instead of a stream of chunks.
@@ -132,7 +128,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set whether chunks can be split into multiple messages, if their chunk size exceeds the size of the input buffer.
+     * 输入缓冲不足时是否允许将单个 chunk 拆成多条 {@link HttpContent}。
      *
      * @param allowPartialChunks set to {@code false} to only allow sending whole chunks down the pipeline.
      * @return This decoder config.
@@ -167,9 +163,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set whether more than one {@code Content-Length} header is allowed.
-     * You usually want to disallow this (which is the default) as multiple {@code Content-Length} headers can indicate
-     * a request- or response-splitting attack.
+     * 是否允许多个 Content-Length 头（默认禁止，防请求/响应拆分攻击）。
      *
      * @param allowDuplicateContentLengths set to {@code true} to allow multiple content length headers.
      * @return This decoder config.
@@ -180,7 +174,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * Set whether header validation should be enabled or not.
+     * 启用/禁用头名与头值校验（默认启用，防 CRLF 注入）。
      * This works by changing the configured {@linkplain #setHeadersFactory(HttpHeadersFactory) header factory}
      * and {@linkplain #setTrailersFactory(HttpHeadersFactory) trailer factory}.
      * <p>
@@ -224,9 +218,7 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * The RFC 9112 specification for the HTTP protocol says that the initial start-line, and the following header
-     * field-lines, must be separated by a Carriage Return (CR) and Line Feed (LF) octet pair, but also offers that
-     * implementations "MAY" accept just a Line Feed octet as a separator.
+     * RFC 9112 严格行解析：{@code true} 时强制 CR LF 分隔起始行与头字段。
      * <p>
      * Parsing leniencies can increase compatibility with a wider range of implementations, but can also cause
      * security vulnerabilities, when multiple systems disagree on the meaning of leniently parsed messages.
@@ -256,10 +248,8 @@ public final class HttpDecoderConfig implements Cloneable {
     }
 
     /**
-     * The RFC 9112 specification is more strict than RFC 7230 with regards to having {@code Transfer-Encoding} and
-     * {@code Content-Length} headers in the same HTTP message. Senders are now forbidden from including both headers
-     * in the same message, while servers may reject such requests. When this setting is set to {@code true}, which
-     * is the default, then such messages will be <em>rejected.</em>
+     * RFC 9112 比 RFC 7230 更严格：禁止同一消息同时含 Transfer-Encoding 与 Content-Length；
+     * 默认 {@code true} 时此类消息将被<em>拒绝</em>。
      * <p>
      * When this setting is set to {@code false}, it restores the RFC 7230 behavior of instead removing any
      * {@code Content-Length} headers when {@code Transfer-Encoding} headers are present.

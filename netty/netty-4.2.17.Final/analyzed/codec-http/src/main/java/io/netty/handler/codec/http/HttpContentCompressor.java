@@ -42,11 +42,9 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkInRange;
 
 /**
- * Compresses an {@link HttpMessage} and an {@link HttpContent} in {@code gzip} or
- * {@code deflate} encoding while respecting the {@code "Accept-Encoding"} header.
- * If there is no matching encoding, no compression is done.  For more
- * information on how this handler modifies the message, please refer to
- * {@link HttpContentEncoder}.
+ * HTTP 响应内容压缩器，根据 {@code Accept-Encoding} 选择 br/zstd/snappy/gzip/deflate。
+ * <p>
+ * 无匹配编码或已设置 Content-Encoding 时不压缩；行为详见 {@link HttpContentEncoder}。
  */
 public class HttpContentCompressor extends HttpContentEncoder {
 
@@ -57,6 +55,7 @@ public class HttpContentCompressor extends HttpContentEncoder {
     private final SnappyOptions snappyOptions;
 
     private final int contentSizeThreshold;
+    /** handler 加入 pipeline 时保存的上下文，用于创建 EmbeddedChannel */
     private ChannelHandlerContext ctx;
 
     private static final CompressionOptions[] DEFAULT_COMPRESSION_OPTIONS;
@@ -217,7 +216,7 @@ public class HttpContentCompressor extends HttpContentEncoder {
 
         ObjectUtil.deepCheckNotNull("compressionOptions", compressionOptions);
         for (CompressionOptions compressionOption : compressionOptions) {
-            // BrotliOptions' class initialization depends on Brotli classes being on the classpath.
+            // Brotli/Zstd 可选依赖：类路径存在时才实例化对应 Options
             // The Brotli.isAvailable check ensures that BrotliOptions will only get instantiated if Brotli is
             // on the classpath.
             // This results in the static analysis of native-image identifying the instanceof BrotliOptions check
@@ -279,8 +278,7 @@ public class HttpContentCompressor extends HttpContentEncoder {
 
         String contentEncoding = httpResponse.headers().get(HttpHeaderNames.CONTENT_ENCODING);
         if (contentEncoding != null) {
-            // Content-Encoding was set, either as something specific or as the IDENTITY encoding
-            // Therefore, we should NOT encode here
+            // 响应已含 Content-Encoding，跳过压缩
             return null;
         }
 
@@ -368,7 +366,7 @@ public class HttpContentCompressor extends HttpContentEncoder {
                 try {
                     q = Float.parseFloat(encoding.substring(equalsPos + 1));
                 } catch (NumberFormatException e) {
-                    // Ignore encoding
+                    // q 值解析失败则视为 0，忽略该编码
                     q = 0.0f;
                 }
             }
@@ -387,6 +385,7 @@ public class HttpContentCompressor extends HttpContentEncoder {
             }
             start = comma + 1;
         }
+        // 按 q 值与配置优先级选择最佳压缩算法
         if (brQ > 0.0f || zstdQ > 0.0f || snappyQ > 0.0f || gzipQ > 0.0f || deflateQ > 0.0f) {
             if (brQ != -1.0f && brQ >= zstdQ && this.brotliOptions != null) {
                 return "br";

@@ -25,14 +25,9 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * This DateFormat decodes 3 formats of {@link Date}, but only encodes the one,
- * the first:
- * <ul>
- * <li>Sun, 06 Nov 1994 08:49:37 GMT: standard specification, the only one with
- * valid generation</li>
- * <li>Sunday, 06-Nov-94 08:49:37 GMT: obsolete specification</li>
- * <li>Sun Nov  6 08:49:37 1994: obsolete specification</li>
- * </ul>
+ * HTTP 头 Date 字段的解析/格式化工具（已废弃，请用 {@link DateFormatter}）。
+ * <p>
+ * 解析兼容三种格式，编码仅输出 RFC 标准格式（Sun, 06 Nov 1994 08:49:37 GMT）。
  * @deprecated Use {@link DateFormatter} instead
  */
 @Deprecated
@@ -55,8 +50,8 @@ public final class HttpHeaderDateFormat extends SimpleDateFormat {
     }
 
     /**
-     * Standard date format<p>
-     * Sun, 06 Nov 1994 08:49:37 GMT -> E, d MMM yyyy HH:mm:ss z
+     * 标准日期格式（编码输出格式）。
+     * Sun, 06 Nov 1994 08:49:37 GMT -> E, dd MMM yyyy HH:mm:ss z
      */
     private HttpHeaderDateFormat() {
         super("E, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH);
@@ -76,8 +71,8 @@ public final class HttpHeaderDateFormat extends SimpleDateFormat {
     }
 
     /**
-     * First obsolete format<p>
-     * Sunday, 06-Nov-94 08:49:37 GMT -> E, d-MMM-y HH:mm:ss z
+     * 第一种过时格式，解析时作为回退。
+     * Sunday, 06-Nov-94 08:49:37 GMT -> E, dd-MMM-yy HH:mm:ss z
      */
     private static final class HttpHeaderDateFormatObsolete1 extends SimpleDateFormat {
         private static final long serialVersionUID = -3178072504225114298L;
@@ -89,9 +84,9 @@ public final class HttpHeaderDateFormat extends SimpleDateFormat {
     }
 
     /**
-     * Second obsolete format
+     * 第二种过时格式（asctime 风格）。
      * <p>
-     * Sun Nov 6 08:49:37 1994 -> EEE, MMM d HH:mm:ss yyyy
+     * Sun Nov 6 08:49:37 1994 -> E MMM d HH:mm:ss yyyy
      */
     private static final class HttpHeaderDateFormatObsolete2 extends SimpleDateFormat {
         private static final long serialVersionUID = 3010674519968303714L;

@@ -19,10 +19,10 @@ package io.netty.handler.codec.http;
 import io.netty.util.AsciiString;
 
 /**
- * Standard HTTP header names.
+ * 标准 HTTP 头字段名常量（{@link AsciiString}，小写缓存）。
  * <p>
- * These are all defined as lowercase to support HTTP/2 requirements while also not
- * violating HTTP/1.x requirements.  New header names should always be lowercase.
+ * 统一小写以兼容 HTTP/2 要求，同时不违反 HTTP/1.x 大小写不敏感语义；
+ * 新增头名应始终使用小写。
  */
 public final class HttpHeaderNames {
     /**
@@ -33,9 +33,8 @@ public final class HttpHeaderNames {
      * {@code "accept-charset"}
      */
     public static final AsciiString ACCEPT_CHARSET = AsciiString.cached("accept-charset");
-    /**
-     * {@code "accept-encoding"}
-     */
+    /** 客户端接受的压缩编码（{@code "accept-encoding"}） */
+
     public static final AsciiString ACCEPT_ENCODING = AsciiString.cached("accept-encoding");
     /**
      * {@code "accept-language"}
@@ -118,25 +117,22 @@ public final class HttpHeaderNames {
      * {@code "cache-control"}
      */
     public static final AsciiString CACHE_CONTROL = AsciiString.cached("cache-control");
-    /**
-     * {@code "connection"}
-     */
+    /** 连接控制（{@code "connection"}，如 close/keep-alive） */
+
     public static final AsciiString CONNECTION = AsciiString.cached("connection");
     /**
      * {@code "content-base"}
      */
     public static final AsciiString CONTENT_BASE = AsciiString.cached("content-base");
-    /**
-     * {@code "content-encoding"}
-     */
+    /** 消息体的内容编码（{@code "content-encoding"}） */
+
     public static final AsciiString CONTENT_ENCODING = AsciiString.cached("content-encoding");
     /**
      * {@code "content-language"}
      */
     public static final AsciiString CONTENT_LANGUAGE = AsciiString.cached("content-language");
-    /**
-     * {@code "content-length"}
-     */
+    /** 消息体长度（{@code "content-length"}） */
+
     public static final AsciiString CONTENT_LENGTH = AsciiString.cached("content-length");
     /**
      * {@code "content-location"}
@@ -162,9 +158,8 @@ public final class HttpHeaderNames {
      * {@code "content-security-policy"}
      */
     public static final AsciiString CONTENT_SECURITY_POLICY = AsciiString.cached("content-security-policy");
-    /**
-     * {@code "content-type"}
-     */
+    /** 消息体 MIME 类型（{@code "content-type"}） */
+
     public static final AsciiString CONTENT_TYPE = AsciiString.cached("content-type");
     /**
      * {@code "cookie"}
@@ -194,9 +189,8 @@ public final class HttpHeaderNames {
      * {@code "from"}
      */
     public static final AsciiString FROM = AsciiString.cached("from");
-    /**
-     * {@code "host"}
-     */
+    /** 目标主机与端口（{@code "host"}，HTTP/1.1 必填） */
+
     public static final AsciiString HOST = AsciiString.cached("host");
     /**
      * {@code "if-match"}
@@ -296,9 +290,8 @@ public final class HttpHeaderNames {
      * {@code "sec-websocket-version"}
      */
     public static final AsciiString SEC_WEBSOCKET_VERSION = AsciiString.cached("sec-websocket-version");
-    /**
-     * {@code "sec-websocket-key"}
-     */
+    /** WebSocket 握手密钥（{@code "sec-websocket-key"}） */
+
     public static final AsciiString SEC_WEBSOCKET_KEY = AsciiString.cached("sec-websocket-key");
     /**
      * {@code "sec-websocket-accept"}
@@ -328,13 +321,11 @@ public final class HttpHeaderNames {
      * {@code "trailer"}
      */
     public static final AsciiString TRAILER = AsciiString.cached("trailer");
-    /**
-     * {@code "transfer-encoding"}
-     */
+    /** 传输编码（{@code "transfer-encoding"}，如 chunked） */
+
     public static final AsciiString TRANSFER_ENCODING = AsciiString.cached("transfer-encoding");
-    /**
-     * {@code "upgrade"}
-     */
+    /** 协议升级目标（{@code "upgrade"}） */
+
     public static final AsciiString UPGRADE = AsciiString.cached("upgrade");
     /**
      * {@code "upgrade-insecure-requests"}
@@ -386,5 +377,6 @@ public final class HttpHeaderNames {
      */
     public static final AsciiString ALT_SVC = AsciiString.cached("alt-svc");
 
+    /** 工具类禁止实例化 */
     private HttpHeaderNames() { }
 }

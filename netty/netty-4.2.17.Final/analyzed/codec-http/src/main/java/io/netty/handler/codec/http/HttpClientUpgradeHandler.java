@@ -31,38 +31,31 @@ import static io.netty.handler.codec.http.HttpResponseStatus.SWITCHING_PROTOCOLS
 import static io.netty.util.ReferenceCountUtil.release;
 
 /**
- * Client-side handler for handling an HTTP upgrade handshake to another protocol. When the first
- * HTTP request is sent, this handler will add all appropriate headers to perform an upgrade to the
- * new protocol. If the upgrade fails (i.e. response is not 101 Switching Protocols), this handler
- * simply removes itself from the pipeline. If the upgrade is successful, upgrades the pipeline to
- * the new protocol.
+ * 客户端 HTTP 协议升级处理器，负责发起 Upgrade 握手并切换 pipeline。
+ * <p>
+ * 首个 {@link HttpRequest} 发出时自动添加 Upgrade/Connection 头；
+ * 若响应非 101 则移除自身继续 HTTP；成功则调用 {@link UpgradeCodec} 替换协议栈。
  */
 public class HttpClientUpgradeHandler extends HttpObjectAggregator implements ChannelOutboundHandler {
 
-    /**
-     * User events that are fired to notify about upgrade status.
-     */
+    /** 升级过程触发的用户事件，供下游 handler 感知状态 */
+
     public enum UpgradeEvent {
-        /**
-         * The Upgrade request was sent to the server.
-         */
+        /** 已向服务端发送 Upgrade 请求 */
+
         UPGRADE_ISSUED,
 
-        /**
-         * The Upgrade to the new protocol was successful.
-         */
+        /** 协议升级成功 */
+
         UPGRADE_SUCCESSFUL,
 
-        /**
-         * The Upgrade was unsuccessful due to the server not issuing
-         * with a 101 Switching Protocols response.
-         */
+        /** 服务端未返回 101，升级被拒绝 */
+
         UPGRADE_REJECTED
     }
 
-    /**
-     * The source codec that is used in the pipeline initially.
-     */
+    /** 升级前 pipeline 中的源协议编解码器（如 {@link HttpClientCodec}） */
+
     public interface SourceCodec {
 
         /**
@@ -77,9 +70,8 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
         void upgradeFrom(ChannelHandlerContext ctx);
     }
 
-    /**
-     * A codec that the source can be upgraded to.
-     */
+    /** 目标升级协议编解码器（如 HTTP/2、WebSocket） */
+
     public interface UpgradeCodec {
         /**
          * Returns the name of the protocol supported by this codec, as indicated by the {@code 'UPGRADE'} header.
@@ -161,7 +153,7 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
         }
 
         if (currentUpgradeEvent == UpgradeEvent.UPGRADE_ISSUED) {
-            // Release message before failing the promise.
+            // 升级进行中禁止再写 HTTP 请求，先释放消息再失败 promise
             ReferenceCountUtil.release(msg);
             promise.setFailure(new IllegalStateException(
                     "Attempting to write HTTP request with upgrade in progress"));
@@ -174,7 +166,7 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
         // Continue writing the request.
         ctx.write(msg, promise);
 
-        // Notify that the upgrade request was issued.
+        // 通知下游：Upgrade 请求已发出
         ctx.fireUserEventTriggered(UpgradeEvent.UPGRADE_ISSUED);
         // Now we wait for the next HTTP response to see if we switch protocols.
     }
@@ -196,10 +188,7 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
             if (msg instanceof HttpResponse) {
                 HttpResponse rep = (HttpResponse) msg;
                 if (!SWITCHING_PROTOCOLS.equals(rep.status())) {
-                    // The server does not support the requested protocol, just remove this handler
-                    // and continue processing HTTP.
-                    // NOTE: not releasing the response since we're letting it propagate to the
-                    // next handler.
+                    // 非 101 响应：升级失败，移除 handler 并继续 HTTP 处理
                     currentUpgradeEvent = null;
                     ctx.fireUserEventTriggered(UpgradeEvent.UPGRADE_REJECTED);
                     removeThisHandler(ctx);
@@ -210,7 +199,7 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
 
             if (msg instanceof FullHttpResponse) {
                 response = (FullHttpResponse) msg;
-                // Need to retain since the base class will release after returning from this method.
+                // 基类 decode 返回后会 release，此处 retain 保活
                 response.retain();
                 out.add(response);
             } else {
@@ -231,7 +220,7 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
                         "Switching Protocols response with unexpected UPGRADE protocol: " + upgradeHeader);
             }
 
-            // Upgrade to the new protocol.
+            // 校验 UPGRADE 头后执行协议切换
             sourceCodec.prepareUpgradeFrom(ctx);
             upgradeCodec.upgradeTo(ctx, response);
 
@@ -242,8 +231,7 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
             // Notify that the upgrade to the new protocol completed successfully.
             ctx.fireUserEventTriggered(UpgradeEvent.UPGRADE_SUCCESSFUL);
 
-            // We guarantee UPGRADE_SUCCESSFUL event will be arrived at the next handler
-            // before http2 setting frame and http response.
+            // 保证 UPGRADE_SUCCESSFUL 事件先于新协议帧到达下游
             sourceCodec.upgradeFrom(ctx);
 
             // We switched protocols, so we're done with the upgrade response.
@@ -262,7 +250,7 @@ public class HttpClientUpgradeHandler extends HttpObjectAggregator implements Ch
     }
 
     /**
-     * Adds all upgrade request headers necessary for an upgrade to the supported protocols.
+     * 为 Upgrade 请求设置 UPGRADE、CONNECTION 及协议相关头。
      */
     private void setUpgradeRequestHeaders(ChannelHandlerContext ctx, HttpRequest request) {
         // Set the UPGRADE header on the request.
