@@ -16,6 +16,7 @@
 package org.redisson.api.stream;
 
 /**
+ * 流裁剪参数的实现类，组合策略、限制与引用选项。
  *
  * @author Nikita Koksharov
  *
@@ -25,8 +26,11 @@ public final class StreamTrimParams extends BaseReferencesParams<StreamTrimLimit
                                             StreamTrimArgs,
                                             StreamTrimReferencesArgs<StreamTrimArgs> {
 
+    /** MAXLEN 策略的长度阈值。 */
     Integer maxLen;
+    /** MINID 策略的最小消息 ID。 */
     StreamMessageId minId;
+    /** 单次裁剪驱逐条目数量上限。 */
     int limit;
 
     StreamTrimParams(int threshold) {

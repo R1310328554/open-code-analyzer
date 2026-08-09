@@ -19,12 +19,11 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * Arguments for the {@code TDIGEST.MERGE} command.
+ * {@code TDIGEST.MERGE} 命令的参数对象。
  * <p>
- * The sketch the merge is invoked on is always the destination;
- * the keys supplied here are the sources merged into it.
+ * 调用合并方法的草图始终为目标；此处提供的键为待合并的源。
  *
- * <p>Usage example:
+ * <p>用法示例：
  * <pre>
  *     destination.mergeWith(
  *         TDigestMergeArgs.keys("server1", "server2")
@@ -38,45 +37,42 @@ import java.util.Collection;
 public interface TDigestMergeArgs {
 
     /**
-     * Creates merge arguments for the specified source keys.
+     * 为指定源键创建合并参数。
      *
-     * @param keys names of the source t-digest sketches
-     * @return arguments instance
+     * @param keys 源 t-digest 草图的键名
+     * @return 参数实例
      */
     static TDigestMergeArgs keys(String... keys) {
         return new TDigestMergeArgsImpl(Arrays.asList(keys));
     }
 
     /**
-     * Creates merge arguments for the specified source keys.
+     * 为指定源键集合创建合并参数。
      *
-     * @param keys names of the source t-digest sketches
-     * @return arguments instance
+     * @param keys 源 t-digest 草图的键名集合
+     * @return 参数实例
      */
     static TDigestMergeArgs keys(Collection<String> keys) {
         return new TDigestMergeArgsImpl(keys);
     }
 
     /**
-     * Defines the compression of the destination sketch after the merge.
+     * 定义合并后目标草图的压缩率。
      * <p>
-     * If not set, the destination keeps its current compression, or — when
-     * the destination is created by this command — the maximum compression
-     * among the sources is used.
+     * 若未设置，目标保留当前压缩率；若由本命令创建目标，
+     * 则使用各源中的最大压缩率。
      *
-     * @param compression compression of the resulting sketch
-     * @return arguments instance
+     * @param compression 合并结果草图的压缩率
+     * @return 参数实例
      */
     TDigestMergeArgs compression(int compression);
 
     /**
-     * Treats the destination as empty before merging, so its existing
-     * observations are discarded and overwritten by the merged result.
+     * 合并前将目标视为空，丢弃其现有观测值并由合并结果覆盖。
      * <p>
-     * Without this flag the sources are merged on top of the destination's
-     * current contents.
+     * 未设置此标志时，源数据将叠加到目标当前内容之上。
      *
-     * @return arguments instance
+     * @return 参数实例
      */
     TDigestMergeArgs override();
 

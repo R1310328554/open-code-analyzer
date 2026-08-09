@@ -16,7 +16,9 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for Stream trim method.
+ * 流裁剪参数接口，组合驱逐限制与引用处理选项。
+ * <p>
+ * 继承 {@link StreamTrimLimitArgs} 与 {@link StreamReferencesArgs}。
  *
  * @author seakider
  *

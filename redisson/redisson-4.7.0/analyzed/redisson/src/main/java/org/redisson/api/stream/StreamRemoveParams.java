@@ -16,12 +16,14 @@
 package org.redisson.api.stream;
 
 /**
+ * {@link StreamRemoveArgs} 的实现类，承载流消息删除参数。
  *
  * @author seakider
  *
  */
 public class StreamRemoveParams extends BaseReferencesParams<StreamRemoveArgs> implements StreamRemoveArgs {
 
+    /** 待删除的消息 ID 数组。 */
     private final StreamMessageId[] ids;
 
     public StreamRemoveParams(StreamMessageId[] ids) {

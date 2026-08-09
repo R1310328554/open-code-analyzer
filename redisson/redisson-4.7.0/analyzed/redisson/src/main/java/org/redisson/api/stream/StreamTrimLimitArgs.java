@@ -16,7 +16,7 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for Stream trim method.
+ * 流裁剪命令的驱逐数量限制参数接口。
  *
  * @author Nikita Koksharov
  *
@@ -24,17 +24,17 @@ package org.redisson.api.stream;
 public interface StreamTrimLimitArgs<T> {
 
     /**
-     * Defines no limit of evicted objects for trim command.
+     * 不限制单次裁剪可驱逐的条目数量。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     T noLimit();
 
     /**
-     * Defines limit of evicted objects for trim command.
+     * 设置单次裁剪最多驱逐的条目数量。
      *
-     * @param size max amount of evicted objects
-     * @return arguments object
+     * @param size 最大驱逐条目数
+     * @return 参数对象
      */
     T limit(int size);
 

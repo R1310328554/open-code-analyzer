@@ -16,24 +16,24 @@
 package org.redisson.api.vector;
 
 /**
- * Vector quantization type
+ * 向量量化类型枚举。
  *
  * @author Nikita Koksharov
  *
  */
 public enum QuantizationType {
     /**
-     * No quantization
+     * 不量化
      */
     NOQUANT,
 
     /**
-     * Binary quantization
+     * 二进制量化
      */
     BIN,
 
     /**
-     * 8-bit quantization
+     * 8 位量化
      */
     Q8
 }

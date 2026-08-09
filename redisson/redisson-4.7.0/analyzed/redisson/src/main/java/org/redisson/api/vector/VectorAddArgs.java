@@ -18,7 +18,9 @@ package org.redisson.api.vector;
 import org.redisson.codec.JsonCodec;
 
 /**
- * Arguments object for RVectorSet.add() method
+ * {@link org.redisson.api.RVectorSet#add} 方法的参数对象。
+ * <p>
+ * 支持配置向量数据、量化、探索因子及属性等选项。
  *
  * @author Nikita Koksharov
  *
@@ -26,81 +28,81 @@ import org.redisson.codec.JsonCodec;
 public interface VectorAddArgs {
 
     /**
-     * Defines element name
+     * 指定待添加的元素名称。
      *
-     * @param name element name
-     * @return arguments object
+     * @param name 元素名称
+     * @return 参数对象
      */
     static ElementStep element(String name) {
         return new VectorAddParams(name);
     }
 
     /**
-     * Arguments object for vector data
+     * 向量数据配置步骤接口。
      */
     interface ElementStep {
 
         /**
-         * Defines vector as byte array (32-bit floating point blob of values)
+         * 以字节数组形式定义向量（32 位浮点值 blob）。
          *
-         * @param vector vector as byte array
-         * @return arguments object
+         * @param vector 向量字节数组
+         * @return 参数对象
          */
         VectorAddArgs vector(byte[] vector);
 
         /**
-         * Defines vector as array of floating point numbers
+         * 以双精度浮点数组形式定义向量。
          *
-         * @param vector vector as array of doubles
-         * @return arguments object
+         * @param vector 向量浮点数组
+         * @return 参数对象
          */
         VectorAddArgs vector(Double... vector);
     }
 
     /**
-     * Sets the random projection value to reduce the dimensionality of the vector.
+     * 设置随机投影值以降低向量维度。
      *
-     * @param reduce value to reduce the dimensionality
-     * @return arguments object
+     * @param reduce 降维目标值
+     * @return 参数对象
      */
     VectorAddArgs reduce(int reduce);
 
     /**
-     * Defines whether it is to use check-and-set style for the addition execution.
+     * 启用 check-and-set 风格的添加执行方式。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     VectorAddArgs useCheckAndSet();
 
     /**
-     * Defines the quantization type
+     * 指定向量量化类型。
      *
-     * @param type quantization type
-     * @return arguments object
+     * @param type 量化类型
+     * @return 参数对象
      */
     VectorAddArgs quantization(QuantizationType type);
 
     /**
-     * Defines the exploration factor (EF)
+     * 设置探索因子（EF）。
      *
-     * @param value exploration factor value
-     * @return arguments object
+     * @param value 探索因子值
+     * @return 参数对象
      */
     VectorAddArgs explorationFactor(int value);
 
     /**
-     * Defines the attributes. Used in the form of a JavaScript object.
+     * 定义属性对象（以 JavaScript 对象形式序列化）。
      *
-     * @param attributes attributes object to serialize
-     * @return arguments object
+     * @param attributes 待序列化的属性对象
+     * @return 参数对象
      */
     VectorAddArgs attributes(Object attributes, JsonCodec jsonCodec);
 
     /**
-     * Defines the number of maximum connections which each node will have with other nodes.
+     * 设置每个节点与其他节点的最大连接数。
      *
-     * @param maxConnections number of maximum connections
-     * @return arguments object
+     * @param maxConnections 最大连接数
+     * @return 参数对象
      */
     VectorAddArgs maxConnections(int maxConnections);
 }

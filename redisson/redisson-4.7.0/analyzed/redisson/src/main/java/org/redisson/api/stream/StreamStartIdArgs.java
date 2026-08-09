@@ -16,24 +16,27 @@
 package org.redisson.api.stream;
 
 /**
+ * 流范围查询的起始消息 ID 参数接口。
+ * <p>
+ * 支持包含或排除起始 ID 两种边界模式。
  *
  * @author seakider
  *
  */
 public interface StreamStartIdArgs<T> {
     /**
-     * Defines startId in range inclusive
+     * 设置范围起始 ID（包含边界）。
      *
-     * @param startId
-     * @return next options
+     * @param startId 起始消息 ID
+     * @return 后续选项
      */
     StreamEndIdArgs<T> startId(StreamMessageId startId);
 
     /**
-     * Defines startId in range exclusive
+     * 设置范围起始 ID（不包含边界）。
      *
-     * @param startId
-     * @return next options
+     * @param startId 起始消息 ID
+     * @return 后续选项
      */
     StreamEndIdArgs<T> startIdExclusive(StreamMessageId startId);
 }

@@ -16,15 +16,20 @@
 package org.redisson.api.topk;
 
 /**
+ * {@link TopKInitArgs} 的实现类，承载 Top-K 初始化参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class TopKInitArgsImpl implements TopKInitArgs {
 
+    /** 需跟踪的高频元素数量。 */
     final int topK;
+    /** 每个计数器数组的宽度。 */
     Integer width;
+    /** 计数器数组层数。 */
     Integer depth;
+    /** 碰撞时计数器衰减概率。 */
     Double decay;
 
     TopKInitArgsImpl(int topK) {

@@ -20,21 +20,31 @@ import org.redisson.codec.JsonCodec;
 import java.util.Objects;
 
 /**
- * Vector add arguments implementation
+ * {@link VectorAddArgs} 的实现类，承载向量集添加参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class VectorAddParams implements VectorAddArgs, VectorAddArgs.ElementStep {
+    /** 元素名称。 */
     private final String element;
+    /** 字节数组形式的向量。 */
     private byte[] vectorBytes;
+    /** 双精度数组形式的向量。 */
     private Double[] vectorDoubles;
+    /** 随机投影降维值。 */
     private Integer reduce;
+    /** 是否使用 check-and-set 模式。 */
     private boolean useCheckAndSet;
+    /** 向量量化类型。 */
     private QuantizationType quantizationType;
+    /** 探索因子（EF）。 */
     private Integer effort;
+    /** 附加属性对象。 */
     private Object attributes;
+    /** 节点最大连接数。 */
     private Integer maxConnections;
+    /** 属性序列化编解码器。 */
     private JsonCodec attributesJsonCodec;
 
     VectorAddParams(String element) {

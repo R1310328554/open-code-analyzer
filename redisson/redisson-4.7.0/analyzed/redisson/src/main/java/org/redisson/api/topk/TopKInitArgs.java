@@ -16,9 +16,9 @@
 package org.redisson.api.topk;
 
 /**
- * Arguments for Top-K initialization.
+ * Top-K 结构初始化参数对象。
  *
- * <p>Usage example:
+ * <p>用法示例：
  * <pre>
  *     topK.init(TopKInitArgs.topK(50)
  *                     .width(2000)
@@ -32,43 +32,42 @@ package org.redisson.api.topk;
 public interface TopKInitArgs {
 
     /**
-     * Creates arguments for a Top-K tracking the {@code topK} most frequent items.
+     * 创建跟踪前 {@code topK} 个高频元素的 Top-K 初始化参数。
      *
-     * @param topK number of top items to keep track of
-     * @return arguments instance
+     * @param topK 需跟踪的高频元素数量
+     * @return 参数实例
      */
     static TopKInitArgs topK(int topK) {
         return new TopKInitArgsImpl(topK);
     }
 
     /**
-     * Defines the number of counters in each array (width).
+     * 定义每个计数器数组的宽度（counter 数量）。
      * <p>
-     * Default value is 8.
+     * 默认值为 8。
      *
-     * @param width number of counters in each array
-     * @return arguments instance
+     * @param width 每个数组中的计数器数量
+     * @return 参数实例
      */
     TopKInitArgs width(int width);
 
     /**
-     * Defines the number of counter arrays (depth).
+     * 定义计数器数组层数（深度）。
      * <p>
-     * Default value is 7.
+     * 默认值为 7。
      *
-     * @param depth number of counter arrays
-     * @return arguments instance
+     * @param depth 计数器数组数量
+     * @return 参数实例
      */
     TopKInitArgs depth(int depth);
 
     /**
-     * Defines the probability of a counter being decreased on collision.
-     * Must be a value in the range {@code (0, 1)}.
+     * 定义碰撞时计数器衰减的概率，取值范围为 {@code (0, 1)}。
      * <p>
-     * Default value is 0.9.
+     * 默认值为 0.9。
      *
-     * @param decay counter decay probability
-     * @return arguments instance
+     * @param decay 计数器衰减概率
+     * @return 参数实例
      */
     TopKInitArgs decay(double decay);
 

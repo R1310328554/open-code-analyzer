@@ -18,14 +18,18 @@ package org.redisson.api.tdigest;
 import java.util.Collection;
 
 /**
+ * {@link TDigestMergeArgs} 的实现类，承载 t-digest 合并参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class TDigestMergeArgsImpl implements TDigestMergeArgs {
 
+    /** 待合并的源 t-digest 键名集合。 */
     final Collection<String> keys;
+    /** 合并后目标草图的压缩率。 */
     Integer compression;
+    /** 是否在合并前清空目标。 */
     boolean override;
 
     TDigestMergeArgsImpl(Collection<String> keys) {

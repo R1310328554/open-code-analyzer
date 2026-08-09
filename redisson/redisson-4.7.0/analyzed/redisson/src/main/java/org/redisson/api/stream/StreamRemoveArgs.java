@@ -16,7 +16,9 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for RStream.remove() method.
+ * {@link org.redisson.api.RStream#remove} 方法的参数对象。
+ * <p>
+ * 用于指定要从流中删除的消息 ID。
  *
  * @author seakider
  *
@@ -24,10 +26,10 @@ package org.redisson.api.stream;
 public interface StreamRemoveArgs extends StreamReferencesArgs<StreamRemoveArgs> {
 
     /**
-     * Defines id of messages to remove
+     * 指定待删除的消息 ID。
      *
-     * @param ids id of messages to remove
-     * @return arguments object
+     * @param ids 待删除的消息 ID
+     * @return 参数对象
      */
     static StreamRemoveArgs ids(StreamMessageId... ids) {
         return new StreamRemoveParams(ids);

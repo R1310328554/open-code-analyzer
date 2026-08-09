@@ -16,7 +16,9 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for Stream trim method.
+ * 流裁剪（trim）方法的参数对象。
+ * <p>
+ * 提供 {@link #maxLen(int)} 与 {@link #minId(StreamMessageId)} 两种裁剪策略入口。
  *
  * @author Nikita Koksharov
  *
@@ -24,22 +26,24 @@ package org.redisson.api.stream;
 public interface StreamTrimArgs {
 
     /**
-     * Defines MAXLEN strategy used for Stream trimming.
-     * Evicts entries which position exceeds the specified stream's length threshold.
+     * 使用 MAXLEN 策略裁剪流。
+     * <p>
+     * 移除位置超过指定长度阈值的条目。
      *
-     * @param threshold - trim threshold
-     * @return arguments object
+     * @param threshold 裁剪长度阈值
+     * @return 参数对象
      */
     static StreamTrimReferencesArgs<StreamTrimArgs> maxLen(int threshold) {
         return new StreamTrimParams(threshold);
     }
 
     /**
-     * Defines MINID strategy used for Stream trimming.
-     * Evicts entries with IDs lower than threshold, where threshold is a stream ID.
+     * 使用 MINID 策略裁剪流。
+     * <p>
+     * 移除 ID 低于指定消息 ID 阈值的条目。
      *
-     * @param messageId - stream Id
-     * @return arguments object
+     * @param messageId 裁剪最小消息 ID
+     * @return 参数对象
      */
     static StreamTrimReferencesArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
         return new StreamTrimParams(messageId);
