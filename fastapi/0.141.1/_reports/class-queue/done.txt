@@ -110,3 +110,13 @@ docs_src/body_multiple_params/tutorial001_an_py310.py
 docs_src/body_multiple_params/tutorial001_py310.py
 docs_src/body_multiple_params/tutorial002_py310.py
 docs_src/body_multiple_params/tutorial003_an_py310.py
+docs_src/body_multiple_params/tutorial003_py310.py
+docs_src/body_multiple_params/tutorial004_an_py310.py
+docs_src/body_multiple_params/tutorial004_py310.py
+docs_src/body_multiple_params/tutorial005_an_py310.py
+docs_src/body_multiple_params/tutorial005_py310.py
+docs_src/body_nested_models/__init__.py
+docs_src/body_nested_models/tutorial001_py310.py
+docs_src/body_nested_models/tutorial002_py310.py
+docs_src/body_nested_models/tutorial003_py310.py
+docs_src/body_nested_models/tutorial004_py310.py
