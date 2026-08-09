@@ -21,12 +21,16 @@ import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 
 /**
+ * Dubbo 适配器工具类，用于构建资源名与读取调用方应用名。
+ *
  * @author Eric Zhao
  */
 public final class DubboUtils {
 
+    /** Sentinel 在 Dubbo attachment 中传递应用名的键。 */
     public static final String SENTINEL_DUBBO_APPLICATION_KEY = "dubboApplication";
 
+    /** 从 invocation attachment 读取调用方应用名。 */
     public static String getApplication(Invocation invocation, String defaultValue) {
         if (invocation == null || invocation.getAttachments() == null) {
             throw new IllegalArgumentException("Bad invocation instance");
@@ -34,10 +38,12 @@ public final class DubboUtils {
         return invocation.getAttachment(SENTINEL_DUBBO_APPLICATION_KEY, defaultValue);
     }
 
+    /** 构建方法级 Sentinel 资源名（不含前缀）。 */
     public static String getMethodResourceName(Invoker<?> invoker, Invocation invocation){
         return getMethodResourceName(invoker, invocation, false);
     }
 
+    /** 构建方法级 Sentinel 资源名，可选包含 group 与 version。 */
     public static String getMethodResourceName(Invoker<?> invoker, Invocation invocation, Boolean useGroupAndVersion) {
         StringBuilder buf = new StringBuilder(64);
         String interfaceResource = useGroupAndVersion ? invoker.getUrl().getColonSeparatedKey() : invoker.getInterface().getName();
@@ -57,6 +63,7 @@ public final class DubboUtils {
         return buf.toString();
     }
 
+    /** 构建带前缀的方法级 Sentinel 资源名。 */
     public static String getMethodResourceName(Invoker<?> invoker, Invocation invocation, String prefix) {
         if (StringUtil.isNotBlank(prefix)) {
             return new StringBuilder(64)
@@ -69,15 +76,18 @@ public final class DubboUtils {
     }
 
 
+    /** 构建接口级 Sentinel 资源名（不含前缀）。 */
     public static String getInterfaceName(Invoker invoker) {
         return getInterfaceName(invoker, false);
     }
 
+    /** 构建接口级 Sentinel 资源名，可选包含 group 与 version。 */
     public static String getInterfaceName(Invoker<?> invoker, Boolean useGroupAndVersion) {
         StringBuilder buf = new StringBuilder(64);
         return useGroupAndVersion ? invoker.getUrl().getColonSeparatedKey() : invoker.getInterface().getName();
     }
 
+    /** 构建带前缀的接口级 Sentinel 资源名。 */
     public static String getInterfaceName(Invoker<?> invoker, String prefix) {
         if (StringUtil.isNotBlank(prefix)) {
             return new StringBuilder(64)

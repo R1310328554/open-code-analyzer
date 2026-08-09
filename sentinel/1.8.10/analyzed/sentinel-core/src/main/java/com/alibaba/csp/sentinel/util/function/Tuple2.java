@@ -3,20 +3,21 @@ package com.alibaba.csp.sentinel.util.function;
 import java.util.Objects;
 
 /**
- * A tuple of 2 elements.
+ * 包含两个元素的元组。
  */
 public class Tuple2<R1, R2> {
 
     public final R1 r1;
     public final R2 r2;
 
+    /** 使用两个元素构造元组。 */
     public Tuple2(R1 r1, R2 r2) {
         this.r1 = r1;
         this.r2 = r2;
     }
 
     /**
-     * Factory method for creating a Tuple.
+     * 创建元组的工厂方法。
      *
      * @return new Tuple
      */
@@ -25,7 +26,7 @@ public class Tuple2<R1, R2> {
     }
 
     /**
-     * Swaps the element of this Tuple.
+     * 交换本元组两个元素的位置。
      *
      * @return a new Tuple where the first element is the second element of this Tuple and the second element is the first element of this Tuple.
      */

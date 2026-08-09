@@ -31,9 +31,9 @@ import java.util.function.BiConsumer;
 import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER;
 
 /**
- * <p>Dubbo service consumer filter for Sentinel. Auto activated by default.</p>
+ * <p>Sentinel 集成的 Dubbo 消费者 Filter，默认自动激活。</p>
  * <p>
- * If you want to disable the consumer filter, you can configure:
+ * 如需禁用消费者 Filter，可配置：
  * <pre>
  * &lt;dubbo:consumer filter="-sentinel.dubbo.consumer.filter"/&gt;
  * </pre>
@@ -45,6 +45,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER;
 @Activate(group = CONSUMER)
 public class SentinelDubboConsumerFilter extends BaseSentinelDubboFilter {
 
+    /** 初始化消费者 Filter 并记录日志。 */
     public SentinelDubboConsumerFilter() {
         RecordLog.info("Sentinel Apache Dubbo consumer filter initialized");
     }
@@ -69,6 +70,7 @@ public class SentinelDubboConsumerFilter extends BaseSentinelDubboFilter {
         }
     }
 
+    /** 同步调用路径：对接口与方法资源分别 entry/exit。 */
     private Result syncInvoke(Invoker<?> invoker, Invocation invocation) {
         Entry interfaceEntry = null;
         Entry methodEntry = null;
@@ -101,6 +103,7 @@ public class SentinelDubboConsumerFilter extends BaseSentinelDubboFilter {
         }
     }
 
+    /** 异步调用路径：使用 asyncEntry 并在 whenComplete 中 exit。 */
     private Result asyncInvoke(Invoker<?> invoker, Invocation invocation) {
         LinkedList<EntryHolder> queue = new LinkedList<>();
         String prefix = DubboAdapterGlobalConfig.getDubboConsumerResNamePrefixKey();
@@ -133,6 +136,7 @@ public class SentinelDubboConsumerFilter extends BaseSentinelDubboFilter {
         }
     }
 
+    /** 异步调用时暂存 Entry 与参数，供完成回调 exit。 */
     static class EntryHolder {
 
         final private Entry entry;
@@ -144,6 +148,7 @@ public class SentinelDubboConsumerFilter extends BaseSentinelDubboFilter {
         }
     }
 
+    /** 按是否携带参数退出 Entry。 */
     private void exitEntry(EntryHolder holder) {
         if (holder.params != null) {
             holder.entry.exit(1, holder.params);

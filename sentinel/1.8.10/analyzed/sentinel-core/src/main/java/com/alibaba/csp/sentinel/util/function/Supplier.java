@@ -16,12 +16,12 @@
 package com.alibaba.csp.sentinel.util.function;
 
 /**
- * Supplier functional interface from JDK 8.
+ * JDK 8 中的 Supplier 函数式接口，无参并返回一个结果。
  */
 public interface Supplier<T> {
 
     /**
-     * Gets a result.
+     * 获取结果。
      *
      * @return a result
      */

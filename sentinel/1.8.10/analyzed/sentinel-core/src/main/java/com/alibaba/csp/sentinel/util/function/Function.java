@@ -16,12 +16,12 @@
 package com.alibaba.csp.sentinel.util.function;
 
 /**
- * Function functional interface from JDK 8.
+ * JDK 8 中的 Function 函数式接口，接受一个参数并返回结果。
  */
 public interface Function<T, R> {
 
     /**
-     * Applies this function to the given argument.
+     * 将此函数应用于给定参数。
      *
      * @param t the function argument
      * @return the function result
@@ -29,7 +29,7 @@ public interface Function<T, R> {
     R apply(T t);
 
     /**
-     * Returns a function that always returns its input argument.
+     * 返回恒等函数，始终返回其输入参数。
      *
      * @param <T> the type of the input and output objects to the function
      * @return a function that always returns its input argument

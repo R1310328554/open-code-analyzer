@@ -1,22 +1,6 @@
 {
   "claimed_at": "2026-08-09T16:57:33Z",
-  "files": [
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/util/function/Consumer.java",
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/util/function/Function.java",
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/util/function/Predicate.java",
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/util/function/Supplier.java",
-    "sentinel-core/src/main/java/com/alibaba/csp/sentinel/util/function/Tuple2.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/BaseSentinelDubboFilter.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/DubboAppContextFilter.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/DubboUtils.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/SentinelDubboConsumerFilter.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/SentinelDubboProviderFilter.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/config/DubboAdapterGlobalConfig.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/fallback/DefaultDubboFallback.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/fallback/DubboFallback.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/fallback/DubboFallbackRegistry.java",
-    "sentinel-adapter/sentinel-apache-dubbo-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/dubbo/origin/DefaultDubboOriginParser.java"
-  ],
-  "remaining_pending": 740,
-  "done": 195
+  "files": [],
+  "remaining_pending": 725,
+  "done": 210
 }

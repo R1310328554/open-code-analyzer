@@ -21,7 +21,7 @@ import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 
 /**
- * Base class of the {@link SentinelDubboProviderFilter} and {@link SentinelDubboConsumerFilter}.
+ * {@link SentinelDubboProviderFilter} 与 {@link SentinelDubboConsumerFilter} 的抽象基类。
  *
  * @author Zechao Zheng
  */
@@ -29,7 +29,7 @@ public abstract class BaseSentinelDubboFilter implements Filter {
 
 
     /**
-     * Get method name of dubbo rpc
+     * 获取 Dubbo RPC 方法资源名。
      *
      * @param invoker
      * @param invocation
@@ -38,7 +38,7 @@ public abstract class BaseSentinelDubboFilter implements Filter {
     abstract String getMethodName(Invoker invoker, Invocation invocation, String prefix);
 
     /**
-     * Get interface name of dubbo rpc
+     * 获取 Dubbo RPC 接口资源名。
      *
      * @param invoker
      * @return

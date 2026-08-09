@@ -22,7 +22,7 @@ import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 
 /**
- * Fallback handler for Dubbo services.
+ * Dubbo 服务被 Sentinel 阻断时的降级处理器。
  *
  * @author Eric Zhao
  */
@@ -30,7 +30,7 @@ import org.apache.dubbo.rpc.Result;
 public interface DubboFallback {
 
     /**
-     * Handle the block exception and provide fallback result.
+     * 处理阻断异常并返回降级结果。
      *
      * @param invoker Dubbo invoker
      * @param invocation Dubbo invocation

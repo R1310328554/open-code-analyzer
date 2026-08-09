@@ -27,7 +27,7 @@ import org.apache.dubbo.rpc.RpcException;
 import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER;
 
 /**
- * Puts current consumer's application name in the attachment of each invocation.
+ * 将当前消费者的应用名写入每次调用的 attachment，供 Provider 端解析调用来源。
  *
  * @author Eric Zhao
  */

@@ -16,12 +16,12 @@
 package com.alibaba.csp.sentinel.util.function;
 
 /**
- * Consumer interface from JDK 8.
+ * JDK 8 中的 Consumer 函数式接口，接受一个参数且无返回值。
  */
 public interface Consumer<T> {
 
     /**
-     * Performs this operation on the given argument.
+     * 对给定参数执行此操作。
      *
      * @param t the input argument
      */

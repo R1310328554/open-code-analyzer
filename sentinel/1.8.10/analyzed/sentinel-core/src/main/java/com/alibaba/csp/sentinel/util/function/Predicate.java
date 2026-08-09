@@ -16,12 +16,12 @@
 package com.alibaba.csp.sentinel.util.function;
 
 /**
- * Predicate functional interface from JDK 8.
+ * JDK 8 中的 Predicate 函数式接口，对给定参数进行布尔判定。
  */
 public interface Predicate<T> {
 
     /**
-     * Evaluates this predicate on the given argument.
+     * 对给定参数求值此谓词。
      *
      * @param t the input argument
      * @return {@code true} if the input argument matches the predicate,

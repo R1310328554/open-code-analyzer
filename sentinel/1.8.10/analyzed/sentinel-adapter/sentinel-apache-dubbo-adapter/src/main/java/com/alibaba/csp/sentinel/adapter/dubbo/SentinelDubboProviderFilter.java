@@ -30,10 +30,10 @@ import org.apache.dubbo.rpc.RpcException;
 import static org.apache.dubbo.common.constants.CommonConstants.PROVIDER;
 
 /**
- * <p>Apache Dubbo service provider filter that enables integration with Sentinel. Auto activated by default.</p>
- * <p>Note: this only works for Apache Dubbo 2.7.x or above version.</p>
+ * <p>与 Sentinel 集成的 Apache Dubbo 提供者 Filter，默认自动激活。</p>
+ * <p>注意：仅适用于 Apache Dubbo 2.7.x 及以上版本。</p>
  * <p>
- * If you want to disable the provider filter, you can configure:
+ * 如需禁用提供者 Filter，可配置：
  * <pre>
  * &lt;dubbo:provider filter="-sentinel.dubbo.provider.filter"/&gt;
  * </pre>
@@ -44,6 +44,7 @@ import static org.apache.dubbo.common.constants.CommonConstants.PROVIDER;
 @Activate(group = PROVIDER)
 public class SentinelDubboProviderFilter extends BaseSentinelDubboFilter {
 
+    /** 初始化提供者 Filter 并记录日志。 */
     public SentinelDubboProviderFilter() {
         RecordLog.info("Sentinel Apache Dubbo provider filter initialized");
     }
@@ -60,7 +61,7 @@ public class SentinelDubboProviderFilter extends BaseSentinelDubboFilter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        // Get origin caller.
+        // 解析调用来源（origin）。
         String origin = DubboAdapterGlobalConfig.getOriginParser().parse(invoker, invocation);
         if (null == origin) {
             origin = "";
@@ -71,8 +72,8 @@ public class SentinelDubboProviderFilter extends BaseSentinelDubboFilter {
         String interfaceResourceName = getInterfaceName(invoker, prefix);
         String methodResourceName = getMethodName(invoker, invocation, prefix);
         try {
-            // Only need to create entrance context at provider side, as context will take effect
-            // at entrance of invocation chain only (for inbound traffic).
+            // 仅在 Provider 端创建入口 Context，Context 仅对入站调用链入口生效
+            // （针对入站流量）。
             ContextUtil.enter(methodResourceName, origin);
             interfaceEntry = SphU.entry(interfaceResourceName, ResourceTypeConstants.COMMON_RPC, EntryType.IN);
             methodEntry = SphU.entry(methodResourceName, ResourceTypeConstants.COMMON_RPC, EntryType.IN,
