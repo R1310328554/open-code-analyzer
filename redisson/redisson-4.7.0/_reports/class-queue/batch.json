@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:27:48Z",
-  "files": [
-    "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/RedissonSession.java",
-    "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/RedissonSessionManager.java",
-    "redisson-tomcat/redisson-tomcat-8/src/main/java/org/redisson/tomcat/RedissonSession.java",
-    "redisson-tomcat/redisson-tomcat-8/src/main/java/org/redisson/tomcat/RedissonSessionManager.java",
-    "redisson-tomcat/redisson-tomcat-9/src/main/java/org/redisson/tomcat/RedissonSession.java",
-    "redisson-tomcat/redisson-tomcat-9/src/main/java/org/redisson/tomcat/RedissonSessionManager.java",
-    "redisson/src/main/java/org/redisson/BaseRedissonList.java",
-    "redisson/src/main/java/org/redisson/MapCacheNativeWrapper.java",
-    "redisson/src/main/java/org/redisson/Redisson.java",
-    "redisson/src/main/java/org/redisson/RedissonArray.java",
-    "redisson/src/main/java/org/redisson/RedissonBatch.java",
-    "redisson/src/main/java/org/redisson/RedissonBitSet.java",
-    "redisson/src/main/java/org/redisson/RedissonBloomFilter.java",
-    "redisson/src/main/java/org/redisson/RedissonBoundedBlockingQueue.java",
-    "redisson/src/main/java/org/redisson/RedissonBucket.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1142,
-  "done": 1665
+  "done": 1680
 }
