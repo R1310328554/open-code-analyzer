@@ -34,15 +34,23 @@ import org.springframework.jdbc.datasource.init.DatabasePopulatorUtils;
 import org.springframework.util.Assert;
 
 /**
- * 用于创建 {@link EmbeddedDatabase} 实例的工厂。
- * <p>Callers 保证返回的数据库已完全初始化和填充。
- * <p> 工厂可以配置如下： <ul> <li> 调用 {@link #generateUniqueDatabaseName} 为数据库设置一个唯一的、随机的名称。
- * <li>调用 {@link #setDatabaseName} 为数据库设置显式名称。 <li> 如果您希望使用预先支持的类型之一及其默认设置，请调用 {@link
- * #setDatabaseType} 设置数据库类型。 <li>调用 {@link #setDatabaseConfigurer} 配置对自定义嵌入式数据库类型的支持，或
- * {@linkplain EmbeddedDatabaseConfigurers#customizeConfigurer customize} 配置预先支持的类型之一的默认值。
- * <li>调用 {@link #setDatabasePopulator} 更改用于填充数据库的算法。 <li>调用{@link
- * #setDataSourceFactory}来更改用于连接数据库的{@link DataSource}的类型。 </ul>
- * <p> 配置工厂后，调用 {@link #getDatabase()} 获取 {@link EmbeddedDatabase} 实例的引用。
+ * 创建 {@link EmbeddedDatabase} 实例的工厂。
+ *
+ * <p>调用方保证返回的数据库已完全初始化并填充。
+ *
+ * <p>可按如下方式配置工厂：
+ * <ul>
+ * <li>调用 {@link #generateUniqueDatabaseName} 设置唯一随机数据库名称。
+ * <li>调用 {@link #setDatabaseName} 设置显式数据库名称。
+ * <li>调用 {@link #setDatabaseType} 设置数据库类型，以使用预支持类型的默认设置。
+ * <li>调用 {@link #setDatabaseConfigurer} 配置自定义嵌入式数据库类型，
+ * 或 {@linkplain EmbeddedDatabaseConfigurers#customizeConfigurer 定制} 预支持类型的默认值。
+ * <li>调用 {@link #setDatabasePopulator} 更改填充数据库的算法。
+ * <li>调用 {@link #setDataSourceFactory} 更改连接数据库的 {@link DataSource} 类型。
+ * </ul>
+ *
+ * <p>配置完成后，调用 {@link #getDatabase()} 获取 {@link EmbeddedDatabase} 实例引用。
+ *
  * @author Keith Donald
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -56,35 +64,25 @@ public class EmbeddedDatabaseFactory {
 	 */
 	public static final String DEFAULT_DATABASE_NAME = "testdb";
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
 	private static final Log logger = LogFactory.getLog(EmbeddedDatabaseFactory.class);
 
-	/** `false`：该类的成员状态。 */
 	private boolean generateUniqueDatabaseName = false;
 
-	/** 名称相关状态（`DEFAULT_DATABASE_NAME`）。 */
 	private String databaseName = DEFAULT_DATABASE_NAME;
 
-	/**
-	 * 方法 `SimpleDriverDataSourceFactory`：完成本类中与「Simple Driver Data Source Factory」相关的职责。
-	 */
 	private DataSourceFactory dataSourceFactory = new SimpleDriverDataSourceFactory();
 
-	/** 配置相关状态（`databaseConfigurer`）。 */
 	private @Nullable EmbeddedDatabaseConfigurer databaseConfigurer;
 
-	/** `databasePopulator`：该类的成员状态。 */
 	private @Nullable DatabasePopulator databasePopulator;
 
-	/** 来源相关状态（`dataSource`）。 */
 	private @Nullable DataSource dataSource;
 
 
 	/**
-	 * 设置 {@code generateUniqueDatabaseName} 标志以启用或禁用生成用作数据库名称的伪随机唯一 ID。 <p> 将此标志设置为 {@code
-	 * true} 会覆盖通过 {@link #setDatabaseName} 设置的任何显式名称。
+	 * 设置 {@code generateUniqueDatabaseName} 标志，启用或禁用
+	 * 生成伪随机唯一 ID 作为数据库名称。
+	 * <p>设为 {@code true} 将覆盖 {@link #setDatabaseName} 设置的显式名称。
 	 * @since 4.2
 	 * @see #setDatabaseName
 	 */
@@ -93,9 +91,10 @@ public class EmbeddedDatabaseFactory {
 	}
 
 	/**
-	 * 设置数据库的名称。 <p>默认为 {@value #DEFAULT_DATABASE_NAME}。如果 {@code generateUniqueDatabaseName}
-	 * 标志已设置为 {@code true}，则 <p> 将被覆盖。
-	 * @param databaseName 嵌入式数据库的名称
+	 * 设置数据库名称。
+	 * <p>默认为 {@value #DEFAULT_DATABASE_NAME}。
+	 * <p>若 {@code generateUniqueDatabaseName} 标志为 {@code true} 则被覆盖。
+	 * @param databaseName 嵌入式数据库名称
 	 * @see #setGenerateUniqueDatabaseName
 	 */
 	public void setDatabaseName(String databaseName) {
@@ -104,8 +103,8 @@ public class EmbeddedDatabaseFactory {
 	}
 
 	/**
-	 * 设置用于创建连接到嵌入式数据库的 {@link DataSource} 实例的工厂。 <p>默认为 {@link
-	 * SimpleDriverDataSourceFactory}。
+	 * 设置用于创建连接嵌入式数据库的 {@link DataSource} 实例的工厂。
+	 * <p>默认为 {@link SimpleDriverDataSourceFactory}。
 	 */
 	public void setDataSourceFactory(DataSourceFactory dataSourceFactory) {
 		Assert.notNull(dataSourceFactory, "DataSourceFactory is required");
@@ -113,7 +112,9 @@ public class EmbeddedDatabaseFactory {
 	}
 
 	/**
-	 * 设置要使用的嵌入式数据库的类型。 <p> 当您希望使用其默认设置配置预先支持的类型之一时，请调用此函数。 <p>默认为 HSQL。
+	 * 设置要使用的嵌入式数据库类型。
+	 * <p>若要以默认设置配置预支持类型之一，调用此方法。
+	 * <p>默认为 HSQL。
 	 * @param type 数据库类型
 	 */
 	public void setDatabaseType(EmbeddedDatabaseType type) {
@@ -121,8 +122,10 @@ public class EmbeddedDatabaseFactory {
 	}
 
 	/**
-	 * 设置将用于配置嵌入式数据库实例的策略。 <p> 当您希望自定义其中一种预支持类型的设置时，请使用 {@linkplain EmbeddedDatabaseConfigurers
-	 * #customizeConfigurer customizeConfigurer} 调用此选项。或者，当您希望使用尚未支持的嵌入式数据库类型时，可以使用此选项。
+	 * 设置用于配置嵌入式数据库实例的策略。
+	 * <p>若需定制预支持类型的设置，
+	 * 配合 {@linkplain EmbeddedDatabaseConfigurers#customizeConfigurer customizeConfigurer} 调用。
+	 * 也可用于尚未支持的嵌入式数据库类型。
 	 * @since 6.2
 	 */
 	public void setDatabaseConfigurer(EmbeddedDatabaseConfigurer configurer) {
@@ -130,14 +133,16 @@ public class EmbeddedDatabaseFactory {
 	}
 
 	/**
-	 * 设置将用于初始化或填充嵌入式数据库的策略。 <p>默认为 {@code null}。
+	 * 设置用于初始化或填充嵌入式数据库的策略。
+	 * <p>默认为 {@code null}。
 	 */
 	public void setDatabasePopulator(DatabasePopulator populator) {
 		this.databasePopulator = populator;
 	}
 
 	/**
-	 * 返回 {@linkplain EmbeddedDatabase embedded database} 实例的工厂方法，该实例也是 {@link DataSource}。
+	 * 工厂方法，返回 {@linkplain EmbeddedDatabase 嵌入式数据库} 实例，
+	 * 同时也是 {@link DataSource}。
 	 */
 	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	public EmbeddedDatabase getDatabase() {
@@ -149,17 +154,18 @@ public class EmbeddedDatabaseFactory {
 
 
 	/**
-	 * 用于初始化嵌入式数据库的挂钩。 <p>如果 {@code generateUniqueDatabaseName} 标志已设置为 {@code true}，则
-	 * {@linkplain #setDatabaseName database name} 的当前值将被自动生成的名称覆盖。
-	 * <p>子类可以调用该方法强制初始化；但是，该方法只能调用一次。 <p> 调用此方法后，{@link #getDataSource()} 返回提供与数据库连接的 {@link
-	 * DataSource}。
+	 * 初始化嵌入式数据库的钩子。
+	 * <p>若 {@code generateUniqueDatabaseName} 标志为 {@code true}，
+	 * 当前 {@linkplain #setDatabaseName 数据库名称} 将被自动生成的名称覆盖。
+	 * <p>子类可调用此方法强制初始化，但仅应调用一次。
+	 * <p>调用后 {@link #getDataSource()} 返回提供数据库连接的 {@link DataSource}。
 	 */
 	protected void initDatabase() {
 		if (this.generateUniqueDatabaseName) {
 			setDatabaseName(UUID.randomUUID().toString());
 		}
 
-		// 首先创建嵌入式数据库
+		// 先创建嵌入式数据库
 		if (this.databaseConfigurer == null) {
 			this.databaseConfigurer = EmbeddedDatabaseConfigurers.getConfigurer(EmbeddedDatabaseType.HSQL);
 		}
@@ -177,13 +183,13 @@ public class EmbeddedDatabaseFactory {
 			}
 		}
 
-		// 现在填充数据库
+		// 再填充数据库
 		if (this.databasePopulator != null) {
 			try {
 				DatabasePopulatorUtils.execute(this.databasePopulator, this.dataSource);
 			}
 			catch (RuntimeException ex) {
-				// 填充失败，因此将其保留为未初始化
+				// 填充失败，保持未初始化状态
 				shutdownDatabase();
 				throw ex;
 			}
@@ -191,8 +197,9 @@ public class EmbeddedDatabaseFactory {
 	}
 
 	/**
-	 * 用于关闭嵌入式数据库的挂钩。子类可以调用此方法来强制关闭。 <p>调用后，{@link #getDataSource()}返回{@code null}。如果没有初始化嵌入式数据
-	 * 库，<p>不执行任何操作。
+	 * 关闭嵌入式数据库的钩子。子类可调用此方法强制关闭。
+	 * <p>调用后 {@link #getDataSource()} 返回 {@code null}。
+	 * <p>若未初始化嵌入式数据库则不执行任何操作。
 	 */
 	protected void shutdownDatabase() {
 		if (this.dataSource != null) {
@@ -213,8 +220,9 @@ public class EmbeddedDatabaseFactory {
 	}
 
 	/**
-	 * 获取 {@link DataSource} 的挂钩，该 {@link DataSource} 提供与嵌入式数据库的连接。 <p> 如果 {@code DataSource}
-	 * 尚未初始化或数据库已关闭，则返回 {@code null}。子类可以调用此方法直接访问 {@code DataSource} 实例。
+	 * 获取提供嵌入式数据库连接的 {@link DataSource} 的钩子。
+	 * <p>若 {@code DataSource} 未初始化或数据库已关闭则返回 {@code null}。
+	 * 子类可调用此方法直接访问 {@code DataSource} 实例。
 	 */
 	protected final @Nullable DataSource getDataSource() {
 		return this.dataSource;
@@ -269,7 +277,7 @@ public class EmbeddedDatabaseFactory {
 			return this.dataSource.isWrapperFor(iface);
 		}
 
-		// getParentLogger() 是 JDBC 4.1 兼容性所必需的
+		// getParentLogger() 为 JDBC 4.1 兼容性所需
 		@Override
 		public Logger getParentLogger() {
 			return Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);

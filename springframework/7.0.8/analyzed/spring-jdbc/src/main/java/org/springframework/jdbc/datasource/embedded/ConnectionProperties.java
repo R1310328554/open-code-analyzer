@@ -19,8 +19,10 @@ package org.springframework.jdbc.datasource.embedded;
 import java.sql.Driver;
 
 /**
- * {@code ConnectionProperties} 用作简单的数据容器，允许一致地配置基本 JDBC 连接属性，而与实际的 {@link
- * javax.sql.DataSource DataSource} 实现无关。
+ * {@code ConnectionProperties} 作为简单数据容器，
+ * 允许以一致方式配置基本 JDBC 连接属性，
+ * 与实际 {@link javax.sql.DataSource DataSource} 实现无关。
+ *
  * @author Keith Donald
  * @author Sam Brannen
  * @since 3.0
@@ -29,25 +31,25 @@ import java.sql.Driver;
 public interface ConnectionProperties {
 
 	/**
-	 * 设置用于连接数据库的 JDBC 驱动程序类。
-	 * @param driverClass jdbc 驱动程序类
+	 * 设置用于连接数据库的 JDBC 驱动类。
+	 * @param driverClass JDBC 驱动类
 	 */
 	void setDriverClass(Class<? extends Driver> driverClass);
 
 	/**
 	 * 设置数据库的 JDBC 连接 URL。
-	 * @param url 连接网址
+	 * @param url 连接 URL
 	 */
 	void setUrl(String url);
 
 	/**
-	 * 设置用于连接数据库的用户名。
+	 * 设置连接数据库所用的用户名。
 	 * @param username 用户名
 	 */
 	void setUsername(String username);
 
 	/**
-	 * 设置用于连接数据库的密码。
+	 * 设置连接数据库所用的密码。
 	 * @param password 密码
 	 */
 	void setPassword(String password);

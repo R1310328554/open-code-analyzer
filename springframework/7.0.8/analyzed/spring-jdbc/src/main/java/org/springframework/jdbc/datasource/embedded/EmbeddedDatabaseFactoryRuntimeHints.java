@@ -25,16 +25,14 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
 /**
- * {@link RuntimeHintsRegistrar} 实现为 {@code EmbeddedDataSourceProxy#shutdown}
- * 注册反射提示，以允许将其用作 bean 销毁方法。
+ * {@link RuntimeHintsRegistrar} 实现，为 {@code EmbeddedDataSourceProxy#shutdown}
+ * 注册反射提示，以便将其用作 Bean 销毁方法。
+ *
  * @author Sebastien Deleuze
  * @since 6.0
  */
 class EmbeddedDatabaseFactoryRuntimeHints implements RuntimeHintsRegistrar {
 
-	/**
-	 * 注册：Hints（方法 `registerHints`）。
-	 */
 	@Override
 	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		hints.reflection().registerTypeIfPresent(classLoader,

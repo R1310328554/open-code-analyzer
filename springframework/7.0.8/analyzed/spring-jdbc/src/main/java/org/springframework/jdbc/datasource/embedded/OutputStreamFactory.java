@@ -20,21 +20,20 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * 用于向嵌入式数据库（例如 Derby）公开虚拟 OutputStreams 的内部帮助程序，以防止创建日志文件。
+ * 内部辅助类，向 Derby 等嵌入式数据库提供空 OutputStream，
+ * 防止创建日志文件。
+ *
  * @author Juergen Hoeller
  * @since 3.0
  */
 public final class OutputStreamFactory {
 
-	/**
-	 * 创建 `OutputStreamFactory` 的新实例。
-	 */
 	private OutputStreamFactory() {
 	}
 
 
 	/**
-	 * 返回一个 {@link java.io.OutputStream}，忽略提供给它的所有数据。
+	 * 返回忽略所有写入数据的 {@link java.io.OutputStream}。
 	 */
 	public static OutputStream getNoopOutputStream() {
 		return new OutputStream() {

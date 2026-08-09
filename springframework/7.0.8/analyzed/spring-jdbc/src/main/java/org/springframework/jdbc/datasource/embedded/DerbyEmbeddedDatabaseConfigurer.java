@@ -26,8 +26,10 @@ import org.apache.derby.jdbc.EmbeddedDriver;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 适用于 Apache Derby 数据库的 {@link EmbeddedDatabaseConfigurer}。
- * <p>调用{@link #getInstance()}来获取该类的单例实例。
+ * Apache Derby 数据库的 {@link EmbeddedDatabaseConfigurer}。
+ *
+ * <p>调用 {@link #getInstance()} 获取本类的单例实例。
+ *
  * @author Oliver Gierke
  * @author Juergen Hoeller
  * @since 3.0
@@ -36,12 +38,11 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 
 	private static final String URL_TEMPLATE = "jdbc:derby:memory:%s;%s";
 
-	/** `instance`：该类的成员状态。 */
 	private static @Nullable DerbyEmbeddedDatabaseConfigurer instance;
 
 
 	/**
-	 * 获取单例 {@link DerbyEmbeddedDatabaseConfigurer} 实例。
+	 * 获取 {@link DerbyEmbeddedDatabaseConfigurer} 单例实例。
 	 * @return 配置器实例
 	 */
 	public static synchronized DerbyEmbeddedDatabaseConfigurer getInstance() {
@@ -55,15 +56,9 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 	}
 
 
-	/**
-	 * 创建 `DerbyEmbeddedDatabaseConfigurer` 的新实例。
-	 */
 	private DerbyEmbeddedDatabaseConfigurer() {
 	}
 
-	/**
-	 * 方法 `configureConnectionProperties`：完成本类中与「configure Connection Properties」相关的职责。
-	 */
 	@Override
 	public void configureConnectionProperties(ConnectionProperties properties, String databaseName) {
 		properties.setDriverClass(EmbeddedDriver.class);
@@ -72,9 +67,6 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 		properties.setPassword("");
 	}
 
-	/**
-	 * 方法 `shutdown`：完成本类中与「shutdown」相关的职责。
-	 */
 	@Override
 	public void shutdown(DataSource dataSource, String databaseName) {
 		try {
@@ -82,7 +74,7 @@ final class DerbyEmbeddedDatabaseConfigurer implements EmbeddedDatabaseConfigure
 					String.format(URL_TEMPLATE, databaseName, "drop=true"), new Properties());
 		}
 		catch (SQLException ex) {
-			// 关机成功的错误码
+			// 表示成功关闭的错误码
 			if (!"08006".equals(ex.getSQLState())) {
 				LogFactory.getLog(getClass()).warn("Could not shut down embedded Derby database", ex);
 			}

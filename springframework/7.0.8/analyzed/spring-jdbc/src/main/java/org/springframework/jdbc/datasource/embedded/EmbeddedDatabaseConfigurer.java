@@ -19,7 +19,9 @@ package org.springframework.jdbc.datasource.embedded;
 import javax.sql.DataSource;
 
 /**
- * {@code EmbeddedDatabaseConfigurer} 封装了创建、连接和关闭特定类型的嵌入式数据库（例如 HSQL、H2 或 Derby）所需的配置。
+ * {@code EmbeddedDatabaseConfigurer} 封装创建、连接和关闭
+ * 特定类型嵌入式数据库（如 HSQL、H2 或 Derby）所需的配置。
+ *
  * @author Keith Donald
  * @author Sam Brannen
  * @since 3.0
@@ -27,16 +29,16 @@ import javax.sql.DataSource;
 public interface EmbeddedDatabaseConfigurer {
 
 	/**
-	 * 配置创建和连接嵌入式数据库所需的属性。
-	 * @param properties 要配置的连接属性
-	 * @param databaseName 嵌入式数据库的名称
+	 * 配置创建并连接嵌入式数据库所需的属性。
+	 * @param properties 待配置的连接属性
+	 * @param databaseName 嵌入式数据库名称
 	 */
 	void configureConnectionProperties(ConnectionProperties properties, String databaseName);
 
 	/**
-	 * 关闭支持提供的 {@link DataSource} 的嵌入式数据库实例。
-	 * @param dataSource 对应的{@link DataSource}
-	 * @param databaseName 正在关闭的数据库的名称
+	 * 关闭支撑给定 {@link DataSource} 的嵌入式数据库实例。
+	 * @param dataSource 对应的 {@link DataSource}
+	 * @param databaseName 待关闭的数据库名称
 	 */
 	void shutdown(DataSource dataSource, String databaseName);
 

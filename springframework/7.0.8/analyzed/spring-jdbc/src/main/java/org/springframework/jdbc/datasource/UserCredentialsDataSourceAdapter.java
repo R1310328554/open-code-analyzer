@@ -26,44 +26,53 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * 目标 JDBC {@link javax.sql.DataSource} 的适配器，将指定的用户凭据应用于每个标准 {@code getConnection()}
- * 调用，在目标上隐式调用 {@code getConnection(username, password)}。所有其他方法只是委托给目标数据源的相应方法。
- * <p> 可用于代理未配置用户凭据的目标 JNDI 数据源。客户端代码可以像往常一样使用标准 {@code getConnection()} 调用来使用此数据源。
- * <p>在以下示例中，客户端代码可以简单地透明地使用预配置的“myDataSource”，使用指定的用户凭据隐式访问“myTargetDataSource”。
- * <pre class="code"> <bean id="myTargetDataSource"
- * class="org.springframework.jndi.JndiObjectFactoryBean">
- * &lt;属性名称=“jndiName”值=“java:comp/env/jdbc/myds”/&gt; &lt;/豆&gt;
- * &lt;bean id="myDataSource"
- * class="org.springframework.jdbc.datasource.UserCredentialsDataSourceAdapter"&gt;
- * <属性名称=“targetDataSource”ref=“myTargetDataSource”/> <属性名称=“用户名”值=“我的用户名”/>
- * <属性名称=“密码”值=“我的密码”/> </bean></pre>
- * <p>如果“用户名”为空，则此代理将简单地委托给目标数据源的标准 {@code getConnection()} 方法。这可用于保留 UserCredentialsDataSo
- * urceAdapter bean 定义，以便仅用于 <i>option</i>，以便在特定目标数据源需要时隐式传递用户凭据。
+ * 目标 JDBC {@link javax.sql.DataSource} 的适配器，
+ * 将指定用户凭据应用于每次标准 {@code getConnection()} 调用，
+ * 隐式在目标上调用 {@code getConnection(username, password)}。
+ * 其他方法均委托给目标 DataSource 的对应方法。
+ *
+ * <p>可用于代理未配置用户凭据的目标 JNDI DataSource。
+ * 客户端代码可照常使用标准 {@code getConnection()} 调用。
+ *
+ * <p>下例中，客户端代码可透明地使用预配置的 "myDataSource"，
+ * 以指定凭据隐式访问 "myTargetDataSource"。
+ *
+ * <pre class="code">
+ * &lt;bean id="myTargetDataSource" class="org.springframework.jndi.JndiObjectFactoryBean"&gt;
+ *   &lt;property name="jndiName" value="java:comp/env/jdbc/myds"/&gt;
+ * &lt;/bean&gt;
+ *
+ * &lt;bean id="myDataSource" class="org.springframework.jdbc.datasource.UserCredentialsDataSourceAdapter"&gt;
+ *   &lt;property name="targetDataSource" ref="myTargetDataSource"/&gt;
+ *   &lt;property name="username" value="myusername"/&gt;
+ *   &lt;property name="password" value="mypassword"/&gt;
+ * &lt;/bean&gt;</pre>
+ *
+ * <p>若 "username" 为空，此代理直接委托目标 DataSource 的标准 {@code getConnection()}。
+ * 可保留 UserCredentialsDataSourceAdapter Bean 定义，
+ * 以便在特定目标 DataSource 需要时<i>可选</i>隐式传入用户凭据。
+ *
  * @author Juergen Hoeller
  * @since 1.0.2
  * @see #getConnection
  */
 public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 
-	/** 名称相关状态（`username`）。 */
 	private @Nullable String username;
 
-	/** `password`：该类的成员状态。 */
 	private @Nullable String password;
 
-	/** `catalog`：该类的成员状态。 */
 	private @Nullable String catalog;
 
-	/** `schema`：该类的成员状态。 */
 	private @Nullable String schema;
 
-	/** `threadBoundCredentials`：该类的成员状态。 */
 	private final ThreadLocal<JdbcUserCredentials> threadBoundCredentials =
 			new NamedThreadLocal<>("Current JDBC user credentials");
 
 
 	/**
-	 * 设置此适配器用于检索连接的默认用户名。 <p>Default 没有特定用户。请注意，显式指定的用户名将始终覆盖在数据源级别指定的任何用户名/密码。
+	 * 设置此适配器获取 Connection 时使用的默认用户名。
+	 * <p>默认无特定用户。显式指定的用户名始终覆盖 DataSource 级别的用户名/密码。
 	 * @see #setPassword
 	 * @see #setCredentialsForCurrentThread(String, String)
 	 * @see #getConnection(String, String)
@@ -73,7 +82,8 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * 设置此适配器用于检索连接的默认用户密码。 <p>默认是没有特定密码。请注意，显式指定的用户名将始终覆盖在数据源级别指定的任何用户名/密码。
+	 * 设置此适配器获取 Connection 时使用的默认用户密码。
+	 * <p>默认无特定密码。显式指定的用户名始终覆盖 DataSource 级别的用户名/密码。
 	 * @see #setUsername
 	 * @see #setCredentialsForCurrentThread(String, String)
 	 * @see #getConnection(String, String)
@@ -83,7 +93,7 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * 指定要应用于每个检索到的连接的数据库目录。
+	 * 指定应用于每个获取 Connection 的数据库 catalog。
 	 * @since 4.3.2
 	 * @see Connection#setCatalog
 	 */
@@ -92,7 +102,7 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * 指定要应用于每个检索到的连接的数据库架构。
+	 * 指定应用于每个获取 Connection 的数据库 schema。
 	 * @since 4.3.2
 	 * @see Connection#setSchema
 	 */
@@ -102,10 +112,11 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 
 
 	/**
-	 * 设置此代理和当前线程的用户凭据。给定的用户名和密码将应用于此数据源代理上的所有后续 {@code getConnection()} 调用。 <p>这将覆盖任何静态指定的用户凭据
-	 * ，即“用户名”和“密码”bean 属性的值。
-	 * @param username 要申请的用户名
-	 * @param password 申请密码
+	 * 为此代理及当前线程设置用户凭据。
+	 * 给定用户名和密码将应用于此后此 DataSource 代理的所有 {@code getConnection()} 调用。
+	 * <p>将覆盖静态指定的用户凭据，即 "username" 和 "password" Bean 属性值。
+	 * @param username 要应用的用户名
+	 * @param password 要应用的密码
 	 * @see #removeCredentialsFromCurrentThread
 	 */
 	public void setCredentialsForCurrentThread(String username, String password) {
@@ -113,7 +124,8 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * 从当前线程中删除此代理的所有用户凭据。之后再次应用静态指定的用户凭据。
+	 * 从当前线程移除此代理的用户凭据。
+	 * 之后重新应用静态指定的用户凭据。
 	 * @see #setCredentialsForCurrentThread
 	 */
 	public void removeCredentialsFromCurrentThread() {
@@ -122,8 +134,9 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 
 
 	/**
-	 * 确定当前是否存在线程绑定凭证，如果可用则使用它们，否则回退到静态指定的用户名和密码（即 bean 属性的值）。 <p>D 使用确定的凭据作为参数委托给 {@link #doGe
-	 * tConnection(String, String)}。
+	 * 确定当前是否有线程绑定凭据，有则使用，
+	 * 否则回退到静态指定的用户名和密码（即 Bean 属性值）。
+	 * <p>以确定的凭据为参数委托 {@link #doGetConnection(String, String)}。
 	 * @see #doGetConnection
 	 */
 	@Override
@@ -143,7 +156,8 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * 只需委托给 {@link #doGetConnection(String, String)}，按原样保留给定的用户凭据。
+	 * 直接委托 {@link #doGetConnection(String, String)}，
+	 * 保持给定用户凭据不变。
 	 */
 	@Override
 	public Connection getConnection(String username, String password) throws SQLException {
@@ -151,11 +165,12 @@ public class UserCredentialsDataSourceAdapter extends DelegatingDataSource {
 	}
 
 	/**
-	 * 此实现委托给目标数据源的 {@code getConnection(username, password)} 方法，传入指定的用户凭据。如果指定的用户名为空，它将简单地委托给目
-	 * 标数据源的标准 {@code getConnection()} 方法。
+	 * 本实现委托目标 DataSource 的 {@code getConnection(username, password)}，
+	 * 传入指定用户凭据。
+	 * 若用户名为空，则直接委托目标 DataSource 的标准 {@code getConnection()}。
 	 * @param username 要使用的用户名
-	 * @param password 使用的密码
-	 * @return 联系
+	 * @param password 要使用的密码
+	 * @return Connection
 	 * @see javax.sql.DataSource#getConnection(String, String)
 	 * @see javax.sql.DataSource#getConnection()
 	 */

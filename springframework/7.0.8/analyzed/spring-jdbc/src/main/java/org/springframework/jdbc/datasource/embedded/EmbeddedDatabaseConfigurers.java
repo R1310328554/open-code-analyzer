@@ -21,8 +21,9 @@ import java.util.function.UnaryOperator;
 import org.springframework.util.Assert;
 
 /**
- * 将众所周知的 {@linkplain EmbeddedDatabaseType embedded database types} 映射到 {@link
- * EmbeddedDatabaseConfigurer} 策略。
+ * 将常见 {@linkplain EmbeddedDatabaseType 嵌入式数据库类型}
+ * 映射到 {@link EmbeddedDatabaseConfigurer} 策略。
+ *
  * @author Keith Donald
  * @author Oliver Gierke
  * @author Sam Brannen
@@ -32,10 +33,10 @@ import org.springframework.util.Assert;
 public abstract class EmbeddedDatabaseConfigurers {
 
 	/**
-	 * 返回给定嵌入式数据库类型的配置器实例。
-	 * @param type {@linkplain EmbeddedDatabaseType embedded database type}
+	 * 返回给定嵌入式数据库类型对应的配置器实例。
+	 * @param type {@linkplain EmbeddedDatabaseType 嵌入式数据库类型}
 	 * @return 配置器实例
-	 * @throws IllegalStateException 如果指定数据库类型的驱动程序不可用
+	 * @throws IllegalStateException 指定数据库类型的驱动不可用时
 	 */
 	public static EmbeddedDatabaseConfigurer getConfigurer(EmbeddedDatabaseType type) {
 		Assert.notNull(type, "EmbeddedDatabaseType is required");
@@ -52,12 +53,13 @@ public abstract class EmbeddedDatabaseConfigurers {
 	}
 
 	/**
-	 * 为给定的嵌入式数据库类型自定义默认配置器。 <p>{@code customizer} 通常使用 {@link EmbeddedDatabaseConfigurerDelega
-	 * te} 根据需要进行自定义。
-	 * @param type {@linkplain EmbeddedDatabaseType embedded database type}
-	 * @param customizer 定制器根据默认值返回
-	 * @return 自定义配置器实例
-	 * @throws IllegalStateException 如果指定数据库类型的驱动程序不可用
+	 * 自定义给定嵌入式数据库类型的默认配置器。
+	 * <p>{@code customizer} 通常使用
+	 * {@link EmbeddedDatabaseConfigurerDelegate} 按需定制。
+	 * @param type {@linkplain EmbeddedDatabaseType 嵌入式数据库类型}
+	 * @param customizer 基于默认配置器返回定制结果的函数
+	 * @return 定制后的配置器实例
+	 * @throws IllegalStateException 指定数据库类型的驱动不可用时
 	 */
 	public static EmbeddedDatabaseConfigurer customizeConfigurer(
 			EmbeddedDatabaseType type, UnaryOperator<EmbeddedDatabaseConfigurer> customizer) {
