@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:08:03Z",
-  "files": [
-    "buffer/src/main/java/io/netty/buffer/UnsafeByteBufUtil.java",
-    "buffer/src/main/java/io/netty/buffer/UnsafeDirectSwappedByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/UnsafeHeapSwappedByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/VarHandleByteBufferAccess.java",
-    "buffer/src/main/java/io/netty/buffer/WrappedByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/WrappedCompositeByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/WrappedUnpooledUnsafeDirectByteBuf.java",
-    "buffer/src/main/java/io/netty/buffer/search/AbstractMultiSearchProcessorFactory.java",
-    "buffer/src/main/java/io/netty/buffer/search/AbstractSearchProcessorFactory.java",
-    "buffer/src/main/java/io/netty/buffer/search/AhoCorasicSearchProcessorFactory.java",
-    "buffer/src/main/java/io/netty/buffer/search/BitapSearchProcessorFactory.java",
-    "buffer/src/main/java/io/netty/buffer/search/KmpSearchProcessorFactory.java",
-    "buffer/src/main/java/io/netty/buffer/search/MultiSearchProcessor.java",
-    "buffer/src/main/java/io/netty/buffer/search/MultiSearchProcessorFactory.java",
-    "buffer/src/main/java/io/netty/buffer/search/SearchProcessor.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1838,
-  "done": 75
+  "done": 90
 }
