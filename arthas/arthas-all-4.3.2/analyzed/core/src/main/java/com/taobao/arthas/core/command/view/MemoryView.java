@@ -15,7 +15,10 @@ import com.taobao.text.ui.TableElement;
 import com.taobao.text.util.RenderUtil;
 
 /**
- * View of 'memory' command
+ * {@code memory} 命令的终端渲染视图。
+ * <p>
+ * 将堆、非堆、BufferPool 用量渲染为 used/total/max/usage 表格；
+ * {@link #drawMemoryInfo} 亦被 {@link com.taobao.arthas.core.command.view.DashboardView} 复用。
  *
  * @author hengyunabc 2022-03-01
  */
@@ -32,7 +35,7 @@ public class MemoryView extends ResultView<MemoryModel> {
         table.add(new RowElement().style(Decoration.bold.fg(Color.black).bg(Color.white)).add("Memory",
                 "used", "total", "max", "usage"));
         List<MemoryEntryVO> heapMemoryEntries = memoryInfo.get(MemoryEntryVO.TYPE_HEAP);
-        //heap memory
+        // 堆内存：汇总行加粗
         for (MemoryEntryVO memoryEntryVO : heapMemoryEntries) {
             if (MemoryEntryVO.TYPE_HEAP.equals(memoryEntryVO.getName())) {
                 new MemoryEntry(memoryEntryVO).addTableRow(table, Decoration.bold.bold());
@@ -41,7 +44,7 @@ public class MemoryView extends ResultView<MemoryModel> {
             }
         }
 
-        //non-heap memory
+        // 非堆内存（Metaspace、Code Cache 等）
         List<MemoryEntryVO> nonheapMemoryEntries = memoryInfo.get(MemoryEntryVO.TYPE_NON_HEAP);
         for (MemoryEntryVO memoryEntryVO : nonheapMemoryEntries) {
             if (MemoryEntryVO.TYPE_NON_HEAP.equals(memoryEntryVO.getName())) {
@@ -51,7 +54,7 @@ public class MemoryView extends ResultView<MemoryModel> {
             }
         }
 
-        //buffer-pool
+        // Direct/Mapped 等 BufferPool（可能为 null）
         List<MemoryEntryVO> bufferPoolMemoryEntries = memoryInfo.get(MemoryEntryVO.TYPE_BUFFER_POOL);
         if (bufferPoolMemoryEntries != null) {
             for (MemoryEntryVO memoryEntryVO : bufferPoolMemoryEntries) {
@@ -61,6 +64,7 @@ public class MemoryView extends ResultView<MemoryModel> {
         return table;
     }
 
+    /** 单行内存条目：按用量自动选择 K/M 单位并计算 usage 百分比 */
     static class MemoryEntry {
         String name;
         long used;
@@ -94,6 +98,7 @@ public class MemoryView extends ResultView<MemoryModel> {
 
         private String format(long value) {
             String valueStr = "-";
+            // max 未定义时 JVM 返回 -1
             if (value == -1) {
                 return "-1";
             }
@@ -105,6 +110,7 @@ public class MemoryView extends ResultView<MemoryModel> {
 
         public void addTableRow(TableElement table) {
             double usage = used / (double) (max == -1 || max == Long.MIN_VALUE ? total : max) * 100;
+            // max 为 -1 时用 committed 作分母，异常值归零
             if (Double.isNaN(usage) || Double.isInfinite(usage)) {
                 usage = 0;
             }

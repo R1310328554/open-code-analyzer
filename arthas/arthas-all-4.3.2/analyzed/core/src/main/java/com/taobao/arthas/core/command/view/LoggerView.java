@@ -13,7 +13,10 @@ import java.util.Map;
 import static com.taobao.text.ui.Element.label;
 
 /**
- * View of 'logger' command
+ * {@code logger} 命令的终端渲染视图。
+ * <p>
+ * 展示 Logback/Log4j 等 Logger 的名称、级别、ClassLoader、appenders 等；
+ * ClassLoader 歧义时先输出候选列表（与 jad/mc 等命令一致）。
  *
  * @author gongdewei 2020/4/22
  */
@@ -21,6 +24,7 @@ public class LoggerView extends ResultView<LoggerModel> {
 
     @Override
     public void draw(CommandProcess process, LoggerModel result) {
+        // ClassLoader 歧义：列出候选后返回
         if (result.getMatchedClassLoaders() != null) {
             process.write("Matched classloaders: \n");
             ClassLoaderView.drawClassLoaders(process, result.getMatchedClassLoaders(), false);
@@ -30,6 +34,7 @@ public class LoggerView extends ResultView<LoggerModel> {
         process.write(renderLoggerInfo(result.getLoggerInfoMap(), process.width()));
     }
 
+    /** 每个 logger 一张主表，appenders 嵌套子表 */
     private String renderLoggerInfo(Map<String, Map<String, Object>> loggerInfos, int width) {
         StringBuilder sb = new StringBuilder(8192);
 

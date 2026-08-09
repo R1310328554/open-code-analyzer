@@ -4,10 +4,13 @@ import com.taobao.arthas.core.command.model.LineListModel;
 import com.taobao.arthas.core.shell.command.CommandProcess;
 
 /**
- * Term view for LineListModel
+ * {@code line -l} 列表模式的终端渲染视图。
+ * <p>
+ * 输出已注册行号探针的类、源文件、方法签名与行号集合，便于确认当前 line 增强范围。
  */
 public class LineListView extends ResultView<LineListModel> {
 
+    @Override
     @Override
     public void draw(CommandProcess process, LineListModel model) {
         StringBuilder sb = new StringBuilder();

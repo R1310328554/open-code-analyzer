@@ -15,7 +15,10 @@ import java.util.Map;
 import static com.taobao.text.ui.Element.label;
 
 /**
- * View of 'jvm' command
+ * {@code jvm} 命令的终端渲染视图。
+ * <p>
+ * 将 {@link JvmModel#getJvmInfo()} 按分组（RUNTIME、CLASS-LOADING、GC 等）渲染为两列表格；
+ * 内存项（名称以 MEMORY-USAGE 结尾）单独格式化为 init/used/committed/max 四行。
  *
  * @author gongdewei 2020/4/24
  */
@@ -29,6 +32,7 @@ public class JvmView extends ResultView<JvmModel> {
             String group = entry.getKey();
             List<JvmItemVO> items = entry.getValue();
 
+            // 分组标题行（加粗）
             table.row(true, label(group).style(Decoration.bold.bold()));
             for (JvmItemVO item : items) {
                 String valueStr;
@@ -37,23 +41,26 @@ public class JvmView extends ResultView<JvmModel> {
                 } else {
                     valueStr = renderItemValue(item.getValue());
                 }
+                // 有 desc 时换行附在名称下方
                 if (item.getDesc() != null) {
                     table.row(item.getName() + "\n[" + item.getDesc() + "]", valueStr);
                 } else {
                     table.row(item.getName(), valueStr);
                 }
             }
+            // 组间空行分隔
             table.row("", "");
         }
 
         process.write(RenderUtil.render(table, process.width()));
     }
 
+    /** count/time 数组格式化为 "count/time" */
     private String renderCountTime(long[] value) {
-        //count/time
         return value[0] + "/" + value[1];
     }
 
+    /** 按运行时类型分发到集合/数组/Map 或 toString */
     private String renderItemValue(Object value) {
         if (value == null) {
             return "null";
@@ -103,6 +110,7 @@ public class JvmView extends ResultView<JvmModel> {
         return colSB.toString();
     }
 
+    /** 内存池四项指标，字节数附带 human-readable 后缀 */
     private String renderMemoryUsage(Map<String, Object> valueMap) {
         final StringBuilder colSB = new StringBuilder();
         String[] keys = new String[]{"init", "used", "committed", "max"};

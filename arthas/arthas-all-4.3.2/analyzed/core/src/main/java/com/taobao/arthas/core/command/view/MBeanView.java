@@ -19,11 +19,15 @@ import static com.taobao.text.ui.Element.label;
 import static javax.management.MBeanOperationInfo.*;
 
 /**
- * View of 'mbean' command
+ * {@code mbean} 命令的终端渲染视图。
+ * <p>
+ * 按 {@link MBeanModel} 载荷分支：ObjectName 列表、MBeanInfo 元数据表、或属性名/值表；
+ * 数组属性转为 List 便于终端展示，读取失败时红色显示 error 信息。
  *
  * @author gongdewei 2020/4/26
  */
 public class MBeanView extends ResultView<MBeanModel> {
+    @Override
     @Override
     public void draw(CommandProcess process, MBeanModel result) {
         if (result.getMbeanNames() != null) {
@@ -48,11 +52,11 @@ public class MBeanView extends ResultView<MBeanModel> {
             for (MBeanAttributeVO attributeVO : attributeVOList) {
                 String attributeName = attributeVO.getName();
                 String valueStr;
+                // 属性不可读或 JMX 抛错时用红色标签展示
                 if (attributeVO.getError() != null) {
                     valueStr = RenderUtil.render(new LabelElement(attributeVO.getError()).style(Decoration.bold_off.fg(Color.red)));
                 } else {
-                    //convert array to list
-                    // TODO support all array type
+                    // 部分数组类型转 List 便于 toString；其余类型 TODO 扩展
                     Object value = attributeVO.getValue();
                     if (value instanceof String[]) {
                         value = Arrays.asList((String[]) value);
@@ -75,6 +79,7 @@ public class MBeanView extends ResultView<MBeanModel> {
         }
     }
 
+    /** 基本类型 long[] 转 List，避免终端输出 [J@hash 形式 */
     private List<Long> convertArrayToList(long[] longs) {
         List<Long> list = new ArrayList<Long>();
         for (long aLong : longs) {
@@ -91,6 +96,7 @@ public class MBeanView extends ResultView<MBeanModel> {
         return list;
     }
 
+    /** 输出 MBeanInfo：构造器、属性、操作、通知及 Descriptor 字段 */
     private void drawMBeanMetadata(CommandProcess process, Map<String, MBeanInfo> mbeanMetadata) {
         TableElement table = createTable();
         for (Map.Entry<String, MBeanInfo> entry : mbeanMetadata.entrySet()) {
@@ -105,6 +111,7 @@ public class MBeanView extends ResultView<MBeanModel> {
 
     }
 
+    /** 无参数列举模式：每行一个 ObjectName */
     private void drawMBeanNames(CommandProcess process, List<String> mbeanNames) {
         for (String mbeanName : mbeanNames) {
             process.write(mbeanName).write("\n");
@@ -156,6 +163,7 @@ public class MBeanView extends ResultView<MBeanModel> {
             table.row("Name", operation.getName());
             table.row("Description", operation.getDescription());
             String impact = "";
+            // MBean 操作影响级别映射为可读字符串
             switch (operation.getImpact()) {
                 case ACTION:
                     impact = "action";

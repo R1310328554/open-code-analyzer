@@ -12,7 +12,9 @@ import java.util.List;
 import static com.taobao.text.ui.Element.label;
 
 /**
- * View of 'perfcounter' command
+ * {@code perfcounter} 命令的终端渲染视图。
+ * <p>
+ * 默认两列（Name/Value）；{@code -d} 详情模式增加 Variability 与 Units 列。
  *
  * @author gongdewei 2020/4/27
  */
@@ -22,12 +24,14 @@ public class PerfCounterView extends ResultView<PerfCounterModel> {
         List<PerfCounterVO> perfCounters = result.getPerfCounters();
         boolean details = result.isDetails();
         TableElement table;
+        // -d 详情模式：四列表格
         if (details) {
             table = new TableElement(3, 1, 1, 10).leftCellPadding(1).rightCellPadding(1);
             table.row(true, label("Name").style(Decoration.bold.bold()),
                     label("Variability").style(Decoration.bold.bold()),
                     label("Units").style(Decoration.bold.bold()), label("Value").style(Decoration.bold.bold()));
         } else {
+            // 默认精简两列
             table = new TableElement(4, 6).leftCellPadding(1).rightCellPadding(1);
             table.row(true, label("Name").style(Decoration.bold.bold()),
                     label("Value").style(Decoration.bold.bold()));

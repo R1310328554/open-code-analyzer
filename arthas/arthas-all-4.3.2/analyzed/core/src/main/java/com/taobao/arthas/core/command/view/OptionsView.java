@@ -13,19 +13,27 @@ import java.util.Collection;
 import static com.taobao.text.ui.Element.label;
 
 /**
+ * {@code options} 命令的终端渲染视图。
+ * <p>
+ * 无参数时列出全部 Arthas 全局选项；set 子命令后展示变更结果表
+ *（{@link ViewRenderUtil#renderChangeResult}）。
+ *
  * @author gongdewei 2020/4/15
  */
 public class OptionsView extends ResultView<OptionsModel> {
     @Override
     public void draw(CommandProcess process, OptionsModel result) {
+        // 查询模式：LEVEL/TYPE/NAME/VALUE/SUMMARY/DESCRIPTION 六列表
         if (result.getOptions() != null) {
             process.write(RenderUtil.render(drawShowTable(result.getOptions()), process.width()));
         } else if (result.getChangeResult() != null) {
+            // set 模式：展示修改前后对比
             TableElement table = ViewRenderUtil.renderChangeResult(result.getChangeResult());
             process.write(RenderUtil.render(table, process.width()));
         }
     }
 
+    /** 构建 options 列表表格元素 */
     private Element drawShowTable(Collection<OptionVO> options) {
         TableElement table = new TableElement(1, 1, 2, 1, 3, 6)
                 .leftCellPadding(1).rightCellPadding(1);

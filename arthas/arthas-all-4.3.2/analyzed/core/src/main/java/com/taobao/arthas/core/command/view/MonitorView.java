@@ -13,7 +13,11 @@ import java.text.DecimalFormat;
 import static com.taobao.text.ui.Element.label;
 
 /**
- * Term view for MonitorModel
+ * {@code monitor} 命令周期统计结果的终端渲染视图。
+ * <p>
+ * 表格展示每轮采样的时间戳、类/方法、调用总数、成功/失败、平均 RT 与失败率；
+ * 数据来自 {@link com.taobao.arthas.core.command.monitor200.MonitorData}。
+ *
  * @author gongdewei 2020/4/28
  */
 public class MonitorView extends ResultView<MonitorModel> {
@@ -48,6 +52,7 @@ public class MonitorView extends ResultView<MonitorModel> {
 
     }
 
+    /** 安全除法：分母为 0 时返回 0，避免 NaN 污染表格 */
     private double div(double a, double b) {
         if (b == 0) {
             return 0;

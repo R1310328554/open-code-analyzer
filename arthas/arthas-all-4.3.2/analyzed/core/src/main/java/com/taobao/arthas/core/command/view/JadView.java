@@ -13,12 +13,18 @@ import com.taobao.text.ui.LabelElement;
 import com.taobao.text.util.RenderUtil;
 
 /**
+ * {@code jad} 反编译命令的终端渲染视图。
+ * <p>
+ * 按 {@link JadModel} 状态分支：ClassLoader 歧义列表、多类匹配表、或完整反编译源码
+ *（含 ClassLoader/Location 元信息与语法高亮）。
+ *
  * @author gongdewei 2020/4/22
  */
 public class JadView extends ResultView<JadModel> {
 
     @Override
     public void draw(CommandProcess process, JadModel result) {
+        // ClassLoader 匹配不唯一时先列出候选，不继续反编译
         if (result.getMatchedClassLoaders() != null) {
             process.write("Matched classloaders: \n");
             ClassLoaderView.drawClassLoaders(process, result.getMatchedClassLoaders(), false);
@@ -28,9 +34,11 @@ public class JadView extends ResultView<JadModel> {
 
         int width = process.width();
         if (result.getMatchedClasses() != null) {
+            // 类名匹配到多个类：表格展示 hash/loader/class
             Element table = ClassUtils.renderMatchedClasses(result.getMatchedClasses());
             process.write(RenderUtil.render(table, width)).write("\n");
         } else {
+            // 成功反编译：元信息 + 源码高亮
             ClassVO classInfo = result.getClassInfo();
             if (classInfo != null) {
                 process.write("\n");
@@ -42,6 +50,7 @@ public class JadView extends ResultView<JadModel> {
                 process.write(RenderUtil.render(new LabelElement(result.getLocation()).style(Decoration.bold.fg(Color.blue)), width) + "\n");
             }
             process.write(LangRenderUtil.render(result.getSource()) + "\n");
+            // 空串占位，与历史终端输出行为保持一致
             process.write(com.taobao.arthas.core.util.Constants.EMPTY_STRING);
         }
     }
