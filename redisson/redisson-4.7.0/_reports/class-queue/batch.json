@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:46:47Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/ScanIterator.java",
-    "redisson/src/main/java/org/redisson/ScanResult.java",
-    "redisson/src/main/java/org/redisson/SlotCallback.java",
-    "redisson/src/main/java/org/redisson/Version.java",
-    "redisson/src/main/java/org/redisson/VoidSlotCallback.java",
-    "redisson/src/main/java/org/redisson/WriteBehindService.java",
-    "redisson/src/main/java/org/redisson/api/AsyncIterator.java",
-    "redisson/src/main/java/org/redisson/api/BaseSyncParams.java",
-    "redisson/src/main/java/org/redisson/api/BatchOptions.java",
-    "redisson/src/main/java/org/redisson/api/BatchResult.java",
-    "redisson/src/main/java/org/redisson/api/CacheAsync.java",
-    "redisson/src/main/java/org/redisson/api/CacheReactive.java",
-    "redisson/src/main/java/org/redisson/api/CacheRx.java",
-    "redisson/src/main/java/org/redisson/api/CronSchedule.java",
-    "redisson/src/main/java/org/redisson/api/CuckooFilterInfo.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1592,
-  "done": 1215
+  "done": 1230
 }
