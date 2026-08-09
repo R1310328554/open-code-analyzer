@@ -25,17 +25,24 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
- * 
+ * Bucket 条件写入（trySet / SETNX）的事务操作：
+ * 仅当键不存在时写入；支持可选 TTL，commit 后释放事务锁。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class BucketTrySetOperation<V> extends TransactionalOperation {
 
+    /** 所属事务 ID。 */
     private String transactionId;
+    /** 尝试写入的值。 */
     private Object value;
+    /** 键对应的事务读锁名。 */
     private String lockName;
+    /** 可选存活时间，0 表示不设过期。 */
     private long timeToLive;
+    /** timeToLive 的时间单位。 */
     private TimeUnit timeUnit;
     
     public BucketTrySetOperation(String name, String lockName, Codec codec, Object value, long timeToLive, TimeUnit timeUnit, String transactionId, long threadId) {
@@ -51,6 +58,7 @@ public class BucketTrySetOperation<V> extends TransactionalOperation {
         this.transactionId = transactionId;
     }
 
+    /** 提交：trySet（含可选 TTL）并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RedissonBucket<V> bucket = new RedissonBucket<V>(codec, commandExecutor, name);
@@ -63,6 +71,7 @@ public class BucketTrySetOperation<V> extends TransactionalOperation {
         lock.unlockAsync(getThreadId());
     }
 
+    /** 回滚：不写入 Bucket，仅释放事务锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
