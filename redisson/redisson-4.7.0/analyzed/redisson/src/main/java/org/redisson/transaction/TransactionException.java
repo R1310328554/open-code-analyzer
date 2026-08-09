@@ -18,19 +18,23 @@ package org.redisson.transaction;
 import org.redisson.client.RedisException;
 
 /**
- * This exception used to report an error during Transaction execution.
- * 
+ * Redisson 事务执行失败时抛出的异常，继承 {@link org.redisson.client.RedisException}。
+ * <p>
+ * 常见原因：WATCH 键被修改、commit 冲突、业务校验失败等。
+ *
  * @author Nikita Koksharov
  *
  */
 public class TransactionException extends RedisException {
 
     private static final long serialVersionUID = 7126673140273327142L;
-    
+
+    /** @param message 错误描述 */
     public TransactionException(String message) {
         super(message);
     }
 
+    /** @param message 错误描述 @param cause 根因 */
     public TransactionException(String message, Throwable cause) {
         super(message, cause);
     }

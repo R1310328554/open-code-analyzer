@@ -23,7 +23,9 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
- * 
+ * 删除 Redis 键（DEL）的事务操作：
+ * commit 时删除目标键并释放读/写锁；rollback 只解锁。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -33,6 +35,7 @@ public class DeleteOperation extends TransactionalOperation {
     private String lockName;
     private String transactionId;
 
+    /** 仅指定键名的简化构造（无锁）。 */
     public DeleteOperation(String name) {
         this(name, null, null, 0);
     }
@@ -48,6 +51,7 @@ public class DeleteOperation extends TransactionalOperation {
         this.writeLockName = writeLockName;
     }
 
+    /** 提交：DEL 键并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RKeys keys = new RedissonKeys(commandExecutor);
@@ -62,6 +66,7 @@ public class DeleteOperation extends TransactionalOperation {
         }
     }
 
+    /** 回滚：不删除键，仅释放锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {

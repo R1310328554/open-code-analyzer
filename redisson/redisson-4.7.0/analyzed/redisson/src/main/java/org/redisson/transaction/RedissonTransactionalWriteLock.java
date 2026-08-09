@@ -19,19 +19,24 @@ import org.redisson.RedissonWriteLock;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
+ * 事务内写锁：继承 {@link org.redisson.RedissonWriteLock}，
+ * 锁名追加 {@code :transactionId}，保证事务提交前写锁仅对本事务可见。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonTransactionalWriteLock extends RedissonWriteLock {
 
+    /** 所属事务 ID。 */
     private final String transactionId;
 
+    /** @param transactionId 写入锁名后缀的事务标识 */
     public RedissonTransactionalWriteLock(CommandAsyncExecutor commandExecutor, String name, String transactionId) {
         super(commandExecutor, name);
         this.transactionId = transactionId;
     }
     
+    /** 写锁名 = 基类锁名 + ":" + transactionId。 */
     @Override
     protected String getLockName(long threadId) {
         return super.getLockName(threadId) + ":" + transactionId;

@@ -25,12 +25,16 @@ import org.redisson.transaction.RedissonTransactionalWriteLock;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 按相对 TTL 设置过期（EXPIRE）的事务操作。
+ * {@link RedissonBucketExtended} 用于调用 expireAsync；
+ * commit/rollback 时处理关联锁。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ExpireOperation extends TransactionalOperation {
 
+    /** 包装 Bucket 以访问 protected expireAsync。 */
     public static final class RedissonBucketExtended extends RedissonBucket {
 
         public RedissonBucketExtended(CommandAsyncExecutor connectionManager, String name) {
@@ -46,7 +50,9 @@ public class ExpireOperation extends TransactionalOperation {
     private String writeLockName;
     private String lockName;
     private String transactionId;
+    /** 相对存活时间数值。 */
     private long timeToLive;
+    /** timeToLive 的时间单位。 */
     private TimeUnit timeUnit;
     private String param;
     private String[] keys;
@@ -76,6 +82,7 @@ public class ExpireOperation extends TransactionalOperation {
         this.writeLockName = writeLockName;
     }
 
+    /** 提交：EXPIRE 目标键并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RedissonBucketExtended bucket = new RedissonBucketExtended(commandExecutor, name);

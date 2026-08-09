@@ -23,12 +23,16 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
- * 
+ * 按绝对时间戳设置过期（EXPIREAT）的事务操作。
+ * 使用 {@link RedissonBucketExtended} 暴露 protected 的 expireAtAsync；
+ * commit 后解锁，rollback 仅解锁。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ExpireAtOperation extends TransactionalOperation {
 
+    /** 扩展 Bucket 以调用包级 expireAtAsync。 */
     public static final class RedissonBucketExtended extends RedissonBucket {
 
         public RedissonBucketExtended(CommandAsyncExecutor connectionManager, String name) {
@@ -46,8 +50,11 @@ public class ExpireAtOperation extends TransactionalOperation {
     private String writeLockName;
     private String lockName;
     private String transactionId;
+    /** 过期 Unix 时间戳（秒或毫秒，取决于 param）。 */
     private long timestamp;
+    /** EXPIREAT 附加参数。 */
     private String param;
+    /** 关联键名（多键过期时使用）。 */
     private String[] keys;
 
     public ExpireAtOperation(String name) {
@@ -73,6 +80,7 @@ public class ExpireAtOperation extends TransactionalOperation {
         this.writeLockName = writeLockName;
     }
 
+    /** 提交：EXPIREAT 并释放事务锁。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RedissonBucketExtended bucket = new RedissonBucketExtended(commandExecutor, name);

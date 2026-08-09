@@ -33,7 +33,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 
+ * 事务内 {@link org.redisson.api.RMapCache} 实现：带 TTL/空闲时间的 Map，
+ * 经 {@link BaseTransactionalMapCache} 在本地合并读写，提交后一次性写入 Redis。
+ * <p>
+ * 租约（lease）读写、remainTimeToLive、maxSize 等缓存在事务中不可用。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -41,7 +45,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> {
 
+    /** 事务 MapCache 核心：维护条目 TTL 与本地变更。 */
     private final BaseTransactionalMapCache<K, V> transactionalMap;
+    /** 事务结束标志。 */
     private final AtomicBoolean executed;
     
     public RedissonTransactionalMapCache(CommandAsyncExecutor commandExecutor, String name, 
@@ -60,6 +66,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         this.transactionalMap = new BaseTransactionalMapCache<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
     }
 
+    // 租约读在事务中不支持
     @Override
     public LeaseGetResult<V> getWithLease(K key, Duration leaseTimeToLive) {
         throw new UnsupportedOperationException("getWithLease method is not supported in transaction");
@@ -110,6 +117,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
     
+    // 过期相关委托 transactionalMap
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return transactionalMap.expireAsync(timeToLive, timeUnit, param, keys);
@@ -158,6 +166,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         return transactionalMap.deleteAsync(commandExecutor);
     }
     
+    // 带 TTL 的 putIfAbsent 走 MapCache 事务路径
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return transactionalMap.putIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
@@ -204,6 +213,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         return transactionalMap.scanIterator(name, client, startPos, pattern, count);
     }
     
+    // 读：先 checkState 再委托
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         checkState();
@@ -337,6 +347,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         return transactionalMap.replaceOperationAsync(key, value);
     }
     
+    /** 事务已结束时禁止继续操作。 */
     protected void checkState() {
         if (executed.get()) {
             throw new IllegalStateException("Unable to execute operation. Transaction is in finished state!");
@@ -373,6 +384,7 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         throw new UnsupportedOperationException("getSemaphore method is not supported in transaction");
     }
     
+    // 字段级锁在事务中不可用
     @Override
     public RLock getLock(K key) {
         throw new UnsupportedOperationException("getLock method is not supported in transaction");

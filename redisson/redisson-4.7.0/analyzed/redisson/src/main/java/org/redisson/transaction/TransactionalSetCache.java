@@ -31,14 +31,19 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 带过期时间的 Set（{@link org.redisson.api.RSetCache}）事务实现。
+ * add 使用 {@link org.redisson.transaction.operation.set.AddCacheOperation}，
+ * remove 使用 {@link RemoveCacheOperation}；不支持 move。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
 
+    /** 底层 RSetCache。 */
     private final RSetCache<V> set;
+    /** 事务 ID。 */
     private final String transactionId;
     
     public TransactionalSetCache(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations,
@@ -59,6 +64,7 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
         return set.readAllAsync();
     }
     
+    /** 带 TTL 的 add：直接构造 {@link AddCacheOperation} 并入队。 */
     public RFuture<Boolean> addAsync(V value, long ttl, TimeUnit ttlUnit) {
         long threadId = Thread.currentThread().getId();
         return addAsync(value, new AddCacheOperation(set, value, ttl, ttlUnit, transactionId, threadId));
@@ -69,6 +75,7 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
         return new AddCacheOperation(set, value, transactionId, threadId);
     }
     
+    /** SetCache 不支持 SMOVE。 */
     @Override
     protected MoveOperation createMoveOperation(String destination, V value, long threadId) {
         throw new UnsupportedOperationException();

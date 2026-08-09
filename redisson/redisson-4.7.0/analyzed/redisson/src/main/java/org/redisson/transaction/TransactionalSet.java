@@ -30,14 +30,18 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 
+ * 普通 Redis Set 的事务逻辑实现：继承 {@link BaseTransactionalSet}，
+ * 将 add/remove/move 封装为 {@link org.redisson.transaction.operation.set} 下的操作对象。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class TransactionalSet<V> extends BaseTransactionalSet<V> {
 
+    /** 底层 {@link RSet}，用于 SCAN 与 readAll。 */
     private final RSet<V> set;
+    /** 当前事务 ID，写入操作对象。 */
     private final String transactionId;
     
     public TransactionalSet(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations,
@@ -47,6 +51,7 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
         this.transactionId = transactionId;
     }
 
+    /** 委托底层 Set 的 SCAN 迭代。 */
     @Override
     protected ScanResult<Object> scanIteratorSource(String name, RedisClient client, String startPos,
                                                     String pattern, int count) {
@@ -58,16 +63,19 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
         return set.readAllAsync();
     }
     
+    /** 创建普通 Set 的 {@link org.redisson.transaction.operation.set.AddOperation}。 */
     @Override
     protected TransactionalOperation createAddOperation(V value, long threadId) {
         return new AddOperation(set, value, transactionId, threadId);
     }
     
+    /** 创建 SMOVE 对应的事务操作。 */
     @Override
     protected MoveOperation createMoveOperation(String destination, V value, long threadId) {
         return new MoveOperation(set, destination, threadId, value, transactionId);
     }
 
+    /** 创建 SREM 对应的事务操作。 */
     @Override
     protected TransactionalOperation createRemoveOperation(Object value, long threadId) {
         return new RemoveOperation(set, value, transactionId, threadId);

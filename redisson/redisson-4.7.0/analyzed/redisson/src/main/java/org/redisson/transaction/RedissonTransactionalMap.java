@@ -32,7 +32,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 
+ * 事务内 {@link org.redisson.api.RMap} 实现：继承 {@link RedissonMap}，
+ * 读写经 {@link BaseTransactionalMap} 缓冲，commit 前对其他客户端不可见。
+ * <p>
+ * 事务已结束（commit/rollback）后调用 {@link #checkState()} 会抛异常；
+ * move/migrate/mapReduce/loadAll 及字段级锁等在事务中不支持。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -40,9 +45,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
 
+    /** 事务 Map 核心逻辑：维护本地状态与 {@link TransactionalOperation} 列表。 */
     private final BaseTransactionalMap<K, V> transactionalMap;
+    /** 事务是否已结束；为 true 时禁止再执行操作。 */
     private final AtomicBoolean executed;
 
+    /** 基于已有 {@link RMap} 实例包装为事务 Map。 */
     public RedissonTransactionalMap(CommandAsyncExecutor commandExecutor,  
             List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, RMap<K, V> innerMap, String transactionId) {
         super(innerMap.getCodec(), commandExecutor, innerMap.getName(), null, null, null);
@@ -66,6 +74,7 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         this.transactionalMap = new BaseTransactionalMap<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
     }
     
+    // 过期设置委托 transactionalMap（commit 时落库）
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return transactionalMap.expireAsync(timeToLive, timeUnit, param, keys);
@@ -81,6 +90,7 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         return transactionalMap.clearExpireAsync();
     }
     
+    // 事务内不支持跨库 MOVE
     @Override
     public RFuture<Boolean> moveAsync(int database) {
         throw new UnsupportedOperationException("move method is not supported in transaction");
@@ -103,6 +113,7 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         return transactionalMap.scanIterator(name, client, startPos, pattern, count);
     }
     
+    // 读操作：校验事务状态后委托
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         checkState();
@@ -133,6 +144,7 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         return transactionalMap.putIfAbsentOperationAsync(key, value);
     }
     
+    // 写操作：缓冲至事务操作列表
     @Override
     protected RFuture<V> putOperationAsync(K key, V value) {
         checkState();
@@ -265,6 +277,7 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         return transactionalMap.replaceOperationAsync(key, value);
     }
     
+    /** 若事务已 commit/rollback，拒绝后续操作。 */
     protected void checkState() {
         if (executed.get()) {
             throw new IllegalStateException("Unable to execute operation. Transaction is in finished state!");
@@ -281,6 +294,7 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         throw new UnsupportedOperationException("loadAll method is not supported in transaction");
     }
     
+    // 事务内不支持字段级分布式锁
     @Override
     public RLock getFairLock(K key) {
         throw new UnsupportedOperationException("getFairLock method is not supported in transaction");

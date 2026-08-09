@@ -16,8 +16,10 @@
 package org.redisson.transaction;
 
 /**
- * This exception used to report an error during Transaction execution.
- * 
+ * 事务等待或执行超时时抛出，是 {@link TransactionException} 的子类。
+ * <p>
+ * 通常在 {@link org.redisson.api.TransactionOptions} 设定的超时到期后触发。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -25,6 +27,7 @@ public class TransactionTimeoutException extends TransactionException {
 
     private static final long serialVersionUID = 7126673140273327142L;
 
+    /** @param message 超时说明 */
     public TransactionTimeoutException(String message) {
         super(message);
     }

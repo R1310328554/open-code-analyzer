@@ -31,14 +31,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 
+ * 事务内 {@link org.redisson.api.RSetCache} 实现：
+ * 经 {@link TransactionalSetCache} 缓冲带 TTL 的集合操作。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
 
+    /** 事务 SetCache 核心。 */
     private final TransactionalSetCache<V> transactionalSet;
+    /** 事务结束标志。 */
     private final AtomicBoolean executed;
     
     public RedissonTransactionalSetCache(CommandAsyncExecutor commandExecutor, String name,
@@ -93,6 +97,7 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
         return transactionalSet.scanIterator(name, client, startPos, pattern, count);
     }
 
+    // 读操作需先 checkState
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
         checkState();
@@ -111,6 +116,7 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
         return transactionalSet.addAsync(e);
     }
     
+    // 带 TTL 的 add 走 SetCache 事务路径
     @Override
     public RFuture<Boolean> addAsync(V value, long ttl, TimeUnit unit) {
         checkState();
@@ -159,6 +165,7 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
         return transactionalSet.deleteAsync();
     }
 
+    /** 已 commit/rollback 时抛 IllegalStateException。 */
     protected void checkState() {
         if (executed.get()) {
             throw new IllegalStateException("Unable to execute operation. Transaction is in finished state!");

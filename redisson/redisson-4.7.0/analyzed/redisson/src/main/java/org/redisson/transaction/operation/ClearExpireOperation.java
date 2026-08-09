@@ -23,14 +23,20 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
- * 
+ * 清除 Redis 键持久化（PERSIST）的事务操作：
+ * commit 时对目标键 {@code clearExpire} 并释放关联的读/写锁；
+ * rollback 仅释放锁，不修改键 TTL。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ClearExpireOperation extends TransactionalOperation {
 
+    /** 可选写锁名，commit/rollback 后释放。 */
     private String writeLockName;
+    /** 可选读锁名。 */
     private String lockName;
+    /** 事务 ID，构造事务锁实例。 */
     private String transactionId;
 
     public ClearExpireOperation(String name, String lockName, long threadId, String transactionId) {
@@ -46,6 +52,7 @@ public class ClearExpireOperation extends TransactionalOperation {
         this.writeLockName = writeLockName;
     }
 
+    /** 提交：PERSIST 目标键并解锁。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RKeys keys = new RedissonKeys(commandExecutor);
@@ -60,6 +67,7 @@ public class ClearExpireOperation extends TransactionalOperation {
         }
     }
 
+    /** 回滚：仅释放事务锁，不执行 PERSIST。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {

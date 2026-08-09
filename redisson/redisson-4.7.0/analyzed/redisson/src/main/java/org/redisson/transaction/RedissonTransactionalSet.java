@@ -31,14 +31,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 
+ * 事务内 {@link org.redisson.api.RSet} 门面：继承 {@link RedissonSet}，
+ * 集合变更经 {@link TransactionalSet} 缓冲，支持 add/remove/集合运算与 SORT。
+ * <p>
+ * move/migrate/mapReduce 及元素级锁在事务中不支持。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class RedissonTransactionalSet<V> extends RedissonSet<V> {
 
+    /** 事务 Set 逻辑层。 */
     private final TransactionalSet<V> transactionalSet;
+    /** 事务是否已结束。 */
     private final AtomicBoolean executed;
     
     public RedissonTransactionalSet(CommandAsyncExecutor commandExecutor,
@@ -57,6 +63,7 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
         this.transactionalSet = new TransactionalSet<V>(commandExecutor, timeout, operations, innerSet, transactionId);
     }
     
+    // 过期操作委托 transactionalSet
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return transactionalSet.expireAsync(timeToLive, timeUnit, param, keys);
@@ -123,6 +130,7 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
         throw new UnsupportedOperationException("getReadWriteLock method is not supported in transaction");
     }
 
+    // 成员检测：校验状态后委托
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
         checkState();
@@ -135,6 +143,7 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
         return transactionalSet.readAllAsync();
     }
     
+    // 添加元素缓冲至事务
     @Override
     public RFuture<Boolean> addAsync(V e) {
         checkState();
@@ -183,6 +192,7 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
         return transactionalSet.removeAllAsync(c);
     }
     
+    // 集合并集运算（SUNIONSTORE 等）
     @Override
     public RFuture<Integer> unionAsync(String... names) {
         checkState();
@@ -298,6 +308,7 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
         return transactionalSet.deleteAsync();
     }
 
+    /** 事务结束后拒绝新操作。 */
     protected void checkState() {
         if (executed.get()) {
             throw new IllegalStateException("Unable to execute operation. Transaction is in finished state!");

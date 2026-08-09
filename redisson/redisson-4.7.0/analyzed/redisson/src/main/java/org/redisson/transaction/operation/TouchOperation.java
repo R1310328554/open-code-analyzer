@@ -23,7 +23,9 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
- * 
+ * 刷新键访问时间（TOUCH）的事务操作：
+ * commit 时对目标键执行 touch 并释放锁；rollback 仅解锁。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -33,6 +35,7 @@ public class TouchOperation extends TransactionalOperation {
     private String lockName;
     private String transactionId;
     
+    /** 无锁的简化构造。 */
     public TouchOperation(String name) {
         this(name, null, 0, null);
     }
@@ -48,6 +51,7 @@ public class TouchOperation extends TransactionalOperation {
         this.writeLockName = writeLockName;
     }
 
+    /** 提交：TOUCH 键并释放读/写锁。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RKeys keys = new RedissonKeys(commandExecutor);
@@ -62,6 +66,7 @@ public class TouchOperation extends TransactionalOperation {
         }
     }
 
+    /** 回滚：不 touch，仅 unlock。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {
