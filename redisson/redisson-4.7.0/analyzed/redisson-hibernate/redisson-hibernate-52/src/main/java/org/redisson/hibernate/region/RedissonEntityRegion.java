@@ -33,15 +33,16 @@ import org.redisson.hibernate.strategy.TransactionalEntityRegionAccessStrategy;
 import java.util.Properties;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Hibernate 5.2 实体二级缓存 Region，基于 Redisson {@link RMapCache}。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonEntityRegion extends BaseRegion implements EntityRegion {
 
     private final Settings settings;
     private final CacheKeysFactory cacheKeysFactory;
     
+    /** @param cacheKeysFactory 缓存键工厂，用于实体键的生成与解析 */
     public RedissonEntityRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, RegionFactory regionFactory,
                                 CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey, CacheKeysFactory cacheKeysFactory) {
         super(mapCache, serviceManager, regionFactory, metadata, properties, defaultKey);
@@ -49,10 +50,12 @@ public class RedissonEntityRegion extends BaseRegion implements EntityRegion {
         this.cacheKeysFactory = cacheKeysFactory;
     }
     
+    /** 返回本 Region 使用的 {@link CacheKeysFactory}。 */
     public CacheKeysFactory getCacheKeysFactory() {
         return cacheKeysFactory;
     }
 
+    /** 按 {@link AccessType} 构建实体 Region 的并发访问策略。 */
     @Override
     public EntityRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

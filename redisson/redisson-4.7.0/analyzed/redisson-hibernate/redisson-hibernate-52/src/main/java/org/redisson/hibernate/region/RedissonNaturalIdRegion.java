@@ -33,15 +33,16 @@ import org.redisson.hibernate.strategy.TransactionalNaturalIdRegionAccessStrateg
 import java.util.Properties;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Hibernate 5.2 自然 ID（NaturalId）二级缓存 Region，基于 Redisson {@link RMapCache}。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonNaturalIdRegion extends BaseRegion implements NaturalIdRegion {
 
     private final Settings settings;
     private final CacheKeysFactory cacheKeysFactory;
     
+    /** @param cacheKeysFactory 缓存键工厂，用于自然 ID 键的生成与解析 */
     public RedissonNaturalIdRegion(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, RegionFactory regionFactory,
                                    CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey, CacheKeysFactory cacheKeysFactory) {
         super(mapCache, serviceManager, regionFactory, metadata, properties, defaultKey);
@@ -49,10 +50,12 @@ public class RedissonNaturalIdRegion extends BaseRegion implements NaturalIdRegi
         this.cacheKeysFactory = cacheKeysFactory;
     }
 
+    /** 返回本 Region 使用的 {@link CacheKeysFactory}。 */
     public CacheKeysFactory getCacheKeysFactory() {
         return cacheKeysFactory;
     }
     
+    /** 按 {@link AccessType} 构建自然 ID Region 的并发访问策略。 */
     @Override
     public NaturalIdRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

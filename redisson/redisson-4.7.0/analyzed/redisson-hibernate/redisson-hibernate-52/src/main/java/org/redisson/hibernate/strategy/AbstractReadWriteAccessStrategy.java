@@ -23,21 +23,28 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.redisson.api.RMapCache;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 读写（READ_WRITE）缓存并发访问策略的抽象基类（Hibernate 5.2）。
+ * <p>委托 {@link GeneralDataRegion} 完成 get/put，解锁时驱逐条目。</p>
  *
+ * @author Nikita Koksharov
  */
 public class AbstractReadWriteAccessStrategy extends BaseRegionAccessStrategy {
 
+    /** @param settings Hibernate 缓存配置
+     * @param region 通用数据区域
+     * @param mapCache 底层 Redisson Map 缓存（保留参数以兼容子类构造签名）
+     */
     public AbstractReadWriteAccessStrategy(Settings settings, GeneralDataRegion region, RMapCache<Object, Object> mapCache) {
         super(settings, region);
     }
 
+    /** 从 Region 读取缓存条目（不校验版本）。 */
     @Override
     public Object get(SharedSessionContractImplementor session, Object key, long txTimestamp) throws CacheException {
         return region.get(session, key);
     }
 
+    /** 加载后写入缓存并始终返回 true。 */
     @Override
     public boolean putFromLoad(SharedSessionContractImplementor session, Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride)
             throws CacheException {
@@ -45,11 +52,13 @@ public class AbstractReadWriteAccessStrategy extends BaseRegionAccessStrategy {
         return true;
     }
 
+    /** 当前实现不使用软锁，直接返回 null。 */
     @Override
     public SoftLock lockItem(SharedSessionContractImplementor session, Object key, Object version) throws CacheException {
         return null;
     }
 
+    /** 解锁时驱逐对应缓存条目。 */
     @Override
     public void unlockItem(SharedSessionContractImplementor session, Object key, SoftLock lock) throws CacheException {
         region.evict(key);
