@@ -46,14 +46,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 批量命令服务：继承 {@link CommandAsyncService}，将 {@code async} 调用
+ * 转为命令入队，在 {@link #executeAsync()} 时按节点打包发送。
+ * <p>支持内存 Pipeline（{@code IN_MEMORY}）、Redis MULTI/EXEC 原子模式
+ * （{@code REDIS_*_ATOMIC}）及嵌套批量、脚本预加载（EVALSHA）。
+ *
  * @author Nikita Koksharov
  *
  */
 public class CommandBatchService extends CommandAsyncService implements BatchService {
 
+    /** Redis 队列模式下每个 MasterSlaveEntry 的连接复用状态。 */
     public static class ConnectionEntry {
 
+        /** 是否尚未发送 MULTI（首条写命令需先发 MULTI）。 */
         boolean firstCommand = true;
         final CompletableFuture<RedisConnection> connectionFuture;
         Runnable cancelCallback;
@@ -84,10 +90,13 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
 
     }
     
+    /** 单个节点源上累积的批量命令与 EVAL 脚本列表。 */
     public static class Entry {
 
+        /** EVAL 命令列表，execute 前可替换为 EVALSHA 并预加载脚本。 */
         final List<BatchCommandData<?, ?>> evalCommands = new ArrayList<>();
         final Deque<BatchCommandData<?, ?>> commands = new ConcurrentLinkedDeque<>();
+        /** 本 Entry 是否仅含读命令（影响连接读/写获取）。 */
         volatile boolean readOnlyMode = true;
 
         public void addCommand(BatchCommandData<?, ?> command) {
@@ -112,6 +121,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
             return commands;
         }
 
+        /** 按 {@link BatchCommandData#getIndex()} 排序，保证结果顺序与添加顺序一致。 */
         public void sortCommands() {
             int index = 0;
             boolean sorted = true;
@@ -150,19 +160,25 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
 
     }
 
+    /** 全局命令序号生成器。 */
     private final AtomicInteger index = new AtomicInteger();
 
+    /** 待执行命令按 NodeSource 分组。 */
     private final ConcurrentMap<NodeSource, Entry> commands = new ConcurrentHashMap<>();
     private Map<MasterSlaveEntry, Entry> aggregatedCommands = Collections.emptyMap();
     private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections = new ConcurrentHashMap<>();
     
+    /** 本批次的 BatchOptions 配置 */
     private final BatchOptions options;
     
     private final Map<CompletableFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
 
+    /** 是否已 execute 或 discard。 */
     private final AtomicBoolean executed = new AtomicBoolean();
 
+    /** 批量节点解析失败时的重试延迟 */
     private final DelayStrategy retryDelay;
+    /** 批量节点解析最大重试次数 */
     private final int retryAttempts;
 
     public CommandBatchService(CommandAsyncExecutor executor) {
@@ -238,6 +254,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         get(discardAsync());
     }
 
+    /** 丢弃未提交的批量：Redis 模式发 DISCARD，内存模式释放参数引用。 */
     public RFuture<Void> discardAsync() {
         if (executed.get()) {
             throw new IllegalStateException("Batch already executed!");
@@ -270,6 +287,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         return executed.get();
     }
 
+    /** 提交整批命令：解析节点、加载脚本、并行发送、汇总 {@link BatchResult}。 */
     public RFuture<BatchResult<?>> executeAsync() {
         if (executed.get()) {
             throw new IllegalStateException("Batch already executed!");
@@ -492,6 +510,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         });
     }
 
+    /** 启用脚本缓存时，批量 SCRIPT LOAD 并将 EVAL 替换为 EVALSHA。 */
     private CompletionStage<Void> loadScripts(Map<NodeSource, Entry> r) {
         if (!connectionManager.getServiceManager().getCfg().isUseScriptCache()) {
             return CompletableFuture.completedFuture(null);
@@ -623,6 +642,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
     }
 
     @SuppressWarnings("MethodLength")
+    /** REDIS_READ/WRITE_ATOMIC 模式：等所有 sentPromise 完成后 EXEC 并分发结果。 */
     private <R> RFuture<R> executeRedisBasedQueue() {
         CompletableFuture<R> resultPromise = new CompletableFuture<R>();
         long responseTimeout;
@@ -756,7 +776,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                                         if (resultIter.hasNext()) {
                                             promise.complete(resultIter.next());
                                         } else {
-                                            // fix for https://github.com/redisson/redisson/issues/2212
+                                            // 回复数少于命令数时用 null 填充，避免 Future 悬挂
                                             promise.complete(null);
                                         }
                                     }
@@ -805,6 +825,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         return new CompletableFutureWrapper<>(resultPromise);
     }
 
+    /** 是否使用 Redis 端 MULTI/EXEC 队列模式。 */
     protected boolean isRedisBasedQueue() {
         return options != null && (options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC 
                                     || options.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC);

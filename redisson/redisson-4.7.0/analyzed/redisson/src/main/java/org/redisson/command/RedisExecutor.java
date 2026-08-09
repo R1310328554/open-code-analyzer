@@ -55,28 +55,42 @@ import java.util.concurrent.*;
 import java.util.function.BiConsumer;
 
 /**
+ * 单条 Redis 命令的执行引擎：获取连接、发送、超时/重试、MOVED/ASK 重定向、
+ * 阻塞命令取消及结果解码。
+ * <p>由 {@link CommandAsyncService#async} 创建并 {@link #execute()}；
+ * 批量子类 {@link BaseRedisBatchExecutor} 覆写发送逻辑为入队。
  *
  * @author Nikita Koksharov
  *
- * @param <V> type of value
- * @param <R> type of returned value
+ * @param <V> Redis 协议回复值类型
+ * @param <R> 业务层期望的返回类型
  */
 @SuppressWarnings({"NestedIfDepth", "ParameterNumber"})
 public class RedisExecutor<V, R> {
 
+    /** 日志记录器。 */
     static final Logger log = LoggerFactory.getLogger(RedisExecutor.class);
 
+    /** true 时从读连接池取连接 */
     final boolean readOnlyMode;
+    /** Redis 命令定义（含解码器） */
     final RedisCommand<V> command;
+    /** 命令参数数组 */
     final Object[] params;
+    /** 业务层等待的结果 Future */
     final CompletableFuture<R> mainPromise;
+    /** 是否忽略 MOVED/ASK 自动重定向 */
     final boolean ignoreRedirect;
     final RedissonObjectBuilder objectBuilder;
+    /** 连接与集群拓扑管理 */
     final ConnectionManager connectionManager;
     final RedissonObjectBuilder.ReferenceType referenceType;
     final boolean noRetry;
+    /** 最大重试次数（含首次） */
     final int attempts;
+    /** 重试间隔计算策略 */
     final DelayStrategy retryStrategy;
+    /** 单次响应超时毫秒数 */
     final int responseTimeout;
     final boolean trackChanges;
     final ReadMode readMode;
@@ -87,10 +101,13 @@ public class RedisExecutor<V, R> {
     NodeSource source;
     MasterSlaveEntry entry;
     Codec codec;
+    /** 当前重试序号（从 0 开始） */
     volatile int attempt;
     volatile Optional<Timeout> timeout = Optional.empty();
     volatile BiConsumer<R, Throwable> mainPromiseListener;
+    /** Netty 写操作 Future */
     volatile ChannelFuture writeFuture;
+    /** 最近一次超时/写失败异常，供重试逻辑使用 */
     volatile RedisException exception;
 
     public RedisExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
@@ -119,6 +136,7 @@ public class RedisExecutor<V, R> {
         this.readMode = readMode;
     }
 
+    /** 命令执行主流程：校验 shutdown → 取连接 → 发送 → 注册超时与完成回调。 */
     public void execute() {
         if (mainPromise.isCancelled()) {
             free();
@@ -229,6 +247,7 @@ public class RedisExecutor<V, R> {
         }
     }
 
+    /** 连接获取超时：无重试间隔时在 responseTimeout 内必须拿到连接。 */
     private void scheduleConnectionTimeout(CompletableFuture<R> attemptPromise, CompletableFuture<RedisConnection> connectionFuture) {
         if (retryInterval > 0 && attempts > 0) {
             return;
@@ -251,6 +270,7 @@ public class RedisExecutor<V, R> {
         timeout = Optional.of(connectionManager.getServiceManager().newTimeout(task, responseTimeout, TimeUnit.MILLISECONDS));
     }
 
+    /** 写超时：命令在超时内必须写入 Netty Channel。 */
     private void scheduleWriteTimeout(CompletableFuture<R> attemptPromise) {
         if (retryInterval > 0 && attempts > 0) {
             return;
@@ -275,6 +295,7 @@ public class RedisExecutor<V, R> {
         timeout = Optional.of(connectionManager.getServiceManager().newTimeout(task, responseTimeout, TimeUnit.MILLISECONDS));
     }
 
+    /** 带重试间隔时周期性检查连接/写入进度，失败则递增 attempt 并重入 execute。 */
     private void scheduleRetryTimeout(CompletableFuture<RedisConnection> connectionFuture, CompletableFuture<R> attemptPromise) {
         if (retryInterval == 0 || attempts == 0) {
             return;
@@ -350,7 +371,7 @@ public class RedisExecutor<V, R> {
             }
 
             if (attempt == attempts) {
-                // filled out in connectionFuture or writeFuture handler
+                // 具体异常已在连接或写 Future 回调中赋值
                 if (exception != null) {
                     attemptPromise.completeExceptionally(exception);
                 }
@@ -433,6 +454,7 @@ public class RedisExecutor<V, R> {
         }
     }
 
+    /** 响应超时：阻塞命令会叠加 BLOCK 等待时间与额外 1 秒容错。 */
     private void scheduleResponseTimeout(CompletableFuture<R> attemptPromise, RedisConnection connection) {
         timeout.ifPresent(Timeout::cancel);
 
@@ -459,7 +481,7 @@ public class RedisExecutor<V, R> {
                 return;
             }
             timeoutTime += popTimeout;
-            // add 1 second due to issue https://github.com/antirez/redis/issues/874
+            // Redis 阻塞命令超时精度问题，额外加 1 秒
             timeoutTime += 1000;
         }
 
@@ -510,7 +532,7 @@ public class RedisExecutor<V, R> {
             return Collections.emptyMap();
         }
 
-        // BLMPOP and BZMPOP share their command name with list-returning
+        // BLMPOP/BZMPOP 与列表变体命令名相同，需用实例身份区分
         // sibling variants (BLMPOP_VALUES, BZMPOP_SINGLE_LIST, BZMPOP_ENTRIES),
         // so we must match on instance identity, not name.
         if (command == RedisCommands.BLMPOP || command == RedisCommands.BZMPOP) {
@@ -527,7 +549,7 @@ public class RedisExecutor<V, R> {
     private void handleBlockingOperations(CompletableFuture<R> attemptPromise, RedisConnection connection, long popTimeout) {
         Timeout scheduledFuture;
         if (popTimeout != 0) {
-            // handling cases when connection has been lost
+            // 连接丢失时阻塞命令在 popTimeout 后返回空结果并强制重连
             scheduledFuture = connectionManager.getServiceManager().newTimeout(timeout -> {
                 R res = (R) emptyBlockingResult(command);
                 if (attemptPromise.complete(res)) {
@@ -543,7 +565,7 @@ public class RedisExecutor<V, R> {
                 scheduledFuture.cancel();
             }
 
-            // handling cancel operation for blocking commands
+            // 取消阻塞命令时强制快速重连以打断 BLPOP 等
             if ((mainPromise.isCancelled()
                     || e instanceof  InterruptedException)
                         && !attemptPromise.isDone()) {
@@ -571,6 +593,7 @@ public class RedisExecutor<V, R> {
         }
     }
 
+    /** 单次 attempt 结束：处理重定向、LOADING 回退主节点、可重试异常及最终结果。 */
     protected void checkAttemptPromise(CompletableFuture<R> attemptFuture, CompletableFuture<RedisConnection> connectionFuture) {
         timeout.ifPresent(Timeout::cancel);
 
@@ -655,6 +678,7 @@ public class RedisExecutor<V, R> {
         }
     }
 
+    /** 解析 MOVED/ASK 目标地址并更新 NodeSource 后重试。 */
     private void handleRedirect(RedisRedirectException ex, CompletableFuture<RedisConnection> connectionFuture, Redirect reason) {
         onException();
 
@@ -717,6 +741,7 @@ public class RedisExecutor<V, R> {
         connectionFuture.join().getRedisClient().getConfig().getFailedNodeDetector().onCommandSuccessful();
     }
 
+    /** 发送单条或 ASKING+命令；小连接池下非阻塞命令发送后立即 release。 */
     protected void sendCommand(CompletableFuture<R> attemptPromise, RedisConnection connection) {
         if (source.getRedirect() == Redirect.ASK) {
             List<CommandData<?, ?>> list = new ArrayList<>(2);
@@ -803,6 +828,7 @@ public class RedisExecutor<V, R> {
 
     private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = new LRUCacheMap<>(100, 0, 0);
 
+    /** 按线程上下文 ClassLoader 缓存并克隆 Codec（Kryo 等需类加载器）。 */
     protected final Codec getCodec(Codec codec) {
         if (codec == null) {
             return null;
@@ -830,7 +856,7 @@ public class RedisExecutor<V, R> {
                     codecToUse = c.newInstance(threadClassLoader, codec);
                 } catch (NoSuchMethodException | InvocationTargetException e) {
                     codecToUse = codec;
-                    // skip
+                    // 无 (ClassLoader, Codec) 构造器则使用原 Codec
                 } catch (Exception e) {
                     throw new IllegalStateException(e);
                 }
@@ -858,7 +884,7 @@ public class RedisExecutor<V, R> {
 
     final CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, CompletableFuture<R> attemptPromise) {
         try {
-            // TODO make the method async
+            // TODO 后续改为完全异步解析 entry
             entry = getEntry(true);
         } catch (Exception e) {
             attemptPromise.completeExceptionally(e);
@@ -897,7 +923,7 @@ public class RedisExecutor<V, R> {
             f.completeExceptionally(connectionManager.getServiceManager().createNodeNotFoundException(source));
             return f;
         }
-        // fix for https://github.com/redisson/redisson/issues/1548
+        // ASK 重定向到从节点且该从属于当前 entry 时使用专用写连接
         if (source.getRedirect() != null
                 && !source.getAddr().equals(entry.getClient().getAddr())
                 && entry.hasSlave(source.getAddr())) {
