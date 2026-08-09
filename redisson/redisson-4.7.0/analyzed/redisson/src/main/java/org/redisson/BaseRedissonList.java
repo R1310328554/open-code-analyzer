@@ -40,14 +40,15 @@ import java.util.function.Predicate;
 import static org.redisson.client.protocol.RedisCommands.*;
 
 /**
- * Base list implementation
+ * Redis {@code LIST} 的抽象基类，为 {@link RedissonList} 等提供通用实现。
+ * <p>封装 LPUSH/RPUSH、LRANGE、LREM、BLPOP 等列表命令及监听器、MapReduce 入口。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public class BaseRedissonList<V> extends RedissonExpirable {
 
+    /** 关联 Redisson 客户端（MapReduce 等扩展用）。 */
     private RedissonClient redisson;
 
     BaseRedissonList(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
@@ -60,76 +61,94 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         this.redisson = redisson;
     }
 
+    /** 创建 MapReduce 任务入口。 */
     public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
         return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor);
     }
     
+    /** 返回列表/集合/过滤器当前元素数量。 */
     public int size() {
         return get(sizeAsync());
     }
 
+    /** 异步返回元素数量。 */
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.readAsync(getRawName(), codec, LLEN_INT, getRawName());
     }
 
+    /** 是否为空。 */
     public boolean isEmpty() {
         return size() == 0;
     }
 
+    /** 布隆过滤器是否可能包含元素。 */
     public boolean contains(Object o) {
         return get(containsAsync(o));
     }
 
+    /** 列表/数组 iterator 操作。 */
     public Iterator<V> iterator() {
         return listIterator();
     }
 
+    /** 列表/数组 toArray 操作。 */
     public Object[] toArray() {
         List<V> list = readAll();
         return list.toArray();
     }
 
+    /** 列表/数组 readAll 操作。 */
     public List<V> readAll() {
         return get(readAllAsync());
     }
 
+    /** 异步执行 readAll。 */
     public RFuture<List<V>> readAllAsync() {
         return commandExecutor.readAsync(getRawName(), codec, LRANGE, getRawName(), 0, -1);
     }
 
+    /** 列表/数组 toArray 操作。 */
     public <T> T[] toArray(T[] a) {
         List<V> list = readAll();
         return list.toArray(a);
     }
 
+    /** 向布隆过滤器添加元素。 */
     public boolean add(V e) {
         return get(addAsync(e));
     }
 
+    /** 异步执行 add。 */
     public RFuture<Boolean> addAsync(V e) {
         return addAsync(e, RPUSH_BOOLEAN);
     }
     
+    /** 异步执行 add。 */
     protected <T> RFuture<T> addAsync(V e, RedisCommand<T> command) {
         return commandExecutor.writeAsync(getRawName(), codec, command, getRawName(), encode(e));
     }
 
+    /** 移除键或元素。 */
     public boolean remove(Object o) {
         return get(removeAsync(o));
     }
 
+    /** 异步执行 remove。 */
     public RFuture<Boolean> removeAsync(Object o) {
         return removeAsync(o, 1);
     }
 
+    /** 异步执行 remove。 */
     public RFuture<Boolean> removeAsync(Object o, int count) {
         return commandExecutor.writeAsync(getRawName(), codec, LREM, getRawName(), count, encode(o));
     }
 
+    /** 移除键或元素。 */
     public boolean remove(Object o, int count) {
         return get(removeAsync(o, count));
     }
 
+    /** 异步执行 containsAll。 */
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
             return new CompletableFutureWrapper<>(true);
@@ -148,14 +167,17 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Collections.<Object>singletonList(getRawName()), encode(c).toArray());
     }
 
+    /** 列表/数组 containsAll 操作。 */
     public boolean containsAll(Collection<?> c) {
         return get(containsAllAsync(c));
     }
 
+    /** 批量添加元素。 */
     public boolean addAll(Collection<? extends V> c) {
         return get(addAllAsync(c));
     }
 
+    /** 异步执行 addAll。 */
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return new CompletableFutureWrapper<>(false);
@@ -167,6 +189,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return commandExecutor.writeAsync(getRawName(), codec, RPUSH_BOOLEAN, args.toArray());
     }
 
+    /** 异步执行 addAll。 */
     public RFuture<Boolean> addAllAsync(int index, Collection<? extends V> coll) {
         if (index < 0) {
             throw new IndexOutOfBoundsException("index: " + index);
@@ -207,10 +230,12 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Collections.<Object>singletonList(getRawName()), args.toArray());
     }
 
+    /** 批量添加元素。 */
     public boolean addAll(int index, Collection<? extends V> coll) {
         return get(addAllAsync(index, coll));
     }
 
+    /** 异步执行 removeAll。 */
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
             return new CompletableFutureWrapper<>(false);
@@ -226,14 +251,17 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Collections.<Object>singletonList(getRawName()), encode(c).toArray());
     }
 
+    /** removeAll：移除操作。 */
     public boolean removeAll(Collection<?> c) {
         return get(removeAllAsync(c));
     }
 
+    /** 列表/数组 retainAll 操作。 */
     public boolean retainAll(Collection<?> c) {
         return get(retainAllAsync(c));
     }
 
+    /** 异步执行 retainAll。 */
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
             return deleteAsync();
@@ -263,23 +291,28 @@ public class BaseRedissonList<V> extends RedissonExpirable {
     }
 
 
+    /** 清空全部元素。 */
     public void clear() {
         delete();
     }
 
+    /** 异步获取  对象或执行  操作。 */
     public RFuture<V> getAsync(int index) {
         return commandExecutor.readAsync(getRawName(), codec, LINDEX, getRawName(), index);
     }
     
+    /** 返回底层 Native MapCache 实例。 */
     public List<V> get(int... indexes) {
         return get(getAsync(indexes));
     }
 
+    /** 列表/数组 distributedIterator 操作。 */
     public Iterator<V> distributedIterator(final int count) {
         String iteratorName = "__redisson_list_cursor_{" + getRawName() + "}";
         return distributedIterator(iteratorName, count);
     }
 
+    /** 列表/数组 distributedIterator 操作。 */
     public Iterator<V> distributedIterator(final String iteratorName, final int count) {
         return new RedissonBaseIterator<V>() {
 
@@ -295,10 +328,12 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         };
     }
 
+    /** 列表/数组 distributedScanIterator 操作。 */
     private ScanResult<Object> distributedScanIterator(String iteratorName, int count) {
         return get(distributedScanIteratorAsync(iteratorName, count));
     }
 
+    /** 异步执行 distributedScanIterator。 */
     private RFuture<ScanResult<Object>> distributedScanIteratorAsync(String iteratorName, int count) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SCAN,
                 "local start_index = redis.call('get', KEYS[2]); "
@@ -321,6 +356,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Arrays.asList(getRawName(), iteratorName), count);
     }
 
+    /** 异步获取  对象或执行  操作。 */
     public RFuture<List<V>> getAsync(int... indexes) {
         List<Integer> params = new ArrayList<Integer>();
         for (Integer index : indexes) {
@@ -337,6 +373,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
     }
 
 
+    /** 返回底层 Native MapCache 实例。 */
     public V get(int index) {
         return getValue(index);
     }
@@ -345,6 +382,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return get(getAsync(index));
     }
 
+    /** 按索引或键写入元素/值。 */
     public V set(int index, V element) {
         try {
             return get(setAsync(index, element));
@@ -356,6 +394,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         }
     }
 
+    /** 设置Async。 */
     public RFuture<V> setAsync(int index, V element) {
         RFuture<V> future = commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
@@ -374,26 +413,32 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 列表/数组 fastSet 操作。 */
     public void fastSet(int index, V element) {
         get(fastSetAsync(index, element));
     }
 
+    /** 异步执行 fastSet。 */
     public RFuture<Void> fastSetAsync(int index, V element) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LSET, getRawName(), index, encode(element));
     }
 
+    /** 向布隆过滤器添加元素。 */
     public void add(int index, V element) {
         addAll(index, Collections.singleton(element));
     }
     
+    /** 异步执行 add。 */
     public RFuture<Boolean> addAsync(int index, V element) {
         return addAllAsync(index, Collections.singleton(element));
     }
     
+    /** 移除键或元素。 */
     public V remove(int index) {
         return get(removeAsync(index));
     }
     
+    /** 异步执行 remove。 */
     public RFuture<V> removeAsync(int index) {
         if (index == 0) {
             return commandExecutor.writeAsync(getRawName(), codec, LPOP, getRawName());
@@ -408,10 +453,12 @@ public class BaseRedissonList<V> extends RedissonExpirable {
     }
 
     
+    /** 列表/数组 fastRemove 操作。 */
     public void fastRemove(int index) {
         get(fastRemoveAsync(index));
     }
     
+    /** 异步执行 fastRemove。 */
     public RFuture<Void> fastRemoveAsync(int index) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                 "redis.call('lset', KEYS[1], ARGV[1], 'DELETED_BY_REDISSON');" +
@@ -419,14 +466,17 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Collections.<Object>singletonList(getRawName()), index);
     }
     
+    /** 列表/数组 indexOf 操作。 */
     public int indexOf(Object o) {
         return get(indexOfAsync(o));
     }
 
+    /** 异步执行 contains。 */
     public RFuture<Boolean> containsAsync(Object o) {
         return indexOfAsync(o, new BooleanNumberReplayConvertor(-1L));
     }
 
+    /** 异步执行 indexOf。 */
     public <R> RFuture<R> indexOfAsync(Object o, Convertor<R> convertor) {
         return commandExecutor.evalReadAsync(getRawName(), codec, new RedisCommand<R>("EVAL", convertor),
                 "local key = KEYS[1] " +
@@ -441,14 +491,17 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Collections.<Object>singletonList(getRawName()), encode(o));
     }
 
+    /** 异步执行 indexOf。 */
     public RFuture<Integer> indexOfAsync(Object o) {
         return indexOfAsync(o, new IntegerReplayConvertor());
     }
 
+    /** 列表/数组 lastIndexOf 操作。 */
     public int lastIndexOf(Object o) {
         return get(lastIndexOfAsync(o));
     }
 
+    /** 异步执行 lastIndexOf。 */
     public RFuture<Integer> lastIndexOfAsync(Object o) {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "local key = KEYS[1] " +
@@ -463,6 +516,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Collections.<Object>singletonList(getRawName()), encode(o));
     }
     
+    /** 异步执行 lastIndexOf。 */
     public <R> RFuture<R> lastIndexOfAsync(Object o, Convertor<R> convertor) {
         return commandExecutor.evalReadAsync(getRawName(), codec, new RedisCommand<R>("EVAL", convertor),
                 "local key = KEYS[1] " +
@@ -477,18 +531,22 @@ public class BaseRedissonList<V> extends RedissonExpirable {
                 Collections.<Object>singletonList(getRawName()), encode(o));
     }
 
+    /** 列表/数组 trim 操作。 */
     public void trim(int fromIndex, int toIndex) {
         get(trimAsync(fromIndex, toIndex));
     }
 
+    /** 异步执行 trim。 */
     public RFuture<Void> trimAsync(int fromIndex, int toIndex) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LTRIM, getRawName(), fromIndex, toIndex);
     }
 
+    /** 列表/数组 listIterator 操作。 */
     public ListIterator<V> listIterator() {
         return listIterator(0);
     }
 
+    /** 列表/数组 listIterator 操作。 */
     public ListIterator<V> listIterator(int ind) {
         return new RedissonListIterator<V>(ind) {
 
@@ -514,6 +572,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         };
     }
 
+    /** 列表/数组 subList 操作。 */
     public RList<V> subList(int fromIndex, int toIndex) {
         int size = size();
         if (fromIndex < 0 || toIndex > size) {
@@ -528,6 +587,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
 
     @Override
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 列表/数组 toString 操作。 */
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -546,6 +606,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
 
     @Override
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 列表/数组 equals 操作。 */
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -565,6 +626,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
 
     @Override
     @SuppressWarnings("AvoidInlineConditionals")
+    /** 列表/数组 hashCode 操作。 */
     public int hashCode() {
         int hashCode = 1;
         Iterable<V> ii = () -> iterator();
@@ -574,162 +636,202 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return hashCode;
     }
 
+    /** 异步执行 addAfter。 */
     public RFuture<Integer> addAfterAsync(V elementToFind, V element) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LINSERT_INT, getRawName(), "AFTER", encode(elementToFind), encode(element));
     }
 
+    /** 异步执行 addBefore。 */
     public RFuture<Integer> addBeforeAsync(V elementToFind, V element) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LINSERT_INT, getRawName(), "BEFORE", encode(elementToFind), encode(element));
     }
 
+    /** addAfter：添加操作。 */
     public int addAfter(V elementToFind, V element) {
         return get(addAfterAsync(elementToFind, element));
     }
 
+    /** addBefore：添加操作。 */
     public int addBefore(V elementToFind, V element) {
         return get(addBeforeAsync(elementToFind, element));
     }
 
+    /** 列表/数组 readSort 操作。 */
     public List<V> readSort(SortOrder order) {
         return get(readSortAsync(order));
     }
     
+    /** 异步执行 readSort。 */
     public RFuture<List<V>> readSortAsync(SortOrder order) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), order);
     }
 
+    /** 列表/数组 readSort 操作。 */
     public List<V> readSort(SortOrder order, int offset, int count) {
         return get(readSortAsync(order, offset, count));
     }
     
+    /** 异步执行 readSort。 */
     public RFuture<List<V>> readSortAsync(SortOrder order, int offset, int count) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), "LIMIT", offset, count, order);
     }
 
+    /** 列表/数组 readSort 操作。 */
     public List<V> readSort(String byPattern, SortOrder order) {
         return get(readSortAsync(byPattern, order));
     }
     
+    /** 异步执行 readSort。 */
     public RFuture<List<V>> readSortAsync(String byPattern, SortOrder order) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), "BY", byPattern, order);
     }
     
+    /** 列表/数组 readSort 操作。 */
     public List<V> readSort(String byPattern, SortOrder order, int offset, int count) {
         return get(readSortAsync(byPattern, order, offset, count));
     }
     
+    /** 异步执行 readSort。 */
     public RFuture<List<V>> readSortAsync(String byPattern, SortOrder order, int offset, int count) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), "BY", byPattern, "LIMIT", offset, count, order);
     }
 
+    /** 列表/数组 readSort 操作。 */
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
         return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order));
     }
     
+    /** 异步执行 readSort。 */
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order) {
         return readSortAsync(byPattern, getPatterns, order, -1, -1);
     }
 
+    /** 列表/数组 readSort 操作。 */
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
+    /** 异步执行 readSort。 */
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return readSortAsync(byPattern, getPatterns, order, offset, count, false);
     }
 
+    /** 列表/数组 readSortAlpha 操作。 */
     public List<V> readSortAlpha(SortOrder order) {
         return get(readSortAlphaAsync(order));
     }
 
+    /** 异步执行 readSortAlpha。 */
     public RFuture<List<V>> readSortAlphaAsync(SortOrder order) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), "ALPHA", order);
     }
 
+    /** 列表/数组 readSortAlpha 操作。 */
     public List<V> readSortAlpha(SortOrder order, int offset, int count) {
         return get(readSortAlphaAsync(order, offset, count));
     }
 
+    /** 异步执行 readSortAlpha。 */
     public RFuture<List<V>> readSortAlphaAsync(SortOrder order, int offset, int count) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), "LIMIT", offset, count, "ALPHA", order);
     }
 
+    /** 列表/数组 readSortAlpha 操作。 */
     public List<V> readSortAlpha(String byPattern, SortOrder order) {
         return get(readSortAlphaAsync(byPattern, order));
     }
 
+    /** 异步执行 readSortAlpha。 */
     public RFuture<List<V>> readSortAlphaAsync(String byPattern, SortOrder order) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), "BY", byPattern, "ALPHA", order);
     }
 
+    /** 列表/数组 readSortAlpha 操作。 */
     public List<V> readSortAlpha(String byPattern, SortOrder order, int offset, int count) {
         return get(readSortAlphaAsync(byPattern, order, offset, count));
     }
 
+    /** 异步执行 readSortAlpha。 */
     public RFuture<List<V>> readSortAlphaAsync(String byPattern, SortOrder order, int offset, int count) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, getRawName(), "BY", byPattern, "LIMIT", offset, count, "ALPHA", order);
     }
 
+    /** 列表/数组 readSortAlpha 操作。 */
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
         return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
+    /** 异步执行 readSortAlpha。 */
     public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order) {
         return readSortAlphaAsync(byPattern, getPatterns, order, -1, -1);
     }
 
+    /** 列表/数组 readSortAlpha 操作。 */
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
+    /** 异步执行 readSortAlpha。 */
     public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return readSortAsync(byPattern, getPatterns, order, offset, count, true);
     }
 
+    /** 列表/数组 sortTo 操作。 */
     public int sortTo(String destName, SortOrder order) {
         return get(sortToAsync(destName, order));
     }
     
+    /** 异步执行 sortTo。 */
     public RFuture<Integer> sortToAsync(String destName, SortOrder order) {
         return sortToAsync(destName, null, Collections.<String>emptyList(), order, -1, -1);
     }
     
+    /** 列表/数组 sortTo 操作。 */
     public int sortTo(String destName, SortOrder order, int offset, int count) {
         return get(sortToAsync(destName, order, offset, count));
     }
     
+    /** 异步执行 sortTo。 */
     public RFuture<Integer> sortToAsync(String destName, SortOrder order, int offset, int count) {
         return sortToAsync(destName, null, Collections.<String>emptyList(), order, offset, count);
     }
 
+    /** 列表/数组 sortTo 操作。 */
     public int sortTo(String destName, String byPattern, SortOrder order, int offset, int count) {
         return get(sortToAsync(destName, byPattern, order, offset, count));
     }
     
+    /** 列表/数组 sortTo 操作。 */
     public int sortTo(String destName, String byPattern, SortOrder order) {
         return get(sortToAsync(destName, byPattern, order));
     }
 
+    /** 异步执行 sortTo。 */
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order) {
         return sortToAsync(destName, byPattern, Collections.<String>emptyList(), order, -1, -1);
     }
 
+    /** 异步执行 sortTo。 */
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order, int offset, int count) {
         return sortToAsync(destName, byPattern, Collections.<String>emptyList(), order, offset, count);
     }
 
+    /** 列表/数组 sortTo 操作。 */
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return get(sortToAsync(destName, byPattern, getPatterns, order));
     }
     
+    /** 异步执行 sortTo。 */
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return sortToAsync(destName, byPattern, getPatterns, order, -1, -1);
     }
     
+    /** 列表/数组 sortTo 操作。 */
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         return get(sortToAsync(destName, byPattern, getPatterns, order, offset, count));
     }
 
+    /** 异步执行 sortTo。 */
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
@@ -757,6 +859,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SORT_TO, params.toArray());
     }
 
+    /** 异步执行 readSort。 */
     private <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
         List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
@@ -789,22 +892,27 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SORT_LIST, params.toArray());
     }
 
+    /** 异步执行 range。 */
     public RFuture<List<V>> rangeAsync(int toIndex) {
         return rangeAsync(0, toIndex);
     }
 
+    /** 异步执行 range。 */
     public RFuture<List<V>> rangeAsync(int fromIndex, int toIndex) {
         return commandExecutor.readAsync(getRawName(), codec, LRANGE, getRawName(), fromIndex, toIndex);
     }
 
+    /** 列表/数组 range 操作。 */
     public List<V> range(int toIndex) {
         return get(rangeAsync(toIndex));
     }
 
+    /** 列表/数组 range 操作。 */
     public List<V> range(int fromIndex, int toIndex) {
         return get(rangeAsync(fromIndex, toIndex));
     }
 
+    /** addListener：添加操作。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof ListAddListener) {
@@ -829,6 +937,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof ListAddListener) {
@@ -853,6 +962,7 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         return super.addListenerAsync(listener);
     }
 
+    /** removeListener：移除操作。 */
     @Override
     public void removeListener(int listenerId) {
         removeTrackingListener(listenerId);
@@ -861,12 +971,14 @@ public class BaseRedissonList<V> extends RedissonExpirable {
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(removeTrackingListenerAsync(listenerId), listenerId,
                 "__keyevent@*:rpush", "__keyevent@*:lrem", "__keyevent@*:ltrim", "__keyevent@*:lset", "__keyevent@*:linsert");
     }
 
+    /** removeIf：移除操作。 */
     public boolean removeIf(Predicate<? super V> filter) {
         throw new UnsupportedOperationException();
     }

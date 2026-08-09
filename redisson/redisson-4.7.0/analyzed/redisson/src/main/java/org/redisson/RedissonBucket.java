@@ -55,11 +55,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         this.name = name;
     }
 
+    /** CAS 原子更新值。 */
     @Override
     public boolean compareAndSet(V expect, V update) {
         return get(compareAndSetAsync(expect, update));
     }
 
+    /** 异步执行 compareAndSet。 */
     @Override
     public RFuture<Boolean> compareAndSetAsync(V expect, V update) {
         if (expect == null && update == null) {
@@ -89,11 +91,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
                 Collections.singletonList(getRawName()), encode(expect), encode(update));
     }
 
+    /** 设置新值并返回旧值。 */
     @Override
     public V getAndSet(V newValue) {
         return get(getAndSetAsync(newValue));
     }
 
+    /** 异步获取 AndSet 对象或执行 AndSet 操作。 */
     @Override
     public RFuture<V> getAndSetAsync(V newValue) {
         if (newValue == null) {
@@ -107,51 +111,61 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETSET, getRawName(), encode(newValue));
     }
 
+    /** 获取 AndExpire。 */
     @Override
     public V getAndExpire(Instant time) {
         return get(getAndExpireAsync(time));
     }
 
+    /** 异步获取 AndExpire 对象或执行 AndExpire 操作。 */
     @Override
     public RFuture<V> getAndExpireAsync(Instant time) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PXAT", time.toEpochMilli());
     }
 
+    /** 获取 AndExpire。 */
     @Override
     public V getAndExpire(Duration duration) {
         return get(getAndExpireAsync(duration));
     }
 
+    /** 异步获取 AndExpire 对象或执行 AndExpire 操作。 */
     @Override
     public RFuture<V> getAndExpireAsync(Duration duration) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PX", duration.toMillis());
     }
 
+    /** 获取 AndClearExpire。 */
     @Override
     public V getAndClearExpire() {
         return get(getAndClearExpireAsync());
     }
 
+    /** 异步获取 AndClearExpire 对象或执行 AndClearExpire 操作。 */
     @Override
     public RFuture<V> getAndClearExpireAsync() {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GETEX, getRawName(), "PERSIST");
     }
 
+    /** 返回底层 Native MapCache 实例。 */
     @Override
     public V get() {
         return get(getAsync());
     }
 
+    /** 异步获取  对象或执行  操作。 */
     @Override
     public RFuture<V> getAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.GET, getRawName());
     }
     
+    /** 获取 AndDelete。 */
     @Override
     public V getAndDelete() {
         return get(getAndDeleteAsync());
     }
     
+    /** 异步获取 AndDelete 对象或执行 AndDelete 操作。 */
     @Override
     public RFuture<V> getAndDeleteAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
@@ -161,21 +175,25 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
                 Collections.singletonList(getRawName()));
     }
     
+    /** 返回列表/集合/过滤器当前元素数量。 */
     @Override
     public long size() {
         return get(sizeAsync());
     }
     
+    /** 异步返回元素数量。 */
     @Override
     public RFuture<Long> sizeAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.STRLEN, getRawName());
     }
 
+    /** 按索引或键写入元素/值。 */
     @Override
     public void set(V value) {
         get(setAsync(value));
     }
 
+    /** 设置Async。 */
     @Override
     public RFuture<Void> setAsync(V value) {
         if (value == null) {
@@ -185,11 +203,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET, getRawName(), encode(value));
     }
 
+    /** 按索引或键写入元素/值。 */
     @Override
     public void set(V value, long timeToLive, TimeUnit timeUnit) {
         get(setAsync(value, timeToLive, timeUnit));
     }
 
+    /** 设置Async。 */
     @Override
     public RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
         if (value == null) {
@@ -199,11 +219,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.PSETEX, getRawName(), timeUnit.toMillis(timeToLive), encode(value));
     }
 
+    /** 按索引或键写入元素/值。 */
     @Override
     public void set(V value, Duration duration) {
         get(setAsync(value, duration));
     }
 
+    /** 设置Async。 */
     @Override
     public RFuture<Void> setAsync(V value, Duration duration) {
         if (value == null) {
@@ -213,6 +235,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.PSETEX, getRawName(), duration.toMillis(), encode(value));
     }
 
+    /** 异步执行 trySet。 */
     @Override
     public RFuture<Boolean> trySetAsync(V value) {
         if (value == null) {
@@ -222,6 +245,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SETNX, getRawName(), encode(value));
     }
 
+    /** 异步执行 trySet。 */
     @Override
     public RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
         if (value == null) {
@@ -230,26 +254,31 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", timeUnit.toMillis(timeToLive), "NX");
     }
 
+    /** 仅当键不存在时写入。 */
     @Override
     public boolean trySet(V value, long timeToLive, TimeUnit timeUnit) {
         return get(trySetAsync(value, timeToLive, timeUnit));
     }
 
+    /** 仅当键不存在时写入。 */
     @Override
     public boolean trySet(V value) {
         return get(trySetAsync(value));
     }
 
+    /** 设置IfAbsent。 */
     @Override
     public boolean setIfAbsent(V value) {
         return get(setIfAbsentAsync(value));
     }
 
+    /** 设置IfAbsent。 */
     @Override
     public boolean setIfAbsent(V value, Duration duration) {
         return get(setIfAbsentAsync(value, duration));
     }
 
+    /** 设置IfAbsentAsync。 */
     @Override
     public RFuture<Boolean> setIfAbsentAsync(V value) {
         if (value == null) {
@@ -259,6 +288,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SETNX, getRawName(), encode(value));
     }
 
+    /** 设置IfAbsentAsync。 */
     @Override
     public RFuture<Boolean> setIfAbsentAsync(V value, Duration duration) {
         if (value == null) {
@@ -267,11 +297,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", duration.toMillis(), "NX");
     }
 
+    /** 设置IfExists。 */
     @Override
     public boolean setIfExists(V value) {
         return get(setIfExistsAsync(value));
     }
 
+    /** 设置IfExistsAsync。 */
     @Override
     public RFuture<Boolean> setIfExistsAsync(V value) {
         if (value == null) {
@@ -288,11 +320,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "XX");
     }
 
+    /** 设置AndKeepTTL。 */
     @Override
     public void setAndKeepTTL(V value) {
         get(setAndKeepTTLAsync(value));
     }
 
+    /** 设置AndKeepTTLAsync。 */
     @Override
     public RFuture<Void> setAndKeepTTLAsync(V value) {
         if (value == null) {
@@ -302,11 +336,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET, getRawName(), encode(value), "KEEPTTL");
     }
 
+    /** 设置IfExists。 */
     @Override
     public boolean setIfExists(V value, long timeToLive, TimeUnit timeUnit) {
         return get(setIfExistsAsync(value, timeToLive, timeUnit));
     }
 
+    /** 设置IfExistsAsync。 */
     @Override
     public RFuture<Boolean> setIfExistsAsync(V value, long timeToLive, TimeUnit timeUnit) {
         if (value == null) {
@@ -316,11 +352,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", timeUnit.toMillis(timeToLive), "XX");
     }
 
+    /** 设置IfExists。 */
     @Override
     public boolean setIfExists(V value, Duration duration) {
         return get(setIfExistsAsync(value, duration));
     }
 
+    /** 设置IfExistsAsync。 */
     @Override
     public RFuture<Boolean> setIfExistsAsync(V value, Duration duration) {
         if (value == null) {
@@ -330,11 +368,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET_BOOLEAN, getRawName(), encode(value), "PX", duration.toMillis(), "XX");
     }
 
+    /** 设置新值并返回旧值。 */
     @Override
     public V getAndSet(V value, Duration duration) {
         return get(getAndSetAsync(value, duration));
     }
 
+    /** 异步获取 AndSet 对象或执行 AndSet 操作。 */
     @Override
     public RFuture<V> getAndSetAsync(V value, Duration duration) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
@@ -345,6 +385,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
              encode(value), duration.toMillis());
     }
 
+    /** 异步获取 AndSet 对象或执行 AndSet 操作。 */
     @Override
     public RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
@@ -355,11 +396,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
              encode(value), timeUnit.toMillis(timeToLive));
     }
 
+    /** 设置新值并返回旧值。 */
     @Override
     public V getAndSet(V value, long timeToLive, TimeUnit timeUnit) {
         return get(getAndSetAsync(value, timeToLive, timeUnit));
     }
 
+    /** addListener：添加操作。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof SetObjectListener) {
@@ -372,6 +415,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof SetObjectListener) {
@@ -384,6 +428,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return super.addListenerAsync(listener);
     }
 
+    /** removeListener：移除操作。 */
     @Override
     public void removeListener(int listenerId) {
         removeTrackingListener(listenerId);
@@ -391,46 +436,55 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(removeTrackingListenerAsync(listenerId), listenerId, "__keyevent@*:set");
     }
 
+    /** Bucket findCommon 操作。 */
     @Override
     public V findCommon(String name) {
         return get(findCommonAsync(name));
     }
 
+    /** 异步执行 findCommon。 */
     @Override
     public RFuture<V> findCommonAsync(String name) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LCS, getRawName(), mapName(name), "MINMATCHLEN", 30);
     }
 
+    /** Bucket findCommonLength 操作。 */
     @Override
     public long findCommonLength(String name) {
         return get(findCommonLengthAsync(name));
     }
 
+    /** 异步执行 findCommonLength。 */
     @Override
     public RFuture<Long> findCommonLengthAsync(String name) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LCS, getRawName(), mapName(name), "LEN");
     }
 
+    /** 获取 Digest。 */
     @Override
     public String getDigest() {
         return get(getDigestAsync());
     }
 
+    /** 异步获取 Digest 对象或执行 Digest 操作。 */
     @Override
     public RFuture<String> getDigestAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DIGEST, getRawName());
     }
 
+    /** CAS 原子更新值。 */
     @Override
     public boolean compareAndSet(CompareAndSetArgs<V> args) {
         return get(compareAndSetAsync(args));
     }
 
+    /** 异步执行 compareAndSet。 */
     @Override
     public RFuture<Boolean> compareAndSetAsync(CompareAndSetArgs<V> args) {
         CompareAndSetParams<V> params = (CompareAndSetParams<V>) args;
@@ -454,6 +508,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         }
     }
 
+    /** 异步执行 compareAndSet。 */
     private RFuture<Boolean> compareAndSetAsync(CompareAndSetParams<V> args, V value, String cond) {
         List<Object> params = new ArrayList<>();
         if (value == null) {
@@ -491,6 +546,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
                 params.toArray());
     }
 
+    /** 异步执行 compareAndSetDigest。 */
     private RFuture<Boolean> compareAndSetDigestAsync(CompareAndSetParams<V> args, String value, String command) {
         V newValue = args.getNewValue();
 
@@ -511,11 +567,13 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SET_BOOLEAN, params.toArray());
     }
 
+    /** Bucket compareAndDelete 操作。 */
     @Override
     public boolean compareAndDelete(CompareAndDeleteArgs<V> args) {
         return get(compareAndDeleteAsync(args));
     }
 
+    /** 异步执行 compareAndDelete。 */
     @Override
     public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs<V> args) {
         CompareAndDeleteParams<V> params = (CompareAndDeleteParams<V>) args;
@@ -538,6 +596,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         }
     }
 
+    /** 异步执行 compareAndDeleteExpected。 */
     private RFuture<Boolean> compareAndDeleteExpectedAsync(V expected) {
         String script =
                 "local currValue = redis.call('get', KEYS[1]) " +
@@ -551,6 +610,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
                 Collections.singletonList(getName()), encode(expected));
     }
 
+    /** 异步执行 compareAndDeleteUnexpected。 */
     private RFuture<Boolean> compareAndDeleteUnexpectedAsync(V unexpected) {
         String script =
                 "local currValue = redis.call('get', KEYS[1]) " +

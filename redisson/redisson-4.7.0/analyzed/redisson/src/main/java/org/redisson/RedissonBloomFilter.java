@@ -50,18 +50,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Bloom filter based on Highway 128-bit hash.
+ * 基于 Highway 128 位哈希的 {@link RBloomFilter} 布隆过滤器实现。
+ * <p>支持预期元素数与误判率配置，底层使用 Redis 位图存储。
  *
  * @author Nikita Koksharov
- *
- * @param <T> type of object
+ * @param <T> 元素类型
  */
 public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomFilter<T> {
 
+    /** 布隆过滤器预期元素容量。 */
     volatile long size;
+    /** 布隆过滤器哈希迭代次数。 */
     volatile int hashIterations;
 
     final CommandAsyncExecutor commandExecutor;
+    /** 存储布隆过滤器配置的 Redis 键后缀。 */
     String configName;
 
     protected RedissonBloomFilter(CommandAsyncExecutor commandExecutor, String name) {
@@ -76,10 +79,12 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         this.configName = suffixName(getRawName(), "config");
     }
 
+    /** 布隆过滤器 optimalNumOfHashFunctions 操作。 */
     private int optimalNumOfHashFunctions(long n, long m) {
         return Math.max(1, (int) Math.round((double) m / n * Math.log(2)));
       }
 
+    /** 布隆过滤器 optimalNumOfBits 操作。 */
     private long optimalNumOfBits(long n, double p) {
         if (p == 0) {
             p = Double.MIN_VALUE;
@@ -87,6 +92,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return (long) (-n * Math.log(p) / (Math.log(2) * Math.log(2)));
     }
     
+    /** 布隆过滤器 hash 操作。 */
     private long[] hash(Object object) {
         ByteBuf state = encode(object);
         try {
@@ -96,17 +102,20 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         }
     }
 
+    /** 向布隆过滤器添加元素。 */
     @Override
     public boolean add(T object) {
         return add(Collections.singletonList(object)) > 0;
     }
 
+    /** 异步执行 add。 */
     @Override
     public RFuture<Boolean> addAsync(T object) {
         CompletionStage<Boolean> f = addAsync(Collections.singletonList(object)).thenApply(r -> r > 0);
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 add。 */
     @Override
     public RFuture<Long> addAsync(Collection<T> objects) {
         CompletionStage<Void> future = CompletableFuture.completedFuture(null);
@@ -151,11 +160,13 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 向布隆过滤器添加元素。 */
     @Override
     public long add(Collection<T> objects) {
         return get(addAsync(objects));
     }
 
+    /** 布隆过滤器 hash 操作。 */
     private long[] hash(long hash1, long hash2, int iterations, long size) {
         long[] indexes = new long[iterations];
         long hash = hash1;
@@ -170,6 +181,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return indexes;
     }
 
+    /** 异步执行 contains。 */
     @Override
     public RFuture<Long> containsAsync(Collection<T> objects) {
         CompletionStage<Long> f = CompletableFuture.completedFuture(null);
@@ -223,16 +235,19 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 布隆过滤器是否可能包含元素。 */
     @Override
     public long contains(Collection<T> objects) {
         return get(containsAsync(objects));
     }
 
+    /** 布隆过滤器 exists 操作。 */
     @Override
     public Set<T> exists(Collection<T> elements) {
         return get(existsAsync(elements));
     }
 
+    /** 异步执行 exists。 */
     @Override
     public RFuture<Set<T>> existsAsync(Collection<T> elements) {
         if (elements == null || elements.isEmpty()) {
@@ -306,22 +321,26 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return allIndexes;
     }
 
+    /** 布隆过滤器是否可能包含元素。 */
     @Override
     public boolean contains(T object) {
         return contains(Collections.singletonList(object)) > 0;
     }
 
+    /** 异步执行 contains。 */
     @Override
     public RFuture<Boolean> containsAsync(T object) {
         CompletionStage<Boolean> f = containsAsync(Collections.singletonList(object)).thenApply(r -> r > 0);
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 统计可能包含的元素数量。 */
     @Override
     public long count() {
         return get(countAsync());
     }
 
+    /** 异步执行 count。 */
     @Override
     public RFuture<Long> countAsync() {
         CompletionStage<Void> f = readConfigAsync();
@@ -334,11 +353,13 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return new CompletableFutureWrapper<>(res);
     }
 
+    /** 异步执行 delete。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), configName);
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         String newName = (String) keys.get(1);
@@ -347,6 +368,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return super.copyAsync(kks, database, replace);
     }
 
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.asList(getRawName(), configName);
@@ -361,6 +383,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         });
     }
 
+    /** 布隆过滤器 readConfig 操作。 */
     private void readConfig(Map<String, String> config) {
         if (config.get("hashIterations") == null
                 || config.get("size") == null) {
@@ -370,15 +393,18 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         hashIterations = Integer.parseInt(config.get("hashIterations"));
     }
 
+    /** 获取 MaxSize。 */
     protected long getMaxSize() {
         return Integer.MAX_VALUE*2L;
     }
     
+    /** 初始化布隆过滤器容量与误判率。 */
     @Override
     public boolean tryInit(long expectedInsertions, double falseProbability) {
         return get(tryInitAsync(expectedInsertions, falseProbability));
     }
 
+    /** 异步执行 tryInit。 */
     @Override
     public RFuture<Boolean> tryInitAsync(long expectedInsertions, double falseProbability) {
         if (falseProbability > 1) {
@@ -412,31 +438,37 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return super.expireAsync(timeToLive, timeUnit, param, getRawName(), configName);
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), configName);
     }
 
+    /** 异步执行 clearExpire。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return clearExpireAsync(getRawName(), configName);
     }
     
+    /** 返回预期插入元素数。 */
     @Override
     public long getExpectedInsertions() {
         return get(getExpectedInsertionsAsync());
     }
 
+    /** 异步获取 ExpectedInsertions 对象或执行 ExpectedInsertions 操作。 */
     @Override
     public RFuture<Long> getExpectedInsertionsAsync() {
         return readSettingAsync(RedisCommands.EVAL_LONG, LongCodec.INSTANCE, "expectedInsertions");
     }
 
+    /** 异步执行 readSetting。 */
     private <T> RFuture<T> readSettingAsync(RedisCommand<T> evalCommandType, Codec codec, String settingName) {
         return commandExecutor.evalReadAsync(configName, codec, evalCommandType,
                   "if redis.call('exists', KEYS[1]) == 0 then " +
@@ -448,41 +480,49 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                         settingName);
     }
 
+    /** 返回目标误判率。 */
     @Override
     public double getFalseProbability() {
         return get(getFalseProbabilityAsync());
     }
 
+    /** 异步获取 FalseProbability 对象或执行 FalseProbability 操作。 */
     @Override
     public RFuture<Double> getFalseProbabilityAsync() {
         return readSettingAsync(RedisCommands.EVAL_DOUBLE, DoubleCodec.INSTANCE, "falseProbability");
     }
 
+    /** 获取 Size。 */
     @Override
     public long getSize() {
         return get(getSizeAsync());
     }
 
+    /** 异步获取 Size 对象或执行 Size 操作。 */
     @Override
     public RFuture<Long> getSizeAsync() {
         return readSettingAsync(RedisCommands.EVAL_LONG, LongCodec.INSTANCE, "size");
     }
 
+    /** 获取 HashIterations。 */
     @Override
     public int getHashIterations() {
         return get(getHashIterationsAsync());
     }
 
+    /** 异步获取 HashIterations 对象或执行 HashIterations 操作。 */
     @Override
     public RFuture<Integer> getHashIterationsAsync() {
         return readSettingAsync(RedisCommands.EVAL_INTEGER, LongCodec.INSTANCE, "hashIterations");
     }
 
+    /** 是否ExistsAsync。 */
     @Override
     public RFuture<Boolean> isExistsAsync() {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.EXISTS, getRawName(), configName);
     }
 
+    /** 异步执行 rename。 */
     @Override
     public RFuture<Void> renameAsync(String newName) {
         String nn = mapName(newName);
@@ -495,6 +535,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         });
     }
 
+    /** 异步执行 renamenx。 */
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
         String nn = mapName(newName);

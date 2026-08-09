@@ -33,10 +33,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Redisson Session object for Apache Tomcat
- * 
- * @author Nikita Koksharov
+ * 基于 Redis {@link RMap} 的 Apache Tomcat {@link org.apache.catalina.Session} 实现。
+ * <p>支持 {@link RedissonSessionManager.ReadMode#REDIS} 按需从 Redis 读取属性
+ * 与 {@link RedissonSessionManager.UpdateMode#AFTER_REQUEST} 请求末批量写回两种模式；
+ * 通过 {@link RTopic} 在集群节点间同步 Session 变更。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonSession extends StandardSession {
 
@@ -59,13 +61,19 @@ public class RedissonSession extends StandardSession {
     
     private boolean isExpirationLocked;
     private boolean loaded;
+    /** 所属 Session 管理器。 */
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
+    /** 持久化 Session 属性的 Redis Map。 */
     private RMap<String, Object> map;
+    /** 集群 Session 变更广播 Topic。 */
     private final RTopic topic;
+    /** Session 属性读取模式。 */
     private final ReadMode readMode;
+    /** Session 属性写回模式。 */
     private final UpdateMode updateMode;
 
+    /** 当前请求对 Session 的并发使用计数。 */
     private final AtomicInteger usages = new AtomicInteger();
     private Map<String, Object> loadedAttributes = Collections.emptyMap();
     private Map<String, Object> updatedAttributes = Collections.emptyMap();
@@ -101,6 +109,7 @@ public class RedissonSession extends StandardSession {
 
     private static final long serialVersionUID = -2518607181636076487L;
 
+    /** 读取 Session 属性；REDIS 模式下按需从 Redis 加载。 */
     @Override
     public Object getAttribute(String name) {
         if (readMode == ReadMode.REDIS) {
@@ -141,6 +150,7 @@ public class RedissonSession extends StandardSession {
         return super.getAttribute(name);
     }
     
+    /** 返回全部属性名枚举。 */
     @Override
     public Enumeration<String> getAttributeNames() {
         if (readMode == ReadMode.REDIS) {
@@ -158,6 +168,7 @@ public class RedissonSession extends StandardSession {
         return super.getAttributeNames();
     }
 
+    /** 返回用户属性名数组（不含内部元数据键）。 */
     @Override
     public String[] getValueNames() {
         if (readMode == ReadMode.REDIS) {
@@ -172,6 +183,7 @@ public class RedissonSession extends StandardSession {
         return super.getValueNames();
     }
     
+    /** 删除键或 Session。 */
     public void delete() {
         if (map == null) {
             map = redissonManager.getMap(id);
@@ -194,6 +206,7 @@ public class RedissonSession extends StandardSession {
         updatedAttributes.clear();
     }
     
+    /** 设置 Session 创建时间戳。 */
     @Override
     public void setCreationTime(long time) {
         super.setCreationTime(time);
@@ -210,6 +223,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** 更新 Session 最后访问时间。 */
     @Override
     public void access() {
         super.access();
@@ -218,14 +232,17 @@ public class RedissonSession extends StandardSession {
         expireSession();
     }
 
+    /** 委托 {@link StandardSession#access()}。 */
     public void superAccess() {
         super.access();
     }
 
+    /** 委托 {@link StandardSession#endAccess()}。 */
     public void superEndAccess() {
         super.endAccess();
     }
 
+    /** 触发 Session 过期逻辑。 */
     protected void expireSession() {
         RMap<String, Object> m = map;
         if (isExpirationLocked || m == null) {
@@ -236,6 +253,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** 构造批量属性更新集群消息。 */
     protected AttributesPutAllMessage createPutAllMessage(Map<String, Object> newMap) {
         try {
             return new AttributesPutAllMessage(redissonManager, getId(), newMap, this.map.getCodec().getMapValueEncoder());
@@ -244,6 +262,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** 设置 Session 最大非活动间隔（秒）。 */
     @Override
     public void setMaxInactiveInterval(int interval) {
         super.setMaxInactiveInterval(interval);
@@ -252,6 +271,7 @@ public class RedissonSession extends StandardSession {
         expireSession();
     }
 
+    /** 快速写入属性到 Redis Map。 */
     private void fastPut(String name, Object value) {
         RMap<String, Object> m = map;
         if (m == null) {
@@ -268,6 +288,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** 设置认证主体并持久化。 */
     @Override
     public void setPrincipal(Principal principal) {
         super.setPrincipal(principal);
@@ -279,6 +300,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** 设置认证类型并持久化。 */
     @Override
     public void setAuthType(String authType) {
         super.setAuthType(authType);
@@ -290,6 +312,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** 设置 Session 有效标志。 */
     @Override
     public void setValid(boolean isValid) {
         super.setValid(isValid);
@@ -303,6 +326,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** 设置 Session 是否为新创建。 */
     @Override
     public void setNew(boolean isNew) {
         super.setNew(isNew);
@@ -310,6 +334,7 @@ public class RedissonSession extends StandardSession {
         fastPut(IS_NEW_ATTR, isNew);
     }
     
+    /** 结束访问并触发过期检查或写回。 */
     @Override
     public void endAccess() {
         boolean oldValue = isNew;
@@ -331,6 +356,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** 设置 Session 属性并标记变更。 */
     @Override
     public void setAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
@@ -350,10 +376,12 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** 委托父类移除属性逻辑。 */
     public void superRemoveAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
     }
 
+    /** 返回自上次访问以来的空闲毫秒数。 */
     @Override
     public long getIdleTimeInternal() {
         long idleTime = super.getIdleTimeInternal();
@@ -366,6 +394,7 @@ public class RedissonSession extends StandardSession {
         return idleTime;
     }
 
+    /** removeAttributeInternal：移除操作。 */
     @Override
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
@@ -373,6 +402,7 @@ public class RedissonSession extends StandardSession {
         removeRedisAttribute(name);
     }
 
+    /** removeRedisAttribute：移除操作。 */
     private void removeRedisAttribute(String name) {
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
@@ -389,6 +419,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** 设置Id。 */
     @Override
     public void setId(String id, boolean notify) {
         if ((this.id != null) && (manager != null)) {
@@ -418,6 +449,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** Tomcat Session save 操作。 */
     public void save() {
         if (map == null) {
             map = redissonManager.getMap(id);
@@ -469,6 +501,7 @@ public class RedissonSession extends StandardSession {
         expireSession();
     }
 
+    /** 复制键到目标名称。 */
     private Object copy(Object value) {
         try {
             if (value instanceof Collection) {
@@ -487,6 +520,7 @@ public class RedissonSession extends StandardSession {
         return value;
     }
     
+    /** Tomcat 生命周期：加载 Session 管理器。 */
     public void load(Map<String, Object> attrs) {
         Number creationTime = (Number) attrs.remove(CREATION_TIME_ATTR);
         if (creationTime != null) {
@@ -532,6 +566,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** Tomcat Session recycle 操作。 */
     @Override
     public void recycle() {
         super.recycle();
@@ -541,10 +576,12 @@ public class RedissonSession extends StandardSession {
         removedAttributes.clear();
     }
 
+    /** 递增使用计数，防止并发覆盖。 */
     public void startUsage() {
         usages.incrementAndGet();
     }
 
+    /** 递减使用计数。 */
     public void endUsage() {
         // don't decrement usages if startUsage wasn't called
 //        if (usages.decrementAndGet() == 0) {
