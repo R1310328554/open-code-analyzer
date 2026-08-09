@@ -21,6 +21,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Top-K 元素及计数 Map 解码器。
+ * <p>
+ * 将 {@code [item1, count1, item2, count2, ...]} 交替数组
+ * 转为 {@link Map}{@code <V, Long>}，跳过 {@code null} 元素键。
  *
  * @author Nikita Koksharov
  *
@@ -28,6 +32,7 @@ import java.util.Map;
  */
 public class TopKListWithCountDecoder<V> implements MultiDecoder<Map<V, Long>> {
 
+    /** 按步长 2 配对元素与计数，使用保序 {@link Map} 存储。 */
     @Override
     public Map<V, Long> decode(List<Object> parts, State state) {
         Map<V, Long> result = MultiDecoder.newLinkedHashMap(parts.size() / 2);

@@ -21,12 +21,17 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
+ * Redis TDigest {@code TDIGEST.INFO} 响应解码器。
+ * <p>
+ * 从键值交替的 {@link List} 中提取压缩率、容量、节点数、
+ * 权重与观测次数等字段，构造 {@link TDigestInfo}。
  *
  * @author Nikita Koksharov
  *
  */
 public class TDigestInfoDecoder implements MultiDecoder<TDigestInfo> {
 
+    /** 按预定义字段名从 parts 中取值并填充 {@link TDigestInfo}。 */
     @Override
     public TDigestInfo decode(List<Object> parts, State state) {
         return new TDigestInfo(
@@ -41,6 +46,7 @@ public class TDigestInfoDecoder implements MultiDecoder<TDigestInfo> {
                 getLong(parts, "Memory usage"));
     }
 
+    /** 在键值对序列中线性查找指定键对应的值。 */
     private static Object getValue(List<Object> list, String key) {
         for (int i = 0; i < list.size() - 1; i += 2) {
             if (key.equals(String.valueOf(list.get(i)))) {
@@ -50,6 +56,7 @@ public class TDigestInfoDecoder implements MultiDecoder<TDigestInfo> {
         return null;
     }
 
+    /** 将字段值安全转为 {@code long}，缺失或非法时返回 0。 */
     private static long getLong(List<Object> list, String key) {
         Object value = getValue(list, key);
         if (value instanceof Number) {
@@ -65,6 +72,7 @@ public class TDigestInfoDecoder implements MultiDecoder<TDigestInfo> {
         return 0;
     }
 
+    /** 将字段值安全转为 {@code double}，缺失或非法时返回 0。 */
     private static double getDouble(List<Object> list, String key) {
         Object value = getValue(list, key);
         if (value instanceof Number) {

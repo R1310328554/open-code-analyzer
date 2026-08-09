@@ -23,12 +23,18 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * 
+ * TimeSeries 首条目解码器。
+ * <p>
+ * 复用 {@link TimeSeriesEntryReplayDecoder} 解析完整列表，
+ * 仅返回第一个 {@link TimeSeriesEntry}；空响应时返回 {@code null}。
+ * 适用于 {@code TS.GET} 等单条查询命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class TimeSeriesFirstEntryReplayDecoder implements MultiDecoder<Object> {
 
+    /** 委托给标准 TimeSeries 列表解码器的元素级解码策略。 */
     private final TimeSeriesEntryReplayDecoder decoder = new TimeSeriesEntryReplayDecoder();
 
     @Override
@@ -36,6 +42,7 @@ public class TimeSeriesFirstEntryReplayDecoder implements MultiDecoder<Object> {
         return decoder.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 解码列表后取首元素，无数据则 {@code null}。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         List<TimeSeriesEntry<Object, Object>> list = decoder.decode(parts, state);

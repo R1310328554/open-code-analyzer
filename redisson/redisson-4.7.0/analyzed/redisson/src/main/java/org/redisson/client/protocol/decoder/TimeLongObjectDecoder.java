@@ -21,23 +21,31 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * Redis 时间戳二元组解码器。
+ * <p>
+ * 将 {@code [秒, 微秒]} 两个 {@link Long} 元素合成为毫秒精度时间戳；
+ * 可选 {@link TimeUnit} 在解码后进一步换算单位。
+ *
  * @author Nikita Koksharov
  *
  */
 
 public class TimeLongObjectDecoder implements MultiDecoder<Long> {
 
+    /** 目标时间单位；{@code null} 表示直接返回毫秒值。 */
     private final TimeUnit timeUnit;
 
+    /** 默认不解码后换算，输出毫秒时间戳。 */
     public TimeLongObjectDecoder() {
         this(null);
     }
 
+    /** @param timeUnit 解码完成后要转换到的 {@link TimeUnit} */
     public TimeLongObjectDecoder(TimeUnit timeUnit) {
         this.timeUnit = timeUnit;
     }
 
+    /** 秒×1000 + 微秒÷1000 合成毫秒，再按需 {@link TimeUnit#convert}。 */
     @Override
     public Long decode(List<Object> parts, State state) {
         long time = ((Long) parts.get(0)) * 1000L + ((Long) parts.get(1)) / 1000L;

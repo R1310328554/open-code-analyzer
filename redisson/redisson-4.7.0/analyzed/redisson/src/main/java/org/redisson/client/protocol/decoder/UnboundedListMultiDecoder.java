@@ -22,14 +22,13 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * A {@link MultiDecoder} that dispatches the top-level array to one decoder
- * and treats every nested array uniformly with a second decoder. Unlike
- * {@link ListMultiDecoder2}, the nested decoder is reused for every level
- * deeper than the top level, so this decoder handles responses of arbitrary
- * nesting depth without the caller needing to know the depth in advance.
+ * 无深度限制的嵌套数组 {@link MultiDecoder} 分发器。
  * <p>
- * If no nested decoder is supplied, an {@link ObjectListReplayDecoder} is
- * used, which produces a {@link List} for each nested array.
+ * 顶层数组委托 {@link #topLevel} 解码；所有更深层嵌套数组
+ * 统一由 {@link #nested} 处理。与 {@link ListMultiDecoder2} 不同，
+ * 嵌套解码器在每一层复用，调用方无需预先知道响应嵌套深度。
+ * 若未指定嵌套解码器，默认使用 {@link ObjectListReplayDecoder}，
+ * 将每个内层数组解码为 {@link List}。
  *
  * @param <T> top level decoded type parameter
  *
@@ -38,13 +37,17 @@ import org.redisson.client.protocol.Decoder;
  */
 public class UnboundedListMultiDecoder<T> implements MultiDecoder<Object> {
 
+    /** 响应最外层（{@link State#getLevel()}==0）使用的解码器。 */
     private final MultiDecoder<?> topLevel;
+    /** 所有内层嵌套数组共用的解码器。 */
     private final MultiDecoder<?> nested;
 
+    /** 嵌套层默认使用 {@link ObjectListReplayDecoder}。 */
     public UnboundedListMultiDecoder(MultiDecoder<?> topLevel) {
         this(topLevel, new ObjectListReplayDecoder<>());
     }
 
+    /** @param topLevel 顶层数组解码器；@param nested 内层数组解码器 */
     public UnboundedListMultiDecoder(MultiDecoder<?> topLevel, MultiDecoder<?> nested) {
         this.topLevel = topLevel;
         this.nested = nested;
@@ -65,6 +68,7 @@ public class UnboundedListMultiDecoder<T> implements MultiDecoder<Object> {
         return active(state).decode(parts, state);
     }
 
+    /** 根据当前解析层级选择顶层或嵌套解码器。 */
     private MultiDecoder<?> active(State state) {
         if (state.getLevel() == 0) {
             return topLevel;

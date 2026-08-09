@@ -18,12 +18,17 @@ package org.redisson.client.protocol.pubsub;
 import org.redisson.client.ChannelName;
 
 /**
- * 
+ * Pub/Sub 消息通用接口。
+ * <p>
+ * 所有订阅推送类型的公共父接口，提供消息所属
+ * {@link ChannelName}（频道或模式）的访问能力。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface Message {
 
+    /** 返回此消息关联的 Redis 频道（或模式）名称。 */
     ChannelName getChannel();
     
 }

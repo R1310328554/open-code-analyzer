@@ -21,12 +21,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * 字符串键值对 Map 批量回放解码器。
+ * <p>
+ * 将 RESP 数组中交替出现的键、值元素（{@code [k1, v1, k2, v2, ...]}）
+ * 组装为保持插入顺序的 {@link Map}{@code <String, String>}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class StringMapReplayDecoder implements MultiDecoder<Map<String, String>> {
 
+    /** 按奇偶索引配对键值，调用 {@link MultiDecoder#newLinkedHashMap} 保序。 */
     @Override
     public Map<String, String> decode(List<Object> parts, State state) {
         Map<String, String> result = MultiDecoder.newLinkedHashMap(parts.size()/2);

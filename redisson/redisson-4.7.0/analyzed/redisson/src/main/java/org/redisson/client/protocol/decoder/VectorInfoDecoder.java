@@ -25,12 +25,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
+ * Redis 向量索引 {@code VINFO} 响应解码器。
+ * <p>
+ * 将键值交替字段映射为 {@link VectorInfo}，包括维度、
+ * HNSW 参数、量化类型（{@code int8}/{@code bin}/{@code f32}）及占用大小。
  *
  * @author Nikita Koksharov
  *
  */
 public class VectorInfoDecoder implements MultiDecoder<VectorInfo> {
 
+    /** 解析键值对并填充 {@link VectorInfo} 各属性。 */
     @Override
     public VectorInfo decode(List<Object> parts, State state) {
         Map<String, Object> map = IntStream.range(0, parts.size())
@@ -43,6 +48,7 @@ public class VectorInfoDecoder implements MultiDecoder<VectorInfo> {
         info.setDimensions((Long) map.get("vector-dim"));
         info.setAttributesCount((Long) map.get("attributes-count"));
         info.setMaxConnections(((Long) map.get("hnsw-m")).intValue());
+        // 将 Redis 量化类型字符串映射为 QuantizationType 枚举
         String qt = (String) map.get("quant-type");
         if ("int8".equals(qt)) {
             info.setQuantizationType(QuantizationType.Q8);

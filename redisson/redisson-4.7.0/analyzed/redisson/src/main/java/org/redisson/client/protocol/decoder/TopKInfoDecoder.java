@@ -21,12 +21,17 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
+ * Redis Top-K {@code TOPK.INFO} 响应解码器。
+ * <p>
+ * 从键值交替字段（{@code k}、{@code width}、{@code depth}、{@code decay}）
+ * 解析 Top-K 数据结构配置，构造 {@link TopKInfo}。
  *
  * @author Nikita Koksharov
  *
  */
 public class TopKInfoDecoder implements MultiDecoder<TopKInfo> {
 
+    /** 遍历键值对，按字段名填充 Top-K 参数并返回 {@link TopKInfo}。 */
     @Override
     public TopKInfo decode(List<Object> parts, State state) {
         long topK = 0;
@@ -58,6 +63,7 @@ public class TopKInfoDecoder implements MultiDecoder<TopKInfo> {
         return new TopKInfo(topK, width, depth, decay);
     }
 
+    /** 将数值对象或字符串安全转为 {@code long}。 */
     private static long toLong(Object value) {
         if (value instanceof Number) {
             return ((Number) value).longValue();
@@ -68,6 +74,7 @@ public class TopKInfoDecoder implements MultiDecoder<TopKInfo> {
         return 0;
     }
 
+    /** 将数值对象或字符串安全转为 {@code double}。 */
     private static double toDouble(Object value) {
         if (value instanceof Number) {
             return ((Number) value).doubleValue();

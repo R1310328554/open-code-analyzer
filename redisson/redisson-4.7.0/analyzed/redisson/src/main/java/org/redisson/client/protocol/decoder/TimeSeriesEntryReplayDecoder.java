@@ -26,22 +26,31 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 
+ * TimeSeries 多条目批量回放解码器。
+ * <p>
+ * 每 4 个元素为一组：{@code [value, label?, flag, timestamp]}，
+ * 其中 {@code flag==3} 表示带标签条目。可选 {@code reverse} 在返回前
+ * 反转列表顺序（如 {@code REVRANGE} 结果）。
+ *
  * @author Nikita Koksharov
  *
  */
 public class TimeSeriesEntryReplayDecoder implements MultiDecoder<List<TimeSeriesEntry<Object, Object>>> {
 
+    /** 为 {@code true} 时在 decode 末尾 {@link Collections#reverse} 结果列表。 */
     private boolean reverse;
 
+    /** 默认保持 Redis 返回的时间顺序。 */
     public TimeSeriesEntryReplayDecoder() {
         this(false);
     }
 
+    /** @param reverse 是否在组装完成后反转条目顺序 */
     public TimeSeriesEntryReplayDecoder(boolean reverse) {
         this.reverse = reverse;
     }
 
+    /** 每组第 3、4 个字段（索引 2、3）使用 {@link LongCodec} 解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 4 == 2 || paramNum % 4 == 3) {
@@ -50,6 +59,7 @@ public class TimeSeriesEntryReplayDecoder implements MultiDecoder<List<TimeSerie
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 按四元组步进解析，构造 {@link TimeSeriesEntry} 列表。 */
     @Override
     public List<TimeSeriesEntry<Object, Object>> decode(List<Object> parts, State state) {
         List<TimeSeriesEntry<Object, Object>> result = new ArrayList<>();

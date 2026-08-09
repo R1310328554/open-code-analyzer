@@ -24,12 +24,18 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * 
+ * TimeSeries 单条目解码器。
+ * <p>
+ * 直接解析一组四元响应为单个 {@link TimeSeriesEntry}，
+ * 布局与 {@link TimeSeriesEntryReplayDecoder} 单组一致：
+ * {@code [flag, timestamp, value, label?]}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class TimeSeriesSingleEntryReplayDecoder implements MultiDecoder<TimeSeriesEntry<Object, Object>> {
 
+    /** 时间戳与 flag 字段（索引 0、1）使用 {@link LongCodec}。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum == 0 || paramNum == 1) {
@@ -38,6 +44,7 @@ public class TimeSeriesSingleEntryReplayDecoder implements MultiDecoder<TimeSeri
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** {@code flag==3} 时取第 4 个元素为标签，否则标签为 {@code null}。 */
     @Override
     public TimeSeriesEntry<Object, Object> decode(List<Object> parts, State state) {
         Long n = (Long) parts.get(0);

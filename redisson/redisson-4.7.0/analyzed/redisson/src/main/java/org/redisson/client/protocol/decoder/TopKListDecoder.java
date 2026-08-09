@@ -21,6 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Top-K 元素列表解码器。
+ * <p>
+ * 将 {@code TOPK.LIST} 等命令返回的对象数组过滤 {@code null}
+ * 后转为 {@link List}{@code <V>}，保留 Redis 给出的频次排序。
  *
  * @author Nikita Koksharov
  *
@@ -28,6 +32,7 @@ import java.util.List;
  */
 public class TopKListDecoder<V> implements MultiDecoder<List<V>> {
 
+    /** 跳过 {@code null} 占位符，将其余元素强转为 {@code V} 加入结果。 */
     @Override
     public List<V> decode(List<Object> parts, State state) {
         List<V> result = new ArrayList<>(parts.size());
