@@ -36,7 +36,9 @@ import org.springframework.util.ObjectUtils;
 
 /**
  * AspectJPointcutAdvisor 的内部实现。
- * <p>请注意，每个目标方法都会有一个该顾问程序的实例。
+ *
+ * <p>注意：每个目标方法对应本通知器的一个实例。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -46,60 +48,40 @@ import org.springframework.util.ObjectUtils;
 final class InstantiationModelAwarePointcutAdvisorImpl
 		implements InstantiationModelAwarePointcutAdvisor, AspectJPrecedenceInformation, Serializable {
 
-	/**
-	 * 方法 `Advice`：完成本类中与「Advice」相关的职责。
-	 */
 	private static final Advice EMPTY_ADVICE = new Advice() {};
 
 
-	/** 切点相关状态（`declaredPointcut`）。 */
 	private final AspectJExpressionPointcut declaredPointcut;
 
-	/** 类相关状态（`declaringClass`）。 */
 	private final Class<?> declaringClass;
 
-	/** 名称相关状态（`methodName`）。 */
 	private final String methodName;
 
-	/** 参数相关状态（`parameterTypes`）。 */
 	private final Class<?>[] parameterTypes;
 
-	/** 方法相关状态（`aspectJAdviceMethod`）。 */
 	private transient Method aspectJAdviceMethod;
 
-	/** 工厂相关状态（`aspectJAdvisorFactory`）。 */
 	private final AspectJAdvisorFactory aspectJAdvisorFactory;
 
-	/** 工厂相关状态（`aspectInstanceFactory`）。 */
 	private final MetadataAwareAspectInstanceFactory aspectInstanceFactory;
 
-	/** `declarationOrder`：该类的成员状态。 */
 	private final int declarationOrder;
 
-	/** 名称相关状态（`aspectName`）。 */
 	private final String aspectName;
 
-	/** 切点相关状态（`pointcut`）。 */
 	private final Pointcut pointcut;
 
-	/** `lazy`：该类的成员状态。 */
 	private final boolean lazy;
 
-	/** 通知相关状态（`instantiatedAdvice`）。 */
 	private @Nullable Advice instantiatedAdvice;
 
-	/** 通知相关状态（`isBeforeAdvice`）。 */
 	@SuppressWarnings("NullAway.Init")
 	private Boolean isBeforeAdvice;
 
-	/** 通知相关状态（`isAfterAdvice`）。 */
 	@SuppressWarnings("NullAway.Init")
 	private Boolean isAfterAdvice;
 
 
-	/**
-	 * 创建 `InstantiationModelAwarePointcutAdvisorImpl` 的新实例。
-	 */
 	public InstantiationModelAwarePointcutAdvisorImpl(AspectJExpressionPointcut declaredPointcut,
 			Method aspectJAdviceMethod, AspectJAdvisorFactory aspectJAdvisorFactory,
 			MetadataAwareAspectInstanceFactory aspectInstanceFactory, int declarationOrder, String aspectName) {
@@ -115,19 +97,19 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 		this.aspectName = aspectName;
 
 		if (aspectInstanceFactory.getAspectMetadata().isLazilyInstantiated()) {
-			// 切入点的静态部分是惰性类型。
+			// 切点的静态部分为延迟类型。
 			Pointcut preInstantiationPointcut = Pointcuts.union(
 					aspectInstanceFactory.getAspectMetadata().getPerClausePointcut(), this.declaredPointcut);
 
-			// 使其动态：必须从实例化前状态转变为实例化后状态。
-			// 如果不是动态切入点，则可能会被优化掉
-			// 通过Spring AOP基础设施的第一次评估后。
+			// 使其动态化：须从实例化前状态变为实例化后状态。
+			// 若非动态切点，可能被优化掉
+			// 在首次求值后由 Spring AOP 基础设施优化。
 			this.pointcut = new PerTargetInstantiationModelPointcut(
 					this.declaredPointcut, preInstantiationPointcut, aspectInstanceFactory);
 			this.lazy = true;
 		}
 		else {
-			// 单例方面。
+			// 单例切面。
 			this.pointcut = this.declaredPointcut;
 			this.lazy = false;
 			this.instantiatedAdvice = instantiateAdvice(this.declaredPointcut);
@@ -136,31 +118,26 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 
 
 	/**
-	 * Spring AOP 使用的切入点。切入点的实际行为将根据建议的状态而变化。
+	 * Spring AOP 使用的切点。
+	 * 切点实际行为随通知状态而变化。
 	 */
 	@Override
 	public Pointcut getPointcut() {
 		return this.pointcut;
 	}
 
-	/**
-	 * 判断是否 Lazy。
-	 */
 	@Override
 	public boolean isLazy() {
 		return this.lazy;
 	}
 
-	/**
-	 * 判断是否 Advice Instantiated。
-	 */
 	@Override
 	public synchronized boolean isAdviceInstantiated() {
 		return (this.instantiatedAdvice != null);
 	}
 
 	/**
-	 * 如有必要，延迟实例化建议。
+	 * 必要时延迟实例化通知。
 	 */
 	@Override
 	public synchronized Advice getAdvice() {
@@ -170,9 +147,6 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 		return this.instantiatedAdvice;
 	}
 
-	/**
-	 * 实例化：Advice（方法 `instantiateAdvice`）。
-	 */
 	private Advice instantiateAdvice(AspectJExpressionPointcut pointcut) {
 		Advice advice = this.aspectJAdvisorFactory.getAdvice(this.aspectJAdviceMethod, pointcut,
 				this.aspectInstanceFactory, this.declarationOrder, this.aspectName);
@@ -180,7 +154,8 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	}
 
 	/**
-	 * 这仅对 Spring AOP 感兴趣：AspectJ 实例化语义要丰富得多。在 AspectJ 术语中，{@code true} 的返回意味着该方面不是 SINGLETON。
+	 * 仅对 Spring AOP 有意义：AspectJ 实例化语义丰富得多。
+	 * 在 AspectJ 术语中，此处返回 {@code true} 仅表示切面不是 SINGLETON。
 	 */
 	@Override
 	public boolean isPerInstance() {
@@ -188,53 +163,35 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	}
 
 	/**
-	 * 返回此顾问程序的 AspectJ AspectMetadata。
+	 * 返回本通知器的 AspectJ AspectMetadata。
 	 */
 	public AspectMetadata getAspectMetadata() {
 		return this.aspectInstanceFactory.getAspectMetadata();
 	}
 
-	/**
-	 * 获取 Aspect Instance Factory（`AspectInstanceFactory`）。
-	 */
 	public MetadataAwareAspectInstanceFactory getAspectInstanceFactory() {
 		return this.aspectInstanceFactory;
 	}
 
-	/**
-	 * 获取 Declared Pointcut（`DeclaredPointcut`）。
-	 */
 	public AspectJExpressionPointcut getDeclaredPointcut() {
 		return this.declaredPointcut;
 	}
 
-	/**
-	 * 获取 Order（`Order`）。
-	 */
 	@Override
 	public int getOrder() {
 		return this.aspectInstanceFactory.getOrder();
 	}
 
-	/**
-	 * 获取 Aspect Name（`AspectName`）。
-	 */
 	@Override
 	public String getAspectName() {
 		return this.aspectName;
 	}
 
-	/**
-	 * 获取 Declaration Order（`DeclarationOrder`）。
-	 */
 	@Override
 	public int getDeclarationOrder() {
 		return this.declarationOrder;
 	}
 
-	/**
-	 * 判断是否 Before Advice。
-	 */
 	@Override
 	public boolean isBeforeAdvice() {
 		if (this.isBeforeAdvice == null) {
@@ -243,9 +200,6 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 		return this.isBeforeAdvice;
 	}
 
-	/**
-	 * 判断是否 After Advice。
-	 */
 	@Override
 	public boolean isAfterAdvice() {
 		if (this.isAfterAdvice == null) {
@@ -255,7 +209,7 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	}
 
 	/**
-	 * 重复 getAdvice 的一些逻辑，但重要的是不强制创建建议。
+	 * 复制 getAdvice 的部分逻辑，但关键是不强制创建通知。
 	 */
 	private void determineAdviceType() {
 		AspectJAnnotation aspectJAnnotation =
@@ -283,9 +237,6 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 	}
 
 
-	/**
-	 * 方法 `readObject`：完成本类中与「read Object」相关的职责。
-	 */
 	private void readObject(ObjectInputStream inputStream) throws IOException, ClassNotFoundException {
 		inputStream.defaultReadObject();
 		try {
@@ -296,9 +247,6 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 		}
 	}
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return "InstantiationModelAwarePointcutAdvisor: expression [" + getDeclaredPointcut().getExpression() +
@@ -308,7 +256,8 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 
 
 	/**
-	 * 实例化通知时更改其行为的切入点实现。请注意，这是一个 <i>dynamic</i> 切入点；否则，如果它最初不静态匹配，则可能会被优化掉。
+	 * 在通知实例化时改变行为的切点实现。
+	 * 注意：这是<i>动态</i>切点；否则若首次未静态匹配可能被优化掉。
 	 */
 	private static final class PerTargetInstantiationModelPointcut extends DynamicMethodMatcherPointcut {
 
@@ -330,15 +279,15 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 
 		@Override
 		public boolean matches(Method method, Class<?> targetClass) {
-			// 我们要么实例化并匹配声明的切入点，
-			// 或任一切入点上的未实例化匹配...
+			// 已实例化时在声明切点上匹配，
+			// 未实例化时在任一切点上匹配...
 			return (isAspectMaterialized() && this.declaredPointcut.matches(method, targetClass)) ||
 					this.preInstantiationPointcut.getMethodMatcher().matches(method, targetClass);
 		}
 
 		@Override
 		public boolean matches(Method method, Class<?> targetClass, @Nullable Object... args) {
-			// 这只能匹配声明的切入点。
+			// 仅能在声明切点上匹配。
 			return (isAspectMaterialized() && this.declaredPointcut.matches(method, targetClass, args));
 		}
 
@@ -348,10 +297,10 @@ final class InstantiationModelAwarePointcutAdvisorImpl
 
 		@Override
 		public boolean equals(@Nullable Object other) {
-			// 为了等效，我们只需要比较 preInstantiationPointcut 字段，因为
-			// 它们包括声明的Pointcut 字段。另外，我们不应该比较
-			// 自 LazySingletonAspectInstanceFactoryDe​​corator 以来的aspectInstanceFactory 字段
-			// 不实现 equals()。
+			// 等价性比较只需 preInstantiationPointcut 字段，
+			// 因其已包含 declaredPointcut 字段。
+			// 此外不应比较 aspectInstanceFactory 字段，
+			// 因 LazySingletonAspectInstanceFactoryDecorator 未实现 equals()。
 			return (this == other || (other instanceof PerTargetInstantiationModelPointcut that &&
 					ObjectUtils.nullSafeEquals(this.preInstantiationPointcut, that.preInstantiationPointcut)));
 		}

@@ -32,23 +32,19 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link BeanFactoryInitializationAotProcessor} 实现负责注册 AOP 建议的提示。
+ * 负责注册 AOP 通知提示的
+ * {@link BeanFactoryInitializationAotProcessor} 实现。
+ *
  * @author Sebastien Deleuze
  * @author Stephane Nicoll
  * @since 6.0.11
  */
 class AspectJBeanFactoryInitializationAotProcessor implements BeanFactoryInitializationAotProcessor {
 
-	/**
-	 * 判断是否 Present。
-	 */
 	private static final boolean ASPECTJ_PRESENT = ClassUtils.isPresent("org.aspectj.lang.annotation.Pointcut",
 			AspectJBeanFactoryInitializationAotProcessor.class.getClassLoader());
 
 
-	/**
-	 * 处理：Ahead Of Time（方法 `processAheadOfTime`）。
-	 */
 	@Override
 	public @Nullable BeanFactoryInitializationAotContribution processAheadOfTime(ConfigurableListableBeanFactory beanFactory) {
 		if (ASPECTJ_PRESENT) {
@@ -59,7 +55,7 @@ class AspectJBeanFactoryInitializationAotProcessor implements BeanFactoryInitial
 
 
 	/**
-	 * 内部类以避免运行时对 AspectJ 的硬依赖。
+	 * 内部类，避免运行时对 AspectJ 的硬依赖。
 	 */
 	private static class AspectDelegate {
 

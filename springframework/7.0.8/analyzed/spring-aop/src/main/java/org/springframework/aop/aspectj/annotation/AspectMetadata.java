@@ -32,9 +32,11 @@ import org.springframework.aop.framework.AopConfigException;
 import org.springframework.aop.support.ComposablePointcut;
 
 /**
- * AspectJ 切面类的元数据，以及每个子句的附加 Spring AOP 切入点。
- * <p>U 使用 AspectJ 5 AJType 反射 API，使我们能够使用不同的 AspectJ
- * 实例化模型，例如“singleton”、“pertarget”和“perthis”。
+ * AspectJ 切面类的元数据，另含 per 子句对应的 Spring AOP 切点。
+ *
+ * <p>使用 AspectJ 5 AJType 反射 API，
+ * 支持 singleton、pertarget、perthis 等不同 AspectJ 实例化模型。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -44,31 +46,34 @@ import org.springframework.aop.support.ComposablePointcut;
 public class AspectMetadata implements Serializable {
 
 	/**
-	 * Spring 中定义的该方面的名称（bean 名称）——允许我们确定两条建议是否来自同一方面，从而确定它们的相对优先级。
+	 * 本切面在 Spring 中的名称（Bean 名称）——
+	 * 用于判断两条通知是否来自同一切面，从而确定相对优先级。
 	 */
 	private final String aspectName;
 
 	/**
-	 * 方面类，单独存储，用于在反序列化时重新解析相应的 AjType。
+	 * 切面类，单独存储以便反序列化时重新解析对应 AjType。
 	 */
 	private final Class<?> aspectClass;
 
 	/**
-	 * AspectJ 反射信息。 <p>重新解决了反序列化问题，因为它本身不可序列化。
+	 * AspectJ 反射信息。
+	 * <p>反序列化时重新解析，因其本身不可序列化。
 	 */
 	private transient AjType<?> ajType;
 
 	/**
-	 * Spring AOP切入点对应于aspect的per子句。如果是单例，则为 {@code Pointcut.TRUE} 规范实例，否则为
-	 * AspectJExpressionPointcut。
+	 * 切面对应 per 子句的 Spring AOP 切点。
+	 * 单例时为 {@code Pointcut.TRUE} 规范实例，
+	 * 否则为 AspectJExpressionPointcut。
 	 */
 	private final Pointcut perClausePointcut;
 
 
 	/**
-	 * 为给定的方面类创建一个新的 AspectMetadata 实例。
-	 * @param aspectClass 方面类
-	 * @param aspectName 方面的名称
+	 * 为给定切面类创建新的 AspectMetadata 实例。
+	 * @param aspectClass 切面类
+	 * @param aspectName 切面名称
 	 */
 	public AspectMetadata(Class<?> aspectClass, String aspectName) {
 		this.aspectName = aspectName;
@@ -130,35 +135,36 @@ public class AspectMetadata implements Serializable {
 
 
 	/**
-	 * 返回AspectJ反射信息。
+	 * 返回 AspectJ 反射信息。
 	 */
 	public AjType<?> getAjType() {
 		return this.ajType;
 	}
 
 	/**
-	 * 返回方面类。
+	 * 返回切面类。
 	 */
 	public Class<?> getAspectClass() {
 		return this.aspectClass;
 	}
 
 	/**
-	 * 返回方面名称。
+	 * 返回切面名称。
 	 */
 	public String getAspectName() {
 		return this.aspectName;
 	}
 
 	/**
-	 * 返回单例切面的 Spring 切入点表达式。 （例如，{@code Pointcut.TRUE}，如果它是单例）。
+	 * 返回单例切面的 Spring 切点表达式
+	 * （例如单例时为 {@code Pointcut.TRUE}）。
 	 */
 	public Pointcut getPerClausePointcut() {
 		return this.perClausePointcut;
 	}
 
 	/**
-	 * 返回方面是否定义为“perthis”或“pertarget”。
+	 * 返回切面是否定义为 "perthis" 或 "pertarget"。
 	 */
 	public boolean isPerThisOrPerTarget() {
 		PerClauseKind kind = getAjType().getPerClause().getKind();
@@ -166,7 +172,7 @@ public class AspectMetadata implements Serializable {
 	}
 
 	/**
-	 * 返回方面是否定义为“pertypewithin”。
+	 * 返回切面是否定义为 "pertypewithin"。
 	 */
 	public boolean isPerTypeWithin() {
 		PerClauseKind kind = getAjType().getPerClause().getKind();
@@ -174,16 +180,13 @@ public class AspectMetadata implements Serializable {
 	}
 
 	/**
-	 * 返回该方面是否需要延迟实例化。
+	 * 返回切面是否需要延迟实例化。
 	 */
 	public boolean isLazilyInstantiated() {
 		return (isPerThisOrPerTarget() || isPerTypeWithin());
 	}
 
 
-	/**
-	 * 方法 `readObject`：完成本类中与「read Object」相关的职责。
-	 */
 	private void readObject(ObjectInputStream inputStream) throws IOException, ClassNotFoundException {
 		inputStream.defaultReadObject();
 		this.ajType = AjTypeSystem.getAjType(this.aspectClass);

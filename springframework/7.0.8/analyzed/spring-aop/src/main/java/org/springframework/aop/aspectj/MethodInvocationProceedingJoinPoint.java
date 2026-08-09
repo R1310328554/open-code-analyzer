@@ -32,11 +32,16 @@ import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.util.Assert;
 
 /**
- * 包装 AOP 联盟 {@link org.aopalliance.intercept.MethodInvocation} 的 AspectJ {@link
- * ProceedingJoinPoint} 接口的实现。
- * <p><b>Note</b>：{@code getThis()} 方法返回当前的 Spring AOP 代理。 {@code getTarget()} 方法返回当前 Sprin
- * g AOP 目标（如果没有目标实例，则可能是 {@code null}）作为普通 POJO，没有任何建议。 <b>如果要调用该对象并使建议生效，请使用 {@code getTh
- * is()}.</b> 一个常见的示例是将对象强制转换为在引入的实现中引入的接口。 AspectJ 本身没有目标和代理之间的这种区别。
+ * AspectJ {@link ProceedingJoinPoint} 接口的实现，
+ * 封装 AOP Alliance {@link org.aopalliance.intercept.MethodInvocation}。
+ *
+ * <p><b>注意</b>：{@code getThis()} 返回当前 Spring AOP 代理。
+ * {@code getTarget()} 返回当前 Spring AOP 目标（无目标实例时可为 {@code null}），
+ * 为不带任何通知的普通 POJO。
+ * <b>若需调用对象并使通知生效，请使用 {@code getThis()}。</b>
+ * 常见示例是在引介实现中将对象转型为引介接口。
+ * AspectJ 本身并无 target 与 proxy 的此类区分。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Adrian Colyer
@@ -45,24 +50,21 @@ import org.springframework.util.Assert;
  */
 public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint, JoinPoint.StaticPart {
 
-	/** 方法相关状态（`methodInvocation`）。 */
 	private final ProxyMethodInvocation methodInvocation;
 
-	/** `args`：该类的成员状态。 */
 	private @Nullable Object @Nullable [] args;
 
-	/**
-	 */
+	/** 延迟初始化的签名对象。 */
 	private @Nullable Signature signature;
 
-	/**
-	 */
+	/** 延迟初始化的源码位置对象。 */
 	private @Nullable SourceLocation sourceLocation;
 
 
 	/**
-	 * 创建一个新的 MethodInitationProceedingJoinPoint，包装给定的 Spring ProxyMethodInitation 对象。
-	 * @param methodInvocation Spring 代理方法调用对象
+	 * 创建新的 MethodInvocationProceedingJoinPoint，
+	 * 封装给定 Spring ProxyMethodInvocation 对象。
+	 * @param methodInvocation Spring ProxyMethodInvocation 对象
 	 */
 	public MethodInvocationProceedingJoinPoint(ProxyMethodInvocation methodInvocation) {
 		Assert.notNull(methodInvocation, "MethodInvocation must not be null");
@@ -70,25 +72,16 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	}
 
 
-	/**
-	 * 方法 `AroundClosure`：完成本类中与「Around Closure」相关的职责。
-	 */
 	@Override
 	public void set$AroundClosure(AroundClosure aroundClosure) {
 		throw new UnsupportedOperationException();
 	}
 
-	/**
-	 * 方法 `proceed`：完成本类中与「proceed」相关的职责。
-	 */
 	@Override
 	public @Nullable Object proceed() throws Throwable {
 		return this.methodInvocation.invocableClone().proceed();
 	}
 
-	/**
-	 * 方法 `proceed`：完成本类中与「proceed」相关的职责。
-	 */
 	@Override
 	public @Nullable Object proceed(Object[] arguments) throws Throwable {
 		Assert.notNull(arguments, "Argument array passed to proceed cannot be null");
@@ -102,7 +95,7 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	}
 
 	/**
-	 * 返回 Spring AOP 代理。不能是 {@code null}。
+	 * 返回 Spring AOP 代理。不可为 {@code null}。
 	 */
 	@Override
 	public Object getThis() {
@@ -110,16 +103,13 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 	}
 
 	/**
-	 * 返回 Spring AOP 目标。如果没有目标，可能是 {@code null}。
+	 * 返回 Spring AOP 目标。无目标时可为 {@code null}。
 	 */
 	@Override
 	public @Nullable Object getTarget() {
 		return this.methodInvocation.getThis();
 	}
 
-	/**
-	 * 获取 Args（`Args`）。
-	 */
 	@Override
 	@SuppressWarnings("NullAway") // Overridden method does not define nullness
 	public @Nullable Object[] getArgs() {
@@ -129,9 +119,6 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 		return this.args;
 	}
 
-	/**
-	 * 获取 Signature（`Signature`）。
-	 */
 	@Override
 	public Signature getSignature() {
 		if (this.signature == null) {
@@ -140,9 +127,6 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 		return this.signature;
 	}
 
-	/**
-	 * 获取 Source Location（`SourceLocation`）。
-	 */
 	@Override
 	public SourceLocation getSourceLocation() {
 		if (this.sourceLocation == null) {
@@ -151,50 +135,32 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 		return this.sourceLocation;
 	}
 
-	/**
-	 * 获取 Kind（`Kind`）。
-	 */
 	@Override
 	public String getKind() {
 		return ProceedingJoinPoint.METHOD_EXECUTION;
 	}
 
-	/**
-	 * 获取 Id（`Id`）。
-	 */
 	@Override
 	public int getId() {
-		// TODO：它只是一个适配器，但返回 0 可能仍然有副作用......
+		// TODO：仅为适配器，但返回 0 仍可能有副作用...
 		return 0;
 	}
 
-	/**
-	 * 获取 Static Part（`StaticPart`）。
-	 */
 	@Override
 	public JoinPoint.StaticPart getStaticPart() {
 		return this;
 	}
 
-	/**
-	 * 方法 `toShortString`：完成本类中与「to Short String」相关的职责。
-	 */
 	@Override
 	public String toShortString() {
 		return "execution(" + getSignature().toShortString() + ")";
 	}
 
-	/**
-	 * 方法 `toLongString`：完成本类中与「to Long String」相关的职责。
-	 */
 	@Override
 	public String toLongString() {
 		return "execution(" + getSignature().toLongString() + ")";
 	}
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return "execution(" + getSignature() + ")";
@@ -202,7 +168,7 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 
 
 	/**
-	 * 延迟初始化 MethodSignature。
+	 * 延迟初始化的 MethodSignature。
 	 */
 	private class MethodSignatureImpl implements MethodSignature {
 
@@ -327,7 +293,7 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 
 
 	/**
-	 * 延迟初始化 SourceLocation。
+	 * 延迟初始化的 SourceLocation。
 	 */
 	private class SourceLocationImpl implements SourceLocation {
 

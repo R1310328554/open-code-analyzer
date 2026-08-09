@@ -42,23 +42,26 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * 此类封装了一些 AspectJ 内部知识，应在未来版本中将其推回到 AspectJ 项目中。
- * <p>I 依赖于 AspectJ 中的实现特定知识来打破封装并执行 AspectJ 未设计的操作：查询将执行的运行时测试的类型。这里的代码应该迁移到 {@code
- * ShadowMatch.getVariablesInvolvedInRuntimeTest()} 或一些类似的操作。
+ * 本类封装一些 AspectJ 内部知识，
+ * 未来应回馈至 AspectJ 项目。
+ *
+ * <p>它依赖 AspectJ 实现细节打破封装，
+ * 执行 AspectJ 未设计的功能：查询将执行的运行时测试类型。
+ * 此处代码应迁移至 {@code ShadowMatch.getVariablesInvolvedInRuntimeTest()}
+ * 或类似操作。
+ *
  * <p>参见 <a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=151593">Bug 151593</a>
+ *
  * @author Adrian Colyer
  * @author Ramnivas Laddad
  * @since 2.0
  */
 class RuntimeTestWalker {
 
-	/** 字段相关状态（`residualTestField`）。 */
 	private static final Field residualTestField;
 
-	/** 类型相关状态（`varTypeField`）。 */
 	private static final Field varTypeField;
 
-	/** 类相关状态（`myClassField`）。 */
 	private static final Field myClassField;
 
 
@@ -75,13 +78,9 @@ class RuntimeTestWalker {
 	}
 
 
-	/** `runtimeTest`：该类的成员状态。 */
 	private final @Nullable Test runtimeTest;
 
 
-	/**
-	 * 创建 `RuntimeTestWalker` 的新实例。
-	 */
 	public RuntimeTestWalker(ShadowMatch shadowMatch) {
 		try {
 			ReflectionUtils.makeAccessible(residualTestField);
@@ -94,24 +93,19 @@ class RuntimeTestWalker {
 
 
 	/**
-	 * 如果测试使用 this、target、at_this、at_target 和 at_annotation 变量中的任何一个，则它会测试子类型敏感变量。
+	 * 若测试使用 this、target、at_this、at_target 或 at_annotation 变量，
+	 * 则测试子类型敏感变量。
 	 */
 	public boolean testsSubtypeSensitiveVars() {
 		return (this.runtimeTest != null &&
 				new SubtypeSensitiveVarTypeTestVisitor().testsSubtypeSensitiveVars(this.runtimeTest));
 	}
 
-	/**
-	 * 方法 `testThisInstanceOfResidue`：完成本类中与「test This Instance Of Residue」相关的职责。
-	 */
 	public boolean testThisInstanceOfResidue(Class<?> thisClass) {
 		return (this.runtimeTest != null &&
 				new ThisInstanceOfResidueTestVisitor(thisClass).thisInstanceOfMatches(this.runtimeTest));
 	}
 
-	/**
-	 * 方法 `testTargetInstanceOfResidue`：完成本类中与「test Target Instance Of Residue」相关的职责。
-	 */
 	public boolean testTargetInstanceOfResidue(Class<?> targetClass) {
 		return (this.runtimeTest != null &&
 				new TargetInstanceOfResidueTestVisitor(targetClass).targetInstanceOfMatches(this.runtimeTest));
@@ -219,7 +213,7 @@ class RuntimeTestWalker {
 				}
 			}
 			try {
-				// 不要使用 ResolvedType.isAssignableFrom() 因为它不会意识到（Spring）mixins
+				// 勿用 ResolvedType.isAssignableFrom()，它无法感知（Spring）混入
 				if (typeClass == null) {
 					typeClass = ClassUtils.forName(type.getName(), this.matchClass.getClassLoader());
 				}
@@ -233,7 +227,7 @@ class RuntimeTestWalker {
 
 
 	/**
-	 * 检查是否存在目标（TYPE）类型的残基。有关更多详细信息，请参阅 SPR-3783。
+	 * 检查是否为 target(TYPE) 类型的 residue。详见 SPR-3783。
 	 */
 	private static class TargetInstanceOfResidueTestVisitor extends InstanceOfResidueTestVisitor {
 
@@ -248,7 +242,7 @@ class RuntimeTestWalker {
 
 
 	/**
-	 * 检查是否存在该（类型）类型的残留物。有关更多详细信息，请参阅 SPR-2979。
+	 * 检查是否为 this(TYPE) 类型的 residue。详见 SPR-2979。
 	 */
 	private static class ThisInstanceOfResidueTestVisitor extends InstanceOfResidueTestVisitor {
 
@@ -256,7 +250,7 @@ class RuntimeTestWalker {
 			super(thisClass, true, THIS_VAR);
 		}
 
-		// TODO：优化：仅当 this() 指定类型而不是标识符时才进行处理。
+		// TODO：优化：仅当 this() 指定类型而非标识符时处理。
 		public boolean thisInstanceOfMatches(Test test) {
 			return instanceOfMatches(test);
 		}
@@ -289,7 +283,7 @@ class RuntimeTestWalker {
 
 		@Override
 		public void visit(HasAnnotation hasAnn) {
-			// 如果你之前认为事情很糟糕，那么现在我们陷入了新的恐怖水平......
+			// 若以为之前已够糟，现在则坠入更深的深渊...
 			ReflectionVar v = (ReflectionVar) hasAnn.getVar();
 			int varType = getVarType(v);
 			if (varType == AT_THIS_VAR || varType == AT_TARGET_VAR || varType == AT_ANNOTATION_VAR) {

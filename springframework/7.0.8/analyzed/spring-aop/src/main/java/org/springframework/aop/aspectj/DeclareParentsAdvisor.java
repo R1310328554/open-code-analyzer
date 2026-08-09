@@ -26,27 +26,26 @@ import org.springframework.aop.support.DelegatePerTargetObjectIntroductionInterc
 import org.springframework.aop.support.DelegatingIntroductionInterceptor;
 
 /**
- * 介绍顾问委派给给定的对象。为 DeclareParents 注释实现 AspectJ 注释样式行为。
+ * 委托给给定对象的引介通知器。
+ * 为 DeclareParents 注解实现 AspectJ 注解风格行为。
+ *
  * @author Rod Johnson
  * @author Ramnivas Laddad
  * @since 2.0
  */
 public class DeclareParentsAdvisor implements IntroductionAdvisor {
 
-	/** 通知相关状态（`advice`）。 */
 	private final Advice advice;
 
-	/** `introducedInterface`：该类的成员状态。 */
 	private final Class<?> introducedInterface;
 
-	/** 类型相关状态（`typePatternClassFilter`）。 */
 	private final ClassFilter typePatternClassFilter;
 
 
 	/**
-	 * 为此 DeclareParents 字段创建一个新顾问。
-	 * @param interfaceType 定义介绍的静态字段
-	 * @param typePattern 类型模式的介绍仅限于
+	 * 为本 DeclareParents 字段创建新通知器。
+	 * @param interfaceType 定义引介的静态字段
+	 * @param typePattern 引介所限制的类型模式
 	 * @param defaultImpl 默认实现类
 	 */
 	public DeclareParentsAdvisor(Class<?> interfaceType, String typePattern, Class<?> defaultImpl) {
@@ -55,9 +54,9 @@ public class DeclareParentsAdvisor implements IntroductionAdvisor {
 	}
 
 	/**
-	 * 为此 DeclareParents 字段创建一个新顾问。
-	 * @param interfaceType 定义介绍的静态字段
-	 * @param typePattern 类型模式的介绍仅限于
+	 * 为本 DeclareParents 字段创建新通知器。
+	 * @param interfaceType 定义引介的静态字段
+	 * @param typePattern 引介所限制的类型模式
 	 * @param delegateRef 委托实现对象
 	 */
 	public DeclareParentsAdvisor(Class<?> interfaceType, String typePattern, Object delegateRef) {
@@ -65,49 +64,38 @@ public class DeclareParentsAdvisor implements IntroductionAdvisor {
 	}
 
 	/**
-	 * 私有构造函数在基于 impl 的委托和基于引用的委托之间共享公共代码（由于使用了 Final 字段，因此不能使用 init() 等方法来共享公共代码）。
-	 * @param interfaceType 定义介绍的静态字段
-	 * @param typePattern 类型模式的介绍仅限于
-	 * @param interceptor 代表团建议为{@link IntroductionInterceptor}
+	 * 在基于实现类委托与基于引用委托之间共享公共代码的私有构造器
+	 * （因使用 final 字段，无法通过 init() 等方法共享公共代码）。
+	 * @param interfaceType 定义引介的静态字段
+	 * @param typePattern 引介所限制的类型模式
+	 * @param interceptor 作为 {@link IntroductionInterceptor} 的委托通知
 	 */
 	private DeclareParentsAdvisor(Class<?> interfaceType, String typePattern, IntroductionInterceptor interceptor) {
 		this.advice = interceptor;
 		this.introducedInterface = interfaceType;
 
-		// 不包括实施的方法。
+		// 排除已实现该接口的类。
 		ClassFilter typePatternFilter = new TypePatternClassFilter(typePattern);
 		ClassFilter exclusion = (clazz -> !this.introducedInterface.isAssignableFrom(clazz));
 		this.typePatternClassFilter = ClassFilters.intersection(typePatternFilter, exclusion);
 	}
 
 
-	/**
-	 * 获取 Class Filter（`ClassFilter`）。
-	 */
 	@Override
 	public ClassFilter getClassFilter() {
 		return this.typePatternClassFilter;
 	}
 
-	/**
-	 * 校验：Interfaces（方法 `validateInterfaces`）。
-	 */
 	@Override
 	public void validateInterfaces() throws IllegalArgumentException {
-		// 什么都不做
+		// Do nothing
 	}
 
-	/**
-	 * 获取 Advice（`Advice`）。
-	 */
 	@Override
 	public Advice getAdvice() {
 		return this.advice;
 	}
 
-	/**
-	 * 获取 Interfaces（`Interfaces`）。
-	 */
 	@Override
 	public Class<?>[] getInterfaces() {
 		return new Class<?>[] {this.introducedInterface};

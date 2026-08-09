@@ -24,12 +24,17 @@ import org.aspectj.bridge.IMessage.Kind;
 import org.aspectj.bridge.IMessageHandler;
 
 /**
- * AspectJ 的 {@link IMessageHandler} 接口的实现，通过与常规 Spring 消息相同的日志系统路由 AspectJ 编织消息。
- * <p>通过选项...
- * <p><code
- * class="code">-XmessageHandlerClass:org.springframework.aop.aspectj.AspectJWeaverMessageHandler</code>
- * <p>给织工；例如，在“{@code META-INF/aop.xml} 文件中指定以下内容：
- * <p><code class="code"><weaver options="..."/></code>
+ * AspectJ {@link IMessageHandler} 接口的实现，
+ * 将 AspectJ 织入消息路由至与常规 Spring 消息相同的日志系统。
+ *
+ * <p>向织入器传递选项...
+ *
+ * <p><code class="code">-XmessageHandlerClass:org.springframework.aop.aspectj.AspectJWeaverMessageHandler</code>
+ *
+ * <p>例如在 "{@code META-INF/aop.xml} 文件中指定：
+ *
+ * <p><code class="code">&lt;weaver options="..."/&gt;</code>
+ *
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @since 2.0
@@ -38,15 +43,9 @@ public class AspectJWeaverMessageHandler implements IMessageHandler {
 
 	private static final String AJ_ID = "[AspectJ] ";
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
 	private static final Log logger = LogFactory.getLog("AspectJ Weaver");
 
 
-	/**
-	 * 处理：Message（方法 `handleMessage`）。
-	 */
 	@Override
 	public boolean handleMessage(IMessage message) throws AbortException {
 		Kind messageKind = message.getKind();
@@ -83,36 +82,24 @@ public class AspectJWeaverMessageHandler implements IMessageHandler {
 		return false;
 	}
 
-	/**
-	 * 方法 `makeMessageFor`：完成本类中与「make Message For」相关的职责。
-	 */
 	private String makeMessageFor(IMessage aMessage) {
 		return AJ_ID + aMessage.getMessage();
 	}
 
-	/**
-	 * 判断是否 Ignoring。
-	 */
 	@Override
 	public boolean isIgnoring(Kind messageKind) {
-		// 我们希望看到一切，并允许动态配置日志级别。
+		// 希望看到所有消息，并允许动态配置日志级别。
 		return false;
 	}
 
-	/**
-	 * 执行核心逻辑：nt Ignore（方法 `dontIgnore`）。
-	 */
 	@Override
 	public void dontIgnore(Kind messageKind) {
-		// 无论如何，我们并没有忽视任何事情......
+		// 本来就没有忽略任何消息...
 	}
 
-	/**
-	 * 方法 `ignore`：完成本类中与「ignore」相关的职责。
-	 */
 	@Override
 	public void ignore(Kind kind) {
-		// 无论如何，我们并没有忽视任何事情......
+		// 本来就没有忽略任何消息...
 	}
 
 }

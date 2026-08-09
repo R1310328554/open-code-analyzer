@@ -23,7 +23,8 @@ import org.aspectj.weaver.tools.ShadowMatch;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 内部 {@link ShadowMatch} 实用程序。
+ * 内部 {@link ShadowMatch} 工具类。
+ *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @since 6.2
@@ -34,19 +35,21 @@ public abstract class ShadowMatchUtils {
 
 
 	/**
-	 * 查找指定密钥的 {@link ShadowMatch}。
-	 * @param key 使用钥匙
-	 * @return 用于指定密钥的 {@code ShadowMatch}，如果未找到则为 {@code null}
+	 * 查找指定键对应的 {@link ShadowMatch}。
+	 * @param key 使用的键
+	 * @return 指定键对应的 {@code ShadowMatch}，
+	 * 未找到时返回 {@code null}
 	 */
 	static @Nullable ShadowMatch getShadowMatch(Object key) {
 		return shadowMatchCache.get(key);
 	}
 
 	/**
-	 * 将 {@link ShadowMatch} 与指定的键关联。如果条目已存在，则忽略给定的 {@code shadowMatch}。
-	 * @param key 使用钥匙
-	 * @param shadowMatch 如果不存在则用于此键的影子匹配
-	 * @return 用于指定键的影子匹配
+	 * 将 {@link ShadowMatch} 与指定键关联。
+	 * 若条目已存在，则忽略给定的 {@code shadowMatch}。
+	 * @param key 使用的键
+	 * @param shadowMatch 该键尚无条目时使用的 shadow match
+	 * @return 指定键应使用的 shadow match
 	 */
 	static ShadowMatch setShadowMatch(Object key, ShadowMatch shadowMatch) {
 		ShadowMatch existing = shadowMatchCache.putIfAbsent(key, shadowMatch);
@@ -54,7 +57,7 @@ public abstract class ShadowMatchUtils {
 	}
 
 	/**
-	 * 清除计算的 {@link ShadowMatch} 实例的缓存。
+	 * 清空已计算 {@link ShadowMatch} 实例的缓存。
 	 */
 	public static void clearCache() {
 		shadowMatchCache.clear();

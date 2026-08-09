@@ -27,19 +27,20 @@ import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * {@link AspectInstanceFactory} 的实现，为每个 {@link #getAspectInstance()} 调用创建指定方面类的新实例。
+ * {@link AspectInstanceFactory} 的实现，
+ * 每次调用 {@link #getAspectInstance()} 时创建指定切面类的新实例。
+ *
  * @author Juergen Hoeller
  * @since 2.0.4
  */
 public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
 
-	/** 类相关状态（`aspectClass`）。 */
 	private final Class<?> aspectClass;
 
 
 	/**
-	 * 为给定的方面类创建一个新的 SimpleAspectInstanceFactory。
-	 * @param aspectClass 方面类
+	 * 为给定切面类创建新的 SimpleAspectInstanceFactory。
+	 * @param aspectClass 切面类
 	 */
 	public SimpleAspectInstanceFactory(Class<?> aspectClass) {
 		Assert.notNull(aspectClass, "Aspect class must not be null");
@@ -48,15 +49,12 @@ public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
 
 
 	/**
-	 * 返回指定的方面类（绝不是 {@code null}）。
+	 * 返回指定的切面类（永不为 {@code null}）。
 	 */
 	public final Class<?> getAspectClass() {
 		return this.aspectClass;
 	}
 
-	/**
-	 * 获取 Aspect Instance（`AspectInstance`）。
-	 */
 	@Override
 	public final Object getAspectInstance() {
 		try {
@@ -80,16 +78,15 @@ public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
 		}
 	}
 
-	/**
-	 * 获取 Aspect Class Loader（`AspectClassLoader`）。
-	 */
 	@Override
 	public @Nullable ClassLoader getAspectClassLoader() {
 		return this.aspectClass.getClassLoader();
 	}
 
 	/**
-	 * 确定该工厂方面实例的顺序，可以是通过实现 {@link org.springframework.core.Ordered} 接口表达的特定于实例的顺序，也可以是回退顺序。
+	 * 确定本工厂切面实例的顺序：
+	 * 要么通过实现 {@link org.springframework.core.Ordered} 接口表达的实例级顺序，
+	 * 要么为回退顺序。
 	 * @see org.springframework.core.Ordered
 	 * @see #getOrderForAspectClass
 	 */
@@ -99,9 +96,10 @@ public class SimpleAspectInstanceFactory implements AspectInstanceFactory {
 	}
 
 	/**
-	 * 通过实现 {@link org.springframework.core.Ordered} 接口，确定方面实例不表达特定于实例的顺序的情况的回退顺序。
-	 * <p>默认实现只是返回{@code Ordered.LOWEST_PRECEDENCE}。
-	 * @param aspectClass 方面类
+	 * 在切面实例未通过实现 {@link org.springframework.core.Ordered} 接口
+	 * 表达实例级顺序时，确定回退顺序。
+	 * <p>默认实现直接返回 {@code Ordered.LOWEST_PRECEDENCE}。
+	 * @param aspectClass 切面类
 	 */
 	protected int getOrderForAspectClass(Class<?> aspectClass) {
 		return Ordered.LOWEST_PRECEDENCE;
