@@ -1,6 +1,27 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 47,
+  "claimed_at": "2026-08-09T18:11:43Z",
+  "files": [
+    "docs_src/settings/app01_py310/__init__.py",
+    "docs_src/settings/app01_py310/config.py",
+    "docs_src/settings/app01_py310/main.py",
+    "docs_src/settings/app02_an_py310/__init__.py",
+    "docs_src/settings/app02_an_py310/config.py",
+    "docs_src/settings/app02_an_py310/main.py",
+    "docs_src/settings/app02_an_py310/test_main.py",
+    "docs_src/settings/app02_py310/__init__.py",
+    "docs_src/settings/app02_py310/config.py",
+    "docs_src/settings/app02_py310/main.py",
+    "docs_src/settings/app02_py310/test_main.py",
+    "docs_src/settings/app03_an_py310/__init__.py",
+    "docs_src/settings/app03_an_py310/config.py",
+    "docs_src/settings/app03_an_py310/main.py",
+    "docs_src/settings/app03_py310/__init__.py",
+    "docs_src/settings/app03_py310/config.py",
+    "docs_src/settings/app03_py310/main.py",
+    "docs_src/settings/tutorial001_py310.py",
+    "docs_src/sql_databases/__init__.py",
+    "docs_src/sql_databases/tutorial001_an_py310.py"
+  ],
+  "remaining_pending": 27,
   "done": 462
 }

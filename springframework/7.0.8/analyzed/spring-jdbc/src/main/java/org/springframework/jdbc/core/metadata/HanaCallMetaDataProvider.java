@@ -20,24 +20,20 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * {@link CallMetaDataProvider} 接口的 SAP HANA 特定实现。此类供 Simple JDBC 类内部使用。
+ * SAP HANA specific implementation for the {@link CallMetaDataProvider} interface.
+ * This class is intended for internal use by the Simple JDBC classes.
+ *
  * @author Subhobrata Dey
  * @author Juergen Hoeller
  * @since 4.2.1
  */
 public class HanaCallMetaDataProvider extends GenericCallMetaDataProvider {
 
-	/**
-	 * 创建 `HanaCallMetaDataProvider` 的新实例。
-	 */
 	public HanaCallMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 	}
 
 
-	/**
-	 * 初始化：With Meta Data（方法 `initializeWithMetaData`）。
-	 */
 	@Override
 	public void initializeWithMetaData(DatabaseMetaData databaseMetaData) throws SQLException {
 		super.initializeWithMetaData(databaseMetaData);

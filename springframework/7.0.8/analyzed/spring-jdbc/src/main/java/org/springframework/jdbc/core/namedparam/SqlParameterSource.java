@@ -21,9 +21,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- * 为对象定义通用功能的接口，这些对象可以为命名 SQL 参数提供参数值，充当 {@link NamedParameterJdbcTemplate} 操作的参数。
- * <p> 除了参数值之外，该接口还允许指定 SQL 类型。所有参数值和类型均通过指定参数名称来标识。
- * <p> 旨在用一致的接口包装各种实现，例如 Map 或 JavaBean。
+ * Interface that defines common functionality for objects that can
+ * offer parameter values for named SQL parameters, serving as argument
+ * for {@link NamedParameterJdbcTemplate} operations.
+ *
+ * <p>This interface allows for the specification of SQL type in addition
+ * to parameter values. All parameter values and types are identified by
+ * specifying the name of the parameter.
+ *
+ * <p>Intended to wrap various implementations like a Map or a JavaBean
+ * with a consistent interface.
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.0
@@ -35,7 +43,8 @@ import org.springframework.jdbc.support.JdbcUtils;
 public interface SqlParameterSource {
 
 	/**
-	 * 指示未知（或未指定）SQL 类型的常量。当没有特定的 SQL 类型已知时从 {@code getType} 返回。
+	 * Constant that indicates an unknown (or unspecified) SQL type.
+	 * To be returned from {@code getType} when no specific SQL type known.
 	 * @see #getSqlType
 	 * @see java.sql.Types
 	 */
@@ -43,24 +52,25 @@ public interface SqlParameterSource {
 
 
 	/**
-	 * 确定指定的命名参数是否有值。
-	 * @param paramName 参数名称
-	 * @return 有一个定义的值
+	 * Determine whether there is a value for the specified named parameter.
+	 * @param paramName the name of the parameter
+	 * @return whether there is a value defined
 	 */
 	boolean hasValue(String paramName);
 
 	/**
-	 * 返回请求的命名参数的参数值。
-	 * @param paramName 参数名称
-	 * @return 指定参数的值
-	 * @throws IllegalArgumentException 如果请求的参数没有值
+	 * Return the parameter value for the requested named parameter.
+	 * @param paramName the name of the parameter
+	 * @return the value of the specified parameter
+	 * @throws IllegalArgumentException if there is no value for the requested parameter
 	 */
 	@Nullable Object getValue(String paramName) throws IllegalArgumentException;
 
 	/**
-	 * 确定指定命名参数的 SQL 类型。
-	 * @param paramName 参数名称
-	 * @return 指定参数的 SQL 类型，如果未知则为 {@code TYPE_UNKNOWN}
+	 * Determine the SQL type for the specified named parameter.
+	 * @param paramName the name of the parameter
+	 * @return the SQL type of the specified parameter,
+	 * or {@code TYPE_UNKNOWN} if not known
 	 * @see #TYPE_UNKNOWN
 	 */
 	default int getSqlType(String paramName) {
@@ -68,19 +78,21 @@ public interface SqlParameterSource {
 	}
 
 	/**
-	 * 确定指定命名参数的类型名称。
-	 * @param paramName 参数名称
-	 * @return 输入指定参数的名称，如果未知，则输入 {@code null}
+	 * Determine the type name for the specified named parameter.
+	 * @param paramName the name of the parameter
+	 * @return the type name of the specified parameter,
+	 * or {@code null} if not known
 	 */
 	default @Nullable String getTypeName(String paramName) {
 		return null;
 	}
 
 	/**
-	 * 如果可能，枚举所有可用的参数名称。 <p>这是一个可选操作，主要与{@link
-	 * org.springframework.jdbc.core.simple.SimpleJdbcInsert}和{@link
-	 * org.springframework.jdbc.core.simple.SimpleJdbcCall}一起使用。
-	 * @return 参数名称数组，如果无法确定则为 {@code null}
+	 * Enumerate all available parameter names if possible.
+	 * <p>This is an optional operation, primarily for use with
+	 * {@link org.springframework.jdbc.core.simple.SimpleJdbcInsert}
+	 * and {@link org.springframework.jdbc.core.simple.SimpleJdbcCall}.
+	 * @return the array of parameter names, or {@code null} if not determinable
 	 * @since 5.0.3
 	 * @see SqlParameterSourceUtils#extractCaseInsensitiveParameterNames
 	 */

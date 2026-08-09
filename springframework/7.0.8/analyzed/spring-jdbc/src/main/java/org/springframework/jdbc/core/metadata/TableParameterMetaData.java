@@ -17,25 +17,23 @@
 package org.springframework.jdbc.core.metadata;
 
 /**
- * 用于表处理的特定参数的元数据的持有者。
+ * Holder of meta-data for a specific parameter that is used for table processing.
+ *
  * @author Thomas Risberg
  * @since 2.5
  * @see GenericTableMetaDataProvider
  */
 public class TableParameterMetaData {
 
-	/** 参数相关状态（`parameterName`）。 */
 	private final String parameterName;
 
-	/** 类型相关状态（`sqlType`）。 */
 	private final int sqlType;
 
-	/** `nullable`：该类的成员状态。 */
 	private final boolean nullable;
 
 
 	/**
-	 * 构造函数获取所有属性。
+	 * Constructor taking all the properties.
 	 */
 	public TableParameterMetaData(String columnName, int sqlType, boolean nullable) {
 		this.parameterName = columnName;
@@ -45,21 +43,21 @@ public class TableParameterMetaData {
 
 
 	/**
-	 * 获取参数名称。
+	 * Get the parameter name.
 	 */
 	public String getParameterName() {
 		return this.parameterName;
 	}
 
 	/**
-	 * 获取参数SQL类型。
+	 * Get the parameter SQL type.
 	 */
 	public int getSqlType() {
 		return this.sqlType;
 	}
 
 	/**
-	 * 获取参数/列是否可为空。
+	 * Get whether the parameter/column is nullable.
 	 */
 	public boolean isNullable() {
 		return this.nullable;

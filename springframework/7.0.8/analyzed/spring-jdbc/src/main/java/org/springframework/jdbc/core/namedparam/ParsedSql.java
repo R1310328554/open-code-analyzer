@@ -20,40 +20,37 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 保存有关已解析 SQL 语句的信息。
+ * Holds information about a parsed SQL statement.
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.0
  */
 public class ParsedSql {
 
-	/** `originalSql`：该类的成员状态。 */
 	private final String originalSql;
 
 	private final List<String> parameterNames = new ArrayList<>();
 
 	private final List<int[]> parameterIndexes = new ArrayList<>();
 
-	/** 参数相关状态（`namedParameterCount`）。 */
 	private int namedParameterCount;
 
-	/** 参数相关状态（`unnamedParameterCount`）。 */
 	private int unnamedParameterCount;
 
-	/** 参数相关状态（`totalParameterCount`）。 */
 	private int totalParameterCount;
 
 
 	/**
-	 * 创建 {@link ParsedSql} 类的新实例。
-	 * @param originalSql 正在（或将要）解析的 SQL 语句
+	 * Create a new instance of the {@link ParsedSql} class.
+	 * @param originalSql the SQL statement that is being (or is to be) parsed
 	 */
 	ParsedSql(String originalSql) {
 		this.originalSql = originalSql;
 	}
 
 	/**
-	 * 返回正在解析的SQL语句。
+	 * Return the SQL statement that is being parsed.
 	 */
 	String getOriginalSql() {
 		return this.originalSql;
@@ -61,10 +58,10 @@ public class ParsedSql {
 
 
 	/**
-	 * 添加从此 SQL 语句解析的命名参数。
-	 * @param parameterName 参数名称
-	 * @param startIndex 原始 SQL 字符串中的起始索引
-	 * @param endIndex 原始 SQL 字符串中的结束索引
+	 * Add a named parameter parsed from this SQL statement.
+	 * @param parameterName the name of the parameter
+	 * @param startIndex the start index in the original SQL String
+	 * @param endIndex the end index in the original SQL String
 	 */
 	void addNamedParameter(String parameterName, int startIndex, int endIndex) {
 		this.parameterNames.add(parameterName);
@@ -72,58 +69,65 @@ public class ParsedSql {
 	}
 
 	/**
-	 * 返回解析后的SQL语句中的所有参数（绑定变量）。此处包含重复出现的相同参数名称。
+	 * Return all the parameters (bind variables) in the parsed SQL statement.
+	 * Repeated occurrences of the same parameter name are included here.
 	 */
 	List<String> getParameterNames() {
 		return this.parameterNames;
 	}
 
 	/**
-	 * 返回指定参数的参数索引。
-	 * @param parameterPosition 参数的位置（作为参数名称列表中的索引）
-	 * @return 起始索引和结束索引，组合成长度为2的int数组
+	 * Return the parameter indexes for the specified parameter.
+	 * @param parameterPosition the position of the parameter
+	 * (as index in the parameter names List)
+	 * @return the start index and end index, combined into
+	 * an int array of length 2
 	 */
 	int[] getParameterIndexes(int parameterPosition) {
 		return this.parameterIndexes.get(parameterPosition);
 	}
 
 	/**
-	 * 设置 SQL 语句中命名参数的数量。每个参数名称计算一次；重复出现的次数不计入此处。
+	 * Set the count of named parameters in the SQL statement.
+	 * Each parameter name counts once; repeated occurrences do not count here.
 	 */
 	void setNamedParameterCount(int namedParameterCount) {
 		this.namedParameterCount = namedParameterCount;
 	}
 
 	/**
-	 * 返回 SQL 语句中命名参数的计数。每个参数名称计算一次；重复出现的次数不计入此处。
+	 * Return the count of named parameters in the SQL statement.
+	 * Each parameter name counts once; repeated occurrences do not count here.
 	 */
 	int getNamedParameterCount() {
 		return this.namedParameterCount;
 	}
 
 	/**
-	 * 设置SQL语句中所有未命名参数的数量。
+	 * Set the count of all the unnamed parameters in the SQL statement.
 	 */
 	void setUnnamedParameterCount(int unnamedParameterCount) {
 		this.unnamedParameterCount = unnamedParameterCount;
 	}
 
 	/**
-	 * 返回 SQL 语句中所有未命名参数的计数。
+	 * Return the count of all the unnamed parameters in the SQL statement.
 	 */
 	int getUnnamedParameterCount() {
 		return this.unnamedParameterCount;
 	}
 
 	/**
-	 * 设置SQL语句中所有参数的总数。此处重复出现相同的参数名称确实有效。
+	 * Set the total count of all the parameters in the SQL statement.
+	 * Repeated occurrences of the same parameter name do count here.
 	 */
 	void setTotalParameterCount(int totalParameterCount) {
 		this.totalParameterCount = totalParameterCount;
 	}
 
 	/**
-	 * 返回SQL语句中所有参数的总数。此处重复出现相同的参数名称确实有效。
+	 * Return the total count of all the parameters in the SQL statement.
+	 * Repeated occurrences of the same parameter name do count here.
 	 */
 	int getTotalParameterCount() {
 		return this.totalParameterCount;
@@ -131,7 +135,7 @@ public class ParsedSql {
 
 
 	/**
-	 * 公开原始 SQL 字符串。
+	 * Exposes the original SQL String.
 	 */
 	@Override
 	public String toString() {

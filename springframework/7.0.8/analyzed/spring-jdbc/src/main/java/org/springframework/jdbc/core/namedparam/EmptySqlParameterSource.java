@@ -19,53 +19,39 @@ package org.springframework.jdbc.core.namedparam;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@link SqlParameterSource} 接口的简单空实现。
+ * A simple empty implementation of the {@link SqlParameterSource} interface.
+ *
  * @author Juergen Hoeller
  * @since 3.2.2
  */
 public class EmptySqlParameterSource implements SqlParameterSource {
 
 	/**
-	 * {@link EmptySqlParameterSource} 的共享实例。
+	 * A shared instance of {@link EmptySqlParameterSource}.
 	 */
 	public static final EmptySqlParameterSource INSTANCE = new EmptySqlParameterSource();
 
 
-	/**
-	 * 判断是否包含/具备 Value。
-	 */
 	@Override
 	public boolean hasValue(String paramName) {
 		return false;
 	}
 
-	/**
-	 * 获取 Value（`Value`）。
-	 */
 	@Override
 	public @Nullable Object getValue(String paramName) throws IllegalArgumentException {
 		throw new IllegalArgumentException("This SqlParameterSource is empty");
 	}
 
-	/**
-	 * 获取 Sql Type（`SqlType`）。
-	 */
 	@Override
 	public int getSqlType(String paramName) {
 		return TYPE_UNKNOWN;
 	}
 
-	/**
-	 * 获取 Type Name（`TypeName`）。
-	 */
 	@Override
 	public @Nullable String getTypeName(String paramName) {
 		return null;
 	}
 
-	/**
-	 * 获取 Parameter Names（`ParameterNames`）。
-	 */
 	@Override
 	public String @Nullable [] getParameterNames() {
 		return null;

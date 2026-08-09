@@ -23,24 +23,20 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@link CallMetaDataProvider} 接口的 DB2 特定实现。此类供 Simple JDBC 类内部使用。
+ * DB2 specific implementation for the {@link CallMetaDataProvider} interface.
+ * This class is intended for internal use by the Simple JDBC classes.
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.5
  */
 public class Db2CallMetaDataProvider extends GenericCallMetaDataProvider {
 
-	/**
-	 * 创建 `Db2CallMetaDataProvider` 的新实例。
-	 */
 	public Db2CallMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 	}
 
 
-	/**
-	 * 初始化：With Meta Data（方法 `initializeWithMetaData`）。
-	 */
 	@Override
 	public void initializeWithMetaData(DatabaseMetaData databaseMetaData) throws SQLException {
 		try {
@@ -69,16 +65,13 @@ public class Db2CallMetaDataProvider extends GenericCallMetaDataProvider {
 		}
 	}
 
-	/**
-	 * 方法 `metaDataSchemaNameToUse`：完成本类中与「meta Data Schema Name To Use」相关的职责。
-	 */
 	@Override
 	public @Nullable String metaDataSchemaNameToUse(@Nullable String schemaName) {
 		if (schemaName != null) {
 			return super.metaDataSchemaNameToUse(schemaName);
 		}
 
-		// 如果未指定架构，则使用当前用户架构...
+		// Use current user schema if no schema specified...
 		String userName = getUserName();
 		return (userName != null ? userName.toUpperCase(Locale.ROOT) : null);
 	}

@@ -27,7 +27,9 @@ import org.springframework.jdbc.core.SqlOutParameter;
 import org.springframework.jdbc.core.SqlParameter;
 
 /**
- * {@link CallMetaDataProvider} 接口的 Oracle 特定实现。此类供 Simple JDBC 类内部使用。
+ * Oracle-specific implementation for the {@link CallMetaDataProvider} interface.
+ * This class is intended for internal use by the Simple JDBC classes.
+ *
  * @author Thomas Risberg
  * @since 2.5
  */
@@ -36,59 +38,38 @@ public class OracleCallMetaDataProvider extends GenericCallMetaDataProvider {
 	private static final String REF_CURSOR_NAME = "REF CURSOR";
 
 
-	/**
-	 * 创建 `OracleCallMetaDataProvider` 的新实例。
-	 */
 	public OracleCallMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 	}
 
 
-	/**
-	 * 判断是否 Return Result Set Supported。
-	 */
 	@Override
 	public boolean isReturnResultSetSupported() {
 		return false;
 	}
 
-	/**
-	 * 判断是否 Ref Cursor Supported。
-	 */
 	@Override
 	public boolean isRefCursorSupported() {
 		return true;
 	}
 
-	/**
-	 * 获取 Ref Cursor Sql Type（`RefCursorSqlType`）。
-	 */
 	@Override
 	public int getRefCursorSqlType() {
 		return -10;
 	}
 
-	/**
-	 * 方法 `metaDataCatalogNameToUse`：完成本类中与「meta Data Catalog Name To Use」相关的职责。
-	 */
 	@Override
 	public @Nullable String metaDataCatalogNameToUse(@Nullable String catalogName) {
-		// Oracle 使用目录名称作为包名称，如果没有包，则使用空字符串
+		// Oracle uses catalog name for package name or an empty string if no package
 		return (catalogName == null ? "" : catalogNameToUse(catalogName));
 	}
 
-	/**
-	 * 方法 `metaDataSchemaNameToUse`：完成本类中与「meta Data Schema Name To Use」相关的职责。
-	 */
 	@Override
 	public @Nullable String metaDataSchemaNameToUse(@Nullable String schemaName) {
-		// 如果未指定架构，则使用当前用户架构
+		// Use current user schema if no schema specified
 		return (schemaName == null ? getUserName() : super.metaDataSchemaNameToUse(schemaName));
 	}
 
-	/**
-	 * 创建：Default Out Parameter（方法 `createDefaultOutParameter`）。
-	 */
 	@Override
 	public SqlParameter createDefaultOutParameter(String parameterName, CallParameterMetaData meta) {
 		if (meta.getSqlType() == Types.OTHER && REF_CURSOR_NAME.equals(meta.getTypeName())) {

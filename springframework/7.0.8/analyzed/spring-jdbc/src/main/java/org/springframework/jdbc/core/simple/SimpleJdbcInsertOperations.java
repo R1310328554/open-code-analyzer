@@ -22,8 +22,11 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.support.KeyHolder;
 
 /**
- * 指定 {@link SimpleJdbcInsert} 实现的简单 JDBC 插入 API 的接口。
- * <p> 该接口通常不直接使用，但提供了增强可测试性的选项，因为它可以轻松地被模拟或存根。
+ * Interface specifying the API for a Simple JDBC Insert implemented by {@link SimpleJdbcInsert}.
+ *
+ * <p>This interface is not often used directly, but provides the option to enhance testability,
+ * as it can easily be mocked or stubbed.
+ *
  * @author Thomas Risberg
  * @author Sam Brannen
  * @since 2.5
@@ -31,45 +34,51 @@ import org.springframework.jdbc.support.KeyHolder;
 public interface SimpleJdbcInsertOperations {
 
 	/**
-	 * 指定用于插入的表名称。
-	 * @param tableName 存储的表的名称
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Specify the table name to be used for the insert.
+	 * @param tableName the name of the stored table
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 */
 	SimpleJdbcInsertOperations withTableName(String tableName);
 
 	/**
-	 * 指定用于插入的架构名称（如果有）。
-	 * @param schemaName 模式的名称
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Specify the schema name, if any, to be used for the insert.
+	 * @param schemaName the name of the schema
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 */
 	SimpleJdbcInsertOperations withSchemaName(String schemaName);
 
 	/**
-	 * 指定用于插入的目录名称（如果有）。
-	 * @param catalogName 目录名称
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Specify the catalog name, if any, to be used for the insert.
+	 * @param catalogName the name of the catalog
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 */
 	SimpleJdbcInsertOperations withCatalogName(String catalogName);
 
 	/**
-	 * 指定插入语句应限制使用的列名。
-	 * @param columnNames 一个或多个列名
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Specify the column names that the insert statement should be limited to use.
+	 * @param columnNames one or more column names
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 */
 	SimpleJdbcInsertOperations usingColumns(String... columnNames);
 
 	/**
-	 * 指定具有自动生成键的任何列的名称。
-	 * @param columnNames 一个或多个列名
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Specify the names of any columns that have auto-generated keys.
+	 * @param columnNames one or more column names
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 */
 	SimpleJdbcInsertOperations usingGeneratedKeyColumns(String... columnNames);
 
 	/**
-	 * 指定 SQL 标识符应加引号。 <p>如果调用此方法，则将使用底层数据库的标识符引用字符串来引用生成的 SQL 语句中的 SQL 标识符。在此上下文中，SQL 标识符指的是架构
-	 * 、表和列名称。 <p>当引用标识符时，必须通过 {@link #usingColumns(String...)} 提供显式列名称。此外，模式名称、表名称和列名称的所有标识符必须
-	 * 与数据库元数据中有关大小写（混合大小写、大写或小写）的相应标识符相匹配。
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Specify that SQL identifiers should be quoted.
+	 * <p>If this method is invoked, the identifier quote string for the underlying
+	 * database will be used to quote SQL identifiers in generated SQL statements.
+	 * In this context, SQL identifiers refer to schema, table, and column names.
+	 * <p>When identifiers are quoted, explicit column names must be supplied via
+	 * {@link #usingColumns(String...)}. Furthermore, all identifiers for the
+	 * schema name, table name, and column names must match the corresponding
+	 * identifiers in the database's metadata regarding casing (mixed case,
+	 * uppercase, or lowercase).
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 * @since 6.1
 	 * @see #withSchemaName(String)
 	 * @see #withTableName(String)
@@ -85,71 +94,85 @@ public interface SimpleJdbcInsertOperations {
 	SimpleJdbcInsertOperations usingQuotedIdentifiers();
 
 	/**
-	 * 关闭对通过 JDBC 获取的列元数据信息的任何处理。
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Turn off any processing of column meta-data information obtained via JDBC.
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 */
 	SimpleJdbcInsertOperations withoutTableColumnMetaDataAccess();
 
 	/**
-	 * 包括通过 JDBC 进行列元数据查找的同义词。 <p>注意：这仅适用于 Oracle，因为支持同义词的其他数据库似乎自动包含同义词。
-	 * @return {@code SimpleJdbcInsert}（用于方法链接）
+	 * Include synonyms for the column meta-data lookups via JDBC.
+	 * <p>Note: This is only necessary to include for Oracle since other databases
+	 * supporting synonyms seem to include the synonyms automatically.
+	 * @return this {@code SimpleJdbcInsert} (for method chaining)
 	 */
 	SimpleJdbcInsertOperations includeSynonymsForTableColumnMetaData();
 
 	/**
-	 * 使用传入的值执行插入。
-	 * @param args 包含列名和相应值的 Map
-	 * @return JDBC 驱动程序返回的受影响的行数
+	 * Execute the insert using the values passed in.
+	 * @param args a Map containing column names and corresponding value
+	 * @return the number of rows affected as returned by the JDBC driver
 	 */
 	int execute(Map<String, ?> args);
 
 	/**
-	 * 使用传入的值执行插入。
-	 * @param parameterSource 包含用于插入的值的 SqlParameterSource
-	 * @return JDBC 驱动程序返回的受影响的行数
+	 * Execute the insert using the values passed in.
+	 * @param parameterSource the SqlParameterSource containing values to use for insert
+	 * @return the number of rows affected as returned by the JDBC driver
 	 */
 	int execute(SqlParameterSource parameterSource);
 
 	/**
-	 * 使用传入的值执行插入并返回生成的键。 <p>这要求已指定具有自动生成键的列的名称。此方法将始终返回 KeyHolder，但调用者必须验证它是否确实包含生成的密钥。
-	 * @param args 包含列名和相应值的 Map
-	 * @return 生成的键值
+	 * Execute the insert using the values passed in and return the generated key.
+	 * <p>This requires that the name of the columns with auto generated keys have been specified.
+	 * This method will always return a KeyHolder but the caller must verify that it actually
+	 * contains the generated keys.
+	 * @param args a Map containing column names and corresponding value
+	 * @return the generated key value
 	 */
 	Number executeAndReturnKey(Map<String, ?> args);
 
 	/**
-	 * 使用传入的值执行插入并返回生成的键。 <p>这要求已指定具有自动生成键的列的名称。此方法将始终返回 KeyHolder，但调用者必须验证它是否确实包含生成的密钥。
-	 * @param parameterSource 包含用于插入的值的 SqlParameterSource
-	 * @return 生成的键值。
+	 * Execute the insert using the values passed in and return the generated key.
+	 * <p>This requires that the name of the columns with auto generated keys have been specified.
+	 * This method will always return a KeyHolder but the caller must verify that it actually
+	 * contains the generated keys.
+	 * @param parameterSource the SqlParameterSource containing values to use for insert
+	 * @return the generated key value.
 	 */
 	Number executeAndReturnKey(SqlParameterSource parameterSource);
 
 	/**
-	 * 使用传入的值执行插入并返回生成的键。 <p>这要求已指定具有自动生成键的列的名称。此方法将始终返回 KeyHolder，但调用者必须验证它是否确实包含生成的密钥。
-	 * @param args 包含列名和相应值的 Map
-	 * @return KeyHolder 包含所有生成的密钥
+	 * Execute the insert using the values passed in and return the generated keys.
+	 * <p>This requires that the name of the columns with auto generated keys have been specified.
+	 * This method will always return a KeyHolder but the caller must verify that it actually
+	 * contains the generated keys.
+	 * @param args a Map containing column names and corresponding value
+	 * @return the KeyHolder containing all generated keys
 	 */
 	KeyHolder executeAndReturnKeyHolder(Map<String, ?> args);
 
 	/**
-	 * 使用传入的值执行插入并返回生成的键。 <p>这要求已指定具有自动生成键的列的名称。此方法将始终返回 KeyHolder，但调用者必须验证它是否确实包含生成的密钥。
-	 * @param parameterSource 包含用于插入的值的 SqlParameterSource
-	 * @return KeyHolder 包含所有生成的密钥
+	 * Execute the insert using the values passed in and return the generated keys.
+	 * <p>This requires that the name of the columns with auto generated keys have been specified.
+	 * This method will always return a KeyHolder but the caller must verify that it actually
+	 * contains the generated keys.
+	 * @param parameterSource the SqlParameterSource containing values to use for insert
+	 * @return the KeyHolder containing all generated keys
 	 */
 	KeyHolder executeAndReturnKeyHolder(SqlParameterSource parameterSource);
 
 	/**
-	 * 使用传入的批量值执行批量插入。
-	 * @param batch 包含一批列名和相应值的 Map 数组
-	 * @return JDBC 驱动程序返回的受影响的行数数组
+	 * Execute a batch insert using the batch of values passed in.
+	 * @param batch an array of Maps containing a batch of column names and corresponding value
+	 * @return the array of number of rows affected as returned by the JDBC driver
 	 */
 	@SuppressWarnings("unchecked")
 	int[] executeBatch(Map<String, ?>... batch);
 
 	/**
-	 * 使用传入的批量值执行批量插入。
-	 * @param batch 包含批次值的 SqlParameterSource 数组
-	 * @return JDBC 驱动程序返回的受影响的行数数组
+	 * Execute a batch insert using the batch of values passed in.
+	 * @param batch an array of SqlParameterSource containing values for the batch
+	 * @return the array of number of rows affected as returned by the JDBC driver
 	 */
 	int[] executeBatch(SqlParameterSource... batch);
 

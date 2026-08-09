@@ -20,32 +20,25 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * {@link TableMetaDataProvider} 的 HSQL 具体实现。支持在没有 JDBC 3.0 {@code getGeneratedKeys}
- * 支持的情况下检索生成的密钥的功能。
+ * The HSQL specific implementation of {@link TableMetaDataProvider}.
+ * Supports a feature for retrieving generated keys without the JDBC 3.0
+ * {@code getGeneratedKeys} support.
+ *
  * @author Thomas Risberg
  * @since 2.5
  */
 public class HsqlTableMetaDataProvider extends GenericTableMetaDataProvider {
 
-	/**
-	 * 创建 `HsqlTableMetaDataProvider` 的新实例。
-	 */
 	public HsqlTableMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 	}
 
 
-	/**
-	 * 判断是否 Get Generated Keys Simulated。
-	 */
 	@Override
 	public boolean isGetGeneratedKeysSimulated() {
 		return true;
 	}
 
-	/**
-	 * 获取 Simple Query For Get Generated Key（`SimpleQueryForGetGeneratedKey`）。
-	 */
 	@Override
 	public String getSimpleQueryForGetGeneratedKey(String tableName, String keyColumnName) {
 		return "select max(identity()) from " + tableName;

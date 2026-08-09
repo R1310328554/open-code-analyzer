@@ -27,7 +27,9 @@ import org.springframework.jdbc.core.SqlOutParameter;
 import org.springframework.jdbc.core.SqlParameter;
 
 /**
- * {@link CallMetaDataProvider} 接口的 Postgres 特定实现。此类供 Simple JDBC 类内部使用。
+ * Postgres-specific implementation for the {@link CallMetaDataProvider} interface.
+ * This class is intended for internal use by the Simple JDBC classes.
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.5
@@ -36,57 +38,38 @@ public class PostgresCallMetaDataProvider extends GenericCallMetaDataProvider {
 
 	private static final String RETURN_VALUE_NAME = "returnValue";
 
-	/** 名称相关状态（`schemaName`）。 */
 	private final String schemaName;
 
 
-	/**
-	 * 创建 `PostgresCallMetaDataProvider` 的新实例。
-	 */
 	public PostgresCallMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 
-		// 如果未指定架构，则使用当前架构（或公共架构）
+		// Use current schema (or public schema) if no schema specified
 		String schema = databaseMetaData.getConnection().getSchema();
 		this.schemaName = (schema != null ? schema : "public");
 	}
 
 
-	/**
-	 * 判断是否 Return Result Set Supported。
-	 */
 	@Override
 	public boolean isReturnResultSetSupported() {
 		return false;
 	}
 
-	/**
-	 * 判断是否 Ref Cursor Supported。
-	 */
 	@Override
 	public boolean isRefCursorSupported() {
 		return true;
 	}
 
-	/**
-	 * 获取 Ref Cursor Sql Type（`RefCursorSqlType`）。
-	 */
 	@Override
 	public int getRefCursorSqlType() {
 		return Types.OTHER;
 	}
 
-	/**
-	 * 方法 `metaDataSchemaNameToUse`：完成本类中与「meta Data Schema Name To Use」相关的职责。
-	 */
 	@Override
 	public @Nullable String metaDataSchemaNameToUse(@Nullable String schemaName) {
 		return (schemaName == null ? this.schemaName : super.metaDataSchemaNameToUse(schemaName));
 	}
 
-	/**
-	 * 创建：Default Out Parameter（方法 `createDefaultOutParameter`）。
-	 */
 	@Override
 	public SqlParameter createDefaultOutParameter(String parameterName, CallParameterMetaData meta) {
 		if (meta.getSqlType() == Types.OTHER && "refcursor".equals(meta.getTypeName())) {
@@ -97,9 +80,6 @@ public class PostgresCallMetaDataProvider extends GenericCallMetaDataProvider {
 		}
 	}
 
-	/**
-	 * 方法 `byPassReturnParameter`：完成本类中与「by Pass Return Parameter」相关的职责。
-	 */
 	@Override
 	public boolean byPassReturnParameter(String parameterName) {
 		return RETURN_VALUE_NAME.equals(parameterName);

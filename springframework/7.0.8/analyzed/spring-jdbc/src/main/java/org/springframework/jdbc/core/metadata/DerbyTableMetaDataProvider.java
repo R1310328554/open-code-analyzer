@@ -20,27 +20,22 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * Derby的具体实现是{@link TableMetaDataProvider}。覆盖有关检索生成的密钥的 Derby 元数据信息。
+ * The Derby specific implementation of {@link TableMetaDataProvider}.
+ * Overrides the Derby meta-data info regarding retrieving generated keys.
+ *
  * @author Thomas Risberg
  * @since 3.0
  */
 public class DerbyTableMetaDataProvider extends GenericTableMetaDataProvider {
 
-	/** `false`：该类的成员状态。 */
 	private boolean supportsGeneratedKeysOverride = false;
 
 
-	/**
-	 * 创建 `DerbyTableMetaDataProvider` 的新实例。
-	 */
 	public DerbyTableMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		super(databaseMetaData);
 	}
 
 
-	/**
-	 * 初始化：With Meta Data（方法 `initializeWithMetaData`）。
-	 */
 	@Override
 	public void initializeWithMetaData(DatabaseMetaData databaseMetaData) throws SQLException {
 		super.initializeWithMetaData(databaseMetaData);
@@ -53,9 +48,6 @@ public class DerbyTableMetaDataProvider extends GenericTableMetaDataProvider {
 		}
 	}
 
-	/**
-	 * 判断是否 Get Generated Keys Supported。
-	 */
 	@Override
 	public boolean isGetGeneratedKeysSupported() {
 		return (super.isGetGeneratedKeysSupported() || this.supportsGeneratedKeysOverride);

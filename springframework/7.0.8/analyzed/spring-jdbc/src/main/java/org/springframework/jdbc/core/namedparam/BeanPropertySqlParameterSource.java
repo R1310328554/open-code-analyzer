@@ -30,9 +30,13 @@ import org.springframework.jdbc.core.StatementCreatorUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link SqlParameterSource} 实现，从给定 JavaBean 对象的 bean 属性获取参数值。 bean 属性的名称必须与参数名称匹配。还支持记录类的
- * 组件，访问器方法与参数名称匹配。
- * <p> 使用 Spring {@link BeanWrapper} 进行底层 bean 属性访问。
+ * {@link SqlParameterSource} implementation that obtains parameter values
+ * from bean properties of a given JavaBean object. The names of the bean
+ * properties have to match the parameter names. Supports components of
+ * record classes as well, with accessor methods matching parameter names.
+ *
+ * <p>Uses a Spring {@link BeanWrapper} for bean property access underneath.
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 2.0
@@ -41,33 +45,25 @@ import org.springframework.util.StringUtils;
  */
 public class BeanPropertySqlParameterSource extends AbstractSqlParameterSource {
 
-	/** Bean相关状态（`beanWrapper`）。 */
 	private final BeanWrapper beanWrapper;
 
-	/** 名称相关状态（`propertyNames`）。 */
 	private String @Nullable [] propertyNames;
 
 
 	/**
-	 * 为给定的 bean 创建一个新的 BeanPropertySqlParameterSource。
-	 * @param object 要包装的 bean 实例
+	 * Create a new BeanPropertySqlParameterSource for the given bean.
+	 * @param object the bean instance to wrap
 	 */
 	public BeanPropertySqlParameterSource(Object object) {
 		this.beanWrapper = PropertyAccessorFactory.forBeanPropertyAccess(object);
 	}
 
 
-	/**
-	 * 判断是否包含/具备 Value。
-	 */
 	@Override
 	public boolean hasValue(String paramName) {
 		return this.beanWrapper.isReadableProperty(paramName);
 	}
 
-	/**
-	 * 获取 Value（`Value`）。
-	 */
 	@Override
 	public @Nullable Object getValue(String paramName) throws IllegalArgumentException {
 		try {
@@ -79,7 +75,7 @@ public class BeanPropertySqlParameterSource extends AbstractSqlParameterSource {
 	}
 
 	/**
-	 * 从相应的属性类型派生默认 SQL 类型。
+	 * Derives a default SQL type from the corresponding property type.
 	 * @see org.springframework.jdbc.core.StatementCreatorUtils#javaTypeToSqlParameterType
 	 */
 	@Override
@@ -92,17 +88,15 @@ public class BeanPropertySqlParameterSource extends AbstractSqlParameterSource {
 		return StatementCreatorUtils.javaTypeToSqlParameterType(propType);
 	}
 
-	/**
-	 * 获取 Parameter Names（`ParameterNames`）。
-	 */
 	@Override
 	public String[] getParameterNames() {
 		return getReadablePropertyNames();
 	}
 
 	/**
-	 * 提供对包装 bean 的属性名称的访问。使用 {@link PropertyAccessor} 接口中提供的支持。
-	 * @return 包含所有已知属性名称的数组
+	 * Provide access to the property names of the wrapped bean.
+	 * Uses support provided in the {@link PropertyAccessor} interface.
+	 * @return an array containing all the known property names
 	 */
 	public String[] getReadablePropertyNames() {
 		if (this.propertyNames == null) {

@@ -28,7 +28,9 @@ import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.jdbc.support.MetaDataAccessException;
 
 /**
- * 工厂用于根据所使用的数据库类型创建 {@link CallMetaDataProvider} 实现。
+ * Factory used to create a {@link CallMetaDataProvider} implementation
+ * based on the type of database being used.
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -47,8 +49,7 @@ public final class CallMetaDataProviderFactory {
 	private static final String POSTGRES = "PostgreSQL";
 	private static final String SYBASE = "Sybase";
 
-	/**
-	 */
+	/** List of supported database products for procedure calls. */
 	public static final List<String> supportedDatabaseProductsForProcedures = List.of(
 			DERBY,
 			DB2,
@@ -61,8 +62,7 @@ public final class CallMetaDataProviderFactory {
 			SYBASE
 		);
 
-	/**
-	 */
+	/** List of supported database products for function calls. */
 	public static final List<String> supportedDatabaseProductsForFunctions = List.of(
 			MARIA,
 			MS_SQL_SERVER,
@@ -71,24 +71,18 @@ public final class CallMetaDataProviderFactory {
 			POSTGRES
 		);
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
 	private static final Log logger = LogFactory.getLog(CallMetaDataProviderFactory.class);
 
 
-	/**
-	 * 创建 `CallMetaDataProviderFactory` 的新实例。
-	 */
 	private CallMetaDataProviderFactory() {
 	}
 
 
 	/**
-	 * 根据数据库元数据创建 {@link CallMetaDataProvider}。
-	 * @param dataSource 用于检索元数据的 JDBC 数据源
-	 * @param context 保存配置和元数据的类
-	 * @return 要使用的 CallMetaDataProvider 实现的
+	 * Create a {@link CallMetaDataProvider} based on the database meta-data.
+	 * @param dataSource the JDBC DataSource to use for retrieving meta-data
+	 * @param context the class that holds configuration and meta-data
+	 * @return instance of the CallMetaDataProvider implementation to be used
 	 */
 	public static CallMetaDataProvider createMetaDataProvider(DataSource dataSource, final CallMetaDataContext context) {
 		try {
