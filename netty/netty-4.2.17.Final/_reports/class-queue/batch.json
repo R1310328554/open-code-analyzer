@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:37:12Z",
   "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeaderValues.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeadersEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeadersFactory.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpMessage.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpMessageDecoderResult.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpMessageUtil.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpMethod.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpObject.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpRequest.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpRequestDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpRequestEncoder.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/HttpResponse.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/HttpResponseDecoder.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/HttpResponseEncoder.java",
@@ -33,5 +18,5 @@
     "codec-http/src/main/java/io/netty/handler/codec/http/InvalidLineSeparatorException.java"
   ],
   "remaining_pending": 1478,
-  "done": 420
+  "done": 435
 }
