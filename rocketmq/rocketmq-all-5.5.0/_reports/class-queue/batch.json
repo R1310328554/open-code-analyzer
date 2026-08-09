@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:04:24Z",
   "files": [
-    "tools/src/main/java/org/apache/rocketmq/tools/command/consumer/DeleteSubscriptionGroupCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/consumer/GetConsumerConfigSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/consumer/SetConsumeModeSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/consumer/StartMonitoringSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/consumer/UpdateSubGroupListSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/consumer/UpdateSubGroupSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/container/AddBrokerSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/container/RemoveBrokerSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/controller/CleanControllerBrokerMetaSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/controller/GetControllerConfigSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/controller/GetControllerMetaDataSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/controller/ReElectMasterSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/controller/UpdateControllerConfigSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportConfigsCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportMetadataCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportMetadataInRocksDBCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportMetricsCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/export/ExportPopRecordCommand.java",
@@ -33,5 +18,5 @@
     "tools/src/main/java/org/apache/rocketmq/tools/command/message/DumpCompactionLogCommand.java"
   ],
   "remaining_pending": 168,
-  "done": 1290
+  "done": 1305
 }
