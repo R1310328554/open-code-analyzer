@@ -17,25 +17,18 @@
 
 package org.apache.rocketmq.store.ha;
 
+/**
+ * HA 连接生命周期状态枚举。
+ */
 public enum HAConnectionState {
-    /**
-     * Ready to start connection.
-     */
+    /** 就绪，尚未开始握手。 */
     READY,
-    /**
-     * CommitLog consistency checking.
-     */
+    /** 握手中，校验 CommitLog 一致性。 */
     HANDSHAKE,
-    /**
-     * Synchronizing data.
-     */
+    /** 数据传输中，同步 CommitLog。 */
     TRANSFER,
-    /**
-     * Temporarily stop transferring.
-     */
+    /** 暂停传输。 */
     SUSPEND,
-    /**
-     * Connection shutdown.
-     */
+    /** 连接已关闭。 */
     SHUTDOWN,
 }

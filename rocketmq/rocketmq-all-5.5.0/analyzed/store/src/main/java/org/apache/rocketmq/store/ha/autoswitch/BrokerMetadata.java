@@ -21,18 +21,26 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 
+/**
+ * Broker 元数据文件：持久化 clusterName、brokerName、brokerId。
+ */
 public class BrokerMetadata extends MetadataFile {
 
+    /** 集群名称。 */
     protected String clusterName;
 
+    /** Broker 名称。 */
     protected String brokerName;
 
+    /** Broker ID（0 为主）。 */
     protected Long brokerId;
 
+    /** 指定元数据文件路径。 */
     public BrokerMetadata(String filePath) {
         this.filePath = filePath;
     }
 
+    /** 更新内存字段并写盘。 */
     public void updateAndPersist(String clusterName, String brokerName, Long brokerId) throws Exception {
         this.clusterName = clusterName;
         this.brokerName = brokerName;
@@ -40,6 +48,7 @@ public class BrokerMetadata extends MetadataFile {
         writeToFile();
     }
 
+    /** 序列化为 cluster#broker#id 字符串。 */
     @Override
     public String encodeToStr() {
         StringBuilder sb = new StringBuilder();
@@ -49,6 +58,7 @@ public class BrokerMetadata extends MetadataFile {
         return sb.toString();
     }
 
+    /** 从 # 分隔字符串反序列化。 */
     @Override
     public void decodeFromStr(String dataStr) {
         if (dataStr == null) return;
@@ -58,11 +68,13 @@ public class BrokerMetadata extends MetadataFile {
         this.brokerId = Long.valueOf(dataArr[2]);
     }
 
+    /** 三个字段均已加载则返回 true。 */
     @Override
     public boolean isLoaded() {
         return StringUtils.isNotEmpty(this.clusterName) && StringUtils.isNotEmpty(this.brokerName) && brokerId != null;
     }
 
+    /** 清空内存中的元数据。 */
     @Override
     public void clearInMem() {
         this.clusterName = null;
@@ -70,18 +82,22 @@ public class BrokerMetadata extends MetadataFile {
         this.brokerId = null;
     }
 
+    /** 返回 brokerName。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 返回 brokerId。 */
     public Long getBrokerId() {
         return brokerId;
     }
 
+    /** 返回 clusterName。 */
     public String getClusterName() {
         return clusterName;
     }
 
+    /** 按 cluster、broker、id 比较相等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -90,11 +106,13 @@ public class BrokerMetadata extends MetadataFile {
         return Objects.equals(clusterName, that.clusterName) && Objects.equals(brokerName, that.brokerName) && Objects.equals(brokerId, that.brokerId);
     }
 
+    /** 计算哈希码。 */
     @Override
     public int hashCode() {
         return Objects.hash(clusterName, brokerName, brokerId);
     }
 
+    /** 返回调试字符串。 */
     @Override
     public String toString() {
         return "BrokerMetadata{" +

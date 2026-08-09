@@ -26,24 +26,31 @@ import org.apache.rocketmq.store.DefaultMessageStore;
 import org.apache.rocketmq.store.config.BrokerRole;
 
 /**
- * Service to periodically check and notify for certain connection state.
+ * HA 连接状态通知服务：周期性检查并回调等待中的 Future。
  */
 public class HAConnectionStateNotificationService extends ServiceThread {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 连接建立超时毫秒数（10 秒）。 */
     private static final long CONNECTION_ESTABLISH_TIMEOUT = 10 * 1000;
 
+    /** 当前待处理的通知请求。 */
     private volatile HAConnectionStateNotificationRequest request;
+    /** 上次检测到匹配连接的时间戳。 */
     private volatile long lastCheckTimeStamp = -1;
+    /** 关联 HA 服务。 */
     private HAService haService;
+    /** 所属 MessageStore。 */
     private DefaultMessageStore defaultMessageStore;
 
+    /** 构造并注入依赖。 */
     public HAConnectionStateNotificationService(HAService haService, DefaultMessageStore defaultMessageStore) {
         this.haService = haService;
         this.defaultMessageStore = defaultMessageStore;
     }
 
+    /** 返回服务名称。 */
     @Override
     public String getServiceName() {
         if (defaultMessageStore != null && defaultMessageStore.getBrokerConfig().isInBrokerContainer()) {
@@ -52,6 +59,7 @@ public class HAConnectionStateNotificationService extends ServiceThread {
         return HAConnectionStateNotificationService.class.getSimpleName();
     }
 
+    /** 设置新请求并取消未完成的前序请求。 */
     public synchronized void setRequest(HAConnectionStateNotificationRequest request) {
         if (this.request != null) {
             this.request.getRequestFuture().cancel(true);
@@ -60,6 +68,7 @@ public class HAConnectionStateNotificationService extends ServiceThread {
         lastCheckTimeStamp = System.currentTimeMillis();
     }
 
+    /** 检查从/主侧连接是否达到期望状态或超时。 */
     private synchronized void doWaitConnectionState() {
         if (this.request == null || this.request.getRequestFuture().isDone()) {
             return;
@@ -99,10 +108,10 @@ public class HAConnectionStateNotificationService extends ServiceThread {
     }
 
     /**
-     * Check if connection matched and notify request.
+     * 检查连接地址与状态并通知请求。
      *
-     * @param connection connection to check.
-     * @return if connection remote address match request.
+     * @param connection 待检查连接
+     * @return 远程地址是否匹配请求
      */
     public synchronized boolean checkConnectionStateAndNotify(HAConnection connection) {
         if (this.request == null || connection == null) {
@@ -132,6 +141,7 @@ public class HAConnectionStateNotificationService extends ServiceThread {
         return false;
     }
 
+    /** 主循环：每秒检查连接状态。 */
     @Override
     public void run() {
         LOGGER.info(this.getServiceName() + " service started");

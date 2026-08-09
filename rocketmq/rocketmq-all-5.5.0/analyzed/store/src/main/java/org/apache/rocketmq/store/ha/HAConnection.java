@@ -19,59 +19,54 @@ package org.apache.rocketmq.store.ha;
 
 import java.nio.channels.SocketChannel;
 
+/**
+ * HA 连接接口：主节点侧与单个从节点的同步通道抽象。
+ */
 public interface HAConnection {
-    /**
-     * Start HA Connection
-     */
+    /** 启动 HA 连接读写线程。 */
     void start();
 
-    /**
-     * Shutdown HA Connection
-     */
+    /** 关闭 HA 连接及相关资源。 */
     void shutdown();
 
-    /**
-     * Close HA Connection
-     */
+    /** 关闭底层 Socket 通道。 */
     void close();
 
-    /**
-     * Get socket channel
-     */
+    /** 返回底层 SocketChannel。 */
     SocketChannel getSocketChannel();
 
     /**
-     * Get current state for ha connection
+     * 获取连接当前状态。
      *
      * @return HAConnectionState
      */
     HAConnectionState getCurrentState();
 
     /**
-     * Get client address for ha connection
+     * 获取从节点客户端 IP 地址。
      *
-     * @return client ip address
+     * @return 客户端 IP
      */
     String getClientAddress();
 
     /**
-     * Get the transfer rate per second
+     * 获取每秒向该从节点传输的字节数。
      *
-     *  @return transfer bytes in second
+     * @return 每秒传输字节
      */
     long getTransferredByteInSecond();
 
     /**
-     * Get the current transfer offset to the slave
+     * 获取向从节点传输的起始偏移（transferFromWhere）。
      *
-     * @return the current transfer offset to the slave
+     * @return 当前传输起始偏移
      */
     long getTransferFromWhere();
 
     /**
-     * Get slave ack offset
+     * 获取从节点已 ACK 的 CommitLog 偏移。
      *
-     * @return slave ack offset
+     * @return 从节点 ACK 偏移
      */
     long getSlaveAckOffset();
 }

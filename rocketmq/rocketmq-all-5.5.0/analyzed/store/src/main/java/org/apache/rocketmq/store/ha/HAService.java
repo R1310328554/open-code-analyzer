@@ -27,32 +27,33 @@ import org.apache.rocketmq.store.DefaultMessageStore;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.rocksdb.RocksDBException;
 
+/**
+ * 主从同步（HA）服务接口：管理 CommitLog 复制、连接与角色切换。
+ */
 public interface HAService {
 
     /**
-     * Init HAService, must be called before other methods.
+     * 初始化 HA 服务，须在其它方法之前调用。
      *
-     * @param defaultMessageStore
-     * @throws IOException
+     * @param defaultMessageStore MessageStore 实例
+     * @throws IOException 初始化 IO 异常
      */
     void init(DefaultMessageStore defaultMessageStore) throws IOException;
 
     /**
-     * Start HA Service
+     * 启动 HA 服务。
      *
-     * @throws Exception
+     * @throws Exception 启动失败
      */
     void start() throws Exception;
 
-    /**
-     * Shutdown HA Service
-     */
+    /** 关闭 HA 服务。 */
     void shutdown();
 
     /**
-     * Change to master state
+     * 切换为主节点。
      *
-     * @param masterEpoch the new masterEpoch
+     * @param masterEpoch 新主 epoch
      */
     default boolean changeToMaster(int masterEpoch) throws RocksDBException {
         return false;
@@ -68,10 +69,10 @@ public interface HAService {
     }
 
     /**
-     * Change to slave state
+     * 切换为从节点。
      *
-     * @param newMasterAddr new master addr
-     * @param newMasterEpoch new masterEpoch
+     * @param newMasterAddr 新主地址
+     * @param newMasterEpoch 新主 epoch
      */
     default boolean changeToSlave(String newMasterAddr, int newMasterEpoch, Long slaveId) {
         return false;
@@ -88,81 +89,73 @@ public interface HAService {
     }
 
     /**
-     * Update master address
+     * 更新主节点业务地址。
      *
-     * @param newAddr
+     * @param newAddr 新地址
      */
     void updateMasterAddress(String newAddr);
 
     /**
-     * Update ha master address
+     * 更新 HA 专用主地址。
      *
-     * @param newAddr
+     * @param newAddr 新 HA 地址
      */
     void updateHaMasterAddress(String newAddr);
 
     /**
-     * Returns the number of replicas those commit log are not far behind the master. It includes master itself. Returns
-     * syncStateSet size if HAService instanceof AutoSwitchService
+     * 返回 CommitLog 未明显落后的副本数（含主）。AutoSwitch 模式下等价于 syncStateSet 大小。
      *
-     * @return the number of slaves
+     * @return 同步副本数量
      * @see MessageStoreConfig#getHaMaxGapNotInSync()
      */
     int inSyncReplicasNums(long masterPutWhere);
 
     /**
-     * Get connection count
+     * 获取 HA 连接数。
      *
-     * @return the number of connection
+     * @return 连接数量
      */
     AtomicInteger getConnectionCount();
 
     /**
-     * Put request to handle HA
+     * 提交组提交请求由 HA 处理。
      *
-     * @param request
+     * @param request 组提交请求
      */
     void putRequest(final CommitLog.GroupCommitRequest request);
 
     /**
-     * Put GroupConnectionStateRequest for preOnline
+     * 注册 preOnline 用的连接状态等待请求。
      *
-     * @param request
+     * @param request 状态通知请求
      */
     void putGroupConnectionStateRequest(HAConnectionStateNotificationRequest request);
 
     /**
-     * Get ha connection list
+     * 获取 HA 连接列表。
      *
-     * @return List<HAConnection>
+     * @return HAConnection 列表
      */
     List<HAConnection> getConnectionList();
 
     /**
-     * Get HAClient
+     * 获取 HA 客户端（从节点）。
      *
      * @return HAClient
      */
     HAClient getHAClient();
 
-    /**
-     * Get the max offset in all slaves
-     */
+    /** 获取所有从节点中的最大已推送偏移。 */
     AtomicLong getPush2SlaveMaxOffset();
 
-    /**
-     * Get HA runtime info
-     */
+    /** 收集 HA 运行时信息。 */
     HARuntimeInfo getRuntimeInfo(final long masterPutWhere);
 
-    /**
-     * Get WaitNotifyObject
-     */
+    /** 返回等待/唤醒对象。 */
     WaitNotifyObject getWaitNotifyObject();
 
     /**
-     * Judge whether the slave keeps up according to the masterPutWhere, If the offset gap exceeds haSlaveFallBehindMax,
-     * then slave is not OK
+     * 根据 masterPutWhere 判断从节点是否跟上；偏移差超过阈值则返回 false。
      */
     boolean isSlaveOK(long masterPutWhere);
 }

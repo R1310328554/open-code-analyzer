@@ -34,25 +34,31 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.EpochEntry;
 
 /**
- * Cache for epochFile. Mapping (Epoch -> StartOffset)
+ * Epoch 文件缓存：维护 Epoch 到 StartOffset 的有序映射。
  */
 public class EpochFileCache {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    /** 保护 epochMap 的读写锁。 */
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock readLock = this.readWriteLock.readLock();
     private final Lock writeLock = this.readWriteLock.writeLock();
+    /** Epoch -> EpochEntry 有序表。 */
     private final TreeMap<Integer, EpochEntry> epochMap;
+    /** 持久化 checkpoint 文件句柄。 */
     private CheckpointFile<EpochEntry> checkpoint;
 
+    /** 内存模式，不写盘。 */
     public EpochFileCache() {
         this.epochMap = new TreeMap<>();
     }
 
+    /** 指定 checkpoint 文件路径。 */
     public EpochFileCache(final String path) {
         this.epochMap = new TreeMap<>();
         this.checkpoint = new CheckpointFile<>(path, new EpochEntrySerializer());
     }
 
+    /** 从磁盘加载 epoch 条目到缓存。 */
     public boolean initCacheFromFile() {
         this.writeLock.lock();
         try {
@@ -67,6 +73,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 用给定条目初始化并刷盘。 */
     public void initCacheFromEntries(final List<EpochEntry> entries) {
         this.writeLock.lock();
         try {
@@ -77,6 +84,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 重建 epochMap 并链接相邻 entry 的 endOffset。 */
     private void initEntries(final List<EpochEntry> entries) {
         this.epochMap.clear();
         EpochEntry preEntry = null;
@@ -89,6 +97,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 返回 epoch 条目数量。 */
     public int getEntrySize() {
         this.readLock.lock();
         try {
@@ -98,6 +107,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 追加新 epoch 条目并刷盘。 */
     public boolean appendEntry(final EpochEntry entry) {
         this.writeLock.lock();
         try {
@@ -117,9 +127,7 @@ public class EpochFileCache {
         }
     }
 
-    /**
-     * Set endOffset for lastEpochEntry.
-     */
+    /** 设置最后一个 epoch 条目的 endOffset。 */
     public void setLastEpochEntryEndOffset(final long endOffset) {
         this.writeLock.lock();
         try {
@@ -134,6 +142,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 返回首个 epoch 条目的副本。 */
     public EpochEntry firstEntry() {
         this.readLock.lock();
         try {
@@ -146,6 +155,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 返回最后一个 epoch 条目的副本。 */
     public EpochEntry lastEntry() {
         this.readLock.lock();
         try {
@@ -158,6 +168,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 返回最大 epoch 值，空则 -1。 */
     public int lastEpoch() {
         final EpochEntry entry = lastEntry();
         if (entry != null) {
@@ -166,6 +177,7 @@ public class EpochFileCache {
         return -1;
     }
 
+    /** 按 epoch 查询条目副本。 */
     public EpochEntry getEntry(final int epoch) {
         this.readLock.lock();
         try {
@@ -179,6 +191,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 按 CommitLog 偏移查找所属 epoch 条目。 */
     public EpochEntry findEpochEntryByOffset(final long offset) {
         this.readLock.lock();
         try {
@@ -195,6 +208,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 返回严格大于给定 epoch 的下一条目。 */
     public EpochEntry nextEntry(final int epoch) {
         this.readLock.lock();
         try {
@@ -208,6 +222,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 返回全部 epoch 条目副本列表。 */
     public List<EpochEntry> getAllEntries() {
         this.readLock.lock();
         try {
@@ -220,9 +235,9 @@ public class EpochFileCache {
     }
 
     /**
-     * Find the consistentPoint between compareCache and local.
+     * 与 compareCache 比对，找到一致点偏移。
      *
-     * @return the consistent offset
+     * @return 一致偏移，无则 -1
      */
     public long findConsistentPoint(final EpochFileCache compareCache) {
         this.readLock.lock();
@@ -244,22 +259,19 @@ public class EpochFileCache {
         }
     }
 
-    /**
-     * Remove epochEntries with epoch >= truncateEpoch.
-     */
+    /** 截断 epoch >= truncateEpoch 的后缀条目。 */
     public void truncateSuffixByEpoch(final int truncateEpoch) {
         Predicate<EpochEntry> predict = entry -> entry.getEpoch() >= truncateEpoch;
         doTruncateSuffix(predict);
     }
 
-    /**
-     * Remove epochEntries with startOffset >= truncateOffset.
-     */
+    /** 截断 startOffset >= truncateOffset 的后缀条目。 */
     public void truncateSuffixByOffset(final long truncateOffset) {
         Predicate<EpochEntry> predict = entry -> entry.getStartOffset() >= truncateOffset;
         doTruncateSuffix(predict);
     }
 
+    /** 按谓词删除后缀并重置末条 endOffset 为 MAX。 */
     private void doTruncateSuffix(Predicate<EpochEntry> predict) {
         this.writeLock.lock();
         try {
@@ -274,9 +286,7 @@ public class EpochFileCache {
         }
     }
 
-    /**
-     * Remove epochEntries with endOffset <= truncateOffset.
-     */
+    /** 截断 endOffset <= truncateOffset 的前缀条目。 */
     public void truncatePrefixByOffset(final long truncateOffset) {
         Predicate<EpochEntry> predict = entry -> entry.getEndOffset() <= truncateOffset;
         this.writeLock.lock();
@@ -288,6 +298,7 @@ public class EpochFileCache {
         }
     }
 
+    /** 将 epochMap 写入 checkpoint 文件。 */
     private void flush() {
         this.writeLock.lock();
         try {
@@ -302,8 +313,10 @@ public class EpochFileCache {
         }
     }
 
+    /** EpochEntry 与 checkpoint 行格式互转。 */
     static class EpochEntrySerializer implements CheckpointFile.CheckpointSerializer<EpochEntry> {
 
+        /** 格式化为 epoch-startOffset 行。 */
         @Override
         public String toLine(EpochEntry entry) {
             if (entry != null) {
@@ -313,6 +326,7 @@ public class EpochFileCache {
             }
         }
 
+        /** 从 checkpoint 行解析 EpochEntry。 */
         @Override
         public EpochEntry fromLine(String line) {
             final String[] arr = line.split("-");

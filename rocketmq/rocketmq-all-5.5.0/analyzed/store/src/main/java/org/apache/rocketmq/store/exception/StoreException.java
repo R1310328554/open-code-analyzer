@@ -16,18 +16,25 @@
  */
 package org.apache.rocketmq.store.exception;
 
+/**
+ * 消息存储模块通用异常基类。
+ */
 public class StoreException extends Exception {
+    /** 无参构造。 */
     public StoreException() {
     }
 
+    /** 以消息构造异常。 */
     public StoreException(String message) {
         super(message);
     }
 
+    /** 以消息与原因构造异常。 */
     public StoreException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** 以原因构造异常。 */
     public StoreException(Throwable cause) {
         super(cause);
     }

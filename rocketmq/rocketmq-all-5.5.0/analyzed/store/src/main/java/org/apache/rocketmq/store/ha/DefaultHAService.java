@@ -40,30 +40,44 @@ import org.apache.rocketmq.store.DefaultMessageStore;
 import org.apache.rocketmq.store.config.BrokerRole;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * 默认主从同步（HA）服务实现：管理 Accept 监听、GroupTransfer 与 HAClient。
+ */
 public class DefaultHAService implements HAService {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 当前 HA 连接数量。 */
     protected final AtomicInteger connectionCount = new AtomicInteger(0);
 
+    /** 活跃 HA 连接列表。 */
     protected final List<HAConnection> connectionList = new LinkedList<>();
 
+    /** 接受从节点连接的 Socket 服务。 */
     protected AcceptSocketService acceptSocketService;
 
+    /** 所属 MessageStore 实例。 */
     protected DefaultMessageStore defaultMessageStore;
 
+    /** 组提交等待/唤醒对象。 */
     protected WaitNotifyObject waitNotifyObject = new WaitNotifyObject();
+    /** 已推送到从节点的最大 CommitLog 偏移。 */
     protected AtomicLong push2SlaveMaxOffset = new AtomicLong(0);
 
+    /** 组传输服务，等待从节点 ACK。 */
     protected GroupTransferService groupTransferService;
 
+    /** 从节点侧 HA 客户端（主节点为 null）。 */
     protected HAClient haClient;
 
+    /** HA 连接状态变更通知服务。 */
     protected HAConnectionStateNotificationService haConnectionStateNotificationService;
 
+    /** 默认构造。 */
     public DefaultHAService() {
     }
 
+    /** 初始化 HA 组件，须在其它方法之前调用。 */
     @Override
     public void init(final DefaultMessageStore defaultMessageStore) throws IOException {
         this.defaultMessageStore = defaultMessageStore;
@@ -75,6 +89,7 @@ public class DefaultHAService implements HAService {
         this.haConnectionStateNotificationService = new HAConnectionStateNotificationService(this, defaultMessageStore);
     }
 
+    /** 更新主节点业务地址。 */
     @Override
     public void updateMasterAddress(final String newAddr) {
         if (this.haClient != null) {
@@ -82,6 +97,7 @@ public class DefaultHAService implements HAService {
         }
     }
 
+    /** 更新主节点 HA 专用地址。 */
     @Override
     public void updateHaMasterAddress(String newAddr) {
         if (this.haClient != null) {
@@ -89,11 +105,13 @@ public class DefaultHAService implements HAService {
         }
     }
 
+    /** 提交组提交请求至 GroupTransferService。 */
     @Override
     public void putRequest(final CommitLog.GroupCommitRequest request) {
         this.groupTransferService.putRequest(request);
     }
 
+    /** 判断从节点是否跟得上主节点写入进度。 */
     @Override
     public boolean isSlaveOK(final long masterPutWhere) {
         boolean result = this.connectionCount.get() > 0;
@@ -104,6 +122,7 @@ public class DefaultHAService implements HAService {
         return result;
     }
 
+    /** 更新 push2SlaveMaxOffset 并唤醒传输等待。 */
     public void notifyTransferSome(final long offset) {
         for (long value = this.push2SlaveMaxOffset.get(); offset > value; ) {
             boolean ok = this.push2SlaveMaxOffset.compareAndSet(value, offset);
@@ -116,11 +135,13 @@ public class DefaultHAService implements HAService {
         }
     }
 
+    /** 返回当前 HA 连接数。 */
     @Override
     public AtomicInteger getConnectionCount() {
         return connectionCount;
     }
 
+    /** 启动 Accept、GroupTransfer、状态通知及 HAClient。 */
     @Override
     public void start() throws Exception {
         this.acceptSocketService.beginAccept();
@@ -132,12 +153,14 @@ public class DefaultHAService implements HAService {
         }
     }
 
+    /** 将新 HA 连接加入列表。 */
     public void addConnection(final HAConnection conn) {
         synchronized (this.connectionList) {
             this.connectionList.add(conn);
         }
     }
 
+    /** 移除连接并触发状态通知检查。 */
     public void removeConnection(final HAConnection conn) {
         this.haConnectionStateNotificationService.checkConnectionStateAndNotify(conn);
         synchronized (this.connectionList) {
@@ -145,6 +168,7 @@ public class DefaultHAService implements HAService {
         }
     }
 
+    /** 关闭 HA 全部子服务与连接。 */
     @Override
     public void shutdown() {
         if (this.haClient != null) {
@@ -163,6 +187,7 @@ public class DefaultHAService implements HAService {
         }
     }
 
+    /** 关闭并清空所有 HA 连接。 */
     public void destroyConnections() {
         synchronized (this.connectionList) {
             for (HAConnection c : this.connectionList) {
@@ -173,20 +198,24 @@ public class DefaultHAService implements HAService {
         }
     }
 
+    /** 返回关联的 MessageStore。 */
     public DefaultMessageStore getDefaultMessageStore() {
         return defaultMessageStore;
     }
 
+    /** 返回等待/唤醒对象。 */
     @Override
     public WaitNotifyObject getWaitNotifyObject() {
         return waitNotifyObject;
     }
 
+    /** 返回已推送至从节点的最大偏移。 */
     @Override
     public AtomicLong getPush2SlaveMaxOffset() {
         return push2SlaveMaxOffset;
     }
 
+    /** 统计与主节点同步的副本数量（含主）。 */
     @Override
     public int inSyncReplicasNums(final long masterPutWhere) {
         int inSyncNums = 1;
@@ -198,6 +227,7 @@ public class DefaultHAService implements HAService {
         return inSyncNums;
     }
 
+    /** 判断单个从连接是否在同步阈值内。 */
     protected boolean isInSyncSlave(final long masterPutWhere, HAConnection conn) {
         if (masterPutWhere - conn.getSlaveAckOffset() < this.defaultMessageStore.getMessageStoreConfig()
             .getHaMaxGapNotInSync()) {
@@ -206,21 +236,25 @@ public class DefaultHAService implements HAService {
         return false;
     }
 
+    /** 注册 HA 连接状态等待请求。 */
     @Override
     public void putGroupConnectionStateRequest(HAConnectionStateNotificationRequest request) {
         this.haConnectionStateNotificationService.setRequest(request);
     }
 
+    /** 返回 HA 连接列表。 */
     @Override
     public List<HAConnection> getConnectionList() {
         return connectionList;
     }
 
+    /** 返回 HA 客户端（从节点）。 */
     @Override
     public HAClient getHAClient() {
         return this.haClient;
     }
 
+    /** 收集主/从 HA 运行时指标。 */
     @Override
     public HARuntimeInfo getRuntimeInfo(long masterPutWhere) {
         HARuntimeInfo info = new HARuntimeInfo();
@@ -263,12 +297,14 @@ public class DefaultHAService implements HAService {
         return info;
     }
 
+    /** 默认 Accept 实现，创建 DefaultHAConnection。 */
     class DefaultAcceptSocketService extends AcceptSocketService {
 
         public DefaultAcceptSocketService(final MessageStoreConfig messageStoreConfig) {
             super(messageStoreConfig);
         }
 
+        /** 为新 Socket 创建 DefaultHAConnection。 */
         @Override
         protected HAConnection createConnection(SocketChannel sc) throws IOException {
             return new DefaultHAConnection(DefaultHAService.this, sc);
@@ -284,11 +320,14 @@ public class DefaultHAService implements HAService {
     }
 
     /**
-     * Listens to slave connections to create {@link HAConnection}.
+     * 监听从节点连接并创建 {@link HAConnection}。
      */
     protected abstract class AcceptSocketService extends ServiceThread {
+        /** 监听绑定地址。 */
         private final SocketAddress socketAddressListen;
+        /** 服务端 Socket 通道。 */
         private ServerSocketChannel serverSocketChannel;
+        /** NIO 选择器。 */
         private Selector selector;
 
         private final MessageStoreConfig messageStoreConfig;
@@ -299,9 +338,9 @@ public class DefaultHAService implements HAService {
         }
 
         /**
-         * Starts listening to slave connections.
+         * 开始在 HA 端口监听从节点连接。
          *
-         * @throws Exception If fails.
+         * @throws Exception 绑定或注册失败时抛出
          */
         public void beginAccept() throws Exception {
             this.serverSocketChannel = ServerSocketChannel.open();
@@ -310,7 +349,7 @@ public class DefaultHAService implements HAService {
             this.serverSocketChannel.socket().bind(this.socketAddressListen);
             if (0 == messageStoreConfig.getHaListenPort()) {
                 messageStoreConfig.setHaListenPort(this.serverSocketChannel.socket().getLocalPort());
-                log.info("OS picked up {} to listen for HA", messageStoreConfig.getHaListenPort());
+                log.info("OS picked up {} to listen for HA", messageStoreConfig.getHaListenPort());  // 操作系统自动分配 HA 监听端口
             }
             this.serverSocketChannel.configureBlocking(false);
             this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
@@ -380,7 +419,7 @@ public class DefaultHAService implements HAService {
         }
 
         /**
-         * Create ha connection
+         * 为接受的 Socket 创建 HA 连接实例
          */
         protected abstract HAConnection createConnection(final SocketChannel sc) throws IOException;
     }

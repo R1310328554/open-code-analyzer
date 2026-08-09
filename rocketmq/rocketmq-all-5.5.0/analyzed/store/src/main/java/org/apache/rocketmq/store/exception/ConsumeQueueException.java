@@ -16,18 +16,25 @@
  */
 package org.apache.rocketmq.store.exception;
 
+/**
+ * 消费队列相关异常：封装 ConsumeQueue 读写或索引操作失败。
+ */
 public class ConsumeQueueException extends StoreException {
+    /** 无参构造。 */
     public ConsumeQueueException() {
     }
 
+    /** 以消息构造异常。 */
     public ConsumeQueueException(String message) {
         super(message);
     }
 
+    /** 以消息与原因构造异常。 */
     public ConsumeQueueException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** 以原因构造异常。 */
     public ConsumeQueueException(Throwable cause) {
         super(cause);
     }

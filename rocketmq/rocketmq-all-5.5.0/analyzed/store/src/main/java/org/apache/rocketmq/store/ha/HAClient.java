@@ -17,88 +17,83 @@
 
 package org.apache.rocketmq.store.ha;
 
+/**
+ * HA 客户端接口：从节点侧连接主节点并同步 CommitLog。
+ */
 public interface HAClient {
 
-    /**
-     * Start HAClient
-     */
+    /** 启动 HA 客户端线程。 */
     void start();
 
-    /**
-     * Shutdown HAClient
-     */
+    /** 关闭 HA 客户端。 */
     void shutdown();
 
-    /**
-     * Wakeup HAClient
-     */
+    /** 唤醒阻塞中的 HA 客户端。 */
     void wakeup();
 
     /**
-     * Update master address
+     * 更新主节点业务地址。
      *
-     * @param newAddress
+     * @param newAddress 新主节点地址
      */
     void updateMasterAddress(String newAddress);
 
     /**
-     * Update master ha address
+     * 更新主节点 HA 专用地址。
      *
-     * @param newAddress
+     * @param newAddress 新 HA 地址
      */
     void updateHaMasterAddress(String newAddress);
 
     /**
-     * Get master address
+     * 获取主节点业务地址。
      *
-     * @return master address
+     * @return 主节点地址
      */
     String getMasterAddress();
 
     /**
-     * Get master ha address
+     * 获取主节点 HA 地址。
      *
-     * @return master ha address
+     * @return HA 地址
      */
     String getHaMasterAddress();
 
     /**
-     * Get HAClient last read timestamp
+     * 获取最近一次读主节点数据的时间戳。
      *
-     * @return last read timestamp
+     * @return 最后读时间戳
      */
     long getLastReadTimestamp();
 
     /**
-     * Get HAClient last write timestamp
+     * 获取最近一次向主节点写入的时间戳。
      *
-     * @return last write timestamp
+     * @return 最后写时间戳
      */
     long getLastWriteTimestamp();
 
     /**
-     * Get current state for ha connection
+     * 获取当前 HA 连接状态。
      *
      * @return HAConnectionState
      */
     HAConnectionState getCurrentState();
 
     /**
-     * Change the current state for ha connection for testing
+     * 测试用：强制修改连接状态。
      *
-     * @param haConnectionState
+     * @param haConnectionState 目标状态
      */
     void changeCurrentState(HAConnectionState haConnectionState);
 
-    /**
-     * Disconnecting from the master for testing
-     */
+    /** 测试用：断开与主节点的连接。 */
     void closeMaster();
 
     /**
-     * Get the transfer rate per second
+     * 获取每秒传输字节数。
      *
-     *  @return transfer bytes in second
+     * @return 每秒传输字节
      */
     long getTransferredByteInSecond();
 }
