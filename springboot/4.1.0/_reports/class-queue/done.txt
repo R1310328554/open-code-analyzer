@@ -621,3 +621,4 @@ core/spring-boot/src/main/java/org/springframework/boot/logging/logback/SpringBo
 core/spring-boot/src/main/java/org/springframework/boot/ssl/pem/PemPrivateKeyParser.java
 core/spring-boot/src/main/java/org/springframework/boot/util/LambdaSafe.java
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletContextInitializerBeans.java
+core/spring-boot/src/main/java/org/springframework/boot/context/properties/source/ConfigurationPropertyName.java
