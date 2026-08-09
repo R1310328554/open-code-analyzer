@@ -25,6 +25,10 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 
+/**
+ * C {@code sockaddr_in} / {@code sockaddr_in6} 与 Java {@link InetSocketAddress} 的双向转换工具。
+ * 直接读写 {@link ByteBuffer} 中的原生套接字地址结构。
+ */
 final class SockaddrIn {
     static final byte[] IPV4_MAPPED_IPV6_PREFIX = {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xff, (byte) 0xff };
@@ -35,15 +39,18 @@ final class SockaddrIn {
 
     private SockaddrIn() { }
 
+    /** 比较两处原生内存中的 sockaddr 是否相等。 */
     static int cmp(long memory, long memory2) {
         return Quiche.sockaddr_cmp(memory, memory2);
     }
 
+    /** 根据地址类型自动选择 IPv4 或 IPv6 写入。 */
     static int setAddress(ByteBuffer memory, InetSocketAddress address) {
         InetAddress addr = address.getAddress();
         return setAddress(addr instanceof Inet6Address, memory, address);
     }
 
+    /** 按 {@code ipv6} 标志写入 IPv4 或 IPv6 sockaddr。 */
     static int setAddress(boolean ipv6, ByteBuffer memory, InetSocketAddress address) {
         if (ipv6) {
             return SockaddrIn.setIPv6(memory, address.getAddress(), address.getPort());
@@ -69,7 +76,7 @@ final class SockaddrIn {
     static int setIPv4(ByteBuffer memory, InetAddress address, int port) {
         int position = memory.position();
         try {
-            // memset
+            // 先清零结构体
             memory.put(SOCKADDR_IN_EMPTY_ARRAY);
 
             memory.putShort(position + Quiche.SOCKADDR_IN_OFFSETOF_SIN_FAMILY, Quiche.AF_INET);
@@ -78,7 +85,7 @@ final class SockaddrIn {
             byte[] bytes = address.getAddress();
             int offset = 0;
             if (bytes.length == IPV6_ADDRESS_LENGTH) {
-                // IPV6 mapped IPV4 address, we only need the last 4 bytes.
+                // IPv4 映射 IPv6 地址仅取末 4 字节
                 offset = IPV4_MAPPED_IPV6_PREFIX.length;
             }
             assert bytes.length == offset + IPV4_ADDRESS_LENGTH;
@@ -112,7 +119,7 @@ final class SockaddrIn {
             memory.putShort(position + Quiche.SOCKADDR_IN6_OFFSETOF_SIN6_FAMILY, Quiche.AF_INET6);
             memory.putShort(position + Quiche.SOCKADDR_IN6_OFFSETOF_SIN6_PORT, (short) port);
 
-            // Skip sin6_flowinfo as we did memset before
+            // flowinfo 已由 memset 置零，跳过
             byte[] bytes = address.getAddress();
             int offset = Quiche.SOCKADDR_IN6_OFFSETOF_SIN6_ADDR + Quiche.IN6_ADDRESS_OFFSETOF_S6_ADDR;
 
@@ -123,7 +130,7 @@ final class SockaddrIn {
                 memory.position(position + offset + IPV4_MAPPED_IPV6_PREFIX.length);
                 memory.put(bytes, 0, IPV4_ADDRESS_LENGTH);
 
-                // Skip sin6_scope_id as we did memset before
+                // 纯 IPv4 映射时 scope_id 保持零
             } else {
                 memory.position(position + offset);
                 memory.put(bytes, 0, IPV6_ADDRESS_LENGTH);
@@ -137,6 +144,7 @@ final class SockaddrIn {
         }
     }
 
+    /** 从 {@code sockaddr_in} 解析 IPv4 {@link InetSocketAddress}。 */
     @Nullable
     static InetSocketAddress getIPv4(ByteBuffer memory, byte[] tmpArray) {
         assert tmpArray.length == IPV4_ADDRESS_LENGTH;
@@ -156,6 +164,7 @@ final class SockaddrIn {
         }
     }
 
+    /** 从 {@code sockaddr_in6} 解析地址；自动识别 IPv4-mapped IPv6。 */
     @Nullable
     static InetSocketAddress getIPv6(ByteBuffer memory, byte[] ipv6Array, byte[] ipv4Array) {
         assert ipv6Array.length == IPV6_ADDRESS_LENGTH;

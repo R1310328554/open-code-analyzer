@@ -25,9 +25,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Decompresses a {@link ByteBuf} encoded with the brotli format.
+ * 基于 {@link Decompressor} 接口的 Brotli 解压器，供新压缩 API 使用。
  *
- * See <a href="https://github.com/google/brotli">brotli</a>.
+ * 参见 <a href="https://github.com/google/brotli">brotli</a>。
  */
 @UnstableApi
 public final class BrotliDecompressor implements Decompressor {
@@ -123,8 +123,7 @@ public final class BrotliDecompressor implements Decompressor {
     @Override
     public ByteBuf takeOutput() throws DecompressionException {
         ByteBuffer nativeBuffer = decoder.pull();
-        // nativeBuffer actually wraps brotli's internal buffer so we need to copy its content
-        // size limited by maxOutputChunkSize
+        // nativeBuffer 为 brotli 内部缓冲的视图，须复制；大小受 maxOutputChunkSize 限制
         ByteBuf copy = allocator.buffer(nativeBuffer.remaining());
         copy.writeBytes(nativeBuffer);
         return copy;
@@ -165,7 +164,7 @@ public final class BrotliDecompressor implements Decompressor {
         }
 
         /**
-         * Desired size of the input buffer in bytes. Default 8K.
+         * 输入缓冲区期望大小（字节），默认 8KB。
          *
          * @param inputBufferSize desired size of the input buffer in bytes
          * @return This builder
@@ -176,7 +175,7 @@ public final class BrotliDecompressor implements Decompressor {
         }
 
         /**
-         * Number of bytes of output to consume at a time. Default 64K.
+         * 每次取出的最大输出块大小（字节），默认 64KB。
          *
          * @param maxOutputChunkSize Maximum output chunk size
          * @return This builder

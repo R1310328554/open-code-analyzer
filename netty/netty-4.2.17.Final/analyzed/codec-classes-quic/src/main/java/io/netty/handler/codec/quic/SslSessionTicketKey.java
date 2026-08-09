@@ -19,33 +19,26 @@ package io.netty.handler.codec.quic;
 import java.util.Arrays;
 
 /**
- * Session Ticket Key
+ * TLS 会话票据（Session Ticket）加密密钥三元组：名称、HMAC 密钥与 AES 密钥。
+ * 供 BoringSSL 会话恢复回调使用。
  */
 public final class SslSessionTicketKey {
-    /**
-     * Size of session ticket key name
-     */
+    /** 票据密钥名称长度（字节）。 */
     public static final int NAME_SIZE = 16;
-    /**
-     * Size of session ticket key HMAC key
-     */
+    /** HMAC 密钥长度（字节）。 */
     public static final int HMAC_KEY_SIZE = 16;
-    /**
-     * Size of session ticket key AES key
-     */
+    /** AES 加密密钥长度（字节）。 */
     public static final int AES_KEY_SIZE = 16;
-    /**
-     * Size of session ticket key
-     */
+    /** 完整票据密钥总长度（name + hmac + aes）。 */
     public static final int TICKET_KEY_SIZE = NAME_SIZE + HMAC_KEY_SIZE + AES_KEY_SIZE;
 
-    // package private so we can access these in BoringSSLSessionTicketCallback without calling clone() on the byte[].
+    // 包可见字段，供 BoringSSLSessionTicketCallback 直接访问，避免 clone
     final byte[] name;
     final byte[] hmacKey;
     final byte[] aesKey;
 
     /**
-     * Construct SessionTicketKey.
+     * 构造会话票据密钥；各数组长度须与对应 SIZE 常量一致。
      * @param name the name of the session ticket key
      * @param hmacKey the HMAC key of the session ticket key
      * @param aesKey the AES key of the session ticket key
@@ -66,7 +59,7 @@ public final class SslSessionTicketKey {
     }
 
     /**
-     * Get name.
+     * 返回密钥名称的副本。
      *
      * @return the name of the session ticket key
      */
@@ -75,7 +68,7 @@ public final class SslSessionTicketKey {
     }
 
     /**
-     * Get HMAC key.
+     * 返回 HMAC 密钥的副本。
      * @return the HMAC key of the session ticket key
      */
     public byte[] hmacKey() {
@@ -83,7 +76,7 @@ public final class SslSessionTicketKey {
     }
 
     /**
-     * Get AES Key.
+     * 返回 AES 密钥的副本。
      * @return the AES key of the session ticket key
      */
     public byte[] aesKey() {

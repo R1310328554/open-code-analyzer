@@ -21,14 +21,13 @@ import io.netty.channel.socket.DatagramPacket;
 import java.net.InetSocketAddress;
 
 /**
- * Used to allocate datagram packets that use UDP_SEGMENT (GSO).
+ * 分配支持 UDP_SEGMENT（GSO 分段卸载）的分段 {@link DatagramPacket} 的分配器接口。
+ * 在 Linux 上可将多个 UDP 段合并为一次系统调用发送。
  */
 @FunctionalInterface
 public interface SegmentedDatagramPacketAllocator {
 
-    /**
-     * {@link SegmentedDatagramPacketAllocator} which should be used if no UDP_SEGMENT is supported and used.
-     */
+    /** 不支持 UDP_SEGMENT 时的占位实现，调用 {@link #newPacket} 将抛出异常。 */
     SegmentedDatagramPacketAllocator NONE = new SegmentedDatagramPacketAllocator() {
         @Override
         public int maxNumSegments() {
@@ -42,8 +41,7 @@ public interface SegmentedDatagramPacketAllocator {
     };
 
     /**
-     * The maximum number of segments to use per packet. By default this is {@code 10} but this may be overridden by
-     * the implementation of the interface.
+     * 每个 UDP 报文允许的最大分段数，默认 {@code 10}，实现类可覆盖。
      *
      * @return  the segments.
      */
@@ -52,7 +50,7 @@ public interface SegmentedDatagramPacketAllocator {
     }
 
     /**
-     * Return a new segmented {@link DatagramPacket}.
+     * 创建带 UDP_SEGMENT 控制信息的分段 {@link DatagramPacket}。
      *
      * @param buffer        the {@link ByteBuf} that is used as content.
      * @param segmentSize   the size of each segment.

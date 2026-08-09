@@ -20,29 +20,27 @@ import com.aayushatharva.brotli4j.encoder.Encoder;
 import static com.aayushatharva.brotli4j.encoder.Encoder.Mode;
 
 /**
- * Provides a way to specify the Brotli compression mode.
+ * Brotli 压缩模式：通用、文本或字体数据，映射至 brotli4j {@link Encoder.Mode}。
  */
 public enum BrotliMode {
 
     /**
-     * The compressor does not make any assumptions about the input data's properties,
-     * making it suitable for a wide range of data types.
-     * default mode.
+     * 不对输入数据做假设，适用于各类二进制与混合内容（默认模式）。
      */
     GENERIC,
 
     /**
-     * Optimized for UTF-8 formatted text input.
+     * 针对 UTF-8 文本优化，适合 HTML/JSON 等。
      */
     TEXT,
 
     /**
-     * Designed specifically for font data compression, as used in WOFF 2.0.
+     * 专为 WOFF 2.0 等字体数据设计。
      */
     FONT;
 
     /**
-     * Convert to Brotli {@link Encoder.Mode}.
+     * 转换为 brotli4j {@link Encoder.Mode}。
      *
      * @return a new {@link Encoder.Mode}
      */

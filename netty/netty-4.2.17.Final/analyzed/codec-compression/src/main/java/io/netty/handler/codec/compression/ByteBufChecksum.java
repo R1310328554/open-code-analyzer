@@ -26,10 +26,9 @@ import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
 /**
- * {@link Checksum} implementation which can directly act on a {@link ByteBuf}.
+ * 可直接对 {@link ByteBuf} 计算校验和的 {@link Checksum} 抽象实现。
  * <p>
- * Implementations may optimize access patterns depending on if the {@link ByteBuf} is backed by a
- * byte array ({@link ByteBuf#hasArray()} is {@code true}) or not.
+ * 若 {@link ByteBuf#hasArray()} 为 {@code true} 则走数组路径，否则逐字节或 NIO 缓冲更新。
  */
 abstract class ByteBufChecksum implements Checksum {
     private final ByteProcessor updateProcessor = new ByteProcessor() {
@@ -91,7 +90,8 @@ abstract class ByteBufChecksum implements Checksum {
             ByteBuffer byteBuffer = CompressionUtil.safeNioBuffer(b, off, len);
             int javaVersion = PlatformDependent.javaVersion();
             if (javaVersion >= 22 && javaVersion < 25 && byteBuffer.isDirect()) {
-                // Work-around for https://bugs.openjdk.org/browse/JDK-8357145
+                // 规避 JDK 22–24 对直接缓冲 CRC32/Adler32 的缺陷
+                // 参见 https://bugs.openjdk.org/browse/JDK-8357145
                 if (scratchBuffer == null || scratchBuffer.length < len) {
                     scratchBuffer = new byte[len];
                 }

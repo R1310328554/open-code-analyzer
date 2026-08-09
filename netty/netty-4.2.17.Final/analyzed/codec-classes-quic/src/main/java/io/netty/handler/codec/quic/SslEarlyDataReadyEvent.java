@@ -17,15 +17,16 @@ package io.netty.handler.codec.quic;
 
 
 /**
- * Event which is fired once it's possible to send early data on the client-side.
- * See <a href="https://www.rfc-editor.org/rfc/rfc8446#section-4.2.10">RFC8446 4.2.10 Early Data Indication</a>.
+ * 客户端 TLS 1.3 0-RTT 早期数据可发送时触发的用户事件（单例）。
+ * 参见 <a href="https://www.rfc-editor.org/rfc/rfc8446#section-4.2.10">RFC8446 4.2.10 Early Data Indication</a>。
  * <p>
- * Users might call {@link io.netty.channel.Channel#writeAndFlush(Object)} or
- * {@link io.netty.channel.ChannelHandlerContext#writeAndFlush(Object)} to send early data.
- * Please be aware that early data may be replay-able and so may have other security concerns then other data.
+ * 可通过 {@link io.netty.channel.Channel#writeAndFlush(Object)} 或
+ * {@link io.netty.channel.ChannelHandlerContext#writeAndFlush(Object)} 发送早期数据。
+ * 注意：早期数据可能被重放，安全语义与普通数据不同。
  */
 public final class SslEarlyDataReadyEvent {
 
+    /** 全局单例事件实例。 */
     static final SslEarlyDataReadyEvent INSTANCE = new SslEarlyDataReadyEvent();
 
     private SslEarlyDataReadyEvent() { }

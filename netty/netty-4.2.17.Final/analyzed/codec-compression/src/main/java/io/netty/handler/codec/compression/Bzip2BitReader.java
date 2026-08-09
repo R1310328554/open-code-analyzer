@@ -18,40 +18,39 @@ package io.netty.handler.codec.compression;
 import io.netty.buffer.ByteBuf;
 
 /**
- * An bit reader that allows the reading of single bit booleans, bit strings of
- * arbitrary length (up to 32 bits), and bit aligned 32-bit integers. A single byte
- * at a time is read from the {@link ByteBuf} when more bits are required.
+ * Bzip2 按位读取器：支持单 bit 布尔值、最长 32 bit 位串及 32 bit 对齐整数。
+ * 位缓冲不足时从 {@link ByteBuf} 逐字节补充。
  */
 class Bzip2BitReader {
     /**
-     * Maximum count of possible readable bytes to check.
+     * 可检查的最大可读字节数上限。
      */
     private static final int MAX_COUNT_OF_READABLE_BYTES = Integer.MAX_VALUE >>> 3;
 
     /**
-     * The {@link ByteBuf} from which to read data.
+     * 输入数据源 {@link ByteBuf}。
      */
     private ByteBuf in;
 
     /**
-     * A buffer of bits read from the input stream that have not yet been returned.
+     * 尚未消费的预读位缓冲（高位在左）。
      */
     private long bitBuffer;
 
     /**
-     * The number of bits currently buffered in {@link #bitBuffer}.
+     * {@link #bitBuffer} 中当前有效位数。
      */
     private int bitCount;
 
     /**
-     * Set the {@link ByteBuf} from which to read data.
+     * 绑定待读取的 {@link ByteBuf}。
      */
     void setByteBuf(ByteBuf in) {
         this.in = in;
     }
 
     /**
-     * Reads up to 32 bits from the {@link ByteBuf}.
+     * 从 {@link ByteBuf} 读取最多 32 位，结果在 int 中右对齐。
      * @param count The number of bits to read (maximum {@code 32} as a size of {@code int})
      * @return The bits requested, right-aligned within the integer
      */
@@ -98,7 +97,7 @@ class Bzip2BitReader {
     }
 
     /**
-     * Reads a single bit from the {@link ByteBuf}.
+     * 读取单个位；为 1 时返回 {@code true}。
      * @return {@code true} if the bit read was {@code 1}, otherwise {@code false}
      */
     boolean readBoolean() {
@@ -106,7 +105,7 @@ class Bzip2BitReader {
     }
 
     /**
-     * Reads 32 bits of input as an integer.
+     * 读取 32 位组成一个 int。
      * @return The integer read
      */
     int readInt() {
@@ -114,7 +113,7 @@ class Bzip2BitReader {
     }
 
     /**
-     * Refill the {@link ByteBuf} by one byte.
+     * 从 {@link ByteBuf} 再读一字节补充位缓冲。
      */
     void refill() {
         int readData = in.readUnsignedByte();
@@ -123,7 +122,7 @@ class Bzip2BitReader {
     }
 
     /**
-     * Checks that at least one bit is available for reading.
+     * 是否至少还有 1 位可读。
      * @return {@code true} if one bit is available for reading, otherwise {@code false}
      */
     boolean isReadable() {
@@ -131,7 +130,7 @@ class Bzip2BitReader {
     }
 
     /**
-     * Checks that the specified number of bits available for reading.
+     * 检查是否尚有 {@code count} 位可读。
      * @param count The number of bits to check
      * @return {@code true} if {@code count} bits are available for reading, otherwise {@code false}
      */
@@ -143,7 +142,7 @@ class Bzip2BitReader {
     }
 
     /**
-     * Checks that the specified number of bytes available for reading.
+     * 检查是否尚有 {@code count} 字节（换算为 bit）可读。
      * @param count The number of bytes to check
      * @return {@code true} if {@code count} bytes are available for reading, otherwise {@code false}
      */

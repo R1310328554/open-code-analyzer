@@ -35,9 +35,9 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritableByteChannel;
 
 /**
- * Compress a {@link ByteBuf} with the Brotli compression.
+ * 使用 Brotli 算法压缩 {@link ByteBuf} 的 {@link MessageToByteEncoder}。
  * <p>
- * See <a href="https://github.com/google/brotli">brotli</a>.
+ * 参见 <a href="https://github.com/google/brotli">brotli</a>。
  */
 @ChannelHandler.Sharable
 public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
@@ -49,15 +49,14 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
     private Writer writer;
 
     /**
-     * Create a new {@link BrotliEncoder} Instance with {@link BrotliOptions#DEFAULT}
-     * and {@link #isSharable()} set to {@code true}
+     * 使用 {@link BrotliOptions#DEFAULT} 创建可共享实例（{@link #isSharable()} 为 {@code true}）。
      */
     public BrotliEncoder() {
         this(BrotliOptions.DEFAULT);
     }
 
     /**
-     * Create a new {@link BrotliEncoder} Instance
+     * 使用指定 {@link BrotliOptions} 创建可共享编码器。
      *
      * @param brotliOptions {@link BrotliOptions} to use and
      *                      {@link #isSharable()} set to {@code true}
@@ -67,8 +66,7 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Create a new {@link BrotliEncoder} Instance
-     * and {@link #isSharable()} set to {@code true}
+     * 使用 brotli4j {@link Encoder.Parameters} 创建可共享编码器。
      *
      * @param parameters {@link Encoder.Parameters} to use
      */
@@ -82,12 +80,9 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
      * whether this instance will be shared with multiple pipelines or not.
      * </p>
      *
-     * If {@link #isSharable()} is true then on {@link #handlerAdded(ChannelHandlerContext)} call,
-     * a new {@link Writer} will create, and it will be mapped using {@link Channel#attr(AttributeKey)}
-     * so {@link BrotliEncoder} can be shared with multiple pipelines. This works fine but there on every
-     * {@link #encode(ChannelHandlerContext, ByteBuf, ByteBuf)} call, we have to get the {@link Writer} associated
-     * with the appropriate channel. And this will add a overhead. So it is recommended to set {@link #isSharable()}
-     * to {@code false} and create new {@link BrotliEncoder} instance for every pipeline.
+     * 若 {@link #isSharable()} 为 {@code true}，每个 Channel 在 {@link #handlerAdded} 时创建独立 {@link Writer}
+     * 并存入 {@link Channel#attr}，以便多 pipeline 共享同一 Handler；但每次编码需查找 Writer，有额外开销。
+     * 建议设为 {@code false} 并为每个 pipeline 创建独立 {@link BrotliEncoder} 实例。
      *
      * @param parameters {@link Encoder.Parameters} to use
      * @param isSharable Set to {@code true} if this instance is shared else set to {@code false}
@@ -133,7 +128,7 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
             writer = this.writer;
         }
 
-        // If Writer is 'null' then Writer is not open.
+        // Writer 为 null 表示编码器尚未就绪或已关闭
         if (writer == null) {
             return Unpooled.EMPTY_BUFFER;
         } else {
@@ -148,7 +143,7 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Finish the encoding, close streams and write final {@link ByteBuf} to the channel.
+     * 结束编码、刷出尾部数据并将最终 {@link ByteBuf} 写入通道。
      *
      * @param ctx {@link ChannelHandlerContext} which we want to close
      * @throws IOException If an error occurred during closure
@@ -181,8 +176,7 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * {@link Writer} is the implementation of {@link WritableByteChannel} which encodes
-     * Brotli data and stores it into {@link ByteBuf}.
+     * 内部 {@link WritableByteChannel} 实现：接收 brotli4j 输出并写入 {@link ByteBuf}。
      */
     private static final class Writer implements WritableByteChannel {
 
@@ -203,13 +197,8 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
             try {
                 allocate(preferDirect);
 
-                // Compress data and flush it into Buffer.
-                //
-                // As soon as we call flush, Encoder will be triggered to write encoded
-                // data into WritableByteChannel.
-                //
-                // A race condition will not arise because one flush call to encoder will result
-                // in only 1 call at `write(ByteBuffer)`.
+                // 压缩并 flush；flush 触发编码器向 WritableByteChannel 写入
+                // 一次 flush 对应一次 write，无竞态
                 ByteBuffer nioBuffer = CompressionUtil.safeReadableNioBuffer(msg);
                 int position = nioBuffer.position();
                 brotliEncoderChannel.write(nioBuffer);
@@ -263,7 +252,7 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
 
         public void finish(final ChannelPromise promise) throws IOException {
             if (!isClosed) {
-                // Allocate a buffer and write last pending data.
+                // 分配缓冲并写入编码器关闭时的尾部数据
                 allocate(true);
 
                 try {
@@ -272,8 +261,7 @@ public final class BrotliEncoder extends MessageToByteEncoder<ByteBuf> {
                 } catch (Exception ex) {
                     promise.setFailure(ex);
 
-                    // Since we have already allocated Buffer for close operation,
-                    // we will release that buffer to prevent memory leak.
+                    // 关闭失败时释放已分配缓冲，防止泄漏
                     ReferenceCountUtil.release(writableBuffer);
                     return;
                 }

@@ -26,17 +26,20 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * Decompresses a {@link ByteBuf} encoded with the brotli format.
+ * 将 Brotli 格式压缩的 {@link ByteBuf} 解压为明文。
  * <p>
- * See <a href="https://github.com/google/brotli">brotli</a>.
+ * 参见 <a href="https://github.com/google/brotli">brotli</a>。
  */
 public final class BrotliDecoder extends ByteToMessageDecoder {
 
     private static final int DEFAULT_MAX_FORWARD_BYTES = CompressionUtil.DEFAULT_MAX_FORWARD_BYTES;
     private static final int DEFAULT_INPUT_BUFFER_SIZE = 8 * 1024;
 
+    /** 内部解压状态机。 */
     private enum State {
-        DONE, NEEDS_MORE_INPUT, ERROR
+        /** 流已结束。 */ DONE,
+        /** 需要更多输入。 */ NEEDS_MORE_INPUT,
+        /** 数据损坏或解码错误。 */ ERROR
     }
 
     static {
@@ -55,14 +58,14 @@ public final class BrotliDecoder extends ByteToMessageDecoder {
     private ByteBuf accumBuffer;
 
     /**
-     * Creates a new BrotliDecoder with a default 8kB input buffer
+     * 使用默认 8KB 输入缓冲区创建解码器。
      */
     public BrotliDecoder() {
         this(DEFAULT_INPUT_BUFFER_SIZE);
     }
 
     /**
-     * Creates a new BrotliDecoder
+     * 指定输入缓冲区大小（字节）创建解码器。
      * @param inputBufferSize desired size of the input buffer in bytes
      */
     public BrotliDecoder(int inputBufferSize) {
@@ -70,7 +73,7 @@ public final class BrotliDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new BrotliDecoder
+     * 同时指定输入与输出缓冲区上限；超出输出上限时分块向下游传递。
      * @param inputBufferSize desired size of the input buffer in bytes
      * @param outputBufferSize desired max size of the output buffer in bytes
      *                         (produce multiple output buffers if exceeded)
@@ -81,9 +84,8 @@ public final class BrotliDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new {@link BrotliDecoder} that use the {@code maxAllocation}
-     * semantics: the supplied value bounds the size of the emitted decompressed chunks.
-     * The input buffer size stays at the decoder's default.
+     * 按 {@code maxAllocation} 限制单次向下游输出的解压块大小；
+     * 输入缓冲区仍使用默认值。
      *
      * @param maxAllocation maximum size, in bytes, of each decompressed output
      *                      buffer forwarded downstream; if {@code 0}, the
@@ -98,7 +100,7 @@ public final class BrotliDecoder extends ByteToMessageDecoder {
 
     private void forwardOutput(ChannelHandlerContext ctx) {
         ByteBuffer nativeBuffer = decoder.pull(outputBufferSize);
-        // nativeBuffer actually wraps brotli's internal buffer so we need to copy its content
+        // nativeBuffer 指向 brotli 内部缓冲，须复制到 Netty ByteBuf
         int remaining = nativeBuffer.remaining();
         if (accumBuffer == null) {
             accumBuffer = ctx.alloc().buffer(remaining);
@@ -173,7 +175,7 @@ public final class BrotliDecoder extends ByteToMessageDecoder {
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         needsRead = true;
         if (destroyed) {
-            // Skip data received after finished.
+            // 流已结束，丢弃后续输入
             in.skipBytes(in.readableBytes());
             return;
         }
@@ -224,7 +226,7 @@ public final class BrotliDecoder extends ByteToMessageDecoder {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        // Discard bytes of the cumulation buffer if needed.
+        // 必要时丢弃 cumulation 中已读字节
         discardSomeReadBytes();
 
         if (needsRead && !ctx.channel().config().isAutoRead()) {

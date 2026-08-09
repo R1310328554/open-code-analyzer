@@ -21,17 +21,18 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * <a href="https://www.aumasson.jp/siphash/siphash.pdf">Siphash implementation</a>.
+ * <a href="https://www.aumasson.jp/siphash/siphash.pdf">SipHash</a> 消息认证码实现，
+ * 用于 QUIC 连接 ID 生成等场景；构造后无额外堆分配。
  */
 final class SipHash {
 
     static final int SEED_LENGTH = 16;
 
-    // Make this class allocation free as soon as its constructed.
+    // 构造完成后不再分配对象，便于热路径复用
     private final int compressionRounds;
     private final int finalizationRounds;
 
-    // As specified in https://www.aumasson.jp/siphash/siphash.pdf
+    // 初始状态常量，见 SipHash 论文
     private static final long INITIAL_STATE_V0 = 0x736f6d6570736575L; // "somepseu"
     private static final long INITIAL_STATE_V1 = 0x646f72616e646f6dL; // "dorandom"
     private static final long INITIAL_STATE_V2 = 0x6c7967656e657261L; // "lygenera"
@@ -54,8 +55,7 @@ final class SipHash {
         this.compressionRounds = ObjectUtil.checkPositive(compressionRounds, "compressionRounds");
         this.finalizationRounds = ObjectUtil.checkPositive(finalizationRounds, "finalizationRounds");
 
-        // Wrap the seed to extract two longs that will be used to generate the initial state.
-        // Use little-endian as in the paper.
+        // 将 16 字节 seed 拆为两个 long 初始化状态；与论文一致使用小端序
         ByteBuffer keyBuffer = ByteBuffer.wrap(seed).order(ByteOrder.LITTLE_ENDIAN);
         final long k0 = keyBuffer.getLong();
         final long k1 = keyBuffer.getLong();
@@ -66,6 +66,7 @@ final class SipHash {
         initialStateV3 = INITIAL_STATE_V3 ^ k1;
     }
 
+    /** 对输入缓冲区计算 SipHash MAC，返回 64 位哈希值。 */
     long macHash(ByteBuffer input) {
         v0 = initialStateV0;
         v1 = initialStateV1;
@@ -78,7 +79,7 @@ final class SipHash {
         for (int offset = position; offset < len; offset +=  Long.BYTES) {
             long m = input.getLong(offset);
             if (needsReverse) {
-                // We use little-endian as in the paper.
+                // 大端输入需反字节序，与论文小端约定一致
                 m = Long.reverseBytes(m);
             }
             v3 ^= m;
@@ -88,7 +89,7 @@ final class SipHash {
             v0 ^= m;
         }
 
-        // Get last bits.
+        // 处理不足 8 字节的尾部数据
         final int left = remaining & (Long.BYTES - 1);
         long b = (long) remaining << 56;
         assert left < Long.BYTES;
@@ -128,6 +129,7 @@ final class SipHash {
         return v0 ^ v1 ^ v2 ^ v3;
     }
 
+    /** 执行一轮 SipHash 压缩轮（sipround）。 */
     private void sipround() {
         v0 += v1;
         v2 += v3;

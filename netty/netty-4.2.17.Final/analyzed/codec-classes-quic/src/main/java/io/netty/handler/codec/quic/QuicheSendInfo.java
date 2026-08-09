@@ -23,7 +23,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class to handle access to {@code quiche_send_info}.
+ * 读写 Quiche {@code quiche_send_info} 结构体的工具类：
+ * 解析/写入本地与远端 {@link InetSocketAddress}，以及计划发送时间。
  */
 final class QuicheSendInfo {
 
@@ -46,7 +47,7 @@ final class QuicheSendInfo {
     private QuicheSendInfo() { }
 
     /**
-     * Get the {@link InetSocketAddress} out of the {@code quiche_send_info} struct.
+     * 从 {@code quiche_send_info} 读取目标地址（to）。
      *
      * @param memory the memory of {@code quiche_send_info}.
      * @return the address that was read.
@@ -56,6 +57,7 @@ final class QuicheSendInfo {
         return getAddress(memory, Quiche.QUICHE_SEND_INFO_OFFSETOF_TO_LEN, Quiche.QUICHE_SEND_INFO_OFFSETOF_TO);
     }
 
+    /** 从 {@code quiche_send_info} 读取本地源地址（from）。 */
     @Nullable
     static InetSocketAddress getFromAddress(ByteBuffer memory) {
        return getAddress(memory, Quiche.QUICHE_SEND_INFO_OFFSETOF_FROM_LEN, Quiche.QUICHE_SEND_INFO_OFFSETOF_FROM);
@@ -84,7 +86,7 @@ final class QuicheSendInfo {
     }
 
     /**
-     * Set the {@link InetSocketAddress} into the {@code quiche_send_info} struct.
+     * 将本地与远端地址写入 {@code quiche_send_info} 结构体。
      * <pre>
      *
      * typedef struct {
@@ -110,7 +112,7 @@ final class QuicheSendInfo {
         try {
             setAddress(memory, Quiche.QUICHE_SEND_INFO_OFFSETOF_FROM, Quiche.QUICHE_SEND_INFO_OFFSETOF_FROM_LEN, from);
             setAddress(memory, Quiche.QUICHE_SEND_INFO_OFFSETOF_TO, Quiche.QUICHE_SEND_INFO_OFFSETOF_TO_LEN, to);
-            // Zero out the timespec.
+            // 将发送时间 timespec 清零
             memory.position(position + Quiche.QUICHE_SEND_INFO_OFFSETOF_AT);
             memory.put(TIMESPEC_ZEROOUT);
         } finally {
@@ -130,7 +132,7 @@ final class QuicheSendInfo {
     }
 
     /**
-     * Get the {@code timespec} from the {@code quiche_send_info} struct in nanos.
+     * 读取 {@code quiche_send_info.at}  timespec 并转换为纳秒。
      * <pre>
      *
      * typedef struct {
@@ -158,7 +160,7 @@ final class QuicheSendInfo {
     }
 
     /**
-     * Returns {@code true} if both {@link ByteBuffer}s have the same {@code sockaddr_storage} stored.
+     * 比较两个 {@code quiche_send_info} 中的 to 地址是否相同。
      *
      * @param memory    the first {@link ByteBuffer} which holds a {@code quiche_send_info}.
      * @param memory2   the second {@link ByteBuffer} which holds a {@code quiche_send_info}.

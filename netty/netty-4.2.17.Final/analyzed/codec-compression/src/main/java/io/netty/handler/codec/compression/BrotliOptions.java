@@ -19,8 +19,7 @@ import com.aayushatharva.brotli4j.encoder.Encoder;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * {@link BrotliOptions} holds {@link Encoder.Parameters} for
- * Brotli compression.
+ * 封装 Brotli 压缩的 {@link Encoder.Parameters}，实现 {@link CompressionOptions}。
  */
 public final class BrotliOptions implements CompressionOptions {
 
@@ -29,6 +28,7 @@ public final class BrotliOptions implements CompressionOptions {
     /**
      * @see StandardCompressionOptions#brotli()
      */
+    /** 默认选项：质量 4、TEXT 模式。 */
     static final BrotliOptions DEFAULT = new BrotliOptions(
             new Encoder.Parameters().setQuality(4).setMode(Encoder.Mode.TEXT)
     );
@@ -41,6 +41,7 @@ public final class BrotliOptions implements CompressionOptions {
         this.parameters = ObjectUtil.checkNotNull(parameters, "Parameters");
     }
 
+    /** 返回底层 brotli4j 编码参数。 */
     public Encoder.Parameters parameters() {
         return parameters;
     }

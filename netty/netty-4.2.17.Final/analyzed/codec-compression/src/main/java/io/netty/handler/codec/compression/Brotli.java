@@ -21,6 +21,9 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
+/**
+ * Brotli 压缩运行时可用性探测：检测 brotli4j 是否在 classpath 中且原生库可加载。
+ */
 public final class Brotli {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Brotli.class);
@@ -41,7 +44,7 @@ public final class Brotli {
 
         CNFE = cnfe;
 
-        // If in the classpath, try to load the native library and initialize brotli4j.
+        // classpath 中存在 brotli4j 时尝试加载原生库
         if (cnfe == null) {
             cause = Brotli4jLoader.getUnavailabilityCause();
             if (cause != null) {
@@ -52,15 +55,14 @@ public final class Brotli {
 
     /**
      *
-     * @return true when brotli4j is in the classpath
-     * and native library is available on this platform and could be loaded
+     * @return 当 brotli4j 在 classpath 中且当前平台原生库已成功加载时为 {@code true}
      */
     public static boolean isAvailable() {
         return CNFE == null && Brotli4jLoader.isAvailable();
     }
 
     /**
-     * Throws when brotli support is missing from the classpath or is unavailable on this platform
+     * 当 brotli4j 缺失或原生库不可用时抛出异常。
      * @throws Throwable a ClassNotFoundException if brotli4j is missing
      * or a UnsatisfiedLinkError if brotli4j native lib can't be loaded
      */
@@ -72,7 +74,7 @@ public final class Brotli {
     }
 
     /**
-     * Returns {@link Throwable} of unavailability cause
+     * 返回原生库加载失败原因；可用时为 {@code null}。
      */
     public static Throwable cause() {
         return cause;
