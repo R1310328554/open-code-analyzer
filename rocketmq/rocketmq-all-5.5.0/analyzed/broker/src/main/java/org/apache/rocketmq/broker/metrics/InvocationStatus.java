@@ -17,8 +17,13 @@
 
 package org.apache.rocketmq.broker.metrics;
 
+/**
+ * RPC 调用结果状态，用作指标标签 {@code invocation_status} 的取值。
+ */
 public enum InvocationStatus {
+    /** 调用成功。 */
     SUCCESS("success"),
+    /** 调用失败。 */
     FAILURE("failure");
 
     private final String name;
@@ -27,6 +32,7 @@ public enum InvocationStatus {
         this.name = name;
     }
 
+    /** 返回指标标签字符串值。 */
     public String getName() {
         return name;
     }

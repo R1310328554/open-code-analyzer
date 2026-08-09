@@ -39,9 +39,8 @@ import static org.apache.rocketmq.broker.longpolling.PollingResult.POLLING_SUC;
 import static org.apache.rocketmq.broker.longpolling.PollingResult.POLLING_TIMEOUT;
 
 /**
- * Long polling service specifically designed for lite consumption.
- * Stores pending requests in memory using clientId as the key instead of topic@cid@qid.
- * Notification and resource checking mechanisms are identical to those in PopLongPollingService.
+ * Lite 消费专用长轮询服务：以 clientId 为键在内存中挂起 POP 请求（而非 topic@cid@qid）。
+ * 消息到达通知与资源清理机制与 {@link PopLongPollingService} 一致。
  */
 public class PopLiteLongPollingService extends ServiceThread {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
@@ -54,6 +53,7 @@ public class PopLiteLongPollingService extends ServiceThread {
     private final AtomicLong totalPollingNum = new AtomicLong(0);
     private final boolean notifyLast;
 
+    /** 初始化 lite 轮询映射，{@code notifyLast} 控制唤醒时取队首还是队尾请求。 */
     public PopLiteLongPollingService(BrokerController brokerController, NettyRequestProcessor processor, boolean notifyLast) {
         this.brokerController = brokerController;
         this.processor = processor;
@@ -62,6 +62,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         this.notifyLast = notifyLast;
     }
 
+    /** 容器模式下附加 broker 标识前缀。 */
     @Override
     public String getServiceName() {
         if (brokerController.getBrokerConfig().isInBrokerContainer()) {
@@ -70,6 +71,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         return PopLiteLongPollingService.class.getSimpleName();
     }
 
+    /** 周期性扫描超时挂起请求、统计队列深度并清理空桶。 */
     @Override
     public void run() {
         int i = 0;
@@ -145,6 +147,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         }
     }
 
+    /** 新消息到达时按 clientId 唤醒对应挂起 POP 请求。 */
     public boolean notifyMessageArriving(final String clientId, boolean force, long msgStoreTime, String group) {
         String pollingKey = getPollingKey(clientId, group);
         ConcurrentSkipListSet<PopRequest> remotingCommands = pollingMap.get(pollingKey);
@@ -162,6 +165,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         return wakeUp(popRequest);
     }
 
+    /** 完成挂起请求并在 pull 线程池中重新执行 POP 处理逻辑。 */
     public boolean wakeUp(final PopRequest request) {
         if (request == null || !request.complete()) {
             return false;
@@ -194,6 +198,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         return true;
     }
 
+    /** 尝试将 POP 请求挂入 lite 轮询队列，返回挂起结果。 */
     public PollingResult polling(final ChannelHandlerContext ctx, RemotingCommand remotingCommand,
         long bornTime, long pollTime, String clientId, String group) {
         if (pollTime <= 0 || this.isStopped()) {
@@ -243,6 +248,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         }
     }
 
+    /** 每 3 分钟移除空的轮询桶以释放内存。 */
     private void cleanUnusedResource() {
         try {
             pollingMap.entrySet().removeIf(entry -> {
@@ -257,6 +263,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         lastCleanTime = System.currentTimeMillis();
     }
 
+    /** 从挂起集合中取出首个活跃连接对应的请求。 */
     private PopRequest pollRemotingCommands(ConcurrentSkipListSet<PopRequest> remotingCommands) {
         if (remotingCommands == null || remotingCommands.isEmpty()) {
             return null;
@@ -277,7 +284,7 @@ public class PopLiteLongPollingService extends ServiceThread {
         return popRequest;
     }
 
-    // Assume that clientId is unique, so we use it as the key for now.
+    /** lite 模式下假定 clientId 全局唯一，直接作为轮询桶键。 */
     private String getPollingKey(String clientId, String group) {
         return clientId;
     }

@@ -25,6 +25,9 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.store.MessageFilter;
 
+/**
+ * POP 长轮询挂起请求：封装 Remoting 命令、Netty 通道、过期时间及可选订阅过滤条件。
+ */
 public class PopRequest {
     private static final AtomicLong COUNTER = new AtomicLong(Long.MIN_VALUE);
 
@@ -37,6 +40,7 @@ public class PopRequest {
     private final SubscriptionData subscriptionData;
     private final MessageFilter messageFilter;
 
+    /** 构造挂起请求，{@code expired} 为绝对超时时间戳（毫秒）。 */
     public PopRequest(RemotingCommand remotingCommand, ChannelHandlerContext ctx,
         long expired, SubscriptionData subscriptionData, MessageFilter messageFilter) {
 
@@ -47,6 +51,7 @@ public class PopRequest {
         this.messageFilter = messageFilter;
     }
 
+    /** 返回客户端 Netty 通道。 */
     public Channel getChannel() {
         return ctx.channel();
     }
@@ -59,10 +64,12 @@ public class PopRequest {
         return remotingCommand;
     }
 
+    /** 距过期时间不足 50ms 即视为超时。 */
     public boolean isTimeout() {
         return System.currentTimeMillis() > (expired - 50);
     }
 
+    /** CAS 标记请求已完成，防止重复唤醒。 */
     public boolean complete() {
         return complete.compareAndSet(false, true);
     }
@@ -91,6 +98,7 @@ public class PopRequest {
         return sb.toString();
     }
 
+    /** 按过期时间升序、操作序号升序排序，用于 {@link ConcurrentSkipListSet}。 */
     public static final Comparator<PopRequest> COMPARATOR = (o1, o2) -> {
         int ret = (int) (o1.getExpired() - o2.getExpired());
 

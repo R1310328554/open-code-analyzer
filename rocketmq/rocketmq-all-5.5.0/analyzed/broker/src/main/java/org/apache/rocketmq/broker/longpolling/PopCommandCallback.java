@@ -22,6 +22,9 @@ import java.util.function.BiConsumer;
 import org.apache.rocketmq.broker.metrics.ConsumerLagCalculator;
 import org.apache.rocketmq.remoting.CommandCallback;
 
+/**
+ * POP 命令回调：在 Remoting 异步响应完成后触发消费滞后计算。
+ */
 public class PopCommandCallback implements CommandCallback {
 
     private final BiConsumer<ConsumerLagCalculator.ProcessGroupInfo,
@@ -29,6 +32,7 @@ public class PopCommandCallback implements CommandCallback {
     private final ConsumerLagCalculator.ProcessGroupInfo info;
     private final CompletableFuture<ConsumerLagCalculator.CalculateLagResult> future;
 
+    /** 绑定滞后计算回调、进程组上下文与结果 Future。 */
     public PopCommandCallback(
         BiConsumer<ConsumerLagCalculator.ProcessGroupInfo,
             CompletableFuture<ConsumerLagCalculator.CalculateLagResult>> biConsumer,
@@ -40,6 +44,7 @@ public class PopCommandCallback implements CommandCallback {
         this.future = future;
     }
 
+    /** 执行滞后计算并将结果写入 Future。 */
     @Override
     public void accept() {
         biConsumer.accept(info, future);

@@ -59,6 +59,9 @@ import static org.apache.rocketmq.broker.metrics.PopMetricsConstant.LABEL_PUT_ST
 import static org.apache.rocketmq.broker.metrics.PopMetricsConstant.LABEL_QUEUE_ID;
 import static org.apache.rocketmq.broker.metrics.PopMetricsConstant.LABEL_REVIVE_MESSAGE_TYPE;
 
+/**
+ * POP 指标管理器：注册 buffer 扫描、revive 进出站及重试等 OpenTelemetry 仪器。
+ */
 public class PopMetricsManager {
     private static final Logger log = LoggerFactory.getLogger(PopMetricsManager.class);
     
@@ -72,6 +75,7 @@ public class PopMetricsManager {
     public PopMetricsManager() {
     }
 
+    /** 返回 POP buffer 扫描耗时的直方图分桶视图配置。 */
     public List<Pair<InstrumentSelector, ViewBuilder>> getMetricsView() {
         List<Double> rpcCostTimeBuckets = Arrays.asList(
             (double) Duration.ofMillis(1).toMillis(),
@@ -91,6 +95,7 @@ public class PopMetricsManager {
         return Lists.newArrayList(new Pair<>(popBufferScanTimeConsumeSelector, popBufferScanTimeConsumeViewBuilder));
     }
 
+    /** 注册 POP 相关 Counter、Histogram 与 Gauge 回调。 */
     public void initMetrics(Meter meter, BrokerController brokerController,
         Supplier<AttributesBuilder> attributesBuilderSupplier) {
         this.attributesBuilderSupplier = attributesBuilderSupplier;
@@ -170,14 +175,17 @@ public class PopMetricsManager {
         }
     }
 
+    /** ACK 消息写入 revive topic 时递增计数。 */
     public void incPopReviveAckPutCount(AckMsg ackMsg, PutMessageStatus status) {
         incPopRevivePutCount(ackMsg.getConsumerGroup(), ackMsg.getTopic(), PopReviveMessageType.ACK, status, 1);
     }
 
+    /** Checkpoint 写入 revive topic 时递增计数。 */
     public void incPopReviveCkPutCount(PopCheckPoint checkPoint, PutMessageStatus status) {
         incPopRevivePutCount(checkPoint.getCId(), checkPoint.getTopic(), PopReviveMessageType.CK, status, 1);
     }
 
+    /** 按 group、topic、消息类型与写入状态递增 revive 入站计数。 */
     public void incPopRevivePutCount(String group, String topic, PopReviveMessageType messageType,
         PutMessageStatus status, int num) {
         Attributes attributes = this.newAttributesBuilder()
@@ -197,6 +205,7 @@ public class PopMetricsManager {
         incPopReviveGetCount(checkPoint.getCId(), checkPoint.getTopic(), PopReviveMessageType.CK, queueId, 1);
     }
 
+    /** 从 revive topic 读出消息时递增出站计数。 */
     public void incPopReviveGetCount(String group, String topic, PopReviveMessageType messageType, int queueId,
         int num) {
         AttributesBuilder builder = this.newAttributesBuilder();
@@ -209,6 +218,7 @@ public class PopMetricsManager {
         this.popReviveGetTotal.add(num, attributes);
     }
 
+    /** Checkpoint 触发 POP 重试 topic 写入时递增计数。 */
     public void incPopReviveRetryMessageCount(PopCheckPoint checkPoint, PutMessageStatus status) {
         AttributesBuilder builder = this.newAttributesBuilder();
         Attributes attributes = builder
@@ -219,10 +229,12 @@ public class PopMetricsManager {
         this.popReviveRetryMessageTotal.add(1, attributes);
     }
 
+    /** 记录 POP buffer 单次扫描耗时（毫秒）。 */
     public void recordPopBufferScanTimeConsume(long time) {
         this.popBufferScanTimeConsume.record(time, this.newAttributesBuilder().build());
     }
 
+    /** 获取带 broker 公共标签的 Attributes 构建器。 */
     public AttributesBuilder newAttributesBuilder() {
         return this.attributesBuilderSupplier != null ? this.attributesBuilderSupplier.get() : Attributes.builder();
     }

@@ -16,7 +16,12 @@
  */
 package org.apache.rocketmq.broker.metrics;
 
+/**
+ * POP revive topic 消息类型，用于指标标签区分 Checkpoint 与 ACK。
+ */
 public enum PopReviveMessageType {
+    /** Checkpoint 消息。 */
     CK,
+    /** 消费确认（ACK）消息。 */
     ACK
 }

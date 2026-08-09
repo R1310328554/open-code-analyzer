@@ -16,15 +16,22 @@
  */
 package org.apache.rocketmq.broker.metrics;
 
+/**
+ * Broker OpenTelemetry 指标名与标签常量定义。
+ */
 public class BrokerMetricsConstant {
+    /** OpenTelemetry Meter 名称。 */
     public static final String OPEN_TELEMETRY_METER_NAME = "broker-meter";
 
+    /** Gauge：各处理器队列水位。 */
     public static final String GAUGE_PROCESSOR_WATERMARK = "rocketmq_processor_watermark";
     public static final String GAUGE_BROKER_PERMISSION = "rocketmq_broker_permission";
     public static final String GAUGE_TOPIC_NUM = "rocketmq_topic_number";
     public static final String GAUGE_CONSUMER_GROUP_NUM = "rocketmq_consumer_group_number";
 
+    /** Counter：入站消息总数。 */
     public static final String COUNTER_MESSAGES_IN_TOTAL = "rocketmq_messages_in_total";
+    /** Counter：出站消息总数。 */
     public static final String COUNTER_MESSAGES_OUT_TOTAL = "rocketmq_messages_out_total";
     public static final String COUNTER_THROUGHPUT_IN_TOTAL = "rocketmq_throughput_in_total";
     public static final String COUNTER_THROUGHPUT_OUT_TOTAL = "rocketmq_throughput_out_total";
@@ -35,18 +42,22 @@ public class BrokerMetricsConstant {
     public static final String GAUGE_PRODUCER_CONNECTIONS = "rocketmq_producer_connections";
     public static final String GAUGE_CONSUMER_CONNECTIONS = "rocketmq_consumer_connections";
 
+    /** Gauge：消费滞后消息数。 */
     public static final String GAUGE_CONSUMER_LAG_MESSAGES = "rocketmq_consumer_lag_messages";
+    /** Gauge：消费滞后时间（毫秒）。 */
     public static final String GAUGE_CONSUMER_LAG_LATENCY = "rocketmq_consumer_lag_latency";
     public static final String GAUGE_CONSUMER_INFLIGHT_MESSAGES = "rocketmq_consumer_inflight_messages";
     public static final String GAUGE_CONSUMER_QUEUEING_LATENCY = "rocketmq_consumer_queueing_latency";
     public static final String GAUGE_CONSUMER_READY_MESSAGES = "rocketmq_consumer_ready_messages";
     public static final String COUNTER_CONSUMER_SEND_TO_DLQ_MESSAGES_TOTAL = "rocketmq_send_to_dlq_messages_total";
 
+    /** Counter：事务提交消息数。 */
     public static final String COUNTER_COMMIT_MESSAGES_TOTAL = "rocketmq_commit_messages_total";
     public static final String COUNTER_ROLLBACK_MESSAGES_TOTAL = "rocketmq_rollback_messages_total";
     public static final String HISTOGRAM_FINISH_MSG_LATENCY = "rocketmq_finish_message_latency";
     public static final String GAUGE_HALF_MESSAGES = "rocketmq_half_messages";
 
+    /** 标签：集群名。 */
     public static final String LABEL_CLUSTER_NAME = "cluster";
     public static final String LABEL_NODE_TYPE = "node_type";
     public static final String NODE_TYPE_BROKER = "broker";
@@ -55,13 +66,16 @@ public class BrokerMetricsConstant {
     public static final String AGGREGATION_DELTA = "delta";
     public static final String LABEL_PROCESSOR = "processor";
 
+    /** 标签：topic 名。 */
     public static final String LABEL_TOPIC = "topic";
     public static final String LABEL_INVOCATION_STATUS = "invocation_status";
     public static final String LABEL_IS_RETRY = "is_retry";
     public static final String LABEL_IS_SYSTEM = "is_system";
+    /** 标签：消费组名。 */
     public static final String LABEL_CONSUMER_GROUP = "consumer_group";
     public static final String LABEL_MESSAGE_TYPE = "message_type";
     public static final String LABEL_LANGUAGE = "language";
     public static final String LABEL_VERSION = "version";
+    /** 标签：消费模式（push/pull/pop 等）。 */
     public static final String LABEL_CONSUME_MODE = "consume_mode";
 }

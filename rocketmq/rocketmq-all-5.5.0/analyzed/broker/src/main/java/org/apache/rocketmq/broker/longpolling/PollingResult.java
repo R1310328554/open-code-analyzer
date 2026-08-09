@@ -17,9 +17,16 @@
 
 package org.apache.rocketmq.broker.longpolling;
 
+/**
+ * POP 长轮询挂起结果：标识请求是否成功进入等待队列或遭拒绝/超时。
+ */
 public enum PollingResult {
+    /** 成功挂起，等待新消息到达后唤醒。 */
     POLLING_SUC,
+    /** 轮询队列已满，拒绝挂起。 */
     POLLING_FULL,
+    /** 挂起前已超时，直接返回。 */
     POLLING_TIMEOUT,
+    /** 未进入长轮询（pollTime 无效或服务已停止）。 */
     NOT_POLLING;
 }

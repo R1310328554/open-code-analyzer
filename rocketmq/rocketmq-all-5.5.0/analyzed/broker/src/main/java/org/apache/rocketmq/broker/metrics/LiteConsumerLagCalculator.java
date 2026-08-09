@@ -40,8 +40,12 @@ import org.apache.rocketmq.common.entity.TopicGroup;
 import org.apache.rocketmq.common.lite.LiteLagInfo;
 import org.apache.rocketmq.common.lite.LiteUtil;
 
+/**
+ * Lite 消费滞后计算器：按 LMQ 维度统计消息条数滞后与最早未消费时间戳。
+ */
 public class LiteConsumerLagCalculator {
 
+    /** 尚无滞后数据时的占位时间戳。 */
     protected static final long INIT_CONSUME_TIMESTAMP = -1L;
 
     @VisibleForTesting
@@ -50,10 +54,12 @@ public class LiteConsumerLagCalculator {
 
     private final BrokerController brokerController;
 
+    /** 绑定 Broker 控制器以访问 offset 表与 MessageStore。 */
     public LiteConsumerLagCalculator(BrokerController brokerController) {
         this.brokerController = brokerController;
     }
 
+    /** 移除指定 LMQ 的滞后时间堆条目。 */
     public void removeLagInfo(String group, String bindTopic, String lmqName) {
         PriorityBlockingQueue<LagTimeInfo> lagHeap = topicGroupLagTimeMap.get(new TopicGroup(bindTopic, group));
         if (lagHeap != null) {
@@ -61,6 +67,7 @@ public class LiteConsumerLagCalculator {
         }
     }
 
+    /** 更新 LMQ 最早未消费时间戳，堆大小受 {@code liteLagLatencyTopK} 限制。 */
     public void updateLagInfo(String group, String bindTopic, String lmqName, long storeTimestamp) {
         PriorityBlockingQueue<LagTimeInfo> lagHeap = topicGroupLagTimeMap.computeIfAbsent(
             new TopicGroup(bindTopic, group),
@@ -97,6 +104,7 @@ public class LiteConsumerLagCalculator {
         return Math.max(0L, maxOffset - consumerOffset);
     }
 
+    /** 遍历 lite offset 表，按父 topic 聚合消息条数滞后并回调记录。 */
     public void calculateLiteLagCount(Consumer<ConsumerLagCalculator.CalculateLagResult> lagRecorder) {
         if (!brokerController.getBrokerConfig().isLiteLagCountMetricsEnable()) {
             return;
@@ -123,6 +131,7 @@ public class LiteConsumerLagCalculator {
         });
     }
 
+    /** 从滞后时间堆取最小 storeTimestamp 作为 topic 组滞后延迟指标。 */
     public void calculateLiteLagLatency(Consumer<ConsumerLagCalculator.CalculateLagResult> lagRecorder) {
         if (!brokerController.getBrokerConfig().isLiteLagLatencyMetricsEnable()) {
             return;
@@ -147,7 +156,7 @@ public class LiteConsumerLagCalculator {
     }
 
     /**
-     * Get top K LiteLagInfo entries with the smallest lag timestamps for a topic group.
+     * 获取指定 topic 组滞后时间最小的 topK {@link LiteLagInfo} 条目。
      *
      * @param group       consumer group name
      * @param parentTopic parent topic name
@@ -198,7 +207,7 @@ public class LiteConsumerLagCalculator {
     }
 
     /**
-     * Get top K LiteLagInfo entries with the largest lag counts for a topic group.
+     * 获取指定消费组滞后条数最大的 topK {@link LiteLagInfo} 条目。
      *
      * @param group consumer group name
      * @param topK  max number of entries to retrieve
@@ -242,7 +251,7 @@ public class LiteConsumerLagCalculator {
     }
 
     /**
-     * Filters the lite group offset by the specified group and processes each entry via BiConsumer.
+     * 遍历 lite 消费 offset 表，{@code group} 为 null 时处理全部组。
      *
      * @param group    The specified consumer group. If null, all offset information is processed.
      * @param consumer The BiConsumer used to process each entry.
@@ -272,6 +281,7 @@ public class LiteConsumerLagCalculator {
         });
     }
 
+    /** LMQ 最早未消费消息的时间戳条目，按 lmqName 去重。 */
     protected static class LagTimeInfo {
         private final String lmqName;
         // earliest unconsumed timestamp

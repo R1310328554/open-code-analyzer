@@ -19,15 +19,20 @@ package org.apache.rocketmq.broker.metrics;
 import com.google.common.base.Objects;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 
+/**
+ * 生产者连接属性：语言与客户端版本组合，用作指标标签去重键。
+ */
 public class ProducerAttr {
     LanguageCode language;
     int version;
 
+    /** 构造生产者属性快照。 */
     public ProducerAttr(LanguageCode language, int version) {
         this.language = language;
         this.version = version;
     }
 
+    /** 按 language 与 version 判等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o)

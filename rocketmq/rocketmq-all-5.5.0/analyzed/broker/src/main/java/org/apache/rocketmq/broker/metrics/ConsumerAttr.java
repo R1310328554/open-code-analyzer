@@ -20,12 +20,16 @@ import com.google.common.base.Objects;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 
+/**
+ * 消费者连接属性：用于指标标签去重的 group、语言、版本与消费模式组合键。
+ */
 public class ConsumerAttr {
     String group;
     LanguageCode language;
     int version;
     ConsumeType consumeMode;
 
+    /** 构造消费者属性快照。 */
     public ConsumerAttr(String group, LanguageCode language, int version, ConsumeType consumeMode) {
         this.group = group;
         this.language = language;
@@ -33,6 +37,7 @@ public class ConsumerAttr {
         this.consumeMode = consumeMode;
     }
 
+    /** 按 group、language、version、consumeMode 判等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o)
