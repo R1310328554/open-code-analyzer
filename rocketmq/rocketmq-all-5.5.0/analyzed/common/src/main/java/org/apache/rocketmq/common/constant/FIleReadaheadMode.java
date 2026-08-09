@@ -16,6 +16,10 @@
  */
 package org.apache.rocketmq.common.constant;
 
+/**
+ * 文件预读模式配置项键名（类名 FIle 为历史拼写保留）。
+ */
 public class FIleReadaheadMode {
+    /** RocksDB/存储层 READ_AHEAD_MODE 配置键。 */
     public static final String READ_AHEAD_MODE = "READ_AHEAD_MODE";
 }

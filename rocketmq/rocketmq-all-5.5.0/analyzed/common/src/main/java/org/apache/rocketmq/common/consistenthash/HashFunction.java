@@ -17,8 +17,9 @@
 package org.apache.rocketmq.common.consistenthash;
 
 /**
- * Hash String to long value
+ * 将字符串键哈希为 long 值，供一致性哈希环定位使用。
  */
 public interface HashFunction {
+    /** 计算键的哈希值。 */
     long hash(String key);
 }

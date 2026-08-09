@@ -16,21 +16,32 @@
  */
 package org.apache.rocketmq.common.constant;
 
+/**
+ * 通用字符串分隔符与符号常量，供配置解析、路径拼接等使用。
+ */
 public class CommonConstants {
 
+    /** 冒号分隔符。 */
     public static final String COLON = ":";
 
+    /** 星号通配符。 */
     public static final String ASTERISK = "*";
 
+    /** 逗号分隔符。 */
     public static final String COMMA = ",";
 
+    /** 等号（键值对分隔）。 */
     public static final String EQUAL = "=";
 
+    /** 斜杠（路径分隔）。 */
     public static final String SLASH = "/";
 
+    /** 空格字符。 */
     public static final String SPACE = " ";
 
+    /** 连字符。 */
     public static final String HYPHEN = "-";
 
+    /** 井号字符。 */
     public static final String POUND = "#";
 }

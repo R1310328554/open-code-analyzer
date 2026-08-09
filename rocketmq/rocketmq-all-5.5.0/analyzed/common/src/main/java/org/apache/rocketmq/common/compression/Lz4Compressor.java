@@ -26,9 +26,13 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 基于 LZ4 Frame 格式的消息体压缩/解压实现。
+ */
 public class Lz4Compressor implements Compressor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /** 使用 LZ4 Frame 压缩字节数组；level 参数由框架传入，LZ4 实现中未直接使用。 */
     @Override
     public byte[] compress(byte[] src, int level) throws IOException {
         byte[] result = src;
@@ -51,6 +55,7 @@ public class Lz4Compressor implements Compressor {
         return result;
     }
 
+    /** 解压 LZ4 Frame 格式的压缩数据并返回原始字节。 */
     @Override
     public byte[] decompress(byte[] src) throws IOException {
         byte[] result = src;

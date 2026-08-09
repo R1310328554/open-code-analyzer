@@ -26,9 +26,13 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 基于 zstd-jni 的 ZSTD 压缩/解压实现。
+ */
 public class ZstdCompressor implements Compressor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /** 按指定压缩级别对数据进行 ZSTD 压缩。 */
     @Override
     public byte[] compress(byte[] src, int level) throws IOException {
         byte[] result = src;
@@ -51,6 +55,7 @@ public class ZstdCompressor implements Compressor {
         return result;
     }
 
+    /** 解压 ZSTD 格式数据并返回原始字节数组。 */
     @Override
     public byte[] decompress(byte[] src) throws IOException {
         byte[] result = src;

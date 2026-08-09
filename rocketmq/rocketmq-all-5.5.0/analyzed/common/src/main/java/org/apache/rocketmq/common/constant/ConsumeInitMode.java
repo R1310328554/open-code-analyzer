@@ -16,7 +16,12 @@
  */
 package org.apache.rocketmq.common.constant;
 
+/**
+ * 消费位点初始化模式边界：MIN/MAX 用于校验合法取值范围。
+ */
 public class ConsumeInitMode {
+    /** 消费初始化模式最小合法值。 */
     public static final int MIN = 0;
+    /** 消费初始化模式最大合法值。 */
     public static final int MAX = 1;
 }

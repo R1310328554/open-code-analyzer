@@ -37,7 +37,11 @@ import org.rocksdb.StringAppendOperator;
 import org.rocksdb.WALRecoveryMode;
 import org.rocksdb.util.SizeUnit;
 
+/**
+ * RocketMQ 配置 RocksDB 的列族与 DB 选项工厂：块缓存、Compaction、WAL 刷盘策略等。
+ */
 public class ConfigHelper {
+    /** 创建配置存储专用列族选项（块表、Bloom 过滤、Level Compaction 等）。 */
     public static ColumnFamilyOptions createConfigColumnFamilyOptions() {
         BlockBasedTableConfig blockBasedTableConfig = new BlockBasedTableConfig().
             setFormatVersion(5).
@@ -45,7 +49,7 @@ public class ConfigHelper {
             setDataBlockIndexType(DataBlockIndexType.kDataBlockBinarySearch).
             setBlockSize(32 * SizeUnit.KB).
             setFilterPolicy(new BloomFilter(16, false)).
-            // Indicating if we'd put index/filter blocks to the block cache.
+            // 是否将索引/过滤块放入块缓存。
             setCacheIndexAndFilterBlocks(true).
             setCacheIndexAndFilterBlocksWithHighPriority(true).
             setPinL0FilterAndIndexBlocksInCache(false).
@@ -65,18 +69,19 @@ public class ConfigHelper {
             setLevel0FileNumCompactionTrigger(4).
             setLevel0SlowdownWritesTrigger(8).
             setLevel0StopWritesTrigger(12).
-            // The target file size for compaction.
+            // Compaction 目标文件大小。
             setTargetFileSizeBase(64 * SizeUnit.MB).
             setTargetFileSizeMultiplier(2).
-            // The upper-bound of the total size of L1 files in bytes
+            // L1 层文件总大小的上限（字节）。
             setMaxBytesForLevelBase(256 * SizeUnit.MB).
             setMaxBytesForLevelMultiplier(2).
             setMergeOperator(new StringAppendOperator()).
             setInplaceUpdateSupport(true);
     }
 
+    /** 创建配置库 DB 选项：手动 WAL 刷盘、限速、Direct IO 等。 */
     public static DBOptions createConfigDBOptions() {
-        // Tune based on https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide
+        // 调参参考 RocksDB Tuning Guide 及内部 JStorm 实践。
         // and http://gitlab.alibaba-inc.com/aloha/aloha/blob/branch_2_5_0/jstorm-core/src/main/java/com/alibaba/jstorm/cache/rocksdb/RocksDbOptionsFactory.java
         DBOptions options = new DBOptions();
         Statistics statistics = new Statistics();
@@ -86,14 +91,12 @@ public class ConfigHelper {
             setInfoLogLevel(InfoLogLevel.INFO_LEVEL).
             setWalRecoveryMode(WALRecoveryMode.SkipAnyCorruptedRecords).
             /*
-             * We use manual flush to achieve desired balance between reliability and performance:
-             * for metadata that matters, including {topic, subscription}-config changes, each write incurs a
-             * flush-and-sync to ensure reliability; for {commit, pull}-offset advancements, group-flush are offered for
-             * every N(configurable, 1024 by default) writes or aging of writes, similar to OS page-cache flush
-             * mechanism.
+             * 启用手动 WAL 刷盘，在可靠性与性能间折中：
+             * 对 Topic/订阅等关键元数据每次写入都会 flush-and-sync；
+             * 对 commit/pull 位点推进则按 N 次写入（默认 1024）或写入老化批量刷盘，类似 OS 页缓存机制。
              */
             setManualWalFlush(true).
-            // This option takes effect only when we have multiple column families
+            // 仅在有多个列族时生效。
             // https://github.com/facebook/rocksdb/issues/4180
             // setMaxTotalWalSize(1024 * SizeUnit.MB).
             setDbWriteBufferSize(128 * SizeUnit.MB).
@@ -117,6 +120,7 @@ public class ConfigHelper {
             setUseDirectReads(true);
     }
 
+    /** 在用户目录、临时目录或 /data 下递归创建并返回 RocketMQ RocksDB 日志目录。 */
     public static String getDBLogDir() {
         String[] rootPaths = new String[] {
             System.getProperty("user.home"),
@@ -124,8 +128,8 @@ public class ConfigHelper {
             File.separator + "data"
         };
         for (String rootPath : rootPaths) {
-            // Refer bazel test encyclopedia: https://bazel.build/reference/test-encyclopedia
-            // Not all directories is available
+            // 参考 Bazel 测试百科：并非所有目录在测试环境中可写。
+            // 跳过不存在或不可写的根路径。
             if (Strings.isNullOrEmpty(rootPath)) {
                 continue;
             }
@@ -134,7 +138,7 @@ public class ConfigHelper {
                 continue;
             }
             String logDirectory = rootPath + File.separator + "logs" + File.separator + "rocketmqlogs";
-            // Create directories recursively.
+            // 递归创建日志目录。
             UtilAll.ensureDirOK(logDirectory);
             return logDirectory;
         }

@@ -16,8 +16,13 @@
  */
 package org.apache.rocketmq.common.consistenthash;
 
+/**
+ * 物理节点在一致性哈希环上的虚拟副本，键为 physicalKey-replicaIndex。
+ */
 public class VirtualNode<T extends Node> implements Node {
+    /** 关联的物理节点。 */
     final T physicalNode;
+    /** 虚拟副本序号（同一物理节点可有多个）。 */
     final int replicaIndex;
 
     public VirtualNode(T physicalNode, int replicaIndex) {
@@ -30,10 +35,12 @@ public class VirtualNode<T extends Node> implements Node {
         return physicalNode.getKey() + "-" + replicaIndex;
     }
 
+    /** 判断该虚拟节点是否属于给定物理节点。 */
     public boolean isVirtualNodeOf(T pNode) {
         return physicalNode.getKey().equals(pNode.getKey());
     }
 
+    /** 返回关联的物理节点。 */
     public T getPhysicalNode() {
         return physicalNode;
     }

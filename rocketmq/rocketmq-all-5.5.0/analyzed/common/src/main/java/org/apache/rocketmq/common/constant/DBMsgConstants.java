@@ -17,6 +17,10 @@
 
 package org.apache.rocketmq.common.constant;
 
+/**
+ * 数据库消息（DB 消息）相关容量常量。
+ */
 public class DBMsgConstants {
+    /** 消息体最大字节数（64 MiB；源码注释误写为 64KB）。 */
     public static final int MAX_BODY_SIZE = 64 * 1024 * 1024; //64KB
 }

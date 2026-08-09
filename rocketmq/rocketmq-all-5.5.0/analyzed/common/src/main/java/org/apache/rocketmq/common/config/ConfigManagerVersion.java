@@ -17,8 +17,13 @@
 
 package org.apache.rocketmq.common.config;
 
+/**
+ * 配置管理器存储格式版本标识。
+ */
 public enum ConfigManagerVersion {
+    /** 配置管理器 v1 格式。 */
     V1("v1"),
+    /** 配置管理器 v2 格式（RocksDB 等）。 */
     V2("v2"),
     ;
     private final String version;
@@ -27,6 +32,7 @@ public enum ConfigManagerVersion {
         this.version = version;
     }
 
+    /** 返回版本字符串（如 v1、v2）。 */
     public String getVersion() {
         return version;
     }

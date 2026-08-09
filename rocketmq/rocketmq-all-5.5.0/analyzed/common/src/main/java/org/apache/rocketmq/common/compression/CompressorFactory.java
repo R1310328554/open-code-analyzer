@@ -19,7 +19,11 @@ package org.apache.rocketmq.common.compression;
 
 import java.util.EnumMap;
 
+/**
+ * 压缩器工厂：按 {@link CompressionType} 注册并返回 LZ4/ZSTD/ZLIB 实现。
+ */
 public class CompressorFactory {
+    /** 压缩类型到具体压缩器实例的映射表。 */
     private static final EnumMap<CompressionType, Compressor> COMPRESSORS;
 
     static {
@@ -29,6 +33,7 @@ public class CompressorFactory {
         COMPRESSORS.put(CompressionType.ZLIB, new ZlibCompressor());
     }
 
+    /** 根据压缩类型获取对应压缩器，未注册类型返回 null。 */
     public static Compressor getCompressor(CompressionType type) {
         return COMPRESSORS.get(type);
     }
