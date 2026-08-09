@@ -12,20 +12,27 @@ import java.util.List;
 import static com.taobao.text.ui.Element.label;
 
 /**
+ * {@code vmoption} 命令的终端渲染视图。
+ * <p>
+ * 查询模式输出 JVM 诊断选项四列表格（KEY/VALUE/ORIGIN/WRITEABLE）；
+ * 修改模式展示 {@link ChangeResultVO} 修改前后对比。
+ *
  * @author gongdewei 2020/4/15
  */
 public class VMOptionView extends ResultView<VMOptionModel> {
 
     @Override
     public void draw(CommandProcess process, VMOptionModel result) {
-        if (result.getVmOptions() != null) {
+        // 列表查询：渲染全部 VMOption
             process.write(renderVMOptions(result.getVmOptions(), process.width()));
         } else if (result.getChangeResult() != null) {
+            // set 模式：展示 NAME/BEFORE/AFTER 对比表
             TableElement table = ViewRenderUtil.renderChangeResult(result.getChangeResult());
             process.write(RenderUtil.render(table, process.width()));
         }
     }
 
+    /** 将诊断 VM 选项列表渲染为四列表格字符串 */
     private static String renderVMOptions(List<VMOption> diagnosticOptions, int width) {
         TableElement table = new TableElement(1, 1, 1, 1).leftCellPadding(1).rightCellPadding(1);
         table.row(true, label("KEY").style(Decoration.bold.bold()),

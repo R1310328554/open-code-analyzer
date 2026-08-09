@@ -6,21 +6,31 @@ import java.lang.reflect.Method;
 import com.taobao.arthas.core.env.Environment;
 
 /**
- * 
- * @author hengyunabc 2020-01-10
+ * 配置绑定工具：将 {@link Environment} 中的属性值注入到带 {@link Config} 注解的对象。
+ * <p>
+ * 通过反射扫描 setter 方法按前缀匹配配置键；支持 {@link NestedConfig} 嵌套对象递归注入。
  *
+ * @author hengyunabc 2020-01-10
  */
 public class BinderUtils {
 
+    /** 无前缀注入：从 Environment 读取属性并调用 setter */
     public static void inject(Environment environment, Object instance) {
         inject(environment, null, null, instance);
     }
 
+    /** 指定前缀注入 */
     public static void inject(Environment environment, String prefix, Object instance) {
         inject(environment, null, prefix, instance);
     }
 
-    public static void inject(Environment environment, String parentPrefix, String prefix, Object instance) {
+    /**
+     * 核心注入逻辑：解析 {@link Config#prefix()}、遍历 setter、递归处理 {@link NestedConfig} 字段。
+     * @param environment 配置环境
+     * @param parentPrefix 父级前缀
+     * @param prefix 当前前缀
+     * @param instance 待注入实例
+     */
         if (prefix == null) {
             prefix = "";
         }
@@ -40,7 +50,7 @@ public class BinderUtils {
             }
 
             Method[] declaredMethods = type.getDeclaredMethods();
-            // 获取到所有setter方法，再提取出field。根据前缀从 properties里取出值，再尝试用setter方法注入到对象里
+            // 扫描 setter：setXxx -> xxx，拼接 prefix 后从 Environment 取值并 invoke
             for (Method method : declaredMethods) {
                 String methodName = method.getName();
                 Class<?>[] parameterTypes = method.getParameterTypes();
@@ -62,7 +72,7 @@ public class BinderUtils {
             throw new RuntimeException("inject error. prefix: " + prefix + ", instance: " + instance, e);
         }
 
-        // process @NestedConfig
+        // 处理 @NestedConfig 标注的嵌套配置对象字段
         Field[] fields = type.getDeclaredFields();
         for (Field field : fields) {
             NestedConfig nestedConfig = field.getAnnotation(NestedConfig.class);
@@ -75,6 +85,7 @@ public class BinderUtils {
                 field.setAccessible(true);
                 try {
                     Object fieldValue = field.get(instance);
+                    // 嵌套对象为空时先实例化再递归注入
                     if (fieldValue == null) {
                         fieldValue = field.getType().newInstance();
                     }

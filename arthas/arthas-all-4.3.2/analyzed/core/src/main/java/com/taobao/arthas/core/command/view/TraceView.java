@@ -15,11 +15,17 @@ import java.util.List;
 import static java.lang.String.format;
 
 /**
- * Term view for TraceModel
+ * {@code trace} 命令的终端渲染视图。
+ * <p>
+ * 将 {@link TraceModel} 中的调用树以 ASCII 树形结构输出，展示方法耗时、行号、
+ * 线程上下文及异常节点；耗时最高的方法节点以红色高亮。
+ *
  * @author gongdewei 2020/4/29
  */
 public class TraceView extends ResultView<TraceModel> {
+    /** 树形末节点前缀字符 */
     private static final String STEP_FIRST_CHAR = "`---";
+    /** 树形中间节点前缀字符 */
     private static final String STEP_NORMAL_CHAR = "+---";
     private static final String STEP_HAS_BOARD = "|   ";
     private static final String STEP_EMPTY_BOARD = "    ";
@@ -37,7 +43,7 @@ public class TraceView extends ResultView<TraceModel> {
 
     public String drawTree(TraceNode root) {
 
-        //reset status
+        // 每次绘制前重置，重新查找最大耗时节点
         maxCostNode = null;
         findMaxCostNode(root);
 
@@ -63,20 +69,20 @@ public class TraceView extends ResultView<TraceModel> {
     }
 
     private void renderNode(StringBuilder sb, TraceNode node, Ansi highlighted) {
-        //render cost: [0.366865ms]
+        // 渲染耗时标签，格式如 [12.34% 0.37ms ] 或 [0.37ms]
         if (isPrintCost && node instanceof MethodNode) {
             MethodNode methodNode = (MethodNode) node;
 
             String costStr = renderCost(methodNode);
             if (node == maxCostNode) {
-                // the node with max cost will be highlighted
+                // 全局最大耗时节点用 ANSI 红色高亮
                 sb.append(highlighted.a(costStr).reset().toString());
             } else {
                 sb.append(costStr);
             }
         }
 
-        //render method name
+        // 按节点类型分别渲染：方法、线程上下文或异常
         if (node instanceof MethodNode) {
             MethodNode methodNode = (MethodNode) node;
             //clazz.getName() + ":" + method.getName() + "()"
@@ -86,7 +92,7 @@ public class TraceView extends ResultView<TraceModel> {
                 sb.append(" #").append(methodNode.getLineNumber());
             }
         } else if (node instanceof ThreadNode) {
-            //render thread info
+            // 线程根节点：输出 ts/name/id/daemon/priority/TCCL 等上下文
             ThreadNode threadNode = (ThreadNode) node;
             //ts=2020-04-29 10:34:00;thread_name=main;id=1;is_daemon=false;priority=5;TCCL=sun.misc.Launcher$AppClassLoader@18b4aac2
             sb.append(format("ts=%s;thread_name=%s;id=%d;is_daemon=%s;priority=%d;TCCL=%s",
@@ -97,7 +103,7 @@ public class TraceView extends ResultView<TraceModel> {
                     threadNode.getPriority(),
                     threadNode.getClassloader()));
 
-            //trace_id
+            // 可选分布式 trace_id / rpc_id 扩展字段
             if (threadNode.getTraceId() != null) {
                 sb.append(";trace_id=").append(threadNode.getTraceId());
             }
@@ -201,9 +207,8 @@ public class TraceView extends ResultView<TraceModel> {
     }
 
 
-    /**
-     * convert nano-seconds to milli-seconds
-     */
+    /** 纳秒转毫秒，保留小数精度供终端展示 */
+
     double nanoToMillis(long nanoSeconds) {
         return nanoSeconds / 1000000.0;
     }

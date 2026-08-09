@@ -15,7 +15,11 @@ import static com.taobao.arthas.core.command.monitor200.TimeTunnelTable.*;
 import static java.lang.String.format;
 
 /**
- * Term view for TimeTunnelCommand
+ * {@code tt}（TimeTunnel）命令的终端渲染视图。
+ * <p>
+ * 支持列表、单条详情、表达式 watch、条件搜索 watch 与方法重放等多种输出形态，
+ * 对象展示长度受 {@link ObjectView#normalizeMaxObjectLength(int)} 约束。
+ *
  * @author gongdewei 2020/4/27
  */
 public class TimeTunnelView extends ResultView<TimeTunnelModel> {
@@ -25,12 +29,12 @@ public class TimeTunnelView extends ResultView<TimeTunnelModel> {
         int sizeLimitValue = ObjectView.normalizeMaxObjectLength(timeTunnelModel.getSizeLimit());
 
         if (timeTunnelModel.getTimeFragmentList() != null) {
-            //show list table: tt -l / tt -t
+            // 列表模式：tt -l / tt -t 展示索引表
             Element table = drawTimeTunnelTable(timeTunnelModel.getTimeFragmentList(), timeTunnelModel.getFirst());
             process.write(RenderUtil.render(table, process.width()));
 
         } else if (timeTunnelModel.getTimeFragment() != null) {
-            //show detail of single TimeFragment: tt -i 1000
+            // 单条详情：tt -i INDEX 展示参数/返回值/异常
             TimeFragmentVO tf = timeTunnelModel.getTimeFragment();
             TableElement table = TimeTunnelTable.createDefaultTable();
             TimeTunnelTable.drawTimeTunnel(table, tf);
@@ -40,8 +44,9 @@ public class TimeTunnelView extends ResultView<TimeTunnelModel> {
             process.write(RenderUtil.render(table, process.width()));
 
         } else if (timeTunnelModel.getWatchValue() != null) {
-            //watch single TimeFragment: tt -i 1000 -w 'params'
+            // 单条 watch：对指定片段执行 OGNL 表达式
             ObjectVO valueVO = timeTunnelModel.getWatchValue();
+            // 复杂对象需展开为树形结构
             if (valueVO.needExpand()) {
                 process.write(new ObjectView(sizeLimitValue, valueVO).draw()).write("\n");
             } else {
@@ -49,14 +54,14 @@ public class TimeTunnelView extends ResultView<TimeTunnelModel> {
             }
 
         } else if (timeTunnelModel.getWatchResults() != null) {
-            //search & watch: tt -s 'returnObj!=null' -w 'returnObj'
+            // 条件搜索 + watch：tt -s 表达式 -w 表达式
             TableElement table = TimeTunnelTable.createDefaultTable();
             TimeTunnelTable.drawWatchTableHeader(table);
             TimeTunnelTable.drawWatchResults(table, timeTunnelModel.getWatchResults(), sizeLimitValue);
             process.write(RenderUtil.render(table, process.width()));
 
         } else if (timeTunnelModel.getReplayResult() != null) {
-            //replay: tt -i 1000 -p
+            // 重放模式：tt -i INDEX -p 再次调用并展示结果
             TimeFragmentVO replayResult = timeTunnelModel.getReplayResult();
             Integer replayNo = timeTunnelModel.getReplayNo();
             TableElement table = TimeTunnelTable.createDefaultTable();

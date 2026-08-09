@@ -22,9 +22,13 @@ import static java.lang.reflect.Modifier.isStatic;
 @Config(prefix = "arthas")
 public class Configure {
 
+    /** 绑定 IP，默认 127.0.0.1 */
     private String ip;
+    /** Telnet 交互端口 */
     private Integer telnetPort;
+    /** HTTP/WebSocket 端口 */
     private Integer httpPort;
+    /** 目标 JVM 进程 PID（attach 时使用） */
     private Long javaPid;
     private String arthasCore;
     private String arthasAgent;
@@ -53,9 +57,8 @@ public class Configure {
      * </pre>
      */
     private String appName;
-    /**
-     * report executed command
-     */
+    /** 命令执行统计上报 URL */
+
     private String statUrl;
 
     /**
@@ -64,9 +67,8 @@ public class Configure {
      */
     private Long sessionTimeout;
 
-    /**
-     * disabled commands
-     */
+    /** 禁用的命令列表，逗号分隔 */
+
     private String disabledCommands;
 
     /**
@@ -79,14 +81,12 @@ public class Configure {
      */
     private Boolean localConnectionNonAuth;
 
-    /**
-     * MCP (Model Context Protocol) endpoint path
-     */
+    /** MCP（Model Context Protocol）端点路径 */
+
     private String mcpEndpoint;
 
-    /**
-     * MCP Server Protocol: STREAMABLE or STATELESS
-     */
+    /** MCP 服务协议：STREAMABLE 或 STATELESS */
+
     private String mcpProtocol;
 
     public String getIp() {
@@ -260,12 +260,12 @@ public class Configure {
         final Map<String, String> map = new HashMap<String, String>();
         for (Field field : ArthasReflectUtils.getFields(Configure.class)) {
 
-            // 过滤掉静态类
+            // 静态字段不参与序列化
             if (isStatic(field.getModifiers())) {
                 continue;
             }
 
-            // 非静态的才需要纳入非序列化过程
+            // 仅非 null 的非静态字段写入 map
             try {
                 Object fieldValue = ArthasReflectUtils.getFieldValueByField(this, field);
                 if (fieldValue != null) {

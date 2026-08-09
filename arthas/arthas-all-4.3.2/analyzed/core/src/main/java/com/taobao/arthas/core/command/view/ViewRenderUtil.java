@@ -21,12 +21,16 @@ import static com.taobao.text.ui.Element.label;
 import static java.lang.String.format;
 
 /**
- * view render util for term/tty
+ * 终端（TTY）视图渲染工具类。
+ * <p>
+ * 提供 KV 表格、配置变更对比、增强器影响摘要、线程列表等通用渲染方法，
+ * 供各 {@link ResultView} 子类复用。
+ *
  * @author gongdewei 2020/6/22
  */
 public class ViewRenderUtil {
 
-    /** Thread State Colors */
+    /** 线程状态到终端颜色的映射，用于 thread 命令表格着色 */
     public static final EnumMap<Thread.State, Color> colorMapping = new EnumMap<Thread.State, Color>(Thread.State.class);
     static {
         colorMapping.put(Thread.State.NEW, Color.cyan);
@@ -38,10 +42,10 @@ public class ViewRenderUtil {
     }
 
     /**
-     * Render key-value table
-     * @param map
-     * @param width
-     * @return
+     * 渲染 KEY/VALUE 两列表格。
+     * @param map 键值对
+     * @param width 终端宽度
+     * @return 渲染后的字符串
      */
     public static String renderKeyValueTable(Map<String, String> map, int width) {
         TableElement table = new TableElement(1, 4).leftCellPadding(1).rightCellPadding(1);
@@ -55,9 +59,9 @@ public class ViewRenderUtil {
     }
 
     /**
-     * Render change result vo
-     * @param result
-     * @return
+     * 渲染配置项修改前后对比表（NAME/BEFORE-VALUE/AFTER-VALUE）。
+     * @param result 变更结果 VO
+     * @return 表格元素
      */
     public static TableElement renderChangeResult(ChangeResultVO result) {
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
@@ -70,9 +74,9 @@ public class ViewRenderUtil {
     }
 
     /**
-     * Render EnhancerAffectVO
-     * @param affectVO
-     * @return
+     * 渲染字节码增强影响摘要：dump 文件、受影响方法、类/方法计数与 listenerId。
+     * @param affectVO 增强器影响 VO
+     * @return 多行文本
      */
     public static String renderEnhancerAffect(EnhancerAffectVO affectVO) {
         final StringBuilder infoSB = new StringBuilder();
@@ -106,10 +110,14 @@ public class ViewRenderUtil {
         return infoSB.toString();
     }
 
+    /**
+     * 渲染线程列表表格，含 ID/NAME/STATE/%CPU 等列；
+     * 非守护线程以洋红色标注，状态列按 colorMapping 着色。
+     */
     public static String drawThreadInfo(List<ThreadVO> threads, int width, int height) {
         TableElement table = new TableElement(1, 6, 3, 2, 2, 2, 2, 2, 2, 2).overflow(Overflow.HIDDEN).rightCellPadding(1);
 
-        // Header
+        // 表头行：加粗白底黑字
         table.add(
                 new RowElement().style(Decoration.bold.fg(Color.black).bg(Color.white)).add(
                         "ID",
@@ -154,6 +162,7 @@ public class ViewRenderUtil {
                     new LabelElement(thread.isInterrupted()),
                     daemonLabel
             );
+            // 超出可见行数时截断，避免刷屏
             if (++count >= height) {
                 break;
             }
@@ -161,6 +170,7 @@ public class ViewRenderUtil {
         return RenderUtil.render(table, width, height);
     }
 
+    /** 将毫秒格式化为 min:sec.mmm 字符串（避免 String.format 开销） */
     private static String formatTimeMills(long timeMills) {
         long seconds = timeMills / 1000;
         long mills = timeMills % 1000;
@@ -179,6 +189,7 @@ public class ViewRenderUtil {
         return str;
     }
 
+    /** 将毫秒格式化为 sec.mmm，用于 DELTA_TIME 列 */
     private static String formatTimeMillsToSeconds(long timeMills) {
         long seconds = timeMills / 1000;
         long mills = timeMills % 1000;

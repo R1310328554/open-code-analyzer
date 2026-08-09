@@ -16,7 +16,7 @@ import static com.taobao.arthas.core.util.StringUtils.isBlank;
  * Created by dukun on 15/3/31.
  */
 public class FeatureCodec {
-    // 对象的编码解码器
+    /** 命令行参数默认编解码器：分号分隔 KV 段，等号分隔 K/V */
     public final static FeatureCodec DEFAULT_COMMANDLINE_CODEC = new FeatureCodec(';', '=');
 
     /**
@@ -65,6 +65,7 @@ public class FeatureCodec {
 
         final StringBuilder featureSB = new StringBuilder().append(kvSegmentSeparator);
 
+        // 空 map 仍返回 leading 分隔符，保持格式一致
         if (null == map
                 || map.isEmpty()) {
             return featureSB.toString();
@@ -102,13 +103,13 @@ public class FeatureCodec {
         for (String kv : escapeSplit(featureString, kvSegmentSeparator)) {
 
             if (isBlank(kv)) {
-                // 过滤掉为空的字符串片段
+                // 跳过连续分隔符产生的空片段
                 continue;
             }
 
             final String[] ar = escapeSplit(kv, kvSeparator);
             if (ar.length != 2) {
-                // 过滤掉不符合K:V单目的情况
+                // 非严格 K=V 对（如缺少 value）直接丢弃
                 continue;
             }
 
