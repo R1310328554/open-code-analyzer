@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.cluster.server.config.ClusterServerConfigManager
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 全局请求 QPS 限流器，按命名空间维护 {@link RequestLimiter} 实例。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */

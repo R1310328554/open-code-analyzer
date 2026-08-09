@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.server;
 
 /**
+ * 集群令牌服务端常量，定义服务器状态码与默认命名空间。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

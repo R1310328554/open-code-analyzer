@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.slots.statistic.base.LeapArray;
 import com.alibaba.csp.sentinel.slots.statistic.base.WindowWrap;
 
 /**
+ * 集群指标滑动窗口数组，扩展 {@link LeapArray} 以支持预占用计数转移。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

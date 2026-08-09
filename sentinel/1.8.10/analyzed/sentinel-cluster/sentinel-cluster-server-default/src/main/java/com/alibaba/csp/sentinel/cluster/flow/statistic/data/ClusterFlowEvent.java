@@ -16,37 +16,39 @@
 package com.alibaba.csp.sentinel.cluster.flow.statistic.data;
 
 /**
+ * 集群流控统计事件类型枚举。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public enum ClusterFlowEvent {
 
     /**
-     * Normal pass.
+     * 正常通过。
      */
     PASS,
     /**
-     * Normal block.
+     * 正常限流。
      */
     BLOCK,
     /**
-     * Token request (from client) passed.
+     * 客户端令牌请求通过。
      */
     PASS_REQUEST,
     /**
-     * Token request (from client) blocked.
+     * 客户端令牌请求被限流。
      */
     BLOCK_REQUEST,
     /**
-     * Pass (pre-occupy incoming buckets).
+     * 通过（预占用即将到来的时间桶）。
      */
     OCCUPIED_PASS,
     /**
-     * Block (pre-occupy incoming buckets failed).
+     * 限流（预占用即将到来的时间桶失败）。
      */
     OCCUPIED_BLOCK,
     /**
-     * Waiting due to flow shaping or for next bucket tick.
+     * 因流控整形或等待下一时间桶刻度而等待。
      */
     WAITING
 }

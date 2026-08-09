@@ -29,6 +29,8 @@ import com.alibaba.csp.sentinel.slots.statistic.cache.CacheMap;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 集群热点参数指标统计，按参数值聚合滑动窗口计数并支持 Top-N 查询。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -107,7 +109,7 @@ public class ClusterParamMetric {
             }
         }
 
-        // After merge, get the top set one.
+        // 合并各桶后，取计数最高的参数值。
         Set<Entry<Object, Long>> set = result.entrySet();
         List<Entry<Object, Long>> list = new ArrayList<>(set);
         Collections.sort(list, new Comparator<Entry<Object, Long>>() {

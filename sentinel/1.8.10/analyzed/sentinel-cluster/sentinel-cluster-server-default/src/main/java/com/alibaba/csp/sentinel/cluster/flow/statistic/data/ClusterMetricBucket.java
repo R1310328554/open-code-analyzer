@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.cluster.flow.statistic.data;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
+ * 集群指标统计桶，按 {@link ClusterFlowEvent} 分类维护各类事件的计数。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

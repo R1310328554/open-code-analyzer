@@ -32,35 +32,29 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * We need to consider the situation that the token client goes offline
- * or the resource call times out. It can be detected by sourceTimeout
- * and clientTimeout. The resource calls timeout detection is triggered
- * on the token client. If the resource is called over time, the token
- * client will request the token server to release token or refresh the
- * token. The client offline detection is triggered on the token server.
- * If the offline detection time is exceeded, token server will trigger
- * the detection token client’s status. If the token client is offline,
- * token server will delete the corresponding tokenId. If it is not offline,
- * token server will continue to save it.
+ * 定期清理过期并发令牌的策略实现。
+ * <p>需考虑令牌客户端离线或资源调用超时的情况，可通过 sourceTimeout 与 clientTimeout 检测。
+ * 资源调用超时检测在令牌客户端侧触发；若资源调用超时，客户端会向令牌服务端请求释放或刷新令牌。
+ * 客户端离线检测在令牌服务端侧触发；若超过离线检测时间，服务端会探测客户端状态。
+ * 若客户端已离线，服务端删除对应 tokenId；否则继续保留。
  *
  * @author yunfeiyanggzq
  **/
 public class RegularExpireStrategy implements ExpireStrategy {
     /**
-     * The max number of token deleted each time,
-     * the number of expired key-value pairs deleted each time does not exceed this number
+     * 每次任务最多删除的令牌数量，单次清理的过期键值对不超过此值。
      */
     private long executeCount = 1000;
     /**
-     * Length of time for task execution
+     * 单次任务执行的时间上限（毫秒）。
      */
     private long executeDuration = 800;
     /**
-     * Frequency of task execution
+     * 定时清理任务的执行间隔（毫秒）。
      */
     private long executeRate = 1000;
     /**
-     * the local cache of tokenId
+     * tokenId 的本地缓存。
      */
     private ConcurrentLinkedHashMap<Long, TokenCacheNode> localCache;
 
@@ -95,7 +89,7 @@ public class RegularExpireStrategy implements ExpireStrategy {
         long start = System.currentTimeMillis();
         List<Long> keyList = new ArrayList<>(localCache.keySet());
         for (int i = 0; i < executeCount && i < keyList.size(); i++) {
-            // time out execution exit
+            // 执行超时则退出本轮清理
             if (System.currentTimeMillis() - start > executeDuration) {
                 RecordLog.info("[RegularExpireStrategy] End the process of expired token detection because of execute time is more than executeDuration: {}", executeDuration);
                 break;
@@ -106,15 +100,14 @@ public class RegularExpireStrategy implements ExpireStrategy {
                 continue;
             }
 
-            // remove the token whose client is offline and saved for more than clientTimeout
+            // 移除客户端已离线且保存时间超过 clientTimeout 的令牌
             if (!ConnectionManager.isClientOnline(node.getClientAddress()) && node.getClientTimeout() - System.currentTimeMillis() < 0) {
                 removeToken(key, node);
                 RecordLog.info("[RegularExpireStrategy] Delete the expired token<{}> because of client offline for ruleId<{}>", node.getTokenId(), node.getFlowId());
                 continue;
             }
 
-            // If we find that token's save time is more than 2 times of the client's call resource timeout time,
-            // the token will be determined to timeout.
+            // 若令牌保存时间超过资源调用超时阈值，则判定为超时并清理。
             long resourceTimeout = ClusterFlowRuleManager.getFlowRuleById(node.getFlowId()).getClusterConfig().getResourceTimeout();
             if (System.currentTimeMillis() - node.getResourceTimeout() > resourceTimeout) {
                 removeToken(key, node);

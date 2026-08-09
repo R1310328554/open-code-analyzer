@@ -31,6 +31,8 @@ import com.alibaba.csp.sentinel.util.HostNameUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * Sentinel 默认集群令牌服务端，负责 Netty 传输启动/停止与嵌入式模式注册。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -124,7 +126,7 @@ public class SentinelDefaultTokenServer implements ClusterTokenServer {
     private void handleEmbeddedStart() {
         String namespace = ConfigSupplierRegistry.getNamespaceSupplier().get();
         if (StringUtil.isNotEmpty(namespace)) {
-            // Mark server global mode as embedded.
+            // 将服务端全局模式标记为嵌入式。
             ClusterServerConfigManager.setEmbedded(true);
             if (!ClusterServerConfigManager.getNamespaceSet().contains(namespace)) {
                 Set<String> namespaceSet = new HashSet<>(ClusterServerConfigManager.getNamespaceSet());
@@ -132,7 +134,7 @@ public class SentinelDefaultTokenServer implements ClusterTokenServer {
                 ClusterServerConfigManager.loadServerNamespaceSet(namespaceSet);
             }
 
-            // Register self to connection group.
+            // 将自身注册到连接分组。
             ConnectionManager.addConnection(namespace, HostNameUtil.getIp());
         }
     }

@@ -45,6 +45,8 @@ import io.netty.util.internal.SystemPropertyUtil;
 import static com.alibaba.csp.sentinel.cluster.server.ServerConstants.*;
 
 /**
+ * 基于 Netty 的集群令牌服务端传输实现，管理连接池与服务器生命周期。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -127,12 +129,12 @@ public class NettyTransportServer implements ClusterTokenServer {
 
     @Override
     public void stop() {
-        // If still initializing, wait for ready.
+        // 若仍在初始化，等待就绪。
         while (currentState.get() == SERVER_STATUS_STARTING) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
-                // Ignore.
+                // 忽略。
             }
         }
 

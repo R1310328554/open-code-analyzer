@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.slots.statistic.base.UnaryLeapArray;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 基于滑动窗口的请求 QPS 限流器，统计窗口内请求量并与配额比较。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */

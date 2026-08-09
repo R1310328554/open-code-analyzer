@@ -22,7 +22,9 @@ import com.alibaba.csp.sentinel.slots.statistic.cache.ConcurrentLinkedHashMapWra
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * @param <C> counter type
+ * 集群参数指标滑动窗口数组，每个时间桶为 LRU 限制的参数→计数映射。
+ *
+ * @param <C> 计数器类型
  * @author Eric Zhao
  * @since 1.4.0
  */

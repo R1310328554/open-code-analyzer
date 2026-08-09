@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.cluster.flow.statistic.data.ClusterMetricBucket;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 集群流控指标统计，基于 {@link ClusterMetricLeapArray} 滑动窗口聚合 {@link ClusterFlowEvent}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -45,10 +47,10 @@ public class ClusterMetric {
     }
 
     /**
-     * Get total sum for provided event in {@code intervalInSec}.
+     * 获取指定事件在整个统计窗口内的总计数。
      *
-     * @param event event to calculate
-     * @return total sum for event
+     * @param event 待统计的事件类型
+     * @return 该事件的总计数
      */
     public long getSum(ClusterFlowEvent event) {
         metric.currentWindow();
@@ -62,19 +64,19 @@ public class ClusterMetric {
     }
 
     /**
-     * Get average count for provided event per second.
+     * 获取指定事件的每秒平均计数（QPS）。
      *
-     * @param event event to calculate
-     * @return average count per second for event
+     * @param event 待统计的事件类型
+     * @return 该事件的每秒平均计数
      */
     public double getAvg(ClusterFlowEvent event) {
         return getSum(event) / metric.getIntervalInSecond();
     }
 
     /**
-     * Try to pre-occupy upcoming buckets.
+     * 尝试预占用即将到来的时间桶。
      *
-     * @return time to wait for next bucket (in ms); 0 if cannot occupy next buckets
+     * @return 等待下一桶的毫秒数；无法预占用时返回 0
      */
     public int tryOccupyNext(ClusterFlowEvent event, int acquireCount, double threshold) {
         double latestQps = getAvg(ClusterFlowEvent.PASS);
@@ -89,10 +91,10 @@ public class ClusterMetric {
     private boolean canOccupy(ClusterFlowEvent event, int acquireCount, double latestQps, double threshold) {
         long headPass = metric.getFirstCountOfWindow(event);
         long occupiedCount = metric.getOccupiedCount(event);
-        //  bucket to occupy (= incoming bucket)
+        //  待占用桶（= 即将到来的桶）
         //       ↓
-        // | head bucket |    |    |    | current bucket |
-        // +-------------+----+----+----+----------- ----+
+        // | 头桶 |    |    |    | 当前桶 |
+        // +------+----+----+----+--------+
         //   (headPass)
         return latestQps + (acquireCount + occupiedCount) - headPass <= threshold;
     }

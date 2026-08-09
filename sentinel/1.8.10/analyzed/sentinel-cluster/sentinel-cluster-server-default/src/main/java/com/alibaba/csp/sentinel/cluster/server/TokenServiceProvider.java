@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
+ * 全局 {@link TokenService} SPI 提供者，启动时解析并缓存令牌服务实例。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

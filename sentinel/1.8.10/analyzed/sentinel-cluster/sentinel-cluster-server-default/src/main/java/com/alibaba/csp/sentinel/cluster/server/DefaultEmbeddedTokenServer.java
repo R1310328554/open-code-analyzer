@@ -22,8 +22,8 @@ import com.alibaba.csp.sentinel.cluster.TokenResultStatus;
 import com.alibaba.csp.sentinel.cluster.TokenService;
 
 /**
- * Default embedded token server in Sentinel which wraps the {@link SentinelDefaultTokenServer}
- * and the {@link TokenService} from SPI provider.
+ * Sentinel 默认嵌入式令牌服务端，封装 {@link SentinelDefaultTokenServer}
+ * 与 SPI 提供的 {@link TokenService}。
  *
  * @author Eric Zhao
  * @since 1.4.0
