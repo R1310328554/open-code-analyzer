@@ -32,25 +32,30 @@ import java.nio.channels.ScatteringByteChannel;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * A NIO {@link ByteBuffer} based buffer. It is recommended to use
- * {@link UnpooledByteBufAllocator#directBuffer(int, int)}, {@link Unpooled#directBuffer(int)} and
- * {@link Unpooled#wrappedBuffer(ByteBuffer)} instead of calling the constructor explicitly.
+ * 基于 NIO {@link ByteBuffer} 的直接 {@link ByteBuf}。
+ * 建议使用 {@link UnpooledByteBufAllocator#directBuffer}、{@link Unpooled#directBuffer}、{@link Unpooled#wrappedBuffer(ByteBuffer)}。
  */
 public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
 
+    /** 所属分配器。 */
     private final ByteBufAllocator alloc;
 
+    /** 可清理的直接内存句柄。 */
     CleanableDirectBuffer cleanable;
-    ByteBuffer buffer; // accessed by UnpooledUnsafeNoCleanerDirectByteBuf.reallocateDirect()
+    /** 底层 NIO 缓冲（UnpooledUnsafeNoCleanerDirectByteBuf 扩容时访问）。 */
+    ByteBuffer buffer;
+    /** 复用的 duplicate，避免重复创建 NIO 视图。 */
     private ByteBuffer tmpNioBuf;
+    /** 当前逻辑容量。 */
     private int capacity;
+    /** 为 true 时 deallocate 不释放底层内存（包装外部缓冲）。 */
     private boolean doNotFree;
 
     /**
-     * Creates a new direct buffer.
+     * 分配新的直接缓冲区。
      *
-     * @param initialCapacity the initial capacity of the underlying direct buffer
-     * @param maxCapacity     the maximum capacity of the underlying direct buffer
+     * @param initialCapacity 初始容量
+     * @param maxCapacity     最大容量
      */
     public UnpooledDirectByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         this(alloc, initialCapacity, maxCapacity, false);
@@ -71,9 +76,9 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
     }
 
     /**
-     * Creates a new direct buffer by wrapping the specified initial buffer.
+     * 包装已有直接 {@link ByteBuffer}。
      *
-     * @param maxCapacity the maximum capacity of the underlying direct buffer
+     * @param maxCapacity 最大容量
      */
     protected UnpooledDirectByteBuf(ByteBufAllocator alloc, ByteBuffer initialBuffer, int maxCapacity) {
         this(alloc, initialBuffer, maxCapacity, false, true);
@@ -104,8 +109,8 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
     }
 
     /**
-     * Allocate a new direct {@link ByteBuffer} with the given initialCapacity.
-     * @deprecated Use {@link #allocateDirectBuffer(int)} instead.
+     * 分配直接 {@link ByteBuffer}。
+     * @deprecated 请使用 {@link #allocateDirectBuffer(int)}。
      */
     @Deprecated
     protected ByteBuffer allocateDirect(int initialCapacity) {
@@ -113,8 +118,8 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
     }
 
     /**
-     * Free a direct {@link ByteBuffer}
-     * @deprecated Use {@link #allocateDirectBuffer(int)} instead.
+     * 释放直接 {@link ByteBuffer}。
+     * @deprecated 请使用 {@link #allocateDirectBuffer(int)} 路径。
      */
     @Deprecated
     protected void freeDirect(ByteBuffer buffer) {
@@ -129,6 +134,7 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
         return PlatformDependent.allocateDirect(capacity, permitExpensiveClean);
     }
 
+    /** 绑定 CleanableDirectBuffer；tryFree 为 true 时先释放旧缓冲。 */
     void setByteBuffer(CleanableDirectBuffer cleanableDirectBuffer, boolean tryFree) {
         if (tryFree) {
             CleanableDirectBuffer oldCleanable = cleanable;
@@ -152,6 +158,7 @@ public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
         capacity = buffer.remaining();
     }
 
+    /** 绑定裸 ByteBuffer（无 Cleanable 包装）。 */
     void setByteBuffer(ByteBuffer buffer, boolean tryFree) {
         if (tryFree) {
             ByteBuffer oldBuffer = this.buffer;

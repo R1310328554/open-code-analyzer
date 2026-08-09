@@ -16,18 +16,18 @@
 package io.netty.buffer;
 
 /**
- * A derived buffer which exposes its parent's sub-region only.  It is
- * recommended to use {@link ByteBuf#slice()} and
- * {@link ByteBuf#slice(int, int)} instead of calling the constructor
- * explicitly.
+ * 仅暴露父缓冲区子区域的派生视图。
+ * 建议使用 {@link ByteBuf#slice()} 与 {@link ByteBuf#slice(int, int)}，而非直接调用构造函数。
  *
- * @deprecated Do not use.
+ * @deprecated 请勿使用。
  */
 @Deprecated
 public class SlicedByteBuf extends AbstractUnpooledSlicedByteBuf {
 
+    /** 切片逻辑长度（与父缓冲区独立存储）。 */
     private int length;
 
+    /** @param buffer 父缓冲区；@param index 起始偏移；@param length 切片长度 */
     public SlicedByteBuf(ByteBuf buffer, int index, int length) {
         super(buffer, index, length);
     }

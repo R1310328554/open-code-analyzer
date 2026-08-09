@@ -29,17 +29,21 @@ import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 
 /**
- * Wrapper which swap the {@link ByteOrder} of a {@link ByteBuf}.
+ * 交换底层 {@link ByteBuf} 的 {@link ByteOrder} 的包装视图。
+ * <p>
+ * 读写多字节整数时在视图字节序与底层存储之间转换。
  *
- * @deprecated use the Little Endian accessors, e.g. {@code getShortLE}, {@code getIntLE}
- * instead.
+ * @deprecated 请改用 Little Endian 访问器，如 {@code getShortLE}、{@code getIntLE}。
  */
 @Deprecated
 public class SwappedByteBuf extends ByteBuf {
 
+    /** 被包装的底层缓冲区。 */
     private final ByteBuf buf;
+    /** 本视图暴露的字节序（与 buf 相反）。 */
     private final ByteOrder order;
 
+    /** 包装 buf 并选择与 buf 相反的字节序。 */
     public SwappedByteBuf(ByteBuf buf) {
         this.buf = ObjectUtil.checkNotNull(buf, "buf");
         if (buf.order() == ByteOrder.BIG_ENDIAN) {

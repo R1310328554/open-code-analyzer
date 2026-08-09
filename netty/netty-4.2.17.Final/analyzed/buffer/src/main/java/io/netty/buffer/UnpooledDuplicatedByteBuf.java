@@ -16,10 +16,10 @@
 package io.netty.buffer;
 
 /**
- * {@link DuplicatedByteBuf} implementation that can do optimizations because it knows the duplicated buffer
- * is of type {@link AbstractByteBuf}.
+ * 非池化 {@link DuplicatedByteBuf}：已知底层为 {@link AbstractByteBuf}，可委托其 {@code _get*}/{@code _set*} 优化读写。
  */
 class UnpooledDuplicatedByteBuf extends DuplicatedByteBuf {
+    /** @param buffer 被复制的 {@link AbstractByteBuf} */
     UnpooledDuplicatedByteBuf(AbstractByteBuf buffer) {
         super(buffer);
     }

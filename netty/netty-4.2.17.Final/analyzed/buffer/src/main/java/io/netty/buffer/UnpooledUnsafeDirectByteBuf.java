@@ -25,14 +25,14 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * A NIO {@link ByteBuffer} based buffer. It is recommended to use
- * {@link UnpooledByteBufAllocator#directBuffer(int, int)}, {@link Unpooled#directBuffer(int)} and
- * {@link Unpooled#wrappedBuffer(ByteBuffer)} instead of calling the constructor explicitly.}
+ * 基于 Unsafe 的直接 {@link ByteBuf}，通过内存地址读写。
+ * 建议使用分配器/ {@link Unpooled} 工厂而非直接构造。
  */
 public class UnpooledUnsafeDirectByteBuf extends UnpooledDirectByteBuf {
 
     private static final boolean USE_VAR_HANDLE = PlatformDependent.useVarHandleForMultiByteAccess();
 
+    /** 底层直接内存起始地址（index 偏移与此相加）。 */
     long memoryAddress;
 
     /**
@@ -56,15 +56,8 @@ public class UnpooledUnsafeDirectByteBuf extends UnpooledDirectByteBuf {
      * @param maxCapacity the maximum capacity of the underlying direct buffer
      */
     protected UnpooledUnsafeDirectByteBuf(ByteBufAllocator alloc, ByteBuffer initialBuffer, int maxCapacity) {
-        // We never try to free the buffer if it was provided by the end-user as we don't know if this is a duplicate or
-        // a slice. This is done to prevent an IllegalArgumentException when using Java9 as Unsafe.invokeCleaner(...)
-        // will check if the given buffer is either a duplicate or slice and in this case throw an
-        // IllegalArgumentException.
-        //
-        // See https://hg.openjdk.java.net/jdk9/hs-demo/jdk/file/0d2ab72ba600/src/jdk.unsupported/share/classes/
-        // sun/misc/Unsafe.java#l1250
-        //
-        // We also call slice() explicitly here to preserve behaviour with previous netty releases.
+        // 用户提供的 ByteBuffer 不尝试 free（可能是 duplicate/slice）；Java9 Unsafe.invokeCleaner 会校验
+        // 显式 slice() 以保持与旧版 Netty 行为一致
         super(alloc, initialBuffer, maxCapacity, /* doFree = */ false, /* slice = */ true);
     }
 
@@ -360,6 +353,7 @@ public class UnpooledUnsafeDirectByteBuf extends UnpooledDirectByteBuf {
         return UnsafeByteBufUtil.copy(this, addr(index), index, length);
     }
 
+    /** 计算 index 处的绝对内存地址。 */
     final long addr(int index) {
         return memoryAddress + index;
     }
@@ -367,7 +361,7 @@ public class UnpooledUnsafeDirectByteBuf extends UnpooledDirectByteBuf {
     @Override
     protected SwappedByteBuf newSwappedByteBuf() {
         if (PlatformDependent.isUnaligned()) {
-            // Only use if unaligned access is supported otherwise there is no gain.
+            // 仅在不对齐访问可用时使用 UnsafeDirectSwappedByteBuf
             return new UnsafeDirectSwappedByteBuf(this);
         }
         return super.newSwappedByteBuf();

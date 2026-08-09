@@ -31,21 +31,23 @@ import java.nio.channels.ScatteringByteChannel;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Big endian Java heap buffer implementation. It is recommended to use
- * {@link UnpooledByteBufAllocator#heapBuffer(int, int)}, {@link Unpooled#buffer(int)} and
- * {@link Unpooled#wrappedBuffer(byte[])} instead of calling the constructor explicitly.
+ * 大端 Java 堆 {@link ByteBuf} 实现。
+ * 建议使用 {@link UnpooledByteBufAllocator#heapBuffer}、{@link Unpooled#buffer}、{@link Unpooled#wrappedBuffer(byte[])}。
  */
 public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
 
+    /** 所属分配器。 */
     private final ByteBufAllocator alloc;
+    /** 底层 byte 数组。 */
     byte[] array;
+    /** 复用的 NIO 包装视图。 */
     private ByteBuffer tmpNioBuf;
 
     /**
-     * Creates a new heap buffer with a newly allocated byte array.
+     * 分配新 byte 数组作为堆缓冲。
      *
-     * @param initialCapacity the initial capacity of the underlying byte array
-     * @param maxCapacity the max capacity of the underlying byte array
+     * @param initialCapacity 初始容量
+     * @param maxCapacity 最大容量
      */
     public UnpooledHeapByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         super(maxCapacity);
@@ -61,10 +63,10 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
     }
 
     /**
-     * Creates a new heap buffer with an existing byte array.
+     * 包装已有 byte 数组。
      *
-     * @param initialArray the initial underlying byte array
-     * @param maxCapacity the max capacity of the underlying byte array
+     * @param initialArray 底层数组
+     * @param maxCapacity 最大容量
      */
     protected UnpooledHeapByteBuf(ByteBufAllocator alloc, byte[] initialArray, int maxCapacity) {
         super(maxCapacity);
@@ -81,12 +83,14 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
         setIndex(0, initialArray.length);
     }
 
+    /** 分配底层数组；子类可覆盖（如未初始化数组）。 */
     protected byte[] allocateArray(int initialCapacity) {
         return new byte[initialCapacity];
     }
 
+    /** 释放数组；默认无操作。 */
     protected void freeArray(byte[] array) {
-        // NOOP
+        // 默认无操作
     }
 
     private void setArray(byte[] initialArray) {

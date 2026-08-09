@@ -20,6 +20,11 @@ import io.netty.util.internal.PlatformDependent;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 使用 {@link PlatformDependent#reallocateDirect} 扩容、无 Cleaner 的 Unsafe 直接缓冲区。
+ * <p>
+ * {@link #capacity(int)} 原地重分配而非 allocate+copy+free。
+ */
 class UnpooledUnsafeNoCleanerDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
     UnpooledUnsafeNoCleanerDirectByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         super(alloc, initialCapacity, maxCapacity);
@@ -30,6 +35,7 @@ class UnpooledUnsafeNoCleanerDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
         throw new UnsupportedOperationException();
     }
 
+    /** 原地重分配直接内存，保留内容前缀。 */
     CleanableDirectBuffer reallocateDirect(CleanableDirectBuffer oldBuffer, int newCapacity) {
         return PlatformDependent.reallocateDirect(oldBuffer, newCapacity);
     }

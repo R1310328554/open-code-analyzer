@@ -20,11 +20,11 @@ import io.netty.util.internal.ObjectUtil;
 import java.nio.ByteOrder;
 
 /**
- * A {@link ByteBuf} implementation that wraps another buffer to prevent a user from increasing or decreasing the
- * wrapped buffer's reference count.
+ * 包装 {@link ByteBuf} 并忽略 {@link #retain()} / {@link #release()}，防止调用方改变底层引用计数。
  */
 final class UnreleasableByteBuf extends WrappedByteBuf {
 
+    /** 缓存的字节序交换视图。 */
     private SwappedByteBuf swappedBuf;
 
     UnreleasableByteBuf(ByteBuf buf) {
@@ -56,9 +56,7 @@ final class UnreleasableByteBuf extends WrappedByteBuf {
 
     @Override
     public ByteBuf readRetainedSlice(int length) {
-        // We could call buf.readSlice(..), and then call buf.release(). However this creates a leak in unit tests
-        // because the release method on UnreleasableByteBuf will never allow the leak record to be cleaned up.
-        // So we just use readSlice(..) because the end result should be logically equivalent.
+        // 若 readSlice 后再 release 底层，单元测试中泄漏记录无法清理；逻辑上等价故仅用 readSlice
         return readSlice(length);
     }
 
@@ -69,9 +67,7 @@ final class UnreleasableByteBuf extends WrappedByteBuf {
 
     @Override
     public ByteBuf retainedSlice() {
-        // We could call buf.retainedSlice(), and then call buf.release(). However this creates a leak in unit tests
-        // because the release method on UnreleasableByteBuf will never allow the leak record to be cleaned up.
-        // So we just use slice() because the end result should be logically equivalent.
+        // 同上：retainedSlice+release 会导致泄漏检测无法清理，改用 slice()
         return slice();
     }
 
@@ -82,9 +78,7 @@ final class UnreleasableByteBuf extends WrappedByteBuf {
 
     @Override
     public ByteBuf retainedSlice(int index, int length) {
-        // We could call buf.retainedSlice(..), and then call buf.release(). However this creates a leak in unit tests
-        // because the release method on UnreleasableByteBuf will never allow the leak record to be cleaned up.
-        // So we just use slice(..) because the end result should be logically equivalent.
+        // 同上：带索引的 retainedSlice 同理
         return slice(index, length);
     }
 
@@ -95,9 +89,7 @@ final class UnreleasableByteBuf extends WrappedByteBuf {
 
     @Override
     public ByteBuf retainedDuplicate() {
-        // We could call buf.retainedDuplicate(), and then call buf.release(). However this creates a leak in unit tests
-        // because the release method on UnreleasableByteBuf will never allow the leak record to be cleaned up.
-        // So we just use duplicate() because the end result should be logically equivalent.
+        // 同上：retainedDuplicate 改用 duplicate()
         return duplicate();
     }
 

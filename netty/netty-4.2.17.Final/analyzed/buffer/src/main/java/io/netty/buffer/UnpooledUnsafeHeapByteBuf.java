@@ -18,17 +18,15 @@ package io.netty.buffer;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Big endian Java heap buffer implementation. It is recommended to use
- * {@link UnpooledByteBufAllocator#heapBuffer(int, int)}, {@link Unpooled#buffer(int)} and
- * {@link Unpooled#wrappedBuffer(byte[])} instead of calling the constructor explicitly.
+ * 基于 Unsafe 的大端堆 {@link ByteBuf}；使用 {@link UnsafeByteBufUtil} 读写。
  */
 public class UnpooledUnsafeHeapByteBuf extends UnpooledHeapByteBuf {
 
     /**
-     * Creates a new heap buffer with a newly allocated byte array.
+     * 分配未初始化 byte 数组（{@link PlatformDependent#allocateUninitializedArray}）。
      *
-     * @param initialCapacity the initial capacity of the underlying byte array
-     * @param maxCapacity the max capacity of the underlying byte array
+     * @param initialCapacity 初始容量
+     * @param maxCapacity 最大容量
      */
     public UnpooledUnsafeHeapByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         super(alloc, initialCapacity, maxCapacity);
@@ -266,7 +264,7 @@ public class UnpooledUnsafeHeapByteBuf extends UnpooledHeapByteBuf {
     @Deprecated
     protected SwappedByteBuf newSwappedByteBuf() {
         if (PlatformDependent.isUnaligned()) {
-            // Only use if unaligned access is supported otherwise there is no gain.
+            // 非对齐访问可用时使用 UnsafeHeapSwappedByteBuf
             return new UnsafeHeapSwappedByteBuf(this);
         }
         return super.newSwappedByteBuf();

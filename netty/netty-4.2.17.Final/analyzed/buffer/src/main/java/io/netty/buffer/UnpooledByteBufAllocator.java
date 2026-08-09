@@ -23,53 +23,46 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Simplistic {@link ByteBufAllocator} implementation that does not pool anything.
+ * 简单的非池化 {@link ByteBufAllocator}：每次分配新内存，不做复用。
  */
 public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator implements ByteBufAllocatorMetricProvider {
 
+    /** 堆/直接内存用量指标。 */
     private final UnpooledByteBufAllocatorMetric metric = new UnpooledByteBufAllocatorMetric();
+    /** 是否完全禁用直接缓冲泄漏检测。 */
     private final boolean disableLeakDetector;
+    /** 是否尝试无 Cleaner 的直接内存分配。 */
     private final boolean noCleaner;
 
-    /**
-     * Default instance which uses leak-detection for direct buffers.
-     */
+    /** 默认实例：对直接缓冲启用泄漏检测。 */
     public static final UnpooledByteBufAllocator DEFAULT =
             new UnpooledByteBufAllocator(PlatformDependent.directBufferPreferred());
 
     /**
-     * Create a new instance which uses leak-detection for direct buffers.
+     * 创建实例；直接缓冲默认启用泄漏检测。
      *
-     * @param preferDirect {@code true} if {@link #buffer(int)} should try to allocate a direct buffer rather than
-     *                     a heap buffer
+     * @param preferDirect {@code true} 时 {@link #buffer(int)} 优先分配直接缓冲
      */
     public UnpooledByteBufAllocator(boolean preferDirect) {
         this(preferDirect, false);
     }
 
     /**
-     * Create a new instance
+     * 创建实例，可禁用泄漏检测（依赖 GC 回收未 release 的直接内存）。
      *
-     * @param preferDirect {@code true} if {@link #buffer(int)} should try to allocate a direct buffer rather than
-     *                     a heap buffer
-     * @param disableLeakDetector {@code true} if the leak-detection should be disabled completely for this
-     *                            allocator. This can be useful if the user just want to depend on the GC to handle
-     *                            direct buffers when not explicit released.
+     * @param preferDirect {@code true} 优先直接缓冲
+     * @param disableLeakDetector {@code true} 完全禁用泄漏检测
      */
     public UnpooledByteBufAllocator(boolean preferDirect, boolean disableLeakDetector) {
         this(preferDirect, disableLeakDetector, PlatformDependent.useDirectBufferNoCleaner());
     }
 
     /**
-     * Create a new instance
+     * 完整构造：偏好直接缓冲、泄漏检测开关、是否尝试无 Cleaner 分配。
      *
-     * @param preferDirect {@code true} if {@link #buffer(int)} should try to allocate a direct buffer rather than
-     *                     a heap buffer
-     * @param disableLeakDetector {@code true} if the leak-detection should be disabled completely for this
-     *                            allocator. This can be useful if the user just want to depend on the GC to handle
-     *                            direct buffers when not explicit released.
-     * @param tryNoCleaner {@code true} if we should try to use {@link PlatformDependent#allocateDirect(int)}
-     *                            to allocate direct memory.
+     * @param preferDirect {@code true} 优先直接缓冲
+     * @param disableLeakDetector {@code true} 禁用泄漏检测
+     * @param tryNoCleaner {@code true} 尝试 {@link PlatformDependent#allocateDirect(int)}
      */
     public UnpooledByteBufAllocator(boolean preferDirect, boolean disableLeakDetector, boolean tryNoCleaner) {
         super(preferDirect);
@@ -119,22 +112,27 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         return metric;
     }
 
+    /** 直接内存用量 +amount（Instrumented 包装调用）。 */
     void incrementDirect(int amount) {
         metric.directCounter.add(amount);
     }
 
+    /** 直接内存用量 -amount。 */
     void decrementDirect(int amount) {
         metric.directCounter.add(-amount);
     }
 
+    /** 堆内存用量 +amount。 */
     void incrementHeap(int amount) {
         metric.heapCounter.add(amount);
     }
 
+    /** 堆内存用量 -amount。 */
     void decrementHeap(int amount) {
         metric.heapCounter.add(-amount);
     }
 
+    /** 带堆内存指标统计的 Unsafe 堆缓冲。 */
     private static final class InstrumentedUnpooledUnsafeHeapByteBuf extends UnpooledUnsafeHeapByteBuf {
         InstrumentedUnpooledUnsafeHeapByteBuf(UnpooledByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
             super(alloc, initialCapacity, maxCapacity);
@@ -155,6 +153,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         }
     }
 
+    /** 带堆内存指标统计的普通堆缓冲。 */
     private static final class InstrumentedUnpooledHeapByteBuf extends UnpooledHeapByteBuf {
         InstrumentedUnpooledHeapByteBuf(UnpooledByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
             super(alloc, initialCapacity, maxCapacity);
@@ -175,6 +174,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         }
     }
 
+    /** 无 Cleaner 直接缓冲 + 直接内存指标。 */
     private static final class InstrumentedUnpooledUnsafeNoCleanerDirectByteBuf
             extends UnpooledUnsafeNoCleanerDirectByteBuf {
         InstrumentedUnpooledUnsafeNoCleanerDirectByteBuf(
@@ -203,6 +203,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         }
     }
 
+    /** Unsafe 直接缓冲 + 直接内存指标。 */
     private static final class InstrumentedUnpooledUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
         InstrumentedUnpooledUnsafeDirectByteBuf(
                 UnpooledByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
@@ -232,6 +233,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         }
     }
 
+    /** 安全 NIO 直接缓冲 + 直接内存指标。 */
     private static final class InstrumentedUnpooledDirectByteBuf extends UnpooledDirectByteBuf {
         InstrumentedUnpooledDirectByteBuf(
                 UnpooledByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
@@ -261,6 +263,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         }
     }
 
+    /** 包装 CleanableDirectBuffer，clean 时递减分配器直接内存计数。 */
     private static final class DecrementingCleanableDirectBuffer implements CleanableDirectBuffer {
         private final UnpooledByteBufAllocator alloc;
         private final CleanableDirectBuffer delegate;
@@ -300,8 +303,11 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         }
     }
 
+    /** 非池化分配器的堆/直接内存用量指标。 */
     private static final class UnpooledByteBufAllocatorMetric implements ByteBufAllocatorMetric {
+        /** 当前直接内存字节数。 */
         final LongAdder directCounter = new LongAdder();
+        /** 当前堆内存字节数。 */
         final LongAdder heapCounter = new LongAdder();
 
         @Override

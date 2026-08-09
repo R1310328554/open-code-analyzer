@@ -21,10 +21,17 @@ import io.netty.util.internal.ObjectUtil;
 
 import java.nio.ByteOrder;
 
+/**
+ * 组合 {@link ByteBuf} 的简单泄漏感知包装器。
+ * <p>
+ * 释放时关闭 {@link ResourceLeakTracker}；slice/duplicate 等派生视图仍保持泄漏跟踪。
+ */
 class SimpleLeakAwareCompositeByteBuf extends WrappedCompositeByteBuf {
 
+    /** 组合缓冲区的泄漏跟踪器。 */
     final ResourceLeakTracker<ByteBuf> leak;
 
+    /** 包装组合缓冲区并绑定泄漏跟踪器。 */
     SimpleLeakAwareCompositeByteBuf(CompositeByteBuf wrapped, ResourceLeakTracker<ByteBuf> leak) {
         super(wrapped);
         this.leak = ObjectUtil.checkNotNull(leak, "leak");
@@ -32,8 +39,7 @@ class SimpleLeakAwareCompositeByteBuf extends WrappedCompositeByteBuf {
 
     @Override
     public boolean release() {
-        // Call unwrap() before just in case that super.release() will change the ByteBuf instance that is returned
-        // by unwrap().
+        // 先 unwrap：super.release() 可能改变 unwrap() 返回的 ByteBuf 实例
         ByteBuf unwrapped = unwrap();
         if (super.release()) {
             closeLeak(unwrapped);
@@ -55,8 +61,7 @@ class SimpleLeakAwareCompositeByteBuf extends WrappedCompositeByteBuf {
     }
 
     private void closeLeak(ByteBuf trackedByteBuf) {
-        // Close the ResourceLeakTracker with the tracked ByteBuf as argument. This must be the same that was used when
-        // calling DefaultResourceLeak.track(...).
+        // 以 trackedByteBuf 关闭跟踪器，须与 DefaultResourceLeak.track(...) 时使用的对象一致
         boolean closed = leak.close(trackedByteBuf);
         assert closed;
     }
@@ -115,10 +120,12 @@ class SimpleLeakAwareCompositeByteBuf extends WrappedCompositeByteBuf {
         return newLeakAwareByteBuf(super.asReadOnly());
     }
 
+    /** 为单组件视图创建泄漏感知包装。 */
     private SimpleLeakAwareByteBuf newLeakAwareByteBuf(ByteBuf wrapped) {
         return newLeakAwareByteBuf(wrapped, unwrap(), leak);
     }
 
+    /** 供子类定制泄漏感知 ByteBuf 的工厂方法。 */
     protected SimpleLeakAwareByteBuf newLeakAwareByteBuf(
             ByteBuf wrapped, ByteBuf trackedByteBuf, ResourceLeakTracker<ByteBuf> leakTracker) {
         return new SimpleLeakAwareByteBuf(wrapped, trackedByteBuf, leakTracker);
