@@ -19,8 +19,12 @@ package org.springframework.aop;
 import org.aopalliance.intercept.MethodInterceptor;
 
 /**
- * AOP 联盟 MethodInterceptor 的子接口，允许拦截器实现其他接口，并通过使用该拦截器的代理可用。这是一个基本的 AOP 概念，称为 <b> 简介 </b>。 
- * <p>引入通常是<b>mixins</b>，使得能够构建可以实现Java中多重继承的许多目标的复合对象。
+ * AOP Alliance MethodInterceptor 的子接口，允许拦截器实现额外接口，
+ * 并通过使用该拦截器的代理对外提供。这是 AOP 的基本概念 <b>introduction</b>（引介）。
+ *
+ * <p>引介通常是 <b>mixins</b>，用于构建复合对象，
+ * 在 Java 中实现多重继承的许多目标。
+ *
  * @author Rod Johnson
  * @see DynamicIntroductionAdvice
  */

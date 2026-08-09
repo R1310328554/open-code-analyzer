@@ -19,7 +19,8 @@ package org.springframework.aop;
 import org.springframework.core.NestedRuntimeException;
 
 /**
- * 当 AOP 调用由于配置错误或意外的运行时问题而失败时引发的异常。
+ * 因配置错误或意外运行时问题导致 AOP 调用失败时抛出的异常。
+ *
  * @author Juergen Hoeller
  * @since 2.0
  */
@@ -27,7 +28,7 @@ import org.springframework.core.NestedRuntimeException;
 public class AopInvocationException extends NestedRuntimeException {
 
 	/**
-	 * AopIncationException 的构造函数。
+	 * 构造 AopInvocationException。
 	 * @param msg 详细消息
 	 */
 	public AopInvocationException(String msg) {
@@ -35,7 +36,7 @@ public class AopInvocationException extends NestedRuntimeException {
 	}
 
 	/**
-	 * AopIncationException 的构造函数。
+	 * 构造 AopInvocationException。
 	 * @param msg 详细消息
 	 * @param cause 根本原因
 	 */

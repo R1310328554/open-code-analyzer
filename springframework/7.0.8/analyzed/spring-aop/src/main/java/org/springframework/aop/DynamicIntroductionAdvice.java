@@ -19,9 +19,16 @@ package org.springframework.aop;
 import org.aopalliance.aop.Advice;
 
 /**
- * AOP Alliance Advice 的子接口，允许 Advice 实现附加接口，并通过使用该拦截器的代理可用。这是一个基本的 AOP 概念，称为 <b> 简介 </b>。 
- * <p>引入通常是<b>mixins</b>，使得能够构建可以实现Java中多重继承的许多目标的复合对象。 <p>与{@link IntroductionInfo}相比，该接口允
- * 许建议实现一系列不一定提前知道的接口。因此，{@link IntroductionAdvisor} 可用于 指定将在建议对象中公开哪些接口。
+ * AOP Alliance Advice 的子接口，允许 Advice 实现额外接口，
+ * 并通过使用该拦截器的代理对外提供。这是 AOP 的基本概念 <b>introduction</b>（引介）。
+ *
+ * <p>引介通常是 <b>mixins</b>，用于构建复合对象，
+ * 在 Java 中实现多重继承的许多目标。
+ *
+ * <p>与 {@link IntroductionInfo} 相比，本接口允许 advice 实现
+ * 事先未必确定的一组接口。因此可用 {@link IntroductionAdvisor}
+ * 指定被通知对象将暴露哪些接口。
+ *
  * @author Rod Johnson
  * @since 1.1.1
  * @see IntroductionInfo
@@ -30,10 +37,10 @@ import org.aopalliance.aop.Advice;
 public interface DynamicIntroductionAdvice extends Advice {
 
 	/**
-	* 此介绍建议是否实现了给定的接口？
-	* @param intf 要检查的接口
-	* @return 该建议实现指定的接口
-	*/
+	 * 该引介 advice 是否实现了给定接口？
+	 * @param intf 待检查的接口
+	 * @return advice 是否实现指定接口
+	 */
 	boolean implementsInterface(Class<?> intf);
 
 }

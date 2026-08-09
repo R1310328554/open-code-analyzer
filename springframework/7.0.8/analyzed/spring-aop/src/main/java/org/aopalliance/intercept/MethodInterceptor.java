@@ -19,21 +19,34 @@ package org.aopalliance.intercept;
 import org.jspecify.annotations.Nullable;
 
 /**
- * <p>用户应实现{@link #invoke(MethodInvocation)}方法来修改原始行为。例如，以下类实现跟踪拦截器（跟踪拦截方法上的所有被调用）： <pre
- * class=code> 类 TracingInterceptor 实现 MethodInterceptor { 对象调用(MethodInitation i) throws
- * Throwable { System.out.println("方法"+i.getMethod()+" 在 "+ i.getThis()+" 上调用，参数为
- * "+i.getArguments());object ret=i.proceed();
- * System.out.println("方法"+i.getMethod()+"返回"+ret);返回ret； </pre>
+ * 拦截通往目标对象途中对接口方法的调用，拦截器嵌套在目标之上。
+ *
+ * <p>用户应实现 {@link #invoke(MethodInvocation)} 以修改原始行为。
+ * 例如，以下类实现跟踪拦截器（跟踪被拦截方法上的所有调用）：
+ *
+ * <pre class=code>
+ * class TracingInterceptor implements MethodInterceptor {
+ *   Object invoke(MethodInvocation i) throws Throwable {
+ *     System.out.println("method "+i.getMethod()+" is called on "+
+ *                        i.getThis()+" with args "+i.getArguments());
+ *     Object ret=i.proceed();
+ *     System.out.println("method "+i.getMethod()+" returns "+ret);
+ *     return ret;
+ *   }
+ * }
+ * </pre>
+ *
  * @author Rod Johnson
  */
 @FunctionalInterface
 public interface MethodInterceptor extends Interceptor {
 
 	/**
-	 * 实现此方法以在调用之前和之后执行额外的处理。礼貌的实现肯定会调用 {@link Joinpoint#proceed()}。
+	 * 实现本方法以在调用前后执行额外处理。
+	 * 规范的实现应调用 {@link Joinpoint#proceed()}。
 	 * @param invocation 方法调用连接点
-	 * @return {@link Joinpoint#proceed()} 的结果；可能会被拦截器拦截
-	 * @throws Throwable 如果拦截器或目标对象抛出异常
+	 * @return 调用 {@link Joinpoint#proceed()} 的结果；可能被拦截器改写
+	 * @throws Throwable 若拦截器或目标对象抛出异常
 	 */
 	@Nullable Object invoke(MethodInvocation invocation) throws Throwable;
 

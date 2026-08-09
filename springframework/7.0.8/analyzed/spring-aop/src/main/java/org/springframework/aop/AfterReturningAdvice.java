@@ -21,7 +21,9 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 返回后通知仅在正常方法返回时调用，如果抛出异常则不会调用。此类通知可以看到返回值，但不能更改它。
+ * 方法正常返回时触发的后置 advice，抛出异常时不会调用。
+ * 此类 advice 可读取返回值，但无法修改。
+ *
  * @author Rod Johnson
  * @see MethodBeforeAdvice
  * @see ThrowsAdvice
@@ -29,13 +31,14 @@ import org.jspecify.annotations.Nullable;
 public interface AfterReturningAdvice extends AfterAdvice {
 
 	/**
-	* 给定方法成功返回后的回调。
-	* @param returnValue 该方法返回的值（如果有）
-	* @param method 被调用的方法
-	* @param args 该方法的参数
-	* @param target 方法调用的目标。可能是 {@code null}。
-	* @throws Throwable 如果该对象希望中止调用。如果方法签名允许，则抛出的任何异常都将返回给调用者。否则，异常将被包装为运行时异常。
-	*/
+	 * 给定方法成功返回后的回调。
+	 * @param returnValue 方法返回值（若有）
+	 * @param method 被调用的方法
+	 * @param args 方法参数
+	 * @param target 方法调用的目标对象，可为 {@code null}
+	 * @throws Throwable 若本对象希望中止调用。
+	 * 若方法签名允许，抛出的异常会返回给调用方；否则会被包装为运行时异常。
+	 */
 	void afterReturning(@Nullable Object returnValue, Method method, @Nullable Object[] args, @Nullable Object target) throws Throwable;
 
 }

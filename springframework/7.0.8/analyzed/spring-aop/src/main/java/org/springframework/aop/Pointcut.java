@@ -17,8 +17,12 @@
 package org.springframework.aop;
 
 /**
- * <p>A 切入点由 {@link ClassFilter} 和 {@link MethodMatcher} 组成。这些术语和切入点本身基本都组合起来构建组合（例如，可以通过
- * {@link org.springframework.aop.support.ComposablePointcut}）。
+ * Spring 切入点核心抽象。
+ *
+ * <p>切入点由 {@link ClassFilter} 与 {@link MethodMatcher} 组成。
+ * 这两个基本组件以及 Pointcut 本身均可组合构建更复杂的切入点
+ * （例如通过 {@link org.springframework.aop.support.ComposablePointcut}）。
+ *
  * @author Rod Johnson
  * @see ClassFilter
  * @see MethodMatcher
@@ -29,21 +33,21 @@ package org.springframework.aop;
 public interface Pointcut {
 
 	/**
-	 * 返回此切入点的ClassFilter。
-	 * @return {@code null}）
+	 * 返回本切入点的 ClassFilter。
+	 * @return ClassFilter（永不为 {@code null}）
 	 */
 	ClassFilter getClassFilter();
 
 	/**
-	 * 返回此切入点的MethodMatcher。
-	 * @return {@code null}）
+	 * 返回本切入点的 MethodMatcher。
+	 * @return MethodMatcher（永不为 {@code null}）
 	 */
 	MethodMatcher getMethodMatcher();
 
 
 	/**
-	* 始终匹配的规范切入点实例。
-	*/
+	 * 始终匹配的 Pointcut 规范实例。
+	 */
 	Pointcut TRUE = TruePointcut.INSTANCE;
 
 }

@@ -17,8 +17,12 @@
 package org.springframework.aop;
 
 /**
- * 用于执行一个或多个 AOP <b> 简介 </b> 的顾问程序的超级接口。 <p>该接口不能直接实现；子接口必须提供实现引入的建议类型。 <p>Introduction 是通过
- *  AOP 建议实现附加接口（未由目标实现）。
+ * 执行一个或多个 AOP <b>introduction</b>（引介）的 Advisor 超接口。
+ *
+ * <p>本接口不能直接实现；子接口必须提供实现引介的 advice 类型。
+ *
+ * <p>引介是通过 AOP advice 为目标实现其原本不具备的额外接口。
+ *
  * @author Rod Johnson
  * @since 04.04.2003
  * @see IntroductionInterceptor
@@ -26,14 +30,16 @@ package org.springframework.aop;
 public interface IntroductionAdvisor extends Advisor, IntroductionInfo {
 
 	/**
-	* 返回过滤器，确定此介绍应适用于哪些目标类。 <p>这表示切入点的类部分。请注意，方法匹配对于介绍没有意义。
-	* @return 类过滤器
-	*/
+	 * 返回决定该引介应作用于哪些目标类的过滤器。
+	 * <p>这对应切入点的类匹配部分。注意引介不涉及方法匹配。
+	 * @return 类过滤器
+	 */
 	ClassFilter getClassFilter();
 
 	/**
-	 * 所建议的接口可以通过引入advice来实现吗？在添加IntroductionAdvisor之前调用。
-	 * @throws IllegalArgumentException 如果介绍的advice无法实现建议的接口
+	 * 被通知接口能否由引介 advice 实现？
+	 * 在添加 IntroductionAdvisor 之前调用。
+	 * @throws IllegalArgumentException 若被通知接口无法由引介 advice 实现
 	 */
 	void validateInterfaces() throws IllegalArgumentException;
 

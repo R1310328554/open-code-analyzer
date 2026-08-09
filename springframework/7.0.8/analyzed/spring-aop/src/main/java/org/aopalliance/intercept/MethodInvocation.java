@@ -19,16 +19,19 @@ package org.aopalliance.intercept;
 import java.lang.reflect.Method;
 
 /**
- * 对方法调用的描述，在方法调用时提供给拦截器。
- * <p>A 方法调用是一个连接点，可以被方法拦截器拦截。
+ * 方法调用的描述，在方法被调用时传递给拦截器。
+ *
+ * <p>方法调用是一种连接点，可由方法拦截器拦截。
+ *
  * @author Rod Johnson
  * @see MethodInterceptor
  */
 public interface MethodInvocation extends Invocation {
 
 	/**
-	 * 获取被调用的方法。 <p>该方法是{@link Joinpoint#getStaticPart()}方法的友好实现（结果相同）。
-	 * @return
+	 * 获取被调用的方法。
+	 * <p>该方法是 {@link Joinpoint#getStaticPart()} 的友好封装（结果相同）。
+	 * @return 被调用的方法
 	 */
 	Method getMethod();
 

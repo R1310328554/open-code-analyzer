@@ -19,16 +19,19 @@ package org.aopalliance.intercept;
 import java.lang.reflect.Constructor;
 
 /**
- * 对构造函数调用的描述，在构造函数调用时提供给拦截器。
- * <p>A 构造函数调用是一个连接点，可以被构造函数拦截器拦截。
+ * 构造函数调用的描述，在构造函数被调用时传递给拦截器。
+ *
+ * <p>构造函数调用是一种连接点，可由构造函数拦截器拦截。
+ *
  * @author Rod Johnson
  * @see ConstructorInterceptor
  */
 public interface ConstructorInvocation extends Invocation {
 
 	/**
-	 * 获取被调用的构造函数。 <p>该方法是{@link Joinpoint#getStaticPart()}方法的友好实现（结果相同）。
-	 * @return
+	 * 获取被调用的构造函数。
+	 * <p>该方法是 {@link Joinpoint#getStaticPart()} 的友好封装（结果相同）。
+	 * @return 被调用的构造函数
 	 */
 	Constructor<?> getConstructor();
 

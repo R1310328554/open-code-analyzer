@@ -19,7 +19,9 @@ package org.springframework.aop;
 import org.aopalliance.aop.Advice;
 
 /**
- * 用于后续的建议通用标记接口，例如 {@link AfterReturningAdvice} 和 {@link ThrowsAdvice}。
+ * 后置 advice 的通用标记接口，
+ * 例如 {@link AfterReturningAdvice} 与 {@link ThrowsAdvice}。
+ *
  * @author Juergen Hoeller
  * @since 2.0.3
  * @see BeforeAdvice

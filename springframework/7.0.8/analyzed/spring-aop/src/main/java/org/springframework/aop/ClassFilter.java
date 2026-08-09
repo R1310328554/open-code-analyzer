@@ -17,11 +17,16 @@
 package org.springframework.aop;
 
 /**
- * <p> 可以初始化 {@link Pointcut} 的一部分或用于 {@link IntroductionAdvisor} 的整个目标。
- * <p><strong>WARNING</strong>：此接口的具体实现必须提供 {@link Object#equals(Object)}、{@link Object#has
- * hCode()} 和 {@link Object#toString()}的实现正确，便于允许在服务器场景中使用过滤器 - 例如，在 CGLIB 生成的代理中。从 Spring
- * Framework 接口 6.0.13 开始，{@code toString()} 实现必须生成与实现 {@code equals()}
- * 的逻辑一致的唯一字符串表示形式。有关示例，请参见框架内此的具体实现。
+ * 将切入点或引介的匹配范围限制在给定目标类集合上的过滤器。
+ *
+ * <p>可作为 {@link Pointcut} 的一部分，或用于 {@link IntroductionAdvisor} 的整体目标选择。
+ *
+ * <p><strong>警告</strong>：本接口的具体实现必须正确实现
+ * {@link Object#equals(Object)}、{@link Object#hashCode()} 与 {@link Object#toString()}，
+ * 以便在缓存场景（例如 CGLIB 生成的代理）中使用。
+ * 自 Spring Framework 6.0.13 起，{@code toString()} 必须生成与 {@code equals()} 逻辑一致的唯一字符串表示。
+ * 可参考框架内本接口的具体实现示例。
+ *
  * @author Rod Johnson
  * @author Sam Brannen
  * @see Pointcut
@@ -31,10 +36,10 @@ package org.springframework.aop;
 public interface ClassFilter {
 
 	/**
-	* 切入点是否应该应用于给定的接口或目标类？
-	* @param clazz 候选目标类别
-	* @return 该建议应适用于给定的目标类别
-	*/
+	 * 切入点是否应作用于给定接口或目标类？
+	 * @param clazz 候选目标类
+	 * @return advice 是否应作用于该目标类
+	 */
 	boolean matches(Class<?> clazz);
 
 

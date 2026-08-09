@@ -21,7 +21,9 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 在调用方法之前调用建议。此类建议无法阻止方法调用继续进行，除非它们抛出 Throwable。
+ * 在方法调用前触发的 advice。除非抛出 Throwable，
+ * 否则无法阻止方法继续执行。
+ *
  * @author Rod Johnson
  * @see AfterReturningAdvice
  * @see ThrowsAdvice
@@ -29,12 +31,13 @@ import org.jspecify.annotations.Nullable;
 public interface MethodBeforeAdvice extends BeforeAdvice {
 
 	/**
-	* 调用给定方法之前的回调。
-	* @param method 被调用的方法
-	* @param args 该方法的参数
-	* @param target 方法调用的目标。可能是 {@code null}。
-	* @throws Throwable 如果该对象希望中止调用。如果方法签名允许，则抛出的任何异常都将返回给调用者。否则，异常将被包装为运行时异常。
-	*/
+	 * 给定方法被调用前的回调。
+	 * @param method 被调用的方法
+	 * @param args 方法参数
+	 * @param target 方法调用的目标对象，可为 {@code null}
+	 * @throws Throwable 若本对象希望中止调用。
+	 * 若方法签名允许，抛出的异常会返回给调用方；否则会被包装为运行时异常。
+	 */
 	void before(Method method, @Nullable Object[] args, @Nullable Object target) throws Throwable;
 
 }
