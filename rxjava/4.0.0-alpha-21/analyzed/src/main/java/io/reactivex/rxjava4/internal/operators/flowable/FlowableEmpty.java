@@ -16,22 +16,27 @@ package io.reactivex.rxjava4.internal.operators.flowable;
 import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.core.Flowable;
+import io.reactivex.rxjava4.internal.subscriptions.EmptySubscription;
+import io.reactivex.rxjava4.operators.ScalarSupplier;
 
 /**
- * 将 {@link Publisher} 包装为 {@link Flowable}，订阅时直接委托上游 Publisher。
- * @param <T> 元素类型
+ * 仅发出 onSubscribe 与 onComplete 的空 {@link Flowable} 源。
  */
-public final class FlowableFromPublisher<T> extends Flowable<T> {
-    final Publisher<? extends T> publisher;
+public final class FlowableEmpty extends Flowable<Object> implements ScalarSupplier<Object> {
 
-    /** @param publisher 上游 Publisher */
-    public FlowableFromPublisher(Publisher<? extends T> publisher) {
-        this.publisher = publisher;
+    public static final Flowable<Object> INSTANCE = new FlowableEmpty();
+
+    private FlowableEmpty() {
     }
 
-    /** 将下游 Subscriber 直接订阅到 wrapped Publisher。 */
+    /** 通过 {@link EmptySubscription#complete} 立即完成。 */
     @Override
-    protected void subscribeActual(Subscriber<? super T> s) {
-        publisher.subscribe(s);
+    public void subscribeActual(Subscriber<? super Object> s) {
+        EmptySubscription.complete(s);
+    }
+
+    @Override
+    public Object get() {
+        return null; // null 标量值表示空序列
     }
 }

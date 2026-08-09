@@ -13,55 +13,55 @@
 
 package io.reactivex.rxjava4.internal.operators.flowable;
 
+import java.util.concurrent.*;
+
 import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.core.Flowable;
 import io.reactivex.rxjava4.exceptions.Exceptions;
-import io.reactivex.rxjava4.functions.Supplier;
 import io.reactivex.rxjava4.internal.subscriptions.DeferredScalarSubscription;
-import io.reactivex.rxjava4.plugins.RxJavaPlugins;
-
-import java.util.Objects;
+import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 
 /**
- * 每次订阅时调用 {@link Supplier}，发射返回值或传播抛出的异常。
- * @param <T> Supplier 返回值及流元素类型
- * @since 3.0.0
+ * 阻塞等待 {@link Future} 完成并将其结果作为唯一元素发出。
+ * @param <T> 元素类型
  */
-public final class FlowableFromSupplier<T> extends Flowable<T> implements Supplier<T> {
+public final class FlowableFromFuture<T> extends Flowable<T> {
+    final Future<? extends T> future;
+    final long timeout;
+    final TimeUnit unit;
 
-    final Supplier<? extends T> supplier;
-
-    /** @param supplier 每次订阅时调用的 Supplier */
-    public FlowableFromSupplier(Supplier<? extends T> supplier) {
-        this.supplier = supplier;
+    /**
+     * @param future 要等待的 Future
+     * @param timeout 超时时间（unit 为 null 时不限时）
+     * @param unit 超时时间单位
+     */
+    public FlowableFromFuture(Future<? extends T> future, long timeout, TimeUnit unit) {
+        this.future = future;
+        this.timeout = timeout;
+        this.unit = unit;
     }
 
-    /** 调用 supplier 并通过 DeferredScalarSubscription 发射单值。 */
+    /** 调用 future.get 并通过 DeferredScalarSubscription 发出结果。 */
     @Override
     public void subscribeActual(Subscriber<? super T> s) {
         DeferredScalarSubscription<T> deferred = new DeferredScalarSubscription<>(s);
         s.onSubscribe(deferred);
 
-        T t;
+        T v;
         try {
-            t = Objects.requireNonNull(supplier.get(), "The supplier returned a null value");
+            v = unit != null ? future.get(timeout, unit) : future.get();
         } catch (Throwable ex) {
             Exceptions.throwIfFatal(ex);
-            if (deferred.isCancelled()) {
-                RxJavaPlugins.onError(ex);
-            } else {
+            if (!deferred.isCancelled()) {
                 s.onError(ex);
             }
             return;
         }
-
-        deferred.complete(t);
-    }
-
-    /** 直接调用 supplier 并校验非 null。 */
-    @Override
-    public T get() throws Throwable {
-        return Objects.requireNonNull(supplier.get(), "The supplier returned a null value");
+        if (v == null) {
+            s.onError(ExceptionHelper.createNullPointerException("The future returned a null value."));
+        } else {
+            deferred.complete(v);
+        }
     }
 }

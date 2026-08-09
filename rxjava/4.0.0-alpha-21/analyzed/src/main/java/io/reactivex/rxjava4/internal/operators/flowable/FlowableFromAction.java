@@ -17,26 +17,26 @@ import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.core.Flowable;
 import io.reactivex.rxjava4.exceptions.Exceptions;
-import io.reactivex.rxjava4.functions.Supplier;
+import io.reactivex.rxjava4.functions.*;
 import io.reactivex.rxjava4.internal.fuseable.CancellableQueueFuseable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * 执行 {@link Runnable}，异常时 onError，正常完成时 onComplete。
+ * 执行 {@link Action} 并在正常完成时 onComplete，异常时 onError。
  *
  * @param <T> 元素类型
  * @since 3.0.0
  */
-public final class FlowableFromRunnable<T> extends Flowable<T> implements Supplier<T> {
+public final class FlowableFromAction<T> extends Flowable<T> implements Supplier<T> {
 
-    final Runnable run;
+    final Action action;
 
-    /** @param run 订阅时执行的 Runnable */
-    public FlowableFromRunnable(Runnable run) {
-        this.run = run;
+    /** @param action 要执行的 Action */
+    public FlowableFromAction(Action action) {
+        this.action = action;
     }
 
-    /** 创建可取消 Subscription，执行 run 并通知完成或错误。 */
+    /** 运行 action 并转发完成或错误；不发射元素。 */
     @Override
     protected void subscribeActual(Subscriber<? super T> subscriber) {
         CancellableQueueFuseable<T> qs = new CancellableQueueFuseable<>();
@@ -45,7 +45,7 @@ public final class FlowableFromRunnable<T> extends Flowable<T> implements Suppli
         if (!qs.isDisposed()) {
 
             try {
-                run.run();
+                action.run();
             } catch (Throwable ex) {
                 Exceptions.throwIfFatal(ex);
                 if (!qs.isDisposed()) {
@@ -62,10 +62,9 @@ public final class FlowableFromRunnable<T> extends Flowable<T> implements Suppli
         }
     }
 
-    /** 执行 run 并返回 null（表示正常完成）。 */
     @Override
     public T get() throws Throwable {
-        run.run();
+        action.run();
         return null; // 视为 onComplete()
     }
 }
