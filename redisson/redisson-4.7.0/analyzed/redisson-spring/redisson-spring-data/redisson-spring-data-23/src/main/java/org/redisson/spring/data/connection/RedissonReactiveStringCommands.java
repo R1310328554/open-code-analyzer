@@ -39,18 +39,22 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Spring Data Redis 响应式 String 命令实现。
+ * <p>封装 SET/GET、MGET/MSET、APPEND、GETRANGE、BITCOUNT/BITOP 等字符串与位图操作。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveStringCommands extends RedissonBaseReactive implements ReactiveStringCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveStringCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
     private static final RedisCommand<Boolean> SET = new RedisCommand<Boolean>("SET", new BooleanReplayConvertor());
     
+    /** SET：支持 PX/NX/XX 过期与条件选项组合。 */
     @Override
     public Flux<BooleanResponse<SetCommand>> set(Publisher<SetCommand> commands) {
         return execute(commands, command -> {
@@ -88,6 +92,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** GET：读取字符串值，缺失时返回 {@link AbsentByteBufferResponse}。 */
     @Override
     public Flux<ByteBufferResponse<KeyCommand>> get(Publisher<KeyCommand> keys) {
         return execute(keys, command -> {
@@ -120,6 +125,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** MGET：批量读取，null 槽位映射为空 {@link ByteBuffer}。 */
     @Override
     public Flux<MultiValueResponse<List<ByteBuffer>, ByteBuffer>> mGet(Publisher<List<ByteBuffer>> keysets) {
         return execute(keysets, coll -> {
@@ -206,6 +212,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisCommand<Boolean> MSET = new RedisCommand<Boolean>("MSET", new BooleanReplayConvertor());
     
+    /** MSET：批量写入 key-value 对。 */
     @Override
     public Flux<BooleanResponse<MSetCommand>> mSet(Publisher<MSetCommand> commands) {
         return execute(commands, command -> {
@@ -219,6 +226,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 将 MSetCommand 的键值对展开为 Redis 参数数组。 */
     protected List<byte[]> convert(MSetCommand command) {
         List<byte[]> params = new ArrayList<byte[]>(command.getKeyValuePairs().size());
         command.getKeyValuePairs().entrySet().forEach(e -> {
@@ -245,6 +253,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisStrictCommand<Long> APPEND = new RedisStrictCommand<Long>("APPEND");
     
+    /** APPEND：在字符串末尾追加内容。 */
     @Override
     public Flux<NumericResponse<AppendCommand, Long>> append(Publisher<AppendCommand> commands) {
         return execute(commands, command -> {
@@ -307,6 +316,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** SETBIT：设置指定偏移处的位值。 */
     @Override
     public Flux<BooleanResponse<SetBitCommand>> setBit(Publisher<SetBitCommand> commands) {
         return execute(commands, command -> {
@@ -393,6 +403,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisStrictCommand<Long> BITOP = new RedisStrictCommand<Long>("BITOP");
     
+    /** BITOP：对多个字符串 key 执行 AND/OR/XOR/NOT 位运算。 */
     @Override
     public Flux<NumericResponse<BitOpCommand, Long>> bitOp(Publisher<BitOpCommand> commands) {
         return execute(commands, command -> {
@@ -441,6 +452,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** STRLEN：返回字符串字节长度。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> strLen(Publisher<KeyCommand> keys) {
         return execute(keys, command -> {

@@ -39,21 +39,28 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * Spring Data Redis Stream 命令同步实现。
+ * <p>封装 XADD/XACK/XDEL、XRANGE/XREVRANGE、XREAD/XREADGROUP、
+XGROUP 消费者组管理及 XTRIM 等 Redis Stream 操作。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonStreamCommands implements RedisStreamCommands {
 
+    /** 所属 {@link RedissonConnection}。 */
     private final RedissonConnection connection;
 
+    /** 异步命令执行器。 */
     private final CommandAsyncExecutor executor;
 
+    /** 绑定连接与命令执行器。 */
     public RedissonStreamCommands(RedissonConnection connection, CommandAsyncExecutor executor) {
         this.connection = connection;
         this.executor = executor;
     }
 
+    /** 将 RecordId 列表转为 Redis 命令参数字符串列表。 */
     private static List<String> toStringList(RecordId... recordIds) {
         if (recordIds.length == 1) {
             return Arrays.asList(recordIds[0].getValue());
@@ -62,6 +69,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return Arrays.stream(recordIds).map(RecordId::getValue).collect(Collectors.toList());
     }
 
+    /** XADD：向 Stream 追加一条记录。 */
     @Override
     public RecordId xAdd(MapRecord<byte[], byte[], byte[]> record) {
         return xAdd(record, XAddOptions.none());
@@ -69,6 +77,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
     private static final RedisStrictCommand<RecordId> XCLAIM_JUSTID = new RedisStrictCommand<RecordId>("XCLAIM", obj -> RecordId.of(obj.toString()));
 
+    /** XCLAIM JUSTID：认领消息并仅返回 ID。 */
     @Override
     public List<RecordId> xClaimJustId(byte[] key, String group, String newOwner, XClaimOptions options) {
         Assert.notNull(key, "Key must not be null!");
@@ -87,6 +96,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(key, StringCodec.INSTANCE, XCLAIM_JUSTID, params.toArray());
     }
 
+    /** XCLAIM：将空闲消息重新分配给新消费者。 */
     @Override
     public List<ByteRecord> xClaim(byte[] key, String group, String newOwner, XClaimOptions options) {
         Assert.notNull(key, "Key must not be null!");
@@ -108,6 +118,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
                         new MapEntriesDecoder(new StreamObjectMapReplayDecoder()))), params.toArray());
     }
 
+    /** XGROUP CREATE：创建消费组。 */
     @Override
     public String xGroupCreate(byte[] key, String groupName, ReadOffset readOffset, boolean mkStream) {
         Assert.notNull(key, "Key must not be null!");
@@ -259,6 +270,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
     }
 
+    /** XPENDING：查询消费组待处理消息摘要或明细。 */
     @Override
     public PendingMessagesSummary xPending(byte[] key, String groupName) {
         Assert.notNull(key, "Key must not be null!");
@@ -304,6 +316,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
     }
 
+    /** XPENDING：查询消费组待处理消息摘要或明细。 */
     @Override
     public PendingMessages xPending(byte[] key, String groupName, XPendingOptions options) {
         Assert.notNull(key, "Key must not be null!");
@@ -332,6 +345,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
                 params.toArray());
     }
 
+    /** XACK：确认消费组已处理指定消息 ID。 */
     @Override
     public Long xAck(byte[] key, String group, RecordId... recordIds) {
         Assert.notNull(key, "Key must not be null!");
@@ -348,6 +362,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
     private static final RedisStrictCommand<RecordId> XADD = new RedisStrictCommand<RecordId>("XADD", obj -> RecordId.of(obj.toString()));
 
+    /** XADD：向 Stream 追加一条记录。 */
     @Override
     public RecordId xAdd(MapRecord<byte[], byte[], byte[]> record, XAddOptions options) {
         Assert.notNull(record, "record must not be null!");
@@ -374,6 +389,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(record.getStream(), StringCodec.INSTANCE, XADD, params.toArray());
     }
 
+    /** XDEL：按 ID 删除 Stream 消息。 */
     @Override
     public Long xDel(byte[] key, RecordId... recordIds) {
         Assert.notNull(key, "Key must not be null!");
@@ -388,6 +404,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
     private static final RedisStrictCommand<String> XGROUP_STRING = new RedisStrictCommand<>("XGROUP");
 
+    /** XGROUP CREATE：创建消费组。 */
     @Override
     public String xGroupCreate(byte[] key, String groupName, ReadOffset readOffset) {
         return xGroupCreate(key, groupName, readOffset, false);
@@ -395,6 +412,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
     private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XGROUP", obj -> ((Long)obj) > 0);
 
+    /** XGROUP DELCONSUMER：删除消费组中的消费者。 */
     @Override
     public Boolean xGroupDelConsumer(byte[] key, Consumer consumer) {
         Assert.notNull(key, "Key must not be null!");
@@ -405,6 +423,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(key, StringCodec.INSTANCE, XGROUP_BOOLEAN, "DELCONSUMER", key, consumer.getGroup(), consumer.getName());
     }
 
+    /** XGROUP DESTROY：销毁消费组。 */
     @Override
     public Boolean xGroupDestroy(byte[] key, String groupName) {
         Assert.notNull(key, "Key must not be null!");
@@ -413,6 +432,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(key, StringCodec.INSTANCE, XGROUP_BOOLEAN, "DESTROY", key, groupName);
     }
 
+    /** XLEN：返回 Stream 当前长度。 */
     @Override
     public Long xLen(byte[] key) {
         Assert.notNull(key, "Key must not be null!");
@@ -420,6 +440,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(key, StringCodec.INSTANCE, RedisCommands.XLEN, key);
     }
 
+    /** XRANGE/XREVRANGE 共用实现。 */
     private List<ByteRecord> range(RedisCommand<?> rangeCommand, byte[] key, Range<String> range,
                                    RedisZSetCommands.Limit limit) {
         Assert.notNull(key, "Key must not be null!");
@@ -496,6 +517,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
     }
 
+    /** XRANGE：按 ID 范围正序读取 Stream 记录。 */
     @Override
     public List<ByteRecord> xRange(byte[] key, Range<String> range, RedisZSetCommands.Limit limit) {
         return range(new RedisCommand<>("XRANGE",
@@ -599,6 +621,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         RedisCommands.BLOCKING_COMMANDS.add(XREADGROUP_BLOCKING_V2);
     }
 
+    /** XREAD：从一个或多个 Stream 读取消息。 */
     @Override
     public List<ByteRecord> xRead(StreamReadOptions readOptions, StreamOffset<byte[]>... streams) {
         Assert.notNull(readOptions, "ReadOptions must not be null!");
@@ -638,6 +661,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.read(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREAD, params.toArray());
     }
 
+    /** XREADGROUP：以消费组身份读取 Stream 消息。 */
     @Override
     public List<ByteRecord> xReadGroup(Consumer consumer, StreamReadOptions readOptions, StreamOffset<byte[]>... streams) {
         Assert.notNull(readOptions, "Consumer must not be null!");
@@ -686,6 +710,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP, params.toArray());
     }
 
+    /** XREVRANGE：按 ID 范围逆序读取 Stream 记录。 */
     @Override
     public List<ByteRecord> xRevRange(byte[] key, Range<String> range, RedisZSetCommands.Limit limit) {
         return range(new RedisCommand<>("XREVRANGE",
@@ -696,6 +721,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
                 key, range, limit);
     }
 
+    /** XTRIM：按最大长度裁剪 Stream。 */
     @Override
     public Long xTrim(byte[] key, long count) {
         Assert.notNull(key, "Key must not be null!");
