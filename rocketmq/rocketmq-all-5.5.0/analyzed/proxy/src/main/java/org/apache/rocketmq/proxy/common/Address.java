@@ -20,18 +20,27 @@ import com.google.common.net.HostAndPort;
 import java.util.Objects;
 import org.apache.rocketmq.common.utils.IPAddressUtils;
 
+/**
+ * 网络地址封装：区分 IPv4/IPv6/域名并持有 {@link HostAndPort}。
+ */
 public class Address {
 
+    /** 地址类型枚举。 */
     public enum AddressScheme {
+        /** IPv4 地址。 */
         IPv4,
+        /** IPv6 地址。 */
         IPv6,
+        /** 域名。 */
         DOMAIN_NAME,
+        /** 无法识别或空地址。 */
         UNRECOGNIZED
     }
 
     private AddressScheme addressScheme;
     private HostAndPort hostAndPort;
 
+    /** 根据 host 自动推断地址类型。 */
     public Address(HostAndPort hostAndPort) {
         this.addressScheme = buildScheme(hostAndPort);
         this.hostAndPort = hostAndPort;
@@ -58,6 +67,7 @@ public class Address {
         this.hostAndPort = hostAndPort;
     }
 
+    /** 按 IP 校验工具判断 IPv4/IPv6/域名。 */
     private AddressScheme buildScheme(HostAndPort hostAndPort) {
         if (hostAndPort == null) {
             return AddressScheme.UNRECOGNIZED;
@@ -72,6 +82,7 @@ public class Address {
         return AddressScheme.DOMAIN_NAME;
     }
 
+    /** 按 scheme 与 hostAndPort 比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) {

@@ -33,17 +33,21 @@ import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.common.UtilAll;
 import org.apache.rocketmq.common.message.MessageAccessor;
 
+/**
+ * OMS 与 RocketMQ 消息/结果转换及通用工具方法。
+ */
 public class OMSUtil {
 
     /**
-     * Builds a OMS client instance name.
+     * 构建 OMS 客户端实例名（PID + 纳秒时间戳）。
      *
-     * @return a unique instance name
+     * @return 唯一实例名
      */
     public static String buildInstanceName() {
         return Integer.toString(UtilAll.getPid()) + "%OpenMessaging" + "%" + System.nanoTime();
     }
 
+    /** 将 OMS {@link BytesMessage} 转为 RocketMQ {@link org.apache.rocketmq.common.message.Message}。 */
     public static org.apache.rocketmq.common.message.Message msgConvert(BytesMessage omsMessage) {
         org.apache.rocketmq.common.message.Message rmqMessage = new org.apache.rocketmq.common.message.Message();
         rmqMessage.setBody(omsMessage.getBody(byte[].class));
@@ -51,7 +55,7 @@ public class OMSUtil {
         KeyValue sysHeaders = omsMessage.sysHeaders();
         KeyValue userHeaders = omsMessage.userHeaders();
 
-        //All destinations in RocketMQ use Topic
+        // RocketMQ 中目标统一映射为 Topic
         rmqMessage.setTopic(sysHeaders.getString(BuiltinKeys.DESTINATION));
 
         if (sysHeaders.containsKey(BuiltinKeys.START_TIME)) {
@@ -65,7 +69,7 @@ public class OMSUtil {
             MessageAccessor.putProperty(rmqMessage, key, userHeaders.getString(key));
         }
 
-        //System headers has a high priority
+        // 系统头优先级高于用户头
         for (String key : sysHeaders.keySet()) {
             MessageAccessor.putProperty(rmqMessage, key, sysHeaders.getString(key));
         }
@@ -73,6 +77,7 @@ public class OMSUtil {
         return rmqMessage;
     }
 
+    /** 将 RocketMQ 消息扩展体转为 OMS {@link BytesMessage}。 */
     public static BytesMessage msgConvert(org.apache.rocketmq.common.message.MessageExt rmqMsg) {
         BytesMessage omsMsg = new BytesMessageImpl();
         omsMsg.setBody(rmqMsg.getBody());
@@ -102,6 +107,7 @@ public class OMSUtil {
         return omsMsg;
     }
 
+    /** 判断属性键是否为 OMS 内置系统头字段。 */
     public static boolean isOMSHeader(String value) {
         for (Field field : BuiltinKeys.class.getDeclaredFields()) {
             try {
@@ -115,14 +121,13 @@ public class OMSUtil {
         return false;
     }
 
-    /**
-     * Convert a RocketMQ SEND_OK SendResult instance to a OMS SendResult.
-     */
+    /** 将 RocketMQ SEND_OK 发送结果转为 OMS {@link SendResult}。 */
     public static SendResult sendResultConvert(org.apache.rocketmq.client.producer.SendResult rmqResult) {
         assert rmqResult.getSendStatus().equals(SendStatus.SEND_OK);
         return new SendResultImpl(rmqResult.getMsgId(), OMS.newKeyValue());
     }
 
+    /** 合并多个 {@link KeyValue} 为单一键值对象。 */
     public static KeyValue buildKeyValue(KeyValue... keyValues) {
         KeyValue keyValue = OMS.newKeyValue();
         for (KeyValue properties : keyValues) {
@@ -133,9 +138,7 @@ public class OMSUtil {
         return keyValue;
     }
 
-    /**
-     * Returns an iterator that cycles indefinitely over the elements of {@code Iterable}.
-     */
+    /** 返回对 {@code Iterable} 元素无限循环的迭代器。 */
     public static <T> Iterator<T> cycle(final Iterable<T> iterable) {
         return new Iterator<T>() {
             Iterator<T> iterator = new Iterator<T>() {
@@ -151,7 +154,7 @@ public class OMSUtil {
 
                 @Override
                 public synchronized void remove() {
-                    //Ignore
+                    // 占位迭代器不支持 remove
                 }
             };
 

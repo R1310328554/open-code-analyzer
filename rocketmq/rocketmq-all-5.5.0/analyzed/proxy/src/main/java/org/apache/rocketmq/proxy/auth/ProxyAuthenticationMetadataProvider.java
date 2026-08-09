@@ -24,11 +24,17 @@ import org.apache.rocketmq.auth.authentication.model.User;
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.proxy.service.metadata.MetadataService;
 
+/**
+ * Proxy 认证元数据提供者：委托 {@link MetadataService} 查询用户，写操作暂未实现。
+ */
 public class ProxyAuthenticationMetadataProvider implements AuthenticationMetadataProvider {
 
+    /** 认证模块配置。 */
     protected AuthConfig authConfig;
+    /** 元数据服务，用于读取用户定义。 */
     protected MetadataService metadataService;
 
+    /** 注入认证配置与元数据服务 Supplier。 */
     @Override
     public void initialize(AuthConfig authConfig, Supplier<?> metadataService) {
         this.authConfig = authConfig;
@@ -42,6 +48,7 @@ public class ProxyAuthenticationMetadataProvider implements AuthenticationMetada
 
     }
 
+    /** 创建用户（Proxy 侧未实现）。 */
     @Override
     public CompletableFuture<Void> createUser(User user) {
         return null;
@@ -57,11 +64,13 @@ public class ProxyAuthenticationMetadataProvider implements AuthenticationMetada
         return null;
     }
 
+    /** 异步按用户名查询 {@link User}。 */
     @Override
     public CompletableFuture<User> getUser(String username) {
         return this.metadataService.getUser(null, username);
     }
 
+    /** 列出用户（Proxy 侧未实现）。 */
     @Override
     public CompletableFuture<List<User>> listUser(String filter) {
         return null;

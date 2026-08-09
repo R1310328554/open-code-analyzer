@@ -28,12 +28,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * JavaBean 属性填充工具：将 {@link KeyValue} 或 {@link Properties} 映射到 setter 方法。
+ */
 public final class BeanUtils {
     private static final Logger log = LoggerFactory.getLogger(BeanUtils.class);
 
-    /**
-     * Maps primitive {@code Class}es to their corresponding wrapper {@code Class}.
-     */
+    /** 基本类型到包装类型的映射表。 */
     private static Map<Class<?>, Class<?>> primitiveWrapperMap = new HashMap<>();
 
     static {
@@ -61,29 +62,15 @@ public final class BeanUtils {
     }
 
     /**
-     * <p>Populate the JavaBeans properties of the specified bean, based on
-     * the specified name/value pairs.  This method uses Java reflection APIs
-     * to identify corresponding "property setter" method names, and deals
-     * with setter arguments of type <Code>String</Code>, <Code>boolean</Code>,
-     * <Code>int</Code>, <Code>long</Code>, <Code>float</Code>, and
-     * <Code>double</Code>.</p>
+     * 根据键值对填充 JavaBean 属性，通过反射调用对应 setter。
+     * 支持 String、boolean、int、long、float、double 等参数类型。
      *
-     * <p>The particular setter method to be called for each property is
-     * determined using the usual JavaBeans introspection mechanisms.  Thus,
-     * you may identify custom setter methods using a BeanInfo class that is
-     * associated with the class of the bean itself.  If no such BeanInfo
-     * class is available, the standard method name conversion ("set" plus
-     * the capitalized name of the property in question) is used.</p>
-     *
-     * <p><strong>NOTE</strong>:  It is contrary to the JavaBeans Specification
-     * to have more than one setter method (with different argument
-     * signatures) for the same property.</p>
-     *
-     * @param clazz JavaBean class whose properties are being populated
-     * @param properties Map keyed by property name, with the corresponding (String or String[]) value(s) to be set
-     * @param <T> Class type
-     * @return Class instance
+     * @param clazz 待填充的 JavaBean 类型
+     * @param properties 属性名到值的映射
+     * @param <T> 目标类型
+     * @return 填充后的实例，失败时返回 null
      */
+    /** 从 {@link Properties} 创建并填充 JavaBean。 */
     public static <T> T populate(final Properties properties, final Class<T> clazz) {
         T obj = null;
         try {
@@ -95,6 +82,7 @@ public final class BeanUtils {
         return obj;
     }
 
+    /** 从 OMS {@link KeyValue} 创建并填充 JavaBean。 */
     public static <T> T populate(final KeyValue properties, final Class<T> clazz) {
         T obj = null;
         try {
@@ -106,6 +94,7 @@ public final class BeanUtils {
         return obj;
     }
 
+    /** 查找 setter 方法的第一个参数类型。 */
     public static Class<?> getMethodClass(Class<?> clazz, String methodName) {
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
@@ -116,6 +105,7 @@ public final class BeanUtils {
         return null;
     }
 
+    /** 按参数类型转换后调用指定 setter。 */
     public static void setProperties(Class<?> clazz, Object obj, String methodName,
         Object value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Class<?> parameterClass = getMethodClass(clazz, methodName);
@@ -134,6 +124,7 @@ public final class BeanUtils {
             setterMethod.invoke(obj, value);
     }
 
+    /** 将 Properties 键（支持点分）映射到已有对象的 setter。 */
     public static <T> T populate(final Properties properties, final T obj) {
         Class<?> clazz = obj.getClass();
         try {
@@ -150,7 +141,7 @@ public final class BeanUtils {
                 try {
                     setProperties(clazz, obj, "set" + beanFieldNameWithCapitalization, entry.getValue());
                 } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
-                    //ignored...
+                    // 无对应 setter 时忽略
                 }
             }
         } catch (RuntimeException e) {
@@ -159,6 +150,7 @@ public final class BeanUtils {
         return obj;
     }
 
+    /** 将 KeyValue 键（支持 ._ 分隔）映射到已有对象的 setter。 */
     public static <T> T populate(final KeyValue properties, final T obj) {
         Class<?> clazz = obj.getClass();
         try {

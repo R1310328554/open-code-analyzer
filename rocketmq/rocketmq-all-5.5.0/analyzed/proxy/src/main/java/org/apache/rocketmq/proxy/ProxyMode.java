@@ -17,16 +17,23 @@
 
 package org.apache.rocketmq.proxy;
 
+/**
+ * Proxy 部署模式：本地内嵌 Broker 或集群独立 Proxy。
+ */
 public enum ProxyMode {
+    /** 本地模式：Proxy 与 Broker 同进程。 */
     LOCAL("LOCAL"),
+    /** 集群模式：Proxy 独立部署，经 NameServer 路由。 */
     CLUSTER("CLUSTER");
 
+    /** 模式字符串标识。 */
     private final String mode;
 
     ProxyMode(String mode) {
         this.mode = mode;
     }
 
+    /** 判断字符串是否为 CLUSTER 模式（忽略大小写）。 */
     public static boolean isClusterMode(String mode) {
         if (mode == null) {
             return false;
@@ -34,6 +41,7 @@ public enum ProxyMode {
         return CLUSTER.mode.equals(mode.toUpperCase());
     }
 
+    /** 判断枚举值是否为 CLUSTER。 */
     public static boolean isClusterMode(ProxyMode mode) {
         if (mode == null) {
             return false;
@@ -41,6 +49,7 @@ public enum ProxyMode {
         return CLUSTER.equals(mode);
     }
 
+    /** 判断字符串是否为 LOCAL 模式。 */
     public static boolean isLocalMode(String mode) {
         if (mode == null) {
             return false;
@@ -48,6 +57,7 @@ public enum ProxyMode {
         return LOCAL.mode.equals(mode.toUpperCase());
     }
 
+    /** 判断枚举值是否为 LOCAL。 */
     public static boolean isLocalMode(ProxyMode mode) {
         if (mode == null) {
             return false;

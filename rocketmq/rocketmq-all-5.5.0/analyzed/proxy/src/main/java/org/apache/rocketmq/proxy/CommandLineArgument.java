@@ -16,20 +16,30 @@
  */
 package org.apache.rocketmq.proxy;
 
+/**
+ * Proxy 命令行参数 POJO，由 Commons CLI 解析后填充。
+ */
 public class CommandLineArgument {
+    /** NameServer 地址列表。 */
     private String namesrvAddr;
+    /** 本地模式下 Broker 配置文件路径。 */
     private String brokerConfigPath;
+    /** Proxy 配置文件路径。 */
     private String proxyConfigPath;
+    /** 运行模式：LOCAL 或 CLUSTER。 */
     private String proxyMode;
 
+    /** 获取 NameServer 地址。 */
     public String getNamesrvAddr() {
         return namesrvAddr;
     }
 
+    /** 设置 NameServer 地址。 */
     public void setNamesrvAddr(String namesrvAddr) {
         this.namesrvAddr = namesrvAddr;
     }
 
+    /** 获取 Broker 配置路径。 */
     public String getBrokerConfigPath() {
         return brokerConfigPath;
     }
@@ -38,6 +48,7 @@ public class CommandLineArgument {
         this.brokerConfigPath = brokerConfigPath;
     }
 
+    /** 获取 Proxy 配置路径。 */
     public String getProxyConfigPath() {
         return proxyConfigPath;
     }
@@ -46,6 +57,7 @@ public class CommandLineArgument {
         this.proxyConfigPath = proxyConfigPath;
     }
 
+    /** 获取 Proxy 运行模式字符串。 */
     public String getProxyMode() {
         return proxyMode;
     }

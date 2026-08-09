@@ -39,17 +39,26 @@ import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
 import static io.openmessaging.rocketmq.utils.OMSUtil.buildInstanceName;
 
+/**
+ * OMS Producer 抽象基类：封装 {@link DefaultMQProducer} 生命周期、配置映射与异常转换。
+ */
 abstract class AbstractOMSProducer implements ServiceLifecycle, MessageFactory {
+    /** OMS 客户端配置属性。 */
     final KeyValue properties;
+    /** 底层 RocketMQ 同步/异步 Producer。 */
     final DefaultMQProducer rocketmqProducer;
+    /** 是否已启动。 */
     private boolean started = false;
+    /** 从 OMS 属性解析出的客户端配置。 */
     private final ClientConfig clientConfig;
 
+    /** 初始化 RocketMQ Producer 并应用 OMS 配置。 */
     AbstractOMSProducer(final KeyValue properties) {
         this.properties = properties;
         this.rocketmqProducer = new DefaultMQProducer();
         this.clientConfig = BeanUtils.populate(properties, ClientConfig.class);
 
+        // 直连 NameServer 模式：从 AccessPoints 解析地址
         if ("true".equalsIgnoreCase(System.getenv("OMS_RMQ_DIRECT_NAME_SRV"))) {
             String accessPoints = clientConfig.getAccessPoints();
             if (accessPoints == null || accessPoints.isEmpty()) {
@@ -69,6 +78,7 @@ abstract class AbstractOMSProducer implements ServiceLifecycle, MessageFactory {
         properties.put(OMSBuiltinKeys.PRODUCER_ID, producerId);
     }
 
+    /** 启动底层 RocketMQ Producer（幂等）。 */
     @Override
     public synchronized void startup() {
         if (!started) {
@@ -81,6 +91,7 @@ abstract class AbstractOMSProducer implements ServiceLifecycle, MessageFactory {
         this.started = true;
     }
 
+    /** 关闭底层 Producer 并重置启动标志。 */
     @Override
     public synchronized void shutdown() {
         if (this.started) {
@@ -89,6 +100,7 @@ abstract class AbstractOMSProducer implements ServiceLifecycle, MessageFactory {
         this.started = false;
     }
 
+    /** 将 RocketMQ 客户端异常映射为 OMS 运行时/超时/格式异常。 */
     OMSRuntimeException checkProducerException(String topic, String msgId, Throwable e) {
         if (e instanceof MQClientException) {
             if (e.getCause() != null) {
@@ -111,7 +123,7 @@ abstract class AbstractOMSProducer implements ServiceLifecycle, MessageFactory {
                     }
                 }
             }
-            // Exception thrown by local.
+            // 本地校验抛出的异常（如 Topic 不存在、消息非法）
             else {
                 MQClientException clientException = (MQClientException) e;
                 if (-1 == clientException.getResponseCode()) {
@@ -126,12 +138,14 @@ abstract class AbstractOMSProducer implements ServiceLifecycle, MessageFactory {
         return new OMSRuntimeException("-1", "Send message to RocketMQ broker failed.", e);
     }
 
+    /** 校验消息类型，当前仅支持 {@link BytesMessage}。 */
     protected void checkMessageType(Message message) {
         if (!(message instanceof BytesMessage)) {
             throw new OMSNotSupportedException("-1", "Only BytesMessage is supported.");
         }
     }
 
+    /** 创建字节消息并设置目标队列（Topic）。 */
     @Override
     public BytesMessage createBytesMessage(String queue, byte[] body) {
         BytesMessage message = new BytesMessageImpl();

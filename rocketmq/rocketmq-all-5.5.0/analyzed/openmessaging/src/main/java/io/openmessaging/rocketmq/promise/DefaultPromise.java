@@ -25,22 +25,30 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * OMS {@link Promise} 默认实现：基于 wait/notify 的异步结果容器。
+ */
 public class DefaultPromise<V> implements Promise<V> {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultPromise.class);
+    /** 状态变更与 get 等待的互斥锁。 */
     private final Object lock = new Object();
+    /** 当前 Promise 状态。 */
     private volatile FutureState state = FutureState.DOING;
     private V result = null;
     private long timeout;
     private long createTime;
     private Throwable exception = null;
+    /** 完成时待通知的监听器列表。 */
     private List<FutureListener<V>> promiseListenerList;
 
+    /** 创建 Promise，默认超时 5000ms。 */
     public DefaultPromise() {
         createTime = System.currentTimeMillis();
         promiseListenerList = new ArrayList<>();
         timeout = 5000;
     }
 
+    /** 取消操作（当前恒返回 false）。 */
     @Override
     public boolean cancel(final boolean mayInterruptIfRunning) {
         return false;
@@ -61,6 +69,7 @@ public class DefaultPromise<V> implements Promise<V> {
         return result;
     }
 
+    /** 带超时阻塞获取结果，超时则标记为 CANCELLED。 */
     @Override
     public V get(final long timeout) {
         synchronized (lock) {
@@ -104,6 +113,7 @@ public class DefaultPromise<V> implements Promise<V> {
         }
     }
 
+    /** 设置成功结果并唤醒等待线程。 */
     @Override
     public boolean set(final V value) {
         if (value == null)
@@ -112,6 +122,7 @@ public class DefaultPromise<V> implements Promise<V> {
         return done();
     }
 
+    /** 设置失败原因并完成 Promise。 */
     @Override
     public boolean setFailure(final Throwable cause) {
         if (cause == null)
@@ -120,6 +131,7 @@ public class DefaultPromise<V> implements Promise<V> {
         return done();
     }
 
+    /** 注册完成监听器；若已完成则立即回调。 */
     @Override
     public void addListener(final FutureListener<V> listener) {
         if (listener == null) {
@@ -160,6 +172,7 @@ public class DefaultPromise<V> implements Promise<V> {
         return isDone() && exception == null;
     }
 
+    /** 等待超时后将状态置为 CANCELLED 并通知监听器。 */
     private void timeoutSoCancel() {
         synchronized (lock) {
             if (!isDoing()) {
@@ -172,6 +185,7 @@ public class DefaultPromise<V> implements Promise<V> {
         notifyListeners();
     }
 
+    /** 返回结果或包装异常为 {@link OMSRuntimeException} 抛出。 */
     private V getValueOrThrowable() {
         if (exception != null) {
             Throwable e = exception.getCause() != null ? exception.getCause() : exception;
@@ -199,6 +213,7 @@ public class DefaultPromise<V> implements Promise<V> {
         return true;
     }
 
+    /** 安全调用监听器，捕获回调中的异常。 */
     private void notifyListener(final FutureListener<V> listener) {
         try {
             listener.operationComplete(this);

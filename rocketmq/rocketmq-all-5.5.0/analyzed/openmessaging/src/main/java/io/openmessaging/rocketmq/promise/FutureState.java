@@ -17,34 +17,35 @@
 
 package io.openmessaging.rocketmq.promise;
 
+/**
+ * Promise 生命周期状态枚举。
+ */
 public enum FutureState {
-    /**
-     * the task is doing
-     **/
+    /** 任务进行中。 */
     DOING(0),
-    /**
-     * the task is done
-     **/
+    /** 任务已完成。 */
     DONE(1),
-    /**
-     * ths task is cancelled
-     **/
+    /** 任务已取消或超时。 */
     CANCELLED(2);
 
+    /** 状态整型编码。 */
     public final int value;
 
     private FutureState(int value) {
         this.value = value;
     }
 
+    /** 是否为取消状态。 */
     public boolean isCancelledState() {
         return this == CANCELLED;
     }
 
+    /** 是否为完成状态。 */
     public boolean isDoneState() {
         return this == DONE;
     }
 
+    /** 是否为进行中状态。 */
     public boolean isDoingState() {
         return this == DOING;
     }

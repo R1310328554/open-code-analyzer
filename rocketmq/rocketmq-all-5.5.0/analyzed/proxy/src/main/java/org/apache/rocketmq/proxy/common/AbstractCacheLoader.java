@@ -22,13 +22,19 @@ import com.google.common.util.concurrent.ListenableFutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 import javax.annotation.Nonnull;
 
+/**
+ * Guava CacheLoader 抽象基类：异步 reload 并在失败时保留旧值。
+ */
 public abstract class AbstractCacheLoader<K, V> extends CacheLoader<K, V> {
+    /** 执行后台 refresh/reload 的线程池。 */
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
+    /** 指定缓存刷新线程池。 */
     public AbstractCacheLoader(ThreadPoolExecutor cacheRefreshExecutor) {
         this.cacheRefreshExecutor = cacheRefreshExecutor;
     }
 
+    /** 异步 reload：失败时调用 onErr 并返回 oldValue。 */
     @Override
     public ListenableFuture<V> reload(@Nonnull K key, @Nonnull V oldValue) throws Exception {
         ListenableFutureTask<V> task = ListenableFutureTask.create(() -> {
@@ -43,12 +49,15 @@ public abstract class AbstractCacheLoader<K, V> extends CacheLoader<K, V> {
         return task;
     }
 
+    /** 同步 load，直接调用 getDirectly。 */
     @Override
     public V load(@Nonnull K key) throws Exception {
         return getDirectly(key);
     }
 
+    /** 子类实现：从数据源加载缓存值。 */
     protected abstract V getDirectly(K key) throws Exception;
 
+    /** 子类实现：reload 失败时的错误处理。 */
     protected abstract void onErr(K key, Exception e);
 }

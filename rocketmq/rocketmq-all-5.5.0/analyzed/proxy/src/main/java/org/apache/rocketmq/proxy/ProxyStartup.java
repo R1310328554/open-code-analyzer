@@ -53,8 +53,12 @@ import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * RocketMQ Proxy 启动入口：解析参数、初始化配置并启动 gRPC 与 Remoting 服务。
+ */
 public class ProxyStartup {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 统一管理 Proxy 各组件启停的生命周期容器。 */
     private static final ProxyStartAndShutdown PROXY_START_AND_SHUTDOWN = new ProxyStartAndShutdown();
 
     private static class ProxyStartAndShutdown extends AbstractStartAndShutdown {
@@ -64,24 +68,25 @@ public class ProxyStartup {
         }
     }
 
+    /** 主入口：按顺序启动 TLS、gRPC、Remoting 并注册关闭钩子。 */
     public static void main(String[] args) {
         try {
-            // parse argument from command line
+            // 解析命令行参数
             CommandLineArgument commandLineArgument = parseCommandLineArgument(args);
             initConfiguration(commandLineArgument);
 
-            // init thread pool monitor for proxy.
+            // 初始化 Proxy 线程池监控
             initThreadPoolMonitor();
 
             ThreadPoolExecutor executor = createServerExecutor();
 
             MessagingProcessor messagingProcessor = createMessagingProcessor();
 
-            // tls cert update
+            // TLS 证书热更新管理
             TlsCertificateManager tlsCertificateManager = new TlsCertificateManager();
             PROXY_START_AND_SHUTDOWN.appendStartAndShutdown(tlsCertificateManager);
 
-            // create grpcServer
+            // 构建 gRPC 服务（含 Channelz 与反射服务）
             GrpcServer grpcServer = GrpcServerBuilder.newBuilder(executor,
                     ConfigurationManager.getProxyConfig().getGrpcServerPort(), tlsCertificateManager)
                 .addService(createServiceProcessor(messagingProcessor))
@@ -95,7 +100,7 @@ public class ProxyStartup {
             RemotingProtocolServer remotingServer = new RemotingProtocolServer(messagingProcessor, tlsCertificateManager);
             PROXY_START_AND_SHUTDOWN.appendStartAndShutdown(remotingServer);
 
-            // start servers one by one.
+            // 依次启动已注册组件
             PROXY_START_AND_SHUTDOWN.start();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -117,6 +122,7 @@ public class ProxyStartup {
         log.info(new Date() + " rocketmq-proxy startup successfully");
     }
 
+    /** 加载环境变量与配置文件，并应用命令行覆盖项。 */
     protected static void initConfiguration(CommandLineArgument commandLineArgument) throws Exception {
         if (StringUtils.isNotBlank(commandLineArgument.getProxyConfigPath())) {
             System.setProperty(Configuration.CONFIG_PATH_PROPERTY, commandLineArgument.getProxyConfigPath());
@@ -128,6 +134,7 @@ public class ProxyStartup {
 
     }
 
+    /** 解析 mqproxy 命令行并转为 {@link CommandLineArgument}。 */
     protected static CommandLineArgument parseCommandLineArgument(String[] args) {
         CommandLine commandLine = ServerUtil.parseCmdLine("mqproxy", args,
             buildCommandlineOptions(), new DefaultParser());
@@ -140,6 +147,7 @@ public class ProxyStartup {
         return commandLineArgument;
     }
 
+    /** 构建 Proxy 专用 CLI 选项（brokerConfigPath、proxyConfigPath、proxyMode）。 */
     private static Options buildCommandlineOptions() {
         Options options = ServerUtil.buildCommandlineOptions(new Options());
 
@@ -158,6 +166,7 @@ public class ProxyStartup {
         return options;
     }
 
+    /** 将命令行非空字段写入 {@link ProxyConfig}。 */
     private static void setConfigFromCommandLineArgument(CommandLineArgument commandLineArgument) {
         if (StringUtils.isNotBlank(commandLineArgument.getNamesrvAddr())) {
             ConfigurationManager.getProxyConfig().setNamesrvAddr(commandLineArgument.getNamesrvAddr());
@@ -170,6 +179,7 @@ public class ProxyStartup {
         }
     }
 
+    /** 按 LOCAL/CLUSTER 模式创建 {@link MessagingProcessor} 并注册指标与 Broker。 */
     protected static MessagingProcessor createMessagingProcessor() {
         String proxyModeStr = ConfigurationManager.getProxyConfig().getProxyMode();
         MessagingProcessor messagingProcessor;
@@ -213,6 +223,7 @@ public class ProxyStartup {
         return application;
     }
 
+    /** 本地模式下根据配置创建并返回 {@link BrokerController}。 */
     protected static BrokerController createBrokerController() {
         ProxyConfig config = ConfigurationManager.getProxyConfig();
         List<String> brokerStartupArgList = Lists.newArrayList("-c", config.getBrokerConfigPath());
@@ -224,6 +235,7 @@ public class ProxyStartup {
         return BrokerStartup.createBrokerController(brokerStartupArgs);
     }
 
+    /** 创建 gRPC 请求线程池并注册关闭回调。 */
     public static ThreadPoolExecutor createServerExecutor() {
         ProxyConfig config = ConfigurationManager.getProxyConfig();
         int threadPoolNums = config.getGrpcThreadPoolNums();
@@ -239,6 +251,7 @@ public class ProxyStartup {
         return executor;
     }
 
+    /** 按 ProxyConfig 初始化线程池水位与 JStack 打印监控。 */
     public static void initThreadPoolMonitor() {
         ProxyConfig config = ConfigurationManager.getProxyConfig();
         ThreadPoolMonitor.config(

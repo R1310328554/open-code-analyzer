@@ -35,24 +35,31 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 import static io.openmessaging.rocketmq.utils.OMSUtil.msgConvert;
 
+/**
+ * OMS Producer 实现：提供同步、异步与单向发送能力。
+ */
 public class ProducerImpl extends AbstractOMSProducer implements Producer {
 
     private static final Logger log = LoggerFactory.getLogger(ProducerImpl.class);
 
+    /** 使用 OMS 属性构造 Producer。 */
     public ProducerImpl(final KeyValue properties) {
         super(properties);
     }
 
+    /** 返回 Producer 配置属性（含 PRODUCER_ID）。 */
     @Override
     public KeyValue attributes() {
         return properties;
     }
 
+    /** 同步发送，使用默认超时。 */
     @Override
     public SendResult send(final Message message) {
         return send(message, this.rocketmqProducer.getSendMsgTimeout());
     }
 
+    /** 同步发送，可从 properties 读取 TIMEOUT 覆盖默认超时。 */
     @Override
     public SendResult send(final Message message, final KeyValue properties) {
         long timeout = properties.containsKey(Message.BuiltinKeys.TIMEOUT)
@@ -60,11 +67,13 @@ public class ProducerImpl extends AbstractOMSProducer implements Producer {
         return send(message, timeout);
     }
 
+    /** 本地事务发送（当前未实现）。 */
     @Override
     public SendResult send(Message message, LocalTransactionExecutor branchExecutor, KeyValue attributes) {
         return null;
     }
 
+    /** 同步发送核心逻辑：转换消息、调用 RocketMQ 并校验 SEND_OK。 */
     private SendResult send(final Message message, long timeout) {
         checkMessageType(message);
         org.apache.rocketmq.common.message.Message rmqMessage = msgConvert((BytesMessage) message);
@@ -82,6 +91,7 @@ public class ProducerImpl extends AbstractOMSProducer implements Producer {
         }
     }
 
+    /** 异步发送，使用默认超时。 */
     @Override
     public Promise<SendResult> sendAsync(final Message message) {
         return sendAsync(message, this.rocketmqProducer.getSendMsgTimeout());
@@ -94,6 +104,7 @@ public class ProducerImpl extends AbstractOMSProducer implements Producer {
         return sendAsync(message, timeout);
     }
 
+    /** 异步发送：通过 {@link DefaultPromise} 包装 SendCallback 结果。 */
     private Promise<SendResult> sendAsync(final Message message, long timeout) {
         checkMessageType(message);
         org.apache.rocketmq.common.message.Message rmqMessage = msgConvert((BytesMessage) message);
@@ -117,13 +128,14 @@ public class ProducerImpl extends AbstractOMSProducer implements Producer {
         return promise;
     }
 
+    /** 单向发送，不等待 Broker 应答（异常被忽略）。 */
     @Override
     public void sendOneway(final Message message) {
         checkMessageType(message);
         org.apache.rocketmq.common.message.Message rmqMessage = msgConvert((BytesMessage) message);
         try {
             this.rocketmqProducer.sendOneway(rmqMessage);
-        } catch (Exception ignore) { //Ignore the oneway exception.
+        } catch (Exception ignore) { // 单向发送忽略异常
         }
     }
 
@@ -132,6 +144,7 @@ public class ProducerImpl extends AbstractOMSProducer implements Producer {
         sendOneway(message);
     }
 
+    /** 批量发送器（当前未实现）。 */
     @Override
     public BatchMessageSender createBatchMessageSender() {
         return null;
