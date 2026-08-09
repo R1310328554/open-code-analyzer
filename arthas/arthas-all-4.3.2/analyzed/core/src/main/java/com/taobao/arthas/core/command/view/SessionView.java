@@ -9,7 +9,9 @@ import com.taobao.text.util.RenderUtil;
 import static com.taobao.text.ui.Element.label;
 
 /**
- * Term / Tty view for session result
+ * {@code session} 命令的终端渲染视图：以键值表展示当前会话元数据。
+ * <p>
+ * 固定输出 JAVA_PID、SESSION_ID；Agent/Tunnel/Stat/用户等字段仅在模型非空时追加行。
  *
  * @author gongdewei 2020/3/27
  */
@@ -17,7 +19,7 @@ public class SessionView extends ResultView<SessionModel> {
 
     @Override
     public void draw(CommandProcess process, SessionModel result) {
-        //会话详情
+        // 会话详情：Name-Value 两列表格
         TableElement table = new TableElement().leftCellPadding(1).rightCellPadding(1);
         table.row(true, label("Name").style(Decoration.bold.bold()), label("Value").style(Decoration.bold.bold()));
         table.row("JAVA_PID", "" + result.getJavaPid()).row("SESSION_ID", "" + result.getSessionId());

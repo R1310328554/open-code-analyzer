@@ -10,14 +10,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Result view resolver for term
+ * 终端侧 {@link ResultView} 注册表与解析器。
+ * <p>
+ * 启动时按命令模块批量注册 Model→View 映射；命令执行完成后根据
+ * {@link ResultModel} 运行时类型选取对应渲染器。映射表线程安全，View 实例无状态可共享。
  *
  * @author gongdewei 2020/3/27
  */
 public class ResultViewResolver {
     private static final Logger logger = LoggerFactory.getLogger(ResultViewResolver.class);
 
-    // modelClass -> view
+    /** ResultModel 子类 → 对应 ResultView 实例 */
     private Map<Class, ResultView> resultViewMap = new ConcurrentHashMap<Class, ResultView>();
 
     public ResultViewResolver() {
@@ -25,7 +28,7 @@ public class ResultViewResolver {
     }
 
     /**
-     * 需要调用此方法初始化注册ResultView
+     * 注册全部内置 ResultView；构造器内调用，失败时记录日志但不抛出。
      */
     private void initResultViews() {
         try {
@@ -89,6 +92,7 @@ public class ResultViewResolver {
         }
     }
 
+    /** 按模型运行时 Class 查找已注册的 View；未注册时返回 null */
     public ResultView getResultView(ResultModel model) {
         return resultViewMap.get(model.getClass());
     }
@@ -99,6 +103,7 @@ public class ResultViewResolver {
         return this;
     }
 
+    /** 从 View 实例反射推断 Model 类型并注册 */
     public ResultViewResolver registerView(ResultView view) {
         Class modelClass = getModelClass(view);
         if (modelClass == null) {
@@ -107,6 +112,7 @@ public class ResultViewResolver {
         return this.registerView(modelClass, view);
     }
 
+    /** 通过无参构造实例化 View 类并完成注册 */
     public void registerView(Class<? extends ResultView> viewClass) {
         ResultView view = null;
         try {
@@ -118,9 +124,9 @@ public class ResultViewResolver {
     }
 
     /**
-     * Get model class of result view
+     * 反射解析 View 的 {@code draw(CommandProcess, T)} 第二个参数类型作为 Model Class。
      *
-     * @return
+     * @return Model 类型；找不到符合签名的 draw 方法时返回 null
      */
     public static <V extends ResultView> Class getModelClass(V view) {
         //类反射获取子类的draw方法第二个参数的ResultModel具体类型

@@ -8,7 +8,11 @@ import com.taobao.text.util.RenderUtil;
 
 
 /**
- * render for SearchMethodCommand
+ * {@code sm}（search method）命令的终端渲染视图。
+ * <p>
+ * ClassLoader 歧义时输出候选列表；详情模式渲染方法/构造器签名，
+ * 否则输出 {@code 类名 方法名+描述符} 紧凑格式。
+ *
  * @author gongdewei 2020/4/9
  */
 public class SearchMethodView extends ResultView<SearchMethodModel> {
@@ -26,15 +30,14 @@ public class SearchMethodView extends ResultView<SearchMethodModel> {
 
         if (detail) {
             if (methodInfo.isConstructor()) {
-                //render constructor
+                // 详情：渲染构造器声明（含修饰符、参数、异常）
                 process.write(RenderUtil.render(ClassUtils.renderConstructor(methodInfo), process.width()) + "\n");
             } else {
-                //render method
+                // 详情：渲染普通方法声明
                 process.write(RenderUtil.render(ClassUtils.renderMethod(methodInfo), process.width()) + "\n");
             }
         } else {
-            //java.util.List indexOf(Ljava/lang/Object;)I
-            //className methodName+Descriptor
+            // 简洁模式示例：java.util.List indexOf(Ljava/lang/Object;)I
             process.write(methodInfo.getDeclaringClass())
                     .write(" ")
                     .write(methodInfo.getMethodName())
