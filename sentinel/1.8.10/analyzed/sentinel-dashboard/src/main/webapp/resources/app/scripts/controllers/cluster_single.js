@@ -1,11 +1,14 @@
+/** 单台机器集群限流配置页控制器：查询/修改客户端或服务端 Token 配置。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ngDialog',
     'MachineService', 'ClusterStateService',
     function ($scope, $stateParams, ngDialog, MachineService, ClusterStateService) {
         $scope.app = $stateParams.app;
+        /** 客户端不支持集群限流时的 API 错误码。 */
         const UNSUPPORTED_CODE = 4041;
 
+        /** 集群模式：0=客户端，1=服务端。 */
         const CLUSTER_MODE_CLIENT = 0;
         const CLUSTER_MODE_SERVER = 1;
 
@@ -24,6 +27,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
             }
         };
 
+        /** 将命名空间集合数组转为逗号分隔字符串，供表单展示。 */
         function convertSetToString(set) {
             if (set === undefined) {
                 return '';
@@ -38,6 +42,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
             return s;
         }
 
+        /** 将逗号分隔的命名空间字符串解析为去空白后的数组。 */
         function convertStrToNamespaceSet(str) {
             if (str === undefined || str === '') {
                 return [];
@@ -50,6 +55,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
             return arr;
         }
 
+        /** 拉取当前选中机器的集群通用状态并填充 scope。 */
         function fetchMachineClusterState() {
             if (!$scope.macInputModel || $scope.macInputModel === '') {
                 return;
@@ -78,6 +84,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
 
         fetchMachineClusterState();
 
+        /** 校验集群客户端配置：Token Server 地址、端口与请求超时。 */
         function checkValidClientConfig(stateVO) {
             if (!stateVO.client || !stateVO.client.clientConfig) {
                 alert('不合法的配置');
@@ -99,6 +106,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
             return true;
         }
 
+        /** 提交集群客户端模式配置修改请求。 */
         function sendClusterClientRequest(stateVO) {
             if (!checkValidClientConfig(stateVO)) {
                 return;
@@ -130,6 +138,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
             });
         }
 
+        /** 校验集群服务端配置：命名空间集合、端口与最大 QPS。 */
         function checkValidServerConfig(stateVO) {
             if (!stateVO.server || !stateVO.server.transport) {
                 alert('不合法的配置');
@@ -156,6 +165,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
             return true;
         }
 
+        /** 提交集群服务端模式配置修改请求。 */
         function sendClusterServerRequest(stateVO) {
             if (!checkValidServerConfig(stateVO)) {
                 return;
@@ -207,6 +217,7 @@ app.controller('SentinelClusterSingleController', ['$scope', '$stateParams', 'ng
             }
         };
 
+        /** 加载应用下健康机器列表，填充机器选择下拉框。 */
         function queryAppMachines() {
             MachineService.getAppMachines($scope.app).success(
                 function (data) {

@@ -1,9 +1,10 @@
+/** 系统保护规则页控制器：LOAD/RT/线程数/QPS/CPU 等全局阈值管理。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('SystemCtl', ['$scope', '$stateParams', 'SystemService', 'ngDialog', 'MachineService',
   function ($scope, $stateParams, SystemService,
     ngDialog, MachineService) {
-    //初始化
+    // 初始化应用名、分页与机器选择器
     $scope.app = $stateParams.app;
     $scope.rulesPageConfig = {
       pageSize: 10,
@@ -27,6 +28,7 @@ app.controller('SystemCtl', ['$scope', '$stateParams', 'SystemService', 'ngDialo
     };
 
     getMachineRules();
+    /** 拉取系统保护规则并按有效阈值字段推断 grade 展示类型。 */
     function getMachineRules() {
       if (!$scope.macInputModel) {
         return;
@@ -158,6 +160,7 @@ app.controller('SystemCtl', ['$scope', '$stateParams', 'SystemService', 'ngDialo
       }
     };
 
+    /** 删除系统保护规则。 */
     function deleteRule(rule) {
       SystemService.deleteRule(rule).success(function (data) {
         if (data.code === 0) {
@@ -171,6 +174,7 @@ app.controller('SystemCtl', ['$scope', '$stateParams', 'SystemService', 'ngDialo
       });
     }
 
+    /** 新增系统保护规则（CPU 模式校验 [0,1] 区间）。 */
     function addNewRule(rule) {
       if (rule.grade == 4 && (rule.highestCpuUsage < 0 || rule.highestCpuUsage > 1)) {
         alert('CPU 使用率模式的取值范围应为 [0.0, 1.0]，对应 0% - 100%');
@@ -188,6 +192,7 @@ app.controller('SystemCtl', ['$scope', '$stateParams', 'SystemService', 'ngDialo
       });
     }
 
+    /** 保存系统保护规则修改。 */
     function saveRule(rule, edit) {
       SystemService.saveRule(rule).success(function (data) {
         if (data.code === 0) {
@@ -205,6 +210,7 @@ app.controller('SystemCtl', ['$scope', '$stateParams', 'SystemService', 'ngDialo
       });
     }
     queryAppMachines();
+    /** 加载健康机器列表。 */
     function queryAppMachines() {
       MachineService.getAppMachines($scope.app).success(
         function (data) {

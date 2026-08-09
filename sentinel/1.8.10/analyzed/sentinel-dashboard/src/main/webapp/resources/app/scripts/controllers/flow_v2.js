@@ -1,3 +1,4 @@
+/** 流控规则页控制器（v2 API）：支持 fallbackToLocalWhenFail 等扩展配置。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('FlowControllerV2', ['$scope', '$stateParams', 'FlowServiceV2', 'ngDialog',
@@ -27,6 +28,7 @@ app.controller('FlowControllerV2', ['$scope', '$stateParams', 'FlowServiceV2', '
       }
     };
 
+    /** 根据 clusterMode 与 thresholdType 生成阈值类型展示文案。 */
     $scope.generateThresholdTypeShow = (rule) => {
       if (!rule.clusterMode) {
         return '单机';
@@ -41,6 +43,7 @@ app.controller('FlowControllerV2', ['$scope', '$stateParams', 'FlowServiceV2', '
     };
 
     getMachineRules();
+    /** 拉取当前机器的流控规则列表（v2 接口）。 */
     function getMachineRules() {
       if (!$scope.macInputModel) {
         return;
@@ -143,6 +146,7 @@ app.controller('FlowControllerV2', ['$scope', '$stateParams', 'FlowServiceV2', '
       }
     };
 
+    /** 删除流控规则并刷新。 */
     function deleteRule(rule) {
       FlowService.deleteRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -154,6 +158,7 @@ app.controller('FlowControllerV2', ['$scope', '$stateParams', 'FlowServiceV2', '
       });
     };
 
+    /** 新增流控规则（含集群降级本地兜底默认值）。 */
     function addNewRule(rule) {
       FlowService.newRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -172,6 +177,7 @@ app.controller('FlowControllerV2', ['$scope', '$stateParams', 'FlowServiceV2', '
       $scope.flowRuleDialog.showAdvanceButton = true;
     };
 
+    /** 保存流控规则修改。 */
     function saveRule(rule, edit) {
       FlowService.saveRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -187,6 +193,7 @@ app.controller('FlowControllerV2', ['$scope', '$stateParams', 'FlowServiceV2', '
       });
     }
     queryAppMachines();
+    /** 加载健康机器列表。 */
     function queryAppMachines() {
       MachineService.getAppMachines($scope.app).success(
         function (data) {

@@ -1,8 +1,9 @@
+/** 熔断降级规则页控制器：按机器查询、增删改熔断规则。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('DegradeCtl', ['$scope', '$stateParams', 'DegradeService', 'ngDialog', 'MachineService',
   function ($scope, $stateParams, DegradeService, ngDialog, MachineService) {
-    //初始化
+    // 初始化应用名与分页、机器选择器配置
     $scope.app = $stateParams.app;
     $scope.rulesPageConfig = {
       pageSize: 10,
@@ -25,6 +26,7 @@ app.controller('DegradeCtl', ['$scope', '$stateParams', 'DegradeService', 'ngDia
       }
     };
     getMachineRules();
+    /** 按当前选中机器拉取熔断规则列表。 */
     function getMachineRules() {
       if (!$scope.macInputModel) {
         return;
@@ -94,6 +96,7 @@ app.controller('DegradeCtl', ['$scope', '$stateParams', 'DegradeService', 'ngDia
       }
     };
 
+    /** 将熔断策略 grade 转为中文描述（慢调用比例/异常比例/异常数）。 */
     function parseDegradeMode(grade) {
         switch (grade) {
             case 0:
@@ -133,6 +136,7 @@ app.controller('DegradeCtl', ['$scope', '$stateParams', 'DegradeService', 'ngDia
       }
     };
 
+    /** 调用服务删除规则并刷新列表。 */
     function deleteRule(rule) {
       DegradeService.deleteRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -144,6 +148,7 @@ app.controller('DegradeCtl', ['$scope', '$stateParams', 'DegradeService', 'ngDia
       });
     };
 
+    /** 新增熔断规则并关闭编辑对话框。 */
     function addNewRule(rule) {
       DegradeService.newRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -155,6 +160,7 @@ app.controller('DegradeCtl', ['$scope', '$stateParams', 'DegradeService', 'ngDia
       });
     };
 
+    /** 保存编辑后的熔断规则。 */
     function saveRule(rule, edit) {
       DegradeService.saveRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -170,6 +176,7 @@ app.controller('DegradeCtl', ['$scope', '$stateParams', 'DegradeService', 'ngDia
       });
     }
     queryAppMachines();
+    /** 加载应用下健康机器供规则绑定。 */
     function queryAppMachines() {
       MachineService.getAppMachines($scope.app).success(
         function (data) {

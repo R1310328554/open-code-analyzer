@@ -1,11 +1,10 @@
 /**
  * @ngdoc function
- * @name sentinelDashboardApp.controller:MainCtrl
+ * @name sentinelDashboardApp.controller:HomeCtrl
  * @description
- * # MainCtrl
- * Controller of the sentinelDashboardApp
+ * 控制台首页占位控制器，当前无业务逻辑。
  */
 angular.module('sentinelDashboardApp')
   .controller('HomeCtrl', ['$scope', '$position', function ($scope, $position) {
-    // do noting
+    // 暂无实现
   }]);

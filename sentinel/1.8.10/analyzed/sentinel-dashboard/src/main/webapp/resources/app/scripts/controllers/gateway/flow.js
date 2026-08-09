@@ -1,3 +1,4 @@
+/** 网关流控规则页控制器：按 Route ID 或自定义 API 配置限流。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService', 'GatewayApiService', 'ngDialog', 'MachineService',
@@ -27,6 +28,7 @@ app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService'
     };
 
     getMachineRules();
+    /** 拉取当前机器的网关流控规则。 */
     function getMachineRules() {
       if (!$scope.macInputModel) {
         return;
@@ -47,6 +49,7 @@ app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService'
     $scope.getMachineRules = getMachineRules;
 
     getApiNames();
+    /** 拉取自定义 API 名称列表，供规则资源选择。 */
     function getApiNames() {
       if (!$scope.macInputModel) {
         return;
@@ -65,6 +68,7 @@ app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService'
         });
     }
 
+    /** 统计窗口单位选项（秒/分/时/天）。 */
     $scope.intervalUnits = [{val: 0, desc: '秒'}, {val: 1, desc: '分'}, {val: 2, desc: '时'}, {val: 3, desc: '天'}];
 
     var gatewayFlowRuleDialog;
@@ -152,6 +156,7 @@ app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService'
       $scope.currentRule.paramItem.matchStrategy = null;
     };
 
+    /** 新增网关流控规则。 */
     function addNewRule(rule) {
       GatewayFlowService.newRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -163,6 +168,7 @@ app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService'
       });
     };
 
+    /** 保存网关流控规则修改。 */
     function saveRule(rule, edit) {
       GatewayFlowService.saveRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -203,6 +209,7 @@ app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService'
       }
     };
 
+    /** 删除网关流控规则。 */
     function deleteRule(rule) {
       GatewayFlowService.deleteRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -216,6 +223,7 @@ app.controller('GatewayFlowCtl', ['$scope', '$stateParams', 'GatewayFlowService'
 
     queryAppMachines();
 
+    /** 加载健康机器列表。 */
     function queryAppMachines() {
       MachineService.getAppMachines($scope.app).success(
           function (data) {

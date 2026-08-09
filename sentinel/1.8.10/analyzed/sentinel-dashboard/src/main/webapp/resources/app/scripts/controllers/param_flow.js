@@ -1,16 +1,18 @@
 /**
- * Parameter flow control controller.
- * 
+ * 热点参数限流页控制器：按机器管理 ParamFlow 规则及例外项列表。
+ *
  * @author Eric Zhao
  */
 angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scope', '$stateParams', 'ParamFlowService', 'ngDialog',
   'MachineService',
   function ($scope, $stateParams, ParamFlowService, ngDialog,
     MachineService) {
+    /** 客户端不支持热点参数限流时的错误码。 */
     const UNSUPPORTED_CODE = 4041;
     $scope.app = $stateParams.app;
     $scope.curExItem = {};
 
+    /** 热点参数允许的 Java 类型列表。 */
     $scope.paramItemClassTypeList = [
       'int', 'double', 'java.lang.String', 'long', 'float', 'char', 'byte'
     ];
@@ -36,6 +38,7 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
       }
     };
 
+      /** 更新或追加单条参数例外项（object + classType -> count）。 */
       function updateSingleParamItem(arr, v, t, c) {
           for (let i = 0; i < arr.length; i++) {
               if (arr[i].object === v && arr[i].classType === t) {
@@ -46,6 +49,7 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
           arr.push({object: v, classType: t, count: c});
       }
 
+      /** 从例外项列表移除匹配的参数项。 */
       function removeSingleParamItem(arr, v, t) {
           for (let i = 0; i < arr.length; i++) {
               if (arr[i].object === v && arr[i].classType === t) {
@@ -55,11 +59,13 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
           }
       }
 
+      /** 判断类型是否为数值型（int/double/float/long/short）。 */
       function isNumberClass(classType) {
         return classType === 'int' || classType === 'double' ||
             classType === 'float' || classType === 'long' || classType === 'short';
       }
 
+      /** 判断类型是否为 byte。 */
       function isByteClass(classType) {
           return classType === 'byte';
       }
@@ -98,6 +104,7 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
           removeSingleParamItem($scope.currentRule.rule.paramFlowItemList, v, t);
       };
 
+    /** 拉取当前机器的热点参数限流规则。 */
     function getMachineRules() {
       if (!$scope.macInputModel) {
         return;
@@ -205,6 +212,7 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
       }
     };
 
+    /** 新增规则并推送至客户端。 */
     function addNewRuleAndPush(rule) {
       ParamFlowService.addNewRule(rule).success((data) => {
         if (data.success) {
@@ -222,6 +230,7 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
       });
     }
 
+    /** 保存规则修改并推送。 */
     function saveRuleAndPush(rule, edit) {
       ParamFlowService.saveRule(rule).success(function (data) {
         if (data.success) {
@@ -244,6 +253,7 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
       });
     }
 
+    /** 按 ID 删除规则并推送。 */
     function deleteRuleAndPush(entity) {
       if (entity.id === undefined || isNaN(entity.id)) {
         alert('规则 ID 不合法！');
@@ -294,6 +304,7 @@ angular.module('sentinelDashboardApp').controller('ParamFlowController', ['$scop
 
     queryAppMachines();
 
+    /** 加载健康机器列表。 */
     function queryAppMachines() {
       MachineService.getAppMachines($scope.app).success(
         function (data) {

@@ -1,3 +1,4 @@
+/** 网关资源簇（Identity）页控制器：展示资源列表并快捷新增流控/降级规则。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService',
@@ -33,6 +34,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
     $scope.table = null;
 
     getApiNames();
+    /** 拉取自定义 API 名称，用于判断资源模式。 */
     function getApiNames() {
       if (!$scope.macInputModel) {
         return;
@@ -53,6 +55,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
 
     var gatewayFlowRuleDialog;
     var gatewayFlowRuleDialogScope;
+    /** 为指定资源打开新增网关流控规则对话框（独立 scope）。 */
     $scope.addNewGatewayFlowRule = function (resource) {
       if (!$scope.macInputModel) {
         return;
@@ -130,6 +133,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
       });
     };
 
+    /** 保存网关流控规则并跳转至流控规则页。 */
     function saveGatewayFlowRule() {
       if (!GatewayFlowService.checkRuleValid(gatewayFlowRuleDialogScope.currentRule)) {
         return;
@@ -147,6 +151,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
       });
     }
 
+    /** 保存规则后保持当前页，便于连续添加。 */
     function saveGatewayFlowRuleAndContinue() {
         if (!GatewayFlowService.checkRuleValid(gatewayFlowRuleDialogScope.currentRule)) {
             return;
@@ -161,6 +166,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
     }
 
     var degradeRuleDialog;
+    /** 为指定资源打开新增降级规则对话框。 */
     $scope.addNewDegradeRule = function (resource) {
       if (!$scope.macInputModel) {
         return;
@@ -195,6 +201,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
       });
     };
 
+    /** 保存降级规则并跳转至降级规则页。 */
     function saveDegradeRule() {
         if (!DegradeService.checkRuleValid(degradeRuleDialogScope.currentRule)) {
             return;
@@ -210,6 +217,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
       });
     }
 
+    /** 保存降级规则后继续留在当前页。 */
     function saveDegradeRuleAndContinue() {
         if (!DegradeService.checkRuleValid(degradeRuleDialogScope.currentRule)) {
             return;
@@ -224,6 +232,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
     }
 
     var searchHandler;
+    /** 防抖搜索：600ms 后按关键字刷新资源列表。 */
     $scope.searchChange = function (searchKey) {
       $timeout.cancel(searchHandler);
       searchHandler = $timeout(function () {
@@ -258,7 +267,7 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
       );
     }
 
-    // Fetch all machines by current app name.
+    // 按当前应用名加载全部机器
     queryAppMachines();
 
     $scope.$watch('macInputModel', function () {
@@ -272,11 +281,13 @@ app.controller('GatewayIdentityCtl', ['$scope', '$stateParams', 'IdentityService
     });
 
     var intervalId;
+    /** 机器或搜索条件变化时重新拉取 API 名称与资源簇。 */
     function reInitIdentityDatas() {
       getApiNames();
       queryIdentities();
     };
 
+    /** 查询机器上的 ClusterNode 资源列表（支持关键字过滤）。 */
     function queryIdentities() {
       var mac = $scope.macInputModel.split(':');
       if (mac == null || mac.length < 2) {

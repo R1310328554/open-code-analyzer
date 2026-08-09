@@ -1,3 +1,4 @@
+/** 实时监控页控制器：按资源展示 pass/block QPS 时序图表并定时刷新。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interval', '$timeout',
@@ -8,6 +9,7 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
     $scope.startTime.setMinutes($scope.endTime.getMinutes() - 30);
     $scope.startTimeFmt = formatDate($scope.startTime);
     $scope.endTimeFmt = formatDate($scope.endTime);
+    /** 将 Date 格式化为 YYYY/MM/DD HH:mm:ss 供时间选择器展示。 */
     function formatDate(date) {
       return moment(date).format('YYYY/MM/DD HH:mm:ss');
     }
@@ -21,7 +23,7 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
     };
 
     $scope.app = $stateParams.app;
-    // 数据自动刷新频率
+    /** 指标数据自动刷新间隔（毫秒）。 */
     var DATA_REFRESH_INTERVAL = 1000 * 10;
 
     $scope.servicePageConfig = {
@@ -47,6 +49,7 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
 
     var intervalId;
     reInitIdentityDatas();
+    /** 启动/重置定时拉取任务。 */
     function reInitIdentityDatas() {
       $interval.cancel(intervalId);
       queryIdentityDatas();
@@ -58,8 +61,9 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
     $scope.$on('$destroy', function () {
       $interval.cancel(intervalId);
     });
+    /** 销毁旧图表并按 metrics 数据用 G2 渲染 pass/block QPS 折线图。 */
     $scope.initAllChart = function () {
-      //revoke useless charts positively
+      // 主动销毁旧图表实例，避免内存泄漏
       while($scope.charts.length > 0) {
       	let chart = $scope.charts.pop();
       	chart.destroy();
@@ -120,10 +124,10 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
         chart.axis('timestamp', {
           label: {
             textStyle: {
-              textAlign: 'center', // 文本对齐方向，可取值为： start center end
-              fill: '#404040', // 文本的颜色
-              fontSize: '11', // 文本大小
-              //textBaseline: 'top', // 文本基准线，可取 top middle bottom，默认为middle
+              textAlign: 'center', // 文本对齐：start / center / end
+              fill: '#404040', // 文本颜色
+              fontSize: '11', // 字体大小
+              // textBaseline: 'top'，基准线可选 top/middle/bottom
             },
             autoRotate: false,
             formatter: function (text, item, index) {
@@ -176,6 +180,7 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
 
     $scope.metrics = [];
     $scope.emptyObjs = [];
+    /** 分页查询应用下各资源的排序 metric 数据。 */
     function queryIdentityDatas() {
       var params = {
         app: $scope.app,
@@ -211,7 +216,7 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
             metrics.shortData = lastOfArray(identityDatas, 6);
             $scope.metrics.push(metrics);
           });
-          // push an empty element in the last, for ng-init reasons.
+          // 末尾追加空元素，配合 ng-init 触发图表渲染
           $scope.metrics.push([]);
         } else {
           $scope.emptyServices = true;
@@ -219,6 +224,7 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
         }
       });
     };
+    /** 在缺失的时间戳处补零，保证折线图时间轴连续。 */
     function fillZeros(metricData) {
       if (!metricData || metricData.length == 0) {
         return [];
@@ -246,6 +252,7 @@ app.controller('MetricCtl', ['$scope', '$stateParams', 'MetricService', '$interv
       }
       return filledData;
     }
+    /** 取数组末尾 n 个元素（倒序），用于缩略展示。 */
     function lastOfArray(arr, n) {
       if (!arr.length) {
         return [];

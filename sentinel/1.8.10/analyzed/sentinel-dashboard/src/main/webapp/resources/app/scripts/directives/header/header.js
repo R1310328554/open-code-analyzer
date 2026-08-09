@@ -1,8 +1,8 @@
 /**
  * @ngdoc directive
- * @name izzyposWebApp.directive:adminPosHeader
+ * @name sentinelDashboardApp.directive:header
  * @description
- * # adminPosHeader
+ * 顶栏指令：展示控制台版本、会话校验与登出。
  */
 angular.module('sentinelDashboardApp')
   .directive('header', ['VersionService', 'AuthService', function () {
@@ -10,6 +10,7 @@ angular.module('sentinelDashboardApp')
       templateUrl: 'app/scripts/directives/header/header.html',
       restrict: 'E',
       replace: true,
+      /** 顶栏控制器：拉取版本号并维护登录态。 */
       controller: function ($scope, $state, $window, VersionService, AuthService) {
         VersionService.version().success(function (data) {
           if (data.code == 0) {
@@ -31,13 +32,14 @@ angular.module('sentinelDashboardApp')
             var id = JSON.parse($window.localStorage.getItem("session_sentinel_admin")).id;
             handleLogout($scope, id);
           } catch (e) {
-            // Historical version compatibility processing, fixes issue-1449
-            // If error happens while parsing, remove item in localStorage and redirect to login page.
+            // 历史版本 localStorage 格式兼容处理，修复 issue-1449
+            // 解析失败则清除缓存并跳转登录页
             $window.localStorage.removeItem("session_sentinel_admin");
             $state.go('login');
           }
         }
 
+        /** 内置账号 FAKE_EMP_ID 不显示登出按钮。 */
         function handleLogout($scope, id) {
           if (id == 'FAKE_EMP_ID') {
             $scope.showLogout = false;
@@ -46,6 +48,7 @@ angular.module('sentinelDashboardApp')
           }
         }
 
+        /** 调用登出接口并清除本地会话。 */
         $scope.logout = function () {
           AuthService.logout().success(function (data) {
             if (data.code == 0) {

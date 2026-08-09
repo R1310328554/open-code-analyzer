@@ -1,3 +1,4 @@
+/** 网关自定义 API 定义页控制器：管理 API 名称与匹配规则（predicateItems）。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 'ngDialog', 'MachineService',
@@ -27,6 +28,7 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
     };
 
     getApis();
+    /** 拉取网关 API 定义并按 predicateItem 展开为多行表格数据。 */
     function getApis() {
       if (!$scope.macInputModel) {
         return;
@@ -36,7 +38,7 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
       GatewayApiService.queryApis($scope.app, mac[0], mac[1]).success(
         function (data) {
           if (data.code == 0 && data.data) {
-            // To merge rows for api who has more than one predicateItems, here we build data manually
+            // 含多个 predicateItem 的 API 需手动展开行，以便表格 rowspan 合并
             $scope.apis = [];
 
             data.data.forEach(function(api) {
@@ -49,11 +51,11 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
                 newItem["apiName"] = api["apiName"];
                 newItem["pattern"] = item["pattern"];
                 newItem["matchStrategy"] = item["matchStrategy"];
-                // The itemSize indicates how many rows to merge, by using rowspan="{{api.itemSize}}" in <td> tag
+                // itemSize 供模板 rowspan 合并同一 API 的多行
                 newItem["itemSize"] = api["predicateItems"].length;
-                // Mark the flag of first item to zero, indicates the start row to merge
+                // firstFlag=0 标记合并块的首行
                 newItem["firstFlag"] = index == 0 ? 0 : 1;
-                // Still hold the data of predicateItems, in order to bind data in edit dialog html
+                // 保留完整 predicateItems 供编辑对话框绑定
                 newItem["predicateItems"] = api["predicateItems"];
                 $scope.apis.push(newItem);
               });
@@ -127,6 +129,7 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
       }
     };
 
+    /** 新增自定义 API 定义。 */
     function addNewApi(api) {
       GatewayApiService.newApi(api).success(function (data) {
         if (data.code == 0) {
@@ -138,6 +141,7 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
       });
     };
 
+    /** 保存 API 定义修改。 */
     function saveApi(api, edit) {
       GatewayApiService.saveApi(api).success(function (data) {
         if (data.code == 0) {
@@ -178,6 +182,7 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
       }
     };
 
+    /** 删除自定义 API 定义。 */
     function deleteApi(api) {
       GatewayApiService.deleteApi(api).success(function (data) {
         if (data.code == 0) {
@@ -202,7 +207,7 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
 
     $scope.removeMatchPattern = function($index) {
       if ($scope.currentApi.predicateItems.length <= 1) {
-        // Should never happen since no remove button will display when only one predicateItem.
+        // 仅剩一条匹配规则时不应触发（UI 已隐藏删除按钮）
         alert('至少有一个匹配规则');
         return;
       }
@@ -210,6 +215,7 @@ app.controller('GatewayApiCtl', ['$scope', '$stateParams', 'GatewayApiService', 
     };
 
     queryAppMachines();
+    /** 加载健康机器列表。 */
     function queryAppMachines() {
       MachineService.getAppMachines($scope.app).success(
         function (data) {

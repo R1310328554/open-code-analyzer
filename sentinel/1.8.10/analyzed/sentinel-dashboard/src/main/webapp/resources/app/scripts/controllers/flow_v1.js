@@ -1,3 +1,4 @@
+/** 流控规则页控制器（v1 API）：单机/集群流控规则的 CRUD。 */
 var app = angular.module('sentinelDashboardApp');
 
 app.controller('FlowControllerV1', ['$scope', '$stateParams', 'FlowServiceV1', 'ngDialog',
@@ -27,6 +28,7 @@ app.controller('FlowControllerV1', ['$scope', '$stateParams', 'FlowServiceV1', '
       }
     };
 
+    /** 根据 clusterMode 与 thresholdType 生成阈值类型展示文案。 */
     $scope.generateThresholdTypeShow = (rule) => {
       if (!rule.clusterMode) {
         return '单机';
@@ -41,6 +43,7 @@ app.controller('FlowControllerV1', ['$scope', '$stateParams', 'FlowServiceV1', '
     };
 
     getMachineRules();
+    /** 拉取当前机器的流控规则列表。 */
     function getMachineRules() {
       if (!$scope.macInputModel) {
         return;
@@ -142,6 +145,7 @@ app.controller('FlowControllerV1', ['$scope', '$stateParams', 'FlowServiceV1', '
       }
     };
 
+    /** 删除流控规则并刷新。 */
     function deleteRule(rule) {
       FlowService.deleteRule(rule).success(function (data) {
         if (data.code == 0) {
@@ -153,6 +157,7 @@ app.controller('FlowControllerV1', ['$scope', '$stateParams', 'FlowServiceV1', '
       });
     };
 
+    /** 新增流控规则。 */
     function addNewRule(rule) {
       FlowService.newRule(rule).success(function (data) {
         if (data.code === 0) {
@@ -171,6 +176,7 @@ app.controller('FlowControllerV1', ['$scope', '$stateParams', 'FlowServiceV1', '
       $scope.flowRuleDialog.showAdvanceButton = true;
     };
 
+    /** 保存流控规则修改。 */
     function saveRule(rule, edit) {
       FlowService.saveRule(rule).success(function (data) {
         if (data.code === 0) {
@@ -186,6 +192,7 @@ app.controller('FlowControllerV1', ['$scope', '$stateParams', 'FlowServiceV1', '
       });
     }
     queryAppMachines();
+    /** 加载健康机器列表。 */
     function queryAppMachines() {
       MachineService.getAppMachines($scope.app).success(
         function (data) {
