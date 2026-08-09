@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:51:19Z",
-  "files": [
-    "client/src/main/java/org/apache/rocketmq/client/producer/RequestResponseFuture.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/SendCallback.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/SendResult.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/SendStatus.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/TransactionCheckListener.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/TransactionListener.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/TransactionMQProducer.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/TransactionSendResult.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/selector/SelectMessageQueueByHash.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/selector/SelectMessageQueueByMachineRoom.java",
-    "client/src/main/java/org/apache/rocketmq/client/producer/selector/SelectMessageQueueByRandom.java",
-    "client/src/main/java/org/apache/rocketmq/client/rpchook/NamespaceRpcHook.java",
-    "client/src/main/java/org/apache/rocketmq/client/stat/ConsumerStatsManager.java",
-    "client/src/main/java/org/apache/rocketmq/client/trace/TraceBean.java",
-    "client/src/main/java/org/apache/rocketmq/client/trace/TraceConstants.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1158,
-  "done": 315
+  "done": 330
 }
