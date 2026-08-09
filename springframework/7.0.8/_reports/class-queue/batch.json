@@ -1,27 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:47:21Z",
-  "files": [
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/LazySingletonAspectInstanceFactoryDecorator.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/MetadataAwareAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/NotAnAtAspectException.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/PrototypeAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/ReflectiveAspectJAdvisorFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/SimpleMetadataAwareAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/SingletonMetadataAwareAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/autoproxy/AspectJAwareAdvisorAutoProxyCreator.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/autoproxy/AspectJPrecedenceComparator.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AbstractInterceptorDrivenBeanDefinitionDecorator.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AdviceEntry.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AdvisorComponentDefinition.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AdvisorEntry.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AopConfigUtils.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AopNamespaceHandler.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AopNamespaceUtils.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AspectComponentDefinition.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AspectEntry.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/AspectJAutoProxyBeanDefinitionParser.java",
-    "spring-aop/src/main/java/org/springframework/aop/config/MethodLocatingFactoryBean.java"
-  ],
+  "files": [],
   "remaining_pending": 384,
   "done": 1107
 }
