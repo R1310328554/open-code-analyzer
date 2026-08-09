@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:45:10Z",
   "files": [
-    "redisson/src/main/java/org/redisson/reactive/MapReactiveIterator.java",
-    "redisson/src/main/java/org/redisson/reactive/PublisherAdder.java",
-    "redisson/src/main/java/org/redisson/reactive/ReactiveProxyBuilder.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonArrayReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonBatchReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonBinaryStreamReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonBlockingDequeReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonBlockingQueueReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonKeysReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonLexSortedSetReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonListMultimapCacheReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonListMultimapReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonListReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonMapCacheReactive.java",
-    "redisson/src/main/java/org/redisson/reactive/RedissonMapReactive.java",
     "redisson/src/main/java/org/redisson/reactive/RedissonMapsReactive.java",
     "redisson/src/main/java/org/redisson/reactive/RedissonReadWriteLockReactive.java",
     "redisson/src/main/java/org/redisson/reactive/RedissonReliableTopicReactive.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/redisnode/RedisNode.java"
   ],
   "remaining_pending": 122,
-  "done": 2670
+  "done": 2685
 }
