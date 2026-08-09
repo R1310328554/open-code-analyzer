@@ -20,26 +20,33 @@ package org.apache.rocketmq.remoting.protocol.body;
 import org.apache.rocketmq.common.message.MessageRequestMode;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 设置 Topic 消息请求模式（Pull/Pop）的请求体：指定消费组、模式及 Pop 队列共享数。
+ */
 public class SetMessageRequestModeRequestBody extends RemotingSerializable {
 
+    /** 目标 Topic 名称。 */
     private String topic;
 
+    /** 消费组名称。 */
     private String consumerGroup;
 
+    /** 消息请求模式，默认 Pull。 */
     private MessageRequestMode mode = MessageRequestMode.PULL;
 
-    /*
-    consumer working in pop mode could share the MessageQueues assigned to the N (N = popShareQueueNum) consumers following it in the cid list
-     */
+    /** Pop 模式下，当前消费者可与 cid 列表中后续 N（N=popShareQueueNum）个消费者共享已分配的 MessageQueue。 */
+    /** Pop 队列共享数量，0 表示不共享。 */
     private int popShareQueueNum = 0;
 
     public SetMessageRequestModeRequestBody() {
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
@@ -52,6 +59,7 @@ public class SetMessageRequestModeRequestBody extends RemotingSerializable {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回消息请求模式。 */
     public MessageRequestMode getMode() {
         return mode;
     }
@@ -60,6 +68,7 @@ public class SetMessageRequestModeRequestBody extends RemotingSerializable {
         this.mode = mode;
     }
 
+    /** 返回 Pop 队列共享数。 */
     public int getPopShareQueueNum() {
         return popShareQueueNum;
     }

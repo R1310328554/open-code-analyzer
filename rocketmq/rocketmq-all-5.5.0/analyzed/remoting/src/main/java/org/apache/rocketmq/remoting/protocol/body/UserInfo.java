@@ -16,16 +16,24 @@
  */
 package org.apache.rocketmq.remoting.protocol.body;
 
+/**
+ * ACL 用户信息：用户名、密码、类型及状态，用于权限认证与账户管理。
+ */
 public class UserInfo {
 
+    /** 用户名。 */
     private String username;
 
+    /** 密码（传输或存储时通常已加密）。 */
     private String password;
 
+    /** 用户类型（如 SUPER、NORMAL）。 */
     private String userType;
 
+    /** 账户状态（启用/禁用等）。 */
     private String userStatus;
 
+    /** 三字段工厂方法。 */
     public static UserInfo of(String username, String password, String userType) {
         UserInfo userInfo = new UserInfo();
         userInfo.setUsername(username);
@@ -34,6 +42,7 @@ public class UserInfo {
         return userInfo;
     }
 
+    /** 四字段工厂方法，含账户状态。 */
     public static UserInfo of(String username, String password, String userType, String userStatus) {
         UserInfo userInfo = new UserInfo();
         userInfo.setUsername(username);
@@ -43,6 +52,7 @@ public class UserInfo {
         return userInfo;
     }
 
+    /** 返回用户名。 */
     public String getUsername() {
         return username;
     }
@@ -59,6 +69,7 @@ public class UserInfo {
         this.password = password;
     }
 
+    /** 返回用户类型。 */
     public String getUserType() {
         return userType;
     }

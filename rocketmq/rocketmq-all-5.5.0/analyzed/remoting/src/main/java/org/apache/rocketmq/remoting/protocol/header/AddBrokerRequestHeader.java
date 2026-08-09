@@ -25,8 +25,12 @@ import org.apache.rocketmq.remoting.annotation.CFNullable;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 向集群添加 Broker 的请求头：可选指定 Broker 配置文件路径。
+ */
 @RocketMQAction(value = RequestCode.ADD_BROKER, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class AddBrokerRequestHeader implements CommandCustomHeader {
+    /** Broker 配置文件路径，可为空。 */
     @CFNullable
     private String configPath;
 
@@ -36,10 +40,12 @@ public class AddBrokerRequestHeader implements CommandCustomHeader {
 
     }
 
+    /** 返回配置文件路径。 */
     public String getConfigPath() {
         return configPath;
     }
 
+    /** 设置配置文件路径。 */
     public void setConfigPath(String configPath) {
         this.configPath = configPath;
     }

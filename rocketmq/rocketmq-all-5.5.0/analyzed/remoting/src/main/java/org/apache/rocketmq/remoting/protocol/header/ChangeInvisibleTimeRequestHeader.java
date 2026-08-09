@@ -26,30 +26,36 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * 修改 Pop 消息不可见时间请求头：延长或缩短消息重投前的等待窗口。
+ */
 @RocketMQAction(value = RequestCode.CHANGE_MESSAGE_INVISIBLETIME, action = Action.SUB)
 public class ChangeInvisibleTimeRequestHeader extends TopicQueueRequestHeader {
+    /** 消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Topic。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
     @CFNotNull
     private Integer queueId;
-    /**
-     * startOffset popTime invisibleTime queueId
-     */
+    /** Pop 附加信息：startOffset、popTime、invisibleTime、queueId。 */
     @CFNotNull
     private String extraInfo;
 
     @CFNotNull
     private Long offset;
 
+    /** 新的不可见时长（毫秒）。 */
     @CFNotNull
     private Long invisibleTime;
 
+    /** Lite Topic 名（可选）。 */
     private String liteTopic;
 
+    /** 是否挂起等待（长轮询场景）。 */
     private boolean suspend = false;
 
     @Override
@@ -64,6 +70,7 @@ public class ChangeInvisibleTimeRequestHeader extends TopicQueueRequestHeader {
         return offset;
     }
 
+    /** 返回不可见时长。 */
     public Long getInvisibleTime() {
         return invisibleTime;
     }
@@ -80,9 +87,7 @@ public class ChangeInvisibleTimeRequestHeader extends TopicQueueRequestHeader {
         this.extraInfo = extraInfo;
     }
 
-    /**
-     * startOffset popTime invisibleTime queueId
-     */
+    /** 返回 Pop 附加信息。 */
     public String getExtraInfo() {
         return extraInfo;
     }
@@ -115,6 +120,7 @@ public class ChangeInvisibleTimeRequestHeader extends TopicQueueRequestHeader {
         this.liteTopic = liteTopic;
     }
 
+    /** 返回是否挂起等待。 */
     public boolean isSuspend() {
         return suspend;
     }

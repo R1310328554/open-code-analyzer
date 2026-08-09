@@ -20,10 +20,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Broker 上 Topic 名称列表及所属 Broker 地址，用于路由查询响应。
+ */
 public class TopicList extends RemotingSerializable {
+    /** Topic 名称集合。 */
     private Set<String> topicList = ConcurrentHashMap.newKeySet();
+    /** 承载上述 Topic 的 Broker 地址。 */
     private String brokerAddr;
 
+    /** 返回 Topic 名称集合。 */
     public Set<String> getTopicList() {
         return topicList;
     }
@@ -32,6 +38,7 @@ public class TopicList extends RemotingSerializable {
         this.topicList = topicList;
     }
 
+    /** 返回 Broker 地址。 */
     public String getBrokerAddr() {
         return brokerAddr;
     }

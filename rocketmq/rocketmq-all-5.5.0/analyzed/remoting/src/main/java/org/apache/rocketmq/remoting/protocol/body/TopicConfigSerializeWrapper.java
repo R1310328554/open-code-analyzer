@@ -23,11 +23,17 @@ import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Topic 配置序列化包装：Broker 端 Topic 配置表及数据版本，用于注册与同步。
+ */
 public class TopicConfigSerializeWrapper extends RemotingSerializable {
+    /** Topic 名 → {@link TopicConfig} 配置。 */
     private ConcurrentMap<String, TopicConfig> topicConfigTable =
         new ConcurrentHashMap<>();
+    /** Topic 配置数据版本。 */
     private DataVersion dataVersion = new DataVersion();
 
+    /** 返回 Topic 配置表。 */
     public ConcurrentMap<String, TopicConfig> getTopicConfigTable() {
         return topicConfigTable;
     }
@@ -36,6 +42,7 @@ public class TopicConfigSerializeWrapper extends RemotingSerializable {
         this.topicConfigTable = topicConfigTable;
     }
 
+    /** 返回数据版本。 */
     public DataVersion getDataVersion() {
         return dataVersion;
     }

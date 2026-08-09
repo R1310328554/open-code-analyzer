@@ -20,14 +20,20 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 修改不可见时间响应头：返回 Pop 时间、新不可见时长及 Revive 队列 ID。
+ */
 public class ChangeInvisibleTimeResponseHeader implements CommandCustomHeader {
 
 
+    /** 消息 Pop 时间戳。 */
     @CFNotNull
     private long popTime;
+    /** 生效后的不可见时长（毫秒）。 */
     @CFNotNull
     private long invisibleTime;
 
+    /** Revive 主题队列 ID，用于超时重投。 */
     @CFNotNull
     private int reviveQid;
 
@@ -35,6 +41,7 @@ public class ChangeInvisibleTimeResponseHeader implements CommandCustomHeader {
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Pop 时间戳。 */
     public long getPopTime() {
         return popTime;
     }
@@ -43,6 +50,7 @@ public class ChangeInvisibleTimeResponseHeader implements CommandCustomHeader {
         this.popTime = popTime;
     }
 
+    /** 返回不可见时长。 */
     public long getInvisibleTime() {
         return invisibleTime;
     }
@@ -51,6 +59,7 @@ public class ChangeInvisibleTimeResponseHeader implements CommandCustomHeader {
         this.invisibleTime = invisibleTime;
     }
 
+    /** 返回 Revive 队列 ID。 */
     public int getReviveQid() {
         return reviveQid;
     }

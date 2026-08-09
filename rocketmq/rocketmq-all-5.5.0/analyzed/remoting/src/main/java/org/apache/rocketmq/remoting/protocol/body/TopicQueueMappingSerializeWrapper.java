@@ -22,10 +22,16 @@ import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingDetail;
 
+/**
+ * 静态 Topic 队列映射序列化包装：Topic → {@link TopicQueueMappingDetail} 及数据版本。
+ */
 public class TopicQueueMappingSerializeWrapper extends RemotingSerializable {
+    /** Topic → 队列映射详情。 */
     private Map<String/* topic */, TopicQueueMappingDetail> topicQueueMappingInfoMap;
+    /** 映射数据版本。 */
     private DataVersion dataVersion = new DataVersion();
 
+    /** 返回 Topic 队列映射表。 */
     public Map<String, TopicQueueMappingDetail> getTopicQueueMappingInfoMap() {
         return topicQueueMappingInfoMap;
     }
@@ -34,6 +40,7 @@ public class TopicQueueMappingSerializeWrapper extends RemotingSerializable {
         this.topicQueueMappingInfoMap = topicQueueMappingInfoMap;
     }
 
+    /** 返回数据版本。 */
     public DataVersion getDataVersion() {
         return dataVersion;
     }

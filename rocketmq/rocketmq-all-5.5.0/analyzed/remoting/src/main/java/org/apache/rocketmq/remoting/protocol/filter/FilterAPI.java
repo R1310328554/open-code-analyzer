@@ -22,17 +22,24 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
 import java.util.Arrays;
 
+/**
+ * 订阅过滤表达式构建工具：将 Topic 与订阅串解析为 {@link SubscriptionData}。
+ * 支持 Tag（|| 分隔）与 SQL92 等表达式类型。
+ */
 public class FilterAPI {
 
+    /** 按 Topic 与 Tag 订阅串构建订阅数据（默认 Tag 类型）。 */
     public static SubscriptionData buildSubscriptionData(String topic, String subString) throws Exception {
         final SubscriptionData subscriptionData = new SubscriptionData();
         subscriptionData.setTopic(topic);
         subscriptionData.setSubString(subString);
 
+        // 空串或 SUB_ALL 表示订阅全部 Tag
         if (StringUtils.isEmpty(subString) || subString.equals(SubscriptionData.SUB_ALL)) {
             subscriptionData.setSubString(SubscriptionData.SUB_ALL);
             return subscriptionData;
         }
+        // 以 || 分割多 Tag
         String[] tags = subString.split("\\|\\|");
         if (tags.length > 0) {
             Arrays.stream(tags).map(String::trim).filter(tag -> !tag.isEmpty()).forEach(tag -> {
@@ -40,12 +47,13 @@ public class FilterAPI {
                 subscriptionData.getCodeSet().add(tag.hashCode());
             });
         } else {
-            throw new Exception("subString split error");
+            throw new Exception("订阅串分割失败");
         }
 
         return subscriptionData;
     }
 
+    /** 构建订阅数据并指定表达式类型（Tag/SQL92 等）。 */
     public static SubscriptionData buildSubscriptionData(String topic, String subString, String expressionType) throws Exception {
         final SubscriptionData subscriptionData = buildSubscriptionData(topic, subString);
         if (StringUtils.isNotBlank(expressionType)) {
@@ -54,6 +62,7 @@ public class FilterAPI {
         return subscriptionData;
     }
 
+    /** 统一入口：按 type 选择 Tag 或通用表达式构建逻辑。 */
     public static SubscriptionData build(final String topic, final String subString,
         final String type) throws Exception {
         if (ExpressionType.TAG.equals(type) || type == null) {
@@ -61,7 +70,7 @@ public class FilterAPI {
         }
 
         if (StringUtils.isEmpty(subString)) {
-            throw new IllegalArgumentException("Expression can't be null! " + type);
+            throw new IllegalArgumentException("非 Tag 类型时表达式不可为空: " + type);
         }
 
         SubscriptionData subscriptionData = new SubscriptionData();

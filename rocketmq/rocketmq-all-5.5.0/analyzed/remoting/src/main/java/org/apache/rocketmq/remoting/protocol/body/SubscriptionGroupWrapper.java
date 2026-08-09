@@ -23,13 +23,20 @@ import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 订阅组元数据序列化包装：含订阅组表、禁消费表及数据版本号。
+ */
 public class SubscriptionGroupWrapper extends RemotingSerializable {
+    /** groupName → 订阅组配置。 */
     private ConcurrentMap<String, SubscriptionGroupConfig> subscriptionGroupTable =
         new ConcurrentHashMap<>(1024);
+    /** groupName →（Topic → 禁消费标志）映射。 */
     private ConcurrentMap<String, ConcurrentMap<String, Integer>> forbiddenTable =
         new ConcurrentHashMap<>(1024);
+    /** 订阅组数据版本，用于增量同步。 */
     private DataVersion dataVersion = new DataVersion();
 
+    /** 返回订阅组配置表。 */
     public ConcurrentMap<String, SubscriptionGroupConfig> getSubscriptionGroupTable() {
         return subscriptionGroupTable;
     }
@@ -39,6 +46,7 @@ public class SubscriptionGroupWrapper extends RemotingSerializable {
         this.subscriptionGroupTable = subscriptionGroupTable;
     }
 
+    /** 返回禁消费表。 */
     public ConcurrentMap<String, ConcurrentMap<String, Integer>> getForbiddenTable() {
         return forbiddenTable;
     }
@@ -47,6 +55,7 @@ public class SubscriptionGroupWrapper extends RemotingSerializable {
         this.forbiddenTable = forbiddenTable;
     }
 
+    /** 返回数据版本。 */
     public DataVersion getDataVersion() {
         return dataVersion;
     }

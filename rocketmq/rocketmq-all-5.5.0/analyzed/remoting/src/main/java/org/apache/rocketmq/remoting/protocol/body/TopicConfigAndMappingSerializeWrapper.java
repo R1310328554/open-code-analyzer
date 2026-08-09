@@ -23,14 +23,21 @@ import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingDetail;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingInfo;
 
+/**
+ * Topic 配置与静态 Topic 队列映射的联合序列化包装，继承 {@link TopicConfigSerializeWrapper}。
+ */
 public class TopicConfigAndMappingSerializeWrapper extends TopicConfigSerializeWrapper {
+    /** Topic → 队列映射概要信息。 */
     private Map<String/* topic */, TopicQueueMappingInfo> topicQueueMappingInfoMap = new ConcurrentHashMap<>();
 
+    /** Topic → 队列映射详情。 */
     private Map<String/* topic */, TopicQueueMappingDetail> topicQueueMappingDetailMap = new ConcurrentHashMap<>();
 
+    /** 映射数据版本号。 */
     private DataVersion mappingDataVersion = new DataVersion();
 
 
+    /** 返回 Topic 队列映射概要表。 */
     public Map<String, TopicQueueMappingInfo> getTopicQueueMappingInfoMap() {
         return topicQueueMappingInfoMap;
     }
@@ -39,6 +46,7 @@ public class TopicConfigAndMappingSerializeWrapper extends TopicConfigSerializeW
         this.topicQueueMappingInfoMap = topicQueueMappingInfoMap;
     }
 
+    /** 返回 Topic 队列映射详情表。 */
     public Map<String, TopicQueueMappingDetail> getTopicQueueMappingDetailMap() {
         return topicQueueMappingDetailMap;
     }
@@ -55,6 +63,7 @@ public class TopicConfigAndMappingSerializeWrapper extends TopicConfigSerializeW
         this.mappingDataVersion = mappingDataVersion;
     }
 
+    /** 从 Topic 配置包装转换为带映射信息的包装。 */
     public static TopicConfigAndMappingSerializeWrapper from(TopicConfigSerializeWrapper wrapper) {
         if (wrapper instanceof  TopicConfigAndMappingSerializeWrapper) {
             return (TopicConfigAndMappingSerializeWrapper) wrapper;

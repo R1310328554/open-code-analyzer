@@ -21,20 +21,27 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 订阅组配置列表 Remoting 体：批量传输 {@link SubscriptionGroupConfig} 条目。
+ */
 public class SubscriptionGroupList extends RemotingSerializable {
+    /** 订阅组配置列表，不可为空。 */
     @CFNotNull
     private List<SubscriptionGroupConfig> groupConfigList;
 
     public SubscriptionGroupList() {}
 
+    /** 以给定配置列表构造。 */
     public SubscriptionGroupList(List<SubscriptionGroupConfig> groupConfigList) {
         this.groupConfigList = groupConfigList;
     }
 
+    /** 返回订阅组配置列表。 */
     public List<SubscriptionGroupConfig> getGroupConfigList() {
         return groupConfigList;
     }
 
+    /** 设置订阅组配置列表。 */
     public void setGroupConfigList(List<SubscriptionGroupConfig> groupConfigList) {
         this.groupConfigList = groupConfigList;
     }

@@ -21,15 +21,22 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 同步状态集（SyncStateSet）：Controller 模式下参与同步复制的 BrokerId 集合及纪元。
+ */
 public class SyncStateSet extends RemotingSerializable {
+    /** 同步副本 BrokerId 集合。 */
     private Set<Long> syncStateSet;
+    /** 同步状态集纪元，变更时递增。 */
     private int syncStateSetEpoch;
 
+    /** 以副本集合与纪元构造。 */
     public SyncStateSet(Set<Long> syncStateSet, int syncStateSetEpoch) {
         this.syncStateSet = new HashSet<>(syncStateSet);
         this.syncStateSetEpoch = syncStateSetEpoch;
     }
 
+    /** 返回同步副本集合的防御性拷贝。 */
     public Set<Long> getSyncStateSet() {
         return new HashSet<>(syncStateSet);
     }
@@ -38,6 +45,7 @@ public class SyncStateSet extends RemotingSerializable {
         this.syncStateSet = new HashSet<>(syncStateSet);
     }
 
+    /** 返回同步状态集纪元。 */
     public int getSyncStateSetEpoch() {
         return syncStateSetEpoch;
     }

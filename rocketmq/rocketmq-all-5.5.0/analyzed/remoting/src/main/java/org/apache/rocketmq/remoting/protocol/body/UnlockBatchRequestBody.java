@@ -23,12 +23,20 @@ import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 批量解锁 MessageQueue 请求体：Pop 消费模式下释放已锁定的队列。
+ */
 public class UnlockBatchRequestBody extends RemotingSerializable {
+    /** 消费组名称。 */
     private String consumerGroup;
+    /** 发起解锁的客户端 ID。 */
     private String clientId;
+    /** 是否仅在本 Broker 解锁，默认 false。 */
     private boolean onlyThisBroker = false;
+    /** 待解锁的 MessageQueue 集合。 */
     private Set<MessageQueue> mqSet = new HashSet<>();
 
+    /** 返回消费组。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
@@ -53,6 +61,7 @@ public class UnlockBatchRequestBody extends RemotingSerializable {
         this.onlyThisBroker = onlyThisBroker;
     }
 
+    /** 返回待解锁队列集合。 */
     public Set<MessageQueue> getMqSet() {
         return mqSet;
     }

@@ -26,22 +26,31 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * Pop 消息确认（ACK）请求头：标识消费组、Topic、队列、位点及 Pop 附加信息。
+ */
 @RocketMQAction(value = RequestCode.ACK_MESSAGE, action = Action.SUB)
 public class AckMessageRequestHeader extends TopicQueueRequestHeader {
+    /** 消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Topic。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 队列 ID。 */
     @CFNotNull
     private Integer queueId;
+    /** Pop 附加信息（含 startOffset、popTime 等）。 */
     @CFNotNull
     private String extraInfo;
 
+    /** 消息消费位点。 */
     @CFNotNull
     private Long offset;
 
+    /** Lite Topic 名（Lite 消费场景可选）。 */
     private String liteTopic;
 
     @Override
@@ -52,6 +61,7 @@ public class AckMessageRequestHeader extends TopicQueueRequestHeader {
         this.offset = offset;
     }
 
+    /** 返回消费位点。 */
     public Long getOffset() {
         return offset;
     }
@@ -64,6 +74,7 @@ public class AckMessageRequestHeader extends TopicQueueRequestHeader {
         this.extraInfo = extraInfo;
     }
 
+    /** 返回 Pop 附加信息。 */
     public String getExtraInfo() {
         return extraInfo;
     }
