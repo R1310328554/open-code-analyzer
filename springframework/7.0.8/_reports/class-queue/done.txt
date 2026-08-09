@@ -95,3 +95,15 @@ spring-beans/src/main/java/org/springframework/beans/factory/annotation/Lookup.j
 spring-beans/src/main/java/org/springframework/beans/factory/annotation/ParameterResolutionDelegate.java
 spring-beans/src/main/java/org/springframework/beans/factory/annotation/Qualifier.java
 spring-beans/src/main/java/org/springframework/beans/factory/annotation/QualifierAnnotationAutowireCandidateResolver.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/PreferencesPlaceholderConfigurer.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/PropertiesFactoryBean.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/ProviderCreatingFactoryBean.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/RuntimeBeanNameReference.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/RuntimeBeanReference.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/Scope.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/SetFactoryBean.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/SingletonBeanRegistry.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/SmartInstantiationAwareBeanPostProcessor.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/TypedStringValue.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/YamlMapFactoryBean.java
+spring-beans/src/main/java/org/springframework/beans/factory/config/YamlPropertiesFactoryBean.java
