@@ -25,22 +25,22 @@ import java.util.Set;
 /**
  * Reliable queue implementation based on Stream object.
  * <p>
- * Unlike regular Valkey or Redis based queues, this implementation provides features like:
+ * 与常规 Valkey/Redis 队列不同，本实现提供如下能力：
  * <ul>
- *   <li>Message acknowledgment to confirm successful processing</li>
- *   <li>Message negative acknowledgment to redeliver a message or delete it if DLQ is not defined</li>
- *   <li>Redundancy and synchronous replication</li>
- *   <li>Deduplication by id or hash within a defined time interval</li>
- *   <li>Bulk operations</li>
- *   <li>Configurable queue size limit</li>
- *   <li>Configurable message size limit</li>
- *   <li>Configurable message expiration timeout</li>
- *   <li>Configurable message visibility timeout</li>
- *   <li>Configurable message priority</li>
- *   <li>Configurable message delay</li>
- *   <li>Configurable message delivery limit</li>
- *   <li>Automatic redelivery of unacknowledged messages</li>
- *   <li>Dead letter queue support for failed message handling</li>
+ *   <li>消息确认（ACK）以标记处理成功</li>
+ *   <li>否定确认（NACK）触发重投；未配置 DLQ 时可能删除消息</li>
+ *   <li>冗余与同步复制</li>
+ *   <li>按 ID 或哈希在指定时间窗口内去重</li>
+ *   <li>批量操作</li>
+ *   <li>可配置队列大小上限</li>
+ *   <li>可配置单条消息大小上限</li>
+ *   <li>可配置消息过期时间</li>
+ *   <li>可配置消息可见性超时</li>
+ *   <li>可配置消息优先级</li>
+ *   <li>可配置消息延迟投递</li>
+ *   <li>可配置最大投递次数</li>
+ *   <li>未 ACK 消息自动重投</li>
+ *   <li>死信队列（DLQ）支持</li>
  * </ul>
  *
  * @author Nikita Koksharov
@@ -49,261 +49,249 @@ import java.util.Set;
 public interface RReliableQueue<V> extends RExpirable, RReliableQueueAsync<V>, RDestroyable {
 
     /**
-     * Sets the configuration for this reliable queue.
+     * 设置本可靠队列的配置。
      *
-     * @param config the queue configuration to apply
+     * @param config 要应用的队列配置
      */
     void setConfig(QueueConfig config);
 
     /**
-     * Attempts to set the configuration for this reliable queue.
+     * 尝试设置本可靠队列的配置。
      * <p>
-     * This method only applies the configuration if no configuration has been set previously.
+     * 仅当此前未设置过配置时才会生效。
      *
-     * @param config the queue configuration to apply
-     * @return {@code true} if the configuration was successfully applied,
-     *         {@code false} if a configuration already exists
+     * @param config 要应用的队列配置
+     * @return 设置成功则为 true，已有配置则为 false
      */
     boolean setConfigIfAbsent(QueueConfig config);
 
     /**
-     * Returns the total number of messages in the queue ready for polling,
-     * excluding delayed and unacknowledged messages.
+     * 返回队列中可 poll 的消息总数（不含延迟与未 ACK 消息）。
      *
-     * @return the total number of messages
+     * @return 消息总数
      */
     int size();
 
     /**
-     * Returns the number of delayed messages in the queue.
+     * 返回队列中延迟投递的消息数量。
      * <p>
-     * Delayed messages are those scheduled for future delivery and not yet available for consumption.
+     * 延迟消息尚未到达可消费时间。
      *
-     * @return the number of delayed messages
+     * @return 延迟消息数量
      */
     int countDelayedMessages();
 
     /**
-     * Returns the number of unacknowledged messages in the queue.
+     * 返回队列中未确认（未 ACK）的消息数量。
      * <p>
-     * Unacknowledged messages are those that have been delivered to consumers
-     * but not yet acknowledged as successfully processed.
+     * 这类消息已投递给消费者，但尚未确认处理成功。
      *
-     * @return the number of unacknowledged messages
+     * @return 未 ACK 消息数量
      */
     int countUnacknowledgedMessages();
 
     /**
-     * Checks if the queue is empty.
+     * 检查队列是否为空。
      * <p>
-     * A queue is considered empty when it contains no messages in any state
-     * (ready, delayed, or unacknowledged).
+     * 就绪、延迟、未 ACK 三种状态下均无消息时视为空。
      *
-     * @return {@code true} if the queue is empty, {@code false} otherwise
+     * @return 为空则为 true，否则 false
      */
     boolean isEmpty();
 
     /**
-     * Removes all messages from the queue.
+     * 清空队列中的全部消息。
      * <p>
-     * This operation clears messages in all states (ready, delayed, and unacknowledged).
+     * 会清除就绪、延迟、未 ACK 等所有状态的消息。
      *
-     * @return {@code true} if the queue existed and has been cleared, otherwise false
+     * @return 队列存在且已清空则为 true，否则 false
      */
     boolean clear();
 
     /**
-     * Retrieves and removes the head of this queue, or returns {@code null} if this queue is empty.
+     * 取出并移除队首消息；队列为空时返回 {@code null}。
      * <p>
-     * The retrieved message remains unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledge(QueueAckArgs)} or {@link #negativeAcknowledge(QueueNegativeAckArgs)} method.
+     * 取出的消息处于未 ACK 状态，需调用 {@link #acknowledge(QueueAckArgs)} 或 {@link #negativeAcknowledge(QueueNegativeAckArgs)} 确认或否定确认。
      *
-     * @return the message in the head of this queue, or {@code null} if this queue is empty
+     * @return 队首消息；队列为空则为 null
      * @throws OperationDisabledException if this operation is disabled
      */
     Message<V> poll();
 
     /**
-     * Retrieves and removes the head of this queue with the specified polling arguments.
+     * 按 poll 参数取出并移除队首消息。
      * <p>
-     * The retrieved message remains unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledge(QueueAckArgs)} or {@link #negativeAcknowledge(QueueNegativeAckArgs)} method.
+     * 取出的消息处于未 ACK 状态，需调用 {@link #acknowledge(QueueAckArgs)} 或 {@link #negativeAcknowledge(QueueNegativeAckArgs)} 确认或否定确认。
      *
-     * @param args polling arguments
-     * @return the message in the head of this queue, or {@code null} if this queue is empty
+     * @param args poll 参数
+     * @return 队首消息；队列为空则为 null
      * @throws OperationDisabledException if this operation is disabled
      */
     Message<V> poll(QueuePollArgs args);
 
     /**
-     * Retrieves and removes multiple messages from the queue with the specified polling arguments.
+     * 按 poll 参数批量取出并移除消息。
      * <p>
-     * This batch operation is more efficient than polling messages individually.
+     * 比逐条 poll 更高效。
      * <p>
-     * The retrieved messages remain unacknowledged until explicitly acknowledged
-     * using the {@link #acknowledge(QueueAckArgs)} or {@link #negativeAcknowledge(QueueNegativeAckArgs)} method.
+     * 取出的消息处于未 ACK 状态，需调用 {@link #acknowledge(QueueAckArgs)} 或 {@link #negativeAcknowledge(QueueNegativeAckArgs)} 确认或否定确认。
      *
-     * @param pargs polling arguments
-     * @return a list of retrieved messages
+     * @param pargs poll 参数
+     * @return 取出的消息列表
      * @throws OperationDisabledException if this operation is disabled
      */
     List<Message<V>> pollMany(QueuePollArgs pargs);
 
     /**
-     * Acknowledges the successful processing of a message.
+     * 确认消息已成功处理。
      * <p>
-     * Once acknowledged, a message is permanently removed from the queue and will not be redelivered.
+     * ACK 后消息将从队列永久移除，不再重投。
      *
-     * @param args acknowledgment arguments
+     * @param args 确认（ACK）参数
      */
     void acknowledge(QueueAckArgs args);
 
     /**
-     * Checks if the queue contains a message with the specified ID.
+     * 检查队列是否包含指定 ID 的消息。
      *
-     * @param id the message ID to check
-     * @return {@code true} if a message with the specified ID exists in the queue, {@code false} otherwise
+     * @param id 待检查的消息 ID
+     * @return 存在则为 true，否则 false
      */
     boolean contains(String id);
 
     /**
-     * Checks if the queue contains messages with the specified IDs.
+     * 检查队列是否包含指定 ID 列表中的消息。
      *
-     * @param ids the message IDs to check
-     * @return the number of matching messages found in the queue
+     * @param ids 待检查的消息 ID 列表
+     * @return 匹配的消息数量
      */
     int containsMany(String... ids);
 
     /**
-     * Removes a specific message from the queue.
+     * 从队列移除指定消息。
      * <p>
-     * This operation can remove messages in any state (ready, delayed, or unacknowledged).
+     * 可删除就绪、延迟、未 ACK 任意状态的消息。
      *
-     * @param args removal arguments
-     * @return {@code true} if the message was successfully removed, {@code false} if the message was not found
+     * @param args 移除参数
+     * @return 移除成功则为 true，未找到则为 false
      */
     boolean remove(QueueRemoveArgs args);
 
     /**
-     * Removes multiple messages from the queue in a single operation.
+     * 批量从队列移除多条消息。
      *
-     * @param args removal arguments
-     * @return the number of messages successfully removed
+     * @param args 移除参数
+     * @return 成功移除的消息数量
      */
     int removeMany(QueueRemoveArgs args);
 
     /**
-     * Moves messages between queues.
+     * 在队列之间移动消息。
      *
-     * @param args move arguments
-     * @return the number of messages successfully moved
+     * @param args 移动参数
+     * @return 成功移动的消息数量
      */
     int move(QueueMoveArgs args);
 
     /**
-     * Adds a message to the queue with the specified parameters.
+     * 按参数向队列添加单条消息。
      * <p>
-     * Returns {@code null} if the message hasn't been added for one of the following reasons:
+     * 以下情况可能返回 {@code null}：
      * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured queue size limit and queue is full</li>
+     *     <li>按 ID 或哈希去重导致重复</li>
+     *     <li>队列已达配置的大小上限</li>
      * </ul>
      *
-     * @param params parameters for the message to be added
-     * @return the added message with its assigned ID and metadata
-     *          or {@code null} if timeout defined and no space becomes available in full queue.
+     * @param params 待添加消息的参数
+     * @return 已添加消息（含 ID 与元数据）；队列已满且超时未腾出空间则为 null
      * @throws OperationDisabledException if this operation is disabled
      */
     Message<V> add(QueueAddArgs<V> params);
 
     /**
-     * Adds multiple messages to the queue in a single operation.
+     * 批量向队列添加消息。
      * <p>
-     * This batch operation is more efficient than adding messages individually.
+     * 比逐条添加更高效。
      * <p>
-     * Messages may not be added for one of the following reasons:
+     * 以下情况部分消息可能未写入：
      * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured queue size limit and queue is full</li>
+     *     <li>按 ID 或哈希去重导致重复</li>
+     *     <li>队列已达配置的大小上限</li>
      * </ul>
      *
-     * @param params parameters for the messages to be added
-     * @return a list of added messages with their assigned IDs and metadata
-     *          or empty list if timeout defined and no space becomes available in full queue.
+     * @param params 待批量添加消息的参数
+     * @return 已添加消息列表；队列已满且超时未腾出空间则为空列表
      * @throws OperationDisabledException if this operation is disabled
      */
     List<Message<V>> addMany(QueueAddArgs<V> params);
 
     /**
-     * Returns the names of source queues which uses this reliable queue as dead letter queue.
+     * 返回将本队列配置为死信队列（DLQ）的源队列名称集合。
      * <p>
-     * This only applies if this queue is configured as a dead letter queue in the source queue configurations.
+     * 仅当源队列配置中指定了本队列作为 DLQ 时有效。
      *
-     * @return a set of source queue names
+     * @return 源队列名称集合
      */
     Set<String> getDeadLetterQueueSources();
 
     /**
-     * Returns all messages in the queue, ready to be retrieved by the poll() command, without removing them.
-     * <p>
-     * This operation is useful for inspection and debugging purposes.
+     * 返回队列中可由 poll() 读取的全部消息（不移除），便于巡检与调试。
      *
-     * @return a list of all messages in the queue
+     * @return 队列中全部消息列表
      */
     List<Message<V>> listAll();
 
     /**
-     * Returns all messages in the queue, ready to be retrieved by the poll() command,
-     * using the specified codec for message header values.
+     * 使用指定编解码器反序列化消息头，返回队列中可由 poll() 读取的全部消息。
      *
-     * @param headersCodec the codec to use for deserializing message header values
-     * @return a list of all messages in the queue
+     * @param headersCodec 用于反序列化消息头的编解码器
+     * @return 队列中全部消息列表
      */
     List<Message<V>> listAll(Codec headersCodec);
 
     /**
-     * Returns message by id
+     * 按 ID 返回单条消息
      *
-     * @param id message id
-     * @return message
+     * @param id 消息 ID
+     * @return 消息对象
      */
     Message<V> get(String id);
 
     /**
-     * Returns message by id applying specified codec to headers
+     * 按 ID 返回单条消息 applying specified codec to headers
      *
-     * @param id message id
-     * @param headersCodec codec for headers
-     * @return message
+     * @param id 消息 ID
+     * @param headersCodec 消息头编解码器
+     * @return 消息对象
      */
     Message<V> get(Codec headersCodec, String id);
 
     /**
-     * Returns messages by ids
+     * 按 ID 列表返回多条消息
      *
-     * @param ids message ids
-     * @return message
+     * @param ids 消息 ID 列表
+     * @return 消息对象
      */
     List<Message<V>> getAll(String... ids);
 
     /**
-     * Returns messages by ids applying specified codec to headers
+     * 按 ID 列表返回多条消息 applying specified codec to headers
      *
-     * @param ids message ids
-     * @param headersCodec codec for headers
-     * @return message
+     * @param ids 消息 ID 列表
+     * @param headersCodec 消息头编解码器
+     * @return 消息对象
      */
     List<Message<V>> getAll(Codec headersCodec, String... ids);
 
     /**
-     * Explicitly marks a message as failed or rejected.
+     * 显式否定确认（NACK）消息，标记为处理失败或拒绝。
      *
-     * @param args arguments specifying the message to negatively acknowledge
+     * @param args 否定确认（NACK）参数
      */
     void negativeAcknowledge(QueueNegativeAckArgs args);
 
     /**
-     * Adds queue listener
+     * 注册队列事件监听器
      *
      * @see org.redisson.api.queue.event.AddedEventListener
      * @see org.redisson.api.queue.event.PolledEventListener
@@ -315,29 +303,29 @@ public interface RReliableQueue<V> extends RExpirable, RReliableQueueAsync<V>, R
      * @see org.redisson.api.queue.event.EnabledOperationEventListener
      * @see org.redisson.api.queue.event.FullEventListener
      *
-     * @param listener entry listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     String addListener(QueueEventListener listener);
 
     /**
-     * Removes map entry listener
+     * 按 ID 移除监听器
      *
-     * @param id listener id
+     * @param id 监听器 ID
      */
     void removeListener(String id);
 
     /**
-     * Disables a queue operation
+     * 禁用指定的队列操作
      *
-     * @param operation queue operation
+     * @param operation 队列操作类型
      */
     void disableOperation(QueueOperation operation);
 
     /**
-     * Enables a queue operation
+     * 启用指定的队列操作
      *
-     * @param operation queue operation
+     * @param operation 队列操作类型
      */
     void enableOperation(QueueOperation operation);
 

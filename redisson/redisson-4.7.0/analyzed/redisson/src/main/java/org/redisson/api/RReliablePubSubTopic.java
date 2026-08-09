@@ -25,26 +25,26 @@ import java.util.Set;
 /**
  * Reliable PubSub Topic implementation based on Stream object.
  * <p>
- * Unlike regular Valkey or Redis based PubSub, this implementation provides features like:
+ * 与常规 Valkey/Redis PubSub 不同，本实现提供如下能力：
  * <ul>
- *   <li>Messages delivered in FIFO order
- *   <li>Message acknowledgment to confirm successful processing</li>
- *   <li>Message negative acknowledgment to redeliver a message or delete it if DLT is not defined</li>
- *   <li>Redundancy and synchronous replication</li>
- *   <li>Deduplication by id or hash within a defined time interval</li>
- *   <li>Bulk operations</li>
- *   <li>Configurable topic size limit</li>
- *   <li>Configurable message size limit</li>
- *   <li>Configurable message expiration timeout</li>
- *   <li>Configurable message visibility timeout</li>
- *   <li>Configurable message priority</li>
- *   <li>Configurable message delay</li>
- *   <li>Configurable message delivery limit</li>
- *   <li>Per-subscription seek operation for message replay or offset adjustment</li>
- *   <li>Pull and push consumer models for flexible message consumption</li>
- *   <li>Key-based message grouping for sequential processing guarantees by the same consumer</li>
- *   <li>Automatic redelivery of unacknowledged messages, may affect ordering if visibility values are different per message</li>
- *   <li>Dead letter topic support for failed message handling</li>
+ *   <li>FIFO 顺序投递消息</li>
+ *   <li>消息确认（ACK）以标记处理成功</li>
+ *   <li>否定确认（NACK）触发重投；未配置 DLT 时可能删除消息</li>
+ *   <li>冗余与同步复制</li>
+ *   <li>按 ID 或哈希在指定时间窗口内去重</li>
+ *   <li>批量操作</li>
+ *   <li>可配置 Topic 大小上限</li>
+ *   <li>可配置单条消息大小上限</li>
+ *   <li>可配置消息过期时间</li>
+ *   <li>可配置消息可见性超时</li>
+ *   <li>可配置消息优先级</li>
+ *   <li>可配置消息延迟投递</li>
+ *   <li>可配置最大投递次数</li>
+ *   <li>按订阅 seek，支持回放或偏移调整</li>
+ *   <li>Pull/Push 两种消费模型</li>
+ *   <li>按 key 分组，保证同一消费者顺序处理</li>
+ *   <li>未 ACK 消息自动重投（各消息 visibility 不同可能影响顺序）</li>
+ *   <li>死信 Topic（DLT）支持</li>
  * </ul>
  *
  * @author Nikita Koksharov
@@ -53,163 +53,155 @@ import java.util.Set;
 public interface RReliablePubSubTopic<V> extends RExpirable, RReliablePubSubTopicAsync<V>, RDestroyable {
 
     /**
-     * Sets the configuration for this reliable pubsub topic.
+     * 设置本可靠 PubSub Topic 的配置。
      *
-     * @param config the topic configuration to apply
+     * @param config 要应用的 Topic 配置
      */
     void setConfig(TopicConfig config);
 
     /**
-     * Attempts to set the configuration for this reliable pubsub topic.
+     * 尝试设置本可靠 PubSub Topic 的配置。
      * <p>
-     * This method only applies the configuration if no configuration has been set previously.
+     * 仅当此前未设置过配置时才会生效。
      *
-     * @param config the topic configuration to apply
-     * @return {@code true} if the configuration was successfully applied,
-     *         {@code false} if a configuration already exists
+     * @param config 要应用的 Topic 配置
+     * @return 设置成功则为 true，已有配置则为 false
      */
     boolean setConfigIfAbsent(TopicConfig config);
 
     /**
-     * Returns the total number of messages in the pubsub topic ready for polling,
-     * excluding delayed and unacknowledged messages.
+     * 返回 Topic 中可 poll 的消息总数（不含延迟与未 ACK 消息）。
      *
-     * @return the total number of messages
+     * @return 消息总数
      */
     int size();
 
     /**
-     * Checks if the pubsub topic is empty.
+     * 检查 PubSub Topic 是否为空。
      * <p>
-     * A topic is considered empty when it contains no messages in any state
-     * (ready, delayed, or unacknowledged).
+     * 就绪、延迟、未 ACK 三种状态下均无消息时视为空。
      *
-     * @return {@code true} if the topic is empty, {@code false} otherwise
+     * @return 为空则为 true，否则 false
      */
     boolean isEmpty();
 
     /**
-     * Removes all messages from the pubsub topic.
+     * 清空 PubSub Topic 中的全部消息。
      * <p>
-     * This operation clears messages in all states (ready, delayed, and unacknowledged).
+     * 会清除就绪、延迟、未 ACK 等所有状态的消息。
      *
-     * @return {@code true} if the topic existed and has been cleared, otherwise false
+     * @return Topic 存在且已清空则为 true，否则 false
      */
     boolean clear();
 
     /**
-     * Checks if the pubsub topic contains a message with the specified ID.
+     * 检查 PubSub Topic 是否包含指定 ID 的消息。
      *
-     * @param id the message ID to check
-     * @return {@code true} if a message with the specified ID exists in the topic, {@code false} otherwise
+     * @param id 待检查的消息 ID
+     * @return 存在则为 true，否则 false
      */
     boolean contains(String id);
 
     /**
-     * Checks if the pubsub topic contains messages with the specified IDs.
+     * 检查 PubSub Topic 是否包含指定 ID 列表中的消息。
      *
-     * @param ids the message IDs to check
-     * @return the number of matching messages found in the topic
+     * @param ids 待检查的消息 ID 列表
+     * @return 匹配的消息数量
      */
     int containsMany(String... ids);
 
     /**
-     * Adds a message to the pubsub topic with the specified parameters.
+     * 按参数向 PubSub Topic 添加单条消息。
      * <p>
-     * Returns {@code null} if the message hasn't been added for one of the following reasons:
+     * 以下情况可能返回 {@code null}：
      * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured topic size limit and topic is full</li>
+     *     <li>按 ID 或哈希去重导致重复</li>
+     *     <li>Topic 已达配置的大小上限</li>
      * </ul>
      *
-     * @param params parameters for the message to be added
-     * @return the added message with its assigned ID and metadata
-     *          or {@code null} if timeout defined and no space becomes available in full pubsub topic.
+     * @param params 待添加消息的参数
+     * @return 已添加消息（含 ID 与元数据）；Topic 已满且超时未腾出空间则为 null
      * @throws  if this operation is disabled
      */
     Message<V> publish(PublishArgs<V> params);
 
     /**
-     * Adds multiple messages to the pubsub topic in a single operation.
+     * 批量向 PubSub Topic 添加消息。
      * <p>
-     * This batch operation is more efficient than adding messages individually.
+     * 比逐条添加更高效。
      * <p>
-     * Messages may not be added for one of the following reasons:
+     * 以下情况部分消息可能未写入：
      * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured topic size limit and topic is full</li>
+     *     <li>按 ID 或哈希去重导致重复</li>
+     *     <li>Topic 已达配置的大小上限</li>
      * </ul>
      *
-     * @param params parameters for the messages to be added
-     * @return a list of added messages with their assigned IDs and metadata
-     *          or empty list if timeout defined and no space becomes available in full topic.
+     * @param params 待批量添加消息的参数
+     * @return 已添加消息列表；Topic 已满且超时未腾出空间则为空列表
      * @throws OperationDisabledException if this operation is disabled
      */
     List<Message<V>> publishMany(PublishArgs<V> params);
 
     /**
-     * Returns the names of source pubsub topics which uses this topic as dead letter topic.
+     * 返回将本 Topic 配置为死信 Topic（DLT）的源 Topic 名称集合。
      * <p>
-     * This only applies if this topic is configured as a dead letter topic in the source topic configurations.
+     * 仅当源 Topic 配置中指定了本 Topic 作为 DLT 时有效。
      *
-     * @return a set of source topic names
+     * @return 源 Topic 名称集合
      */
     Set<String> getDeadLetterTopicSources();
 
     /**
-     * Returns all messages in the pubsub topic, ready to be retrieved by the poll() command, without removing them.
-     * <p>
-     * This operation is useful for inspection and debugging purposes.
+     * 返回 Topic 中可由 poll() 读取的全部消息（不移除），便于巡检与调试。
      *
-     * @return a list of all messages in the topic
+     * @return Topic 中全部消息列表
      */
     List<Message<V>> listAll();
 
     /**
-     * Returns all messages in the pubsub topic, ready to be retrieved by the poll() command,
-     * using the specified codec for message header values.
+     * 使用指定编解码器反序列化消息头，返回 Topic 中可由 poll() 读取的全部消息。
      *
-     * @param headersCodec the codec to use for deserializing message header values
-     * @return a list of all messages in the topic
+     * @param headersCodec 用于反序列化消息头的编解码器
+     * @return Topic 中全部消息列表
      */
     List<Message<V>> listAll(Codec headersCodec);
 
     /**
-     * Returns message by id
+     * 按 ID 返回单条消息
      *
-     * @param id message id
-     * @return message
+     * @param id 消息 ID
+     * @return 消息对象
      */
     Message<V> get(String id);
 
     /**
-     * Returns message by id applying specified codec to headers
+     * 按 ID 返回单条消息 applying specified codec to headers
      *
-     * @param id message id
-     * @param headersCodec codec for headers
-     * @return message
+     * @param id 消息 ID
+     * @param headersCodec 消息头编解码器
+     * @return 消息对象
      */
     Message<V> get(Codec headersCodec, String id);
 
     /**
-     * Returns messages by ids
+     * 按 ID 列表返回多条消息
      *
-     * @param ids message ids
-     * @return message
+     * @param ids 消息 ID 列表
+     * @return 消息对象
      */
     List<Message<V>> getAll(String... ids);
 
     /**
-     * Returns messages by ids applying specified codec to headers
+     * 按 ID 列表返回多条消息 applying specified codec to headers
      *
-     * @param ids message ids
-     * @param headersCodec codec for headers
-     * @return message
+     * @param ids 消息 ID 列表
+     * @param headersCodec 消息头编解码器
+     * @return 消息对象
      */
     List<Message<V>> getAll(Codec headersCodec, String... ids);
 
     /**
-     * Adds pubsub listener
+     * 注册 PubSub 事件监听器
      *
      * @see org.redisson.api.pubsub.event.PublishedEventListener
      * @see org.redisson.api.pubsub.event.TopicConfigEventListener
@@ -217,92 +209,90 @@ public interface RReliablePubSubTopic<V> extends RExpirable, RReliablePubSubTopi
      * @see org.redisson.api.pubsub.event.EnabledOperationEventListener
      * @see org.redisson.api.pubsub.event.TopicFullEventListener
      *
-     * @param listener entry listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     String addListener(PubSubEventListener listener);
 
     /**
-     * Removes map entry listener
+     * 按 ID 移除监听器
      *
-     * @param id listener id
+     * @param id 监听器 ID
      */
     void removeListener(String id);
 
     /**
-     * Disables a pubsub operation
+     * 禁用指定的 PubSub 操作
      *
-     * @param operation pubsub operation
+     * @param operation PubSub 操作类型
      */
     void disableOperation(PubSubOperation operation);
 
     /**
-     * Enables a pubsub operation
+     * 启用指定的 PubSub 操作
      *
-     * @param operation pubsub operation
+     * @param operation PubSub 操作类型
      */
     void enableOperation(PubSubOperation operation);
 
     /**
-     * Returns an existing subscription by name.
+     * 按名称返回已存在的订阅。
      *
-     * @param name the subscription name
-     * @return the subscription with the specified name, or {@code null} if not found
+     * @param name 订阅名称
+     * @return 对应订阅；不存在则为 null
      */
     Subscription<V> getSubscription(String name);
 
     /**
-     * Creates a new subscription with an auto-generated name.
+     * 创建自动命名的新订阅。
      * <p>
-     * The subscription maintains its own offset and tracks message
-     * consumption independently of other subscriptions on the same topic.
+     * 每个订阅维护独立偏移量，与同 Topic 上其他订阅的消费进度互不影响。
      *
-     * @return the subscription object
+     * @return 订阅对象
      */
     Subscription<V> createSubscription();
 
     /**
-     * Creates a new subscription with the specified configuration.
+     * 按指定配置创建新订阅。
      * <p>
-     * The subscription maintains its own offset and tracks message
-     * consumption independently of other subscriptions on the same topic.
+     * 每个订阅维护独立偏移量，与同 Topic 上其他订阅的消费进度互不影响。
      *
-     * @param config the subscription configuration
-     * @return the subscription object
+     * @param config 订阅配置
+     * @return 订阅对象
      */
     Subscription<V> createSubscription(SubscriptionConfig config);
 
     /**
-     * Checks if a subscription with the specified name exists.
+     * 检查指定名称的订阅是否存在。
      *
-     * @param name the subscription name to check
-     * @return {@code true} if the subscription exists, {@code false} otherwise
+     * @param name 订阅名称 to check
+     * @return 存在则为 true，否则 false
      */
     boolean hasSubscription(String name);
 
     /**
-     * Removes the subscription with the specified name.
+     * 移除指定名称的订阅。
      * <p>
-     * This operation also removes all consumers associated with the subscription.
+     * 同时删除该订阅关联的全部消费者。
      *
-     * @param name the subscription name to remove
-     * @return {@code true} if the subscription was removed, {@code false} if it did not exist
+     * @param name 订阅名称 to remove
+     * @return 移除成功则为 true，不存在则为 false
      */
     boolean removeSubscription(String name);
 
     /**
-     * Returns the names of all subscriptions registered to this topic.
+     * 返回本 Topic 上已注册的全部订阅名称。
      *
-     * @return a set of subscription names
+     * @return 订阅名称集合
      */
     Set<String> getSubscriptions();
 
     /**
-     * Returns statistics for this topic.
+     * 返回本 Topic 的统计信息。
      * <p>
-     * Statistics include message counts, throughput metrics, and other operational data.
+     * 包括消息数量、吞吐量及其他运行指标。
      *
-     * @return the topic statistics
+     * @return Topic 统计信息
      */
     TopicStatistics getStatistics();
 

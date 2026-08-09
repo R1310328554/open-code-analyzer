@@ -21,103 +21,92 @@ import org.redisson.api.fanout.FanoutPublishArgs;
 import java.util.List;
 
 /**
- * Reliable fanout implementation that ensures message delivery to subscribed queues.
+ * 可靠的扇出（Fanout）异步 API，确保消息投递到已订阅队列。
+ * <p>各方法返回 {@link RFuture}。
  *
- * @param <V> The type of message payload
+ * @param <V> 消息载荷类型
  *
  * @author Nikita Koksharov
- *
  */
 public interface RReliableFanoutAsync<V> extends RExpirableAsync {
 
     /**
-     * Publishes a message to all subscribed queues based on the provided arguments.
+     * 按给定参数向所有已订阅队列发布单条消息。
      *
-     * @param args arguments defining the message and publishing parameters
-     * @return The published message, or null if the message hasn't been added to all
-     *         subscribed queues. The message may not be added to a subscribed queue if
-     *         the queue has size limit and is full, if message size exceeds defined queue message size limit
-     *         or message rejected due to deduplication.
+     * @param args 单条消息的发布参数
+     * @return 已发布消息；若未写入全部订阅队列则可能为 null（队列已满、消息超限或去重拒绝等）
      */
     RFuture<Message<V>> publishAsync(FanoutPublishArgs<V> args);
 
     /**
-     * Publishes multiple messages to all subscribed queues based on the provided arguments.
+     * 按给定参数向所有已订阅队列批量发布消息。
      *
-     * @param args arguments defining the messages and publishing parameters
-     * @return A list containing only messages that were added to at least a single
-     *         subscribed queue. Messages may not be added to a subscribed queue if
-     *         the queue has size limit and is full, if message size exceeds defined queue message size limit
-     *         or message rejected due to deduplication.
+     * @param args 批量消息的发布参数
+     * @return 至少写入一个订阅队列的消息列表（未写入的条目因队列满、消息超限或去重而被跳过）
      */
     RFuture<List<Message<V>>> publishManyAsync(FanoutPublishArgs<V> args);
 
     /**
-     * Removes a filter for the specified queue name .
+     * 移除指定队列名称上的消息过滤器。
      *
-     * @param name the queue name
+     * @param name 队列名称
      */
     RFuture<Void> removeFilterAsync(String name);
 
     /**
-     * Sets a filter that is applied to all messages published to the queue through
-     * this fanout.
+     * 设置通过本扇出发布到队列时应用于全部消息的过滤器。
      * <p>
-     * The FanoutFilter object is replicated among all ReliableFanout objects
-     * and applied on each of them during message publishing.
+     * FanoutFilter 会在所有 ReliableFanout 实例间复制，并在发布时各自生效。
      *
-     * @param name the queue name
-     * @param filter applied to messages
+     * @param name 队列名称
+     * @param filter 应用于消息的过滤器
      */
     RFuture<Void> setFilterAsync(String name, MessageFilter<V> filter);
 
     /**
-     * Checks if a queue with the specified name is subscribed to this fanout.
+     * 检查指定名称的队列是否已订阅本扇出。
      *
-     * @param name the queue name
-     * @return <code>true</code> if the queue is subscribed, <code>false</code> otherwise
+     * @param name 队列名称
+     * @return 已订阅则为 true，否则 false
      */
     RFuture<Boolean> isSubscribedAsync(String name);
 
     /**
-     * Subscribes a queue with the specified name to this fanout.
+     * 将指定名称的队列订阅到本扇出。
      *
-     * @param name the queue name
-     * @return <code>true</code> if the queue was subscribed,
-     *          <code>false</code> if queue is already subscribed
+     * @param name 队列名称
+     * @return 新订阅成功则为 true，已订阅则为 false
      */
     RFuture<Boolean> subscribeQueueAsync(String name);
 
     /**
-     * Subscribes a queue with the specified name to this fanout with a filter.
+     * 将指定名称的队列订阅到本扇出，并绑定消息过滤器。
      *
-     * @param name the queue name
-     * @param filter the filter that is applied to all messages published through this fanout
-     * @return <code>true</code> if the queue was subscribed,
-     *          <code>false</code> if queue is already subscribed
+     * @param name 队列名称
+     * @param filter 应用于本扇出全部发布消息的过滤器
+     * @return 新订阅成功则为 true，已订阅则为 false
      */
     RFuture<Boolean> subscribeQueueAsync(String name, MessageFilter<V> filter);
 
     /**
-     * Unsubscribes a queue with the specified name from this fanout.
+     * 取消指定名称队列对本扇出的订阅。
      *
-     * @param name the queue name
-     * @return <code>true</code> if the queue was unsubscribed,
-     *          <code>false</code> if the queue isn't subscribed
+     * @param name 队列名称
+     * @return 取消订阅成功则为 true，未订阅则为 false
      */
     RFuture<Boolean> unsubscribeAsync(String name);
 
     /**
-     * Returns a list of the names of all subscribers to this fanout.
+     * 返回本扇出全部订阅者的队列名称列表。
      *
-     * @return subscriber names
+     * @return 订阅者名称列表
      */
     RFuture<List<String>> getSubscribersAsync();
 
     /**
-     * Returns amount of subscribers to this fanout.
+     * 返回本扇出的订阅者数量。
      *
-     * @return amount of subscribers
+     * @return 订阅者数量
      */
     RFuture<Integer> countSubscribersAsync();
 

@@ -18,72 +18,68 @@ package org.redisson.api;
 import org.redisson.api.listener.MessageListener;
 
 /**
- *
- * Asynchronous interface for Reliable topic based on Redis Stream object.
+ * 基于 Redis Stream 的可靠 Topic 异步 API。
  * <p>
- * Dedicated Redis connection is allocated per instance (subscriber) of this object.
- * Messages are delivered to all listeners attached to the same Redis setup.
+ * 每个订阅者实例分配独立 Redis 连接；各方法返回 {@link RFuture}。
  * <p>
- * Requires <b>Redis 5.0.0 and higher.</b>
+ * 需要 <b>Redis 5.0.0 及以上</b>。
  * <p>
  * @author Nikita Koksharov
- *
  */
 public interface RReliableTopicAsync extends RExpirableAsync {
 
     /**
-     * Amount of messages stored in Redis Stream object.
+     * 返回 Redis Stream 中存储的消息数量。
      *
-     * @return amount of messages
+     * @return 消息数量
      */
     RFuture<Long> sizeAsync();
 
     /**
-     * Publish the message to all subscribers of this topic asynchronously.
-     * Each subscriber may have multiple listeners.
+     * 异步向本 Topic 的全部订阅者发布消息。
+     * 每个订阅者可挂载多个监听器。
      *
-     * @param message to send
-     * @return number of subscribers that received the message
+     * @param message 待发送消息
+     * @return 收到消息的订阅者数量
      */
     RFuture<Long> publishAsync(Object message);
     
     /**
-     * Subscribes to this topic.
-     * <code>MessageListener.onMessage</code> method is called when any message
-     * is published on this topic.
+     * 订阅本 Topic。
+     * 任意消息发布时触发 {@code MessageListener.onMessage}。
      * <p>
-     * Though messages broadcasted across all topic instances, listener is attached to this topic instance.
+     * 消息会在所有 Topic 实例间广播，但监听器绑定在当前实例上。
      * <p>
-     * Watchdog is started when listener was registered.
+     * 注册监听器后会启动 Watchdog。
      *
      * @see org.redisson.config.Config#setReliableTopicWatchdogTimeout(long)
      *
-     * @param <M> - type of message
-     * @param type - type of message
-     * @param listener for messages
-     * @return id of listener attached to this topic instance
+     * @param <M> 消息类型
+     * @param type 消息类型
+     * @param listener 消息监听器
+     * @return 绑定在本 Topic 实例上的监听器 ID
      * @see MessageListener
      */
     <M> RFuture<String> addListenerAsync(Class<M> type, MessageListener<M> listener);
     
     /**
-     * Removes the listener by <code>id</code> attached to this topic instance
+     * 按 ID 移除绑定在本 Topic 实例上的监听器
      *
-     * @param listenerIds - listener ids
-     * @return void
+     * @param listenerIds 监听器 ID 列表
+     * @return 无返回值
      */
     RFuture<Void> removeListenerAsync(String... listenerIds);
 
     /**
-     * Removes all listeners attached to this topic instance
+     * 移除绑定在本 Topic 实例上的全部监听器
      */
     RFuture<Void> removeAllListenersAsync();
 
     /**
-     * Returns amount of subscribers to this topic across all Redisson instances.
-     * Each subscriber may have multiple listeners.
+     * 返回所有 Redisson 实例上对本 Topic 的订阅者总数。
+     * 每个订阅者可挂载多个监听器。
      *
-     * @return amount of subscribers
+     * @return 订阅者数量
      */
     RFuture<Integer> countSubscribersAsync();
 
