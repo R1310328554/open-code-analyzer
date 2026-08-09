@@ -1,26 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:47:21Z",
   "files": [
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJProxyUtils.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJWeaverMessageHandler.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/DeclareParentsAdvisor.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/InstantiationModelAwarePointcutAdvisor.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/MethodInvocationProceedingJoinPoint.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/RuntimeTestWalker.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/ShadowMatchUtils.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/SimpleAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/SingletonAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/TypePatternClassFilter.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/AbstractAspectJAdvisorFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/AnnotationAwareAspectJAutoProxyCreator.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/AspectJAdvisorBeanRegistrationAotProcessor.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/AspectJAdvisorFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/AspectJBeanFactoryInitializationAotProcessor.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/AspectJProxyFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/AspectMetadata.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/BeanFactoryAspectInstanceFactory.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/BeanFactoryAspectJAdvisorsBuilder.java",
-    "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/InstantiationModelAwarePointcutAdvisorImpl.java",
     "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/LazySingletonAspectInstanceFactoryDecorator.java",
     "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/MetadataAwareAspectInstanceFactory.java",
     "spring-aop/src/main/java/org/springframework/aop/aspectj/annotation/NotAnAtAspectException.java",
@@ -43,5 +23,5 @@
     "spring-aop/src/main/java/org/springframework/aop/config/MethodLocatingFactoryBean.java"
   ],
   "remaining_pending": 384,
-  "done": 1067
+  "done": 1107
 }
