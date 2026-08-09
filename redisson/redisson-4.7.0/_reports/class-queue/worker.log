@@ -1835,3 +1835,4 @@
 2026-08-09T20:38:11Z DONE redisson/src/main/java/org/redisson/api/RScoredSortedSet.java wave59a [0:15]
 2026-08-09T20:38:11Z DONE redisson/src/main/java/org/redisson/api/RScoredSortedSetAsync.java wave59a [0:15]
 2026-08-09T20:38:11Z DONE redisson/src/main/java/org/redisson/api/RScoredSortedSetReactive.java wave59a [0:15]
+2026-08-09T20:38:32Z CLAIM redisson redisson-4.7.0 wave60 n=30 remaining_pending=1022
