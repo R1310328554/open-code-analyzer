@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:54:37Z",
-  "files": [
-    "store/src/main/java/org/apache/rocketmq/store/queue/ReferredIterator.java",
-    "store/src/main/java/org/apache/rocketmq/store/queue/RocksDBConsumeQueueTable.java",
-    "store/src/main/java/org/apache/rocketmq/store/queue/RocksGroupCommitService.java",
-    "store/src/main/java/org/apache/rocketmq/store/queue/offset/OffsetEntry.java",
-    "store/src/main/java/org/apache/rocketmq/store/queue/offset/OffsetEntryType.java",
-    "store/src/main/java/org/apache/rocketmq/store/rocksdb/ConsumeQueueCompactionFilterFactory.java",
-    "store/src/main/java/org/apache/rocketmq/store/rocksdb/ConsumeQueueRocksDBStorage.java",
-    "store/src/main/java/org/apache/rocketmq/store/rocksdb/RocksDBOptionsFactory.java",
-    "store/src/main/java/org/apache/rocketmq/store/stats/BrokerStats.java",
-    "store/src/main/java/org/apache/rocketmq/store/stats/LmqBrokerStatsManager.java",
-    "store/src/main/java/org/apache/rocketmq/store/timer/Slot.java",
-    "store/src/main/java/org/apache/rocketmq/store/timer/TimerCheckpoint.java",
-    "store/src/main/java/org/apache/rocketmq/store/timer/TimerLog.java",
-    "store/src/main/java/org/apache/rocketmq/store/timer/TimerMetrics.java",
-    "store/src/main/java/org/apache/rocketmq/store/timer/TimerRequest.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 288,
-  "done": 1185
+  "done": 1200
 }
