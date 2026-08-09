@@ -35,8 +35,8 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.Assert;
 
 /**
- * Common delegate code for the handling of parser strategies, for example,
- * {@code TypeFilter}, {@code ImportSelector}, {@code ImportBeanDefinitionRegistrar}.
+ * 解析器策略的公共委托代码，例如
+ * {@code TypeFilter}、{@code ImportSelector}、{@code ImportBeanDefinitionRegistrar}。
  *
  * @author Juergen Hoeller
  * @author Phillip Webb
@@ -45,11 +45,9 @@ import org.springframework.util.Assert;
 abstract class ParserStrategyUtils {
 
 	/**
-	 * Instantiate a class using an appropriate constructor and return the new
-	 * instance as the specified assignable type. The returned instance will
-	 * have {@link BeanClassLoaderAware}, {@link BeanFactoryAware},
-	 * {@link EnvironmentAware}, and {@link ResourceLoaderAware} contracts
-	 * invoked if they are implemented by the given object.
+	 * 使用合适的构造器实例化类，并以指定可赋值类型返回新实例。
+	 * <p>若实例实现了 {@link BeanClassLoaderAware}、{@link BeanFactoryAware}、
+	 * {@link EnvironmentAware} 或 {@link ResourceLoaderAware}，将自动调用相应回调。
 	 * @since 5.2
 	 */
 	@SuppressWarnings("unchecked")
@@ -68,6 +66,7 @@ abstract class ParserStrategyUtils {
 		return instance;
 	}
 
+	/** 根据构造器参数类型选择实例化方式。 */
 	private static Object createInstance(Class<?> clazz, Environment environment,
 			ResourceLoader resourceLoader, BeanDefinitionRegistry registry,
 			@Nullable ClassLoader classLoader) {
@@ -87,6 +86,7 @@ abstract class ParserStrategyUtils {
 		return BeanUtils.instantiateClass(clazz);
 	}
 
+	/** 为带参构造器解析各参数值。 */
 	private static @Nullable Object[] resolveArgs(Class<?>[] parameterTypes,
 			Environment environment, ResourceLoader resourceLoader,
 			BeanDefinitionRegistry registry, @Nullable ClassLoader classLoader) {
@@ -99,6 +99,7 @@ abstract class ParserStrategyUtils {
 			return parameters;
 	}
 
+	/** 将已知基础设施类型映射为构造器参数。 */
 	private static @Nullable Object resolveParameter(Class<?> parameterType,
 			Environment environment, ResourceLoader resourceLoader,
 			BeanDefinitionRegistry registry, @Nullable ClassLoader classLoader) {
@@ -118,6 +119,7 @@ abstract class ParserStrategyUtils {
 		throw new IllegalStateException("Illegal method parameter type: " + parameterType.getName());
 	}
 
+	/** 对实现了 {@link Aware} 的策略 Bean 注入环境依赖。 */
 	private static void invokeAwareMethods(Object parserStrategyBean, Environment environment,
 			ResourceLoader resourceLoader, BeanDefinitionRegistry registry, @Nullable ClassLoader classLoader) {
 

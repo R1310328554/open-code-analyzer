@@ -23,21 +23,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a bean should be given preference when multiple candidates
- * are qualified to autowire a single-valued dependency. If exactly one
- * 'primary' bean exists among the candidates, it will be the autowired value.
+ * 当多个候选 Bean 均可自动装配到单值依赖时，指示应优先选用该 Bean。
+ * 若候选中恰好存在一个 primary Bean，则它将成为自动装配的值。
  *
- * <p>Primary beans only have an effect when finding multiple candidates
- * for single injection points. All type-matching beans are included when
- * autowiring arrays, collections, maps, or ObjectProvider streams.
+ * <p>Primary 仅在单注入点存在多个候选时生效。自动装配数组、集合、Map
+ * 或 {@code ObjectProvider} 流时，会包含所有类型匹配的 Bean。
  *
- * <p>This annotation is semantically equivalent to the {@code <bean>} element's
- * {@code primary} attribute in Spring XML.
+ * <p>本注解在语义上等价于 Spring XML 中 {@code <bean>} 元素的 {@code primary} 属性。
  *
- * <p>May be used on any class directly or indirectly annotated with
- * {@code @Component} or on methods annotated with @{@link Bean}.
+ * <p>可用于直接或间接标注了 {@code @Component} 的任意类，或标注了 @{@link Bean} 的方法。
  *
- * <h2>Example</h2>
+ * <h2>示例</h2>
  * <pre class="code">
  * &#064;Component
  * public class FooService {
@@ -68,15 +64,12 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  *
- * <p>Because {@code HibernateFooRepository} is marked with {@code @Primary},
- * it will be injected preferentially over the jdbc-based variant assuming both
- * are present as beans within the same Spring application context, which is
- * often the case when component-scanning is applied liberally.
+ * <p>由于 {@code HibernateFooRepository} 标注了 {@code @Primary}，在同一 Spring 应用上下文中
+ * 若两者均注册为 Bean（常见于广泛组件扫描），将优先注入它而非基于 JDBC 的实现。
  *
- * <p>Note that using {@code @Primary} at the class level has no effect unless
- * component-scanning is being used. If a {@code @Primary}-annotated class is
- * declared via XML, {@code @Primary} annotation metadata is ignored, and
- * {@code <bean primary="true|false"/>} is respected instead.
+ * <p>注意：类级别的 {@code @Primary} 仅在启用组件扫描时才有意义。若通过 XML 声明
+ * {@code @Primary} 标注的类，注解元数据会被忽略，应使用
+ * {@code <bean primary="true|false"/>}。
  *
  * @author Chris Beams
  * @author Juergen Hoeller

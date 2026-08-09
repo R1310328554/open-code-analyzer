@@ -37,9 +37,8 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Resolver for the injection of named beans on a field or method element,
- * following the rules of the {@link jakarta.annotation.Resource} annotation
- * but without any JNDI support. This is primarily intended for AOT processing.
+ * 按 {@link jakarta.annotation.Resource} 注解规则（不含 JNDI 支持），
+ * 解析字段或方法元素上命名 Bean 注入的解析器。主要用于 AOT 处理。
  *
  * @author Stephane Nicoll
  * @author Juergen Hoeller
@@ -49,8 +48,10 @@ import org.springframework.util.StringUtils;
  */
 public abstract class ResourceElementResolver {
 
+	/** 资源（Bean）名称。 */
 	private final String name;
 
+	/** 是否使用默认名称（字段名或 setter 推导名）进行按类型解析。 */
 	private final boolean defaultName;
 
 
@@ -61,30 +62,29 @@ public abstract class ResourceElementResolver {
 
 
 	/**
-	 * Create a new {@link ResourceFieldResolver} for the specified field.
-	 * @param fieldName the field name
-	 * @return a new {@link ResourceFieldResolver} instance
+	 * 为指定字段创建 {@link ResourceFieldResolver}。
+	 * @param fieldName 字段名
+	 * @return 新的 {@link ResourceFieldResolver} 实例
 	 */
 	public static ResourceElementResolver forField(String fieldName) {
 		return new ResourceFieldResolver(fieldName, true, fieldName);
 	}
 
 	/**
-	 * Create a new {@link ResourceFieldResolver} for the specified field and resource name.
-	 * @param fieldName the field name
-	 * @param resourceName the resource name
-	 * @return a new {@link ResourceFieldResolver} instance
+	 * 为指定字段与资源名创建 {@link ResourceFieldResolver}。
+	 * @param fieldName 字段名
+	 * @param resourceName 资源名
+	 * @return 新的 {@link ResourceFieldResolver} 实例
 	 */
 	public static ResourceElementResolver forField(String fieldName, String resourceName) {
 		return new ResourceFieldResolver(resourceName, false, fieldName);
 	}
 
 	/**
-	 * Create a new {@link ResourceMethodResolver} for the specified method
-	 * using a resource name that infers from the method name.
-	 * @param methodName the method name
-	 * @param parameterType the parameter type.
-	 * @return a new {@link ResourceMethodResolver} instance
+	 * 为指定方法创建 {@link ResourceMethodResolver}，资源名由方法名推导。
+	 * @param methodName 方法名
+	 * @param parameterType 参数类型
+	 * @return 新的 {@link ResourceMethodResolver} 实例
 	 */
 	public static ResourceElementResolver forMethod(String methodName, Class<?> parameterType) {
 		return new ResourceMethodResolver(defaultResourceNameForMethod(methodName), true,
@@ -92,17 +92,17 @@ public abstract class ResourceElementResolver {
 	}
 
 	/**
-	 * Create a new {@link ResourceMethodResolver} for the specified method
-	 * and resource name.
-	 * @param methodName the method name
-	 * @param parameterType the parameter type
-	 * @param resourceName the resource name
-	 * @return a new {@link ResourceMethodResolver} instance
+	 * 为指定方法与资源名创建 {@link ResourceMethodResolver}。
+	 * @param methodName 方法名
+	 * @param parameterType 参数类型
+	 * @param resourceName 资源名
+	 * @return 新的 {@link ResourceMethodResolver} 实例
 	 */
 	public static ResourceElementResolver forMethod(String methodName, Class<?> parameterType, String resourceName) {
 		return new ResourceMethodResolver(resourceName, false, methodName, parameterType);
 	}
 
+	/** 从 setter 方法名推导默认资源名（如 setFoo → foo）。 */
 	private static String defaultResourceNameForMethod(String methodName) {
 		if (methodName.startsWith("set") && methodName.length() > 3) {
 			return StringUtils.uncapitalizeAsProperty(methodName.substring(3));
@@ -112,9 +112,9 @@ public abstract class ResourceElementResolver {
 
 
 	/**
-	 * Resolve the value for the specified registered bean.
-	 * @param registeredBean the registered bean
-	 * @return the resolved field or method parameter value
+	 * 为指定已注册 Bean 解析注入值。
+	 * @param registeredBean 已注册 Bean
+	 * @return 解析得到的字段或方法参数值
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> @Nullable T resolve(RegisteredBean registeredBean) {
@@ -124,16 +124,16 @@ public abstract class ResourceElementResolver {
 	}
 
 	/**
-	 * Resolve the value for the specified registered bean and set it using reflection.
-	 * @param registeredBean the registered bean
-	 * @param instance the bean instance
+	 * 为指定已注册 Bean 解析值并通过反射设置。
+	 * @param registeredBean 已注册 Bean
+	 * @param instance Bean 实例
 	 */
 	public abstract void resolveAndSet(RegisteredBean registeredBean, Object instance);
 
 	/**
-	 * Create a suitable {@link DependencyDescriptor} for the specified bean.
-	 * @param registeredBean the registered bean
-	 * @return a descriptor for that bean
+	 * 为指定 Bean 创建合适的 {@link DependencyDescriptor}。
+	 * @param registeredBean 已注册 Bean
+	 * @return 该 Bean 的依赖描述符
 	 */
 	abstract DependencyDescriptor createDependencyDescriptor(RegisteredBean registeredBean);
 
@@ -141,12 +141,14 @@ public abstract class ResourceElementResolver {
 
 	abstract AnnotatedElement getAnnotatedElement(RegisteredBean registeredBean);
 
+	/** 注入点是否标注了 {@code @Lazy(true)}。 */
 	boolean isLazyLookup(RegisteredBean registeredBean) {
 		AnnotatedElement ae = getAnnotatedElement(registeredBean);
 		Lazy lazy = ae.getAnnotation(Lazy.class);
 		return (lazy != null && lazy.value());
 	}
 
+	/** 为懒查找构建代理，首次访问时才解析目标 Bean。 */
 	private Object buildLazyResourceProxy(RegisteredBean registeredBean) {
 		Class<?> lookupType = getLookupType(registeredBean);
 
@@ -170,9 +172,9 @@ public abstract class ResourceElementResolver {
 	}
 
 	/**
-	 * Resolve the value to inject for this instance.
-	 * @param registeredBean the bean registration
-	 * @return the value to inject
+	 * 解析本实例要注入的值。
+	 * @param registeredBean Bean 注册信息
+	 * @return 要注入的值
 	 */
 	private Object resolveValue(RegisteredBean registeredBean) {
 		ConfigurableListableBeanFactory factory = registeredBean.getBeanFactory();
@@ -181,6 +183,7 @@ public abstract class ResourceElementResolver {
 		Set<String> autowiredBeanNames;
 		DependencyDescriptor descriptor = createDependencyDescriptor(registeredBean);
 		if (this.defaultName && !factory.containsBean(this.name)) {
+			// 默认名称对应 Bean 不存在时，按类型解析
 			autowiredBeanNames = new LinkedHashSet<>();
 			resource = factory.resolveDependency(descriptor, registeredBean.getBeanName(), autowiredBeanNames, null);
 			if (resource == null) {
@@ -188,10 +191,12 @@ public abstract class ResourceElementResolver {
 			}
 		}
 		else {
+			// 按名称解析
 			resource = factory.resolveBeanByName(this.name, descriptor);
 			autowiredBeanNames = Collections.singleton(this.name);
 		}
 
+		// 登记依赖关系
 		for (String autowiredBeanName : autowiredBeanNames) {
 			if (factory.containsBean(autowiredBeanName)) {
 				factory.registerDependentBean(autowiredBeanName, registeredBean.getBeanName());
@@ -201,6 +206,7 @@ public abstract class ResourceElementResolver {
 	}
 
 
+	/** 字段注入解析器。 */
 	private static final class ResourceFieldResolver extends ResourceElementResolver {
 
 		private final String fieldName;
@@ -245,6 +251,7 @@ public abstract class ResourceElementResolver {
 	}
 
 
+	/** 方法（setter）注入解析器。 */
 	private static final class ResourceMethodResolver extends ResourceElementResolver {
 
 		private final String methodName;
@@ -294,8 +301,7 @@ public abstract class ResourceElementResolver {
 
 
 	/**
-	 * Extension of the DependencyDescriptor class,
-	 * overriding the dependency type with the specified resource type.
+	 * {@link DependencyDescriptor} 的扩展，用指定资源类型覆盖依赖类型。
 	 */
 	@SuppressWarnings("serial")
 	static class LookupDependencyDescriptor extends DependencyDescriptor {

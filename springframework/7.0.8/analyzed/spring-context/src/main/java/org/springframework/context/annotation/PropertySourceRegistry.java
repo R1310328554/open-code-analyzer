@@ -30,7 +30,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Registry of {@link PropertySource} processed on configuration classes.
+ * 配置类上已处理的 {@link PropertySource} 注册表。
  *
  * @author Stephane Nicoll
  * @since 6.0
@@ -38,8 +38,10 @@ import org.springframework.util.StringUtils;
  */
 class PropertySourceRegistry {
 
+	/** 实际加载属性源的处理器。 */
 	private final PropertySourceProcessor propertySourceProcessor;
 
+	/** 已处理的属性源描述符列表。 */
 	private final List<PropertySourceDescriptor> descriptors;
 
 
@@ -50,9 +52,9 @@ class PropertySourceRegistry {
 
 
 	/**
-	 * Process the given <code>@PropertySource</code> annotation metadata.
-	 * @param propertySource metadata for the <code>@PropertySource</code> annotation found
-	 * @throws IOException if loading a property source failed
+	 * 处理给定的 {@code @PropertySource} 注解元数据。
+	 * @param propertySource 找到的 {@code @PropertySource} 注解元数据
+	 * @throws IOException 加载属性源失败时
 	 */
 	void processPropertySource(AnnotationAttributes propertySource) throws IOException {
 		String name = propertySource.getString("name");
@@ -76,6 +78,7 @@ class PropertySourceRegistry {
 		this.descriptors.add(descriptor);
 	}
 
+	/** 返回已注册描述符的不可变视图。 */
 	public List<PropertySourceDescriptor> getDescriptors() {
 		return Collections.unmodifiableList(this.descriptors);
 	}

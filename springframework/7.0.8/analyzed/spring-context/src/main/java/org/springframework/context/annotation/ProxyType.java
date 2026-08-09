@@ -17,7 +17,7 @@
 package org.springframework.context.annotation;
 
 /**
- * Common enum for indicating a desired proxy type.
+ * 指示所需代理类型的公共枚举。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -26,19 +26,18 @@ package org.springframework.context.annotation;
 public enum ProxyType {
 
 	/**
-	 * Default is a JDK dynamic proxy, or potentially a class-based CGLIB proxy
-	 * when globally configured.
+	 * 默认为 JDK 动态代理；若全局配置为基于类，则可能使用 CGLIB 代理。
 	 */
 	DEFAULT,
 
 	/**
-	 * Suggest a JDK dynamic proxy implementing <i>all</i> interfaces exposed by
-	 * the class of the target object. Overrides a globally configured default.
+	 * 建议使用 JDK 动态代理，实现目标对象类暴露的<em>全部</em>接口。
+	 * 覆盖全局默认配置。
 	 */
 	INTERFACES,
 
 	/**
-	 * Suggest a class-based CGLIB proxy. Overrides a globally configured default.
+	 * 建议使用基于类的 CGLIB 代理。覆盖全局默认配置。
 	 */
 	TARGET_CLASS
 

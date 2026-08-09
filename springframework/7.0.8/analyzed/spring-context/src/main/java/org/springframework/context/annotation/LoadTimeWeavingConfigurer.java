@@ -19,14 +19,12 @@ package org.springframework.context.annotation;
 import org.springframework.instrument.classloading.LoadTimeWeaver;
 
 /**
- * Interface to be implemented by
+ * 由标注了 {@link EnableLoadTimeWeaving @EnableLoadTimeWeaving} 的
  * {@link org.springframework.context.annotation.Configuration @Configuration}
- * classes annotated with {@link EnableLoadTimeWeaving @EnableLoadTimeWeaving}
- * that wish to customize the {@link LoadTimeWeaver} instance to be used.
+ * 类实现，用于自定义要使用的 {@link LoadTimeWeaver} 实例。
  *
- * <p>See {@link org.springframework.scheduling.annotation.EnableAsync @EnableAsync}
- * for usage examples and information on how a default {@code LoadTimeWeaver}
- * is selected when this interface is not used.
+ * <p>用法示例及未使用本接口时默认 {@code LoadTimeWeaver} 的选取方式，
+ * 参见 {@link org.springframework.scheduling.annotation.EnableAsync @EnableAsync}。
  *
  * @author Chris Beams
  * @since 3.1
@@ -36,10 +34,9 @@ import org.springframework.instrument.classloading.LoadTimeWeaver;
 public interface LoadTimeWeavingConfigurer {
 
 	/**
-	 * Create, configure and return the {@code LoadTimeWeaver} instance to be used.
-	 * Note that it is unnecessary to annotate this method with {@code @Bean}
-	 * because the object returned will automatically be registered as a bean by
-	 * {@link LoadTimeWeavingConfiguration#loadTimeWeaver()}
+	 * 创建、配置并返回要使用的 {@code LoadTimeWeaver} 实例。
+	 * <p>无需在本方法上加 {@code @Bean}，返回值会由
+	 * {@link LoadTimeWeavingConfiguration#loadTimeWeaver()} 自动注册为 Bean。
 	 */
 	LoadTimeWeaver getLoadTimeWeaver();
 

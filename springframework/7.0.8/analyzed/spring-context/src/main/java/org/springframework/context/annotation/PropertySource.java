@@ -26,17 +26,15 @@ import java.lang.annotation.Target;
 import org.springframework.core.io.support.PropertySourceFactory;
 
 /**
- * Annotation providing a convenient and declarative mechanism for adding a
- * {@link org.springframework.core.env.PropertySource PropertySource} to Spring's
- * {@link org.springframework.core.env.Environment Environment}. To be used in
- * conjunction with @{@link Configuration} classes.
+ * 提供便捷、声明式机制，向 Spring {@link org.springframework.core.env.Environment Environment}
+ * 添加 {@link org.springframework.core.env.PropertySource PropertySource}。
+ * 与 @{@link Configuration} 类配合使用。
  *
- * <h3>Example usage</h3>
+ * <h3>用法示例</h3>
  *
- * <p>Given a file {@code app.properties} containing the key/value pair
- * {@code testbean.name=myTestBean}, the following {@code @Configuration} class
- * uses {@code @PropertySource} to contribute {@code app.properties} to the
- * {@code Environment}'s set of {@code PropertySources}.
+ * <p>给定包含键值对 {@code testbean.name=myTestBean} 的文件 {@code app.properties}，
+ * 下列 {@code @Configuration} 类通过 {@code @PropertySource} 将 {@code app.properties}
+ * 贡献给 {@code Environment} 的 {@code PropertySources} 集合：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -54,32 +52,26 @@ import org.springframework.core.io.support.PropertySourceFactory;
  *     }
  * }</pre>
  *
- * <p>Notice that the {@code Environment} object is
- * {@link org.springframework.beans.factory.annotation.Autowired @Autowired} into the
- * configuration class and then used when populating the {@code TestBean} object. Given
- * the configuration above, a call to {@code testBean.getName()} will return "myTestBean".
+ * <p>注意 {@code Environment} 通过
+ * {@link org.springframework.beans.factory.annotation.Autowired @Autowired}
+ * 注入配置类，再用于填充 {@code TestBean}。在上述配置下，调用
+ * {@code testBean.getName()} 将返回 "myTestBean"。
  *
- * <h3>Resolving <code>${...}</code> placeholders in {@code <bean>} and {@code @Value} annotations</h3>
+ * <h3>在 {@code <bean>} 与 {@code @Value} 中解析 <code>${...}</code> 占位符</h3>
  *
- * <p>In order to resolve ${...} placeholders in {@code <bean>} definitions or {@code @Value}
- * annotations using properties from a {@code PropertySource}, you must ensure that an
- * appropriate <em>embedded value resolver</em> is registered in the {@code BeanFactory}
- * used by the {@code ApplicationContext}. This happens automatically when using
- * {@code <context:property-placeholder>} in XML. When using {@code @Configuration} classes
- * this can be achieved by explicitly registering a {@code PropertySourcesPlaceholderConfigurer}
- * via a {@code static} {@code @Bean} method. Note, however, that explicit registration
- * of a {@code PropertySourcesPlaceholderConfigurer} via a {@code static} {@code @Bean}
- * method is typically only required if you need to customize configuration such as the
- * placeholder syntax, etc. See the "Working with externalized values" section of
- * {@link Configuration @Configuration}'s javadocs and "a note on
- * BeanFactoryPostProcessor-returning {@code @Bean} methods" of {@link Bean @Bean}'s
- * javadocs for details and examples.
+ * <p>要在 {@code <bean>} 定义或 {@code @Value} 注解中使用 {@code PropertySource} 中的属性
+ * 解析 ${...} 占位符，须确保在 {@code ApplicationContext} 使用的 {@code BeanFactory} 中
+ * 注册了合适的<em>嵌入式值解析器</em>。XML 中使用 {@code <context:property-placeholder>}
+ * 时会自动完成。使用 {@code @Configuration} 类时，可通过 {@code static} {@code @Bean}
+ * 方法显式注册 {@code PropertySourcesPlaceholderConfigurer}。不过，通常仅在需要自定义
+ * 占位符语法等配置时才需要这样做。详见 {@link Configuration @Configuration} JavaDoc
+ * 的「处理外部化值」章节，以及 {@link Bean @Bean} JavaDoc 中关于返回
+ * {@code BeanFactoryPostProcessor} 的 {@code @Bean} 方法的说明。
  *
- * <h3>Resolving ${...} placeholders within {@code @PropertySource} resource locations</h3>
+ * <h3>在 {@code @PropertySource} 资源位置中解析 ${...} 占位符</h3>
  *
- * <p>Any ${...} placeholders present in a {@code @PropertySource} {@linkplain #value()
- * resource location} will be resolved against the set of property sources already
- * registered against the environment. For example:
+ * <p>{@code @PropertySource} {@linkplain #value() 资源位置}中的任意 ${...} 占位符，
+ * 将针对环境中已注册的属性源集合解析。例如：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -97,22 +89,16 @@ import org.springframework.core.io.support.PropertySourceFactory;
  *     }
  * }</pre>
  *
- * <p>Assuming that "my.placeholder" is present in one of the property sources already
- * registered &mdash; for example, system properties or environment variables &mdash;
- * the placeholder will be resolved to the corresponding value. If not, then "default/path"
- * will be used as a default. Expressing a default value (delimited by colon ":") is
- * optional. If no default is specified and a property cannot be resolved, an {@code
- * IllegalArgumentException} will be thrown.
+ * <p>若 "my.placeholder" 已存在于某个已注册属性源（如系统属性或环境变量）中，
+ * 占位符将解析为对应值；否则使用默认值 "default/path"。默认值（以冒号 ":" 分隔）为可选。
+ * 若未指定默认值且属性无法解析，将抛出 {@code IllegalArgumentException}。
  *
- * <h3>A note on property overriding with {@code @PropertySource}</h3>
+ * <h3>关于 {@code @PropertySource} 属性覆盖的说明</h3>
  *
- * <p>In cases where a given property key exists in more than one property resource
- * file, the last {@code @PropertySource} annotation processed will 'win' and override
- * any previous key with the same name.
+ * <p>当同一属性键存在于多个属性资源文件中时，最后处理的 {@code @PropertySource}
+ * 注解将「胜出」，覆盖先前同名键。
  *
- * <p>For example, given two properties files {@code a.properties} and
- * {@code b.properties}, consider the following two configuration classes
- * that reference them with {@code @PropertySource} annotations:
+ * <p>例如，给定 {@code a.properties} 与 {@code b.properties}，考虑下列两个配置类：
  *
  * <pre class="code">
  * &#064;Configuration
@@ -124,8 +110,7 @@ import org.springframework.core.io.support.PropertySourceFactory;
  * public class ConfigB { }
  * </pre>
  *
- * <p>The override ordering depends on the order in which these classes are registered
- * with the application context.
+ * <p>覆盖顺序取决于这些类注册到应用上下文的顺序：
  *
  * <pre class="code">
  * AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
@@ -134,22 +119,17 @@ import org.springframework.core.io.support.PropertySourceFactory;
  * ctx.refresh();
  * </pre>
  *
- * <p>In the scenario above, the properties in {@code b.properties} will override any
- * duplicates that exist in {@code a.properties}, because {@code ConfigB} was registered
- * last.
+ * <p>上述场景中，{@code b.properties} 中的属性将覆盖 {@code a.properties} 中的重复项，
+ * 因为 {@code ConfigB} 最后注册。
  *
- * <p>In certain situations, it may not be possible or practical to tightly control
- * property source ordering when using {@code @PropertySource} annotations. For example,
- * if the {@code @Configuration} classes above were registered via component-scanning,
- * the ordering is difficult to predict. In such cases &mdash; and if overriding is important
- * &mdash; it is recommended that the user fall back to using the programmatic
- * {@code PropertySource} API. See {@link org.springframework.core.env.ConfigurableEnvironment
- * ConfigurableEnvironment} and {@link org.springframework.core.env.MutablePropertySources
- * MutablePropertySources} javadocs for details.
+ * <p>某些情况下，使用 {@code @PropertySource} 时难以严格控制属性源顺序（例如通过组件扫描
+ * 注册上述 {@code @Configuration} 类时，顺序难以预测）。若覆盖很重要，建议改用编程式
+ * {@code PropertySource} API。详见
+ * {@link org.springframework.core.env.ConfigurableEnvironment ConfigurableEnvironment}
+ * 与 {@link org.springframework.core.env.MutablePropertySources MutablePropertySources} JavaDoc。
  *
- * <p>{@code @PropertySource} can be used as a <em>{@linkplain Repeatable repeatable}</em>
- * annotation. {@code @PropertySource} may also be used as a <em>meta-annotation</em>
- * to create custom <em>composed annotations</em> with attribute overrides.
+ * <p>{@code @PropertySource} 可作为<em>{@linkplain Repeatable 可重复}</em>注解使用。
+ * 也可作为<em>元注解</em>创建带属性覆盖的自定义<em>组合注解</em>。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -169,27 +149,21 @@ import org.springframework.core.io.support.PropertySourceFactory;
 public @interface PropertySource {
 
 	/**
-	 * Indicate the unique name of this property source.
-	 * <p>If omitted, the {@link #factory} will generate a name based on the
-	 * underlying resource (in the case of
+	 * 指定本属性源的唯一名称。
+	 * <p>若省略，{@link #factory} 将根据底层资源生成名称（对
 	 * {@link org.springframework.core.io.support.DefaultPropertySourceFactory
-	 * DefaultPropertySourceFactory}: derived from the resource description through
-	 * a corresponding name-less
+	 * DefaultPropertySourceFactory}：通过无名称的
 	 * {@link org.springframework.core.io.support.ResourcePropertySource
-	 * ResourcePropertySource} constructor).
-	 * <p>The name of a {@code PropertySource} serves two general purposes.
+	 * ResourcePropertySource} 构造器，从资源描述派生）。
+	 * <p>{@code PropertySource} 的名称有两方面用途：
 	 * <ul>
-	 * <li>Diagnostics: to determine the source of the properties in logging and
-	 * debugging &mdash; for example, in a Spring Boot application via Spring
-	 * Boot's {@code PropertySourceOrigin}.</li>
-	 * <li>Programmatic interaction with
-	 * {@link org.springframework.core.env.MutablePropertySources MutablePropertySources}:
-	 * the name can be used to retrieve properties from a particular property
-	 * source (or to determine if a particular named property source already exists).
-	 * The name can also be used to add a new property source relative to an existing
-	 * property source (see
-	 * {@link org.springframework.core.env.MutablePropertySources#addBefore addBefore()} and
-	 * {@link org.springframework.core.env.MutablePropertySources#addAfter addAfter()}).</li>
+	 * <li>诊断：在日志与调试中确定属性来源，例如 Spring Boot 应用中的
+	 * {@code PropertySourceOrigin}。</li>
+	 * <li>与 {@link org.springframework.core.env.MutablePropertySources MutablePropertySources}
+	 * 的编程式交互：可按名称检索特定属性源（或判断是否已存在），也可相对已有属性源
+	 * 添加新属性源（参见
+	 * {@link org.springframework.core.env.MutablePropertySources#addBefore addBefore()}
+	 * 与 {@link org.springframework.core.env.MutablePropertySources#addAfter addAfter()}）。</li>
 	 * </ul>
 	 * @see org.springframework.core.env.PropertySource#getName()
 	 * @see org.springframework.core.io.Resource#getDescription()
@@ -197,41 +171,36 @@ public @interface PropertySource {
 	String name() default "";
 
 	/**
-	 * Indicate the resource locations of the properties files to be loaded.
-	 * <p>The default {@link #factory() factory} supports both traditional and
-	 * XML-based properties file formats &mdash; for example,
-	 * {@code "classpath:/com/myco/app.properties"} or {@code "file:/path/to/file.xml"}.
-	 * <p>As of Spring Framework 6.1, resource location wildcards are also
-	 * supported &mdash; for example, {@code "classpath*:/config/*.properties"}.
-	 * <p>{@code ${...}} placeholders will be resolved against property sources already
-	 * registered with the {@code Environment}. See {@linkplain PropertySource above}
-	 * for examples.
-	 * <p>Each location will be added to the enclosing {@code Environment} as its own
-	 * property source, and in the order declared (or in the order in which resource
-	 * locations are resolved when location wildcards are used).
+	 * 指定要加载的属性文件资源位置。
+	 * <p>默认 {@link #factory() 工厂} 支持传统与基于 XML 的属性格式，例如
+	 * {@code "classpath:/com/myco/app.properties"} 或 {@code "file:/path/to/file.xml"}。
+	 * <p>自 Spring Framework 6.1 起，也支持资源位置通配符，例如
+	 * {@code "classpath*:/config/*.properties"}。
+	 * <p>{@code ${...}} 占位符将针对已向 {@code Environment} 注册的属性源解析。
+	 * 示例见上文 {@linkplain PropertySource 类说明}。
+	 * <p>每个位置将作为独立属性源按声明顺序（或使用通配符时按解析顺序）加入
+	 * 封闭的 {@code Environment}。
 	 */
 	String[] value();
 
 	/**
-	 * Indicate if a failure to find a {@link #value property resource} should be
-	 * ignored.
-	 * <p>{@code true} is appropriate if the properties file is completely optional.
-	 * <p>Default is {@code false}.
+	 * 找不到 {@link #value 属性资源} 时是否忽略失败。
+	 * <p>若属性文件完全可选，应设为 {@code true}。
+	 * <p>默认为 {@code false}。
 	 * @since 4.0
 	 */
 	boolean ignoreResourceNotFound() default false;
 
 	/**
-	 * A specific character encoding for the given resources, for example, "UTF-8".
+	 * 给定资源的特定字符编码，例如 "UTF-8"。
 	 * @since 4.3
 	 */
 	String encoding() default "";
 
 	/**
-	 * Specify a custom {@link PropertySourceFactory}, if any.
-	 * <p>By default, a default factory for standard resource files will be used
-	 * which supports {@code *.properties} and {@code *.xml} file formats for
-	 * {@link java.util.Properties}.
+	 * 指定自定义 {@link PropertySourceFactory}（若有）。
+	 * <p>默认使用支持 {@code *.properties} 与 {@code *.xml} 格式的标准资源文件工厂，
+	 * 用于 {@link java.util.Properties}。
 	 * @since 4.3
 	 * @see org.springframework.core.io.support.DefaultPropertySourceFactory
 	 * @see org.springframework.core.io.support.ResourcePropertySource

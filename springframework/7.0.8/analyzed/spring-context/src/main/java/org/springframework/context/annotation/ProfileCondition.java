@@ -22,8 +22,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.util.MultiValueMap;
 
 /**
- * {@link Condition} that matches based on the value of a {@link Profile @Profile}
- * annotation.
+ * 根据 {@link Profile @Profile} 注解的值进行匹配的 {@link Condition}。
  *
  * @author Chris Beams
  * @author Phillip Webb
@@ -32,6 +31,10 @@ import org.springframework.util.MultiValueMap;
  */
 class ProfileCondition implements Condition {
 
+	/**
+	 * 若元数据上存在 {@code @Profile}，则检查当前环境是否匹配其中任一 profile 表达式；
+	 * 无该注解时默认匹配成功。
+	 */
 	@Override
 	@SuppressWarnings("NullAway") // Reflection
 	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {

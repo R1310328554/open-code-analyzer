@@ -31,11 +31,10 @@ import org.springframework.instrument.classloading.LoadTimeWeaver;
 import org.springframework.util.Assert;
 
 /**
- * {@code @Configuration} class that registers a {@link LoadTimeWeaver} bean.
+ * 注册 {@link LoadTimeWeaver} Bean 的 {@code @Configuration} 类。
  *
- * <p>This configuration class is automatically imported when using the
- * {@link EnableLoadTimeWeaving} annotation. See {@code @EnableLoadTimeWeaving}
- * javadoc for complete usage details.
+ * <p>使用 {@link EnableLoadTimeWeaving} 注解时会自动导入本配置类。
+ * 完整用法参见 {@code @EnableLoadTimeWeaving} 的 JavaDoc。
  *
  * @author Chris Beams
  * @since 3.1
@@ -46,13 +45,19 @@ import org.springframework.util.Assert;
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class LoadTimeWeavingConfiguration implements ImportAware, BeanClassLoaderAware {
 
+	/** {@code @EnableLoadTimeWeaving} 注解属性。 */
 	private @Nullable AnnotationAttributes enableLTW;
 
+	/** 可选的自定义织入器配置器。 */
 	private @Nullable LoadTimeWeavingConfigurer ltwConfigurer;
 
+	/** 当前 Bean 工厂使用的类加载器。 */
 	private @Nullable ClassLoader beanClassLoader;
 
 
+	/**
+	 * 从导入本配置的类上读取 {@code @EnableLoadTimeWeaving} 元数据。
+	 */
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
 		this.enableLTW = AnnotationConfigUtils.attributesFor(importMetadata, EnableLoadTimeWeaving.class);
@@ -62,17 +67,26 @@ public class LoadTimeWeavingConfiguration implements ImportAware, BeanClassLoade
 		}
 	}
 
+	/**
+	 * 注入可选的 {@link LoadTimeWeavingConfigurer}，用于自定义 {@link LoadTimeWeaver}。
+	 */
 	@Autowired(required = false)
 	public void setLoadTimeWeavingConfigurer(LoadTimeWeavingConfigurer ltwConfigurer) {
 		this.ltwConfigurer = ltwConfigurer;
 	}
 
+	/** 设置 Bean 类加载器。 */
 	@Override
 	public void setBeanClassLoader(ClassLoader beanClassLoader) {
 		this.beanClassLoader = beanClassLoader;
 	}
 
 
+	/**
+	 * 创建并配置 {@link LoadTimeWeaver} Bean。
+	 * <p>优先使用 {@link LoadTimeWeavingConfigurer} 提供的实例，否则回退到
+	 * {@link DefaultContextLoadTimeWeaver}，并按注解属性决定是否启用 AspectJ 织入。
+	 */
 	@Bean(name = ConfigurableApplicationContext.LOAD_TIME_WEAVER_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public LoadTimeWeaver loadTimeWeaver() {
@@ -80,12 +94,12 @@ public class LoadTimeWeavingConfiguration implements ImportAware, BeanClassLoade
 		LoadTimeWeaver loadTimeWeaver = null;
 
 		if (this.ltwConfigurer != null) {
-			// The user has provided a custom LoadTimeWeaver instance
+			// 用户提供了自定义 LoadTimeWeaver 实例
 			loadTimeWeaver = this.ltwConfigurer.getLoadTimeWeaver();
 		}
 
 		if (loadTimeWeaver == null) {
-			// No custom LoadTimeWeaver provided -> fall back to the default
+			// 未提供自定义织入器，使用默认实现
 			loadTimeWeaver = new DefaultContextLoadTimeWeaver(this.beanClassLoader);
 		}
 
@@ -93,14 +107,14 @@ public class LoadTimeWeavingConfiguration implements ImportAware, BeanClassLoade
 			AspectJWeaving aspectJWeaving = this.enableLTW.getEnum("aspectjWeaving");
 			switch (aspectJWeaving) {
 				case DISABLED -> {
-					// AJ weaving is disabled -> do nothing
+					// AspectJ 织入已禁用，不做处理
 				}
 				case AUTODETECT -> {
 					if (this.beanClassLoader.getResource(AspectJWeavingEnabler.ASPECTJ_AOP_XML_RESOURCE) == null) {
-						// No aop.xml present on the classpath -> treat as 'disabled'
+						// classpath 上无 aop.xml，视为禁用
 						break;
 					}
-					// aop.xml is present on the classpath -> enable
+					// classpath 存在 aop.xml，启用 AspectJ 织入
 					AspectJWeavingEnabler.enableAspectJWeaving(loadTimeWeaver, this.beanClassLoader);
 				}
 				case ENABLED -> {

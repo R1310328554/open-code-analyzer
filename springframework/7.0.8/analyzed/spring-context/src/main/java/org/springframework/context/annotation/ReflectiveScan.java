@@ -27,28 +27,22 @@ import org.springframework.aot.hint.annotation.RegisterReflection;
 import org.springframework.core.annotation.AliasFor;
 
 /**
- * Scan arbitrary types for use of {@link Reflective}. Typically used on
- * {@link Configuration @Configuration} classes but can be added to any bean.
- * Scanning happens during AOT processing, typically at build-time.
+ * 扫描任意类型中对 {@link Reflective} 的使用。通常用于
+ * {@link Configuration @Configuration} 类，也可添加到任意 Bean。
+ * 扫描在 AOT 处理期间进行，通常在构建时执行。
  *
- * <p>In the example below, {@code com.example.app} and its subpackages are
- * scanned: <pre><code class="java">
+ * <p>下例扫描 {@code com.example.app} 及其子包：<pre><code class="java">
  * &#064;Configuration
  * &#064;ReflectiveScan("com.example.app")
  * class MyConfiguration {
  *     // ...
  * }</code></pre>
  *
- * <p>Either {@link #basePackageClasses} or {@link #basePackages} (or its alias
- * {@link #value}) may be specified to define specific packages to scan. If specific
- * packages are not defined, scanning will occur recursively beginning with the
- * package of the class that declares this annotation.
+ * <p>可通过 {@link #basePackageClasses} 或 {@link #basePackages}
+ * （及其别名 {@link #value}）指定要扫描的包。若未定义具体包，则从声明本注解的类所在包开始递归扫描。
  *
- * <p>A type does not need to be annotated at class level to be candidate, and
- * this performs a "deep scan" by loading every class in the target packages and
- * search for {@link Reflective} on types, constructors, methods, and fields.
- * Enclosed classes are candidates as well. Classes that fail to load are
- * ignored.
+ * <p>类型无需在类级别标注即可成为候选；本注解会对目标包中的每个类执行「深度扫描」，
+ * 在类型、构造器、方法与字段上查找 {@link Reflective}。内部类也是候选。加载失败的类会被忽略。
  *
  * @author Stephane Nicoll
  * @since 6.2
@@ -61,29 +55,25 @@ import org.springframework.core.annotation.AliasFor;
 public @interface ReflectiveScan {
 
 	/**
-	 * Alias for {@link #basePackages}.
-	 * <p>Allows for more concise annotation declarations if no other attributes
-	 * are needed &mdash; for example, {@code @ReflectiveScan("org.my.pkg")}
-	 * instead of {@code @ReflectiveScan(basePackages = "org.my.pkg")}.
+	 * {@link #basePackages} 的别名。
+	 * <p>若无需其他属性，可更简洁地声明，例如
+	 * {@code @ReflectiveScan("org.my.pkg")} 而非
+	 * {@code @ReflectiveScan(basePackages = "org.my.pkg")}。
 	 */
 	@AliasFor("basePackages")
 	String[] value() default {};
 
 	/**
-	 * Base packages to scan for reflective usage.
-	 * <p>{@link #value} is an alias for (and mutually exclusive with) this
-	 * attribute.
-	 * <p>Use {@link #basePackageClasses} for a type-safe alternative to
-	 * String-based package names.
+	 * 要扫描反射用法的基包。
+	 * <p>{@link #value} 是本属性的别名（且与之互斥）。
+	 * <p>类型安全的包名替代方案请使用 {@link #basePackageClasses}。
 	 */
 	@AliasFor("value")
 	String[] basePackages() default {};
 
 	/**
-	 * Type-safe alternative to {@link #basePackages} for specifying the packages
-	 * to scan for reflection usage. The package of each class specified will be scanned.
-	 * <p>Consider creating a special no-op marker class or interface in each package
-	 * that serves no purpose other than being referenced by this attribute.
+	 * {@link #basePackages} 的类型安全替代：指定若干类，将扫描各自所在包。
+	 * <p>可在每个包中创建一个仅用于被本属性引用的无操作标记类或接口。
 	 */
 	Class<?>[] basePackageClasses() default {};
 

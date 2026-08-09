@@ -23,12 +23,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Common annotation for suggesting a specific proxy type for a {@link Bean @Bean}
- * method or {@link org.springframework.stereotype.Component @Component} class,
- * overriding a globally configured default.
+ * 为 {@link Bean @Bean} 方法或 {@link org.springframework.stereotype.Component @Component} 类
+ * 建议特定代理类型，覆盖全局默认配置。
  *
- * <p>Only actually applying in case of a bean actually getting auto-proxied in
- * the first place. Actual auto-proxying is dependent on external configuration.
+ * <p>仅在 Bean 实际会被自动代理时生效；是否自动代理取决于外部配置。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -41,16 +39,14 @@ import java.lang.annotation.Target;
 public @interface Proxyable {
 
 	/**
-	 * Suggest a specific proxy type, either {@link ProxyType#INTERFACES} for
-	 * a JDK dynamic proxy or {@link ProxyType#TARGET_CLASS} for a CGLIB proxy,
-	 * overriding a globally configured default.
+	 * 建议的代理类型：{@link ProxyType#INTERFACES} 表示 JDK 动态代理，
+	 * {@link ProxyType#TARGET_CLASS} 表示 CGLIB 代理，覆盖全局默认配置。
 	 */
 	ProxyType value() default ProxyType.DEFAULT;
 
 	/**
-	 * Suggest a JDK dynamic proxy with specific interfaces to expose, overriding
-	 * a globally configured default.
-	 * <p>Only taken into account if {@link #value()} is not {@link ProxyType#TARGET_CLASS}.
+	 * 建议 JDK 动态代理暴露的特定接口，覆盖全局默认配置。
+	 * <p>仅当 {@link #value()} 不是 {@link ProxyType#TARGET_CLASS} 时生效。
 	 */
 	Class<?>[] interfaces() default {};
 

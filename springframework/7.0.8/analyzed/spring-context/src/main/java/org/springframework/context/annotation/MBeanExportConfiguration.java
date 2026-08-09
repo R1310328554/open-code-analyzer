@@ -35,10 +35,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * {@code @Configuration} class that registers a {@link AnnotationMBeanExporter} bean.
+ * 注册 {@link AnnotationMBeanExporter} Bean 的 {@code @Configuration} 类。
  *
- * <p>This configuration class is automatically imported when using the
- * {@link EnableMBeanExport} annotation. See its javadoc for complete usage details.
+ * <p>使用 {@link EnableMBeanExport} 注解时会自动导入本配置类。
+ * 完整用法参见该注解的 JavaDoc。
  *
  * @author Phillip Webb
  * @author Chris Beams
@@ -49,15 +49,20 @@ import org.springframework.util.StringUtils;
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class MBeanExportConfiguration implements ImportAware, EnvironmentAware, BeanFactoryAware {
 
+	/** MBean 导出器 Bean 名称。 */
 	private static final String MBEAN_EXPORTER_BEAN_NAME = "mbeanExporter";
 
+	/** {@code @EnableMBeanExport} 注解属性。 */
 	private @Nullable AnnotationAttributes enableMBeanExport;
 
+	/** 用于解析占位符的环境。 */
 	private @Nullable Environment environment;
 
+	/** 用于按名称查找 {@link MBeanServer} 的 Bean 工厂。 */
 	private @Nullable BeanFactory beanFactory;
 
 
+	/** 从导入类读取 {@code @EnableMBeanExport} 元数据。 */
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
 		Map<String, @Nullable Object> map = importMetadata.getAnnotationAttributes(EnableMBeanExport.class.getName());
@@ -79,6 +84,9 @@ public class MBeanExportConfiguration implements ImportAware, EnvironmentAware, 
 	}
 
 
+	/**
+	 * 创建并配置 {@link AnnotationMBeanExporter} Bean。
+	 */
 	@Bean(name = MBEAN_EXPORTER_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public AnnotationMBeanExporter mbeanExporter() {
@@ -90,6 +98,7 @@ public class MBeanExportConfiguration implements ImportAware, EnvironmentAware, 
 		return exporter;
 	}
 
+	/** 配置默认 JMX 域，并解析其中的占位符。 */
 	private void setupDomain(AnnotationMBeanExporter exporter, AnnotationAttributes enableMBeanExport) {
 		String defaultDomain = enableMBeanExport.getString("defaultDomain");
 		if (StringUtils.hasLength(defaultDomain) && this.environment != null) {
@@ -100,6 +109,7 @@ public class MBeanExportConfiguration implements ImportAware, EnvironmentAware, 
 		}
 	}
 
+	/** 配置目标 {@link MBeanServer}，按 Bean 名称从工厂解析。 */
 	private void setupServer(AnnotationMBeanExporter exporter, AnnotationAttributes enableMBeanExport) {
 		String server = enableMBeanExport.getString("server");
 		if (StringUtils.hasLength(server) && this.environment != null) {
@@ -111,6 +121,7 @@ public class MBeanExportConfiguration implements ImportAware, EnvironmentAware, 
 		}
 	}
 
+	/** 配置 MBean 注册冲突时的处理策略。 */
 	private void setupRegistrationPolicy(AnnotationMBeanExporter exporter, AnnotationAttributes enableMBeanExport) {
 		RegistrationPolicy registrationPolicy = enableMBeanExport.getEnum("registration");
 		exporter.setRegistrationPolicy(registrationPolicy);

@@ -23,13 +23,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Container annotation that aggregates several {@link PropertySource} annotations.
+ * 聚合多个 {@link PropertySource} 注解的容器注解。
  *
- * <p>Can be used natively, declaring several nested {@link PropertySource} annotations.
- * Can also be used in conjunction with Java's support for <em>repeatable annotations</em>,
- * where {@link PropertySource @PropertySource} can simply be declared several
- * times on the same {@linkplain ElementType#TYPE type}, implicitly generating
- * this container annotation.
+ * <p>可直接声明多个嵌套的 {@link PropertySource} 注解。
+ * 也可配合 Java 的<em>可重复注解</em>机制使用：在同一 {@linkplain ElementType#TYPE 类型}上
+ * 多次声明 {@link PropertySource @PropertySource} 时，会隐式生成本容器注解。
  *
  * @author Phillip Webb
  * @since 4.0
