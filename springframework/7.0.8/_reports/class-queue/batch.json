@@ -1,27 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:11:43Z",
-  "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/SqlServerCallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/SybaseCallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableMetaDataProviderFactory.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableParameterMetaData.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/AbstractSqlParameterSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/BeanPropertySqlParameterSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/EmptySqlParameterSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/MapSqlParameterSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/NamedParameterJdbcDaoSupport.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/ParsedSql.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/SimplePropertySqlParameterSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/SqlParameterSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/namedparam/SqlParameterSourceUtils.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/SimpleJdbcCall.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/SimpleJdbcCallOperations.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/SimpleJdbcInsert.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/simple/SimpleJdbcInsertOperations.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/AbstractInterruptibleBatchPreparedStatementSetter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/AbstractLobCreatingPreparedStatementCallback.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 184,
-  "done": 1287
+  "done": 1307
 }
