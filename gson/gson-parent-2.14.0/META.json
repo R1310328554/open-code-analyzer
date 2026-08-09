@@ -1,0 +1,7 @@
+{
+  "project": "gson",
+  "version": "gson-parent-2.14.0",
+  "git_ref": "gson-parent-2.14.0",
+  "repo_url": "https://github.com/google/gson",
+  "source": "release"
+}

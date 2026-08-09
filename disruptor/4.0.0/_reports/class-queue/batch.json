@@ -1,0 +1,27 @@
+{
+  "claimed_at": "2026-08-09T15:51:14Z",
+  "files": [
+    "src/main/java/com/lmax/disruptor/RingBuffer.java",
+    "src/main/java/com/lmax/disruptor/Sequencer.java",
+    "src/main/java/com/lmax/disruptor/Sequence.java",
+    "src/main/java/com/lmax/disruptor/EventProcessor.java",
+    "src/main/java/com/lmax/disruptor/BatchEventProcessor.java",
+    "src/main/java/com/lmax/disruptor/dsl/Disruptor.java",
+    "src/main/java/com/lmax/disruptor/dsl/ProducerType.java",
+    "src/main/java/com/lmax/disruptor/WaitStrategy.java",
+    "src/main/java/com/lmax/disruptor/AbstractSequencer.java",
+    "src/main/java/com/lmax/disruptor/AggregateEventHandler.java",
+    "src/main/java/com/lmax/disruptor/AlertException.java",
+    "src/main/java/com/lmax/disruptor/BatchEventProcessorBuilder.java",
+    "src/main/java/com/lmax/disruptor/BatchRewindStrategy.java",
+    "src/main/java/com/lmax/disruptor/BlockingWaitStrategy.java",
+    "src/main/java/com/lmax/disruptor/BusySpinWaitStrategy.java",
+    "src/main/java/com/lmax/disruptor/Cursored.java",
+    "src/main/java/com/lmax/disruptor/DataProvider.java",
+    "src/main/java/com/lmax/disruptor/EventFactory.java",
+    "src/main/java/com/lmax/disruptor/EventHandler.java",
+    "src/main/java/com/lmax/disruptor/EventHandlerBase.java"
+  ],
+  "remaining_pending": 151,
+  "note": "src/main only"
+}

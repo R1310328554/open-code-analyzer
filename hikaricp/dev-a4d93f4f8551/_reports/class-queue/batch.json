@@ -1,0 +1,32 @@
+{
+  "claimed_at": "2026-08-09T15:50:50Z",
+  "files": [
+    "src/main/java/com/zaxxer/hikari/HikariConfigMXBean.java",
+    "src/main/java/com/zaxxer/hikari/HikariCredentialsProvider.java",
+    "src/main/java/com/zaxxer/hikari/HikariDataSource.java",
+    "src/main/java/com/zaxxer/hikari/HikariJNDIFactory.java",
+    "src/main/java/com/zaxxer/hikari/HikariPoolMXBean.java",
+    "src/main/java/com/zaxxer/hikari/SQLExceptionOverride.java",
+    "src/main/java/com/zaxxer/hikari/hibernate/HikariConfigurationUtil.java",
+    "src/main/java/com/zaxxer/hikari/hibernate/HikariConnectionProvider.java",
+    "src/main/java/com/zaxxer/hikari/metrics/IMetricsTracker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/MetricsTracker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/MetricsTrackerFactory.java",
+    "src/main/java/com/zaxxer/hikari/metrics/PoolStats.java",
+    "src/main/java/com/zaxxer/hikari/metrics/dropwizard/CodaHaleMetricsTracker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/dropwizard/CodahaleHealthChecker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/dropwizard/CodahaleMetricsTrackerFactory.java",
+    "src/main/java/com/zaxxer/hikari/metrics/dropwizard/Dropwizard5MetricsTracker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/dropwizard/Dropwizard5MetricsTrackerFactory.java",
+    "src/main/java/com/zaxxer/hikari/metrics/dropwizard/DropwizardCommon.java",
+    "src/main/java/com/zaxxer/hikari/metrics/micrometer/MicrometerMetricsTracker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/micrometer/MicrometerMetricsTrackerFactory.java",
+    "src/main/java/com/zaxxer/hikari/metrics/prometheus/HikariCPCollector.java",
+    "src/main/java/com/zaxxer/hikari/metrics/prometheus/PrometheusHistogramMetricsTracker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/prometheus/PrometheusHistogramMetricsTrackerFactory.java",
+    "src/main/java/com/zaxxer/hikari/metrics/prometheus/PrometheusMetricsTracker.java",
+    "src/main/java/com/zaxxer/hikari/metrics/prometheus/PrometheusMetricsTrackerFactory.java"
+  ],
+  "remaining_pending": 24,
+  "done": 0
+}

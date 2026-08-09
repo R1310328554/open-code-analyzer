@@ -16,8 +16,8 @@ from oca.classwork.queue import QueuePaths, _read_lines, _write_lines  # noqa: E
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project", default="springframework")
-    ap.add_argument("--version", default="7.0.8")
+    ap.add_argument("--project", default="springframework", help="项目目录名，如 flask/gson/hikaricp")
+    ap.add_argument("--version", default="7.0.8", help="版本目录名")
     ap.add_argument("--note", default="agent-understood-batch")
     ap.add_argument("files", nargs="*")
     args = ap.parse_args()
