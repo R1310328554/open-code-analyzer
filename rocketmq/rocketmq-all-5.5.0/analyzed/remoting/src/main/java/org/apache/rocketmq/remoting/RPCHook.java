@@ -19,9 +19,14 @@ package org.apache.rocketmq.remoting;
 
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * RPC 拦截钩子：在请求发出前与响应返回后注入自定义逻辑。
+ */
 public interface RPCHook {
+    /** 请求发送前回调，可修改或审计 {@link RemotingCommand}。 */
     void doBeforeRequest(final String remoteAddr, final RemotingCommand request);
 
+    /** 收到响应后回调，可用于日志、鉴权或指标采集。 */
     void doAfterResponse(final String remoteAddr, final RemotingCommand request,
                          final RemotingCommand response);
 }

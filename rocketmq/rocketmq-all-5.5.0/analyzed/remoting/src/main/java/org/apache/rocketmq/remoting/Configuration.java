@@ -30,6 +30,9 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.remoting.protocol.DataVersion;
 
+/**
+ * Remoting 配置聚合器：注册配置对象与扩展属性，支持持久化与版本追踪。
+ */
 public class Configuration {
 
     private final Logger log;
@@ -41,9 +44,7 @@ public class Configuration {
     private Field storePathField;
     private DataVersion dataVersion = new DataVersion();
     private ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-    /**
-     * All properties include configs in object and extend properties.
-     */
+    /** 合并后的全部配置项（对象字段与扩展属性）。 */
     private Properties allConfigs = new Properties();
 
     public Configuration(Logger log) {
@@ -69,9 +70,9 @@ public class Configuration {
     }
 
     /**
-     * register config object
+     * 注册配置对象并将其属性合并到全局配置。
      *
-     * @return the current Configuration object
+     * @return 当前 Configuration 实例
      */
     public Configuration registerConfig(Object configObject) {
         try {
@@ -94,9 +95,9 @@ public class Configuration {
     }
 
     /**
-     * register config properties
+     * 注册扩展 Properties 并合并到全局配置。
      *
-     * @return the current Configuration object
+     * @return 当前 Configuration 实例
      */
     public Configuration registerConfig(Properties extProperties) {
         if (extProperties == null) {
@@ -119,9 +120,9 @@ public class Configuration {
     }
 
     /**
-     * The store path will be gotten from the field of object.
+     * 指定从配置对象字段动态读取持久化路径。
      *
-     * @throws java.lang.RuntimeException if the field of object is not exist.
+     * @throws java.lang.RuntimeException 字段不存在时抛出
      */
     public void setStorePathFromConfig(Object object, String fieldName) {
         assert object != null;
@@ -132,7 +133,7 @@ public class Configuration {
             try {
                 this.storePathFromConfig = true;
                 this.storePathObject = object;
-                // check
+                // 校验字段存在且非 static
                 this.storePathField = object.getClass().getDeclaredField(fieldName);
                 assert this.storePathField != null
                     && !Modifier.isStatic(this.storePathField.getModifiers());
@@ -176,16 +177,17 @@ public class Configuration {
         this.storePath = storePath;
     }
 
+    /** 按传入 Properties 更新已注册配置并持久化。 */
     public void update(Properties properties) {
         try {
             readWriteLock.writeLock().lockInterruptibly();
 
             try {
-                // the property must be exist when update
+                // 更新时仅覆盖已存在的配置键
                 mergeIfExist(properties, this.allConfigs);
 
                 for (Object configObject : configObjectList) {
-                    // not allConfigs to update...
+                    // 仅将变更项写回各注册对象，而非全量替换
                     MixAll.properties2Object(properties, configObject);
                 }
 
@@ -202,6 +204,7 @@ public class Configuration {
         persist();
     }
 
+    /** 将当前全部配置序列化写入存储路径。 */
     public void persist() {
         try {
             readWriteLock.readLock().lockInterruptibly();
@@ -220,6 +223,7 @@ public class Configuration {
         }
     }
 
+    /** 返回全部配置的可读字符串表示。 */
     public String getAllConfigsFormatString() {
         try {
             readWriteLock.readLock().lockInterruptibly();
@@ -238,6 +242,7 @@ public class Configuration {
         return null;
     }
 
+    /** 按指定键列表导出客户端可见配置字符串。 */
     public String getClientConfigsFormatString(List<String> clientKeys) {
         try {
             readWriteLock.readLock().lockInterruptibly();
@@ -260,6 +265,7 @@ public class Configuration {
         return this.dataVersion.toJson();
     }
 
+    /** 获取合并后的全部配置 Properties。 */
     public Properties getAllConfigs() {
         try {
             readWriteLock.readLock().lockInterruptibly();
@@ -281,7 +287,7 @@ public class Configuration {
     private String getAllConfigsInternal() {
         StringBuilder stringBuilder = new StringBuilder();
 
-        // reload from config object ?
+        // 导出前从各配置对象重新加载属性
         for (Object configObject : this.configObjectList) {
             Properties properties = MixAll.object2Properties(configObject);
             if (properties != null) {

@@ -16,7 +16,11 @@
  */
 package org.apache.rocketmq.remoting;
 
+/**
+ * Remoting 命令处理完成后的无参回调接口。
+ */
 public interface CommandCallback {
 
+    /** 命令处理完成后执行。 */
     void accept();
 }

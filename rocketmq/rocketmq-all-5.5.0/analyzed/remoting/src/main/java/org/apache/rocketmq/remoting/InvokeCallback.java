@@ -19,19 +19,23 @@ package org.apache.rocketmq.remoting;
 import org.apache.rocketmq.remoting.netty.ResponseFuture;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 异步 Remoting 调用完成回调。
+ */
 public interface InvokeCallback {
     /**
-     * This method is expected to be invoked after {@link #operationSucceed(RemotingCommand)}
-     * or {@link #operationFail(Throwable)}
+     * 在 {@link #operationSucceed(RemotingCommand)} 或 {@link #operationFail(Throwable)} 之后调用。
      *
-     * @param responseFuture the returned object contains response or exception
+     * @param responseFuture 包含响应或异常的 Future 包装对象
      */
     void operationComplete(final ResponseFuture responseFuture);
 
+    /** 异步调用成功时的默认空实现。 */
     default void operationSucceed(final RemotingCommand response) {
 
     }
 
+    /** 异步调用失败时的默认空实现。 */
     default void operationFail(final Throwable throwable) {
 
     }

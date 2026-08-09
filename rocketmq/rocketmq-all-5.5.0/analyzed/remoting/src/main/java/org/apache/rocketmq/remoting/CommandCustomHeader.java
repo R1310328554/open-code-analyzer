@@ -18,6 +18,10 @@ package org.apache.rocketmq.remoting;
 
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * Remoting 命令自定义扩展头：提供字段合法性校验。
+ */
 public interface CommandCustomHeader {
+    /** 校验扩展头各字段，非法时抛出 {@link RemotingCommandException}。 */
     void checkFields() throws RemotingCommandException;
 }
