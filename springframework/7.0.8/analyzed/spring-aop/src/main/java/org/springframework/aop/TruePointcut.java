@@ -19,49 +19,39 @@ package org.springframework.aop;
 import java.io.Serializable;
 
 /**
- * 始终匹配的规范切入点实例。
+ * 始终匹配的规范 Pointcut 实例。
+ *
  * @author Rod Johnson
  */
 @SuppressWarnings("serial")
 final class TruePointcut implements Pointcut, Serializable {
 
-	/**
-	 * 创建 `TruePointcut` 的新实例。
-	 */
 	public static final TruePointcut INSTANCE = new TruePointcut();
 
 	/**
-	* 强制执行单例模式。
-	*/
+	 * 强制单例模式。
+	 */
 	private TruePointcut() {
 	}
 
-	/**
-	 * 获取类过滤器（`ClassFilter`）。
-	 */
 	@Override
 	public ClassFilter getClassFilter() {
 		return ClassFilter.TRUE;
 	}
 
-	/**
-	 * 获取方法匹配器（`MethodMatcher`）。
-	 */
 	@Override
 	public MethodMatcher getMethodMatcher() {
 		return MethodMatcher.TRUE;
 	}
 
 	/**
-	* 需要支持序列化。替换反序列化时的规范实例，保护单例模式。替代 {@code equals()}。
-	*/
+	 * 支持序列化所需。反序列化时替换为规范实例，
+	 * 保护单例模式。可替代重写 {@code equals()}。
+	 */
 	private Object readResolve() {
 		return INSTANCE;
 	}
 
-	/**
-	* 返回字符串表示。
-	*/
 	@Override
 	public String toString() {
 		return "Pointcut.TRUE";

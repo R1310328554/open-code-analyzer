@@ -17,9 +17,16 @@
 package org.springframework.aop;
 
 /**
- * 用于显式返回原始目标对象（从方法调用返回时通常会被代理对象替换）的 AOP 代理接口（特别是：引入接口）的标记。
- * <p>注意，这是 {@link java.io.Serializable} 风格的标记接口，语义上应用于声明的接口而不是具体对象的完整类。换句话说，该标记仅适用于特定接口（通常
- * 是不作为 AOP 代理的主要接口的引入接口），因此不会影响具体 AOP 代理可能实现的其他接口。
+ * 标记 AOP 代理接口（尤其是引介接口），
+ * 明确表示要返回原始目标对象
+ * （方法调用返回时通常会被替换为代理对象）。
+ *
+ * <p>本接口是 {@link java.io.Serializable} 风格的标记接口，
+ * 语义上作用于声明的接口，而非具体对象的完整类。
+ * 换言之，该标记仅适用于特定接口
+ * （通常是不作为 AOP 代理主接口的引介接口），
+ * 因此不影响具体 AOP 代理可能实现的其他接口。
+ *
  * @author Juergen Hoeller
  * @since 2.0.5
  * @see org.springframework.aop.scope.ScopedObject

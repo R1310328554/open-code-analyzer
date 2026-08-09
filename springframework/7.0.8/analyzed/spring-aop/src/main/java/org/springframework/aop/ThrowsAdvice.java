@@ -17,16 +17,31 @@
 package org.springframework.aop;
 
 /**
- * <p> 该接口上没有任何方法，因为方法是通过引用调用的。 实现类必须实现以下形式的方法： <pre class="code">void
- * afterThrowing([method, args, goal], ThrowableSubclass);</pre> <p> 有效方法的一些示例是： <pre
- * class="code">public void afterThrowing(Exception ex)</pre> <pre class="code">public void
- * afterThrowing(RemoteException ex)</pre> <pre class="code">public void
- * afterThrowing(Method method, Object[] args, Object target, Exception ex)</pre> <pre
- * class="code">public void afterThrowing(Method method, Object[]
- * args、对象目标、ServletException前)</pre> <p> 前三个参数是可选的，仅当我们需要有关连接点的更多信息时才用，如 AspectJ <b>after-
- * throws </b> 建议中所示。 <p><b> 注：</b> 如果抛出建议它本身发送异常，会覆盖原始异常（即更改向用户发送的异常）。重写异常通常是
- * RuntimeException；这与任何方法签名兼容。但是，如果 throws-advice
- * 方法发送已检查的异常，则必须与目标方法的异常相匹配，因此声明在某种与特定的目标方法签名连接。 <b> 不要转发与目标方法的签名不兼容的未声明的检查异常！</b>
+ * 异常抛出通知的标记接口。
+ *
+ * <p>本接口不含任何方法，方法通过反射调用。
+ * 实现类须实现如下形式的方法：
+ *
+ * <pre class="code">void afterThrowing([Method, args, target], ThrowableSubclass);</pre>
+ *
+ * <p>有效方法示例：
+ *
+ * <pre class="code">public void afterThrowing(Exception ex)</pre>
+ * <pre class="code">public void afterThrowing(RemoteException ex)</pre>
+ * <pre class="code">public void afterThrowing(Method method, Object[] args, Object target, Exception ex)</pre>
+ * <pre class="code">public void afterThrowing(Method method, Object[] args, Object target, ServletException ex)</pre>
+ *
+ * <p>前三个参数可选，仅在需要连接点额外信息时有用，
+ * 类似 AspectJ 的 <b>after-throwing</b> 通知。
+ *
+ * <p><b>注意：</b>若 throws-advice 方法自身抛出异常，
+ * 将覆盖原始异常（即改变抛给调用者的异常）。
+ * 覆盖异常通常为 RuntimeException，与任意方法签名兼容。
+ * 但若 throws-advice 方法抛出受检异常，
+ * 则须与目标方法声明的异常匹配，
+ * 因此在一定程度上与特定目标方法签名耦合。
+ * <b>切勿抛出与目标方法签名不兼容的未声明受检异常！</b>
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see AfterReturningAdvice

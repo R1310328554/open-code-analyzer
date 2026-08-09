@@ -19,8 +19,12 @@ package org.springframework.aop;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 用于公开代理背后的目标类的最小接口。 <p>由AOP代理对象和代理工厂（通过{@link
- * org.springframework.aop.framework.Advised}）以及{@link TargetSour ce TargetSources}实现。
+ * 用于暴露代理背后目标类的最小接口。
+ *
+ * <p>由 AOP 代理对象与代理工厂
+ * （通过 {@link org.springframework.aop.framework.Advised}）
+ * 以及 {@link TargetSource TargetSources} 实现。
+ *
  * @author Juergen Hoeller
  * @since 2.0.3
  * @see org.springframework.aop.support.AopUtils#getTargetClass(Object)
@@ -28,9 +32,10 @@ import org.jspecify.annotations.Nullable;
 public interface TargetClassAware {
 
 	/**
-	* 返回实现对象背后的目标类（通常是代理配置或实际代理）。
-	* @return 目标类，如果未知则为 {@code null}
-	*/
+	 * 返回实现对象背后的目标类
+	 * （通常是代理配置或实际代理）。
+	 * @return 目标 Class，未知时返回 {@code null}
+	 */
 	@Nullable Class<?> getTargetClass();
 
 }

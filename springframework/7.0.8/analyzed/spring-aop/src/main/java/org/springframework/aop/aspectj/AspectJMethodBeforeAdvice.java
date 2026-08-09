@@ -24,7 +24,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.MethodBeforeAdvice;
 
 /**
- * Spring AOP 建议包装 AspectJ before 方法。
+ * 封装 AspectJ before 方法的 Spring AOP 通知。
+ * 在目标方法执行之前调用切面中的前置通知方法。
+ *
  * @author Rod Johnson
  * @author Adrian Colyer
  * @since 2.0
@@ -32,9 +34,6 @@ import org.springframework.aop.MethodBeforeAdvice;
 @SuppressWarnings("serial")
 public class AspectJMethodBeforeAdvice extends AbstractAspectJAdvice implements MethodBeforeAdvice, Serializable {
 
-	/**
-	 * 创建 `AspectJMethodBeforeAdvice` 的新实例。
-	 */
 	public AspectJMethodBeforeAdvice(
 			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
 
@@ -42,25 +41,16 @@ public class AspectJMethodBeforeAdvice extends AbstractAspectJAdvice implements 
 	}
 
 
-	/**
-	 * 在…之前回调（方法 `before`）。
-	 */
 	@Override
 	public void before(Method method, @Nullable Object[] args, @Nullable Object target) throws Throwable {
 		invokeAdviceMethod(getJoinPointMatch(), null, null);
 	}
 
-	/**
-	 * 判断是否 Before Advice。
-	 */
 	@Override
 	public boolean isBeforeAdvice() {
 		return true;
 	}
 
-	/**
-	 * 判断是否 After Advice。
-	 */
 	@Override
 	public boolean isAfterAdvice() {
 		return false;

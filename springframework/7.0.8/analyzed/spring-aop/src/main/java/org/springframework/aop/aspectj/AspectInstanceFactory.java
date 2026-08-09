@@ -21,8 +21,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.Ordered;
 
 /**
- * 实现接口以提供 AspectJ 方面的实例。与 Spring 的 bean 工厂解耦。
- * <p> 扩展了 {@link org.springframework.core.Ordered} 接口以表达链中底层方面的顺序值。
+ * 提供 AspectJ 切面实例的接口。
+ * 与 Spring Bean 工厂解耦。
+ *
+ * <p>扩展 {@link org.springframework.core.Ordered} 接口，
+ * 为链中的底层切面表达顺序值。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -31,14 +35,14 @@ import org.springframework.core.Ordered;
 public interface AspectInstanceFactory extends Ordered {
 
 	/**
-	 * 创建该工厂方面的一个实例。
-	 * @return 方面实例（绝不是 {@code null}）
+	 * 创建本工厂切面的一个实例。
+	 * @return 切面实例（永不为 {@code null}）
 	 */
 	Object getAspectInstance();
 
 	/**
-	 * 公开该工厂使用的方面类加载器。
-	 * @return 方面类加载器（或用于引导加载器的 {@code null}）
+	 * 暴露本工厂使用的切面类加载器。
+	 * @return 切面类加载器（引导类加载器时为 {@code null}）
 	 * @see org.springframework.util.ClassUtils#getDefaultClassLoader()
 	 */
 	@Nullable ClassLoader getAspectClassLoader();

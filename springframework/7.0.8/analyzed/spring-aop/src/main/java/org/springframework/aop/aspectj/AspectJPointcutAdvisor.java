@@ -25,27 +25,25 @@ import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
- * {@code AspectJPointcutAdvisor} 将 {@link AbstractAspectJAdvice} 适配为 {@link
- * PointcutAdvisor} 接口。
+ * {@code AspectJPointcutAdvisor} 将 {@link AbstractAspectJAdvice}
+ * 适配为 {@link PointcutAdvisor} 接口。
+ *
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @since 2.0
  */
 public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 
-	/** 通知相关状态（`advice`）。 */
 	private final AbstractAspectJAdvice advice;
 
-	/** 切点相关状态（`pointcut`）。 */
 	private final Pointcut pointcut;
 
-	/** `order`：该类的成员状态。 */
 	private @Nullable Integer order;
 
 
 	/**
-	 * 为给定的建议创建一个新的 AspectJPointcutAdvisor。
-	 * @param advice 要包装的 AbstractAspectJAdvice
+	 * 为给定 advice 创建新的 AspectJPointcutAdvisor。
+	 * @param advice 要封装的 AbstractAspectJAdvice
 	 */
 	public AspectJPointcutAdvisor(AbstractAspectJAdvice advice) {
 		Assert.notNull(advice, "Advice must not be null");
@@ -54,16 +52,10 @@ public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 	}
 
 
-	/**
-	 * 设置 Order（`Order`）。
-	 */
 	public void setOrder(int order) {
 		this.order = order;
 	}
 
-	/**
-	 * 获取 Order（`Order`）。
-	 */
 	@Override
 	public int getOrder() {
 		if (this.order != null) {
@@ -74,24 +66,18 @@ public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 		}
 	}
 
-	/**
-	 * 获取 Advice（`Advice`）。
-	 */
 	@Override
 	public Advice getAdvice() {
 		return this.advice;
 	}
 
-	/**
-	 * 获取 Pointcut（`Pointcut`）。
-	 */
 	@Override
 	public Pointcut getPointcut() {
 		return this.pointcut;
 	}
 
 	/**
-	 * 返回声明通知的方面（bean）的名称。
+	 * 返回声明该通知的切面（bean）名称。
 	 * @since 4.3.15
 	 * @see AbstractAspectJAdvice#getAspectName()
 	 */
@@ -100,18 +86,12 @@ public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 	}
 
 
-	/**
-	 * 比较是否相等。
-	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof AspectJPointcutAdvisor that &&
 				this.advice.equals(that.advice)));
 	}
 
-	/**
-	 * 判断是否包含/具备 h Code。
-	 */
 	@Override
 	public int hashCode() {
 		return AspectJPointcutAdvisor.class.hashCode() * 29 + this.advice.hashCode();

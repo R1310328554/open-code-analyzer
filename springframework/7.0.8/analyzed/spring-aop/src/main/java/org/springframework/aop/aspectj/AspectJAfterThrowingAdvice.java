@@ -26,7 +26,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.AfterAdvice;
 
 /**
- * Spring AOP 建议包装 AspectJ 后抛出建议方法。
+ * 封装 AspectJ after-throwing 通知方法的 Spring AOP 通知。
+ *
  * @author Rod Johnson
  * @since 2.0
  */
@@ -34,9 +35,6 @@ import org.springframework.aop.AfterAdvice;
 public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice
 		implements MethodInterceptor, AfterAdvice, Serializable {
 
-	/**
-	 * 创建 `AspectJAfterThrowingAdvice` 的新实例。
-	 */
 	public AspectJAfterThrowingAdvice(
 			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
 
@@ -44,33 +42,21 @@ public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice
 	}
 
 
-	/**
-	 * 判断是否 Before Advice。
-	 */
 	@Override
 	public boolean isBeforeAdvice() {
 		return false;
 	}
 
-	/**
-	 * 判断是否 After Advice。
-	 */
 	@Override
 	public boolean isAfterAdvice() {
 		return true;
 	}
 
-	/**
-	 * 设置 Throwing Name（`ThrowingName`）。
-	 */
 	@Override
 	public void setThrowingName(String name) {
 		setThrowingNameNoCheck(name);
 	}
 
-	/**
-	 * 调用（方法 `invoke`）。
-	 */
 	@Override
 	public @Nullable Object invoke(MethodInvocation mi) throws Throwable {
 		try {
@@ -85,7 +71,8 @@ public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice
 	}
 
 	/**
-	 * 在 AspectJ 语义中，仅当抛出的异常是给定抛出类型的子类型时，才会调用指定抛出子句的抛出建议。
+	 * 按 AspectJ 语义，指定了 throwing 子句的 after-throwing 通知
+	 * 仅当抛出的异常是给定 throwing 类型的子类型时才调用。
 	 */
 	private boolean shouldInvokeOnThrowing(Throwable ex) {
 		return getDiscoveredThrowingType().isAssignableFrom(ex.getClass());

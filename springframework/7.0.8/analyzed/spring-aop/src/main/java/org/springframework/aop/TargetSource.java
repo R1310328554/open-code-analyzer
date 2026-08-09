@@ -19,26 +19,36 @@ package org.springframework.aop;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@code TargetSource} 用于获取 AOP 调用的当前“目标”，如果没有周围建议选择结束拦截器链本身，则将通过反射调用该目标。
- * <p>如果 {@code TargetSource} 是“静态”的，它将始终返回相同的目标，从而允许在 AOP 框架中进行优化。动态目标源可以支持池化、热插拔等。
- * <p>应用程序开发人员通常不需要直接使用{@code TargetSources}：这是一个AOP框架接口。
+ * {@code TargetSource} 用于获取 AOP 调用的当前「目标」对象；
+ * 若没有环绕通知自行终止拦截器链，
+ * 该目标将通过反射被调用。
+ *
+ * <p>若 {@code TargetSource} 为「静态」，则始终返回同一目标，
+ * 便于 AOP 框架优化。动态 TargetSource 可支持池化、热替换等。
+ *
+ * <p>应用开发者通常无需直接使用 {@code TargetSource}：
+ * 这是 AOP 框架接口。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public interface TargetSource extends TargetClassAware {
 
 	/**
-	 * 返回此 {@link TargetSource} 返回的目标类型。 <p>C 可以返回 {@code null}，尽管 {@code TargetSource}
-	 * 的某些方案可能只适用于预定的目标类型。
-	 * @return {@link TargetSource} 返回的目标类型
+	 * 返回本 {@link TargetSource} 所返回目标的类型。
+	 * <p>可返回 {@code null}，
+	 * 尽管某些 {@code TargetSource} 用法可能仅适用于预定目标类。
+	 * @return 本 {@link TargetSource} 所返回目标的类型
 	 */
 	@Override
 	@Nullable Class<?> getTargetClass();
 
 	/**
-	 * 对 {@link #getTarget()} 的所有调用都会返回相同的对象吗？ <p> 这样的话，就不需要调用 {@link
-	 * #releaseTarget(Object)}，AOP 框架缓存可以 {@link #getTarget()} 的返回值。 <p> 默认实现返回 {@code false}。
-	 * @return 如果目标是不可变的
+	 * 对 {@link #getTarget()} 的所有调用是否都返回同一对象？
+	 * <p>若是，则无需调用 {@link #releaseTarget(Object)}，
+	 * AOP 框架可缓存 {@link #getTarget()} 的返回值。
+	 * <p>默认实现返回 {@code false}。
+	 * @return 若目标不可变则返回 {@code true}
 	 * @see #getTarget
 	 */
 	default boolean isStatic() {
@@ -46,16 +56,17 @@ public interface TargetSource extends TargetClassAware {
 	}
 
 	/**
-	* 返回一个目标实例。在 AOP 框架调用 AOP 方法调用的“目标”之前立即调用。
-	* @return 包含连接点的目标对象，如果没有实际目标实例，则为 {@code null}
-	* @throws Exception 如果目标对象无法解析
-	*/
+	 * 返回目标实例。在 AOP 框架调用 AOP 方法调用的「目标」之前立即调用。
+	 * @return 包含连接点的目标对象；若无实际目标实例则返回 {@code null}
+	 * @throws Exception 若无法解析目标对象
+	 */
 	@Nullable Object getTarget() throws Exception;
 
 	/**
-	 * 释放从 {@link #getTarget()} 方法获取的给定目标对象（如果有）。 <p>默认实现为空。
-	 * @param target 通过调用 {@link #getTarget()} 获得的对象
-	 * @throws Exception 如果对象无法被释放
+	 * 释放通过 {@link #getTarget()} 获取的目标对象（若有）。
+	 * <p>默认实现为空。
+	 * @param target 调用 {@link #getTarget()} 获得的对象
+	 * @throws Exception 若无法释放该对象
 	 */
 	default void releaseTarget(Object target) throws Exception {
 	}
