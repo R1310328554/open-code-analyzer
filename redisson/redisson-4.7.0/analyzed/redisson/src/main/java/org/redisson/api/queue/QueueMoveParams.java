@@ -18,6 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.api.BaseSyncParams;
 
 /**
+ * {@link QueueMoveArgs} 的可变实现，支持按 ID 或按队首条数指定待转移消息。
  *
  * @author Nikita Koksharov
  *
@@ -28,10 +29,12 @@ public class QueueMoveParams extends BaseSyncParams<QueueMoveArgs> implements Qu
     private int firstCount;
     private String destination;
 
+    /** 按消息 ID 构造转移参数。 */
     public QueueMoveParams(String[] ids) {
         this.ids = ids;
     }
 
+    /** 按队首条数构造转移参数。 */
     public QueueMoveParams(int firstCount) {
         this.firstCount = firstCount;
     }
@@ -42,14 +45,17 @@ public class QueueMoveParams extends BaseSyncParams<QueueMoveArgs> implements Qu
         return this;
     }
 
+    /** 返回目标队列名称。 */
     public String getDestination() {
         return destination;
     }
 
+    /** 返回待转移消息 ID 列表。 */
     public String[] getIds() {
         return ids;
     }
 
+    /** 返回从队首转移的消息条数。 */
     public int getFirstCount() {
         return firstCount;
     }

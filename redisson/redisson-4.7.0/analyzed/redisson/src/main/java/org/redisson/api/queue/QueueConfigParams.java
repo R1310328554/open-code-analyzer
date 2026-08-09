@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
+ * {@link QueueConfig} 的可变实现，持有各配置项及默认值。
  *
  * @author Nikita Koksharov
  *
@@ -97,34 +98,42 @@ public final class QueueConfigParams implements QueueConfig {
         return this;
     }
 
+    /** 返回最大投递次数。 */
     public int getDeliveryLimit() {
         return deliveryLimit;
     }
 
+    /** 返回可见性超时时长。 */
     public Duration getVisibilityTimeout() {
         return visibilityTimeout;
     }
 
+    /** 返回消息 TTL。 */
     public Duration getTtl() {
         return ttl;
     }
 
+    /** 返回死信队列名称，未配置时为 {@code null}。 */
     public String getDeadLetterQueueName() {
         return deadLetterQueueName;
     }
 
+    /** 返回单条消息最大字节数，0 表示不限制。 */
     public int getMaxMessageSize() {
         return maxMessageSize;
     }
 
+    /** 返回入队延迟时长。 */
     public Duration getDelay() {
         return delay;
     }
 
+    /** 返回队列最大容量，0 表示不限制。 */
     public int getMaxSize() {
         return maxSize;
     }
 
+    /** 返回消息处理模式。 */
     public ProcessingMode getProcessingMode() {
         return processingMode;
     }

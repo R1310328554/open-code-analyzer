@@ -16,6 +16,7 @@
 package org.redisson.api.queue;
 
 /**
+ * {@link QueueMoveElementsArgs} 的可变实现，保存目标队列、数量选择器与转移顺序。
  *
  * @author Nikita Koksharov
  *
@@ -24,8 +25,10 @@ public class QueueMoveElementsParams implements QueueMoveElementsArgs,
                                                 QueueMoveElementsAmount,
                                                 QueueMoveElementsOrder {
 
+    /** 数量选择模式：最多转移或精确转移。 */
     public enum Selector {COUNT, EXACTLY};
 
+    /** 转移顺序：逐条或批量。 */
     public enum Ordering {OBO, BULK};
 
     private final String destName;
@@ -63,18 +66,22 @@ public class QueueMoveElementsParams implements QueueMoveElementsArgs,
         return this;
     }
 
+    /** 返回目标队列名称。 */
     public String getDestName() {
         return destName;
     }
 
+    /** 返回数量选择模式。 */
     public Selector getSelector() {
         return selector;
     }
 
+    /** 返回待转移元素条数。 */
     public int getCount() {
         return count;
     }
 
+    /** 返回转移顺序策略。 */
     public Ordering getOrdering() {
         return ordering;
     }

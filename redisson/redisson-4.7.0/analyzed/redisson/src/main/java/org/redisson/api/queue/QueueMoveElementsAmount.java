@@ -16,7 +16,7 @@
 package org.redisson.api.queue;
 
 /**
- * Arguments object for queue move method.
+ * 队列 {@code move} 操作的参数对象，用于指定转移数量。
  *
  * @author Nikita Koksharov
  *
@@ -24,20 +24,20 @@ package org.redisson.api.queue;
 public interface QueueMoveElementsAmount extends QueueMoveElementsArgs {
 
     /**
-     * Defines maximum amount of elements to move.
-     * If this queue holds fewer elements then all of them are moved.
+     * 设置最多转移的元素条数。
+     * 若本队列元素不足，则转移全部现有元素。
      *
-     * @param value maximum amount of elements
-     * @return arguments object
+     * @param value 最多转移条数
+     * @return 参数对象
      */
     QueueMoveElementsOrder count(int value);
 
     /**
-     * Defines exact amount of elements to move.
-     * If this queue holds fewer elements then no element is moved.
+     * 设置必须精确转移的元素条数。
+     * 若本队列元素不足，则不转移任何元素。
      *
-     * @param value exact amount of elements
-     * @return arguments object
+     * @param value 精确转移条数
+     * @return 参数对象
      */
     QueueMoveElementsOrder exactly(int value);
 

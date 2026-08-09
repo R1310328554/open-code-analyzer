@@ -18,7 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.api.SyncArgs;
 
 /**
- * Interface defining parameters for transferring elements between queues.
+ * 定义队列间转移消息的参数接口。
  *
  * @author Nikita Koksharov
  *
@@ -26,20 +26,20 @@ import org.redisson.api.SyncArgs;
 public interface QueueMoveArgs extends SyncArgs<QueueMoveArgs> {
 
     /**
-     * Defines messages by ids to move to the destination queue.
+     * 按消息 ID 指定要转移到目标队列的消息。
      *
-     * @param ids identifiers of queue messages to move
-     * @return arguments object
+     * @param ids 待转移消息的标识符
+     * @return 参数对象
      */
     static QueueMoveDestination ids(String... ids) {
         return new QueueMoveParams(ids);
     }
 
     /**
-     * Defines number of messages to move from the beginning of the queue to the end of the destination queue.
+     * 指定从本队列队首转移到目标队列队尾的消息条数。
      *
-     * @param count The number of elements to move from the beginning of the queue
-     * @return arguments object
+     * @param count 从队首转移的元素数量
+     * @return 参数对象
      */
     static QueueMoveDestination count(int count) {
         return new QueueMoveParams(count);

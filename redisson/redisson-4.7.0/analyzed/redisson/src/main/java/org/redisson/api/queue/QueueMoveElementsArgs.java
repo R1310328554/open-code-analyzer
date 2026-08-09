@@ -16,7 +16,7 @@
 package org.redisson.api.queue;
 
 /**
- * Arguments object for queue move method.
+ * 队列 {@code move} 操作的参数对象。
  * <p>
  * {@link org.redisson.api.RQueue#move(QueueMoveElementsArgs)}
  * {@link org.redisson.api.RQueueAsync#moveAsync(QueueMoveElementsArgs)}
@@ -29,13 +29,13 @@ package org.redisson.api.queue;
 public interface QueueMoveElementsArgs {
 
     /**
-     * Defines name of destination queue.
-     * Head elements of this queue are added at the tail of destination queue.
+     * 指定目标队列名称。
+     * 本队列队首元素将追加到目标队列队尾。
      * <p>
-     * If amount of elements isn't defined then a single element is moved.
+     * 若未指定转移数量，则默认只移动一条元素。
      *
-     * @param name name of destination queue
-     * @return arguments object
+     * @param name 目标队列名称
+     * @return 参数对象
      */
     static QueueMoveElementsAmount to(String name) {
         return new QueueMoveElementsParams(name);

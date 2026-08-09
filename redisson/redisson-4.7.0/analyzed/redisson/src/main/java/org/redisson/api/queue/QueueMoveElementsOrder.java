@@ -16,7 +16,7 @@
 package org.redisson.api.queue;
 
 /**
- * Arguments object for queue move method.
+ * 队列 {@code move} 操作的参数对象，用于指定转移顺序策略。
  *
  * @author Nikita Koksharov
  *
@@ -24,19 +24,18 @@ package org.redisson.api.queue;
 public interface QueueMoveElementsOrder extends QueueMoveElementsArgs {
 
     /**
-     * Defines to add all elements at once preserving their relative order.
+     * 一次性批量追加全部元素，并保持相对顺序不变。
      * <p>
-     * Applied by default.
+     * 此为默认策略。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     QueueMoveElementsArgs bulk();
 
     /**
-     * Defines to add elements one by one. Each element is added
-     * before the next one is removed from this queue.
+     * 逐条转移元素：每追加一条到目标队列后，再从本队列移除下一条。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     QueueMoveElementsArgs oneByOne();
 

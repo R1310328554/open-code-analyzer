@@ -18,7 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.api.SyncArgs;
 
 /**
- * Interface that defines arguments for queue removal operations.
+ * 定义队列消息移除操作的参数。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +26,10 @@ import org.redisson.api.SyncArgs;
 public interface QueueRemoveArgs extends SyncArgs<QueueRemoveArgs> {
 
     /**
-     * Defines messages by ids to remove from the queue.
+     * 按消息 ID 指定要从队列中移除的消息。
      *
-     * @param ids the message ids to be removed from the queue
-     * @return arguments object
+     * @param ids 待移除的消息 ID
+     * @return 参数对象
      */
     static QueueRemoveArgs ids(String... ids) {
         return new QueueRemoveParams(ids);

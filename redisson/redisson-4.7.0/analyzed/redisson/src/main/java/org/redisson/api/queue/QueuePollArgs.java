@@ -21,11 +21,11 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
- * Arguments for queue polling operations.
+ * 队列拉取（poll）操作的参数接口。
  *
- * <p>Use the {@code defaults()} factory method to create a new instance with default settings.</p>
+ * <p>使用 {@code defaults()} 工厂方法创建带默认设置的实例。</p>
  *
- * <p>Example usage:</p>
+ * <p>示例用法：</p>
  * <pre>
  * QueuePollArgs args = QueuePollArgs.defaults()
  *     .acknowledgeMode(AcknowledgeMode.MANUAL)
@@ -39,86 +39,80 @@ import java.time.Duration;
 public interface QueuePollArgs extends SyncArgs<QueuePollArgs> {
 
     /**
-     * Creates a new instance of QueuePollArgs with default settings.
+     * 创建带默认设置的 {@link QueuePollArgs} 实例。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     static QueuePollArgs defaults() {
         return new QueuePollParams();
     }
 
     /**
-     * Sets the acknowledgment mode for message processing.
+     * 设置消息处理的确认模式。
      *
-     * <p>The acknowledgment mode determines how messages are acknowledged after retrieval:
+     * <p>确认模式决定消息在拉取后如何被确认：
      * <ul>
-     *   <li>{@code AcknowledgeMode.AUTO} - Messages are automatically acknowledged after delivery</li>
-     *   <li>{@code AcknowledgeMode.MANUAL} - Messages must be explicitly acknowledged by the consumer</li>
+     *   <li>{@code AcknowledgeMode.AUTO} — 投递后自动确认</li>
+     *   <li>{@code AcknowledgeMode.MANUAL} — 需由消费者显式确认</li>
      * </ul></p>
-     * Default value is AcknowledgeMode.MANUAL
+     * 默认值为 {@link AcknowledgeMode#MANUAL}。
      *
-     * @param mode the acknowledgment mode to use
-     * @return arguments object
+     * @param mode 确认模式
+     * @return 参数对象
      * @see AcknowledgeMode
      */
     QueuePollArgs acknowledgeMode(AcknowledgeMode mode);
 
     /**
-     * Specifies the codec to use for decoding message headers.
+     * 指定用于解码消息头的编解码器。
      *
-     * @param codec the codec to use for header deserialization
-     * @return arguments object
+     * @param codec 消息头反序列化编解码器
+     * @return 参数对象
      */
     QueuePollArgs headersCodec(Codec codec);
 
     /**
-     * Sets the maximum time to wait for messages to become available.
+     * 设置等待消息可用的最长阻塞时间。
      *
-     * <p>If the queue is empty, the poll operation will block until either:
+     * <p>若队列为空，拉取操作将阻塞直到：
      * <ul>
-     *   <li>At least one message becomes available</li>
-     *   <li>The specified timeout duration elapses</li>
+     *   <li>至少有一条消息可用，或</li>
+     *   <li>达到指定的超时时间</li>
      * </ul>
      *
-     * <p>If the timeout elapses without any messages becoming available,
-     * the poll operation will return empty collection of messages.
+     * <p>超时后仍无消息则返回空集合。
      * <p>
-     * <code>0</code> means to wait indefinitely for a message.
+     * {@code 0} 表示无限期等待。
      * <p>
-     * Default value is undefined.
+     * 默认未定义。
      *
-     * @param value the maximum duration to wait for messages
-     * @return arguments object
+     * @param value 最长等待时长
+     * @return 参数对象
      */
     QueuePollArgs timeout(Duration value);
 
     /**
-     * Sets the visibility timeout for retrieved messages.
+     * 设置已拉取消息的可见性超时。
      * <p>
-     * The visibility timeout specifies how long a message will be hidden from other consumers
-     * after it has been retrieved but before it has been acknowledged or negatively acknowledged. This prevents other
-     * consumers from processing the same message while it's being handled.
+     * 可见性超时指定消息在被拉取后、尚未确认或否定确认之前，
+     * 对其他消费者隐藏的时间，避免同一条消息被并发处理。
      * <p>
-     * If a message is not acknowledged within this time period, it will become visible
-     * again in the queue and may be delivered to another consumer.
+     * 若在此时间内未确认，消息将重新对队列可见，可能投递给其他消费者。
      * <p>
-     * If not defined, the queue's visibility setting value is used.
-     * If queue's visibility setting is also not set, the default value is <code>30 seconds</code>.
+     * 未设置时使用队列的可见性配置；队列也未设置时默认为 {@code 30} 秒。
      *
-     * @param value the duration for which retrieved messages should remain invisible to other consumers
-     * @return arguments object
+     * @param value 消息对其他消费者不可见的时长
+     * @return 参数对象
      */
     QueuePollArgs visibility(Duration value);
 
     /**
-     * Sets the maximum number of messages to retrieve in a single poll operation.
+     * 设置单次拉取操作最多返回的消息条数。
      *
-     * <p>This parameter enables batch retrieval of messages, which can improve throughput
-     * when processing multiple messages at once. The actual number of messages returned
-     * may be less than the requested count if fewer messages are available.</p>
+     * <p>批量拉取可提高吞吐；实际返回条数可能少于请求值。</p>
      *
-     * @param value the maximum number of messages to retrieve
-     * @return arguments object
+     * @param value 最大拉取条数
+     * @return 参数对象
      */
     QueuePollArgs count(int value);
 

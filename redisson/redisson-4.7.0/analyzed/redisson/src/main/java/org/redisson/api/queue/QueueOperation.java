@@ -16,14 +16,17 @@
 package org.redisson.api.queue;
 
 /**
+ * 队列支持的操作类型枚举。
  *
  * @author Nikita Koksharov
  *
  */
 public enum QueueOperation {
 
+    /** 向队列添加消息。 */
     ADD,
 
+    /** 从队列拉取消息。 */
     POLL,
 
 }

@@ -18,7 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.api.SyncArgs;
 
 /**
- * Interface defining parameters for negative acknowledgment of queue messages.
+ * 定义队列消息负确认（NACK）操作的参数。
  *
  * @author Nikita Koksharov
  *
@@ -26,22 +26,21 @@ import org.redisson.api.SyncArgs;
 public interface QueueNegativeAckArgs extends SyncArgs<QueueNegativeAckArgs> {
 
     /**
-     * Defines status which indicates that the client application failed to process the message.
-     * The message is redelivered.
+     * 标记客户端处理失败，消息将被重新投递。
      *
-     * @param ids message ids
-     * @return arguments object
+     * @param ids 消息 ID
+     * @return 参数对象
      */
     static FailedAckArgs failed(String... ids) {
         return new QueueNegativeAckParams(ids, true);
     }
 
     /**
-     * Defines status which indicates that the client application could process the message, but it was not accepted.
-     * The message is removed and moves it to the Dead Letter Queue (DLQ) if configured.
+     * 标记客户端已处理但业务拒绝该消息。
+     * 消息将被移除；若已配置死信队列（DLQ）则转入 DLQ。
      *
-     * @param ids message ids
-     * @return arguments object
+     * @param ids 消息 ID
+     * @return 参数对象
      */
     static QueueNegativeAckArgs rejected(String... ids) {
         return new QueueNegativeAckParams(ids, false);

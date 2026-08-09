@@ -18,7 +18,7 @@ package org.redisson.api.queue;
 import java.time.Duration;
 
 /**
- * Defines queue parameters.
+ * 定义可靠队列的参数配置。
  *
  * @author Nikita Koksharov
  *
@@ -26,104 +26,103 @@ import java.time.Duration;
 public interface QueueConfig {
 
     /**
-     * Creates a new QueueConfig instance with default settings.
+     * 创建带默认设置的 {@link QueueConfig} 实例。
      *
-     * @return config object
+     * @return 配置对象
      */
     static QueueConfig defaults() {
         return new QueueConfigParams();
     }
 
     /**
-     * Defines the maximum number of delivery attempts for a message.
-     * Once this limit is reached, the message may be moved to
-     * a dead letter queue if it's configured, otherwise it will be deleted.
-     * Can be overridden when adding a message.
+     * 设置单条消息的最大投递尝试次数。
+     * 达到上限后，若已配置死信队列（DLQ）则消息转入 DLQ，否则将被删除。
+     * 入队时可单独覆盖此值。
      * <p>
-     * Default value is 10 attempts.
+     * 默认值为 10 次。
      *
-     * @param value the maximum number of delivery attempts
-     * @return config object
+     * @param value 最大投递次数
+     * @return 配置对象
      */
     QueueConfig deliveryLimit(int value);
 
     /**
-     * Sets the duration for which a message becomes invisible to other consumers after being polled.
-     * This prevents multiple consumers from processing the same message simultaneously.
-     * Can be overridden when pooling a message.
+     * 设置消息被拉取后对其它消费者不可见的时长（可见性超时）。
+     * 用于避免同一条消息被多个消费者同时处理。
+     * 拉取时可单独覆盖此值。
      * <p>
-     * Default value is 30 seconds.
+     * 默认值为 30 秒。
      *
-     * @param value the visibility timeout duration
-     * @return config object
+     * @param value 可见性超时时长
+     * @return 配置对象
      */
     QueueConfig visibility(Duration value);
 
     /**
-     * Sets the time-to-live duration for messages in the queue.
-     * Messages will be automatically removed from the queue after this duration expires.
-     * 0 value means expiration is not applied.
-     * Can be overridden when adding a message.
+     * 设置队列中消息的存活时间（TTL）。
+     * 超过该时长后消息将自动从队列中移除。
+     * 值为 0 表示不启用过期。
+     * 入队时可单独覆盖此值。
      * <p>
-     * Default value is 0.
+     * 默认值为 0。
      *
-     * @param value the time-to-live duration
-     * @return config object
+     * @param value 存活时长
+     * @return 配置对象
      */
     QueueConfig timeToLive(Duration value);
 
     /**
-     * Sets the name of the Dead Letter Queue (DLQ) to which messages that have reached the delivery limit or have been rejected are sent.
+     * 设置死信队列（Dead Letter Queue，DLQ）名称。
+     * 达到投递上限或被拒绝的消息将发往该队列。
      * <p>
-     * Dead letter queue can be removed by setting null value.
+     * 传入 {@code null} 可移除死信队列配置。
      *
-     * @param value the name of the dead letter queue
-     * @return config object
+     * @param value 死信队列名称
+     * @return 配置对象
      */
     QueueConfig deadLetterQueueName(String value);
 
     /**
-     * Sets the maximum allowed size (in bytes) for a single message in the queue.
-     * Messages exceeding this size will be rejected.
-     * 0 value means size limit is not applied.
+     * 设置单条消息允许的最大字节数。
+     * 超出限制的消息将被拒绝。
+     * 值为 0 表示不限制大小。
      * <p>
-     * Default value is 0.
+     * 默认值为 0。
      *
-     * @param value the maximum message size in bytes
-     * @return config object
+     * @param value 最大消息字节数
+     * @return 配置对象
      */
     QueueConfig maxMessageSize(int value);
 
     /**
-     * Sets the delay duration before a message becomes available for consumption after being added to the queue.
-     * 0 value means delay duration is not applied.
-     * Can be overridden when adding a message.
+     * 设置消息入队后、可被消费前的延迟时长。
+     * 值为 0 表示不延迟。
+     * 入队时可单独覆盖此值。
      * <p>
-     * Default value is 0.
+     * 默认值为 0。
      *
-     * @param delay the delay duration
-     * @return config object
+     * @param delay 延迟时长
+     * @return 配置对象
      */
     QueueConfig delay(Duration delay);
 
     /**
-     * Sets the maximum number of messages that can be stored in the queue.
-     * When the queue reaches this size, add messages operation may be blocked and/or return empty result.
-     * 0 value means queue size limit is not applied.
+     * 设置队列可存储的最大消息条数。
+     * 达到上限后，入队操作可能被阻塞和/或返回空结果。
+     * 值为 0 表示不限制队列大小。
      * <p>
-     * Default value is 0.
+     * 默认值为 0。
      *
-     * @param value the maximum queue size
-     * @return config object
+     * @param value 最大队列容量
+     * @return 配置对象
      */
     QueueConfig maxSize(int value);
 
     /**
-     * Sets the processing mode for the queue which determines how messages
-     * are processed by consumers.
+     * 设置队列的消息处理模式，决定消费者如何消费消息。
      *
-     * @param mode the processing mode
-     * @return config object
+     * @param mode 处理模式
+     * @return 配置对象
      */
     QueueConfig processingMode(ProcessingMode mode);
 

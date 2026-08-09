@@ -16,7 +16,7 @@
 package org.redisson.api.queue;
 
 /**
- * Interface defining the destination queue name.
+ * 定义消息转移的目标队列名称。
  *
  * @author Nikita Koksharov
  *
@@ -24,10 +24,10 @@ package org.redisson.api.queue;
 public interface QueueMoveDestination  {
 
     /**
-     * Defines destination queue name
+     * 指定目标队列名称。
      *
-     * @param queueName name of queue
-     * @return arguments object
+     * @param queueName 目标队列名
+     * @return 参数对象
      */
     QueueMoveArgs destination(String queueName);
 
