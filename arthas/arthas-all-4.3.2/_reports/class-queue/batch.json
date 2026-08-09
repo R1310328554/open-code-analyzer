@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:29:43Z",
-  "files": [
-    "core/src/main/java/com/taobao/arthas/core/env/convert/Converter.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/ConvertiblePair.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/DefaultConversionService.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/ObjectToStringConverter.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/StringToArrayConverter.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/StringToBooleanConverter.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/StringToEnumConverter.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/StringToInetAddressConverter.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/StringToIntegerConverter.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/StringToLongConverter.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/ArthasMcpBootstrap.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/ArthasMcpServer.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/AbstractArthasTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/StreamableToolUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/basic1000/OptionsTool.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 345,
-  "done": 435
+  "done": 450
 }
