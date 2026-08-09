@@ -25,38 +25,33 @@ import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * A special, non thread-safe scheduler for testing operators that require
- * a scheduler without introducing real concurrency and allows manually advancing
- * a virtual time.
+ * 专用于测试的、非线程安全调度器：在不引入真实并发的前提下满足算子对调度器的需求，
+ * 并允许手动推进虚拟时间。
  * <p>
- * By default, the tasks submitted via the various {@code schedule} methods are not
- * wrapped by the {@link RxJavaPlugins#onSchedule(Runnable)} hook. To enable this behavior,
- * create a {@code TestScheduler} via {@link #TestScheduler(boolean)} or {@link #TestScheduler(long, TimeUnit, boolean)}.
+ * 默认情况下，经各 {@code schedule} 方法提交的任务不会经 {@link RxJavaPlugins#onSchedule(Runnable)} 包装；
+ * 若需启用，请通过 {@link #TestScheduler(boolean)} 或 {@link #TestScheduler(long, TimeUnit, boolean)} 创建。
  */
 public final class TestScheduler extends Scheduler {
-    /** The ordered queue for the runnable tasks. */
+    /** 按序存放 Runnable 任务的队列。 */
     final Queue<TimedRunnable> queue = new PriorityBlockingQueue<>(11);
-    /** Use the {@link RxJavaPlugins#onSchedule(Runnable)} hook when scheduling tasks. */
+    /** 调度任务时是否使用 {@link RxJavaPlugins#onSchedule(Runnable)} 钩子。 */
     final boolean useOnScheduleHook;
-    /** The per-scheduler global order counter. */
+    /** 本调度器内全局顺序计数器。 */
     long counter;
     // Storing time in nanoseconds internally.
     volatile long time;
 
     /**
-     * Creates a new TestScheduler with initial virtual time of zero.
+     * 创建虚拟时间初始为零的 TestScheduler。
      */
     public TestScheduler() {
         this(false);
     }
 
     /**
-     * Creates a new TestScheduler with the option to use the
-     * {@link RxJavaPlugins#onSchedule(Runnable)} hook when scheduling tasks.
+     * 创建 TestScheduler，可选是否在调度时使用 {@link RxJavaPlugins#onSchedule(Runnable)} 包装任务。
      * <p>History: 3.0.10 - experimental
-     * @param useOnScheduleHook if {@code true}, the tasks submitted to this
-     *                          TestScheduler is wrapped via the
-     *                          {@link RxJavaPlugins#onSchedule(Runnable)} hook
+     * @param useOnScheduleHook 为 {@code true} 时经 {@link RxJavaPlugins#onSchedule(Runnable)} 包装提交任务
      * @since 3.1.0
      */
     public TestScheduler(boolean useOnScheduleHook) {
@@ -64,29 +59,22 @@ public final class TestScheduler extends Scheduler {
     }
 
     /**
-     * Creates a new TestScheduler with the specified initial virtual time.
+     * 以指定初始虚拟时间创建 TestScheduler。
      *
-     * @param delayTime
-     *          the point in time to move the Scheduler's clock to
-     * @param unit
-     *          the units of time that {@code delayTime} is expressed in
+     * @param delayTime 调度器时钟要移动到的时刻
+     * @param unit {@code delayTime} 的时间单位
      */
     public TestScheduler(long delayTime, TimeUnit unit) {
         this(delayTime, unit, false);
     }
 
     /**
-     * Creates a new TestScheduler with the specified initial virtual time
-     * and with the option to use the
-     * {@link RxJavaPlugins#onSchedule(Runnable)} hook when scheduling tasks.
+     * 以指定初始虚拟时间创建 TestScheduler，并可选是否使用
+     * {@link RxJavaPlugins#onSchedule(Runnable)} 包装任务。
      * <p>History: 3.0.10 - experimental
-     * @param delayTime
-     *          the point in time to move the Scheduler's clock to
-     * @param unit
-     *          the units of time that {@code delayTime} is expressed in
-     * @param useOnScheduleHook if {@code true}, the tasks submitted to this
-     *                          TestScheduler is wrapped via the
-     *                          {@link RxJavaPlugins#onSchedule(Runnable)} hook
+     * @param delayTime 调度器时钟要移动到的时刻
+     * @param unit {@code delayTime} 的时间单位
+     * @param useOnScheduleHook 为 {@code true} 时经 {@link RxJavaPlugins#onSchedule(Runnable)} 包装提交任务
      * @since 3.1.0
      */
     public TestScheduler(long delayTime, TimeUnit unit, boolean useOnScheduleHook) {
@@ -95,7 +83,7 @@ public final class TestScheduler extends Scheduler {
     }
 
     /**
-     * @param count for differentiating tasks at same time
+     * @param count 区分同一时刻任务的序号
      */
     record TimedRunnable(TestWorker scheduler, long time, Runnable run,
                          long count) implements Comparable<TimedRunnable> {
@@ -120,24 +108,20 @@ public final class TestScheduler extends Scheduler {
     }
 
     /**
-     * Moves the Scheduler's clock forward by a specified amount of time.
+     * 将调度器时钟向前推进指定时长。
      *
-     * @param delayTime
-     *          the amount of time to move the Scheduler's clock forward
-     * @param unit
-     *          the units of time that {@code delayTime} is expressed in
+     * @param delayTime 推进量
+     * @param unit {@code delayTime} 的时间单位
      */
     public void advanceTimeBy(long delayTime, TimeUnit unit) {
         advanceTimeTo(time + unit.toNanos(delayTime), TimeUnit.NANOSECONDS);
     }
 
     /**
-     * Moves the Scheduler's clock to a particular moment in time.
+     * 将调度器时钟移动到指定时刻。
      *
-     * @param delayTime
-     *          the point in time to move the Scheduler's clock to
-     * @param unit
-     *          the units of time that {@code delayTime} is expressed in
+     * @param delayTime 目标时刻
+     * @param unit {@code delayTime} 的时间单位
      */
     public void advanceTimeTo(long delayTime, TimeUnit unit) {
         long targetTime = unit.toNanos(delayTime);
@@ -145,8 +129,7 @@ public final class TestScheduler extends Scheduler {
     }
 
     /**
-     * Triggers any actions that have not yet been triggered and that are scheduled to be triggered at or
-     * before this Scheduler's present time.
+     * 触发所有尚未执行、且计划在本调度器当前时刻或之前执行的动作。
      */
     public void triggerActions() {
         triggerActions(time);

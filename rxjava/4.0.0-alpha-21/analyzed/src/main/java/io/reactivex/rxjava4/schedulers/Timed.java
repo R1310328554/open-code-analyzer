@@ -19,22 +19,22 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.rxjava4.annotations.NonNull;
 
 /**
- * Holds onto a value along with time information.
+ * 保存值及其时间信息。
  *
- * @param <T> the value type
- * @param value the item to store
- * @param time the time value
- * @param unit the unit of time
+ * @param <T> 值类型
+ * @param value 要保存的项
+ * @param time 时间值
+ * @param unit 时间单位
  * @since 4.0.0
  */
 public record Timed<T>(T value, long time, TimeUnit unit) {
     /**
-     * Constructs a {@code Timed} instance with the given value and time information.
+     * 以给定值与时间信息构造 {@code Timed}。
      *
-     * @param value the value to hold
-     * @param time  the time to hold
-     * @param unit  the time unit, not null
-     * @throws NullPointerException if {@code value} or {@code unit} is {@code null}
+     * @param value 要保存的值
+     * @param time  要保存的时间
+     * @param unit  时间单位，不可为 null
+     * @throws NullPointerException 若 {@code value} 或 {@code unit} 为 {@code null}
      */
     public Timed {
         Objects.requireNonNull(value, "value is null");
@@ -42,10 +42,10 @@ public record Timed<T>(T value, long time, TimeUnit unit) {
     }
 
     /**
-     * Returns the contained time value in the time unit specified.
+     * 以指定时间单位返回所含时间值。
      *
-     * @param unit the time unit
-     * @return the converted time
+     * @param unit 时间单位
+     * @return 转换后的时间
      */
     public long time(@NonNull TimeUnit unit) {
         return unit.convert(time, this.unit);

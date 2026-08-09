@@ -12,25 +12,24 @@
  */
 
 /**
- * Classes representing so-called hot backpressure-aware sources, aka <strong>processors</strong>,
- * that implement the {@link io.reactivex.rxjava4.processors.FlowableProcessor FlowableProcessor} class,
- * the Reactive Streams {@link java.util.concurrent.Flow.Processor Processor} interface
- * to allow forms of multicasting events to one or more subscribers as well as consuming another
- * Reactive Streams {@link java.util.concurrent.Flow.Publisher Publisher}.
+ * 表示所谓热、背压感知源（<strong>processor</strong>）的类：实现
+ * {@link io.reactivex.rxjava4.processors.FlowableProcessor FlowableProcessor}，
+ * 即 Reactive Streams {@link java.util.concurrent.Flow.Processor Processor} 接口，
+ * 支持向一个或多个订阅者多播，也可消费另一 Reactive Streams {@link java.util.concurrent.Flow.Publisher Publisher}。
  * <p>
- * Available processor implementations:
+ * 可用 processor 实现：
  * <br>
  * <ul>
- *     <li>{@link io.reactivex.rxjava4.processors.AsyncProcessor AsyncProcessor} - replays the very last item</li>
- *     <li>{@link io.reactivex.rxjava4.processors.BehaviorProcessor BehaviorProcessor} - remembers the latest item</li>
- *     <li>{@link io.reactivex.rxjava4.processors.MulticastProcessor MulticastProcessor} - coordinates its source with its consumers</li>
- *     <li>{@link io.reactivex.rxjava4.processors.PublishProcessor PublishProcessor} - dispatches items to current consumers</li>
- *     <li>{@link io.reactivex.rxjava4.processors.ReplayProcessor ReplayProcessor} - remembers some or all items and replays them to consumers</li>
- *     <li>{@link io.reactivex.rxjava4.processors.UnicastProcessor UnicastProcessor} - remembers or relays items to a single consumer</li>
+ *     <li>{@link io.reactivex.rxjava4.processors.AsyncProcessor AsyncProcessor} — 重放最后一项</li>
+ *     <li>{@link io.reactivex.rxjava4.processors.BehaviorProcessor BehaviorProcessor} — 记住最新一项</li>
+ *     <li>{@link io.reactivex.rxjava4.processors.MulticastProcessor MulticastProcessor} — 协调源与消费者</li>
+ *     <li>{@link io.reactivex.rxjava4.processors.PublishProcessor PublishProcessor} — 向当前消费者分发</li>
+ *     <li>{@link io.reactivex.rxjava4.processors.ReplayProcessor ReplayProcessor} — 记住部分或全部项并重放</li>
+ *     <li>{@link io.reactivex.rxjava4.processors.UnicastProcessor UnicastProcessor} — 向单一消费者记住或转发</li>
  * </ul>
  * <p>
- * The non-backpressured variants of the {@code FlowableProcessor} class are called
- * {@link io.reactivex.rxjava4.subjects.Subject}s and reside in the {@code io.reactivex.subjects} package.
+ * {@code FlowableProcessor} 的无背压变体称为 {@link io.reactivex.rxjava4.subjects.Subject}，
+ * 位于 {@code io.reactivex.subjects} 包。
  * @see io.reactivex.rxjava4.subjects
  */
 package io.reactivex.rxjava4.processors;

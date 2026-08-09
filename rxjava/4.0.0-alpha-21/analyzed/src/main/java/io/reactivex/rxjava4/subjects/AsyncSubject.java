@@ -24,87 +24,27 @@ import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * A Subject that emits the very last value followed by a completion event or the received error to Observers.
+ * Subject：onComplete 时向 Observer 发射最后一项，或 onError 时发射错误。
  * <p>
  * <img width="640" height="239" src="https://raw.github.com/wiki/ReactiveX/RxJava/images/rx-operators/AsyncSubject.png" alt="">
  * <p>
- * This subject does not have a public constructor by design; a new empty instance of this
- * {@code AsyncSubject} can be created via the {@link #create()} method.
+ * 通过 {@link #create()} 创建；onNext/onError 禁止 null（Reactive Streams 规则 2.13）。
  * <p>
- * Since a {@code Subject} is conceptionally derived from the {@code Processor} type in the Reactive Streams specification,
- * {@code null}s are not allowed (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.13">Rule 2.13</a>)
- * as parameters to {@link #onNext(Object)} and {@link #onError(Throwable)}. Such calls will result in a
- * {@link NullPointerException} being thrown and the subject's state is not changed.
+ * 作为 {@link io.reactivex.rxjava4.core.Observable} 不支持背压；内部只缓存最新一项，仅在 onComplete 时发射，
+ * 不宜用于无限或永不完成的源。onError 会清除最后一项，晚到 Observer 仅收到 onError。
  * <p>
- * Since an {@code AsyncSubject} is an {@link io.reactivex.rxjava4.core.Observable}, it does not support backpressure.
+ * onSubscribe 在独立作源时非必需（规则 2.12）；终止后调用会立即 dispose Disposable。
+ * onNext/onError/onComplete 须串行调用，可用 {@link #toSerialized()} 防重入。
  * <p>
- * When this {@code AsyncSubject} is terminated via {@link #onError(Throwable)}, the
- * last observed item (if any) is cleared and late {@link io.reactivex.rxjava4.core.Observer}s only receive
- * the {@code onError} event.
- * <p>
- * The {@code AsyncSubject} caches the latest item internally and it emits this item only when {@code onComplete} is called.
- * Therefore, it is not recommended to use this {@code Subject} with infinite or never-completing sources.
- * <p>
- * Even though {@code AsyncSubject} implements the {@code Observer} interface, calling
- * {@code onSubscribe} is not required (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.12">Rule 2.12</a>)
- * if the subject is used as a standalone source. However, calling {@code onSubscribe}
- * after the {@code AsyncSubject} reached its terminal state will result in the
- * given {@code Disposable} being disposed immediately.
- * <p>
- * Calling {@link #onNext(Object)}, {@link #onError(Throwable)} and {@link #onComplete()}
- * is required to be serialized (called from the same thread or called non-overlappingly from different threads
- * through external means of serialization). The {@link #toSerialized()} method available to all {@code Subject}s
- * provides such serialization and also protects against reentrance (i.e., when a downstream {@code Observer}
- * consuming this subject also wants to call {@link #onNext(Object)} on this subject recursively).
- * The implementation of onXXX methods are technically thread-safe but non-serialized calls
- * to them may lead to undefined state in the currently subscribed Observers.
- * <p>
- * This {@code AsyncSubject} supports the standard state-peeking methods {@link #hasComplete()}, {@link #hasThrowable()},
- * {@link #getThrowable()} and {@link #hasObservers()} as well as means to read the very last observed value -
- * after this {@code AsyncSubject} has been completed - in a non-blocking and thread-safe
- * manner via {@link #hasValue()} or {@link #getValue()}.
+ * 支持 hasComplete/hasThrowable/getValue 等状态查询；默认不在特定 {@link io.reactivex.rxjava4.core.Scheduler} 上运行。
+ * onError 时向当前 Observer 集合同一 Throwable 实例；取消订阅可能导致 RxJavaPlugins.onError 多次调用。
  * <dl>
  *  <dt><b>Scheduler:</b></dt>
- *  <dd>{@code AsyncSubject} does not operate by default on a particular {@link io.reactivex.rxjava4.core.Scheduler} and
- *  the {@code Observer}s get notified on the thread where the terminating {@code onError} or {@code onComplete}
- *  methods were invoked.</dd>
+ *  <dd>终止 onError/onComplete 所在线程通知 Observer。</dd>
  *  <dt><b>Error handling:</b></dt>
- *  <dd>When the {@link #onError(Throwable)} is called, the {@code AsyncSubject} enters into a terminal state
- *  and emits the same {@code Throwable} instance to the last set of {@code Observer}s. During this emission,
- *  if one or more {@code Observer}s dispose their respective {@code Disposable}s, the
- *  {@code Throwable} is delivered to the global error handler via
- *  {@link io.reactivex.rxjava4.plugins.RxJavaPlugins#onError(Throwable)} (multiple times if multiple {@code Observer}s
- *  cancel at once).
- *  If there were no {@code Observer}s subscribed to this {@code AsyncSubject} when the {@code onError()}
- *  was called, the global error handler is not invoked.
- *  </dd>
+ *  <dd>无 Observer 时 onError 不触发全局错误处理器。</dd>
  * </dl>
- * <p>
- * Example usage:
- * <pre><code>
- * AsyncSubject&lt;Object&gt; subject = AsyncSubject.create();
- * 
- * TestObserver&lt;Object&gt; to1 = subject.test();
- *
- * to1.assertEmpty();
- *
- * subject.onNext(1);
- *
- * // AsyncSubject only emits when onComplete was called.
- * to1.assertEmpty();
- *
- * subject.onNext(2);
- * subject.onComplete();
- *
- * // onComplete triggers the emission of the last cached item and the onComplete event.
- * to1.assertResult(2);
- *
- * TestObserver&lt;Object&gt; to2 = subject.test();
- *
- * // late Observers receive the last cached item too
- * to2.assertResult(2);
- * </code></pre>
- * @param <T> the value type
+ * @param <T> 值类型
  */
 public final class AsyncSubject<T> extends Subject<T> {
 
@@ -116,16 +56,16 @@ public final class AsyncSubject<T> extends Subject<T> {
 
     final AtomicReference<AsyncDisposable<T>[]> subscribers;
 
-    /** Write before updating subscribers, read after reading subscribers as TERMINATED. */
+    /** 在 subscribers 置 TERMINATED 前写入，读后可见。 */
     Throwable error;
 
-    /** Write before updating subscribers, read after reading subscribers as TERMINATED. */
+    /** 在 subscribers 置 TERMINATED 前写入，读后可见。 */
     T value;
 
     /**
-     * Creates a new AsyncProcessor.
-     * @param <T> the value type to be received and emitted
-     * @return the new AsyncProcessor instance
+     * 创建新的 AsyncSubject。
+     * @param <T> 接收与发射的值类型
+     * @return 新的 AsyncSubject 实例
      */
     @CheckReturnValue
     @NonNull
@@ -134,7 +74,7 @@ public final class AsyncSubject<T> extends Subject<T> {
     }
 
     /**
-     * Constructs an AsyncSubject.
+     * 构造 AsyncSubject。
      * @since 2.0
      */
     @SuppressWarnings("unchecked")
@@ -240,10 +180,9 @@ public final class AsyncSubject<T> extends Subject<T> {
     }
 
     /**
-     * Tries to add the given subscriber to the subscribers array atomically
-     * or returns false if the subject has terminated.
-     * @param ps the subscriber to add
-     * @return true if successful, false if the subject has terminated
+     * 尝试将给定订阅者原子加入 subscribers 数组；subject 已终止则返回 false。
+     * @param ps 要添加的订阅者
+     * @return 成功为 true，已终止为 false
      */
     boolean add(AsyncDisposable<T> ps) {
         for (;;) {
@@ -265,8 +204,8 @@ public final class AsyncSubject<T> extends Subject<T> {
     }
 
     /**
-     * Atomically removes the given subscriber if it is subscribed to the subject.
-     * @param ps the subject to remove
+     * 若已订阅则从 subject 原子移除给定订阅者。
+     * @param ps 要移除的订阅者
      */
     @SuppressWarnings("unchecked")
     void remove(AsyncDisposable<T> ps) {
@@ -305,9 +244,9 @@ public final class AsyncSubject<T> extends Subject<T> {
     }
 
     /**
-     * Returns true if the subject has any value.
-     * <p>The method is thread-safe.
-     * @return true if the subject has any value
+     * 若 subject 持有任意值则返回 true。
+     * <p>本方法线程安全。
+     * @return 有值时为 true
      */
     @CheckReturnValue
     public boolean hasValue() {
@@ -315,9 +254,9 @@ public final class AsyncSubject<T> extends Subject<T> {
     }
 
     /**
-     * Returns a single value the Subject currently has or null if no such value exists.
-     * <p>The method is thread-safe.
-     * @return a single value the Subject currently has or null if no such value exists
+     * 返回 Subject 当前持有的单一值；无值时返回 null。
+     * <p>本方法线程安全。
+     * @return 当前值或 null
      */
     @Nullable
     @CheckReturnValue

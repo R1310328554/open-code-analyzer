@@ -20,24 +20,24 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Serializes calls to the Subscriber methods.
- * <p>All other Publisher and Subject methods are thread-safe by design.
+ * 串行化对 Subscriber 方法的调用。
+ * <p>其余 Publisher 与 Subject 方法按设计已为线程安全。
  *
- * @param <T> the item value type
+ * @param <T> 元素值类型
  */
 /* public */ final class SerializedProcessor<T> extends FlowableProcessor<T> {
-    /** The actual subscriber to serialize Subscriber calls to. */
+    /** 实际接收串行化 Subscriber 调用的处理器。 */
     final FlowableProcessor<T> actual;
-    /** Indicates an emission is going on, guarded by this. */
+    /** 表示正在发射，由本对象监视器保护。 */
     boolean emitting;
-    /** If not null, it holds the missed NotificationLite events. */
+    /** 非 null 时保存错过的 NotificationLite 事件。 */
     AppendOnlyLinkedArrayList<Object> queue;
-    /** Indicates a terminal event has been received and all further events will be dropped. */
+    /** 已收到终止事件，后续事件将被丢弃。 */
     volatile boolean done;
 
     /**
-     * Constructor that wraps an actual subject.
-     * @param actual the subject wrapped
+     * 包装实际 subject 的构造器。
+     * @param actual 被包装的 subject
      */
     SerializedProcessor(final FlowableProcessor<T> actual) {
         this.actual = actual;
@@ -160,7 +160,7 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
         actual.onComplete();
     }
 
-    /** Loops until all notifications in the queue has been processed. */
+    /** 循环处理队列中所有通知直至清空。 */
     void emitLoop() {
         for (;;) {
             AppendOnlyLinkedArrayList<Object> q;

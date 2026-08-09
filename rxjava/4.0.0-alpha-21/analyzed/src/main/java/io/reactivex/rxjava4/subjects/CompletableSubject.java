@@ -23,65 +23,21 @@ import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Represents a hot Completable-like source and consumer of events similar to Subjects.
+ * 类似 Subject 的热 Completable 式事件源与消费者。
  * <p>
  * <img width="640" height="243" src="https://raw.github.com/wiki/ReactiveX/RxJava/images/rx-operators/CompletableSubject.png" alt="">
  * <p>
- * This subject does not have a public constructor by design; a new non-terminated instance of this
- * {@code CompletableSubject} can be created via the {@link #create()} method.
+ * 通过 {@link #create()} 创建；{@link #onError(Throwable)} 禁止 null。
+ * onSubscribe 独立作源时非必需；终止后调用会立即 dispose Disposable。
+ * 所有方法线程安全；重复 onComplete 无效果，重复 onError 交由 RxJavaPlugins 处理。
  * <p>
- * Since the {@code CompletableSubject} is conceptionally derived from the {@code Processor} type in the Reactive Streams specification,
- * {@code null}s are not allowed (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.13">Rule 2.13</a>)
- * as parameters to {@link #onError(Throwable)}.
- * <p>
- * Even though {@code CompletableSubject} implements the {@code CompletableObserver} interface, calling
- * {@code onSubscribe} is not required (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.12">Rule 2.12</a>)
- * if the subject is used as a standalone source. However, calling {@code onSubscribe}
- * after the {@code CompletableSubject} reached its terminal state will result in the
- * given {@code Disposable} being disposed immediately.
- * <p>
- * All methods are thread safe. Calling {@link #onComplete()} multiple
- * times has no effect. Calling {@link #onError(Throwable)} multiple times relays the {@code Throwable} to
- * the {@link io.reactivex.rxjava4.plugins.RxJavaPlugins#onError(Throwable)} global error handler.
- * <p>
- * This {@code CompletableSubject} supports the standard state-peeking methods {@link #hasComplete()},
- * {@link #hasThrowable()}, {@link #getThrowable()} and {@link #hasObservers()}.
+ * 支持 hasComplete/hasThrowable/getThrowable/hasObservers；默认不在特定 {@link io.reactivex.rxjava4.core.Scheduler} 上运行。
  * <dl>
  *  <dt><b>Scheduler:</b></dt>
- *  <dd>{@code CompletableSubject} does not operate by default on a particular {@link io.reactivex.rxjava4.core.Scheduler} and
- *  the {@code CompletableObserver}s get notified on the thread where the terminating {@code onError} or {@code onComplete}
- *  methods were invoked.</dd>
+ *  <dd>终止事件在调用线程通知 CompletableObserver。</dd>
  *  <dt><b>Error handling:</b></dt>
- *  <dd>When the {@link #onError(Throwable)} is called, the {@code CompletableSubject} enters into a terminal state
- *  and emits the same {@code Throwable} instance to the last set of {@code CompletableObserver}s. During this emission,
- *  if one or more {@code CompletableObserver}s dispose their respective {@code Disposable}s, the
- *  {@code Throwable} is delivered to the global error handler via
- *  {@link io.reactivex.rxjava4.plugins.RxJavaPlugins#onError(Throwable)} (multiple times if multiple {@code CompletableObserver}s
- *  cancel at once).
- *  If there were no {@code CompletableObserver}s subscribed to this {@code CompletableSubject} when the {@code onError()}
- *  was called, the global error handler is not invoked.
- *  </dd>
+ *  <dd>无 Observer 时 onError 不触发全局错误处理器。</dd>
  * </dl>
- * <p>
- * Example usage:
- * <pre><code>
- * CompletableSubject subject = CompletableSubject.create();
- *
- * TestObserver&lt;Void&gt; to1 = subject.test();
- *
- * // a fresh CompletableSubject is empty
- * to1.assertEmpty();
- *
- * subject.onComplete();
- *
- * // a CompletableSubject is always void of items
- * to1.assertResult();
- *
- * TestObserver&lt;Void&gt; to2 = subject.test()
- *
- * // late CompletableObservers receive the terminal event
- * to2.assertResult();
- * </code></pre>
  * <p>History: 2.0.5 - experimental
  * @since 2.1
  */
@@ -97,8 +53,8 @@ public final class CompletableSubject extends Completable implements Completable
     Throwable error;
 
     /**
-     * Creates a fresh CompletableSubject.
-     * @return the new CompletableSubject instance
+     * 创建新的 CompletableSubject。
+     * @return 新的 CompletableSubject 实例
      */
     @CheckReturnValue
     @NonNull
@@ -212,8 +168,8 @@ public final class CompletableSubject extends Completable implements Completable
     }
 
     /**
-     * Returns the terminal error if this CompletableSubject has been terminated with an error, null otherwise.
-     * @return the terminal error or null if not terminated or not with an error
+     * 若 CompletableSubject 以 error 终止则返回该错误，否则 null。
+     * @return 终止错误或 null
      */
     @Nullable
     public Throwable getThrowable() {
@@ -224,32 +180,32 @@ public final class CompletableSubject extends Completable implements Completable
     }
 
     /**
-     * Returns true if this CompletableSubject has been terminated with an error.
-     * @return true if this CompletableSubject has been terminated with an error
+     * 若 CompletableSubject 以 error 终止则返回 true。
+     * @return 以 error 终止时为 true
      */
     public boolean hasThrowable() {
         return observers.get() == TERMINATED && error != null;
     }
 
     /**
-     * Returns true if this CompletableSubject has been completed.
-     * @return true if this CompletableSubject has been completed
+     * 若 CompletableSubject 已完成则返回 true。
+     * @return 已完成时为 true
      */
     public boolean hasComplete() {
         return observers.get() == TERMINATED && error == null;
     }
 
     /**
-     * Returns true if this CompletableSubject has observers.
-     * @return true if this CompletableSubject has observers
+     * 若 CompletableSubject 有 Observer 则返回 true。
+     * @return 有 Observer 时为 true
      */
     public boolean hasObservers() {
         return observers.get().length != 0;
     }
 
     /**
-     * Returns the number of current observers.
-     * @return the number of current observers
+     * 返回当前 Observer 数量。
+     * @return 当前 Observer 数量
      */
     /* test */ int observerCount() {
         return observers.get().length;

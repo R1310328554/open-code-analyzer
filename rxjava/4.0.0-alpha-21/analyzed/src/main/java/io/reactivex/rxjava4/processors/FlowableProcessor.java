@@ -19,27 +19,26 @@ import io.reactivex.rxjava4.annotations.*;
 import io.reactivex.rxjava4.core.*;
 
 /**
- * Represents a Subscriber and a Flowable (Publisher) at the same time, allowing
- * multicasting events from a single source to multiple child Subscribers.
- * <p>All methods except the onSubscribe, onNext, onError and onComplete are thread-safe.
- * Use {@link #toSerialized()} to make these methods thread-safe as well.
+ * 同时表示 Subscriber 与 Flowable（Publisher），可将单一源的事件多播给多个子 Subscriber。
+ * <p>除 onSubscribe、onNext、onError、onComplete 外，其余方法均为线程安全；
+ * 可调用 {@link #toSerialized()} 使这些方法也线程安全。
  *
- * @param <T> the item value type
+ * @param <T> 元素值类型
  */
 public abstract class FlowableProcessor<@NonNull T> extends Flowable<T> implements Processor<T, T>, FlowableSubscriber<T> {
 
     /**
-     * Returns true if the FlowableProcessor has subscribers.
-     * <p>The method is thread-safe.
-     * @return true if the FlowableProcessor has subscribers
+     * 若 FlowableProcessor 当前有订阅者则返回 true。
+     * <p>本方法线程安全。
+     * @return 有订阅者时为 true
      */
     @CheckReturnValue
     public abstract boolean hasSubscribers();
 
     /**
-     * Returns true if the FlowableProcessor has reached a terminal state through an error event.
-     * <p>The method is thread-safe.
-     * @return true if the FlowableProcessor has reached a terminal state through an error event
+     * 若 FlowableProcessor 已通过 error 事件进入终止状态则返回 true。
+     * <p>本方法线程安全。
+     * @return 因 error 终止时为 true
      * @see #getThrowable()
      * @see #hasComplete()
      */
@@ -47,30 +46,27 @@ public abstract class FlowableProcessor<@NonNull T> extends Flowable<T> implemen
     public abstract boolean hasThrowable();
 
     /**
-     * Returns true if the FlowableProcessor has reached a terminal state through a complete event.
-     * <p>The method is thread-safe.
-     * @return true if the FlowableProcessor has reached a terminal state through a complete event
+     * 若 FlowableProcessor 已通过 complete 事件进入终止状态则返回 true。
+     * <p>本方法线程安全。
+     * @return 因 complete 终止时为 true
      * @see #hasThrowable()
      */
     @CheckReturnValue
     public abstract boolean hasComplete();
 
     /**
-     * Returns the error that caused the FlowableProcessor to terminate or null if the FlowableProcessor
-     * hasn't terminated yet.
-     * <p>The method is thread-safe.
-     * @return the error that caused the FlowableProcessor to terminate or null if the FlowableProcessor
-     * hasn't terminated yet
+     * 返回导致 FlowableProcessor 终止的错误；尚未终止时返回 null。
+     * <p>本方法线程安全。
+     * @return 终止错误，或尚未终止时为 null
      */
     @Nullable
     @CheckReturnValue
     public abstract Throwable getThrowable();
 
     /**
-     * Wraps this FlowableProcessor and serializes the calls to the onSubscribe, onNext, onError and
-     * onComplete methods, making them thread-safe.
-     * <p>The method is thread-safe.
-     * @return the wrapped and serialized FlowableProcessor
+     * 包装本 FlowableProcessor，串行化 onSubscribe、onNext、onError、onComplete 调用，使其线程安全。
+     * <p>本方法线程安全。
+     * @return 包装后的串行化 FlowableProcessor
      */
     @NonNull
     @CheckReturnValue

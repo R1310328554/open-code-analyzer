@@ -19,30 +19,27 @@ import io.reactivex.rxjava4.internal.functions.Functions;
 import io.reactivex.rxjava4.internal.schedulers.BlockingCurrentThreadScheduler;
 
 /**
- * Holds onto a blocking scheduler instance and provides access to its {@link #execute()}
- * method and a way to obtain a pure {@link Scheduler} instance to be used as parameter.
+ * 持有阻塞调度器实例，提供 {@link #execute()} 访问，以及获取纯 {@link Scheduler} 视图供传参。
  * <p>
- * <strong>Implementation note</strong><br>
- *           No need to instantiate this record by client applications, it serves as a way to
- *           give access to the {@code Scheduler} interface as well as the blocking-specific
- *           {@link #execute()} methods.
- * @param backingScheduler the scheduler instance
+ * <strong>实现说明</strong><br>
+ *           客户端无需实例化本 record；它同时暴露 {@code Scheduler} 接口与阻塞专用 {@link #execute()}。
+ * @param backingScheduler 底层调度器实例
  * @since 4.0.0
  */
 public record BlockingScheduler(BlockingCurrentThreadScheduler backingScheduler) {
 
     /**
-     * Returns the Scheduler view to submit tasks to or use it as a parameter.
-     * @return the Scheduler view of the underlying blocking current thread scheduler.
+     * 返回用于提交任务或作为参数的 Scheduler 视图。
+     * @return 底层阻塞当前线程调度器的 Scheduler 视图
      */
     public Scheduler scheduler( ) {
         return backingScheduler;
     }
 
     /**
-     * Begin executing the blocking event loop without any initial action.
+     * 无初始动作启动阻塞事件循环。
      * <p>
-     * This method will block until the {@link Scheduler#shutdown()} is invoked.
+     * 本方法阻塞直至调用 {@link Scheduler#shutdown()}。
      * @see #execute(Action)
      */
     public void execute() {
@@ -50,18 +47,17 @@ public record BlockingScheduler(BlockingCurrentThreadScheduler backingScheduler)
     }
 
     /**
-     * Begin executing the blocking event loop with the given initial action
-     * (usually contain the rest of the 'main' method).
+     * 以给定初始动作（通常含 main 其余逻辑）启动阻塞事件循环。
      * <p>
-     * This method will block until the {@link Scheduler#shutdown()} is invoked.
-     * @param action the action to execute
+     * 本方法阻塞直至调用 {@link Scheduler#shutdown()}。
+     * @param action 要执行的动作
      */
     public void execute(Action action) {
         backingScheduler.execute(action);
     }
 
     /**
-     * Shuts down the underlying blocking current thread scheduler
+     * 关闭底层阻塞当前线程调度器
      */
     public void shutdown() {
         backingScheduler.shutdown();

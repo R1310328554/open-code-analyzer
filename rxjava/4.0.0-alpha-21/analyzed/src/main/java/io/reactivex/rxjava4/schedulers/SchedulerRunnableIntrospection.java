@@ -18,24 +18,21 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Interface to indicate the implementor class wraps a {@code Runnable} that can
- * be accessed via {@link #getWrappedRunnable()}.
+ * 表明实现类包装了可通过 {@link #getWrappedRunnable()} 访问的 {@code Runnable}。
  * <p>
- * You can check if a {@link Runnable} task submitted to a {@link io.reactivex.rxjava4.core.Scheduler Scheduler} (or its
- * {@link io.reactivex.rxjava4.core.Scheduler.Worker Scheduler.Worker}) implements this interface and unwrap the
- * original {@code Runnable} instance. This could help to avoid hooking the same underlying {@code Runnable}
- * task in a custom {@link RxJavaPlugins#onSchedule(Runnable)} hook set via
- * the {@link RxJavaPlugins#setScheduleHandler(Function)} method multiple times due to internal delegation
- * of the default {@code Scheduler.scheduleDirect} or {@code Scheduler.Worker.schedule} methods.
+ * 可检查提交到 {@link io.reactivex.rxjava4.core.Scheduler Scheduler}
+ * （或其 {@link io.reactivex.rxjava4.core.Scheduler.Worker Scheduler.Worker}）的 {@link Runnable}
+ * 是否实现本接口以解包原始任务，避免在自定义
+ * {@link RxJavaPlugins#onSchedule(Runnable)} 钩子中因内部委托而重复包装同一底层任务。
  * <p>History: 2.1.7 - experimental
  * @since 2.2
  */
 public interface SchedulerRunnableIntrospection {
 
     /**
-     * Returns the wrapped action.
+     * 返回被包装的动作。
      *
-     * @return the wrapped action. Cannot be null.
+     * @return 被包装的动作，不可为 null
      */
     @NonNull
     Runnable getWrappedRunnable();

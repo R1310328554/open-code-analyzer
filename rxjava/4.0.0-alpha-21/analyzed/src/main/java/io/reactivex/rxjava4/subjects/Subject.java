@@ -17,28 +17,27 @@ import io.reactivex.rxjava4.annotations.*;
 import io.reactivex.rxjava4.core.*;
 
 /**
- * Represents an {@link Observer} and an {@link Observable} at the same time, allowing
- * multicasting events from a single source to multiple child {@code Observer}s.
+ * 同时表示 {@link Observer} 与 {@link Observable}，可将单一源的事件多播给多个子 Observer。
  * <p>
- * All methods except the {@link #onSubscribe(io.reactivex.rxjava4.disposables.Disposable)}, {@link #onNext(Object)},
- * {@link #onError(Throwable)} and {@link #onComplete()} are thread-safe.
- * Use {@link #toSerialized()} to make these methods thread-safe as well.
+ * 除 {@link #onSubscribe(io.reactivex.rxjava4.disposables.Disposable)}、{@link #onNext(Object)}、
+ * {@link #onError(Throwable)}、{@link #onComplete()} 外，其余方法均为线程安全；
+ * 可调用 {@link #toSerialized()} 使这些方法也线程安全。
  *
- * @param <T> the item value type
+ * @param <T> 元素值类型
  */
 public abstract class Subject<T> extends Observable<T> implements Observer<T> {
     /**
-     * Returns true if the subject has any Observers.
-     * <p>The method is thread-safe.
-     * @return true if the subject has any Observers
+     * 若 subject 有任意 Observer 则返回 true。
+     * <p>本方法线程安全。
+     * @return 有 Observer 时为 true
      */
     @CheckReturnValue
     public abstract boolean hasObservers();
 
     /**
-     * Returns true if the subject has reached a terminal state through an error event.
-     * <p>The method is thread-safe.
-     * @return true if the subject has reached a terminal state through an error event
+     * 若 subject 已通过 error 事件进入终止状态则返回 true。
+     * <p>本方法线程安全。
+     * @return 因 error 终止时为 true
      * @see #getThrowable()
      * @see #hasComplete()
      */
@@ -46,30 +45,27 @@ public abstract class Subject<T> extends Observable<T> implements Observer<T> {
     public abstract boolean hasThrowable();
 
     /**
-     * Returns true if the subject has reached a terminal state through a complete event.
-     * <p>The method is thread-safe.
-     * @return true if the subject has reached a terminal state through a complete event
+     * 若 subject 已通过 complete 事件进入终止状态则返回 true。
+     * <p>本方法线程安全。
+     * @return 因 complete 终止时为 true
      * @see #hasThrowable()
      */
     @CheckReturnValue
     public abstract boolean hasComplete();
 
     /**
-     * Returns the error that caused the Subject to terminate or null if the Subject
-     * hasn't terminated yet.
-     * <p>The method is thread-safe.
-     * @return the error that caused the Subject to terminate or null if the Subject
-     * hasn't terminated yet
+     * 返回导致 Subject 终止的错误；尚未终止时返回 null。
+     * <p>本方法线程安全。
+     * @return 终止错误，或尚未终止时为 null
      */
     @Nullable
     @CheckReturnValue
     public abstract Throwable getThrowable();
 
     /**
-     * Wraps this Subject and serializes the calls to the onSubscribe, onNext, onError and
-     * onComplete methods, making them thread-safe.
-     * <p>The method is thread-safe.
-     * @return the wrapped and serialized subject
+     * 包装本 Subject，串行化 onSubscribe、onNext、onError、onComplete 调用，使其线程安全。
+     * <p>本方法线程安全。
+     * @return 包装后的串行化 subject
      */
     @NonNull
     @CheckReturnValue

@@ -12,9 +12,8 @@
  */
 
 /**
- * Contains notably the factory class of {@link io.reactivex.rxjava4.schedulers.Schedulers Schedulers} providing methods for
- * retrieving the standard scheduler instances, the {@link io.reactivex.rxjava4.schedulers.TestScheduler TestScheduler} for testing flows
- * with scheduling in a controlled manner and the class {@link io.reactivex.rxjava4.schedulers.Timed Timed} that can hold
- * a value and a timestamp associated with it.
+ * 本包包含 {@link io.reactivex.rxjava4.schedulers.Schedulers Schedulers} 工厂类（获取标准调度器实例）、
+ * 用于可控测试调度的 {@link io.reactivex.rxjava4.schedulers.TestScheduler TestScheduler}，
+ * 以及可同时保存值与时间戳的 {@link io.reactivex.rxjava4.schedulers.Timed Timed}。
  */
 package io.reactivex.rxjava4.schedulers;

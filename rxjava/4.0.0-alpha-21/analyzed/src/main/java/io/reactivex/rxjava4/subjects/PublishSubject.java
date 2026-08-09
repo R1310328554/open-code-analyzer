@@ -23,95 +23,39 @@ import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * A Subject that emits (multicasts) items to currently subscribed {@link Observer}s and terminal events to current
- * or late {@code Observer}s.
+ * Subject：向当前订阅的 {@link Observer} 多播项，向当前或晚到 Observer 发送终止事件。
  * <p>
  * <img width="640" height="281" src="https://raw.github.com/wiki/ReactiveX/RxJava/images/rx-operators/PublishSubject.png" alt="">
  * <p>
- * This subject does not have a public constructor by design; a new empty instance of this
- * {@code PublishSubject} can be created via the {@link #create()} method.
- * <p>
- * Since a {@code Subject} is conceptionally derived from the {@code Processor} type in the Reactive Streams specification,
- * {@code null}s are not allowed (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.13">Rule 2.13</a>) as
- * parameters to {@link #onNext(Object)} and {@link #onError(Throwable)}. Such calls will result in a
- * {@link NullPointerException} being thrown and the subject's state is not changed.
- * <p>
- * Since a {@code PublishSubject} is an {@link io.reactivex.rxjava4.core.Observable}, it does not support backpressure.
- * <p>
- * When this {@code PublishSubject} is terminated via {@link #onError(Throwable)} or {@link #onComplete()},
- * late {@link io.reactivex.rxjava4.core.Observer}s only receive the respective terminal event.
- * <p>
- * Unlike a {@link BehaviorSubject}, a {@code PublishSubject} doesn't retain/cache items, therefore, a new
- * {@code Observer} won't receive any past items.
- * <p>
- * Even though {@code PublishSubject} implements the {@code Observer} interface, calling
- * {@code onSubscribe} is not required (<a href="https://github.com/reactive-streams/reactive-streams-jvm#2.12">Rule 2.12</a>)
- * if the subject is used as a standalone source. However, calling {@code onSubscribe}
- * after the {@code PublishSubject} reached its terminal state will result in the
- * given {@code Disposable} being disposed immediately.
- * <p>
- * Calling {@link #onNext(Object)}, {@link #onError(Throwable)} and {@link #onComplete()}
- * is required to be serialized (called from the same thread or called non-overlappingly from different threads
- * through external means of serialization). The {@link #toSerialized()} method available to all {@code Subject}s
- * provides such serialization and also protects against reentrance (i.e., when a downstream {@code Observer}
- * consuming this subject also wants to call {@link #onNext(Object)} on this subject recursively).
- * <p>
- * This {@code PublishSubject} supports the standard state-peeking methods {@link #hasComplete()}, {@link #hasThrowable()},
- * {@link #getThrowable()} and {@link #hasObservers()}.
+ * 通过 {@link #create()} 创建；onNext/onError 禁止 null；作为 Observable 不支持背压，不缓存历史项。
+ * 终止后晚到 Observer 仅收到对应终止事件。onXXX 须串行，可用 {@link #toSerialized()}。
  * <dl>
  *  <dt><b>Scheduler:</b></dt>
- *  <dd>{@code PublishSubject} does not operate by default on a particular {@link io.reactivex.rxjava4.core.Scheduler} and
- *  the {@code Observer}s get notified on the thread the respective {@code onXXX} methods were invoked.</dd>
+ *  <dd>在各自 onXXX 调用线程通知 Observer。</dd>
  *  <dt><b>Error handling:</b></dt>
- *  <dd>When the {@link #onError(Throwable)} is called, the {@code PublishSubject} enters into a terminal state
- *  and emits the same {@code Throwable} instance to the last set of {@code Observer}s. During this emission,
- *  if one or more {@code Observer}s dispose their respective {@code Disposable}s, the
- *  {@code Throwable} is delivered to the global error handler via
- *  {@link io.reactivex.rxjava4.plugins.RxJavaPlugins#onError(Throwable)} (multiple times if multiple {@code Observer}s
- *  cancel at once).
- *  If there were no {@code Observer}s subscribed to this {@code PublishSubject} when the {@code onError()}
- *  was called, the global error handler is not invoked.
- *  </dd>
+ *  <dd>无 Observer 时 onError 不触发全局错误处理器。</dd>
  * </dl>
- * <p>
- * Example usage:
- * <pre> {@code
-
-    PublishSubject<Object> subject = PublishSubject.create();
-    // observer1 will receive all onNext and onComplete events
-    subject.subscribe(observer1);
-    subject.onNext("one");
-    subject.onNext("two");
-    // observer2 will only receive "three" and onComplete
-    subject.subscribe(observer2);
-    subject.onNext("three");
-    subject.onComplete();
-
-    // late Observers only receive the terminal event
-    subject.test().assertEmpty();
-    } </pre>
  *
- * @param <T>
- *          the type of items observed and emitted by the Subject
+ * @param <T> Subject 观察与发射的项类型
  */
 public final class PublishSubject<T> extends Subject<T> {
-    /** The terminated indicator for the subscribers array. */
+    /** subscribers 数组的已终止标记。 */
     @SuppressWarnings("rawtypes")
     static final PublishDisposable[] TERMINATED = new PublishDisposable[0];
-    /** An empty subscribers array to avoid allocating it all the time. */
+    /** 空 subscribers 数组，避免重复分配。 */
     @SuppressWarnings("rawtypes")
     static final PublishDisposable[] EMPTY = new PublishDisposable[0];
 
-    /** The array of currently subscribed subscribers. */
+    /** 当前已订阅的 subscribers 数组。 */
     final AtomicReference<PublishDisposable<T>[]> subscribers;
 
-    /** The error, write before terminating and read after checking subscribers. */
+    /** 错误；终止前写入，检查 subscribers 后读取。 */
     Throwable error;
 
     /**
-     * Constructs a PublishSubject.
-     * @param <T> the value type
-     * @return the new PublishSubject
+     * 构造 PublishSubject。
+     * @param <T> 值类型
+     * @return 新的 PublishSubject
      */
     @CheckReturnValue
     @NonNull
@@ -120,7 +64,7 @@ public final class PublishSubject<T> extends Subject<T> {
     }
 
     /**
-     * Constructs a PublishSubject.
+     * 构造 PublishSubject。
      * @since 2.0
      */
     @SuppressWarnings("unchecked")
@@ -149,10 +93,9 @@ public final class PublishSubject<T> extends Subject<T> {
     }
 
     /**
-     * Tries to add the given subscriber to the subscribers array atomically
-     * or returns false if the subject has terminated.
-     * @param ps the subscriber to add
-     * @return true if successful, false if the subject has terminated
+     * 尝试将给定订阅者原子加入 subscribers 数组；subject 已终止则返回 false。
+     * @param ps 要添加的订阅者
+     * @return 成功为 true，已终止为 false
      */
     boolean add(PublishDisposable<T> ps) {
         for (;;) {
@@ -174,8 +117,8 @@ public final class PublishSubject<T> extends Subject<T> {
     }
 
     /**
-     * Atomically removes the given subscriber if it is subscribed to the subject.
-     * @param ps the subject to remove
+     * 若已订阅则从 subject 原子移除给定订阅者。
+     * @param ps 要移除的订阅者
      */
     @SuppressWarnings("unchecked")
     void remove(PublishDisposable<T> ps) {
@@ -283,24 +226,23 @@ public final class PublishSubject<T> extends Subject<T> {
     }
 
     /**
-     * Wraps the actual subscriber, tracks its requests and makes cancellation
-     * to remove itself from the current subscribers array.
+     * 包装实际订阅者，跟踪请求，取消时从 subscribers 数组移除自身。
      *
-     * @param <T> the value type
+     * @param <T> 值类型
      */
     static final class PublishDisposable<T> extends AtomicBoolean implements Disposable {
 
         @Serial
         private static final long serialVersionUID = 3562861878281475070L;
-        /** The actual subscriber. */
+        /** 实际订阅者。 */
         final Observer<? super T> downstream;
-        /** The subject state. */
+        /** subject 状态。 */
         final PublishSubject<T> parent;
 
         /**
-         * Constructs a PublishSubscriber, wraps the actual subscriber and the state.
-         * @param actual the actual subscriber
-         * @param parent the parent PublishProcessor
+         * 构造 PublishDisposable，包装实际订阅者与父 subject。
+         * @param actual 实际订阅者
+         * @param parent 父 PublishSubject
          */
         PublishDisposable(Observer<? super T> actual, PublishSubject<T> parent) {
             this.downstream = actual;
