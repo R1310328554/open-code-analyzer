@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:52:45Z",
-  "files": [
-    "store/src/main/java/org/apache/rocketmq/store/kv/CompactionService.java",
-    "store/src/main/java/org/apache/rocketmq/store/kv/CompactionStore.java",
-    "store/src/main/java/org/apache/rocketmq/store/kv/MessageFetcher.java",
-    "store/src/main/java/org/apache/rocketmq/store/lock/AdaptiveBackOffSpinLock.java",
-    "store/src/main/java/org/apache/rocketmq/store/lock/AdaptiveBackOffSpinLockImpl.java",
-    "store/src/main/java/org/apache/rocketmq/store/lock/BackOffReentrantLock.java",
-    "store/src/main/java/org/apache/rocketmq/store/lock/BackOffSpinLock.java",
-    "store/src/main/java/org/apache/rocketmq/store/logfile/AbstractMappedFile.java",
-    "store/src/main/java/org/apache/rocketmq/store/logfile/MappedFile.java",
-    "store/src/main/java/org/apache/rocketmq/store/logfile/SharedByteBufferManager.java",
-    "store/src/main/java/org/apache/rocketmq/store/metrics/DefaultStoreMetricsConstant.java",
-    "store/src/main/java/org/apache/rocketmq/store/metrics/DefaultStoreMetricsManager.java",
-    "store/src/main/java/org/apache/rocketmq/store/metrics/RocksDBStoreMetricsManager.java",
-    "store/src/main/java/org/apache/rocketmq/store/metrics/StoreMetricsManager.java",
-    "store/src/main/java/org/apache/rocketmq/store/plugin/MessageStoreFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 318,
-  "done": 1155
+  "done": 1170
 }
