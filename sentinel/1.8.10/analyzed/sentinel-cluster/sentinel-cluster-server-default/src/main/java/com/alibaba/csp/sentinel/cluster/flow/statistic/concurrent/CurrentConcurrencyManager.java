@@ -25,18 +25,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * We use a ConcurrentHashMap<long, AtomicInteger> type structure to store nowCalls corresponding to
- * rules, where the key is flowId and the value is nowCalls. Because nowCalls may be accessed and
- * modified by multiple threads, we consider to design it as an AtomicInteger class . Each newly
- * created rule will add a nowCalls object to this map. If the concurrency corresponding to a rule changes,
- * we will update the corresponding nowCalls in real time. Each request to obtain a token will increase the nowCalls;
- * and the request to release the token will reduce the nowCalls.
+ * 使用 ConcurrentHashMap&lt;Long, AtomicInteger&gt; 存储各规则的当前并发数（nowCalls），
+ * key 为 flowId，value 为并发计数。因多线程并发访问与修改，值设计为 {@link AtomicInteger}。
+ * 新建规则时会向 map 添加计数器；并发阈值变更时实时更新对应计数。
+ * 获取令牌时递增 nowCalls，释放令牌时递减。
  *
  * @author yunfeiyanggzq
  */
 public final class CurrentConcurrencyManager {
     /**
-     * use ConcurrentHashMap to store the nowCalls of rules.
+     * 使用 ConcurrentHashMap 存储各规则的 nowCalls。
      */
     private static final ConcurrentHashMap<Long, AtomicInteger> NOW_CALLS_MAP = new ConcurrentHashMap<Long, AtomicInteger>();
 
@@ -50,7 +48,7 @@ public final class CurrentConcurrencyManager {
     }
 
     /**
-     * add current concurrency.
+     * 增加当前并发数。
      */
     public static void addConcurrency(Long flowId, Integer acquireCount) {
 
@@ -62,35 +60,35 @@ public final class CurrentConcurrencyManager {
     }
 
     /**
-     * get the current concurrency.
+     * 获取指定 flowId 的当前并发计数器。
      */
     public static AtomicInteger get(Long flowId) {
         return NOW_CALLS_MAP.get(flowId);
     }
 
     /**
-     * delete the current concurrency.
+     * 删除指定 flowId 的并发计数器。
      */
     public static void remove(Long flowId) {
         NOW_CALLS_MAP.remove(flowId);
     }
 
     /**
-     * put the current concurrency.
+     * 设置指定 flowId 的初始并发数。
      */
     public static void put(Long flowId, Integer nowCalls) {
         NOW_CALLS_MAP.put(flowId, new AtomicInteger(nowCalls));
     }
 
     /**
-     * check flow id.
+     * 检查 flowId 是否已注册。
      */
     public static boolean containsFlowId(Long flowId) {
         return NOW_CALLS_MAP.containsKey(flowId);
     }
 
     /**
-     * get NOW_CALLS_MAP.
+     * 获取并发 map 的全部 flowId 键集合。
      */
     public static Set<Long> getConcurrencyMapKeySet() {
         return NOW_CALLS_MAP.keySet();

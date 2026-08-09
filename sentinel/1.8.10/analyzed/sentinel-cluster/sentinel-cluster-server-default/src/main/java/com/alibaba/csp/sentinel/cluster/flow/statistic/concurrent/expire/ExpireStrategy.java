@@ -16,11 +16,13 @@
 package com.alibaba.csp.sentinel.cluster.flow.statistic.concurrent.expire;
 
 /**
+ * 过期令牌清理策略接口。
+ *
  * @author yunfeiyagnggzq
  */
 public interface ExpireStrategy {
     /**
-     * clean expired token regularly.
+     * 启动定期清理过期令牌的任务。
      */
     void startClearTaskRegularly();
 }

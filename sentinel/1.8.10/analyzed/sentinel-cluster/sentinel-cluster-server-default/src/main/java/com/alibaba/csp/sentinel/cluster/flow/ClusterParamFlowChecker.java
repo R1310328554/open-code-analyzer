@@ -28,6 +28,8 @@ import com.alibaba.csp.sentinel.slots.block.ClusterRuleConstant;
 import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule;
 
 /**
+ * 集群热点参数流控检查器，按参数值维度判断是否放行。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  * @since 1.4.0
@@ -48,11 +50,11 @@ public final class ClusterParamFlowChecker {
 
         ClusterParamMetric metric = ClusterParamMetricStatistics.getMetric(id);
         if (metric == null) {
-            // Unexpected state, return FAIL.
+            // 异常状态，返回 FAIL。
             return new TokenResult(TokenResultStatus.FAIL);
         }
         if (values == null || values.isEmpty()) {
-            // Empty parameter list will always pass.
+            // 空参数列表始终放行。
             return new TokenResult(TokenResultStatus.OK);
         }
         double remaining = -1;
@@ -79,7 +81,7 @@ public final class ClusterParamFlowChecker {
             ClusterServerStatLogUtil.log(String.format("param|block|%d|%s", id, blockObject));
         }
         if (values.size() > 1) {
-            // Remaining field is unsupported for multi-values.
+            // 多参数场景不支持返回 remaining 字段。
             remaining = -1;
         }
 

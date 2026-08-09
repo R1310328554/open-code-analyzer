@@ -31,6 +31,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ * 集群指标节点生成器，将流控与热点参数指标转换为 {@link ClusterMetricNode}。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */

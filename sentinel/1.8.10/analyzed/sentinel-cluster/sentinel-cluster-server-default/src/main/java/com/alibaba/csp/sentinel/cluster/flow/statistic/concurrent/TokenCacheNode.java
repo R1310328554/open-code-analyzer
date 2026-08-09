@@ -20,36 +20,35 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import java.util.UUID;
 
 /**
- * We use TokenCacheNodeManager to store the tokenId, whose the underlying storage structure
- * is ConcurrentLinkedHashMap, Its storage node is TokenCacheNode. In order to operate the nowCalls value when
- * the expired tokenId is deleted regularly, we need to store the flowId in TokenCacheNode.
+ * 并发令牌缓存节点，由 {@link TokenCacheNodeManager} 以 ConcurrentLinkedHashMap 存储。
+ * 定期清理过期 token 时需据此更新 nowCalls，故需保存 flowId 等信息。
  *
  * @author yunfeiyanggzq
  */
 public class TokenCacheNode {
     /**
-     * the TokenId of the token
+     * 令牌 ID。
      */
     private Long tokenId;
     /**
-     * the client goes offline detection time
+     * 客户端离线检测截止时间（绝对时间戳）。
      */
     private Long clientTimeout;
     /**
-     * the resource called over time detection time
+     * 资源调用超时检测截止时间（绝对时间戳）。
      */
     private Long resourceTimeout;
     /**
-     * the flow rule id  corresponding to the token
+     * 令牌对应的流控规则 ID。
      */
     private Long flowId;
     /**
-     * the number this token occupied
+     * 该令牌占用的并发配额数。
      */
     private int acquireCount;
 
     /**
-     * the address of the client holds the token.
+     * 持有该令牌的客户端地址。
      */
     private String clientAddress;
 
@@ -58,8 +57,8 @@ public class TokenCacheNode {
 
     public static TokenCacheNode generateTokenCacheNode(FlowRule rule, int acquireCount, String clientAddress) {
         TokenCacheNode node = new TokenCacheNode();
-        // getMostSignificantBits() returns the most significant 64 bits of this UUID's 128 bit value.
-        // The probability of collision is extremely low.
+        // getMostSignificantBits() 取 UUID 128 位值的高 64 位作为 tokenId。
+        // 碰撞概率极低。
         node.setTokenId(UUID.randomUUID().getMostSignificantBits());
         node.setFlowId(rule.getClusterConfig().getFlowId());
         node.setClientTimeout(rule.getClusterConfig().getClientOfflineTime());

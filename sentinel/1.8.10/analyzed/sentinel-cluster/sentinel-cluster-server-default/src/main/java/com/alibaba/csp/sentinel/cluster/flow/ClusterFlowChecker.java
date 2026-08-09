@@ -28,7 +28,7 @@ import com.alibaba.csp.sentinel.slots.block.ClusterRuleConstant;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 
 /**
- * Flow checker for cluster flow rules.
+ * 集群流控规则检查器，基于滑动窗口指标判断是否发放令牌。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -69,40 +69,40 @@ final class ClusterFlowChecker {
         double nextRemaining = globalThreshold - latestQps - acquireCount;
 
         if (nextRemaining >= 0) {
-            // TODO: checking logic and metric operation should be separated.
+            // TODO：检查逻辑与指标写入应分离。
             metric.add(ClusterFlowEvent.PASS, acquireCount);
             metric.add(ClusterFlowEvent.PASS_REQUEST, 1);
             if (prioritized) {
-                // Add prioritized pass.
+                // 记录优先级通过的令牌数。
                 metric.add(ClusterFlowEvent.OCCUPIED_PASS, acquireCount);
             }
-            // Remaining count is cut down to a smaller integer.
+            // 剩余配额截断为整数返回。
             return new TokenResult(TokenResultStatus.OK)
                 .setRemaining((int) nextRemaining)
                 .setWaitInMs(0);
         } else {
             if (prioritized) {
-                // Try to occupy incoming buckets.
+                // 尝试预占后续时间窗口的配额。
                 double occupyAvg = metric.getAvg(ClusterFlowEvent.WAITING);
                 if (occupyAvg <= ClusterServerConfigManager.getMaxOccupyRatio() * globalThreshold) {
                     int waitInMs = metric.tryOccupyNext(ClusterFlowEvent.PASS, acquireCount, globalThreshold);
-                    // waitInMs > 0 indicates pre-occupy incoming buckets successfully.
+                    // waitInMs > 0 表示成功预占后续窗口配额。
                     if (waitInMs > 0) {
                         ClusterServerStatLogUtil.log("flow|waiting|" + id);
                         return new TokenResult(TokenResultStatus.SHOULD_WAIT)
                             .setRemaining(0)
                             .setWaitInMs(waitInMs);
                     }
-                    // Or else occupy failed, should be blocked.
+                    // 否则预占失败，请求应被阻断。
                 }
             }
-            // Blocked.
+            // 请求被阻断。
             metric.add(ClusterFlowEvent.BLOCK, acquireCount);
             metric.add(ClusterFlowEvent.BLOCK_REQUEST, 1);
             ClusterServerStatLogUtil.log("flow|block|" + id, acquireCount);
             ClusterServerStatLogUtil.log("flow|block_request|" + id, 1);
             if (prioritized) {
-                // Add prioritized block.
+                // 记录优先级阻断的令牌数。
                 metric.add(ClusterFlowEvent.OCCUPIED_BLOCK, acquireCount);
                 ClusterServerStatLogUtil.log("flow|occupied_block|" + id, 1);
             }

@@ -29,6 +29,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 集群并发流控检查器，基于当前并发数限制同时执行的请求数量。
+ *
  * @author yunfeiyanggzq
  */
 final public class ConcurrentClusterFlowChecker {
@@ -53,16 +55,16 @@ final public class ConcurrentClusterFlowChecker {
             return new TokenResult(TokenResultStatus.FAIL);
         }
 
-        // check before enter the lock to improve the efficiency
+        // 加锁前先检查，提升效率
         if (nowCalls.get() + acquireCount > calcGlobalThreshold(rule)) {
             ClusterServerStatLogUtil.log("concurrent|block|" + flowId, acquireCount);
             return new TokenResult(TokenResultStatus.BLOCKED);
         }
 
-        // ensure the atomicity of operations
-        // lock different nowCalls to improve the efficiency
+        // 保证并发计数操作的原子性
+        // 按 flowId 分别加锁，减少锁竞争
         synchronized (nowCalls) {
-            // check again whether the request can pass.
+            // 加锁后再次检查是否可放行。
             if (nowCalls.get() + acquireCount > calcGlobalThreshold(rule)) {
                 ClusterServerStatLogUtil.log("concurrent|block|" + flowId, acquireCount);
                 return new TokenResult(TokenResultStatus.BLOCKED);

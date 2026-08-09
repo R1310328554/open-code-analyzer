@@ -21,8 +21,7 @@ import com.alibaba.csp.sentinel.property.PropertyListener;
 import com.alibaba.csp.sentinel.property.SentinelProperty;
 
 /**
- * A property wrapper for list of rules of a given namespace.
- * This is useful for auto-management of the property and listener.
+ * 给定命名空间规则列表的属性包装器，便于统一管理属性与监听器。
  *
  * @param <T> type of the rule
  * @author Eric Zhao

@@ -41,7 +41,7 @@ import com.alibaba.csp.sentinel.util.function.Function;
 import com.alibaba.csp.sentinel.util.function.Predicate;
 
 /**
- * Manager for cluster parameter flow rules.
+ * 集群热点参数流控规则管理器，维护规则注册、动态更新与指标初始化。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -49,8 +49,7 @@ import com.alibaba.csp.sentinel.util.function.Predicate;
 public final class ClusterParamFlowRuleManager {
 
     /**
-     * The default cluster parameter flow rule property supplier that creates a new
-     * dynamic property for a specific namespace to manually do rule management.
+     * 默认集群热点参数流控规则属性供应器，为指定命名空间创建动态属性以手动管理规则。
      */
     public static final Function<String, SentinelProperty<List<ParamFlowRule>>> DEFAULT_PROPERTY_SUPPLIER =
         new Function<String, SentinelProperty<List<ParamFlowRule>>>() {
@@ -61,24 +60,24 @@ public final class ClusterParamFlowRuleManager {
         };
 
     /**
-     * (id, clusterParamRule)
+     * 规则 ID 到集群热点参数规则的映射。
      */
     private static final Map<Long, ParamFlowRule> PARAM_RULES = new ConcurrentHashMap<>();
     /**
-     * (namespace, [flowId...])
+     * 命名空间到 flowId 集合的映射。
      */
     private static final Map<String, Set<Long>> NAMESPACE_FLOW_ID_MAP = new ConcurrentHashMap<>();
     /**
-     * (flowId, namespace)
+     * flowId 到命名空间的映射。
      */
     private static final Map<Long, String> FLOW_NAMESPACE_MAP = new ConcurrentHashMap<>();
 
     /**
-     * (namespace, property-listener wrapper)
+     * 命名空间到属性-监听器包装器的映射。
      */
     private static final Map<String, NamespaceFlowProperty<ParamFlowRule>> PROPERTY_MAP = new ConcurrentHashMap<>();
     /**
-     * Cluster parameter flow rule property supplier for a specific namespace.
+     * 为指定命名空间提供集群热点参数流控规则属性的供应器。
      */
     private static volatile Function<String, SentinelProperty<List<ParamFlowRule>>> propertySupplier
         = DEFAULT_PROPERTY_SUPPLIER;
@@ -105,8 +104,8 @@ public final class ClusterParamFlowRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for cluster {@link ParamFlowRule}s.
-     * The property is the source of cluster {@link ParamFlowRule}s for a specific namespace.
+     * 监听指定命名空间的集群 {@link ParamFlowRule} {@link SentinelProperty}。
+     * 该属性是该命名空间集群 {@link ParamFlowRule} 的数据源。
      *
      * @param namespace namespace to register
      */
@@ -238,7 +237,7 @@ public final class ClusterParamFlowRuleManager {
     }
 
     /**
-     * Get all cluster parameter flow rules within a specific namespace.
+     * 获取指定命名空间内的全部集群热点参数流控规则。
      *
      * @param namespace a valid namespace
      * @return cluster parameter flow rules within the provided namespace
@@ -262,7 +261,7 @@ public final class ClusterParamFlowRuleManager {
     }
 
     /**
-     * Load parameter flow rules for a specific namespace. The former rules of the namespace will be replaced.
+     * 为指定命名空间加载热点参数流控规则，将替换该命名空间原有规则。
      *
      * @param namespace a valid namespace
      * @param rules rule list
@@ -276,7 +275,7 @@ public final class ClusterParamFlowRuleManager {
     }
 
     /**
-     * Get connected count for associated namespace of given {@code flowId}.
+     * 获取给定 {@code flowId} 关联命名空间的已连接客户端数量。
      *
      * @param flowId existing rule ID
      * @return connected count
@@ -341,7 +340,7 @@ public final class ClusterParamFlowRuleManager {
             ParamFlowRuleUtil.fillExceptionFlowItems(rule);
 
             ParamFlowClusterConfig clusterConfig = rule.getClusterConfig();
-            // Flow id should not be null after filtered.
+            // 过滤后 flowId 不应为空。
             Long flowId = clusterConfig.getFlowId();
             if (flowId == null) {
                 continue;
@@ -350,12 +349,12 @@ public final class ClusterParamFlowRuleManager {
             FLOW_NAMESPACE_MAP.put(flowId, namespace);
             flowIdSet.add(flowId);
 
-            // Prepare cluster parameter metric from valid rule ID.
+            // 根据有效规则 ID 初始化集群热点参数指标。
             ClusterParamMetricStatistics.putMetricIfAbsent(flowId,
                 new ClusterParamMetric(clusterConfig.getSampleCount(), clusterConfig.getWindowIntervalMs()));
         }
 
-        // Cleanup unused cluster parameter metrics.
+        // 清理不再使用的集群热点参数指标。
         clearAndResetRulesConditional(namespace, new Predicate<Long>() {
             @Override
             public boolean test(Long flowId) {

@@ -27,7 +27,7 @@ import com.alibaba.csp.sentinel.spi.Spi;
 import java.util.Collection;
 
 /**
- * Default implementation for cluster {@link TokenService}.
+ * 集群 {@link TokenService} 的默认实现，委托各检查器处理令牌请求。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -40,7 +40,7 @@ public class DefaultTokenService implements TokenService {
         if (notValidRequest(ruleId, acquireCount)) {
             return badRequest();
         }
-        // The rule should be valid.
+        // 规则必须有效。
         FlowRule rule = ClusterFlowRuleManager.getFlowRuleById(ruleId);
         if (rule == null) {
             return new TokenResult(TokenResultStatus.NO_RULE_EXISTS);
@@ -54,7 +54,7 @@ public class DefaultTokenService implements TokenService {
         if (notValidRequest(ruleId, acquireCount) || params == null || params.isEmpty()) {
             return badRequest();
         }
-        // The rule should be valid.
+        // 规则必须有效。
         ParamFlowRule rule = ClusterParamFlowRuleManager.getParamRuleById(ruleId);
         if (rule == null) {
             return new TokenResult(TokenResultStatus.NO_RULE_EXISTS);
@@ -68,7 +68,7 @@ public class DefaultTokenService implements TokenService {
         if (notValidRequest(clientAddress, ruleId, acquireCount)) {
             return badRequest();
         }
-        // The rule should be valid.
+        // 规则必须有效。
         FlowRule rule = ClusterFlowRuleManager.getFlowRuleById(ruleId);
         if (rule == null) {
             return new TokenResult(TokenResultStatus.NO_RULE_EXISTS);

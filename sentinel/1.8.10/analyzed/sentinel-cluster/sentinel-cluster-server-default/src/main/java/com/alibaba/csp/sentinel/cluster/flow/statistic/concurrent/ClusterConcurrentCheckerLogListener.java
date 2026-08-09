@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import java.util.Set;
 
 /**
+ * 集群并发流控定期日志采集任务，记录各资源当前并发与令牌缓存规模。
+ *
  * @author yunfeiyanggzq
  */
 public class ClusterConcurrentCheckerLogListener implements Runnable {

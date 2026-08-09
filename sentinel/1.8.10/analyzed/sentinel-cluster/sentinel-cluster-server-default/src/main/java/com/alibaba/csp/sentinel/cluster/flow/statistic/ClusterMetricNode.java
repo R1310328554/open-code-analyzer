@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.cluster.flow.statistic;
 import java.util.Map;
 
 /**
+ * 集群流控指标快照节点，汇总某资源的通过/阻断 QPS 与热点参数。
+ *
  * @author Eric Zhao
  * @since 1.4.1
  */

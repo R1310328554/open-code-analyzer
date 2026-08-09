@@ -23,6 +23,8 @@ import com.googlecode.concurrentlinkedhashmap.Weighers;
 import java.util.Set;
 
 /**
+ * 并发令牌缓存管理器，基于 ConcurrentLinkedHashMap 存储 {@link TokenCacheNode} 并定期清理过期条目。
+ *
  * @author yunfeiyanggzq
  */
 public class TokenCacheNodeManager {
@@ -45,14 +47,14 @@ public class TokenCacheNodeManager {
                 .maximumWeightedCapacity(maximumWeightedCapacity)
                 .weigher(Weighers.singleton())
                 .build();
-        // Start the task of regularly clearing expired keys
+        // 启动定期清理过期令牌的定时任务
         RegularExpireStrategy strategy = new RegularExpireStrategy(TOKEN_CACHE_NODE_MAP);
         strategy.startClearTaskRegularly();
     }
 
 
     public static TokenCacheNode getTokenCacheNode(long tokenId) {
-        //use getQuietly to prevent disorder
+        // 使用 getQuietly 避免影响 LRU 顺序
         return TOKEN_CACHE_NODE_MAP.getQuietly(tokenId);
     }
 

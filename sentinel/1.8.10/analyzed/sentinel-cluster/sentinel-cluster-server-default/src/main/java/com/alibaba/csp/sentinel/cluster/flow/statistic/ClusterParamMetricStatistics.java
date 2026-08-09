@@ -24,6 +24,8 @@ import com.alibaba.csp.sentinel.cluster.server.config.ClusterServerConfigManager
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 集群热点参数指标统计容器，按 flowId 管理 {@link ClusterParamMetric} 实例。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
