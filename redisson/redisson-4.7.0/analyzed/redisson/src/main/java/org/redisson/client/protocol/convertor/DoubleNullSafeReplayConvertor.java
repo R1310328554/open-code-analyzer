@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 空安全 {@link Double} 回复转换器，继承 {@link DoubleReplayConvertor}。
+ * <p>
+ * 父类转换结果为 {@code null} 时返回 {@code 0.0}，避免下游 NPE。
+ *
  * @author Nikita Koksharov
  *
  */
 public class DoubleNullSafeReplayConvertor extends DoubleReplayConvertor {
 
+    /** 委托父类转换，{@code null} 结果替换为 {@code 0.0}。 */
     @Override
     public Double convert(Object obj) {
         Double r = super.convert(obj);

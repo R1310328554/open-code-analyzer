@@ -18,6 +18,10 @@ package org.redisson.client.protocol;
 import java.util.Objects;
 
 /**
+ * 有序集合（ZSET）或向量集合中的带分数成员条目。
+ * <p>
+ * 由 {@code ZRANGE WITHSCORES}、{@code VSIM WITHSCORES} 等命令解码器构造，
+ * 实现 {@link Comparable} 以便按分数排序。
  *
  * @author Nikita Koksharov
  *
@@ -25,19 +29,24 @@ import java.util.Objects;
  */
 public class ScoredEntry<V> implements Comparable<ScoredEntry<V>> {
 
+    /** 成员分数。 */
     private final Double score;
+    /** 成员值。 */
     private final V value;
 
+    /** 指定分数与成员值构造条目。 */
     public ScoredEntry(Double score, V value) {
         super();
         this.score = score;
         this.value = value;
     }
 
+    /** 返回成员值。 */
     public V getValue() {
         return value;
     }
 
+    /** 返回成员分数。 */
     public Double getScore() {
         return score;
     }
@@ -55,6 +64,7 @@ public class ScoredEntry<V> implements Comparable<ScoredEntry<V>> {
         return Objects.hash(score, value);
     }
 
+    /** 按分数升序比较，用于排序与范围查询结果。 */
     @Override
     public int compareTo(ScoredEntry<V> o) {
         return score.compareTo(o.score);

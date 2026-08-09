@@ -16,13 +16,23 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * Redis 回复后处理转换器接口。
+ * <p>
+ * 解码器得到原始对象后，由 {@link Convertor} 将其映射为命令期望的 Java 类型，
+ * 例如整数转布尔、字节长度转位数等。
+ *
  * @author Nikita Koksharov
  *
  * @param <R> type
  */
 public interface Convertor<R> {
 
+    /**
+     * 将解码后的原始回复对象转换为目标类型。
+     *
+     * @param obj 解码器输出的原始对象
+     * @return 转换后的目标类型实例
+     */
     R convert(Object obj);
 
 }

@@ -16,12 +16,17 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 将 Redis 整数回复转换为布尔值：大于 0 为 {@code true}，否则为 {@code false}。
+ * <p>
+ * 适用于 {@code ZADD}、{@code SADD}、{@code DEL} 等返回受影响元素数量的命令，
+ * 表示是否至少修改了一个元素。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BooleanAmountReplayConvertor implements Convertor<Boolean> {
 
+    /** 受影响数量大于 0 时返回 {@code true}。 */
     @Override
     public Boolean convert(Object obj) {
         return (Long) obj > 0;

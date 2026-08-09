@@ -18,16 +18,24 @@ package org.redisson.client.protocol;
 import java.util.Objects;
 
 /**
+ * 向量集合相似度查询结果：成员值、相似度分数及附加属性字符串。
+ * <p>
+ * 由 {@code VSIM ... WITHSCORES ATTRIBS} 等命令的解码器构造，用于
+ * {@link org.redisson.api.RVectorSet} 带属性相似度查询。
  *
  * @author seakider
  *
  * @param <V> value type
  */
 public class ScoreAttributesEntry<V> {
+    /** 相似度分数（距离或相似度，取决于命令语义）。 */
     private final Double score;
+    /** 成员值。 */
     private final V value;
+    /** 附加属性字符串（通常为 JSON 或键值序列）。 */
     private final String attributes;
 
+    /** 指定分数、成员值与属性构造条目。 */
     public ScoreAttributesEntry(Double score, V value, String attributes) {
         super();
         this.score = score;
@@ -35,14 +43,17 @@ public class ScoreAttributesEntry<V> {
         this.value = value;
     }
 
+    /** 返回相似度分数。 */
     public Double getScore() {
         return score;
     }
 
+    /** 返回附加属性字符串。 */
     public String getAttributes() {
         return attributes;
     }
 
+    /** 返回成员值。 */
     public V getValue() {
         return value;
     }

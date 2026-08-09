@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 将 Redis 回复转换为 {@link Byte}。
+ * <p>
+ * {@code null} 输入返回 {@code 0}，其余通过 {@code toString()} 解析为字节值。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ByteReplayConvertor implements Convertor<Byte> {
 
+    /** {@code null} 返回 0，否则解析字符串为字节。 */
     @Override
     public Byte convert(Object obj) {
         if (obj == null) {

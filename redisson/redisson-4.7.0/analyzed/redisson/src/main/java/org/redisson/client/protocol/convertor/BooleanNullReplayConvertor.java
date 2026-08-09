@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 将 Redis 回复转换为布尔值：{@code null} 为 {@code true}，非空为 {@code false}。
+ * <p>
+ * 用于检测 Redis 是否返回了空/nil 回复（例如键不存在场景）。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BooleanNullReplayConvertor implements Convertor<Boolean> {
 
+    /** 回复为 {@code null} 时返回 {@code true}。 */
     @Override
     public Boolean convert(Object obj) {
         return obj == null;

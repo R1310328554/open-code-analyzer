@@ -16,19 +16,25 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 将 Redis 整数回复与指定阈值比较，不相等时为 {@code true}。
+ * <p>
+ * 构造时传入期望的"失败"数值，用于检测命令是否返回了非预期状态码。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BooleanNumberReplayConvertor implements Convertor<Boolean> {
 
+    /** 与之比较的基准整数值。 */
     private final long number;
 
+    /** @param number 期望比较的整型阈值 */
     public BooleanNumberReplayConvertor(long number) {
         super();
         this.number = number;
     }
 
+    /** 回复整数不等于 {@link #number} 时返回 {@code true}。 */
     @Override
     public Boolean convert(Object obj) {
         return (Long) obj != number;

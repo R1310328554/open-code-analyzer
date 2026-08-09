@@ -16,12 +16,17 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 将 {@code STRLEN} 返回的字节长度转换为位图位数（字节数 × 8）。
+ * <p>
+ * 用于 {@link org.redisson.client.protocol.RedisCommands#BITS_SIZE} 等命令，
+ * 使调用方直接获得 BIT 相关操作的位长度。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BitsSizeReplayConvertor implements Convertor<Long> {
 
+    /** 将字节长度乘以 8 得到位长度；{@code null} 输入返回 {@code null}。 */
     @Override
     public Long convert(Object obj) {
         if (obj == null) {

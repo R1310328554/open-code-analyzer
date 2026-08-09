@@ -16,21 +16,28 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 将 Redis 浮点或字符串回复转换为 {@link Double}。
+ * <p>
+ * 可配置 {@code null} 或空字符串时的默认返回值，用于 ZSET 分数等场景。
+ *
  * @author Nikita Koksharov
  *
  */
 public class DoubleReplayConvertor implements Convertor<Double> {
 
+    /** {@code null} 或空字符串时返回的默认值。 */
     private Double nullValue;
 
+    /** 默认构造，空值时返回 {@code null}。 */
     public DoubleReplayConvertor() {
     }
 
+    /** @param nullValue 空回复时的替代值 */
     public DoubleReplayConvertor(Double nullValue) {
         this.nullValue = nullValue;
     }
 
+    /** {@code null} 或空串返回 {@link #nullValue}，否则解析为 double。 */
     @Override
     public Double convert(Object obj) {
         if (obj == null || obj.toString().isEmpty()) {

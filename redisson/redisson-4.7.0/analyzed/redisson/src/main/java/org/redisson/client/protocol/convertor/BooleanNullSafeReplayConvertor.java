@@ -16,12 +16,17 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 空安全布尔回复转换器：{@code null} 视为 {@code false}。
+ * <p>
+ * 成功条件为整数 {@code 1} 或字符串 {@code "OK"}，用于 {@code SET}、
+ * {@code DEL}、{@code FCALL} 等需要明确成功/失败语义的命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BooleanNullSafeReplayConvertor implements Convertor<Boolean> {
 
+    /** {@code null} 返回 {@code false}；{@code 1} 或 {@code "OK"} 返回 {@code true}。 */
     @Override
     public Boolean convert(Object obj) {
         if (obj == null) {

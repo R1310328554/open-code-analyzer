@@ -16,25 +16,33 @@
 package org.redisson.client.protocol;
 
 /**
- * 
+ * Redis {@code TIME} 命令返回的时间戳，由秒与微秒两部分组成。
+ * <p>
+ * 与 Unix 纪元对齐，微秒部分为秒以下的精度扩展。
+ *
  * @author Nikita Koksharov
  *
  */
 public class Time {
 
+    /** 自 Unix 纪元起的整秒数。 */
     private final int seconds;
+    /** 当前秒内的微秒偏移（0–999999）。 */
     private final int microseconds;
     
+    /** 指定秒与微秒构造时间戳。 */
     public Time(int seconds, int microseconds) {
         super();
         this.seconds = seconds;
         this.microseconds = microseconds;
     }
    
+    /** 返回微秒部分。 */
     public int getMicroseconds() {
         return microseconds;
     }
     
+    /** 返回秒部分。 */
     public int getSeconds() {
         return seconds;
     }
