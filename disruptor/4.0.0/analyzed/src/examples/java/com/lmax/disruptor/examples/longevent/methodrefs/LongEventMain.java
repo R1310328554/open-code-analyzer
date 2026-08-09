@@ -1,3 +1,7 @@
+/**
+ * 方法引用风格 Disruptor 示例。
+ */
+
 package com.lmax.disruptor.examples.longevent.methodrefs;
 
 // tag::example[]

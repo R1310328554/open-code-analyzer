@@ -19,19 +19,19 @@ import com.lmax.disruptor.EventProcessor;
 import com.lmax.disruptor.Sequence;
 
 /**
- * Set of common functions used by the Disruptor.
+ * Disruptor 通用工具方法集合。
  */
 public final class Util
 {
     private static final int ONE_MILLISECOND_IN_NANOSECONDS = 1_000_000;
 
     /**
-     * Calculate the next power of 2, greater than or equal to x.
+     * 计算大于等于 x 的下一个 2 的幂。
      *
-     * <p>From Hacker's Delight, Chapter 3, Harry S. Warren Jr.
+     * <p>算法出自 Hacker's Delight 第 3 章, Harry S. Warren Jr.
      *
-     * @param x Value to round up
-     * @return The next power of 2 from x inclusive
+     * @param x 待向上取整的值
+     * @return 大于等于 x 的最小 2 的幂
      */
     public static int ceilingNextPowerOfTwo(final int x)
     {
@@ -39,10 +39,10 @@ public final class Util
     }
 
     /**
-     * Get the minimum sequence from an array of {@link com.lmax.disruptor.Sequence}s.
+     * 从序号数组中获取最小 {@link com.lmax.disruptor.Sequence}s.
      *
-     * @param sequences to compare.
-     * @return the minimum sequence found or Long.MAX_VALUE if the array is empty.
+     * @param 待比较的序号数组
+     * @return 最小序号；数组为空时返回 Long.MAX_VALUE
      */
     public static long getMinimumSequence(final Sequence[] sequences)
     {
@@ -50,9 +50,9 @@ public final class Util
     }
 
     /**
-     * Get the minimum sequence from an array of {@link com.lmax.disruptor.Sequence}s.
+     * 从序号数组中获取最小 {@link com.lmax.disruptor.Sequence}s.
      *
-     * @param sequences to compare.
+     * @param 待比较的序号数组
      * @param minimum   an initial default minimum.  If the array is empty this value will be
      *                  returned.
      * @return the smaller of minimum sequence value found in {@code sequences} and {@code minimum};
@@ -73,7 +73,7 @@ public final class Util
     /**
      * Get an array of {@link Sequence}s for the passed {@link EventProcessor}s.
      *
-     * @param processors for which to get the sequences
+     * @param 事件处理器
      * @return the array of {@link Sequence}s
      */
     public static Sequence[] getSequencesFor(final EventProcessor... processors)
@@ -88,11 +88,11 @@ public final class Util
     }
 
     /**
-     * Calculate the log base 2 of the supplied integer, essentially reports the location
+     * 计算以 2 为底的对数, essentially reports the location
      * of the highest bit.
      *
-     * @param value Positive value to calculate log2 for.
-     * @return The log2 value
+     * @param value 待计算 log2 的正整数
+     * @return log2 值
      */
     public static int log2(final int value)
     {
@@ -104,10 +104,10 @@ public final class Util
     }
 
     /**
-     * @param mutex The object to wait on
-     * @param timeoutNanos The number of nanoseconds to wait for
-     * @return the number of nanoseconds waited (approximately)
-     * @throws InterruptedException if the underlying call to wait is interrupted
+     * @param mutex 等待对象
+     * @param timeoutNanos 最长等待纳秒数
+     * @return 剩余未等待的纳秒数（近似）
+     * @throws InterruptedException 等待被中断时抛出
      */
     public static long awaitNanos(final Object mutex, final long timeoutNanos) throws InterruptedException
     {

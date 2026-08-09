@@ -1,3 +1,7 @@
+/**
+ * JMH 简单事件。
+ */
+
 package com.lmax.disruptor.util;
 
 public class SimpleEvent

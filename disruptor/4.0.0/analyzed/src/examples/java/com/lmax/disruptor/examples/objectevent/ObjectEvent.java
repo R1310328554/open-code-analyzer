@@ -1,3 +1,7 @@
+/**
+ * 通用对象事件载体。
+ */
+
 package com.lmax.disruptor.examples.objectevent;
 
 // tag::example[]

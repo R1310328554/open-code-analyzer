@@ -18,6 +18,9 @@ package com.lmax.disruptor.examples.support;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventTranslatorTwoArg;
 
+/**
+ * 测试用桩事件。
+ */
 public final class StubEvent
 {
     private int value;

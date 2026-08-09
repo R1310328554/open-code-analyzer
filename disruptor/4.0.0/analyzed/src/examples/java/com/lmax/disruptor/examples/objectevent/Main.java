@@ -1,3 +1,7 @@
+/**
+ * 对象事件流水线示例入口。
+ */
+
 package com.lmax.disruptor.examples.objectevent;
 
 import com.lmax.disruptor.dsl.Disruptor;

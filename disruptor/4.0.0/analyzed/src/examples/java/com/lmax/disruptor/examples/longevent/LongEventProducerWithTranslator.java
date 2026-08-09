@@ -1,3 +1,7 @@
+/**
+ * 独立翻译器发布长整型事件示例。
+ */
+
 package com.lmax.disruptor.examples.longevent;
 
 // tag::example[]

@@ -1,3 +1,7 @@
+/**
+ * 长整型事件处理器示例。
+ */
+
 package com.lmax.disruptor.examples.longevent;
 
 import com.lmax.disruptor.EventHandler;

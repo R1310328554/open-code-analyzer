@@ -1,3 +1,7 @@
+/**
+ * 传统三步发布示例。
+ */
+
 package com.lmax.disruptor.examples.longevent.legacy;
 
 // tag::example[]

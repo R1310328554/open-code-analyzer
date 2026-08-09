@@ -16,12 +16,12 @@
 package com.lmax.disruptor.util;
 
 /**
- * This class captures possible hints that may be used by some
+ * 封装部分运行时可用于提升性能的线程提示 that may be used by some
  * runtimes to improve code performance. It is intended to capture hinting
  * behaviours that are implemented in or anticipated to be spec'ed under the
  * {@link java.lang.Thread} class in some Java SE versions, but missing in prior
  * versions.
- * @deprecated Use Thread.onSpinWait() directly. This class previously existed to accommodate
+ * @deprecated 请直接使用 Thread.onSpinWait()。 This class previously existed to accommodate
  * Java versions which do not have Thread.onSpinWait().
  */
 @Deprecated
@@ -33,13 +33,13 @@ public final class ThreadHints
     }
 
     /**
-     * Indicates that the caller is momentarily unable to progress, until the
+     * 提示调用方暂时无法继续执行, until the
      * occurrence of one or more actions on the part of other activities.  By
      * invoking this method within each iteration of a spin-wait loop construct,
      * the calling thread indicates to the runtime that it is busy-waiting. The runtime
      * may take action to improve the performance of invoking spin-wait loop constructions.
      *
-     * @deprecated Use Thread.onSpinWait() directly. This method previously existed to accommodate
+     * @deprecated 请直接使用 Thread.onSpinWait()。 This method previously existed to accommodate
      * Java versions which do not have Thread.onSpinWait().
      */
     @Deprecated

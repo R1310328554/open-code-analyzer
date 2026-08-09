@@ -1,3 +1,7 @@
+/**
+ * 通过 EventTranslator 发布长整型事件。
+ */
+
 package com.lmax.disruptor.examples.longevent;
 
 // tag::example[]

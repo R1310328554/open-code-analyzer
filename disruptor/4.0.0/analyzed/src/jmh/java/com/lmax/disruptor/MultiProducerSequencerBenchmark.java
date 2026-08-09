@@ -30,9 +30,6 @@ import java.util.stream.Collectors;
 
 import static java.util.function.Predicate.not;
 
-/**
- * 对比 Unsafe 与 VarHandle 实现的多生产者 {@link Sequencer} 读写性能的 JMH 基准。
- */
 @SuppressWarnings("unused")
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
@@ -42,32 +39,22 @@ import static java.util.function.Predicate.not;
 @Threads(1)
 public class MultiProducerSequencerBenchmark
 {
-    // 在已调优系统上运行、并将基准线程绑定到隔离 CPU 时：
-    // 启动 JMH 进程时设置环境变量指定隔离 CPU 列表，例如 ISOLATED_CPUS=38,40,42,44,46,48 java -jar disruptor-jmh.jar
-    /** 从环境变量 ISOLATED_CPUS 解析的隔离 CPU 列表。 */
+    // 在隔离 CPU 上运行基准：
+    // 通过环境变量 ISOLATED_CPUS 指定 CPU，例如 ISOLATED_CPUS=38,40,42,44,46,48 java -jar disruptor-jmh.jar
     private static final List<Integer> ISOLATED_CPUS = Arrays.stream(System.getenv().getOrDefault("ISOLATED_CPUS", "").split(","))
             .map(String::trim)
             .filter(not(String::isBlank))
             .map(Integer::valueOf)
             .collect(Collectors.toList());
 
-    /** 为各基准线程分配递增 ID。 */
     private static final AtomicInteger THREAD_COUNTER = new AtomicInteger();
 
-    /**
-     * 线程 CPU 亲和性绑定状态。
-     */
     @State(Scope.Thread)
     public static class ThreadPinningState
     {
-        /** 当前线程在基准中的序号。 */
         int threadId = THREAD_COUNTER.getAndIncrement();
-        /** CPU 亲和性锁。 */
         private AffinityLock affinityLock;
 
-        /**
-         * 若配置了 ISOLATED_CPUS，则将当前线程绑定到对应 CPU。
-         */
         @Setup
         public void setup()
         {
@@ -99,9 +86,6 @@ public class MultiProducerSequencerBenchmark
             }
         }
 
-        /**
-         * 释放 CPU 亲和性锁。
-         */
         @TearDown
         public void teardown()
         {
@@ -113,19 +97,15 @@ public class MultiProducerSequencerBenchmark
     }
 
     /*
-     * com.lmax.disruptor.alternatives.MultiProducerSequencerUnsafe（disruptor v3.4.2 实现）
+     * com.lmax.disruptor.alternatives.MultiProducerSequencerUnsafe (as of disruptor v3.4.2)
      */
-    /** Unsafe 版多生产者 Sequencer 的 JMH 组状态。 */
     @State(Scope.Group)
     public static class StateMultiProducerSequencerUnsafe
     {
-        /** 第一个 Sequencer 实例。 */
         Sequencer value1 = new MultiProducerSequencerUnsafe(64, new BlockingWaitStrategy());
-        /** 第二个 Sequencer 实例。 */
         Sequencer value2 = new MultiProducerSequencerUnsafe(64, new BlockingWaitStrategy());
     }
 
-    /** 并发读取 value1 可用性。 */
     @Benchmark
     @Group("SequenceUnsafe")
     public boolean read1(final StateMultiProducerSequencerUnsafe s, final ThreadPinningState t)
@@ -133,7 +113,6 @@ public class MultiProducerSequencerBenchmark
         return s.value1.isAvailable(1);
     }
 
-    /** 并发读取 value1 可用性（第二读线程）。 */
     @Benchmark
     @Group("SequenceUnsafe")
     public boolean read2(final StateMultiProducerSequencerUnsafe s, final ThreadPinningState t)
@@ -141,7 +120,6 @@ public class MultiProducerSequencerBenchmark
         return s.value1.isAvailable(1);
     }
 
-    /** 向 value1 发布序号 1。 */
     @Benchmark
     @Group("SequenceUnsafe")
     public void setValue1A(final StateMultiProducerSequencerUnsafe s, final ThreadPinningState t)
@@ -149,7 +127,6 @@ public class MultiProducerSequencerBenchmark
         s.value1.publish(1L);
     }
 
-    /** 向 value1 发布序号 2。 */
     @Benchmark
     @Group("SequenceUnsafe")
     public void setValue1B(final StateMultiProducerSequencerUnsafe s, final ThreadPinningState t)
@@ -157,7 +134,6 @@ public class MultiProducerSequencerBenchmark
         s.value1.publish(2L);
     }
 
-    /** 向 value2 发布序号 1。 */
     @Benchmark
     @Group("SequenceUnsafe")
     public void setValue2A(final StateMultiProducerSequencerUnsafe s, final ThreadPinningState t)
@@ -165,7 +141,6 @@ public class MultiProducerSequencerBenchmark
         s.value2.publish(1L);
     }
 
-    /** 向 value2 发布序号 2。 */
     @Benchmark
     @Group("SequenceUnsafe")
     public void setValue2B(final StateMultiProducerSequencerUnsafe s, final ThreadPinningState t)
@@ -174,19 +149,15 @@ public class MultiProducerSequencerBenchmark
     }
 
     /*
-     * com.lmax.disruptor.alternatives.StateSequenceVarHandle（disruptor v3.4.2 实现）
+     * com.lmax.disruptor.alternatives.StateSequenceVarHandle (as of disruptor v3.4.2)
      */
-    /** VarHandle 版多生产者 Sequencer 的 JMH 组状态。 */
     @State(Scope.Group)
     public static class StateMultiProducerSequencerVarHandle
     {
-        /** 第一个 Sequencer 实例。 */
         Sequencer value1 = new MultiProducerSequencerVarHandle(64, new BlockingWaitStrategy());
-        /** 第二个 Sequencer 实例。 */
         Sequencer value2 = new MultiProducerSequencerVarHandle(64, new BlockingWaitStrategy());
     }
 
-    /** 并发读取 value1 可用性。 */
     @Benchmark
     @Group("StateMultiProducerSequencerVarHandle")
     public boolean read1(final StateMultiProducerSequencerVarHandle s, final ThreadPinningState t)
@@ -194,7 +165,6 @@ public class MultiProducerSequencerBenchmark
         return s.value1.isAvailable(1);
     }
 
-    /** 并发读取 value1 可用性（第二读线程）。 */
     @Benchmark
     @Group("StateMultiProducerSequencerVarHandle")
     public boolean read2(final StateMultiProducerSequencerVarHandle s, final ThreadPinningState t)
@@ -202,7 +172,6 @@ public class MultiProducerSequencerBenchmark
         return s.value1.isAvailable(1);
     }
 
-    /** 向 value1 发布序号 1。 */
     @Benchmark
     @Group("StateMultiProducerSequencerVarHandle")
     public void setValue1A(final StateMultiProducerSequencerVarHandle s, final ThreadPinningState t)
@@ -210,7 +179,6 @@ public class MultiProducerSequencerBenchmark
         s.value1.publish(1L);
     }
 
-    /** 向 value1 发布序号 2。 */
     @Benchmark
     @Group("StateMultiProducerSequencerVarHandle")
     public void setValue1B(final StateMultiProducerSequencerVarHandle s, final ThreadPinningState t)
@@ -218,7 +186,6 @@ public class MultiProducerSequencerBenchmark
         s.value1.publish(2L);
     }
 
-    /** 向 value2 发布序号 1。 */
     @Benchmark
     @Group("StateMultiProducerSequencerVarHandle")
     public void setValue2A(final StateMultiProducerSequencerVarHandle s, final ThreadPinningState t)
@@ -226,7 +193,6 @@ public class MultiProducerSequencerBenchmark
         s.value2.publish(1L);
     }
 
-    /** 向 value2 发布序号 2。 */
     @Benchmark
     @Group("StateMultiProducerSequencerVarHandle")
     public void setValue2B(final StateMultiProducerSequencerVarHandle s, final ThreadPinningState t)
@@ -234,9 +200,6 @@ public class MultiProducerSequencerBenchmark
         s.value2.publish(2L);
     }
 
-    /**
-     * 独立运行本基准。
-     */
     public static void main(final String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()

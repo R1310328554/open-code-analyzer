@@ -1,3 +1,7 @@
+/**
+ * 清空事件引用，避免内存泄漏。
+ */
+
 package com.lmax.disruptor.examples.objectevent;
 
 // tag::example[]

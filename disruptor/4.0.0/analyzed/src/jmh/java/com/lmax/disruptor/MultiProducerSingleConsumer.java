@@ -1,3 +1,7 @@
+/**
+ * JMH：多生产者单消费者吞吐测试。
+ */
+
 package com.lmax.disruptor;
 
 import com.lmax.disruptor.dsl.Disruptor;
@@ -23,25 +27,16 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * 多生产者、单消费者场景下 Disruptor 发布吞吐量的 JMH 基准。
- */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 @Fork(1)
 public class MultiProducerSingleConsumer
 {
-    /** 环形缓冲区。 */
     private RingBuffer<SimpleEvent> ringBuffer;
-    /** Disruptor 实例。 */
     private Disruptor<SimpleEvent> disruptor;
-    /** 大容量缓冲区（2^22）。 */
     private static final int BIG_BUFFER = 1 << 22;
 
-    /**
-     * 配置多生产者 Disruptor 并启动消费者。
-     */
     @Setup
     public void setup(final Blackhole bh)
     {
@@ -56,9 +51,6 @@ public class MultiProducerSingleConsumer
         ringBuffer = disruptor.start();
     }
 
-    /**
-     * 四线程并发发布事件的吞吐量。
-     */
     @Benchmark
     @Threads(4)
     public void producing()
@@ -69,18 +61,12 @@ public class MultiProducerSingleConsumer
         ringBuffer.publish(sequence);
     }
 
-    /**
-     * 关闭 Disruptor。
-     */
     @TearDown
     public void tearDown()
     {
         disruptor.shutdown();
     }
 
-    /**
-     * 独立运行本基准。
-     */
     public static void main(final String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()

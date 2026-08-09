@@ -1,3 +1,7 @@
+/**
+ * JMH 事件处理器。
+ */
+
 package com.lmax.disruptor.util;
 
 import com.lmax.disruptor.EventHandler;

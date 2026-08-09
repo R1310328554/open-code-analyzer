@@ -1,6 +1,6 @@
 /**
- * The Disruptor is a concurrent programming framework for exchanging and coordinating work as a continuous series of events.
- * It can be used as an alternative to wiring processing stages together via queues.
+ * Disruptor 是以连续事件流交换与协调工作的并发编程框架。
+ * 可作为通过队列串联处理阶段的替代方案。
  * The Disruptor design has the characteristics of generating significantly less garbage than queues and separates the
  * concurrency concerns so non-locking algorithms can be employed resulting in greater scalability and performance.
  *
@@ -9,7 +9,7 @@
  *
  * <p>Almost any graph or pipeline structure can be composed via one or more Disruptor patterns.
  *
- * <h2>UniCast a series of items between 1 publisher and 1 EventProcessor.</h2>
+ * <h2>单播：1 发布者与 1 EventProcessor</h2>
  *
  * <pre>{@code
  *                                           track to prevent wrap
@@ -25,7 +25,7 @@
  *                                                       waitFor
  * }</pre>
  *
- * <h2>Sequence a series of messages from multiple publishers</h2>
+ * <h2>多发布者消息排序</h2>
  * <pre>{@code
  *                                          track to prevent wrap
  *                                          +--------------------+
@@ -44,7 +44,7 @@
  * +----+                       +----+
  * }</pre>
  *
- * <h2>Pipeline a series of messages</h2>
+ * <h2>流水线处理消息</h2>
  * <pre>{@code
  *                           +----+    +-----+    +-----+    +-----+
  *                           | P1 |--->| EP1 |--->| EP2 |--->| EP3 |
@@ -64,7 +64,7 @@
  *              +---------+---------------------+---------------------+
  * }</pre>
  *
- * <h2>Multicast a series of messages to multiple EventProcessors</h2>
+ * <h2>多播至多个 EventProcessor</h2>
  * <pre>{@code
  *           +-----+                                        track to prevent wrap
  *    +----->| EP1 |                        +--------------------+----------+----------+
@@ -79,7 +79,7 @@
  *           +-----+                                                 waitFor
  * }</pre>
  *
- * <h2>Replicate a message then fold back the results</h2>
+ * <h2>复制消息后汇聚结果</h2>
  * <pre>{@code
  *           +-----+                               track to prevent wrap
  *    +----->| EP1 |-----+                   +-------------------------------+
@@ -99,7 +99,7 @@
  *                                          waitFor  +-----+
  * }</pre>
  *
- * <h2>Code Example</h2>
+ * <h2>代码示例</h2>
  * <pre>{@code
  * // Event holder for data to be exchanged
  * public final class ValueEvent

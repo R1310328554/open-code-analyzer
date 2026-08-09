@@ -1,3 +1,7 @@
+/**
+ * 长整型事件实体。
+ */
+
 package com.lmax.disruptor.examples.support;
 
 import com.lmax.disruptor.EventFactory;

@@ -1,3 +1,7 @@
+/**
+ * Lambda 风格 Disruptor 入门示例。
+ */
+
 package com.lmax.disruptor.examples.longevent.lambdas;
 
 // tag::example[]

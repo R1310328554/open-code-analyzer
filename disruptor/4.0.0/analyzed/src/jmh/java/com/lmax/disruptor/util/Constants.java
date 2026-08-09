@@ -1,3 +1,7 @@
+/**
+ * JMH 基准常量。
+ */
+
 package com.lmax.disruptor.util;
 
 public class Constants
