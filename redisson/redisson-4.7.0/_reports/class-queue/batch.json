@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:16:50Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/array/ArrayGrepArgs.java",
-    "redisson/src/main/java/org/redisson/api/array/ArrayGrepParams.java",
-    "redisson/src/main/java/org/redisson/api/array/ArrayInfo.java",
-    "redisson/src/main/java/org/redisson/api/atomic/BaseIncrementArgs.java",
-    "redisson/src/main/java/org/redisson/api/atomic/BaseIncrementParams.java",
-    "redisson/src/main/java/org/redisson/api/atomic/CompareAndDeleteArgs.java",
-    "redisson/src/main/java/org/redisson/api/atomic/ComparisonCondition.java",
-    "redisson/src/main/java/org/redisson/api/atomic/DoubleIncrementArgs.java",
-    "redisson/src/main/java/org/redisson/api/atomic/DoubleIncrementParams.java",
-    "redisson/src/main/java/org/redisson/api/atomic/LongIncrementArgs.java",
-    "redisson/src/main/java/org/redisson/api/atomic/LongIncrementParams.java",
-    "redisson/src/main/java/org/redisson/api/bitset/BitFieldArgs.java",
-    "redisson/src/main/java/org/redisson/api/bitset/BitFieldInitArgs.java",
-    "redisson/src/main/java/org/redisson/api/bitset/BitFieldOverflow.java",
-    "redisson/src/main/java/org/redisson/api/bitset/BitFieldParams.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1262,
-  "done": 1545
+  "done": 1560
 }
