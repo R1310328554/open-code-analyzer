@@ -15,23 +15,8 @@
     "codec-http2/src/main/java/io/netty/handler/codec/http2/CleartextHttp2ServerUpgradeHandler.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/CompressorHttp2ConnectionEncoder.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/DecoratingHttp2ConnectionDecoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DecoratingHttp2ConnectionEncoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DecoratingHttp2FrameWriter.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2Connection.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2ConnectionDecoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2ConnectionEncoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2DataFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2FrameReader.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2FrameWriter.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2GoAwayFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2Headers.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2HeadersDecoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2HeadersEncoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2HeadersFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2LocalFlowController.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2PingFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2PriorityFrame.java"
+    "codec-http2/src/main/java/io/netty/handler/codec/http2/DecoratingHttp2ConnectionEncoder.java"
   ],
   "remaining_pending": 1268,
-  "done": 630
+  "done": 645
 }
