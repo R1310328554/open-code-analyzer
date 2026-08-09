@@ -21,20 +21,27 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * Pop 长轮询信息查询响应头：返回当前轮询中的 Consumer 数量。
+ */
 public class PollingInfoResponseHeader implements CommandCustomHeader {
 
 
+    /** 当前处于长轮询等待中的 Consumer 数量。 */
     @CFNotNull
     private int pollingNum;
 
+    /** 返回轮询 Consumer 数量。 */
     public int getPollingNum() {
         return pollingNum;
     }
 
+    /** 设置轮询 Consumer 数量。 */
     public void setPollingNum(int pollingNum) {
         this.pollingNum = pollingNum;
     }
 
+    /** 校验响应头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }

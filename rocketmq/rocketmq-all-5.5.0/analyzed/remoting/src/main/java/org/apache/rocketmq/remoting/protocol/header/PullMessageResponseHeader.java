@@ -28,28 +28,41 @@ import org.apache.rocketmq.remoting.annotation.CFNullable;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.FastCodesHeader;
 
+/**
+ * 拉取消息响应头：返回下次拉取偏移、队列边界及 Broker 建议信息。
+ */
 public class PullMessageResponseHeader implements CommandCustomHeader, FastCodesHeader {
+    /** 建议下次拉取的 Broker ID。 */
     @CFNotNull
     private Long suggestWhichBrokerId;
+    /** 下次拉取起始偏移量。 */
     @CFNotNull
     private Long nextBeginOffset;
+    /** 队列最小偏移量。 */
     @CFNotNull
     private Long minOffset;
+    /** 队列最大偏移量。 */
     @CFNotNull
     private Long maxOffset;
+    /** 偏移量增量，可为空。 */
     @CFNullable
     private Long offsetDelta;
+    /** Topic 系统标志位，可为空。 */
     @CFNullable
     private Integer topicSysFlag;
+    /** 消费组系统标志位，可为空。 */
     @CFNullable
     private Integer groupSysFlag;
+    /** 禁止拉取类型，可为空。 */
     @CFNullable
     private Integer forbiddenType;
 
+    /** 校验响应头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 将响应头字段编码写入 ByteBuf。 */
     @Override
     public void encode(ByteBuf out) {
         writeIfNotNull(out, "suggestWhichBrokerId", suggestWhichBrokerId);
@@ -62,6 +75,7 @@ public class PullMessageResponseHeader implements CommandCustomHeader, FastCodes
         writeIfNotNull(out, "forbiddenType", forbiddenType);
     }
 
+    /** 从字段映射解码并填充响应头。 */
     @Override
     public void decode(HashMap<String, String> fields) throws RemotingCommandException {
         String str = getAndCheckNotNull(fields, "suggestWhichBrokerId");

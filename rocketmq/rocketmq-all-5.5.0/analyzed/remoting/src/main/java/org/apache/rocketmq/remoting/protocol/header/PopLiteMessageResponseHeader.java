@@ -20,19 +20,29 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * Lite Pop 消息响应头：返回 Pop 时间、不可见时长及偏移信息。
+ */
 public class PopLiteMessageResponseHeader implements CommandCustomHeader {
 
+    /** Pop 操作时间戳（毫秒）。 */
     @CFNotNull
     private long popTime;
+    /** 消息不可见时长（毫秒）。 */
     @CFNotNull
     private long invisibleTime;
+    /** 复活队列 ID，复用现有 ACK 实现。 */
     @CFNotNull
-    private int reviveQid; // reuse current ack implementation
+    private int reviveQid;
 
+    /** 起始偏移量信息（序列化字符串）。 */
     private String startOffsetInfo;
+    /** 消息偏移量信息（序列化字符串）。 */
     private String msgOffsetInfo;
+    /** 顺序消费计数信息（序列化字符串）。 */
     private String orderCountInfo;
 
+    /** 校验响应头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }

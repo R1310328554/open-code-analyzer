@@ -26,20 +26,27 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 消费组客户端 ID 变更通知请求头：Broker 通知 Consumer 刷新同组在线成员。
+ */
 @RocketMQAction(value = RequestCode.NOTIFY_CONSUMER_IDS_CHANGED, action = Action.SUB)
 public class NotifyConsumerIdsChangedRequestHeader extends RpcRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }

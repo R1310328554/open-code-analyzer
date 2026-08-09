@@ -34,51 +34,65 @@ import org.apache.rocketmq.remoting.protocol.FastCodesHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * 拉取消息请求头：指定 Topic、队列偏移、过滤条件及长轮询参数。
+ */
 @RocketMQAction(value = RequestCode.PULL_MESSAGE, action = Action.SUB)
 public class PullMessageRequestHeader extends TopicQueueRequestHeader implements FastCodesHeader {
 
+    /** 消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** Lite Topic 名称，可选。 */
     private String liteTopic;
+    /** 目标队列 ID。 */
     @CFNotNull
     private Integer queueId;
+    /** 拉取起始队列偏移量。 */
     @CFNotNull
     private Long queueOffset;
+    /** 单次拉取的最大消息条数。 */
     @CFNotNull
     private Integer maxMsgNums;
+    /** 系统标志位（压缩、事务等）。 */
     @CFNotNull
     private Integer sysFlag;
+    /** 已提交的消费偏移量。 */
     @CFNotNull
     private Long commitOffset;
+    /** 长轮询挂起超时（毫秒）。 */
     @CFNotNull
     private Long suspendTimeoutMillis;
+    /** 订阅过滤表达式，可为空。 */
     @CFNullable
     private String subscription;
+    /** 订阅版本号。 */
     @CFNotNull
     private Long subVersion;
+    /** 过滤表达式类型（如 TAG、SQL92）。 */
     private String expressionType;
 
+    /** 单条消息最大字节数限制，可为空。 */
     @CFNullable
     private Integer maxMsgBytes;
 
-    /**
-     * mark the source of this pull request
-     */
+    /** 标识本次拉取请求的来源。 */
     private Integer requestSource;
 
-    /**
-     * the real clientId when request from proxy
-     */
+    /** 经 Proxy 转发时的真实客户端 ID。 */
     private String proxyFrowardClientId;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 将请求头字段编码写入 ByteBuf。 */
     @Override
     public void encode(ByteBuf out) {
         writeIfNotNull(out, "consumerGroup", consumerGroup);
@@ -103,6 +117,7 @@ public class PullMessageRequestHeader extends TopicQueueRequestHeader implements
         writeIfNotNull(out, "oway", oway);
     }
 
+    /** 从字段映射解码并填充请求头。 */
     @Override
     public void decode(HashMap<String, String> fields) throws RemotingCommandException {
         String str = getAndCheckNotNull(fields, "consumerGroup");
@@ -330,6 +345,7 @@ public class PullMessageRequestHeader extends TopicQueueRequestHeader implements
         this.proxyFrowardClientId = proxyFrowardClientId;
     }
 
+    /** 返回含拉取参数的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

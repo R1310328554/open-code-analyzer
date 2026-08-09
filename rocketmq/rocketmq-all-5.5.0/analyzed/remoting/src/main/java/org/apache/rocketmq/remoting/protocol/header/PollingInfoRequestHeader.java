@@ -26,37 +26,49 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * Pop 长轮询信息查询请求头：查询消费组在指定 Topic 队列上的轮询状态。
+ */
 @RocketMQAction(value = RequestCode.POLLING_INFO, action = Action.GET)
 public class PollingInfoRequestHeader extends TopicQueueRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 目标队列 ID，负值表示不限定队列。 */
     @CFNotNull
     private int queueId;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回队列 ID，负值归一化为 -1 表示不限定。 */
     public Integer getQueueId() {
         if (queueId < 0) {
             return -1;
@@ -64,6 +76,7 @@ public class PollingInfoRequestHeader extends TopicQueueRequestHeader {
         return queueId;
     }
 
+    /** 设置队列 ID。 */
     public void setQueueId(Integer queueId) {
         this.queueId = queueId;
     }

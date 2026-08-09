@@ -24,27 +24,39 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * Lite Pop 消息请求头：轻量级 Pop 消费，指定 Topic 与不可见时间等参数。
+ */
 public class PopLiteMessageRequestHeader extends RpcRequestHeader {
 
+    /** Consumer 客户端 ID。 */
     @CFNotNull
     private String clientId;
+    /** 消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 单次 Pop 的最大消息条数。 */
     @CFNotNull
     private int maxMsgNum;
+    /** 消息不可见时长（毫秒）。 */
     @CFNotNull
     private long invisibleTime;
+    /** 长轮询等待时长（毫秒）。 */
     @CFNotNull
     private long pollTime;
+    /** 请求创建时间戳（毫秒）。 */
     @CFNotNull
     private long bornTime;
 
+    /** Pop 尝试 ID，用于幂等与重试追踪。 */
     private String attemptId;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
@@ -114,10 +126,12 @@ public class PopLiteMessageRequestHeader extends RpcRequestHeader {
         this.attemptId = attemptId;
     }
 
+    /** 判断长轮询是否已超时过多（超过 500ms 余量）。 */
     public boolean isTimeoutTooMuch() {
         return System.currentTimeMillis() - bornTime - pollTime > 500;
     }
 
+    /** 返回含 Pop 参数的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

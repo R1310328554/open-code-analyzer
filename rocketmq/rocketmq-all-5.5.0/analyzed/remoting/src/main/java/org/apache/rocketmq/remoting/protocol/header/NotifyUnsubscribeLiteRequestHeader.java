@@ -26,47 +26,61 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * Lite Topic 取消订阅通知请求头：Broker 通知 Consumer 退出 Lite 订阅。
+ */
 @RocketMQAction(value = RequestCode.NOTIFY_UNSUBSCRIBE_LITE, action = Action.SUB)
 public class NotifyUnsubscribeLiteRequestHeader extends RpcRequestHeader {
 
+    /** Lite Topic 名称。 */
     @CFNotNull
     private String liteTopic;
 
+    /** 目标消费组名称。 */
     @RocketMQResource(ResourceType.GROUP)
     @CFNotNull
     private String consumerGroup;
 
+    /** 发起取消订阅的 Consumer 客户端 ID。 */
     @CFNotNull
     private String clientId;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Lite Topic 名称。 */
     public String getLiteTopic() {
         return liteTopic;
     }
 
+    /** 设置 Lite Topic 名称。 */
     public void setLiteTopic(String liteTopic) {
         this.liteTopic = liteTopic;
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
 
+    /** 设置消费组名称。 */
     public void setConsumerGroup(String consumerGroup) {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回客户端 ID。 */
     public String getClientId() {
         return clientId;
     }
 
+    /** 设置客户端 ID。 */
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
+    /** 返回含 Lite Topic、消费组与客户端 ID 的调试字符串。 */
     @Override
     public String toString() {
         return "NotifyUnsubscribeLiteRequestHeader{" +

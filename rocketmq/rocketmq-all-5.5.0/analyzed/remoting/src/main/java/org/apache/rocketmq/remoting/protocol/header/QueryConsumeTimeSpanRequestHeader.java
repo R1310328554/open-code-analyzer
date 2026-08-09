@@ -26,31 +26,41 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 查询消费时间跨度请求头：按 Topic 与消费组获取消费进度时间范围。
+ */
 @RocketMQAction(value = RequestCode.QUERY_CONSUME_TIME_SPAN, action = Action.GET)
 public class QueryConsumeTimeSpanRequestHeader extends TopicRequestHeader {
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String group;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回消费组名称。 */
     public String getGroup() {
         return group;
     }
 
+    /** 设置消费组名称。 */
     public void setGroup(String group) {
         this.group = group;
     }

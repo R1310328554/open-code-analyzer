@@ -26,40 +26,55 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 
+/**
+ * Pop 消息请求头：长轮询 Pop 消费，支持顺序消费与过滤表达式。
+ */
 @RocketMQAction(value = RequestCode.POP_MESSAGE, action = Action.SUB)
 public class PopMessageRequestHeader extends TopicQueueRequestHeader {
+    /** 消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 目标队列 ID。 */
     @CFNotNull
     private int queueId;
+    /** 单次 Pop 的最大消息条数。 */
     @CFNotNull
     private int maxMsgNums;
+    /** 消息不可见时长（毫秒）。 */
     @CFNotNull
     private long invisibleTime;
+    /** 长轮询等待时长（毫秒）。 */
     @CFNotNull
     private long pollTime;
+    /** 请求创建时间戳（毫秒）。 */
     @CFNotNull
     private long bornTime;
+    /** Pop 初始化模式。 */
     @CFNotNull
     private int initMode;
 
+    /** 过滤表达式类型。 */
     private String expType;
+    /** 过滤表达式内容。 */
     private String exp;
 
     /**
-     * marked as order consume, if true
-     * 1. not commit offset
-     * 2. not pop retry, because no retry
-     * 3. not append check point, because no retry
+     * 标记为顺序消费；为 true 时：
+     * 1. 不提交消费偏移量
+     * 2. 不进行 Pop 重试（无重试机制）
+     * 3. 不追加检查点（无重试机制）
      */
     private Boolean order = Boolean.FALSE;
 
+    /** Pop 尝试 ID，用于幂等与重试追踪。 */
     private String attemptId;
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
@@ -112,6 +127,7 @@ public class PopMessageRequestHeader extends TopicQueueRequestHeader {
         this.topic = topic;
     }
 
+    /** 返回队列 ID，负值归一化为 -1 表示不限定。 */
     public Integer getQueueId() {
         if (queueId < 0) {
             return -1;
@@ -132,6 +148,7 @@ public class PopMessageRequestHeader extends TopicQueueRequestHeader {
         this.maxMsgNums = maxMsgNums;
     }
 
+    /** 判断长轮询是否已超时过多（超过 500ms 余量）。 */
     public boolean isTimeoutTooMuch() {
         return System.currentTimeMillis() - bornTime - pollTime > 500;
     }
@@ -160,6 +177,7 @@ public class PopMessageRequestHeader extends TopicQueueRequestHeader {
         this.order = order;
     }
 
+    /** 返回是否为顺序消费模式。 */
     public boolean isOrder() {
         return this.order != null && this.order.booleanValue();
     }
@@ -172,6 +190,7 @@ public class PopMessageRequestHeader extends TopicQueueRequestHeader {
         this.attemptId = attemptId;
     }
 
+    /** 返回含 Pop 参数的调试字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

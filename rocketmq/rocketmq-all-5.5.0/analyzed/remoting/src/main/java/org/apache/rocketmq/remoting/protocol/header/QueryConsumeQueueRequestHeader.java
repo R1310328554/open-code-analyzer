@@ -25,14 +25,22 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.TopicQueueRequestHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 查询 ConsumeQueue 索引的请求头：按 Topic、队列及起始索引分页读取。
+ */
 @RocketMQAction(value = RequestCode.QUERY_CONSUME_QUEUE, action = Action.GET)
 public class QueryConsumeQueueRequestHeader extends TopicQueueRequestHeader {
 
+    /** 目标 Topic 名称。 */
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 目标队列 ID。 */
     private int queueId;
+    /** ConsumeQueue 起始索引位置。 */
     private long index;
+    /** 读取条目数量。 */
     private int count;
+    /** 消费组名称。 */
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
 
@@ -76,6 +84,7 @@ public class QueryConsumeQueueRequestHeader extends TopicQueueRequestHeader {
         this.consumerGroup = consumerGroup;
     }
 
+    /** 校验请求头字段（空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
