@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/RateLimiterConfig.java",
     "redisson/src/main/java/org/redisson/api/RateType.java",
     "redisson/src/main/java/org/redisson/api/RedissonNodeInitializer.java",
-    "redisson/src/main/java/org/redisson/api/RemoteInvocationOptions.java",
-    "redisson/src/main/java/org/redisson/api/SetIntersectionArgs.java",
-    "redisson/src/main/java/org/redisson/api/SetIntersectionParams.java",
-    "redisson/src/main/java/org/redisson/api/SetReadArgs.java",
-    "redisson/src/main/java/org/redisson/api/SetReadArgsParam.java",
-    "redisson/src/main/java/org/redisson/api/SetUnionArgs.java",
-    "redisson/src/main/java/org/redisson/api/SetUnionParams.java",
-    "redisson/src/main/java/org/redisson/api/SortOrder.java",
-    "redisson/src/main/java/org/redisson/api/SyncArgs.java",
-    "redisson/src/main/java/org/redisson/api/SyncFailureMode.java",
-    "redisson/src/main/java/org/redisson/api/SyncMode.java",
-    "redisson/src/main/java/org/redisson/api/TDigestInfo.java",
-    "redisson/src/main/java/org/redisson/api/TimeSeriesEntry.java",
-    "redisson/src/main/java/org/redisson/api/TopKInfo.java",
-    "redisson/src/main/java/org/redisson/api/TransactionOptions.java",
-    "redisson/src/main/java/org/redisson/api/WorkerOptions.java"
+    "redisson/src/main/java/org/redisson/api/RemoteInvocationOptions.java"
   ],
   "remaining_pending": 1292,
-  "done": 1500
+  "done": 1515
 }
