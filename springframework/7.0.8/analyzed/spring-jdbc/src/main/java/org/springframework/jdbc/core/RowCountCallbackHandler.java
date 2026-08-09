@@ -25,19 +25,18 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- * Implementation of RowCallbackHandler. Convenient superclass for callback handlers.
- * An instance can only be used once.
+ * RowCallbackHandler 的实现。回调处理器的便捷超类。
+ * 每个实例只能使用一次。
  *
- * <p>We can either use this on its own (for example, in a test case, to ensure
- * that our result sets have valid dimensions), or use it as a superclass
- * for callback handlers that actually do something, and will benefit
- * from the dimension information it provides.
+ * <p>可单独使用（例如在测试用例中验证结果集维度），
+ * 也可作为实际执行操作的回调处理器的超类，
+ * 以利用其提供的维度信息。
  *
- * <p>A usage example with JdbcTemplate:
+ * <p>与 JdbcTemplate 配合使用的示例：
  *
- * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // reusable object
+ * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // 可重用对象
  *
- * RowCountCallbackHandler countCallback = new RowCountCallbackHandler();  // not reusable
+ * RowCountCallbackHandler countCallback = new RowCountCallbackHandler();  // 不可重用
  * jdbcTemplate.query("select * from user", countCallback);
  * int rowCount = countCallback.getRowCount();</pre>
  *
@@ -46,29 +45,29 @@ import org.springframework.jdbc.support.JdbcUtils;
  */
 public class RowCountCallbackHandler implements RowCallbackHandler {
 
-	/** Rows we've seen so far. */
+	/** 目前已处理的行数。 */
 	private int rowCount;
 
-	/** Columns we've seen so far. */
+	/** 目前已知的列数。 */
 	private int columnCount;
 
 	/**
-	 * Indexed from 0. Type (as in java.sql.Types) for the columns
-	 * as returned by ResultSetMetaData object.
+	 * 从 0 开始索引。ResultSetMetaData 返回的各列类型
+	 * （对应 java.sql.Types 常量）。
 	 */
 	private int @Nullable [] columnTypes;
 
 	/**
-	 * Indexed from 0. Column name as returned by ResultSetMetaData object.
+	 * 从 0 开始索引。ResultSetMetaData 返回的列名。
 	 */
 	private String @Nullable [] columnNames;
 
 
 	/**
-	 * Implementation of ResultSetCallbackHandler.
-	 * Work out column size if this is the first row, otherwise just count rows.
-	 * <p>Subclasses can perform custom extraction or processing
-	 * by overriding the {@code processRow(ResultSet, int)} method.
+	 * ResultSetCallbackHandler 的实现。
+	 * 若是第一行则确定列数，否则仅计数行数。
+	 * <p>子类可覆盖 {@code processRow(ResultSet, int)} 方法
+	 * 执行自定义提取或处理。
 	 * @see #processRow(java.sql.ResultSet, int)
 	 */
 	@Override
@@ -82,56 +81,54 @@ public class RowCountCallbackHandler implements RowCallbackHandler {
 				this.columnTypes[i] = rsmd.getColumnType(i + 1);
 				this.columnNames[i] = JdbcUtils.lookupColumnName(rsmd, i + 1);
 			}
-			// could also get column names
+			// 也可获取列名
 		}
 		processRow(rs, this.rowCount++);
 	}
 
 	/**
-	 * Subclasses may override this to perform custom extraction
-	 * or processing. This class's implementation does nothing.
-	 * @param rs the ResultSet to extract data from. This method is
-	 * invoked for each row
-	 * @param rowNum number of the current row (starting from 0)
+	 * 子类可覆盖本方法执行自定义提取或处理。
+	 * 本类实现为空操作。
+	 * @param rs 要提取数据的 ResultSet。每行调用一次
+	 * @param rowNum 当前行号（从 0 开始）
 	 */
 	protected void processRow(ResultSet rs, int rowNum) throws SQLException {
 	}
 
 
 	/**
-	 * Return the types of the columns as java.sql.Types constants
-	 * Valid after processRow is invoked the first time.
-	 * @return the types of the columns as java.sql.Types constants.
-	 * <b>Indexed from 0 to n-1.</b>
+	 * 以 java.sql.Types 常量返回各列类型。
+	 * 首次调用 processRow 后有效。
+	 * @return 各列的 java.sql.Types 常量。
+	 * <b>从 0 到 n-1 索引。</b>
 	 */
 	public final int @Nullable [] getColumnTypes() {
 		return this.columnTypes;
 	}
 
 	/**
-	 * Return the names of the columns.
-	 * Valid after processRow is invoked the first time.
-	 * @return the names of the columns.
-	 * <b>Indexed from 0 to n-1.</b>
+	 * 返回各列名称。
+	 * 首次调用 processRow 后有效。
+	 * @return 各列名称。
+	 * <b>从 0 到 n-1 索引。</b>
 	 */
 	public final String @Nullable [] getColumnNames() {
 		return this.columnNames;
 	}
 
 	/**
-	 * Return the row count of this ResultSet.
-	 * Only valid after processing is complete
-	 * @return the number of rows in this ResultSet
+	 * 返回此 ResultSet 的行数。
+	 * 仅在处理完成后有效。
+	 * @return 此 ResultSet 中的行数
 	 */
 	public final int getRowCount() {
 		return this.rowCount;
 	}
 
 	/**
-	 * Return the number of columns in this result set.
-	 * Valid once we've seen the first row,
-	 * so subclasses can use it during processing
-	 * @return the number of columns in this result set
+	 * 返回此结果集的列数。
+	 * 看到第一行后有效，子类可在处理过程中使用。
+	 * @return 此结果集的列数
 	 */
 	public final int getColumnCount() {
 		return this.columnCount;

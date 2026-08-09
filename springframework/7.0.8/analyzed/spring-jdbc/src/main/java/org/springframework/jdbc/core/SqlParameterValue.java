@@ -19,14 +19,15 @@ package org.springframework.jdbc.core;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Object to represent an SQL parameter value, including parameter meta-data
- * such as the SQL type and the scale for numeric values.
+ * 表示 SQL 参数值的对象，包含参数元数据，
+ * 如 SQL 类型和数值的小数位数。
  *
- * <p>Designed for use with {@link JdbcTemplate}'s operations that take an array of
- * argument values: Each such argument value may be a {@code SqlParameterValue},
- * indicating the SQL type (and optionally the scale) instead of letting the
- * template guess a default type. Note that this only applies to the operations with
- * a 'plain' argument array, not to the overloaded variants with an explicit type array.
+ * <p>设计用于 {@link JdbcTemplate} 接受参数值数组的操作：
+ * 每个参数值可以是 {@code SqlParameterValue}，
+ * 显式指定 SQL 类型（及可选的小数位数），
+ * 而非让模板猜测默认类型。
+ * 注意这仅适用于带普通参数数组的操作，
+ * 不适用于带显式类型数组的重载变体。
  *
  * @author Juergen Hoeller
  * @since 2.0.5
@@ -42,9 +43,9 @@ public class SqlParameterValue extends SqlParameter {
 
 
 	/**
-	 * Create a new SqlParameterValue, supplying the SQL type.
-	 * @param sqlType the SQL type of the parameter according to {@code java.sql.Types}
-	 * @param value the value object
+	 * 创建新的 SqlParameterValue，指定 SQL 类型。
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param value 值对象
 	 */
 	public SqlParameterValue(int sqlType, @Nullable Object value) {
 		super(sqlType);
@@ -52,10 +53,10 @@ public class SqlParameterValue extends SqlParameter {
 	}
 
 	/**
-	 * Create a new SqlParameterValue, supplying the SQL type.
-	 * @param sqlType the SQL type of the parameter according to {@code java.sql.Types}
-	 * @param typeName the type name of the parameter (optional)
-	 * @param value the value object
+	 * 创建新的 SqlParameterValue，指定 SQL 类型。
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param typeName 参数的类型名（可选）
+	 * @param value 值对象
 	 */
 	public SqlParameterValue(int sqlType, @Nullable String typeName, @Nullable Object value) {
 		super(sqlType, typeName);
@@ -63,11 +64,10 @@ public class SqlParameterValue extends SqlParameter {
 	}
 
 	/**
-	 * Create a new SqlParameterValue, supplying the SQL type.
-	 * @param sqlType the SQL type of the parameter according to {@code java.sql.Types}
-	 * @param scale the number of digits after the decimal point
-	 * (for DECIMAL and NUMERIC types)
-	 * @param value the value object
+	 * 创建新的 SqlParameterValue，指定 SQL 类型。
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param scale 小数点后的位数（用于 DECIMAL 和 NUMERIC 类型）
+	 * @param value 值对象
 	 */
 	public SqlParameterValue(int sqlType, int scale, @Nullable Object value) {
 		super(sqlType, scale);
@@ -75,9 +75,9 @@ public class SqlParameterValue extends SqlParameter {
 	}
 
 	/**
-	 * Create a new SqlParameterValue based on the given SqlParameter declaration.
-	 * @param declaredParam the declared SqlParameter to define a value for
-	 * @param value the value object
+	 * 基于给定 SqlParameter 声明创建新的 SqlParameterValue。
+	 * @param declaredParam 要定义值的已声明 SqlParameter
+	 * @param value 值对象
 	 */
 	public SqlParameterValue(SqlParameter declaredParam, @Nullable Object value) {
 		super(declaredParam);
@@ -86,7 +86,7 @@ public class SqlParameterValue extends SqlParameter {
 
 
 	/**
-	 * Return the value object that this parameter value holds.
+	 * 返回此参数值持有的值对象。
 	 */
 	public @Nullable Object getValue() {
 		return this.value;

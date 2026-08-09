@@ -31,18 +31,16 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.NumberUtils;
 
 /**
- * {@link RowMapper} implementation that converts a single column into a single
- * result value per row. Expects to operate on a {@code java.sql.ResultSet}
- * that just contains a single column.
+ * {@link RowMapper} 实现，将单列转换为每行一个结果值。
+ * 期望操作的 {@code java.sql.ResultSet} 仅包含单列。
  *
- * <p>The type of the result value for each row can be specified. The value
- * for the single column will be extracted from the {@code ResultSet}
- * and converted into the specified target type.
+ * <p>可指定每行结果值的类型。单列值将从 {@code ResultSet} 提取
+ * 并转换为指定的目标类型。
  *
  * @author Juergen Hoeller
  * @author Kazuki Shimizu
  * @since 1.2
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see JdbcTemplate#queryForList(String, Class)
  * @see JdbcTemplate#queryForObject(String, Class)
  */
@@ -54,15 +52,15 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 
 
 	/**
-	 * Create a new {@code SingleColumnRowMapper} for bean-style configuration.
+	 * 创建新的 {@code SingleColumnRowMapper}，用于 Bean 风格配置。
 	 * @see #setRequiredType
 	 */
 	public SingleColumnRowMapper() {
 	}
 
 	/**
-	 * Create a new {@code SingleColumnRowMapper}.
-	 * @param requiredType the type that each result object is expected to match
+	 * 创建新的 {@code SingleColumnRowMapper}。
+	 * @param requiredType 每个结果对象期望匹配的类型
 	 */
 	public SingleColumnRowMapper(Class<T> requiredType) {
 		if (requiredType != Object.class) {
@@ -71,9 +69,9 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 	}
 
 	/**
-	 * Create a new {@code SingleColumnRowMapper}.
-	 * @param requiredType the type that each result object is expected to match
-	 * @param conversionService a {@link ConversionService} for converting a fetched value
+	 * 创建新的 {@code SingleColumnRowMapper}。
+	 * @param requiredType 每个结果对象期望匹配的类型
+	 * @param conversionService 用于转换获取值的 {@link ConversionService}
 	 * @since 7.0
 	 */
 	public SingleColumnRowMapper(Class<T> requiredType, @Nullable ConversionService conversionService) {
@@ -85,17 +83,16 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 
 
 	/**
-	 * Set the type that each result object is expected to match.
-	 * <p>If not specified, the column value will be exposed as
-	 * returned by the JDBC driver.
+	 * 设置每个结果对象期望匹配的类型。
+	 * <p>若未指定，列值将按 JDBC 驱动返回的形式暴露。
 	 */
 	public void setRequiredType(Class<T> requiredType) {
 		this.requiredType = ClassUtils.resolvePrimitiveIfNecessary(requiredType);
 	}
 
 	/**
-	 * Set a {@link ConversionService} for converting a fetched value.
-	 * <p>Default is the {@link DefaultConversionService}.
+	 * 设置用于转换获取值的 {@link ConversionService}。
+	 * <p>默认为 {@link DefaultConversionService}。
 	 * @since 5.0.4
 	 * @see DefaultConversionService#getSharedInstance()
 	 */
@@ -105,10 +102,9 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 
 
 	/**
-	 * Extract a value for the single column in the current row.
-	 * <p>Validates that there is only one column selected,
-	 * then delegates to {@code getColumnValue()} and also
-	 * {@code convertValueToRequiredType}, if necessary.
+	 * 提取当前行单列的值。
+	 * <p>验证仅选择了一列，然后委托 {@code getColumnValue()}，
+	 * 必要时还调用 {@code convertValueToRequiredType}。
 	 * @see java.sql.ResultSetMetaData#getColumnCount()
 	 * @see #getColumnValue(java.sql.ResultSet, int, Class)
 	 * @see #convertValueToRequiredType(Object, Class)
@@ -116,17 +112,17 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public @Nullable T mapRow(ResultSet rs, int rowNum) throws SQLException {
-		// Validate column count.
+		// 验证列数。
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int nrOfColumns = rsmd.getColumnCount();
 		if (nrOfColumns != 1) {
 			throw new IncorrectResultSetColumnCountException(1, nrOfColumns);
 		}
 
-		// Extract column value from JDBC ResultSet.
+		// 从 JDBC ResultSet 提取列值。
 		Object result = getColumnValue(rs, 1, this.requiredType);
 		if (result != null && this.requiredType != null && !this.requiredType.isInstance(result)) {
-			// Extracted value does not match already: try to convert it.
+			// 提取的值类型不匹配：尝试转换。
 			try {
 				return (T) convertValueToRequiredType(result, this.requiredType);
 			}
@@ -140,19 +136,18 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 	}
 
 	/**
-	 * Retrieve a JDBC object value for the specified column.
-	 * <p>The default implementation calls
-	 * {@link JdbcUtils#getResultSetValue(java.sql.ResultSet, int, Class)}.
-	 * If no required type has been specified, this method delegates to
-	 * {@code getColumnValue(rs, index)}, which basically calls
-	 * {@code ResultSet.getObject(index)} but applies some additional
-	 * default conversion to appropriate value types.
-	 * @param rs is the ResultSet holding the data
-	 * @param index is the column index
-	 * @param requiredType the type that each result object is expected to match
-	 * (or {@code null} if none specified)
-	 * @return the Object value
-	 * @throws SQLException in case of extraction failure
+	 * 获取指定列的 JDBC 对象值。
+	 * <p>默认实现调用
+	 * {@link JdbcUtils#getResultSetValue(java.sql.ResultSet, int, Class)}。
+	 * 若未指定 requiredType，则委托 {@code getColumnValue(rs, index)}，
+	 * 基本调用 {@code ResultSet.getObject(index)}，
+	 * 但会应用额外的默认转换到合适的值类型。
+	 * @param rs 持有数据的 ResultSet
+	 * @param index 列索引
+	 * @param requiredType 每个结果对象期望匹配的类型
+	 * （未指定则为 {@code null}）
+	 * @return 对象值
+	 * @throws SQLException 提取失败时
 	 * @see org.springframework.jdbc.support.JdbcUtils#getResultSetValue(java.sql.ResultSet, int, Class)
 	 * @see #getColumnValue(java.sql.ResultSet, int)
 	 */
@@ -161,23 +156,22 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 			return JdbcUtils.getResultSetValue(rs, index, requiredType);
 		}
 		else {
-			// No required type specified -> perform default extraction.
+			// 未指定 requiredType -> 执行默认提取。
 			return getColumnValue(rs, index);
 		}
 	}
 
 	/**
-	 * Retrieve a JDBC object value for the specified column, using the most
-	 * appropriate value type. Called if no required type has been specified.
-	 * <p>The default implementation delegates to {@code JdbcUtils.getResultSetValue()},
-	 * which uses the {@code ResultSet.getObject(index)} method. Additionally,
-	 * it includes a "hack" to get around Oracle returning a non-standard object for
-	 * their TIMESTAMP datatype. See the {@code JdbcUtils#getResultSetValue()}
-	 * javadoc for details.
-	 * @param rs is the ResultSet holding the data
-	 * @param index is the column index
-	 * @return the Object value
-	 * @throws SQLException in case of extraction failure
+	 * 获取指定列的 JDBC 对象值，使用最合适的值类型。
+	 * 未指定 requiredType 时调用。
+	 * <p>默认实现委托 {@code JdbcUtils.getResultSetValue()}，
+	 * 使用 {@code ResultSet.getObject(index)} 方法。
+	 * 此外还包含处理 Oracle TIMESTAMP 返回非标准对象的变通方案。
+	 * 详情参见 {@code JdbcUtils#getResultSetValue()} 的 javadoc。
+	 * @param rs 持有数据的 ResultSet
+	 * @param index 列索引
+	 * @return 对象值
+	 * @throws SQLException 提取失败时
 	 * @see org.springframework.jdbc.support.JdbcUtils#getResultSetValue(java.sql.ResultSet, int)
 	 */
 	protected @Nullable Object getColumnValue(ResultSet rs, int index) throws SQLException {
@@ -185,18 +179,14 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 	}
 
 	/**
-	 * Convert the given column value to the specified required type.
-	 * Only called if the extracted column value does not match already.
-	 * <p>If the required type is String, the value will simply get stringified
-	 * via {@code toString()}. In case of a Number, the value will be
-	 * converted into a Number, either through number conversion or through
-	 * String parsing (depending on the value type). Otherwise, the value will
-	 * be converted to a required type using the {@link ConversionService}.
-	 * @param value the column value as extracted from {@code getColumnValue()}
-	 * (never {@code null})
-	 * @param requiredType the type that each result object is expected to match
-	 * (never {@code null})
-	 * @return the converted value
+	 * 将给定的列值转换为指定的 requiredType。
+	 * 仅在提取的列值类型不匹配时调用。
+	 * <p>若 requiredType 为 String，通过 {@code toString()} 字符串化。
+	 * 若为 Number，通过数值转换或字符串解析（取决于值类型）转换为 Number。
+	 * 否则通过 {@link ConversionService} 转换为 requiredType。
+	 * @param value 从 {@code getColumnValue()} 提取的列值（永不为 {@code null}）
+	 * @param requiredType 每个结果对象期望匹配的类型（永不为 {@code null}）
+	 * @return 转换后的值
 	 * @see #getColumnValue(java.sql.ResultSet, int, Class)
 	 */
 	@SuppressWarnings("unchecked")
@@ -206,11 +196,11 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 		}
 		else if (Number.class.isAssignableFrom(requiredType)) {
 			if (value instanceof Number number) {
-				// Convert original Number to target Number class.
+				// 将原始 Number 转换为目标 Number 类。
 				return NumberUtils.convertNumberToTargetClass(number, (Class<Number>) requiredType);
 			}
 			else {
-				// Convert stringified value to target Number class.
+				// 将字符串化的值转换为目标 Number 类。
 				return NumberUtils.parseNumber(value.toString(),(Class<Number>) requiredType);
 			}
 		}
@@ -226,8 +216,8 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 
 
 	/**
-	 * Static factory method to create a new {@code SingleColumnRowMapper}.
-	 * @param requiredType the type that each result object is expected to match
+	 * 创建新 {@code SingleColumnRowMapper} 的静态工厂方法。
+	 * @param requiredType 每个结果对象期望匹配的类型
 	 * @since 4.1
 	 * @see #newInstance(Class, ConversionService)
 	 */
@@ -236,10 +226,10 @@ public class SingleColumnRowMapper<T> implements RowMapper<@Nullable T> {
 	}
 
 	/**
-	 * Static factory method to create a new {@code SingleColumnRowMapper}.
-	 * @param requiredType the type that each result object is expected to match
-	 * @param conversionService the {@link ConversionService} for converting a
-	 * fetched value, or {@code null} for none
+	 * 创建新 {@code SingleColumnRowMapper} 的静态工厂方法。
+	 * @param requiredType 每个结果对象期望匹配的类型
+	 * @param conversionService 用于转换获取值的 {@link ConversionService}，
+	 * 或 {@code null} 表示不使用
 	 * @since 5.0.4
 	 * @see #newInstance(Class)
 	 * @see #setConversionService

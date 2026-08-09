@@ -19,11 +19,11 @@ package org.springframework.jdbc.core;
 import java.sql.ResultSet;
 
 /**
- * Subclass of {@link SqlOutParameter} to represent an INOUT parameter.
- * Will return {@code true} for SqlParameter's {@link #isInputValueProvided}
- * test, in contrast to a standard SqlOutParameter.
+ * {@link SqlOutParameter} 的子类，表示 INOUT 参数。
+ * 与标准 SqlOutParameter 不同，对 SqlParameter 的
+ * {@link #isInputValueProvided} 测试将返回 {@code true}。
  *
- * <p>Output parameters - like all stored procedure parameters - must have names.
+ * <p>输出参数——与所有存储过程参数一样——必须有名称。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -32,71 +32,70 @@ import java.sql.ResultSet;
 public class SqlInOutParameter extends SqlOutParameter {
 
 	/**
-	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
+	 * 创建新的 SqlInOutParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
 	 */
 	public SqlInOutParameter(String name, int sqlType) {
 		super(name, sqlType);
 	}
 
 	/**
-	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param scale the number of digits after the decimal point
-	 * (for DECIMAL and NUMERIC types)
+	 * 创建新的 SqlInOutParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param scale 小数点后的位数（用于 DECIMAL 和 NUMERIC 类型）
 	 */
 	public SqlInOutParameter(String name, int sqlType, int scale) {
 		super(name, sqlType, scale);
 	}
 
 	/**
-	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param typeName the type name of the parameter (optional)
+	 * 创建新的 SqlInOutParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param typeName 参数的类型名（可选）
 	 */
 	public SqlInOutParameter(String name, int sqlType, String typeName) {
 		super(name, sqlType, typeName);
 	}
 
 	/**
-	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param typeName the type name of the parameter (optional)
-	 * @param sqlReturnType custom value handler for complex type (optional)
+	 * 创建新的 SqlInOutParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param typeName 参数的类型名（可选）
+	 * @param sqlReturnType 复杂类型的自定义值处理器（可选）
 	 */
 	public SqlInOutParameter(String name, int sqlType, String typeName, SqlReturnType sqlReturnType) {
 		super(name, sqlType, typeName, sqlReturnType);
 	}
 
 	/**
-	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rse the {@link ResultSetExtractor} to use for parsing the {@link ResultSet}
+	 * 创建新的 SqlInOutParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param rse 用于解析 {@link ResultSet} 的 {@link ResultSetExtractor}
 	 */
 	public SqlInOutParameter(String name, int sqlType, ResultSetExtractor<?> rse) {
 		super(name, sqlType, rse);
 	}
 
 	/**
-	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rch the {@link RowCallbackHandler} to use for parsing the {@link ResultSet}
+	 * 创建新的 SqlInOutParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param rch 用于解析 {@link ResultSet} 的 {@link RowCallbackHandler}
 	 */
 	public SqlInOutParameter(String name, int sqlType, RowCallbackHandler rch) {
 		super(name, sqlType, rch);
 	}
 
 	/**
-	 * Create a new SqlInOutParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rm the {@link RowMapper} to use for parsing the {@link ResultSet}
+	 * 创建新的 SqlInOutParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param rm 用于解析 {@link ResultSet} 的 {@link RowMapper}
 	 */
 	public SqlInOutParameter(String name, int sqlType, RowMapper<?> rm) {
 		super(name, sqlType, rm);
@@ -104,7 +103,7 @@ public class SqlInOutParameter extends SqlOutParameter {
 
 
 	/**
-	 * This implementation always returns {@code true}.
+	 * 本实现始终返回 {@code true}。
 	 */
 	@Override
 	public boolean isInputValueProvided() {

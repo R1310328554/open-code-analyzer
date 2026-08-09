@@ -21,9 +21,8 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * Implement this interface when parameters need to be customized based
- * on the connection. We might need to do this to make use of proprietary
- * features, available only with a specific Connection type.
+ * 当参数需基于连接进行定制时实现此接口。
+ * 可能需要利用特定 Connection 类型才能使用的专有特性。
  *
  * @author Rod Johnson
  * @author Thomas Risberg
@@ -34,14 +33,13 @@ import java.util.Map;
 public interface ParameterMapper {
 
 	/**
-	 * Create a Map of input parameters, keyed by name.
-	 * @param con a JDBC connection. This is useful (and the purpose of this interface)
-	 * if we need to do something RDBMS-specific with a proprietary Connection
-	 * implementation class. This class conceals such proprietary details. However,
-	 * it is best to avoid using such proprietary RDBMS features if possible.
-	 * @return a Map of input parameters, keyed by name (never {@code null})
-	 * @throws SQLException if an SQLException is encountered setting
-	 * parameter values (that is, there's no need to catch SQLException)
+	 * 创建以名称为键的输入参数 Map。
+	 * @param con JDBC 连接。若需对专有 Connection 实现类
+	 * 执行 RDBMS 特定操作，此参数很有用（也是本接口的用途）。
+	 * 此类封装了这类专有细节；但如有可能，最好避免使用这类专有 RDBMS 特性。
+	 * @return 以名称为键的输入参数 Map（永不为 {@code null}）
+	 * @throws SQLException 若设置参数值时遇到 SQLException
+	 * （即无需捕获 SQLException）
 	 */
 	Map<String, ?> createMap(Connection con) throws SQLException;
 

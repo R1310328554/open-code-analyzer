@@ -21,8 +21,8 @@ import java.sql.ResultSet;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Common base class for ResultSet-supporting SqlParameters like
- * {@link SqlOutParameter} and {@link SqlReturnResultSet}.
+ * 支持 ResultSet 的 SqlParameter（如 {@link SqlOutParameter}
+ * 和 {@link SqlReturnResultSet}）的公共基类。
  *
  * @author Juergen Hoeller
  * @since 1.0.2
@@ -37,40 +37,39 @@ public class ResultSetSupportingSqlParameter extends SqlParameter {
 
 
 	/**
-	 * Create a new ResultSetSupportingSqlParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
+	 * 创建新的 ResultSetSupportingSqlParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
 	 */
 	public ResultSetSupportingSqlParameter(String name, int sqlType) {
 		super(name, sqlType);
 	}
 
 	/**
-	 * Create a new ResultSetSupportingSqlParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param scale the number of digits after the decimal point
-	 * (for DECIMAL and NUMERIC types)
+	 * 创建新的 ResultSetSupportingSqlParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param scale 小数点后的位数（用于 DECIMAL 和 NUMERIC 类型）
 	 */
 	public ResultSetSupportingSqlParameter(String name, int sqlType, int scale) {
 		super(name, sqlType, scale);
 	}
 
 	/**
-	 * Create a new ResultSetSupportingSqlParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param typeName the type name of the parameter (optional)
+	 * 创建新的 ResultSetSupportingSqlParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param typeName 参数的类型名（可选）
 	 */
 	public ResultSetSupportingSqlParameter(String name, int sqlType, @Nullable String typeName) {
 		super(name, sqlType, typeName);
 	}
 
 	/**
-	 * Create a new ResultSetSupportingSqlParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rse the {@link ResultSetExtractor} to use for parsing the {@link ResultSet}
+	 * 创建新的 ResultSetSupportingSqlParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param rse 用于解析 {@link ResultSet} 的 {@link ResultSetExtractor}
 	 */
 	public ResultSetSupportingSqlParameter(String name, int sqlType, ResultSetExtractor<?> rse) {
 		super(name, sqlType);
@@ -78,10 +77,10 @@ public class ResultSetSupportingSqlParameter extends SqlParameter {
 	}
 
 	/**
-	 * Create a new ResultSetSupportingSqlParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rch the {@link RowCallbackHandler} to use for parsing the {@link ResultSet}
+	 * 创建新的 ResultSetSupportingSqlParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param rch 用于解析 {@link ResultSet} 的 {@link RowCallbackHandler}
 	 */
 	public ResultSetSupportingSqlParameter(String name, int sqlType, RowCallbackHandler rch) {
 		super(name, sqlType);
@@ -89,10 +88,10 @@ public class ResultSetSupportingSqlParameter extends SqlParameter {
 	}
 
 	/**
-	 * Create a new ResultSetSupportingSqlParameter.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param sqlType the parameter SQL type according to {@code java.sql.Types}
-	 * @param rm the {@link RowMapper} to use for parsing the {@link ResultSet}
+	 * 创建新的 ResultSetSupportingSqlParameter。
+	 * @param name 参数名称，用于输入和输出 Map
+	 * @param sqlType 参数的 SQL 类型，对应 {@code java.sql.Types}
+	 * @param rm 用于解析 {@link ResultSet} 的 {@link RowMapper}
 	 */
 	public ResultSetSupportingSqlParameter(String name, int sqlType, RowMapper<?> rm) {
 		super(name, sqlType);
@@ -101,29 +100,29 @@ public class ResultSetSupportingSqlParameter extends SqlParameter {
 
 
 	/**
-	 * Does this parameter support a ResultSet, i.e. does it hold a
-	 * ResultSetExtractor, RowCallbackHandler or RowMapper?
+	 * 此参数是否支持 ResultSet，即是否持有
+	 * ResultSetExtractor、RowCallbackHandler 或 RowMapper？
 	 */
 	public boolean isResultSetSupported() {
 		return (this.resultSetExtractor != null || this.rowCallbackHandler != null || this.rowMapper != null);
 	}
 
 	/**
-	 * Return the ResultSetExtractor held by this parameter, if any.
+	 * 返回此参数持有的 ResultSetExtractor（若有）。
 	 */
 	public @Nullable ResultSetExtractor<?> getResultSetExtractor() {
 		return this.resultSetExtractor;
 	}
 
 	/**
-	 * Return the RowCallbackHandler held by this parameter, if any.
+	 * 返回此参数持有的 RowCallbackHandler（若有）。
 	 */
 	public @Nullable RowCallbackHandler getRowCallbackHandler() {
 		return this.rowCallbackHandler;
 	}
 
 	/**
-	 * Return the RowMapper held by this parameter, if any.
+	 * 返回此参数持有的 RowMapper（若有）。
 	 */
 	public @Nullable RowMapper<?> getRowMapper() {
 		return this.rowMapper;
@@ -131,7 +130,7 @@ public class ResultSetSupportingSqlParameter extends SqlParameter {
 
 
 	/**
-	 * This implementation always returns {@code false}.
+	 * 本实现始终返回 {@code false}。
 	 */
 	@Override
 	public boolean isInputValueProvided() {

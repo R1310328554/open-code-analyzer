@@ -17,12 +17,11 @@
 package org.springframework.jdbc.core;
 
 /**
- * Interface to be implemented by objects that can close resources
- * allocated by parameters like {@code SqlLobValue} objects.
+ * 由能够关闭参数（如 {@code SqlLobValue} 对象）所分配资源的对象实现的接口。
  *
- * <p>Typically implemented by {@code PreparedStatementCreators} and
- * {@code PreparedStatementSetters} that support {@link DisposableSqlTypeValue}
- * objects (for example, {@code SqlLobValue}) as parameters.
+ * <p>通常由支持 {@link DisposableSqlTypeValue}
+ * 对象（例如 {@code SqlLobValue}）作为参数的
+ * {@code PreparedStatementCreators} 和 {@code PreparedStatementSetters} 实现。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -35,9 +34,8 @@ package org.springframework.jdbc.core;
 public interface ParameterDisposer {
 
 	/**
-	 * Close the resources allocated by parameters that the implementing
-	 * object holds, for example in case of a DisposableSqlTypeValue
-	 * (like an SqlLobValue).
+	 * 关闭实现对象持有的、由参数分配的资源，
+	 * 例如 DisposableSqlTypeValue（如 SqlLobValue）的情况。
 	 * @see DisposableSqlTypeValue#cleanup()
 	 * @see org.springframework.jdbc.core.support.SqlLobValue#cleanup()
 	 */

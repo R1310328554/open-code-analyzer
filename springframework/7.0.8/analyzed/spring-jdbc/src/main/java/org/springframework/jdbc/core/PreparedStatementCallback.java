@@ -24,22 +24,18 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Generic callback interface for code that operates on a PreparedStatement.
- * Allows to execute any number of operations on a single PreparedStatement,
- * for example a single {@code executeUpdate} call or repeated
- * {@code executeUpdate} calls with varying parameters.
+ * 在 PreparedStatement 上执行代码的通用回调接口。
+ * 允许在单个 PreparedStatement 上执行任意次操作，
+ * 例如单次 {@code executeUpdate} 调用，或带不同参数的多次 {@code executeUpdate} 调用。
  *
- * <p>Used internally by JdbcTemplate, but also useful for application code.
- * Note that the passed-in PreparedStatement can have been created by the
- * framework or by a custom PreparedStatementCreator. However, the latter is
- * hardly ever necessary, as most custom callback actions will perform updates
- * in which case a standard PreparedStatement is fine. Custom actions will
- * always set parameter values themselves, so that PreparedStatementCreator
- * capability is not needed either.
+ * <p>由 JdbcTemplate 内部使用，应用代码同样适用。
+ * 注意传入的 PreparedStatement 可能由框架或自定义 PreparedStatementCreator 创建。
+ * 但后者几乎不需要——大多数自定义回调执行更新，标准 PreparedStatement 即可。
+ * 自定义操作总会自行设置参数值，因此也无需 PreparedStatementCreator 能力。
  *
  * @author Juergen Hoeller
  * @since 16.03.2004
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see JdbcTemplate#execute(String, PreparedStatementCallback)
  * @see JdbcTemplate#execute(PreparedStatementCreator, PreparedStatementCallback)
  */
@@ -47,31 +43,23 @@ import org.springframework.dao.DataAccessException;
 public interface PreparedStatementCallback<T extends @Nullable Object> {
 
 	/**
-	 * Gets called by {@code JdbcTemplate.execute} with an active JDBC
-	 * PreparedStatement. Does not need to care about closing the Statement
-	 * or the Connection, or about handling transactions: this will all be
-	 * handled by Spring's JdbcTemplate.
-	 * <p><b>NOTE:</b> Any ResultSets opened should be closed in finally blocks
-	 * within the callback implementation. Spring will close the Statement
-	 * object after the callback returned, but this does not necessarily imply
-	 * that the ResultSet resources will be closed: the Statement objects might
-	 * get pooled by the connection pool, with {@code close} calls only
-	 * returning the object to the pool but not physically closing the resources.
-	 * <p>If called without a thread-bound JDBC transaction (initiated by
-	 * DataSourceTransactionManager), the code will simply get executed on the
-	 * JDBC connection with its transactional semantics. If JdbcTemplate is
-	 * configured to use a JTA-aware DataSource, the JDBC connection and thus
-	 * the callback code will be transactional if a JTA transaction is active.
-	 * <p>Allows for returning a result object created within the callback, i.e.
-	 * a domain object or a collection of domain objects. Note that there's
-	 * special support for single step actions: see JdbcTemplate.queryForObject etc.
-	 * A thrown RuntimeException is treated as application exception, it gets
-	 * propagated to the caller of the template.
-	 * @param ps active JDBC PreparedStatement
-	 * @return a result object, or {@code null} if none
-	 * @throws SQLException if thrown by a JDBC method, to be auto-converted
-	 * to a DataAccessException by an SQLExceptionTranslator
-	 * @throws DataAccessException in case of custom exceptions
+	 * 由 {@code JdbcTemplate.execute} 调用，传入活动的 JDBC PreparedStatement。
+	 * 无需关心关闭 Statement 或 Connection，也无需处理事务——均由 Spring JdbcTemplate 负责。
+	 * <p><b>注意：</b>回调实现中打开的 ResultSet 应在 finally 块中关闭。
+	 * Spring 在回调返回后关闭 Statement 对象，但这不一定意味着 ResultSet 资源已关闭：
+	 * Statement 可能被连接池复用，{@code close} 仅将对象归还池中，
+	 * 未必物理关闭底层资源。
+	 * <p>若无线程绑定的 JDBC 事务（由 DataSourceTransactionManager 启动），
+	 * 代码将直接在 JDBC 连接上按其事务语义执行。
+	 * 若 JdbcTemplate 配置为使用 JTA 感知 DataSource，
+	 * 且 JTA 事务处于活动状态，则 JDBC 连接及回调代码均在事务中运行。
+	 * <p>允许返回回调内创建的结果对象，如领域对象或领域对象集合。
+	 * 单步操作有专门支持：参见 JdbcTemplate.queryForObject 等。
+	 * 抛出的 RuntimeException 视为应用异常，会传播给模板调用方。
+	 * @param ps 活动的 JDBC PreparedStatement
+	 * @return 结果对象，若无则 {@code null}
+	 * @throws SQLException 若 JDBC 方法抛出，将由 SQLExceptionTranslator 自动转换为 DataAccessException
+	 * @throws DataAccessException 自定义异常时
 	 * @see JdbcTemplate#queryForObject(String, Class, Object...)
 	 * @see JdbcTemplate#queryForList(String, Object...)
 	 */

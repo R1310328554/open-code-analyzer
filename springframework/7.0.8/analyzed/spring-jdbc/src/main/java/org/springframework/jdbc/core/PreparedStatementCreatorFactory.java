@@ -34,9 +34,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 
 /**
- * Helper class that efficiently creates multiple {@link PreparedStatementCreator}
- * objects with different parameters based on an SQL statement and a single
- * set of parameter declarations.
+ * 辅助类，基于一条 SQL 语句和一组参数声明，
+ * 高效创建带不同参数的多个 {@link PreparedStatementCreator} 对象。
  *
  * @author Rod Johnson
  * @author Thomas Risberg
@@ -44,10 +43,10 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
  */
 public class PreparedStatementCreatorFactory {
 
-	/** The SQL, which won't change when the parameters change. */
+	/** SQL 语句，参数变化时不会改变。 */
 	private final String sql;
 
-	/** List of SqlParameter objects (may be {@code null}). */
+	/** SqlParameter 对象列表（可能为 {@code null}）。 */
 	private @Nullable List<SqlParameter> declaredParameters;
 
 	private int resultSetType = ResultSet.TYPE_FORWARD_ONLY;
@@ -60,18 +59,17 @@ public class PreparedStatementCreatorFactory {
 
 
 	/**
-	 * Create a new factory. Will need to add parameters via the
-	 * {@link #addParameter} method or have no parameters.
-	 * @param sql the SQL statement to execute
+	 * 创建新工厂。需通过 {@link #addParameter} 方法添加参数，或不设参数。
+	 * @param sql 要执行的 SQL 语句
 	 */
 	public PreparedStatementCreatorFactory(String sql) {
 		this.sql = sql;
 	}
 
 	/**
-	 * Create a new factory with the given SQL and JDBC types.
-	 * @param sql the SQL statement to execute
-	 * @param types int array of JDBC types
+	 * 使用给定 SQL 和 JDBC 类型创建新工厂。
+	 * @param sql 要执行的 SQL 语句
+	 * @param types JDBC 类型的 int 数组
 	 */
 	public PreparedStatementCreatorFactory(String sql, int... types) {
 		this.sql = sql;
@@ -79,9 +77,9 @@ public class PreparedStatementCreatorFactory {
 	}
 
 	/**
-	 * Create a new factory with the given SQL and parameters.
-	 * @param sql the SQL statement to execute
-	 * @param declaredParameters list of {@link SqlParameter} objects
+	 * 使用给定 SQL 和参数创建新工厂。
+	 * @param sql 要执行的 SQL 语句
+	 * @param declaredParameters {@link SqlParameter} 对象列表
 	 */
 	public PreparedStatementCreatorFactory(String sql, List<SqlParameter> declaredParameters) {
 		this.sql = sql;
@@ -90,7 +88,7 @@ public class PreparedStatementCreatorFactory {
 
 
 	/**
-	 * Return the SQL statement to execute.
+	 * 返回要执行的 SQL 语句。
 	 * @since 5.1.3
 	 */
 	public final String getSql() {
@@ -98,9 +96,9 @@ public class PreparedStatementCreatorFactory {
 	}
 
 	/**
-	 * Add a new declared parameter.
-	 * <p>Order of parameter addition is significant.
-	 * @param param the parameter to add to the list of declared parameters
+	 * 添加新的声明参数。
+	 * <p>参数添加顺序有意义。
+	 * @param param 要添加到声明参数列表的参数
 	 */
 	public void addParameter(SqlParameter param) {
 		if (this.declaredParameters == null) {
@@ -110,8 +108,8 @@ public class PreparedStatementCreatorFactory {
 	}
 
 	/**
-	 * Set whether to use prepared statements that return a specific type of ResultSet.
-	 * @param resultSetType the ResultSet type
+	 * 设置是否使用返回特定类型 ResultSet 的 PreparedStatement。
+	 * @param resultSetType ResultSet 类型
 	 * @see java.sql.ResultSet#TYPE_FORWARD_ONLY
 	 * @see java.sql.ResultSet#TYPE_SCROLL_INSENSITIVE
 	 * @see java.sql.ResultSet#TYPE_SCROLL_SENSITIVE
@@ -121,21 +119,21 @@ public class PreparedStatementCreatorFactory {
 	}
 
 	/**
-	 * Set whether to use prepared statements capable of returning updatable ResultSets.
+	 * 设置是否使用能返回可更新 ResultSet 的 PreparedStatement。
 	 */
 	public void setUpdatableResults(boolean updatableResults) {
 		this.updatableResults = updatableResults;
 	}
 
 	/**
-	 * Set whether prepared statements should be capable of returning auto-generated keys.
+	 * 设置 PreparedStatement 是否应能返回自动生成的主键。
 	 */
 	public void setReturnGeneratedKeys(boolean returnGeneratedKeys) {
 		this.returnGeneratedKeys = returnGeneratedKeys;
 	}
 
 	/**
-	 * Set the column names of the auto-generated keys.
+	 * 设置自动生成主键的列名。
 	 */
 	public void setGeneratedKeysColumnNames(String... names) {
 		this.generatedKeysColumnNames = names;
@@ -143,42 +141,42 @@ public class PreparedStatementCreatorFactory {
 
 
 	/**
-	 * Return a new PreparedStatementSetter for the given parameters.
-	 * @param params list of parameters (may be {@code null})
+	 * 为给定参数返回新的 PreparedStatementSetter。
+	 * @param params 参数列表（可能为 {@code null}）
 	 */
 	public PreparedStatementSetter newPreparedStatementSetter(@Nullable List<?> params) {
 		return new PreparedStatementCreatorImpl(params != null ? params : Collections.emptyList());
 	}
 
 	/**
-	 * Return a new PreparedStatementSetter for the given parameters.
-	 * @param params the parameter array (may be {@code null})
+	 * 为给定参数返回新的 PreparedStatementSetter。
+	 * @param params 参数数组（可能为 {@code null}）
 	 */
 	public PreparedStatementSetter newPreparedStatementSetter(@Nullable Object @Nullable [] params) {
 		return new PreparedStatementCreatorImpl(params != null ? Arrays.asList(params) : Collections.emptyList());
 	}
 
 	/**
-	 * Return a new PreparedStatementCreator for the given parameters.
-	 * @param params list of parameters (may be {@code null})
+	 * 为给定参数返回新的 PreparedStatementCreator。
+	 * @param params 参数列表（可能为 {@code null}）
 	 */
 	public PreparedStatementCreator newPreparedStatementCreator(@Nullable List<? extends @Nullable Object> params) {
 		return new PreparedStatementCreatorImpl(params != null ? params : Collections.emptyList());
 	}
 
 	/**
-	 * Return a new PreparedStatementCreator for the given parameters.
-	 * @param params the parameter array (may be {@code null})
+	 * 为给定参数返回新的 PreparedStatementCreator。
+	 * @param params 参数数组（可能为 {@code null}）
 	 */
 	public PreparedStatementCreator newPreparedStatementCreator(@Nullable Object @Nullable [] params) {
 		return new PreparedStatementCreatorImpl(params != null ? Arrays.asList(params) : Collections.emptyList());
 	}
 
 	/**
-	 * Return a new PreparedStatementCreator for the given parameters.
-	 * @param sqlToUse the actual SQL statement to use (if different from
-	 * the factory's, for example because of named parameter expanding)
-	 * @param params the parameter array (may be {@code null})
+	 * 为给定参数返回新的 PreparedStatementCreator。
+	 * @param sqlToUse 实际使用的 SQL 语句（若与工厂的不同，
+	 * 例如因命名参数展开）
+	 * @param params 参数数组（可能为 {@code null}）
 	 */
 	public PreparedStatementCreator newPreparedStatementCreator(String sqlToUse, @Nullable Object @Nullable [] params) {
 		return new PreparedStatementCreatorImpl(
@@ -187,7 +185,7 @@ public class PreparedStatementCreatorFactory {
 
 
 	/**
-	 * PreparedStatementCreator implementation returned by this class.
+	 * 本类返回的 PreparedStatementCreator 实现。
 	 */
 	private class PreparedStatementCreatorImpl
 			implements PreparedStatementCreator, PreparedStatementSetter, SqlProvider, ParameterDisposer {
@@ -204,7 +202,7 @@ public class PreparedStatementCreatorFactory {
 			this.actualSql = actualSql;
 			this.parameters = parameters;
 			if (declaredParameters != null && parameters.size() != declaredParameters.size()) {
-				// Account for named parameters being used multiple times
+				// 考虑命名参数被多次使用的情况
 				Set<String> names = new HashSet<>();
 				for (int i = 0; i < parameters.size(); i++) {
 					Object param = parameters.get(i);
@@ -247,13 +245,13 @@ public class PreparedStatementCreatorFactory {
 
 		@Override
 		public void setValues(PreparedStatement ps) throws SQLException {
-			// Set arguments: Does nothing if there are no parameters.
+			// 设置参数：若无参数则不执行任何操作。
 			int sqlColIndx = 1;
 			for (int i = 0; i < this.parameters.size(); i++) {
 				Object in = this.parameters.get(i);
 				SqlParameter declaredParameter = null;
-				// SqlParameterValue overrides declared parameter meta-data, in particular for
-				// independence from the declared parameter position in case of named parameters.
+				// SqlParameterValue 覆盖声明的参数元数据，特别是
+				// 命名参数场景下不依赖声明的参数位置。
 				if (in instanceof SqlParameterValue sqlParameterValue) {
 					in = sqlParameterValue.getValue();
 					declaredParameter = sqlParameterValue;

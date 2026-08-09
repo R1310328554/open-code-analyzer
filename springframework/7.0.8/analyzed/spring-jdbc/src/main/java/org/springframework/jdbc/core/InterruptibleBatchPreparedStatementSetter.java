@@ -17,23 +17,19 @@
 package org.springframework.jdbc.core;
 
 /**
- * Extension of the {@link BatchPreparedStatementSetter} interface,
- * adding a batch exhaustion check.
+ * {@link BatchPreparedStatementSetter} 接口的扩展，增加了批次耗尽检查。
  *
- * <p>This interface allows you to signal the end of a batch rather than
- * having to determine the exact batch size upfront. Batch size is still
- * being honored, but it is now the maximum size of the batch.
+ * <p>本接口允许标记批次结束，而无需事先确定确切的批次大小。
+ * 批次大小仍然生效，但现仅作为批次的最大上限。
  *
- * <p>The {@link #isBatchExhausted} method is called after each call to
- * {@link #setValues} to determine whether there were some values added,
- * or if the batch was determined to be complete and no additional values
- * were provided during the last call to {@code setValues}.
+ * <p>每次调用 {@link #setValues} 后都会调用 {@link #isBatchExhausted}，
+ * 以判断本次是否添加了新值，或批次是否已确定完成
+ * （即最后一次 {@code setValues} 调用未提供额外值）。
  *
- * <p>Consider extending the
+ * <p>建议扩展
  * {@link org.springframework.jdbc.core.support.AbstractInterruptibleBatchPreparedStatementSetter}
- * base class instead of implementing this interface directly, using a single
- * {@code setValuesIfAvailable} callback method that checks for available
- * values and sets them, returning whether values have actually been provided.
+ * 基类而非直接实现本接口：只需实现单个 {@code setValuesIfAvailable} 回调，
+ * 检查可用值并设置，同时返回是否实际提供了值。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -44,15 +40,13 @@ package org.springframework.jdbc.core;
 public interface InterruptibleBatchPreparedStatementSetter extends BatchPreparedStatementSetter {
 
 	/**
-	 * Return whether the batch is complete, that is, whether there were no
-	 * additional values added during the last {@code setValues} call.
-	 * <p><b>NOTE:</b> If this method returns {@code true}, any parameters
-	 * that might have been set during the last {@code setValues} call will
-	 * be ignored! Make sure that you set a corresponding internal flag if you
-	 * detect exhaustion <i>at the beginning</i> of your {@code setValues}
-	 * implementation, letting this method return {@code true} based on the flag.
-	 * @param i index of the statement we're issuing in the batch, starting from 0
-	 * @return whether the batch is already exhausted
+	 * 返回批次是否已完成，即最后一次 {@code setValues} 调用是否未添加额外值。
+	 * <p><b>注意：</b>若此方法返回 {@code true}，最后一次 {@code setValues} 调用
+	 * 中可能已设置的任何参数都将被忽略！若在 {@code setValues} 实现
+	 * <i>开头</i>检测到耗尽，请设置相应的内部标志，
+	 * 让此方法基于该标志返回 {@code true}。
+	 * @param i 批次中当前语句的索引，从 0 开始
+	 * @return 批次是否已耗尽
 	 * @see #setValues
 	 * @see org.springframework.jdbc.core.support.AbstractInterruptibleBatchPreparedStatementSetter#setValuesIfAvailable
 	 */

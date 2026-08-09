@@ -40,35 +40,32 @@ import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * {@link RowMapper} implementation that converts a row into a new instance
- * of the specified mapped target class. The mapped target class must be a
- * top-level class or {@code static} nested class, and it may expose either a
- * <em>data class</em> constructor with named parameters corresponding to column
- * names or classic bean property setter methods with property names corresponding
- * to column names or fields with corresponding field names.
+ * {@link RowMapper} 实现，将一行转换为指定映射目标类的新实例。
+ * 映射目标类须为顶层类或 {@code static} 嵌套类，
+ * 可暴露与列名对应命名参数的<em>数据类</em>构造器，
+ * 或与列名对应的经典 Bean 属性 setter 方法，
+ * 或与字段名对应的字段。
  *
- * <p>When combining a data class constructor with setter methods, any property
- * mapped successfully via a constructor argument will not be mapped additionally
- * via a corresponding setter method or field mapping. This means that constructor
- * arguments take precedence over property setter methods which in turn take
- * precedence over direct field mappings.
+ * <p>组合数据类构造器与 setter 方法时，
+ * 已通过构造器参数成功映射的属性不会再通过
+ * 对应 setter 方法或字段映射。
+ * 即构造器参数优先于属性 setter，setter 优先于直接字段映射。
  *
- * <p>To facilitate mapping between columns and properties that don't have matching
- * names, try using underscore-separated column aliases in the SQL statement like
- * {@code "select fname as first_name from customer"}, where {@code first_name}
- * can be mapped to a {@code setFirstName(String)} method in the target class.
+ * <p>为便于映射列名与属性名不匹配的情况，
+ * 可在 SQL 中使用下划线分隔的列别名，如
+ * {@code "select fname as first_name from customer"}，
+ * 其中 {@code first_name} 可映射到目标类的 {@code setFirstName(String)} 方法。
  *
- * <p>This is a flexible alternative to {@link DataClassRowMapper} and
- * {@link BeanPropertyRowMapper} for scenarios where no specific customization
- * and no pre-defined property mappings are needed.
+ * <p>这是 {@link DataClassRowMapper} 和 {@link BeanPropertyRowMapper} 的灵活替代，
+ * 适用于无需特定定制和预定义属性映射的场景。
  *
- * <p>In terms of its fallback property discovery algorithm, this class is similar to
- * {@link org.springframework.jdbc.core.namedparam.SimplePropertySqlParameterSource}
- * and is similarly used for {@link org.springframework.jdbc.core.simple.JdbcClient}.
+ * <p>其回退属性发现算法与
+ * {@link org.springframework.jdbc.core.namedparam.SimplePropertySqlParameterSource} 类似，
+ * 同样用于 {@link org.springframework.jdbc.core.simple.JdbcClient}。
  *
  * @author Juergen Hoeller
  * @since 6.1
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see DataClassRowMapper
  * @see BeanPropertyRowMapper
  * @see org.springframework.jdbc.core.simple.JdbcClient.StatementSpec#query(Class)
@@ -92,18 +89,17 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 
 
 	/**
-	 * Create a new {@code SimplePropertyRowMapper}.
-	 * @param mappedClass the class that each row should be mapped to
+	 * 创建新的 {@code SimplePropertyRowMapper}。
+	 * @param mappedClass 每行应映射到的类
 	 */
 	public SimplePropertyRowMapper(Class<T> mappedClass) {
 		this(mappedClass, DefaultConversionService.getSharedInstance());
 	}
 
 	/**
-	 * Create a new {@code SimplePropertyRowMapper}.
-	 * @param mappedClass the class that each row should be mapped to
-	 * @param conversionService a {@link ConversionService} for binding
-	 * JDBC values to bean properties
+	 * 创建新的 {@code SimplePropertyRowMapper}。
+	 * @param mappedClass 每行应映射到的类
+	 * @param conversionService 用于将 JDBC 值绑定到 Bean 属性的 {@link ConversionService}
 	 */
 	public SimplePropertyRowMapper(Class<T> mappedClass, ConversionService conversionService) {
 		Assert.notNull(mappedClass, "Mapped Class must not be null");
@@ -130,11 +126,11 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 			String name = this.constructorParameterNames[i];
 			int index;
 			try {
-				// Try direct name match first
+				// 先尝试直接名称匹配
 				index = rs.findColumn(name);
 			}
 			catch (SQLException ex) {
-				// Try underscored name match instead
+				// 否则尝试下划线名称匹配
 				index = rs.findColumn(JdbcUtils.convertPropertyNameToUnderscoreName(name));
 			}
 			TypeDescriptor td = this.constructorParameterTypes[i];
@@ -173,7 +169,7 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 	private Object getDescriptor(String column) {
 		return this.propertyDescriptors.computeIfAbsent(column, name -> {
 
-			// Try direct match first
+			// 先尝试直接匹配
 			PropertyDescriptor pd = BeanUtils.getPropertyDescriptor(this.mappedClass, name);
 			if (pd != null && pd.getWriteMethod() != null) {
 				return BeanUtils.getWriteMethodParameter(pd);
@@ -183,7 +179,7 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 				return field;
 			}
 
-			// Try de-underscored match instead
+			// 否则尝试去下划线匹配
 			String adaptedName = JdbcUtils.convertUnderscoreNameToPropertyName(name);
 			if (!adaptedName.equals(name)) {
 				pd = BeanUtils.getPropertyDescriptor(this.mappedClass, adaptedName);
@@ -196,7 +192,7 @@ public class SimplePropertyRowMapper<T> implements RowMapper<T> {
 				}
 			}
 
-			// Fallback: case-insensitive match
+			// 回退：不区分大小写匹配
 			PropertyDescriptor[] pds = BeanUtils.getPropertyDescriptors(this.mappedClass);
 			for (PropertyDescriptor candidate : pds) {
 				if (name.equalsIgnoreCase(candidate.getName())) {
