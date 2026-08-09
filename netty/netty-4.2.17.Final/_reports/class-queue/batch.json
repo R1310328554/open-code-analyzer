@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:56:15Z",
   "files": [
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2PushPromiseFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2RemoteFlowController.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2ResetFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2SettingsAckFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2SettingsFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2UnknownFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DefaultHttp2WindowUpdateFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DelegatingDecompressorFrameListener.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/EmptyHttp2Headers.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackDecoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackDynamicTable.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackEncoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackHeaderField.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackHuffmanDecoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackHuffmanEncoder.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackStaticTable.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/HpackUtil.java",
     "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2ChannelDuplexHandler.java",
@@ -33,5 +18,5 @@
     "codec-http2/src/main/java/io/netty/handler/codec/http2/Http2DataFrame.java"
   ],
   "remaining_pending": 1238,
-  "done": 660
+  "done": 675
 }
