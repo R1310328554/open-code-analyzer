@@ -18,7 +18,7 @@ package com.alibaba.csp.sentinel.cluster;
 import java.util.Map;
 
 /**
- * Result entity of acquiring cluster flow token.
+ * 获取集群流控令牌的结果实体。
  *
  * @author Eric Zhao
  * @since 1.4.0

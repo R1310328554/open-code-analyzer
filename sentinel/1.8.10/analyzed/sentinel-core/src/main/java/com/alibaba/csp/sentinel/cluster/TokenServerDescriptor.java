@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.cluster;
 
 /**
- * A simple descriptor for Sentinel token server.
+ * Sentinel 令牌服务端的简单描述符。
  *
  * @author Eric Zhao
  * @since 1.4.0

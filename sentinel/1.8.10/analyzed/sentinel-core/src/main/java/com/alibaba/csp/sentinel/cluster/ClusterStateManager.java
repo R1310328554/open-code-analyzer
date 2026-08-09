@@ -28,8 +28,8 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
  * <p>
- * Global state manager for Sentinel cluster.
- * This enables switching between cluster token client and server mode.
+ * Sentinel 集群全局状态管理器。
+ * 用于在集群令牌客户端与服务端模式之间切换。
  * </p>
  *
  * @author Eric Zhao
@@ -75,8 +75,8 @@ public final class ClusterStateManager {
 
     /**
      * <p>
-     * Set current mode to client mode. If Sentinel currently works in server mode,
-     * it will be turned off. Then the cluster client will be started.
+     * 将当前模式设置为客户端模式。若 Sentinel 当前处于服务端模式，
+     * 将先关闭服务端，再启动集群客户端。
      * </p>
      */
     public static boolean setToClient() {
@@ -129,8 +129,8 @@ public final class ClusterStateManager {
 
     /**
      * <p>
-     * Set current mode to server mode. If Sentinel currently works in client mode,
-     * it will be turned off. Then the cluster server will be started.
+     * 将当前模式设置为服务端模式。若 Sentinel 当前处于客户端模式，
+     * 将先关闭客户端，再启动集群服务端。
      * </p>
      */
     public static boolean setToServer() {
@@ -182,8 +182,8 @@ public final class ClusterStateManager {
     }
 
     /**
-     * The interval between two change operations should be greater than {@code MIN_INTERVAL} (by default 10s).
-     * Or we need to wait for a while.
+     * 两次模式变更操作的间隔应大于 {@code MIN_INTERVAL}（默认 10 秒）。
+     * 否则需要等待一段时间。
      */
     private static void sleepIfNeeded() {
         if (lastModified <= 0) {
@@ -258,9 +258,9 @@ public final class ClusterStateManager {
     }
 
     /**
-     * Apply given state to cluster mode.
+     * 将给定状态应用到集群模式。
      *
-     * @param state valid state to apply
+     * @param state 要应用的有效状态
      */
     public static void applyState(Integer state) {
         stateProperty.updateValue(state);

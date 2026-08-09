@@ -28,7 +28,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import static com.alibaba.csp.sentinel.util.ConfigUtil.addSeparator;
 
 /**
- * <p>The loader that responsible for loading Sentinel common configurations.</p>
+ * <p>负责加载 Sentinel 通用配置的加载器。</p>
  *
  * @author lianglin
  * @since 1.7.0
@@ -51,7 +51,7 @@ public final class SentinelConfigLoader {
     }
 
     private static void load() {
-        // Order: system property -> system env -> default file (classpath:sentinel.properties) -> legacy path
+        // 优先级：系统属性 -> 系统环境变量 -> 默认文件 (classpath:sentinel.properties) -> 旧路径
         String fileName = System.getProperty(SENTINEL_CONFIG_PROPERTY_KEY);
         if (StringUtil.isBlank(fileName)) {
             fileName = System.getenv(SENTINEL_CONFIG_ENV_KEY);

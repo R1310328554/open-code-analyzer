@@ -19,6 +19,8 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
+ * 嵌入式集群令牌服务端实例的提供者。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

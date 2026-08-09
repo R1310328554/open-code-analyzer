@@ -19,7 +19,7 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
- * Provider for a universal {@link ClusterTokenClient} instance.
+ * 通用 {@link ClusterTokenClient} 实例的提供者。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -29,7 +29,7 @@ public final class TokenClientProvider {
     private static ClusterTokenClient client = null;
 
     static {
-        // Not strictly thread-safe, but it's OK since it will be resolved only once.
+        // 非严格线程安全，但仅解析一次，可接受。
         resolveTokenClientInstance();
     }
 

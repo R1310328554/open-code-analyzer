@@ -25,8 +25,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The universal local configuration center of Sentinel. The config is retrieved from command line arguments
- * and customized properties file by default.
+ * Sentinel 通用本地配置中心。默认从命令行参数与自定义属性文件读取配置。
  *
  * @author leyou
  * @author Eric Zhao
@@ -35,15 +34,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SentinelConfig {
 
     /**
-     * The default application type.
+     * 默认应用类型。
      *
      * @since 1.6.0
      */
     public static final int APP_TYPE_COMMON = 0;
 
-    /**
-     * Parameter value for using context classloader.
-     */
+    /** 使用上下文类加载器的配置参数值。 */
     private static final String CLASSLOADER_CONTEXT = "context";
 
     private static final Map<String, String> props = new ConcurrentHashMap<>();
@@ -119,10 +116,10 @@ public final class SentinelConfig {
     }
 
     /**
-     * Get config value of the specific key.
+     * 获取指定键的配置值。
      *
-     * @param key config key
-     * @return the config value.
+     * @param key 配置键
+     * @return 配置值
      */
     public static String getConfig(String key) {
         AssertUtil.notNull(key, "key cannot be null");
@@ -130,11 +127,11 @@ public final class SentinelConfig {
     }
     
     /**
-     * Get config value of the specific key.
+     * 获取指定键的配置值。
      *
-     * @param key config key
-     * @param envVariableKey Get the value of the environment variable with the given key
-     * @return the config value.
+     * @param key 配置键
+     * @param envVariableKey 若为 true，则先尝试从给定键的环境变量取值
+     * @return 配置值
      */
     public static String getConfig(String key, boolean envVariableKey) {
         AssertUtil.notNull(key, "key cannot be null");
@@ -172,9 +169,9 @@ public final class SentinelConfig {
     }
 
     /**
-     * Get application type.
+     * 获取应用类型。
      *
-     * @return application type, common (0) by default
+     * @return 应用类型，默认为 common (0)
      * @since 1.6.0
      */
     public static int getAppType() {
@@ -186,8 +183,8 @@ public final class SentinelConfig {
     }
     
     /**
-     * Get the metric log flush interval in second
-     * @return  the metric log flush interval in second
+     * 获取指标日志刷新间隔（秒）。
+     * @return 指标日志刷新间隔（秒）
      * @since 1.8.1
      */
     public static long metricLogFlushIntervalSec() {
@@ -242,9 +239,9 @@ public final class SentinelConfig {
     }
 
     /**
-     * <p>Get the max RT value that Sentinel could accept for system BBR strategy.</p>
+     * <p>获取 Sentinel 系统 BBR 策略可接受的最大 RT 值。</p>
      *
-     * @return the max allowed RT value
+     * @return 允许的最大 RT 值
      * @since 1.4.1
      */
     public static int statisticMaxRt() {
@@ -263,15 +260,14 @@ public final class SentinelConfig {
     }
 
     /**
-     * Function for resolving project name. The order is elaborated below:
+     * 解析项目名称。优先级如下：
      *
      * <ol>
-     * <li>Resolve the value from {@code CSP_SENTINEL_APP_NAME} system environment;</li>
-     * <li>Resolve the value from {@code csp.sentinel.app.name} system property;</li>
-     * <li>Resolve the value from {@code project.name} system property (for compatibility);</li>
-     * <li>Resolve the value from {@code sun.java.command} system property, then remove path, arguments and ".jar" or ".JAR"
-     * suffix, use the result as app name. Note that whitespace in file name or path is not allowed, or a
-     * wrong app name may be gotten, For example:
+     * <li>从 {@code CSP_SENTINEL_APP_NAME} 系统环境变量解析；</li>
+     * <li>从 {@code csp.sentinel.app.name} 系统属性解析；</li>
+     * <li>从 {@code project.name} 系统属性解析（兼容旧配置）；</li>
+     * <li>从 {@code sun.java.command} 系统属性解析，去除路径、参数及 ".jar" 或 ".JAR" 后缀，
+     * 将结果作为应用名。注意文件名或路径中不允许空格，否则可能得到错误应用名，例如：
      * <p>
      * <code>
      * "test.Main" -> test.Main<br/>
@@ -279,7 +275,7 @@ public final class SentinelConfig {
      * "/target/test.Main args1" -> test.Main<br/>
      * "Main.jar" -> Main<br/>
      * "/target/Main.JAR args1" -> Main<br/>
-     * "Mai n.jar" -> Mai // whitespace in file name is not allowed<br/>
+     * "Mai n.jar" -> Mai // 文件名中不允许空格<br/>
      * </code>
      * </p>
      * </li>
@@ -335,9 +331,9 @@ public final class SentinelConfig {
         return propKey.toUpperCase().replace('.', '_');
     }
     /**
-     * Whether use context classloader via config parameter
+     * 是否通过配置参数使用上下文类加载器。
      *
-     * @return Whether use context classloader
+     * @return 是否使用上下文类加载器
      */
     public static boolean shouldUseContextClassloader() {
         String classloaderConf = SentinelConfig.getConfig(SentinelConfig.SPI_CLASSLOADER);
@@ -345,8 +341,8 @@ public final class SentinelConfig {
     }
 
     /**
-     * Return whether to skip regex matching when simple rules already matched.
-     * Default: false (keeps backward compatibility).
+     * 简单规则已匹配时是否跳过正则匹配。
+     * 默认 false（保持向后兼容）。
      */
     public static boolean shouldSkipRegexIfSimpleRuleMatched() {
         return Boolean.parseBoolean(getConfig(SKIP_REGEX_IF_SIMPLE_RULE_MATCHED_KEY));

@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.eagleeye.StatLogger;
 import com.alibaba.csp.sentinel.log.LogBase;
 
 /**
+ * 集群服务端统计日志工具类，写入 sentinel-cluster.log。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  * @since 1.4.0
@@ -47,10 +49,21 @@ public final class ClusterStatLogUtil {
             .buildSingleton();
     }
 
+    /**
+     * 记录一条统计日志消息。
+     *
+     * @param msg 日志消息
+     */
     public static void log(String msg) {
         statLogger.stat(msg).count();
     }
 
+    /**
+     * 记录带计数的统计日志消息。
+     *
+     * @param msg 日志消息
+     * @param count 计数
+     */
     public static void log(String msg, int count) {
         statLogger.stat(msg).count(count);
     }

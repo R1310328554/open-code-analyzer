@@ -16,56 +16,36 @@
 package com.alibaba.csp.sentinel.cluster;
 
 /**
+ * 集群令牌请求结果状态码常量。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public final class TokenResultStatus {
 
-    /**
-     * Bad client request.
-     */
+    /** 客户端请求无效。 */
     public static final int BAD_REQUEST = -4;
-    /**
-     * Too many request in server.
-     */
+    /** 服务端请求过多。 */
     public static final int TOO_MANY_REQUEST = -2;
-    /**
-     * Server or client unexpected failure (due to transport or serialization failure).
-     */
+    /** 服务端或客户端意外失败（传输或序列化失败）。 */
     public static final int FAIL = -1;
 
-    /**
-     * Token acquired.
-     */
+    /** 令牌获取成功。 */
     public static final int OK = 0;
 
-    /**
-     * Token acquire failed (blocked).
-     */
+    /** 令牌获取失败（被限流阻断）。 */
     public static final int BLOCKED = 1;
-    /**
-     * Should wait for next buckets.
-     */
+    /** 应等待下一个时间窗口。 */
     public static final int SHOULD_WAIT = 2;
-    /**
-     * Token acquire failed (no rule exists).
-     */
+    /** 令牌获取失败（规则不存在）。 */
     public static final int NO_RULE_EXISTS = 3;
-    /**
-     * Token acquire failed (reference resource is not available).
-     */
+    /** 令牌获取失败（引用资源不可用）。 */
     public static final int NO_REF_RULE_EXISTS = 4;
-    /**
-     * Token acquire failed (strategy not available).
-     */
+    /** 令牌获取失败（策略不可用）。 */
     public static final int NOT_AVAILABLE = 5;
-    /**
-     * Token is successfully released.
-     */
+    /** 令牌释放成功。 */
     public static final int RELEASE_OK = 6;
-    /**
-     * Token already is released before the request arrives.
-     */
+    /** 请求到达时令牌已被释放。 */
     public static final int ALREADY_RELEASE=7;
 
     private TokenResultStatus() {

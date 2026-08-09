@@ -20,6 +20,8 @@ import com.alibaba.csp.sentinel.eagleeye.StatLogger;
 import com.alibaba.csp.sentinel.log.LogBase;
 
 /**
+ * 集群客户端统计日志工具类。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  * @since 1.4.0

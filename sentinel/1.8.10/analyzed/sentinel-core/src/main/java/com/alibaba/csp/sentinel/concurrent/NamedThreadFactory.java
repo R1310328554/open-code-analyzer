@@ -19,7 +19,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Wrapped thread factory for better use.
+ * 便于使用的命名线程工厂封装。
  */
 public class NamedThreadFactory implements ThreadFactory {
 
