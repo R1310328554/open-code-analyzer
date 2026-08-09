@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.cluster.response;
 
 /**
- * Cluster transport response interface.
+ * 集群传输响应接口。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -24,23 +24,23 @@ package com.alibaba.csp.sentinel.cluster.response;
 public interface Response {
 
     /**
-     * Get response ID.
+     * 获取响应 ID。
      *
-     * @return response ID
+     * @return 响应 ID
      */
     int getId();
 
     /**
-     * Get response type.
+     * 获取响应类型。
      *
-     * @return response type
+     * @return 响应类型
      */
     int getType();
 
     /**
-     * Get response status.
+     * 获取响应状态码。
      *
-     * @return response status
+     * @return 响应状态码
      */
     int getStatus();
 }

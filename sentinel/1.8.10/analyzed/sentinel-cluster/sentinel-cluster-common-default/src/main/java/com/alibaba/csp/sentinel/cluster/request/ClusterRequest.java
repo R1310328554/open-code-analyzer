@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.request;
 
 /**
+ * 集群请求实体，封装请求 ID、类型与载荷数据。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

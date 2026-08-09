@@ -16,18 +16,20 @@
 package com.alibaba.csp.sentinel.cluster.codec;
 
 /**
- * @param <S> source stream type
- * @param <T> target entity type
+ * 实体解码器通用接口，将源流解码为目标实体。
+ *
+ * @param <S> 源流类型
+ * @param <T> 目标实体类型
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface EntityDecoder<S, T> {
 
     /**
-     * Decode target object from source stream.
+     * 从源流解码目标对象。
      *
-     * @param source source stream
-     * @return decoded target object
+     * @param source 源流
+     * @return 解码后的目标对象
      */
     T decode(S source);
 }

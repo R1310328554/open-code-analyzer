@@ -16,20 +16,20 @@
 package com.alibaba.csp.sentinel.cluster.codec;
 
 /**
- * A universal interface for publishing entities to a target stream.
+ * 将实体写入目标流的通用接口。
  *
- * @param <E> entity type
- * @param <T> target stream type
+ * @param <E> 实体类型
+ * @param <T> 目标流类型
  * @author Eric Zhao
  * @since 1.4.0
  */
 public interface EntityWriter<E, T> {
 
     /**
-     * Write the provided entity to target stream.
+     * 将给定实体写入目标流。
      *
-     * @param entity entity to publish
-     * @param target the target stream
+     * @param entity 待发布的实体
+     * @param target 目标流
      */
     void writeTo(E entity, T target);
 }

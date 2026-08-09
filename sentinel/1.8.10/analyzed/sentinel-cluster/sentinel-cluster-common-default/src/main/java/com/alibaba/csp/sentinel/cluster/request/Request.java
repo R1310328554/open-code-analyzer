@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.cluster.request;
 
 /**
- * Cluster transport request interface.
+ * 集群传输请求接口。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -24,16 +24,16 @@ package com.alibaba.csp.sentinel.cluster.request;
 public interface Request {
 
     /**
-     * Get request type.
+     * 获取请求类型。
      *
-     * @return request type
+     * @return 请求类型
      */
     int getType();
 
     /**
-     * Get request ID.
+     * 获取请求 ID。
      *
-     * @return unique request ID
+     * @return 唯一请求 ID
      */
     int getId();
 }

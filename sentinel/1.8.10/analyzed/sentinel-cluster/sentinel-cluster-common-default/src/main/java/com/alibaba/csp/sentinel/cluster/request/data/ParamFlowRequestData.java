@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.cluster.request.data;
 import java.util.Collection;
 
 /**
+ * 热点参数流控请求载荷，包含规则 ID、申请数量与参数列表。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

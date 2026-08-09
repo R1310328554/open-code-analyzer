@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.exception;
 
 /**
+ * Sentinel 集群模块异常，不填充堆栈以减轻开销。
+ *
  * @author jialiang.ljl
  * @since 1.4.0
  */

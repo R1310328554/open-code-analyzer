@@ -19,6 +19,8 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityDecoder;
 import com.alibaba.csp.sentinel.cluster.response.Response;
 
 /**
+ * 集群 {@link Response} 实体解码器接口，继承 {@link EntityDecoder}。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

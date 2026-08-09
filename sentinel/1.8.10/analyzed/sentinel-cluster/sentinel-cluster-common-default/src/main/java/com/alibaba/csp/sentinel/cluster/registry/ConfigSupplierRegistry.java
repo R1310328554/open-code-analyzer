@@ -21,13 +21,15 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.function.Supplier;
 
 /**
+ * 集群配置供应器注册表，管理命名空间 {@link Supplier} 的注册与获取。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public final class ConfigSupplierRegistry {
 
     /**
-     * The default namespace supplier provides appName as namespace.
+     * 默认命名空间供应器，以应用名作为命名空间。
      */
     private static final Supplier<String> DEFAULT_APP_NAME_SUPPLIER = new Supplier<String>() {
         @Override
@@ -36,14 +38,14 @@ public final class ConfigSupplierRegistry {
         }
     };
     /**
-     * Registered namespace supplier.
+     * 已注册的命名空间供应器。
      */
     private static Supplier<String> namespaceSupplier = DEFAULT_APP_NAME_SUPPLIER;
 
     /**
-     * Get the registered namespace supplier.
+     * 获取已注册的命名空间供应器。
      *
-     * @return the registered namespace supplier
+     * @return 已注册的命名空间供应器
      */
     public static Supplier<String> getNamespaceSupplier() {
         return namespaceSupplier;

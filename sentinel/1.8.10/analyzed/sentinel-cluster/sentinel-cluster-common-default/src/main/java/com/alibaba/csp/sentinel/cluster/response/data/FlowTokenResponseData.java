@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.response.data;
 
 /**
+ * 流控令牌响应载荷，包含剩余配额与建议等待时间（毫秒）。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.request.data;
 
 /**
+ * 流控令牌请求载荷，包含规则 ID、申请数量与优先级标志。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */

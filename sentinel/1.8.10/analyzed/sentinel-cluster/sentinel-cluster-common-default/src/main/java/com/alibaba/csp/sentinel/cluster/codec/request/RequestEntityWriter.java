@@ -19,7 +19,7 @@ import com.alibaba.csp.sentinel.cluster.codec.EntityWriter;
 import com.alibaba.csp.sentinel.cluster.request.Request;
 
 /**
- * A universal {@link EntityWriter} interface for publishing {@link Request} to a target stream.
+ * 将 {@link Request} 写入目标流的通用 {@link EntityWriter} 接口。
  *
  * @author Eric Zhao
  * @since 1.4.0

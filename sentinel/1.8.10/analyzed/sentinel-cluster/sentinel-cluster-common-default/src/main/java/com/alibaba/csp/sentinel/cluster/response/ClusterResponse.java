@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.cluster.response;
 
 /**
+ * 集群响应实体，封装响应 ID、类型、状态码与载荷数据。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
