@@ -20,12 +20,19 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import org.apache.rocketmq.common.resource.ResourceType;
 
+/**
+ * 标注 RPC/管理接口所需的 ACL 动作与资源类型。
+ * {@link #value()} 为请求码，{@link #action()} 列出允许的动作集合。
+ */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RocketMQAction {
 
+    /** 关联的请求码（RequestCode）。 */
     int value();
 
+    /** 受控资源类型，默认 UNKNOWN。 */
     ResourceType resource() default ResourceType.UNKNOWN;
 
+    /** 本接口允许的一个或多个 {@link Action}。 */
     Action[] action();
 }

@@ -24,6 +24,9 @@ import java.lang.annotation.Target;
 
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
+/**
+ * 标记重要字段/参数/局部变量：供配置持久化、Diff 或审计逻辑识别不可忽略项。
+ */
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.LOCAL_VARIABLE})
 public @interface ImportantField {
 }

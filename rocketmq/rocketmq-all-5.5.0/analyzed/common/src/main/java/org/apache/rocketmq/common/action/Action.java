@@ -19,30 +19,46 @@ package org.apache.rocketmq.common.action;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * ACL/鉴权动作枚举：与 {@link RocketMQAction} 配合描述对资源的操作类型。
+ * 支持按名称忽略大小写解析。
+ */
 public enum Action {
 
+    /** 未知动作。 */
     UNKNOWN((byte) 0, "Unknown"),
 
+    /** 全部动作（通配）。 */
     ALL((byte) 1, "All"),
 
+    /** 任意动作。 */
     ANY((byte) 2, "Any"),
 
+    /** 发布消息。 */
     PUB((byte) 3, "Pub"),
 
+    /** 订阅/消费。 */
     SUB((byte) 4, "Sub"),
 
+    /** 创建资源。 */
     CREATE((byte) 5, "Create"),
 
+    /** 更新资源。 */
     UPDATE((byte) 6, "Update"),
 
+    /** 删除资源。 */
     DELETE((byte) 7, "Delete"),
 
+    /** 获取单个资源。 */
     GET((byte) 8, "Get"),
 
+    /** 列出资源。 */
     LIST((byte) 9, "List");
 
+    /** 动作编码，JSON 序列化主键。 */
     @JSONField(value = true)
     private final byte code;
+    /** 动作英文名称。 */
     private final String name;
 
     Action(byte code, String name) {
@@ -50,6 +66,7 @@ public enum Action {
         this.name = name;
     }
 
+    /** 按名称忽略大小写查找，未找到返回 null。 */
     public static Action getByName(String name) {
         for (Action action : Action.values()) {
             if (StringUtils.equalsIgnoreCase(action.getName(), name)) {

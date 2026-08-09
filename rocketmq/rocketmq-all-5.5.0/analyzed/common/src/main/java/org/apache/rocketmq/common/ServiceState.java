@@ -16,21 +16,16 @@
  */
 package org.apache.rocketmq.common;
 
+/**
+ * RocketMQ 内部服务生命周期状态枚举。
+ */
 public enum ServiceState {
-    /**
-     * Service just created,not start
-     */
+    /** 服务已创建但尚未启动。 */
     CREATE_JUST,
-    /**
-     * Service Running
-     */
+    /** 服务正在运行。 */
     RUNNING,
-    /**
-     * Service shutdown
-     */
+    /** 服务已关闭。 */
     SHUTDOWN_ALREADY,
-    /**
-     * Service Start failure
-     */
+    /** 服务启动失败。 */
     START_FAILED;
 }

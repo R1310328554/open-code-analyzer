@@ -16,8 +16,13 @@
  */
 package org.apache.rocketmq.common;
 
+/**
+ * Topic 订阅 Tag 过滤模式。
+ */
 public enum TopicFilterType {
+    /** 单 Tag 过滤（SQL92 仅支持一个 Tag 表达式）。 */
     SINGLE_TAG,
+    /** 多 Tag 过滤。 */
     MULTI_TAG
 
 }

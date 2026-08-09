@@ -18,12 +18,20 @@ package org.apache.rocketmq.common;
 
 import com.google.common.base.Objects;
 
+/**
+ * Topic 与队列 ID 的不可变组合键，用于 HashMap 索引与相等比较。
+ * hashCode 在构造时预计算以提升热点路径性能。
+ */
 public class TopicQueueId {
+    /** Topic 名称。 */
     private final String topic;
+    /** 队列 ID。 */
     private final int queueId;
 
+    /** 预计算的 hash(topic, queueId)。 */
     private final int hash;
 
+    /** 构造 Topic+queueId 键并缓存 hashCode。 */
     public TopicQueueId(String topic, int queueId) {
         this.topic = topic;
         this.queueId = queueId;
@@ -32,6 +40,7 @@ public class TopicQueueId {
     }
 
     @Override
+    /** 按 topic 与 queueId 相等比较。 */
     public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -42,11 +51,13 @@ public class TopicQueueId {
     }
 
     @Override
+    /** 返回构造时缓存的 hash 值。 */
     public int hashCode() {
         return hash;
     }
 
     @Override
+    /** 调试字符串（类名沿用 MessageQueueInBroker 历史命名）。 */
     public String toString() {
         final StringBuilder sb = new StringBuilder("MessageQueueInBroker{");
         sb.append("topic='").append(topic).append('\'');

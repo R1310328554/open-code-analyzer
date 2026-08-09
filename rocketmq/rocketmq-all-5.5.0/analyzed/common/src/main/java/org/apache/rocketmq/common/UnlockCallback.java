@@ -16,8 +16,13 @@
  */
 package org.apache.rocketmq.common;
 
+/**
+ * 分布式锁解锁异步回调：成功或异常时通知调用方。
+ */
 public interface UnlockCallback {
+    /** 解锁成功。 */
     void onSuccess();
 
+    /** 解锁失败并携带异常。 */
     void onException(final Throwable e);
 }

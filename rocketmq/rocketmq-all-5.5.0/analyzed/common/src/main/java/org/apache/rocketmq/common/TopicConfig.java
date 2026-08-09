@@ -29,20 +29,35 @@ import org.apache.rocketmq.common.constant.PermName;
 import static org.apache.rocketmq.common.TopicAttributes.LITE_EXPIRATION_ATTRIBUTE;
 import static org.apache.rocketmq.common.TopicAttributes.TOPIC_MESSAGE_TYPE_ATTRIBUTE;
 
+/**
+ * Topic 元数据配置：读写队列数、权限、过滤类型、顺序标志及扩展属性。
+ * 支持空格分隔字符串编解码，属性 Map 以 JSON 附加在末尾字段。
+ */
 public class TopicConfig {
+    /** encode/decode 字段分隔符（属性 JSON 内不得含空格）。 */
     private static final String SEPARATOR = " ";
+    /** 默认读队列数量。 */
     public static int defaultReadQueueNums = 16;
+    /** 默认写队列数量。 */
     public static int defaultWriteQueueNums = 16;
     private static final TypeReference<Map<String, String>> ATTRIBUTES_TYPE_REFERENCE = new TypeReference<Map<String, String>>() {
     };
+    /** Topic 名称。 */
     private String topicName;
+    /** 读队列数量。 */
     private int readQueueNums = defaultReadQueueNums;
+    /** 写队列数量。 */
     private int writeQueueNums = defaultWriteQueueNums;
+    /** 权限位（读/写/继承等，见 {@link PermName}）。 */
     private int perm = PermName.PERM_READ | PermName.PERM_WRITE;
+    /** Tag 过滤类型（单 Tag / 多 Tag）。 */
     private TopicFilterType topicFilterType = TopicFilterType.SINGLE_TAG;
+    /** Topic 系统标志位。 */
     private int topicSysFlag = 0;
+    /** 是否为顺序 Topic。 */
     private boolean order = false;
-    // Field attributes should not have ' ' char in key or value, otherwise will lead to decode failure.
+    // 属性键值不得含空格，否则 decode 时 split 会失败
+    /** 扩展属性（message.type、lite.topic.expiration 等）。 */
     private Map<String, String> attributes = new HashMap<>();
 
     public TopicConfig() {
@@ -84,24 +99,25 @@ public class TopicConfig {
         this.attributes = other.attributes;
     }
 
+    /** 编码为「topic read write perm filterType [attributesJson]」空格分隔串。 */
     public String encode() {
         StringBuilder sb = new StringBuilder();
-        //[0]
+        //[0] topicName
         sb.append(this.topicName);
         sb.append(SEPARATOR);
-        //[1]
+        //[1] readQueueNums
         sb.append(this.readQueueNums);
         sb.append(SEPARATOR);
-        //[2]
+        //[2] writeQueueNums
         sb.append(this.writeQueueNums);
         sb.append(SEPARATOR);
-        //[3]
+        //[3] perm
         sb.append(this.perm);
         sb.append(SEPARATOR);
-        //[4]
+        //[4] topicFilterType
         sb.append(this.topicFilterType);
         sb.append(SEPARATOR);
-        //[5]
+        //[5] attributes JSON（可选）
         if (attributes != null) {
             sb.append(JSON.toJSONString(attributes));
         }
@@ -109,6 +125,7 @@ public class TopicConfig {
         return sb.toString();
     }
 
+    /** 从 encode 字符串解析；至少 5 段，第 6 段为 attributes JSON。 */
     public boolean decode(final String in) {
         String[] strs = in.split(SEPARATOR);
         if (strs.length >= 5) {
@@ -126,7 +143,7 @@ public class TopicConfig {
                 try {
                     this.attributes = JSON.parseObject(strs[5], ATTRIBUTES_TYPE_REFERENCE.getType());
                 } catch (Exception e) {
-                    // ignore exception when parse failed, cause map's key/value can have ' ' char.
+                    // 解析失败时忽略，因旧数据或键值可能含空格导致 JSON 段不完整
                 }
             }
 
@@ -200,6 +217,7 @@ public class TopicConfig {
         this.attributes = attributes;
     }
 
+    /** 从 attributes 读取 {@link TopicMessageType}，缺省为 NORMAL。 */
     @JSONField(serialize = false, deserialize = false)
     public TopicMessageType getTopicMessageType() {
         if (attributes == null) {
@@ -212,11 +230,13 @@ public class TopicConfig {
         return TopicMessageType.valueOf(content);
     }
 
+    /** 写入 message.type 属性。 */
     @JSONField(serialize = false, deserialize = false)
     public void setTopicMessageType(TopicMessageType topicMessageType) {
         attributes.put(TOPIC_MESSAGE_TYPE_ATTRIBUTE.getName(), topicMessageType.getValue());
     }
 
+    /** 仅 LITE 类型 Topic 设置 lite.topic.expiration（分钟）。 */
     @JSONField(serialize = false, deserialize = false)
     public void setLiteTopicExpiration(int liteTopicExpiration) {
         if (!TopicMessageType.LITE.equals(getTopicMessageType())) {
@@ -225,6 +245,7 @@ public class TopicConfig {
         attributes.put(LITE_EXPIRATION_ATTRIBUTE.getName(), String.valueOf(liteTopicExpiration));
     }
 
+    /** 读取 LITE Topic 过期分钟数，非 LITE 或缺失时返回 -1。 */
     @JSONField(serialize = false, deserialize = false)
     public int getLiteTopicExpiration() {
         if (!TopicMessageType.LITE.equals(getTopicMessageType())) {

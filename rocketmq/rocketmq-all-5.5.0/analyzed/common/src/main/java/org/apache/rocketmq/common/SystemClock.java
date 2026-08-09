@@ -16,7 +16,11 @@
  */
 package org.apache.rocketmq.common;
 
+/**
+ * 系统时钟抽象：便于测试注入 mock 时间。
+ */
 public class SystemClock {
+    /** 返回当前毫秒时间戳（{@link System#currentTimeMillis()}）。 */
     public long now() {
         return System.currentTimeMillis();
     }
