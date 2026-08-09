@@ -1,3 +1,7 @@
+/**
+ * 不可变长整型负载的简单测试事件。
+ */
+
 package com.lmax.disruptor.immutable;
 
 public class SimpleEvent

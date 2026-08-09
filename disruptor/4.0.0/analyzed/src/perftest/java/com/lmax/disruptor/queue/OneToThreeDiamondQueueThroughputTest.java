@@ -30,9 +30,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static com.lmax.disruptor.support.PerfTestUtil.failIf;
 
 /**
- * <pre>
- * Produce an event replicated to two event processors and fold back to a single third event processor.
+ * 菱形拓扑吞吐（BlockingQueue 对照）：事件复制到两个处理器后汇合到第三个处理器。
  *
+ * <pre>
  *           +-----+
  *    +----->| EP1 |------+
  *    |      +-----+      |
@@ -46,7 +46,7 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIf;
  *           +-----+
  *
  *
- * Queue Based:
+ * 基于队列：
  * ============
  *                 take       put
  *     put   +====+    +-----+    +====+  take
@@ -57,17 +57,17 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIf;
  * | P1 |--->| Q2 |<---| EP2 |--->| Q4 |<---| EP3 |
  * +----+    +====+    +-----+    +====+    +-----+
  *
- * P1  - Publisher 1
- * Q1  - Queue 1
- * Q2  - Queue 2
- * Q3  - Queue 3
- * Q4  - Queue 4
+ * P1  - 发布者 1
+ * Q1  - 队列 1
+ * Q2  - 队列 2
+ * Q3  - 队列 3
+ * Q4  - 队列 4
  * EP1 - EventProcessor 1
  * EP2 - EventProcessor 2
  * EP3 - EventProcessor 3
  *
  *
- * Disruptor:
+ * Disruptor：
  * ==========
  *                    track to prevent wrap
  *              +-------------------------------+
@@ -86,7 +86,7 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIf;
  *              +-------| EP2 |<-----+
  *             waitFor  +-----+
  *
- * P1  - Publisher 1
+ * P1  - 发布者 1
  * RB  - RingBuffer
  * SB1 - SequenceBarrier 1
  * EP1 - EventProcessor 1

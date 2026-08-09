@@ -1,3 +1,7 @@
+/**
+ * 使用 {@link CustomRingBuffer} 的不可变事件吞吐性能测试。
+ */
+
 package com.lmax.disruptor.immutable;
 
 import com.lmax.disruptor.BatchEventProcessor;

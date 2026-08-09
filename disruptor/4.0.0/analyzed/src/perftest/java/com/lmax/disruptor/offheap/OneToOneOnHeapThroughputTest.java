@@ -1,3 +1,8 @@
+/**
+ * 单播吞吐：1 发布者与 1 EventProcessor，事件为堆内/堆外 {@link java.nio.ByteBuffer}。
+ * <p>可通过系统属性 {@code -Dsliced=true} 启用切片分配工厂。
+ */
+
 package com.lmax.disruptor.offheap;
 
 import com.lmax.disruptor.AbstractPerfTestDisruptor;
@@ -101,6 +106,7 @@ public class OneToOneOnHeapThroughputTest extends AbstractPerfTestDisruptor
         new OneToOneOnHeapThroughputTest().testImplementations();
     }
 
+    /** 累加 ByteBuffer 中 long 值并统计批次数。 */
     public static class ByteBufferHandler implements EventHandler<ByteBuffer>
     {
         private final PaddedLong total = new PaddedLong();
@@ -147,6 +153,7 @@ public class OneToOneOnHeapThroughputTest extends AbstractPerfTestDisruptor
         }
     }
 
+    /** 为每个槽位分配独立 ByteBuffer 的工厂。 */
     private static final class BufferFactory implements EventFactory<ByteBuffer>
     {
         private final boolean isDirect;
@@ -183,6 +190,7 @@ public class OneToOneOnHeapThroughputTest extends AbstractPerfTestDisruptor
         }
     }
 
+    /** 从大块缓冲中切片分配槽位 ByteBuffer 的工厂。 */
     private static final class SlicedBufferFactory implements EventFactory<ByteBuffer>
     {
         private final boolean isDirect;

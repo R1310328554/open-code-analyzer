@@ -1,3 +1,7 @@
+/**
+ * 将 {@link EventHolder} 上的事件委托给 {@link SimpleEvent} 处理器，并在处理后清空引用。
+ */
+
 package com.lmax.disruptor.immutable;
 
 import com.lmax.disruptor.EventHandler;

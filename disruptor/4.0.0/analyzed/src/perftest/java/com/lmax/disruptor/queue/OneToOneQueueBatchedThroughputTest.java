@@ -29,14 +29,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static com.lmax.disruptor.support.PerfTestUtil.failIf;
 
 /**
+ * 单播批处理吞吐（BlockingQueue 对照）：1 发布者与 1 消费者，批量取值累加。
+ *
  * <pre>
- * UniCast a series of items between 1 publisher and 1 event processor.
+ * 单播拓扑：
  *
  * +----+    +-----+
  * | P1 |--->| EP1 |
  * +----+    +-----+
  *
- * Queue Based:
+ * 基于队列：
  * ============
  *
  *        put      take
@@ -44,8 +46,8 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIf;
  * | P1 |--->| Q1 |<---| EP1 |
  * +----+    +====+    +-----+
  *
- * P1  - Publisher 1
- * Q1  - Queue 1
+ * P1  - 发布者 1
+ * Q1  - 队列 1
  * EP1 - EventProcessor 1
  *
  * </pre>

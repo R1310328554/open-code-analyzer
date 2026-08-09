@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * BlockingQueue 性能测试抽象基类：多次运行并统计队列吞吐。
+ */
+
 package com.lmax.disruptor;
 
 
 public abstract class AbstractPerfTestQueue
 {
+    /** 每种实现重复运行的次数。 */
     public static final int RUNS = 7;
 
     protected void testImplementations()

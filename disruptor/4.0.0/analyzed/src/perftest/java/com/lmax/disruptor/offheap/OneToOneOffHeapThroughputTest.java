@@ -1,3 +1,7 @@
+/**
+ * 单播吞吐：1 发布者与 1 EventProcessor，事件为堆外 {@link java.nio.ByteBuffer} 切片。
+ */
+
 package com.lmax.disruptor.offheap;
 
 import com.lmax.disruptor.AbstractPerfTestDisruptor;
@@ -96,6 +100,7 @@ public class OneToOneOffHeapThroughputTest extends AbstractPerfTestDisruptor
         new OneToOneOffHeapThroughputTest().testImplementations();
     }
 
+    /** 累加 ByteBuffer 中 long 值并统计批次数。 */
     public static class ByteBufferHandler implements EventHandler<ByteBuffer>
     {
         private final PaddedLong total = new PaddedLong();
@@ -143,6 +148,7 @@ public class OneToOneOffHeapThroughputTest extends AbstractPerfTestDisruptor
         }
     }
 
+    /** 堆外连续 ByteBuffer 环形缓冲，按槽位切片暴露给处理器。 */
     public static class OffHeapRingBuffer implements DataProvider<ByteBuffer>
     {
         private final Sequencer sequencer;

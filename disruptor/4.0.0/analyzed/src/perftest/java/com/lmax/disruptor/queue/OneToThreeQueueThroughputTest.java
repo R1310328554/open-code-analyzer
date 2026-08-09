@@ -30,9 +30,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static com.lmax.disruptor.support.PerfTestUtil.failIf;
 
 /**
- * <pre>
+ * 多播吞吐（BlockingQueue 对照）：1 发布者向 3 个独立消费者队列广播事件。
  *
- * MultiCast a series of items between 1 publisher and 3 event processors.
+ * <pre>
  *
  *           +-----+
  *    +----->| EP1 |
@@ -47,7 +47,7 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIf;
  *           +-----+
  *
  *
- * Queue Based:
+ * 基于队列：
  * ============
  *                 take
  *   put     +====+    +-----+
@@ -62,10 +62,10 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIf;
  *    +----->| Q3 |<---| EP3 |
  *           +====+    +-----+
  *
- * P1  - Publisher 1
- * Q1  - Queue 1
- * Q2  - Queue 2
- * Q3  - Queue 3
+ * P1  - 发布者 1
+ * Q1  - 队列 1
+ * Q2  - 队列 2
+ * Q3  - 队列 3
  * EP1 - EventProcessor 1
  * EP2 - EventProcessor 2
  * EP3 - EventProcessor 3

@@ -1,3 +1,7 @@
+/**
+ * 将不可变事件放入环形缓冲并在消费时取出的自定义实现。
+ */
+
 package com.lmax.disruptor.immutable;
 
 import com.lmax.disruptor.BatchEventProcessor;
@@ -8,6 +12,7 @@ import com.lmax.disruptor.Sequencer;
 
 public class CustomRingBuffer<T> implements DataProvider<EventAccessor<T>>, EventAccessor<T>
 {
+    /** 将 {@link EventAccessor} 槽位上的事件转交给底层 {@link EventHandler}。 */
     private static final class AccessorEventHandler<T> implements EventHandler<EventAccessor<T>>
     {
         private final EventHandler<T> handler;

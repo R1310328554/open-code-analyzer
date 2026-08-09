@@ -1,3 +1,7 @@
+/**
+ * 使用标准 {@link com.lmax.disruptor.RingBuffer} 与 {@link EventHolder} 的不可变事件性能测试。
+ */
+
 package com.lmax.disruptor.immutable;
 
 import com.lmax.disruptor.BatchEventProcessor;

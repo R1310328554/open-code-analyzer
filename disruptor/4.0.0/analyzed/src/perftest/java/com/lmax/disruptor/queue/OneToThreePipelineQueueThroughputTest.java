@@ -30,17 +30,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static com.lmax.disruptor.support.PerfTestUtil.failIf;
 
 /**
- * <pre>
+ * 流水线吞吐（BlockingQueue 对照）：多阶段队列串联，每阶段依赖上一阶段输出。
  *
- * Pipeline a series of stages from a publisher to ultimate event processor.
- * Each event processor depends on the output of the event processor.
+ * <pre>
  *
  * +----+    +-----+    +-----+    +-----+
  * | P1 |--->| EP1 |--->| EP2 |--->| EP3 |
  * +----+    +-----+    +-----+    +-----+
  *
  *
- * Queue Based:
+ * 基于队列：
  * ============
  *
  *        put      take        put      take        put      take
@@ -48,12 +47,12 @@ import static com.lmax.disruptor.support.PerfTestUtil.failIf;
  * | P1 |--->| Q1 |<---| EP1 |--->| Q2 |<---| EP2 |--->| Q3 |<---| EP3 |
  * +----+    +====+    +-----+    +====+    +-----+    +====+    +-----+
  *
- * P1  - Publisher 1
- * Q1  - Queue 1
+ * P1  - 发布者 1
+ * Q1  - 队列 1
  * EP1 - EventProcessor 1
- * Q2  - Queue 2
+ * Q2  - 队列 2
  * EP2 - EventProcessor 2
- * Q3  - Queue 3
+ * Q3  - 队列 3
  * EP3 - EventProcessor 3
  *
  * </pre>

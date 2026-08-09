@@ -1,3 +1,7 @@
+/**
+ * JMH：对比 AtomicLong 与多种 Sequence 实现的并发读写吞吐。
+ */
+
 package com.lmax.disruptor;
 
 import com.lmax.disruptor.alternatives.SequenceDoublePadded;
@@ -43,8 +47,8 @@ import static java.util.function.Predicate.not;
 @Threads(1)
 public class SequenceBenchmark
 {
-    // To run this on a tuned system with benchmark threads pinned to isolated cpus:
-    // Run the JMH process with an env var defining the isolated cpu list, e.g. ISOLATED_CPUS=38,40,42,44,46,48 java -jar disruptor-jmh.jar
+    // 在隔离 CPU 上运行基准：
+    // 通过环境变量 ISOLATED_CPUS 指定 CPU，例如 ISOLATED_CPUS=38,40,42,44,46,48 java -jar disruptor-jmh.jar
     private static final List<Integer> ISOLATED_CPUS = Arrays.stream(System.getenv().getOrDefault("ISOLATED_CPUS", "").split(","))
             .map(String::trim)
             .filter(not(String::isBlank))
@@ -53,6 +57,7 @@ public class SequenceBenchmark
 
     private static final AtomicInteger THREAD_COUNTER = new AtomicInteger();
 
+    /** 将基准线程绑定到 ISOLATED_CPUS 列表中的 CPU。 */
     @State(Scope.Thread)
     public static class ThreadPinningState
     {
@@ -101,9 +106,9 @@ public class SequenceBenchmark
     }
 
     /*
-     * APPROACH 1: AtomicLong
+     * 方案 1：AtomicLong
      *
-     * Thread safe? Check. Atomic updates? Check.
+     * 线程安全？是。原子更新？是。
      */
     @State(Scope.Group)
     public static class StateAtomic
@@ -130,7 +135,7 @@ public class SequenceBenchmark
     @Group("AtomicLong")
     public void setValue1Opaque(final StateAtomic s, final ThreadPinningState t)
     {
-        // Put Long Opaque
+        // 有序写入 long（opaque）
         s.value1.setOpaque(1234L);
     }
 
@@ -138,7 +143,7 @@ public class SequenceBenchmark
     @Group("AtomicLong")
     public void setValue1Volatile(final StateAtomic s, final ThreadPinningState t)
     {
-        // Put Long Volatile
+        // volatile 写入 long
         s.value1.set(5678L);
     }
 
@@ -150,11 +155,10 @@ public class SequenceBenchmark
     }
 
     /*
-     * APPROACH 2: com.lmax.disruptor.Sequence (as of disruptor v3.4.2)
+     * 方案 2：com.lmax.disruptor.Sequence（Disruptor v3.4.2 风格）
      *
-     * A lot like AtomicLong, but with some padding to avoid false sharing.
-     * This uses UNSAFE to give us more control over the memory model of the field, we don't always need full volatile
-     * guarantees and we need to use compareAndSwap to be atomic.
+     * 与 AtomicLong 类似，但带填充以避免伪共享。
+     * 使用 UNSAFE 以更细粒度控制字段内存语义；并非总需完整 volatile 保证，原子更新依赖 compareAndSwap。
      */
     @State(Scope.Group)
     public static class StateSequenceUnsafe
@@ -181,7 +185,7 @@ public class SequenceBenchmark
     @Group("SequenceUnsafe")
     public void setValue1(final StateSequenceUnsafe s, final ThreadPinningState t)
     {
-        // Put Ordered Long
+        // 有序写入 long
         s.value1.set(1234L);
     }
 
@@ -189,7 +193,7 @@ public class SequenceBenchmark
     @Group("SequenceUnsafe")
     public void setValue1Volatile(final StateSequenceUnsafe s, final ThreadPinningState t)
     {
-        // Put Long Volatile
+        // volatile 写入 long
         s.value1.setVolatile(5678L);
     }
 
@@ -201,14 +205,12 @@ public class SequenceBenchmark
     }
 
     /*
-     * APPROACH 2.5: com.lmax.disruptor.alternatives.SequenceDoublePadded
+     * 方案 2.5：com.lmax.disruptor.alternatives.SequenceDoublePadded
      *
-     * This is identical to the Sequence from Disruptor 3.4.2 but with double the amount of padding.
-     * https://github.com/LMAX-Exchange/disruptor/issues/231 raised the point of Intel CPUs optionally (on by default I
-     * believe) prefetching 2 cache lines.
+     * 与 Disruptor 3.4.2 的 Sequence 相同，但填充量加倍。
+     * https://github.com/LMAX-Exchange/disruptor/issues/231 指出 Intel CPU 可能（默认可选）预取 2 条缓存行。
      *
-     * This benchmark should show if there is any difference in performance having extra padding when compared to the
-     * regular Sequence benchmark.
+     * 本基准用于对比额外填充相对常规 Sequence 是否有性能差异。
      */
     @State(Scope.Group)
     public static class StateSequenceDoublePadded
@@ -235,7 +237,7 @@ public class SequenceBenchmark
     @Group("SequenceDoublePadded")
     public void setValue1(final StateSequenceDoublePadded s, final ThreadPinningState t)
     {
-        // Put Ordered Long
+        // 有序写入 long
         s.value1.set(1234L);
     }
 
@@ -243,7 +245,7 @@ public class SequenceBenchmark
     @Group("SequenceDoublePadded")
     public void setValue1Volatile(final StateSequenceDoublePadded s, final ThreadPinningState t)
     {
-        // Put Long Volatile
+        // volatile 写入 long
         s.value1.setVolatile(5678L);
     }
 
@@ -255,10 +257,9 @@ public class SequenceBenchmark
     }
 
     /*
-     * APPROACH 3: com.lmax.disruptor.alternatives.SequenceVarHandle
+     * 方案 3：com.lmax.disruptor.alternatives.SequenceVarHandle
      *
-     * An updated version of com.lmax.disruptor.Sequence but using VarHandle instead of UNSAFE to get memory ordering.
-     * This is probably the way we should go for version Disruptor 4.0
+     * 使用 VarHandle 替代 UNSAFE 实现内存序的 Sequence 更新版本，可能是 Disruptor 4.0 的方向。
      */
     @State(Scope.Group)
     public static class StateSequenceVarHandle
@@ -285,7 +286,7 @@ public class SequenceBenchmark
     @Group("SequenceVarHandle")
     public void setValue1(final StateSequenceVarHandle s, final ThreadPinningState t)
     {
-        // Put Ordered Long
+        // 有序写入 long
         s.value1.set(1234L);
     }
 
@@ -293,7 +294,7 @@ public class SequenceBenchmark
     @Group("SequenceVarHandle")
     public void setValue1Volatile(final StateSequenceVarHandle s, final ThreadPinningState t)
     {
-        // Put Long Volatile
+        // volatile 写入 long
         s.value1.setVolatile(5678L);
     }
 
@@ -305,10 +306,9 @@ public class SequenceBenchmark
     }
 
     /*
-     * APPROACH 3.5: com.lmax.disruptor.alternatives.SequenceVarHandleBarrier
+     * 方案 3.5：com.lmax.disruptor.alternatives.SequenceVarHandleBarrier
      *
-     * Much like the VarHandle version but with manual memory barriers used.
-     * We think this might cut down on some boxing and maybe gives a little more flexibility.
+     * 与 VarHandle 版类似，但使用手动内存屏障；可能减少装箱并提供更多灵活性。
      */
     @State(Scope.Group)
     public static class StateSequenceVarHandleBarrier
@@ -335,7 +335,7 @@ public class SequenceBenchmark
     @Group("SequenceVarHandleBarrier")
     public void setValue1(final StateSequenceVarHandleBarrier s, final ThreadPinningState t)
     {
-        // Put Ordered Long
+        // 有序写入 long
         s.value1.set(1234L);
     }
 
@@ -343,7 +343,7 @@ public class SequenceBenchmark
     @Group("SequenceVarHandleBarrier")
     public void setValue1Volatile(final StateSequenceVarHandleBarrier s, final ThreadPinningState t)
     {
-        // Put Long Volatile
+        // volatile 写入 long
         s.value1.setVolatile(5678L);
     }
 
@@ -355,12 +355,10 @@ public class SequenceBenchmark
     }
 
     /*
-     * APPROACH 4: com.lmax.disruptor.alternatives.SequenceVarHandleArray
+     * 方案 4：com.lmax.disruptor.alternatives.SequenceVarHandleArray
      *
-     * Similar to the SequenceVarHandle but instead of using class hierarchy for padding, using a long array.
-     * This seemed like a good idea but suffers from array bounds checking slowing down all the operations.
-     * This method probably isn't a good way to go, but kept here as a warning to others who think this is a good way to
-     * do cache-line padding.
+     * 与 SequenceVarHandle 类似，但用 long 数组而非类层次做填充。
+     * 数组边界检查会拖慢所有操作；保留此方案以警示：数组填充可能不是好选择。
      */
     @State(Scope.Group)
     public static class StateSequenceVarHandleArray
@@ -387,7 +385,7 @@ public class SequenceBenchmark
     @Group("SequenceVarHandleArray")
     public void setValue1(final StateSequenceVarHandleArray s, final ThreadPinningState t)
     {
-        // Put Ordered Long
+        // 有序写入 long
         s.value1.set(1234L);
     }
 
@@ -395,7 +393,7 @@ public class SequenceBenchmark
     @Group("SequenceVarHandleArray")
     public void setValue1Volatile(final StateSequenceVarHandleArray s, final ThreadPinningState t)
     {
-        // Put Long Volatile
+        // volatile 写入 long
         s.value1.setVolatile(5678L);
     }
 

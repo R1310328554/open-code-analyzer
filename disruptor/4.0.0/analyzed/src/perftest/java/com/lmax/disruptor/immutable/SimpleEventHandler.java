@@ -1,3 +1,7 @@
+/**
+ * 累加 {@link SimpleEvent} 计数器的简单处理器。
+ */
+
 package com.lmax.disruptor.immutable;
 
 import com.lmax.disruptor.EventHandler;
