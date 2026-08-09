@@ -1003,3 +1003,18 @@
 2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimeoutTimed.java wave20b
 2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTimer.java wave20b
 2026-08-09T18:03:22Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableToList.java wave20b
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableToListSingle.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableUnsubscribeOn.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableUsing.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWindow.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWindowBoundary.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWindowSubscribeIntercept.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWithLatestFrom.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWithLatestFromMany.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableZip.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableZipIterable.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObserverResourceWrapper.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelCollect.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelConcatMap.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelDoOnNextTry.java wave21a [0:15]
+2026-08-09T18:06:34Z DONE src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelFilter.java wave21a [0:15]
