@@ -15,23 +15,8 @@
     "common/src/main/java/org/apache/rocketmq/common/LockCallback.java",
     "common/src/main/java/org/apache/rocketmq/common/ObjectCreator.java",
     "common/src/main/java/org/apache/rocketmq/common/OrderedConsumptionLevel.java",
-    "common/src/main/java/org/apache/rocketmq/common/Pair.java",
-    "common/src/main/java/org/apache/rocketmq/common/PopAckConstants.java",
-    "common/src/main/java/org/apache/rocketmq/common/ServiceState.java",
-    "common/src/main/java/org/apache/rocketmq/common/ServiceThread.java",
-    "common/src/main/java/org/apache/rocketmq/common/SubscriptionGroupAttributes.java",
-    "common/src/main/java/org/apache/rocketmq/common/SystemClock.java",
-    "common/src/main/java/org/apache/rocketmq/common/ThreadFactoryImpl.java",
-    "common/src/main/java/org/apache/rocketmq/common/TopicAttributes.java",
-    "common/src/main/java/org/apache/rocketmq/common/TopicConfig.java",
-    "common/src/main/java/org/apache/rocketmq/common/TopicFilterType.java",
-    "common/src/main/java/org/apache/rocketmq/common/TopicQueueId.java",
-    "common/src/main/java/org/apache/rocketmq/common/UnlockCallback.java",
-    "common/src/main/java/org/apache/rocketmq/common/action/Action.java",
-    "common/src/main/java/org/apache/rocketmq/common/action/RocketMQAction.java",
-    "common/src/main/java/org/apache/rocketmq/common/annotation/ImportantField.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/Attribute.java"
+    "common/src/main/java/org/apache/rocketmq/common/Pair.java"
   ],
   "remaining_pending": 1128,
-  "done": 330
+  "done": 345
 }
