@@ -599,3 +599,8 @@ core/spring-boot/src/main/java/org/springframework/boot/web/servlet/AbstractFilt
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/DelegatingFilterProxyRegistrationBean.java
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/DispatcherType.java
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/DynamicRegistrationBean.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletRegistrationBean.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ErrorPageFilter.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ErrorPageFilterConfiguration.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ServletContextApplicationContextInitializer.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/SpringBootServletInitializer.java
