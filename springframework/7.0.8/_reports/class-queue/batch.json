@@ -20,28 +20,8 @@
     "spring-aop/src/main/java/org/springframework/aop/support/annotation/AnnotationClassFilter.java",
     "spring-aop/src/main/java/org/springframework/aop/support/annotation/AnnotationMatchingPointcut.java",
     "spring-aop/src/main/java/org/springframework/aop/support/annotation/AnnotationMethodMatcher.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/AbstractBeanFactoryBasedTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/AbstractLazyCreationTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/AbstractPoolingTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/AbstractPrototypeBasedTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/CommonsPool2TargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/EmptyTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/HotSwappableTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/LazyInitTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/PoolingConfig.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/PrototypeTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/SimpleBeanTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/SingletonTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/ThreadLocalTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/ThreadLocalTargetSourceStats.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/dynamic/AbstractRefreshableTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/dynamic/BeanFactoryRefreshableTargetSource.java",
-    "spring-aop/src/main/java/org/springframework/aop/target/dynamic/Refreshable.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/BadSqlGrammarException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/CannotGetJdbcConnectionException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/IncorrectResultSetColumnCountException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/InvalidResultSetAccessException.java"
+    "spring-aop/src/main/java/org/springframework/aop/target/AbstractBeanFactoryBasedTargetSource.java"
   ],
   "remaining_pending": 264,
-  "done": 1187
+  "done": 1207
 }
