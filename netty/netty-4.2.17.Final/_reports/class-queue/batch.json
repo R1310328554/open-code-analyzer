@@ -15,23 +15,8 @@
     "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspObjectEncoder.java",
     "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspRequestDecoder.java",
     "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspRequestEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspResponseDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspResponseEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspResponseStatuses.java",
-    "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspVersions.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyDataFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyGoAwayFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyHeadersFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyPingFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyRstStreamFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdySettingsFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyStreamFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdySynReplyFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdySynStreamFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyUnknownFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/DefaultSpdyWindowUpdateFrame.java"
+    "codec-http/src/main/java/io/netty/handler/codec/rtsp/RtspResponseDecoder.java"
   ],
   "remaining_pending": 1328,
-  "done": 570
+  "done": 585
 }
