@@ -961,3 +961,10 @@ src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWindo
 src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWindowTimed.java
 src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelFromPublisher.java
 src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelJoin.java
+src/main/java/io/reactivex/rxjava4/core/Completable.java
+src/main/java/io/reactivex/rxjava4/core/Flowable.java
+src/main/java/io/reactivex/rxjava4/core/Maybe.java
+src/main/java/io/reactivex/rxjava4/core/Observable.java
+src/main/java/io/reactivex/rxjava4/core/Single.java
+src/main/java/io/reactivex/rxjava4/processors/BehaviorProcessor.java
+src/main/java/io/reactivex/rxjava4/processors/MulticastProcessor.java

@@ -1,13 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:48:28Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/core/Completable.java",
-    "src/main/java/io/reactivex/rxjava4/core/Flowable.java",
-    "src/main/java/io/reactivex/rxjava4/core/Maybe.java",
-    "src/main/java/io/reactivex/rxjava4/core/Observable.java",
-    "src/main/java/io/reactivex/rxjava4/core/Single.java",
-    "src/main/java/io/reactivex/rxjava4/processors/BehaviorProcessor.java",
-    "src/main/java/io/reactivex/rxjava4/processors/MulticastProcessor.java",
     "src/main/java/io/reactivex/rxjava4/processors/PublishProcessor.java",
     "src/main/java/io/reactivex/rxjava4/processors/ReplayProcessor.java",
     "src/main/java/io/reactivex/rxjava4/processors/UnicastProcessor.java",
@@ -17,5 +10,5 @@
     "src/main/java/io/reactivex/rxjava4/subjects/UnicastSubject.java"
   ],
   "remaining_pending": 0,
-  "done": 963
+  "done": 970
 }
