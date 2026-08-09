@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:12:53Z",
-  "files": [
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/queue/TransactionalMessageServiceImpl.java",
-    "client/src/main/java/org/apache/rocketmq/client/ClientConfig.java",
-    "client/src/main/java/org/apache/rocketmq/client/consumer/DefaultLitePullConsumer.java",
-    "client/src/main/java/org/apache/rocketmq/client/consumer/DefaultMQPullConsumer.java",
-    "client/src/main/java/org/apache/rocketmq/client/consumer/DefaultMQPushConsumer.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/MQAdminImpl.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/MQClientAPIImpl.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/admin/MqClientAdminImpl.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/consumer/ConsumeMessageConcurrentlyService.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/consumer/ConsumeMessageOrderlyService.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/consumer/ConsumeMessagePopConcurrentlyService.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/consumer/ConsumeMessagePopOrderlyService.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/consumer/DefaultLitePullConsumerImpl.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/consumer/DefaultMQPullConsumerImpl.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/consumer/DefaultMQPushConsumerImpl.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 64,
-  "done": 1409
+  "done": 1424
 }
