@@ -19,8 +19,8 @@ package org.springframework.beans;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Exception thrown on an attempt to set the value of a property that
- * is not writable (typically because there is no setter method).
+ * 尝试写入不可写属性时抛出的异常。
+ * <p>通常是因为没有对应的 setter 方法。
  *
  * @author Rod Johnson
  * @author Alef Arendsen
@@ -29,13 +29,14 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings("serial")
 public class NotWritablePropertyException extends InvalidPropertyException {
 
+	/** 与无效属性名相近的合法属性名建议（可能为 {@code null}）。 */
 	private final String @Nullable [] possibleMatches;
 
 
 	/**
-	 * Create a new NotWritablePropertyException.
-	 * @param beanClass the offending bean class
-	 * @param propertyName the offending property name
+	 * 创建新的 {@code NotWritablePropertyException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param propertyName 出问题的属性名
 	 */
 	public NotWritablePropertyException(Class<?> beanClass, String propertyName) {
 		super(beanClass, propertyName,
@@ -45,10 +46,10 @@ public class NotWritablePropertyException extends InvalidPropertyException {
 	}
 
 	/**
-	 * Create a new NotWritablePropertyException.
-	 * @param beanClass the offending bean class
-	 * @param propertyName the offending property name
-	 * @param msg the detail message
+	 * 创建新的 {@code NotWritablePropertyException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param propertyName 出问题的属性名
+	 * @param msg 详细消息
 	 */
 	public NotWritablePropertyException(Class<?> beanClass, String propertyName, String msg) {
 		super(beanClass, propertyName, msg);
@@ -56,11 +57,11 @@ public class NotWritablePropertyException extends InvalidPropertyException {
 	}
 
 	/**
-	 * Create a new NotWritablePropertyException.
-	 * @param beanClass the offending bean class
-	 * @param propertyName the offending property name
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 创建新的 {@code NotWritablePropertyException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param propertyName 出问题的属性名
+	 * @param msg 详细消息
+	 * @param cause 根因
 	 */
 	public NotWritablePropertyException(Class<?> beanClass, String propertyName, String msg, Throwable cause) {
 		super(beanClass, propertyName, msg, cause);
@@ -68,12 +69,11 @@ public class NotWritablePropertyException extends InvalidPropertyException {
 	}
 
 	/**
-	 * Create a new NotWritablePropertyException.
-	 * @param beanClass the offending bean class
-	 * @param propertyName the offending property name
-	 * @param msg the detail message
-	 * @param possibleMatches suggestions for actual bean property names
-	 * that closely match the invalid property name
+	 * 创建新的 {@code NotWritablePropertyException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param propertyName 出问题的属性名
+	 * @param msg 详细消息
+	 * @param possibleMatches 与无效属性名相近的合法 bean 属性名建议
 	 */
 	public NotWritablePropertyException(Class<?> beanClass, String propertyName, String msg, String[] possibleMatches) {
 		super(beanClass, propertyName, msg);
@@ -82,8 +82,7 @@ public class NotWritablePropertyException extends InvalidPropertyException {
 
 
 	/**
-	 * Return suggestions for actual bean property names that closely match
-	 * the invalid property name, if any.
+	 * 返回与无效属性名相近的合法 bean 属性名建议（若有）。
 	 */
 	public String @Nullable [] getPossibleMatches() {
 		return this.possibleMatches;

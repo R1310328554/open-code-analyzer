@@ -17,11 +17,10 @@
 package org.springframework.beans;
 
 /**
- * Exception thrown when navigation of a valid nested property
- * path encounters a NullPointerException.
+ * 沿合法嵌套属性路径导航时遇到 {@code NullPointerException} 而抛出的异常。
  *
- * <p>For example, navigating "spouse.age" could fail because the
- * spouse property of the target object has a null value.
+ * <p>例如，访问 {@code "spouse.age"} 可能失败，因为目标对象上的
+ * {@code spouse} 属性值为 {@code null}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -30,30 +29,30 @@ package org.springframework.beans;
 public class NullValueInNestedPathException extends InvalidPropertyException {
 
 	/**
-	 * Create a new NullValueInNestedPathException.
-	 * @param beanClass the offending bean class
-	 * @param propertyName the offending property
+	 * 创建新的 {@code NullValueInNestedPathException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param propertyName 出问题的属性名
 	 */
 	public NullValueInNestedPathException(Class<?> beanClass, String propertyName) {
 		super(beanClass, propertyName, "Value of nested property '" + propertyName + "' is null");
 	}
 
 	/**
-	 * Create a new NullValueInNestedPathException.
-	 * @param beanClass the offending bean class
-	 * @param propertyName the offending property
-	 * @param msg the detail message
+	 * 创建新的 {@code NullValueInNestedPathException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param propertyName 出问题的属性名
+	 * @param msg 详细消息
 	 */
 	public NullValueInNestedPathException(Class<?> beanClass, String propertyName, String msg) {
 		super(beanClass, propertyName, msg);
 	}
 
 	/**
-	 * Create a new NullValueInNestedPathException.
-	 * @param beanClass the offending bean class
-	 * @param propertyName the offending property
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 创建新的 {@code NullValueInNestedPathException}。
+	 * @param beanClass 出问题的 bean 类型
+	 * @param propertyName 出问题的属性名
+	 * @param msg 详细消息
+	 * @param cause 根因
 	 * @since 4.3.2
 	 */
 	public NullValueInNestedPathException(Class<?> beanClass, String propertyName, String msg, Throwable cause) {
