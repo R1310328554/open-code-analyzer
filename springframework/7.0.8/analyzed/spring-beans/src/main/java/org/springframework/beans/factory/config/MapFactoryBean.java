@@ -26,8 +26,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Simple factory for shared Map instances. Allows for central setup
- * of Maps via the "map" element in XML bean definitions.
+ * 共享 Map 实例的简单工厂。支持通过 XML Bean 定义中的 "map" 元素集中配置 Map。
  *
  * @author Juergen Hoeller
  * @since 09.12.2003
@@ -36,23 +35,25 @@ import org.springframework.util.CollectionUtils;
  */
 public class MapFactoryBean extends AbstractFactoryBean<Map<Object, Object>> {
 
+	/** 源 Map，通常通过 XML "map" 元素填充。 */
 	private @Nullable Map<?, ?> sourceMap;
 
+	/** 目标 Map 实现类。 */
 	@SuppressWarnings("rawtypes")
 	private @Nullable Class<? extends Map> targetMapClass;
 
 
 	/**
-	 * Set the source Map, typically populated via XML "map" elements.
+	 * 设置源 Map，通常通过 XML "map" 元素填充。
 	 */
 	public void setSourceMap(Map<?, ?> sourceMap) {
 		this.sourceMap = sourceMap;
 	}
 
 	/**
-	 * Set the class to use for the target Map. Can be populated with a fully
-	 * qualified class name when defined in a Spring application context.
-	 * <p>Default is a linked HashMap, keeping the registration order.
+	 * 设置目标 Map 使用的类。在 Spring 应用上下文中定义时，
+	 * 可使用完全限定类名填充。
+	 * <p>默认为 LinkedHashMap，保持注册顺序。
 	 * @see java.util.LinkedHashMap
 	 */
 	@SuppressWarnings("rawtypes")
@@ -80,12 +81,14 @@ public class MapFactoryBean extends AbstractFactoryBean<Map<Object, Object>> {
 			throw new IllegalArgumentException("'sourceMap' is required");
 		}
 		Map<Object, Object> result = null;
+		// 实例化目标 Map 类型，或使用默认 LinkedHashMap
 		if (this.targetMapClass != null) {
 			result = BeanUtils.instantiateClass(this.targetMapClass);
 		}
 		else {
 			result = CollectionUtils.newLinkedHashMap(this.sourceMap.size());
 		}
+		// 若目标类型声明了泛型键/值类型，则进行类型转换
 		Class<?> keyType = null;
 		Class<?> valueType = null;
 		if (this.targetMapClass != null) {

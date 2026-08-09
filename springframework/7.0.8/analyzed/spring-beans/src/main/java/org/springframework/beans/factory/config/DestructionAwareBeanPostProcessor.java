@@ -19,10 +19,9 @@ package org.springframework.beans.factory.config;
 import org.springframework.beans.BeansException;
 
 /**
- * Subinterface of {@link BeanPostProcessor} that adds a before-destruction callback.
+ * {@link BeanPostProcessor} 的子接口，增加了 Bean 销毁前的回调。
  *
- * <p>The typical usage will be to invoke custom destruction callbacks on
- * specific bean types, matching corresponding initialization callbacks.
+ * <p>典型用法是针对特定 Bean 类型调用自定义销毁回调，与对应的初始化回调相匹配。
  *
  * @author Juergen Hoeller
  * @since 1.0.1
@@ -30,28 +29,24 @@ import org.springframework.beans.BeansException;
 public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
 
 	/**
-	 * Apply this BeanPostProcessor to the given bean instance before its
-	 * destruction, for example, invoking custom destruction callbacks.
-	 * <p>Like DisposableBean's {@code destroy} and a custom destroy method, this
-	 * callback will only apply to beans which the container fully manages the
-	 * lifecycle for. This is usually the case for singletons and scoped beans.
-	 * @param bean the bean instance to be destroyed
-	 * @param beanName the name of the bean
-	 * @throws org.springframework.beans.BeansException in case of errors
+	 * 在 Bean 销毁前应用本 BeanPostProcessor，例如调用自定义销毁回调。
+	 * <p>与 {@link org.springframework.beans.factory.DisposableBean#destroy()} 及自定义 destroy 方法类似，
+	 * 本回调仅适用于容器完全管理其生命周期的 Bean。通常包括单例和作用域 Bean。
+	 * @param bean 即将被销毁的 Bean 实例
+	 * @param beanName Bean 名称
+	 * @throws org.springframework.beans.BeansException 出错时
 	 * @see org.springframework.beans.factory.DisposableBean#destroy()
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#setDestroyMethodName(String)
 	 */
 	void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException;
 
 	/**
-	 * Determine whether the given bean instance requires destruction by this
-	 * post-processor.
-	 * <p>The default implementation returns {@code true}. If a pre-5 implementation
-	 * of {@code DestructionAwareBeanPostProcessor} does not provide a concrete
-	 * implementation of this method, Spring silently assumes {@code true} as well.
-	 * @param bean the bean instance to check
-	 * @return {@code true} if {@link #postProcessBeforeDestruction} is supposed to
-	 * be called for this bean instance eventually, or {@code false} if not needed
+	 * 判断给定 Bean 实例是否需要由本后置处理器执行销毁。
+	 * <p>默认实现返回 {@code true}。若 5.0 之前的 {@code DestructionAwareBeanPostProcessor}
+	 * 实现未提供本方法的具体实现，Spring 也会静默假定为 {@code true}。
+	 * @param bean 待检查的 Bean 实例
+	 * @return 若最终需要对本 Bean 实例调用 {@link #postProcessBeforeDestruction} 则为 {@code true}，
+	 * 否则为 {@code false}
 	 * @since 4.3
 	 */
 	default boolean requiresDestruction(Object bean) {

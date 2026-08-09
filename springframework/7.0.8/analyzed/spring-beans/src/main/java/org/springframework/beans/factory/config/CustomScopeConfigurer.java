@@ -29,16 +29,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Simple {@link BeanFactoryPostProcessor} implementation that registers
- * custom {@link Scope Scope(s)} with the containing {@link ConfigurableBeanFactory}.
+ * 简单的 {@link BeanFactoryPostProcessor} 实现，向所包含的
+ * {@link ConfigurableBeanFactory} 注册自定义 {@link Scope 作用域}。
  *
- * <p>Will register all of the supplied {@link #setScopes(java.util.Map) scopes}
- * with the {@link ConfigurableListableBeanFactory} that is passed to the
- * {@link #postProcessBeanFactory(ConfigurableListableBeanFactory)} method.
+ * <p>会将所有通过 {@link #setScopes(java.util.Map)} 提供的作用域注册到
+ * 传入 {@link #postProcessBeanFactory(ConfigurableListableBeanFactory)} 方法的
+ * {@link ConfigurableListableBeanFactory} 中。
  *
- * <p>This class allows for <i>declarative</i> registration of custom scopes.
- * Alternatively, consider implementing a custom {@link BeanFactoryPostProcessor}
- * that calls {@link ConfigurableBeanFactory#registerScope} programmatically.
+ * <p>本类支持以<i>声明式</i>方式注册自定义作用域。
+ * 也可考虑实现自定义 {@link BeanFactoryPostProcessor}，
+ * 以编程方式调用 {@link ConfigurableBeanFactory#registerScope}。
  *
  * @author Juergen Hoeller
  * @author Rick Evans
@@ -47,27 +47,29 @@ import org.springframework.util.ClassUtils;
  */
 public class CustomScopeConfigurer implements BeanFactoryPostProcessor, BeanClassLoaderAware, Ordered {
 
+	/** 待注册的自定义作用域映射（名称 → 实例/类名/类）。 */
 	private @Nullable Map<String, Object> scopes;
 
+	/** 执行顺序，默认为最低优先级。 */
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
+	/** Bean 类加载器。 */
 	private @Nullable ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
 
 	/**
-	 * Specify the custom scopes that are to be registered.
-	 * <p>The keys indicate the scope names (of type String); each value
-	 * is expected to be the corresponding custom {@link Scope} instance
-	 * or class name.
+	 * 指定要注册的自定义作用域。
+	 * <p>键为作用域名称（{@code String} 类型）；每个值应为对应的自定义
+	 * {@link Scope} 实例或类名。
 	 */
 	public void setScopes(Map<String, Object> scopes) {
 		this.scopes = scopes;
 	}
 
 	/**
-	 * Add the given scope to this configurer's map of scopes.
-	 * @param scopeName the name of the scope
-	 * @param scope the scope implementation
+	 * 将给定作用域添加到本配置器的作用域映射中。
+	 * @param scopeName 作用域名称
+	 * @param scope 作用域实现
 	 * @since 4.1.1
 	 */
 	public void addScope(String scopeName, Scope scope) {
@@ -98,13 +100,16 @@ public class CustomScopeConfigurer implements BeanFactoryPostProcessor, BeanClas
 		if (this.scopes != null) {
 			this.scopes.forEach((scopeKey, value) -> {
 				if (value instanceof Scope scope) {
+					// 直接注册 Scope 实例
 					beanFactory.registerScope(scopeKey, scope);
 				}
 				else if (value instanceof Class<?> scopeClass) {
+					// 通过 Class 对象实例化后注册
 					Assert.isAssignable(Scope.class, scopeClass, "Invalid scope class");
 					beanFactory.registerScope(scopeKey, (Scope) BeanUtils.instantiateClass(scopeClass));
 				}
 				else if (value instanceof String scopeClassName) {
+					// 通过类名字符串解析并实例化后注册
 					Class<?> scopeClass = ClassUtils.resolveClassName(scopeClassName, this.beanClassLoader);
 					Assert.isAssignable(Scope.class, scopeClass, "Invalid scope class");
 					beanFactory.registerScope(scopeKey, (Scope) BeanUtils.instantiateClass(scopeClass));

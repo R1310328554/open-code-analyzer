@@ -21,13 +21,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringValueResolver;
 
 /**
- * {@link StringValueResolver} adapter for resolving placeholders and
- * expressions against a {@link ConfigurableBeanFactory}.
+ * 针对 {@link ConfigurableBeanFactory} 解析占位符与表达式的
+ * {@link StringValueResolver} 适配器。
  *
- * <p>Note that this adapter resolves expressions as well, in contrast
- * to the {@link ConfigurableBeanFactory#resolveEmbeddedValue} method.
- * The {@link BeanExpressionContext} used is for the plain bean factory,
- * with no scope specified for any contextual objects to access.
+ * <p>注意，与 {@link ConfigurableBeanFactory#resolveEmbeddedValue} 方法不同，
+ * 本适配器也会解析表达式。所使用的 {@link BeanExpressionContext} 面向普通 Bean 工厂，
+ * 未为任何可访问的上下文对象指定作用域。
  *
  * @author Juergen Hoeller
  * @since 4.3
@@ -37,8 +36,10 @@ import org.springframework.util.StringValueResolver;
  */
 public class EmbeddedValueResolver implements StringValueResolver {
 
+	/** Bean 表达式上下文。 */
 	private final BeanExpressionContext exprContext;
 
+	/** Bean 表达式解析器，可能为 {@code null}。 */
 	private final @Nullable BeanExpressionResolver exprResolver;
 
 
@@ -50,7 +51,9 @@ public class EmbeddedValueResolver implements StringValueResolver {
 
 	@Override
 	public @Nullable String resolveStringValue(String strVal) {
+		// 先解析嵌入式占位符
 		String value = this.exprContext.getBeanFactory().resolveEmbeddedValue(strVal);
+		// 若配置了表达式解析器，则继续求值
 		if (this.exprResolver != null && value != null) {
 			Object evaluated = this.exprResolver.evaluate(value, this.exprContext);
 			value = (evaluated != null ? evaluated.toString() : null);

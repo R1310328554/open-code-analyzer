@@ -26,8 +26,7 @@ import org.springframework.beans.TypeConverter;
 import org.springframework.core.ResolvableType;
 
 /**
- * Simple factory for shared List instances. Allows for central setup
- * of Lists via the "list" element in XML bean definitions.
+ * 共享 List 实例的简单工厂。支持通过 XML Bean 定义中的 "list" 元素集中配置 List。
  *
  * @author Juergen Hoeller
  * @since 09.12.2003
@@ -36,23 +35,25 @@ import org.springframework.core.ResolvableType;
  */
 public class ListFactoryBean extends AbstractFactoryBean<List<Object>> {
 
+	/** 源 List，通常通过 XML "list" 元素填充。 */
 	private @Nullable List<?> sourceList;
 
+	/** 目标 List 实现类。 */
 	@SuppressWarnings("rawtypes")
 	private @Nullable Class<? extends List> targetListClass;
 
 
 	/**
-	 * Set the source List, typically populated via XML "list" elements.
+	 * 设置源 List，通常通过 XML "list" 元素填充。
 	 */
 	public void setSourceList(List<?> sourceList) {
 		this.sourceList = sourceList;
 	}
 
 	/**
-	 * Set the class to use for the target List. Can be populated with a fully
-	 * qualified class name when defined in a Spring application context.
-	 * <p>Default is a {@code java.util.ArrayList}.
+	 * 设置目标 List 使用的类。在 Spring 应用上下文中定义时，
+	 * 可使用完全限定类名填充。
+	 * <p>默认为 {@code java.util.ArrayList}。
 	 * @see java.util.ArrayList
 	 */
 	@SuppressWarnings("rawtypes")
@@ -80,12 +81,14 @@ public class ListFactoryBean extends AbstractFactoryBean<List<Object>> {
 			throw new IllegalArgumentException("'sourceList' is required");
 		}
 		List<Object> result = null;
+		// 实例化目标 List 类型，或使用默认 ArrayList
 		if (this.targetListClass != null) {
 			result = BeanUtils.instantiateClass(this.targetListClass);
 		}
 		else {
 			result = new ArrayList<>(this.sourceList.size());
 		}
+		// 若目标类型声明了泛型元素类型，则进行类型转换
 		Class<?> valueType = null;
 		if (this.targetListClass != null) {
 			valueType = ResolvableType.forClass(this.targetListClass).asCollection().resolveGeneric();

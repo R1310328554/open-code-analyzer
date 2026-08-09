@@ -38,9 +38,8 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Descriptor for a specific dependency that is about to be injected.
- * Wraps a constructor parameter, a method parameter or a field,
- * allowing unified access to their metadata.
+ * 描述即将被注入的特定依赖。
+ * 封装构造器参数、方法参数或字段，提供对其元数据的统一访问。
  *
  * @author Juergen Hoeller
  * @since 2.5
@@ -48,45 +47,55 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public class DependencyDescriptor extends InjectionPoint implements Serializable {
 
+	/** 声明类（字段或方法/构造器所在类）。 */
 	private final Class<?> declaringClass;
 
+	/** 方法名称（字段依赖时为 {@code null}）。 */
 	private @Nullable String methodName;
 
+	/** 参数类型数组（字段依赖时为 {@code null}）。 */
 	private Class<?> @Nullable [] parameterTypes;
 
+	/** 参数索引（字段依赖时无意义）。 */
 	private int parameterIndex;
 
+	/** 字段名称（方法/构造器参数依赖时为 {@code null}）。 */
 	private @Nullable String fieldName;
 
+	/** 是否必需（注入点级别）。 */
 	private final boolean required;
 
+	/** 是否"急切"（用于类型匹配时是否急切解析候选 Bean）。 */
 	private final boolean eager;
 
+	/** 嵌套层级（用于泛型嵌套类型）。 */
 	private int nestingLevel = 1;
 
+	/** 包含此依赖的具体类（可能是子类）。 */
 	private @Nullable Class<?> containingClass;
 
+	/** 可解析类型（延迟构建，transient）。 */
 	private transient volatile @Nullable ResolvableType resolvableType;
 
+	/** 类型描述符（延迟构建，transient）。 */
 	private transient volatile @Nullable TypeDescriptor typeDescriptor;
 
 
 	/**
-	 * Create a new descriptor for a method or constructor parameter.
-	 * Considers the dependency as 'eager'.
-	 * @param methodParameter the MethodParameter to wrap
-	 * @param required whether the dependency is required
+	 * 为方法或构造器参数创建新描述符。
+	 * 将依赖视为"急切"。
+	 * @param methodParameter 要封装的 MethodParameter
+	 * @param required 依赖是否必需
 	 */
 	public DependencyDescriptor(MethodParameter methodParameter, boolean required) {
 		this(methodParameter, required, true);
 	}
 
 	/**
-	 * Create a new descriptor for a method or constructor parameter.
-	 * @param methodParameter the MethodParameter to wrap
-	 * @param required whether the dependency is required
-	 * @param eager whether this dependency is 'eager' in the sense of
-	 * eagerly resolving potential target beans for type matching
+	 * 为方法或构造器参数创建新描述符。
+	 * @param methodParameter 要封装的 MethodParameter
+	 * @param required 依赖是否必需
+	 * @param eager 此依赖是否"急切"，即是否为类型匹配急切解析候选目标 Bean
 	 */
 	public DependencyDescriptor(MethodParameter methodParameter, boolean required, boolean eager) {
 		super(methodParameter);
@@ -103,21 +112,20 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Create a new descriptor for a field.
-	 * Considers the dependency as 'eager'.
-	 * @param field the field to wrap
-	 * @param required whether the dependency is required
+	 * 为字段创建新描述符。
+	 * 将依赖视为"急切"。
+	 * @param field 要封装的字段
+	 * @param required 依赖是否必需
 	 */
 	public DependencyDescriptor(Field field, boolean required) {
 		this(field, required, true);
 	}
 
 	/**
-	 * Create a new descriptor for a field.
-	 * @param field the field to wrap
-	 * @param required whether the dependency is required
-	 * @param eager whether this dependency is 'eager' in the sense of
-	 * eagerly resolving potential target beans for type matching
+	 * 为字段创建新描述符。
+	 * @param field 要封装的字段
+	 * @param required 依赖是否必需
+	 * @param eager 此依赖是否"急切"，即是否为类型匹配急切解析候选目标 Bean
 	 */
 	public DependencyDescriptor(Field field, boolean required, boolean eager) {
 		super(field);
@@ -129,8 +137,8 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Copy constructor.
-	 * @param original the original descriptor to create a copy from
+	 * 拷贝构造器。
+	 * @param original 要复制的原始描述符
 	 */
 	public DependencyDescriptor(DependencyDescriptor original) {
 		super(original);
@@ -148,11 +156,10 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 
 
 	/**
-	 * Return whether this dependency is required.
-	 * <p>Optional semantics are derived from Java's {@link java.util.Optional},
-	 * any variant of a parameter-level {@code @Nullable} annotation (such as from
-	 * JSpecify, JSR-305, or the FindBugs set of annotations), or a language-level
-	 * nullable type declaration in Kotlin.
+	 * 返回此依赖是否必需。
+	 * <p>可选语义源自 Java 的 {@link java.util.Optional}、
+	 * 参数级 {@code @Nullable} 注解的任何变体（如 JSpecify、JSR-305 或 FindBugs 注解集），
+	 * 或 Kotlin 语言级别的可空类型声明。
 	 */
 	public boolean isRequired() {
 		if (!this.required) {
@@ -168,24 +175,20 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Return whether this dependency is 'eager' in the sense of
-	 * eagerly resolving potential target beans for type matching.
+	 * 返回此依赖是否"急切"，即是否为类型匹配急切解析候选目标 Bean。
 	 */
 	public boolean isEager() {
 		return this.eager;
 	}
 
 	/**
-	 * Resolve the specified not-unique scenario: by default,
-	 * throwing a {@link NoUniqueBeanDefinitionException}.
-	 * <p>Subclasses may override this to select one of the instances or
-	 * to opt out with no result at all through returning {@code null}.
-	 * @param type the requested bean type
-	 * @param matchingBeans a map of bean names and corresponding bean
-	 * instances which have been pre-selected for the given type
-	 * (qualifiers etc already applied)
-	 * @return a bean instance to proceed with, or {@code null} for none
-	 * @throws BeansException in case of the not-unique scenario being fatal
+	 * 解析指定的非唯一场景：默认抛出 {@link NoUniqueBeanDefinitionException}。
+	 * <p>子类可覆盖此方法以选择其中一个实例，或通过返回 {@code null} 完全放弃结果。
+	 * @param type 请求的 Bean 类型
+	 * @param matchingBeans 已为给定类型预选出的 Bean 名称与对应 Bean 实例的映射
+	 *（限定符等已应用）
+	 * @return 要继续使用的 Bean 实例，或 {@code null} 表示无
+	 * @throws BeansException 非唯一场景为致命错误时
 	 * @since 5.1
 	 */
 	public @Nullable Object resolveNotUnique(ResolvableType type, Map<String, Object> matchingBeans) throws BeansException {
@@ -193,15 +196,13 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Resolve a shortcut for this dependency against the given factory, for example
-	 * taking some pre-resolved information into account.
-	 * <p>The resolution algorithm will first attempt to resolve a shortcut through this
-	 * method before going into the regular type matching algorithm across all beans.
-	 * Subclasses may override this method to improve resolution performance based on
-	 * pre-cached information while still receiving {@link InjectionPoint} exposure etc.
-	 * @param beanFactory the associated factory
-	 * @return the shortcut result if any, or {@code null} if none
-	 * @throws BeansException if the shortcut could not be obtained
+	 * 针对给定工厂解析此依赖的快捷方式，例如考虑某些预解析信息。
+	 * <p>解析算法在遍历所有 Bean 进行常规类型匹配之前，会先尝试通过本方法解析快捷方式。
+	 * 子类可覆盖此方法，在仍能获得 {@link InjectionPoint} 暴露等能力的同时，
+	 * 基于预缓存信息提升解析性能。
+	 * @param beanFactory 关联工厂
+	 * @return 快捷方式结果（若有），否则为 {@code null}
+	 * @throws BeansException 无法获取快捷方式时
 	 * @since 4.3.1
 	 */
 	public @Nullable Object resolveShortcut(BeanFactory beanFactory) throws BeansException {
@@ -209,15 +210,14 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Resolve the specified bean name, as a candidate result of the matching
-	 * algorithm for this dependency, to a bean instance from the given factory.
-	 * <p>The default implementation calls {@link BeanFactory#getBean(String, Class)}.
-	 * Subclasses may provide additional arguments or other customizations.
-	 * @param beanName the bean name, as a candidate result for this dependency
-	 * @param requiredType the expected type of the bean (as an assertion)
-	 * @param beanFactory the associated factory
-	 * @return the bean instance (never {@code null})
-	 * @throws BeansException if the bean could not be obtained
+	 * 将此依赖匹配算法的候选结果 Bean 名称解析为给定工厂中的 Bean 实例。
+	 * <p>默认实现调用 {@link BeanFactory#getBean(String, Class)}。
+	 * 子类可提供额外参数或其他自定义。
+	 * @param beanName Bean 名称，作为此依赖的候选匹配结果
+	 * @param requiredType 期望的 Bean 类型（用于断言）
+	 * @param beanFactory 关联工厂
+	 * @return Bean 实例（永不为 {@code null}）
+	 * @throws BeansException 无法获取 Bean 时
 	 * @since 4.3.2
 	 * @see BeanFactory#getBean(String)
 	 */
@@ -225,18 +225,18 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 			throws BeansException {
 
 		try {
-			// Need to provide required type for SmartFactoryBean
+			// 需要为 SmartFactoryBean 提供所需类型
 			return beanFactory.getBean(beanName, requiredType);
 		}
 		catch (BeanNotOfRequiredTypeException ex) {
-			// Probably a null bean...
+			// 可能是 null Bean...
 			return beanFactory.getBean(beanName);
 		}
 	}
 
 
 	/**
-	 * Increase this descriptor's nesting level.
+	 * 增加此描述符的嵌套层级。
 	 */
 	public void increaseNestingLevel() {
 		this.nestingLevel++;
@@ -247,9 +247,8 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Optionally set the concrete class that contains this dependency.
-	 * This may differ from the class that declares the parameter/field in that
-	 * it may be a subclass thereof, potentially substituting type variables.
+	 * 可选地设置包含此依赖的具体类。
+	 * 该类可能与声明参数/字段的类不同，可能是其子类，并可能替换类型变量。
 	 * @since 4.0
 	 */
 	public void setContainingClass(Class<?> containingClass) {
@@ -261,7 +260,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Build a {@link ResolvableType} object for the wrapped parameter/field.
+	 * 为封装的参数/字段构建 {@link ResolvableType} 对象。
 	 * @since 4.0
 	 */
 	public ResolvableType getResolvableType() {
@@ -276,7 +275,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Build a {@link TypeDescriptor} object for the wrapped parameter/field.
+	 * 为封装的参数/字段构建 {@link TypeDescriptor} 对象。
 	 * @since 5.1.4
 	 */
 	public TypeDescriptor getTypeDescriptor() {
@@ -291,10 +290,10 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Return whether a fallback match is allowed.
-	 * <p>This is {@code false} by default but may be overridden to return {@code true} in order
-	 * to suggest to an {@link org.springframework.beans.factory.support.AutowireCandidateResolver}
-	 * that a fallback match is acceptable as well.
+	 * 返回是否允许回退匹配。
+	 * <p>默认返回 {@code false}，但可覆盖为 {@code true}，
+	 * 以向 {@link org.springframework.beans.factory.support.AutowireCandidateResolver}
+	 * 表明回退匹配也可接受。
 	 * @since 4.0
 	 */
 	public boolean fallbackMatchAllowed() {
@@ -302,7 +301,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Return a variant of this descriptor that is intended for a fallback match.
+	 * 返回用于回退匹配的此描述符变体。
 	 * @since 4.0
 	 * @see #fallbackMatchAllowed()
 	 */
@@ -320,10 +319,9 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Initialize parameter name discovery for the underlying method parameter, if any.
-	 * <p>This method does not actually try to retrieve the parameter name at
-	 * this point; it just allows discovery to happen when the application calls
-	 * {@link #getDependencyName()} (if ever).
+	 * 为底层方法参数（若有）初始化参数名发现。
+	 * <p>本方法此时并不实际尝试获取参数名；仅允许在应用调用
+	 * {@link #getDependencyName()}（若有）时发现参数名。
 	 */
 	public void initParameterNameDiscovery(@Nullable ParameterNameDiscoverer parameterNameDiscoverer) {
 		if (this.methodParameter != null) {
@@ -332,16 +330,16 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Determine the name of the wrapped parameter/field.
-	 * @return the declared name (may be {@code null} if unresolvable)
+	 * 确定封装的参数/字段的名称。
+	 * @return 声明的名称（若无法解析则可能为 {@code null}）
 	 */
 	public @Nullable String getDependencyName() {
 		return (this.field != null ? this.field.getName() : obtainMethodParameter().getParameterName());
 	}
 
 	/**
-	 * Determine the declared (non-generic) type of the wrapped parameter/field.
-	 * @return the declared type (never {@code null})
+	 * 确定封装的参数/字段的声明（非泛型）类型。
+	 * @return 声明的类型（永不为 {@code null}）
 	 */
 	public Class<?> getDependencyType() {
 		if (this.field != null) {
@@ -359,8 +357,8 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Determine whether this dependency supports lazy resolution,
-	 * for example, through extra proxying. The default is {@code true}.
+	 * 确定此依赖是否支持延迟解析，例如通过额外代理。
+	 * 默认为 {@code true}。
 	 * @since 6.1.2
 	 * @see org.springframework.beans.factory.support.AutowireCandidateResolver#getLazyResolutionProxyIfNecessary
 	 */
@@ -369,13 +367,11 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	}
 
 	/**
-	 * Determine whether this descriptor uses a standard bean lookup
-	 * in {@link #resolveCandidate(String, Class, BeanFactory)} and
-	 * therefore qualifies for factory-level shortcut resolution.
-	 * <p>By default, the {@code DependencyDescriptor} class itself
-	 * uses a standard bean lookup but subclasses may override this.
-	 * If a subclass overrides other methods but preserves a standard
-	 * bean lookup, it may override this method to return {@code true}.
+	 * 确定此描述符在 {@link #resolveCandidate(String, Class, BeanFactory)} 中
+	 * 是否使用标准 Bean 查找，从而有资格进行工厂级快捷解析。
+	 * <p>默认情况下，{@code DependencyDescriptor} 类本身使用标准 Bean 查找，
+	 * 但子类可覆盖。若子类覆盖其他方法但保留标准 Bean 查找，
+	 * 可覆盖本方法返回 {@code true}。
 	 * @since 6.2
 	 * @see #resolveCandidate(String, Class, BeanFactory)
 	 */
@@ -408,10 +404,10 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	//---------------------------------------------------------------------
 
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-		// Rely on default serialization; just initialize state after deserialization.
+		// 依赖默认序列化；反序列化后仅初始化状态
 		ois.defaultReadObject();
 
-		// Restore reflective handles (which are unfortunately not serializable)
+		// 恢复反射句柄（遗憾的是不可序列化）
 		try {
 			if (this.fieldName != null) {
 				this.field = this.declaringClass.getDeclaredField(this.fieldName);
