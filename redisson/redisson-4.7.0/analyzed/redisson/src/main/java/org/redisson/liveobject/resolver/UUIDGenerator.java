@@ -21,13 +21,16 @@ import org.redisson.command.CommandAsyncExecutor;
 import java.util.UUID;
 
 /**
+ * 为 {@link RId} 字段生成随机 UUID 字符串主键。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class UUIDGenerator implements RIdResolver<String>{
 
+    /** 单例实例。 */
     public static final UUIDGenerator INSTANCE = new UUIDGenerator();
     
+    /** 返回 {@link UUID#randomUUID()} 的字符串形式。 */
     @Override
     public String resolve(Class<?> value, RId id, String idFieldName, CommandAsyncExecutor commandAsyncExecutor) {
         return UUID.randomUUID().toString();

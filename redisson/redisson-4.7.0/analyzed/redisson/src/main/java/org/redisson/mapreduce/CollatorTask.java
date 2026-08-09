@@ -25,7 +25,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.misc.Injector;
 
 /**
- * 
+ * MapReduce Collator 阶段任务：读取 Mapper 输出的 {@link RMap}，调用 {@link RCollator#collate} 合并为最终结果。
+ * <p>
+ * 执行完毕后删除临时 result Map。
+ *
  * @author Nikita Koksharov
  *
  * @param <KOut> key type
@@ -34,19 +37,26 @@ import org.redisson.misc.Injector;
  */
 public class CollatorTask<KOut, VOut, R> implements Callable<R> {
 
+    /** 运行时注入的 Redisson 客户端（无参构造路径）。 */
     @RInject
     private RedissonClient redisson;
     
+    /** 用户实现的合并逻辑。 */
     private RCollator<KOut, VOut, R> collator;
     
+    /** Mapper 阶段写入的中间结果 Map 名称。 */
     private String resultMapName;
+    /** 结果 Map 使用的 Codec 类（可序列化字段）。 */
     private Class<?> codecClass;
     
+    /** {@link #call()} 中实例化后的 Codec。 */
     private Codec codec;
     
+    /** 无参构造，供 Executor 反序列化后注入依赖。 */
     public CollatorTask() {
     }
     
+    /** 本地构造并指定 collator 与中间 Map 参数。 */
     public CollatorTask(RedissonClient redisson, RCollator<KOut, VOut, R> collator, String resultMapName, Class<?> codecClass) {
         super();
         this.redisson = redisson;
@@ -55,6 +65,9 @@ public class CollatorTask<KOut, VOut, R> implements Callable<R> {
         this.codecClass = codecClass;
     }
 
+    /**
+     * 实例化 Codec、注入 collator 依赖，读取 resultMap 执行 collate 后删除临时 Map。
+     */
     @Override
     public R call() throws Exception {
         this.codec = (Codec) codecClass.getConstructor().newInstance();

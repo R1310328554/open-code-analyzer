@@ -22,20 +22,30 @@ import jodd.bean.BeanVisitor;
 import java.util.List;
 
 /**
- * 
+ * 基于 Jodd BeanUtil 的属性拷贝工具。
+ * <p>
+ * 遍历 source 的非 null 属性写入 destination，可排除指定字段名。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class AdvBeanCopy {
 
+    /** 属性来源对象。 */
     private final Object source;
+    /** 属性目标对象。 */
     private final Object destination;
 
+    /** @param source 源 Bean @param destination 目标 Bean */
     public AdvBeanCopy(Object source, Object destination) {
         this.source = source;
         this.destination = destination;
     }
     
+    /**
+     * 将 source 的可读属性复制到 destination。
+     * @param excludedFields 跳过不拷贝的属性名列表
+     */
     public void copy(List<String> excludedFields) {
         BeanUtil beanUtil = new BeanUtilBean();
 

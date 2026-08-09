@@ -18,17 +18,23 @@ package org.redisson.liveobject.resolver;
 import org.redisson.client.codec.Codec;
 
 /**
+ * {@link NamingScheme} 抽象基类，持有构造时注入的 {@link Codec}。
+ * <p>
+ * 具体命名规则由 {@link DefaultNamingScheme} 等子类实现。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public abstract class AbstractNamingScheme implements NamingScheme {
     
+    /** 用于 id 编解码的 Codec，与 Live Object Redis key 一致。 */
     protected final Codec codec;
 
+    /** @param codec Live Object 使用的序列化 Codec */
     public AbstractNamingScheme(Codec codec) {
         this.codec = codec;
     }
     
+    /** 返回构造时绑定的 Codec。 */
     @Override
     public Codec getCodec() {
         return codec;

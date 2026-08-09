@@ -30,20 +30,26 @@ import org.redisson.api.annotation.RId;
 import org.redisson.cache.LRUCacheMap;
 
 /**
+ * Live Object 实体 introspection：ByteBuddy 字段描述与 {@link RId} 字段名解析。
+ * <p>
+ * 类名拼写保留历史 typo（Introspectior）。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class Introspectior {
 
+    /** 将已加载 Class 包装为 ByteBuddy {@link TypeDescription}。 */
     public static TypeDescription.ForLoadedType getTypeDescription(Class<?> c) {
         return new TypeDescription.ForLoadedType(c);
     }
 
+    /** 返回类及其父类上带指定注解的字段列表。 */
     public static FieldList<FieldDescription.InDefinedShape> getFieldsWithAnnotation(Class<?> c, Class<? extends Annotation> a) {
         return getAllFields(c)
                 .filter(ElementMatchers.isAnnotatedWith(a));
     }
 
+    /** 收集类层次中所有 declared 字段。 */
     public static FieldList<FieldDescription.InDefinedShape> getAllFields(Class<?> cls) {
         List<Field> fields = new ArrayList<Field>();
         for (Class<?> c = cls; c != null; c = c.getSuperclass()) {
@@ -53,8 +59,10 @@ public class Introspectior {
     }
 
 
+    /** 实体类 → {@link RId} 字段名的 LRU 缓存。 */
     private static final Map<Class<?>, String> ID_FIELD_NAME_CACHE = new LRUCacheMap<>(500, 0, 0);
 
+    /** 解析并缓存 {@code @REntity} 上 {@link RId} 标注的字段名（必须唯一）。 */
     public static String getREntityIdFieldName(Class<?> cls) {
         String name = ID_FIELD_NAME_CACHE.get(cls);
         if (name == null) {

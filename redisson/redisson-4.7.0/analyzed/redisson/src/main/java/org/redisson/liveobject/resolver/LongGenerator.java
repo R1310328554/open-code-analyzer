@@ -21,13 +21,19 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 
 /**
+ * {@link RId} 自增 Long 主键生成器。
+ * <p>
+ * 每个实体类+字段名对应一个 {@link RedissonAtomicLong} key，{@link #resolve} 时 incrementAndGet。
+ * 不支持在 {@link CommandBatchService} 批处理中使用。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class LongGenerator implements RIdResolver<Long> {
 
+    /** 单例实例，供 {@code @RId} 默认引用。 */
     public static final LongGenerator INSTANCE = new LongGenerator();
 
+    /** 在 Redis 原子长整型计数器上自增并返回新 id。 */
     @Override
     public Long resolve(Class<?> value, RId id, String idFieldName, CommandAsyncExecutor commandAsyncExecutor) {
         if (commandAsyncExecutor instanceof CommandBatchService) {

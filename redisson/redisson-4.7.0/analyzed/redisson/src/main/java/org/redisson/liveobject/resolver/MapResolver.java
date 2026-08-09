@@ -22,27 +22,38 @@ import org.redisson.connection.ServiceManager;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 
 /**
+ * Live Object 实体级 {@link RMap} 的解析与懒创建。
+ * <p>
+ * 拦截器通过 Getter/Setter 缓存已创建的 Map；首次访问时按 {@link NamingScheme} 构造 {@link RedissonMap}。
  *
  * @author Nikita Koksharov
  *
  */
 public final class MapResolver {
 
+    /** 连接与服务管理（remove/destroy 预留扩展点）。 */
     private final ServiceManager serviceManager;
 
+    /** @param serviceManager Redisson 服务管理器 */
     public MapResolver(ServiceManager serviceManager) {
         this.serviceManager = serviceManager;
     }
 
+    /** 按实体类型清理缓存（当前为空实现）。 */
     public void remove(Class<?> entityClass) {
     }
 
+    /** 按实体类型与 id 清理（当前为空实现）。 */
     public void remove(Class<?> entityClass, Object id) {
     }
 
+    /** 销毁指定 Live Object 的 Map（当前为空实现）。 */
     public void destroy(Class<?> entityClass, Object id) {
     }
 
+    /**
+     * 返回实体 id 对应的 Live Map：若 Getter 已有值则直接返回，否则创建并 Setter 缓存。
+     */
     public RMap resolve(CommandAsyncExecutor commandExecutor, Class<?> entityClass, Object id,
                         LiveObjectInterceptor.Setter mapSetter, LiveObjectInterceptor.Getter mapGetter) {
         if (mapGetter.getValue() != null) {

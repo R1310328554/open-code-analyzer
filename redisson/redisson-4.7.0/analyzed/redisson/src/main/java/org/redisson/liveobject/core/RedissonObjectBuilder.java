@@ -38,19 +38,29 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * 
+ * Live Object 引用与嵌套 {@link RObject} 的构建、序列化与反序列化中心。
+ * <p>
+ * 负责：根据 Java 集合/队列类型映射到 Redisson 实现类；
+ * 在 {@code @REntity} 字段上创建命名正确的子对象；
+ * 在 {@link RedissonReference} 与运行时对象之间双向转换（含 List/Set/Map 递归解引用）。
+ *
  * @author Rui Gu
  * @author Nikita Koksharov
  *
  */
 public class RedissonObjectBuilder {
 
+    /** 反序列化引用时使用的客户端风格。 */
     public enum ReferenceType {RXJAVA, REACTIVE, DEFAULT}
 
+    /** Java 接口/抽象类型 → Redisson 同步实现类的映射表。 */
     private static final Map<Class<?>, Class<? extends RObject>> SUPPORTED_CLASS_MAPPING = new LinkedHashMap<>();
+    /** 各 RObject 接口在默认 Codec 下的 {@code getXxx(String)} 工厂方法。 */
     private static final Map<Class<?>, Method> DEFAULT_CODEC_REFERENCES = new HashMap<>();
+    /** 各 RObject 接口在自定义 Codec 下的 {@code getXxx(String, Codec)} 工厂方法。 */
     private static final Map<Class<?>, Method> CUSTOM_CODEC_REFERENCES = new HashMap<>();
 
+    /** 静态初始化：填充类型映射并扫描 Client 上的 get* 工厂方法。 */
     static {
         SUPPORTED_CLASS_MAPPING.put(SortedSet.class,      RedissonSortedSet.class);
         SUPPORTED_CLASS_MAPPING.put(Set.class,            RedissonSet.class);
@@ -67,13 +77,19 @@ public class RedissonObjectBuilder {
         fillCodecMethods(RedissonRxClient.class, RObjectRx.class);
     }
 
+    /** Redisson 全局配置（含默认 Codec）。 */
     private final Config config;
+    /** 同步客户端（可为 null，取决于构造方式）。 */
     private RedissonClient redisson;
+    /** Reactive 客户端。 */
     private RedissonReactiveClient redissonReactive;
+    /** RxJava 客户端。 */
     private RedissonRxClient redissonRx;
     
+    /** 引用序列化时按注解/字段解析 Codec 的提供者。 */
     private final ReferenceCodecProvider codecProvider = new DefaultReferenceCodecProvider();
     
+    /** 基于同步 {@link RedissonClient} 构造，并注册配置中的默认 Codec。 */
     public RedissonObjectBuilder(RedissonClient redisson) {
         super();
         this.config = redisson.getConfig();
@@ -83,6 +99,7 @@ public class RedissonObjectBuilder {
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
+    /** 基于 Reactive 客户端构造。 */
     public RedissonObjectBuilder(RedissonReactiveClient redissonReactive) {
         super();
         this.config = redissonReactive.getConfig();
@@ -92,6 +109,7 @@ public class RedissonObjectBuilder {
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
+    /** 基于 RxJava 客户端构造。 */
     public RedissonObjectBuilder(RedissonRxClient redissonRx) {
         super();
         this.config = redissonRx.getConfig();
@@ -101,14 +119,21 @@ public class RedissonObjectBuilder {
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
+    /** 异步将嵌套 RObject 引用写入 Live Object 的 liveMap 字段。 */
     public void storeAsync(RObject ar, String fieldName, RMap<String, Object> liveMap) {
         liveMap.fastPutAsync(fieldName, ar);
     }
 
+    /** 同步将嵌套 RObject 引用写入 Live Object 的 liveMap 字段。 */
     public void store(RObject ar, String fieldName, RMap<String, Object> liveMap) {
         liveMap.fastPut(fieldName, ar);
     }
     
+    /**
+     * 为 {@code @REntity} 的嵌套集合/队列字段创建对应的 {@link RObject}。
+     * <p>
+     * 根据 fieldType 查映射表，用 {@link NamingScheme} 生成 Redis key 后调用 Client 工厂。
+     */
     public RObject createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName) {
         Class<? extends RObject> mappedClass = getMappedClass(fieldType);
         try {
@@ -126,7 +151,9 @@ public class RedissonObjectBuilder {
     }
     
     /**
-     * WARNING: rEntity has to be the class of @This object.
+     * 解析字段级或实体级 Codec。
+     * <p>
+     * WARNING: rEntity 必须是 {@code @This} 对象声明的实体类。
      */
     private Codec getFieldCodec(Class<?> rEntity, Class<? extends RObject> rObjectClass, String fieldName) throws ReflectiveOperationException {
         Field field = ClassUtils.getDeclaredField(rEntity, fieldName);
@@ -139,12 +166,14 @@ public class RedissonObjectBuilder {
         }
     }
     
+    /** 根据实体 {@code @REntity} 注解实例化其 namingScheme 策略。 */
     public NamingScheme getNamingScheme(Class<?> entityClass) {
         REntity anno = ClassUtils.getAnnotation(entityClass, REntity.class);
         Codec codec = codecProvider.getCodec(anno, entityClass, config);
         return getNamingScheme(entityClass, codec);
     }
     
+    /** 使用指定 Codec 构造 namingScheme 实例。 */
     public NamingScheme getNamingScheme(Class<?> rEntity, Codec c) {
         REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
         try {
@@ -154,6 +183,7 @@ public class RedissonObjectBuilder {
         }
     }
 
+    /** 按 assignableFrom 顺序查找 fieldType 对应的 Redisson 实现类。 */
     private Class<? extends RObject> getMappedClass(Class<?> cls) {
         for (Entry<Class<?>, Class<? extends RObject>> entrySet : SUPPORTED_CLASS_MAPPING.entrySet()) {
             if (entrySet.getKey().isAssignableFrom(cls)) {
@@ -163,6 +193,7 @@ public class RedissonObjectBuilder {
         return null;
     }
     
+    /** 扫描 Client 上返回 RObject 的 get* 方法，登记默认/自定义 Codec 两种签名。 */
     private static void fillCodecMethods(Class<?> clientClazz, Class<?> objectClazz) {
         for (Method method : clientClazz.getDeclaredMethods()) {
             if (!method.getReturnType().equals(Void.TYPE)
@@ -170,7 +201,7 @@ public class RedissonObjectBuilder {
                     && method.getName().startsWith("get")) {
 
                 Class<?> cls = method.getReturnType();
-                if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
+                if (method.getParameterTypes().length == 2 // 第一参数为 name，第二参数为 codec
                         && String.class == method.getParameterTypes()[0]
                             && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
                     CUSTOM_CODEC_REFERENCES.put(cls, method);
@@ -182,6 +213,7 @@ public class RedissonObjectBuilder {
         }
     }
 
+    /** 按客户端类型将 {@link RedissonReference} 还原为 Live Object 或 RObject。 */
     public Object fromReference(RedissonReference rr, ReferenceType type) throws ReflectiveOperationException {
         if (type == ReferenceType.REACTIVE) {
             return fromReference(redissonReactive, rr);
@@ -191,6 +223,7 @@ public class RedissonObjectBuilder {
         return fromReference(redisson, rr);
     }
     
+    /** 同步客户端路径：REntity 走 LiveObjectService，否则反射调用 get* 工厂。 */
     private Object fromReference(RedissonClient redisson, RedissonReference rr) throws ReflectiveOperationException {
         Class<?> type = rr.getType();
         if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
@@ -204,6 +237,7 @@ public class RedissonObjectBuilder {
         return getObject(redisson, rr, type, codecProvider);
     }
 
+    /** 根据引用中的类型与 Codec 信息，反射调用 RedissonClient 上匹配的 get* 方法。 */
     private Object getObject(Object redisson, RedissonReference rr, Class<?> type,
             ReferenceCodecProvider codecProvider) throws ReflectiveOperationException {
         if (type != null) {
@@ -226,6 +260,7 @@ public class RedissonObjectBuilder {
         throw new ClassNotFoundException("No RObject is found to match class type of " + rr.getTypeName() + " with codec type of " + rr.getCodec());
     }
     
+    /** 判断引用是否使用全局默认 Codec（null 或与 config 中类名相同）。 */
     private boolean isDefaultCodec(RedissonReference rr) {
         return rr.getCodec() == null
                 || rr.getCodec().equals(config.getCodec().getClass().getName());
@@ -233,20 +268,21 @@ public class RedissonObjectBuilder {
 
     private Object fromReference(RedissonRxClient redisson, RedissonReference rr) throws ReflectiveOperationException {
         Class<?> type = rr.getRxJavaType();
-        /**
-         * Live Object from reference in rxjava client is not supported yet.
-         */
+        /** RxJava 客户端暂不支持从引用还原 Live Object，仅还原普通 RObject。 */
         return getObject(redisson, rr, type, codecProvider);
     }
     
     private Object fromReference(RedissonReactiveClient redisson, RedissonReference rr) throws ReflectiveOperationException {
         Class<?> type = rr.getReactiveType();
-        /**
-         * Live Object from reference in reactive client is not supported yet.
-         */
+        /** Reactive 客户端暂不支持从引用还原 Live Object，仅还原普通 RObject。 */
         return getObject(redisson, rr, type, codecProvider);
     }
 
+    /**
+     * 将运行时对象转为可序列化的 {@link RedissonReference}。
+     * <p>
+     * 未 attach 的 {@code @REntity} 禁止直接序列化；{@link RLiveObject} 使用 NamingScheme 生成 key。
+     */
     public RedissonReference toReference(Object object) {
         if (object != null && ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
             throw new IllegalArgumentException("REntity should be attached to Redisson before save");
@@ -294,6 +330,7 @@ public class RedissonObjectBuilder {
         return null;
     }
 
+    /** 按 expectedType 的接口与 Codec 是否默认，反射调用 Client 工厂创建 RObject。 */
     private <T extends RObject, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws ReflectiveOperationException {
         Class<?>[] interfaces = expectedType.getInterfaces();
         for (Class<?> iType : interfaces) {
@@ -319,6 +356,11 @@ public class RedissonObjectBuilder {
         throw new ClassNotFoundException("No RObject is found to match class type of " + expectedType.getName() + " with codec type of " + codecName);
     }
 
+    /**
+     * 递归遍历容器结构，将其中 {@link RedissonReference} 替换为真实对象。
+     * <p>
+     * 支持 List、Set、Map、{@link ListScanResult}、{@link MapScanResult} 及 {@link ScoredEntry}。
+     */
     public Object tryHandleReference(Object o, ReferenceType type) throws ReflectiveOperationException {
         boolean hasConversion = false;
         if (o instanceof List) {
@@ -341,13 +383,8 @@ public class RedissonObjectBuilder {
             }
             for (Object i : r) {
                 Object ref = tryHandleReference0(i, type);
-                //Not testing for ref changes because r.add(ref) below needs to
-                //fail on the first iteration to be able to perform fall back
-                //if failure happens.
-                //
-                //Assuming the failure reason is systematic such as put method
-                //is not supported or implemented, and not an occasional issue
-                //like only one element fails.
+                // 此处不检测 ref 是否变化：下方 r.add(ref) 需在首次失败时触发回退；
+                // 假设失败是系统性的（如 Set 不支持 add），而非偶发单元素错误。
                 if (useNewSet) {
                     set.add(ref);
                 } else {
@@ -355,9 +392,7 @@ public class RedissonObjectBuilder {
                         r.add(ref);
                         set.add(i);
                     } catch (Exception e) {
-                        //r is not supporting add operation, like
-                        //LinkedHashMap$LinkedEntrySet and others.
-                        //fall back to use a new set.
+                        // 原 Set 不支持 add（如 LinkedHashMap$LinkedEntrySet），回退为新建 Set
                         useNewSet = true;
                         set.add(ref);
                     }
@@ -412,6 +447,7 @@ public class RedissonObjectBuilder {
         }
     }
 
+    /** 单对象层级的引用解包：Reference、ScoredEntry 内引用、Map.Entry 键值。 */
     private Object tryHandleReference0(Object o, ReferenceType type) throws ReflectiveOperationException {
         if (o instanceof RedissonReference) {
             return fromReference((RedissonReference) o, type);

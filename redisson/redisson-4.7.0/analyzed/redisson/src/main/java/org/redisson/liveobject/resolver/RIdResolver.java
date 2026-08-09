@@ -19,6 +19,9 @@ import org.redisson.api.annotation.RId;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
+ * {@link org.redisson.api.annotation.RId} 字段值的生成策略。
+ * <p>
+ * {@link org.redisson.RedissonLiveObjectService} 实例化实体前调用 {@link #resolve} 填充主键。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  * @param <V> Value type
@@ -26,8 +29,7 @@ import org.redisson.command.CommandAsyncExecutor;
 public interface RIdResolver<V> {
 
     /**
-     * RLiveObjectService instantiate the class and invokes this method to get
-     * a value used as the value for the field with RId annotation. 
+     * {@link org.redisson.RedissonLiveObjectService} 实例化实体类后调用，为 {@link RId} 字段生成主键值。
      * 
      * @param cls the class of the LiveObject.
      * @param annotation the RId annotation used in the class.
