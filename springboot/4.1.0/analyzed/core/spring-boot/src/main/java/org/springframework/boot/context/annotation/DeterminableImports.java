@@ -25,8 +25,7 @@ import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
- * 当 {@link ImportSelector} 与 {@link ImportBeanDefinitionRegistrar} 实现可提前确定导入内容时可实现的接口。
- * 上述接口较灵活，难以精确预知将添加的 Bean 定义；若给定相同源时导入结果一致，应使用本接口。
+ * 当 {@link ImportSelector} 与 {@link ImportBeanDefinitionRegistrar} 实现可提前确定导入内容时可实现的接口。 上述接口较灵活，难以精确预知将添加的 Bean 定义；若给定相同源时导入结果一致，应使用本接口。
  * <p>
  * 配合 Spring 测试支持时尤其有用，可更好地生成 {@link ApplicationContext} 缓存键。
  *
