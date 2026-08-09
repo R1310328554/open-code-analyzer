@@ -21,11 +21,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Decorator around a {@link Http2FrameReader} that logs all inbound frames before calling
- * back the listener.
+ * {@link Http2FrameReader} 的装饰器：在回调 listener 之前记录所有入站帧日志。
+ * <p>通过匿名 {@link Http2FrameListener} 拦截各帧类型，委托 {@link Http2FrameLogger} 输出后再转发。
  */
 public class Http2InboundFrameLogger implements Http2FrameReader {
+    /** 被装饰的实际帧读取器。 */
     private final Http2FrameReader reader;
+    /** 帧日志记录器，区分 INBOUND/OUTBOUND 方向。 */
     private final Http2FrameLogger logger;
 
     public Http2InboundFrameLogger(Http2FrameReader reader, Http2FrameLogger logger) {
@@ -36,6 +38,7 @@ public class Http2InboundFrameLogger implements Http2FrameReader {
     @Override
     public void readFrame(ChannelHandlerContext ctx, ByteBuf input, final Http2FrameListener listener)
             throws Http2Exception {
+        // 包装 listener：先打日志，再转发给真实 listener
         reader.readFrame(ctx, input, new Http2FrameListener() {
 
             @Override

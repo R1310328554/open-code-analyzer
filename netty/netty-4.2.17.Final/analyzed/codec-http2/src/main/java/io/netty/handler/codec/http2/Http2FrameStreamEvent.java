@@ -15,13 +15,21 @@
  */
 package io.netty.handler.codec.http2;
 
+/**
+ * {@link Http2FrameStream} 的状态变更事件，由 {@link Http2FrameCodec} 通过 user event 向上游投递。
+ */
 public final class Http2FrameStreamEvent {
 
+    /** 发生变更的流。 */
     private final Http2FrameStream stream;
+    /** 变更类型：状态迁移或可写性变化。 */
     private final Type type;
 
+    /** 事件类别。 */
     public enum Type {
+        /** 流状态机发生迁移（如 OPEN → HALF_CLOSED_LOCAL）。 */
         State,
+        /** 流控窗口变化导致可写性改变。 */
         Writability
     }
 
@@ -38,10 +46,12 @@ public final class Http2FrameStreamEvent {
         return type;
     }
 
+    /** 构造流状态变更事件。 */
     static Http2FrameStreamEvent stateChanged(Http2FrameStream stream) {
         return new Http2FrameStreamEvent(stream, Type.State);
     }
 
+    /** 构造流可写性变更事件。 */
     static Http2FrameStreamEvent writabilityChanged(Http2FrameStream stream) {
         return new Http2FrameStreamEvent(stream, Type.Writability);
     }

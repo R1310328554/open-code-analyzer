@@ -18,29 +18,27 @@ package io.netty.handler.codec.http2;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Decodes HPACK-encoded headers blocks into {@link Http2Headers}.
+ * HPACK 头块解码器：将二进制头块还原为 {@link Http2Headers}。
+ * <p>解码过程维护动态表状态，须与对端编码器通过 SETTINGS 同步表大小。
  */
 public interface Http2HeadersDecoder {
     /**
-     * Configuration related elements for the {@link Http2HeadersDecoder} interface
+     * {@link Http2HeadersDecoder} 的配置项。
      */
     interface Configuration {
         /**
-         * Represents the value for
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
+         * 设置 HPACK 动态表最大容量，对应 SETTINGS_HEADER_TABLE_SIZE。
          * This method should only be called by Netty (not users) as a result of a receiving a {@code SETTINGS} frame.
          */
         void maxHeaderTableSize(long max) throws Http2Exception;
 
         /**
-         * Represents the value for
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>. The initial value
-         * returned by this method must be {@link Http2CodecUtil#DEFAULT_HEADER_TABLE_SIZE}.
+         * 返回当前 HPACK 动态表最大容量；初始值须为 {@link Http2CodecUtil#DEFAULT_HEADER_TABLE_SIZE}。
          */
         long maxHeaderTableSize();
 
         /**
-         * Configure the maximum allowed size in bytes of each set of headers.
+         * 配置单组头的最大字节数及触发 GOAWAY 的上限。
          * <p>
          * This method should only be called by Netty (not users) as a result of a receiving a {@code SETTINGS} frame.
          * @param max <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
@@ -53,26 +51,26 @@ public interface Http2HeadersDecoder {
         void maxHeaderListSize(long max, long goAwayMax) throws Http2Exception;
 
         /**
-         * Represents the value for
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+         * 返回 SETTINGS_MAX_HEADER_LIST_SIZE 当前值。
          */
         long maxHeaderListSize();
 
         /**
-         * Represents the upper bound in bytes for a set of headers before a {@code GO_AWAY} should be sent.
-         * This will be {@code <=}
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+         * 返回触发 GOAWAY 的头列表大小上限，{@code <= maxHeaderListSize()}。
          */
         long maxHeaderListSizeGoAway();
     }
 
     /**
-     * Decodes the given headers block and returns the headers.
+     * 解码 HPACK 头块并返回 {@link Http2Headers}。
+     *
+     * @param streamId 所属流 ID，用于错误报告
+     * @param headerBlock HPACK 编码的二进制头块
      */
     Http2Headers decodeHeaders(int streamId, ByteBuf headerBlock) throws Http2Exception;
 
     /**
-     * Get the {@link Configuration} for this {@link Http2HeadersDecoder}
+     * 获取本解码器的配置对象。
      */
     Configuration configuration();
 }

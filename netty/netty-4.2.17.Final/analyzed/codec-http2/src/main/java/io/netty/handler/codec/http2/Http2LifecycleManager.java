@@ -20,30 +20,27 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
 /**
- * Manager for the life cycle of the HTTP/2 connection. Handles graceful shutdown of the channel,
- * closing only after all of the streams have closed.
+ * HTTP/2 连接生命周期管理器：协调流关闭、RST_STREAM、GOAWAY 与 channel 关闭。
+ * <p>核心职责是在所有活跃流结束后才关闭底层 channel，实现优雅停机。
  */
 public interface Http2LifecycleManager {
 
     /**
-     * Closes the local side of the {@code stream}. Depending on the {@code stream} state this may result in
-     * {@code stream} being closed. See {@link #closeStream(Http2Stream, ChannelFuture)}.
+     * 半关闭本地端（发送 END_STREAM）；视流状态可能触发完整关闭。
      * @param stream the stream to be half closed.
      * @param future See {@link #closeStream(Http2Stream, ChannelFuture)}.
      */
     void closeStreamLocal(Http2Stream stream, ChannelFuture future);
 
     /**
-     * Closes the remote side of the {@code stream}. Depending on the {@code stream} state this may result in
-     * {@code stream} being closed. See {@link #closeStream(Http2Stream, ChannelFuture)}.
+     * 半关闭远端（收到 END_STREAM）；视流状态可能触发完整关闭。
      * @param stream the stream to be half closed.
      * @param future See {@link #closeStream(Http2Stream, ChannelFuture)}.
      */
     void closeStreamRemote(Http2Stream stream, ChannelFuture future);
 
     /**
-     * Closes and deactivates the given {@code stream}. A listener is also attached to {@code future} and upon
-     * completion the underlying channel will be closed if {@link Http2Connection#numActiveStreams()} is 0.
+     * 完全关闭并注销流；{@code future} 完成后若 {@link Http2Connection#numActiveStreams()} 为 0 则关闭 channel。
      * @param stream the stream to be closed and deactivated.
      * @param future when completed if {@link Http2Connection#numActiveStreams()} is 0 then the underlying channel
      * will be closed.
@@ -51,9 +48,7 @@ public interface Http2LifecycleManager {
     void closeStream(Http2Stream stream, ChannelFuture future);
 
     /**
-     * Ensure the stream identified by {@code streamId} is reset. If our local state does not indicate the stream has
-     * been reset yet then a {@code RST_STREAM} will be sent to the peer. If our local state indicates the stream
-     * has already been reset then the return status will indicate success without sending anything to the peer.
+     * 确保指定流被重置：本地尚未 reset 时发送 RST_STREAM，已 reset 则直接返回成功。
      * @param ctx The context used for communication and buffer allocation if necessary.
      * @param streamId The identifier of the stream to reset.
      * @param errorCode Justification as to why this stream is being reset. See {@link Http2Error}.
@@ -66,12 +61,8 @@ public interface Http2LifecycleManager {
             ChannelPromise promise);
 
     /**
-     * Prevents the peer from creating streams and close the connection if {@code errorCode} is not
-     * {@link Http2Error#NO_ERROR}. After this call the peer is not allowed to create any new streams and the local
-     * endpoint will be limited to creating streams with {@code stream identifier <= lastStreamId}. This may result in
-     * sending a {@code GO_AWAY} frame (assuming we have not already sent one with
-     * {@code Last-Stream-ID <= lastStreamId}), or may just return success if a {@code GO_AWAY} has previously been
-     * sent.
+     * 禁止对端创建新流；{@code errorCode != NO_ERROR} 时关闭连接。
+     * 本地此后只能创建 {@code streamId <= lastStreamId} 的流，必要时发送 GOAWAY。
      * @param ctx The context used for communication and buffer allocation if necessary.
      * @param lastStreamId The last stream that the local endpoint is claiming it will accept.
      * @param errorCode The rational as to why the connection is being closed. See {@link Http2Error}.
@@ -85,7 +76,7 @@ public interface Http2LifecycleManager {
             ByteBuf debugData, ChannelPromise promise);
 
     /**
-     * Processes the given error.
+     * 处理连接级或流级错误；{@code outbound=true} 表示由出站操作引发，同时 fail 对应 {@link ChannelPromise}。
      *
      * @param ctx The context used for communication and buffer allocation if necessary.
      * @param outbound {@code true} if the error was caused by an outbound operation and so the corresponding

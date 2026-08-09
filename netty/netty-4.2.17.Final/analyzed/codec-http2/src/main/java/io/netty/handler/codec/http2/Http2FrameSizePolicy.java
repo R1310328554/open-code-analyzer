@@ -14,9 +14,13 @@
  */
 package io.netty.handler.codec.http2;
 
+/**
+ * HTTP/2 帧载荷大小策略，映射 RFC 7540 的 SETTINGS_MAX_FRAME_SIZE。
+ * <p>读写两端各自维护一份，收到对端 SETTINGS 后由 Netty 内部调用 {@link #maxFrameSize(int)} 同步。
+ */
 public interface Http2FrameSizePolicy {
     /**
-     * Sets the maximum allowed frame size. Attempts to write frames longer than this maximum will fail.
+     * 设置允许的最大帧载荷长度；超出此值的写操作将失败。
      * <p>
      * This value is used to represent
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_FRAME_SIZE</a>. This method should
@@ -25,7 +29,7 @@ public interface Http2FrameSizePolicy {
     void maxFrameSize(int max) throws Http2Exception;
 
     /**
-     * Gets the maximum allowed frame size.
+     * 获取当前允许的最大帧载荷长度。
      * <p>
      * This value is used to represent
      * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_FRAME_SIZE</a>. The initial value

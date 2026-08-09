@@ -16,22 +16,22 @@
 package io.netty.handler.codec.http2;
 
 /**
- * HTTP/2 HEADERS frame.
+ * HTTP/2 HEADERS 帧抽象，携带完整 HPACK 解码后的头列表。
  */
 public interface Http2HeadersFrame extends Http2StreamFrame {
 
     /**
-     * A complete header list. CONTINUATION frames are automatically handled.
+     * 完整头列表；CONTINUATION 分片由 codec 自动拼接。
      */
     Http2Headers headers();
 
     /**
-     * Frame padding to use. Must be non-negative and less than 256.
+     * 帧 padding 字节数，非负且小于 256。
      */
     int padding();
 
     /**
-     * Returns {@code true} if the END_STREAM flag is set.
+     * 是否设置 END_STREAM 标志（本帧同时结束该流）。
      */
     boolean isEndStream();
 }

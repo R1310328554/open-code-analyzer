@@ -19,11 +19,12 @@ package io.netty.handler.codec.http2;
 import io.netty.handler.codec.http2.Http2Stream.State;
 
 /**
- * A single stream within an HTTP/2 connection. To be used with the {@link Http2FrameCodec}.
+ * HTTP/2 连接中的单条流抽象，供 {@link Http2FrameCodec} 向上层暴露流标识与状态。
+ * <p>与底层 {@link Http2Stream} 不同，此接口面向 frame 级 API 用户，不暴露流控细节。
  */
 public interface Http2FrameStream {
     /**
-     * Returns the stream identifier.
+     * 返回流标识符。
      *
      * <p>Use {@link Http2CodecUtil#isStreamIdValid(int)} to check if the stream has already been assigned an
      * identifier.
@@ -31,7 +32,7 @@ public interface Http2FrameStream {
     int id();
 
     /**
-     * Returns the state of this stream.
+     * 返回流当前生命周期状态（IDLE、OPEN、HALF_CLOSED 等）。
      */
     State state();
 }

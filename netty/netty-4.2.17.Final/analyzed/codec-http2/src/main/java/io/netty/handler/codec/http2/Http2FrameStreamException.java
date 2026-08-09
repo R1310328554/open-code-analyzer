@@ -19,13 +19,15 @@ package io.netty.handler.codec.http2;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * An HTTP/2 exception for a specific {@link Http2FrameStream}.
+ * 绑定到特定 {@link Http2FrameStream} 的 HTTP/2 异常，携带 RFC 7540 错误码以便发送 RST_STREAM。
  */
 public final class Http2FrameStreamException extends Exception {
 
     private static final long serialVersionUID = -4407186173493887044L;
 
+    /** 应写入 RST_STREAM 帧的 HTTP/2 错误码。 */
     private final Http2Error error;
+    /** 出错的流。 */
     private final Http2FrameStream stream;
 
     public Http2FrameStreamException(Http2FrameStream stream, Http2Error error, Throwable cause) {
@@ -34,10 +36,12 @@ public final class Http2FrameStreamException extends Exception {
         this.error = checkNotNull(error, "error");
     }
 
+    /** 返回 HTTP/2 错误码。 */
     public Http2Error error() {
         return error;
     }
 
+    /** 返回关联的流。 */
     public Http2FrameStream stream() {
         return stream;
     }

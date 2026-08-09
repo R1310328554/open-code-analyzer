@@ -23,28 +23,27 @@ import io.netty.channel.ChannelPromise;
 import java.io.Closeable;
 
 /**
- * A writer responsible for marshaling HTTP/2 frames to the channel. All of the write methods in
- * this interface write to the context, but DO NOT FLUSH. To perform a flush, you must separately
- * call {@link ChannelHandlerContext#flush()}.
+ * HTTP/2 帧写入器：将各类帧序列化到 channel 出站缓冲。
+ * <p>所有 write 方法仅写入 context，<strong>不会自动 flush</strong>；需另行调用 {@link ChannelHandlerContext#flush()}。
  */
 public interface Http2FrameWriter extends Http2DataWriter, Closeable {
     /**
-     * Configuration specific to {@link Http2FrameWriter}
+     * {@link Http2FrameWriter} 的运行时可调配置。
      */
     interface Configuration {
         /**
-         * Get the {@link Http2HeadersEncoder.Configuration} for this {@link Http2FrameWriter}
+         * 返回 HPACK 头块编码配置。
          */
         Http2HeadersEncoder.Configuration headersConfiguration();
 
         /**
-         * Get the {@link Http2FrameSizePolicy} for this {@link Http2FrameWriter}
+         * 返回帧载荷最大长度策略。
          */
         Http2FrameSizePolicy frameSizePolicy();
     }
 
     /**
-     * Writes a HEADERS frame to the remote endpoint.
+     * 写入 HEADERS 帧。
      *
      * @param ctx the context to use for writing.
      * @param streamId the stream for which to send the frame.
@@ -66,7 +65,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
                                int padding, boolean endStream, ChannelPromise promise);
 
     /**
-     * Writes a HEADERS frame with priority specified to the remote endpoint.
+     * 写入带优先级信息的 HEADERS 帧。
      *
      * @param ctx the context to use for writing.
      * @param streamId the stream for which to send the frame.
@@ -93,7 +92,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
                                ChannelPromise promise);
 
     /**
-     * Writes a PRIORITY frame to the remote endpoint.
+     * 写入 PRIORITY 帧，调整流的依赖树与权重。
      *
      * @param ctx the context to use for writing.
      * @param streamId the stream for which to send the frame.
@@ -108,7 +107,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
             short weight, boolean exclusive, ChannelPromise promise);
 
     /**
-     * Writes a RST_STREAM frame to the remote endpoint.
+     * 写入 RST_STREAM 帧，以 errorCode 终止指定流。
      *
      * @param ctx the context to use for writing.
      * @param streamId the stream for which to send the frame.
@@ -120,7 +119,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
             ChannelPromise promise);
 
     /**
-     * Writes a SETTINGS frame to the remote endpoint.
+     * 写入 SETTINGS 帧，协商连接参数。
      *
      * @param ctx the context to use for writing.
      * @param settings the settings to be sent.
@@ -131,7 +130,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
             ChannelPromise promise);
 
     /**
-     * Writes a SETTINGS acknowledgment to the remote endpoint.
+     * 写入 SETTINGS ACK，确认已应用对端 SETTINGS。
      *
      * @param ctx the context to use for writing.
      * @param promise the promise for the write.
@@ -140,7 +139,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
     ChannelFuture writeSettingsAck(ChannelHandlerContext ctx, ChannelPromise promise);
 
     /**
-     * Writes a PING frame to the remote endpoint.
+     * 写入 PING 帧；{@code ack=true} 时为对入站 PING 的应答。
      *
      * @param ctx the context to use for writing.
      * @param ack indicates whether this is an ack of a PING frame previously received from the
@@ -153,7 +152,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
             ChannelPromise promise);
 
     /**
-     * Writes a PUSH_PROMISE frame to the remote endpoint.
+     * 写入 PUSH_PROMISE 帧，预告服务端推送流。
      *
      * @param ctx the context to use for writing.
      * @param streamId the stream for which to send the frame.
@@ -175,7 +174,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
                                    Http2Headers headers, int padding, ChannelPromise promise);
 
     /**
-     * Writes a GO_AWAY frame to the remote endpoint.
+     * 写入 GO_AWAY 帧，发起连接级关闭；{@code debugData} 由本方法负责释放。
      *
      * @param ctx the context to use for writing.
      * @param lastStreamId the last known stream of this endpoint.
@@ -188,7 +187,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
             ByteBuf debugData, ChannelPromise promise);
 
     /**
-     * Writes a WINDOW_UPDATE frame to the remote endpoint.
+     * 写入 WINDOW_UPDATE 帧，增加本地入站流控窗口。
      *
      * @param ctx the context to use for writing.
      * @param streamId the stream for which to send the frame.
@@ -201,7 +200,7 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
             int windowSizeIncrement, ChannelPromise promise);
 
     /**
-     * Generic write method for any HTTP/2 frame. This allows writing of non-standard frames.
+     * 通用帧写入入口，用于非标准扩展帧类型；{@code payload} 由本方法负责释放。
      *
      * @param ctx the context to use for writing.
      * @param frameType the frame type identifier.
@@ -215,12 +214,12 @@ public interface Http2FrameWriter extends Http2DataWriter, Closeable {
             Http2Flags flags, ByteBuf payload, ChannelPromise promise);
 
     /**
-     * Get the configuration related elements for this {@link Http2FrameWriter}
+     * 获取本 writer 的配置对象。
      */
     Configuration configuration();
 
     /**
-     * Closes this writer and frees any allocated resources.
+     * 关闭 writer 并释放内部资源。
      */
     @Override
     void close();

@@ -21,39 +21,42 @@ import io.netty.channel.ChannelHandlerContext;
 import java.io.Closeable;
 
 /**
- * Reads HTTP/2 frames from an input {@link ByteBuf} and notifies the specified
- * {@link Http2FrameListener} when frames are complete.
+ * HTTP/2 帧读取器：从 {@link ByteBuf} 增量解析帧，完整帧就绪后回调 {@link Http2FrameListener}。
+ * <p>典型实现（如 {@code DefaultHttp2FrameReader}）会维护解析状态，数据不足时静默等待更多字节。
  */
 public interface Http2FrameReader extends Closeable {
     /**
-     * Configuration specific to {@link Http2FrameReader}
+     * {@link Http2FrameReader} 的运行时可调配置。
      */
     interface Configuration {
         /**
-         * Get the {@link Http2HeadersDecoder.Configuration} for this {@link Http2FrameReader}
+         * 返回 HPACK 头块解码配置（动态表大小等）。
          */
         Http2HeadersDecoder.Configuration headersConfiguration();
 
         /**
-         * Get the {@link Http2FrameSizePolicy} for this {@link Http2FrameReader}
+         * 返回帧载荷最大长度策略，对应 SETTINGS_MAX_FRAME_SIZE。
          */
         Http2FrameSizePolicy frameSizePolicy();
     }
 
     /**
-     * Attempts to read the next frame from the input buffer. If enough data is available to fully
-     * read the frame, notifies the listener of the read frame.
+     * 尝试从输入缓冲读取下一帧；数据足够时解析并通知 listener，不足则留待下次调用。
+     *
+     * @param ctx 当前 channel handler 上下文
+     * @param input 待解析的字节缓冲（reader index 会随已消费数据前移）
+     * @param listener 帧解析完成后的回调
      */
     void readFrame(ChannelHandlerContext ctx, ByteBuf input, Http2FrameListener listener)
             throws Http2Exception;
 
     /**
-     * Get the configuration related elements for this {@link Http2FrameReader}
+     * 获取本 reader 的配置对象，用于响应 SETTINGS 帧更新解码参数。
      */
     Configuration configuration();
 
     /**
-     * Closes this reader and frees any allocated resources.
+     * 关闭 reader 并释放内部资源（如 HPACK 解码器状态）。
      */
     @Override
     void close();

@@ -19,7 +19,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
 /**
- * HTTP/2 GOAWAY frame.
+ * HTTP/2 GOAWAY 帧抽象，表示连接级优雅关闭。
  *
  * <p>The last stream identifier <em>must not</em> be set by the application, but instead the
  * relative {@link #extraStreamIds()} should be used. The {@link #lastStreamId()} will only be
@@ -30,19 +30,17 @@ import io.netty.buffer.ByteBufHolder;
  */
 public interface Http2GoAwayFrame extends Http2Frame, ByteBufHolder {
     /**
-     * The reason for beginning closure of the connection. Represented as an HTTP/2 error code.
+     * 连接关闭原因，以 HTTP/2 错误码表示。
      */
     long errorCode();
 
     /**
-     * The number of IDs to reserve for the receiver to use while GOAWAY is in transit. This allows
-     * for new streams currently en route to still be created, up to a point, which allows for very
-     * graceful shutdown of both sides.
+     * GOAWAY 传输期间为对端预留的新流 ID 数量，实现双向优雅关闭。
      */
     int extraStreamIds();
 
     /**
-     * Sets the number of IDs to reserve for the receiver to use while GOAWAY is in transit.
+     * 设置 GOAWAY 传输期间预留的新流 ID 数量。
      *
      * @see #extraStreamIds
      * @return {@code this}
@@ -50,13 +48,12 @@ public interface Http2GoAwayFrame extends Http2Frame, ByteBufHolder {
     Http2GoAwayFrame setExtraStreamIds(int extraStreamIds);
 
     /**
-     * Returns the last stream identifier if set, or {@code -1} else.
+     * 返回最后处理的流 ID；未设置时返回 {@code -1}（出站帧由 codec 根据 extraStreamIds 计算）。
      */
     int lastStreamId();
 
     /**
-     * Optional debugging information describing cause the GOAWAY. Will not be {@code null}, but may
-     * be empty.
+     * 可选调试信息，永不为 {@code null}，但可为 empty。
      */
     @Override
     ByteBuf content();

@@ -23,12 +23,14 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 /**
- * A collection of headers sent or received via HTTP/2.
+ * HTTP/2 头集合，扩展通用 {@link Headers} 接口并支持伪头（pseudo-header）语义。
+ * <p>请求头含 {@code :method/:scheme/:authority/:path}，响应头含 {@code :status}；
+ * RFC 8441 扩展 {@code :protocol} 用于 WebSocket over HTTP/2。
  */
 public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2Headers> {
 
     /**
-     * HTTP/2 pseudo-headers names.
+     * HTTP/2 伪头名称枚举；均以 {@code ':'} 开头，区别于普通头字段。
      */
     enum PseudoHeaderName {
         /**
@@ -62,10 +64,12 @@ public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2H
          */
         PROTOCOL(":protocol", true);
 
+        /** 伪头前缀字符 {@code ':'}。 */
         private static final char PSEUDO_HEADER_PREFIX = ':';
         private static final byte PSEUDO_HEADER_PREFIX_BYTE = (byte) PSEUDO_HEADER_PREFIX;
 
         private final AsciiString value;
+        /** {@code true} 表示仅用于请求上下文（如 :method），{@code :status} 为响应专用。 */
         private final boolean requestOnly;
 
         PseudoHeaderName(String value, boolean requestOnly) {
@@ -79,7 +83,7 @@ public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2H
         }
 
         /**
-         * Indicates whether the specified header follows the pseudo-header format (begins with ':' character)
+         * 判断给定名称是否符合伪头格式（以 {@code ':'} 开头）。
          *
          * @return {@code true} if the header follow the pseudo-header format
          */
@@ -93,28 +97,28 @@ public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2H
         }
 
         /**
-         * Indicates whether the given header name is a valid HTTP/2 pseudo header.
+         * 判断给定名称是否为 RFC 7540 定义的合法伪头。
          */
         public static boolean isPseudoHeader(CharSequence header) {
             return getPseudoHeader(header) != null;
         }
 
         /**
-         * Indicates whether the given header name is a valid HTTP/2 pseudo header.
+         * 判断给定名称是否为 RFC 7540 定义的合法伪头。
          */
         public static boolean isPseudoHeader(AsciiString header) {
             return getPseudoHeader(header) != null;
         }
 
         /**
-         * Indicates whether the given header name is a valid HTTP/2 pseudo header.
+         * 判断给定名称是否为 RFC 7540 定义的合法伪头。
          */
         public static boolean isPseudoHeader(String header) {
             return getPseudoHeader(header) != null;
         }
 
         /**
-         * Returns the {@link PseudoHeaderName} corresponding to the specified header name.
+         * 根据头名称返回对应 {@link PseudoHeaderName}，无法识别时返回 {@code null}。
          *
          * @return corresponding {@link PseudoHeaderName} if any, {@code null} otherwise.
          */
@@ -125,6 +129,7 @@ public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2H
             return getPseudoHeaderName(header);
         }
 
+        // 按名称长度分支匹配，避免对所有伪头做完整字符串比较
         private static PseudoHeaderName getPseudoHeaderName(CharSequence header) {
             int length = header.length();
             if (length > 0 && header.charAt(0) == PSEUDO_HEADER_PREFIX) {
@@ -162,7 +167,7 @@ public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2H
         }
 
         /**
-         * Returns the {@link PseudoHeaderName} corresponding to the specified header name.
+         * 根据 {@link AsciiString} 头名称返回对应 {@link PseudoHeaderName}。
          *
          * @return corresponding {@link PseudoHeaderName} if any, {@code null} otherwise.
          */
@@ -203,7 +208,7 @@ public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2H
         }
 
         /**
-         * Indicates whether the pseudo-header is to be used in a request context.
+         * 该伪头是否仅用于请求上下文。
          *
          * @return {@code true} if the pseudo-header is to be used in a request context
          */
@@ -213,72 +218,70 @@ public interface Http2Headers extends Headers<CharSequence, CharSequence, Http2H
     }
 
     /**
-     * Returns an iterator over all HTTP/2 headers. The iteration order is as follows:
-     *   1. All pseudo headers (order not specified).
-     *   2. All non-pseudo headers (in insertion order).
+     * 迭代所有 HTTP/2 头，顺序为：先全部伪头（顺序未规定），再普通头（插入顺序）。
      */
     @Override
     Iterator<Entry<CharSequence, CharSequence>> iterator();
 
     /**
-     * Equivalent to {@link #getAll(Object)} but no intermediate list is generated.
+     * 等价于 {@link #getAll(Object)} 但不生成中间 List。
      * @param name the name of the header to retrieve
      * @return an {@link Iterator} of header values corresponding to {@code name}.
      */
     Iterator<CharSequence> valueIterator(CharSequence name);
 
     /**
-     * Sets the {@link PseudoHeaderName#METHOD} header
+     * 设置 {@link PseudoHeaderName#METHOD} 伪头。
      */
     Http2Headers method(CharSequence value);
 
     /**
-     * Sets the {@link PseudoHeaderName#SCHEME} header
+     * 设置 {@link PseudoHeaderName#SCHEME} 伪头。
      */
     Http2Headers scheme(CharSequence value);
 
     /**
-     * Sets the {@link PseudoHeaderName#AUTHORITY} header
+     * 设置 {@link PseudoHeaderName#AUTHORITY} 伪头。
      */
     Http2Headers authority(CharSequence value);
 
     /**
-     * Sets the {@link PseudoHeaderName#PATH} header
+     * 设置 {@link PseudoHeaderName#PATH} 伪头。
      */
     Http2Headers path(CharSequence value);
 
     /**
-     * Sets the {@link PseudoHeaderName#STATUS} header
+     * 设置 {@link PseudoHeaderName#STATUS} 伪头。
      */
     Http2Headers status(CharSequence value);
 
     /**
-     * Gets the {@link PseudoHeaderName#METHOD} header or {@code null} if there is no such header
+     * 获取 {@link PseudoHeaderName#METHOD}，不存在时返回 {@code null}。
      */
     CharSequence method();
 
     /**
-     * Gets the {@link PseudoHeaderName#SCHEME} header or {@code null} if there is no such header
+     * 获取 {@link PseudoHeaderName#SCHEME}，不存在时返回 {@code null}。
      */
     CharSequence scheme();
 
     /**
-     * Gets the {@link PseudoHeaderName#AUTHORITY} header or {@code null} if there is no such header
+     * 获取 {@link PseudoHeaderName#AUTHORITY}，不存在时返回 {@code null}。
      */
     CharSequence authority();
 
     /**
-     * Gets the {@link PseudoHeaderName#PATH} header or {@code null} if there is no such header
+     * 获取 {@link PseudoHeaderName#PATH}，不存在时返回 {@code null}。
      */
     CharSequence path();
 
     /**
-     * Gets the {@link PseudoHeaderName#STATUS} header or {@code null} if there is no such header
+     * 获取 {@link PseudoHeaderName#STATUS}，不存在时返回 {@code null}。
      */
     CharSequence status();
 
     /**
-     * Returns {@code true} if a header with the {@code name} and {@code value} exists, {@code false} otherwise.
+     * 判断是否存在指定 {@code name}/{@code value} 的头对。
      * <p>
      * If {@code caseInsensitive} is {@code true} then a case insensitive compare is done on the value.
      *

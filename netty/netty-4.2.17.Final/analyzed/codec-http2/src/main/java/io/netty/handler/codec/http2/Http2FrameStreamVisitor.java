@@ -17,12 +17,12 @@
 package io.netty.handler.codec.http2;
 
 /**
- * A visitor that allows to iterate over a collection of {@link Http2FrameStream}s.
+ * {@link Http2FrameStream} 集合的访问者模式迭代器，用于遍历连接上的活跃流。
  */
 public interface Http2FrameStreamVisitor {
 
     /**
-     * This method is called once for each stream of the collection.
+     * 对集合中的每条流调用一次。
      *
      * <p>If an {@link Exception} is thrown, the loop is stopped.
      *

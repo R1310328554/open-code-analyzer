@@ -18,50 +18,43 @@ package io.netty.handler.codec.http2;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Encodes {@link Http2Headers} into HPACK-encoded headers blocks.
+ * HPACK 头块编码器：将 {@link Http2Headers} 序列化为二进制头块写入 {@link ByteBuf}。
  */
 public interface Http2HeadersEncoder {
     /**
-     * Configuration related elements for the {@link Http2HeadersEncoder} interface
+     * {@link Http2HeadersEncoder} 的配置项。
      */
     interface Configuration {
         /**
-         * Represents the value for
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
+         * 设置 HPACK 动态表最大容量，对应 SETTINGS_HEADER_TABLE_SIZE。
          * This method should only be called by Netty (not users) as a result of a receiving a {@code SETTINGS} frame.
          */
         void maxHeaderTableSize(long max) throws Http2Exception;
 
         /**
-         * Represents the value for
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_HEADER_TABLE_SIZE</a>.
-         * The initial value returned by this method must be {@link Http2CodecUtil#DEFAULT_HEADER_TABLE_SIZE}.
+         * 返回当前 HPACK 动态表最大容量；初始值须为 {@link Http2CodecUtil#DEFAULT_HEADER_TABLE_SIZE}。
          */
         long maxHeaderTableSize();
 
         /**
-         * Represents the value for
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+         * 设置单组头的最大字节数，对应 SETTINGS_MAX_HEADER_LIST_SIZE。
          * This method should only be called by Netty (not users) as a result of a receiving a {@code SETTINGS} frame.
          */
         void maxHeaderListSize(long max) throws Http2Exception;
 
         /**
-         * Represents the value for
-         * <a href="https://tools.ietf.org/html/rfc7540#section-6.5.2">SETTINGS_MAX_HEADER_LIST_SIZE</a>.
+         * 返回 SETTINGS_MAX_HEADER_LIST_SIZE 当前值。
          */
         long maxHeaderListSize();
     }
 
     /**
-     * Determine if a header name/value pair is treated as
-     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.
-     * If the object can be dynamically modified and shared across multiple connections it may need to be thread safe.
+     * 敏感头检测器：判定头名/值对应否以 HPACK "Never Index" 方式编码（RFC 7541 §7.1.3）。
+     * <p>若实例跨连接共享且可动态修改，实现须保证线程安全。
      */
     interface SensitivityDetector {
         /**
-         * Determine if a header {@code name}/{@code value} pair should be treated as
-         * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.
+         * 判定 {@code name}/{@code value} 是否应视为敏感头（禁止索引）。
          *
          * @param name The name for the header.
          * @param value The value of the header.
@@ -73,22 +66,20 @@ public interface Http2HeadersEncoder {
     }
 
     /**
-     * Encodes the given headers and writes the output headers block to the given output buffer.
+     * 将头列表 HPACK 编码并写入输出缓冲。
      *
-     * @param streamId  the identifier of the stream for which the headers are encoded.
-     * @param headers the headers to be encoded.
-     * @param buffer the buffer to receive the encoded headers.
+     * @param streamId  所属流 ID
+     * @param headers 待编码的头集合
+     * @param buffer 接收编码结果的输出缓冲
      */
     void encodeHeaders(int streamId, Http2Headers headers, ByteBuf buffer) throws Http2Exception;
 
     /**
-     * Get the {@link Configuration} for this {@link Http2HeadersEncoder}
+     * 获取本编码器的配置对象。
      */
     Configuration configuration();
 
-    /**
-     * Always return {@code false} for {@link SensitivityDetector#isSensitive(CharSequence, CharSequence)}.
-     */
+    /** 始终返回 {@code false} 的敏感头检测器（所有头均可索引）。 */
     SensitivityDetector NEVER_SENSITIVE = new SensitivityDetector() {
         @Override
         public boolean isSensitive(CharSequence name, CharSequence value) {
@@ -96,9 +87,7 @@ public interface Http2HeadersEncoder {
         }
     };
 
-    /**
-     * Always return {@code true} for {@link SensitivityDetector#isSensitive(CharSequence, CharSequence)}.
-     */
+    /** 始终返回 {@code true} 的敏感头检测器（所有头均禁止索引）。 */
     SensitivityDetector ALWAYS_SENSITIVE = new SensitivityDetector() {
         @Override
         public boolean isSensitive(CharSequence name, CharSequence value) {
