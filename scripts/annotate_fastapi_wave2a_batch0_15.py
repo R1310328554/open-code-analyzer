@@ -434,10 +434,12 @@ def annotate_file(rel: str) -> None:
     for old, new in FILE_REPLACEMENTS.get(rel, []):
         if old == new:
             continue
-        count = text.count(old)
-        if count == 0:
+        if old in text:
+            text = text.replace(old, new)
+        elif has_chinese(text):
+            continue
+        else:
             raise ValueError(f"Pattern not found in {rel}:\n{old[:120]}...")
-        text = text.replace(old, new)
     if not has_chinese(text):
         raise ValueError(f"No Chinese content after annotation: {rel}")
     dst.write_text(text, encoding="utf-8")
