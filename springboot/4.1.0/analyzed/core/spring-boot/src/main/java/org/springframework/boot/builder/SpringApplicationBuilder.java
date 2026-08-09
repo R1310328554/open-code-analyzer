@@ -50,14 +50,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * 用于构建 {@link SpringApplication} 与 {@link ApplicationContext} 实例的构建器，
- * 提供流式 API 与上下文层次结构支持。上下文层次结构示例：
+ * 用于构建 {@link SpringApplication} 与 {@link ApplicationContext} 实例的构建器，提供流式 API 与上下文层次结构支持。 Simple example of a context
+ * hierarchy:
  *
  * <pre class="code">
  * new SpringApplicationBuilder(ParentConfig.class).child(ChildConfig.class).run(args);
  * </pre>
  *
- * 另一常见用法是设置激活的 profile 与默认属性以配置应用环境：
+ * Another common use case is setting active profiles and default properties to set up the
+ * environment for an application:
  *
  * <pre class="code">
  * new SpringApplicationBuilder(Application.class).profiles(&quot;server&quot;)
@@ -103,11 +104,12 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 使用给定 {@link ResourceLoader} 从指定源创建新的 {@link SpringApplication} 实例。
-	 * 子类可覆盖以提供自定义 {@link SpringApplication} 子类。
-	 * @param resourceLoader 资源加载器，或 {@code null}
-	 * @param sources 配置源
-	 * @return {@link SpringApplication} 实例
+	 * Creates a new {@link SpringApplication} instance from the given sources using the
+	 * given {@link ResourceLoader}. Subclasses may override in order to provide a custom
+	 * subclass of {@link SpringApplication}.
+	 * @param resourceLoader the resource loader or {@code null}
+	 * @param sources the sources
+	 * @return the {@link SpringApplication} instance
 	 * @since 2.6.0
 	 */
 	protected SpringApplication createSpringApplication(@Nullable ResourceLoader resourceLoader, Class<?>... sources) {
@@ -115,26 +117,27 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 访问当前应用上下文。
-	 * @return 当前应用上下文（尚未运行时为 {@code null}）
+	 * Accessor for the current application context.
+	 * @return the current application context (or {@code null} if not yet running)
 	 */
 	public @Nullable ConfigurableApplicationContext context() {
 		return this.context;
 	}
 
 	/**
-	 * 访问当前应用。
-	 * @return 当前应用（永不为 null）
+	 * Accessor for the current application.
+	 * @return the current application (never null)
 	 */
 	public SpringApplication application() {
 		return this.application;
 	}
 
 	/**
-	 * 使用提供的命令行参数创建应用上下文（及指定的父上下文）。若父上下文尚未启动，
-	 * 将先以相同参数运行父上下文。
-	 * @param args 命令行参数
-	 * @return 根据当前状态创建的应用上下文
+	 * Create an application context (and its parent if specified) with the command line
+	 * args provided. The parent is run first with the same arguments if it has not yet
+	 * been started.
+	 * @param args the command line arguments
+	 * @return an application context created from the current state
 	 */
 	public ConfigurableApplicationContext run(String... args) {
 		if (this.running.get()) {
@@ -164,7 +167,7 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 返回已完全配置、可运行的 {@link SpringApplication}。
+	 * Returns a fully configured {@link SpringApplication} that is ready to run.
 	 * @return 已完全配置的 {@link SpringApplication}
 	 */
 	public SpringApplication build() {
@@ -172,10 +175,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 返回已完全配置、可运行的 {@link SpringApplication}。已配置的父上下文将使用
-	 * 给定 {@code args} 运行。
-	 * @param args 父上下文的参数
-	 * @return the fully configured {@link SpringApplication}.
+	 * Returns a fully configured {@link SpringApplication} that is ready to run. Any
+	 * parent that has been configured will be run with the given {@code args}.
+	 * @param args the parent's args
+	 * @return 已完全配置的 {@link SpringApplication}
 	 */
 	public SpringApplication build(String... args) {
 		configureAsChildIfNecessary(args);
@@ -184,8 +187,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 使用提供的源创建子应用。默认参数与环境会复制到子应用，其余为全新配置。
-	 * @param sources 应用的配置源（Spring 配置类）
+	 * Create a child application with the provided sources. Default args and environment
+	 * are copied down into the child, but everything else is a clean sheet.
+	 * @param sources the sources for the application (Spring configuration)
 	 * @return 子应用构建器
 	 */
 	public SpringApplicationBuilder child(Class<?>... sources) {
@@ -213,7 +217,8 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 使用提供的源添加父应用。默认参数与环境会复制到父应用，其余为全新配置。
+	 * Add a parent application with the provided sources. Default args and environment
+	 * are copied up into the parent, but everything else is a clean sheet.
 	 * @param sources the sources for the application (Spring configuration)
 	 * @return 父构建器
 	 */
@@ -241,9 +246,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 向现有应用添加已在运行的父上下文。
-	 * @param parent 父上下文
-	 * @return 当前构建器（非父构建器）
+	 * Add an already running parent context to an existing application.
+	 * @param parent the parent context
+	 * @return 当前构建器 (not the parent)
 	 */
 	public SpringApplicationBuilder parent(ConfigurableApplicationContext parent) {
 		this.parent = new SpringApplicationBuilder();
@@ -253,30 +258,34 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 创建兄弟应用（拥有相同父上下文）。调用此方法时，若当前应用（及其父上下文）
-	 * 尚未运行，将不带参数启动。若需传入参数，请改用
-	 * {@link #sibling(Class[], String...)}。
+	 * Create a sibling application (one with the same parent). A side effect of calling
+	 * this method is that the current application (and its parent) are started without
+	 * any arguments if they are not already running. To supply arguments when starting
+	 * the current application and its parent use {@link #sibling(Class[], String...)}
+	 * instead.
 	 * @param sources the sources for the application (Spring configuration)
-	 * @return 新的兄弟构建器
+	 * @return 新的同级构建器
 	 */
 	public SpringApplicationBuilder sibling(Class<?>... sources) {
 		return runAndExtractParent().child(sources);
 	}
 
 	/**
-	 * 创建兄弟应用（拥有相同父上下文）。调用此方法时，若当前应用（及其父上下文）
-	 * 尚未运行，将启动它们。
+	 * Create a sibling application (one with the same parent). A side effect of calling
+	 * this method is that the current application (and its parent) are started if they
+	 * are not already running.
 	 * @param sources the sources for the application (Spring configuration)
-	 * @param args 启动当前应用及其父上下文时使用的命令行参数
-	 * @return the new sibling builder
+	 * @param args the command line arguments to use when starting the current app and its
+	 * parent
+	 * @return 新的同级构建器
 	 */
 	public SpringApplicationBuilder sibling(Class<?>[] sources, String... args) {
 		return runAndExtractParent(args).child(sources);
 	}
 
 	/**
-	 * 显式设置用于创建应用上下文的工厂。
-	 * @param factory 要使用的工厂
+	 * Explicitly set the factory used to create the application context.
+	 * @param factory the factory to use
 	 * @return 当前构建器
 	 * @since 2.4.0
 	 */
@@ -286,9 +295,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 向此应用添加更多源（配置类与组件）。
-	 * @param sources 要添加的源
-	 * @return the current builder
+	 * Add more sources (configuration classes and components) to this application.
+	 * @param sources the sources to add
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder sources(Class<?>... sources) {
 		this.sources.addAll(new LinkedHashSet<>(Arrays.asList(sources)));
@@ -296,9 +305,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 显式指定 Web 应用类型。未设置时根据类路径自动检测。
-	 * @param webApplicationType Web 应用类型
-	 * @return the current builder
+	 * Flag to explicitly request a specific type of web application. Auto-detected based
+	 * on the classpath if not set.
+	 * @param webApplicationType the type of web application
+	 * @return 当前构建器
 	 * @since 2.0.0
 	 */
 	public SpringApplicationBuilder web(WebApplicationType webApplicationType) {
@@ -307,9 +317,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 是否记录启动信息。
-	 * @param logStartupInfo 标志位，默认为 true
-	 * @return the current builder
+	 * Flag to indicate the startup information should be logged.
+	 * @param logStartupInfo the flag to set. Default true.
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder logStartupInfo(boolean logStartupInfo) {
 		this.application.setLogStartupInfo(logStartupInfo);
@@ -317,9 +327,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 设置在未提供静态 banner 文件时用于打印 banner 的 {@link Banner} 实例。
-	 * @param banner 要使用的 banner
-	 * @return the current builder
+	 * Sets the {@link Banner} instance which will be used to print the banner when no
+	 * static banner file is provided.
+	 * @param banner the banner to use
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder banner(Banner banner) {
 		this.application.setBanner(banner);
@@ -332,10 +343,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 设置应用是否为无头模式（不实例化 AWT）。默认为 {@code true}，
-	 * 以避免出现 Java 图标。
-	 * @param headless 是否为无头模式
-	 * @return the current builder
+	 * Sets if the application is headless and should not instantiate AWT. Defaults to
+	 * {@code true} to prevent java icons appearing.
+	 * @param headless if the application is headless
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder headless(boolean headless) {
 		this.application.setHeadless(headless);
@@ -343,9 +354,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 设置创建的 {@link ApplicationContext} 是否注册关闭钩子。
-	 * @param registerShutdownHook 是否注册关闭钩子
-	 * @return the current builder
+	 * Sets if the created {@link ApplicationContext} should have a shutdown hook
+	 * registered.
+	 * @param registerShutdownHook if the shutdown hook should be registered
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder registerShutdownHook(boolean registerShutdownHook) {
 		this.registerShutdownHookApplied = true;
@@ -354,9 +366,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 固定用于锚定启动消息的主应用类。
-	 * @param mainApplicationClass 要使用的类
-	 * @return the current builder
+	 * Fixes the main application class that is used to anchor the startup messages.
+	 * @param mainApplicationClass the class to use.
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder main(Class<?> mainApplicationClass) {
 		this.application.setMainApplicationClass(mainApplicationClass);
@@ -364,9 +376,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 是否将命令行参数添加到环境中。
-	 * @param addCommandLineProperties 标志位，默认为 true
-	 * @return the current builder
+	 * Flag to indicate that command line arguments should be added to the environment.
+	 * @param addCommandLineProperties the flag to set. Default true.
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder addCommandLineProperties(boolean addCommandLineProperties) {
 		this.application.setAddCommandLineProperties(addCommandLineProperties);
@@ -374,10 +386,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 是否将 {@link ApplicationConversionService} 添加到应用上下文的
-	 * {@link Environment} 中。
-	 * @param addConversionService 是否添加转换服务
-	 * @return the current builder
+	 * Flag to indicate if the {@link ApplicationConversionService} should be added to the
+	 * application context's {@link Environment}.
+	 * @param addConversionService if the conversion service should be added.
+	 * @return 当前构建器
 	 * @since 2.1.0
 	 */
 	public SpringApplicationBuilder setAddConversionService(boolean addConversionService) {
@@ -386,10 +398,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 添加用于初始化 {@link BootstrapRegistry} 的
-	 * {@link BootstrapRegistryInitializer} 实例。
-	 * @param bootstrapRegistryInitializer 要添加的引导注册表初始化器
-	 * @return the current builder
+	 * Adds {@link BootstrapRegistryInitializer} instances that can be used to initialize
+	 * the {@link BootstrapRegistry}.
+	 * @param bootstrapRegistryInitializer the bootstrap registry initializer to add
+	 * @return 当前构建器
 	 * @since 2.4.5
 	 */
 	public SpringApplicationBuilder addBootstrapRegistryInitializer(
@@ -399,9 +411,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 控制应用是否延迟初始化。
-	 * @param lazyInitialization 标志位，默认为 false
-	 * @return the current builder
+	 * Flag to control whether the application should be initialized lazily.
+	 * @param lazyInitialization the flag to set. Defaults to false.
+	 * @return 当前构建器
 	 * @since 2.2
 	 */
 	public SpringApplicationBuilder lazyInitialization(boolean lazyInitialization) {
@@ -410,10 +422,11 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 以 {@code key=value} 或 {@code key:value} 形式设置环境默认属性。
-	 * 多次调用会累积，不会清除先前设置的属性。
-	 * @param defaultProperties 要设置的属性
-	 * @return the current builder
+	 * Default properties for the environment in the form {@code key=value} or
+	 * {@code key:value}. Multiple calls to this method are cumulative and will not clear
+	 * any previously set properties.
+	 * @param defaultProperties the properties to set.
+	 * @return 当前构建器
 	 * @see SpringApplicationBuilder#properties(Properties)
 	 * @see SpringApplicationBuilder#properties(Map)
 	 */
@@ -444,9 +457,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 设置环境的默认属性。多次调用会累积，不会清除先前设置的属性。
+	 * Default properties for the environment.Multiple calls to this method are cumulative
+	 * and will not clear any previously set properties.
 	 * @param defaultProperties the properties to set.
-	 * @return the current builder
+	 * @return 当前构建器
 	 * @see SpringApplicationBuilder#properties(String...)
 	 * @see SpringApplicationBuilder#properties(Map)
 	 */
@@ -463,9 +477,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 设置环境的默认属性。多次调用会累积，不会清除先前设置的属性。
-	 * @param defaults 默认属性
-	 * @return the current builder
+	 * Default properties for the environment. Multiple calls to this method are
+	 * cumulative and will not clear any previously set properties.
+	 * @param defaults the default properties
+	 * @return 当前构建器
 	 * @see SpringApplicationBuilder#properties(String...)
 	 * @see SpringApplicationBuilder#properties(Properties)
 	 */
@@ -480,9 +495,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 为此应用（及其父、子应用）添加激活的 Spring profile。
-	 * @param profiles 要添加的 profile
-	 * @return the current builder
+	 * Add to the active Spring profiles for this app (and its parent and children).
+	 * @param profiles the profiles to add.
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder profiles(String... profiles) {
 		this.additionalProfiles.addAll(Arrays.asList(profiles));
@@ -497,9 +512,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 应用上下文中自动生成 Bean 名称的生成器。
-	 * @param beanNameGenerator 要设置的生成器
-	 * @return the current builder
+	 * Bean name generator for automatically generated bean names in the application
+	 * context.
+	 * @param beanNameGenerator the generator to set.
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder beanNameGenerator(BeanNameGenerator beanNameGenerator) {
 		this.application.setBeanNameGenerator(beanNameGenerator);
@@ -507,9 +523,9 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 应用上下文的环境。
-	 * @param environment 要设置的环境
-	 * @return the current builder
+	 * Environment for the application context.
+	 * @param environment 环境 to set
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder environment(@Nullable ConfigurableEnvironment environment) {
 		this.application.setEnvironment(environment);
@@ -518,9 +534,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 从系统环境获取配置属性时使用的前缀。
-	 * @param environmentPrefix 要设置的环境属性前缀
-	 * @return the current builder
+	 * Prefix that should be applied when obtaining configuration properties from the
+	 * system environment.
+	 * @param environmentPrefix the environment property prefix to set
+	 * @return 当前构建器
 	 * @since 2.5.0
 	 */
 	public SpringApplicationBuilder environmentPrefix(String environmentPrefix) {
@@ -529,9 +546,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 应用上下文的 {@link ResourceLoader}。如需自定义类加载器，在此设置。
-	 * @param resourceLoader 要设置的资源加载器
-	 * @return the current builder
+	 * {@link ResourceLoader} for the application context. If a custom class loader is
+	 * needed, this is where it would be added.
+	 * @param resourceLoader the resource loader to set.
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder resourceLoader(ResourceLoader resourceLoader) {
 		this.application.setResourceLoader(resourceLoader);
@@ -539,9 +557,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 向应用添加初始化器（在加载任何 Bean 定义前应用于 {@link ApplicationContext}）。
-	 * @param initializers 要添加的初始化器
-	 * @return the current builder
+	 * Add some initializers to the application (applied to the {@link ApplicationContext}
+	 * before any bean definitions are loaded).
+	 * @param initializers some initializers to add
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder initializers(ApplicationContextInitializer<?>... initializers) {
 		this.application.addInitializers(initializers);
@@ -549,11 +568,12 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 向应用添加监听器（监听 SpringApplication 事件及上下文运行后的常规 Spring 事件）。
-	 * 同时实现 {@link ApplicationContextInitializer} 的监听器会自动加入
-	 * {@link #initializers(ApplicationContextInitializer...) 初始化器}。
-	 * @param listeners 要添加的监听器
-	 * @return the current builder
+	 * Add some listeners to the application (listening for SpringApplication events as
+	 * well as regular Spring events once the context is running). Any listeners that are
+	 * also {@link ApplicationContextInitializer} will be added to the
+	 * {@link #initializers(ApplicationContextInitializer...) initializers} automatically.
+	 * @param listeners some listeners to add
+	 * @return 当前构建器
 	 */
 	public SpringApplicationBuilder listeners(ApplicationListener<?>... listeners) {
 		this.application.addListeners(listeners);
@@ -561,10 +581,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 配置与 {@link ApplicationContext} 配合使用的 {@link ApplicationStartup}，
-	 * 用于收集启动指标。
-	 * @param applicationStartup 要使用的应用启动追踪器
-	 * @return the current builder
+	 * Configure the {@link ApplicationStartup} to be used with the
+	 * {@link ApplicationContext} for collecting startup metrics.
+	 * @param applicationStartup the application startup to use
+	 * @return 当前构建器
 	 * @since 2.4.0
 	 */
 	public SpringApplicationBuilder applicationStartup(ApplicationStartup applicationStartup) {
@@ -573,9 +593,10 @@ public class SpringApplicationBuilder {
 	}
 
 	/**
-	 * 是否允许 Bean 之间的循环引用并自动尝试解析。
-	 * @param allowCircularReferences 是否允许循环引用
-	 * @return the current builder
+	 * Whether to allow circular references between beans and automatically try to resolve
+	 * them.
+	 * @param allowCircularReferences whether circular references are allowed
+	 * @return 当前构建器
 	 * @since 2.6.0
 	 * @see AbstractAutowireCapableBeanFactory#setAllowCircularReferences(boolean)
 	 */

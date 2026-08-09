@@ -44,7 +44,7 @@ public class BootstrapContextClosedEvent extends ApplicationEvent {
 	}
 
 	/**
-	 * 返回已准备完成的应用上下文。
+	 * 返回已准备的应用上下文。
 	 * @return 应用上下文
 	 */
 	public ConfigurableApplicationContext getApplicationContext() {

@@ -27,9 +27,8 @@ package org.springframework.boot.bootstrap;
 public interface BootstrapRegistryInitializer {
 
 	/**
-	 * 使用所需注册项初始化给定 {@link BootstrapRegistry}。
-	 *
-	 * @param registry 待初始化的注册表
+	 * 使用所需注册项初始化给定的 {@link BootstrapRegistry}。
+	 * @param registry 要初始化的注册表
 	 */
 	void initialize(BootstrapRegistry registry);
 

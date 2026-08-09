@@ -26,16 +26,18 @@ import org.springframework.core.env.Environment;
 import org.springframework.util.Assert;
 
 /**
- * 在启动及 {@link Environment} 后处理阶段、直至 {@link ApplicationContext} 准备完成
- * 之前可用的简单对象注册表。
+ * 在启动及 {@link Environment} 后处理期间、直至 {@link ApplicationContext} 准备完成前可用的简单对象注册表。
  * <p>
- * 可用于注册创建成本较高、或需在 {@link ApplicationContext} 可用前共享的实例。
+ * Can be used to register instances that may be expensive to create, or need to be shared
+ * before the {@link ApplicationContext} is available.
  * <p>
  * 注册表以 {@link Class} 为键，即每种类型只能存储一个实例。
  * <p>
- * 可通过 {@link #addCloseListener(ApplicationListener)} 添加监听器，在
- * {@link BootstrapContext} 关闭且 {@link ApplicationContext} 完全准备就绪后执行操作。
- * 例如，某实例可注册为常规 Spring Bean 供应用使用。
+ * The {@link #addCloseListener(ApplicationListener)} method can be used to add a listener
+ * that can perform actions when {@link BootstrapContext} has been closed and the
+ * {@link ApplicationContext} is fully prepared. For example, an instance may choose to
+ * register itself as a regular Spring bean so that it is available for the application to
+ * use.
  *
  * @author Phillip Webb
  * @since 4.0.0
@@ -45,73 +47,76 @@ import org.springframework.util.Assert;
 public interface BootstrapRegistry {
 
 	/**
-	 * 向注册表注册指定类型。若该类型已注册且尚未作为 {@link Scope#SINGLETON 单例}
-	 * 获取，则会被替换。
+	 * 向注册表注册指定类型。 If the specified type has already been
+	 * registered and has not been obtained as a {@link Scope#SINGLETON singleton}, it
+	 * will be replaced.
 	 * @param <T> 实例类型
 	 * @param type 实例类型
-	 * @param instanceSupplier 实例供应器
+	 * @param instanceSupplier the instance supplier
 	 */
 	<T> void register(Class<T> type, InstanceSupplier<T> instanceSupplier);
 
 	/**
-	 * 若尚未存在则向注册表注册指定类型。
-	 * @param <T> the instance type
-	 * @param type the instance type
+	 * Register a specific type with the registry if one is not already present.
+	 * @param <T> 实例类型
+	 * @param type 实例类型
 	 * @param instanceSupplier the instance supplier
 	 */
 	<T> void registerIfAbsent(Class<T> type, InstanceSupplier<T> instanceSupplier);
 
 	/**
 	 * Return if a registration exists for the given type.
-	 * @param <T> the instance type
-	 * @param type the instance type
-	 * @return 若类型已注册则为 {@code true}
+	 * @param <T> 实例类型
+	 * @param type 实例类型
+	 * @return {@code true} if the type has already been registered
 	 */
 	<T> boolean isRegistered(Class<T> type);
 
 	/**
-	 * 返回给定类型已注册的 {@link InstanceSupplier}。
-	 * @param <T> the instance type
-	 * @param type the instance type
-	 * @return 已注册的 {@link InstanceSupplier}，或 {@code null}
+	 * Return any existing {@link InstanceSupplier} for the given type.
+	 * @param <T> 实例类型
+	 * @param type 实例类型
+	 * @return the registered {@link InstanceSupplier} or {@code null}
 	 */
 	<T> @Nullable InstanceSupplier<T> getRegisteredInstanceSupplier(Class<T> type);
 
 	/**
-	 * 添加 {@link ApplicationListener}，在 {@link BootstrapContext} 关闭且
-	 * {@link ApplicationContext} 准备完成后以 {@link BootstrapContextClosedEvent} 调用。
-	 * @param listener 要添加的监听器
+	 * Add an {@link ApplicationListener} that will be called with a
+	 * {@link BootstrapContextClosedEvent} when the {@link BootstrapContext} is closed and
+	 * the {@link ApplicationContext} has been prepared.
+	 * @param listener the listener to add
 	 */
 	void addCloseListener(ApplicationListener<BootstrapContextClosedEvent> listener);
 
 	/**
-	 * 在需要时提供实际实例的供应器。
+	 * 在需要时提供实际实例的供应者。
 	 *
-	 * @param <T> the instance type
+	 * @param <T> 实例类型
 	 * @see Scope
 	 */
 	@FunctionalInterface
 	interface InstanceSupplier<T> {
 
 		/**
-		 * 在需要时创建实例的工厂方法。
-		 * @param context 可用于获取其他引导实例的 {@link BootstrapContext}
-		 * @return 实例，或 {@code null}
+		 * Factory method used to create the instance when needed.
+		 * @param context the {@link BootstrapContext} which may be used to obtain other
+		 * bootstrap instances.
+		 * @return the instance or {@code null}
 		 */
 		@Nullable T get(BootstrapContext context);
 
 		/**
-		 * 返回所供应实例的作用域。
-		 * @return 作用域
+		 * Return the scope of the supplied instance.
+		 * @return the scope
 		 */
 		default Scope getScope() {
 			return Scope.SINGLETON;
 		}
 
 		/**
-		 * 返回具有更新后 {@link Scope} 的新 {@link InstanceSupplier}。
-		 * @param scope 新作用域
-		 * @return 具有新作用域的新 {@link InstanceSupplier} 实例
+		 * Return a new {@link InstanceSupplier} with an updated {@link Scope}.
+		 * @param scope the new scope
+		 * @return a new {@link InstanceSupplier} instance with the new scope
 		 */
 		default InstanceSupplier<T> withScope(Scope scope) {
 			Assert.notNull(scope, "'scope' must not be null");
@@ -132,19 +137,21 @@ public interface BootstrapRegistry {
 		}
 
 		/**
-		 * 为给定实例创建 {@link InstanceSupplier} 的工厂方法。
-		 * @param <T> the instance type
-		 * @param instance 实例
-		 * @return 新的 {@link InstanceSupplier}
+		 * Factory method that can be used to create an {@link InstanceSupplier} for a
+		 * given instance.
+		 * @param <T> 实例类型
+		 * @param instance the instance
+		 * @return a new {@link InstanceSupplier}
 		 */
 		static <T> InstanceSupplier<T> of(@Nullable T instance) {
 			return (registry) -> instance;
 		}
 
 		/**
-		 * 从 {@link Supplier} 创建 {@link InstanceSupplier} 的工厂方法。
-		 * @param <T> the instance type
-		 * @param supplier 提供实例的 Supplier
+		 * Factory method that can be used to create an {@link InstanceSupplier} from a
+		 * {@link Supplier}.
+		 * @param <T> 实例类型
+		 * @param supplier the supplier that will provide the instance
 		 * @return a new {@link InstanceSupplier}
 		 */
 		static <T> InstanceSupplier<T> from(@Nullable Supplier<T> supplier) {
@@ -159,12 +166,14 @@ public interface BootstrapRegistry {
 	enum Scope {
 
 		/**
-		 * 单例实例。{@link InstanceSupplier} 仅调用一次，每次返回同一实例。
+		 * 单例实例。 The {@link InstanceSupplier} will be called only once and
+		 * the same instance will be returned each time.
 		 */
 		SINGLETON,
 
 		/**
-		 * 原型实例。每次需要实例时都会调用 {@link InstanceSupplier}。
+		 * 原型实例。 The {@link InstanceSupplier} will be called whenever an
+		 * instance is needed.
 		 */
 		PROTOTYPE
 

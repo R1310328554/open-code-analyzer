@@ -17,7 +17,8 @@
 package org.springframework.boot.availability;
 
 /**
- * 用于标记 {@link ApplicationAvailability} 状态的标签接口，通常由 {@code enum} 实现。
+ * 用于标记 {@link ApplicationAvailability} 状态的标签接口。
+ * 通常由 {@code enum} 类型实现。
  *
  * @author Phillip Webb
  * @since 2.3.0

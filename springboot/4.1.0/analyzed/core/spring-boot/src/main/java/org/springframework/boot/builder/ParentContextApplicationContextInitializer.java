@@ -25,8 +25,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.Ordered;
 
 /**
- * 用于设置父上下文的 {@link ApplicationContextInitializer}。上下文刷新时还会发布
- * {@link ParentContextAvailableEvent}，通知其他监听器上下文已可用且拥有父上下文。
+ * {@link ApplicationContextInitializer} 用于设置父上下文。上下文刷新时还会发布 {@link ParentContextAvailableEvent}，通知其他监听器上下文已可用且拥有父上下文。
  *
  * @author Dave Syer
  * @since 1.0.0
@@ -80,7 +79,7 @@ public class ParentContextApplicationContextInitializer
 	}
 
 	/**
-	 * 父上下文可用时触发的 {@link ApplicationEvent}。
+	 * {@link ApplicationEvent} 父上下文可用时触发。
 	 */
 	public static class ParentContextAvailableEvent extends ApplicationEvent {
 

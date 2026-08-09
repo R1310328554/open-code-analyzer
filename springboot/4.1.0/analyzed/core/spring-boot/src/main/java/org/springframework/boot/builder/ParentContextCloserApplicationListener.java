@@ -29,8 +29,7 @@ import org.springframework.core.Ordered;
 import org.springframework.util.ObjectUtils;
 
 /**
- * 当父上下文关闭时关闭应用上下文的监听器。监听刷新事件获取当前上下文，
- * 再监听关闭事件并沿层次结构向下传播。
+ * 在父上下文关闭时关闭应用上下文的监听器。监听刷新事件以获取当前上下文，再监听关闭事件并沿层次结构向下传播。
  *
  * @author Dave Syer
  * @author Eric Bottard
@@ -66,16 +65,17 @@ public class ParentContextCloserApplicationListener
 	}
 
 	/**
-	 * 子类可覆盖以创建自定义 ContextCloserListener 子类，仍强制使用弱引用。
+	 * 子类可覆盖以创建自定义 {@link ContextCloserListener} 子类。 This
+	 * still enforces the use of a weak reference.
 	 * @param child 子上下文
-	 * @return 要使用的 {@link ContextCloserListener}
+	 * @return the {@link ContextCloserListener} to use
 	 */
 	protected ContextCloserListener createContextCloserListener(ConfigurableApplicationContext child) {
 		return new ContextCloserListener(child);
 	}
 
 	/**
-	 * 用于关闭上下文的 {@link ApplicationListener}。
+	 * {@link ApplicationListener} 用于关闭上下文。
 	 */
 	protected static class ContextCloserListener implements ApplicationListener<ContextClosedEvent> {
 

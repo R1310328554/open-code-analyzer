@@ -40,17 +40,17 @@ import org.springframework.core.env.Environment;
 import org.springframework.util.Assert;
 
 /**
- * 将应用 PID 写入文件的 {@link ApplicationListener}。 每个 JVM 仅触发一次，文件名可在运行时通过名为 "PIDFILE"（或 "pidfile"）的系统属性或环境变量覆盖，
- * 或使用 Spring {@link Environment} 中的 {@code spring.pid.file} 属性。
+ * 将应用 PID 写入文件的 {@link ApplicationListener}。
+ * 每个 JVM 仅触发一次；文件名可在运行时通过名为 {@code PIDFILE}（或 {@code pidfile}）
+ * 的系统属性或环境变量，或 Spring {@link Environment} 中的 {@code spring.pid.file} 属性覆盖。
  * <p>
  * 若无法创建 PID 文件则不报告异常。可通过将系统属性或环境变量
- * {@code PID_FAIL_ON_WRITE_ERROR}（或 "pid_fail_on_write_error"）设为 {@code true}，
- * 或设置 Spring {@link Environment} 中的 {@code spring.pid.fail-on-write-error}
- * 属性来更改此行为。
+ * {@code PID_FAIL_ON_WRITE_ERROR}（或 {@code pid_fail_on_write_error}）或
+ * Spring {@link Environment} 中的 {@code spring.pid.fail-on-write-error} 设为 {@code true} 更改此行为。
  * <p>
  * 注意：仅当 {@link #setTriggerEventType(Class) triggerEventType} 设为
  * {@link ApplicationEnvironmentPreparedEvent}、{@link ApplicationReadyEvent} 或
- * {@link ApplicationPreparedEvent} 时，才能访问 Spring {@link Environment}。
+ * {@link ApplicationPreparedEvent} 时才能访问 Spring {@link Environment}。
  *
  * @author Jakub Kubrynski
  * @author Dave Syer
@@ -93,7 +93,7 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 	private Class<? extends SpringApplicationEvent> triggerEventType = ApplicationPreparedEvent.class;
 
 	/**
-	 * 使用文件名 'application.pid' 创建新的 {@link ApplicationPidFileWriter} 实例。
+	 * 使用文件名 {@code application.pid} 创建新的 {@link ApplicationPidFileWriter} 实例。
 	 */
 	public ApplicationPidFileWriter() {
 		this(new File(DEFAULT_FILE_NAME));
@@ -101,6 +101,7 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 
 	/**
 	 * 使用指定文件名创建新的 {@link ApplicationPidFileWriter} 实例。
+	 *
 	 * @param filename 包含 PID 的文件名
 	 */
 	public ApplicationPidFileWriter(String filename) {
@@ -109,6 +110,7 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 
 	/**
 	 * 使用指定文件创建新的 {@link ApplicationPidFileWriter} 实例。
+	 *
 	 * @param file 包含 PID 的文件
 	 */
 	public ApplicationPidFileWriter(File file) {
@@ -117,9 +119,10 @@ public class ApplicationPidFileWriter implements ApplicationListener<SpringAppli
 	}
 
 	/**
-	 * 设置触发写入 PID 文件的应用事件类型。默认为 {@link ApplicationPreparedEvent}。
+	 * 设置触发写入 PID 文件的应用事件类型，默认为 {@link ApplicationPreparedEvent}。
 	 * 注意：若使用 {@link org.springframework.boot.context.event.ApplicationStartingEvent}
-	 * 触发写入，将无法在 Spring {@link Environment} 中指定 PID 文件名。
+	 * 触发写入，则无法在 Spring {@link Environment} 中指定 PID 文件名。
+	 *
 	 * @param triggerEventType 触发事件类型
 	 */
 	public void setTriggerEventType(Class<? extends SpringApplicationEvent> triggerEventType) {

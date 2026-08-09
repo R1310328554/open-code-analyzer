@@ -28,12 +28,12 @@ package org.springframework.boot.availability;
 public enum ReadinessState implements AvailabilityState {
 
 	/**
-	 * 应用已就绪，可接收流量。
+	 * 应用已准备好接收流量。
 	 */
 	ACCEPTING_TRAFFIC,
 
 	/**
-	 * 应用拒绝接收流量。
+	 * 应用不愿意接收流量。
 	 */
 	REFUSING_TRAFFIC
 

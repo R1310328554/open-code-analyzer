@@ -44,7 +44,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * 针对常见配置错误发出警告的 {@link ApplicationContextInitializer}。
+ * {@link ApplicationContextInitializer} 报告常见配置错误。
  *
  * @author Phillip Webb
  * @since 1.2.0
@@ -68,7 +68,7 @@ public class ConfigurationWarningsApplicationContextInitializer
 	}
 
 	/**
-	 * 用于报告警告的 {@link BeanDefinitionRegistryPostProcessor}。
+	 * {@link BeanDefinitionRegistryPostProcessor} 用于报告警告。
 	 */
 	protected static final class ConfigurationWarningsPostProcessor
 			implements PriorityOrdered, BeanDefinitionRegistryPostProcessor {
@@ -108,22 +108,22 @@ public class ConfigurationWarningsApplicationContextInitializer
 	}
 
 	/**
-	 * 可应用的单项检查。
+	 * 可应用的单个检查项。
 	 */
 	@FunctionalInterface
 	protected interface Check {
 
 		/**
 		 * 检查失败时返回警告信息，无问题时返回 {@code null}。
-		 * @param registry {@link BeanDefinitionRegistry}
-		 * @return 警告消息或 {@code null}
+		 * @param registry the {@link BeanDefinitionRegistry}
+		 * @return a warning message or {@code null}
 		 */
 		@Nullable String getWarning(BeanDefinitionRegistry registry);
 
 	}
 
 	/**
-	 * 针对问题包上 {@code @ComponentScan} 的 {@link Check}。
+	 * {@link Check} 针对有问题的包上 {@code @ComponentScan}。
 	 */
 	protected static class ComponentScanPackageCheck implements Check {
 

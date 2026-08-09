@@ -132,8 +132,9 @@ public class DefaultBootstrapContext implements ConfigurableBootstrapContext {
 	}
 
 	/**
-	 * 在 {@link BootstrapContext} 关闭且 {@link ApplicationContext} 准备完成时调用。
-	 * @param applicationContext 已准备完成的上下文
+	 * 在 {@link BootstrapContext} 关闭且 {@link ApplicationContext} 已准备完成时调用的方法。
+	 *
+	 * @param applicationContext 已准备的上下文
 	 */
 	public void close(ConfigurableApplicationContext applicationContext) {
 		this.events.multicastEvent(new BootstrapContextClosedEvent(this, applicationContext));

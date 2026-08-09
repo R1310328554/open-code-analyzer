@@ -24,7 +24,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.util.Assert;
 
 /**
- * 应用 {@link AvailabilityState} 变更时发送的 {@link ApplicationEvent}。
+ * 应用 {@link AvailabilityState} 发生变化时发送的 {@link ApplicationEvent}。
  * <p>
  * 任何应用组件均可发送此类事件以更新应用状态。
  *
@@ -68,7 +68,7 @@ public class AvailabilityChangeEvent<S extends AvailabilityState> extends Payloa
 	}
 
 	/**
-	 * 便捷方法，向给定应用上下文发布 {@link AvailabilityChangeEvent}。
+	 * 向给定应用上下文发布 {@link AvailabilityChangeEvent} 的便捷方法。
 	 *
 	 * @param <S> 可用性状态类型
 	 * @param context 用于发布事件的上下文
@@ -80,7 +80,7 @@ public class AvailabilityChangeEvent<S extends AvailabilityState> extends Payloa
 	}
 
 	/**
-	 * 便捷方法，通过给定发布器发布 {@link AvailabilityChangeEvent}。
+	 * 向给定应用上下文发布 {@link AvailabilityChangeEvent} 的便捷方法。
 	 *
 	 * @param <S> 可用性状态类型
 	 * @param publisher 用于发布事件的发布器

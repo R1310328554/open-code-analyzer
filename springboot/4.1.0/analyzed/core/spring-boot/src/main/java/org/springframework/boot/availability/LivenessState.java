@@ -19,8 +19,8 @@ package org.springframework.boot.availability;
 /**
  * 应用的「存活（Liveness）」状态。
  * <p>
- * 当应用正在运行且内部状态正常时视为存活。「存活」失败表示应用内部状态已损坏且
- * 无法恢复，平台应重启该应用。
+ * 当应用正在运行且内部状态正确时视为存活。「存活」失败表示应用内部状态已损坏且
+ * 无法恢复，平台应重启应用。
  *
  * @author Brian Clozel
  * @since 2.3.0
@@ -28,7 +28,7 @@ package org.springframework.boot.availability;
 public enum LivenessState implements AvailabilityState {
 
 	/**
-	 * 应用正在运行且内部状态正常。
+	 * 应用正在运行且内部状态正确。
 	 */
 	CORRECT,
 

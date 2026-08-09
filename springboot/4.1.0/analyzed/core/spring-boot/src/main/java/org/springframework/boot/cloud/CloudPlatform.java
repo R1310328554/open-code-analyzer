@@ -186,9 +186,10 @@ public enum CloudPlatform {
 	private static final String PROPERTY_NAME = "spring.main.cloud-platform";
 
 	/**
-	 * 判断平台是否处于激活状态（即应用是否运行在该平台上）。
+	 * 判定平台是否处于活动状态（即应用是否运行在该平台上）。
+	 *
 	 * @param environment 环境
-	 * @return 平台是否激活
+	 * @return 平台是否活动
 	 */
 	public boolean isActive(Environment environment) {
 		String platformProperty = environment.getProperty(PROPERTY_NAME);
@@ -196,8 +197,9 @@ public enum CloudPlatform {
 	}
 
 	/**
-	 * 通过 {@code "spring.main.cloud-platform"} 配置属性判断是否强制指定平台。
-	 * @param environment the environment
+	 * 通过 {@code "spring.main.cloud-platform"} 配置属性判定平台是否被强制指定。
+	 *
+	 * @param environment 环境
 	 * @return 平台是否被强制指定
 	 * @since 2.3.0
 	 */
@@ -206,10 +208,10 @@ public enum CloudPlatform {
 	}
 
 	/**
-	 * Determines if the platform is enforced by looking at the
-	 * {@code "spring.main.cloud-platform"} configuration property.
+	 * 通过 {@code "spring.main.cloud-platform"} 配置属性判定平台是否被强制指定。
+	 *
 	 * @param binder 绑定器
-	 * @return if the platform is enforced
+	 * @return 平台是否被强制指定
 	 * @since 2.4.0
 	 */
 	public boolean isEnforced(Binder binder) {
@@ -221,15 +223,17 @@ public enum CloudPlatform {
 	}
 
 	/**
-	 * 通过查找平台特定环境变量判断是否检测到该平台。
-	 * @param environment the environment
+	 * 通过查找平台特定环境变量判定平台是否被自动检测。
+	 *
+	 * @param environment 环境
 	 * @return 平台是否被自动检测
 	 * @since 2.3.0
 	 */
 	public abstract boolean isDetected(Environment environment);
 
 	/**
-	 * 返回平台是否位于负载均衡器之后并使用 {@literal X-Forwarded-For} 头。
+	 * 返回平台是否位于负载均衡器后并使用 {@literal X-Forwarded-For} 头。
+	 *
 	 * @return 是否使用 {@literal X-Forwarded-For} 头
 	 */
 	public boolean isUsingForwardHeaders() {
@@ -237,8 +241,9 @@ public enum CloudPlatform {
 	}
 
 	/**
-	 * 返回激活的 {@link CloudPlatform}，若无激活平台则返回 {@code null}。
-	 * @param environment the environment
+	 * 返回活动的 {@link CloudPlatform}；若无活动平台则返回 {@code null}。
+	 *
+	 * @param environment 环境
 	 * @return {@link CloudPlatform} 或 {@code null}
 	 */
 	public static @Nullable CloudPlatform getActive(@Nullable Environment environment) {
