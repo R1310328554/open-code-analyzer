@@ -24,38 +24,48 @@ import org.hibernate.cfg.Settings;
 import org.redisson.api.RMapCache;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 自然 ID 并发策略 {@code read-write} 的 Redisson 区域访问实现。
+ * <p>插入/更新完成后写回缓存；更新阶段不立即写入。
  *
+ * @author Nikita Koksharov
  */
 public class ReadWriteNaturalIdRegionAccessStrategy extends AbstractReadWriteAccessStrategy implements NaturalIdRegionAccessStrategy {
 
+    /** @param settings Hibernate 缓存配置
+     * @param region 自然 ID 缓存区域
+     * @param mapCache 底层 Redisson 带 TTL 的 Map 缓存
+     */
     public ReadWriteNaturalIdRegionAccessStrategy(Settings settings, GeneralDataRegion region,
             RMapCache<Object, Object> mapCache) {
         super(settings, region, mapCache);
     }
 
+    /** 返回强类型 {@link NaturalIdRegion} 视图。 */
     @Override
     public NaturalIdRegion getRegion() {
         return (NaturalIdRegion) region;
     }
 
+    /** 插入阶段不写缓存，延迟至 afterInsert。 */
     @Override
     public boolean insert(Object key, Object value) throws CacheException {
         return false;
     }
 
+    /** 插入完成后将自然 ID 映射写入缓存。 */
     @Override
     public boolean afterInsert(Object key, Object value) throws CacheException {
         region.put(key, value);
         return true;
     }
 
+    /** 更新阶段不立即写入，等待 afterUpdate。 */
     @Override
     public boolean update(Object key, Object value) throws CacheException {
         return false;
     }
 
+    /** 更新完成后将新映射写入缓存。 */
     @Override
     public boolean afterUpdate(Object key, Object value, SoftLock lock) throws CacheException {
         region.put(key, value);

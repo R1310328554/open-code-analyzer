@@ -23,16 +23,21 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.cfg.Settings;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 自然 ID 并发策略 {@code read-only} 的 Redisson 区域访问实现。
+ * <p>插入后写入缓存；后续更新抛出 {@link UnsupportedOperationException}。
  *
+ * @author Nikita Koksharov
  */
 public class ReadOnlyNaturalIdRegionAccessStrategy extends BaseRegionAccessStrategy implements NaturalIdRegionAccessStrategy {
 
+    /** @param settings Hibernate 缓存配置
+     * @param region 自然 ID 缓存区域
+     */
     public ReadOnlyNaturalIdRegionAccessStrategy(Settings settings, GeneralDataRegion region) {
         super(settings, region);
     }
 
+    /** 直接读取缓存条目。 */
     @Override
     public Object get(Object key, long txTimestamp) throws CacheException {
         return region.get(key);
@@ -41,6 +46,7 @@ public class ReadOnlyNaturalIdRegionAccessStrategy extends BaseRegionAccessStrat
     @Override
     public boolean putFromLoad(Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride)
             throws CacheException {
+        // 最小写入模式下键已存在则跳过写入。
         if (minimalPutOverride && region.contains(key)) {
             return false;
         }
@@ -49,37 +55,44 @@ public class ReadOnlyNaturalIdRegionAccessStrategy extends BaseRegionAccessStrat
         return true;
     }
 
+    /** 只读策略不提供项级软锁。 */
     @Override
     public SoftLock lockItem(Object key, Object version) throws CacheException {
         return null;
     }
 
+    /** 解锁时逐出键。 */
     @Override
     public void unlockItem(Object key, SoftLock lock) throws CacheException {
         evict(key);
     }
 
+    /** 返回强类型 {@link NaturalIdRegion} 视图。 */
     @Override
     public NaturalIdRegion getRegion() {
         return (NaturalIdRegion) region;
     }
 
+    /** 插入阶段不写缓存，延迟至 afterInsert。 */
     @Override
     public boolean insert(Object key, Object value) throws CacheException {
         return false;
     }
 
+    /** 插入完成后将自然 ID 映射写入缓存。 */
     @Override
     public boolean afterInsert(Object key, Object value) throws CacheException {
         region.put(key, value);
         return true;
     }
 
+    /** 只读自然 ID 禁止更新。 */
     @Override
     public boolean update(Object key, Object value) throws CacheException {
         throw new UnsupportedOperationException("Unable to update read-only object");
     }
 
+    /** 只读自然 ID 禁止 afterUpdate。 */
     @Override
     public boolean afterUpdate(Object key, Object value, SoftLock lock) throws CacheException {
         throw new UnsupportedOperationException("Unable to update read-only object");

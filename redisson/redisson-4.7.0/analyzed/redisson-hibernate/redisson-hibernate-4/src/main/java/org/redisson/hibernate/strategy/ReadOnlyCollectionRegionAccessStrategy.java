@@ -23,21 +23,27 @@ import org.hibernate.cache.spi.access.SoftLock;
 import org.hibernate.cfg.Settings;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 集合并发策略 {@code read-only} 的 Redisson 区域访问实现。
+ * <p>缓存内容不可变；解锁为空操作，不逐出条目。
  *
+ * @author Nikita Koksharov
  */
 public class ReadOnlyCollectionRegionAccessStrategy extends BaseRegionAccessStrategy implements CollectionRegionAccessStrategy {
 
+    /** @param settings Hibernate 缓存配置
+     * @param region 集合缓存区域
+     */
     public ReadOnlyCollectionRegionAccessStrategy(Settings settings, GeneralDataRegion region) {
         super(settings, region);
     }
 
+    /** 返回强类型 {@link CollectionRegion} 视图。 */
     @Override
     public CollectionRegion getRegion() {
         return (CollectionRegion) region;
     }
 
+    /** 直接读取缓存条目。 */
     @Override
     public Object get(Object key, long txTimestamp) throws CacheException {
         return region.get(key);
@@ -46,6 +52,7 @@ public class ReadOnlyCollectionRegionAccessStrategy extends BaseRegionAccessStra
     @Override
     public boolean putFromLoad(Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride)
             throws CacheException {
+        // 最小写入模式下键已存在则跳过写入。
         if (minimalPutOverride && region.contains(key)) {
             return false;
         }
@@ -54,11 +61,13 @@ public class ReadOnlyCollectionRegionAccessStrategy extends BaseRegionAccessStra
         return true;
     }
 
+    /** 只读策略不提供项级软锁。 */
     @Override
     public SoftLock lockItem(Object key, Object version) throws CacheException {
         return null;
     }
 
+    /** 只读解锁为空操作，不修改缓存。 */
     @Override
     public void unlockItem(Object key, SoftLock lock) throws CacheException {
     }
