@@ -21,9 +21,9 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * A WebSocket Extension data from the <tt>Sec-WebSocket-Extensions</tt> header.
+ * 从 {@code Sec-WebSocket-Extensions} HTTP 头解析出的扩展名称与参数。
  *
- * See <tt>io.netty.handler.codec.http.HttpHeaders.Names.SEC_WEBSOCKET_EXTENSIONS</tt>.
+ * 参见 {@code io.netty.handler.codec.http.HttpHeaders.Names.SEC_WEBSOCKET_EXTENSIONS}。
  */
 public final class WebSocketExtensionData {
 
@@ -37,14 +37,14 @@ public final class WebSocketExtensionData {
     }
 
     /**
-     * @return the extension name.
+     * @return 扩展名称。
      */
     public String name() {
         return name;
     }
 
     /**
-     * @return the extension optional parameters.
+     * @return 扩展可选参数映射（不可变）。
      */
     public Map<String, String> parameters() {
         return parameters;

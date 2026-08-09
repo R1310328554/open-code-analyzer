@@ -35,7 +35,8 @@ import static io.netty.handler.codec.http.HttpUtil.*;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * Handles the HTTP handshake (the HTTP Upgrade request) for {@link WebSocketServerProtocolHandler}.
+ * 为 {@link WebSocketServerProtocolHandler} 处理 HTTP Upgrade 握手阶段。
+ * <p>匹配 WebSocket 路径、解析握手器、触发升级并在成功后发出 {@link HandshakeComplete} 事件。
  */
 class WebSocketServerProtocolHandshakeHandler extends ChannelInboundHandlerAdapter {
 
@@ -111,6 +112,7 @@ class WebSocketServerProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
         }
     }
 
+    /** 判断请求 URI 是否匹配配置的 WebSocket 路径。 */
     private boolean isWebSocketPath(HttpRequest req) {
         String websocketPath = serverConfig.websocketPath();
         String uri = req.uri();
@@ -119,6 +121,7 @@ class WebSocketServerProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
                 : uri.equals(websocketPath);
     }
 
+    /** 前缀匹配时校验路径分隔符或查询串起始位置。 */
     private boolean checkNextUri(String uri, String websocketPath) {
         int len = websocketPath.length();
         if (uri.length() > len) {
@@ -128,6 +131,7 @@ class WebSocketServerProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
         return true;
     }
 
+    /** 根据管道中是否含 {@link SslHandler} 构造 ws/wss 升级 URL。 */
     private static String getWebSocketLocation(ChannelPipeline cp, HttpRequest req, String path) {
         String protocol = "ws";
         if (cp.get(SslHandler.class) != null) {
@@ -138,6 +142,7 @@ class WebSocketServerProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
         return protocol + "://" + host + path;
     }
 
+    /** 为握手操作注册超时任务，超时后关闭连接并触发 {@link ServerHandshakeStateEvent#HANDSHAKE_TIMEOUT}。 */
     private void applyHandshakeTimeout() {
         final ChannelPromise localHandshakePromise = handshakePromise;
         final long handshakeTimeoutMillis = serverConfig.handshakeTimeoutMillis();

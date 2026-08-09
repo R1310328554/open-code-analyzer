@@ -28,8 +28,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Auto-detects the version of the Web Socket protocol in use and creates a new proper
- * {@link WebSocketServerHandshaker}.
+ * 根据客户端请求自动检测 WebSocket 协议版本，并创建对应 {@link WebSocketServerHandshaker} 的工厂。
  */
 public class WebSocketServerHandshakerFactory {
 
@@ -40,7 +39,7 @@ public class WebSocketServerHandshakerFactory {
     private final WebSocketDecoderConfig decoderConfig;
 
     /**
-     * Constructor specifying the destination web socket location
+     * 创建握手器工厂（默认最大帧载荷 65536 字节）。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -56,7 +55,7 @@ public class WebSocketServerHandshakerFactory {
     }
 
     /**
-     * Constructor specifying the destination web socket location
+     * 创建握手器工厂（默认最大帧载荷 65536 字节）。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -76,7 +75,7 @@ public class WebSocketServerHandshakerFactory {
     }
 
     /**
-     * Constructor specifying the destination web socket location
+     * 创建握手器工厂（默认最大帧载荷 65536 字节）。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -103,17 +102,9 @@ public class WebSocketServerHandshakerFactory {
     }
 
     /**
-     * Constructor specifying the destination web socket location
+     * 使用自定义帧解码配置创建握手器工厂。
      *
      * @param webSocketURL
-     *            URL for web socket communications. e.g "ws://myhost.com/mypath".
-     *            Subsequent web socket frames will be sent to this URL.
-     * @param subprotocols
-     *            CSV of supported protocols. Null if sub protocols not supported.
-     * @param decoderConfig
-     *            Frames decoder options.
-     */
-    public WebSocketServerHandshakerFactory(
             String webSocketURL, String subprotocols, WebSocketDecoderConfig decoderConfig) {
         this.webSocketURL = webSocketURL;
         this.subprotocols = subprotocols;
@@ -121,7 +112,7 @@ public class WebSocketServerHandshakerFactory {
     }
 
     /**
-     * Instances a new handshaker
+     * 根据 HTTP 升级请求创建对应版本的 {@link WebSocketServerHandshaker}。
      *
      * @return A new WebSocketServerHandshaker for the requested web socket version. Null if web
      *         socket version is not supported.
@@ -131,10 +122,8 @@ public class WebSocketServerHandshakerFactory {
     }
 
     /**
-     * Resolves the client's WebSocket protocol version from the HTTP request header,
-     * and creates the corresponding handshaker.
-     * This method is identical to {@link #newHandshaker(HttpRequest)},
-     * however it does not require a {@link WebSocketServerHandshakerFactory} instance allocation.
+     * 从 HTTP 请求头解析客户端 WebSocket 版本并创建握手器（静态方法，无需工厂实例）。
+     * 行为与 {@link #newHandshaker(HttpRequest)} 相同。
      *
      * @param req
      *            The HTTP request that came from the client to upgrade the protocol to WebSocket.
@@ -191,14 +180,14 @@ public class WebSocketServerHandshakerFactory {
     }
 
     /**
-     * Return that we need cannot support the web socket version
+     * 向客户端返回 426 Upgrade Required，提示支持的 WebSocket 版本。
      */
     public static ChannelFuture sendUnsupportedVersionResponse(Channel channel) {
         return sendUnsupportedVersionResponse(channel, channel.newPromise());
     }
 
     /**
-     * Return that we need cannot support the web socket version
+     * 向客户端返回 426 Upgrade Required，并携带 {@link WebSocketVersion#V13} 版本提示。
      */
     public static ChannelFuture sendUnsupportedVersionResponse(Channel channel, ChannelPromise promise) {
         HttpResponse res = new DefaultFullHttpResponse(

@@ -17,20 +17,19 @@ package io.netty.handler.codec.http.websocketx.extensions;
 
 
 /**
- * Handshakes a client extension with the server.
+ * 客户端 WebSocket 扩展握手器：生成请求参数并解析服务端应答。
  */
 public interface WebSocketClientExtensionHandshaker {
 
     /**
-     * Return extension configuration to submit to the server.
+     * 返回提交给服务端的扩展配置。
      *
      * @return the desired extension configuration.
      */
     WebSocketExtensionData newRequestData();
 
     /**
-     * Handshake based on server response. It should always succeed because server response
-     * should be a request acknowledge.
+     * 根据服务端应答完成扩展握手；应答应为对客户端请求的确认。
      *
      * @param extensionData
      *          the extension configuration sent by the server.

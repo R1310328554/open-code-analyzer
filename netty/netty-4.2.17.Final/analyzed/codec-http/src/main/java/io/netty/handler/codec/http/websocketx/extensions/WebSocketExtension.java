@@ -16,26 +16,29 @@
 package io.netty.handler.codec.http.websocketx.extensions;
 
 /**
- * Created once the handshake phase is done.
+ * WebSocket 扩展抽象：握手完成后创建，负责占用 RSV 位并提供帧变换编解码器。
  */
 public interface WebSocketExtension {
 
+    /** RSV1 位掩码（0x04）。 */
     int RSV1 = 0x04;
+    /** RSV2 位掩码（0x02）。 */
     int RSV2 = 0x02;
+    /** RSV3 位掩码（0x01）。 */
     int RSV3 = 0x01;
 
     /**
-     * @return the reserved bit value to ensure that no other extension should interfere.
+     * @return 本扩展占用的 RSV 位值，确保与其他扩展不冲突。
      */
     int rsv();
 
     /**
-     * @return create the extension encoder.
+     * @return 创建扩展编码器。
      */
     WebSocketExtensionEncoder newExtensionEncoder();
 
     /**
-     * @return create the extension decoder.
+     * @return 创建扩展解码器。
      */
     WebSocketExtensionDecoder newExtensionDecoder();
 

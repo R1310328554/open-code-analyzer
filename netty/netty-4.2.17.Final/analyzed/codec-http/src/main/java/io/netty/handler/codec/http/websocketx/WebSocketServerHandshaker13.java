@@ -31,18 +31,18 @@ import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * <p>
- * Performs server side opening and closing handshakes for <a href="https://netty.io/s/rfc6455">RFC 6455</a>
- * (originally web socket specification <a href="https://netty.io/s/ws-17">draft-ietf-hybi-thewebsocketprotocol-17</a>).
- * </p>
+ * RFC 6455（HyBi-13 至 17）服务端 WebSocket 握手实现（{@link WebSocketVersion#V13}）。
+ * <p>当前主流 WebSocket 版本；校验升级头、计算 Accept 并安装 V13 帧编解码器。
  */
 public class WebSocketServerHandshaker13 extends WebSocketServerHandshaker {
 
+    /** RFC 6455 规定的握手 GUID。 */
     public static final String WEBSOCKET_13_ACCEPT_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    /** GUID 的 ASCII 字节，供 SHA-1 增量更新复用。 */
     private static final byte[] GUID_BYTES = WEBSOCKET_13_ACCEPT_GUID.getBytes(StandardCharsets.US_ASCII);
 
     /**
-     * Constructor specifying the destination web socket location
+     * 创建 V13 服务端握手器。
      *
      * @param webSocketURL
      *        URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web
@@ -61,7 +61,7 @@ public class WebSocketServerHandshaker13 extends WebSocketServerHandshaker {
     }
 
     /**
-     * Constructor specifying the destination web socket location
+     * 创建 V13 服务端握手器。
      *
      * @param webSocketURL
      *        URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web
@@ -88,7 +88,7 @@ public class WebSocketServerHandshaker13 extends WebSocketServerHandshaker {
     }
 
     /**
-     * Constructor specifying the destination web socket location
+     * 使用自定义帧解码配置创建 V13 服务端握手器。
      *
      * @param webSocketURL
      *        URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web
@@ -105,9 +105,9 @@ public class WebSocketServerHandshaker13 extends WebSocketServerHandshaker {
 
     /**
      * <p>
-     * Handle the web socket handshake for the web socket specification <a href=
-     * "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-17">HyBi versions 13-17</a>. Versions 13-17
-     * share the same wire protocol.
+     * 处理 HyBi-13 至 17 版 WebSocket 握手并返回 101 响应；各版本线协议相同。
+     * 规范参见 <a href=
+     * "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-17">HyBi versions 13-17</a>。
      * </p>
      *
      * <p>
@@ -193,11 +193,13 @@ public class WebSocketServerHandshaker13 extends WebSocketServerHandshaker {
         return res;
     }
 
+    /** 创建 V13 帧解码器。 */
     @Override
     protected WebSocketFrameDecoder newWebsocketDecoder() {
         return new WebSocket13FrameDecoder(decoderConfig());
     }
 
+    /** 创建 V13 帧编码器（服务端发送帧无需掩码）。 */
     @Override
     protected WebSocketFrameEncoder newWebSocketEncoder() {
         return new WebSocket13FrameEncoder(false);

@@ -31,21 +31,16 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * This handler negotiates and initializes the WebSocket Extensions.
- *
- * This implementation negotiates the extension with the server in a defined order,
- * ensures that the successfully negotiated extensions are consistent between them,
- * and initializes the channel pipeline with the extension decoder and encoder.
- *
- * Find a basic implementation for compression extensions at
- * <tt>io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler</tt>.
+ * 客户端 WebSocket 扩展协商处理器。
+ * <p>按优先级顺序与服务器协商扩展，校验 RSV 位不冲突，并在管道中安装扩展编解码器。
+ * 压缩扩展示例见 {@code io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler}。
  */
 public class WebSocketClientExtensionHandler extends ChannelDuplexHandler {
 
     private final List<WebSocketClientExtensionHandshaker> extensionHandshakers;
 
     /**
-     * Constructor
+     * 创建扩展协商处理器。
      *
      * @param extensionHandshakers
      *      The extension handshaker in priority order. A handshaker could be repeated many times
@@ -55,6 +50,7 @@ public class WebSocketClientExtensionHandler extends ChannelDuplexHandler {
         this.extensionHandshakers = Arrays.asList(checkNonEmpty(extensionHandshakers, "extensionHandshakers"));
     }
 
+    /** 出站 HTTP 升级请求时合并 {@code Sec-WebSocket-Extensions} 头。 */
     @Override
     public void write(final ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof HttpRequest && WebSocketExtensionUtil.isWebsocketUpgrade(((HttpRequest) msg).headers())) {
@@ -74,6 +70,7 @@ public class WebSocketClientExtensionHandler extends ChannelDuplexHandler {
         super.write(ctx, msg, promise);
     }
 
+    /** 入站 HTTP 101 响应时解析扩展、校验 RSV 并安装编解码器。 */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {

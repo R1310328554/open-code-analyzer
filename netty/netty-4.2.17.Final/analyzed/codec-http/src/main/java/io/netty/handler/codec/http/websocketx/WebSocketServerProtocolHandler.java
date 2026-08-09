@@ -35,30 +35,20 @@ import static io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConf
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * This handler does all the heavy lifting for you to run a websocket server.
- *
- * It takes care of websocket handshaking as well as processing of control frames (Close, Ping, Pong). Text and Binary
- * data frames are passed to the next handler in the pipeline (implemented by you) for processing.
- *
- * See <tt>io.netty.example.http.websocketx.html5.WebSocketServer</tt> for usage.
- *
- * The implementation of this handler assumes that you just want to run  a websocket server and not process other types
- * HTTP requests (like GET and POST). If you wish to support both HTTP requests and websockets in the one server, refer
- * to the <tt>io.netty.example.http.websocketx.server.WebSocketServer</tt> example.
- *
- * To know once a handshake was done you can intercept the
- * {@link ChannelInboundHandler#userEventTriggered(ChannelHandlerContext, Object)} and check if the event was instance
- * of {@link HandshakeComplete}, the event will contain extra information about the handshake such as the request and
- * selected subprotocol.
+ * WebSocket 服务端协议处理器：负责握手升级、控制帧（Close/Ping/Pong）及帧转发。
+ * <p>Text/Binary 数据帧交给下游业务处理器；仅运行 WebSocket 服务时可直接使用本类。
+ * 若需同时处理普通 HTTP 与 WebSocket，参见 {@code io.netty.example.http.websocketx.server.WebSocketServer}。
+ * <p>握手完成后可通过 {@link ChannelInboundHandler#userEventTriggered} 接收
+ * {@link HandshakeComplete} 用户事件，获取请求 URI 与协商子协议等信息。
  */
 public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
 
     /**
-     * Events that are fired to notify about handshake status
+     * 服务端握手状态通知事件。
      */
     public enum ServerHandshakeStateEvent {
         /**
-         * The Handshake was completed successfully and the channel was upgraded to websockets.
+         * 握手已成功完成，通道已升级为 WebSocket。
          *
          * @deprecated in favor of {@link HandshakeComplete} class,
          * it provides extra information about the handshake
@@ -67,13 +57,13 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
         HANDSHAKE_COMPLETE,
 
         /**
-         * The Handshake was timed out
+         * 握手超时。
          */
         HANDSHAKE_TIMEOUT
     }
 
     /**
-     * The Handshake was completed successfully and the channel was upgraded to websockets.
+     * 握手成功完成时触发的用户事件，携带请求 URI、头与协商子协议。
      */
     public static final class HandshakeComplete {
         private final String requestUri;
@@ -86,14 +76,17 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
             this.selectedSubprotocol = selectedSubprotocol;
         }
 
+        /** 返回握手请求的 URI。 */
         public String requestUri() {
             return requestUri;
         }
 
+        /** 返回握手请求的 HTTP 头。 */
         public HttpHeaders requestHeaders() {
             return requestHeaders;
         }
 
+        /** 返回协商选定的子协议。 */
         public String selectedSubprotocol() {
             return selectedSubprotocol;
         }
@@ -105,7 +98,7 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
     private final WebSocketServerProtocolConfig serverConfig;
 
     /**
-     * Base constructor
+     * 基于 {@link WebSocketServerProtocolConfig} 创建服务端协议处理器。
      *
      * @param serverConfig
      *            Server protocol configuration.
@@ -118,6 +111,7 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
         this.serverConfig = serverConfig;
     }
 
+    /** 使用默认握手超时创建处理器。 */
     public WebSocketServerProtocolHandler(String websocketPath) {
         this(websocketPath, DEFAULT_HANDSHAKE_TIMEOUT_MILLIS);
     }
@@ -217,6 +211,7 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
             .build());
     }
 
+    /** 安装握手处理器与可选 UTF-8 校验器到管道。 */
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         ChannelPipeline cp = ctx.pipeline();
@@ -232,6 +227,7 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
         }
     }
 
+    /** 若配置为自行处理 Close 帧，则委托握手器完成关闭握手。 */
     @Override
     protected void decode(ChannelHandlerContext ctx, WebSocketFrame frame, List<Object> out) throws Exception {
         if (serverConfig.handleCloseFrames() && frame instanceof CloseWebSocketFrame) {
@@ -254,6 +250,7 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
         return new WebSocketServerHandshakeException(message);
     }
 
+    /** 握手失败时返回 400 并关闭连接。 */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (cause instanceof WebSocketHandshakeException) {
@@ -266,10 +263,12 @@ public class WebSocketServerProtocolHandler extends WebSocketProtocolHandler {
         }
     }
 
+    /** 从通道属性读取当前 {@link WebSocketServerHandshaker}。 */
     static WebSocketServerHandshaker getHandshaker(Channel channel) {
         return channel.attr(HANDSHAKER_ATTR_KEY).get();
     }
 
+    /** 将握手器存入通道属性，供后续 Close 等操作使用。 */
     static void setHandshaker(Channel channel, WebSocketServerHandshaker handshaker) {
         channel.attr(HANDSHAKER_ATTR_KEY).set(handshaker);
     }

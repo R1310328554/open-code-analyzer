@@ -19,39 +19,36 @@ import io.netty.util.AsciiString;
 import io.netty.util.internal.StringUtil;
 
 /**
- * <p>
- * Versions of the web socket specification.
- * </p>
- * <p>
- * A specification is tied to one wire protocol version but a protocol version may have use by more than 1 version of
- * the specification.
- * </p>
+ * WebSocket 协议版本枚举。
+ * <p>每个枚举值对应一种线协议版本；同一线协议可能被多个规范草案共用。
  */
 public enum WebSocketVersion {
+    /** 未知或未识别的版本。 */
     UNKNOWN(AsciiString.cached(StringUtil.EMPTY_STRING)),
 
     /**
-     * <a href= "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00"
-     * >draft-ietf-hybi-thewebsocketprotocol- 00</a>.
+     * HyBi-00 草案（<a href= "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00"
+     * >draft-ietf-hybi-thewebsocketprotocol- 00</a>）。
      */
     V00(AsciiString.cached("0")),
 
     /**
-     * <a href= "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-07"
-     * >draft-ietf-hybi-thewebsocketprotocol- 07</a>
+     * HyBi-07 草案（<a href= "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-07"
+     * >draft-ietf-hybi-thewebsocketprotocol- 07</a>）。
      */
     V07(AsciiString.cached("7")),
 
     /**
-     * <a href= "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-10"
-     * >draft-ietf-hybi-thewebsocketprotocol- 10</a>
+     * HyBi-10 草案（<a href= "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-10"
+     * >draft-ietf-hybi-thewebsocketprotocol- 10</a>）。
      */
     V08(AsciiString.cached("8")),
 
     /**
-     * <a href="https://tools.ietf.org/html/rfc6455 ">RFC 6455</a>. This was originally <a href=
+     * RFC 6455（<a href="https://tools.ietf.org/html/rfc6455 ">RFC 6455</a>），
+     * 源自 <a href=
      * "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-17" >draft-ietf-hybi-thewebsocketprotocol-
-     * 17</a>
+     * 17</a>。
      */
     V13(AsciiString.cached("13"));
 
@@ -61,7 +58,7 @@ public enum WebSocketVersion {
         this.headerValue = headerValue;
     }
     /**
-     * @return Value for HTTP Header 'Sec-WebSocket-Version'
+     * @return HTTP 头 {@code Sec-WebSocket-Version} 对应的字符串值。
      */
     public String toHttpHeaderValue() {
         return toAsciiString().toString();

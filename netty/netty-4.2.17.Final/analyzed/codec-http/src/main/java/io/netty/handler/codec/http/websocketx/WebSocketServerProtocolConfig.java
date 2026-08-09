@@ -21,10 +21,11 @@ import io.netty.util.internal.ObjectUtil;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
- * WebSocket server configuration.
+ * WebSocket 服务端协议配置（不可变），通过 {@link Builder} 构建。
  */
 public final class WebSocketServerProtocolConfig {
 
+    /** 默认握手超时（毫秒）。 */
     static final long DEFAULT_HANDSHAKE_TIMEOUT_MILLIS = 10000L;
 
     private final String websocketPath;
@@ -59,38 +60,47 @@ public final class WebSocketServerProtocolConfig {
         this.decoderConfig = decoderConfig == null ? WebSocketDecoderConfig.DEFAULT : decoderConfig;
     }
 
+    /** 返回 WebSocket 升级路径。 */
     public String websocketPath() {
         return websocketPath;
     }
 
+    /** 返回支持的子协议 CSV 列表。 */
     public String subprotocols() {
         return subprotocols;
     }
 
+    /** 是否以路径前缀匹配升级 URI（否则精确匹配）。 */
     public boolean checkStartsWith() {
         return checkStartsWith;
     }
 
+    /** 返回握手超时时间（毫秒）。 */
     public long handshakeTimeoutMillis() {
         return handshakeTimeoutMillis;
     }
 
+    /** 返回强制关闭连接的超时（毫秒）；0 表示不强制。 */
     public long forceCloseTimeoutMillis() {
         return forceCloseTimeoutMillis;
     }
 
+    /** 是否由本处理器直接处理 Close 帧（而非转发给下游）。 */
     public boolean handleCloseFrames() {
         return handleCloseFrames;
     }
 
+    /** 返回未手动发送关闭帧时自动发送的 Close 状态码。 */
     public WebSocketCloseStatus sendCloseFrame() {
         return sendCloseFrame;
     }
 
+    /** 是否丢弃 Pong 帧而不向下游传递。 */
     public boolean dropPongFrames() {
         return dropPongFrames;
     }
 
+    /** 返回帧解码器配置。 */
     public WebSocketDecoderConfig decoderConfig() {
         return decoderConfig;
     }
@@ -110,15 +120,18 @@ public final class WebSocketServerProtocolConfig {
             "}";
     }
 
+    /** 基于当前配置创建可变 {@link Builder}。 */
     public Builder toBuilder() {
         return new Builder(this);
     }
 
+    /** 创建带默认值的 {@link Builder}。 */
     public static Builder newBuilder() {
         return new Builder("/", null, false, DEFAULT_HANDSHAKE_TIMEOUT_MILLIS, 0L,
                            true, WebSocketCloseStatus.NORMAL_CLOSURE, true, WebSocketDecoderConfig.DEFAULT);
     }
 
+    /** 服务端 WebSocket 协议配置构建器。 */
     public static final class Builder {
         private String websocketPath;
         private String subprotocols;
@@ -165,24 +178,22 @@ public final class WebSocketServerProtocolConfig {
         }
 
         /**
-         * URI path component to handle websocket upgrade requests on.
+         * 设置处理 WebSocket 升级请求的 URI 路径。
          */
         public Builder websocketPath(String websocketPath) {
             this.websocketPath = websocketPath;
             return this;
         }
 
-        /**
-         * CSV of supported protocols
-         */
+        /** 设置支持的子协议 CSV 列表。 */
         public Builder subprotocols(String subprotocols) {
             this.subprotocols = subprotocols;
             return this;
         }
 
         /**
-         * {@code true} to handle all requests, where URI path component starts from
-         * {@link WebSocketServerProtocolConfig#websocketPath()}, {@code false} for exact match (default).
+         * {@code true} 时匹配以 {@link WebSocketServerProtocolConfig#websocketPath()} 为前缀的 URI；
+         * {@code false} 时要求精确匹配（默认）。
          */
         public Builder checkStartsWith(boolean checkStartsWith) {
             this.checkStartsWith = checkStartsWith;
@@ -190,49 +201,38 @@ public final class WebSocketServerProtocolConfig {
         }
 
         /**
-         * Handshake timeout in mills, when handshake timeout, will trigger user
-         * event {@link ClientHandshakeStateEvent#HANDSHAKE_TIMEOUT}
+         * 设置握手超时（毫秒）；超时后触发 {@link ClientHandshakeStateEvent#HANDSHAKE_TIMEOUT}。
          */
         public Builder handshakeTimeoutMillis(long handshakeTimeoutMillis) {
             this.handshakeTimeoutMillis = handshakeTimeoutMillis;
             return this;
         }
 
-        /**
-         * Close the connection if it was not closed by the client after timeout specified
-         */
+        /** 若客户端在指定超时内未关闭连接，则强制关闭。 */
         public Builder forceCloseTimeoutMillis(long forceCloseTimeoutMillis) {
             this.forceCloseTimeoutMillis = forceCloseTimeoutMillis;
             return this;
         }
 
-        /**
-         * {@code true} if close frames should not be forwarded and just close the channel
-         */
+        /** {@code true} 时 Close 帧不转发，直接关闭通道。 */
         public Builder handleCloseFrames(boolean handleCloseFrames) {
             this.handleCloseFrames = handleCloseFrames;
             return this;
         }
 
-        /**
-         * Close frame to send, when close frame was not send manually. Or {@code null} to disable proper close.
-         */
+        /** 设置未手动发送关闭帧时自动发送的 Close 状态；{@code null} 表示禁用。 */
         public Builder sendCloseFrame(WebSocketCloseStatus sendCloseFrame) {
             this.sendCloseFrame = sendCloseFrame;
             return this;
         }
 
-        /**
-         * {@code true} if pong frames should not be forwarded
-         */
+        /** {@code true} 时不向下游转发 Pong 帧。 */
         public Builder dropPongFrames(boolean dropPongFrames) {
             this.dropPongFrames = dropPongFrames;
             return this;
         }
 
-        /**
-         * Frames decoder configuration.
-         */
+        /** 设置帧解码器配置。 */
         public Builder decoderConfig(WebSocketDecoderConfig decoderConfig) {
             this.decoderConfig = decoderConfig == null ? WebSocketDecoderConfig.DEFAULT : decoderConfig;
             this.decoderConfigBuilder = null;
@@ -246,39 +246,43 @@ public final class WebSocketServerProtocolConfig {
             return decoderConfigBuilder;
         }
 
+        /** 设置单帧最大载荷长度。 */
         public Builder maxFramePayloadLength(int maxFramePayloadLength) {
             decoderConfigBuilder().maxFramePayloadLength(maxFramePayloadLength);
             return this;
         }
 
+        /** 是否要求客户端帧必须带掩码。 */
         public Builder expectMaskedFrames(boolean expectMaskedFrames) {
             decoderConfigBuilder().expectMaskedFrames(expectMaskedFrames);
             return this;
         }
 
+        /** 是否允许掩码格式不符合标准的帧。 */
         public Builder allowMaskMismatch(boolean allowMaskMismatch) {
             decoderConfigBuilder().allowMaskMismatch(allowMaskMismatch);
             return this;
         }
 
+        /** 是否允许使用帧 RSV 扩展位。 */
         public Builder allowExtensions(boolean allowExtensions) {
             decoderConfigBuilder().allowExtensions(allowExtensions);
             return this;
         }
 
+        /** 协议违规时是否关闭连接。 */
         public Builder closeOnProtocolViolation(boolean closeOnProtocolViolation) {
             decoderConfigBuilder().closeOnProtocolViolation(closeOnProtocolViolation);
             return this;
         }
 
+        /** 是否在管道中安装 UTF-8 文本帧校验器。 */
         public Builder withUTF8Validator(boolean withUTF8Validator) {
             decoderConfigBuilder().withUTF8Validator(withUTF8Validator);
             return this;
         }
 
-        /**
-         * Build unmodifiable server protocol configuration.
-         */
+        /** 构建不可变的服务端协议配置。 */
         public WebSocketServerProtocolConfig build() {
             return new WebSocketServerProtocolConfig(
                 websocketPath,

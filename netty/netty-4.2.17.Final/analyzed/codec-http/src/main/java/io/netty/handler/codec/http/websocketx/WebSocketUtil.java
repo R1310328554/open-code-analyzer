@@ -23,7 +23,7 @@ import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A utility class mainly for use by web sockets
+ * WebSocket 握手与帧处理常用工具类（MD5/SHA-1、Base64、随机数等）。
  */
 final class WebSocketUtil {
 
@@ -58,7 +58,7 @@ final class WebSocketUtil {
     };
 
     /**
-     * Performs a MD5 hash on the specified data
+     * 对指定数据计算 MD5 摘要（HyBi-00 握手使用）。
      *
      * @param data The data to hash
      * @return The hashed data
@@ -68,6 +68,7 @@ final class WebSocketUtil {
         return digest(MD5, data);
     }
 
+    /** 获取已 reset 的线程本地 SHA-1 摘要实例，供增量更新使用。 */
     static MessageDigest sha1() {
         MessageDigest digest = SHA1.get();
         digest.reset();
@@ -75,7 +76,7 @@ final class WebSocketUtil {
     }
 
     /**
-     * Performs a SHA-1 hash on the specified data
+     * 对指定数据计算 SHA-1 摘要（HyBi-07+ 握手 Accept 计算）。
      *
      * @param data The data to hash
      * @return The hashed data
@@ -92,7 +93,7 @@ final class WebSocketUtil {
     }
 
     /**
-     * Performs base64 encoding on the specified data
+     * 对字节数组进行 Base64 编码。
      *
      * @param data The data to encode
      * @return An encoded string containing the data
@@ -102,7 +103,7 @@ final class WebSocketUtil {
     }
 
     /**
-     * Creates an arbitrary number of random bytes
+     * 生成指定长度的随机字节（如 Sec-WebSocket-Key）。
      *
      * @param size the number of random bytes to create
      * @return An array of random bytes
@@ -114,7 +115,7 @@ final class WebSocketUtil {
     }
 
     /**
-     * Generates a pseudo-random number
+     * 生成 [minimum, maximum) 范围内的伪随机整数。
      *
      * @param minimum The minimum allowable value
      * @param maximum The maximum allowable value
@@ -146,13 +147,12 @@ final class WebSocketUtil {
         return (int) (minimum + fraction * (maximum - minimum));
     }
 
+    /** 从 32 位掩码中按索引取出单字节（HyBi-00 握手 Key 处理）。 */
     static int byteAtIndex(int mask, int index) {
         return (mask >> 8 * (3 - index)) & 0xFF;
     }
 
-    /**
-     * A private constructor to ensure that instances of this class cannot be made
-     */
+    /** 私有构造，禁止实例化工具类。 */
     private WebSocketUtil() {
         // Unused
     }

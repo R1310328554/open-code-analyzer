@@ -19,7 +19,7 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
 /**
- * Convenient class for <tt>io.netty.handler.codec.http.websocketx.extensions.WebSocketExtension</tt> decoder.
+ * {@link WebSocketExtension} 解码器的便捷基类，将 {@link WebSocketFrame} 解码为下游消息。
  */
 public abstract class WebSocketExtensionDecoder extends MessageToMessageDecoder<WebSocketFrame> {
 

@@ -29,18 +29,18 @@ import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpVersion.*;
 
 /**
- * <p>
- * Performs server side opening and closing handshakes for web socket specification version <a
- * href="https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-10" >draft-ietf-hybi-thewebsocketprotocol-
- * 10</a>
- * </p>
+ * HyBi-08 草案版服务端 WebSocket 握手实现（{@link WebSocketVersion#V08}）。
+ * <p>V08/V09/V10 线协议相同；校验升级头并安装对应帧编解码器。
  */
 public class WebSocketServerHandshaker08 extends WebSocketServerHandshaker {
 
+    /** HyBi-08 握手 GUID，用于计算 Sec-WebSocket-Accept。 */
     public static final String WEBSOCKET_08_ACCEPT_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
     /**
-     * Constructor specifying the destination web socket location
+     * 创建 V08 服务端握手器。
+     *
+     * @param webSocketURL
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -59,7 +59,7 @@ public class WebSocketServerHandshaker08 extends WebSocketServerHandshaker {
     }
 
     /**
-     * Constructor specifying the destination web socket location
+     * 创建 V08 服务端握手器。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -86,7 +86,7 @@ public class WebSocketServerHandshaker08 extends WebSocketServerHandshaker {
     }
 
     /**
-     * Constructor specifying the destination web socket location
+     * 使用自定义帧解码配置创建 V08 服务端握手器。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -103,9 +103,9 @@ public class WebSocketServerHandshaker08 extends WebSocketServerHandshaker {
 
     /**
      * <p>
-     * Handle the web socket handshake for the web socket specification <a href=
-     * "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-08">HyBi version 8 to 10</a>. Version 8, 9 and
-     * 10 share the same wire protocol.
+     * 处理 HyBi-08 版 WebSocket 握手并返回 101 响应；V08/V09/V10 线协议一致。
+     * 规范参见 <a href=
+     * "https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-08">HyBi version 8 to 10</a>。
      * </p>
      *
      * <p>
@@ -189,11 +189,13 @@ public class WebSocketServerHandshaker08 extends WebSocketServerHandshaker {
         return res;
     }
 
+    /** 创建 V08 帧解码器。 */
     @Override
     protected WebSocketFrameDecoder newWebsocketDecoder() {
         return new WebSocket08FrameDecoder(decoderConfig());
     }
 
+    /** 创建 V08 帧编码器（服务端发送帧无需掩码）。 */
     @Override
     protected WebSocketFrameEncoder newWebSocketEncoder() {
         return new WebSocket08FrameEncoder(false);

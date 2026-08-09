@@ -16,7 +16,8 @@
 package io.netty.handler.codec.http.websocketx.extensions;
 
 /**
- * Created once the handshake phase is done.
+ * 握手完成后实例化的客户端 WebSocket 扩展。
+ * <p>扩展在协商阶段确定 RSV 位占用，并提供帧编解码器。
  */
 public interface WebSocketClientExtension extends WebSocketExtension {
 
