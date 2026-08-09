@@ -18,15 +18,14 @@ package io.netty.handler.codec.http.websocketx.extensions;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
 /**
- * Filter that is responsible to skip the evaluation of a certain extension
- * according to standard.
+ * WebSocket 扩展帧过滤器：按 RFC 约定决定是否跳过某扩展对当前帧的处理。
+ * <p>permessage-deflate 等扩展在握手后可配置为仅压缩特定帧类型或大小；
+ * 编码器/解码器在 {@link #mustSkip} 返回 true 时不介入该帧。
  */
 public interface WebSocketExtensionFilter {
 
-    /**
-     * A {@link WebSocketExtensionFilter} that never skip the evaluation of an
-     * any given extensions {@link WebSocketExtension}.
-     */
+    /** 永不过滤：对所有帧均应用扩展编解码 */
+
     WebSocketExtensionFilter NEVER_SKIP = new WebSocketExtensionFilter() {
         @Override
         public boolean mustSkip(WebSocketFrame frame) {
@@ -34,10 +33,8 @@ public interface WebSocketExtensionFilter {
         }
     };
 
-    /**
-     * A {@link WebSocketExtensionFilter} that always skip the evaluation of an
-     * any given extensions {@link WebSocketExtension}.
-     */
+    /** 始终跳过：扩展编解码器不处理任何帧 */
+
     WebSocketExtensionFilter ALWAYS_SKIP = new WebSocketExtensionFilter() {
         @Override
         public boolean mustSkip(WebSocketFrame frame) {
@@ -46,8 +43,10 @@ public interface WebSocketExtensionFilter {
     };
 
     /**
-     * Returns {@code true} if the evaluation of the extension must skipped
-     * for the given frame otherwise {@code false}.
+     * 判断当前帧是否应跳过扩展处理。
+     *
+     * @param frame 待处理的 WebSocket 帧
+     * @return 为 true 时编/解码器忽略该帧
      */
     boolean mustSkip(WebSocketFrame frame);
 

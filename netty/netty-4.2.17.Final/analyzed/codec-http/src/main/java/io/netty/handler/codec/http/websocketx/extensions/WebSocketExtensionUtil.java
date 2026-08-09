@@ -28,22 +28,34 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * WebSocket 扩展握手工具类：解析/合并 {@code Sec-WebSocket-Extensions} 头。
+ * <p>支持 RFC 6455 扩展参数语法（逗号分隔扩展名、分号分隔键值对）。
+ */
 public final class WebSocketExtensionUtil {
 
+    /** 多个扩展名之间的分隔符 */
     private static final String EXTENSION_SEPARATOR = ",";
+    /** 扩展名与其参数之间的分隔符 */
     private static final String PARAMETER_SEPARATOR = ";";
     private static final char PARAMETER_EQUAL = '=';
 
     private static final Pattern PARAMETER = Pattern.compile("^([^=]+)(=[\\\"]?([^\\\"]+)[\\\"]?)?$");
 
+    /** 判断 HTTP 头是否表示 WebSocket 升级请求/响应（Upgrade + Connection） */
     static boolean isWebsocketUpgrade(HttpHeaders headers) {
-        //this contains check does not allocate an iterator, and most requests are not upgrades
+        // contains 检查不分配迭代器；多数请求非升级，先做快速否定
         //so we do the contains check first before checking for specific values
         return headers.contains(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET, true) &&
                headers.containsValue(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true);
     }
 
-    public static List<WebSocketExtensionData> extractExtensions(String extensionHeader) {
+    /**
+     * 解析 {@code Sec-WebSocket-Extensions} 头值为扩展数据列表。
+     *
+     * @param extensionHeader 原始扩展头字符串
+     * @return 按出现顺序排列的 {@link WebSocketExtensionData}
+     */
         String[] rawExtensions = extensionHeader.split(EXTENSION_SEPARATOR);
         if (rawExtensions.length > 0) {
             List<WebSocketExtensionData> extensions = new ArrayList<>(rawExtensions.length);
@@ -71,6 +83,14 @@ public final class WebSocketExtensionUtil {
         }
     }
 
+    /**
+     * 将用户已有扩展头与协商成功的扩展合并，生成响应头值。
+     * <p>同名扩展以用户参数优先覆盖服务端默认值。
+     *
+     * @param userDefinedHeaderValue 响应中已有的扩展头（可为 null）
+     * @param extraExtensions 握手协商后待追加的扩展
+     * @return 合并后的 {@code Sec-WebSocket-Extensions} 值
+     */
     static String computeMergeExtensionsHeaderValue(String userDefinedHeaderValue,
                                                     List<WebSocketExtensionData> extraExtensions) {
         List<WebSocketExtensionData> userDefinedExtensions =
@@ -91,7 +111,7 @@ public final class WebSocketExtensionUtil {
             if (matchingExtra == null) {
                 extraExtensions.add(userDefined);
             } else {
-                // merge with higher precedence to user defined parameters
+                // 用户自定义参数优先级高于服务端默认值
                 Map<String, String> mergedParameters = new LinkedHashMap<>(matchingExtra.parameters());
                 mergedParameters.putAll(userDefined.parameters());
                 extraExtensions.set(i, new WebSocketExtensionData(matchingExtra.name(), mergedParameters));
@@ -120,7 +140,8 @@ public final class WebSocketExtensionUtil {
         return sb.toString();
     }
 
+    /** 工具类不可实例化 */
     private WebSocketExtensionUtil() {
-        // Unused
+        // 无实例字段
     }
 }

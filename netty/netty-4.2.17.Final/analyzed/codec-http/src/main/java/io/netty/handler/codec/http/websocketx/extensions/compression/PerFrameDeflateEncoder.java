@@ -23,16 +23,17 @@ import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtension;
 import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtensionFilter;
 
 /**
- * Per-frame implementation of deflate compressor.
+ * perframe-deflate 压缩器：对每个可压缩数据帧独立 Deflate 并设置 RSV1。
+ * <p>仅压缩 RSV1 未置位且载荷非空的 Text/Binary/Continuation 帧。
  */
 class PerFrameDeflateEncoder extends DeflateEncoder {
 
     /**
      * Constructor
      *
-     * @param compressionLevel compression level of the compressor.
-     * @param windowSize       maximum size of the window compressor buffer.
-     * @param noContext        true to disable context takeover.
+     * @param compressionLevel 压缩级别
+     * @param windowSize 压缩窗口位数
+     * @param noContext 是否禁用上下文接管
      */
     PerFrameDeflateEncoder(int compressionLevel, int windowSize, boolean noContext) {
         super(compressionLevel, windowSize, noContext, WebSocketExtensionFilter.NEVER_SKIP);
@@ -44,7 +45,7 @@ class PerFrameDeflateEncoder extends DeflateEncoder {
      * @param compressionLevel compression level of the compressor.
      * @param windowSize       maximum size of the window compressor buffer.
      * @param noContext        true to disable context takeover.
-     * @param extensionEncoderFilter extension encoder filter for per frame deflate encoder.
+     * @param extensionEncoderFilter perframe 编码扩展过滤器
      */
     PerFrameDeflateEncoder(int compressionLevel, int windowSize, boolean noContext,
                            WebSocketExtensionFilter extensionEncoderFilter) {
@@ -56,7 +57,7 @@ class PerFrameDeflateEncoder extends DeflateEncoder {
      *
      * @param compressionLevel compression level of the compressor.
      * @param windowSize       maximum size of the window compressor buffer.
-     * @param memLevel         internal compression state memory level (1..9).
+     * @param memLevel zlib 内存级别 1–9
      * @param noContext        true to disable context takeover.
      * @param extensionEncoderFilter extension encoder filter for per frame deflate encoder.
      */
@@ -66,6 +67,7 @@ class PerFrameDeflateEncoder extends DeflateEncoder {
     }
 
     @Override
+    /** 压缩 RSV1 未置位、载荷可读且未被 filter 跳过的数据帧 */
     public boolean acceptOutboundMessage(Object msg) throws Exception {
         if (!super.acceptOutboundMessage(msg)) {
             return false;
@@ -83,11 +85,13 @@ class PerFrameDeflateEncoder extends DeflateEncoder {
     }
 
     @Override
+    /** 压缩后在 RSV 中置位 RSV1 */
     protected int rsv(WebSocketFrame msg) {
         return msg.rsv() | WebSocketExtension.RSV1;
     }
 
     @Override
+    /** perframe 模式始终从压缩结果移除 zlib 同步尾 */
     protected boolean removeFrameTail(WebSocketFrame msg) {
         return true;
     }

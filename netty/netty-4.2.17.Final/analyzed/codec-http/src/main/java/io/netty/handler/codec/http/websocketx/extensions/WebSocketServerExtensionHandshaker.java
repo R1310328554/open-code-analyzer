@@ -17,16 +17,16 @@ package io.netty.handler.codec.http.websocketx.extensions;
 
 
 /**
- * Handshakes a client extension based on this server capabilities.
+ * 服务端 WebSocket 扩展握手器：根据服务端能力匹配客户端请求的扩展配置。
+ * <p>由 {@link WebSocketServerExtensionHandler} 按注册顺序调用；无法支持时返回 null。
  */
 public interface WebSocketServerExtensionHandshaker {
 
     /**
-     * Handshake based on client request. It must failed with <tt>null</tt> if server cannot handle it.
+     * 基于客户端扩展配置尝试握手。
      *
-     * @param extensionData
-     *          the extension configuration sent by the client.
-     * @return an initialized extension if handshake phase succeed or null if failed.
+     * @param extensionData 客户端 {@code Sec-WebSocket-Extensions} 中的一项
+     * @return 协商成功则返回可用的 {@link WebSocketServerExtension}，否则 null
      */
     WebSocketServerExtension handshakeExtension(WebSocketExtensionData extensionData);
 

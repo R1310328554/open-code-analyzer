@@ -36,27 +36,35 @@ import static io.netty.handler.codec.http.websocketx.extensions.compression.PerM
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * Deflate implementation of a payload compressor for
- * <tt>io.netty.handler.codec.http.websocketx.WebSocketFrame</tt>.
+ * WebSocket 帧载荷 Deflate 压缩抽象基类。
+ * <p>使用 {@link EmbeddedChannel} 包装 zlib 编码器；子类控制 RSV1 置位、
+ * 是否剥离 {@link PerMessageDeflateDecoder#FRAME_TAIL} 等 per-frame/per-message 细节。
  */
 abstract class DeflateEncoder extends WebSocketExtensionEncoder {
 
+    /** zlib 内部状态默认内存级别（1–9） */
     static final int DEFAULT_MEM_LEVEL = 8;
 
+    /** Deflate 压缩级别 0–9 */
     private final int compressionLevel;
+    /** zlib 窗口大小（位数 8–15） */
     private final int windowSize;
+    /** zlib 内存级别 1–9 */
     private final int memLevel;
+    /** 为 true 时每消息/帧结束后重置压缩上下文 */
     private final boolean noContext;
+    /** 决定是否跳过当前帧压缩的过滤器 */
     private final WebSocketExtensionFilter extensionEncoderFilter;
 
+    /** 懒创建的 zlib 压缩 EmbeddedChannel */
     private EmbeddedChannel encoder;
 
     /**
      * Constructor
-     * @param compressionLevel compression level of the compressor.
-     * @param windowSize maximum size of the window compressor buffer.
-     * @param noContext true to disable context takeover.
-     * @param extensionEncoderFilter extension encoder filter.
+     * @param compressionLevel 压缩级别 0–9
+     * @param windowSize 压缩窗口位数
+     * @param noContext 是否禁用上下文接管
+     * @param extensionEncoderFilter 扩展编码过滤器
      */
     DeflateEncoder(int compressionLevel, int windowSize, boolean noContext,
                    WebSocketExtensionFilter extensionEncoderFilter) {
@@ -67,7 +75,7 @@ abstract class DeflateEncoder extends WebSocketExtensionEncoder {
      * Constructor
      * @param compressionLevel compression level of the compressor.
      * @param windowSize maximum size of the window compressor buffer.
-     * @param memLevel internal compression state memory level (1..9).
+     * @param memLevel zlib 内部状态内存级别（1–9）
      * @param noContext true to disable context takeover.
      * @param extensionEncoderFilter extension encoder filter.
      */
@@ -88,14 +96,14 @@ abstract class DeflateEncoder extends WebSocketExtensionEncoder {
     }
 
     /**
-     * @param msg the current frame.
-     * @return the rsv bits to set in the compressed frame.
+     * @param msg 当前 WebSocket 帧
+     * @return 压缩后帧应设置的 RSV 位
      */
     protected abstract int rsv(WebSocketFrame msg);
 
     /**
-     * @param msg the current frame.
-     * @return true if compressed payload tail needs to be removed.
+     * @param msg 当前 WebSocket 帧
+     * @return 为 true 时从压缩结果末尾移除 {@code FRAME_TAIL}
      */
     protected abstract boolean removeFrameTail(WebSocketFrame msg);
 
@@ -105,7 +113,7 @@ abstract class DeflateEncoder extends WebSocketExtensionEncoder {
         if (msg.content().isReadable()) {
             compressedContent = compressContent(ctx, msg);
         } else if (msg.isFinalFragment()) {
-            // Set empty DEFLATE block manually for unknown buffer size
+            // 末帧空载荷时手动写入空 Deflate 块（RFC 7692 §7.2.3.6）
             // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
             compressedContent = EMPTY_DEFLATE_BLOCK.duplicate();
         } else {
@@ -177,7 +185,7 @@ abstract class DeflateEncoder extends WebSocketExtensionEncoder {
 
     private void cleanup() {
         if (encoder != null) {
-            // Clean-up the previous encoder if not cleaned up correctly.
+            // 释放未正确清理的 zlib 编码器资源
             encoder.finishAndReleaseAll();
             encoder = null;
         }

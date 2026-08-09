@@ -28,18 +28,23 @@ import static io.netty.handler.codec.http.websocketx.extensions.compression.Defl
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * <a href="https://tools.ietf.org/id/draft-tyoshino-hybi-websocket-perframe-deflate-06.txt">perframe-deflate</a>
- * handshake implementation.
+ * 客户端 perframe-deflate / x-webkit-deflate-frame 扩展握手实现。
+ * <p>草案扩展：对<strong>每一 WebSocket 帧</strong>独立 Deflate 压缩（非整条消息）。
+ * 协商成功后创建 {@link PerFrameDeflateEncoder}/{@link PerFrameDeflateDecoder}。
  */
 public final class DeflateFrameClientExtensionHandshaker implements WebSocketClientExtensionHandshaker {
 
+    /** Deflate 压缩级别 0–9 */
     private final int compressionLevel;
+    /** 为 true 时使用 {@code x-webkit-deflate-frame} 扩展名（WebKit 兼容） */
     private final boolean useWebkitExtensionName;
+    /** 编解码侧扩展过滤器提供者 */
     private final WebSocketExtensionFilterProvider extensionFilterProvider;
+    /** 解压缓冲最大分配，0 表示不限 */
     private final int maxAllocation;
 
     /**
-     * Constructor with default configuration.
+     * 默认配置构造（压缩级别 6）。
      *
      * @deprecated
      *            Use {@link DeflateFrameClientExtensionHandshaker#DeflateFrameClientExtensionHandshaker(boolean, int)}.
@@ -126,6 +131,7 @@ public final class DeflateFrameClientExtensionHandshaker implements WebSocketCli
     }
 
     @Override
+    /** 构造无参数的 perframe-deflate 扩展请求 */
     public WebSocketExtensionData newRequestData() {
         return new WebSocketExtensionData(
                 useWebkitExtensionName ? X_WEBKIT_DEFLATE_FRAME_EXTENSION : DEFLATE_FRAME_EXTENSION,
@@ -133,6 +139,7 @@ public final class DeflateFrameClientExtensionHandshaker implements WebSocketCli
     }
 
     @Override
+    /** 校验服务端确认的扩展名与空参数，成功则返回客户端扩展实例 */
     public WebSocketClientExtension handshakeExtension(WebSocketExtensionData extensionData) {
         if (!X_WEBKIT_DEFLATE_FRAME_EXTENSION.equals(extensionData.name()) &&
             !DEFLATE_FRAME_EXTENSION.equals(extensionData.name())) {
@@ -146,6 +153,7 @@ public final class DeflateFrameClientExtensionHandshaker implements WebSocketCli
         }
     }
 
+    /** perframe-deflate 客户端扩展：RSV1 + PerFrame 编解码器工厂 */
     private static class DeflateFrameClientExtension implements WebSocketClientExtension {
 
         private final int compressionLevel;

@@ -36,30 +36,38 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * Deflate implementation of a payload decompressor for
- * <tt>io.netty.handler.codec.http.websocketx.WebSocketFrame</tt>.
+ * WebSocket 帧载荷 Deflate 解压抽象基类。
+ * <p>使用 {@link EmbeddedChannel} 包装 zlib 解码器；子类决定 RSV 位处理、
+ * 是否在帧尾追加 {@link #FRAME_TAIL} 以及 per-frame/per-message 语义。
  */
 abstract class DeflateDecoder extends WebSocketExtensionDecoder {
 
+    /** RFC 7692 要求的 Deflate 块结束标记（0x00 0x00 0xff 0xff） */
     static final ByteBuf FRAME_TAIL = Unpooled.unreleasableBuffer(
             Unpooled.wrappedBuffer(new byte[] {0x00, 0x00, (byte) 0xff, (byte) 0xff}))
             .asReadOnly();
 
+    /** 空 Deflate 块（单字节 0x00），用于零长度压缩帧 */
     static final ByteBuf EMPTY_DEFLATE_BLOCK = Unpooled.unreleasableBuffer(
             Unpooled.wrappedBuffer(new byte[] { 0x00 }))
             .asReadOnly();
 
+    /** 为 true 时禁用上下文接管（每消息/帧结束后重置 zlib 状态） */
     private final boolean noContext;
+    /** 决定是否跳过当前帧解压的过滤器 */
     private final WebSocketExtensionFilter extensionDecoderFilter;
+    /** 解压缓冲区最大分配字节数，0 表示不限制 */
     private final int maxAllocation;
 
+    /** 懒创建的 zlib 解压 EmbeddedChannel */
     private EmbeddedChannel decoder;
 
     /**
      * Constructor
      *
-     * @param noContext true to disable context takeover.
-     * @param extensionDecoderFilter extension decoder filter.
+     * @param noContext 为 true 禁用上下文接管
+     * @param extensionDecoderFilter 扩展解码过滤器
+     * @param maxAllocation 解压缓冲上限
      */
     DeflateDecoder(boolean noContext, WebSocketExtensionFilter extensionDecoderFilter, int maxAllocation) {
         this.noContext = noContext;
@@ -67,15 +75,16 @@ abstract class DeflateDecoder extends WebSocketExtensionDecoder {
         this.maxAllocation = maxAllocation;
     }
 
-    /**
-     * Returns the extension decoder filter.
-     */
+    /** @return 当前使用的扩展解码过滤器 */
+
     protected WebSocketExtensionFilter extensionDecoderFilter() {
         return extensionDecoderFilter;
     }
 
+    /** 子类决定是否在解压输入末尾追加 {@link #FRAME_TAIL} */
     protected abstract boolean appendFrameTail(WebSocketFrame msg);
 
+    /** 子类计算解压后输出帧的 RSV 位（通常清除 RSV1） */
     protected abstract int newRsv(WebSocketFrame msg);
 
     @Override
@@ -138,10 +147,10 @@ abstract class DeflateDecoder extends WebSocketExtensionDecoder {
             }
             compositeDecompressedContent.addComponent(true, partUncompressedContent);
         }
-        // Correctly handle empty frames
+        // 正确处理空帧（见 netty#4348）
         // See https://github.com/netty/netty/issues/4348
         if (!emptyDeflateBlock && readable && compositeDecompressedContent.numComponents() <= 0) {
-            // Sometimes after fragmentation the last frame
+            // 分片消息末帧可能含不影响解压的残留数据
             // May contain left-over data that doesn't affect decompression
             if (!(msg instanceof ContinuationWebSocketFrame)) {
                 compositeDecompressedContent.release();
@@ -158,7 +167,7 @@ abstract class DeflateDecoder extends WebSocketExtensionDecoder {
 
     private void cleanup() {
         if (decoder != null) {
-            // Clean-up the previous encoder if not cleaned up correctly.
+            // 释放未正确清理的 zlib 解码器资源
             decoder.finishAndReleaseAll();
             decoder = null;
         }

@@ -19,9 +19,12 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
 /**
- * Convenient class for <tt>io.netty.handler.codec.http.websocketx.extensions.WebSocketExtension</tt> encoder.
+ * {@link WebSocketExtension} 编码器的便捷抽象基类。
+ * <p>继承 {@link io.netty.handler.codec.MessageToMessageEncoder}，限定入站类型为 {@link WebSocketFrame}，
+ * 具体扩展（如 permessage-deflate）在子类中实现压缩等出站变换。
  */
 public abstract class WebSocketExtensionEncoder extends MessageToMessageEncoder<WebSocketFrame> {
+    /** 构造编码器并绑定 {@link WebSocketFrame} 为唯一接受的出站消息类型 */
     public WebSocketExtensionEncoder() {
         super(WebSocketFrame.class);
     }

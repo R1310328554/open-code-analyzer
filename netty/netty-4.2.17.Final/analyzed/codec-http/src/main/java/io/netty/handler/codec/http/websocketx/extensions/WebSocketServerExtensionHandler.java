@@ -40,27 +40,25 @@ import java.util.List;
 import java.util.Queue;
 
 /**
- * This handler negotiates and initializes the WebSocket Extensions.
- *
- * It negotiates the extensions based on the client desired order,
- * ensures that the successfully negotiated extensions are consistent between them,
- * and initializes the channel pipeline with the extension decoder and encoder.
- *
- * Find a basic implementation for compression extensions at
- * <tt>io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerCompressionHandler</tt>.
+ * 服务端 WebSocket 扩展协商与 pipeline 初始化处理器。
+ * <p>按客户端 {@code Sec-WebSocket-Extensions} 声明顺序，依次调用注册的
+ * {@link WebSocketServerExtensionHandshaker} 匹配扩展；校验 RSV 位不冲突后，
+ * 在 101 响应写出成功时将对应 {@link WebSocketExtensionDecoder}/{@link WebSocketExtensionEncoder}
+ * 插入 pipeline 并移除自身。
+ * <p>压缩扩展示例见 {@code WebSocketServerCompressionHandler}。
  */
 public class WebSocketServerExtensionHandler extends ChannelDuplexHandler {
 
+    /** 按优先级排列的扩展握手器列表（可重复注册以支持降级配置） */
     private final List<WebSocketServerExtensionHandshaker> extensionHandshakers;
 
+    /** 请求阶段协商成功的扩展列表，与后续 101 响应按 FIFO 配对 */
     private final Queue<List<WebSocketServerExtension>> validExtensions = new ArrayDeque<>(4);
 
     /**
      * Constructor
      *
-     * @param extensionHandshakers
-     *      The extension handshaker in priority order. A handshaker could be repeated many times
-     *      with fallback configuration.
+     * @param extensionHandshakers 按优先级排列的握手器；可重复注册同一类型以提供降级参数
      */
     public WebSocketServerExtensionHandler(WebSocketServerExtensionHandshaker... extensionHandshakers) {
         this.extensionHandshakers = Arrays.asList(checkNonEmpty(extensionHandshakers, "extensionHandshakers"));
@@ -68,17 +66,17 @@ public class WebSocketServerExtensionHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        // JDK type checks vs non-implemented interfaces costs O(N), where
+        // JDK instanceof 对未实现接口的检查为 O(N)，对常见具体类型走快速路径
         // N is the number of interfaces already implemented by the concrete type that's being tested.
         // The only requirement for this call is to make HttpRequest(s) implementors to call onHttpRequestChannelRead
         // and super.channelRead the others, but due to the O(n) cost we perform few fast-path for commonly met
         // singleton and/or concrete types, to save performing such slow type checks.
         if (msg != LastHttpContent.EMPTY_LAST_CONTENT) {
             if (msg instanceof DefaultHttpRequest) {
-                // fast-path
+                // 快速路径：DefaultHttpRequest
                 onHttpRequestChannelRead(ctx, (DefaultHttpRequest) msg);
             } else if (msg instanceof HttpRequest) {
-                // slow path
+                // 慢路径：其他 HttpRequest 实现
                 onHttpRequestChannelRead(ctx, (HttpRequest) msg);
             } else {
                 super.channelRead(ctx, msg);
@@ -89,11 +87,9 @@ public class WebSocketServerExtensionHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * This is a method exposed to perform fail-fast checks of user-defined http types.<p>
-     * eg:<br>
-     * If the user has defined a specific {@link HttpRequest} type i.e.{@code CustomHttpRequest} and
-     * {@link #channelRead} can receive {@link LastHttpContent#EMPTY_LAST_CONTENT} {@code msg}
-     * types too, can override it like this:
+     * 供子类对自定义 {@link HttpRequest} 类型做快速分发；完整示例见源码注释。
+     * <p>若 {@link #channelRead} 还会收到 {@link LastHttpContent#EMPTY_LAST_CONTENT}，
+     * 可像下面这样仅对 {@code CustomHttpRequest} 调用本方法：
      * <pre>
      *     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
      *         if (msg != LastHttpContent.EMPTY_LAST_CONTENT) {
@@ -113,8 +109,9 @@ public class WebSocketServerExtensionHandler extends ChannelDuplexHandler {
      *     }
      * </pre>
      * <strong>IMPORTANT:</strong>
-     * It already call {@code super.channelRead(ctx, request)} before returning.
+     * 返回前已调用 {@code super.channelRead(ctx, request)}。
      */
+    /** 解析升级请求中的扩展头，按 handshaker 顺序协商并暂存有效扩展 */
     protected void onHttpRequestChannelRead(ChannelHandlerContext ctx, HttpRequest request) throws Exception {
         List<WebSocketServerExtension> validExtensionsList = null;
 
@@ -171,10 +168,8 @@ public class WebSocketServerExtensionHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * This is a method exposed to perform fail-fast checks of user-defined http types.<p>
-     * eg:<br>
-     * If the user has defined a specific {@link HttpResponse} type i.e.{@code CustomHttpResponse} and
-     * {@link #write} can receive {@link ByteBuf} {@code msg} types too, it can be overridden like this:
+     * 供子类对自定义 {@link HttpResponse} 类型做快速分发；完整示例见源码注释。
+     * <p>若 {@link #write} 还会收到 {@link ByteBuf}，可仅对 {@code CustomHttpResponse} 调用本方法：
      * <pre>
      *     public void write(final ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
      *         if (msg != Unpooled.EMPTY_BUFFER && !(msg instanceof ByteBuf)) {
@@ -194,12 +189,12 @@ public class WebSocketServerExtensionHandler extends ChannelDuplexHandler {
      *     }
      * </pre>
      * <strong>IMPORTANT:</strong>
-     * It already call {@code super.write(ctx, response, promise)} before returning.
+     * 返回前已调用 {@code super.write(ctx, response, promise)}。
      */
     protected void onHttpResponseWrite(ChannelHandlerContext ctx, HttpResponse response, ChannelPromise promise)
             throws Exception {
         List<WebSocketServerExtension> validExtensionsList = validExtensions.poll();
-        // checking the status is faster than looking at headers so we do this first
+        // 先比对 101 状态码，比解析头更快
         if (HttpResponseStatus.SWITCHING_PROTOCOLS.equals(response.status())) {
             handlePotentialUpgrade(ctx, promise, response, validExtensionsList);
         }
@@ -207,16 +202,14 @@ public class WebSocketServerExtensionHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Returns {@code true} if WebSocket extensions negotiated from the request should be acknowledged for this
-     * response.
-     * <p>
-     * This method can be overridden to make the final extension negotiation decision when the handshake response is
-     * written.
+     * 写出 101 响应时是否确认并写入协商成功的扩展头。
+     * <p>子类可覆盖以在最终响应阶段否决部分扩展。
      */
     protected boolean isExtensionNegotiationEnabled(ChannelHandlerContext ctx, HttpResponse response) {
         return true;
     }
 
+    /** 101 升级响应：合并扩展头，写成功后插入编解码器并移除本 handler */
     private void handlePotentialUpgrade(final ChannelHandlerContext ctx,
                                         ChannelPromise promise, HttpResponse httpResponse,
                                         final List<WebSocketServerExtension> validExtensionsList) {

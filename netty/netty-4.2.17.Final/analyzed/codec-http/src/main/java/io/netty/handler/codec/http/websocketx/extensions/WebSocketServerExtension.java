@@ -17,16 +17,18 @@ package io.netty.handler.codec.http.websocketx.extensions;
 
 
 /**
- * Created once the handshake phase is done.
+ * 服务端 WebSocket 扩展实例，在握手协商成功后创建。
+ * <p>扩展 {@link WebSocketExtension}，额外提供向客户端回写确认配置的
+ * {@link #newReponseData()} 及编解码器工厂方法。
  */
 public interface WebSocketServerExtension extends WebSocketExtension {
 
     /**
-     * Return an extension configuration to submit to the client as an acknowledge.
+     * 返回写入 101 响应 {@code Sec-WebSocket-Extensions} 的确认配置。
      *
-     * @return the acknowledged extension configuration.
+     * @return 已协商的扩展参数
      */
-    //TODO: after migrating to JDK 8 rename this to 'newResponseData()' and mark old as deprecated with default method
+    // TODO: JDK 8 迁移后重命名为 newResponseData() 并将旧名标为 @Deprecated default 方法
     WebSocketExtensionData newReponseData();
 
 }

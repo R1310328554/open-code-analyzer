@@ -27,19 +27,25 @@ import java.util.Collections;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * <a href="https://tools.ietf.org/id/draft-tyoshino-hybi-websocket-perframe-deflate-06.txt">perframe-deflate</a>
- * handshake implementation.
+ * 服务端 perframe-deflate / x-webkit-deflate-frame 扩展握手实现。
+ * <p>接受客户端无参数的 {@code deflate-frame} 或 {@code x-webkit-deflate-frame} 请求，
+ * 创建对应 {@link PerFrameDeflateEncoder}/{@link PerFrameDeflateDecoder}。
  */
 public final class DeflateFrameServerExtensionHandshaker implements WebSocketServerExtensionHandshaker {
 
+    /** 默认 Deflate 压缩级别 */
     public static final int DEFAULT_COMPRESSION_LEVEL = 6;
+    /** zlib 窗口最小位数 */
     public static final int MIN_WINDOW_SIZE = 8;
+    /** zlib 窗口最大位数 */
     public static final int MAX_WINDOW_SIZE = 15;
     public static final int DEFAULT_MEM_LEVEL = 8;
     public static final int MIN_MEM_LEVEL = 1;
     public static final int MAX_MEM_LEVEL = 9;
 
+    /** WebKit 非标准 perframe-deflate 扩展名 */
     static final String X_WEBKIT_DEFLATE_FRAME_EXTENSION = "x-webkit-deflate-frame";
+    /** IETF 草案 perframe-deflate 扩展名 */
     static final String DEFLATE_FRAME_EXTENSION = "deflate-frame";
 
     private final int compressionLevel;
@@ -170,6 +176,7 @@ public final class DeflateFrameServerExtensionHandshaker implements WebSocketSer
     }
 
     @Override
+    /** 匹配 deflate-frame 扩展且无额外参数时返回服务端扩展实例 */
     public WebSocketServerExtension handshakeExtension(WebSocketExtensionData extensionData) {
         if (!X_WEBKIT_DEFLATE_FRAME_EXTENSION.equals(extensionData.name()) &&
             !DEFLATE_FRAME_EXTENSION.equals(extensionData.name())) {
@@ -184,8 +191,10 @@ public final class DeflateFrameServerExtensionHandshaker implements WebSocketSer
         }
     }
 
+    /** 协商成功的 perframe-deflate 服务端扩展实现 */
     private static class DeflateFrameServerExtension implements WebSocketServerExtension {
 
+        /** 回写响应时使用的扩展名（deflate-frame 或 x-webkit 变体） */
         private final String extensionName;
         private final int compressionLevel;
         private final int windowSize;

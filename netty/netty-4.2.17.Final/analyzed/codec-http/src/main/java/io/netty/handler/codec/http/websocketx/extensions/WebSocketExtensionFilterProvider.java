@@ -16,10 +16,12 @@
 package io.netty.handler.codec.http.websocketx.extensions;
 
 /**
- * Extension filter provider that is responsible to provide filters for a certain {@link WebSocketExtension} extension.
+ * 扩展过滤器提供者：为指定 {@link WebSocketExtension} 分别提供编码侧与解码侧过滤器。
+ * <p>握手阶段通过 {@link WebSocketExtensionFilterProvider#DEFAULT} 或自定义实现注入 pipeline。
  */
 public interface WebSocketExtensionFilterProvider {
 
+    /** 默认实现：编码与解码均使用 {@link WebSocketExtensionFilter#NEVER_SKIP} */
     WebSocketExtensionFilterProvider DEFAULT = new WebSocketExtensionFilterProvider() {
         @Override
         public WebSocketExtensionFilter encoderFilter() {
@@ -32,14 +34,12 @@ public interface WebSocketExtensionFilterProvider {
         }
     };
 
-    /**
-     * Returns the extension filter for {@link WebSocketExtensionEncoder} encoder.
-     */
+    /** 返回出站 {@link WebSocketExtensionEncoder} 使用的扩展过滤器 */
+
     WebSocketExtensionFilter encoderFilter();
 
-    /**
-     * Returns the extension filter for {@link WebSocketExtensionDecoder} decoder.
-     */
+    /** 返回入站 {@link WebSocketExtensionDecoder} 使用的扩展过滤器 */
+
     WebSocketExtensionFilter decoderFilter();
 
 }

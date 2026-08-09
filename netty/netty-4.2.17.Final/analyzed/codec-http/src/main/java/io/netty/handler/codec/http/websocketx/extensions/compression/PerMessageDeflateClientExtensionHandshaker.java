@@ -31,15 +31,21 @@ import static io.netty.handler.codec.http.websocketx.extensions.compression.PerM
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-18">permessage-deflate</a>
- * handshake implementation.
+ * 客户端 RFC 7692 permessage-deflate 扩展握手实现。
+ * <p>协商窗口大小、上下文接管等参数；成功则使用 {@link PerMessageDeflateEncoder}/
+ * {@link PerMessageDeflateDecoder} 对<strong>整条消息</strong>（含分片）压缩。
  */
 public final class PerMessageDeflateClientExtensionHandshaker implements WebSocketClientExtensionHandshaker {
 
+    /** 出站压缩级别 0–9 */
     private final int compressionLevel;
+    /** 是否允许服务端指定客户端解压窗口（client_max_window_bits） */
     private final boolean allowClientWindowSize;
+    /** 请求的服务端解压窗口位数（server_max_window_bits） */
     private final int requestedServerWindowSize;
+    /** 是否允许服务端激活 client_no_context_takeover */
     private final boolean allowClientNoContext;
+    /** 是否请求服务端启用 server_no_context_takeover */
     private final boolean requestedServerNoContext;
     private final WebSocketExtensionFilterProvider extensionFilterProvider;
     private final int maxAllocation;
@@ -195,6 +201,7 @@ public final class PerMessageDeflateClientExtensionHandshaker implements WebSock
     }
 
     @Override
+    /** 按配置构造 permessage-deflate 扩展请求参数 */
     public WebSocketExtensionData newRequestData() {
         HashMap<String, String> parameters = new HashMap<String, String>(4);
         if (requestedServerNoContext) {
@@ -213,6 +220,7 @@ public final class PerMessageDeflateClientExtensionHandshaker implements WebSock
     }
 
     @Override
+    /** 逐项校验服务端响应参数，全部匹配则返回客户端扩展实例 */
     public WebSocketClientExtension handshakeExtension(WebSocketExtensionData extensionData) {
         if (!PERMESSAGE_DEFLATE_EXTENSION.equals(extensionData.name())) {
             return null;
@@ -230,9 +238,9 @@ public final class PerMessageDeflateClientExtensionHandshaker implements WebSock
             Entry<String, String> parameter = parametersIterator.next();
 
             if (CLIENT_MAX_WINDOW.equalsIgnoreCase(parameter.getKey())) {
-                // allowed client_window_size_bits
+                // 服务端确认 client_max_window_bits
                 if (allowClientWindowSize) {
-                    // RFC 7692: client_max_window_bits may have a value or no value
+                    // RFC 7692：client_max_window_bits 可有值或无值
                     String value = parameter.getValue();
                     if (value != null) {
                         // Let NumberFormatException bubble up if value is invalid
@@ -241,28 +249,28 @@ public final class PerMessageDeflateClientExtensionHandshaker implements WebSock
                             succeed = false;
                         }
                     }
-                    // If value is null, keep MAX_WINDOW_SIZE (default)
+                    // 无值时保持默认 MAX_WINDOW_SIZE
                 } else {
                     succeed = false;
                 }
             } else if (SERVER_MAX_WINDOW.equalsIgnoreCase(parameter.getKey())) {
-                // acknowledged server_window_size_bits
+                // 服务端确认的 server_max_window_bits
                 serverWindowSize = Integer.parseInt(parameter.getValue());
                 if (serverWindowSize > MAX_WINDOW_SIZE || serverWindowSize < MIN_WINDOW_SIZE) {
                     succeed = false;
                 }
             } else if (CLIENT_NO_CONTEXT.equalsIgnoreCase(parameter.getKey())) {
-                // allowed client_no_context_takeover
+                // 允许 client_no_context_takeover
                 if (allowClientNoContext) {
                     clientNoContext = true;
                 } else {
                     succeed = false;
                 }
             } else if (SERVER_NO_CONTEXT.equalsIgnoreCase(parameter.getKey())) {
-                // acknowledged server_no_context_takeover
+                // 服务端确认 server_no_context_takeover
                 serverNoContext = true;
             } else {
-                // unknown parameter
+                // 未知参数导致握手失败
                 succeed = false;
             }
         }
@@ -280,6 +288,7 @@ public final class PerMessageDeflateClientExtensionHandshaker implements WebSock
         }
     }
 
+    /** 协商成功的 permessage-deflate 客户端扩展 */
     private final class PermessageDeflateExtension implements WebSocketClientExtension {
 
         private final boolean serverNoContext;

@@ -26,10 +26,13 @@ import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtensionFilte
 import java.util.List;
 
 /**
- * Per-message implementation of deflate decompressor.
+ * permessage-deflate 解压器：整条逻辑消息（含分片）共享一次 Deflate 流。
+ * <p>首帧带 RSV1 启动解压，后续 Continuation 帧延续同一 zlib 上下文；
+ * 仅在消息末帧（FIN）追加 {@link DeflateDecoder#FRAME_TAIL}。
  */
 class PerMessageDeflateDecoder extends DeflateDecoder {
 
+    /** 是否处于一条多帧压缩消息的解压过程中 */
     private boolean compressing;
 
     /**
@@ -47,7 +50,7 @@ class PerMessageDeflateDecoder extends DeflateDecoder {
      * Constructor
      *
      * @param noContext true to disable context takeover.
-     * @param extensionDecoderFilter extension decoder for per message deflate decoder.
+     * @param extensionDecoderFilter permessage 解码扩展过滤器
      * @param maxAllocation
      *            maximum size of the decompression buffer. Must be &gt;= 0. If zero, maximum size is not limited.
      */
@@ -56,6 +59,7 @@ class PerMessageDeflateDecoder extends DeflateDecoder {
     }
 
     @Override
+    /** 接受 RSV1 首帧或解压进行中的 Continuation；filter 跳过且进行中则抛异常 */
     public boolean acceptInboundMessage(Object msg) throws Exception {
         if (!super.acceptInboundMessage(msg)) {
             return false;
@@ -81,11 +85,13 @@ class PerMessageDeflateDecoder extends DeflateDecoder {
     }
 
     @Override
+    /** 仅在消息末帧（FIN）追加 FRAME_TAIL */
     protected boolean appendFrameTail(WebSocketFrame msg) {
         return msg.isFinalFragment();
     }
 
     @Override
+    /** 解压后更新 compressing 状态：末帧清零，首帧置位 */
     protected void decode(ChannelHandlerContext ctx, WebSocketFrame msg,
                           List<Object> out) throws Exception {
         super.decode(ctx, msg, out);

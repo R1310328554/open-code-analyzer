@@ -23,16 +23,16 @@ import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtension;
 import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtensionFilter;
 
 /**
- * Per-frame implementation of deflate decompressor.
+ * perframe-deflate 解压器：每个带 RSV1 的数据帧独立解压。
+ * <p>每帧解压时追加 {@link DeflateDecoder#FRAME_TAIL}；解压后清除 RSV1 位。
  */
 class PerFrameDeflateDecoder extends DeflateDecoder {
 
     /**
      * Constructor
      *
-     * @param noContext true to disable context takeover.
-     * @param maxAllocation
-     *          maximum size of the decompression buffer. Must be &gt;= 0. If zero, maximum size is not limited.
+     * @param noContext 是否禁用上下文接管
+     * @param maxAllocation 解压缓冲上限，0 表示不限
      */
     PerFrameDeflateDecoder(boolean noContext, int maxAllocation) {
         super(noContext, WebSocketExtensionFilter.NEVER_SKIP, maxAllocation);
@@ -42,7 +42,7 @@ class PerFrameDeflateDecoder extends DeflateDecoder {
      * Constructor
      *
      * @param noContext true to disable context takeover.
-     * @param extensionDecoderFilter extension decoder filter for per frame deflate decoder.
+     * @param extensionDecoderFilter perframe 解码扩展过滤器
      * @param maxAllocation
      *            maximum size of the decompression buffer. Must be &gt;= 0. If zero, maximum size is not limited.
      */
@@ -51,6 +51,7 @@ class PerFrameDeflateDecoder extends DeflateDecoder {
     }
 
     @Override
+    /** 仅处理 Text/Binary/Continuation 且 RSV1 置位且未被 filter 跳过的帧 */
     public boolean acceptInboundMessage(Object msg) throws Exception {
         if (!super.acceptInboundMessage(msg)) {
             return false;
@@ -67,11 +68,13 @@ class PerFrameDeflateDecoder extends DeflateDecoder {
     }
 
     @Override
+    /** 清除 RSV1 压缩标志位 */
     protected int newRsv(WebSocketFrame msg) {
         return msg.rsv() ^ WebSocketExtension.RSV1;
     }
 
     @Override
+    /** perframe 模式每帧解压均需追加 FRAME_TAIL */
     protected boolean appendFrameTail(WebSocketFrame msg) {
         return true;
     }
