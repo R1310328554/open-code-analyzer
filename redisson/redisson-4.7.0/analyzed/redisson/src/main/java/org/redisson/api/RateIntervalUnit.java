@@ -18,7 +18,10 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 限流器速率时间窗口单位（已废弃，请改用 {@link java.time.Duration}）。
+ * <p>
+     * 各常量通过 {@link #toMillis(long)} 转换为毫秒。
+ *
  * @author Nikita Koksharov
  *
  */

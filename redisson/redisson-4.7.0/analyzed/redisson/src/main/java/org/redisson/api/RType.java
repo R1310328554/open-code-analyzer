@@ -16,7 +16,8 @@
 package org.redisson.api;
 
 /**
- * 
+ * Redis 键对应的数据结构类型枚举；{@link #getValue()} 返回 Redis 内部类型字符串。
+ *
  * @author Nikita Koksharov
  *
  */

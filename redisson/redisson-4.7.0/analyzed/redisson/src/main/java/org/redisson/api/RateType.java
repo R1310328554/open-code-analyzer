@@ -16,19 +16,20 @@
 package org.redisson.api;
 
 /**
- * 
+ * 分布式限流器的速率作用域枚举。
+ *
  * @author Nikita Koksharov
  *
  */
 public enum RateType {
 
     /**
-     * Total rate for all RateLimiter instances
+     * 全局限流：所有 Redisson 客户端实例共享同一速率配额。
      */
     OVERALL,
     
     /**
-     * Total rate for all RateLimiter instances working with the same Redisson instance
+     * 全局限流：所有 Redisson 客户端实例共享同一速率配额。 working with the same Redisson instance
      */
     PER_CLIENT
     

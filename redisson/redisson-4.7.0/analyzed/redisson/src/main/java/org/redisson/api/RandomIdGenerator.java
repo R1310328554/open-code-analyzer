@@ -21,7 +21,7 @@ import org.redisson.misc.RandomXoshiro256PlusPlus;
 import java.util.Random;
 
 /**
- * Random identifier
+ * 基于 Xoshiro256++ 的随机 ID 生成器；生成 32 字符十六进制字符串。
  *
  * @author Nikita Koksharov
  *

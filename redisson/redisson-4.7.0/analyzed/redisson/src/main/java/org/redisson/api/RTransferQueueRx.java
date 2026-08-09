@@ -21,31 +21,25 @@ import io.reactivex.rxjava3.core.Single;
 import java.util.concurrent.TimeUnit;
 
 /**
- * RxJava2 interface of Redis based implementation of {@link java.util.concurrent.TransferQueue}
+ * RxJava2 interface of 基于 Redis 的 {@link java.util.concurrent.TransferQueue} 同步 API；支持阻塞入队与零缓冲元素转移（生产者直接交给等待中的消费者）。
  *
  * @author Nikita Koksharov
- * @param <V> the type of elements held in this collection
+ * @param <V> 队列元素类型
  */
 public interface RTransferQueueRx<V> extends RBlockingQueueRx<V> {
 
     /**
-     * Tries to transfer the element to waiting consumer
-     * which invoked {@link #take} or {@link #poll} method
-     * at the moment of transfer.
+     * 尝试将元素转移给正在等待的消费者（调用 {@link #take} 或 {@link #poll} 的线程）；无等待消费者时立即返回 false。
      *
-     * @param e element to transfer
-     * @return {@code true} if element was transferred, otherwise
-     *         {@code false}
+     * @param e 待转移元素
+     * @return 转移成功则为 {@code true}，否则 {@code false}
      */
     Single<Boolean> tryTransfer(V e);
 
     /**
-     * Transfers the element to waiting consumer
-     * which invoked {@link #take} or {@link #poll} method
-     * at the moment of transfer.
-     * Waits if necessary for a consumer.
+     * 将元素转移给正在等待的消费者；若无等待者则阻塞直到有消费者就绪。
      *
-     * @param e the element to transfer
+     * @param e 待转移元素
      * @throws ClassCastException if the class of the specified element
      *         prevents it from being added to this queue
      * @throws NullPointerException if the specified element is null
@@ -55,16 +49,12 @@ public interface RTransferQueueRx<V> extends RBlockingQueueRx<V> {
     Completable transfer(V e);
 
     /**
-     * Transfers the element to waiting consumer
-     * which invoked {@link #take} or {@link #poll} method
-     * at the moment of transfer.
-     * Waits up to defined <code>timeout</code> if necessary for a consumer.
+     * 将元素转移给正在等待的消费者；在指定超时内等待消费者，超时则返回 false。
      *
-     * @param e the element to transfer
-     * @param timeout the maximum time to wait
-     * @param unit the time unit
-     * @return <code>true</code> if the element was transferred and <code>false</code>
-     *         otherwise
+     * @param e 待转移元素
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 转移成功则为 {@code true}，否则 {@code false}
      */
     Single<Boolean> tryTransfer(V e, long timeout, TimeUnit unit);
 

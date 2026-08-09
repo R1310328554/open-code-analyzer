@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.TransferQueue;
 
 /**
- * Redis based implementation of {@link java.util.concurrent.TransferQueue}
+ * 基于 Redis 的 {@link java.util.concurrent.TransferQueue} 同步 API；支持阻塞入队与零缓冲元素转移（生产者直接交给等待中的消费者）。
  *
  * @author Nikita Koksharov
  *
@@ -27,9 +27,9 @@ import java.util.concurrent.TransferQueue;
 public interface RTransferQueue<V> extends TransferQueue<V>, RBlockingQueue<V>, RTransferQueueAsync<V> {
 
     /**
-     * Returns all queue elements at once
+     * 一次性返回队列全部元素
      *
-     * @return elements
+     * @return 队列元素列表
      */
     List<V> readAll();
 

@@ -16,7 +16,8 @@
 package org.redisson.api;
 
 /**
- * 
+ * 限流器当前配置快照；包含 {@link RateType}、时间窗口与速率上限。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -34,30 +35,27 @@ public class RateLimiterConfig {
     }
 
     /**
-     * Returns current rate type set through {@link RRateLimiter#trySetRate(RateType, long, long, RateIntervalUnit)} 
-     * or {@link RRateLimiter#trySetRateAsync(RateType, long, long, RateIntervalUnit)} method.
+     * 返回通过 {@link RRateLimiter#trySetRate(RateType, long, long, RateIntervalUnit)} 或 {@link RRateLimiter#trySetRateAsync(RateType, long, long, RateIntervalUnit)} 设置的限流模式。
      * 
-     * @return rate type
+     * @return 限流模式
      */
     public RateType getRateType() {
         return rateType;
     }
     
     /**
-     * Returns current rate time interval value set through {@link RRateLimiter#trySetRate(RateType, long, long, RateIntervalUnit)} 
-     * or {@link RRateLimiter#trySetRateAsync(RateType, long, long, RateIntervalUnit)} method.
+     * 返回通过 {@link RRateLimiter#trySetRate(RateType, long, long, RateIntervalUnit)} 或 {@link RRateLimiter#trySetRateAsync(RateType, long, long, RateIntervalUnit)} 设置的速率时间窗口（毫秒）。
      * 
-     * @return rate time interval in milliseconds
+     * @return 速率时间窗口（毫秒）
      */
     public Long getRateInterval() {
         return rateInterval;
     }
 
     /**
-     * Returns current rate value set through {@link RRateLimiter#trySetRate(RateType, long, long, RateIntervalUnit)} 
-     * or {@link RRateLimiter#trySetRateAsync(RateType, long, long, RateIntervalUnit)} method.
+     * 返回通过 {@link RRateLimiter#trySetRate(RateType, long, long, RateIntervalUnit)} 或 {@link RRateLimiter#trySetRateAsync(RateType, long, long, RateIntervalUnit)} 设置的速率上限。
      * 
-     * @return rate
+     * @return 速率上限
      */
     public Long getRate() {
         return rate;

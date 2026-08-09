@@ -18,7 +18,7 @@ package org.redisson.api;
 import org.redisson.RedissonNode;
 
 /**
- * Node initializer callback interface.
+ * Redisson Node 启动回调接口；用于在节点启动时执行自定义初始化逻辑。
  * 
  * @author Nikita Koksharov
  *
@@ -26,9 +26,9 @@ import org.redisson.RedissonNode;
 public interface RedissonNodeInitializer {
 
     /**
-     * Invoked during Redisson Node startup
+     * Redisson Node 启动时调用。
      * 
-     * @param redissonNode - Redisson Node instance
+     * @param redissonNode Redisson Node 实例
      */
     void onStartup(RedissonNode redissonNode);
     

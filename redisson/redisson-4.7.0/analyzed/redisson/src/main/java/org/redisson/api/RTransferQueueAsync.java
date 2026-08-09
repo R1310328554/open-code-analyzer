@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Async interface for Redis based implementation of {@link java.util.concurrent.TransferQueue}
+ * Async interface for 基于 Redis 的 {@link java.util.concurrent.TransferQueue} 同步 API；支持阻塞入队与零缓冲元素转移（生产者直接交给等待中的消费者）。
  *
  * @author Nikita Koksharov
  *
@@ -27,23 +27,17 @@ import java.util.concurrent.TimeUnit;
 public interface RTransferQueueAsync<V> extends RBlockingQueueAsync<V> {
 
         /**
-     * Tries to transfer the element to waiting consumer
-     * which invoked {@link #takeAsync} or {@link #pollAsync} method
-     * at the moment of transfer.
+     * 尝试将元素转移给正在等待的消费者（调用 {@link #takeAsync} 或 {@link #pollAsync} 的线程）；无等待消费者时立即返回 false。
      *
-     * @param e element to transfer
-     * @return {@code true} if element was transferred, otherwise
-     *         {@code false}
+     * @param e 待转移元素
+     * @return 转移成功则为 {@code true}，否则 {@code false}
      */
     RFuture<Boolean> tryTransferAsync(V e);
 
     /**
-     * Transfers the element to waiting consumer
-     * which invoked {@link #takeAsync} or {@link #pollAsync} method
-     * at the moment of transfer.
-     * Waits if necessary for a consumer.
+     * 将元素转移给正在等待的消费者；若无等待者则阻塞直到有消费者就绪。
      *
-     * @param e the element to transfer
+     * @param e 待转移元素
      * @throws ClassCastException if the class of the specified element
      *         prevents it from being added to this queue
      * @throws NullPointerException if the specified element is null
@@ -53,23 +47,19 @@ public interface RTransferQueueAsync<V> extends RBlockingQueueAsync<V> {
     RFuture<Void> transferAsync(V e);
 
     /**
-     * Transfers the element to waiting consumer
-     * which invoked {@link #takeAsync} or {@link #pollAsync} method
-     * at the moment of transfer.
-     * Waits up to defined <code>timeout</code> if necessary for a consumer.
+     * 将元素转移给正在等待的消费者；在指定超时内等待消费者，超时则返回 false。
      *
-     * @param e the element to transfer
-     * @param timeout the maximum time to wait
-     * @param unit the time unit
-     * @return <code>true</code> if the element was transferred and <code>false</code>
-     *         otherwise
+     * @param e 待转移元素
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 转移成功则为 {@code true}，否则 {@code false}
      */
     RFuture<Boolean> tryTransferAsync(V e, long timeout, TimeUnit unit);
 
     /**
-     * Returns all queue elements at once
+     * 一次性返回队列全部元素
      *
-     * @return elements
+     * @return 队列元素列表
      */
     List<V> readAll();
 

@@ -24,7 +24,7 @@ import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.codec.JsonCodec;
 
 /**
- * Async interface for Vector Set
+ * 向量集合（Vector Set）异步 API；各方法返回 {@link RFuture}。
  *
  * @author Nikita Koksharov
  *
@@ -32,169 +32,160 @@ import org.redisson.codec.JsonCodec;
 public interface RVectorSetAsync extends RExpirableAsync {
 
     /**
-     * Adds an element
+     * 添加或更新向量元素。
      *
-     * @param args add arguments
-     * @return <code>true</code> if element was added and <code>false</code> if updated
+     * @param args 添加参数（元素名、向量、属性等）
+     * @return 新增则为 {@code true}，更新已有元素则为 {@code false}
      */
     RFuture<Boolean> addAsync(VectorAddArgs args);
 
     /**
-     * Returns the number of elements
+     * 返回集合中元素数量。
      *
-     * @return number of elements
+     * @return 元素数量
      */
     RFuture<Integer> sizeAsync();
 
     /**
-     * Returns the number of dimensions of vectors
+     * 返回向量维度数。
      *
-     * @return dimensions count
+     * @return 向量维度数
      */
     RFuture<Integer> dimensionsAsync();
 
     /**
-     * Retrieves approximate vector associated with a given element name
+     * 获取指定元素名称对应的近似向量坐标。
      *
-     * @param name element name
-     * @return list of vector coordinates
+     * @param name 元素名称
+     * @return 向量坐标列表
      */
     RFuture<List<Double>> getVectorAsync(String name);
 
     /**
-     * Retrieves raw internal representation of
-     * the approximate vector associated with a given element name
+     * 获取指定元素名称对应的向量原始内部表示。
      *
-     * @param name element name
-     * @return list of raw vector values
+     * @param name 元素名称
+     * @return 向量原始值列表
      */
     RFuture<List<Object>> getRawVectorAsync(String name);
 
     /**
-     * Retrieves attributes associated with a given element name
+     * 获取指定元素名称关联的属性对象。
      *
-     * @param name element name
-     * @param clazz type for deserialization
-     * @return attributes
+     * @param name 元素名称
+     * @param clazz 反序列化目标类型
+     * @return 属性对象
      */
     <T> RFuture<T> getAttributesAsync(String name, Class<T> clazz);
 
     /**
-     * Returns metadata for this vector set
+     * 返回当前向量集合的元数据信息。
      *
-     * @return vector set information
+     * @return 向量集合元数据
      */
     RFuture<VectorInfo> getInfoAsync();
 
     /**
-     * Retrieves the neighbors of a specified element by name
+     * 获取指定元素在 HNSW 图索引中的邻居元素名称。
      *
-     * @param element element name
-     * @return list of neighbor element names
+     * @param element 元素名称
+     * @return 邻居元素名称列表
      */
     RFuture<List<String>> getNeighborsAsync(String element);
 
     /**
-     * Retrieves the neighbors with scores of a specified element by name
+     * 获取指定元素的邻居元素及其距离分数。
      *
-     * @param element element name
-     * @return list of neighbor elements with scores
+     * @param element 元素名称
+     * @return 带分数的邻居元素列表
      */
     RFuture<List<ScoredEntry<String>>> getNeighborEntriesAsync(String element);
 
     /**
-     * Returns a random element name
+     * 随机返回一个元素名称。
      *
-     * @return random element name
+     * @return 随机元素名称
      */
     RFuture<String> randomAsync();
 
     /**
-     * Returns random element names
+     * 随机返回多个元素名称。
      *
-     * @param count number of elements to return
-     * @return list of random element names
+     * @param count 返回元素数量
+     * @return 随机元素名称列表
      */
     RFuture<List<String>> randomAsync(int count);
 
     /**
-     * Removes an element by name
+     * 按名称移除元素。
      *
-     * @param element element name to remove
-     * @return <code>true</code> if element was removed, <code>false</code> otherwise
+     * @param element 元素名称 to remove
+     * @return 移除成功则为 {@code true}，否则 {@code false}
      */
     RFuture<Boolean> removeAsync(String element);
 
     /**
-     * Sets attributes for an element by name
+     * 为指定元素设置 JSON 属性。
      *
-     * @param element element name
-     * @param attributes attributes
-     * @param jsonCodec json codec for attributes serialization
-     * @return <code>true</code> if attributes were set, <code>false</code> otherwise
+     * @param element 元素名称
+     * @param attributes 属性对象
+     * @param jsonCodec 属性 JSON 编解码器
+     * @return 设置成功则为 {@code true}，否则 {@code false}
      */
     RFuture<Boolean> setAttributesAsync(String element, Object attributes, JsonCodec jsonCodec);
 
     /**
-     * Retrieves element names similar to a specified vector or element
+     * 按向量或元素名称检索相似元素名称列表。
      *
-     * @param args vector similarity arguments
-     * @return list of similar element names
+     * @param args 向量相似度检索参数
+     * @return 相似元素名称列表
      */
     RFuture<List<String>> getSimilarAsync(VectorSimilarArgs args);
 
     /**
-     * Retrieves element names with scores similar to a given vector or element
+     * 检索相似元素名称及其相似度分数。
      *
-     * @param args similarity arguments
-     * @return list of similar element names with scores
+     * @param args 相似度检索参数
+     * @return 相似元素名称列表 with scores
      */
     RFuture<List<ScoredEntry<String>>> getSimilarEntriesAsync(VectorSimilarArgs args);
 
     /**
-     * Retrieves element names with scores and attributes similar to a given vector or element
+     * 检索相似元素名称、分数及关联属性。
      *
-     * @param args similarity arguments
-     * @return list of similar element names with scores and attributes
+     * @param args 相似度检索参数
+     * @return 相似元素名称列表 with scores and attributes
      */
     RFuture<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributesAsync(VectorSimilarArgs args);
 
     /**
-     * Checks whether an element is a member of this vector set
+     * 检查指定元素是否属于当前向量集合。
      *
-     * @param element element name
-     * @return <code>true</code> if element is a member, <code>false</code> otherwise
+     * @param element 元素名称
+     * @return 存在则为 {@code true}，否则 {@code false}
      */
     RFuture<Boolean> containsAsync(String element);
 
     /**
-     * Returns element names within the specified lexicographical range.
+     * 返回指定字典序范围内的元素名称。
      * <p>
-     * Each bound is an element name treated as an inclusive bound. Use
-     * <code>-</code> as <code>startElement</code> and <code>+</code> as
-     * <code>endElement</code> to span the whole vector set, or prefix an element
-     * name with <code>[</code> (inclusive) or <code>(</code> (exclusive) to set
-     * the bound explicitly.
+     * 边界默认为闭区间；{@code startElement} 用 {@code -}、{@code endElement} 用 {@code +} 表示全集合；元素名前加 {@code [}（含）或 {@code (}（不含）可显式指定开闭区间。
      *
-     * @param startElement lexicographical range start (inclusive)
-     * @param endElement lexicographical range end (inclusive)
-     * @return list of element names within the range
+     * @param startElement 字典序范围起始（含）
+     * @param endElement 字典序范围结束（含）
+     * @return 范围内元素名称列表
      */
     RFuture<List<String>> rangeAsync(String startElement, String endElement);
 
     /**
-     * Returns at most <code>count</code> element names within the specified lexicographical range.
+     * 返回字典序范围内至多 {@code count} 个元素名称。
      * <p>
-     * Each bound is an element name treated as an inclusive bound. Use
-     * <code>-</code> as <code>startElement</code> and <code>+</code> as
-     * <code>endElement</code> to span the whole vector set, or prefix an element
-     * name with <code>[</code> (inclusive) or <code>(</code> (exclusive) to set
-     * the bound explicitly.
+     * 边界规则同 {@link #range(String, String)}。
      *
-     * @param startElement lexicographical range start (inclusive)
-     * @param endElement lexicographical range end (inclusive)
-     * @param count maximum number of elements to return
-     * @return list of element names within the range
+     * @param startElement 字典序范围起始（含）
+     * @param endElement 字典序范围结束（含）
+     * @param count 最多返回元素数
+     * @return 范围内元素名称列表
      */
     RFuture<List<String>> rangeAsync(String startElement, String endElement, int count);
 }
