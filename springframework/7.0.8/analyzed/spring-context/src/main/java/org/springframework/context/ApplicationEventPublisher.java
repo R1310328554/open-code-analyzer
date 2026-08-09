@@ -17,9 +17,9 @@
 package org.springframework.context;
 
 /**
- * Interface that encapsulates event publication functionality.
+ * 封装事件发布功能的接口。
  *
- * <p>Serves as a super-interface for {@link ApplicationContext}.
+ * <p>作为 {@link ApplicationContext} 的超接口。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
@@ -35,26 +35,18 @@ package org.springframework.context;
 public interface ApplicationEventPublisher {
 
 	/**
-	 * Notify all <strong>matching</strong> listeners registered with this
-	 * application of an application event. Events may be framework events
-	 * (such as ContextRefreshedEvent) or application-specific events.
-	 * <p>Such an event publication step is effectively a hand-off to the
-	 * multicaster and does not imply synchronous/asynchronous execution
-	 * or even immediate execution at all. Event listeners are encouraged
-	 * to be as efficient as possible, individually using asynchronous
-	 * execution for longer-running and potentially blocking operations.
-	 * <p>For usage in a reactive call stack, include event publication
-	 * as a simple hand-off:
-	 * {@code Mono.fromRunnable(() -> eventPublisher.publishEvent(...))}.
-	 * As with any asynchronous execution, thread-local data is not going
-	 * to be available for reactive listener methods. All state which is
-	 * necessary to process the event needs to be included in the event
-	 * instance itself.
-	 * <p>For the convenient inclusion of the current transaction context
-	 * in a reactive hand-off, consider using
-	 * {@link org.springframework.transaction.reactive.TransactionalEventPublisher#publishEvent(java.util.function.Function)}.
-	 * For thread-bound transactions, this is not necessary since the
-	 * state will be implicitly available through thread-local storage.
+	 * 通知本应用中所有<strong>匹配</strong>的已注册监听器：发生了应用事件。
+	 * 事件可以是框架事件（如 ContextRefreshedEvent）或应用特定事件。
+	 * <p>此类事件发布步骤实质上是移交给多播器，并不意味着同步/异步执行，
+	 * 甚至不意味着立即执行。鼓励监听器尽可能高效，对耗时且可能阻塞的操作
+	 * 各自使用异步执行。
+	 * <p>在响应式调用栈中使用时，可将事件发布作为简单移交：
+	 * {@code Mono.fromRunnable(() -> eventPublisher.publishEvent(...))}。
+	 * 与任何异步执行一样，响应式监听方法中无法使用线程局部数据。
+	 * 处理事件所需的全部状态须包含在事件实例本身中。
+	 * <p>若要在响应式移交中便捷包含当前事务上下文，可考虑使用
+	 * {@link org.springframework.transaction.reactive.TransactionalEventPublisher#publishEvent(java.util.function.Function)}。
+	 * 对于线程绑定事务，无需如此，因为状态会通过线程局部存储隐式可用。
 	 * @param event the event to publish
 	 * @see #publishEvent(Object)
 	 * @see ApplicationListener#supportsAsyncExecution()
@@ -66,20 +58,15 @@ public interface ApplicationEventPublisher {
 	}
 
 	/**
-	 * Notify all <strong>matching</strong> listeners registered with this
-	 * application of an event.
-	 * <p>If the specified {@code event} is not an {@link ApplicationEvent},
-	 * it is wrapped in a {@link PayloadApplicationEvent}.
-	 * <p>Such an event publication step is effectively a hand-off to the
-	 * multicaster and does not imply synchronous/asynchronous execution
-	 * or even immediate execution at all. Event listeners are encouraged
-	 * to be as efficient as possible, individually using asynchronous
-	 * execution for longer-running and potentially blocking operations.
-	 * <p>For the convenient inclusion of the current transaction context
-	 * in a reactive hand-off, consider using
-	 * {@link org.springframework.transaction.reactive.TransactionalEventPublisher#publishEvent(Object)}.
-	 * For thread-bound transactions, this is not necessary since the
-	 * state will be implicitly available through thread-local storage.
+	 * 通知本应用中所有<strong>匹配</strong>的已注册监听器：发生了事件。
+	 * <p>若指定的 {@code event} 不是 {@link ApplicationEvent}，
+	 * 则包装为 {@link PayloadApplicationEvent}。
+	 * <p>此类事件发布步骤实质上是移交给多播器，并不意味着同步/异步执行，
+	 * 甚至不意味着立即执行。鼓励监听器尽可能高效，对耗时且可能阻塞的操作
+	 * 各自使用异步执行。
+	 * <p>若要在响应式移交中便捷包含当前事务上下文，可考虑使用
+	 * {@link org.springframework.transaction.reactive.TransactionalEventPublisher#publishEvent(Object)}。
+	 * 对于线程绑定事务，无需如此，因为状态会通过线程局部存储隐式可用。
 	 * @param event the event to publish
 	 * @since 4.2
 	 * @see #publishEvent(ApplicationEvent)

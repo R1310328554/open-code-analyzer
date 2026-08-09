@@ -20,32 +20,26 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.Aware;
 
 /**
- * Interface to be implemented by any object that wishes to be notified
- * of the {@link ApplicationContext} that it runs in.
+ * 任何希望获知其所运行 {@link ApplicationContext} 的对象应实现的接口。
  *
- * <p>Implementing this interface makes sense for example when an object
- * requires access to a set of collaborating beans. Note that configuration
- * via bean references is preferable to implementing this interface just
- * for bean lookup purposes.
+ * <p>例如，当对象需要访问一组协作 Bean 时，实现本接口是合理的。
+ * 注意：仅为查找 Bean 而实现本接口，不如通过 Bean 引用配置来得合适。
  *
- * <p>This interface can also be implemented if an object needs access to file
- * resources, i.e. wants to call {@code getResource}, wants to publish
- * an application event, or requires access to the MessageSource. However,
- * it is preferable to implement the more specific {@link ResourceLoaderAware},
- * {@link ApplicationEventPublisherAware} or {@link MessageSourceAware} interface
- * in such a specific scenario.
+ * <p>若对象需要访问文件资源（即调用 {@code getResource}）、发布应用事件，
+ * 或访问 MessageSource，也可实现本接口。但在此类具体场景下，
+ * 更宜实现更专用的 {@link ResourceLoaderAware}、
+ * {@link ApplicationEventPublisherAware} 或 {@link MessageSourceAware} 接口。
  *
- * <p>Note that file resource dependencies can also be exposed as bean properties
- * of type {@link org.springframework.core.io.Resource}, populated via Strings
- * with automatic type conversion by the bean factory. This removes the need
- * for implementing any callback interface just for the purpose of accessing
- * a specific file resource.
+ * <p>注意：文件资源依赖也可作为类型为
+ * {@link org.springframework.core.io.Resource} 的 Bean 属性暴露，
+ * 通过字符串由 Bean 工厂自动类型转换填充。这样无需仅为访问特定文件资源
+ * 而实现任何回调接口。
  *
- * <p>{@link org.springframework.context.support.ApplicationObjectSupport} is a
- * convenience base class for application objects, implementing this interface.
+ * <p>{@link org.springframework.context.support.ApplicationObjectSupport} 是
+ * 实现本接口的应用对象便捷基类。
  *
- * <p>For a list of all bean lifecycle methods, see the
- * {@link org.springframework.beans.factory.BeanFactory BeanFactory javadocs}.
+ * <p>所有 Bean 生命周期方法列表见
+ * {@link org.springframework.beans.factory.BeanFactory BeanFactory javadocs}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -59,13 +53,14 @@ import org.springframework.beans.factory.Aware;
 public interface ApplicationContextAware extends Aware {
 
 	/**
-	 * Set the ApplicationContext that this object runs in.
-	 * Normally this call will be used to initialize the object.
-	 * <p>Invoked after population of normal bean properties but before an init callback such
-	 * as {@link org.springframework.beans.factory.InitializingBean#afterPropertiesSet()}
-	 * or a custom init-method. Invoked after {@link ResourceLoaderAware#setResourceLoader},
-	 * {@link ApplicationEventPublisherAware#setApplicationEventPublisher} and
-	 * {@link MessageSourceAware}, if applicable.
+	 * 设置本对象所运行的 ApplicationContext。
+	 * 通常用于初始化该对象。
+	 * <p>在普通 Bean 属性填充之后、init 回调（如
+	 * {@link org.springframework.beans.factory.InitializingBean#afterPropertiesSet()}
+	 * 或自定义 init-method）之前调用。若适用，在
+	 * {@link ResourceLoaderAware#setResourceLoader}、
+	 * {@link ApplicationEventPublisherAware#setApplicationEventPublisher} 和
+	 * {@link MessageSourceAware} 之后调用。
 	 * @param applicationContext the ApplicationContext object to be used by this object
 	 * @throws ApplicationContextException in case of context initialization errors
 	 * @throws BeansException if thrown by application context methods

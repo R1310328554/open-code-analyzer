@@ -19,8 +19,7 @@ package org.springframework.context;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Sub-interface of MessageSource to be implemented by objects that
- * can resolve messages hierarchically.
+ * MessageSource 的子接口，由能够层次化解析消息的对象实现。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -28,8 +27,7 @@ import org.jspecify.annotations.Nullable;
 public interface HierarchicalMessageSource extends MessageSource {
 
 	/**
-	 * Set the parent that will be used to try to resolve messages
-	 * that this object can't resolve.
+	 * 设置父级 MessageSource，用于尝试解析本对象无法解析的消息。
 	 * @param parent the parent MessageSource that will be used to
 	 * resolve messages that this object can't resolve.
 	 * May be {@code null}, in which case no further resolution is possible.
@@ -37,7 +35,7 @@ public interface HierarchicalMessageSource extends MessageSource {
 	void setParentMessageSource(@Nullable MessageSource parent);
 
 	/**
-	 * Return the parent of this MessageSource, or {@code null} if none.
+	 * 返回本 MessageSource 的父级，若无则返回 {@code null}。
 	 */
 	@Nullable MessageSource getParentMessageSource();
 

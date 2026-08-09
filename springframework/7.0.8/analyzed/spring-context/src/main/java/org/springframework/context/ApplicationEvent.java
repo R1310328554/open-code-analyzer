@@ -20,8 +20,7 @@ import java.time.Clock;
 import java.util.EventObject;
 
 /**
- * Class to be extended by all application events. Abstract as it
- * doesn't make sense for generic events to be published directly.
+ * 所有应用事件应继承的基类。为抽象类，因为通用事件不应直接发布。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -30,16 +29,16 @@ import java.util.EventObject;
  */
 public abstract class ApplicationEvent extends EventObject {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/** 为与 Spring 1.2 互操作而使用的 serialVersionUID。 */
 	private static final long serialVersionUID = 7099057708183571937L;
 
-	/** System time when the event happened. */
+	/** 事件发生时的系统时间。 */
 	private final long timestamp;
 
 
 	/**
-	 * Create a new {@code ApplicationEvent} with its {@link #getTimestamp() timestamp}
-	 * set to {@link System#currentTimeMillis()}.
+	 * 创建新的 {@code ApplicationEvent}，其 {@link #getTimestamp() 时间戳}
+	 * 设为 {@link System#currentTimeMillis()}。
 	 * @param source the object on which the event initially occurred or with
 	 * which the event is associated (never {@code null})
 	 * @see #ApplicationEvent(Object, Clock)
@@ -50,9 +49,9 @@ public abstract class ApplicationEvent extends EventObject {
 	}
 
 	/**
-	 * Create a new {@code ApplicationEvent} with its {@link #getTimestamp() timestamp}
-	 * set to the value returned by {@link Clock#millis()} in the provided {@link Clock}.
-	 * <p>This constructor is typically used in testing scenarios.
+	 * 创建新的 {@code ApplicationEvent}，其 {@link #getTimestamp() 时间戳}
+	 * 设为所提供 {@link Clock} 的 {@link Clock#millis()} 返回值。
+	 * <p>此构造器通常用于测试场景。
 	 * @param source the object on which the event initially occurred or with
 	 * which the event is associated (never {@code null})
 	 * @param clock a clock which will provide the timestamp
@@ -66,7 +65,7 @@ public abstract class ApplicationEvent extends EventObject {
 
 
 	/**
-	 * Return the time in milliseconds when the event occurred.
+	 * 返回事件发生时的毫秒时间戳。
 	 * @see #ApplicationEvent(Object)
 	 * @see #ApplicationEvent(Object, Clock)
 	 */

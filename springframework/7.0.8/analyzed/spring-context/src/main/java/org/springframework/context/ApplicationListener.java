@@ -20,15 +20,13 @@ import java.util.EventListener;
 import java.util.function.Consumer;
 
 /**
- * Interface to be implemented by application event listeners.
+ * 应用事件监听器应实现的接口。
  *
- * <p>Based on the standard {@link java.util.EventListener} interface for the
- * Observer design pattern.
+ * <p>基于观察者设计模式的标准 {@link java.util.EventListener} 接口。
  *
- * <p>An {@code ApplicationListener} can generically declare the event type that
- * it is interested in. When registered with a Spring {@code ApplicationContext},
- * events will be filtered accordingly, with the listener getting invoked for
- * matching event objects only.
+ * <p>{@code ApplicationListener} 可泛型声明其关注的事件类型。
+ * 注册到 Spring {@code ApplicationContext} 后，事件会据此过滤，
+ * 仅对匹配的事件对象调用该监听器。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -43,13 +41,13 @@ import java.util.function.Consumer;
 public interface ApplicationListener<E extends ApplicationEvent> extends EventListener {
 
 	/**
-	 * Handle an application event.
+	 * 处理应用事件。
 	 * @param event the event to respond to
 	 */
 	void onApplicationEvent(E event);
 
 	/**
-	 * Return whether this listener supports asynchronous execution.
+	 * 返回本监听器是否支持异步执行。
 	 * @return {@code true} if this listener instance can be executed asynchronously
 	 * depending on the multicaster configuration (the default), or {@code false} if it
 	 * needs to immediately run within the original thread which published the event
@@ -62,7 +60,7 @@ public interface ApplicationListener<E extends ApplicationEvent> extends EventLi
 
 
 	/**
-	 * Create a new {@code ApplicationListener} for the given payload consumer.
+	 * 为给定载荷消费者创建新的 {@code ApplicationListener}。
 	 * @param consumer the event payload consumer
 	 * @param <T> the type of the event payload
 	 * @return a corresponding {@code ApplicationListener} instance
