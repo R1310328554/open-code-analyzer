@@ -22,18 +22,24 @@ import org.redisson.client.handler.State;
 import java.util.*;
 
 /**
- * 
+ * {@code FT.SEARCH} 命令 RESP3 Map 式响应解码器。
+ * <p>
+ * 外层键值对展平为 List 后，先还原为 Map（含 {@code total_results}、
+ * {@code results} 等键），再逐条解析 {@code id} 与 {@code extra_attributes}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SearchResultDecoderV2 implements MultiDecoder<Object> {
 
+    /** 将 RESP3 Map 展平序列解析为 {@link SearchResult}。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
             return new SearchResult(0, Collections.emptyList());
         }
 
+        // 键值交替序列还原为 Map
         Map<String, Object> m = new HashMap<>();
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {

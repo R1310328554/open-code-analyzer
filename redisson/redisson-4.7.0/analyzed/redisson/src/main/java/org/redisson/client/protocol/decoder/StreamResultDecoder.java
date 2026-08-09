@@ -24,19 +24,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * 多 Stream 读取结果解码器（RESP2 嵌套数组格式）。
+ * <p>
+ * 解析 {@code [[streamName, [[id, fields], ...]], ...]} 结构，
+ * 按 Stream 名称分组为 {@code Map<StreamMessageId, fieldMap>}。
+ * {@code firstResult} 为 true 时仅返回首个非空 Stream 的条目 Map。
+ *
  * @author Nikita Koksharov
  *
  */
 public class StreamResultDecoder implements MultiDecoder<Object> {
 
+    /** 为 true 时遇到首个非空 Stream 即返回其条目 Map。 */
     private final boolean firstResult;
     
+    /** @param firstResult 是否只取第一个 Stream 的结果 */
     public StreamResultDecoder(boolean firstResult) {
         super();
         this.firstResult = firstResult;
     }
 
+    /** 逐 Stream 解析消息 ID 与字段 Map，按名称聚合或返回首个结果。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         List<List<Object>> list = (List<List<Object>>) (Object) parts;

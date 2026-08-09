@@ -21,13 +21,19 @@ import org.redisson.client.protocol.StreamEntryStatus;
 import java.util.*;
 
 /**
+ * Stream 条目状态批量解码器。
+ * <p>
+ * 将 Redis 返回的整数状态码列表，按构造时传入的键顺序
+ * 映射为 {@link StreamEntryStatus} 枚举值的 {@link Map}。
  *
  * @author seakider
  *
  */
 public class StreamEntryStatusDecoder<K, V> implements MultiDecoder<Map<K, V>> {
+    /** 与响应中各状态码一一对应的键列表。 */
     private final List<K> args;
 
+    /** 保存键顺序，供 decode 时按索引对齐状态码。 */
     public StreamEntryStatusDecoder(Collection<K> args) {
         if (args instanceof List) {
             this.args = (List<K>) args;
@@ -36,6 +42,7 @@ public class StreamEntryStatusDecoder<K, V> implements MultiDecoder<Map<K, V>> {
         }
     }
 
+    /** 逐索引将 Long 状态码转为 {@link StreamEntryStatus} 并填入 Map。 */
     @Override
     public Map<K, V> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

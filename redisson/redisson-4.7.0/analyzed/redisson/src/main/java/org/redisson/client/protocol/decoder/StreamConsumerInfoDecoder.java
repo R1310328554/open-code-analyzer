@@ -21,14 +21,20 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
- * 
+ * Stream 消费者信息解码器。
+ * <p>
+ * 解析 {@code XINFO CONSUMERS} 返回的键值交替序列，
+ * 提取消费者名称、待处理数、空闲时间与可选的活跃时间。
+ *
  * @author Nikita Koksharov
  *
  */
 public class StreamConsumerInfoDecoder implements MultiDecoder<StreamConsumer> {
 
+    /** 从键值对序列构造 {@link StreamConsumer} 实例。 */
     @Override
     public StreamConsumer decode(List<Object> parts, State state) {
+        // 含 active-time 字段时 parts 长度大于 6
         if (parts.size() > 6) {
             return new StreamConsumer((String) parts.get(1),
                     ((Long) parts.get(3)).intValue(), (Long) parts.get(5), (Long) parts.get(7));

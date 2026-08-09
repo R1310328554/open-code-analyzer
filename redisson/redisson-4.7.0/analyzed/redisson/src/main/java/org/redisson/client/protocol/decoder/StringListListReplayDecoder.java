@@ -19,8 +19,15 @@ import org.redisson.client.handler.State;
 
 import java.util.List;
 
+/**
+ * 嵌套字符串列表回放解码器。
+ * <p>
+ * 当响应已解码为 {@code List<List<String>>} 双层结构时直接返回；
+ * 否则委托父类 {@link StringListReplayDecoder} 处理单层列表。
+ */
 public class StringListListReplayDecoder extends StringListReplayDecoder {
 
+    /** 检测嵌套 List 形状，适配双层或单层字符串列表响应。 */
     @Override
     public List<String> decode(List<Object> parts, State state) {
         for (Object part : parts) {

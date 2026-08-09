@@ -25,12 +25,17 @@ import org.redisson.client.protocol.Decoder;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 
+ * Stream 消息 ID 字节级解码器。
+ * <p>
+ * 从 RESP 缓冲区读取 {@code "毫秒-序号"} 格式字符串，
+ * 解析为 {@link StreamMessageId}；无序号部分时返回 {@code null}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class StreamIdDecoder implements Decoder<Object> {
 
+    /** 读取字符串并按 {@code -} 分割，构造 {@link StreamMessageId}。 */
     @Override
     public Object decode(ByteBuf buf, State state) throws IOException {
         String id = (String) StringCodec.INSTANCE.getValueDecoder().decode(buf, state);

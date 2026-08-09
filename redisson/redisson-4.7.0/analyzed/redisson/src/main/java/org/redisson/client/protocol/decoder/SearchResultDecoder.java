@@ -25,12 +25,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * {@code FT.SEARCH} 命令 RESP2 位置式响应解码器。
+ * <p>
+ * 输入格式为 {@code [total, doc_id, [attrs], doc_id, [attrs], ...]}，
+ * 将每条文档 ID 与可选属性 Map 组装为 {@link Document} 列表。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SearchResultDecoder implements MultiDecoder<Object> {
 
+    /** 解析搜索结果：提取总数并逐条构造 {@link Document}。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
@@ -42,6 +47,7 @@ public class SearchResultDecoder implements MultiDecoder<Object> {
         if (total > 0) {
             for (int i = 1; i < parts.size(); i++) {
                 String id = (String) parts.get(i);
+                // 下一元素为 Map 时视为文档属性，否则仅保留 ID
                 if ((i + 1) < parts.size() && parts.get(i + 1) instanceof Map) {
                     Map<String, Object> attrs = (Map<String, Object>) parts.get(++i);
                     docs.add(new Document(id, attrs));

@@ -23,17 +23,27 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * 
+ * 带分数有序集合 {@code ZSCAN} 扫描结果回放解码器。
+ * <p>
+ * Redis 返回 {@code [游标, [成员, 分数, 成员, 分数, ...]]} 结构；
+ * 本解码器剔除分数字段，仅保留成员列表与游标。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ScoredSortedSetScanReplayDecoder implements MultiDecoder<ListScanResult<Object>> {
 
+    /** 成员与游标字段统一用 {@link StringCodec} 解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     
+    /**
+     * 组装扫描结果：提取游标，并从成员/分数交替列表中移除分数。
+     * <p>
+     * 从索引 1 起每隔一个元素删除分数，使 values 仅含成员。
+     */
     @Override
     public ListScanResult<Object> decode(List<Object> parts, State state) {
         List<Object> values = (List<Object>) parts.get(1);

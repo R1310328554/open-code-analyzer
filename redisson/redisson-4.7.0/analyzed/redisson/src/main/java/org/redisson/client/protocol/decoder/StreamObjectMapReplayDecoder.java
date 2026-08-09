@@ -25,22 +25,34 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * 
+ * Stream 条目字段 Map 回放解码器。
+ * <p>
+ * 继承 {@link ObjectMapReplayDecoder}，针对 Stream 响应中
+ * 已解码为 Map 或空列表的特殊形状做分支处理。
+ *
  * @author Nikita Koksharov
  *
  */
 public class StreamObjectMapReplayDecoder extends ObjectMapReplayDecoder<Object, Object> {
 
+    /** 可选的自定义字段解码器，非空时优先使用。 */
     private Decoder<Object> codec;
     
+    /** 使用默认父类解码逻辑。 */
     public StreamObjectMapReplayDecoder() {
     }
     
+    /** 指定 Stream 字段值的自定义解码器。 */
     public StreamObjectMapReplayDecoder(Decoder<Object> codec) {
         super();
         this.codec = codec;
     }
 
+    /**
+     * 解码 Stream 条目字段映射。
+     * <p>
+     * 空/null/空列表时返回空 Map；首元素已是 Map 时直接合并。
+     */
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()
@@ -60,6 +72,7 @@ public class StreamObjectMapReplayDecoder extends ObjectMapReplayDecoder<Object,
         return super.decode(parts, state);
     }
 
+    /** 有注入解码器时返回之，否则委托父类按 Codec 选择。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (this.codec != null) {

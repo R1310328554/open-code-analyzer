@@ -29,17 +29,24 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.cluster.ClusterSlotRange;
 
 /**
- * 
+ * Redis Cluster 槽位分配信息解码器。
+ * <p>
+ * 解析 {@code CLUSTER SLOTS} 返回的嵌套数组：
+ * 每行 {@code [startSlot, endSlot, [host, port], [host, port], ...]}，
+ * 映射为 {@link ClusterSlotRange} → 节点地址集合。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SlotsDecoder implements MultiDecoder<Object> {
 
+    /** 节点地址字段用 {@link StringCodec} 解码。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return StringCodec.INSTANCE.getValueDecoder();
     }
     
+    /** 逐行解析槽位范围与主从节点地址，组装集群拓扑 Map。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (!parts.isEmpty() && parts.get(0) instanceof List) {

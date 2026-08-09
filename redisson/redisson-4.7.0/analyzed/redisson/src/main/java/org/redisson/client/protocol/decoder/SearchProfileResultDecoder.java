@@ -27,27 +27,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Decoder for the {@code FT.PROFILE ... SEARCH ...} command response.
+ * {@code FT.PROFILE ... SEARCH ...} 命令响应解码器。
  * <p>
- * Handles both RESP2 and RESP3 wire formats:
+ * 同时兼容 RESP2 与 RESP3 两种线格式：
  * <ul>
- *   <li>RESP2: a 2-element array {@code [<search-result>, <profile-info>]}
- *       where the search result has the positional shape
- *       {@code [total, doc_id, [attrs], ...]} returned by {@code FT.SEARCH}.</li>
- *   <li>RESP3: a Map with {@code "Results"} and {@code "Profile"} keys; the
- *       Results value is itself a Map keyed by {@code total_results},
- *       {@code results}, etc., and each result has {@code id} and
- *       {@code extra_attributes} entries.</li>
+ *   <li>RESP2：二元数组 {@code [<search-result>, <profile-info>]}
+ *       其中搜索结果为 {@code FT.SEARCH} 的位置式结构
+ *       {@code [total, doc_id, [attrs], ...]}。</li>
+ *   <li>RESP3：Map 结构，含 {@code "Results"} 与 {@code "Profile"} 键；
+ *       Results 值本身为 Map（{@code total_results}、{@code results} 等），
+ *       每条结果含 {@code id} 与 {@code extra_attributes}。</li>
  * </ul>
- * Both shapes are flattened to nested {@link List}s by the surrounding
- * {@link UnboundedListMultiDecoder}; this decoder examines the shape at
- * runtime to decide how to interpret the data.
+ * 外层 {@link UnboundedListMultiDecoder} 会将两种形状展平为嵌套 {@link List}；
+ * 本解码器在运行时根据首元素类型判断协议版本并解析。
  *
  * @author Nikita Koksharov
  *
  */
 public class SearchProfileResultDecoder implements MultiDecoder<Object> {
 
+    /** 将搜索结果与性能剖析信息组装为 {@link SearchProfileResult}。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts == null || parts.isEmpty()) {
@@ -76,6 +75,12 @@ public class SearchProfileResultDecoder implements MultiDecoder<Object> {
         return new SearchProfileResult(searchResult, info);
     }
 
+    /**
+     * 判断是否为 RESP3 形状。
+     * <p>
+     * RESP2 外层为二元位置数组，首元素本身是数组（搜索结果）；
+     * RESP3 外层为 Map 展平后的键值交替序列，首元素为 {@code "Results"} 等字符串键。
+     */
     private static boolean isResp3Shape(List<Object> parts) {
         // In RESP2 the outer is a 2-element positional array whose first
         // element is itself an array (the search result). In RESP3 the outer
@@ -84,6 +89,7 @@ public class SearchProfileResultDecoder implements MultiDecoder<Object> {
         return parts.get(0) instanceof String;
     }
 
+    /** 安全地将对象转为 List，非 List 时返回空列表。 */
     @SuppressWarnings("unchecked")
     private static List<Object> asList(Object value) {
         if (value instanceof List) {
@@ -92,6 +98,7 @@ public class SearchProfileResultDecoder implements MultiDecoder<Object> {
         return Collections.emptyList();
     }
 
+    /** 解析 RESP2 格式的 {@code FT.SEARCH} 搜索结果。 */
     @SuppressWarnings("unchecked")
     private static SearchResult decodeSearchResultResp2(List<Object> parts) {
         if (parts.isEmpty()) {
@@ -128,6 +135,7 @@ public class SearchProfileResultDecoder implements MultiDecoder<Object> {
         return new SearchResult(total, docs);
     }
 
+    /** 解析 RESP3 格式的搜索结果 Map。 */
     @SuppressWarnings("unchecked")
     private static SearchResult decodeSearchResultResp3(List<Object> parts) {
         if (parts.isEmpty()) {
@@ -176,6 +184,7 @@ public class SearchProfileResultDecoder implements MultiDecoder<Object> {
         return new SearchResult(total, docs);
     }
 
+    /** 将键值交替 List 转为 {@link Map}。 */
     private static Map<String, Object> kvListToMap(List<Object> kvs) {
         Map<String, Object> attrs = new LinkedHashMap<>();
         for (int j = 0; j + 1 < kvs.size(); j += 2) {
