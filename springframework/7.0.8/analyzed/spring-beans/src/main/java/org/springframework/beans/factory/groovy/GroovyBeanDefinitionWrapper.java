@@ -34,16 +34,9 @@ import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class GroovyBeanDefinitionWrapper — 意图说明
-
-Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/groovy/GroovyBeanDefinitionWrapper.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Internal wrapper for a Spring BeanDefinition, allowing for Groovy-style
- * property access within a {@link GroovyBeanDefinitionReader} closure.
+ * Spring {@link BeanDefinition} 的内部包装器，允许在
+ * {@link GroovyBeanDefinitionReader} 闭包内以 Groovy 风格访问属性。
  *
  * @author Jeff Brown
  * @author Juergen Hoeller
@@ -51,38 +44,44 @@ Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spri
  */
 class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 
-	// [OCA] 字段 `PARENT`：类成员状态。
+	/** 父 Bean 属性名。 */
 	private static final String PARENT = "parent";
-	// [OCA] 字段 `AUTOWIRE`：类成员状态。
+	/** 自动装配属性名。 */
 	private static final String AUTOWIRE = "autowire";
-	// [OCA] 字段 `CONSTRUCTOR_ARGS`：类成员状态。
+	/** 构造器参数属性名。 */
 	private static final String CONSTRUCTOR_ARGS = "constructorArgs";
-	// [OCA] 字段 `FACTORY_BEAN`：类成员状态。
+	/** 工厂 Bean 属性名。 */
 	private static final String FACTORY_BEAN = "factoryBean";
-	// [OCA] 字段 `FACTORY_METHOD`：类成员状态。
+	/** 工厂方法属性名。 */
 	private static final String FACTORY_METHOD = "factoryMethod";
-	// [OCA] 字段 `INIT_METHOD`：类成员状态。
+	/** 初始化方法属性名。 */
 	private static final String INIT_METHOD = "initMethod";
-	// [OCA] 字段 `DESTROY_METHOD`：类成员状态。
+	/** 销毁方法属性名。 */
 	private static final String DESTROY_METHOD = "destroyMethod";
-	// [OCA] 字段 `SINGLETON`：类成员状态。
+	/** 单例属性名。 */
 	private static final String SINGLETON = "singleton";
 
-	// [OCA] 字段 `dynamicProperties`：类成员状态。
+	/** 需特殊处理的动态属性名集合。 */
 	private static final Set<String> dynamicProperties = Set.of(PARENT, AUTOWIRE, CONSTRUCTOR_ARGS,
 			FACTORY_BEAN, FACTORY_METHOD, INIT_METHOD, DESTROY_METHOD, SINGLETON);
 
 
+	/** Bean 名称。 */
 	private @Nullable String beanName;
 
+	/** Bean 类类型。 */
 	private final @Nullable Class<?> clazz;
 
+	/** 构造器参数集合。 */
 	private final @Nullable Collection<?> constructorArgs;
 
+	/** 底层 Bean 定义。 */
 	private @Nullable AbstractBeanDefinition definition;
 
+	/** Bean 定义的 BeanWrapper。 */
 	private @Nullable BeanWrapper definitionWrapper;
 
+	/** 父 Bean 名称。 */
 	private @Nullable String parentName;
 
 
@@ -101,14 +100,23 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 	}
 
 
+	/**
+	 * 返回 Bean 名称。
+	 */
 	public @Nullable String getBeanName() {
 		return this.beanName;
 	}
 
+	/**
+	 * 设置底层 Bean 定义。
+	 */
 	void setBeanDefinition(AbstractBeanDefinition definition) {
 		this.definition = definition;
 	}
 
+	/**
+	 * 获取 Bean 定义，若尚未创建则懒加载创建。
+	 */
 	AbstractBeanDefinition getBeanDefinition() {
 		if (this.definition == null) {
 			this.definition = createBeanDefinition();
@@ -116,6 +124,9 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 		return this.definition;
 	}
 
+	/**
+	 * 创建新的 GenericBeanDefinition，并填充类、构造器参数及父名称。
+	 */
 	protected AbstractBeanDefinition createBeanDefinition() {
 		AbstractBeanDefinition bd = new GenericBeanDefinition();
 		bd.setBeanClass(this.clazz);
@@ -133,16 +144,25 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 		return bd;
 	}
 
+	/**
+	 * 从 BeanDefinitionHolder 设置 Bean 定义与名称。
+	 */
 	void setBeanDefinitionHolder(BeanDefinitionHolder holder) {
 		this.definition = (AbstractBeanDefinition) holder.getBeanDefinition();
 		this.beanName = holder.getBeanName();
 	}
 
+	/**
+	 * 返回封装当前 Bean 定义的 BeanDefinitionHolder。
+	 */
 	BeanDefinitionHolder getBeanDefinitionHolder() {
 		Assert.state(this.beanName != null, "Bean name must be set");
 		return new BeanDefinitionHolder(getBeanDefinition(), this.beanName);
 	}
 
+	/**
+	 * 设置父 Bean，支持字符串、RuntimeBeanReference 或 GroovyBeanDefinitionWrapper。
+	 */
 	void setParent(@Nullable Object obj) {
 		Assert.notNull(obj, "Parent bean cannot be set to a null runtime bean reference");
 		if (obj instanceof String name) {
@@ -158,6 +178,9 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 		getBeanDefinition().setAbstract(false);
 	}
 
+	/**
+	 * 向 Bean 定义添加属性值，若值为包装器则提取其 Bean 定义。
+	 */
 	GroovyBeanDefinitionWrapper addProperty(String propertyName, @Nullable Object propertyValue) {
 		if (propertyValue instanceof GroovyBeanDefinitionWrapper wrapper) {
 			propertyValue = wrapper.getBeanDefinition();
@@ -180,11 +203,6 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 	}
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 setProperty — 意图与阅读要点
-
-方法 `setProperty` 复杂度较高（CCN≈21, NLOC≈60）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void setProperty(String property, @Nullable Object newValue) {
 		if (PARENT.equals(property)) {
 			setParent(newValue);
@@ -193,6 +211,7 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 			AbstractBeanDefinition bd = getBeanDefinition();
 			Assert.state(this.definitionWrapper != null, "BeanDefinition wrapper not initialized");
 			if (AUTOWIRE.equals(property)) {
+				// 根据字符串或布尔值设置自动装配模式
 				if ("byName".equals(newValue)) {
 					bd.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_NAME);
 				}
@@ -206,7 +225,7 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 					bd.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_NAME);
 				}
 			}
-			// constructorArgs
+			// 构造器参数
 			else if (CONSTRUCTOR_ARGS.equals(property) && newValue instanceof List<?> args) {
 				ConstructorArgumentValues cav = new ConstructorArgumentValues();
 				for (Object arg : args) {
@@ -214,31 +233,31 @@ class GroovyBeanDefinitionWrapper extends GroovyObjectSupport {
 				}
 				bd.setConstructorArgumentValues(cav);
 			}
-			// factoryBean
+			// 工厂 Bean
 			else if (FACTORY_BEAN.equals(property)) {
 				if (newValue != null) {
 					bd.setFactoryBeanName(newValue.toString());
 				}
 			}
-			// factoryMethod
+			// 工厂方法
 			else if (FACTORY_METHOD.equals(property)) {
 				if (newValue != null) {
 					bd.setFactoryMethodName(newValue.toString());
 				}
 			}
-			// initMethod
+			// 初始化方法
 			else if (INIT_METHOD.equals(property)) {
 				if (newValue != null) {
 					bd.setInitMethodName(newValue.toString());
 				}
 			}
-			// destroyMethod
+			// 销毁方法
 			else if (DESTROY_METHOD.equals(property)) {
 				if (newValue != null) {
 					bd.setDestroyMethodName(newValue.toString());
 				}
 			}
-			// singleton property
+			// 单例作用域
 			else if (SINGLETON.equals(property)) {
 				bd.setScope(Boolean.TRUE.equals(newValue) ?
 						BeanDefinition.SCOPE_SINGLETON : BeanDefinition.SCOPE_PROTOTYPE);

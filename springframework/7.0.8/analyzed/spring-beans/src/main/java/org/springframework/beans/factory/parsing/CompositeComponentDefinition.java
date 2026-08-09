@@ -24,9 +24,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * {@link ComponentDefinition} implementation that holds one or more nested
- * {@link ComponentDefinition} instances, aggregating them into a named group
- * of components.
+ * 持有若干嵌套 {@link ComponentDefinition} 实例的 {@link ComponentDefinition} 实现，
+ * 将它们聚合为命名的组件组。
  *
  * @author Juergen Hoeller
  * @since 2.0.1
@@ -34,17 +33,20 @@ import org.springframework.util.Assert;
  */
 public class CompositeComponentDefinition extends AbstractComponentDefinition {
 
+	/** 复合组件名称。 */
 	private final String name;
 
+	/** 定义复合组件根的来源元素。 */
 	private final @Nullable Object source;
 
+	/** 嵌套的组件定义列表。 */
 	private final List<ComponentDefinition> nestedComponents = new ArrayList<>();
 
 
 	/**
-	 * Create a new CompositeComponentDefinition.
-	 * @param name the name of the composite component
-	 * @param source the source element that defines the root of the composite component
+	 * 创建新的 {@link CompositeComponentDefinition}。
+	 * @param name 复合组件的名称
+	 * @param source 定义复合组件根的来源元素
 	 */
 	public CompositeComponentDefinition(String name, @Nullable Object source) {
 		Assert.notNull(name, "Name must not be null");
@@ -65,8 +67,8 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 
 
 	/**
-	 * Add the given component as nested element of this composite component.
-	 * @param component the nested component to add
+	 * 将给定组件作为嵌套元素添加到本复合组件。
+	 * @param component 要添加的嵌套组件
 	 */
 	public void addNestedComponent(ComponentDefinition component) {
 		Assert.notNull(component, "ComponentDefinition must not be null");
@@ -74,8 +76,8 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 	}
 
 	/**
-	 * Return the nested components that this composite component holds.
-	 * @return the array of nested components, or an empty array if none
+	 * 返回本复合组件持有的嵌套组件。
+	 * @return 嵌套组件数组，若无则返回空数组
 	 */
 	public ComponentDefinition[] getNestedComponents() {
 		return this.nestedComponents.toArray(new ComponentDefinition[0]);

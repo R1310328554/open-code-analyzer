@@ -21,12 +21,11 @@ import java.util.ArrayDeque;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Simple {@link ArrayDeque}-based structure for tracking the logical position during
- * a parsing process. {@link Entry entries} are added to the ArrayDeque at each point
- * during the parse phase in a reader-specific manner.
+ * 基于 {@link ArrayDeque} 的简单结构，用于在解析过程中追踪逻辑位置。
+ * 在解析阶段的各节点，以读取器特定的方式向 ArrayDeque 添加 {@link Entry 条目}。
  *
- * <p>Calling {@link #toString()} will render a tree-style view of the current logical
- * position in the parse phase. This representation is intended for use in error messages.
+ * <p>调用 {@link #toString()} 将以树形样式呈现解析阶段当前的逻辑位置。
+ * 此表示旨在用于错误消息。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -35,21 +34,21 @@ import org.jspecify.annotations.Nullable;
 public final class ParseState {
 
 	/**
-	 * Internal {@link ArrayDeque} storage.
+	 * 内部 {@link ArrayDeque} 存储。
 	 */
 	private final ArrayDeque<Entry> state;
 
 
 	/**
-	 * Create a new {@code ParseState} with an empty {@link ArrayDeque}.
+	 * 创建具有空 {@link ArrayDeque} 的新 {@code ParseState}。
 	 */
 	public ParseState() {
 		this.state = new ArrayDeque<>();
 	}
 
 	/**
-	 * Create a new {@code ParseState} whose {@link ArrayDeque} is a clone
-	 * of the state in the passed-in {@code ParseState}.
+	 * 创建新 {@code ParseState}，其 {@link ArrayDeque} 为传入
+	 * {@code ParseState} 状态的克隆。
 	 */
 	private ParseState(ParseState other) {
 		this.state = other.state.clone();
@@ -57,30 +56,29 @@ public final class ParseState {
 
 
 	/**
-	 * Add a new {@link Entry} to the {@link ArrayDeque}.
+	 * 向 {@link ArrayDeque} 添加新的 {@link Entry}。
 	 */
 	public void push(Entry entry) {
 		this.state.push(entry);
 	}
 
 	/**
-	 * Remove an {@link Entry} from the {@link ArrayDeque}.
+	 * 从 {@link ArrayDeque} 移除 {@link Entry}。
 	 */
 	public void pop() {
 		this.state.pop();
 	}
 
 	/**
-	 * Return the {@link Entry} currently at the top of the {@link ArrayDeque} or
-	 * {@code null} if the {@link ArrayDeque} is empty.
+	 * 返回当前位于 {@link ArrayDeque} 顶部的 {@link Entry}，
+	 * 若 {@link ArrayDeque} 为空则返回 {@code null}。
 	 */
 	public @Nullable Entry peek() {
 		return this.state.peek();
 	}
 
 	/**
-	 * Create a new instance of {@link ParseState} which is an independent snapshot
-	 * of this instance.
+	 * 创建本实例的独立快照新 {@link ParseState} 实例。
 	 */
 	public ParseState snapshot() {
 		return new ParseState(this);
@@ -88,7 +86,7 @@ public final class ParseState {
 
 
 	/**
-	 * Returns a tree-style representation of the current {@code ParseState}.
+	 * 返回当前 {@code ParseState} 的树形表示。
 	 */
 	@Override
 	public String toString() {
@@ -108,7 +106,7 @@ public final class ParseState {
 
 
 	/**
-	 * Marker interface for entries into the {@link ParseState}.
+	 * {@link ParseState} 条目的标记接口。
 	 */
 	public interface Entry {
 	}

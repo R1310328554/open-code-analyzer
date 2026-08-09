@@ -21,14 +21,11 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Simple {@link ProblemReporter} implementation that exhibits fail-fast
- * behavior when errors are encountered.
+ * 简单的 {@link ProblemReporter} 实现，遇到错误时采用快速失败行为。
  *
- * <p>The first error encountered results in a {@link BeanDefinitionParsingException}
- * being thrown.
+ * <p>遇到的第一个错误将导致抛出 {@link BeanDefinitionParsingException}。
  *
- * <p>Warnings are written to
- * {@link #setLogger(org.apache.commons.logging.Log) the log} for this class.
+ * <p>警告写入本类的 {@link #setLogger(org.apache.commons.logging.Log) 日志}。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -37,14 +34,14 @@ import org.jspecify.annotations.Nullable;
  */
 public class FailFastProblemReporter implements ProblemReporter {
 
+	/** 用于记录警告的日志。 */
 	private Log logger = LogFactory.getLog(getClass());
 
 
 	/**
-	 * Set the {@link Log logger} that is to be used to report warnings.
-	 * <p>If set to {@code null} then a default {@link Log logger} set to
-	 * the name of the instance class will be used.
-	 * @param logger the {@link Log logger} that is to be used to report warnings
+	 * 设置用于报告警告的 {@link Log} 日志。
+	 * <p>若设为 {@code null}，则使用以实例类名命名的默认 {@link Log} 日志。
+	 * @param logger 用于报告警告的 {@link Log} 日志
 	 */
 	public void setLogger(@Nullable Log logger) {
 		this.logger = (logger != null ? logger : LogFactory.getLog(getClass()));
@@ -52,9 +49,8 @@ public class FailFastProblemReporter implements ProblemReporter {
 
 
 	/**
-	 * Throws a {@link BeanDefinitionParsingException} detailing the error
-	 * that has occurred.
-	 * @param problem the source of the error
+	 * 抛出 {@link BeanDefinitionParsingException}，详述已发生的错误。
+	 * @param problem 错误来源
 	 */
 	@Override
 	public void fatal(Problem problem) {
@@ -62,9 +58,8 @@ public class FailFastProblemReporter implements ProblemReporter {
 	}
 
 	/**
-	 * Throws a {@link BeanDefinitionParsingException} detailing the error
-	 * that has occurred.
-	 * @param problem the source of the error
+	 * 抛出 {@link BeanDefinitionParsingException}，详述已发生的错误。
+	 * @param problem 错误来源
 	 */
 	@Override
 	public void error(Problem problem) {
@@ -72,8 +67,8 @@ public class FailFastProblemReporter implements ProblemReporter {
 	}
 
 	/**
-	 * Writes the supplied {@link Problem} to the {@link Log} at {@code WARN} level.
-	 * @param problem the source of the warning
+	 * 以 {@code WARN} 级别将提供的 {@link Problem} 写入 {@link Log}。
+	 * @param problem 警告来源
 	 */
 	@Override
 	public void warning(Problem problem) {

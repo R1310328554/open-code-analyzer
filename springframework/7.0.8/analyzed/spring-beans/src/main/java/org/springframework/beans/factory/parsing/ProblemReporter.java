@@ -17,8 +17,7 @@
 package org.springframework.beans.factory.parsing;
 
 /**
- * SPI interface allowing tools and other external processes to handle errors
- * and warnings reported during bean definition parsing.
+ * SPI 接口，允许工具及其他外部进程处理 Bean 定义解析过程中报告的错误与警告。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -28,24 +27,23 @@ package org.springframework.beans.factory.parsing;
 public interface ProblemReporter {
 
 	/**
-	 * Called when a fatal error is encountered during the parsing process.
-	 * <p>Implementations must treat the given problem as fatal,
-	 * i.e. they have to eventually raise an exception.
-	 * @param problem the source of the error (never {@code null})
+	 * 解析过程中遇到致命错误时调用。
+	 * <p>实现必须将给定问题视为致命，即最终必须抛出异常。
+	 * @param problem 错误来源（永不为 {@code null}）
 	 */
 	void fatal(Problem problem);
 
 	/**
-	 * Called when an error is encountered during the parsing process.
-	 * <p>Implementations may choose to treat errors as fatal.
-	 * @param problem the source of the error (never {@code null})
+	 * 解析过程中遇到错误时调用。
+	 * <p>实现可选择将错误视为致命。
+	 * @param problem 错误来源（永不为 {@code null}）
 	 */
 	void error(Problem problem);
 
 	/**
-	 * Called when a warning is raised during the parsing process.
-	 * <p>Warnings are <strong>never</strong> considered to be fatal.
-	 * @param problem the source of the warning (never {@code null})
+	 * 解析过程中引发警告时调用。
+	 * <p>警告<strong>永不</strong>被视为致命。
+	 * @param problem 警告来源（永不为 {@code null}）
 	 */
 	void warning(Problem problem);
 

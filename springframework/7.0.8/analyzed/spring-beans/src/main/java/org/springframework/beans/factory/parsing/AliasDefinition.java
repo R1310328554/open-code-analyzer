@@ -22,7 +22,7 @@ import org.springframework.beans.BeanMetadataElement;
 import org.springframework.util.Assert;
 
 /**
- * Representation of an alias that has been registered during the parsing process.
+ * 解析过程中已注册别名的表示。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -30,27 +30,30 @@ import org.springframework.util.Assert;
  */
 public class AliasDefinition implements BeanMetadataElement {
 
+	/** Bean 的规范名称。 */
 	private final String beanName;
 
+	/** 为 Bean 注册的别名。 */
 	private final String alias;
 
+	/** 来源对象。 */
 	private final @Nullable Object source;
 
 
 	/**
-	 * Create a new AliasDefinition.
-	 * @param beanName the canonical name of the bean
-	 * @param alias the alias registered for the bean
+	 * 创建新的 {@link AliasDefinition}。
+	 * @param beanName Bean 的规范名称
+	 * @param alias 为 Bean 注册的别名
 	 */
 	public AliasDefinition(String beanName, String alias) {
 		this(beanName, alias, null);
 	}
 
 	/**
-	 * Create a new AliasDefinition.
-	 * @param beanName the canonical name of the bean
-	 * @param alias the alias registered for the bean
-	 * @param source the source object (may be {@code null})
+	 * 创建新的 {@link AliasDefinition}。
+	 * @param beanName Bean 的规范名称
+	 * @param alias 为 Bean 注册的别名
+	 * @param source 来源对象（可为 {@code null}）
 	 */
 	public AliasDefinition(String beanName, String alias, @Nullable Object source) {
 		Assert.notNull(beanName, "Bean name must not be null");
@@ -62,14 +65,14 @@ public class AliasDefinition implements BeanMetadataElement {
 
 
 	/**
-	 * Return the canonical name of the bean.
+	 * 返回 Bean 的规范名称。
 	 */
 	public final String getBeanName() {
 		return this.beanName;
 	}
 
 	/**
-	 * Return the alias registered for the bean.
+	 * 返回为 Bean 注册的别名。
 	 */
 	public final String getAlias() {
 		return this.alias;

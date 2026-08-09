@@ -21,11 +21,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.Resource;
 
 /**
- * Simple implementation of {@link SourceExtractor} that returns {@code null}
- * as the source metadata.
+ * {@link SourceExtractor} 的简单实现，始终将来源元数据返回为 {@code null}。
  *
- * <p>This is the default implementation and prevents too much metadata from being
- * held in memory during normal (non-tooled) runtime usage.
+ * <p>这是默认实现，可防止在正常（非工具化）运行时占用过多内存来保存元数据。
  *
  * @author Rob Harrop
  * @since 2.0
@@ -33,7 +31,7 @@ import org.springframework.core.io.Resource;
 public class NullSourceExtractor implements SourceExtractor {
 
 	/**
-	 * This implementation simply returns {@code null} for any input.
+	 * 本实现对任何输入均返回 {@code null}。
 	 */
 	@Override
 	public @Nullable Object extractSource(Object sourceCandidate, @Nullable Resource definitionResource) {

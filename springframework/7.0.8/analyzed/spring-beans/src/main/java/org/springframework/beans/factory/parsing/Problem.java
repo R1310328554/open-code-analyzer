@@ -21,10 +21,10 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Represents a problem with a bean definition configuration.
- * Mainly serves as common argument passed into a {@link ProblemReporter}.
+ * 表示 Bean 定义配置问题的对象。
+ * 主要作为传入 {@link ProblemReporter} 的通用参数。
  *
- * <p>May indicate a potentially fatal problem (an error) or just a warning.
+ * <p>可表示潜在致命问题（错误）或仅为警告。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -33,40 +33,44 @@ import org.springframework.util.Assert;
  */
 public class Problem {
 
+	/** 问题描述消息。 */
 	private final String message;
 
+	/** 触发错误的位置。 */
 	private final Location location;
 
+	/** 错误发生时的解析状态。 */
 	private final @Nullable ParseState parseState;
 
+	/** 根本原因异常。 */
 	private final @Nullable Throwable rootCause;
 
 
 	/**
-	 * Create a new instance of the {@link Problem} class.
-	 * @param message a message detailing the problem
-	 * @param location the location within a bean configuration source that triggered the error
+	 * 创建新的 {@link Problem} 实例。
+	 * @param message 详述问题的消息
+	 * @param location 触发错误的 Bean 配置来源中的位置
 	 */
 	public Problem(String message, Location location) {
 		this(message, location, null, null);
 	}
 
 	/**
-	 * Create a new instance of the {@link Problem} class.
-	 * @param message a message detailing the problem
-	 * @param parseState the {@link ParseState} at the time of the error
-	 * @param location the location within a bean configuration source that triggered the error
+	 * 创建新的 {@link Problem} 实例。
+	 * @param message 详述问题的消息
+	 * @param parseState 错误发生时的 {@link ParseState}
+	 * @param location 触发错误的 Bean 配置来源中的位置
 	 */
 	public Problem(String message, Location location, ParseState parseState) {
 		this(message, location, parseState, null);
 	}
 
 	/**
-	 * Create a new instance of the {@link Problem} class.
-	 * @param message a message detailing the problem
-	 * @param rootCause the underlying exception that caused the error (may be {@code null})
-	 * @param parseState the {@link ParseState} at the time of the error
-	 * @param location the location within a bean configuration source that triggered the error
+	 * 创建新的 {@link Problem} 实例。
+	 * @param message 详述问题的消息
+	 * @param rootCause 导致错误的底层异常（可为 {@code null}）
+	 * @param parseState 错误发生时的 {@link ParseState}
+	 * @param location 触发错误的 Bean 配置来源中的位置
 	 */
 	public Problem(String message, Location location, @Nullable ParseState parseState, @Nullable Throwable rootCause) {
 		Assert.notNull(message, "Message must not be null");
@@ -79,22 +83,21 @@ public class Problem {
 
 
 	/**
-	 * Get the message detailing the problem.
+	 * 获取详述问题的消息。
 	 */
 	public String getMessage() {
 		return this.message;
 	}
 
 	/**
-	 * Get the location within a bean configuration source that triggered the error.
+	 * 获取触发错误的 Bean 配置来源中的位置。
 	 */
 	public Location getLocation() {
 		return this.location;
 	}
 
 	/**
-	 * Get the description of the bean configuration source that triggered the error,
-	 * as contained within this Problem's Location object.
+	 * 获取触发错误的 Bean 配置来源描述，取自本 Problem 的 Location 对象。
 	 * @see #getLocation()
 	 */
 	public String getResourceDescription() {
@@ -102,14 +105,14 @@ public class Problem {
 	}
 
 	/**
-	 * Get the {@link ParseState} at the time of the error (may be {@code null}).
+	 * 获取错误发生时的 {@link ParseState}（可为 {@code null}）。
 	 */
 	public @Nullable ParseState getParseState() {
 		return this.parseState;
 	}
 
 	/**
-	 * Get the underlying exception that caused the error (may be {@code null}).
+	 * 获取导致错误的底层异常（可为 {@code null}）。
 	 */
 	public @Nullable Throwable getRootCause() {
 		return this.rootCause;

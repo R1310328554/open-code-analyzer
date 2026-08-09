@@ -28,8 +28,8 @@ import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.BeanReference;
 
 /**
- * ComponentDefinition based on a standard BeanDefinition, exposing the given bean
- * definition as well as inner bean definitions and bean references for the given bean.
+ * 基于标准 {@link BeanDefinition} 的 {@link ComponentDefinition}，
+ * 暴露给定 Bean 的定义及其内部 Bean 定义与 Bean 引用。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -37,39 +37,41 @@ import org.springframework.beans.factory.config.BeanReference;
  */
 public class BeanComponentDefinition extends BeanDefinitionHolder implements ComponentDefinition {
 
+	/** 空 BeanDefinition 数组常量。 */
 	private static final BeanDefinition[] EMPTY_BEAN_DEFINITION_ARRAY = new BeanDefinition[0];
 
+	/** 空 BeanReference 数组常量。 */
 	private static final BeanReference[] EMPTY_BEAN_REFERENCE_ARRAY = new BeanReference[0];
 
-
+	/** 内部 Bean 定义数组。 */
 	private final BeanDefinition[] innerBeanDefinitions;
 
+	/** Bean 引用数组。 */
 	private final BeanReference[] beanReferences;
 
 
 	/**
-	 * Create a new BeanComponentDefinition for the given bean.
-	 * @param beanDefinition the BeanDefinition
-	 * @param beanName the name of the bean
+	 * 为给定 Bean 创建新的 {@link BeanComponentDefinition}。
+	 * @param beanDefinition BeanDefinition
+	 * @param beanName Bean 名称
 	 */
 	public BeanComponentDefinition(BeanDefinition beanDefinition, String beanName) {
 		this(new BeanDefinitionHolder(beanDefinition, beanName));
 	}
 
 	/**
-	 * Create a new BeanComponentDefinition for the given bean.
-	 * @param beanDefinition the BeanDefinition
-	 * @param beanName the name of the bean
-	 * @param aliases alias names for the bean, or {@code null} if none
+	 * 为给定 Bean 创建新的 {@link BeanComponentDefinition}。
+	 * @param beanDefinition BeanDefinition
+	 * @param beanName Bean 名称
+	 * @param aliases Bean 的别名，若无则为 {@code null}
 	 */
 	public BeanComponentDefinition(BeanDefinition beanDefinition, String beanName, String @Nullable [] aliases) {
 		this(new BeanDefinitionHolder(beanDefinition, beanName, aliases));
 	}
 
 	/**
-	 * Create a new BeanComponentDefinition for the given bean.
-	 * @param beanDefinitionHolder the BeanDefinitionHolder encapsulating
-	 * the bean definition as well as the name of the bean
+	 * 为给定 Bean 创建新的 {@link BeanComponentDefinition}。
+	 * @param beanDefinitionHolder 封装 Bean 定义及名称的 BeanDefinitionHolder
 	 */
 	public BeanComponentDefinition(BeanDefinitionHolder beanDefinitionHolder) {
 		super(beanDefinitionHolder);
@@ -77,6 +79,7 @@ public class BeanComponentDefinition extends BeanDefinitionHolder implements Com
 		List<BeanDefinition> innerBeans = new ArrayList<>();
 		List<BeanReference> references = new ArrayList<>();
 		PropertyValues propertyValues = beanDefinitionHolder.getBeanDefinition().getPropertyValues();
+		// 遍历属性值，收集内部 Bean 定义与 Bean 引用
 		for (PropertyValue propertyValue : propertyValues.getPropertyValues()) {
 			Object value = propertyValue.getValue();
 			if (value instanceof BeanDefinitionHolder beanDefHolder) {
@@ -121,7 +124,7 @@ public class BeanComponentDefinition extends BeanDefinitionHolder implements Com
 
 
 	/**
-	 * This implementation returns this ComponentDefinition's description.
+	 * 本实现返回本 ComponentDefinition 的描述。
 	 * @see #getDescription()
 	 */
 	@Override
@@ -130,8 +133,7 @@ public class BeanComponentDefinition extends BeanDefinitionHolder implements Com
 	}
 
 	/**
-	 * This implementation expects the other object to be of type BeanComponentDefinition
-	 * as well, in addition to the superclass's equality requirements.
+	 * 本实现除满足超类的相等性要求外，还要求另一对象同为 BeanComponentDefinition 类型。
 	 */
 	@Override
 	public boolean equals(@Nullable Object other) {

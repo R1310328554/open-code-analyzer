@@ -20,11 +20,11 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanReference;
 
 /**
- * Base implementation of {@link ComponentDefinition} that provides a basic implementation of
- * {@link #getDescription} which delegates to {@link #getName}. Also provides a base implementation
- * of {@link #toString} which delegates to {@link #getDescription} in keeping with the recommended
- * implementation strategy. Also provides default implementations of {@link #getInnerBeanDefinitions}
- * and {@link #getBeanReferences} that return an empty array.
+ * {@link ComponentDefinition} 的基类实现，为 {@link #getDescription} 提供默认实现，
+ * 委托给 {@link #getName}。同时为 {@link #toString} 提供基类实现，同样委托给
+ * {@link #getDescription}，与推荐的实现策略保持一致。此外为
+ * {@link #getInnerBeanDefinitions} 和 {@link #getBeanReferences} 提供默认实现，
+ * 返回空数组。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -33,7 +33,7 @@ import org.springframework.beans.factory.config.BeanReference;
 public abstract class AbstractComponentDefinition implements ComponentDefinition {
 
 	/**
-	 * Delegates to {@link #getName}.
+	 * 委托给 {@link #getName}。
 	 */
 	@Override
 	public String getDescription() {
@@ -41,7 +41,7 @@ public abstract class AbstractComponentDefinition implements ComponentDefinition
 	}
 
 	/**
-	 * Returns an empty array.
+	 * 返回空数组。
 	 */
 	@Override
 	public BeanDefinition[] getBeanDefinitions() {
@@ -49,7 +49,7 @@ public abstract class AbstractComponentDefinition implements ComponentDefinition
 	}
 
 	/**
-	 * Returns an empty array.
+	 * 返回空数组。
 	 */
 	@Override
 	public BeanDefinition[] getInnerBeanDefinitions() {
@@ -57,7 +57,7 @@ public abstract class AbstractComponentDefinition implements ComponentDefinition
 	}
 
 	/**
-	 * Returns an empty array.
+	 * 返回空数组。
 	 */
 	@Override
 	public BeanReference[] getBeanReferences() {
@@ -65,7 +65,7 @@ public abstract class AbstractComponentDefinition implements ComponentDefinition
 	}
 
 	/**
-	 * Delegates to {@link #getDescription}.
+	 * 委托给 {@link #getDescription}。
 	 */
 	@Override
 	public String toString() {

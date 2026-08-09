@@ -23,7 +23,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
- * Representation of an import that has been processed during the parsing process.
+ * 解析过程中已处理导入的表示。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -31,34 +31,37 @@ import org.springframework.util.Assert;
  */
 public class ImportDefinition implements BeanMetadataElement {
 
+	/** 被导入资源的位置。 */
 	private final String importedResource;
 
+	/** 实际解析得到的资源数组。 */
 	private final Resource @Nullable [] actualResources;
 
+	/** 来源对象。 */
 	private final @Nullable Object source;
 
 
 	/**
-	 * Create a new ImportDefinition.
-	 * @param importedResource the location of the imported resource
+	 * 创建新的 {@link ImportDefinition}。
+	 * @param importedResource 被导入资源的位置
 	 */
 	public ImportDefinition(String importedResource) {
 		this(importedResource, null, null);
 	}
 
 	/**
-	 * Create a new ImportDefinition.
-	 * @param importedResource the location of the imported resource
-	 * @param source the source object (may be {@code null})
+	 * 创建新的 {@link ImportDefinition}。
+	 * @param importedResource 被导入资源的位置
+	 * @param source 来源对象（可为 {@code null}）
 	 */
 	public ImportDefinition(String importedResource, @Nullable Object source) {
 		this(importedResource, null, source);
 	}
 
 	/**
-	 * Create a new ImportDefinition.
-	 * @param importedResource the location of the imported resource
-	 * @param source the source object (may be {@code null})
+	 * 创建新的 {@link ImportDefinition}。
+	 * @param importedResource 被导入资源的位置
+	 * @param source 来源对象（可为 {@code null}）
 	 */
 	public ImportDefinition(String importedResource, Resource @Nullable [] actualResources, @Nullable Object source) {
 		Assert.notNull(importedResource, "Imported resource must not be null");
@@ -69,12 +72,15 @@ public class ImportDefinition implements BeanMetadataElement {
 
 
 	/**
-	 * Return the location of the imported resource.
+	 * 返回被导入资源的位置。
 	 */
 	public final String getImportedResource() {
 		return this.importedResource;
 	}
 
+	/**
+	 * 返回实际解析得到的资源数组。
+	 */
 	public final Resource @Nullable [] getActualResources() {
 		return this.actualResources;
 	}

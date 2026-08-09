@@ -17,19 +17,20 @@
 package org.springframework.beans.factory.parsing;
 
 /**
- * {@link ParseState} entry representing a bean definition.
+ * 表示 Bean 定义的 {@link ParseState} 条目。
  *
  * @author Rob Harrop
  * @since 2.0
  */
 public class BeanEntry implements ParseState.Entry {
 
+	/** 关联的 Bean 定义名称。 */
 	private final String beanDefinitionName;
 
 
 	/**
-	 * Create a new {@code BeanEntry} instance.
-	 * @param beanDefinitionName the name of the associated bean definition
+	 * 创建新的 {@code BeanEntry} 实例。
+	 * @param beanDefinitionName 关联 Bean 定义的名称
 	 */
 	public BeanEntry(String beanDefinitionName) {
 		this.beanDefinitionName = beanDefinitionName;

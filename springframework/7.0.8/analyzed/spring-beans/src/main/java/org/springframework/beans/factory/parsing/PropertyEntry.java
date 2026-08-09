@@ -19,19 +19,20 @@ package org.springframework.beans.factory.parsing;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link ParseState} entry representing a JavaBean property.
+ * 表示 JavaBean 属性的 {@link ParseState} 条目。
  *
  * @author Rob Harrop
  * @since 2.0
  */
 public class PropertyEntry implements ParseState.Entry {
 
+	/** 属性名称。 */
 	private final String name;
 
 
 	/**
-	 * Create a new {@code PropertyEntry} instance.
-	 * @param name the name of the JavaBean property represented by this instance
+	 * 创建新的 {@code PropertyEntry} 实例。
+	 * @param name 本实例所表示的 JavaBean 属性名
 	 */
 	public PropertyEntry(String name) {
 		if (!StringUtils.hasText(name)) {

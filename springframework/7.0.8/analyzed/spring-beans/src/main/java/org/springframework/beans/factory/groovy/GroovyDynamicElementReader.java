@@ -34,8 +34,7 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate;
 
 /**
- * Used by GroovyBeanDefinitionReader to read a Spring XML namespace expression
- * in the Groovy DSL.
+ * 供 {@link GroovyBeanDefinitionReader} 在 Groovy DSL 中读取 Spring XML 命名空间表达式。
  *
  * @author Jeff Brown
  * @author Juergen Hoeller
@@ -44,19 +43,33 @@ import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate;
  */
 class GroovyDynamicElementReader extends GroovyObjectSupport {
 
+	/** 根命名空间名称。 */
 	private final String rootNamespace;
 
+	/** XML 命名空间映射。 */
 	private final Map<String, String> xmlNamespaces;
 
+	/** Bean 定义解析委托。 */
 	private final BeanDefinitionParserDelegate delegate;
 
+	/** 当前 Bean 定义包装器。 */
 	private final GroovyBeanDefinitionWrapper beanDefinition;
 
+	/** 是否为装饰模式（decorate 而非 parse）。 */
 	protected final boolean decorating;
 
+	/** 是否在调用结束后执行 afterInvocation 钩子。 */
 	private boolean callAfterInvocation = true;
 
 
+	/**
+	 * 创建动态元素读取器。
+	 * @param namespace 根命名空间
+	 * @param namespaceMap XML 命名空间映射
+	 * @param delegate Bean 定义解析委托
+	 * @param beanDefinition Bean 定义包装器
+	 * @param decorating 是否为装饰模式
+	 */
 	public GroovyDynamicElementReader(String namespace, Map<String, String> namespaceMap,
 			BeanDefinitionParserDelegate delegate, GroovyBeanDefinitionWrapper beanDefinition, boolean decorating) {
 
@@ -72,6 +85,7 @@ class GroovyDynamicElementReader extends GroovyObjectSupport {
 	public @Nullable Object invokeMethod(String name, Object obj) {
 		Object[] args = (Object[]) obj;
 		if (name.equals("doCall")) {
+			// 处理闭包调用：设置委托并执行
 			@SuppressWarnings("unchecked")
 			Closure<Object> callable = (Closure<Object>) args[0];
 			callable.setResolveStrategy(Closure.DELEGATE_FIRST);
@@ -85,6 +99,7 @@ class GroovyDynamicElementReader extends GroovyObjectSupport {
 			return result;
 		}
 		else {
+			// 将 Groovy DSL 调用转换为 XML 标记，再交由委托解析
 			StreamingMarkupBuilder builder = new StreamingMarkupBuilder();
 			String myNamespace = this.rootNamespace;
 			Map<String, String> myNamespaces = this.xmlNamespaces;
@@ -114,14 +129,17 @@ class GroovyDynamicElementReader extends GroovyObjectSupport {
 				throw new IllegalStateException(ex);
 			}
 
+			// 从生成的 XML 字符串解析 DOM 元素
 			Element element = this.delegate.getReaderContext().readDocumentFromString(sw.toString()).getDocumentElement();
 			this.delegate.initDefaults(element);
 			if (this.decorating) {
+				// 装饰模式：对已有 Bean 定义进行装饰
 				BeanDefinitionHolder holder = this.beanDefinition.getBeanDefinitionHolder();
 				holder = this.delegate.decorateIfRequired(element, holder, null);
 				this.beanDefinition.setBeanDefinitionHolder(holder);
 			}
 			else {
+				// 解析模式：解析自定义元素并设置 Bean 定义
 				BeanDefinition beanDefinition = this.delegate.parseCustomElement(element);
 				if (beanDefinition != null) {
 					this.beanDefinition.setBeanDefinition((AbstractBeanDefinition) beanDefinition);
@@ -136,8 +154,7 @@ class GroovyDynamicElementReader extends GroovyObjectSupport {
 	}
 
 	/**
-	 * Hook that subclasses or anonymous classes can override to implement custom behavior
-	 * after invocation completes.
+	 * 调用完成后的钩子，子类或匿名类可覆盖以实现自定义行为。
 	 */
 	protected void afterInvocation() {
 		// NOOP

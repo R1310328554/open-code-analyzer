@@ -1,5 +1,5 @@
 /**
- * Support package for Groovy-based bean definitions.
+ * 基于 Groovy 的 Bean 定义支持包。
  */
 @NullMarked
 package org.springframework.beans.factory.groovy;

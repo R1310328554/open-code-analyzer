@@ -22,38 +22,37 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 /**
- * Class that models an arbitrary location in a {@link Resource resource}.
+ * 对 {@link Resource} 中任意位置的建模类。
  *
- * <p>Typically used to track the location of problematic or erroneous
- * metadata in XML configuration files. For example, a
- * {@link #getSource() source} location might be 'The bean defined on
- * line 76 of beans.properties has an invalid Class'; another source might
- * be the actual DOM Element from a parsed XML {@link org.w3c.dom.Document};
- * or the source object might simply be {@code null}.
+ * <p>通常用于追踪 XML 配置文件中存在问题的或错误的元数据位置。例如，
+ * 某个 {@link #getSource() 来源} 位置可能是「beans.properties 第 76 行定义的
+ * Bean 具有无效的 Class」；另一来源可能是来自已解析 XML
+ * {@link org.w3c.dom.Document} 的实际 DOM 元素；或者来源对象可能仅为 {@code null}。
  *
  * @author Rob Harrop
  * @since 2.0
  */
 public class Location {
 
+	/** 关联的资源。 */
 	private final Resource resource;
 
+	/** 资源内的具体位置。 */
 	private final @Nullable Object source;
 
 
 	/**
-	 * Create a new instance of the {@link Location} class.
-	 * @param resource the resource with which this location is associated
+	 * 创建新的 {@link Location} 实例。
+	 * @param resource 与本位置关联的资源
 	 */
 	public Location(Resource resource) {
 		this(resource, null);
 	}
 
 	/**
-	 * Create a new instance of the {@link Location} class.
-	 * @param resource the resource with which this location is associated
-	 * @param source the actual location within the associated resource
-	 * (may be {@code null})
+	 * 创建新的 {@link Location} 实例。
+	 * @param resource 与本位置关联的资源
+	 * @param source 关联资源内的实际位置（可为 {@code null}）
 	 */
 	public Location(Resource resource, @Nullable Object source) {
 		Assert.notNull(resource, "Resource must not be null");
@@ -63,17 +62,15 @@ public class Location {
 
 
 	/**
-	 * Get the resource with which this location is associated.
+	 * 获取与本位置关联的资源。
 	 */
 	public Resource getResource() {
 		return this.resource;
 	}
 
 	/**
-	 * Get the actual location within the associated {@link #getResource() resource}
-	 * (may be {@code null}).
-	 * <p>See the {@link Location class level javadoc for this class} for examples
-	 * of what the actual type of the returned object may be.
+	 * 获取关联 {@link #getResource() 资源} 内的实际位置（可为 {@code null}）。
+	 * <p>返回对象的实际类型示例参见本类的类级 JavaDoc。
 	 */
 	public @Nullable Object getSource() {
 		return this.source;

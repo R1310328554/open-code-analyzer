@@ -19,8 +19,7 @@ package org.springframework.beans.factory.parsing;
 import org.springframework.util.Assert;
 
 /**
- * {@link ParseState} entry representing a (possibly indexed)
- * constructor argument.
+ * 表示（可能带索引的）构造器参数的 {@link ParseState} 条目。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -28,23 +27,21 @@ import org.springframework.util.Assert;
  */
 public class ConstructorArgumentEntry implements ParseState.Entry {
 
+	/** 构造器参数索引，未知时为 -1。 */
 	private final int index;
 
 
 	/**
-	 * Creates a new instance of the {@link ConstructorArgumentEntry} class
-	 * representing a constructor argument with a (currently) unknown index.
+	 * 创建表示索引尚未确定的构造器参数的 {@link ConstructorArgumentEntry} 实例。
 	 */
 	public ConstructorArgumentEntry() {
 		this.index = -1;
 	}
 
 	/**
-	 * Creates a new instance of the {@link ConstructorArgumentEntry} class
-	 * representing a constructor argument at the supplied {@code index}.
-	 * @param index the index of the constructor argument
-	 * @throws IllegalArgumentException if the supplied {@code index}
-	 * is less than zero
+	 * 创建表示指定 {@code index} 处构造器参数的 {@link ConstructorArgumentEntry} 实例。
+	 * @param index 构造器参数的索引
+	 * @throws IllegalArgumentException 若 {@code index} 小于零
 	 */
 	public ConstructorArgumentEntry(int index) {
 		Assert.isTrue(index >= 0, "Constructor argument index must be greater than or equal to zero");

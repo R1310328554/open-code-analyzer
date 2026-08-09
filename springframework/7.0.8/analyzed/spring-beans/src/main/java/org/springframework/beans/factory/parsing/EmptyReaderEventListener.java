@@ -17,8 +17,7 @@
 package org.springframework.beans.factory.parsing;
 
 /**
- * Empty implementation of the {@link ReaderEventListener} interface,
- * providing no-op implementations of all callback methods.
+ * {@link ReaderEventListener} 的空实现，所有回调方法均为空操作。
  *
  * @author Juergen Hoeller
  * @since 2.0
