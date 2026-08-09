@@ -34,13 +34,16 @@ import org.redisson.micronaut.cache.RedissonSyncCache;
 import java.util.concurrent.ExecutorService;
 
 /**
+ * Micronaut {@link Factory}，注册 Redisson 客户端与缓存 Bean（Micronaut 4.x）。
+ * <p>根据 {@link RedissonCacheConfiguration} 或 {@link RedissonCacheNativeConfiguration}
+ * 为每个命名缓存创建 {@link RedissonSyncCache} 实例。
  *
  * @author Nikita Koksharov
- *
  */
 @Factory
 public class RedissonFactory {
 
+    /** 从 {@link Config} 创建 {@link RedissonClient}；容器销毁时调用 {@code shutdown}。 */
     @Requires(beans = Config.class)
     @Singleton
     @Bean(preDestroy = "shutdown")
@@ -48,6 +51,7 @@ public class RedissonFactory {
         return Redisson.create(config);
     }
 
+    /** 为每个 {@code redisson.caches.*} 配置创建同步缓存；有 TTL/容量时使用 {@link RMapCache}。 */
     @EachBean(RedissonCacheConfiguration.class)
     public RedissonSyncCache cache(@Parameter RedissonCacheConfiguration configuration,
                                      RedissonClient redisson,
@@ -64,6 +68,7 @@ public class RedissonFactory {
         return new RedissonSyncCache(conversionService, null, map, executorService, configuration);
     }
 
+    /** 为每个 {@code redisson.caches-native.*} 配置创建 Native Map 缓存。 */
     @EachBean(RedissonCacheNativeConfiguration.class)
     public RedissonSyncCache cache(@Parameter RedissonCacheNativeConfiguration configuration,
                                      RedissonClient redisson,

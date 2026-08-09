@@ -19,14 +19,15 @@ import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
 
 /**
- * Micronaut Cache settings.
+ * {@code redisson.caches.<name>} 命名缓存的 Micronaut 配置绑定。
+ * <p>每个属性块对应一个 {@link RedissonSyncCache} Bean。
  *
  * @author Nikita Koksharov
- *
  */
 @EachProperty("redisson.caches")
 public class RedissonCacheConfiguration extends BaseCacheConfiguration {
 
+    /** @param name 配置键后缀，即缓存逻辑名称 */
     public RedissonCacheConfiguration(@Parameter String name) {
         super(name);
     }
