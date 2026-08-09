@@ -18,41 +18,39 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.atomic.DoubleAdder}
- * <p>
- * Internal state maintained on client side.
- * 
- * @author Nikita Koksharov
+ * {@link java.util.concurrent.atomic.DoubleAdder} 的分布式实现。
+ * <p>局部增量在客户端维护，{@link #sum()} 汇总所有实例。
  *
+ * @author Nikita Koksharov
  */
 public interface RDoubleAdder extends RExpirable, RDestroyable {
 
     /**
-     * Adds value
+     * 累加指定浮点增量。
      * 
-     * @param x - value
+     * @param x 增量值
      */
     void add(double x);
     
     /**
-     * Increments value
+     * 将计数加 1。
      */
     void increment();
 
     /**
-     * Decrements value
+     * 将计数减 1。
      */
     void decrement();
     
     /**
-     * Accumulates sum across all RDoubleAdder instances
+     * 汇总所有 RDoubleAdder 实例的局部增量。
      * 
-     * @return accumulated sum
+     * @return 汇总后的总和
      */
     double sum();
     
     /**
-     * Resets value across all RDoubleAdder instances
+     * 将所有 RDoubleAdder 实例的计数重置为零。
      */
     void reset();
     
@@ -65,29 +63,29 @@ public interface RDoubleAdder extends RExpirable, RDestroyable {
 
     
     /**
-     * Accumulates sum across all RDoubleAdder instances 
-     * within defined <code>timeout</code>.
+     * 汇总所有 RDoubleAdder 实例的局部增量。
+     * 在指定 {@code timeout} 内完成。
      * 
-     * @param timeout for accumulation
-     * @param timeUnit for timeout
+     * @param timeout 最长等待时间
+     * @param timeUnit 延迟时间单位
      * 
-     * @return accumulated sum
+     * @return 汇总后的总和
      */
     RFuture<Double> sumAsync(long timeout, TimeUnit timeUnit);
 
     /**
-     * Resets value across all RDoubleAdder instances
+     * 将所有 RDoubleAdder 实例的计数重置为零。
      * 
      * @return void
      */
     RFuture<Void> resetAsync();
     
     /**
-     * Resets value across all RDoubleAdder instances 
-     * within defined <code>timeout</code>.
+     * 将所有 RDoubleAdder 实例的计数重置为零。
+     * 在指定 {@code timeout} 内完成。
      * 
-     * @param timeout for reset
-     * @param timeUnit for timeout
+     * @param timeout 最长等待时间
+     * @param timeUnit 延迟时间单位
      * 
      * @return void
      */

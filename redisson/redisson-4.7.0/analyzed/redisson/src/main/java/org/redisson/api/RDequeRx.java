@@ -22,101 +22,101 @@ import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.queue.DequeMoveArgs;
 
 /**
- * RxJava2 interface for Deque object
+ * {@link RDeque} 的 RxJava 风格 API。
+ * <p>各方法返回 {@link Single}、{@link Maybe}、{@link Flowable} 或 {@link Completable}。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public interface RDequeRx<V> extends RQueueRx<V> {
 
     /**
-     * Adds element at the head of existing deque.
+     * 在已存在的双端队列队头追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the list
+     * @param elements 元素集合
+     * @return 列表长度
      */
     Single<Integer> addFirstIfExists(V... elements);
 
     /**
-     * Adds element at the tail of existing deque.
+     * 在已存在的双端队列队尾追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the list
+     * @param elements 元素集合
+     * @return 列表长度
      */
     Single<Integer> addLastIfExists(V... elements);
 
     /**
-     * Adds elements at the head of deque.
+     * 在双端队列队头批量追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the deque
+     * @param elements 元素集合
+     * @return 双端队列长度
      */
     Single<Integer> addFirst(V... elements);
 
     /**
-     * Adds elements at the tail of deque.
+     * 在双端队列队尾批量追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the deque
+     * @param elements 元素集合
+     * @return 双端队列长度
      */
     Single<Integer> addLast(V... elements);
 
     Flowable<V> descendingIterator();
 
     /**
-     * Removes last occurrence of element <code>o</code>
+     * 移除元素最后一次出现的实例。
      * 
-     * @param o - element
-     * @return <code>true</code> if object has been removed otherwise <code>false</code>
+     * @param o 待移除元素
+     * @return 见方法说明
      */
     Single<Boolean> removeLastOccurrence(Object o);
 
     /**
-     * Retrieves and removes the last element of deque.
-     * Returns <code>null</code> if there are no elements in deque.
+     * 移除并返回双端队列最后一个元素。
+     * 双端队列为空时返回 {@code null}。
      * 
-     * @return element
+     * @return 元素
      */
     Maybe<V> removeLast();
 
     /**
-     * Retrieves and removes the first element of deque.
-     * Returns <code>null</code> if there are no elements in deque.
+     * 移除并返回双端队列第一个元素。
+     * 双端队列为空时返回 {@code null}。
      * 
-     * @return element
+     * @return 元素
      */
     Maybe<V> removeFirst();
 
     /**
-     * Removes first occurrence of element <code>o</code>
+     * 移除元素第一次出现的实例。
      * 
-     * @param o - element to remove
-     * @return <code>true</code> if object has been removed otherwise <code>false</code>
+     * @param o 待移除元素
+     * @return 见方法说明
      */
     Single<Boolean> removeFirstOccurrence(Object o);
 
     /**
-     * Adds element at the head of this deque.
+     * 在队头添加元素（栈式 push）。
      * 
-     * @param e - element to add
+     * @param e 待添加元素
      * @return void
      */
     Completable push(V e);
 
     /**
-     * Retrieves and removes element at the head of this deque.
-     * Returns <code>null</code> if there are no elements in deque.
+     * 弹出队头元素；空队列返回 null。
+     * 双端队列为空时返回 {@code null}。
      * 
-     * @return element
+     * @return 元素
      */
     Maybe<V> pop();
 
     /**
-     * Retrieves and removes element at the tail of this deque.
-     * Returns <code>null</code> if there are no elements in deque.
+     * 弹出队尾元素；空队列返回 null。
+     * 双端队列为空时返回 {@code null}。
      * 
-     * @return element
+     * @return 元素
      */
     Maybe<V> pollLast();
 
@@ -129,42 +129,42 @@ public interface RDequeRx<V> extends RQueueRx<V> {
     Maybe<V> pollFirst();
 
     /**
-     * Retrieves and removes the tail elements of this queue.
-     * Elements amount limited by <code>limit</code> param.
+     * 拉取并移除至多 limit 个队尾元素。
+     * 拉取数量受 {@code limit} 参数限制。
      *
-     * @return list of tail elements
+     * @return 队尾元素列表
      */
     Flowable<V> pollLast(int limit);
 
     /**
-     * Retrieves and removes the head elements of this queue.
-     * Elements amount limited by <code>limit</code> param.
+     * 拉取并移除至多 limit 个队头元素。
+     * 拉取数量受 {@code limit} 参数限制。
      *
-     * @return list of head elements
+     * @return 队头元素列表
      */
     Flowable<V> pollFirst(int limit);
 
     /**
-     * Returns element at the tail of this deque 
-     * or <code>null</code> if there are no elements in deque.
+     * 查看队尾元素但不移除。
+     * 双端队列为空时返回 {@code null}。
      * 
-     * @return element
+     * @return 元素
      */
     Maybe<V> peekLast();
 
     /**
-     * Returns element at the head of this deque 
-     * or <code>null</code> if there are no elements in deque.
+     * 查看队头元素但不移除。
+     * 双端队列为空时返回 {@code null}。
      * 
-     * @return element
+     * @return 元素
      */
     Maybe<V> peekFirst();
 
     /**
-     * Adds element at the tail of this deque.
+     * 在队尾添加元素。
      * 
-     * @param e - element to add
-     * @return <code>true</code> if element was added to this deque otherwise <code>false</code>
+     * @param e 待添加元素
+     * @return 见方法说明
      */
     Single<Boolean> offerLast(V e);
 
@@ -177,9 +177,9 @@ public interface RDequeRx<V> extends RQueueRx<V> {
     Maybe<V> getLast();
 
     /**
-     * Adds element at the tail of this deque.
+     * 在队尾添加元素。
      * 
-     * @param e - element to add
+     * @param e 待添加元素
      * @return void
      */
     Completable addLast(V e);
@@ -193,18 +193,18 @@ public interface RDequeRx<V> extends RQueueRx<V> {
     Completable addFirst(V e);
 
     /**
-     * Adds element at the head of this deque.
+     * 在队头添加元素（栈式 push）。
      * 
-     * @param e - element to add
-     * @return <code>true</code> if element was added to this deque otherwise <code>false</code>
+     * @param e 待添加元素
+     * @return 见方法说明
      */
     Single<Boolean> offerFirst(V e);
 
     /**
-     * Move element from this deque to the given destination deque.
-     * Returns moved element.
+     * 将元素从本双端队列原子移动到目标队列并返回被移动元素。
+     * 
      * <p>
-     * Usage examples:
+     * 用法示例：
      * <pre>
      * V element = deque.move(DequeMoveArgs.pollLast()
      *                                 .addFirstTo("deque2"));
@@ -214,10 +214,10 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      *                                 .addLastTo("deque2"));
      * </pre>
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param args - arguments object
-     * @return moved element
+     * @param args 移动参数
+     * @return 被移动的元素
      */
     Maybe<V> move(DequeMoveArgs args);
 

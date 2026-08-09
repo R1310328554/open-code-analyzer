@@ -16,16 +16,15 @@
 package org.redisson.api;
 
 /**
- * All objects that implement this interface 
- * should be destroyed via {@link #destroy()} method.
- * 
- * @author Nikita Koksharov
+ * 可销毁对象标记接口。
+ * <p>实现类在不再使用时须调用 {@link #destroy()} 释放 Redis 侧资源。
  *
+ * @author Nikita Koksharov
  */
 public interface RDestroyable {
 
     /**
-     * Destroys object when it's not necessary anymore.
+     * 在对象不再需要时销毁并释放资源。
      */
     void destroy();
     

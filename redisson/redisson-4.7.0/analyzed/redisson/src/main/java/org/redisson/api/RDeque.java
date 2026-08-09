@@ -21,67 +21,67 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * Distributed implementation of {@link java.util.Deque}
+ * {@link java.util.Deque} 的 Redis 分布式实现。
+ * <p>支持双端插入/弹出、批量 poll 及跨队列原子移动（Redis 6.2+）。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public interface RDeque<V> extends Deque<V>, RQueue<V>, RDequeAsync<V> {
 
     /**
-     * Adds element at the head of existing deque.
+     * 在已存在的双端队列队头追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the list
+     * @param elements 元素集合
+     * @return 列表长度
      */
     int addFirstIfExists(V... elements);
 
     /**
-     * Adds elements at the head of deque.
+     * 在双端队列队头批量追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the deque
+     * @param elements 元素集合
+     * @return 双端队列长度
      */
     int addFirst(V... elements);
 
     /**
-     * Adds element at the tail of existing deque.
+     * 在已存在的双端队列队尾追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the list
+     * @param elements 元素集合
+     * @return 列表长度
      */
     int addLastIfExists(V... elements);
 
     /**
-     * Adds elements at the tail of deque.
+     * 在双端队列队尾批量追加元素。
      *
-     * @param elements - elements to add
-     * @return length of the deque
+     * @param elements 元素集合
+     * @return 双端队列长度
      */
     int addLast(V... elements);
 
     /**
-     * Retrieves and removes the tail elements of this queue.
-     * Elements amount limited by <code>limit</code> param.
+     * 拉取并移除至多 limit 个队尾元素。
+     * 拉取数量受 {@code limit} 参数限制。
      *
-     * @return list of tail elements
+     * @return 队尾元素列表
      */
     List<V> pollLast(int limit);
 
     /**
-     * Retrieves and removes the head elements of this queue.
-     * Elements amount limited by <code>limit</code> param.
+     * 拉取并移除至多 limit 个队头元素。
+     * 拉取数量受 {@code limit} 参数限制。
      *
-     * @return list of head elements
+     * @return 队头元素列表
      */
     List<V> pollFirst(int limit);
 
     /**
-     * Move element from this deque to the given destination deque.
-     * Returns moved element.
+     * 将元素从本双端队列原子移动到目标队列并返回被移动元素。
+     * 
      * <p>
-     * Usage examples:
+     * 用法示例：
      * <pre>
      * V element = deque.move(DequeMoveArgs.pollLast()
      *                                 .addFirstTo("deque2"));
@@ -91,15 +91,15 @@ public interface RDeque<V> extends Deque<V>, RQueue<V>, RDequeAsync<V> {
      *                                 .addLastTo("deque2"));
      * </pre>
      * <p>
-     * Requires <b>Redis 6.2.0 and higher.</b>
+     * 需要 <b>Redis 6.2.0 及以上</b>。
      *
-     * @param args - arguments object
-     * @return moved element
+     * @param args 移动参数
+     * @return 被移动的元素
      */
     V move(DequeMoveArgs args);
 
     /**
-     * Adds object event listener
+     * 注册双端队列对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.ListAddListener
@@ -111,8 +111,8 @@ public interface RDeque<V> extends Deque<V>, RQueue<V>, RDequeAsync<V> {
      * @see org.redisson.api.DeletedObjectListener
      * @see org.redisson.api.listener.DequeAddFirstListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 

@@ -22,129 +22,128 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Async interface for Cuckoo filter ({@code CF.*} commands).
+ * 布谷鸟过滤器异步 API（{@code CF.*} 命令）。
+ * <p>各方法返回 {@link RFuture}。
  *
- * @param <V> element type
- *
+ * @param <V> 元素类型
  * @author Nikita Koksharov
- *
  */
 public interface RCuckooFilterAsync<V> extends RExpirableAsync {
 
     /**
-     * Initializes the cuckoo filter with the specified capacity.
+     * 以指定容量初始化布谷鸟过滤器。
      * <p>
      * Equivalent to {@code CF.RESERVE key capacity}.
      *
-     * @param capacity expected number of items
+     * @param capacity 预期元素数量
      * @return void
      */
     RFuture<Void> initAsync(long capacity);
 
     /**
-     * Initializes the cuckoo filter with detailed parameters.
+     * 以详细参数初始化布谷鸟过滤器。
      * <p>
      * Equivalent to {@code CF.RESERVE key capacity [BUCKETSIZE ..] [MAXITERATIONS ..] [EXPANSION ..]}.
      *
-     * @param args initialization arguments
+     * @param args 初始化/添加参数
      * @return void
      */
     RFuture<Void> initAsync(CuckooFilterInitArgs args);
 
     /**
-     * Adds an element to the filter.
-     * Allows adding the same element multiple times.
+     * 向过滤器添加元素。
+     * 允许重复添加同一元素。
      * <p>
      * Equivalent to {@code CF.ADD}.
      *
-     * @param element element to add
+     * @param element 元素
      * @return {@code true} if the element was successfully added
      */
     RFuture<Boolean> addAsync(V element);
 
     /**
-     * Adds elements in bulk with optional capacity and noCreate control.
-     * Returns the set of elements that were successfully added.
+     * 批量添加元素，可选容量与 noCreate 控制。
+     * 返回成功添加的元素集合。
      * <p>
      * Equivalent to {@code CF.INSERT}.
      *
-     * @param args add arguments containing items and optional parameters
-     * @return set of elements successfully added
+     * @param args 初始化/添加参数
+     * @return 元素集合
      */
     RFuture<Set<V>> addAsync(CuckooFilterAddArgs<V> args);
 
     /**
-     * Adds an element only if it does not already exist in the filter.
+     * 仅当元素可能不存在时添加（ADDNX）。
      * <p>
      * Equivalent to {@code CF.ADDNX}.
      *
-     * @param element element to add
+     * @param element 元素
      * @return {@code true} if the element was added,
      *         {@code false} if it may already exist
      */
     RFuture<Boolean> addIfAbsentAsync(V element);
 
     /**
-     * Adds elements in bulk only if they do not already exist.
-     * Returns the set of elements that were successfully added.
+     * 批量添加可能不存在的元素（INSERTNX）。
+     * 返回成功添加的元素集合。
      * <p>
      * Equivalent to {@code CF.INSERTNX}.
      *
-     * @param args add arguments containing items and optional parameters
-     * @return set of elements that were newly added
+     * @param args 初始化/添加参数
+     * @return 元素集合
      */
     RFuture<Set<V>> addIfAbsentAsync(CuckooFilterAddArgs<V> args);
 
     /**
-     * Checks if an element may exist in the filter.
+     * 探测元素是否可能存在（允许假阳性）。
      * <p>
      * Equivalent to {@code CF.EXISTS}.
      *
-     * @param element element to check
+     * @param element 元素
      * @return {@code true} if the element may exist,
      *         {@code false} if it definitely does not
      */
     RFuture<Boolean> existsAsync(V element);
 
     /**
-     * Checks multiple elements for existence.
-     * Returns the set of elements that may exist in the filter.
+     * 批量探测多个元素是否可能存在。
+     * 返回可能存在（假阳性）的元素集合。
      * <p>
      * Equivalent to {@code CF.MEXISTS}.
      *
-     * @param elements elements to check
-     * @return set of elements that may exist
+     * @param elements 元素集合
+     * @return 元素集合
      */
     RFuture<Set<V>> existsAsync(Collection<V> elements);
 
     /**
-     * Removes an element from the filter.
+     * 从过滤器删除元素。
      * <p>
      * Equivalent to {@code CF.DEL}.
      *
-     * @param element element to remove
+     * @param element 元素
      * @return {@code true} if the element was found and removed,
      *         {@code false} if the element was not found
      */
     RFuture<Boolean> removeAsync(V element);
 
     /**
-     * Returns the approximate count of times an element
-     * may be in the filter.
+     * 返回元素在过滤器中的近似出现次数。
+     * 在过滤器中的近似出现次数。
      * <p>
      * Equivalent to {@code CF.COUNT}.
      *
-     * @param element element to count
-     * @return approximate count
+     * @param element 元素
+     * @return 近似出现次数
      */
     RFuture<Long> countAsync(V element);
 
     /**
-     * Returns filter information.
+     * 返回过滤器统计信息。
      * <p>
      * Equivalent to {@code CF.INFO}.
      *
-     * @return filter information
+     * @return 过滤器信息
      */
     RFuture<CuckooFilterInfo> getInfoAsync();
 }

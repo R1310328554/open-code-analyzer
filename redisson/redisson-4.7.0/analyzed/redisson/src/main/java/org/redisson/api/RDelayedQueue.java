@@ -18,32 +18,32 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Instead, use the {@link RReliableQueue} object with delay feature.
+ * 已废弃：请改用支持延迟投递的 {@link RReliableQueue}。
+ * <p>元素在指定延迟后从本队列转入关联的目标队列。
  *
  * @author Nikita Koksharov
- *
- * @param <V> value type
+ * @param <V> 元素类型
  */
 @Deprecated
 public interface RDelayedQueue<V> extends RQueue<V>, RDestroyable {
 
     /**
-     * Inserts element into this queue with 
-     * specified transfer delay to destination queue.
+     * 将元素放入本延迟队列，并指定
+     * 指定延迟后转入目标队列。
      * 
-     * @param e the element to add
-     * @param delay for transition
-     * @param timeUnit for delay
+     * @param e 待添加元素
+     * @param delay 转移延迟
+     * @param timeUnit 延迟时间单位
      */
     void offer(V e, long delay, TimeUnit timeUnit);
     
     /**
-     * Inserts element into this queue with 
-     * specified transfer delay to destination queue.
+     * 将元素放入本延迟队列，并指定
+     * 指定延迟后转入目标队列。
      * 
-     * @param e the element to add
-     * @param delay for transition
-     * @param timeUnit for delay
+     * @param e 待添加元素
+     * @param delay 转移延迟
+     * @param timeUnit 延迟时间单位
      * @return void
      */
     RFuture<Void> offerAsync(V e, long delay, TimeUnit timeUnit);

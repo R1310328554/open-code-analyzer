@@ -18,18 +18,15 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Async interface of Redis based {@link java.util.concurrent.CountDownLatch}
- *
- * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
- * count can be set via {@link #trySetCountAsync} method.
+ * 基于 Redis 的 {@link RCountDownLatch} 异步 API。
+ * <p>各方法返回 {@link RFuture}；可通过 {@link #trySetCountAsync} 设置计数。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RCountDownLatchAsync extends RObjectAsync {
 
     /**
-     * Waits until counter reach zero.
+     * 阻塞等待计数归零。
      *
      * @return void
      *
@@ -37,37 +34,37 @@ public interface RCountDownLatchAsync extends RObjectAsync {
     RFuture<Void> awaitAsync();
 
     /**
-     * Waits until counter reach zero or up to defined <code>timeout</code>.
+     * 阻塞等待计数归零，或在指定超时内返回。
      *
-     * @param waitTime the maximum time to wait
-     * @param unit the time unit
-     * @return <code>true</code> if the count reached zero and <code>false</code>
+     * @param waitTime 最长等待时间
+     * @param unit 时间单位
+     * @return 见方法说明
      *         if timeout reached before the count reached zero
      */
     RFuture<Boolean> awaitAsync(long waitTime, TimeUnit unit);
 
     /**
-     * Decrements the counter of the latch.
-     * Notifies all waiting threads when count reaches zero.
+     * 递减闭锁计数；归零时唤醒等待者。
+     * 计数归零时唤醒所有等待线程。
      * 
      * @return void
      */
     RFuture<Void> countDownAsync();
 
     /**
-     * Returns value of current count.
+     * 返回当前计数值。
      *
-     * @return the current count
+     * @return 当前计数
      */
     RFuture<Long> getCountAsync();
 
     /**
-     * Sets new count value only if previous count already has reached zero
-     * or is not set at all.
+     * 仅当前计数已归零或未初始化时设置新计数。
+     * 或尚未初始化计数。
      *
-     * @param count - number of times <code>countDown</code> must be invoked
+     * @param count 计数初始值
      *        before threads can pass through <code>await</code>
-     * @return <code>true</code> if new count setted
+     * @return 见方法说明
      *         <code>false</code> if previous count has not reached zero
      */
     RFuture<Boolean> trySetCountAsync(long count);
