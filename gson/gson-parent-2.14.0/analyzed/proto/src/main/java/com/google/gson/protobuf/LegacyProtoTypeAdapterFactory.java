@@ -47,16 +47,12 @@ import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A {@link TypeAdapterFactory} that supports the broken JSON mapping that Gson users get for
- * protobuf messages if they forget to register a proper handler such as {@link ProtoTypeAdapter}.
- * <b>This class is a migration aid.</b> If your project currently uses it, you should consider
- * migrating to {@link ProtoTypeAdapter} or similar. That does <i>change</i> the JSON encoding,
- * though, so there can be compatibility concerns.
+ * 为未注册 {@link ProtoTypeAdapter} 等正确处理器时 Gson 对 protobuf 消息产生的错误 JSON 映射提供兼容的 {@link
+ * TypeAdapterFactory}。<b>此类为迁移辅助工具。</b>若项目当前使用它，应考虑迁移至 {@link ProtoTypeAdapter} 或类似实现。迁移会<i>改变</i>
+ * JSON 编码，因此可能存在兼容性问题。
  *
- * <p>The default JSON mapping for protobuf messages is derived by examining the private fields of
- * the generated protobuf classes. That's obviously very fragile, and leads to ugly JSON that is not
- * what people would reasonably expect. For example, here is what a serialized {@code
- * .google.protobuf.Duration} might look like:
+ * <p>protobuf 消息的默认 JSON 映射来自对生成类私有字段的反射，非常脆弱，且会产生不符合预期的 JSON。例如序列化后的 {@code
+ * .google.protobuf.Duration} 可能如下：
  *
  * <pre>
  * {
@@ -66,10 +62,9 @@ import org.jspecify.annotations.Nullable;
  * }
  * </pre>
  *
- * <p>Notice the underscore at the end of each field name and the extra field {@code bitField0_}
- * whose meaning is unlikely to be obvious to typical observers.
+ * <p>注意字段名末尾的下划线，以及含义不明显的 {@code bitField0_} 额外字段。
  *
- * <p>This class does not support Java Proto Lite.
+ * <p>不支持 Java Proto Lite。
  */
 public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
   INSTANCE;
@@ -92,7 +87,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
     return adapter;
   }
 
-  // In what follows, RTAF means ReflectiveTypeAdapterFactory, which is the fallback that Gson
+  // 下文 RTAF 指 ReflectiveTypeAdapterFactory, which is the fallback that Gson
   // uses for classes that don't have an explicit TypeAdapter. When serializing or deserializing
   // a Java object, RTAF reflects on the instance fields of the object's class to determine
   // its JSON representation. To output JSON, it outputs a JSON object with one key-value
@@ -104,6 +99,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
   // Specifically, it attempts to behave the same as RTAF would when reflecting on the version of
   // proto generated code that was current in early 2026.
 
+  /** 针对具体 protobuf 消息类型的适配器。 */
   private static final class Adapter<T extends Message> extends TypeAdapter<T> {
     private final Gson gson;
     private final FieldNamingPolicy fieldNamingPolicy;
@@ -200,7 +196,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
       return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
     }
 
-    // The field `private int bitField0_` tracks presence for the first 32 fields that have
+    // 字段 bitField0_ 用前 32 个带 presence 的字段的位掩码跟踪 presence for the first 32 fields that have
     // presence, with bit 0 corresponding to the first field, and so on. The field `private int
     // bitField1_` tracks presence for the next 32 fields with presence, and so on.
     private static final Pattern BIT_FIELD_PATTERN = Pattern.compile("bitField(\\d{1,9})_");
@@ -257,7 +253,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
           builder.clearField(fieldDescriptor);
         }
       }
-      // Finally, set any string-valued oneof fields.
+      // 设置字符串类型 oneof 字段
       oneofNameToValue.forEach(
           (oneofName, value) -> {
             Integer caseNumber = oneofNameToCaseNumber.get(oneofName);
@@ -452,7 +448,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
       for (int i = 0; i < bitFieldCount; i++) {
         writeFieldName(out, "bitField" + i + "_").value(bitFields[i]);
       }
-      // Consistently with RTAF, we write all fields, regardless of presence.
+      // 与 RTAF 一致：写出所有字段，不论 presence
       List<FieldDescriptor> fields = message.getDescriptorForType().getFields();
       for (int i = 0; i < fields.size(); i++) {
         FieldDescriptor fieldDescriptor = fields.get(i);
@@ -665,6 +661,7 @@ public enum LegacyProtoTypeAdapterFactory implements TypeAdapterFactory {
     }
   }
 
+  /** 处理 Message.class 基类时的动态分发适配器。 */
   private static class DynamicAdapter extends TypeAdapter<Message> {
     private final Gson gson;
 

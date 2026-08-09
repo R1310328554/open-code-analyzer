@@ -51,19 +51,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * GSON type adapter for protocol buffers that knows how to serialize enums either by using their
- * values or their names, and also supports custom proto field names.
+ * 用于 protocol buffers 的 GSON 类型适配器，支持按枚举数值或名称序列化，并支持自定义 proto 字段名。
  *
- * <p>You can specify which case representation is used for the proto fields when writing/reading
- * the JSON payload by calling {@link Builder#setFieldNameSerializationFormat(CaseFormat,
- * CaseFormat)}.
+ * <p>可通过 {@link Builder#setFieldNameSerializationFormat(CaseFormat, CaseFormat)} 指定读写 JSON 时字段名的命名格式。
  *
- * <p>An example of default serialization/deserialization using custom proto field names is shown
- * below:
+ * <p>使用自定义 proto 字段名的默认序列化/反序列化示例：
  *
  * <pre>
  * message MyMessage {
- *   // Will be serialized as 'osBuildID' instead of the default 'osBuildId'.
+ *   // 将序列化为 'osBuildID' 而非默认的 'osBuildId'。
  *   string os_build_id = 1 [(serialized_name) = "osBuildID"];
  * }
  * </pre>
@@ -73,18 +69,17 @@ import java.util.concurrent.ConcurrentMap;
  * @author Stanley Wang
  */
 public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializer<Message> {
-  /** Determines how enum <u>values</u> should be serialized. */
+  /** 控制枚举<i>值</i>的序列化方式。 */
   public enum EnumSerialization {
     /**
-     * Serializes and deserializes enum values using their <b>number</b>. When this is used, custom
-     * value names set on enums are ignored.
+     * 使用枚举的<b>数值</b>序列化与反序列化；此时忽略枚举上的自定义值名。
      */
     NUMBER,
-    /** Serializes and deserializes enum values using their <b>name</b>. */
+    /** 使用枚举的<b>名称</b>序列化与反序列化。 */
     NAME;
   }
 
-  /** Builder for {@link ProtoTypeAdapter}s. */
+  /** {@link ProtoTypeAdapter} 的构建器。 */
   public static class Builder {
     private final Set<Extension<FieldOptions, String>> serializedNameExtensions;
     private final Set<Extension<EnumValueOptions, String>> serializedEnumValueExtensions;
@@ -111,9 +106,7 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
     }
 
     /**
-     * Sets the field names serialization format. The first parameter defines how to read the format
-     * of the proto field names you are converting to JSON. The second parameter defines which
-     * format to use when serializing them.
+     * 设置字段名序列化格式。第一个参数表示 proto 字段名的源格式，第二个参数表示写出 JSON 时使用的目标格式。
      *
      * <p>For example, if you use the following parameters: {@link CaseFormat#LOWER_UNDERSCORE},
      * {@link CaseFormat#LOWER_CAMEL}, the following conversion will occur:
@@ -216,9 +209,7 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
   }
 
   /**
-   * Creates a new {@link ProtoTypeAdapter} builder, defaulting enum serialization to {@link
-   * EnumSerialization#NAME} and converting field serialization from {@link
-   * CaseFormat#LOWER_UNDERSCORE} to {@link CaseFormat#LOWER_CAMEL}.
+   * 创建 {@link ProtoTypeAdapter} 构建器，默认枚举序列化为 {@link EnumSerialization#NAME}，字段名从 {@link CaseFormat#LOWER_UNDERSCORE} 转为 {@link CaseFormat#LOWER_CAMEL}。
    */
   public static Builder newBuilder() {
     return new Builder(EnumSerialization.NAME, CaseFormat.LOWER_UNDERSCORE, CaseFormat.LOWER_CAMEL);
@@ -295,7 +286,7 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
         throw new IllegalStateException("only generated messages are supported");
       }
 
-      // Invoke the ProtoClass.newBuilder() method
+      // 调用 ProtoClass.newBuilder()
       Message.Builder protoBuilder =
           (Message.Builder) getCachedMethod(protoClass, "newBuilder").invoke(null);
 
@@ -304,7 +295,7 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
 
       Descriptor protoDescriptor =
           (Descriptor) getCachedMethod(protoClass, "getDescriptor").invoke(null);
-      // Call setters on all of the available fields
+      // 对所有可用字段调用 setter
       for (FieldDescriptor fieldDescriptor : protoDescriptor.getFields()) {
         String jsonFieldName = getCustSerializedName(fieldDescriptor);
 
@@ -357,8 +348,7 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
   }
 
   /**
-   * Retrieves the custom field name for a given FieldDescriptor via its field options, falling back
-   * to its name as a default.
+   * 从 {@link FieldDescriptor} 的字段选项获取自定义序列化字段名，若无则使用 proto 字段名的格式转换结果。
    */
   private String getCustSerializedName(FieldDescriptor fieldDescriptor) {
     FieldOptions options = fieldDescriptor.getOptions();
@@ -374,8 +364,7 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
   }
 
   /**
-   * Retrieves the custom enum value name from the given options, and if not found, returns the
-   * specified default value.
+   * 从给定选项中获取自定义枚举值名；未找到时返回指定的默认值。
    */
   private String getCustSerializedEnumValue(EnumValueOptions options, String defaultValue) {
     for (Extension<EnumValueOptions, String> extension : serializedEnumValueExtensions) {
@@ -387,8 +376,7 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
   }
 
   /**
-   * Returns the enum value to use for serialization, depending on the value of {@link
-   * EnumSerialization} that was given to this adapter.
+   * 根据构造时指定的 {@link EnumSerialization} 返回用于序列化的枚举值表示。
    */
   private Object getEnumValue(EnumValueDescriptor enumDesc) {
     if (enumSerialization == EnumSerialization.NAME) {
@@ -399,12 +387,10 @@ public class ProtoTypeAdapter implements JsonSerializer<Message>, JsonDeserializ
   }
 
   /**
-   * Finds an enum value in the given {@link EnumDescriptor} that matches the given JSON element,
-   * either by name if the current adapter is using {@link EnumSerialization#NAME}, otherwise by
-   * number. If matching by name, it uses the extension value if it is defined, otherwise it uses
+   * 在 {@link EnumDescriptor} 中查找与 JSON 元素匹配的枚举值：{@link EnumSerialization#NAME} 时按名称（含扩展值），否则按数值。 If matching by name, it uses the extension value if it is defined, otherwise it uses
    * its default value.
    *
-   * @throws IllegalArgumentException if a matching name/number was not found
+   * @throws IllegalArgumentException 未找到匹配的名称或数值时
    */
   private EnumValueDescriptor findValueByNameAndExtension(
       EnumDescriptor desc, JsonElement jsonElement) {
