@@ -32,13 +32,19 @@ import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
- * 
+ * 全局键扫描的 RxJava3 实现，对应 {@link org.redisson.api.RKeysRx} 的流式 API。
+ * <p>
+ * 主从/集群下对每个 {@link MasterSlaveEntry} 并发 SCAN，{@link Flowable#merge} 合并；
+ * 单节点迭代器内用 {@link LongConsumer} 背压控制 emit 速率。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonKeysRx {
 
+    /** Rx 命令执行器。 */
     private final CommandRxExecutor commandExecutor;
+    /** 委托 RedissonKeys 发起 scanIteratorAsync。 */
     private final RedissonKeys instance;
 
     public RedissonKeysRx(CommandRxExecutor commandExecutor) {
@@ -50,6 +56,7 @@ public class RedissonKeysRx {
         return getKeysByPattern(null);
     }
 
+    /** 按扫描选项对每个拓扑 entry 创建 Publisher 并 merge 为统一 Flowable。 */
     public Flowable<String> getKeys(KeysScanOptions options) {
         KeysScanParams params = (KeysScanParams) options;
         List<Publisher<String>> publishers = new ArrayList<>();
@@ -71,12 +78,16 @@ public class RedissonKeysRx {
         return getKeys(KeysScanOptions.defaults().pattern(pattern).chunkSize(count));
     }
 
+    /** 单 MasterSlaveEntry 上的 SCAN 迭代：维护 cursor(nextIterPos) 与背压 requested。 */
     private Publisher<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count, RType type) {
         ReplayProcessor<String> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
 
+            /** 当前 SCAN 使用的 Redis 连接客户端（游标绑定连接）。 */
             private RedisClient client;
+            /** SCAN 游标，"0" 表示迭代结束。 */
             private String nextIterPos = "0";
+            /** 下游 request 尚未 emit 的许可数。 */
             private final AtomicLong requested = new AtomicLong();
 
             @Override
@@ -102,6 +113,7 @@ public class RedissonKeysRx {
                                 requested.decrementAndGet();
                             }
 
+                            // 游标回到 0：本 entry 扫描完成
                             if ("0".equals(nextIterPos)) {
                                 p.onComplete();
                                 return;

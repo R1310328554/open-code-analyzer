@@ -25,22 +25,31 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 
 /**
- * 
+ * {@link RBatchRx} 实现：在单次批量上下文中获取各类 Redis 结构的 Rx 视图。
+ * <p>
+ * 所有 {@code get*} 方法通过 {@link RxProxyBuilder} 将命令路由到 {@link CommandRxBatchService}，
+ * 使同一 batch 内命令合并发送；{@link #execute}/{@link #discard} 提交或丢弃批量。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonBatchRx implements RBatchRx {
 
+    /** 带过期策略结构（MapCache/SetCache 等）使用的驱逐调度器。 */
     private final EvictionScheduler evictionScheduler;
+    /** 批量 Rx 命令执行器，get* 返回的对象均经此入队。 */
     private final CommandRxBatchService executorService;
+    /** 外层 Rx 执行器，用于 execute/discard 的 flowable 包装。 */
     private final CommandRxExecutor commandExecutor;
 
+    /** 构造批量 Rx 上下文：内部创建 CommandRxBatchService 绑定 BatchOptions。 */
     public RedissonBatchRx(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandRxExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandRxBatchService(connectionManager, commandExecutor, options);
         this.commandExecutor = commandExecutor;
     }
 
+    // 以下 get* 均创建对应 Redisson 对象并用 RxProxyBuilder 暴露 Rx 接口，命令走 executorService 批量入队
     @Override
     public <V> RArrayRx<V> getArray(String name) {
         return RxProxyBuilder.create(executorService, new RedissonArray<V>(executorService, name), RArrayRx.class);
@@ -327,11 +336,13 @@ public class RedissonBatchRx implements RBatchRx {
         return RxProxyBuilder.create(executorService, new RedissonSearch(codec, executorService), RSearchRx.class);
     }
 
+    /** 执行已入队批量命令，Maybe 包装 BatchResult（无元素时 empty）。 */
     @Override
     public Maybe<BatchResult<?>> execute() {
         return commandExecutor.flowable(() -> executorService.executeAsync()).singleElement();
     }
 
+    /** 丢弃未执行的批量命令队列。 */
     @Override
     public Completable discard() {
         return commandExecutor.flowable(() -> executorService.discardAsync()).ignoreElements();

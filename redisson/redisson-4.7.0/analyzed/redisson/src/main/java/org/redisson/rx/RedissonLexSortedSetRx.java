@@ -25,18 +25,23 @@ import org.redisson.api.RLexSortedSet;
 import org.redisson.client.RedisClient;
 
 /**
- * 
+ * 字典序有序集合 {@link org.redisson.api.RLexSortedSetRx} 的 Rx 辅助实现。
+ * <p>
+ * {@link #addAll} 复用 {@link PublisherAdder}；迭代走 {@link SetRxIterator} 对 ZSET SCAN。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonLexSortedSetRx {
 
+    /** 底层 RLexSortedSet（ScoredSortedSet 字典序视图）。 */
     private final RLexSortedSet instance;
     
     public RedissonLexSortedSetRx(RLexSortedSet instance) {
         this.instance = instance;
     }
 
+    /** 将 Publisher 中字符串批量 addAsync 到集合。 */
     public Single<Boolean> addAll(Publisher<? extends String> c) {
         return new PublisherAdder<String>() {
             @Override
@@ -46,6 +51,7 @@ public class RedissonLexSortedSetRx {
         }.addAll(c);
     }
     
+    /** 内部：匿名 SetRxIterator 按 pattern/count SCAN 成员。 */
     private Flowable<String> scanIteratorReactive(String pattern, int count) {
         return new SetRxIterator<String>() {
             @Override
@@ -55,6 +61,7 @@ public class RedissonLexSortedSetRx {
         }.create();
     }
 
+    /** 默认每批 10 条的全量成员迭代 Flowable。 */
     public Flowable<String> iterator() {
         return scanIteratorReactive(null, 10);
     }

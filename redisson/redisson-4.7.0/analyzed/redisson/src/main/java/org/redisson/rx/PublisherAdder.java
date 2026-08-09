@@ -26,15 +26,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 
+ * 将 Reactive Streams {@link Publisher} 批量写入 Redis 集合的 Rx 辅助抽象类。
+ * <p>
+ * 子类实现 {@link #add} 单条异步写入；{@link #addAll} 订阅 Publisher，
+ * 全部 add 完成后返回 {@link Single}（值为是否发生过「结构变化」，如 set 的 add 返回 true）。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public abstract class PublisherAdder<V> {
 
+    /** 子类实现：异步添加单条元素，Boolean 表示是否实际写入/改变结构。 */
     public abstract RFuture<Boolean> add(Object o);
     
+    /** 消费 Publisher 中全部元素并 add；用 values/completed 协调最后一帧 Single 发射。 */
     public Single<Boolean> addAll(Publisher<? extends V> c) {
         final Flowable<? extends V> cc = Flowable.fromPublisher(c);
         final ReplayProcessor<Boolean> p = ReplayProcessor.create();
@@ -54,6 +60,7 @@ public abstract class PublisherAdder<V> {
                     if (res) {
                         lastSize.set(true);
                     }
+                    // Publisher 已 complete 且所有 add 回调已返回：发射聚合结果
                     if (values.decrementAndGet() == 0 && completed.get()) {
                         p.onNext(lastSize.get());
                         p.onComplete();

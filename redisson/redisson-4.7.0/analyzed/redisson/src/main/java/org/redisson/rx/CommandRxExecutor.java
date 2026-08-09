@@ -25,17 +25,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * RxJava3 命令执行器接口：在 {@link CommandAsyncExecutor} 上增加 {@link Flowable} 适配。
+ * <p>
+ * {@link #flowable} 将 {@link CompletionStage} 转为背压 {@link Flowable}；
+ * {@link #create} 工厂方法返回 {@link CommandRxService} 默认实现。
  *
  * @author Nikita Koksharov
  *
  */
 public interface CommandRxExecutor extends CommandAsyncExecutor {
 
+    /** 懒执行 supplier 得到 CompletionStage，并以 Flowable 形式暴露单次结果。 */
     <R> Flowable<R> flowable(Callable<CompletionStage<R>> supplier);
 
     @Override
     CommandRxExecutor copy(ObjectParams objectParams);
 
+    /** 基于连接管理器与对象构建器创建默认 {@link CommandRxService}。 */
     static CommandRxExecutor create(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         return new CommandRxService(connectionManager, objectBuilder);
     }

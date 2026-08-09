@@ -29,6 +29,10 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * {@link CommandRxExecutor} 默认实现，继承 {@link CommandAsyncService}。
+ * <p>
+ * {@link #flowable} 在 doOnRequest 时调用 supplier，用 {@link ReplayProcessor} 发射
+ * 至多一个元素；取消订阅时 cancel 底层 CompletableFuture。
  *
  * @author Nikita Koksharov
  *
@@ -57,8 +61,10 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
         return new CommandRxService(this, objectParams);
     }
 
+    /** Request 驱动：supplier 在首次 request 时执行，结果 onNext 后 onComplete；取消则中断 future。 */
     @Override
     public <R> Flowable<R> flowable(Callable<CompletionStage<R>> supplier) {
+        // ReplayProcessor 缓存至多一个结果；futureRef 供 doOnCancel 中断
         ReplayProcessor<R> p = ReplayProcessor.create();
         AtomicReference<CompletionStage<R>> futureRef = new AtomicReference<>();
         return p.doOnRequest(t -> {
@@ -73,6 +79,7 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
 
                     future.whenComplete((res, e) -> {
                        if (e != null) {
+                           // 解包 CompletionException 以传递真实 cause
                            if (e instanceof CompletionException) {
                                e = e.getCause();
                            }

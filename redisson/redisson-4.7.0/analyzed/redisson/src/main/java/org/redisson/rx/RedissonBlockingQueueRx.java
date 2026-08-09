@@ -20,13 +20,17 @@ import org.redisson.BaseRedissonList;
 import org.redisson.api.RBlockingQueueAsync;
 
 /**
- * 
+ * 阻塞队列 {@link org.redisson.api.RBlockingQueueRx} 的 Rx 扩展，继承 {@link RedissonListRx}。
+ * <p>
+ * {@link #takeElements} 将 {@link RBlockingQueueAsync#takeAsync} 转为按 request 驱动的 Flowable。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> - value type
  */
 public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
 
+    /** 异步阻塞队列 API，takeAsync 供 ElementsStream 使用。 */
     private final RBlockingQueueAsync<V> queue;
     
     public RedissonBlockingQueueRx(RBlockingQueueAsync<V> queue) {
@@ -34,6 +38,7 @@ public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
         this.queue = queue;
     }
 
+    /** 按 downstream request 连续阻塞 take 队列元素。 */
     public Flowable<V> takeElements() {
         return ElementsStream.takeElements(queue::takeAsync);
     }

@@ -23,13 +23,19 @@ import org.redisson.api.RFuture;
 import java.nio.ByteBuffer;
 
 /**
- * 
+ * {@link org.redisson.api.RBinaryStreamRx} 的 Rx 辅助实现：二进制流异步读写。
+ * <p>
+ * 委托 {@link RedissonBinaryStream.RedissonAsynchronousByteChannel} 的 position/read/write，
+ * 通过 {@link CommandRxExecutor#flowable} 将 {@link RFuture} 转为 {@link Single}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonBinaryStreamRx {
 
+    /** Rx 命令执行器。 */
     private final CommandRxExecutor commandExecutor;
+    /** 底层异步 NIO 字节通道。 */
     private final RedissonBinaryStream.RedissonAsynchronousByteChannel channel;
 
     public RedissonBinaryStreamRx(CommandRxExecutor commandExecutor, RBinaryStream stream) {
@@ -37,6 +43,7 @@ public class RedissonBinaryStreamRx {
         channel = (RedissonBinaryStream.RedissonAsynchronousByteChannel) stream.getAsynchronousChannel();
     }
 
+    /** 当前读写字节偏移量。 */
     public long position() {
         return channel.position();
     }
@@ -45,10 +52,12 @@ public class RedissonBinaryStreamRx {
         channel.position(newPosition);
     }
 
+    /** 异步读入 buf，Single 值为实际读取字节数。 */
     public Single<Integer> read(ByteBuffer buf) {
         return commandExecutor.flowable(() -> ((RFuture<Integer>) channel.read(buf))).singleOrError();
     }
 
+    /** 异步写出 buf，Single 值为实际写入字节数。 */
     public Single<Integer> write(ByteBuffer buf) {
         return commandExecutor.flowable(() -> ((RFuture<Integer>) channel.write(buf))).singleOrError();
     }

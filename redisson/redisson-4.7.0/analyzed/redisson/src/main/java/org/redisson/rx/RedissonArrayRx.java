@@ -21,10 +21,10 @@ import org.redisson.api.RArray;
 import org.redisson.api.array.ArrayEntry;
 
 /**
- * RxJava3 facade backing the streaming methods of {@link org.redisson.api.RArrayRx}.
+ * {@link org.redisson.api.RArrayRx} 流式方法的 RxJava3 门面实现。
  * <p>
- * Only the methods declared here override the generic async-to-rx proxy; the rest of
- * the interface is served by mapping to the corresponding {@code *Async} methods.
+ * 仅此处声明的方法覆盖通用 async→rx 代理；接口其余方法仍映射到对应 {@code *Async}。
+ * {@link #iterator} 通过 {@link ArrayEntryRxIteratorConsumer} 提供背压 {@link Publisher}。
  *
  * @author Nikita Koksharov
  *
@@ -32,6 +32,7 @@ import org.redisson.api.array.ArrayEntry;
  */
 public class RedissonArrayRx<V> {
 
+    /** 被包装的同步/异步 RArray 实例。 */
     private final RArray<V> instance;
 
     public RedissonArrayRx(RArray<V> instance) {
@@ -42,6 +43,7 @@ public class RedissonArrayRx<V> {
         return iterator(10);
     }
 
+    /** 返回带背压的 ArrayEntry 迭代 Publisher，count 为 ARSCAN 分页大小。 */
     public Publisher<ArrayEntry<V>> iterator(int count) {
         ReplayProcessor<ArrayEntry<V>> p = ReplayProcessor.create();
         return p.doOnRequest(new ArrayEntryRxIteratorConsumer<>(p, instance, count));

@@ -35,19 +35,26 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 
+ * RxJava 批量命令服务：在 {@link CommandRxService} 之上委托 {@link CommandBatchService}。
+ * <p>
+ * {@link #flowable} 对 supplier 做单次触发并立即 subscribe，使批量命令在订阅时入队；
+ * {@link #executeAsync}/{@link #discardAsync} 走底层 batch 执行/丢弃。
+ *
  * @author Nikita Koksharov
  *
  */
 public class CommandRxBatchService extends CommandRxService implements BatchService {
 
+    /** 底层异步批量命令实现，ReferenceType 为 RXJAVA。 */
     private final CommandBatchService batchService;
 
+    /** 包装 executor 为 CommandBatchService，并继承 CommandRxService 的 Rx 能力。 */
     CommandRxBatchService(ConnectionManager connectionManager, CommandAsyncExecutor executor, BatchOptions options) {
         super(connectionManager, executor.getObjectBuilder());
         batchService = new CommandBatchService(executor, options, RedissonObjectBuilder.ReferenceType.RXJAVA);
     }
     
+    /** 批量模式下 flowable：AtomicBoolean 保证 supplier 仅调用一次，并 eager subscribe 触发入队。 */
     @Override
     public <R> Flowable<R> flowable(Callable<CompletionStage<R>> supplier) {
         Flowable<R> flowable = super.flowable(new Callable<CompletionStage<R>>() {
@@ -55,6 +62,7 @@ public class CommandRxBatchService extends CommandRxService implements BatchServ
             final AtomicBoolean lock = new AtomicBoolean();
             @Override
             public RFuture<R> call() throws Exception {
+                // 仅首个订阅路径执行 supplier，结果 transfer 到共享 CompletableFuture
                 if (lock.compareAndSet(false, true)) {
                     transfer(supplier.call().toCompletableFuture(), future);
                 }
@@ -76,6 +84,7 @@ public class CommandRxBatchService extends CommandRxService implements BatchServ
         return batchService.async(readOnlyMode, nodeSource, codec, command, params, ignoreRedirect, noRetry);
     }
 
+    /** 提交并执行已入队的批量命令，返回各命令结果。 */
     public RFuture<BatchResult<?>> executeAsync() {
         return batchService.executeAsync();
     }
@@ -85,6 +94,7 @@ public class CommandRxBatchService extends CommandRxService implements BatchServ
         return false;
     }
 
+    /** 丢弃尚未执行的批量命令队列。 */
     public RFuture<Void> discardAsync() {
         return batchService.discardAsync();
     }
