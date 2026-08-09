@@ -52,30 +52,25 @@ import org.springframework.core.metrics.ApplicationStartup;
 import org.springframework.util.Assert;
 
 /**
- * Generic ApplicationContext implementation that holds a single internal
- * {@link org.springframework.beans.factory.support.DefaultListableBeanFactory}
- * instance and does not assume a specific bean definition format. Implements
- * the {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
- * interface in order to allow for applying any bean definition readers to it.
+ * 通用 ApplicationContext 实现，持有单一内部
+ * {@link org.springframework.beans.factory.support.DefaultListableBeanFactory} 实例，
+ * 不假定特定 bean 定义格式；实现
+ * {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}，
+ * 以便对其应用任意 bean 定义读取器。
  *
- * <p>Typical usage is to register a variety of bean definitions via the
+ * <p>典型用法：通过
  * {@link org.springframework.beans.factory.support.BeanDefinitionRegistry}
- * interface and then call {@link #refresh()} to initialize those beans
- * with application context semantics (handling
- * {@link org.springframework.context.ApplicationContextAware}, auto-detecting
- * {@link org.springframework.beans.factory.config.BeanFactoryPostProcessor BeanFactoryPostProcessors},
- * etc).
+ * 注册多种 bean 定义，再调用 {@link #refresh()} 以应用上下文语义初始化
+ * （处理 {@link org.springframework.context.ApplicationContextAware}、
+ * 自动检测 {@link org.springframework.beans.factory.config.BeanFactoryPostProcessor BeanFactoryPostProcessors} 等）。
  *
- * <p>In contrast to other ApplicationContext implementations that create a new
- * internal BeanFactory instance for each refresh, the internal BeanFactory of
- * this context is available right from the start, to be able to register bean
- * definitions on it. {@link #refresh()} may only be called once.
+ * <p>与其他每次 refresh 都创建新内部 BeanFactory 的实现不同，
+ * 本上下文的内部 BeanFactory 从一开始就可用，便于注册 bean 定义；
+ * {@link #refresh()} 只能调用一次。
  *
- * <p>This ApplicationContext implementation is suitable for Ahead of Time
- * processing, using {@link #refreshForAotProcessing} as an alternative to the
- * regular {@link #refresh()}.
+ * <p>本实现适用于 AOT 处理，可用 {@link #refreshForAotProcessing} 替代常规 {@link #refresh()}。
  *
- * <p>Usage example:
+ * <p>用法示例：
  *
  * <pre class="code">
  * GenericApplicationContext ctx = new GenericApplicationContext();
@@ -86,13 +81,10 @@ import org.springframework.util.Assert;
  * MyBean myBean = (MyBean) ctx.getBean("myBean");
  * ...</pre>
  *
- * For the typical case of XML bean definitions, you may also use
- * {@link ClassPathXmlApplicationContext} or {@link FileSystemXmlApplicationContext},
- * which are easier to set up - but less flexible, since you can just use standard
- * resource locations for XML bean definitions, rather than mixing arbitrary bean
- * definition formats. For a custom application context implementation supposed to
- * read a specific bean definition format in a refreshable manner, consider
- * deriving from the {@link AbstractRefreshableApplicationContext} base class.
+ * <p>对于典型 XML bean 定义，也可使用更易配置的
+ * {@link ClassPathXmlApplicationContext} 或 {@link FileSystemXmlApplicationContext}，
+ * 但灵活性较低。若要可 refresh 地读取特定定义格式的自定义实现，
+ * 可考虑继承 {@link AbstractRefreshableApplicationContext}。
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -115,7 +107,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 
 
 	/**
-	 * Create a new GenericApplicationContext.
+	 * 创建新的 GenericApplicationContext。
 	 * @see #registerBeanDefinition
 	 * @see #refresh
 	 */
@@ -135,7 +127,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 	}
 
 	/**
-	 * Create a new GenericApplicationContext with the given parent.
+	 * 使用给定父级创建新的 GenericApplicationContext。
 	 * @param parent the parent application context
 	 * @see #registerBeanDefinition
 	 * @see #refresh
@@ -407,13 +399,22 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 		if (logger.isDebugEnabled()) {
 			logger.debug("Preparing bean factory for AOT processing");
 		}
+		// 1) 准备 refresh：启动时间、活动标志、Environment 校验、早期事件缓冲
+		// 1) 标准 refresh 准备
 		prepareRefresh();
+		// 2) 子类刷新内部 BeanFactory（加载配置定义）
+		// 2) 确保 BeanFactory 就绪
 		obtainFreshBeanFactory();
+		// 3) 配置工厂标准特性
 		prepareBeanFactory(this.beanFactory);
 		postProcessBeanFactory(this.beanFactory);
+		// 4) 仅执行工厂级后置处理器
 		invokeBeanFactoryPostProcessors(this.beanFactory);
+		// 5) 冻结配置
 		this.beanFactory.freezeConfiguration();
+		// 6) 合并定义后处理
 		PostProcessorRegistrationDelegate.invokeMergedBeanDefinitionPostProcessors(this.beanFactory);
+		// 7) 预解析类型以生成代理 hint
 		preDetermineBeanTypes(runtimeHints);
 	}
 
@@ -426,7 +427,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 		List<String> singletons = new ArrayList<>();
 		List<String> lazyBeans = new ArrayList<>();
 
-		// First round: pre-registered singleton instances, if any.
+		// 第一轮：已预注册的单例实例（若有）
 		for (String beanName : this.beanFactory.getSingletonNames()) {
 			Class<?> beanType = this.beanFactory.getType(beanName);
 			if (beanType != null) {
@@ -439,7 +440,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 				PostProcessorRegistrationDelegate.loadBeanPostProcessors(
 						this.beanFactory, SmartInstantiationAwareBeanPostProcessor.class);
 
-		// Second round: non-lazy singleton beans in definition order,
+		// 第二轮：按定义顺序的非懒加载单例，
 		// matching preInstantiateSingletons.
 		for (String beanName : this.beanFactory.getBeanDefinitionNames()) {
 			if (!singletons.contains(beanName)) {
@@ -453,7 +454,7 @@ public class GenericApplicationContext extends AbstractApplicationContext implem
 			}
 		}
 
-		// Third round: lazy singleton beans and scoped beans.
+		// 第三轮：懒加载单例与作用域 bean
 		for (String beanName : lazyBeans) {
 			preDetermineBeanType(beanName, bpps, runtimeHints);
 		}

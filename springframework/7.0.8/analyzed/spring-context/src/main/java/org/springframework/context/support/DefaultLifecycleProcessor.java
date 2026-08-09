@@ -57,30 +57,18 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class DefaultLifecycleProcessor — 意图说明
-
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/context/support/DefaultLifecycleProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Spring's default implementation of the {@link LifecycleProcessor} strategy.
+ * {@link LifecycleProcessor} 策略的 Spring 默认实现。
  *
- * <p>Provides interaction with {@link Lifecycle} and {@link SmartLifecycle} beans in
- * groups for specific phases, on startup/shutdown as well as for explicit start/stop
- * interactions on a {@link org.springframework.context.ConfigurableApplicationContext}.
+ * <p>按阶段分组与 {@link Lifecycle}、{@link SmartLifecycle} bean 交互，
+ * 用于启动/关闭以及在 {@link org.springframework.context.ConfigurableApplicationContext} 上的显式 start/stop。
  *
- * <p>As of 6.1, this also includes support for JVM checkpoint/restore (Project CRaC)
- * when the {@code org.crac:crac} dependency is on the classpath. All running beans
- * will get stopped and restarted according to the CRaC checkpoint/restore callbacks.
+ * <p>自 6.1 起，当类路径存在 {@code org.crac:crac} 依赖时，还支持 JVM checkpoint/restore（Project CRaC）。
+ * 所有运行中的 bean 将按 CRaC 回调停止并重启。
  *
- * <p>As of 6.2, this processor can be configured with custom timeouts for specific
- * shutdown phases, applied to {@link SmartLifecycle#stop(Runnable)} implementations.
- * As of 6.2.6, there is also support for the concurrent startup of specific phases
- * with individual timeouts, triggering the {@link SmartLifecycle#start()} callbacks
- * of all associated beans asynchronously and then waiting for all of them to return,
- * as an alternative to the default sequential startup of beans without a timeout.
+ * <p>自 6.2 起，可为特定关闭阶段配置自定义超时，应用于 {@link SmartLifecycle#stop(Runnable)} 实现。
+ * 自 6.2.6 起，还支持特定阶段的并发启动（各阶段独立超时）：异步触发关联 bean 的
+ * {@link SmartLifecycle#start()} 回调并等待全部完成，作为默认无超时的顺序启动的替代方案。
  *
  * @author Mark Fisher
  * @author Juergen Hoeller
@@ -92,7 +80,6 @@ class DefaultLifecycleProcessor — 意图说明
  */
 public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactoryAware {
 
-	// [OCA] 字段 `CHECKPOINT_PROPERTY_NAME`：类成员状态。
 	/**
 	 * Property name for a common context checkpoint: {@value}.
 	 * @since 6.1
@@ -101,7 +88,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	 */
 	public static final String CHECKPOINT_PROPERTY_NAME = "spring.context.checkpoint";
 
-	// [OCA] 字段 `EXIT_PROPERTY_NAME`：类成员状态。
 	/**
 	 * Property name for terminating the JVM when the context reaches a specific phase: {@value}.
 	 * @since 6.1
@@ -109,7 +95,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	 */
 	public static final String EXIT_PROPERTY_NAME = "spring.context.exit";
 
-	// [OCA] 字段 `ON_REFRESH_VALUE`：类成员状态。
 	/**
 	 * Recognized value for the context checkpoint and exit properties: {@value}.
 	 * @since 6.1
@@ -119,27 +104,20 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	public static final String ON_REFRESH_VALUE = "onRefresh";
 
 
-	// [OCA] 字段 `checkpointOnRefresh`：类成员状态。
 	private static boolean checkpointOnRefresh =
 			ON_REFRESH_VALUE.equalsIgnoreCase(SpringProperties.getProperty(CHECKPOINT_PROPERTY_NAME));
 
-	// [OCA] 字段 `exitOnRefresh`：类成员状态。
 	private static final boolean exitOnRefresh =
 			ON_REFRESH_VALUE.equalsIgnoreCase(SpringProperties.getProperty(EXIT_PROPERTY_NAME));
 
-	// [OCA] 字段 `logger`：类成员状态。
 	private final Log logger = LogFactory.getLog(getClass());
 
-	// [OCA] 字段 `concurrentStartupForPhases`：类成员状态。
 	private final Map<Integer, Long> concurrentStartupForPhases = new ConcurrentHashMap<>();
 
-	// [OCA] 字段 `timeoutsForShutdownPhases`：类成员状态。
 	private final Map<Integer, Long> timeoutsForShutdownPhases = new ConcurrentHashMap<>();
 
-	// [OCA] 字段 `timeoutPerShutdownPhase`：类成员状态。
 	private volatile long timeoutPerShutdownPhase = 10000;
 
-	// [OCA] 字段 `running`：类成员状态。
 	private volatile boolean running;
 
 	private volatile @Nullable ConfigurableListableBeanFactory beanFactory;
@@ -286,11 +264,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	 * will be started before the dependent bean regardless of the declared phase.
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 start — 意图与阅读要点
-
-方法 `start` 复杂度较高（CCN≈10, NLOC≈29）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void start() {
 		this.stoppedBeans = null;
 		startBeans(false);
@@ -308,11 +281,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	 * will be stopped before the dependency bean regardless of the declared phase.
 	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 stop — 意图与阅读要点
-
-方法 `stop` 复杂度较高（CCN≈11, NLOC≈32）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void stop() {
 		stopBeans(false);
 		this.running = false;
@@ -390,12 +358,14 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	}
 
 	private void startBeans(boolean autoStartupOnly) {
+		// 1) 收集所有适用的 Lifecycle bean
 		Map<String, Lifecycle> lifecycleBeans = getLifecycleBeans();
 		Map<Integer, LifecycleGroup> phases = new TreeMap<>();
 
 		lifecycleBeans.forEach((beanName, bean) -> {
 			if (!autoStartupOnly || isAutoStartupCandidate(beanName, bean)) {
 				int startupPhase = getPhase(bean);
+				// 2) 按 phase 分组，过滤 autoStartup 候选
 				phases.computeIfAbsent(
 						startupPhase, phase -> new LifecycleGroup(phase, lifecycleBeans, autoStartupOnly, false))
 							.add(beanName, bean);
@@ -403,6 +373,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 		});
 
 		if (!phases.isEmpty()) {
+			// 3) 按 phase 从低到高依次启动各组
 			phases.values().forEach(LifecycleGroup::start);
 		}
 	}
@@ -413,11 +384,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 				(bean instanceof SmartLifecycle smartLifecycle && smartLifecycle.isAutoStartup()));
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 doStart — 意图与阅读要点
-
-方法 `doStart` 复杂度较高（CCN≈8, NLOC≈18）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Start the specified bean as part of the given set of Lifecycle beans,
 	 * making sure that any beans that it depends on are started first.
@@ -444,13 +410,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 doStart — 意图与阅读要点
-
-方法 `doStart` 复杂度较高（CCN≈8, NLOC≈18）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
 	private void doStart(String beanName, Lifecycle bean) {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Starting bean '" + beanName + "' of type [" + bean.getClass().getName() + "]");
@@ -473,7 +432,9 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	}
 
 	private void stopBeans(boolean pauseableOnly) {
+		// 1) 收集当前 Lifecycle bean
 		Map<String, Lifecycle> lifecycleBeans = getLifecycleBeans();
+		// 2) 按 phase 从高到低分组（与启动顺序相反）
 		Map<Integer, LifecycleGroup> phases = new TreeMap<>(Comparator.reverseOrder());
 
 		lifecycleBeans.forEach((beanName, bean) -> {
@@ -484,15 +445,11 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 		});
 
 		if (!phases.isEmpty()) {
+			// 3) 逐组停止
 			phases.values().forEach(LifecycleGroup::stop);
 		}
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 doStop — 意图与阅读要点
-
-方法 `doStop` 复杂度较高（CCN≈17, NLOC≈58）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Stop the specified bean as part of the given set of Lifecycle beans,
 	 * making sure that any beans that depends on it are stopped first.
@@ -564,11 +521,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 
 	// Overridable hooks
 
-	/* ===== [OCA 中文解析] =====
-方法 getLifecycleBeans — 意图与阅读要点
-
-方法 `getLifecycleBeans` 复杂度较高（CCN≈9, NLOC≈19）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Retrieve all applicable Lifecycle beans: all singletons that have already been created,
 	 * as well as all SmartLifecycle beans (even if they are marked as lazy-init).
@@ -600,7 +552,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	}
 
 	/**
-	 * Determine the lifecycle phase of the given bean.
+	 * 确定给定 bean 的生命周期 phase。
 	 * <p>The default implementation checks for the {@link Phased} interface, using
 	 * a default of 0 otherwise. Can be overridden to apply other/further policies.
 	 * @param bean the bean to introspect
@@ -613,13 +565,6 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class LifecycleGroup — 意图说明
-
-class `LifecycleGroup`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/support/DefaultLifecycleProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Helper class for maintaining a group of Lifecycle beans that should be started
 	 * and stopped together based on their 'phase' value (or the default value of 0).
@@ -656,13 +601,6 @@ class `LifecycleGroup`：请结合所属模块与调用方理解其在整体架�
 			}
 		}
 
-		/* ===== [OCA 中文解析] =====
-方法 start — 意图与阅读要点
-
-方法 `start` 复杂度较高（CCN≈10, NLOC≈29）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
-
 		public void start() {
 			if (this.members.isEmpty()) {
 				return;
@@ -692,13 +630,6 @@ class `LifecycleGroup`：请结合所属模块与调用方理解其在整体架�
 				}
 			}
 		}
-
-		/* ===== [OCA 中文解析] =====
-方法 stop — 意图与阅读要点
-
-方法 `stop` 复杂度较高（CCN≈11, NLOC≈32）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-		===== [OCA 中文解析结束] ===== */
 
 		public void stop() {
 			if (this.members.isEmpty()) {
@@ -737,28 +668,14 @@ class `LifecycleGroup`：请结合所属模块与调用方理解其在整体架�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-record LifecycleGroupMember — 意图说明
-
-record `LifecycleGroupMember`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/support/DefaultLifecycleProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * A simple record of a LifecycleGroup member.
+	 * LifecycleGroup 成员的简单记录。
 	 */
 	private record LifecycleGroupMember(String name, Lifecycle bean) {}
 
 
-	/* ===== [OCA 中文解析] =====
-class CracDelegate — 意图说明
-
-class `CracDelegate`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/support/DefaultLifecycleProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Inner class to avoid a hard dependency on Project CRaC at runtime.
+	 * 避免运行时硬依赖 Project CRaC 的内部类。
 	 * @since 6.1
 	 * @see org.crac.Core
 	 */
@@ -789,13 +706,6 @@ class `CracDelegate`：请结合所属模块与调用方理解其在整体架构
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class CracResourceAdapter — 意图说明
-
-class `CracResourceAdapter`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/support/DefaultLifecycleProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
 	 * Resource adapter for Project CRaC, triggering a stop-and-restart cycle
 	 * for Spring-managed lifecycle beans around a JVM checkpoint/restore.
