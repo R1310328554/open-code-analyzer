@@ -27,7 +27,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * 用于编写 {@link ClassFilter ClassFilters} 的静态实用方法。
+ * Static utility methods for composing {@link ClassFilter ClassFilters}.
+ *
  * @author Rod Johnson
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -39,10 +40,11 @@ import org.springframework.util.ObjectUtils;
 public abstract class ClassFilters {
 
 	/**
-	 * 匹配给定 ClassFilters 的 <i> 或 </i>（或两者）匹配的所有类。
-	 * @param cf1 第一个类过滤器
-	 * @param cf2 第二个类过滤器
-	 * @return 与给定 ClassFilter 匹配的所有类相匹配的不同 ClassFilter
+	 * Match all classes that <i>either</i> (or both) of the given ClassFilters matches.
+	 * @param cf1 the first ClassFilter
+	 * @param cf2 the second ClassFilter
+	 * @return a distinct ClassFilter that matches all classes that either
+	 * of the given ClassFilter matches
 	 */
 	public static ClassFilter union(ClassFilter cf1, ClassFilter cf2) {
 		Assert.notNull(cf1, "First ClassFilter must not be null");
@@ -51,9 +53,10 @@ public abstract class ClassFilters {
 	}
 
 	/**
-	 * 匹配给定 ClassFilters 的 <i> 或 </i>（或全部）匹配的所有类。
-	 * @param classFilters 要匹配的 ClassFilters
-	 * @return 与给定 ClassFilter 匹配的所有类相匹配的不同 ClassFilter
+	 * Match all classes that <i>either</i> (or all) of the given ClassFilters matches.
+	 * @param classFilters the ClassFilters to match
+	 * @return a distinct ClassFilter that matches all classes that either
+	 * of the given ClassFilter matches
 	 */
 	public static ClassFilter union(ClassFilter[] classFilters) {
 		Assert.notEmpty(classFilters, "ClassFilter array must not be empty");
@@ -61,10 +64,11 @@ public abstract class ClassFilters {
 	}
 
 	/**
-	 * 匹配给定 ClassFilters 的 <i>both</i> 匹配的所有类。
-	 * @param cf1 第一个类过滤器
-	 * @param cf2 第二个类过滤器
-	 * @return 与给定 ClassFilter 匹配的所有类相匹配的不同 ClassFilter
+	 * Match all classes that <i>both</i> of the given ClassFilters match.
+	 * @param cf1 the first ClassFilter
+	 * @param cf2 the second ClassFilter
+	 * @return a distinct ClassFilter that matches all classes that both
+	 * of the given ClassFilter match
 	 */
 	public static ClassFilter intersection(ClassFilter cf1, ClassFilter cf2) {
 		Assert.notNull(cf1, "First ClassFilter must not be null");
@@ -73,9 +77,10 @@ public abstract class ClassFilters {
 	}
 
 	/**
-	 * 匹配给定 ClassFilters 的 <i>all</i> 匹配的所有类。
-	 * @param classFilters 要匹配的 ClassFilters
-	 * @return 与给定 ClassFilter 匹配的所有类相匹配的不同 ClassFilter
+	 * Match all classes that <i>all</i> of the given ClassFilters match.
+	 * @param classFilters the ClassFilters to match
+	 * @return a distinct ClassFilter that matches all classes that both
+	 * of the given ClassFilter match
 	 */
 	public static ClassFilter intersection(ClassFilter[] classFilters) {
 		Assert.notEmpty(classFilters, "ClassFilter array must not be empty");
@@ -83,9 +88,10 @@ public abstract class ClassFilters {
 	}
 
 	/**
-	 * 返回表示指定过滤器实例的逻辑非的类过滤器。
-	 * @param classFilter 要否定的 {@link ClassFilter}
-	 * @return 表示指定过滤器的逻辑非的过滤器
+	 * Return a class filter that represents the logical negation of the specified
+	 * filter instance.
+	 * @param classFilter the {@link ClassFilter} to negate
+	 * @return a filter that represents the logical negation of the specified filter
 	 * @since 6.1
 	 */
 	public static ClassFilter negate(ClassFilter classFilter) {
@@ -95,7 +101,7 @@ public abstract class ClassFilters {
 
 
 	/**
-	 * 给定 ClassFilter 联合的 ClassFilter 实现。
+	 * ClassFilter implementation for a union of the given ClassFilters.
 	 */
 	@SuppressWarnings("serial")
 	private static class UnionClassFilter implements ClassFilter, Serializable {
@@ -135,7 +141,7 @@ public abstract class ClassFilters {
 
 
 	/**
-	 * 给定 ClassFilter 交集的 ClassFilter 实现。
+	 * ClassFilter implementation for an intersection of the given ClassFilters.
 	 */
 	@SuppressWarnings("serial")
 	private static class IntersectionClassFilter implements ClassFilter, Serializable {
@@ -175,7 +181,7 @@ public abstract class ClassFilters {
 
 
 	/**
-	 * ClassFilter 实现给定 ClassFilter 的逻辑非。
+	 * ClassFilter implementation for a logical negation of the given ClassFilter.
 	 */
 	@SuppressWarnings("serial")
 	private static class NegateClassFilter implements ClassFilter, Serializable {

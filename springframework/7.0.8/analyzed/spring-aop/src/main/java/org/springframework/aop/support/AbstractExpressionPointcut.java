@@ -21,7 +21,9 @@ import java.io.Serializable;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 表达式切入点的抽象超类，提供位置和表达式属性。
+ * Abstract superclass for expression pointcuts,
+ * offering location and expression properties.
+ *
  * @author Rod Johnson
  * @author Rob Harrop
  * @since 2.0
@@ -31,38 +33,35 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings("serial")
 public abstract class AbstractExpressionPointcut implements ExpressionPointcut, Serializable {
 
-	/** `location`：该类的成员状态。 */
 	private @Nullable String location;
 
-	/** `expression`：该类的成员状态。 */
 	private @Nullable String expression;
 
 
 	/**
-	 * 设置调试位置。
+	 * Set the location for debugging.
 	 */
 	public void setLocation(@Nullable String location) {
 		this.location = location;
 	}
 
 	/**
-	 * 返回有关切入点表达式的位置信息（如果可用）。这在调试时很有用。
-	 * @return 作为人类可读字符串的信息，或 {@code null}（如果没有可用的）
+	 * Return location information about the pointcut expression
+	 * if available. This is useful in debugging.
+	 * @return location information as a human-readable String,
+	 * or {@code null} if none is available
 	 */
 	public @Nullable String getLocation() {
 		return this.location;
 	}
 
-	/**
-	 * 设置 Expression（`Expression`）。
-	 */
 	public void setExpression(@Nullable String expression) {
 		this.expression = expression;
 		try {
 			onSetExpression(expression);
 		}
 		catch (IllegalArgumentException ex) {
-			// 如果可能，请填写位置信息。
+			// Fill in location information if possible.
 			if (this.location != null) {
 				throw new IllegalArgumentException("Invalid expression at location [" + this.location + "]: " + ex);
 			}
@@ -73,16 +72,18 @@ public abstract class AbstractExpressionPointcut implements ExpressionPointcut, 
 	}
 
 	/**
-	 * 当设置新的切入点表达式时调用。如果可能的话，应该在此时解析表达式。 <p>这个实现是空的。
-	 * @param expression 要设置的表达式
-	 * @throws IllegalArgumentException 如果表达式无效
+	 * Called when a new pointcut expression is set.
+	 * The expression should be parsed at this point if possible.
+	 * <p>This implementation is empty.
+	 * @param expression the expression to set
+	 * @throws IllegalArgumentException if the expression is invalid
 	 * @see #setExpression
 	 */
 	protected void onSetExpression(@Nullable String expression) throws IllegalArgumentException {
 	}
 
 	/**
-	 * 返回此切入点的表达式。
+	 * Return this pointcut's expression.
 	 */
 	@Override
 	public @Nullable String getExpression() {

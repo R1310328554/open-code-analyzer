@@ -26,8 +26,10 @@ import org.springframework.core.Ordered;
 import org.springframework.util.ObjectUtils;
 
 /**
- * {@link org.springframework.aop.PointcutAdvisor}
- * 实现的抽象基类。可以进行子类化以返回特定的切入点/建议或可自由配置的切入点/建议。
+ * Abstract base class for {@link org.springframework.aop.PointcutAdvisor}
+ * implementations. Can be subclassed for returning a specific pointcut/advice
+ * or a freely configurable pointcut/advice.
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 1.1.2
@@ -36,20 +38,13 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public abstract class AbstractPointcutAdvisor implements PointcutAdvisor, Ordered, Serializable {
 
-	/** `order`：该类的成员状态。 */
 	private @Nullable Integer order;
 
 
-	/**
-	 * 设置 Order（`Order`）。
-	 */
 	public void setOrder(int order) {
 		this.order = order;
 	}
 
-	/**
-	 * 获取 Order（`Order`）。
-	 */
 	@Override
 	public int getOrder() {
 		if (this.order != null) {
@@ -63,9 +58,6 @@ public abstract class AbstractPointcutAdvisor implements PointcutAdvisor, Ordere
 	}
 
 
-	/**
-	 * 比较是否相等。
-	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof PointcutAdvisor otherAdvisor &&
@@ -73,9 +65,6 @@ public abstract class AbstractPointcutAdvisor implements PointcutAdvisor, Ordere
 				ObjectUtils.nullSafeEquals(getPointcut(), otherAdvisor.getPointcut())));
 	}
 
-	/**
-	 * 判断是否包含/具备 h Code。
-	 */
 	@Override
 	public int hashCode() {
 		return PointcutAdvisor.class.hashCode();

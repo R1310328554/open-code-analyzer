@@ -41,22 +41,17 @@ import org.springframework.javapoet.ClassName;
 import org.springframework.javapoet.CodeBlock;
 
 /**
- * {@link BeanRegistrationAotProcessor} 为 {@link ScopedProxyFactoryBean}。
+ * {@link BeanRegistrationAotProcessor} for {@link ScopedProxyFactoryBean}.
+ *
  * @author Stephane Nicoll
  * @author Phillip Webb
  * @since 6.0
  */
 class ScopedProxyBeanRegistrationAotProcessor implements BeanRegistrationAotProcessor {
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
 	private static final Log logger = LogFactory.getLog(ScopedProxyBeanRegistrationAotProcessor.class);
 
 
-	/**
-	 * 处理：Ahead Of Time（方法 `processAheadOfTime`）。
-	 */
 	@Override
 	@SuppressWarnings("NullAway") // Lambda
 	public @Nullable BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
@@ -77,17 +72,11 @@ class ScopedProxyBeanRegistrationAotProcessor implements BeanRegistrationAotProc
 		return null;
 	}
 
-	/**
-	 * 获取 Target Bean Name（`TargetBeanName`）。
-	 */
 	private @Nullable String getTargetBeanName(BeanDefinition beanDefinition) {
 		Object value = beanDefinition.getPropertyValues().get("targetBeanName");
 		return (value instanceof String targetBeanName ? targetBeanName : null);
 	}
 
-	/**
-	 * 获取 Target Bean Definition（`TargetBeanDefinition`）。
-	 */
 	private @Nullable BeanDefinition getTargetBeanDefinition(
 			ConfigurableBeanFactory beanFactory, @Nullable String targetBeanName) {
 

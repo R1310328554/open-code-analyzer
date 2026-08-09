@@ -1,6 +1,27 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 107,
+  "claimed_at": "2026-08-09T18:01:57Z",
+  "files": [
+    "docs_src/response_change_status_code/tutorial001_py310.py",
+    "docs_src/response_cookies/__init__.py",
+    "docs_src/response_cookies/tutorial001_py310.py",
+    "docs_src/response_cookies/tutorial002_py310.py",
+    "docs_src/response_directly/__init__.py",
+    "docs_src/response_directly/tutorial001_py310.py",
+    "docs_src/response_directly/tutorial002_py310.py",
+    "docs_src/response_headers/__init__.py",
+    "docs_src/response_headers/tutorial001_py310.py",
+    "docs_src/response_headers/tutorial002_py310.py",
+    "docs_src/response_model/__init__.py",
+    "docs_src/response_model/tutorial001_01_py310.py",
+    "docs_src/response_model/tutorial001_py310.py",
+    "docs_src/response_model/tutorial002_py310.py",
+    "docs_src/response_model/tutorial003_01_py310.py",
+    "docs_src/response_model/tutorial003_02_py310.py",
+    "docs_src/response_model/tutorial003_03_py310.py",
+    "docs_src/response_model/tutorial003_04_py310.py",
+    "docs_src/response_model/tutorial003_05_py310.py",
+    "docs_src/response_model/tutorial003_py310.py"
+  ],
+  "remaining_pending": 87,
   "done": 402
 }

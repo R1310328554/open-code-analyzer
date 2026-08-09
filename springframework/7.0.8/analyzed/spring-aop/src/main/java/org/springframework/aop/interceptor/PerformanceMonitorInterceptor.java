@@ -23,8 +23,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.StopWatch;
 
 /**
- * 简单的AOP联盟{@code MethodInterceptor}用于性能监控。该拦截器对拦截的方法调用没有任何影响。
- * <p> 使用 {@code StopWatch} 进行实际性能测量。
+ * Simple AOP Alliance {@code MethodInterceptor} for performance monitoring.
+ * This interceptor has no effect on the intercepted method call.
+ *
+ * <p>Uses a {@code StopWatch} for the actual performance measuring.
+ *
  * @author Rod Johnson
  * @author Dmitriy Kopylenko
  * @author Rob Harrop
@@ -34,14 +37,15 @@ import org.springframework.util.StopWatch;
 public class PerformanceMonitorInterceptor extends AbstractMonitoringInterceptor {
 
 	/**
-	 * 使用静态记录器创建一个新的 PerformanceMonitorInterceptor。
+	 * Create a new PerformanceMonitorInterceptor with a static logger.
 	 */
 	public PerformanceMonitorInterceptor() {
 	}
 
 	/**
-	 * 根据给定的标志，使用动态或静态记录器创建一个新的 PerformanceMonitorInterceptor。
-	 * @param useDynamicLogger 是否使用动态记录器或静态记录器
+	 * Create a new PerformanceMonitorInterceptor with a dynamic or static logger,
+	 * according to the given flag.
+	 * @param useDynamicLogger whether to use a dynamic logger or a static logger
 	 * @see #setUseDynamicLogger
 	 */
 	public PerformanceMonitorInterceptor(boolean useDynamicLogger) {
@@ -49,9 +53,6 @@ public class PerformanceMonitorInterceptor extends AbstractMonitoringInterceptor
 	}
 
 
-	/**
-	 * 调用：Under Trace（方法 `invokeUnderTrace`）。
-	 */
 	@Override
 	protected @Nullable Object invokeUnderTrace(MethodInvocation invocation, Log logger) throws Throwable {
 		String name = createInvocationTraceName(invocation);

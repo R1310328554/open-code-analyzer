@@ -19,7 +19,9 @@ package org.springframework.aop.support;
 import org.aopalliance.aop.Advice;
 
 /**
- * 抽象通用 {@link org.springframework.aop.PointcutAdvisor}，允许配置任何 {@link Advice}。
+ * Abstract generic {@link org.springframework.aop.PointcutAdvisor}
+ * that allows for any {@link Advice} to be configured.
+ *
  * @author Juergen Hoeller
  * @since 2.0
  * @see #setAdvice
@@ -28,29 +30,22 @@ import org.aopalliance.aop.Advice;
 @SuppressWarnings("serial")
 public abstract class AbstractGenericPointcutAdvisor extends AbstractPointcutAdvisor {
 
-	/** 通知相关状态（`EMPTY_ADVICE`）。 */
 	private Advice advice = EMPTY_ADVICE;
 
 
 	/**
-	 * 指定该顾问应采用的建议。
+	 * Specify the advice that this advisor should apply.
 	 */
 	public void setAdvice(Advice advice) {
 		this.advice = advice;
 	}
 
-	/**
-	 * 获取 Advice（`Advice`）。
-	 */
 	@Override
 	public Advice getAdvice() {
 		return this.advice;
 	}
 
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return getClass().getName() + ": advice [" + getAdvice() + "]";

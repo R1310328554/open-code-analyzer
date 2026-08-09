@@ -23,8 +23,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * 简单的 AOP 联盟 {@code MethodInterceptor}，可以在链中引入，以显示有关拦截的方法调用的详细跟踪信息，以及方法入口和方法出口信息。
- * <p>考虑使用 {@code CustomizableTraceInterceptor} 来满足更高级的需求。
+ * Simple AOP Alliance {@code MethodInterceptor} that can be introduced
+ * in a chain to display verbose trace information about intercepted method
+ * invocations, with method entry and method exit info.
+ *
+ * <p>Consider using {@code CustomizableTraceInterceptor} for more
+ * advanced needs.
+ *
  * @author Dmitriy Kopylenko
  * @author Juergen Hoeller
  * @since 1.2
@@ -34,14 +39,15 @@ import org.springframework.util.Assert;
 public class SimpleTraceInterceptor extends AbstractTraceInterceptor {
 
 	/**
-	 * 使用静态记录器创建一个新的 SimpleTraceInterceptor。
+	 * Create a new SimpleTraceInterceptor with a static logger.
 	 */
 	public SimpleTraceInterceptor() {
 	}
 
 	/**
-	 * 根据给定的标志，使用动态或静态记录器创建一个新的 SimpleTraceInterceptor。
-	 * @param useDynamicLogger 是否使用动态记录器或静态记录器
+	 * Create a new SimpleTraceInterceptor with dynamic or static logger,
+	 * according to the given flag.
+	 * @param useDynamicLogger whether to use a dynamic logger or a static logger
 	 * @see #setUseDynamicLogger
 	 */
 	public SimpleTraceInterceptor(boolean useDynamicLogger) {
@@ -49,9 +55,6 @@ public class SimpleTraceInterceptor extends AbstractTraceInterceptor {
 	}
 
 
-	/**
-	 * 调用：Under Trace（方法 `invokeUnderTrace`）。
-	 */
 	@Override
 	protected @Nullable Object invokeUnderTrace(MethodInvocation invocation, Log logger) throws Throwable {
 		String invocationDescription = getInvocationDescription(invocation);
@@ -68,9 +71,9 @@ public class SimpleTraceInterceptor extends AbstractTraceInterceptor {
 	}
 
 	/**
-	 * 返回给定方法调用的描述。
-	 * @param invocation 调用来描述
-	 * @return 描述
+	 * Return a description for the given method invocation.
+	 * @param invocation the invocation to describe
+	 * @return the description
 	 */
 	protected String getInvocationDescription(MethodInvocation invocation) {
 		Object target = invocation.getThis();
