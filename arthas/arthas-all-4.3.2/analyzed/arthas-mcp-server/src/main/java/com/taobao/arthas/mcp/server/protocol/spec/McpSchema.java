@@ -16,11 +16,12 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Based on the <a href="http://www.jsonrpc.org/specification">JSON-RPC 2.0
- * specification</a>
- * and the <a href=
- * "https://github.com/modelcontextprotocol/specification/blob/main/schema/2024-11-05/schema.ts">
- * Model Context Protocol Schema</a>.
+ * MCP 协议数据模型：基于 <a href="http://www.jsonrpc.org/specification">JSON-RPC 2.0</a>
+ * 与 <a href="https://github.com/modelcontextprotocol/specification/blob/main/schema/2024-11-05/schema.ts">
+ * MCP TypeScript Schema</a> 的 Java 映射。
+ * <p>
+ * 集中定义方法名常量、请求/响应 DTO、能力结构与任务相关类型，
+ * 供序列化、处理器分发与 Streamable HTTP 事件存储共用。
  *
  * @author Yeaury
  */
@@ -28,18 +29,21 @@ public final class McpSchema {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpSchema.class);
 
+	/** 工具类，禁止实例化。 */
 	private McpSchema() {
 	}
 
+	/** 服务端默认协商的最新 MCP 协议版本。 */
 	public static final String LATEST_PROTOCOL_VERSION = ProtocolVersions.MCP_2025_11_25;
 
+	/** JSON-RPC 协议版本字段固定值。 */
 	public static final String JSONRPC_VERSION = "2.0";
 
 	// ---------------------------
-	// Method Names
+	// 方法名常量（与 MCP 规范 method 字段一一对应）
 	// ---------------------------
 
-	// Lifecycle Methods
+	// 生命周期：initialize、initialized 通知、ping、进度通知
 	public static final String METHOD_INITIALIZE = "initialize";
 
 	public static final String METHOD_NOTIFICATION_INITIALIZED = "notifications/initialized";
@@ -48,14 +52,14 @@ public final class McpSchema {
 
 	public static final String METHOD_NOTIFICATION_PROGRESS = "notifications/progress";
 
-	// Tool Methods
+	// 工具：列表、调用及列表变更通知
 	public static final String METHOD_TOOLS_LIST = "tools/list";
 
 	public static final String METHOD_TOOLS_CALL = "tools/call";
 
 	public static final String METHOD_NOTIFICATION_TOOLS_LIST_CHANGED = "notifications/tools/list_changed";
 
-	// Resources Methods
+	// 资源：列表、读取、模板及变更通知
 	public static final String METHOD_RESOURCES_LIST = "resources/list";
 
 	public static final String METHOD_RESOURCES_READ = "resources/read";
@@ -64,39 +68,40 @@ public final class McpSchema {
 
 	public static final String METHOD_RESOURCES_TEMPLATES_LIST = "resources/templates/list";
 
-	// Prompt Methods
+	// 提示词：列表、获取及变更通知
 	public static final String METHOD_PROMPT_LIST = "prompts/list";
 
 	public static final String METHOD_PROMPT_GET = "prompts/get";
 
 	public static final String METHOD_NOTIFICATION_PROMPTS_LIST_CHANGED = "notifications/prompts/list_changed";
 
-	// Logging Methods
+	// 日志：设置级别与服务端 message 通知
 	public static final String METHOD_LOGGING_SET_LEVEL = "logging/setLevel";
 
 	public static final String METHOD_NOTIFICATION_MESSAGE = "notifications/message";
 
-	// Roots Methods
+	// 根目录：列表及变更通知
 	public static final String METHOD_ROOTS_LIST = "roots/list";
 
 	public static final String METHOD_NOTIFICATION_ROOTS_LIST_CHANGED = "notifications/roots/list_changed";
 
-	// Sampling Methods
+	// 采样：向客户端请求 LLM 补全
 	public static final String METHOD_SAMPLING_CREATE_MESSAGE = "sampling/createMessage";
 
-	// Elicitation Methods
+	// 引导：向用户收集结构化输入
 	public static final String METHOD_ELICITATION_CREATE = "elicitation/create";
 
-	// Tasks Methods
+	// 任务：列表、查询、阻塞取结果、取消及状态通知
 	public static final String METHOD_TASKS_LIST = "tasks/list";
 	public static final String METHOD_TASKS_GET = "tasks/get";
+	/** 阻塞式获取任务最终结果的方法名。 */
 	public static final String METHOD_TASKS_RESULT = "tasks/result"; // Blocking result retrieval
 	public static final String METHOD_TASKS_CANCEL = "tasks/cancel";
 	public static final String METHOD_NOTIFICATION_TASKS_STATUS = "notifications/tasks/status";
 	public static final String METHOD_NOTIFICATION_TASKS_LIST_CHANGED = "notifications/tasks/list_changed";
 
 	// ---------------------------
-	// Metadata Keys
+	// 元数据键
 	// ---------------------------
 
 	/**
@@ -111,40 +116,31 @@ public final class McpSchema {
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	// ---------------------------
-	// JSON-RPC Error Codes
+	// JSON-RPC 标准错误码
 	// ---------------------------
 	/**
-	 * Standard error codes used in MCP JSON-RPC responses.
+	 * MCP JSON-RPC 响应中使用的标准错误码。
 	 */
 	public static final class ErrorCodes {
 
-		/**
-		 * The JSON received by the server is invalid.
-		 */
+		/** 服务端收到的 JSON 无法解析。 */
 		public static final int PARSE_ERROR = -32700;
 
-		/**
-		 * The JSON sent is not a valid Request object.
-		 */
+		/** 消息不符合 JSON-RPC Request 结构。 */
 		public static final int INVALID_REQUEST = -32600;
 
-		/**
-		 * The method does not exist or is unavailable.
-		 */
+		/** 方法不存在或当前不可用。 */
 		public static final int METHOD_NOT_FOUND = -32601;
 
-		/**
-		 * Invalid method parameters.
-		 */
+		/** 方法参数无效或校验失败。 */
 		public static final int INVALID_PARAMS = -32602;
 
-		/**
-		 * Internal JSON-RPC error.
-		 */
+		/** 服务端内部错误。 */
 		public static final int INTERNAL_ERROR = -32603;
 
 	}
 
+	/** 带可选 {@code _meta} 扩展字段的请求/结果标记接口。 */
 	public interface Meta {
 
 		default Map<String, Object> meta() {
@@ -153,6 +149,7 @@ public final class McpSchema {
 
 	}
 
+	/** MCP 请求参数标记：可携带 progressToken 等元数据。 */
 	public interface Request extends Meta {
 
 		default Object progressToken() {
@@ -164,13 +161,16 @@ public final class McpSchema {
 		}
 	}
 
+	/** MCP 响应结果标记接口。 */
 	public interface Result extends Meta {
 	}
 
 
+	/** 服务端任务类方法的 result 标记（如 tools/call 返回任务句柄）。 */
 	public interface ServerTaskPayloadResult extends Result {
 	}
 
+	/** 客户端任务类方法的 result 标记。 */
 	public interface ClientTaskPayloadResult extends Result {
 	}
 
@@ -178,7 +178,9 @@ public final class McpSchema {
 	};
 
 	/**
-	 * Deserializes a JSON string into a JSONRPCMessage object.
+	 * 将 JSON 文本反序列化为 {@link JSONRPCMessage} 具体子类型。
+	 * <p>
+	 * 按是否同时包含 method/id/result/error 字段区分 Request、Notification 与 Response。
 	 * 
 	 * @param objectMapper The ObjectMapper instance to use for deserialization
 	 * @param jsonText     The JSON string to deserialize
@@ -196,7 +198,7 @@ public final class McpSchema {
 
 		Map<String, Object> map = objectMapper.readValue(jsonText, MAP_TYPE_REF);
 
-		// Determine message type based on specific JSON structure
+		// 根据 JSON 字段组合判定消息类型
 		if (map.containsKey("method") && map.containsKey("id")) {
 			return objectMapper.convertValue(map, JSONRPCRequest.class);
 		} else if (map.containsKey("method") && !map.containsKey("id")) {
@@ -209,15 +211,17 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// JSON-RPC Message Types
+	// JSON-RPC 消息类型
 	// ---------------------------
 
+	/** 所有 JSON-RPC 消息的公共标记（含 jsonrpc 版本字段）。 */
 	public interface JSONRPCMessage {
 		String getJsonrpc();
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 带 id 的 JSON-RPC 请求消息。 */
 	public static class JSONRPCRequest implements JSONRPCMessage {
 		private final String jsonrpc;
 		private final String method;
@@ -255,6 +259,7 @@ public final class McpSchema {
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 无 id 的 JSON-RPC 通知消息。 */
 	public static class JSONRPCNotification implements JSONRPCMessage {
 		private final String jsonrpc;
 		private final String method;
@@ -285,6 +290,7 @@ public final class McpSchema {
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** JSON-RPC 响应：result 与 error 互斥。 */
 	public static class JSONRPCResponse implements JSONRPCMessage {
 		private final String jsonrpc;
 		private final Object id;
@@ -350,10 +356,11 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Initialization
+	// 握手初始化
 	// ---------------------------
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 客户端 initialize 请求：声明协议版本、能力与客户端信息。 */
 	public static class InitializeRequest implements Request {
 		private final String protocolVersion;
 		private final ClientCapabilities capabilities;
@@ -383,6 +390,7 @@ public final class McpSchema {
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 服务端 initialize 响应：返回协议版本、服务端能力与说明。 */
 	public static class InitializeResult implements Result {
 		private final String protocolVersion;
 		private final ServerCapabilities capabilities;
@@ -427,6 +435,7 @@ public final class McpSchema {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 客户端在 initialize 中声明的可选能力（roots、sampling、tasks 等）。 */
 	public static class ClientCapabilities {
 
 		private final Map<String, Object> experimental;
@@ -539,6 +548,7 @@ public final class McpSchema {
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 服务端在 initialize 响应中声明的可选能力子集。 */
 	public static class ServerCapabilities {
 		private final Map<String, Object> experimental;
 		private final LoggingCapabilities logging;
@@ -797,6 +807,7 @@ public final class McpSchema {
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 实现方名称与版本（clientInfo / serverInfo）。 */
 	public static class Implementation {
 		private final String name;
 		private final String version;
@@ -817,7 +828,8 @@ public final class McpSchema {
 		}
 	}
 
-	// Existing Enums and Base Types
+	// 既有枚举与基础类型
+	/** 对话消息中的角色：user / assistant。 */
 	public enum Role {
 		@JsonProperty("user")
 		USER,
@@ -844,7 +856,7 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Resource Interfaces
+	// 资源相关接口与 DTO
 	// ---------------------------
 	/**
 	 * Base for objects that include optional annotations for the client. The client
@@ -889,6 +901,7 @@ public final class McpSchema {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 可读资源的元数据描述（URI、名称、MIME 等）。 */
 	public static class Resource implements Annotated {
 		private final String uri;
 		private final String name;
@@ -1239,13 +1252,14 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Prompt Interfaces
+	// 提示词相关接口与 DTO
 	// ---------------------------
 	/**
 	 * A prompt or prompt template that the server offers.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 提示词模板定义及其参数列表。 */
 	public static class Prompt {
 		private final String name;
 		private final String description;
@@ -1441,7 +1455,7 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Tool Interfaces
+	// 工具相关接口与 DTO
 	// ---------------------------
 	/**
 	 * The server's response to a tools/list request from the client.
@@ -1528,6 +1542,7 @@ public final class McpSchema {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 工具元数据：名称、描述、inputSchema 及任务支持模式。 */
 	public static class Tool {
 		private final String name;
 		private final String description;
@@ -1618,6 +1633,7 @@ public final class McpSchema {
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 工具是否支持以异步任务方式执行。 */
 	public enum TaskSupportMode {
 
 		@JsonProperty("forbidden")
@@ -1663,6 +1679,7 @@ public final class McpSchema {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** tools/call 请求：指定工具名与 arguments。 */
 	public static class CallToolRequest implements Request {
 		private final String name;
 		private final Map<String, Object> arguments;
@@ -1780,6 +1797,7 @@ public final class McpSchema {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** tools/call 响应：content 列表或关联的任务结果。 */
 	public static class CallToolResult implements ServerTaskPayloadResult {
 		private final List<Content> content;
 		private final Boolean isError;
@@ -1870,7 +1888,7 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Sampling Interfaces
+	// 采样（LLM）相关接口
 	// ---------------------------
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -2208,7 +2226,7 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Pagination Interfaces
+	// 分页请求/结果基类
 	// ---------------------------
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -2241,7 +2259,7 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Progress and Logging
+	// 进度与日志通知
 	// ---------------------------
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class ProgressNotification {
@@ -2336,6 +2354,7 @@ public final class McpSchema {
 		}
 	}
 
+	/** MCP 日志级别枚举，数值越大级别越高。 */
 	public enum LoggingLevel {
 		@JsonProperty("debug")
 		DEBUG(0),
@@ -2408,7 +2427,7 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Autocomplete
+	// 参数自动补全
 	// ---------------------------
 	public enum CompleteArgument {
 		@JsonProperty("name")
@@ -2525,12 +2544,13 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Content Types
+	// 多模态内容块（文本、图片、嵌入资源）
 	// ---------------------------
 	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = As.PROPERTY, property = "type")
 	@JsonSubTypes({ @JsonSubTypes.Type(value = TextContent.class, name = "text"),
 			@JsonSubTypes.Type(value = ImageContent.class, name = "image"),
 			@JsonSubTypes.Type(value = EmbeddedResource.class, name = "resource") })
+	/** 工具结果与采样消息中的内容块标记接口。 */
 	public interface Content {
 
 		default String type() {
@@ -2655,7 +2675,7 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Roots
+	// 客户端根目录
 	// ---------------------------
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -2696,9 +2716,10 @@ public final class McpSchema {
 	}
 
 	// ---------------------------
-	// Tasks
+	// 长运行任务模型
 	// ---------------------------
 
+	/** 任务生命周期状态。 */
 	public enum TaskStatus {
 		@JsonProperty("working")
 		WORKING,
@@ -2725,6 +2746,7 @@ public final class McpSchema {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** 任务实体：状态、进度、关联工具调用等。 */
 	public static class Task {
 		private final String taskId;
 		private final TaskStatus status;
@@ -2870,6 +2892,7 @@ public final class McpSchema {
 
 	@JsonInclude(JsonInclude.Include.NON_ABSENT)
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	/** _meta 中关联任务的元数据结构。 */
 	public static class RelatedTaskMetadata {
 		private final String taskId;
 
@@ -3404,6 +3427,7 @@ public final class McpSchema {
 	 *
 	 * @param <T> 预期的结果类型
 	 */
+	/** 任务相关响应消息的公共标记（created/status/result/error）。 */
 	public interface ResponseMessage<T extends Result> {
 
 		/**

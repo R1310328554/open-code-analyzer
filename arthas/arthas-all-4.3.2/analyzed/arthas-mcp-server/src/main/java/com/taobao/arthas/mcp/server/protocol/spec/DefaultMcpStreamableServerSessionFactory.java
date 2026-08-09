@@ -18,20 +18,31 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Default implementation of the streamable server session factory.
- * This factory creates new MCP streamable server sessions with the provided configuration.
- *
+ * 可流式 MCP 服务端会话工厂的默认实现。
+ * <p>
+ * 根据注入的超时、请求/通知处理器、命令执行器与任务组件，
+ * 为每次 {@link McpSchema.InitializeRequest} 创建独立的 {@link McpStreamableServerSession}。
  */
 public class DefaultMcpStreamableServerSessionFactory implements McpStreamableServerSession.Factory {
 
+    /** 单次 JSON-RPC 请求的超时时间。 */
     private final Duration requestTimeout;
+    /** 处理 initialize 握手并返回 {@link McpSchema.InitializeResult} 的处理器。 */
     private final McpInitRequestHandler mcpInitRequestHandler;
+    /** 方法名到请求处理器的映射表。 */
     private final Map<String, McpRequestHandler<?>> requestHandlers;
+    /** 方法名到通知处理器的映射表。 */
     private final Map<String, McpNotificationHandler> notificationHandlers;
+    /** 执行 Arthas 命令的底层执行器。 */
     private final CommandExecutor commandExecutor;
+    /** 持久化服务端任务状态与结果的存储。 */
     private final TaskStore<McpSchema.ServerTaskPayloadResult> taskStore;
+    /** 任务相关消息的异步队列。 */
     private final TaskMessageQueue taskMessageQueue;
 
+    /**
+     * 构造会话工厂，注入运行会话所需的全部依赖。
+     */
     public DefaultMcpStreamableServerSessionFactory(Duration requestTimeout,
                                                     McpInitRequestHandler mcpInitRequestHandler,
                                                     Map<String, McpRequestHandler<?>> requestHandlers,
@@ -52,7 +63,7 @@ public class DefaultMcpStreamableServerSessionFactory implements McpStreamableSe
     public McpStreamableServerSession.McpStreamableServerSessionInit startSession(
             McpSchema.InitializeRequest initializeRequest) {
 
-        // Create a new session with a unique ID
+        // 以随机 UUID 作为会话标识，并绑定内存事件存储
         McpStreamableServerSession session = new McpStreamableServerSession(
                 UUID.randomUUID().toString(),
                 initializeRequest.getCapabilities(),
@@ -65,7 +76,7 @@ public class DefaultMcpStreamableServerSessionFactory implements McpStreamableSe
                 taskStore,
                 taskMessageQueue);
 
-        // Handle the initialization request
+        // 异步处理 initialize 请求，结果与 session 一并封装返回
         CompletableFuture<McpSchema.InitializeResult> initResult = 
                 this.mcpInitRequestHandler.handle(initializeRequest);
 

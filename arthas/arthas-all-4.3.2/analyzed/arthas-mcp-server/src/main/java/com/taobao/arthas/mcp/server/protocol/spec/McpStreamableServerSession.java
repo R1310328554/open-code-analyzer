@@ -32,41 +32,63 @@ import java.util.stream.Stream;
 import static com.taobao.arthas.mcp.server.util.McpAuthExtractor.MCP_AUTH_SUBJECT_KEY;
 
 /**
- * Main implementation of a streamable MCP server session that manages client connections
- * and handles JSON-RPC communication using CompletableFuture for async operations.
+ * 可流式 MCP 服务端会话的核心实现。
+ * <p>
+ * 维护会话 ID、客户端能力、事件存储与多条并发 SSE 流；
+ * 通过 {@link CompletableFuture} 异步处理 JSON-RPC 请求、通知与出站调用。
  */
 public class McpStreamableServerSession implements McpSession {
 
+    /** 会话级日志记录器。 */
     private static final Logger logger = LoggerFactory.getLogger(McpStreamableServerSession.class);
 
+    /** 出站请求 ID 到承载该请求的 SSE 子流的映射。 */
     private final ConcurrentHashMap<Object, McpStreamableServerSessionStream> requestIdToStream = new ConcurrentHashMap<>();
 
+    /** 全局唯一的会话标识，亦写入 HTTP 头 mcp-session-id。 */
     private final String id;
+    /** 出站请求等待客户端响应的超时时间。 */
     private final Duration requestTimeout;
+    /** 会话内出站请求序号生成器。 */
     private final AtomicLong requestCounter = new AtomicLong(0);
+    /** 入站 JSON-RPC 请求的方法名到处理器映射。 */
     private final Map<String, McpRequestHandler<?>> requestHandlers;
+    /** 入站 JSON-RPC 通知的方法名到处理器映射。 */
     private final Map<String, McpNotificationHandler> notificationHandlers;
     
+    /** 客户端在 initialize 中声明的能力快照。 */
     private final AtomicReference<McpSchema.ClientCapabilities> clientCapabilities = new AtomicReference<>();
 
+    /** 客户端名称与版本信息。 */
     private final AtomicReference<McpSchema.Implementation> clientInfo = new AtomicReference<>();
 
+    /** 当前用于接收服务端主动推送的 SSE 监听流。 */
     private final AtomicReference<McpSession> listeningStreamRef;
 
+    /** 无可用监听流时的占位委托对象。 */
     private final MissingMcpTransportSession missingMcpTransportSession;
     
+    /** 允许向客户端推送的最低日志级别。 */
     private volatile McpSchema.LoggingLevel minLoggingLevel = McpSchema.LoggingLevel.INFO;
 
+    /** Arthas 命令执行器。 */
     private final CommandExecutor commandExecutor;
 
+    /** 按 MCP 会话绑定 Arthas 命令会话的管理器。 */
     private final ArthasCommandSessionManager commandSessionManager;
     
+    /** 会话级 JSON-RPC 事件存储，支持 SSE 重播。 */
     private final EventStore eventStore;
 
+    /** 长运行任务的状态与结果存储。 */
     private final TaskStore<McpSchema.ServerTaskPayloadResult> taskStore;
 
+    /** 任务进度与中间结果的异步消息队列。 */
     private final TaskMessageQueue taskMessageQueue;
 
+    /**
+     * 构造会话实例并初始化命令会话管理器与占位监听流。
+     */
     public McpStreamableServerSession(String id, McpSchema.ClientCapabilities clientCapabilities,
                                       McpSchema.Implementation clientInfo, Duration requestTimeout,
                                       Map<String, McpRequestHandler<?>> requestHandlers,
@@ -89,7 +111,7 @@ public class McpStreamableServerSession implements McpSession {
     }
 
     /**
-     * Sets the minimum logging level for this session.
+     * 设置本会话允许推送的最低日志级别。
      * @param minLoggingLevel the minimum logging level
      */
     public void setMinLoggingLevel(McpSchema.LoggingLevel minLoggingLevel) {
@@ -98,7 +120,7 @@ public class McpStreamableServerSession implements McpSession {
     }
 
     /**
-     * Checks if notifications for the given logging level are allowed.
+     * 判断给定级别是否不低于当前最低级别，从而是否允许推送日志通知。
      * @param loggingLevel the logging level to check
      * @return true if notifications for this level are allowed
      */
@@ -106,10 +128,12 @@ public class McpStreamableServerSession implements McpSession {
         return loggingLevel.level() >= this.minLoggingLevel.level();
     }
 
+    /** 返回会话唯一标识。 */
     public String getId() {
         return this.id;
     }
 
+    /** 生成带会话前缀的出站请求 ID，保证全局可路由。 */
     private String generateRequestId() {
         return this.id + "-" + this.requestCounter.getAndIncrement();
     }
@@ -126,6 +150,7 @@ public class McpStreamableServerSession implements McpSession {
         return listeningStream.sendNotification(method, params);
     }
 
+    /** 优雅关闭并清理事件存储与 Arthas 命令会话。 */
     public CompletableFuture<Void> delete() {
         return this.closeGracefully().thenRun(() -> {
             try {
@@ -137,6 +162,7 @@ public class McpStreamableServerSession implements McpSession {
         });
     }
 
+    /** 绑定 SSE 监听流，供服务端主动推送通知与请求。 */
     public McpStreamableServerSessionStream listeningStream(McpStreamableServerTransport transport) {
         McpStreamableServerSessionStream listeningStream = new McpStreamableServerSessionStream(transport);
         this.listeningStreamRef.set(listeningStream);
@@ -156,6 +182,7 @@ public class McpStreamableServerSession implements McpSession {
                 .map(EventStore.StoredEvent::getMessage);
     }
 
+    /** 在独立 SSE 流上处理单次 JSON-RPC 请求并返回响应后关闭流。 */
     public CompletableFuture<Void> responseStream(McpSchema.JSONRPCRequest jsonrpcRequest, 
             McpStreamableServerTransport transport, McpTransportContext transportContext) {
         
@@ -169,7 +196,7 @@ public class McpStreamableServerSession implements McpSession {
                     new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
                             error.getMessage(), error.getData()));
 
-            // 存储错误响应
+            // 将 METHOD_NOT_FOUND 错误写入事件存储，便于 SSE 重播
             try {
                 eventStore.storeEvent(this.id, errorResponse);
             } catch (Exception e) {
@@ -211,6 +238,7 @@ public class McpStreamableServerSession implements McpSession {
                 .thenCompose(v -> transport.closeGracefully());
     }
 
+    /** 分发入站 JSON-RPC 通知到已注册处理器。 */
     public CompletableFuture<Void> accept(McpSchema.JSONRPCNotification notification, 
             McpTransportContext transportContext) {
         
@@ -227,6 +255,7 @@ public class McpStreamableServerSession implements McpSession {
                 commandContext, notification.getParams());
     }
 
+    /** 将客户端对出站请求的 JSON-RPC 响应路由回对应 SSE 子流。 */
     public CompletableFuture<Void> accept(McpSchema.JSONRPCResponse response) {
         McpStreamableServerSessionStream stream = this.requestIdToStream.get(response.getId());
         if (stream == null) {
@@ -247,6 +276,7 @@ public class McpStreamableServerSession implements McpSession {
         return CompletableFuture.completedFuture(null);
     }
 
+    /** 方法未找到时的结构化错误载荷。 */
     public class MethodNotFoundError {
         private final String method;
         private final String message;
@@ -272,6 +302,7 @@ public class McpStreamableServerSession implements McpSession {
     }
 
 
+    /** 构造标准 METHOD_NOT_FOUND 错误描述。 */
     private MethodNotFoundError getMethodNotFoundError(String method) {
         return new MethodNotFoundError(method, "Method not found: " + method, null);
     }
@@ -289,7 +320,7 @@ public class McpStreamableServerSession implements McpSession {
         }
         
         return listeningStream.closeGracefully();
-        // TODO: Also close all the open streams
+        // TODO: 同步关闭所有仍打开的 SSE 子流
     }
 
     @Override
@@ -307,13 +338,15 @@ public class McpStreamableServerSession implements McpSession {
         if (listeningStream != null) {
             listeningStream.close();
         }
-        // TODO: Also close all open streams
+        // TODO: 同步关闭所有仍打开的 SSE 子流
     }
 
+    /** 由传输层调用以创建并初始化新会话。 */
     public interface Factory {
         McpStreamableServerSessionInit startSession(McpSchema.InitializeRequest initializeRequest);
     }
 
+    /** {@link #startSession} 的返回值：会话实例与 initialize 异步结果。 */
     public static class McpStreamableServerSessionInit {
         private final McpStreamableServerSession session;
         private final CompletableFuture<McpSchema.InitializeResult> initResult;
@@ -335,19 +368,23 @@ public class McpStreamableServerSession implements McpSession {
     }
 
 
+    /** 绑定单条 SSE 传输的子会话，负责该流上的出站 RPC 与 pending 响应表。 */
     public final class McpStreamableServerSessionStream implements McpSession {
 
+        /** 等待客户端响应的出站请求 ID 到 Future 的映射。 */
         private final ConcurrentHashMap<Object, CompletableFuture<McpSchema.JSONRPCResponse>> pendingResponses = new ConcurrentHashMap<>();
 
+        /** 本流绑定的可流式传输实现。 */
         private final McpStreamableServerTransport transport;
+        /** 本子流的稳定前缀 ID，便于按流过滤事件历史。 */
         private final String transportId;
+        /** 生成本流内唯一消息 ID 的供应商。 */
         private final Supplier<String> uuidGenerator;
 
         public McpStreamableServerSessionStream(McpStreamableServerTransport transport) {
             this.transport = transport;
             this.transportId = UUID.randomUUID().toString();
-            // This ID design allows for a constant-time extraction of the history by
-            // precisely identifying the SSE stream using the first component
+            // transportId 作为 SSE 事件 ID 前缀，便于按流 O(1) 定位历史
             this.uuidGenerator = () -> this.transportId + "_" + UUID.randomUUID();
         }
 
@@ -372,14 +409,14 @@ public class McpStreamableServerSession implements McpSession {
                 logger.warn("Failed to store outbound request event: {}", e.getMessage());
             }
 
-            // Send the message
+            // 经传输层发送请求；发送失败则异常完成 responseFuture
             this.transport.sendMessage(jsonrpcRequest, messageId).exceptionally(ex -> {
                 responseFuture.completeExceptionally(ex);
                 return null;
             });
 
             return responseFuture.handle((jsonRpcResponse, throwable) -> {
-                // Cleanup
+                // 无论成功失败均清理 pending 映射，避免泄漏
                 this.pendingResponses.remove(requestId);
                 McpStreamableServerSession.this.requestIdToStream.remove(requestId);
 
@@ -419,12 +456,12 @@ public class McpStreamableServerSession implements McpSession {
 
         @Override
         public CompletableFuture<Void> closeGracefully() {
-            // Complete all pending responses with error
+            // 关闭时将全部 pending 请求以异常完成
             this.pendingResponses.values().forEach(future -> 
                     future.completeExceptionally(new RuntimeException("Stream closed")));
             this.pendingResponses.clear();
             
-            // If this was the generic stream, reset it
+            // 若关闭的是当前监听流，则回退为占位会话
             McpStreamableServerSession.this.listeningStreamRef.compareAndSet(this,
                     McpStreamableServerSession.this.missingMcpTransportSession);
 
