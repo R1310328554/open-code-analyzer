@@ -19,13 +19,17 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
 /**
- * 
+ * 缓存值的弱引用实现。
+ * <p>
+ * 无强引用指向时 JVM 可回收引用对象，并通过 {@link #getOwner()} 关联缓存条目。
+ *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public class CachedValueWeakReference<V> extends WeakReference<V> implements CachedValueReference {
 
+    /** 引用所属的缓存条目。 */
     private final CachedValue<?, ?> owner;
     
     public CachedValueWeakReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {

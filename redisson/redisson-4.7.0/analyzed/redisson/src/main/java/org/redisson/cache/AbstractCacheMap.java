@@ -28,11 +28,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
+ * 带过期与容量限制的抽象缓存映射基类。
+ * <p>
+ * 提供 TTL、最大空闲时间及过期条目清理等通用逻辑，子类实现具体的淘汰策略。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
@@ -42,9 +45,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     private final long maxIdleInMillis;
     private Consumer<CachedValue<K, V>> removalListener;
 
-    /**
-     * the least expire time of entry in the map
-     */
+    /** 映射中所有条目的最早过期时间戳。 */
     private final AtomicLong leastExpireTime =  new AtomicLong(0L);
 
     public AbstractCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
@@ -70,28 +71,19 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         this.removalListener = removalListener;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#size()
-     */
+    /** {@inheritDoc} 返回当前缓存条目数。 */
     @Override
     public int size() {
         return map.size();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#isEmpty()
-     */
+    /** {@inheritDoc} 判断缓存是否为空。 */
     @Override
     public boolean isEmpty() {
         return map.isEmpty();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#containsKey(java.lang.Object)
-     */
+    /** {@inheritDoc} 判断键是否存在且未过期。 */
     @Override
     public boolean containsKey(Object key) {
         if (key == null) {
@@ -124,10 +116,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#containsValue(java.lang.Object)
-     */
+    /** {@inheritDoc} 判断值是否存在且未过期。 */
     @Override
     public boolean containsValue(Object value) {
         if (value == null) {
@@ -150,10 +139,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#get(java.lang.Object)
-     */
+    /** {@inheritDoc} 获取键对应值，过期条目会被移除。 */
     @Override
     public V get(Object key) {
         if (key == null) {
@@ -179,10 +165,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return (V) entry.getValue();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#put(java.lang.Object, java.lang.Object)
-     */
+    /** {@inheritDoc} 写入键值对，使用默认 TTL 与最大空闲时间。 */
     @Override
     public V put(K key, V value) {
         return put(key, value, timeToLiveInMillis, TimeUnit.MILLISECONDS, maxIdleInMillis, TimeUnit.MILLISECONDS);
@@ -222,7 +205,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         }
         long newLeastExpireTime = Long.MAX_VALUE;
         boolean removed = false;
-        // TODO optimize
+        // TODO 优化过期扫描
         for (CachedValue<K, V> value : map.values()) {
             if (isValueExpired(value)) {
                 if (map.remove(value.getKey(), value)) {
@@ -261,10 +244,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#remove(java.lang.Object)
-     */
+    /** {@inheritDoc} 移除指定键的条目。 */
     @Override
     public V remove(Object key) {
         CachedValue<K, V> entry = map.remove(key);
@@ -277,10 +257,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#putAll(java.util.Map)
-     */
+    /** {@inheritDoc} 批量写入条目，先清理过期项。 */
     @Override
     public void putAll(Map<? extends K, ? extends V> m) {
         removeExpiredEntries();
@@ -289,39 +266,27 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#clear()
-     */
+    /** {@inheritDoc} 清空所有缓存条目。 */
     @Override
     public void clear() {
         map.clear();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#keySet()
-     */
+    /** {@inheritDoc} 返回未过期键的集合视图。 */
     @Override
     public Set<K> keySet() {
         removeExpiredEntries();
         return new KeySet();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#values()
-     */
+    /** {@inheritDoc} 返回未过期值的集合视图。 */
     @Override
     public Collection<V> values() {
         removeExpiredEntries();
         return new Values();
     }
 
-    /*
-     * (non-Javadoc)
-     * @see java.util.Map#entrySet()
-     */
+    /** {@inheritDoc} 返回未过期条目的集合视图。 */
     @Override
     public Set<Map.Entry<K, V>> entrySet() {
         removeExpiredEntries();

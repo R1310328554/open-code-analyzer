@@ -20,14 +20,19 @@ import java.util.Objects;
 
 
 /**
- * 
+ * 缓存键值对容器，用于序列化传输。
+ * <p>
+ * 相等性仅基于值字段比较。
+ *
  * @author Nikita Koksharov
  *
  */
 @SuppressWarnings("EqualsHashCode")
 public class CacheValue implements Serializable {
     
+    /** 缓存键。 */
     private final Object key;
+    /** 缓存值。 */
     private final Object value;
     
     public CacheValue(Object key, Object value) {

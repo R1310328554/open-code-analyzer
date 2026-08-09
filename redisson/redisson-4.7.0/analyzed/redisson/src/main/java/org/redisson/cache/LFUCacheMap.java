@@ -23,18 +23,22 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * LFU (least frequently used) cache.
- * 
+ * LFU（最不经常使用）缓存实现。
+ * <p>
+ * 容量满时淘汰访问次数最少的条目，并周期性衰减计数。
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     public static class MapKey implements Comparable<MapKey> {
         
+        /** 访问计数。 */
         private Long accessCount;
+        /** 关联的 LFU 缓存条目。 */
         private LFUCachedValue cachedValue;
         
         public MapKey(Long accessCount, LFUCachedValue cachedValue) {
@@ -61,7 +65,9 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     
     public static class LFUCachedValue<K, V> extends StdCachedValue<K, V> {
 
+        /** 条目唯一标识，用于相同访问次数时的排序。 */
         private final Long id;
+        /** 累计访问次数。 */
         private long accessCount;
         
         public LFUCachedValue(long id, K key, V value, long ttl, long maxIdleTime) {
@@ -148,8 +154,8 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
                 return;
             }
 
-            // TODO optimize
-            // decrease all values
+            // TODO 优化批量衰减
+            // 衰减所有条目的访问计数
             for (LFUCachedValue<K, V> value : accessMap.values()) {
                 addAccessCount(value, -entry.getValue().accessCount);
             }

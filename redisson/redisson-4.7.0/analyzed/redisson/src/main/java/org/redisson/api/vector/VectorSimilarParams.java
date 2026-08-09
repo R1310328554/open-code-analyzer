@@ -16,21 +16,31 @@
 package org.redisson.api.vector;
 
 /**
- * Vector similarity arguments implementation
+ * {@link VectorSimilarArgs} 的实现类，承载相似向量检索参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class VectorSimilarParams implements VectorSimilarArgs {
+    /** 元素名称（按名称检索时使用）。 */
     private final String element;
+    /** 查询向量字节数组。 */
     private final byte[] vectorBytes;
+    /** 查询向量浮点数组。 */
     private final Double[] vectorDoubles;
+    /** 返回结果数量。 */
     private Integer count;
+    /** 距离阈值。 */
     private Double epsilon;
+    /** 探索因子。 */
     private Integer effort;
+    /** 过滤表达式。 */
     private String filter;
+    /** 过滤尝试次数上限。 */
     private Integer filterEffort;
+    /** 是否使用线性扫描。 */
     private boolean useLinearScan;
+    /** 是否在主线程执行。 */
     private boolean useMainThread;
 
     VectorSimilarParams(String element) {

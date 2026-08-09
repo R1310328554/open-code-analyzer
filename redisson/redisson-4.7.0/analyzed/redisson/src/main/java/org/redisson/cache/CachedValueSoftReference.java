@@ -19,13 +19,17 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 
 /**
- * 
+ * 缓存值的软引用实现。
+ * <p>
+ * 内存不足时 JVM 可回收引用对象，并通过 {@link #getOwner()} 关联缓存条目。
+ *
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 值类型
  */
 public class CachedValueSoftReference<V> extends SoftReference<V> implements CachedValueReference {
 
+    /** 引用所属的缓存条目。 */
     private final CachedValue<?, ?> owner;
     
     public CachedValueSoftReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {

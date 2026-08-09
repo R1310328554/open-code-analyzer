@@ -18,13 +18,18 @@ package org.redisson.cache;
 import org.redisson.misc.WrappedLock;
 
 /**
- * Created by jribble on 2/20/17.
+ * 缓存条目接口，扩展 {@link ExpirableValue}。
+ * <p>
+ * 提供键、值访问及条目级锁。
  */
 public interface CachedValue<K, V> extends ExpirableValue {
 
+    /** 返回条目键。 */
     K getKey();
 
+    /** 返回条目值。 */
     V getValue();
 
+    /** 返回条目级互斥锁。 */
     WrappedLock getLock();
 }

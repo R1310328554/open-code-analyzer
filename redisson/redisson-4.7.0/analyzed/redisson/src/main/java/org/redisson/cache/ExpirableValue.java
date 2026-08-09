@@ -16,13 +16,18 @@
 package org.redisson.cache;
 
 /**
- * 
+ * 可过期值接口。
+ * <p>
+ * 缓存条目及嵌套值可实现此接口以支持 TTL 判断。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface ExpirableValue {
 
+    /** 判断值是否已过期。 */
     boolean isExpired();
 
+    /** 返回过期时间戳（毫秒）。 */
     long getExpireTime();
 }

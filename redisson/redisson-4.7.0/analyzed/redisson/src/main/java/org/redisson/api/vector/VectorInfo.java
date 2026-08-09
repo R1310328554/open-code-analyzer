@@ -18,17 +18,24 @@ package org.redisson.api.vector;
 import java.io.Serializable;
 
 /**
- * Vector information object
+ * 向量信息对象。
+ * <p>
+ * 描述向量集合的维度、规模、量化类型及图连接数等元数据。
  *
  * @author Nikita Koksharov
  *
  */
 public final class VectorInfo implements Serializable {
 
+    /** 属性数量。 */
     private long attributesCount;
+    /** 向量维度。 */
     private long dimensions;
+    /** 向量集合大小（元素个数）。 */
     private long size;
+    /** 量化类型。 */
     private QuantizationType quantizationType;
+    /** 每个节点的最大连接数。 */
     private long maxConnections;
 
     public long getAttributesCount() {

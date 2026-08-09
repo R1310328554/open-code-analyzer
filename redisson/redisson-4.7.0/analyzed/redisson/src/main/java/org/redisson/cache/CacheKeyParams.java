@@ -21,12 +21,16 @@ import org.redisson.misc.Hash;
 import java.util.Arrays;
 
 /**
+ * 缓存键参数容器，用于复合键的哈希与相等性比较。
+ * <p>
+ * 构造时会将 {@link io.netty.buffer.ByteBuf} 递归转换为哈希值。
  *
  * @author Nikita Koksharov
  *
  */
 public final class CacheKeyParams {
 
+    /** 键组成部分数组（已规范化）。 */
     private final Object[] values;
 
     public CacheKeyParams(Object[] values) {
@@ -35,6 +39,7 @@ public final class CacheKeyParams {
                 .toArray();
     }
 
+    /** 递归将 ByteBuf 转换为哈希值。 */
     private Object deepConvertByteBuf(Object obj) {
         if (obj instanceof ByteBuf) {
             ByteBuf buf = (ByteBuf) obj;

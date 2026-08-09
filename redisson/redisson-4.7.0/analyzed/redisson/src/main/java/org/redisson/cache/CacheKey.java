@@ -20,7 +20,10 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * 
+ * 缓存键对象，以键哈希字节数组作为唯一标识。
+ * <p>
+ * 实现 {@link Serializable}，可用于分布式缓存键序列化。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -28,6 +31,7 @@ public final class CacheKey implements Serializable {
     
     private static final long serialVersionUID = 5790732187795028243L;
     
+    /** 键的哈希字节数组。 */
     private final byte[] keyHash;
 
     public CacheKey(byte[] keyHash) {

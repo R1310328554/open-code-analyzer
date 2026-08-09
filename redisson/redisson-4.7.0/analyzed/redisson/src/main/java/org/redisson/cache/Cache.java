@@ -18,11 +18,14 @@ package org.redisson.cache;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * 
+ * 并发缓存映射接口。
+ * <p>
+ * 扩展 {@link java.util.concurrent.ConcurrentMap}，供 Redisson 本地缓存实现使用。
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key
- * @param <V> valu
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface Cache<K, V> extends ConcurrentMap<K, V> {
     

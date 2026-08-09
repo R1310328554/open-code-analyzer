@@ -16,7 +16,9 @@
 package org.redisson.api.vector;
 
 /**
- * Arguments object for RVectorSet.getSimilar() method
+ * {@link org.redisson.api.RVectorSet#getSimilar} 方法的参数对象。
+ * <p>
+ * 用于配置相似向量检索的查询向量、返回数量及过滤条件。
  *
  * @author Nikita Koksharov
  *
@@ -24,85 +26,85 @@ package org.redisson.api.vector;
 public interface VectorSimilarArgs {
 
     /**
-     * Defines element name.
+     * 指定待检索的元素名称。
      *
-     * @param element element name
-     * @return arguments object
+     * @param element 元素名称
+     * @return 参数对象
      */
     static VectorSimilarArgs element(String element) {
         return new VectorSimilarParams(element);
     }
 
     /**
-     * Defines vector as byte array (32-bit floating point blob of values).
+     * 以字节数组形式指定查询向量（32 位浮点值序列）。
      *
-     * @param vector as byte array
-     * @return arguments object
+     * @param vector 向量字节数组
+     * @return 参数对象
      */
     static VectorSimilarArgs vector(byte[] vector) {
         return new VectorSimilarParams(vector);
     }
 
     /**
-     * Defines vector as array of floating point numbers.
+     * 以浮点数数组形式指定查询向量。
      *
-     * @param vector vector as array of doubles
-     * @return arguments object
+     * @param vector 双精度浮点数组
+     * @return 参数对象
      */
     static VectorSimilarArgs vector(Double... vector) {
         return new VectorSimilarParams(vector);
     }
 
     /**
-     * Defines the count parameter.
+     * 指定返回的相似结果数量。
      *
-     * @param count count value
-     * @return arguments object
+     * @param count 返回条数
+     * @return 参数对象
      */
     VectorSimilarArgs count(int count);
 
     /**
-     * Defines the distance that is no further than the specified delta.
+     * 指定距离阈值，仅返回距离不超过该值的结果。
      *
-     * @param value a floating point number between 0 and 1.
-     * @return arguments object
+     * @param value 0 到 1 之间的浮点数
+     * @return 参数对象
      */
     VectorSimilarArgs epsilon(double value);
     /**
-     * Defines the exploration factor (EF).
+     * 指定探索因子（EF）。
      *
-     * @param value exploration factor value
-     * @return arguments object
+     * @param value 探索因子值
+     * @return 参数对象
      */
     VectorSimilarArgs explorationFactor(int value);
 
     /**
-     * Defines the filter expression to restrict matching elements.
+     * 指定过滤表达式以限制匹配元素。
      *
-     * @param expression expression value
-     * @return arguments object
+     * @param expression 过滤表达式
+     * @return 参数对象
      */
     VectorSimilarArgs filter(String expression);
 
     /**
-     * Defines the limit of filtering attempts for the filter expression.
+     * 指定过滤表达式的最大尝试次数。
      *
-     * @param filterEffort - filter effort value
-     * @return arguments object
+     * @param filterEffort 过滤尝试次数上限
+     * @return 参数对象
      */
     VectorSimilarArgs filterEffort(int filterEffort);
 
     /**
-     * Defines whether a linear scan is used to obtain exact results.
+     * 启用线性扫描以获取精确结果。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     VectorSimilarArgs useLinearScan();
 
     /**
-     * Defines whether the search is executed in the main thread or a background thread.
+     * 指定在主线程而非后台线程执行检索。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     VectorSimilarArgs useMainThread();
 }

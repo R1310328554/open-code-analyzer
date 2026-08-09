@@ -16,12 +16,16 @@
 package org.redisson.cache;
 
 /**
- * 
+ * 缓存值引用接口，关联所属的 {@link CachedValue} 条目。
+ * <p>
+ * 用于软/弱引用实现中追踪引用所有者。
+ *
  * @author Nikita Koksharov
  *
  */
 public interface CachedValueReference {
 
+    /** 返回引用所属的缓存条目。 */
     CachedValue<?, ?> getOwner();
     
 }

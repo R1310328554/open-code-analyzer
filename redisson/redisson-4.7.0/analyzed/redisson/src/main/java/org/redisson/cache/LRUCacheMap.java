@@ -18,15 +18,18 @@ package org.redisson.cache;
 import org.redisson.misc.FastRemovalQueue;
 
 /**
- * LRU (least recently used) cache.
- * 
+ * LRU（最近最少使用）缓存实现。
+ * <p>
+ * 容量满时淘汰最久未访问的条目，读取时更新访问顺序。
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
+    /** 按访问顺序排列的条目队列。 */
     private final FastRemovalQueue<CachedValue<K, V>> queue = new FastRemovalQueue<>();
 
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
