@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:40:25Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/mapreduce/CollectionMapperTask.java",
-    "redisson/src/main/java/org/redisson/mapreduce/Collector.java",
-    "redisson/src/main/java/org/redisson/mapreduce/CoordinatorTask.java",
-    "redisson/src/main/java/org/redisson/mapreduce/MapReduceExecutor.java",
-    "redisson/src/main/java/org/redisson/mapreduce/MapReduceTimeoutException.java",
-    "redisson/src/main/java/org/redisson/mapreduce/MapperTask.java",
-    "redisson/src/main/java/org/redisson/mapreduce/RedissonCollectionMapReduce.java",
-    "redisson/src/main/java/org/redisson/mapreduce/RedissonMapReduce.java",
-    "redisson/src/main/java/org/redisson/mapreduce/ReducerTask.java",
-    "redisson/src/main/java/org/redisson/mapreduce/SubTasksExecutor.java",
-    "redisson/src/main/java/org/redisson/misc/AsyncChunkProcessor.java",
-    "redisson/src/main/java/org/redisson/misc/AsyncCountDownLatch.java",
-    "redisson/src/main/java/org/redisson/misc/AsyncIteratorUtils.java",
-    "redisson/src/main/java/org/redisson/misc/AsyncSemaphore.java",
-    "redisson/src/main/java/org/redisson/misc/CollectionSyncProxy.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 182,
-  "done": 2625
+  "done": 2640
 }
