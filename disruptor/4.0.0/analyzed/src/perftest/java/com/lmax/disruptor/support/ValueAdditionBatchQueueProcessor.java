@@ -19,6 +19,9 @@ import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * 基于阻塞队列的批量累加处理器：先取一条再 drain 至多 100 条合并求和。
+ */
 public final class ValueAdditionBatchQueueProcessor implements Runnable
 {
     private volatile boolean running;
@@ -41,6 +44,7 @@ public final class ValueAdditionBatchQueueProcessor implements Runnable
         return value;
     }
 
+    /** 重置累加值与完成 latch。 */
     public void reset(final CountDownLatch latch)
     {
         value = 0L;
@@ -48,6 +52,7 @@ public final class ValueAdditionBatchQueueProcessor implements Runnable
         this.latch = latch;
     }
 
+    /** 请求停止消费循环。 */
     public void halt()
     {
         running = false;
@@ -66,6 +71,7 @@ public final class ValueAdditionBatchQueueProcessor implements Runnable
 
                 this.value += v;
 
+                // 步骤：批量 drain 剩余元素并合并求和
                 int c = blockingQueue.drainTo(batch, 100);
                 sequence += c;
 

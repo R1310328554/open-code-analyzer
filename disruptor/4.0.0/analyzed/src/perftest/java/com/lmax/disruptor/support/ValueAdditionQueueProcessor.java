@@ -18,6 +18,9 @@ package com.lmax.disruptor.support;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * 基于阻塞队列的单条累加处理器：逐条取数并累加。
+ */
 public final class ValueAdditionQueueProcessor implements Runnable
 {
     private volatile boolean running;
@@ -39,6 +42,7 @@ public final class ValueAdditionQueueProcessor implements Runnable
         return value;
     }
 
+    /** 重置累加值与完成 latch。 */
     public void reset(final CountDownLatch latch)
     {
         value = 0L;
@@ -46,6 +50,7 @@ public final class ValueAdditionQueueProcessor implements Runnable
         this.latch = latch;
     }
 
+    /** 请求停止消费循环。 */
     public void halt()
     {
         running = false;

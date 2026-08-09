@@ -20,6 +20,9 @@ import com.lmax.disruptor.util.PaddedLong;
 
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * long 数组事件处理器：累加数组元素并统计已处理批次数。
+ */
 public final class LongArrayEventHandler implements EventHandler<long[]>
 {
     private final PaddedLong value = new PaddedLong();
@@ -37,6 +40,7 @@ public final class LongArrayEventHandler implements EventHandler<long[]>
         return batchesProcessed.get();
     }
 
+    /** 重置累加值与批次计数，并绑定完成 latch。 */
     public void reset(final CountDownLatch latch, final long expectedCount)
     {
         value.set(0L);
@@ -48,6 +52,7 @@ public final class LongArrayEventHandler implements EventHandler<long[]>
     @Override
     public void onEvent(final long[] event, final long sequence, final boolean endOfBatch) throws Exception
     {
+        // 步骤：遍历数组并累加每个元素
         for (int i = 0; i < event.length; i++)
         {
             value.set(value.get() + event[i]);

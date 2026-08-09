@@ -15,8 +15,12 @@
  */
 package com.lmax.disruptor.support;
 
+/**
+ * 性能测试辅助工具：基准累加与结果断言。
+ */
 public final class PerfTestUtil
 {
+    /** 计算 0 至 iterations-1 的累加和，用作对照基准。 */
     public static long accumulatedAddition(final long iterations)
     {
         long temp = 0L;
@@ -28,6 +32,7 @@ public final class PerfTestUtil
         return temp;
     }
 
+    /** 若 a 与 b 相等则抛出异常（用于检测意外一致）。 */
     public static void failIf(final long a, final long b)
     {
         if (a == b)
@@ -36,6 +41,7 @@ public final class PerfTestUtil
         }
     }
 
+    /** 若 a 与 b 不等则抛出异常（用于验证预期结果）。 */
     public static void failIfNot(final long a, final long b)
     {
         if (a != b)

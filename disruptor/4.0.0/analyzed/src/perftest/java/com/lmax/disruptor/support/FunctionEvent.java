@@ -17,6 +17,9 @@ package com.lmax.disruptor.support;
 
 import com.lmax.disruptor.EventFactory;
 
+/**
+ * 三阶段函数流水线事件：携带两个操作数及前两步的中间结果。
+ */
 public final class FunctionEvent
 {
     private long operandOne;
@@ -64,5 +67,6 @@ public final class FunctionEvent
         this.stepTwoResult = stepTwoResult;
     }
 
+    /** RingBuffer 预分配事件工厂。 */
     public static final EventFactory<FunctionEvent> EVENT_FACTORY = () -> new FunctionEvent();
 }

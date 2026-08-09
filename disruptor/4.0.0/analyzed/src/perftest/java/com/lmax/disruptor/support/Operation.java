@@ -15,8 +15,12 @@
  */
 package com.lmax.disruptor.support;
 
+/**
+ * 数值变异运算：供 ValueMutation 系列处理器对累加器施加二元操作。
+ */
 public enum Operation
 {
+    /** 加法：lhs + rhs。 */
     ADDITION
         {
             @Override
@@ -26,6 +30,7 @@ public enum Operation
             }
         },
 
+    /** 减法：lhs - rhs。 */
     SUBTRACTION
         {
             @Override
@@ -35,6 +40,7 @@ public enum Operation
             }
         },
 
+    /** 按位与：lhs & rhs。 */
     AND
         {
             @Override
@@ -44,5 +50,6 @@ public enum Operation
             }
         };
 
+    /** 对左值与右值执行本枚举所代表的运算。 */
     public abstract long op(long lhs, long rhs);
 }

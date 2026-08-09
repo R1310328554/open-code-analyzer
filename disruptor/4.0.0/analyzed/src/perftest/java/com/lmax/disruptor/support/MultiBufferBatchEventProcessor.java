@@ -10,6 +10,9 @@ import com.lmax.disruptor.TimeoutException;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 多 RingBuffer 批处理事件处理器：轮询各缓冲区的可用序号并批量派发事件。
+ */
 public class MultiBufferBatchEventProcessor<T>
     implements EventProcessor
 {
@@ -67,6 +70,7 @@ public class MultiBufferBatchEventProcessor<T>
 
                     long nextSequence = sequence.get() + 1;
 
+                    // 步骤：从上次消费位置起批量派发至 available
                     for (long l = nextSequence; l <= available; l++)
                     {
                         handler.onEvent(providers[i].get(l), l, nextSequence == available);
@@ -108,11 +112,13 @@ public class MultiBufferBatchEventProcessor<T>
         throw new UnsupportedOperationException();
     }
 
+    /** 返回已处理的事件总数。 */
     public long getCount()
     {
         return count;
     }
 
+    /** 返回各缓冲区对应的消费序号。 */
     public Sequence[] getSequences()
     {
         return sequences;

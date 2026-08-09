@@ -20,6 +20,9 @@ import com.lmax.disruptor.util.PaddedLong;
 
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * 数值变异事件处理器：用 {@link Operation} 对累加器与事件值做二元运算。
+ */
 public final class ValueMutationEventHandler implements EventHandler<ValueEvent>
 {
     private final Operation operation;
@@ -43,6 +46,7 @@ public final class ValueMutationEventHandler implements EventHandler<ValueEvent>
         return batchesProcessed.get();
     }
 
+    /** 重置累加值与批次计数，并绑定完成 latch（在 expectedCount 序号处触发）。 */
     public void reset(final CountDownLatch latch, final long expectedCount)
     {
         value.set(0L);

@@ -20,6 +20,9 @@ import com.lmax.disruptor.util.PaddedLong;
 
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * 三阶段函数流水线事件处理器：按步骤执行加法、加常数或位掩码计数。
+ */
 public final class FunctionEventHandler implements EventHandler<FunctionEvent>
 {
     private final FunctionStep functionStep;
@@ -37,6 +40,7 @@ public final class FunctionEventHandler implements EventHandler<FunctionEvent>
         return stepThreeCounter.get();
     }
 
+    /** 重置第三步计数器并绑定完成 latch（在 expectedCount 序号处触发）。 */
     public void reset(final CountDownLatch latch, final long expectedCount)
     {
         stepThreeCounter.set(0L);
@@ -50,14 +54,17 @@ public final class FunctionEventHandler implements EventHandler<FunctionEvent>
         switch (functionStep)
         {
             case ONE:
+                // 步骤：两操作数相加，写入第一步结果
                 event.setStepOneResult(event.getOperandOne() + event.getOperandTwo());
                 break;
 
             case TWO:
+                // 步骤：第一步结果加 3，写入第二步结果
                 event.setStepTwoResult(event.getStepOneResult() + 3L);
                 break;
 
             case THREE:
+                // 步骤：第二步结果第 2 位为 1 时累加计数
                 if ((event.getStepTwoResult() & 4L) == 4L)
                 {
                     stepThreeCounter.set(stepThreeCounter.get() + 1L);

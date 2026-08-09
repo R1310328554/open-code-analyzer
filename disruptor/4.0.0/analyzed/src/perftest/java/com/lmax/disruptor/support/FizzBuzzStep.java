@@ -15,9 +15,15 @@
  */
 package com.lmax.disruptor.support;
 
+/**
+ * FizzBuzz 流水线步骤：分别判定整除 3、整除 5，或汇聚统计 fizz+buzz。
+ */
 public enum FizzBuzzStep
 {
+    /** 判定数值能否被 3 整除（fizz）。 */
     FIZZ,
+    /** 判定数值能否被 5 整除（buzz）。 */
     BUZZ,
+    /** 汇聚 fizz 与 buzz 结果并统计同时满足的次数。 */
     FIZZ_BUZZ,
 }

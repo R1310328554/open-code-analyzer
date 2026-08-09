@@ -17,6 +17,9 @@ package com.lmax.disruptor.support;
 
 import com.lmax.disruptor.EventFactory;
 
+/**
+ * 单 long 数值事件：供累加/变异类性能测试使用。
+ */
 public final class ValueEvent
 {
     private long value;
@@ -31,5 +34,6 @@ public final class ValueEvent
         this.value = value;
     }
 
+    /** RingBuffer 预分配事件工厂。 */
     public static final EventFactory<ValueEvent> EVENT_FACTORY = ValueEvent::new;
 }

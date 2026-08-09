@@ -18,6 +18,9 @@ package com.lmax.disruptor.support;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * 基于阻塞队列的数值变异处理器：用 {@link Operation} 对累加器逐条施加二元运算。
+ */
 public final class ValueMutationQueueProcessor implements Runnable
 {
     private volatile boolean running;
@@ -42,6 +45,7 @@ public final class ValueMutationQueueProcessor implements Runnable
         return value;
     }
 
+    /** 重置累加值与完成 latch。 */
     public void reset(final CountDownLatch latch)
     {
         value = 0L;
@@ -49,6 +53,7 @@ public final class ValueMutationQueueProcessor implements Runnable
         this.latch = latch;
     }
 
+    /** 请求停止消费循环。 */
     public void halt()
     {
         running = false;

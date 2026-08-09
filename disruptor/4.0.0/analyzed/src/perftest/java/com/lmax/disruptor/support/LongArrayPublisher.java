@@ -19,6 +19,9 @@ import com.lmax.disruptor.RingBuffer;
 
 import java.util.concurrent.CyclicBarrier;
 
+/**
+ * long 数组事件发布者：同步启动后向 RingBuffer 逐条填充数组并发布。
+ */
 public final class LongArrayPublisher implements Runnable
 {
     private final CyclicBarrier cyclicBarrier;
@@ -49,6 +52,7 @@ public final class LongArrayPublisher implements Runnable
             {
                 long sequence = ringBuffer.next();
                 long[] event = ringBuffer.get(sequence);
+                // 步骤：按迭代序号填充数组各槽位
                 for (int j = 0; j < arraySize; j++)
                 {
                     event[j] = i + j;

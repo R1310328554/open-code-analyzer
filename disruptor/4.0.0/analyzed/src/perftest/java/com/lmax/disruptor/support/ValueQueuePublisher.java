@@ -18,6 +18,9 @@ package com.lmax.disruptor.support;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CyclicBarrier;
 
+/**
+ * 阻塞队列数值发布者：同步启动后向队列逐条写入 0..iterations-1。
+ */
 public final class ValueQueuePublisher implements Runnable
 {
     private final CyclicBarrier cyclicBarrier;

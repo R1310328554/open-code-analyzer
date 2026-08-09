@@ -18,6 +18,9 @@ package com.lmax.disruptor.support;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * 基于阻塞队列的三阶段函数处理器：加法、加常数、位掩码计数。
+ */
 public final class FunctionQueueProcessor implements Runnable
 {
     private final FunctionStep functionStep;
@@ -50,6 +53,7 @@ public final class FunctionQueueProcessor implements Runnable
         return stepThreeCounter;
     }
 
+    /** 重置第三步计数与完成 latch。 */
     public void reset(final CountDownLatch latch)
     {
         stepThreeCounter = 0L;
@@ -57,6 +61,7 @@ public final class FunctionQueueProcessor implements Runnable
         this.latch = latch;
     }
 
+    /** 请求停止消费循环。 */
     public void halt()
     {
         running = false;
@@ -75,6 +80,7 @@ public final class FunctionQueueProcessor implements Runnable
                     case ONE:
                     {
                         long[] values = stepOneQueue.take();
+                        // 步骤：两操作数相加并送入第二步队列
                         stepTwoQueue.put(Long.valueOf(values[0] + values[1]));
                         break;
                     }
@@ -82,6 +88,7 @@ public final class FunctionQueueProcessor implements Runnable
                     case TWO:
                     {
                         Long value = stepTwoQueue.take();
+                        // 步骤：加 3 后送入第三步队列
                         stepThreeQueue.put(Long.valueOf(value.longValue() + 3));
                         break;
                     }
@@ -90,6 +97,7 @@ public final class FunctionQueueProcessor implements Runnable
                     {
                         Long value = stepThreeQueue.take();
                         long testValue = value.longValue();
+                        // 步骤：第 2 位为 1 时累加第三步计数
                         if ((testValue & 4L) == 4L)
                         {
                             ++stepThreeCounter;

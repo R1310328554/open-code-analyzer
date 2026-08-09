@@ -15,9 +15,15 @@
  */
 package com.lmax.disruptor.support;
 
+/**
+ * 三阶段函数流水线步骤：加法、加常数、位掩码计数。
+ */
 public enum FunctionStep
 {
+    /** 第一步：两操作数相加。 */
     ONE,
+    /** 第二步：第一步结果加 3。 */
     TWO,
+    /** 第三步：对第二步结果做位掩码判定并计数。 */
     THREE
 }

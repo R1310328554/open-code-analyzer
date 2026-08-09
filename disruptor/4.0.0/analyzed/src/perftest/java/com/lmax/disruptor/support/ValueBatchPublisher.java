@@ -19,6 +19,9 @@ import com.lmax.disruptor.RingBuffer;
 
 import java.util.concurrent.CyclicBarrier;
 
+/**
+ * 批量数值事件发布者：同步启动后按 batchSize Claim 并批量发布 ValueEvent。
+ */
 public final class ValueBatchPublisher implements Runnable
 {
     private final CyclicBarrier cyclicBarrier;
@@ -49,6 +52,7 @@ public final class ValueBatchPublisher implements Runnable
             {
                 long hi = ringBuffer.next(batchSize);
                 long lo = hi - (batchSize - 1);
+                // 步骤：填充 [lo, hi] 区间内各事件的 value
                 for (long l = lo; l <= hi; l++)
                 {
                     ValueEvent event = ringBuffer.get(l);

@@ -19,6 +19,9 @@ import com.lmax.disruptor.RingBuffer;
 
 import java.util.concurrent.CyclicBarrier;
 
+/**
+ * 单条数值事件发布者：同步启动后逐条 Claim、填充并发布 ValueEvent。
+ */
 public final class ValuePublisher implements Runnable
 {
     private final CyclicBarrier cyclicBarrier;
