@@ -1,0 +1,4 @@
+spring-beans/src/main/java/org/springframework/beans/factory/support/DefaultSingletonBeanRegistry.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/DefaultListableBeanFactory.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractBeanFactory.java
+spring-beans/src/main/java/org/springframework/beans/factory/support/AbstractAutowireCapableBeanFactory.java

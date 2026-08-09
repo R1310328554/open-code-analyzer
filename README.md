@@ -40,22 +40,35 @@ springframework/
       项目模块说明/
 ```
 
-### 注释策略（重要）——直接改 `analyzed` 源码
+### 注释策略（重要）——逐类精读，直接改 `analyzed` 源码
 
-本项目的**主目标**是让国内开发者直接阅读中文注释版源码，因此 `analyzed/` 不是只写架构文档，而是**改文件内容**：
+本项目的**主目标**是让国内开发者直接阅读中文注释版源码。  
+**必须逐个类：先读懂代码，再把英文注释改为中文或做补充**——禁止无理解的批量机翻/查找替换。
 
-1. **已有英文 JavaDoc / `//` 注释 → 翻译成中文**（保留 `{@link}` / `@param` 等标签结构）
-2. **每个字段**补充中文注释（说明含义与意图）
-3. **每个方法**补充中文注释；复杂方法在方法体内关键步骤加中文行内注释
-4. 版权 License 头保持英文不动
-5. `original/` 永远只读对照；所有改动只发生在 `analyzed/`
+对每个类：
+
+1. 通读 `original/` 源码，理解职责、字段、主路径与弯绕点
+2. 改写 `analyzed/` 同路径文件：英文 JavaDoc/`//` → 通顺中文
+3. 为字段、方法补充中文说明；复杂方法体内加关键步骤中文注释
+4. License 头保持英文；`original/` 只读
+
+#### 逐类队列 + 10 秒定时器
 
 ```bash
-# 推荐：从 original 重建 analyzed 并做中文翻译/补注释
-./bin/localize-zh.sh springframework 7.0.8 --force-sync
-# 或只处理某些模块
-./bin/localize-zh.sh springframework 7.0.8 --modules spring-jdbc,spring-beans
+# 1) 建立队列（按核心类优先）
+./bin/class-queue-init.sh springframework 7.0.8 spring-beans,spring-context
+
+# 2) 启动守护进程：默认每 10 秒领取一个类，等待精读改写完成后再领下一个
+INTERVAL=10 ./bin/class-by-class-daemon.sh springframework 7.0.8
+
+# 3) Agent/人：按 CURRENT.json 精读 original → 改 analyzed → 标记完成
+./bin/class-mark-done.sh springframework 7.0.8
 ```
+
+说明见 `prompts/class_by_class.md`，进度在  
+`springframework/<ver>/_reports/class-queue/`。
+
+> 旧的 `localize-zh.sh` 批量机翻仅作遗留工具，**不再作为主路径**。
 
 ---
 
