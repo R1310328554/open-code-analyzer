@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:05:14Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/RObject.java",
-    "redisson/src/main/java/org/redisson/api/RObjectAsync.java",
-    "redisson/src/main/java/org/redisson/api/RObjectReactive.java",
-    "redisson/src/main/java/org/redisson/api/RObjectRx.java",
-    "redisson/src/main/java/org/redisson/api/RObservable.java",
-    "redisson/src/main/java/org/redisson/api/RObservableAsync.java",
-    "redisson/src/main/java/org/redisson/api/RObservableReactive.java",
-    "redisson/src/main/java/org/redisson/api/RObservableRx.java",
-    "redisson/src/main/java/org/redisson/api/RPatternTopic.java",
-    "redisson/src/main/java/org/redisson/api/RPatternTopicReactive.java",
-    "redisson/src/main/java/org/redisson/api/RPatternTopicRx.java",
-    "redisson/src/main/java/org/redisson/api/RPermitExpirableSemaphore.java",
-    "redisson/src/main/java/org/redisson/api/RPermitExpirableSemaphoreAsync.java",
-    "redisson/src/main/java/org/redisson/api/RPermitExpirableSemaphoreReactive.java",
-    "redisson/src/main/java/org/redisson/api/RPriorityBlockingDeque.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1412,
-  "done": 1395
+  "done": 1410
 }
