@@ -378,3 +378,23 @@
 2026-08-09T17:30:15Z DONE spring-tx/src/main/java/org/springframework/transaction/jta/JtaTransactionObject.java wave17b interceptor/jta [20:40]
 2026-08-09T17:30:15Z DONE spring-tx/src/main/java/org/springframework/transaction/jta/ManagedTransactionAdapter.java wave17b interceptor/jta [20:40]
 2026-08-09T17:30:15Z DONE spring-tx/src/main/java/org/springframework/transaction/jta/SimpleTransactionFactory.java wave17b interceptor/jta [20:40]
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/aopalliance/intercept/ConstructorInvocation.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/aopalliance/intercept/Interceptor.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/aopalliance/intercept/Invocation.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/aopalliance/intercept/Joinpoint.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/aopalliance/intercept/MethodInterceptor.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/aopalliance/intercept/MethodInvocation.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/Advisor.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/AfterAdvice.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/AfterReturningAdvice.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/AopInvocationException.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/BeforeAdvice.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/ClassFilter.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/DynamicIntroductionAdvice.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/IntroductionAdvisor.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/IntroductionAwareMethodMatcher.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/IntroductionInfo.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/IntroductionInterceptor.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/MethodBeforeAdvice.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/MethodMatcher.java wave19a
+2026-08-09T17:46:10Z DONE spring-aop/src/main/java/org/springframework/aop/Pointcut.java wave19a
