@@ -1,17 +1,6 @@
 {
-  "claimed_at": "2026-08-09T17:40:23Z",
-  "files": [
-    "docs_src/query_params/tutorial001_py310.py",
-    "docs_src/query_params/tutorial002_py310.py",
-    "docs_src/query_params/tutorial003_py310.py",
-    "docs_src/query_params/tutorial004_py310.py",
-    "docs_src/query_params/tutorial005_py310.py",
-    "docs_src/query_params/tutorial006_py310.py",
-    "docs_src/query_params_str_validations/__init__.py",
-    "docs_src/query_params_str_validations/tutorial001_py310.py",
-    "docs_src/query_params_str_validations/tutorial002_an_py310.py",
-    "docs_src/query_params_str_validations/tutorial002_py310.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 167,
   "done": 342
 }
