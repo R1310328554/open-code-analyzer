@@ -24,8 +24,13 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 客户端心跳请求头：Producer/Consumer 定期上报存活状态，维持与 Broker 的连接注册。
+ * 字段由 {@link RpcRequestHeader} 基类承载（含命名空间等）。
+ */
 @RocketMQAction(value = RequestCode.HEART_BEAT, resource = ResourceType.GROUP, action = {Action.PUB, Action.SUB})
 public class HeartbeatRequestHeader extends RpcRequestHeader {
+    /** 校验请求头字段（心跳无附加字段，空实现）。 */
     // for namespace
     @Override
     public void checkFields() throws RemotingCommandException {

@@ -25,21 +25,28 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 查询生产者连接列表的请求头：按生产者组名获取当前在线 Producer 客户端连接。
+ */
 @RocketMQAction(value = RequestCode.GET_PRODUCER_CONNECTION_LIST, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetProducerConnectionListRequestHeader extends RpcRequestHeader {
+    /** 生产者组名称。 */
     @CFNotNull
     private String producerGroup;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
         // To change body of implemented methods use File | Settings | File
         // Templates.
     }
 
+    /** 返回生产者组名称。 */
     public String getProducerGroup() {
         return producerGroup;
     }
 
+    /** 设置生产者组名称。 */
     public void setProducerGroup(String producerGroup) {
         this.producerGroup = producerGroup;
     }

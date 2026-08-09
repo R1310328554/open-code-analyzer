@@ -23,8 +23,13 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 批量锁定消息队列的请求头：Pop 消费模式下 Consumer 批量申请队列消息锁。
+ * 锁定详情由 RPC 请求体携带，本头类无附加字段。
+ */
 @RocketMQAction(value = RequestCode.LOCK_BATCH_MQ, action = Action.SUB)
 public class LockBatchMqRequestHeader extends RpcRequestHeader {
+    /** 校验请求头字段（本类无附加字段，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

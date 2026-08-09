@@ -26,27 +26,28 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 获取 Topic 配置的请求头：按 Topic 名称查询 Broker 上 Topic 路由与属性配置。
+ */
 @RocketMQAction(value = RequestCode.GET_TOPIC_CONFIG, action = Action.GET)
 public class GetTopicConfigRequestHeader extends TopicRequestHeader {
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
 
 
-    /**
-     * @return the topic
-     */
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
-    /**
-     * @param topic the topic to set
-     */
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }

@@ -29,27 +29,28 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 获取订阅组配置的请求头：按消费组名拉取 Broker 上持久化的订阅组配置。
+ */
 @RocketMQAction(value = RequestCode.GET_SUBSCRIPTIONGROUP_CONFIG, action = Action.GET)
 public class GetSubscriptionGroupConfigRequestHeader extends RpcRequestHeader {
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 订阅组（消费组）名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String group;
 
-    /**
-     * @return the group
-     */
+    /** 返回订阅组名称。 */
     public String getGroup() {
         return group;
     }
 
-    /**
-     * @param group the group to set
-     */
+    /** 设置订阅组名称。 */
     public void setGroup(String group) {
         this.group = group;
     }

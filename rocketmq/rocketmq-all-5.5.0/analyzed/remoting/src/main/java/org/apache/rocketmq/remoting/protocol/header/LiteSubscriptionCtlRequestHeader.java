@@ -20,8 +20,13 @@ package org.apache.rocketmq.remoting.protocol.header;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * Lite 订阅控制请求头：管理 Pop 模式下 Lite 消费组的订阅关系。
+ * 具体参数由 RPC 请求体承载，本头类无附加字段。
+ */
 public class LiteSubscriptionCtlRequestHeader extends RpcRequestHeader {
 
+    /** 校验请求头字段（本类无附加字段，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

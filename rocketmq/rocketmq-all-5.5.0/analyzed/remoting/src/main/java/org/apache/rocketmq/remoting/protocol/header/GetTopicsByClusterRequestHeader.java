@@ -25,19 +25,26 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 按集群列举 Topic 的请求头：指定集群名称，返回该集群下所有 Topic 列表。
+ */
 @RocketMQAction(value = RequestCode.GET_TOPICS_BY_CLUSTER, resource = ResourceType.TOPIC, action = Action.LIST)
 public class GetTopicsByClusterRequestHeader implements CommandCustomHeader {
+    /** 集群名称。 */
     @CFNotNull
     private String cluster;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回集群名称。 */
     public String getCluster() {
         return cluster;
     }
 
+    /** 设置集群名称。 */
     public void setCluster(String cluster) {
         this.cluster = cluster;
     }

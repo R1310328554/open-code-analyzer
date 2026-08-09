@@ -19,29 +19,39 @@ package org.apache.rocketmq.remoting.protocol.header;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 初始化消费位点的请求头：为指定 Topic 设置消费组起始消费进度。
+ * initMode 取值参见 {@code ConsumeInitMode}。
+ */
 public class InitConsumerOffsetRequestHeader extends TopicRequestHeader {
 
+    /** 目标 Topic 名称。 */
     private String topic;
-    // @see ConsumeInitMode
+    /** 消费位点初始化模式，参见 {@code ConsumeInitMode}。 */
     private int initMode;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回消费位点初始化模式。 */
     public int getInitMode() {
         return initMode;
     }
 
+    /** 设置消费位点初始化模式。 */
     public void setInitMode(int initMode) {
         this.initMode = initMode;
     }

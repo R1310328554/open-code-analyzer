@@ -23,27 +23,36 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 查询 ACL 用户的请求头：按用户名获取 RocketMQ 访问控制用户详情。
+ */
 @RocketMQAction(value = RequestCode.AUTH_GET_USER, resource = ResourceType.CLUSTER, action = Action.GET)
 public class GetUserRequestHeader implements CommandCustomHeader {
 
+    /** ACL 用户名。 */
     private String username;
 
+    /** 无参构造。 */
     public GetUserRequestHeader() {
     }
 
+    /** 以用户名构造请求头。 */
     public GetUserRequestHeader(String username) {
         this.username = username;
     }
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 ACL 用户名。 */
     public String getUsername() {
         return username;
     }
 
+    /** 设置 ACL 用户名。 */
     public void setUsername(String username) {
         this.username = username;
     }
