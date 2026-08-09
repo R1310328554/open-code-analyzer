@@ -43,5 +43,5 @@
     "core/spring-boot/src/main/java/org/springframework/boot/logging/structured/StructuredLoggingJsonPropertiesBeanFactoryInitializationAotProcessor.java"
   ],
   "remaining_pending": 104,
-  "done": 481
+  "done": 501
 }
