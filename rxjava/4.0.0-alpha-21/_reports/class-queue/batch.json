@@ -15,23 +15,8 @@
     "src/main/java/io/reactivex/rxjava4/operators/DeferredEnumerableSource.java",
     "src/main/java/io/reactivex/rxjava4/operators/EnumerableSource.java",
     "src/main/java/io/reactivex/rxjava4/operators/IndexableSource.java",
-    "src/main/java/io/reactivex/rxjava4/operators/QueueDisposable.java",
-    "src/main/java/io/reactivex/rxjava4/operators/QueueFuseable.java",
-    "src/main/java/io/reactivex/rxjava4/operators/QueueSubscription.java",
-    "src/main/java/io/reactivex/rxjava4/operators/ScalarSupplier.java",
-    "src/main/java/io/reactivex/rxjava4/operators/SimplePlainQueue.java",
-    "src/main/java/io/reactivex/rxjava4/operators/SimpleQueue.java",
-    "src/main/java/io/reactivex/rxjava4/operators/SpscArrayQueue.java",
-    "src/main/java/io/reactivex/rxjava4/operators/SpscLinkedArrayQueue.java",
-    "src/main/java/io/reactivex/rxjava4/operators/package-info.java",
-    "src/main/java/io/reactivex/rxjava4/parallel/ParallelFailureHandling.java",
-    "src/main/java/io/reactivex/rxjava4/parallel/ParallelFlowableConverter.java",
-    "src/main/java/io/reactivex/rxjava4/parallel/ParallelTransformer.java",
-    "src/main/java/io/reactivex/rxjava4/parallel/package-info.java",
-    "src/main/java/io/reactivex/rxjava4/plugins/package-info.java",
-    "src/main/java/io/reactivex/rxjava4/processors/AsyncProcessor.java",
-    "src/main/java/io/reactivex/rxjava4/processors/DispatchStreamProcessor.java"
+    "src/main/java/io/reactivex/rxjava4/operators/QueueDisposable.java"
   ],
   "remaining_pending": 152,
-  "done": 795
+  "done": 810
 }
