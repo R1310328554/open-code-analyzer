@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:40:53Z",
   "files": [
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/TransactionMetricsFlushService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/TransactionalMessageCheckService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/TransactionalMessageService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/queue/DefaultTransactionalMessageCheckListener.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/queue/GetResult.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/queue/MessageQueueOpContext.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/queue/TransactionalMessageBridge.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/queue/TransactionalMessageUtil.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/queue/TransactionalOpBatchService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/transaction/rocksdb/TransactionalMessageRocksDBService.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/util/HookUtils.java",
-    "broker/src/main/java/org/apache/rocketmq/broker/util/PositiveAtomicCounter.java",
-    "client/src/main/java/org/apache/rocketmq/acl/common/AclClientRPCHook.java",
-    "client/src/main/java/org/apache/rocketmq/acl/common/AclConstants.java",
-    "client/src/main/java/org/apache/rocketmq/acl/common/AclException.java",
     "client/src/main/java/org/apache/rocketmq/acl/common/AclSigner.java",
     "client/src/main/java/org/apache/rocketmq/acl/common/AclUtils.java",
     "client/src/main/java/org/apache/rocketmq/acl/common/Permission.java",
@@ -32,6 +17,6 @@
     "client/src/main/java/org/apache/rocketmq/client/common/NameserverAccessConfig.java",
     "client/src/main/java/org/apache/rocketmq/client/common/ThreadLocalIndex.java"
   ],
-  "remaining_pending": 1278,
-  "done": 180
+  "remaining_pending": 1293,
+  "done": 195
 }
