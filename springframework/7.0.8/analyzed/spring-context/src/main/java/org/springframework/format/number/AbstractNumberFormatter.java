@@ -24,8 +24,8 @@ import java.util.Locale;
 import org.springframework.format.Formatter;
 
 /**
- * Abstract formatter for Numbers,
- * providing a {@link #getNumberFormat(java.util.Locale)} template method.
+ * 数值的抽象格式化器，
+ * 提供 {@link #getNumberFormat(java.util.Locale)} 模板方法。
  *
  * @author Juergen Hoeller
  * @author Keith Donald
@@ -37,9 +37,9 @@ public abstract class AbstractNumberFormatter implements Formatter<Number> {
 
 
 	/**
-	 * Specify whether parsing is to be lenient. Default is {@code false}.
-	 * <p>With lenient parsing, the parser may allow inputs that do not precisely match the format.
-	 * With strict parsing, inputs must match the format exactly.
+	 * 指定解析是否宽松。默认为 {@code false}。
+	 * <p>宽松解析时，解析器可能允许与格式不完全匹配的输入。
+	 * 严格解析时，输入必须精确匹配格式。
 	 */
 	public void setLenient(boolean lenient) {
 		this.lenient = lenient;
@@ -61,7 +61,7 @@ public abstract class AbstractNumberFormatter implements Formatter<Number> {
 		}
 		if (!this.lenient) {
 			if (text.length() != position.getIndex()) {
-				// indicates a part of the string that was not parsed
+				// 表示字符串中有一部分未被解析
 				throw new ParseException(text, position.getIndex());
 			}
 		}
@@ -69,9 +69,9 @@ public abstract class AbstractNumberFormatter implements Formatter<Number> {
 	}
 
 	/**
-	 * Obtain a concrete NumberFormat for the specified locale.
-	 * @param locale the current locale
-	 * @return the NumberFormat instance (never {@code null})
+	 * 为指定区域设置获取具体的 NumberFormat。
+	 * @param locale 当前区域设置
+	 * @return NumberFormat 实例（永不为 {@code null}）
 	 */
 	protected abstract NumberFormat getNumberFormat(Locale locale);
 

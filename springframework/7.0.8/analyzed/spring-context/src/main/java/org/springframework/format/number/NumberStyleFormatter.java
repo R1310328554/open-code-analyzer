@@ -23,12 +23,12 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A general-purpose number formatter using NumberFormat's number style.
+ * 使用 NumberFormat 数值样式的通用数字格式化器。
  *
- * <p>Delegates to {@link java.text.NumberFormat#getInstance(Locale)}.
- * Configures BigDecimal parsing so there is no loss in precision.
- * Allows configuration over the decimal number pattern.
- * The {@link #parse(String, Locale)} routine always returns a BigDecimal.
+ * <p>委托给 {@link java.text.NumberFormat#getInstance(Locale)}。
+ * 配置 BigDecimal 解析以避免精度损失。
+ * 允许配置小数数字模式。
+ * {@link #parse(String, Locale)} 方法始终返回 BigDecimal。
  *
  * @author Keith Donald
  * @author Juergen Hoeller
@@ -42,14 +42,14 @@ public class NumberStyleFormatter extends AbstractNumberFormatter {
 
 
 	/**
-	 * Create a new NumberStyleFormatter without a pattern.
+	 * 创建不带模式的新 NumberStyleFormatter。
 	 */
 	public NumberStyleFormatter() {
 	}
 
 	/**
-	 * Create a new NumberStyleFormatter with the specified pattern.
-	 * @param pattern the format pattern
+	 * 使用指定模式创建新的 NumberStyleFormatter。
+	 * @param pattern 格式模式
 	 * @see #setPattern
 	 */
 	public NumberStyleFormatter(String pattern) {
@@ -58,8 +58,8 @@ public class NumberStyleFormatter extends AbstractNumberFormatter {
 
 
 	/**
-	 * Specify the pattern to use to format number values.
-	 * If not specified, the default DecimalFormat pattern is used.
+	 * 指定用于格式化数值的模式。
+	 * 若未指定，则使用默认的 DecimalFormat 模式。
 	 * @see java.text.DecimalFormat#applyPattern(String)
 	 */
 	public void setPattern(String pattern) {

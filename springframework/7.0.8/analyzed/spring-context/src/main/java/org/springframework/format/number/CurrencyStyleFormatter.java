@@ -27,11 +27,11 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A BigDecimal formatter for number values in currency style.
+ * 以货币样式格式化数值的 BigDecimal 格式化器。
  *
- * <p>Delegates to {@link java.text.NumberFormat#getCurrencyInstance(Locale)}.
- * Configures BigDecimal parsing so there is no loss of precision.
- * Can apply a specified {@link java.math.RoundingMode} to parsed values.
+ * <p>委托给 {@link java.text.NumberFormat#getCurrencyInstance(Locale)}。
+ * 配置 BigDecimal 解析以避免精度损失。
+ * 可对解析后的值应用指定的 {@link java.math.RoundingMode}。
  *
  * @author Keith Donald
  * @author Juergen Hoeller
@@ -51,31 +51,31 @@ public class CurrencyStyleFormatter extends AbstractNumberFormatter {
 
 
 	/**
-	 * Specify the desired number of fraction digits.
-	 * Default is 2.
+	 * 指定所需的小数位数。
+	 * 默认为 2。
 	 */
 	public void setFractionDigits(int fractionDigits) {
 		this.fractionDigits = fractionDigits;
 	}
 
 	/**
-	 * Specify the rounding mode to use for decimal parsing.
-	 * Default is {@link java.math.RoundingMode#UNNECESSARY}.
+	 * 指定用于小数解析的舍入模式。
+	 * 默认为 {@link java.math.RoundingMode#UNNECESSARY}。
 	 */
 	public void setRoundingMode(RoundingMode roundingMode) {
 		this.roundingMode = roundingMode;
 	}
 
 	/**
-	 * Specify the currency, if known.
+	 * 指定货币（若已知）。
 	 */
 	public void setCurrency(Currency currency) {
 		this.currency = currency;
 	}
 
 	/**
-	 * Specify the pattern to use to format number values.
-	 * If not specified, the default DecimalFormat pattern is used.
+	 * 指定用于格式化数值的模式。
+	 * 若未指定，则使用默认的 DecimalFormat 模式。
 	 * @see java.text.DecimalFormat#applyPattern(String)
 	 */
 	public void setPattern(String pattern) {
