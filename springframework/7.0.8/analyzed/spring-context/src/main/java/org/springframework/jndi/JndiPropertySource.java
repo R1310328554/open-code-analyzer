@@ -23,26 +23,21 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.env.PropertySource;
 
 /**
- * {@link PropertySource} implementation that reads properties from an underlying Spring
- * {@link JndiLocatorDelegate}.
+ * 从底层 Spring {@link JndiLocatorDelegate} 读取属性的 {@link PropertySource} 实现。
  *
- * <p>By default, the underlying {@code JndiLocatorDelegate} will be configured with its
- * {@link JndiLocatorDelegate#setResourceRef(boolean) "resourceRef"} property set to
- * {@code true}, meaning that names looked up will automatically be prefixed with
- * "java:comp/env/" in alignment with published
- * <a href="https://download.oracle.com/javase/jndi/tutorial/beyond/misc/policy.html">JNDI
- * naming conventions</a>. To override this setting or to change the prefix, manually
- * configure a {@code JndiLocatorDelegate} and provide it to one of the constructors here
- * that accepts it. The same applies when providing custom JNDI properties. These should
- * be specified using {@link JndiLocatorDelegate#setJndiEnvironment(java.util.Properties)}
- * prior to construction of the {@code JndiPropertySource}.
+ * <p>默认底层 {@code JndiLocatorDelegate} 的
+ * {@link JndiLocatorDelegate#setResourceRef(boolean) "resourceRef"} 为 {@code true}，
+ * 查找名称将自动前缀 {@code java:comp/env/}，符合
+ * <a href="https://download.oracle.com/javase/jndi/tutorial/beyond/misc/policy.html">JNDI 命名约定</a>。
+ * 若要覆盖或更改前缀，手动配置 {@code JndiLocatorDelegate} 并通过接受它的构造器传入。
+ * 自定义 JNDI 属性应通过 {@link JndiLocatorDelegate#setJndiEnvironment(java.util.Properties)}
+ * 在构造 {@code JndiPropertySource} 前指定。
  *
- * <p>Note that {@link org.springframework.web.context.support.StandardServletEnvironment
- * StandardServletEnvironment} includes a {@code JndiPropertySource} by default, and any
- * customization of the underlying {@link JndiLocatorDelegate} may be performed within an
- * {@link org.springframework.context.ApplicationContextInitializer
- * ApplicationContextInitializer} or {@link org.springframework.web.WebApplicationInitializer
- * WebApplicationInitializer}.
+ * <p>{@link org.springframework.web.context.support.StandardServletEnvironment
+ * StandardServletEnvironment} 默认包含 {@code JndiPropertySource}；
+ * 可在 {@link org.springframework.context.ApplicationContextInitializer
+ * ApplicationContextInitializer} 或 {@link org.springframework.web.WebApplicationInitializer
+ * WebApplicationInitializer} 中定制底层 {@link JndiLocatorDelegate}。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -55,17 +50,15 @@ import org.springframework.core.env.PropertySource;
 public class JndiPropertySource extends PropertySource<JndiLocatorDelegate> {
 
 	/**
-	 * Create a new {@code JndiPropertySource} with the given name
-	 * and a {@link JndiLocatorDelegate} configured to prefix any names with
-	 * "java:comp/env/".
+	 * 使用给定名称创建 {@code JndiPropertySource}，
+	 * 底层 {@link JndiLocatorDelegate} 配置为名称前缀 {@code java:comp/env/}。
 	 */
 	public JndiPropertySource(String name) {
 		this(name, JndiLocatorDelegate.createDefaultResourceRefLocator());
 	}
 
 	/**
-	 * Create a new {@code JndiPropertySource} with the given name and the given
-	 * {@code JndiLocatorDelegate}.
+	 * 使用给定名称与 {@code JndiLocatorDelegate} 创建 {@code JndiPropertySource}。
 	 */
 	public JndiPropertySource(String name, JndiLocatorDelegate jndiLocator) {
 		super(name, jndiLocator);
@@ -73,10 +66,9 @@ public class JndiPropertySource extends PropertySource<JndiLocatorDelegate> {
 
 
 	/**
-	 * This implementation looks up and returns the value associated with the given
-	 * name from the underlying {@link JndiLocatorDelegate}. If a {@link NamingException}
-	 * is thrown during the call to {@link JndiLocatorDelegate#lookup(String)}, returns
-	 * {@code null} and issues a DEBUG-level log statement with the exception message.
+	 * 从底层 {@link JndiLocatorDelegate} 查找并返回与给定名称关联的值。
+	 * 若 {@link JndiLocatorDelegate#lookup(String)} 抛出 {@link NamingException}，
+	 * 返回 {@code null} 并以 DEBUG 级别记录异常消息。
 	 */
 	@Override
 	public @Nullable Object getProperty(String name) {

@@ -21,10 +21,9 @@ import javax.naming.NamingException;
 import org.springframework.core.NestedRuntimeException;
 
 /**
- * RuntimeException to be thrown in case of JNDI lookup failures,
- * in particular from code that does not declare JNDI's checked
- * {@link javax.naming.NamingException}: for example, from Spring's
- * {@link JndiObjectTargetSource}.
+ * JNDI 查找失败时抛出的运行时异常，
+ * 尤其适用于不声明 JNDI 受检 {@link javax.naming.NamingException} 的代码，
+ * 例如 Spring 的 {@link JndiObjectTargetSource}。
  *
  * @author Juergen Hoeller
  * @since 2.0.3
@@ -33,10 +32,9 @@ import org.springframework.core.NestedRuntimeException;
 public class JndiLookupFailureException extends NestedRuntimeException {
 
 	/**
-	 * Construct a new JndiLookupFailureException,
-	 * wrapping the given JNDI NamingException.
-	 * @param msg the detail message
-	 * @param cause the NamingException root cause
+	 * 构造新的 {@code JndiLookupFailureException}，包装给定 JNDI {@code NamingException}。
+	 * @param msg 详细消息
+	 * @param cause {@code NamingException} 根因
 	 */
 	public JndiLookupFailureException(String msg, NamingException cause) {
 		super(msg, cause);

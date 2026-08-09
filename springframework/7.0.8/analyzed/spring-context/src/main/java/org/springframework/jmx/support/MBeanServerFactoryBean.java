@@ -29,17 +29,13 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jmx.MBeanServerNotFoundException;
 
 /**
- * {@link FactoryBean} that obtains a {@link javax.management.MBeanServer} reference
- * through the standard JMX 1.2 {@link javax.management.MBeanServerFactory}
- * API.
+ * 通过标准 JMX 1.2 {@link javax.management.MBeanServerFactory} API
+ * 获取 {@link javax.management.MBeanServer} 引用的 {@link FactoryBean}。
  *
- * <p>Exposes the {@code MBeanServer} for bean references.
+ * <p>将 {@code MBeanServer} 暴露为 Bean 引用。
  *
- * <p>By default, {@code MBeanServerFactoryBean} will always create
- * a new {@code MBeanServer} even if one is already running. To have
- * the {@code MBeanServerFactoryBean} attempt to locate a running
- * {@code MBeanServer} first, set the value of the
- * "locateExistingServerIfPossible" property to "true".
+ * <p>默认 {@code MBeanServerFactoryBean} 即使已有运行中的 {@code MBeanServer} 也会创建新实例。
+ * 若希望先尝试定位运行中的 {@code MBeanServer}，将 {@code locateExistingServerIfPossible} 设为 {@code true}。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -71,22 +67,18 @@ public class MBeanServerFactoryBean implements FactoryBean<MBeanServer>, Initial
 
 
 	/**
-	 * Set whether the {@code MBeanServerFactoryBean} should attempt
-	 * to locate a running {@code MBeanServer} before creating one.
-	 * <p>Default is {@code false}.
+	 * 设置是否先尝试定位运行中的 {@code MBeanServer} 再创建。
+	 * <p>默认为 {@code false}。
 	 */
 	public void setLocateExistingServerIfPossible(boolean locateExistingServerIfPossible) {
 		this.locateExistingServerIfPossible = locateExistingServerIfPossible;
 	}
 
 	/**
-	 * Set the agent id of the {@code MBeanServer} to locate.
-	 * <p>Default is none. If specified, this will result in an
-	 * automatic attempt being made to locate the attendant MBeanServer,
-	 * and (importantly) if said MBeanServer cannot be located no
-	 * attempt will be made to create a new MBeanServer (and an
-	 * MBeanServerNotFoundException will be thrown at resolution time).
-	 * <p>Specifying the empty String indicates the platform MBeanServer.
+	 * 设置要定位的 {@code MBeanServer} 的 agent id。
+	 * <p>默认为无。若指定，将自动尝试定位对应 MBeanServer；若找不到则<b>不会</b>创建新实例
+	 * （解析时抛出 {@code MBeanServerNotFoundException}）。
+	 * <p>空字符串表示平台 MBeanServer。
 	 * @see javax.management.MBeanServerFactory#findMBeanServer(String)
 	 */
 	public void setAgentId(String agentId) {
@@ -94,10 +86,9 @@ public class MBeanServerFactoryBean implements FactoryBean<MBeanServer>, Initial
 	}
 
 	/**
-	 * Set the default domain to be used by the {@code MBeanServer},
-	 * to be passed to {@code MBeanServerFactory.createMBeanServer()}
-	 * or {@code MBeanServerFactory.findMBeanServer()}.
-	 * <p>Default is none.
+	 * 设置 {@code MBeanServer} 的默认域，传递给
+	 * {@code MBeanServerFactory.createMBeanServer()} 或 {@code findMBeanServer()}。
+	 * <p>默认为无。
 	 * @see javax.management.MBeanServerFactory#createMBeanServer(String)
 	 * @see javax.management.MBeanServerFactory#findMBeanServer(String)
 	 */
@@ -106,10 +97,9 @@ public class MBeanServerFactoryBean implements FactoryBean<MBeanServer>, Initial
 	}
 
 	/**
-	 * Set whether to register the {@code MBeanServer} with the
-	 * {@code MBeanServerFactory}, making it available through
-	 * {@code MBeanServerFactory.findMBeanServer()}.
-	 * <p>Default is {@code true}.
+	 * 设置是否将 {@code MBeanServer} 注册到 {@code MBeanServerFactory}，
+	 * 使其可通过 {@code MBeanServerFactory.findMBeanServer()} 找到。
+	 * <p>默认为 {@code true}。
 	 * @see javax.management.MBeanServerFactory#createMBeanServer
 	 * @see javax.management.MBeanServerFactory#findMBeanServer
 	 */
@@ -118,9 +108,7 @@ public class MBeanServerFactoryBean implements FactoryBean<MBeanServer>, Initial
 	}
 
 
-	/**
-	 * Creates the {@code MBeanServer} instance.
-	 */
+	/** 创建 {@code MBeanServer} 实例。 */
 	@Override
 	public void afterPropertiesSet() throws MBeanServerNotFoundException {
 		// Try to locate existing MBeanServer, if desired.
@@ -146,16 +134,12 @@ public class MBeanServerFactoryBean implements FactoryBean<MBeanServer>, Initial
 	}
 
 	/**
-	 * Attempt to locate an existing {@code MBeanServer}.
-	 * Called if {@code locateExistingServerIfPossible} is set to {@code true}.
-	 * <p>The default implementation attempts to find an {@code MBeanServer} using
-	 * a standard lookup. Subclasses may override to add additional location logic.
-	 * @param agentId the agent identifier of the MBeanServer to retrieve.
-	 * If this parameter is {@code null}, all registered MBeanServers are
-	 * considered.
-	 * @return the {@code MBeanServer} if found
-	 * @throws org.springframework.jmx.MBeanServerNotFoundException
-	 * if no {@code MBeanServer} could be found
+	 * 尝试定位现有 {@code MBeanServer}。
+	 * 在 {@code locateExistingServerIfPossible} 为 {@code true} 时调用。
+	 * <p>默认使用标准查找。子类可重写以添加额外定位逻辑。
+	 * @param agentId MBeanServer 代理标识；{@code null} 时考虑全部已注册服务器
+	 * @return 找到的 {@code MBeanServer}
+	 * @throws org.springframework.jmx.MBeanServerNotFoundException 找不到时
 	 * @see #setLocateExistingServerIfPossible
 	 * @see JmxUtils#locateMBeanServer(String)
 	 * @see javax.management.MBeanServerFactory#findMBeanServer(String)
@@ -165,11 +149,9 @@ public class MBeanServerFactoryBean implements FactoryBean<MBeanServer>, Initial
 	}
 
 	/**
-	 * Create a new {@code MBeanServer} instance and register it with the
-	 * {@code MBeanServerFactory}, if desired.
-	 * @param defaultDomain the default domain, or {@code null} if none
-	 * @param registerWithFactory whether to register the {@code MBeanServer}
-	 * with the {@code MBeanServerFactory}
+	 * 创建新 {@code MBeanServer} 实例并按需注册到 {@code MBeanServerFactory}。
+	 * @param defaultDomain 默认域，或 {@code null}
+	 * @param registerWithFactory 是否注册到 {@code MBeanServerFactory}
 	 * @see javax.management.MBeanServerFactory#createMBeanServer
 	 * @see javax.management.MBeanServerFactory#newMBeanServer
 	 */
@@ -199,9 +181,7 @@ public class MBeanServerFactoryBean implements FactoryBean<MBeanServer>, Initial
 	}
 
 
-	/**
-	 * Unregisters the {@code MBeanServer} instance, if necessary.
-	 */
+	/** 按需注销 {@code MBeanServer} 实例。 */
 	@Override
 	public void destroy() {
 		if (this.newlyRegistered) {

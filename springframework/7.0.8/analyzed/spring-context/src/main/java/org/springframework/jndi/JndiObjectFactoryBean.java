@@ -38,37 +38,22 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
-/* ===== [OCA 中文解析] =====
-class JndiObjectFactoryBean — 意图说明
-
-工厂：封装复杂创建逻辑；源文件: `spring-context/src/main/java/org/springframework/jndi/JndiObjectFactoryBean.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * {@link org.springframework.beans.factory.FactoryBean} that looks up a
- * JNDI object. Exposes the object found in JNDI for bean references,
- * for example, for data access object's "dataSource" property in case of a
- * {@link javax.sql.DataSource}.
+ * 查找 JNDI 对象的 {@link org.springframework.beans.factory.FactoryBean}。
+ * 将 JNDI 中找到的对象暴露为 Bean 引用，例如 {@link javax.sql.DataSource} 用于 DAO 的 dataSource 属性。
  *
- * <p>The typical usage will be to register this as singleton factory
- * (for example, for a certain JNDI-bound DataSource) in an application context,
- * and give bean references to application services that need it.
+ * <p>典型用法是在应用上下文中注册为单例工厂（如某 JNDI 绑定的 DataSource），
+ * 再注入需要它的应用服务。
  *
- * <p>The default behavior is to look up the JNDI object on startup and cache it.
- * This can be customized through the "lookupOnStartup" and "cache" properties,
- * using a {@link JndiObjectTargetSource} underneath. Note that you need to specify
- * a "proxyInterface" in such a scenario, since the actual JNDI object type is not
- * known in advance.
+ * <p>默认在启动时查找并缓存 JNDI 对象。可通过 {@code lookupOnStartup} 与 {@code cache} 定制，
+ * 底层使用 {@link JndiObjectTargetSource}。此场景需指定 {@code proxyInterface}，
+ * 因为实际 JNDI 对象类型事先未知。
  *
- * <p>Of course, bean classes in a Spring environment may look up, for example, a DataSource
- * from JNDI themselves. This class simply enables central configuration of the
- * JNDI name, and easy switching to non-JNDI alternatives. The latter is
- * particularly convenient for test setups, reuse in standalone clients, etc.
+ * <p>Spring 环境中的 Bean 类也可自行从 JNDI 查找 DataSource 等。
+ * 本类便于集中配置 JNDI 名称并轻松切换到非 JNDI 替代方案，尤其利于测试与独立客户端。
  *
- * <p>Note that switching to, for example, DriverManagerDataSource is just a matter of
- * configuration: Simply replace the definition of this FactoryBean with a
- * {@link org.springframework.jdbc.datasource.DriverManagerDataSource} definition!
+ * <p>切换到 {@link org.springframework.jdbc.datasource.DriverManagerDataSource} 等只需改配置：
+ * 用其 Bean 定义替换本 FactoryBean 即可。
  *
  * @author Juergen Hoeller
  * @since 22.05.2003
@@ -82,13 +67,10 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 
 	private Class<?> @Nullable [] proxyInterfaces;
 
-	// [OCA] 字段 `lookupOnStartup`：类成员状态。
 	private boolean lookupOnStartup = true;
 
-	// [OCA] 字段 `cache`：类成员状态。
 	private boolean cache = true;
 
-	// [OCA] 字段 `exposeAccessContext`：类成员状态。
 	private boolean exposeAccessContext = false;
 
 	private @Nullable Object defaultObject;
@@ -101,10 +83,9 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 
 
 	/**
-	 * Specify the proxy interface to use for the JNDI object.
-	 * <p>Typically used in conjunction with "lookupOnStartup"=false and/or "cache"=false.
-	 * Needs to be specified because the actual JNDI object type is not known
-	 * in advance in case of a lazy lookup.
+	 * 指定 JNDI 对象使用的代理接口。
+	 * <p>通常与 {@code lookupOnStartup=false} 和/或 {@code cache=false} 配合使用。
+	 * 懒加载时须指定，因实际 JNDI 对象类型事先未知。
 	 * @see #setProxyInterfaces
 	 * @see #setLookupOnStartup
 	 * @see #setCache
@@ -114,10 +95,9 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 	/**
-	 * Specify multiple proxy interfaces to use for the JNDI object.
-	 * <p>Typically used in conjunction with "lookupOnStartup"=false and/or "cache"=false.
-	 * Note that proxy interfaces will be autodetected from a specified "expectedType",
-	 * if necessary.
+	 * 指定 JNDI 对象使用的多个代理接口。
+	 * <p>通常与 {@code lookupOnStartup=false} 和/或 {@code cache=false} 配合使用。
+	 * 必要时可从 {@code expectedType} 自动检测代理接口。
 	 * @see #setExpectedType
 	 * @see #setLookupOnStartup
 	 * @see #setCache
@@ -127,10 +107,9 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 	/**
-	 * Set whether to look up the JNDI object on startup. Default is "true".
-	 * <p>Can be turned off to allow for late availability of the JNDI object.
-	 * In this case, the JNDI object will be fetched on first access.
-	 * <p>For a lazy lookup, a proxy interface needs to be specified.
+	 * 设置是否在启动时查找 JNDI 对象。默认为 {@code true}。
+	 * <p>可关闭以允许 JNDI 对象延迟可用，首次访问时才获取。
+	 * <p>懒加载须指定代理接口。
 	 * @see #setProxyInterface
 	 * @see #setCache
 	 */
@@ -139,11 +118,9 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 	/**
-	 * Set whether to cache the JNDI object once it has been located.
-	 * Default is "true".
-	 * <p>Can be turned off to allow for hot redeployment of JNDI objects.
-	 * In this case, the JNDI object will be fetched for each invocation.
-	 * <p>For hot redeployment, a proxy interface needs to be specified.
+	 * 设置定位后是否缓存 JNDI 对象。默认为 {@code true}。
+	 * <p>可关闭以支持热部署，每次调用重新获取。
+	 * <p>热部署须指定代理接口。
 	 * @see #setProxyInterface
 	 * @see #setLookupOnStartup
 	 */
@@ -152,27 +129,20 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 	/**
-	 * Set whether to expose the JNDI environment context for all access to the target
-	 * object, i.e. for all method invocations on the exposed object reference.
-	 * <p>Default is "false", i.e. to only expose the JNDI context for object lookup.
-	 * Switch this flag to "true" in order to expose the JNDI environment (including
-	 * the authorization context) for each method invocation, as needed by WebLogic
-	 * for JNDI-obtained factories (for example, JDBC DataSource, JMS ConnectionFactory)
-	 * with authorization requirements.
+	 * 设置是否对所有目标对象访问（即暴露对象引用的全部方法调用）暴露 JNDI 环境上下文。
+	 * <p>默认为 {@code false}，仅在对象查找时暴露 JNDI 上下文。
+	 * 设为 {@code true} 可在每次方法调用时暴露 JNDI 环境（含授权上下文），
+	 * 满足 WebLogic 对带授权要求的 JNDI 工厂（如 JDBC DataSource、JMS ConnectionFactory）的需求。
 	 */
 	public void setExposeAccessContext(boolean exposeAccessContext) {
 		this.exposeAccessContext = exposeAccessContext;
 	}
 
 	/**
-	 * Specify a default object to fall back to if the JNDI lookup fails.
-	 * Default is none.
-	 * <p>This can be an arbitrary bean reference or literal value.
-	 * It is typically used for literal values in scenarios where the JNDI environment
-	 * might define specific config settings but those are not required to be present.
-	 * <p>Note: This is only supported for lookup on startup.
-	 * If specified together with {@link #setExpectedType}, the specified value
-	 * needs to be either of that type or convertible to it.
+	 * 指定 JNDI 查找失败时的回退默认对象。默认为无。
+	 * <p>可为任意 Bean 引用或字面值，常用于 JNDI 环境可能定义但非必需的配置项。
+	 * <p>注意：仅支持启动时查找。若与 {@link #setExpectedType} 同时指定，
+	 * 默认值须为该类型或可转换到该类型。
 	 * @see #setLookupOnStartup
 	 * @see ConfigurableBeanFactory#getTypeConverter()
 	 * @see SimpleTypeConverter
@@ -196,15 +166,8 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 
-	/**
-	 * Look up the JNDI object and store it.
-	 */
+	/** 查找 JNDI 对象并保存。 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 afterPropertiesSet — 意图与阅读要点
-
-方法 `afterPropertiesSet` 复杂度较高（CCN≈11, NLOC≈26）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void afterPropertiesSet() throws IllegalArgumentException, NamingException {
 		super.afterPropertiesSet();
 
@@ -237,10 +200,9 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 	/**
-	 * Lookup variant that returns the specified "defaultObject"
-	 * (if any) in case of lookup failure.
-	 * @return the located object, or the "defaultObject" as fallback
-	 * @throws NamingException in case of lookup failure without fallback
+	 * 查找变体：查找失败时返回指定的 {@code defaultObject}（若有）。
+	 * @return 查找到的对象，或回退的 {@code defaultObject}
+	 * @throws NamingException 无回退且查找失败时
 	 * @see #setDefaultObject
 	 */
 	protected Object lookupWithFallback() throws NamingException {
@@ -273,9 +235,7 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 
-	/**
-	 * Return the singleton JNDI object.
-	 */
+	/** 返回单例 JNDI 对象。 */
 	@Override
 	public @Nullable Object getObject() {
 		return this.jndiObject;
@@ -306,12 +266,10 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 
 
 	/**
-	 * Create a composite interface Class for the given interfaces,
-	 * implementing the given interfaces in one single Class.
-	 * <p>The default implementation builds a JDK proxy class for the
-	 * given interfaces.
-	 * @param interfaces the interfaces to merge
-	 * @return the merged interface as Class
+	 * 为给定接口创建合并的复合接口 Class。
+	 * <p>默认实现为给定接口构建 JDK 代理类。
+	 * @param interfaces 要合并的接口
+	 * @return 合并后的接口 Class
 	 * @see java.lang.reflect.Proxy#getProxyClass
 	 */
 	protected Class<?> createCompositeInterface(Class<?>[] interfaces) {
@@ -319,16 +277,7 @@ public class JndiObjectFactoryBean extends JndiObjectLocator
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class JndiObjectProxyFactory — 意图说明
-
-代理相关：AOP/事务等横切能力的载体；源文件: `spring-context/src/main/java/org/springframework/jndi/JndiObjectFactoryBean.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
-	/**
-	 * Inner class to just introduce an AOP dependency when actually creating a proxy.
-	 */
+	/** 内部类：仅在实际创建代理时引入 AOP 依赖。 */
 	private static class JndiObjectProxyFactory {
 
 		private static Object createJndiObjectProxy(JndiObjectFactoryBean jof) throws NamingException {
@@ -371,16 +320,9 @@ class JndiObjectProxyFactory — 意图说明
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class JndiContextExposingInterceptor — 意图说明
-
-拦截器：调用链中的前置/后置逻辑；源文件: `spring-context/src/main/java/org/springframework/jndi/JndiObjectFactoryBean.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Interceptor that exposes the JNDI context for all method invocations,
-	 * according to JndiObjectFactoryBean's "exposeAccessContext" flag.
+	 * 根据 JndiObjectFactoryBean 的 {@code exposeAccessContext} 标志，
+	 * 为全部方法调用暴露 JNDI 上下文的拦截器。
 	 */
 	private static class JndiContextExposingInterceptor implements MethodInterceptor {
 

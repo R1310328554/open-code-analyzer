@@ -22,7 +22,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 /**
- * Helper class for the creation of {@link javax.management.ObjectName} instances.
+ * 创建 {@link javax.management.ObjectName} 实例的辅助类。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -36,10 +36,10 @@ public final class ObjectNameManager {
 
 
 	/**
-	 * Retrieve the {@link ObjectName} instance corresponding to the supplied name.
-	 * @param name the name in {@code ObjectName} or {@code String} format
-	 * @return the {@code ObjectName} instance
-	 * @throws MalformedObjectNameException in case of an invalid object name specification
+	 * 获取与给定名称对应的 {@link ObjectName} 实例。
+	 * @param name {@code ObjectName} 或 {@code String} 格式的名称
+	 * @return {@code ObjectName} 实例
+	 * @throws MalformedObjectNameException 对象名无效时
 	 * @see ObjectName#ObjectName(String)
 	 * @see ObjectName#getInstance(String)
 	 */
@@ -55,10 +55,10 @@ public final class ObjectNameManager {
 	}
 
 	/**
-	 * Retrieve the {@code ObjectName} instance corresponding to the supplied name.
-	 * @param objectName the {@code ObjectName} in {@code String} format
-	 * @return the {@code ObjectName} instance
-	 * @throws MalformedObjectNameException in case of an invalid object name specification
+	 * 获取与给定名称对应的 {@code ObjectName} 实例。
+	 * @param objectName {@code String} 格式的 {@code ObjectName}
+	 * @return {@code ObjectName} 实例
+	 * @throws MalformedObjectNameException 对象名无效时
 	 * @see ObjectName#ObjectName(String)
 	 * @see ObjectName#getInstance(String)
 	 */
@@ -67,13 +67,12 @@ public final class ObjectNameManager {
 	}
 
 	/**
-	 * Retrieve an {@code ObjectName} instance for the specified domain and a
-	 * single property with the supplied key and value.
-	 * @param domainName the domain name for the {@code ObjectName}
-	 * @param key the key for the single property in the {@code ObjectName}
-	 * @param value the value for the single property in the {@code ObjectName}
-	 * @return the {@code ObjectName} instance
-	 * @throws MalformedObjectNameException in case of an invalid object name specification
+	 * 获取指定域及单个键值属性对应的 {@code ObjectName} 实例。
+	 * @param domainName {@code ObjectName} 的域名
+	 * @param key 单个属性的键
+	 * @param value 单个属性的值
+	 * @return {@code ObjectName} 实例
+	 * @throws MalformedObjectNameException 对象名无效时
 	 * @see ObjectName#ObjectName(String, String, String)
 	 * @see ObjectName#getInstance(String, String, String)
 	 */
@@ -84,12 +83,11 @@ public final class ObjectNameManager {
 	}
 
 	/**
-	 * Retrieve an {@code ObjectName} instance with the specified domain name
-	 * and the supplied key/name properties.
-	 * @param domainName the domain name for the {@code ObjectName}
-	 * @param properties the properties for the {@code ObjectName}
-	 * @return the {@code ObjectName} instance
-	 * @throws MalformedObjectNameException in case of an invalid object name specification
+	 * 获取指定域名及键/值属性表对应的 {@code ObjectName} 实例。
+	 * @param domainName {@code ObjectName} 的域名
+	 * @param properties {@code ObjectName} 的属性表
+	 * @return {@code ObjectName} 实例
+	 * @throws MalformedObjectNameException 对象名无效时
 	 * @see ObjectName#ObjectName(String, java.util.Hashtable)
 	 * @see ObjectName#getInstance(String, java.util.Hashtable)
 	 */

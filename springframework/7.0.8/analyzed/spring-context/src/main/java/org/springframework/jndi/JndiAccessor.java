@@ -23,8 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Convenient superclass for JNDI accessors, providing "jndiTemplate"
- * and "jndiEnvironment" bean properties.
+ * JNDI 访问器的便捷超类，提供 {@code jndiTemplate} 与 {@code jndiEnvironment} Bean 属性。
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -33,42 +32,36 @@ import org.jspecify.annotations.Nullable;
  */
 public class JndiAccessor {
 
-	/**
-	 * Logger, available to subclasses.
-	 */
+	/** 子类可用的日志记录器。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private JndiTemplate jndiTemplate = new JndiTemplate();
 
 
 	/**
-	 * Set the JNDI template to use for JNDI lookups.
-	 * <p>You can also specify JNDI environment settings via "jndiEnvironment".
+	 * 设置用于 JNDI 查找的 {@link JndiTemplate}。
+	 * <p>也可通过 {@code jndiEnvironment} 指定 JNDI 环境设置。
 	 * @see #setJndiEnvironment
 	 */
 	public void setJndiTemplate(@Nullable JndiTemplate jndiTemplate) {
 		this.jndiTemplate = (jndiTemplate != null ? jndiTemplate : new JndiTemplate());
 	}
 
-	/**
-	 * Return the JNDI template to use for JNDI lookups.
-	 */
+	/** 返回用于 JNDI 查找的 {@link JndiTemplate}。 */
 	public JndiTemplate getJndiTemplate() {
 		return this.jndiTemplate;
 	}
 
 	/**
-	 * Set the JNDI environment to use for JNDI lookups.
-	 * <p>Creates a JndiTemplate with the given environment settings.
+	 * 设置用于 JNDI 查找的 JNDI 环境。
+	 * <p>使用给定环境设置创建 {@link JndiTemplate}。
 	 * @see #setJndiTemplate
 	 */
 	public void setJndiEnvironment(@Nullable Properties jndiEnvironment) {
 		this.jndiTemplate = new JndiTemplate(jndiEnvironment);
 	}
 
-	/**
-	 * Return the JNDI environment to use for JNDI lookups.
-	 */
+	/** 返回用于 JNDI 查找的 JNDI 环境。 */
 	public @Nullable Properties getJndiEnvironment() {
 		return this.jndiTemplate.getEnvironment();
 	}

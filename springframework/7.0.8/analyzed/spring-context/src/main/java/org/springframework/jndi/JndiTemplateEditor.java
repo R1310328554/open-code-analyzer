@@ -24,8 +24,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.propertyeditors.PropertiesEditor;
 
 /**
- * Properties editor for JndiTemplate objects. Allows properties of type
- * JndiTemplate to be populated with a properties-format string.
+ * {@code JndiTemplate} 对象的属性编辑器。
+ * 允许用 properties 格式字符串填充 {@code JndiTemplate} 类型属性。
  *
  * @author Rod Johnson
  * @since 09.05.2003

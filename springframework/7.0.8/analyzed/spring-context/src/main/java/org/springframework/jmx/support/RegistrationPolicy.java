@@ -17,8 +17,7 @@
 package org.springframework.jmx.support;
 
 /**
- * Indicates registration behavior when attempting to register an MBean that already
- * exists.
+ * 指示尝试注册已存在 MBean 时的注册行为。
  *
  * @author Phillip Webb
  * @author Chris Beams
@@ -26,22 +25,13 @@ package org.springframework.jmx.support;
  */
 public enum RegistrationPolicy {
 
-	/**
-	 * Registration should fail when attempting to register an MBean under a name that
-	 * already exists.
-	 */
+	/** 尝试以已存在的名称注册 MBean 时，注册应失败。 */
 	FAIL_ON_EXISTING,
 
-	/**
-	 * Registration should ignore the affected MBean when attempting to register an MBean
-	 * under a name that already exists.
-	 */
+	/** 尝试以已存在的名称注册 MBean 时，应忽略受影响的 MBean。 */
 	IGNORE_EXISTING,
 
-	/**
-	 * Registration should replace the affected MBean when attempting to register an MBean
-	 * under a name that already exists.
-	 */
+	/** 尝试以已存在的名称注册 MBean 时，应替换受影响的 MBean。 */
 	REPLACE_EXISTING
 
 }

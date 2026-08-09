@@ -23,15 +23,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Convenient superclass for classes that can locate any number of JNDI objects.
- * Derives from JndiAccessor to inherit the "jndiTemplate" and "jndiEnvironment"
- * bean properties.
+ * 可定位任意数量 JNDI 对象的便捷超类。
+ * 继承 {@link JndiAccessor}，拥有 {@code jndiTemplate} 与 {@code jndiEnvironment} Bean 属性。
  *
- * <p>JNDI names may or may not include the "java:comp/env/" prefix expected
- * by Jakarta EE applications when accessing a locally mapped (ENC - Environmental
- * Naming Context) resource. If it doesn't, the "java:comp/env/" prefix will
- * be prepended if the "resourceRef" property is true (the default is
- * <strong>false</strong>) and no other scheme (for example, "java:") is given.
+ * <p>JNDI 名称可含也可不含 Jakarta EE 访问本地映射（ENC）资源时期望的
+ * {@code java:comp/env/} 前缀。若不含且 {@code resourceRef} 为 {@code true}
+ *（默认 <strong>false</strong>）且未指定其他 scheme（如 {@code java:}），
+ * 则会自动添加该前缀。
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -41,7 +39,7 @@ import org.springframework.util.Assert;
  */
 public abstract class JndiLocatorSupport extends JndiAccessor {
 
-	/** JNDI prefix used in a Jakarta EE container. */
+	/** Jakarta EE 容器中使用的 JNDI 前缀。 */
 	public static final String CONTAINER_PREFIX = "java:comp/env/";
 
 
@@ -49,30 +47,26 @@ public abstract class JndiLocatorSupport extends JndiAccessor {
 
 
 	/**
-	 * Set whether the lookup occurs in a Jakarta EE container, i.e. if the prefix
-	 * "java:comp/env/" needs to be added if the JNDI name doesn't already
-	 * contain it. Default is "false".
-	 * <p>Note: Will only get applied if no other scheme (for example, "java:") is given.
+	 * 设置查找是否发生在 Jakarta EE 容器中，即 JNDI 名称不含
+	 * {@code java:comp/env/} 时是否需自动添加。默认为 {@code false}。
+	 * <p>仅当未指定其他 scheme（如 {@code java:}）时生效。
 	 */
 	public void setResourceRef(boolean resourceRef) {
 		this.resourceRef = resourceRef;
 	}
 
-	/**
-	 * Return whether the lookup occurs in a Jakarta EE container.
-	 */
+	/** 返回查找是否发生在 Jakarta EE 容器中。 */
 	public boolean isResourceRef() {
 		return this.resourceRef;
 	}
 
 
 	/**
-	 * Perform an actual JNDI lookup for the given name via the JndiTemplate.
-   * <p>If the name doesn't begin with "java:comp/env/", this prefix is added
-	 * if "resourceRef" is set to "true".
-	 * @param jndiName the JNDI name to look up
-	 * @return the obtained object
-	 * @throws NamingException if the JNDI lookup failed
+	 * 通过 {@link JndiTemplate} 执行实际 JNDI 查找。
+	 * <p>若名称不以 {@code java:comp/env/} 开头且 {@code resourceRef} 为 {@code true}，则添加前缀。
+	 * @param jndiName 要查找的 JNDI 名称
+	 * @return 查找到的对象
+	 * @throws NamingException JNDI 查找失败时
 	 * @see #setResourceRef
 	 */
 	protected Object lookup(String jndiName) throws NamingException {
@@ -80,13 +74,11 @@ public abstract class JndiLocatorSupport extends JndiAccessor {
 	}
 
 	/**
-	 * Perform an actual JNDI lookup for the given name via the JndiTemplate.
-	 * <p>If the name doesn't begin with "java:comp/env/", this prefix is added
-	 * if "resourceRef" is set to "true".
-	 * @param jndiName the JNDI name to look up
-	 * @param requiredType the required type of the object
-	 * @return the obtained object
-	 * @throws NamingException if the JNDI lookup failed
+	 * 通过 {@link JndiTemplate} 执行实际 JNDI 查找。
+	 * @param jndiName 要查找的 JNDI 名称
+	 * @param requiredType 期望的对象类型
+	 * @return 查找到的对象
+	 * @throws NamingException JNDI 查找失败时
 	 * @see #setResourceRef
 	 */
 	protected <T> T lookup(String jndiName, @Nullable Class<T> requiredType) throws NamingException {
@@ -116,11 +108,10 @@ public abstract class JndiLocatorSupport extends JndiAccessor {
 	}
 
 	/**
-	 * Convert the given JNDI name into the actual JNDI name to use.
-	 * <p>The default implementation applies the "java:comp/env/" prefix if
-	 * "resourceRef" is "true" and no other scheme (for example, "java:") is given.
-	 * @param jndiName the original JNDI name
-	 * @return the JNDI name to use
+	 * 将给定 JNDI 名称转换为实际使用的 JNDI 名称。
+	 * <p>默认在 {@code resourceRef} 为 {@code true} 且未指定其他 scheme 时添加 {@code java:comp/env/} 前缀。
+	 * @param jndiName 原始 JNDI 名称
+	 * @return 实际使用的 JNDI 名称
 	 * @see #CONTAINER_PREFIX
 	 * @see #setResourceRef
 	 */

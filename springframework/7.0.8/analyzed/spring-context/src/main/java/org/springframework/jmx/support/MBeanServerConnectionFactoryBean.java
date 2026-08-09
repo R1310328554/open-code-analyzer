@@ -41,9 +41,9 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
- * {@link FactoryBean} that creates a JMX 1.2 {@code MBeanServerConnection}
- * to a remote {@code MBeanServer} exposed via a {@code JMXServerConnector}.
- * Exposes the {@code MBeanServer} for bean references.
+ * 创建 JMX 1.2 {@code MBeanServerConnection} 以连接通过 {@code JMXServerConnector}
+ * 暴露的远程 {@code MBeanServer} 的 {@link FactoryBean}。
+ * 将 {@code MBeanServerConnection} 暴露为 Bean 引用。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -71,24 +71,20 @@ public class MBeanServerConnectionFactoryBean
 	private @Nullable JMXConnectorLazyInitTargetSource connectorTargetSource;
 
 
-	/**
-	 * Set the service URL of the remote {@code MBeanServer}.
-	 */
+	/** 设置远程 {@code MBeanServer} 的服务 URL。 */
 	public void setServiceUrl(String url) throws MalformedURLException {
 		this.serviceUrl = new JMXServiceURL(url);
 	}
 
 	/**
-	 * Set the environment properties used to construct the {@code JMXConnector}
-	 * as {@code java.util.Properties} (String key/value pairs).
+	 * 以 {@code java.util.Properties}（String 键值对）设置构造 {@code JMXConnector} 的环境属性。
 	 */
 	public void setEnvironment(Properties environment) {
 		CollectionUtils.mergePropertiesIntoMap(environment, this.environment);
 	}
 
 	/**
-	 * Set the environment properties used to construct the {@code JMXConnector}
-	 * as a {@code Map} of String keys and arbitrary Object values.
+	 * 以 String 键与任意 Object 值的 {@code Map} 设置构造 {@code JMXConnector} 的环境属性。
 	 */
 	public void setEnvironmentMap(@Nullable Map<String, ?> environment) {
 		if (environment != null) {
@@ -97,10 +93,8 @@ public class MBeanServerConnectionFactoryBean
 	}
 
 	/**
-	 * Set whether to connect to the server on startup.
-	 * <p>Default is {@code true}.
-	 * <p>Can be turned off to allow for late start of the JMX server.
-	 * In this case, the JMX connector will be fetched on first access.
+	 * 设置是否在启动时连接服务器。默认为 {@code true}。
+	 * <p>可关闭以允许 JMX 服务器延迟启动，此时首次访问时才获取 JMX 连接器。
 	 */
 	public void setConnectOnStartup(boolean connectOnStartup) {
 		this.connectOnStartup = connectOnStartup;
@@ -113,8 +107,7 @@ public class MBeanServerConnectionFactoryBean
 
 
 	/**
-	 * Creates a {@code JMXConnector} for the given settings
-	 * and exposes the associated {@code MBeanServerConnection}.
+	 * 根据给定设置创建 {@code JMXConnector} 并暴露关联的 {@code MBeanServerConnection}。
 	 */
 	@Override
 	public void afterPropertiesSet() throws IOException {
@@ -130,19 +123,14 @@ public class MBeanServerConnectionFactoryBean
 		}
 	}
 
-	/**
-	 * Connects to the remote {@code MBeanServer} using the configured service URL and
-	 * environment properties.
-	 */
+	/** 使用配置的服务 URL 与环境属性连接远程 {@code MBeanServer}。 */
 	private void connect() throws IOException {
 		Assert.state(this.serviceUrl != null, "No JMXServiceURL set");
 		this.connector = JMXConnectorFactory.connect(this.serviceUrl, this.environment);
 		this.connection = this.connector.getMBeanServerConnection();
 	}
 
-	/**
-	 * Creates lazy proxies for the {@code JMXConnector} and {@code MBeanServerConnection}.
-	 */
+	/** 为 {@code JMXConnector} 与 {@code MBeanServerConnection} 创建懒加载代理。 */
 	private void createLazyConnection() {
 		this.connectorTargetSource = new JMXConnectorLazyInitTargetSource();
 		TargetSource connectionTargetSource = new MBeanServerConnectionLazyInitTargetSource();
@@ -170,9 +158,7 @@ public class MBeanServerConnectionFactoryBean
 	}
 
 
-	/**
-	 * Closes the underlying {@code JMXConnector}.
-	 */
+	/** 关闭底层 {@code JMXConnector}。 */
 	@Override
 	public void destroy() throws IOException {
 		if (this.connector != null &&
@@ -183,8 +169,7 @@ public class MBeanServerConnectionFactoryBean
 
 
 	/**
-	 * Lazily creates a {@code JMXConnector} using the configured service URL
-	 * and environment properties.
+	 * 使用配置的服务 URL 与环境属性懒加载创建 {@code JMXConnector}。
 	 * @see MBeanServerConnectionFactoryBean#setServiceUrl(String)
 	 * @see MBeanServerConnectionFactoryBean#setEnvironment(java.util.Properties)
 	 */
@@ -203,9 +188,7 @@ public class MBeanServerConnectionFactoryBean
 	}
 
 
-	/**
-	 * Lazily creates an {@code MBeanServerConnection}.
-	 */
+	/** 懒加载创建 {@code MBeanServerConnection}。 */
 	private class MBeanServerConnectionLazyInitTargetSource extends AbstractLazyCreationTargetSource {
 
 		@Override

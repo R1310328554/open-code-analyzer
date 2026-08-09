@@ -19,8 +19,8 @@ package org.springframework.jndi;
 import javax.naming.NamingException;
 
 /**
- * Exception thrown if a type mismatch is encountered for an object
- * located in a JNDI environment. Thrown by JndiTemplate.
+ * 在 JNDI 环境中定位的对象发生类型不匹配时抛出的异常。
+ * 由 {@link JndiTemplate} 抛出。
  *
  * @author Juergen Hoeller
  * @since 1.2.8
@@ -35,11 +35,10 @@ public class TypeMismatchNamingException extends NamingException {
 
 
 	/**
-	 * Construct a new TypeMismatchNamingException,
-	 * building an explanation text from the given arguments.
-	 * @param jndiName the JNDI name
-	 * @param requiredType the required type for the lookup
-	 * @param actualType the actual type that the lookup returned
+	 * 构造新的 {@code TypeMismatchNamingException}，根据给定参数生成说明文本。
+	 * @param jndiName JNDI 名称
+	 * @param requiredType 查找时期望的类型
+	 * @param actualType 查找实际返回的类型
 	 */
 	public TypeMismatchNamingException(String jndiName, Class<?> requiredType, Class<?> actualType) {
 		super("Object of type [" + actualType + "] available at JNDI location [" +
@@ -49,16 +48,12 @@ public class TypeMismatchNamingException extends NamingException {
 	}
 
 
-	/**
-	 * Return the required type for the lookup, if available.
-	 */
+	/** 返回查找时期望的类型（若有）。 */
 	public final Class<?> getRequiredType() {
 		return this.requiredType;
 	}
 
-	/**
-	 * Return the actual type that the lookup returned, if available.
-	 */
+	/** 返回查找实际返回的类型（若有）。 */
 	public final Class<?> getActualType() {
 		return this.actualType;
 	}

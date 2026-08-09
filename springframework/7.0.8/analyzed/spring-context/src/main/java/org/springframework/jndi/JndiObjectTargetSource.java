@@ -23,15 +23,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.TargetSource;
 
 /**
- * AOP {@link org.springframework.aop.TargetSource} that provides
- * configurable JNDI lookups for {@code getTarget()} calls.
+ * 为 {@code getTarget()} 调用提供可配置 JNDI 查找的 AOP {@link org.springframework.aop.TargetSource}。
  *
- * <p>Can be used as alternative to {@link JndiObjectFactoryBean}, to allow for
- * relocating a JNDI object lazily or for each operation (see "lookupOnStartup"
- * and "cache" properties). This is particularly useful during development, as it
- * allows for hot restarting of the JNDI server (for example, a remote JMS server).
+ * <p>可作为 {@link JndiObjectFactoryBean} 的替代，支持懒加载或每次操作重新查找 JNDI 对象
+ * （见 {@code lookupOnStartup} 与 {@code cache} 属性），开发时便于热重启 JNDI 服务器（如远程 JMS）。
  *
- * <p>Example:
+ * <p>示例：
  *
  * <pre class="code">
  * &lt;bean id="queueConnectionFactoryTarget" class="org.springframework.jndi.JndiObjectTargetSource"&gt;
@@ -44,14 +41,12 @@ import org.springframework.aop.TargetSource;
  *   &lt;property name="targetSource" ref="queueConnectionFactoryTarget"/&gt;
  * &lt;/bean&gt;</pre>
  *
- * A {@code createQueueConnection} call on the "queueConnectionFactory" proxy will
- * cause a lazy JNDI lookup for "JmsQueueConnectionFactory" and a subsequent delegating
- * call to the retrieved QueueConnectionFactory's {@code createQueueConnection}.
+ * 对 {@code queueConnectionFactory} 代理调用 {@code createQueueConnection} 将懒加载
+ * {@code JmsQueueConnectionFactory} 并委托给检索到的 QueueConnectionFactory。
  *
- * <p><b>Alternatively, use a {@link JndiObjectFactoryBean} with a "proxyInterface".</b>
- * "lookupOnStartup" and "cache" can then be specified on the JndiObjectFactoryBean,
- * creating a JndiObjectTargetSource underneath (instead of defining separate
- * ProxyFactoryBean and JndiObjectTargetSource beans).
+ * <p><b>或者使用带 {@code proxyInterface} 的 {@link JndiObjectFactoryBean}。</b>
+ * 可在 JndiObjectFactoryBean 上指定 {@code lookupOnStartup} 与 {@code cache}，
+ * 底层自动创建 JndiObjectTargetSource。
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -72,9 +67,8 @@ public class JndiObjectTargetSource extends JndiObjectLocator implements TargetS
 
 
 	/**
-	 * Set whether to look up the JNDI object on startup. Default is "true".
-	 * <p>Can be turned off to allow for late availability of the JNDI object.
-	 * In this case, the JNDI object will be fetched on first access.
+	 * 设置是否在启动时查找 JNDI 对象。默认为 {@code true}。
+	 * <p>可关闭以允许 JNDI 对象延迟可用，首次访问时才获取。
 	 * @see #setCache
 	 */
 	public void setLookupOnStartup(boolean lookupOnStartup) {
@@ -82,10 +76,8 @@ public class JndiObjectTargetSource extends JndiObjectLocator implements TargetS
 	}
 
 	/**
-	 * Set whether to cache the JNDI object once it has been located.
-	 * Default is "true".
-	 * <p>Can be turned off to allow for hot redeployment of JNDI objects.
-	 * In this case, the JNDI object will be fetched for each invocation.
+	 * 设置定位后是否缓存 JNDI 对象。默认为 {@code true}。
+	 * <p>可关闭以支持 JNDI 对象热部署，每次调用重新获取。
 	 * @see #setLookupOnStartup
 	 */
 	public void setCache(boolean cache) {
