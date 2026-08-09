@@ -30,33 +30,38 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateColdDataFlowCtrGroupConfig 子命令：新增或更新消费组冷数据读流控阈值。
+ */
 public class UpdateColdDataFlowCtrGroupConfigSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 updateColdDataFlowCtrGroupConfig。 */
     public String commandName() {
         return "updateColdDataFlowCtrGroupConfig";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Add or update cold data flow ctr group config.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "update which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "update which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名，批量更新各 Master");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "consumerGroup", true, "specific consumerGroup");
+        opt = new Option("g", "consumerGroup", true, "消费组名（作为配置键）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("v", "threshold", true, "cold read threshold value");
+        opt = new Option("v", "threshold", true, "冷读流控阈值");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -64,6 +69,7 @@ public class UpdateColdDataFlowCtrGroupConfigSubCommand implements SubCommand {
     }
 
     @Override
+    /** 将消费组与阈值写入 Properties，在 Broker 或集群上更新冷流控配置。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

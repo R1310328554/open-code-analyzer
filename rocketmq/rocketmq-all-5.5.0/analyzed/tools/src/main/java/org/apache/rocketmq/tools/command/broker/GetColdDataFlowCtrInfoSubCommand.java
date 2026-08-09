@@ -39,26 +39,32 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * getColdDataFlowCtrInfo 子命令：查询 Broker 冷数据流控运行时表与阈值配置。
+ */
 public class GetColdDataFlowCtrInfoSubCommand implements SubCommand {
+    /** 时间戳格式化器，用于将毫秒值转为可读时间。 */
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Override
+    /** 返回子命令名 getColdDataFlowCtrInfo。 */
     public String commandName() {
         return "getColdDataFlowCtrInfo";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get cold data flow ctr info.";
     }
 
     @Override
     public Options buildCommandlineOptions(final Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "get from which broker");
+        Option opt = new Option("b", "brokerAddr", true, "指定 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "get from which cluster");
+        opt = new Option("c", "clusterName", true, "指定集群名，遍历 Master/Slave 查询");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -66,6 +72,7 @@ public class GetColdDataFlowCtrInfoSubCommand implements SubCommand {
     }
 
     @Override
+    /** 按 Broker 或集群拉取冷数据流控信息并打印。 */
     public void execute(final CommandLine commandLine, final Options options, final RPCHook rpcHook)
         throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -94,6 +101,7 @@ public class GetColdDataFlowCtrInfoSubCommand implements SubCommand {
         }
     }
 
+    /** 拉取指定地址的冷流控 JSON，格式化时间字段后输出。 */
     protected void getAndPrint(final MQAdminExt defaultMQAdminExt, final String printPrefix, final String addr)
         throws InterruptedException, RemotingConnectException,
         UnsupportedEncodingException, RemotingTimeoutException,

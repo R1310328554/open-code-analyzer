@@ -32,29 +32,34 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * clusterList 子命令：列出集群内 Broker 基础或扩展运行时统计信息。
+ */
 public class ClusterListSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 clusterList。 */
     public String commandName() {
         return "clusterList";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "List cluster infos.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("m", "moreStats", false, "Print more stats");
+        Option opt = new Option("m", "moreStats", false, "输出昨日/今日进出 TPS 等扩展统计");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("i", "interval", true, "specify intervals numbers, it is in seconds");
+        opt = new Option("i", "interval", true, "轮询间隔（秒），指定后循环刷新");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "which cluster");
+        opt = new Option("c", "clusterName", true, "过滤指定集群名，缺省显示全部");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -62,6 +67,7 @@ public class ClusterListSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取集群信息，按 -m 选择基础或扩展视图，支持 -i 定时刷新。 */
     public void execute(final CommandLine commandLine, final Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -104,6 +110,7 @@ public class ClusterListSubCommand implements SubCommand {
         }
     }
 
+    /** 解析目标集群名集合：空则返回全部集群。 */
     private Set<String> getTargetClusterNames(String clusterName, ClusterInfo clusterInfo) {
         if (StringUtils.isEmpty(clusterName)) {
             return clusterInfo.getClusterAddrTable().keySet();
@@ -114,6 +121,7 @@ public class ClusterListSubCommand implements SubCommand {
         }
     }
 
+    /** 打印各 Broker 昨日/今日消息进出总量统计。 */
     private void printClusterMoreStats(final Set<String> clusterNames,
         final DefaultMQAdminExt defaultMQAdminExt,
         final ClusterInfo clusterInfo) {
@@ -176,6 +184,7 @@ public class ClusterListSubCommand implements SubCommand {
         }
     }
 
+    /** 打印各 Broker TPS、队列积压、定时消息进度等基础运行时指标。 */
     private void printClusterBaseInfo(final Set<String> clusterNames,
         final DefaultMQAdminExt defaultMQAdminExt,
         final ClusterInfo clusterInfo) {

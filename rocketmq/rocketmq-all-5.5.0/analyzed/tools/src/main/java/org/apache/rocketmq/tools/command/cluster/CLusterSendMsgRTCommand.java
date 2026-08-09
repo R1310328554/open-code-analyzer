@@ -36,44 +36,50 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * clusterRT 子命令：对各集群 Broker 循环发送测试消息并统计平均 RT。
+ */
 public class CLusterSendMsgRTCommand implements SubCommand {
 
+    /** 占位 main，无独立入口逻辑。 */
     public static void main(String[] args) {
     }
 
     @Override
+    /** 返回子命令名 clusterRT。 */
     public String commandName() {
         return "clusterRT";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "List All clusters Message Send RT.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("a", "amount", true, "message amount | default 100");
+        Option opt = new Option("a", "amount", true, "每个 Broker 发送条数，默认 100");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "size", true, "message size | default 128 Byte");
+        opt = new Option("s", "size", true, "消息体大小（字节），默认 128");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "cluster name | default display all cluster");
+        opt = new Option("c", "cluster", true, "集群名，缺省则遍历全部集群");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("p", "print log", true, "print as tlog | default false");
+        opt = new Option("p", "print log", true, "是否以 tlog 格式输出，默认 false");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("m", "machine room", true, "machine room name | default noname");
+        opt = new Option("m", "machine room", true, "机房标识（tlog 模式），默认 noname");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("i", "interval", true, "print interval | default 10 seconds");
+        opt = new Option("i", "interval", true, "轮询间隔（秒），默认 10");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -81,6 +87,7 @@ public class CLusterSendMsgRTCommand implements SubCommand {
     }
 
     @Override
+    /** 无限循环对各 Broker 压测发送并输出 RT、成功/失败计数。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -191,6 +198,7 @@ public class CLusterSendMsgRTCommand implements SubCommand {
         }
     }
 
+    /** 生成指定长度的测试字符串。 */
     public String getStringBySize(long size) {
         StringBuilder res = new StringBuilder();
         for (int i = 0; i < size; i++) {
@@ -199,6 +207,7 @@ public class CLusterSendMsgRTCommand implements SubCommand {
         return res.toString();
     }
 
+    /** 返回 GMT+8 时区的当前时间字符串。 */
     public String getCurTime() {
         String fromTimeZone = "GMT+8";
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

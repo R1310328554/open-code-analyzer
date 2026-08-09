@@ -45,40 +45,47 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * consumerProgress 子命令：查询消费组各队列偏移、堆积量与消费 TPS。
+ */
 public class ConsumerProgressSubCommand implements SubCommand {
+    /** 日志记录器。 */
     private static final Logger log = LoggerFactory.getLogger(ConsumerProgressSubCommand.class);
 
     @Override
+    /** 返回子命令名 consumerProgress。 */
     public String commandName() {
         return "consumerProgress";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query consumer's progress, speed.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "groupName", true, "consumer group name");
+        Option opt = new Option("g", "groupName", true, "消费组名（缺省则扫描全部重试组）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("t", "topicName", true, "topic name");
+        opt = new Option("t", "topicName", true, "可选，限定 Topic 的消费进度");
         opt.setRequired(false);
         options.addOption(opt);
 
-        Option optionShowClientIP = new Option("s", "showClientIP", true, "Show Client IP per Queue");
+        Option optionShowClientIP = new Option("s", "showClientIP", true, "是否显示各队列分配的客户端 IP");
         optionShowClientIP.setRequired(false);
         options.addOption(optionShowClientIP);
 
-        opt = new Option("c", "cluster", true, "Cluster name or lmq parent topic, lmq is used to find the route.");
+        opt = new Option("c", "cluster", true, "集群名或 LMQ 父 Topic，用于路由查询");
         opt.setRequired(false);
         options.addOption(opt);
 
         return options;
     }
 
+    /** 汇总各消费实例当前分配的 {@link MessageQueue} 与客户端 IP。 */
     private Map<MessageQueue, String> getMessageQueueAllocationResult(DefaultMQAdminExt defaultMQAdminExt,
         String groupName) {
         Map<MessageQueue, String> results = new HashMap<>();
@@ -99,6 +106,7 @@ public class ConsumerProgressSubCommand implements SubCommand {
     }
 
     @Override
+    /** 按 -g 查询单组进度，或扫描全部 %RETRY% 消费组汇总列表。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
@@ -169,7 +177,7 @@ public class ConsumerProgressSubCommand implements SubCommand {
                             lastTime = UtilAll.formatDate(new Date(offsetWrapper.getLastTimestamp()), UtilAll.YYYY_MM_DD_HH_MM_SS);
                         }
                     } catch (Exception e) {
-                        // ignore
+                        // 忽略时间戳格式化异常
                     }
 
                     String clientIP = null;
@@ -273,23 +281,36 @@ public class ConsumerProgressSubCommand implements SubCommand {
     }
 }
 
+/**
+ * 消费组汇总信息：用于 consumerProgress 无 -g 时批量展示各重试组状态。
+ */
 class GroupConsumeInfo implements Comparable<GroupConsumeInfo> {
+    /** 消费组名。 */
     private String group;
+    /** 组内最低客户端协议版本号。 */
     private int version;
+    /** 在线消费实例数量。 */
     private int count;
+    /** 消费类型（Push/Pull）。 */
     private ConsumeType consumeType;
+    /** 消息模式（集群/广播）。 */
     private MessageModel messageModel;
+    /** 消费 TPS。 */
     private int consumeTps;
+    /** 总堆积量（BrokerOffset - ConsumerOffset 之和）。 */
     private long diffTotal;
 
+    /** 返回消费组名。 */
     public String getGroup() {
         return group;
     }
 
+    /** 设置消费组名。 */
     public void setGroup(String group) {
         this.group = group;
     }
 
+    /** 返回 PULL/PUSH 描述；离线时返回空串。 */
     public String consumeTypeDesc() {
         if (this.count != 0) {
             return this.getConsumeType() == ConsumeType.CONSUME_ACTIVELY ? "PULL" : "PUSH";
@@ -305,6 +326,7 @@ class GroupConsumeInfo implements Comparable<GroupConsumeInfo> {
         this.consumeType = consumeType;
     }
 
+    /** Push 模式下返回消息模型描述。 */
     public String messageModelDesc() {
         if (this.count != 0 && this.getConsumeType() == ConsumeType.CONSUME_PASSIVELY) {
             return this.getMessageModel().toString();
@@ -320,6 +342,7 @@ class GroupConsumeInfo implements Comparable<GroupConsumeInfo> {
         this.messageModel = messageModel;
     }
 
+    /** 返回最低客户端版本描述。 */
     public String versionDesc() {
         if (this.count != 0) {
             return MQVersion.getVersionDesc(this.version);
@@ -343,6 +366,7 @@ class GroupConsumeInfo implements Comparable<GroupConsumeInfo> {
         this.diffTotal = diffTotal;
     }
 
+    /** 按在线数、堆积量降序排序。 */
     @Override
     public int compareTo(GroupConsumeInfo o) {
         if (this.count != o.count) {

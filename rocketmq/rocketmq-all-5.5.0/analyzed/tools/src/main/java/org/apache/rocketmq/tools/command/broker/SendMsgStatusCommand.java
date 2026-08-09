@@ -28,8 +28,12 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * sendMsgStatus 子命令：向指定 Broker 发送测试消息并输出 RT 与 {@link SendResult}。
+ */
 public class SendMsgStatusCommand implements SubCommand {
 
+    /** 构造指定大小的测试 {@link Message}，Topic 为 Broker 名。 */
     private static Message buildMessage(final String topic, final int messageSize) throws UnsupportedEncodingException {
         Message msg = new Message();
         msg.setTopic(topic);
@@ -43,26 +47,28 @@ public class SendMsgStatusCommand implements SubCommand {
     }
 
     @Override
+    /** 返回子命令名 sendMsgStatus。 */
     public String commandName() {
         return "sendMsgStatus";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Send msg to broker.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerName", true, "Broker Name e.g. clusterName_brokerName as DefaultCluster_broker-a");
+        Option opt = new Option("b", "brokerName", true, "Broker 名，如 DefaultCluster_broker-a");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "messageSize", true, "Message Size, Default: 128");
+        opt = new Option("s", "messageSize", true, "消息体大小（字节），默认 128");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "count", true, "send message count, Default: 50");
+        opt = new Option("c", "count", true, "发送次数，默认 50");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -70,6 +76,7 @@ public class SendMsgStatusCommand implements SubCommand {
     }
 
     @Override
+    /** 启动生产者，预热一条消息后循环发送并打印耗时。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         final DefaultMQProducer producer = new DefaultMQProducer("PID_SMSC", rpcHook);
         producer.setInstanceName("PID_SMSC_" + System.currentTimeMillis());

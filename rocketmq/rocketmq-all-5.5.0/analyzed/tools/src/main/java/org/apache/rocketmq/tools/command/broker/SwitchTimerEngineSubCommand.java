@@ -28,16 +28,23 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * switchTimerEngine 子命令：切换 Broker 定时消息的存储引擎（RocksDB 时间线 / 文件时间轮）。
+ */
 public class SwitchTimerEngineSubCommand implements SubCommand {
+    /** RocksDB 时间线引擎显示名。 */
     private static final String ROCKSDB_TIMELINE = "ROCKSDB_TIMELINE";
+    /** 文件时间轮引擎显示名。 */
     private static final String FILE_TIME_WHEEL = "FILE_TIME_WHEEL";
 
     @Override
+    /** 返回子命令名 switchTimerEngine。 */
     public String commandName() {
         return "switchTimerEngine";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "switch the engine of timer message in broker";
     }
@@ -45,22 +52,23 @@ public class SwitchTimerEngineSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
-        Option opt = new Option("b", "brokerAddr", true, "update which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "update which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名，批量切换各 Master");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("e", "engineType", true, "R/F, R for rocksdb timeline engine, F for file time wheel engine");
+        opt = new Option("e", "engineType", true, "引擎类型：R=RocksDB 时间线，F=文件时间轮");
         opt.setRequired(true);
         options.addOption(opt);
         return options;
     }
 
     @Override
+    /** 校验 engineType 后在 Broker 或集群 Master 上切换定时消息引擎。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
 
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);

@@ -28,37 +28,42 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateBrokerConfig 子命令：在线更新 Broker 运行时配置项（键值对）。
+ */
 public class UpdateBrokerConfigSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 updateBrokerConfig。 */
     public String commandName() {
         return "updateBrokerConfig";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update broker's config.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "update which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "update which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名，批量更新各 Broker");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("a", "updateAllBroker", true, "update all brokers include slave");
+        opt = new Option("a", "updateAllBroker", true, "是否包含 Slave 一并更新（与 -c 配合）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("k", "key", true, "config key");
+        opt = new Option("k", "key", true, "配置项键名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("v", "value", true, "config value");
+        opt = new Option("v", "value", true, "配置项新值");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -66,6 +71,7 @@ public class UpdateBrokerConfigSubCommand implements SubCommand {
     }
 
     @Override
+    /** 构造 Properties 并在指定 Broker 或集群上调用 updateBrokerConfig。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

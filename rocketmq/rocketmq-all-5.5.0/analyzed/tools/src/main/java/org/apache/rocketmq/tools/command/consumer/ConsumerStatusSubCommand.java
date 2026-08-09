@@ -33,38 +33,44 @@ import org.apache.rocketmq.tools.command.MQAdminStartup;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * consumerStatus 子命令：导出消费组各实例内部运行态（订阅、Rebalance、ProcessQueue）。
+ */
 public class ConsumerStatusSubCommand implements SubCommand {
 
+    /** 本地调试入口，连接 127.0.0.1:9876 执行 consumerStatus。 */
     public static void main(String[] args) {
         System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, "127.0.0.1:9876");
         MQAdminStartup.main(new String[] {new ConsumerStatusSubCommand().commandName(), "-g", "benchmark_consumer"});
     }
 
     @Override
+    /** 返回子命令名 consumerStatus。 */
     public String commandName() {
         return "consumerStatus";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query consumer's internal data structure.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "consumerGroup", true, "consumer group name");
+        Option opt = new Option("g", "consumerGroup", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("i", "clientId", true, "The consumer's client id");
+        opt = new Option("i", "clientId", true, "可选，指定单个消费者 clientId");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "broker address");
+        opt = new Option("b", "brokerAddr", true, "可选，指定 Broker 地址查询连接");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("s", "jstack", false, "Run jstack command in the consumer progress");
+        opt = new Option("s", "jstack", false, "是否在消费端执行 jstack 采集线程栈");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -72,6 +78,7 @@ public class ConsumerStatusSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取各实例 {@link ConsumerRunningInfo}，分析订阅/Rebalance 并写入本地文件。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

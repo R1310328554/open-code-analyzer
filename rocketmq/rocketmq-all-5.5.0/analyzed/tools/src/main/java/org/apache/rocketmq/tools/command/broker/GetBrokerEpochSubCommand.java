@@ -31,13 +31,18 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getBrokerEpoch 子命令：拉取 Broker 的 Epoch 条目，用于 HA 复制与偏移区间校验。
+ */
 public class GetBrokerEpochSubCommand implements SubCommand {
     @Override
+    /** 返回子命令名 getBrokerEpoch。 */
     public String commandName() {
         return "getBrokerEpoch";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Fetch broker epoch entries.";
     }
@@ -45,12 +50,12 @@ public class GetBrokerEpochSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
         OptionGroup group = new OptionGroup();
-        group.addOption(new Option("c", "clusterName", true, "which cluster"));
-        group.addOption(new Option("b", "brokerName", true, "which broker to fetch"));
+        group.addOption(new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）"));
+        group.addOption(new Option("b", "brokerName", true, "目标 Broker 名（与 -c 二选一）"));
         group.setRequired(true);
         options.addOptionGroup(group);
 
-        Option opt = new Option("i", "interval", true, "the interval(second) of get info");
+        Option opt = new Option("i", "interval", true, "轮询间隔（秒），指定后持续刷新输出");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -58,6 +63,7 @@ public class GetBrokerEpochSubCommand implements SubCommand {
     }
 
     @Override
+    /** 启动管理客户端，按 -i 决定是否循环拉取 Epoch 信息。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -89,6 +95,7 @@ public class GetBrokerEpochSubCommand implements SubCommand {
         }
     }
 
+    /** 按 -b 或 -c 解析目标 Broker 并打印 Epoch 数据。 */
     private void innerExec(CommandLine commandLine, Options options,
         DefaultMQAdminExt defaultMQAdminExt) throws Exception {
         if (commandLine.hasOption('b')) {
@@ -104,6 +111,7 @@ public class GetBrokerEpochSubCommand implements SubCommand {
         }
     }
 
+    /** 遍历 Broker 地址，拉取 {@link EpochEntryCache} 并格式化输出各 Epoch 区间。 */
     private void printData(Set<String> brokers, DefaultMQAdminExt defaultMQAdminExt) throws Exception {
         for (String brokerAddr : brokers) {
             final EpochEntryCache epochCache = defaultMQAdminExt.getBrokerEpochCache(brokerAddr);

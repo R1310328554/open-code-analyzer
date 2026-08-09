@@ -30,25 +30,30 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * consumerConnection 子命令：查询消费组在线连接、客户端版本与订阅关系。
+ */
 public class ConsumerConnectionSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 consumerConnection。 */
     public String commandName() {
         return "consumerConnection";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query consumer's socket connection, client version and subscription.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "consumerGroup", true, "consumer group name");
+        Option opt = new Option("g", "consumerGroup", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "broker address");
+        opt = new Option("b", "brokerAddr", true, "可选，指定 Broker 地址查询");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -56,6 +61,7 @@ public class ConsumerConnectionSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取 {@link ConsumerConnection} 并打印连接列表、订阅表与消费模式。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

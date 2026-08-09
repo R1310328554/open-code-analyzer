@@ -33,30 +33,36 @@ import org.apache.rocketmq.tools.command.MQAdminStartup;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * consumer 子命令：综合查询消费组连接、运行态与 Rebalance 分析结果。
+ */
 public class ConsumerSubCommand implements SubCommand {
 
+    /** 本地调试入口，连接 127.0.0.1:9876 执行 consumer 命令。 */
     public static void main(String[] args) {
         System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, "127.0.0.1:9876");
         MQAdminStartup.main(new String[] {new ConsumerSubCommand().commandName(), "-g", "benchmark_consumer"});
     }
 
     @Override
+    /** 返回子命令名 consumer。 */
     public String commandName() {
         return "consumer";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query consumer's connection, status, etc.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "consumerGroup", true, "consumer group name");
+        Option opt = new Option("g", "consumerGroup", true, "消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("s", "jstack", false, "Run jstack command in the consumer progress");
+        opt = new Option("s", "jstack", false, "是否在消费端执行 jstack 采集线程栈");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -64,6 +70,7 @@ public class ConsumerSubCommand implements SubCommand {
     }
 
     @Override
+    /** 遍历消费组全部连接，导出运行态并分析订阅一致性与 Rebalance 状态。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

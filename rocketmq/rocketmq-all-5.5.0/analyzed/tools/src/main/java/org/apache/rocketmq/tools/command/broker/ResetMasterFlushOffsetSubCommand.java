@@ -25,24 +25,29 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * resetMasterFlushOffset 子命令：在 Slave Broker 上重置 Master 刷盘偏移量。
+ */
 public class ResetMasterFlushOffsetSubCommand implements SubCommand {
     @Override
+    /** 返回子命令名 resetMasterFlushOffset。 */
     public String commandName() {
         return "resetMasterFlushOffset";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Reset master flush offset in slave.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "which broker to reset");
+        Option opt = new Option("b", "brokerAddr", true, "待重置的 Slave Broker 地址");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("o", "offset", true, "the offset to reset at");
+        opt = new Option("o", "offset", true, "要设置的 Master 刷盘偏移量");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -50,6 +55,7 @@ public class ResetMasterFlushOffsetSubCommand implements SubCommand {
     }
 
     @Override
+    /** 调用 {@link DefaultMQAdminExt#resetMasterFlushOffset} 重置指定偏移。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);

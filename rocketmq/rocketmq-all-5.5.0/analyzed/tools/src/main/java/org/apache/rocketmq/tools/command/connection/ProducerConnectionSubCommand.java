@@ -27,25 +27,30 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * producerConnection 子命令：查询指定 Topic 下生产者组的在线连接与版本。
+ */
 public class ProducerConnectionSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 producerConnection。 */
     public String commandName() {
         return "producerConnection";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Query producer's socket connection and client version.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("g", "producerGroup", true, "producer group name");
+        Option opt = new Option("g", "producerGroup", true, "生产者组名");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "topic", true, "topic name");
+        opt = new Option("t", "topic", true, "Topic 名");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -53,6 +58,7 @@ public class ProducerConnectionSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取 {@link ProducerConnection} 并逐行打印客户端连接信息。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 

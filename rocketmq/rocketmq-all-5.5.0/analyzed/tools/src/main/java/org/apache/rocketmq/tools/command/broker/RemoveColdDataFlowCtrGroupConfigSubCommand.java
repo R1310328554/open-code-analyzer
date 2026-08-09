@@ -27,29 +27,34 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * removeColdDataFlowCtrGroupConfig 子命令：从冷数据流控配置中移除指定消费组。
+ */
 public class RemoveColdDataFlowCtrGroupConfigSubCommand implements SubCommand {
 
     @Override
+    /** 返回子命令名 removeColdDataFlowCtrGroupConfig。 */
     public String commandName() {
         return "removeColdDataFlowCtrGroupConfig";
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Remove consumer from cold ctr config.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "update which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "update which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名，批量移除各 Master 配置");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "consumerGroup", true, "the consumer group will remove from the config");
+        opt = new Option("g", "consumerGroup", true, "待从冷流控配置中移除的消费组名");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -57,6 +62,7 @@ public class RemoveColdDataFlowCtrGroupConfigSubCommand implements SubCommand {
     }
 
     @Override
+    /** 在指定 Broker 或集群全部 Master 上移除消费组冷读阈值配置。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
