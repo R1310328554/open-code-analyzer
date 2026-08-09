@@ -21,7 +21,7 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
- * {@link QueuePollArgs} 的可变实现，持有拉取操作的各项参数及默认值。
+ * {@link QueuePollArgs} 的可变实现，保存确认模式、超时、可见性与批量条数等拉取参数。
  *
  * @author Nikita Koksharov
  *
@@ -65,17 +65,17 @@ public final class QueuePollParams extends BaseSyncParams<QueuePollArgs> impleme
         return this;
     }
 
-    /** 返回阻塞等待超时，未设置时为 {@code null}。 */
+    /** 返回拉取阻塞超时，未设置时为 {@code null}。 */
     public Duration getTimeout() {
         return timeout;
     }
 
-    /** 返回可见性超时时长。 */
+    /** 返回拉取消息的可见性超时时长。 */
     public Duration getVisibility() {
         return visibility;
     }
 
-    /** 返回单次拉取的最大条数。 */
+    /** 返回单次拉取的最大消息条数。 */
     public int getCount() {
         return count;
     }
@@ -85,7 +85,7 @@ public final class QueuePollParams extends BaseSyncParams<QueuePollArgs> impleme
         return headersCodec;
     }
 
-    /** 返回确认模式。 */
+    /** 返回消息确认模式。 */
     public AcknowledgeMode getAcknowledgeMode() {
         return acknowledgeMode;
     }
