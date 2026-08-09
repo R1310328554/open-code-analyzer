@@ -21,16 +21,27 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 静态 Topic 队列映射摘要：注册到 Broker/NameServer 用于构建路由。
+ * 含 epoch 防脏读、逻辑到物理 queueId 映射等元数据。
+ */
 public class TopicQueueMappingInfo extends RemotingSerializable {
+    /** 映射层级 0：当前 Broker 上的 Leader。 */
     public static final int LEVEL_0 = 0;
 
+    /** Topic 名称（冗余字段）。 */
     String topic; // redundant field
+    /** 元数据作用域，默认全局。 */
     String scope = MixAll.METADATA_SCOPE_GLOBAL;
+    /** 逻辑队列总数。 */
     int totalQueues;
+    /** 托管 Broker 名称。 */
     String bname;  //identify the hosted broker name
+    /** 映射 epoch，用于隔离旧脏数据。 */
     long epoch; //important to fence the old dirty data
+    /** 是否为脏数据标记。 */
     boolean dirty; //indicate if the data is dirty
-    //register to broker to construct the route
+    /** 逻辑 queueId 到物理 queueId 的当前映射（用于构建路由）。 */
     protected ConcurrentMap<Integer/*logicId*/, Integer/*physicalId*/> currIdMap = new ConcurrentHashMap<>();
 
     public TopicQueueMappingInfo() {
@@ -45,27 +56,33 @@ public class TopicQueueMappingInfo extends RemotingSerializable {
         this.dirty = false;
     }
 
+    /** 返回是否为脏数据。 */
     public boolean isDirty() {
         return dirty;
     }
 
+    /** 设置脏数据标记。 */
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
     }
 
+    /** 返回逻辑队列总数。 */
     public int getTotalQueues() {
         return totalQueues;
     }
 
 
+    /** 返回托管 Broker 名称。 */
     public String getBname() {
         return bname;
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 返回映射 epoch。 */
     public long getEpoch() {
         return epoch;
     }
@@ -78,6 +95,7 @@ public class TopicQueueMappingInfo extends RemotingSerializable {
         this.totalQueues = totalQueues;
     }
 
+    /** 返回逻辑到物理 queueId 映射。 */
     public ConcurrentMap<Integer, Integer> getCurrIdMap() {
         return currIdMap;
     }
@@ -94,6 +112,7 @@ public class TopicQueueMappingInfo extends RemotingSerializable {
         this.currIdMap = currIdMap;
     }
 
+    /** 返回元数据作用域。 */
     public String getScope() {
         return scope;
     }

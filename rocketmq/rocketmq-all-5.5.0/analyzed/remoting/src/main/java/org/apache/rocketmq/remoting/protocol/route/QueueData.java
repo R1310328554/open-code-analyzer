@@ -20,18 +20,27 @@
  */
 package org.apache.rocketmq.remoting.protocol.route;
 
+/**
+ * Topic 在某 Broker 上的队列元数据：读写队列数、权限位与系统标志。
+ * 按 brokerName 字典序实现 {@link Comparable}。
+ */
 public class QueueData implements Comparable<QueueData> {
+    /** 承载该 Topic 队列的 Broker 名称。 */
     private String brokerName;
+    /** 可读队列数量。 */
     private int readQueueNums;
+    /** 可写队列数量。 */
     private int writeQueueNums;
+    /** Topic 在该 Broker 上的权限位（读/写/继承等）。 */
     private int perm;
+    /** Topic 系统标志位。 */
     private int topicSysFlag;
 
     public QueueData() {
 
     }
 
-    // Deep copy QueueData
+    /** 深拷贝构造：复制源 QueueData 的全部字段。 */
     public QueueData(QueueData queueData) {
         this.brokerName = queueData.brokerName;
         this.readQueueNums = queueData.readQueueNums;
@@ -40,34 +49,42 @@ public class QueueData implements Comparable<QueueData> {
         this.topicSysFlag = queueData.topicSysFlag;
     }
 
+    /** 返回可读队列数。 */
     public int getReadQueueNums() {
         return readQueueNums;
     }
 
+    /** 设置可读队列数。 */
     public void setReadQueueNums(int readQueueNums) {
         this.readQueueNums = readQueueNums;
     }
 
+    /** 返回可写队列数。 */
     public int getWriteQueueNums() {
         return writeQueueNums;
     }
 
+    /** 设置可写队列数。 */
     public void setWriteQueueNums(int writeQueueNums) {
         this.writeQueueNums = writeQueueNums;
     }
 
+    /** 返回权限位。 */
     public int getPerm() {
         return perm;
     }
 
+    /** 设置权限位。 */
     public void setPerm(int perm) {
         this.perm = perm;
     }
 
+    /** 返回 Topic 系统标志。 */
     public int getTopicSysFlag() {
         return topicSysFlag;
     }
 
+    /** 设置 Topic 系统标志。 */
     public void setTopicSysFlag(int topicSysFlag) {
         this.topicSysFlag = topicSysFlag;
     }
@@ -115,14 +132,17 @@ public class QueueData implements Comparable<QueueData> {
     }
 
     @Override
+    /** 按 brokerName 字典序比较。 */
     public int compareTo(QueueData o) {
         return this.brokerName.compareTo(o.getBrokerName());
     }
 
+    /** 返回 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }

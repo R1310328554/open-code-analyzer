@@ -17,9 +17,10 @@
 
 package org.apache.rocketmq.remoting.protocol.subscription;
 
+/** 消费重试延迟策略接口。 */
 public interface RetryPolicy {
     /**
-     * Compute message's next delay duration by specify reconsumeTimes
+     * 根据已重试次数计算消息下次投递前的延迟时长。
      *
      * @param reconsumeTimes Message reconsumeTimes
      * @return Message's nextDelayDuration in milliseconds

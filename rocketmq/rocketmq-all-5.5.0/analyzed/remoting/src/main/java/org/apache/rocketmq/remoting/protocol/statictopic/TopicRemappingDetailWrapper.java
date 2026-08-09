@@ -22,22 +22,36 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Topic 重映射操作包装：携带 epoch、Broker 配置变更与迁入/迁出 Broker 集合。
+ * 支持 CREATE_OR_UPDATE 与 REMAPPING 两种操作类型。
+ */
 public class TopicRemappingDetailWrapper extends RemotingSerializable {
+    /** 操作类型：创建或更新映射。 */
     public static final String TYPE_CREATE_OR_UPDATE = "CREATE_OR_UPDATE";
+    /** 操作类型：重映射（迁移逻辑队列）。 */
     public static final String TYPE_REMAPPING = "REMAPPING";
 
+    /** 重映射前配置键后缀。 */
     public static final String SUFFIX_BEFORE = ".before";
+    /** 重映射后配置键后缀。 */
     public static final String SUFFIX_AFTER = ".after";
 
 
+    /** Topic 名称。 */
     private String topic;
+    /** 操作类型（CREATE_OR_UPDATE 或 REMAPPING）。 */
     private String type;
+    /** 映射 epoch，用于版本隔离。 */
     private long epoch;
 
+    /** Broker 名称到 Topic 配置与映射的组合映射。 */
     private Map<String, TopicConfigAndQueueMapping> brokerConfigMap = new HashMap<>();
 
+    /** 需要迁入映射的 Broker 集合。 */
     private Set<String> brokerToMapIn = new HashSet<>();
 
+    /** 需要迁出映射的 Broker 集合。 */
     private Set<String> brokerToMapOut = new HashSet<>();
 
     public TopicRemappingDetailWrapper() {
@@ -53,26 +67,32 @@ public class TopicRemappingDetailWrapper extends RemotingSerializable {
         this.brokerToMapOut = brokerToMapOut;
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 返回操作类型。 */
     public String getType() {
         return type;
     }
 
+    /** 返回映射 epoch。 */
     public long getEpoch() {
         return epoch;
     }
 
+    /** 返回 Broker 配置映射。 */
     public Map<String, TopicConfigAndQueueMapping> getBrokerConfigMap() {
         return brokerConfigMap;
     }
 
+    /** 返回迁入 Broker 集合。 */
     public Set<String> getBrokerToMapIn() {
         return brokerToMapIn;
     }
 
+    /** 返回迁出 Broker 集合。 */
     public Set<String> getBrokerToMapOut() {
         return brokerToMapOut;
     }

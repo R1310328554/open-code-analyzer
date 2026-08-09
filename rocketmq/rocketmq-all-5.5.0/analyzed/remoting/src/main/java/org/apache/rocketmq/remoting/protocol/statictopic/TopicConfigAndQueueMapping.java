@@ -21,21 +21,28 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.rocketmq.common.TopicConfig;
 
+/**
+ * Topic 配置与静态队列映射的组合体：继承 {@link TopicConfig} 并附加映射详情。
+ */
 public class TopicConfigAndQueueMapping extends TopicConfig {
+    /** 静态 Topic 队列映射详情。 */
     private TopicQueueMappingDetail mappingDetail;
 
     public TopicConfigAndQueueMapping() {
     }
 
+    /** 由 Topic 配置与映射详情构造。 */
     public TopicConfigAndQueueMapping(TopicConfig topicConfig, TopicQueueMappingDetail mappingDetail) {
         super(topicConfig);
         this.mappingDetail = mappingDetail;
     }
 
+    /** 返回队列映射详情。 */
     public TopicQueueMappingDetail getMappingDetail() {
         return mappingDetail;
     }
 
+    /** 设置队列映射详情。 */
     public void setMappingDetail(TopicQueueMappingDetail mappingDetail) {
         this.mappingDetail = mappingDetail;
     }

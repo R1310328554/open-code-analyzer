@@ -20,34 +20,43 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
 /**
- *
+ * 消费组禁读配置：标记某 group 对指定 topic 是否允许拉取消息。
  */
 public class GroupForbidden extends RemotingSerializable {
 
+    /** 受限 Topic 名称。 */
     private String  topic;
+    /** 消费组名称。 */
     private String  group;
+    /** 是否可读（false 表示禁止消费该 Topic）。 */
     private Boolean readable;
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回消费组名称。 */
     public String getGroup() {
         return group;
     }
 
+    /** 设置消费组名称。 */
     public void setGroup(String group) {
         this.group = group;
     }
 
+    /** 返回是否可读。 */
     public Boolean getReadable() {
         return readable;
     }
 
+    /** 设置是否可读。 */
     public void setReadable(Boolean readable) {
         this.readable = readable;
     }

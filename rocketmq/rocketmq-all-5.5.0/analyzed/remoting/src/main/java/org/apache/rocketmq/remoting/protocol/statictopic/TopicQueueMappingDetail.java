@@ -23,10 +23,13 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+/**
+ * 静态 Topic 队列映射详情：在 {@link TopicQueueMappingInfo} 基础上
+ * 持有当前 Broker 托管的逻辑队列映射项（不注册到 NameServer）。
+ */
 public class TopicQueueMappingDetail extends TopicQueueMappingInfo {
 
-    // the mapping info in current broker, do not register to nameserver
-    // make sure this value is not null
+    /** 当前 Broker 托管的全局 ID 到映射项列表（不注册 NameServer，非 null）。 */
     private ConcurrentMap<Integer/*global id*/, List<LogicQueueMappingItem>> hostedQueues = new ConcurrentHashMap<>();
 
     //make sure there is a default constructor
@@ -40,6 +43,7 @@ public class TopicQueueMappingDetail extends TopicQueueMappingInfo {
 
 
 
+    /** 向映射详情写入指定 globalId 的映射项列表。 */
     public static boolean putMappingInfo(TopicQueueMappingDetail mappingDetail, Integer globalId, List<LogicQueueMappingItem> mappingInfo) {
         if (mappingInfo.isEmpty()) {
             return true;
@@ -48,10 +52,12 @@ public class TopicQueueMappingDetail extends TopicQueueMappingInfo {
         return true;
     }
 
+    /** 读取指定 globalId 的映射项列表。 */
     public static List<LogicQueueMappingItem> getMappingInfo(TopicQueueMappingDetail mappingDetail, Integer globalId) {
         return mappingDetail.hostedQueues.get(globalId);
     }
 
+    /** 构建 globalId 到物理 queueId 的映射（level 0 表示当前 Leader）。 */
     public static ConcurrentMap<Integer, Integer> buildIdMap(TopicQueueMappingDetail mappingDetail, int level) {
         //level 0 means current leader in this broker
         //level 1 means previous leader in this broker, reserved for
@@ -76,6 +82,7 @@ public class TopicQueueMappingDetail extends TopicQueueMappingInfo {
     }
 
 
+    /** 根据映射计算指定 globalId 的最大静态队列偏移。 */
     public static long computeMaxOffsetFromMapping(TopicQueueMappingDetail mappingDetail, Integer globalId) {
         List<LogicQueueMappingItem> mappingItems = getMappingInfo(mappingDetail, globalId);
         if (mappingItems == null
@@ -87,12 +94,14 @@ public class TopicQueueMappingDetail extends TopicQueueMappingInfo {
     }
 
 
+    /** 克隆为可注册到 NameServer 的 {@link TopicQueueMappingInfo}。 */
     public static TopicQueueMappingInfo cloneAsMappingInfo(TopicQueueMappingDetail mappingDetail) {
         TopicQueueMappingInfo topicQueueMappingInfo = new TopicQueueMappingInfo(mappingDetail.topic, mappingDetail.totalQueues, mappingDetail.bname, mappingDetail.epoch);
         topicQueueMappingInfo.currIdMap = TopicQueueMappingDetail.buildIdMap(mappingDetail, LEVEL_0);
         return topicQueueMappingInfo;
     }
 
+    /** 判断该 globalId 是否可按物理队列处理（无映射或 logicOffset 为 0）。 */
     public static boolean checkIfAsPhysical(TopicQueueMappingDetail mappingDetail, Integer globalId) {
         List<LogicQueueMappingItem> mappingItems = getMappingInfo(mappingDetail, globalId);
         return mappingItems == null
@@ -100,10 +109,12 @@ public class TopicQueueMappingDetail extends TopicQueueMappingInfo {
                 &&  mappingItems.get(0).getLogicOffset() == 0;
     }
 
+    /** 返回托管队列映射表。 */
     public ConcurrentMap<Integer, List<LogicQueueMappingItem>> getHostedQueues() {
         return hostedQueues;
     }
 
+    /** 设置托管队列映射表。 */
     public void setHostedQueues(ConcurrentMap<Integer, List<LogicQueueMappingItem>> hostedQueues) {
         this.hostedQueues = hostedQueues;
     }

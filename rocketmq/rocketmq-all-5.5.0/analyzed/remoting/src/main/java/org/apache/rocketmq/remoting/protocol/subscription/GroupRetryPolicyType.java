@@ -17,7 +17,10 @@
 
 package org.apache.rocketmq.remoting.protocol.subscription;
 
+/** 消费组重试策略类型枚举。 */
 public enum GroupRetryPolicyType {
+    /** 指数退避重试。 */
     EXPONENTIAL,
+    /** 自定义延迟阶梯重试。 */
     CUSTOMIZED
 }

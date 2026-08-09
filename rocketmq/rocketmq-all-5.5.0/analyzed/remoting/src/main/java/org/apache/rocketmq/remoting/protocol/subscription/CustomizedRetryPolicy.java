@@ -21,12 +21,12 @@ import com.google.common.base.MoreObjects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * CustomizedRetryPolicy is aim to make group's behavior compatible with messageDelayLevel
+ * 自定义重试策略：与 messageDelayLevel 延迟级别表兼容，供消费组按固定阶梯延迟重投。
  *
  * @see <a href="https://github.com/apache/rocketmq/blob/3bd4b2b2f61a824196f19b03146e2c929c62777b/store/src/main/java/org/apache/rocketmq/store/config/MessageStoreConfig.java#L137">org.apache.rocketmq.store.config.MessageStoreConfig</a>
  */
 public class CustomizedRetryPolicy implements RetryPolicy {
-    // 1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h
+    /** 默认延迟阶梯（毫秒）：1s 5s 10s … 2h，与 messageDelayLevel 对齐。 */
     private long[] next = new long[] {
         TimeUnit.SECONDS.toMillis(1),
         TimeUnit.SECONDS.toMillis(5),
@@ -51,14 +51,17 @@ public class CustomizedRetryPolicy implements RetryPolicy {
     public CustomizedRetryPolicy() {
     }
 
+    /** 使用自定义延迟数组构造。 */
     public CustomizedRetryPolicy(long[] next) {
         this.next = next;
     }
 
+    /** 返回延迟阶梯数组。 */
     public long[] getNext() {
         return next;
     }
 
+    /** 设置延迟阶梯数组。 */
     public void setNext(long[] next) {
         this.next = next;
     }
@@ -71,8 +74,7 @@ public class CustomizedRetryPolicy implements RetryPolicy {
     }
 
     /**
-     * Index = reconsumeTimes + 2 is compatible logic, cause old delayLevelTable starts from index 1,
-     * and old index is reconsumeTime + 3
+     * 按重试次数计算下次延迟：index = reconsumeTimes + 2，与旧 delayLevelTable 索引兼容。
      *
      * @param reconsumeTimes Message reconsumeTimes {@link org.apache.rocketmq.common.message.MessageExt#getReconsumeTimes}
      * @see <a href="https://github.com/apache/rocketmq/blob/3bddd514646826253a239f95959c14840a87034a/broker/src/main/java/org/apache/rocketmq/broker/processor/AbstractSendMessageProcessor.java#L210">org.apache.rocketmq.broker.processor.AbstractSendMessageProcessor</a>

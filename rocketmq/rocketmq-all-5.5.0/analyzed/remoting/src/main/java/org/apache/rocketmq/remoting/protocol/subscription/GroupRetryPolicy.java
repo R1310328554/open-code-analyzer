@@ -20,20 +20,31 @@ package org.apache.rocketmq.remoting.protocol.subscription;
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.google.common.base.MoreObjects;
 
+/**
+ * 消费组重试策略配置：按 {@link GroupRetryPolicyType} 选择
+ * 自定义阶梯或指数退避 {@link RetryPolicy} 实现。
+ */
 public class GroupRetryPolicy {
+    /** 默认重试策略（CustomizedRetryPolicy）。 */
     private final static RetryPolicy DEFAULT_RETRY_POLICY = new CustomizedRetryPolicy();
+    /** 重试策略类型，默认 CUSTOMIZED。 */
     private GroupRetryPolicyType type = GroupRetryPolicyType.CUSTOMIZED;
+    /** 指数退避策略参数（type 为 EXPONENTIAL 时使用）。 */
     private ExponentialRetryPolicy exponentialRetryPolicy;
+    /** 自定义阶梯策略参数（type 为 CUSTOMIZED 时使用）。 */
     private CustomizedRetryPolicy customizedRetryPolicy;
 
+    /** 返回重试策略类型。 */
     public GroupRetryPolicyType getType() {
         return type;
     }
 
+    /** 设置重试策略类型。 */
     public void setType(GroupRetryPolicyType type) {
         this.type = type;
     }
 
+    /** 返回指数退避策略配置。 */
     public ExponentialRetryPolicy getExponentialRetryPolicy() {
         return exponentialRetryPolicy;
     }
@@ -42,6 +53,7 @@ public class GroupRetryPolicy {
         this.exponentialRetryPolicy = exponentialRetryPolicy;
     }
 
+    /** 返回自定义阶梯策略配置。 */
     public CustomizedRetryPolicy getCustomizedRetryPolicy() {
         return customizedRetryPolicy;
     }
@@ -50,6 +62,7 @@ public class GroupRetryPolicy {
         this.customizedRetryPolicy = customizedRetryPolicy;
     }
 
+    /** 按 type 解析并返回实际 {@link RetryPolicy}（缺省回退 DEFAULT）。 */
     @JSONField(serialize = false, deserialize = false)
     public RetryPolicy getRetryPolicy() {
         if (GroupRetryPolicyType.EXPONENTIAL.equals(type)) {

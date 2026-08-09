@@ -20,13 +20,23 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 静态 Topic 逻辑队列映射项：描述逻辑偏移与物理偏移的对应区间。
+ * 用于逻辑队列 ID 到物理 Broker 队列的偏移换算。
+ */
 public class LogicQueueMappingItem extends RemotingSerializable {
 
+    /** 映射代数（不可变）。 */
     private int gen; // immutable
+    /** 物理队列 ID（不可变）。 */
     private int queueId; //, immutable
+    /** 承载 Broker 名称（重要，不可变）。 */
     private String bname; //important, immutable
+    /** 逻辑偏移起点（重要，仅可通过命令修改一次）。 */
     private long logicOffset; // the start of the logic offset, important, can be changed by command only once
+    /** 物理偏移起点（通常恒为 0，不可变）。 */
     private long startOffset; // the start of the physical offset, should always be 0, immutable
+    /** 物理偏移终点（不含，-1 表示未定，可变）。 */
     private long endOffset = -1; // the end of the physical offset, excluded, revered -1, mutable
     private long timeOfStart = -1; // mutable, reserved
     private long timeOfEnd = -1; // mutable, reserved
@@ -48,7 +58,7 @@ public class LogicQueueMappingItem extends RemotingSerializable {
     }
 
 
-    //should only be user in sendMessage and getMinOffset
+    /** 宽松计算静态队列偏移（sendMessage/getMinOffset 场景，考虑未闭合区间）。 */
     public long computeStaticQueueOffsetLoosely(long physicalQueueOffset) {
         //consider the newly mapped item
         if (logicOffset < 0) {
@@ -64,6 +74,7 @@ public class LogicQueueMappingItem extends RemotingSerializable {
         return  logicOffset + (physicalQueueOffset - startOffset);
     }
 
+    /** 严格计算静态队列偏移（要求 logicOffset 已确定）。 */
     public long computeStaticQueueOffsetStrictly(long physicalQueueOffset) {
         assert logicOffset >= 0;
 
@@ -73,10 +84,12 @@ public class LogicQueueMappingItem extends RemotingSerializable {
         return  logicOffset + (physicalQueueOffset - startOffset);
     }
 
+    /** 由静态队列偏移反算物理队列偏移。 */
     public long computePhysicalQueueOffset(long staticQueueOffset) {
         return  (staticQueueOffset - logicOffset) + startOffset;
     }
 
+    /** 计算本映射项覆盖的最大静态队列偏移。 */
     public long computeMaxStaticQueueOffset() {
         if (endOffset >= startOffset) {
             return logicOffset + endOffset - startOffset;
@@ -84,31 +97,38 @@ public class LogicQueueMappingItem extends RemotingSerializable {
             return logicOffset;
         }
     }
+    /** 判断物理 endOffset 是否已确定（endOffset > startOffset）。 */
     public boolean checkIfEndOffsetDecided() {
         //if the endOffset == startOffset, then the item should be deleted
         return endOffset > startOffset;
     }
 
+    /** 判断逻辑偏移是否已确定（logicOffset >= 0）。 */
     public boolean checkIfLogicoffsetDecided() {
         return logicOffset >= 0;
     }
 
+    /** 返回逻辑偏移与物理起点的差值。 */
     public long computeOffsetDelta() {
         return logicOffset - startOffset;
     }
 
+    /** 返回映射代数。 */
     public int getGen() {
         return gen;
     }
 
+    /** 返回物理队列 ID。 */
     public int getQueueId() {
         return queueId;
     }
 
+    /** 返回 Broker 名称。 */
     public String getBname() {
         return bname;
     }
 
+    /** 返回逻辑偏移起点。 */
     public long getLogicOffset() {
         return logicOffset;
     }
@@ -129,10 +149,12 @@ public class LogicQueueMappingItem extends RemotingSerializable {
         return timeOfEnd;
     }
 
+    /** 设置逻辑偏移起点。 */
     public void setLogicOffset(long logicOffset) {
         this.logicOffset = logicOffset;
     }
 
+    /** 设置物理偏移终点。 */
     public void setEndOffset(long endOffset) {
         this.endOffset = endOffset;
     }

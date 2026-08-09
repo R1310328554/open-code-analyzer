@@ -30,12 +30,20 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingInfo;
 
+/**
+ * Topic 路由数据：队列分布、Broker 地址、Filter Server 与静态 Topic 队列映射。
+ * 可序列化并通过 NameServer 下发给客户端。
+ */
 public class TopicRouteData extends RemotingSerializable {
+    /** 顺序 Topic 配置串（可为空）。 */
     private String orderTopicConf;
+    /** 各 Broker 上的队列元数据列表。 */
     private List<QueueData> queueDatas;
+    /** Broker 地址与角色信息列表。 */
     private List<BrokerData> brokerDatas;
+    /** Broker 地址到 Filter Server 列表的映射。 */
     private HashMap<String/* brokerAddr */, List<String>/* Filter Server */> filterServerTable;
-    //It could be null or empty
+    /** 按 Broker 名称索引的静态 Topic 队列映射（可为 null 或空）。 */
     private Map<String/*brokerName*/, TopicQueueMappingInfo> topicQueueMappingByBroker;
 
     public TopicRouteData() {
@@ -67,6 +75,7 @@ public class TopicRouteData extends RemotingSerializable {
         }
     }
 
+    /** 浅克隆：复制集合引用与映射表，不递归克隆元素对象。 */
     public TopicRouteData cloneTopicRouteData() {
         TopicRouteData topicRouteData = new TopicRouteData();
         topicRouteData.setQueueDatas(new ArrayList<>());
@@ -84,6 +93,7 @@ public class TopicRouteData extends RemotingSerializable {
         return topicRouteData;
     }
 
+    /** 深克隆：递归复制 QueueData、BrokerData、Filter Server 与队列映射。 */
     public TopicRouteData deepCloneTopicRouteData() {
         TopicRouteData topicRouteData = new TopicRouteData();
 
@@ -117,6 +127,7 @@ public class TopicRouteData extends RemotingSerializable {
         return topicRouteData;
     }
 
+    /** 比较与旧路由是否发生变化（排序后比较队列与 Broker 列表）。 */
     public boolean topicRouteDataChanged(TopicRouteData oldData) {
         if (oldData == null)
             return true;
@@ -129,42 +140,52 @@ public class TopicRouteData extends RemotingSerializable {
         return !old.equals(now);
     }
 
+    /** 返回队列元数据列表。 */
     public List<QueueData> getQueueDatas() {
         return queueDatas;
     }
 
+    /** 设置队列元数据列表。 */
     public void setQueueDatas(List<QueueData> queueDatas) {
         this.queueDatas = queueDatas;
     }
 
+    /** 返回 Broker 数据列表。 */
     public List<BrokerData> getBrokerDatas() {
         return brokerDatas;
     }
 
+    /** 设置 Broker 数据列表。 */
     public void setBrokerDatas(List<BrokerData> brokerDatas) {
         this.brokerDatas = brokerDatas;
     }
 
+    /** 返回 Filter Server 映射表。 */
     public HashMap<String, List<String>> getFilterServerTable() {
         return filterServerTable;
     }
 
+    /** 设置 Filter Server 映射表。 */
     public void setFilterServerTable(HashMap<String, List<String>> filterServerTable) {
         this.filterServerTable = filterServerTable;
     }
 
+    /** 返回顺序 Topic 配置。 */
     public String getOrderTopicConf() {
         return orderTopicConf;
     }
 
+    /** 设置顺序 Topic 配置。 */
     public void setOrderTopicConf(String orderTopicConf) {
         this.orderTopicConf = orderTopicConf;
     }
 
+    /** 返回按 Broker 索引的静态队列映射。 */
     public Map<String, TopicQueueMappingInfo> getTopicQueueMappingByBroker() {
         return topicQueueMappingByBroker;
     }
 
+    /** 设置按 Broker 索引的静态队列映射。 */
     public void setTopicQueueMappingByBroker(Map<String, TopicQueueMappingInfo> topicQueueMappingByBroker) {
         this.topicQueueMappingByBroker = topicQueueMappingByBroker;
     }
