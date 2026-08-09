@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:16:19Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/client/protocol/ScoreAttributesEntry.java",
-    "redisson/src/main/java/org/redisson/client/protocol/ScoredEntry.java",
-    "redisson/src/main/java/org/redisson/client/protocol/StreamEntryStatus.java",
-    "redisson/src/main/java/org/redisson/client/protocol/Time.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/BitsSizeReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/BooleanAmountReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/BooleanNotNullReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/BooleanNullReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/BooleanNullSafeReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/BooleanNumberReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/BooleanReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/ByteReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/Convertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/DoubleNullSafeReplayConvertor.java",
-    "redisson/src/main/java/org/redisson/client/protocol/convertor/DoubleReplayConvertor.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 512,
-  "done": 2295
+  "done": 2310
 }
