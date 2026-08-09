@@ -21,7 +21,7 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A network path specific {@link QuicEvent}.
+ * 与特定网络路径（本地/远端地址对）相关的 {@link QuicEvent} 基类。
  */
 public abstract class QuicPathEvent implements QuicEvent {
 
@@ -34,7 +34,7 @@ public abstract class QuicPathEvent implements QuicEvent {
     }
 
     /**
-     * The local address of the network path.
+     * 该网络路径的本地地址。
      *
      * @return  local
      */
@@ -43,7 +43,7 @@ public abstract class QuicPathEvent implements QuicEvent {
     }
 
     /**
-     * The remote address of the network path.
+     * 该网络路径的远端地址。
      *
      * @return  local
      */
@@ -84,9 +84,8 @@ public abstract class QuicPathEvent implements QuicEvent {
 
     public static final class New extends QuicPathEvent {
         /**
-         * A new network path (local address, remote address) has been seen on a received packet.
-         * Note that this event is only triggered for servers, as the client is responsible from initiating new paths.
-         * The application may then probe this new path, if desired.
+         * 收到报文时观测到新的网络路径（本地/远端地址对）。
+         * 仅服务端触发（新路径由客户端发起）；应用可按需探测该路径。
          *
          * @param local     local address.
          * @param remote    remote address.
@@ -106,7 +105,7 @@ public abstract class QuicPathEvent implements QuicEvent {
 
     public static final class Validated extends QuicPathEvent {
         /**
-         * The related network path between local and remote has been validated.
+         * 本地与远端之间的该网络路径已通过验证。
          *
          * @param local     local address.
          * @param remote    remote address.
@@ -126,8 +125,7 @@ public abstract class QuicPathEvent implements QuicEvent {
 
     public static final class FailedValidation extends QuicPathEvent {
         /**
-         * The related network path between local and remote failed to be validated.
-         * This network path will not be used anymore, unless the application requests probing this path again.
+         * 该网络路径验证失败，除非应用再次请求探测，否则不再使用。
          *
          * @param local     local address.
          * @param remote    remote address.
@@ -148,7 +146,7 @@ public abstract class QuicPathEvent implements QuicEvent {
     public static final class Closed extends QuicPathEvent {
 
         /**
-         * The related network path between local and remote has been closed and is now unusable on this connection.
+         * 该网络路径已关闭，在此连接上不可再用。
          *
          * @param local     local address.
          * @param remote    remote address.
@@ -188,9 +186,7 @@ public abstract class QuicPathEvent implements QuicEvent {
         private final InetSocketAddress oldRemote;
 
         /**
-         * The stack observes that the Source Connection ID with the given sequence number,
-         * initially used by the peer over the first pair of addresses, is now reused over
-         * the second pair of addresses.
+         * 观测到对等体在第二组地址上复用了原先在第一组地址上使用的源连接 ID（给定序列号）。
          *
          * @param seq           sequence number
          * @param oldLocal      old local address.
@@ -207,7 +203,7 @@ public abstract class QuicPathEvent implements QuicEvent {
         }
 
         /**
-         * Source connection id sequence number.
+         * 源连接 ID 序列号。
          *
          * @return  sequence number
          */
@@ -216,7 +212,7 @@ public abstract class QuicPathEvent implements QuicEvent {
         }
 
         /**
-         * The old local address of the network path.
+         * 原先网络路径的本地地址。
          *
          * @return  local
          */
@@ -225,9 +221,9 @@ public abstract class QuicPathEvent implements QuicEvent {
         }
 
         /**
-         * The old remote address of the network path.
+         * 原先网络路径的远端地址。
          *
-         * @return  local
+     * @return  local
          */
         public InetSocketAddress oldRemote() {
             return oldRemote;
@@ -280,9 +276,8 @@ public abstract class QuicPathEvent implements QuicEvent {
     public static final class PeerMigrated extends QuicPathEvent {
 
         /**
-         * The connection observed that the remote migrated over the network path denoted by the pair of addresses,
-         * i.e., non-probing packets have been received on this network path. This is a server side only event.
-         * Note that this event is only raised if the path has been validated.
+         * 连接观测到远端已迁移至该地址对表示的路径（收到非探测报文）。
+         * 仅服务端、且路径已验证时触发。
          *
          * @param local     local address.
          * @param remote    remote address.

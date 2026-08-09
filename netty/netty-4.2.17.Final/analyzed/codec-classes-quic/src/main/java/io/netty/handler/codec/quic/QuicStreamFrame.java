@@ -20,12 +20,12 @@ import io.netty.buffer.ByteBufHolder;
 import io.netty.buffer.Unpooled;
 
 /**
- * A QUIC STREAM_FRAME.
+ * QUIC STREAM 帧的 {@link ByteBufHolder} 表示，携带 payload 与可选 {@code FIN} 标志。
  */
 public interface QuicStreamFrame extends ByteBufHolder {
 
     /**
-     * An empty {@link QuicStreamFrame} that has the {@code FIN} flag set.
+     * 空 payload 且置 {@code FIN} 的常量帧，用于仅发送流结束信号。
      */
     QuicStreamFrame EMPTY_FIN = new QuicStreamFrame() {
         @Override
@@ -95,8 +95,7 @@ public interface QuicStreamFrame extends ByteBufHolder {
     };
 
     /**
-     * Returns {@code true} if the frame has the FIN set, which means it notifies the remote peer that
-     * there will be no more writing happen. {@code false} otherwise.
+     * 是否设置 {@code FIN}：为 {@code true} 时通知对端本流不再有数据写入。
      *
      * @return {@code true} if the FIN flag should be set, {@code false} otherwise.
      */

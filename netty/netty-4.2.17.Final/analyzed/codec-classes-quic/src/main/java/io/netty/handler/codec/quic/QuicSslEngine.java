@@ -18,6 +18,6 @@ package io.netty.handler.codec.quic;
 import javax.net.ssl.SSLEngine;
 
 /**
- * An {@link SSLEngine} that can be used for QUIC.
+ * 可用于 QUIC 的 {@link SSLEngine} 抽象基类；TLS 记录层由 QUIC 传输层承载，而非 TCP。
  */
 public abstract class QuicSslEngine extends SSLEngine { }

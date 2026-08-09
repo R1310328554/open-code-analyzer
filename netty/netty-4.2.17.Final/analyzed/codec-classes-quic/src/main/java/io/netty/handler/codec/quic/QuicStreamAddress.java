@@ -19,18 +19,19 @@ import java.net.SocketAddress;
 import java.util.Objects;
 
 /**
- * A {@link SocketAddress} for QUIC stream.
+ * 以流 ID 标识的 QUIC 流 {@link SocketAddress}。
  */
 public final class QuicStreamAddress extends SocketAddress {
 
     private final long streamId;
 
+    /** @param streamId QUIC 流标识符 */
     public QuicStreamAddress(long streamId) {
         this.streamId = streamId;
     }
 
     /**
-     * Return the id of the stream.
+     * 返回流 ID。
      *
      * @return the id.
      */

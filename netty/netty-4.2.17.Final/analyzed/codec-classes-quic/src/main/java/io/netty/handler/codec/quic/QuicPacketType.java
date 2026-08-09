@@ -16,42 +16,29 @@
 package io.netty.handler.codec.quic;
 
 /**
- * The type of the
- * <a href="https://quicwg.org/base-drafts/rfc9000.html#name-packets-and-frames">QUIC packet</a>.
+ * <a href="https://quicwg.org/base-drafts/rfc9000.html#name-packets-and-frames">QUIC 报文</a> 类型枚举。
  */
 public enum QuicPacketType {
-    /**
-     * Initial packet.
-     */
+    /** Initial 报文（连接建立首包）。 */
     INITIAL,
 
-    /**
-     * Retry packet.
-     */
+    /** Retry 报文（服务端地址验证）。 */
     RETRY,
 
-    /**
-     * Handshake packet.
-     */
+    /** Handshake 报文（TLS 握手阶段）。 */
     HANDSHAKE,
 
-    /**
-     * 0-RTT packet.
-     */
+    /** 0-RTT 报文（早期数据）。 */
     ZERO_RTT,
 
-    /**
-     * 1-RTT short header packet.
-     */
+    /** 1-RTT 短头报文（连接建立后数据通道）。 */
     SHORT,
 
-    /**
-     * Version negotiation packet.
-     */
+    /** 版本协商报文。 */
     VERSION_NEGOTIATION;
 
     /**
-     * Return the {@link QuicPacketType} for the given byte.
+     * 根据内部编码字节返回对应 {@link QuicPacketType}。
      *
      * @param type  the byte that represent the type.
      * @return      the {@link QuicPacketType}.

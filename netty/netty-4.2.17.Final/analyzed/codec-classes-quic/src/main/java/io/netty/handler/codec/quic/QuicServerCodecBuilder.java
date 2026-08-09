@@ -28,12 +28,11 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 /**
- * {@link QuicCodecBuilder} that configures and builds a {@link ChannelHandler} that should be added to the
- * {@link io.netty.channel.ChannelPipeline} of a {@code QUIC} server.
+ * 面向 QUIC 服务端的 {@link QuicCodecBuilder}，配置并构建应加入
+ * {@code QUIC} 服务端 {@link io.netty.channel.ChannelPipeline} 的 {@link ChannelHandler}。
  */
 public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCodecBuilder> {
-    // The order in which ChannelOptions are applied is important they may depend on each other for validation
-    // purposes.
+    // ChannelOption 应用顺序可能影响校验，故使用 LinkedHashMap 保持顺序
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<>();
     private final Map<AttributeKey<?>, Object> attrs = new HashMap<>();
     private final Map<ChannelOption<?>, Object> streamOptions = new LinkedHashMap<>();
@@ -44,9 +43,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     private QuicTokenHandler tokenHandler;
     private QuicResetTokenGenerator resetTokenGenerator;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建新的服务端编解码器构建器实例。 */
     public QuicServerCodecBuilder() {
         super(true);
     }
@@ -64,14 +61,14 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
         resetTokenGenerator = builder.resetTokenGenerator;
     }
 
+    /** 克隆当前构建器，复制全部配置。 */
     @Override
     public QuicServerCodecBuilder clone() {
         return new QuicServerCodecBuilder(this);
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link QuicChannel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * 为新建 {@link QuicChannel} 设置 {@link ChannelOption}；{@code null} 表示移除先前选项。
      *
      * @param option    the {@link ChannelOption} to apply to the {@link QuicChannel}.
      * @param value     the value of the option.
@@ -84,8 +81,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     }
 
     /**
-     * Allow to specify an initial attribute of the newly created {@link QuicChannel}.  If the {@code value} is
-     * {@code null}, the attribute of the specified {@code key} is removed.
+     * 为新建 {@link QuicChannel} 设置初始 {@link AttributeKey} 属性；{@code null} 表示移除。
      *
      * @param key       the {@link AttributeKey} to apply to the {@link QuicChannel}.
      * @param value     the value of the attribute.
@@ -98,8 +94,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     }
 
     /**
-     * Set the {@link ChannelHandler} that is added to the {@link io.netty.channel.ChannelPipeline} of the
-     * {@link QuicChannel} once created.
+     * 设置 {@link QuicChannel} 创建后加入其 pipeline 的 {@link ChannelHandler}。
      *
      * @param handler   the {@link ChannelHandler} that is added to the {@link QuicChannel}s
      *                  {@link io.netty.channel.ChannelPipeline}.
@@ -111,8 +106,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link QuicStreamChannel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * 为新建 {@link QuicStreamChannel} 设置 {@link ChannelOption}。
      *
      * @param option    the {@link ChannelOption} to apply to the {@link QuicStreamChannel}s.
      * @param value     the value of the option.
@@ -139,8 +133,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     }
 
     /**
-     * Set the {@link ChannelHandler} that is added to the {@link io.netty.channel.ChannelPipeline} of the
-     * {@link QuicStreamChannel} once created.
+     * 设置 {@link QuicStreamChannel} 创建后加入 pipeline 的 {@link ChannelHandler}。
      *
      * @param streamHandler     the {@link ChannelHandler} that is added to the {@link QuicStreamChannel}s
      *                          {@link io.netty.channel.ChannelPipeline}.
@@ -152,7 +145,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     }
 
     /**
-     * Sets the {@link QuicConnectionIdGenerator} to use.
+     * 设置连接 ID 生成器；未指定时使用 {@link QuicConnectionIdGenerator#signGenerator()}。
      *
      * @param connectionIdAddressGenerator  the {@link QuicConnectionIdGenerator} to use.
      * @return                              this instance.
@@ -164,8 +157,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     }
 
     /**
-     * Set the {@link QuicTokenHandler} that is used to generate and validate tokens or
-     * {@code null} if no tokens should be used at all.
+     * 设置地址验证 token 的生成/校验处理器；{@code null} 时使用 {@link NoQuicTokenHandler}。
      *
      * @param tokenHandler  the {@link QuicTokenHandler} to use.
      * @return              this instance.
@@ -176,8 +168,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
     }
 
     /**
-     * Set the {@link QuicResetTokenGenerator} that is used to generate stateless reset tokens or
-     * {@code null} if the default should be used.
+     * 设置无状态重置 token 生成器；{@code null} 时使用 {@link QuicResetTokenGenerator#signGenerator()}。
      *
      * @param resetTokenGenerator  the {@link QuicResetTokenGenerator} to use.
      * @return                     this instance.
@@ -187,6 +178,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
         return self();
     }
 
+    /** 校验 handler 与 streamHandler 至少配置其一。 */
     @Override
     protected void validate() {
         super.validate();
@@ -195,6 +187,7 @@ public final class QuicServerCodecBuilder extends QuicCodecBuilder<QuicServerCod
         }
     }
 
+    /** 组装默认 token/CID/reset 生成器并构建 {@link QuicheQuicServerCodec}。 */
     @Override
     ChannelHandler build(QuicheConfig config,
                                    Function<QuicChannel, ? extends QuicSslEngine> sslEngineProvider,

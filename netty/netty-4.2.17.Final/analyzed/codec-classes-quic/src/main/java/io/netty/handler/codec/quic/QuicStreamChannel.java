@@ -25,13 +25,12 @@ import org.jetbrains.annotations.Nullable;
 import java.net.SocketAddress;
 
 /**
- * A QUIC stream.
+ * QUIC 双向/单向流通道，继承 {@link DuplexChannel}，可独立 shutdown 输入/输出。
  */
 public interface QuicStreamChannel extends DuplexChannel {
 
     /**
-     * Should be added to a {@link ChannelFuture} when the output should be cleanly shutdown via a {@code FIN}. No more
-     * writes will be allowed after this point.
+     * 写入完成后附加到 {@link ChannelFuture}，以 {@code FIN} 干净关闭输出，此后禁止再写。
      */
     ChannelFutureListener SHUTDOWN_OUTPUT = f -> ((QuicStreamChannel) f.channel()).shutdownOutput();
 
@@ -162,7 +161,7 @@ public interface QuicStreamChannel extends DuplexChannel {
     }
 
     /**
-     * Shortcut for calling {@link #shutdownInput(int)} and {@link #shutdownInput(int)}.
+     * 同时关闭输入与输出，并携带给定错误码。
      *
      * @param error the error to send.
      * @return the future that is notified on completion.
@@ -181,8 +180,7 @@ public interface QuicStreamChannel extends DuplexChannel {
     ChannelFuture shutdown(int error, ChannelPromise promise);
 
     /**
-     * Shutdown the input of the stream with the given error code. This means a {@code STOP_SENDING} frame will
-     * be send to the remote peer and all data received will be discarded.
+     * 以给定错误码关闭输入：发送 {@code STOP_SENDING}，后续接收数据丢弃。
      *
      * @param error the error to send as part of the {@code STOP_SENDING} frame.
      * @return the future that is notified on completion.
@@ -202,12 +200,8 @@ public interface QuicStreamChannel extends DuplexChannel {
     ChannelFuture shutdownInput(int error, ChannelPromise promise);
 
     /**
-     * Shutdown the output of the stream with the given error code. This means a {@code RESET_STREAM} frame will
-     * be send to the remote peer and all data that is not sent yet will be discarded.
-     *
-     * <strong>Important:</strong>If you want to shutdown the output without sending a {@code RESET_STREAM} frame you
-     * should use {@link #shutdownOutput()} which will shutdown the output by sending a {@code FIN} and so signal
-     * a clean shutdown.
+     * 以错误码关闭输出：发送 {@code RESET_STREAM}，未发送数据丢弃。
+     * <strong>注意：</strong>若需干净关闭请用 {@link #shutdownOutput()} 发送 {@code FIN}。
      *
      * @param error the error to send as part of the {@code RESET_STREAM} frame.
      * @return the future that is notified on completion.
@@ -237,29 +231,28 @@ public interface QuicStreamChannel extends DuplexChannel {
     QuicStreamAddress remoteAddress();
 
     /**
-     * Returns {@code true} if the stream was created locally.
+     * 流是否由本端发起创建。
      *
      * @return {@code true} if created locally, {@code false} otherwise.
      */
     boolean isLocalCreated();
 
     /**
-     * Returns the {@link QuicStreamType} of the stream.
+     * 返回流的 {@link QuicStreamType}（双向/单向）。
      *
      * @return {@link QuicStreamType} of this stream.
      */
     QuicStreamType type();
 
     /**
-     * The id of the stream.
+     * 流 ID。
      *
      * @return the stream id of this {@link QuicStreamChannel}.
      */
     long streamId();
 
     /**
-     * The {@link QuicStreamPriority} if explicit set for the stream via {@link #updatePriority(QuicStreamPriority)} or
-     * {@link #updatePriority(QuicStreamPriority, ChannelPromise)}. Otherwise {@code null}.
+     * 显式设置的 {@link QuicStreamPriority}；未设置时为 {@code null}。
      *
      * @return the priority if any was set.
      */
@@ -267,8 +260,7 @@ public interface QuicStreamChannel extends DuplexChannel {
     QuicStreamPriority priority();
 
     /**
-     * Update the priority of the stream. A stream's priority determines the order in which stream data is sent
-     * on the wire (streams with lower priority are sent first).
+     * 更新流优先级；数值越低越优先发送。
      *
      * @param priority  the priority.
      * @return          future that is notified once the operation completes.

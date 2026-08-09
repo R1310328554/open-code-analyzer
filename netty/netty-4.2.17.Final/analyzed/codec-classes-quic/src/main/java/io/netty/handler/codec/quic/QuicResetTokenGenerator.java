@@ -18,21 +18,21 @@ package io.netty.handler.codec.quic;
 import java.nio.ByteBuffer;
 
 /**
- * Generate
+ * 生成 QUIC
  * <a href="https://www.ietf.org/archive/id/draft-ietf-quic-transport-29.html#name-calculating-a-stateless-res">
- *     stateless reset tokens</a> to use.
+ *     无状态重置 token</a> 的接口。
  */
 public interface QuicResetTokenGenerator {
 
     /**
-     * Generate a reset token to use for the given connection id. The returned token MUST be of length 16.
+     * 为给定连接 ID 生成重置 token，返回值长度必须为 16 字节。
      * @param cid the connection id
      * @return a newly generated reset token
      */
     ByteBuffer newResetToken(ByteBuffer cid);
 
     /**
-     * Return a {@link QuicResetTokenGenerator} which generates new reset tokens by signing the given input.
+     * 返回基于 HMAC 签名输入生成 token 的默认 {@link QuicResetTokenGenerator} 实现。
      *
      * @return a {@link QuicResetTokenGenerator} which generates new reset tokens by signing the given input.
      */

@@ -23,13 +23,11 @@ import java.net.InetSocketAddress;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Parses the QUIC packet header and notifies a callback once parsing was successful.
+ * 解析 QUIC 报文首部，成功后通过回调通知调用方。
  * <p>
- * Once the parser is not needed anymore the user needs to call {@link #close()} to ensure all resources are
- * released. Failed to do so may lead to memory leaks.
+ * 不再使用时须调用 {@link #close()} 释放资源，否则可能导致泄漏。
  * <p>
- * This class can be used for advanced use-cases. Usually you want to just use {@link QuicClientCodecBuilder} or
- * {@link QuicServerCodecBuilder}.
+ * 面向高级场景；一般应用直接使用 {@link QuicClientCodecBuilder} 或 {@link QuicServerCodecBuilder} 即可。
  */
 public final class QuicHeaderParser implements AutoCloseable {
     // See https://datatracker.ietf.org/doc/rfc7714/
@@ -38,10 +36,12 @@ public final class QuicHeaderParser implements AutoCloseable {
     private final int localConnectionIdLength;
     private boolean closed;
 
+    /** 指定本地连接 ID 长度（短头报文解析时使用）。 */
     public QuicHeaderParser(int localConnectionIdLength) {
         this.localConnectionIdLength = checkPositiveOrZero(localConnectionIdLength, "localConnectionIdLength");
     }
 
+    /** 标记解析器已关闭，后续 {@link #parse} 将抛出 {@link IllegalStateException}。 */
     @Override
     public void close() {
         if (!closed) {
@@ -50,9 +50,7 @@ public final class QuicHeaderParser implements AutoCloseable {
     }
 
     /**
-     * Parses a QUIC packet and extract the header values out of it. This method takes no ownership of the packet itself
-     * which means the caller of this method is expected to call {@link ByteBuf#release()} once the packet is not needed
-     * anymore.
+     * 解析 QUIC 报文并提取首部字段。本方法不接管 {@code packet} 所有权，调用方须在不再需要时自行 {@link ByteBuf#release()}。
      *
      * @param sender        the sender of the packet. This is directly passed to the {@link QuicHeaderProcessor} once
      *                      parsing was successful.
@@ -142,8 +140,7 @@ public final class QuicHeaderParser implements AutoCloseable {
         callback.process(sender, recipient, packet, type, version, scid, dcid, token);
     }
 
-    // Check if the connection id is not longer then 20. This is what is the maximum for QUIC version 1.
-    // See https://www.rfc-editor.org/rfc/rfc9000.html#section-17.2
+    // QUIC v1 连接 ID 最大 20 字节（RFC 9000 §17.2）
     private static void checkCidLength(int length) throws QuicException {
         if (length > Quic.MAX_CONN_ID_LEN) {
             throw new QuicException("connection id to large: "  + length + " > " + Quic.MAX_CONN_ID_LEN,
@@ -164,8 +161,7 @@ public final class QuicHeaderParser implements AutoCloseable {
                 checkReadable(offset, readable, len);
                 return packet.slice(offset, len);
             case RETRY:
-                // Exclude the integrity tag from the token.
-                // See https://www.rfc-editor.org/rfc/rfc9000.html#section-17.2.5
+                // RETRY 报文 token 不含完整性标签（RFC 9000 §17.2.5）
                 checkReadable(offset, readable, AES_128_GCM_TAG_LENGTH);
                 int tokenLen = readable - offset - AES_128_GCM_TAG_LENGTH;
                 return packet.slice(offset, tokenLen);
@@ -191,8 +187,8 @@ public final class QuicHeaderParser implements AutoCloseable {
     }
 
     /**
-     * Read the variable length integer from the {@link ByteBuf}.
-     * See <a href="https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-16">
+     * 从 {@link ByteBuf} 读取 QUIC 变长整数。
+     * 参见 <a href="https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-16">
      *     Variable-Length Integer Encoding </a>
      */
     private static long getVariableLengthInteger(ByteBuf in, int offset, int len) throws QuicException {
@@ -212,8 +208,8 @@ public final class QuicHeaderParser implements AutoCloseable {
     }
 
     /**
-     * Returns the number of bytes that were encoded into the byte for a variable length integer to read.
-     * See <a href="https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-16">
+     * 根据首字节判断变长整数编码所占字节数。
+     * 参见 <a href="https://tools.ietf.org/html/draft-ietf-quic-transport-32#section-16">
      *     Variable-Length Integer Encoding </a>
      */
     private static int numBytesForVariableLengthInteger(byte b) {
@@ -230,16 +226,14 @@ public final class QuicHeaderParser implements AutoCloseable {
         return 1;
     }
 
+    /** 判断首字节是否为 QUIC 短头格式（Header Form 位为 0）。 */
     static boolean hasShortHeader(byte b) {
         return (b & 0x80) == 0;
     }
 
     private static QuicPacketType typeOfLongHeader(byte first, long version) throws QuicException {
         if (version == 0) {
-            // If we parsed a version of 0 we are sure it's a version negotiation packet:
-            // https://www.rfc-editor.org/rfc/rfc9000.html#section-17.2.1
-            //
-            // This also means we should ignore everything that is left in 'first'.
+            // version 为 0 表示版本协商报文（RFC 9000 §17.2.1），忽略 first 中其余类型位
             return QuicPacketType.VERSION_NEGOTIATION;
         }
         int packetType = (first & 0x30) >> 4;
@@ -258,12 +252,12 @@ public final class QuicHeaderParser implements AutoCloseable {
     }
 
     /**
-     * Called when a QUIC packet and its header could be parsed.
+     * QUIC 报文首部解析成功后的回调接口。
      */
     public interface QuicHeaderProcessor {
 
         /**
-         * Called when a QUIC packet header was parsed.
+         * 报文首部解析完成时调用；{@code packet} 等缓冲区所有权不转移，需 {@link ByteBuf#retain()} 才能跨方法持有。
          *
          * @param sender        the sender of the QUIC packet.
          * @param recipient     the recipient of the QUIC packet.

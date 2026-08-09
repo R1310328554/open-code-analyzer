@@ -22,12 +22,11 @@ import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.socket.DuplexChannelConfig;
 
 /**
- * {@link DuplexChannelConfig} for QUIC streams.
+ * QUIC 流的 {@link DuplexChannelConfig}，扩展帧模式与半关闭等选项。
  */
 public interface QuicStreamChannelConfig extends DuplexChannelConfig {
     /**
-     * Set this to {@code true} if the {@link QuicStreamChannel} should read {@link QuicStreamFrame}s and fire these
-     * through the {@link io.netty.channel.ChannelPipeline}, {@code false} if it uses {@link io.netty.buffer.ByteBuf}.
+     * {@code true} 时读取 {@link QuicStreamFrame} 并沿 pipeline 传播；{@code false} 时使用 {@link io.netty.buffer.ByteBuf}。
      *
      * @param readFrames    {@code true} if {@link QuicStreamFrame}s should be used, {@code false} if
      *                      {@link io.netty.buffer.ByteBuf} should be used.
@@ -37,8 +36,7 @@ public interface QuicStreamChannelConfig extends DuplexChannelConfig {
     QuicStreamChannelConfig setReadFrames(boolean readFrames);
 
     /**
-     * Returns {@code true} if the {@link QuicStreamChannel} will read {@link QuicStreamFrame}s and fire these through
-     * the {@link io.netty.channel.ChannelPipeline}, {@code false} if it uses {@link io.netty.buffer.ByteBuf}.
+     * 是否以 {@link QuicStreamFrame} 模式读取。
      *
      * @return  {@code true} if {@link QuicStreamFrame}s should be used, {@code false} if
      *          {@link io.netty.buffer.ByteBuf} should be used.

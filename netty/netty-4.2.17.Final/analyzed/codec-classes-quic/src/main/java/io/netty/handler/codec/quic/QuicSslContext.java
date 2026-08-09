@@ -23,16 +23,19 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 /**
- * Special {@link SslContext} that can be used for {@code QUIC}.
+ * 专用于 {@code QUIC} 的 {@link SslContext} 抽象基类，工厂方法返回 {@link QuicSslEngine}。
  */
 public abstract class QuicSslContext extends SslContext {
 
+    /** 创建不带对端主机信息的 {@link QuicSslEngine}。 */
     @Override
     public abstract QuicSslEngine newEngine(ByteBufAllocator alloc);
 
+    /** 创建指定对端主机/端口的 {@link QuicSslEngine}（SNI 等场景）。 */
     @Override
     public abstract QuicSslEngine newEngine(ByteBufAllocator alloc, String peerHost, int peerPort);
 
+    /** 返回 QUIC 专用的 {@link QuicSslSessionContext}。 */
     @Override
     public abstract QuicSslSessionContext sessionContext();
 

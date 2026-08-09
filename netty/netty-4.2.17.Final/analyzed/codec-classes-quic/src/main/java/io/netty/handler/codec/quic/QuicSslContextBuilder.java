@@ -44,14 +44,13 @@ import java.util.Map;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Builder for configuring a new SslContext for creation.
+ * 构建 {@link QuicSslContext} 的 fluent 配置器，基于 BoringSSL/Quiche 实现 TLS 1.3 over QUIC。
  */
 public final class QuicSslContextBuilder {
 
     /**
-     * Special {@link X509ExtendedKeyManager} implementation which will just fail the certificate selection.
-     * This is used as a "dummy" implementation when SNI is used as we should always select an other
-     * {@link QuicSslContext} based on the provided hostname.
+     * SNI 模式下使用的占位 {@link X509ExtendedKeyManager}，证书选择始终失败；
+     * 实际证书由 hostname 映射到的 {@link QuicSslContext} 提供。
      */
     private static final X509ExtendedKeyManager SNI_KEYMANAGER = new X509ExtendedKeyManager() {
         private final X509Certificate[] emptyCerts = new X509Certificate[0];
@@ -92,14 +91,14 @@ public final class QuicSslContextBuilder {
     };
 
     /**
-     * Creates a builder for new client-side {@link QuicSslContext} that can be used for {@code QUIC}.
+     * 创建 QUIC 客户端 {@link QuicSslContext} 构建器。
      */
     public static QuicSslContextBuilder forClient() {
         return new QuicSslContextBuilder(false);
     }
 
     /**
-     * Creates a builder for new server-side {@link QuicSslContext} that can be used for {@code QUIC}.
+     * 创建 QUIC 服务端 {@link QuicSslContext} 构建器（PEM 私钥与证书链文件）。
      *
      * @param keyFile a PKCS#8 private key file in PEM format
      * @param keyPassword the password of the {@code keyFile}, or {@code null} if it's not
@@ -149,9 +148,9 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Enables support for
+     * 启用服务端
      * <a href="https://quicwg.org/ops-drafts/draft-ietf-quic-manageability.html#name-server-name-indication-sni">
-     *     SNI</a> on the server side.
+     *     SNI</a>，按 hostname 映射选择 {@link QuicSslContext}。
      *
      * @param mapping   the {@link Mapping} that is used to map names to the {@link QuicSslContext} to use.
      *                  Usually using {@link io.netty.util.DomainWildcardMappingBuilder} should be used
@@ -210,7 +209,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Configure a {@link SslContextOption}.
+     * 配置底层 {@link SslContextOption}。
      */
     public <T> QuicSslContextBuilder option(SslContextOption<T> option, T value) {
         if (value == null) {
@@ -222,7 +221,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Enable / disable the usage of early data.
+     * 启用或禁用 0-RTT early data。
      */
     public QuicSslContextBuilder earlyData(boolean enabled) {
         this.earlyData = enabled;
@@ -253,8 +252,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Trusted certificates for verifying the remote endpoint's certificate. The file should
-     * contain an X.509 certificate collection in PEM format. {@code null} uses the system default
+     * 校验远端证书的受信 CA（PEM 格式）；{@code null} 使用系统默认（需 Java 8u261+ 以支持 TLS1.3
      * which only works with Java 8u261 and later as these versions support TLS1.3,
      * see <a href="https://www.oracle.com/java/technologies/javase/8u261-relnotes.html">
      *     JDK 8u261 Update Release Notes</a>
@@ -305,8 +303,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Identifying certificate for this host. {@code keyCertChainFile} and {@code keyFile} may
-     * be {@code null} for client contexts, which disables mutual authentication.
+     * 配置本端身份证书（私钥与链）；客户端可为 {@code null} 以禁用双向认证。
      *
      * @param keyFile a PKCS#8 private key file in PEM format
      * @param keyPassword the password of the {@code keyFile}, or {@code null} if it's not
@@ -378,7 +375,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Application protocol negotiation configuration. {@code null} disables support.
+     * 配置 ALPN 应用层协议列表；{@code null} 表示禁用。
      */
     public QuicSslContextBuilder applicationProtocols(String @Nullable ... applicationProtocols) {
         this.applicationProtocols = applicationProtocols;
@@ -386,8 +383,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Set the size of the cache used for storing SSL session objects. {@code 0} to use the
-     * default value.
+     * 设置 TLS 会话缓存容量；{@code 0} 使用默认值。
      */
     public QuicSslContextBuilder sessionCacheSize(long sessionCacheSize) {
         this.sessionCacheSize = sessionCacheSize;
@@ -404,7 +400,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Sets the client authentication mode.
+     * 设置服务端客户端证书认证模式（仅服务端）。
      */
     public QuicSslContextBuilder clientAuth(ClientAuth clientAuth) {
         if (!forServer) {
@@ -415,8 +411,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Specify the endpoint identification algorithm (aka. hostname verification algorithm) that clients will use as
-     * part of authenticating servers.
+     * 指定客户端验证服务端证书时使用的端点识别算法（主机名校验）。
      * <p>
      * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
      *     Java Security Standard Names</a> for a list of supported algorithms.
@@ -430,7 +425,7 @@ public final class QuicSslContextBuilder {
     }
 
     /**
-     * Create new {@link QuicSslContext} instance with configured settings that can be used for {@code QUIC}.
+     * 根据当前配置实例化 {@link QuicheQuicSslContext}。
      *
      */
     public QuicSslContext build() {

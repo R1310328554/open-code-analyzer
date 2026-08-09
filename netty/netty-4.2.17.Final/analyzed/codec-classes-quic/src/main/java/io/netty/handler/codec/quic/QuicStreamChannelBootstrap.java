@@ -31,7 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Allows to bootstrap outgoing {@link QuicStreamChannel}s.
+ * 在已有 {@link QuicChannel} 上引导创建出站 {@link QuicStreamChannel} 的构建器。
  */
 public final class QuicStreamChannelBootstrap {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(QuicStreamChannelBootstrap.class);
@@ -43,7 +43,7 @@ public final class QuicStreamChannelBootstrap {
     private QuicStreamType type = QuicStreamType.BIDIRECTIONAL;
 
     /**
-     * Creates a new instance which uses the given {@link QuicChannel} to bootstrap {@link QuicStreamChannel}s.
+     * 使用给定父 {@link QuicChannel} 创建引导器。
      *
      * @param parent    the {@link QuicChannel} that is used.
 
@@ -53,8 +53,7 @@ public final class QuicStreamChannelBootstrap {
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link QuicStreamChannel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * 为新建 {@link QuicStreamChannel} 设置 {@link ChannelOption}。
      *
      * @param option    the {@link ChannelOption} to apply to the {@link QuicStreamChannel}.
      * @param value     the value of the option.
@@ -94,8 +93,7 @@ public final class QuicStreamChannelBootstrap {
     }
 
     /**
-     * Set the {@link QuicStreamType} to use for the {@link QuicStreamChannel}, default is
-     * {@link QuicStreamType#BIDIRECTIONAL}.
+     * 设置流类型，默认 {@link QuicStreamType#BIDIRECTIONAL}。
      *
      * @param type     the {@link QuicStreamType} of the  {@link QuicStreamChannel}.
      * @return         this instance.
@@ -106,7 +104,7 @@ public final class QuicStreamChannelBootstrap {
     }
 
     /**
-     * Creates a new {@link QuicStreamChannel} and notifies the {@link Future}.
+     * 创建新流并在 {@link Future} 上通知结果。
      *
      * @return  the {@link Future} that is notified once the operation completes.
      */
@@ -141,6 +139,7 @@ public final class QuicStreamChannelBootstrap {
             this.streamOptions = streamOptions;
             this.streamAttrs = streamAttrs;
         }
+        /** 应用 stream 选项、属性并添加 handler。 */
         @Override
         protected void initChannel(QuicStreamChannel ch) {
             Quic.setupChannel(ch, streamOptions, streamAttrs, streamHandler, logger);

@@ -16,8 +16,7 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Marker interface for events that will be passed through the {@link io.netty.channel.ChannelPipeline} via
- * {@link io.netty.channel.ChannelPipeline#fireUserEventTriggered(Object)} to notify the user about supported
- * QUIC extensions by the remote peer.
+ * QUIC 扩展相关用户事件的标记接口；事件经 {@link io.netty.channel.ChannelPipeline#fireUserEventTriggered(Object)}
+ * 在 {@link io.netty.channel.ChannelPipeline} 中传播，用于通知应用层远端对等体支持的 QUIC 扩展能力。
  */
 public interface QuicExtensionEvent extends QuicEvent { }
