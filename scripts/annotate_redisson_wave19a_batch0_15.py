@@ -21,7 +21,7 @@ SCRIPTS = ROOT / "scripts"
 WAVE19A_FILE = Path("/tmp/redisson_w19a.txt")
 SCRIPT_NAME = "annotate_redisson_wave19a_batch0_15.py"
 MARK_NOTE = "wave19a [0:15]"
-INDEX_FILE = Path("/var/tmp/re19a.index")
+INDEX_FILE = Path("/var/tmp/re19a-retry.index")
 BATCH_FILES = [
     ln.strip()
     for ln in WAVE19A_FILE.read_text(encoding="utf-8").splitlines()

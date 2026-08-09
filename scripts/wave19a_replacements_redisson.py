@@ -1,4 +1,4 @@
-"""Chinese annotation replacements for Redisson 4.7.0 wave-19a spring-data-25 reactive [0:15]."""
+"""Chinese annotation replacements for Redisson 4.7.0 wave-19a spring-data-25/26 [0:15]."""
 from __future__ import annotations
 
 import importlib.util
@@ -15,35 +15,41 @@ def _load(module_file: str, attr: str) -> dict[str, list[tuple[str, str]]]:
     return getattr(mod, attr)
 
 
-W14B = _load("wave14b_replacements_redisson.py", "W14B_REPLACEMENTS")
+W11A = _load("wave11a_replacements_redisson.py", "W11A_REPLACEMENTS")
+W12B = _load("wave12b_replacements_redisson.py", "W12B_REPLACEMENTS")
 W15A = _load("wave15a_replacements_redisson.py", "W15A_REPLACEMENTS")
-W16B = _load("wave16b_replacements_redisson.py", "W16B_REPLACEMENTS")
+W17A = _load("wave17a_replacements_redisson.py", "W17A_REPLACEMENTS")
 
 W19A_REPLACEMENTS: dict[str, list[tuple[str, str]]] = {}
 
-# spring-data-25: reuse wave-14b (sources identical to spring-data-22/24 for these files).
+# spring-data-25: reuse wave-15a (sources identical to spring-data-22/23/24 for these files).
 for _key in (
-    "RedissonReactiveClusterListCommands.java",
-    "RedissonReactiveClusterNumberCommands.java",
-    "RedissonReactiveClusterServerCommands.java",
-    "RedissonReactiveClusterSetCommands.java",
-    "RedissonReactiveClusterStreamCommands.java",
-    "RedissonReactiveClusterStringCommands.java",
-    "RedissonReactiveClusterZSetCommands.java",
-    "RedissonReactiveGeoCommands.java",
-    "RedissonReactiveHashCommands.java",
-    "RedissonReactiveHyperLogLogCommands.java",
-    "RedissonReactiveKeyCommands.java",
-    "RedissonReactiveListCommands.java",
-    "RedissonReactiveNumberCommands.java",
+    "RedissonReactiveRedisConnection.java",
+    "RedissonReactiveScriptingCommands.java",
+    "RedissonReactiveServerCommands.java",
+    "RedissonReactiveSetCommands.java",
+    "RedissonReactiveSubscription.java",
+    "RedissonSentinelConnection.java",
+    "RedissonSubscription.java",
+    "ScoredSortedListReplayDecoder.java",
+    "ScoredSortedSetReplayDecoder.java",
+    "ScoredSortedSetReplayDecoderV2.java",
+    "SecondsConvertor.java",
+    "SetReplayDecoder.java",
 ):
-    W19A_REPLACEMENTS[_key] = W14B[_key]
+    W19A_REPLACEMENTS[_key] = list(W15A[_key])
 
-W19A_REPLACEMENTS["RedissonReactivePubSubCommands.java"] = W15A[
-    "RedissonReactivePubSubCommands.java"
-]
+# spring-data-25: TIME with TimeUnit conversion (added vs spring-data-24).
+W19A_REPLACEMENTS["RedissonReactiveServerCommands.java"].append(
+    (
+        "    @Override\n    public Mono<Long> time(TimeUnit timeUnit) {",
+        "    /** TIME：读取服务器时间并按 {@link TimeUnit} 转换（毫秒基准）。 */\n"
+        "    @Override\n"
+        "    public Mono<Long> time(TimeUnit timeUnit) {",
+    )
+)
 
-# spring-data-25: extended cluster admin API (same as spring-data-24).
-W19A_REPLACEMENTS["RedissonReactiveRedisClusterConnection.java"] = W16B[
-    "RedissonReactiveRedisClusterConnection.java"
-]
+# spring-data-26: identical to spring-data-22/24/25 counterparts.
+W19A_REPLACEMENTS["BinaryConvertor.java"] = W11A["BinaryConvertor.java"]
+W19A_REPLACEMENTS["ByteBufferGeoResultsDecoder.java"] = W12B["ByteBufferGeoResultsDecoder.java"]
+W19A_REPLACEMENTS["DataTypeConvertor.java"] = W17A["DataTypeConvertor.java"]
