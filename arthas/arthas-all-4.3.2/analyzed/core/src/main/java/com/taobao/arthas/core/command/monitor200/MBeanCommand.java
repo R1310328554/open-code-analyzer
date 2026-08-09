@@ -45,7 +45,10 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
 /**
- * Date: 2019/4/18
+ * {@code mbean} 命令：查询平台 MBeanServer，支持列举 ObjectName、读取属性值或展示 MBeanInfo 元数据。
+ * <p>
+ * 无参数时列出全部 MBean 名称；指定 name/attribute 模式可通配或 {@code -E} 正则；
+ * {@code -i} 间隔大于 0 时周期性采样属性值，行为类似 dashboard。
  *
  * @author xuzhiyi
  */
@@ -66,13 +69,21 @@ public class MBeanCommand extends AnnotatedCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(MBeanCommand.class);
 
+    /** ObjectName 匹配模式（positional 或 -m） */
     private String name;
+    /** MBean 属性名匹配模式 */
     private String attribute;
+    /** 属性名是否使用正则（-E） */
     private boolean isRegEx = false;
+    /** 周期性采样间隔毫秒，0 表示只执行一次 */
     private long interval = 0;
+    /** 为 true 时输出 MBeanInfo 元数据而非属性值 */
     private boolean metaData;
+    /** 周期性模式下的最大执行次数 */
     private int numOfExecutions = 100;
+    /** 驱动周期性属性采样的 Timer */
     private Timer timer;
+    /** 已完成采样轮次 */
     private long count = 0;
 
     @Argument(argName = "name-pattern", index = 0, required = false)
@@ -136,6 +147,7 @@ public class MBeanCommand extends AnnotatedCommand {
         return numOfExecutions;
     }
 
+    /** 按是否指定 name / --metadata 分发到列举、元数据或属性采样分支 */
     @Override
     public void process(CommandProcess process) {
         //每个分支调用process.end()结束执行
@@ -148,6 +160,7 @@ public class MBeanCommand extends AnnotatedCommand {
         }
     }
 
+    /** 无参数：queryNames 默认 *:* 并返回全部 MBean 名称列表 */
     private void listMBean(CommandProcess process) {
         Set<ObjectName> objectNames = queryObjectNames();
         List<String> mbeanNames = new ArrayList<String>(objectNames.size());
@@ -158,6 +171,7 @@ public class MBeanCommand extends AnnotatedCommand {
         process.end();
     }
 
+    /** 按 name/attribute 模式周期性或单次读取可读属性，CompositeData 等会递归转换 */
     private void listAttribute(final CommandProcess process) {
         Session session = process.session();
         timer = new Timer("Timer-for-arthas-mbean-" + session.getSessionId(), true);
@@ -211,6 +225,7 @@ public class MBeanCommand extends AnnotatedCommand {
         }
     }
 
+    /** --metadata：对每个匹配 ObjectName 拉取 MBeanInfo 写入模型 */
     private void listMetaData(CommandProcess process) {
         Set<ObjectName> objectNames = queryObjectNames();
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -327,6 +342,7 @@ public class MBeanCommand extends AnnotatedCommand {
         return false;
     }
 
+    /** 将 name 模式转为 ObjectName 并 queryNames；空 name 视为 *:* */
     private Set<ObjectName> queryObjectNames() {
         MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
         Set<ObjectName> objectNames = new HashSet<ObjectName>();
@@ -341,6 +357,7 @@ public class MBeanCommand extends AnnotatedCommand {
         return objectNames;
     }
 
+    /** 构造属性名通配或正则匹配器；未指定时匹配全部属性 */
     private Matcher<String> getAttributeMatcher() {
         if (StringUtils.isEmpty(attribute)) {
             attribute = isRegEx ? ".*" : "*";
@@ -365,6 +382,7 @@ public class MBeanCommand extends AnnotatedCommand {
         }
     }
 
+    /** 每轮读取匹配 MBean 的可读属性，interval<=0 时首轮后结束命令 */
     private class MBeanTimerTask extends TimerTask {
 
         private CommandProcess process;
@@ -450,6 +468,7 @@ public class MBeanCommand extends AnnotatedCommand {
         return new MBeanAttributeVO(attributeName, attrValue);
     }
 
+    /** 将 ObjectName、CompositeData、TabularData 等 JMX 类型转为 JSON 友好结构 */
     private Object convertAttrValue(String attributeName, Object originAttrValue) {
         Object attrValue = originAttrValue;
 

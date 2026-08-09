@@ -21,10 +21,11 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * HeapDump command
- * 
- * @author hengyunabc 2019-09-02
+ * {@code heapdump} 命令：调用 HotSpot {@link HotSpotDiagnosticMXBean#dumpHeap} 生成 hprof 堆转储文件。
+ * <p>
+ * 未指定路径时在系统临时目录创建带时间戳的文件；{@code --live} 仅 dump 存活对象。
  *
+ * @author hengyunabc 2019-09-02
  */
 @Name("heapdump")
 @Summary("Heap dump")
@@ -32,8 +33,10 @@ import com.taobao.middleware.cli.annotations.Summary;
                 + Constants.WIKI + Constants.WIKI_HOME + "heapdump")
 public class HeapDumpCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(HeapDumpCommand.class);
+    /** 输出 hprof 文件路径（可选 positional 参数） */
     private String file;
 
+    /** 为 true 时仅 dump 存活对象（-l / --live） */
     private boolean live;
 
     @Argument(argName = "file", index = 0, required = false)
@@ -48,6 +51,7 @@ public class HeapDumpCommand extends AnnotatedCommand {
         this.live = live;
     }
 
+    /** 解析输出路径，调用 dumpHeap 并返回 {@link HeapDumpModel} */
     @Override
     public void process(CommandProcess process) {
         try {
@@ -74,6 +78,7 @@ public class HeapDumpCommand extends AnnotatedCommand {
 
     }
 
+    /** 通过 JMX HotSpotDiagnosticMXBean 执行堆转储 */
     private static void run(CommandProcess process, String file, boolean live) throws IOException {
         HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean = ManagementFactory
                         .getPlatformMXBean(HotSpotDiagnosticMXBean.class);

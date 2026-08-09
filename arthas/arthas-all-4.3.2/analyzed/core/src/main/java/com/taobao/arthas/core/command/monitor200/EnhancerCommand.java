@@ -34,28 +34,44 @@ import com.taobao.middleware.cli.annotations.Description;
 import com.taobao.middleware.cli.annotations.Option;
 
 /**
+ * 字节码增强类命令的抽象基类：统一类/方法匹配、Advice 注册、session 锁与超时退出逻辑。
+ * <p>
+ * 子类（watch/trace/monitor/line 等）实现 {@link #getAdviceListener} 与匹配器；
+ * {@link #enhance} 通过 {@link Enhancer} 注入 Advice，支持 lazy 模式等待类加载。
+ *
  * @author beiwei30 on 29/11/2016.
  */
 public abstract class EnhancerCommand extends AnnotatedCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(EnhancerCommand.class);
+    /** 空列表常量，供子类默认返回 */
     protected static final List<String> EMPTY = Collections.emptyList();
+    /** OGNL 表达式补全示例，用于 CLI 提示 */
     public static final String[] EXPRESS_EXAMPLES = { "params", "returnObj", "throwExp", "target", "clazz", "method",
                                                        "{params,returnObj}", "params[0]" };
+    /** 排除类名模式（--exclude-class-pattern） */
     private String excludeClassPattern;
 
+    /** 类名匹配器（懒初始化） */
     protected Matcher classNameMatcher;
+    /** 排除类名匹配器 */
     protected Matcher classNameExcludeMatcher;
+    /** 方法名匹配器 */
     protected Matcher methodNameMatcher;
 
+    /** 复用已有 AdviceListener 的 ID（--listenerId） */
     protected long listenerId;
 
+    /** 是否输出增强过程详细信息（-v） */
     protected boolean verbose;
 
+    /** 最多增强的类数量上限（-m，默认 50） */
     protected int maxNumOfMatchedClass;
 
+    /** 命令自动退出超时秒数（--timeout） */
     protected Long timeout;
 
+    /** 懒增强：类加载时再注入 Advice（-L） */
     protected boolean lazy = false;
 
     /**
@@ -148,6 +164,7 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
         return null;
     }
 
+    /** 优先按 listenerId 从 AdviceWeaver 取已有监听器，否则创建新实例 */
     AdviceListener getAdviceListenerWithId(CommandProcess process) {
         if (listenerId != 0) {
             AdviceListener listener = AdviceWeaver.listener(listenerId);
@@ -157,6 +174,7 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
         }
         return getAdviceListener(process);
     }
+    /** 注册 Ctrl+C / Q 退出后进入 enhance 流程 */
     @Override
     public void process(final CommandProcess process) {
         // ctrl-C support
@@ -190,6 +208,7 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
         super.complete(completion);
     }
 
+    /** 获取 session 增强锁，注册 AdviceListener 并执行 Enhancer.enhance；失败或无匹配时给出诊断提示 */
     protected void enhance(CommandProcess process) {
         Session session = process.session();
         if (!session.tryLock()) {
@@ -304,6 +323,7 @@ public abstract class EnhancerCommand extends AnnotatedCommand {
      *
      * @param process the command process
      */
+    /** 若指定 --timeout，在 ScheduledExecutor 中延迟结束仍在运行的命令 */
     private void scheduleTimeoutTask(final CommandProcess process) {
         if (timeout == null || timeout <= 0) {
             return;

@@ -7,14 +7,20 @@ import com.taobao.arthas.core.command.ScriptSupportCommand;
 import com.taobao.arthas.core.shell.command.CommandProcess;
 
 /**
- * Groovy support has been completed dropped in Arthas 3.0 because of severer memory leak.
+ * 已废弃的 Groovy 脚本 Advice 监听器：将方法切点事件转发给 {@link ScriptSupportCommand.ScriptListener}。
+ * <p>
+ * Arthas 3.0 起因严重内存泄漏已移除 Groovy 支持；本类保留仅为兼容旧字节码引用。
+ *
  * @author beiwei30 on 01/12/2016.
  */
 @Deprecated
 public class GroovyAdviceListener extends AdviceListenerAdapter {
+    /** 用户 Groovy 脚本实现的回调接口 */
     private ScriptSupportCommand.ScriptListener scriptListener;
+    /** 脚本输出适配器，桥接到 CommandProcess */
     private ScriptSupportCommand.Output output;
 
+    /** 包装 CommandProcess 为 ScriptSupportCommand.Output */
     public GroovyAdviceListener(ScriptSupportCommand.ScriptListener scriptListener, CommandProcess process) {
         this.scriptListener = scriptListener;
         this.output = new CommandProcessAdaptor(process);
@@ -48,6 +54,7 @@ public class GroovyAdviceListener extends AdviceListenerAdapter {
         scriptListener.afterThrowing(output, Advice.newForAfterThrowing(loader, clazz, method, target, args, throwable));
     }
 
+    /** 将 CommandProcess.write/end 适配为脚本 Output 接口 */
     private static class CommandProcessAdaptor implements ScriptSupportCommand.Output {
         private CommandProcess process;
 

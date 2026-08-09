@@ -16,13 +16,19 @@ import com.taobao.arthas.core.util.ThreadLocalWatch;
 import com.taobao.arthas.core.util.ThreadUtil;
 
 /**
- * line 命令的运行时监听器。
+ * {@code line} 命令的运行时 Advice 监听器：在行探针命中时求值 OGNL 并输出 {@link LineModel}。
+ * <p>
+ * {@link #atLine} 携带局部变量名/值；可选 {@code --stack} 附加截断后的调用栈；
+ * 达到 {@code -n} 次数上限时调用 {@link #abortProcess} 结束命令。
  */
 public class LineCommandAdviceListener extends AdviceListenerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(LineCommandAdviceListener.class);
 
+    /** 统计从方法 entry 到行探针的耗时 */
     private final ThreadLocalWatch threadLocalWatch = new ThreadLocalWatch();
+    /** 关联的 line 命令配置 */
     private final LineCommand command;
+    /** 命令输出通道 */
     private final CommandProcess process;
 
     public LineCommandAdviceListener(LineCommand command, CommandProcess process, boolean verbose) {
@@ -49,6 +55,7 @@ public class LineCommandAdviceListener extends AdviceListenerAdapter {
         threadLocalWatch.costInMillis();
     }
 
+    /** 行探针回调：评估条件表达式，满足则构造 LineModel 并递增输出计数 */
     @Override
     public void atLine(ClassLoader loader, Class<?> clazz, ArthasMethod method, Object target, Object[] args,
             int lineNumber, String[] argNames, Object[] localVars, String[] localVarNames) throws Throwable {
@@ -94,6 +101,7 @@ public class LineCommandAdviceListener extends AdviceListenerAdapter {
         }
     }
 
+    /** 获取当前线程调用栈并按 stackDepth 截断 */
     private StackTraceElement[] limitedStackTrace(ClassLoader loader, Thread currentThread, int stackDepth) {
         StackModel stackModel = ThreadUtil.getThreadStackModel(loader, currentThread);
         StackTraceElement[] stackTrace = stackModel.getStackTrace();

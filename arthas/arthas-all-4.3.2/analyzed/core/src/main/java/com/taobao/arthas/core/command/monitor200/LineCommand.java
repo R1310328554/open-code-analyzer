@@ -29,6 +29,12 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
+/**
+ * {@code line} 命令：在指定源码行号处观测局部变量与 OGNL 表达式结果（行级增强）。
+ * <p>
+ * 通过 {@link LineEnhanceOptions} 在 ASM LineNumberTable 对应字节码处插桩；
+ * {@code --list-lines} 模式仅解析 LineNumberTable 不增强；行号暂不支持范围语法。
+ */
 @Name("line")
 @Summary("Watch local variables and expression result at specified source line numbers")
 @Description(Constants.EXPRESS_DESCRIPTION + "\nExamples:\n" +
@@ -38,8 +44,11 @@ import com.taobao.middleware.cli.annotations.Summary;
         "  line --class demo.MathGame --method primeFactors --desc '(I)Ljava/util/List;' --line 51\n" +
         "  line --list-lines --class demo.MathGame\n")
 public class LineCommand extends EnhancerCommand {
+    /** 单次命令最多指定的行号数量 */
     static final int MAX_LINE_COUNT = 256;
+    /** --stack 模式下调用栈最大深度上限 */
     static final int MAX_STACK_DEPTH = 256;
+    /** 默认 OGNL 表达式：方法参数与局部变量映射 */
     static final String DEFAULT_EXPRESS = "{params, localVarMap}";
 
     private String classPattern;
@@ -188,6 +197,7 @@ public class LineCommand extends EnhancerCommand {
         return isRegEx;
     }
 
+    /** 校验参数后进入 list-lines 或父类 enhance 流程 */
     @Override
     public void process(CommandProcess process) {
         String validateError = validate();
@@ -231,11 +241,13 @@ public class LineCommand extends EnhancerCommand {
         return new LineCommandAdviceListener(this, process, GlobalOptions.verbose || this.verbose);
     }
 
+    /** 将解析后的行号集合与方法描述符传给 Enhancer 做行级插桩 */
     @Override
     protected LineEnhanceOptions getLineEnhanceOptions() {
         return new LineEnhanceOptions(lineNumbers, methodDesc);
     }
 
+    /** 校验 --class、--line、expand、sizeLimit、stack-depth 等参数合法性 */
     private String validate() {
         if (StringUtils.isEmpty(classPattern)) {
             return "The --class option is required.";
@@ -269,6 +281,7 @@ public class LineCommand extends EnhancerCommand {
         return null;
     }
 
+    /** 解析逗号分隔的行号列表，去重并保持顺序；不支持 a-b 范围语法 */
     static Set<Integer> parseLines(List<String> lineSpecs) {
         if (lineSpecs == null || lineSpecs.isEmpty()) {
             throw new IllegalArgumentException("The --line option is required unless --list-lines is used.");
@@ -309,6 +322,7 @@ public class LineCommand extends EnhancerCommand {
         return result;
     }
 
+    /** --list-lines：ASM 解析匹配类的方法 LineNumberTable 并输出 {@link LineListModel} */
     private void listLines(CommandProcess process) {
         try {
             Instrumentation instrumentation = process.session().getInstrumentation();
@@ -339,6 +353,7 @@ public class LineCommand extends EnhancerCommand {
         }
     }
 
+    /** 过滤 Bootstrap/Arthas 自身类及 hashCode、exclude 不匹配项 */
     private boolean isListableClass(Class<?> clazz) {
         if (clazz == null) {
             return false;
@@ -393,6 +408,7 @@ public class LineCommand extends EnhancerCommand {
         return methodDesc == null || methodDesc.length() == 0 || methodDesc.equals(methodNode.desc);
     }
 
+    /** 从方法字节码指令链收集 LineNumberNode 并排序去重 */
     private List<Integer> collectLines(MethodNode methodNode) {
         Set<Integer> lines = new LinkedHashSet<Integer>();
         for (AbstractInsnNode insnNode = methodNode.instructions.getFirst(); insnNode != null; insnNode = insnNode

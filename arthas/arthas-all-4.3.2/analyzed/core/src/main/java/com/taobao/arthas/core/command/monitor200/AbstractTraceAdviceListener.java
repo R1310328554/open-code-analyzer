@@ -12,25 +12,34 @@ import com.taobao.arthas.core.util.ThreadLocalWatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * {@code trace} 系列命令的 Advice 监听器基类：维护调用树与耗时，满足条件时输出 {@link TraceModel}。
+ * <p>
+ * 每个线程持有独立的 {@link TraceEntity} 与 {@link ThreadLocalWatch}，在根调用返回时
+ * 评估 OGNL 条件表达式并递增输出计数；{@link #abortProcess} 用 CAS 保证多线程仅终止一次。
+ *
  * @author ralf0131 2017-01-06 16:02.
  */
 public class AbstractTraceAdviceListener extends AdviceListenerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(AbstractTraceAdviceListener.class);
+    /** 线程局部计时器，统计单次根 trace 总耗时 */
     protected final ThreadLocalWatch threadLocalWatch = new ThreadLocalWatch();
+    /** 关联的 trace 命令配置（条件、次数上限等） */
     protected TraceCommand command;
+    /** 命令输出通道 */
     protected CommandProcess process;
+    /** 防止并发多次调用 abortProcess 终止会话 */
     private final AtomicBoolean processAborted = new AtomicBoolean(false);
 
+    /** 当前线程的 trace 调用树与嵌套深度 */
     protected final ThreadLocal<TraceEntity> threadBoundEntity = new ThreadLocal<TraceEntity>();
 
-    /**
-     * Constructor
-     */
+    /** 绑定 trace 命令与输出进程 */
     public AbstractTraceAdviceListener(TraceCommand command, CommandProcess process) {
         this.command = command;
         this.process = process;
     }
 
+    /** 懒初始化当前线程的 TraceEntity，首次调用时创建并绑定 ClassLoader */
     protected TraceEntity threadLocalTraceEntity(ClassLoader loader) {
         TraceEntity traceEntity = threadBoundEntity.get();
         if (traceEntity == null) {
@@ -40,6 +49,7 @@ public class AbstractTraceAdviceListener extends AdviceListenerAdapter {
         return traceEntity;
     }
 
+    /** 增强卸载时清理 ThreadLocal，避免 ClassLoader 泄漏 */
     @Override
     public void destroy() {
         threadBoundEntity.remove();
@@ -81,6 +91,7 @@ public class AbstractTraceAdviceListener extends AdviceListenerAdapter {
         return command;
     }
 
+    /** 方法退出回调：递减嵌套深度，根调用完成时评估条件并可能输出 trace 树 */
     private void finishing(ClassLoader loader, Advice advice) {
         // 本次调用的耗时
         TraceEntity traceEntity = threadLocalTraceEntity(loader);
@@ -115,6 +126,7 @@ public class AbstractTraceAdviceListener extends AdviceListenerAdapter {
         }
     }
 
+    /** 达到输出次数上限时终止命令；CAS 保证仅首个线程执行 super.abortProcess */
     @Override
     protected void abortProcess(CommandProcess process, int limit) {
         // Only proceed if this thread is the first one to set the flag to true
