@@ -440,3 +440,13 @@ docs_src/schema_extra_example/__init__.py
 docs_src/schema_extra_example/tutorial001_py310.py
 docs_src/schema_extra_example/tutorial002_py310.py
 docs_src/schema_extra_example/tutorial003_an_py310.py
+docs_src/separate_openapi_schemas/__init__.py
+docs_src/separate_openapi_schemas/tutorial001_py310.py
+docs_src/separate_openapi_schemas/tutorial002_py310.py
+docs_src/server_sent_events/__init__.py
+docs_src/server_sent_events/tutorial001_py310.py
+docs_src/server_sent_events/tutorial002_py310.py
+docs_src/server_sent_events/tutorial003_py310.py
+docs_src/server_sent_events/tutorial004_py310.py
+docs_src/server_sent_events/tutorial005_py310.py
+docs_src/settings/__init__.py
