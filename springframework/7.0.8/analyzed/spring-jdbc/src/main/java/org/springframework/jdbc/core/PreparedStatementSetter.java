@@ -20,13 +20,21 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * {@link JdbcTemplate} 类使用的通用回调接口。
- * <p> 此接口在 JdbcTemplate 类提供的 {@link java.sql.PreparedStatement} 上设置值，为使用相同 SQL 的批量更新中的每一个更
- * 新设置值。实现负责设置任何必要的参数。带有占位符的 SQL 已经提供。
- * <p>比{@link
- * PreparedStatementCreator}更容易使用这个接口：JdbcTemplate将创建PreparedStatement，回调只负责设置参数值。
- * <p> 实现 <i> 不需要 </i> 需要关注可能从它们尝试的操作中抛出的 SQLException。 JdbcTemplate 类将捕获并适当地处理
- * SQLException。
+ * General callback interface used by the {@link JdbcTemplate} class.
+ *
+ * <p>This interface sets values on a {@link java.sql.PreparedStatement} provided
+ * by the JdbcTemplate class, for each of a number of updates in a batch using the
+ * same SQL. Implementations are responsible for setting any necessary parameters.
+ * SQL with placeholders will already have been supplied.
+ *
+ * <p>It's easier to use this interface than {@link PreparedStatementCreator}:
+ * The JdbcTemplate will create the PreparedStatement, with the callback
+ * only being responsible for setting parameter values.
+ *
+ * <p>Implementations <i>do not</i> need to concern themselves with
+ * SQLExceptions that may be thrown from operations they attempt.
+ * The JdbcTemplate class will catch and handle SQLExceptions appropriately.
+ *
  * @author Rod Johnson
  * @since March 2, 2003
  * @see JdbcTemplate#update(String, PreparedStatementSetter)
@@ -36,9 +44,10 @@ import java.sql.SQLException;
 public interface PreparedStatementSetter {
 
 	/**
-	 * 在给定的PreparedStatement上设置参数值。
-	 * @param ps 调用setter方法的PreparedStatement
-	 * @throws SQLException 如果遇到 SQLException（即不需要捕获 SQLException）
+	 * Set parameter values on the given PreparedStatement.
+	 * @param ps the PreparedStatement to invoke setter methods on
+	 * @throws SQLException if an SQLException is encountered
+	 * (i.e. there is no need to catch SQLException)
 	 */
 	void setValues(PreparedStatement ps) throws SQLException;
 

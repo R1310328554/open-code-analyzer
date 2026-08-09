@@ -27,18 +27,16 @@ import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
 /**
- * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} 解析 {@code
- * initialize-database} 元素并创建 {@link DataSourceInitializer} 类型的 {@link
- * BeanDefinition}。选取嵌套的 {@code script} 元素并为其配置 {@link ResourceDatabasePopulator}。
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} that parses an {@code initialize-database}
+ * element and creates a {@link BeanDefinition} of type {@link DataSourceInitializer}. Picks up nested
+ * {@code script} elements and configures a {@link ResourceDatabasePopulator} for them.
+ *
  * @author Dave Syer
  * @author Juergen Hoeller
  * @since 3.0
  */
 class InitializeDatabaseBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
-	/**
-	 * 解析：Internal（方法 `parseInternal`）。
-	 */
 	@Override
 	protected AbstractBeanDefinition parseInternal(Element element, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(DataSourceInitializer.class);
@@ -49,9 +47,6 @@ class InitializeDatabaseBeanDefinitionParser extends AbstractBeanDefinitionParse
 		return builder.getBeanDefinition();
 	}
 
-	/**
-	 * 方法 `shouldGenerateId`：完成本类中与「should Generate Id」相关的职责。
-	 */
 	@Override
 	protected boolean shouldGenerateId() {
 		return true;

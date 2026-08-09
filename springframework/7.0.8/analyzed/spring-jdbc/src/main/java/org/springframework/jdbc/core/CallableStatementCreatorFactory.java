@@ -30,30 +30,31 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 
 /**
- * 帮助程序类，可根据 SQL 语句和一组参数声明有效地创建具有不同参数的多个 {@link CallableStatementCreator} 对象。
+ * Helper class that efficiently creates multiple {@link CallableStatementCreator}
+ * objects with different parameters based on an SQL statement and a single
+ * set of parameter declarations.
+ *
  * @author Rod Johnson
  * @author Thomas Risberg
  * @author Juergen Hoeller
  */
 public class CallableStatementCreatorFactory {
 
-	/**
-	 */
+	/** The SQL call string, which won't change when the parameters change. */
 	private final String callString;
 
-	/**
-	 */
+	/** List of SqlParameter objects. May not be {@code null}. */
 	private final List<SqlParameter> declaredParameters;
 
 	private int resultSetType = ResultSet.TYPE_FORWARD_ONLY;
 
-	/** `false`：该类的成员状态。 */
 	private boolean updatableResults = false;
 
 
 	/**
-	 * 创建一个新工厂。需要通过 {@link #addParameter} 方法添加参数或没有参数。
-	 * @param callString SQL 调用字符串
+	 * Create a new factory. Will need to add parameters via the
+	 * {@link #addParameter} method or have no parameters.
+	 * @param callString the SQL call string
 	 */
 	public CallableStatementCreatorFactory(String callString) {
 		this.callString = callString;
@@ -61,9 +62,9 @@ public class CallableStatementCreatorFactory {
 	}
 
 	/**
-	 * 使用给定的 SQL 和给定的参数创建一个新工厂。
-	 * @param callString SQL 调用字符串
-	 * @param declaredParameters {@link SqlParameter} 对象列表
+	 * Create a new factory with the given SQL and the given parameters.
+	 * @param callString the SQL call string
+	 * @param declaredParameters list of {@link SqlParameter} objects
 	 */
 	public CallableStatementCreatorFactory(String callString, List<SqlParameter> declaredParameters) {
 		this.callString = callString;
@@ -72,7 +73,7 @@ public class CallableStatementCreatorFactory {
 
 
 	/**
-	 * 返回 SQL 调用字符串。
+	 * Return the SQL call string.
 	 * @since 5.1.3
 	 */
 	public final String getCallString() {
@@ -80,16 +81,18 @@ public class CallableStatementCreatorFactory {
 	}
 
 	/**
-	 * 添加新的声明参数。 <p>参数添加顺序很重要。
-	 * @param param 要添加到声明参数列表的参数
+	 * Add a new declared parameter.
+	 * <p>Order of parameter addition is significant.
+	 * @param param the parameter to add to the list of declared parameters
 	 */
 	public void addParameter(SqlParameter param) {
 		this.declaredParameters.add(param);
 	}
 
 	/**
-	 * 设置是否使用返回特定类型 ResultSet 的准备语句。 ResultSet 的特定类型。
-	 * @param resultSetType 结果集类型
+	 * Set whether to use prepared statements that return a specific type of ResultSet.
+	 * specific type of ResultSet.
+	 * @param resultSetType the ResultSet type
 	 * @see java.sql.ResultSet#TYPE_FORWARD_ONLY
 	 * @see java.sql.ResultSet#TYPE_SCROLL_INSENSITIVE
 	 * @see java.sql.ResultSet#TYPE_SCROLL_SENSITIVE
@@ -99,7 +102,7 @@ public class CallableStatementCreatorFactory {
 	}
 
 	/**
-	 * 设置是否使用能够返回可更新结果集的准备语句。
+	 * Set whether to use prepared statements capable of returning updatable ResultSets.
 	 */
 	public void setUpdatableResults(boolean updatableResults) {
 		this.updatableResults = updatableResults;
@@ -107,16 +110,16 @@ public class CallableStatementCreatorFactory {
 
 
 	/**
-	 * 给定这些参数，返回一个新的 CallableStatementCreator 实例。
-	 * @param params 参数列表（可能是{@code null}）
+	 * Return a new CallableStatementCreator instance given these parameters.
+	 * @param params list of parameters (may be {@code null})
 	 */
 	public CallableStatementCreator newCallableStatementCreator(@Nullable Map<String, ?> params) {
 		return new CallableStatementCreatorImpl(params != null ? params : new HashMap<>());
 	}
 
 	/**
-	 * 给定此参数映射器，返回一个新的 CallableStatementCreator 实例。
-	 * @param inParamMapper ParameterMapper 实现将返回参数映射
+	 * Return a new CallableStatementCreator instance given this parameter mapper.
+	 * @param inParamMapper the ParameterMapper implementation that will return a Map of parameters
 	 */
 	public CallableStatementCreator newCallableStatementCreator(ParameterMapper inParamMapper) {
 		return new CallableStatementCreatorImpl(inParamMapper);
@@ -124,7 +127,7 @@ public class CallableStatementCreatorFactory {
 
 
 	/**
-	 * 此类返回的 CallableStatementCreator 实现。
+	 * CallableStatementCreator implementation returned by this class.
 	 */
 	private class CallableStatementCreatorImpl implements CallableStatementCreator, SqlProvider, ParameterDisposer {
 
@@ -133,16 +136,16 @@ public class CallableStatementCreatorFactory {
 		private @Nullable Map<String, ?> inParameters;
 
 		/**
-		 * 创建一个新的 CallableStatementCreatorImpl。
-		 * @param inParamMapper 用于映射输入参数的 ParameterMapper 实现
+		 * Create a new CallableStatementCreatorImpl.
+		 * @param inParamMapper the ParameterMapper implementation for mapping input parameters
 		 */
 		public CallableStatementCreatorImpl(ParameterMapper inParamMapper) {
 			this.inParameterMapper = inParamMapper;
 		}
 
 		/**
-		 * 创建一个新的 CallableStatementCreatorImpl。
-		 * @param inParams SqlParameter 对象列表
+		 * Create a new CallableStatementCreatorImpl.
+		 * @param inParams list of SqlParameter objects
 		 */
 		public CallableStatementCreatorImpl(Map<String, ?> inParams) {
 			this.inParameters = inParams;
@@ -150,7 +153,7 @@ public class CallableStatementCreatorFactory {
 
 		@Override
 		public CallableStatement createCallableStatement(Connection con) throws SQLException {
-			// 如果我们有一个 ParameterMapper，我们必须让映射器完成它的工作来创建 Map。
+			// If we were given a ParameterMapper, we must let the mapper do its thing to create the Map.
 			if (this.inParameterMapper != null) {
 				this.inParameters = this.inParameterMapper.createMap(con);
 			}
@@ -173,12 +176,12 @@ public class CallableStatementCreatorFactory {
 			int sqlColIndx = 1;
 			for (SqlParameter declaredParam : declaredParameters) {
 				if (!declaredParam.isResultsParameter()) {
-					// 因此，它是一个调用参数 - 调用字符串的一部分。
-					// 获取该值 - 它可能仍然为空。
+					// So, it's a call parameter - part of the call string.
+					// Get the value - it may still be null.
 					Object inValue = this.inParameters.get(declaredParam.getName());
 					if (declaredParam instanceof ResultSetSupportingSqlParameter) {
-						// 它是一个输出参数：SqlReturnResultSet 参数已被排除。
-						// 它不需要（但可能）由调用者提供。
+						// It's an output parameter: SqlReturnResultSet parameters already excluded.
+						// It need not (but may be) supplied by the caller.
 						if (declaredParam instanceof SqlOutParameter) {
 							if (declaredParam.getTypeName() != null) {
 								cs.registerOutParameter(sqlColIndx, declaredParam.getSqlType(), declaredParam.getTypeName());
@@ -197,7 +200,7 @@ public class CallableStatementCreatorFactory {
 						}
 					}
 					else {
-						// 它是一个输入参数；必须由调用者提供。
+						// It's an input parameter; must be supplied by the caller.
 						if (!this.inParameters.containsKey(declaredParam.getName())) {
 							throw new InvalidDataAccessApiUsageException(
 									"Required input parameter '" + declaredParam.getName() + "' is missing");

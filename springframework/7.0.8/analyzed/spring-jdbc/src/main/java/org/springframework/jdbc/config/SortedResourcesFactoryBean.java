@@ -33,7 +33,9 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternUtils;
 
 /**
- * {@link FactoryBean} 实现采用位置字符串列表并创建 {@link Resource} 实例的排序数组。
+ * {@link FactoryBean} implementation that takes a list of location Strings
+ * and creates a sorted array of {@link Resource} instances.
+ *
  * @author Dave Syer
  * @author Juergen Hoeller
  * @author Christian Dupuis
@@ -41,57 +43,40 @@ import org.springframework.core.io.support.ResourcePatternUtils;
  */
 public class SortedResourcesFactoryBean extends AbstractFactoryBean<Resource[]> implements ResourceLoaderAware {
 
-	/** `locations`：该类的成员状态。 */
 	private final List<String> locations;
 
-	/** 解析器相关状态（`resourcePatternResolver`）。 */
 	private ResourcePatternResolver resourcePatternResolver;
 
 
-	/**
-	 * 创建 `SortedResourcesFactoryBean` 的新实例。
-	 */
 	public SortedResourcesFactoryBean(List<String> locations) {
 		this.locations = locations;
 		this.resourcePatternResolver = new PathMatchingResourcePatternResolver();
 	}
 
-	/**
-	 * 创建 `SortedResourcesFactoryBean` 的新实例。
-	 */
 	public SortedResourcesFactoryBean(ResourceLoader resourceLoader, List<String> locations) {
 		this.locations = locations;
 		this.resourcePatternResolver = ResourcePatternUtils.getResourcePatternResolver(resourceLoader);
 	}
 
 
-	/**
-	 * 设置 Resource Loader（`ResourceLoader`）。
-	 */
 	@Override
 	public void setResourceLoader(ResourceLoader resourceLoader) {
 		this.resourcePatternResolver = ResourcePatternUtils.getResourcePatternResolver(resourceLoader);
 	}
 
 
-	/**
-	 * 获取 Object Type（`ObjectType`）。
-	 */
 	@Override
 	public Class<? extends Resource[]> getObjectType() {
 		return Resource[].class;
 	}
 
-	/**
-	 * 创建：Instance（方法 `createInstance`）。
-	 */
 	@Override
 	protected Resource[] createInstance() throws Exception {
 		List<Resource> result = new ArrayList<>();
 		for (String location : this.locations) {
 			Resource[] resources = this.resourcePatternResolver.getResources(location);
 
-			// 缓存 URL 以避免排序期间重复 I/O
+			// Cache URLs to avoid repeated I/O during sorting
 			Map<Resource, String> urlCache = new LinkedHashMap<>(resources.length);
 			List<Resource> failingResources = new ArrayList<>();
 			for (Resource resource : resources) {
@@ -106,7 +91,7 @@ public class SortedResourcesFactoryBean extends AbstractFactoryBean<Resource[]> 
 				}
 			}
 
-			// 使用缓存的 URL 进行排序
+			// Sort using cached URLs
 			List<Resource> sortedResources = new ArrayList<>(urlCache.keySet());
 			sortedResources.sort(Comparator.comparing(urlCache::get));
 

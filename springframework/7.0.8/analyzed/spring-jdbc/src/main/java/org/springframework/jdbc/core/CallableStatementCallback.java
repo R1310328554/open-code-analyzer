@@ -24,14 +24,22 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * 用于在 CallableStatement 上操作的代码的通用回调接口。允许在单个 CallableStatement 上执行任意数量的操作，例如单个执行调用或具有不同参数的重
- * 复执行调用。
- * <p> 由 JdbcTemplate 在内部使用，但对于应用程序代码也很有用。请注意，传入的 CallableStatement 可以由框架或自定义 CallableState
- * mentCreator 创建。然而，后者几乎没有必要，因为大多数自定义回调操作将执行更新，在这种情况下，标准 CallableStatement 就可以了。自定义操作始终会自行
- * 设置参数值，因此也不需要 CallableStatementCreator 功能。
+ * Generic callback interface for code that operates on a CallableStatement.
+ * Allows to execute any number of operations on a single CallableStatement,
+ * for example a single execute call or repeated execute calls with varying
+ * parameters.
+ *
+ * <p>Used internally by JdbcTemplate, but also useful for application code.
+ * Note that the passed-in CallableStatement can have been created by the
+ * framework or by a custom CallableStatementCreator. However, the latter is
+ * hardly ever necessary, as most custom callback actions will perform updates
+ * in which case a standard CallableStatement is fine. Custom actions will
+ * always set parameter values themselves, so that CallableStatementCreator
+ * capability is not needed either.
+ *
  * @author Juergen Hoeller
  * @since 16.03.2004
- * @param <T> 结果类型
+ * @param <T> the result type
  * @see JdbcTemplate#execute(String, CallableStatementCallback)
  * @see JdbcTemplate#execute(CallableStatementCreator, CallableStatementCallback)
  */
@@ -39,17 +47,33 @@ import org.springframework.dao.DataAccessException;
 public interface CallableStatementCallback<T extends @Nullable Object> {
 
 	/**
-	 * 由 {@code JdbcTemplate.execute} 使用活动的 JDBC CallableStatement
-	 * 进行调用。不需要关心关闭Statement或Connection，或者处理事务：这一切都将由Spring的JdbcTemplate处理。
-	 * <p><b>NOTE:</b> 打开的任何结果集都应在回调实现中的finally 块中关闭。 Spring 将在回调返回后关闭 Statement 对象，但这并不一定意味着 R
-	 * esultSet 资源将被关闭：Statement 对象可能会被连接池池化，{@code close} 调用仅将对象返回到池中，但不会物理关闭资源。
-	 * <p>如果在没有线程绑定 JDBC 事务（由 DataSourceTransactionManager 启动）的情况下调用，则代码将简单地在 JDBC 连接上以其事务语义执行。
-	 * 如果 JdbcTemplate 配置为使用 JTA 感知的数据源，则 JDBC 连接以及回调代码将是事务性的（如果 JTA 事务处于活动状态）。
-	 * <p>A允许返回在回调中创建的结果对象，即域对象或域对象的集合。抛出的 RuntimeException 被视为应用程序异常：它会传播到模板的调用者。
-	 * @param cs 主动 JDBC CallableStatement
-	 * @return 结果对象，如果没有则为 {@code null}
-	 * @throws SQLException 如果由 JDBC 方法抛出，则由 SQLExceptionTranslator 自动转换为 DataAccessException
-	 * @throws DataAccessException 如果出现自定义异常
+	 * Gets called by {@code JdbcTemplate.execute} with an active JDBC
+	 * CallableStatement. Does not need to care about closing the Statement
+	 * or the Connection, or about handling transactions: this will all be
+	 * handled by Spring's JdbcTemplate.
+	 *
+	 * <p><b>NOTE:</b> Any ResultSets opened should be closed in finally blocks
+	 * within the callback implementation. Spring will close the Statement
+	 * object after the callback returned, but this does not necessarily imply
+	 * that the ResultSet resources will be closed: the Statement objects might
+	 * get pooled by the connection pool, with {@code close} calls only
+	 * returning the object to the pool but not physically closing the resources.
+	 *
+	 * <p>If called without a thread-bound JDBC transaction (initiated by
+	 * DataSourceTransactionManager), the code will simply get executed on the
+	 * JDBC connection with its transactional semantics. If JdbcTemplate is
+	 * configured to use a JTA-aware DataSource, the JDBC connection and thus
+	 * the callback code will be transactional if a JTA transaction is active.
+	 *
+	 * <p>Allows for returning a result object created within the callback, i.e.
+	 * a domain object or a collection of domain objects. A thrown RuntimeException
+	 * is treated as application exception: it gets propagated to the caller of
+	 * the template.
+	 * @param cs active JDBC CallableStatement
+	 * @return a result object, or {@code null} if none
+	 * @throws SQLException if thrown by a JDBC method, to be auto-converted
+	 * into a DataAccessException by an SQLExceptionTranslator
+	 * @throws DataAccessException in case of custom exceptions
 	 */
 	T doInCallableStatement(CallableStatement cs) throws SQLException, DataAccessException;
 

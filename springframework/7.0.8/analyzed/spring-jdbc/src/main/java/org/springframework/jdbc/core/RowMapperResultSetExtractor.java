@@ -24,61 +24,74 @@ import java.util.List;
 import org.springframework.util.Assert;
 
 /**
- * ResultSetExtractor 接口的适配器实现，委托给 RowMapper，该 RowMapper 应该为每行创建一个对象。每个对象都会添加到此
- * ResultSetExtractor 的结果列表中。
- * <p> 对于数据库表中每行一个对象的典型情况很有用。结果列表中的条目数将与行数匹配。
- * <p>请注意，RowMapper 对象通常是无状态的，因此可重用；只有 RowMapperResultSetExtractor 适配器是有状态的。
- * <p>A 与 JdbcTemplate 的使用示例：
- * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource); // 可重用对象
- * RowMapper rowMapper = new UserRowMapper(); // 可重用对象
- * List allUsers = (List) jdbcTemplate.query( "从用户中选择 *", new
- * RowMapperResultSetExtractor(rowMapper, 10));
- * 用户 user = (User) jdbcTemplate.queryForObject( "select * from user where id=?", new
- * Object[] {id}, new RowMapperResultSetExtractor(rowMapper, 1));</pre>
- * <p>或者，考虑从 {@code jdbc.object} 包中子类化 MappingSqlQuery：您可以在那里拥有可执行查询对象（包含行映射逻辑），而不是使用单独的
- * JdbcTemplate 和 RowMapper 对象。
+ * Adapter implementation of the ResultSetExtractor interface that delegates
+ * to a RowMapper which is supposed to create an object for each row.
+ * Each object is added to the results List of this ResultSetExtractor.
+ *
+ * <p>Useful for the typical case of one object per row in the database table.
+ * The number of entries in the results list will match the number of rows.
+ *
+ * <p>Note that a RowMapper object is typically stateless and thus reusable;
+ * just the RowMapperResultSetExtractor adapter is stateful.
+ *
+ * <p>A usage example with JdbcTemplate:
+ *
+ * <pre class="code">JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);  // reusable object
+ * RowMapper rowMapper = new UserRowMapper();  // reusable object
+ *
+ * List allUsers = (List) jdbcTemplate.query(
+ *     "select * from user",
+ *     new RowMapperResultSetExtractor(rowMapper, 10));
+ *
+ * User user = (User) jdbcTemplate.queryForObject(
+ *     "select * from user where id=?", new Object[] {id},
+ *     new RowMapperResultSetExtractor(rowMapper, 1));</pre>
+ *
+ * <p>Alternatively, consider subclassing MappingSqlQuery from the {@code jdbc.object}
+ * package: Instead of working with separate JdbcTemplate and RowMapper objects,
+ * you can have executable query objects (containing row-mapping logic) there.
+ *
  * @author Juergen Hoeller
  * @author Yanming Zhou
  * @since 1.0.2
- * @param <T> 结果元素类型
+ * @param <T> the result element type
  * @see RowMapper
  * @see JdbcTemplate
  * @see org.springframework.jdbc.object.MappingSqlQuery
  */
 public class RowMapperResultSetExtractor<T> implements ResultSetExtractor<List<T>> {
 
-	/** 映射器相关状态（`rowMapper`）。 */
 	private final RowMapper<T> rowMapper;
 
-	/** `rowsExpected`：该类的成员状态。 */
 	private final int rowsExpected;
 
-	/** `maxRows`：该类的成员状态。 */
 	private final int maxRows;
 
 
 	/**
-	 * 创建一个新的 RowMapperResultSetExtractor。
-	 * @param rowMapper RowMapper 为每一行创建一个对象
+	 * Create a new RowMapperResultSetExtractor.
+	 * @param rowMapper the RowMapper which creates an object for each row
 	 */
 	public RowMapperResultSetExtractor(RowMapper<T> rowMapper) {
 		this(rowMapper, 0);
 	}
 
 	/**
-	 * 创建一个新的 RowMapperResultSetExtractor。
-	 * @param rowMapper RowMapper 为每一行创建一个对象
-	 * @param rowsExpected 预期行数（仅用于优化集合处理）
+	 * Create a new RowMapperResultSetExtractor.
+	 * @param rowMapper the RowMapper which creates an object for each row
+	 * @param rowsExpected the number of expected rows
+	 * (just used for optimized collection handling)
 	 */
 	public RowMapperResultSetExtractor(RowMapper<T> rowMapper, int rowsExpected) {
 		this(rowMapper, rowsExpected, -1);
 	}
 
 	/**
-	 * 创建一个新的 RowMapperResultSetExtractor。
-	 * @param rowMapper RowMapper 为每一行创建一个对象
-	 * @param rowsExpected 预期行数（仅用于优化集合处理）
-	 * @param maxRows 最大行数（驱动程序默认为 -1）
+	 * Create a new RowMapperResultSetExtractor.
+	 * @param rowMapper the RowMapper which creates an object for each row
+	 * @param rowsExpected the number of expected rows
+	 * (just used for optimized collection handling)
+	 * @param maxRows the number of max rows (or -1 for the driver's default)
 	 * @since 7.0
 	 */
 	public RowMapperResultSetExtractor(RowMapper<T> rowMapper, int rowsExpected, int maxRows) {
@@ -89,9 +102,6 @@ public class RowMapperResultSetExtractor<T> implements ResultSetExtractor<List<T
 	}
 
 
-	/**
-	 * 提取：Data（方法 `extractData`）。
-	 */
 	@Override
 	public List<T> extractData(ResultSet rs) throws SQLException {
 		List<T> results = (this.rowsExpected > 0 ? new ArrayList<>(this.rowsExpected) : new ArrayList<>());

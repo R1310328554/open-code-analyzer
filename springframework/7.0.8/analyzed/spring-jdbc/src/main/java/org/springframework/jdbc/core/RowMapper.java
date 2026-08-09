@@ -22,17 +22,27 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * {@link JdbcTemplate} 使用的接口，用于按行映射 {@link java.sql.ResultSet}
- * 的行。此接口的实现执行将每一行映射到结果对象的实际工作，但不需要担心异常处理。 {@link java.sql.SQLException SQLExceptions} 将由调用
- * {@code JdbcTemplate} 捕获并处理。
- * <p> 通常用于 {@code JdbcTemplate} 的查询方法或存储过程的 {@code out} 参数。 {@code RowMapper} 对象通常是无状态的，因此
- * 可重用；它们是在单个位置实现行映射逻辑的理想选择。
- * <p>或者，考虑从 {@code jdbc.object} 包中子类化 {@link
- * org.springframework.jdbc.object.MappingSqlQuery}：您可以以该样式构建可执行查询对象（包含行映射逻辑），而不是使用单独的
- * {@code JdbcTemplate} 和 {@code RowMapper} 对象。
+ * An interface used by {@link JdbcTemplate} for mapping rows of a
+ * {@link java.sql.ResultSet} on a per-row basis. Implementations of this
+ * interface perform the actual work of mapping each row to a result object
+ * but don't need to worry about exception handling.
+ * {@link java.sql.SQLException SQLExceptions} will be caught and handled
+ * by the calling {@code JdbcTemplate}.
+ *
+ * <p>Typically used either for {@code JdbcTemplate}'s query methods or for
+ * {@code out} parameters of stored procedures. {@code RowMapper} objects are
+ * typically stateless and thus reusable; they are an ideal choice for
+ * implementing row-mapping logic in a single place.
+ *
+ * <p>Alternatively, consider subclassing
+ * {@link org.springframework.jdbc.object.MappingSqlQuery} from the
+ * {@code jdbc.object} package: instead of working with separate
+ * {@code JdbcTemplate} and {@code RowMapper} objects, you can build executable
+ * query objects (containing row-mapping logic) in that style.
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
- * @param <T> 结果类型
+ * @param <T> the result type
  * @see JdbcTemplate
  * @see RowCallbackHandler
  * @see ResultSetExtractor
@@ -42,12 +52,14 @@ import org.jspecify.annotations.Nullable;
 public interface RowMapper<T extends @Nullable Object> {
 
 	/**
-	 * 实现必须实现此方法来映射 {@code ResultSet} 中的每一行数据。此方法不应在 {@code ResultSet} 上调用 {@code next()}；它只应该映
-	 * 射当前行的值。
-	 * @param rs 要映射的 {@code ResultSet}（针对当前行预先初始化）
-	 * @param rowNum 当前行号
-	 * @return 当前行的结果对象（可能是 {@code null}）
-	 * @throws SQLException 如果在获取列值时遇到 SQLException（即无需捕获 SQLException）
+	 * Implementations must implement this method to map each row of data in the
+	 * {@code ResultSet}. This method should not call {@code next()} on the
+	 * {@code ResultSet}; it is only supposed to map values of the current row.
+	 * @param rs the {@code ResultSet} to map (pre-initialized for the current row)
+	 * @param rowNum the number of the current row
+	 * @return the result object for the current row (may be {@code null})
+	 * @throws SQLException if an SQLException is encountered while getting
+	 * column values (that is, there's no need to catch SQLException)
 	 */
 	T mapRow(ResultSet rs, int rowNum) throws SQLException;
 

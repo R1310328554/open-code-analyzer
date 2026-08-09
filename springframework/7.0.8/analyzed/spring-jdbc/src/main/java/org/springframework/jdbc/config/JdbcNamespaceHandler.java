@@ -20,15 +20,12 @@ import org.springframework.beans.factory.xml.NamespaceHandler;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * {@link NamespaceHandler} 用于 JDBC 配置命名空间。
+ * {@link NamespaceHandler} for JDBC configuration namespace.
  * @author Oliver Gierke
  * @author Dave Syer
  */
 public class JdbcNamespaceHandler extends NamespaceHandlerSupport {
 
-	/**
-	 * 方法 `init`：完成本类中与「init」相关的职责。
-	 */
 	@Override
 	public void init() {
 		registerBeanDefinitionParser("embedded-database", new EmbeddedDatabaseBeanDefinitionParser());
