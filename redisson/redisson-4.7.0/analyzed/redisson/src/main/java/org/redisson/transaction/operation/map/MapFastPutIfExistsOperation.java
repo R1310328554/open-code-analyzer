@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map 快速「键存在则覆盖」操作：commit 时调用 {@link RMap#fastPutIfExistsAsync}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -31,6 +32,7 @@ public class MapFastPutIfExistsOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
+    /** 提交：仅当 key 已存在时更新 value。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.fastPutIfExistsAsync(key, value);

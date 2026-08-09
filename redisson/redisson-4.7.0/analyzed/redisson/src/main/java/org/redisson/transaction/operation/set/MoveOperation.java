@@ -22,13 +22,17 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
+ * 事务内 set 元素迁移操作：将 value 从源 set 移动到目标 set。
+ * commit 时执行 move 并释放源、目标两侧的元素锁；rollback 仅解锁。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MoveOperation extends SetOperation {
 
+    /** 目标 set 的 Redis 键名。 */
     private String destinationName;
+    /** 待迁移的元素值。 */
     private Object value;
 
     public MoveOperation(RObject set, String destinationName, long threadId, Object value, String transactionId) {
@@ -41,6 +45,7 @@ public class MoveOperation extends SetOperation {
         this.value = value;
     }
 
+    /** 提交：SMOVE 到目标 set，并释放两侧元素锁。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);
@@ -51,6 +56,7 @@ public class MoveOperation extends SetOperation {
         getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
+    /** 回滚：不执行 move，仅释放源与目标元素锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);

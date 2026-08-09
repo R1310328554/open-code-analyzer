@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map 快速「键不存在则写入」操作：commit 时调用 {@link RMap#fastPutIfAbsentAsync}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -31,6 +32,7 @@ public class MapFastPutIfAbsentOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
+    /** 提交：仅当 key 不存在时写入 value。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.fastPutIfAbsentAsync(key, value);

@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map 快速删除键操作：commit 时调用 {@link RMap#fastRemoveAsync}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -31,6 +32,7 @@ public class MapFastRemoveOperation extends MapOperation {
         super(map, key, null, transactionId, threadId);
     }
     
+    /** 提交：从 map 中删除指定 key。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.fastRemoveAsync(key);

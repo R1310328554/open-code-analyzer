@@ -23,22 +23,16 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.RedissonTransactionalWriteLock;
 
 /**
- * 异步删除 Redis 键（UNLINK）的事务操作：
- * commit 时对目标键执行 unlink 并释放读/写锁；rollback 只解锁。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class UnlinkOperation extends TransactionalOperation {
 
-    /** 可选写锁名。 */
     private String writeLockName;
-    /** 可选读锁名。 */
     private String lockName;
-    /** 事务 ID，用于构造 {@link RedissonTransactionalLock}。 */
     private String transactionId;
     
-    /** 仅指定键名的简化构造（无锁）。 */
     public UnlinkOperation(String name) {
         this(name, null, 0, null);
     }
@@ -54,7 +48,6 @@ public class UnlinkOperation extends TransactionalOperation {
         this.writeLockName = writeLockName;
     }
 
-    /** 提交：UNLINK 键并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RKeys keys = new RedissonKeys(commandExecutor);
@@ -69,7 +62,6 @@ public class UnlinkOperation extends TransactionalOperation {
         }
     }
 
-    /** 回滚：不删除键，仅释放锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         if (lockName != null) {

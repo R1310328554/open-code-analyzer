@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map 无条件写入（HSET）操作：commit 时调用 {@link RMap#putAsync}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -31,6 +32,7 @@ public class MapPutOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
+    /** 提交：写入 key-value 到 map。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.putAsync(key, value);

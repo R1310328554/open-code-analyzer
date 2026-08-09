@@ -21,21 +21,15 @@ import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 
 /**
- * MapCache 条件写入（putIfAbsent）的事务操作：
- * 字段不存在时写入并设置 TTL / maxIdle；返回是否写入由 Redis 侧决定。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class MapCachePutIfAbsentOperation extends MapOperation {
 
-    /** 条目存活时间。 */
     private long ttl; 
-    /** ttl 的时间单位。 */
     private TimeUnit unit;
-    /** 最大空闲时间。 */
     private long maxIdleTime;
-    /** maxIdleTime 的时间单位。 */
     private TimeUnit maxIdleUnit;
 
     public MapCachePutIfAbsentOperation() {
@@ -54,7 +48,6 @@ public class MapCachePutIfAbsentOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
-    /** 提交：对 MapCache 执行 putIfAbsentAsync。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         ((RMapCache<Object, Object>) map).putIfAbsentAsync(key, value, ttl, unit, maxIdleTime, maxIdleUnit);

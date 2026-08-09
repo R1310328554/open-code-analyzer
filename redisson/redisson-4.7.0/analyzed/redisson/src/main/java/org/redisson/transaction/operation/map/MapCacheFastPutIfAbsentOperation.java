@@ -21,21 +21,15 @@ import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 
 /**
- * MapCache 快速条件写入（fastPutIfAbsent）的事务操作：
- * 字段不存在时写入并设置 TTL / maxIdle；不返回旧值。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class MapCacheFastPutIfAbsentOperation extends MapOperation {
 
-    /** 条目存活时间。 */
     private long ttl;
-    /** ttl 的时间单位。 */
     private TimeUnit ttlUnit;
-    /** 最大空闲时间。 */
     private long maxIdleTime;
-    /** maxIdleTime 的时间单位。 */
     private TimeUnit maxIdleUnit;
 
     public MapCacheFastPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, long ttl, TimeUnit ttlUnit,
@@ -47,7 +41,6 @@ public class MapCacheFastPutIfAbsentOperation extends MapOperation {
         this.maxIdleUnit = maxIdleUnit;
     }
 
-    /** 提交：对 MapCache 执行 fastPutIfAbsentAsync。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         ((RMapCache<Object, Object>) map).fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);

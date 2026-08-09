@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map 删除操作：可按 key 删除，或按 key+value 条件删除（HDEL）。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -35,6 +36,7 @@ public class MapRemoveOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
+    /** 提交：value 非空时按 key-value 删除，否则仅按 key 删除。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         if (value != null) {

@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map 快速写入操作：commit 时调用 {@link RMap#fastPutAsync}（不返回旧值）。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -31,6 +32,7 @@ public class MapFastPutOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
+    /** 提交：无条件写入 key-value。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.fastPutAsync(key, value);

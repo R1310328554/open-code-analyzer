@@ -21,21 +21,15 @@ import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 
 /**
- * MapCache 快速写入（fastPut）的事务操作：
- * 覆盖或新增字段并设置 TTL / maxIdle；不返回旧值。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class MapCacheFastPutOperation extends MapOperation {
 
-    /** 条目存活时间。 */
     private long ttl;
-    /** ttl 的时间单位。 */
     private TimeUnit ttlUnit;
-    /** 最大空闲时间。 */
     private long maxIdleTime;
-    /** maxIdleTime 的时间单位。 */
     private TimeUnit maxIdleUnit;
 
     public MapCacheFastPutOperation() {
@@ -49,7 +43,6 @@ public class MapCacheFastPutOperation extends MapOperation {
         this.maxIdleUnit = maxIdleUnit;
     }
     
-    /** 提交：对 MapCache 执行 fastPutAsync。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         ((RMapCache<Object, Object>) map).fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);

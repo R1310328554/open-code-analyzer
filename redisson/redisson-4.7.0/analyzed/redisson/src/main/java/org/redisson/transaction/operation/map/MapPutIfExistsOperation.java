@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map「键存在则覆盖」操作：commit 时调用 {@link RMap#putIfExistsAsync}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -31,6 +32,7 @@ public class MapPutIfExistsOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
     
+    /** 提交：key 已存在时更新 value，不存在则跳过。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.putIfExistsAsync(key, value);

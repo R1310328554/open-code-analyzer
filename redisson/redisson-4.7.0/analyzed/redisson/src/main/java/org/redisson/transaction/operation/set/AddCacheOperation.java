@@ -24,14 +24,19 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
- * 
+ * 事务内 {@link RSetCache} 添加元素操作，可选 TTL。
+ * commit 时写入 set 并释放元素级事务锁；rollback 仅解锁。
+ *
  * @author Nikita Koksharov
  *
  */
 public class AddCacheOperation extends SetOperation {
 
+    /** 待添加的元素值。 */
     private Object value;
+    /** 元素存活时间数值（0 表示无 TTL）。 */
     private long ttl;
+    /** ttl 的时间单位；为 null 时不设置过期。 */
     private TimeUnit timeUnit;
 
     public AddCacheOperation(RObject set, Object value, String transactionId, long threadId) {
@@ -49,6 +54,7 @@ public class AddCacheOperation extends SetOperation {
         this.ttl = ttl;
     }
 
+    /** 提交：SADD 到 SetCache（可选 EXPIRE）并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RSetCache<Object> set = new RedissonSetCache<>(codec, null, commandExecutor, name, null);
@@ -60,6 +66,7 @@ public class AddCacheOperation extends SetOperation {
         getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
+    /** 回滚：不修改 set，仅释放元素锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSetCache<Object> set = new RedissonSetCache<>(codec, null, commandExecutor, name, null);

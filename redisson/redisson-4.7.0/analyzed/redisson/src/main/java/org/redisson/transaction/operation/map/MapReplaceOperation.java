@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map 替换操作：可无条件替换，或仅当旧值匹配时替换（compare-and-set）。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -35,6 +36,7 @@ public class MapReplaceOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
+    /** 提交：oldValue 非空时 CAS 替换，否则直接 replace。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         if (oldValue != null) {

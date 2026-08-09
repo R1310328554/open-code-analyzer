@@ -18,9 +18,7 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * Map 字段原子递增（addAndGet / HINCRBY）的事务操作：
- * 对指定 key 的数值字段加上 delta，由 {@link MapOperation} 负责加锁与解锁。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
@@ -33,7 +31,6 @@ public class MapAddAndGetOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
 
-    /** 提交：对 map 字段执行 addAndGetAsync。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.addAndGetAsync(key, (Number) value);

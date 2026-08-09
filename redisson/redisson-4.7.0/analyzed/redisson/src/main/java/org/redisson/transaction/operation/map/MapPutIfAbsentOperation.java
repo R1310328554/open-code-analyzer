@@ -18,7 +18,8 @@ package org.redisson.transaction.operation.map;
 import org.redisson.api.RMap;
 
 /**
- * 
+ * 事务内 map「键不存在则写入」操作：commit 时调用 {@link RMap#putIfAbsentAsync}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -31,6 +32,7 @@ public class MapPutIfAbsentOperation extends MapOperation {
         super(map, key, value, transactionId, threadId);
     }
     
+    /** 提交：key 不存在时写入 value，已存在则跳过。 */
     @Override
     public void commit(RMap<Object, Object> map) {
         map.putIfAbsentAsync(key, value);

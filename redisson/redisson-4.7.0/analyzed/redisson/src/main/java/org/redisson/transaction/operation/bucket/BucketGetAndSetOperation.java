@@ -26,24 +26,17 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
- * Bucket 读取旧值并写入新值（getAndSet）的事务操作：
- * 可选 TTL；commit 后释放键级事务锁。
- *
+ * 
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class BucketGetAndSetOperation<V> extends TransactionalOperation {
 
-    /** 要写入的新值。 */
     private Object value;
-    /** 键对应的事务读锁名。 */
     private String lockName;
-    /** 所属事务 ID。 */
     private String transactionId;
-    /** 可选存活时间，0 表示不设过期。 */
     private long timeToLive;
-    /** timeToLive 的时间单位。 */
     private TimeUnit timeUnit;
 
     public BucketGetAndSetOperation(String name, String lockName, Codec codec, Object value, long timeToLive, TimeUnit timeUnit, String transactionId) {
@@ -59,7 +52,6 @@ public class BucketGetAndSetOperation<V> extends TransactionalOperation {
         this.transactionId = transactionId;
     }
 
-    /** 提交：getAndSet（含可选 TTL）并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RBucket<V> bucket = new RedissonBucket<V>(codec, commandExecutor, name);
@@ -72,7 +64,6 @@ public class BucketGetAndSetOperation<V> extends TransactionalOperation {
         lock.unlockAsync(getThreadId());
     }
 
-    /** 回滚：不修改 Bucket，仅释放事务锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
