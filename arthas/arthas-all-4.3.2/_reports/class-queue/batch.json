@@ -15,23 +15,8 @@
     "core/src/main/java/com/taobao/arthas/core/command/basic1000/KeymapCommand.java",
     "core/src/main/java/com/taobao/arthas/core/command/basic1000/OptionsCommand.java",
     "core/src/main/java/com/taobao/arthas/core/command/basic1000/PwdCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/ResetCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/SessionCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/StopCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/SystemEnvCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/SystemPropertyCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/TeeCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/VMOptionCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/basic1000/VersionCommand.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/ArthasObjectPropertyAccessor.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/ClassLoaderClassResolver.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/CustomClassResolver.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/DefaultMemberAccess.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/Express.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/ExpressException.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/ExpressFactory.java",
-    "core/src/main/java/com/taobao/arthas/core/command/express/OgnlExpress.java"
+    "core/src/main/java/com/taobao/arthas/core/command/basic1000/ResetCommand.java"
   ],
   "remaining_pending": 585,
-  "done": 180
+  "done": 195
 }
