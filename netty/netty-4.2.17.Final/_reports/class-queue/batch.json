@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:32:30Z",
-  "files": [
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxyMessage.java",
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxyMessageDecoder.java",
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxyMessageEncoder.java",
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxyProtocolException.java",
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxyProtocolVersion.java",
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxyProxiedProtocol.java",
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxySSLTLV.java",
-    "codec-haproxy/src/main/java/io/netty/handler/codec/haproxy/HAProxyTLV.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/ClientCookieEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/CombinedHttpHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/ComposedLastHttpContent.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/ContentLengthNotAllowedException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/Cookie.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/CookieDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/CookieUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1538,
-  "done": 375
+  "done": 390
 }
