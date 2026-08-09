@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Redis Sentinel node API interface
+ * Redis Sentinel 节点 API。
+ * <p>
+ * 在 {@link RedisNode} 通用能力之上，提供主从拓扑查询、哨兵列表及手动故障转移等哨兵运维接口。
  *
  * @author Nikita Koksharov
  *
@@ -29,51 +31,48 @@ import java.util.Map;
 public interface RedisSentinel extends RedisNode, RedisSentinelAsync {
 
     /**
-     * Returns network address of defined Redis master.
+     * 返回指定主节点名称对应的网络地址。
      *
-     * @param masterName - name of master
-     * @return network address
+     * @param masterName 主节点名称
+     * @return 网络地址
      */
     RedisURI getMasterAddr(String masterName);
 
     /**
-     * Returns list of map containing info regarding Redis Sentinel server
-     * monitoring defined master.
+     * 返回监控指定主节点的 Sentinel 实例信息列表。
      *
-     * @param masterName - name of master
-     * @return list of Redis Sentinels
+     * @param masterName 主节点名称
+     * @return Sentinel 信息列表
      */
     List<Map<String, String>> getSentinels(String masterName);
 
     /**
-     * Returns list of map containing info regarding Redis Master server
-     * monitored by current Redis Sentinel server.
+     * 返回当前 Sentinel 所监控的所有 Redis 主节点信息列表。
      *
-     * @return list of Redis Masters
+     * @return 主节点信息列表
      */
     List<Map<String, String>> getMasters();
 
     /**
-     * Returns list of map containing info regarding Redis Slave server
-     * of defined master.
+     * 返回指定主节点下所有从节点信息列表。
      *
-     * @param masterName - name of master
-     * @return list of Redis Slaves
+     * @param masterName 主节点名称
+     * @return 从节点信息列表
      */
     List<Map<String, String>> getSlaves(String masterName);
 
     /**
-     * Returns map containing info regarding defined Redis master.
+     * 返回指定主节点的详细信息。
      *
-     * @param masterName - name of master
-     * @return map containing info
+     * @param masterName 主节点名称
+     * @return 主节点信息键值对
      */
     Map<String, String> getMaster(String masterName);
 
     /**
-     * Starts failover process for defined Redis master
+     * 对指定主节点发起手动故障转移（failover）。
      *
-     * @param masterName - name of master
+     * @param masterName 主节点名称
      */
     void failover(String masterName);
 

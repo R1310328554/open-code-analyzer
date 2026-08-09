@@ -22,7 +22,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Base Redis Cluster node API interface
+ * Redis 集群节点基础 API。
+ * <p>
+ * 在 {@link RedisNode} 通用节点能力之上，提供槽位分配、节点加入/移除、
+ * 故障报告及集群拓扑查询等集群运维操作。
  *
  * @author Nikita Koksharov
  *
@@ -30,107 +33,107 @@ import java.util.Set;
 public interface RedisClusterNode extends RedisNode, RedisClusterNodeAsync {
 
     /**
-     * Returns cluster information reported by this Redis node
+     * 返回该 Redis 节点上报的集群信息。
      *
-     * @return cluster information
+     * @return 集群信息键值对
      */
     Map<String, String> clusterInfo();
 
     /**
-     * Returns id of this Redis node
+     * 返回该 Redis 节点的集群 ID。
      *
-     * @return Redis node Id
+     * @return 节点 ID
      */
     String clusterId();
 
     /**
-     * Adds slots to this Redis node
+     * 向该 Redis 节点添加槽位（slot）。
      *
-     * @param slots slots to add
+     * @param slots 要添加的槽位编号
      */
     void clusterAddSlots(int... slots);
 
     /**
-     * Reconfigures this Redis node as replica of Redis node by defined id.
+     * 将该 Redis 节点重新配置为指定 ID 节点的从副本。
      *
-     * @param nodeId Redis node Id
+     * @param nodeId 目标主节点 ID
      */
     void clusterReplicate(String nodeId);
 
     /**
-     * Removes Redis node by defined id from Cluster
+     * 从集群中移除指定 ID 的 Redis 节点。
      *
-     * @param nodeId
+     * @param nodeId 待移除节点 ID
      */
     void clusterForget(String nodeId);
 
     /**
-     * Removes slots from this Redis node
+     * 从该 Redis 节点移除槽位。
      *
-     * @param slots slots to remove
+     * @param slots 要移除的槽位编号
      */
     void clusterDeleteSlots(int... slots);
 
     /**
-     * Counts keys in defined slot
+     * 统计指定槽位中的键数量。
      *
-     * @param slot slot
-     * @return keys amount
+     * @param slot 槽位编号
+     * @return 键数量
      */
     long clusterCountKeysInSlot(int slot);
 
     /**
-     * Returns keys in defines slot limited by count
+     * 返回指定槽位中的键，数量受 count 限制。
      *
-     * @param slot slot
-     * @param count limits keys amount
-     * @return keys
+     * @param slot 槽位编号
+     * @param count 最多返回的键数量
+     * @return 键名列表
      */
     List<String> clusterGetKeysInSlot(int slot, int count);
 
     /**
-     * Sets slot to this Redis node according to defined command
+     * 按指定命令设置槽位归属（如 IMPORTING、MIGRATING、STABLE 等）。
      *
-     * @param slot slot
-     * @param command slot command
+     * @param slot 槽位编号
+     * @param command 槽位操作命令
      */
     void clusterSetSlot(int slot, SetSlotCommand command);
 
     /**
-     * Sets slot to this Redis node according to defined command
+     * 按指定命令设置槽位归属，并关联目标节点 ID。
      *
-     * @param slot slot
-     * @param command slot command
-     * @param nodeId Redis node id
+     * @param slot 槽位编号
+     * @param command 槽位操作命令
+     * @param nodeId 关联的 Redis 节点 ID
      */
     void clusterSetSlot(int slot, SetSlotCommand command, String nodeId);
 
     /**
-     * Joins Redis node by the defined address to Cluster
+     * 将指定地址的 Redis 节点加入集群。
      * <p>
-     * Address example: <code>redis://127.0.0.1:9233</code>
+     * 地址示例：<code>redis://127.0.0.1:9233</code>
      *
-     * @param address Redis node address
+     * @param address Redis 节点地址
      */
     void clusterMeet(String address);
 
     /**
-     * Returns number of failure reports for Redis node by defined id
+     * 返回指定节点 ID 收到的故障报告数量。
      *
-     * @param nodeId Redis node id
-     * @return amount of failure reports
+     * @param nodeId Redis 节点 ID
+     * @return 故障报告次数
      */
     long clusterCountFailureReports(String nodeId);
 
     /**
-     * Removes all slots from this Redis node
+     * 清除该 Redis 节点上的所有槽位分配。
      */
     void clusterFlushSlots();
 
     /**
-     * Return Redis Cluster slots mapped to Redis nodes
+     * 返回集群槽位区间到 Redis 节点的映射关系。
      *
-     * @return slots mapping
+     * @return 槽位区间与节点 ID 集合的映射
      */
     Map<ClusterSlotRange, Set<String>> clusterSlots();
 

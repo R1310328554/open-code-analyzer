@@ -23,7 +23,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Base Redis node API interface
+ * Redis 节点基础 API。
+ * <p>
+ * 提供内存统计、服务器时间、连通性检测、INFO 查询、运行时配置及持久化等通用运维能力，
+ * 适用于集群、主从、哨兵及单机等多种部署形态下的单个节点。
  *
  * @author Nikita Koksharov
  *
@@ -31,110 +34,109 @@ import java.util.concurrent.TimeUnit;
 public interface RedisNode {
 
     /**
-     * Returns Redis memory statistics
+     * 返回 Redis 内存使用统计信息。
      *
-     * @return statistics info map
+     * @return 统计信息键值对
      */
     Map<String, String> getMemoryStatistics();
 
     /**
-     * Returns current Redis server time in seconds
+     * 返回 Redis 服务器当前时间（秒级）。
      *
-     * @return time in seconds
+     * @return 服务器时间
      */
     Time time();
 
     /**
-     * Get Redis node address
+     * 获取 Redis 节点网络地址。
      *
-     * @return node address
+     * @return 节点地址
      */
     InetSocketAddress getAddr();
 
     /**
-     * Ping Redis node.
-     * Default timeout is 1000 milliseconds
+     * 向 Redis 节点发送 PING 命令。
+     * 默认超时为 1000 毫秒。
      *
-     * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
+     * @return 收到 "PONG" 回复时为 <code>true</code>，否则为 <code>false</code>
      */
     boolean ping();
 
     /**
-     * Ping Redis node with specified timeout.
+     * 以指定超时向 Redis 节点发送 PING 命令。
      *
-     * @param timeout - ping timeout
-     * @param timeUnit - timeout unit
-     * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
+     * @param timeout 超时时间
+     * @param timeUnit 超时单位
+     * @return 收到 "PONG" 回复时为 <code>true</code>，否则为 <code>false</code>
      */
     boolean ping(long timeout, TimeUnit timeUnit);
 
+    /** INFO 命令可查询的信息分区 */
     enum InfoSection {ALL, DEFAULT, SERVER, CLIENTS, MEMORY, PERSISTENCE, STATS, REPLICATION, CPU, COMMANDSTATS, CLUSTER, KEYSPACE}
 
     /**
-     * Returns information about Redis node.
+     * 返回 Redis 节点的 INFO 信息。
      *
-     * @param section - section of information
-     * @return information
+     * @param section 信息分区
+     * @return 信息键值对
      */
     Map<String, String> info(RedisNode.InfoSection section);
 
     /**
-     * Get value of Redis configuration parameter.
+     * 读取 Redis 配置参数的值。
      *
-     * @param parameter - name of parameter
-     * @return value of parameter
+     * @param parameter 参数名
+     * @return 参数值
      */
     Map<String, String> getConfig(String parameter);
 
     /**
-     * Set value of Redis configuration parameter.
+     * 设置 Redis 配置参数的值。
      *
-     * @param parameter - name of parameter
-     * @param value - value of parameter
+     * @param parameter 参数名
+     * @param value 参数值
      */
     void setConfig(String parameter, String value);
 
     /**
-     * Runs the Redis database saving process in background.
+     * 在后台异步执行 RDB 快照保存（BGSAVE）。
      *
      */
     void bgSave();
 
     /**
-     * Save the Redis database in background.
-     * If AOF rewrite process is in progress then
-     * the background save is scheduled to run upon its completion.
+     * 在后台调度 RDB 快照保存。
+     * 若当前正在进行 AOF 重写，则会在重写完成后执行 BGSAVE。
      *
      */
     void scheduleBgSave();
 
     /**
-     * Save the Redis database.
+     * 同步阻塞保存 Redis 数据库到磁盘（SAVE）。
      *
      */
     void save();
 
     /**
-     * Returns time of the last successful
-     * Redis database save operation.
+     * 返回最近一次成功完成 RDB 保存的时间。
      *
-     * @return time
+     * @return 上次保存时间
      */
     Instant getLastSaveTime();
 
     /**
-     * Runs an Append Only File rewrite process.
-     * Starts only if there is no a background process doing persistence.
+     * 在后台执行 AOF 重写（BGREWRITEAOF）。
+     * 仅当没有其他持久化后台进程运行时才启动；
+     * 失败时不会丢失已有数据。
      * <p>
-     * If fails no data gets lost
      *
      */
     void bgRewriteAOF();
 
     /**
-     * Returns keys amount stored in this Redis node.
+     * 返回该 Redis 节点当前存储的键数量。
      *
-     * @return keys amount
+     * @return 键数量
      */
     long size();
 

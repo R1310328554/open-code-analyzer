@@ -16,7 +16,9 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Master node API interface
+ * 主从架构下的 Redis 主节点异步 API。
+ * <p>
+ * 继承 {@link RedisNodeAsync}，以异步方式访问主节点的监控与配置能力。
  *
  * @author Nikita Koksharov
  *

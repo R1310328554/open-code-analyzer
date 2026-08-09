@@ -18,7 +18,9 @@ package org.redisson.api.redisnode;
 import java.util.Collection;
 
 /**
- * Valkey or Redis Cluster nodes API interface
+ * Valkey 或 Redis 集群节点访问 API。
+ * <p>
+ * 用于按主从角色浏览集群拓扑，并获取指定地址的主节点或从节点句柄。
  *
  * @author Nikita Koksharov
  *
@@ -26,34 +28,34 @@ import java.util.Collection;
 public interface RedisCluster extends BaseRedisNodes {
 
     /**
-     * Returns collection of Redis Master nodes belongs to this Redis Cluster.
+     * 返回当前 Redis 集群中所有主（Master）节点。
      *
-     * @return Redis Master nodes
+     * @return 主节点集合
      */
     Collection<RedisClusterMaster> getMasters();
 
     /**
-     * Returns Redis Master node by defined address.
+     * 按地址获取 Redis 主节点。
      * <p>
-     * Address example: <code>redis://127.0.0.1:9233</code>
+     * 地址示例：<code>redis://127.0.0.1:9233</code>
      *
-     * @return Redis Master node
+     * @return 对应的主节点
      */
     RedisClusterMaster getMaster(String address);
 
     /**
-     * Returns collection of Redis Slave nodes belongs to this Redis Cluster.
+     * 返回当前 Redis 集群中所有从（Slave）节点。
      *
-     * @return Redis Slave nodes
+     * @return 从节点集合
      */
     Collection<RedisClusterSlave> getSlaves();
 
     /**
-     * Returns Redis Slave node by defined address.
+     * 按地址获取 Redis 从节点。
      * <p>
-     * Address example: <code>redis://127.0.0.1:9233</code>
+     * 地址示例：<code>redis://127.0.0.1:9233</code>
      *
-     * @return Redis Slave node
+     * @return 对应的从节点
      */
     RedisClusterSlave getSlave(String address);
 

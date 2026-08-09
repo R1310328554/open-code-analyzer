@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Redis Sentinel node API interface
+ * Redis Sentinel 节点异步 API。
+ * <p>
+ * 以 {@link RFuture} 形式暴露 {@link RedisSentinel} 中的拓扑查询与故障转移能力。
  *
  * @author Nikita Koksharov
  *
@@ -30,51 +32,48 @@ import java.util.Map;
 public interface RedisSentinelAsync extends RedisNodeAsync {
 
     /**
-     * Returns network address of defined Redis master.
+     * 异步返回指定主节点名称对应的网络地址。
      *
-     * @param masterName - name of master
-     * @return network address
+     * @param masterName 主节点名称
+     * @return 网络地址
      */
     RFuture<RedisURI> getMasterAddrAsync(String masterName);
 
     /**
-     * Returns list of map containing info regarding Redis Sentinel server
-     * monitoring defined master.
+     * 异步返回监控指定主节点的 Sentinel 实例信息列表。
      *
-     * @param masterName - name of master
-     * @return list of Redis Sentinels
+     * @param masterName 主节点名称
+     * @return Sentinel 信息列表
      */
     RFuture<List<Map<String, String>>> getSentinelsAsync(String masterName);
 
     /**
-     * Returns list of map containing info regarding Redis Master server
-     * monitored by current Redis Sentinel server.
+     * 异步返回当前 Sentinel 所监控的所有 Redis 主节点信息列表。
      *
-     * @return list of Redis Masters
+     * @return 主节点信息列表
      */
     RFuture<List<Map<String, String>>> getMastersAsync();
 
     /**
-     * Returns list of map containing info regarding Redis Slave server
-     * of defined master.
+     * 异步返回指定主节点下所有从节点信息列表。
      *
-     * @param masterName - name of master
-     * @return list of Redis Slaves
+     * @param masterName 主节点名称
+     * @return 从节点信息列表
      */
     RFuture<List<Map<String, String>>> getSlavesAsync(String masterName);
 
     /**
-     * Returns map containing info regarding defined Redis master.
+     * 异步返回指定主节点的详细信息。
      *
-     * @param masterName - name of master
-     * @return map containing info
+     * @param masterName 主节点名称
+     * @return 主节点信息键值对
      */
     RFuture<Map<String, String>> getMasterAsync(String masterName);
 
     /**
-     * Starts failover process for defined Redis master
+     * 异步对指定主节点发起手动故障转移（failover）。
      *
-     * @param masterName - name of master
+     * @param masterName 主节点名称
      */
     RFuture<Void> failoverAsync(String masterName);
 

@@ -16,15 +16,23 @@
 package org.redisson.api.redisnode;
 
 /**
+ * Redis 节点 API 类型标识符。
+ * <p>
+ * 预定义集群、主从、哨兵主从及单机等部署模式对应的 {@link BaseRedisNodes} 实现类型，
+ * 供 {@link org.redisson.Redisson#getRedisNodes(RedisNodes)} 选择正确的节点访问入口。
  *
  * @author Nikita Koksharov
  *
  */
 public final class RedisNodes<T extends BaseRedisNodes> {
 
+    /** 集群模式节点 API 类型 */
     public static final RedisNodes<RedisCluster> CLUSTER = new RedisNodes<>(RedisCluster.class);
+    /** 主从模式节点 API 类型 */
     public static final RedisNodes<RedisMasterSlave> MASTER_SLAVE = new RedisNodes<>(RedisMasterSlave.class);
+    /** 哨兵 + 主从模式节点 API 类型 */
     public static final RedisNodes<RedisSentinelMasterSlave> SENTINEL_MASTER_SLAVE = new RedisNodes<>(RedisSentinelMasterSlave.class);
+    /** 单机模式节点 API 类型 */
     public static final RedisNodes<RedisSingle> SINGLE = new RedisNodes<>(RedisSingle.class);
 
     private final Class<T> clazz;
@@ -33,6 +41,11 @@ public final class RedisNodes<T extends BaseRedisNodes> {
         this.clazz = clazz;
     }
 
+    /**
+     * 返回绑定的 {@link BaseRedisNodes} 实现类。
+     *
+     * @return 节点 API 接口类型
+     */
     public Class<T> getClazz() {
         return clazz;
     }

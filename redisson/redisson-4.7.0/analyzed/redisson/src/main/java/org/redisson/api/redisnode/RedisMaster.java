@@ -16,7 +16,9 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Master node API interface
+ * 主从架构下的 Redis 主节点 API。
+ * <p>
+ * 组合 {@link RedisNode} 与 {@link RedisMasterAsync}，用于读写与运维单机主节点。
  *
  * @author Nikita Koksharov
  *

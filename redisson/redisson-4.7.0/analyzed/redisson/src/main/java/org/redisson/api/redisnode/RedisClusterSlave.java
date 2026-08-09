@@ -16,7 +16,10 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Cluster Salve node API interface
+ * Redis 集群从节点 API。
+ * <p>
+ * 聚合 {@link RedisClusterNode} 与 {@link RedisClusterSlaveAsync}，
+ * 用于访问复制主节点数据的集群从（Replica）节点。
  *
  * @author Nikita Koksharov
  */

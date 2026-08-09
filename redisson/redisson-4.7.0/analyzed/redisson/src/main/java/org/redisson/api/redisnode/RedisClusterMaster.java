@@ -16,7 +16,10 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Cluster Master node API interface
+ * Redis 集群主节点 API。
+ * <p>
+ * 聚合 {@link RedisClusterNode} 的同步集群管理能力与 {@link RedisClusterMasterAsync} 的异步接口，
+ * 用于对持有槽位的主节点执行运维与监控操作。
  *
  * @author Nikita Koksharov
  *

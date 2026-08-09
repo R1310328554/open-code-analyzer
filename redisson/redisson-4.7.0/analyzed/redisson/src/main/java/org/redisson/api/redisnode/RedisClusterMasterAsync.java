@@ -16,7 +16,9 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Cluster Master node API interface
+ * Redis 集群主节点异步 API。
+ * <p>
+ * 继承 {@link RedisClusterNodeAsync}，以 {@link org.redisson.api.RFuture} 形式暴露集群主节点的异步运维能力。
  *
  * @author Nikita Koksharov
  *

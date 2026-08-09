@@ -18,7 +18,9 @@ package org.redisson.api.redisnode;
 import java.util.Collection;
 
 /**
- * Valkey or Redis Master Slave nodes API interface
+ * Valkey 或 Redis 主从（Master-Slave）部署的节点访问 API。
+ * <p>
+ * 用于获取当前拓扑中的主节点及从节点集合，并按地址定位具体节点。
  *
  * @author Nikita Koksharov
  *
@@ -26,34 +28,34 @@ import java.util.Collection;
 public interface RedisMasterSlave extends BaseRedisNodes {
 
     /**
-     * Returns Redis Master node belong to this Redis setup.
+     * 返回当前 Redis 主从部署中的主节点。
      *
-     * @return Redis Master nodes
+     * @return 主节点
      */
     RedisMaster getMaster();
 
     /**
-     * Returns Redis Master node by defined address.
+     * 按地址获取 Redis 主节点。
      * <p>
-     * Address example: <code>redis://127.0.0.1:9233</code>
+     * 地址示例：<code>redis://127.0.0.1:9233</code>
      *
-     * @return Redis Master node
+     * @return 对应的主节点
      */
     RedisMaster getMaster(String address);
 
     /**
-     * Returns collection of Redis Slave nodes belongs to this Redis setup.
+     * 返回当前 Redis 主从部署中的所有从节点。
      *
-     * @return Redis Slave nodes
+     * @return 从节点集合
      */
     Collection<RedisSlave> getSlaves();
 
     /**
-     * Returns Redis Slave node by defined address.
+     * 按地址获取 Redis 从节点。
      * <p>
-     * Address example: <code>redis://127.0.0.1:9233</code>
+     * 地址示例：<code>redis://127.0.0.1:9233</code>
      *
-     * @return Redis Slave node
+     * @return 对应的从节点
      */
     RedisSlave getSlave(String address);
 

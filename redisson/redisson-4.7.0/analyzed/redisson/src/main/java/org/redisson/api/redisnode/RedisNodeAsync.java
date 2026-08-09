@@ -23,7 +23,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Base Redis node API interface
+ * Redis 节点异步基础 API。
+ * <p>
+ * 以 {@link RFuture} 形式暴露 {@link RedisNode} 中的监控、配置与持久化操作。
  *
  * @author Nikita Koksharov
  *
@@ -31,102 +33,100 @@ import java.util.concurrent.TimeUnit;
 public interface RedisNodeAsync {
 
     /**
-     * Returns Redis memory statistics
+     * 异步返回 Redis 内存使用统计信息。
      *
-     * @return statistics info map
+     * @return 统计信息键值对
      */
     RFuture<Map<String, String>> getMemoryStatisticsAsync();
 
     /**
-     * Returns current Redis server time in seconds
+     * 异步返回 Redis 服务器当前时间（秒级）。
      *
-     * @return time in seconds
+     * @return 服务器时间
      */
     RFuture<Time> timeAsync();
 
     /**
-     * Ping Redis node.
-     * Default timeout is 1000 milliseconds
+     * 异步向 Redis 节点发送 PING 命令。
+     * 默认超时为 1000 毫秒。
      *
-     * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
+     * @return 收到 "PONG" 回复时为 <code>true</code>，否则为 <code>false</code>
      */
     RFuture<Boolean> pingAsync();
 
     /**
-     * Ping Redis node with specified timeout.
+     * 异步以指定超时向 Redis 节点发送 PING 命令。
      *
-     * @param timeout - ping timeout
-     * @param timeUnit - timeout unit
-     * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
+     * @param timeout 超时时间
+     * @param timeUnit 超时单位
+     * @return 收到 "PONG" 回复时为 <code>true</code>，否则为 <code>false</code>
      */
     RFuture<Boolean> pingAsync(long timeout, TimeUnit timeUnit);
 
     /**
-     * Returns information about Redis node.
+     * 异步返回 Redis 节点的 INFO 信息。
      *
-     * @param section - section of information
-     * @return information map
+     * @param section 信息分区
+     * @return 信息键值对
      */
     RFuture<Map<String, String>> infoAsync(RedisNode.InfoSection section);
 
     /**
-     * Get value of Redis configuration parameter.
+     * 异步读取 Redis 配置参数的值。
      *
-     * @param parameter - name of parameter
-     * @return value of parameter
+     * @param parameter 参数名
+     * @return 参数值
      */
     RFuture<Map<String, String>> getConfigAsync(String parameter);
 
     /**
-     * Set value of Redis configuration parameter.
+     * 异步设置 Redis 配置参数的值。
      *
-     * @param parameter - name of parameter
-     * @param value - value of parameter
+     * @param parameter 参数名
+     * @param value 参数值
      * @return void
      */
     RFuture<Void> setConfigAsync(String parameter, String value);
 
     /**
-     * Runs the Redis database saving process in background.
+     * 异步在后台执行 RDB 快照保存（BGSAVE）。
      *
      */
     RFuture<Void> bgSaveAsync();
 
     /**
-     * Save the Redis database in background.
-     * If AOF rewrite process is in progress then
-     * the background save is scheduled to run upon its completion.
+     * 异步在后台调度 RDB 快照保存。
+     * 若当前正在进行 AOF 重写，则会在重写完成后执行 BGSAVE。
      *
      */
     RFuture<Void> scheduleBgSaveAsync();
 
     /**
-     * Save the Redis database.
+     * 异步同步阻塞保存 Redis 数据库到磁盘（SAVE）。
      *
      */
     RFuture<Void> saveAsync();
 
     /**
-     * Returns time of the last successful
-     * Redis database save operation.
+     * 异步返回最近一次成功完成 RDB 保存的时间。
      *
-     * @return time
+     * @return 上次保存时间
      */
     RFuture<Instant> getLastSaveTimeAsync();
 
     /**
-     * Runs an Append Only File rewrite process.
-     * Starts only if there is no a background process doing persistence.
+     * 异步在后台执行 AOF 重写（BGREWRITEAOF）。
+     * 仅当没有其他持久化后台进程运行时才启动；
+     * 失败时不会丢失已有数据。
      * <p>
-     * If fails no data gets lost
      *
      */
     RFuture<Void> bgRewriteAOFAsync();
 
     /**
-     * Returns keys amount stored in this Redis node.
+     * 异步返回该 Redis 节点当前存储的键数量。
      *
-     * @return keys amount
+     * @return 键数量
      */
     RFuture<Long> sizeAsync();
 

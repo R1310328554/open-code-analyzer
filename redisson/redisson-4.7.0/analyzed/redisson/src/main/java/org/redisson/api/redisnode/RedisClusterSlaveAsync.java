@@ -16,6 +16,10 @@
 package org.redisson.api.redisnode;
 
 /**
+ * Redis 集群从节点异步 API。
+ * <p>
+ * 继承 {@link RedisClusterNodeAsync}，提供集群从节点相关操作的异步入口。
+ *
  * @author Nikita Koksharov
  */
 public interface RedisClusterSlaveAsync extends RedisClusterNodeAsync {
