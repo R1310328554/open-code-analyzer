@@ -16,67 +16,70 @@
 package org.redisson.api.search.index;
 
 /**
- * Optional options object for vector field index which uses SVS-VAMANA indexing method.
+ * SVS-VAMANA 向量索引的可选参数阶段接口。
+ * <p>
+ * 在设定向量类型、维度与距离度量后，可配置压缩算法、图构建窗口与搜索窗口等参数。
  *
  * @author seakider
  */
 public interface SVSVamanaVectorOptionalArgs extends FieldIndex {
 
+    /** 向量压缩算法枚举。 */
     enum CompressionAlgorithm {LVQ8, LVQ4, LVQ4x4, LVQ4x8, LeanVec4x8, LeanVec8x8}
 
     /**
-     * Defines compression algorithm
+     * 设置向量压缩算法。
      *
-     * @param algorithm compression algorithm
-     * @return vector options
+     * @param algorithm 压缩算法
+     * @return 当前向量选项
      */
     SVSVamanaVectorOptionalArgs compression(CompressionAlgorithm algorithm);
 
     /**
-     * Defines number of the search window size to during graph construction
+     * 设置建图时的搜索窗口大小。
      *
-     * @param value number of search window size
-     * @return vector options
+     * @param value 搜索窗口大小
+     * @return 当前向量选项
      */
     SVSVamanaVectorOptionalArgs constructionWindowSize(int value);
 
     /**
-     * Defines the maximum number of edges per node
+     * 设置每个节点的最大边数（图的最大度数）。
      *
-     * @param value the maximum number of edges
-     * @return vector options
+     * @param value 最大边数
+     * @return 当前向量选项
      */
     SVSVamanaVectorOptionalArgs graphMaxDegree(int value);
 
     /**
-     * Defines the size of the search window
+     * 设置查询时的搜索窗口大小。
      *
-     * @param value size of the search window
-     * @return vector options
+     * @param value 搜索窗口大小
+     * @return 当前向量选项
      */
     SVSVamanaVectorOptionalArgs searchWindowSize(int value);
 
     /**
-     * Defines relative factor that sets the boundaries in which a range query may search for candidates
+     * 设置范围查询的相对边界因子（epsilon）。
      *
-     * @param value relative factor
-     * @return vector options
+     * @param value 相对边界因子
+     * @return 当前向量选项
      */
     SVSVamanaVectorOptionalArgs epsilon(double value);
 
     /**
-     * Defines number of vectors needed to learn compression parameters.
+     * 设置学习压缩参数所需的向量数量阈值。
      *
-     * @param value number of vectors
-     * @return
+     * @param value 向量数量阈值
+     * @return 当前向量选项
      */
     SVSVamanaVectorOptionalArgs trainingThreshold(int value);
 
     /**
-     * Defines the dimension used when using LeanVec4x8 or LeanVec8x8
+     * 设置 LeanVec4x8 或 LeanVec8x8 压缩时使用的向量维度。
      *
-     * @param value the dimension
-     * @return
+     * @param value 压缩向量维度
+     * @return 当前向量选项
      */
     SVSVamanaVectorOptionalArgs leanVecDim(int value);
 

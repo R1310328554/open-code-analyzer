@@ -16,7 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
- * Numeric field index options.
+ * 数值（NUMERIC）字段索引配置接口。
  *
  * @author Nikita Koksharov
  *
@@ -24,32 +24,32 @@ package org.redisson.api.search.index;
 public interface NumericIndex extends FieldIndex {
 
     /**
-     * Defines the attribute associated to the field name
+     * 指定字段映射到的文档属性名。
      *
-     * @param as the associated attribute
-     * @return options object
+     * @param as 关联属性名
+     * @return 当前数值索引选项
      */
     NumericIndex as(String as);
 
     /**
-     * Defines sort mode applied to the value of this attribute
+     * 设置该属性值的排序模式。
      *
-     * @param sortMode sort mode
-     * @return options object
+     * @param sortMode 排序模式
+     * @return 当前数值索引选项
      */
     NumericIndex sortMode(SortMode sortMode);
 
     /**
-     * Defines to not index this attribute
+     * 标记该属性不参与索引。
      *
-     * @return options object
+     * @return 当前数值索引选项
      */
     NumericIndex noIndex();
 
     /**
-     * Defines to index documents that don't contain this attribute
+     * 索引缺少该属性的文档（视为缺失值参与检索）。
      *
-     * @return options object
+     * @return 当前数值索引选项
      */
     NumericIndex indexMissing();
 

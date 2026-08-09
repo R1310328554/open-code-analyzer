@@ -16,13 +16,16 @@
 package org.redisson.api.search.index;
 
 /**
+ * RediSearch 索引所索引的 Redis 文档类型。
  *
  * @author Nikita Koksharov
  *
  */
 public enum IndexType {
 
+    /** 索引 RedisJSON 文档。 */
     JSON,
+    /** 索引 Redis Hash 文档。 */
     HASH
 
 }

@@ -16,7 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
- * Options object for vector field index which uses SVS-VAMANA indexing method.
+ * 使用 SVS-VAMANA 索引算法的向量字段配置接口。
  *
  * @author seakider
  *
@@ -24,10 +24,10 @@ package org.redisson.api.search.index;
 public interface SVSVamanaVectorIndex extends VectorTypeParam<SVSVamanaVectorOptionalArgs> {
 
     /**
-     * Defines the attribute associated to the field name
+     * 指定字段映射到的文档属性名。
      *
-     * @param as the associated attribute
-     * @return options object
+     * @param as 关联属性名
+     * @return 当前向量索引选项
      */
     SVSVamanaVectorIndex as(String as);
 }

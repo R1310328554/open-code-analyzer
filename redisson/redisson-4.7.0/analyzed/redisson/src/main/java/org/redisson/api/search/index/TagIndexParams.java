@@ -16,6 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
+ * {@link TagIndex} 的参数实现。
  *
  * @author Nikita Koksharov
  *
@@ -87,38 +88,47 @@ public final class TagIndexParams implements TagIndex {
         return this;
     }
 
+    /** 返回字段名。 */
     public String getFieldName() {
         return fieldName;
     }
 
+    /** 返回映射的属性别名。 */
     public String getAs() {
         return as;
     }
 
+    /** 返回排序模式。 */
     public SortMode getSortMode() {
         return sortMode;
     }
 
+    /** 是否区分标签大小写。 */
     public boolean isCaseSensitive() {
         return caseSensitive;
     }
 
+    /** 是否标记为不索引。 */
     public boolean isNoIndex() {
         return noIndex;
     }
 
+    /** 是否启用后缀 trie。 */
     public boolean isWithSuffixTrie() {
         return withSuffixTrie;
     }
 
+    /** 返回标签分隔符。 */
     public String getSeparator() {
         return separator;
     }
 
+    /** 是否索引空标签值。 */
     public boolean isIndexEmpty() {
         return indexEmpty;
     }
 
+    /** 是否索引缺失该属性的文档。 */
     public boolean isIndexMissing() {
         return indexMissing;
     }

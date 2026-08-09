@@ -16,6 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
+ * {@link NumericIndex} 的参数实现。
  *
  * @author Nikita Koksharov
  *
@@ -56,22 +57,27 @@ public final class NumericIndexParams implements NumericIndex {
         return this;
     }
 
+    /** 返回排序模式。 */
     public SortMode getSortMode() {
         return sortMode;
     }
 
+    /** 是否标记为不索引。 */
     public boolean isNoIndex() {
         return noIndex;
     }
 
+    /** 返回字段名。 */
     public String getFieldName() {
         return fieldName;
     }
 
+    /** 返回映射的属性别名。 */
     public String getAs() {
         return as;
     }
 
+    /** 是否索引缺失该属性的文档。 */
     public boolean isIndexMissing() {
         return indexMissing;
     }

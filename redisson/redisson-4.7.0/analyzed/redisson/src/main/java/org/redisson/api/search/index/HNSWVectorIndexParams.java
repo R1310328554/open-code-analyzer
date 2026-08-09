@@ -16,6 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
+ * {@link HNSWVectorIndex} 的参数实现，串联类型、维度、距离度量与可选 HNSW 参数。
  *
  * @author Nikita Koksharov
  *
@@ -103,46 +104,57 @@ public final class HNSWVectorIndexParams implements HNSWVectorIndex,
         return this;
     }
 
+    /** 返回索引字段名。 */
     public String getFieldName() {
         return fieldName;
     }
 
+    /** 返回向量元素类型。 */
     public Type getType() {
         return type;
     }
 
+    /** 返回向量维度。 */
     public int getDim() {
         return dim;
     }
 
+    /** 返回距离度量方式。 */
     public DistanceMetric getDistanceMetric() {
         return distanceMetric;
     }
 
+    /** 返回初始容量，未设置时为 {@code null}。 */
     public Integer getInitialCap() {
         return initialCap;
     }
 
+    /** 返回 HNSW 最大出边数 M，未设置时为 {@code null}。 */
     public Integer getM() {
         return m;
     }
 
+    /** 返回建图候选出边上限 efConstruction，未设置时为 {@code null}。 */
     public Integer getEfConstruction() {
         return efConstruction;
     }
 
+    /** 返回搜索候选集上限 efRuntime，未设置时为 {@code null}。 */
     public Integer getEfRuntime() {
         return efRuntime;
     }
 
+    /** 返回范围查询边界因子 epsilon，未设置时为 {@code null}。 */
     public Double getEpsilon() {
         return epsilon;
     }
 
+    /** 返回已配置的向量参数项数量。 */
     public int getCount() {
         return count;
     }
 
+    /** 返回映射的属性别名。 */
     public String getAs() {
         return as;
     }

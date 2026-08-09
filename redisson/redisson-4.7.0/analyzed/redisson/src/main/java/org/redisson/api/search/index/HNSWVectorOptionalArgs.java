@@ -16,7 +16,9 @@
 package org.redisson.api.search.index;
 
 /**
- * Optional options object for vector field index which uses HNSW indexing method.
+ * HNSW 向量索引的可选参数阶段接口。
+ * <p>
+ * 在设定向量类型、维度与距离度量后，可进一步配置图结构、搜索窗口与范围查询边界。
  *
  * @author Nikita Koksharov
  *
@@ -24,42 +26,42 @@ package org.redisson.api.search.index;
 public interface HNSWVectorOptionalArgs extends FieldIndex {
 
     /**
-     * Defines initial vector capacity.
+     * 设置向量索引的初始容量。
      *
-     * @param value initial vector capacity
-     * @return vector options
+     * @param value 初始向量容量
+     * @return 当前向量选项
      */
     HNSWVectorOptionalArgs initialCapacity(int value);
 
     /**
-     * Defines number of maximum allowed outgoing edges for each node.
+     * 设置每个节点的最大出边数（HNSW 的 M 参数）。
      *
-     * @param value number of maximum allowed outgoing edges
-     * @return vector options
+     * @param value 最大出边数
+     * @return 当前向量选项
      */
     HNSWVectorOptionalArgs m(int value);
 
     /**
-     * Defines number of maximum allowed potential outgoing edges candidates for each node.
+     * 设置建图时每个节点候选出边的最大数量（efConstruction）。
      *
-     * @param value number of maximum allowed potential outgoing edges
-     * @return vector options
+     * @param value 候选出边数量上限
+     * @return 当前向量选项
      */
     HNSWVectorOptionalArgs efConstruction(int value);
 
     /**
-     * Defines number of maximum top candidates to hold during the KNN search.
+     * 设置 KNN 搜索过程中保留的候选集大小上限（efRuntime）。
      *
-     * @param value number of maximum top candidates
-     * @return vector options
+     * @param value 候选集大小上限
+     * @return 当前向量选项
      */
     HNSWVectorOptionalArgs efRuntime(int value);
 
     /**
-     * Defines relative factor that sets the boundaries in which a range query may search for candidates
+     * 设置范围查询的相对边界因子（epsilon）。
      *
-     * @param value relative factor
-     * @return
+     * @param value 相对边界因子
+     * @return 当前向量选项
      */
     HNSWVectorOptionalArgs epsilon(double value);
 

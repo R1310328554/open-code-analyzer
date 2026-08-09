@@ -16,18 +16,25 @@
 package org.redisson.api.search.index;
 
 /**
+ * 全文索引可选的语音匹配算法及语言。
+ * <p>
+ * 基于 Double Metaphone 编码，用于近似发音的检索匹配。
  *
  * @author Nikita Koksharov
  *
  */
 public enum PhoneticMatcher {
 
+    /** 英语 Double Metaphone 匹配器。 */
     DM_EN("dm:en"),
 
+    /** 法语 Double Metaphone 匹配器。 */
     DM_FR("dm:fr"),
 
+    /** 葡萄牙语 Double Metaphone 匹配器。 */
     DM_PT("dm:pt"),
 
+    /** 西班牙语 Double Metaphone 匹配器。 */
     DM_ES("dm:es");
 
     private final String value;

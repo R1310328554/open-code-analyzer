@@ -16,6 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
+ * {@link SVSVamanaVectorIndex} 的参数实现，串联类型、维度、距离度量与可选 SVS-VAMANA 参数。
  *
  * @author seakider
  *
@@ -119,54 +120,67 @@ public class SVSVamanaVectorIndexParams implements SVSVamanaVectorIndex,
         return this;
     }
 
+    /** 返回索引字段名。 */
     public String getFieldName() {
         return fieldName;
     }
 
+    /** 返回向量元素类型。 */
     public Type getType() {
         return type;
     }
 
+    /** 返回向量维度。 */
     public int getDim() {
         return dim;
     }
 
+    /** 返回距离度量方式。 */
     public DistanceMetric getDistanceMetric() {
         return distanceMetric;
     }
 
+    /** 返回已配置的向量参数项数量。 */
     public int getCount() {
         return count;
     }
 
+    /** 返回映射的属性别名。 */
     public String getAs() {
         return as;
     }
 
+    /** 返回压缩算法，未设置时为 {@code null}。 */
     public CompressionAlgorithm getCompressionAlgorithm() {
         return compressionAlgorithm;
     }
 
+    /** 返回建图搜索窗口大小，未设置时为 {@code null}。 */
     public Integer getConstructionWindowSize() {
         return constructionWindowSize;
     }
 
+    /** 返回图最大度数，未设置时为 {@code null}。 */
     public Integer getGraphMaxDegree() {
         return graphMaxDegree;
     }
 
+    /** 返回查询搜索窗口大小，未设置时为 {@code null}。 */
     public Integer getSearchWindowSize() {
         return searchWindowSize;
     }
 
+    /** 返回范围查询边界因子 epsilon，未设置时为 {@code null}。 */
     public Double getEpsilon() {
         return epsilon;
     }
 
+    /** 返回压缩训练向量阈值，未设置时为 {@code null}。 */
     public Integer getTrainingThreshold() {
         return trainingThreshold;
     }
 
+    /** 返回 LeanVec 压缩维度，未设置时为 {@code null}。 */
     public Integer getLeanVecDim() {
         return leanVecDim;
     }

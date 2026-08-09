@@ -16,7 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
- * Tag field index options.
+ * 标签（TAG）字段索引配置接口。
  *
  * @author Nikita Koksharov
  *
@@ -24,65 +24,63 @@ package org.redisson.api.search.index;
 public interface TagIndex extends FieldIndex {
 
     /**
-     * Defines the attribute associated to the field name
+     * 指定字段映射到的文档属性名。
      *
-     * @param as the associated attribute
-     * @return options object
+     * @param as 关联属性名
+     * @return 当前标签索引选项
      */
     TagIndex as(String as);
 
     /**
-     * Defines separator used for splitting the value of this attribute.
-     * The separator value must be a single character.
+     * 设置拆分标签值的分隔符，必须为单个字符。
      * <p>
-     * Default is <code>,</code>
+     * 默认为 <code>,</code>。
      *
-     * @param separator separator value
-     * @return options object
+     * @param separator 分隔符
+     * @return 当前标签索引选项
      */
     TagIndex separator(String separator);
 
     /**
-     * Defines sort mode applied to the value of this attribute
+     * 设置该属性值的排序模式。
      *
-     * @param sortMode sort mode
-     * @return options object
+     * @param sortMode 排序模式
+     * @return 当前标签索引选项
      */
     TagIndex sortMode(SortMode sortMode);
 
     /**
-     * Defines whether to keep the original letter cases of the tags.
-     * If not defined, the characters are converted to lowercase.
+     * 保留标签的原始大小写；未设置时标签会转为小写。
      *
-     * @return options object
+     * @return 当前标签索引选项
      */
     TagIndex caseSensitive();
 
     /**
-     * Defines to not index this attribute
+     * 标记该属性不参与索引。
      *
-     * @return options object
+     * @return 当前标签索引选项
      */
     TagIndex noIndex();
 
     /**
-     * Defines whether to keep a suffix trie with all terms which match the suffix.
+     * 为匹配后缀的词条保留后缀 trie 结构。
      *
-     * @return options object
+     * @return 当前标签索引选项
      */
     TagIndex withSuffixTrie();
 
     /**
-     * Defines whether to index an empty value.
+     * 是否索引空字符串标签值。
      *
-     * @return options object
+     * @return 当前标签索引选项
      */
     TagIndex indexEmpty();
 
     /**
-     * Defines to index documents that don't contain this attribute
+     * 索引缺少该属性的文档（视为缺失值参与检索）。
      *
-     * @return options object
+     * @return 当前标签索引选项
      */
     TagIndex indexMissing();
 

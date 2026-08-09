@@ -16,14 +16,17 @@
 package org.redisson.api.search.index;
 
 /**
+ * 可排序字段值的归一化模式。
  *
  * @author Nikita Koksharov
  *
  */
 public enum SortMode {
 
+    /** 对字段值做归一化后再参与排序。 */
     NORMALIZED,
 
+    /** 使用原始字段值排序，不做归一化。 */
     UNNORMALIZED
 
 }
