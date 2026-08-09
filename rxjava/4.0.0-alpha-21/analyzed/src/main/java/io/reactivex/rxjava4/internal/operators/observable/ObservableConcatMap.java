@@ -1,0 +1,672 @@
+/*
+ * Copyright (c) 2016-present, RxJava Contributors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations under the License.
+ */
+
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Observable concatMap：将上游各元素映射为 inner Observable 并顺序串联订阅，前一 inner 完成后再订阅下一 inner，支持 delayErrors 与 fusion。
+===== [OCA 中文解析结束] ===== */
+package io.reactivex.rxjava4.internal.operators.observable;
+
+import java.io.Serial;
+import java.util.Objects;
+import java.util.concurrent.atomic.*;
+
+import io.reactivex.rxjava4.core.*;
+import io.reactivex.rxjava4.disposables.Disposable;
+import io.reactivex.rxjava4.exceptions.Exceptions;
+import io.reactivex.rxjava4.functions.*;
+import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
+import io.reactivex.rxjava4.internal.util.*;
+import io.reactivex.rxjava4.observers.SerializedObserver;
+import io.reactivex.rxjava4.operators.QueueDisposable;
+import io.reactivex.rxjava4.operators.SimpleQueue;
+import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
+import io.reactivex.rxjava4.plugins.RxJavaPlugins;
+
+/* ===== [OCA 中文解析] =====
+class ObservableConcatMap — 意图说明
+
+SourceObserver/InnerObserver 顺序切换 inner Observable。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
+/**
+ * SourceObserver/InnerObserver 顺序切换 inner Observable。
+ */
+public final class ObservableConcatMap<T, U> extends AbstractObservableWithUpstream<T, U> {
+    final Function<? super T, ? extends ObservableSource<? extends U>> mapper;
+    final int bufferSize;
+
+    final ErrorMode delayErrors;
+
+    public ObservableConcatMap(ObservableSource<T> source, Function<? super T, ? extends ObservableSource<? extends U>> mapper,
+            int bufferSize, ErrorMode delayErrors) {
+        super(source);
+        this.mapper = mapper;
+        this.delayErrors = delayErrors;
+        this.bufferSize = Math.max(8, bufferSize);
+    }
+
+    /** 组装内部 Observer 并订阅上游。 */
+
+
+    @Override
+
+
+    public void subscribeActual(Observer<? super U> observer) {
+
+        if (ObservableScalarXMap.tryScalarXMapSubscribe(source, observer, mapper)) {
+            return;
+        }
+
+        if (delayErrors == ErrorMode.IMMEDIATE) {
+            SerializedObserver<U> serial = new SerializedObserver<>(observer);
+            source.subscribe(new SourceObserver<>(serial, mapper, bufferSize));
+        } else {
+            source.subscribe(new ConcatMapDelayErrorObserver<>(observer, mapper, bufferSize, delayErrors == ErrorMode.END));
+        }
+    }
+
+    /** 内部 SourceObserver。 */
+
+
+    static final class SourceObserver<T, U> extends AtomicInteger implements Observer<T>, Disposable {
+
+        @Serial
+        private static final long serialVersionUID = 8828587559905699186L;
+        final Observer<? super U> downstream;
+        final Function<? super T, ? extends ObservableSource<? extends U>> mapper;
+        final InnerObserver<U> inner;
+        final int bufferSize;
+
+        SimpleQueue<T> queue;
+
+        Disposable upstream;
+
+        volatile boolean active;
+
+        volatile boolean disposed;
+
+        volatile boolean done;
+
+        int fusionMode;
+
+        SourceObserver(Observer<? super U> actual,
+                                Function<? super T, ? extends ObservableSource<? extends U>> mapper, int bufferSize) {
+            this.downstream = actual;
+            this.mapper = mapper;
+            this.bufferSize = bufferSize;
+            this.inner = new InnerObserver<>(actual, this);
+        }
+
+        /** 校验 Disposable 并初始化内部状态。 */
+
+
+        @Override
+
+
+        public void onSubscribe(Disposable d) {
+            if (DisposableHelper.validate(this.upstream, d)) {
+                this.upstream = d;
+                if (d instanceof QueueDisposable) {
+                    @SuppressWarnings("unchecked")
+                    QueueDisposable<T> qd = (QueueDisposable<T>) d;
+
+                    int m = qd.requestFusion(QueueDisposable.ANY);
+                    if (m == QueueDisposable.SYNC) {
+                        fusionMode = m;
+                        queue = qd;
+                        done = true;
+
+                        downstream.onSubscribe(this);
+
+                        drain();
+                        return;
+                    }
+
+                    if (m == QueueDisposable.ASYNC) {
+                        fusionMode = m;
+                        queue = qd;
+
+                        downstream.onSubscribe(this);
+
+                        return;
+                    }
+                }
+
+                queue = new SpscLinkedArrayQueue<>(bufferSize);
+
+                downstream.onSubscribe(this);
+            }
+        }
+
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
+        @Override
+
+
+        public void onNext(T t) {
+            if (done) {
+                return;
+            }
+            if (fusionMode == QueueDisposable.NONE) {
+                queue.offer(t);
+            }
+            drain();
+        }
+
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
+        @Override
+
+
+        public void onError(Throwable t) {
+            if (done) {
+                RxJavaPlugins.onError(t);
+                return;
+            }
+            done = true;
+            dispose();
+            downstream.onError(t);
+        }
+
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
+        @Override
+
+
+        public void onComplete() {
+            if (done) {
+                return;
+            }
+            done = true;
+            drain();
+        }
+
+        /** inner 完成：更新状态并继续 drain/切换。 */
+
+
+        void innerComplete() {
+            active = false;
+            drain();
+        }
+
+        /** 返回是否已 dispose。 */
+
+
+        @Override
+
+
+        public boolean isDisposed() {
+            return disposed;
+        }
+
+        /** dispose 连接/inner 并清理状态。 */
+
+
+        @Override
+
+
+        public void dispose() {
+            disposed = true;
+            inner.dispose();
+            upstream.dispose();
+            if (getAndIncrement() == 0) {
+                queue.clear();
+            }
+        }
+
+        /** drain 循环：从队列取元素向下游发射。 */
+
+
+        void drain() {
+            if (getAndIncrement() != 0) {
+                return;
+            }
+
+            for (;;) {
+                if (disposed) {
+                    queue.clear();
+                    return;
+                }
+                if (!active) {
+
+                    boolean d = done;
+
+                    T t;
+
+                    try {
+                        t = queue.poll();
+                    } catch (Throwable ex) {
+                        Exceptions.throwIfFatal(ex);
+                        dispose();
+                        queue.clear();
+                        downstream.onError(ex);
+                        return;
+                    }
+
+                    boolean empty = t == null;
+
+                    if (d && empty) {
+                        disposed = true;
+                        downstream.onComplete();
+                        return;
+                    }
+
+                    if (!empty) {
+                        ObservableSource<? extends U> o;
+
+                        try {
+                            o = Objects.requireNonNull(mapper.apply(t), "The mapper returned a null ObservableSource");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            dispose();
+                            queue.clear();
+                            downstream.onError(ex);
+                            return;
+                        }
+
+                        active = true;
+                        o.subscribe(inner);
+                    }
+                }
+
+                if (decrementAndGet() == 0) {
+                    break;
+                }
+            }
+        }
+
+        /** 内部 InnerObserver。 */
+
+
+        static final class InnerObserver<U> extends AtomicReference<Disposable> implements Observer<U> {
+
+            @Serial
+            private static final long serialVersionUID = -7449079488798789337L;
+
+            final Observer<? super U> downstream;
+            final SourceObserver<?, ?> parent;
+
+            InnerObserver(Observer<? super U> actual, SourceObserver<?, ?> parent) {
+                this.downstream = actual;
+                this.parent = parent;
+            }
+
+            /** 校验 Disposable 并初始化内部状态。 */
+
+
+            @Override
+
+
+            public void onSubscribe(Disposable d) {
+                DisposableHelper.replace(this, d);
+            }
+
+            /** 处理上游 onNext 并转发或缓存。 */
+
+
+            @Override
+
+
+            public void onNext(U t) {
+                downstream.onNext(t);
+            }
+
+            /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
+            @Override
+
+
+            public void onError(Throwable t) {
+                parent.dispose();
+                downstream.onError(t);
+            }
+
+            /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
+            @Override
+
+
+            public void onComplete() {
+                parent.innerComplete();
+            }
+
+            void dispose() {
+                DisposableHelper.dispose(this);
+            }
+        }
+    }
+
+    /** 内部 ConcatMapDelayErrorObserver。 */
+
+
+    static final class ConcatMapDelayErrorObserver<T, R>
+    extends AtomicInteger
+    implements Observer<T>, Disposable {
+
+        @Serial
+        private static final long serialVersionUID = -6951100001833242599L;
+
+        final Observer<? super R> downstream;
+
+        final Function<? super T, ? extends ObservableSource<? extends R>> mapper;
+
+        final int bufferSize;
+
+        final AtomicThrowable errors;
+
+        final DelayErrorInnerObserver<R> observer;
+
+        final boolean tillTheEnd;
+
+        SimpleQueue<T> queue;
+
+        Disposable upstream;
+
+        volatile boolean active;
+
+        volatile boolean done;
+
+        volatile boolean cancelled;
+
+        int sourceMode;
+
+        ConcatMapDelayErrorObserver(Observer<? super R> actual,
+                Function<? super T, ? extends ObservableSource<? extends R>> mapper, int bufferSize,
+                        boolean tillTheEnd) {
+            this.downstream = actual;
+            this.mapper = mapper;
+            this.bufferSize = bufferSize;
+            this.tillTheEnd = tillTheEnd;
+            this.errors = new AtomicThrowable();
+            this.observer = new DelayErrorInnerObserver<>(actual, this);
+        }
+
+        /** 校验 Disposable 并初始化内部状态。 */
+
+
+        @Override
+
+
+        public void onSubscribe(Disposable d) {
+            if (DisposableHelper.validate(this.upstream, d)) {
+                this.upstream = d;
+
+                if (d instanceof QueueDisposable) {
+                    @SuppressWarnings("unchecked")
+                    QueueDisposable<T> qd = (QueueDisposable<T>) d;
+
+                    int m = qd.requestFusion(QueueDisposable.ANY);
+                    if (m == QueueDisposable.SYNC) {
+                        sourceMode = m;
+                        queue = qd;
+                        done = true;
+
+                        downstream.onSubscribe(this);
+
+                        drain();
+                        return;
+                    }
+                    if (m == QueueDisposable.ASYNC) {
+                        sourceMode = m;
+                        queue = qd;
+
+                        downstream.onSubscribe(this);
+
+                        return;
+                    }
+                }
+
+                queue = new SpscLinkedArrayQueue<>(bufferSize);
+
+                downstream.onSubscribe(this);
+            }
+        }
+
+        /** 处理上游 onNext 并转发或缓存。 */
+
+
+        @Override
+
+
+        public void onNext(T value) {
+            if (sourceMode == QueueDisposable.NONE) {
+                queue.offer(value);
+            }
+            drain();
+        }
+
+        /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
+        @Override
+
+
+        public void onError(Throwable e) {
+            if (errors.tryAddThrowableOrReport(e)) {
+                done = true;
+                drain();
+            }
+        }
+
+        /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
+        @Override
+
+
+        public void onComplete() {
+            done = true;
+            drain();
+        }
+
+        /** 返回是否已 dispose。 */
+
+
+        @Override
+
+
+        public boolean isDisposed() {
+            return cancelled;
+        }
+
+        /** dispose 连接/inner 并清理状态。 */
+
+
+        @Override
+
+
+        public void dispose() {
+            cancelled = true;
+            upstream.dispose();
+            observer.dispose();
+            errors.tryTerminateAndReport();
+        }
+
+        @SuppressWarnings("unchecked")
+        /** drain 循环：从队列取元素向下游发射。 */
+
+        void drain() {
+            if (getAndIncrement() != 0) {
+                return;
+            }
+
+            Observer<? super R> downstream = this.downstream;
+            SimpleQueue<T> queue = this.queue;
+            AtomicThrowable errors = this.errors;
+
+            for (;;) {
+
+                if (!active) {
+
+                    if (cancelled) {
+                        queue.clear();
+                        return;
+                    }
+
+                    if (!tillTheEnd) {
+                        Throwable ex = errors.get();
+                        if (ex != null) {
+                            queue.clear();
+                            cancelled = true;
+                            errors.tryTerminateConsumer(downstream);
+                            return;
+                        }
+                    }
+
+                    boolean d = done;
+
+                    T v;
+
+                    try {
+                        v = queue.poll();
+                    } catch (Throwable ex) {
+                        Exceptions.throwIfFatal(ex);
+                        cancelled = true;
+                        this.upstream.dispose();
+                        errors.tryAddThrowableOrReport(ex);
+                        errors.tryTerminateConsumer(downstream);
+                        return;
+                    }
+
+                    boolean empty = v == null;
+
+                    if (d && empty) {
+                        cancelled = true;
+                        errors.tryTerminateConsumer(downstream);
+                        return;
+                    }
+
+                    if (!empty) {
+
+                        ObservableSource<? extends R> o;
+
+                        try {
+                            o = Objects.requireNonNull(mapper.apply(v), "The mapper returned a null ObservableSource");
+                        } catch (Throwable ex) {
+                            Exceptions.throwIfFatal(ex);
+                            cancelled = true;
+                            this.upstream.dispose();
+                            queue.clear();
+                            errors.tryAddThrowableOrReport(ex);
+                            errors.tryTerminateConsumer(downstream);
+                            return;
+                        }
+
+                        if (o instanceof Supplier) {
+                            R w;
+
+                            try {
+                                w = ((Supplier<R>)o).get();
+                            } catch (Throwable ex) {
+                                Exceptions.throwIfFatal(ex);
+                                errors.tryAddThrowableOrReport(ex);
+                                continue;
+                            }
+
+                            if (w != null && !cancelled) {
+                                downstream.onNext(w);
+                            }
+                            continue;
+                        } else {
+                            active = true;
+                            o.subscribe(observer);
+                        }
+                    }
+                }
+
+                if (decrementAndGet() == 0) {
+                    break;
+                }
+            }
+        }
+
+        /** 内部 DelayErrorInnerObserver。 */
+
+
+        static final class DelayErrorInnerObserver<R> extends AtomicReference<Disposable> implements Observer<R> {
+
+            @Serial
+            private static final long serialVersionUID = 2620149119579502636L;
+
+            final Observer<? super R> downstream;
+
+            final ConcatMapDelayErrorObserver<?, R> parent;
+
+            DelayErrorInnerObserver(Observer<? super R> actual, ConcatMapDelayErrorObserver<?, R> parent) {
+                this.downstream = actual;
+                this.parent = parent;
+            }
+
+            /** 校验 Disposable 并初始化内部状态。 */
+
+
+            @Override
+
+
+            public void onSubscribe(Disposable d) {
+                DisposableHelper.replace(this, d);
+            }
+
+            /** 处理上游 onNext 并转发或缓存。 */
+
+
+            @Override
+
+
+            public void onNext(R value) {
+                downstream.onNext(value);
+            }
+
+            /** 处理上游/onError 并按策略终止或延迟错误。 */
+
+
+            @Override
+
+
+            public void onError(Throwable e) {
+                ConcatMapDelayErrorObserver<?, R> p = parent;
+                if (p.errors.tryAddThrowableOrReport(e)) {
+                    if (!p.tillTheEnd) {
+                        p.upstream.dispose();
+                    }
+                    p.active = false;
+                    p.drain();
+                }
+            }
+
+            /** 上游完成：清理资源并向下游发送 onComplete。 */
+
+
+            @Override
+
+
+            public void onComplete() {
+                ConcatMapDelayErrorObserver<?, R> p = parent;
+                p.active = false;
+                p.drain();
+            }
+
+            void dispose() {
+                DisposableHelper.dispose(this);
+            }
+        }
+    }
+}
