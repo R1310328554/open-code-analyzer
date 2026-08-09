@@ -18,10 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>xgroup-createconsumer</b> event
- * published by Valkey or Redis when a Stream Consumer is created.
+ * 监听 Valkey 或 Redis 发布的流<b>创建消费者</b>（xgroup-createconsumer）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Et letters
+ * 当 Stream 消费组内新建消费者时触发；需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code t} 字母。
  *
  * @author Nikita Koksharov
  */
@@ -29,9 +28,9 @@ import org.redisson.api.ObjectListener;
 public interface StreamCreateConsumerListener extends ObjectListener {
 
     /**
-     * Invoked when a Stream Consumer is created
+     * 当 Stream 消费组内创建新消费者时触发。
      *
-     * @param name object name
+     * @param name 对象名称（键名）
      */
     void onCreateConsumer(String name);
 

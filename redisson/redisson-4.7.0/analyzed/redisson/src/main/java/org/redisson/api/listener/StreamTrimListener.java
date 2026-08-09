@@ -18,10 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>ltrim</b> event
- * published by Valkey or Redis when trim operation is executed for Stream.
+ * 监听 Valkey 或 Redis 发布的流<b>裁剪</b>（xtrim）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Et letters
+ * 当 Stream 执行裁剪操作以限制长度时触发；需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code t} 字母。
  *
  * @author Nikita Koksharov
  *
@@ -30,9 +29,9 @@ import org.redisson.api.ObjectListener;
 public interface StreamTrimListener extends ObjectListener {
 
     /**
-     * Invoked when trim operation is executed for Stream
+     * 当 Stream 执行 xtrim 裁剪操作时触发。
      *
-     * @param name - name of object
+     * @param name 对象名称（键名）
      */
     void onTrim(String name);
 

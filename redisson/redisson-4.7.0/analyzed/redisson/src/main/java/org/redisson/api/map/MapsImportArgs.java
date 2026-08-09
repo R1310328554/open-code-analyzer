@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Arguments object for bulk import of Map objects sharing the same field names.
+ * 共享相同字段名的 Map 对象批量导入参数接口。
  *
  * @author Nikita Koksharov
  *
@@ -28,12 +28,12 @@ import java.util.List;
 public interface MapsImportArgs<K> {
 
     /**
-     * Defines field names shared by all imported Map objects.
+     * 定义所有待导入 Map 对象共用的字段名（变参形式）。
      * <p>
-     * Values passed to the import object are matched to these field names by position.
+     * 导入时传入的值按位置与这些字段名一一对应。
      *
-     * @param fields field names
-     * @return arguments object
+     * @param fields 字段名
+     * @return 参数对象
      */
     @SafeVarargs
     static <K> MapsImportArgs<K> fields(K... fields) {
@@ -41,24 +41,24 @@ public interface MapsImportArgs<K> {
     }
 
     /**
-     * Defines field names shared by all imported Map objects.
+     * 定义所有待导入 Map 对象共用的字段名（List 形式）。
      * <p>
-     * Values passed to the import object are matched to these field names by position.
+     * 导入时传入的值按位置与这些字段名一一对应。
      *
-     * @param fields field names
-     * @return arguments object
+     * @param fields 字段名列表
+     * @return 参数对象
      */
     static <K> MapsImportArgs<K> fields(List<K> fields) {
         return new MapsImportParams<>(fields);
     }
 
     /**
-     * Defines the amount of buffered Map objects which triggers an automatic flush.
+     * 设置缓冲 Map 对象数量达到该阈值时自动 flush 写入 Redis。
      * <p>
-     * Default value is <code>500</code>.
+     * 默认值为 {@code 500}。
      *
-     * @param batchSize amount of Map objects
-     * @return arguments object
+     * @param batchSize 缓冲 Map 对象数量
+     * @return 参数对象
      */
     MapsImportArgs<K> batchSize(int batchSize);
 

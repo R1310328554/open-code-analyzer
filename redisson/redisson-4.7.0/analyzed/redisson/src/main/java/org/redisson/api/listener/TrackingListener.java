@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>client tracking</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的<b>客户端追踪</b>（client tracking）失效事件。
  * <p>
- * Requires Redis 6.0+ or Valkey any version
+ * 当服务端检测到被追踪的键发生变更并通知客户端时触发；需要 Redis 6.0+ 或任意版本 Valkey。
  *
  * @author Nikita Koksharov
  *
@@ -29,9 +29,9 @@ import org.redisson.api.ObjectListener;
 public interface TrackingListener extends ObjectListener {
 
     /**
-     * Invoked when a Redisson object was changed
+     * 当被追踪的 Redisson 对象在服务端发生变更时触发。
      *
-     * @param name object name
+     * @param name 对象名称（键名）
      */
     void onChange(String name);
 

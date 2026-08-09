@@ -18,10 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>srem</b> event
- * published by Valkey or Redis when an element removed from Stream.
+ * 监听 Valkey 或 Redis 发布的流<b>删除条目</b>（xdel）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Et letters
+ * 当 Stream 中移除元素时触发；需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code t} 字母。
  *
  * @author Nikita Koksharov
  */
@@ -29,9 +28,9 @@ import org.redisson.api.ObjectListener;
 public interface StreamRemoveListener extends ObjectListener {
 
     /**
-     * Invoked when an element removed from Stream
+     * 当条目从 {@link org.redisson.api.RStream} 对象中移除时触发。
      *
-     * @param name object name
+     * @param name 对象名称（键名）
      */
     void onRemove(String name);
 

@@ -18,6 +18,7 @@ package org.redisson.api.map;
 import java.util.List;
 
 /**
+ * {@link MapsImportArgs} 的默认实现，保存共享字段名与批量 flush 阈值。
  *
  * @author Nikita Koksharov
  *
@@ -35,6 +36,7 @@ public final class MapsImportParams<K> implements MapsImportArgs<K> {
         this.fields = fields;
     }
 
+    /** 设置自动 flush 的缓冲 Map 数量阈值。 */
     @Override
     public MapsImportArgs<K> batchSize(int batchSize) {
         if (batchSize <= 0) {
@@ -44,10 +46,12 @@ public final class MapsImportParams<K> implements MapsImportArgs<K> {
         return this;
     }
 
+    /** 返回所有导入 Map 共用的字段名列表。 */
     public List<K> getFields() {
         return fields;
     }
 
+    /** 返回触发自动 flush 的缓冲 Map 数量阈值。 */
     public int getBatchSize() {
         return batchSize;
     }

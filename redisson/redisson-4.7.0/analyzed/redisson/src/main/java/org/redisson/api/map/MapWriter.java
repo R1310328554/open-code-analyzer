@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Map writer used for write-through operations.
+ * Map 写入器，用于写穿透（write-through）模式下将变更同步到外部数据源。
  * 
  * @author Nikita Koksharov
  *
@@ -28,8 +28,10 @@ import java.util.Map;
  */
 public interface MapWriter<K, V> {
 
+    /** 将一批键值对写入外部数据源。 */
     void write(Map<K, V> map);
     
+    /** 从外部数据源删除指定键对应的条目。 */
     void delete(Collection<K> keys);
     
 }

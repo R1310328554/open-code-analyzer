@@ -18,7 +18,7 @@ package org.redisson.api.map;
 import org.redisson.api.RMap;
 
 /**
- * Map loader used for read-through operations or during {@link RMap#loadAll} execution.
+ * Map 加载器，用于读穿透（read-through）或在执行 {@link RMap#loadAll} 时从外部数据源加载数据。
  * 
  * @author Nikita Koksharov
  *
@@ -28,17 +28,17 @@ import org.redisson.api.RMap;
 public interface MapLoader<K, V> {
 
     /**
-     * Loads map value by key.
+     * 按键从外部数据源加载 Map 条目值。
      * 
      * @param key - map key
-     * @return value or <code>null</code> if value doesn't exists
+     * @return 对应的值；若不存在则返回 {@code null}
      */
     V load(K key);
     
     /**
-     * Loads all keys.
+     * 加载全部键集合。
      * 
-     * @return Iterable object. It's helpful if all keys don't fit in memory.
+     * @return 可迭代的键集合；当键数量过大无法一次性装入内存时尤为有用
      */
     Iterable<K> loadAllKeys();
     

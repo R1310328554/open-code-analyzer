@@ -21,7 +21,7 @@ import org.redisson.api.RMap;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Map loader used for read-through operations or during {@link RMap#loadAll} execution.
+ * 异步 Map 加载器，用于读穿透（read-through）或在执行 {@link RMap#loadAll} 时从外部数据源加载数据。
  * 
  * @author Nikita Koksharov
  *
@@ -31,17 +31,17 @@ import java.util.concurrent.CompletionStage;
 public interface MapLoaderAsync<K, V> {
 
     /**
-     * Loads map value by key.
+     * 异步按键从外部数据源加载 Map 条目值。
      * 
      * @param key - map key
-     * @return value or <code>null</code> if value doesn't exists
+     * @return 异步结果；若不存在则完成值为 {@code null}
      */
     CompletionStage<V> load(K key);
     
     /**
-     * Loads all keys.
+     * 异步加载全部键的迭代器。
      * 
-     * @return Iterable object. It's helpful if all keys don't fit in memory.
+     * @return 异步键迭代器；当键数量过大无法一次性装入内存时尤为有用
      */
     AsyncIterator<K> loadAllKeys();
     

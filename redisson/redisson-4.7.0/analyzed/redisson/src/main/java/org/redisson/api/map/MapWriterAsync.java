@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Asynchronous Map writer used for write-through operations.
+ * 异步 Map 写入器，用于写穿透（write-through）模式下将变更异步同步到外部数据源。
  * 
  * @author Nikita Koksharov
  *
@@ -29,8 +29,10 @@ import java.util.concurrent.CompletionStage;
  */
 public interface MapWriterAsync<K, V> {
 
+    /** 异步将一批键值对写入外部数据源。 */
     CompletionStage<Void> write(Map<K, V> map);
 
+    /** 异步从外部数据源删除指定键对应的条目。 */
     CompletionStage<Void> delete(Collection<K> keys);
     
 }
