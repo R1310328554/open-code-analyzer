@@ -46,50 +46,48 @@ import org.springframework.util.Assert;
 import org.springframework.util.ErrorHandler;
 
 /**
- * A simple implementation of Spring's {@link TaskScheduler} interface, using
- * a single scheduler thread and executing every scheduled task in an individual
- * separate thread. This is an attractive choice with virtual threads on JDK 21,
- * expecting common usage with {@link #setVirtualThreads setVirtualThreads(true)}.
+ * Spring {@link TaskScheduler} 接口的简单实现，
+ * 使用单个调度线程并在各自独立线程中执行每个定时任务。
+ * 在 JDK 21 虚拟线程场景下是颇具吸引力的选择，
+ * 预期常见用法为 {@link #setVirtualThreads setVirtualThreads(true)}。
  *
- * <p><b>NOTE: Scheduling with a fixed delay enforces execution on a single
- * scheduler thread, in order to provide traditional fixed-delay semantics!</b>
- * Prefer the use of fixed rates or cron triggers instead which are a better fit
- * with this thread-per-task scheduler variant.
+ * <p><b>注意：固定延迟调度强制在单个调度线程上执行，
+ * 以提供传统固定延迟语义！</b>
+ * 更推荐使用固定速率或 cron 触发器，
+ * 它们更适合这种每任务一线程的调度器变体。
  *
- * <p>Supports a graceful shutdown through {@link #setTaskTerminationTimeout},
- * at the expense of task tracking overhead per execution thread at runtime.
- * Supports limiting concurrent threads through {@link #setConcurrencyLimit}.
- * By default, the number of concurrent task executions is unlimited.
- * This allows for dynamic concurrency of scheduled task executions, in contrast
- * to {@link ThreadPoolTaskScheduler} which requires a fixed pool size.
+ * <p>通过 {@link #setTaskTerminationTimeout} 支持优雅关闭，
+ * 代价是运行时每个执行线程的任务跟踪开销。
+ * 通过 {@link #setConcurrencyLimit} 支持限制并发线程数。
+ * 默认并发任务执行数无限制。
+ * 这允许定时任务执行的动态并发，
+ * 与需要固定池大小的 {@link ThreadPoolTaskScheduler} 形成对比。
  *
- * <p><b>NOTE: This implementation does not reuse threads!</b> Consider a
- * thread-pooling TaskScheduler implementation instead, in particular for
- * scheduling a large number of short-lived tasks. Alternatively, on JDK 21,
- * consider setting {@link #setVirtualThreads} to {@code true}.
+ * <p><b>注意：本实现不重用线程！</b>请考虑基于线程池的 TaskScheduler 实现，
+ * 尤其用于调度大量短生命周期任务。或在 JDK 21 上
+ * 考虑将 {@link #setVirtualThreads} 设为 {@code true}。
  *
- * <p>Extends {@link SimpleAsyncTaskExecutor} and can serve as a fully capable
- * replacement for it, for example, as a single shared instance serving as a
- * {@link org.springframework.core.task.TaskExecutor} as well as a {@link TaskScheduler}.
- * This is generally not the case with other executor/scheduler implementations
- * which tend to have specific constraints for the scheduler thread pool,
- * requiring a separate thread pool for general executor purposes in practice.
+ * <p>继承 {@link SimpleAsyncTaskExecutor}，可完全替代它，
+ * 例如作为同时充当 {@link org.springframework.core.task.TaskExecutor}
+ * 与 {@link TaskScheduler} 的单一共享实例。
+ * 其他执行器/调度器实现通常对调度线程池有特定约束，
+ * 实践中往往需要单独线程池用于一般执行目的，本类一般并非如此。
  *
- * <p><b>NOTE: This scheduler variant does not track the actual completion of tasks
- * but rather just the hand-off to an execution thread.</b> As a consequence,
- * a {@link ScheduledFuture} handle (for example, from {@link #schedule(Runnable, Instant)})
- * represents that hand-off rather than the actual completion of the provided task
- * (or series of repeated tasks). Also, this scheduler participates in lifecycle
- * management to a limited degree only, stopping trigger firing and fixed-delay
- * task execution but not stopping the execution of handed-off tasks.
+ * <p><b>注意：本调度器变体不跟踪任务的实际完成，
+ * 而仅跟踪移交给执行线程。</b>因此
+ * {@link ScheduledFuture} 句柄（例如来自 {@link #schedule(Runnable, Instant)}）
+ * 表示该移交而非所提供任务（或一系列重复任务）的实际完成。
+ * 此外，本调度器仅有限参与生命周期管理，
+ * 停止触发器触发与固定延迟任务执行，但不停止已移交任务的执行。
  *
- * <p>As an alternative to the built-in thread-per-task capability, this scheduler
- * can also be configured with a separate target executor for scheduled task
- * execution through {@link #setTargetTaskExecutor}: for example, pointing to a shared
- * {@link ThreadPoolTaskExecutor} bean. This is still rather different from a
- * {@link ThreadPoolTaskScheduler} setup since it always uses a single scheduler
- * thread while dynamically dispatching to the target thread pool which may have
- * a dynamic core/max pool size range, participating in a shared concurrency limit.
+ * <p>作为内置每任务一线程能力的替代，
+ * 本调度器也可通过 {@link #setTargetTaskExecutor} 配置
+ * 用于定时任务执行的独立目标执行器：例如指向共享
+ * {@link ThreadPoolTaskExecutor} Bean。这与
+ * {@link ThreadPoolTaskScheduler} 配置仍相当不同，
+ * 因其始终使用单个调度线程，
+ * 同时动态分派到可能具有动态 core/max 池大小范围、
+ * 参与共享并发限制的目标线程池。
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -104,7 +102,7 @@ public class SimpleAsyncTaskScheduler extends SimpleAsyncTaskExecutor implements
 		ApplicationContextAware, SmartLifecycle, ApplicationListener<ContextClosedEvent> {
 
 	/**
-	 * The default phase for an executor {@link SmartLifecycle}: {@code Integer.MAX_VALUE / 2}.
+	 * 执行器 {@link SmartLifecycle} 的默认阶段：{@code Integer.MAX_VALUE / 2}。
 	 * @since 6.2
 	 * @see #getPhase()
 	 * @see ExecutorConfigurationSupport#DEFAULT_PHASE
@@ -134,7 +132,7 @@ public class SimpleAsyncTaskScheduler extends SimpleAsyncTaskExecutor implements
 
 
 	/**
-	 * Provide an {@link ErrorHandler} strategy.
+	 * 提供 {@link ErrorHandler} 策略。
 	 * @since 6.2
 	 */
 	public void setErrorHandler(ErrorHandler errorHandler) {
@@ -143,8 +141,8 @@ public class SimpleAsyncTaskScheduler extends SimpleAsyncTaskExecutor implements
 	}
 
 	/**
-	 * Set the clock to use for scheduling purposes.
-	 * <p>The default clock is the system clock for the default time zone.
+	 * 设置用于调度目的的时钟。
+	 * <p>默认时钟为默认时区的系统时钟。
 	 * @see Clock#systemDefaultZone()
 	 */
 	public void setClock(Clock clock) {
@@ -158,8 +156,8 @@ public class SimpleAsyncTaskScheduler extends SimpleAsyncTaskExecutor implements
 	}
 
 	/**
-	 * Specify the lifecycle phase for pausing and resuming this executor.
-	 * The default is {@link #DEFAULT_PHASE}.
+	 * 指定暂停与恢复本执行器的生命周期阶段。
+	 * 默认为 {@link #DEFAULT_PHASE}。
 	 * @see SmartLifecycle#getPhase()
 	 */
 	public void setPhase(int phase) {
@@ -167,7 +165,7 @@ public class SimpleAsyncTaskScheduler extends SimpleAsyncTaskExecutor implements
 	}
 
 	/**
-	 * Return the lifecycle phase for pausing and resuming this executor.
+	 * 返回暂停与恢复本执行器的生命周期阶段。
 	 * @see #setPhase
 	 */
 	@Override
@@ -176,12 +174,11 @@ public class SimpleAsyncTaskScheduler extends SimpleAsyncTaskExecutor implements
 	}
 
 	/**
-	 * Specify a custom target {@link Executor} to delegate to for
-	 * the individual execution of scheduled tasks. This can for example
-	 * be set to a separate thread pool for executing scheduled tasks,
-	 * whereas this scheduler keeps using its single scheduler thread.
-	 * <p>If not set, the regular {@link SimpleAsyncTaskExecutor}
-	 * arrangements kicks in with a new thread per task.
+	 * 指定用于定时任务各自执行时委托的自定义目标 {@link Executor}。
+	 * 例如可设为执行定时任务的独立线程池，
+	 * 而本调度器仍使用其单个调度线程。
+	 * <p>若未设置，则启用常规 {@link SimpleAsyncTaskExecutor}
+	 * 安排，每个任务新建线程。
 	 */
 	public void setTargetTaskExecutor(Executor targetTaskExecutor) {
 		this.targetTaskExecutor = (targetTaskExecutor == this ? null : targetTaskExecutor);

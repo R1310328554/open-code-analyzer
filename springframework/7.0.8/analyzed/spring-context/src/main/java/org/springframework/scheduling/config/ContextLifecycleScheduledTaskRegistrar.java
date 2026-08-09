@@ -19,8 +19,8 @@ package org.springframework.scheduling.config;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 
 /**
- * {@link ScheduledTaskRegistrar} subclass which redirects the actual scheduling
- * of tasks to the {@link #afterSingletonsInstantiated()} callback (as of 4.1.2).
+ * 将实际任务调度重定向到 {@link #afterSingletonsInstantiated()} 回调的
+ * {@link ScheduledTaskRegistrar} 子类（自 4.1.2 起）。
  *
  * @author Juergen Hoeller
  * @since 3.2.1

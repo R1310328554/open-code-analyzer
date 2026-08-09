@@ -19,7 +19,7 @@ package org.springframework.scheduling.config;
 import java.time.Duration;
 
 /**
- * Specialization of {@link IntervalTask} for fixed-rate semantics.
+ * 用于固定速率语义的 {@link IntervalTask} 特化。
  *
  * @author Juergen Hoeller
  * @author Arjen Poutsma
@@ -30,11 +30,11 @@ import java.time.Duration;
 public class FixedRateTask extends IntervalTask {
 
 	/**
-	 * Create a new {@code FixedRateTask}.
-	 * @param runnable the underlying task to execute
-	 * @param interval how often in milliseconds the task should be executed
-	 * @param initialDelay the initial delay before first execution of the task
-	 * @deprecated as of 6.0, in favor on {@link #FixedRateTask(Runnable, Duration, Duration)}
+	 * 创建新的 {@code FixedRateTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param interval 任务执行间隔（毫秒）
+	 * @param initialDelay 任务首次执行前的初始延迟
+	 * @deprecated 自 6.0 起，请改用 {@link #FixedRateTask(Runnable, Duration, Duration)}
 	 */
 	@Deprecated(since = "6.0")
 	public FixedRateTask(Runnable runnable, long interval, long initialDelay) {
@@ -42,10 +42,10 @@ public class FixedRateTask extends IntervalTask {
 	}
 
 	/**
-	 * Create a new {@code FixedRateTask}.
-	 * @param runnable the underlying task to execute
-	 * @param interval how often the task should be executed
-	 * @param initialDelay the initial delay before first execution of the task
+	 * 创建新的 {@code FixedRateTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param interval 任务执行间隔
+	 * @param initialDelay 任务首次执行前的初始延迟
 	 * @since 6.0
 	 */
 	public FixedRateTask(Runnable runnable, Duration interval, Duration initialDelay) {

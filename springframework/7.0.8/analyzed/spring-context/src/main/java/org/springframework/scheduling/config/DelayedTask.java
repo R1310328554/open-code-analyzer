@@ -21,7 +21,7 @@ import java.time.Duration;
 import org.springframework.util.Assert;
 
 /**
- * {@link Task} implementation defining a {@code Runnable} with an initial delay.
+ * 定义带初始延迟的 {@code Runnable} 的 {@link Task} 实现。
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -32,9 +32,9 @@ public class DelayedTask extends Task {
 
 
 	/**
-	 * Create a new {@code DelayedTask}.
-	 * @param runnable the underlying task to execute
-	 * @param initialDelay the initial delay before execution of the task
+	 * 创建新的 {@code DelayedTask}。
+	 * @param runnable 要执行的底层任务
+	 * @param initialDelay 任务执行前的初始延迟
 	 */
 	public DelayedTask(Runnable runnable, Duration initialDelay) {
 		super(runnable);
@@ -43,7 +43,7 @@ public class DelayedTask extends Task {
 	}
 
 	/**
-	 * Copy constructor.
+	 * 拷贝构造函数。
 	 */
 	DelayedTask(DelayedTask task) {
 		super(task.getRunnable());
@@ -53,7 +53,7 @@ public class DelayedTask extends Task {
 
 
 	/**
-	 * Return the initial delay before first execution of the task.
+	 * 返回任务首次执行前的初始延迟。
 	 */
 	public Duration getInitialDelayDuration() {
 		return this.initialDelay;

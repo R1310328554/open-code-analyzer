@@ -26,8 +26,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.context.SmartLifecycle;
 
 /**
- * An internal delegate for common {@link ExecutorService} lifecycle management
- * with pause/resume support.
+ * 带暂停/恢复支持的通用 {@link ExecutorService} 生命周期管理内部委托。
  *
  * @author Juergen Hoeller
  * @since 6.1

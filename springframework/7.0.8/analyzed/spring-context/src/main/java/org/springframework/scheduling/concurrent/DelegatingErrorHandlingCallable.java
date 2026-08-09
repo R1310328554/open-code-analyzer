@@ -26,11 +26,12 @@ import org.springframework.util.ErrorHandler;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * {@link Callable} adapter for an {@link ErrorHandler}.
+ * 面向 {@link ErrorHandler} 的 {@link Callable} 适配器，
+ * 在调用失败时将异常委托给错误处理器。
  *
  * @author Juergen Hoeller
  * @since 6.2
- * @param <V> the value type
+ * @param <V> 值类型
  */
 class DelegatingErrorHandlingCallable<V> implements Callable<V> {
 
