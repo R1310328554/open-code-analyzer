@@ -23,9 +23,11 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import com.alibaba.csp.sentinel.Constants;
 
 /**
+ * 设置 Sentinel 全局开关 {@link Constants#ON}；参数 {@code value} 为 {@code true|false}。
+ *
  * @author youji.zj
  */
-@CommandMapping(name = "setSwitch", desc = "set sentinel switch, accept param: value={true|false}")
+@CommandMapping(name = "setSwitch", desc = "设置 Sentinel 开关，参数 value={true|false}")
 public class OnOffSetCommandHandler implements CommandHandler<String> {
 
     @Override

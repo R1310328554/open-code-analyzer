@@ -20,6 +20,9 @@ import com.alibaba.csp.sentinel.transport.HeartbeatSender;
 import com.alibaba.csp.sentinel.spi.SpiLoader;
 
 /**
+ * {@link HeartbeatSender} 单例提供者：类加载时通过 {@link SpiLoader}
+ * 解析优先级最高的心跳发送实现。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
@@ -31,6 +34,7 @@ public final class HeartbeatSenderProvider {
         resolveInstance();
     }
 
+    /** 从 SPI 加载并缓存 {@link HeartbeatSender} 实例。 */
     private static void resolveInstance() {
         HeartbeatSender resolved = SpiLoader.of(HeartbeatSender.class).loadHighestPriorityInstance();
         if (resolved == null) {
@@ -43,7 +47,7 @@ public final class HeartbeatSenderProvider {
     }
 
     /**
-     * Get resolved {@link HeartbeatSender} instance.
+     * 获取已解析的 {@link HeartbeatSender} 实例。
      *
      * @return resolved {@code HeartbeatSender} instance
      */

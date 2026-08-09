@@ -16,28 +16,28 @@
 package com.alibaba.csp.sentinel.transport;
 
 /**
+ * 传输层命令中心 SPI：负责注册命令、启动 HTTP/Netty 等服务端并优雅停止。
+ *
  * @author Eric Zhao
  */
 public interface CommandCenter {
 
     /**
-     * Prepare and init for the command center (e.g. register commands).
-     * This will be executed before starting.
+     * 启动前初始化（如注册 {@link com.alibaba.csp.sentinel.command.CommandHandler}）。
      *
      * @throws Exception if error occurs
      */
     void beforeStart() throws Exception;
 
     /**
-     * Start the command center in the background.
-     * This method should NOT block.
+     * 在后台启动命令中心，本方法不得阻塞调用线程。
      *
      * @throws Exception if error occurs
      */
     void start() throws Exception;
 
     /**
-     * Stop the command center and do cleanup.
+     * 停止命令中心并释放资源。
      *
      * @throws Exception if error occurs
      */

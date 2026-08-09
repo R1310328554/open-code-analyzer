@@ -22,10 +22,12 @@ import com.alibaba.csp.sentinel.command.CommandResponse;
 import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 
 /**
+ * 返回当前 Sentinel 版本号 {@link Constants#SENTINEL_VERSION}。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  */
-@CommandMapping(name = "version", desc = "get sentinel version")
+@CommandMapping(name = "version", desc = "获取 Sentinel 版本号")
 public class VersionCommandHandler implements CommandHandler<String> {
 
     @Override

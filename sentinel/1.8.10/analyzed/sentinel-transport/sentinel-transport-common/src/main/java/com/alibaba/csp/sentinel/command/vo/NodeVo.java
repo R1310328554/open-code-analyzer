@@ -22,7 +22,8 @@ import com.alibaba.csp.sentinel.node.DefaultNode;
 import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 
 /**
- * This class is view object of {@link DefaultNode} or {@link ClusterNode}.
+ * {@link DefaultNode} 或 {@link ClusterNode} 的指标视图对象，供 Dashboard 展示 QPS、RT、线程数等。
+ * 树形结构通过 {@link #parentId} 关联父子节点。
  *
  * @author leyou
  */
@@ -47,8 +48,8 @@ public class NodeVo {
     private Long timestamp;
 
     /**
-     * {@link DefaultNode} holds statistics of every node in the invoke tree.
-     * We use parentId to hold the tree structure.
+     * 从调用树 {@link DefaultNode} 构建 {@link NodeVo}，并分配随机 {@link #id}。
+     * {@link DefaultNode} 保存调用链各节点统计；{@code parentId} 用于还原树结构。
      *
      * @param node     the DefaultNode to be presented.
      * @param parentId random generated parent node id, may be a random UUID
@@ -78,7 +79,8 @@ public class NodeVo {
     }
 
     /**
-     * {@link ClusterNode} holds total statistics of the same resource name.
+     * 从 {@link ResourceWrapper} 与 {@link ClusterNode} 构建视图对象。
+     * {@link ClusterNode} 聚合同名资源的总体统计。
      *
      * @param name resource name.
      * @param node the ClusterNode to be presented.

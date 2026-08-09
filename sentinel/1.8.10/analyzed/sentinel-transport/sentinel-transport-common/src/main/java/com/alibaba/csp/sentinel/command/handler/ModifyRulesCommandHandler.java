@@ -40,24 +40,26 @@ import com.alibaba.fastjson.JSONArray;
 import static com.alibaba.csp.sentinel.transport.util.WritableDataSourceRegistry.*;
 
 /**
+ * 动态修改流控/降级/授权/系统规则：参数 {@code type} 指定规则类型，
+ * {@code data} 为 URL 编码的 JSON 规则数组；成功时同步写入已注册 {@link WritableDataSource}。
+ *
  * @author jialiang.linjl
  * @author Eric Zhao
  */
-@CommandMapping(name = "setRules", desc = "modify the rules, accept param: type={ruleType}&data={ruleJson}")
+@CommandMapping(name = "setRules", desc = "修改规则，参数 type={ruleType}&data={ruleJson}")
 public class ModifyRulesCommandHandler implements CommandHandler<String> {
     private static final int FASTJSON_MINIMAL_VER = 0x01020C00;
 
     @Override
     public CommandResponse<String> handle(CommandRequest request) {
-        // XXX from 1.7.2, force to fail when fastjson is older than 1.2.12
-        // We may need a better solution on this.
+        // 自 1.7.2 起：fastjson 低于 1.2.12 时拒绝写入规则
         if (VersionUtil.fromVersionString(JSON.VERSION) < FASTJSON_MINIMAL_VER) {
-            // fastjson too old
+            // fastjson 版本过低
             return CommandResponse.ofFailure(new RuntimeException("The \"fastjson-" + JSON.VERSION
                     + "\" introduced in application is too old, you need fastjson-1.2.12 at least."));
         }
         String type = request.getParam("type");
-        // rule data in get parameter
+        // 规则 JSON 来自 GET 参数 data
         String data = request.getParam("data");
         if (StringUtil.isNotEmpty(data)) {
             try {
@@ -105,12 +107,12 @@ public class ModifyRulesCommandHandler implements CommandHandler<String> {
     }
 
     /**
-     * Write target value to given data source.
+     * 将规则写入已注册的 {@link WritableDataSource}。
      *
      * @param dataSource writable data source
      * @param value target value to save
      * @param <T> value type
-     * @return true if write successful or data source is empty; false if error occurs
+     * @return 写入成功或未注册数据源时 true；异常时 false
      */
     private <T> boolean writeToDataSource(WritableDataSource<T> dataSource, T value) {
         if (dataSource != null) {
@@ -124,6 +126,7 @@ public class ModifyRulesCommandHandler implements CommandHandler<String> {
         return true;
     }
 
+    /** 规则已加载但持久化数据源写入失败时的响应文本。 */
     private static final String WRITE_DS_FAILURE_MSG = "partial success (write data source failed)";
     private static final String FLOW_RULE_TYPE = "flow";
     private static final String DEGRADE_RULE_TYPE = "degrade";

@@ -25,10 +25,12 @@ import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 import com.alibaba.fastjson.JSONObject;
 
 /**
+ * 查询集群模式状态：当前 mode、最近变更时间，以及客户端/服务端 SPI 是否可用。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
-@CommandMapping(name = "getClusterMode", desc = "get cluster mode status")
+@CommandMapping(name = "getClusterMode", desc = "获取集群模式状态")
 public class FetchClusterModeCommandHandler implements CommandHandler<String> {
 
     @Override
@@ -41,10 +43,12 @@ public class FetchClusterModeCommandHandler implements CommandHandler<String> {
         return CommandResponse.ofSuccess(res.toJSONString());
     }
 
+    /** 集群 Token 客户端 SPI 是否已加载。 */
     private boolean isClusterClientSpiAvailable() {
         return TokenClientProvider.getClient() != null;
     }
 
+    /** 嵌入式集群 Token 服务端 SPI 是否已加载。 */
     private boolean isClusterServerSpiAvailable() {
         return EmbeddedClusterTokenServerProvider.getServer() != null;
     }

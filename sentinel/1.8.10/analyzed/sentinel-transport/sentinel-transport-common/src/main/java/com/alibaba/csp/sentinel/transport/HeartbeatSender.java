@@ -16,8 +16,7 @@
 package com.alibaba.csp.sentinel.transport;
 
 /**
- * The heartbeat sender which is responsible for sending heartbeat to remote dashboard
- * periodically per {@code interval}.
+ * 心跳发送 SPI：按 {@link #intervalMs()} 周期向 Sentinel Dashboard 上报机器存活信息。
  *
  * @author leyou
  * @author Eric Zhao
@@ -25,9 +24,7 @@ package com.alibaba.csp.sentinel.transport;
 public interface HeartbeatSender {
 
     /**
-     * Send heartbeat to Sentinel Dashboard. Each invocation of this method will send
-     * heartbeat once. Sentinel core is responsible for invoking this method
-     * at every {@link #intervalMs()} interval.
+     * 向 Dashboard 发送一次心跳；核心模块按 {@link #intervalMs()} 间隔调用。
      *
      * @return whether heartbeat is successfully send.
      * @throws Exception if error occurs
@@ -35,8 +32,7 @@ public interface HeartbeatSender {
     boolean sendHeartbeat() throws Exception;
 
     /**
-     * Default interval in milliseconds of the sender. It would take effect only when
-     * the heartbeat interval is not configured in Sentinel config property.
+     * 默认心跳间隔（毫秒）；仅当配置项未指定 {@code csp.sentinel.heartbeat.interval.ms} 时生效。
      *
      * @return default interval of the sender in milliseconds
      */

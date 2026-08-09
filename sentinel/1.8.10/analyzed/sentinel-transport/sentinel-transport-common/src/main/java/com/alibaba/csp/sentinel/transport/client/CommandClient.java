@@ -19,14 +19,14 @@ import com.alibaba.csp.sentinel.command.CommandRequest;
 import com.alibaba.csp.sentinel.command.CommandResponse;
 
 /**
- * Basic interface for clients that sending commands.
+ * 命令客户端 SPI：向远程 Sentinel 命令端口发送 {@link CommandRequest} 并接收 {@link CommandResponse}。
  *
  * @author Eric Zhao
  */
 public interface CommandClient {
 
     /**
-     * Send a command to target destination.
+     * 向目标主机命令端口发送一次命令请求。
      *
      * @param host    target host
      * @param port    target port

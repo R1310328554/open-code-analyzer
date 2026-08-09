@@ -25,10 +25,13 @@ import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
+ * 切换集群运行模式：参数 {@code mode} 为 0（客户端）或 1（服务端）；
+ * 切换前校验对应 SPI 是否可用。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
-@CommandMapping(name = "setClusterMode", desc = "set cluster mode, accept param: mode={0|1} 0:client mode 1:server mode")
+@CommandMapping(name = "setClusterMode", desc = "设置集群模式，参数 mode={0|1}，0 客户端 1 服务端")
 public class ModifyClusterModeCommandHandler implements CommandHandler<String> {
 
     @Override

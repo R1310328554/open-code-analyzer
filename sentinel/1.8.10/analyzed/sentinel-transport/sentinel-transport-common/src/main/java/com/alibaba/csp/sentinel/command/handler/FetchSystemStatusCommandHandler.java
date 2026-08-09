@@ -26,9 +26,11 @@ import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 import com.alibaba.fastjson.JSONObject;
 
 /**
+ * 查询入口节点系统级实时指标（成功 QPS、通过 QPS、阻断 QPS、平均 RT、并发线程数），返回 JSON。
+ *
  * @author jialiang.linjl
  */
-@CommandMapping(name = "systemStatus", desc = "get system status")
+@CommandMapping(name = "systemStatus", desc = "获取系统状态指标")
 public class FetchSystemStatusCommandHandler implements CommandHandler<String> {
 
     @Override

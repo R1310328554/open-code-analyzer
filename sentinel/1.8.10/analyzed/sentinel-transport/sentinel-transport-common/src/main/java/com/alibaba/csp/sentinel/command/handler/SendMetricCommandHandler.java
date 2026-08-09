@@ -33,22 +33,24 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
- * Retrieve and aggregate {@link MetricNode} metrics.
+ * 从本地指标日志检索并聚合 {@link MetricNode}；支持时间窗口、行数上限与资源名过滤。
+ * 未指定 {@code identity} 时会附加当前 CPU 使用率与系统负载快照。
  *
  * @author leyou
  * @author Eric Zhao
  */
-@CommandMapping(name = "metric", desc = "get and aggregate metrics, accept param: "
-    + "startTime={startTime}&endTime={endTime}&maxLines={maxLines}&identify={resourceName}")
+@CommandMapping(name = "metric", desc = "检索聚合指标，参数 startTime/endTime/maxLines/identify")
 public class SendMetricCommandHandler implements CommandHandler<String> {
 
+    /** 本地指标文件搜索器，懒加载。 */
     private volatile MetricSearcher searcher;
 
+    /** 延迟初始化 {@link MetricSearcher} 的锁。 */
     private final Object lock = new Object();
 
     @Override
     public CommandResponse<String> handle(CommandRequest request) {
-        // Note: not thread-safe.
+        // 懒加载 MetricSearcher，非严格线程安全
         if (searcher == null) {
             synchronized (lock) {
                 String appName = SentinelConfig.getAppName();
@@ -74,7 +76,7 @@ public class SendMetricCommandHandler implements CommandHandler<String> {
         }
         List<MetricNode> list;
         try {
-            // Find by end time if set.
+            // 指定 endTime 时按闭区间检索
             if (StringUtil.isNotBlank(endTimeStr)) {
                 long endTime = Long.parseLong(endTimeStr);
                 list = searcher.findByTimeAndResource(startTime, endTime, identity);
@@ -102,7 +104,7 @@ public class SendMetricCommandHandler implements CommandHandler<String> {
     }
 
     /**
-     * add current cpu usage and load to the metric list.
+     * 将当前 CPU 使用率与系统平均负载追加到指标列表。
      *
      * @param list metric list, should not be null
      */
@@ -121,10 +123,9 @@ public class SendMetricCommandHandler implements CommandHandler<String> {
     }
 
     /**
-     * transfer the value to a MetricNode, the value will multiply 10000 then truncate
-     * to long value, and as the {@link MetricNode#passQps}.
+     * 将浮点值乘以 10000 后写入 {@link MetricNode#passQps}，用于承载 CPU/负载等非 QPS 指标。
      * <p>
-     * This is an eclectic scheme before we have a standard metric format.
+     * 在统一指标格式落地前的临时编码方案。
      * </p>
      *
      * @param value    value to save.

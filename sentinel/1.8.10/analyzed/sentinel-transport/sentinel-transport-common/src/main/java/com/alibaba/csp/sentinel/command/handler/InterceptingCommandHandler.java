@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * intercept specified command handler
+ * 命令处理器装饰器：在委托 {@link CommandHandler} 执行前后串联
+ * {@link CommandHandlerInterceptor} 拦截链。
  *
  * @author icodening
  * @date 2022.03.03
@@ -34,6 +35,10 @@ public class InterceptingCommandHandler<R> implements CommandHandler<R> {
 
     private final List<CommandHandlerInterceptor<R>> commandHandlerInterceptors;
 
+    /**
+     * @param delegate 实际命令处理器
+     * @param commandHandlerInterceptors 按顺序执行的拦截器列表
+     */
     public InterceptingCommandHandler(CommandHandler<R> delegate, List<CommandHandlerInterceptor<R>> commandHandlerInterceptors) {
         AssertUtil.notNull(delegate, "delegate cannot be null");
         AssertUtil.notNull(commandHandlerInterceptors, "commandHandlerInterceptors cannot be null");
@@ -46,6 +51,7 @@ public class InterceptingCommandHandler<R> implements CommandHandler<R> {
         return new InterceptingRequestExecution<>(commandHandlerInterceptors.iterator(), delegate::handle).execute(request);
     }
 
+    /** 递归驱动拦截器链，末尾调用真实 {@code handle}。 */
     private static class InterceptingRequestExecution<R> implements CommandRequestExecution<R> {
 
         private final Iterator<CommandHandlerInterceptor<R>> iterator;

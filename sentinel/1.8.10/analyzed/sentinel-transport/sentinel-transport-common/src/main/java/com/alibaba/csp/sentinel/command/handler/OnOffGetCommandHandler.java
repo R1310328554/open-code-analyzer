@@ -22,9 +22,11 @@ import com.alibaba.csp.sentinel.command.CommandResponse;
 import com.alibaba.csp.sentinel.command.annotation.CommandMapping;
 
 /**
+ * 查询 Sentinel 全局开关 {@link Constants#ON} 当前值。
+ *
  * @author youji.zj
  */
-@CommandMapping(name = "getSwitch", desc = "get sentinel switch status")
+@CommandMapping(name = "getSwitch", desc = "获取 Sentinel 全局开关状态")
 public class OnOffGetCommandHandler implements CommandHandler<String> {
 
     @Override

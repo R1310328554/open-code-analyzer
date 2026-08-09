@@ -25,9 +25,11 @@ import com.alibaba.csp.sentinel.node.EntranceNode;
 import com.alibaba.csp.sentinel.node.Node;
 
 /**
+ * 以树形文本输出调用链各节点实时指标；参数 {@code id} 可指定根资源名（精确或模糊匹配）。
+ *
  * @author qinan.qn
  */
-@CommandMapping(name = "tree", desc = "get metrics in tree mode, use id to specify detailed tree root")
+@CommandMapping(name = "tree", desc = "树形输出节点指标，id 指定子树根资源")
 public class FetchTreeCommandHandler implements CommandHandler<String> {
 
     @Override
@@ -67,6 +69,7 @@ public class FetchTreeCommandHandler implements CommandHandler<String> {
         return CommandResponse.ofSuccess(sb.toString());
     }
 
+    /** 递归遍历调用树并以缩进文本格式化各节点 QPS/RT 等指标。 */
     private void visitTree(int level, DefaultNode node, /*@NonNull*/ StringBuilder sb) {
         for (int i = 0; i < level; ++i) {
             sb.append("-");
