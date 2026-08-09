@@ -29,8 +29,8 @@ import io.netty.util.internal.PlatformDependent;
 import java.nio.ByteOrder;
 
 /**
- * Utility class for {@link ByteBuf} that encodes and decodes to and from
- * <a href="https://en.wikipedia.org/wiki/Base64">Base64</a> notation.
+ * {@link ByteBuf} 的 Base64 编解码工具类，支持
+ * <a href="https://en.wikipedia.org/wiki/Base64">Base64</a> 多种方言。
  * <p>
  * The encoding and decoding algorithm in this class has been derived from
  * <a href="http://iharder.sourceforge.net/current/java/base64/">Robert Harder's Public Domain
@@ -38,18 +38,20 @@ import java.nio.ByteOrder;
  */
 public final class Base64 {
 
-    /** Maximum line length (76) of Base64 output. */
+    /** Base64 输出最大行宽（76 字符）。 */
     private static final int MAX_LINE_LENGTH = 76;
 
-    /** The equals sign (=) as a byte. */
+    /** 填充符 {@code =} 的字节值。 */
     private static final byte EQUALS_SIGN = (byte) '=';
 
-    /** The new line character (\n) as a byte. */
+    /** 换行符 {@code \n} 的字节值。 */
     private static final byte NEW_LINE = (byte) '\n';
 
-    private static final byte WHITE_SPACE_ENC = -5; // Indicates white space in encoding
+    /** 解码表中标记空白字符的特殊值。 */
+    private static final byte WHITE_SPACE_ENC = -5;
 
-    private static final byte EQUALS_SIGN_ENC = -1; // Indicates equals sign in encoding
+    /** 解码表中标记等号填充的特殊值。 */
+    private static final byte EQUALS_SIGN_ENC = -1;
 
     private static byte[] alphabet(Base64Dialect dialect) {
         return ObjectUtil.checkNotNull(dialect, "dialect").alphabet;
@@ -63,6 +65,7 @@ public final class Base64 {
         return ObjectUtil.checkNotNull(dialect, "dialect").breakLinesByDefault;
     }
 
+    /** 使用 {@link Base64Dialect#STANDARD} 编码整个可读区域。 */
     public static ByteBuf encode(ByteBuf src) {
         return encode(src, Base64Dialect.STANDARD);
     }
@@ -135,7 +138,7 @@ public final class Base64 {
 
         int capacity = encodedBufferSize(len, breakLines);
         ByteBuf destBuf = allocator.buffer(capacity).order(src.order());
-        // Ensure the destination buffer is flat, if possible, and avoid leak detection checks on every write:
+        // 尽量使用扁平目标缓冲，减少每次写入的泄漏检测开销
         ByteBuf dest = destBuf.unwrap() == null || !destBuf.isContiguous() ? destBuf :
                 destBuf.hasArray() ?
                         Unpooled.wrappedBuffer(destBuf.array(), destBuf.arrayOffset(), capacity).order(src.order()) :
@@ -162,7 +165,7 @@ public final class Base64 {
             e += encode3to4(src, d + off, len - d, dest, e, alphabet, addPadding);
         } // end if: some padding needed
 
-        // Remove last byte if it's a newline
+        // 若末尾多余换行则去掉
         if (e > 1 && dest.getByte(e - 1) == NEW_LINE) {
             e--;
         }
@@ -334,6 +337,7 @@ public final class Base64 {
         }
     }
 
+    /** 使用 {@link Base64Dialect#STANDARD} 解码整个可读区域。 */
     public static ByteBuf decode(ByteBuf src) {
         return decode(src, Base64Dialect.STANDARD);
     }
@@ -384,7 +388,7 @@ public final class Base64 {
             try {
                 src.forEachByte(off, len, this);
 
-                // Padding missing, process additional bytes
+                // 流结束时处理未满四字节的尾部
                 if (b4Posn == 1) {
                     throw new IllegalArgumentException(
                             "Invalid Base64 input, single remaining character implies incorrect length or padding");
@@ -416,7 +420,7 @@ public final class Base64 {
                             outBuffPosn += decode4to3(b4, dest, outBuffPosn, decodabet);
                             b4Posn = 0;
 
-                            // If that was the equals sign, break out of 'for' loop
+                            // 遇到填充等号则结束扫描
                             return value != EQUALS_SIGN;
                         }
                     }
@@ -500,7 +504,7 @@ public final class Base64 {
         }
     }
 
+    /** 工具类不可实例化。 */
     private Base64() {
-        // Unused
     }
 }

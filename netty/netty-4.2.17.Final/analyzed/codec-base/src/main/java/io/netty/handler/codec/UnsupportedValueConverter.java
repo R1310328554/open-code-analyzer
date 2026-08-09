@@ -16,13 +16,15 @@
 package io.netty.handler.codec;
 
 /**
- * {@link UnsupportedOperationException} will be thrown from all {@link ValueConverter} methods.
+ * 占位 {@link ValueConverter}：所有转换方法均抛出 {@link UnsupportedOperationException}。
  */
 public final class UnsupportedValueConverter<V> implements ValueConverter<V> {
+    /** 单例实例。 */
     @SuppressWarnings("rawtypes")
     private static final UnsupportedValueConverter INSTANCE = new UnsupportedValueConverter();
     private UnsupportedValueConverter() { }
 
+    /** 返回共享的 {@link UnsupportedValueConverter} 单例。 */
     @SuppressWarnings("unchecked")
     public static <V> UnsupportedValueConverter<V> instance() {
         return (UnsupportedValueConverter<V>) INSTANCE;

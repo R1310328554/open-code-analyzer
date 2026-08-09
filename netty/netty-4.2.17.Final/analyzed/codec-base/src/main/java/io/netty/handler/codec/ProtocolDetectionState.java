@@ -15,22 +15,14 @@
  */
 package io.netty.handler.codec;
 
-/**
- * The state of the current detection.
- */
+/** 协议探测的当前状态。 */
 public enum ProtocolDetectionState {
-    /**
-     * Need more data to detect the protocol.
-     */
+    /** 数据不足，需继续读取。 */
     NEEDS_MORE_DATA,
 
-    /**
-     * The data was invalid.
-     */
+    /** 数据无效，无法识别协议。 */
     INVALID,
 
-    /**
-     * Protocol was detected,
-     */
+    /** 已成功识别协议。 */
     DETECTED
 }

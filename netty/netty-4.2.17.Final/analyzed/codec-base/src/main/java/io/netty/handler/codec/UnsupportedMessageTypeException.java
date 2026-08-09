@@ -15,13 +15,12 @@
  */
 package io.netty.handler.codec;
 
-/**
- * Thrown if an unsupported message is received by an codec.
- */
+/** 编解码器收到不支持的消息类型时抛出。 */
 public class UnsupportedMessageTypeException extends CodecException {
 
     private static final long serialVersionUID = 2799598826487038726L;
 
+    /** @param message 实际消息；@param expectedTypes 期望的类型列表 */
     public UnsupportedMessageTypeException(
             Object message, Class<?>... expectedTypes) {
         super(message(
@@ -42,6 +41,7 @@ public class UnsupportedMessageTypeException extends CodecException {
         super(cause);
     }
 
+    /** 构造“实际类型 (expected: …)”格式的异常消息。 */
     private static String message(
             String actualType, Class<?>... expectedTypes) {
         StringBuilder buf = new StringBuilder(actualType);

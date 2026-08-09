@@ -34,14 +34,18 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * Special {@link ByteBuf} implementation which is used by the {@link ReplayingDecoder}
+ * {@link ReplayingDecoder} 使用的特殊 {@link ByteBuf}：可读字节不足时抛出 REPLAY 信号触发重试。
  */
 final class ReplayingDecoderByteBuf extends ByteBuf {
 
+    /** 与 {@link ReplayingDecoder#REPLAY} 相同的重放信号。 */
     private static final Signal REPLAY = ReplayingDecoder.REPLAY;
 
+    /** 底层累积缓冲。 */
     private ByteBuf buffer;
+    /** 为 true 时表示通道已关闭，不再虚拟“无限可读”。 */
     private boolean terminated;
+    /** 字节序切换时的包装缓冲。 */
     private SwappedByteBuf swapped;
 
     @SuppressWarnings("checkstyle:StaticFinalBuffer")  // Unpooled.EMPTY_BUFFER is not writeable or readable.
@@ -57,16 +61,19 @@ final class ReplayingDecoderByteBuf extends ByteBuf {
         setCumulation(buffer);
     }
 
+    /** 绑定新的累积缓冲。 */
     void setCumulation(ByteBuf buffer) {
         this.buffer = buffer;
     }
 
+    /** 标记解码结束，恢复真实可读字节数。 */
     void terminate() {
         terminated = true;
     }
 
     @Override
     public int capacity() {
+        // 未 terminate 时假装容量极大，使 decode 无需手动检查 readableBytes
         if (terminated) {
             return buffer.capacity();
         } else {
@@ -497,6 +504,7 @@ final class ReplayingDecoderByteBuf extends ByteBuf {
 
     @Override
     public int readableBytes() {
+        // 重放模式下对外报告“剩余可读”为极大值
         if (terminated) {
             return buffer.readableBytes();
         } else {
@@ -1088,12 +1096,14 @@ final class ReplayingDecoderByteBuf extends ByteBuf {
         throw reject();
     }
 
+    /** 随机访问越界则抛 REPLAY，由 ReplayingDecoder 回退并重试。 */
     private void checkIndex(int index, int length) {
         if (index + length > buffer.writerIndex()) {
             throw REPLAY;
         }
     }
 
+    /** 顺序读取字节不足则抛 REPLAY。 */
     private void checkReadableBytes(int readableBytes) {
         if (buffer.readableBytes() < readableBytes) {
             throw REPLAY;
@@ -1147,6 +1157,7 @@ final class ReplayingDecoderByteBuf extends ByteBuf {
         throw reject();
     }
 
+    /** 禁止会改变缓冲状态或破坏重放语义的操作。 */
     private static UnsupportedOperationException reject() {
         return new UnsupportedOperationException("not a replayable operation");
     }

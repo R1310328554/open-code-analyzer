@@ -28,10 +28,10 @@ import io.netty.util.internal.ObjectUtil;
 import java.util.List;
 
 /**
- * Decodes a Base64-encoded {@link ByteBuf} or US-ASCII {@link String}
- * into a {@link ByteBuf}.  Please note that this decoder must be used
- * with a proper {@link ByteToMessageDecoder} such as {@link DelimiterBasedFrameDecoder}
- * if you are using a stream-based transport such as TCP/IP.  A typical decoder
+ * 将 Base64 编码的 {@link ByteBuf}（或 US-ASCII {@link String}）解码为 {@link ByteBuf}。
+ * <p>
+ * 在 TCP 等流式传输中须配合 {@link DelimiterBasedFrameDecoder} 等
+ * {@link ByteToMessageDecoder} 先切分完整 Base64 帧。  A typical decoder
  * setup for TCP/IP would be:
  * <pre>
  * {@link ChannelPipeline} pipeline = ...;
@@ -47,12 +47,15 @@ import java.util.List;
 @Sharable
 public class Base64Decoder extends MessageToMessageDecoder<ByteBuf> {
 
+    /** 使用的 Base64 字母表方言。 */
     private final Base64Dialect dialect;
 
+    /** 使用 {@link Base64Dialect#STANDARD} 创建解码器。 */
     public Base64Decoder() {
         this(Base64Dialect.STANDARD);
     }
 
+    /** @param dialect Base64 编码方言 */
     public Base64Decoder(Base64Dialect dialect) {
         super(ByteBuf.class);
         this.dialect = ObjectUtil.checkNotNull(dialect, "dialect");

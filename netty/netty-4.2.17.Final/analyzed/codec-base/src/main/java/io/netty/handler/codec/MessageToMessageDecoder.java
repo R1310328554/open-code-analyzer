@@ -26,7 +26,7 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
- * {@link ChannelInboundHandlerAdapter} which decodes from one message to an other message.
+ * 将一种消息解码为另一种消息的 {@link ChannelInboundHandlerAdapter}。
  *
  *
  * For example here is an implementation which decodes a {@link String} to an {@link Integer} which represent
@@ -44,36 +44,36 @@ import java.util.List;
  *     }
  * </pre>
  *
- * Be aware that you need to call {@link ReferenceCounted#retain()} on messages that are just passed through if they
- * are of type {@link ReferenceCounted}. This is needed as the {@link MessageToMessageDecoder} will call
- * {@link ReferenceCounted#release()} on decoded messages.
- *
+ * <p>
+ * 透传 {@link ReferenceCounted} 消息时须 {@link ReferenceCounted#retain()}，
+ * 因解码后会 {@link ReferenceCounted#release()} 原消息。
  */
 public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAdapter {
 
+    /** 入站消息类型匹配器。 */
     private final TypeParameterMatcher matcher;
+    /** 本轮 {@link #channelRead} 是否已调用 decode。 */
     private boolean decodeCalled;
+    /** 本轮是否已向下游 fire 至少一条消息。 */
     private boolean messageProduced;
 
-    /**
-     * Create a new instance which will try to detect the types to match out of the type parameter of the class.
-     */
+    /** 从泛型参数推断待匹配入站消息类型。 */
     protected MessageToMessageDecoder() {
         matcher = TypeParameterMatcher.find(this, MessageToMessageDecoder.class, "I");
     }
 
     /**
-     * Create a new instance
+     * 创建新实例。
      *
-     * @param inboundMessageType    The type of messages to match and so decode
+     * @param inboundMessageType    待匹配并解码的入站消息类型
      */
     protected MessageToMessageDecoder(Class<? extends I> inboundMessageType) {
         matcher = TypeParameterMatcher.get(inboundMessageType);
     }
 
     /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be passed to the next
-     * {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
+     * 返回 {@code true} 表示由本解码器处理；否则交给 {@link ChannelPipeline} 中下一个
+     * {@link ChannelInboundHandler}。
      */
     public boolean acceptInboundMessage(Object msg) throws Exception {
         return matcher.match(msg);
@@ -90,6 +90,7 @@ public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAd
                 try {
                     decode(ctx, cast, out);
                 } finally {
+                    // 解码完成后释放入站消息引用
                     ReferenceCountUtil.release(cast);
                 }
             } else {
@@ -115,7 +116,7 @@ public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAd
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
         if (!isSharable()) {
-            // Only use local vars if this decoder is not sharable as otherwise this is not safe to do.
+            // 非 sharable 时才用局部状态触发 read，避免共享实例竞态
             if (decodeCalled && !messageProduced && !ctx.channel().config().isAutoRead()) {
                 ctx.read();
             }
@@ -126,13 +127,12 @@ public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAd
     }
 
     /**
-     * Decode from one message to an other. This method will be called for each written message that can be handled
-     * by this decoder.
+     * 将入站消息解码为零条或多条下游消息。
      *
-     * @param ctx           the {@link ChannelHandlerContext} which this {@link MessageToMessageDecoder} belongs to
-     * @param msg           the message to decode to an other one
-     * @param out           the {@link List} to which decoded messages should be added
-     * @throws Exception    is thrown if an error occurs
+     * @param ctx           本 {@link MessageToMessageDecoder} 所属的 {@link ChannelHandlerContext}
+     * @param msg           待解码消息
+     * @param out           解码结果写入此 {@link List}
+     * @throws Exception    解码出错时抛出
      */
     protected abstract void decode(ChannelHandlerContext ctx, I msg, List<Object> out) throws Exception;
 }

@@ -24,9 +24,9 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
- * A Codec for on-the-fly encoding/decoding of message.
- *
- * This can be thought of as a combination of {@link MessageToMessageDecoder} and {@link MessageToMessageEncoder}.
+ * 消息到消息的双向编解码器，可在运行时对消息做即时转换。
+ * <p>
+ * 可视为 {@link MessageToMessageDecoder} 与 {@link MessageToMessageEncoder} 的组合。
  *
  * Here is an example of a {@link MessageToMessageCodec} which just decode from {@link Integer} to {@link Long}
  * and encode from {@link Long} to {@link Integer}.
@@ -48,12 +48,13 @@ import java.util.List;
  *     }
  * </pre>
  *
- * Be aware that you need to call {@link ReferenceCounted#retain()} on messages that are just passed through if they
- * are of type {@link ReferenceCounted}. This is needed as the {@link MessageToMessageCodec} will call
- * {@link ReferenceCounted#release()} on encoded / decoded messages.
+ * <p>
+ * 若透传 {@link ReferenceCounted} 消息，须先 {@link ReferenceCounted#retain()}，
+ * 因本类会对已编/解码消息调用 {@link ReferenceCounted#release()}。
  */
 public abstract class MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN> extends ChannelDuplexHandler {
 
+    /** 委托入站解码逻辑的内部解码器。 */
     private final MessageToMessageDecoder<Object> decoder = new MessageToMessageDecoder<Object>(Object.class) {
 
         @Override
@@ -72,6 +73,7 @@ public abstract class MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN> extends Cha
             return MessageToMessageCodec.this.isSharable();
         }
     };
+    /** 委托出站编码逻辑的内部编码器。 */
     private final MessageToMessageEncoder<Object> encoder = new MessageToMessageEncoder<Object>(Object.class) {
 
         @Override
@@ -91,23 +93,22 @@ public abstract class MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN> extends Cha
         }
     };
 
+    /** 入站消息类型匹配器。 */
     private final TypeParameterMatcher inboundMsgMatcher;
+    /** 出站消息类型匹配器。 */
     private final TypeParameterMatcher outboundMsgMatcher;
 
-    /**
-     * Create a new instance which will try to detect the types to decode and encode out of the type parameter
-     * of the class.
-     */
+    /** 从泛型参数推断入站/出站消息类型并创建实例。 */
     protected MessageToMessageCodec() {
         inboundMsgMatcher = TypeParameterMatcher.find(this, MessageToMessageCodec.class, "INBOUND_IN");
         outboundMsgMatcher = TypeParameterMatcher.find(this, MessageToMessageCodec.class, "OUTBOUND_IN");
     }
 
     /**
-     * Create a new instance.
+     * 创建新实例。
      *
-     * @param inboundMessageType    The type of messages to decode
-     * @param outboundMessageType   The type of messages to encode
+     * @param inboundMessageType    待解码的入站消息类型
+     * @param outboundMessageType   待编码的出站消息类型
      */
     protected MessageToMessageCodec(
             Class<? extends INBOUND_IN> inboundMessageType, Class<? extends OUTBOUND_IN> outboundMessageType) {
@@ -131,32 +132,28 @@ public abstract class MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN> extends Cha
     }
 
     /**
-     * Returns {@code true} if and only if the specified message can be decoded by this codec.
+     * 判断指定消息是否可由本 codec 解码。
      *
-     * @param msg the message
+     * @param msg 待判断的消息
      */
     public boolean acceptInboundMessage(Object msg) throws Exception {
         return inboundMsgMatcher.match(msg);
     }
 
     /**
-     * Returns {@code true} if and only if the specified message can be encoded by this codec.
+     * 判断指定消息是否可由本 codec 编码。
      *
-     * @param msg the message
+     * @param msg 待判断的消息
      */
     public boolean acceptOutboundMessage(Object msg) throws Exception {
         return outboundMsgMatcher.match(msg);
     }
 
-    /**
-     * @see MessageToMessageEncoder#encode(ChannelHandlerContext, Object, List)
-     */
+    /** @see MessageToMessageEncoder#encode(ChannelHandlerContext, Object, List) 子类实现出站编码 */
     protected abstract void encode(ChannelHandlerContext ctx, OUTBOUND_IN msg, List<Object> out)
             throws Exception;
 
-    /**
-     * @see MessageToMessageDecoder#decode(ChannelHandlerContext, Object, List)
-     */
+    /** @see MessageToMessageDecoder#decode(ChannelHandlerContext, Object, List) 子类实现入站解码 */
     protected abstract void decode(ChannelHandlerContext ctx, INBOUND_IN msg, List<Object> out)
             throws Exception;
 }

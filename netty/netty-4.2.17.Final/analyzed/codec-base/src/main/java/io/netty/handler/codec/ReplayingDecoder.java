@@ -26,8 +26,7 @@ import io.netty.util.internal.StringUtil;
 import java.util.List;
 
 /**
- * A specialized variation of {@link ByteToMessageDecoder} which enables implementation
- * of a non-blocking decoder in the blocking I/O paradigm.
+ * {@link ByteToMessageDecoder} 的特化变体：在阻塞 I/O 编程模型下实现“非阻塞式”解码体验。
  * <p>
  * The biggest difference between {@link ReplayingDecoder} and
  * {@link ByteToMessageDecoder} is that {@link ReplayingDecoder} allows you to
@@ -71,7 +70,7 @@ import java.util.List;
  * }
  * </pre>
  *
- * <h3>How does this work?</h3>
+ * <h3>工作原理</h3>
  * <p>
  * {@link ReplayingDecoder} passes a specialized {@link ByteBuf}
  * implementation which throws an {@link Error} of certain type when there's not
@@ -90,7 +89,7 @@ import java.util.List;
  * {@link Error} instance to avoid the overhead of creating a new {@link Error}
  * and filling its stack trace for every throw.
  *
- * <h3>Limitations</h3>
+ * <h3>使用限制</h3>
  * <p>
  * At the cost of the simplicity, {@link ReplayingDecoder} enforces you a few
  * limitations:
@@ -146,7 +145,7 @@ import java.util.List;
  *     </li>
  * </ul>
  *
- * <h3>Improving the performance</h3>
+ * <h3>性能优化</h3>
  * <p>
  * Fortunately, the performance of a complex decoder implementation can be
  * improved significantly with the {@code checkpoint()} method.  The
@@ -227,7 +226,7 @@ import java.util.List;
  * }
  * </pre>
  *
- * <h3>Replacing a decoder with another decoder in a pipeline</h3>
+ * <h3>在 pipeline 中替换解码器</h3>
  * <p>
  * If you are going to write a protocol multiplexer, you will probably want to
  * replace a {@link ReplayingDecoder} (protocol detector) with another
@@ -261,60 +260,47 @@ import java.util.List;
  *         ctx.pipeline().remove(this);
  *     }
  * </pre>
- * @param <S>
- *        the state type which is usually an {@link Enum}; use {@link Void} if state management is
- *        unused
+ * @param <S> 解码器状态类型，通常为 {@link Enum}；不使用状态机时用 {@link Void}
  */
 public abstract class ReplayingDecoder<S> extends ByteToMessageDecoder {
 
+    /** 数据不足时由 {@link ReplayingDecoderByteBuf} 抛出的重放信号。 */
     static final Signal REPLAY = Signal.valueOf(ReplayingDecoder.class, "REPLAY");
 
+    /** 包装累积缓冲的可重放 {@link ByteBuf}。 */
     private final ReplayingDecoderByteBuf replayable = new ReplayingDecoderByteBuf();
+    /** 当前解码状态（可选状态机）。 */
     private S state;
+    /** 累积缓冲 readerIndex 检查点；{@code -1} 表示未设置。 */
     private int checkpoint = -1;
 
-    /**
-     * Creates a new instance with no initial state (i.e: {@code null}).
-     */
+    /** 创建无初始状态（{@code null}）的实例。 */
     protected ReplayingDecoder() {
         this(null);
     }
 
-    /**
-     * Creates a new instance with the specified initial state.
-     */
+    /** 以指定初始状态创建实例。 */
     protected ReplayingDecoder(S initialState) {
         state = initialState;
     }
 
-    /**
-     * Stores the internal cumulative buffer's reader position.
-     */
+    /** 保存内部累积缓冲的 readerIndex 作为回退点。 */
     protected void checkpoint() {
         checkpoint = internalBuffer().readerIndex();
     }
 
-    /**
-     * Stores the internal cumulative buffer's reader position and updates
-     * the current decoder state.
-     */
+    /** 保存 readerIndex 并更新解码器状态。 */
     protected void checkpoint(S state) {
         checkpoint();
         state(state);
     }
 
-    /**
-     * Returns the current state of this decoder.
-     * @return the current state of this decoder
-     */
+    /** @return 当前解码器状态 */
     protected S state() {
         return state;
     }
 
-    /**
-     * Sets the current state of this decoder.
-     * @return the old state of this decoder
-     */
+    /** @return 设置前的旧状态 */
     protected S state(S newState) {
         S oldState = state;
         state = newState;
@@ -332,7 +318,7 @@ public abstract class ReplayingDecoder<S> extends ByteToMessageDecoder {
             }
             decodeLast(ctx, replayable, out);
         } catch (Signal replay) {
-            // Ignore
+            // 通道关闭时忽略 REPLAY 信号
             replay.expect(REPLAY);
         }
     }
@@ -349,8 +335,7 @@ public abstract class ReplayingDecoder<S> extends ByteToMessageDecoder {
                     fireChannelRead(ctx, out, outSize);
                     out.clear();
 
-                    // Check if this handler was removed before continuing with decoding.
-                    // If it was removed, it is not safe to continue to operate on the buffer.
+                    // handler 已移除则停止解码，避免操作已释放缓冲
                     //
                     // See:
                     // - https://github.com/netty/netty/issues/4635
@@ -395,13 +380,12 @@ public abstract class ReplayingDecoder<S> extends ByteToMessageDecoder {
                         break;
                     }
 
-                    // Return to the checkpoint (or oldPosition) and retry.
+                    // 回退到 checkpoint 等待更多入站数据后重试
                     int checkpoint = this.checkpoint;
                     if (checkpoint >= 0) {
                         in.readerIndex(checkpoint);
                     } else {
-                        // Called by cleanup() - no need to maintain the readerIndex
-                        // anymore because the buffer has been released already.
+                        // cleanup 路径：缓冲已释放，无需恢复 readerIndex
                     }
                     break;
                 }

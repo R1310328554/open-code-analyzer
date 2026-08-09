@@ -18,36 +18,28 @@ package io.netty.handler.codec;
 import io.netty.channel.Channel;
 
 /**
- * A {@link CodecException} which is thrown when a {@link Channel} is closed unexpectedly before
- * the codec finishes handling the current message, such as missing response while waiting for a
- * request.
+ * 编解码器尚未完成当前消息处理时 {@link Channel} 意外关闭所抛出的 {@link CodecException}。
+ * <p>
+ * 例如等待请求响应时连接提前断开。
  */
 public class PrematureChannelClosureException extends CodecException {
 
     private static final long serialVersionUID = 4907642202594703094L;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建无详细消息的新实例。 */
     public PrematureChannelClosureException() { }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息与原因的新实例。 */
     public PrematureChannelClosureException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息的新实例。 */
     public PrematureChannelClosureException(String message) {
         super(message);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带原因的新实例。 */
     public PrematureChannelClosureException(Throwable cause) {
         super(cause);
     }

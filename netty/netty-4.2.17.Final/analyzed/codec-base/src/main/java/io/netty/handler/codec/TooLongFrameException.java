@@ -16,36 +16,27 @@
 package io.netty.handler.codec;
 
 /**
- * An {@link DecoderException} which is thrown when the length of the frame
- * decoded is greater than the allowed maximum.
+ * 解码帧长度超过允许上限时抛出的 {@link DecoderException}。
  */
 public class TooLongFrameException extends DecoderException {
 
     private static final long serialVersionUID = -1995801950698951640L;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建无详细消息的新实例。 */
     public TooLongFrameException() {
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息与原因的新实例。 */
     public TooLongFrameException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带消息的新实例。 */
     public TooLongFrameException(String message) {
         super(message);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 创建带原因的新实例。 */
     public TooLongFrameException(Throwable cause) {
         super(cause);
     }

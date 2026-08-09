@@ -20,17 +20,14 @@
 package io.netty.handler.codec.base64;
 
 /**
- * Enumeration of supported Base64 dialects.
+ * 支持的 Base64 方言枚举。
  * <p>
  * The internal lookup tables in this class has been derived from
  * <a href="http://iharder.sourceforge.net/current/java/base64/">Robert Harder's Public Domain
  * Base64 Encoder/Decoder</a>.
  */
 public enum Base64Dialect {
-    /**
-     * Standard Base64 encoding as described in the Section 3 of
-     * <a href="http://www.faqs.org/rfcs/rfc3548.html">RFC3548</a>.
-     */
+    /** RFC3548 第 3 节定义的标准 Base64，默认每 76 字符换行。 */
     STANDARD(new byte[] {
             (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E',
             (byte) 'F', (byte) 'G', (byte) 'H', (byte) 'I', (byte) 'J',
@@ -80,8 +77,7 @@ public enum Base64Dialect {
             -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9            // Decimal 245 - 255 */
             }, true),
     /**
-     * Base64-like encoding that is URL-safe as described in the Section 4 of
-     * <a href="http://www.faqs.org/rfcs/rfc3548.html">RFC3548</a>.  It is
+     * RFC3548 第 4 节的 URL 安全变体（{@code -/_} 替代 {@code +/}），  It is
      * important to note that data encoded this way is <em>not</em> officially
      * valid Base64, or at the very least should not be called Base64 without
      * also specifying that is was encoded using the URL-safe dialect.
@@ -138,10 +134,7 @@ public enum Base64Dialect {
             -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 232 - 244
             -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9            // Decimal 245 - 255 */
             }, false),
-    /**
-     * Special "ordered" dialect of Base64 described in
-     * <a href="http://www.faqs.org/qa/rfcc-1940.html">RFC1940</a>.
-     */
+    /** RFC1940 定义的有序 Base64 字母表变体。 */
     ORDERED(new byte[] {
             (byte) '-', (byte) '0', (byte) '1', (byte) '2', (byte) '3',
             (byte) '4', (byte) '5', (byte) '6', (byte) '7', (byte) '8',
@@ -195,8 +188,11 @@ public enum Base64Dialect {
             -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9            // Decimal 245 - 255 */
             }, true);
 
+    /** 编码字母表（64 字符）。 */
     final byte[] alphabet;
+    /** 解码查找表（按 ASCII 码索引）。 */
     final byte[] decodabet;
+    /** 编码时是否默认按 76 字符换行。 */
     final boolean breakLinesByDefault;
 
     Base64Dialect(byte[] alphabet, byte[] decodabet, boolean breakLinesByDefault) {

@@ -30,7 +30,7 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
- * {@link ChannelOutboundHandlerAdapter} which encodes from one message to an other message
+ * 将一种消息编码为另一种消息的 {@link ChannelOutboundHandlerAdapter}。
  *
  * For example here is an implementation which decodes an {@link Integer} to an {@link String}.
  *
@@ -46,33 +46,31 @@ import java.util.List;
  *     }
  * </pre>
  *
- * Be aware that you need to call {@link ReferenceCounted#retain()} on messages that are just passed through if they
- * are of type {@link ReferenceCounted}. This is needed as the {@link MessageToMessageEncoder} will call
- * {@link ReferenceCounted#release()} on encoded messages.
+ * <p>
+ * 透传 {@link ReferenceCounted} 消息时须 {@link ReferenceCounted#retain()}，
+ * 因编码后会 {@link ReferenceCounted#release()} 原消息。
  */
 public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerAdapter {
 
+    /** 出站消息类型匹配器。 */
     private final TypeParameterMatcher matcher;
 
-    /**
-     * Create a new instance which will try to detect the types to match out of the type parameter of the class.
-     */
+    /** 从泛型参数推断待匹配出站消息类型。 */
     protected MessageToMessageEncoder() {
         matcher = TypeParameterMatcher.find(this, MessageToMessageEncoder.class, "I");
     }
 
     /**
-     * Create a new instance
+     * 创建新实例。
      *
-     * @param outboundMessageType   The type of messages to match and so encode
+     * @param outboundMessageType   待匹配并编码的出站消息类型
      */
     protected MessageToMessageEncoder(Class<? extends I> outboundMessageType) {
         matcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
     /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be passed to the next
-     * {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     * 返回 {@code true} 表示由本编码器处理；否则交给下一个 {@link ChannelOutboundHandler}。
      */
     public boolean acceptOutboundMessage(Object msg) throws Exception {
         return matcher.match(msg);
@@ -112,8 +110,7 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
                     if (sizeMinusOne == 0) {
                         ctx.write(out.getUnsafe(0), promise);
                     } else if (sizeMinusOne > 0) {
-                        // Check if we can use a voidPromise for our extra writes to reduce GC-Pressure
-                        // See https://github.com/netty/netty/issues/2525
+                        // 多条出站写时可用 voidPromise 降低 GC 压力（见 issue #2525）
                         if (promise == ctx.voidPromise()) {
                             writeVoidPromise(ctx, out);
                         } else {
@@ -143,14 +140,12 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
     }
 
     /**
-     * Encode from one message to an other. This method will be called for each written message that can be handled
-     * by this encoder.
+     * 将出站消息编码为零条或多条下游消息（至少一条，否则抛 {@link EncoderException}）。
      *
-     * @param ctx           the {@link ChannelHandlerContext} which this {@link MessageToMessageEncoder} belongs to
-     * @param msg           the message to encode to an other one
-     * @param out           the {@link List} into which the encoded msg should be added
-     *                      needs to do some kind of aggregation
-     * @throws Exception    is thrown if an error occurs
+     * @param ctx           本 {@link MessageToMessageEncoder} 所属的 {@link ChannelHandlerContext}
+     * @param msg           待编码消息
+     * @param out           编码结果写入此 {@link List}
+     * @throws Exception    编码出错时抛出
      */
     protected abstract void encode(ChannelHandlerContext ctx, I msg, List<Object> out) throws Exception;
 }
