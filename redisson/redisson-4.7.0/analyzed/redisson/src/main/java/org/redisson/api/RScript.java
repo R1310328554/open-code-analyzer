@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * API for Redis Lua scripts execution.
+ * Redis Lua 脚本执行 API。
+ * <p>支持 {@code EVAL}/{@code EVALSHA}、脚本加载与缓存管理；
+ * 集群模式下可按 {@link Mode} 路由到主/从节点。
  * 
  * @author Nikita Koksharov
  *
@@ -32,12 +34,12 @@ public interface RScript extends RScriptAsync {
 
     enum Mode {
         /**
-         * Execute script as read operation
+         * 以只读模式执行脚本（路由到从节点）
          */
         READ_ONLY,
 
         /**
-         * Execute script as write operation
+         * 以读写模式执行脚本（路由到主节点）
          */
         READ_WRITE
     }
@@ -64,7 +66,7 @@ public interface RScript extends RScriptAsync {
     };
 
     /**
-     * Executes Lua script stored in Redis scripts cache by SHA-1 digest
+     * 通过 SHA-1 摘要执行 Redis 脚本缓存中的 Lua 脚本
      * 
      * @param <R> - type of result
      * @param mode - execution mode
@@ -72,7 +74,7 @@ public interface RScript extends RScriptAsync {
      * @param returnType - return type
      * @param keys - keys available through KEYS param in script
      * @param values - values available through ARGV param in script
-     * @return result object
+     * @return 脚本执行结果
      */
     <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
@@ -170,10 +172,10 @@ public interface RScript extends RScriptAsync {
     <R> R eval(Mode mode, String luaScript, ReturnType returnType);
 
     /**
-     * Loads Lua script into Redis scripts cache and returns its SHA-1 digest
+     * 将 Lua 脚本加载到 Redis 脚本缓存并返回 SHA-1 摘要
      * 
      * @param luaScript - lua script
-     * @return SHA-1 digest
+     * @return SHA-1 摘要
      */
     String scriptLoad(String luaScript);
 
@@ -192,7 +194,7 @@ public interface RScript extends RScriptAsync {
     void scriptKill();
 
     /**
-     * Flushes Lua script cache.
+     * 清空 Redis Lua 脚本缓存
      * 
      */
     void scriptFlush();

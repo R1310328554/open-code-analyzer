@@ -22,24 +22,23 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * RingBuffer based queue evicts elements from the head if queue capacity became full.
+ * 环形缓冲区队列的 RxJava3 API；容量满时从队首淘汰最旧元素。
  * <p>
- * The head element removed if new element added and queue is full. 
+ * 队列已满时再添加元素会移除队首元素。
  * <p>
- * Must be initialized with capacity size {@link #trySetCapacity(int)} before usage.
+ * 使用前须先通过 {@link #trySetCapacity(int)} 初始化容量。
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 元素类型
  */
 public interface RRingBufferRx<V> extends RQueueRx<V> {
 
     /**
-     * Sets queue capacity only if it is not set before.
+     * 仅当容量尚未设置时设置队列容量。
      *
      * @param capacity - queue capacity
-     * @return <code>true</code> if capacity set successfully
-     *         <code>false</code> if capacity already set
+     * @return 设置成功则为 <code>true</code>，容量已存在则为 <code>false</code>
      */
     Single<Boolean> trySetCapacity(int capacity);
 
@@ -97,6 +96,7 @@ public interface RRingBufferRx<V> extends RQueueRx<V> {
      *
      * @return the newest element, or empty if this buffer is empty
      */
+    /** RxJava 查看缓冲区最新元素（不移除）。 */
     Maybe<V> peekLast();
     
 }

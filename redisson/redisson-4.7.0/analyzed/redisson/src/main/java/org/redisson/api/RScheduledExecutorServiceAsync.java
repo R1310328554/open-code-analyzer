@@ -20,7 +20,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis based implementation of {@link java.util.concurrent.ScheduledExecutorService}
+ * 分布式调度执行器的异步 API。
+ * <p>各方法返回 {@link RScheduledFuture}，支持监听器与异步回调。
  * 
  * @author Nikita Koksharov
  *
@@ -28,14 +29,12 @@ import java.util.concurrent.TimeUnit;
 public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
 
     /**
-     * Schedules a Runnable task for execution asynchronously
-     * after the given <code>delay</code>. Returns a RScheduledFuture representing that task.
-     * The Future's {@code get} method will return the given result upon successful completion.
+     * 在指定延迟后异步调度 {@link Runnable} 任务。
      *
      * @param task the task to execute
      * @param delay the time from now to delay execution
      * @param unit the time unit of the delay parameter
-     * @return RScheduledFuture with listeners support
+     * @return 支持监听器的 {@link RScheduledFuture}
      */
     RScheduledFuture<?> scheduleAsync(Runnable task, long delay, TimeUnit unit);
 
@@ -142,18 +141,13 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
     <V> RScheduledFuture<V> scheduleAsync(String id, Callable<V> callable, Duration delay, Duration timeToLive);
 
     /**
-     * Schedules a Runnable task for execution asynchronously
-     * after the given <code>initialDelay</code>, and subsequently with the given
-     * <code>period</code>.
-     * Subsequent executions are stopped if any execution of the task throws an exception.
-     * Otherwise, task could be terminated via cancellation or
-     * termination of the executor.
+     * 以固定速率异步周期性调度 {@link Runnable} 任务。
      *
      * @param task the task to execute
      * @param initialDelay the time to delay first execution
      * @param period the period between successive executions
      * @param unit the time unit of the initialDelay and period parameters
-     * @return RScheduledFuture with listeners support
+     * @return 支持监听器的 {@link RScheduledFuture}
      */
     RScheduledFuture<?> scheduleAtFixedRateAsync(Runnable task, long initialDelay, long period, TimeUnit unit);
 

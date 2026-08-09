@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Reactive interface for Redis Script feature
+ * Redis Lua 脚本的 Reactor 响应式 API。
+ * <p>各方法返回 {@link Mono}，与 Project Reactor 集成。
  * 
  * @author Nikita Koksharov
  *
@@ -32,7 +33,7 @@ import java.util.function.Function;
 public interface RScriptReactive {
 
     /**
-     * Flushes Lua script cache.
+     * 响应式清空 Redis Lua 脚本缓存
      * 
      * @return void
      */
@@ -145,10 +146,10 @@ public interface RScriptReactive {
     <R> Mono<R> eval(Mode mode, String luaScript, ReturnType returnType, Function<Collection<R>, R> resultMapper, Object... values);
 
     /**
-     * Loads Lua script into Redis scripts cache and returns its SHA-1 digest
+     * 响应式加载 Lua 脚本并返回 SHA-1 摘要
      * 
      * @param luaScript - lua script
-     * @return SHA-1 digest
+     * @return SHA-1 摘要
      */
     Mono<String> scriptLoad(String luaScript);
 

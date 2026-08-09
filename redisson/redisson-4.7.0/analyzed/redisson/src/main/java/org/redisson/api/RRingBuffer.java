@@ -18,24 +18,23 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * RingBuffer based queue evicts elements from the head if queue capacity became full.
+ * 基于环形缓冲区的队列；容量满时从队首淘汰最旧元素。
  * <p>
- * The head element removed if new element added and queue is full. 
+ * 队列已满时再添加元素会移除队首元素。
  * <p>
- * Must be initialized with capacity size {@link #trySetCapacity(int)} before usage.
+ * 使用前须先通过 {@link #trySetCapacity(int)} 初始化容量。
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <V> 元素类型
  */
 public interface RRingBuffer<V> extends RQueue<V>, RRingBufferAsync<V> {
 
     /**
-     * Sets capacity of the queue only if it wasn't set before.
+     * 仅当容量尚未设置时设置队列容量。
      *
      * @param capacity - queue capacity
-     * @return <code>true</code> if capacity set successfully
-     *         <code>false</code> if capacity already set
+     * @return 设置成功则为 <code>true</code>，容量已存在则为 <code>false</code>
      */
     boolean trySetCapacity(int capacity);
 
@@ -48,9 +47,9 @@ public interface RRingBuffer<V> extends RQueue<V>, RRingBufferAsync<V> {
     void setCapacity(int capacity);
 
     /**
-     * Returns remaining capacity of this queue
+     * 返回队列剩余可用容量
      * 
-     * @return remaining capacity
+     * @return 剩余容量
      */
     int remainingCapacity();   
 
@@ -88,10 +87,10 @@ public interface RRingBuffer<V> extends RQueue<V>, RRingBufferAsync<V> {
     List<V> readOldest(int count);
 
     /**
-     * Retrieves, but doesn't remove, the newest (most recently added) element of this buffer,
-     * or returns <code>null</code> if this buffer is empty.
+     * 查看但不移除缓冲区最新（最近添加）的元素；
+     * 缓冲区为空时返回 <code>null</code>。
      *
-     * @return the newest element, or <code>null</code> if this buffer is empty
+     * @return 最新元素；空缓冲区时为 <code>null</code>
      */
     V peekLast();
 }

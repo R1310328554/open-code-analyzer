@@ -21,7 +21,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis based implementation of {@link java.util.concurrent.ScheduledExecutorService}
+ * 基于 Redis 的分布式 {@link java.util.concurrent.ScheduledExecutorService} 实现。
+ * <p>任务序列化后存入 Redis，由 Worker 节点按调度时间执行；
+ * 支持延迟、固定速率、固定延迟及 Cron 表达式。
  * 
  * @author Nikita Koksharov
  *
@@ -29,16 +31,13 @@ import java.util.concurrent.TimeUnit;
 public interface RScheduledExecutorService extends RExecutorService, ScheduledExecutorService, RScheduledExecutorServiceAsync {
 
     /**
-     * Synchronously schedules a Runnable task for execution asynchronously
-     * after the given <code>delay</code>. Returns a RScheduledFuture representing that task.
-     * The Future's {@code get} method will return the given result upon successful completion.
+     * 在指定延迟后调度 {@link Runnable} 任务执行，返回 {@link RScheduledFuture}。
      *
      * @param command the task to execute
      * @param delay the time from now to delay execution
      * @param unit the time unit of the delay parameter
-     * @return a ScheduledFuture representing pending completion of
-     *         the task and whose {@code get()} method will return
-     *         {@code null} upon completion
+     * @return 表示任务待完成状态的 {@link RScheduledFuture}，
+     *         完成后 {@code get()} 返回 {@code null}
      */
     @Override
     RScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit);
@@ -149,20 +148,15 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
     <V> RScheduledFuture<V> schedule(String id, Callable<V> callable, Duration delay, Duration timeToLive);
 
     /**
-     * Synchronously schedules a Runnable task for execution asynchronously
-     * after the given <code>initialDelay</code>, and subsequently with the given
-     * <code>period</code>.
-     * Subsequent executions are stopped if any execution of the task throws an exception.
-     * Otherwise, task could be terminated via cancellation or
-     * termination of the executor.
+     * 以固定速率周期性调度 {@link Runnable} 任务（首次延迟 {@code initialDelay}，
+     * 之后每隔 {@code period} 执行一次）。
+     * 任一次执行抛异常则停止后续调度；也可通过取消或关闭执行器终止。
      *
      * @param task the task to execute
      * @param initialDelay the time to delay first execution
      * @param period the period between successive executions
      * @param unit the time unit of the initialDelay and period parameters
-     * @return a ScheduledFuture representing pending completion of
-     *         the task, and whose {@code get()} method will throw an
-     *         exception upon cancellation
+     * @return 表示任务待完成状态的 {@link RScheduledFuture}
      */
     @Override
     RScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit);
@@ -226,15 +220,12 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
     RScheduledFuture<?> scheduleWithFixedDelay(String id, Runnable task, Duration initialDelay, Duration delay);
     
     /**
-     * Synchronously schedules a Runnable task for execution asynchronously
-     * cron schedule object.
-     * Subsequent executions are stopped if any execution of the task throws an exception.
-     * Otherwise, task could be terminated via cancellation or
-     * termination of the executor.
+     * 按 Cron 表达式调度 {@link Runnable} 任务。
+     * 任一次执行抛异常则停止后续调度；也可通过取消或关闭执行器终止。
      *
      * @param task the task to execute
      * @param cronSchedule cron schedule object
-     * @return future object
+     * @return {@link RScheduledFuture} 对象
      */
     RScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule);
 

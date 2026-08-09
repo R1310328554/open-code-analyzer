@@ -18,10 +18,13 @@ package org.redisson.api;
 import java.util.concurrent.ScheduledFuture;
 
 /**
+ * 分布式调度任务的 Future 接口。
+ * <p>扩展 {@link RExecutorFuture} 与 {@link java.util.concurrent.ScheduledFuture}，
+ * 支持取消、延迟查询及 Redisson 任务监听器。
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> 任务返回值类型
  */
 public interface RScheduledFuture<V> extends RExecutorFuture<V>, ScheduledFuture<V> {
 

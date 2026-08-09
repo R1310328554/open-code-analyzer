@@ -19,9 +19,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Allows to execute object methods remotely between Redisson instances (Server side and Client side instances in terms of remote invocation).
+ * 支持 Redisson 实例之间远程调用对象方法（服务端 Worker 与客户端调用方）。
  * <p>
- * <b>1. Server side instance (worker instance).</b> Register object with RRemoteService instance. 
+ * <b>1. 服务端（Worker 实例）。</b> 向 {@link RRemoteService} 注册实现对象。
  * <p>
  * <code>
  * RRemoteService remoteService = redisson.getRemoteService();<br>
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * remoteService.register(SomeServiceInterface.class, someServiceImpl);
  * </code>
  * <p>
- * <b>2. Client side instance.</b> Invokes method remotely.
+ * <b>2. 客户端。</b> 通过动态代理远程调用方法。
  * <p>
  * <code>
  * RRemoteService remoteService = redisson.getRemoteService();<br>
@@ -39,18 +39,18 @@ import java.util.concurrent.TimeUnit;
  * String result = service.doSomeStuff(1L, "secondParam", new AnyParam());
  * </code>
  * <p>
- * There are two timeouts during execution:
+ * 执行过程中涉及两类超时：
  * <p>
- * <b>Acknowledge (Ack) timeout.</b>Client side instance waits for acknowledge message from Server side instance.
+ * <b>确认（Ack）超时。</b> 客户端等待服务端确认消息。
  * <p>
- * If acknowledge has not been received by Client side instance then <code>RemoteServiceAckTimeoutException</code> will be thrown. 
- * And next invocation attempt can be made.
+ * 若客户端未收到确认则抛出 <code>RemoteServiceAckTimeoutException</code>，
+ * 可重试下一次调用。
  * <p>
- * If acknowledge has not been received Client side instance but Server side instance has received invocation message already. 
- * In this case invocation will be skipped, due to ack timeout checking by Server side instance. 
+ * 若客户端未收到确认但服务端已收到调用消息，
+ * 服务端会因 Ack 超时而跳过该次执行。
  * <p>
- * <b>Execution timeout.</b> Client side instance received acknowledge message. If it hasn't received any result or error 
- * from server side during execution timeout then <code>RemoteServiceTimeoutException</code> will be thrown.
+ * <b>执行超时。</b> 客户端已收到确认；若在执行超时内未收到结果或错误，
+ * 则抛出 <code>RemoteServiceTimeoutException</code>。
  * 
  * @author Nikita Koksharov
  *
@@ -58,18 +58,18 @@ import java.util.concurrent.TimeUnit;
 public interface RRemoteService {
 
     /**
-     * Returns free workers amount available for invocations 
+     * 返回可用于处理远程调用的空闲 Worker 数量
      * 
      * @param remoteInterface - remote service interface
-     * @return workers amount
+     * @return Worker 数量
      */
     int getFreeWorkers(Class<?> remoteInterface);
     
     /**
-     * Returns pending invocations amount for handling in free workers.
+     * 返回等待空闲 Worker 处理的待执行远程调用数量
      * 
      * @param remoteInterface - remote service interface
-     * @return invocations amount
+     * @return 待处理调用数量
      */
     int getPendingInvocations(Class<?> remoteInterface);
 
@@ -82,7 +82,7 @@ public interface RRemoteService {
     RFuture<Integer> getPendingInvocationsAsync(Class<?> remoteInterface);
 
     /**
-     * Register remote service with single worker
+     * 注册远程服务，使用单个 Worker 处理调用
      *
      * @param <T> type of remote service
      * @param remoteInterface - remote service interface
@@ -113,7 +113,7 @@ public interface RRemoteService {
     <T> void register(Class<T> remoteInterface, T object, int workers, ExecutorService executor);
     
     /**
-     * Deregister all workers for remote service
+     * 注销指定远程服务的全部 Worker
      *
      * @param <T> type of remote service
      * @param remoteInterface - remote service interface
@@ -192,7 +192,7 @@ public interface RRemoteService {
     <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, ExecutorService executorService, long timeout, TimeUnit timeUnit);
 
     /**
-     * Get remote service object for remote invocations.
+     * 获取用于远程调用的动态代理对象。
      * <p>
      * This method is a shortcut for
      * <pre>
@@ -204,7 +204,7 @@ public interface RRemoteService {
      *
      * @param <T> type of remote service
      * @param remoteInterface - remote service interface
-     * @return remote service instance
+     * @return 远程服务代理实例
      */
     <T> T get(Class<T> remoteInterface);
 

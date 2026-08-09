@@ -36,7 +36,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * API for RediSearch module
+ * RediSearch 模块同步 API。
+ * <p>封装索引创建、全文检索、聚合、混合向量搜索、
+ * 拼写检查与同义词等 {@code FT.*} 命令。
  *
  * @author Nikita Koksharov
  *
@@ -44,7 +46,7 @@ import java.util.Map;
 public interface RSearch extends RSearchAsync {
 
     /**
-     * Creates an index.
+     * 创建 RediSearch 索引。
      * <p>
      * Code example:
      * <pre>
@@ -62,7 +64,7 @@ public interface RSearch extends RSearchAsync {
     void createIndex(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
-     * Executes search over defined index using defined query.
+     * 在指定索引上执行全文检索。
      * <p>
      * Code example:
      * <pre>
@@ -73,13 +75,12 @@ public interface RSearch extends RSearchAsync {
      * @param indexName index name
      * @param query query value
      * @param options query options
-     * @return search result
+     * @return 检索结果
      */
     SearchResult search(String indexName, String query, QueryOptions options);
 
     /**
-     * Performs hybrid search combining text search and vector similarity
-     * using the FT.HYBRID command.
+     * 通过 {@code FT.HYBRID} 执行文本检索与向量相似度混合搜索。
      * <p>
      * Requires Redis Stack 8.4.0 or higher.
      * <p>
@@ -95,7 +96,7 @@ public interface RSearch extends RSearchAsync {
      *
      * @param indexName the name of the index
      * @param args hybrid query arguments
-     * @return search result
+     * @return 混合检索结果
      */
     HybridSearchResult hybridSearch(String indexName, HybridQueryArgs args);
 
@@ -274,7 +275,7 @@ public interface RSearch extends RSearchAsync {
     List<String> dumpDict(String dictionary);
 
     /**
-     * Deletes index by name
+     * 按名称删除索引（不删除关联文档）
      *
      * @param indexName index name
      */
@@ -339,9 +340,9 @@ public interface RSearch extends RSearchAsync {
     void updateSynonyms(String indexName, String synonymGroupId, String... terms);
 
     /**
-     * Returns list of all created indexes
+     * 返回所有已创建索引的名称列表
      *
-     * @return list of indexes
+     * @return 索引名称列表
      */
     List<String> getIndexes();
 

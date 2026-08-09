@@ -37,7 +37,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Reactive API for RediSearch module
+ * RediSearch 模块 Reactor 响应式 API。
+ * <p>各方法返回 {@link Mono}，与 Project Reactor 集成。
  *
  * @author Nikita Koksharov
  *
@@ -45,7 +46,7 @@ import java.util.Map;
 public interface RSearchReactive {
 
     /**
-     * Creates an index.
+     * 响应式创建 RediSearch 索引。
      * <p>
      * Code example:
      * <pre>
@@ -63,7 +64,7 @@ public interface RSearchReactive {
     Mono<Void> createIndex(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
-     * Executes search over defined index using defined query.
+     * 响应式在指定索引上执行全文检索。
      * <p>
      * Code example:
      * <pre>
@@ -74,7 +75,7 @@ public interface RSearchReactive {
      * @param indexName index name
      * @param query query value
      * @param options query options
-     * @return search result
+     * @return 检索结果
      */
     Mono<SearchResult> search(String indexName, String query, QueryOptions options);
 
@@ -322,9 +323,9 @@ public interface RSearchReactive {
     Mono<Void> updateSynonyms(String indexName, String synonymGroupId, String... terms);
 
     /**
-     * Returns list of all created indexes
+     * 响应式返回所有已创建索引的名称列表
      *
-     * @return list of indexes
+     * @return 索引名称列表
      */
     Mono<List<String>> getIndexes();
 }

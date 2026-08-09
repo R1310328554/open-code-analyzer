@@ -34,7 +34,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Asynchronous API for RediSearch module
+ * RediSearch 模块异步 API。
+ * <p>各方法返回 {@link RFuture}，适用于 Netty 异步回调模型。
  *
  * @author Nikita Koksharov
  *
@@ -42,7 +43,7 @@ import java.util.Map;
 public interface RSearchAsync {
 
     /**
-     * Creates an index.
+     * 异步创建 RediSearch 索引。
      * <p>
      * Code example:
      * <pre>
@@ -60,7 +61,7 @@ public interface RSearchAsync {
     RFuture<Void> createIndexAsync(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
-     * Executes search over defined index using defined query.
+     * 异步在指定索引上执行全文检索。
      * <p>
      * Code example:
      * <pre>
@@ -71,7 +72,7 @@ public interface RSearchAsync {
      * @param indexName index name
      * @param query query value
      * @param options query options
-     * @return search result
+     * @return 检索结果
      */
     RFuture<SearchResult> searchAsync(String indexName, String query, QueryOptions options);
 
@@ -302,9 +303,9 @@ public interface RSearchAsync {
     RFuture<Void> updateSynonymsAsync(String indexName, String synonymGroupId, String... terms);
 
     /**
-     * Returns list of all created indexes
+     * 异步返回所有已创建索引的名称列表
      *
-     * @return list of indexes
+     * @return 索引名称列表
      */
     RFuture<List<String>> getIndexesAsync();
 

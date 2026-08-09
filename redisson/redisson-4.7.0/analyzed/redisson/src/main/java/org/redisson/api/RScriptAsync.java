@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Async interface for Redis Script feature
+ * Redis Lua 脚本异步 API。
+ * <p>各方法返回 {@link RFuture}，适用于 Netty 异步回调模型。
  * 
  * @author Nikita Koksharov
  *
@@ -31,7 +32,7 @@ import java.util.function.Function;
 public interface RScriptAsync {
 
     /**
-     * Flushes Lua script cache.
+     * 异步清空 Redis Lua 脚本缓存
      * 
      * @return void
      */
@@ -144,10 +145,10 @@ public interface RScriptAsync {
     <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType);
 
     /**
-     * Loads Lua script into Redis scripts cache and returns its SHA-1 digest
+     * 异步加载 Lua 脚本到 Redis 缓存并返回 SHA-1 摘要
      * 
      * @param luaScript - lua script
-     * @return SHA-1 digest
+     * @return SHA-1 摘要
      */
     RFuture<String> scriptLoadAsync(String luaScript);
 
@@ -178,7 +179,7 @@ public interface RScriptAsync {
     RFuture<List<Boolean>> scriptExistsAsync(String key, String... shaDigests);
 
     /**
-     * Kills currently executed Lua script
+     * 异步终止当前正在执行的 Lua 脚本
      * 
      * @return void
      */
