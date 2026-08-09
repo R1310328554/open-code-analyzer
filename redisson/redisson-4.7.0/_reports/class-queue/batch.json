@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:39:19Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/IntegerSlotCallback.java",
-    "redisson/src/main/java/org/redisson/JndiRedissonFactory.java",
-    "redisson/src/main/java/org/redisson/LongSlotCallback.java",
-    "redisson/src/main/java/org/redisson/MapWriteBehindTask.java",
-    "redisson/src/main/java/org/redisson/MapWriterTask.java",
-    "redisson/src/main/java/org/redisson/PubSubEntry.java",
-    "redisson/src/main/java/org/redisson/PubSubMessageListener.java",
-    "redisson/src/main/java/org/redisson/PubSubPatternMessageListener.java",
-    "redisson/src/main/java/org/redisson/PubSubPatternStatusListener.java",
-    "redisson/src/main/java/org/redisson/PubSubStatusListener.java",
-    "redisson/src/main/java/org/redisson/QueueTransferService.java",
-    "redisson/src/main/java/org/redisson/QueueTransferTask.java",
-    "redisson/src/main/java/org/redisson/RedissonAtomicDouble.java",
-    "redisson/src/main/java/org/redisson/RedissonAtomicLong.java",
-    "redisson/src/main/java/org/redisson/RedissonBaseAdder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1682,
-  "done": 1125
+  "done": 1140
 }
