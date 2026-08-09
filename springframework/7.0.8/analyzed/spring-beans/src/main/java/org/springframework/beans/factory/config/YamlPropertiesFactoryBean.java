@@ -25,20 +25,18 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.CollectionFactory;
 
 /**
- * Factory for {@link java.util.Properties} that reads from a YAML source,
- * exposing a flat structure of String property values.
+ * 从 YAML 源读取并创建 {@link java.util.Properties} 的工厂，
+ * 暴露扁平化的 String 属性值结构。
  *
- * <p>YAML is a nice human-readable format for configuration, and it has some
- * useful hierarchical properties. It's more or less a superset of JSON, so it
- * has a lot of similar features.
+ * <p>YAML 是易读的配置格式，具有有用的层次结构特性，大致是 JSON 的超集，
+ * 具备许多类似功能。
  *
- * <p><b>Note: All exposed values are of type {@code String}</b> for access through
- * the common {@link Properties#getProperty} method (for example, in configuration property
- * resolution through {@link PropertyResourceConfigurer#setProperties(Properties)}).
- * If this is not desirable, use {@link YamlMapFactoryBean} instead.
+ * <p><b>注意：所有暴露的值均为 {@code String} 类型</b>，以便通过常见的
+ * {@link Properties#getProperty} 方法访问（例如通过
+ * {@link PropertyResourceConfigurer#setProperties(Properties)} 进行配置属性解析）。
+ * 若不需要此行为，请使用 {@link YamlMapFactoryBean}。
  *
- * <p>The Properties created by this factory have nested paths for hierarchical
- * objects, so for instance this YAML
+ * <p>本工厂创建的 Properties 对层次对象使用嵌套路径。例如以下 YAML：
  *
  * <pre class="code">
  * environments:
@@ -50,7 +48,7 @@ import org.springframework.core.CollectionFactory;
  *     name: My Cool App
  * </pre>
  *
- * is transformed into these properties:
+ * 转换为以下 properties：
  *
  * <pre class="code">
  * environments.dev.url=https://dev.bar.com
@@ -59,8 +57,7 @@ import org.springframework.core.CollectionFactory;
  * environments.prod.name=My Cool App
  * </pre>
  *
- * Lists are split as property keys with <code>[]</code> dereferencers, for
- * example this YAML:
+ * 列表以带 <code>[]</code> 下标的属性键拆分，例如以下 YAML：
  *
  * <pre class="code">
  * servers:
@@ -68,14 +65,14 @@ import org.springframework.core.CollectionFactory;
  * - foo.bar.com
  * </pre>
  *
- * becomes properties like this:
+ * 变为如下 properties：
  *
  * <pre class="code">
  * servers[0]=dev.bar.com
  * servers[1]=foo.bar.com
  * </pre>
  *
- * <p>Requires SnakeYAML 2.0 or higher.
+ * <p>需要 SnakeYAML 2.0 或更高版本。
  *
  * @author Dave Syer
  * @author Stephane Nicoll
@@ -84,14 +81,15 @@ import org.springframework.core.CollectionFactory;
  */
 public class YamlPropertiesFactoryBean extends YamlProcessor implements FactoryBean<Properties>, InitializingBean {
 
+	/** 是否以单例模式创建。 */
 	private boolean singleton = true;
 
+	/** 单例模式下的 Properties 缓存。 */
 	private @Nullable Properties properties;
 
 
 	/**
-	 * Set if a singleton should be created, or a new object on each request
-	 * otherwise. Default is {@code true} (a singleton).
+	 * 设置是否创建单例，否则每次请求创建新对象。默认为 {@code true}（单例）。
 	 */
 	public void setSingleton(boolean singleton) {
 		this.singleton = singleton;
@@ -121,12 +119,11 @@ public class YamlPropertiesFactoryBean extends YamlProcessor implements FactoryB
 
 
 	/**
-	 * Template method that subclasses may override to construct the object
-	 * returned by this factory. The default implementation returns a
-	 * properties with the content of all resources.
-	 * <p>Invoked lazily the first time {@link #getObject()} is invoked in
-	 * case of a shared singleton; else, on each {@link #getObject()} call.
-	 * @return the object returned by this factory
+	 * 子类可覆盖的模板方法，用于构造本工厂返回的对象。默认实现返回
+	 * 包含所有资源内容的 properties。
+	 * <p>单例模式下在首次调用 {@link #getObject()} 时懒加载调用；
+	 * 否则在每次 {@link #getObject()} 时调用。
+	 * @return 本工厂返回的对象
 	 * @see #process(MatchCallback)
 	 */
 	protected Properties createProperties() {

@@ -26,8 +26,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Simple factory for shared Set instances. Allows for central setup
- * of Sets via the "set" element in XML bean definitions.
+ * 共享 Set 实例的简单工厂。支持通过 XML bean 定义中的 "set" 元素集中配置 Set。
  *
  * @author Juergen Hoeller
  * @since 09.12.2003
@@ -36,23 +35,24 @@ import org.springframework.util.CollectionUtils;
  */
 public class SetFactoryBean extends AbstractFactoryBean<Set<Object>> {
 
+	/** 源 Set，通常由 XML "set" 元素填充。 */
 	private @Nullable Set<?> sourceSet;
 
+	/** 目标 Set 的实现类。 */
 	@SuppressWarnings("rawtypes")
 	private @Nullable Class<? extends Set> targetSetClass;
 
 
 	/**
-	 * Set the source Set, typically populated via XML "set" elements.
+	 * 设置源 Set，通常由 XML "set" 元素填充。
 	 */
 	public void setSourceSet(Set<?> sourceSet) {
 		this.sourceSet = sourceSet;
 	}
 
 	/**
-	 * Set the class to use for the target Set. Can be populated with a fully
-	 * qualified class name when defined in a Spring application context.
-	 * <p>Default is a linked HashSet, keeping the registration order.
+	 * 设置目标 Set 使用的类。在 Spring 应用上下文中定义时可填入全限定类名。
+	 * <p>默认为 LinkedHashSet，保持注册顺序。
 	 * @see java.util.LinkedHashSet
 	 */
 	@SuppressWarnings("rawtypes")
@@ -80,6 +80,7 @@ public class SetFactoryBean extends AbstractFactoryBean<Set<Object>> {
 			throw new IllegalArgumentException("'sourceSet' is required");
 		}
 		Set<Object> result = null;
+		// 实例化目标 Set 类型，或使用默认 LinkedHashSet
 		if (this.targetSetClass != null) {
 			result = BeanUtils.instantiateClass(this.targetSetClass);
 		}
@@ -90,6 +91,7 @@ public class SetFactoryBean extends AbstractFactoryBean<Set<Object>> {
 		if (this.targetSetClass != null) {
 			valueType = ResolvableType.forClass(this.targetSetClass).asCollection().resolveGeneric();
 		}
+		// 若可解析元素类型，则进行类型转换后添加
 		if (valueType != null) {
 			TypeConverter converter = getBeanTypeConverter();
 			for (Object elem : this.sourceSet) {

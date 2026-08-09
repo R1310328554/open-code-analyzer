@@ -21,8 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Immutable placeholder class used for a property value object when it's
- * a reference to another bean in the factory, to be resolved at runtime.
+ * 不可变占位类，表示属性值为对工厂中另一 bean 的引用，在运行时解析。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -32,29 +31,32 @@ import org.springframework.util.Assert;
  */
 public class RuntimeBeanReference implements BeanReference {
 
+	/** 目标 bean 名称（按类型解析时为全限定类名）。 */
 	private final String beanName;
 
+	/** 按类型解析时的目标 bean 类型。 */
 	private final @Nullable Class<?> beanType;
 
+	/** 是否显式引用父工厂中的 bean。 */
 	private final boolean toParent;
 
+	/** 配置元数据来源对象。 */
 	private @Nullable Object source;
 
 
 	/**
-	 * Create a new RuntimeBeanReference to the given bean name.
-	 * @param beanName name of the target bean
+	 * 为给定 bean 名称创建新的 RuntimeBeanReference。
+	 * @param beanName 目标 bean 名称
 	 */
 	public RuntimeBeanReference(String beanName) {
 		this(beanName, false);
 	}
 
 	/**
-	 * Create a new RuntimeBeanReference to the given bean name,
-	 * with the option to mark it as reference to a bean in the parent factory.
-	 * @param beanName name of the target bean
-	 * @param toParent whether this is an explicit reference to a bean in the
-	 * parent factory
+	 * 为给定 bean 名称创建新的 RuntimeBeanReference，
+	 * 并可标记为对父工厂中 bean 的显式引用。
+	 * @param beanName 目标 bean 名称
+	 * @param toParent 是否为对父工厂中 bean 的显式引用
 	 */
 	public RuntimeBeanReference(String beanName, boolean toParent) {
 		Assert.hasText(beanName, "'beanName' must not be empty");
@@ -64,8 +66,8 @@ public class RuntimeBeanReference implements BeanReference {
 	}
 
 	/**
-	 * Create a new RuntimeBeanReference to a bean of the given type.
-	 * @param beanType type of the target bean
+	 * 为给定类型的 bean 创建新的 RuntimeBeanReference。
+	 * @param beanType 目标 bean 类型
 	 * @since 5.2
 	 */
 	public RuntimeBeanReference(Class<?> beanType) {
@@ -73,11 +75,10 @@ public class RuntimeBeanReference implements BeanReference {
 	}
 
 	/**
-	 * Create a new RuntimeBeanReference to a bean of the given type,
-	 * with the option to mark it as reference to a bean in the parent factory.
-	 * @param beanType type of the target bean
-	 * @param toParent whether this is an explicit reference to a bean in the
-	 * parent factory
+	 * 为给定类型的 bean 创建新的 RuntimeBeanReference，
+	 * 并可标记为对父工厂中 bean 的显式引用。
+	 * @param beanType 目标 bean 类型
+	 * @param toParent 是否为对父工厂中 bean 的显式引用
 	 * @since 5.2
 	 */
 	public RuntimeBeanReference(Class<?> beanType, boolean toParent) {
@@ -88,9 +89,9 @@ public class RuntimeBeanReference implements BeanReference {
 	}
 
 	/**
-	 * Create a new RuntimeBeanReference to a bean of the given type.
-	 * @param beanName name of the target bean
-	 * @param beanType type of the target bean
+	 * 为给定类型的 bean 创建新的 RuntimeBeanReference。
+	 * @param beanName 目标 bean 名称
+	 * @param beanType 目标 bean 类型
 	 * @since 7.0
 	 */
 	public RuntimeBeanReference(String beanName, Class<?> beanType) {
@@ -98,12 +99,11 @@ public class RuntimeBeanReference implements BeanReference {
 	}
 
 	/**
-	 * Create a new RuntimeBeanReference to a bean of the given type,
-	 * with the option to mark it as reference to a bean in the parent factory.
-	 * @param beanName name of the target bean
-	 * @param beanType type of the target bean
-	 * @param toParent whether this is an explicit reference to a bean in the
-	 * parent factory
+	 * 为给定类型的 bean 创建新的 RuntimeBeanReference，
+	 * 并可标记为对父工厂中 bean 的显式引用。
+	 * @param beanName 目标 bean 名称
+	 * @param beanType 目标 bean 类型
+	 * @param toParent 是否为对父工厂中 bean 的显式引用
 	 * @since 7.0
 	 */
 	public RuntimeBeanReference(String beanName, Class<?> beanType, boolean toParent) {
@@ -116,8 +116,7 @@ public class RuntimeBeanReference implements BeanReference {
 
 
 	/**
-	 * Return the requested bean name, or the fully-qualified type name
-	 * in case of by-type resolution.
+	 * 返回请求的 bean 名称；按类型解析时返回全限定类型名。
 	 * @see #getBeanType()
 	 */
 	@Override
@@ -126,7 +125,7 @@ public class RuntimeBeanReference implements BeanReference {
 	}
 
 	/**
-	 * Return the requested bean type if resolution by type is demanded.
+	 * 若要求按类型解析，返回请求的 bean 类型。
 	 * @since 5.2
 	 */
 	public @Nullable Class<?> getBeanType() {
@@ -134,15 +133,15 @@ public class RuntimeBeanReference implements BeanReference {
 	}
 
 	/**
-	 * Return whether this is an explicit reference to a bean in the parent factory.
+	 * 返回是否为对父工厂中 bean 的显式引用。
 	 */
 	public boolean isToParent() {
 		return this.toParent;
 	}
 
 	/**
-	 * Set the configuration source {@code Object} for this metadata element.
-	 * <p>The exact type of the object will depend on the configuration mechanism used.
+	 * 设置本元数据元素的配置来源 {@code Object}。
+	 * <p>对象的具体类型取决于所使用的配置机制。
 	 */
 	public void setSource(@Nullable Object source) {
 		this.source = source;

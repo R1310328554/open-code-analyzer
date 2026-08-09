@@ -26,17 +26,14 @@ import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
- * Subclass of {@link PropertyPlaceholderConfigurer} that supports JDK 1.4's
- * {@link Preferences} API.
+ * 支持 JDK 1.4 {@link Preferences} API 的 {@link PropertyPlaceholderConfigurer} 子类。
  *
- * <p>Tries to resolve placeholders as keys first in the user preferences,
- * then in the system preferences, then in this configurer's properties.
- * Thus, behaves like PropertyPlaceholderConfigurer if no corresponding
- * preferences defined.
+ * <p>占位符解析顺序：先在用户偏好设置中查找键，再在系统偏好设置中查找，
+ * 最后在本配置器的 properties 中查找。若未定义对应偏好设置，行为与
+ * PropertyPlaceholderConfigurer 相同。
  *
- * <p>Supports custom paths for the system and user preferences trees. Also
- * supports custom paths specified in placeholders ("myPath/myPlaceholderKey").
- * Uses the respective root node if not specified.
+ * <p>支持为系统与用户偏好设置树指定自定义路径；也支持在占位符中指定路径
+ *（如 "myPath/myPlaceholderKey"）。未指定时使用各自的根节点。
  *
  * @author Juergen Hoeller
  * @since 16.02.2004
@@ -49,26 +46,28 @@ import org.springframework.beans.factory.InitializingBean;
 @SuppressWarnings({"deprecation", "removal"})
 public class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigurer implements InitializingBean {
 
+	/** 系统偏好设置树中的路径。 */
 	private @Nullable String systemTreePath;
 
+	/** 用户偏好设置树中的路径。 */
 	private @Nullable String userTreePath;
 
+	/** 系统偏好设置根节点（或指定路径下的子节点）。 */
 	private Preferences systemPrefs = Preferences.systemRoot();
 
+	/** 用户偏好设置根节点（或指定路径下的子节点）。 */
 	private Preferences userPrefs = Preferences.userRoot();
 
 
 	/**
-	 * Set the path in the system preferences tree to use for resolving
-	 * placeholders. Default is the root node.
+	 * 设置用于解析占位符的系统偏好设置树路径。默认为根节点。
 	 */
 	public void setSystemTreePath(String systemTreePath) {
 		this.systemTreePath = systemTreePath;
 	}
 
 	/**
-	 * Set the path in the system preferences tree to use for resolving
-	 * placeholders. Default is the root node.
+	 * 设置用于解析占位符的用户偏好设置树路径。默认为根节点。
 	 */
 	public void setUserTreePath(String userTreePath) {
 		this.userTreePath = userTreePath;
@@ -76,8 +75,7 @@ public class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigu
 
 
 	/**
-	 * This implementation eagerly fetches the Preferences instances
-	 * for the required system and user tree nodes.
+	 * 提前获取系统与用户偏好设置树所需节点对应的 {@link Preferences} 实例。
 	 */
 	@Override
 	public void afterPropertiesSet() {
@@ -90,14 +88,13 @@ public class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigu
 	}
 
 	/**
-	 * This implementation tries to resolve placeholders as keys first
-	 * in the user preferences, then in the system preferences, then in
-	 * the passed-in properties.
+	 * 占位符解析顺序：用户偏好设置 → 系统偏好设置 → 传入的 properties。
 	 */
 	@Override
 	protected String resolvePlaceholder(String placeholder, Properties props) {
 		String path = null;
 		String key = placeholder;
+		// 若占位符含 '/'，则 '/' 前为路径，后为键名
 		int endOfPath = placeholder.lastIndexOf('/');
 		if (endOfPath != -1) {
 			path = placeholder.substring(0, endOfPath);
@@ -114,15 +111,15 @@ public class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigu
 	}
 
 	/**
-	 * Resolve the given path and key against the given Preferences.
-	 * @param path the preferences path (placeholder part before '/')
-	 * @param key the preferences key (placeholder part after '/')
-	 * @param preferences the Preferences to resolve against
-	 * @return the value for the placeholder, or {@code null} if none found
+	 * 在指定 {@link Preferences} 中根据路径与键解析占位符值。
+	 * @param path 偏好设置路径（占位符中 '/' 之前的部分）
+	 * @param key 偏好设置键（占位符中 '/' 之后的部分）
+	 * @param preferences 用于解析的 Preferences
+	 * @return 占位符对应的值，未找到时返回 {@code null}
 	 */
 	protected @Nullable String resolvePlaceholder(@Nullable String path, String key, Preferences preferences) {
 		if (path != null) {
-			// Do not create the node if it does not exist...
+			// 节点不存在时不创建节点
 			try {
 				if (preferences.nodeExists(path)) {
 					return preferences.node(path).get(key, null);

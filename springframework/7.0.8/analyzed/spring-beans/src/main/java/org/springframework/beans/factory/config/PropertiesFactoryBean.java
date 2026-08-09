@@ -26,17 +26,14 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.support.PropertiesLoaderSupport;
 
 /**
- * Allows for making a properties file from a classpath location available
- * as Properties instance in a bean factory. Can be used to populate
- * any bean property of type Properties via a bean reference.
+ * 将 classpath 上的 properties 文件以 {@link Properties} 实例形式暴露到 Bean 工厂。
+ * 可通过 bean 引用为任意 Properties 类型属性注入值。
  *
- * <p>Supports loading from a properties file and/or setting local properties
- * on this FactoryBean. The created Properties instance will be merged from
- * loaded and local values. If neither a location nor local properties are set,
- * an exception will be thrown on initialization.
+ * <p>支持从 properties 文件加载，和/或在本 FactoryBean 上设置本地属性。
+ * 创建的 Properties 会合并加载值与本地值。若既未设置 location 也未设置本地属性，
+ * 初始化时将抛出异常。
  *
- * <p>Can create a singleton or a new object on each request.
- * Default is a singleton.
+ * <p>可创建单例，或在每次请求时创建新对象。默认为单例。
  *
  * @author Juergen Hoeller
  * @see #setLocation
@@ -47,15 +44,16 @@ import org.springframework.core.io.support.PropertiesLoaderSupport;
 public class PropertiesFactoryBean extends PropertiesLoaderSupport
 		implements FactoryBean<Properties>, InitializingBean {
 
+	/** 是否以单例模式创建共享的 Properties 实例。 */
 	private boolean singleton = true;
 
+	/** 单例模式下的 Properties 实例缓存。 */
 	private @Nullable Properties singletonInstance;
 
 
 	/**
-	 * Set whether a shared 'singleton' Properties instance should be
-	 * created, or rather a new Properties instance on each request.
-	 * <p>Default is "true" (a shared singleton).
+	 * 设置是否创建共享的单例 Properties，或在每次请求时创建新实例。
+	 * <p>默认为 {@code true}（共享单例）。
 	 */
 	public final void setSingleton(boolean singleton) {
 		this.singleton = singleton;
@@ -91,13 +89,10 @@ public class PropertiesFactoryBean extends PropertiesLoaderSupport
 
 
 	/**
-	 * Template method that subclasses may override to construct the object
-	 * returned by this factory. The default implementation returns the
-	 * plain merged Properties instance.
-	 * <p>Invoked on initialization of this FactoryBean in case of a
-	 * shared singleton; else, on each {@link #getObject()} call.
-	 * @return the object returned by this factory
-	 * @throws IOException if an exception occurred during properties loading
+	 * 子类可覆盖的模板方法，用于构造本工厂返回的对象。默认实现返回合并后的 Properties。
+	 * <p>单例模式下在 FactoryBean 初始化时调用；否则在每次 {@link #getObject()} 时调用。
+	 * @return 本工厂返回的对象
+	 * @throws IOException properties 加载过程中发生异常时
 	 * @see #mergeProperties()
 	 */
 	protected Properties createProperties() throws IOException {
