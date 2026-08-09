@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:34:46Z",
-  "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpChunkLineValidatingByteProcessor.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpChunkedInput.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpClientCodec.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpClientUpgradeHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpConstants.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpContent.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpContentCompressor.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpContentDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpContentDecompressor.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpContentEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpDecoderConfig.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpExpectationFailedEvent.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeaderDateFormat.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeaderNames.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeaderValidationUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1508,
-  "done": 405
+  "done": 420
 }
