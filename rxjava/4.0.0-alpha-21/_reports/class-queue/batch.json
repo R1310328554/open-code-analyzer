@@ -1,22 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:26:31Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSkipWhile.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSubscribeOn.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableSwitchIfEmpty.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTake.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTakeLast.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTakeLastOne.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTakeLastTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTakePublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTakeUntil.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTakeUntilPredicate.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTakeWhile.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableThrottleFirstTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableThrottleLatest.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTimeInterval.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/flowable/FlowableTimeout.java"
-  ],
+  "files": [],
   "remaining_pending": 632,
   "done": 375
 }
