@@ -18,6 +18,7 @@ package org.redisson.api.search.query;
 import org.redisson.api.geo.GeoUnit;
 
 /**
+ * {@link GeoFilter} 与 {@link GeoFilterRadius} 的参数实现，同时作为 {@link QueryFilter} 使用。
  *
  * @author Nikita Koksharov
  *
@@ -50,22 +51,27 @@ public final class GeoFilterParams implements GeoFilter,
         return this;
     }
 
+    /** 返回地理字段名。 */
     public String getFieldName() {
         return fieldName;
     }
 
+    /** 返回圆心经度。 */
     public double getLongitude() {
         return longitude;
     }
 
+    /** 返回圆心纬度。 */
     public double getLatitude() {
         return latitude;
     }
 
+    /** 返回搜索半径。 */
     public double getRadius() {
         return radius;
     }
 
+    /** 返回半径所用地理单位。 */
     public GeoUnit getUnit() {
         return unit;
     }

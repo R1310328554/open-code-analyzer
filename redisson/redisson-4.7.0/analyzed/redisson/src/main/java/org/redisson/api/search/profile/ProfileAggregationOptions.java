@@ -23,11 +23,10 @@ import org.redisson.api.search.aggregate.SortedField;
 import java.util.Map;
 
 /**
- * Aggregation options for {@code FT.PROFILE ... AGGREGATE ...}.
+ * {@code FT.PROFILE ... AGGREGATE ...} 命令的聚合选项。
  * <p>
- * Inherits all the regular {@link AggregationOptions} settings and adds
- * profile-specific flags (such as {@code LIMITED}) that control behavior
- * of the profiling itself.
+ * 继承常规 {@link AggregationOptions} 的全部设置，并增加性能分析专用标志
+ *（如 {@code LIMITED}）以控制分析行为本身。
  *
  * @author Nikita Koksharov
  *
@@ -40,20 +39,18 @@ public class ProfileAggregationOptions extends AggregationOptions {
     }
 
     /**
-     * Creates a new {@link ProfileAggregationOptions} with default settings
-     * (no flags set, no aggregation options).
+     * 创建默认 {@link ProfileAggregationOptions}（未设置标志与聚合选项）。
      *
-     * @return new options instance
+     * @return 新的选项实例
      */
     public static ProfileAggregationOptions defaults() {
         return new ProfileAggregationOptions();
     }
 
     /**
-     * Enables the {@code LIMITED} flag, which removes details of reader
-     * iterators from the returned profile information.
+     * 启用 {@code LIMITED} 标志，从返回的分析信息中省略读取器迭代器细节。
      *
-     * @return this
+     * @return 当前实例
      */
     public ProfileAggregationOptions limited() {
         this.limited = true;
@@ -61,11 +58,10 @@ public class ProfileAggregationOptions extends AggregationOptions {
     }
 
     /**
-     * Sets the {@code LIMITED} flag, which removes details of reader
-     * iterators from the returned profile information.
+     * 设置 {@code LIMITED} 标志，从返回的分析信息中省略读取器迭代器细节。
      *
-     * @param limited whether to enable the {@code LIMITED} flag
-     * @return this
+     * @param limited 是否启用 {@code LIMITED} 标志
+     * @return 当前实例
      */
     public ProfileAggregationOptions limited(boolean limited) {
         this.limited = limited;

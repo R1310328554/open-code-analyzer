@@ -18,7 +18,7 @@ package org.redisson.api.search.query;
 import org.redisson.api.geo.GeoUnit;
 
 /**
- *
+ * 地理过滤器配置链中设置搜索半径的阶段接口。
  *
  * @author Nikita Koksharov
  *
@@ -26,11 +26,11 @@ import org.redisson.api.geo.GeoUnit;
 public interface GeoFilterRadius {
 
     /**
-     * Defines search within radius
+     * 以给定半径与单位限定搜索范围。
      *
-     * @param radius - radius in geo units
-     * @param geoUnit - geo unit
-     * @return search conditions object
+     * @param radius 半径值
+     * @param geoUnit 地理距离单位
+     * @return 可加入 {@link QueryOptions#filters(QueryFilter...)} 的过滤器
      */
     QueryFilter radius(double radius, GeoUnit geoUnit);
 

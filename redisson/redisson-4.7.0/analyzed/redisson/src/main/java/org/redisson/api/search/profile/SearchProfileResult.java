@@ -20,11 +20,9 @@ import org.redisson.api.search.query.SearchResult;
 import java.util.Map;
 
 /**
- * Result object returned by
- * {@link org.redisson.api.RSearch#profileSearch(String, String, org.redisson.api.search.query.QueryOptions)} method
- * and its overloads. Wraps the {@link SearchResult} produced by the underlying
- * {@code FT.SEARCH} call together with the performance information collected by
- * the {@code FT.PROFILE} command.
+ * {@link org.redisson.api.RSearch#profileSearch(String, String, org.redisson.api.search.query.QueryOptions)}
+ * 及其重载方法返回的结果对象。封装底层 {@code FT.SEARCH} 调用产生的 {@link SearchResult}，
+ * 以及 {@code FT.PROFILE} 命令收集的性能分析信息。
  *
  * @author Nikita Koksharov
  *
@@ -41,32 +39,27 @@ public final class SearchProfileResult {
     }
 
     /**
-     * Returns the result of the underlying {@code FT.SEARCH} call.
+     * 返回底层 {@code FT.SEARCH} 调用的搜索结果。
      *
-     * @return search result
+     * @return 搜索结果
      */
     public SearchResult getResult() {
         return result;
     }
 
     /**
-     * Returns profile information collected by the {@code FT.PROFILE} command.
+     * 返回 {@code FT.PROFILE} 命令收集的性能分析信息。
      * <p>
-     * The map is keyed by the top-level section name as returned by the
-     * server. For Redis Stack 8 and later this is typically {@code "Shards"}
-     * (a list of per-shard profile data) and {@code "Coordinator"} (data
-     * from the coordinator node, if any). Per-shard entries themselves
-     * contain timings (e.g. {@code "Total profile time"}, {@code "Parsing
-     * time"}, {@code "Pipeline creation time"}), the iterators tree under
-     * {@code "Iterators profile"}, and the per-stage result processors data
-     * under {@code "Result processors profile"}.
+     * 映射的键为服务端返回的顶层分区名称。Redis Stack 8 及更高版本通常为
+     * {@code "Shards"}（各分片分析数据列表）与 {@code "Coordinator"}（协调节点数据，如有）。
+     * 各分片条目包含耗时（如 {@code "Total profile time"}、{@code "Parsing time"}、
+     * {@code "Pipeline creation time"}）、{@code "Iterators profile"} 下的迭代器树，
+     * 以及 {@code "Result processors profile"} 下各阶段结果处理器数据。
      * <p>
-     * Values are returned as raw lists or primitive values; the nested
-     * structure mirrors the array layout returned by the server. Concrete
-     * keys and value shapes depend on the Redis Stack version and may
-     * evolve over time.
+     * 值为原始列表或基本类型；嵌套结构与服务端返回的数组布局一致。具体键名与值形态
+     * 取决于 Redis Stack 版本，可能随版本演进而变化。
      *
-     * @return profile information
+     * @return 性能分析信息
      */
     public Map<String, Object> getInfo() {
         return info;

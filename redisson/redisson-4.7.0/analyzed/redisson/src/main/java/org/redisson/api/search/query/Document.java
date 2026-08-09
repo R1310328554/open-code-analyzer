@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * 搜索结果中的单条文档，包含标识、属性、载荷与相关性得分。
  *
  * @author Nikita Koksharov
  *
@@ -41,36 +42,36 @@ public class Document {
     }
 
     /**
-     * Returns document id
+     * 返回文档标识。
      *
-     * @return document id
+     * @return 文档 id
      */
     public String getId() {
         return id;
     }
 
     /**
-     * Returns document attributes
+     * 返回文档属性映射。
      *
-     * @return document attributes
+     * @return 文档属性
      */
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
     /**
-     * Returns document payload
+     * 返回文档载荷（二进制附加数据）。
      *
-     * @return document payload
+     * @return 文档 payload
      */
     public byte[] getPayload() {
         return payload;
     }
 
     /**
-     * Returns document score
+     * 返回文档相关性得分。
      *
-     * @return document score
+     * @return 文档 score
      */
     public Double getScore() {
         return score;

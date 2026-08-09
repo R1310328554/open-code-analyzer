@@ -16,7 +16,7 @@
 package org.redisson.api.search.query;
 
 /**
- * Numeric filter for {@link QueryOptions#filters(QueryFilter...)} method
+ * 用于 {@link QueryOptions#filters(QueryFilter...)} 的数值范围过滤器。
  *
  * @author Nikita Koksharov
  *
@@ -24,18 +24,18 @@ package org.redisson.api.search.query;
 public interface NumericFilter {
 
     /**
-     * Defines minimum value in numeric range inclusive
+     * 设置数值范围下限（含边界）。
      *
-     * @param value numeric value
-     * @return next options
+     * @param value 下限值
+     * @return 上限配置阶段
      */
     NumericFilterMax min(double value);
 
     /**
-     * Defines minimum value in numeric range exclusive
+     * 设置数值范围下限（不含边界）。
      *
-     * @param value numeric value
-     * @return next options
+     * @param value 下限值
+     * @return 上限配置阶段
      */
     NumericFilterMax minExclusive(double value);
 

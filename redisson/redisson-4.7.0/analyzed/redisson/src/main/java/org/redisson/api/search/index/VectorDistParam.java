@@ -16,19 +16,21 @@
 package org.redisson.api.search.index;
 
 /**
+ * 向量索引配置链中设置距离度量的阶段接口。
  *
  * @author Nikita Koksharov
  *
  */
 public interface VectorDistParam<T> {
 
+    /** 向量相似度距离度量方式。 */
     enum DistanceMetric {L2, IP, COSINE}
 
     /**
-     * Defines distance metric parameter
+     * 设置向量距离度量方式。
      *
-     * @param metric distance metric
-     * @return vector options
+     * @param metric 距离度量（L2、内积或余弦）
+     * @return 后续向量选项对象
      */
     T distance(DistanceMetric metric);
 

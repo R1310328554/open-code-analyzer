@@ -18,6 +18,7 @@ package org.redisson.api.search.query;
 import java.util.List;
 
 /**
+ * 搜索结果高亮显示选项，用于配置高亮字段与包裹标签。
  *
  * @author Nikita Koksharov
  *
@@ -31,29 +32,46 @@ public final class HighlightOptions {
     private HighlightOptions() {
     }
 
+    /** 创建默认高亮选项。 */
     public static HighlightOptions defaults() {
         return new HighlightOptions();
     }
 
+    /**
+     * 指定需要高亮的字段列表。
+     *
+     * @param fields 字段名列表
+     * @return 当前选项
+     */
     public HighlightOptions fields(List<String> fields) {
         this.fields = fields;
         return this;
     }
 
+    /**
+     * 设置高亮片段的开闭标签。
+     *
+     * @param open 开标签
+     * @param close 闭标签
+     * @return 当前选项
+     */
     public HighlightOptions tags(String open, String close) {
         openTag = open;
         closeTag = close;
         return this;
     }
 
+    /** 返回高亮字段列表。 */
     public List<String> getFields() {
         return fields;
     }
 
+    /** 返回高亮开标签。 */
     public String getOpenTag() {
         return openTag;
     }
 
+    /** 返回高亮闭标签。 */
     public String getCloseTag() {
         return closeTag;
     }

@@ -16,7 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
- * Text field index options.
+ * 全文（TEXT）字段索引配置接口。
  *
  * @author Nikita Koksharov
  *
@@ -24,70 +24,69 @@ package org.redisson.api.search.index;
 public interface TextIndex extends FieldIndex {
 
     /**
-     * Defines the attribute associated to the field name.
+     * 指定字段映射到的文档属性名。
      *
-     * @param as the associated attribute
-     * @return options object
+     * @param as 关联属性名
+     * @return 当前文本索引选项
      */
     TextIndex as(String as);
 
     /**
-     * Defines sort mode applied to the value of this attribute.
+     * 设置该属性值的排序模式。
      *
-     * @param sortMode sort mode
-     * @return options object
+     * @param sortMode 排序模式
+     * @return 当前文本索引选项
      */
     TextIndex sortMode(SortMode sortMode);
 
     /**
-     * Defines whether to disable stemming when indexing its values.
+     * 索引时禁用词干提取（stemming）。
      *
-     * @return options object
+     * @return 当前文本索引选项
      */
     TextIndex noStem();
 
     /**
-     * Defines to not index this attribute
+     * 标记该属性不参与索引。
      *
-     * @return options object
+     * @return 当前文本索引选项
      */
     TextIndex noIndex();
 
     /**
-     * Defines whether to keep a suffix trie with all terms which match the suffix.
+     * 保留后缀字典树，以支持后缀匹配检索。
      *
-     * @return options object
+     * @return 当前文本索引选项
      */
     TextIndex withSuffixTrie();
 
     /**
-     * Defines phonetic matcher algorithm and language used for search result matching.
+     * 配置语音匹配算法及语言，用于搜索结果匹配。
      *
-     * @param matcher phonetic matcher algorithm and language
-     * @return options object
+     * @param matcher 语音匹配器（算法与语言）
+     * @return 当前文本索引选项
      */
     TextIndex phonetic(PhoneticMatcher matcher);
 
     /**
-     * Defines declares a multiplication factor value used to declare the importance
-     * of this attribute when calculating result accuracy.
+     * 设置相关性评分权重，用于计算结果准确度时体现该字段的重要程度。
      *
-     * @param weight multiplication factor value
-     * @return options object
+     * @param weight 权重乘数
+     * @return 当前文本索引选项
      */
     TextIndex weight(Double weight);
 
     /**
-     * Defines whether to index an empty value.
+     * 索引空字符串值。
      *
-     * @return options object
+     * @return 当前文本索引选项
      */
     TextIndex indexEmpty();
 
     /**
-     * Defines to index documents that don't contain this attribute
+     * 索引缺少该属性的文档（视为缺失值参与检索）。
      *
-     * @return options object
+     * @return 当前文本索引选项
      */
     TextIndex indexMissing();
 

@@ -16,7 +16,7 @@
 package org.redisson.api.search.query;
 
 /**
- * Geo filter for {@link QueryOptions#filters(QueryFilter...)} method
+ * 用于 {@link QueryOptions#filters(QueryFilter...)} 的地理坐标过滤器。
  *
  * @author Nikita Koksharov
  *
@@ -24,11 +24,11 @@ package org.redisson.api.search.query;
 public interface GeoFilter {
 
     /**
-     * Defines search from defined longitude and latitude coordinates
+     * 以给定经纬度坐标作为搜索圆心。
      *
-     * @param longitude - longitude of object
-     * @param latitude - latitude of object
-     * @return search conditions object
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @return 半径配置阶段
      */
     GeoFilterRadius from(double longitude, double latitude);
 

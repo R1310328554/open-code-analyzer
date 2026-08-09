@@ -26,11 +26,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Search query options for {@code FT.PROFILE ... SEARCH ...}.
+ * {@code FT.PROFILE ... SEARCH ...} 命令的搜索查询选项。
  * <p>
- * Inherits all the regular {@link QueryOptions} settings and adds
- * profile-specific flags (such as {@code LIMITED}) that control behavior
- * of the profiling itself.
+ * 继承常规 {@link QueryOptions} 的全部设置，并增加性能分析专用标志
+ *（如 {@code LIMITED}）以控制分析行为本身。
  *
  * @author Nikita Koksharov
  *
@@ -43,20 +42,18 @@ public class ProfileQueryOptions extends QueryOptions {
     }
 
     /**
-     * Creates a new {@link ProfileQueryOptions} with default settings
-     * (no flags set, no query options).
+     * 创建默认 {@link ProfileQueryOptions}（未设置标志与查询选项）。
      *
-     * @return new options instance
+     * @return 新的选项实例
      */
     public static ProfileQueryOptions defaults() {
         return new ProfileQueryOptions();
     }
 
     /**
-     * Enables the {@code LIMITED} flag, which removes details of reader
-     * iterators from the returned profile information.
+     * 启用 {@code LIMITED} 标志，从返回的分析信息中省略读取器迭代器细节。
      *
-     * @return this
+     * @return 当前实例
      */
     public ProfileQueryOptions limited() {
         this.limited = true;
@@ -64,11 +61,10 @@ public class ProfileQueryOptions extends QueryOptions {
     }
 
     /**
-     * Sets the {@code LIMITED} flag, which removes details of reader
-     * iterators from the returned profile information.
+     * 设置 {@code LIMITED} 标志，从返回的分析信息中省略读取器迭代器细节。
      *
-     * @param limited whether to enable the {@code LIMITED} flag
-     * @return this
+     * @param limited 是否启用 {@code LIMITED} 标志
+     * @return 当前实例
      */
     public ProfileQueryOptions limited(boolean limited) {
         this.limited = limited;

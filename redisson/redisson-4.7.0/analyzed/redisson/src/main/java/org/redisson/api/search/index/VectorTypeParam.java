@@ -16,19 +16,21 @@
 package org.redisson.api.search.index;
 
 /**
+ * 向量索引配置链中设置向量元素类型的阶段接口。
  *
  * @author Nikita Koksharov
  *
  */
 public interface VectorTypeParam<T> {
 
+    /** 向量元素浮点精度类型。 */
     enum Type {FLOAT32, FLOAT64}
 
     /**
-     * Defines vector type parameter
+     * 设置向量元素类型。
      *
-     * @param type vector type parameter
-     * @return vector options
+     * @param type 向量类型（32 位或 64 位浮点）
+     * @return 向量维度配置阶段
      */
     VectorDimParam<T> type(Type type);
 

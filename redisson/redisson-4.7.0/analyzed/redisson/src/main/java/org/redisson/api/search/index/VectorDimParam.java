@@ -16,6 +16,7 @@
 package org.redisson.api.search.index;
 
 /**
+ * 向量索引配置链中设置向量维度的阶段接口。
  *
  * @author Nikita Koksharov
  *
@@ -23,10 +24,10 @@ package org.redisson.api.search.index;
 public interface VectorDimParam<T> {
 
     /**
-     * Defines vector dimension parameter
+     * 设置向量维度。
      *
-     * @param value vector dimension
-     * @return vector options
+     * @param value 向量维度
+     * @return 距离度量配置阶段
      */
     VectorDistParam<T> dim(int value);
 
