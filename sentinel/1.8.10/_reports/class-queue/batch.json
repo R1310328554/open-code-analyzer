@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:14:24Z",
-  "files": [
-    "sentinel-demo/sentinel-demo-apollo-datasource/src/main/java/com/alibaba/csp/sentinel/demo/datasource/apollo/FlowQpsRunner.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/AsyncEntryDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/authority/AuthorityDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/degrade/ExceptionRatioCircuitBreakerDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/degrade/SlowRatioCircuitBreakerDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/flow/FlowQpsDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/flow/FlowQpsRegexDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/flow/FlowThreadDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/flow/PaceFlowDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/flow/WarmUpFlowDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/flow/WarmUpRateLimiterFlowDemo.java",
-    "sentinel-demo/sentinel-demo-basic/src/main/java/com/alibaba/csp/sentinel/demo/system/SystemGuardDemo.java",
-    "sentinel-demo/sentinel-demo-cluster/sentinel-demo-cluster-embedded/src/main/java/com/alibaba/csp/sentinel/demo/cluster/DemoConstants.java",
-    "sentinel-demo/sentinel-demo-cluster/sentinel-demo-cluster-embedded/src/main/java/com/alibaba/csp/sentinel/demo/cluster/app/ClusterDemoApplication.java",
-    "sentinel-demo/sentinel-demo-cluster/sentinel-demo-cluster-embedded/src/main/java/com/alibaba/csp/sentinel/demo/cluster/app/config/AopConfig.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 245,
-  "done": 690
+  "done": 705
 }
