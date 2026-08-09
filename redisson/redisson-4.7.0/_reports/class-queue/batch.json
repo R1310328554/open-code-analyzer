@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:22:44Z",
   "files": [
-    "redisson-quarkus/redisson-quarkus-30/cache/runtime/src/main/java/io/quarkus/cache/redisson/runtime/RedissonCachesConfig.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/deployment/src/main/java/io/quarkus/redisson/client/deployment/QuarkusRedissonClientProcessor.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/deployment/src/main/java/io/quarkus/redisson/client/deployment/RedissonClientItemBuild.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/integration-tests/src/main/java/org/redisson/quarkus/client/it/QuarkusRedissonClientResource.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/integration-tests/src/main/java/org/redisson/quarkus/client/it/RemService.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/integration-tests/src/main/java/org/redisson/quarkus/client/it/RemoteServiceImpl.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/integration-tests/src/main/java/org/redisson/quarkus/client/it/Task.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/RedissonClientProducer.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/RedissonClientRecorder.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/RedissonConfig.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/graal/ByteBuddySubstitutions.java",
-    "redisson-quarkus/redisson-quarkus-30/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/graal/CodecsSubstitutions.java",
-    "redisson-quarkus/redisson-quarkus-33/cache/deployment/src/main/java/io/quarkus/cache/redisson/deployment/RedissonCacheProcessor.java",
-    "redisson-quarkus/redisson-quarkus-33/cache/integration-tests/src/main/java/org/redisson/quarkus/client/it/CachedService.java",
-    "redisson-quarkus/redisson-quarkus-33/cache/integration-tests/src/main/java/org/redisson/quarkus/client/it/MyCredentialsResolver.java",
     "redisson-quarkus/redisson-quarkus-33/cache/integration-tests/src/main/java/org/redisson/quarkus/client/it/QuarkusRedissonClientResource.java",
     "redisson-quarkus/redisson-quarkus-33/cache/runtime/src/main/java/io/quarkus/cache/redisson/runtime/CacheImplementation.java",
     "redisson-quarkus/redisson-quarkus-33/cache/runtime/src/main/java/io/quarkus/cache/redisson/runtime/RedissonCache.java",
@@ -33,5 +18,5 @@
     "redisson-quarkus/redisson-quarkus-33/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/RedissonClientProducer.java"
   ],
   "remaining_pending": 2582,
-  "done": 210
+  "done": 225
 }
