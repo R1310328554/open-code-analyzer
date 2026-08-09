@@ -29,6 +29,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
+ * 阻塞队列等元素订阅的循环调度服务。
+ * <p>由 {@link org.redisson.connection.ServiceManager} 持有，供 {@link RedissonBlockingQueue} 等
+ * 反复调用异步取元素 API 并将结果交给消费者；失败时在非关闭状态下延迟重试。
+ *
  * @author Nikita Koksharov
  */
 public class ElementsSubscribeService {
@@ -37,10 +41,19 @@ public class ElementsSubscribeService {
     private final Map<Integer, CompletableFuture<?>> subscribeListeners = new ConcurrentHashMap<>();
     private final ServiceManager serviceManager;
 
+    /** @param serviceManager 提供超时调度与关闭状态检测 */
     public ElementsSubscribeService(ServiceManager serviceManager) {
         this.serviceManager = serviceManager;
     }
 
+    /**
+     * 注册异步元素订阅循环（推荐）。
+     * <p>{@code func} 持续发起取元素请求，{@code consumer} 处理每个元素并可返回后续 {@link CompletionStage}。
+     *
+     * @param func 异步取元素供应函数（如 {@code takeAsync}）
+     * @param consumer 元素处理函数，勿在其中调用阻塞 API
+     * @return 监听器 ID，用于 {@link #unsubscribe(int)}
+     */
     public <V> int subscribeOnElements(Supplier<CompletionStage<V>> func, Function<V, CompletionStage<Void>> consumer) {
         int id = System.identityHashCode(consumer);
         CompletableFuture<?> currentFuture = subscribeListeners.putIfAbsent(id, CompletableFuture.completedFuture(null));
@@ -51,6 +64,7 @@ public class ElementsSubscribeService {
         return id;
     }
 
+    /** @deprecated 请改用 {@link #subscribeOnElements(Supplier, Function)} */
     @Deprecated
     public <V> int subscribeOnElements(Supplier<CompletionStage<V>> func, Consumer<V> consumer) {
         int id = System.identityHashCode(consumer);
@@ -62,6 +76,8 @@ public class ElementsSubscribeService {
         return id;
     }
 
+    /** 取消订阅并中断进行中的异步取元素循环。
+     * @param listenerId {@link #subscribeOnElements} 返回的 ID */
     public void unsubscribe(int listenerId) {
         CompletableFuture<?> f = subscribeListeners.remove(listenerId);
         if (f != null) {

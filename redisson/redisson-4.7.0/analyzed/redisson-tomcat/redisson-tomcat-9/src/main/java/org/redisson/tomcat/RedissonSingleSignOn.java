@@ -28,8 +28,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 
 /**
- * Extended implementation of Tomcat SSO valve to use Redis or Valkey as a storage.
- * This allows to cluster Tomcat without sticky sessions.
+ * 扩展 Tomcat {@link org.apache.catalina.authenticator.SingleSignOn} Valve，
+ * 以 Redis/Valkey 持久化 SSO 条目，实现无粘性 Session 的 Tomcat 集群单点登录。
+ * <p>本地 {@code cache} 与 Redis Map {@code redisson:tomcat_sso} 双向同步。
  */
 public class RedissonSingleSignOn extends SingleSignOn {
 
@@ -38,6 +39,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
 
   private RedissonSessionManager manager;
 
+  /** 注入 {@link RedissonSessionManager} 以访问 Redis Map。 */
   void setSessionManager(RedissonSessionManager manager) {
     if (containerLog != null && containerLog.isTraceEnabled()) {
         containerLog.trace(sm.getString("redissonSingleSignOn.trace.setSessionManager", manager));
@@ -45,6 +47,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
     this.manager = manager;
   }
 
+  /** 请求前从 Redis 同步 SSO 条目，再委托父类 Valve 链。 */
   @Override
   public void invoke(Request request, Response response) throws IOException, ServletException {
       if (containerLog.isTraceEnabled()) {
@@ -55,6 +58,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       super.invoke(request, response);
   }
 
+  /** Session 销毁时清理 Redis 中对应 SSO 条目。 */
   @Override
   public void sessionDestroyed(String ssoId, Session session) {
       if (containerLog.isTraceEnabled()) {
@@ -64,6 +68,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       manager.getMap(SSO_SESSION_ENTRIES).fastRemove(ssoId);
   }
 
+  /** 关联 Session 与 SSO ID 后，将条目写入 Redis。 */
   @Override
   protected boolean associate(String ssoId, Session session) {
       if (containerLog.isTraceEnabled()) {
@@ -77,6 +82,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       return associated;
   }
 
+  /** 重新认证前同步 Redis 中的 SSO 状态。 */
   @Override
   protected boolean reauthenticate(String ssoId, Realm realm, Request request) {
       if (containerLog.isTraceEnabled()) {
@@ -86,6 +92,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       return super.reauthenticate(ssoId, realm, request);
   }
 
+  /** 注册新 SSO 条目并持久化到 Redis。 */
   @Override
   protected void register(String ssoId, Principal principal, String authType, String username, String password) {
       if (containerLog.isTraceEnabled()) {
@@ -95,6 +102,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, cache.get(ssoId));
   }
 
+  /** 注销 SSO 并从 Redis 删除条目。 */
   @Override
   protected void deregister(String ssoId) {
       if (containerLog.isTraceEnabled()) {
@@ -104,6 +112,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       manager.getMap(SSO_SESSION_ENTRIES).fastRemove(ssoId);
   }
 
+  /** 更新 SSO 凭证；成功时写回 Redis。 */
   @Override
   protected boolean update(String ssoId, Principal principal, String authType, String username, String password) {
       if (containerLog.isTraceEnabled()) {
@@ -117,6 +126,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       return updated;
   }
 
+  /** 移除 Session 关联；若无剩余 Session 则注销 SSO。 */
   @Override
   protected void removeSession(String ssoId, Session session) {
       if (containerLog.isTraceEnabled()) {
@@ -130,11 +140,11 @@ public class RedissonSingleSignOn extends SingleSignOn {
   }
 
   /**
-   * Lookup {@code SingleSignOnEntry} for the given SSO ID and make sure local cache has the same value.
-   * That applies also to non existence.
+   * 按 SSO ID 从 Redis 查找 {@link org.apache.catalina.authenticator.SingleSignOnEntry}，
+   * 并同步本地 cache（包括条目不存在时移除缓存项）。
    *
-   * @param ssoSessionId SSO session id we are looking for
-   * @return matching {@code SingleSignOnEntry} instance or null when not found
+   * @param ssoSessionId 目标 SSO Session ID
+   * @return 匹配的条目，未找到时返回 {@code null}
    */
   private SingleSignOnEntry syncAndGetSsoEntry(String ssoSessionId) {
       if (containerLog.isTraceEnabled()) {
@@ -153,10 +163,10 @@ public class RedissonSingleSignOn extends SingleSignOn {
   }
 
   /**
-   * Retrieve SSO session ID from provided cookies in the request.
+   * 从请求 Cookie 中解析 SSO Session ID。
    *
-   * @param request The request that has been sent to the server.
-   * @return SSO session ID provided with the request or null when none provided
+   * @param request 入站请求
+   * @return Cookie 中的 SSO ID，未提供时返回 {@code null}
    */
   private String getSsoSessionId(Request request) {
       if (containerLog.isTraceEnabled()) {

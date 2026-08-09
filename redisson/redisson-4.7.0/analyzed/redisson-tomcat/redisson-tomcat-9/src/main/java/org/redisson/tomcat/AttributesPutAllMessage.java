@@ -24,9 +24,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨 Tomcat 节点广播：批量写入 Session 属性。
+ * <p>构造时将每个值编码为字节数组以支持集群 Topic 消息传递。
  *
+ * @author Nikita Koksharov
  */
 public class AttributesPutAllMessage extends AttributeMessage {
 
@@ -35,6 +36,11 @@ public class AttributesPutAllMessage extends AttributeMessage {
     public AttributesPutAllMessage() {
     }
 
+    /** @param redissonSessionManager 提供节点 ID 的 Session 管理器
+     *  @param sessionId 目标 Session
+     *  @param attrs 待写入的属性名→值映射
+     *  @param encoder Redisson 编码器
+     */
     public AttributesPutAllMessage(RedissonSessionManager redissonSessionManager, String sessionId, Map<String, Object> attrs, Encoder encoder) throws Exception {
         super(redissonSessionManager.getNodeId(), sessionId);
         if (attrs != null) {
@@ -47,6 +53,7 @@ public class AttributesPutAllMessage extends AttributeMessage {
         }
     }
 
+    /** 解码全部属性并返回名→值映射；原始 attrs 为 null 时返回 null。 */
     public Map<String, Object> getAttrs(Decoder<?> decoder) throws IOException, ClassNotFoundException {
     	if (attrs == null) {
     		return null;
