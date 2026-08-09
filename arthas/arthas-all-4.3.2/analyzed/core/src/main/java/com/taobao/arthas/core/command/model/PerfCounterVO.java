@@ -2,15 +2,22 @@ package com.taobao.arthas.core.command.model;
 
 
 /**
- * VO for PerfCounterCommand
+ * 单条 JVM PerfCounter 的值对象，供 {@link PerfCounterModel} 聚合展示。
+ * <p>
+ * {@link #value} 类型随计数器而定（Long、Double 等）；{@link #variability}
+ * 描述采样变异性（如 CONSTANT、VARIABLE），仅在详细模式下填充。
  *
  * @author gongdewei 2020/4/27
  */
 public class PerfCounterVO {
 
+    /** 计数器名称，与 JVM 内部 perf 键一致 */
     private String name;
+    /** 计量单位，如 events、bytes（详细模式） */
     private String units;
+    /** 变异性分类：CONSTANT / VARIABLE / MONOTONIC 等（详细模式） */
     private String variability;
+    /** 当前采样值，具体类型取决于计数器定义 */
     private Object value;
 
     public PerfCounterVO() {

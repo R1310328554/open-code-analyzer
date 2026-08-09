@@ -4,17 +4,29 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Class info of SearchClassCommand
+ * sc（search class）命令的结构化结果：类搜索命中列表或单个类详情。
+ * <p>
+ * 两种构造模式互斥：{@link #classNames}+{@link #segment} 用于分页列出匹配类名；
+ * {@link #classInfo} 配合 {@link #detailed}/{@link #withField} 返回单类结构与字段。
+ * 多 ClassLoader 场景下填充 {@link #matchedClassLoaders} 提示用户加 {@code -c}。
+ *
  * @author gongdewei 2020/04/08
  */
 public class SearchClassModel extends ResultModel {
+    /** 单个类的详细信息（详情模式） */
     private ClassDetailVO classInfo;
+    /** 是否在详情中包含字段信息 */
     private boolean withField;
+    /** 是否输出完整类结构（反编译级别细节） */
     private boolean detailed;
+    /** 匹配到的类全限定名列表（列表模式） */
     private List<String> classNames;
+    /** 分页段号，配合 Arthas 结果分段输出 */
     private int segment;
 
+    /** ClassLoader 歧义时的候选加载器 */
     private Collection<ClassLoaderVO> matchedClassLoaders;
+    /** 用户指定的 ClassLoader 类名 */
     private String classLoaderClass;
 
     public SearchClassModel() {

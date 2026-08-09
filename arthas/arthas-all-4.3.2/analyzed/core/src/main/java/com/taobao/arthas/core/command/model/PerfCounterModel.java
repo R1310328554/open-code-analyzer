@@ -3,12 +3,17 @@ package com.taobao.arthas.core.command.model;
 import java.util.List;
 
 /**
- * Model of 'perfcounter'
+ * perfcounter 命令的结构化结果：JVM 内部性能计数器（PerfCounter）快照。
+ * <p>
+ * 数据来源于 HotSpot 的 perf 数据；{@link #details} 为 true 时各条目包含
+ * units、variability 等元数据，false 时仅返回名称与数值，便于快速浏览。
  *
  * @author gongdewei 2020/4/27
  */
 public class PerfCounterModel extends ResultModel {
+    /** 计数器条目列表，顺序与 JVM 导出一致 */
     private List<PerfCounterVO> perfCounters;
+    /** 是否以详细模式返回（含单位、变异性等字段） */
     private boolean details;
 
     public PerfCounterModel() {
