@@ -22,13 +22,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Array information decoder.
+ * Redis Array 类型元信息解码器。
+ * <p>
+ * 将 {@code ARRAY INFO} 等命令返回的键值对列表解析为 {@link ArrayInfo}，
+ * 基础字段由父类 {@link AbstractArrayInfoDecoder#populateBase} 填充。
  *
  * @author lamnt2008
  *
  */
 public class ArrayInfoDecoder extends AbstractArrayInfoDecoder implements MultiDecoder<ArrayInfo> {
 
+    /** 将 RESP 数组段转为键值 Map 并填充 {@link ArrayInfo}。 */
     @Override
     public ArrayInfo decode(List<Object> parts, State state) {
         Map<String, Object> map = toMap(parts);

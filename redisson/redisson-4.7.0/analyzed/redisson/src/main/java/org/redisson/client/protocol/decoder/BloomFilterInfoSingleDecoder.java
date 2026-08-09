@@ -22,18 +22,22 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * BloomFilter info(single) decoder
+ * 布隆过滤器 {@code BF.INFO} 单字段回复解码器。
+ * <p>
+ * 当命令仅查询某一统计项时，回复为单元素数组，取首项 {@code Long}。
  *
  * @author Su Ko
  *
  */
 public class BloomFilterInfoSingleDecoder implements MultiDecoder<Long> {
 
+    /** 单值回复使用 {@link LongCodec}。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return LongCodec.INSTANCE.getValueDecoder();
     }
 
+    /** 返回数组第一个元素作为 Long 统计值。 */
     @Override
     public Long decode(List<Object> parts, State state) {
         return (Long) parts.get(0);

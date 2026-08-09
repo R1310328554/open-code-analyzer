@@ -24,14 +24,20 @@ import java.util.Set;
 import org.redisson.client.handler.State;
 
 /**
- * 
+ * 批量存在性探测结果解码器（集合形式）。
+ * <p>
+ * 与 {@link ContainsDecoder} 逻辑相同，但结果放入 {@link LinkedHashSet}
+ * 以保持插入顺序并去重。
+ *
  * @author Su Ko
  *
  */
 public class ContainsSetDecoder<T> implements MultiDecoder<Set<T>> {
 
+    /** 与 Redis 0/1 回复逐位对应的待检测元素。 */
     private final List<T> args;
 
+    /** 保存待检测元素集合。 */
     public ContainsSetDecoder(Collection<T> args) {
         if (args instanceof List) {
             this.args = (List<T>) args;
@@ -40,6 +46,7 @@ public class ContainsSetDecoder<T> implements MultiDecoder<Set<T>> {
         }
     }
 
+    /** 将标记为 1 的参数加入 LinkedHashSet 并返回。 */
     @Override
     public Set<T> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

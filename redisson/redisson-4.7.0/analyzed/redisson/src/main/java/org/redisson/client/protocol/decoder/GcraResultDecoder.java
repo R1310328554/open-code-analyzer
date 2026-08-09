@@ -21,12 +21,17 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
+ * GCRA 通用限流算法（{@code CL.THROTTLE}）回复解码器。
+ * <p>
+ * 期望固定 5 个数值字段：是否允许、剩余配额、重试间隔、
+ * 总限制与已用计数，组装为 {@link GcraResult}。
  *
  * @author Su Ko
  *
  */
 public class GcraResultDecoder implements MultiDecoder<GcraResult> {
 
+    /** 校验长度为 5，否则抛出 {@link IllegalStateException}。 */
     @Override
     public GcraResult decode(List<Object> parts, State state) {
         if (parts == null || parts.size() != 5) {
@@ -40,6 +45,7 @@ public class GcraResultDecoder implements MultiDecoder<GcraResult> {
                 toLong(parts.get(4)));
     }
 
+    /** 将 Number 或字符串安全转为 long。 */
     private long toLong(Object value) {
         if (value instanceof Number) {
             return ((Number) value).longValue();

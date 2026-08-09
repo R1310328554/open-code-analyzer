@@ -24,17 +24,23 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * 
+ * {@code XAUTOCLAIM} 精简（仅 ID）回复解码器。
+ * <p>
+ * 解析下一扫描起点与已认领消息 ID 列表，构造 {@link FastAutoClaimResult}，
+ * 不携带消息体字段映射。
+ *
  * @author Nikita Koksharov
  *
  */
 public class FastAutoClaimDecoder implements MultiDecoder<FastAutoClaimResult> {
 
+    /** 消息 ID 字段使用 {@link StreamIdDecoder}。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return new StreamIdDecoder();
     }
 
+    /** parts[0] 为 nextId，parts[1] 为 StreamMessageId 列表。 */
     @Override
     public FastAutoClaimResult decode(List<Object> parts, State state) {
         return new FastAutoClaimResult((StreamMessageId) parts.get(0),

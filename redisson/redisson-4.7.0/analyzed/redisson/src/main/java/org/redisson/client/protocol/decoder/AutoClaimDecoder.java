@@ -26,24 +26,32 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * {@code XAUTOCLAIM} 命令完整回复解码器。
+ * <p>
+ * 解析起始消息 ID、已认领消息映射及可选的已删除 ID 列表，
+ * 组装为 {@link AutoClaimResult}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class AutoClaimDecoder implements MultiDecoder<Object> {
 
+    /** 嵌套字段使用 {@link StreamIdDecoder} 解析 Stream 消息 ID。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return new StreamIdDecoder();
     }
 
+    /** 空回复返回 {@code null}；否则按 [nextId, messages, deletedIds?] 构造结果。 */
     @Override
     public Object decode(List<Object> parts, State state) {
+        // 无待认领消息时 Redis 返回空数组
         if (parts.isEmpty()) {
             return null;            
         }
 
         Map<StreamMessageId, Map<Object, Object>> maps = (Map<StreamMessageId, Map<Object, Object>>) parts.get(1);
+        // 第三段为可选的已删除消息 ID 列表
         List<StreamMessageId> deletedIds = Collections.emptyList();
         if (parts.size() == 3) {
             deletedIds = (List<StreamMessageId>) parts.get(2);

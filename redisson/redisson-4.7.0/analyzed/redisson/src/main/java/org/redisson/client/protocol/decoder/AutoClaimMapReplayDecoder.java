@@ -25,12 +25,17 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * {@code XAUTOCLAIM} 回复中消息映射段的分阶段解码器。
+ * <p>
+ * 首次调用将 {@code [id, fields]} 列表转为 {@code Map}；
+ * 后续嵌套层通过 {@link State} 标记直接透传子段。
+ *
  * @author Nikita Koksharov
  *
  */
 public class AutoClaimMapReplayDecoder implements MultiDecoder<Object> {
 
+    /** 已进入内层解析时对消息 ID 使用 {@link StreamIdDecoder}。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (state.getValue() != null) {
@@ -39,12 +44,14 @@ public class AutoClaimMapReplayDecoder implements MultiDecoder<Object> {
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
 
+    /** 首段聚合为 LinkedHashMap；内层返回原始 parts 供上层继续解码。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         if (state.getValue() != null) {
             return parts;
         }
 
+        // 标记已进入内层，后续 getDecoder 切换为 StreamIdDecoder
         state.setValue(true);
         List<List<Object>> list = (List<List<Object>>) (Object) parts;
         return list.stream()

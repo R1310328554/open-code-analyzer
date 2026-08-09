@@ -28,19 +28,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * {@code CLUSTER NODES} 文本回复解码器。
+ * <p>
+ * 按行解析节点 ID、地址、角色标志、主从关系及槽位区间，
+ * 生成 {@link ClusterNodeInfo} 列表。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
 
+    /** 连接 URI 使用的协议前缀（如 {@code redis}、{@code rediss}）。 */
     private final String scheme;
-    
+
+    /** @param scheme URI scheme，用于拼接节点地址 */
     public ClusterNodesDecoder(String scheme) {
         super();
         this.scheme = scheme;
     }
 
+    /** 将整段 UTF-8 文本按行拆分为集群节点信息对象。 */
     @Override
     public List<ClusterNodeInfo> decode(ByteBuf buf, State state) throws IOException {
         String response = buf.toString(CharsetUtil.UTF_8);
@@ -53,6 +60,7 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             String nodeId = params[0];
             node.setNodeId(nodeId);
 
+            // 第三列为逗号分隔的角色/状态标志
             String flags = params[2];
             for (String flag : flags.split(",")) {
                 for (Flag nodeInfoFlag : ClusterNodeInfo.Flag.values()) {
@@ -80,9 +88,11 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
                 node.setSlaveOf(slaveOf);
             }
 
+            // 第 9 列起为槽位或迁移标记
             if (params.length > 8) {
                 for (int i = 0; i < params.length - 8; i++) {
                     String slots = params[i + 8];
+                    // 跳过槽迁移中的临时标记
                     if (slots.contains("-<-") || slots.contains("->-")) {
                         continue;
                     }
@@ -100,12 +110,13 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
         return nodes;
     }
 
+    /** 从 {@code host:port@bus-port} 片段提取客户端地址并加上 scheme。 */
     private String createUri(String part) {
 
         String addr = part.split("@")[0];
         String name = addr.substring(0, addr.lastIndexOf(":"));
         if (name.isEmpty()) {
-            // skip nodes with empty address
+            // 地址为空则跳过该节点（如无有效 host）
             return null;
         }
         return scheme + "://" + addr;

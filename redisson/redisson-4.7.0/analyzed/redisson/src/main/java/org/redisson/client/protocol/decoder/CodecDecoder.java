@@ -20,12 +20,16 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
- * 
+ * 透传型 {@link MultiDecoder}：不对子元素做二次转换。
+ * <p>
+ * 直接返回已解码的 {@code parts} 列表，供上层自行处理原始结构。
+ *
  * @author Nikita Koksharov
  *
  */
 public class CodecDecoder implements MultiDecoder<Object> {
 
+    /** 原样返回 RESP 数组各元素，不做类型变换。 */
     @Override
     public Object decode(List<Object> parts, State state) {
         return parts;

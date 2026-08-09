@@ -23,18 +23,22 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
 /**
- * BloomFilter ScanDump Info decoder
+ * 布隆过滤器 {@code BF.SCANDUMP} 扫描导出解码器。
+ * <p>
+ * 解析迭代游标与二进制 dump 片段，封装为 {@link BloomFilterScanDumpInfo}。
  *
  * @author Su Ko
  *
  */
 public class BloomFilterScanDumpInfoDecoder implements MultiDecoder<BloomFilterScanDumpInfo> {
 
+    /** dump 数据段使用 {@link ByteArrayCodec} 解码为字节数组。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return ByteArrayCodec.INSTANCE.getValueDecoder();
     }
 
+    /** 首项为下次扫描游标，次项为当前批次的二进制数据。 */
     @Override
     public BloomFilterScanDumpInfo decode(List<Object> parts, State state) {
         long iterator = (long) parts.get(0);
