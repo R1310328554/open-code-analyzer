@@ -23,14 +23,20 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 创建 ACL 权限规则请求头：指定授权主体（Subject）。
+ */
 @RocketMQAction(value = RequestCode.AUTH_CREATE_ACL, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class CreateAclRequestHeader implements CommandCustomHeader {
 
+    /** ACL 授权主体（用户或角色）。 */
     private String subject;
 
+    /** 默认构造器。 */
     public CreateAclRequestHeader() {
     }
 
+    /** 以指定主体构造请求头。 */
     public CreateAclRequestHeader(String subject) {
         this.subject = subject;
     }
@@ -40,10 +46,12 @@ public class CreateAclRequestHeader implements CommandCustomHeader {
 
     }
 
+    /** 返回授权主体。 */
     public String getSubject() {
         return subject;
     }
 
+    /** 设置授权主体。 */
     public void setSubject(String subject) {
         this.subject = subject;
     }

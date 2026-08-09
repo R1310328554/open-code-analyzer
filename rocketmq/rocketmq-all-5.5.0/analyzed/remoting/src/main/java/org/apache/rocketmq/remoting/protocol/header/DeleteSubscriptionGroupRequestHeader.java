@@ -26,30 +26,39 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 删除订阅组请求头：移除消费组并可选择清理其消费位点。
+ */
 @RocketMQAction(value = RequestCode.DELETE_SUBSCRIPTIONGROUP, action = Action.DELETE)
 public class DeleteSubscriptionGroupRequestHeader extends RpcRequestHeader {
+    /** 待删除的消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String groupName;
 
+    /** 是否同步清理该组的消费位点。 */
     private boolean cleanOffset = false;
 
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费组名称。 */
     public String getGroupName() {
         return groupName;
     }
 
+    /** 设置消费组名称。 */
     public void setGroupName(String groupName) {
         this.groupName = groupName;
     }
 
+    /** 返回是否清理位点。 */
     public boolean isCleanOffset() {
         return cleanOffset;
     }
 
+    /** 设置是否清理位点。 */
     public void setCleanOffset(boolean cleanOffset) {
         this.cleanOffset = cleanOffset;
     }

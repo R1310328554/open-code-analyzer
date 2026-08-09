@@ -29,30 +29,42 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 结束事务请求头：Producer 提交或回滚半消息，完成两阶段事务。
+ */
 @RocketMQAction(value = RequestCode.END_TRANSACTION, action = Action.PUB)
 public class EndTransactionRequestHeader extends RpcRequestHeader {
+    /** 半消息所属 Topic。 */
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 生产者组名称。 */
     @CFNotNull
     private String producerGroup;
+    /** 事务状态表位点。 */
     @CFNotNull
     private Long tranStateTableOffset;
+    /** CommitLog 物理位点。 */
     @CFNotNull
     private Long commitLogOffset;
+    /** 提交/回滚/未知标志（TRANSACTION_COMMIT_TYPE / ROLLBACK / NOT）。 */
     @CFNotNull
     private Integer commitOrRollback; // TRANSACTION_COMMIT_TYPE
     // TRANSACTION_ROLLBACK_TYPE
     // TRANSACTION_NOT_TYPE
 
+    /** 是否由 Broker 事务回查触发。 */
     @CFNullable
     private Boolean fromTransactionCheck = false;
 
+    /** 半消息 ID。 */
     @CFNotNull
     private String msgId;
 
+    /** 事务 ID。 */
     private String transactionId;
 
     @Override
+    /** 校验 commitOrRollback 必须为合法事务类型。 */
     public void checkFields() throws RemotingCommandException {
         if (MessageSysFlag.TRANSACTION_NOT_TYPE == this.commitOrRollback) {
             return;
@@ -77,6 +89,7 @@ public class EndTransactionRequestHeader extends RpcRequestHeader {
         this.topic = topic;
     }
 
+    /** 返回生产者组。 */
     public String getProducerGroup() {
         return producerGroup;
     }
@@ -101,6 +114,7 @@ public class EndTransactionRequestHeader extends RpcRequestHeader {
         this.commitLogOffset = commitLogOffset;
     }
 
+    /** 返回提交/回滚标志。 */
     public Integer getCommitOrRollback() {
         return commitOrRollback;
     }
@@ -109,6 +123,7 @@ public class EndTransactionRequestHeader extends RpcRequestHeader {
         this.commitOrRollback = commitOrRollback;
     }
 
+    /** 返回是否由回查触发。 */
     public Boolean getFromTransactionCheck() {
         return fromTransactionCheck;
     }
@@ -117,6 +132,7 @@ public class EndTransactionRequestHeader extends RpcRequestHeader {
         this.fromTransactionCheck = fromTransactionCheck;
     }
 
+    /** 返回消息 ID。 */
     public String getMsgId() {
         return msgId;
     }
@@ -125,6 +141,7 @@ public class EndTransactionRequestHeader extends RpcRequestHeader {
         this.msgId = msgId;
     }
 
+    /** 返回事务 ID。 */
     public String getTransactionId() {
         return transactionId;
     }
@@ -133,6 +150,7 @@ public class EndTransactionRequestHeader extends RpcRequestHeader {
         this.transactionId = transactionId;
     }
 
+    /** 返回便于诊断的可读字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

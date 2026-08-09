@@ -30,16 +30,25 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 事务状态回查请求头：Broker 向 Producer 发起半消息提交/回滚状态确认。
+ */
 @RocketMQAction(value = RequestCode.CHECK_TRANSACTION_STATE, action = Action.PUB)
 public class CheckTransactionStateRequestHeader extends RpcRequestHeader {
+    /** 半消息所属 Topic。 */
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 事务状态表中的逻辑位点。 */
     @CFNotNull
     private Long tranStateTableOffset;
+    /** CommitLog 中的物理位点。 */
     @CFNotNull
     private Long commitLogOffset;
+    /** 消息唯一标识。 */
     private String msgId;
+    /** 事务 ID（Producer 端生成）。 */
     private String transactionId;
+    /** 基于位点生成的 MsgId。 */
     private String offsetMsgId;
 
     @Override
@@ -54,6 +63,7 @@ public class CheckTransactionStateRequestHeader extends RpcRequestHeader {
         this.topic = topic;
     }
 
+    /** 返回事务状态表位点。 */
     public Long getTranStateTableOffset() {
         return tranStateTableOffset;
     }
@@ -62,6 +72,7 @@ public class CheckTransactionStateRequestHeader extends RpcRequestHeader {
         this.tranStateTableOffset = tranStateTableOffset;
     }
 
+    /** 返回 CommitLog 位点。 */
     public Long getCommitLogOffset() {
         return commitLogOffset;
     }
@@ -70,6 +81,7 @@ public class CheckTransactionStateRequestHeader extends RpcRequestHeader {
         this.commitLogOffset = commitLogOffset;
     }
 
+    /** 返回消息 ID。 */
     public String getMsgId() {
         return msgId;
     }
@@ -78,6 +90,7 @@ public class CheckTransactionStateRequestHeader extends RpcRequestHeader {
         this.msgId = msgId;
     }
 
+    /** 返回事务 ID。 */
     public String getTransactionId() {
         return transactionId;
     }
@@ -86,6 +99,7 @@ public class CheckTransactionStateRequestHeader extends RpcRequestHeader {
         this.transactionId = transactionId;
     }
 
+    /** 返回位点 MsgId。 */
     public String getOffsetMsgId() {
         return offsetMsgId;
     }
@@ -94,6 +108,7 @@ public class CheckTransactionStateRequestHeader extends RpcRequestHeader {
         this.offsetMsgId = offsetMsgId;
     }
 
+    /** 返回便于诊断的可读字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

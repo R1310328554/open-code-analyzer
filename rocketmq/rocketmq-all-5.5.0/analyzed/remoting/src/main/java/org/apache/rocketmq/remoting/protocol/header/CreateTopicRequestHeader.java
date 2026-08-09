@@ -32,30 +32,44 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 创建或更新 Topic 请求头：配置读写队列数、权限、过滤类型及顺序属性。
+ */
 @RocketMQAction(value = RequestCode.UPDATE_AND_CREATE_TOPIC, action = Action.CREATE)
 public class CreateTopicRequestHeader extends TopicRequestHeader {
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 默认 Topic（用于路由占位）。 */
     @CFNotNull
     private String defaultTopic;
+    /** 读队列数量。 */
     @CFNotNull
     private Integer readQueueNums;
+    /** 写队列数量。 */
     @CFNotNull
     private Integer writeQueueNums;
+    /** Topic 权限位（读/写/继承）。 */
     @CFNotNull
     private Integer perm;
+    /** 消息过滤类型（SINGLE_TAG / MULTI_TAG）。 */
     @CFNotNull
     private String topicFilterType;
+    /** Topic 系统标志位。 */
     private Integer topicSysFlag;
+    /** 是否顺序 Topic。 */
     @CFNotNull
     private Boolean order = false;
+    /** Topic 扩展属性（JSON 字符串）。 */
     private String attributes;
 
+    /** 是否强制覆盖已有配置。 */
     @CFNullable
     private Boolean force = false;
 
     @Override
+    /** 校验 topicFilterType 是否为合法枚举值。 */
     public void checkFields() throws RemotingCommandException {
         try {
             TopicFilterType.valueOf(this.topicFilterType);
@@ -64,6 +78,7 @@ public class CreateTopicRequestHeader extends TopicRequestHeader {
         }
     }
 
+    /** 返回过滤类型枚举。 */
     public TopicFilterType getTopicFilterTypeEnum() {
         return TopicFilterType.valueOf(this.topicFilterType);
     }
@@ -84,6 +99,7 @@ public class CreateTopicRequestHeader extends TopicRequestHeader {
         this.defaultTopic = defaultTopic;
     }
 
+    /** 返回读队列数。 */
     public Integer getReadQueueNums() {
         return readQueueNums;
     }
@@ -124,6 +140,7 @@ public class CreateTopicRequestHeader extends TopicRequestHeader {
         this.topicSysFlag = topicSysFlag;
     }
 
+    /** 返回是否顺序 Topic。 */
     public Boolean getOrder() {
         return order;
     }
@@ -132,6 +149,7 @@ public class CreateTopicRequestHeader extends TopicRequestHeader {
         this.order = order;
     }
 
+    /** 返回是否强制覆盖。 */
     public Boolean getForce() {
         return force;
     }
@@ -148,6 +166,7 @@ public class CreateTopicRequestHeader extends TopicRequestHeader {
         this.attributes = attributes;
     }
 
+    /** 返回便于诊断的可读字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

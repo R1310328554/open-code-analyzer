@@ -25,13 +25,18 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 检查 RocksDB 消费队列（CQ）写入进度请求头：指定 Topic 与校验时间点。
+ */
 @RocketMQAction(value = RequestCode.CHECK_ROCKSDB_CQ_WRITE_PROGRESS, action = Action.GET)
 public class CheckRocksdbCqWriteProgressRequestHeader implements CommandCustomHeader {
 
+    /** 待检查的 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
 
+    /** 校验用的存储时间戳（毫秒）。 */
     private long checkStoreTime;
 
     @Override
@@ -39,18 +44,22 @@ public class CheckRocksdbCqWriteProgressRequestHeader implements CommandCustomHe
 
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
 
+    /** 返回校验存储时间戳。 */
     public long getCheckStoreTime() {
         return checkStoreTime;
     }
 
+    /** 设置校验存储时间戳。 */
     public void setCheckStoreTime(long checkStoreTime) {
         this.checkStoreTime = checkStoreTime;
     }

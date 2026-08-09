@@ -22,8 +22,12 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 批量创建 Topic 请求头：配合 RPC 请求体一次性创建多个 Topic。
+ */
 @RocketMQAction(value = RequestCode.UPDATE_AND_CREATE_TOPIC_LIST, action = Action.CREATE)
 public class CreateTopicListRequestHeader extends RpcRequestHeader {
+    /** 字段校验（当前无额外约束）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 

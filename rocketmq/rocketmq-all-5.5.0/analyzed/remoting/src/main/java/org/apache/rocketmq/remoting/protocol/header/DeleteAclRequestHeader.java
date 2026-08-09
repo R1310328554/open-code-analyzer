@@ -23,18 +23,26 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 删除 ACL 权限规则请求头：按主体、策略类型与资源定位待删规则。
+ */
 @RocketMQAction(value = RequestCode.AUTH_DELETE_ACL, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class DeleteAclRequestHeader implements CommandCustomHeader {
 
+    /** ACL 授权主体。 */
     private String subject;
 
+    /** 策略类型（如 Custom / Default）。 */
     private String policyType;
 
+    /** 受控资源标识（Topic/Group/Cluster 等）。 */
     private String resource;
 
+    /** 默认构造器。 */
     public DeleteAclRequestHeader() {
     }
 
+    /** 以主体与资源构造请求头。 */
     public DeleteAclRequestHeader(String subject, String resource) {
         this.subject = subject;
         this.resource = resource;
@@ -45,6 +53,7 @@ public class DeleteAclRequestHeader implements CommandCustomHeader {
 
     }
 
+    /** 返回授权主体。 */
     public String getSubject() {
         return subject;
     }
@@ -53,6 +62,7 @@ public class DeleteAclRequestHeader implements CommandCustomHeader {
         this.subject = subject;
     }
 
+    /** 返回策略类型。 */
     public String getPolicyType() {
         return policyType;
     }
@@ -61,6 +71,7 @@ public class DeleteAclRequestHeader implements CommandCustomHeader {
         this.policyType = policyType;
     }
 
+    /** 返回受控资源。 */
     public String getResource() {
         return resource;
     }

@@ -28,20 +28,30 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 消费者消息回退请求头：将消费失败的消息重新投递到重试队列。
+ */
 @RocketMQAction(value = RequestCode.CONSUMER_SEND_MSG_BACK, action = Action.SUB)
 public class ConsumerSendMsgBackRequestHeader extends RpcRequestHeader {
+    /** 消息在 CommitLog 中的位点。 */
     @CFNotNull
     private Long offset;
+    /** 消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String group;
+    /** 延迟级别（决定重投间隔）。 */
     @CFNotNull
     private Integer delayLevel;
+    /** 原始消息 ID。 */
     private String originMsgId;
+    /** 原始 Topic 名称。 */
     @RocketMQResource(ResourceType.TOPIC)
     private String originTopic;
+    /** 是否单元化模式。 */
     @CFNullable
     private boolean unitMode = false;
+    /** 最大重消费次数上限。 */
     private Integer maxReconsumeTimes;
 
     @Override
@@ -49,6 +59,7 @@ public class ConsumerSendMsgBackRequestHeader extends RpcRequestHeader {
 
     }
 
+    /** 返回消息位点。 */
     public Long getOffset() {
         return offset;
     }
@@ -65,6 +76,7 @@ public class ConsumerSendMsgBackRequestHeader extends RpcRequestHeader {
         this.group = group;
     }
 
+    /** 返回延迟级别。 */
     public Integer getDelayLevel() {
         return delayLevel;
     }
@@ -89,6 +101,7 @@ public class ConsumerSendMsgBackRequestHeader extends RpcRequestHeader {
         this.originTopic = originTopic;
     }
 
+    /** 返回是否单元化模式。 */
     public boolean isUnitMode() {
         return unitMode;
     }
@@ -97,6 +110,7 @@ public class ConsumerSendMsgBackRequestHeader extends RpcRequestHeader {
         this.unitMode = unitMode;
     }
 
+    /** 返回最大重消费次数。 */
     public Integer getMaxReconsumeTimes() {
         return maxReconsumeTimes;
     }
@@ -105,6 +119,7 @@ public class ConsumerSendMsgBackRequestHeader extends RpcRequestHeader {
         this.maxReconsumeTimes = maxReconsumeTimes;
     }
 
+    /** 返回便于诊断的可读字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

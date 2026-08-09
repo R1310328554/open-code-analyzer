@@ -25,19 +25,27 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 事务状态回查响应头：Producer 告知 Broker 半消息提交或回滚决策。
+ */
 public class CheckTransactionStateResponseHeader implements CommandCustomHeader {
+    /** 生产者组名称。 */
     @CFNotNull
     private String producerGroup;
+    /** 事务状态表位点。 */
     @CFNotNull
     private Long tranStateTableOffset;
+    /** CommitLog 物理位点。 */
     @CFNotNull
     private Long commitLogOffset;
+    /** 提交或回滚标志（TRANSACTION_COMMIT_TYPE / TRANSACTION_ROLLBACK_TYPE）。 */
     @CFNotNull
     private Integer commitOrRollback; // TRANSACTION_COMMIT_TYPE
 
     // TRANSACTION_ROLLBACK_TYPE
 
     @Override
+    /** 校验 commitOrRollback 必须为合法事务类型。 */
     public void checkFields() throws RemotingCommandException {
         if (MessageSysFlag.TRANSACTION_COMMIT_TYPE == this.commitOrRollback) {
             return;
@@ -50,6 +58,7 @@ public class CheckTransactionStateResponseHeader implements CommandCustomHeader 
         throw new RemotingCommandException("commitOrRollback field wrong");
     }
 
+    /** 返回生产者组。 */
     public String getProducerGroup() {
         return producerGroup;
     }
@@ -74,6 +83,7 @@ public class CheckTransactionStateResponseHeader implements CommandCustomHeader 
         this.commitLogOffset = commitLogOffset;
     }
 
+    /** 返回提交/回滚标志。 */
     public Integer getCommitOrRollback() {
         return commitOrRollback;
     }

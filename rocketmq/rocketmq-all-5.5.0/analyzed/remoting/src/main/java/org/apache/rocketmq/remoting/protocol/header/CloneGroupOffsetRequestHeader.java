@@ -30,21 +30,29 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 克隆消费组位点请求头：将源组在某 Topic 上的消费进度复制到目标组。
+ */
 @RocketMQAction(value = RequestCode.CLONE_GROUP_OFFSET, action = Action.UPDATE)
 public class CloneGroupOffsetRequestHeader extends RpcRequestHeader {
+    /** 源消费组名称。 */
     @CFNotNull
     private String srcGroup;
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String destGroup;
+    /** 待克隆位点的 Topic。 */
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** 是否离线克隆（不通知在线消费者）。 */
     private boolean offline;
 
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回目标消费组。 */
     public String getDestGroup() {
         return destGroup;
     }
@@ -61,6 +69,7 @@ public class CloneGroupOffsetRequestHeader extends RpcRequestHeader {
         this.topic = topic;
     }
 
+    /** 返回源消费组。 */
     public String getSrcGroup() {
 
         return srcGroup;
@@ -70,6 +79,7 @@ public class CloneGroupOffsetRequestHeader extends RpcRequestHeader {
         this.srcGroup = srcGroup;
     }
 
+    /** 返回是否离线克隆。 */
     public boolean isOffline() {
         return offline;
     }
@@ -78,6 +88,7 @@ public class CloneGroupOffsetRequestHeader extends RpcRequestHeader {
         this.offline = offline;
     }
 
+    /** 返回便于诊断的可读字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

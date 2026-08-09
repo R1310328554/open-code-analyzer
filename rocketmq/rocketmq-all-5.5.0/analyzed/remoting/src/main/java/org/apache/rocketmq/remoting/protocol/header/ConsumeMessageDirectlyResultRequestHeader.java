@@ -28,22 +28,32 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 直接消费消息结果查询请求头：按消费组、客户端与 MsgId 定位消费结果。
+ */
 @RocketMQAction(value = RequestCode.CONSUME_MESSAGE_DIRECTLY, action = Action.SUB)
 public class ConsumeMessageDirectlyResultRequestHeader extends TopicRequestHeader {
+    /** 消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String consumerGroup;
+    /** 消费者客户端 ID（可选）。 */
     @CFNullable
     private String clientId;
+    /** 目标消息 ID（可选）。 */
     @CFNullable
     private String msgId;
+    /** 承载消息的 Broker 名称（可选）。 */
     @CFNullable
     private String brokerName;
+    /** 消息所属 Topic（可选）。 */
     @CFNullable
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
+    /** Topic 系统标志位（可选）。 */
     @CFNullable
     private Integer topicSysFlag;
+    /** 消费组系统标志位（可选）。 */
     @CFNullable
     private Integer groupSysFlag;
 
@@ -51,6 +61,7 @@ public class ConsumeMessageDirectlyResultRequestHeader extends TopicRequestHeade
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费组名称。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
@@ -59,6 +70,7 @@ public class ConsumeMessageDirectlyResultRequestHeader extends TopicRequestHeade
         this.consumerGroup = consumerGroup;
     }
 
+    /** 返回 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
@@ -75,6 +87,7 @@ public class ConsumeMessageDirectlyResultRequestHeader extends TopicRequestHeade
         this.clientId = clientId;
     }
 
+    /** 返回消息 ID。 */
     public String getMsgId() {
         return msgId;
     }
@@ -107,6 +120,7 @@ public class ConsumeMessageDirectlyResultRequestHeader extends TopicRequestHeade
         this.groupSysFlag = groupSysFlag;
     }
 
+    /** 返回便于诊断的可读字符串。 */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(this)

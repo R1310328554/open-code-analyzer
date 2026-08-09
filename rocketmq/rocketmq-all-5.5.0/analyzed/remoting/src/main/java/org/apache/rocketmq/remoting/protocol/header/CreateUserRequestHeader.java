@@ -23,14 +23,20 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 创建集群用户请求头：指定新用户名。
+ */
 @RocketMQAction(value = RequestCode.AUTH_CREATE_USER, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class CreateUserRequestHeader implements CommandCustomHeader {
 
+    /** 待创建的用户名。 */
     private String username;
 
+    /** 默认构造器。 */
     public CreateUserRequestHeader() {
     }
 
+    /** 以指定用户名构造请求头。 */
     public CreateUserRequestHeader(String username) {
         this.username = username;
     }
@@ -40,10 +46,12 @@ public class CreateUserRequestHeader implements CommandCustomHeader {
 
     }
 
+    /** 返回用户名。 */
     public String getUsername() {
         return username;
     }
 
+    /** 设置用户名。 */
     public void setUsername(String username) {
         this.username = username;
     }

@@ -29,8 +29,12 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 在 Broker 上删除 Topic 请求头：指定待移除的 Topic 名称。
+ */
 @RocketMQAction(value = RequestCode.DELETE_TOPIC_IN_BROKER, action = Action.DELETE)
 public class DeleteTopicRequestHeader extends TopicRequestHeader {
+    /** 待删除的 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
@@ -39,10 +43,12 @@ public class DeleteTopicRequestHeader extends TopicRequestHeader {
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }
