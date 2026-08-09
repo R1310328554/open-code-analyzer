@@ -22,13 +22,17 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 import java.util.List;
 
 /**
- * 
+ * 将 TIME 命令的多段数组回复解码为 {@link Time}。
+ * <p>
+ * 数组前两元素分别为秒与微秒（协议层为 {@link Long}），窄化为 {@code int} 构造 {@link Time}。
+ *
  * @author Nikita Koksharov
  *
  */
 
 public class TimeObjectDecoder implements MultiDecoder<Time> {
 
+    /** 从 {@code [seconds, microseconds]} 构造 {@link Time}。 */
     @Override
     public Time decode(List<Object> parts, State state) {
         return new Time(((Long) parts.get(0)).intValue(), ((Long) parts.get(1)).intValue());

@@ -20,13 +20,16 @@ import org.redisson.api.JsonType;
 import java.util.Locale;
 
 /**
- * Json data type convertor
+ * Redis JSON 数据类型字符串到 {@link JsonType} 枚举的转换器。
+ * <p>
+ * 先将回复转为英文大写再匹配枚举常量，与 Redis JSON 类型命名一致。
  *
  * @author Nikita Koksharov
  *
  */
 public class JsonTypeConvertor implements Convertor<JsonType> {
 
+    /** {@code null} 保持为 {@code null}，否则解析为 {@link JsonType}。 */
     @Override
     public JsonType convert(Object obj) {
         if (obj == null) {

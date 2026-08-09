@@ -16,13 +16,17 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 恒等转换器：将 Redis 回复原样转为目标类型，不做额外处理。
+ * <p>
+ * 适用于解码结果已与 {@code R} 兼容、仅需类型擦除的场景。
+ *
  * @author Nikita Koksharov
  *
  * @param <R> type of value
  */
 public class EmptyConvertor<R> implements Convertor<R> {
 
+    /** 直接强转并返回输入对象。 */
     @Override
     public R convert(Object obj) {
         return (R) obj;

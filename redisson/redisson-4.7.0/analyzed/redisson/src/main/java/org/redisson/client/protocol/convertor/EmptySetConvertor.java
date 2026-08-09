@@ -18,10 +18,15 @@ package org.redisson.client.protocol.convertor;
 import java.util.Collections;
 
 /**
+ * 集合回复的空值规范化转换器。
+ * <p>
+ * Redis 返回 {@code null} 时映射为不可变空集合，语义上等价于「无成员」。
+ *
  * @author Nikita Koksharov
  */
 public class EmptySetConvertor implements Convertor<Object> {
 
+    /** {@code null} 转为 {@link Collections#emptySet()}，否则原样返回。 */
     @Override
     public Object convert(Object obj) {
         if (obj == null) {

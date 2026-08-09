@@ -18,11 +18,16 @@ package org.redisson.client.protocol.convertor;
 import java.time.Instant;
 
 /**
+ * 将 Unix 秒级时间戳（{@link Long}）转为 {@link Instant}。
+ * <p>
+ * 适用于 Redis 返回整型 epoch 秒、上层需要 {@code java.time} 类型的命令。
  *
  * @author Nikita Koksharov
  *
  */
 public class InstantReplyConvertor implements Convertor<Instant> {
+
+    /** 以 epoch 秒构造 {@link Instant}。 */
     @Override
     public Instant convert(Object obj) {
         return Instant.ofEpochSecond((Long) obj);

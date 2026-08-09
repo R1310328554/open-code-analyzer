@@ -18,10 +18,15 @@ package org.redisson.client.protocol.convertor;
 import java.util.Collections;
 
 /**
+ * 映射回复的空值规范化转换器。
+ * <p>
+ * Redis 返回 {@code null} 时映射为不可变空映射，便于上层统一迭代。
+ *
  * @author Nikita Koksharov
  */
 public class EmptyMapConvertor implements Convertor<Object> {
 
+    /** {@code null} 转为 {@link Collections#emptyMap()}，否则原样返回。 */
     @Override
     public Object convert(Object obj) {
         if (obj == null) {

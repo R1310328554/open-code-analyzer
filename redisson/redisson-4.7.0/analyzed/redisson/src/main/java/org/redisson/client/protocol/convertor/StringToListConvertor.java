@@ -19,12 +19,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * 将多行字符串回复拆分为 {@link List}{@code <String>}。
+ * <p>
+ * 按 {@code \r\n} 或 {@code \n} 分行，适用于 INFO、CLUSTER 等块状文本回复。
+ *
  * @author Nikita Koksharov
  *
  */
 public class StringToListConvertor implements Convertor<List<String>> {
 
+    /** 按换行符拆分字符串，每行作为列表元素。 */
     @Override
     public List<String> convert(Object obj) {
         String value = (String) obj;

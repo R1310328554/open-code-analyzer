@@ -16,21 +16,32 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 整数回复转换器：将协议层 {@link Long} 窄化为 {@link Integer}。
+ * <p>
+ * 可通过构造函数指定 {@code null} 输入时的替代值；默认无参构造时 {@code null} 映射为 {@code null}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class IntegerReplayConvertor implements Convertor<Integer> {
 
+    /** 输入为 {@code null} 时返回的默认值。 */
     private Integer nullValue;
     
+    /** 使用默认 {@code null} 映射。 */
     public IntegerReplayConvertor() {
     }
     
+    /**
+     * 指定 {@code null} 输入时的返回值。
+     *
+     * @param nullValue 空回复对应的整数
+     */
     public IntegerReplayConvertor(Integer nullValue) {
         this.nullValue = nullValue;
     }
 
+    /** {@code null} 返回 {@link #nullValue}，否则取 {@link Long#intValue()}。 */
     @Override
     public Integer convert(Object obj) {
         if (obj == null) {

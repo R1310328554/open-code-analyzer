@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
+ * 长整型回复转换器，保留 {@code null} 而不替换为默认值。
+ * <p>
+ * 非空回复通过 {@link String} 形式解析为 {@link Long}，兼容多种协议表示。
  *
  * @author Su Ko
  *
  */
 public class LongNullReplayConvertor implements Convertor<Long> {
 
+    /** {@code null} 原样返回，否则解析为 {@link Long}。 */
     @Override
     public Long convert(Object obj) {
         if (obj == null) {

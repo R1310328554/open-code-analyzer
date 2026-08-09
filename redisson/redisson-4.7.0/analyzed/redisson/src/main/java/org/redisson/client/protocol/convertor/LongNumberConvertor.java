@@ -18,19 +18,27 @@ package org.redisson.client.protocol.convertor;
 import java.math.BigDecimal;
 
 /**
- * 
+ * 将已解码的 {@link Long} 或 {@link Double} 转为调用方期望的数值类型。
+ * <p>
+ * 构造时指定 {@link #resultClass}，按可赋值关系选择 {@code intValue}、{@link BigDecimal} 等。
+ *
  * @author Nikita Koksharov
  *
  */
 public class LongNumberConvertor implements Convertor<Object> {
 
+    /** 目标返回类型的 Class 对象。 */
     private Class<?> resultClass;
 
+    /**
+     * @param resultClass 期望的数值类型（如 {@link Long}、{@link Integer}、{@link BigDecimal}）
+     */
     public LongNumberConvertor(Class<?> resultClass) {
         super();
         this.resultClass = resultClass;
     }
 
+    /** 按 {@link #resultClass} 将 Long/Double 转为对应包装类型或 {@link BigDecimal}。 */
     @Override
     public Object convert(Object result) {
         if (result instanceof Long) {

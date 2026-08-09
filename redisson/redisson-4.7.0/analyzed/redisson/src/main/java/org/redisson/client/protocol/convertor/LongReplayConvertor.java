@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 长整型回复转换器：{@code null} 映射为 {@code 0L}。
+ * <p>
+ * 非空值通过字符串解析，适用于计数、TTL 等常见整型回复。
+ *
  * @author Nikita Koksharov
  *
  */
 public class LongReplayConvertor implements Convertor<Long> {
 
+    /** {@code null} 返回 {@code 0L}，否则解析为 {@link Long}。 */
     @Override
     public Long convert(Object obj) {
         if (obj == null) {

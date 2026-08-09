@@ -18,19 +18,27 @@ package org.redisson.client.protocol.convertor;
 import java.math.BigDecimal;
 
 /**
- * 
+ * 将字符串形式的数值回复解析为指定数值类型。
+ * <p>
+ * 支持 {@link Long}、{@link Integer}、{@link Float}、{@link Double} 与 {@link BigDecimal}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class NumberConvertor implements Convertor<Object> {
 
+    /** 目标返回类型的 Class 对象。 */
     private Class<?> resultClass;
 
+    /**
+     * @param resultClass 期望解析得到的数值类型
+     */
     public NumberConvertor(Class<?> resultClass) {
         super();
         this.resultClass = resultClass;
     }
 
+    /** 按 {@link #resultClass} 调用对应 {@code parse*} 或构造 {@link BigDecimal}。 */
     @Override
     public Object convert(Object result) {
         String res = (String) result;

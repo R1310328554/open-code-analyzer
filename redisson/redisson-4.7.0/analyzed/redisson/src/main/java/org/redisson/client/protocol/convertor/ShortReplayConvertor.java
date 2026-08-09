@@ -16,12 +16,16 @@
 package org.redisson.client.protocol.convertor;
 
 /**
- * 
+ * 短整型回复转换器：{@code null} 映射为 {@code 0}。
+ * <p>
+ * 非空值通过 {@link String} 解析为 {@link Short}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ShortReplayConvertor implements Convertor<Short> {
 
+    /** {@code null} 返回 {@code 0}，否则解析为 {@link Short}。 */
     @Override
     public Short convert(Object obj) {
         if (obj == null) {

@@ -18,10 +18,15 @@ package org.redisson.client.protocol.convertor;
 import java.util.Collections;
 
 /**
+ * 列表回复的空值规范化转换器。
+ * <p>
+ * Redis 返回 {@code null} 时映射为不可变空列表，避免调用方出现 NPE。
+ *
  * @author Nikita Koksharov
  */
 public class EmptyListConvertor implements Convertor<Object> {
 
+    /** {@code null} 转为 {@link Collections#emptyList()}，否则原样返回。 */
     @Override
     public Object convert(Object obj) {
         if (obj == null) {
