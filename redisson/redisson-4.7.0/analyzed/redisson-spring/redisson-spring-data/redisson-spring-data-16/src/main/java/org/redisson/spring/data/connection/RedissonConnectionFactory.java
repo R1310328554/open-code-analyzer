@@ -35,8 +35,10 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisSentinelConnection;
 
 /**
- * Redisson based connection factory
- * 
+ * 基于 Redisson 的 Spring Data Redis {@link RedisConnectionFactory}。
+ * <p>提供 {@link RedissonConnection} 与 Sentinel 模式下的 {@link RedissonSentinelConnection}；
+异常经 {@link RedissonExceptionConverter} 转为 Spring {@link DataAccessException}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -44,12 +46,14 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     private final static Log log = LogFactory.getLog(RedissonConnectionFactory.class);
     
+    /** 全局异常翻译策略，供 {@link #translateExceptionIfPossible} 使用。 */
     public static final ExceptionTranslationStrategy EXCEPTION_TRANSLATION = 
                                 new PassThroughExceptionTranslationStrategy(new RedissonExceptionConverter());
 
     private Config config;
     private RedissonClient redisson;
     
+    /** 使用 {@link Redisson#create()} 默认配置创建工厂。 */
     /**
      * Creates factory with default Redisson configuration
      */
@@ -85,6 +89,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
     public void destroy() throws Exception {
     }
 
+    /** 若注入了 {@link Config}，在此阶段创建 {@link RedissonClient}。 */
     @Override
     public void afterPropertiesSet() throws Exception {
         if (config != null) {
@@ -92,6 +97,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
         }
     }
 
+    /** 返回包装当前 {@link RedissonClient} 的 {@link RedissonConnection}。 */
     @Override
     public RedisConnection getConnection() {
         return new RedissonConnection(redisson);
@@ -102,8 +108,10 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
         return true;
     }
 
+    /** 遍历 Sentinel 节点 PING，返回首个可用的 {@link RedissonSentinelConnection}。 */
     @Override
     public RedisSentinelConnection getSentinelConnection() {
+        // 非 Sentinel 配置时拒绝创建 Sentinel 连接。
         if (!redisson.getConfig().isSentinelConfig()) {
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
         }
@@ -114,6 +122,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
             try {
                 connection = client.connect();
                 String res = connection.sync(RedisCommands.PING);
+                // 首个响应 PONG 的 Sentinel 用于 Spring Data 管理命令。
                 if ("pong".equalsIgnoreCase(res)) {
                     return new RedissonSentinelConnection(connection);
                 }

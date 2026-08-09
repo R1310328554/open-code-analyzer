@@ -35,8 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * A {@link org.springframework.cache.CacheManager} implementation
- * backed by Redisson instance.
+ * 基于 Redisson {@link RMap}/{@link RMapCache} 的 Spring {@link org.springframework.cache.CacheManager}。
+ * <p>支持动态创建缓存、YAML/Map 配置、Codec 共享、事务感知装饰及空值策略。
+ * TTL/maxIdle/maxSize 全为 0 时使用 {@link RMap}，否则使用 {@link RMapCache}。
  *
  * @author Nikita Koksharov
  *
@@ -44,12 +45,16 @@ import java.util.concurrent.ConcurrentMap;
 @SuppressWarnings("unchecked")
 public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderAware, InitializingBean {
 
+    /** Spring 资源加载器，用于读取 YAML 缓存配置。 */
     ResourceLoader resourceLoader;
 
+    /** {@code true} 时按名称动态创建缓存；{@code false} 时仅使用预定义名称。 */
     private boolean dynamic = true;
     
+    /** 是否允许缓存 {@code null} 值（默认 {@code true}）。 */
     private boolean allowNullValues = true;
 
+    /** 是否包装 {@link TransactionAwareCacheDecorator} 以参与 Spring 事务。 */
     private boolean transactionAware = false;
 
     Codec codec;
@@ -61,6 +66,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     String configLocation;
 
+    /** 使用 Redisson 客户端与默认配置创建 CacheManager。 */
     /**
      * Creates CacheManager supplied by Redisson instance
      *
@@ -130,6 +136,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         this.codec = codec;
     }
     
+    /** 设置是否允许缓存空值；关闭时 {@code null} 不会写入 Redis。 */
     /**
      * Defines possibility of storing {@code null} values.
      * <p>
@@ -141,6 +148,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         this.allowNullValues = allowNullValues;
     }
 
+    /** 启用后 put/evict 仅在事务成功提交后的 after-commit 阶段执行。 */
     /**
      * Defines if cache aware of Spring-managed transactions.
      * If {@code true} put/evict operations are executed only for successful transaction in after-commit phase.
@@ -153,6 +161,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         this.transactionAware = transactionAware;
     }
 
+    /** 预注册固定缓存名；传入非 {@code null} 集合后关闭动态模式。 */
     /**
      * Defines 'fixed' cache names. 
      * A new cache instance will not be created in dynamic for non-defined names.
@@ -212,6 +221,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         return new CacheConfig();
     }
 
+    /** 按名称获取或（动态模式下）创建 {@link RedissonCache} 实例。 */
     @Override
     public Cache getCache(String name) {
         Cache cache = instanceMap.get(name);
@@ -228,6 +238,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             configMap.put(name, config);
         }
         
+        // 无过期与容量限制时使用普通 RMap，否则使用 RMapCache。
         if (config.getMaxIdleTime() == 0 && config.getTTL() == 0 && config.getMaxSize() == 0) {
             return createMap(name, config);
         }
@@ -235,6 +246,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         return createMapCache(name, config);
     }
 
+    /** 基于 {@link RMap} 创建无 TTL 的 {@link RedissonCache}。 */
     private Cache createMap(String name, CacheConfig config) {
         RMap<Object, Object> map = getMap(name, config);
         
@@ -256,6 +268,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         return redisson.getMap(name);
     }
 
+    /** 基于 {@link RMapCache} 创建带 TTL/淘汰策略的 {@link RedissonCache}。 */
     private Cache createMapCache(String name, CacheConfig config) {
         RMapCache<Object, Object> map = getMapCache(name, config);
         
@@ -267,6 +280,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         if (oldCache != null) {
             cache = oldCache;
         } else {
+            // 首次创建时应用 maxSize 与 MapEntryListener。
             map.setMaxSize(config.getMaxSize(), config.getEvictionMode());
             for (MapEntryListener listener : config.getListeners()) {
                 map.addListener(listener);
@@ -292,6 +306,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         this.resourceLoader = resourceLoader;
     }
 
+    /** 若配置了 {@code configLocation}，从 classpath 加载 YAML 缓存配置。 */
     @Override
     public void afterPropertiesSet() throws Exception {
         if (configLocation == null) {

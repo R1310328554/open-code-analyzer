@@ -26,6 +26,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Spring Boot 4.x 缓存指标自动配置（{@code org.springframework.boot.cache.metrics.CacheMeterBinderProvider}）。
+ * <p>条件与 {@link RedissonCacheStatisticsAutoConfiguration} 相同，绑定器实现为
+ * {@link RedissonCacheMeterBinderProviderV4}。
  *
  * @author Craig Andrews
  * @author Nikita Koksharov
@@ -39,6 +42,7 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnClass({CacheMeterBinderProvider.class, RedissonCache.class})
 public class RedissonCacheStatisticsAutoConfigurationV4 {
     
+    /** 注册 Boot 4.x 版 Redisson 缓存 Micrometer 绑定器。 */
     @Bean
     public RedissonCacheMeterBinderProviderV4 redissonCacheMeterBinderProvider(){
         return new RedissonCacheMeterBinderProviderV4();

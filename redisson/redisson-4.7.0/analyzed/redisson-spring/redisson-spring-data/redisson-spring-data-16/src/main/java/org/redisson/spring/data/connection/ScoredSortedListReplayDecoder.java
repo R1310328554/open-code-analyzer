@@ -27,12 +27,15 @@ import org.springframework.data.redis.connection.DefaultTuple;
 import org.springframework.data.redis.connection.RedisZSetCommands.Tuple;
 
 /**
- * 
+ * 将 Redis 有序集合批量响应（member/score 交替）解码为 {@link List}{@code <}{@link Tuple}{@code >}。
+ * <p>奇数参数位使用 {@link DoubleCodec} 解析 score。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ScoredSortedListReplayDecoder implements MultiDecoder<List<Tuple>> {
 
+    /** 奇数下标参数解码为 {@code double} score。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -41,6 +44,7 @@ public class ScoredSortedListReplayDecoder implements MultiDecoder<List<Tuple>> 
         return null;
     }
     
+    /** 每两个元素组装为一个 {@link DefaultTuple}（member 字节数组 + score）。 */
     @Override
     public List<Tuple> decode(List<Object> parts, State state) {
         List<Tuple> result = new ArrayList<Tuple>();

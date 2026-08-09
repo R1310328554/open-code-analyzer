@@ -26,6 +26,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Spring Boot Actuator 缓存指标自动配置（Boot 2.x {@code CacheMeterBinderProvider}）。
+ * <p>在存在 {@link CacheManager} 且 classpath 含 {@link RedissonCache} 时注册
+ * {@link RedissonCacheMeterBinderProvider}，将 Redisson 缓存命中率等指标暴露给 Micrometer。
  *
  * @author Craig Andrews
  * @author Nikita Koksharov
@@ -39,6 +42,7 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnClass({CacheMeterBinderProvider.class, RedissonCache.class})
 public class RedissonCacheStatisticsAutoConfiguration {
     
+    /** 注册 Redisson 缓存 Micrometer 绑定器。 */
     @Bean
     public RedissonCacheMeterBinderProvider redissonCacheMeterBinderProvider(){
         return new RedissonCacheMeterBinderProvider();

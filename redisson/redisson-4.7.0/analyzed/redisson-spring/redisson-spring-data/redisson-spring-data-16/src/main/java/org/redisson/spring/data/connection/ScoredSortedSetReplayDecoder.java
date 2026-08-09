@@ -28,7 +28,8 @@ import org.springframework.data.redis.connection.DefaultTuple;
 import org.springframework.data.redis.connection.RedisZSetCommands.Tuple;
 
 /**
- * 
+ * 有序集合响应解码为 {@link Set}{@code <}{@link Tuple}{@code >}（保持 Redis 返回顺序的 {@link LinkedHashSet}）。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -42,6 +43,7 @@ public class ScoredSortedSetReplayDecoder implements MultiDecoder<Set<Tuple>> {
         return null;
     }
     
+    /** 成对解析 member/score 并加入 {@link LinkedHashSet}。 */
     @Override
     public Set<Tuple> decode(List<Object> parts, State state) {
         Set<Tuple> result = new LinkedHashSet<Tuple>();

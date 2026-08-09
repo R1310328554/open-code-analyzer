@@ -26,7 +26,9 @@ import org.springframework.data.redis.connection.RedisZSetCommands;
 import java.util.List;
 
 /**
- * 
+ * 单条 member/score 对解码为单个 {@link RedisZSetCommands.Tuple}（V2 接口）。
+ * <p>用于仅返回一个元素的 ZSET 命令响应。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -37,9 +39,11 @@ public class ScoredSortedSetReplayDecoderV2 implements MultiDecoder<RedisZSetCom
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
+        // 偶数下标 member 走默认 Codec 解码。
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
+    /** 从两元素列表构造 {@link DefaultTuple}。 */
     @Override
     public RedisZSetCommands.Tuple decode(List<Object> parts, State state) {
         return new DefaultTuple((byte[])parts.get(0), ((Number)parts.get(1)).doubleValue());

@@ -28,8 +28,9 @@ import org.springframework.context.ResourceLoaderAware;
 import java.util.Map;
 
 /**
- * A {@link CacheManager} implementation
- * backed by Redisson instance.
+ * 使用 Redisson {@link RMapCacheNative} 后端的 Spring {@link CacheManager}。
+ * <p>继承 {@link RedissonSpringCacheManager}，底层 map 一律为 Native 实现；
+ * 不支持 {@code maxIdleTime} 与 {@code maxSize}（启动时校验）。
  *
  * @author Nikita Koksharov
  *
@@ -104,9 +105,11 @@ public class RedissonSpringCacheNativeManager extends RedissonSpringCacheManager
         super(redisson, configLocation, codec);
     }
 
+    /** 校验各缓存配置：Native 模式不支持 maxIdleTime 与 maxSize。 */
     private void validateProps() {
         for (CacheConfig value : configMap.values()) {
             if (value.getMaxIdleTime() > 0) {
+                // MapCacheNative 无独立 max-idle 语义。
                 throw new UnsupportedOperationException("maxIdleTime isn't supported");
             }
             if (value.getMaxSize() > 0) {
@@ -121,6 +124,7 @@ public class RedissonSpringCacheNativeManager extends RedissonSpringCacheManager
         validateProps();
     }
 
+    /** 始终返回 {@link RMapCacheNative}（可选 Codec）。 */
     @Override
     protected RMap<Object, Object> getMap(String name, CacheConfig config) {
         if (codec != null) {
@@ -129,6 +133,7 @@ public class RedissonSpringCacheNativeManager extends RedissonSpringCacheManager
         return redisson.getMapCacheNative(name);
     }
 
+    /** 将 Native map 包装为 {@link MapCacheNativeWrapper} 以适配 {@link RMapCache} API。 */
     @Override
     protected RMapCache<Object, Object> getMapCache(String name, CacheConfig config) {
         RMapCacheNative<Object, Object> map = (RMapCacheNative<Object, Object>) getMap(name, config);
