@@ -16,21 +16,21 @@
 package org.redisson.api;
 
 /**
- * Future object for submitted task
- * 
- * @author Nikita Koksharov
+ * 已提交远程任务的 Future 对象。
+ * <p>可通过 {@link #getTaskId()} 获取任务 ID 用于取消。
  *
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <V> 任务返回值类型
  */
 public interface RExecutorFuture<V> extends RFuture<V> {
 
     /**
-     * Returns scheduled task's id.
+     * 返回已调度任务的 ID；可用于 {@link RExecutorService#cancelTask(String)} 取消任务。
      * This id could be used for task cancellation.
      *  
      * @see RExecutorService#cancelTask(String)
      * 
-     * @return task id
+     * @return 任务 ID
      */
     String getTaskId();
 

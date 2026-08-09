@@ -21,171 +21,170 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Base async interface for all Redisson objects
- * which supports expiration (TTL)
+ * 支持过期时间（TTL）的 Redisson 对象异步基类接口。
+ * <p>各方法返回 {@link RFuture}。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RExpirableAsync extends RObjectAsync {
 
     /**
-     * Use {@link #expireAsync(Duration)} instead
+     * 已废弃，请改用 {@link #expireAsync(Duration)}。
      *
-     * @param timeToLive - timeout before object will be deleted
-     * @param timeUnit - timeout time unit
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 见方法说明
      */
     @Deprecated
     RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Use {@link #expireAsync(Instant)} instead
+     * 已废弃，请改用 {@link #expireAsync(Instant)}。
      *
-     * @param timestamp - expire date
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param timestamp 过期时间戳
+     * @return 见方法说明
      */
     @Deprecated
     RFuture<Boolean> expireAtAsync(Date timestamp);
 
     /**
-     * Use {@link #expireAsync(Instant)} instead
+     * 已废弃，请改用 {@link #expireAsync(Instant)}。
      *
-     * @param timestamp - expire date in milliseconds (Unix timestamp)
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param timestamp 过期时间戳
+     * @return 见方法说明
      */
     @Deprecated
     RFuture<Boolean> expireAtAsync(long timestamp);
 
     /**
-     * Set an expire date for object. When expire date comes
+     * 为对象设置绝对过期时刻；到期后 Redis 键将自动删除。
      * the key will automatically be deleted.
      *
-     * @param time - expire date
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param time 过期时刻
+     * @return 见方法说明
      */
     RFuture<Boolean> expireAsync(Instant time);
 
     /**
-     * Sets an expiration date for this object only if it has been already set.
+     * 仅当对象已设置过期时间时，才更新为新的绝对过期时刻（Redis 7.0+）。
      * When expire date comes the object will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param time expire date
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param time 过期时刻
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfSetAsync(Instant time);
 
     /**
-     * Sets an expiration date for this object only if it hasn't been set before.
+     * 仅当对象尚未设置过期时间时，才设置绝对过期时刻（Redis 7.0+）。
      * When expire date comes the object will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param time expire date
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param time 过期时刻
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfNotSetAsync(Instant time);
 
     /**
-     * Sets an expiration date for this object only if it's greater than expiration date set before.
+     * 仅当新绝对过期时刻晚于当前值时才更新（Redis 7.0+）。
      * When expire date comes the object will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param time expire date
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param time 过期时刻
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfGreaterAsync(Instant time);
 
     /**
-     * Sets an expiration date for this object only if it's less than expiration date set before.
+     * 仅当新绝对过期时刻早于当前值时才更新（Redis 7.0+）。
      * When expire date comes the object will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param time expire date
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param time 过期时刻
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfLessAsync(Instant time);
 
     /**
-     * Set a timeout for object. After the timeout has expired,
+     * 为对象设置相对过期时长；到期后 Redis 键将自动删除。
      * the key will automatically be deleted.
      *
-     * @param duration timeout before object will be deleted
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param duration 过期时长
+     * @return 见方法说明
      */
     RFuture<Boolean> expireAsync(Duration duration);
 
     /**
-     * Sets a timeout for this object only if it has been already set.
+     * 仅当对象已设置 TTL 时，才更新为新的相对过期时长（Redis 7.0+）。
      * After the timeout has expired, the key will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param duration timeout before object will be deleted
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param duration 过期时长
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfSetAsync(Duration duration);
 
     /**
-     * Sets a timeout for this object only if it hasn't been set before.
+     * 仅当对象尚未设置 TTL 时，才设置相对过期时长（Redis 7.0+）。
      * After the timeout has expired, the key will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param duration timeout before object will be deleted
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param duration 过期时长
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfNotSetAsync(Duration duration);
 
     /**
-     * Sets a timeout for this object only if it's greater than timeout set before.
+     * 仅当新 TTL 长于当前值时才更新（Redis 7.0+）。
      * After the timeout has expired, the key will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param duration timeout before object will be deleted
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param duration 过期时长
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfGreaterAsync(Duration duration);
 
     /**
-     * Sets a timeout for this object only if it's less than timeout set before.
+     * 仅当新 TTL 短于当前值时才更新（Redis 7.0+）。
      * After the timeout has expired, the key will automatically be deleted.
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @param duration timeout before object will be deleted
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param duration 过期时长
+     * @return 见方法说明
      */
     RFuture<Boolean> expireIfLessAsync(Duration duration);
 
     /**
-     * Clear an expire timeout or expire date for object in async mode.
+     * 异步清除对象的过期时间（不删除对象本身）。
      * Object will not be deleted.
      *
-     * @return <code>true</code> if the timeout was cleared and <code>false</code> if not
+     * @return 见方法说明
      */
     RFuture<Boolean> clearExpireAsync();
 
     /**
-     * Returns remaining time of the object in milliseconds.
+     * 返回对象剩余存活时间（毫秒）。
      *
-     * @return time in milliseconds
+     * @return 剩余毫秒数
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
     RFuture<Long> remainTimeToLiveAsync();
 
     /**
-     * Returns expiration time of the object as the absolute Unix expiration timestamp in milliseconds.
+     * 返回对象绝对过期时刻的 Unix 毫秒时间戳（Redis 7.0+）。
      * <p>
-     * Requires <b>Redis 7.0.0 and higher.</b>
+     * 需要 <b>Redis 7.0.0 及以上.</b>
      *
-     * @return Unix time in milliseconds
+     * @return Unix 毫秒时间戳
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expiration time.
      */

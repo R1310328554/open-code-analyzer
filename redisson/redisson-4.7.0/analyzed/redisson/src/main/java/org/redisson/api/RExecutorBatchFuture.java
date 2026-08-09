@@ -18,17 +18,17 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * Future object for submitted tasks in a batch
- * 
- * @author Nikita Koksharov
+ * 批量提交任务后返回的 Future 对象。
+ * <p>可通过 {@link #getTaskFutures()} 获取各子任务的 {@link RExecutorFuture}。
  *
+ * @author Nikita Koksharov
  */
 public interface RExecutorBatchFuture extends RFuture<Void> {
 
     /**
-     * Returns list of Future objects. Each Future object represents submitted task.
+     * 返回各子任务对应的 Future 列表。
      * 
-     * @return list
+     * @return Future 列表
      */
     List<RExecutorFuture<?>> getTaskFutures();
     

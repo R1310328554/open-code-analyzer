@@ -18,143 +18,143 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * Interface for Redis Function feature
+ * Redis Function 异步 API。
+ * <p>各方法返回 {@link RFuture}。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RFunctionAsync {
 
     /**
-     * Deletes library. Error is thrown if library doesn't exist.
+     * 删除函数库；库不存在时抛出错误。
      *
-     * @param libraryName library name
+     * @param libraryName 函数库名称
      */
     RFuture<Void> deleteAsync(String libraryName);
 
     /**
-     * Returns serialized state of all libraries.
+     * 返回所有函数库的序列化状态。
      *
-     * @return serialized state
+     * @return 序列化状态
      */
     RFuture<byte[]> dumpAsync();
 
     /**
-     * Deletes all libraries.
+     * 删除所有已加载的函数库。
      *
      */
     RFuture<Void> flushAsync();
 
     /**
-     * Kills currently executed functions.
+     * 终止当前正在执行的函数（仅适用于不修改数据的函数）。
      * Applied only to functions which don't modify data.
      *
      */
     RFuture<Void> killAsync();
 
     /**
-     * Returns information about libraries and functions per each.
+     * 返回各函数库及其包含函数的信息列表。
      *
-     * @return list of libraries
+     * @return 函数库列表
      */
     RFuture<List<FunctionLibrary>> listAsync();
 
     /**
-     * Returns information about libraries and functions per each by name pattern.
+     * 按名称模式（glob）返回匹配的函数库及函数信息。
      * <p>
      *  Supported glob-style patterns:
      *    h?llo matches hello, hallo and hxllo
      *    h*llo matches hllo and heeeello
      *    h[ae]llo matches hello and hallo, but not hillo
      *
-     * @param namePattern name pattern
-     * @return list of libraries
+     * @param namePattern 名称匹配模式
+     * @return 函数库列表
      */
     RFuture<List<FunctionLibrary>> listAsync(String namePattern);
 
     /**
-     * Loads a library. Error is thrown if library already exists.
+     * 加载函数库；库已存在时抛出错误。
      *
-     * @param libraryName library name
-     * @param code function code
+     * @param libraryName 函数库名称
+     * @param code 函数库代码
      */
     RFuture<Void> loadAsync(String libraryName, String code);
 
     /**
-     * Loads a library and overwrites existing library.
+     * 加载函数库并覆盖同名已有库。
      *
-     * @param libraryName library name
-     * @param code function code
+     * @param libraryName 函数库名称
+     * @param code 函数库代码
      */
     RFuture<Void> loadAndReplaceAsync(String libraryName, String code);
 
     /**
-     * Restores libraries using their state returned by {@link #dumpAsync()} method.
+     * 使用 {@link #dumpAsync()} 返回的状态恢复函数库并追加到现有库（冲突时报错）。
      * Restored libraries are appended to the existing libraries and throws error in case of collision.
      *
-     * @param payload serialized state
+     * @param payload 序列化状态
      */
     RFuture<Void> restoreAsync(byte[] payload);
 
     /**
-     * Restores libraries using their state returned by {@link #dumpAsync()} method.
+     * 使用 {@link #dumpAsync()} 返回的状态恢复函数库并追加到现有库（冲突时报错）。
      * Restored libraries are appended to the existing libraries.
      *
-     * @param payload serialized state
+     * @param payload 序列化状态
      */
     RFuture<Void> restoreAndReplaceAsync(byte[] payload);
 
     /**
-     * Restores libraries using their state returned by {@link #dumpAsync()} method.
+     * 使用 {@link #dumpAsync()} 返回的状态恢复函数库并追加到现有库（冲突时报错）。
      * Deletes all existing libraries before restoring.
      *
-     * @param payload serialized state
+     * @param payload 序列化状态
      */
     RFuture<Void> restoreAfterFlushAsync(byte[] payload);
 
     /**
-     * Returns information about currently running
+     * 返回当前正在运行的 Redis Function 及可用执行引擎信息。
      * Redis function and available execution engines.
      *
-     * @return function information
+     * @return 函数运行信息
      */
     RFuture<FunctionStats> statsAsync();
 
     /**
-     * Executes function
+     * 执行 Redis Function。
      *
      * @param <R> - type of result
-     * @param key - used to locate Redis node in Cluster which stores cached Lua script
-     * @param mode - execution mode
-     * @param name - function name
-     * @param returnType - return type
-     * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
-     * @return result object
+     * @param key 路由键（Cluster 定位节点）
+     * @param mode 执行模式
+     * @param name 函数名称
+     * @param returnType 返回值类型
+     * @param keys 脚本 KEYS 参数
+     * @param values 脚本 ARGV 参数
+     * @return 执行结果
      */
     <R> RFuture<R> callAsync(String key, FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
-     * Executes function
+     * 执行 Redis Function。
      *
      * @param <R> - type of result
-     * @param mode - execution mode
-     * @param name - function name
-     * @param returnType - return type
-     * @param keys - keys available through KEYS param in script
-     * @param values - values available through VALUES param in script
-     * @return result object
+     * @param mode 执行模式
+     * @param name 函数名称
+     * @param returnType 返回值类型
+     * @param keys 脚本 KEYS 参数
+     * @param values 脚本 ARGV 参数
+     * @return 执行结果
      */
     <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType, List<Object> keys, Object... values);
 
     /**
-     * Executes function
+     * 执行 Redis Function。
      *
      * @param <R> - type of result
-     * @param mode - execution mode
-     * @param name - function name
-     * @param returnType - return type
-     * @return result object
+     * @param mode 执行模式
+     * @param name 函数名称
+     * @param returnType 返回值类型
+     * @return 执行结果
      */
     <R> RFuture<R> callAsync(FunctionMode mode, String name, FunctionResult returnType);
 
