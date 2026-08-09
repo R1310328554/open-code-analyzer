@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:54:07Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/pubsub/event/PulledEventListener.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/event/TopicConfigEventListener.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/event/TopicFullEventListener.java",
-    "redisson/src/main/java/org/redisson/api/queue/AcknowledgeMode.java",
-    "redisson/src/main/java/org/redisson/api/queue/DeduplicationMode.java",
-    "redisson/src/main/java/org/redisson/api/queue/DequeMoveArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/DequeMoveDestination.java",
-    "redisson/src/main/java/org/redisson/api/queue/DequeMoveParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/FailedAckArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/OperationDisabledException.java",
-    "redisson/src/main/java/org/redisson/api/queue/ProcessingMode.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueAckArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueAckParams.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueAddArgs.java",
-    "redisson/src/main/java/org/redisson/api/queue/QueueAddParams.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 812,
-  "done": 1995
+  "done": 2010
 }
