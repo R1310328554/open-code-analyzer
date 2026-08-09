@@ -25,18 +25,27 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.core.io.ResourceEditor;
 
 /**
- * {@link RuntimeHintsRegistrar} to register hints for popular conventions in
- * {@link BeanUtils#findEditorByConvention(Class)}.
+ * {@link RuntimeHintsRegistrar} 实现：为 {@link BeanUtils#findEditorByConvention(Class)}
+ * 中常用的按约定查找 PropertyEditor 场景注册运行时提示（AOT / 原生镜像反射提示）。
  *
  * @author Sebastien Deleuze
  * @since 6.0.10
  */
 class BeanUtilsRuntimeHints implements RuntimeHintsRegistrar {
 
+	/**
+	 * 注册反射提示：声明式构造器可被调用，以便按约定实例化常见 PropertyEditor。
+	 * <p>始终注册 {@link ResourceEditor}；若类路径上存在
+	 * {@code org.springframework.http.MediaTypeEditor}，则一并注册。
+	 * @param hints 待填充的 {@link RuntimeHints}
+	 * @param classLoader 用于探测可选类型是否存在的类加载器，可为 {@code null}
+	 */
 	@Override
 	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		ReflectionHints reflectionHints = hints.reflection();
+		// ResourceEditor 随 core 提供，始终需要可反射调用其声明的构造器
 		reflectionHints.registerType(ResourceEditor.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+		// MediaTypeEditor 位于 spring-web，类路径上有才注册
 		reflectionHints.registerTypeIfPresent(classLoader, "org.springframework.http.MediaTypeEditor",
 				MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 	}
