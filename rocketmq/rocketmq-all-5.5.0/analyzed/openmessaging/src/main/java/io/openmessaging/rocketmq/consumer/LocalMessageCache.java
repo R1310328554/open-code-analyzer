@@ -49,13 +49,20 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 class LocalMessageCache implements ServiceLifecycle {
     private static final Logger log = LoggerFactory.getLogger(LocalMessageCache.class);
 
+    /** 待消费请求阻塞队列。 */
     private final BlockingQueue<ConsumeRequest> consumeRequestCache;
+    /** 已 poll 出但未 ack 的消息，按 msgId 索引。 */
     private final Map<String, ConsumeRequest> consumedRequest;
+    /** 各 MessageQueue 的下一次拉取偏移。 */
     private final ConcurrentHashMap<MessageQueue, Long> pullOffsetTable;
+    /** 底层 RocketMQ Pull 消费者。 */
     private final DefaultMQPullConsumer rocketmqPullConsumer;
+    /** OMS 客户端配置。 */
     private final ClientConfig clientConfig;
+    /** 定时清理过期未 ack 消息的调度器。 */
     private final ScheduledExecutorService cleanExpireMsgExecutors;
 
+    /** 初始化缓存、偏移表与过期清理线程池。 */
     LocalMessageCache(final DefaultMQPullConsumer rocketmqPullConsumer, final ClientConfig clientConfig) {
         consumeRequestCache = new LinkedBlockingQueue<>(clientConfig.getRmqPullMessageCacheCapacity());
         this.consumedRequest = new ConcurrentHashMap<>();
@@ -66,10 +73,12 @@ class LocalMessageCache implements ServiceLifecycle {
             "OMS_CleanExpireMsgScheduledThread_"));
     }
 
+    /** 计算本次 Pull 批量大小（不超过缓存剩余容量）。 */
     int nextPullBatchNums() {
         return Math.min(clientConfig.getRmqPullMessageBatchNums(), consumeRequestCache.remainingCapacity());
     }
 
+    /** 获取指定队列的下一次拉取偏移，必要时从 Broker 拉取已提交偏移。 */
     long nextPullOffset(MessageQueue remoteQueue) {
         if (!pullOffsetTable.containsKey(remoteQueue)) {
             try {
@@ -82,10 +91,12 @@ class LocalMessageCache implements ServiceLifecycle {
         return pullOffsetTable.get(remoteQueue);
     }
 
+    /** 更新队列拉取偏移。 */
     void updatePullOffset(MessageQueue remoteQueue, long nextPullOffset) {
         pullOffsetTable.put(remoteQueue, nextPullOffset);
     }
 
+    /** 将拉取到的消费请求放入缓存（阻塞直至有空间）。 */
     void submitConsumeRequest(ConsumeRequest consumeRequest) {
         try {
             consumeRequestCache.put(consumeRequest);
@@ -97,6 +108,7 @@ class LocalMessageCache implements ServiceLifecycle {
         return poll(clientConfig.getOperationTimeout());
     }
 
+    /** 支持通过属性覆盖 poll 超时时间。 */
     MessageExt poll(final KeyValue properties) {
         int currentPollTimeout = clientConfig.getOperationTimeout();
         if (properties.containsKey(Message.BuiltinKeys.TIMEOUT)) {
@@ -105,6 +117,7 @@ class LocalMessageCache implements ServiceLifecycle {
         return poll(currentPollTimeout);
     }
 
+    /** 从缓存取出一条消息并记录开始消费时间。 */
     private MessageExt poll(long timeout) {
         try {
             ConsumeRequest consumeRequest = consumeRequestCache.poll(timeout, TimeUnit.MILLISECONDS);
@@ -120,6 +133,7 @@ class LocalMessageCache implements ServiceLifecycle {
         return null;
     }
 
+    /** 按 msgId ack 并更新 Broker 消费进度。 */
     void ack(final String messageId) {
         ConsumeRequest consumeRequest = consumedRequest.remove(messageId);
         if (consumeRequest != null) {
@@ -132,6 +146,7 @@ class LocalMessageCache implements ServiceLifecycle {
         }
     }
 
+    /** 按队列与 ProcessQueue ack（用于过期消息回退场景）。 */
     void ack(final MessageQueue messageQueue, final ProcessQueue processQueue, final MessageExt messageExt) {
         consumedRequest.remove(messageExt.getMsgId());
         long offset = processQueue.removeMessage(Collections.singletonList(messageExt));
@@ -143,6 +158,7 @@ class LocalMessageCache implements ServiceLifecycle {
     }
 
     @Override
+    /** 启动定时任务，周期性扫描并回退过期未 ack 消息。 */
     public void startup() {
         this.cleanExpireMsgExecutors.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -153,10 +169,12 @@ class LocalMessageCache implements ServiceLifecycle {
     }
 
     @Override
+    /** 优雅关闭过期清理调度器。 */
     public void shutdown() {
         ThreadUtils.shutdownGracefully(cleanExpireMsgExecutors, 5000, TimeUnit.MILLISECONDS);
     }
 
+    /** 遍历各 ProcessQueue，将超时未 ack 的消息 sendMessageBack 并 ack。 */
     private void cleanExpireMsg() {
         for (final Map.Entry<MessageQueue, ProcessQueue> next : rocketmqPullConsumer.getDefaultMQPullConsumerImpl()
             .getRebalanceImpl().getProcessQueueTable().entrySet()) {
@@ -180,7 +198,7 @@ class LocalMessageCache implements ServiceLifecycle {
                             msg = msgTreeMap.firstEntry().getValue();
                             if (System.currentTimeMillis() - Long.parseLong(MessageAccessor.getConsumeStartTimeStamp(msg))
                                 > clientConfig.getRmqMessageConsumeTimeout() * 60 * 1000) {
-                                //Expired, ack and remove it.
+                                // 已过期，后续 sendMessageBack 并 ack
                             } else {
                                 break;
                             }
@@ -206,6 +224,7 @@ class LocalMessageCache implements ServiceLifecycle {
         }
     }
 
+    /** 通过反射读取 ProcessQueue 内部 msgTreeMap 读写锁（兼容不同版本）。 */
     private ReadWriteLock getLockInProcessQueue(ProcessQueue pq) {
         try {
             return (ReadWriteLock) FieldUtils.readDeclaredField(pq, "lockTreeMap", true);

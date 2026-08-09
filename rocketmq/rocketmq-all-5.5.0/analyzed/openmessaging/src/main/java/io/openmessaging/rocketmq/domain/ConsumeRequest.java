@@ -24,11 +24,16 @@ import org.apache.rocketmq.common.message.MessageQueue;
  * Pull 消费待处理请求：封装消息、队列与 ProcessQueue，供本地缓存与 ack 使用。
  */
 public class ConsumeRequest {
+    /** RocketMQ 原始消息体。 */
     private final MessageExt messageExt;
+    /** 消息所属 MessageQueue。 */
     private final MessageQueue messageQueue;
+    /** 对应 ProcessQueue，用于更新消费进度。 */
     private final ProcessQueue processQueue;
+    /** 消费者开始处理该消息的时间戳（毫秒）。 */
     private long startConsumeTimeMillis;
 
+    /** 构造一条待消费请求。 */
     public ConsumeRequest(final MessageExt messageExt, final MessageQueue messageQueue,
         final ProcessQueue processQueue) {
         this.messageExt = messageExt;

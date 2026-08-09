@@ -40,18 +40,25 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
- * OMS Pull 消费者实现：基于 {@link DefaultMQPullConsumer} 定时拉取并配合 {@link LocalMessageCache} 供应用 poll/ack。
+ * OMS Pull 消费者实现：基于 {@link DefaultMQPullConsumer} 定时拉取并经由本地缓存交付消息。
  */
 public class PullConsumerImpl implements PullConsumer {
     private static final Logger log = LoggerFactory.getLogger(PullConsumerImpl.class);
 
+    /** 底层 RocketMQ Pull 消费者实例。 */
     private final DefaultMQPullConsumer rocketmqPullConsumer;
+    /** OMS 实例属性。 */
     private final KeyValue properties;
+    /** 是否已启动。 */
     private boolean started = false;
+    /** 按 Topic 调度 Pull 任务的服务。 */
     private final MQPullConsumerScheduleService pullConsumerScheduleService;
+    /** 本地消息缓存，解耦拉取与 receive/ack。 */
     private final LocalMessageCache localMessageCache;
+    /** 解析后的客户端配置。 */
     private final ClientConfig clientConfig;
 
+    /** 从 OMS 属性初始化 Pull 消费者、调度服务与本地缓存。 */
     public PullConsumerImpl(final KeyValue properties) {
         this.properties = properties;
         this.clientConfig = BeanUtils.populate(properties, ClientConfig.class);
@@ -64,6 +71,7 @@ public class PullConsumerImpl implements PullConsumer {
 
         this.rocketmqPullConsumer = pullConsumerScheduleService.getDefaultMQPullConsumer();
 
+        // 环境变量开启时直连 NameServer，跳过 OMS 服务发现
         if ("true".equalsIgnoreCase(System.getenv("OMS_RMQ_DIRECT_NAME_SRV"))) {
             String accessPoints = clientConfig.getAccessPoints();
             if (accessPoints == null || accessPoints.isEmpty()) {
@@ -92,6 +100,7 @@ public class PullConsumerImpl implements PullConsumer {
     }
 
     @Override
+    /** 注册 Topic 并启动定时 Pull 任务。 */
     public PullConsumer attachQueue(String queueName) {
         registerPullTaskCallback(queueName);
         return this;
@@ -104,12 +113,14 @@ public class PullConsumerImpl implements PullConsumer {
     }
 
     @Override
+    /** 取消 Topic 订阅。 */
     public PullConsumer detachQueue(String queueName) {
         this.rocketmqPullConsumer.getRegisterTopics().remove(queueName);
         return this;
     }
 
     @Override
+    /** 阻塞从本地缓存取一条 OMS 消息。 */
     public Message receive() {
         MessageExt rmqMsg = localMessageCache.poll();
         return rmqMsg == null ? null : OMSUtil.msgConvert(rmqMsg);
@@ -132,6 +143,7 @@ public class PullConsumerImpl implements PullConsumer {
     }
 
     @Override
+    /** 启动调度 Pull 与本地缓存清理线程。 */
     public synchronized void startup() {
         if (!started) {
             try {
@@ -144,6 +156,7 @@ public class PullConsumerImpl implements PullConsumer {
         this.started = true;
     }
 
+    /** 为指定 Topic 注册 Pull 回调：拉取消息并提交到本地缓存。 */
     private void registerPullTaskCallback(final String targetQueueName) {
         this.pullConsumerScheduleService.registerPullTaskCallback(targetQueueName, new PullTaskCallback() {
             @Override
@@ -177,6 +190,7 @@ public class PullConsumerImpl implements PullConsumer {
     }
 
     @Override
+    /** 关闭本地缓存、调度服务与 Pull 消费者。 */
     public synchronized void shutdown() {
         if (this.started) {
             this.localMessageCache.shutdown();

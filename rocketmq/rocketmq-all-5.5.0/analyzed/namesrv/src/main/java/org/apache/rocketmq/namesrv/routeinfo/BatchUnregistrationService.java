@@ -29,37 +29,39 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.header.namesrv.UnRegisterBrokerRequestHeader;
 
 /**
- * BatchUnregistrationService provides a mechanism to unregister brokers in batch manner, which speeds up broker-offline
- * process.
+ * Broker 批量注销服务：将注销请求入队并批量处理，加速 Broker 下线时的路由清理。
  */
 public class BatchUnregistrationService extends ServiceThread {
     /** 路由信息管理器，执行实际注销逻辑。 */
     private final RouteInfoManager routeInfoManager;
-    /** 待处理注销请求阻塞队列。 */
+    /** 待处理的 Broker 注销请求队列。 */
     private BlockingQueue<UnRegisterBrokerRequestHeader> unregistrationQueue;
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
+    /** 构造服务并初始化有界注销队列。 */
     public BatchUnregistrationService(RouteInfoManager routeInfoManager, NamesrvConfig namesrvConfig) {
         this.routeInfoManager = routeInfoManager;
         this.unregistrationQueue = new LinkedBlockingQueue<>(namesrvConfig.getUnRegisterBrokerQueueCapacity());
     }
 
     /**
-     * 将注销请求提交到队列（非阻塞 offer）。
+     * 提交一条 Broker 注销请求到队列。
      *
      * @param unRegisterRequest 待提交的注销请求
-     * @return {@code true} 表示入队成功，否则 {@code false}
+     * @return {@code true} 表示入队成功，{@code false} 表示队列已满
      */
     public boolean submit(UnRegisterBrokerRequestHeader unRegisterRequest) {
         return unregistrationQueue.offer(unRegisterRequest);
     }
 
     @Override
+    /** 返回服务线程名称标识。 */
     public String getServiceName() {
         return BatchUnregistrationService.class.getName();
     }
 
     @Override
+    /** 后台循环：阻塞取请求并 drain 同批请求后批量注销。 */
     public void run() {
         while (!this.isStopped()) {
             try {
@@ -67,7 +69,7 @@ public class BatchUnregistrationService extends ServiceThread {
                 Set<UnRegisterBrokerRequestHeader> unregistrationRequests = new HashSet<>();
                 unregistrationQueue.drainTo(unregistrationRequests);
 
-                // 将本次 take 的请求一并纳入批量处理
+                // 将本次 poll 到的请求一并纳入批量处理
                 unregistrationRequests.add(request);
 
                 this.routeInfoManager.unRegisterBroker(unregistrationRequests);
@@ -77,7 +79,7 @@ public class BatchUnregistrationService extends ServiceThread {
         }
     }
 
-    // 仅供单元测试查询队列长度
+    // 仅供测试：返回当前队列长度
     int queueLength() {
         return this.unregistrationQueue.size();
     }

@@ -28,10 +28,15 @@ public interface NonStandardKeys {
     String MAX_REDELIVERY_TIMES = "rmq.max.redelivery.times";
     /** 消息消费超时（分钟）配置键。 */
     String MESSAGE_CONSUME_TIMEOUT = "rmq.message.consume.timeout";
+    /** 消费线程池最大线程数配置键。 */
     String MAX_CONSUME_THREAD_NUMS = "rmq.max.consume.thread.nums";
+    /** 消费线程池最小线程数配置键。 */
     String MIN_CONSUME_THREAD_NUMS = "rmq.min.consume.thread.nums";
+    /** 消息消费状态（成功/稍后重试）上下文键。 */
     String MESSAGE_CONSUME_STATUS = "rmq.message.consume.status";
+    /** 消息目标 Topic/Queue 配置键。 */
     String MESSAGE_DESTINATION = "rmq.message.destination";
+    /** Pull 单次拉取条数配置键。 */
     String PULL_MESSAGE_BATCH_NUMS = "rmq.pull.message.batch.nums";
     /** Pull 本地缓存容量配置键。 */
     String PULL_MESSAGE_CACHE_CAPACITY = "rmq.pull.message.cache.capacity";

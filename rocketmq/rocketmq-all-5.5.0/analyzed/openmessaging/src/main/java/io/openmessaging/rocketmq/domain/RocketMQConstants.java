@@ -22,7 +22,7 @@ package io.openmessaging.rocketmq.domain;
 public interface RocketMQConstants {
 
     /**
-     * 定时消息投递时间的系统属性键。 message delivery time
+     * 定时消息投递时间的系统属性键。
      */
     String START_DELIVER_TIME = "__STARTDELIVERTIME";
 

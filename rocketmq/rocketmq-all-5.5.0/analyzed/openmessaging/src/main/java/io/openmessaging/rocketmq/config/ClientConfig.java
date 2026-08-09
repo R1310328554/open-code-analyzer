@@ -29,25 +29,37 @@ public class ClientConfig implements OMSBuiltinKeys, NonStandardKeys {
     private String accessPoints;
     /** OMS 命名空间。 */
     private String namespace;
+    /** 生产者标识。 */
     private String producerId;
     /** 消费者标识（对应 RocketMQ Consumer Group）。 */
     private String consumerId;
     /** 通用操作超时（毫秒）。 */
     private int operationTimeout = 5000;
+    /** 区域标识。 */
     private String region;
+    /** 路由源（Topic/Queue 等）。 */
     private String routingSource;
+    /** 路由目标。 */
     private String routingDestination;
+    /** 路由表达式（如 Tag 过滤）。 */
     private String routingExpression;
     /** RocketMQ 消费组名。 */
     private String rmqConsumerGroup;
+    /** RocketMQ 生产组名，默认 OMS 内置组。 */
     private String rmqProducerGroup = "__OMS_PRODUCER_DEFAULT_GROUP";
+    /** 最大重投递次数。 */
     private int rmqMaxRedeliveryTimes = 16;
+    /** 单条消息消费超时（分钟）。 */
     private int rmqMessageConsumeTimeout = 15; //In minutes
+    /** 消费线程池最大线程数。 */
     private int rmqMaxConsumeThreadNums = 64;
+    /** 消费线程池最小线程数。 */
     private int rmqMinConsumeThreadNums = 20;
+    /** 消息目标 Topic/Queue 名称。 */
     private String rmqMessageDestination;
     /** Pull 模式单次拉取消息条数。 */
     private int rmqPullMessageBatchNums = 32;
+    /** Pull 模式本地消息缓存容量。 */
     private int rmqPullMessageCacheCapacity = 1000;
 
     public String getDriverImpl() {

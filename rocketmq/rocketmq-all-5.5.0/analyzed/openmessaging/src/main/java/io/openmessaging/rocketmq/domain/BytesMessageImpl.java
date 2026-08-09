@@ -27,16 +27,21 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * OMS 字节消息实现：维护系统头、用户头与二进制消息体。
  */
 public class BytesMessageImpl implements BytesMessage {
+    /** 系统级消息头（Topic、Queue 等 OMS 标准键）。 */
     private KeyValue sysHeaders;
+    /** 用户自定义消息头。 */
     private KeyValue userHeaders;
+    /** 消息二进制载荷。 */
     private byte[] body;
 
+    /** 创建空消息并初始化头容器。 */
     public BytesMessageImpl() {
         this.sysHeaders = OMS.newKeyValue();
         this.userHeaders = OMS.newKeyValue();
     }
 
     @Override
+    /** 按类型读取消息体，当前仅支持 {@code byte[]}。 */
     public <T> T getBody(Class<T> type) throws OMSMessageFormatException {
         if (type == byte[].class) {
             return (T)body;
@@ -46,6 +51,7 @@ public class BytesMessageImpl implements BytesMessage {
     }
 
     @Override
+    /** 设置消息体并返回自身以支持链式调用。 */
     public BytesMessage setBody(final byte[] body) {
         this.body = body;
         return this;

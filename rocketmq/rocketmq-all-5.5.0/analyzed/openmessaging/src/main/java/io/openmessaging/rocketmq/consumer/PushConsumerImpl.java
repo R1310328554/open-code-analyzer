@@ -42,15 +42,21 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 
 /**
- * OMS Push 消费者实现：将 RocketMQ 并发消费回调桥接到 OMS {@link MessageListener}。
+ * OMS Push 消费者实现：将 RocketMQ 并发消费回调桥接为 OMS {@link MessageListener} 异步 ack 模型。
  */
 public class PushConsumerImpl implements PushConsumer {
+    /** 底层 RocketMQ Push 消费者。 */
     private final DefaultMQPushConsumer rocketmqPushConsumer;
+    /** OMS 实例属性。 */
     private final KeyValue properties;
+    /** 是否已启动。 */
     private boolean started = false;
+    /** Topic 到 OMS 监听器的映射表。 */
     private final Map<String, MessageListener> subscribeTable = new ConcurrentHashMap<>();
+    /** 解析后的客户端配置。 */
     private final ClientConfig clientConfig;
 
+    /** 从 OMS 属性初始化 Push 消费者并注册内部并发监听器。 */
     public PushConsumerImpl(final KeyValue properties) {
         this.rocketmqPushConsumer = new DefaultMQPushConsumer();
         this.properties = properties;
@@ -88,11 +94,13 @@ public class PushConsumerImpl implements PushConsumer {
     }
 
     @Override
+    /** 恢复 Push 消费。 */
     public void resume() {
         this.rocketmqPushConsumer.resume();
     }
 
     @Override
+    /** 暂停 Push 消费。 */
     public void suspend() {
         this.rocketmqPushConsumer.suspend();
     }
@@ -108,6 +116,7 @@ public class PushConsumerImpl implements PushConsumer {
     }
 
     @Override
+    /** 订阅 Topic 并绑定 OMS 消息监听器。 */
     public PushConsumer attachQueue(final String queueName, final MessageListener listener) {
         this.subscribeTable.put(queueName, listener);
         try {
@@ -124,6 +133,7 @@ public class PushConsumerImpl implements PushConsumer {
     }
 
     @Override
+    /** 取消订阅并移除监听器。 */
     public PushConsumer detachQueue(String queueName) {
         this.subscribeTable.remove(queueName);
         try {
@@ -145,6 +155,7 @@ public class PushConsumerImpl implements PushConsumer {
     }
 
     @Override
+    /** 启动 RocketMQ Push 消费者。 */
     public synchronized void startup() {
         if (!started) {
             try {
@@ -157,6 +168,7 @@ public class PushConsumerImpl implements PushConsumer {
     }
 
     @Override
+    /** 关闭 Push 消费者。 */
     public synchronized void shutdown() {
         if (this.started) {
             this.rocketmqPushConsumer.shutdown();
@@ -164,6 +176,7 @@ public class PushConsumerImpl implements PushConsumer {
         this.started = false;
     }
 
+    /** 将 RocketMQ 并发消费回调适配为 OMS 监听器 + CountDownLatch 等待 ack。 */
     class MessageListenerImpl implements MessageListenerConcurrently {
 
         @Override
@@ -182,6 +195,7 @@ public class PushConsumerImpl implements PushConsumer {
             final KeyValue contextProperties = OMS.newKeyValue();
             final CountDownLatch sync = new CountDownLatch(1);
 
+            // 默认消费状态为稍后重试，listener ack 后改为成功
             contextProperties.put(NonStandardKeys.MESSAGE_CONSUME_STATUS, ConsumeConcurrentlyStatus.RECONSUME_LATER.name());
 
             MessageListener.Context context = new MessageListener.Context() {
@@ -202,6 +216,7 @@ public class PushConsumerImpl implements PushConsumer {
             long costs = System.currentTimeMillis() - begin;
             long timeoutMills = clientConfig.getRmqMessageConsumeTimeout() * 60 * 1000;
             try {
+                // 在消费超时窗口内等待用户 ack
                 sync.await(Math.max(0, timeoutMills - costs), TimeUnit.MILLISECONDS);
             } catch (InterruptedException ignore) {
             }

@@ -32,16 +32,16 @@ import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 
 /**
- * 集群测试路由处理器：本地无路由时回退到生产环境 {@link DefaultMQAdminExt} 查询。
+ * 集群测试环境路由处理器：本地无路由时回退到生产环境查询 Topic 路由。
  */
 public class ClusterTestRequestProcessor extends ClientRequestProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
-    /** 连接生产环境的 Admin 客户端，用于远程拉取路由。 */
+    /** 用于跨环境查询路由的管理工具客户端。 */
     private final DefaultMQAdminExt adminExt;
-    /** 生产环境单元名，用于 Admin 实例标识。 */
+    /** 生产环境单元名称，用于 Admin 客户端标识。 */
     private final String productEnvName;
 
-    /** 创建处理器并启动指向生产环境的 Admin 扩展。 */
+    /** 构造处理器并启动连接生产环境的 Admin 客户端。 */
     public ClusterTestRequestProcessor(NamesrvController namesrvController, String productEnvName) {
         super(namesrvController);
         this.productEnvName = productEnvName;
@@ -56,6 +56,7 @@ public class ClusterTestRequestProcessor extends ClientRequestProcessor {
     }
 
     @Override
+    /** 优先本地路由；缺失时从生产环境拉取并返回顺序 Topic 配置。 */
     public RemotingCommand getRouteInfoByTopic(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -69,6 +70,7 @@ public class ClusterTestRequestProcessor extends ClientRequestProcessor {
                     requestHeader.getTopic());
             topicRouteData.setOrderTopicConf(orderTopicConf);
         } else {
+            // 本地测试集群无该 Topic 路由时，向生产环境查询
             try {
                 topicRouteData = adminExt.examineTopicRouteInfo(requestHeader.getTopic());
             } catch (Exception e) {

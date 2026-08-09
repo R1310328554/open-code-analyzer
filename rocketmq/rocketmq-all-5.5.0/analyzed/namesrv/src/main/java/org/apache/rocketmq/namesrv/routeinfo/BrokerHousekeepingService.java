@@ -21,41 +21,43 @@ import org.apache.rocketmq.namesrv.NamesrvController;
 import org.apache.rocketmq.remoting.ChannelEventListener;
 
 /**
- * Broker 连接生命周期监听：通道关闭/异常/空闲时通知 {@link RouteInfoManager} 清理路由。
+ * Broker 连接生命周期监听器：在通道关闭、异常或空闲时触发路由表清理。
  */
 public class BrokerHousekeepingService implements ChannelEventListener {
 
     /** NameServer 控制器，用于访问路由信息管理器。 */
     private final NamesrvController namesrvController;
 
-    /** 绑定 NameServer 控制器。 */
+    /** 构造监听器并绑定 NameServer 控制器。 */
     public BrokerHousekeepingService(NamesrvController namesrvController) {
         this.namesrvController = namesrvController;
     }
 
     @Override
+    /** 新连接建立（当前无额外处理）。 */
     public void onChannelConnect(String remoteAddr, Channel channel) {
     }
 
     @Override
-    /** 通道关闭时触发路由清理。 */
+    /** 通道正常关闭时注销对应 Broker 路由信息。 */
     public void onChannelClose(String remoteAddr, Channel channel) {
         this.namesrvController.getRouteInfoManager().onChannelDestroy(channel);
     }
 
     @Override
-    /** 通道异常时同样清理对应 Broker 路由。 */
+    /** 通道异常时同样清理 Broker 路由，避免僵尸注册。 */
     public void onChannelException(String remoteAddr, Channel channel) {
         this.namesrvController.getRouteInfoManager().onChannelDestroy(channel);
     }
 
     @Override
-    /** 通道空闲超时视为断开，清理路由。 */
+    /** 通道空闲超时断开时清理路由。 */
     public void onChannelIdle(String remoteAddr, Channel channel) {
         this.namesrvController.getRouteInfoManager().onChannelDestroy(channel);
     }
 
     @Override
+    /** 通道激活（当前无额外处理）。 */
     public void onChannelActive(String remoteAddr, Channel channel) {
 
     }

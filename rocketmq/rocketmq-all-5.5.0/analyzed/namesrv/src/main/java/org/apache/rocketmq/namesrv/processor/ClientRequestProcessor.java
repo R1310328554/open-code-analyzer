@@ -43,9 +43,9 @@ public class ClientRequestProcessor implements NettyRequestProcessor {
 
     private static Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
-        /** NameServer 控制器，提供路由与 KV 配置访问。 */
+    /** NameServer 控制器，提供路由与 KV 配置访问。 */
     protected NamesrvController namesrvController;
-        /** 处理器启动时间戳，用于判断 NameServer 是否已完成预热。 */
+    /** 处理器启动时间戳，用于判断 NameServer 是否已完成预热。 */
     private long startupTimeMillis;
 
     /** 构造处理器并记录启动时间。 */
