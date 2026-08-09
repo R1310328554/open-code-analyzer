@@ -15,23 +15,8 @@
     "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpStreamableServerTransportProvider.java",
     "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpTransport.java",
     "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/MissingMcpTransportSession.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/ProtocolVersions.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/session/ArthasCommandContext.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/session/ArthasCommandSessionManager.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/AbstractTaskAwareToolSpecificationBuilder.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/AbstractTaskHandler.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/CreateTaskContext.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/CreateTaskHandler.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/CreateTaskOptions.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/DefaultCreateTaskContext.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/DefaultTaskManager.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/GetTaskFromStoreResult.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/GetTaskHandler.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/GetTaskResultHandler.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/InMemoryTaskMessageQueue.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/InMemoryTaskStore.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/task/NullTaskManager.java"
+    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/ProtocolVersions.java"
   ],
   "remaining_pending": 735,
-  "done": 30
+  "done": 45
 }
