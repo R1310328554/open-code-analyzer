@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:05:11Z",
-  "files": [
-    "redisson-hibernate/redisson-hibernate-52/src/main/java/org/redisson/hibernate/strategy/ReadWriteEntityRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-52/src/main/java/org/redisson/hibernate/strategy/ReadWriteNaturalIdRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-52/src/main/java/org/redisson/hibernate/strategy/TransactionalCollectionRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-52/src/main/java/org/redisson/hibernate/strategy/TransactionalEntityRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-52/src/main/java/org/redisson/hibernate/strategy/TransactionalNaturalIdRegionAccessStrategy.java",
-    "redisson-hibernate/redisson-hibernate-53/src/main/java/org/redisson/hibernate/JndiRedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-53/src/main/java/org/redisson/hibernate/JndiRedissonRegionNativeFactory.java",
-    "redisson-hibernate/redisson-hibernate-53/src/main/java/org/redisson/hibernate/RedissonCacheKeysFactory.java",
-    "redisson-hibernate/redisson-hibernate-53/src/main/java/org/redisson/hibernate/RedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-53/src/main/java/org/redisson/hibernate/RedissonRegionNativeFactory.java",
-    "redisson-hibernate/redisson-hibernate-53/src/main/java/org/redisson/hibernate/RedissonStorage.java",
-    "redisson-hibernate/redisson-hibernate-53/src/main/java/org/redisson/hibernate/RedissonStrategyRegistrationProvider.java",
-    "redisson-hibernate/redisson-hibernate-6/src/main/java/org/redisson/hibernate/JndiRedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-6/src/main/java/org/redisson/hibernate/JndiRedissonRegionNativeFactory.java",
-    "redisson-hibernate/redisson-hibernate-6/src/main/java/org/redisson/hibernate/RedissonCacheKeysFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2732,
-  "done": 75
+  "done": 90
 }
