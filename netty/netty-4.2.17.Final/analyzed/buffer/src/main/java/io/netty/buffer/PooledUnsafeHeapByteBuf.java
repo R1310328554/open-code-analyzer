@@ -19,6 +19,9 @@ import io.netty.util.Recycler;
 import io.netty.util.internal.ObjectPool.Handle;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * 通过 Unsafe 读写 {@code byte[]} 的池化堆 {@link ByteBuf}。
+ */
 final class PooledUnsafeHeapByteBuf extends PooledHeapByteBuf {
 
     private static final Recycler<PooledUnsafeHeapByteBuf> RECYCLER =
@@ -29,6 +32,8 @@ final class PooledUnsafeHeapByteBuf extends PooledHeapByteBuf {
                 }
             };
 
+    /** 从 {@link Recycler} 获取 Unsafe 堆缓冲区实例。 */
+    /** 从 {@link Recycler} 获取 Unsafe 堆缓冲区实例。 */
     static PooledUnsafeHeapByteBuf newUnsafeInstance(int maxCapacity) {
         PooledUnsafeHeapByteBuf buf = RECYCLER.get();
         buf.reuse(maxCapacity);
@@ -149,7 +154,7 @@ final class PooledUnsafeHeapByteBuf extends PooledHeapByteBuf {
     @Deprecated
     protected SwappedByteBuf newSwappedByteBuf() {
         if (PlatformDependent.isUnaligned()) {
-            // Only use if unaligned access is supported otherwise there is no gain.
+            // 仅当支持非对齐访问时使用，否则无性能收益
             return new UnsafeHeapSwappedByteBuf(this);
         }
         return super.newSwappedByteBuf();

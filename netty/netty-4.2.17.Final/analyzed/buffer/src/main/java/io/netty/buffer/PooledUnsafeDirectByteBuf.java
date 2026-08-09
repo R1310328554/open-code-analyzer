@@ -25,6 +25,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * 使用 {@link UnsafeByteBufUtil} 访问的池化直接 {@link ByteBuf}，性能优于纯 NIO API。
+ */
 final class PooledUnsafeDirectByteBuf extends PooledByteBuf<ByteBuffer> {
 
     private static final Recycler<PooledUnsafeDirectByteBuf> RECYCLER =
@@ -41,6 +44,8 @@ final class PooledUnsafeDirectByteBuf extends PooledByteBuf<ByteBuffer> {
         return buf;
     }
 
+    /** 缓冲区起始本地内存地址（含 chunk 内 offset）。 */
+    /** 缓冲区起始本地内存地址（含 chunk 内 offset）。 */
     private long memoryAddress;
 
     private PooledUnsafeDirectByteBuf(Handle<PooledUnsafeDirectByteBuf> recyclerHandle, int maxCapacity) {
@@ -60,6 +65,8 @@ final class PooledUnsafeDirectByteBuf extends PooledByteBuf<ByteBuffer> {
         initMemoryAddress();
     }
 
+    /** 根据 {@link ByteBuffer} 与 offset 计算并缓存 memoryAddress。 */
+    /** 根据 {@link ByteBuffer} 与 offset 计算并缓存 memoryAddress。 */
     private void initMemoryAddress() {
         memoryAddress = PlatformDependent.directBufferAddress(memory) + offset;
     }
@@ -254,7 +261,7 @@ final class PooledUnsafeDirectByteBuf extends PooledByteBuf<ByteBuffer> {
     @Override
     protected SwappedByteBuf newSwappedByteBuf() {
         if (PlatformDependent.isUnaligned()) {
-            // Only use if unaligned access is supported otherwise there is no gain.
+            // 仅在不支持非对齐访问时才有收益
             return new UnsafeDirectSwappedByteBuf(this);
         }
         return super.newSwappedByteBuf();

@@ -16,8 +16,8 @@
 package io.netty.buffer;
 
 /**
- * Specialized {@link ReadOnlyByteBuf} sub-type which allows fast access to parent
- * without extra bound-checks.
+ * {@link ReadOnlyByteBuf} 特化子类：父缓冲区为 {@link AbstractByteBuf} 时，
+ * 可通过 {@code _get*} 方法跳过额外边界检查以加速只读访问。
  */
 final class ReadOnlyAbstractByteBuf extends ReadOnlyByteBuf {
 

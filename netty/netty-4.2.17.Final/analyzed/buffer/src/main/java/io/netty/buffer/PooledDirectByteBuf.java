@@ -25,8 +25,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * 池化直接（堆外）{@link ByteBuf}，底层为 {@link ByteBuffer}。
+ * 通过 NIO {@link ByteBuffer} API 读写，支持 {@link #memoryAddress()}。
+ */
 final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer> {
 
+    /** 直接缓冲区对象池。 */
+    /** 直接缓冲区对象池。 */
     private static final Recycler<PooledDirectByteBuf> RECYCLER =
             new Recycler<PooledDirectByteBuf>() {
                 @Override
@@ -35,6 +41,8 @@ final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer> {
                 }
             };
 
+    /** 从 {@link Recycler} 获取实例并设置最大容量。 */
+    /** 从 {@link Recycler} 获取实例并设置最大容量。 */
     static PooledDirectByteBuf newInstance(int maxCapacity) {
         PooledDirectByteBuf buf = RECYCLER.get();
         buf.reuse(maxCapacity);
@@ -307,6 +315,8 @@ final class PooledDirectByteBuf extends PooledByteBuf<ByteBuffer> {
         throw new UnsupportedOperationException("direct buffer");
     }
 
+    /** 若 chunk 的 {@link CleanableDirectBuffer} 暴露地址则返回 true。 */
+    /** 若 chunk 的 {@link CleanableDirectBuffer} 暴露地址则返回 true。 */
     @Override
     public boolean hasMemoryAddress() {
         PoolChunk<ByteBuffer> chunk = this.chunk;

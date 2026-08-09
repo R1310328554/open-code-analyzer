@@ -23,20 +23,19 @@ import jdk.jfr.Name;
 @SuppressWarnings("Since15")
 @Label("Buffer Reallocation")
 @Name(ReallocateBufferEvent.NAME)
-@Description("Triggered when a buffer is reallocated for resizing in an allocator. " +
-        "Will be followed by an AllocateBufferEvent")
+@Description("分配器因扩容重新分配缓冲区时触发；随后通常会有 AllocateBufferEvent")
 final class ReallocateBufferEvent extends AbstractBufferEvent {
     static final String NAME = "io.netty.ReallocateBuffer";
     private static final ReallocateBufferEvent INSTANCE = new ReallocateBufferEvent();
 
     /**
-     * Statically check if this event is enabled.
+     * 静态检查此 JFR 事件是否已启用。
      */
     public static boolean isEventEnabled() {
         return INSTANCE.isEnabled();
     }
 
     @DataAmount
-    @Description("Targeted buffer capacity")
+    @Description("目标缓冲区容量")
     public int newCapacity;
 }

@@ -29,10 +29,12 @@ import java.nio.channels.ScatteringByteChannel;
 
 
 /**
- * Read-only ByteBuf which wraps a read-only ByteBuffer.
+ * 包装只读 {@link ByteBuffer} 的只读 {@link ByteBuf}。
  */
 class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
 
+    /** 底层只读 {@link ByteBuffer}（已 slice 并设为大端）。 */
+    /** 底层只读 {@link ByteBuffer}（已 slice 并设为大端）。 */
     protected final ByteBuffer buffer;
     private final ByteBufAllocator allocator;
     private ByteBuffer tmpNioBuf;
@@ -495,7 +497,7 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
         ensureAccessible();
         ByteBuffer src;
         try {
-            // Always duplicate the buffer so it's safe to call copy from multiple threads.
+            // 始终 duplicate，保证多线程调用 copy 安全
             src = (ByteBuffer) buffer.duplicate().clear().position(index).limit(index + length);
         } catch (IllegalArgumentException ignored) {
             throw new IndexOutOfBoundsException("Too many bytes to read - Need " + (index + length));
@@ -578,6 +580,8 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
     }
 
     @SuppressWarnings("deprecation")
+    /** 只读 slice，禁止写入。 */
+    /** 只读 slice，禁止写入。 */
     private static final class ReadOnlySlicedByteBuf extends SlicedByteBuf {
         ReadOnlySlicedByteBuf(ByteBuf buffer, int index, int length) {
             super(buffer, index, length);
@@ -615,6 +619,8 @@ class ReadOnlyByteBufferBuf extends AbstractReferenceCountedByteBuf {
     }
 
     @SuppressWarnings("deprecation")
+    /** 只读 duplicate，禁止写入。 */
+    /** 只读 duplicate，禁止写入。 */
     private static final class ReadOnlyDuplicatedByteBuf extends DuplicatedByteBuf {
         ReadOnlyDuplicatedByteBuf(ByteBuf buffer) {
             super(buffer);

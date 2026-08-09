@@ -23,15 +23,16 @@ import java.nio.ByteBuffer;
 
 
 /**
- * Read-only ByteBuf which wraps a read-only direct ByteBuffer and use unsafe for best performance.
+ * 包装只读直接 {@link ByteBuffer} 的只读 {@link ByteBuf}，通过 Unsafe 实现高性能读取。
  */
 final class ReadOnlyUnsafeDirectByteBuf extends ReadOnlyByteBufferBuf {
+    /** 直接缓冲区的本地内存基址。 */
+    /** 直接缓冲区的本地内存基址。 */
     private final long memoryAddress;
 
     ReadOnlyUnsafeDirectByteBuf(ByteBufAllocator allocator, ByteBuffer byteBuffer) {
         super(allocator, byteBuffer);
-        // Use buffer as the super class will slice the passed in ByteBuffer which means the memoryAddress
-        // may be different if the position != 0.
+        // 使用字段 buffer：父类会 slice 入参，position≠0 时地址可能变化
         memoryAddress = PlatformDependent.directBufferAddress(buffer);
     }
 

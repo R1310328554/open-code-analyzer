@@ -28,6 +28,9 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
+/**
+ * 池化缓冲区的 duplicate 视图：读写均转发给 unwrapped 底层缓冲区，共享引用计数。
+ */
 final class PooledDuplicatedByteBuf extends AbstractPooledDerivedByteBuf {
 
     private static final Recycler<PooledDuplicatedByteBuf> RECYCLER =
@@ -38,6 +41,8 @@ final class PooledDuplicatedByteBuf extends AbstractPooledDerivedByteBuf {
                 }
             };
 
+    /** 创建并初始化 duplicate，保留读写索引标记。 */
+    /** 创建并初始化 duplicate，保留读写索引标记。 */
     static PooledDuplicatedByteBuf newInstance(AbstractByteBuf unwrapped, ByteBuf wrapped,
                                                int readerIndex, int writerIndex) {
         final PooledDuplicatedByteBuf duplicate = RECYCLER.get();

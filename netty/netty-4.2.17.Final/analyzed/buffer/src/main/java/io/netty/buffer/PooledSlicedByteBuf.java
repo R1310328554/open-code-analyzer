@@ -30,6 +30,9 @@ import java.nio.channels.ScatteringByteChannel;
 
 import static io.netty.buffer.AbstractUnpooledSlicedByteBuf.checkSliceOutOfBounds;
 
+/**
+ * 池化缓冲区的 slice 视图：固定长度子区间，索引相对 slice 偏移。
+ */
 final class PooledSlicedByteBuf extends AbstractPooledDerivedByteBuf {
 
     private static final Recycler<PooledSlicedByteBuf> RECYCLER =
@@ -56,6 +59,8 @@ final class PooledSlicedByteBuf extends AbstractPooledDerivedByteBuf {
         return slice;
     }
 
+    /** 在 unwrapped 缓冲区中的起始偏移。 */
+    /** 在 unwrapped 缓冲区中的起始偏移。 */
     int adjustment;
 
     private PooledSlicedByteBuf(Handle<PooledSlicedByteBuf> handle) {
@@ -434,6 +439,8 @@ final class PooledSlicedByteBuf extends AbstractPooledDerivedByteBuf {
         return ret - adjustment;
     }
 
+    /** slice 相对索引转 unwrapped 绝对索引。 */
+    /** slice 相对索引转 unwrapped 绝对索引。 */
     private int idx(int index) {
         return index + adjustment;
     }

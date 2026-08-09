@@ -27,18 +27,41 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
+/**
+ * 池化 {@link ByteBuf} 抽象基类：内存来自 {@link PoolChunk}，释放时归还 arena 并回收到 {@link Recycler}。
+ */
 abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
 
+    /** {@link Recycler} 句柄，释放后用于对象复用。 */
+    /** {@link Recycler} 句柄，释放后用于对象复用。 */
     private final EnhancedHandle<PooledByteBuf<T>> recyclerHandle;
 
+    /** 所属内存块。 */
+    /** 所属内存块。 */
     protected PoolChunk<T> chunk;
+    /** arena 内分配句柄；{@code -1} 表示已释放。 */
+    /** arena 内分配句柄；{@code -1} 表示已释放。 */
     protected long handle;
+    /** 底层内存（堆数组或 {@link ByteBuffer}）。 */
+    /** 底层内存（堆数组或 {@link ByteBuffer}）。 */
     protected T memory;
+    /** 在 chunk 内存中的起始偏移。 */
+    /** 在 chunk 内存中的起始偏移。 */
     protected int offset;
+    /** 当前逻辑容量（可小于 {@link #maxLength}）。 */
+    /** 当前逻辑容量（可小于 {@link #maxLength}）。 */
     protected int length;
+    /** 本次分配的最大可用长度（含扩容余量）。 */
+    /** 本次分配的最大可用长度（含扩容余量）。 */
     int maxLength;
+    /** 分配时使用的线程本地缓存。 */
+    /** 分配时使用的线程本地缓存。 */
     PoolThreadCache cache;
+    /** 复用的临时 NIO 视图，避免重复 {@link ByteBuffer#duplicate()}。 */
+    /** 复用的临时 NIO 视图，避免重复 {@link ByteBuffer#duplicate()}。 */
     ByteBuffer tmpNioBuf;
+    /** 创建此缓冲区的分配器。 */
+    /** 创建此缓冲区的分配器。 */
     private ByteBufAllocator allocator;
 
     @SuppressWarnings("unchecked")
@@ -47,14 +70,18 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
         this.recyclerHandle = (EnhancedHandle<PooledByteBuf<T>>) recyclerHandle;
     }
 
+    /** 池化分配完成后绑定 chunk、句柄与线程缓存。 */
+    /** 池化分配完成后绑定 chunk、句柄与线程缓存。 */
     void init(PoolChunk<T> chunk, ByteBuffer nioBuffer,
               long handle, int offset, int length, int maxLength, PoolThreadCache cache, boolean threadLocal) {
         init0(chunk, nioBuffer, handle, offset, length, maxLength, cache, true, threadLocal);
     }
 
+    /** 非池化 chunk 上的大块分配初始化。 */
+    /** 非池化 chunk 上的大块分配初始化。 */
     void initUnpooled(PoolChunk<T> chunk, int length) {
         init0(chunk, null, 0, 0, length, length, null, false,
-                false /* unpooled buffers are never allocated out of the thread-local cache */);
+                false /* 非池化缓冲区不会来自线程本地缓存 */);
     }
 
     private void init0(PoolChunk<T> chunk, ByteBuffer nioBuffer, long handle, int offset, int length, int maxLength,
@@ -79,7 +106,7 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
     }
 
     /**
-     * Method must be called before reuse this {@link PooledByteBufAllocator}
+     * 从 {@link Recycler} 取出后、再次使用前必须调用，重置容量与索引。
      */
     final void reuse(int maxCapacity) {
         maxCapacity(maxCapacity);
@@ -106,7 +133,7 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
         }
         checkNewCapacity(newCapacity);
         if (!chunk.unpooled) {
-            // If the request capacity does not require reallocation, just update the length of the memory.
+            // 若新容量无需重新分配，仅更新 length。
             if (newCapacity > length) {
                 if (newCapacity <= maxLength) {
                     length = newCapacity;
@@ -114,14 +141,14 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
                 }
             } else if (newCapacity > maxLength >>> 1 &&
                     (maxLength > 512 || newCapacity > maxLength - 16)) {
-                // here newCapacity < length
+                // 此处 newCapacity < length，可收缩逻辑容量
                 length = newCapacity;
                 trimIndicesToCapacity(newCapacity);
                 return this;
             }
         }
 
-        // Reallocation required.
+        // 需要向 arena 重新分配。
         PooledByteBufAllocator.onReallocateBuffer(this, newCapacity);
         chunk.arena.reallocate(this, newCapacity);
         return this;
@@ -168,6 +195,8 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
         return tmpNioBuf;
     }
 
+    /** 由子类根据内存类型创建内部 NIO 缓冲区。 */
+    /** 由子类根据内存类型创建内部 NIO 缓冲区。 */
     protected abstract ByteBuffer newInternalNioBuffer(T memory);
 
     @Override
@@ -185,6 +214,8 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
         }
     }
 
+    /** 将相对索引转换为 chunk 内绝对偏移。 */
+    /** 将相对索引转换为 chunk 内绝对偏移。 */
     protected final int idx(int index) {
         return offset + index;
     }

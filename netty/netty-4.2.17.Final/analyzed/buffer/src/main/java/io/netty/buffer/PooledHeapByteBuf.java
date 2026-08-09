@@ -23,8 +23,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * 池化堆 {@link ByteBuf}，底层为 {@code byte[]}。
+ * 读写通过 {@link HeapByteBufUtil} 或 {@link System#arraycopy} 完成。
+ */
 class PooledHeapByteBuf extends PooledByteBuf<byte[]> {
 
+    /** 堆缓冲区对象池。 */
+    /** 堆缓冲区对象池。 */
     private static final Recycler<PooledHeapByteBuf> RECYCLER =
             new Recycler<PooledHeapByteBuf>() {
                 @Override
@@ -33,12 +39,16 @@ class PooledHeapByteBuf extends PooledByteBuf<byte[]> {
                 }
             };
 
+    /** 从 {@link Recycler} 获取堆缓冲区实例。 */
+    /** 从 {@link Recycler} 获取堆缓冲区实例。 */
     static PooledHeapByteBuf newInstance(int maxCapacity) {
         PooledHeapByteBuf buf = RECYCLER.get();
         buf.reuse(maxCapacity);
         return buf;
     }
 
+    /** 供 {@link Recycler} 使用的包内构造。 */
+    /** 供 {@link Recycler} 使用的包内构造。 */
     PooledHeapByteBuf(Handle<? extends PooledHeapByteBuf> recyclerHandle, int maxCapacity) {
         super(recyclerHandle, maxCapacity);
     }
@@ -214,6 +224,8 @@ class PooledHeapByteBuf extends PooledByteBuf<byte[]> {
         return copy.writeBytes(memory, idx(index), length);
     }
 
+    /** 返回堆数组对应区间的 NIO slice 视图。 */
+    /** 返回堆数组对应区间的 NIO slice 视图。 */
     @Override
     final ByteBuffer duplicateInternalNioBuffer(int index, int length) {
         checkIndex(index, length);

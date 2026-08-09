@@ -24,14 +24,19 @@ import io.netty.util.internal.ThrowableUtil;
 
 import java.nio.ByteOrder;
 
+/**
+ * 带 {@link ResourceLeakDetector} 跟踪的简单泄漏感知 {@link ByteBuf} 包装器。
+ * slice/duplicate 等派生视图共享或强制跟踪泄漏。
+ */
 class SimpleLeakAwareByteBuf extends WrappedByteBuf {
 
     /**
-     * This object's is associated with the {@link ResourceLeakTracker}. When {@link ResourceLeakTracker#close(Object)}
-     * is called this object will be used as the argument. It is also assumed that this object is used when
-     * {@link ResourceLeakDetector#track(Object)} is called to create {@link #leak}.
+     * 与 {@link ResourceLeakTracker} 关联的对象：{@link ResourceLeakTracker#close(Object)} 时作为参数；
+     * 创建 {@link #leak} 时 {@link ResourceLeakDetector#track(Object)} 也使用同一对象。
      */
     private final ByteBuf trackedByteBuf;
+    /** 缓冲区泄漏跟踪器。 */
+    /** 缓冲区泄漏跟踪器。 */
     final ResourceLeakTracker<ByteBuf> leak;
 
     SimpleLeakAwareByteBuf(ByteBuf wrapped, ByteBuf trackedByteBuf, ResourceLeakTracker<ByteBuf> leak) {
@@ -168,8 +173,7 @@ class SimpleLeakAwareByteBuf extends WrappedByteBuf {
     }
 
     private void closeLeak() {
-        // Close the ResourceLeakTracker with the tracked ByteBuf as argument. This must be the same that was used when
-        // calling DefaultResourceLeak.track(...).
+        // 以 trackedByteBuf 关闭 ResourceLeakTracker，须与 track 时传入对象一致
         boolean closed = leak.close(trackedByteBuf);
         assert closed;
     }
@@ -184,15 +188,14 @@ class SimpleLeakAwareByteBuf extends WrappedByteBuf {
     }
 
     private ByteBuf unwrappedDerived(ByteBuf derived) {
-        // We only need to unwrap SwappedByteBuf implementations as these will be the only ones that may end up in
-        // the AbstractLeakAwareByteBuf implementations beside slices / duplicates and "real" buffers.
+        // 仅需解包 SwappedByteBuf；除 slice/duplicate 外，泄漏感知层主要遇到此类包装
         ByteBuf unwrappedDerived = unwrapSwapped(derived);
 
         if (unwrappedDerived instanceof AbstractPooledDerivedByteBuf) {
-            // Update the parent to point to this buffer so we correctly close the ResourceLeakTracker.
+            // 更新 parent 指向本包装，以便正确关闭 ResourceLeakTracker
             ((AbstractPooledDerivedByteBuf) unwrappedDerived).parent(this);
 
-            // force tracking of derived buffers (see issue #13414)
+            // 强制跟踪派生缓冲区（见 issue #13414）
             return newLeakAwareByteBuf(derived, AbstractByteBuf.leakDetector.trackForcibly(derived));
         }
         return newSharedLeakAwareByteBuf(derived);

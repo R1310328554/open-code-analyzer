@@ -28,15 +28,16 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
 /**
- * A derived buffer which forbids any write requests to its parent.  It is
- * recommended to use {@link Unpooled#unmodifiableBuffer(ByteBuf)}
- * instead of calling the constructor explicitly.
+ * 禁止一切写操作的派生缓冲区。
+ * 建议使用 {@link Unpooled#unmodifiableBuffer(ByteBuf)}，而非直接调用构造函数。
  *
- * @deprecated Do not use.
+ * @deprecated 请勿使用。
  */
 @Deprecated
 public class ReadOnlyByteBuf extends AbstractDerivedByteBuf {
 
+    /** 被包装的只读底层缓冲区。 */
+    /** 被包装的只读底层缓冲区。 */
     private final ByteBuf buffer;
 
     public ReadOnlyByteBuf(ByteBuf buffer) {

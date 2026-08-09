@@ -35,6 +35,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 基于 jemalloc 风格 arena/chunk 的池化 {@link ByteBufAllocator} 实现。
+ * 支持堆与直接内存、线程本地 {@link PoolThreadCache}，并可暴露 JFR 分配事件。
+ */
 public class PooledByteBufAllocator extends AbstractByteBufAllocator implements ByteBufAllocatorMetricProvider {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(PooledByteBufAllocator.class);
@@ -42,7 +46,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     private static final int DEFAULT_NUM_DIRECT_ARENA;
 
     private static final int DEFAULT_PAGE_SIZE;
-    private static final int DEFAULT_MAX_ORDER; // 8192 << 9 = 4 MiB per chunk
+    private static final int DEFAULT_MAX_ORDER; // 8192 << 9，每 chunk 约 4 MiB
     private static final int DEFAULT_SMALL_CACHE_SIZE;
     private static final int DEFAULT_NORMAL_CACHE_SIZE;
     static final int DEFAULT_MAX_CACHED_BUFFER_CAPACITY;
@@ -90,16 +94,13 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
         }
         DEFAULT_MAX_ORDER = defaultMaxOrder;
 
-        // Determine reasonable default for nHeapArena and nDirectArena.
-        // Assuming each arena has 3 chunks, the pool should not consume more than 50% of max memory.
+        // 根据可用内存估算堆/直接 arena 默认数量；假设每 arena 约 3 个 chunk，池占用不超过约 50% 内存。
         final Runtime runtime = Runtime.getRuntime();
 
         /*
-         * We use 2 * available processors by default to reduce contention as we use 2 * available processors for the
-         * number of EventLoops in NIO and EPOLL as well. If we choose a smaller number we will run into hot spots as
-         * allocation and de-allocation needs to be synchronized on the PoolArena.
-         *
-         * See https://github.com/netty/netty/issues/3888.
+         * 默认使用 2×CPU 核数以降低争用（与 NIO/EPOLL EventLoop 数量一致）。
+         * arena 过少会导致分配/释放在 {@link PoolArena} 上热点同步。
+         * 见 https://github.com/netty/netty/issues/3888。
          */
         final int defaultMinNumArena = NettyRuntime.availableProcessors() * 2;
         final int defaultChunkSize = DEFAULT_PAGE_SIZE << DEFAULT_MAX_ORDER;
@@ -116,16 +117,15 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
                                 defaultMinNumArena,
                                 PlatformDependent.maxDirectMemory() / defaultChunkSize / 2 / 3)));
 
-        // cache sizes
+        // 线程本地缓存大小
         DEFAULT_SMALL_CACHE_SIZE = SystemPropertyUtil.getInt("io.netty.allocator.smallCacheSize", 256);
         DEFAULT_NORMAL_CACHE_SIZE = SystemPropertyUtil.getInt("io.netty.allocator.normalCacheSize", 64);
 
-        // 32 kb is the default maximum capacity of the cached buffer. Similar to what is explained in
-        // 'Scalable memory allocation using jemalloc'
+        // 默认缓存缓冲区最大 32KB，策略类似 jemalloc 论文
         DEFAULT_MAX_CACHED_BUFFER_CAPACITY = SystemPropertyUtil.getInt(
                 "io.netty.allocator.maxCachedBufferCapacity", 32 * 1024);
 
-        // the number of threshold of allocations when cached entries will be freed up if not frequently used
+        // 分配次数达到该阈值时，trim 不常用的缓存项
         DEFAULT_CACHE_TRIM_INTERVAL = SystemPropertyUtil.getInt(
                 "io.netty.allocator.cacheTrimInterval", 8192);
 
@@ -134,7 +134,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
                     " use -Dio.netty.allocator.cacheTrimIntervalMillis");
 
             if (SystemPropertyUtil.contains("io.netty.allocator.cacheTrimIntervalMillis")) {
-                // Both system properties are specified. Use the non-deprecated one.
+                // 两个系统属性均存在时，使用非废弃项。
                 DEFAULT_CACHE_TRIM_INTERVAL_MILLIS = SystemPropertyUtil.getLong(
                         "io.netty.allocator.cacheTrimIntervalMillis", 0);
             } else {
@@ -152,8 +152,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
         DEFAULT_DISABLE_CACHE_FINALIZERS_FOR_FAST_THREAD_LOCAL_THREADS = SystemPropertyUtil.getBoolean(
                 "io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", false);
 
-        // Use 1023 by default as we use an ArrayDeque as backing storage which will then allocate an internal array
-        // of 1024 elements. Otherwise we would allocate 2048 and only use 1024 which is wasteful.
+        // 默认 1023：ArrayDeque 内部数组为 1024，避免浪费到 2048。
         DEFAULT_MAX_CACHED_BYTEBUFFERS_PER_CHUNK = SystemPropertyUtil.getInt(
                 "io.netty.allocator.maxCachedByteBuffersPerChunk", 1023);
 
@@ -184,6 +183,8 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
         }
     }
 
+    /** 全局默认池化分配器。 */
+    /** 全局默认池化分配器。 */
     public static final PooledByteBufAllocator DEFAULT =
             new PooledByteBufAllocator(!PlatformDependent.isExplicitNoPreferDirect());
 
@@ -212,7 +213,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * @deprecated use
+     * @deprecated 请使用
      * {@link PooledByteBufAllocator#PooledByteBufAllocator(boolean, int, int, int, int, int, int, boolean)}
      */
     @Deprecated
@@ -282,7 +283,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
                         "Either Unsafe or ByteBuffer.alignSlice() must be available.");
             }
 
-            // Ensure page size is a whole multiple of the alignment, or bump it to the next whole multiple.
+            // 保证 pageSize 为 alignment 的整数倍。
             pageSize = (int) PlatformDependent.align(pageSize, directMemoryCacheAlignment);
         }
 
@@ -355,7 +356,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
                     "Alignment: " + alignment + ", page size: " + pageSize + '.');
         }
 
-        // Logarithm base 2. At this point we know that pageSize is a power of two.
+        // 以 2 为底的对数；此时 pageSize 已为 2 的幂。
         return Integer.SIZE - 1 - Integer.numberOfLeadingZeros(pageSize);
     }
 
@@ -364,7 +365,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
             throw new IllegalArgumentException("maxOrder: " + maxOrder + " (expected: 0-14)");
         }
 
-        // Ensure the resulting chunkSize does not overflow.
+        // 确保 chunkSize 不溢出。
         int chunkSize = pageSize;
         for (int i = maxOrder; i > 0; i --) {
             if (chunkSize > MAX_CHUNK_SIZE / 2) {
@@ -409,59 +410,59 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Default number of heap arenas - System Property: io.netty.allocator.numHeapArenas - default 2 * cores
+     * 默认堆 arena 数量；系统属性 {@code io.netty.allocator.numHeapArenas}，默认 2×核数。
      */
     public static int defaultNumHeapArena() {
         return DEFAULT_NUM_HEAP_ARENA;
     }
 
     /**
-     * Default number of direct arenas - System Property: io.netty.allocator.numDirectArenas - default 2 * cores
+     * 默认直接内存 arena 数量；系统属性 {@code io.netty.allocator.numDirectArenas}，默认 2×核数。
      */
     public static int defaultNumDirectArena() {
         return DEFAULT_NUM_DIRECT_ARENA;
     }
 
     /**
-     * Default buffer page size - System Property: io.netty.allocator.pageSize - default 8192
+     * 默认页大小；系统属性 {@code io.netty.allocator.pageSize}，默认 8192。
      */
     public static int defaultPageSize() {
         return DEFAULT_PAGE_SIZE;
     }
 
     /**
-     * Default maximum order - System Property: io.netty.allocator.maxOrder - default 9
+     * 默认 chunk 阶数；系统属性 {@code io.netty.allocator.maxOrder}，默认 9。
      */
     public static int defaultMaxOrder() {
         return DEFAULT_MAX_ORDER;
     }
 
     /**
-     * Default control creation of PoolThreadCache finalizers for FastThreadLocalThreads -
-     * System Property: io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads - default false
+     * 是否为 FastThreadLocalThread 禁用 PoolThreadCache finalizer；
+     * 系统属性 {@code io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads}，默认 false。
      */
     public static boolean defaultDisableCacheFinalizersForFastThreadLocalThreads() {
         return DEFAULT_DISABLE_CACHE_FINALIZERS_FOR_FAST_THREAD_LOCAL_THREADS;
     }
 
     /**
-     * Default thread caching behavior - System Property: io.netty.allocator.useCacheForAllThreads - default false
+     * 是否对所有线程启用缓存；系统属性 {@code io.netty.allocator.useCacheForAllThreads}，默认 false。
      */
     public static boolean defaultUseCacheForAllThreads() {
         return DEFAULT_USE_CACHE_FOR_ALL_THREADS;
     }
 
     /**
-     * Default prefer direct - System Property: io.netty.noPreferDirect - default false
+     * 是否优先直接内存；与系统属性 {@code io.netty.noPreferDirect} 相反，默认 false。
      */
     public static boolean defaultPreferDirect() {
         return PlatformDependent.directBufferPreferred();
     }
 
     /**
-     * Default tiny cache size - default 0
+     * 默认 tiny 缓存大小，现为 0。
      *
-     * @deprecated Tiny caches have been merged into small caches.
+     * @deprecated Tiny 缓存已并入 small 缓存。
      */
     @Deprecated
     public static int defaultTinyCacheSize() {
@@ -469,21 +470,21 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Default small cache size - System Property: io.netty.allocator.smallCacheSize - default 256
+     * 默认 small 缓存大小；系统属性 {@code io.netty.allocator.smallCacheSize}，默认 256。
      */
     public static int defaultSmallCacheSize() {
         return DEFAULT_SMALL_CACHE_SIZE;
     }
 
     /**
-     * Default normal cache size - System Property: io.netty.allocator.normalCacheSize - default 64
+     * 默认 normal 缓存大小；系统属性 {@code io.netty.allocator.normalCacheSize}，默认 64。
      */
     public static int defaultNormalCacheSize() {
         return DEFAULT_NORMAL_CACHE_SIZE;
     }
 
     /**
-     * Return {@code true} if direct memory cache alignment is supported, {@code false} otherwise.
+     * 若支持直接内存缓存对齐则返回 {@code true}。
      */
     public static boolean isDirectMemoryCacheAlignmentSupported() {
         return PlatformDependent.hasUnsafe();
@@ -495,9 +496,8 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * @deprecated will be removed
-     * Returns {@code true} if the calling {@link Thread} has a {@link ThreadLocal} cache for the allocated
-     * buffers.
+     * @deprecated 将移除
+     * 若当前 {@link Thread} 已绑定 {@link ThreadLocal} 缓冲区缓存则返回 {@code true}。
      */
     @Deprecated
     public boolean hasThreadLocalCache() {
@@ -505,8 +505,8 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * @deprecated will be removed
-     * Free all cached buffers for the calling {@link Thread}.
+     * @deprecated 将移除
+     * 释放当前 {@link Thread} 缓存的全部缓冲区。
      */
     @Deprecated
     public void freeThreadLocalCache() {
@@ -529,10 +529,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
             final EventExecutor executor = ThreadExecutorMap.currentExecutor();
 
             if (useCacheForAllThreads ||
-                    // If the current thread is a FastThreadLocalThread we will always use the cache
+                    // FastThreadLocalThread 始终使用线程缓存
                     FastThreadLocalThread.currentThreadHasFastThreadLocal() ||
-                    // The Thread is used by an EventExecutor, let's use the cache as the chances are good that we
-                    // will allocate a lot!
+                    // EventExecutor 线程预期频繁分配，启用缓存
                     executor != null) {
                 final PoolThreadCache cache = new PoolThreadCache(
                         heapArena, directArena, smallCacheSize, normalCacheSize,
@@ -546,7 +545,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
                 }
                 return cache;
             }
-            // No caching so just use 0 as sizes.
+            // 不使用缓存，缓存大小设为 0。
             return new PoolThreadCache(heapArena, directArena, 0, 0, 0, 0, false);
         }
 
@@ -561,8 +560,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
             }
 
             PoolArena<T> minArena = arenas[0];
-            //optimized
-            //If it is the first execution, directly return minarena and reduce the number of for loop comparisons below
+            // 优化：首次使用时直接返回 minArena，减少循环比较
             if (minArena.numThreadCaches.get() == CACHE_NOT_USED) {
                 return minArena;
             }
@@ -590,9 +588,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return the number of heap arenas.
+     * 返回堆 arena 数量。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#numHeapArenas()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#numHeapArenas()}。
      */
     @Deprecated
     public int numHeapArenas() {
@@ -600,9 +598,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return the number of direct arenas.
+     * 返回直接内存 arena 数量。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#numDirectArenas()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#numDirectArenas()}。
      */
     @Deprecated
     public int numDirectArenas() {
@@ -610,9 +608,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return a {@link List} of all heap {@link PoolArenaMetric}s that are provided by this pool.
+     * 返回此池提供的全部堆 {@link PoolArenaMetric}。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#heapArenas()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#heapArenas()}。
      */
     @Deprecated
     public List<PoolArenaMetric> heapArenas() {
@@ -620,9 +618,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return a {@link List} of all direct {@link PoolArenaMetric}s that are provided by this pool.
+     * 返回此池提供的全部直接 {@link PoolArenaMetric}。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#directArenas()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#directArenas()}。
      */
     @Deprecated
     public List<PoolArenaMetric> directArenas() {
@@ -630,9 +628,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return the number of thread local caches used by this {@link PooledByteBufAllocator}.
+     * 返回此 {@link PooledByteBufAllocator} 使用的线程本地缓存数量。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#numThreadLocalCaches()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#numThreadLocalCaches()}。
      */
     @Deprecated
     public int numThreadLocalCaches() {
@@ -653,9 +651,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return the size of the tiny cache.
+     * 返回 tiny 缓存大小。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#tinyCacheSize()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#tinyCacheSize()}。
      */
     @Deprecated
     public int tinyCacheSize() {
@@ -663,9 +661,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return the size of the small cache.
+     * 返回 small 缓存大小。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#smallCacheSize()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#smallCacheSize()}。
      */
     @Deprecated
     public int smallCacheSize() {
@@ -673,9 +671,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return the size of the normal cache.
+     * 返回 normal 缓存大小。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#normalCacheSize()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#normalCacheSize()}。
      */
     @Deprecated
     public int normalCacheSize() {
@@ -683,9 +681,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Return the chunk size for an arena.
+     * 返回每个 arena 的 chunk 字节大小。
      *
-     * @deprecated use {@link PooledByteBufAllocatorMetric#chunkSize()}.
+     * @deprecated 请使用 {@link PooledByteBufAllocatorMetric#chunkSize()}。
      */
     @Deprecated
     public final int chunkSize() {
@@ -715,20 +713,16 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Returns the number of bytes of heap memory that is currently pinned to heap buffers allocated by a
-     * {@link ByteBufAllocator}, or {@code -1} if unknown.
-     * A buffer can pin more memory than its {@linkplain ByteBuf#capacity() capacity} might indicate,
-     * due to implementation details of the allocator.
+     * 返回 {@link ByteBufAllocator} 当前钉住（pinned）的堆内存字节数；未知时 {@code -1}。
+     * 因分配器实现，钉住量可能大于 {@linkplain ByteBuf#capacity() 逻辑容量}。
      */
     public final long pinnedHeapMemory() {
         return pinnedMemory(heapArenas);
     }
 
     /**
-     * Returns the number of bytes of direct memory that is currently pinned to direct buffers allocated by a
-     * {@link ByteBufAllocator}, or {@code -1} if unknown.
-     * A buffer can pin more memory than its {@linkplain ByteBuf#capacity() capacity} might indicate,
-     * due to implementation details of the allocator.
+     * 返回 {@link ByteBufAllocator} 当前钉住的直接内存字节数；未知时 {@code -1}。
+     * 因分配器实现，钉住量可能大于 {@linkplain ByteBuf#capacity() 逻辑容量}。
      */
     public final long pinnedDirectMemory() {
         return pinnedMemory(directArenas);
@@ -755,10 +749,9 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Trim thread local cache for the current {@link Thread}, which will give back any cached memory that was not
-     * allocated frequently since the last trim operation.
+     * 对当前 {@link Thread} 的本地缓存执行 trim，归还不常用的缓存内存。
      *
-     * Returns {@code true} if a cache for the current {@link Thread} exists and so was trimmed, false otherwise.
+     * @return 若存在并已 trim 缓存则为 {@code true}，否则 {@code false}。
      */
     public boolean trimCurrentThreadCache() {
         PoolThreadCache cache = threadCache.getIfExists();
@@ -770,8 +763,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
     }
 
     /**
-     * Returns the status of the allocator (which contains all metrics) as string. Be aware this may be expensive
-     * and so should not called too frequently.
+     * 以字符串返回分配器状态（含全部指标）；开销较大，不宜频繁调用。
      */
     public String dumpStats() {
         int heapArenasLen = heapArenas == null ? 0 : heapArenas.length;
@@ -838,7 +830,7 @@ public class PooledByteBufAllocator extends AbstractByteBufAllocator implements 
             if (event.shouldCommit()) {
                 event.fill(chunk, PooledByteBufAllocator.class);
                 event.pooled = pooled;
-                event.threadLocal = false; // Chunks in the pooled allocator are always shared.
+                event.threadLocal = false; // 池化分配器的 chunk 始终共享
                 event.commit();
             }
         }
