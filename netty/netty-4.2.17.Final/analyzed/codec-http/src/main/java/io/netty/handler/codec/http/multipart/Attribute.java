@@ -20,16 +20,16 @@ import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 
 /**
- * Attribute interface
+ * multipart 普通表单字段（非文件）的 {@link HttpData} 接口。
  */
 public interface Attribute extends HttpData {
     /**
-     * Returns the value of this HttpData.
+     * 以字符串形式返回字段值。
      */
     String getValue() throws IOException;
 
     /**
-     * Sets the value of this HttpData.
+     * 设置字段的字符串值。
      */
     void setValue(String value) throws IOException;
 

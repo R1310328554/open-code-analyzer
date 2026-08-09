@@ -27,7 +27,7 @@ import java.nio.charset.Charset;
 import static io.netty.util.internal.ObjectUtil.checkNonEmpty;
 
 /**
- * Abstract HttpData implementation
+ * {@link HttpData} 抽象基类：字段名清理、大小限制、完成状态与引用计数。
  */
 public abstract class AbstractHttpData extends AbstractReferenceCounted implements HttpData {
 
@@ -48,6 +48,7 @@ public abstract class AbstractHttpData extends AbstractReferenceCounted implemen
         definedSize = size;
     }
 
+    /** 清理 multipart 字段名：去首尾空白、换行，\r/\t 转空格 */
     //Replaces \r and \t with a space
     //Removes leading and trailing whitespace and newlines
     private static String cleanName(String name) {
@@ -71,7 +72,7 @@ public abstract class AbstractHttpData extends AbstractReferenceCounted implemen
             char c = name.charAt(i);
 
             if (c == '\n') {
-                // Skip newline entirely
+                // 跳过换行符
                 if (sb == null) {
                     sb = new StringBuilder(len);
                     sb.append(name, start, i);
@@ -90,7 +91,7 @@ public abstract class AbstractHttpData extends AbstractReferenceCounted implemen
             }
         }
 
-        // If no replacements were needed, return the trimmed slice
+        // 无特殊字符则返回 trim 后的子串
         return sb == null ? name.substring(start, end) : sb.toString();
     }
 
@@ -121,6 +122,7 @@ public abstract class AbstractHttpData extends AbstractReferenceCounted implemen
         return completed;
     }
 
+    /** 标记数据接收完成 */
     protected void setCompleted() {
         setCompleted(true);
     }

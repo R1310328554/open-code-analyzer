@@ -35,12 +35,8 @@ import static io.netty.handler.codec.http.cookie.CookieUtil.stripTrailingSeparat
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A <a href="https://tools.ietf.org/html/rfc6265">RFC6265</a> compliant cookie encoder to be used server side,
- * so some fields are sent (Version is typically ignored).
- *
- * As Netty's Cookie merges Expires and MaxAge into one single field, only Max-Age field is sent.
- *
- * Note that multiple cookies must be sent as separate "Set-Cookie" headers.
+ * 服务端 RFC6265 Set-Cookie 编码器，将 {@link Cookie} 序列化为响应头值。
+ * <p>Netty 将 Expires 与 Max-Age 合并为单一字段，编码时仅输出 Max-Age；多个 cookie 须分多条 Set-Cookie 头发送。
  *
  * <pre>
  * // Example
@@ -53,16 +49,12 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 public final class ServerCookieEncoder extends CookieEncoder {
 
     /**
-     * Strict encoder that validates that name and value chars are in the valid scope
-     * defined in RFC6265, and (for methods that accept multiple cookies) that only
-     * one cookie is encoded with any given name. (If multiple cookies have the same
-     * name, the last one is the one that is encoded.)
+     * 严格模式：校验字符集，批量编码时同名 cookie 仅保留最后一个。
      */
     public static final ServerCookieEncoder STRICT = new ServerCookieEncoder(true);
 
     /**
-     * Lax instance that doesn't validate name and value, and that allows multiple
-     * cookies with the same name.
+     * 宽松模式：不校验字符，允许输出多个同名 cookie。
      */
     public static final ServerCookieEncoder LAX = new ServerCookieEncoder(false);
 
@@ -71,7 +63,7 @@ public final class ServerCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Encodes the specified cookie name-value pair into a Set-Cookie header value.
+     * 将 name/value 编码为单条 Set-Cookie 头值。
      *
      * @param name the cookie name
      * @param value the cookie value
@@ -82,7 +74,7 @@ public final class ServerCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Encodes the specified cookie into a Set-Cookie header value.
+     * 编码完整 {@link Cookie}（含 Path、Domain、Secure、SameSite 等属性）。
      *
      * @param cookie the cookie
      * @return a single Set-Cookie header value
@@ -137,7 +129,7 @@ public final class ServerCookieEncoder extends CookieEncoder {
         return stripTrailingSeparator(buf);
     }
 
-    /** Deduplicate a list of encoded cookies by keeping only the last instance with a given name.
+    /** 严格模式下按名称去重，仅保留每个 name 最后一次出现的编码结果。
      *
      * @param encoded The list of encoded cookies.
      * @param nameToLastIndex A map from cookie name to index of last cookie instance.
@@ -158,7 +150,7 @@ public final class ServerCookieEncoder extends CookieEncoder {
     }
 
     /**
-     * Batch encodes cookies into Set-Cookie header values.
+     * 批量编码 cookie 数组为 Set-Cookie 头值列表。
      *
      * @param cookies a bunch of cookies
      * @return the corresponding bunch of Set-Cookie headers

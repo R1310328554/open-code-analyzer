@@ -34,7 +34,7 @@ import static io.netty.buffer.Unpooled.compositeBuffer;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 
 /**
- * Abstract Memory HttpData implementation
+ * 纯内存 {@link HttpData} 抽象实现，内容保存在 {@link ByteBuf} 中。
  */
 public abstract class AbstractMemoryHttpData extends AbstractHttpData {
 
@@ -120,10 +120,10 @@ public abstract class AbstractMemoryHttpData extends AbstractHttpData {
             if (byteBuf == null) {
                 byteBuf = buffer;
             } else if (localsize == 0) {
-                // Nothing to add and byteBuf already exists
+                // 空块且已有 buffer，直接释放
                 buffer.release();
             } else if (byteBuf.readableBytes() == 0) {
-                // Previous buffer is empty, so just replace it
+                // 原 buffer 为空，直接替换
                 byteBuf.release();
                 byteBuf = buffer;
             } else if (byteBuf instanceof CompositeByteBuf) {
@@ -212,8 +212,7 @@ public abstract class AbstractMemoryHttpData extends AbstractHttpData {
     }
 
     /**
-     * Utility to go from a In Memory FileUpload
-     * to a Disk (or another implementation) FileUpload
+     * 返回持有实际字节的 {@link ByteBuf}（供迁移到磁盘实现时使用）。
      * @return the attached ByteBuf containing the actual bytes
      */
     @Override

@@ -35,7 +35,7 @@ import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 
 /**
- * Abstract Disk HttpData implementation
+ * 基于磁盘临时文件的 {@link HttpData} 抽象实现，适合大文件上传/属性。
  */
 public abstract class AbstractDiskHttpData extends AbstractHttpData {
 
@@ -51,17 +51,17 @@ public abstract class AbstractDiskHttpData extends AbstractHttpData {
 
     /**
      *
-     * @return the real DiskFilename (basename)
+     * @return 磁盘文件名（basename），用于生成临时文件后缀
      */
     protected abstract String getDiskFilename();
     /**
      *
-     * @return the default prefix
+     * @return 临时文件前缀
      */
     protected abstract String getPrefix();
     /**
      *
-     * @return the default base Directory
+     * @return 临时文件基目录，{@code null} 则用系统默认
      */
     protected abstract String getBaseDirectory();
     /**
@@ -71,12 +71,12 @@ public abstract class AbstractDiskHttpData extends AbstractHttpData {
     protected abstract String getPostfix();
     /**
      *
-     * @return True if the file should be deleted on Exit by default
+     * @return 是否在 JVM 退出时删除临时文件
      */
     protected abstract boolean deleteOnExit();
 
     /**
-     * @return a new Temp File from getDiskFilename(), default prefix, postfix and baseDirectory
+     * 根据前缀/后缀/基目录创建临时文件，并按需注册 {@link DeleteFileOnExitHook}。
      */
     private File tempFile() throws IOException {
         String newpostfix;
@@ -114,7 +114,7 @@ public abstract class AbstractDiskHttpData extends AbstractHttpData {
                 file = tempFile();
             }
             if (buffer.readableBytes() == 0) {
-                // empty file
+                // 空内容：创建零长度文件
                 if (!file.createNewFile()) {
                     if (file.length() == 0) {
                         return;
@@ -142,8 +142,7 @@ public abstract class AbstractDiskHttpData extends AbstractHttpData {
             }
             setCompleted();
         } finally {
-            // Release the buffer as it was retained before and we not need a reference to it at all
-            // See https://github.com/netty/netty/issues/1516
+            // 释放上游 retain 的 buffer，避免泄漏（见 netty#1516）
             buffer.release();
         }
     }
@@ -442,7 +441,7 @@ public abstract class AbstractDiskHttpData extends AbstractHttpData {
     }
 
     /**
-     * Utility function
+     * 将整个文件读入内存字节数组（文件不得超过 {@link Integer#MAX_VALUE}）。
      *
      * @return the array of bytes
      */

@@ -25,12 +25,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * A <a href="https://tools.ietf.org/html/rfc6265">RFC6265</a> compliant cookie decoder to be used server side.
- *
- * Only name and value fields are expected, so old fields are not populated (path, domain, etc).
- *
- * Old <a href="https://tools.ietf.org/html/rfc2965">RFC2965</a> cookies are still supported,
- * old fields will simply be ignored.
+ * 服务端侧 RFC6265 Cookie 请求头解码器，从 {@code Cookie} 头解析 name=value 对。
+ * <p>仅填充名称与值，不解析 Path/Domain 等 Set-Cookie 专有属性；兼容 RFC2965 但忽略其扩展字段。
  *
  * @see ServerCookieEncoder
  */
@@ -45,13 +41,12 @@ public final class ServerCookieDecoder extends CookieDecoder {
     private static final String RFC2965_PORT = "$Port";
 
     /**
-     * Strict decoder that validates that name and value chars are in the valid scope
-     * defined in RFC6265
+     * 严格模式：校验 name/value 字符是否符合 RFC6265 允许范围。
      */
     public static final ServerCookieDecoder STRICT = new ServerCookieDecoder(true);
 
     /**
-     * Lax instance that doesn't validate name and value
+     * 宽松模式：不校验 name/value 字符。
      */
     public static final ServerCookieDecoder LAX = new ServerCookieDecoder(false);
 
@@ -60,8 +55,7 @@ public final class ServerCookieDecoder extends CookieDecoder {
     }
 
     /**
-     * Decodes the specified {@code Cookie} HTTP header value into a {@link Cookie}. Unlike {@link #decode(String)},
-     * this includes all cookie values present, even if they have the same name.
+     * 解码 Cookie 头并返回列表，保留同名 cookie 的全部实例（与 {@link #decode(String)} 的 Set 去重不同）。
      *
      * @return the decoded {@link Cookie}
      */
@@ -72,7 +66,7 @@ public final class ServerCookieDecoder extends CookieDecoder {
     }
 
     /**
-     * Decodes the specified {@code Cookie} HTTP header value into a {@link Cookie}.
+     * 解码 Cookie 头为 {@link TreeSet}，同名 cookie 按 {@link Cookie#compareTo} 只保留一个。
      *
      * @return the decoded {@link Cookie}
      */
@@ -96,7 +90,7 @@ public final class ServerCookieDecoder extends CookieDecoder {
 
         boolean rfc2965Style = false;
         if (header.regionMatches(true, 0, RFC2965_VERSION, 0, RFC2965_VERSION.length())) {
-            // RFC 2965 style cookie, move to after version value
+            // RFC2965 风格：跳过 $Version 及其值
             i = header.indexOf(';') + 1;
             rfc2965Style = true;
         }
@@ -162,7 +156,7 @@ public final class ServerCookieDecoder extends CookieDecoder {
                     header.regionMatches(nameBegin, RFC2965_DOMAIN, 0, RFC2965_DOMAIN.length()) ||
                     header.regionMatches(nameBegin, RFC2965_PORT, 0, RFC2965_PORT.length()))) {
 
-                // skip obsolete RFC2965 fields
+                // 忽略 RFC2965 废弃字段 $Path/$Domain/$Port
                 continue;
             }
 

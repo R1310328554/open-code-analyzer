@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
- * Configuration for Cross-Origin Resource Sharing (CORS).
+ * 跨域资源共享（CORS）配置：允许的 Origin、方法、头、凭证及预检缓存等。
  */
 public final class CorsConfig {
 
@@ -63,7 +63,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Determines if support for CORS is enabled.
+     * 是否启用 CORS 支持。
      *
      * @return {@code true} if support for CORS is enabled, false otherwise.
      */
@@ -72,7 +72,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Determines whether a wildcard origin, '*', is supported.
+     * 是否允许任意 Origin（通配符 {@code *}）。
      *
      * @return {@code boolean} true if any origin is allowed.
      */
@@ -81,7 +81,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Returns the allowed origin. This can either be a wildcard or an origin value.
+     * 返回 Access-Control-Allow-Origin 响应头的值（通配符或具体 origin）。
      *
      * @return the value that will be used for the CORS response header 'Access-Control-Allow-Origin'
      */
@@ -90,7 +90,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Returns the set of allowed origins.
+     * 返回配置的允许 Origin 集合。
      *
      * @return {@code Set} the allowed origins.
      */
@@ -99,8 +99,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Web browsers may set the 'Origin' request header to 'null' if a resource is loaded
-     * from the local file system.
+     * 是否允许 Origin 为 {@code null}（如本地 file:// 页面）。
      *
      * If isNullOriginAllowed is true then the server will response with the wildcard for
      * the CORS response header 'Access-Control-Allow-Origin'.
@@ -126,7 +125,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Returns a set of headers to be exposed to calling clients.
+     * 返回需在 Access-Control-Expose-Headers 中暴露给脚本的响应头集合。
      *
      * During a simple CORS request only certain response headers are made available by the
      * browser, for example using:
@@ -152,7 +151,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Determines if cookies are supported for CORS requests.
+     * 是否允许跨域请求携带凭证（Cookie 等），对应 Allow-Credentials 响应头。
      *
      * By default cookies are not included in CORS requests but if isCredentialsAllowed returns
      * true cookies will be added to CORS requests. Setting this value to true will set the
@@ -173,12 +172,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Gets the maxAge setting.
-     *
-     * When making a preflight request the client has to perform two request with can be inefficient.
-     * This setting will set the CORS 'Access-Control-Max-Age' response header and enables the
-     * caching of the preflight response for the specified time. During this time no preflight
-     * request will be made.
+     * 预检响应 Max-Age（秒），浏览器在此时间内可缓存预检结果而不再发 OPTIONS。
      *
      * @return {@code long} the time in seconds that a preflight request may be cached.
      */
@@ -187,8 +181,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Returns the allowed set of Request Methods. The Http methods that should be returned in the
-     * CORS 'Access-Control-Request-Method' response header.
+     * 允许的 HTTP 方法集合，写入 Access-Control-Allow-Methods。
      *
      * @return {@code Set} of {@link HttpMethod}s that represent the allowed Request Methods.
      */
@@ -197,10 +190,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Returns the allowed set of Request Headers.
-     *
-     * The header names returned from this method will be used to set the CORS
-     * 'Access-Control-Allow-Headers' response header.
+     * 允许的请求头名称，写入 Access-Control-Allow-Headers。
      *
      * @return {@code Set<String>} of strings that represent the allowed Request Headers.
      */
@@ -209,7 +199,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Returns HTTP response headers that should be added to a CORS preflight response.
+     * 预检响应附加的自定义 HTTP 头（如 Date、Content-Length）。
      *
      * @return {@link HttpHeaders} the HTTP response headers to be added.
      */
@@ -230,12 +220,7 @@ public final class CorsConfig {
     }
 
     /**
-     * Determines whether a CORS request should be rejected if it's invalid before being
-     * further processing.
-     *
-     * CORS headers are set after a request is processed. This may not always be desired
-     * and this setting will check that the Origin is valid and if it is not valid no
-     * further processing will take place, and an error will be returned to the calling client.
+     * 是否在 Origin 非法时短路拒绝（403），而非继续处理后再加 CORS 头。
      *
      * @return {@code true} if a CORS request should short-circuit upon receiving an invalid Origin header.
      */

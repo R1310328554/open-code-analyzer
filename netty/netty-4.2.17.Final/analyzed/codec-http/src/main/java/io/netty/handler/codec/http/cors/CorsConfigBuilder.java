@@ -31,12 +31,12 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
- * Builder used to configure and build a {@link CorsConfig} instance.
+ * {@link CorsConfig} 构建器，链式配置 Origin、方法、头、凭证与预检选项。
  */
 public final class CorsConfigBuilder {
 
     /**
-     * Creates a Builder instance with it's origin set to '*'.
+     * 创建允许任意 Origin（{@code *}）的构建器。
      *
      * @return Builder to support method chaining.
      */
@@ -45,7 +45,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Creates a {@link CorsConfigBuilder} instance with the specified origin.
+     * 创建仅允许单个指定 Origin 的构建器。
      *
      * @return {@link CorsConfigBuilder} to support method chaining.
      */
@@ -57,7 +57,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Creates a {@link CorsConfigBuilder} instance with the specified origins.
+     * 创建允许多个 Origin 的构建器。
      *
      * @return {@link CorsConfigBuilder} to support method chaining.
      */
@@ -100,9 +100,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Web browsers may set the 'Origin' request header to 'null' if a resource is loaded
-     * from the local file system. Calling this method will enable a successful CORS response
-     * with a {@code "null"} value for the CORS response header 'Access-Control-Allow-Origin'.
+     * 允许 Origin 为 {@code null} 的跨域响应。
      *
      * @return {@link CorsConfigBuilder} to support method chaining.
      */
@@ -112,7 +110,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Disables CORS support.
+     * 关闭 CORS 支持。
      *
      * @return {@link CorsConfigBuilder} to support method chaining.
      */
@@ -184,8 +182,8 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * By default cookies are not included in CORS requests, but this method will enable cookies to
-     * be added to CORS requests. Calling this method will set the CORS 'Access-Control-Allow-Credentials'
+     * 允许跨域请求携带 Cookie，设置 Allow-Credentials 为 true。
+     * Calling this method will set the CORS 'Access-Control-Allow-Credentials'
      * response header to true.
      *
      * Please note, that cookie support needs to be enabled on the client side as well.
@@ -204,10 +202,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * When making a preflight request the client has to perform two request with can be inefficient.
-     * This setting will set the CORS 'Access-Control-Max-Age' response header and enables the
-     * caching of the preflight response for the specified time. During this time no preflight
-     * request will be made.
+     * 设置预检缓存 Max-Age（秒）。
      *
      * @param max the maximum time, in seconds, that the preflight response may be cached.
      * @return {@link CorsConfigBuilder} to support method chaining.
@@ -218,8 +213,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Specifies the allowed set of HTTP Request Methods that should be returned in the
-     * CORS 'Access-Control-Request-Method' response header.
+     * 配置允许的 HTTP 方法。
      *
      * @param methods the {@link HttpMethod}s that should be allowed.
      * @return {@link CorsConfigBuilder} to support method chaining.
@@ -339,12 +333,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Specifies that a CORS request should be rejected if it's invalid before being
-     * further processing.
-     *
-     * CORS headers are set after a request is processed. This may not always be desired
-     * and this setting will check that the Origin is valid and if it is not valid no
-     * further processing will take place, and an error will be returned to the calling client.
+     * 启用短路：非法 Origin 直接 403，不进入后续 handler。
      *
      * @return {@link CorsConfigBuilder} to support method chaining.
      */
@@ -354,10 +343,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Web browsers may set the 'Access-Control-Request-Private-Network' request header if a resource is loaded
-     * from a local network.
-     * By default direct access to private network endpoints from public websites is not allowed.
-     * Calling this method will set the CORS 'Access-Control-Request-Private-Network' response header to true.
+     * 允许从公网站点访问私有网络（Private Network Access）。
      *
      * @return {@link CorsConfigBuilder} to support method chaining.
      */
@@ -367,7 +353,7 @@ public final class CorsConfigBuilder {
     }
 
     /**
-     * Builds a {@link CorsConfig} with settings specified by previous method calls.
+     * 根据当前配置构建不可变的 {@link CorsConfig}。
      *
      * @return {@link CorsConfig} the configured CorsConfig instance.
      */

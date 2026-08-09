@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+/**
+ * 混合存储 {@link HttpData}：小于 {@code limitSize} 用内存，超出则透明切换为磁盘实现。
+ */
 abstract class AbstractMixedHttpData<D extends HttpData> extends AbstractReferenceCounted implements HttpData {
     final String baseDir;
     final boolean deleteOnExit;
@@ -37,6 +40,7 @@ abstract class AbstractMixedHttpData<D extends HttpData> extends AbstractReferen
         this.deleteOnExit = deleteOnExit;
     }
 
+    /** 创建对应的磁盘 {@link HttpData} 实例 */
     abstract D makeDiskData();
 
     @Override
@@ -156,7 +160,7 @@ abstract class AbstractMixedHttpData<D extends HttpData> extends AbstractReferen
         }
         if (buffer.readableBytes() > limitSize) {
             if (wrapped instanceof AbstractMemoryHttpData) {
-                // change to Disk
+                // 超过阈值，从内存切换为磁盘
                 wrapped.release();
                 wrapped = makeDiskData();
             }
@@ -180,7 +184,7 @@ abstract class AbstractMixedHttpData<D extends HttpData> extends AbstractReferen
     @Override
     public void setContent(InputStream inputStream) throws IOException {
         if (wrapped instanceof AbstractMemoryHttpData) {
-            // change to Disk even if we don't know the size
+            // 流式输入无法预知大小，直接切换磁盘
             wrapped.release();
             wrapped = makeDiskData();
         }

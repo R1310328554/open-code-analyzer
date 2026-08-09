@@ -20,6 +20,10 @@ import io.netty.util.internal.InternalThreadLocalMap;
 
 import java.util.BitSet;
 
+/**
+ * Cookie 编解码内部工具类：字符集校验、属性拼接与引号值处理。
+ * <p>供 {@link ServerCookieEncoder}、{@link ClientCookieEncoder} 等包内类共用。
+ */
 final class CookieUtil {
 
     private static final BitSet VALID_COOKIE_NAME_OCTETS = validCookieNameOctets();
@@ -28,6 +32,7 @@ final class CookieUtil {
 
     private static final BitSet VALID_COOKIE_ATTRIBUTE_VALUE_OCTETS = validCookieAttributeValueOctets();
 
+    /** 构建 RFC6265 允许的 cookie 名称字符位图（排除分隔符） */
     // token = 1*<any CHAR except CTLs or separators>
     // separators = "(" | ")" | "<" | ">" | "@"
     // | "," | ";" | ":" | "\" | <">
@@ -46,6 +51,7 @@ final class CookieUtil {
         return bits;
     }
 
+    /** 构建 cookie 值允许的 octet 位图 */
     // cookie-octet = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E
     // US-ASCII characters excluding CTLs, whitespace, DQUOTE, comma, semicolon, and backslash
     private static BitSet validCookieValueOctets() {
@@ -66,6 +72,7 @@ final class CookieUtil {
         return bits;
     }
 
+    /** 构建 Path/Domain 等属性值允许的字符位图（不含分号） */
     // path-value        = <any CHAR except CTLs or ";">
     private static BitSet validCookieAttributeValueOctets() {
         BitSet bits = new BitSet();
@@ -76,11 +83,13 @@ final class CookieUtil {
         return bits;
     }
 
+    /** 从线程本地缓存获取可复用的 {@link StringBuilder} */
     static StringBuilder stringBuilder() {
         return InternalThreadLocalMap.get().stringBuilder();
     }
 
     /**
+     * 若缓冲区为空则返回 {@code null}，否则去掉末尾 {@code "; "} 分隔符。
      * @param buf a buffer where some cookies were maybe encoded
      * @return the buffer String without the trailing separator, or null if no cookie was appended.
      */
@@ -88,6 +97,7 @@ final class CookieUtil {
         return buf.length() == 0 ? null : stripTrailingSeparator(buf);
     }
 
+    /** 移除 {@link StringBuilder} 末尾的分号与空格分隔符 */
     static String stripTrailingSeparator(StringBuilder buf) {
         if (buf.length() > 0) {
             buf.setLength(buf.length() - 2);
@@ -95,6 +105,7 @@ final class CookieUtil {
         return buf.toString();
     }
 
+    /** 追加 {@code name=val; } 形式的属性 */
     static void add(StringBuilder sb, String name, long val) {
         sb.append(name);
         sb.append('=');
@@ -117,6 +128,7 @@ final class CookieUtil {
         sb.append(HttpConstants.SP_CHAR);
     }
 
+    /** 追加带双引号的 {@code name="val"; } 属性 */
     static void addQuoted(StringBuilder sb, String name, String val) {
         if (val == null) {
             val = "";
@@ -131,6 +143,7 @@ final class CookieUtil {
         sb.append(HttpConstants.SP_CHAR);
     }
 
+    /** 返回 cookie 名称中首个非法字符下标，合法则 {@code -1} */
     static int firstInvalidCookieNameOctet(CharSequence cs) {
         return firstInvalidOctet(cs, VALID_COOKIE_NAME_OCTETS);
     }
@@ -149,6 +162,7 @@ final class CookieUtil {
         return -1;
     }
 
+    /** 若值为成对双引号包裹则去引号，否则原样或 {@code null}（引号不匹配） */
     static CharSequence unwrapValue(CharSequence cs) {
         final int len = cs.length();
         if (len > 0 && cs.charAt(0) == '"') {
@@ -162,6 +176,7 @@ final class CookieUtil {
         return cs;
     }
 
+    /** 校验并 trim 属性值，非法字符抛出 {@link IllegalArgumentException} */
     static String validateAttributeValue(String name, String value) {
         if (value == null) {
             return null;

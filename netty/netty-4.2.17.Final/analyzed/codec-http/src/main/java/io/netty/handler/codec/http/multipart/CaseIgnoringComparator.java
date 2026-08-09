@@ -18,6 +18,9 @@ package io.netty.handler.codec.http.multipart;
 import java.io.Serializable;
 import java.util.Comparator;
 
+/**
+ * 忽略大小写的 {@link CharSequence} 比较器，用于 multipart 字段名匹配。
+ */
 final class CaseIgnoringComparator implements Comparator<CharSequence>, Serializable {
 
     private static final long serialVersionUID = 4582133183775373862L;
@@ -50,6 +53,7 @@ final class CaseIgnoringComparator implements Comparator<CharSequence>, Serializ
         return o1Length - o2Length;
     }
 
+    /** 反序列化时复用单例 {@link #INSTANCE} */
     private Object readResolve() {
         return INSTANCE;
     }

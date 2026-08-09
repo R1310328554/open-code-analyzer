@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * DeleteFileOnExitHook.
+ * JVM 关闭钩子：在进程退出时删除已注册的临时 multipart 磁盘文件。
  */
 final class DeleteFileOnExitHook {
     private static final Set<String> FILES = ConcurrentHashMap.newKeySet();
@@ -29,10 +29,7 @@ final class DeleteFileOnExitHook {
     }
 
     static {
-        // DeleteOnExitHook must be the last shutdown hook to be invoked.
-        // Application shutdown hooks may add the first file to the
-        // delete on exit list and cause the DeleteOnExitHook to be
-        // registered during shutdown in progress.
+        // 须在其它 shutdown hook 之后执行，以便应用 hook 仍可向列表添加文件
         Runtime.getRuntime().addShutdownHook(new Thread() {
 
             @Override
@@ -43,7 +40,7 @@ final class DeleteFileOnExitHook {
     }
 
     /**
-     * Remove from the pool to reduce space footprint.
+     * 文件已手动删除时从池中移除，减小集合占用。
      *
      * @param file tmp file path
      */
@@ -52,7 +49,7 @@ final class DeleteFileOnExitHook {
     }
 
     /**
-     * Add to the hook and clean up when the program exits.
+     * 注册临时文件路径，进程退出时由 {@link #runHook()} 删除。
      *
      * @param file tmp file path
      */
@@ -71,7 +68,7 @@ final class DeleteFileOnExitHook {
     }
 
     /**
-     * Clean up all the files.
+     * 关闭钩子入口：遍历并删除所有已注册文件。
      */
     static void runHook() {
         for (String filename : FILES) {

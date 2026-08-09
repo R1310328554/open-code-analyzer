@@ -45,10 +45,9 @@ import static io.netty.util.internal.ObjectUtil.checkNonEmpty;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Handles <a href="https://www.w3.org/TR/cors/">Cross Origin Resource Sharing</a> (CORS) requests.
+ * CORS 双工 {@link ChannelDuplexHandler}：处理预检 OPTIONS、校验 Origin 并在响应上附加 CORS 头。
  * <p>
- * This handler can be configured using one or more {@link CorsConfig}, please
- * refer to this class for details about the configuration options available.
+ * 通过 {@link CorsConfig} 或配置列表驱动；多配置时按列表顺序匹配 Origin。
  */
 public class CorsHandler extends ChannelDuplexHandler {
 
@@ -63,15 +62,14 @@ public class CorsHandler extends ChannelDuplexHandler {
     private boolean consumeContent;
 
     /**
-     * Creates a new instance with a single {@link CorsConfig}.
+     * 使用单一 {@link CorsConfig} 创建 handler。
      */
     public CorsHandler(final CorsConfig config) {
         this(Collections.singletonList(checkNotNull(config, "config")), config.isShortCircuit());
     }
 
     /**
-     * Creates a new instance with the specified config list. If more than one
-     * config matches a certain origin, the first in the List will be used.
+     * 使用配置列表创建；多个配置匹配同一 Origin 时取列表中第一个。
      *
      * @param configList     List of {@link CorsConfig}
      * @param isShortCircuit Same as {@link CorsConfig#isShortCircuit} but applicable to all supplied configs.
@@ -90,8 +88,7 @@ public class CorsHandler extends ChannelDuplexHandler {
             config = getForOrigin(origin);
             if (isPreflightRequest(request)) {
                 handlePreflight(ctx, request);
-                // Enable consumeContent so that all following HttpContent
-                // for this request will be released and not propagated downstream.
+                // 预检已响应，后续 HttpContent 在本 handler 释放，不下传
                 consumeContent = true;
                 return;
             }
@@ -138,8 +135,7 @@ public class CorsHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * This is a non CORS specification feature which enables the setting of preflight
-     * response headers that might be required by intermediaries.
+     * 将配置中的预检附加头写入响应（非 CORS 规范必需，供负载均衡等中间件使用）。
      *
      * @param response the HttpResponse to which the preflight response headers should be added.
      */

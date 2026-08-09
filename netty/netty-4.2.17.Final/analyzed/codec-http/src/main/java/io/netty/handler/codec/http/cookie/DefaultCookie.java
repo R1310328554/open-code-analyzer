@@ -23,7 +23,7 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkNonEmptyAfterTrim;
 
 /**
- * The default {@link Cookie} implementation.
+ * {@link Cookie} 的默认实现，持有名称、值及 Path/Domain/Max-Age 等 RFC6265 属性。
  */
 public class DefaultCookie implements Cookie {
 
@@ -39,7 +39,7 @@ public class DefaultCookie implements Cookie {
     private boolean partitioned;
 
     /**
-     * Creates a new cookie with the specified name and value.
+     * 以指定名称与值创建 cookie；名称经 trim 且非空校验。
      */
     public DefaultCookie(String name, String value) {
         this.name = checkNonEmptyAfterTrim(name, "name");
@@ -122,7 +122,7 @@ public class DefaultCookie implements Cookie {
     }
 
     /**
-     * Checks to see if this {@link Cookie} can be sent along cross-site requests.
+     * 返回 SameSite 策略，控制跨站请求时是否携带此 cookie。
      * For more information, please look
      * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05">here</a>
      * @return <b>same-site-flag</b> value
@@ -132,7 +132,7 @@ public class DefaultCookie implements Cookie {
     }
 
     /**
-     * Determines if this this {@link Cookie} can be sent along cross-site requests.
+     * 设置 SameSite 属性（Strict/Lax/None 等）。
      * For more information, please look
      *  <a href="https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-05">here</a>
      * @param sameSite <b>same-site-flag</b> value
@@ -142,7 +142,7 @@ public class DefaultCookie implements Cookie {
     }
 
     /**
-     * Checks to see if this {@link Cookie} is partitioned
+     * 是否启用 CHIPS 分区 cookie（Partitioned 属性）。
      *
      * @return True if this {@link Cookie} is partitioned, otherwise false
      */
@@ -151,7 +151,7 @@ public class DefaultCookie implements Cookie {
     }
 
     /**
-     * Sets the {@code Partitioned} attribute of this {@link Cookie}
+     * 设置 Partitioned 属性，用于第三方 cookie 分区存储。
      *
      * @param partitioned True if this {@link Cookie} is to be partitioned, otherwise false
      */
@@ -235,7 +235,7 @@ public class DefaultCookie implements Cookie {
     }
 
     /**
-     * Validate a cookie attribute value, throws a {@link IllegalArgumentException} otherwise.
+     * 校验属性值（已废弃，旧 Cookie API 兼容用）。
      * Only intended to be used by {@link io.netty.handler.codec.http.DefaultCookie}.
      * @param name attribute name
      * @param value attribute value

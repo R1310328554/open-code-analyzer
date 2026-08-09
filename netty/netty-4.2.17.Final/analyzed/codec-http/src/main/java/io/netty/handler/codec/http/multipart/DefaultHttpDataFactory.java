@@ -30,9 +30,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Default factory giving {@link Attribute} and {@link FileUpload} according to constructor.
- *
- * <p>According to the constructor, {@link Attribute} and {@link FileUpload} can be:</p>
+ * 默认 {@link HttpDataFactory}：按构造参数创建 Memory/Disk/Mixed 类型的 Attribute 与 FileUpload。
+ * <p>处理完成后应 release 并调用 clean 方法，示例：</p>
  * <ul>
  * <li>MemoryAttribute, DiskAttribute or MixedAttribute</li>
  * <li>MemoryFileUpload, DiskFileUpload or MixedFileUpload</li>
@@ -50,11 +49,11 @@ import java.util.Map.Entry;
 public class DefaultHttpDataFactory implements HttpDataFactory {
 
     /**
-     * Proposed default MINSIZE as 16 KB.
+     * 默认内存阈值：16 KB，超出则 Mixed 模式落盘。
      */
     public static final long MINSIZE = 0x4000;
     /**
-     * Proposed default MAXSIZE = -1 as UNLIMITED
+     * 默认最大尺寸 {@code -1} 表示不限制（仍受 {@link #setMaxLimit} 约束）。
      */
     public static final long MAXSIZE = -1;
 
@@ -73,18 +72,13 @@ public class DefaultHttpDataFactory implements HttpDataFactory {
     private boolean deleteOnExit; // false is a good default cause true leaks
 
     /**
-     * Keep all {@link HttpData}s until cleaning methods are called.
-     * We need to use {@link IdentityHashMap} because different requests may be equal.
-     * See {@link DefaultHttpRequest#hashCode} and {@link DefaultHttpRequest#equals}.
-     * Similarly, when removing data items, we need to check their identities because
-     * different data items may be equal.
+     * 按请求跟踪需清理的 {@link HttpData}；用 {@link IdentityHashMap} 因请求对象可能 equals 相同但非同一实例。
      */
     private final Map<HttpRequest, List<HttpData>> requestFileDeleteMap =
             Collections.synchronizedMap(new IdentityHashMap<HttpRequest, List<HttpData>>());
 
     /**
-     * HttpData will be in memory if less than default size (16KB).
-     * The type will be Mixed.
+     * 默认 Mixed 模式：小于 16KB 驻内存，否则写磁盘。
      */
     public DefaultHttpDataFactory() {
         useDisk = false;
@@ -98,7 +92,7 @@ public class DefaultHttpDataFactory implements HttpDataFactory {
     }
 
     /**
-     * HttpData will be always on Disk if useDisk is True, else always in Memory if False
+     * {@code useDisk=true} 始终磁盘；{@code false} 始终内存。
      */
     public DefaultHttpDataFactory(boolean useDisk) {
         this.useDisk = useDisk;
@@ -110,8 +104,7 @@ public class DefaultHttpDataFactory implements HttpDataFactory {
         this.charset = charset;
     }
     /**
-     * HttpData will be on Disk if the size of the file is greater than minSize, else it
-     * will be in memory. The type will be Mixed.
+     * 指定 {@code minSize} 的 Mixed 模式阈值。
      */
     public DefaultHttpDataFactory(long minSize) {
         useDisk = false;
@@ -125,7 +118,7 @@ public class DefaultHttpDataFactory implements HttpDataFactory {
     }
 
     /**
-     * Override global {@link DiskAttribute#baseDirectory} and {@link DiskFileUpload#baseDirectory} values.
+     * 设置磁盘 Attribute/FileUpload 的临时文件基目录。
      *
      * @param baseDir directory path where to store disk attributes and file uploads.
      */
@@ -203,7 +196,7 @@ public class DefaultHttpDataFactory implements HttpDataFactory {
     }
 
     /**
-     * Utility method
+     * 校验已创建 HttpData 未超过 maxSize。
      */
     private static void checkHttpDataSize(HttpData data) {
         try {
