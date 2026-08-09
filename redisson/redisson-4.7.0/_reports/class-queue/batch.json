@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:07:30Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/RPriorityBlockingQueue.java",
-    "redisson/src/main/java/org/redisson/api/RPriorityDeque.java",
-    "redisson/src/main/java/org/redisson/api/RPriorityQueue.java",
-    "redisson/src/main/java/org/redisson/api/RQueue.java",
-    "redisson/src/main/java/org/redisson/api/RQueueAsync.java",
-    "redisson/src/main/java/org/redisson/api/RQueueReactive.java",
-    "redisson/src/main/java/org/redisson/api/RQueueRx.java",
-    "redisson/src/main/java/org/redisson/api/RRateLimiter.java",
-    "redisson/src/main/java/org/redisson/api/RRateLimiterAsync.java",
-    "redisson/src/main/java/org/redisson/api/RRateLimiterReactive.java",
-    "redisson/src/main/java/org/redisson/api/RRateLimiterRx.java",
-    "redisson/src/main/java/org/redisson/api/RReadWriteLock.java",
-    "redisson/src/main/java/org/redisson/api/RReadWriteLockReactive.java",
-    "redisson/src/main/java/org/redisson/api/RReadWriteLockRx.java",
-    "redisson/src/main/java/org/redisson/api/RReliableFanout.java",
     "redisson/src/main/java/org/redisson/api/RReliableFanoutAsync.java",
     "redisson/src/main/java/org/redisson/api/RReliableFanoutReactive.java",
     "redisson/src/main/java/org/redisson/api/RReliableFanoutRx.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/RReliableTopicRx.java"
   ],
   "remaining_pending": 1382,
-  "done": 1410
+  "done": 1425
 }
