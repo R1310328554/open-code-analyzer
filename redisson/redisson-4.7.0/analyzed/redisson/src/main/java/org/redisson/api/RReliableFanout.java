@@ -21,103 +21,91 @@ import org.redisson.api.fanout.FanoutPublishArgs;
 import java.util.List;
 
 /**
- * Reliable fanout implementation that ensures message delivery to subscribed queues.
+ * 可靠扇出（Fanout）同步 API，确保消息投递到已订阅队列。
+ * <p>发布时按订阅关系将消息复制到各目标队列，支持过滤、去重与容量限制。
  *
- * @param <V> The type of message payload
- *
+ * @param <V> 消息载荷类型
  * @author Nikita Koksharov
- *
  */
 public interface RReliableFanout<V> extends RExpirable, RReliableFanoutAsync<V>, RDestroyable {
 
     /**
-     * Publishes a message to all subscribed queues based on the provided arguments.
+     * 按参数将单条消息发布到所有已订阅队列。
      *
-     * @param args arguments defining the message and publishing parameters
-     * @return The published message, or null if the message hasn't been added to all
-     *         subscribed queues. The message may not be added to a subscribed queue if
-     *         the queue has size limit and is full, if message size exceeds defined queue message size limit
-     *         or message rejected due to deduplication.
+     * @param args 单条消息发布参数
+     * @return 已发布的消息；若未写入全部订阅队列则可能为 null（队列满、消息过大或去重拒绝）
      */
     Message<V> publish(FanoutPublishArgs<V> args);
 
     /**
-     * Publishes multiple messages to all subscribed queues based on the provided arguments.
+     * 按参数批量发布消息到所有已订阅队列。
      *
-     * @param args arguments defining the messages and publishing parameters
-     * @return A list containing only messages that were added to at least a single
-     *         subscribed queue. Messages may not be added to a subscribed queue if
-     *         the queue has size limit and is full, if message size exceeds defined queue message size limit
-     *         or message rejected due to deduplication.
+     * @param args 批量消息发布参数
+     * @return 至少写入一个订阅队列的消息列表（队列满、消息过大或去重时可能跳过部分队列）
      */
     List<Message<V>> publishMany(FanoutPublishArgs<V> args);
 
     /**
-     * Removes a filter for the specified queue name .
+     * 移除指定队列名称关联的消息过滤器。
      *
-     * @param name the queue name
+     * @param name 队列名称
      */
     void removeFilter(String name);
 
     /**
-     * Sets a filter that is applied to all messages published to the queue through
-     * this fanout.
+     * 为通过本 fanout 投递到指定队列的全部消息设置过滤器。
      * <p>
-     * The FanoutFilter object is replicated among all ReliableFanout objects
-     * and applied on each of them during message publishing.
+     * FanoutFilter 会在各 ReliableFanout 实例间复制，发布消息时在各自节点上应用。
      *
-     * @param name the queue name
-     * @param filter applied to messages
+     * @param name 队列名称
+     * @param filter 消息过滤器
      */
     void setFilter(String name, MessageFilter<V> filter);
 
     /**
-     * Checks if a queue with the specified name is subscribed to this fanout.
+     * 检查指定名称的队列是否已订阅本 fanout。
      *
-     * @param name the queue name
-     * @return <code>true</code> if the queue is subscribed, <code>false</code> otherwise
+     * @param name 队列名称
+     * @return 已订阅则为 {@code true}，否则 {@code false}
      */
     boolean isSubscribed(String name);
 
     /**
-     * Subscribes a queue with the specified name to this fanout.
+     * 将指定名称的队列订阅到本 fanout。
      *
-     * @param name the queue name
-     * @return <code>true</code> if the queue was subscribed,
-     *          <code>false</code> if queue is already subscribed
+     * @param name 队列名称
+     * @return 订阅成功则为 {@code true}；已订阅则为 {@code false}
      */
     boolean subscribeQueue(String name);
 
     /**
-     * Subscribes a queue with the specified name to this fanout with a filter.
+     * 将指定队列订阅到本 fanout，并绑定消息过滤器。
      *
-     * @param name the queue name
-     * @param filter the filter that is applied to all messages published through this fanout
-     * @return <code>true</code> if the queue was subscribed,
-     *          <code>false</code> if queue is already subscribed
+     * @param name 队列名称
+     * @param filter 应用于该队列全部消息的过滤器
+     * @return 订阅成功则为 {@code true}；已订阅则为 {@code false}
      */
     boolean subscribeQueue(String name, MessageFilter<V> filter);
 
     /**
-     * Unsubscribes a queue with the specified name from this fanout.
+     * 取消指定队列对本 fanout 的订阅。
      *
-     * @param name the queue name
-     * @return <code>true</code> if the queue was unsubscribed,
-     *          <code>false</code> if the queue isn't subscribed
+     * @param name 队列名称
+     * @return 取消订阅成功则为 {@code true}；未订阅则为 {@code false}
      */
     boolean unsubscribe(String name);
 
     /**
-     * Returns a list of the names of all subscribers to this fanout.
+     * 返回本 fanout 全部订阅队列的名称列表。
      *
-     * @return subscriber names
+     * @return 订阅队列名称列表
      */
     List<String> getSubscribers();
 
     /**
-     * Returns amount of subscribers to this fanout.
+     * 返回本 fanout 的订阅队列数量。
      *
-     * @return amount of subscribers
+     * @return 订阅队列数量
      */
     int countSubscribers();
 

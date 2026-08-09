@@ -18,18 +18,18 @@ package org.redisson.api;
 import java.util.stream.Stream;
 
 /**
- * Redis based priority deque.
- * 
- * @author Nikita Koksharov
+ * 基于 Redis 实现的优先级双端队列。
+ * <p>元素按 {@link Comparator} 排序，支持队首/队尾两端操作。
  *
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <V> 元素类型
  */
 public interface RPriorityDeque<V> extends RDeque<V>, RPriorityQueue<V> {
 
     /**
-     * Returns stream of elements contained in this deque in reverse order
+     * 返回 deque 中元素按逆序排列的 Stream
      *
-     * @return stream of elements in reverse order
+     * @return 逆序元素 Stream
      */
     Stream<V> descendingStream();
     

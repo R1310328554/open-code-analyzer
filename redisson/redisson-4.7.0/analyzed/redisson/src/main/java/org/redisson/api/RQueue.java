@@ -21,42 +21,38 @@ import java.util.List;
 import java.util.Queue;
 
 /**
- * {@link java.util.Queue} backed by Redis
+ * 基于 Redis 实现的 {@link java.util.Queue}。
+ * <p>底层映射为 Redis List，支持过期、批量读取与跨队列移动元素。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
 
     /**
-     * Retrieves and removes last available tail element of this queue queue and adds it at the head of <code>queueName</code>.
+     * 取出本队列队尾最后一个可用元素，并将其插入 {@code queueName} 队列队首。
      *
-     * @param queueName - names of destination queue
-     * @return the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueName 目标队列名称
+     * @return 队尾元素；超时无可用元素时为 {@code null}
      */
     V pollLastAndOfferFirstTo(String queueName);
 
     /**
-     * Returns all queue elements at once
+     * 一次性读取队列中的全部元素
      * 
-     * @return elements
+     * @return 元素列表
      */
     List<V> readAll();
 
     /**
-     * Retrieves and removes the head elements of this queue.
-     * Elements amount limited by <code>limit</code> param.
+     * 取出并移除队首最多 {@code limit} 个元素。
      *
-     * @return list of head elements
+     * @return 队首元素列表
      */
     List<V> poll(int limit);
 
     /**
-     * Retrieves and removes the head elements of this queue
-     * and adds them at the tail of <code>queueName</code>.
-     * Returns moved elements.
+     * 取出队首元素并追加到 {@code queueName} 队尾，返回已移动的元素列表。
      * <p>
      * Code example:
      * <pre>
@@ -69,13 +65,13 @@ public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
      * <p>
      * Requires <b>Redis 8.10.0 and higher.</b>
      *
-     * @param args - arguments object
-     * @return moved elements
+     * @param args 参数对象
+     * @return 已移动的元素列表
      */
     List<V> move(QueueMoveElementsArgs args);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.ListAddListener
@@ -87,16 +83,15 @@ public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
      * @see org.redisson.api.DeletedObjectListener
      *
      * @param listener - object event listener
-     * @return listener id
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 
     /**
-     * Returns index of <code>element</code> or
-     * -1 if element isn't found
+     * 返回 {@code element} 在队列中的索引；未找到则返回 -1
      *
-     * @param element to find
-     * @return index of -1 if element isn't found
+     * @param element 待查找元素
+     * @return 元素索引；未找到则为 -1
      */
     int indexOf(V element);
 

@@ -23,250 +23,214 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Reactive interface for Redis based Rate Limiter object.
- * 
- * @author Nikita Koksharov
+ * 基于 Redis 的分布式限流器 RxJava3 API。
+ * <p>各方法返回 {@link Single} 或 {@link Completable}。
  *
+ * @author Nikita Koksharov
  */
 public interface RRateLimiterRx extends RExpirableRx {
 
     /**
-     * Use {@link #trySetRate(RateType, long, Duration)} instead
+     * 请改用 {@link #trySetRate(RateType, long, Duration)}
      * 
-     * @param mode rate mode
-     * @param rate rate
-     * @param rateInterval rate time interval
-     * @param rateIntervalUnit rate time interval unit
-     * @return {@code true} if rate was set and {@code false}
-     *         otherwise
+     * @param mode 限流模式（{@link RateType}）
+     * @param rate 时间窗口内允许的请求数
+     * @param rateInterval 速率统计时间窗口
+     * @param rateIntervalUnit 时间窗口单位
+     * @return 设置成功则为 {@code true}，否则 {@code false}
      */
     @Deprecated
     Single<Boolean> trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
-     * Sets the rate limit only if it hasn't been set before.
+     * 仅在限流器尚未配置时设置速率（首次设置）。
      *
-     * @param mode rate mode
-     * @param rate rate
-     * @param rateInterval rate time interval
-     * @return {@code true} if rate was set and {@code false}
-     *         otherwise
+     * @param mode 限流模式（{@link RateType}）
+     * @param rate 时间窗口内允许的请求数
+     * @param rateInterval 速率统计时间窗口
+     * @return 设置成功则为 {@code true}，否则 {@code false}
      */
     Single<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval);
 
     /**
-     * Sets the rate limit only if it hasn't been set before.
+     * 仅在限流器尚未配置时设置速率（首次设置）。
      * Time to live is applied only if rate limit has been set successfully.
      *
-     * @param mode rate mode
-     * @param rate rate
-     * @param rateInterval rate time interval
-     * @param keepAliveTime this is the maximum time that the limiter will wait for a new acquisition before deletion
-     * @return {@code true} if rate was set and {@code false}
-     *         otherwise
+     * @param mode 限流模式（{@link RateType}）
+     * @param rate 时间窗口内允许的请求数
+     * @param rateInterval 速率统计时间窗口
+     * @param keepAliveTime 无新获取时限流器键的最大存活时间
+     * @return 设置成功则为 {@code true}，否则 {@code false}
      */
     Single<Boolean> trySetRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
-     * Use {@link #setRate(RateType, long, Duration)} instead.
+     * 请改用 {@link #setRate(RateType, long, Duration)}
      *
-     * @param mode rate mode
-     * @param rate rate
-     * @param rateInterval rate time interval
-     * @param rateIntervalUnit rate time interval unit
+     * @param mode 限流模式（{@link RateType}）
+     * @param rate 时间窗口内允许的请求数
+     * @param rateInterval 速率统计时间窗口
+     * @param rateIntervalUnit 时间窗口单位
      *
      */
     @Deprecated
     Single<Void> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
-     * Updates the rate limit, either resetting the current state or keeping it.
+     * 更新速率配置，可选择重置或保留当前令牌状态。
      * <p>
      * Use {@link RateLimiterArgs#of(RateType, long, Duration)} to construct arguments.
      *
-     * @param args arguments object
-     * @return {@code false} if the rate limiter has not been set or expired, {@code true} otherwise
+     * @param args 限流参数对象
+     * @return 限流器未配置或已过期则为 {@code false}，否则 {@code true}
      */
     Single<Boolean> updateRate(RateLimiterArgs args);
 
     /**
      * Use {@link #setRate(RateLimiterArgs)} instead
      * 
-     * Sets the rate limit and clears the state.
-     * Overrides both limit and state if they haven't been set before.
+     * 设置速率并清空令牌状态；若此前未配置则覆盖限流与状态。
      *
-     * @param mode rate mode
-     * @param rate rate
-     * @param rateInterval rate time interval
+     * @param mode 限流模式（{@link RateType}）
+     * @param rate 时间窗口内允许的请求数
+     * @param rateInterval 速率统计时间窗口
      */
     Single<Void> setRate(RateType mode, long rate, Duration rateInterval);
 
     /**
      * Use {@link #setRate(RateLimiterArgs)} instead
      * 
-     * Sets time to live, the rate limit, and clears the state.
-     * Overrides both limit and state if they haven't been set before.
+     * 设置 TTL、速率并清空令牌状态；若此前未配置则覆盖限流与状态。
      *
-     * @param mode rate mode
-     * @param rate rate
-     * @param rateInterval rate time interval
-     * @param keepAliveTime this is the maximum time that the limiter will wait for a new acquisition before deletion
+     * @param mode 限流模式（{@link RateType}）
+     * @param rate 时间窗口内允许的请求数
+     * @param rateInterval 速率统计时间窗口
+     * @param keepAliveTime 无新获取时限流器键的最大存活时间
      */
     @Deprecated
     Single<Void> setRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
-     * Sets the rate limit, either resetting the current state or keeping it.
+     * 设置速率，可选择重置或保留当前令牌状态。
      * <p>
      * Use {@link RateLimiterArgs#of(RateType, long, Duration)} to construct arguments.
      *
-     * @param args arguments object
+     * @param args 限流参数对象
      */
     Single<Void> setRate(RateLimiterArgs args);
 
     /**
-     * Acquires a permit only if one is available at the
-     * time of invocation.
+     * 若调用时恰好有可用令牌则立即获取一个。
      *
-     * <p>Acquires a permit, if one is available and returns immediately,
-     * with the value {@code true},
-     * reducing the number of available permits by one.
+     * <p>若有可用令牌则立即获取并返回 {@code true}，可用令牌数减一。
      *
-     * <p>If no permit is available then this method will return
-     * immediately with the value {@code false}.
+     * <p>若无可用令牌则立即返回 {@code false}。
      *
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         otherwise
+     * @return 获取成功则为 {@code true}，否则 {@code false}
      */
     Single<Boolean> tryAcquire();
     
     /**
-     * Acquires the given number of <code>permits</code> only if all are available at the
-     * time of invocation.
+     * 若调用时可用令牌足够则立即获取指定数量。
      *
-     * <p>Acquires a permits, if all are available and returns immediately,
-     * with the value {@code true},
-     * reducing the number of available permits by given number of permits.
+     * <p>若令牌足够则立即获取并返回 {@code true}，可用令牌数相应减少。
      *
-     * <p>If no permits are available then this method will return
-     * immediately with the value {@code false}.
+     * <p>若令牌不足则立即返回 {@code false}。
      *
-     * @param permits the number of permits to acquire
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         otherwise
+     * @param permits 待获取令牌数
+     * @return 获取成功则为 {@code true}，否则 {@code false}
      */
     Single<Boolean> tryAcquire(long permits);
     
     /**
-     * Acquires a permit from this RateLimiter, blocking until one is available.
+     * 阻塞获取一个令牌，直到有可用令牌为止。
      *
      * <p>Acquires a permit, if one is available and returns immediately,
      * reducing the number of available permits by one.
      * 
-     * @return void
+     * @return 无返回值
      */
     Completable acquire();
     
     /**
-     * Acquires a specified <code>permits</code> from this RateLimiter, 
-     * blocking until one is available.
+     * 阻塞获取指定数量的令牌，直到全部可用为止。
      *
-     * <p>Acquires the given number of permits, if they are available 
-     * and returns immediately, reducing the number of available permits 
-     * by the given amount.
+     * <p>若令牌足够则立即获取指定数量，可用令牌数相应减少。
      * 
-     * @param permits the number of permits to acquire
-     * @return void
+     * @param permits 待获取令牌数
+     * @return 无返回值
      */
     Completable acquire(long permits);
     
     /**
-     * Use {@link #tryAcquire(Duration)} instead.
+     * 请改用 {@link #tryAcquire(Duration)}
      *
-     * @param timeout the maximum time to wait for a permit
-     * @param unit the time unit of the {@code timeout} argument
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         if the waiting time elapsed before a permit was acquired
+     * @param timeout 最大等待时间
+     * @param unit 超时时间单位
+     * @return 获取成功则为 {@code true}，超时则为 {@code false}
      */
     @Deprecated
     Single<Boolean> tryAcquire(long timeout, TimeUnit unit);
 
     /**
-     * Acquires a permit from this RateLimiter, if one becomes available
-     * within the given waiting time.
+     * 在指定等待时间内尝试获取一个令牌。
      *
-     * <p>Acquires a permit, if one is available and returns immediately,
-     * with the value {@code true},
-     * reducing the number of available permits by one.
+     * <p>若有可用令牌则立即获取并返回 {@code true}，可用令牌数减一。
      *
-     * <p>If no permit is available then the current thread becomes
-     * disabled for thread scheduling purposes and lies dormant until
-     * specified waiting time elapses.
+     * <p>若无可用令牌则当前线程进入等待，直到超时或获取成功。
      *
-     * <p>If a permit is acquired then the value {@code true} is returned.
+     * <p>成功获取时返回 {@code true}。
      *
-     * <p>If the specified waiting time elapses then the value {@code false}
-     * is returned.  If the time is less than or equal to zero, the method
-     * will not wait at all.
+     * <p>超时则返回 {@code false}；等待时间小于等于零时不等待。
      *
-     * @param timeout the maximum time to wait for a permit
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         if the waiting time elapsed before a permit was acquired
+     * @param timeout 最大等待时间
+     * @return 获取成功则为 {@code true}，超时则为 {@code false}
      */
     Single<Boolean> tryAcquire(Duration timeout);
 
     /**
-     * Use {@link #tryAcquire(long, Duration)} instead.
+     * 请改用 {@link #tryAcquire(long, Duration)}
      *
-     * @param permits amount
-     * @param timeout the maximum time to wait for a permit
-     * @param unit the time unit of the {@code timeout} argument
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         if the waiting time elapsed before a permit was acquired
+     * @param permits 令牌数量
+     * @param timeout 最大等待时间
+     * @param unit 超时时间单位
+     * @return 获取成功则为 {@code true}，超时则为 {@code false}
      */
     @Deprecated
     Single<Boolean> tryAcquire(long permits, long timeout, TimeUnit unit);
 
     /**
-     * Acquires the given number of <code>permits</code> only if all are available
-     * within the given waiting time.
+     * 在指定等待时间内尝试获取指定数量的令牌。
      *
-     * <p>Acquires the given number of permits, if all are available and returns immediately,
-     * with the value {@code true}, reducing the number of available permits by one.
+     * <p>若令牌足够则立即获取并返回 {@code true}，可用令牌数相应减少。
      *
-     * <p>If no permit is available then the current thread becomes
-     * disabled for thread scheduling purposes and lies dormant until
-     * the specified waiting time elapses.
+     * <p>若无足够令牌则当前线程进入等待，直到超时或获取成功。
      *
-     * <p>If a permits is acquired then the value {@code true} is returned.
+     * <p>成功获取时返回 {@code true}。
      *
-     * <p>If the specified waiting time elapses then the value {@code false}
-     * is returned.  If the time is less than or equal to zero, the method
-     * will not wait at all.
+     * <p>超时则返回 {@code false}；等待时间小于等于零时不等待。
      *
-     * @param permits amount
-     * @param timeout the maximum time to wait for a permit
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         if the waiting time elapsed before a permit was acquired
+     * @param permits 令牌数量
+     * @param timeout 最大等待时间
+     * @return 获取成功则为 {@code true}，超时则为 {@code false}
      */
     Single<Boolean> tryAcquire(long permits, Duration timeout);
 
     /**
-     * Releases the given number of <code>permits</code>.
+     * 释放指定数量的令牌，增加可用配额。
      *
-     * <p>Increases the number of available permits by the specified amount and completes
-     * immediately, causing any waiting acquirers that can now obtain permits to proceed.
+     * <p>按指定数量增加可用令牌，唤醒可继续获取的等待者。
      *
-     * <p>The returned future completes when the release has been applied.
+     * <p>释放操作完成后 Future/Mono 结束。
      *
-     * @param permits amount to release; must be greater than or equal to zero
+     * @param permits 令牌数量 to release; must be greater than or equal to zero
      */
     Completable release(long permits);
 
     /**
-     * Returns amount of available permits.
+     * 返回当前可用令牌数量。
      *
-     * @return number of permits
+     * @return 可用令牌数
      */
     Single<Long> availablePermits();
 

@@ -22,41 +22,40 @@ import io.reactivex.rxjava3.core.Single;
 import java.util.List;
 
 /**
- * RxJava2 interface for Queue object
+ * 队列对象的 RxJava3 API。
+ * <p>各方法返回 {@link Maybe}、{@link Single} 等 RxJava 类型。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
 public interface RQueueRx<V> extends RCollectionRx<V> {
 
     /**
-     * Retrieves the head of this queue in async mode.
+     * 异步查看队首元素（不移除）。
      * 
-     * @return the head of this queue, or {@code null}
+     * @return 队首元素；队列为空时为 {@code null}
      */
     Maybe<V> peek();
 
     /**
-     * Retrieves and removes the head of this queue in async mode.
+     * 异步取出并移除队首元素。
      *
-     * @return the head of this queue, or {@code null}
+     * @return 队首元素；队列为空时为 {@code null}
      */
     Maybe<V> poll();
 
     /**
-     * Retrieves and removes the head elements of this queue.
-     * Elements amount limited by <code>limit</code> param.
+     * 取出并移除队首最多 {@code limit} 个元素。
      *
-     * @return list of head elements
+     * @return 队首元素列表
      */
     Single<List<V>> poll(int limit);
 
     /**
-     * Inserts the specified element into this queue.
+     * 将指定元素插入队列尾部。
      *
-     * @param e the element to add
-     * @return {@code true} if successful, or {@code false}
+     * @param e 待添加元素
+     * @return 成功则为 {@code true}，否则 {@code false}
      * @throws ClassCastException if the class of the specified element
      *         prevents it from being added to this queue
      * @throws NullPointerException if the specified element is null
@@ -64,35 +63,32 @@ public interface RQueueRx<V> extends RCollectionRx<V> {
     Single<Boolean> offer(V e);
 
     /**
-     * Retrieves and removes last available tail element of this queue queue and adds it at the head of <code>queueName</code>.
+     * 取出本队列队尾最后一个可用元素，并将其插入 {@code queueName} 队列队首。
      *
-     * @param queueName - names of destination queue
-     * @return the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueName 目标队列名称
+     * @return 队尾元素；超时无可用元素时为 {@code null}
      */
     Maybe<V> pollLastAndOfferFirstTo(String queueName);
 
     /**
-     * Returns all queue elements at once
+     * 一次性读取队列中的全部元素
      * 
-     * @return elements
+     * @return 元素列表
      */
     Single<List<V>> readAll();
 
     /**
-     * Retrieves and removes the head elements of this queue
-     * and adds them at the tail of <code>queueName</code>.
-     * Returns moved elements.
+     * 取出队首元素并追加到 {@code queueName} 队尾，返回已移动的元素列表。
      * <p>
      * Requires <b>Redis 8.10.0 and higher.</b>
      *
-     * @param args - arguments object
-     * @return moved elements
+     * @param args 参数对象
+     * @return 已移动的元素列表
      */
     Single<List<V>> move(QueueMoveElementsArgs args);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.ExpiredObjectListener
@@ -101,16 +97,15 @@ public interface RQueueRx<V> extends RCollectionRx<V> {
      * @see org.redisson.api.listener.ListRemoveListener
      *
      * @param listener - object event listener
-     * @return listener id
+     * @return 监听器 ID
      */
     Single<Integer> addListener(ObjectListener listener);
 
     /**
-     * Returns index of <code>element</code> or
-     * -1 if element isn't found
+     * 返回 {@code element} 在队列中的索引；未找到则返回 -1
      *
-     * @param element to find
-     * @return index of -1 if element isn't found
+     * @param element 待查找元素
+     * @return 元素索引；未找到则为 -1
      */
     Single<Integer> indexOf(V element);
 

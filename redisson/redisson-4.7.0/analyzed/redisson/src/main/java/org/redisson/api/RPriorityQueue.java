@@ -19,44 +19,41 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * 
- * Redis based priority deque.
- * 
- * @author Nikita Koksharov
+ * 基于 Redis 实现的优先级队列。
+ * <p>底层使用有序集合维护元素顺序，由 {@link Comparator} 决定优先级。
  *
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <V> 元素类型
  */
 public interface RPriorityQueue<V> extends RQueue<V>, RObject {
 
     /**
-     * Returns comparator used by this queue
+     * 返回本队列用于排序的 {@link Comparator}
      * 
-     * @return comparator object
+     * @return 比较器实例
      */
     Comparator<? super V> comparator();
     
     /**
-     * Returns all queue elements at once
+     * 一次性读取队列中的全部元素
      * 
-     * @return elements
+     * @return 元素列表
      */
     List<V> readAll();
     
     /**
-     * Retrieves and removes last available tail element of this queue queue and adds it at the head of <code>queueName</code>.
+     * 取出本队列队尾最后一个可用元素，并将其插入 {@code queueName} 队列队首。
      *
-     * @param queueName - names of destination queue
-     * @return the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @param queueName 目标队列名称
+     * @return 队尾元素；超时无可用元素时为 {@code null}
      */
     V pollLastAndOfferFirstTo(String queueName);
     
     /**
-     * Sets new comparator only if current set is empty
+     * 仅当当前队列为空时设置新的 {@link Comparator}
      *
-     * @param comparator for values
-     * @return <code>true</code> if new comparator setted
-     *         <code>false</code> otherwise
+     * @param comparator 元素比较器
+     * @return 设置成功则为 {@code true}，否则 {@code false}
      */
     boolean trySetComparator(Comparator<? super V> comparator);
 
