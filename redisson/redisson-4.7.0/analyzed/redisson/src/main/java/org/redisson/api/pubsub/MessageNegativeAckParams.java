@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
+ * {@link MessageNegativeAckArgs} 与 {@link FailedAckArgs} 的可变参数实现。
  *
  * @author Nikita Koksharov
  *
@@ -31,11 +32,23 @@ public class MessageNegativeAckParams extends BaseSyncParams<MessageNegativeAckA
     private Duration delay = Duration.ZERO;
     private boolean failed;
 
+    /**
+     * 构造负向确认参数。
+     *
+     * @param ids 待 nack 的消息 ID 数组
+     * @param failed 为 {@code true} 表示处理失败（将重新投递），为 {@code false} 表示业务拒绝
+     */
     public MessageNegativeAckParams(String[] ids, boolean failed) {
         this.ids = ids;
         this.failed = failed;
     }
 
+    /**
+     * 设置处理失败消息的重新投递延迟。
+     *
+     * @param value 延迟时长，不可为 {@code null}
+     * @return 参数对象
+     */
     @Override
     public MessageNegativeAckArgs delay(Duration value) {
         Objects.requireNonNull(value);

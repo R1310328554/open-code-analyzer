@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import org.redisson.client.RedisException;
 
 /**
- * This error occurs when the pubsub operation is disabled.
+ * 当 PubSub 操作被禁用时抛出的异常。
  *
  * @author Nikita Koksharov
  *

@@ -16,14 +16,17 @@
 package org.redisson.api.pubsub;
 
 /**
+ * PubSub 操作类型枚举。
  *
  * @author Nikita Koksharov
  *
  */
 public enum PubSubOperation {
 
+    /** 发布消息 */
     PUBLISH,
 
+    /** 拉取消息 */
     PULL,
 
 }

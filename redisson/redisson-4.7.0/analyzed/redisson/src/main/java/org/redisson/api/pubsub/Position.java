@@ -18,10 +18,10 @@ package org.redisson.api.pubsub;
 import java.time.Instant;
 
 /**
- * Represents a position within a pubsub subscription's message stream.
+ * 表示 PubSub 订阅消息流中的消费位置。
  * <p>
- * Positions are used with {@link Subscription#seek(Position)} to control
- * where message consumption begins, enabling message replay or skipping.
+ * 与 {@link Subscription#seek(Position)} 配合使用，控制消息消费的起始点，
+ * 支持消息回放或跳过。
  *
  * @author Nikita Koksharov
  *
@@ -29,63 +29,62 @@ import java.time.Instant;
 public interface Position {
 
     /**
-     * Creates a position pointing to the latest (newest) messages.
+     * 创建指向最新（最新发布）消息的位置。
      * <p>
-     * This is the default position.
+     * 此为默认位置。
      *
-     * @return position object
+     * @return 位置对象
      */
     static Position latest() {
         return new PositionValue(true);
     }
 
     /**
-     * Creates a position pointing to the earliest (oldest) available messages.
+     * 创建指向最早可用消息的位置。
      *
-     * @return position object
+     * @return 位置对象
      */
     static Position earliest() {
         return new PositionValue(false);
     }
 
     /**
-     * Creates a position at the specified message ID (inclusive).
+     * 创建位于指定消息 ID 处（含该 ID）的位置。
      *
-     * @param id the message ID to seek to
-     * @return position object
+     * @param id 要定位到的消息 ID
+     * @return 位置对象
      */
     static Position messageId(String id) {
         return new PositionValue(id, false);
     }
 
     /**
-     * Creates a position after the specified message ID (exclusive).
+     * 创建位于指定消息 ID 之后（不含该 ID）的位置。
      *
-     * @param id the message ID to seek after
-     * @return position object
+     * @param id 要定位到其后的消息 ID
+     * @return 位置对象
      */
     static Position messageIdExclusive(String id) {
         return new PositionValue(id, true);
     }
 
     /**
-     * Creates a position at the specified timestamp (inclusive).
+     * 创建位于指定时间戳处（含该时刻）的位置。
      *
-     * @param value the timestamp to seek to
-     * @return position object
+     * @param value 要定位到的时间戳
+     * @return 位置对象
      */
     static Position timestamp(Instant value) {
         return new PositionValue(value.toEpochMilli(), false);
     }
 
     /**
-     * Creates a position after the specified timestamp (exclusive).
+     * 创建位于指定时间戳之后（不含该时刻）的位置。
      * <p>
-     * When seeking to this position, consumption will start from
-     * the first message with a timestamp strictly greater than the specified value.
+     * 定位到此位置时，消费将从时间戳严格大于指定值的第一条消息开始。
      *
-     * @param value the timestamp to seek after
-     * @return position object
+     * @param value 要定位到其后的时间戳
+     * @return 位置对象
      */
     static Position timestampExclusive(Instant value) {
         return new PositionValue(value.toEpochMilli(), true);

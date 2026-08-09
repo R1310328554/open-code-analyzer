@@ -21,63 +21,61 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
- * Configuration arguments for registering a {@link MessageListener} with a {@link PushConsumer}.
+ * 向 {@link PushConsumer} 注册 {@link MessageListener} 时的配置参数。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值的类型
  * @author Nikita Koksharov
  */
 public interface MessageListenerArgs<V> extends SyncArgs<MessageListenerArgs<V>> {
 
     /**
-     * Creates a new instance of MessageListenerArgs with the specified listener.
+     * 使用指定监听器创建参数实例。
      *
-     * @param <V> the type of message values
-     * @param listener the message listener to register
-     * @return a new arguments instance
+     * @param <V> 消息值的类型
+     * @param listener 要注册的消息监听器
+     * @return 新的参数实例
      */
     static <V> MessageListenerArgs<V> listener(MessageListener<V> listener) {
         return new MessageListenerParams<>(listener);
     }
 
     /**
-     * Sets the acknowledgment mode for message processing.
+     * 设置消息处理的确认模式。
      *
-     * <p>The acknowledgment mode determines how messages are acknowledged after retrieval:
+     * <p>确认模式决定消息拉取后如何确认：
      * <ul>
-     *   <li>{@code AcknowledgeMode.AUTO} - Messages are automatically acknowledged after delivery</li>
-     *   <li>{@code AcknowledgeMode.MANUAL} - Messages must be explicitly acknowledged by the consumer</li>
+     *   <li>{@code AcknowledgeMode.AUTO} - 投递后由系统自动确认</li>
+     *   <li>{@code AcknowledgeMode.MANUAL} - 须由消费者显式确认</li>
      * </ul></p>
-     * Default value is {@link AcknowledgeMode#MANUAL}.
+     * 默认值为 {@link AcknowledgeMode#MANUAL}。
      *
-     * @param mode the acknowledgment mode to use
-     * @return arguments object
+     * @param mode 确认模式
+     * @return 参数对象
      * @see AcknowledgeMode
      */
     MessageListenerArgs<V> acknowledgeMode(AcknowledgeMode mode);
 
     /**
-     * Specifies the codec to use for decoding message headers.
+     * 指定用于解码消息头部的编解码器。
      *
-     * @param codec the codec to use for header deserialization
-     * @return arguments object
+     * @param codec 头部反序列化所用的编解码器
+     * @return 参数对象
      */
     MessageListenerArgs<V> headersCodec(Codec codec);
 
     /**
-     * Sets the visibility timeout for retrieved messages.
+     * 设置已拉取消息的可见性超时。
      * <p>
-     * The visibility timeout specifies how long a message will be hidden from other consumers
-     * after it has been retrieved but before it has been acknowledged or negatively acknowledged. This prevents other
-     * consumers from processing the same message while it's being handled.
+     * 可见性超时指定消息被拉取后、在确认或负向确认之前对其他消费者隐藏的时间，
+     * 防止多个消费者同时处理同一条消息。
      * <p>
-     * If a message is not acknowledged within this time period, it will become visible
-     * again in the subscription and may be delivered to another consumer.
+     * 若在此时间内未确认，消息将重新在订阅中可见，可能被其他消费者投递。
      * <p>
-     * If not defined, the subscription's visibility setting value is used.
-     * If subscription's visibility setting is also not set, the default value is <code>30 seconds</code>.
+     * 若未设置，则使用订阅级别的可见性配置；
+     * 若订阅也未设置，默认值为 <code>30 秒</code>。
      *
-     * @param value the duration for which retrieved messages should remain invisible to other consumers
-     * @return arguments object
+     * @param value 已拉取消息对其他消费者不可见的时长
+     * @return 参数对象
      */
     MessageListenerArgs<V> visibility(Duration value);
 

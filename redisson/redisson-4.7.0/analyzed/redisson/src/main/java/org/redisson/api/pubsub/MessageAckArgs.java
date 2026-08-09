@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import org.redisson.api.SyncArgs;
 
 /**
- * Interface defining parameters for message acknowledgment operations.
+ * 消息确认（ack）操作的参数接口。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +26,10 @@ import org.redisson.api.SyncArgs;
 public interface MessageAckArgs extends SyncArgs<MessageAckArgs> {
 
     /**
-     * Defines message IDs for acknowledgment process.
+     * 指定待确认的消息 ID 列表。
      *
-     * @param ids the message identifiers to be acknowledged
-     * @return arguments object
+     * @param ids 待确认的消息标识符
+     * @return 参数对象
      */
     static MessageAckArgs ids(String... ids) {
         return new MessageAckParams(ids);

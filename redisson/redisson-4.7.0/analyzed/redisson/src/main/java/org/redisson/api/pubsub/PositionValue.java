@@ -16,6 +16,7 @@
 package org.redisson.api.pubsub;
 
 /**
+ * {@link Position} 的具体实现，将最新/最早、消息 ID 或时间戳等定位信息序列化为 Redis 流 ID 字符串。
  *
  * @author Nikita Koksharov
  *

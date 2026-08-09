@@ -21,6 +21,7 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
+ * {@link MessageListenerArgs} 的可变参数实现，保存监听器、确认模式、可见性超时与头部编解码器。
  *
  * @author Nikita Koksharov
  *

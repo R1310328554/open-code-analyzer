@@ -18,6 +18,7 @@ package org.redisson.api.pubsub;
 import org.redisson.api.BaseSyncParams;
 
 /**
+ * {@link MessageAckArgs} 的可变参数实现，持有待确认的消息 ID 数组。
  *
  * @author Nikita Koksharov
  *

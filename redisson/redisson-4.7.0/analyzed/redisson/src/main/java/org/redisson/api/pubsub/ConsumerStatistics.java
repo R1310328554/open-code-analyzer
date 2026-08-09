@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import java.io.Serializable;
 
 /**
- * Reliable PubSub Consumer statistics interface.
+ * 可靠 PubSub 消费者的统计信息接口。
  *
  * @author Nikita Koksharov
  *
@@ -26,30 +26,30 @@ import java.io.Serializable;
 public interface ConsumerStatistics extends Serializable {
 
     /**
-     * Returns consumer name.
+     * 返回消费者名称。
      *
-     * @return name
+     * @return 名称
      */
     String getConsumerName();
 
     /**
-     * Returns the number of unacknowledged messages awaiting acknowledgment.
+     * 返回尚未确认、等待 ack 的消息数量。
      *
-     * @return unacknowledged messages count
+     * @return 未确认消息数
      */
     long getUnacknowledgedMessagesCount();
 
     /**
-     * Return the total number of messages successfully acknowledged by consumers.
+     * 返回消费者已成功确认的消息总数。
      *
-     * @return acknowledged messages count
+     * @return 已确认消息数
      */
     long getAcknowledgedMessagesCount();
 
     /**
-     * Return the total number of messages negatively acknowledged by consumers.
+     * 返回消费者负向确认（nack）的消息总数。
      *
-     * @return acknowledged messages count
+     * @return 负向确认消息数
      */
     long getNegativelyAcknowledgedMessagesCount();
 

@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import org.redisson.api.SyncArgs;
 
 /**
- * Interface defining parameters for negative acknowledgment of messages.
+ * 消息负向确认（nack）操作的参数接口。
  *
  * @author Nikita Koksharov
  *
@@ -26,22 +26,21 @@ import org.redisson.api.SyncArgs;
 public interface MessageNegativeAckArgs extends SyncArgs<MessageNegativeAckArgs> {
 
     /**
-     * Defines status which indicates that the client application failed to process the message.
-     * The message is redelivered.
+     * 标记客户端处理消息失败，消息将被重新投递。
      *
-     * @param ids message ids
-     * @return arguments object
+     * @param ids 消息 ID
+     * @return 参数对象
      */
     static FailedAckArgs failed(String... ids) {
         return new MessageNegativeAckParams(ids, true);
     }
 
     /**
-     * Defines status which indicates that the client application could process the message, but it was not accepted.
-     * The message is removed and moves it to the Dead Letter Topic if configured.
+     * 标记客户端已处理消息但业务未接受，消息将被移除；
+     * 若已配置死信主题（Dead Letter Topic），则转入死信。
      *
-     * @param ids message ids
-     * @return arguments object
+     * @param ids 消息 ID
+     * @return 参数对象
      */
     static MessageNegativeAckArgs rejected(String... ids) {
         return new MessageNegativeAckParams(ids, false);

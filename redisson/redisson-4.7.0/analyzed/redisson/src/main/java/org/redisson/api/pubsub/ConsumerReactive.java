@@ -18,11 +18,10 @@ package org.redisson.api.pubsub;
 import reactor.core.publisher.Mono;
 
 /**
- * Base interface for message consumers within a subscription.
+ * 订阅内消息消费者的基础接口（Project Reactor 响应式风格）。
  * <p>
- * A consumer processes messages from a subscription and can be either a
- * {@link PullConsumer} for on-demand retrieval or a {@link PushConsumer}
- * for event-driven processing.
+ * 消费者负责处理订阅中的消息，可为按需拉取的 {@link PullConsumer}，
+ * 或事件驱动的 {@link PushConsumer}。
  *
  * @author Nikita Koksharov
  *
@@ -30,16 +29,16 @@ import reactor.core.publisher.Mono;
 public interface ConsumerReactive {
 
     /**
-     * Returns the name of this consumer.
+     * 返回此消费者的名称。
      *
-     * @return the consumer name
+     * @return 消费者名称
      */
     String getName();
 
     /**
-     * Returns statistics for this consumer.
+     * 返回此消费者的统计信息。
      *
-     * @return statistics object
+     * @return 统计信息对象
      */
     Mono<ConsumerStatistics> getStatistics();
 

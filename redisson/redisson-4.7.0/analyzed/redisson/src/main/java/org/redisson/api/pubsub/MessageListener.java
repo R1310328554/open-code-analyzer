@@ -20,9 +20,9 @@ import org.redisson.api.Message;
 import java.util.EventListener;
 
 /**
- * Listener interface for receiving messages from a {@link PushConsumer}.
+ * 从 {@link PushConsumer} 接收消息的监听器接口。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值的类型
  *
  * @author Nikita Koksharov
  *
@@ -30,20 +30,18 @@ import java.util.EventListener;
 public interface MessageListener<V> extends EventListener {
 
     /**
-     * Invoked when a message is received from the subscription.
+     * 当从订阅收到消息时调用。
      * <p>
-     * Messages are received one by one, no batches are used.
+     * 消息逐条投递，不使用批量模式。
      * <p>
-     * The implementation should process the message and then call either
-     * {@link Acknowledgment#acknowledge(MessageAckArgs)} to confirm successful processing
-     * or {@link Acknowledgment#negativeAcknowledge(MessageNegativeAckArgs)} to trigger
-     * redelivery or dead letter handling.
+     * 实现方应处理消息后调用 {@link Acknowledgment#acknowledge(MessageAckArgs)}
+     * 确认成功，或调用 {@link Acknowledgment#negativeAcknowledge(MessageNegativeAckArgs)}
+     * 触发重新投递或死信处理。
      * <p>
-     * Unacknowledged messages will be automatically redelivered after the
-     * visibility timeout expires.
+     * 未确认的消息在可见性超时到期后将自动重新投递。
      *
-     * @param message the received message containing the payload and metadata
-     * @param acknowledgment the acknowledgment handler for this message
+     * @param message 收到的消息，包含负载与元数据
+     * @param acknowledgment 该消息的确认处理器
      */
     void onMessage(Message<V> message, Acknowledgment acknowledgment);
 
