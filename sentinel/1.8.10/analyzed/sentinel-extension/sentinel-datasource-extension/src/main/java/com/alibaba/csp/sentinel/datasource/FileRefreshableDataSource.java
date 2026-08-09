@@ -25,12 +25,10 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
  * <p>
- * A {@link ReadableDataSource} based on file. This class will automatically
- * fetches the backend file every isModified period.
+ * 基于本地文件的自动刷新数据源：定时检测文件修改时间并重新加载。
  * </p>
  * <p>
- * Limitations: Default read buffer size is 1 MB. If file size is greater than
- * buffer size, exceeding bytes will be ignored. Default charset is UTF-8.
+ * 限制：默认读缓冲 1 MB；文件大于缓冲时超出部分被忽略。默认字符集 UTF-8。
  * </p>
  *
  * @author Carpenter Lee
@@ -50,11 +48,10 @@ public class FileRefreshableDataSource<T> extends AutoRefreshDataSource<String, 
     private long lastModified = 0L;
 
     /**
-     * Create a file based {@link ReadableDataSource} whose read buffer size is
-     * 1MB, charset is UTF8, and read interval is 3 seconds.
+     * 创建文件数据源：缓冲 1 MB、UTF-8、刷新间隔 3 秒。
      *
-     * @param file         the file to read
-     * @param configParser the config decoder (parser)
+     * @param file         配置文件
+     * @param configParser 配置解析器
      */
     public FileRefreshableDataSource(File file, Converter<String, T> configParser) throws FileNotFoundException {
         this(file, configParser, DEFAULT_REFRESH_MS, DEFAULT_BUF_SIZE, DEFAULT_CHAR_SET);
@@ -89,11 +86,12 @@ public class FileRefreshableDataSource<T> extends AutoRefreshDataSource<String, 
         this.buf = new byte[bufSize];
         this.file = file;
         this.charset = charset;
-        // If the file does not exist, the last modified will be 0.
+        // 文件不存在时 lastModified 为 0
         this.lastModified = file.lastModified();
         firstLoad();
     }
 
+    /** 构造完成后立即加载一次配置。 */
     private void firstLoad() {
         try {
             T newValue = loadConfig();
@@ -106,7 +104,7 @@ public class FileRefreshableDataSource<T> extends AutoRefreshDataSource<String, 
     @Override
     public String readSource() throws Exception {
         if (!file.exists()) {
-            // Will throw FileNotFoundException later.
+            // 文件不存在，后续 read 将抛 FileNotFoundException
             RecordLog.warn(String.format("[FileRefreshableDataSource] File does not exist: %s", file.getAbsolutePath()));
         }
         FileInputStream inputStream = null;

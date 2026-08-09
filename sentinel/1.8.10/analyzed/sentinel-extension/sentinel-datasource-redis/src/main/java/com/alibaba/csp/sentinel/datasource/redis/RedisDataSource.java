@@ -42,16 +42,14 @@ import java.util.List;
 
 /**
  * <p>
- * A read-only {@code DataSource} with Redis backend.
+ * 基于 Redis 的只读数据源。
  * </p>
  * <p>
- * The data source first loads initial rules from a Redis String during initialization.
- * Then the data source subscribe from specific channel. When new rules is published to the channel,
- * the data source will observe the change in realtime and update to memory.
+ * 初始化时从 Redis String（ruleKey）加载规则，并订阅指定 channel；
+ * 发布新规则时实时更新内存中的 {@link SentinelProperty}。
  * </p>
  * <p>
- * Note that for consistency, users should publish the value and save the value to the ruleKey simultaneously
- * like this (using Redis transaction):
+ * 为保证一致性，建议用 Redis 事务同时 SET ruleKey 与 PUBLISH channel：
  * <pre>
  *  MULTI
  *  SET ruleKey value
@@ -71,12 +69,12 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
     private final String ruleKey;
 
     /**
-     * Constructor of {@code RedisDataSource}.
+     * 构造 Redis 数据源（支持单机、Sentinel、Cluster）。
      *
-     * @param connectionConfig Redis connection config
-     * @param ruleKey          data key in Redis
-     * @param channel          channel to subscribe in Redis
-     * @param parser           customized data parser, cannot be empty
+     * @param connectionConfig Redis 连接配置
+     * @param ruleKey          规则 String 键
+     * @param channel          Pub/Sub 频道
+     * @param parser           配置解析器
      */
     public RedisDataSource(RedisConnectionConfig connectionConfig, String ruleKey, String channel,
                            Converter<String, T> parser) {
@@ -97,10 +95,10 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
     }
 
     /**
-     * init SslOptions, support jks or pem format
+     * 初始化 SSL 选项，支持 JKS 或 PEM 格式证书。
      *
-     * @param connectionConfig Redis connection config
-     * @return a new SslOptions
+     * @param connectionConfig Redis 连接配置
+     * @return SslOptions 实例，未启用 SSL 时返回 null
      */
     private SslOptions initSslOptions(RedisConnectionConfig connectionConfig) {
         if (!connectionConfig.isSslEnable()){
@@ -111,13 +109,13 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
 
         if (connectionConfig.getTrustedCertificatesPath() != null){
             if (connectionConfig.getTrustedCertificatesPath().endsWith(".jks")){
-                // if the value is end with .jks，think it is java key store format，to invoke truststore method
+                // .jks 后缀视为 Java KeyStore，调用 truststore
                 sslOptionsBuilder.truststore(
                         new File(connectionConfig.getTrustedCertificatesPath()),
                         connectionConfig.getTrustedCertificatesJksPassword()
                 );
             } else {
-                // if the value is not end with .jks，think it is pem format，to invoke trustManager method
+                // 非 .jks 视为 PEM，调用 trustManager
                 sslOptionsBuilder.trustManager(new File(connectionConfig.getTrustedCertificatesPath()));
             }
         }
@@ -140,9 +138,9 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
     }
 
     /**
-     * Build Redis client fromm {@code RedisConnectionConfig}.
+     * 根据 {@link RedisConnectionConfig} 构建 Lettuce {@link RedisClient}。
      *
-     * @return a new {@link RedisClient}
+     * @return 新的 RedisClient
      */
     private RedisClient getRedisClient(RedisConnectionConfig connectionConfig) {
         RedisClient redisClient;
@@ -166,7 +164,7 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
         char[] password = connectionConfig.getPassword();
         String clientName = connectionConfig.getClientName();
 
-        //If any uri is successful for connection, the others are not tried anymore
+        // 任一 URI 连接成功即停止尝试其余节点
         List<RedisURI> redisUris = new ArrayList<>();
         for (RedisConnectionConfig config : connectionConfig.getRedisClusters()) {
             RedisURI.Builder clusterRedisUriBuilder = RedisURI.builder();
@@ -174,7 +172,7 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
                 .withPort(config.getPort())
                 .withSsl(config.isSslEnable())
                 .withTimeout(Duration.ofMillis(connectionConfig.getTimeout()));
-            //All redis nodes must have same password
+            // 集群各节点须使用相同密码
             if (password != null) {
                 clusterRedisUriBuilder.withPassword(connectionConfig.getPassword());
             }
@@ -228,6 +226,7 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
         return RedisClient.create(sentinelRedisUriBuilder.build());
     }
 
+    /** 订阅 Redis Pub/Sub 频道，收到消息时更新 property。 */
     private void subscribeFromChannel(String channel) {
         RedisPubSubAdapter<String, String> adapterListener = new DelegatingRedisPubSubListener();
         if (redisClient != null) {
@@ -243,6 +242,7 @@ public class RedisDataSource<T> extends AbstractDataSource<String, T> {
         }
     }
 
+    /** 启动时从 ruleKey 读取初始规则。 */
     private void loadInitialConfig() {
         try {
             T newValue = loadConfig();

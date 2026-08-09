@@ -31,8 +31,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A read-only {@code DataSource} with Etcd backend. When the data in Etcd backend has been modified,
- * Etcd will automatically push the new value so that the dynamic configuration can be real-time.
+ * 基于 Etcd 的只读数据源：Etcd 键值变更时通过 Watch 推送，实现规则实时更新。
  *
  * @author lianglin
  * @since 1.7.0
@@ -46,10 +45,10 @@ public class EtcdDataSource<T> extends AbstractDataSource<String, T> {
     private Charset charset = Charset.forName(EtcdConfig.getCharset());
 
     /**
-     * Create an etcd data-source. The connection configuration will be retrieved from {@link EtcdConfig}.
+     * 创建 Etcd 数据源，连接参数从 {@link EtcdConfig} 读取。
      *
-     * @param key    config key
-     * @param parser data parser
+     * @param key    配置键
+     * @param parser 配置解析器
      */
     public EtcdDataSource(String key, Converter<String, T> parser) {
         super(parser);
@@ -69,6 +68,7 @@ public class EtcdDataSource<T> extends AbstractDataSource<String, T> {
         initWatcher();
     }
 
+    /** 启动时加载初始配置并写入 property。 */
     private void loadInitialConfig() {
         try {
             T newValue = loadConfig();
@@ -82,6 +82,7 @@ public class EtcdDataSource<T> extends AbstractDataSource<String, T> {
         }
     }
 
+    /** 注册 Etcd Watch，处理 PUT/DELETE 事件。 */
     private void initWatcher() {
         watcher = client.getWatchClient().watch(ByteSequence.from(key, charset), (watchResponse) -> {
             for (WatchEvent watchEvent : watchResponse.getEvents()) {

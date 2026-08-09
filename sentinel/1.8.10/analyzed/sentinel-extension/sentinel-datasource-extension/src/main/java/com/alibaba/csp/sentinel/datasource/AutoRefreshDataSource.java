@@ -23,10 +23,10 @@ import com.alibaba.csp.sentinel.concurrent.NamedThreadFactory;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
- * A {@link ReadableDataSource} automatically fetches the backend data.
+ * 自动定时刷新的 {@link ReadableDataSource}：周期性检测变更并更新 {@link SentinelProperty}。
  *
- * @param <S> source data type
- * @param <T> target data type
+ * @param <S> 原始数据类型
+ * @param <T> 解析后的目标类型
  * @author Carpenter Lee
  */
 public abstract class AutoRefreshDataSource<S, T> extends AbstractDataSource<S, T> {
@@ -34,11 +34,13 @@ public abstract class AutoRefreshDataSource<S, T> extends AbstractDataSource<S, 
     private ScheduledExecutorService service;
     protected long recommendRefreshMs = 3000;
 
+    /** 使用默认刷新间隔（3 秒）启动定时刷新任务。 */
     public AutoRefreshDataSource(Converter<S, T> configParser) {
         super(configParser);
         startTimerService();
     }
 
+    /** 指定刷新间隔（毫秒）并启动定时刷新任务。 */
     public AutoRefreshDataSource(Converter<S, T> configParser, final long recommendRefreshMs) {
         super(configParser);
         if (recommendRefreshMs <= 0) {
@@ -76,6 +78,7 @@ public abstract class AutoRefreshDataSource<S, T> extends AbstractDataSource<S, 
         }
     }
 
+    /** 子类可覆盖以判断后端数据是否变更；默认始终返回 true。 */
     protected boolean isModified() {
         return true;
     }

@@ -16,7 +16,7 @@
 package com.alibaba.csp.sentinel.datasource;
 
 /**
- * Interface of writable data source support.
+ * 可写数据源接口：将规则持久化到外部存储（如本地文件）。
  *
  * @author Eric Zhao
  * @since 0.2.0
@@ -24,17 +24,17 @@ package com.alibaba.csp.sentinel.datasource;
 public interface WritableDataSource<T> {
 
     /**
-     * Write the {@code value} to the data source.
+     * 将 {@code value} 序列化后写入后端存储。
      *
-     * @param value value to write
-     * @throws Exception IO or other error occurs
+     * @param value 待写入的配置对象
+     * @throws Exception IO 或其他异常
      */
     void write(T value) throws Exception;
 
     /**
-     * Close the data source.
+     * 关闭数据源并释放相关资源。
      *
-     * @throws Exception IO or other error occurs
+     * @throws Exception IO 或其他异常
      */
     void close() throws Exception;
 }

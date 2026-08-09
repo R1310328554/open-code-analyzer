@@ -26,11 +26,10 @@ import java.util.jar.JarFile;
 
 /**
  * <p>
- * A {@link ReadableDataSource} based on jar file. This class can only read file initially when it loads file.
+ * 基于 JAR 内文件的只读数据源，仅在初始化时加载一次，不支持热更新。
  * </p>
  * <p>
- * Limitations: Default read buffer size is 1 MB, while max allowed buffer size is 4MB.
- * File size should not exceed the buffer size, or exception will be thrown. Default charset is UTF-8.
+ * 限制：默认读缓冲 1 MB，最大 4 MB；文件不得超过缓冲大小，否则抛异常。默认字符集 UTF-8。
  * </p>
  *
  * @author dingq
@@ -52,10 +51,10 @@ public class FileInJarReadableDataSource<T> extends AbstractDataSource<String, T
     private JarFile jarFile;
 
     /**
-     * @param jarName       the jar to read
-     * @param fileInJarName the file in jar to read
-     * @param configParser  the config decoder (parser)
-     * @throws IOException if IO failure occurs
+     * @param jarName       待读取的 JAR 路径
+     * @param fileInJarName JAR 内配置文件路径
+     * @param configParser  配置解析器
+     * @throws IOException IO 失败时抛出
      */
     public FileInJarReadableDataSource(String jarName, String fileInJarName, Converter<String, T> configParser)
         throws IOException {
@@ -92,7 +91,7 @@ public class FileInJarReadableDataSource<T> extends AbstractDataSource<String, T
     @Override
     public String readSource() throws Exception {
         if (null == jarEntry) {
-            // Will throw FileNotFoundException later.
+            // 条目不存在，后续 read 将失败
             RecordLog.warn(String.format("[FileInJarReadableDataSource] File does not exist: %s", jarFile.getName()));
         }
         try (InputStream inputStream = jarFile.getInputStream(jarEntry)) {
@@ -105,6 +104,7 @@ public class FileInJarReadableDataSource<T> extends AbstractDataSource<String, T
         }
     }
 
+    /** 构造完成后立即加载一次配置并更新 property。 */
     private void firstLoad() {
         try {
             T newValue = loadConfig();

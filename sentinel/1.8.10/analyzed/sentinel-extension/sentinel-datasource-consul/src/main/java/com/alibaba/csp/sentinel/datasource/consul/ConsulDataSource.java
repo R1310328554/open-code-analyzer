@@ -31,16 +31,13 @@ import java.util.concurrent.*;
 
 /**
  * <p>
- * A read-only {@code DataSource} with Consul backend.
+ * 基于 Consul KV 的只读数据源。
+ * </p>
  * <p>
- * <p>
- * The data source first initial rules from a Consul during initialization.
- * Then it start a watcher to observe the updates of rule date and update to memory.
- *
- * Consul do not provide http api to watch the update of KV，so it use a long polling and
- * <a href="https://www.consul.io/api/features/blocking.html">blocking queries</a> of the Consul's feature
- * to watch and update value easily.When Querying data by index will blocking until change or timeout. If
- * the index of the current query is larger than before, it means that the data has changed.
+ * 初始化时从 Consul 加载规则，随后启动后台 watcher 监听 KV 变更并更新内存。
+ * Consul 无原生 KV 变更推送 HTTP API，故采用
+ * <a href="https://www.consul.io/api/features/blocking.html">blocking queries</a>
+ * 长轮询：按 index 查询会阻塞至变更或超时；若返回 index 大于上次，表示数据已更新。
  * </p>
  *
  * @author wavesZh
@@ -53,15 +50,10 @@ public class ConsulDataSource<T> extends AbstractDataSource<String, T> {
     private final String address;
     private final String token;
     private final String ruleKey;
-    /**
-     * Request of query will hang until timeout (in second) or get updated value.
-     */
+    /** 长轮询超时时间（秒），超时或无变更则返回。 */
     private final int watchTimeout;
 
-    /**
-     * Record the data's index in Consul to watch the change.
-     * If lastIndex is smaller than the index of next query, it means that rule data has updated.
-     */
+    /** 记录 Consul 返回的 index，用于 blocking query 增量监听。 */
     private volatile long lastIndex;
 
     private final ConsulClient client;
@@ -77,27 +69,27 @@ public class ConsulDataSource<T> extends AbstractDataSource<String, T> {
     }
 
     /**
-     * Constructor of {@code ConsulDataSource}.
+     * 构造 Consul 数据源（默认端口 8500）。
      *
-     * @param parser       customized data parser, cannot be empty
-     * @param host         consul agent host
-     * @param port         consul agent port
-     * @param ruleKey      data key in Consul
-     * @param watchTimeout request for querying data will be blocked until new data or timeout. The unit is second (s)
+     * @param parser       自定义配置解析器，不可为空
+     * @param host         Consul Agent 主机
+     * @param port         Consul Agent 端口
+     * @param ruleKey      Consul KV 键
+     * @param watchTimeout 长轮询超时（秒）
      */
     public ConsulDataSource(String host, int port, String ruleKey, int watchTimeout, Converter<String, T> parser) {
         this(host, port, null, ruleKey, watchTimeout, parser);
     }
 
     /**
-     * Constructor of {@code ConsulDataSource}.
+     * 构造带 ACL Token 的 Consul 数据源。
      *
-     * @param parser       customized data parser, cannot be empty
-     * @param host         consul agent host
-     * @param port         consul agent port
-     * @param token     consul agent acl token
-     * @param ruleKey      data key in Consul
-     * @param watchTimeout request for querying data will be blocked until new data or timeout. The unit is second (s)
+     * @param parser       自定义配置解析器
+     * @param host         Consul Agent 主机
+     * @param port         Consul Agent 端口
+     * @param token        ACL Token（可为 null）
+     * @param ruleKey      Consul KV 键
+     * @param watchTimeout 长轮询超时（秒）
      */
     public ConsulDataSource(String host, int port, String token, String ruleKey, int watchTimeout, Converter<String, T> parser) {
         super(parser);
@@ -156,7 +148,7 @@ public class ConsulDataSource<T> extends AbstractDataSource<String, T> {
         @Override
         public void run() {
             while (running) {
-                // It will be blocked until watchTimeout(s) if rule data has no update.
+                // 无变更时将阻塞最长 watchTimeout 秒
                 Response<GetValue> response = getValue(ruleKey, lastIndex, watchTimeout);
                 if (response == null) {
                     try {
@@ -178,7 +170,7 @@ public class ConsulDataSource<T> extends AbstractDataSource<String, T> {
                         RecordLog.info("[ConsulDataSource] New property value received for ({}, {}): {}",
                             address, ruleKey, newValue);
                     } catch (Exception ex) {
-                        // In case of parsing error.
+                        // 解析失败时记录日志，不中断 watcher
                         RecordLog.warn("[ConsulDataSource] Failed to update value for ({}, {}), raw value: {}",
                             address, ruleKey, newValue);
                     }
@@ -192,22 +184,22 @@ public class ConsulDataSource<T> extends AbstractDataSource<String, T> {
     }
 
     /**
-     * Get data from Consul immediately.
+     * 非阻塞方式立即读取 Consul KV。
      *
-     * @param key data key in Consul
-     * @return the value associated to the key, or null if error occurs
+     * @param key Consul KV 键
+     * @return 键对应值，失败返回 null
      */
     private Response<GetValue> getValueImmediately(String key) {
         return getValue(key, -1, -1);
     }
 
     /**
-     * Get data from Consul (blocking).
+     * 阻塞方式读取 Consul KV（blocking query）。
      *
-     * @param key      data key in Consul
-     * @param index    the index of data in Consul.
-     * @param waitTime time(second) for waiting get updated value.
-     * @return the value associated to the key, or null if error occurs
+     * @param key      Consul KV 键
+     * @param index    上次已知 index
+     * @param waitTime 最长等待秒数
+     * @return 键对应值，失败返回 null
      */
     private Response<GetValue> getValue(String key, long index, long waitTime) {
         try {

@@ -19,7 +19,7 @@ import com.alibaba.csp.sentinel.config.SentinelConfig;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * Etcd connection configuration.
+ * Etcd 连接配置项，从 {@link com.alibaba.csp.sentinel.config.SentinelConfig} 读取。
  *
  * @author lianglin
  * @since 1.7.0
@@ -35,18 +35,22 @@ public final class EtcdConfig {
 
     private final static String ENABLED = "true";
 
+    /** 获取 Etcd 端点列表（逗号分隔）。 */
     public static String getEndPoints() {
         return SentinelConfig.getConfig(END_POINTS);
     }
 
+    /** 获取 Etcd 认证用户名。 */
     public static String getUser() {
         return SentinelConfig.getConfig(USER);
     }
 
+    /** 获取 Etcd 认证密码。 */
     public static String getPassword() {
         return SentinelConfig.getConfig(PASSWORD);
     }
 
+    /** 获取 Etcd 通信字符集，未配置则回退 Sentinel 全局 charset。 */
     public static String getCharset() {
         String etcdCharset = SentinelConfig.getConfig(CHARSET);
         if (StringUtil.isNotBlank(etcdCharset)) {
@@ -55,10 +59,12 @@ public final class EtcdConfig {
         return SentinelConfig.charset();
     }
 
+    /** 是否启用 Etcd 用户名密码认证。 */
     public static boolean isAuthEnable() {
         return ENABLED.equalsIgnoreCase(SentinelConfig.getConfig(AUTH_ENABLE));
     }
 
+    /** 获取 Etcd authority 头（TLS/SNI 场景）。 */
     public static String getAuthority() {
         return SentinelConfig.getConfig(AUTHORITY);
     }

@@ -19,15 +19,15 @@ import com.alibaba.csp.sentinel.property.NoOpSentinelProperty;
 import com.alibaba.csp.sentinel.property.SentinelProperty;
 
 /**
- * A {@link ReadableDataSource} based on nothing. {@link EmptyDataSource#getProperty()} will always return the same cached
- * {@link SentinelProperty} that doing nothing.
+ * 空数据源：不读取任何外部配置，{@link #getProperty()} 始终返回无操作的 {@link NoOpSentinelProperty}。
  * <br/>
- * This class is used when we want to use default settings instead of configs from the {@link ReadableDataSource}.
+ * 当希望使用 Sentinel 内置默认规则而非外部配置时使用。
  *
  * @author leyou
  */
 public final class EmptyDataSource implements ReadableDataSource<Object, Object> {
 
+    /** 全局共享的空数据源单例。 */
     public static final ReadableDataSource<Object, Object> EMPTY_DATASOURCE = new EmptyDataSource();
 
     private static final SentinelProperty<Object> PROPERTY = new NoOpSentinelProperty();

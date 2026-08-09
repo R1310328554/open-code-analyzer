@@ -33,12 +33,10 @@ import java.util.List;
 
 /**
  * <p>
- * A {@link ReadableDataSource} based on Eureka. This class will automatically
- * fetches the metadata of the instance every period.
+ * 基于 Eureka 实例元数据的自动刷新数据源，周期性拉取规则配置。
  * </p>
  * <p>
- * Limitations: Default refresh interval is 10s. Because there is synchronization between eureka servers,
- * it may take longer to take effect.
+ * 限制：默认刷新间隔 10 秒；Eureka 集群同步可能导致生效延迟更长。
  * </p>
  *
  * @author liyang
@@ -48,36 +46,24 @@ public class EurekaDataSource<T> extends AutoRefreshDataSource<String, T> {
 
     private static final long DEFAULT_REFRESH_MS = 10000;
 
-    /**
-     * Default connect timeout: 3s
-     */
+    /** 默认连接超时：3 秒 */
     private static final int DEFAULT_CONNECT_TIMEOUT_MS = 3000;
 
-    /**
-     * Default read timeout: 30s
-     */
+    /** 默认读取超时：30 秒 */
     private static final int DEFAULT_READ_TIMEOUT_MS = 30000;
 
     private final int connectTimeoutMills;
     private final int readTimeoutMills;
 
-    /**
-     * Eureka instance app ID.
-     */
+    /** Eureka 应用 ID（app name）。 */
     private final String appId;
-    /**
-     * Eureka instance id.
-     */
+    /** Eureka 实例 ID。 */
     private final String instanceId;
 
-    /**
-     * Eureka server URL list.
-     */
+    /** Eureka Server URL 列表（可多个，失败时随机重试）。 */
     private final List<String> serviceUrls;
 
-    /**
-     * Metadata key of the rule source.
-     */
+    /** 实例 metadata 中存放规则的键名。 */
     private final String ruleKey;
 
     public EurekaDataSource(String appId, String instanceId, List<String> serviceUrls, String ruleKey,
@@ -162,7 +148,7 @@ public class EurekaDataSource<T> extends AutoRefreshDataSource<String, T> {
                     }
                 } catch (Exception e1) {
                     RecordLog.warn("[EurekaDataSource] Warn: failed to request ", e1);
-                    //ignore
+                    // 忽略解析主机地址失败
                 }
                 RecordLog.warn("[EurekaDataSource] Warn: failed to request,retrying on another server if available");
 

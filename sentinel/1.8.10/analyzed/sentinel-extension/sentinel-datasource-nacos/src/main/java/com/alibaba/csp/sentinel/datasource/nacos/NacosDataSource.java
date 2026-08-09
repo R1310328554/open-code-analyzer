@@ -34,8 +34,7 @@ import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
 
 /**
- * A read-only {@code DataSource} with Nacos backend. When the data in Nacos backend has been modified,
- * Nacos will automatically push the new value so that the dynamic configuration can be real-time.
+ * 基于 Nacos 的只读数据源：配置变更时 Nacos 主动推送，实现规则实时更新。
  *
  * @author Eric Zhao
  */
@@ -43,9 +42,7 @@ public class NacosDataSource<T> extends AbstractDataSource<String, T> {
 
     private static final int DEFAULT_TIMEOUT = 3000;
 
-    /**
-     * Single-thread pool. Once the thread pool is blocked, we throw up the old task.
-     */
+    /** 单线程池；队列满时丢弃最旧任务以保证最新配置优先处理。 */
     private final ExecutorService pool = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
         new ArrayBlockingQueue<Runnable>(1), new NamedThreadFactory("sentinel-nacos-ds-update", true),
         new ThreadPoolExecutor.DiscardOldestPolicy());
@@ -55,18 +52,16 @@ public class NacosDataSource<T> extends AbstractDataSource<String, T> {
     private final String dataId;
     private final Properties properties;
 
-    /**
-     * Note: The Nacos config might be null if its initialization failed.
-     */
+    /** 注意：Nacos 初始化失败时 configService 可能为 null。 */
     private ConfigService configService = null;
 
     /**
-     * Constructs an read-only DataSource with Nacos backend.
+     * 使用 Nacos 服务地址构造只读数据源。
      *
-     * @param serverAddr server address of Nacos, cannot be empty
-     * @param groupId    group ID, cannot be empty
-     * @param dataId     data ID, cannot be empty
-     * @param parser     customized data parser, cannot be empty
+     * @param serverAddr Nacos 服务地址
+     * @param groupId    配置分组
+     * @param dataId     配置 dataId
+     * @param parser     配置解析器
      */
     public NacosDataSource(final String serverAddr, final String groupId, final String dataId,
                            Converter<String, T> parser) {
@@ -102,7 +97,7 @@ public class NacosDataSource<T> extends AbstractDataSource<String, T> {
                 RecordLog.info("[NacosDataSource] New property value received for (properties: {}) (dataId: {}, groupId: {}): {}",
                     properties, dataId, groupId, configInfo);
                 T newValue = NacosDataSource.this.parser.convert(configInfo);
-                // Update the new value to the property.
+                // 将新配置写入 SentinelProperty
                 getProperty().updateValue(newValue);
             }
         };
@@ -125,7 +120,7 @@ public class NacosDataSource<T> extends AbstractDataSource<String, T> {
     private void initNacosListener() {
         try {
             this.configService = NacosFactory.createConfigService(this.properties);
-            // Add config listener.
+            // 注册 Nacos 配置变更监听器
             configService.addListener(dataId, groupId, configListener);
         } catch (Exception e) {
             RecordLog.warn("[NacosDataSource] Error occurred when initializing Nacos data source", e);

@@ -24,9 +24,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
- * A {@link WritableDataSource} based on file.
+ * 基于本地文件的 {@link WritableDataSource}，将规则序列化后写入指定路径。
  *
- * @param <T> data type
+ * @param <T> 配置数据类型
  * @author Eric Zhao
  * @since 0.2.0
  */
@@ -63,6 +63,7 @@ public class FileWritableDataSource<T> implements WritableDataSource<T> {
         this.charset = charset;
     }
 
+    /** 加锁后将 value 编码为字符串并覆盖写入文件。 */
     @Override
     public void write(T value) throws Exception {
         lock.lock();
@@ -81,7 +82,7 @@ public class FileWritableDataSource<T> implements WritableDataSource<T> {
                     try {
                         outputStream.close();
                     } catch (Exception ignore) {
-                        // nothing
+                        // 忽略关闭异常
                     }
                 }
             }
@@ -92,6 +93,6 @@ public class FileWritableDataSource<T> implements WritableDataSource<T> {
 
     @Override
     public void close() throws Exception {
-        // Nothing
+        // 文件数据源无需额外关闭逻辑
     }
 }
