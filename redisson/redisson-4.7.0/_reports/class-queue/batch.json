@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:26:59Z",
-  "files": [
-    "redisson-quarkus/redisson-quarkus-33/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/RedissonClientRecorder.java",
-    "redisson-quarkus/redisson-quarkus-33/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/RedissonConfig.java",
-    "redisson-quarkus/redisson-quarkus-33/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/graal/ByteBuddySubstitutions.java",
-    "redisson-quarkus/redisson-quarkus-33/cdi/runtime/src/main/java/io/quarkus/redisson/client/runtime/graal/CodecsSubstitutions.java",
-    "redisson-spring/redisson-spring-boot-starter/src/main/java/org/redisson/spring/starter/RedissonAutoConfigurationCustomizer.java",
-    "redisson-spring/redisson-spring-boot-starter/src/main/java/org/redisson/spring/starter/RedissonAutoConfigurationV2.java",
-    "redisson-spring/redisson-spring-boot-starter/src/main/java/org/redisson/spring/starter/RedissonAutoConfigurationV4.java",
-    "redisson-spring/redisson-spring-boot-starter/src/main/java/org/redisson/spring/starter/RedissonProperties.java",
-    "redisson-spring/redisson-spring-cache/src/main/java/org/redisson/spring/cache/CacheConfig.java",
-    "redisson-spring/redisson-spring-cache/src/main/java/org/redisson/spring/cache/CacheConfigSupport.java",
-    "redisson-spring/redisson-spring-cache/src/main/java/org/redisson/spring/cache/NullValue.java",
-    "redisson-spring/redisson-spring-cache/src/main/java/org/redisson/spring/cache/RedissonCache.java",
-    "redisson-spring/redisson-spring-cache/src/main/java/org/redisson/spring/cache/RedissonCacheMeterBinderProvider.java",
-    "redisson-spring/redisson-spring-cache/src/main/java/org/redisson/spring/cache/RedissonCacheMeterBinderProviderV4.java",
-    "redisson-spring/redisson-spring-cache/src/main/java/org/redisson/spring/cache/RedissonCacheMetrics.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2552,
-  "done": 255
+  "done": 270
 }
