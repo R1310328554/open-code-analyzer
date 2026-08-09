@@ -32,15 +32,8 @@ import org.springframework.core.ResolvableType;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class PropertyDescriptorUtils — 意图说明
-
-class `PropertyDescriptorUtils`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/PropertyDescriptorUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Common delegate methods for Spring's internal {@link PropertyDescriptor} implementations.
+ * Spring 内部 {@link PropertyDescriptor} 实现所共用的委托方法。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -48,24 +41,19 @@ class `PropertyDescriptorUtils`：请结合所属模块与调用方理解其在�
  */
 abstract class PropertyDescriptorUtils {
 
-	// [OCA] 字段 `EMPTY_PROPERTY_DESCRIPTOR_ARRAY`：类成员状态。
+	/** 空的 PropertyDescriptor 数组常量。 */
 	public static final PropertyDescriptor[] EMPTY_PROPERTY_DESCRIPTOR_ARRAY = {};
 
 
-	/* ===== [OCA 中文解析] =====
-方法 determineBasicProperties — 意图与阅读要点
-
-方法 `determineBasicProperties` 复杂度较高（CCN≈17, NLOC≈45）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Simple introspection algorithm for basic set/get/is accessor methods,
-	 * building corresponding JavaBeans property descriptors for them.
-	 * <p>This just supports the basic JavaBeans conventions, without indexed
-	 * properties or any customizers, and without other BeanInfo metadata.
-	 * For standard JavaBeans introspection, use the JavaBeans Introspector.
-	 * @param beanClass the target class to introspect
-	 * @return a collection of property descriptors
-	 * @throws IntrospectionException from introspecting the given bean class
+	 * 针对基本 set/get/is 访问器方法的简易内省算法，
+	 * 并为它们构建对应的 JavaBeans 属性描述符。
+	 * <p>仅支持基本 JavaBeans 约定，不支持索引属性、自定义器，
+	 * 也不包含其他 BeanInfo 元数据。
+	 * 若需标准 JavaBeans 内省，请使用 JavaBeans {@code Introspector}。
+	 * @param beanClass 要内省的目标类
+	 * @return 属性描述符集合
+	 * @throws IntrospectionException 内省给定 bean 类时抛出
 	 * @since 5.3.24
 	 * @see SimpleBeanInfoFactory
 	 * @see java.beans.Introspector#getBeanInfo(Class)
@@ -123,7 +111,10 @@ abstract class PropertyDescriptorUtils {
 	}
 
 	/**
-	 * See {@link java.beans.FeatureDescriptor}.
+	 * 复制与读/写方法无关的属性特征。
+	 * 参见 {@link java.beans.FeatureDescriptor}。
+	 * @param source 源属性描述符
+	 * @param target 目标属性描述符
 	 */
 	public static void copyNonMethodProperties(PropertyDescriptor source, PropertyDescriptor target) {
 		target.setExpert(source.isExpert());
@@ -133,21 +124,26 @@ abstract class PropertyDescriptorUtils {
 		target.setShortDescription(source.getShortDescription());
 		target.setDisplayName(source.getDisplayName());
 
-		// Copy all attributes (emulating behavior of private FeatureDescriptor#addTable)
+		// 复制全部属性（模拟私有方法 FeatureDescriptor#addTable 的行为）
 		Enumeration<String> keys = source.attributeNames();
 		while (keys.hasMoreElements()) {
 			String key = keys.nextElement();
 			target.setValue(key, source.getValue(key));
 		}
 
-		// See java.beans.PropertyDescriptor#PropertyDescriptor(PropertyDescriptor)
+		// 参见 java.beans.PropertyDescriptor#PropertyDescriptor(PropertyDescriptor)
 		target.setPropertyEditorClass(source.getPropertyEditorClass());
 		target.setBound(source.isBound());
 		target.setConstrained(source.isConstrained());
 	}
 
 	/**
-	 * See {@link java.beans.PropertyDescriptor#findPropertyType}.
+	 * 根据读方法与写方法推断属性类型。
+	 * 参见 {@link java.beans.PropertyDescriptor#findPropertyType}。
+	 * @param readMethod 读方法，可为 {@code null}
+	 * @param writeMethod 写方法，可为 {@code null}
+	 * @return 推断出的属性类型；两者皆无时返回 {@code null}
+	 * @throws IntrospectionException 参数个数或类型不合法时抛出
 	 */
 	public static @Nullable Class<?> findPropertyType(@Nullable Method readMethod, @Nullable Method writeMethod)
 			throws IntrospectionException {
@@ -171,11 +167,11 @@ abstract class PropertyDescriptorUtils {
 			}
 			if (propertyType != null) {
 				if (propertyType.isAssignableFrom(params[0])) {
-					// Write method's property type potentially more specific
+					// 写方法的属性类型可能更具体
 					propertyType = params[0];
 				}
 				else if (params[0].isAssignableFrom(propertyType)) {
-					// Proceed with read method's property type
+					// 继续沿用读方法的属性类型
 				}
 				else {
 					throw new IntrospectionException(
@@ -191,7 +187,14 @@ abstract class PropertyDescriptorUtils {
 	}
 
 	/**
-	 * See {@link java.beans.IndexedPropertyDescriptor#findIndexedPropertyType}.
+	 * 根据索引读/写方法推断索引属性类型，并与非索引属性类型做一致性校验。
+	 * 参见 {@link java.beans.IndexedPropertyDescriptor#findIndexedPropertyType}。
+	 * @param name 属性名
+	 * @param propertyType 非索引属性类型，可为 {@code null}
+	 * @param indexedReadMethod 索引读方法，可为 {@code null}
+	 * @param indexedWriteMethod 索引写方法，可为 {@code null}
+	 * @return 推断出的索引属性类型
+	 * @throws IntrospectionException 参数个数、索引类型或读写类型不一致时抛出
 	 */
 	public static @Nullable Class<?> findIndexedPropertyType(String name, @Nullable Class<?> propertyType,
 			@Nullable Method indexedReadMethod, @Nullable Method indexedWriteMethod) throws IntrospectionException {
@@ -222,11 +225,11 @@ abstract class PropertyDescriptorUtils {
 			}
 			if (indexedPropertyType != null) {
 				if (indexedPropertyType.isAssignableFrom(params[1])) {
-					// Write method's property type potentially more specific
+					// 写方法的属性类型可能更具体
 					indexedPropertyType = params[1];
 				}
 				else if (params[1].isAssignableFrom(indexedPropertyType)) {
-					// Proceed with read method's property type
+					// 继续沿用读方法的属性类型
 				}
 				else {
 					throw new IntrospectionException("Type mismatch between indexed read and write methods: " +
@@ -248,9 +251,11 @@ abstract class PropertyDescriptorUtils {
 	}
 
 	/**
-	 * Compare the given {@code PropertyDescriptors} and return {@code true} if
-	 * they are equivalent, i.e. their read method, write method, property type,
-	 * property editor and flags are equivalent.
+	 * 比较给定的两个 {@code PropertyDescriptor}，若它们等价则返回 {@code true}，
+	 * 即读方法、写方法、属性类型、属性编辑器以及相关标志均等价。
+	 * @param pd 第一个属性描述符
+	 * @param otherPd 第二个属性描述符
+	 * @return 两者是否等价
 	 * @see java.beans.PropertyDescriptor#equals(Object)
 	 */
 	public static boolean equals(PropertyDescriptor pd, PropertyDescriptor otherPd) {
@@ -262,29 +267,33 @@ abstract class PropertyDescriptorUtils {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class BasicPropertyDescriptor — 意图说明
-
-class `BasicPropertyDescriptor`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/PropertyDescriptorUtils.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * PropertyDescriptor for {@link #determineBasicProperties(Class)},
-	 * not performing any early type determination for
-	 * {@link #setReadMethod}/{@link #setWriteMethod}.
+	 * 供 {@link #determineBasicProperties(Class)} 使用的 {@code PropertyDescriptor}，
+	 * 在 {@link #setReadMethod}/{@link #setWriteMethod} 时不做提前类型判定。
 	 * @since 5.3.24
 	 */
 	private static class BasicPropertyDescriptor extends PropertyDescriptor {
 
+		/** 所属 bean 类型，用于解析泛型读写方法的具体类型。 */
 		private final Class<?> beanClass;
 
+		/** 当前选用的读方法。 */
 		private @Nullable Method readMethod;
 
+		/** 当前选用的写方法；在有多个候选写方法时可能延迟解析。 */
 		private @Nullable Method writeMethod;
 
+		/** 候选写方法列表，供延迟选择最匹配者。 */
 		private final List<Method> candidateWriteMethods = new ArrayList<>();
 
+		/**
+		 * 创建基本属性描述符。
+		 * @param propertyName 属性名
+		 * @param beanClass 所属 bean 类型
+		 * @param readMethod 读方法，可为 {@code null}
+		 * @param writeMethod 写方法，可为 {@code null}
+		 * @throws IntrospectionException 父类构造过程中类型不合法时抛出
+		 */
 		public BasicPropertyDescriptor(String propertyName, Class<?> beanClass, @Nullable Method readMethod, @Nullable Method writeMethod)
 				throws IntrospectionException {
 
@@ -292,24 +301,40 @@ class `BasicPropertyDescriptor`：请结合所属模块与调用方理解其在�
 			this.beanClass = beanClass;
 		}
 
+		/**
+		 * 设置读方法（仅缓存引用，不做父类那套提前类型校验）。
+		 */
 		@Override
 		public void setReadMethod(@Nullable Method readMethod) {
 			this.readMethod = readMethod;
 		}
 
+		/**
+		 * 返回当前读方法。
+		 */
 		@Override
 		public @Nullable Method getReadMethod() {
 			return this.readMethod;
 		}
 
+		/**
+		 * 设置写方法（仅缓存引用，不做父类那套提前类型校验）。
+		 */
 		@Override
 		public void setWriteMethod(@Nullable Method writeMethod) {
 			this.writeMethod = writeMethod;
 		}
 
+		/**
+		 * 追加一个候选写方法。
+		 * <p>由于 {@code setWriteMethod()} 会从
+		 * {@code PropertyDescriptor(String, Method, Method)} 构造函数中被调用，
+		 * {@code this.writeMethod} 此时可能非空。
+		 * @param writeMethod 候选写方法
+		 */
 		void addWriteMethod(Method writeMethod) {
-			// Since setWriteMethod() is invoked from the PropertyDescriptor(String, Method, Method)
-			// constructor, this.writeMethod may be non-null.
+			// 由于 setWriteMethod() 会从 PropertyDescriptor(String, Method, Method)
+			// 构造函数中被调用，this.writeMethod 此时可能非空。
 			if (this.writeMethod != null) {
 				this.candidateWriteMethods.add(this.writeMethod);
 				this.writeMethod = null;
@@ -317,6 +342,9 @@ class `BasicPropertyDescriptor`：请结合所属模块与调用方理解其在�
 			this.candidateWriteMethods.add(writeMethod);
 		}
 
+		/**
+		 * 返回写方法；若尚未选定且存在多个候选，则按读方法返回类型挑选最匹配者。
+		 */
 		@Override
 		public @Nullable Method getWriteMethod() {
 			if (this.writeMethod == null && !this.candidateWriteMethods.isEmpty()) {
@@ -327,7 +355,7 @@ class `BasicPropertyDescriptor`：请结合所属模块与调用方理解其在�
 					Class<?> resolvedReadType =
 							ResolvableType.forMethodReturnType(this.readMethod, this.beanClass).toClass();
 					for (Method method : this.candidateWriteMethods) {
-						// 1) Check for an exact match against the resolved types.
+						// 1) 与解析后的类型做精确匹配检查。
 						Class<?> resolvedWriteType =
 								ResolvableType.forMethodParameter(method, 0, this.beanClass).toClass();
 						if (resolvedReadType.equals(resolvedWriteType)) {
@@ -335,18 +363,15 @@ class `BasicPropertyDescriptor`：请结合所属模块与调用方理解其在�
 							break;
 						}
 
-						// 2) Check if the candidate write method's parameter type is compatible with
-						// the read method's return type.
+						// 2) 检查候选写方法的参数类型是否与读方法返回类型兼容。
 						Class<?> parameterType = method.getParameterTypes()[0];
 						if (this.readMethod.getReturnType().isAssignableFrom(parameterType)) {
-							// If we haven't yet found a compatible write method, or if the current
-							// candidate's parameter type is a subtype of the previous candidate's
-							// parameter type, track the current candidate as the write method.
+							// 若尚未找到兼容的写方法，或当前候选的参数类型是先前候选
+							// 参数类型的子类型，则将当前候选记为写方法。
 							if (this.writeMethod == null ||
 									this.writeMethod.getParameterTypes()[0].isAssignableFrom(parameterType)) {
 								this.writeMethod = method;
-								// We do not "break" here, since we need to compare the current candidate
-								// with all remaining candidates.
+								// 此处不 break，还需与剩余候选继续比较。
 							}
 						}
 					}

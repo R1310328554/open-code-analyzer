@@ -17,13 +17,11 @@
 package org.springframework.beans;
 
 /**
- * Interface for strategies that register custom
- * {@link java.beans.PropertyEditor property editors} with a
- * {@link org.springframework.beans.PropertyEditorRegistry property editor registry}.
+ * 策略接口：向 {@link org.springframework.beans.PropertyEditorRegistry 属性编辑器注册表}
+ * 注册自定义 {@link java.beans.PropertyEditor 属性编辑器}。
  *
- * <p>This is particularly useful when you need to use the same set of
- * property editors in several situations: write a corresponding
- * registrar and reuse that in each case.
+ * <p>当需要在多种场景下复用同一组属性编辑器时特别有用：
+ * 编写一个对应的注册器，并在各处复用即可。
  *
  * @author Juergen Hoeller
  * @since 1.2.6
@@ -33,23 +31,23 @@ package org.springframework.beans;
 public interface PropertyEditorRegistrar {
 
 	/**
-	 * Register custom {@link java.beans.PropertyEditor PropertyEditors} with
-	 * the given {@code PropertyEditorRegistry}.
-	 * <p>The passed-in registry will usually be a {@link BeanWrapper} or a
-	 * {@link org.springframework.validation.DataBinder DataBinder}.
-	 * <p>It is expected that implementations will create brand new
-	 * {@code PropertyEditors} instances for each invocation of this
-	 * method (since {@code PropertyEditors} are not threadsafe).
-	 * @param registry the {@code PropertyEditorRegistry} to register the
-	 * custom {@code PropertyEditors} with
+	 * 向给定的 {@code PropertyEditorRegistry} 注册自定义
+	 * {@link java.beans.PropertyEditor PropertyEditor}。
+	 * <p>传入的注册表通常是 {@link BeanWrapper} 或
+	 * {@link org.springframework.validation.DataBinder DataBinder}。
+	 * <p>实现类应在每次调用本方法时创建全新的
+	 * {@code PropertyEditor} 实例（因为 {@code PropertyEditor} 不是线程安全的）。
+	 * @param registry 用于注册自定义 {@code PropertyEditor} 的
+	 * {@code PropertyEditorRegistry}
 	 */
 	void registerCustomEditors(PropertyEditorRegistry registry);
 
 	/**
-	 * Indicate whether this registrar exclusively overrides default editors
-	 * rather than registering custom editors, intended to be applied lazily.
-	 * <p>This has an impact on registrar handling in a bean factory: see
-	 * {@link org.springframework.beans.factory.config.ConfigurableBeanFactory#addPropertyEditorRegistrar}.
+	 * 表明本注册器是否仅覆盖默认编辑器，而不是注册自定义编辑器，
+	 * 并意图被延迟应用。
+	 * <p>这会影响 bean 工厂中对注册器的处理，参见
+	 * {@link org.springframework.beans.factory.config.ConfigurableBeanFactory#addPropertyEditorRegistrar}。
+	 * @return 若仅覆盖默认编辑器则返回 {@code true}；否则返回 {@code false}
 	 * @since 6.2.3
 	 * @see PropertyEditorRegistry#registerCustomEditor
 	 * @see PropertyEditorRegistrySupport#overrideDefaultEditor

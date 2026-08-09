@@ -26,13 +26,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Combined exception, composed of individual PropertyAccessException instances.
- * An object of this class is created at the beginning of the binding
- * process, and errors added to it as necessary.
+ * 组合异常，由若干独立的 {@link PropertyAccessException} 组成。
+ * 绑定过程开始时会创建本类实例，并在需要时向其中追加错误。
  *
- * <p>The binding process continues when it encounters application-level
- * PropertyAccessExceptions, applying those changes that can be applied
- * and storing rejected changes in an object of this class.
+ * <p>遇到应用层 {@code PropertyAccessException} 时绑定仍会继续：
+ * 能成功应用的变更照常生效，被拒绝的变更则记录在本类对象中。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -41,13 +39,13 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public class PropertyBatchUpdateException extends BeansException {
 
-	/** List of PropertyAccessException objects. */
+	/** 所包含的 PropertyAccessException 对象列表。 */
 	private final PropertyAccessException[] propertyAccessExceptions;
 
 
 	/**
-	 * Create a new PropertyBatchUpdateException.
-	 * @param propertyAccessExceptions the List of PropertyAccessExceptions
+	 * 创建一个新的 {@code PropertyBatchUpdateException}。
+	 * @param propertyAccessExceptions PropertyAccessException 列表
 	 */
 	public PropertyBatchUpdateException(PropertyAccessException[] propertyAccessExceptions) {
 		super(null, null);
@@ -57,22 +55,24 @@ public class PropertyBatchUpdateException extends BeansException {
 
 
 	/**
-	 * If this returns 0, no errors were encountered during binding.
+	 * 返回异常数量。若返回 0，表示绑定过程中未遇到错误。
 	 */
 	public final int getExceptionCount() {
 		return this.propertyAccessExceptions.length;
 	}
 
 	/**
-	 * Return an array of the propertyAccessExceptions stored in this object.
-	 * <p>Will return the empty array (not {@code null}) if there were no errors.
+	 * 返回本对象中保存的 {@code propertyAccessExceptions} 数组。
+	 * <p>若没有错误，返回空数组（而非 {@code null}）。
 	 */
 	public final PropertyAccessException[] getPropertyAccessExceptions() {
 		return this.propertyAccessExceptions;
 	}
 
 	/**
-	 * Return the exception for this field, or {@code null} if there isn't any.
+	 * 返回指定字段对应的异常；若不存在则返回 {@code null}。
+	 * @param propertyName 属性名
+	 * @return 该属性对应的 PropertyAccessException；没有则返回 {@code null}
 	 */
 	public @Nullable PropertyAccessException getPropertyAccessException(String propertyName) {
 		for (PropertyAccessException pae : this.propertyAccessExceptions) {
@@ -84,6 +84,9 @@ public class PropertyBatchUpdateException extends BeansException {
 	}
 
 
+	/**
+	 * 返回汇总后的详细消息，包含所有嵌套的属性访问异常信息。
+	 */
 	@Override
 	public String getMessage() {
 		StringJoiner stringJoiner = new StringJoiner("; ", "Failed properties: ", "");
@@ -93,6 +96,9 @@ public class PropertyBatchUpdateException extends BeansException {
 		return stringJoiner.toString();
 	}
 
+	/**
+	 * 返回包含嵌套异常概要的字符串表示。
+	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -105,6 +111,9 @@ public class PropertyBatchUpdateException extends BeansException {
 		return sb.toString();
 	}
 
+	/**
+	 * 将本异常及全部嵌套 {@code PropertyAccessException} 的堆栈打印到指定流。
+	 */
 	@Override
 	public void printStackTrace(PrintStream ps) {
 		synchronized (ps) {
@@ -117,6 +126,9 @@ public class PropertyBatchUpdateException extends BeansException {
 		}
 	}
 
+	/**
+	 * 将本异常及全部嵌套 {@code PropertyAccessException} 的堆栈打印到指定 Writer。
+	 */
 	@Override
 	public void printStackTrace(PrintWriter pw) {
 		synchronized (pw) {
@@ -129,6 +141,9 @@ public class PropertyBatchUpdateException extends BeansException {
 		}
 	}
 
+	/**
+	 * 判断本异常或其嵌套的 {@code PropertyAccessException} 是否包含指定类型。
+	 */
 	@Override
 	public boolean contains(@Nullable Class<?> exType) {
 		if (exType == null) {
