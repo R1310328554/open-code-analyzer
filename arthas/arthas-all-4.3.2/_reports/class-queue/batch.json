@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T22:07:07Z",
   "files": [
-    "client/src/main/java/org/apache/commons/net/DefaultDatagramSocketFactory.java",
-    "client/src/main/java/org/apache/commons/net/DefaultSocketFactory.java",
-    "client/src/main/java/org/apache/commons/net/MalformedServerReplyException.java",
-    "client/src/main/java/org/apache/commons/net/PrintCommandListener.java",
-    "client/src/main/java/org/apache/commons/net/ProtocolCommandEvent.java",
-    "client/src/main/java/org/apache/commons/net/ProtocolCommandListener.java",
-    "client/src/main/java/org/apache/commons/net/ProtocolCommandSupport.java",
-    "client/src/main/java/org/apache/commons/net/SocketClient.java",
-    "client/src/main/java/org/apache/commons/net/telnet/EchoOptionHandler.java",
-    "client/src/main/java/org/apache/commons/net/telnet/InvalidTelnetOptionException.java",
-    "client/src/main/java/org/apache/commons/net/telnet/SimpleOptionHandler.java",
-    "client/src/main/java/org/apache/commons/net/telnet/SuppressGAOptionHandler.java",
-    "client/src/main/java/org/apache/commons/net/telnet/Telnet.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetClient.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetCommand.java",
     "client/src/main/java/org/apache/commons/net/telnet/TelnetInputListener.java",
     "client/src/main/java/org/apache/commons/net/telnet/TelnetInputStream.java",
     "client/src/main/java/org/apache/commons/net/telnet/TelnetNotificationHandler.java",
@@ -33,5 +18,5 @@
     "common/src/main/java/com/taobao/arthas/common/JavaVersionUtils.java"
   ],
   "remaining_pending": 645,
-  "done": 120
+  "done": 135
 }
