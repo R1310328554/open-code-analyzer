@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:59:06Z",
-  "files": [
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/ArthasProperties.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/EmbeddedRedisConfiguration.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/TunnelClusterStoreConfiguration.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/TunnelServerConfiguration.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/ClusterController.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/DetailAPIController.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/ProxyController.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/StatController.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/cluster/InMemoryClusterStore.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/cluster/RedisTunnelClusterStore.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/cluster/TunnelClusterStore.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/endpoint/ArthasEndPointAutoconfiguration.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/endpoint/ArthasEndpoint.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/utils/HttpUtils.java",
-    "tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/utils/InetAddressUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 780
+  "done": 795
 }

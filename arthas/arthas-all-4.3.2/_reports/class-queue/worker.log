@@ -763,3 +763,18 @@
 2026-08-09T22:58:48Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/TunnelSocketServerInitializer.java wave26b [15:30]
 2026-08-09T22:58:48Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/ArthasTunnelApplication.java wave26b [15:30]
 2026-08-09T22:58:48Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/WebSecurityConfig.java wave26b [15:30]
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/ArthasProperties.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/EmbeddedRedisConfiguration.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/TunnelClusterStoreConfiguration.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/configuration/TunnelServerConfiguration.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/ClusterController.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/DetailAPIController.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/ProxyController.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/app/web/StatController.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/cluster/InMemoryClusterStore.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/cluster/RedisTunnelClusterStore.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/cluster/TunnelClusterStore.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/endpoint/ArthasEndPointAutoconfiguration.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/endpoint/ArthasEndpoint.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/utils/HttpUtils.java wave27a [0:15] final
+2026-08-09T23:00:01Z DONE tunnel-server/src/main/java/com/alibaba/arthas/tunnel/server/utils/InetAddressUtil.java wave27a [0:15] final
