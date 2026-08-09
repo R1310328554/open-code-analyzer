@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:26:17Z",
-  "files": [
-    "core/src/main/java/com/taobao/arthas/core/env/EnumerablePropertySource.java",
-    "core/src/main/java/com/taobao/arthas/core/env/Environment.java",
-    "core/src/main/java/com/taobao/arthas/core/env/MapPropertySource.java",
-    "core/src/main/java/com/taobao/arthas/core/env/MissingRequiredPropertiesException.java",
-    "core/src/main/java/com/taobao/arthas/core/env/MutablePropertySources.java",
-    "core/src/main/java/com/taobao/arthas/core/env/PropertiesPropertySource.java",
-    "core/src/main/java/com/taobao/arthas/core/env/PropertyPlaceholderHelper.java",
-    "core/src/main/java/com/taobao/arthas/core/env/PropertyResolver.java",
-    "core/src/main/java/com/taobao/arthas/core/env/PropertySource.java",
-    "core/src/main/java/com/taobao/arthas/core/env/PropertySources.java",
-    "core/src/main/java/com/taobao/arthas/core/env/PropertySourcesPropertyResolver.java",
-    "core/src/main/java/com/taobao/arthas/core/env/ReadOnlySystemAttributesMap.java",
-    "core/src/main/java/com/taobao/arthas/core/env/SystemEnvironmentPropertySource.java",
-    "core/src/main/java/com/taobao/arthas/core/env/SystemPropertyUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/env/convert/ConfigurableConversionService.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 375,
-  "done": 405
+  "done": 420
 }
