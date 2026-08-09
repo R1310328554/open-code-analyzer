@@ -13,9 +13,12 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * 
- * @author hengyunabc 2015年12月7日 下午2:29:28
+ * 线程枚举、堆栈格式化与 EagleEye 链路信息提取工具。
+ * <p>
+ * 供 thread、stack、profiler 等命令获取 JVM 全量线程、阻塞锁分析、
+ * 带 CPU 占用的堆栈文本，以及过滤 Spy 框架帧后的业务调用栈。
  *
+ * @author hengyunabc 2015年12月7日 下午2:29:28
  */
 abstract public class ThreadUtil {
 
@@ -26,6 +29,7 @@ abstract public class ThreadUtil {
     private static boolean detectedEagleEye = false;
     public static boolean foundEagleEye = false;
 
+    /** 沿 ThreadGroup 父链向上找到根线程组。 */
     public static ThreadGroup getRoot() {
         ThreadGroup group = Thread.currentThread().getThreadGroup();
         ThreadGroup parent;
@@ -54,6 +58,7 @@ abstract public class ThreadUtil {
         return list;
     }
 
+    /** 将 {@link Thread} 转为命令层 {@link ThreadVO}。 */
     private static ThreadVO createThreadVO(Thread thread) {
         ThreadGroup group = thread.getThreadGroup();
         ThreadVO threadVO = new ThreadVO();
@@ -89,20 +94,18 @@ abstract public class ThreadUtil {
 
 
     /**
-     * Find the thread and lock that is blocking the most other threads.
+     * 找出阻塞线程数最多的锁及其持有线程。
+     * <p>时间复杂度 O(线程数)，空间复杂度 O(锁数量)。</p>
      *
-     * Time complexity of this algorithm: O(number of thread)
-     * Space complexity of this algorithm: O(number of locks)
-     *
-     * @return the BlockingLockInfo object, or an empty object if not found.
+     * @return 阻塞锁信息；未找到时返回空对象
      */
     public static BlockingLockInfo findMostBlockingLock() {
         ThreadInfo[] infos = threadMXBean.dumpAllThreads(threadMXBean.isObjectMonitorUsageSupported(),
                 threadMXBean.isSynchronizerUsageSupported());
 
-        // a map of <LockInfo.getIdentityHashCode, number of thread blocking on this>
+        // 锁 identityHashCode -> 等待该锁的线程数
         Map<Integer, Integer> blockCountPerLock = new HashMap<Integer, Integer>();
-        // a map of <LockInfo.getIdentityHashCode, the thread info that holding this lock
+        // 锁 identityHashCode -> 当前持有该锁的 ThreadInfo
         Map<Integer, ThreadInfo> ownerThreadPerLock = new HashMap<Integer, ThreadInfo>();
 
         for (ThreadInfo info: infos) {
@@ -112,7 +115,7 @@ abstract public class ThreadUtil {
 
             LockInfo lockInfo = info.getLockInfo();
             if (lockInfo != null) {
-                // the current thread is blocked waiting on some condition
+                // 当前线程正在等待某锁/条件
                 if (blockCountPerLock.get(lockInfo.getIdentityHashCode()) == null) {
                     blockCountPerLock.put(lockInfo.getIdentityHashCode(), 0);
                 }
@@ -121,33 +124,33 @@ abstract public class ThreadUtil {
             }
 
             for (MonitorInfo monitorInfo: info.getLockedMonitors()) {
-                // the object monitor currently held by this thread
+                // 当前线程持有的对象监视器
                 if (ownerThreadPerLock.get(monitorInfo.getIdentityHashCode()) == null) {
                     ownerThreadPerLock.put(monitorInfo.getIdentityHashCode(), info);
                 }
             }
 
             for (LockInfo lockedSync: info.getLockedSynchronizers()) {
-                // the ownable synchronizer currently held by this thread
+                // 当前线程持有的可拥有同步器（如 ReentrantLock）
                 if (ownerThreadPerLock.get(lockedSync.getIdentityHashCode()) == null) {
                     ownerThreadPerLock.put(lockedSync.getIdentityHashCode(), info);
                 }
             }
         }
 
-        // find the thread that is holding the lock that blocking the largest number of threads.
+        // 选取阻塞线程数最多且确有持有者的那把锁
         int mostBlockingLock = 0; // System.identityHashCode(null) == 0
         int maxBlockingCount = 0;
         for (Map.Entry<Integer, Integer> entry: blockCountPerLock.entrySet()) {
             if (entry.getValue() > maxBlockingCount && ownerThreadPerLock.get(entry.getKey()) != null) {
-                // the lock is explicitly held by anther thread.
+                // 该锁已被其他线程显式持有
                 maxBlockingCount = entry.getValue();
                 mostBlockingLock = entry.getKey();
             }
         }
 
         if (mostBlockingLock == 0) {
-            // nothing found
+            // 未发现符合条件的阻塞锁
             return EMPTY_INFO;
         }
 
@@ -159,10 +162,12 @@ abstract public class ThreadUtil {
     }
 
 
+    /** 格式化 {@link ThreadInfo} 完整堆栈（无 CPU/锁高亮）。 */
     public static String getFullStacktrace(ThreadInfo threadInfo) {
         return getFullStacktrace(threadInfo, -1, -1, -1, 0, 0);
     }
 
+    /** 格式化持有最多阻塞锁的线程堆栈并高亮锁信息。 */
     public static String getFullStacktrace(BlockingLockInfo blockingLockInfo) {
         return getFullStacktrace(blockingLockInfo.getThreadInfo(), -1, -1, -1, blockingLockInfo.getLockIdentityHashCode(),
                 blockingLockInfo.getBlockingThreadCount());
@@ -265,6 +270,7 @@ abstract public class ThreadUtil {
         return sb.toString().replace("\t", "    ");
     }
 
+    /** 格式化 {@link BusyThreadInfo} 堆栈，可标注阻塞其他线程的锁。 */
     public static String getFullStacktrace(BusyThreadInfo threadInfo, int lockIdentityHashCode, int blockingThreadCount) {
         if (threadInfo == null) {
             return "";
@@ -378,6 +384,7 @@ abstract public class ThreadUtil {
      */
     private static int MAGIC_STACK_DEPTH = 0;
 
+    /** 定位 {@link SpyAPI} 在堆栈中的深度，用于裁剪 Arthas 探针帧。 */
     private static int findTheSpyAPIDepth(StackTraceElement[] stackTraceElementArray) {
         if (MAGIC_STACK_DEPTH > 0) {
             return MAGIC_STACK_DEPTH;
@@ -410,7 +417,7 @@ abstract public class ThreadUtil {
         getEagleeyeTraceInfo(loader, currentThread, stackModel);
 
 
-        //stack
+        // 裁剪 Spy 探针帧后的业务堆栈
         StackTraceElement[] stackTraceElementArray = currentThread.getStackTrace();
         int magicStackDepth = findTheSpyAPIDepth(stackTraceElementArray);
         StackTraceElement[] actualStackFrames = new StackTraceElement[stackTraceElementArray.length - magicStackDepth];
@@ -419,6 +426,7 @@ abstract public class ThreadUtil {
         return stackModel;
     }
 
+    /** 构建含 traceId/rpcId 的 {@link ThreadNode}（不含完整堆栈）。 */
     public static ThreadNode getThreadNode(ClassLoader loader, Thread currentThread) {
         ThreadNode threadNode = new ThreadNode();
         threadNode.setThreadId(currentThread.getId());
@@ -427,7 +435,7 @@ abstract public class ThreadUtil {
         threadNode.setPriority(currentThread.getPriority());
         threadNode.setClassloader(getTCCL(currentThread));
 
-        //trace_id
+        // 附加 EagleEye trace 信息
         StackModel stackModel = new StackModel();
         getEagleeyeTraceInfo(loader, currentThread, stackModel);
         threadNode.setTraceId(stackModel.getTraceId());
@@ -435,6 +443,7 @@ abstract public class ThreadUtil {
         return threadNode;
     }
 
+    /** 生成 thread 命令输出的线程标题行（名称、id、TCCL、trace 等）。 */
     public static String getThreadTitle(StackModel stackModel) {
         StringBuilder sb = new StringBuilder("thread_name=");
         sb.append(stackModel.getThreadName())
@@ -451,6 +460,7 @@ abstract public class ThreadUtil {
         return sb.toString();
     }
 
+    /** 返回线程上下文 ClassLoader 的类名@hash 描述。 */
     private static String getTCCL(Thread currentThread) {
         ClassLoader contextClassLoader = currentThread.getContextClassLoader();
         if (null == contextClassLoader) {
@@ -462,6 +472,7 @@ abstract public class ThreadUtil {
         }
     }
 
+    /** 反射调用 EagleEye 获取 traceId 与 rpcId（若 classpath 存在）。 */
     private static void getEagleeyeTraceInfo(ClassLoader loader, Thread currentThread, StackModel stackModel) {
         if(loader == null) {
             return;

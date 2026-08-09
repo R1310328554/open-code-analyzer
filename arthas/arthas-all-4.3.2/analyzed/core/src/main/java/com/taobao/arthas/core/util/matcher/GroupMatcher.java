@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
+ * 可组合多个子 {@link Matcher} 的组匹配器接口。
+ * <p>提供 {@link And} 与 {@link Or} 两种逻辑组合实现。</p>
  * @author ralf0131 2017-01-06 13:29.
  */
 public interface GroupMatcher<T> extends Matcher<T> {
@@ -35,6 +37,7 @@ public interface GroupMatcher<T> extends Matcher<T> {
             this.matchers = Arrays.asList(matchers);
         }
 
+        /** 全部子匹配器成功才返回 true。 */
         @Override
         public boolean matching(T target) {
             for (Matcher<T> matcher : matchers) {
@@ -60,6 +63,7 @@ public interface GroupMatcher<T> extends Matcher<T> {
 
         private final Collection<Matcher<T>> matchers;
 
+        /** 空 OR 组，可通过 {@link #add} 动态追加。 */
         public Or() {
             this.matchers = new ArrayList<Matcher<T>>();
         }
@@ -74,10 +78,12 @@ public interface GroupMatcher<T> extends Matcher<T> {
             this.matchers = Arrays.asList(matchers);
         }
 
+        /** 使用已有匹配器集合构造 OR 组。 */
         public Or(Collection<Matcher<T>> matchers) {
             this.matchers = matchers;
         }
 
+        /** 任一子匹配器成功即返回 true。 */
         @Override
         public boolean matching(T target) {
             for (Matcher<T> matcher : matchers) {

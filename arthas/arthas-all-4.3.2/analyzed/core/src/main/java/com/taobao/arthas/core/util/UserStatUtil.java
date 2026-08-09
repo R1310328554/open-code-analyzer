@@ -11,8 +11,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Arthas 使用情况统计
- * <p/>
+ * Arthas 使用情况异步上报工具。
+ * <p>
+ * 在独立守护线程中向配置的 statUrl 发送启动与命令执行统计，
+ * 包含 IP、版本、agentId 与命令参数；失败静默忽略。
+ * </p>
  * Created by zhuyong on 15/11/12.
  */
 public class UserStatUtil {
@@ -37,22 +40,27 @@ public class UserStatUtil {
 
     private static volatile String agentId = null;
 
+    /** 统计上报 URL。 */
     public static String getStatUrl() {
         return statUrl;
     }
 
+    /** 设置统计上报地址。 */
     public static void setStatUrl(String url) {
         statUrl = url;
     }
 
+    /** 当前 Agent 实例 id。 */
     public static String getAgentId() {
         return agentId;
     }
 
+    /** 设置 Agent id，随上报携带。 */
     public static void setAgentId(String id) {
         agentId = id;
     }
 
+    /** 异步上报 Agent 启动事件。 */
     public static void arthasStart() {
         if (statUrl == null) {
             return;
@@ -72,6 +80,7 @@ public class UserStatUtil {
         }
     }
 
+    /** 构造并异步提交命令使用上报任务。 */
     private static void arthasUsage(String cmd, String detail, String userId) {
         RemoteJob job = new RemoteJob();
         job.appendQueryData("ip", ip);
@@ -95,11 +104,11 @@ public class UserStatUtil {
     }
 
     /**
-     * Report command usage with userId
-     * 
-     * @param cmd command name
-     * @param args command arguments
-     * @param userId user id
+     * 上报命令成功执行及完整参数字符串。
+     *
+     * @param cmd 命令名
+     * @param args 参数列表
+     * @param userId 用户标识，可为 null
      */
     public static void arthasUsageSuccess(String cmd, List<String> args, String userId) {
         if (statUrl == null) {
@@ -112,6 +121,7 @@ public class UserStatUtil {
         UserStatUtil.arthasUsage(cmd, commandString.toString(), userId);
     }
 
+    /** 上报命令成功执行（无 userId）。 */
     public static void arthasUsageSuccess(String cmd, List<String> args) {
         arthasUsageSuccess(cmd, args, null);
     }
@@ -121,9 +131,11 @@ public class UserStatUtil {
         executorService.shutdownNow();
     }
 
+    /** 后台 HTTP GET 上报任务，读尽响应体后丢弃。 */
     static class RemoteJob implements Runnable {
         private StringBuilder queryData = new StringBuilder();
 
+        /** 追加 URL 查询参数键值对。 */
         public void appendQueryData(String key, String value) {
             if (key != null && value != null) {
                 if (queryData.length() == 0) {
@@ -153,7 +165,7 @@ public class UserStatUtil {
                 inputStream = connection.getInputStream();
                 //noinspection StatementWithEmptyBody
                 while (inputStream.read(SKIP_BYTE_BUFFER) != -1) {
-                    // do nothing
+                    // 丢弃响应体，仅完成请求                    // do nothing
                 }
             } catch (Throwable t) {
                 // ignore

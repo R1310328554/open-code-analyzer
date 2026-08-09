@@ -20,46 +20,59 @@ import java.util.List;
 import static com.taobao.text.ui.Element.label;
 
 /**
+ * 类/字段/方法信息的文本与 TUI 树形渲染工具。
+ * <p>将反射元数据格式化为 sc -d、jad 等命令的表格与树形输出。</p>
+ *
  * @author beiwei30 on 24/11/2016.
  */
 public class TypeRenderUtils {
 
+    /** 逗号连接类实现的全部接口名。 */
     public static String drawInterface(Class<?> clazz) {
         return StringUtils.concat(",", clazz.getInterfaces());
     }
 
+    /** 方法参数类型列表，换行分隔。 */
     public static String drawParameters(Method method) {
         return StringUtils.concat("\n", method.getParameterTypes());
     }
 
+    /** 构造器参数类型列表，换行分隔。 */
     public static String drawParameters(Constructor constructor) {
         return StringUtils.concat("\n", constructor.getParameterTypes());
     }
 
+    /** 已格式化的参数类型名数组，换行连接。 */
     public static String drawParameters(String[] parameterTypes) {
         return StringUtils.concat("\n", parameterTypes);
     }
 
+    /** 方法返回类型的可读类名。 */
     public static String drawReturn(Method method) {
         return StringUtils.classname(method.getReturnType());
     }
 
+    /** 方法 throws 子句中的异常类型，换行分隔。 */
     public static String drawExceptions(Method method) {
         return StringUtils.concat("\n", method.getExceptionTypes());
     }
 
+    /** 构造器声明异常，换行分隔。 */
     public static String drawExceptions(Constructor constructor) {
         return StringUtils.concat("\n", constructor.getExceptionTypes());
     }
 
+    /** 异常类型名数组，换行连接。 */
     public static String drawExceptions(String[] exceptionTypes) {
         return StringUtils.concat("\n", exceptionTypes);
     }
 
+    /** 父类继承链渲染为树形 {@link Element}。 */
     public static Element drawSuperClass(ClassDetailVO clazz) {
         return drawTree(clazz.getSuperClass());
     }
 
+    /** ClassLoader 层级链格式化为树。 */
     public static Element drawClassLoader(ClassVO clazz) {
         String[] classloaders = clazz.getClassloader();
         if (classloaders == null) {
@@ -72,6 +85,7 @@ public class TypeRenderUtils {
         return drawTree(formattedClassloaders);
     }
 
+    /** 将字符串数组逐级嵌套为 {@link TreeElement}。 */
     public static Element drawTree(String[] nodes) {
         TreeElement root = new TreeElement();
         TreeElement parent = root;
@@ -83,6 +97,7 @@ public class TypeRenderUtils {
         return root;
     }
 
+    /** 渲染类的字段表格（含注解与 static 字段值）。 */
     public static Element drawField(ClassDetailVO clazz) {
         TableElement fieldsTable = new TableElement(1).leftCellPadding(0).rightCellPadding(0);
         FieldVO[] fields = clazz.getFields();
@@ -114,14 +129,17 @@ public class TypeRenderUtils {
         return fieldsTable;
     }
 
+    /** 逗号连接注解类型名。 */
     public static String drawAnnotation(String... annotations) {
         return StringUtils.concat(",", annotations);
     }
 
+    /** 获取类声明注解的可读名数组。 */
     public static String[] getAnnotations(Class<?> clazz) {
         return getAnnotations(clazz.getDeclaredAnnotations());
     }
 
+    /** 注解实例数组转类型名列表。 */
     public static String[] getAnnotations(Annotation[] annotations) {
         List<String> list = new ArrayList<String>();
         if (annotations != null && annotations.length > 0) {
@@ -132,11 +150,13 @@ public class TypeRenderUtils {
         return list.toArray(new String[0]);
     }
 
+    /** 类直接实现的接口全名列表。 */
     public static String[] getInterfaces(Class clazz) {
         Class[] interfaces = clazz.getInterfaces();
         return ClassUtils.getClassNameList(interfaces);
     }
 
+    /** 从直接父类到 Object 的继承链。 */
     public static String[] getSuperClass(Class clazz) {
         List<String> list = new ArrayList<String>();
         Class<?> superClass = clazz.getSuperclass();
@@ -153,6 +173,7 @@ public class TypeRenderUtils {
         return list.toArray(new String[0]);
     }
 
+    /** 从定义该类的 loader 到 bootstrap 的层级描述。 */
     public static String[] getClassloader(Class clazz) {
         List<String> list = new ArrayList<String>();
         ClassLoader loader = clazz.getClassLoader();
@@ -169,6 +190,7 @@ public class TypeRenderUtils {
         return list.toArray(new String[0]);
     }
 
+    /** 反射收集声明字段并封装为 {@link FieldVO} 数组。 */
     public static FieldVO[] getFields(Class clazz, Integer expand) {
         Field[] fields = clazz.getDeclaredFields();
         if (fields.length == 0) {
@@ -193,6 +215,7 @@ public class TypeRenderUtils {
         return list.toArray(new FieldVO[0]);
     }
 
+    /** 读取 static 字段值，临时放宽 accessible。 */
     private static Object getFieldValue(Field field) {
         final boolean isAccessible = field.isAccessible();
         try {

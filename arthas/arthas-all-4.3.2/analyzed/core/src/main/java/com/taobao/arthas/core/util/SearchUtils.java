@@ -11,7 +11,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 类搜索工具
+ * 基于 {@link Instrumentation} 的已加载类搜索工具。
+ * <p>
+ * 支持通配符/正则类名匹配、子类扩展、ClassLoader hash 过滤及内部类检索，
+ * 供 sc、sm、watch 等命令在 JVM 内快速定位目标类。
  * Created by vlinux on 15/5/17.
  * @author diecui1202 on 2017/09/07.
  */
@@ -44,36 +47,49 @@ public class SearchUtils {
         return matches;
     }
 
+    /** 无数量上限地搜索与匹配器相符的已加载类。 */
     public static Set<Class<?>> searchClass(Instrumentation inst, Matcher<String> classNameMatcher) {
         return searchClass(inst, classNameMatcher, Integer.MAX_VALUE);
     }
 
+    /**
+     * 按类名模式搜索；若未禁用子类扩展则一并纳入匹配类的子类型。
+     *
+     * @param inst Instrumentation
+     * @param classPattern 类名通配符或正则
+     * @param isRegEx true 使用正则，false 使用通配符
+     */
     public static Set<Class<?>> searchClass(Instrumentation inst, String classPattern, boolean isRegEx) {
         Matcher<String> classNameMatcher = classNameMatcher(classPattern, isRegEx);
         return GlobalOptions.isDisableSubClass ? searchClass(inst, classNameMatcher) :
                 searchSubClass(inst, searchClass(inst, classNameMatcher));
     }
 
+    /** 在类名匹配基础上，再按 ClassLoader 十六进制 hash 过滤结果。 */
     public static Set<Class<?>> searchClass(Instrumentation inst, String classPattern, boolean isRegEx, String code) {
         Set<Class<?>> matchedClasses = searchClass(inst, classPattern, isRegEx);
         return filter(matchedClasses, code);
     }
 
+    /** 仅匹配类名本身，不扩展子类。 */
     public static Set<Class<?>> searchClassOnly(Instrumentation inst, String classPattern, boolean isRegEx) {
         Matcher<String> classNameMatcher = classNameMatcher(classPattern, isRegEx);
         return searchClass(inst, classNameMatcher);
     }
 
+    /** 通配符匹配类名，并限制最大返回数量。 */
     public static Set<Class<?>> searchClassOnly(Instrumentation inst, String classPattern, int limit) {
         Matcher<String> classNameMatcher = classNameMatcher(classPattern, false);
         return searchClass(inst, classNameMatcher, limit);
     }
 
+    /** 类名匹配 + ClassLoader hash 过滤，不扩展子类。 */
     public static Set<Class<?>> searchClassOnly(Instrumentation inst, String classPattern, boolean isRegEx, String code) {
         Set<Class<?>> matchedClasses = searchClassOnly(inst, classPattern, isRegEx);
         return filter(matchedClasses, code);
     }
 
+    /** 按 ClassLoader {@code hashCode()} 十六进制串过滤类集合。 */
     private static Set<Class<?>> filter(Set<Class<?>> matchedClasses, String code) {
         if (code == null) {
             return matchedClasses;
@@ -90,6 +106,11 @@ public class SearchUtils {
         return result;
     }
 
+    /**
+     * 根据模式串构造类名 {@link Matcher}。
+     * <p>空模式时：正则默认为 {@code .*}，通配符默认为 {@code *}；
+     * 非 Lambda 类名将 {@code /} 规范为 {@code .}。
+     */
     public static Matcher<String> classNameMatcher(String classPattern, boolean isRegEx) {
         if (StringUtils.isEmpty(classPattern)) {
             classPattern = isRegEx ? ".*" : "*";

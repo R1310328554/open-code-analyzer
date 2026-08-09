@@ -1,8 +1,11 @@
 package com.taobao.arthas.core.util;
 
 /**
- * 简单的调用计时器。
- * 
+ * 基于 ThreadLocal 的轻量级纳秒计时器。
+ * <p>
+ * 使用固定大小 long 环形栈记录时间戳，避免在业务线程 ThreadLocal 中持有
+ * ArthasClassLoader 加载的对象，便于 Agent detach 后回收。
+ *
  * @author vlinux 16/6/1.
  * @author hengyunabc 2016-10-31
  */
@@ -21,20 +24,24 @@ public class ThreadLocalWatch {
     private static final int DEFAULT_STACK_SIZE = 1024 * 4;
     private final ThreadLocal<long[]> timestampRef = ThreadLocal.withInitial(() -> new long[DEFAULT_STACK_SIZE + 1]);
 
+    /** 记录当前纳秒时间并入栈，返回该时间戳。 */
     public long start() {
         final long timestamp = System.nanoTime();
         push(timestampRef.get(), timestamp);
         return timestamp;
     }
 
+    /** 弹出栈顶时间戳并返回与当前的纳秒差值。 */
     public long cost() {
         return (System.nanoTime() - pop(timestampRef.get()));
     }
 
+    /** 同 {@link #cost()}，结果转换为毫秒。 */
     public double costInMillis() {
         return (System.nanoTime() - pop(timestampRef.get())) / 1000000.0;
     }
 
+    /** 窥视栈顶时间戳计算耗时，不弹出栈。 */
     public double costInMillisWithoutPop() {
         long timestamp = peek(timestampRef.get());
         if (timestamp == 0) {
@@ -62,7 +69,7 @@ public class ThreadLocalWatch {
         if (pos < cap) {
             pos++;
         } else {
-            // if stack is full, reset pos
+            // 栈满时回绕到索引 1，牺牲精确性换取 bounded 内存            // if stack is full, reset pos
             pos = 1;
         }
         stack[pos] = value;
