@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:40:25Z",
   "files": [
-    "redisson/src/main/java/org/redisson/liveobject/core/RMapInterceptor.java",
-    "redisson/src/main/java/org/redisson/liveobject/core/RedissonObjectBuilder.java",
-    "redisson/src/main/java/org/redisson/liveobject/misc/AdvBeanCopy.java",
-    "redisson/src/main/java/org/redisson/liveobject/misc/ClassUtils.java",
-    "redisson/src/main/java/org/redisson/liveobject/misc/Introspectior.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/AbstractNamingScheme.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/DefaultNamingScheme.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/LongGenerator.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/MapResolver.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/NamingScheme.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/RIdResolver.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/RequiredIdResolver.java",
-    "redisson/src/main/java/org/redisson/liveobject/resolver/UUIDGenerator.java",
-    "redisson/src/main/java/org/redisson/mapreduce/BaseMapperTask.java",
-    "redisson/src/main/java/org/redisson/mapreduce/CollatorTask.java",
     "redisson/src/main/java/org/redisson/mapreduce/CollectionMapperTask.java",
     "redisson/src/main/java/org/redisson/mapreduce/Collector.java",
     "redisson/src/main/java/org/redisson/mapreduce/CoordinatorTask.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/misc/CollectionSyncProxy.java"
   ],
   "remaining_pending": 182,
-  "done": 2610
+  "done": 2625
 }
