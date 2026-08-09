@@ -21,6 +21,8 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import org.jboss.logging.Logger;
 
 /**
+ * Quarkus 部署阶段处理器，注册 Sentinel JAX-RS 适配器特性。
+ *
  * @author sea
  */
 class SentinelJaxRsQuarkusAdapterProcessor {

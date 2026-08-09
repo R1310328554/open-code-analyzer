@@ -19,6 +19,8 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * Reactor 适配器 Sentinel 上下文配置，包含 contextName 与 origin。
+ *
  * @author Eric Zhao
  */
 public class ContextConfig {

@@ -19,16 +19,18 @@ import okhttp3.Connection;
 import okhttp3.Request;
 
 /**
+ * OkHttp 资源名提取器接口。
+ *
  * @author zhaoyuguang
  */
 public interface OkHttpResourceExtractor {
 
     /**
-     * Extracts the resource name from the HTTP request.
+     * 从 HTTP 请求中提取 Sentinel 资源名。
      *
-     * @param request    HTTP request entity
-     * @param connection HTTP connection
-     * @return the resource name of current request
+     * @param request    HTTP 请求实体
+     * @param connection HTTP 连接
+     * @return 当前请求的资源名
      */
     String extract(Request request, Connection connection);
 }

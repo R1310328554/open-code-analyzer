@@ -22,13 +22,15 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
+ * OkHttp 适配器默认降级实现，将 {@link BlockException} 包装为 {@link SentinelRpcException} 抛出。
+ *
  * @author zhaoyuguang
  */
 public class DefaultOkHttpFallback implements OkHttpFallback {
 
     @Override
     public Response handle(Request request, Connection connection, BlockException e) {
-        // Just wrap and throw the exception.
+        // 直接包装并抛出异常。
         throw new SentinelRpcException(e);
     }
 }

@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.ResourceTypeConstants;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * Reactor 适配器 Sentinel Entry 配置，描述资源名、Entry 类型、许可数与上下文等参数。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */
@@ -74,7 +76,7 @@ public class EntryConfig {
         this.resourceType = resourceType;
         this.acquireCount = acquireCount;
         this.args = args;
-        // Constructed ContextConfig should be valid here. Null is allowed here.
+        // 此处传入的 ContextConfig 应已校验有效；允许为 null。
         this.contextConfig = contextConfig;
     }
 

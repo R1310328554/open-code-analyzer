@@ -19,6 +19,8 @@ import okhttp3.Connection;
 import okhttp3.Request;
 
 /**
+ * 默认 OkHttp 资源名提取器，格式为 {@code method:url}。
+ *
  * @author zhaoyuguang
  */
 public class DefaultOkHttpResourceExtractor implements OkHttpResourceExtractor {

@@ -27,11 +27,10 @@ import reactor.core.publisher.SignalType;
 
 /**
  * <p>
- * Copied from {@link reactor.core.publisher.BaseSubscriber} of reactor-core,
- * but allow sub-classes to override {@code onSubscribe}, {@code onNext},
- * {@code onError} and {@code onComplete} method for customization.
+ * 自 reactor-core 的 {@link reactor.core.publisher.BaseSubscriber} 复制而来，
+ * 允许子类重写 {@code onSubscribe}、{@code onNext}、{@code onError} 与 {@code onComplete} 以定制行为。
  * </p>
- * <p>This base subscriber also provides predicate for {@code onErrorDropped} hook as a workaround for Sentinel.</p>
+ * <p>该基类还为 {@code onErrorDropped} 钩子提供谓词，作为 Sentinel 流控场景的变通方案。</p>
  */
 abstract class InheritableBaseSubscriber<T> implements CoreSubscriber<T>, Subscription, Disposable {
 
@@ -42,9 +41,9 @@ abstract class InheritableBaseSubscriber<T> implements CoreSubscriber<T>, Subscr
             "subscription");
 
     /**
-     * Return current {@link Subscription}
+     * 返回当前上游 {@link Subscription}。
      *
-     * @return current {@link Subscription}
+     * @return 当前 {@link Subscription}
      */
     protected Subscription upstream() {
         return subscription;
@@ -56,8 +55,7 @@ abstract class InheritableBaseSubscriber<T> implements CoreSubscriber<T>, Subscr
     }
 
     /**
-     * {@link Disposable#dispose() Dispose} the {@link Subscription} by
-     * {@link Subscription#cancel() cancelling} it.
+     * 通过 {@link Subscription#cancel()} 取消订阅，等效于 {@link Disposable#dispose()}。
      */
     @Override
     public void dispose() {
@@ -65,68 +63,62 @@ abstract class InheritableBaseSubscriber<T> implements CoreSubscriber<T>, Subscr
     }
 
     /**
-     * Hook for further processing of onSubscribe's Subscription. Implement this method
-     * to call {@link #request(long)} as an initial request. Values other than the
-     * unbounded {@code Long.MAX_VALUE} imply that you'll also call request in
-     * {@link #hookOnNext(Object)}.
-     * <p> Defaults to request unbounded Long.MAX_VALUE as in {@link #requestUnbounded()}
+     * {@code onSubscribe} 时进一步处理上游 {@link Subscription} 的钩子。
+     * 可在此调用 {@link #request(long)} 作为初始请求；若初始请求不是无界的 {@code Long.MAX_VALUE}，
+     * 则通常还需在 {@link #hookOnNext(Object)} 中继续 request。
+     * <p>默认行为同 {@link #requestUnbounded()}，请求无界 {@code Long.MAX_VALUE}。
      *
-     * @param subscription the subscription to optionally process
+     * @param subscription 待处理的上游订阅
      */
     protected void hookOnSubscribe(Subscription subscription) {
         subscription.request(Long.MAX_VALUE);
     }
 
     /**
-     * Hook for processing of onNext values. You can call {@link #request(long)} here
-     * to further request data from the source {@code org.reactivestreams.Publisher} if
-     * the {@link #hookOnSubscribe(Subscription) initial request} wasn't unbounded.
-     * <p>Defaults to doing nothing.
+     * 处理 {@code onNext} 值的钩子。若 {@link #hookOnSubscribe(Subscription) 初始请求} 非无界，
+     * 可在此调用 {@link #request(long)} 向上游 {@code org.reactivestreams.Publisher} 继续拉取数据。
+     * <p>默认为空实现。
      *
-     * @param value the emitted value to process
+     * @param value 下游收到的元素
      */
     protected void hookOnNext(T value) {
-        // NO-OP
+        // 空操作
     }
 
     /**
-     * Optional hook for completion processing. Defaults to doing nothing.
+     * 可选的完成处理钩子，默认为空实现。
      */
     protected void hookOnComplete() {
-        // NO-OP
+        // 空操作
     }
 
     /**
-     * Optional hook for error processing. Default is to call
-     * {@link Exceptions#errorCallbackNotImplemented(Throwable)}.
+     * 可选的错误处理钩子，默认调用 {@link Exceptions#errorCallbackNotImplemented(Throwable)}。
      *
-     * @param throwable the error to process
+     * @param throwable 待处理的错误
      */
     protected void hookOnError(Throwable throwable) {
         throw Exceptions.errorCallbackNotImplemented(throwable);
     }
 
     /**
-     * Optional hook executed when the subscription is cancelled by calling this
-     * Subscriber's {@link #cancel()} method. Defaults to doing nothing.
+     * 调用本 Subscriber 的 {@link #cancel()} 取消订阅时执行的可选钩子，默认为空实现。
      */
     protected void hookOnCancel() {
-        //NO-OP
+        // 空操作
     }
 
     /**
-     * Optional hook executed after any of the termination events (onError, onComplete,
-     * cancel). The hook is executed in addition to and after {@link #hookOnError(Throwable)},
-     * {@link #hookOnComplete()} and {@link #hookOnCancel()} hooks, even if these callbacks
-     * fail. Defaults to doing nothing. A failure of the callback will be caught by
-     * {@code Operators#onErrorDropped(Throwable, reactor.util.context.Context)}.
+     * 任意终止事件（onError、onComplete、cancel）之后执行的可选钩子。
+     * 该钩子在 {@link #hookOnError(Throwable)}、{@link #hookOnComplete()} 与 {@link #hookOnCancel()} 之后执行，
+     * 即使上述回调失败也会调用。默认为空实现；若钩子自身失败，将由
+     * {@code Operators#onErrorDropped(Throwable, reactor.util.context.Context)} 捕获。
      *
-     * @param type the type of termination event that triggered the hook
-     *             ({@link SignalType#ON_ERROR}, {@link SignalType#ON_COMPLETE} or
-     *             {@link SignalType#CANCEL})
+     * @param type 触发该钩子的终止事件类型
+     *             （{@link SignalType#ON_ERROR}、{@link SignalType#ON_COMPLETE} 或 {@link SignalType#CANCEL}）
      */
     protected void hookFinally(SignalType type) {
-        //NO-OP
+        // 空操作
     }
 
     @Override
@@ -160,11 +152,10 @@ abstract class InheritableBaseSubscriber<T> implements CoreSubscriber<T>, Subscr
 
         if (S.getAndSet(this, Operators.cancelledSubscription()) == Operators
             .cancelledSubscription()) {
-            // Already cancelled concurrently
+            // 订阅已被并发取消
 
-            // Workaround for Sentinel BlockException:
-            // Here we add a predicate method to decide whether exception should be dropped implicitly
-            // or call the {@code onErrorDropped} hook.
+            // Sentinel BlockException 变通处理：
+            // 通过谓词方法决定异常是被静默丢弃，还是调用 {@code onErrorDropped} 钩子。
             if (shouldCallErrorDropHook()) {
                 Operators.onErrorDropped(t, currentContext());
             }
@@ -186,11 +177,11 @@ abstract class InheritableBaseSubscriber<T> implements CoreSubscriber<T>, Subscr
     public void onComplete() {
         if (S.getAndSet(this, Operators.cancelledSubscription()) != Operators
             .cancelledSubscription()) {
-            //we're sure it has not been concurrently cancelled
+            // 确认未被并发取消
             try {
                 hookOnComplete();
             } catch (Throwable throwable) {
-                //onError itself will short-circuit due to the CancelledSubscription being push above
+                // 上方已置为 CancelledSubscription，hookOnError 将短路
                 hookOnError(Operators.onOperatorError(throwable, currentContext()));
             } finally {
                 safeHookFinally(SignalType.ON_COMPLETE);
@@ -209,7 +200,7 @@ abstract class InheritableBaseSubscriber<T> implements CoreSubscriber<T>, Subscr
     }
 
     /**
-     * {@link #request(long) Request} an unbounded amount.
+     * 以无界方式 {@link #request(long) 请求} 上游数据。
      */
     public final void requestUnbounded() {
         request(Long.MAX_VALUE);

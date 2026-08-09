@@ -22,6 +22,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxOperator;
 
 /**
+ * 为 {@link Flux} 提供 Sentinel 流控的算子，订阅时委托 {@link SentinelReactorSubscriber} 执行 Entry 生命周期管理。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */

@@ -21,16 +21,19 @@ import com.weibo.api.motan.rpc.Request;
 import com.weibo.api.motan.rpc.Response;
 
 /**
+ * Motan 适配器降级处理器接口，流控触发时由过滤器回调。
+ *
  * @author zhangxn8
  */
 public interface MotanFallback {
 
     /**
-     * Handle the block exception and provide fallback result.
-     * @param caller
-     * @param request
-     * @param ex
-     * @return
+     * 处理流控异常并返回降级结果。
+     *
+     * @param caller Motan 调用方
+     * @param request RPC 请求
+     * @param ex 流控异常
+     * @return 降级响应
      */
     Response handle(Caller<?> caller, Request request, BlockException ex);
 

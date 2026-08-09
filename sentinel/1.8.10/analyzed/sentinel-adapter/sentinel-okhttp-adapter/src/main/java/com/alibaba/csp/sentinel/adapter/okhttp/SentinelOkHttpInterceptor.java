@@ -27,6 +27,8 @@ import okhttp3.Response;
 import java.io.IOException;
 
 /**
+ * OkHttp 出站拦截器，在 HTTP 请求发出前创建 Sentinel 资源并执行流控。
+ *
  * @author zhaoyuguang
  */
 public class SentinelOkHttpInterceptor implements Interceptor {

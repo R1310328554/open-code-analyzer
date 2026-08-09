@@ -21,9 +21,19 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
+ * OkHttp 适配器降级处理器接口。
+ *
  * @author zhaoyuguang
  */
 public interface OkHttpFallback {
 
+    /**
+     * 流控触发时的降级处理。
+     *
+     * @param request    HTTP 请求
+     * @param connection HTTP 连接
+     * @param e          流控异常
+     * @return 降级响应
+     */
     Response handle(Request request, Connection connection, BlockException e);
 }

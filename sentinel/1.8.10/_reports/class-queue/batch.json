@@ -1,22 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:21:58Z",
-  "files": [
-    "sentinel-adapter/sentinel-motan-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/motan/fallback/MotanFallback.java",
-    "sentinel-adapter/sentinel-okhttp-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/okhttp/SentinelOkHttpConfig.java",
-    "sentinel-adapter/sentinel-okhttp-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/okhttp/SentinelOkHttpInterceptor.java",
-    "sentinel-adapter/sentinel-okhttp-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/okhttp/extractor/DefaultOkHttpResourceExtractor.java",
-    "sentinel-adapter/sentinel-okhttp-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/okhttp/extractor/OkHttpResourceExtractor.java",
-    "sentinel-adapter/sentinel-okhttp-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/okhttp/fallback/DefaultOkHttpFallback.java",
-    "sentinel-adapter/sentinel-okhttp-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/okhttp/fallback/OkHttpFallback.java",
-    "sentinel-adapter/sentinel-quarkus-adapter/sentinel-annotation-quarkus-adapter-deployment/src/main/java/com/alibaba/csp/sentinel/adapter/quarkus/annotation/deployment/SentinelAnnotationQuarkusAdapterProcessor.java",
-    "sentinel-adapter/sentinel-quarkus-adapter/sentinel-jax-rs-quarkus-adapter-deployment/src/main/java/com/alibaba/csp/sentinel/adapter/quarkus/jaxrs/deployment/SentinelJaxRsQuarkusAdapterProcessor.java",
-    "sentinel-adapter/sentinel-quarkus-adapter/sentinel-native-image-quarkus-adapter-deployment/src/main/java/com/alibaba/csp/sentinel/adapter/quarkus/nativeimage/SentinelNativeImageProcessor.java",
-    "sentinel-adapter/sentinel-quarkus-adapter/sentinel-native-image-quarkus-adapter-runtime/src/main/java/com/alibaba/csp/sentinel/adapter/quarkus/nativeimage/SentinelRecorder.java",
-    "sentinel-adapter/sentinel-reactor-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/reactor/ContextConfig.java",
-    "sentinel-adapter/sentinel-reactor-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/reactor/EntryConfig.java",
-    "sentinel-adapter/sentinel-reactor-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/reactor/FluxSentinelOperator.java",
-    "sentinel-adapter/sentinel-reactor-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/reactor/InheritableBaseSubscriber.java"
-  ],
-  "remaining_pending": 650,
-  "done": 285
+  "files": [],
+  "remaining_pending": 635,
+  "done": 300
 }

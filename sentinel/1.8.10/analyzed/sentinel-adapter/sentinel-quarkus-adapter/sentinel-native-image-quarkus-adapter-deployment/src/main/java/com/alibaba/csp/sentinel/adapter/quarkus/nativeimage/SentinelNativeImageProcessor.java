@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * Quarkus Native Image 部署处理器，配置 Sentinel 在 GraalVM 原生镜像下的反射与运行时初始化类。
+ *
  * @author sea
  */
 class SentinelNativeImageProcessor {

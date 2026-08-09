@@ -26,13 +26,15 @@ import com.alibaba.fastjson.serializer.SerializeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
+ * Quarkus 运行时 Recorder，在静态初始化阶段预热 Fastjson 序列化/反序列化配置。
+ *
  * @author sea
  */
 @Recorder
 public class SentinelRecorder {
 
     /**
-     * register fastjson serializer deserializer class info
+     * 注册 Fastjson 序列化与反序列化所需的类元信息，供 Native Image 使用。
      */
     public void init() {
         SerializeConfig.getGlobalInstance().getObjectWriter(NodeVo.class);

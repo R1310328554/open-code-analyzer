@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * Quarkus 部署阶段处理器，注册 Sentinel 注解适配器特性与 CDI 拦截器 Bean。
+ *
  * @author sea
  */
 class SentinelAnnotationQuarkusAdapterProcessor {

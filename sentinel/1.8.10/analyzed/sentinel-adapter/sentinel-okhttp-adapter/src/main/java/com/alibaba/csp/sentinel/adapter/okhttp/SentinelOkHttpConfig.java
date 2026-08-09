@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.adapter.okhttp.fallback.OkHttpFallback;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * OkHttp 适配器配置，管理资源名前缀、资源提取器与降级处理器。
+ *
  * @author zhaoyuguang
  * @author Eric Zhao
  */
