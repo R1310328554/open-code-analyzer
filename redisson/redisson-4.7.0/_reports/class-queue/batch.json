@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/listener/NewObjectListener.java",
     "redisson/src/main/java/org/redisson/api/listener/PatternMessageListener.java",
     "redisson/src/main/java/org/redisson/api/listener/PatternStatusListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetAddListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetDiffStoreListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetIncrListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetInterStoreListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetRemoveListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetUnionStoreListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetAddListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetDiffStoreListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetExpiredListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetInterStoreListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetObjectListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetRemoveListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetRemoveRandomListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/SetUnionStoreListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/StatusListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/StreamAddListener.java"
+    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetAddListener.java"
   ],
   "remaining_pending": 962,
-  "done": 1830
+  "done": 1845
 }
