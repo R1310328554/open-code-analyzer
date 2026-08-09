@@ -16,11 +16,12 @@
 package org.redisson.api;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 带 TTL 的 Set Multimap 同步 API。
+ * <p>继承 {@link RSetMultimap} 与 {@link RMultimapCache}，支持为映射键设置过期时间。
  *
- * @param <K> key type
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RSetMultimapCache<K, V> extends RSetMultimap<K, V>, RMultimapCache<K, V>, RDestroyable {
 

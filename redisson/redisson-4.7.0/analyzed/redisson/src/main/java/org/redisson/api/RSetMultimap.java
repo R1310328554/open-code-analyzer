@@ -19,21 +19,19 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Set based Multimap. Doesn't allow duplications for values mapped to key.
+ * 基于 Set 的 Multimap；同一键下值不可重复。
  *
  * @author Nikita Koksharov
  *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RSetMultimap<K, V> extends RMultimap<K, V> {
 
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
-     * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RSetMultimap} 同一键下值唯一，本方法返回 {@link Set} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      */
     @Override
     RSet<V> get(K key);
@@ -41,18 +39,14 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
-     * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RSetMultimap} 同一键下值唯一，本方法返回 {@link Set} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      */
     Set<V> getAll(K key);
 
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
-     * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RSetMultimap} 同一键下值唯一，本方法返回 {@link Set} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      */
     @Override
     Set<V> removeAll(Object key);
@@ -60,11 +54,9 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
-     * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RSetMultimap} 同一键下值唯一，本方法返回 {@link Set} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      *
-     * <p>Any duplicates in {@code values} will be stored in the multimap once.
+     * <p>{@code values} 中的重复值在 multimap 中仅保留一份。
      */
     @Override
     Set<V> replaceValues(K key, Iterable<? extends V> values);
@@ -72,9 +64,7 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
-     * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RSetMultimap} 同一键下值唯一，本方法返回 {@link Set} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      */
     @Override
     Set<Map.Entry<K, V>> entries();
@@ -82,9 +72,7 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
     /**
      * {@inheritDoc}
      *
-     * <p>Because a {@code RSetMultiMap} has unique values for a given key, this
-     * method returns a {@link Set}, instead of the {@link java.util.Collection}
-     * specified in the {@link RMultimap} interface.
+     * <p>因 {@code RSetMultimap} 同一键下值唯一，本方法返回 {@link Set} 而非 {@link RMultimap} 接口声明的 {@link java.util.Collection}。
      */
     @Override
     default Set<Map.Entry<K, V>> entries(int count) {
@@ -92,7 +80,7 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
     }
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.MapPutListener
      * @see org.redisson.api.listener.MapRemoveListener
@@ -101,14 +89,14 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.MapPutListener
      * @see org.redisson.api.listener.MapRemoveListener
@@ -117,8 +105,8 @@ public interface RSetMultimap<K, V> extends RMultimap<K, V> {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 

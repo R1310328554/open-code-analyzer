@@ -23,212 +23,204 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for RSetCache object
+ * RSetCache 的 Reactor 响应式 API。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> 值类型
  */
 public interface RSetCacheReactive<V> extends RCollectionReactive<V>, RDestroyable {
 
     /**
-     * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的 {@link RPermitExpirableSemaphore} 实例
      * 
-     * @param value - set value
-     * @return RPermitExpirableSemaphore object
+     * @param value 集合元素值
+     * @return 可过期许可信号量
      */
     RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(V value);
 
     /**
-     * Returns <code>RSemaphore</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的 {@link RSemaphore} 实例
      * 
-     * @param value - set value
-     * @return RSemaphore object
+     * @param value 集合元素值
+     * @return 信号量
      */
     RSemaphoreReactive getSemaphore(V value);
     
     /**
-     * Returns <code>RLock</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的公平 {@link RLock} 实例
      * 
-     * @param value - set value
-     * @return RLock object
+     * @param value 集合元素值
+     * @return 分布式锁
      */
     RLockReactive getFairLock(V value);
     
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的 {@link RReadWriteLock} 实例
      * 
-     * @param value - set value
-     * @return RReadWriteLock object
+     * @param value 集合元素值
+     * @return 读写锁
      */
     RReadWriteLockReactive getReadWriteLock(V value);
     
     /**
-     * Returns lock instance associated with <code>value</code>
+     * 返回与 {@code value} 关联的 {@link RLock} 实例
      * 
-     * @param value - set value
-     * @return RLock object
+     * @param value 集合元素值
+     * @return 分布式锁
      */
     RLockReactive getLock(V value);
 
     /**
-     * Stores value with specified time to live.
-     * Value expires after specified time to live.
+     * 存储元素并设置存活时间（TTL）；到期后自动过期。
      *
-     * @param value to add
-     * @param ttl - time to live for key\value entry.
-     *              If <code>0</code> then stores infinitely.
-     * @param unit - time unit
-     * @return <code>true</code> if value has been added. <code>false</code>
-     *          if value already been in collection.
+     * @param value 待添加元素
+     * @param ttl 键值条目存活时间；{@code 0} 表示永不过期
+     * @param unit 时间单位
+     * @return 新增成功则为 true；元素已存在则为 false
      */
     Mono<Boolean> add(V value, long ttl, TimeUnit unit);
 
     /**
-     * Returns the number of elements in cache.
-     * This number can reflects expired elements too
-     * due to non realtime cleanup process.
+     * 返回缓存中元素数量。
+     * 因清理非实时，计数可能包含已过期但未删除的元素。
      *
      */
     @Override
     Mono<Integer> size();
 
     /**
-     * Read all elements at once
+     * 一次性读取全部元素。
      *
-     * @return values
+     * @return 元素值s
      */
     Mono<Set<V>> readAll();
 
     /**
-     * Tries to add elements only if none of them in set.
+     * 仅当全部元素均不在集合中时尝试添加。
      *
-     * @param values - values to add
-     * @return <code>true</code> if elements successfully added,
-     *          otherwise <code>false</code>.
+     * @param values 待添加元素
+     * @return 全部添加成功则为 true，否则 false
      */
     Mono<Boolean> tryAdd(V... values);
 
     /**
-     * Use {@link #addIfAbsent(Map)} instead
+     * 请改用 {@link #addIfAbsent(Map)}。
      *
-     * Tries to add elements only if none of them in set.
+     * 仅当全部元素均不在集合中时尝试添加。
      *
-     * @param values - values to add
-     * @param ttl - time to live for value.
-     *              If <code>0</code> then stores infinitely.
-     * @param unit - time unit
-     * @return <code>true</code> if elements successfully added,
-     *          otherwise <code>false</code>.
+     * @param values 待添加元素
+     * @param ttl 元素存活时间；{@code 0} 表示永不过期
+     * @param unit 时间单位
+     * @return 全部添加成功则为 true，否则 false
      */
     @Deprecated
     Mono<Boolean> tryAdd(long ttl, TimeUnit unit, V... values);
 
     /**
-     * Adds element to this set only if has not been added before.
+     * 仅当元素此前不存在时添加到集合。
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param ttl - object ttl
-     * @param object - object itself
-     * @return <code>true</code> if element added and <code>false</code> if not.
+     * @param ttl 元素 TTL
+     * @param object 元素对象
+     * @return 操作成功则为 true，否则 false
      */
     Mono<Boolean> addIfAbsent(Duration ttl, V object);
 
     /**
-     * Adds elements to this set only if all of them haven't been added before.
+     * 仅当全部元素此前均不存在时批量添加。
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param objects map of elements to add
+     * @param objects 元素与 TTL 的映射
      * @return <code>true</code> if elements added and <code>false</code> if not.
      */
     Mono<Boolean> addIfAbsent(Map<V, Duration> objects);
 
     /**
-     * Adds element to this set only if it's already exists.
+     * 仅当元素已存在时更新其 TTL 并保留在集合中。
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param ttl - object ttl
-     * @param object - object itself
-     * @return <code>true</code> if element added and <code>false</code> if not.
+     * @param ttl 元素 TTL
+     * @param object 元素对象
+     * @return 操作成功则为 true，否则 false
      */
     Mono<Boolean> addIfExists(Duration ttl, V object);
 
     /**
-     * Adds element to this set only if new ttl less than current ttl of existed element.
+     * 仅当新 TTL 小于已存在元素当前 TTL 时更新。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param ttl - object ttl
-     * @param object - object itself
-     * @return <code>true</code> if element added and <code>false</code> if not.
+     * @param ttl 元素 TTL
+     * @param object 元素对象
+     * @return 操作成功则为 true，否则 false
      */
     Mono<Boolean> addIfLess(Duration ttl, V object);
 
     /**
-     * Adds element to this set only if new ttl greater than current ttl of existed element.
+     * 仅当新 TTL 大于已存在元素当前 TTL 时更新。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param ttl - object ttl
-     * @param object - object itself
-     * @return <code>true</code> if element added and <code>false</code> if not.
+     * @param ttl 元素 TTL
+     * @param object 元素对象
+     * @return 操作成功则为 true，否则 false
      */
     Mono<Boolean> addIfGreater(Duration ttl, V object);
 
     /**
-     * Adds all elements contained in the specified map to this sorted set.
-     * Map contains of ttl mapped by object.
+     * 批量添加元素；Map 键为元素、值为对应 TTL。
      *
-     * @param objects - map of elements to add
-     * @return amount of added elements, not including already existing in this sorted set
+     * @param objects 元素与 TTL 的映射
+     * @return 新增元素数量（不含已存在元素）
      */
     Mono<Integer> addAll(Map<V, Duration> objects);
 
     /**
-     * Adds elements to this set only if they haven't been added before.
+     * 批量添加仅当元素此前均不存在时生效的元素。
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param objects map of elements to add
-     * @return amount of added elements
+     * @param objects 元素与 TTL 的映射
+     * @return 新增元素数量
      */
     Mono<Integer> addAllIfAbsent(Map<V, Duration> objects);
 
     /**
-     * Adds elements to this set only if they already exist.
+     * 批量添加仅当元素已存在时更新 TTL 的条目。
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param objects map of elements to add
-     * @return amount of added elements
+     * @param objects 元素与 TTL 的映射
+     * @return 新增元素数量
      */
     Mono<Integer> addAllIfExist(Map<V, Duration> objects);
 
     /**
-     * Adds elements to this set only if new ttl greater than current ttl of existed elements.
+     * 批量添加仅当新 TTL 大于已存在元素当前 TTL 时生效。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param objects map of elements to add
-     * @return amount of added elements
+     * @param objects 元素与 TTL 的映射
+     * @return 新增元素数量
      */
     Mono<Integer> addAllIfGreater(Map<V, Duration> objects);
 
     /**
-     * Adds elements to this set only if new ttl less than current ttl of existed elements.
+     * 批量添加仅当新 TTL 小于已存在元素当前 TTL 时生效。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param objects map of elements to add
-     * @return amount of added elements
+     * @param objects 元素与 TTL 的映射
+     * @return 新增元素数量
      */
     Mono<Integer> addAllIfLess(Map<V, Duration> objects);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.SetAddListener
@@ -237,8 +229,8 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V>, RDestroyab
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     Mono<Integer> addListener(ObjectListener listener);
 

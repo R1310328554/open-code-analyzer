@@ -19,246 +19,232 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Async set functions
+ * Redis Set 异步 API。
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> 值类型
  */
 public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>> {
 
     /**
-     * Removes and returns random elements from set
-     * in async mode
+     * 异步从集合中随机移除并返回多个元素
      * 
-     * @param amount of random values
-     * @return random values
+     * @param amount 随机元素数量
+     * @return 随机元素集合
      */
     RFuture<Set<V>> removeRandomAsync(int amount);
     
     /**
-     * Removes and returns random element from set
-     * in async mode
+     * 异步从集合中随机移除并返回一个元素
      * 
-     * @return value
+     * @return 元素值
      */
     RFuture<V> removeRandomAsync();
 
     /**
-     * Returns random element from set
-     * in async mode
+     * 异步从集合中随机返回一个元素
      * 
-     * @return value
+     * @return 元素值
      */
     RFuture<V> randomAsync();
     
     /**
-     * Returns random elements from set limited by <code>count</code>
+     * 异步从集合中随机返回至多 {@code count} 个元素
      *
-     * @param count - values amount to return
-     * @return value
+     * @param count 返回元素数量上限
+     * @return 元素值
      */
     RFuture<Set<V>> randomAsync(int count);
 
     /**
-     * Move a member from this set to the given destination set in async mode.
+     * 异步将成员从当前集合移动到目标集合。
      *
-     * @param destination the destination set
-     * @param member the member to move
-     * @return <code>true</code> if the element is moved, <code>false</code> if the element is not a
-     * member of this set or no operation was performed
+     * @param destination 目标集合名称
+     * @param member 待移动成员
+     * @return 移动成功则为 true；元素不存在或未执行则为 false
      */
     RFuture<Boolean> moveAsync(String destination, V member);
 
     /**
-     * Read all elements at once
+     * 一次性读取全部元素。
      *
-     * @return values
+     * @return 元素值s
      */
     RFuture<Set<V>> readAllAsync();
 
     /**
-     * Union sets specified by name and write to current set.
-     * If current set already exists, it is overwritten.
+     * 将指定名称集合与当前集合作并（并集）并写回当前集合；若当前集合已存在则覆盖。
      *
-     * @param names - name of sets
-     * @return size of union
+     * @param names 参与运算的集合名称
+     * @return 并集写入后的集合大小
      */
     RFuture<Integer> unionAsync(String... names);
 
     /**
-     * Union sets specified by name with current set.
-     * Without current set state change.
+     * 计算指定名称集合与当前集合的并集并返回结果，不修改当前集合。
      *
-     * @param names - name of sets
-     * @return values
+     * @param names 参与运算的集合名称
+     * @return 元素值s
      */
     RFuture<Set<V>> readUnionAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
+     * 统计指定集合与当前集合并集结果的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @return 元素数量
      */
     RFuture<Integer> countUnionAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
+     * 统计指定集合与当前集合并集结果的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @param limit - sets union limit
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 并集运算数量上限
+     * @return 元素数量
      */
     RFuture<Integer> countUnionAsync(int limit, String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
+     * 统计指定集合与当前集合并集结果的元素数量。
      * Returns an approximate value computed through HyperLogLog with
      * 0.81% standard error instead of an exact one.
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @return approximate amount of elements
+     * @param names 参与运算的集合名称
+     * @return 近似元素数量
      */
     RFuture<Integer> countUnionApproxAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets union with current set.
+     * 统计指定集合与当前集合并集结果的元素数量。
      * Returns an approximate value computed through HyperLogLog with
      * 0.81% standard error instead of an exact one.
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @param limit - sets union limit
-     * @return approximate amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 并集运算数量上限
+     * @return 近似元素数量
      */
     RFuture<Integer> countUnionApproxAsync(int limit, String... names);
 
     /**
-     * Diff sets specified by name and write to current set.
-     * If current set already exists, it is overwritten.
+     * 将指定名称集合与当前集合求差集并写回当前集合；若当前集合已存在则覆盖。
      *
-     * @param names - name of sets
-     * @return size of diff
+     * @param names 参与运算的集合名称
+     * @return 差集写入后的集合大小
      */
     RFuture<Integer> diffAsync(String... names);
 
     /**
-     * Diff sets specified by name with current set.
-     * Without current set state change.
+     * 计算指定名称集合与当前集合的差集并返回结果，不修改当前集合。
      * 
-     * @param names - name of sets
-     * @return values
+     * @param names 参与运算的集合名称
+     * @return 元素值s
      */
     RFuture<Set<V>> readDiffAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets difference with current set.
+     * 统计指定集合与当前集合差集结果的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @return 元素数量
      */
     RFuture<Integer> countDiffAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets difference with current set.
+     * 统计指定集合与当前集合差集结果的元素数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param names - name of sets
-     * @param limit - sets difference limit
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 差集运算数量上限
+     * @return 元素数量
      */
     RFuture<Integer> countDiffAsync(int limit, String... names);
 
     /**
-     * Intersection sets specified by name and write to current set.
-     * If current set already exists, it is overwritten.
+     * 将指定名称集合与当前集合求交集并写回当前集合；若当前集合已存在则覆盖。
      *
-     * @param names - name of sets
-     * @return size of intersection
+     * @param names 参与运算的集合名称
+     * @return 交集写入后的集合大小
      */
     RFuture<Integer> intersectionAsync(String... names);
 
     /**
-     * Intersection sets specified by name with current set.
-     * Without current set state change.
+     * 计算指定名称集合与当前集合的交集并返回结果，不修改当前集合。
      * 
-     * @param names - name of sets
-     * @return values
+     * @param names 参与运算的集合名称
+     * @return 元素值s
      */
     RFuture<Set<V>> readIntersectionAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计指定集合与当前集合交集结果的元素数量。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
-     * @param names - name of sets
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @return 元素数量
      */
     RFuture<Integer> countIntersectionAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计指定集合与当前集合交集结果的元素数量。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
-     * @param names - name of sets
-     * @param limit - sets intersection limit
-     * @return amount of elements
+     * @param names 参与运算的集合名称
+     * @param limit 交集运算数量上限
+     * @return 元素数量
      */
     RFuture<Integer> countIntersectionAsync(int limit, String... names);
 
     /**
-     * Tries to add elements only if none of them in set.
+     * 仅当全部元素均不在集合中时尝试添加。
      *
-     * @param values - values to add
-     * @return <code>true</code> if elements successfully added,
-     *          otherwise <code>false</code>.
+     * @param values 待添加元素
+     * @return 全部添加成功则为 true，否则 false
      */
     RFuture<Boolean> tryAddAsync(V... values);
 
     /**
-     * Adds all elements contained in the specified collection.
-     * Returns number of added elements.
+     * 添加集合中全部元素并返回实际新增数量。
      *
-     * @param c - collection of elements to add
-     * @return number of added elements
+     * @param c 元素集合
+     * @return 新增元素数量
      */
     RFuture<Integer> addAllCountedAsync(Collection<? extends V> c);
 
     /**
-     * Removes all elements contained in the specified collection.
-     * Returns number of removed elements.
+     * 移除集合中全部指定元素并返回实际删除数量。
      *
-     * @param c - collection of elements to add
-     * @return number of removed elements
+     * @param c 元素集合
+     * @return 删除元素数量
      */
     RFuture<Integer> removeAllCountedAsync(Collection<? extends V> c);
 
     /**
-     * Check if each element is contained in the specified collection.
-     * Returns contained elements.
+     * 检查指定集合中哪些元素存在于当前集合，返回存在的元素集合。
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param c - collection to check
-     * @return contained elements
+     * @param c 待检查集合
+     * @return 存在于当前集合的元素
      */
     RFuture<Set<V>> containsEachAsync(Collection<V> c);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.SetAddListener
@@ -267,25 +253,23 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
     /**
-     * Returns elements iterator fetches elements in a batch.
-     * Batch size is defined by <code>count</code> param.
+     * 返回分批加载元素的异步迭代器；批次大小由 {@code count} 指定。
      *
-     * @return Asynchronous Iterable object
+     * @return 异步可迭代对象
      */
     AsyncIterator<V> iteratorAsync();
 
     /**
-     * Returns elements iterator fetches elements in a batch.
-     * Batch size is defined by <code>count</code> param.
+     * 返回分批加载元素的异步迭代器；批次大小由 {@code count} 指定。
      *
-     * @param count - size of elements batch
-     * @return Asynchronous Iterable object
+     * @param count 每批元素数量
+     * @return 异步可迭代对象
      */
     AsyncIterator<V> iteratorAsync(int count);
 

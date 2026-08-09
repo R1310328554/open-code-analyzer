@@ -16,16 +16,14 @@
 package org.redisson.api;
 
 /**
- * Set based Multimap with ability to set TTL per entry.
- * Doesn't allow duplications for values mapped to key.
- * Uses Redis native commands for entry expiration and not a scheduled eviction task.
+ * 使用 Redis 原生 TTL 的 Set Multimap Reactor API。
+ * <p>同一键下值不可重复；条目过期由 Redis 原生命令管理。
  * <p>
- * Requires <b>Redis 7.4.0 and higher.</b>
+ * 需要 <b>Redis 7.4.0 及以上</b>。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RSetMultimapCacheNativeReactive<K, V> extends RSetMultimapReactive<K, V>, RMultimapCacheReactive<K, V> {
 

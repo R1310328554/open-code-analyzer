@@ -21,9 +21,9 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Reactive interface of Redis based {@link java.util.concurrent.Semaphore}.
+ * 基于 Redis 的 {@link java.util.concurrent.Semaphore} Reactor 响应式 API。
  * <p>
- * Works in non-fair mode. Therefore order of acquiring is unpredictable.
+ * 非公平模式，获取顺序不可预测。
  *
  * @author Nikita Koksharov
  *
@@ -31,145 +31,135 @@ import java.util.concurrent.TimeUnit;
 public interface RSemaphoreReactive extends RExpirableReactive {
 
     /**
-     * Acquires a permit.
-     * Waits if necessary until a permit became available.
+     * 获取一个许可；若无可用许可则阻塞等待。
      *
-     * @return <code>true</code> if a permit was acquired and <code>false</code>
-     *         otherwise
+     * @return 获取成功则为 true，否则 false
      */
     Mono<Boolean> tryAcquire();
     
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code>.
+     * 尝试立即获取指定数量的当前可用许可。
      *
-     * @param permits the number of permits to acquire
-     * @return <code>true</code> if permits were acquired and <code>false</code>
-     *         otherwise
+     * @param permits 待获取许可数量
+     * @return 获取成功则为 true，否则 false
      */
     Mono<Boolean> tryAcquire(int permits);
 
     /**
-     * Acquires a permit.
-     * Waits if necessary until a permit became available.
+     * 获取一个许可；若无可用许可则阻塞等待。
      * 
-     * @return void
+     * @return 无返回值
      *
      */
     Mono<Void> acquire();
 
     /**
-     * Acquires defined amount of <code>permits</code>.
-     * Waits if necessary until all permits became available.
+     * 获取指定数量的许可；若不足则阻塞等待直至全部可用。
      *
-     * @param permits the number of permits to acquire
-     * @throws IllegalArgumentException if <code>permits</code> is negative
-     * @return void
+     * @param permits 待获取许可数量
+     * @throws IllegalArgumentException 当 {@code permits} 为负数时抛出
+     * @return 无返回值
      */
     Mono<Void> acquire(int permits);
 
     /**
-     * Releases a permit.
+     * 释放一个许可。
      *
-     * @return void
+     * @return 无返回值
      */
     Mono<Void> release();
 
     /**
-     * Releases defined amount of <code>permits</code>.
+     * 释放指定数量的许可。
      *
-     * @param permits amount
-     * @return void
+     * @param permits 许可数量
+     * @return 无返回值
      */
     Mono<Void> release(int permits);
 
     /**
-     * Releases defined amount of <code>permits</code> only if semaphore exists.
-     * Increases the number of available permits by <code>permits</code> amount.
+     * 仅当信号量存在时释放指定数量许可，可用许可数相应增加。
      *
-     * @param permits amount of permits
+     * @param permits 许可数量
      */
     Mono<Boolean> releaseIfExists(int permits);
 
     /**
-     * Tries to set number of permits.
+     * 尝试设置许可总数。
      *
-     * @param permits number of permits
-     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
+     * @param permits 许可总数
+     * @return 设置成功则为 true，否则 false  
      */
     Mono<Boolean> trySetPermits(int permits);
 
     /**
-     * Tries to set number of permits with defined time to live.
+     * 尝试设置许可总数并指定存活时间（TTL）。
      *
-     * @param timeToLive time to live
-     * @param permits number of permits
-     * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.
+     * @param timeToLive 存活时间
+     * @param permits 许可总数
+     * @return 设置成功则为 true，否则 false
      */
     Mono<Boolean> trySetPermits(int permits, Duration timeToLive);
 
     /**
-     * Use {@link #tryAcquire(Duration)} instead
+     * 请改用 {@link #tryAcquire(Duration)}。
      *
-     * @param waitTime the maximum time to wait
-     * @param unit the time unit
-     * @return <code>true</code> if a permit was acquired and <code>false</code>
-     *         otherwise
+     * @param waitTime 最长等待时间
+     * @param unit 时间单位
+     * @return 获取成功则为 true，否则 false
      */
     @Deprecated
     Mono<Boolean> tryAcquire(long waitTime, TimeUnit unit);
     
     /**
-     * Tries to acquire currently available permit.
+     * 尝试立即获取当前可用许可。
      * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
      *
-     * @param waitTime the maximum time to wait
-     * @return <code>true</code> if a permit was acquired and <code>false</code>
-     *         otherwise
+     * @param waitTime 最长等待时间
+     * @return 获取成功则为 true，否则 false
      */
     Mono<Boolean> tryAcquire(Duration waitTime);
 
     /**
-     * Use {@link #tryAcquire(int, Duration)} instead
+     * 请改用 {@link #tryAcquire(int, Duration)}。
      *
-     * @param permits amount of permits
-     * @param waitTime the maximum time to wait
-     * @param unit the time unit
-     * @return <code>true</code> if permits were acquired and <code>false</code>
-     *         otherwise
+     * @param permits 许可数量
+     * @param waitTime 最长等待时间
+     * @param unit 时间单位
+     * @return 获取成功则为 true，否则 false
      */
     @Deprecated
     Mono<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
 
     /**
-     * Tries to acquire defined amount of currently available <code>permits</code>.
+     * 尝试立即获取指定数量的当前可用许可。
      * Waits up to defined <code>waitTime</code> if necessary until all permits became available.
      *
-     * @param permits amount of permits
-     * @param waitTime the maximum time to wait
-     * @param unit the time unit
-     * @return <code>true</code> if permits were acquired and <code>false</code>
-     *         otherwise
+     * @param permits 许可数量
+     * @param waitTime 最长等待时间
+     * @param unit 时间单位
+     * @return 获取成功则为 true，否则 false
      */
     Mono<Boolean> tryAcquire(int permits, Duration waitTime);
 
     /**
-     * Increases or decreases the number of available permits by defined value.
+     * 按指定值增加或减少可用许可数量。
      *
-     * @param permits amount of permits to add/remove
+     * @param permits 许可数量 to add/remove
      */
     Mono<Void> addPermits(int permits);
 
     /**
-     * Returns amount of available permits.
+     * 返回当前可用许可数量。
      *
-     * @return number of permits
+     * @return 许可数量
      */
     Mono<Integer> availablePermits();
 
     /**
-     * Acquires and returns all permits that are immediately available.
+     * 获取并返回当前全部立即可用的许可数量。
      *
-     * @return number of permits
+     * @return 许可数量
      */
     Mono<Integer> drainPermits();
 

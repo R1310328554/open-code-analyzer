@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * RxJava3 API for RediSearch module
+ * RediSearch 模块的 RxJava3 API。
  *
  * @author Nikita Koksharov
  *
@@ -47,7 +47,7 @@ import java.util.Map;
 public interface RSearchRx {
 
     /**
-     * Creates an index.
+     * 创建索引。
      * <p>
      * Code example:
      * <pre>
@@ -58,14 +58,14 @@ public interface RSearchRx {
      *                                     FieldIndex.tag("t2").withSuffixTrie());
      * </pre>
      *
-     * @param indexName index name
-     * @param options index options
-     * @param fields fields
+     * @param indexName 索引名称
+     * @param options 索引选项
+     * @param fields 字段索引列表
      */
     Completable createIndex(String indexName, IndexOptions options, FieldIndex... fields);
 
     /**
-     * Executes search over defined index using defined query.
+     * 在指定索引上执行搜索查询。
      * <p>
      * Code example:
      * <pre>
@@ -73,27 +73,26 @@ public interface RSearchRx {
      *                                                   .returnAttributes(new ReturnAttribute("t1"), new ReturnAttribute("t2")));
      * </pre>
      *
-     * @param indexName index name
-     * @param query query value
-     * @param options query options
-     * @return search result
+     * @param indexName 索引名称
+     * @param query 查询表达式
+     * @param options 查询选项
+     * @return 搜索结果
      */
     Single<SearchResult> search(String indexName, String query, QueryOptions options);
 
     /**
-     * Performs hybrid search combining text search and vector similarity
-     * using the FT.HYBRID command.
+     * 通过 {@code FT.HYBRID} 命令执行混合搜索，结合全文检索与向量相似度。
      * <p>
-     * Requires Redis Stack 8.4.0 or higher.
+     * 需要 <b>Redis Stack 8.4.0 及以上</b>。
      *
-     * @param indexName the name of the index
-     * @param args hybrid query arguments
-     * @return search result
+     * @param indexName 索引名称
+     * @param args 混合查询参数
+     * @return 搜索结果
      */
     Single<HybridSearchResult> hybridSearch(String indexName, HybridQueryArgs args);
 
     /**
-     * Executes aggregation over defined index using defined query.
+     * 在指定索引上执行聚合查询。
      * <p>
      * Code example:
      * <pre>
@@ -101,15 +100,15 @@ public interface RSearchRx {
      *                                                                 .load("t1", "t2"));
      * </pre>
      *
-     * @param indexName index name
-     * @param query query value
-     * @param options aggregation options
-     * @return aggregation result
+     * @param indexName 索引名称
+     * @param query 查询表达式
+     * @param options 聚合选项
+     * @return 聚合结果
      */
     Single<AggregationResult> aggregate(String indexName, String query, AggregationOptions options);
 
     /**
-     * Executes aggregation over defined index using defined query.
+     * 在指定索引上执行聚合查询。
      * <p>
      * Code example:
      * <pre>
@@ -117,216 +116,213 @@ public interface RSearchRx {
      *                                                                 .load("t1", "t2"));
      * </pre>
      *
-     * @param indexName index name
-     * @param query query value
-     * @param options iterable aggregationOptions options
-     * @return iterable aggregation result
+     * @param indexName 索引名称
+     * @param query 查询表达式
+     * @param options 可迭代聚合选项
+     * @return 可迭代聚合条目
      */
     Single<AggregationEntry> aggregate(String indexName, String query, IterableAggregationOptions options);
 
     /**
-     * Executes a search query against the defined index and collects performance
-     * information using the {@code FT.PROFILE} command.
+     * 在指定索引上执行搜索并通过 {@code FT.PROFILE} 收集性能分析信息。
      *
-     * @param indexName index name
-     * @param query query value
-     * @param options profile query options (extends {@link QueryOptions})
-     * @return search profile result
+     * @param indexName 索引名称
+     * @param query 查询表达式
+     * @param options 性能分析查询选项（继承 {@link QueryOptions}）
+     * @return 搜索性能分析结果
      */
     Single<SearchProfileResult> profileSearch(String indexName, String query, ProfileQueryOptions options);
 
     /**
-     * Executes an aggregation against the defined index and collects performance
-     * information using the {@code FT.PROFILE} command.
+     * 在指定索引上执行聚合并通过 {@code FT.PROFILE} 收集性能分析信息。
      *
-     * @param indexName index name
-     * @param query query value
-     * @param options profile aggregation options (extends {@link AggregationOptions})
-     * @return aggregation profile result
+     * @param indexName 索引名称
+     * @param query 查询表达式
+     * @param options 性能分析聚合选项（继承 {@link AggregationOptions}）
+     * @return 聚合性能分析结果
      */
     Single<AggregateProfileResult> profileAggregate(String indexName, String query, ProfileAggregationOptions options);
 
     /**
-     * Adds alias to defined index name
+     * 为指定索引添加别名。
      *
-     * @param alias alias value
-     * @param indexName index name
+     * @param alias 别名
+     * @param indexName 索引名称
      */
     Completable addAlias(String alias, String indexName);
 
     /**
-     * Deletes index alias
+     * 删除索引别名。
      *
-     * @param alias alias value
+     * @param alias 别名
      */
     Completable delAlias(String alias);
 
     /**
-     * Adds alias to defined index name.
+     * 为指定索引添加别名。.
      * Re-assigns the alias if it was used before with a different index.
      *
-     * @param alias alias value
-     * @param indexName index name
+     * @param alias 别名
+     * @param indexName 索引名称
      */
     Completable updateAlias(String alias, String indexName);
 
     /**
-     * Returns list of aliases defined for the specified index
+     * 返回指定索引已定义的全部别名列表
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上</b>。
      *
-     * @param indexName index name
-     * @return list of aliases
+     * @param indexName 索引名称
+     * @return 别名列表
      */
     Single<List<String>> getAliases(String indexName);
 
     /**
-     * Adds a new attribute to the index
+     * 向索引添加新字段属性。
      *
-     * @param indexName index name
-     * @param skipInitialScan doesn't scan the index if <code>true</code>
+     * @param indexName 索引名称
+     * @param skipInitialScan 为 true 时跳过初始全量扫描
      * @param fields field indexes
      */
     Completable alter(String indexName, boolean skipInitialScan, FieldIndex... fields);
 
     /**
-     * Returns configuration map by defined parameter name
+     * 按参数名返回配置映射。
      *
-     * @param parameter parameter name
-     * @return configuration map
+     * @param parameter 参数名称
+     * @return 配置映射
      */
     Maybe<Map<String, String>> getConfig(String parameter);
 
     /**
-     * Sets configuration value by the parameter name
+     * 按参数名设置配置值。
      *
-     * @param parameter parameter name
-     * @param value parameter value
+     * @param parameter 参数名称
+     * @param value 参数值
      */
     Completable setConfig(String parameter, String value);
 
     /**
-     * Deletes cursor by index name and id
+     * 按索引名与游标 ID 删除游标。
      *
-     * @param indexName index name
-     * @param cursorId cursor id
+     * @param indexName 索引名称
+     * @param cursorId 游标 ID
      */
     Completable delCursor(String indexName, long cursorId);
 
     /**
-     * Returns next results by index name and cursor id
+     * 按索引名与游标 ID 读取下一批聚合结果。
      *
-     * @param indexName index name
-     * @param cursorId cursor id
-     * @return aggregation result
+     * @param indexName 索引名称
+     * @param cursorId 游标 ID
+     * @return 聚合结果
      */
     Single<AggregationResult> readCursor(String indexName, long cursorId);
 
     /**
-     * Returns next results by index name, cursor id and results size
+     * 按索引名、游标 ID 与批次大小读取下一批聚合结果
      *
-     * @param indexName index name
-     * @param cursorId cursor id
-     * @param count results size
-     * @return aggregation result
+     * @param indexName 索引名称
+     * @param cursorId 游标 ID
+     * @param count 结果批次大小
+     * @return 聚合结果
      */
     Single<AggregationResult> readCursor(String indexName, long cursorId, int count);
 
     /**
-     * Adds defined terms to the dictionary
+     * 向词典添加指定词条。
      *
-     * @param dictionary dictionary name
-     * @param terms terms
-     * @return number of new terms
+     * @param dictionary 词典名称
+     * @param terms 词条列表
+     * @return 新增词条数量
      */
     Single<Long> addDict(String dictionary, String... terms);
 
     /**
-     * Deletes defined terms from the dictionary
+     * 从词典删除指定词条。
      *
-     * @param dictionary dictionary name
-     * @param terms terms
-     * @return number of deleted terms
+     * @param dictionary 词典名称
+     * @param terms 词条列表
+     * @return 删除词条数量
      */
     Single<Long> delDict(String dictionary, String... terms);
 
     /**
-     * Returns terms stored in the dictionary
+     * 返回词典中存储的全部词条。
      *
-     * @param dictionary dictionary name
-     * @return terms
+     * @param dictionary 词典名称
+     * @return 词条列表
      */
     Maybe<List<String>> dumpDict(String dictionary);
 
     /**
-     * Deletes index by name
+     * 按名称删除索引。
      *
-     * @param indexName index name
+     * @param indexName 索引名称
      */
     Completable dropIndex(String indexName);
 
     /**
-     * Deletes index by name and associated documents.
+     * 按名称删除索引。 and associated documents.
      * Associated documents are deleted asynchronously.
      * Method {@link #info(String)} can be used to check for process completion.
      *
-     * @param indexName index name
+     * @param indexName 索引名称
      */
     Completable dropIndexAndDocuments(String indexName);
 
     /**
-     * Returns index info by name
+     * 按名称返回索引元信息。
      *
-     * @param indexName index name
-     * @return index info
+     * @param indexName 索引名称
+     * @return 索引信息
      */
     Single<IndexInfo> info(String indexName);
 
     /**
-     * Returns boolean value indicating whether index exists
+     * 返回索引是否存在。
      *
-     * @param indexName index name
-     * @return boolean value
+     * @param indexName 索引名称
+     * @return 是否存在
      */
     Single<Boolean> hasIndex(String indexName);
 
     /**
-     * Executes spell checking by defined index name and query.
-     * Returns a map of misspelled terms and their score.
+     * 在指定索引上对查询执行拼写检查，返回拼写错误词及其得分映射。
      *
      * <pre>
      * Map<String, Map<String, Double>> res = s.spellcheck("idx", "Hocke sti", SpellcheckOptions.defaults()
      *                                                                                          .includedTerms("name"));
      * </pre>
      *
-     * @param indexName index name
-     * @param query     query
-     * @param options   spell checking options
-     * @return map of misspelled terms and their score
+     * @param indexName 索引名称
+     * @param query 查询文本
+     * @param options 拼写检查选项
+     * @return 拼写错误词及其得分映射
      */
     Single<Map<String, Map<String, Double>>> spellcheck(String indexName, String query, SpellcheckOptions options);
 
     /**
-     * Returns synonyms mapped by word by defined index name
+     * 返回指定索引的同义词映射（词 → 同义词列表）。
      *
-     * @param indexName index name
-     * @return synonyms map
+     * @param indexName 索引名称
+     * @return 同义词映射
      */
     Single<Map<String, List<String>>> dumpSynonyms(String indexName);
 
     /**
-     * Updates synonyms
+     * 更新同义词组。
      *
-     * @param indexName index name
-     * @param synonymGroupId synonym group id
-     * @param terms terms
+     * @param indexName 索引名称
+     * @param synonymGroupId 同义词组 ID
+     * @param terms 词条列表
      */
     Completable updateSynonyms(String indexName, String synonymGroupId, String... terms);
 
     /**
-     * Returns list of all created indexes
+     * 返回全部已创建索引的名称列表。
      *
-     * @return list of indexes
+     * @return 索引名称列表
      */
     Single<List<String>> getIndexes();
 
