@@ -21,10 +21,9 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Strategy interface for determining the current Locale.
+ * 用于确定当前 {@link Locale} 的策略接口。
  *
- * <p>A LocaleContext instance can be associated with a thread
- * via the LocaleContextHolder class.
+ * <p>{@code LocaleContext} 实例可通过 {@link LocaleContextHolder} 与线程关联。
  *
  * @author Juergen Hoeller
  * @since 1.2
@@ -34,9 +33,8 @@ import org.jspecify.annotations.Nullable;
 public interface LocaleContext {
 
 	/**
-	 * Return the current Locale, which can be fixed or determined dynamically,
-	 * depending on the implementation strategy.
-	 * @return the current Locale, or {@code null} if no specific Locale associated
+	 * 返回当前 {@link Locale}，可为固定值或动态确定，取决于实现策略。
+	 * @return 当前 Locale；若未关联特定 Locale 则返回 {@code null}
 	 */
 	@Nullable Locale getLocale();
 

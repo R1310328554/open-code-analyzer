@@ -27,14 +27,14 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.ObjectUtils;
 
 /**
- * A method-based {@link org.springframework.expression.EvaluationContext} that
- * provides explicit support for method-based invocations.
+ * 基于方法的 {@link org.springframework.expression.EvaluationContext}，
+ * 为基于方法的调用提供显式支持。
  *
- * <p>Expose the actual method arguments using the following aliases:
+ * <p>通过以下别名暴露实际方法参数：
  * <ol>
- * <li>pX where X is the index of the argument (p0 for the first argument)</li>
- * <li>aX where X is the index of the argument (a1 for the second argument)</li>
- * <li>the name of the parameter as discovered by a configurable {@link ParameterNameDiscoverer}</li>
+ * <li>{@code pX}，其中 X 为参数索引（{@code p0} 表示第一个参数）</li>
+ * <li>{@code aX}，其中 X 为参数索引（{@code a1} 表示第二个参数）</li>
+ * <li>由可配置的 {@link ParameterNameDiscoverer} 发现的参数名</li>
  * </ol>
  *
  * @author Stephane Nicoll
@@ -79,7 +79,7 @@ public class MethodBasedEvaluationContext extends StandardEvaluationContext {
 	}
 
 	/**
-	 * Load the param information only when needed.
+	 * 仅在需要时加载参数信息。
 	 */
 	protected void lazyLoadArguments() {
 		// Shortcut if no args need to be loaded

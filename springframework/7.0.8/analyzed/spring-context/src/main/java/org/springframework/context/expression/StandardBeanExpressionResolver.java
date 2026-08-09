@@ -42,13 +42,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Standard implementation of the
- * {@link org.springframework.beans.factory.config.BeanExpressionResolver}
- * interface, parsing and evaluating Spring EL using Spring's expression module.
+ * {@link org.springframework.beans.factory.config.BeanExpressionResolver} 接口的标准实现，
+ * 使用 Spring 表达式模块解析并求值 Spring EL。
  *
- * <p>All beans in the containing {@code BeanFactory} are made available as
- * predefined variables with their common bean name, including standard context
- * beans such as "environment", "systemProperties" and "systemEnvironment".
+ * <p>容器 {@code BeanFactory} 中的所有 Bean 均以其常用 Bean 名称作为预定义变量可用，
+ * 包括 "environment"、"systemProperties"、"systemEnvironment" 等标准上下文 Bean。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -61,17 +59,17 @@ import org.springframework.util.StringUtils;
 public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 
 	/**
-	 * System property to configure the maximum length for SpEL expressions: {@value}.
-	 * <p>Can also be configured via the {@link SpringProperties} mechanism.
+	 * 用于配置 SpEL 表达式最大长度的系统属性：{@value}。
+	 * <p>也可通过 {@link SpringProperties} 机制配置。
 	 * @since 6.1.3
 	 * @see SpelParserConfiguration#getMaximumExpressionLength()
 	 */
 	public static final String MAX_SPEL_EXPRESSION_LENGTH_PROPERTY_NAME = "spring.context.expression.maxLength";
 
-	/** Default expression prefix: "#{". */
+	/** 默认表达式前缀："{#"。 */
 	public static final String DEFAULT_EXPRESSION_PREFIX = "#{";
 
-	/** Default expression suffix: "}". */
+	/** 默认表达式后缀："}" 。 */
 	public static final String DEFAULT_EXPRESSION_SUFFIX = "}";
 
 
@@ -102,20 +100,20 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 
 
 	/**
-	 * Create a new {@code StandardBeanExpressionResolver} with default settings.
-	 * <p>As of Spring Framework 6.1.3, the maximum SpEL expression length can be
-	 * configured via the {@link #MAX_SPEL_EXPRESSION_LENGTH_PROPERTY_NAME} property.
+	 * 使用默认设置创建新的 {@code StandardBeanExpressionResolver}。
+	 * <p>自 Spring Framework 6.1.3 起，可通过
+	 * {@link #MAX_SPEL_EXPRESSION_LENGTH_PROPERTY_NAME} 属性配置 SpEL 表达式最大长度。
 	 */
 	public StandardBeanExpressionResolver() {
 		this(null);
 	}
 
 	/**
-	 * Create a new {@code StandardBeanExpressionResolver} with the given bean class loader,
-	 * using it as the basis for expression compilation.
-	 * <p>As of Spring Framework 6.1.3, the maximum SpEL expression length can be
-	 * configured via the {@link #MAX_SPEL_EXPRESSION_LENGTH_PROPERTY_NAME} property.
-	 * @param beanClassLoader the factory's bean class loader
+	 * 使用给定 Bean 类加载器创建新的 {@code StandardBeanExpressionResolver}，
+	 * 并以其作为表达式编译的基础。
+	 * <p>自 Spring Framework 6.1.3 起，可通过
+	 * {@link #MAX_SPEL_EXPRESSION_LENGTH_PROPERTY_NAME} 属性配置 SpEL 表达式最大长度。
+	 * @param beanClassLoader 工厂的 Bean 类加载器
 	 */
 	public StandardBeanExpressionResolver(@Nullable ClassLoader beanClassLoader) {
 		SpelParserConfiguration parserConfig = new SpelParserConfiguration(
@@ -125,8 +123,8 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 
 
 	/**
-	 * Set the prefix that an expression string starts with.
-	 * The default is "#{".
+	 * 设置表达式字符串的前缀。
+	 * 默认为 "#{" 。
 	 * @see #DEFAULT_EXPRESSION_PREFIX
 	 */
 	public void setExpressionPrefix(String expressionPrefix) {
@@ -135,8 +133,8 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	}
 
 	/**
-	 * Set the suffix that an expression string ends with.
-	 * The default is "}".
+	 * 设置表达式字符串的后缀。
+	 * 默认为 "}" 。
 	 * @see #DEFAULT_EXPRESSION_SUFFIX
 	 */
 	public void setExpressionSuffix(String expressionSuffix) {
@@ -145,9 +143,9 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	}
 
 	/**
-	 * Specify the EL parser to use for expression parsing.
-	 * <p>Default is a {@link org.springframework.expression.spel.standard.SpelExpressionParser},
-	 * compatible with standard Unified EL style expression syntax.
+	 * 指定用于表达式解析的 EL 解析器。
+	 * <p>默认为 {@link org.springframework.expression.spel.standard.SpelExpressionParser}，
+	 * 兼容标准 Unified EL 风格的表达式语法。
 	 */
 	public void setExpressionParser(ExpressionParser expressionParser) {
 		Assert.notNull(expressionParser, "ExpressionParser must not be null");
@@ -187,8 +185,8 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	}
 
 	/**
-	 * Template method for customizing the expression evaluation context.
-	 * <p>The default implementation is empty.
+	 * 用于自定义表达式求值上下文的模板方法。
+	 * <p>默认实现为空。
 	 */
 	protected void customizeEvaluationContext(StandardEvaluationContext evalContext) {
 	}

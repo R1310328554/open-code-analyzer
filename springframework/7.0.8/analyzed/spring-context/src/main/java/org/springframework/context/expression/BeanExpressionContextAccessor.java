@@ -26,8 +26,8 @@ import org.springframework.expression.TypedValue;
 import org.springframework.util.Assert;
 
 /**
- * SpEL {@link PropertyAccessor} that knows how to access the beans and contextual
- * objects of a Spring {@link BeanExpressionContext}.
+ * 能够访问 Spring {@link BeanExpressionContext} 中 Bean 及上下文对象的
+ * SpEL {@link PropertyAccessor}。
  *
  * @author Juergen Hoeller
  * @author Andy Clement

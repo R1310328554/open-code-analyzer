@@ -26,8 +26,7 @@ import org.springframework.expression.TypedValue;
 import org.springframework.util.Assert;
 
 /**
- * Read-only SpEL {@link PropertyAccessor} that knows how to retrieve properties
- * of a Spring {@link Environment} instance.
+ * 能够读取 Spring {@link Environment} 实例属性的只读 SpEL {@link PropertyAccessor}。
  *
  * @author Chris Beams
  * @since 3.1
@@ -45,8 +44,7 @@ public class EnvironmentAccessor implements PropertyAccessor {
 	}
 
 	/**
-	 * Access the given target object by resolving the given property name against
-	 * the given target environment.
+	 * 通过在给定目标 Environment 上解析属性名来访问目标对象。
 	 */
 	@Override
 	public TypedValue read(EvaluationContext context, @Nullable Object target, String name) throws AccessException {
@@ -55,7 +53,7 @@ public class EnvironmentAccessor implements PropertyAccessor {
 	}
 
 	/**
-	 * Read-only: returns {@code false}.
+	 * 只读：返回 {@code false}。
 	 */
 	@Override
 	public boolean canWrite(EvaluationContext context, @Nullable Object target, String name) throws AccessException {

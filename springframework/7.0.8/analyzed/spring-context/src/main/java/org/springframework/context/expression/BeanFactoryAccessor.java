@@ -26,8 +26,7 @@ import org.springframework.expression.TypedValue;
 import org.springframework.util.Assert;
 
 /**
- * SpEL {@link PropertyAccessor} that knows how to access the beans of a
- * Spring {@link BeanFactory}.
+ * 能够访问 Spring {@link BeanFactory} 中 Bean 的 SpEL {@link PropertyAccessor}。
  *
  * @author Juergen Hoeller
  * @author Andy Clement

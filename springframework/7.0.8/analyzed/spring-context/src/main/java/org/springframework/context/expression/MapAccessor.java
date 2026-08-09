@@ -19,19 +19,19 @@ package org.springframework.context.expression;
 import org.springframework.expression.PropertyAccessor;
 
 /**
- * SpEL {@link PropertyAccessor} that knows how to access the keys of a standard
- * {@link java.util.Map}.
+ * 能够访问标准 {@link java.util.Map} 键的 SpEL {@link PropertyAccessor}。
  *
  * @author Juergen Hoeller
  * @author Andy Clement
  * @since 3.0
- * @deprecated as of Spring Framework 7.0 in favor of {@link org.springframework.expression.spel.support.MapAccessor}.
+ * @deprecated 自 Spring Framework 7.0 起已弃用，请改用
+ * {@link org.springframework.expression.spel.support.MapAccessor}。
  */
 @Deprecated(since = "7.0", forRemoval = true)
 public class MapAccessor extends org.springframework.expression.spel.support.MapAccessor {
 
 	/**
-	 * Create a new {@code MapAccessor} for reading as well as writing.
+	 * 创建支持读写的 {@code MapAccessor}。
 	 * @see #MapAccessor(boolean)
 	 */
 	public MapAccessor() {
@@ -39,8 +39,8 @@ public class MapAccessor extends org.springframework.expression.spel.support.Map
 	}
 
 	/**
-	 * Create a new {@code MapAccessor} for reading and possibly also writing.
-	 * @param allowWrite whether to allow write operations on a target instance
+	 * 创建支持读取、并可选择是否支持写入的 {@code MapAccessor}。
+	 * @param allowWrite 是否允许对目标实例执行写操作
 	 * @since 6.2
 	 * @see #canWrite
 	 */

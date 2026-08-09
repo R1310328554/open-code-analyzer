@@ -25,16 +25,13 @@ import org.springframework.core.NamedInheritableThreadLocal;
 import org.springframework.core.NamedThreadLocal;
 
 /**
- * Simple holder class that associates a LocaleContext instance
- * with the current thread. The LocaleContext will be inherited
- * by any child threads spawned by the current thread if the
- * {@code inheritable} flag is set to {@code true}.
+ * 将 {@link LocaleContext} 实例与当前线程关联的简单持有类。
+ * 若 {@code inheritable} 标志设为 {@code true}，当前线程派生的子线程将继承该 {@code LocaleContext}。
  *
- * <p>Used as a central holder for the current Locale in Spring,
- * wherever necessary: for example, in MessageSourceAccessor.
- * DispatcherServlet automatically exposes its current Locale here.
- * Other applications can expose theirs too, to make classes like
- * MessageSourceAccessor automatically use that Locale.
+ * <p>在 Spring 中作为当前 Locale 的中央持有器，在需要时使用——
+ * 例如 {@link org.springframework.context.support.MessageSourceAccessor}。
+ * {@link org.springframework.web.servlet.DispatcherServlet} 会自动在此暴露其当前 Locale。
+ * 其他应用也可暴露各自的 Locale，使 {@code MessageSourceAccessor} 等类自动使用该 Locale。
  *
  * @author Juergen Hoeller
  * @author Nicholas Williams
@@ -63,7 +60,7 @@ public final class LocaleContextHolder {
 
 
 	/**
-	 * Reset the LocaleContext for the current thread.
+	 * 重置当前线程的 LocaleContext。
 	 */
 	public static void resetLocaleContext() {
 		localeContextHolder.remove();
@@ -71,12 +68,12 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Associate the given LocaleContext with the current thread,
-	 * <i>not</i> exposing it as inheritable for child threads.
-	 * <p>The given LocaleContext may be a {@link TimeZoneAwareLocaleContext},
-	 * containing a locale with associated time zone information.
-	 * @param localeContext the current LocaleContext,
-	 * or {@code null} to reset the thread-bound context
+	 * 将给定 LocaleContext 与当前线程关联，
+	 * <i>不</i>向子线程暴露为可继承。
+	 * <p>给定的 LocaleContext 可以是 {@link TimeZoneAwareLocaleContext}，
+	 * 包含关联了时区信息的 Locale。
+	 * @param localeContext 当前 LocaleContext，
+	 * 或 {@code null} 以重置线程绑定的上下文
 	 * @see SimpleLocaleContext
 	 * @see SimpleTimeZoneAwareLocaleContext
 	 */
@@ -85,13 +82,13 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Associate the given LocaleContext with the current thread.
-	 * <p>The given LocaleContext may be a {@link TimeZoneAwareLocaleContext},
-	 * containing a locale with associated time zone information.
-	 * @param localeContext the current LocaleContext,
-	 * or {@code null} to reset the thread-bound context
-	 * @param inheritable whether to expose the LocaleContext as inheritable
-	 * for child threads (using an {@link InheritableThreadLocal})
+	 * 将给定 LocaleContext 与当前线程关联。
+	 * <p>给定的 LocaleContext 可以是 {@link TimeZoneAwareLocaleContext}，
+	 * 包含关联了时区信息的 Locale。
+	 * @param localeContext 当前 LocaleContext，
+	 * 或 {@code null} 以重置线程绑定的上下文
+	 * @param inheritable 是否将 LocaleContext 作为可继承项暴露给子线程
+	 * （使用 {@link InheritableThreadLocal}）
 	 * @see SimpleLocaleContext
 	 * @see SimpleTimeZoneAwareLocaleContext
 	 */
@@ -112,8 +109,8 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Return the LocaleContext associated with the current thread, if any.
-	 * @return the current LocaleContext, or {@code null} if none
+	 * 返回与当前线程关联的 LocaleContext（若有）。
+	 * @return 当前 LocaleContext；若无则返回 {@code null}
 	 */
 	public static @Nullable LocaleContext getLocaleContext() {
 		LocaleContext localeContext = localeContextHolder.get();
@@ -124,12 +121,11 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Associate the given Locale with the current thread,
-	 * preserving any TimeZone that may have been set already.
-	 * <p>Will implicitly create a LocaleContext for the given Locale,
-	 * <i>not</i> exposing it as inheritable for child threads.
-	 * @param locale the current Locale, or {@code null} to reset
-	 * the locale part of thread-bound context
+	 * 将给定 Locale 与当前线程关联，
+	 * 保留可能已设置的 TimeZone。
+	 * <p>将为给定 Locale 隐式创建 LocaleContext，
+	 * <i>不</i>向子线程暴露为可继承。
+	 * @param locale 当前 Locale，或 {@code null} 以重置线程绑定上下文的 Locale 部分
 	 * @see #setTimeZone(TimeZone)
 	 * @see SimpleLocaleContext#SimpleLocaleContext(Locale)
 	 */
@@ -138,13 +134,12 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Associate the given Locale with the current thread,
-	 * preserving any TimeZone that may have been set already.
-	 * <p>Will implicitly create a LocaleContext for the given Locale.
-	 * @param locale the current Locale, or {@code null} to reset
-	 * the locale part of thread-bound context
-	 * @param inheritable whether to expose the LocaleContext as inheritable
-	 * for child threads (using an {@link InheritableThreadLocal})
+	 * 将给定 Locale 与当前线程关联，
+	 * 保留可能已设置的 TimeZone。
+	 * <p>将为给定 Locale 隐式创建 LocaleContext。
+	 * @param locale 当前 Locale，或 {@code null} 以重置线程绑定上下文的 Locale 部分
+	 * @param inheritable 是否将 LocaleContext 作为可继承项暴露给子线程
+	 * （使用 {@link InheritableThreadLocal}）
 	 * @see #setTimeZone(TimeZone, boolean)
 	 * @see SimpleLocaleContext#SimpleLocaleContext(Locale)
 	 */
@@ -165,15 +160,13 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Set a shared default locale at the framework level,
-	 * as an alternative to the JVM-wide default locale.
-	 * <p><b>NOTE:</b> This can be useful to set an application-level
-	 * default locale which differs from the JVM-wide default locale.
-	 * However, this requires each such application to operate against
-	 * locally deployed Spring Framework jars. Do not deploy Spring
-	 * as a shared library at the server level in such a scenario!
-	 * @param locale the default locale (or {@code null} for none,
-	 * letting lookups fall back to {@link Locale#getDefault()})
+	 * 在框架级别设置共享默认 Locale，
+	 * 作为 JVM 全局默认 Locale 的替代方案。
+	 * <p><b>注意：</b> 当应用级默认 Locale 与 JVM 全局默认不同时，此方式很有用。
+	 * 但要求各应用针对本地部署的 Spring Framework jar 运行。
+	 * 在此场景下请勿在服务器级别将 Spring 作为共享库部署！
+	 * @param locale 默认 Locale（或 {@code null} 表示无，
+	 * 查找将回退到 {@link Locale#getDefault()}）
 	 * @since 4.3.5
 	 * @see #getLocale()
 	 * @see Locale#getDefault()
@@ -183,17 +176,16 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Return the Locale associated with the current thread, if any,
-	 * or the system default Locale otherwise. This is effectively a
-	 * replacement for {@link java.util.Locale#getDefault()},
-	 * able to optionally respect a user-level Locale setting.
-	 * <p>Note: This method has a fallback to the shared default Locale,
-	 * either at the framework level or at the JVM-wide system level.
-	 * If you'd like to check for the raw LocaleContext content
-	 * (which may indicate no specific locale through {@code null}, use
-	 * {@link #getLocaleContext()} and call {@link LocaleContext#getLocale()}
-	 * @return the current Locale, or the system default Locale if no
-	 * specific Locale has been associated with the current thread
+	 * 返回与当前线程关联的 Locale（若有），
+	 * 否则返回系统默认 Locale。这实际上是
+	 * {@link java.util.Locale#getDefault()} 的替代方案，
+	 * 可选择尊重用户级 Locale 设置。
+	 * <p>注意：本方法会回退到共享默认 Locale，
+	 * 无论是框架级别还是 JVM 系统级别。
+	 * 若要检查原始 LocaleContext 内容
+	 * （可能通过 {@code null} 表示无特定 Locale），请使用
+	 * {@link #getLocaleContext()} 并调用 {@link LocaleContext#getLocale()}。
+	 * @return 当前 Locale；若当前线程未关联特定 Locale 则返回系统默认 Locale
 	 * @see #getLocaleContext()
 	 * @see LocaleContext#getLocale()
 	 * @see #setDefaultLocale(Locale)
@@ -204,13 +196,12 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Return the Locale associated with the given user context, if any,
-	 * or the system default Locale otherwise. This is effectively a
-	 * replacement for {@link java.util.Locale#getDefault()},
-	 * able to optionally respect a user-level Locale setting.
-	 * @param localeContext the user-level locale context to check
-	 * @return the current Locale, or the system default Locale if no
-	 * specific Locale has been associated with the current thread
+	 * 返回与给定用户上下文关联的 Locale（若有），
+	 * 否则返回系统默认 Locale。这实际上是
+	 * {@link java.util.Locale#getDefault()} 的替代方案，
+	 * 可选择尊重用户级 Locale 设置。
+	 * @param localeContext 要检查的用户级 Locale 上下文
+	 * @return 当前 Locale；若当前线程未关联特定 Locale 则返回系统默认 Locale
 	 * @since 5.0
 	 * @see #getLocale()
 	 * @see LocaleContext#getLocale()
@@ -228,12 +219,11 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Associate the given TimeZone with the current thread,
-	 * preserving any Locale that may have been set already.
-	 * <p>Will implicitly create a LocaleContext for the given Locale,
-	 * <i>not</i> exposing it as inheritable for child threads.
-	 * @param timeZone the current TimeZone, or {@code null} to reset
-	 * the time zone part of the thread-bound context
+	 * 将给定 TimeZone 与当前线程关联，
+	 * 保留可能已设置的 Locale。
+	 * <p>将为给定 Locale 隐式创建 LocaleContext，
+	 * <i>不</i>向子线程暴露为可继承。
+	 * @param timeZone 当前 TimeZone，或 {@code null} 以重置线程绑定上下文的时区部分
 	 * @see #setLocale(Locale)
 	 * @see SimpleTimeZoneAwareLocaleContext#SimpleTimeZoneAwareLocaleContext(Locale, TimeZone)
 	 */
@@ -242,13 +232,12 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Associate the given TimeZone with the current thread,
-	 * preserving any Locale that may have been set already.
-	 * <p>Will implicitly create a LocaleContext for the given Locale.
-	 * @param timeZone the current TimeZone, or {@code null} to reset
-	 * the time zone part of the thread-bound context
-	 * @param inheritable whether to expose the LocaleContext as inheritable
-	 * for child threads (using an {@link InheritableThreadLocal})
+	 * 将给定 TimeZone 与当前线程关联，
+	 * 保留可能已设置的 Locale。
+	 * <p>将为给定 Locale 隐式创建 LocaleContext。
+	 * @param timeZone 当前 TimeZone，或 {@code null} 以重置线程绑定上下文的时区部分
+	 * @param inheritable 是否将 LocaleContext 作为可继承项暴露给子线程
+	 * （使用 {@link InheritableThreadLocal}）
 	 * @see #setLocale(Locale, boolean)
 	 * @see SimpleTimeZoneAwareLocaleContext#SimpleTimeZoneAwareLocaleContext(Locale, TimeZone)
 	 */
@@ -268,15 +257,13 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Set a shared default time zone at the framework level,
-	 * as an alternative to the JVM-wide default time zone.
-	 * <p><b>NOTE:</b> This can be useful to set an application-level
-	 * default time zone which differs from the JVM-wide default time zone.
-	 * However, this requires each such application to operate against
-	 * locally deployed Spring Framework jars. Do not deploy Spring
-	 * as a shared library at the server level in such a scenario!
-	 * @param timeZone the default time zone (or {@code null} for none,
-	 * letting lookups fall back to {@link TimeZone#getDefault()})
+	 * 在框架级别设置共享默认时区，
+	 * 作为 JVM 全局默认时区的替代方案。
+	 * <p><b>注意：</b> 当应用级默认时区与 JVM 全局默认不同时，此方式很有用。
+	 * 但要求各应用针对本地部署的 Spring Framework jar 运行。
+	 * 在此场景下请勿在服务器级别将 Spring 作为共享库部署！
+	 * @param timeZone 默认时区（或 {@code null} 表示无，
+	 * 查找将回退到 {@link TimeZone#getDefault()}）
 	 * @since 4.3.5
 	 * @see #getTimeZone()
 	 * @see TimeZone#getDefault()
@@ -286,18 +273,17 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Return the TimeZone associated with the current thread, if any,
-	 * or the system default TimeZone otherwise. This is effectively a
-	 * replacement for {@link java.util.TimeZone#getDefault()},
-	 * able to optionally respect a user-level TimeZone setting.
-	 * <p>Note: This method has a fallback to the shared default TimeZone,
-	 * either at the framework level or at the JVM-wide system level.
-	 * If you'd like to check for the raw LocaleContext content
-	 * (which may indicate no specific time zone through {@code null}), use
-	 * {@link #getLocaleContext()} and call {@link TimeZoneAwareLocaleContext#getTimeZone()}
-	 * after downcasting to {@link TimeZoneAwareLocaleContext}.
-	 * @return the current TimeZone, or the system default TimeZone if no
-	 * specific TimeZone has been associated with the current thread
+	 * 返回与当前线程关联的 TimeZone（若有），
+	 * 否则返回系统默认 TimeZone。这实际上是
+	 * {@link java.util.TimeZone#getDefault()} 的替代方案，
+	 * 可选择尊重用户级 TimeZone 设置。
+	 * <p>注意：本方法会回退到共享默认 TimeZone，
+	 * 无论是框架级别还是 JVM 系统级别。
+	 * 若要检查原始 LocaleContext 内容
+	 * （可能通过 {@code null} 表示无特定时区），请使用
+	 * {@link #getLocaleContext()}，向下转型为 {@link TimeZoneAwareLocaleContext}
+	 * 后调用 {@link TimeZoneAwareLocaleContext#getTimeZone()}。
+	 * @return 当前 TimeZone；若当前线程未关联特定 TimeZone 则返回系统默认 TimeZone
 	 * @see #getLocaleContext()
 	 * @see TimeZoneAwareLocaleContext#getTimeZone()
 	 * @see #setDefaultTimeZone(TimeZone)
@@ -308,13 +294,12 @@ public final class LocaleContextHolder {
 	}
 
 	/**
-	 * Return the TimeZone associated with the given user context, if any,
-	 * or the system default TimeZone otherwise. This is effectively a
-	 * replacement for {@link java.util.TimeZone#getDefault()},
-	 * able to optionally respect a user-level TimeZone setting.
-	 * @param localeContext the user-level locale context to check
-	 * @return the current TimeZone, or the system default TimeZone if no
-	 * specific TimeZone has been associated with the current thread
+	 * 返回与给定用户上下文关联的 TimeZone（若有），
+	 * 否则返回系统默认 TimeZone。这实际上是
+	 * {@link java.util.TimeZone#getDefault()} 的替代方案，
+	 * 可选择尊重用户级 TimeZone 设置。
+	 * @param localeContext 要检查的用户级 Locale 上下文
+	 * @return 当前 TimeZone；若当前线程未关联特定 TimeZone 则返回系统默认 TimeZone
 	 * @since 5.0
 	 * @see #getTimeZone()
 	 * @see TimeZoneAwareLocaleContext#getTimeZone()
