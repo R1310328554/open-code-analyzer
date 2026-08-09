@@ -25,10 +25,8 @@ import io.netty.util.LeakPresenceDetector;
 import java.util.List;
 
 /**
- * Encodes a {@link WebSocketFrame} into a {@link ByteBuf}.
- * <p>
- * For the detailed instruction on adding add Web Socket support to your HTTP server, take a look into the
- * <tt>WebSocketServer</tt> example located in the {@code io.netty.example.http.websocket} package.
+ * HyBi 00 WebSocket 帧编码器，将 {@link WebSocketFrame} 写回 {@link ByteBuf} 线格式。
+ * <p>{@link Sharable} 可安全复用于多条连接；示例见 {@code io.netty.example.http.websocket}。
  */
 @Sharable
 public class WebSocket00FrameEncoder extends MessageToMessageEncoder<WebSocketFrame> implements WebSocketFrameEncoder {
@@ -46,28 +44,27 @@ public class WebSocket00FrameEncoder extends MessageToMessageEncoder<WebSocketFr
     @Override
     protected void encode(ChannelHandlerContext ctx, WebSocketFrame msg, List<Object> out) throws Exception {
         if (msg instanceof TextWebSocketFrame) {
-            // Text frame
+            // 文本：0x00 + UTF-8 载荷 + 0xFF
             ByteBuf data = msg.content();
 
             out.add(_0X00.duplicate());
             out.add(data.retain());
             out.add(_0XFF.duplicate());
         } else if (msg instanceof CloseWebSocketFrame) {
-            // Close frame, needs to call duplicate to allow multiple writes.
-            // See https://github.com/netty/netty/issues/2768
+            // 关闭帧 0xFF 0x00；duplicate 以支持多次写入（netty#2768）
             out.add(_0XFF_0X00.duplicate());
         } else {
-            // Binary frame
+            // 二进制：0x80 + 变长长度 + 载荷
             ByteBuf data = msg.content();
             int dataLen = data.readableBytes();
 
             ByteBuf buf = ctx.alloc().buffer(5);
             boolean release = true;
             try {
-                // Encode type.
+                // 写入类型字节 0x80
                 buf.writeByte((byte) 0x80);
 
-                // Encode length.
+                // 7 位一组的变长长度编码
                 int b1 = dataLen >>> 28 & 0x7F;
                 int b2 = dataLen >>> 14 & 0x7F;
                 int b3 = dataLen >>> 7 & 0x7F;
@@ -90,7 +87,7 @@ public class WebSocket00FrameEncoder extends MessageToMessageEncoder<WebSocketFr
                     buf.writeByte(b4);
                 }
 
-                // Encode binary data.
+                // 追加二进制载荷
                 out.add(buf);
                 out.add(data.retain());
                 release = false;

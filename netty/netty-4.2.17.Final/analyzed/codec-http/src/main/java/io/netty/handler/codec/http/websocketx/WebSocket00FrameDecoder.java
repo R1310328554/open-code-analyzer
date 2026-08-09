@@ -26,10 +26,8 @@ import java.util.List;
 import static io.netty.buffer.ByteBufUtil.readBytes;
 
 /**
- * Decodes {@link ByteBuf}s into {@link WebSocketFrame}s.
- * <p>
- * For the detailed instruction on adding add Web Socket support to your HTTP server, take a look into the
- * <tt>WebSocketServer</tt> example located in the {@code io.netty.example.http.websocket} package.
+ * HyBi 00（草案）WebSocket 帧解码器，将 {@link ByteBuf} 解析为 {@link WebSocketFrame}。
+ * <p>支持 0x00…0xFF 文本帧与 0x80 前缀二进制帧；示例见 {@code io.netty.example.http.websocket}。
  */
 public class WebSocket00FrameDecoder extends ReplayingDecoder<Void> implements WebSocketFrameDecoder {
 
@@ -43,8 +41,7 @@ public class WebSocket00FrameDecoder extends ReplayingDecoder<Void> implements W
     }
 
     /**
-     * Creates a new instance of {@code WebSocketFrameDecoder} with the specified {@code maxFrameSize}. If the client
-     * sends a frame size larger than {@code maxFrameSize}, the channel will be closed.
+     * 指定最大帧长度，超限抛出 {@link TooLongFrameException}。
      *
      * @param maxFrameSize
      *            the maximum frame size to decode
@@ -54,8 +51,7 @@ public class WebSocket00FrameDecoder extends ReplayingDecoder<Void> implements W
     }
 
     /**
-     * Creates a new instance of {@code WebSocketFrameDecoder} with the specified {@code maxFrameSize}. If the client
-     * sends a frame size larger than {@code maxFrameSize}, the channel will be closed.
+     * 从 {@link WebSocketDecoderConfig} 读取最大载荷长度等参数。
      *
      * @param decoderConfig
      *            Frames decoder configuration.
@@ -66,20 +62,20 @@ public class WebSocket00FrameDecoder extends ReplayingDecoder<Void> implements W
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        // Discard all data received if closing handshake was received before.
+        // 已收到关闭握手后丢弃后续字节
         if (receivedClosingHandshake) {
             in.skipBytes(actualReadableBytes());
             return;
         }
 
-        // Decode a frame otherwise.
+        // 按 HyBi-00 格式解码帧
         byte type = in.readByte();
         WebSocketFrame frame;
         if ((type & 0x80) == 0x80) {
-            // If the MSB on type is set, decode the frame length
+            // 最高位为 1：二进制帧，后跟变长长度字段
             frame = decodeBinaryFrame(ctx, type, in);
         } else {
-            // Decode a 0xff terminated UTF-8 string
+            // 最高位为 0：以 0xFF 结尾的 UTF-8 文本帧
             frame = decodeTextFrame(ctx, in);
         }
 
@@ -101,7 +97,7 @@ public class WebSocket00FrameDecoder extends ReplayingDecoder<Void> implements W
             }
             lengthFieldSize++;
             if (lengthFieldSize > 8) {
-                // Perhaps a malicious peer?
+                // 长度字段超过 8 字节，疑似恶意对端
                 throw new TooLongFrameException("frame length field size exceeds 8: " + lengthFieldSize);
             }
         } while ((b & 0x80) == 0x80);
@@ -119,12 +115,12 @@ public class WebSocket00FrameDecoder extends ReplayingDecoder<Void> implements W
         int rbytes = actualReadableBytes();
         int delimPos = buffer.indexOf(ridx, ridx + rbytes, (byte) 0xFF);
         if (delimPos == -1) {
-            // Frame delimiter (0xFF) not found
+            // 未找到 0xFF 分隔符，等待更多数据
             if (rbytes > maxFrameSize) {
-                // Frame length exceeded the maximum
+                // 累积长度超过 maxFrameSize
                 throw new TooLongFrameException("frame length exceeds " + maxFrameSize + ": " + rbytes);
             } else {
-                // Wait until more data is received
+                // ReplayingDecoder 等待更多输入
                 return null;
             }
         }
@@ -140,6 +136,7 @@ public class WebSocket00FrameDecoder extends ReplayingDecoder<Void> implements W
         int ffDelimPos = binaryData.indexOf(binaryData.readerIndex(), binaryData.writerIndex(), (byte) 0xFF);
         if (ffDelimPos >= 0) {
             binaryData.release();
+            // 文本载荷内不允许出现 0xFF
             throw new IllegalArgumentException("a text frame should not contain 0xFF.");
         }
 

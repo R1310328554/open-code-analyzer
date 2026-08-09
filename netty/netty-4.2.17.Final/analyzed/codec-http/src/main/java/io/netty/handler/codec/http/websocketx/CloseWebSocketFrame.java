@@ -23,19 +23,19 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * Web Socket Frame for closing the connection.
+ * 关闭连接的 WebSocket 帧（opcode 0x8），载荷为 2 字节状态码加可选 UTF-8 原因。
  */
 public class CloseWebSocketFrame extends WebSocketFrame {
 
     /**
-     * Creates a new empty close frame.
+     * 创建空关闭帧。
      */
     public CloseWebSocketFrame() {
         super(Unpooled.buffer(0));
     }
 
     /**
-     * Creates a new empty close frame with closing status code and reason text
+     * 以 {@link WebSocketCloseStatus} 创建关闭帧（含状态码与默认原因文本）。
      *
      * @param status
      *            Status code as per <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455</a>. For
@@ -46,7 +46,7 @@ public class CloseWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new empty close frame with closing status code and reason text, using the provided ByteBuf allocator.
+     * 使用指定 {@link ByteBufAllocator} 分配关闭帧载荷。
      *
      * @param status
      *            Status code as per <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455</a>. For
@@ -57,7 +57,7 @@ public class CloseWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new empty close frame with closing status code and reason text
+     * 以状态枚举与自定义原因文本创建关闭帧。
      *
      * @param status
      *            Status code as per <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455</a>. For
@@ -70,7 +70,7 @@ public class CloseWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new empty close frame with closing status code and reason text
+     * 以整数状态码与原因文本创建关闭帧。
      *
      * @param statusCode
      *            Integer status code as per <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455</a>. For
@@ -83,7 +83,7 @@ public class CloseWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new close frame with no losing status code and no reason text
+     * 创建无状态码与原因文本的空关闭帧，可指定 FIN/RSV。
      *
      * @param finalFragment
      *            flag indicating if this frame is the final fragment
@@ -159,8 +159,7 @@ public class CloseWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Returns the closing status code as per <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455</a>. If
-     * a status code is set, -1 is returned.
+     * 解析载荷前 2 字节为 RFC 6455 关闭状态码；载荷不足时返回 {@code -1}。
      */
     public int statusCode() {
         ByteBuf binaryData = content();
@@ -172,8 +171,7 @@ public class CloseWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Returns the reason text as per <a href="https://tools.ietf.org/html/rfc6455#section-7.4">RFC 6455</a> If a reason
-     * text is not supplied, an empty string is returned.
+     * 返回状态码之后的 UTF-8 原因文本；无原因时返回空串。
      */
     public String reasonText() {
         ByteBuf binaryData = content();
@@ -228,6 +226,7 @@ public class CloseWebSocketFrame extends WebSocketFrame {
         return this;
     }
 
+    /** 校验关闭码符合 RFC 6455，非法则抛出 {@link IllegalArgumentException} */
     static int requireValidStatusCode(int statusCode) {
         if (WebSocketCloseStatus.isValidStatusCode(statusCode)) {
             return statusCode;

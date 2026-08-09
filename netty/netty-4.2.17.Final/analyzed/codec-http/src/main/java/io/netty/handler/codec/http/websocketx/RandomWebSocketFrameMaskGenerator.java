@@ -18,7 +18,8 @@ package io.netty.handler.codec.http.websocketx;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * {@link WebSocketFrameMaskGenerator} implementation which returns a random int for masking.
+ * 基于 {@link ThreadLocalRandom} 的帧掩码生成器，为客户端出站帧提供随机 32 位 mask。
+ * <p>单例 {@link #INSTANCE} 供 {@link WebSocket08FrameEncoder} 等复用。
  */
 public final class RandomWebSocketFrameMaskGenerator implements WebSocketFrameMaskGenerator {
     public static final RandomWebSocketFrameMaskGenerator INSTANCE = new RandomWebSocketFrameMaskGenerator();
@@ -26,6 +27,7 @@ public final class RandomWebSocketFrameMaskGenerator implements WebSocketFrameMa
     private RandomWebSocketFrameMaskGenerator() {
     }
 
+    /** 返回下一个随机 32 位掩码值 */
     @Override
     public int nextMask() {
         return ThreadLocalRandom.current().nextInt();

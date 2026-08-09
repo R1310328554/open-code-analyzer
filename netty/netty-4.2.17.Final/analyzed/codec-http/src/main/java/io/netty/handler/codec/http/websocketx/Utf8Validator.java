@@ -39,7 +39,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.ByteProcessor;
 
 /**
- * Checks UTF8 bytes for validity
+ * 基于 DFA 的 UTF-8 字节流校验器，供 {@link Utf8FrameValidator} 增量检查分片文本。
+ * <p>实现 {@link ByteProcessor}，在 {@link #finish()} 时确认多字节序列完整结束。
  */
 final class Utf8Validator implements ByteProcessor {
     private static final int UTF8_ACCEPT = 0;
@@ -68,16 +69,19 @@ final class Utf8Validator implements ByteProcessor {
     private int codep;
     private boolean checking;
 
+    /** 从头扫描整个 buffer 并更新 DFA 状态 */
     public void check(ByteBuf buffer) {
         checking = true;
         buffer.forEachByte(this);
     }
 
+    /** 扫描 buffer 指定区间 */
     void check(ByteBuf buffer, int index, int length) {
         checking = true;
         buffer.forEachByte(index, length, this);
     }
 
+    /** 结束校验：若多字节序列未完整则抛出 {@link CorruptedWebSocketFrameException} */
     public void finish() {
         checking = false;
         codep = 0;
@@ -104,6 +108,7 @@ final class Utf8Validator implements ByteProcessor {
         return true;
     }
 
+    /** 是否处于分片文本校验进行中（首帧为 Text 且尚未 finish） */
     public boolean isChecking() {
         return checking;
     }

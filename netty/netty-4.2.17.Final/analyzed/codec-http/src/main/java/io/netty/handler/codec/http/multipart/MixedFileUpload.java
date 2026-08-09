@@ -20,10 +20,12 @@ import io.netty.buffer.ByteBuf;
 import java.nio.charset.Charset;
 
 /**
- * Mixed implementation using both in Memory and in File with a limit of size
+ * 混合存储 {@link FileUpload}：声明大小超过 {@code limitSize} 时直接用磁盘，否则先驻内存。
+ * <p>写入过程中超出阈值会由 {@link AbstractMixedHttpData} 迁移到 {@link DiskFileUpload}。
  */
 public class MixedFileUpload extends AbstractMixedHttpData<FileUpload> implements FileUpload {
 
+    /** 使用默认临时目录创建混合 FileUpload */
     public MixedFileUpload(String name, String filename, String contentType,
                            String contentTransferEncoding, Charset charset, long size,
                            long limitSize) {
@@ -36,8 +38,10 @@ public class MixedFileUpload extends AbstractMixedHttpData<FileUpload> implement
                            long limitSize, String baseDir, boolean deleteOnExit) {
         super(limitSize, baseDir, deleteOnExit,
               size > limitSize?
+                      // 已知大小已超阈值，直接落盘
                       new DiskFileUpload(name, filename, contentType, contentTransferEncoding, charset, size, baseDir,
                                          deleteOnExit) :
+                      // 否则先用内存，写入时再按需切换
                       new MemoryFileUpload(name, filename, contentType, contentTransferEncoding, charset, size)
         );
     }
@@ -72,6 +76,7 @@ public class MixedFileUpload extends AbstractMixedHttpData<FileUpload> implement
         return wrapped.getContentType();
     }
 
+    /** 超过阈值时创建 {@link DiskFileUpload} 并继承 maxSize 限制 */
     @Override
     FileUpload makeDiskData() {
         DiskFileUpload diskFileUpload = new DiskFileUpload(
@@ -83,7 +88,7 @@ public class MixedFileUpload extends AbstractMixedHttpData<FileUpload> implement
 
     @Override
     public FileUpload copy() {
-        // for binary compatibility
+        // 显式委托父类，保持二进制 API 兼容
         return super.copy();
     }
 

@@ -19,8 +19,8 @@ import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.handler.codec.DecoderException;
 
 /**
- * An {@link DecoderException} which is thrown when the received {@link WebSocketFrame} data could not be decoded by
- * an inbound handler.
+ * WebSocket 帧解码失败时抛出的 {@link CorruptedFrameException}，携带建议的 {@link WebSocketCloseStatus}。
+ * <p>供 {@link Utf8FrameValidator} 等 inbound handler 在协议违规时关闭连接。
  */
 public final class CorruptedWebSocketFrameException extends CorruptedFrameException {
 
@@ -29,14 +29,14 @@ public final class CorruptedWebSocketFrameException extends CorruptedFrameExcept
     private final WebSocketCloseStatus closeStatus;
 
     /**
-     * Creates a new instance.
+     * 使用 {@link WebSocketCloseStatus#PROTOCOL_ERROR} 创建实例。
      */
     public CorruptedWebSocketFrameException() {
         this(WebSocketCloseStatus.PROTOCOL_ERROR, null, null);
     }
 
     /**
-     * Creates a new instance.
+     * 指定关闭状态、消息与根因创建实例。
      */
     public CorruptedWebSocketFrameException(WebSocketCloseStatus status, String message, Throwable cause) {
         super(message == null ? status.reasonText() : message, cause);
@@ -57,6 +57,7 @@ public final class CorruptedWebSocketFrameException extends CorruptedFrameExcept
         this(status, null, cause);
     }
 
+    /** 返回建议发送给对端的 WebSocket 关闭状态码 */
     public WebSocketCloseStatus closeStatus() {
         return closeStatus;
     }

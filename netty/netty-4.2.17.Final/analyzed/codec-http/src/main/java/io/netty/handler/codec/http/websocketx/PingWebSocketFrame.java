@@ -19,19 +19,19 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 /**
- * Web Socket frame containing binary data.
+ * 心跳 Ping 帧（opcode 0x9），对端应以 {@link PongWebSocketFrame} 回应。
  */
 public class PingWebSocketFrame extends WebSocketFrame {
 
     /**
-     * Creates a new empty ping frame.
+     * 创建空 Ping 帧（FIN 强制为 true）。
      */
     public PingWebSocketFrame() {
         super(true, 0, Unpooled.buffer(0));
     }
 
     /**
-     * Creates a new ping frame with the specified binary data.
+     * 以可选应用数据创建 Ping 帧。
      *
      * @param binaryData
      *            the content of the frame.
@@ -41,7 +41,7 @@ public class PingWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new ping frame with the specified binary data.
+     * 创建 Ping 帧并指定 FIN 与 RSV（RFC 6455 中 Ping 必须为完整帧）。
      *
      * @param finalFragment
      *            flag indicating if this frame is the final fragment

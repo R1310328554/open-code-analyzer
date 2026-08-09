@@ -19,19 +19,19 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 /**
- * Web Socket frame containing binary data.
+ * 心跳 Pong 帧（opcode 0xA），通常作为 {@link PingWebSocketFrame} 的响应。
  */
 public class PongWebSocketFrame extends WebSocketFrame {
 
     /**
-     * Creates a new empty pong frame.
+     * 创建空 Pong 帧。
      */
     public PongWebSocketFrame() {
         super(Unpooled.buffer(0));
     }
 
     /**
-     * Creates a new pong frame with the specified binary data.
+     * 以与 Ping 相同的应用数据创建 Pong 帧。
      *
      * @param binaryData
      *            the content of the frame.
@@ -41,7 +41,7 @@ public class PongWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new pong frame with the specified binary data
+     * 创建 Pong 帧并指定 FIN 与 RSV。
      *
      * @param finalFragment
      *            flag indicating if this frame is the final fragment

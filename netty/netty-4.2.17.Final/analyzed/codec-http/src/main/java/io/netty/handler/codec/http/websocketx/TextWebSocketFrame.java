@@ -20,19 +20,19 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
 /**
- * Web Socket text frame.
+ * UTF-8 文本 WebSocket 数据帧（opcode 0x1）。
  */
 public class TextWebSocketFrame extends WebSocketFrame {
 
     /**
-     * Creates a new empty text frame.
+     * 创建空文本帧。
      */
     public TextWebSocketFrame() {
         super(Unpooled.buffer(0));
     }
 
     /**
-     * Creates a new text frame with the specified text string. The final fragment flag is set to true.
+     * 以字符串创建文本帧，自动 UTF-8 编码，FIN 为 true。
      *
      * @param text
      *            String to put in the frame.
@@ -42,7 +42,7 @@ public class TextWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new text frame with the specified binary data. The final fragment flag is set to true.
+     * 以已编码的 {@link ByteBuf} 创建文本帧。
      *
      * @param binaryData
      *            the content of the frame.
@@ -88,7 +88,7 @@ public class TextWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Returns the text data in this frame.
+     * 将帧载荷按 UTF-8 解码为字符串。
      */
     public String text() {
         return content().toString(CharsetUtil.UTF_8);

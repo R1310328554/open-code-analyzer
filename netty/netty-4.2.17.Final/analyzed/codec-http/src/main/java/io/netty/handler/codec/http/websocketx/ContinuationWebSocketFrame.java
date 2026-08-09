@@ -20,21 +20,20 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 
 /**
- * Web Socket continuation frame containing continuation text or binary data. This is used for
- * fragmented messages where the contents of a messages is contained more than 1 frame.
+ * 分片消息的延续帧（opcode 0x0），承载多帧文本或二进制消息的后续片段。
+ * <p>首帧须为 {@link TextWebSocketFrame} 或 {@link BinaryWebSocketFrame}，中间帧 FIN 为 false。
  */
 public class ContinuationWebSocketFrame extends WebSocketFrame {
 
     /**
-     * Creates a new empty continuation frame.
+     * 创建空延续帧。
      */
     public ContinuationWebSocketFrame() {
         this(Unpooled.buffer(0));
     }
 
     /**
-     * Creates a new continuation frame with the specified binary data. The final fragment flag is
-     * set to true.
+     * 以二进制载荷创建延续帧，FIN 默认为 true。
      *
      * @param binaryData the content of the frame.
      */
@@ -57,7 +56,7 @@ public class ContinuationWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new continuation frame with the specified text data
+     * 以 UTF-8 文本创建延续帧。
      *
      * @param finalFragment
      *            flag indicating if this frame is the final fragment
@@ -71,14 +70,14 @@ public class ContinuationWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Returns the text data in this frame.
+     * 将载荷按 UTF-8 解码为字符串（用于文本分片）。
      */
     public String text() {
         return content().toString(CharsetUtil.UTF_8);
     }
 
     /**
-     * Sets the string for this frame.
+     * 将字符串编码为 UTF-8 {@link ByteBuf} 作为帧内容。
      *
      * @param text
      *            text to store.

@@ -19,19 +19,19 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 /**
- * Web Socket frame containing binary data.
+ * 二进制载荷的 WebSocket 数据帧（opcode 0x2）。
  */
 public class BinaryWebSocketFrame extends WebSocketFrame {
 
     /**
-     * Creates a new empty binary frame.
+     * 创建空二进制帧。
      */
     public BinaryWebSocketFrame() {
         super(Unpooled.buffer(0));
     }
 
     /**
-     * Creates a new binary frame with the specified binary data. The final fragment flag is set to true.
+     * 以指定 {@link ByteBuf} 创建二进制帧，FIN 置为 true。
      *
      * @param binaryData
      *            the content of the frame.
@@ -41,7 +41,7 @@ public class BinaryWebSocketFrame extends WebSocketFrame {
     }
 
     /**
-     * Creates a new binary frame with the specified binary data and the final fragment flag.
+     * 创建二进制帧并指定 FIN 与 RSV 扩展位。
      *
      * @param finalFragment
      *            flag indicating if this frame is the final fragment

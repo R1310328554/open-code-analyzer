@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * Mixed implementation using both in Memory and in File with a limit of size
+ * 混合存储 {@link Attribute}：小于 {@code limitSize} 驻内存，超出后透明切换为 {@link DiskAttribute}。
+ * <p>继承 {@link AbstractMixedHttpData} 的阈值与磁盘目录配置。
  */
 public class MixedAttribute extends AbstractMixedHttpData<Attribute> implements Attribute {
+    /** 使用默认字符集与磁盘目录创建混合 Attribute */
     public MixedAttribute(String name, long limitSize) {
         this(name, limitSize, HttpConstants.DEFAULT_CHARSET);
     }
@@ -62,13 +64,14 @@ public class MixedAttribute extends AbstractMixedHttpData<Attribute> implements 
                 DiskAttribute.baseDirectory, DiskFileUpload.deleteOnExitTemporaryFile);
     }
 
+    /** 按初始值长度选择 {@link MemoryAttribute} 或 {@link DiskAttribute}；磁盘失败时回退内存 */
     private static Attribute makeInitialAttributeFromValue(String name, String value, long limitSize, Charset charset,
                                                            String baseDir, boolean deleteOnExit) {
         if (value.length() > limitSize) {
             try {
                 return new DiskAttribute(name, value, charset, baseDir, deleteOnExit);
             } catch (IOException e) {
-                // revert to Memory mode
+                // 磁盘创建失败时回退为纯内存模式
                 try {
                     return new MemoryAttribute(name, value, charset);
                 } catch (IOException ignore) {
@@ -100,6 +103,7 @@ public class MixedAttribute extends AbstractMixedHttpData<Attribute> implements 
         wrapped.setValue(value);
     }
 
+    /** 超过阈值时创建 {@link DiskAttribute} 并继承 maxSize 限制 */
     @Override
     Attribute makeDiskData() {
         DiskAttribute diskAttribute = new DiskAttribute(getName(), definedLength(), baseDir, deleteOnExit);
@@ -109,7 +113,7 @@ public class MixedAttribute extends AbstractMixedHttpData<Attribute> implements 
 
     @Override
     public Attribute copy() {
-        // for binary compatibility
+        // 显式委托父类，保持二进制 API 兼容
         return super.copy();
     }
 

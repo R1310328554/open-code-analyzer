@@ -25,9 +25,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * Default FileUpload implementation that stores file into memory.<br><br>
- *
- * Warning: be aware of the memory limitation.
+ * 内存型 {@link FileUpload} 实现，上传内容全部保存在 {@link ByteBuf} 中。
+ * <p>注意内存占用：大文件应选用 {@link DiskFileUpload} 或 {@link MixedFileUpload}。
  */
 public class MemoryFileUpload extends AbstractMemoryHttpData implements FileUpload {
 
@@ -37,6 +36,7 @@ public class MemoryFileUpload extends AbstractMemoryHttpData implements FileUplo
 
     private String contentTransferEncoding;
 
+    /** 构造内存文件上传项，并设置文件名、Content-Type 与传输编码 */
     public MemoryFileUpload(String name, String filename, String contentType,
             String contentTransferEncoding, Charset charset, long size) {
         super(name, charset, size);
@@ -115,6 +115,7 @@ public class MemoryFileUpload extends AbstractMemoryHttpData implements FileUplo
             "\r\nIsInMemory: " + isInMemory();
     }
 
+    /** 深拷贝内容 {@link ByteBuf}，返回新的 {@link MemoryFileUpload} */
     @Override
     public FileUpload copy() {
         final ByteBuf content = content();
@@ -147,6 +148,7 @@ public class MemoryFileUpload extends AbstractMemoryHttpData implements FileUplo
         }
     }
 
+    /** 以新 {@link ByteBuf} 内容替换，保留元数据字段 */
     @Override
     public FileUpload replace(ByteBuf content) {
         MemoryFileUpload upload = new MemoryFileUpload(
