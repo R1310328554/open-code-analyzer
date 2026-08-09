@@ -24,12 +24,15 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * 
+ * 单条 Map 键值对解码器：将 Redis 两元素列表解析为一条 {@link Entry}。
+ * <p>奇偶位分别使用 Codec 的 map key/value 解码器，适用于 {@code HRANDFIELD} 等单字段响应。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SingleMapEntryDecoder implements MultiDecoder<Entry<Object, Object>> {
 
+    /** 奇数位返回 value 解码器，偶数位返回 key 解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (paramNum % 2 != 0) {
@@ -38,6 +41,7 @@ public class SingleMapEntryDecoder implements MultiDecoder<Entry<Object, Object>
         return codec.getMapKeyDecoder();
     }
 
+    /** 取 parts 前两个元素构造 {@link Entry}。 */
     @Override
     public Entry<Object, Object> decode(List<Object> parts, State state) {
         return new AbstractMap.SimpleEntry<>(parts.get(0), parts.get(1));

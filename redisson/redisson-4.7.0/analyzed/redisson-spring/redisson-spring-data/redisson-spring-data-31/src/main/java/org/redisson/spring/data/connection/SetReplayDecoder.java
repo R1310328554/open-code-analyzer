@@ -25,24 +25,30 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * 
+ * Redis 集合型响应回放解码器：将元素列表转为 {@link Set}。
+ * <p>使用 {@link LinkedHashSet} 保持插入顺序并去重；元素解码由注入的 {@link Decoder} 完成。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SetReplayDecoder<T> implements MultiDecoder<Set<T>> {
 
+    /** 集合元素解码器。 */
     private final Decoder<Object> decoder;
     
+    /** 指定集合元素的 {@link Decoder}。 */
     public SetReplayDecoder(Decoder<Object> decoder) {
         super();
         this.decoder = decoder;
     }
 
+    /** 返回构造时注入的元素解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return decoder;
     }
     
+    /** 将已解码元素列表包装为 {@link LinkedHashSet}。 */
     @Override
     public Set<T> decode(List<Object> parts, State state) {
         return new LinkedHashSet(parts);

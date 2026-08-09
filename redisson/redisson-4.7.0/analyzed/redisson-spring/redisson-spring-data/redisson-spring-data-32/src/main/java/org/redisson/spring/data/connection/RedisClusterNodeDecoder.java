@@ -32,18 +32,24 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * 
+ * 解析 Redis {@code CLUSTER NODES} 文本响应为 {@link RedisClusterNode} 列表。
+ * <p>提取 nodeId、地址、角色标志、master 关联、槽位范围与链路状态；
+ * 空地址节点经 {@link ServiceManager#toURI} 规范化。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> {
 
+    /** 用于将集群 bus 地址映射为客户端可连 URI。 */
     private final ServiceManager serviceManager;
 
+    /** 注入 Redisson 连接管理器以解析节点地址。 */
     public RedisClusterNodeDecoder(ServiceManager serviceManager) {
         this.serviceManager = serviceManager;
     }
 
+    /** 逐行解析 CLUSTER NODES 输出并组装 {@link RedisClusterNode}。 */
     @Override
     public List<RedisClusterNode> decode(ByteBuf buf, State state) throws IOException {
         String response = buf.toString(CharsetUtil.UTF_8);
@@ -67,6 +73,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
                 String addr = params[1].split("@")[0];
                 String name = addr.substring(0, addr.lastIndexOf(":"));
                 if (name.isEmpty()) {
+                    // 跳过无有效 host 的占位节点。
                     // skip nodes with empty address
                     continue;
                 }
@@ -88,6 +95,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
             if (params.length > 8) {
                 for (int i = 0; i < params.length - 8; i++) {
                     String slots = params[i + 8];
+                    // 忽略槽迁移中间态标记行。
                     if (slots.indexOf("-<-") != -1 || slots.indexOf("->-") != -1) {
                         continue;
                     }
