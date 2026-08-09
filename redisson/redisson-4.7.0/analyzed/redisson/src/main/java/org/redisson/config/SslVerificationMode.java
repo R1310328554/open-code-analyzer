@@ -16,25 +16,22 @@
 package org.redisson.config;
 
 /**
+ * SSL/TLS 证书校验模式，用于 {@link BaseConfig#setSslVerificationMode(SslVerificationMode)}。
+ * <p>
+ * 控制 Redisson 与 Redis 建立 TLS 连接时对服务端证书的验证严格程度。
  *
  * @author Nikita Koksharov
  *
  */
 public enum SslVerificationMode {
 
-    /**
-     * No SSL certificate verification.
-     */
+    /** 不进行 SSL 证书校验（仅加密传输，不验证身份）。 */
     NONE,
 
-    /**
-     * Validate the certificate chain but ignore hostname verification.
-     */
+    /** 校验证书链有效性，但跳过主机名（hostname）匹配检查。 */
     CA_ONLY,
 
-    /**
-     * Complete validation of the certificate chain and hostname.
-     */
+    /** 完整校验证书链与主机名，生产环境推荐。 */
     STRICT
 
 }

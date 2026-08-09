@@ -33,26 +33,38 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
 /**
- * 
+ * 通用 Redis 连接池持有者，管理空闲/活跃连接与并发借还。
+ * <p>
+ * 通过 {@link AsyncSemaphore} 限制最大连接数；
+ * 支持普通命令连接与 Pub/Sub 连接两种模式（changeUsage 标志）。
+ *
  * @author Nikita Koksharov
  *
+ * @param <T> 连接类型（{@link RedisConnection} 或其子类）
  */
 public class ConnectionsHolder<T extends RedisConnection> {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** 池中所有连接（含借出中的）。 */
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
+    /** 空闲可借连接双端队列。 */
     private final Deque<T> freeConnections = new ConcurrentLinkedDeque<>();
+    /** 空闲连接计数信号量（上限 = poolMaxSize）。 */
     private final AsyncSemaphore freeConnectionsCounter;
 
+    /** 关联的 Redis 客户端。 */
     private final RedisClient client;
 
+    /** 创建新连接的异步回调。 */
     private final Function<RedisClient, CompletionStage<T>> connectionCallback;
 
+    /** 服务管理器（事件循环、定时器等）。 */
     private final ServiceManager serviceManager;
 
-    private final boolean changeUsage;
+    /** 是否在借还时增减连接的 usage 计数。 */
 
+    /** 构造连接池，以 poolMaxSize 初始化信号量。 */
     public ConnectionsHolder(RedisClient client, int poolMaxSize,
                              Function<RedisClient, CompletionStage<T>> connectionCallback,
                              ServiceManager serviceManager, boolean changeUsage) {
@@ -63,6 +75,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         this.changeUsage = changeUsage;
     }
 
+    /** 从空闲队列与全量集合中移除连接。 */
     public <R extends RedisConnection> boolean remove(R connection) {
         if (freeConnections.remove(connection)) {
             return allConnections.remove(connection);
@@ -78,6 +91,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return freeConnectionsCounter;
     }
 
+    /** 异步获取连接许可（信号量 acquire）。 */
     protected CompletableFuture<Void> acquireConnection() {
         return freeConnectionsCounter.acquire();
     }
@@ -91,6 +105,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         freeConnections.add(conn);
     }
 
+    /** 从空闲队列轮询活跃连接，跳过 inactive 通道。 */
     private T pollConnection(RedisCommand<?> command) {
         int size = freeConnections.size();
         for (int i = 0; i < size; i++) {
@@ -138,6 +153,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return allConnections;
     }
 
+    /** 顺序创建 minimumIdleSize 条连接并加入空闲池。 */
     public CompletableFuture<Void> initConnections(int minimumIdleSize) {
         if (minimumIdleSize == 0) {
             return CompletableFuture.completedFuture(null);
@@ -164,8 +180,8 @@ public class ConnectionsHolder<T extends RedisConnection> {
                         conn.decUsage();
                     }
                     addConnection(conn);
-                    // release only on success; the failure path already releases in createConnection(promise),
-                    // so an unconditional release here double-releases per failed init and lifts the counter above pool max
+                    // 仅在成功时 release；失败路径已在 createConnection(promise) 中 release，
+                    // 此处无条件 release 会导致初始化失败时双重释放，使计数器超过池上限
                     releaseConnection();
                 }
 
@@ -221,6 +237,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         }
     }
 
+    /** 异步借出连接：优先复用空闲连接，否则新建。 */
     public CompletableFuture<T> acquireConnection(RedisCommand<?> command) {
         CompletableFuture<T> result = new CompletableFuture<>();
 
@@ -260,6 +277,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
                 '}';
     }
 
+    /** 归还连接；若条目已冻结则关闭连接而非回池。 */
     public void releaseConnection(ClientConnectionsEntry entry, T connection) {
         if (entry.isFreezed()) {
             connection.closeAsync();

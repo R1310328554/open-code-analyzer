@@ -23,12 +23,22 @@ import io.netty.resolver.dns.DnsServerAddressStreamProvider;
 import java.net.InetSocketAddress;
 
 /**
- * Created by hasaadon on 15/02/2018.
+ * 地址解析器组工厂接口，用于创建 Netty {@link AddressResolverGroup}。
+ * <p>
+ * 默认实现为 {@link DnsAddressResolverGroupFactory}；
+ * 可替换以支持自定义 DNS 或静态地址映射。
+ *
+ * @author hasaadon
  */
 public interface AddressResolverGroupFactory {
 
-    AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType,
-                                                   Class<? extends SocketChannel> socketChannelType,
-                                                   DnsServerAddressStreamProvider nameServerProvider);
+    /**
+     * 创建 {@link InetSocketAddress} 地址解析器组。
+     *
+     * @param channelType UDP 通道类型（DNS 查询）
+     * @param socketChannelType TCP 通道类型（DNS TCP 回退）
+     * @param nameServerProvider DNS 服务器地址流提供者
+     * @return 地址解析器组实例
+     */
 
 }

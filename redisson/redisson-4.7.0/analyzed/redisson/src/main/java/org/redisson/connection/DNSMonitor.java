@@ -31,8 +31,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * DNS changes monitor.
- * 
+ * DNS 变更监视器，周期性解析主从主机名并触发拓扑更新。
+ * <p>
+ * 当检测到 IP 变化时，调用 {@link MasterSlaveEntry#changeMaster} 或
+ * {@link MasterSlaveEntry#addSlave}/{@link MasterSlaveEntry#slaveDown} 同步连接池。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -40,16 +43,23 @@ public class DNSMonitor {
     
     private static final Logger log = LoggerFactory.getLogger(DNSMonitor.class);
     
+    /** 所属连接管理器。 */
     private final ConnectionManager connectionManager;
+    /** 主节点 URI → 当前解析地址。 */
     private final Map<RedisURI, InetSocketAddress> masters = new HashMap<>();
+    /** 从节点 URI → 当前解析地址。 */
     private final Map<RedisURI, InetSocketAddress> slaves = new HashMap<>();
-    
+
+    /** 下一次 DNS 扫描的 Netty 定时任务。 */
     private volatile Timeout dnsMonitorFuture;
+    /** DNS 扫描间隔（毫秒）。 */
     private final long dnsMonitoringInterval;
+    /** 每次扫描的 DNS 解析重试次数。 */
     private final int dnsMonitoringTimes;
 
-    private boolean printed;
+    /** 是否已打印多 IP 警告（避免重复日志）。 */
 
+    /** 构造监视器并解析初始主从地址。 */
     public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisClient> slaveHosts, long dnsMonitoringInterval, int dnsMonitoringTimes) {
         masterHost.resolveAddr().join();
         masters.put(masterHost.getConfig().getAddress(), masterHost.getAddr());
@@ -63,17 +73,20 @@ public class DNSMonitor {
         this.dnsMonitoringTimes = dnsMonitoringTimes;
     }
     
+    /** 启动周期性 DNS 变更检测。 */
     public void start() {
         monitorDnsChange();
         log.debug("DNS monitoring enabled; Current masters: {}, slaves: {}", masters, slaves);
     }
     
+    /** 停止 DNS 监视定时任务。 */
     public void stop() {
         if (dnsMonitorFuture != null) {
             dnsMonitorFuture.cancel();
         }
     }
     
+    /** 调度下一次 DNS 扫描（主从并行检测）。 */
     private void monitorDnsChange() {
         dnsMonitorFuture = connectionManager.getServiceManager().newTimeout(t -> {
             if (connectionManager.getServiceManager().isShuttingDown()) {
@@ -87,6 +100,7 @@ public class DNSMonitor {
         }, dnsMonitoringInterval, TimeUnit.MILLISECONDS);
     }
 
+    /** 检测所有主节点 DNS 是否变更，变更时触发 changeMaster。 */
     private CompletableFuture<Void> monitorMasters() {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
@@ -169,6 +183,7 @@ public class DNSMonitor {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
+    /** 检测从节点 DNS 变更，更新 slaveUp/slaveDown/addSlave。 */
     private CompletableFuture<Void> monitorSlaves() {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Entry<RedisURI, InetSocketAddress> entry : slaves.entrySet()) {
@@ -265,6 +280,7 @@ public class DNSMonitor {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
     
+    /** 多次解析 DNS，收集所有 IP 并判断是否与当前地址一致。 */
     private CompletableFuture<Boolean> resolveTimes(Entry<RedisURI, InetSocketAddress> entry, Set<RedisURI> addressSet, int times) {
         CompletableFuture<List<RedisURI>> ipsFuture = connectionManager.getServiceManager().resolveAll(entry.getKey());
         return ipsFuture.thenCompose(addresses -> {

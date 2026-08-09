@@ -16,31 +16,29 @@
 package org.redisson.config;
 
 /**
- * 
+ * Netty 底层 I/O 传输模式，影响事件循环与 socket 实现。
+ * <p>
+ * 通过 {@link Config#setTransportMode(TransportMode)} 设置；
+ * 非 NIO 模式需对应 native 依赖在 classpath 中。
+ *
  * @author Nikita Koksharov
  *
  */
 public enum TransportMode {
 
-    /**
-     * Use NIO transport.
-     */
+    /** 使用 Java NIO 传输（跨平台默认选项）。 */
     NIO,
 
     /**
-     * Use EPOLL transport. Activates an unix socket if servers binded to loopback interface.
-     * Requires <b>netty-transport-native-epoll</b> lib in classpath.
+     * 使用 Linux EPOLL 传输；服务器绑定回环地址时可启用 Unix Domain Socket。
+     * 需要 classpath 中包含 <b>netty-transport-native-epoll</b>。
      */
     EPOLL,
 
-    /**
-     * Use KQUEUE transport. Requires <b>netty-transport-native-kqueue</b> lib in classpath.
-     */
+    /** 使用 BSD/macOS KQUEUE 传输，需 <b>netty-transport-native-kqueue</b> 依赖。 */
     KQUEUE,
 
-    /**
-     * Use `io_uring` transport. Requires <b>netty-transport-io_uring</b> lib in classpath.
-     */
+    /** 使用 Linux io_uring 传输，需 <b>netty-transport-io_uring</b> 依赖。 */
     IO_URING,
 
 }

@@ -16,18 +16,16 @@
 package org.redisson.config;
 
 /**
- * Valkey capabilities options
+ * Valkey 客户端能力声明选项，通过 CLIENT SETINFO 告知服务端。
+ * <p>
+ * 用于协商 Valkey 特有协议特性（如集群重定向）。
  *
  * @author Nikita Koksharov
  *
  */
 public enum ValkeyCapability {
 
-    /**
-     *
-     * This option indicates that the client is capable of handling redirect messages.
-     *
-     */
+    /** 声明客户端可处理 Valkey 重定向（REDIRECT）消息。 */
     REDIRECT
 
 }

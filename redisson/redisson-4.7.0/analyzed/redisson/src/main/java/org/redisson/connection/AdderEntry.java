@@ -21,20 +21,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 聚合计数条目，用于跟踪一组 ID 及其并发使用次数。
+ * <p>
+ * 内部使用线程安全的 {@link ConcurrentHashMap} 集合与 {@link AtomicInteger} 计数器。
  *
  * @author Nikita Koksharov
  *
  */
 public class AdderEntry {
 
+    /** 关联的 ID 集合（线程安全）。 */
     private final Set<String> ids = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    /** 当前使用计数。 */
     private final AtomicInteger usage = new AtomicInteger();
 
+    /** 返回关联 ID 集合。 */
     public Set<String> getIds() {
         return ids;
     }
 
+    /** 返回使用计数器。 */
     public AtomicInteger getUsage() {
         return usage;
     }

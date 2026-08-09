@@ -44,7 +44,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Redis 集群模式连接管理器，继承 {@link MasterSlaveConnectionManager}。
+ * <p>
+ * 职责包括：
+ * <ul>
+ *   <li>启动时通过 CLUSTER NODES 解析拓扑并建立 master/slave 连接池</li>
+ *   <li>周期性扫描集群状态，处理 master 故障转移、slave 增减与槽位迁移</li>
+ *   <li>维护 slot → {@link MasterSlaveEntry} 映射及 CRC16 槽位计算</li>
+ * </ul>
+ *
  * @author Nikita Koksharov
  *
  */
@@ -52,30 +60,43 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** 槽号 → 当前集群分区快照（引用计数管理生命周期）。 */
     private final Map<Integer, ClusterPartition> lastPartitions = new ConcurrentHashMap<>();
+    /** master URI → 分区对象，用于拓扑变更比对。 */
     private final Map<RedisURI, ClusterPartition> lastUri2Partition = new ConcurrentHashMap<>();
 
+    /** 集群拓扑扫描定时任务。 */
     private volatile Timeout monitorFuture;
-    
+
+    /** 最近一次成功获取 CLUSTER NODES 的节点 URI。 */
     private volatile RedisURI lastClusterNode;
-    
+
+    /** CLUSTER NODES 命令封装（含解码器）。 */
     private RedisStrictCommand<List<ClusterNodeInfo>> clusterNodesCommand;
-    
+
+    /** 配置端点（如 ElastiCache Configuration Endpoint）主机名。 */
     private String configEndpointHostName;
+    /** 配置端点认证用户名。 */
     private String configEndpointUsername;
+    /** 配置端点认证密码。 */
     private String configEndpointPassword;
-    
+
+    /** 16384 个槽位各自对应的主从条目（原子数组）。 */
     private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<>(MAX_SLOT);
 
+    /** RedisClient → 主从条目，加速按客户端查找。 */
     private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
 
+    /** 集群模式专用配置。 */
     private ClusterServersConfig cfg;
 
+    /** 构造集群连接管理器并设置 NAT 映射器。 */
     ClusterConnectionManager(ClusterServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
         this.serviceManager.setNatMapper(cfg.getNatMapper());
     }
 
+    /** 从集群配置创建主从配置，传递 database 编号。 */
     @Override
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         this.cfg = (ClusterServersConfig) cfg;
@@ -84,6 +105,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return res;
     }
 
+    /** 连接集群：遍历节点地址，执行 CLUSTER NODES 并初始化 master 条目。 */
     @Override
     public void doConnect(Function<RedisURI, String> hostnameMapper) {
         if (cfg.getScanInterval() <= 0) {
@@ -138,9 +160,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     break;
                 }
 
-                // Build entries first, then register slots only for entries that finish within the
-                // bounded wait. A slow entry can't deadlock init, and a single failed master or slave
-                // no longer prevents the healthy masters from registering
+                // 先并行构建条目，再在有限等待内注册已完成初始化的槽位。
+                // 慢条目不会阻塞整体 init；单个 master/slave 失败不再阻止健康 master 注册
                 Map<ClusterPartition, CompletableFuture<MasterSlaveEntry>> buildFutures = new LinkedHashMap<>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
@@ -186,8 +207,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 lastException = ce.getCause();
                             }
                         }
-                        // Failed build (already torn down by buildMasterEntry) or a straggler that
-                        // finishes after the deadline: shut its pool down so it can't leak or register late.
+                        // 构建失败（buildMasterEntry 已清理）或超时后才完成的条目：
+                        // 关闭其连接池，防止泄漏或延迟注册
                         bf.whenComplete((entry, ex) -> {
                             if (entry != null) {
                                 entry.shutdownAsync();
@@ -231,6 +252,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         scheduleClusterChangeCheck(cfg);
     }
 
+    /** 返回所有已注册的主从条目（懒连接模式下先触发 connect）。 */
     @Override
     public Collection<MasterSlaveEntry> getEntrySet() {
         lazyConnect();
@@ -238,6 +260,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return client2entry.values();
     }
 
+    /** 按 RedisURI 查找主或从条目。 */
     @Override
     public MasterSlaveEntry getEntry(RedisURI addr) {
         lazyConnect();
@@ -253,6 +276,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return null;
     }
 
+    /** 按 RedisClient 查找条目（含从节点）。 */
     @Override
     public MasterSlaveEntry getEntry(RedisClient redisClient) {
         lazyConnect();
@@ -270,6 +294,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return null;
     }
 
+    /** 按 InetSocketAddress 查找条目。 */
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress address) {
         lazyConnect();
@@ -286,6 +311,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return null;
     }
 
+    /** 集群 master 故障转移：更新 slot 映射与 client2entry。 */
     @Override
     protected CompletableFuture<RedisClient> changeMaster(int slot, RedisURI address) {
         MasterSlaveEntry entry = getEntry(slot);
@@ -298,6 +324,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
+    /** 按槽号 O(1) 查找主从条目。 */
     @Override
     public MasterSlaveEntry getEntry(int slot) {
         lazyConnect();
@@ -305,6 +332,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return slot2entry.get(slot);
     }
 
+    /** 注册槽位条目，引用计数递增并更新 client2entry。 */
     private void addEntry(Integer slot, MasterSlaveEntry entry) {
         MasterSlaveEntry oldEntry = slot2entry.getAndSet(slot, entry);
         if (oldEntry != entry) {
@@ -314,6 +342,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         client2entry.put(entry.getClient(), entry);
     }
 
+    /** 移除槽位条目并关闭无引用的旧条目。 */
     private void removeEntry(Integer slot) {
         MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
         shutdownEntry(entry, null);
@@ -325,6 +354,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 引用计数归零时关闭条目：断开节点、nodeDown、取消订阅。 */
     private void shutdownEntry(MasterSlaveEntry entry, MasterSlaveEntry newEntry) {
         if (entry != null && entry.decReference() == 0) {
             entry.getAllEntries().forEach(e -> {
@@ -353,6 +383,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 集群模式下从节点连接标记 readOnly（受 ReadMode 影响）。 */
     @Override
     protected RedisClientConfig createRedisConfig(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
         RedisClientConfig result = super.createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
@@ -360,10 +391,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
     
+    /** 异步添加新 master 分区并注册槽位。 */
     private CompletionStage<Void> addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
         return buildMasterEntry(partition, cfg).thenAccept(entry -> registerMasterEntry(entry, partition));
     }
 
+    /** 构建单个 master 的主从条目（含 slave 初始化）。 */
     private CompletableFuture<MasterSlaveEntry> buildMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
         if (partition.isMasterFail()) {
             RedisException e = new RedisException("Failed to add master: " +
@@ -431,6 +464,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }).toCompletableFuture();
     }
 
+    /** 将 master 条目注册到其所有槽位。 */
     private void registerMasterEntry(MasterSlaveEntry entry, ClusterPartition partition) {
         for (Integer slot : partition.getSlots()) {
             addEntry(slot, entry);
@@ -441,6 +475,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 更新槽位分区快照（引用计数管理）。 */
     private void addPartition(Integer slot, ClusterPartition partition) {
         partition.incReference();
         ClusterPartition prevPartiton = lastPartitions.put(slot, partition);
@@ -450,6 +485,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 按 scanInterval 调度下一次集群拓扑扫描。 */
     private void scheduleClusterChangeCheck(ClusterServersConfig cfg) {
         monitorFuture = serviceManager.newTimeout(t -> {
             if (configEndpointHostName != null) {
@@ -485,7 +521,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 Collections.shuffle(nodes);
                 Collections.shuffle(slaves);
 
-                // master nodes first
+                // 优先尝试 master 节点，再追加 slave
                 nodes.addAll(slaves);
 
                 Iterator<RedisURI> nodesIterator = nodes.iterator();
@@ -495,6 +531,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
+    /** 依次尝试节点列表获取 CLUSTER NODES，失败则切换下一节点。 */
     private void checkClusterState(ClusterServersConfig cfg, Iterator<RedisURI> iterator, AtomicReference<Throwable> lastException, List<RedisURI> allNodes) {
         if (!iterator.hasNext()) {
             if (lastException.get() != null) {
@@ -521,6 +558,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
+    /** 解析 CLUSTER NODES 响应并链式检查 master/slave/槽位变更。 */
     private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection,
             Iterator<RedisURI> iterator, RedisURI uri, AtomicReference<Throwable> lastException, List<RedisURI> allNodes) {
         RFuture<List<ClusterNodeInfo>> future = connection.async(StringCodec.INSTANCE, clusterNodesCommand);
@@ -595,6 +633,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
+    /** 比对新旧分区，增删 slave 并更新 fail/up 状态。 */
     private CompletableFuture<Void> checkSlaveNodesChange(Collection<ClusterPartition> newPartitions) {
         List<CompletableFuture<?>> futures = new ArrayList<>();
         for (ClusterPartition newPart : newPartitions) {
@@ -604,10 +643,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             MasterSlaveEntry entry = getEntry(currentPart.getSlotRanges().iterator().next().getStartSlot());
-            // should be invoked first in order to remove stale failedSlaveAddresses
+            // 必须先调用以清除过期的 failedSlaveAddresses
             CompletableFuture<Set<RedisURI>> addedSlavesFuture = addRemoveSlaves(entry, currentPart, newPart);
             CompletableFuture<Void> f = addedSlavesFuture.thenCompose(addedSlaves -> {
-                // Have some slaves changed state from failed to alive?
+                // 是否有 slave 从 FAIL 恢复为可用？
                 return upDownSlaves(entry, currentPart, newPart, addedSlaves);
             });
             futures.add(f);
@@ -621,6 +660,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                     });
     }
 
+    /** 处理 slave 上线（slaveUp）与下线（slaveDown）状态同步。 */
     private CompletableFuture<Void> upDownSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart, Set<RedisURI> addedSlaves) {
         List<CompletableFuture<?>> futures = new ArrayList<>();
 
@@ -655,6 +695,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
+    /** 检测并执行 slave 增删，返回新增加的 slave 集合。 */
     private CompletableFuture<Set<RedisURI>> addRemoveSlaves(MasterSlaveEntry entry, ClusterPartition currentPart, ClusterPartition newPart) {
         Set<RedisURI> removedSlaves = new HashSet<>(currentPart.getSlaveAddresses());
         removedSlaves.removeAll(newPart.getSlaveAddresses());
@@ -711,8 +752,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
             
             if (config.isSlaveNotUsed()) {
-                // slaves aren't connected in this mode, but the partition state must still be
-                // updated so the same slaves aren't re-detected as added on every topology scan
+                // 此模式下不连接 slave，但仍须更新分区状态，
+                // 避免每次拓扑扫描重复检测为新增 slave
                 currentPart.addSlaveAddress(uri);
                 currentPart.removeFailedSlaveAddress(uri);
                 continue;
@@ -733,12 +774,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return f.thenApply(r -> addedSlaves);
     }
 
+    /** 在分区集合中查找包含指定槽的分区。 */
     private ClusterPartition find(Collection<ClusterPartition> partitions, Integer slot) {
         return partitions.stream().filter(p -> p.hasSlot(slot)).findFirst().orElseThrow(() -> {
             return new IllegalStateException("Unable to find partition with slot " + slot);
         });
     }
 
+    /** 检测 master 故障转移与新 master 加入。 */
     private CompletableFuture<Void> checkMasterNodesChange(ClusterServersConfig cfg, Collection<ClusterPartition> newPartitions) {
         Map<RedisURI, ClusterPartition> addedPartitions = new HashMap<>();
         Set<RedisURI> mastersElected = new HashSet<>();
@@ -754,7 +797,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             if (masterFound && newPart.isMasterFail()) {
                 for (Integer slot : currentPart.getSlots()) {
                     ClusterPartition newMasterPart = find(newPartitions, slot);
-                    // does partition have a new master?
+                    // 该槽位是否已选举新 master？
                     if (!Objects.equals(newMasterPart.getMasterAddress(), currentPart.getMasterAddress())) {
                         RedisURI newUri = newMasterPart.getMasterAddress();
                         RedisURI oldUri = currentPart.getMasterAddress();
@@ -794,6 +837,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                     });
     }
 
+    /** 检测槽位增删（集群扩缩容场景）。 */
     private void checkSlotsChange(Collection<ClusterPartition> newPartitions) {
         int newSlotsAmount = newPartitions.stream()
                                 .mapToInt(ClusterPartition::getSlotsAmount)
@@ -840,10 +884,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 检测同一节点内的槽位迁移并更新映射，触发 Pub/Sub 重挂接。 */
     private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
         Collection<ClusterPartition> clusterLastPartitions = getLastPartitions();
 
-        // https://github.com/redisson/redisson/issues/3635
+        // https://github.com/redisson/redisson/issues/3635 — 按 nodeId 索引条目
         Map<String, MasterSlaveEntry> nodeEntries = clusterLastPartitions.stream()
                                                                           .collect(Collectors.toMap(p -> p.getNodeId(),
                                                                                     p -> getEntry(p.getSlotRanges().iterator().next().getStartSlot())));
@@ -890,16 +935,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 if (!addedSlots.isEmpty() || !removedSlots.isEmpty()) {
-                    // https://github.com/redisson/redisson/issues/3695, slotRanges not update when slots of node changed.
+                    // https://github.com/redisson/redisson/issues/3695 — 槽位变更时同步更新 slotRanges
                     currentPartition.updateSlotRanges(newPartition.getSlotRanges(), newPartition.slots());
                 }
                 break;
             }
         }
 
+        // 槽位变更后重挂接受影响频道的 Pub/Sub
         changedSlots.forEach(subscribeService::reattachPubSub);
     }
     
+    /** 在字节数组中查找指定元素下标。 */
     private int indexOf(byte[] array, byte element) {
         for (int i = 0; i < array.length; ++i) {
             if (array[i] == element) {
@@ -909,6 +956,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return -1;
     }  
     
+    /** 计算 key 槽号，支持 hash tag（{...} 内子串）。 */
     @Override
     public int calcSlot(byte[] key) {
         if (key == null) {
@@ -927,6 +975,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
+    /** 对 ByteBuf key 计算槽号（支持 hash tag）。 */
     @Override
     public int calcSlot(ByteBuf key) {
         if (key == null) {
@@ -946,6 +995,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
+    /** 对字符串 key 计算槽号（支持 hash tag）。 */
     @Override
     public int calcSlot(String key) {
         if (key == null) {
@@ -965,6 +1015,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
+    /** 解析 CLUSTER NODES 输出为 ClusterPartition 集合（含 DNS 解析与 master-link 检查）。 */
     private CompletableFuture<Collection<ClusterPartition>> parsePartitions(List<ClusterNodeInfo> nodes) {
         Map<String, ClusterPartition> partitions = new ConcurrentHashMap<>();
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -973,7 +1024,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     || clusterNodeInfo.containsFlag(Flag.HANDSHAKE)
                         || clusterNodeInfo.getAddress() == null
                             || (clusterNodeInfo.getSlotRanges().isEmpty() && clusterNodeInfo.containsFlag(Flag.MASTER))) {
-                // skip it
+                // 跳过无地址、握手或无效节点
                 continue;
             }
 
@@ -985,7 +1036,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             if (masterId == null) {
-                // skip it
+                // 无 master 关联则跳过
                 continue;
             }
 
@@ -1112,6 +1163,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         });
     }
 
+    /** 将级联 slave 的地址合并到父 master 分区并移除 slave 分区对象。 */
     private void addCascadeSlaves(Collection<ClusterPartition> partitions) {
         Iterator<ClusterPartition> iter = partitions.iterator();
         while (iter.hasNext()) {
@@ -1133,6 +1185,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    /** 取消拓扑扫描定时任务并关闭所有连接。 */
     @Override
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
         if (monitorFuture != null) {
@@ -1143,6 +1196,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         super.shutdown(quietPeriod, timeout, unit);
     }
 
+    /** 异步关闭：先取消 monitor 再关闭连接。 */
     @Override
     public CompletionStage<Void> shutdownAsync(long quietPeriod, long timeout, TimeUnit unit) {
         if (monitorFuture != null) {
@@ -1151,11 +1205,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return closeNodeConnectionsAsync().thenCompose(v -> super.shutdownAsync(quietPeriod, timeout, unit));
     }
 
+    /** 返回去重后的最新分区快照（按 nodeId 取最新时间戳）。 */
     private Collection<ClusterPartition> getLastPartitions() {
         return lastUri2Partition.values().stream().collect(Collectors.toMap(e -> e.getNodeId(), Function.identity(),
                                                                 BinaryOperator.maxBy(Comparator.comparing(e -> e.getTime())))).values();
     }
 
+    /** 查找条目对应的任意槽号（用于日志/诊断）。 */
     public int getSlot(MasterSlaveEntry entry) {
         return lastPartitions.entrySet().stream()
                 .filter(e -> e.getValue().getMasterAddress().equals(entry.getClient().getConfig().getAddress()))
@@ -1164,6 +1220,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 .orElse(-1);
     }
 
+    /** 返回最近一次成功通信的集群节点 URI。 */
     @Override
     public RedisURI getLastClusterNode() {
         return lastClusterNode;

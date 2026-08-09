@@ -16,20 +16,19 @@
 package org.redisson.config;
 
 /**
- * 
+ * Pub/Sub 订阅连接的目标节点选择模式。
+ * <p>
+ * 在 {@link MasterSlaveServersConfig} 中配置，决定订阅命令连接主节点还是从节点。
+ *
  * @author Nikita Koksharov
  *
  */
 public enum SubscriptionMode {
 
-    /**
-     * Subscribe to slave nodes
-     */
+    /** 订阅连接绑定从节点，减轻主节点 Pub/Sub 负载。 */
     SLAVE,
 
-    /**
-     * Subscribe to master node
-     */
+    /** 订阅连接绑定主节点。 */
     MASTER
 
 }
