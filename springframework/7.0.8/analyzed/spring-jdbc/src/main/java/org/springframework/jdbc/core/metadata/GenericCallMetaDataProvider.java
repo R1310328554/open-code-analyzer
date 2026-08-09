@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+CallMetaDataProvider 通用实现：通过 DatabaseMetaData.getProcedureColumns 读取存储过程参数元数据，可被数据库特定子类扩展。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core.metadata;
 
 import java.sql.DatabaseMetaData;
@@ -34,9 +39,16 @@ import org.springframework.jdbc.core.SqlOutParameter;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.util.StringUtils;
 
+/* ===== [OCA 中文解析] =====
+class GenericCallMetaDataProvider — 意图说明
+
+基于 JDBC DatabaseMetaData 的过程参数元数据提供者：解析 IN/OUT/INOUT 参数名、序号与 SQL 类型，供 SimpleJdbcCall 等组件使用。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * {@link CallMetaDataProvider} 接口的通用实现。
- * <p> 这个类可以扩展以提供数据库特定的行为。
+ * {@link CallMetaDataProvider} 的通用实现。
+ * <p>可被子类扩展以适配特定数据库的行为差异。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -53,27 +65,27 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	/** 名称相关状态（`userName`）。 */
 	private final String userName;
 
-	/** `false`：该类的成员状态。 */
+	/** 布尔配置标志（默认 false）。 */
 	private boolean procedureColumnMetaDataUsed = false;
 
-	/** `true`：该类的成员状态。 */
+	/** 布尔配置标志。 */
 	private boolean supportsCatalogsInProcedureCalls = true;
 
-	/** `true`：该类的成员状态。 */
+	/** 布尔配置标志。 */
 	private boolean supportsSchemasInProcedureCalls = true;
 
-	/** `true`：该类的成员状态。 */
+	/** 布尔配置标志。 */
 	private boolean storesUpperCaseIdentifiers = true;
 
-	/** `false`：该类的成员状态。 */
+	/** 布尔配置标志（默认 false）。 */
 	private boolean storesLowerCaseIdentifiers = false;
 
 	private final List<CallParameterMetaData> callParameterMetaData = new ArrayList<>();
 
 
 	/**
-	 * 用于使用提供的数据库元数据进行初始化的构造函数。
-	 * @param databaseMetaData 要使用的元数据
+	 * 使用给定 {@link DatabaseMetaData} 初始化提供者。
+	 * @param databaseMetaData JDBC 数据库元数据
 	 */
 	protected GenericCallMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		this.userName = databaseMetaData.getUserName();
@@ -139,7 +151,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `procedureNameToUse`：完成本类中与「procedure Name To Use」相关的职责。
+	 * 执行 procedureNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String procedureNameToUse(@Nullable String procedureName) {
@@ -147,7 +159,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `catalogNameToUse`：完成本类中与「catalog Name To Use」相关的职责。
+	 * 执行 catalogNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String catalogNameToUse(@Nullable String catalogName) {
@@ -155,7 +167,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `schemaNameToUse`：完成本类中与「schema Name To Use」相关的职责。
+	 * 执行 schemaNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String schemaNameToUse(@Nullable String schemaName) {
@@ -163,7 +175,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `metaDataCatalogNameToUse`：完成本类中与「meta Data Catalog Name To Use」相关的职责。
+	 * 执行 metaDataCatalogNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String metaDataCatalogNameToUse(@Nullable String catalogName) {
@@ -176,7 +188,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `metaDataSchemaNameToUse`：完成本类中与「meta Data Schema Name To Use」相关的职责。
+	 * 执行 metaDataSchemaNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String metaDataSchemaNameToUse(@Nullable String schemaName) {
@@ -189,7 +201,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `parameterNameToUse`：完成本类中与「parameter Name To Use」相关的职责。
+	 * 执行 parameterNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String parameterNameToUse(@Nullable String parameterName) {
@@ -197,7 +209,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `namedParameterBindingToUse`：完成本类中与「named Parameter Binding To Use」相关的职责。
+	 * 执行 namedParameterBindingToUse 方法的核心逻辑。
 	 */
 	@Override
 	public String namedParameterBindingToUse(@Nullable String parameterName) {
@@ -269,7 +281,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `byPassReturnParameter`：完成本类中与「by Pass Return Parameter」相关的职责。
+	 * 执行 byPassReturnParameter 方法的核心逻辑。
 	 */
 	@Override
 	public boolean byPassReturnParameter(String parameterName) {
@@ -336,7 +348,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 
 
 	/**
-	 * 方法 `identifierNameToUse`：完成本类中与「identifier Name To Use」相关的职责。
+	 * 执行 identifierNameToUse 方法的核心逻辑。
 	 */
 	private @Nullable String identifierNameToUse(@Nullable String identifierName) {
 		if (identifierName == null) {
@@ -503,7 +515,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `escapeNamePattern`：完成本类中与「escape Name Pattern」相关的职责。
+	 * 执行 escapeNamePattern 方法的核心逻辑。
 	 */
 	private static @Nullable String escapeNamePattern(@Nullable String name, @Nullable String escape) {
 		if (name == null || escape == null) {
@@ -531,7 +543,7 @@ public class GenericCallMetaDataProvider implements CallMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `ProcedureMetadata`：完成本类中与「Procedure Metadata」相关的职责。
+	 * 执行 ProcedureMetadata 方法的核心逻辑。
 	 */
 	private record ProcedureMetadata(@Nullable String schemaName, @Nullable String procedureName,
 			List<String> matches, boolean function) {

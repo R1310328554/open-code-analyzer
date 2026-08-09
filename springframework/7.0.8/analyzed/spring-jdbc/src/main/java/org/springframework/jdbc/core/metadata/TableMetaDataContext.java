@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+表操作元数据上下文：持有表名、catalog/schema、列元数据与 TableMetaDataProvider，为 SimpleJdbcInsert 生成参数化 INSERT 及主键回填逻辑。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core.metadata;
 
 import java.util.ArrayList;
@@ -38,8 +43,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+/* ===== [OCA 中文解析] =====
+class TableMetaDataContext — 意图说明
+
+INSERT/UPDATE 等表操作的运行时上下文：解析参与列、引号规则与 generated keys，与 GenericTableMetaDataProvider 协作完成元数据驱动的 SQL 组装。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * 管理用于配置和执行数据库表操作的上下文元数据的类。
+ * 管理数据库表操作（如 INSERT）的配置与执行上下文元数据。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -49,7 +61,7 @@ public class TableMetaDataContext {
 
 	// 记录器可用于子类
 	/**
-	 * 获取 Log（`Log`）。
+	 * 日志记录器，供子类或本类记录诊断信息。
 	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -66,15 +78,15 @@ public class TableMetaDataContext {
 	private @Nullable String schemaName;
 
 	// 我们是否应该访问插入参数元数据信息
-	/** `true`：该类的成员状态。 */
+	/** 布尔配置标志。 */
 	private boolean accessTableColumnMetaData = true;
 
 	// 我们是否应该覆盖默认值以包含元数据查找的同义词
-	/** `false`：该类的成员状态。 */
+	/** 布尔配置标志（默认 false）。 */
 	private boolean overrideIncludeSynonymsDefault = false;
 
 	// 我们是否引用标识符？
-	/** `false`：该类的成员状态。 */
+	/** 布尔配置标志（默认 false）。 */
 	private boolean quoteIdentifiers = false;
 
 	// 表元数据提供者
@@ -85,7 +97,7 @@ public class TableMetaDataContext {
 	private List<String> tableColumns = new ArrayList<>();
 
 	// 我们是否使用生成的键列
-	/** `false`：该类的成员状态。 */
+	/** 布尔配置标志（默认 false）。 */
 	private boolean generatedKeyColumnsUsed = false;
 
 
@@ -199,7 +211,7 @@ public class TableMetaDataContext {
 	}
 
 	/**
-	 * 方法 `obtainMetaDataProvider`：完成本类中与「obtain Meta Data Provider」相关的职责。
+	 * 执行 obtainMetaDataProvider 方法的核心逻辑。
 	 */
 	private TableMetaDataProvider obtainMetaDataProvider() {
 		Assert.state(this.metaDataProvider != null, "No TableMetaDataProvider - call processMetaData first");

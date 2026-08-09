@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+存储过程调用上下文：持有过程名、catalog/schema、SqlParameter 列表与 CallMetaDataProvider，负责 IN/OUT 参数映射及 CallableStatement 创建前的元数据解析。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core.metadata;
 
 import java.util.ArrayList;
@@ -43,8 +48,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+/* ===== [OCA 中文解析] =====
+class CallMetaDataContext — 意图说明
+
+存储过程调用的运行时上下文：结合 CallMetaDataProvider 解析参数顺序与 JDBC 类型，生成 CallableStatement 所需的参数声明与返回值映射。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * 用于管理用于存储过程调用的配置和执行的上下文元数据的类。
+ * 管理存储过程调用配置与执行所需的上下文元数据。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Kiril Nugmanov
@@ -54,7 +66,7 @@ public class CallMetaDataContext {
 
 	// 记录器可用于子类
 	/**
-	 * 获取 Log（`Log`）。
+	 * 日志记录器，供子类或本类记录诊断信息。
 	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -84,15 +96,15 @@ public class CallMetaDataContext {
 	private List<String> outParameterNames = new ArrayList<>();
 
 	// 指示这是一个过程还是一个函数
-	/** `false`：该类的成员状态。 */
+	/** 布尔配置标志（默认 false）。 */
 	private boolean function = false;
 
 	// 指示是否应包含此过程的返回值
-	/** `false`：该类的成员状态。 */
+	/** 布尔配置标志（默认 false）。 */
 	private boolean returnValueRequired = false;
 
 	// 我们是否应该访问调用参数元数据信息
-	/** `true`：该类的成员状态。 */
+	/** 布尔配置标志。 */
 	private boolean accessCallParameterMetaData = true;
 
 	// 我们应该按名称绑定参数吗
@@ -256,7 +268,7 @@ public class CallMetaDataContext {
 	}
 
 	/**
-	 * 方法 `obtainMetaDataProvider`：完成本类中与「obtain Meta Data Provider」相关的职责。
+	 * 执行 obtainMetaDataProvider 方法的核心逻辑。
 	 */
 	private CallMetaDataProvider obtainMetaDataProvider() {
 		Assert.state(this.metaDataProvider != null, "No CallMetaDataProvider - call initializeMetaData first");
@@ -684,7 +696,7 @@ public class CallMetaDataContext {
 	}
 
 	/**
-	 * 方法 `lowerCase`：完成本类中与「lower Case」相关的职责。
+	 * 执行 lowerCase 方法的核心逻辑。
 	 */
 	private static String lowerCase(@Nullable String paramName) {
 		return (paramName != null ? paramName.toLowerCase(Locale.ROOT) : "");

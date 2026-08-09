@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+TableMetaDataProvider 通用实现：读取表列元数据、generated keys 能力及标识符大小写规则，支撑 SimpleJdbcInsert 等自动生成 INSERT 语句。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core.metadata;
 
 import java.sql.DatabaseMetaData;
@@ -33,8 +38,15 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.support.JdbcUtils;
 
+/* ===== [OCA 中文解析] =====
+class GenericTableMetaDataProvider — 意图说明
+
+表结构元数据通用提供者：通过 DatabaseMetaData 获取列名、类型、是否支持 getGeneratedKeys 等信息，供 TableMetaDataContext 构建 INSERT。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * {@link TableMetaDataProvider} 接口的通用实现，应该为所有支持的数据库提供足够的功能。
+ * {@link TableMetaDataProvider} 的通用实现，适用于大多数受支持的数据库。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -164,7 +176,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `tableNameToUse`：完成本类中与「table Name To Use」相关的职责。
+	 * 执行 tableNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String tableNameToUse(@Nullable String tableName) {
@@ -172,7 +184,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `columnNameToUse`：完成本类中与「column Name To Use」相关的职责。
+	 * 执行 columnNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String columnNameToUse(@Nullable String columnName) {
@@ -180,7 +192,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `catalogNameToUse`：完成本类中与「catalog Name To Use」相关的职责。
+	 * 执行 catalogNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String catalogNameToUse(@Nullable String catalogName) {
@@ -188,7 +200,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `schemaNameToUse`：完成本类中与「schema Name To Use」相关的职责。
+	 * 执行 schemaNameToUse 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable String schemaNameToUse(@Nullable String schemaName) {
@@ -196,7 +208,7 @@ public class GenericTableMetaDataProvider implements TableMetaDataProvider {
 	}
 
 	/**
-	 * 方法 `identifierNameToUse`：完成本类中与「identifier Name To Use」相关的职责。
+	 * 执行 identifierNameToUse 方法的核心逻辑。
 	 */
 	private @Nullable String identifierNameToUse(@Nullable String identifierName) {
 		if (identifierName == null) {

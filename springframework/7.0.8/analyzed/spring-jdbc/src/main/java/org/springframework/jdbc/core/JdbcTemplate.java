@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Spring JDBC 中央模板类：实现 JdbcOperations，管理 DataSource 连接、PreparedStatement/CallableStatement 生命周期、异常翻译与各类 query/update 回调。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core;
 
 import java.lang.reflect.InvocationHandler;
@@ -59,23 +64,20 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 
+/* ===== [OCA 中文解析] =====
+class JdbcTemplate — 意图说明
+
+JDBC 核心模板：封装连接/语句资源管理、SQL 执行与 SQLException 翻译，通过 ConnectionCallback/PreparedStatementCallback 等回调让应用代码专注 SQL 与结果映射。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * <b>这是 JDBC 核心包中的中央委托。 </b> 它可以直接用于许多数据访问目的，支持任何类型的 JDBC 操作。在此之上，为了获得更集中、更方便的外观，请考虑从 6.1 
- * 开始使用 {@link org.springframework.jdbc.core.simple.JdbcClient}。
- * <p>该类简化了 JDBC 的使用并有助于避免常见错误。它执行核心 JDBC 工作流程，让应用程序代码提供 SQL 并提取结果。此类执行 SQL 查询或更新、启动 Result
- * Set 迭代并捕获 JDBC 异常并将它们转换为常见的 {@code org.springframework.dao} 异常层次结构。
- * 使用此类的 <p>Code 只需实现回调接口，给它们一个明确定义的契约。 {@link PreparedStatementCreator}
- * 回调接口在给定连接的情况下创建准备好的语句，提供 SQL 和任何必要的参数。 {@link ResultSetExtractor} 接口从 ResultSet
- * 中提取值。另请参阅 {@link PreparedStatementSetter} 和 {@link RowMapper} 了解两个流行的替代回调接口。
- * <p>一旦配置，该模板类的实例就是线程安全的。可以通过使用 DataSource 引用直接实例化在服务实现中使用，或者在应用程序上下文中做好准备并作为 bean 引用提供给服务
- * 。注意：数据源应始终在应用程序上下文中配置为 bean，在第一种情况下直接提供给服务，在第二种情况下提供给准备好的模板。
- * <p> 因为此类可通过回调接口和 {@link org.springframework.jdbc.support.SQLExceptionTranslator}
- * 接口进行参数化，所以不需要对其进行子类化。
- * <p>A 此类执行的所有 SQL 操作都在调试级别记录，使用“org.springframework.jdbc.core.JdbcTemplate”作为日志类别。
- * <p><b>NOTE：从 6.1 开始，有一个统一的 JDBC 访问外观，以 {@link
- * org.springframework.jdbc.core.simple.JdbcClient} 的形式提供。</b> {@code JdbcClient} 为常见的 JDBC
- * 查询/更新提供了流畅的 API 风格，可以灵活地使用索引或命名参数。它委托给 {@code JdbcTemplate}/{@code
- * NamedParameterJdbcTemplate} 来实际执行。
+ * <b>JDBC 核心包中的中央委托类。</b> 可直接完成各类 JDBC 操作；自 6.1 起也可考虑更简洁的 {@link org.springframework.jdbc.core.simple.JdbcClient}。
+ * <p>简化 JDBC 使用、避免常见错误：执行查询/更新、遍历 ResultSet，并将 {@link SQLException} 翻译为 {@code org.springframework.dao} 异常层次。
+ * <p>应用代码实现 {@link PreparedStatementCreator}、{@link ResultSetExtractor}、{@link RowMapper} 等回调即可，无需子类化本模板。
+ * <p>配置完成后实例线程安全；DataSource 应作为 Bean 注入。
+ * <p>所有 SQL 操作在 debug 级别记录，日志类别为 {@code org.springframework.jdbc.core.JdbcTemplate}。
+ * <p><b>注意：6.1+ 提供 {@link org.springframework.jdbc.core.simple.JdbcClient} 流式 API，底层仍委托本类与 {@code NamedParameterJdbcTemplate}。</b>
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Thomas Risberg
@@ -303,7 +305,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	//-------------------------------------------------------------------------
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	@Override
 	public <T extends @Nullable Object> T execute(ConnectionCallback<T> action) throws DataAccessException {
@@ -350,7 +352,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	//-------------------------------------------------------------------------
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	private <T extends @Nullable Object> T execute(StatementCallback<T> action, boolean closeResources) throws DataAccessException {
 		Assert.notNull(action, "Callback object must not be null");
@@ -386,7 +388,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	@Override
 	public <T extends @Nullable Object> T execute(StatementCallback<T> action) throws DataAccessException {
@@ -394,7 +396,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	@Override
 	public void execute(String sql) throws DataAccessException {
@@ -419,7 +421,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, ResultSetExtractor<T> rse) throws DataAccessException {
@@ -452,7 +454,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public void query(String sql, RowCallbackHandler rch) throws DataAccessException {
@@ -460,7 +462,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, RowMapper<T> rowMapper) throws DataAccessException {
@@ -468,7 +470,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 * 执行 queryForStream 方法的核心逻辑。
 	 */
 	@Override
 	public <T> Stream<T> queryForStream(String sql, RowMapper<T> rowMapper) throws DataAccessException {
@@ -493,7 +495,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 * 执行 queryForMap 方法的核心逻辑。
 	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql) throws DataAccessException {
@@ -501,7 +503,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, RowMapper<T> rowMapper) throws DataAccessException {
@@ -510,7 +512,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, Class<T> requiredType) throws DataAccessException {
@@ -518,7 +520,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 * 执行 queryForList 方法的核心逻辑。
 	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, Class<T> elementType) throws DataAccessException {
@@ -526,7 +528,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 * 执行 queryForList 方法的核心逻辑。
 	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql) throws DataAccessException {
@@ -534,7 +536,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 * 执行 queryForRowSet 方法的核心逻辑。
 	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql) throws DataAccessException {
@@ -571,7 +573,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 * 执行 batchUpdate 方法的核心逻辑。
 	 */
 	@Override
 	public int[] batchUpdate(String... sql) throws DataAccessException {
@@ -646,7 +648,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	//-------------------------------------------------------------------------
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	private <T extends @Nullable Object> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action, boolean closeResources)
 			throws DataAccessException {
@@ -696,7 +698,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	@Override
 	public <T extends @Nullable Object> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action)
@@ -706,7 +708,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	@Override
 	public <T extends @Nullable Object> T execute(String sql, PreparedStatementCallback<T> action) throws DataAccessException {
@@ -748,7 +750,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T query(PreparedStatementCreator psc, ResultSetExtractor<T> rse) throws DataAccessException {
@@ -756,7 +758,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, @Nullable PreparedStatementSetter pss, ResultSetExtractor<T> rse) throws DataAccessException {
@@ -764,7 +766,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, ResultSetExtractor<T> rse) throws DataAccessException {
@@ -772,7 +774,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Deprecated(since = "5.3")
 	@Override
@@ -781,7 +783,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T query(String sql, ResultSetExtractor<T> rse, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -789,7 +791,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public void query(PreparedStatementCreator psc, RowCallbackHandler rch) throws DataAccessException {
@@ -797,7 +799,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public void query(String sql, @Nullable PreparedStatementSetter pss, RowCallbackHandler rch) throws DataAccessException {
@@ -805,7 +807,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public void query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowCallbackHandler rch) throws DataAccessException {
@@ -813,7 +815,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Deprecated(since = "5.3")
 	@Override
@@ -822,7 +824,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public void query(String sql, RowCallbackHandler rch, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -830,7 +832,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(PreparedStatementCreator psc, RowMapper<T> rowMapper) throws DataAccessException {
@@ -838,7 +840,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper) throws DataAccessException {
@@ -846,7 +848,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowMapper<T> rowMapper) throws DataAccessException {
@@ -854,7 +856,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Deprecated(since = "5.3")
 	@Override
@@ -863,7 +865,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `query`：完成本类中与「query」相关的职责。
+	 * 执行 query 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> List<T> query(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -901,7 +903,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 * 执行 queryForStream 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(PreparedStatementCreator psc, RowMapper<T> rowMapper) throws DataAccessException {
@@ -909,7 +911,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 * 执行 queryForStream 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(String sql, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper) throws DataAccessException {
@@ -917,7 +919,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForStream`：完成本类中与「query For Stream」相关的职责。
+	 * 执行 queryForStream 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> Stream<T> queryForStream(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -925,7 +927,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, @Nullable Object @Nullable [] args, int[] argTypes, RowMapper<T> rowMapper)
@@ -936,7 +938,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Deprecated(since = "5.3")
 	@Override
@@ -946,7 +948,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Override
 	public <T extends @Nullable Object> T queryForObject(String sql, RowMapper<T> rowMapper, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -955,7 +957,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, @Nullable Object @Nullable [] args, int[] argTypes, Class<T> requiredType)
@@ -965,7 +967,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Deprecated(since = "5.3")
 	@Override
@@ -974,7 +976,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForObject`：完成本类中与「query For Object」相关的职责。
+	 * 执行 queryForObject 方法的核心逻辑。
 	 */
 	@Override
 	public <T> @Nullable T queryForObject(String sql, Class<T> requiredType, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -982,7 +984,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 * 执行 queryForMap 方法的核心逻辑。
 	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException {
@@ -990,7 +992,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForMap`：完成本类中与「query For Map」相关的职责。
+	 * 执行 queryForMap 方法的核心逻辑。
 	 */
 	@Override
 	public Map<String, @Nullable Object> queryForMap(String sql, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -998,7 +1000,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 * 执行 queryForList 方法的核心逻辑。
 	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, @Nullable Object @Nullable [] args, int[] argTypes, Class<T> elementType) throws DataAccessException {
@@ -1006,7 +1008,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 * 执行 queryForList 方法的核心逻辑。
 	 */
 	@Deprecated(since = "5.3")
 	@Override
@@ -1015,7 +1017,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 * 执行 queryForList 方法的核心逻辑。
 	 */
 	@Override
 	public <T> List<@Nullable T> queryForList(String sql, Class<T> elementType, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -1023,7 +1025,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 * 执行 queryForList 方法的核心逻辑。
 	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException {
@@ -1031,7 +1033,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForList`：完成本类中与「query For List」相关的职责。
+	 * 执行 queryForList 方法的核心逻辑。
 	 */
 	@Override
 	public List<Map<String, @Nullable Object>> queryForList(String sql, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -1039,7 +1041,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 * 执行 queryForRowSet 方法的核心逻辑。
 	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql, @Nullable Object @Nullable [] args, int[] argTypes) throws DataAccessException {
@@ -1047,7 +1049,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `queryForRowSet`：完成本类中与「query For Row Set」相关的职责。
+	 * 执行 queryForRowSet 方法的核心逻辑。
 	 */
 	@Override
 	public SqlRowSet queryForRowSet(String sql, @Nullable Object @Nullable ... args) throws DataAccessException {
@@ -1135,7 +1137,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 * 执行 batchUpdate 方法的核心逻辑。
 	 */
 	@Override
 	public int[] batchUpdate(PreparedStatementCreator psc, BatchPreparedStatementSetter pss,
@@ -1148,7 +1150,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 * 执行 batchUpdate 方法的核心逻辑。
 	 */
 	@Override
 	public int[] batchUpdate(String sql, BatchPreparedStatementSetter pss) throws DataAccessException {
@@ -1166,7 +1168,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 * 执行 batchUpdate 方法的核心逻辑。
 	 */
 	@Override
 	public int[] batchUpdate(String sql, List<Object[]> batchArgs) throws DataAccessException {
@@ -1174,7 +1176,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 * 执行 batchUpdate 方法的核心逻辑。
 	 */
 	@Override
 	public int[] batchUpdate(String sql, List<Object[]> batchArgs, int[] argTypes) throws DataAccessException {
@@ -1214,7 +1216,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `batchUpdate`：完成本类中与「batch Update」相关的职责。
+	 * 执行 batchUpdate 方法的核心逻辑。
 	 */
 	@Override
 	public <T> int[][] batchUpdate(String sql, Collection<T> batchArgs, int batchSize,
@@ -1276,7 +1278,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	//-------------------------------------------------------------------------
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	@Override
 	public <T extends @Nullable Object> T execute(CallableStatementCreator csc, CallableStatementCallback<T> action)
@@ -1325,7 +1327,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 执行（方法 `execute`）。
+	 * 执行 execute 回调并处理 JDBC 资源生命周期。
 	 */
 	@Override
 	public <T extends @Nullable Object> T execute(String callString, CallableStatementCallback<T> action) throws DataAccessException {
@@ -1333,7 +1335,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `call`：完成本类中与「call」相关的职责。
+	 * 执行 call 方法的核心逻辑。
 	 */
 	@Override
 	public Map<String, @Nullable Object> call(CallableStatementCreator csc, List<SqlParameter> declaredParameters)
@@ -1688,7 +1690,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `result`：完成本类中与「result」相关的职责。
+	 * 执行 result 方法的核心逻辑。
 	 */
 	private static <T> T result(@Nullable T result) {
 		Assert.state(result != null, "No result");
@@ -1704,7 +1706,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 	/**
-	 * 方法 `storeGeneratedKeys`：完成本类中与「store Generated Keys」相关的职责。
+	 * 执行 storeGeneratedKeys 方法的核心逻辑。
 	 */
 	private void storeGeneratedKeys(KeyHolder generatedKeyHolder, PreparedStatement ps, int rowsExpected)
 			throws SQLException {

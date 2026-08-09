@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+PreparedStatement/CallableStatement 参数绑定工具：Java 类型到 JDBC 类型的映射、NULL/LOB 值设置及 ParameterMetaData 兼容性处理。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core;
 
 import java.io.StringReader;
@@ -45,11 +50,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.SpringProperties;
 import org.springframework.jdbc.support.SqlValue;
 
+/* ===== [OCA 中文解析] =====
+class StatementCreatorUtils — 意图说明
+
+语句创建辅助类：为 PreparedStatementSetter/Creator 提供 setParameterValue、setNull 等静态方法，统一 Java 类型与 SQL 类型的绑定逻辑。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * 用于PreparedStatementSetter/Creator 和CallableStatementCreator 实现的实用方法，提供复杂的参数管理（包括对LOB 值的支
- * 持）。
- * <p> 由PreparedStatementCreatorFactory 和CallableStatementCreatorFactory
- * 使用，但也可直接在自定义setter/creator 实现中使用。
+ * {@link PreparedStatementSetter}/{@link PreparedStatementCreator} 与
+ * {@link CallableStatementCreator} 的参数绑定工具类，支持 LOB 等复杂类型。
+ * <p>由 {@link PreparedStatementCreatorFactory}、{@link CallableStatementCreatorFactory} 使用，也可在自定义 creator/setter 中直接调用。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 1.1
@@ -76,7 +87,7 @@ public abstract class StatementCreatorUtils {
 
 
 	/**
-	 * 获取 Log（`Log`）。
+	 * 日志记录器，供子类或本类记录诊断信息。
 	 */
 	private static final Log logger = LogFactory.getLog(StatementCreatorUtils.class);
 

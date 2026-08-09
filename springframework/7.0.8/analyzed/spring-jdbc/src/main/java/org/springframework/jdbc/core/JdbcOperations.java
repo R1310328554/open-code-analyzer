@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Spring JDBC 核心操作接口：定义 Connection/Statement/PreparedStatement/CallableStatement 上的查询、更新、批处理与存储过程调用契约；由 JdbcTemplate 实现，便于测试 mock。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core;
 
 import java.util.Collection;
@@ -27,15 +32,18 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
+/* ===== [OCA 中文解析] =====
+interface JdbcOperations — 意图说明
+
+JDBC 模板层对外契约：封装连接获取、语句执行、异常翻译与回调风格 API，是 JdbcTemplate/NamedParameterJdbcTemplate 的共同抽象。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * 指定一组基本 JDBC 操作的接口。
- * <p>由{@link JdbcTemplate}实现。通常不直接使用，但它是增强可测试性的有用选项，因为它可以轻松地被模拟或存根。
- * <p>或者，可以模拟标准 JDBC 基础结构。然而，模拟这个接口会显着减少工作量。作为测试数据访问代码的模拟对象方法的替代方法，请考虑通过 <em>Spring TestCon
- * text Framework</em>（在 {@code spring-test} 工件中）提供的强大集成测试支持。
- * <p><b>NOTE：从 6.1 开始，有一个统一的 JDBC 访问外观，以 {@link
- * org.springframework.jdbc.core.simple.JdbcClient} 的形式提供。</b> {@code JdbcClient} 为常见的 JDBC
- * 查询/更新提供了流畅的 API 风格，可以灵活地使用索引或命名参数。它委托给 {@code JdbcOperations}/{@code
- * NamedParameterJdbcOperations} 来实际执行。
+ * 定义 Spring JDBC 基本操作的接口。
+ * <p>由 {@link JdbcTemplate} 实现。通常注入接口类型以增强可测试性（便于 mock/stub）。
+ * <p>相比 mock 整个 JDBC 栈，mock 本接口更轻量；也可考虑 {@code spring-test} 中的集成测试支持。
+ * <p><b>注意：自 6.1 起推荐使用 {@link org.springframework.jdbc.core.simple.JdbcClient} 作为统一 JDBC 访问外观。</b> {@code JdbcClient} 提供流式 API，底层仍委托 {@code JdbcOperations}/{@code NamedParameterJdbcOperations}。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see JdbcTemplate
@@ -48,12 +56,11 @@ public interface JdbcOperations {
 	//-------------------------------------------------------------------------
 
 	/**
-	 * 执行 JDBC 数据访问操作，作为在 JDBC 连接上工作的回调操作来实现。这允许在 Spring 的托管 JDBC 环境中实现任意数据访问操作：即参与 Spring 管理的事
-	 * 务并将 JDBC SQLException 转换为 Spring 的 DataAccessException 层次结构。 <p>回调操作可以返回结果对象，例如域对象或域对象的集
-	 * 合。
-	 * @param action 指定操作的回调对象
-	 * @return 操作返回的结果对象，如果没有则返回 {@code null}
-	 * @throws DataAccessException 如果有任何问题
+	 * 在 Spring 托管的 {@link Connection} 上执行 {@link ConnectionCallback}。
+	 * <p>参与 Spring 事务并将 {@link SQLException} 翻译为 {@link DataAccessException}。
+	 * @param action 指定操作的回调
+	 * @return 回调返回的结果，无则 {@code null}
+	 * @throws DataAccessException 数据访问失败时
 	 */
 	<T extends @Nullable Object> T execute(ConnectionCallback<T> action) throws DataAccessException;
 

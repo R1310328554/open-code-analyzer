@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+Spring AOP 自动代理创建器抽象基类：作为 BeanPostProcessor 在容器初始化阶段为符合条件的 Bean 包装 AOP 代理，协调通用/特定拦截器、TargetSourceCreator 与 Advisor 适配注册表。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.aop.framework.autoproxy;
 
 import java.lang.reflect.Constructor;
@@ -52,21 +57,19 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
+/* ===== [OCA 中文解析] =====
+class AbstractAutoProxyCreator — 意图说明
+
+AOP 自动代理的核心抽象：在 Bean 实例化/属性填充阶段决定是否创建代理、装配 Advisor 与 TargetSource，是 DefaultAdvisorAutoProxyCreator、BeanNameAutoProxyCreator 等的共同父类。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * {@link org.springframework.beans.factory.config.BeanPostProcessor} 实现使用 AOP 代理包装每个符合条件的
- * bean，在调用 bean 本身之前委托给指定的拦截器。
- * <p>该类区分“通用”拦截器：为其创建的所有代理共享，以及“特定”拦截器：每个 bean 实例唯一。不需要有任何通用的拦截器。如果有，则使用 InterceptorNames 
- * 属性来设置它们。与 {@link org.springframework.aop.framework.ProxyFactoryBean} 一样，使用当前工厂中的拦截器名称而不是
- *  bean 引用来允许正确处理原型顾问程序和拦截器：例如，支持有状态 mixins。 {@link #setInterceptorNames "interceptorNames
- * "} 条目支持任何建议类型。
- * <p>如果有大量的bean需要用类似的代理包装，即委托给相同的拦截器，那么这种自动代理特别有用。您可以向 bean 工厂注册一个这样的后处理器来实现相同的效果，而不是为 x 个
- * 目标 bean 进行 x 个重复的代理定义。
- * <p>子类可以应用任何策略来决定是否要代理 bean，例如按类型、按名称、按定义详细信息等。它们还可以返回应仅应用于特定 bean 实例的附加拦截器。一个简单的具体实现是 {@
- * link BeanNameAutoProxyCreator}，通过给定名称标识要代理的 bean。
- * <p> 任意数量的 {@link TargetSourceCreator} 实现都可用于创建自定义目标源：例如，池原型对象。只要 TargetSourceCreator
- * 指定自定义 {@link org.springframework.aop.TargetSource}，即使没有建议，自动代理也会发生。如果没有设置
- * TargetSourceCreators，或者没有匹配，则默认情况下将使用 {@link
- * org.springframework.aop.target.SingletonTargetSource} 来包装目标 bean 实例。
+ * {@link org.springframework.beans.factory.config.BeanPostProcessor} 实现，用 AOP 代理包装每个符合条件的 Bean，在调用目标 Bean 之前先经过指定拦截器链。
+ * <p>区分「通用」拦截器（所有代理共享）与「特定」拦截器（每个 Bean 实例独有）。通用拦截器通过 {@link #setInterceptorNames interceptorNames} 配置；与 {@link org.springframework.aop.framework.ProxyFactoryBean} 一样使用工厂内 Bean 名称而非引用，以正确处理原型 Advisor/Interceptor（如 stateful mixin）。
+ * <p>当大量 Bean 需委托相同拦截器时，注册单个后处理器即可替代重复的代理定义。
+ * <p>子类决定代理策略（按类型、名称、定义细节等），并可返回仅作用于特定 Bean 的附加拦截器。典型实现如 {@link BeanNameAutoProxyCreator}。
+ * <p>可配置 {@link TargetSourceCreator} 创建自定义 TargetSource（如池化原型）；即使无 Advice，只要指定了自定义 {@link org.springframework.aop.TargetSource} 也会代理。未匹配时默认使用 {@link org.springframework.aop.target.SingletonTargetSource}。
  * @author Juergen Hoeller
  * @author Rod Johnson
  * @author Rob Harrop
@@ -82,7 +85,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		implements SmartInstantiationAwareBeanPostProcessor, BeanFactoryAware {
 
 	/**
-	 * 子类的方便常量：“不代理”的返回值。
+	 * 子类便捷常量：表示「不创建代理」的返回值。
 	 * @see #getAdvicesAndAdvisorsForBean
 	 */
 	protected static final Object @Nullable [] DO_NOT_PROXY = null;
@@ -106,7 +109,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	private String[] interceptorNames = new String[0];
 
-	/** `true`：该类的成员状态。 */
+	/** 布尔配置标志。 */
 	private boolean applyCommonInterceptorsFirst = true;
 
 	/** 来源相关状态（`customTargetSourceCreators`）。 */
@@ -116,7 +119,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	private @Nullable BeanFactory beanFactory;
 
 	/**
-	 * 方法 `newKeySet`：完成本类中与「new Key Set」相关的职责。
+	 * 执行 newKeySet 方法的核心逻辑。
 	 */
 	private final Set<String> targetSourcedBeans = ConcurrentHashMap.newKeySet(16);
 
@@ -128,7 +131,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 
 	/**
-	 * 指定要使用的 {@link AdvisorAdapterRegistry}。 <p>Ddefault 是全局 {@link AdvisorAdapterRegistry}。
+	 * 指定要使用的 {@link AdvisorAdapterRegistry}。
+	 * <p>默认为全局 {@link AdvisorAdapterRegistry}。
 	 * @see org.springframework.aop.framework.adapter.GlobalAdvisorAdapterRegistry
 	 */
 	public void setAdvisorAdapterRegistry(AdvisorAdapterRegistry advisorAdapterRegistry) {
@@ -180,7 +184,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 
 	/**
-	 * 方法 `predictBeanType`：完成本类中与「predict Bean Type」相关的职责。
+	 * 执行 predictBeanType 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable Class<?> predictBeanType(Class<?> beanClass, String beanName) {
@@ -192,7 +196,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	/**
-	 * 方法 `determineBeanType`：完成本类中与「determine Bean Type」相关的职责。
+	 * 执行 determineBeanType 方法的核心逻辑。
 	 */
 	@Override
 	public Class<?> determineBeanType(Class<?> beanClass, String beanName) {
@@ -219,7 +223,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	/**
-	 * 方法 `determineCandidateConstructors`：完成本类中与「determine Candidate Constructors」相关的职责。
+	 * 执行 determineCandidateConstructors 方法的核心逻辑。
 	 */
 	@Override
 	public Constructor<?> @Nullable [] determineCandidateConstructors(Class<?> beanClass, String beanName) {
@@ -237,7 +241,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	/**
-	 * 方法 `postProcessBeforeInstantiation`：完成本类中与「post Process Before Instantiation」相关的职责。
+	 * 执行 postProcessBeforeInstantiation 方法的核心逻辑。
 	 */
 	@Override
 	public @Nullable Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) {
@@ -271,7 +275,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	/**
-	 * 方法 `postProcessProperties`：完成本类中与「post Process Properties」相关的职责。
+	 * 执行 postProcessProperties 方法的核心逻辑。
 	 */
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
@@ -421,7 +425,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	/**
-	 * 创建：Proxy Class（方法 `createProxyClass`）。
+	 * 创建 AOP 代理类（createProxyClass）。
 	 */
 	private Class<?> createProxyClass(Class<?> beanClass, @Nullable String beanName,
 			Object @Nullable [] specificInterceptors, TargetSource targetSource) {
@@ -430,7 +434,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	}
 
 	/**
-	 * 构建：Proxy（方法 `buildProxy`）。
+	 * 组装并返回 AOP 代理实例（buildProxy）。
 	 */
 	private Object buildProxy(Class<?> beanClass, @Nullable String beanName,
 			Object @Nullable [] specificInterceptors, TargetSource targetSource, boolean classOnly) {

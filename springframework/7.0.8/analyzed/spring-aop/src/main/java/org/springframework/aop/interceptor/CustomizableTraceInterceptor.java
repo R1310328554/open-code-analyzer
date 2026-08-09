@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+可定制占位符的方法级跟踪拦截器：在方法入口/出口/异常时输出日志，支持 $[methodName]、$[arguments] 等运行时占位符替换。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.aop.interceptor;
 
 import java.util.Set;
@@ -29,17 +34,27 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
 
+/* ===== [OCA 中文解析] =====
+class CustomizableTraceInterceptor — 意图说明
+
+基于占位符模板的方法跟踪拦截器：继承 AbstractTraceInterceptor，在 enter/exit/exception 三类消息中替换运行时占位符生成诊断日志。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * {@code MethodInterceptor} 实现允许使用占位符进行高度可定制的方法级跟踪。
- * <p>Trace 消息写入方法入口处，如果方法调用成功则写入方法出口处。如果调用导致异常，则会写入异常消息。这些跟踪消息的内容是完全可定制的，并且可以使用特殊的占位符来允许您在
- * 日志消息中包含运行时信息。可用的占位符有：
- * <p><ul> <li>{@code $[methodName]} - 替换为正在调用的方法的名称</li> <li>{@code $[targetClassName]} -
- * 替换为调用目标的类的名称</li> <li>{@code $[targetClassShortName]} - 替换为调用目标的类的短名称incall</li>
- * <li>{@code $[returnValue]} - 替换为调用 </li> 返回的值 <li>{@code $[argumentTypes]} -
- * 替换为方法参数的短类名的逗号分隔列表</li> <li>{@code $[arguments]} - 替换为方法参数的 {@code String}
- * 表示形式的逗号分隔列表</li> <li>{@code $[exception]} - 替换为调用期间引发的任何 {@code Throwable} 的 {@code
- * String} 表示形式</li> <li>{@code $[invocationTime]} - 替换为所采取的时间（以毫秒为单位）通过方法调用</li> </ul>
- * <p> 对于哪些消息中可以使用哪些占位符存在限制：有关有效占位符的详细信息，请参阅各个消息属性。
+ * 支持占位符的高度可定制 {@code MethodInterceptor}，用于方法级跟踪日志。
+ * <p>方法入口写 enter 消息，正常返回写 exit 消息，抛出异常写 exception 消息。消息模板可完全自定义，可用占位符包括：
+ * <ul>
+ * <li>{@code $[methodName]} — 被调用方法名</li>
+ * <li>{@code $[targetClassName]} — 目标类全限定名</li>
+ * <li>{@code $[targetClassShortName]} — 目标类短名</li>
+ * <li>{@code $[returnValue]} — 返回值字符串</li>
+ * <li>{@code $[argumentTypes]} — 参数类型短名列表</li>
+ * <li>{@code $[arguments]} — 参数值字符串列表</li>
+ * <li>{@code $[exception]} — 异常字符串</li>
+ * <li>{@code $[invocationTime]} — 调用耗时（毫秒）</li>
+ * </ul>
+ * <p>不同消息类型允许的占位符集合不同，详见各 setXxxMessage 属性。
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Sam Brannen

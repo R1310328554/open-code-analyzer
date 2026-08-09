@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* ===== [OCA 中文解析] =====
+文件意图总览
+
+基于 JavaBean 属性名的 RowMapper：按列名（含下划线转驼峰）匹配 setter，将 ResultSet 行映射为目标类型实例；便利优先，非高性能场景首选。
+===== [OCA 中文解析结束] ===== */
 package org.springframework.jdbc.core;
 
 import java.beans.PropertyDescriptor;
@@ -45,22 +50,21 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
+/* ===== [OCA 中文解析] =====
+class BeanPropertyRowMapper — 意图说明
+
+按列名与 JavaBean setter 匹配的行映射器：支持下划线列名转驼峰属性、ConversionService 类型转换及 NULL 基元处理策略。
+
+（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
+===== [OCA 中文解析结束] ===== */
 /**
- * {@link RowMapper} 实现将行转换为指定映射目标类的新实例。映射的目标类必须是顶级类或 {@code static} 嵌套类，并且它必须具有默认或无参数构造函数。
- * <p>Column 值根据列名（从结果集元数据获取）与目标类中相应属性的公共设置器的匹配进行映射。名称可以直接匹配，也可以通过使用“驼峰”大小写将用下划线分隔的部分的名称转换为
- * 相同的名称来匹配。
- * <p>Mapping 是为许多常见类型的目标类中的属性提供的
- * –例如：String、boolean、Boolean、byte、Byte、short、Short、int、Integer、long、Long、float、Float、double、Double、BigDecimal、{@code
- * java.util.Date} 等。
- * <p>为了促进没有匹配名称的列和属性之间的映射，请尝试在 SQL 语句中使用下划线分隔的列别名，例如 {@code "select fname as first_name fr
- * om customer"}，其中 {@code first_name} 可以映射到目标类中的 {@code setFirstName(String)} 方法。
- * <p> 对于从数据库读取的 {@code NULL} 值，将尝试使用 {@code null} 调用相应的 setter 方法，但对于 Java 原语，默认情况下这将导致
- * {@link TypeMismatchException}。要忽略目标类中所有基元属性的 {@code NULL} 数据库值，请将 {@code
- * primitivesDefaultedForNullValue} 标志设置为 {@code true}。有关详细信息，请参阅 {@link
- * #setPrimitivesDefaultedForNullValue(boolean)}。
- * <p>如果需要映射到具有 <em> 数据类的目标类 </em> 构造函数 –例如，Java {@code record} 或 Kotlin {@code data} 类
- * –请改用 {@link DataClassRowMapper}。
- * <p>请注意，此类旨在提供便利而不是高性能。为了获得最佳性能，请考虑使用自定义 {@code RowMapper} 实现。
+ * {@link RowMapper} 实现，将每行映射为指定目标类的新实例。目标类须为顶级或 {@code static} 嵌套类，且有无参构造器。
+ * <p>列值按 ResultSet 元数据列名与目标类 public setter 匹配；支持直接匹配或下划线列名转驼峰属性名。
+ * <p>内置 String、数值、Boolean、BigDecimal、{@code java.util.Date} 等常见类型转换。
+ * <p>列名与属性不一致时可在 SQL 中使用下划线别名，如 {@code first_name} 映射 {@code setFirstName}。
+ * <p>数据库 NULL 默认调用 setter(null)；基元属性会触发 {@link TypeMismatchException}，可设 {@link #setPrimitivesDefaultedForNullValue(boolean)} 忽略。
+ * <p>映射 record/data class 请用 {@link DataClassRowMapper}。
+ * <p>本类侧重便利而非性能，高性能场景请用定制 {@code RowMapper}。
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -103,7 +107,7 @@ public class BeanPropertyRowMapper<T> implements RowMapper<T> {
 
 
 	/**
-	 * 创建一个新的 {@code BeanPropertyRowMapper} 用于 bean 样式配置。
+	 * 创建 {@code BeanPropertyRowMapper}，供后续通过 setter 配置 mappedClass 等属性。
 	 * @see #setMappedClass
 	 * @see #setCheckFullyPopulated
 	 */
