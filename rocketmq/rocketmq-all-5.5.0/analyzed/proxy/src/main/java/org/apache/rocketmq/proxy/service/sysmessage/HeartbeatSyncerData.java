@@ -25,6 +25,7 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 
+/** 心跳同步广播消息体：携带消费者注册/注销上下文与通道编码。 */
 public class HeartbeatSyncerData {
     private HeartbeatType heartbeatType;
     private String clientId;
@@ -42,6 +43,14 @@ public class HeartbeatSyncerData {
     public HeartbeatSyncerData() {
     }
 
+    /**
+     * 构造心跳同步数据。
+     *
+     * @param heartbeatType REGISTER 或 UNREGISTER
+     * @param clientId 客户端标识
+     * @param localProxyId 发送方 Proxy 唯一 ID
+     * @param channelData 编码后的 {@link RemoteChannel} 数据
+     */
     public HeartbeatSyncerData(HeartbeatType heartbeatType, String clientId,
         LanguageCode language, int version, String group,
         ConsumeType consumeType, MessageModel messageModel,
@@ -59,6 +68,7 @@ public class HeartbeatSyncerData {
         this.channelData = channelData;
     }
 
+    /** 返回心跳类型。 */
     public HeartbeatType getHeartbeatType() {
         return heartbeatType;
     }
@@ -140,6 +150,7 @@ public class HeartbeatSyncerData {
         this.consumeFromWhere = consumeFromWhere;
     }
 
+    /** 返回发送方 Proxy 标识。 */
     public String getLocalProxyId() {
         return localProxyId;
     }
@@ -148,6 +159,7 @@ public class HeartbeatSyncerData {
         this.localProxyId = localProxyId;
     }
 
+    /** 返回序列化后的远程通道数据。 */
     public String getChannelData() {
         return channelData;
     }

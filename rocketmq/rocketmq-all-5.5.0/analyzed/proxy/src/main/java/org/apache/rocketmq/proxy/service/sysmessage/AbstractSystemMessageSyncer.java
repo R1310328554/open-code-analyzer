@@ -47,6 +47,9 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
+/**
+ * 系统消息同步器基类：通过广播主题在 Proxy 实例间同步注册/注销等系统事件。
+ */
 public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, MessageListenerConcurrently {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     protected final TopicRouteService topicRouteService;
@@ -62,6 +65,7 @@ public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, M
         this.rpcHook = rpcHook;
     }
 
+    /** 系统消息生产者组 ID。 */
     protected String getSystemMessageProducerId() {
         return "PID_" + getBroadcastTopicName();
     }
@@ -70,6 +74,7 @@ public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, M
         return "CID_" + getBroadcastTopicName();
     }
 
+    /** 广播主题名，取自 Proxy 配置。 */
     protected String getBroadcastTopicName() {
         return ConfigurationManager.getProxyConfig().getHeartbeatSyncerTopicName();
     }
@@ -91,6 +96,7 @@ public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, M
         return rpcHook;
     }
 
+    /** 将 data 序列化为 JSON 并异步发送到广播主题。 */
     protected void sendSystemMessage(Object data) {
         String targetTopic = this.getBroadcastTopicName();
         try {
@@ -121,6 +127,7 @@ public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, M
         }
     }
 
+    /** 构造系统消息发送请求头。 */
     protected SendMessageRequestHeader buildSendMessageRequestHeader(Message message,
         String producerGroup, int queueId) {
         SendMessageRequestHeader requestHeader = new SendMessageRequestHeader();
@@ -140,6 +147,7 @@ public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, M
     }
 
     @Override
+    /** 创建广播主题并启动 BROADCASTING 模式 PushConsumer。 */
     public void start() throws Exception {
         this.createSysTopic();
         RPCHook rpcHook = this.getRpcHook();
@@ -156,6 +164,7 @@ public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, M
         this.defaultMQPushConsumer.start();
     }
 
+    /** 在指定集群上创建系统广播主题（若不存在）。 */
     protected void createSysTopic() {
         String clusterName = this.getBroadcastTopicClusterName();
         if (StringUtils.isEmpty(clusterName)) {
@@ -176,6 +185,7 @@ public abstract class AbstractSystemMessageSyncer implements StartAndShutdown, M
     }
 
     @Override
+    /** 关闭 PushConsumer。 */
     public void shutdown() throws Exception {
         this.defaultMQPushConsumer.shutdown();
     }

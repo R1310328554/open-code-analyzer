@@ -28,10 +28,14 @@ import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.remoting.protocol.route.QueueData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * Proxy 侧主题路由数据：将 Broker 地址转换为 {@link Address} 列表供客户端访问。
+ */
 public class ProxyTopicRouteData {
     public ProxyTopicRouteData() {
     }
 
+    /** 从标准 {@link TopicRouteData} 转换，保留原始 Broker 主机与端口。 */
     public ProxyTopicRouteData(TopicRouteData topicRouteData) {
         this.queueDatas = topicRouteData.getQueueDatas();
         this.brokerDatas = new ArrayList<>();
@@ -49,6 +53,7 @@ public class ProxyTopicRouteData {
         }
     }
 
+    /** 转换路由并将所有 Broker 地址端口替换为指定 proxy 端口。 */
     public ProxyTopicRouteData(TopicRouteData topicRouteData, int port) {
         this.queueDatas = topicRouteData.getQueueDatas();
         this.brokerDatas = new ArrayList<>();
@@ -67,6 +72,7 @@ public class ProxyTopicRouteData {
         }
     }
 
+    /** 转换路由并将各 Broker 地址统一映射为请求侧地址列表。 */
     public ProxyTopicRouteData(TopicRouteData topicRouteData, List<Address> requestHostAndPortList) {
         this.queueDatas = topicRouteData.getQueueDatas();
         this.brokerDatas = new ArrayList<>();
@@ -82,6 +88,7 @@ public class ProxyTopicRouteData {
         }
     }
 
+    /** Proxy 视角的 Broker 路由条目，地址为 {@link Address} 列表。 */
     public static class ProxyBrokerData {
         private String cluster;
         private String brokerName;
@@ -111,6 +118,7 @@ public class ProxyTopicRouteData {
             this.brokerAddrs = brokerAddrs;
         }
 
+        /** 还原为 Remoting 协议使用的 {@link BrokerData}。 */
         public BrokerData buildBrokerData() {
             BrokerData brokerData = new BrokerData();
             brokerData.setCluster(cluster);
@@ -145,6 +153,7 @@ public class ProxyTopicRouteData {
         this.brokerDatas = brokerDatas;
     }
 
+    /** 组装并返回标准 {@link TopicRouteData}。 */
     public TopicRouteData buildTopicRouteData() {
         TopicRouteData topicRouteData = new TopicRouteData();
         topicRouteData.setQueueDatas(queueDatas);

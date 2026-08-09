@@ -48,10 +48,14 @@ import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+/**
+ * 主题路由服务抽象基类：维护 Caffeine 缓存、故障容忍策略与队列视图构建。
+ */
 public abstract class TopicRouteService extends AbstractStartAndShutdown {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
     private final MQFaultStrategy mqFaultStrategy;
+    /** 主题名到 {@link MessageQueueView} 的本地缓存。 */
     protected final LoadingCache<String /* topicName */, MessageQueueView> topicCache;
     protected final ThreadPoolExecutor cacheRefreshExecutor;
     protected final List<MessageQueuePenalizer<AddressableMessageQueue>> penalizers = new ArrayList<>();
@@ -80,6 +84,7 @@ public abstract class TopicRouteService extends AbstractStartAndShutdown {
                         TopicRouteData topicRouteData = mqClientAPIFactory.getClient().getTopicRouteInfoFromNameServer(topic, Duration.ofSeconds(3).toMillis());
                         return buildMessageQueueView(topic, topicRouteData);
                     } catch (Exception e) {
+                        // 主题不存在时缓存空占位视图
                         if (TopicRouteHelper.isTopicNotExistError(e)) {
                             return MessageQueueView.WRAPPED_EMPTY_QUEUE;
                         }
@@ -132,7 +137,7 @@ public abstract class TopicRouteService extends AbstractStartAndShutdown {
         this.init();
     }
 
-    // pickup one topic in the topic cache
+    // 从缓存中任取一个主题用于 Broker 可达性探测
     private Optional<String> pickTopic() {
         if (topicCache.asMap().isEmpty()) {
             return Optional.empty();
@@ -153,6 +158,7 @@ public abstract class TopicRouteService extends AbstractStartAndShutdown {
         return tempClientConfig;
     }
 
+    /** 更新 Broker 故障项：延迟、隔离与可达状态。 */
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation,
                                 boolean reachable) {
         checkSendFaultToleranceEnable();
@@ -170,10 +176,12 @@ public abstract class TopicRouteService extends AbstractStartAndShutdown {
         return this.mqFaultStrategy;
     }
 
+    /** 从缓存加载主题的全部读写队列视图。 */
     public MessageQueueView getAllMessageQueueView(ProxyContext ctx, String topicName) throws Exception {
         return getCacheMessageQueueWrapper(this.topicCache, topicName);
     }
 
+    /** 获取当前生效的主题队列视图（子类实现）。 */
     public abstract MessageQueueView getCurrentMessageQueueView(ProxyContext ctx, String topicName) throws Exception;
 
     public abstract ProxyTopicRouteData getTopicRouteForProxy(ProxyContext ctx, List<Address> requestHostAndPortList,
@@ -183,6 +191,7 @@ public abstract class TopicRouteService extends AbstractStartAndShutdown {
 
     public abstract AddressableMessageQueue buildAddressableMessageQueue(ProxyContext ctx, MessageQueue messageQueue) throws Exception;
 
+    /** 从缓存取视图，空占位时抛出 TOPIC_NOT_EXIST。 */
     protected static MessageQueueView getCacheMessageQueueWrapper(LoadingCache<String, MessageQueueView> topicCache,
         String key) throws Exception {
         MessageQueueView res = topicCache.get(key);
@@ -193,11 +202,13 @@ public abstract class TopicRouteService extends AbstractStartAndShutdown {
         return res;
     }
 
+    /** 校验路由数据是否同时包含队列与 Broker 信息。 */
     protected static boolean isTopicRouteValid(TopicRouteData routeData) {
         return routeData != null && routeData.getQueueDatas() != null && !routeData.getQueueDatas().isEmpty()
             && routeData.getBrokerDatas() != null && !routeData.getBrokerDatas().isEmpty();
     }
 
+    /** 根据路由有效性构建 {@link MessageQueueView} 或空占位。 */
     protected MessageQueueView buildMessageQueueView(String topic, TopicRouteData topicRouteData) {
         if (isTopicRouteValid(topicRouteData)) {
             MessageQueueView tmp = new MessageQueueView(topic, topicRouteData, this.penalizers, this.priorityProvider);
@@ -216,6 +227,7 @@ public abstract class TopicRouteService extends AbstractStartAndShutdown {
     }
 
     @VisibleForTesting
+    /** 根据 {@link MQFaultStrategy} 构建可用性与可达性惩罚器。 */
     public static List<MessageQueuePenalizer<AddressableMessageQueue>> buildPenalizerByMQFaultStrategy(MQFaultStrategy mqFaultStrategy) {
         List<MessageQueuePenalizer<AddressableMessageQueue>> penalizers = new ArrayList<>();
         penalizers.add(messageQueue -> {

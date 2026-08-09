@@ -21,6 +21,9 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 
+/**
+ * 半消息事务元数据：记录 Broker、偏移量、事务 ID 与过期时间。
+ */
 public class TransactionData implements Comparable<TransactionData> {
     private final String brokerName;
     private final String topic;
@@ -30,6 +33,13 @@ public class TransactionData implements Comparable<TransactionData> {
     private final long checkTimestamp;
     private final long expireMs;
 
+    /**
+     * @param brokerName 存储半消息的 Broker
+     * @param tranStateTableOffset 事务状态表偏移
+     * @param commitLogOffset CommitLog 偏移
+     * @param transactionId 全局事务 ID
+     * @param expireMs 过期毫秒数
+     */
     public TransactionData(String brokerName, String topic, long tranStateTableOffset, long commitLogOffset, String transactionId,
         long checkTimestamp, long expireMs) {
         this.brokerName = brokerName;
@@ -69,6 +79,7 @@ public class TransactionData implements Comparable<TransactionData> {
         return expireMs;
     }
 
+    /** 返回 checkTimestamp + expireMs 的绝对过期时间。 */
     public long getExpireTime() {
         return checkTimestamp + expireMs;
     }
@@ -93,6 +104,7 @@ public class TransactionData implements Comparable<TransactionData> {
     }
 
     @Override
+    /** 按过期时间、brokerName、偏移量与 transactionId 排序。 */
     public int compareTo(TransactionData o) {
         return ComparisonChain.start()
             .compare(getExpireTime(), o.getExpireTime())

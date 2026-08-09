@@ -39,26 +39,38 @@ import org.apache.rocketmq.remoting.protocol.route.QueueData;
 import static org.apache.rocketmq.proxy.service.route.MessageQueuePenalizer.selectLeastPenaltyWithPriority;
 import static org.apache.rocketmq.proxy.service.route.MessageQueuePriorityProvider.buildPriorityGroups;
 
+/**
+ * 消息队列选择器：基于主题路由构建读/写队列列表，支持轮询、惩罚因子与优先级分组选择。
+ */
 public class MessageQueueSelector {
+    /** Broker 代理队列标识，queueId 为 -1 表示按 Broker 粒度路由。 */
     private static final int BROKER_ACTING_QUEUE_ID = -1;
 
-    // multiple queues for brokers with queueId : normal
+    // 普通队列：每个 Broker 下 queueId >= 0 的多个队列
     private final List<AddressableMessageQueue> queues = new ArrayList<>();
-    // one queue for brokers with queueId : -1
+    // Broker 代理队列：每个 Broker 仅一条 queueId 为 -1 的队列
     private final List<AddressableMessageQueue> brokerActingQueues = new ArrayList<>();
     private final Map<String, AddressableMessageQueue> brokerNameQueueMap = new ConcurrentHashMap<>();
     private final AtomicInteger queueIndex;
     private final AtomicInteger brokerIndex;
     private final List<MessageQueuePenalizer<AddressableMessageQueue>> penalizers = new ArrayList<>();
 
-    // ordered by priority asc (smaller => higher priority)
+    // 按优先级升序分组（数值越小优先级越高）
     private final List<List<AddressableMessageQueue>> queuesWithPriority;
     private final List<List<AddressableMessageQueue>> brokerActingQueuesWithPriority;
 
+    /** 以主题路由与读/写模式构造选择器，使用默认优先级提供者。 */
     public MessageQueueSelector(TopicRouteWrapper topicRouteWrapper, boolean read) {
         this(topicRouteWrapper, read, null);
     }
 
+    /**
+     * 构造选择器并指定优先级分组策略。
+     *
+     * @param topicRouteWrapper 主题路由包装
+     * @param read 为 true 时构建可读队列，否则构建可写队列
+     * @param priorityProvider 队列优先级提供者，可为 null
+     */
     public MessageQueueSelector(TopicRouteWrapper topicRouteWrapper, boolean read,
         MessageQueuePriorityProvider<AddressableMessageQueue> priorityProvider) {
         if (read) {
@@ -78,6 +90,7 @@ public class MessageQueueSelector {
         this.brokerActingQueuesWithPriority = buildPriorityGroups(brokerActingQueues, priorityProvider);
     }
 
+    /** 根据可读权限与主 Broker 地址构建读队列列表。 */
     private static List<AddressableMessageQueue> buildRead(TopicRouteWrapper topicRoute) {
         Set<AddressableMessageQueue> queueSet = new HashSet<>();
         List<QueueData> qds = topicRoute.getQueueDatas();
@@ -104,9 +117,10 @@ public class MessageQueueSelector {
         return queueSet.stream().sorted().collect(Collectors.toList());
     }
 
+    /** 根据顺序主题配置或可写权限构建写队列列表。 */
     private static List<AddressableMessageQueue> buildWrite(TopicRouteWrapper topicRoute) {
         Set<AddressableMessageQueue> queueSet = new HashSet<>();
-        // order topic route.
+        // 顺序主题：按 orderTopicConf 解析 Broker 与队列数
         if (StringUtils.isNotBlank(topicRoute.getOrderTopicConf())) {
             String[] brokers = topicRoute.getOrderTopicConf().split(";");
             for (String broker : brokers) {
@@ -166,15 +180,18 @@ public class MessageQueueSelector {
         Collections.sort(brokerActingQueues);
     }
 
+    /** 按 Broker 名称返回对应的 Broker 代理队列。 */
     public AddressableMessageQueue getQueueByBrokerName(String brokerName) {
         return this.brokerNameQueueMap.get(brokerName);
     }
 
+    /** 轮询选择一条队列；onlyBroker 为 true 时仅从 Broker 代理队列中选择。 */
     public AddressableMessageQueue selectOne(boolean onlyBroker) {
         int nextIndex = onlyBroker ? brokerIndex.getAndIncrement() : queueIndex.getAndIncrement();
         return selectOneByIndex(nextIndex, onlyBroker);
     }
 
+    /** 优先按惩罚因子与优先级选择，无可用结果时回退到轮询。 */
     public AddressableMessageQueue selectOneByPipeline(boolean onlyBroker) {
         if (CollectionUtils.isNotEmpty(penalizers)) {
             Pair<AddressableMessageQueue, Integer> queueAndPenalty;
@@ -188,10 +205,11 @@ public class MessageQueueSelector {
             }
         }
 
-        // SendLatency is not enabled, or no queue is selected, then select by index.
+        // 未启用延迟惩罚或未选出队列时，按索引轮询
         return selectOne(onlyBroker);
     }
 
+    /** 选择与 last 不同的下一条队列，最多尝试 count 次。 */
     public AddressableMessageQueue selectNextOne(AddressableMessageQueue last) {
         boolean onlyBroker = last.getQueueId() < 0;
         AddressableMessageQueue newOne = last;
@@ -206,6 +224,7 @@ public class MessageQueueSelector {
         return newOne;
     }
 
+    /** 按 index 取模选择队列。 */
     public AddressableMessageQueue selectOneByIndex(int index, boolean onlyBroker) {
         if (onlyBroker) {
             if (brokerActingQueues.isEmpty()) {
@@ -228,6 +247,7 @@ public class MessageQueueSelector {
         return brokerActingQueues;
     }
 
+    /** 注册队列惩罚器，用于延迟/故障容忍路由。 */
     public void addPenalizer(MessageQueuePenalizer<AddressableMessageQueue> penalizer) {
         if (penalizer != null) {
             this.penalizers.add(penalizer);

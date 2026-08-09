@@ -21,8 +21,10 @@ import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/** 主题路由相关异常判定工具类。 */
 public class TopicRouteHelper {
 
+    /** 判断异常是否表示主题在 NameServer/Broker 中不存在。 */
     public static boolean isTopicNotExistError(Throwable e) {
         if (e instanceof MQBrokerException) {
             if (((MQBrokerException) e).getResponseCode() == ResponseCode.TOPIC_NOT_EXIST) {

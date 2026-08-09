@@ -24,8 +24,12 @@ import org.apache.rocketmq.common.utils.StartAndShutdown;
 import org.apache.rocketmq.proxy.config.ConfigurationManager;
 import org.apache.rocketmq.remoting.protocol.header.EndTransactionRequestHeader;
 
+/**
+ * 事务服务抽象基类：管理 {@link TransactionData} 并生成结束事务请求。
+ */
 public abstract class AbstractTransactionService implements TransactionService, StartAndShutdown {
 
+    /** 本地事务元数据管理器。 */
     protected TransactionDataManager transactionDataManager = new TransactionDataManager();
 
     @Override
@@ -35,6 +39,7 @@ public abstract class AbstractTransactionService implements TransactionService, 
     }
 
     @Override
+    /** 按 brokerName 记录半消息事务元数据。 */
     public TransactionData addTransactionDataByBrokerName(ProxyContext ctx, String brokerName, String topic, String producerGroup, long tranStateTableOffset, long commitLogOffset, String transactionId,
         Message message) {
         if (StringUtils.isBlank(brokerName)) {
@@ -56,6 +61,7 @@ public abstract class AbstractTransactionService implements TransactionService, 
     }
 
     @Override
+    /** 根据本地缓存的事务数据生成 {@link EndTransactionRequestData}。 */
     public EndTransactionRequestData genEndTransactionRequestHeader(ProxyContext ctx, String topic, String producerGroup, Integer commitOrRollback,
         boolean fromTransactionCheck, String msgId, String transactionId) {
         TransactionData transactionData = this.transactionDataManager.pollNoExpireTransactionData(producerGroup, transactionId);
@@ -75,10 +81,12 @@ public abstract class AbstractTransactionService implements TransactionService, 
     }
 
     @Override
+    /** 回查发送失败时移除本地事务记录。 */
     public void onSendCheckTransactionStateFailed(ProxyContext context, String producerGroup, TransactionData transactionData) {
         this.transactionDataManager.removeTransactionData(producerGroup, transactionData.getTransactionId(), transactionData);
     }
 
+    /** 将 Broker 地址解析为 brokerName（子类实现）。 */
     protected abstract String getBrokerNameByAddr(String brokerAddr);
 
     @Override

@@ -21,7 +21,11 @@ import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * 主题消息队列视图：封装读/写 {@link MessageQueueSelector} 与 {@link TopicRouteWrapper}。
+ */
 public class MessageQueueView {
+    /** 空路由占位视图，表示 NameServer 中不存在该主题。 */
     public static final MessageQueueView WRAPPED_EMPTY_QUEUE = new MessageQueueView("", new TopicRouteData(), null);
 
     private final MessageQueueSelector readSelector;
@@ -29,10 +33,19 @@ public class MessageQueueView {
     private final TopicRouteWrapper topicRouteWrapper;
 
 
+    /** 以主题名、路由数据与惩罚器列表构造视图。 */
     public MessageQueueView(String topic, TopicRouteData topicRouteData, List<MessageQueuePenalizer<AddressableMessageQueue>> penalizer) {
         this(topic, topicRouteData, penalizer, null);
     }
 
+    /**
+     * 构造视图并指定队列优先级提供者。
+     *
+     * @param topic 主题名
+     * @param topicRouteData NameServer 返回的路由数据
+     * @param penalizer 惩罚器列表
+     * @param priorityProvider 优先级提供者
+     */
     public MessageQueueView(String topic, TopicRouteData topicRouteData, List<MessageQueuePenalizer<AddressableMessageQueue>> penalizer,
         MessageQueuePriorityProvider<AddressableMessageQueue> priorityProvider) {
         this.topicRouteWrapper = new TopicRouteWrapper(topicRouteData, topic);
@@ -60,14 +73,17 @@ public class MessageQueueView {
         return topicRouteWrapper.getTopicName();
     }
 
+    /** 判断是否为无路由的空占位视图。 */
     public boolean isEmptyCachedQueue() {
         return this == WRAPPED_EMPTY_QUEUE;
     }
 
+    /** 返回读路径队列选择器。 */
     public MessageQueueSelector getReadSelector() {
         return readSelector;
     }
 
+    /** 返回写路径队列选择器。 */
     public MessageQueueSelector getWriteSelector() {
         return writeSelector;
     }

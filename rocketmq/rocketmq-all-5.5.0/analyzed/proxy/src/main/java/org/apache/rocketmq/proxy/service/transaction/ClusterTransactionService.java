@@ -46,9 +46,13 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.HeartbeatData;
 import org.apache.rocketmq.remoting.protocol.heartbeat.ProducerData;
 import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 
+/**
+ * 集群模式事务服务：维护生产者组与集群订阅关系，并周期性向 Broker 发送事务心跳。
+ */
 public class ClusterTransactionService extends AbstractTransactionService {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
+    /** 事务心跳使用的固定 clientId。 */
     private static final String TRANS_HEARTBEAT_CLIENT_ID = "rmq-proxy-producer-client";
 
     private final MQClientAPIFactory mqClientAPIFactory;
@@ -75,6 +79,7 @@ public class ClusterTransactionService extends AbstractTransactionService {
     }
 
     @Override
+    /** 将主题所属集群加入生产者组的事务订阅集合。 */
     public void addTransactionSubscription(ProxyContext ctx, String group, String topic) {
         try {
             groupClusterData.compute(group, (groupName, clusterDataSet) -> {
@@ -90,6 +95,7 @@ public class ClusterTransactionService extends AbstractTransactionService {
     }
 
     @Override
+    /** 用新主题列表替换生产者组的集群订阅。 */
     public void replaceTransactionSubscription(ProxyContext ctx, String group, List<String> topicList) {
         Set<ClusterData> clusterDataSet = new HashSet<>();
         for (String topic : topicList) {
@@ -122,6 +128,7 @@ public class ClusterTransactionService extends AbstractTransactionService {
         groupClusterData.remove(group);
     }
 
+    /** 扫描在线生产者组并向各集群 Broker 发送事务心跳。 */
     public void scanProducerHeartBeat() {
         Set<String> groupSet = groupClusterData.keySet();
 
@@ -194,6 +201,7 @@ public class ClusterTransactionService extends AbstractTransactionService {
         this.brokerAddrNameMapRef.set(brokerAddrNameMap);
     }
 
+    /** 向集群内各 Broker 异步发送单条事务心跳。 */
     protected void sendHeartBeatToCluster(String clusterName, HeartbeatData heartbeatData, Map<String, String> brokerAddrNameMap) {
         try {
             MessageQueueView messageQueue = this.topicRouteService.getAllMessageQueueView(ProxyContext.createForInner(this.getClass()), clusterName);
@@ -256,6 +264,7 @@ public class ClusterTransactionService extends AbstractTransactionService {
         }
     }
 
+    /** 后台线程：按配置周期触发 scanProducerHeartBeat。 */
     class TxHeartbeatServiceThread extends ServiceThread {
 
         @Override
@@ -271,6 +280,7 @@ public class ClusterTransactionService extends AbstractTransactionService {
         }
 
         @Override
+        /** 等待周期结束后扫描并发送事务心跳。 */
         protected void onWaitEnd() {
             scanProducerHeartBeat();
         }

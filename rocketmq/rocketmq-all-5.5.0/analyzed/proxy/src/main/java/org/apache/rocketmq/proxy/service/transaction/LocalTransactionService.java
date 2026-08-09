@@ -21,17 +21,20 @@ import org.apache.rocketmq.common.BrokerConfig;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 
 /**
- * no need to implements, because the channel of producer will put into the broker's producerManager
+ * 本地（Broker 内嵌）事务服务：生产者通道已由 Broker producerManager 管理，无需额外心跳订阅。
  */
+/** 内嵌 Broker 模式下的 {@link TransactionService} 实现。 */
 public class LocalTransactionService extends AbstractTransactionService {
 
     protected final BrokerConfig brokerConfig;
 
+    /** @param brokerConfig 本地 Broker 配置 */
     public LocalTransactionService(BrokerConfig brokerConfig) {
         this.brokerConfig = brokerConfig;
     }
 
     @Override
+    /** 本地模式无需维护事务主题订阅。 */
     public void addTransactionSubscription(ProxyContext ctx, String group, List<String> topicList) {
 
     }
@@ -52,6 +55,7 @@ public class LocalTransactionService extends AbstractTransactionService {
     }
 
     @Override
+    /** 直接返回本地 Broker 名称。 */
     protected String getBrokerNameByAddr(String brokerAddr) {
         return this.brokerConfig.getBrokerName();
     }
