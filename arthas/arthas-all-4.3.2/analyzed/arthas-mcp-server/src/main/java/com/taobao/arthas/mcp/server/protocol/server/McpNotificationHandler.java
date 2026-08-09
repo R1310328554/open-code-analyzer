@@ -9,13 +9,13 @@ import com.taobao.arthas.mcp.server.session.ArthasCommandContext;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handles MCP notifications from clients using CompletableFuture for async operations.
+ * 处理 MCP 客户端通知（如 initialized、roots/list_changed），不返回 JSON-RPC 响应体。
  * This is the Netty-specific version that doesn't depend on Reactor.
  */
 public interface McpNotificationHandler {
 
 	/**
-	 * Handles a notification from the client.
+	 * 处理客户端发来的 notification。
 	 * @param exchange the exchange associated with the client that allows calling back to
 	 * the connected client or inspecting its capabilities.
 	 * @param params the parameters of the notification.

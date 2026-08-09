@@ -18,6 +18,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
+/**
+ * 无状态 MCP 请求处理器：为每个 JSON-RPC 请求创建临时 Arthas session，执行完毕后立即关闭。
+ */
 class DefaultMcpStatelessServerHandler implements McpStatelessServerHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultMcpStatelessServerHandler.class);
@@ -41,19 +44,19 @@ class DefaultMcpStatelessServerHandler implements McpStatelessServerHandler {
 
 	@Override
 	public CompletableFuture<McpSchema.JSONRPCResponse> handleRequest(McpTransportContext ctx, McpSchema.JSONRPCRequest req) {
-		// Create a temporary session for this request
+		// 为本次请求创建临时 session，无状态模式下不跨请求复用
 		String tempSessionId = UUID.randomUUID().toString();
 		ArthasCommandSessionManager.CommandSessionBinding binding = commandSessionManager.createCommandSession(tempSessionId);
 		ArthasCommandContext commandContext = new ArthasCommandContext(commandExecutor, binding);
 
-		// Extract auth subject from transport context and apply to session
+		// 从传输上下文提取认证主体并绑定到 session
 		Object authSubject = ctx.get(McpAuthExtractor.MCP_AUTH_SUBJECT_KEY);
 		if (authSubject != null) {
 			commandExecutor.setSessionAuth(binding.getArthasSessionId(), authSubject);
 			logger.debug("Applied auth subject to stateless session: {}", binding.getArthasSessionId());
 		}
 
-		// Extract userId from transport context and apply to session
+		// 从传输上下文提取 userId，用于统计上报
 		String userId = (String) ctx.get(McpAuthExtractor.MCP_USER_ID_KEY);
 		if (userId != null) {
 			commandExecutor.setSessionUserId(binding.getArthasSessionId(), userId);
@@ -62,7 +65,7 @@ class DefaultMcpStatelessServerHandler implements McpStatelessServerHandler {
 
 		McpStatelessRequestHandler<?> handler = requestHandlers.get(req.getMethod());
 		if (handler == null) {
-			// Clean up session if handler not found
+			// 找不到对应 method 的 handler 时清理临时 session
 			closeSession(binding);
 			CompletableFuture<McpSchema.JSONRPCResponse> f = new CompletableFuture<>();
 			f.completeExceptionally(new McpError("Missing handler for request type: " + req.getMethod()));
@@ -73,7 +76,7 @@ class DefaultMcpStatelessServerHandler implements McpStatelessServerHandler {
 			CompletableFuture<Object> result = (CompletableFuture<Object>) handler
 					.handle(ctx, commandContext, req.getParams());
 			return result.handle((r, ex) -> {
-				// Clean up session after execution
+				// 请求处理完成后关闭临时 session，避免泄漏
 				closeSession(binding);
 
 				if (ex != null) {

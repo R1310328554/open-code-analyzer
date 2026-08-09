@@ -21,8 +21,7 @@ import java.util.concurrent.*;
 import java.util.function.BiFunction;
 
 /**
- * A Netty-based MCP server implementation that provides access to tools,
- * resources, and prompts.
+ * 基于 Netty 的 MCP 服务端实现，注册 tools/resources/prompts 等标准 MCP 能力并向客户端暴露。
  *
  * @author Yeaury
  */
@@ -127,13 +126,13 @@ public class McpNettyServer {
 	private Map<String, McpRequestHandler<?>> prepareRequestHandlers() {
 		Map<String, McpRequestHandler<?>> requestHandlers = new HashMap<>();
 
-		// Initialize request handlers for standard MCP methods
+		// 注册标准 MCP 方法的 request handler
 
-		// Ping MUST respond with an empty data, but not NULL response.
+		// Ping 必须返回空对象而非 null
 		requestHandlers.put(McpSchema.METHOD_PING,
 				(exchange, commandContext, params) -> CompletableFuture.completedFuture(Collections.emptyMap()));
 
-		// Add tools API handlers if the tool capability is enabled
+		// 若启用了 tools 能力，注册 tools/list 与 tools/call
 		if (this.serverCapabilities.getTools() != null) {
 			requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler());
 			requestHandlers.put(McpSchema.METHOD_TOOLS_CALL, toolsCallRequestHandler());
@@ -174,9 +173,7 @@ public class McpNettyServer {
 					initializeRequest.getProtocolVersion(), initializeRequest.getCapabilities(),
 					initializeRequest.getClientInfo());
 
-			// The server MUST respond with the highest protocol version it supports
-			// if
-			// it does not support the requested (e.g. Client) version.
+			// 服务端不支持客户端请求的协议版本时，回退到自身支持的最高版本
 			String serverProtocolVersion = protocolVersions.get(protocolVersions.size() - 1);
 
 			if (protocolVersions.contains(initializeRequest.getProtocolVersion())) {

@@ -4,7 +4,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
- * 
+ * Attach 场景下的 Arthas 类加载器，隔离 arthas-core 与宿主应用类路径。
+ *
  * @author hengyunabc 2020-06-22
  *
  */

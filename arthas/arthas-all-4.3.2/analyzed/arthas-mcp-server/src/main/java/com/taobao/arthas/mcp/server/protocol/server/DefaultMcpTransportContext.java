@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Default implementation for {@link McpTransportContext} which uses a Thread-safe map.
+ * 默认的 {@link McpTransportContext} 实现，使用线程安全的 {@link ConcurrentHashMap} 存储键值。
  * Objects of this kind are mutable.
  */
 public class DefaultMcpTransportContext implements McpTransportContext {

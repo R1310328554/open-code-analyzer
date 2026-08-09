@@ -4,6 +4,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
+ * Arthas 专用类加载器，优先从自身 JAR 加载 Arthas 类，避免污染应用 ClassLoader。
+ *
  * @author beiwei30 on 09/12/2016.
  */
 public class ArthasClassloader extends URLClassLoader {

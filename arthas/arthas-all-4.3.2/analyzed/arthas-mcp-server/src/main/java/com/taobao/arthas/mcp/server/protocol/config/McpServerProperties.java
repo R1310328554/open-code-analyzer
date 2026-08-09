@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * MCP Server Configuration Properties
+ * MCP Server 配置属性，集中管理服务端名称、能力开关、超时与协议模式等项。
  * Used to manage all configuration items for MCP server.
  *
  * @author Yeaury
@@ -15,14 +15,14 @@ import java.util.Map;
 public class McpServerProperties {
 
     /**
-     * Server basic information
+     * 服务端基础信息：名称、版本与使用说明
      */
     private final String name;
     private final String version;
     private final String instructions;
 
     /**
-     * Server capability configuration
+     * 服务端能力开关：工具/资源/提示词变更通知及资源订阅
      */
     private final boolean toolChangeNotification;
     private final boolean resourceChangeNotification;
@@ -32,7 +32,7 @@ public class McpServerProperties {
     private final String mcpEndpoint;
 
     /**
-     * Timeout configuration
+     * 请求与初始化握手超时配置
      */
     private final Duration requestTimeout;
     private final Duration initializationTimeout;
@@ -72,7 +72,10 @@ public class McpServerProperties {
     }
 
     public enum ServerProtocol {
-        STREAMABLE, STATELESS
+        /** 流式 HTTP（SSE）模式，支持长连接与会话 */
+        STREAMABLE,
+        /** 无状态 HTTP 模式，每个请求独立处理 */
+        STATELESS
     }
 
     /**
@@ -176,10 +179,10 @@ public class McpServerProperties {
     }
 
     /**
-     * Builder class for McpServerProperties
+     * {@link McpServerProperties} 的 Builder，支持链式配置各项属性。
      */
     public static class Builder {
-        // Default values
+        // 默认值
         private String name = "mcp-server";
         private String version = "1.0.0";
         private String instructions;

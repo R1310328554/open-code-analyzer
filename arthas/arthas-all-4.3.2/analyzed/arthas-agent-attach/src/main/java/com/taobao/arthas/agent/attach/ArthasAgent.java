@@ -12,7 +12,8 @@ import org.zeroturnaround.zip.ZipUtil;
 import net.bytebuddy.agent.ByteBuddyAgent;
 
 /**
- * 
+ * 通过 ByteBuddy 自 attach 启动 Arthas 的入口类，支持配置项与静默初始化。
+ *
  * @author hengyunabc 2020-06-22
  *
  */

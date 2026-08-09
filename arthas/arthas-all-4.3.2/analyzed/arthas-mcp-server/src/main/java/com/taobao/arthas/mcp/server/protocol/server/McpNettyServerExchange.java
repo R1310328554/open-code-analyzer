@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Represents the interaction between MCP server and client. Provides methods for communication, logging, and context management.
+ * MCP 服务端与客户端之间的会话交换对象，封装向客户端发请求/通知、采样、根目录查询等能力。
  * This class is focused only on MCP protocol communication and does not handle command execution directly.
  *
  * <p>
