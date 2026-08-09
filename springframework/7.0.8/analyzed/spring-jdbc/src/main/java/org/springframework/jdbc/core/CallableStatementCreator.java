@@ -21,18 +21,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * One of the three central callback interfaces used by the JdbcTemplate class.
- * This interface creates a CallableStatement given a connection, provided
- * by the JdbcTemplate class. Implementations are responsible for providing
- * SQL and any necessary parameters.
+ * JdbcTemplate 使用的三个核心回调接口之一。
+ * 由 JdbcTemplate 提供 Connection，本接口负责创建 CallableStatement；
+ * 实现类需提供 SQL 及必要参数。
  *
- * <p>Implementations <i>do not</i> need to concern themselves with
- * SQLExceptions that may be thrown from operations they attempt.
- * The JdbcTemplate class will catch and handle SQLExceptions appropriately.
+ * <p>实现类<i>无需</i>处理操作中可能抛出的 SQLException；
+ * JdbcTemplate 会适当捕获并处理。
  *
- * <p>A PreparedStatementCreator should also implement the SqlProvider interface
- * if it is able to provide the SQL it uses for PreparedStatement creation.
- * This allows for better contextual information in case of exceptions.
+ * <p>若能为 CallableStatement 创建提供所用 SQL，
+ * 还应实现 SqlProvider，以便异常时提供更完整上下文。
  *
  * @author Rod Johnson
  * @author Thomas Risberg
@@ -44,13 +41,10 @@ import java.sql.SQLException;
 public interface CallableStatementCreator {
 
 	/**
-	 * Create a callable statement in this connection. Allows implementations to use
-	 * CallableStatements.
-	 * @param con the Connection to use to create statement
-	 * @return a callable statement
-	 * @throws SQLException there is no need to catch SQLExceptions
-	 * that may be thrown in the implementation of this method.
-	 * The JdbcTemplate class will handle them.
+	 * 在此连接上创建 CallableStatement。
+	 * @param con 用于创建语句的 Connection
+	 * @return CallableStatement
+	 * @throws SQLException 实现中可能抛出，无需自行捕获；JdbcTemplate 会处理
 	 */
 	CallableStatement createCallableStatement(Connection con) throws SQLException;
 

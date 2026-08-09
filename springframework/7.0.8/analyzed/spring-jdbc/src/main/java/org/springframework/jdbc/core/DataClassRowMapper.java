@@ -30,34 +30,25 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.util.Assert;
 
 /**
- * {@link RowMapper} implementation that converts a row into a new instance
- * of the specified mapped target class. The mapped target class must be a
- * top-level class or {@code static} nested class, and it may expose either a
- * <em>data class</em> constructor with named parameters corresponding to column
- * names or classic bean property setter methods with property names corresponding
- * to column names (or even a combination of both).
+ * 将行映射为指定目标类新实例的 {@link RowMapper} 实现。
+ * 目标类须为顶层类或 {@code static} 嵌套类，可提供与列名对应的
+ * <em>数据类</em> 命名参数构造器，或属性名对应列名的经典 setter（或两者兼有）。
  *
- * <p>The term "data class" applies to Java <em>records</em>, Kotlin <em>data
- * classes</em>, and any class which has a constructor with named parameters
- * that are intended to be mapped to corresponding column names.
+ * <p>「数据类」指 Java <em>record</em>、Kotlin <em>data class</em>，
+ * 以及具命名参数构造器且参数拟映射到列名的任意类。
  *
- * <p>When combining a data class constructor with setter methods, any property
- * mapped successfully via a constructor argument will not be mapped additionally
- * via a corresponding setter method. This means that constructor arguments take
- * precedence over property setter methods.
+ * <p>构造器与 setter 并用时，已通过构造器参数映射的属性
+ * 不再经对应 setter 映射；构造器参数优先于 setter。
  *
- * <p>Note that this class extends {@link BeanPropertyRowMapper} and can
- * therefore serve as a common choice for any mapped target class, flexibly
- * adapting to constructor style versus setter methods in the mapped class.
+ * <p>本类继承 {@link BeanPropertyRowMapper}，可作为通用映射选择，
+ * 灵活适配构造器风格或 setter 方法。
  *
- * <p>Please note that this class is designed to provide convenience rather than
- * high performance. For best performance, consider using a custom {@code RowMapper}
- * implementation.
+ * <p>本类侧重便利而非高性能；追求性能请考虑自定义 {@code RowMapper}。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 5.3
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see SimplePropertyRowMapper
  */
 public class DataClassRowMapper<T> extends BeanPropertyRowMapper<T> {
@@ -70,7 +61,7 @@ public class DataClassRowMapper<T> extends BeanPropertyRowMapper<T> {
 
 
 	/**
-	 * Create a new {@code DataClassRowMapper} for bean-style configuration.
+	 * 创建用于 bean 风格配置的 {@code DataClassRowMapper}。
 	 * @see #setMappedClass
 	 * @see #setConversionService
 	 */
@@ -78,8 +69,8 @@ public class DataClassRowMapper<T> extends BeanPropertyRowMapper<T> {
 	}
 
 	/**
-	 * Create a new {@code DataClassRowMapper}.
-	 * @param mappedClass the class that each row should be mapped to
+	 * 创建 {@code DataClassRowMapper}。
+	 * @param mappedClass 每行映射到的类
 	 */
 	public DataClassRowMapper(Class<T> mappedClass) {
 		super(mappedClass);
@@ -136,8 +127,8 @@ public class DataClassRowMapper<T> extends BeanPropertyRowMapper<T> {
 
 
 	/**
-	 * Static factory method to create a new {@code DataClassRowMapper}.
-	 * @param mappedClass the class that each row should be mapped to
+	 * 创建 {@code DataClassRowMapper} 的静态工厂方法。
+	 * @param mappedClass 每行映射到的类
 	 * @see #newInstance(Class, ConversionService)
 	 */
 	public static <T> DataClassRowMapper<T> newInstance(Class<T> mappedClass) {
@@ -145,10 +136,9 @@ public class DataClassRowMapper<T> extends BeanPropertyRowMapper<T> {
 	}
 
 	/**
-	 * Static factory method to create a new {@code DataClassRowMapper}.
-	 * @param mappedClass the class that each row should be mapped to
-	 * @param conversionService the {@link ConversionService} for binding
-	 * JDBC values to bean properties, or {@code null} for none
+	 * 创建 {@code DataClassRowMapper} 的静态工厂方法。
+	 * @param mappedClass 每行映射到的类
+	 * @param conversionService 将 JDBC 值绑定到 bean 属性的 {@link ConversionService}，无则 {@code null}
 	 * @see #newInstance(Class)
 	 * @see #setConversionService
 	 */

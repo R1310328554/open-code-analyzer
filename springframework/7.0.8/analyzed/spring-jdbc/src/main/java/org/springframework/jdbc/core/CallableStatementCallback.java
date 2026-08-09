@@ -24,22 +24,18 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataAccessException;
 
 /**
- * Generic callback interface for code that operates on a CallableStatement.
- * Allows to execute any number of operations on a single CallableStatement,
- * for example a single execute call or repeated execute calls with varying
- * parameters.
+ * 在 CallableStatement 上执行代码的通用回调接口。
+ * 可在单个 CallableStatement 上执行任意次操作，
+ * 例如单次 execute 或参数不同的多次 execute。
  *
- * <p>Used internally by JdbcTemplate, but also useful for application code.
- * Note that the passed-in CallableStatement can have been created by the
- * framework or by a custom CallableStatementCreator. However, the latter is
- * hardly ever necessary, as most custom callback actions will perform updates
- * in which case a standard CallableStatement is fine. Custom actions will
- * always set parameter values themselves, so that CallableStatementCreator
- * capability is not needed either.
+ * <p>JdbcTemplate 内部使用，应用代码亦可用。
+ * 传入的 CallableStatement 可由框架或自定义 CallableStatementCreator 创建；
+ * 后者通常不必，因多数自定义回调只需标准 CallableStatement。
+ * 自定义回调会自行设参，故亦无需 CallableStatementCreator。
  *
  * @author Juergen Hoeller
  * @since 16.03.2004
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see JdbcTemplate#execute(String, CallableStatementCallback)
  * @see JdbcTemplate#execute(CallableStatementCreator, CallableStatementCallback)
  */
@@ -47,33 +43,24 @@ import org.springframework.dao.DataAccessException;
 public interface CallableStatementCallback<T extends @Nullable Object> {
 
 	/**
-	 * Gets called by {@code JdbcTemplate.execute} with an active JDBC
-	 * CallableStatement. Does not need to care about closing the Statement
-	 * or the Connection, or about handling transactions: this will all be
-	 * handled by Spring's JdbcTemplate.
+	 * 由 {@code JdbcTemplate.execute} 以活动 JDBC CallableStatement 调用。
+	 * 无需关心关闭 Statement 或 Connection，亦无需处理事务；
+	 * 均由 Spring JdbcTemplate 负责。
 	 *
-	 * <p><b>NOTE:</b> Any ResultSets opened should be closed in finally blocks
-	 * within the callback implementation. Spring will close the Statement
-	 * object after the callback returned, but this does not necessarily imply
-	 * that the ResultSet resources will be closed: the Statement objects might
-	 * get pooled by the connection pool, with {@code close} calls only
-	 * returning the object to the pool but not physically closing the resources.
+	 * <p><b>注意：</b>打开的 ResultSet 应在回调实现的 finally 块中关闭。
+	 * Spring 在回调返回后关闭 Statement，但不保证 ResultSet 资源已释放：
+	 * Statement 可能被连接池复用，{@code close} 仅归还池而非物理关闭。
 	 *
-	 * <p>If called without a thread-bound JDBC transaction (initiated by
-	 * DataSourceTransactionManager), the code will simply get executed on the
-	 * JDBC connection with its transactional semantics. If JdbcTemplate is
-	 * configured to use a JTA-aware DataSource, the JDBC connection and thus
-	 * the callback code will be transactional if a JTA transaction is active.
+	 * <p>若无线程绑定 JDBC 事务（由 DataSourceTransactionManager 启动），
+	 * 代码将按 JDBC 连接自身语义执行。若 JdbcTemplate 使用 JTA 感知 DataSource，
+	 * 且 JTA 事务活动，则 JDBC 连接及回调代码亦具事务性。
 	 *
-	 * <p>Allows for returning a result object created within the callback, i.e.
-	 * a domain object or a collection of domain objects. A thrown RuntimeException
-	 * is treated as application exception: it gets propagated to the caller of
-	 * the template.
-	 * @param cs active JDBC CallableStatement
-	 * @return a result object, or {@code null} if none
-	 * @throws SQLException if thrown by a JDBC method, to be auto-converted
-	 * into a DataAccessException by an SQLExceptionTranslator
-	 * @throws DataAccessException in case of custom exceptions
+	 * <p>可返回回调内创建的结果对象，如领域对象或其集合。
+	 * 抛出的 RuntimeException 视为应用异常，传播给模板调用方。
+	 * @param cs 活动 JDBC CallableStatement
+	 * @return 结果对象，无则 {@code null}
+	 * @throws SQLException JDBC 方法抛出时，由 SQLExceptionTranslator 转为 DataAccessException
+	 * @throws DataAccessException 自定义异常时
 	 */
 	T doInCallableStatement(CallableStatement cs) throws SQLException, DataAccessException;
 

@@ -28,12 +28,12 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link org.springframework.beans.factory.xml.BeanDefinitionParser} that
- * parses an {@code embedded-database} element and creates a {@link BeanDefinition}
- * for an {@link EmbeddedDatabaseFactoryBean}.
+ * 解析 {@code embedded-database} 元素并为
+ * {@link EmbeddedDatabaseFactoryBean} 创建 {@link BeanDefinition} 的
+ * {@link org.springframework.beans.factory.xml.BeanDefinitionParser}。
  *
- * <p>Picks up nested {@code script} elements and configures a
- * {@link ResourceDatabasePopulator} for each of them.
+ * <p>收集嵌套 {@code script} 元素，并为每个配置
+ * {@link ResourceDatabasePopulator}。
  *
  * @author Oliver Gierke
  * @author Juergen Hoeller
@@ -44,12 +44,12 @@ import org.springframework.util.StringUtils;
 class EmbeddedDatabaseBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
 	/**
-	 * Constant for the "database-name" attribute.
+	 * {@code database-name} 属性常量。
 	 */
 	static final String DB_NAME_ATTRIBUTE = "database-name";
 
 	/**
-	 * Constant for the "generate-name" attribute.
+	 * {@code generate-name} 属性常量。
 	 */
 	static final String GENERATE_NAME_ATTRIBUTE = "generate-name";
 

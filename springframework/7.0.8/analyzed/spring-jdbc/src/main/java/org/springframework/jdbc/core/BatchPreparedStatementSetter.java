@@ -20,16 +20,14 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * Batch update callback interface used by the {@link JdbcTemplate} class.
+ * {@link JdbcTemplate} 使用的批量更新回调接口。
  *
- * <p>This interface sets values on a {@link java.sql.PreparedStatement} provided
- * by the JdbcTemplate class, for each of a number of updates in a batch using the
- * same SQL. Implementations are responsible for setting any necessary parameters.
- * SQL with placeholders will already have been supplied.
+ * <p>对同一 SQL 的批量更新中，为 JdbcTemplate 提供的
+ * {@link java.sql.PreparedStatement} 逐条设值；实现类负责设置必要参数。
+ * 带占位符的 SQL 已由框架提供。
  *
- * <p>Implementations <i>do not</i> need to concern themselves with SQLExceptions
- * that may be thrown from operations they attempt. The JdbcTemplate class will
- * catch and handle SQLExceptions appropriately.
+ * <p>实现类<i>无需</i>处理操作中可能抛出的 SQLException；
+ * JdbcTemplate 会适当捕获并处理。
  *
  * @author Rod Johnson
  * @since March 2, 2003
@@ -39,17 +37,16 @@ import java.sql.SQLException;
 public interface BatchPreparedStatementSetter {
 
 	/**
-	 * Set parameter values on the given PreparedStatement.
-	 * @param ps the PreparedStatement to invoke setter methods on
-	 * @param i index of the statement we're issuing in the batch, starting from 0
-	 * @throws SQLException if an SQLException is encountered
-	 * (i.e. there is no need to catch SQLException)
+	 * 为给定 PreparedStatement 设置参数值。
+	 * @param ps 要调用 setter 的 PreparedStatement
+	 * @param i 批量中当前语句索引，从 0 起
+	 * @throws SQLException 若遇到 SQLException（无需自行捕获）
 	 */
 	void setValues(PreparedStatement ps, int i) throws SQLException;
 
 	/**
-	 * Return the size of the batch.
-	 * @return the number of statements in the batch
+	 * 返回批量大小。
+	 * @return 批量中语句数量
 	 */
 	int getBatchSize();
 

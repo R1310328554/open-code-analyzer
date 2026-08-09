@@ -26,8 +26,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 
 /**
- * Simple adapter for {@link PreparedStatementSetter} that applies the given
- * arrays of arguments and JDBC argument types.
+ * 将给定参数数组及 JDBC 参数类型应用到
+ * {@link PreparedStatementSetter} 的简单适配器。
  *
  * @author Juergen Hoeller
  * @since 3.2.3
@@ -40,10 +40,9 @@ public class ArgumentTypePreparedStatementSetter implements PreparedStatementSet
 
 
 	/**
-	 * Create a new {@code ArgumentTypePreparedStatementSetter} for the given
-	 * arguments and types.
-	 * @param args the arguments to set
-	 * @param argTypes the corresponding SQL types of the arguments
+	 * 为给定参数及类型创建 {@code ArgumentTypePreparedStatementSetter}。
+	 * @param args 要设置的参数
+	 * @param argTypes 参数对应的 SQL 类型
 	 */
 	public ArgumentTypePreparedStatementSetter(@Nullable Object @Nullable [] args, int @Nullable [] argTypes) {
 		if ((args == null && argTypes != null) || (args != null && (argTypes == null || args.length != argTypes.length))) {
@@ -83,14 +82,13 @@ public class ArgumentTypePreparedStatementSetter implements PreparedStatementSet
 	}
 
 	/**
-	 * Set the value for the prepared statement's specified parameter position
-	 * using the supplied value and type.
-	 * <p>This method can be overridden by subclasses if needed.
-	 * @param ps the PreparedStatement
-	 * @param parameterPosition index of the parameter position
-	 * @param argType the argument type
-	 * @param argValue the argument value
-	 * @throws SQLException if thrown by PreparedStatement methods
+	 * 使用给定值和类型为 PreparedStatement 指定参数位置设值。
+	 * <p>子类可按需覆盖。
+	 * @param ps PreparedStatement
+	 * @param parameterPosition 参数位置索引
+	 * @param argType 参数类型
+	 * @param argValue 参数值
+	 * @throws SQLException 若 PreparedStatement 方法抛出
 	 */
 	protected void doSetValue(PreparedStatement ps, int parameterPosition, int argType, @Nullable Object argValue)
 			throws SQLException {

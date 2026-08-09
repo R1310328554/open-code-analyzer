@@ -22,8 +22,7 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Simple adapter for {@link PreparedStatementSetter} that applies a given array
- * of arguments.
+ * 将给定参数数组应用到 {@link PreparedStatementSetter} 的简单适配器。
  *
  * @author Juergen Hoeller
  * @since 3.2.3
@@ -34,8 +33,8 @@ public class ArgumentPreparedStatementSetter implements PreparedStatementSetter,
 
 
 	/**
-	 * Create a new {@code ArgumentPreparedStatementSetter} for the given arguments.
-	 * @param args the arguments to set
+	 * 为给定参数创建 {@code ArgumentPreparedStatementSetter}。
+	 * @param args 要设置的参数
 	 */
 	public ArgumentPreparedStatementSetter(@Nullable Object @Nullable [] args) {
 		this.args = args;
@@ -53,13 +52,12 @@ public class ArgumentPreparedStatementSetter implements PreparedStatementSetter,
 	}
 
 	/**
-	 * Set the value for the prepared statement's specified parameter position
-	 * using the supplied value.
-	 * <p>This method can be overridden by subclasses if needed.
-	 * @param ps the PreparedStatement
-	 * @param parameterPosition index of the parameter position
-	 * @param argValue the value to set
-	 * @throws SQLException if thrown by PreparedStatement methods
+	 * 使用给定值为 PreparedStatement 指定参数位置设值。
+	 * <p>子类可按需覆盖。
+	 * @param ps PreparedStatement
+	 * @param parameterPosition 参数位置索引
+	 * @param argValue 要设置的值
+	 * @throws SQLException 若 PreparedStatement 方法抛出
 	 */
 	protected void doSetValue(PreparedStatement ps, int parameterPosition, @Nullable Object argValue)
 			throws SQLException {
