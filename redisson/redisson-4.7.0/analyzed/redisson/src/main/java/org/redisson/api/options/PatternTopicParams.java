@@ -18,6 +18,7 @@ package org.redisson.api.options;
 import org.redisson.client.codec.Codec;
 
 /**
+ * {@link PatternTopicOptions} 的默认实现，持有模式主题名。
  *
  * @author Nikita Koksharov
  *

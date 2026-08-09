@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import java.time.Duration;
 
 /**
- * Defines consumer parameters for a subscription to a reliable topic.
+ * 定义可靠主题订阅的消费者参数。
  *
  * @author Nikita Koksharov
  *
@@ -26,44 +26,44 @@ import java.time.Duration;
 public interface ConsumerConfig {
 
     /**
-     * Creates a consumer configuration with an auto-generated name.
+     * 创建使用自动生成名称的消费者配置。
      *
-     * @return consumer config
+     * @return 消费者配置
      */
     static ConsumerConfig generatedName() {
         return new ConsumerConfigParams(null);
     }
 
     /**
-     * Creates a consumer configuration with the specified name.
+     * 创建使用指定名称的消费者配置。
      *
-     * @param value the consumer name
-     * @return consumer config
+     * @param value 消费者名称
+     * @return 消费者配置
      */
     static ConsumerConfig name(String value) {
         return new ConsumerConfigParams(value);
     }
 
     /**
-     * Define a timeout for reassigning a message group id's ownership to a new consumer.
+     * 定义将消息组 ID 的所有权重新分配给新消费者的超时时间。
      * <p>
-     * Messages with the same {@code groupId} setting delivered to a single "owner" consumer.
-     * Ownership is reassigned to a new consumer when <b>both</b> conditions are met:
+     * 具有相同 {@code groupId} 设置的消息会交付给单一“所有者”消费者。
+     * 当<b>同时</b>满足以下条件时，所有权会重新分配给新消费者：
      * <ol>
-     *   <li>The current owner has not pulled the next pending message for this group id
-     *       within the timeout period (i.e., message is stuck at head of the key's sequence).</li>
-     *   <li>The current owner has been inactive (no {@code acknowledge()}, {@code negativeAcknowledge()},
-     *       {@code pull()}, or push listener invocations) for longer than this timeout.</li>
+     *   <li>当前所有者在此超时时间内未拉取该组 ID 的下一条待处理消息
+     *       （即消息卡在该键序列的队首）。</li>
+     *   <li>当前所有者在此超时时间内处于非活跃状态（未调用 {@code acknowledge()}、
+     *       {@code negativeAcknowledge()}、{@code pull()} 或推送监听器）。</li>
      * </ol>
      * <p>
-     * This prevents a stalled or slow consumer from blocking message delivery for a group id
-     * indefinitely, while still respecting active consumers that are processing other messages.
+     * 这可防止停滞或缓慢的消费者无限期阻塞某组 ID 的消息投递，
+     * 同时仍尊重正在处理其他消息的活动消费者。
      * <p>
-     * Note: {@code visibilityTimeout} setting still applies to individual messages with a group id.
-     * This timeout governs key-level ownership, not message-level visibility.
+     * 注意：{@code visibilityTimeout} 仍适用于带组 ID 的各条消息。
+     * 此超时控制键级所有权，而非消息级可见性。
      *
-     * @param value timeout duration
-     * @return config object
+     * @param value 超时时长
+     * @return 配置对象
      */
     ConsumerConfig groupIdClaimTimeout(Duration value);
 

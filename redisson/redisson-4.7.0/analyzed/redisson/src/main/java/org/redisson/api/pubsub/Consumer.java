@@ -18,11 +18,10 @@ package org.redisson.api.pubsub;
 import org.redisson.api.RFuture;
 
 /**
- * Base interface for message consumers within a subscription.
+ * 订阅内消息消费者的基础接口。
  * <p>
- * A consumer processes messages from a subscription and can be either a
- * {@link PullConsumer} for on-demand retrieval or a {@link PushConsumer}
- * for event-driven processing.
+ * 消费者处理订阅中的消息，可为按需拉取的 {@link PullConsumer}
+ * 或事件驱动的 {@link PushConsumer}。
  *
  * @author Nikita Koksharov
  *
@@ -30,23 +29,23 @@ import org.redisson.api.RFuture;
 public interface Consumer {
 
     /**
-     * Returns the name of this consumer.
+     * 返回此消费者的名称。
      *
-     * @return the consumer name
+     * @return 消费者名称
      */
     String getName();
 
     /**
-     * Returns statistics for this consumer.
+     * 返回此消费者的统计信息。
      *
-     * @return statistics object
+     * @return 统计对象
      */
     ConsumerStatistics getStatistics();
 
     /**
-     * Returns statistics for this consumer.
+     * 异步返回此消费者的统计信息。
      *
-     * @return statistics object
+     * @return 统计对象
      */
     RFuture<ConsumerStatistics> getStatisticsAsync();
 

@@ -18,8 +18,7 @@ package org.redisson.api.pubsub;
 import org.redisson.client.RedisException;
 
 /**
- * This error occurs when the consumer is already subscribed
- * to the subscription.
+ * 当消费者已订阅该订阅时抛出此异常。
  *
  * @author Nikita Koksharov
  *

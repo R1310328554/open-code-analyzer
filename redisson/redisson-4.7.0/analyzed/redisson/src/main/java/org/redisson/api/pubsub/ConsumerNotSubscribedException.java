@@ -18,8 +18,7 @@ package org.redisson.api.pubsub;
 import org.redisson.client.RedisException;
 
 /**
- * This error occurs when the consumer is not subscribed
- * or was removed for the subscription.
+ * 当消费者未订阅或已从该订阅中移除时抛出此异常。
  *
  * @author Nikita Koksharov
  *

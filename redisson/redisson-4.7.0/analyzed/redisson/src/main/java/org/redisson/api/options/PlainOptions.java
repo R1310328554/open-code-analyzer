@@ -18,7 +18,7 @@ package org.redisson.api.options;
 import org.redisson.client.codec.Codec;
 
 /**
- * Object instance options.
+ * 普通 Redis 对象实例的选项配置。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +26,10 @@ import org.redisson.client.codec.Codec;
 public interface PlainOptions extends CodecOptions<PlainOptions, Codec>, ReadModeOptions<PlainOptions> {
 
     /**
-     * Creates options with the name of object instance
+     * 按对象实例名称创建选项。
      *
-     * @param name of object instance
-     * @return options instance
+     * @param name 对象实例名称
+     * @return 选项实例
      */
     static PlainOptions name(String name) {
         return new PlainParams(name);

@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import reactor.core.publisher.Mono;
 
 /**
- * Provides message acknowledgment operations for message processing.
+ * 提供消息处理相关的 Reactive 确认操作。
  *
  * @author Nikita Koksharov
  *
@@ -26,17 +26,17 @@ import reactor.core.publisher.Mono;
 public interface AcknowledgmentReactive {
 
     /**
-     * Acknowledges the successful processing of a message.
+     * 确认消息已成功处理。
      *
-     * @param args acknowledgment arguments
+     * @param args 确认参数
      */
     Mono<Void> acknowledge(MessageAckArgs args);
 
 
     /**
-     * Explicitly marks a message as failed or rejected.
+     * 显式标记消息处理失败或被拒绝。
      *
-     * @param args arguments specifying the message to negatively acknowledge
+     * @param args 指定待负向确认消息的参数
      */
     Mono<Void> negativeAcknowledge(MessageNegativeAckArgs args);
 

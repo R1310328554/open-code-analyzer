@@ -16,10 +16,9 @@
 package org.redisson.api.pubsub;
 
 /**
- * Specifies the acknowledgment mode for message processing operations.
+ * 指定消息处理操作的确认模式。
  * <p>
- * This enum defines how the system handles acknowledgments when consuming messages
- * from a subscription
+ * 该枚举定义从订阅消费消息时系统如何处理确认。
  *
  * @author Nikita Koksharov
  *
@@ -28,19 +27,17 @@ public enum AcknowledgeMode {
 
 
     /**
-     * Automatic acknowledgment mode.
+     * 自动确认模式。
      * <p>
-     * In this mode, messages are automatically acknowledged by the system
-     * after they are delivered to the consumer, regardless of whether
-     * the processing was successful or not.
+     * 此模式下，消息交付给消费者后由系统自动确认，
+     * 无论处理是否成功。
      */
     AUTO,
 
     /**
-     * Manual acknowledgment mode.
+     * 手动确认模式。
      * <p>
-     * In this mode, the consumer is responsible for explicitly acknowledging
-     * messages after successful processing.
+     * 此模式下，消费者须在成功处理消息后显式确认。
      */
     MANUAL
 

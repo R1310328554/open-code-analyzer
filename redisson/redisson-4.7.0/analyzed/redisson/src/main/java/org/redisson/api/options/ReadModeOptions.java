@@ -18,45 +18,38 @@ package org.redisson.api.options;
 import org.redisson.config.ReadMode;
 
 /**
- * Options which allow per-object override of the {@link ReadMode}
- * defined globally on the Redisson configuration.
+ * 允许按对象实例覆盖 Redisson 全局配置中定义的 {@link ReadMode}。
  *
  * @author Nikita Koksharov
  *
- * @param <T> returned options object type
+ * @param <T> 返回的选项对象类型
  */
 public interface ReadModeOptions<T extends InvocationOptions<T>> extends InvocationOptions<T> {
 
     /**
-     * Defines the {@link ReadMode} used for read operations on this object.
+     * 定义此对象读取操作使用的 {@link ReadMode}。
      * <p>
-     * Overrides the {@code readMode} setting declared globally in the
-     * Redisson configuration for this object instance only.
+     * 仅覆盖本对象实例在 Redisson 全局配置中声明的 {@code readMode} 设置。
      * <p>
-     * When set to {@code null} (default) the globally configured
-     * {@code readMode} is used.
+     * 设为 {@code null}（默认）时使用全局配置的 {@code readMode}。
      * <p>
-     * <b>Note:</b> the effect of this override depends on the slave pool
-     * being initialized, which is governed by the globally configured
-     * {@code readMode} and {@code subscriptionMode}. The slave pool is
-     * not initialized when both global settings are {@code MASTER}, so an
-     * override of {@code SLAVE} or {@code MASTER_SLAVE} has no effect in
-     * that configuration. Furthermore, when the slave pool is initialized,
-     * the master node is included in it only when the global {@code readMode}
-     * is {@code MASTER_SLAVE}. As a result:
+     * <b>注意：</b>此覆盖是否生效取决于从节点连接池是否已初始化，这由全局
+     * {@code readMode} 与 {@code subscriptionMode} 共同决定。当两项全局设置均为
+     * {@code MASTER} 时不会初始化从节点池，因此在此配置下将 {@code readMode}
+     * 覆盖为 {@code SLAVE} 或 {@code MASTER_SLAVE} 无效。此外，从节点池初始化后，
+     * 仅当全局 {@code readMode} 为 {@code MASTER_SLAVE} 时主节点才会被纳入该池。
+     * 因此：
      * <ul>
-     * <li>Override {@code MASTER}: always honored unconditionally.</li>
-     * <li>Override {@code SLAVE}: requires the global setting to be
-     *     {@code SLAVE} or {@code MASTER_SLAVE}. When global is
-     *     {@code MASTER_SLAVE}, reads may still land on the master because
-     *     master is part of the slave pool.</li>
-     * <li>Override {@code MASTER_SLAVE}: requires the global setting to be
-     *     {@code MASTER_SLAVE}; when global is {@code SLAVE}, behaves like
-     *     {@code SLAVE} because master is not in the slave pool.</li>
+     * <li>覆盖为 {@code MASTER}：始终无条件生效。</li>
+     * <li>覆盖为 {@code SLAVE}：要求全局设置为 {@code SLAVE} 或
+     *     {@code MASTER_SLAVE}。全局为 {@code MASTER_SLAVE} 时，读取仍可能落到主节点，
+     *     因为主节点属于从节点池。</li>
+     * <li>覆盖为 {@code MASTER_SLAVE}：要求全局设置为 {@code MASTER_SLAVE}；
+     *     全局为 {@code SLAVE} 时行为等同于 {@code SLAVE}，因为主节点不在从节点池中。</li>
      * </ul>
      *
-     * @param readMode read mode applied to this object instance
-     * @return options instance
+     * @param readMode 应用于本对象实例的读取模式
+     * @return 选项实例
      */
     T readMode(ReadMode readMode);
 

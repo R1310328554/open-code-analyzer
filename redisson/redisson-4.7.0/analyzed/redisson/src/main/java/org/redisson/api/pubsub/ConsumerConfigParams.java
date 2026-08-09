@@ -18,6 +18,7 @@ package org.redisson.api.pubsub;
 import java.time.Duration;
 
 /**
+ * {@link ConsumerConfig} 的默认实现，持有消费者名称与组 ID 认领超时。
  *
  * @author Nikita Koksharov
  *

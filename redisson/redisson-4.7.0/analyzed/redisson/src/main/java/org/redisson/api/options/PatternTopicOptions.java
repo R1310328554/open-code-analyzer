@@ -18,7 +18,7 @@ package org.redisson.api.options;
 import org.redisson.client.codec.Codec;
 
 /**
- * {@link org.redisson.api.RPatternTopic} instance options.
+ * {@link org.redisson.api.RPatternTopic} 实例的选项配置。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +26,10 @@ import org.redisson.client.codec.Codec;
 public interface PatternTopicOptions extends CodecOptions<PatternTopicOptions, Codec> {
 
     /**
-     * Creates options with the pattern of object instance
+     * 按主题匹配模式创建选项。
      *
-     * @param pattern of object instance
-     * @return options instance
+     * @param pattern 对象实例的匹配模式
+     * @return 选项实例
      */
     static PatternTopicOptions pattern(String pattern) {
         return new PatternTopicParams(pattern);

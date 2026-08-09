@@ -18,6 +18,7 @@ package org.redisson.api.options;
 import org.redisson.client.codec.Codec;
 
 /**
+ * {@link PlainOptions} 的默认实现，持有对象名称。
  *
  * @author Nikita Koksharov
  *
