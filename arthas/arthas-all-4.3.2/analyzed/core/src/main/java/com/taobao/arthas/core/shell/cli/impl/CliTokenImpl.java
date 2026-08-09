@@ -8,14 +8,23 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * {@link CliToken} 的可变实现，负责 Shell 输入的词法分词。
+ * <p>
+ * 区分文本 Token 与空白 Token，支持弱/强引号及转义；分词后通过
+ * {@link #correctPipeChar} 修正管道符 {@code |} 与相邻命令粘连的问题。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class CliTokenImpl implements CliToken {
 
+    /** true 表示有效文本段，false 表示空白分隔 */
     final boolean text;
+    /** 原始子串（含转义字符） */
     final String raw;
+    /** 规范化后的值（引号与转义已展开） */
     final String value;
 
+    /** 文本 Token：raw 与 value 相同 */
     public CliTokenImpl(boolean text, String value) {
         this(text, value, value);
     }
@@ -36,10 +45,12 @@ public class CliTokenImpl implements CliToken {
         return !text;
     }
 
+    /** @return 原始 Token 子串 */
     public String raw() {
         return raw;
     }
 
+    /** @return 规范化后的 Token 值 */
     public String value() {
         return value;
     }
@@ -65,6 +76,12 @@ public class CliTokenImpl implements CliToken {
         return "CliToken[text=" + text + ",value=" + value + "]";
     }
 
+    /**
+     * 对整行输入分词并修正管道符。
+     *
+     * @param s 原始命令行
+     * @return Token 列表
+     */
     public static List<CliToken> tokenize(String s) {
 
         List<CliToken> tokens = new LinkedList<CliToken>();
@@ -77,36 +94,36 @@ public class CliTokenImpl implements CliToken {
     }
 
     /**
-     * fix pipe char '|' problem: https://github.com/alibaba/arthas/issues/1151
-     * supported:
-     * 1) thread| grep xxx
-     *   [thread|, grep]  -> [thread, |, grep]
-     * 2) thread |grep xxx
-     *   [thread, |grep] -> [thread, |, grep]
+     * 修正管道符 {@code |} 与相邻 token 粘连的问题。
+     * <p>
+     * 参见 https://github.com/alibaba/arthas/issues/1151
+     * <pre>
+     * 支持：
+     * 1) thread| grep xxx  → [thread, |, grep]
+     * 2) thread |grep xxx  → [thread, |, grep]
+     * 不支持：
+     * 3) thread|grep xxx（无空格）
+     * 4) trace -E classA|classB methodA|methodB|grep classA（正则内竖线）
+     * </pre>
      *
-     * unsupported:
-     * 3) thread|grep xxx
-     * 4) trace -E  classA|classB methodA|methodB|grep classA
-     * @param tokens
-     * @return
+     * @param tokens 初次分词结果
+     * @return 修正后的 Token 列表
      */
     private static List<CliToken> correctPipeChar(List<CliToken> tokens) {
         List<CliToken> newTokens = new ArrayList<CliToken>(tokens.size()+4);
         for (CliToken token : tokens) {
             String tokenValue = token.value();
             if (tokenValue.length()>1 && tokenValue.endsWith("|")) {
-                //split last char '|'
+                // 末尾 '|' 拆成独立 token
                 tokenValue = tokenValue.substring(0, tokenValue.length()-1);
                 String rawValue = token.raw();
                 rawValue = rawValue.substring(0, rawValue.length()-1);
                 newTokens.add(new CliTokenImpl(token.isText(), rawValue, tokenValue));
-                //add '|' char
                 newTokens.add(new CliTokenImpl(true, "|", "|"));
 
             } else if (tokenValue.length()>1 && tokenValue.startsWith("|")) {
-                //add '|' char
+                // 开头 '|' 拆成独立 token
                 newTokens.add(new CliTokenImpl(true, "|", "|"));
-                //remove first char '|'
                 tokenValue = tokenValue.substring(1);
                 String rawValue = token.raw();
                 rawValue = rawValue.substring(1);
@@ -118,6 +135,7 @@ public class CliTokenImpl implements CliToken {
         return newTokens;
     }
 
+    /** 递归扫描字符串，按空白/文本段切分 */
     private static void tokenize(String s, int index, List<CliToken> builder) {
         while (index < s.length()) {
             char c = s.charAt(index);
@@ -133,7 +151,8 @@ public class CliTokenImpl implements CliToken {
         }
     }
 
-    // Todo use code points and not chars
+    // TODO: 应使用 code point 而非 char 处理增补平面字符
+    /** 读取一段文本 Token，处理引号与转义 */
     private static int textToken(String s, int index, List<CliToken> builder) {
         LineStatus quoter = new LineStatus();
         int from = index;
@@ -156,6 +175,7 @@ public class CliTokenImpl implements CliToken {
         return index;
     }
 
+    /** 读取连续空白字符为一个 blank Token */
     private static int blankToken(String s, int index, List<CliToken> builder) {
         int from = index;
         while (index < s.length() && isBlank(s.charAt(index))) {

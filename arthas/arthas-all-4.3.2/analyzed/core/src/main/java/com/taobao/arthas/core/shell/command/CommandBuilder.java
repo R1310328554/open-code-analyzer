@@ -6,55 +6,57 @@ import com.taobao.arthas.core.shell.handlers.Handler;
 import com.taobao.middleware.cli.CLI;
 
 /**
- * command builder
+ * 编程式构建 {@link Command} 的流式 API。
+ * <p>
+ * 适用于无法使用 {@link AnnotatedCommand} 注解的内置命令（如管道、grep 等），
+ * 通过 {@link #processHandler} 与 {@link #completionHandler} 分别绑定执行与补全逻辑。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public abstract class CommandBuilder {
 
     /**
-     * Create a new command builder, the command is responsible for managing the options and arguments via the
-     * {@link CommandProcess#args() arguments}.
+     * 按命令名创建 Builder；执行时由处理器自行解析 {@link CommandProcess#args()}。
      *
-     * @param name the command name
-     * @return the command
+     * @param name 命令名称
+     * @return Builder 实例
      */
     public static CommandBuilder command(String name) {
         return new CommandBuilderImpl(name, null);
     }
 
     /**
-     * Create a new command with its {@link CLI} descriptor. This command can then retrieve the parsed
-     * {@link CommandProcess#commandLine()} when it executes to know get the command arguments and options.
+     * 绑定已有 {@link CLI} 描述创建 Builder。
+     * <p>
+     * 执行时可通过 {@link CommandProcess#commandLine()} 读取已解析的选项与参数。
      *
-     * @param cli the cli to use
-     * @return the command
+     * @param cli CLI 描述对象
+     * @return Builder 实例
      */
     public static CommandBuilder command(CLI cli) {
         return new CommandBuilderImpl(cli.getName(), cli);
     }
 
     /**
-     * Set the command process handler, the process handler is called when the command is executed.
+     * 设置命令执行处理器，Shell 调度命令时调用。
      *
-     * @param handler the process handler
-     * @return this command object
+     * @param handler 进程处理器
+     * @return 当前 Builder，支持链式调用
      */
     public abstract CommandBuilder processHandler(Handler<CommandProcess> handler);
 
     /**
-     * Set the command completion handler, the completion handler when the user asks for contextual command line
-     * completion, usually hitting the <i>tab</i> key.
+     * 设置 Tab 补全处理器（用户按 Tab 键时触发）。
      *
-     * @param handler the completion handler
-     * @return this command object
+     * @param handler 补全处理器
+     * @return 当前 Builder，支持链式调用
      */
     public abstract CommandBuilder completionHandler(Handler<Completion> handler);
 
     /**
-     * Build the command
+     * 构建不可变的 {@link Command} 实例。
      *
-     * @return the built command
+     * @return 已配置的命令对象
      */
     public abstract Command build();
 

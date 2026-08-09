@@ -6,46 +6,50 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A registry that contains the commands known by a shell.<p/>
+ * Shell 命令注册表：维护命令名到 {@link Command} 的可变映射。
  * <p>
- * It is a mutable command resolver.
+ * 实现 {@link CommandResolver}，供 Shell 查找、注册与注销诊断命令。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class CommandRegistry implements CommandResolver {
+    /** 命令名 → 命令实例，线程安全 */
     final ConcurrentHashMap<String, Command> commandMap = new ConcurrentHashMap<String, Command>();
 
     /**
-     * Create a new registry.
+     * 创建空注册表。
      *
-     * @return the created registry
+     * @return 新的 CommandRegistry
      */
     public static CommandRegistry create() {
         return new CommandRegistry();
     }
 
     /**
-     * Register a single command.
+     * 从 {@link AnnotatedCommand} 类注册单个命令。
+     *
+     * @param command 带 CLI 注解的命令类
+     * @return 当前注册表，支持链式调用
      */
     public CommandRegistry registerCommand(Class<? extends AnnotatedCommand> command) {
         return registerCommand(Command.create(command));
     }
 
     /**
-     * Register a command
+     * 注册已构建的 {@link Command} 实例。
      *
-     * @param command the command to register
-     * @return a reference to this, so the API can be used fluently
+     * @param command 待注册命令
+     * @return 当前注册表，支持链式调用
      */
     public CommandRegistry registerCommand(Command command) {
         return registerCommands(Collections.singletonList(command));
     }
 
     /**
-     * Register a list of commands.
+     * 批量注册命令列表。
      *
-     * @param commands the commands to register
-     * @return a reference to this, so the API can be used fluently
+     * @param commands 命令集合
+     * @return 当前注册表，支持链式调用
      */
     public CommandRegistry registerCommands(List<Command> commands) {
         for (Command command : commands) {
@@ -56,16 +60,19 @@ public class CommandRegistry implements CommandResolver {
 
 
     /**
-     * Unregister a command.
+     * 按名称注销命令。
      *
-     * @param commandName the command name
-     * @return a reference to this, so the API can be used fluently
+     * @param commandName 命令名
+     * @return 当前注册表，支持链式调用
      */
     public CommandRegistry unregisterCommand(String commandName) {
         commandMap.remove(commandName);
         return this;
     }
 
+    /**
+     * @return 当前注册表中的全部命令副本列表
+     */
     @Override
     public List<Command> commands() {
         return new ArrayList<Command>(commandMap.values());

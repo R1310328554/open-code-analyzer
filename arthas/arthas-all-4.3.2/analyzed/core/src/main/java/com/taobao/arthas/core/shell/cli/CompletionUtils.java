@@ -24,10 +24,20 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * Shell Tab 补全工具集：选项、类名、方法名、文件路径及前缀匹配。
+ * <p>
+ * 与 {@link Completion}、{@link OptionCompleteHandler} 配合，为各诊断命令提供上下文感知补全。
+ *
  * @author beiwei30 on 09/11/2016.
  */
 public class CompletionUtils {
 
+    /**
+     * 计算候选字符串集合的最长公共前缀（按 Unicode 码点）。
+     *
+     * @param values 候选项集合
+     * @return 最长公共前缀
+     */
     public static String findLongestCommonPrefix(Collection<String> values) {
         List<int[]> entries = new LinkedList<int[]>();
         for (String value : values) {
@@ -37,6 +47,12 @@ public class CompletionUtils {
         return Helper.fromCodePoints(io.termd.core.readline.Completion.findLongestCommonPrefix(entries));
     }
 
+    /**
+     * 根据命令类上的 CLI 注解补全长/短选项或使用说明。
+     *
+     * @param completion 补全上下文
+     * @param clazz 带 {@link com.taobao.middleware.cli.annotations} 的命令类
+     */
     public static void complete(Completion completion, Class<?> clazz) {
         List<CliToken> tokens = completion.lineTokens();
         CliToken lastToken = tokens.get(tokens.size() - 1);
@@ -54,7 +70,11 @@ public class CompletionUtils {
     }
 
     /**
-     * 从给定的查询数组中查询匹配的对象，并进行自动补全
+     * 在 searchScope 中按前缀匹配并补全。
+     *
+     * @param completion 补全上下文
+     * @param searchScope 候选名称集合
+     * @return 始终 true（表示已尝试补全）
      */
     public static boolean complete(Completion completion, Collection<String> searchScope) {
         List<CliToken> tokens = completion.lineTokens();
@@ -79,14 +99,16 @@ public class CompletionUtils {
         }
     }
 
+    /** 判断 token 是否以目录分隔符结尾（表示用户已进入某目录） */
     private static boolean isEndOfDirectory(String token) {
         return !StringUtils.isBlank(token) && (token.endsWith(File.separator) || token.endsWith("/"));
     }
 
     /**
-     * 返回true表示已经完成completion，返回否则表示没有，调用者需要另外完成补全
-     * @param completion
-     * @return
+     * 文件路径 Tab 补全。
+     *
+     * @param completion 补全上下文
+     * @return true 表示已完成补全；false 表示未处理，调用方需另行补全
      */
     public static boolean completeFilePath(Completion completion) {
         List<CliToken> tokens = completion.lineTokens();
@@ -141,7 +163,7 @@ public class CompletionUtils {
 
         if (names.size() == 1 && isEndOfDirectory(names.get(0))) {
             String name = names.get(0);
-            // 这个函数补全后不会有空格，并且只能传入要补全的内容
+            // 单目录候选：只插入相对片段，补全后不带尾随空格
             completion.complete(name.substring(tokenFileName.length()), false);
             return true;
         }
@@ -157,11 +179,17 @@ public class CompletionUtils {
         for (String name : names) {
             namesWithPrefix.add(prefix + name);
         }
-        // 这个函数需要保留前缀
+        // 多候选时保留路径前缀再交给通用前缀补全
         CompletionUtils.complete(completion, namesWithPrefix);
         return true;
     }
 
+    /**
+     * 基于 JVM 已加载类列表补全类名（包名逐级展开）。
+     *
+     * @param completion 补全上下文
+     * @return true 表示已处理
+     */
     public static boolean completeClassName(Completion completion) {
         List<CliToken> tokens = completion.lineTokens();
         String lastToken = tokens.get(tokens.size() - 1).value();
@@ -204,6 +232,12 @@ public class CompletionUtils {
         return true;
     }
 
+    /**
+     * 在已解析类名前提下补全方法名（含 {@code <init>}）。
+     *
+     * @param completion 补全上下文
+     * @return true 表示已处理
+     */
     public static boolean completeMethodName(Completion completion) {
         List<CliToken> tokens = completion.lineTokens();
         String lastToken = completion.lineTokens().get(tokens.size() - 1).value();
@@ -212,7 +246,7 @@ public class CompletionUtils {
             lastToken = "";
         }
 
-        // retrieve the class name
+        // 从 token 序列推断类名位置
         String className;
         if (StringUtils.isBlank(lastToken)) {
             // tokens = { " ", "CLASS_NAME", " "}
@@ -238,7 +272,6 @@ public class CompletionUtils {
             results.add(clazz);
         }
         if (results.isEmpty()) {
-            // no class found
             completion.complete(Collections.<String>emptyList());
             return true;
         }
@@ -249,8 +282,7 @@ public class CompletionUtils {
             try {
                 methods = clazz.getDeclaredMethods();
             } catch (LinkageError e) {
-                // A method signature may refer to a type that is not available to this class loader.
-                // Ignore that class and still offer methods from matching classes loaded elsewhere.
+                // 方法签名可能引用当前 ClassLoader 不可见的类型，跳过该类
                 continue;
             }
             for (Method method : methods) {
@@ -275,9 +307,10 @@ public class CompletionUtils {
     }
 
     /**
-     * 推断输入到哪一个 argument
-     * @param completion
-     * @return
+     * 推断当前光标位于第几个 positional 参数（1-based）。
+     *
+     * @param completion 补全上下文
+     * @return 参数序号；光标在选项上时返回 -1
      */
     public static int detectArgumentIndex(Completion completion) {
         List<CliToken> tokens = completion.lineTokens();
@@ -295,7 +328,7 @@ public class CompletionUtils {
 
         for (CliToken token : tokens) {
             if (StringUtils.isBlank(token.value()) || token.value().startsWith("-") || token.value().startsWith("--")) {
-                // filter irrelevant tokens
+                // 跳过空白与选项 token
                 continue;
             }
             tokenCount++;
@@ -307,6 +340,7 @@ public class CompletionUtils {
         return tokenCount;
     }
 
+    /** 补全短选项名（{@code -x} 形式） */
     public static void completeShortOption(Completion completion, CliToken lastToken, List<Option> options) {
         String prefix = lastToken.value().substring(1);
         List<String> candidates = new ArrayList<String>();
@@ -318,6 +352,7 @@ public class CompletionUtils {
         complete(completion, prefix, candidates);
     }
 
+    /** 补全长选项名（{@code --name} 形式） */
     public static void completeLongOption(Completion completion, CliToken lastToken, List<Option> options) {
         String prefix = lastToken.value().substring(2);
         List<String> candidates = new ArrayList<String>();
@@ -329,12 +364,14 @@ public class CompletionUtils {
         complete(completion, prefix, candidates);
     }
 
+    /** 在光标位于命令名后时展示格式化 usage 帮助 */
     public static void completeUsage(Completion completion, CLI cli) {
         Tty tty = completion.session().get(Session.TTY);
         String usage = StyledUsageFormatter.styledUsage(cli, tty.width());
         completion.complete(Collections.singletonList(usage));
     }
 
+    /** 单/多候选前缀补全：唯一匹配直接插入，否则展示 LCP 或完整列表 */
     private static void complete(Completion completion, String prefix, List<String> candidates) {
         if (candidates.size() == 1) {
             completion.complete(candidates.get(0).substring(prefix.length()), true);
@@ -355,18 +392,19 @@ public class CompletionUtils {
 
     /**
      * <pre>
-     * 检查是否应该补全某个 option。
-     * 比如 option是： --classPattern ， tokens可能是：
-     *  2个： '--classPattern' ' '
-     *  3个： '--classPattern' ' ' 'demo.'
+     * 检查是否应补全某个 option 的值（如 --classPattern 后的类名）。
+     * 例如 option 为 {@code --classPattern}，tokens 可能是：
+     *  2 个：'--classPattern' ' '
+     *  3 个：'--classPattern' ' ' 'demo.'
      * </pre>
-     * 
-     * @param option
-     * @return
+     *
+     * @param completion 补全上下文
+     * @param option 选项完整 token（如 {@code --classPattern}）
+     * @return 若已执行类名补全则 true
      */
     public static boolean shouldCompleteOption(Completion completion, String option) {
         List<CliToken> tokens = completion.lineTokens();
-        // 有两个 tocken, 然后 倒数第一个不是 - 开头的
+        // 两个 token：倒数第二个等于 option，倒数第一个非选项
         if (tokens.size() >= 2) {
             CliToken cliToken_1 = tokens.get(tokens.size() - 1);
             CliToken cliToken_2 = tokens.get(tokens.size() - 2);
@@ -375,7 +413,7 @@ public class CompletionUtils {
                 return CompletionUtils.completeClassName(completion);
             }
         }
-        // 有三个 token，然后 倒数第一个不是 - 开头的，倒数第2是空的，倒数第3是 --classPattern
+        // 三个 token：option + 空白 + 部分类名
         if (tokens.size() >= 3) {
             CliToken cliToken_1 = tokens.get(tokens.size() - 1);
             CliToken cliToken_2 = tokens.get(tokens.size() - 2);
@@ -388,11 +426,18 @@ public class CompletionUtils {
         return false;
     }
 
+    /**
+     * 按 {@link OptionCompleteHandler} 列表匹配当前 option 并委派值补全。
+     *
+     * @param completion 补全上下文
+     * @param handlers 各选项的自定义补全处理器
+     * @return 若某 handler 已处理则 true
+     */
     public static boolean completeOptions(Completion completion, List<OptionCompleteHandler> handlers) {
         List<CliToken> tokens = completion.lineTokens();
         /**
          * <pre>
-         * 比如 ` --name a`，这样子的tokens
+         * 例如 {@code --name a}：option + 空白 + 部分值
          * </pre>
          */
         if (tokens.size() >= 3) {
@@ -412,7 +457,7 @@ public class CompletionUtils {
 
         /**
          * <pre>
-         * 比如 ` --name `，这样子的tokens
+         * 例如 {@code --name }：option 后光标位于空白 token
          * </pre>
          */
         if (tokens.size() >= 2) {
