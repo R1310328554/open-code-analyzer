@@ -20,7 +20,8 @@
 package org.apache.rocketmq.filter.parser;
 
 /**
- * Describes the input token stream.
+ * 词法 token：描述输入流中的一个词法单元及其位置、链表与特殊 token 信息。
+ * <p>由 JavaCC 生成，供 {@link ParseException} 与解析器共享。</p>
  */
 
 public class Token implements java.io.Serializable {
@@ -32,20 +33,12 @@ public class Token implements java.io.Serializable {
      */
     private static final long serialVersionUID = 1L;
 
-    /**
-     * An integer that describes the kind of this token.  This numbering
-     * system is determined by JavaCCParser, and a table of these numbers is
-     * stored in the file ...Constants.java.
-     */
+    /** token 类型序号，对应 {@link SelectorParserConstants} 中的常量。 */
     public int kind;
 
-    /**
-     * The line number of the first character of this Token.
-     */
+    /** 起始行号（从 1 计）。 */
     public int beginLine;
-    /**
-     * The column number of the first character of this Token.
-     */
+    /** 起始列号（从 1 计）。 */
     public int beginColumn;
     /**
      * The line number of the last character of this Token.
@@ -56,19 +49,10 @@ public class Token implements java.io.Serializable {
      */
     public int endColumn;
 
-    /**
-     * The string image of the token.
-     */
+    /** token 原始文本图像。 */
     public String image;
 
-    /**
-     * A reference to the next regular (non-special) token from the input
-     * stream.  If this is the last token from the input stream, or if the
-     * token manager has not read tokens beyond this one, this field is
-     * set to null.  This is true only if this token is also a regular
-     * token.  Otherwise, see below for a description of the contents of
-     * this field.
-     */
+    /** 链表中下一个普通（非 special）token，末尾为 null。 */
     public Token next;
 
     /**
@@ -97,15 +81,11 @@ public class Token implements java.io.Serializable {
         return null;
     }
 
-    /**
-     * No-argument constructor
-     */
+    /** 无参构造，供序列化或子类扩展。 */
     public Token() {
     }
 
-    /**
-     * Constructs a new token for the specified Image.
-     */
+    /** 指定 token 类型构造，图像为 null。 */
     public Token(int kind) {
         this(kind, null);
     }
@@ -118,9 +98,7 @@ public class Token implements java.io.Serializable {
         this.image = image;
     }
 
-    /**
-     * Returns the image.
-     */
+    /** @return token 文本图像 */
     public String toString() {
         return image;
     }

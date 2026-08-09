@@ -26,20 +26,17 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * An expression which performs an operation on two expression values
- * <p>
- * This class was taken from ActiveMQ org.apache.activemq.filter.UnaryExpression,
- * but:
- * 1. remove XPath and XQuery expression;
- * 2. Add constant UnaryType to distinguish different unary expression;
- * 3. Extract UnaryInExpression to an independent class.
- * </p>
+ * 一元表达式抽象基类：对单个子表达式执行取反、NOT、布尔转换或 IN 等运算。
+ * <p>源自 ActiveMQ UnaryExpression，已移除 XPath/XQuery，并用 {@link UnaryType} 区分类型；
+ * IN 逻辑已拆至 {@link UnaryInExpression}。</p>
  */
 public abstract class UnaryExpression implements Expression {
 
     private static final BigDecimal BD_LONG_MIN_VALUE = BigDecimal.valueOf(Long.MIN_VALUE);
+    /** 被运算的子表达式（右操作数）。 */
     protected Expression right;
 
+    /** 一元运算类型标识。 */
     public UnaryType unaryType;
 
     public UnaryExpression(Expression left) {
@@ -51,6 +48,7 @@ public abstract class UnaryExpression implements Expression {
         this.right = left;
     }
 
+    /** 创建数值取反表达式（符号 {@code -}）。 */
     public static Expression createNegate(Expression left) {
         return new UnaryExpression(left, UnaryType.NEGATE) {
             @Override
@@ -75,7 +73,7 @@ public abstract class UnaryExpression implements Expression {
     public static BooleanExpression createInExpression(PropertyExpression right, List<Object> elements,
         final boolean not) {
 
-        // Use a HashSet if there are many elements.
+        // 元素较多时使用 HashSet 提升 contains 性能。
         Collection<Object> t;
         if (elements.size() == 0) {
             t = null;
@@ -151,6 +149,7 @@ public abstract class UnaryExpression implements Expression {
         }
     }
 
+    /** 创建逻辑 NOT 布尔表达式。 */
     public static BooleanExpression createNOT(BooleanExpression left) {
         return new BooleanUnaryExpression(left, UnaryType.NOT) {
             @Override
@@ -169,6 +168,7 @@ public abstract class UnaryExpression implements Expression {
         };
     }
 
+    /** 将子表达式结果强制转换为布尔值。 */
     public static BooleanExpression createBooleanCast(Expression left) {
         return new BooleanUnaryExpression(left, UnaryType.BOOLEANCAST) {
             @Override
@@ -206,7 +206,7 @@ public abstract class UnaryExpression implements Expression {
         } else if (clazz == Double.class) {
             return new Double(-left.doubleValue());
         } else if (clazz == BigDecimal.class) {
-            // We ussually get a big deciamal when we have Long.MIN_VALUE
+            // 选择器常量 Long.MIN_VALUE 常以 BigDecimal 存储，取反后尝试还原为 Long。
             // constant in the
             // Selector. Long.MIN_VALUE is too big to store in a Long as a
             // positive so we store it
@@ -270,10 +270,7 @@ public abstract class UnaryExpression implements Expression {
 
     }
 
-    /**
-     * Returns the symbol that represents this binary expression. For example,
-     * addition is represented by "+"
-     */
+    /** @return 表示该一元运算的符号，如 {@code -}、{@code NOT}、{@code IN} */
     public abstract String getExpressionSymbol();
 
 }

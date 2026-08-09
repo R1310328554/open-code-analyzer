@@ -18,24 +18,25 @@
 package org.apache.rocketmq.filter.expression;
 
 /**
- * Represents a property expression
- * <p>
- * This class was taken from ActiveMQ org.apache.activemq.filter.PropertyExpression,
- * but more simple and no transfer between expression and message property.
- * </p>
+ * 属性表达式：从 {@link EvaluationContext} 按名称读取属性值。
+ * <p>源自 ActiveMQ 的 PropertyExpression，实现更精简，不在表达式与消息属性间做转换。</p>
  */
 public class PropertyExpression implements Expression {
+    /** 属性名称。 */
     private final String name;
 
+    /** @param name 要读取的属性名 */
     public PropertyExpression(String name) {
         this.name = name;
     }
 
+    /** 从上下文按 {@link #name} 取值。 */
     @Override
     public Object evaluate(EvaluationContext context) throws Exception {
         return context.get(name);
     }
 
+    /** @return 属性名称 */
     public String getName() {
         return name;
     }

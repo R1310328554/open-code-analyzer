@@ -51,10 +51,15 @@ import org.apache.rocketmq.remoting.netty.TlsSystemConfig;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.srvutil.FileWatchService;
 
+/**
+ * NameServer 控制器：组装 KV 配置、路由信息、Remoting 服务与线程池，
+ * 注册各类请求处理器并调度 Broker 扫描与水位监控任务。
+ */
 public class NamesrvController {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private static final Logger WATER_MARK_LOG = LoggerFactory.getLogger(LoggerName.NAMESRV_WATER_MARK_LOGGER_NAME);
 
+    /** NameServer 业务配置。 */
     private final NamesrvConfig namesrvConfig;
 
     private final NettyServerConfig nettyServerConfig;
@@ -66,7 +71,9 @@ public class NamesrvController {
     private final ScheduledExecutorService scanExecutorService = ThreadUtils.newScheduledThreadPool(1,
             new BasicThreadFactory.Builder().namingPattern("NSScanScheduledThread").daemon(true).build());
 
+    /** KV 键值配置管理器。 */
     private final KVConfigManager kvConfigManager;
+    /** 主题/Broker 路由信息管理器。 */
     private final RouteInfoManager routeInfoManager;
 
     private RemotingClient remotingClient;
@@ -83,6 +90,7 @@ public class NamesrvController {
     private final Configuration configuration;
     private FileWatchService fileWatchService;
 
+    /** 使用默认 {@link NettyClientConfig} 构造。 */
     public NamesrvController(NamesrvConfig namesrvConfig, NettyServerConfig nettyServerConfig) {
         this(namesrvConfig, nettyServerConfig, new NettyClientConfig());
     }
@@ -98,6 +106,7 @@ public class NamesrvController {
         this.configuration.setStorePathFromConfig(this.namesrvConfig, "configStorePath");
     }
 
+    /** 加载配置、启动网络组件、注册处理器并开启定时任务。 */
     public boolean initialize() {
         loadConfig();
         initiateNetworkComponents();
@@ -109,10 +118,12 @@ public class NamesrvController {
         return true;
     }
 
+    /** 从磁盘加载 KV 配置表。 */
     private void loadConfig() {
         this.kvConfigManager.load();
     }
 
+    /** 调度 Broker 非活跃扫描、KV 定期打印与队列水位日志。 */
     private void startScheduleService() {
         this.scanExecutorService.scheduleAtFixedRate(NamesrvController.this.routeInfoManager::scanNotActiveBroker,
             5000, this.namesrvConfig.getScanNotActiveBrokerInterval(), TimeUnit.MILLISECONDS);
@@ -129,6 +140,7 @@ public class NamesrvController {
         }, 10, 1, TimeUnit.SECONDS);
     }
 
+    /** 创建 Netty Remoting 服务端与客户端。 */
     private void initiateNetworkComponents() {
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
         this.remotingClient = new NettyRemotingClient(this.nettyClientConfig);
@@ -206,7 +218,7 @@ public class NamesrvController {
 
             this.remotingServer.registerDefaultProcessor(new ClusterTestRequestProcessor(this, namesrvConfig.getProductEnvName()), this.defaultExecutor);
         } else {
-            // Support get route info only temporarily
+            // 非集群测试模式下，客户端路由查询走独立线程池
             ClientRequestProcessor clientRequestProcessor = new ClientRequestProcessor(this);
             this.remotingServer.registerProcessor(RequestCode.GET_ROUTEINFO_BY_TOPIC, clientRequestProcessor, this.clientRequestExecutor);
 
@@ -221,7 +233,7 @@ public class NamesrvController {
     public void start() throws Exception {
         this.remotingServer.start();
 
-        // In test scenarios where it is up to OS to pick up an available port, set the listening port back to config
+        // 测试环境端口由 OS 分配时，将实际监听端口写回配置
         if (0 == nettyServerConfig.getListenPort()) {
             nettyServerConfig.setListenPort(this.remotingServer.localListenPort());
         }
@@ -237,6 +249,7 @@ public class NamesrvController {
         this.routeInfoManager.start();
     }
 
+    /** 关闭 Remoting、线程池、路由管理与文件监视服务。 */
     public void shutdown() {
         this.remotingClient.shutdown();
         this.remotingServer.shutdown();

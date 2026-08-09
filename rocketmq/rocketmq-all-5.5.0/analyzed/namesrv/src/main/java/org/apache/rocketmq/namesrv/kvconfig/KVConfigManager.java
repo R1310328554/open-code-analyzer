@@ -28,12 +28,18 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.namesrv.NamesrvController;
 import org.apache.rocketmq.remoting.protocol.body.KVTable;
 
+/**
+ * NameServer KV 配置管理器：按命名空间维护键值表，支持加载、持久化与 RPC 读写。
+ * <p>使用读写锁保证并发安全，变更后异步刷盘。</p>
+ */
 public class KVConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
     private final NamesrvController namesrvController;
 
+    /** 保护 {@link #configTable} 的读写锁。 */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    /** 命名空间 → (键 → 值) 的两级哈希表。 */
     private final HashMap<String/* Namespace */, HashMap<String/* Key */, String/* Value */>> configTable =
         new HashMap<>();
 
@@ -41,6 +47,7 @@ public class KVConfigManager {
         this.namesrvController = namesrvController;
     }
 
+    /** 从 {@link NamesrvConfig#getKvConfigPath()} 加载 JSON 序列化的配置表。 */
     public void load() {
         String content = null;
         try {
@@ -58,6 +65,13 @@ public class KVConfigManager {
         }
     }
 
+    /**
+     * 写入或更新指定命名空间下的键值，并触发持久化。
+     *
+     * @param namespace 命名空间
+     * @param key 配置键
+     * @param value 配置值
+     */
     public void putKVConfig(final String namespace, final String key, final String value) {
         try {
             this.lock.writeLock().lockInterruptibly();
@@ -87,6 +101,7 @@ public class KVConfigManager {
         this.persist();
     }
 
+    /** 将内存配置表序列化为 JSON 并写入磁盘。 */
     public void persist() {
         try {
             this.lock.readLock().lockInterruptibly();
@@ -111,6 +126,7 @@ public class KVConfigManager {
 
     }
 
+    /** 删除指定命名空间下的键，若命名空间为空则移除整个空间。 */
     public void deleteKVConfig(final String namespace, final String key) {
         try {
             this.lock.writeLock().lockInterruptibly();

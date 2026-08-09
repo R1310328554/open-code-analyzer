@@ -18,13 +18,17 @@
 package org.apache.rocketmq.filter.util;
 
 /**
- * Wrapper of bytes array, in order to operate single bit easily.
+ * 位数组包装：基于 {@code byte[]} 提供按位读写、逻辑运算与克隆。
+ * <p>布隆过滤器 {@link BloomFilter} 依赖本类设置哈希位。</p>
  */
 public class BitsArray implements Cloneable {
 
+    /** 底层字节存储。 */
     private byte[] bytes;
+    /** 有效位长度（可能小于字节数组容量）。 */
     private int bitLength;
 
+    /** 分配指定长度的空位数组。 */
     public static BitsArray create(int bitLength) {
         return new BitsArray(bitLength);
     }
@@ -39,7 +43,7 @@ public class BitsArray implements Cloneable {
 
     private BitsArray(int bitLength) {
         this.bitLength = bitLength;
-        // init bytes
+        // 按位长度分配字节并清零
         int temp = bitLength / Byte.SIZE;
         if (bitLength % Byte.SIZE > 0) {
             temp++;
@@ -90,6 +94,7 @@ public class BitsArray implements Cloneable {
         return this.bytes;
     }
 
+    /** 与另一位数组按字节异或（长度取较短者）。 */
     public void xor(final BitsArray other) {
         checkInitialized(this);
         checkInitialized(other);
@@ -156,6 +161,7 @@ public class BitsArray implements Cloneable {
         setBit(bitPos, !getBit(bitPos));
     }
 
+    /** 将指定位设为 1 或 0。 */
     public void setBit(int bitPos, boolean set) {
         checkBitPosition(bitPos, this);
         int sub = subscript(bitPos);
@@ -173,6 +179,7 @@ public class BitsArray implements Cloneable {
         this.bytes[bytePos] = set;
     }
 
+    /** 读取指定位是否为 1。 */
     public boolean getBit(int bitPos) {
         checkBitPosition(bitPos, this);
 
@@ -213,6 +220,7 @@ public class BitsArray implements Cloneable {
         }
     }
 
+    /** 校验位数组已正确初始化。 */
     protected void checkInitialized(BitsArray bitsArray) {
         if (bitsArray.bytes() == null) {
             throw new RuntimeException("Not initialized!");
@@ -237,7 +245,7 @@ public class BitsArray implements Cloneable {
 
             int j = Byte.SIZE - 1;
             if (i == this.bytes.length - 1 && this.bitLength % Byte.SIZE > 0) {
-                // not full byte
+                // 最高字节可能未占满 8 位
                 j = this.bitLength % Byte.SIZE;
             }
 

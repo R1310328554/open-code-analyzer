@@ -20,29 +20,15 @@
 package org.apache.rocketmq.filter.parser;
 
 /**
- * This exception is thrown when parse errors are encountered.
- * You can explicitly create objects of this exception type by
- * calling the method generateParseException in the generated
- * parser.
- * <p/>
- * You can modify this class to customize your error reporting
- * mechanisms so long as you retain the public fields.
+ * 选择器解析异常：词法/语法分析失败时由 JavaCC 生成器抛出。
+ * <p>可通过 {@code generateParseException} 构造，保留 {@link #currentToken} 等公开字段以便定制错误报告。</p>
  */
 public class ParseException extends Exception {
 
-    /**
-     * The version identifier for this Serializable class.
-     * Increment only if the <i>serialized</i> form of the
-     * class changes.
-     */
+    /** 序列化版本号，仅当序列化形态变更时递增。 */
     private static final long serialVersionUID = 1L;
 
-    /**
-     * This constructor is used by the method "generateParseException"
-     * in the generated parser.  Calling this constructor generates
-     * a new object of this type with the fields "currentToken",
-     * "expectedTokenSequences", and "TOKEN_IMAGE" set.
-     */
+    /** 由生成器 {@code generateParseException} 调用，填充 token 与期望序列信息。 */
     public ParseException(Token currentTokenVal,
         int[][] expectedTokenSequencesVal,
         String[] tokenImageVal
@@ -67,32 +53,18 @@ public class ParseException extends Exception {
         super();
     }
 
-    /**
-     * Constructor with message.
-     */
+    /** 仅携带错误消息的构造器。 */
     public ParseException(String message) {
         super(message);
     }
 
-    /**
-     * This is the last token that has been consumed successfully.  If
-     * this object has been created due to a parse error, the token
-     * followng this token will (therefore) be the first error token.
-     */
+    /** 已成功消费的最后一个 token；若因解析错误创建，其下一个 token 即为首个错误 token。 */
     public Token currentToken;
 
-    /**
-     * Each entry in this array is an array of integers.  Each array
-     * of integers represents a sequence of tokens (by their ordinal
-     * values) that is expected at this point of the parse.
-     */
+    /** 期望的 token 序号序列数组，每个内层数组表示一种可接受的续接方式。 */
     public int[][] expectedTokenSequences;
 
-    /**
-     * This is a reference to the "TOKEN_IMAGE" array of the generated
-     * parser within which the parse error occurred.  This array is
-     * defined in the generated ...Constants interface.
-     */
+    /** 指向生成解析器常量接口中 {@code TOKEN_IMAGE} 的引用，用于渲染 token 文本。 */
     public String[] tokenImage;
 
     /**
@@ -152,11 +124,7 @@ public class ParseException extends Exception {
      */
     protected String eol = System.getProperty("line.separator", "\n");
 
-    /**
-     * Used to convert raw characters to their escaped version
-     * when these raw version cannot be used as part of an ASCII
-     * string literal.
-     */
+    /** 将无法直接写入 ASCII 字面量的字符转为转义形式。 */
     static String add_escapes(String str) {
         StringBuilder retval = new StringBuilder();
         char ch;

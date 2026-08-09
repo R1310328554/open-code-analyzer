@@ -18,18 +18,22 @@
 package org.apache.rocketmq.filter.expression;
 
 /**
- * Current time expression.Just for test.
+ * 当前时间表达式：求值时返回 {@link System#currentTimeMillis()}。
+ * <p>主要用于测试场景，常量名为 {@code "now"}。</p>
  */
 public class NowExpression extends ConstantExpression {
+    /** 构造固定符号 {@code now} 的时间表达式。 */
     public NowExpression() {
         super("now");
     }
 
+    /** 在求值上下文中返回当前毫秒时间戳。 */
     @Override
     public Object evaluate(EvaluationContext context) throws Exception {
         return new Long(System.currentTimeMillis());
     }
 
+    /** 直接获取当前毫秒时间戳，不依赖上下文。 */
     public Object getValue() {
         return new Long(System.currentTimeMillis());
     }

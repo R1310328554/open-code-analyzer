@@ -23,26 +23,27 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Simple implement of bloom filter.
+ * 布隆过滤器简化实现：基于 MurmurHash3 计算 k 个位位置，支持生成 {@link BloomFilterData}。
+ * <p>参数 f 为百分误差率，n 为期望映射元素数量。</p>
  */
 public class BloomFilter {
 
     public static final Charset UTF_8 = StandardCharsets.UTF_8;
 
-    // as error rate, 10/100 = 0.1
+    // f 表示百分误差率，例如 10 即 10%
     private int f = 10;
     private int n = 128;
 
-    // hash function num, by calculation.
+    // k：哈希函数个数，由公式计算
     private int k;
     // bit count, by calculation.
     private int m;
 
     /**
-     * Create bloom filter by error rate and mapping num.
+     * 按误差率与期望元素数创建过滤器。
      *
-     * @param f error rate
-     * @param n num will mapping to bit
+     * @param f 百分误差率
+     * @param n 期望映射元素数量
      */
     public static BloomFilter createByFn(int f, int n) {
         return new BloomFilter(f, n);
@@ -65,7 +66,7 @@ public class BloomFilter {
         this.f = f;
         this.n = n;
 
-        // set p = e^(-kn/m)
+        // 依据误差率推导 k、m，详见类注释中的数学关系
         // f = (1 - p)^k = e^(kln(1-p))
         // when p = 0.5, k = ln2 * (m/n), f = (1/2)^k = (0.618)^(m/n)
         double errorRate = f / 100.0;
@@ -82,11 +83,7 @@ public class BloomFilter {
     }
 
     /**
-     * Calculate bit positions of {@code str}.
-     * <p>
-     * See "Less Hashing, Same Performance: Building a Better Bloom Filter" by Adam Kirsch and Michael
-     * Mitzenmacher.
-     * </p>
+     * 计算字符串对应的 k 个位下标（双哈希法，参见 Kirsch & Mitzenmacher 论文）。
      */
     public int[] calcBitPositions(String str) {
         int[] bitPositions = new int[this.k];
@@ -98,7 +95,7 @@ public class BloomFilter {
 
         for (int i = 1; i <= this.k; i++) {
             int combinedHash = hash1 + (i * hash2);
-            // Flip all the bits if it's negative (guaranteed positive number)
+            // 合并哈希为负时按位取反，保证模运算为正
             if (combinedHash < 0) {
                 combinedHash = ~combinedHash;
             }
@@ -108,9 +105,7 @@ public class BloomFilter {
         return bitPositions;
     }
 
-    /**
-     * Calculate bit positions of {@code str} to construct {@code BloomFilterData}
-     */
+    /** 生成包含位下标与总位数的 {@link BloomFilterData}。 */
     public BloomFilterData generate(String str) {
         int[] bitPositions = calcBitPositions(str);
 
@@ -191,9 +186,9 @@ public class BloomFilter {
     }
 
     /**
-     * Check whether one of {@code bitPositions} has been occupied.
+     * 检查是否所有位均已置 1（用于判断是否可能已被占用）。
      *
-     * @return true: if all positions have been occupied.
+     * @return 全部位为 1 时返回 true
      */
     public boolean checkFalseHit(int[] bitPositions, BitsArray bits) {
         for (int j = 0; j < bitPositions.length; j++) {

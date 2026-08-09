@@ -22,14 +22,23 @@ import org.apache.rocketmq.filter.constant.UnaryType;
 import java.util.Collection;
 
 /**
- * In expression.
+ * IN / NOT IN 布尔一元表达式：判断属性值是否属于给定集合。
+ * <p>由 {@link UnaryExpression#createInExpression} 工厂方法创建匿名子类。</p>
  */
 abstract public class UnaryInExpression extends UnaryExpression implements BooleanExpression {
 
+    /** 是否为 NOT IN（取反语义）。 */
     private boolean not;
 
+    /** 候选值集合，可为 List 或 HashSet。 */
     private Collection inList;
 
+    /**
+     * @param left 通常为 {@link PropertyExpression}
+     * @param unaryType 固定为 {@link UnaryType#IN}
+     * @param inList 比较用的值集合
+     * @param not true 表示 NOT IN
+     */
     public UnaryInExpression(Expression left, UnaryType unaryType,
         Collection inList, boolean not) {
         super(left, unaryType);
@@ -38,11 +47,13 @@ abstract public class UnaryInExpression extends UnaryExpression implements Boole
 
     }
 
+    /** 求值结果为 {@link Boolean#TRUE} 时视为匹配。 */
     public boolean matches(EvaluationContext context) throws Exception {
         Object object = evaluate(context);
         return object != null && object == Boolean.TRUE;
     }
 
+    /** @return 是否为 NOT IN 模式 */
     public boolean isNot() {
         return not;
     }
@@ -51,6 +62,7 @@ abstract public class UnaryInExpression extends UnaryExpression implements Boole
         this.not = not;
     }
 
+    /** @return IN 列表引用 */
     public Collection getInList() {
         return inList;
     }

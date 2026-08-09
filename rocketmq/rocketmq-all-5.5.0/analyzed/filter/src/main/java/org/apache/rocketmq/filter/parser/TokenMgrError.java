@@ -20,7 +20,8 @@
 package org.apache.rocketmq.filter.parser;
 
 /**
- * Token Manager Error.
+ * 词法管理器错误：解析阶段无法识别输入或词法状态异常时抛出。
+ * <p>继承 {@link Error}，通常不应被业务代码捕获。</p>
  */
 public class TokenMgrError extends Error {
 
@@ -35,36 +36,22 @@ public class TokenMgrError extends Error {
    * Ordinals for various reasons why an Error of this type can be thrown.
    */
 
-    /**
-     * Lexical error occurred.
-     */
+    /** 发生词法错误。 */
     static final int LEXICAL_ERROR = 0;
 
-    /**
-     * An attempt was made to create a second instance of a static token manager.
-     */
+    /** 试图重复创建静态词法管理器实例。 */
     static final int STATIC_LEXER_ERROR = 1;
 
-    /**
-     * Tried to change to an invalid lexical state.
-     */
+    /** 切换到非法词法状态。 */
     static final int INVALID_LEXICAL_STATE = 2;
 
-    /**
-     * Detected (and bailed out of) an infinite loop in the token manager.
-     */
+    /** 检测到词法管理器无限循环并已中止。 */
     static final int LOOP_DETECTED = 3;
 
-    /**
-     * Indicates the reason why the exception is thrown. It will have
-     * one of the above 4 values.
-     */
+    /** 错误原因码，取上述四种常量之一。 */
     int errorCode;
 
-    /**
-     * Replaces unprintable characters by their escaped (or unicode escaped)
-     * equivalents in the given string
-     */
+    /** 将不可打印字符替换为转义或 Unicode 转义形式。 */
     protected static final String addEscapes(String str) {
         StringBuilder retval = new StringBuilder();
         char ch;
@@ -150,14 +137,13 @@ public class TokenMgrError extends Error {
    * Constructors of various flavors follow.
    */
 
-    /**
-     * No arg constructor.
-     */
+    /** 无参构造。 */
     public TokenMgrError() {
     }
 
     /**
-     * Constructor with message and reason.
+     * @param message 错误消息
+     * @param reason 错误原因码
      */
     public TokenMgrError(String message, int reason) {
         super(message);

@@ -41,21 +41,28 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.srvutil.ShutdownHookThread;
 
+/**
+ * NameServer 进程入口：解析命令行与配置文件，启动 {@link NamesrvController}，
+ * 可选内嵌 {@link ControllerManager}（JRaft 控制器）。
+ */
 public class NamesrvStartup {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private static final Logger logConsole = LoggerFactory.getLogger(LoggerName.NAMESRV_CONSOLE_LOGGER_NAME);
+    /** 自配置文件加载的原始 Properties。 */
     private static Properties properties = null;
     private static NamesrvConfig namesrvConfig = null;
     private static NettyServerConfig nettyServerConfig = null;
     private static NettyClientConfig nettyClientConfig = null;
     private static ControllerConfig controllerConfig = null;
 
+    /** JVM 入口：先启动 NameServer，再按需启动内嵌 Controller。 */
     public static void main(String[] args) {
         main0(args);
         controllerManagerMain();
     }
 
+    /** 启动 NameServer 核心逻辑，供 main 与测试调用。 */
     public static NamesrvController main0(String[] args) {
         try {
             parseCommandlineAndConfigFile(args);
@@ -69,6 +76,7 @@ public class NamesrvStartup {
         return null;
     }
 
+    /** 若配置启用，则在同一进程中启动 ControllerManager。 */
     public static ControllerManager controllerManagerMain() {
         try {
             if (namesrvConfig.isEnableControllerInNamesrv()) {
@@ -81,6 +89,10 @@ public class NamesrvStartup {
         return null;
     }
 
+    /**
+     * 解析命令行参数并加载配置文件到静态配置对象。
+     * <p>支持 {@code -c} 指定配置文件、{@code -p} 打印配置后退出。</p>
+     */
     public static void parseCommandlineAndConfigFile(String[] args) throws Exception {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
