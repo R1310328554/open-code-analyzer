@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:00:06Z",
   "files": [
-    "common/src/main/java/org/apache/rocketmq/common/resource/RocketMQResource.java",
-    "common/src/main/java/org/apache/rocketmq/common/running/RunningStats.java",
-    "common/src/main/java/org/apache/rocketmq/common/state/StateEventListener.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/FutureHolder.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/Interceptor.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsBrief.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsBriefInterceptor.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsItem.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsItemFormatter.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsItemPrinter.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsItemScheduledIncrementPrinter.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsItemScheduledPrinter.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsItemStateGetter.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsKindMeta.java",
-    "common/src/main/java/org/apache/rocketmq/common/statistics/StatisticsManager.java",
     "common/src/main/java/org/apache/rocketmq/common/stats/MomentStatsItem.java",
     "common/src/main/java/org/apache/rocketmq/common/stats/MomentStatsItemSet.java",
     "common/src/main/java/org/apache/rocketmq/common/stats/RTStatsItem.java",
@@ -33,5 +18,5 @@
     "common/src/main/java/org/apache/rocketmq/common/thread/ThreadPoolStatusMonitor.java"
   ],
   "remaining_pending": 1008,
-  "done": 450
+  "done": 465
 }
