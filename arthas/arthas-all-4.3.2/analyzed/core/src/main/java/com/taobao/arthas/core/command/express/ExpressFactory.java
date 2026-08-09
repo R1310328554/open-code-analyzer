@@ -3,7 +3,8 @@ package com.taobao.arthas.core.command.express;
 import java.lang.ref.WeakReference;
 
 /**
- * ExpressFactory
+ * {@link Express} 实例工厂：提供线程本地复用与非池化两种创建方式。
+ *
  * @author ralf0131 2017-01-04 14:40.
  * @author hengyunabc 2018-10-08
  */
@@ -19,9 +20,10 @@ public class ExpressFactory {
             .withInitial(() -> new WeakReference<Express>(new OgnlExpress()));
 
     /**
-     * get ThreadLocal Express Object
-     * @param object
-     * @return
+     * 获取当前线程复用的 Express，绑定目标对象并重置上下文后返回。
+     *
+     * @param object 作为 OGNL 根对象的绑定目标
+     * @return 已 reset 并 bind 的 Express 实例
      */
     public static Express threadLocalExpress(Object object) {
         WeakReference<Express> reference = expressRef.get();
@@ -33,6 +35,12 @@ public class ExpressFactory {
         return express.reset().bind(object);
     }
 
+    /**
+     * 创建不进入 ThreadLocal 的 Express，使用指定 ClassLoader 解析类名。
+     *
+     * @param classloader 目标类加载器，null 时使用系统 ClassLoader
+     * @return 新的 {@link OgnlExpress} 实例
+     */
     public static Express unpooledExpress(ClassLoader classloader) {
         if (classloader == null) {
             classloader = ClassLoader.getSystemClassLoader();

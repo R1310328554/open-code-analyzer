@@ -12,7 +12,7 @@ import com.taobao.middleware.cli.annotations.Summary;
 import com.alibaba.arthas.tunnel.client.TunnelClient;
 
 /**
- * 查看会话状态命令
+ * 查看当前 Arthas 会话状态命令，汇总 PID、会话 ID、Tunnel 连接与用户标识等信息。
  *
  * @author vlinux on 15/5/3.
  */
@@ -24,10 +24,11 @@ public class SessionCommand extends AnnotatedCommand {
     public void process(CommandProcess process) {
         SessionModel result = new SessionModel();
         Session session = process.session();
+        // 填充目标 JVM 进程号与 shell 会话标识
         result.setJavaPid(session.getPid());
         result.setSessionId(session.getSessionId());
 
-        //tunnel
+        // 若已启用 Tunnel 客户端，附加 Agent ID、服务端地址与连接状态
         TunnelClient tunnelClient = ArthasBootstrap.getInstance().getTunnelClient();
         if (tunnelClient != null) {
             String id = tunnelClient.getId();
@@ -38,11 +39,11 @@ public class SessionCommand extends AnnotatedCommand {
             result.setTunnelConnected(tunnelClient.isConnected());
         }
 
-        //statUrl
+        // 统计上报 URL（若配置了用户统计）
         String statUrl = UserStatUtil.getStatUrl();
         result.setStatUrl(statUrl);
 
-        //userId
+        // 当前登录用户 ID
         String userId = session.getUserId();
         result.setUserId(userId);
 

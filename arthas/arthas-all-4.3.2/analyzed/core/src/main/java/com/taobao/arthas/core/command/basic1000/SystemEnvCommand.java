@@ -13,6 +13,8 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * 查看操作系统环境变量：无参数时列出全部，指定名称时只显示该项。
+ *
  * @author hengyunabc 2018-11-09
  *
  */
@@ -21,6 +23,7 @@ import com.taobao.middleware.cli.annotations.Summary;
 @Description(Constants.EXAMPLE + "  sysenv\n" + "  sysenv USER\n" + Constants.WIKI + Constants.WIKI_HOME + "sysenv")
 public class SystemEnvCommand extends AnnotatedCommand {
 
+    /** 待查询的环境变量名，为空表示列出全部 */
     private String envName;
 
     @Argument(index = 0, argName = "env-name", required = false)
@@ -34,10 +37,10 @@ public class SystemEnvCommand extends AnnotatedCommand {
         try {
             SystemEnvModel result = new SystemEnvModel();
             if (StringUtils.isBlank(envName)) {
-                // show all system env
+                // 未指定名称：输出全部环境变量
                 result.putAll(System.getenv());
             } else {
-                // view the specified system env
+                // 指定名称：只查询单个环境变量
                 String value = System.getenv(envName);
                 result.put(envName, value);
             }
@@ -49,8 +52,7 @@ public class SystemEnvCommand extends AnnotatedCommand {
     }
 
     /**
-     * First, try to complete with the sysenv command scope. If completion is
-     * failed, delegates to super class.
+     * 优先按当前系统环境变量名集合做 Tab 补全；失败时委托父类。
      *
      * @param completion
      *            the completion object

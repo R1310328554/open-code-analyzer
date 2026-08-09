@@ -24,7 +24,9 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * vmoption command
+ * HotSpot 虚拟机诊断选项（VMOption）的查看与修改命令。
+ * <p>
+ * 通过 {@link HotSpotDiagnosticMXBean} 读写 PrintGC 等运行时诊断开关。
  * 
  * @author hengyunabc 2019-09-02
  *
@@ -42,7 +44,9 @@ import com.taobao.middleware.cli.annotations.Summary;
 public class VMOptionCommand extends AnnotatedCommand {
     private static final Logger logger = LoggerFactory.getLogger(VMOptionCommand.class);
 
+    /** VMOption 名称 */
     private String name;
+    /** 新值，为空表示只读 */
     private String value;
 
     @Argument(index = 0, argName = "name", required = false)
@@ -62,16 +66,17 @@ public class VMOptionCommand extends AnnotatedCommand {
         run(process, name, value);
     }
 
+    /** 列出、查询或修改 VM 诊断选项 */
     private static void run(CommandProcess process, String name, String value) {
         try {
             HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean = ManagementFactory
                             .getPlatformMXBean(HotSpotDiagnosticMXBean.class);
 
             if (StringUtils.isBlank(name) && StringUtils.isBlank(value)) {
-                // show all options
+                // 无参数：列出全部可写诊断选项
                 process.appendResult(new VMOptionModel(hotSpotDiagnosticMXBean.getDiagnosticOptions()));
             } else if (StringUtils.isBlank(value)) {
-                // view the specified option
+                // 仅指定名称：查看单个选项当前值
                 VMOption option = hotSpotDiagnosticMXBean.getVMOption(name);
                 if (option == null) {
                     process.end(-1, "In order to change the system properties, you must specify the property value.");
@@ -83,7 +88,7 @@ public class VMOptionCommand extends AnnotatedCommand {
                 VMOption vmOption = hotSpotDiagnosticMXBean.getVMOption(name);
                 String originValue = vmOption.getValue();
 
-                // change vm option
+                // 指定名称与值：更新选项并输出变更前后对比
                 hotSpotDiagnosticMXBean.setVMOption(name, value);
                 process.appendResult(new MessageModel("Successfully updated the vm option."));
                 process.appendResult(new VMOptionModel(new ChangeResultVO(name, originValue,
@@ -96,6 +101,7 @@ public class VMOptionCommand extends AnnotatedCommand {
         }
     }
 
+    /** Tab 补全所有已注册的 VMOption 名称 */
     @Override
     public void complete(Completion completion) {
         HotSpotDiagnosticMXBean hotSpotDiagnosticMXBean = ManagementFactory

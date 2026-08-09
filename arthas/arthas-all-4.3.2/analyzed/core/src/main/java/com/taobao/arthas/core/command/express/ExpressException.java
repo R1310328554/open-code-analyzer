@@ -1,11 +1,12 @@
 package com.taobao.arthas.core.command.express;
 
 /**
- * 表达式异常
+ * 表达式求值失败时抛出的受检异常，携带出错的原始表达式字符串。
  * Created by vlinux on 15/5/20.
  */
 public class ExpressException extends Exception {
 
+    /** 求值失败的 OGNL 表达式原文 */
     private final String express;
 
     /**

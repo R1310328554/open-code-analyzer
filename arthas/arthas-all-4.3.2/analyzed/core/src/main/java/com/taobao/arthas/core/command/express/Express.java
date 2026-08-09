@@ -1,7 +1,7 @@
 package com.taobao.arthas.core.command.express;
 
 /**
- * 表达式
+ * 表达式求值接口，供 watch/condition 等命令绑定上下文并执行 OGNL 表达式。
  * Created by vlinux on 15/5/20.
  */
 public interface Express {

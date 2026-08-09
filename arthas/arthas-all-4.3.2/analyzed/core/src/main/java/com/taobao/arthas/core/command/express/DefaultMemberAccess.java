@@ -16,13 +16,20 @@ import java.util.Map;
  * coarse-grained access controls to allow access to private, protected
  * and package protected members.  This will apply to all classes
  * and members.
+ * <p>
+ * OGNL 成员访问控制：在表达式求值前临时打开 private/protected/包可见成员的反射访问，
+ * 并在 {@link #restore} 中恢复原始 accessible 状态。
  */
 public class DefaultMemberAccess implements MemberAccess {
 
+    /** 是否允许访问 private 成员 */
     public boolean allowPrivateAccess = false;
+    /** 是否允许访问 protected 成员 */
     public boolean allowProtectedAccess = false;
+    /** 是否允许访问包可见成员 */
     public boolean allowPackageProtectedAccess = false;
 
+    /** 三个可见性级别统一开关 */
     public DefaultMemberAccess(boolean allowAllAccess) {
         this(allowAllAccess, allowAllAccess, allowAllAccess);
     }
@@ -58,6 +65,7 @@ public class DefaultMemberAccess implements MemberAccess {
         allowPackageProtectedAccess = value;
     }
 
+    /** 若成员可访问则临时 setAccessible(true)，返回需 restore 的状态 */
     @Override
     public Object setup(Map context, Object target, Member member, String propertyName) {
         Object result = null;
@@ -73,6 +81,7 @@ public class DefaultMemberAccess implements MemberAccess {
         return result;
     }
 
+    /** 将成员 accessible 状态恢复为 setup 前的值 */
     @Override
     public void restore(Map context, Object target, Member member, String propertyName, Object state) {
         if (state != null) {

@@ -9,7 +9,7 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * 输出版本
+ * 输出当前 Arthas 版本号，版本字符串来自 {@link ArthasBanner#version()}。
  *
  * @author vlinux
  */

@@ -14,6 +14,10 @@ import com.taobao.middleware.cli.annotations.Name;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
+ * 查看或修改 JVM 系统属性（{@code System.getProperties()}）。
+ * <p>
+ * 无参数列出全部；仅指定名称则查看；同时指定名称与值则写入新属性。
+ *
  * @author ralf0131 2017-01-09 14:03.
  */
 @Name("sysprop")
@@ -22,7 +26,9 @@ import com.taobao.middleware.cli.annotations.Summary;
         Constants.WIKI + Constants.WIKI_HOME + "sysprop")
 public class SystemPropertyCommand extends AnnotatedCommand {
 
+    /** 属性名 */
     private String propertyName;
+    /** 属性新值，为空表示只读不写 */
     private String propertyValue;
 
     @Argument(index = 0, argName = "property-name", required = false)
@@ -42,10 +48,10 @@ public class SystemPropertyCommand extends AnnotatedCommand {
         try {
 
             if (StringUtils.isBlank(propertyName) && StringUtils.isBlank(propertyValue)) {
-                // show all system properties
+                // 列出全部系统属性
                 process.appendResult(new SystemPropertyModel(System.getProperties()));
             } else if (StringUtils.isBlank(propertyValue)) {
-                // view the specified system property
+                // 只读：查看指定属性
                 String value = System.getProperty(propertyName);
                 if (value == null) {
                     process.end(1, "There is no property with the key " + propertyName);
@@ -54,7 +60,7 @@ public class SystemPropertyCommand extends AnnotatedCommand {
                     process.appendResult(new SystemPropertyModel(propertyName, value));
                 }
             } else {
-                // change system property
+                // 写入：修改系统属性并回显新值
                 System.setProperty(propertyName, propertyValue);
                 process.appendResult(new MessageModel("Successfully changed the system property."));
                 process.appendResult(new SystemPropertyModel(propertyName, System.getProperty(propertyName)));
@@ -66,8 +72,7 @@ public class SystemPropertyCommand extends AnnotatedCommand {
     }
 
     /**
-     * First, try to complete with the sysprop command scope.
-     * If completion is failed, delegates to super class.
+     * 按已注册的系统属性名做 Tab 补全；失败时委托父类。
      * @param completion the completion object
      */
     @Override
