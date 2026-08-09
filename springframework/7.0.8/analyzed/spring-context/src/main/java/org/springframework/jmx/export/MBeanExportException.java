@@ -19,7 +19,7 @@ package org.springframework.jmx.export;
 import org.springframework.jmx.JmxException;
 
 /**
- * Exception thrown in case of failure when exporting an MBean.
+ * 导出 MBean 失败时抛出的异常。
  *
  * @author Rob Harrop
  * @since 2.0
@@ -29,19 +29,17 @@ import org.springframework.jmx.JmxException;
 public class MBeanExportException extends JmxException {
 
 	/**
-	 * Create a new {@code MBeanExportException} with the
-	 * specified error message.
-	 * @param msg the detail message
+	 * 使用指定的错误消息创建新的 {@code MBeanExportException}。
+	 * @param msg 详细消息
 	 */
 	public MBeanExportException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Create a new {@code MBeanExportException} with the
-	 * specified error message and root cause.
-	 * @param msg the detail message
-	 * @param cause the root cause
+	 * 使用指定的错误消息和根因创建新的 {@code MBeanExportException}。
+	 * @param msg 详细消息
+	 * @param cause 根因
 	 */
 	public MBeanExportException(String msg, Throwable cause) {
 		super(msg, cause);
