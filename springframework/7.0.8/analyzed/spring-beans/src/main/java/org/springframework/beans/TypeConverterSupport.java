@@ -27,8 +27,8 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.util.Assert;
 
 /**
- * Base implementation of the {@link TypeConverter} interface, using a package-private delegate.
- * Mainly serves as base class for {@link BeanWrapperImpl}.
+ * {@link TypeConverter} 接口的基础实现，通过包私有委托完成转换。
+ * 主要作为 {@link BeanWrapperImpl} 的基类。
  *
  * @author Juergen Hoeller
  * @since 3.2
@@ -36,14 +36,21 @@ import org.springframework.util.Assert;
  */
 public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport implements TypeConverter {
 
+	/** 实际执行类型转换的委托对象。 */
 	@Nullable TypeConverterDelegate typeConverterDelegate;
 
 
+	/**
+	 * 将值转换为所需类型（无额外类型上下文）。
+	 */
 	@Override
 	public <T> @Nullable T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType) throws TypeMismatchException {
 		return convertIfNecessary(null, value, requiredType, TypeDescriptor.valueOf(requiredType));
 	}
 
+	/**
+	 * 将值转换为所需类型，并利用方法参数分析泛型。
+	 */
 	@Override
 	public <T> @Nullable T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,
 			@Nullable MethodParameter methodParam) throws TypeMismatchException {
@@ -52,6 +59,9 @@ public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport
 				(methodParam != null ? new TypeDescriptor(methodParam) : TypeDescriptor.valueOf(requiredType)));
 	}
 
+	/**
+	 * 将值转换为所需类型，并利用字段分析泛型。
+	 */
 	@Override
 	public <T> @Nullable T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType, @Nullable Field field)
 			throws TypeMismatchException {
@@ -60,6 +70,9 @@ public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport
 				(field != null ? new TypeDescriptor(field) : TypeDescriptor.valueOf(requiredType)));
 	}
 
+	/**
+	 * 将值转换为所需类型，使用给定 TypeDescriptor。
+	 */
 	@Override
 	public <T> @Nullable T convertIfNecessary(@Nullable Object value, @Nullable Class<T> requiredType,
 			@Nullable TypeDescriptor typeDescriptor) throws TypeMismatchException {
@@ -67,6 +80,9 @@ public abstract class TypeConverterSupport extends PropertyEditorRegistrySupport
 		return convertIfNecessary(null, value, requiredType, typeDescriptor);
 	}
 
+	/**
+	 * 委托 TypeConverterDelegate 执行实际转换，并将底层异常包装为 Beans 异常。
+	 */
 	private <T> @Nullable T convertIfNecessary(@Nullable String propertyName, @Nullable Object value,
 			@Nullable Class<T> requiredType, @Nullable TypeDescriptor typeDescriptor) throws TypeMismatchException {
 

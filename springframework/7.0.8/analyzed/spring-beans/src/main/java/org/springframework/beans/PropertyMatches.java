@@ -26,11 +26,11 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Helper class for calculating property matches, according to a configurable
- * distance. Provide the list of potential matches and an easy way to generate
- * an error message. Works for both java bean properties and fields.
+ * 按可配置的字符串距离计算属性匹配的辅助类。
+ * 提供可能匹配的列表，并便于生成错误消息。
+ * 同时适用于 JavaBean 属性与字段。
  *
- * <p>Mainly for use within the framework and in particular the binding facility.
+ * <p>主要在框架内部使用，尤其是绑定设施中。
  *
  * @author Alef Arendsen
  * @author Arjen Poutsma
@@ -42,60 +42,62 @@ import org.springframework.util.StringUtils;
  */
 public abstract class PropertyMatches {
 
-	/** Default maximum property distance: 2. */
+	/** 默认最大属性距离：2。 */
 	public static final int DEFAULT_MAX_DISTANCE = 2;
 
 
-	// Static factory methods
+	// 静态工厂方法
 
 	/**
-	 * Create PropertyMatches for the given bean property.
-	 * @param propertyName the name of the property to find possible matches for
-	 * @param beanClass the bean class to search for matches
+	 * 为给定 bean 属性创建 PropertyMatches。
+	 * @param propertyName 要查找可能匹配的属性名
+	 * @param beanClass 要在其上搜索匹配的 bean 类
 	 */
 	public static PropertyMatches forProperty(String propertyName, Class<?> beanClass) {
 		return forProperty(propertyName, beanClass, DEFAULT_MAX_DISTANCE);
 	}
 
 	/**
-	 * Create PropertyMatches for the given bean property.
-	 * @param propertyName the name of the property to find possible matches for
-	 * @param beanClass the bean class to search for matches
-	 * @param maxDistance the maximum property distance allowed for matches
+	 * 为给定 bean 属性创建 PropertyMatches。
+	 * @param propertyName 要查找可能匹配的属性名
+	 * @param beanClass 要在其上搜索匹配的 bean 类
+	 * @param maxDistance 匹配所允许的最大属性距离
 	 */
 	public static PropertyMatches forProperty(String propertyName, Class<?> beanClass, int maxDistance) {
 		return new BeanPropertyMatches(propertyName, beanClass, maxDistance);
 	}
 
 	/**
-	 * Create PropertyMatches for the given field property.
-	 * @param propertyName the name of the field to find possible matches for
-	 * @param beanClass the bean class to search for matches
+	 * 为给定字段创建 PropertyMatches。
+	 * @param propertyName 要查找可能匹配的字段名
+	 * @param beanClass 要在其上搜索匹配的 bean 类
 	 */
 	public static PropertyMatches forField(String propertyName, Class<?> beanClass) {
 		return forField(propertyName, beanClass, DEFAULT_MAX_DISTANCE);
 	}
 
 	/**
-	 * Create PropertyMatches for the given field property.
-	 * @param propertyName the name of the field to find possible matches for
-	 * @param beanClass the bean class to search for matches
-	 * @param maxDistance the maximum property distance allowed for matches
+	 * 为给定字段创建 PropertyMatches。
+	 * @param propertyName 要查找可能匹配的字段名
+	 * @param beanClass 要在其上搜索匹配的 bean 类
+	 * @param maxDistance 匹配所允许的最大属性距离
 	 */
 	public static PropertyMatches forField(String propertyName, Class<?> beanClass, int maxDistance) {
 		return new FieldPropertyMatches(propertyName, beanClass, maxDistance);
 	}
 
 
-	// Instance state
+	// 实例状态
 
+	/** 请求的属性名。 */
 	private final String propertyName;
 
+	/** 计算出的可能匹配名称。 */
 	private final String[] possibleMatches;
 
 
 	/**
-	 * Create a new PropertyMatches instance for the given property and possible matches.
+	 * 为给定属性名与可能匹配创建新的 PropertyMatches 实例。
 	 */
 	private PropertyMatches(String propertyName, String[] possibleMatches) {
 		this.propertyName = propertyName;
@@ -104,28 +106,30 @@ public abstract class PropertyMatches {
 
 
 	/**
-	 * Return the name of the requested property.
+	 * 返回所请求的属性名。
 	 */
 	public String getPropertyName() {
 		return this.propertyName;
 	}
 
 	/**
-	 * Return the calculated possible matches.
+	 * 返回计算出的可能匹配。
 	 */
 	public String[] getPossibleMatches() {
 		return this.possibleMatches;
 	}
 
 	/**
-	 * Build an error message for the given invalid property name,
-	 * indicating the possible property matches.
+	 * 为无效属性名构建错误消息，并指出可能的属性匹配。
 	 */
 	public abstract String buildErrorMessage();
 
 
-	// Implementation support for subclasses
+	// 供子类使用的实现支持
 
+	/**
+	 * 将“你是否指……”形式的提示追加到消息中。
+	 */
 	protected void appendHintMessage(StringBuilder msg) {
 		msg.append("Did you mean ");
 		for (int i = 0; i < this.possibleMatches.length; i++) {
@@ -142,11 +146,10 @@ public abstract class PropertyMatches {
 	}
 
 	/**
-	 * Calculate the distance between the given two Strings
-	 * according to the Levenshtein algorithm.
-	 * @param s1 the first String
-	 * @param s2 the second String
-	 * @return the distance value
+	 * 按 Levenshtein 算法计算两个字符串之间的距离。
+	 * @param s1 第一个字符串
+	 * @param s2 第二个字符串
+	 * @return 距离值
 	 */
 	private static int calculateStringDistance(String s1, String s2) {
 		if (s1.isEmpty()) {
@@ -183,8 +186,11 @@ public abstract class PropertyMatches {
 	}
 
 
-	// Concrete subclasses
+	// 具体子类
 
+	/**
+	 * 基于 JavaBean 可写属性的匹配实现。
+	 */
 	private static class BeanPropertyMatches extends PropertyMatches {
 
 		public BeanPropertyMatches(String propertyName, Class<?> beanClass, int maxDistance) {
@@ -193,11 +199,10 @@ public abstract class PropertyMatches {
 		}
 
 		/**
-		 * Generate possible property alternatives for the given property and class.
-		 * Internally uses the {@code getStringDistance} method, which in turn uses
-		 * the Levenshtein algorithm to determine the distance between two Strings.
-		 * @param descriptors the JavaBeans property descriptors to search
-		 * @param maxDistance the maximum distance to accept
+		 * 为给定属性与类生成可能的属性替代名。
+		 * 内部使用字符串距离计算（基于 Levenshtein 算法）。
+		 * @param descriptors 要搜索的 JavaBeans 属性描述符
+		 * @param maxDistance 可接受的最大距离
 		 */
 		private static String[] calculateMatches(String name, PropertyDescriptor[] descriptors, int maxDistance) {
 			List<String> candidates = new ArrayList<>();
@@ -229,12 +234,18 @@ public abstract class PropertyMatches {
 	}
 
 
+	/**
+	 * 基于字段名的匹配实现。
+	 */
 	private static class FieldPropertyMatches extends PropertyMatches {
 
 		public FieldPropertyMatches(String propertyName, Class<?> beanClass, int maxDistance) {
 			super(propertyName, calculateMatches(propertyName, beanClass, maxDistance));
 		}
 
+		/**
+		 * 在给定类的字段中计算名称距离匹配。
+		 */
 		private static String[] calculateMatches(final String name, Class<?> clazz, final int maxDistance) {
 			final List<String> candidates = new ArrayList<>();
 			ReflectionUtils.doWithFields(clazz, field -> {

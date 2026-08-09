@@ -22,22 +22,25 @@ import java.util.Properties;
 import org.springframework.beans.propertyeditors.PropertiesEditor;
 
 /**
- * {@link java.beans.PropertyEditor Editor} for a {@link PropertyValues} object.
+ * 面向 {@link PropertyValues} 对象的 {@link java.beans.PropertyEditor}。
  *
- * <p>The required format is defined in the {@link java.util.Properties}
- * documentation. Each property must be on a new line.
+ * <p>所需格式见 {@link java.util.Properties} 文档说明。
+ * 每个属性必须独占一行。
  *
- * <p>The present implementation relies on a
- * {@link org.springframework.beans.propertyeditors.PropertiesEditor}
- * underneath.
+ * <p>当前实现在底层依赖
+ * {@link org.springframework.beans.propertyeditors.PropertiesEditor}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public class PropertyValuesEditor extends PropertyEditorSupport {
 
+	/** 用于将文本解析为 Properties 的底层编辑器。 */
 	private final PropertiesEditor propertiesEditor = new PropertiesEditor();
 
+	/**
+	 * 将文本解析为 Properties，再包装为 MutablePropertyValues。
+	 */
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 		this.propertiesEditor.setAsText(text);
@@ -46,4 +49,3 @@ public class PropertyValuesEditor extends PropertyEditorSupport {
 	}
 
 }
-

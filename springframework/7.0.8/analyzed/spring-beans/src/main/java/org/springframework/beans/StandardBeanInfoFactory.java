@@ -24,15 +24,14 @@ import org.springframework.core.Ordered;
 import org.springframework.core.SpringProperties;
 
 /**
- * {@link BeanInfoFactory} implementation that performs standard
- * {@link java.beans.Introspector} inspection.
+ * 执行标准 {@link java.beans.Introspector} 检查的 {@link BeanInfoFactory} 实现。
  *
- * <p>To be configured via a {@code META-INF/spring.factories} file with the following content:
+ * <p>通过 {@code META-INF/spring.factories} 配置如下内容启用：
  *
  * <p>{@code org.springframework.beans.BeanInfoFactory=org.springframework.beans.StandardBeanInfoFactory}
  *
- * <p>Ordered at {@link Ordered#LOWEST_PRECEDENCE} to allow other user-defined
- * {@link BeanInfoFactory} types to take precedence.
+ * <p>排序为 {@link Ordered#LOWEST_PRECEDENCE}，以便其他用户定义的
+ * {@link BeanInfoFactory} 可以优先。
  *
  * @author Juergen Hoeller
  * @since 6.0
@@ -43,37 +42,39 @@ import org.springframework.core.SpringProperties;
 public class StandardBeanInfoFactory implements BeanInfoFactory, Ordered {
 
 	/**
-	 * System property that instructs Spring to use the {@link Introspector#IGNORE_ALL_BEANINFO}
-	 * mode when calling the JavaBeans {@link Introspector}: "spring.beaninfo.ignore", with a
-	 * value of "true" skipping the search for {@code BeanInfo} classes (typically for scenarios
-	 * where no such classes are being defined for beans in the application in the first place).
-	 * <p>The default is "false", considering all {@code BeanInfo} metadata classes, like for
-	 * standard {@link Introspector#getBeanInfo(Class)} calls. Consider switching this flag to
-	 * "true" if you experience repeated ClassLoader access for non-existing {@code BeanInfo}
-	 * classes, in case such access is expensive on startup or on lazy loading.
-	 * <p>Note that such an effect may also indicate a scenario where caching doesn't work
-	 * effectively: Prefer an arrangement where the Spring jars live in the same ClassLoader
-	 * as the application classes, which allows for clean caching along with the application's
-	 * lifecycle in any case. For a web application, consider declaring a local
-	 * {@link org.springframework.web.util.IntrospectorCleanupListener} in {@code web.xml}
-	 * in case of a multi-ClassLoader layout, which will allow for effective caching as well.
+	 * 指示 Spring 在调用 JavaBeans {@link Introspector} 时使用
+	 * {@link Introspector#IGNORE_ALL_BEANINFO} 模式的系统属性：
+	 * {@code "spring.beaninfo.ignore"}。值为 {@code "true"} 时跳过对
+	 * {@code BeanInfo} 类的搜索（常见于应用本身并未定义此类 BeanInfo 的场景）。
+	 * <p>默认为 {@code "false"}，会考虑全部 {@code BeanInfo} 元数据类，
+	 * 行为与标准 {@link Introspector#getBeanInfo(Class)} 调用一致。
+	 * 若反复访问不存在的 {@code BeanInfo} 类导致启动或懒加载开销过大，可考虑设为 {@code "true"}。
+	 * <p>此类现象也可能说明缓存未有效工作：优先让 Spring jar 与应用类处于同一 ClassLoader，
+	 * 以便缓存随应用生命周期干净清理。Web 应用若为多 ClassLoader 布局，
+	 * 可在 {@code web.xml} 中声明本地
+	 * {@link org.springframework.web.util.IntrospectorCleanupListener} 以获得有效缓存。
 	 * @see Introspector#getBeanInfo(Class, int)
 	 */
 	public static final String IGNORE_BEANINFO_PROPERTY_NAME = "spring.beaninfo.ignore";
 
+	/** 是否让 Introspector 忽略 BeanInfo 类。 */
 	private static final boolean shouldIntrospectorIgnoreBeaninfoClasses =
 			SpringProperties.getFlag(IGNORE_BEANINFO_PROPERTY_NAME);
 
 
+	/**
+	 * 使用标准 Introspector 获取 BeanInfo，并立即从 JDK 缓存中冲刷相关类，
+	 * 以便由 CachedIntrospectionResults 以更利于 GC 的方式缓存。
+	 */
 	@Override
 	public BeanInfo getBeanInfo(Class<?> beanClass) throws IntrospectionException {
 		BeanInfo beanInfo = (shouldIntrospectorIgnoreBeaninfoClasses ?
 				Introspector.getBeanInfo(beanClass, Introspector.IGNORE_ALL_BEANINFO) :
 				Introspector.getBeanInfo(beanClass));
 
-		// Immediately remove class from Introspector cache to allow for proper garbage
-		// collection on class loader shutdown; we cache it in CachedIntrospectionResults
-		// in a GC-friendly manner. This is necessary (again) for the JDK ClassInfo cache.
+		// 立即将类从 Introspector 缓存中移除，以便 ClassLoader 关闭时可正常 GC；
+		// 我们在 CachedIntrospectionResults 中以利于 GC 的方式自行缓存。
+		// 这对 JDK 的 ClassInfo 缓存同样必要。
 		Class<?> classToFlush = beanClass;
 		do {
 			Introspector.flushFromCaches(classToFlush);
@@ -84,6 +85,9 @@ public class StandardBeanInfoFactory implements BeanInfoFactory, Ordered {
 		return beanInfo;
 	}
 
+	/**
+	 * 返回最低优先级，以便其他 BeanInfoFactory 可覆盖本实现。
+	 */
 	@Override
 	public int getOrder() {
 		return Ordered.LOWEST_PRECEDENCE;

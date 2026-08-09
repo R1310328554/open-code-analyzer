@@ -26,8 +26,8 @@ import java.util.stream.StreamSupport;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Holder containing one or more {@link PropertyValue} objects,
- * typically comprising one update for a specific target bean.
+ * 包含一个或多个 {@link PropertyValue} 对象的持有者，
+ * 通常表示对某个目标 bean 的一次更新。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -37,7 +37,7 @@ import org.jspecify.annotations.Nullable;
 public interface PropertyValues extends Iterable<PropertyValue> {
 
 	/**
-	 * Return an {@link Iterator} over the property values.
+	 * 返回属性值上的 {@link Iterator}。
 	 * @since 5.1
 	 */
 	@Override
@@ -46,7 +46,7 @@ public interface PropertyValues extends Iterable<PropertyValue> {
 	}
 
 	/**
-	 * Return a {@link Spliterator} over the property values.
+	 * 返回属性值上的 {@link Spliterator}。
 	 * @since 5.1
 	 */
 	@Override
@@ -55,7 +55,7 @@ public interface PropertyValues extends Iterable<PropertyValue> {
 	}
 
 	/**
-	 * Return a sequential {@link Stream} containing the property values.
+	 * 返回包含属性值的顺序 {@link Stream}。
 	 * @since 5.1
 	 */
 	default Stream<PropertyValue> stream() {
@@ -63,36 +63,36 @@ public interface PropertyValues extends Iterable<PropertyValue> {
 	}
 
 	/**
-	 * Return an array of the PropertyValue objects held in this object.
+	 * 返回本对象所持有的 PropertyValue 数组。
 	 */
 	PropertyValue[] getPropertyValues();
 
 	/**
-	 * Return the property value with the given name, if any.
-	 * @param propertyName the name to search for
-	 * @return the property value, or {@code null} if none
+	 * 返回具有给定名称的属性值（若存在）。
+	 * @param propertyName 要查找的名称
+	 * @return 属性值；若不存在则为 {@code null}
 	 */
 	@Nullable PropertyValue getPropertyValue(String propertyName);
 
 	/**
-	 * Return the changes since the previous PropertyValues.
-	 * Subclasses should also override {@code equals}.
-	 * @param old the old property values
-	 * @return the updated or new properties.
-	 * Return empty PropertyValues if there are no changes.
+	 * 返回自先前 PropertyValues 以来的变更。
+	 * 子类还应覆盖 {@code equals}。
+	 * @param old 旧的属性值
+	 * @return 已更新或新增的属性。
+	 * 若无变更则返回空的 PropertyValues。
 	 * @see Object#equals
 	 */
 	PropertyValues changesSince(PropertyValues old);
 
 	/**
-	 * Is there a property value (or other processing entry) for this property?
-	 * @param propertyName the name of the property we're interested in
-	 * @return whether there is a property value for this property
+	 * 是否存在该属性的属性值（或其他处理条目）？
+	 * @param propertyName 所关注的属性名
+	 * @return 该属性是否有属性值
 	 */
 	boolean contains(String propertyName);
 
 	/**
-	 * Does this holder not contain any PropertyValue objects at all?
+	 * 本持有者是否完全不包含任何 PropertyValue 对象？
 	 */
 	boolean isEmpty();
 

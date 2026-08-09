@@ -25,18 +25,18 @@ import java.beans.SimpleBeanInfo;
 import org.springframework.core.Ordered;
 
 /**
- * {@link BeanInfoFactory} implementation that bypasses the standard {@link java.beans.Introspector}
- * for faster introspection, reduced to basic property determination (as commonly needed in Spring).
+ * {@link BeanInfoFactory} 实现：绕过标准 {@link java.beans.Introspector} 以加快内省，
+ * 仅做 Spring 中常见的基本属性判定。
  *
- * <p>Used by default in 6.0 through direct invocation from {@link CachedIntrospectionResults}.
- * Potentially configured via a {@code META-INF/spring.factories} file with the following content,
- * overriding other custom {@code org.springframework.beans.BeanInfoFactory} declarations:
+ * <p>6.0 起默认由 {@link CachedIntrospectionResults} 直接调用。
+ * 也可通过 {@code META-INF/spring.factories} 配置下列内容，
+ * 以覆盖其他自定义的 {@code org.springframework.beans.BeanInfoFactory} 声明：
  *
  * <p>{@code org.springframework.beans.BeanInfoFactory=org.springframework.beans.SimpleBeanInfoFactory}
  *
- * <p>Ordered at {@code Ordered.LOWEST_PRECEDENCE - 1} to override {@link ExtendedBeanInfoFactory}
- * (registered by default in 5.3) if necessary while still allowing other user-defined
- * {@link BeanInfoFactory} types to take precedence.
+ * <p>排序为 {@code Ordered.LOWEST_PRECEDENCE - 1}，以便在必要时覆盖
+ * {@link ExtendedBeanInfoFactory}（5.3 中默认注册），同时仍允许其他用户定义的
+ * {@link BeanInfoFactory} 优先。
  *
  * @author Juergen Hoeller
  * @since 5.3.24
@@ -45,6 +45,9 @@ import org.springframework.core.Ordered;
  */
 class SimpleBeanInfoFactory implements BeanInfoFactory, Ordered {
 
+	/**
+	 * 通过基本属性判定为给定 bean 类构建 BeanInfo。
+	 */
 	@Override
 	public BeanInfo getBeanInfo(Class<?> beanClass) throws IntrospectionException {
 		PropertyDescriptor[] pds = PropertyDescriptorUtils.determineBasicProperties(beanClass)
@@ -62,6 +65,9 @@ class SimpleBeanInfoFactory implements BeanInfoFactory, Ordered {
 		};
 	}
 
+	/**
+	 * 返回本工厂的排序值（略高于最低优先级）。
+	 */
 	@Override
 	public int getOrder() {
 		return Ordered.LOWEST_PRECEDENCE - 1;
