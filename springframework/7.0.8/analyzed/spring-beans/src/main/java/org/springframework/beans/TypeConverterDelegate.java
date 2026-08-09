@@ -117,12 +117,12 @@ class TypeConverterDelegate {
 	public <T> @Nullable T convertIfNecessary(@Nullable String propertyName, @Nullable Object oldValue, @Nullable Object newValue,
 			@Nullable Class<T> requiredType, @Nullable TypeDescriptor typeDescriptor) throws IllegalArgumentException {
 
-		// Custom editor for this type?
+		// 该类型/属性是否注册了自定义 Editor？
 		PropertyEditor editor = this.propertyEditorRegistry.findCustomEditor(requiredType, propertyName);
 
 		ConversionFailedException conversionAttemptEx = null;
 
-		// No custom editor but custom ConversionService specified?
+		// 无自定义 Editor，但配置了 ConversionService？
 		ConversionService conversionService = this.propertyEditorRegistry.getConversionService();
 		if (editor == null && conversionService != null && newValue != null && typeDescriptor != null) {
 			TypeDescriptor sourceTypeDesc = TypeDescriptor.forObject(newValue);
@@ -131,7 +131,7 @@ class TypeConverterDelegate {
 					return (T) conversionService.convert(newValue, sourceTypeDesc, typeDescriptor);
 				}
 				catch (ConversionFailedException ex) {
-					// fallback to default conversion logic below
+					// 转换失败则回退到下方默认转换逻辑
 					conversionAttemptEx = ex;
 				}
 			}
@@ -139,7 +139,7 @@ class TypeConverterDelegate {
 
 		Object convertedValue = newValue;
 
-		// Value not of required type?
+		// 值类型与目标类型不匹配？
 		if (editor != null || (requiredType != null && !ClassUtils.isAssignableValue(requiredType, convertedValue))) {
 			if (typeDescriptor != null && requiredType != null && Collection.class.isAssignableFrom(requiredType)) {
 				TypeDescriptor elementTypeDesc = typeDescriptor.getElementTypeDescriptor();
@@ -164,14 +164,14 @@ class TypeConverterDelegate {
 		boolean standardConversion = false;
 
 		if (requiredType != null) {
-			// Try to apply some standard type conversion rules if appropriate.
+			// 在合适时尝试标准类型转换规则。
 
 			if (convertedValue != null) {
 				if (Object.class == requiredType) {
 					return (T) convertedValue;
 				}
 				else if (requiredType.isArray()) {
-					// Array required -> apply appropriate conversion of elements.
+					// 需要数组：逐元素转换为目标组件类型。
 					if (convertedValue instanceof String text &&
 							Enum.class.isAssignableFrom(requiredType.componentType())) {
 						convertedValue = StringUtils.commaDelimitedListToStringArray(text);
@@ -185,22 +185,23 @@ class TypeConverterDelegate {
 						standardConversion = true;
 					}
 					else if (Array.getLength(convertedValue) == 1) {
+						// 单元素数组可解包为标量
 						convertedValue = Array.get(convertedValue, 0);
 						standardConversion = true;
 					}
 				}
 				else if (convertedValue instanceof Collection<?> coll) {
-					// Convert elements to target type, if determined.
+					// 若已确定元素类型，则逐元素转换。
 					convertedValue = convertToTypedCollection(coll, propertyName, requiredType, typeDescriptor);
 					standardConversion = true;
 				}
 				else if (convertedValue instanceof Map<?, ?> map) {
-					// Convert keys and values to respective target type, if determined.
+					// 若已确定键/值类型，则分别转换。
 					convertedValue = convertToTypedMap(map, propertyName, requiredType, typeDescriptor);
 					standardConversion = true;
 				}
 				if (String.class == requiredType && ClassUtils.isPrimitiveOrWrapper(convertedValue.getClass())) {
-					// We can stringify any primitive value...
+					// 任意基本类型/包装类型都可转为字符串
 					return (T) convertedValue.toString();
 				}
 				else if (convertedValue instanceof String text && !requiredType.isInstance(convertedValue)) {
@@ -210,7 +211,7 @@ class TypeConverterDelegate {
 							return BeanUtils.instantiateClass(strCtor, convertedValue);
 						}
 						catch (NoSuchMethodException ex) {
-							// proceed with field lookup
+							// 无 String 构造器，继续尝试字段查找
 							if (logger.isTraceEnabled()) {
 								logger.trace("No String constructor found on type [" + requiredType.getName() + "]", ex);
 							}
@@ -223,7 +224,7 @@ class TypeConverterDelegate {
 					}
 					String trimmedValue = text.trim();
 					if (requiredType.isEnum() && trimmedValue.isEmpty()) {
-						// It's an empty enum identifier: reset the enum value to null.
+						// 空枚举标识符：将枚举值重置为 null
 						return null;
 					}
 					convertedValue = attemptToConvertStringToEnum(requiredType, trimmedValue, convertedValue);
@@ -243,19 +244,18 @@ class TypeConverterDelegate {
 
 			if (!ClassUtils.isAssignableValue(requiredType, convertedValue)) {
 				if (conversionAttemptEx != null) {
-					// Original exception from former ConversionService call above...
+					// 上方 ConversionService 调用抛出的原始异常
 					throw conversionAttemptEx;
 				}
 				else if (conversionService != null && typeDescriptor != null) {
-					// ConversionService not tried before, probably custom editor found
-					// but editor couldn't produce the required type...
+					// 此前未尝试 ConversionService（可能找到了自定义 Editor 但无法产出目标类型）
 					TypeDescriptor sourceTypeDesc = TypeDescriptor.forObject(newValue);
 					if (conversionService.canConvert(sourceTypeDesc, typeDescriptor)) {
 						return (T) conversionService.convert(newValue, sourceTypeDesc, typeDescriptor);
 					}
 				}
 
-				// Definitely doesn't match: throw IllegalArgumentException/IllegalStateException
+				// 确定无法匹配：抛出 IllegalArgumentException / IllegalStateException
 				StringBuilder msg = new StringBuilder();
 				msg.append("Cannot convert value of type '").append(ClassUtils.getDescriptiveType(newValue));
 				msg.append("' to required type '").append(ClassUtils.getQualifiedName(requiredType)).append('\'');
@@ -290,7 +290,7 @@ class TypeConverterDelegate {
 		Object convertedValue = currentConvertedValue;
 
 		if (Enum.class == requiredType && this.targetObject != null) {
-			// target type is declared as raw enum, treat the trimmed value as <enum.fqn>.FIELD_NAME
+			// 目标类型声明为原始 Enum：将 trimmed 值视为 <enum.fqn>.FIELD_NAME
 			int index = trimmedValue.lastIndexOf('.');
 			if (index > - 1) {
 				String enumType = trimmedValue.substring(0, index);
@@ -315,9 +315,8 @@ class TypeConverterDelegate {
 		}
 
 		if (convertedValue == currentConvertedValue) {
-			// Try field lookup as fallback: for Java enum or custom enum
-			// with values defined as static fields. Resulting value still needs
-			// to be checked, hence we don't return it right away.
+			// 回退：按字段名查找（Java 枚举或自定义静态字段枚举）
+			// 结果仍需后续类型检查，故此处不直接返回
 			try {
 				Field enumField = requiredType.getField(trimmedValue);
 				ReflectionUtils.makeAccessible(enumField);
@@ -333,17 +332,17 @@ class TypeConverterDelegate {
 		return convertedValue;
 	}
 	/**
-	 * Find a default editor for the given type.
-	 * @param requiredType the type to find an editor for
-	 * @return the corresponding editor, or {@code null} if none
+	 * 为给定类型查找默认 PropertyEditor。
+	 * @param requiredType 要查找 Editor 的类型
+	 * @return 对应 Editor，若无则 {@code null}
 	 */
 	private @Nullable PropertyEditor findDefaultEditor(@Nullable Class<?> requiredType) {
 		PropertyEditor editor = null;
 		if (requiredType != null) {
-			// No custom editor -> check BeanWrapperImpl's default editors.
+			// 无自定义 Editor → 查 BeanWrapperImpl 的默认 Editor
 			editor = this.propertyEditorRegistry.getDefaultEditor(requiredType);
 			if (editor == null && String.class != requiredType) {
-				// No BeanWrapper default editor -> check standard JavaBean editor.
+				// 仍无 → 查标准 JavaBean 约定 Editor
 				editor = BeanUtils.findEditorByConvention(requiredType);
 			}
 		}
@@ -351,15 +350,14 @@ class TypeConverterDelegate {
 	}
 
 	/**
-	 * Convert the value to the required type (if necessary from a String),
-	 * using the given property editor.
-	 * @param oldValue the previous value, if available (may be {@code null})
-	 * @param newValue the proposed new value
-	 * @param requiredType the type we must convert to
-	 * (or {@code null} if not known, for example in case of a collection element)
-	 * @param editor the PropertyEditor to use
-	 * @return the new value, possibly the result of type conversion
-	 * @throws IllegalArgumentException if type conversion failed
+	 * 使用给定 PropertyEditor 将值（必要时从 String）转换为目标类型。
+	 * @param oldValue 旧值（若有，可为 {@code null}）
+	 * @param newValue 拟设置的新值
+	 * @param requiredType 必须转换到的类型
+	 * （若未知可为 {@code null}，例如集合元素场景）
+	 * @param editor 要使用的 PropertyEditor
+	 * @return 新值，可能经类型转换得到
+	 * @throws IllegalArgumentException 类型转换失败时
 	 */
 	private @Nullable Object doConvertValue(@Nullable Object oldValue, @Nullable Object newValue,
 			@Nullable Class<?> requiredType, @Nullable PropertyEditor editor) {
@@ -367,17 +365,15 @@ class TypeConverterDelegate {
 		Object convertedValue = newValue;
 
 		if (editor != null && !(convertedValue instanceof String)) {
-			// Not a String -> use PropertyEditor's setValue.
-			// With standard PropertyEditors, this will return the very same object;
-			// we just want to allow special PropertyEditors to override setValue
-			// for type conversion from non-String values to the required type.
+			// 非 String → 使用 PropertyEditor.setValue。
+			// 标准 PropertyEditor 通常返回同一对象；
+			// 此处允许特殊 Editor 覆盖 setValue，以支持非 String → 目标类型。
 			try {
 				editor.setValue(convertedValue);
 				Object newConvertedValue = editor.getValue();
 				if (newConvertedValue != convertedValue) {
 					convertedValue = newConvertedValue;
-					// Reset PropertyEditor: It already did a proper conversion.
-					// Don't use it again for a setAsText call.
+					// Editor 已完成转换，不再用于后续 setAsText
 					editor = null;
 				}
 			}
@@ -385,16 +381,15 @@ class TypeConverterDelegate {
 				if (logger.isDebugEnabled()) {
 					logger.debug("PropertyEditor [" + editor.getClass().getName() + "] does not support setValue call", ex);
 				}
-				// Swallow and proceed.
+				// 吞掉异常继续后续流程
 			}
 		}
 
 		Object returnValue = convertedValue;
 
 		if (requiredType != null && !requiredType.isArray() && convertedValue instanceof String[] array) {
-			// Convert String array to a comma-separated String.
-			// Only applies if no PropertyEditor converted the String array before.
-			// The CSV String will be passed into a PropertyEditor's setAsText method, if any.
+			// String 数组 → 逗号分隔的单个 String（若 Editor 尚未处理）
+			// 随后可能进入 PropertyEditor.setAsText
 			if (logger.isTraceEnabled()) {
 				logger.trace("Converting String array to comma-delimited String [" + convertedValue + "]");
 			}
@@ -403,7 +398,7 @@ class TypeConverterDelegate {
 
 		if (convertedValue instanceof String newTextValue) {
 			if (editor != null) {
-				// Use PropertyEditor's setAsText in case of a String value.
+				// String 值 → 使用 PropertyEditor.setAsText
 				if (logger.isTraceEnabled()) {
 					logger.trace("Converting String to [" + requiredType + "] using property editor [" + editor + "]");
 				}
@@ -418,11 +413,11 @@ class TypeConverterDelegate {
 	}
 
 	/**
-	 * Convert the given text value using the given property editor.
-	 * @param oldValue the previous value, if available (may be {@code null})
-	 * @param newTextValue the proposed text value
-	 * @param editor the PropertyEditor to use
-	 * @return the converted value
+	 * 使用给定 PropertyEditor 将文本值转换为目标类型。
+	 * @param oldValue 旧值（若有，可为 {@code null}）
+	 * @param newTextValue 拟设置的文本值
+	 * @param editor 要使用的 PropertyEditor
+	 * @return 转换后的值
 	 */
 	private Object doConvertTextValue(@Nullable Object oldValue, String newTextValue, PropertyEditor editor) {
 		try {
@@ -432,7 +427,7 @@ class TypeConverterDelegate {
 			if (logger.isDebugEnabled()) {
 				logger.debug("PropertyEditor [" + editor.getClass().getName() + "] does not support setValue call", ex);
 			}
-			// Swallow and proceed.
+			// 吞掉异常继续 setAsText
 		}
 		editor.setAsText(newTextValue);
 		return editor.getValue();
@@ -440,7 +435,7 @@ class TypeConverterDelegate {
 
 	private Object convertToTypedArray(Object input, @Nullable String propertyName, Class<?> componentType) {
 		if (input instanceof Collection<?> coll) {
-			// Convert Collection elements to array elements.
+			// 集合元素 → 数组元素
 			Object result = Array.newInstance(componentType, coll.size());
 			int i = 0;
 			for (Iterator<?> it = coll.iterator(); it.hasNext(); i++) {
@@ -451,7 +446,7 @@ class TypeConverterDelegate {
 			return result;
 		}
 		else if (input.getClass().isArray()) {
-			// Convert array elements, if necessary.
+			// 数组元素按需转换
 			if (componentType.equals(input.getClass().componentType()) &&
 					!this.propertyEditorRegistry.hasCustomEditorForElement(componentType, propertyName)) {
 				return input;
@@ -466,7 +461,7 @@ class TypeConverterDelegate {
 			return result;
 		}
 		else {
-			// A plain value: convert it to an array with a single component.
+			// 标量值：包装为单元素数组
 			Object result = Array.newInstance(componentType, 1);
 			Object value = convertIfNecessary(
 					buildIndexedPropertyName(propertyName, 0), null, input, componentType);
@@ -476,6 +471,7 @@ class TypeConverterDelegate {
 	}
 
 	@SuppressWarnings("unchecked")
+	/** 将集合元素转换为目标元素类型，必要时创建目标集合类型的副本。 */
 	private Collection<?> convertToTypedCollection(Collection<?> original, @Nullable String propertyName,
 			Class<?> requiredType, @Nullable TypeDescriptor typeDescriptor) {
 
@@ -549,6 +545,7 @@ class TypeConverterDelegate {
 	}
 
 	@SuppressWarnings("unchecked")
+	/** 将 Map 的键与值分别转换为目标类型，必要时创建目标 Map 类型的副本。 */
 	private Map<?, ?> convertToTypedMap(Map<?, ?> original, @Nullable String propertyName,
 			Class<?> requiredType, @Nullable TypeDescriptor typeDescriptor) {
 
@@ -626,18 +623,21 @@ class TypeConverterDelegate {
 		return (originalAllowed ? original : convertedCopy);
 	}
 
+	/** 构建带下标后缀的属性名，如 {@code items[0]}。 */
 	private @Nullable String buildIndexedPropertyName(@Nullable String propertyName, int index) {
 		return (propertyName != null ?
 				propertyName + PropertyAccessor.PROPERTY_KEY_PREFIX + index + PropertyAccessor.PROPERTY_KEY_SUFFIX :
 				null);
 	}
 
+	/** 构建带键后缀的属性名，如 {@code map[key]}。 */
 	private @Nullable String buildKeyedPropertyName(@Nullable String propertyName, Object key) {
 		return (propertyName != null ?
 				propertyName + PropertyAccessor.PROPERTY_KEY_PREFIX + key + PropertyAccessor.PROPERTY_KEY_SUFFIX :
 				null);
 	}
 
+	/** 目标集合/Map 类型是否可通过公共无参构造实例化以创建副本。 */
 	private boolean canCreateCopy(Class<?> requiredType) {
 		return (!requiredType.isInterface() && !Modifier.isAbstract(requiredType.getModifiers()) &&
 				Modifier.isPublic(requiredType.getModifiers()) && ClassUtils.hasConstructor(requiredType));

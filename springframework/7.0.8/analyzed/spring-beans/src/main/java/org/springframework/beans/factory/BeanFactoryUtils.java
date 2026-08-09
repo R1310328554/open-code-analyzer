@@ -154,6 +154,7 @@ public abstract class BeanFactoryUtils {
 	public static String[] beanNamesForTypeIncludingAncestors(ListableBeanFactory lbf, ResolvableType type) {
 		Assert.notNull(lbf, "ListableBeanFactory must not be null");
 		String[] result = lbf.getBeanNamesForType(type);
+		// 若存在可列举的父工厂，递归合并祖先结果
 		if (lbf instanceof HierarchicalBeanFactory hbf) {
 			if (hbf.getParentBeanFactory() instanceof ListableBeanFactory pbf) {
 				String[] parentResult = beanNamesForTypeIncludingAncestors(pbf, type);
@@ -281,6 +282,7 @@ public abstract class BeanFactoryUtils {
 		Assert.notNull(lbf, "ListableBeanFactory must not be null");
 		Map<String, T> result = new LinkedHashMap<>(4);
 		result.putAll(lbf.getBeansOfType(type));
+		// 从父工厂补充：跳过本地已有及子工厂本地覆盖的名称
 		if (lbf instanceof HierarchicalBeanFactory hbf) {
 			if (hbf.getParentBeanFactory() instanceof ListableBeanFactory pbf) {
 				Map<String, T> parentResult = beansOfTypeIncludingAncestors(pbf, type);
@@ -420,6 +422,7 @@ public abstract class BeanFactoryUtils {
 		List<String> merged = new ArrayList<>(result.length + parentResult.length);
 		merged.addAll(Arrays.asList(result));
 		for (String beanName : parentResult) {
+			// 父级名称若未在合并列表且非子工厂本地 Bean，则纳入
 			if (!merged.contains(beanName) && !hbf.containsLocalBean(beanName)) {
 				merged.add(beanName);
 			}
