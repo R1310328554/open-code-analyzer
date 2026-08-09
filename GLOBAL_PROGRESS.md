@@ -11,9 +11,9 @@
 | flask | 3.1.3 | 24 | 0 ✅ |
 | gson | gson-parent-2.14.0 | 97 | 0 ✅ |
 | hikaricp | dev-a4d93f4f8551 | 49 | 0 ✅ |
-| disruptor | 4.0.0 | 134 | 0 ✅ |
+| disruptor | 4.0.0 | 134 | 0 (+37 wave6 claimed) |
 | gin | 1.12.0 | 56 | 0 ✅ |
 | fastapi | 0.141.1 | 0 | 527 |
 | rxjava | 4.0.0-alpha-21 | 0 | 993 |
 
-下一步：sentinel / redisson / rocketmq / fastapi 精读。
+下一步：fastapi / sentinel / redisson / rocketmq 精读。

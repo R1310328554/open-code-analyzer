@@ -31,6 +31,8 @@ projects:
     note: 超大仓，分模块排队
   - id: gson
     url: https://github.com/google/gson
+    status: complete
+    version: "gson-parent-2.14.0"
   - id: sentinel
     url: https://github.com/alibaba/Sentinel
   - id: hikaricp
