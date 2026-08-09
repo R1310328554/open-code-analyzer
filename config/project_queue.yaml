@@ -24,6 +24,8 @@ projects:
     url: https://github.com/apache/rocketmq
   - id: redisson
     url: https://github.com/redisson/redisson
+    status: complete
+    version: "redisson-4.7.0"
   - id: jdk
     url: https://github.com/openjdk/jdk
     # OpenJDK 体量极大：先核心 java.base 相关模块
@@ -76,6 +78,8 @@ projects:
     url: https://github.com/ReactiveX/RxJava
   - id: arthas
     url: https://github.com/alibaba/arthas
+    status: in_progress
+    version: "arthas-all-4.3.2"
   - id: netty
     url: https://github.com/netty/netty
   - id: nacos

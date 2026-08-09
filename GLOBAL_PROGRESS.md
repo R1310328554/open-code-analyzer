@@ -6,14 +6,19 @@
 
 | 项目 | 版本 | done | pending |
 | --- | --- | ---: | ---: |
-| springframework | 7.0.8 | 707 | 744 |
-| springboot | 4.1.0 | 180+ | 425 |
+| springframework | 7.0.8 | 1491 | 0 ✅ |
+| springboot | 4.1.0 | 625 | 0 ✅ |
+| fastapi | 0.141.1 | 489 | 0 ✅ |
+| rxjava | 4.0.0-alpha-21 | 977 | 0 ✅ |
+| sentinel | 1.8.10 | 950 | 0 ✅ |
+| rocketmq | rocketmq-all-5.5.0 | 1488 | 0 ✅ |
+| redisson | redisson-4.7.0 | 2822 | 0 ✅ |
 | flask | 3.1.3 | 24 | 0 ✅ |
 | gson | gson-parent-2.14.0 | 97 | 0 ✅ |
 | hikaricp | dev-a4d93f4f8551 | 49 | 0 ✅ |
 | disruptor | 4.0.0 | 171 | 0 ✅ |
 | gin | 1.12.0 | 56 | 0 ✅ |
-| fastapi | 0.141.1 | 30 | 479 |
-| rxjava | 4.0.0-alpha-21 | ~15 | ~977 |
+| arthas | arthas-all-4.3.2 | 0 | 795 |
 
-已完成：flask / gson / hikaricp / disruptor / gin。进行中：springframework / springboot / fastapi / rxjava。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin。  
+进行中：arthas（`src/main/java` 队列已初始化）。

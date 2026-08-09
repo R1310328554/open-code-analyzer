@@ -1,0 +1,7 @@
+{
+  "project": "arthas",
+  "version": "arthas-all-4.3.2",
+  "git_ref": "arthas-all-4.3.2",
+  "repo_url": "https://github.com/alibaba/arthas",
+  "source": "explicit"
+}
