@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:57:33Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisCluster.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterMaster.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterMasterAsync.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterNode.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterNodeAsync.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterSlave.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisClusterSlaveAsync.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisMaster.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisMasterAsync.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisMasterSlave.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisNode.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisNodeAsync.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisNodes.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisSentinel.java",
-    "redisson/src/main/java/org/redisson/api/redisnode/RedisSentinelAsync.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 782,
-  "done": 2025
+  "done": 2040
 }
