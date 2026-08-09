@@ -25,12 +25,11 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Holder for a BeanDefinition with name and aliases.
- * Can be registered as a placeholder for an inner bean.
+ * 持有 BeanDefinition 及其名称和别名的容器。
+ * 可作为内部 bean 的占位符注册。
  *
- * <p>Can also be used for programmatic registration of inner bean
- * definitions. If you don't care about BeanNameAware and the like,
- * registering RootBeanDefinition or ChildBeanDefinition is good enough.
+ * <p>也可用于以编程方式注册内部 bean 定义。
+ * 若不在意 BeanNameAware 等回调，直接注册 RootBeanDefinition 或 ChildBeanDefinition 即可。
  *
  * @author Juergen Hoeller
  * @since 1.0.2
@@ -40,27 +39,30 @@ import org.springframework.util.StringUtils;
  */
 public class BeanDefinitionHolder implements BeanMetadataElement {
 
+	/** 包装的 BeanDefinition。 */
 	private final BeanDefinition beanDefinition;
 
+	/** bean 的主名称。 */
 	private final String beanName;
 
+	/** bean 的别名数组。 */
 	private final String @Nullable [] aliases;
 
 
 	/**
-	 * Create a new BeanDefinitionHolder.
-	 * @param beanDefinition the BeanDefinition to wrap
-	 * @param beanName the name of the bean, as specified for the bean definition
+	 * 创建新的 BeanDefinitionHolder。
+	 * @param beanDefinition 要包装的 BeanDefinition
+	 * @param beanName bean 的名称，与 bean 定义中指定的一致
 	 */
 	public BeanDefinitionHolder(BeanDefinition beanDefinition, String beanName) {
 		this(beanDefinition, beanName, null);
 	}
 
 	/**
-	 * Create a new BeanDefinitionHolder.
-	 * @param beanDefinition the BeanDefinition to wrap
-	 * @param beanName the name of the bean, as specified for the bean definition
-	 * @param aliases alias names for the bean, or {@code null} if none
+	 * 创建新的 BeanDefinitionHolder。
+	 * @param beanDefinition 要包装的 BeanDefinition
+	 * @param beanName bean 的名称，与 bean 定义中指定的一致
+	 * @param aliases bean 的别名，无则为 {@code null}
 	 */
 	public BeanDefinitionHolder(BeanDefinition beanDefinition, String beanName, String @Nullable [] aliases) {
 		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
@@ -71,11 +73,9 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	}
 
 	/**
-	 * Copy constructor: Create a new BeanDefinitionHolder with the
-	 * same contents as the given BeanDefinitionHolder instance.
-	 * <p>Note: The wrapped BeanDefinition reference is taken as-is;
-	 * it is {@code not} deeply copied.
-	 * @param beanDefinitionHolder the BeanDefinitionHolder to copy
+	 * 拷贝构造器：创建与给定 BeanDefinitionHolder 实例内容相同的新实例。
+	 * <p>注意：包装的 BeanDefinition 引用原样取用，<i>不会</i>深拷贝。
+	 * @param beanDefinitionHolder 要拷贝的 BeanDefinitionHolder
 	 */
 	public BeanDefinitionHolder(BeanDefinitionHolder beanDefinitionHolder) {
 		Assert.notNull(beanDefinitionHolder, "BeanDefinitionHolder must not be null");
@@ -86,29 +86,29 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 
 
 	/**
-	 * Return the wrapped BeanDefinition.
+	 * 返回包装的 BeanDefinition。
 	 */
 	public BeanDefinition getBeanDefinition() {
 		return this.beanDefinition;
 	}
 
 	/**
-	 * Return the primary name of the bean, as specified for the bean definition.
+	 * 返回 bean 的主名称，与 bean 定义中指定的一致。
 	 */
 	public String getBeanName() {
 		return this.beanName;
 	}
 
 	/**
-	 * Return the alias names for the bean, as specified directly for the bean definition.
-	 * @return the array of alias names, or {@code null} if none
+	 * 返回 bean 的别名，与 bean 定义中直接指定的一致。
+	 * @return 别名数组，无则为 {@code null}
 	 */
 	public String @Nullable [] getAliases() {
 		return this.aliases;
 	}
 
 	/**
-	 * Expose the bean definition's source object.
+	 * 暴露 bean 定义的源对象。
 	 * @see BeanDefinition#getSource()
 	 */
 	@Override
@@ -117,8 +117,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	}
 
 	/**
-	 * Determine whether the given candidate name matches the bean name
-	 * or the aliases stored in this bean definition.
+	 * 判断给定候选名称是否与存储的 bean 名称或别名匹配。
 	 */
 	public boolean matchesName(@Nullable String candidateName) {
 		return (candidateName != null && (candidateName.equals(this.beanName) ||
@@ -128,7 +127,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 
 
 	/**
-	 * Return a friendly, short description for the bean, stating name and aliases.
+	 * 返回 bean 的友好简短描述，包含名称和别名。
 	 * @see #getBeanName()
 	 * @see #getAliases()
 	 */
@@ -140,8 +139,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	}
 
 	/**
-	 * Return a long description for the bean, including name and aliases
-	 * as well as a description of the contained {@link BeanDefinition}.
+	 * 返回 bean 的详细描述，包含名称、别名以及所含 {@link BeanDefinition} 的描述。
 	 * @see #getShortDescription()
 	 * @see #getBeanDefinition()
 	 */
@@ -150,8 +148,7 @@ public class BeanDefinitionHolder implements BeanMetadataElement {
 	}
 
 	/**
-	 * This implementation returns the long description. Can be overridden
-	 * to return the short description or any kind of custom description instead.
+	 * 默认返回详细描述。子类可覆盖以返回简短描述或自定义描述。
 	 * @see #getLongDescription()
 	 * @see #getShortDescription()
 	 */

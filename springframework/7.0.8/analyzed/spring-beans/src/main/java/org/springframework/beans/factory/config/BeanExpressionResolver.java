@@ -21,13 +21,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.BeansException;
 
 /**
- * Strategy interface for resolving a value by evaluating it as an expression,
- * if applicable.
+ * 通过将值作为表达式求值来解析值的策略接口（在适用时）。
  *
- * <p>A raw {@link org.springframework.beans.factory.BeanFactory} does not
- * contain a default implementation of this strategy. However,
- * {@link org.springframework.context.ApplicationContext} implementations
- * will provide expression support out of the box.
+ * <p>原始的 {@link org.springframework.beans.factory.BeanFactory} 不包含
+ * 此策略的默认实现。但 {@link org.springframework.context.ApplicationContext}
+ * 实现会开箱即用地提供表达式支持。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -35,13 +33,11 @@ import org.springframework.beans.BeansException;
 public interface BeanExpressionResolver {
 
 	/**
-	 * Evaluate the given value as an expression, if applicable;
-	 * return the value as-is otherwise.
-	 * @param value the value to evaluate as an expression
-	 * @param beanExpressionContext the bean expression context to use when
-	 * evaluating the expression
-	 * @return the resolved value (potentially the given value as-is)
-	 * @throws BeansException if evaluation failed
+	 * 在适用时将给定值作为表达式求值；否则原样返回值。
+	 * @param value 要求值的值
+	 * @param beanExpressionContext 求值表达式时使用的 bean 表达式上下文
+	 * @return 解析后的值（可能原样返回给定值）
+	 * @throws BeansException 如果求值失败
 	 */
 	@Nullable Object evaluate(@Nullable String value, BeanExpressionContext beanExpressionContext) throws BeansException;
 

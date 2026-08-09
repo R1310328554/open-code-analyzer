@@ -59,13 +59,12 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.function.ThrowingSupplier;
 
 /**
- * Default code generator to create an {@link InstanceSupplier}, usually in
- * the form of a {@link BeanInstanceSupplier} that retains the executable
- * that is used to instantiate the bean. Takes care of registering the
- * necessary hints if reflection or a JDK proxy is required.
+ * 创建 {@link InstanceSupplier} 的默认代码生成器，通常以
+ * {@link BeanInstanceSupplier} 形式保留用于实例化 bean 的可执行对象。
+ * 负责在需要反射或 JDK 代理时注册必要的 hints。
  *
- * <p>Generated code is usually a method reference that generates the
- * {@link BeanInstanceSupplier}, but some shortcut can be used as well such as:
+ * <p>生成的代码通常是生成 {@link BeanInstanceSupplier} 的方法引用，
+ * 但也可使用快捷方式，例如：
  * <pre class="code">
  * InstanceSupplier.of(TheGeneratedClass::getMyBeanInstance);
  * </pre>
@@ -79,34 +78,43 @@ import org.springframework.util.function.ThrowingSupplier;
  */
 public class InstanceSupplierCodeGenerator {
 
+	/** 生成代码中 RegisteredBean 参数的名称。 */
 	private static final String REGISTERED_BEAN_PARAMETER_NAME = "registeredBean";
 
+	/** 生成代码中构造器/工厂方法参数数组的名称。 */
 	private static final String ARGS_PARAMETER_NAME = "args";
 
+	/** 私有静态方法的修饰符。 */
 	private static final javax.lang.model.element.Modifier[] PRIVATE_STATIC =
 			{javax.lang.model.element.Modifier.PRIVATE, javax.lang.model.element.Modifier.STATIC};
 
+	/** 无参代码块占位符。 */
 	private static final CodeBlock NO_ARGS = CodeBlock.of("");
 
+	/** Kotlin 反射是否可用。 */
 	private static final boolean KOTLIN_REFLECT_PRESENT = KotlinDetector.isKotlinReflectPresent();
 
 
+	/** AOT 代码生成上下文。 */
 	private final GenerationContext generationContext;
 
+	/** 要实例化的 bean 所在生成类的类名。 */
 	private final ClassName className;
 
+	/** 生成方法的容器。 */
 	private final GeneratedMethods generatedMethods;
 
+	/** 是否允许直接使用 Supplier 快捷方式而非始终需要 {@link InstanceSupplier}。 */
 	private final boolean allowDirectSupplierShortcut;
 
 
 	/**
-	 * Create a new generator instance.
-	 * @param generationContext the generation context
-	 * @param className the class name of the bean to instantiate
-	 * @param generatedMethods the generated methods
-	 * @param allowDirectSupplierShortcut whether a direct supplier may be used rather
-	 * than always needing an {@link InstanceSupplier}
+	 * 创建新的生成器实例。
+	 * @param generationContext 生成上下文
+	 * @param className 要实例化的 bean 所在类的类名
+	 * @param generatedMethods 生成方法的容器
+	 * @param allowDirectSupplierShortcut 是否允许直接使用 supplier 快捷方式，
+	 * 而非始终需要 {@link InstanceSupplier}
 	 */
 	public InstanceSupplierCodeGenerator(GenerationContext generationContext,
 			ClassName className, GeneratedMethods generatedMethods, boolean allowDirectSupplierShortcut) {
@@ -119,11 +127,11 @@ public class InstanceSupplierCodeGenerator {
 
 
 	/**
-	 * Generate the instance supplier code.
-	 * @param registeredBean the bean to handle
-	 * @param constructorOrFactoryMethod the executable to use to create the bean
-	 * @return the generated code
-	 * @deprecated in favor of {@link #generateCode(RegisteredBean, InstantiationDescriptor)}
+	 * 生成实例 supplier 代码。
+	 * @param registeredBean 要处理的 bean
+	 * @param constructorOrFactoryMethod 用于创建 bean 的可执行对象
+	 * @return 生成的代码
+	 * @deprecated 推荐使用 {@link #generateCode(RegisteredBean, InstantiationDescriptor)}
 	 */
 	@Deprecated(since = "6.1.7")
 	public CodeBlock generateCode(RegisteredBean registeredBean, Executable constructorOrFactoryMethod) {
@@ -132,14 +140,15 @@ public class InstanceSupplierCodeGenerator {
 	}
 
 	/**
-	 * Generate the instance supplier code.
-	 * @param registeredBean the bean to handle
-	 * @param instantiationDescriptor the executable to use to create the bean
-	 * @return the generated code
+	 * 生成实例 supplier 代码。
+	 * @param registeredBean 要处理的 bean
+	 * @param instantiationDescriptor 用于创建 bean 的实例化描述符
+	 * @return 生成的代码
 	 * @since 6.1.7
 	 */
 	public CodeBlock generateCode(RegisteredBean registeredBean, InstantiationDescriptor instantiationDescriptor) {
 		Executable constructorOrFactoryMethod = instantiationDescriptor.executable();
+		// 必要时注册运行时反射/代理 hints
 		registerRuntimeHintsIfNecessary(registeredBean, constructorOrFactoryMethod);
 		if (constructorOrFactoryMethod instanceof Constructor<?> constructor) {
 			return generateCodeForConstructor(registeredBean, constructor);
@@ -150,6 +159,9 @@ public class InstanceSupplierCodeGenerator {
 		throw new AotBeanProcessingException(registeredBean, "no suitable constructor or factory method found");
 	}
 
+	/**
+	 * 在需要反射或代理时注册运行时 hints。
+	 */
 	private void registerRuntimeHintsIfNecessary(RegisteredBean registeredBean, Executable constructorOrFactoryMethod) {
 		if (registeredBean.getBeanFactory() instanceof DefaultListableBeanFactory dlbf) {
 			RuntimeHints runtimeHints = this.generationContext.getRuntimeHints();
@@ -158,16 +170,21 @@ public class InstanceSupplierCodeGenerator {
 		}
 	}
 
+	/**
+	 * 为构造器生成实例 supplier 代码。
+	 */
 	private CodeBlock generateCodeForConstructor(RegisteredBean registeredBean, Constructor<?> constructor) {
 		ConstructorDescriptor descriptor = new ConstructorDescriptor(
 				registeredBean.getBeanName(), constructor, registeredBean.getBeanClass());
 
 		Class<?> publicType = descriptor.publicType();
+		// Kotlin 带可选参数的构造器需要反射路径
 		if (KOTLIN_REFLECT_PRESENT && KotlinDetector.isKotlinType(publicType) && KotlinDelegate.hasConstructorWithOptionalParameter(publicType)) {
 			return generateCodeForInaccessibleConstructor(descriptor,
 					hints -> hints.registerType(publicType, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS));
 		}
 
+		// 不可见构造器或存在方法覆盖时走反射路径
 		if (!isVisible(constructor, constructor.getDeclaringClass()) ||
 				registeredBean.getMergedBeanDefinition().hasMethodOverrides()) {
 			return generateCodeForInaccessibleConstructor(descriptor,
@@ -176,6 +193,9 @@ public class InstanceSupplierCodeGenerator {
 		return generateCodeForAccessibleConstructor(descriptor);
 	}
 
+	/**
+	 * 为可直接访问的构造器生成代码（方法引用或生成方法）。
+	 */
 	private CodeBlock generateCodeForAccessibleConstructor(ConstructorDescriptor descriptor) {
 		Constructor<?> constructor = descriptor.constructor();
 		this.generationContext.getRuntimeHints().reflection().registerType(constructor.getDeclaringClass());
@@ -190,11 +210,15 @@ public class InstanceSupplierCodeGenerator {
 			return CodeBlock.of("$T.of($T::new)", ThrowingSupplier.class, descriptor.actualType());
 		}
 
+		// 有参构造器：生成私有静态方法
 		GeneratedMethod generatedMethod = generateGetInstanceSupplierMethod(method ->
 				buildGetInstanceMethodForConstructor(method, descriptor, PRIVATE_STATIC));
 		return generateReturnStatement(generatedMethod);
 	}
 
+	/**
+	 * 为不可直接访问的构造器生成代码（通过反射 hints + 生成方法）。
+	 */
 	private CodeBlock generateCodeForInaccessibleConstructor(ConstructorDescriptor descriptor,
 			Consumer<ReflectionHints> hints) {
 
@@ -215,6 +239,9 @@ public class InstanceSupplierCodeGenerator {
 		return generateReturnStatement(generatedMethod);
 	}
 
+	/**
+	 * 构建获取构造器实例 supplier 的生成方法体。
+	 */
 	private void buildGetInstanceMethodForConstructor(MethodSpec.Builder method, ConstructorDescriptor descriptor,
 			javax.lang.model.element.Modifier... modifiers) {
 
@@ -235,6 +262,7 @@ public class InstanceSupplierCodeGenerator {
 		boolean hasArguments = constructor.getParameterCount() > 0;
 		boolean onInnerClass = ClassUtils.isInnerClass(actualType);
 
+		// 生成自动装配参数代码
 		CodeBlock arguments = hasArguments ?
 				new AutowiredArgumentsCodeGenerator(actualType, constructor)
 						.generateCode(constructor.getParameterTypes(), (onInnerClass ? 1 : 0)) : NO_ARGS;
@@ -244,12 +272,14 @@ public class InstanceSupplierCodeGenerator {
 		method.addStatement(code.build());
 	}
 
+	/** 生成 BeanInstanceSupplier.forConstructor(...) 代码。 */
 	private CodeBlock generateResolverForConstructor(ConstructorDescriptor descriptor) {
 		CodeBlock parameterTypes = generateParameterTypesCode(descriptor.constructor().getParameterTypes());
 		return CodeBlock.of("return $T.<$T>forConstructor($L)", BeanInstanceSupplier.class,
 				descriptor.publicType(), parameterTypes);
 	}
 
+	/** 生成 new 实例代码（处理内部类需先获取外部类实例）。 */
 	private CodeBlock generateNewInstanceCodeForConstructor(Class<?> declaringClass, CodeBlock args) {
 		if (ClassUtils.isInnerClass(declaringClass)) {
 			return CodeBlock.of("$L.getBeanFactory().getBean($T.class).new $L($L)",
@@ -259,6 +289,9 @@ public class InstanceSupplierCodeGenerator {
 		return CodeBlock.of("new $T($L)", declaringClass, args);
 	}
 
+	/**
+	 * 为工厂方法生成实例 supplier 代码。
+	 */
 	private CodeBlock generateCodeForFactoryMethod(
 			RegisteredBean registeredBean, Method factoryMethod, Class<?> targetClass) {
 
@@ -269,11 +302,15 @@ public class InstanceSupplierCodeGenerator {
 				registeredBean.getMergedBeanDefinition().getFactoryBeanName());
 	}
 
+	/**
+	 * 为可直接访问的工厂方法生成代码。
+	 */
 	private CodeBlock generateCodeForAccessibleFactoryMethod(String beanName,
 			Method factoryMethod, Class<?> targetClass, @Nullable String factoryBeanName) {
 
 		this.generationContext.getRuntimeHints().reflection().registerType(factoryMethod.getDeclaringClass());
 
+		// 无参静态工厂方法可内联生成
 		if (factoryBeanName == null && factoryMethod.getParameterCount() == 0) {
 			Class<?> suppliedType = ClassUtils.resolvePrimitiveIfNecessary(factoryMethod.getReturnType());
 			CodeBlock.Builder code = CodeBlock.builder();
@@ -290,6 +327,9 @@ public class InstanceSupplierCodeGenerator {
 		return generateReturnStatement(getInstanceMethod);
 	}
 
+	/**
+	 * 为不可直接访问的工厂方法生成代码。
+	 */
 	private CodeBlock generateCodeForInaccessibleFactoryMethod(
 			String beanName, Method factoryMethod, Class<?> targetClass) {
 
@@ -308,6 +348,9 @@ public class InstanceSupplierCodeGenerator {
 		return generateReturnStatement(getInstanceMethod);
 	}
 
+	/**
+	 * 构建获取工厂方法实例 supplier 的生成方法体。
+	 */
 	private void buildGetInstanceMethodForFactoryMethod(MethodSpec.Builder method,
 			String beanName, Method factoryMethod, Class<?> targetClass,
 			@Nullable String factoryBeanName, javax.lang.model.element.Modifier... modifiers) {
@@ -338,6 +381,7 @@ public class InstanceSupplierCodeGenerator {
 		method.addStatement(code.build());
 	}
 
+	/** 生成 BeanInstanceSupplier.forFactoryMethod(...) 代码。 */
 	private CodeBlock generateInstanceSupplierForFactoryMethod(Method factoryMethod,
 			Class<?> suppliedType, Class<?> targetClass, String factoryMethodName) {
 
@@ -351,6 +395,7 @@ public class InstanceSupplierCodeGenerator {
 				BeanInstanceSupplier.class, suppliedType, targetClass, factoryMethodName, parameterTypes);
 	}
 
+	/** 生成工厂方法调用代码（静态或实例工厂 bean）。 */
 	private CodeBlock generateNewInstanceCodeForMethod(@Nullable String factoryBeanName,
 			Class<?> targetClass, String factoryMethodName, CodeBlock args) {
 
@@ -361,11 +406,13 @@ public class InstanceSupplierCodeGenerator {
 				REGISTERED_BEAN_PARAMETER_NAME, factoryBeanName, targetClass, factoryMethodName, args);
 	}
 
+	/** 生成对生成方法的调用返回语句。 */
 	private CodeBlock generateReturnStatement(GeneratedMethod generatedMethod) {
 		return generatedMethod.toMethodReference().toInvokeCodeBlock(
 				ArgumentCodeGenerator.none(), this.className);
 	}
 
+	/** 生成 .withGenerator(...) lambda 代码块。 */
 	private CodeBlock generateWithGeneratorCode(boolean hasArguments, CodeBlock newInstance) {
 		CodeBlock lambdaArguments = (hasArguments ?
 				CodeBlock.of("($L, $L)", REGISTERED_BEAN_PARAMETER_NAME, ARGS_PARAMETER_NAME) :
@@ -378,6 +425,9 @@ public class InstanceSupplierCodeGenerator {
 		return code.build();
 	}
 
+	/**
+	 * 判断成员在目标类上下文中是否可见（public 或同包非 private）。
+	 */
 	private boolean isVisible(Member member, Class<?> targetClass) {
 		AccessControl classAccessControl = AccessControl.forClass(targetClass);
 		AccessControl memberAccessControl = AccessControl.forMember(member);
@@ -386,6 +436,7 @@ public class InstanceSupplierCodeGenerator {
 				member.getDeclaringClass().getPackageName().equals(this.className.packageName())));
 	}
 
+	/** 生成参数类型数组的 .class 引用代码。 */
 	private CodeBlock generateParameterTypesCode(Class<?>[] parameterTypes) {
 		CodeBlock.Builder code = CodeBlock.builder();
 		for (int i = 0; i < parameterTypes.length; i++) {
@@ -395,10 +446,12 @@ public class InstanceSupplierCodeGenerator {
 		return code.build();
 	}
 
+	/** 注册并返回名为 getInstanceSupplier 的生成方法。 */
 	private GeneratedMethod generateGetInstanceSupplierMethod(Consumer<MethodSpec.Builder> method) {
 		return this.generatedMethods.add("getInstanceSupplier", method);
 	}
 
+	/** 判断可执行对象是否声明了受检异常。 */
 	private boolean isThrowingCheckedException(Executable executable) {
 		return Arrays.stream(executable.getGenericExceptionTypes())
 				.map(ResolvableType::forType)
@@ -408,10 +461,13 @@ public class InstanceSupplierCodeGenerator {
 
 
 	/**
-	 * Inner class to avoid a hard dependency on Kotlin at runtime.
+	 * 内部类，避免在运行时对 Kotlin 的硬依赖。
 	 */
 	private static class KotlinDelegate {
 
+		/**
+		 * 判断 Kotlin 类是否有带可选参数的构造器。
+		 */
 		public static boolean hasConstructorWithOptionalParameter(Class<?> beanClass) {
 			KClass<?> kClass = JvmClassMappingKt.getKotlinClass(beanClass);
 			for (KFunction<?> constructor : kClass.getConstructors()) {
@@ -426,8 +482,14 @@ public class InstanceSupplierCodeGenerator {
 	}
 
 
+	/**
+	 * 为构造器/工厂方法参数注册 JDK 代理运行时 hints 的记录类。
+	 */
 	private record ProxyRuntimeHintsRegistrar(AutowireCandidateResolver candidateResolver) {
 
+		/**
+		 * 遍历可执行对象参数，为需要懒解析代理的类型注册 hints。
+		 */
 		public void registerRuntimeHints(RuntimeHints runtimeHints, Executable executable) {
 			Class<?>[] parameterTypes = executable.getParameterTypes();
 			for (int i = 0; i < parameterTypes.length; i++) {
@@ -437,6 +499,7 @@ public class InstanceSupplierCodeGenerator {
 			}
 		}
 
+		/** 若依赖需要 JDK 代理则注册代理 hints。 */
 		private void registerProxyIfNecessary(RuntimeHints runtimeHints, DependencyDescriptor dependencyDescriptor) {
 			Class<?> proxyType = this.candidateResolver.getLazyResolutionProxyClass(dependencyDescriptor, null);
 			if (proxyType != null && Proxy.isProxyClass(proxyType)) {
@@ -446,8 +509,12 @@ public class InstanceSupplierCodeGenerator {
 	}
 
 
+	/**
+	 * 构造器描述符，封装 bean 名称、构造器和公开类型。
+	 */
 	record ConstructorDescriptor(String beanName, Constructor<?> constructor, Class<?> publicType) {
 
+		/** 返回构造器声明的实际类型（即构造器所在类）。 */
 		Class<?> actualType() {
 			return this.constructor.getDeclaringClass();
 		}

@@ -21,15 +21,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Context object for evaluating an expression within a bean definition.
+ * 在 bean 定义内求值表达式时使用的上下文对象。
  *
  * @author Juergen Hoeller
  * @since 3.0
  */
 public class BeanExpressionContext {
 
+	/** 关联的可配置 BeanFactory。 */
 	private final ConfigurableBeanFactory beanFactory;
 
+	/** 当前作用域（可为 null）。 */
 	private final @Nullable Scope scope;
 
 
@@ -39,20 +41,28 @@ public class BeanExpressionContext {
 		this.scope = scope;
 	}
 
+	/** 返回关联的 BeanFactory。 */
 	public final ConfigurableBeanFactory getBeanFactory() {
 		return this.beanFactory;
 	}
 
+	/** 返回当前作用域。 */
 	public final @Nullable Scope getScope() {
 		return this.scope;
 	}
 
 
+	/**
+	 * 判断指定键是否对应可用对象（bean 或作用域上下文对象）。
+	 */
 	public boolean containsObject(String key) {
 		return (this.beanFactory.containsBean(key) ||
 				(this.scope != null && this.scope.resolveContextualObject(key) != null));
 	}
 
+	/**
+	 * 获取指定键对应的对象：优先从 BeanFactory 获取 bean，否则从作用域解析。
+	 */
 	public @Nullable Object getObject(String key) {
 		if (this.beanFactory.containsBean(key)) {
 			return this.beanFactory.getBean(key);

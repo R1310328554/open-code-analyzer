@@ -30,20 +30,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringValueResolver;
 
-/* ===== [OCA 中文解析] =====
-class BeanDefinitionVisitor — 意图说明
-
-Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spring-beans/src/main/java/org/springframework/beans/factory/config/BeanDefinitionVisitor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Visitor class for traversing {@link BeanDefinition} objects, in particular
- * the property values and constructor argument values contained in them,
- * resolving bean metadata values.
+ * 遍历 {@link BeanDefinition} 对象的访问者类，特别是其中包含的
+ * 属性值和构造器参数值，并解析 bean 元数据值。
  *
- * <p>Used by {@link PlaceholderConfigurerSupport} to parse all String values
- * contained in a BeanDefinition, resolving any placeholders found.
+ * <p>由 {@link PlaceholderConfigurerSupport} 使用，以解析 BeanDefinition 中
+ * 包含的所有字符串值，处理发现的任何占位符。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -55,13 +47,13 @@ Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spri
  */
 public class BeanDefinitionVisitor {
 
+	/** 用于解析字符串值的解析器。 */
 	private @Nullable StringValueResolver valueResolver;
 
 
 	/**
-	 * Create a new BeanDefinitionVisitor, applying the specified
-	 * value resolver to all bean metadata values.
-	 * @param valueResolver the StringValueResolver to apply
+	 * 创建新的 BeanDefinitionVisitor，将指定的值解析器应用于所有 bean 元数据值。
+	 * @param valueResolver 要应用的 StringValueResolver
 	 */
 	public BeanDefinitionVisitor(StringValueResolver valueResolver) {
 		Assert.notNull(valueResolver, "StringValueResolver must not be null");
@@ -69,17 +61,17 @@ public class BeanDefinitionVisitor {
 	}
 
 	/**
-	 * Create a new BeanDefinitionVisitor for subclassing.
-	 * Subclasses need to override the {@link #resolveStringValue} method.
+	 * 创建用于子类化的 BeanDefinitionVisitor。
+	 * 子类需要覆盖 {@link #resolveStringValue} 方法。
 	 */
 	protected BeanDefinitionVisitor() {
 	}
 
 
 	/**
-	 * Traverse the given BeanDefinition object and the MutablePropertyValues
-	 * and ConstructorArgumentValues contained in them.
-	 * @param beanDefinition the BeanDefinition object to traverse
+	 * 遍历给定的 BeanDefinition 对象及其包含的 MutablePropertyValues
+	 * 和 ConstructorArgumentValues。
+	 * @param beanDefinition 要遍历的 BeanDefinition 对象
 	 * @see #resolveStringValue(String)
 	 */
 	public void visitBeanDefinition(BeanDefinition beanDefinition) {
@@ -98,6 +90,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 访问并解析父 bean 定义名称。 */
 	protected void visitParentName(BeanDefinition beanDefinition) {
 		String parentName = beanDefinition.getParentName();
 		if (parentName != null) {
@@ -108,6 +101,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 访问并解析 bean 类名。 */
 	protected void visitBeanClassName(BeanDefinition beanDefinition) {
 		String beanClassName = beanDefinition.getBeanClassName();
 		if (beanClassName != null) {
@@ -118,6 +112,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 访问并解析工厂 bean 名称。 */
 	protected void visitFactoryBeanName(BeanDefinition beanDefinition) {
 		String factoryBeanName = beanDefinition.getFactoryBeanName();
 		if (factoryBeanName != null) {
@@ -128,6 +123,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 访问并解析工厂方法名称。 */
 	protected void visitFactoryMethodName(BeanDefinition beanDefinition) {
 		String factoryMethodName = beanDefinition.getFactoryMethodName();
 		if (factoryMethodName != null) {
@@ -138,6 +134,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 访问并解析作用域名称。 */
 	protected void visitScope(BeanDefinition beanDefinition) {
 		String scope = beanDefinition.getScope();
 		if (scope != null) {
@@ -148,6 +145,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 遍历并解析所有属性值。 */
 	protected void visitPropertyValues(MutablePropertyValues pvs) {
 		PropertyValue[] pvArray = pvs.getPropertyValues();
 		for (PropertyValue pv : pvArray) {
@@ -158,6 +156,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 遍历并解析带索引的构造器参数值。 */
 	protected void visitIndexedArgumentValues(Map<Integer, ConstructorArgumentValues.ValueHolder> ias) {
 		for (ConstructorArgumentValues.ValueHolder valueHolder : ias.values()) {
 			Object newVal = resolveValue(valueHolder.getValue());
@@ -167,6 +166,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 遍历并解析通用构造器参数值。 */
 	protected void visitGenericArgumentValues(List<ConstructorArgumentValues.ValueHolder> gas) {
 		for (ConstructorArgumentValues.ValueHolder valueHolder : gas) {
 			Object newVal = resolveValue(valueHolder.getValue());
@@ -176,6 +176,9 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/**
+	 * 递归解析给定值：处理嵌套 BeanDefinition、引用、集合、字符串等。
+	 */
 	@SuppressWarnings("rawtypes")
 	protected @Nullable Object resolveValue(@Nullable Object value) {
 		if (value instanceof BeanDefinition beanDef) {
@@ -227,6 +230,7 @@ public class BeanDefinitionVisitor {
 		return value;
 	}
 
+	/** 遍历并解析数组中的每个元素。 */
 	protected void visitArray(@Nullable Object[] arrayVal) {
 		for (int i = 0; i < arrayVal.length; i++) {
 			Object elem = arrayVal[i];
@@ -237,6 +241,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 遍历并解析列表中的每个元素。 */
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected void visitList(List listVal) {
 		for (int i = 0; i < listVal.size(); i++) {
@@ -248,6 +253,7 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 遍历并解析集合中的每个元素（必要时重建集合内容）。 */
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected void visitSet(Set setVal) {
 		Set newContent = new LinkedHashSet();
@@ -265,12 +271,8 @@ public class BeanDefinitionVisitor {
 		}
 	}
 
+	/** 遍历并解析映射中的键和值（必要时重建映射内容）。 */
 	@SuppressWarnings({"rawtypes", "unchecked"})
-	/* ===== [OCA 中文解析] =====
-方法 visitMap — 意图与阅读要点
-
-方法 `visitMap` 复杂度较高（CCN≈8, NLOC≈18）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	protected void visitMap(Map<?, ?> mapVal) {
 		Map newContent = new LinkedHashMap();
 		boolean entriesModified = false;
@@ -291,9 +293,9 @@ public class BeanDefinitionVisitor {
 	}
 
 	/**
-	 * Resolve the given String value, for example parsing placeholders.
-	 * @param strVal the original String value
-	 * @return the resolved String value
+	 * 解析给定字符串值，例如解析占位符。
+	 * @param strVal 原始字符串值
+	 * @return 解析后的字符串值
 	 */
 	protected @Nullable String resolveStringValue(String strVal) {
 		if (this.valueResolver == null) {
@@ -301,7 +303,7 @@ public class BeanDefinitionVisitor {
 					"object into the constructor or override the 'resolveStringValue' method");
 		}
 		String resolvedValue = this.valueResolver.resolveStringValue(strVal);
-		// Return original String if not modified.
+		// 若未修改则返回原始字符串
 		return (strVal.equals(resolvedValue) ? strVal : resolvedValue);
 	}
 
