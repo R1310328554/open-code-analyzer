@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:48:11Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/pubsub/ConsumerReactive.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/ConsumerRx.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/ConsumerStatistics.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/FailedAckArgs.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/MessageAckArgs.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/MessageAckParams.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/MessageListener.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/MessageListenerArgs.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/MessageListenerParams.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/MessageNegativeAckArgs.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/MessageNegativeAckParams.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/OperationDisabledException.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/Position.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PositionValue.java",
-    "redisson/src/main/java/org/redisson/api/pubsub/PubSubOperation.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 872,
-  "done": 1935
+  "done": 1950
 }
