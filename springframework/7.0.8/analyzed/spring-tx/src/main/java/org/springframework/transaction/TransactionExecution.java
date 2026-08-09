@@ -17,9 +17,10 @@
 package org.springframework.transaction;
 
 /**
- * 当前事务状态的通用表示。
- * 作为 {@link TransactionStatus} 与 {@link ReactiveTransaction} 的基接口，
- * 自 6.1 起也作为 {@link TransactionExecutionListener} 的事务表示。
+ * Common representation of the current state of a transaction.
+ * Serves as base interface for {@link TransactionStatus} as well as
+ * {@link ReactiveTransaction}, and as of 6.1 also as transaction
+ * representation for {@link TransactionExecutionListener}.
  *
  * @author Juergen Hoeller
  * @since 5.2
@@ -27,10 +28,10 @@ package org.springframework.transaction;
 public interface TransactionExecution {
 
 	/**
-	 * 返回事务的定义名称（可能为空字符串）。
-	 * <p>对于 Spring 声明式事务，暴露的名称默认为
-	 * {@code 全限定类名 + "." + 方法名}。
-	 * <p>默认实现返回空字符串。
+	 * Return the defined name of the transaction (possibly an empty String).
+	 * <p>In case of Spring's declarative transactions, the exposed name will be
+	 * the {@code fully-qualified class name + "." + method name} (by default).
+	 * <p>The default implementation returns an empty String.
 	 * @since 6.1
 	 * @see TransactionDefinition#getName()
 	 */
@@ -39,9 +40,10 @@ public interface TransactionExecution {
 	}
 
 	/**
-	 * 返回是否存在实际活动事务：涵盖新事务及参与现有事务，
-	 * 仅当完全未运行于实际事务中时返回 {@code false}。
-	 * <p>默认实现返回 {@code true}。
+	 * Return whether there is an actual transaction active: this is meant to cover
+	 * a new transaction as well as participation in an existing transaction, only
+	 * returning {@code false} when not running in an actual transaction at all.
+	 * <p>The default implementation returns {@code true}.
 	 * @since 6.1
 	 * @see #isNewTransaction()
 	 * @see #isNested()
@@ -52,15 +54,18 @@ public interface TransactionExecution {
 	}
 
 	/**
-	 * 返回事务管理器是否将当前事务视为新事务；
-	 * 否则为参与现有事务，或可能根本未运行于实际事务中。
-	 * <p>主要用于事务管理器状态处理。
-	 * 应用层更宜使用 {@link #hasTransaction()}，语义通常更合适。
-	 * <p>"新" 状态可能因事务管理器而异，例如实际嵌套事务返回 {@code true}，
-	 * 但若显式暴露保存点管理（如 {@link TransactionStatus}），
-	 * 基于保存点的嵌套事务范围可能返回 {@code false}。
-	 * {@link #isNested()} 提供对任意嵌套执行的联合检查。
-	 * <p>默认实现返回 {@code true}。
+	 * Return whether the transaction manager considers the present transaction
+	 * as new; otherwise participating in an existing transaction, or potentially
+	 * not running in an actual transaction in the first place.
+	 * <p>This is primarily here for transaction manager state handling.
+	 * Prefer the use of {@link #hasTransaction()} for application purposes
+	 * since this is usually semantically appropriate.
+	 * <p>The "new" status can be transaction manager specific, for example, returning
+	 * {@code true} for an actual nested transaction but potentially {@code false}
+	 * for a savepoint-based nested transaction scope if the savepoint management
+	 * is explicitly exposed (such as on {@link TransactionStatus}). A combined
+	 * check for any kind of nested execution is provided by {@link #isNested()}.
+	 * <p>The default implementation returns {@code true}.
 	 * @see #hasTransaction()
 	 * @see #isNested()
 	 * @see TransactionStatus#hasSavepoint()
@@ -70,8 +75,8 @@ public interface TransactionExecution {
 	}
 
 	/**
-	 * 返回本事务是否以嵌套方式在另一事务内执行。
-	 * <p>默认实现返回 {@code false}。
+	 * Return if this transaction executes in a nested fashion within another.
+	 * <p>The default implementation returns {@code false}.
 	 * @since 6.1
 	 * @see #hasTransaction()
 	 * @see #isNewTransaction()
@@ -82,8 +87,8 @@ public interface TransactionExecution {
 	}
 
 	/**
-	 * 返回本事务是否定义为只读事务。
-	 * <p>默认实现返回 {@code false}。
+	 * Return if this transaction is defined as read-only transaction.
+	 * <p>The default implementation returns {@code false}.
 	 * @since 6.1
 	 * @see TransactionDefinition#isReadOnly()
 	 */
@@ -92,9 +97,10 @@ public interface TransactionExecution {
 	}
 
 	/**
-	 * 将事务设为仅回滚。通知事务管理器事务唯一可能结果为回滚，
-	 * 作为抛出异常触发回滚的替代方式。
-	 * <p>默认实现抛出 UnsupportedOperationException。
+	 * Set the transaction rollback-only. This instructs the transaction manager
+	 * that the only possible outcome of the transaction may be a rollback, as
+	 * alternative to throwing an exception which would in turn trigger a rollback.
+	 * <p>The default implementation throws an UnsupportedOperationException.
 	 * @see #isRollbackOnly()
 	 */
 	default void setRollbackOnly() {
@@ -102,9 +108,9 @@ public interface TransactionExecution {
 	}
 
 	/**
-	 * 返回事务是否已被标记为仅回滚
-	 * （由应用或事务基础设施标记）。
-	 * <p>默认实现返回 {@code false}。
+	 * Return whether the transaction has been marked as rollback-only
+	 * (either by the application or by the transaction infrastructure).
+	 * <p>The default implementation returns {@code false}.
 	 * @see #setRollbackOnly()
 	 */
 	default boolean isRollbackOnly() {
@@ -112,9 +118,9 @@ public interface TransactionExecution {
 	}
 
 	/**
-	 * 返回本事务是否已完成，
-	 * 即是否已提交或已回滚。
-	 * <p>默认实现返回 {@code false}。
+	 * Return whether this transaction is completed, that is,
+	 * whether it has already been committed or rolled back.
+	 * <p>The default implementation returns {@code false}.
 	 */
 	default boolean isCompleted() {
 		return false;

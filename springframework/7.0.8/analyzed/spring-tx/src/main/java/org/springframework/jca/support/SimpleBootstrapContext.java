@@ -29,11 +29,11 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * JCA 1.7 {@link jakarta.resource.spi.BootstrapContext} 接口的简单实现，
- * 用于在本地环境中引导 JCA ResourceAdapter。
+ * Simple implementation of the JCA 1.7 {@link jakarta.resource.spi.BootstrapContext}
+ * interface, used for bootstrapping a JCA ResourceAdapter in a local environment.
  *
- * <p>委托给给定的 WorkManager 和 XATerminator（若有）。
- * 创建 {@code java.util.Timer} 的简单本地实例。
+ * <p>Delegates to the given WorkManager and XATerminator, if any. Creates simple
+ * local instances of {@code java.util.Timer}.
  *
  * @author Juergen Hoeller
  * @since 2.0.3
@@ -50,18 +50,18 @@ public class SimpleBootstrapContext implements BootstrapContext {
 
 
 	/**
-	 * 为给定 WorkManager 创建 SimpleBootstrapContext，
-	 * 不提供 XATerminator。
-	 * @param workManager 要使用的 JCA WorkManager（可为 {@code null}）
+	 * Create a new SimpleBootstrapContext for the given WorkManager,
+	 * with no XATerminator available.
+	 * @param workManager the JCA WorkManager to use (may be {@code null})
 	 */
 	public SimpleBootstrapContext(@Nullable WorkManager workManager) {
 		this.workManager = workManager;
 	}
 
 	/**
-	 * 为给定 WorkManager 和 XATerminator 创建 SimpleBootstrapContext。
-	 * @param workManager 要使用的 JCA WorkManager（可为 {@code null}）
-	 * @param xaTerminator 要使用的 JCA XATerminator（可为 {@code null}）
+	 * Create a new SimpleBootstrapContext for the given WorkManager and XATerminator.
+	 * @param workManager the JCA WorkManager to use (may be {@code null})
+	 * @param xaTerminator the JCA XATerminator to use (may be {@code null})
 	 */
 	public SimpleBootstrapContext(@Nullable WorkManager workManager, @Nullable XATerminator xaTerminator) {
 		this.workManager = workManager;
@@ -69,12 +69,12 @@ public class SimpleBootstrapContext implements BootstrapContext {
 	}
 
 	/**
-	 * 为给定 WorkManager、XATerminator 和 TransactionSynchronizationRegistry
-	 * 创建 SimpleBootstrapContext。
-	 * @param workManager 要使用的 JCA WorkManager（可为 {@code null}）
-	 * @param xaTerminator 要使用的 JCA XATerminator（可为 {@code null}）
-	 * @param transactionSynchronizationRegistry 要使用的 TransactionSynchronizationRegistry
-	 * （可为 {@code null}）
+	 * Create a new SimpleBootstrapContext for the given WorkManager, XATerminator
+	 * and TransactionSynchronizationRegistry.
+	 * @param workManager the JCA WorkManager to use (may be {@code null})
+	 * @param xaTerminator the JCA XATerminator to use (may be {@code null})
+	 * @param transactionSynchronizationRegistry the TransactionSynchronizationRegistry
+	 * to use (may be {@code null})
 	 * @since 5.0
 	 */
 	public SimpleBootstrapContext(@Nullable WorkManager workManager, @Nullable XATerminator xaTerminator,

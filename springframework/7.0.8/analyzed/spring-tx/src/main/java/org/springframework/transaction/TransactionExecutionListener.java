@@ -19,14 +19,15 @@ package org.springframework.transaction;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 无状态监听事务管理器中事务创建/完成步骤的回调接口。
- * 主要用于观测与统计；资源管理请考虑有状态事务同步。
+ * Callback interface for stateless listening to transaction creation/completion steps
+ * in a transaction manager. This is primarily meant for observation and statistics;
+ * consider stateful transaction synchronizations for resource management purposes.
  *
- * <p>与同步机制不同，事务执行监听器契约通常同时支持
- * 线程绑定事务与响应式事务。
- * 回调提供的 {@link TransactionExecution} 对象或为
- * {@link TransactionStatus}（{@link PlatformTransactionManager} 事务），
- * 或为 {@link ReactiveTransaction}（{@link ReactiveTransactionManager} 事务）。
+ * <p>In contrast to synchronizations, the transaction execution listener contract is
+ * commonly supported for thread-bound transactions as well as reactive transactions.
+ * The callback-provided {@link TransactionExecution} object will be either a
+ * {@link TransactionStatus} (for a {@link PlatformTransactionManager} transaction) or
+ * a {@link ReactiveTransaction} (for a {@link ReactiveTransactionManager} transaction).
  *
  * @author Juergen Hoeller
  * @since 6.1
@@ -37,49 +38,49 @@ import org.jspecify.annotations.Nullable;
 public interface TransactionExecutionListener {
 
 	/**
-	 * 事务 begin 步骤之前的回调。
-	 * @param transaction 当前事务
+	 * Callback before the transaction begin step.
+	 * @param transaction the current transaction
 	 */
 	default void beforeBegin(TransactionExecution transaction) {
 	}
 
 	/**
-	 * 事务 begin 步骤之后的回调。
-	 * @param transaction 当前事务
-	 * @param beginFailure begin 期间发生的异常
-	 * （成功 begin 后为 {@code null}）
+	 * Callback after the transaction begin step.
+	 * @param transaction the current transaction
+	 * @param beginFailure an exception occurring during begin
+	 * (or {@code null} after a successful begin step)
 	 */
 	default void afterBegin(TransactionExecution transaction, @Nullable Throwable beginFailure) {
 	}
 
 	/**
-	 * 事务 commit 步骤之前的回调。
-	 * @param transaction 当前事务
+	 * Callback before the transaction commit step.
+	 * @param transaction the current transaction
 	 */
 	default void beforeCommit(TransactionExecution transaction) {
 	}
 
 	/**
-	 * 事务 commit 步骤之后的回调。
-	 * @param transaction 当前事务
-	 * @param commitFailure commit 期间发生的异常
-	 * （成功 commit 后为 {@code null}）
+	 * Callback after the transaction commit step.
+	 * @param transaction the current transaction
+	 * @param commitFailure an exception occurring during commit
+	 * (or {@code null} after a successful commit step)
 	 */
 	default void afterCommit(TransactionExecution transaction, @Nullable Throwable commitFailure) {
 	}
 
 	/**
-	 * 事务 rollback 步骤之前的回调。
-	 * @param transaction 当前事务
+	 * Callback before the transaction rollback step.
+	 * @param transaction the current transaction
 	 */
 	default void beforeRollback(TransactionExecution transaction) {
 	}
 
 	/**
-	 * 事务 rollback 步骤之后的回调。
-	 * @param transaction 当前事务
-	 * @param rollbackFailure rollback 期间发生的异常
-	 * （成功 rollback 后为 {@code null}）
+	 * Callback after the transaction rollback step.
+	 * @param transaction the current transaction
+	 * @param rollbackFailure an exception occurring during rollback
+	 * (or {@code null} after a successful rollback step)
 	 */
 	default void afterRollback(TransactionExecution transaction, @Nullable Throwable rollbackFailure) {
 	}

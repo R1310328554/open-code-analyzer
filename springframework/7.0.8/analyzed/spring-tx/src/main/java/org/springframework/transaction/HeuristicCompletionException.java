@@ -17,7 +17,8 @@
 package org.springframework.transaction;
 
 /**
- * 表示事务协调器启发式决策导致的事务失败异常。
+ * Exception that represents a transaction failure caused by a heuristic
+ * decision on the side of the transaction coordinator.
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -27,22 +28,22 @@ package org.springframework.transaction;
 public class HeuristicCompletionException extends TransactionException {
 
 	/**
-	 * 未知结果状态。
+	 * Unknown outcome state.
 	 */
 	public static final int STATE_UNKNOWN = 0;
 
 	/**
-	 * 已提交结果状态。
+	 * Committed outcome state.
 	 */
 	public static final int STATE_COMMITTED = 1;
 
 	/**
-	 * 已回滚结果状态。
+	 * Rolledback outcome state.
 	 */
 	public static final int STATE_ROLLED_BACK = 2;
 
 	/**
-	 * 混合结果状态。
+	 * Mixed outcome state.
 	 */
 	public static final int STATE_MIXED = 3;
 
@@ -58,15 +59,15 @@ public class HeuristicCompletionException extends TransactionException {
 
 
 	/**
-	 * 事务的结果状态：部分或全部资源是否已提交？
+	 * The outcome state of the transaction: have some or all resources been committed?
 	 */
 	private final int outcomeState;
 
 
 	/**
-	 * HeuristicCompletionException 构造函数。
-	 * @param outcomeState 事务的结果状态
-	 * @param cause 所用事务 API 的根因
+	 * Constructor for HeuristicCompletionException.
+	 * @param outcomeState the outcome state of the transaction
+	 * @param cause the root cause from the transaction API in use
 	 */
 	public HeuristicCompletionException(int outcomeState, Throwable cause) {
 		super("Heuristic completion: outcome state is " + getStateString(outcomeState), cause);
@@ -74,8 +75,8 @@ public class HeuristicCompletionException extends TransactionException {
 	}
 
 	/**
-	 * 返回事务状态的结果状态，
-	 * 为本类常量之一。
+	 * Return the outcome state of the transaction state,
+	 * as one of the constants in this class.
 	 * @see #STATE_UNKNOWN
 	 * @see #STATE_COMMITTED
 	 * @see #STATE_ROLLED_BACK
