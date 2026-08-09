@@ -604,3 +604,9 @@ core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/Erro
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ErrorPageFilterConfiguration.java
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ServletContextApplicationContextInitializer.java
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/SpringBootServletInitializer.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/FilterRegistration.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/FilterRegistrationBean.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/RegistrationBean.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletContextInitializer.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletListenerRegistrationBean.java
+core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletRegistration.java
