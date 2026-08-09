@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:44:56Z",
-  "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/RegisterBrokerResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/RegisterOrderTopicRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/RegisterTopicRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/UnRegisterBrokerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/WipeWritePermOfBrokerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/WipeWritePermOfBrokerResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/heartbeat/ConsumeType.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/heartbeat/ConsumerData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/heartbeat/HeartbeatData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/heartbeat/MessageModel.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/heartbeat/ProducerData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/heartbeat/SubscriptionData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/namesrv/RegisterBrokerResult.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/route/BrokerData.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/route/MessageQueueRouteState.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 438,
-  "done": 1035
+  "done": 1050
 }
