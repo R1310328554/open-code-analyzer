@@ -24,16 +24,22 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 
+ * 本地缓存条目更新广播消息。
+ * <p>
+ * 向其他实例广播完整键值字节，触发本地缓存条目写入或更新。
+ *
  * @author Nikita Koksharov
  *
  */
 @SuppressWarnings("serial")
 public class LocalCachedMapUpdate implements Serializable {
 
+    /** 单条键值更新条目。 */
     public static class Entry {
         
+        /** 编码后的键字节数组。 */
         private final byte[] key;
+        /** 编码后的值字节数组。 */
         private final byte[] value;
         
         public Entry(byte[] key, byte[] value) {
@@ -59,8 +65,10 @@ public class LocalCachedMapUpdate implements Serializable {
         
     }
     
+    /** 待更新的键值条目列表。 */
     private List<Entry> entries = new ArrayList<Entry>();
 
+    /** 发起更新操作的实例 ID（接收方需排除自身）。 */
     private byte[] excludedId;
 
     public LocalCachedMapUpdate() {

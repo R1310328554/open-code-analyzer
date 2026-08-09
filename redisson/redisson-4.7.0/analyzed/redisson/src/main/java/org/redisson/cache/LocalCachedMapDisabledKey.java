@@ -18,13 +18,18 @@ package org.redisson.cache;
 import java.io.Serializable;
 
 /**
- * 
+ * 已禁用键或缓存的持久化记录。
+ * <p>
+ * 存储在 Redis 中，实例启动时恢复禁用状态。
+ *
  * @author Nikita Koksharov
  *
  */
 public class LocalCachedMapDisabledKey implements Serializable {
 
+    /** 禁用请求的唯一标识。 */
     private String requestId;
+    /** 禁用剩余时间（毫秒）。 */
     private long timeout;
     
     public LocalCachedMapDisabledKey() {

@@ -40,17 +40,25 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * 
+ * {@link org.redisson.api.RLocalCachedMap} 本地缓存监听器抽象基类。
+ * <p>
+ * 负责订阅失效/更新主题、处理跨实例同步消息、管理键禁用与重连策略。
+ *
  * @author Nikita Koksharov
  *
  */
 public abstract class LocalCacheListener {
 
+    /** 失效广播主题名后缀。 */
     public static final String TOPIC_SUFFIX = "topic";
+    /** 禁用键集合 Redis 键名后缀。 */
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
+    /** 禁用确认主题名后缀。 */
     public static final String DISABLED_ACK_SUFFIX = ":topic";
 
+    /** 按缓存键记录禁用该键的请求 ID 集合。 */
     private ConcurrentMap<CacheKey, Set<String>> disabledKeys = new ConcurrentHashMap<>();
+    /** 当前处于全缓存禁用状态的请求 ID 集合。 */
     private Set<String> cacheDisabled = ConcurrentHashMap.newKeySet();
 
     private static final Logger log = LoggerFactory.getLogger(LocalCacheListener.class);
@@ -95,10 +103,17 @@ public abstract class LocalCacheListener {
         instanceId = commandExecutor.getServiceManager().generateIdArray();
     }
 
+    /** 返回本实例唯一标识字节数组。 */
     public byte[] getInstanceId() {
         return instanceId;
     }
 
+    /**
+     * 判断指定键或整个本地缓存是否处于禁用状态。
+     *
+     * @param key 待检查的键
+     * @return 若键被禁用或全缓存禁用则返回 {@code true}
+     */
     public boolean isDisabled(Object key) {
         return disabledKeys.containsKey(key) || !cacheDisabled.isEmpty();
     }
@@ -203,7 +218,7 @@ public abstract class LocalCacheListener {
                 
                 @Override
                 public void onPUnsubscribe(String pattern) {
-                    // skip
+                    // 取消订阅时不做处理
                 }
             }));
         }
@@ -322,25 +337,34 @@ public abstract class LocalCacheListener {
             }
         }
         if (options.getReconnectionStrategy() == ReconnectionStrategy.LOAD
-                // check if instance has already been used
+                // 仅当实例曾被使用过（已有失效记录）时才重载
                 && lastInvalidate > 0) {
 
             loadAfterReconnection();
         }
     }
 
+    /** 通知所有已注册的本地缓存更新监听器。 */
     public void notifyUpdate(CacheValue value) {
         for (LocalCacheUpdateListener listener : updateListeners.values()) {
             listener.onUpdate(value.getKey(), value.getValue());
         }
     }
 
+    /** 通知所有已注册的本地缓存失效监听器。 */
     public void notifyInvalidate(CacheValue value) {
         for (LocalCacheInvalidateListener listener : invalidateListeners.values()) {
             listener.onInvalidate(value.getKey(), value.getValue());
         }
     }
 
+    /**
+     * 异步清空本地缓存并向其他实例广播清空消息。
+     * <p>
+     * 使用信号量等待各实例确认后再完成。
+     *
+     * @return 清空完成的 Future
+     */
     public RFuture<Void> clearLocalCacheAsync() {
         cache.clear();
         if (options.isUseObjectAsCacheKey()) {
@@ -371,10 +395,12 @@ public abstract class LocalCacheListener {
         return publishAsync(new LocalCachedMapClear(instanceId, id, true));
     }
 
+    /** 向失效主题异步发布同步消息。 */
     public RFuture<Long> publishAsync(Object msg) {
         return invalidationTopic.publishAsync(msg);
     }
 
+    /** 返回发布命令名（分片模式下可能为 SPUBLISH）。 */
     public String getPublishCommand() {
         if (isSharded && !options.isUseTopicPattern()) {
             return RedisCommands.SPUBLISH.getName();
@@ -382,10 +408,19 @@ public abstract class LocalCacheListener {
         return RedisCommands.PUBLISH.getName();
     }
 
+    /** 返回本地缓存失效广播主题全名。 */
     public String getInvalidationTopicName() {
         return RedissonObject.suffixName(name, TOPIC_SUFFIX);
     }
 
+    /**
+     * 解码并更新本地缓存中的单条条目（由子类实现）。
+     *
+     * @param keyBuf 编码后的键缓冲区
+     * @param valueBuf 编码后的值缓冲区
+     * @return 更新后的缓存值
+     * @throws IOException 解码失败时抛出
+     */
     protected abstract CacheValue updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException;
 
     private void disableCache(final String requestId, long timeout) {
@@ -432,6 +467,7 @@ public abstract class LocalCacheListener {
         }, timeout, TimeUnit.MILLISECONDS);
     }
 
+    /** 移除所有监听器并取消过期事件订阅。 */
     public void remove() {
         removeAsync();
 
@@ -469,6 +505,7 @@ public abstract class LocalCacheListener {
         return ids;
     }
 
+    /** 返回缓存更新日志在 Redis 中的键名。 */
     public String getUpdatesLogName() {
         return RedissonObject.prefixName("redisson__cache_updates_log", name);
     }
@@ -521,18 +558,21 @@ public abstract class LocalCacheListener {
         return new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
     }
 
+    /** 注册本地缓存失效监听器，返回监听器 ID。 */
     public <K, V> int addListener(LocalCacheInvalidateListener<K, V> listener) {
         int listenerId = System.identityHashCode(listener);
         invalidateListeners.put(listenerId, listener);
         return listenerId;
     }
 
+    /** 注册本地缓存更新监听器，返回监听器 ID。 */
     public <K, V> int addListener(LocalCacheUpdateListener<K, V> listener) {
         int listenerId = System.identityHashCode(listener);
         updateListeners.put(listenerId, listener);
         return listenerId;
     }
 
+    /** 按 ID 移除更新或失效监听器。 */
     public void removeListener(int listenerId) {
         updateListeners.remove(listenerId);
         invalidateListeners.remove(listenerId);
