@@ -17,9 +17,17 @@
 
 package org.apache.rocketmq.controller.helper;
 
+/**
+ * Broker 生命周期监听器：在 Controller 检测到
+ * Broker 不活跃（心跳超时或通道断开）时触发回调。
+ */
 public interface BrokerLifecycleListener {
     /**
-     * Trigger when broker inactive.
+     * Broker 变为不活跃时调用。
+     *
+     * @param clusterName 集群名
+     * @param brokerName  Broker 组名
+     * @param brokerId    下线副本 ID，强制选举时可为 null
      */
     void onBrokerInactive(final String clusterName, final String brokerName, final Long brokerId);
 }

@@ -29,112 +29,69 @@ import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.netty.NettyServerConfig;
 
 /**
- * An interface for broker container to hold multiple master and slave brokers.
+ * Broker 容器接口：在同一 JVM 进程中托管多个主从 Broker，
+ * 共享 Remoting 服务器与 {@link BrokerOuterAPI} 等基础设施。
  */
 public interface IBrokerContainer {
 
-    /**
-     * Start broker container
-     */
+    /** 启动容器及共享网络组件。 */
     void start() throws Exception;
 
-    /**
-     * Shutdown broker container and all the brokers inside.
-     */
+    /** 关闭容器内全部 Broker 并释放共享资源。 */
     void shutdown();
 
     /**
-     * Add a broker to this container with specific broker config.
+     * 按配置上下文向容器动态添加 Broker。
      *
-     * @param configContext the specified config context
-     * @return the added BrokerController or null if the broker already exists
-     * @throws Exception when initialize broker
+     * @param configContext 包含 Broker/Store/Auth 等配置
+     * @return 新建的控制器；已存在时返回 null
+     * @throws Exception 初始化 Broker 失败时抛出
      */
     BrokerController addBroker(ConfigContext configContext) throws Exception;
 
     /**
-     * Remove the broker from this container associated with the specific broker identity
+     * 按身份标识从容器移除 Broker。
      *
-     * @param brokerIdentity the specific broker identity
-     * @return the removed BrokerController or null if the broker doesn't exists
+     * @param brokerIdentity 集群名、Broker 名与 ID 组合
+     * @return 被移除的控制器；不存在时返回 null
      */
     BrokerController removeBroker(BrokerIdentity brokerIdentity) throws Exception;
 
     /**
-     * Return the broker controller associated with the specific broker identity
+     * 按身份查找已注册的 Broker 控制器。
      *
-     * @param brokerIdentity the specific broker identity
-     * @return the associated messaging broker or null
+     * @param brokerIdentity 目标 Broker 身份
+     * @return 匹配的控制器或 null
      */
     BrokerController getBroker(BrokerIdentity brokerIdentity);
 
-    /**
-     * Return all the master brokers belong to this container
-     *
-     * @return the master broker list
-     */
+    /** 返回容器内全部 Master Broker。 */
     Collection<InnerBrokerController> getMasterBrokers();
 
-    /**
-     * Return all the slave brokers belong to this container
-     *
-     * @return the slave broker list
-     */
+    /** 返回容器内全部 Slave Broker。 */
     Collection<InnerSalveBrokerController> getSlaveBrokers();
 
-    /**
-     * Return all broker controller in this container
-     *
-     * @return all broker controller
-     */
+    /** 返回容器内所有 Broker 控制器列表。 */
     List<BrokerController> getBrokerControllers();
 
-    /**
-     * Return the address of broker container.
-     *
-     * @return broker container address.
-     */
+    /** 返回容器对外暴露的监听地址。 */
     String getBrokerContainerAddr();
 
-    /**
-     * Peek the first master broker in container.
-     *
-     * @return the first master broker in container
-     */
+    /** 获取容器中第一个 Master Broker（用于默认路由）。 */
     BrokerController peekMasterBroker();
 
-    /**
-     * Return the config of the broker container
-     *
-     * @return the broker container config
-     */
+    /** 返回容器级配置对象。 */
     BrokerContainerConfig getBrokerContainerConfig();
 
-    /**
-     * Get netty server config.
-     *
-     * @return netty server config
-     */
+    /** 返回共享 Netty 服务端配置。 */
     NettyServerConfig getNettyServerConfig();
 
-    /**
-     * Get netty client config.
-     *
-     * @return netty client config
-     */
+    /** 返回共享 Netty 客户端配置。 */
     NettyClientConfig getNettyClientConfig();
 
-    /**
-     * Return the shared BrokerOuterAPI
-     *
-     * @return the shared BrokerOuterAPI
-     */
+    /** 返回容器内 Broker 共用的对外 RPC 客户端。 */
     BrokerOuterAPI getBrokerOuterAPI();
 
-    /**
-     * Return the shared RemotingServer
-     *
-     * @return the shared RemotingServer
-     */
+    /** 返回容器共享的 Remoting 服务端。 */
     RemotingServer getRemotingServer();
 }

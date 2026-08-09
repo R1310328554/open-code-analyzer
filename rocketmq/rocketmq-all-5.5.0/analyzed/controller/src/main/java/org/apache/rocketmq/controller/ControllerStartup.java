@@ -39,16 +39,22 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.srvutil.ShutdownHookThread;
 
+/**
+ * Controller 进程启动入口：解析命令行与配置文件，
+ * 创建 {@link ControllerManager} 并注册 JVM 关闭钩子。
+ */
 public class ControllerStartup {
 
     private static Logger log;
     private static Properties properties = null;
     private static CommandLine commandLine = null;
 
+    /** JVM 主入口，启动失败时以非零码退出。 */
     public static void main(String[] args) {
         main0(args);
     }
 
+    /** 创建、启动 Controller 并打印序列化类型等启动信息。 */
     public static ControllerManager main0(String[] args) {
 
         try {
@@ -66,6 +72,10 @@ public class ControllerStartup {
         return null;
     }
 
+    /**
+     * 解析 -c 配置文件与 -p 打印选项，加载 Controller/Netty 配置。
+     * 校验 ROCKETMQ_HOME 后构造 {@link ControllerManager}。
+     */
     public static ControllerManager createControllerManager(String[] args) throws IOException {
         Options options = ServerUtil.buildCommandlineOptions(new Options());
         commandLine = ServerUtil.parseCmdLine("mqcontroller", args, buildCommandlineOptions(options), new DefaultParser());
@@ -125,6 +135,7 @@ public class ControllerStartup {
         return controllerManager;
     }
 
+    /** 初始化 Controller、注册 shutdown hook 并启动服务。 */
     public static ControllerManager start(final ControllerManager controller) throws Exception {
 
         if (null == controller) {
@@ -147,10 +158,12 @@ public class ControllerStartup {
         return controller;
     }
 
+    /** 显式关闭 Controller 管理器。 */
     public static void shutdown(final ControllerManager controller) {
         controller.shutdown();
     }
 
+    /** 构建 -c（配置文件）与 -p（打印配置）命令行选项。 */
     public static Options buildCommandlineOptions(final Options options) {
         Option opt = new Option("c", "configFile", true, "Controller config properties file");
         opt.setRequired(false);

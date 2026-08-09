@@ -16,7 +16,19 @@
  */
 package org.apache.rocketmq.controller.helper;
 
+/**
+ * Broker 选主资格谓词：判断指定副本当前是否
+ * 满足被选为 Master 的基本存活条件。
+ */
 public interface BrokerValidPredicate {
 
+    /**
+     * 检查副本是否具备选主资格。
+     *
+     * @param clusterName 集群名
+     * @param brokerName  Broker 组名
+     * @param brokerId    副本 ID
+     * @return 有资格返回 true
+     */
     boolean check(String clusterName, String brokerName, Long brokerId);
 }

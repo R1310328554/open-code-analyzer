@@ -18,18 +18,22 @@ package org.apache.rocketmq.controller.elect;
 
 import java.util.Set;
 
+/**
+ * Master 选举策略接口：根据同步副本集与全部副本
+ * 在 Controller 触发选主时返回新 Master 的 brokerId。
+ */
 public interface ElectPolicy {
 
     /**
-     * elect a master
+     * 执行 Master 选举。
      *
-     * @param clusterName       the broker group belongs to
-     * @param brokerName        the broker group name
-     * @param syncStateBrokers  all broker replicas in syncStateSet
-     * @param allReplicaBrokers all broker replicas
-     * @param oldMaster         old master
-     * @param brokerId          broker id(can be used as prefer or assigned in some elect policy)
-     * @return new master's broker id
+     * @param clusterName       Broker 所属集群名
+     * @param brokerName        Broker 组名
+     * @param syncStateBrokers  SyncStateSet 内副本 ID 集合
+     * @param allReplicaBrokers 全部注册副本 ID 集合
+     * @param oldMaster         原 Master 的 brokerId
+     * @param brokerId          优先或指定的 brokerId
+     * @return 新 Master 的 brokerId；无法选出时返回 null
      */
     Long elect(String clusterName, String brokerName, Set<Long> syncStateBrokers, Set<Long> allReplicaBrokers,
         Long oldMaster, Long brokerId);

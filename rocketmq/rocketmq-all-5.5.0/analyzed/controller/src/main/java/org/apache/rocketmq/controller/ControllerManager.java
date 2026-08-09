@@ -58,6 +58,10 @@ import org.apache.rocketmq.remoting.protocol.header.controller.ElectMasterReques
 import org.apache.rocketmq.remoting.protocol.header.controller.GetReplicaInfoRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.controller.GetReplicaInfoResponseHeader;
 
+/**
+ * Controller 进程总控：组装心跳、选举、通知与请求处理器，
+ * 在 Broker 下线时触发 Master 选举并通知角色变更。
+ */
 public class ControllerManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
 
@@ -74,6 +78,7 @@ public class ControllerManager {
     private final NotifyService notifyService;
     private ControllerMetricsManager controllerMetricsManager;
 
+    /** 根据配置创建 DLedger 或 JRaft 版 Controller 及配套组件。 */
     public ControllerManager(ControllerConfig controllerConfig, NettyServerConfig nettyServerConfig,
         NettyClientConfig nettyClientConfig) {
         this.controllerConfig = controllerConfig;
@@ -87,6 +92,7 @@ public class ControllerManager {
         this.notifyService = new NotifyService();
     }
 
+    /** 初始化线程池、Controller 实现、心跳监听与 RPC 处理器注册。 */
     public boolean initialize() {
         this.controllerRequestThreadPoolQueue = new LinkedBlockingQueue<>(this.controllerConfig.getControllerRequestThreadPoolQueueCapacity());
         this.controllerRequestExecutor = ThreadUtils.newThreadPoolExecutor(
@@ -136,12 +142,11 @@ public class ControllerManager {
     }
 
     /**
-     * When the heartbeatManager detects the "Broker is not active", we call this method to elect a master and do
-     * something else.
+     * 心跳检测到 Broker 不活跃时的回调：若为 Master 则触发选主。
      *
-     * @param clusterName The cluster name of this inactive broker
-     * @param brokerName  The inactive broker name
-     * @param brokerId    The inactive broker id, null means that the election forced to be triggered
+     * @param clusterName 集群名
+     * @param brokerName  Broker 组名
+     * @param brokerId    下线副本 ID；null 表示强制选举
      */
     private void onBrokerInactive(String clusterName, String brokerName, Long brokerId) {
         log.info("Controller Manager received broker inactive event, clusterName: {}, brokerName: {}, brokerId: {}",
@@ -172,6 +177,7 @@ public class ControllerManager {
         }
     }
 
+    /** 异步调用 Controller 选主并可选通知角色变更。 */
     private CompletableFuture<Boolean> triggerElectMaster0(String brokerName) {
         final CompletableFuture<RemotingCommand> electMasterFuture = controller.electMaster(ElectMasterRequestHeader.ofControllerTrigger(brokerName));
         return electMasterFuture.handleAsync((electMasterResponse, err) -> {
@@ -191,6 +197,7 @@ public class ControllerManager {
         });
     }
 
+    /** 带重试的同步选主入口。 */
     private void triggerElectMaster(String brokerName) {
         int maxRetryCount = controllerConfig.getElectMasterMaxRetryCount();
         for (int i = 0; i < maxRetryCount; i++) {
@@ -205,9 +212,7 @@ public class ControllerManager {
         }
     }
 
-    /**
-     * Notify master and all slaves for a broker that the master role changed.
-     */
+    /** 向 Broker 组内全部活跃副本通知 Master 角色变更。 */
     public void notifyBrokerRoleChanged(final RoleChangeNotifyEntry entry) {
         final BrokerMemberGroup memberGroup = entry.getBrokerMemberGroup();
         if (memberGroup != null) {
@@ -226,10 +231,10 @@ public class ControllerManager {
     }
 
     /**
-     * Notify broker that there are roles-changing in controller
+     * 向单个 Broker 地址发送角色变更通知。
      *
-     * @param brokerAddr target broker's address to notify
-     * @param entry      role change entry
+     * @param brokerAddr 目标 Broker 地址
+     * @param entry      角色变更详情
      */
     public void doNotifyBrokerRoleChanged(final String brokerAddr, final RoleChangeNotifyEntry entry) {
         if (StringUtils.isNoneEmpty(brokerAddr)) {
@@ -246,6 +251,7 @@ public class ControllerManager {
         }
     }
 
+    /** 向 RemotingServer 注册 Controller 相关请求处理器。 */
     public void registerProcessor() {
         final ControllerRequestProcessor controllerRequestProcessor = new ControllerRequestProcessor(this);
         RemotingServer controllerRemotingServer = this.controller.getRemotingServer();
@@ -264,12 +270,14 @@ public class ControllerManager {
         controllerRemotingServer.registerProcessor(RequestCode.CONTROLLER_APPLY_BROKER_ID, controllerRequestProcessor, this.controllerRequestExecutor);
     }
 
+    /** 启动 Controller、心跳管理器与 Remoting 客户端。 */
     public void start() {
         this.controller.startup();
         this.heartbeatManager.start();
         this.remotingClient.start();
     }
 
+    /** 依次关闭心跳、线程池、通知服务与 Controller。 */
     public void shutdown() {
         this.heartbeatManager.shutdown();
         this.controllerRequestExecutor.shutdown();
@@ -306,6 +314,7 @@ public class ControllerManager {
         return configuration;
     }
 
+    /** 异步通知 Broker 角色变更，按 masterEpoch 取消过期任务。 */
     class NotifyService {
         private ExecutorService executorService;
 
@@ -319,6 +328,7 @@ public class ControllerManager {
             this.currentNotifyFutures = new ConcurrentHashMap<>();
         }
 
+        /** 提交通知任务；若存在更旧 epoch 的未完成通知则取消。 */
         public void notifyBroker(String brokerAddress, RoleChangeNotifyEntry entry) {
             int masterEpoch = entry.getMasterEpoch();
             NotifyTask oldTask = this.currentNotifyFutures.get(brokerAddress);

@@ -45,18 +45,26 @@ import org.apache.rocketmq.remoting.protocol.header.GetBrokerConfigResponseHeade
 import org.apache.rocketmq.remoting.protocol.header.RemoveBrokerRequestHeader;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * Broker 容器远程请求处理器：处理动态增删 Broker、读取与更新容器级配置。
+ * 实现 {@link NettyRequestProcessor}，响应 ADD/REMOVE/GET/UPDATE 等请求码。
+ */
 public class BrokerContainerProcessor implements NettyRequestProcessor {
+    /** 容器模块日志记录器。 */
     protected static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     protected final BrokerContainer brokerContainer;
     protected List<BrokerBootHook> brokerBootHookList;
 
+    /** 禁止通过远程接口修改的配置项黑名单。 */
     protected final Set<String> configBlackList = new HashSet<>();
 
+    /** 绑定所属 {@link BrokerContainer} 并初始化配置黑名单。 */
     public BrokerContainerProcessor(BrokerContainer brokerContainer) {
         this.brokerContainer = brokerContainer;
         initConfigBlackList();
     }
 
+    /** 合并内置与配置文件中声明的黑名单项。 */
     private void initConfigBlackList() {
         configBlackList.add("brokerConfigPaths");
         configBlackList.add("rocketmqHome");
@@ -65,6 +73,7 @@ public class BrokerContainerProcessor implements NettyRequestProcessor {
         configBlackList.addAll(Arrays.asList(configArray));
     }
 
+    /** 按请求码分发至增删 Broker 或配置读写处理逻辑。 */
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         switch (request.getCode()) {
@@ -87,6 +96,10 @@ public class BrokerContainerProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /**
+     * 加载配置文件、校验副本参数并启动容器内新 Broker。
+     * 启动失败时回滚已注册的 Broker 实例。
+     */
     protected synchronized RemotingCommand addBroker(ChannelHandlerContext ctx,
         RemotingCommand request) throws Exception {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -212,6 +225,7 @@ public class BrokerContainerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 按 {@link BrokerIdentity} 从容器中移除指定 Broker。 */
     protected synchronized RemotingCommand removeBroker(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -240,10 +254,12 @@ public class BrokerContainerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 注册 Broker 启动前后执行的钩子列表。 */
     public void registerBrokerBootHook(List<BrokerBootHook> brokerBootHookList) {
         this.brokerBootHookList = brokerBootHookList;
     }
 
+    /** 更新容器共享配置，拒绝修改黑名单中的键。 */
     private RemotingCommand updateBrokerConfig(ChannelHandlerContext ctx, RemotingCommand request) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
 
@@ -285,6 +301,7 @@ public class BrokerContainerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 检查待更新属性是否包含黑名单配置项。 */
     private boolean validateBlackListConfigExist(Properties properties) {
         for (String blackConfig : configBlackList) {
             if (properties.containsKey(blackConfig)) {
@@ -294,6 +311,7 @@ public class BrokerContainerProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 返回容器全部配置文本及数据版本号。 */
     private RemotingCommand getBrokerConfig(ChannelHandlerContext ctx, RemotingCommand request) {
 
         final RemotingCommand response = RemotingCommand.createResponseCommand(GetBrokerConfigResponseHeader.class);

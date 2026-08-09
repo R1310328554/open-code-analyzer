@@ -19,8 +19,20 @@ package org.apache.rocketmq.controller.helper;
 
 import org.apache.rocketmq.controller.impl.heartbeat.BrokerLiveInfo;
 
+/**
+ * Broker 存活信息查询器：供选主策略获取
+ * epoch、maxOffset、electionPriority 等排序字段。
+ */
 public interface BrokerLiveInfoGetter {
 
+    /**
+     * 按集群与 Broker 身份获取存活详情。
+     *
+     * @param clusterName 集群名
+     * @param brokerName  Broker 组名
+     * @param brokerId    副本 ID
+     * @return 对应 {@link BrokerLiveInfo}
+     */
     BrokerLiveInfo get(String clusterName, String brokerName, Long brokerId);
 
 }

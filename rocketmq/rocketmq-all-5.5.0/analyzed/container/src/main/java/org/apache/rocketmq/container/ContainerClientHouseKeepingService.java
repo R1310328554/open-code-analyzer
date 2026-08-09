@@ -22,9 +22,14 @@ import java.util.Collection;
 import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.remoting.ChannelEventListener;
 
+/**
+ * 容器级客户端连接 housekeeping：将 Netty 通道事件
+ * 广播给容器内所有主从 Broker，维护生产者/消费者连接统计。
+ */
 public class ContainerClientHouseKeepingService implements ChannelEventListener {
     private final IBrokerContainer brokerContainer;
 
+    /** @param brokerContainer 托管多个 Broker 的容器实例 */
     public ContainerClientHouseKeepingService(final IBrokerContainer brokerContainer) {
         this.brokerContainer = brokerContainer;
     }
@@ -54,6 +59,7 @@ public class ContainerClientHouseKeepingService implements ChannelEventListener 
         onChannelOperation(CallbackCode.ACTIVE, remoteAddr, channel);
     }
 
+    /** 遍历主从 Broker 并统一分发通道事件。 */
     private void onChannelOperation(CallbackCode callbackCode, String remoteAddr, Channel channel) {
         Collection<InnerBrokerController> masterBrokers = this.brokerContainer.getMasterBrokers();
         Collection<InnerSalveBrokerController> slaveBrokers = this.brokerContainer.getSlaveBrokers();
@@ -67,6 +73,7 @@ public class ContainerClientHouseKeepingService implements ChannelEventListener 
         }
     }
 
+    /** 更新连接计数或清理生产者/消费者上的失效通道。 */
     private void brokerOperation(BrokerController brokerController, CallbackCode callbackCode, String remoteAddr,
         Channel channel) {
         if (callbackCode == CallbackCode.CONNECT) {
@@ -92,26 +99,17 @@ public class ContainerClientHouseKeepingService implements ChannelEventListener 
         }
     }
 
+    /** 通道事件类型枚举。 */
     public enum CallbackCode {
-        /**
-         * onChannelConnect
-         */
+        /** 新连接建立。 */
         CONNECT,
-        /**
-         * onChannelClose
-         */
+        /** 连接正常关闭。 */
         CLOSE,
-        /**
-         * onChannelException
-         */
+        /** 连接发生异常。 */
         EXCEPTION,
-        /**
-         * onChannelIdle
-         */
+        /** 连接空闲超时。 */
         IDLE,
-        /**
-         * onChannelActive
-         */
+        /** 通道变为活跃状态。 */
         ACTIVE
     }
 }

@@ -25,6 +25,10 @@ import org.apache.rocketmq.common.BrokerConfig;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * 容器内 Slave Broker 控制器：继承 {@link InnerBrokerController}，
+ * 构造时校验从节点 ID 必须非 Master。
+ */
 public class InnerSalveBrokerController extends InnerBrokerController {
 
     public InnerSalveBrokerController(final BrokerContainer brokerContainer,
@@ -32,10 +36,11 @@ public class InnerSalveBrokerController extends InnerBrokerController {
         final MessageStoreConfig storeConfig,
         final AuthConfig authConfig) {
         super(brokerContainer, brokerConfig, storeConfig, authConfig);
-        // Check configs
+        // 校验从节点必备配置
         checkSlaveBrokerConfig();
     }
 
+    /** 断言集群名、Broker 名非空且 brokerId 不为 Master ID。 */
     private void checkSlaveBrokerConfig() {
         Preconditions.checkNotNull(brokerConfig.getBrokerClusterName());
         Preconditions.checkNotNull(brokerConfig.getBrokerName());

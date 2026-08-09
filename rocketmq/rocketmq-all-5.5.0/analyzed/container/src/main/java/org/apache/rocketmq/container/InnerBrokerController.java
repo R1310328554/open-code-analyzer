@@ -30,7 +30,12 @@ import org.apache.rocketmq.remoting.netty.NettyServerConfig;
 import org.apache.rocketmq.store.MessageStore;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * 容器内 Master Broker 控制器：复用容器共享的 Remoting 与 OuterAPI，
+ * 按容器策略注册 NameServer 并调度心跳任务。
+ */
 public class InnerBrokerController extends BrokerController {
+    /** 所属 Broker 容器引用。 */
     protected BrokerContainer brokerContainer;
 
     public InnerBrokerController(
@@ -44,6 +49,7 @@ public class InnerBrokerController extends BrokerController {
         this.brokerOuterAPI = this.brokerContainer.getBrokerOuterAPI();
     }
 
+    /** 从容器 Remoting 工厂创建主/快通道服务端并绑定指标。 */
     @Override
     protected void initializeRemotingServer() {
         RemotingServer remotingServer = this.brokerContainer.getRemotingServer().newRemotingServer(brokerConfig.getListenPort());
@@ -61,11 +67,16 @@ public class InnerBrokerController extends BrokerController {
         setFastRemotingServer(fastRemotingServer);
     }
 
+    /** 仅初始化 Broker 自身定时任务（容器模式不重复注册全局任务）。 */
     @Override
     protected void initializeScheduledTasks() {
         initializeBrokerScheduledTasks();
     }
 
+    /**
+     * 启动基础服务并按配置向 NameServer 注册；
+     * 支持从节点代主、Controller 模式心跳及成员组同步。
+     */
     @Override
     public void start() throws Exception {
         this.shouldStartTime = System.currentTimeMillis() + messageStoreConfig.getDisappearTimeAfterStart();
@@ -124,6 +135,7 @@ public class InnerBrokerController extends BrokerController {
         }
     }
 
+    /** 关闭基础服务、取消定时任务并从容器 Remoting 注销端口。 */
     @Override
     public void shutdown() {
 
@@ -142,11 +154,13 @@ public class InnerBrokerController extends BrokerController {
         }
     }
 
+    /** 返回 Broker 对外服务地址（IP1:listenPort）。 */
     @Override
     public String getBrokerAddr() {
         return this.brokerConfig.getBrokerIP1() + ":" + this.brokerConfig.getListenPort();
     }
 
+    /** 返回 HA 复制监听地址（IP2:haListenPort）。 */
     @Override
     public String getHAServerAddr() {
         return this.brokerConfig.getBrokerIP2() + ":" + this.messageStoreConfig.getHaListenPort();
@@ -178,6 +192,7 @@ public class InnerBrokerController extends BrokerController {
         return brokerContainer.getNettyClientConfig();
     }
 
+    /** 按 Broker 名查找本容器内对应的消息存储实例。 */
     public MessageStore getMessageStoreByBrokerName(String brokerName) {
         if (this.brokerConfig.getBrokerName().equals(brokerName)) {
             return this.getMessageStore();
@@ -189,6 +204,7 @@ public class InnerBrokerController extends BrokerController {
         return null;
     }
 
+    /** 若自身为 Master 则返回 this，否则委托容器查找 Master。 */
     @Override
     public BrokerController peekMasterBroker() {
         if (brokerConfig.getBrokerId() == MixAll.MASTER_ID) {

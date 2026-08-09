@@ -26,16 +26,19 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+/**
+ * 默认选主策略：先在 SyncStateSet 内、再在全副本中
+ * 按存活过滤、优先保留旧 Master 或指定 ID，否则按 epoch/offset 排序。
+ */
 public class DefaultElectPolicy implements ElectPolicy {
 
-    // <clusterName, brokerName, brokerAddr>, Used to judge whether a broker
-    // has preliminary qualification to be selected as master
+    /** 判断副本是否具备被选为 Master 的存活资格。 */
     private BrokerValidPredicate validPredicate;
 
-    // <clusterName, brokerName, brokerAddr, BrokerLiveInfo>, Used to obtain the BrokerLiveInfo information of a broker
+    /** 获取副本心跳详情用于排序比较。 */
     private BrokerLiveInfoGetter brokerLiveInfoGetter;
 
-    // Sort in descending order according to<epoch, offset>, and sort in ascending order according to priority
+    /** 按 epoch 降序、maxOffset 降序、electionPriority 升序比较副本。 */
     private final Comparator<BrokerLiveInfo> comparator = (o1, o2) -> {
         if (o1.getEpoch() == o2.getEpoch()) {
             return o1.getMaxOffset() == o2.getMaxOffset() ? o1.getElectionPriority() - o2.getElectionPriority() :
@@ -55,19 +58,17 @@ public class DefaultElectPolicy implements ElectPolicy {
     }
 
     /**
-     * We will try to select a new master from syncStateBrokers and allReplicaBrokers in turn.
-     * The strategies are as follows:
-     *    - Filter alive brokers by 'validPredicate'.
-     *    - Check whether the old master is still valid.
-     *    - If preferBrokerAddr is not empty and valid, select it as master.
-     *    - Otherwise, we will sort the array of 'brokerLiveInfo' according to (epoch, offset, electionPriority), and select the best candidate as the new master.
+     * 依次在 SyncStateSet 与全副本中尝试选主：
+     * 1. 用 validPredicate 过滤存活副本；
+     * 2. 旧 Master 仍有效且未指定其他优先 ID 则保留；
+     * 3. 否则按 epoch/offset/优先级排序取最优，或随机取一。
      *
-     * @param clusterName       the brokerGroup belongs
-     * @param syncStateBrokers  all broker replicas in syncStateSet
-     * @param allReplicaBrokers all broker replicas
-     * @param oldMaster         old master's broker id
-     * @param preferBrokerId    the broker id prefer to be elected
-     * @return master elected by our own policy
+     * @param clusterName       集群名
+     * @param syncStateBrokers  同步副本 ID 集合
+     * @param allReplicaBrokers 全部副本 ID 集合
+     * @param oldMaster         原 Master brokerId
+     * @param preferBrokerId    优先选举的 brokerId
+     * @return 选出的新 Master brokerId
      */
     @Override
     public Long elect(String clusterName, String brokerName, Set<Long> syncStateBrokers, Set<Long> allReplicaBrokers,
@@ -88,6 +89,7 @@ public class DefaultElectPolicy implements ElectPolicy {
         return newMaster;
     }
 
+    /** 在给定副本 ID 集合内执行一轮选主逻辑。 */
     private Long tryElect(String clusterName, String brokerName, Set<Long> brokers, Long oldMaster,
         Long preferBrokerId) {
         if (this.validPredicate != null) {
