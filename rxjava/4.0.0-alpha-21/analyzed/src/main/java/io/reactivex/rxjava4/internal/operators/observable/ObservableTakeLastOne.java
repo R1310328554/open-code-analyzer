@@ -17,17 +17,24 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 缓存上游最后一个 onNext 值，onComplete 时发射该值（若有）后完成。
+ * @param <T> 元素类型
+ */
 public final class ObservableTakeLastOne<T> extends AbstractObservableWithUpstream<T, T> {
 
+    /** @param source 上游 ObservableSource */
     public ObservableTakeLastOne(ObservableSource<T> source) {
         super(source);
     }
 
+    /** 订阅 TakeLastOneObserver。 */
     @Override
     public void subscribeActual(Observer<? super T> observer) {
         source.subscribe(new TakeLastOneObserver<>(observer));
     }
 
+    /** 每次 onNext 覆盖 value；onComplete 时 emit 后完成。 */
     static final class TakeLastOneObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> downstream;
 
@@ -47,6 +54,7 @@ public final class ObservableTakeLastOne<T> extends AbstractObservableWithUpstre
             }
         }
 
+        /** 覆盖缓存的最后一个值。 */
         @Override
         public void onNext(T t) {
             value = t;
@@ -63,6 +71,7 @@ public final class ObservableTakeLastOne<T> extends AbstractObservableWithUpstre
                 emit();
         }
 
+        /** 非 null 时 onNext 缓存值，然后 onComplete。 */
         void emit() {
             T v = value;
             if (v != null) {

@@ -22,6 +22,10 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
+/**
+ * 按时间窗口与 count 限制缓存元素；上游终止后 drain 发射未过期项。
+ * @param <T> 元素类型
+ */
 public final class ObservableTakeLastTimed<T> extends AbstractObservableWithUpstream<T, T> {
     final long count;
     final long time;
@@ -30,6 +34,15 @@ public final class ObservableTakeLastTimed<T> extends AbstractObservableWithUpst
     final int bufferSize;
     final boolean delayError;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param count 最大保留元素数（Long.MAX_VALUE 表示不限）
+     * @param time 时间窗口长度
+     * @param unit 时间单位
+     * @param scheduler 提供 now 时间戳的 Scheduler
+     * @param bufferSize 队列容量
+     * @param delayError 为 true 时延迟报告错误直至 drain
+     */
     public ObservableTakeLastTimed(ObservableSource<T> source,
             long count, long time, TimeUnit unit, Scheduler scheduler, int bufferSize, boolean delayError) {
         super(source);
@@ -46,6 +59,7 @@ public final class ObservableTakeLastTimed<T> extends AbstractObservableWithUpst
         source.subscribe(new TakeLastTimedObserver<>(t, count, time, unit, scheduler, bufferSize, delayError));
     }
 
+    /** SpscLinkedArrayQueue 存 (timestamp, value) 对；drain 过滤过期项。 */
     static final class TakeLastTimedObserver<T>
     extends AtomicBoolean implements Observer<T>, Disposable {
 
@@ -83,6 +97,7 @@ public final class ObservableTakeLastTimed<T> extends AbstractObservableWithUpst
             }
         }
 
+        /** offer (now, t) 并剔除超出时间窗口或 count 的旧项。 */
         @Override
         public void onNext(T t) {
             final SpscLinkedArrayQueue<Object> q = queue;
@@ -133,6 +148,7 @@ public final class ObservableTakeLastTimed<T> extends AbstractObservableWithUpst
             return cancelled;
         }
 
+        /** compareAndSet 门控：poll 未过期项 onNext，空队列时终止。 */
         void drain() {
             if (!compareAndSet(false, true)) {
                 return;

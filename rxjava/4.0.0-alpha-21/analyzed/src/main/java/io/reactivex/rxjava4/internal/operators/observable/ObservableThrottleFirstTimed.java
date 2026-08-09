@@ -25,12 +25,24 @@ import io.reactivex.rxjava4.functions.Consumer;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.observers.SerializedObserver;
 
+/**
+ * 每个 timeout 窗口内仅转发首个 onNext（gate 门控），
+ * 窗口内其余值可选经 onDropped 回调丢弃。
+ * @param <T> 元素类型
+ */
 public final class ObservableThrottleFirstTimed<T> extends AbstractObservableWithUpstream<T, T> {
     final long timeout;
     final TimeUnit unit;
     final Scheduler scheduler;
     final Consumer<? super T> onDropped;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param timeout 节流窗口长度
+     * @param unit 时间单位
+     * @param scheduler 调度窗口 reset 的 Scheduler
+     * @param onDropped 窗口内被丢弃值的回调（可为 null）
+     */
     public ObservableThrottleFirstTimed(
             ObservableSource<T> source,
             long timeout,
@@ -52,6 +64,7 @@ public final class ObservableThrottleFirstTimed<T> extends AbstractObservableWit
                 onDropped));
     }
 
+    /** gate 为 true 时阻塞转发；run 重置 gate 开启下一窗口。 */
     static final class DebounceTimedObserver<T>
     extends AtomicReference<Disposable>
     implements Observer<T>, Disposable, Runnable {
@@ -87,6 +100,7 @@ public final class ObservableThrottleFirstTimed<T> extends AbstractObservableWit
             }
         }
 
+        /** gate 关闭时转发首项并 schedule reset；否则 onDropped。 */
         @Override
         public void onNext(T t) {
             if (!gate) {
@@ -111,6 +125,7 @@ public final class ObservableThrottleFirstTimed<T> extends AbstractObservableWit
             }
         }
 
+        /** 定时任务：gate=false 开启下一节流窗口。 */
         @Override
         public void run() {
             gate = false;

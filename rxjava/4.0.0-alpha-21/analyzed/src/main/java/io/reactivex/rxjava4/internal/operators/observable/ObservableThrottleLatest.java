@@ -25,14 +25,10 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Emits the next or latest item when the given time elapses.
- * <p>
- * The operator emits the next item, then starts a timer. When the timer fires,
- * it tries to emit the latest item from upstream. If there was no upstream item,
- * in the meantime, the next upstream item is emitted immediately and the
- * timed process repeats.
+ * 节流发射最新值：先发射下一项并启动定时器；
+ * 定时器触发时发射 upstream 最新缓存值。窗口内无新值则下一项立即发射。
  * <p>History: 2.1.14 - experimental
- * @param <T> the upstream and downstream value type
+ * @param <T> 上下游元素类型
  * @since 2.2
  */
 public final class ObservableThrottleLatest<T> extends AbstractObservableWithUpstream<T, T> {
@@ -47,6 +43,14 @@ public final class ObservableThrottleLatest<T> extends AbstractObservableWithUps
 
     final Consumer<? super T> onDropped;
 
+    /**
+     * @param source 上游 Observable
+     * @param timeout 节流窗口长度
+     * @param unit 时间单位
+     * @param scheduler 调度定时任务的 Scheduler
+     * @param emitLast 完成时是否发射最后一次缓存值
+     * @param onDropped 被覆盖旧值的回调（可为 null）
+     */
     public ObservableThrottleLatest(Observable<T> source,
             long timeout, TimeUnit unit,
             Scheduler scheduler,
@@ -65,6 +69,7 @@ public final class ObservableThrottleLatest<T> extends AbstractObservableWithUps
         source.subscribe(new ThrottleLatestObserver<>(observer, timeout, unit, scheduler.createWorker(), emitLast, onDropped));
     }
 
+    /** latest 缓存最新值；drain 协调 timerRunning/timerFired 与 emitLast。 */
     static final class ThrottleLatestObserver<T>
     extends AtomicInteger
     implements Observer<T>, Disposable, Runnable {
@@ -119,6 +124,7 @@ public final class ObservableThrottleLatest<T> extends AbstractObservableWithUps
             }
         }
 
+        /** getAndSet 更新 latest；旧值可选 onDropped。 */
         @Override
         public void onNext(T t) {
             T old = latest.getAndSet(t);
@@ -179,12 +185,14 @@ public final class ObservableThrottleLatest<T> extends AbstractObservableWithUps
             return cancelled;
         }
 
+        /** 定时 tick：timerFired=true 触发 drain。 */
         @Override
         public void run() {
             timerFired = true;
             drain();
         }
 
+        /** wip 门控：定时或立即 emit latest，处理 done/emitLast/onDropped。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;

@@ -21,16 +21,25 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.*;
 
+/**
+ * 延迟 delay 后发射单个 0L 并 onComplete 的冷 Observable。
+ */
 public final class ObservableTimer extends Observable<Long> {
     final Scheduler scheduler;
     final long delay;
     final TimeUnit unit;
+    /**
+     * @param delay 延迟时间
+     * @param unit 时间单位
+     * @param scheduler 调度 run 的 Scheduler
+     */
     public ObservableTimer(long delay, TimeUnit unit, Scheduler scheduler) {
         this.delay = delay;
         this.unit = unit;
         this.scheduler = scheduler;
     }
 
+    /** scheduleDirect 触发 TimerObserver.run 发射 0L。 */
     @Override
     public void subscribeActual(Observer<? super Long> observer) {
         TimerObserver ios = new TimerObserver(observer);
@@ -41,6 +50,7 @@ public final class ObservableTimer extends Observable<Long> {
         ios.setResource(d);
     }
 
+    /** run 时 onNext(0L) 并 lazySet EmptyDisposable 后 onComplete。 */
     static final class TimerObserver extends AtomicReference<Disposable>
     implements Disposable, Runnable {
 

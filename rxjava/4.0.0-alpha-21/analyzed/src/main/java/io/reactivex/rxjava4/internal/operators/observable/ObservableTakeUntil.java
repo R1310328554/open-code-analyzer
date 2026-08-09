@@ -21,15 +21,26 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.util.*;
 
+/**
+ * 转发上游元素直至 other 发出 onNext/onComplete/onError，
+ * 随后 dispose 上游并以 HalfSerializer 终止下游。
+ * @param <T> 主流元素类型
+ * @param <U> other 元素类型
+ */
 public final class ObservableTakeUntil<T, U> extends AbstractObservableWithUpstream<T, T> {
 
     final ObservableSource<? extends U> other;
 
+    /**
+     * @param source 主流 ObservableSource
+     * @param other 触发停止信号的 ObservableSource
+     */
     public ObservableTakeUntil(ObservableSource<T> source, ObservableSource<? extends U> other) {
         super(source);
         this.other = other;
     }
 
+    /** 并行订阅 other 与 source，共用 TakeUntilMainObserver。 */
     @Override
     public void subscribeActual(Observer<? super T> child) {
         TakeUntilMainObserver<T, U> parent = new TakeUntilMainObserver<>(child);
@@ -39,6 +50,7 @@ public final class ObservableTakeUntil<T, U> extends AbstractObservableWithUpstr
         source.subscribe(parent);
     }
 
+    /** 主流 Observer：HalfSerializer 串行转发 onNext/onError/onComplete。 */
     static final class TakeUntilMainObserver<T, U> extends AtomicInteger
     implements Observer<T>, Disposable {
 
@@ -98,11 +110,13 @@ public final class ObservableTakeUntil<T, U> extends AbstractObservableWithUpstr
             HalfSerializer.onError(downstream, e, this, error);
         }
 
+        /** other 完成：dispose 上游并以 HalfSerializer onComplete。 */
         void otherComplete() {
             DisposableHelper.dispose(upstream);
             HalfSerializer.onComplete(downstream, this, error);
         }
 
+        /** other 侧 Observer：onNext 触发 otherComplete。 */
         final class OtherObserver extends AtomicReference<Disposable>
         implements Observer<U> {
 

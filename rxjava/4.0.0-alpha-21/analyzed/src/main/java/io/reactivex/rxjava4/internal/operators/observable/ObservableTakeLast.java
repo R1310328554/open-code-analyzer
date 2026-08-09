@@ -20,19 +20,30 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 以 ArrayDeque 滑动窗口缓存上游最后 count 个元素，
+ * 上游 onComplete 后依次 poll 并 onNext。
+ * @param <T> 元素类型
+ */
 public final class ObservableTakeLast<T> extends AbstractObservableWithUpstream<T, T> {
     final int count;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param count 保留的末尾元素个数
+     */
     public ObservableTakeLast(ObservableSource<T> source, int count) {
         super(source);
         this.count = count;
     }
 
+    /** 订阅 TakeLastObserver（继承 ArrayDeque）。 */
     @Override
     public void subscribeActual(Observer<? super T> t) {
         source.subscribe(new TakeLastObserver<>(t, count));
     }
 
+    /** deque 满时 poll 队首再 offer；onComplete 时 drain 发射。 */
     static final class TakeLastObserver<T> extends ArrayDeque<T> implements Observer<T>, Disposable {
 
         @Serial
@@ -57,6 +68,7 @@ public final class ObservableTakeLast<T> extends AbstractObservableWithUpstream<
             }
         }
 
+        /** 队列 size 达 count 时 poll 最旧元素再 offer 新值。 */
         @Override
         public void onNext(T t) {
             if (count == size()) {
@@ -70,6 +82,7 @@ public final class ObservableTakeLast<T> extends AbstractObservableWithUpstream<
             downstream.onError(t);
         }
 
+        /** 循环 poll 并 onNext 直至 deque 空，然后 onComplete。 */
         @Override
         public void onComplete() {
             Observer<? super T> a = downstream;

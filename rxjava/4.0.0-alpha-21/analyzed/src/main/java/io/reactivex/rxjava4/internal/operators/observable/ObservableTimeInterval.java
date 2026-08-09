@@ -20,10 +20,20 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.schedulers.Timed;
 
+/**
+ * 将上游每个元素包装为 {@link Timed}，
+ * value() 为元素，time() 为与上一项的时间间隔。
+ * @param <T> 元素类型
+ */
 public final class ObservableTimeInterval<T> extends AbstractObservableWithUpstream<T, Timed<T>> {
     final Scheduler scheduler;
     final TimeUnit unit;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param unit 时间间隔单位
+     * @param scheduler 提供 now 时间戳的 Scheduler
+     */
     public ObservableTimeInterval(ObservableSource<T> source, TimeUnit unit, Scheduler scheduler) {
         super(source);
         this.scheduler = scheduler;
@@ -35,6 +45,7 @@ public final class ObservableTimeInterval<T> extends AbstractObservableWithUpstr
         source.subscribe(new TimeIntervalObserver<>(t, unit, scheduler));
     }
 
+    /** 记录 lastTime；onNext 时计算 delta 并发射 Timed。 */
     static final class TimeIntervalObserver<T> implements Observer<T>, Disposable {
         final Observer<? super Timed<T>> downstream;
         final TimeUnit unit;
@@ -69,6 +80,7 @@ public final class ObservableTimeInterval<T> extends AbstractObservableWithUpstr
             return upstream.isDisposed();
         }
 
+        /** delta = now - lastTime，发射 new Timed(t, delta, unit)。 */
         @Override
         public void onNext(T t) {
             long now = scheduler.now(unit);

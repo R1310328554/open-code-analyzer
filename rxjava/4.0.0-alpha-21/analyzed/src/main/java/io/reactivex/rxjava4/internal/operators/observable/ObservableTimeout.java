@@ -26,11 +26,24 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.internal.operators.observable.ObservableTimeoutTimed.TimeoutSupport;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 首项与每项 onNext 后启动 itemTimeoutIndicator 超时监视；
+ * 超时触发 TimeoutException 或切换至 other fallback。
+ * @param <T> 主流元素类型
+ * @param <U> 首次超时指示类型
+ * @param <V> 逐项超时指示类型
+ */
 public final class ObservableTimeout<T, U, V> extends AbstractObservableWithUpstream<T, T> {
     final ObservableSource<U> firstTimeoutIndicator;
     final Function<? super T, ? extends ObservableSource<V>> itemTimeoutIndicator;
     final ObservableSource<? extends T> other;
 
+    /**
+     * @param source 主流 Observable
+     * @param firstTimeoutIndicator 首项前的超时指示（可为 null）
+     * @param itemTimeoutIndicator 每项映射为超时监视 ObservableSource
+     * @param other 超时后的 fallback（null 则 onError TimeoutException）
+     */
     public ObservableTimeout(
             Observable<T> source,
             ObservableSource<U> firstTimeoutIndicator,
@@ -61,6 +74,7 @@ public final class ObservableTimeout<T, U, V> extends AbstractObservableWithUpst
         void onTimeoutError(long idx, Throwable ex);
     }
 
+    /** idx 序号匹配 TimeoutConsumer；超时则 onError 或 fallback。 */
     static final class TimeoutObserver<T> extends AtomicLong
     implements Observer<T>, Disposable, TimeoutSelectorSupport {
 
@@ -87,6 +101,7 @@ public final class ObservableTimeout<T, U, V> extends AbstractObservableWithUpst
             DisposableHelper.setOnce(upstream, d);
         }
 
+        /** 转发 t 后 replace 为 itemTimeoutIndicator 的新 TimeoutConsumer。 */
         @Override
         public void onNext(T t) {
             long idx = get();
@@ -150,6 +165,7 @@ public final class ObservableTimeout<T, U, V> extends AbstractObservableWithUpst
             }
         }
 
+        /** idx 匹配时 dispose 上游并 onError(TimeoutException)。 */
         @Override
         public void onTimeout(long idx) {
             if (compareAndSet(idx, Long.MAX_VALUE)) {
@@ -182,6 +198,7 @@ public final class ObservableTimeout<T, U, V> extends AbstractObservableWithUpst
         }
     }
 
+    /** 超时后 subscribe fallback 替代主流。 */
     static final class TimeoutFallbackObserver<T>
     extends AtomicReference<Disposable>
     implements Observer<T>, Disposable, TimeoutSelectorSupport {
@@ -320,6 +337,7 @@ public final class ObservableTimeout<T, U, V> extends AbstractObservableWithUpst
         }
     }
 
+    /** 超时指示 Observer：onNext/onComplete 触发 parent.onTimeout(idx)。 */
     static final class TimeoutConsumer extends AtomicReference<Disposable>
     implements Observer<Object>, Disposable {
 

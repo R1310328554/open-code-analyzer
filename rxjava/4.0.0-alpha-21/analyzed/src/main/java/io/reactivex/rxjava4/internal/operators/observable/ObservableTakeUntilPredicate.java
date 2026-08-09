@@ -20,8 +20,17 @@ import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 转发元素直至 predicate.test 为 true（含触发项），
+ * 随后 dispose 上游并 onComplete。
+ * @param <T> 元素类型
+ */
 public final class ObservableTakeUntilPredicate<T> extends AbstractObservableWithUpstream<T, T> {
     final Predicate<? super T> predicate;
+    /**
+     * @param source 上游 ObservableSource
+     * @param predicate 为 true 时停止（含当前元素）
+     */
     public ObservableTakeUntilPredicate(ObservableSource<T> source, Predicate<? super T> predicate) {
         super(source);
         this.predicate = predicate;
@@ -32,6 +41,7 @@ public final class ObservableTakeUntilPredicate<T> extends AbstractObservableWit
         source.subscribe(new TakeUntilPredicateObserver<>(observer, predicate));
     }
 
+    /** 先 onNext 再 test predicate；true 时 dispose 并完成。 */
     static final class TakeUntilPredicateObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> downstream;
         final Predicate<? super T> predicate;
@@ -60,6 +70,7 @@ public final class ObservableTakeUntilPredicate<T> extends AbstractObservableWit
             return upstream.isDisposed();
         }
 
+        /** 转发后 test；predicate 异常转 onError。 */
         @Override
         public void onNext(T t) {
             if (!done) {

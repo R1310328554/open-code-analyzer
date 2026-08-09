@@ -28,12 +28,24 @@ import io.reactivex.rxjava4.operators.SimpleQueue;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 上游每 onNext 用 mapper 映射为新的 ObservableSource 并切换订阅：
+ * 取消旧 inner，仅转发当前 active inner 的队列元素。
+ * @param <T> 上游元素类型
+ * @param <R> 映射后元素类型
+ */
 public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstream<T, R> {
     final Function<? super T, ? extends ObservableSource<? extends R>> mapper;
     final int bufferSize;
 
     final boolean delayErrors;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param mapper 将上游元素映射为 inner ObservableSource 的函数
+     * @param bufferSize inner 队列容量
+     * @param delayErrors 为 true 时延迟聚合错误直至 drain 结束
+     */
     public ObservableSwitchMap(ObservableSource<T> source,
                                Function<? super T, ? extends ObservableSource<? extends R>> mapper, int bufferSize,
                                        boolean delayErrors) {
@@ -43,6 +55,7 @@ public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstr
         this.delayErrors = delayErrors;
     }
 
+    /** 尝试标量优化，否则订阅 SwitchMapObserver。 */
     @Override
     public void subscribeActual(Observer<? super R> t) {
 
@@ -53,6 +66,7 @@ public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstr
         source.subscribe(new SwitchMapObserver<>(t, mapper, bufferSize, delayErrors));
     }
 
+    /** 维护 active inner 与 unique 序号；drain 从 inner 队列 poll 转发。 */
     static final class SwitchMapObserver<T, R> extends AtomicInteger implements Observer<T>, Disposable {
 
         @Serial
@@ -99,6 +113,7 @@ public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstr
             }
         }
 
+        /** 递增 unique、cancel 旧 inner，subscribe 新 inner。 */
         @Override
         public void onNext(T t) {
             long c = unique + 1;
@@ -178,6 +193,7 @@ public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstr
             }
         }
 
+        /** wip 门控：从 active inner 队列 poll 并 onNext，处理 done/错误/切换。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -293,6 +309,7 @@ public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstr
             }
         }
 
+        /** inner 错误：index 匹配 unique 时聚合错误并 drain。 */
         void innerError(SwitchMapInnerObserver<T, R> inner, Throwable ex) {
             if (inner.index == unique && errors.tryAddThrowable(ex)) {
                 if (!delayErrors) {
@@ -307,6 +324,7 @@ public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstr
         }
     }
 
+    /** inner Observer：index 匹配 parent.unique 时才 offer/onComplete。 */
     static final class SwitchMapInnerObserver<T, R> extends AtomicReference<Disposable> implements Observer<R> {
 
         @Serial
@@ -350,6 +368,7 @@ public final class ObservableSwitchMap<T, R> extends AbstractObservableWithUpstr
             }
         }
 
+        /** index 匹配时 offer 至队列并触发 parent.drain。 */
         @Override
         public void onNext(R t) {
             SimpleQueue<R> q = queue;

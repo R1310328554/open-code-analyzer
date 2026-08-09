@@ -18,18 +18,28 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 仅向下游转发前 limit 个元素，随后 dispose 上游并 onComplete。
+ * @param <T> 元素类型
+ */
 public final class ObservableTake<T> extends AbstractObservableWithUpstream<T, T> {
     final long limit;
+    /**
+     * @param source 上游 ObservableSource
+     * @param limit 最多发射的元素个数
+     */
     public ObservableTake(ObservableSource<T> source, long limit) {
         super(source);
         this.limit = limit;
     }
 
+    /** 订阅 TakeObserver。 */
     @Override
     protected void subscribeActual(Observer<? super T> observer) {
         source.subscribe(new TakeObserver<>(observer, limit));
     }
 
+    /** 维护 remaining 计数；归零时触发 onComplete。 */
     static final class TakeObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> downstream;
 
@@ -43,6 +53,7 @@ public final class ObservableTake<T> extends AbstractObservableWithUpstream<T, T
             this.remaining = limit;
         }
 
+        /** remaining 为 0 时直接 EmptyDisposable.complete。 */
         @Override
         public void onSubscribe(Disposable d) {
             if (DisposableHelper.validate(this.upstream, d)) {
@@ -57,6 +68,7 @@ public final class ObservableTake<T> extends AbstractObservableWithUpstream<T, T
             }
         }
 
+        /** 递减 remaining；最后一项 onNext 后立即 onComplete。 */
         @Override
         public void onNext(T t) {
             if (!done && remaining-- > 0) {

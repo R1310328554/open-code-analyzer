@@ -22,16 +22,27 @@ import io.reactivex.rxjava4.functions.Supplier;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 
+/**
+ * 收集上游全部元素至 Supplier 提供的 Collection，
+ * onComplete 时 onNext 该集合并完成。
+ * @param <T> 元素类型
+ * @param <U> Collection 类型
+ */
 public final class ObservableToList<T, U extends Collection<? super T>>
 extends AbstractObservableWithUpstream<T, U> {
 
     final Supplier<U> collectionSupplier;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param collectionSupplier 提供可变 Collection 的 Supplier
+     */
     public ObservableToList(ObservableSource<T> source, Supplier<U> collectionSupplier) {
         super(source);
         this.collectionSupplier = collectionSupplier;
     }
 
+    /** 调用 collectionSupplier 后订阅 ToListObserver。 */
     @Override
     public void subscribeActual(Observer<? super U> t) {
         U coll;
@@ -45,6 +56,7 @@ extends AbstractObservableWithUpstream<T, U> {
         source.subscribe(new ToListObserver<>(t, coll));
     }
 
+    /** 逐 onNext add；onComplete 时 onNext(collection) 再 onComplete。 */
     static final class ToListObserver<T, U extends Collection<? super T>> implements Observer<T>, Disposable {
         final Observer<? super U> downstream;
 
@@ -86,6 +98,7 @@ extends AbstractObservableWithUpstream<T, U> {
             downstream.onError(t);
         }
 
+        /** 发射累积集合并 onComplete。 */
         @Override
         public void onComplete() {
             U c = collection;

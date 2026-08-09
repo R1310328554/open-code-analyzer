@@ -24,12 +24,24 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 每项 onNext 后启动固定 timeout 定时器；
+ * 超时触发 TimeoutException 或切换至 other fallback。
+ * @param <T> 元素类型
+ */
 public final class ObservableTimeoutTimed<T> extends AbstractObservableWithUpstream<T, T> {
     final long timeout;
     final TimeUnit unit;
     final Scheduler scheduler;
     final ObservableSource<? extends T> other;
 
+    /**
+     * @param source 上游 Observable
+     * @param timeout 无新项时的超时长度
+     * @param unit 时间单位
+     * @param scheduler 调度 TimeoutTask 的 Scheduler
+     * @param other 超时 fallback（null 则 onError）
+     */
     public ObservableTimeoutTimed(Observable<T> source,
             long timeout, TimeUnit unit, Scheduler scheduler, ObservableSource<? extends T> other) {
         super(source);
@@ -54,6 +66,7 @@ public final class ObservableTimeoutTimed<T> extends AbstractObservableWithUpstr
         }
     }
 
+    /** 每 onNext 后 startTimeout(idx+1) 重置定时器。 */
     static final class TimeoutObserver<T> extends AtomicLong
     implements Observer<T>, Disposable, TimeoutSupport {
 
@@ -100,6 +113,7 @@ public final class ObservableTimeoutTimed<T> extends AbstractObservableWithUpstr
             startTimeout(idx + 1);
         }
 
+        /** worker.schedule TimeoutTask(nextIndex) 替换旧 task。 */
         void startTimeout(long nextIndex) {
             task.replace(worker.schedule(new TimeoutTask(nextIndex, this), timeout, unit));
         }
@@ -151,6 +165,7 @@ public final class ObservableTimeoutTimed<T> extends AbstractObservableWithUpstr
         }
     }
 
+    /** 定时到期调用 parent.onTimeout(idx)。 */
     record TimeoutTask(long idx, TimeoutSupport parent) implements Runnable {
 
         @Override
@@ -267,6 +282,7 @@ public final class ObservableTimeoutTimed<T> extends AbstractObservableWithUpstr
         }
     }
 
+    /** fallback 侧 Observer：经 arbiter 转发至 downstream。 */
     record FallbackObserver<T>(Observer<? super T> downstream,
                                AtomicReference<Disposable> arbiter) implements Observer<T> {
 
