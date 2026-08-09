@@ -193,6 +193,10 @@ import org.apache.rocketmq.store.timer.TimerMetrics;
 import org.apache.rocketmq.store.timer.rocksdb.TimerMessageRocksDBStore;
 import org.apache.rocketmq.store.transaction.TransMessageRocksDBStore;
 
+/**
+ * Broker 核心控制器：聚合消息存储、客户端管理、Remoting 服务与各类 Processor。
+ * <p>负责初始化元数据、注册请求处理器、启动/关闭 Broker 生命周期及 Controller 模式副本管理。
+ */
 public class BrokerController {
     protected static final Logger LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final Logger LOG_PROTECTION = LoggerFactory.getLogger(LoggerName.PROTECTION_LOGGER_NAME);
@@ -546,7 +550,7 @@ public class BrokerController {
 
         NettyRemotingServer fastRemotingServer = new NettyRemotingServer(fastConfig, this.clientHousekeepingService);
 
-        // Set RemotingMetricsManager on both remoting servers
+        // 为 TCP 与 FAST 两套 Remoting 服务器设置指标管理器
         if (this.brokerMetricsManager != null) {
             tcpRemotingServer.setRemotingMetricsManager(this.brokerMetricsManager.getRemotingMetricsManager());
             fastRemotingServer.setRemotingMetricsManager(this.brokerMetricsManager.getRemotingMetricsManager());
@@ -852,6 +856,7 @@ public class BrokerController {
         }
     }
 
+    /** 加载 Topic、订阅组、消费位点、过滤规则等 Broker 元数据。 */
     public boolean initializeMetadata() {
         boolean result = true;
         if (null != configStorage) {
@@ -866,6 +871,7 @@ public class BrokerController {
         return result;
     }
 
+    /** 创建 {@link MessageStore}（含 RocksDB/DLedger/定时/事务扩展）并注册分发钩子。 */
     public boolean initializeMessageStore() {
         boolean result = true;
         try {
@@ -885,7 +891,7 @@ public class BrokerController {
 
             this.brokerStats = new BrokerStats(defaultMessageStore);
 
-            // Load store plugin
+            // 加载 MessageStore 插件链
             MessageStorePluginContext context = new MessageStorePluginContext(
                 messageStoreConfig, brokerStatsManager, messageArrivingListener, brokerConfig, configuration);
             this.messageStore = MessageStoreFactory.build(context, defaultMessageStore);
@@ -912,6 +918,7 @@ public class BrokerController {
         return result;
     }
 
+    /** 依次初始化元数据、消息存储并恢复服务组件。 */
     public boolean initialize() throws CloneNotSupportedException {
 
         boolean result = this.initializeMetadata();
@@ -927,6 +934,7 @@ public class BrokerController {
         return this.recoverAndInitService();
     }
 
+    /** 恢复存储、启动副本管理器、注册 Processor 并初始化 Lite/Pop 等扩展服务。 */
     public boolean recoverAndInitService() throws CloneNotSupportedException {
 
         boolean result = true;
@@ -1158,13 +1166,12 @@ public class BrokerController {
         return this.liteLifecycleManager.init();
     }
 
+    /** 向 TCP/FAST Remoting 服务器注册各 RequestCode 对应的 Processor 与线程池。 */
     public void registerProcessor() {
         RemotingServer remotingServer = remotingServerMap.get(TCP_REMOTING_SERVER);
         RemotingServer fastRemotingServer = remotingServerMap.get(FAST_REMOTING_SERVER);
 
-        /*
-         * SendMessageProcessor
-         */
+        /* 发送/批量/回退/召回消息处理器 */
         sendMessageProcessor.registerSendMessageHook(sendMessageHookList);
         sendMessageProcessor.registerConsumeMessageHook(consumeMessageHookList);
 
@@ -1178,9 +1185,7 @@ public class BrokerController {
         fastRemotingServer.registerProcessor(RequestCode.SEND_BATCH_MESSAGE, sendMessageProcessor, this.sendMessageExecutor);
         fastRemotingServer.registerProcessor(RequestCode.CONSUMER_SEND_MSG_BACK, sendMessageProcessor, this.sendMessageExecutor);
         fastRemotingServer.registerProcessor(RequestCode.RECALL_MESSAGE, recallMessageProcessor, this.sendMessageExecutor);
-        /**
-         * PullMessageProcessor
-         */
+        /** 拉取与 Lite 拉取消息处理器 */
         remotingServer.registerProcessor(RequestCode.PULL_MESSAGE, this.pullMessageProcessor, this.pullMessageExecutor);
         remotingServer.registerProcessor(RequestCode.LITE_PULL_MESSAGE, this.pullMessageProcessor, this.litePullMessageExecutor);
         this.pullMessageProcessor.registerConsumeMessageHook(consumeMessageHookList);
@@ -1188,15 +1193,11 @@ public class BrokerController {
          * PeekMessageProcessor
          */
         remotingServer.registerProcessor(RequestCode.PEEK_MESSAGE, this.peekMessageProcessor, this.pullMessageExecutor);
-        /**
-         * PopMessageProcessor
-         */
+        /** Pop 与 Pop-Lite 消息处理器 */
         remotingServer.registerProcessor(RequestCode.POP_MESSAGE, this.popMessageProcessor, this.pullMessageExecutor);
         remotingServer.registerProcessor(RequestCode.POP_LITE_MESSAGE, this.popLiteMessageProcessor, this.pullMessageExecutor);
 
-        /**
-         * AckMessageProcessor
-         */
+        /** Pop 确认与批量确认处理器 */
         remotingServer.registerProcessor(RequestCode.ACK_MESSAGE, this.ackMessageProcessor, this.ackMessageExecutor);
         fastRemotingServer.registerProcessor(RequestCode.ACK_MESSAGE, this.ackMessageProcessor, this.ackMessageExecutor);
 
@@ -1315,6 +1316,7 @@ public class BrokerController {
         this.brokerStats = brokerStats;
     }
 
+    /** 检测消费落后超过阈值的 Group 并禁用其消费。 */
     public void protectBroker() {
         if (this.brokerConfig.isDisableConsumeIfConsumerReadSlowly()) {
             for (Map.Entry<String, MomentStatsItem> next : this.brokerStatsManager.getMomentStatsItemSetFallSize().getStatsItemTable().entrySet()) {
@@ -1329,6 +1331,7 @@ public class BrokerController {
         }
     }
 
+    /** 返回线程池队列队首任务等待时间（毫秒），用于流控与水位监控。 */
     public long headSlowTimeMills(BlockingQueue<Runnable> q) {
         long slowTimeMills = 0;
         final Runnable peek = q.peek();
@@ -1396,6 +1399,7 @@ public class BrokerController {
         LOG_WATER_MARK.info("[WATERMARK] {} Queue Size: {} SlowTimeMills: {}", queueName, queue.size(), slowTimeSupplier.get());
     }
 
+    /** 返回消息存储实例。 */
     public MessageStore getMessageStore() {
         return messageStore;
     }
@@ -1415,6 +1419,7 @@ public class BrokerController {
         return broker2Client;
     }
 
+    /** 返回 Consumer 客户端管理器。 */
     public ConsumerManager getConsumerManager() {
         return consumerManager;
     }
@@ -1431,6 +1436,7 @@ public class BrokerController {
         return popInflightMessageCounter;
     }
 
+    /** 返回 Pop 消费服务。 */
     public PopConsumerService getPopConsumerService() {
         return popConsumerService;
     }
@@ -1785,6 +1791,7 @@ public class BrokerController {
         }
     }
 
+    /** 关闭 Remoting、存储、长轮询、Pop、事务及定时任务等全部 Broker 服务。 */
     public void shutdown() {
 
         shutdownBasicService();
@@ -1957,6 +1964,7 @@ public class BrokerController {
         }
     }
 
+    /** 启动 Broker：注册 NameServer、调度心跳与同步任务并启动各后台服务。 */
     public void start() throws Exception {
 
         this.shouldStartTime = System.currentTimeMillis() + messageStoreConfig.getDisappearTimeAfterStart();

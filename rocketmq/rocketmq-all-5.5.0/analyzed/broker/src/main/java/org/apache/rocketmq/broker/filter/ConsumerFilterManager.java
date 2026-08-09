@@ -38,7 +38,8 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
 /**
- * Consumer filter data manager.Just manage the consumers use expression filter.
+ * Consumer 表达式过滤数据管理器：维护使用 SQL92/属性过滤的订阅 Bloom 位图与表达式。
+ * <p>仅管理非 Tag 类型的表达式过滤 Consumer。
  */
 public class ConsumerFilterManager extends ConfigManager {
 
@@ -53,10 +54,11 @@ public class ConsumerFilterManager extends ConfigManager {
     private transient BloomFilter bloomFilter;
 
     public ConsumerFilterManager() {
-        // just for test
+        // 仅用于单元测试
         this.bloomFilter = BloomFilter.createByFn(20, 64);
     }
 
+    /** 绑定 Broker 并按配置初始化 Bloom 过滤器参数。 */
     public ConsumerFilterManager(BrokerController brokerController) {
         this.brokerController = brokerController;
         this.bloomFilter = BloomFilter.createByFn(
@@ -70,9 +72,9 @@ public class ConsumerFilterManager extends ConfigManager {
     }
 
     /**
-     * Build consumer filter data.Be care, bloom filter data is not included.
+     * 构建 Consumer 过滤数据（不含 Bloom 位图）。
      *
-     * @return maybe null
+     * @return 过滤数据，Tag 类型或表达式无效时可能为 null
      */
     public static ConsumerFilterData build(final String topic, final String consumerGroup,
         final String expression, final String type,
@@ -101,6 +103,7 @@ public class ConsumerFilterManager extends ConfigManager {
         return consumerFilterData;
     }
 
+    /** 批量注册消费组的表达式订阅过滤数据。 */
     public void register(final String consumerGroup, final Collection<SubscriptionData> subList) {
         for (SubscriptionData subscriptionData : subList) {
             register(
@@ -134,6 +137,7 @@ public class ConsumerFilterManager extends ConfigManager {
         }
     }
 
+    /** 注册单个 Topic 的表达式过滤并更新 Bloom 位图。 */
     public boolean register(final String topic, final String consumerGroup, final String expression,
         final String type, final long clientVersion) {
         if (ExpressionType.isTagType(type)) {
@@ -157,12 +161,14 @@ public class ConsumerFilterManager extends ConfigManager {
         return filterDataMapByTopic.register(consumerGroup, expression, type, bloomFilterData, clientVersion);
     }
 
+    /** 注销消费组的全部过滤数据。 */
     public void unRegister(final String consumerGroup) {
         for (Entry<String, FilterDataMapByTopic> entry : filterDataByTopic.entrySet()) {
             entry.getValue().unRegister(consumerGroup);
         }
     }
 
+    /** 查询指定 Topic 与消费组的过滤数据。 */
     public ConsumerFilterData get(final String topic, final String consumerGroup) {
         if (!this.filterDataByTopic.containsKey(topic)) {
             return null;
@@ -206,6 +212,7 @@ public class ConsumerFilterManager extends ConfigManager {
         return this.filterDataByTopic.get(topic).getGroupFilterData().values();
     }
 
+    /** 返回 CommitLog 扩展位图使用的 Bloom 过滤器。 */
     public BloomFilter getBloomFilter() {
         return bloomFilter;
     }
@@ -287,6 +294,7 @@ public class ConsumerFilterManager extends ConfigManager {
         return RemotingSerializable.toJson(this, prettyFormat);
     }
 
+    /** 清理过期（24 小时未更新）的过滤数据。 */
     public void clean() {
         Iterator<Map.Entry<String, FilterDataMapByTopic>> topicIterator = this.filterDataByTopic.entrySet().iterator();
         while (topicIterator.hasNext()) {

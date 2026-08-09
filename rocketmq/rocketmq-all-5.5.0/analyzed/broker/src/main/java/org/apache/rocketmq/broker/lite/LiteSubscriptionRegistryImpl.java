@@ -47,6 +47,10 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.header.NotifyUnsubscribeLiteRequestHeader;
 
+/**
+ * Lite 订阅注册表实现：维护 clientId 与 LMQ/Topic 订阅关系及 Netty 通道映射。
+ * <p>支持部分/完整订阅增删、通配符 Group 缓存与取消订阅通知。
+ */
 public class LiteSubscriptionRegistryImpl extends ServiceThread implements LiteSubscriptionRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
 
@@ -67,16 +71,17 @@ public class LiteSubscriptionRegistryImpl extends ServiceThread implements LiteS
         this.liteLifecycleManager = liteLifecycleManager;
     }
 
-    // Number of active liteTopic references.
-    // [(client1, liteTopic1), (client2, liteTopic1)] counts as two active references.
+    // 活跃 LiteTopic 引用计数；同一 Topic 被多客户端订阅时分别计数
     protected final AtomicInteger activeNum = new AtomicInteger(0);
 
     @Override
+    /** 更新客户端 Netty 通道映射。 */
     public void updateClientChannel(String clientId, Channel channel) {
         clientChannels.put(clientId, channel);
     }
 
     @Override
+    /** 增量添加客户端对 Topic 下部分 LMQ 的订阅。 */
     public void addPartialSubscription(String clientId, String group, String topic, Set<String> lmqNameSet,
         OffsetOption offsetOption) {
         long maxCount = brokerController.getBrokerConfig().getMaxLiteSubscriptionCount();
@@ -117,6 +122,7 @@ public class LiteSubscriptionRegistryImpl extends ServiceThread implements LiteS
     }
 
     @Override
+    /** 添加客户端对 Topic 下全部 LMQ 的完整订阅。 */
     public void addCompleteSubscription(String clientId, String group, String topic, Set<String> lmqNameAll, long version) {
         Set<String> lmqNameNew;
         if (LiteMetadataUtil.isWildcardGroup(group, brokerController)) {
@@ -147,6 +153,7 @@ public class LiteSubscriptionRegistryImpl extends ServiceThread implements LiteS
     }
 
     @Override
+    /** 移除客户端的全部 Lite 订阅并清理索引。 */
     public void removeCompleteSubscription(String clientId) {
         clientChannels.remove(clientId);
         LiteSubscription thisSub = client2Subscription.remove(clientId);
@@ -177,6 +184,7 @@ public class LiteSubscriptionRegistryImpl extends ServiceThread implements LiteS
      *    mapping each group to its subscribers
      */
     @Override
+    /** 查询订阅指定 LMQ 的全部客户端（含通配符 Group）。 */
     public SubscriberWrapper getAllSubscriber(String group, String lmqName) {
         String topic = LiteUtil.getParentTopic(lmqName);
 
@@ -225,6 +233,7 @@ public class LiteSubscriptionRegistryImpl extends ServiceThread implements LiteS
      * @param lmqName the LMQ name to clean up
      */
     @Override
+    /** 清理 LMQ 的全部订阅，可选通知客户端取消订阅。 */
     public void cleanSubscription(String lmqName, boolean notifyClient) {
         Set<ClientGroup> topicGroupSet = liteTopic2Group.remove(lmqName);
         if (CollectionUtils.isEmpty(topicGroupSet)) {
@@ -329,11 +338,13 @@ public class LiteSubscriptionRegistryImpl extends ServiceThread implements LiteS
     }
 
     @Override
+    /** 返回客户端的 Lite 订阅快照。 */
     public LiteSubscription getLiteSubscription(String clientId) {
         return client2Subscription.get(clientId);
     }
 
     @Override
+    /** 返回当前活跃 LiteTopic 引用总数。 */
     public int getActiveSubscriptionNum() {
         return activeNum.get();
     }

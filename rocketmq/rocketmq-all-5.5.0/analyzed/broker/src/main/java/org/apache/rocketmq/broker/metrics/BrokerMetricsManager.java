@@ -114,6 +114,10 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.OPEN_TELE
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_PROTOCOL_TYPE;
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.PROTOCOL_TYPE_REMOTING;
 
+/**
+ * Broker OpenTelemetry 指标管理器：注册消息吞吐、事务、Pop、Lite 滞后等 Meter。
+ * <p>支持 OTLP、Prometheus 等多种导出后端及批量拆分装饰。
+ */
 public class BrokerMetricsManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -172,6 +176,7 @@ public class BrokerMetricsManager {
         }
     };
 
+    /** 初始化 SdkMeterProvider、Exporter 与各 Counter/Histogram/Gauge。 */
     public BrokerMetricsManager(BrokerController brokerController) {
         this.brokerController = brokerController;
         brokerConfig = brokerController.getBrokerConfig();
@@ -183,6 +188,7 @@ public class BrokerMetricsManager {
         init();
     }
 
+    /** 创建带 Broker 集群/名称/地址等默认标签的 Attributes 构建器。 */
     public AttributesBuilder newAttributesBuilder() {
         AttributesBuilder attributesBuilder;
         if (attributesBuilderSupplier == null) {
@@ -202,6 +208,7 @@ public class BrokerMetricsManager {
         return attributesBuilder.build();
     }
 
+    /** 判断 Topic 是否为重试或死信队列 Topic。 */
     public static boolean isRetryOrDlqTopic(String topic) {
         if (StringUtils.isBlank(topic)) {
             return false;
@@ -209,6 +216,7 @@ public class BrokerMetricsManager {
         return topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX) || topic.startsWith(MixAll.DLQ_GROUP_TOPIC_PREFIX);
     }
 
+    /** 判断消费组是否为系统内置 Group（如工具组前缀）。 */
     public static boolean isSystemGroup(String group) {
         if (StringUtils.isBlank(group)) {
             return false;
@@ -244,15 +252,18 @@ public class BrokerMetricsManager {
         return topicMessageType;
     }
 
+    /** 返回 Broker 级 OpenTelemetry Meter。 */
     public Meter getBrokerMeter() {
         return brokerMeter;
     }
 
     // Getter methods for metrics variables
+    /** 返回消息写入总量 Counter。 */
     public LongCounter getMessagesInTotal() {
         return messagesInTotal;
     }
 
+    /** 返回消息消费总量 Counter。 */
     public LongCounter getMessagesOutTotal() {
         return messagesOutTotal;
     }
@@ -781,10 +792,12 @@ public class BrokerMetricsManager {
         }
     }
 
+    /** 返回 Lite 消费滞后计算器。 */
     public LiteConsumerLagCalculator getLiteConsumerLagCalculator() {
         return liteConsumerLagCalculator;
     }
 
+    /** 关闭 MeterProvider 与 PeriodicMetricReader。 */
     public void shutdown() {
         if (brokerConfig.isInBrokerContainer()) {
             // only rto need

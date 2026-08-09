@@ -52,6 +52,10 @@ import static org.apache.rocketmq.broker.longpolling.PollingResult.POLLING_FULL;
 import static org.apache.rocketmq.broker.longpolling.PollingResult.POLLING_SUC;
 import static org.apache.rocketmq.broker.longpolling.PollingResult.POLLING_TIMEOUT;
 
+/**
+ * Pop 长轮询服务：挂起 Pop 请求直至消息到达或超时。
+ * <p>按 topic+cid+queueId 维护 polling 队列，支持 Caffeine LRU 过期清理。
+ */
 public class PopLongPollingService extends ServiceThread {
 
     private static final Logger POP_LOGGER =
@@ -65,11 +69,12 @@ public class PopLongPollingService extends ServiceThread {
     private final AtomicLong totalPollingNum = new AtomicLong(0);
     private final boolean notifyLast;
 
+    /** 初始化 polling 映射与 topic-cid 索引缓存。 */
     public PopLongPollingService(BrokerController brokerController, NettyRequestProcessor processor,
         boolean notifyLast) {
         this.brokerController = brokerController;
         this.processor = processor;
-        // 100000 topic default,  100000 lru topic + cid + qid
+        // 默认约 10 万 Topic 容量；LRU 缓存 topic+cid+queueId 组合
         this.topicCidMap = Caffeine.newBuilder()
             .maximumSize(this.brokerController.getBrokerConfig().getPopPollingMapSize() * 2L)
             .expireAfterAccess(this.brokerController.getBrokerConfig().getPopPollingMapExpireTimeSeconds(), TimeUnit.SECONDS)
@@ -90,6 +95,7 @@ public class PopLongPollingService extends ServiceThread {
         return PopLongPollingService.class.getSimpleName();
     }
 
+    /** 后台循环：清理过期 polling 条目并打印统计。 */
     @Override
     public void run() {
         int i = 0;
@@ -198,6 +204,7 @@ public class PopLongPollingService extends ServiceThread {
         notifyMessageArriving(originTopic, queueId, originGroup, true, tagsCode, msgStoreTime, filterBitMap, properties);
     }
 
+    /** 消息到达时唤醒匹配的长轮询 Pop 请求。 */
     public void notifyMessageArriving(final String topic, final int queueId, long offset,
         Long tagsCode, long msgStoreTime, byte[] filterBitMap, Map<String, String> properties) {
         ConcurrentHashMap<String, Byte> cids = topicCidMap.getIfPresent(topic);
@@ -260,6 +267,7 @@ public class PopLongPollingService extends ServiceThread {
         return wakeUp(request, null);
     }
 
+    /** 唤醒单个 Pop 长轮询请求并回调响应。 */
     public boolean wakeUp(final PopRequest request, CommandCallback callback) {
         if (request == null || !request.complete()) {
             return false;
@@ -306,6 +314,7 @@ public class PopLongPollingService extends ServiceThread {
      * @param requestHeader
      * @return
      */
+    /** 处理 Pop 长轮询请求：立即返回或挂起等待消息。 */
     public PollingResult polling(final ChannelHandlerContext ctx, RemotingCommand remotingCommand,
         final PollingHeader requestHeader) {
         return this.polling(ctx, remotingCommand, requestHeader, null, null);
@@ -354,6 +363,7 @@ public class PopLongPollingService extends ServiceThread {
         }
     }
 
+    /** 返回 topic 键到 Pop 请求集合的 polling 映射。 */
     public Cache<String, ConcurrentSkipListSet<PopRequest>> getPollingMap() {
         return pollingMap;
     }

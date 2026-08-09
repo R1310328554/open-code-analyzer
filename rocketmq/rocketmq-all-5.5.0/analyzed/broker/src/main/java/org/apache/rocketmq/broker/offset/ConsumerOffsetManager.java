@@ -39,8 +39,13 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.DataVersion;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 消费位点管理器（JSON 文件持久化）：维护 Push/Pull 位点表与重置位点。
+ * <p>键格式为 topic@group，值为 queueId→offset 映射。
+ */
 public class ConsumerOffsetManager extends ConfigManager {
     protected static final Logger LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    /** Topic 与 Group 在位点键中的分隔符。 */
     public static final String TOPIC_GROUP_SEPARATOR = "@";
 
     protected DataVersion dataVersion = new DataVersion();
@@ -103,6 +108,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         }
     }
 
+    /** 扫描并清理已无在线 Consumer 的 Topic 位点。 */
     public void scanUnsubscribedTopic() {
         Iterator<Entry<String, ConcurrentMap<Integer, Long>>> it = this.offsetTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -137,6 +143,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         return result;
     }
 
+    /** 返回指定消费组已提交位点的全部 Topic。 */
     public Set<String> whichTopicByConsumer(final String group) {
         Set<String> topics = new HashSet<>();
 
@@ -195,6 +202,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         return retMap;
     }
 
+    /** 提交 Push 消费位点并持久化到配置文件。 */
     public void commitOffset(final String clientHost, final String group, final String topic, final int queueId,
         final long offset) {
         // topic@group
@@ -219,6 +227,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         }
     }
 
+    /** 提交 Pull 消费位点。 */
     public void commitPullOffset(final String clientHost, final String group, final String topic, final int queueId,
         final long offset) {
         // topic@group
@@ -236,6 +245,7 @@ public class ConsumerOffsetManager extends ConfigManager {
      * @param queueId Queue ID
      * @return current consume offset or reset offset if there were one.
      */
+    /** 查询 Push 消费位点，不存在时返回 -1。 */
     public long queryOffset(final String group, final String topic, final int queueId) {
         // topic@group
         String key = topic + TOPIC_GROUP_SEPARATOR + group;
@@ -368,6 +378,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         return this.offsetTable.get(key);
     }
 
+    /** 将源消费组在 Topic 上的位点克隆到目标组。 */
     public void cloneOffset(final String srcGroup, final String destGroup, final String topic) {
         ConcurrentMap<Integer, Long> offsets = this.offsetTable.get(topic + TOPIC_GROUP_SEPARATOR + srcGroup);
         if (offsets != null) {
@@ -434,6 +445,7 @@ public class ConsumerOffsetManager extends ConfigManager {
             "offsetTable={}, resetOffsetTable={}, pullOffsetTable={}", group, clearOffset, clearReset, clearPull);
     }
 
+    /** 管理员指定重置位点。 */
     public void assignResetOffset(String topic, String group, int queueId, long offset) {
         if (Strings.isNullOrEmpty(topic) || Strings.isNullOrEmpty(group) || queueId < 0 || offset < 0) {
             LOG.warn("Illegal arguments when assigning reset offset. Topic={}, group={}, queueId={}, offset={}",
@@ -461,6 +473,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         return map.containsKey(queueId);
     }
 
+    /** 查询并清除一次性重置位点（Consumer 拉取时应用）。 */
     public Long queryThenEraseResetOffset(String topic, String group, Integer queueId) {
         String key = topic + TOPIC_GROUP_SEPARATOR + group;
         ConcurrentMap<Integer, Long> map = resetOffsetTable.get(key);

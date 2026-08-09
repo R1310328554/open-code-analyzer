@@ -49,11 +49,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+/**
+ * Lite 事件分发器：消息到达时将 LMQ 事件推送给订阅客户端。
+ * <p>支持共享消费、通配符 Group 全量分发及客户端黑名单防抖。
+ */
 public class LiteEventDispatcher extends ServiceThread {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
     private static final Object PRESENT = new Object();
-    private static final long CLIENT_INACTIVE_INTERVAL = 10 * 1000; // inactive time when it has unprocessed events
+    private static final long CLIENT_INACTIVE_INTERVAL = 10 * 1000; // 存在未处理事件时的非活跃判定间隔
     protected static final long CLIENT_LONG_POLLING_INTERVAL = 30 * 1000 + 5000; // at least a period of long polling as 30s
     protected static final long ACTIVE_CONSUMING_WINDOW = 5000;
     protected static final double LOW_WATER_MARK = 0.2;
@@ -73,6 +77,7 @@ public class LiteEventDispatcher extends ServiceThread {
     private final Random random = ThreadLocalRandom.current();
     private long lastLogTime = System.currentTimeMillis();
 
+    /** 绑定 Broker、Lite 订阅注册表与生命周期管理器。 */
     public LiteEventDispatcher(BrokerController brokerController,
         LiteSubscriptionRegistry liteSubscriptionRegistry, AbstractLiteLifecycleManager liteLifecycleManager) {
         this.brokerController = brokerController;
@@ -81,18 +86,16 @@ public class LiteEventDispatcher extends ServiceThread {
         this.consumerOffsetManager = brokerController.getConsumerOffsetManager();
     }
 
+    /** 注册 Lite 订阅变更监听器。 */
     public void init() {
         this.liteSubscriptionRegistry.addListener(new LiteCtlListenerImpl());
     }
 
     /**
-     * If event mode is enabled, try to dispatch event to one client when message arriving or available.
-     * In most cases, there is only one subscriber for a LMQ under a consumer group,
-     * but also supports multiple clients consuming in share mode.
-     * When group is null, dispatch to all subscribers regardless of their group,
-     * when group is specified, only dispatch to subscribers belonging to this group.
-     * <p>
-     * If the expected number of subscriptions by each client is small, disabling event mode can be a choice.
+     * 启用事件模式时，消息到达或可用后将事件分发给一个客户端。
+     * <p>通常每个 LMQ 在消费组下仅一个订阅者，也支持多客户端共享消费。
+     * group 为 null 时分发给全部订阅者；指定 group 时仅分发给该组成员。
+     * <p>客户端订阅数较少时可关闭事件模式以简化路径。
      */
     public void dispatch(String group, String lmqName, int queueId, long offset, long msgStoreTime) {
         if (!this.brokerController.getBrokerConfig().isEnableLiteEventMode()) {
@@ -132,6 +135,7 @@ public class LiteEventDispatcher extends ServiceThread {
      * @return true if dispatched to one client
      */
     @VisibleForTesting
+    /** 从候选客户端中选取一个并尝试分发事件（可排除指定 clientId）。 */
     public boolean selectAndDispatch(String lmqName, List<ClientGroup> clients, String excludeClientId) {
         if (!this.brokerController.getBrokerConfig().isEnableLiteEventMode()) {
             return true;
@@ -186,6 +190,7 @@ public class LiteEventDispatcher extends ServiceThread {
      * @param scheduleFullDispatchIfFull schedule full dispatch if full, only false if it's a wildcard group.
      */
     @VisibleForTesting
+    /** 向指定客户端投递 LMQ 事件；队列满时可调度全量重分发。 */
     public boolean tryDispatchToClient(String lmqName, String clientId, String group, boolean scheduleFullDispatchIfFull) {
         ClientEventSet eventSet = clientEventMap.computeIfAbsent(clientId, key -> new ClientEventSet(group));
         if (eventSet.offer(lmqName)) {
@@ -222,6 +227,7 @@ public class LiteEventDispatcher extends ServiceThread {
      * It iterates through all LMQ topics subscribed by the client and dispatches events for those
      * with available messages.
      */
+    /** 对指定客户端执行全量 LMQ 事件重分发。 */
     public void doFullDispatchForClient(String clientId, String group) {
         if (!this.brokerController.getBrokerConfig().isEnableLiteEventMode()) {
             return;
@@ -277,6 +283,7 @@ public class LiteEventDispatcher extends ServiceThread {
      * Perform a full dispatch for wildcard group which was previously marked for a delayed full dispatch.
      * It iterates through all LMQ topics in CQ table, so it may be a heavy work.
      */
+    /** 对通配符订阅的消费组执行全量事件重分发。 */
     public void doFullDispatchForWildcardGroup(String group) {
         if (!this.brokerController.getBrokerConfig().isEnableLiteEventMode()) {
             return;
@@ -385,6 +392,7 @@ public class LiteEventDispatcher extends ServiceThread {
      * 1. Check client event set for inactive clients and re-dispatches their events
      * 2. Process delayed full dispatch requests that are ready to be executed
      */
+    /** 扫描非活跃客户端并触发延迟全量分发。 */
     public void scan() {
         boolean needLog = System.currentTimeMillis() - lastLogTime > SCAN_LOG_INTERVAL;
 

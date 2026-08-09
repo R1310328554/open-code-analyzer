@@ -58,6 +58,10 @@ import org.apache.rocketmq.store.DefaultMessageFilter;
 import org.apache.rocketmq.store.MessageStore;
 import org.apache.rocketmq.store.exception.ConsumeQueueException;
 
+/**
+ * 消费滞后计算器：统计 Push/Pull/Pop 模式下 Group×Topic 的 lag、in-flight 与可用消息数。
+ * <p>供 Broker 指标导出与运维监控使用。
+ */
 public class ConsumerLagCalculator {
 
     private final BrokerConfig brokerConfig;
@@ -73,6 +77,7 @@ public class ConsumerLagCalculator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
+    /** 绑定 Broker 各管理器与 Pop 相关服务。 */
     public ConsumerLagCalculator(BrokerController brokerController) {
         this.brokerConfig = brokerController.getBrokerConfig();
         this.topicConfigManager = brokerController.getTopicConfigManager();
@@ -86,6 +91,7 @@ public class ConsumerLagCalculator {
         this.popInflightMessageCounter = brokerController.getPopInflightMessageCounter();
     }
 
+    /** 待计算的 Group×Topic 处理上下文（含 Pop/重试 Topic 标识）。 */
     public static class ProcessGroupInfo {
         public String group;
         public String topic;
@@ -113,6 +119,7 @@ public class ConsumerLagCalculator {
         }
     }
 
+    /** 消费滞后计算结果：lag 条数与最早未消费消息时间戳。 */
     public static class CalculateLagResult extends BaseCalculateResult {
         public long lag;
         public long earliestUnconsumedTimestamp;
@@ -121,6 +128,7 @@ public class ConsumerLagCalculator {
             super(group, topic, isRetry);
         }
 
+        /** 返回滞后延迟（当前时间减最早未消费时间戳）。 */
         public long getLagLatency() {
             return earliestUnconsumedTimestamp == 0 ? 0 : System.currentTimeMillis() - earliestUnconsumedTimestamp;
         }
@@ -226,6 +234,7 @@ public class ConsumerLagCalculator {
         }
     }
 
+    /** 遍历全部在线消费组并计算各 Topic 消费滞后。 */
     public void calculateLag(Consumer<CalculateLagResult> lagRecorder) {
 
         List<CompletableFuture<CalculateLagResult>> futures = new ArrayList<>();
@@ -295,6 +304,7 @@ public class ConsumerLagCalculator {
         }
     }
 
+    /** 计算 Pop 模式下已 Pop 未 Ack 的在途消息数。 */
     public void calculateInflight(Consumer<CalculateInflightResult> inflightRecorder) {
         processAllGroup(info -> {
             CalculateInflightResult result = new CalculateInflightResult(info.group, info.topic, false);
@@ -326,6 +336,7 @@ public class ConsumerLagCalculator {
         });
     }
 
+    /** 计算可立即消费的消息数量（含过滤与 Pop 缓冲）。 */
     public void calculateAvailable(Consumer<CalculateAvailableResult> availableRecorder) {
         processAllGroup(info -> {
             CalculateAvailableResult result = new CalculateAvailableResult(info.group, info.topic, false);
@@ -351,6 +362,7 @@ public class ConsumerLagCalculator {
         });
     }
 
+    /** 查询指定 Group×Topic 的滞后条数与最早未消费时间戳。 */
     public Pair<Long, Long> getConsumerLagStats(String group, String topic, boolean isPop) throws ConsumeQueueException {
         long total = 0L;
         long earliestUnconsumedTimestamp = Long.MAX_VALUE;
@@ -468,6 +480,7 @@ public class ConsumerLagCalculator {
         return new Pair<>(inflight, pullStoreTimeStamp);
     }
 
+    /** 返回指定 Group×Topic 的可消费消息总数。 */
     public long getAvailableMsgCount(String group, String topic, boolean isPop) throws ConsumeQueueException {
         long total = 0L;
 

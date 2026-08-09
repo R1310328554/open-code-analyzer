@@ -49,48 +49,35 @@ import java.util.List;
 import java.util.function.IntSupplier;
 
 /**
- * A {@link MetricExporter} decorator that splits large
- * metric batches into smaller sub-batches before delegating
- * to the underlying exporter.
+ * {@link MetricExporter} 装饰器：将大批量指标拆分为小子批次再委托底层导出器。
  *
- * <p>This addresses the gRPC 32MB payload size limit when
- * exporting OTLP metrics. High-cardinality metrics (e.g.,
- * consumer lag with consumer_group x topic combinations)
- * can produce payloads exceeding this limit, causing all
- * metrics to fail to export.
+ * <p>解决 OTLP 经 gRPC 导出时的 32MB 载荷限制。高基数指标（如 consumer_group × topic
+ * 的消费滞后）可能使单次导出超限导致全部失败。
  *
- * <p>Splitting is based on the total number of data points
- * (not the number of MetricData objects), because a single
- * MetricData can contain thousands of data points. When the
- * total data point count is within the configured threshold,
- * the batch is passed through directly (fast path).
+ * <p>拆分依据为数据点总数（非 MetricData 对象数），单对象可含数千点。
+ * 未超阈值时走快速路径直接透传。
  *
- * <p>When a single MetricData contains more data points
- * than the batch limit, its internal points are split into
- * multiple smaller MetricData objects, each preserving the
- * original resource, scope, name, description, unit, and
- * type metadata.
+ * <p>单 MetricData 超限时将其内部点拆成多个较小对象，保留原 resource/scope/名称等元数据。
  */
 public final class BatchSplittingMetricExporter
     implements MetricExporter {
 
-    /** Logger. */
+    /** 日志记录器。 */
     private static final Logger LOGGER =
         LoggerFactory.getLogger(
             LoggerName.BROKER_LOGGER_NAME);
 
-    /** The underlying exporter to delegate to. */
+    /** 委托的底层指标导出器。 */
     private final MetricExporter delegate;
 
-    /** Supplies the max data points per batch at runtime. */
+    /** 运行时提供每批最大数据点数的供应器。 */
     private final IntSupplier maxBatchSizeSupplier;
 
     /**
-     * Creates a new BatchSplittingMetricExporter.
+     * 创建批量拆分指标导出器。
      *
-     * @param metricExporter the underlying MetricExporter
-     * @param batchSizeSupplier supplies the max number
-     *     of data points per batch; must return &gt; 0
+     * @param metricExporter 底层 MetricExporter
+     * @param batchSizeSupplier 每批最大数据点数供应器，返回值须 &gt; 0
      */
     public BatchSplittingMetricExporter(
         final MetricExporter metricExporter,
@@ -108,6 +95,7 @@ public final class BatchSplittingMetricExporter
     }
 
     /** {@inheritDoc} */
+    /** 按数据点阈值拆分批次后委托底层导出。 */
     @Override
     public CompletableResultCode export(
         final Collection<MetricData> metrics) {
@@ -115,8 +103,7 @@ public final class BatchSplittingMetricExporter
             return delegate.export(metrics);
         }
 
-        // Snapshot to avoid concurrent-modification AIOOBE
-        // in OTel SDK marshaling (see NumberDataPointMarshaler)
+        // 快照避免 OTel SDK 序列化时并发修改 AIOOBE
         List<MetricData> snapshotted =
             snapshotAllMetrics(metrics);
 
@@ -562,12 +549,14 @@ public final class BatchSplittingMetricExporter
     }
 
     /** {@inheritDoc} */
+    /** 委托底层导出器 flush。 */
     @Override
     public CompletableResultCode flush() {
         return delegate.flush();
     }
 
     /** {@inheritDoc} */
+    /** 委托底层导出器 shutdown。 */
     @Override
     public CompletableResultCode shutdown() {
         return delegate.shutdown();

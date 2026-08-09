@@ -64,6 +64,10 @@ import static org.apache.rocketmq.remoting.protocol.ResponseCode.CONTROLLER_BROK
  * roles and master if needed, both master and slave will start this timed task. 2.regularly expanding and Shrinking
  * syncStateSet, only master will start this timed task.
  */
+/**
+ * Controller 模式副本管理器：Broker 与 Controller 集群交互，处理主从角色切换与同步状态集。
+ * <p>负责注册、心跳、epoch 变更及 Master/Slave 角色迁移。
+ */
 public class ReplicasManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
@@ -103,6 +107,7 @@ public class ReplicasManager {
     private long lastSyncTimeMs = System.currentTimeMillis();
     private Random random = new Random();
 
+    /** 绑定 Broker 控制器并初始化 HA 服务与元数据路径。 */
     public ReplicasManager(final BrokerController brokerController) {
         this.brokerController = brokerController;
         this.brokerOuterAPI = brokerController.getBrokerOuterAPI();
@@ -134,6 +139,7 @@ public class ReplicasManager {
         REGISTERED
     }
 
+    /** 启动副本管理：同步 Controller 元数据、注册 Broker 并调度心跳。 */
     public void start() {
         this.state = State.INITIAL;
         updateControllerAddr();
@@ -214,6 +220,7 @@ public class ReplicasManager {
         return true;
     }
 
+    /** 关闭调度与执行线程池，标记状态为 SHUTDOWN。 */
     public void shutdown() {
         this.state = State.SHUTDOWN;
         this.registerState = RegisterState.INITIAL;
@@ -222,6 +229,7 @@ public class ReplicasManager {
         this.scanExecutor.shutdownNow();
     }
 
+    /** Controller 通知角色变更：切换为 Master 或 Slave 并重新注册。 */
     public synchronized void changeBrokerRole(final Long newMasterBrokerId, final String newMasterAddress,
         final Integer newMasterEpoch,
         final Integer syncStateSetEpoch, final Set<Long> syncStateSet) throws Exception {
@@ -234,6 +242,7 @@ public class ReplicasManager {
         }
     }
 
+    /** 切换为 Master：更新 epoch、同步状态集并启动 Master 服务。 */
     public void changeToMaster(final int newMasterEpoch, final int syncStateSetEpoch, final Set<Long> syncStateSet) throws Exception {
         synchronized (this) {
             if (newMasterEpoch > this.masterEpoch) {
@@ -278,6 +287,7 @@ public class ReplicasManager {
         }
     }
 
+    /** 切换为 Slave：连接新 Master 并停止 Master 专属服务。 */
     public void changeToSlave(final String newMasterAddress, final int newMasterEpoch, Long newMasterBrokerId) {
         synchronized (this) {
             if (newMasterEpoch > this.masterEpoch) {
@@ -318,6 +328,7 @@ public class ReplicasManager {
         }
     }
 
+    /** 角色变更后向 NameServer 重新注册 Broker 路由信息。 */
     public void registerBrokerWhenRoleChange() {
 
         this.executorService.submit(() -> {
@@ -398,6 +409,7 @@ public class ReplicasManager {
         }
     }
 
+    /** 向 Controller 发送心跳并上报同步状态。 */
     public void sendHeartbeatToController() {
         final List<String> controllerAddresses = this.getAvailableControllerAddresses();
         for (String controllerAddress : controllerAddresses) {
@@ -827,6 +839,7 @@ public class ReplicasManager {
         return this.brokerController.getMessageStoreConfig().getBrokerRole();
     }
 
+    /** 当前 Broker 是否处于 Master 角色。 */
     public boolean isMasterState() {
         return getBrokerRole() == BrokerRole.SYNC_MASTER;
     }

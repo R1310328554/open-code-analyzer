@@ -39,6 +39,10 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * Consumer 客户端管理器：维护消费组与 Netty 通道映射、订阅关系及补偿表。
+ * <p>负责注册/注销 Consumer、扫描过期通道并通知 {@link ConsumerIdsChangeListener}。
+ */
 public class ConsumerManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final ConcurrentMap<String, ConsumerGroupInfo> consumerTable =
@@ -53,6 +57,7 @@ public class ConsumerManager {
     private final long subscriptionExpiredTimeout;
     private final BrokerConfig brokerConfig;
 
+    /** 测试用构造：仅绑定 ID 变更监听器与过期超时。 */
     public ConsumerManager(final ConsumerIdsChangeListener consumerIdsChangeListener, long expiredTimeout) {
         this.consumerIdsChangeListenerList.add(consumerIdsChangeListener);
         this.brokerStatsManager = null;
@@ -70,6 +75,7 @@ public class ConsumerManager {
         this.brokerConfig = brokerConfig;
     }
 
+    /** 按消费组与 clientId 查找客户端通道信息。 */
     public ClientChannelInfo findChannel(final String group, final String clientId) {
         ConsumerGroupInfo consumerGroupInfo = this.consumerTable.get(group);
         if (consumerGroupInfo != null) {
@@ -86,6 +92,7 @@ public class ConsumerManager {
         return null;
     }
 
+    /** 查询消费组对 Topic 的订阅数据（含补偿表回退）。 */
     public SubscriptionData findSubscriptionData(final String group, final String topic) {
         return findSubscriptionData(group, topic, true);
     }
@@ -205,6 +212,7 @@ public class ConsumerManager {
     }
 
     // compensate consumer info for consumer without heartbeat
+    /** 向补偿表写入消费组基础信息（消费类型与消息模型）。 */
     public void compensateBasicConsumerInfo(String group, ConsumeType consumeType, MessageModel messageModel) {
         ConsumerGroupInfo consumerGroupInfo = consumerCompensationTable.computeIfAbsent(group, ConsumerGroupInfo::new);
         consumerGroupInfo.setConsumeType(consumeType);
@@ -217,6 +225,7 @@ public class ConsumerManager {
         consumerGroupInfo.getSubscriptionTable().put(topic, subscriptionData);
     }
 
+    /** 注册 Consumer 客户端及其订阅关系，并更新 Topic-Group 索引。 */
     public boolean registerConsumer(final String group, final ClientChannelInfo clientChannelInfo,
         ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,
         final Set<SubscriptionData> subList, boolean isNotifyConsumerIdsChangedEnable) {
@@ -306,6 +315,7 @@ public class ConsumerManager {
         return updateChannelRst;
     }
 
+    /** 注销 Consumer 客户端并清理空消费组。 */
     public void unregisterConsumer(final String group, final ClientChannelInfo clientChannelInfo,
         boolean isNotifyConsumerIdsChangedEnable) {
         ConsumerGroupInfo consumerGroupInfo = this.consumerTable.get(group);
@@ -329,6 +339,7 @@ public class ConsumerManager {
         }
     }
 
+    /** 移除长时间无活跃通道的消费组信息。 */
     public void removeExpireConsumerGroupInfo() {
         List<String> removeList = new ArrayList<>();
         consumerCompensationTable.forEach((group, consumerGroupInfo) -> {
@@ -352,6 +363,7 @@ public class ConsumerManager {
         }
     }
 
+    /** 扫描并关闭超时的非活跃 Consumer 通道。 */
     public void scanNotActiveChannel() {
         Iterator<Entry<String, ConsumerGroupInfo>> it = this.consumerTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -386,6 +398,7 @@ public class ConsumerManager {
         removeExpireConsumerGroupInfo();
     }
 
+    /** 查询订阅指定 Topic 的全部消费组名称。 */
     public HashSet<String> queryTopicConsumeByWho(final String topic) {
         return new HashSet<>(Optional.ofNullable(topicGroupTable.get(topic)).orElseGet(HashSet::new));
     }

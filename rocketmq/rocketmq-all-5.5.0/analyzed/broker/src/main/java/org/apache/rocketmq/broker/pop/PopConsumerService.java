@@ -69,6 +69,10 @@ import org.apache.rocketmq.store.pop.PopCheckPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Pop 消费核心服务：异步 Pop/Ack、不可见时间变更、消息复活与重试 Topic 管理。
+ * <p>维护 Pop 位点 KV 存储、FIFO 阻塞状态与 CheckPoint 持久化。
+ */
 public class PopConsumerService extends ServiceThread {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
@@ -87,6 +91,7 @@ public class PopConsumerService extends ServiceThread {
     private final PopConsumerLockService consumerLockService;
     private final ConcurrentMap<String /* groupId@topicId*/, AtomicLong> requestCountTable;
 
+    /** 初始化 Pop 缓存、KV 存储、锁服务与请求计数表。 */
     public PopConsumerService(BrokerController brokerController) {
 
         this.brokerController = brokerController;
@@ -111,6 +116,7 @@ public class PopConsumerService extends ServiceThread {
      * by a consumer but have not yet been deleted. For standard queues,
      * there is a limit on the number of in-flight messages, depending on queue traffic and message backlog.
      */
+    /** 判断指定队列 Pop 是否应暂停（如订阅被禁止）。 */
     public boolean isPopShouldStop(String group, String topic, int queueId) {
         return brokerConfig.isEnablePopMessageThreshold() && popConsumerCache != null &&
             popConsumerCache.getPopInFlightMessageCount(group, topic, queueId) >=
@@ -203,6 +209,7 @@ public class PopConsumerService extends ServiceThread {
         return context;
     }
 
+    /** 获取或初始化 Pop 消费位点（支持 FIFO 与多种 init 模式）。 */
     public long getPopOffset(String groupId, String topicId, int queueId, int initMode, boolean fifo) {
 
         // For FIFO messages, the pull offset is not used.
@@ -232,6 +239,7 @@ public class PopConsumerService extends ServiceThread {
         return resetOffset != null ? resetOffset : offset;
     }
 
+    /** 异步从 CommitLog 读取 Pop 消息并应用过滤器。 */
     public CompletableFuture<GetMessageResult> getMessageAsync(String clientHost,
         String groupId, String topicId, int queueId, long offset, int batchSize, MessageFilter filter) {
 
@@ -350,6 +358,7 @@ public class PopConsumerService extends ServiceThread {
         return future;
     }
 
+    /** 异步 Pop 入口：拉取消息、设置不可见时间并返回上下文。 */
     public CompletableFuture<PopConsumerContext> popAsync(String clientHost, long popTime, long invisibleTime,
         String groupId, String topicId, int queueId, int batchSize, boolean fifo, String attemptId, int initMode,
         MessageFilter filter) {
@@ -469,6 +478,7 @@ public class PopConsumerService extends ServiceThread {
     }
 
     // Notify polling request when receive orderly ack
+    /** 异步确认 Pop 消息，更新位点并触发复活检查。 */
     public CompletableFuture<Boolean> ackAsync(
         long popTime, long invisibleTime, String groupId, String topicId, int queueId, long offset) {
 
@@ -491,6 +501,7 @@ public class PopConsumerService extends ServiceThread {
     }
 
     // refer ChangeInvisibleTimeProcessor.appendCheckPointThenAckOrigin
+    /** 变更已 Pop 消息的不可见时长（ChangeInvisibleTime）。 */
     public void changeInvisibilityDuration(long popTime, long invisibleTime, long changedPopTime,
                                            long changedInvisibleTime, String groupId, String topicId,
                                            int queueId, long offset, boolean suspend) {
@@ -532,6 +543,7 @@ public class PopConsumerService extends ServiceThread {
             consumerRecord.getOffset(), consumerRecord.getQueueId(), brokerConfig.getBrokerName(), false);
     }
 
+    /** 将超时未 Ack 的 Pop 消息复活回队列或重试 Topic。 */
     public CompletableFuture<Boolean> revive(PopConsumerRecord record) {
 
         if (brokerConfig.isPopReviveSkipIfGroupAbsent() &&
@@ -561,6 +573,7 @@ public class PopConsumerService extends ServiceThread {
         }
     }
 
+    /** 批量扫描并复活超时 Pop 消息，返回本次处理条数。 */
     public long revive(AtomicLong currentTime, int maxCount) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         long upperTime = System.currentTimeMillis() - 50L;
@@ -815,6 +828,7 @@ public class PopConsumerService extends ServiceThread {
         }
     }
 
+    /** 后台循环：CheckPoint 刷盘、锁清理与 Pop 复活调度。 */
     @Override
     public void run() {
         this.consumerRunning.set(true);

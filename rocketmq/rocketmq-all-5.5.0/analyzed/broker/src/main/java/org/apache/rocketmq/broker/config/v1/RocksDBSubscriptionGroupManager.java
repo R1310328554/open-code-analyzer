@@ -36,6 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 
+/**
+ * 基于 RocksDB 的订阅组配置管理器（v1 配置存储）。
+ * <p>持久化 {@link SubscriptionGroupConfig}、禁止消费位图及数据版本。
+ */
 public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
 
     protected transient RocksDBConfigManager rocksDBConfigManager;
@@ -47,6 +51,7 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
     private final boolean useSingleRocksDBForAllConfigs;
     private final String storePathRootDir;
 
+    /** 指定是否共用单 RocksDB 实例及存储根目录。 */
     public RocksDBSubscriptionGroupManager(BrokerController brokerController, boolean useSingleRocksDB,
         String storePathRootDir) {
         super(brokerController, false);
@@ -74,6 +79,7 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** 加载数据版本、订阅组配置与禁止消费规则。 */
     public boolean load() {
         if (!rocksDBConfigManager.init()) {
             return false;
@@ -92,6 +98,7 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
         return this.rocksDBConfigManager.loadDataVersion();
     }
 
+    /** 扫描 RocksDB 列族加载全部订阅组与禁止消费条目。 */
     public boolean loadSubscriptionGroupAndForbidden() {
         return this.rocksDBConfigManager.loadData(this::decodeSubscriptionGroup)
                 && this.loadForbidden(this::decodeForbidden)
@@ -157,6 +164,7 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** 写入或更新订阅组配置到 RocksDB 并刷新内存表。 */
     public SubscriptionGroupConfig putSubscriptionGroupConfig(SubscriptionGroupConfig subscriptionGroupConfig) {
         String groupName = subscriptionGroupConfig.getGroupName();
         SubscriptionGroupConfig oldConfig = this.subscriptionGroupTable.put(groupName, subscriptionGroupConfig);
@@ -208,12 +216,14 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** 强制刷盘 RocksDB WAL，保证元数据持久化。 */
     public synchronized void persist() {
         if (brokerController.getMessageStoreConfig().isRealTimePersistRocksDBConfig()) {
             this.rocksDBConfigManager.flushWAL();
         }
     }
 
+    /** 将订阅组配置导出为 JSON 快照文件。 */
     public synchronized void exportToJson() {
         log.info("RocksDBSubscriptionGroupManager export subscription group to json file");
         super.persist();
@@ -273,6 +283,7 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** 设置或清除指定 Group 对 Topic 某队列的禁止消费位。 */
     public void updateForbidden(String group, String topic, int forbiddenIndex, boolean setOrClear) {
         try {
             super.updateForbidden(group, topic, forbiddenIndex, setOrClear);
@@ -284,6 +295,7 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** 禁止消费组对 Topic 指定队列的消费。 */
     public void setForbidden(String group, String topic, int forbiddenIndex) {
         try {
             super.setForbidden(group, topic, forbiddenIndex);
@@ -295,6 +307,7 @@ public class RocksDBSubscriptionGroupManager extends SubscriptionGroupManager {
     }
 
     @Override
+    /** 清除禁止消费位，恢复该队列消费。 */
     public void clearForbidden(String group, String topic, int forbiddenIndex) {
         try {
             super.clearForbidden(group, topic, forbiddenIndex);

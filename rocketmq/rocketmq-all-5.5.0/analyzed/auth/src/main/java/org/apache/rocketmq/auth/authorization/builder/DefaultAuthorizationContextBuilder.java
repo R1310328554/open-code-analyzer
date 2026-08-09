@@ -78,6 +78,10 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumerData;
 import org.apache.rocketmq.remoting.protocol.heartbeat.HeartbeatData;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 默认授权上下文构建器：从 gRPC 或 Remoting 请求解析 Topic、ConsumerGroup 与所需 {@link Action}。
+ * <p>覆盖发送、拉取、心跳、位点管理等常见请求的权限资源提取。
+ */
 public class DefaultAuthorizationContextBuilder implements AuthorizationContextBuilder {
 
     private static final String TOPIC = "topic";
@@ -91,11 +95,13 @@ public class DefaultAuthorizationContextBuilder implements AuthorizationContextB
 
     private final RequestHeaderRegistry requestHeaderRegistry;
 
+    /** 绑定认证配置并初始化请求头注册表。 */
     public DefaultAuthorizationContextBuilder(AuthConfig authConfig) {
         this.authConfig = authConfig;
         this.requestHeaderRegistry = RequestHeaderRegistry.getInstance();
     }
 
+    /** 从 gRPC {@link Metadata} 与 Protobuf 消息构建授权上下文列表。 */
     @Override
     public List<DefaultAuthorizationContext> build(Metadata metadata, GeneratedMessageV3 message) {
         List<DefaultAuthorizationContext> result = null;
@@ -174,6 +180,7 @@ public class DefaultAuthorizationContextBuilder implements AuthorizationContextB
         return result;
     }
 
+    /** 从 Netty 通道与 Remoting 命令按 RequestCode 分支构建授权上下文。 */
     @Override
     public List<DefaultAuthorizationContext> build(ChannelHandlerContext context, RemotingCommand command) {
         List<DefaultAuthorizationContext> result = new ArrayList<>();
@@ -191,6 +198,7 @@ public class DefaultAuthorizationContextBuilder implements AuthorizationContextB
 
             Resource topic;
             Resource group;
+            // 按请求码解析 Topic/Group 与 PUB/SUB/GET 权限
             switch (command.getCode()) {
                 case RequestCode.GET_ROUTEINFO_BY_TOPIC:
                     if (NamespaceUtil.isRetryTopic(fields.get(TOPIC))) {
@@ -201,6 +209,7 @@ public class DefaultAuthorizationContextBuilder implements AuthorizationContextB
                         result.add(DefaultAuthorizationContext.of(subject, topic, Arrays.asList(Action.PUB, Action.SUB, Action.GET), sourceIp));
                     }
                     break;
+                // 发送消息：重试 Topic 映射为 Group 订阅权限
                 case RequestCode.SEND_MESSAGE:
                     if (NamespaceUtil.isRetryTopic(fields.get(TOPIC))) {
                         group = Resource.ofGroup(fields.get(TOPIC));
@@ -234,6 +243,7 @@ public class DefaultAuthorizationContextBuilder implements AuthorizationContextB
                     group = Resource.ofGroup(fields.get(GROUP));
                     result.add(DefaultAuthorizationContext.of(subject, group, Action.SUB, sourceIp));
                     break;
+                // 拉取消息：Topic 与 ConsumerGroup 均需 SUB 权限
                 case RequestCode.PULL_MESSAGE:
                     if (!NamespaceUtil.isRetryTopic(fields.get(TOPIC))) {
                         topic = Resource.ofTopic(fields.get(TOPIC));
@@ -246,12 +256,14 @@ public class DefaultAuthorizationContextBuilder implements AuthorizationContextB
                     topic = Resource.ofTopic(fields.get(TOPIC));
                     result.add(DefaultAuthorizationContext.of(subject, topic, Arrays.asList(Action.SUB, Action.GET), sourceIp));
                     break;
+                // 心跳：遍历 ConsumerData 与订阅 Topic 列表
                 case RequestCode.HEART_BEAT:
                     HeartbeatData heartbeatData = HeartbeatData.decode(command.getBody(), HeartbeatData.class);
                     for (ConsumerData data : heartbeatData.getConsumerDataSet()) {
                         group = Resource.ofGroup(data.getGroupName());
                         result.add(DefaultAuthorizationContext.of(subject, group, Action.SUB, sourceIp));
                         for (SubscriptionData subscriptionData : data.getSubscriptionDataSet()) {
+                            // 重试 Topic 已在 Group 维度授权，跳过
                             if (NamespaceUtil.isRetryTopic(subscriptionData.getTopic())) {
                                 continue;
                             }

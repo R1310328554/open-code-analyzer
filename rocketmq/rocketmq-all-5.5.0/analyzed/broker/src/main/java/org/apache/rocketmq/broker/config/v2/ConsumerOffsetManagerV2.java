@@ -33,20 +33,20 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
 /**
+ * 基于 RocksDB {@link ConfigStorage} 的消费位点管理器（v2 配置存储）。
  * <p>
- * Layout of consumer offset key:
- * [table-prefix, 1 byte][table-id, 2 bytes][record-prefix, 1 byte][group-len, 2 bytes][group bytes][CTRL_1, 1 byte]
- * [topic-len, 2 bytes][topic bytes][CTRL_1, 1 byte][queue-id, 4 bytes]
+ * 位点键布局：表前缀(1) + 表 ID(2) + 记录前缀(1) + group 长度(2) + group + 分隔符(1)
+ * + topic 长度(2) + topic + 分隔符(1) + queueId(4)
  * </p>
- *
  * <p>
- * Layout of consumer offset value: [offset, 8 bytes]
+ * 位点值布局：offset(8 字节)
  * </p>
  */
 public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
 
     private final ConfigStorage configStorage;
 
+    /** 绑定 Broker 控制器与 v2 配置存储。 */
     public ConsumerOffsetManagerV2(BrokerController brokerController, ConfigStorage configStorage) {
         super(brokerController);
         this.configStorage = configStorage;
@@ -109,6 +109,7 @@ public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 删除指定消费组的全部位点记录。 */
     public void removeOffset(String group) {
         if (!MixAll.isLmq(group)) {
             super.removeOffset(group);
@@ -189,6 +190,7 @@ public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
      * @param offset     Consumer offset of the specified queue
      */
     @Override
+    /** 提交 Push 消费位点到 RocksDB 并更新内存缓存。 */
     public void commitOffset(String clientHost, String group, String topic, int queueId, long offset) {
         String key = topic + TOPIC_GROUP_SEPARATOR + group;
 
@@ -269,11 +271,13 @@ public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 从 RocksDB 加载数据版本与全部消费位点。 */
     public boolean load() {
         return loadDataVersion() && loadConsumerOffsets();
     }
 
     @Override
+    /** 强制刷 WAL，持久化位点变更。 */
     public synchronized void persist() {
         try {
             configStorage.flushWAL();
@@ -384,6 +388,7 @@ public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 查询 Push 消费位点，不存在时返回 -1。 */
     public long queryOffset(String group, String topic, int queueId) {
         if (!MixAll.isLmq(topic)) {
             return super.queryOffset(group, topic, queueId);
@@ -405,6 +410,7 @@ public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 提交 Pull 消费位点。 */
     public void commitPullOffset(String clientHost, String group, String topic, int queueId, long offset) {
         if (!MixAll.isLmq(topic)) {
             super.commitPullOffset(clientHost, group, topic, queueId, offset);
@@ -428,6 +434,7 @@ public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 查询 Pull 消费位点。 */
     public long queryPullOffset(String group, String topic, int queueId) {
         if (!MixAll.isLmq(topic)) {
             return super.queryPullOffset(group, topic, queueId);
@@ -449,6 +456,7 @@ public class ConsumerOffsetManagerV2 extends ConsumerOffsetManager {
     }
 
     @Override
+    /** 管理员指定重置位点（写入 reset 表）。 */
     public void assignResetOffset(String topic, String group, int queueId, long offset) {
         if (Strings.isNullOrEmpty(topic) || Strings.isNullOrEmpty(group) || queueId < 0 || offset < 0) {
             LOG.warn("Illegal arguments when assigning reset offset. Topic={}, group={}, queueId={}, offset={}",
