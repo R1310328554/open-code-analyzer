@@ -16,30 +16,29 @@
 package org.redisson.api.options;
 
 /**
- * {@link org.redisson.api.RMapCache} instance options.
+ * {@link org.redisson.api.RMapCache} 实例的配置选项。
  *
  * @author Nikita Koksharov
  *
- * @param <K> type of key
- * @param <V> type of value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface MapCacheOptions<K, V> extends ExMapOptions<MapCacheOptions<K, V>, K, V> {
 
     /**
-     * Creates options with the name of object instance
+     * 按对象实例名称创建配置。
      *
-     * @param name of object instance
-     * @return options instance
+     * @param name 对象实例名称
+     * @return 配置实例
      */
     static <K, V> MapCacheOptions<K, V> name(String name) {
         return new MapCacheParams<>(name);
     }
 
     /**
-     * Removes eviction task from memory if map is empty
-     * upon entries eviction process completion.
+     * 条目淘汰流程结束后，若 Map 已为空则从内存中移除淘汰任务。
      *
-     * @return MapCacheOptions instance
+     * @return MapCacheOptions 配置实例
      */
     MapCacheOptions<K, V> removeEmptyEvictionTask();
 

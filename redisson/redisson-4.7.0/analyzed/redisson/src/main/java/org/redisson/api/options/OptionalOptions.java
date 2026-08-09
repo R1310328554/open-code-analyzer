@@ -18,7 +18,7 @@ package org.redisson.api.options;
 import org.redisson.client.codec.Codec;
 
 /**
- * Object instances options
+ * 可选分布式对象的通用配置选项（编解码器等）。
  *
  * @author Nikita Koksharov
  *
@@ -26,9 +26,9 @@ import org.redisson.client.codec.Codec;
 public interface OptionalOptions extends CodecOptions<OptionalOptions, Codec> {
 
     /**
-     * Creates the default options
+     * 创建默认配置。
      *
-     * @return options instance
+     * @return 配置实例
      */
     static OptionalOptions defaults() {
         return new OptionalParams();

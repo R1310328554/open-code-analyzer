@@ -16,11 +16,12 @@
 package org.redisson.api.options;
 
 /**
+ * {@link MapOptions} 的可变配置实现，保存 Map 对象实例名称。
  *
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public final class MapParams<K, V> extends BaseMapOptions<MapOptions<K, V>, K, V> implements MapOptions<K, V> {
 

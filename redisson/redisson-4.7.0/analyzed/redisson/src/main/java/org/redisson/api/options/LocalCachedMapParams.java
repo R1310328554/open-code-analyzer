@@ -18,12 +18,12 @@ package org.redisson.api.options;
 import java.time.Duration;
 
 /**
- * Configuration for LocalCachedMap object.
+ * {@link LocalCachedMapOptions} 的可变配置实现，保存本地缓存 Map 的全部运行时参数。
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCachedMapOptions<K, V>, K, V> implements LocalCachedMapOptions<K, V> {
 
@@ -68,14 +68,14 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines local cache size.
+     * 设置本地缓存容量。
      * <p>
-     * If size is <code>0</code> then local cache is unbounded.
+     * 若 size 为 <code>0</code>，则本地缓存无上限。
      * <p>
-     * If size is <code>-1</code> then local cache is always empty and doesn't store data.
+     * 若 size 为 <code>-1</code>，则本地缓存始终为空且不存储数据。
      * 
-     * @param cacheSize size of cache
-     * @return LocalCachedMapOptions instance
+     * @param cacheSize 缓存容量
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> cacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
@@ -91,13 +91,13 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines strategy for load missed local cache updates after Redis connection failure.
+     * 设置 Redis 连接失败后补加载本地缓存变更的策略。
      *
      * @param reconnectionStrategy
-     *          <p><code>CLEAR</code> - clear local cache if map instance has been disconnected for a while.
-     *          <p><code>LOAD</code> - store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
-     *          <p><code>NONE</code> - Default. No reconnection handling
-     * @return LocalCachedMapOptions instance
+     *          <p><code>CLEAR</code> - Map 断连一段时间后清空本地缓存。
+     *          <p><code>LOAD</code> - 将失效条目哈希写入日志保留 10 分钟；断连不足 10 分钟则移除对应键，否则清空整个缓存。
+     *          <p><code>NONE</code> - 默认，不处理重连。
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy) {
         if (reconnectionStrategy == null) {
@@ -109,13 +109,13 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines local cache synchronization strategy.
+     * 设置本地缓存跨实例同步策略。
      *
      * @param syncStrategy
-     *          <p><code>INVALIDATE</code> - Default. Invalidate cache entry across all LocalCachedMap instances on map entry change
-     *          <p><code>UPDATE</code> - Insert/update cache entry across all LocalCachedMap instances on map entry change
-     *          <p><code>NONE</code> - No synchronizations on map changes
-     * @return LocalCachedMapOptions instance
+     *          <p><code>INVALIDATE</code> - 默认，Map 条目变更时失效所有实例的本地缓存条目。
+     *          <p><code>UPDATE</code> - Map 条目变更时更新所有实例的本地缓存条目。
+     *          <p><code>NONE</code> - Map 变更时不进行同步。
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> syncStrategy(SyncStrategy syncStrategy) {
         if (syncStrategy == null) {
@@ -127,15 +127,15 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
     
     /**
-     * Defines local cache eviction policy.
+     * 设置本地缓存淘汰策略。
      * 
      * @param evictionPolicy
-     *         <p><code>LRU</code> - uses local cache with LRU (least recently used) eviction policy.
-     *         <p><code>LFU</code> - uses local cache with LFU (least frequently used) eviction policy.
-     *         <p><code>SOFT</code> - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory.
-     *         <p><code>WEAK</code> - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable.
-     *         <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
-     * @return LocalCachedMapOptions instance
+     *         <p><code>LRU</code> - 使用 LRU（最近最少使用）淘汰策略。
+     *         <p><code>LFU</code> - 使用 LFU（最不经常使用）淘汰策略。
+     *         <p><code>SOFT</code> - 值使用软引用，JVM 内存不足时由 GC 淘汰。
+     *         <p><code>WEAK</code> - 值使用弱引用，变为弱可达时由 GC 淘汰。
+     *         <p><code>NONE</code> - 不使用淘汰策略，但 timeToLive 与 maxIdleTime 仍生效。
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> evictionPolicy(EvictionPolicy evictionPolicy) {
         if (evictionPolicy == null) {
@@ -146,11 +146,11 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
     
     /**
-     * Defines time to live in milliseconds of each map entry in local cache.
-     * If value equals to <code>0</code> then timeout is not applied
+     * 设置本地缓存中每条 Map 条目的存活时间（毫秒）。
+     * 若值为 <code>0</code> 则不应用超时。
      * 
-     * @param ttl time to live in milliseconds
-     * @return LocalCachedMapOptions instance
+     * @param ttl 存活时间
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> timeToLive(Duration ttl) {
         this.timeToLiveInMillis = ttl.toMillis();
@@ -158,11 +158,11 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines max idle time in milliseconds of each map entry in local cache.
-     * If value equals to <code>0</code> then timeout is not applied
+     * 设置本地缓存中每条 Map 条目的最大空闲时间（毫秒）。
+     * 若值为 <code>0</code> 则不应用超时。
      * 
-     * @param idleTime time to live in milliseconds
-     * @return LocalCachedMapOptions instance
+     * @param idleTime 最大空闲时间
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> maxIdle(Duration idleTime) {
         this.maxIdleInMillis = idleTime.toMillis();
@@ -174,12 +174,12 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines store mode of cache data.
+     * 设置缓存数据的存储模式。
      *
      * @param storeMode
-     *         <p><code>LOCALCACHE</code> - store data in local cache only.
-     *         <p><code>LOCALCACHE_REDIS</code> - store data in both Redis and local cache.
-     * @return LocalCachedMapOptions instance
+     *         <p><code>LOCALCACHE</code> - 数据仅存储在本地缓存。
+     *         <p><code>LOCALCACHE_REDIS</code> - 数据同时存储在 Redis 与本地缓存。
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> storeMode(StoreMode storeMode) {
         this.storeMode = storeMode;
@@ -187,12 +187,12 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines Cache provider used as local cache store.
+     * 设置用作本地缓存存储的实现提供方。
      *
      * @param cacheProvider
-     *         <p><code>REDISSON</code> - uses Redisson own implementation.
-     *         <p><code>CAFFEINE</code> - uses Caffeine implementation.
-     * @return LocalCachedMapOptions instance
+     *         <p><code>REDISSON</code> - 使用 Redisson 内置实现。
+     *         <p><code>CAFFEINE</code> - 使用 Caffeine 实现。
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> cacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
@@ -204,10 +204,10 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines whether to store a cache miss into the local cache.
+     * 设置是否将缓存未命中（cache miss）也写入本地缓存。
      *
-     * @param storeCacheMiss - whether to store a cache miss into the local cache
-     * @return LocalCachedMapOptions instance
+     * @param storeCacheMiss 是否缓存未命中结果
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> storeCacheMiss(boolean storeCacheMiss) {
         this.storeCacheMiss = storeCacheMiss;
@@ -215,10 +215,10 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     }
 
     /**
-     * Defines whether to use __keyevent pattern topic to listen for expired events.
+     * 设置是否通过 __keyevent 模式主题监听过期事件。
      *
-     * @param useKeyEventsPattern - whether to use __keyevent pattern topic
-     * @return LocalCachedMapOptions instance
+     * @param useKeyEventsPattern 是否使用 __keyevent 模式主题
+     * @return LocalCachedMapOptions 配置实例
      */
     public LocalCachedMapParams<K, V> useKeyEventsPattern(boolean useKeyEventsPattern) {
         if (useKeyEventsPattern) {

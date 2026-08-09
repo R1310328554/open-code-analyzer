@@ -19,7 +19,7 @@ import org.redisson.api.RKeys;
 import org.redisson.api.RType;
 
 /**
- * {@link RKeys#getKeys()} method options
+ * {@link RKeys#getKeys()} 方法的扫描配置选项。
  *
  * @author Nikita Koksharov
  *
@@ -27,50 +27,50 @@ import org.redisson.api.RType;
 public interface KeysScanOptions {
 
     /**
-     * Creates the default options
+     * 创建默认配置。
      *
-     * @return options instance
+     * @return 配置实例
      */
     static KeysScanOptions defaults() {
         return new KeysScanParams();
     }
 
     /**
-     * Defines the total amount of returned keys.
+     * 设置返回键的总数量上限。
      *
-     * @param value total amount of returned keys
-     * @return options instance
+     * @param value 返回键的总数量
+     * @return 配置实例
      */
     KeysScanOptions limit(int value);
 
     /**
-     * Defines the pattern that all keys should match.
-     * Supported glob-style patterns:
+     * 设置键名匹配模式，所有返回的键须符合该 glob 模式。
+     * 支持的 glob 风格模式：
      *  <p>
-     *    h?llo matches hello, hallo and hxllo
+     *    h?llo 匹配 hello、hallo 和 hxllo
      *    <p>
-     *    h*llo matches to hllo and heeeello
+     *    h*llo 匹配 hllo 和 heeeello
      *    <p>
-     *    h[ae]llo matches to hello and hallo, but not hillo     *
+     *    h[ae]llo 匹配 hello 和 hallo，但不匹配 hillo
      *
-     * @param value key pattern
-     * @return options instance
+     * @param value 键名匹配模式
+     * @return 配置实例
      */
     KeysScanOptions pattern(String value);
 
     /**
-     * Defines the amount of loaded keys per request.
+     * 设置每次请求从 Redis 加载的键数量（分块大小）。
      *
-     * @param value amount of loaded keys per request
-     * @return options instance
+     * @param value 每次请求加载的键数量
+     * @return 配置实例
      */
     KeysScanOptions chunkSize(int value);
 
     /**
-     * Defines the type of objects that all keys should match.
+     * 设置键对应 Redis 对象类型过滤条件。
      *
-     * @param value type of objects
-     * @return options instance
+     * @param value Redis 对象类型
+     * @return 配置实例
      */
     KeysScanOptions type(RType value);
 

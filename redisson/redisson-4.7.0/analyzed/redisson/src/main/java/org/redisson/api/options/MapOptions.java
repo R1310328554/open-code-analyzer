@@ -16,20 +16,20 @@
 package org.redisson.api.options;
 
 /**
- * {@link org.redisson.api.RMap} instance options.
+ * {@link org.redisson.api.RMap} 实例的配置选项。
  *
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface MapOptions<K, V> extends ExMapOptions<MapOptions<K, V>, K, V> {
 
     /**
-     * Creates options with the name of object instance
+     * 按对象实例名称创建配置。
      *
-     * @param name of object instance
-     * @return options instance
+     * @param name 对象实例名称
+     * @return 配置实例
      */
     static <K, V> MapOptions<K, V> name(String name) {
         return new MapParams<>(name);

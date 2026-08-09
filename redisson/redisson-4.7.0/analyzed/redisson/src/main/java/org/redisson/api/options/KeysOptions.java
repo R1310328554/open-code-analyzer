@@ -16,7 +16,7 @@
 package org.redisson.api.options;
 
 /**
- * {@link org.redisson.api.RKeys} instance options
+ * {@link org.redisson.api.RKeys} 实例的配置选项。
  *
  * @author Nikita Koksharov
  *
@@ -24,9 +24,9 @@ package org.redisson.api.options;
 public interface KeysOptions extends InvocationOptions<KeysOptions> {
 
     /**
-     * Creates the default options
+     * 创建默认配置。
      *
-     * @return options instance
+     * @return 配置实例
      */
     static KeysOptions defaults() {
         return new KeysParams();

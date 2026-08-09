@@ -18,6 +18,7 @@ package org.redisson.api.options;
 import org.redisson.client.codec.Codec;
 
 /**
+ * {@link LiveObjectOptions} 的默认实现，通过 {@link BaseOptions} 支持编解码器等通用选项。
  *
  * @author Nikita Koksharov
  *

@@ -18,6 +18,7 @@ package org.redisson.api.options;
 import org.redisson.api.RType;
 
 /**
+ * {@link KeysScanOptions} 的可变配置实现，保存扫描限制、模式、分块大小与类型过滤。
  *
  * @author Nikita Koksharov
  *

@@ -16,11 +16,12 @@
 package org.redisson.api.options;
 
 /**
+ * {@link MapCacheOptions} 的可变配置实现。
  *
  * @author Nikita Koksharov
  *
- * @param <K> type of key
- * @param <V> type of value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public final class MapCacheParams<K, V> extends BaseMapOptions<MapCacheOptions<K, V>, K, V> implements MapCacheOptions<K, V> {
 
