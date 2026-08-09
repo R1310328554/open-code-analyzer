@@ -26,7 +26,7 @@ import com.alibaba.csp.sentinel.cluster.server.ServerConstants;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * The connection group stores connection set for a specific namespace.
+ * 连接分组，维护某一命名空间下的客户端连接集合与连接计数。
  *
  * @author Eric Zhao
  * @since 1.4.0
