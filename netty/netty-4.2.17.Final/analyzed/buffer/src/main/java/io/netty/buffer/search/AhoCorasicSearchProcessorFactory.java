@@ -22,27 +22,36 @@ import java.util.Arrays;
 import java.util.Queue;
 
 /**
- * Implements <a href="https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm">Aho–Corasick</a>
- * string search algorithm.
- * Use static {@link AbstractMultiSearchProcessorFactory#newAhoCorasicSearchProcessorFactory}
- * to create an instance of this factory.
- * Use {@link AhoCorasicSearchProcessorFactory#newSearchProcessor} to get an instance of
- * {@link io.netty.util.ByteProcessor} implementation for performing the actual search.
+ * <a href="https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm">Aho–Corasick</a> 多模式搜索实现。
+ * 通过 {@link AbstractMultiSearchProcessorFactory#newAhoCorasicSearchProcessorFactory} 创建工厂；
+ * 通过 {@link #newSearchProcessor()} 获取 {@link io.netty.util.ByteProcessor} 执行扫描。
  * @see AbstractMultiSearchProcessorFactory
  */
 public class AhoCorasicSearchProcessorFactory extends AbstractMultiSearchProcessorFactory {
 
+    /** 256 路跳转表（状态 × 字节 → 下一状态） */
+    /** 256 路跳转表（状态 × 字节 → 下一状态） */
     private final int[] jumpTable;
+    /** 各 trie 节点对应的最长匹配 needle 下标 */
+    /** 各 trie 节点对应的最长匹配 needle 下标 */
     private final int[] matchForNeedleId;
 
+    /** 每符号位数（字节） */
+    /** 每符号位数（字节） */
     static final int BITS_PER_SYMBOL = 8;
+    /** 字母表大小 256 */
+    /** 字母表大小 256 */
     static final int ALPHABET_SIZE = 1 << BITS_PER_SYMBOL;
 
+    /** 构建 trie 时的可变上下文 */
+    /** 构建 trie 时的可变上下文 */
     private static class Context {
         int[] jumpTable;
         int[] matchForNeedleId;
     }
 
+    /** 运行时 FSA：每字节更新 {@link #currentPosition}，命中时 {@link #process} 返回 false */
+    /** 运行时 FSA：每字节更新 {@link #currentPosition}，命中时 {@link #process} 返回 false */
     public static class Processor implements MultiSearchProcessor {
 
         private final int[] jumpTable;
@@ -96,6 +105,8 @@ public class AhoCorasicSearchProcessorFactory extends AbstractMultiSearchProcess
         }
     }
 
+    /** 将各 needle 插入 trie，生成跳转表与匹配表 */
+    /** 将各 needle 插入 trie，生成跳转表与匹配表 */
     private static Context buildTrie(byte[][] needles) {
 
         ArrayList<Integer> jumpTableBuilder = new ArrayList<Integer>(ALPHABET_SIZE);
@@ -144,6 +155,8 @@ public class AhoCorasicSearchProcessorFactory extends AbstractMultiSearchProcess
         return context;
     }
 
+    /** 建立 failure link（后缀链接）并补全缺失跳转 */
+    /** 建立 failure link（后缀链接）并补全缺失跳转 */
     private void linkSuffixes() {
 
         Queue<Integer> queue = new ArrayDeque<Integer>();
@@ -181,7 +194,7 @@ public class AhoCorasicSearchProcessorFactory extends AbstractMultiSearchProcess
     }
 
     /**
-     * Returns a new {@link Processor}.
+     * 返回新的 {@link Processor} 实例。
      */
     @Override
     public Processor newSearchProcessor() {

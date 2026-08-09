@@ -19,19 +19,25 @@ package io.netty.buffer;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Special {@link SwappedByteBuf} for {@link ByteBuf}s that use unsafe to access the byte array.
+ * 针对堆上 {@code byte[]} 且通过 Unsafe 访问的 {@link ByteBuf} 的 {@link SwappedByteBuf} 实现。
  */
 final class UnsafeHeapSwappedByteBuf extends AbstractUnsafeSwappedByteBuf {
 
+    /** 包装底层堆缓冲区。 */
+    /** 包装底层堆缓冲区。 */
     UnsafeHeapSwappedByteBuf(AbstractByteBuf buf) {
         super(buf);
     }
 
+    /** 将逻辑索引转为数组绝对下标（含 {@link ByteBuf#arrayOffset()}）。 */
+    /** 将逻辑索引转为数组绝对下标（含 {@link ByteBuf#arrayOffset()}）。 */
     private static int idx(ByteBuf wrapped, int index) {
         return wrapped.arrayOffset() + index;
     }
 
     @Override
+    /** 以交换后的字节序从堆数组读取 long。 */
+    /** 以交换后的字节序从堆数组读取 long。 */
     protected long _getLong(AbstractByteBuf wrapped, int index) {
         return PlatformDependent.getLong(wrapped.array(), idx(wrapped, index));
     }
@@ -57,6 +63,8 @@ final class UnsafeHeapSwappedByteBuf extends AbstractUnsafeSwappedByteBuf {
     }
 
     @Override
+    /** 以交换后的字节序向堆数组写入 long。 */
+    /** 以交换后的字节序向堆数组写入 long。 */
     protected void _setLong(AbstractByteBuf wrapped, int index, long value) {
         PlatformDependent.putLong(wrapped.array(), idx(wrapped, index), value);
     }

@@ -29,14 +29,25 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.PlatformDependent.BIG_ENDIAN_NATIVE_ORDER;
 
 /**
- * All operations get and set as {@link ByteOrder#BIG_ENDIAN}.
+ * 基于 {@link PlatformDependent} 的不安全内存/数组读写工具类。
+ * 标准 get/set 按 {@link ByteOrder#BIG_ENDIAN} 语义处理；{@code *LE} 方法提供小端变体。
  */
 final class UnsafeByteBufUtil {
+    /** 当前平台是否支持未对齐原生多字节访问 */
+    /** 当前平台是否支持未对齐原生多字节访问 */
     private static final boolean UNALIGNED = PlatformDependent.isUnaligned();
+    /** 对齐受限时是否改用 VarHandle 访问堆数组 */
+    /** 对齐受限时是否改用 VarHandle 访问堆数组 */
     private static final boolean USE_VAR_HANDLE = PlatformDependent.useVarHandleForMultiByteAccess();
+    /** {@link #setZero} 填充值 */
+    /** {@link #setZero} 填充值 */
     private static final byte ZERO = 0;
+    /** 手写清零循环的最大字节数，超过则调用 {@link PlatformDependent#setMemory} */
+    /** 手写清零循环的最大字节数，超过则调用 {@link PlatformDependent#setMemory} */
     private static final int MAX_HAND_ROLLED_SET_ZERO_BYTES = 64;
 
+    /** 从绝对地址读取单字节。 */
+    /** 从绝对地址读取单字节。 */
     static byte getByte(long address) {
         return PlatformDependent.getByte(address);
     }
@@ -131,6 +142,8 @@ final class UnsafeByteBufUtil {
                ((long) PlatformDependent.getByte(address + 7))  << 56;
     }
 
+    /** 向绝对地址写入单字节。 */
+    /** 向绝对地址写入单字节。 */
     static void setByte(long address, int value) {
         PlatformDependent.putByte(address, (byte) value);
     }
@@ -229,6 +242,7 @@ final class UnsafeByteBufUtil {
         }
     }
 
+    // --- 堆数组访问（与地址版本对称，对齐受限时可走 VarHandle） ---
     static byte getByte(byte[] array, int index) {
         return PlatformDependent.getByte(array, index);
     }
@@ -472,7 +486,7 @@ final class UnsafeByteBufUtil {
         if (length == 0) {
             return;
         }
-        // fast-path for small writes to avoid thread-state change JDK's handling
+        // 小范围清零走手写循环，避免 JDK setMemory 的线程状态切换
         if (UNALIGNED && length <= MAX_HAND_ROLLED_SET_ZERO_BYTES) {
             batchSetZero(array, index, length);
         } else {
@@ -545,15 +559,15 @@ final class UnsafeByteBufUtil {
 
         if (dst.isDirect()) {
             if (dst.isReadOnly()) {
-                // We need to check if dst is ready-only so we not write something in it by using Unsafe.
+                // 只读 ByteBuffer 禁止通过 Unsafe 写入
                 throw new ReadOnlyBufferException();
             }
-            // Copy to direct memory
+            // 复制到直接内存
             long dstAddress = PlatformDependent.directBufferAddress(dst);
             PlatformDependent.copyMemory(addr, dstAddress + dst.position(), dst.remaining());
             dst.position(dst.position() + dst.remaining());
         } else if (dst.hasArray()) {
-            // Copy to array
+            // 复制到堆数组
             PlatformDependent.copyMemory(addr, dst.array(), dst.arrayOffset() + dst.position(), dst.remaining());
             dst.position(dst.position() + dst.remaining());
         } else  {
@@ -581,7 +595,7 @@ final class UnsafeByteBufUtil {
 
     static void setBytes(AbstractByteBuf buf, long addr, int index, byte[] src, int srcIndex, int length) {
         buf.checkIndex(index, length);
-        // we need to check not null for src as it may cause the JVM crash
+        // src 必须非 null，否则可能触发 JVM 崩溃
         // See https://github.com/netty/netty/issues/10791
         checkNotNull(src, "src");
         if (isOutOfBounds(srcIndex, length, src.length)) {
@@ -601,20 +615,20 @@ final class UnsafeByteBufUtil {
 
         if (src.isDirect()) {
             buf.checkIndex(index, length);
-            // Copy from direct memory
+            // 从直接内存复制
             long srcAddress = PlatformDependent.directBufferAddress(src);
             PlatformDependent.copyMemory(srcAddress + src.position(), addr, length);
             src.position(src.position() + length);
         } else if (src.hasArray()) {
             buf.checkIndex(index, length);
-            // Copy from array
+            // 从堆数组复制
             PlatformDependent.copyMemory(src.array(), src.arrayOffset() + src.position(), addr, length);
             src.position(src.position() + length);
         } else {
             if (length < 8) {
                 setSingleBytes(buf, addr, index, src, length);
             } else {
-                //no need to checkIndex: internalNioBuffer is already taking care of it
+                // internalNioBuffer 已做边界检查，此处无需再 checkIndex
                 assert buf.nioBufferCount() == 1;
                 final ByteBuffer internalBuffer = buf.internalNioBuffer(index, length);
                 internalBuffer.put(src);
@@ -643,7 +657,7 @@ final class UnsafeByteBufUtil {
             if (len <= ByteBufUtil.MAX_TL_ARRAY_LEN || !buf.alloc().isDirectBufferPooled()) {
                 getBytes(addr, ByteBufUtil.threadLocalTempArray(len), 0, len, out, length);
             } else {
-                // if direct buffers are pooled chances are good that heap buffers are pooled as well.
+                // 直接缓冲池化时，堆缓冲通常也池化，故优先用临时堆缓冲
                 ByteBuf tmpBuf = buf.alloc().heapBuffer(len);
                 try {
                     byte[] tmp = tmpBuf.array();
@@ -686,7 +700,7 @@ final class UnsafeByteBufUtil {
         // fast-path for small writes to avoid thread-state change JDK's handling
         if (length <= MAX_HAND_ROLLED_SET_ZERO_BYTES) {
             if (!UNALIGNED) {
-                // write bytes until the address is aligned
+                // 先逐字节清零直至地址 8 字节对齐
                 int bytesToGetAligned = zeroTillAligned(addr, length);
                 addr += bytesToGetAligned;
                 length -= bytesToGetAligned;
@@ -720,11 +734,11 @@ final class UnsafeByteBufUtil {
     }
 
     /**
-     * Allocates direct buffers for chunks used in the pooling allocators.
-     * @param alloc The allocator we're creating a chunk for.
-     * @param initialCapacity The initial capacity.
-     * @param maxCapacity The max capacity.
-     * @return The {@link UnpooledDirectByteBuf} with the chunk memory.
+     * 为池化分配器的 chunk 分配直接缓冲区包装。
+      * @param alloc 目标分配器
+      * @param initialCapacity 初始容量
+      * @param maxCapacity 最大容量
+     * @return 持有 chunk 内存的 {@link UnpooledDirectByteBuf}
      */
     static UnpooledDirectByteBuf newDirectByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         if (PlatformDependent.hasUnsafe()) {

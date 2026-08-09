@@ -17,13 +17,13 @@ package io.netty.buffer.search;
 import io.netty.util.ByteProcessor;
 
 /**
- * Interface for {@link ByteProcessor} that implements string search.
+ * 基于 {@link ByteProcessor} 的字节串搜索接口；配合 {@link io.netty.buffer.ByteBuf#forEachByte} 使用。
  * @see SearchProcessorFactory
  */
 public interface SearchProcessor extends ByteProcessor {
 
     /**
-     * Resets the state of SearchProcessor.
+     * 重置搜索状态机，便于在新偏移处重新开始扫描。
      */
     void reset();
 

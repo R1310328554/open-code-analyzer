@@ -29,15 +29,24 @@ import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * {@link CompositeByteBuf} 的装饰器：将生命周期、索引与数据访问全部委托给 {@link #wrapped}。
+ * 用于在保留组合语义的同时叠加额外行为（如泄漏检测）。
+ */
 class WrappedCompositeByteBuf extends CompositeByteBuf {
 
+    /** 被委托的组合缓冲区。 */
+    /** 被委托的组合缓冲区。 */
     private final CompositeByteBuf wrapped;
 
+    /** 以 wrapped 的分配器初始化父类，并保存委托目标。 */
+    /** 以 wrapped 的分配器初始化父类，并保存委托目标。 */
     WrappedCompositeByteBuf(CompositeByteBuf wrapped) {
         super(wrapped.alloc());
         this.wrapped = wrapped;
     }
 
+    // --- 引用计数 ---
     @Override
     public boolean release() {
         return wrapped.release();
@@ -53,6 +62,7 @@ class WrappedCompositeByteBuf extends CompositeByteBuf {
         return wrapped.maxCapacity();
     }
 
+    // --- 索引与可读/可写 ---
     @Override
     public final int readerIndex() {
         return wrapped.readerIndex();
@@ -113,6 +123,7 @@ class WrappedCompositeByteBuf extends CompositeByteBuf {
         return wrapped.order(endianness);
     }
 
+    // --- 随机读 ---
     @Override
     public boolean getBoolean(int index) {
         return wrapped.getBoolean(index);
@@ -233,6 +244,7 @@ class WrappedCompositeByteBuf extends CompositeByteBuf {
         return wrapped.readByte();
     }
 
+    // --- 顺序读 ---
     @Override
     public boolean readBoolean() {
         return wrapped.readBoolean();
@@ -498,6 +510,7 @@ class WrappedCompositeByteBuf extends CompositeByteBuf {
         return wrapped.writeBytes(in, length);
     }
 
+    // --- 复制、组件与 NIO ---
     @Override
     public ByteBuf copy() {
         return wrapped.copy();
@@ -995,6 +1008,7 @@ class WrappedCompositeByteBuf extends CompositeByteBuf {
         return this;
     }
 
+    // --- 随机写 ---
     @Override
     public CompositeByteBuf setBoolean(int index, boolean value) {
         wrapped.setBoolean(index, value);
@@ -1151,6 +1165,7 @@ class WrappedCompositeByteBuf extends CompositeByteBuf {
         return this;
     }
 
+    // --- 顺序写 ---
     @Override
     public CompositeByteBuf writeBoolean(boolean value) {
         wrapped.writeBoolean(value);

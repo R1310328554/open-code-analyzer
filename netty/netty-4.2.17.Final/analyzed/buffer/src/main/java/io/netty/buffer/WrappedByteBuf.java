@@ -31,20 +31,25 @@ import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 
 /**
- * Wraps another {@link ByteBuf}.
- *
- * It's important that the {@link #readerIndex()} and {@link #writerIndex()} will not do any adjustments on the
- * indices on the fly because of internal optimizations made by {@link ByteBufUtil#writeAscii(ByteBuf, CharSequence)}
- * and {@link ByteBufUtil#writeUtf8(ByteBuf, CharSequence)}.
+ * 将另一个 {@link ByteBuf} 包装为自身类型的装饰器：几乎所有操作原样委托给 {@link #buf}。
+ * <p>
+ * {@link #readerIndex()} 与 {@link #writerIndex()} 不得在访问时隐式调整索引——
+ * {@link ByteBufUtil#writeAscii(ByteBuf, CharSequence)} 与
+ * {@link ByteBufUtil#writeUtf8(ByteBuf, CharSequence)} 依赖此约定做内部优化。
  */
 public class WrappedByteBuf extends ByteBuf {
 
+    /** 被委托的底层缓冲区。 */
+    /** 被委托的底层缓冲区。 */
     protected final ByteBuf buf;
 
+    /** 子类通过此构造器绑定底层 buf。 */
+    /** 子类通过此构造器绑定底层 buf。 */
     protected WrappedByteBuf(ByteBuf buf) {
         this.buf = ObjectUtil.checkNotNull(buf, "buf");
     }
 
+    // --- 内存布局与容量 ---
     @Override
     public final boolean hasMemoryAddress() {
         return buf.hasMemoryAddress();
@@ -159,6 +164,7 @@ public class WrappedByteBuf extends ByteBuf {
         return buf.maxFastWritableBytes();
     }
 
+    // --- 读写索引与可读/可写状态 ---
     @Override
     public final boolean isReadable() {
         return buf.isReadable();
@@ -222,6 +228,7 @@ public class WrappedByteBuf extends ByteBuf {
         return buf.ensureWritable(minWritableBytes, force);
     }
 
+    // --- 随机访问 get（按索引） ---
     @Override
     public boolean getBoolean(int index) {
         return buf.getBoolean(index);
@@ -379,6 +386,7 @@ public class WrappedByteBuf extends ByteBuf {
         return buf.getCharSequence(index, length, charset);
     }
 
+    // --- 随机访问 set（按索引） ---
     @Override
     public ByteBuf setBoolean(int index, boolean value) {
         buf.setBoolean(index, value);
@@ -519,6 +527,7 @@ public class WrappedByteBuf extends ByteBuf {
         return buf.setCharSequence(index, sequence, charset);
     }
 
+    // --- 顺序读 ---
     @Override
     public boolean readBoolean() {
         return buf.readBoolean();
@@ -702,6 +711,7 @@ public class WrappedByteBuf extends ByteBuf {
         return this;
     }
 
+    // --- 顺序写 ---
     @Override
     public ByteBuf writeBoolean(boolean value) {
         buf.writeBoolean(value);
@@ -882,6 +892,7 @@ public class WrappedByteBuf extends ByteBuf {
         return buf.forEachByteDesc(index, length, processor);
     }
 
+    // --- 复制、切片与 NIO 视图 ---
     @Override
     public ByteBuf copy() {
         return buf.copy();
@@ -1032,6 +1043,7 @@ public class WrappedByteBuf extends ByteBuf {
         return buf.isWritable(size);
     }
 
+    // --- 引用计数 ---
     @Override
     public final int refCnt() {
         return buf.refCnt();

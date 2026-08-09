@@ -15,36 +15,22 @@
 package io.netty.buffer.search;
 
 /**
- * Base class for precomputed factories that create {@link SearchProcessor}s.
+ * 预计算工厂基类，用于创建 {@link SearchProcessor}。
  * <br>
- * Different factories implement different search algorithms with performance characteristics that
- * depend on a use case, so it is advisable to benchmark a concrete use case with different algorithms
- * before choosing one of them.
+ * 各子类实现不同搜索算法，性能因场景而异，选定前应针对实际负载做基准测试。
  * <br>
- * A concrete instance of {@link AbstractSearchProcessorFactory} is built for searching for a concrete sequence of bytes
- * (the {@code needle}), it contains precomputed data needed to perform the search, and is meant to be reused
- * whenever searching for the same {@code needle}.
+ * 每个工厂实例对应固定 {@code needle}，内含预计算表，可在多次搜索同一模式时复用。
  * <br>
- * <b>Note:</b> implementations of {@link SearchProcessor} scan the {@link io.netty.buffer.ByteBuf} sequentially,
- * one byte after another, without doing any random access. As a result, when using {@link SearchProcessor}
- * with such methods as {@link io.netty.buffer.ByteBuf#forEachByte}, these methods return the index of the last byte
- * of the found byte sequence within the {@link io.netty.buffer.ByteBuf} (which might feel counterintuitive,
- * and different from {@link io.netty.buffer.ByteBufUtil#indexOf} which returns the index of the first byte
- * of found sequence).
+ * <b>注意：</b>{@link SearchProcessor} 严格顺序扫描 {@link io.netty.buffer.ByteBuf}，不做随机访问。
+ * 配合 {@link io.netty.buffer.ByteBuf#forEachByte} 时，返回的是命中序列<strong>最后一个字节</strong>的索引
+ * （与 {@link io.netty.buffer.ByteBufUtil#indexOf} 返回首字节索引不同）。
  * <br>
- * A {@link SearchProcessor} is implemented as a
- * <a href="https://en.wikipedia.org/wiki/Finite-state_machine">Finite State Automaton</a> that contains a
- * small internal state which is updated with every byte processed. As a result, an instance of {@link SearchProcessor}
- * should not be reused across independent search sessions (eg. for searching in different
- * {@link io.netty.buffer.ByteBuf}s). A new instance should be created with {@link AbstractSearchProcessorFactory} for
- * every search session. However, a {@link SearchProcessor} can (and should) be reused within the search session,
- * eg. when searching for all occurrences of the {@code needle} within the same {@code haystack}. That way, it can
- * also detect overlapping occurrences of the {@code needle} (eg. a string "ABABAB" contains two occurrences of "BAB"
- * that overlap by one character "B"). For this to work correctly, after an occurrence of the {@code needle} is
- * found ending at index {@code idx}, the search should continue starting from the index {@code idx + 1}.
+ * 实现为<a href="https://en.wikipedia.org/wiki/Finite-state_machine">有限状态自动机</a>，每处理一字节更新内部状态。
+ * 不同 {@link io.netty.buffer.ByteBuf} 的搜索会话须各自 {@link #newSearchProcessor()}；
+ * 同一会话内应复用同一 processor 以支持重叠匹配（如 "ABABAB" 中两个重叠的 "BAB"）。
+ * 命中结束于 {@code idx} 后，应从 {@code idx + 1} 继续扫描。
  * <br>
- * Example (given that the {@code haystack} is a {@link io.netty.buffer.ByteBuf} containing "ABABAB" and
- * the {@code needle} is "BAB"):
+ * 示例（{@code haystack} 含 "ABABAB"，{@code needle} 为 "BAB"）：
  * <pre>
  *     SearchProcessorFactory factory =
  *         SearchProcessorFactory.newKmpSearchProcessorFactory(needle.getBytes(CharsetUtil.UTF_8));
@@ -65,48 +51,37 @@ package io.netty.buffer.search;
  *     int idx3 = haystack.forEachByte(continueFrom2, haystack.readableBytes() - continueFrom2, processor);
  *     // idx3 is -1 (no more occurrences of the needle)
  *
- *     // After this search session is complete, processor should be discarded.
- *     // To search for the same needle again, reuse the same factory to get a new SearchProcessor.
+ *     // 搜索结束应丢弃 processor；再次搜索同一 needle 时复用工厂创建新实例
  * </pre>
  */
 public abstract class AbstractSearchProcessorFactory implements SearchProcessorFactory {
 
     /**
-     * Creates a {@link SearchProcessorFactory} based on
-     * <a href="https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm">Knuth-Morris-Pratt</a>
-     * string search algorithm. It is a reasonable default choice among the provided algorithms.
+     * 基于
+     * <a href="https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm">KMP</a>
+     * 算法创建 {@link SearchProcessorFactory}，为提供的算法中的合理默认选择。
      * <br>
-     * Precomputation (this method) time is linear in the size of input ({@code O(|needle|)}).
+     * 预计算 {@code O(|needle|)}，保留长度 {@code needle.length + 1} 的 int 数组及 needle 副本。
      * <br>
-     * The factory allocates and retains an int array of size {@code needle.length + 1}, and retains a reference
-     * to the {@code needle} itself.
-     * <br>
-     * Search (the actual application of {@link SearchProcessor}) time is linear in the size of
-     * {@link io.netty.buffer.ByteBuf} on which the search is performed ({@code O(|haystack|)}).
-     * Every byte of {@link io.netty.buffer.ByteBuf} is processed only once, sequentially.
+     * 搜索时对 haystack 每字节顺序处理一次，时间 {@code O(|haystack|)}。
      *
-     * @param needle an array of bytes to search for
-     * @return a new instance of {@link KmpSearchProcessorFactory} precomputed for the given {@code needle}
+      * @param needle 待搜索字节序列
+     * @return 针对给定 {@code needle} 预计算的 {@link KmpSearchProcessorFactory}
      */
     public static KmpSearchProcessorFactory newKmpSearchProcessorFactory(byte[] needle) {
         return new KmpSearchProcessorFactory(needle);
     }
 
     /**
-     * Creates a {@link SearchProcessorFactory} based on Bitap string search algorithm.
-     * It is a jump free algorithm that has very stable performance (the contents of the inputs have a minimal
-     * effect on it). The limitation is that the {@code needle} can be no more than 64 bytes long.
+     * 基于 Bitap 算法创建 {@link SearchProcessorFactory}：无跳跃、性能稳定，输入内容影响小。
+     * {@code needle} 长度不得超过 64 字节。
      * <br>
-     * Precomputation (this method) time is linear in the size of the input ({@code O(|needle|)}).
+     * 预计算 {@code O(|needle|)}，保留 {@code long[256]}。
      * <br>
-     * The factory allocates and retains a long[256] array.
-     * <br>
-     * Search (the actual application of {@link SearchProcessor}) time is linear in the size of
-     * {@link io.netty.buffer.ByteBuf} on which the search is performed ({@code O(|haystack|)}).
-     * Every byte of {@link io.netty.buffer.ByteBuf} is processed only once, sequentially.
+     * 搜索时对 haystack 每字节顺序处理一次，时间 {@code O(|haystack|)}。
      *
-     * @param needle an array <b>of no more than 64 bytes</b> to search for
-     * @return a new instance of {@link BitapSearchProcessorFactory} precomputed for the given {@code needle}
+      * @param needle 待搜索字节序列（<b>不超过 64 字节</b>）
+     * @return 针对给定 {@code needle} 预计算的 {@link BitapSearchProcessorFactory}
      */
     public static BitapSearchProcessorFactory newBitapSearchProcessorFactory(byte[] needle) {
         return new BitapSearchProcessorFactory(needle);

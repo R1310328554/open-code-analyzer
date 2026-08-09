@@ -19,16 +19,19 @@ package io.netty.buffer;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Special {@link SwappedByteBuf} for {@link ByteBuf}s that are backed by a {@code memoryAddress}.
+ * 针对带 {@code memoryAddress} 的直接 {@link ByteBuf} 的 {@link SwappedByteBuf} 实现。
+ * 通过绝对地址 + {@link PlatformDependent} 完成字节序交换后的原生读写。
  */
 final class UnsafeDirectSwappedByteBuf extends AbstractUnsafeSwappedByteBuf {
 
+    /** 包装底层直接缓冲区。 */
+    /** 包装底层直接缓冲区。 */
     UnsafeDirectSwappedByteBuf(AbstractByteBuf buf) {
         super(buf);
     }
 
     private static long addr(AbstractByteBuf wrapped, int index) {
-        // We need to call wrapped.memoryAddress() everytime and NOT cache it as it may change if the buffer expand.
+        // 每次计算地址，不可缓存 memoryAddress：扩容后地址可能变化
         // See:
         // - https://github.com/netty/netty/issues/2587
         // - https://github.com/netty/netty/issues/2580
@@ -36,6 +39,8 @@ final class UnsafeDirectSwappedByteBuf extends AbstractUnsafeSwappedByteBuf {
     }
 
     @Override
+    /** 以交换后的字节序从直接内存读取 long。 */
+    /** 以交换后的字节序从直接内存读取 long。 */
     protected long _getLong(AbstractByteBuf wrapped, int index) {
         return PlatformDependent.getLong(addr(wrapped, index));
     }
@@ -61,6 +66,8 @@ final class UnsafeDirectSwappedByteBuf extends AbstractUnsafeSwappedByteBuf {
     }
 
     @Override
+    /** 以交换后的字节序向直接内存写入 long。 */
+    /** 以交换后的字节序向直接内存写入 long。 */
     protected void _setLong(AbstractByteBuf wrapped, int index, long value) {
         PlatformDependent.putLong(addr(wrapped, index), value);
     }

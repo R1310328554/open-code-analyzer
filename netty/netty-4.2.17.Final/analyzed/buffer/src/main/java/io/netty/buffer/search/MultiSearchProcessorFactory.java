@@ -14,10 +14,13 @@
  */
 package io.netty.buffer.search;
 
+/**
+ * 创建 {@link MultiSearchProcessor} 的工厂接口。
+ */
 public interface MultiSearchProcessorFactory extends SearchProcessorFactory {
 
     /**
-     * Returns a new {@link MultiSearchProcessor}.
+     * 返回新的 {@link MultiSearchProcessor} 实例。
      */
     @Override
     MultiSearchProcessor newSearchProcessor();

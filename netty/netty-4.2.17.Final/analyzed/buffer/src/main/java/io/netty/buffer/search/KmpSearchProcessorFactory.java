@@ -17,20 +17,22 @@ package io.netty.buffer.search;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Implements
- * <a href="https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm">Knuth-Morris-Pratt</a>
- * string search algorithm.
- * Use static {@link AbstractSearchProcessorFactory#newKmpSearchProcessorFactory}
- * to create an instance of this factory.
- * Use {@link KmpSearchProcessorFactory#newSearchProcessor} to get an instance of {@link io.netty.util.ByteProcessor}
- * implementation for performing the actual search.
+ * <a href="https://en.wikipedia.org/wiki/Knuth%E2%80%93Morris%E2%80%93Pratt_algorithm">KMP</a> 单模式搜索实现。
+ * 通过 {@link AbstractSearchProcessorFactory#newKmpSearchProcessorFactory} 创建；
+ * {@link #newSearchProcessor()} 返回实际扫描用的 {@link io.netty.util.ByteProcessor}。
  * @see AbstractSearchProcessorFactory
  */
 public class KmpSearchProcessorFactory extends AbstractSearchProcessorFactory {
 
+    /** KMP 部分匹配表（failure function） */
+    /** KMP 部分匹配表（failure function） */
     private final int[] jumpTable;
+    /** 待搜索模式的副本 */
+    /** 待搜索模式的副本 */
     private final byte[] needle;
 
+    /** 按 KMP 规则推进 {@link #currentPosition}，完整匹配时返回 false */
+    /** 按 KMP 规则推进 {@link #currentPosition}，完整匹配时返回 false */
     public static class Processor implements SearchProcessor {
 
         private final byte[] needle;
@@ -81,7 +83,7 @@ public class KmpSearchProcessorFactory extends AbstractSearchProcessorFactory {
     }
 
     /**
-     * Returns a new {@link Processor}.
+     * 返回新的 {@link Processor} 实例。
      */
     @Override
     public Processor newSearchProcessor() {

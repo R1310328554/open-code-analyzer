@@ -19,13 +19,21 @@ import io.netty.util.internal.PlatformDependent;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 包装已有绝对地址的直接内存为 {@link UnpooledUnsafeDirectByteBuf}，
+ * 释放时调用 {@link PlatformDependent#freeMemory(long)} 而非释放 {@link ByteBuffer}。
+ */
 final class WrappedUnpooledUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
 
+    /** 用 {@link PlatformDependent#directBuffer(long, int)} 构造 NIO 视图并绑定分配器。 */
+    /** 用 {@link PlatformDependent#directBuffer(long, int)} 构造 NIO 视图并绑定分配器。 */
     WrappedUnpooledUnsafeDirectByteBuf(ByteBufAllocator alloc, long memoryAddress, int size, boolean doFree) {
         super(alloc, PlatformDependent.directBuffer(memoryAddress, size), size, doFree);
     }
 
     @Override
+    /** 按内存地址释放，忽略传入的 buffer 对象。 */
+    /** 按内存地址释放，忽略传入的 buffer 对象。 */
     protected void freeDirect(ByteBuffer buffer) {
         PlatformDependent.freeMemory(memoryAddress);
     }

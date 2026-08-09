@@ -20,18 +20,18 @@ import io.netty.util.internal.PlatformDependent;
 import java.nio.ByteBuffer;
 
 /**
- * Centralizes all ByteBuffer VarHandle get/set calls so classes like UnpooledDirectByteBuf
- * don't directly reference signature-polymorphic methods. This allows avoiding class verification
- * failures on older Android runtimes by not loading this class when VarHandle is disabled.
- *
- * Methods here must only be called when PlatformDependent.hasVarHandle() is true.
+ * 集中封装 {@link ByteBuffer} 与 {@code byte[]} 的 VarHandle 读写，
+ * 避免 {@link UnpooledDirectByteBuf} 等类直接引用签名多态方法。
+ * 在 VarHandle 禁用时本类不会被加载，从而规避旧版 Android 的类校验失败。
+ * <p>
+ * 仅当 {@code PlatformDependent.hasVarHandle()} 为真时方可调用此处方法。
  */
 final class VarHandleByteBufferAccess {
 
     private VarHandleByteBufferAccess() {
     }
 
-    // short (big endian)
+    // --- ByteBuffer：short 大端 ---
     static short getShortBE(ByteBuffer buffer, int index) {
         //noinspection DataFlowIssue
         return (short) PlatformDependent.shortBeByteBufferView().get(buffer, index);
@@ -42,7 +42,7 @@ final class VarHandleByteBufferAccess {
         PlatformDependent.shortBeByteBufferView().set(buffer, index, (short) value);
     }
 
-    // short (little endian)
+    // --- ByteBuffer：short 小端 ---
     static short getShortLE(ByteBuffer buffer, int index) {
         //noinspection DataFlowIssue
         return (short) PlatformDependent.shortLeByteBufferView().get(buffer, index);
@@ -53,7 +53,7 @@ final class VarHandleByteBufferAccess {
         PlatformDependent.shortLeByteBufferView().set(buffer, index, (short) value);
     }
 
-    // int (big endian)
+    // --- ByteBuffer：int 大端 ---
     static int getIntBE(ByteBuffer buffer, int index) {
         //noinspection DataFlowIssue
         return (int) PlatformDependent.intBeByteBufferView().get(buffer, index);
@@ -75,7 +75,7 @@ final class VarHandleByteBufferAccess {
         PlatformDependent.intLeByteBufferView().set(buffer, index, value);
     }
 
-    // long (big endian)
+    // --- ByteBuffer：long 大端 ---
     static long getLongBE(ByteBuffer buffer, int index) {
         //noinspection DataFlowIssue
         return (long) PlatformDependent.longBeByteBufferView().get(buffer, index);
@@ -98,14 +98,11 @@ final class VarHandleByteBufferAccess {
     }
 
     // --------------------------------------------------------------------
-    // byte[] (heap array) accessors
-    // These centralize VarHandle.get/set calls for heap arrays as well,
-    // so classes like HeapByteBufUtil do not call signature-polymorphic
-    // methods directly.
-    // Methods must only be called when PlatformDependent.hasVarHandle() is true.
+    // 堆 byte[] 访问：同样集中 VarHandle 调用，避免 HeapByteBufUtil 等直接触达签名多态方法
+    // 仅当 PlatformDependent.hasVarHandle() 为真时调用
     // --------------------------------------------------------------------
 
-    // short (big endian)
+    // --- byte[]：short 大端 ---
     static short getShortBE(byte[] memory, int index) {
         //noinspection DataFlowIssue
         return (short) PlatformDependent.shortBeArrayView().get(memory, index);

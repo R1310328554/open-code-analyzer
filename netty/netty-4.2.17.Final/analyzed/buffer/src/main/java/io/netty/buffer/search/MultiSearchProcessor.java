@@ -15,13 +15,13 @@
 package io.netty.buffer.search;
 
 /**
- * Interface for {@link SearchProcessor} that implements simultaneous search for multiple strings.
+ * 扩展 {@link SearchProcessor}，支持在单次扫描中同时搜索多个模式。
  * @see MultiSearchProcessorFactory
  */
 public interface MultiSearchProcessor extends SearchProcessor {
 
     /**
-     * @return the index of found search string (if any, or -1 if none) at current position of this MultiSearchProcessor
+     * @return 当前位置命中的搜索串在 needles 数组中的下标；无匹配时为 -1
      */
     int getFoundNeedleId();
 

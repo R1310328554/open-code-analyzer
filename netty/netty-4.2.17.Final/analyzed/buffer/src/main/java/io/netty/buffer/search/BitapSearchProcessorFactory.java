@@ -17,18 +17,22 @@ package io.netty.buffer.search;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Implements <a href="https://en.wikipedia.org/wiki/Bitap_algorithm">Bitap</a> string search algorithm.
- * Use static {@link AbstractSearchProcessorFactory#newBitapSearchProcessorFactory}
- * to create an instance of this factory.
- * Use {@link BitapSearchProcessorFactory#newSearchProcessor} to get an instance of {@link io.netty.util.ByteProcessor}
- * implementation for performing the actual search.
+ * <a href="https://en.wikipedia.org/wiki/Bitap_algorithm">Bitap</a>（Shift-Or）单模式搜索实现。
+ * 通过 {@link AbstractSearchProcessorFactory#newBitapSearchProcessorFactory} 创建；
+ * {@link #newSearchProcessor()} 返回实际扫描用的 {@link io.netty.util.ByteProcessor}。
  * @see AbstractSearchProcessorFactory
  */
 public class BitapSearchProcessorFactory extends AbstractSearchProcessorFactory {
 
+    /** 各字节值在模式中的位掩码 */
+    /** 各字节值在模式中的位掩码 */
     private final long[] bitMasks = new long[256];
+    /** 模式完全对齐时的成功位 */
+    /** 模式完全对齐时的成功位 */
     private final long successBit;
 
+    /** 维护 {@link #currentMask} 状态机，命中时 {@link #process} 返回 false */
+    /** 维护 {@link #currentMask} 状态机，命中时 {@link #process} 返回 false */
     public static class Processor implements SearchProcessor {
 
         private final long[] bitMasks;
@@ -67,7 +71,7 @@ public class BitapSearchProcessorFactory extends AbstractSearchProcessorFactory 
     }
 
     /**
-     * Returns a new {@link Processor}.
+     * 返回新的 {@link Processor} 实例。
      */
     @Override
     public Processor newSearchProcessor() {
