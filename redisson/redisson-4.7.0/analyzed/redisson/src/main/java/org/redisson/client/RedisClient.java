@@ -55,18 +55,26 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Low-level Redis client
- * 
+ * 底层 Redis 客户端，基于 Netty 管理连接生命周期。
+ * <p>
+ * 负责 DNS 解析、TCP/UDS 连接、普通命令与 Pub/Sub 双 Bootstrap，以及优雅关闭。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class RedisClient {
 
+    /** 异步 DNS 解析结果的 Future 引用。 */
     private final AtomicReference<CompletableFuture<InetSocketAddress>> resolvedAddrFuture = new AtomicReference<>();
+    /** 普通命令连接的 Netty Bootstrap。 */
     private final Bootstrap bootstrap;
+    /** 发布/订阅连接的 Netty Bootstrap。 */
     private final Bootstrap pubSubBootstrap;
+    /** Redis 连接 URI。 */
     private final RedisURI uri;
+    /** 已解析的套接字地址（IP 或 UDS）。 */
     private SocketAddress resolvedAddr;
+    /** 本客户端打开的全部 Channel 组，用于批量关闭。 */
     private final ChannelGroup channels;
 
     private final ExecutorService executor;
@@ -74,12 +82,23 @@ public final class RedisClient {
     private final Timer timer;
     private final RedisClientConfig config;
 
+    /** 是否由本客户端创建并负责关闭 Timer。 */
     private boolean hasOwnTimer;
+    /** 是否由本客户端创建并负责关闭 Executor。 */
     private boolean hasOwnExecutor;
+    /** 是否由本客户端创建并负责关闭 EventLoopGroup。 */
     private boolean hasOwnGroup;
+    /** 是否由本客户端创建并负责关闭 AddressResolverGroup。 */
     private boolean hasOwnResolver;
+    /** 是否已进入关闭流程。 */
     private volatile boolean shutdown;
 
+    /**
+     * 根据配置创建 Redis 客户端实例。
+     *
+     * @param config 客户端配置
+     * @return 新的 {@link RedisClient}
+     */
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);
     }
@@ -130,6 +149,7 @@ public final class RedisClient {
         this.commandTimeout = copy.getCommandTimeout();
     }
 
+    /** 创建并配置指定类型（PLAIN 或 PUBSUB）的 Netty Bootstrap。 */
     private Bootstrap createBootstrap(RedisClientConfig config, Type type) {
         Bootstrap bootstrap = new Bootstrap()
                         .resolver(config.getResolverGroup())
@@ -147,6 +167,7 @@ public final class RedisClient {
         return bootstrap;
     }
 
+    /** 根据配置为 Bootstrap 设置 TCP KeepAlive、NODELAY 等平台相关选项。 */
     private void applyTCPOptions(RedisClientConfig config, Bootstrap bootstrap) {
         bootstrap.option(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());
         bootstrap.option(ChannelOption.TCP_NODELAY, config.isTcpNoDelay());
@@ -156,14 +177,14 @@ public final class RedisClient {
             SocketOption<Integer> idleOption = null;
             SocketOption<Integer> intervalOption = null;
             try {
-                // fixes Intellij compilation issue with JDK 1.8
+                // 兼容 JDK 1.8 下 IntelliJ 编译 ExtendedSocketOptions
                 Class<?> options = Class.forName("jdk.net.ExtendedSocketOptions");
 
                 countOption = (SocketOption<Integer>) options.getDeclaredField("TCP_KEEPCOUNT").get(null);
                 idleOption = (SocketOption<Integer>) options.getDeclaredField("TCP_KEEPIDLE").get(null);
                 intervalOption = (SocketOption<Integer>) options.getDeclaredField("TCP_KEEPINTERVAL").get(null);
             } catch (ReflectiveOperationException e) {
-                // skip
+                // 平台不支持时跳过
             }
 
             if (config.getTcpKeepAliveCount() > 0 && countOption != null) {
@@ -204,6 +225,13 @@ public final class RedisClient {
         }
     }
 
+    /**
+     * 返回已解析的连接地址。
+     * <p>
+     * UDS 连接时包装为带路径字符串的 {@link InetSocketAddress}。
+     *
+     * @return 套接字地址
+     */
     public InetSocketAddress getAddr() {
         if (resolvedAddr instanceof DomainSocketAddress) {
             try {
@@ -221,18 +249,27 @@ public final class RedisClient {
         return (InetSocketAddress) resolvedAddr;
     }
 
+    /** 返回命令执行超时时间（毫秒）。 */
     public long getCommandTimeout() {
         return commandTimeout;
     }
 
+    /** 返回客户端配置的不可变副本引用。 */
     public RedisClientConfig getConfig() {
         return config;
     }
 
+    /** 返回 Netty 定时器，用于超时调度。 */
     public Timer getTimer() {
         return timer;
     }
     
+    /**
+     * 同步建立普通 Redis 连接。
+     *
+     * @return 已就绪的 {@link RedisConnection}
+     * @throws RedisException 连接或握手失败
+     */
     public RedisConnection connect() {
         try {
             return connectAsync().toCompletableFuture().join();
@@ -245,6 +282,13 @@ public final class RedisClient {
         }
     }
     
+    /**
+     * 异步解析主机名为 {@link InetSocketAddress}。
+     * <p>
+     * 字面量 IP 或已预设地址时立即完成；否则通过 Netty DNS 解析器异步解析。
+     *
+     * @return 解析结果的 Future
+     */
     public CompletableFuture<InetSocketAddress> resolveAddr() {
         if (resolvedAddrFuture.get() != null) {
             return resolvedAddrFuture.get();
@@ -260,7 +304,7 @@ public final class RedisClient {
             try {
                 resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(uri.getHost(), addr), uri.getPort());
             } catch (UnknownHostException e) {
-                // skip
+                // 解析失败时跳过
             }
             promise.complete((InetSocketAddress) resolvedAddr);
             return promise;
@@ -282,6 +326,11 @@ public final class RedisClient {
         return promise;
     }
 
+    /**
+     * 异步建立普通 Redis 连接。
+     *
+     * @return 连接就绪后的 {@link RFuture}
+     */
     public RFuture<RedisConnection> connectAsync() {
         CompletionStage<SocketAddress> addrFuture = resolveSocket();
         CompletionStage<RedisConnection> f = addrFuture.thenCompose(res -> {
@@ -323,6 +372,7 @@ public final class RedisClient {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** UDS 直接返回已解析地址，否则异步 DNS 解析。 */
     private CompletionStage<SocketAddress> resolveSocket() {
         if (uri.isUDS()) {
             return CompletableFuture.completedFuture(resolvedAddr);
@@ -330,6 +380,12 @@ public final class RedisClient {
         return resolveAddr().thenApply(s -> s);
     }
 
+    /**
+     * 同步建立 Pub/Sub 专用连接。
+     *
+     * @return 已就绪的 {@link RedisPubSubConnection}
+     * @throws RedisException 连接或握手失败
+     */
     public RedisPubSubConnection connectPubSub() {
         try {
             return connectPubSubAsync().toCompletableFuture().join();
@@ -342,6 +398,11 @@ public final class RedisClient {
         }
     }
 
+    /**
+     * 异步建立 Pub/Sub 专用连接。
+     *
+     * @return 连接就绪后的 {@link RFuture}
+     */
     public RFuture<RedisPubSubConnection> connectPubSubAsync() {
         CompletionStage<SocketAddress> nameFuture = resolveSocket();
         CompletionStage<RedisPubSubConnection> f = nameFuture.thenCompose(res -> {
@@ -377,10 +438,16 @@ public final class RedisClient {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 同步关闭客户端及自有 Timer、Executor、EventLoopGroup 等资源。 */
     public void shutdown() {
         shutdownAsync().toCompletableFuture().join();
     }
 
+    /**
+     * 异步关闭所有 Channel 并释放自有资源。
+     *
+     * @return 关闭完成后的 Future
+     */
     public RFuture<Void> shutdownAsync() {
         shutdown = true;
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -409,10 +476,12 @@ public final class RedisClient {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 判断客户端或 EventLoopGroup 是否已关闭/正在关闭。 */
     public boolean isShutdown() {
         return shutdown || bootstrap.config().group().isShuttingDown();
     }
 
+    /** 在独立线程中停止 Timer、Executor、Resolver 与 EventLoopGroup。 */
     private void shutdown(CompletableFuture<Void> result) {
         if (!hasOwnTimer && !hasOwnExecutor && !hasOwnResolver && !hasOwnGroup) {
             result.complete(null);

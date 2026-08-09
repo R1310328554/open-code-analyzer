@@ -28,14 +28,11 @@ import org.redisson.misc.Hash;
 import io.netty.buffer.ByteBuf;
 
 /**
- * 本地缓存只读视图，提供键集、值集、条目集及 Map 视图。
- * <p>
- * 根据 {@link org.redisson.api.LocalCachedMapOptions} 创建底层缓存实现。
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <K> 键类型
- * @param <V> 值类型
+ * @param <K> key type
+ * @param <V> value type
  */
 public class LocalCacheView<K, V> {
 
@@ -51,7 +48,6 @@ public class LocalCacheView<K, V> {
         this.useObjectAsCacheKey = options.isUseObjectAsCacheKey();
     }
 
-    /** 返回本地缓存中所有键的集合视图。 */
     public Set<K> cachedKeySet() {
         return new LocalKeySet();
     }
@@ -114,7 +110,6 @@ public class LocalCacheView<K, V> {
 
     }
     
-    /** 返回本地缓存中所有值的集合视图。 */
     public Collection<V> cachedValues() {
         return new LocalValues();
     }
@@ -168,7 +163,6 @@ public class LocalCacheView<K, V> {
 
     }
 
-    /** 返回本地缓存中所有键值条目的集合视图。 */
     public Set<Entry<K, V>> cachedEntrySet() {
         return new LocalEntrySet();
     }
@@ -238,7 +232,6 @@ public class LocalCacheView<K, V> {
 
     }
     
-    /** 返回本地缓存的 Map 视图。 */
     public Map<K, V> getCachedMap() {
         return new LocalMap();
     }
@@ -274,12 +267,10 @@ public class LocalCacheView<K, V> {
 
     }
 
-    /** 将内部 {@link CacheValue} 转换为值对象。 */
     protected V toValue(CacheValue cv) {
         return (V) cv.getValue();
     }
 
-    /** 将业务键转换为内部 {@link CacheKey}（含编码与哈希）。 */
     public CacheKey toCacheKey(Object key) {
         CacheKey cacheKey;
         if (useObjectAsCacheKey) {
@@ -296,41 +287,28 @@ public class LocalCacheView<K, V> {
         }
     }
 
-    /** 编码 Map 键为 Netty 字节缓冲区。 */
     protected ByteBuf encodeMapKey(Object key) {
         return object.encodeMapKey(key);
     }
 
-    /** 在启用对象作为缓存键时，建立业务键与 {@link CacheKey} 的映射。 */
     public void putCacheKey(Object key, CacheKey cacheKey) {
         if (useObjectAsCacheKey) {
             cacheKeyMap.put(key, cacheKey);
         }
     }
 
-    /** 由已编码键缓冲区计算 128 位哈希并构造 {@link CacheKey}。 */
     public CacheKey toCacheKey(ByteBuf encodedKey) {
         return new CacheKey(Hash.hash128toArray(encodedKey));
     }
 
-    /** 返回底层并发缓存映射。 */
     public <K1, V1> ConcurrentMap<K1, V1> getCache() {
         return (ConcurrentMap<K1, V1>) cache;
     }
 
-    /** 返回业务键到 {@link CacheKey} 的反向映射。 */
     public ConcurrentMap<Object, CacheKey> getCacheKeyMap() {
         return cacheKeyMap;
     }
 
-    /**
-     * 根据配置选项创建本地缓存实现。
-     * <p>
-     * 支持 Caffeine、LRU、LFU、软/弱引用及无操作等多种策略。
-     *
-     * @param options 本地缓存配置
-     * @return 并发缓存映射实例
-     */
     public <K1, V1> ConcurrentMap<K1, V1> createCache(LocalCachedMapOptions<?, ?> options) {
         if (options.getCacheSize() == -1) {
             return new NoOpCacheMap<>();

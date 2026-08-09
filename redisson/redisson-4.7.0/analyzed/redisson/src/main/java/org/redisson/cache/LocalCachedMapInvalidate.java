@@ -18,19 +18,14 @@ package org.redisson.cache;
 import java.io.Serializable;
 
 /**
- * 本地缓存条目失效广播消息。
- * <p>
- * 向其他实例广播指定键哈希，触发本地缓存条目移除。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 @SuppressWarnings("serial")
 public class LocalCachedMapInvalidate implements Serializable {
 
-    /** 发起失效操作的实例 ID（接收方需排除自身）。 */
     private byte[] excludedId;
-    /** 待失效条目的键哈希数组。 */
     private byte[][] keyHashes;
 
     public LocalCachedMapInvalidate() {

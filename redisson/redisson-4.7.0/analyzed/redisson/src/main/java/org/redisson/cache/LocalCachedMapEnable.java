@@ -18,20 +18,14 @@ package org.redisson.cache;
 import java.io.Serializable;
 
 /**
- * 本地缓存启用广播消息。
- * <p>
- * 解除先前由 {@link LocalCachedMapDisable} 设置的键或全缓存禁用状态。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class LocalCachedMapEnable implements Serializable {
 
-    /** 待重新启用的键哈希数组。 */
     private byte[][] keyHashes;
-    /** 对应禁用请求的唯一标识。 */
     private String requestId;
-    /** 是否重新启用整个本地缓存。 */
     private boolean enableCache;
 
     public boolean isEnableCache() {

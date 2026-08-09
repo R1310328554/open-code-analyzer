@@ -19,8 +19,9 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 
 /**
- * This interface allows to create hooks applied
- * after Netty Bootstrap and Channel object initialization.
+ * Netty 初始化钩子接口。
+ * <p>
+ * 允许在 Bootstrap 与 Channel 创建完成后注入自定义配置或处理器。
  *
  * @author Nikita Koksharov
  *
@@ -28,16 +29,16 @@ import io.netty.channel.Channel;
 public interface NettyHook {
 
     /**
-     * Invoked when Redis client created and initialized Netty Bootstrap object.
+     * Redis 客户端创建并初始化 Netty Bootstrap 后调用。
      *
-     * @param bootstrap - Netty Bootstrap object
+     * @param bootstrap Netty Bootstrap 对象
      */
     void afterBoostrapInitialization(Bootstrap bootstrap);
 
     /**
-     * Invoked when Netty Channel object was created and initialized.
+     * Netty Channel 创建并初始化后调用。
      *
-     * @param channel - Netty Channel object
+     * @param channel Netty Channel 对象
      */
     void afterChannelInitialization(Channel channel);
 

@@ -21,16 +21,16 @@ import org.redisson.client.handler.State;
 import java.util.List;
 
 /**
- * Decoder for {@code CF.INFO} command.
+ * {@code CF.INFO} 命令响应解码器。
  * <p>
- * Converts the raw alternating key-value list response
- * into a {@link CuckooFilterInfo} instance.
+ * 将 Redis 返回的键值交替列表解析为 {@link CuckooFilterInfo} 实例。
  *
  * @author Nikita Koksharov
  *
  */
 public class CuckooFilterInfoDecoder implements MultiDecoder<CuckooFilterInfo> {
 
+    /** 解码布谷鸟过滤器元信息响应。 */
     @Override
     public CuckooFilterInfo decode(List<Object> parts, State state) {
         return new CuckooFilterInfo(parts);

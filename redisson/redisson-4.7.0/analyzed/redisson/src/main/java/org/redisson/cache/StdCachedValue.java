@@ -18,39 +18,22 @@ package org.redisson.cache;
 import org.redisson.misc.WrappedLock;
 
 /**
- * 标准缓存值实现，持有强引用键值并跟踪 TTL 与空闲时间。
- * <p>
- * 实现 {@link CachedValue} 接口，供 LRU/LFU 等本地缓存策略使用。
+ * Created by jribble on 2/20/17.
  */
 
 public class StdCachedValue<K, V> implements CachedValue<K, V> {
 
-    /** 缓存键。 */
     private final K key;
-    /** 缓存值（强引用）。 */
     private final V value;
 
-    /** 存活时间（毫秒），0 表示不限。 */
     private final long ttl;
-    /** 最大空闲时间（毫秒），0 表示不限。 */
     private final long maxIdleTime;
 
-    /** 条目创建时间戳。 */
     private long creationTime;
-    /** 最后一次访问时间戳。 */
     private long lastAccess;
 
-    /** 条目级并发锁。 */
     private final WrappedLock lock = new WrappedLock();
 
-    /**
-     * 创建标准缓存值。
-     *
-     * @param key 键
-     * @param value 值
-     * @param ttl 存活时间（毫秒）
-     * @param maxIdleTime 最大空闲时间（毫秒）
-     */
     public StdCachedValue(K key, V value, long ttl, long maxIdleTime) {
         this.value = value;
         this.ttl = ttl;
@@ -63,7 +46,6 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
         }
     }
 
-    /** 根据 TTL 与最大空闲时间判断条目是否已过期。 */
     @Override
     public boolean isExpired() {
         if (maxIdleTime == 0 && ttl == 0) {
@@ -79,7 +61,6 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
         return false;
     }
 
-    /** 返回条目最早过期时间戳。 */
     @Override
     public long getExpireTime() {
         if (maxIdleTime == 0 && ttl == 0) {
@@ -100,7 +81,6 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
         return key;
     }
 
-    /** 获取值并更新最后访问时间。 */
     @Override
     public V getValue() {
         lastAccess = System.currentTimeMillis();
@@ -112,7 +92,6 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
         return "CachedValue [key=" + key + ", value=" + value + "]";
     }
 
-    /** 返回条目级并发锁。 */
     @Override
     public WrappedLock getLock() {
         return lock;

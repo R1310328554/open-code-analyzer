@@ -16,8 +16,10 @@
 package org.redisson.client;
 
 /**
- * This error occurs when Redis requires authentication. 
- * 
+ * Redis 要求身份验证时抛出的异常。
+ * <p>
+ * 通常表示未提供密码/用户名或凭据无效。
+ *
  * @author Nikita Koksharov
  *
  */

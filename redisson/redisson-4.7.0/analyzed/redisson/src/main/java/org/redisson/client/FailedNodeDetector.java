@@ -16,14 +16,16 @@
 package org.redisson.client;
 
 /**
- * Detects failed Redis node depending
- * on {@link #isNodeFailed()} method implementation.
+ * Redis 节点故障检测器接口。
+ * <p>
+ * 通过连接、PING 与命令执行等事件回调收集状态，由 {@link #isNodeFailed()} 判定节点是否故障。
  *
  * @author Nikita Koksharov
  *
  */
 public interface FailedNodeDetector {
 
+    /** 连接建立成功时回调。 */
     void onConnectSuccessful();
 
     @Deprecated
@@ -33,6 +35,7 @@ public interface FailedNodeDetector {
         onConnectFailed();
     }
 
+    /** PING 成功时回调。 */
     void onPingSuccessful();
 
     @Deprecated
@@ -42,16 +45,19 @@ public interface FailedNodeDetector {
         onPingFailed();
     }
 
+    /** 命令执行成功时回调。 */
     void onCommandSuccessful();
 
+    /** 命令执行失败时回调。 */
     void onCommandFailed(Throwable cause);
 
+    /** 根据已收集的事件判断节点当前是否应视为故障。 */
     boolean isNodeFailed();
 
     /**
-     * Returns a detector with the same configuration and independent runtime state.
+     * 返回配置相同但运行时状态独立的新检测器实例。
      *
-     * @return detector copy
+     * @return 检测器副本
      */
     default FailedNodeDetector copy() {
         return this;

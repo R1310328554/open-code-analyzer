@@ -18,20 +18,26 @@ package org.redisson.client;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
 /**
- * 
+ * Redis 发布/订阅监听器的空实现基类。
+ * <p>
+ * 子类可按需覆盖 {@link #onStatus}、{@link #onMessage} 或 {@link #onPatternMessage}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class BaseRedisPubSubListener implements RedisPubSubListener<Object> {
 
+    /** 订阅状态变更回调，默认空实现。 */
     @Override
     public void onStatus(PubSubType type, CharSequence channel) {
     }
 
+    /** 频道消息回调，默认空实现。 */
     @Override
     public void onMessage(CharSequence channel, Object message) {
     }
 
+    /** 模式订阅消息回调，默认空实现。 */
     @Override
     public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
     }

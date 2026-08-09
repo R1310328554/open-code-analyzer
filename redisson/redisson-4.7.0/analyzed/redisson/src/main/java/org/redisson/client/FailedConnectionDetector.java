@@ -18,17 +18,22 @@ package org.redisson.client;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Detects failed Redis node if it has ongoing connection errors in <code>checkInterval</code> time interval.
+ * 基于连接或 PING 失败持续时间检测 Redis 节点是否故障。
+ * <p>
+ * 自首次连接/PING 失败起，若持续超过 {@code checkInterval} 则判定节点不可用。
  *
  * @author Nikita Koksharov
  *
  */
 public class FailedConnectionDetector implements FailedNodeDetector {
 
+    /** 连续失败判定阈值（毫秒），默认 180000。 */
     private long checkInterval;
 
+    /** 首次连接或 PING 失败的时间戳，0 表示当前无失败。 */
     private final AtomicLong firstFailTime = new AtomicLong(0);
 
+    /** 使用默认 180 秒检测窗口。 */
     public FailedConnectionDetector() {
         this(180000);
     }
@@ -53,11 +58,13 @@ public class FailedConnectionDetector implements FailedNodeDetector {
     public void onConnectFailed() {
     }
 
+    /** 记录首次连接失败时间（若尚未记录）。 */
     @Override
     public void onConnectFailed(Throwable cause) {
         firstFailTime.compareAndSet(0, System.currentTimeMillis());
     }
 
+    /** 连接成功后清除失败计时。 */
     @Override
     public void onConnectSuccessful() {
         firstFailTime.set(0);
@@ -85,6 +92,7 @@ public class FailedConnectionDetector implements FailedNodeDetector {
     public void onCommandFailed(Throwable cause) {
     }
 
+    /** 判断自首次失败起是否已超过检测窗口。 */
     @Override
     public boolean isNodeFailed() {
         if (firstFailTime.get() != 0 && checkInterval > 0) {

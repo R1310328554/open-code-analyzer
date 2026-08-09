@@ -19,23 +19,28 @@ import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * Detects failed Redis node if it has reached specified amount of command execution errors
- * <code>failedCommandsLimit</code> in <code>checkInterval</code> time interval.
+ * 基于命令执行失败次数检测 Redis 节点是否故障。
+ * <p>
+ * 在 {@code checkInterval} 时间窗口内，若失败次数达到 {@code failedCommandsLimit} 则判定节点不可用。
  *
  * @author Nikita Koksharov
  *
  */
 public class FailedCommandsDetector implements FailedNodeDetector {
 
+    /** 统计失败次数的时间窗口（毫秒）。 */
     protected long checkInterval;
 
+    /** 窗口内触发故障判定的失败次数阈值。 */
     protected long failedCommandsLimit;
 
+    /** 记录各次命令失败的时间戳，用于滑动窗口统计。 */
     private final NavigableSet<Long> failedCommands = new ConcurrentSkipListSet<>();
 
     public FailedCommandsDetector() {
     }
 
+    /** 指定检测窗口与失败次数阈值。 */
     public FailedCommandsDetector(long checkInterval, int failedCommandsLimit) {
         if (checkInterval == 0) {
             throw new IllegalArgumentException("checkInterval value");
@@ -89,11 +94,13 @@ public class FailedCommandsDetector implements FailedNodeDetector {
     public void onPingFailed(Throwable cause) {
     }
 
+    /** 记录一次命令失败的时间戳。 */
     @Override
     public void onCommandFailed(Throwable cause) {
         failedCommands.add(System.currentTimeMillis());
     }
 
+    /** 清理过期失败记录，判断窗口内失败次数是否达到阈值。 */
     @Override
     public boolean isNodeFailed() {
         if (failedCommandsLimit == 0) {
@@ -110,6 +117,7 @@ public class FailedCommandsDetector implements FailedNodeDetector {
         return false;
     }
 
+    /** 返回相同配置但独立运行时状态的新检测器实例。 */
     @Override
     public FailedNodeDetector copy() {
         return new FailedCommandsDetector(checkInterval, (int) failedCommandsLimit);

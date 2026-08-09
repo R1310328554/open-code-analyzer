@@ -18,10 +18,7 @@ package org.redisson.cache;
 import java.io.Serializable;
 
 /**
- * 本地缓存禁用确认消息。
- * <p>
- * 实例收到 {@link LocalCachedMapDisable} 并完成处理后，向请求方主题发布此确认。
- *
+ * 
  * @author Nikita Koksharov
  *
  */

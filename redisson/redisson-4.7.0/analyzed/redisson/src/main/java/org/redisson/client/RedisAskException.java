@@ -18,7 +18,10 @@ package org.redisson.client;
 import org.redisson.misc.RedisURI;
 
 /**
- * 
+ * Redis 集群 ASK 重定向异常。
+ * <p>
+ * 表示槽位正在迁移，客户端应临时向目标节点发送 ASKING 命令后再访问。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -26,6 +29,7 @@ public class RedisAskException extends RedisRedirectException {
 
     private static final long serialVersionUID = -6969734163155547631L;
 
+    /** 携带槽位号与目标节点 URI 构造 ASK 异常。 */
     public RedisAskException(int slot, RedisURI url) {
         super(slot, url);
     }

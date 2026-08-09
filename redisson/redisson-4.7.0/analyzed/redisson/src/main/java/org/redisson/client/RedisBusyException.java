@@ -16,7 +16,9 @@
 package org.redisson.client;
 
 /**
- * This error occurs when Redis server is busy.
+ * Redis 服务器繁忙时抛出的异常。
+ * <p>
+ * 常见于后台持久化或脚本执行占用主线程，客户端可稍后重试。
  *
  * @author wuqian
  *

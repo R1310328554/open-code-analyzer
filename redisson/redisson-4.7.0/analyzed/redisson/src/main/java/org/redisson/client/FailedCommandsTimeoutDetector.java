@@ -16,8 +16,9 @@
 package org.redisson.client;
 
 /**
- * Detects failed Redis node if it has certain amount of command execution timeout errors
- * <code>failedCommandsLimit</code> in <code>checkInterval</code> time interval.
+ * 仅统计命令超时（{@link RedisTimeoutException}）的节点故障检测器。
+ * <p>
+ * 在 {@code checkInterval} 窗口内超时次数达到 {@code failedCommandsLimit} 时判定节点故障。
  *
  * @author Nikita Koksharov
  *
@@ -31,6 +32,7 @@ public class FailedCommandsTimeoutDetector extends FailedCommandsDetector {
         super(checkInterval, failedCommandsLimit);
     }
 
+    /** 仅当失败原因为超时时才计入失败次数。 */
     @Override
     public void onCommandFailed(Throwable cause) {
         if (cause instanceof RedisTimeoutException) {
@@ -38,6 +40,7 @@ public class FailedCommandsTimeoutDetector extends FailedCommandsDetector {
         }
     }
 
+    /** 返回相同配置但独立运行时状态的新超时检测器实例。 */
     @Override
     public FailedNodeDetector copy() {
         return new FailedCommandsTimeoutDetector(checkInterval, (int) failedCommandsLimit);

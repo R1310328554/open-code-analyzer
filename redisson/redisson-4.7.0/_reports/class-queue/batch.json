@@ -1,6 +1,21 @@
 {
   "claimed_at": "2026-08-09T21:10:06Z",
   "files": [
+    "redisson/src/main/java/org/redisson/cache/LocalCacheListener.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCacheView.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMapClear.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMapDisable.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMapDisableAck.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMapDisabledKey.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMapEnable.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMapInvalidate.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMapUpdate.java",
+    "redisson/src/main/java/org/redisson/cache/LocalCachedMessageCodec.java",
+    "redisson/src/main/java/org/redisson/cache/NoOpCacheMap.java",
+    "redisson/src/main/java/org/redisson/cache/NoneCacheMap.java",
+    "redisson/src/main/java/org/redisson/cache/ReferenceCacheMap.java",
+    "redisson/src/main/java/org/redisson/cache/ReferenceCachedValue.java",
+    "redisson/src/main/java/org/redisson/cache/StdCachedValue.java",
     "redisson/src/main/java/org/redisson/client/BaseRedisPubSubListener.java",
     "redisson/src/main/java/org/redisson/client/ChannelName.java",
     "redisson/src/main/java/org/redisson/client/CuckooFilterInfoDecoder.java",
@@ -18,5 +33,5 @@
     "redisson/src/main/java/org/redisson/client/RedisClientConfig.java"
   ],
   "remaining_pending": 602,
-  "done": 2205
+  "done": 2190
 }

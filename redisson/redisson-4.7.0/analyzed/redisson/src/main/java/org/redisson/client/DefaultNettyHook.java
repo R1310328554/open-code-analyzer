@@ -19,16 +19,19 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 
 /**
+ * {@link NettyHook} 的空实现，不对 Bootstrap 或 Channel 做任何额外配置。
  *
  * @author Nikita Koksharov
  *
  */
 public class DefaultNettyHook implements NettyHook {
 
+    /** Bootstrap 初始化后的钩子，默认空实现。 */
     @Override
     public void afterBoostrapInitialization(Bootstrap bootstrap) {
     }
 
+    /** Channel 创建后的钩子，默认空实现。 */
     @Override
     public void afterChannelInitialization(Channel channel) {
     }

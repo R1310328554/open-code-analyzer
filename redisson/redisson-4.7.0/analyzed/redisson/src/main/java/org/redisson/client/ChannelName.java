@@ -22,27 +22,35 @@ import java.util.List;
 import io.netty.util.CharsetUtil;
 
 /**
+ * Redis 频道名称，实现 {@link CharSequence} 以便与 Netty 及协议层互操作。
+ * <p>
+ * 内部同时保存 UTF-8 字节数组与字符串形式，支持键空间通知与客户端追踪频道识别。
  *
  * @author Nikita Koksharov
  *
  */
 public class ChannelName implements CharSequence {
 
+    /** 客户端缓存追踪失效通知频道。 */
     public static final ChannelName TRACKING = new ChannelName("__redis__:invalidate");
 
+    /** 创建仅含单个 {@link ChannelName} 的列表。 */
     public static List<ChannelName> newList(ChannelName name) {
         List<ChannelName> result = new ArrayList<>(1);
         result.add(name);
         return result;
     }
 
+    /** 由字符串频道名创建单元素列表。 */
     public static List<ChannelName> newList(String name) {
         List<ChannelName> result = new ArrayList<>(1);
         result.add(new ChannelName(name));
         return result;
     }
 
+    /** 频道名的 UTF-8 字节表示。 */
     private final byte[] name;
+    /** 频道名字符串形式。 */
     private final String str;
 
     public ChannelName(byte[] name) {
@@ -60,6 +68,7 @@ public class ChannelName implements CharSequence {
         return str;
     }
 
+    /** 返回频道名的 UTF-8 字节数组。 */
     public byte[] getName() {
         return name;
     }
@@ -101,11 +110,13 @@ public class ChannelName implements CharSequence {
         return toString().subSequence(start, end);
     }
 
+    /** 判断是否为键空间或键事件通知频道（{@code __keyspace}、{@code __keyevent} 等前缀）。 */
     public boolean isKeyspace() {
         return str.startsWith("__keyspace") || str.startsWith("__keyevent")
                 || str.startsWith("__subkeyspace") || str.startsWith("__subkeyevent");
     }
 
+    /** 判断是否为客户端缓存追踪失效频道。 */
     public boolean isTracking() {
         return str.equals(TRACKING.toString());
     }
