@@ -20,6 +20,7 @@ import org.redisson.api.bucket.SetArgs;
 import org.redisson.client.codec.Codec;
 
 /**
+ * 批量 Bucket 写入：仅当所有目标键均已存在时才覆盖（setIfAllKeysExist）。
  *
  * @author seakider
  *
@@ -30,6 +31,7 @@ public class BucketsSetIfAllKeysExistOperation extends BucketsSetOperation {
         super(codec, setArgs, transactionId);
     }
 
+    /** 所有键 exist 时批量 SET。 */
     @Override
     protected void commit(RBuckets bucket, SetArgs setArgs) {
         bucket.setIfAllKeysExistAsync(setArgs);

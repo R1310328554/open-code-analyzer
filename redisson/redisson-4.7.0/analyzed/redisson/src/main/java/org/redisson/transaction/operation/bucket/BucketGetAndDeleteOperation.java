@@ -23,14 +23,18 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
- * 
+ * Bucket 读取并删除（getAndDelete / GETDEL）的事务操作：
+ * commit 时原子取回旧值并删除键，随后释放事务锁。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public class BucketGetAndDeleteOperation<V> extends TransactionalOperation {
 
+    /** 键对应的事务读锁名。 */
     private String lockName;
+    /** 所属事务 ID。 */
     private String transactionId;
     
     public BucketGetAndDeleteOperation(String name, String lockName, Codec codec, String transactionId, long threadId) {
@@ -39,6 +43,7 @@ public class BucketGetAndDeleteOperation<V> extends TransactionalOperation {
         this.transactionId = transactionId;
     }
 
+    /** 提交：getAndDelete 并 unlock。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RedissonBucket<V> bucket = new RedissonBucket<V>(codec, commandExecutor, name);
@@ -47,6 +52,7 @@ public class BucketGetAndDeleteOperation<V> extends TransactionalOperation {
         lock.unlockAsync(getThreadId());
     }
 
+    /** 回滚：不删除键，仅释放事务锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);

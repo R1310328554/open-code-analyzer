@@ -26,12 +26,16 @@ import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
+ * 批量 Bucket 写入操作的抽象基类。
+ * 子类定义具体写入语义（全量 set、条件 set 等）；commit 后逐键释放 {@code :transaction_lock}。
  *
  * @author seakider
  *
  */
 public abstract class BucketsSetOperation extends TransactionalOperation {
+    /** 所属事务 ID。 */
     private final String transactionId;
+    /** 批量写入参数（键值对及 TTL 等）。 */
     private final SetArgs setArgs;
 
     public BucketsSetOperation(Codec codec, SetArgs setArgs, String transactionId) {
@@ -40,6 +44,7 @@ public abstract class BucketsSetOperation extends TransactionalOperation {
         this.transactionId = transactionId;
     }
 
+    /** 提交：执行子类写入逻辑，再 unlock 所有涉及键。 */
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RBuckets buckets = new RedissonBuckets(codec, commandExecutor);
@@ -47,6 +52,7 @@ public abstract class BucketsSetOperation extends TransactionalOperation {
         unlock(commandExecutor);
     }
 
+    /** 释放 setArgs 中每个键对应的事务锁。 */
     protected void unlock(CommandAsyncExecutor commandExecutor) {
         SetParams pps = (SetParams) setArgs;
         for (String key : pps.getEntries().keySet()) {
@@ -55,8 +61,10 @@ public abstract class BucketsSetOperation extends TransactionalOperation {
         }
     }
 
+    /** 子类实现：对 {@link RBuckets} 发起具体异步写入。 */
     protected abstract void commit(RBuckets buckets, SetArgs setArgs);
 
+    /** 回滚：不写入，仅释放各键事务锁。 */
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         unlock(commandExecutor);
@@ -66,6 +74,7 @@ public abstract class BucketsSetOperation extends TransactionalOperation {
         return setArgs;
     }
 
+    /** 键名后缀 {@code :transaction_lock} 构成事务锁名。 */
     private String getLockName(String name) {
         return name + ":transaction_lock";
     }
