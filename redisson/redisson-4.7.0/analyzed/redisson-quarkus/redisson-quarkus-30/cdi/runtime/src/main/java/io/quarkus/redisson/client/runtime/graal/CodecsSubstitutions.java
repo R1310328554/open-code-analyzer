@@ -20,9 +20,11 @@ import com.oracle.svm.core.annotate.TargetClass;
 import io.netty.channel.EventLoopGroup;
 import org.redisson.config.Config;
 
+/** GraalVM 替代：Native 模式下禁用 IOUring EventLoop 组创建。 */
 @TargetClass(className = "org.redisson.connection.ServiceManager")
 final class ServiceManagerSubstitute {
 
+    /** 抛出异常表明 IOUring 与 Native Image 不兼容。 */
     @Substitute
     private static EventLoopGroup createIOUringGroup(Config cfg) {
         throw new IllegalArgumentException("IOUring isn't compatible with native mode");
@@ -30,9 +32,11 @@ final class ServiceManagerSubstitute {
 
 }
 
+/** GraalVM 替代：跳过 JsonJacksonCodec 构建时 warmup（Native 下不可用）。 */
 @TargetClass(className = "org.redisson.codec.JsonJacksonCodec")
 final class JsonJacksonCodecSubstitute {
 
+    /** Native 模式下空实现，避免反射预热失败。 */
     @Substitute
     private void warmup() {
     }

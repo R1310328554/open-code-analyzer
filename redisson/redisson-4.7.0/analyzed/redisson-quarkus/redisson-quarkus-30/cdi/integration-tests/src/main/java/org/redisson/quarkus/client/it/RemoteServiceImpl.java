@@ -16,11 +16,14 @@
 package org.redisson.quarkus.client.it;
 
 /**
+ * {@link RemService} 的本地实现，注册到 {@link RRemoteService} 后供远程调用。
+ *
  * @author Nikita Koksharov
  */
 public class RemoteServiceImpl implements RemService {
 
 
+    /** 返回 {@code "executed"} 表示远程调用成功。 */
     @Override
     public String executeMe() {
         return "executed";

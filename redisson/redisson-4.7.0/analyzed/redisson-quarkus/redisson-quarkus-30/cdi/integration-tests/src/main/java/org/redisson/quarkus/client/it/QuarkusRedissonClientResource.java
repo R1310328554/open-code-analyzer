@@ -41,12 +41,19 @@ import org.redisson.client.codec.StringCodec;
 
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Quarkus 3.0 Redisson 客户端集成测试 REST 资源。
+ * <p>覆盖 {@link RMap}、{@link RRemoteService}、{@link RScheduledExecutorService}、
+ * 响应式 {@link RBucketReactive} 等典型用法的 HTTP 端点。
+ */
 @Path("/quarkus-redisson-client")
 public class QuarkusRedissonClientResource {
 
+    /** 注入的 Redisson 客户端（由扩展 CDI 生产者提供）。 */
     @Inject
     RedissonClient redisson;
 
+    /** 测试 {@link RMap} 读写：写入键 {@code "1"} 并返回其值。 */
     @GET
     @Path("/map")
     public String map() {
@@ -55,6 +62,7 @@ public class QuarkusRedissonClientResource {
         return m.get("1").toString();
     }
 
+    /** 测试 {@link RRemoteService}：注册 {@link RemService} 实现并远程调用。 */
     @GET
     @Path("/remoteService")
     public String remoteService() {
@@ -66,6 +74,7 @@ public class QuarkusRedissonClientResource {
         return rs.executeMe();
     }
 
+    /** 对单机 Redis 节点执行 {@code pingAll} 连通性检测。 */
     @GET
     @Path("/pingAll")
     public String pingAll() {
@@ -73,6 +82,7 @@ public class QuarkusRedissonClientResource {
         return "OK";
     }
 
+    /** 测试 {@link RScheduledExecutorService}：提交 {@link Task} 并同步等待结果。 */
     @GET
     @Path("/executeTask")
     public String executeTask() throws ExecutionException, InterruptedException {
@@ -83,6 +93,7 @@ public class QuarkusRedissonClientResource {
         return r.get();
     }
 
+    /** 测试响应式 {@link RBucketReactive}：写入 {@code "world"} 后读取值。 */
     @GET
     @Path("/bucket")
     public Uni<String> getBucket(){
@@ -91,6 +102,7 @@ public class QuarkusRedissonClientResource {
                 .flatMap( unused -> Uni.createFrom().future(bucket.get().toFuture()));
     }
 
+    /** 测试响应式 Bucket 删除：写入后调用 {@code delete()} 并返回结果。 */
     @GET
     @Path("/delBucket")
     public Uni<Boolean> deleteBucket(){

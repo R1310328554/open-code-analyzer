@@ -40,24 +40,29 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * Quarkus 3.0 CDI 生产者：从配置或 {@code redisson.yaml} 创建 {@link RedissonClient}。
+ * <p>支持 MicroProfile Config 属性前缀 {@code quarkus.redisson.} 与 classpath 配置文件；
+ * 应用关闭时按 {@code quarkus.shutdown.timeout} 优雅停止客户端。
  *
  * @author Nikita Koksharov
- *
  */
 @ApplicationScoped
 public class RedissonClientProducer {
 
     private RedissonClient redisson;
 
+    /** Quarkus 优雅关闭超时；存在时分阶段 shutdown Redisson。 */
     @Inject
     @ConfigProperty(name = "quarkus.shutdown.timeout")
     Optional<Duration> shutdownTimeout;
 
+    /** 加载 Redisson 配置并创建单例 {@link RedissonClient}。 */
     @Produces
     @Singleton
     @DefaultBean
     public RedissonClient create() throws IOException {
         String config = null;
+        // 优先从 quarkus.redisson.file 指定路径或默认 redisson.yaml 加载。
         Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
         String configFileName = configFile.orElse("redisson.yaml");
         try (InputStream configStream = Optional.ofNullable(getClass().getResourceAsStream(configFileName))
@@ -70,6 +75,7 @@ public class RedissonClientProducer {
                 }
             }
         }
+        // 无 YAML 文件时，将 quarkus.redisson.* 属性聚合为 YAML 字符串。
         if (config == null) {
             Stream<String> s = StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false);
             config = PropertiesConvertor.toYaml("quarkus.redisson.", s.sorted().collect(Collectors.toList()), prop -> {
@@ -77,6 +83,7 @@ public class RedissonClientProducer {
             }, false);
         }
 
+        // 配置为空时拒绝启动，避免静默连接失败。
         if (config.isBlank()) {
             throw new IllegalStateException("Redisson settings aren't defined.");
         }
@@ -87,6 +94,7 @@ public class RedissonClientProducer {
         return redisson;
     }
 
+    /** 容器销毁时关闭 Redisson 客户端；若配置了 shutdown timeout 则分阶段优雅退出。 */
     @PreDestroy
     public void close() {
         if (redisson != null) {

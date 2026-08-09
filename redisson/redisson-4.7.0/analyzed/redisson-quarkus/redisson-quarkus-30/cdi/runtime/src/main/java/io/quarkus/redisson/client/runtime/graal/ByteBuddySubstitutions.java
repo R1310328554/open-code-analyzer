@@ -20,9 +20,13 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 import java.lang.reflect.AnnotatedElement;
 
+/**
+ * GraalVM Native Image 替代：ByteBuddy 形式类型变量注解解析在 Native 模式下不可用。
+ */
 @TargetClass(className = "net.bytebuddy.description.type.TypeDescription$Generic$AnnotationReader$ForTypeVariableBoundType$OfFormalTypeVariable")
 final class OfFormalTypeVariableSubstitute {
 
+    /** Native 模式下返回 {@code null}，跳过 ByteBuddy 注解读取。 */
     @Substitute
     public AnnotatedElement resolve() {
         return null;
@@ -30,9 +34,11 @@ final class OfFormalTypeVariableSubstitute {
 
 }
 
+/** GraalVM 替代：类型变量上界注解解析的占位实现。 */
 @TargetClass(className = "net.bytebuddy.description.type.TypeDescription$Generic$AnnotationReader$ForTypeVariableBoundType")
 final class ForTypeVariableBoundTypeSubstitute {
 
+    /** Native 模式下返回 {@code null}。 */
     @Substitute
     protected AnnotatedElement resolve(AnnotatedElement annotatedElement) {
         return null;
