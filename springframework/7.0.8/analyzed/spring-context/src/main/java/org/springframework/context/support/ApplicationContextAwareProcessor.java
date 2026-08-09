@@ -33,21 +33,19 @@ import org.springframework.context.ResourceLoaderAware;
 import org.springframework.util.StringValueResolver;
 
 /**
- * {@link BeanPostProcessor} implementation that supplies the
- * {@link org.springframework.context.ApplicationContext ApplicationContext},
- * {@link org.springframework.core.env.Environment Environment},
- * {@link StringValueResolver}, or
+ * 为实现了 {@link EnvironmentAware}、{@link EmbeddedValueResolverAware}、
+ * {@link ResourceLoaderAware}、{@link ApplicationEventPublisherAware}、
+ * {@link MessageSourceAware}、{@link ApplicationStartupAware} 和/或
+ * {@link ApplicationContextAware} 接口的 Bean 注入
+ * {@link org.springframework.context.ApplicationContext ApplicationContext}、
+ * {@link org.springframework.core.env.Environment Environment}、
+ * {@link StringValueResolver} 或
  * {@link org.springframework.core.metrics.ApplicationStartup ApplicationStartup}
- * for the {@code ApplicationContext} to beans that implement the {@link EnvironmentAware},
- * {@link EmbeddedValueResolverAware}, {@link ResourceLoaderAware},
- * {@link ApplicationEventPublisherAware}, {@link MessageSourceAware},
- * {@link ApplicationStartupAware}, and/or {@link ApplicationContextAware} interfaces.
+ * 的 {@link BeanPostProcessor} 实现。
  *
- * <p>Implemented interfaces are satisfied in the order in which they are
- * mentioned above.
+ * <p>上述接口按所列顺序依次满足。
  *
- * <p>Application contexts will automatically register this with their
- * underlying bean factory. Applications do not use this directly.
+ * <p>应用上下文会自动将其注册到底层 Bean 工厂。应用程序不应直接使用本类。
  *
  * @author Juergen Hoeller
  * @author Costin Leau
@@ -71,7 +69,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 
 
 	/**
-	 * Create a new ApplicationContextAwareProcessor for the given context.
+	 * 为给定上下文创建新的 ApplicationContextAwareProcessor。
 	 */
 	public ApplicationContextAwareProcessor(ConfigurableApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;

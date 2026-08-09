@@ -22,8 +22,8 @@ import org.springframework.context.EmbeddedValueResolverAware;
 import org.springframework.util.StringValueResolver;
 
 /**
- * Convenient base class for components with a need for embedded value resolution
- * (i.e. {@link org.springframework.context.EmbeddedValueResolverAware} consumers).
+ * 需要嵌入式值解析（即 {@link org.springframework.context.EmbeddedValueResolverAware} 消费者）
+ * 的组件的便捷基类。
  *
  * @author Juergen Hoeller
  * @since 4.1
@@ -39,9 +39,9 @@ public class EmbeddedValueResolutionSupport implements EmbeddedValueResolverAwar
 	}
 
 	/**
-	 * Resolve the given embedded value through this instance's {@link StringValueResolver}.
-	 * @param value the value to resolve
-	 * @return the resolved value, or always the original value if no resolver is available
+	 * 通过本实例的 {@link StringValueResolver} 解析给定的嵌入式值。
+	 * @param value 要解析的值
+	 * @return 解析后的值；若无可用解析器则始终返回原始值
 	 * @see #setEmbeddedValueResolver
 	 */
 	protected @Nullable String resolveEmbeddedValue(String value) {

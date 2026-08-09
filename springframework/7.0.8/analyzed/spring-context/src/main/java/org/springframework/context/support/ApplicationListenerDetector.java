@@ -33,14 +33,13 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ApplicationEventMulticaster;
 
 /**
- * {@code BeanPostProcessor} that detects beans which implement the {@code ApplicationListener}
- * interface. This catches beans that can't reliably be detected by {@code getBeanNamesForType}
- * and related operations which only work against top-level beans.
+ * 检测实现了 {@code ApplicationListener} 接口的 Bean 的 {@code BeanPostProcessor}。
+ * 用于捕获那些无法通过 {@code getBeanNamesForType} 及相关操作可靠检测的 Bean，
+ * 因为这些操作仅针对顶层 Bean 有效。
  *
- * <p>With standard Java serialization, this post-processor won't get serialized as part of
- * {@code DisposableBeanAdapter} to begin with. However, with alternative serialization
- * mechanisms, {@code DisposableBeanAdapter.writeReplace} might not get used at all, so we
- * defensively mark this post-processor's field state as {@code transient}.
+ * <p>在标准 Java 序列化下，本后置处理器不会作为 {@code DisposableBeanAdapter} 的一部分被序列化。
+ * 然而，在使用其他序列化机制时，{@code DisposableBeanAdapter.writeReplace} 可能根本不会被调用，
+ * 因此我们防御性地将本后置处理器的字段状态标记为 {@code transient}。
  *
  * @author Juergen Hoeller
  * @since 4.3.4
