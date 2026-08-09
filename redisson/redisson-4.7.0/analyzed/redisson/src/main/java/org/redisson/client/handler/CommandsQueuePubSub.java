@@ -29,13 +29,16 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- *
+ * Pub/Sub 连接的命令队列处理器，一次仅发送一条命令。
+ * <p>
+ * 订阅类命令在发送前向 {@link CommandPubSubDecoder} 注册频道映射。
  *
  * @author Nikita Koksharov
  *
  */
 public class CommandsQueuePubSub extends ChannelDuplexHandler {
 
+    /** 当前正在等待回复的单条命令持有者。 */
     public static final AttributeKey<QueueCommandHolder> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
     private final Queue<QueueCommandHolder> queue = new ConcurrentLinkedQueue<>();
@@ -46,6 +49,7 @@ public class CommandsQueuePubSub extends ChannelDuplexHandler {
         }
     };
 
+    /** 完成当前命令后 poll 队列并发送下一条。 */
     public void sendNextCommand(Channel channel) {
         QueueCommandHolder holder = channel.attr(CommandsQueuePubSub.CURRENT_COMMAND).getAndSet(null);
         if (holder != null) {
@@ -95,6 +99,7 @@ public class CommandsQueuePubSub extends ChannelDuplexHandler {
         }
     }
 
+    /** 若队首命令可发送，则注册 Pub/Sub 解码器并 flush。 */
     private void sendData(Channel ch) {
         QueueCommandHolder holder = queue.peek();
         if (holder != null && holder.trySend()) {

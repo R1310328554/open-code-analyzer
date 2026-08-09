@@ -31,21 +31,26 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- *
+ * 普通 Redis 连接的出站命令队列处理器。
+ * <p>
+ * 保证同一 Channel 上命令按序发送，并在连接关闭时失败未完成命令。
  *
  * @author Nikita Koksharov
  *
  */
 public class CommandsQueue extends ChannelDuplexHandler {
 
+    /** Channel 属性键，存储待发送/待回复的命令双端队列。 */
     public static final AttributeKey<Deque<QueueCommandHolder>> COMMANDS_QUEUE = AttributeKey.valueOf("COMMANDS_QUEUE");
 
+    /** 注册 Channel 时初始化命令队列。 */
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
         super.channelRegistered(ctx);
         ctx.channel().attr(COMMANDS_QUEUE).set(new ConcurrentLinkedDeque<>());
     }
 
+    /** 连接断开时移除非阻塞命令并以异常完成其 Promise。 */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         Queue<QueueCommandHolder> queue = ctx.channel().attr(COMMANDS_QUEUE).get();
@@ -67,6 +72,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     private final SpinLock lock = new SpinLock();
 
+    /** 将 {@link QueueCommand} 入队并串行 writeAndFlush。 */
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof QueueCommand) {

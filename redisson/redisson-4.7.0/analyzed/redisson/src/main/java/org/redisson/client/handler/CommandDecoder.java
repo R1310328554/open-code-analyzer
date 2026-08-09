@@ -52,7 +52,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Redis protocol command decoder
+ * Redis 协议命令响应解码器，支持 RESP2/RESP3 多种回复类型。
+ * <p>
+ * 从 {@link CommandsQueue} 取出当前命令，解析回复并完成对应 Future。
  *
  * @author Nikita Koksharov
  *
@@ -71,6 +73,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         this.scheme = scheme;
     }
 
+    /** 从 Channel 属性中 peek 当前待解码命令。 */
     protected QueueCommandHolder getCommand(ChannelHandlerContext ctx) {
         Queue<QueueCommandHolder> queue = ctx.channel().attr(CommandsQueue.COMMANDS_QUEUE).get();
         return queue.peek();
@@ -104,7 +107,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         } else {
             if (holder.getChannelPromise().isDone() && !holder.getChannelPromise().isSuccess()) {
                 sendNext(ctx.channel());
-                // throw REPLAY error
+                // 触发 ReplayingDecoder 重放
                 in.indexOf(Integer.MAX_VALUE/2, Integer.MAX_VALUE, (byte) 0);
                 return;
             }
@@ -250,6 +253,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 从命令队列 poll 当前命令并重置解码状态。 */
     protected void sendNext(Channel channel) {
         Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
         queue.poll();
@@ -493,6 +497,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 记录无关联命令时的 Redis 错误消息。 */
     protected void onError(Channel channel, String error) {
         log.error("Error message from Redis: {} channel: {}", error, channel);
     }
@@ -557,6 +562,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 根据命令选择复合回复解码器。 */
     protected MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
             if (!parts.isEmpty()) {
@@ -567,6 +573,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         return data.getCommand().getReplayMultiDecoder();
     }
 
+    /** 为当前回复片段选择具体值解码器。 */
     protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts, long size, State state) {
         if (data == null) {
             return StringCodec.INSTANCE.getValueDecoder();

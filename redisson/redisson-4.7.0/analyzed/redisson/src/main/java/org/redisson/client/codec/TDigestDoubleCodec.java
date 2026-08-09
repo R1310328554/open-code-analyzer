@@ -18,12 +18,14 @@ package org.redisson.client.codec;
 import org.redisson.client.protocol.Decoder;
 
 /**
+ * t-digest 相关 {@link Double} 编解码器，继承 {@link StringCodec} 并处理特殊浮点字面量。
  *
  * @author Nikita Koksharov
  *
  */
 public class TDigestDoubleCodec extends StringCodec {
 
+    /** 单例实例。 */
     public static final TDigestDoubleCodec INSTANCE = new TDigestDoubleCodec();
 
     private final Decoder<Object> decoder = (buf, state) -> {
@@ -32,11 +34,11 @@ public class TDigestDoubleCodec extends StringCodec {
     };
 
     /**
-     * Parses a t-digest floating-point reply, mapping the special
-     * {@code nan}, {@code inf} and {@code -inf} tokens.
+     * 解析 t-digest 浮点回复，映射特殊字面量
+     * {@code nan}、{@code inf} 与 {@code -inf}。
      *
-     * @param str raw reply value
-     * @return parsed double, or {@code null} if the value is absent
+     * @param str 原始回复字符串
+     * @return 解析后的 double，值为空时返回 {@code null}
      */
     public static Double parse(String str) {
         if (str == null) {
@@ -56,6 +58,7 @@ public class TDigestDoubleCodec extends StringCodec {
         }
     }
 
+    /** 先按字符串解码，再调用 {@link #parse(String)} 转换。 */
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;

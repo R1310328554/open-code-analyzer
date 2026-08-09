@@ -34,7 +34,11 @@ import java.util.Objects;
 import java.util.concurrent.*;
 
 /**
- * 
+ * Redis 连接建立后的握手与认证基类处理器。
+ * <p>
+ * 在 {@link #channelActive} 中依次执行 AUTH、HELLO/SELECT、CLIENT SETNAME 等初始化命令，
+ * 并启动凭据续期循环。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -42,10 +46,14 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
 
     private static final Logger log = LoggerFactory.getLogger(BaseConnectionHandler.class);
 
+    /** 所属 Redis 客户端。 */
     final RedisClient redisClient;
+    /** 连接就绪 Future，握手完成后 complete。 */
     final CompletableFuture<C> connectionPromise = new CompletableFuture<>();
+    /** 当前关联的 Redis 连接实例。 */
     C connection;
 
+    /** @param redisClient 所属客户端 */
     public BaseConnectionHandler(RedisClient redisClient) {
         super();
         this.redisClient = redisClient;
@@ -59,6 +67,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         super.channelRegistered(ctx);
     }
 
+    /** 子类创建具体 {@link RedisConnection} 子类型。 */
     abstract C createConnection(ChannelHandlerContext ctx);
 
     @Override
@@ -155,6 +164,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 });
     }
 
+    /** 解析凭据并发送 AUTH（支持用户名/密码）。 */
     protected CompletableFuture<Void> authWithCredential() {
         RedisClientConfig config = redisClient.getConfig();
         InetSocketAddress addr = redisClient.resolveAddr().getNow(null);
@@ -179,6 +189,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         return f.toCompletableFuture();
     }
 
+    /** 非阻塞提取 Future 失败原因，成功或未完成时返回 {@code null}。 */
     protected Throwable cause(CompletableFuture<?> future) {
         try {
             future.toCompletableFuture().getNow(null);

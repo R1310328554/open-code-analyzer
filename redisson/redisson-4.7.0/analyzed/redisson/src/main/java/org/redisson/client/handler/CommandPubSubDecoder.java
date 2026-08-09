@@ -39,7 +39,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Redis Publish Subscribe protocol decoder
+ * Redis 发布/订阅协议解码器，扩展 {@link CommandDecoder} 处理 SUBSCRIBE/MESSAGE 等回复。
+ * <p>
+ * 维护频道订阅状态，支持按序投递 Pub/Sub 消息。
  *
  * @author Nikita Koksharov
  *
@@ -50,7 +52,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     private static final Set<String> SUBSCRIBE_COMMANDS = new HashSet<>(Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName(), RedisCommands.SSUBSCRIBE.getName()));
     private static final Set<String> MESSAGES = new HashSet<>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe", "ssubscribe", "sunsubscribe"));
     private static final Set<String> TYPE_MESSAGES = new HashSet<>(Arrays.asList("message", "smessage", "pmessage"));
-    // It is not needed to use concurrent map because responses are coming consecutive
+    // 响应顺序到达，entries 使用普通 HashMap 即可
     private final Map<ChannelName, PubSubEntry> entries = new HashMap<>();
     private final Map<PubSubKey, CommandData<Object, Object>> commands = new ConcurrentHashMap<>();
 
@@ -61,6 +63,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
         this.config = config;
     }
 
+    /** 注册待完成的 Pub/Sub 命令（按频道与操作类型索引）。 */
     public void addPubSubCommand(ChannelName channel, CommandData<Object, Object> data) {
         String operation = data.getCommand().getName().toLowerCase(Locale.ENGLISH);
         commands.put(new PubSubKey(channel, operation), data);
@@ -145,7 +148,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 return;
             }
         } catch (IllegalStateException e) {
-            // arise in JBOSS. skipped 
+            // JBOSS 环境下可能出现，忽略
         }
 
         if (result instanceof Message) {

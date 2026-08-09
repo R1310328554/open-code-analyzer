@@ -25,6 +25,9 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
+ * 批量 Redis 命令编码器，将 {@link CommandsData} 中多条命令顺序写入同一 ByteBuf。
+ * <p>
+ * 复用 pipeline 中的 {@link CommandEncoder} 逐条编码。
  *
  * @author Nikita Koksharov
  *
@@ -32,6 +35,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 @Sharable
 public class CommandBatchEncoder extends MessageToByteEncoder<CommandsData> {
 
+    /** 可共享的单例实例。 */
     public static final CommandBatchEncoder INSTANCE = new CommandBatchEncoder();
 
     @Override
@@ -45,6 +49,7 @@ public class CommandBatchEncoder extends MessageToByteEncoder<CommandsData> {
         super.write(ctx, msg, promise);
     }
     
+    /** 遍历批量命令并委托 {@link CommandEncoder#encode} 写入输出缓冲。 */
     @Override
     protected void encode(ChannelHandlerContext ctx, CommandsData msg, ByteBuf out) throws Exception {
         CommandEncoder encoder = ctx.pipeline().get(CommandEncoder.class);

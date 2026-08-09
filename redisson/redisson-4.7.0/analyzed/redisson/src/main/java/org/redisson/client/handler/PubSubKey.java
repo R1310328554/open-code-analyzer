@@ -20,25 +20,36 @@ import org.redisson.client.ChannelName;
 import java.util.Objects;
 
 /**
- * 
+ * Pub/Sub 命令索引键：频道名与操作类型（subscribe/message 等）的组合。
+ * <p>
+ * 用作 {@link CommandPubSubDecoder} 中 pending 命令的 Map 键。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PubSubKey {
 
+    /** 频道名称。 */
     private final ChannelName channel;
+    /** 操作类型字符串（小写）。 */
     private final String operation;
     
+    /**
+     * @param channel 频道
+     * @param operation 操作类型
+     */
     public PubSubKey(ChannelName channel, String operation) {
         super();
         this.channel = channel;
         this.operation = operation;
     }
     
+    /** 返回频道名。 */
     public ChannelName getChannel() {
         return channel;
     }
     
+    /** 返回操作类型。 */
     public String getOperation() {
         return operation;
     }

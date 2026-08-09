@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 /**
+ * Channel 异常日志处理器，过滤可忽略的连接重置类 IO 错误。
  *
  * @author Nikita Koksharov
  *
@@ -32,9 +33,11 @@ public class ErrorsLoggingHandler extends ChannelDuplexHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ErrorsLoggingHandler.class);
 
+    /** 匹配 connection reset、broken pipe 等可静默忽略的 IO 错误消息。 */
     private static final Pattern IGNORABLE_ERROR_MESSAGE = Pattern.compile(
             "^.*(?:connection.*(?:reset|closed|abort|broken)|broken.*pipe).*$", Pattern.CASE_INSENSITIVE);
 
+    /** 记录非可忽略异常，可忽略 IO 错误直接返回。 */
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (cause instanceof IOException) {

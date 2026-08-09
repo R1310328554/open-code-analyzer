@@ -23,31 +23,41 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.Message;
 
 /**
- * 
+ * 单个 Pub/Sub 频道的消息缓冲条目，用于保序投递。
+ * <p>
+ * 包含消息队列、解码器及发送中标志。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PubSubEntry {
 
+    /** 该频道消息体使用的复合解码器。 */
     private final MultiDecoder<Object> decoder;
     
+    /** 待投递的 Pub/Sub 消息队列。 */
     private final Queue<Message> queue = new ConcurrentLinkedQueue<Message>();
 
+    /** 是否已有线程正在向连接投递消息。 */
     private final AtomicBoolean sent = new AtomicBoolean();
     
+    /** @param decoder 频道消息解码器 */
     public PubSubEntry(MultiDecoder<Object> decoder) {
         super();
         this.decoder = decoder;
     }
     
+    /** 返回消息解码器。 */
     public MultiDecoder<Object> getDecoder() {
         return decoder;
     }
     
+    /** 返回待投递消息队列。 */
     public Queue<Message> getQueue() {
         return queue;
     }
     
+    /** 返回发送中标志。 */
     public AtomicBoolean getSent() {
         return sent;
     }

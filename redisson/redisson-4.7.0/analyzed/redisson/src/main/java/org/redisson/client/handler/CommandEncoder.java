@@ -49,7 +49,9 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 /**
- * Redis protocol command encoder
+ * Redis 协议命令编码器，将 {@link CommandData} 编码为 RESP 数组格式。
+ * <p>
+ * 支持命令名映射、子命令及多种参数类型（字符串、字节数组、{@link ByteBuf} 等）。
  *
  * @author Nikita Koksharov
  *
@@ -70,6 +72,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         .map(s -> s.getBytes(CharsetUtil.US_ASCII))
         .collect(Collectors.toList());
 
+    /** 将 long 转为 ASCII 字节，小数值使用缓存加速。 */
     public static byte[] longToString(long number) {
         if (number < LONG_TO_STRING_CACHE.size()) {
             return LONG_TO_STRING_CACHE.get((int) number);
@@ -80,6 +83,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
     private CommandMapper commandMapper;
 
+    /** @param commandMapper 命令名映射器 */
     public CommandEncoder(CommandMapper commandMapper) {
         this.commandMapper = commandMapper;
     }
@@ -100,6 +104,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         }
     }
 
+    /** 编码单条命令：* 参数个数、命令名、各参数 $ 长度块。 */
     @Override
     protected void encode(ChannelHandlerContext ctx, CommandData<?, ?> msg, ByteBuf out) throws Exception {
         try {

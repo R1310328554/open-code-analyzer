@@ -27,12 +27,16 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * 
+ * 字符串 Redis 编解码器，实现 {@link JsonCodec}，默认使用 UTF-8。
+ * <p>
+ * 编码时将对象 {@code toString()} 后写入字节；解码时读取全部可读字节为字符串。
+ *
  * @author Nikita Koksharov
  *
  */
 public class StringCodec extends BaseCodec implements JsonCodec {
 
+    /** 默认 UTF-8 单例实例。 */
     public static final StringCodec INSTANCE = new StringCodec();
 
     private final Charset charset;
@@ -55,37 +59,45 @@ public class StringCodec extends BaseCodec implements JsonCodec {
         }
     };
 
+    /** 使用 UTF-8 字符集构造。 */
     public StringCodec() {
         this(CharsetUtil.UTF_8);
     }
     
+    /** 兼容构造，忽略 classLoader 并委托默认 UTF-8 构造。 */
     public StringCodec(ClassLoader classLoader) {
         this();
     }
 
+    /** 按字符集名称构造。 */
     public StringCodec(String charsetName) {
         this(Charset.forName(charsetName));
     }
 
+    /** 指定 {@link Charset} 构造。 */
     public StringCodec(Charset charset) {
         this.charset = charset;
     }
 
+    /** 返回字符串值解码器。 */
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
 
+    /** 返回值编码器。 */
     @Override
     public Encoder getValueEncoder() {
         return encoder;
     }
 
+    /** {@link JsonCodec} 通用编码器，与值编码器相同。 */
     @Override
     public Encoder getEncoder() {
         return encoder;
     }
 
+    /** {@link JsonCodec} 通用解码器，与值解码器相同。 */
     @Override
     public Decoder<Object> getDecoder() {
         return decoder;

@@ -35,7 +35,10 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 连接看门狗：Channel 断开后按退避策略自动重连。
+ * <p>
+ * 重连成功后刷新连接、恢复 Pub/Sub 订阅及阻塞命令队列。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -50,6 +53,11 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     private final ChannelGroup channels;
     private final AsyncSemaphore semaphore = new AsyncSemaphore(2);
 
+    /**
+     * @param bootstrap 重连用的 Netty Bootstrap
+     * @param channels 活跃 Channel 组
+     * @param config 客户端配置（定时器与重连延迟）
+     */
     public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels, RedisClientConfig config) {
         this.bootstrap = bootstrap;
         this.channels  = channels;
@@ -99,7 +107,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         try {
             timer.newTimeout(t -> tryReconnect(connection, attempt + 1), timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (IllegalStateException e) {
-            // skip
+            // 定时器已关闭时忽略
         }
     }
 
@@ -164,7 +172,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                 reconnect(connection, nextAttempt);
             });
         } catch (RejectedExecutionException e) {
-            // skip
+            // EventLoop 拒绝执行时忽略
         }
     }
 

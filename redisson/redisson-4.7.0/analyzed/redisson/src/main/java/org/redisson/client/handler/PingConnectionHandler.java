@@ -33,7 +33,10 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 周期性 PING 保活处理器，检测空闲连接是否仍可用。
+ * <p>
+ * PING 超时或失败时关闭 Channel 并通知失败节点检测器。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -44,6 +47,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     
     private final RedisClientConfig config;
 
+    /** @param config 客户端配置（PING 间隔与超时） */
     public PingConnectionHandler(RedisClientConfig config) {
         this.config = config;
     }
@@ -59,6 +63,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelActive();
     }
 
+    /** 在非阻塞命令空闲时发送 PING，并调度下一次检测。 */
     private void sendPing(ChannelHandlerContext ctx) {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         if (isClosed(ctx, connection)) {
@@ -116,6 +121,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                                 || connection.getRedisClient().isShutdown();
     }
 
+    /** 非阻塞提取 RFuture 失败原因。 */
     protected Throwable cause(RFuture<?> future) {
         try {
             future.toCompletableFuture().getNow(null);
