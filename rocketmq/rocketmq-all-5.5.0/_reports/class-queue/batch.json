@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:44:56Z",
   "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/controller/register/RegisterBrokerToControllerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/controller/register/RegisterBrokerToControllerResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/AddWritePermOfBrokerRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/AddWritePermOfBrokerResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/BrokerHeartbeatRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/DeleteKVConfigRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/DeleteTopicFromNamesrvRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/GetKVConfigRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/GetKVConfigResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/GetKVListByNamespaceRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/GetRouteInfoRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/PutKVConfigRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/QueryDataVersionRequestHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/QueryDataVersionResponseHeader.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/RegisterBrokerRequestHeader.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/RegisterBrokerResponseHeader.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/RegisterOrderTopicRequestHeader.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/namesrv/RegisterTopicRequestHeader.java",
@@ -33,5 +18,5 @@
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/route/MessageQueueRouteState.java"
   ],
   "remaining_pending": 438,
-  "done": 1020
+  "done": 1035
 }
