@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:33:26Z",
   "files": [
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ProcessQueueInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ProducerConnection.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ProducerInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ProducerTableInfo.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/QueryAssignmentRequestBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/QueryAssignmentResponseBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/QueryConsumeQueueResponseBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/QueryConsumeTimeSpanBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/QueryCorrectionOffsetBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/QuerySubscriptionResponseBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/QueueTimeSpan.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/RegisterBrokerBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ResetOffsetBody.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/ResetOffsetBodyForC.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/RoleChangeNotifyEntry.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/SetMessageRequestModeRequestBody.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/SubscriptionGroupList.java",
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/body/SubscriptionGroupWrapper.java",
@@ -33,5 +18,5 @@
     "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/header/ChangeInvisibleTimeResponseHeader.java"
   ],
   "remaining_pending": 588,
-  "done": 870
+  "done": 885
 }
