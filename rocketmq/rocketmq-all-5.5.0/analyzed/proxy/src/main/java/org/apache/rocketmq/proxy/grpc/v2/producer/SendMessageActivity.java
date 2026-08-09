@@ -56,6 +56,10 @@ import org.apache.rocketmq.proxy.processor.QueueSelector;
 import org.apache.rocketmq.proxy.service.route.AddressableMessageQueue;
 import org.apache.rocketmq.proxy.service.route.MessageQueueView;
 
+/**
+ * gRPC 发送消息 Activity：校验 Topic/消息体，转换 protobuf 消息
+ * 并委托 {@link MessagingProcessor#sendMessage} 路由到 Broker。
+ */
 public class SendMessageActivity extends AbstractMessagingActivity {
 
     public SendMessageActivity(MessagingProcessor messagingProcessor,
@@ -63,6 +67,7 @@ public class SendMessageActivity extends AbstractMessagingActivity {
         super(messagingProcessor, grpcClientSettingsManager, grpcChannelManager);
     }
 
+    /** 处理单条或批量 SendMessage 请求。 */
     public CompletableFuture<SendMessageResponse> sendMessage(ProxyContext ctx, SendMessageRequest request) {
         CompletableFuture<SendMessageResponse> future = new CompletableFuture<>();
 

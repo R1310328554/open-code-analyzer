@@ -73,6 +73,10 @@ import org.apache.rocketmq.proxy.grpc.v2.common.ResponseBuilder;
 import org.apache.rocketmq.proxy.grpc.v2.common.ResponseWriter;
 import org.apache.rocketmq.proxy.processor.MessagingProcessor;
 
+/**
+ * gRPC v2 消息服务入口：实现 {@link MessagingServiceGrpc}，
+ * 将 RPC 分发到路由/生产/消费/事务等线程池并串联鉴权 Pipeline。
+ */
 public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServiceImplBase implements StartAndShutdown {
     private final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
@@ -148,8 +152,7 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
     public static GrpcMessagingApplication create(MessagingProcessor messagingProcessor) {
         RequestPipeline pipeline = (context, headers, request) -> {
         };
-        // add pipeline
-        // the last pipe add will execute at the first
+        // 组装 Pipeline；后添加的 Pipe 最先执行
         AuthConfig authConfig = ConfigurationManager.getAuthConfig();
         if (authConfig != null) {
             pipeline = pipeline
@@ -160,10 +163,12 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
         return new GrpcMessagingApplication(new DefaultGrpcMessagingActivity(messagingProcessor), pipeline);
     }
 
+    /** 构造流控拒绝时的 gRPC Status。 */
     protected Status flowLimitStatus() {
         return ResponseBuilder.getInstance().buildStatus(Code.TOO_MANY_REQUESTS, "flow limit");
     }
 
+    /** 将异常转换为 gRPC Status。 */
     protected Status convertExceptionToStatus(Throwable t) {
         return ResponseBuilder.getInstance().buildStatus(t);
     }
@@ -191,10 +196,12 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
         }
     }
 
+    /** 创建 Proxy 请求上下文。 */
     protected ProxyContext createContext() {
         return ProxyContext.create();
     }
 
+    /** 校验 clientId 等非空字段。 */
     protected void validateContext(ProxyContext context) {
         if (StringUtils.isBlank(context.getClientID())) {
             throw new GrpcProxyException(Code.CLIENT_ID_REQUIRED, "client id cannot be empty");
@@ -202,6 +209,7 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
     }
 
     @Override
+    /** 查询 Topic 路由（gRPC QueryRoute）。 */
     public void queryRoute(QueryRouteRequest request, StreamObserver<QueryRouteResponse> responseObserver) {
         Function<Status, QueryRouteResponse> statusResponseCreator = status -> QueryRouteResponse.newBuilder().setStatus(status).build();
         ProxyContext context = createContext();
@@ -236,6 +244,7 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
     }
 
     @Override
+    /** 发送消息（gRPC SendMessage）。 */
     public void sendMessage(SendMessageRequest request, StreamObserver<SendMessageResponse> responseObserver) {
         Function<Status, SendMessageResponse> statusResponseCreator = status -> SendMessageResponse.newBuilder().setStatus(status).build();
         ProxyContext context = createContext();
@@ -271,6 +280,7 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
     }
 
     @Override
+    /** 长轮询接收消息（gRPC ReceiveMessage）。 */
     public void receiveMessage(ReceiveMessageRequest request, StreamObserver<ReceiveMessageResponse> responseObserver) {
         Function<Status, ReceiveMessageResponse> statusResponseCreator = status -> ReceiveMessageResponse.newBuilder().setStatus(status).build();
         ProxyContext context = createContext();
@@ -287,6 +297,7 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
     }
 
     @Override
+    /** 确认 POP 消息（gRPC AckMessage）。 */
     public void ackMessage(AckMessageRequest request, StreamObserver<AckMessageResponse> responseObserver) {
         Function<Status, AckMessageResponse> statusResponseCreator = status -> AckMessageResponse.newBuilder().setStatus(status).build();
         ProxyContext context = createContext();
@@ -322,6 +333,7 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
     }
 
     @Override
+    /** 提交/回滚事务消息（gRPC EndTransaction）。 */
     public void endTransaction(EndTransactionRequest request, StreamObserver<EndTransactionResponse> responseObserver) {
         Function<Status, EndTransactionResponse> statusResponseCreator = status -> EndTransactionResponse.newBuilder().setStatus(status).build();
         ProxyContext context = createContext();
@@ -421,6 +433,7 @@ public class GrpcMessagingApplication extends MessagingServiceGrpc.MessagingServ
     }
 
     @Override
+    /** 双向 Telemetry 流：客户端设置与诊断信息。 */
     public StreamObserver<TelemetryCommand> telemetry(StreamObserver<TelemetryCommand> responseObserver) {
         Function<Status, TelemetryCommand> statusResponseCreator = status -> TelemetryCommand.newBuilder().setStatus(status).build();
         ContextStreamObserver<TelemetryCommand> responseTelemetryCommand = grpcMessagingActivity.telemetry(responseObserver);

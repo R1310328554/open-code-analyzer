@@ -19,18 +19,17 @@
 package org.apache.rocketmq.filter.parser;
 
 /**
- * Token Manager.
+ * 消息选择器词法分析 Token 管理器（JavaCC 生成）。
+ */
+/**
+ * 将输入字符流切分为 Selector 语法 token（关键字、运算符、字面量等）。
  */
 public class SelectorParserTokenManager implements SelectorParserConstants {
 
-    /**
-     * Debug output.
-     */
+    /** 调试输出流。 */
     public java.io.PrintStream debugStream = System.out;
 
-    /**
-     * Set debug output.
-     */
+    /** 设置词法分析调试输出流。 */
     public void setDebugStream(java.io.PrintStream ds) {
         debugStream = ds;
     }

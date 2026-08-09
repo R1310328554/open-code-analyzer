@@ -38,6 +38,10 @@ import org.apache.rocketmq.proxy.ProxyMode;
 import org.apache.rocketmq.proxy.common.ProxyException;
 import org.apache.rocketmq.proxy.common.ProxyExceptionCode;
 
+/**
+ * RocketMQ Proxy 运行时配置：gRPC/Remoting 端口、线程池、
+ * TLS、消息大小限制、路由缓存及事务心跳等参数。
+ */
 public class ProxyConfig implements ConfigFile {
     private final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     public final static String DEFAULT_CONFIG_FILE_NAME = "rmq-proxy.json";
@@ -66,9 +70,7 @@ public class ProxyConfig implements ConfigFile {
 
     private String heartbeatSyncerTopicName = "DefaultHeartBeatSyncerTopic";
 
-    /**
-     * configuration for ThreadPoolMonitor
-     */
+    /** 线程池监控：是否打印 JStack 及状态间隔。 */
     private boolean enablePrintJstack = true;
     private long printJstackInMillis = Duration.ofSeconds(60).toMillis();
     private long printThreadPoolStatusInMillis = Duration.ofSeconds(3).toMillis();
@@ -76,17 +78,13 @@ public class ProxyConfig implements ConfigFile {
     private String namesrvAddr = System.getProperty(MixAll.NAMESRV_ADDR_PROPERTY, System.getenv(MixAll.NAMESRV_ADDR_ENV));
     private String namesrvDomain = "";
     private String namesrvDomainSubgroup = "";
-    /**
-     * TLS
-     */
+    /** TLS 证书与密钥路径配置。 */
     private boolean tlsTestModeEnable = true;
     private String tlsKeyPath = ConfigurationManager.getProxyHome() + "/conf/tls/rocketmq.key";
     private String tlsKeyPassword = "";
     private String tlsCertPath = ConfigurationManager.getProxyHome() + "/conf/tls/rocketmq.crt";
     private int tlsCertWatchIntervalMs = 60 * 60 * 1000; // 1 hour
-    /**
-     * gRPC
-     */
+    /** gRPC 服务端与客户端相关配置。 */
     private String proxyMode = ProxyMode.CLUSTER.name();
     private Integer grpcServerPort = 8081;
     private long grpcShutdownTimeSeconds = 30;
@@ -97,50 +95,35 @@ public class ProxyConfig implements ConfigFile {
     private int grpcThreadPoolQueueCapacity = 100000;
 
     /**
-     * Maximum number of concurrent gRPC calls allowed per client connection.
+     * 单客户端连接允许的最大并发 gRPC 调用数。
      * <p>
-     * A single client issuing excessively high concurrent requests may skew the validation load balancing
-     * and overload a single proxy instance (hotspot), potentially bringing it down. Limiting
-     * {@code grpcMaxConcurrentCallsPerConnection} helps mitigate this per-connection hotspot risk.
+     * 过高并发可能导致单 Proxy 热点过载；限制 {@code grpcMaxConcurrentCallsPerConnection} 可缓解。
      * <p>
-     * Note: Setting this limit too low may cause send/consume failures (e.g., backpressure or rejected calls).
+     * 注意：设置过低可能导致发送/消费失败（背压或拒绝）。
      */
     private int grpcMaxConcurrentCallsPerConnection = Integer.MAX_VALUE;
     private String brokerConfigPath = ConfigurationManager.getProxyHome() + "/conf/broker.conf";
     /**
-     * gRPC max message size
-     * 130M = 4M * 32 messages + 2M attributes
+     * gRPC 入站消息最大尺寸（130M = 32×4M 消息体 + 2M 属性）。
      */
     private int grpcMaxInboundMessageSize = 130 * 1024 * 1024;
-    /**
-     * max message body size, 0 or negative number means no limit for proxy
-     */
+    /** 消息体最大尺寸；0 或负数表示 Proxy 不限制。 */
     private int maxMessageSize = 4 * 1024 * 1024;
-    /**
-     * if true, proxy will check message body size and reject msg if it's body is empty
-     */
+    /** 为 true 时校验消息体非空，否则拒绝。 */
     private boolean enableMessageBodyEmptyCheck = true;
-    /**
-     * max user property size, 0 or negative number means no limit for proxy
-     */
+    /** 用户属性总大小上限；0 或负数表示不限制。 */
     private int maxUserPropertySize = 16 * 1024;
     private int userPropertyMaxNum = 128;
 
-    /**
-     * max message group size, 0 or negative number means no limit for proxy
-     */
+    /** 消息组（顺序消息）最大尺寸；0 或负数表示不限制。 */
     private int maxMessageGroupSize = 64;
-    /**
-     * max lite topic size
-     */
+    /** Lite Topic 名称最大长度。 */
     private int maxLiteTopicSize = 64;
     private int maxLiteRenewNumPerChannel = 100;
-    // syncLiteSubscription request rate limit per proxy
+    // 每个 Proxy 的 syncLiteSubscription 请求速率上限
     private int maxSyncLiteSubscriptionRate = 5000;
 
-    /**
-     * When a message pops, the message is invisible by default
-     */
+    /** POP 消息默认不可见时长（毫秒）。 */
     private long defaultInvisibleTimeMills = Duration.ofSeconds(60).toMillis();
     private long minInvisibleTimeMillsForRecv = Duration.ofSeconds(10).toMillis();
     private long maxInvisibleTimeMills = Duration.ofHours(12).toMillis();
@@ -231,7 +214,7 @@ public class ProxyConfig implements ConfigFile {
     private transient ConcurrentSkipListMap<Integer /* level */, Long/* delay timeMillis */> delayLevelTable = new ConcurrentSkipListMap<>();
 
     private String metricCollectorMode = MetricCollectorMode.OFF.getModeString();
-    // Example address: 127.0.0.1:1234
+    // 示例地址：127.0.0.1:1234
     private String metricCollectorAddress = "";
 
     private String regionId = "";
@@ -256,13 +239,13 @@ public class ProxyConfig implements ConfigFile {
 
     private long channelExpiredTimeout = 1000 * 120;
 
-    // remoting
+    // Remoting 协议接入配置
     private boolean enableRemotingLocalProxyGrpc = true;
     private int localProxyConnectTimeoutMs = 3000;
     private String remotingAccessAddr = "";
     private int remotingListenPort = 8080;
 
-    // related to proxy's send strategy in cluster mode.
+    // 集群模式下 Proxy 发送策略相关配置
     private boolean sendLatencyEnable = false;
     private boolean startDetectorEnable = false;
     private int detectTimeout = 200;

@@ -69,11 +69,16 @@ import org.apache.rocketmq.remoting.protocol.header.namesrv.WipeWritePermOfBroke
 import org.apache.rocketmq.remoting.protocol.namesrv.RegisterBrokerResult;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * NameServer 默认请求处理器：路由 KV 配置、Broker 注册/心跳、
+ * Topic 管理及 NameServer 配置查询等 Remoting 请求。
+ */
 public class DefaultRequestProcessor implements NettyRequestProcessor {
     private static Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
     protected final NamesrvController namesrvController;
 
+    /** 禁止通过 API 修改的配置项黑名单。 */
     protected Set<String> configBlackList = new HashSet<>();
 
     public DefaultRequestProcessor(NamesrvController namesrvController) {
@@ -81,6 +86,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         initConfigBlackList();
     }
 
+    /** 初始化配置修改黑名单。 */
     private void initConfigBlackList() {
         configBlackList.add("configBlackList");
         configBlackList.add("configStorePath");
@@ -152,11 +158,13 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** NameServer 不拒绝请求（流控由上层处理）。 */
     @Override
     public boolean rejectRequest() {
         return false;
     }
 
+    /** 写入 KV 命名空间配置。 */
     public RemotingCommand putKVConfig(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -180,6 +188,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 读取 KV 命名空间配置。 */
     public RemotingCommand getKVConfig(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(GetKVConfigResponseHeader.class);
@@ -242,7 +251,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
             topicConfigWrapper = registerBrokerBody.getTopicConfigSerializeWrapper();
             filterServerList = registerBrokerBody.getFilterServerList();
         } else {
-            // RegisterBrokerBody of old version only contains TopicConfig.
+            // 旧版 RegisterBrokerBody 仅含 TopicConfig
             topicConfigWrapper = extractRegisterTopicConfigFromRequest(request);
         }
 
@@ -261,7 +270,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         );
 
         if (result == null) {
-            // Register single topic route info should be after the broker completes the first registration.
+            // 单 Topic 路由注册须在 Broker 首次注册完成后
             response.setCode(ResponseCode.SYSTEM_ERROR);
             response.setRemark("register broker failed");
             return response;

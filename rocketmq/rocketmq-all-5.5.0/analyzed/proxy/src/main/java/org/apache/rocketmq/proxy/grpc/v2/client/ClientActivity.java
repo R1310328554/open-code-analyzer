@@ -79,6 +79,10 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * gRPC 客户端生命周期 Activity：处理心跳、终止通知、
+ * Lite 订阅同步及 Producer/Consumer 注册。
+ */
 public class ClientActivity extends AbstractMessagingActivity {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
@@ -90,11 +94,13 @@ public class ClientActivity extends AbstractMessagingActivity {
         this.init();
     }
 
+    /** 注册 Producer/Consumer 变更监听器。 */
     protected void init() {
         this.messagingProcessor.registerConsumerListener(new ConsumerIdsChangeListenerImpl());
         this.messagingProcessor.registerProducerListener(new ProducerChangeListenerImpl());
     }
 
+    /** 处理客户端心跳并注册 Producer/Consumer。 */
     public CompletableFuture<HeartbeatResponse> heartbeat(ProxyContext ctx, HeartbeatRequest request) {
         CompletableFuture<HeartbeatResponse> future = new CompletableFuture<>();
 
@@ -139,6 +145,7 @@ public class ClientActivity extends AbstractMessagingActivity {
         return future;
     }
 
+    /** 客户端断开时注销 Producer/Consumer 并清理 Channel。 */
     public CompletableFuture<NotifyClientTerminationResponse> notifyClientTermination(ProxyContext ctx,
         NotifyClientTerminationRequest request) {
         CompletableFuture<NotifyClientTerminationResponse> future = new CompletableFuture<>();
@@ -192,6 +199,7 @@ public class ClientActivity extends AbstractMessagingActivity {
         return future;
     }
 
+    /** 同步 Lite Push 订阅关系。 */
     public CompletableFuture<SyncLiteSubscriptionResponse> syncLiteSubscription(ProxyContext ctx,
         SyncLiteSubscriptionRequest request) {
         try {
@@ -415,7 +423,7 @@ public class ClientActivity extends AbstractMessagingActivity {
         LanguageCode languageCode = LanguageCode.valueOf(ctx.getLanguage());
 
         GrpcClientChannel channel = this.grpcChannelManager.createChannel(ctx, clientId);
-        // use topic name as producer group
+        // Lite 场景以 topic 名作为 producer group
         ClientChannelInfo clientChannelInfo = new ClientChannelInfo(channel, clientId, languageCode, parseClientVersion(ctx.getClientVersion()));
         this.messagingProcessor.registerProducer(ctx, topicName, clientChannelInfo);
         TopicMessageType topicMessageType = this.messagingProcessor.getMetadataService().getTopicMessageType(ctx, topicName);
@@ -591,7 +599,7 @@ public class ClientActivity extends AbstractMessagingActivity {
                 ClientChannelInfo clientChannelInfo = (ClientChannelInfo) args[1];
                 Channel channel = clientChannelInfo.getChannel();
                 if (ChannelHelper.isRemote(channel)) {
-                    // save settings from channel sync from other proxy
+                    // 保存从其他 Proxy 同步的客户端 Settings
                     Settings settings = GrpcClientChannel.parseChannelExtendAttribute(channel);
                     log.debug("save client settings sync from other proxy. group:{}, channelInfo:{}, settings:{}", group, clientChannelInfo, settings);
                     if (settings == null) {

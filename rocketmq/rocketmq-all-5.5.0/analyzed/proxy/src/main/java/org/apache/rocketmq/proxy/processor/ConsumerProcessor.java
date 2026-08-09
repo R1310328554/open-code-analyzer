@@ -65,6 +65,10 @@ import org.apache.rocketmq.remoting.protocol.header.QueryConsumerOffsetRequestHe
 import org.apache.rocketmq.remoting.protocol.header.UpdateConsumerOffsetRequestHeader;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * Proxy 消费侧处理器：封装 POP/Pull、ACK、位点管理、
+ * 队列锁及不可见时间变更等 Broker RPC。
+ */
 public class ConsumerProcessor extends AbstractProcessor {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
@@ -76,6 +80,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         this.executor = executor;
     }
 
+    /** 按队列选择器 POP 消息（自动选队列）。 */
     public CompletableFuture<PopResult> popMessage(
         ProxyContext ctx,
         QueueSelector queueSelector,
@@ -225,6 +230,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         return popResult;
     }
 
+    /** POP Lite 消息（轻量消费模式）。 */
     public CompletableFuture<PopResult> popLiteMessage(
         ProxyContext ctx,
         QueueSelector queueSelector,
@@ -307,6 +313,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         }
     }
 
+    /** 确认 POP 消息消费完成。 */
     public CompletableFuture<AckResult> ackMessage(
         ProxyContext ctx,
         ReceiptHandle handle,
@@ -340,6 +347,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         return FutureUtils.addExecutor(future, this.executor);
     }
 
+    /** 批量 ACK POP 消息。 */
     public CompletableFuture<List<BatchAckResult>> batchAckMessage(
         ProxyContext ctx,
         List<ReceiptHandleMessage> handleMessageList,
@@ -404,6 +412,7 @@ public class ConsumerProcessor extends AbstractProcessor {
             });
     }
 
+    /** 修改 POP 消息不可见时间。 */
     public CompletableFuture<AckResult> changeInvisibleTime(ProxyContext ctx, ReceiptHandle handle, String messageId,
         String groupName, String topicName, long invisibleTime, String liteTopic, long timeoutMillis, boolean suspend) {
         CompletableFuture<AckResult> future = new CompletableFuture<>();
@@ -452,6 +461,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         return handleString + MessageConst.KEY_SEPARATOR + commitLogOffset;
     }
 
+    /** Pull 模式拉取消息。 */
     public CompletableFuture<PullResult> pullMessage(ProxyContext ctx, MessageQueue messageQueue, String consumerGroup,
         long queueOffset, int maxMsgNums, int sysFlag, long commitOffset,
         long suspendTimeoutMillis, SubscriptionData subscriptionData, long timeoutMillis) {
@@ -477,6 +487,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         return FutureUtils.addExecutor(future, this.executor);
     }
 
+    /** 更新消费位点。 */
     public CompletableFuture<Void> updateConsumerOffset(ProxyContext ctx, MessageQueue messageQueue,
         String consumerGroup, long commitOffset, long timeoutMillis) {
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -513,6 +524,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         return FutureUtils.addExecutor(future, this.executor);
     }
 
+    /** 查询消费位点。 */
     public CompletableFuture<Long> queryConsumerOffset(ProxyContext ctx, MessageQueue messageQueue,
         String consumerGroup, long timeoutMillis) {
         CompletableFuture<Long> future = new CompletableFuture<>();
@@ -530,6 +542,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         return FutureUtils.addExecutor(future, this.executor);
     }
 
+    /** 顺序消费：批量锁定 MessageQueue。 */
     public CompletableFuture<Set<MessageQueue>> lockBatchMQ(ProxyContext ctx, Set<MessageQueue> mqSet,
         String consumerGroup, String clientId, long timeoutMillis) {
         CompletableFuture<Set<MessageQueue>> future = new CompletableFuture<>();
@@ -561,6 +574,7 @@ public class ConsumerProcessor extends AbstractProcessor {
         return FutureUtils.addExecutor(future, this.executor);
     }
 
+    /** 顺序消费：批量解锁 MessageQueue。 */
     public CompletableFuture<Void> unlockBatchMQ(ProxyContext ctx, Set<MessageQueue> mqSet,
         String consumerGroup, String clientId, long timeoutMillis) {
         CompletableFuture<Void> future = new CompletableFuture<>();

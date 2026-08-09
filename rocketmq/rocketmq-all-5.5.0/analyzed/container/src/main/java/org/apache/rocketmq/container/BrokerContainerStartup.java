@@ -45,8 +45,14 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * Broker 容器启动入口：解析命令行与配置文件，启动 {@link BrokerContainer}，
+ * 并按配置路径批量创建、初始化并启动多个 {@link InnerBrokerController}。
+ */
 public class BrokerContainerStartup {
+    /** 命令行选项：Broker 容器配置文件路径。 */
     private static final String BROKER_CONTAINER_CONFIG_OPTION = "c";
+    /** 命令行选项：Broker 配置文件路径列表（冒号分隔）。 */
     private static final String BROKER_CONFIG_OPTION = "b";
     private static final String PRINT_PROPERTIES_OPTION = "p";
     private static final String PRINT_IMPORTANT_PROPERTIES_OPTION = "m";
@@ -57,6 +63,7 @@ public class BrokerContainerStartup {
     public static final SystemConfigFileHelper CONFIG_FILE_HELPER = new SystemConfigFileHelper();
     public static String rocketmqHome = null;
 
+    /** 主入口：解析配置并启动容器及其下属 Broker。 */
     public static void main(String[] args) {
         final BrokerContainerConfig containerConfig = new BrokerContainerConfig();
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
@@ -66,6 +73,7 @@ public class BrokerContainerStartup {
         createAndStartBrokers(brokerContainer);
     }
 
+    /** 按配置路径在容器内创建并启动全部 Broker。 */
     public static List<BrokerController> createAndStartBrokers(BrokerContainer brokerContainer) {
         String[] configPaths = parseBrokerConfigPath();
         List<BrokerController> brokerControllerList = new ArrayList<>();
@@ -95,6 +103,7 @@ public class BrokerContainerStartup {
         return brokerControllerList;
     }
 
+    /** 解析 Broker 配置文件路径（支持 -b 或容器配置中的路径列表）。 */
     public static String[] parseBrokerConfigPath() {
         String brokerConfigList = null;
         if (commandLine.hasOption(BROKER_CONFIG_OPTION)) {
@@ -126,6 +135,7 @@ public class BrokerContainerStartup {
         return null;
     }
 
+    /** 加载 Broker 配置、校验副本参数并在容器中注册 InnerBrokerController。 */
     public static InnerBrokerController createAndInitializeBroker(BrokerContainer brokerContainer,
         String filePath, Properties brokerProperties) {
 
@@ -197,6 +207,7 @@ public class BrokerContainerStartup {
         return null;
     }
 
+    /** 启动 Broker 容器并打印序列化类型与 NameServer 地址。 */
     public static BrokerContainer startBrokerContainer(BrokerContainer brokerContainer) {
         try {
 
@@ -219,6 +230,7 @@ public class BrokerContainerStartup {
         return null;
     }
 
+    /** 执行启动 Hook 并启动单个 InnerBrokerController。 */
     public static void startBrokerController(BrokerContainer brokerContainer,
         InnerBrokerController innerBrokerController, Properties brokerProperties) {
         try {
@@ -245,6 +257,7 @@ public class BrokerContainerStartup {
         }
     }
 
+    /** 关闭 Broker 容器。 */
     public static void shutdown(final BrokerContainer controller) {
         if (null != controller) {
             controller.shutdown();
@@ -266,7 +279,7 @@ public class BrokerContainerStartup {
         }
 
         try {
-            //PackageConflictDetect.detectFastjson();
+            // 可选：检测 Fastjson 包冲突
             Options options = ServerUtil.buildCommandlineOptions(new Options());
             commandLine = ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
                 new DefaultParser());
@@ -350,7 +363,7 @@ public class BrokerContainerStartup {
             containerConfig,
             nettyServerConfig,
             nettyClientConfig);
-        // remember all configs to prevent discard
+        // 缓存全部配置项，避免被丢弃
         brokerContainer.getConfiguration().registerConfig(properties);
 
         boolean initResult = brokerContainer.initialize();

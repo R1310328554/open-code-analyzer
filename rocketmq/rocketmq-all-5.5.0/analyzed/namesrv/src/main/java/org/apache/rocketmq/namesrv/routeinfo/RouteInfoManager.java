@@ -65,13 +65,21 @@ import org.apache.rocketmq.remoting.protocol.route.QueueData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingInfo;
 
+/**
+ * NameServer 路由信息管理器：维护 Topic 队列、Broker 地址、
+ * 集群映射、Broker 存活状态及 Filter Server 等路由元数据。
+ */
 public class RouteInfoManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private static final long DEFAULT_BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    /** topic → (brokerName → QueueData) 路由表。 */
     private final Map<String/* topic */, Map<String, QueueData>> topicQueueTable;
+    /** brokerName → Broker 地址与角色信息。 */
     private final Map<String/* brokerName */, BrokerData> brokerAddrTable;
+    /** clusterName → brokerName 集合。 */
     private final Map<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
+    /** Broker 地址 → 存活信息与 Channel。 */
     private final Map<BrokerAddrInfo/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
     private final Map<BrokerAddrInfo/* brokerAddr */, List<String>/* Filter Server */> filterServerTable;
     private final Map<String/* topic */, Map<String/*brokerName*/, TopicQueueMappingInfo>> topicQueueMappingInfoTable;
@@ -105,7 +113,7 @@ public class RouteInfoManager {
         return this.unRegisterService.submit(unRegisterRequest);
     }
 
-    // For test only
+    // 仅供测试：阻塞中的注销请求数
     int blockedUnRegisterRequests() {
         return this.unRegisterService.queueLength();
     }
@@ -135,7 +143,7 @@ public class RouteInfoManager {
                 }
                 log.info("Topic route already exist.{}, {}", topic, this.topicQueueTable.get(topic));
             } else {
-                // check and construct queue data map
+                // 校验 Broker 合法性并构建队列映射
                 Map<String, QueueData> queueDataMap = new HashMap<>();
                 for (QueueData queueData : queueDatas) {
                     if (!this.brokerAddrTable.containsKey(queueData.getBrokerName())) {
@@ -169,7 +177,7 @@ public class RouteInfoManager {
     public void deleteTopic(final String topic, final String clusterName) {
         try {
             this.lock.writeLock().lockInterruptibly();
-            //get all the brokerNames fot the specified cluster
+            // 获取指定集群下全部 brokerName
             Set<String> brokerNames = this.clusterAddrTable.get(clusterName);
             if (brokerNames == null || brokerNames.isEmpty()) {
                 return;
@@ -268,7 +276,7 @@ public class RouteInfoManager {
                 isMinBrokerIdChanged = true;
             }
 
-            //Switch slave to master: first remove <1, IP:PORT> in namesrv, then add <0, IP:PORT>
+            // Slave 升 Master：先删 slave 地址再注册 master 地址
             //The same IP:PORT must only have one record in brokerAddrTable
             brokerAddrsMap.entrySet().removeIf(item -> null != brokerAddr && brokerAddr.equals(item.getValue()) && brokerId != item.getKey());
 
@@ -674,7 +682,7 @@ public class RouteInfoManager {
 
                 if (queueData != null) {
                     if (this.brokerAddrTable.get(brokerName).isEnableActingMaster()) {
-                        // Master has been unregistered, wipe the write perm
+                        // Master 已注销，清除写权限
                         if (isNoMasterExists(brokerName)) {
                             queueData.setPerm(queueData.getPerm() & (~PermName.PERM_WRITE));
                         }
@@ -1114,7 +1122,7 @@ public class RouteInfoManager {
 }
 
 /**
- * broker address information
+ * Broker 地址标识（clusterName + brokerAddr），用作 brokerLiveTable 键。
  */
 class BrokerAddrInfo {
     private String clusterName;

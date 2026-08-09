@@ -82,7 +82,8 @@ import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.L
 import static org.apache.rocketmq.controller.metrics.ControllerMetricsConstant.LABEL_ELECTION_RESULT;
 
 /**
- * The implementation of controller, based on DLedger (raft).
+ * 基于 DLedger（Raft）的 Controller 实现：通过共识日志维护副本元数据，
+ * 负责 Master 选举、SyncStateSet 变更及 Broker 生命周期管理。
  */
 public class DLedgerController implements Controller {
 
@@ -101,9 +102,9 @@ public class DLedgerController implements Controller {
 
     private final List<BrokerLifecycleListener> brokerLifecycleListeners;
 
-    // use for checking whether the broker is alive
+    // 判定 Broker 是否存活的谓词
     private BrokerValidPredicate brokerAlivePredicate;
-    // use for elect a master
+    // Master 选举策略
     private ElectPolicy electPolicy;
 
     private final AtomicBoolean isScheduling = new AtomicBoolean(false);
@@ -132,7 +133,7 @@ public class DLedgerController implements Controller {
         this.replicasInfoManager = new ReplicasInfoManager(controllerConfig);
         this.statemachine = new DLedgerControllerStateMachine(replicasInfoManager, this.eventSerializer, dLedgerConfig.getGroup(), dLedgerConfig.getSelfId());
 
-        // Register statemachine and role handler.
+        // 注册 Raft 状态机与角色变更处理器
         this.dLedgerServer = new DLedgerServer(dLedgerConfig, nettyServerConfig, nettyClientConfig, channelEventListener);
         this.dLedgerServer.registerStateMachine(this.statemachine);
         this.dLedgerServer.getDLedgerLeaderElector().addRoleChangeHandler(this.roleHandler);
@@ -270,9 +271,8 @@ public class DLedgerController implements Controller {
     }
 
     /**
-     * Scan all broker-set in statemachine, find that the broker-set which
-     * its master has been timeout but still has at least one broker keep alive with controller,
-     * and we trigger an election to update its state.
+     * 扫描状态机中 Master 已超时但仍有 Broker 存活的 broker-set，
+     * 触发重新选举以更新集群状态。
      */
     private void scanInactiveMasterAndTriggerReelect() {
         if (!this.roleHandler.isLeaderState()) {
@@ -281,13 +281,13 @@ public class DLedgerController implements Controller {
         }
         List<String> brokerSets = this.replicasInfoManager.scanNeedReelectBrokerSets(this.brokerAlivePredicate);
         for (String brokerName : brokerSets) {
-            // Notify ControllerManager
+            // 通知 ControllerManager 处理 inactive Master
             this.brokerLifecycleListeners.forEach(listener -> listener.onBrokerInactive(null, brokerName, null));
         }
     }
 
     /**
-     * Append the request to DLedger, and wait for DLedger to commit the request.
+     * 将请求追加到 DLedger 日志并等待提交完成。
      */
     private boolean appendToDLedgerAndWait(final AppendEntryRequest request) {
         if (request != null) {
@@ -324,7 +324,7 @@ public class DLedgerController implements Controller {
         return false;
     }
 
-    // Only for test
+    // 仅供测试使用
     public MemberState getMemberState() {
         return this.dLedgerServer.getMemberState();
     }
@@ -344,29 +344,19 @@ public class DLedgerController implements Controller {
         }
     }
 
-    /**
-     * Event handler that handle event
-     */
+    /** Controller 事件处理器接口。 */
     interface EventHandler<T> {
-        /**
-         * Run the controller event
-         */
+        /** 执行 Controller 事件逻辑。 */
         void run() throws Throwable;
 
-        /**
-         * Return the completableFuture
-         */
+        /** 返回异步 Remoting 响应 Future。 */
         CompletableFuture<RemotingCommand> future();
 
-        /**
-         * Handle Exception.
-         */
+        /** 处理执行过程中的异常。 */
         void handleException(final Throwable t);
     }
 
-    /**
-     * Event scheduler, schedule event handler from event queue
-     */
+    /** 事件调度器：从队列顺序调度 Controller 事件处理器。 */
     class EventScheduler extends ServiceThread {
         private final BlockingQueue<EventHandler> eventQueue;
 
@@ -451,16 +441,16 @@ public class DLedgerController implements Controller {
             boolean appendSuccess = true;
 
             if (!this.isWriteEvent || result.getEvents() == null || result.getEvents().isEmpty()) {
-                // read event, or write event with empty events in response which also equals to read event
+                // 读事件，或响应中无事件的写事件（视为读）
                 if (DLedgerController.this.controllerConfig.isProcessReadEvent()) {
-                    // Now the DLedger don't have the function of Read-Index or Lease-Read,
-                    // So we still need to propose an empty request to DLedger.
+                    // DLedger 暂不支持 Read-Index/Lease-Read，
+                    // 仍需 propose 空请求以同步状态
                     final AppendEntryRequest request = new AppendEntryRequest();
                     request.setBody(new byte[0]);
                     appendSuccess = appendToDLedgerAndWait(request);
                 }
             } else {
-                // write event
+                // 写事件：需追加 DLedger 日志
                 final List<EventMessage> events = result.getEvents();
                 final List<byte[]> eventBytes = new ArrayList<>(events.size());
                 for (final EventMessage event : events) {
@@ -473,7 +463,7 @@ public class DLedgerController implements Controller {
                 }
                 // Append events to DLedger
                 if (!eventBytes.isEmpty()) {
-                    // batch append events
+                    // 批量追加事件到 DLedger
                     final BatchAppendEntryRequest request = new BatchAppendEntryRequest();
                     request.setBatchMsgs(eventBytes);
                     appendSuccess = appendToDLedgerAndWait(request);

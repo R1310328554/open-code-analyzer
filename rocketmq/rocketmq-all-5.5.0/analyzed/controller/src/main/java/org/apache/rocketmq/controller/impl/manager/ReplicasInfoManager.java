@@ -70,8 +70,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The manager that manages the replicas info for all brokers. We can think of this class as the controller's memory
- * state machine. If the upper layer want to update the statemachine, it must sequentially call its methods.
+ * 管理全部 Broker 副本信息的内存状态机。
+ * 上层更新状态须顺序调用本类方法，保证与 DLedger 日志一致。
  */
 public class ReplicasInfoManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.CONTROLLER_LOGGER_NAME);
@@ -122,7 +122,7 @@ public class ReplicasInfoManager {
         final SyncStateInfo syncStateInfo = this.syncStateSetInfoTable.get(brokerName);
         final BrokerReplicaInfo brokerReplicaInfo = this.replicaInfoTable.get(brokerName);
 
-        // Check whether the oldSyncStateSet is equal with newSyncStateSet
+        // 校验新 SyncStateSet 是否与旧集合相同
         final Set<Long> oldSyncStateSet = syncStateInfo.getSyncStateSet();
         if (oldSyncStateSet.size() == newSyncStateSet.size() && oldSyncStateSet.containsAll(newSyncStateSet)) {
             String err = "The newSyncStateSet is equal with oldSyncStateSet, no needed to update syncStateSet";
@@ -131,7 +131,7 @@ public class ReplicasInfoManager {
             return result;
         }
 
-        // Check master
+        // 校验请求中的 Master brokerId 是否与当前一致
         if (syncStateInfo.getMasterBrokerId() == null || !syncStateInfo.getMasterBrokerId().equals(request.getMasterBrokerId())) {
             String err = String.format("Rejecting alter syncStateSet request because the current leader is:{%s}, not {%s}",
                 syncStateInfo.getMasterBrokerId(), request.getMasterBrokerId());
@@ -140,7 +140,7 @@ public class ReplicasInfoManager {
             return result;
         }
 
-        // Check master epoch
+        // 校验 Master epoch 是否匹配（防脑裂）
         if (request.getMasterEpoch() != syncStateInfo.getMasterEpoch()) {
             String err = String.format("Rejecting alter syncStateSet request because the current master epoch is:{%d}, not {%d}",
                 syncStateInfo.getMasterEpoch(), request.getMasterEpoch());
@@ -149,7 +149,7 @@ public class ReplicasInfoManager {
             return result;
         }
 
-        // Check syncStateSet epoch
+        // 校验 SyncStateSet epoch
         if (syncStateSet.getSyncStateSetEpoch() != syncStateInfo.getSyncStateSetEpoch()) {
             String err = String.format("Rejecting alter syncStateSet request because the current syncStateSet epoch is:{%d}, not {%d}",
                 syncStateInfo.getSyncStateSetEpoch(), syncStateSet.getSyncStateSetEpoch());
@@ -158,7 +158,7 @@ public class ReplicasInfoManager {
             return result;
         }
 
-        // Check newSyncStateSet correctness
+        // 校验新 SyncStateSet 成员合法性
         for (Long replica : newSyncStateSet) {
             if (!brokerReplicaInfo.isBrokerExist(replica)) {
                 String err = String.format("Rejecting alter syncStateSet request because the replicas {%s} don't exist", replica);
@@ -181,7 +181,7 @@ public class ReplicasInfoManager {
             return result;
         }
 
-        // Generate event
+        // 生成 AlterSyncStateSet 事件
         int epoch = syncStateInfo.getSyncStateSetEpoch() + 1;
         response.setNewSyncStateSetEpoch(epoch);
         result.setBody(new SyncStateSet(newSyncStateSet, epoch).encode());
@@ -197,7 +197,7 @@ public class ReplicasInfoManager {
         final ControllerResult<ElectMasterResponseHeader> result = new ControllerResult<>(new ElectMasterResponseHeader());
         final ElectMasterResponseHeader response = result.getResponse();
         if (!isContainsBroker(brokerName)) {
-            // this broker set hasn't been registered
+            // 该 broker-set 尚未注册
             result.setCodeAndRemark(ResponseCode.CONTROLLER_BROKER_NEED_TO_BE_REGISTERED, "Broker hasn't been registered");
             return result;
         }
@@ -210,12 +210,12 @@ public class ReplicasInfoManager {
         Long newMaster = null;
 
         if (syncStateInfo.isFirstTimeForElect()) {
-            // If never have a master in this broker set, in other words, it is the first time to elect a master
-            // elect it as the first master
+            // 首次选举：该 broker-set 尚无 Master
+            // 将指定 Broker 选为首个 Master
             newMaster = brokerId;
         }
 
-        // elect by policy
+        // 按选举策略选主
         if (newMaster == null || newMaster == -1) {
             // we should assign this assignedBrokerId when the brokerAddress need to be elected by force
             Long assignedBrokerId = request.getDesignateElect() ? brokerId : null;
@@ -223,7 +223,7 @@ public class ReplicasInfoManager {
         }
 
         if (newMaster != null && newMaster.equals(oldMaster)) {
-            // old master still valid, change nothing
+            // 旧 Master 仍有效，无需变更
             String err = String.format("The old master %s is still alive, not need to elect new master for broker %s", oldMaster, brokerReplicaInfo.getBrokerName());
             LOGGER.warn("{}", err);
             // the master still exist
@@ -237,7 +237,7 @@ public class ReplicasInfoManager {
             return result;
         }
 
-        // a new master is elected
+        // 已选举出新 Master
         if (newMaster != null) {
             final int masterEpoch = syncStateInfo.getMasterEpoch();
             final int syncStateSetEpoch = syncStateInfo.getSyncStateSetEpoch();
@@ -484,9 +484,9 @@ public class ReplicasInfoManager {
     }
 
     /**
-     * Apply events to memory statemachine.
+     * 将已提交事件应用到内存状态机。
      *
-     * @param event event message
+     * @param event 事件消息
      */
     public void applyEvent(final EventMessage event) {
         final EventType type = event.getEventType();
@@ -527,14 +527,14 @@ public class ReplicasInfoManager {
                 brokerReplicaInfo.addBroker(event.getNewBrokerId(), event.getBrokerAddress(), event.getRegisterCheckCode());
             }
         } else {
-            // First time to register in this broker set
-            // Initialize the replicaInfo about this broker set
+            // 首次在该 broker-set 注册
+            // 初始化该 broker-set 的副本元数据
             final String clusterName = event.getClusterName();
             final BrokerReplicaInfo brokerReplicaInfo = new BrokerReplicaInfo(clusterName, brokerName);
             brokerReplicaInfo.addBroker(event.getNewBrokerId(), event.getBrokerAddress(), event.getRegisterCheckCode());
             this.replicaInfoTable.put(brokerName, brokerReplicaInfo);
             final SyncStateInfo syncStateInfo = new SyncStateInfo(clusterName, brokerName);
-            // Initialize an empty syncStateInfo for this broker set
+            // 初始化空的 SyncStateSet 信息
             this.syncStateSetInfoTable.put(brokerName, syncStateInfo);
         }
     }
@@ -554,7 +554,7 @@ public class ReplicasInfoManager {
             final SyncStateInfo syncStateInfo = this.syncStateSetInfoTable.get(brokerName);
 
             if (event.getNewMasterElected()) {
-                // Record new master
+                // 记录新 Master
                 syncStateInfo.updateMasterInfo(newMaster);
 
                 // Record new newSyncStateSet list
@@ -599,9 +599,9 @@ public class ReplicasInfoManager {
     }
 
     /**
-     * Is the broker existed in the memory metadata
+     * 判断 brokerName 是否已存在于内存元数据。
      *
-     * @return true if both existed in replicaInfoTable and inSyncReplicasInfoTable
+     * @return replicaInfoTable 与 syncStateSetInfoTable 均存在时返回 true
      */
     private boolean isContainsBroker(final String brokerName) {
         return this.replicaInfoTable.containsKey(brokerName) && this.syncStateSetInfoTable.containsKey(brokerName);

@@ -22,21 +22,19 @@ package org.apache.rocketmq.filter.parser;
 import java.nio.charset.StandardCharsets;
 
 /**
- * An implementation of interface CharStream, where the stream is assumed to
- * contain only ASCII characters (without unicode processing).
+ * {@link CharStream} 实现：假定输入仅含 ASCII 字符（不做 Unicode 处理）。
  */
 
+/**
+ * JavaCC 字符流缓冲：维护行号、列号，供 TokenManager 逐字符扫描。
+ */
 public class SimpleCharStream {
-    /**
-     * Whether parser is static.
-     */
+    /** 解析器是否为 static 模式。 */
     public static final boolean STATIC_FLAG = false;
     int bufsize;
     int available;
     int tokenBegin;
-    /**
-     * Position in buffer.
-     */
+    /** 缓冲区当前读取位置。 */
     public int bufpos = -1;
     protected int[] bufline;
     protected int[] bufcolumn;

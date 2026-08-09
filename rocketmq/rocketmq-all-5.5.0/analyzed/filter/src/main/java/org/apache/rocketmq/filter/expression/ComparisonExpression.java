@@ -20,14 +20,13 @@ package org.apache.rocketmq.filter.expression;
 import java.util.List;
 
 /**
- * A filter performing a comparison of two objects
+ * 二元比较表达式基类，用于 SQL92 风格消息过滤。
  * <p>
- * This class was taken from ActiveMQ org.apache.activemq.filter.ComparisonExpression,
- * but:
- * 1. Remove LIKE expression, and related methods;
- * 2. Extract a new method __compare which has int return value;
- * 3. When create between expression, check whether left value is less or equal than right value;
- * 4. For string type value(can not convert to number), only equal or unequal comparison are supported.
+ * 源自 ActiveMQ ComparisonExpression，RocketMQ 改动：
+ * 1. 移除 LIKE 及相关方法；
+ * 2. 抽取 {@link #__compare} 返回 int 比较结果；
+ * 3. BETWEEN 创建时校验左界 ≤ 右界；
+ * 4. 不可转数字的字符串仅支持等于/不等于。
  * </p>
  */
 public abstract class ComparisonExpression extends BinaryExpression implements BooleanExpression {
@@ -37,8 +36,8 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
     boolean convertStringExpressions = false;
 
     /**
-     * @param left
-     * @param right
+     * @param left 左操作数表达式
+     * @param right 右操作数表达式
      */
     public ComparisonExpression(Expression left, Expression right) {
         super(left, right);
@@ -46,7 +45,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
     }
 
     public static BooleanExpression createBetween(Expression value, Expression left, Expression right) {
-        // check
+        // 常量边界时校验 BETWEEN 左界 ≤ 右界
         if (left instanceof ConstantExpression && right instanceof ConstantExpression) {
             Object lv = ((ConstantExpression) left).getValue();
             Object rv = ((ConstantExpression) right).getValue();
@@ -368,7 +367,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
                 Object lv = left.evaluate(context);
                 Object rv = right.evaluate(context);
 
-                // If one of the values is null
+                // 任一操作数为 null 时比较结果为 false
                 if (lv == null ^ rv == null) {
                     if (lv == null) {
                         return null;
@@ -454,7 +453,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
     }
 
     /**
-     * Only Numeric expressions can be used in >, >=, < or <= expressions.s
+     * 校验 >、>=、<、<= 的操作数必须为数值类型。
      */
     public static void checkLessThanOperand(Expression expr) {
         if (expr instanceof ConstantExpression) {
@@ -463,7 +462,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
                 return;
             }
 
-            // Else it's boolean or a String..
+            // 布尔或字符串不可用于大小比较
             throw new RuntimeException("Value '" + expr + "' cannot be compared.");
         }
         if (expr instanceof BooleanExpression) {
@@ -472,8 +471,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
     }
 
     /**
-     * Validates that the expression can be used in == or <> expression. Cannot
-     * not be NULL TRUE or FALSE litterals.
+     * 校验 ==、!= 操作数合法性（禁止 null/true/false 字面量参与比较）。
      */
     public static void checkEqualOperand(Expression expr) {
         if (expr instanceof ConstantExpression) {
@@ -485,8 +483,10 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
     }
 
     /**
-     * @param left
-     * @param right
+     * 校验等值比较左右操作数类型兼容。
+     *
+     * @param left 左表达式
+     * @param right 右表达式
      */
     private static void checkEqualOperandCompatability(Expression left, Expression right) {
         if (left instanceof ConstantExpression && right instanceof ConstantExpression) {
@@ -511,8 +511,8 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
             Class<? extends Comparable> lc = lv.getClass();
             Class<? extends Comparable> rc = rv.getClass();
             if (lc == rc && lc == String.class) {
-                // Compare String is illegal
-                // first try to convert to double
+                // 字符串不可做大小比较
+                // 先尝试转为 double 再比较
                 try {
                     Comparable lvC = Double.valueOf((String) (Comparable) lv);
                     Comparable rvC = Double.valueOf((String) rv);
@@ -530,8 +530,8 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
     protected static int __compare(Comparable lv, Comparable rv, boolean convertStringExpressions) {
         Class<? extends Comparable> lc = lv.getClass();
         Class<? extends Comparable> rc = rv.getClass();
-        // If the the objects are not of the same type,
-        // try to convert up to allow the comparison.
+        // 类型不一致时
+        // 尝试向上转型以完成比较
         if (lc != rc) {
             try {
                 if (lc == Boolean.class) {

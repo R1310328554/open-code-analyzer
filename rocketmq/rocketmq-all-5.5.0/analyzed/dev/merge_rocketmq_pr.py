@@ -17,15 +17,13 @@
 # limitations under the License.
 #
 
-# This script is a modified version of the one created by the RocketMQ
-# project (https://github.com/apache/rocketmq/blob/master/dev/merge_rocketmq_pr.py).
+# 本脚本改编自 RocketMQ 官方 dev/merge_rocketmq_pr.py。
 
-# Utility for creating well-formed pull request merges and pushing them to Apache.
-#   usage: ./merge_rocketmq_pr.py    (see config env vars below)
+# 用于将 GitHub Pull Request 规范合并并推送到 Apache 官方仓库。
+#   用法: ./merge_rocketmq_pr.py（环境变量见下方配置）
 #
-# This utility assumes you already have local a RocketMQ git folder and that you
-# have added remotes corresponding to both (i) the github apache RocketMQ
-# mirror and (ii) the apache git repo.
+# 前提：本地已有 RocketMQ git 仓库，并配置 (i) GitHub apache 镜像
+# 与 (ii) Apache git 远程。
 
 import json
 import os
@@ -40,20 +38,18 @@ try:
 except ImportError:
     JIRA_IMPORTED = False
 
-# Location of your RocketMQ git development area
+# RocketMQ 本地开发目录
 ROCKETMQ_HOME = os.environ.get("ROCKETMQ_HOME", os.getcwd())
-# Remote name which points to the Gihub site
+# 指向 GitHub 镜像的 remote 名称
 PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "apache-github")
-# Remote name which points to Apache git
+# 指向 Apache 官方 git 的 remote 名称
 PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "origin")
-# ASF JIRA username
+# ASF JIRA 用户名
 JIRA_USERNAME = os.environ.get("JIRA_USERNAME", "")
-# ASF JIRA password
+# ASF JIRA 密码
 JIRA_PASSWORD = os.environ.get("JIRA_PASSWORD", "")
-# OAuth key used for issuing requests against the GitHub API. If this is not defined, then requests
-# will be unauthenticated. You should only need to configure this if you find yourself regularly
-# exceeding your IP's unauthenticated request rate limit. You can create an OAuth key at
-# https://github.com/settings/tokens. This script only requires the "public_repo" scope.
+# GitHub API OAuth Token；未配置则匿名请求（易触发限流）。
+# 在 https://github.com/settings/tokens 创建，仅需 public_repo 权限。
 GITHUB_OAUTH_KEY = os.environ.get("GITHUB_OAUTH_KEY")
 
 
@@ -61,7 +57,7 @@ GITHUB_BASE = "https://github.com/apache/rocketmq/pull"
 GITHUB_API_BASE = "https://api.github.com/repos/apache/rocketmq"
 JIRA_BASE = "https://issues.apache.org/jira/browse"
 JIRA_API_BASE = "https://issues.apache.org/jira"
-# Prefix added to temporary branches
+# 临时分支前缀
 BRANCH_PREFIX = "PR_TOOL"
 DEVELOP_BRANCH = "develop"
 
@@ -83,12 +79,14 @@ def get_json(url):
 
 
 def fail(msg):
+    """打印错误、清理临时分支并退出。"""
     print(msg)
     clean_up()
     sys.exit(-1)
 
 
 def run_cmd(cmd):
+    """执行 shell/git 命令并返回输出。"""
     print(cmd)
     if isinstance(cmd, list):
         return subprocess.check_output(cmd)
@@ -103,6 +101,7 @@ def continue_maybe(prompt):
 
 
 def clean_up():
+    """恢复 HEAD 并删除 PR_TOOL 临时分支。"""
     print("Restoring head pointer to %s" % original_head)
     run_cmd("git checkout %s" % original_head)
 
@@ -113,7 +112,7 @@ def clean_up():
         run_cmd("git branch -D %s" % branch)
 
 
-# merge the requested PR and return the merge hash
+# 合并指定 PR 并返回 merge commit 哈希
 def merge_pr(pr_num, target_ref, title, body, pr_repo_desc):
     pr_branch_name = "%s_MERGE_PR_%s" % (BRANCH_PREFIX, pr_num)
     target_branch_name = "%s_MERGE_PR_%s_%s" % (BRANCH_PREFIX, pr_num, target_ref.upper())
@@ -162,7 +161,7 @@ def merge_pr(pr_num, target_ref, title, body, pr_repo_desc):
             committer_name, committer_email)
         merge_message_flags += ["-m", message]
 
-    # The string "Closes #%s" string is required for GitHub to correctly close the PR
+    # GitHub 需 "Closes #%s" 才能自动关闭 PR
     merge_message_flags += ["-m", "Closes #%s from %s." % (pr_num, pr_repo_desc)]
 
     run_cmd(['git', 'commit', '--author="%s"' % primary_author] + merge_message_flags)
