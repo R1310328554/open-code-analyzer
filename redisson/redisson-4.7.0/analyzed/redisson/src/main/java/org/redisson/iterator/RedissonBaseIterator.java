@@ -16,13 +16,17 @@
 package org.redisson.iterator;
 
 /**
- * 
+ * Redisson 同步迭代器基类：元素即值本身，无需从 Map Entry 解包。
+ * <p>
+ * 继承 {@link BaseIterator}，{@link #getValue(Object)} 直接强转 SCAN 结果。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
 public abstract class RedissonBaseIterator<V> extends BaseIterator<V, Object> {
 
+    /** 将 SCAN 批次中的原始对象直接作为迭代元素返回。 */
     @Override
     protected V getValue(Object entry) {
         return (V) entry;

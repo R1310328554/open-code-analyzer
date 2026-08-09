@@ -20,49 +20,61 @@ import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.management.CacheMXBean;
 
 /**
- * 
+ * JSR-107 {@link CacheMXBean} 实现，暴露 Cache 配置元数据。
+ * <p>
+ * 通过 MBean 查询键值类型、read/write-through、store-by-value 等开关。
+ *
  * @author Nikita Koksharov
  *
  */
 public class JCacheManagementMXBean implements CacheMXBean {
 
+    /** 被管理的 Cache 实例。 */
     private final Cache<?, ?> cache;
     
+    /** 绑定指定 Cache 的配置视图。 */
     public JCacheManagementMXBean(Cache<?, ?> cache) {
         super();
         this.cache = cache;
     }
 
+    /** 配置中的键类型全限定名。 */
     @Override
     public String getKeyType() {
         return cache.getConfiguration(CompleteConfiguration.class).getKeyType().getName();
     }
 
+    /** 配置中的值类型全限定名。 */
     @Override
     public String getValueType() {
         return cache.getConfiguration(CompleteConfiguration.class).getValueType().getName();
     }
 
+    /** 是否启用 read-through。 */
     @Override
     public boolean isReadThrough() {
         return cache.getConfiguration(CompleteConfiguration.class).isReadThrough();
     }
 
+    /** 是否启用 write-through。 */
     @Override
     public boolean isWriteThrough() {
         return cache.getConfiguration(CompleteConfiguration.class).isWriteThrough();
     }
 
+    /** 是否按值存储（非引用）。 */
     @Override
     public boolean isStoreByValue() {
         return cache.getConfiguration(CompleteConfiguration.class).isStoreByValue();
     }
 
+    /** 统计是否已启用。 */
     @Override
     public boolean isStatisticsEnabled() {
         return cache.getConfiguration(CompleteConfiguration.class).isStatisticsEnabled();
     }
 
+    /** JMX 管理是否已启用。 */
     @Override
     public boolean isManagementEnabled() {
         return cache.getConfiguration(CompleteConfiguration.class).isManagementEnabled();

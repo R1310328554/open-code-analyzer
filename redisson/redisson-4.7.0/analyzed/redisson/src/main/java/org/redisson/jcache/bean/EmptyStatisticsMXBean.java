@@ -16,40 +16,51 @@
 package org.redisson.jcache.bean;
 
 /**
- * 
+ * 统计未启用时的空实现 {@link JCacheStatisticsMXBean}。
+ * <p>
+ * 所有 add* 方法均为 no-op，避免 JCache 热路径空指针判断。
+ *
  * @author Nikita Koksharov
  *
  */
 public class EmptyStatisticsMXBean extends JCacheStatisticsMXBean {
 
+    /** 空实现：忽略驱逐计数。 */
     @Override
     public void addEvictions(long value) {
     }
     
+    /** 空实现：忽略读耗时。 */
     @Override
     public void addGetTime(long value) {
     }
     
+    /** 空实现：忽略命中。 */
     @Override
     public void addHits(long value) {
     }
     
+    /** 空实现：忽略未命中。 */
     @Override
     public void addMisses(long value) {
     }
     
+    /** 空实现：忽略写入次数。 */
     @Override
     public void addPuts(long value) {
     }
     
+    /** 空实现：忽略写耗时。 */
     @Override
     public void addPutTime(long value) {
     }
     
+    /** 空实现：忽略删除次数。 */
     @Override
     public void addRemovals(long value) {
     }
     
+    /** 空实现：忽略删耗时。 */
     @Override
     public void addRemoveTime(long value) {
     }

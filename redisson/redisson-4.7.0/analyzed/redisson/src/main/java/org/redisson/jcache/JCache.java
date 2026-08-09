@@ -57,7 +57,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * JCache implementation
+ * Redisson 对 JSR-107（JCache）规范的核心实现。
+ * <p>
+ * 底层以 Redis Hash + 超时 ZSET 存储 entry，通过 Pub/Sub 频道分发
+ * CREATED/UPDATED/REMOVED/EXPIRED 事件；支持 read/write-through、
+ * EntryProcessor、ExpiryPolicy、统计与集群同步监听器。
+ * <p>
+ * {@code atomicExecution} 为 true 时使用 Lua 原子脚本（生产模式）；
+ * TCK 模式下为 false，对单 key 加分布式锁以符合一致性测试。
  *
  * @author Nikita Koksharov
  *
@@ -66,22 +73,32 @@ import java.util.stream.Collectors;
  */
 public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAsync<K, V> {
 
+    /** TCK 未设置 agentId 时为 true，走 Lua 原子路径无需 per-key 锁。 */
     final boolean atomicExecution = System.getProperty("org.jsr107.tck.management.agentId") == null;
 
+    /** 所属 CacheManager，用于统计 Bean 与生命周期。 */
     final JCacheManager cacheManager;
+    /** 完整 JCache 配置（过期策略、监听器、Loader/Writer 等）。 */
     final JCacheConfiguration<K, V> config;
+    /** 监听器配置 → (topicListenerId → channelName) 注册表。 */
     final ConcurrentMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>> listeners = new ConcurrentHashMap<>();
+    /** 底层 Redisson 客户端（可与 Manager 共享或独立）。 */
     final Redisson redisson;
 
+    /** read-through / loadAll 使用的 CacheLoader。 */
     private CacheLoader<K, V> cacheLoader;
+    /** write-through 使用的 CacheWriter。 */
     private CacheWriter<K, V> cacheWriter;
+    /** Cache 是否已 close。 */
     private AtomicBoolean closed = new AtomicBoolean();
+    /** 是否持有独立 Redisson 实例（close 时需 shutdown）。 */
     private boolean hasOwnRedisson;
 
-    /*
-     * No locking required in atomic execution mode.
-     */
+    /* 原子执行模式下无需 per-key 分布式锁。 */
 
+    /**
+     * 构造 JCache：初始化 Loader/Writer、注册过期调度与配置中的监听器。
+     */
     JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config, boolean hasOwnRedisson) {
         super(redisson.getConfig().getCodec(), redisson.getCommandExecutor(), name);
 
@@ -107,84 +124,104 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 已 close 则抛 {@link IllegalStateException}。 */
     void checkNotClosed() {
         if (closed.get()) {
             throw new IllegalStateException();
         }
     }
 
+    /** 本 Cache 超时 ZSET 键名（hash tag 与 rawName 一致）。 */
     String getTimeoutSetName() {
         return "jcache_timeout_set:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名对应的超时 ZSET 键名。 */
     String getTimeoutSetName(String name) {
         return prefixName("jcache_timeout_set", name);
     }
 
+    /** 集群同步信号量键名，syncId 为 publish 时生成的 double。 */
     String getSyncName(Object syncId) {
         return "jcache_sync:" + syncId + ":{" + getRawName() + "}";
     }
 
+    /** CREATED 事件的同步 Pub/Sub 频道。 */
     String getCreatedSyncChannelName() {
         return "jcache_created_sync_channel:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名的 CREATED 同步频道。 */
     String getCreatedSyncChannelName(String name) {
         return prefixName("jcache_created_sync_channel", name);
     }
 
+    /** UPDATED 事件的同步 Pub/Sub 频道。 */
     String getUpdatedSyncChannelName() {
         return "jcache_updated_sync_channel:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名的 UPDATED 同步频道。 */
     String getUpdatedSyncChannelName(String name) {
         return prefixName("jcache_updated_sync_channel", name);
     }
 
+    /** REMOVED 事件的同步 Pub/Sub 频道。 */
     String getRemovedSyncChannelName() {
         return "jcache_removed_sync_channel:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名的 REMOVED 同步频道。 */
     String getRemovedSyncChannelName(String name) {
         return prefixName("jcache_removed_sync_channel", name);
     }
 
+    /** CREATED 事件异步 Pub/Sub 频道。 */
     String getCreatedChannelName() {
         return "jcache_created_channel:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名的 CREATED 频道。 */
     String getCreatedChannelName(String name) {
         return prefixName("jcache_created_channel", name);
     }
 
+    /** UPDATED 事件 Pub/Sub 频道。 */
     String getUpdatedChannelName() {
         return "jcache_updated_channel:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名的 UPDATED 频道。 */
     String getUpdatedChannelName(String name) {
         return prefixName("jcache_updated_channel", name);
     }
 
+    /** EXPIRED 事件 Pub/Sub 频道（由 EvictionTask 发布）。 */
     String getExpiredChannelName() {
         return "jcache_expired_channel:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名的 REMOVED 频道。 */
     String getRemovedChannelName(String name) {
         return prefixName("jcache_removed_channel", name);
     }
 
+    /** REMOVED 事件 Pub/Sub 频道。 */
     String getRemovedChannelName() {
         return "jcache_removed_channel:{" + getRawName() + "}";
     }
 
+    /** Redis 计数器：需要 oldValue 的 UPDATE 监听器数量。 */
     String getOldValueListenerCounter() {
         return "jcache_old_value_listeners:{" + getRawName() + "}";
     }
 
+    /** 指定 hash 名的 oldValue 监听器计数键。 */
     String getOldValueListenerCounter(String name) {
         return prefixName("jcache_old_value_listeners", name);
     }
 
+    /** 统计启用时返回 {@link System#nanoTime()}，否则 0。 */
     long currentNanoTime() {
         if (config.isStatisticsEnabled()) {
             return System.nanoTime();
@@ -192,12 +229,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return 0;
     }
 
+    /** JCache 规范：key 不可为 null。 */
     void checkKey(Object key) {
         if (key == null) {
             throw new NullPointerException();
         }
     }
 
+    /** 将底层异常包装为 {@link CacheException} 的 CompletionStage 处理器。 */
     <V> CompletionStage<V> handleException(CompletionStage<V> f) {
         return f.handle((r, e) -> {
             if (e != null) {
@@ -213,6 +252,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         });
     }
 
+    /** 阻塞等待 {@link RFuture} 并解包 cause 为 RuntimeException。 */
     <V> V sync(RFuture<V> result) {
         try {
             return result.toCompletableFuture().join();
@@ -224,6 +264,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步 get：加 per-key 锁后委托 {@link #getAsync}。 */
     @Override
     public V get(K key) {
         RLock lock = getLockedLock(key);
@@ -235,6 +276,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /**
+     * 异步 get：命中更新统计；miss 且 read-through 时异步 loadValue。
+     * atomic 模式走 {@link #getValue}，否则 {@link #getValueLocked}。
+     */
     @Override
     public RFuture<V> getAsync(K key) {
         checkNotClosed();
@@ -280,6 +325,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** TCK 模式：Lua 读 value 并处理 access 过期/刷新，必要时 waitSync。 */
     V getValueLocked(K key) {
 
         V value = evalWrite(getRawName(), codec, RedisCommands.EVAL_MAP_VALUE,
@@ -333,6 +379,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return value;
     }
 
+    /** 原子模式：异步 Lua 读取 entry，按 ExpiryPolicy 处理 access 超时。 */
     RFuture<V> getValue(K key) {
         Long accessTimeout = getAccessTimeout();
 
@@ -380,6 +427,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
              accessTimeout, System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    /** 根据 ExpiryPolicy 计算 access 过期时间戳；无策略或永不过期为 -1。 */
     Long getAccessTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForAccess() == null) {
             return -1L;
@@ -394,10 +442,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return accessTimeout;
     }
 
+    /** 以当前时间为基准的 access 超时时间戳。 */
     Long getAccessTimeout() {
         return getAccessTimeout(System.currentTimeMillis());
     }
 
+    /** 批量 CacheLoader.loadAll 并 putAll，更新 get 统计。 */
     Map<K, V> loadValues(Iterable<? extends K> keys) {
         Map<K, V> loaded;
         try {
@@ -418,6 +468,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return loaded;
     }
 
+    /** read-through：CacheLoader.load 单 key 并写入 Cache。 */
     V loadValue(K key) {
         V value = null;
         try {
@@ -437,6 +488,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return value;
     }
 
+    /** 同步 write 命令封装，异常转为 CacheException。 */
     <T, R> R write(String key, RedisCommand<T> command, Object... params) {
         RFuture<R> future = commandExecutor.writeAsync(key, command, params);
         try {
@@ -446,6 +498,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步 evalWrite Lua 脚本。 */
     <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         try {
@@ -455,6 +508,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步 evalRead Lua 脚本。 */
     <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalReadAsync(key, codec, evalCommandType, script, keys, params);
         try {
@@ -464,6 +518,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** TCK 模式：Lua 写入/更新 entry，发布事件并 waitSync。 */
     private boolean putValueLocked(K key, Object value) {
         double syncId = ThreadLocalRandom.current().nextDouble();
 
@@ -557,6 +612,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     }
 
 
+    /** 原子模式批量 put，返回新增/更新计数。 */
     RFuture<Long> putAllValues(Map<? extends K, ? extends V> map) {
         double syncId = ThreadLocalRandom.current().nextDouble();
         RFuture<List<Object>> res = putAllOperation(commandExecutor, syncId, null, getRawName(), map);
@@ -565,6 +621,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
+    /** 解析 putAll Lua 结果并在有 sync 时 acquire 信号量。 */
     RFuture<Long> handlePutAllResult(double syncId, CompletionStage<List<Object>> res) {
         if (atomicExecution) {
             CompletionStage<Long> f = res.thenCompose(r -> {
@@ -599,6 +656,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** putAll 核心 Lua：逐 key 判断存在/过期并 hset/zadd/发布事件。 */
     RFuture<List<Object>> putAllOperation(CommandAsyncExecutor commandExecutor, double syncId,
                                           MasterSlaveEntry msEntry, String name, Map<? extends K, ? extends V> map) {
         Long creationTimeout = getCreationTimeout();
@@ -702,6 +760,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     params.toArray());
     }
 
+    /** 原子模式单 key put，返回是否实际写入（非仅 touch）。 */
     RFuture<Boolean> putValue(K key, Object value) {
         double syncId = ThreadLocalRandom.current().nextDouble();
         Long creationTimeout = getCreationTimeout();
@@ -788,6 +847,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
+    /** 异步等待同步监听器 ack（RSemaphore acquire）。 */
     RFuture<Boolean> waitSync(double syncId, RFuture<List<Object>> res) {
         if (atomicExecution) {
             CompletionStage<Boolean> f = res.thenCompose(r -> {
@@ -818,6 +878,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 计算 update 过期时间戳。 */
     Long getUpdateTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForUpdate() == null) {
             return -1L;
@@ -832,10 +893,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return updateTimeout;
     }
 
+    /** 当前时刻的 update 过期时间戳。 */
     Long getUpdateTimeout() {
         return getUpdateTimeout(System.currentTimeMillis());
     }
 
+    /** 计算 creation 过期时间戳；零时长映射为 0。 */
     Long getCreationTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForCreation() == null) {
             return -1L;
@@ -849,10 +912,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return creationTimeout;
     }
 
+    /** 当前时刻的 creation 过期时间戳。 */
     Long getCreationTimeout() {
         return getCreationTimeout(System.currentTimeMillis());
     }
 
+    /** 原子模式 putIfAbsent Lua。 */
     RFuture<Boolean> putIfAbsentValue(K key, Object value) {
         Long creationTimeout = getCreationTimeout();
         if (creationTimeout == 0) {
@@ -886,6 +951,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
              creationTimeout, encodeMapKey(key), encodeMapValue(value), System.currentTimeMillis());
     }
 
+    /** TCK 模式 putIfAbsent。 */
     private boolean putIfAbsentValueLocked(K key, Object value) {
         if (containsKey(key)) {
             return false;
@@ -912,6 +978,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
              creationTimeout, encodeMapKey(key), encodeMapValue(value));
     }
 
+    /**  per-key 分布式锁 Redis 键名（hash128 + rawName）。 */
     private String getLockName(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         try {
@@ -921,6 +988,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步 getAll：非 atomic 且无 read-through 时可短路空结果。 */
     @Override
     public Map<K, V> getAll(Set<? extends K> keys) {
         checkNotClosed();
@@ -950,6 +1018,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return sync(result);
     }
 
+    /** 异步 hmget + 过期过滤；miss 键可 read-through 批量加载。 */
     @Override
     public RFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) {
         checkNotClosed();
@@ -966,6 +1035,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return handleGetAllResult(startTime, res);
     }
 
+    /** getAll Lua：分批 hmget、过期判定与 access 刷新/删除。 */
     RFuture<Map<K, V>> getAllOperation(CommandAsyncExecutor commandExecutor, String name, MasterSlaveEntry entry, List<Object> keys, Long accessTimeout, List<Object> args) {
         String script;
         if (accessTimeout == -1) {
@@ -1046,6 +1116,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                     script, Arrays.asList(name, getTimeoutSetName(name), getRemovedChannelName(name)), args.toArray());
     }
 
+    /** 汇总 getAll 结果、统计 hit/miss 并触发 read-through。 */
     RFuture<Map<K, V>> handleGetAllResult(long startTime, RFuture<Map<K, V>> res) {
         CompletableFuture<Map<K, V>> result = new CompletableFuture<>();
         res.whenComplete((r, ex) -> {
@@ -1088,12 +1159,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 同步 containsKey。 */
     @Override
     public boolean containsKey(K key) {
         RFuture<Boolean> future = containsKeyAsync(key);
         return sync(future);
     }
 
+    /** 异步 hexists + 过期 ZSCORE 检查。 */
     @Override
     public RFuture<Boolean> containsKeyAsync(K key) {
         checkNotClosed();
@@ -1116,6 +1189,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(future);
     }
 
+    /**
+     * 异步批量 load：对每个 key 加锁，不存在或 replace 时 CacheLoader.load。
+     * 完成后回调 completionListener。
+     */
     @Override
     @SuppressWarnings("NestedTryDepth")
     public void loadAll(final Set<? extends K> keys, final boolean replaceExistingValues, final CompletionListener completionListener) {
@@ -1173,11 +1250,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         });
     }
 
+    /** atomic 模式返回 DUMMY_LOCK；否则对 key 加 Redisson 锁。 */
     RLock getLockedLock(K key) {
         if (atomicExecution) {
-            /*
-             * No locking is required in atomic execution mode.
-             */
+            /* 原子模式下无需加锁。 */
             return ServiceManager.DUMMY_LOCK;
         }
 
@@ -1191,6 +1267,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return lock;
     }
 
+    /** 异步 put：区分 write-through（getAndPut + CacheWriter）与普通 put。 */
     @Override
     public RFuture<Void> putAsync(K key, V value) {
         checkNotClosed();
@@ -1258,6 +1335,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** write-through 回调：调用 CacheWriter.write/delete，失败时回滚 Redis。 */
     private CompletableFuture<Void> writeCache(K key, V value, long startTime, List<Object> res, Long added) {
         Runnable r;
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -1312,12 +1390,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
+    /** 同步 put。 */
     @Override
     public void put(K key, V value) {
         RFuture<Void> future = putAsync(key, value);
         sync(future);
     }
 
+    /** 批量删除 key 并发布 REMOVED 事件，返回实际删除数。 */
     RFuture<Long> removeValues(Object... keys) {
         List<Object> params = new ArrayList<>(keys.length + 1);
         params.add(System.currentTimeMillis());
@@ -1325,6 +1405,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return removeValuesOperation(commandExecutor, getRawName(), null, params, null);
     }
 
+    /** removeValues 的 Lua 实现。 */
     RFuture<Long> removeValuesOperation(CommandAsyncExecutor commandExecutor, String name, MasterSlaveEntry entry, List<Object> params, Object[] keys) {
         String script = "local counter = 0;"
                         + "for i=2, #ARGV do "
@@ -1355,6 +1436,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 params.toArray());
     }
 
+    /** TCK 模式 getAndPut（write-through 路径）。 */
     private List<Object> getAndPutValueLocked(K key, V value) {
         double syncId = ThreadLocalRandom.current().nextDouble();
         if (containsKey(key)) {
@@ -1437,6 +1519,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
+    /** 原子模式 getAndPut Lua，返回 {added, oldValue?, syncs}。 */
     CompletionStage<List<Object>> getAndPutValue(K key, V value) {
         Long creationTimeout = getCreationTimeout();
 
@@ -1518,12 +1601,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         });
     }
 
+    /** 同步 getAndPut。 */
     @Override
     public V getAndPut(K key, V value) {
         RFuture<V> future = getAndPutAsync(key, value);
         return sync(future);
     }
 
+    /** 异步 getAndPut，含 write-through 与统计。 */
     @Override
     public RFuture<V> getAndPutAsync(K key, V value) {
         checkNotClosed();
@@ -1596,6 +1681,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 从 getAndPut Lua 结果提取旧值并更新 hit/miss/put 统计。 */
     private V getAndPutResult(long startTime, List<Object> result) {
         if (result.size() != 4) {
             cacheManager.getStatBean(this).addPuts(1);
@@ -1611,12 +1697,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return (V) result.get(1);
     }
 
+    /** 同步 putAll。 */
     @Override
     public void putAll(Map<? extends K, ? extends V> map) {
         RFuture<Void> result = putAllAsync(map);
         sync(result);
     }
 
+    /** 异步 putAll，write-through 时对每个 entry 调 writer。 */
     @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) {
         checkNotClosed();
@@ -1688,6 +1776,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** TCK 同步模式：阻塞 acquire 信号量直至监听器处理完毕。 */
     void waitSync(List<Object> result) {
         if (result.size() < 2) {
             return;
@@ -1706,12 +1795,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步 putIfAbsent。 */
     @Override
     public boolean putIfAbsent(K key, V value) {
         RFuture<Boolean> result = putIfAbsentAsync(key, value);
         return sync(result);
     }
 
+    /** 异步 putIfAbsent。 */
     @Override
     public RFuture<Boolean> putIfAbsentAsync(K key, V value) {
         checkNotClosed();
@@ -1763,6 +1854,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 将异常包装为 CacheWriterException 或 CacheException 完成 Future。 */
     void handleException(CompletableFuture<?> result, Exception e) {
         if (e instanceof CacheWriterException) {
             result.completeExceptionally(e);
@@ -1800,12 +1892,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
+    /** 同步 remove。 */
     @Override
     public boolean remove(K key) {
         RFuture<Boolean> future = removeAsync(key);
         return sync(future);
     }
 
+    /** 异步 remove；write-through 时 getAndRemove 后调 CacheWriter.delete。 */
     @Override
     public RFuture<Boolean> removeAsync(K key) {
         checkNotClosed();
@@ -1873,6 +1967,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** TCK 模式条件 remove（value 匹配）。 */
     private boolean removeValueLocked(K key, V value) {
 
         Boolean result = evalWrite(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -1919,6 +2014,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return result;
     }
 
+    /** 原子模式条件 remove Lua。 */
     RFuture<Boolean> removeValue(K key, V value) {
         Long accessTimeout = getAccessTimeout();
 
@@ -1956,12 +2052,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     }
 
 
+    /** 同步条件 remove。 */
     @Override
     public boolean remove(K key, V value) {
         RFuture<Boolean> future = removeAsync(key, value);
         return sync(future);
     }
 
+    /** 异步条件 remove。 */
     @Override
     public RFuture<Boolean> removeAsync(K key, V value) {
         checkNotClosed();
@@ -2061,6 +2159,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 批量 getAndRemove，返回 key→旧值映射。 */
     CompletionStage<Map<K, V>> getAndRemoveValues(Collection<K> keys) {
         double syncId = ThreadLocalRandom.current().nextDouble();
 
@@ -2108,6 +2207,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 批量 getAndRemove Lua。 */
     RFuture<List<Object>> getAndRemoveValuesOperation(CommandAsyncExecutor commandExecutor, MasterSlaveEntry entry, String name, Collection<Object> keys, double syncId) {
         List<Object> params = new ArrayList<>();
         params.add(System.currentTimeMillis());
@@ -2161,12 +2261,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 params.toArray());
     }
 
+    /** 解析批量 getAndRemove 的 Lua 返回列表为 Map。 */
     private CompletionStage<Map<K, V>> getAndRemoveValuesResult(Collection<K> keys, List<Object> r, long nullsAmount) {
         Map<K, V> res = new HashMap<>();
         fillMap(keys, r, res, nullsAmount, 0);
         return CompletableFuture.completedFuture(res);
     }
 
+    /** 按 null 索引列表将 Lua 结果填充为 key→value Map。 */
     void fillMap(Collection<K> keys, List<Object> r, Map<K, V> res, long nullsAmount, int baseIndex) {
         List<Long> list = (List<Long>) (Object) r.subList(baseIndex + 2, baseIndex + (int) nullsAmount + 2);
         HashSet<Long> nullIndexes = new HashSet<>(list);
@@ -2181,6 +2283,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 单 key getAndRemove Lua。 */
     CompletionStage<V> getAndRemoveValue(K key) {
         double syncId = ThreadLocalRandom.current().nextDouble();
 
@@ -2244,12 +2347,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步 getAndRemove。 */
     @Override
     public V getAndRemove(K key) {
         RFuture<V> future = getAndRemoveAsync(key);
         return sync(future);
     }
 
+    /** 异步 getAndRemove。 */
     @Override
     public RFuture<V> getAndRemoveAsync(K key) {
         checkNotClosed();
@@ -2301,6 +2406,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** TCK 模式 compare-and-replace（oldValue 匹配）。 */
     private long replaceValueLocked(K key, V oldValue, V newValue) {
         Long res = evalWrite(getRawName(), codec, RedisCommands.EVAL_LONG,
                 "local value = redis.call('hget', KEYS[1], ARGV[4]); "
@@ -2460,12 +2566,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
     }
 
+    /** 同步 CAS replace。 */
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
         RFuture<Boolean> future = replaceAsync(key, oldValue, newValue);
         return sync(future);
     }
 
+    /** 异步 CAS replace。 */
     @Override
     public RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue) {
         checkNotClosed();
@@ -2536,6 +2644,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** TCK 模式 replace（仅当 key 存在）。 */
     private boolean replaceValueLocked(K key, V value) {
 
         if (containsKey(key)) {
@@ -2693,6 +2802,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
     }
 
+    /** TCK 模式 getAndReplace。 */
     private V getAndReplaceValueLocked(K key, V value) {
         V oldValue = evalWrite(getRawName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
@@ -2763,30 +2873,35 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return oldValue;
     }
 
+    /** 注册需要 oldValue 的 UPDATE 监听器时递增 Redis 计数。 */
     void incrementOldValueListenerCounter(String counterName) {
         evalWrite(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('incr', KEYS[1]);",
                 Arrays.<Object>asList(counterName));
     }
 
+    /** 注销 UPDATE 监听器时递减计数。 */
     private void decrementOldValueListenerCounter(String counterName) {
         evalWrite(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "return redis.call('decr', KEYS[1]);",
                 Arrays.<Object>asList(counterName));
     }
 
+    /** 读取 oldValue 监听器计数。 */
     private Integer getOldValueListenerCount(String counterName) {
         return evalWrite(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "return tonumber(redis.call('get', KEYS[1]));",
                 Arrays.<Object>asList(counterName));
     }
 
+    /** 同步 replace（key 必须存在）。 */
     @Override
     public boolean replace(K key, V value) {
         RFuture<Boolean> future = replaceAsync(key, value);
         return sync(future);
     }
 
+    /** 异步 replace。 */
     @Override
     public RFuture<Boolean> replaceAsync(K key, V value) {
         checkNotClosed();
@@ -2847,12 +2962,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 同步 getAndReplace。 */
     @Override
     public V getAndReplace(K key, V value) {
         RFuture<V> future = getAndReplaceAsync(key, value);
         return sync(future);
     }
 
+    /** 异步 getAndReplace。 */
     @Override
     public RFuture<V> getAndReplaceAsync(K key, V value) {
         checkNotClosed();
@@ -2913,12 +3030,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 同步批量 remove。 */
     @Override
     public void removeAll(Set<? extends K> keys) {
         RFuture<Void> future = removeAllAsync(keys);
         sync(future);
     }
 
+    /** 异步批量 remove。 */
     @Override
     public RFuture<Void> removeAllAsync(Set<? extends K> keys) {
         checkNotClosed();
@@ -2991,6 +3110,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         };
     }
 
+    /** 通过迭代器分批 removeAll（每批 50 key）。 */
     @Override
     public void removeAll() {
         checkNotClosed();
@@ -3009,17 +3129,20 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步 clear：删除 hash 与 timeout ZSET。 */
     @Override
     public void clear() {
         RFuture<Void> future = clearAsync();
         sync(future);
     }
 
+    /** 异步 DEL hash 与 timeout 键。 */
     @Override
     public RFuture<Void> clearAsync() {
         return clearAsync(commandExecutor, null, getRawName());
     }
 
+    /** clear 底层 write DEL。 */
     RFuture<Void> clearAsync(CommandAsyncExecutor commandExecutor, MasterSlaveEntry entry, String name) {
         checkNotClosed();
         if (entry == null) {
@@ -3028,6 +3151,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return commandExecutor.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.DEL_VOID, name, getTimeoutSetName(name));
     }
 
+    /** 返回 {@link JCacheConfiguration} 实例。 */
     @Override
     public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
         if (clazz.isInstance(config)) {
@@ -3037,6 +3161,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         throw new IllegalArgumentException("Configuration object is not an instance of " + clazz);
     }
 
+    /**
+     * 在 key 上加锁执行 EntryProcessor；按 {@link JMutableEntry.Action} 提交 put/remove。
+     */
     @Override
     public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments)
             throws EntryProcessorException {
@@ -3076,6 +3203,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 对每个 key 依次 invoke，收集结果或 EntryProcessorException。 */
     @Override
     public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys, EntryProcessor<K, V, T> entryProcessor,
             Object... arguments) {
@@ -3101,16 +3229,19 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return results;
     }
 
+    /** 返回所属 JCacheManager。 */
     @Override
     public CacheManager getCacheManager() {
         checkNotClosed();
         return cacheManager;
     }
 
+    /** 委托 Manager 的 URI。 */
     URI getURI() {
         return cacheManager.getURI();
     }
 
+    /** 关闭 Cache：注销监听器、Eviction 任务，独立 Redisson 时 shutdown。 */
     @Override
     public void close() {
         if (isClosed()) {
@@ -3129,11 +3260,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 是否已 close。 */
     @Override
     public boolean isClosed() {
         return closed.get();
     }
 
+    /** 支持 unwrap 为 JCache、CacheAsync、CacheReactive、CacheRx。 */
     @Override
     public <T> T unwrap(Class<T> clazz) {
         if (clazz.isAssignableFrom(getClass())) {
@@ -3151,13 +3284,19 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return null;
     }
 
+    /** 注册监听器并写入配置。 */
     @Override
     public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
         registerCacheEntryListener(cacheEntryListenerConfiguration, true);
     }
 
+    /** Redis 服务器 OS 类型，用于 JCacheEventCodec struct 打包。 */
     JCacheEventCodec.OSType osType;
 
+    /**
+     * 按监听器类型订阅 CREATED/UPDATED/REMOVED/EXPIRED 频道；
+     * 同步监听器使用 *_sync_channel，UPDATE+oldValue 时递增计数器。
+     */
     void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration, boolean addToConfig) {
         if (osType == null) {
             RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
@@ -3273,6 +3412,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 同步监听器处理完成后 release 信号量通知写端继续。 */
     void sendSync(boolean sync, List<Object> msg) {
         if (sync) {
             Object syncId = msg.get(msg.size() - 1);
@@ -3281,6 +3421,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
     }
 
+    /** 取消 topic 订阅并更新 oldValue 计数与配置。 */
     @Override
     public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
         Map<Integer, String> listenerIds = listeners.remove(cacheEntryListenerConfiguration);
@@ -3301,6 +3442,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         config.removeCacheEntryListenerConfiguration(cacheEntryListenerConfiguration);
     }
 
+    /**
+     * HSCAN 迭代 entry；命中计统计，按 access 策略刷新或删除。
+     * 迭代 Entry 不支持 setValue。
+     */
     @Override
     public Iterator<Entry<K, V>> iterator() {
         checkNotClosed();

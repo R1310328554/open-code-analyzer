@@ -26,12 +26,17 @@ import javax.management.NotificationListener;
 
 
 /**
- * 
+ * JSR-107 TCK 兼容的 {@link MBeanServerBuilder}。
+ * <p>
+ * 包装 {@link MBeanServerDelegate}，使 {@link #getMBeanServerId()} 返回
+ * TCK 要求的 {@code org.jsr107.tck.management.agentId} 系统属性。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class JCacheMBeanServerBuilder extends MBeanServerBuilder {
 
+    /** 创建带 TCK 兼容 Delegate 的 MBeanServer。 */
     @Override
     public MBeanServer newMBeanServer(String defaultDomain, MBeanServer outer,
                                       MBeanServerDelegate delegate) {
@@ -40,10 +45,13 @@ public final class JCacheMBeanServerBuilder extends MBeanServerBuilder {
         return builder.newMBeanServer(defaultDomain, outer, wrappedDelegate);
     }
 
+    /** 委托包装：除 MBeanServerId 外均转发至原始 delegate。 */
     public final class JCacheMBeanServerDelegate extends MBeanServerDelegate {
 
+        /** 被包装的平台 MBeanServerDelegate。 */
         private final MBeanServerDelegate delegate;
 
+        /** 构造 TCK 用 Delegate 包装器。 */
         public JCacheMBeanServerDelegate(MBeanServerDelegate delegate) {
             this.delegate = delegate;
         }
@@ -111,6 +119,7 @@ public final class JCacheMBeanServerBuilder extends MBeanServerBuilder {
             delegate.sendNotification(notification);
         }
 
+        /** TCK 要求从系统属性读取 agentId 作为 ServerId。 */
         @Override
         public synchronized String getMBeanServerId() {
             return System.getProperty("org.jsr107.tck.management.agentId");

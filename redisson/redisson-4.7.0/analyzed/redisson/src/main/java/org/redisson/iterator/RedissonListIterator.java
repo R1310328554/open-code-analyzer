@@ -19,6 +19,10 @@ import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
 /**
+ * Redisson List 的 {@link ListIterator} 实现。
+ * <p>
+ * 通过 {@link #getValue(int)} 等抽象方法访问远程 List；
+ * 维护当前索引与 last-return 状态，支持 next/previous/set/add/remove。
  *
  * @author Nikita Koksharov
  *
@@ -26,24 +30,35 @@ import java.util.NoSuchElementException;
  */
 public abstract class RedissonListIterator<V> implements ListIterator<V> {
 
+    /** 缓存 {@link #hasPrevious()} 预取的上一元素。 */
     private V prevCurrentValue;
+    /** 缓存 {@link #hasNext()} 预取的下一元素。 */
     private V nextCurrentValue;
+    /** 最近一次 next/previous 返回的元素，供 remove/set 使用。 */
     private V currentValueHasRead;
+    /** 当前迭代位置（nextIndex - 1）。 */
     private int currentIndex;
+    /** 为 true 表示结构已变，禁止 set；remove 后也会置 true。 */
     private boolean hasBeenModified = true;
 
+    /** @param startIndex 起始 nextIndex（构造时 currentIndex = startIndex - 1） */
     public RedissonListIterator(int startIndex) {
         currentIndex = startIndex - 1;
     }
 
+    /** 读取指定下标元素；不存在时返回 null。 */
     public abstract V getValue(int index);
 
+    /** 删除指定下标元素并返回被删值。 */
     public abstract V remove(int index);
 
+    /** 原地替换指定下标元素（不移动其他元素）。 */
     public abstract void fastSet(int index, V value);
 
+    /** 在指定下标插入元素。 */
     public abstract void add(int index, V value);
 
+    /** 预取并缓存 index+1 处元素，判断是否存在下一项。 */
     @Override
     public boolean hasNext() {
         V val = getValue(currentIndex + 1);
@@ -53,6 +68,7 @@ public abstract class RedissonListIterator<V> implements ListIterator<V> {
         return val != null;
     }
 
+    /** 前进一位并返回当前元素；无元素时抛 {@link NoSuchElementException}。 */
     @Override
     public V next() {
         if (nextCurrentValue == null && !hasNext()) {
@@ -65,6 +81,7 @@ public abstract class RedissonListIterator<V> implements ListIterator<V> {
         return currentValueHasRead;
     }
 
+    /** 删除最近一次 next/previous 返回的元素。 */
     @Override
     public void remove() {
         if (currentValueHasRead == null) {
@@ -79,6 +96,7 @@ public abstract class RedissonListIterator<V> implements ListIterator<V> {
         currentValueHasRead = null;
     }
 
+    /** 预取 currentIndex 处元素，判断是否存在上一项。 */
     @Override
     public boolean hasPrevious() {
         if (currentIndex < 0) {
@@ -91,6 +109,7 @@ public abstract class RedissonListIterator<V> implements ListIterator<V> {
         return val != null;
     }
 
+    /** 后退一位并返回元素。 */
     @Override
     public V previous() {
         if (prevCurrentValue == null && !hasPrevious()) {
@@ -103,16 +122,19 @@ public abstract class RedissonListIterator<V> implements ListIterator<V> {
         return currentValueHasRead;
     }
 
+    /** 下一元素的 List 下标。 */
     @Override
     public int nextIndex() {
         return currentIndex + 1;
     }
 
+    /** 上一元素的 List 下标。 */
     @Override
     public int previousIndex() {
         return currentIndex;
     }
 
+    /** 替换最近一次 next/previous 返回的元素。 */
     @Override
     public void set(V e) {
         if (hasBeenModified) {
@@ -122,6 +144,7 @@ public abstract class RedissonListIterator<V> implements ListIterator<V> {
         fastSet(currentIndex, e);
     }
 
+    /** 在当前位置之后插入元素并前进索引。 */
     @Override
     public void add(V e) {
         add(currentIndex + 1, e);

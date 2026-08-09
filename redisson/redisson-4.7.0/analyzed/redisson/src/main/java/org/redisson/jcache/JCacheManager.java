@@ -39,27 +39,43 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 
+ * Redisson 实现的 JSR-107 {@link CacheManager}。
+ * <p>
+ * 管理命名 {@link JCache} 实例的生命周期、统计与管理 MBean 注册，
+ * 并与 {@link JCachingProvider} 按 URI/ClassLoader 维度共享。
+ *
  * @author Nikita Koksharov
  *
  */
 public class JCacheManager implements CacheManager {
 
+    /** 统计未启用时返回的空实现 MXBean。 */
     private static final EmptyStatisticsMXBean EMPTY_INSTANCE = new EmptyStatisticsMXBean();
+    /** 平台 MBeanServer，用于注册 Cache 统计与管理 Bean。 */
     private static final MBeanServer MBEAN_SERVER = ManagementFactory.getPlatformMBeanServer();
     
+    /** 关联的 ClassLoader（Provider 缓存键之一）。 */
     private final ClassLoader classLoader;
+    /** 创建本 Manager 的 CachingProvider。 */
     private final CachingProvider cacheProvider;
+    /** 创建 Manager 时传入的属性副本。 */
     private final Properties properties;
+    /** Manager 的配置 URI。 */
     private final URI uri;
+    /** cacheName → Cache 实例注册表。 */
     private final ConcurrentMap<String, Cache<?, ?>> caches = new ConcurrentHashMap<>();
+    /** 已注册统计 MBean 的 Cache → StatisticsMXBean。 */
     private final ConcurrentMap<Cache<?, ?>, JCacheStatisticsMXBean> statBeans = new ConcurrentHashMap<>();
+    /** 已注册管理 MBean 的 Cache → ManagementMXBean。 */
     private final ConcurrentMap<Cache<?, ?>, JCacheManagementMXBean> managementBeans = new ConcurrentHashMap<>();
     
+    /** Manager 是否已关闭。 */
     private final AtomicBoolean closed = new AtomicBoolean();
     
+    /** 共享或默认的 Redisson 客户端。 */
     private final Redisson redisson;
     
+    /** 包内构造：由 {@link JCachingProvider} 创建 Manager 实例。 */
     JCacheManager(Redisson redisson, ClassLoader classLoader, CachingProvider cacheProvider, Properties properties, URI uri) {
         super();
         this.classLoader = classLoader;
@@ -89,12 +105,17 @@ public class JCacheManager implements CacheManager {
         return properties;
     }
 
+    /** 已关闭则抛 {@link IllegalStateException}。 */
     private void checkNotClosed() {
         if (closed.get()) {
             throw new IllegalStateException();
         }
     }
     
+    /**
+     * 创建并注册命名 Cache；同名已存在则抛 {@link CacheException}。
+     * 支持 {@link RedissonConfiguration} 指定独立 Redisson 实例。
+     */
     @Override
     public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C configuration)
             throws IllegalArgumentException {
@@ -138,6 +159,7 @@ public class JCacheManager implements CacheManager {
         return cache;
     }
 
+    /** 按名称与键值类型获取 Cache，类型不匹配抛 {@link ClassCastException}。 */
     @Override
     public <K, V> Cache<K, V> getCache(String cacheName, Class<K> keyType, Class<V> valueType) {
         checkNotClosed();
@@ -165,6 +187,7 @@ public class JCacheManager implements CacheManager {
         return (Cache<K, V>) cache;
     }
 
+    /** 以 Object 键值类型获取 Cache（需配置允许 Object）。 */
     @Override
     public <K, V> Cache<K, V> getCache(String cacheName) {
         checkNotClosed();
@@ -180,11 +203,13 @@ public class JCacheManager implements CacheManager {
         return cache;
     }
 
+    /** 返回已创建 Cache 名称的不可变视图。 */
     @Override
     public Iterable<String> getCacheNames() {
         return Collections.unmodifiableSet(new HashSet<>(caches.keySet()));
     }
 
+    /** 清空并关闭指定 Cache（仍保留名称槽位直至 closeCache）。 */
     @Override
     public void destroyCache(String cacheName) {
         checkNotClosed();
@@ -199,12 +224,14 @@ public class JCacheManager implements CacheManager {
         }
     }
     
+    /** Cache.close 时从注册表移除并注销 MBean。 */
     public void closeCache(JCache<?, ?> cache) {
         caches.remove(cache.getName());
         unregisterStatisticsBean(cache);
         unregisterManagementBean(cache);
     }
 
+    /** 注册或注销 Cache 的 Configuration MBean。 */
     @Override
     public void enableManagement(String cacheName, boolean enabled) {
         checkNotClosed();
@@ -246,11 +273,13 @@ public class JCacheManager implements CacheManager {
         cache.getConfiguration(JCacheConfiguration.class).setManagementEnabled(enabled);
     }
 
+    /** 构造 javax.cache 规范 ObjectName（Statistics 或 Configuration）。 */
     private ObjectName queryNames(String baseName, Cache<?, ?> cache) throws MalformedObjectNameException {
         String name = getName(baseName, cache);
         return new ObjectName(name);
     }
 
+    /** 从 MBeanServer 注销管理 Bean 并移除本地映射。 */
     private void unregisterManagementBean(Cache<?, ?> cache) {
         JCacheManagementMXBean statBean = managementBeans.remove(cache);
         if (statBean != null) {
@@ -269,6 +298,7 @@ public class JCacheManager implements CacheManager {
         }
     }
 
+    /** 返回 Cache 的统计 Bean；未启用时返回 {@link EmptyStatisticsMXBean}。 */
     public JCacheStatisticsMXBean getStatBean(JCache<?, ?> cache) {
         JCacheStatisticsMXBean bean = statBeans.get(cache);
         if (bean != null) {
@@ -277,12 +307,14 @@ public class JCacheManager implements CacheManager {
         return EMPTY_INSTANCE;
     }
     
+    /** 生成 MBean ObjectName 字符串（转义 URI 与 cacheName 特殊字符）。 */
     private String getName(String name, Cache<?, ?> cache) {
         return "javax.cache:type=Cache" + name + ",CacheManager="
                 + getURI().toString().replaceAll(",|:|=|\n", ".")
                 + ",Cache=" + cache.getName().replaceAll(",|:|=|\n", ".");
     }
     
+    /** 注册或注销 Cache 的 Statistics MBean。 */
     @Override
     public void enableStatistics(String cacheName, boolean enabled) {
         checkNotClosed();
@@ -324,6 +356,7 @@ public class JCacheManager implements CacheManager {
         cache.getConfiguration(JCacheConfiguration.class).setStatisticsEnabled(enabled);
     }
 
+    /** 注销统计 MBean 并移除 statBeans 条目。 */
     private void unregisterStatisticsBean(Cache<?, ?> cache) {
         JCacheStatisticsMXBean statBean = statBeans.remove(cache);
         if (statBean != null) {
@@ -342,6 +375,7 @@ public class JCacheManager implements CacheManager {
         }
     }
 
+    /** 关闭所有 Cache、Provider 关联与 Redisson（仅一次）。 */
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
@@ -352,7 +386,7 @@ public class JCacheManager implements CacheManager {
                 try {
                     cache.close();
                 } catch (Exception e) {
-                    // skip
+                    // 单个 Cache 关闭失败时忽略，继续关闭其余
                 }
             }
             if (redisson != null) {
@@ -361,11 +395,13 @@ public class JCacheManager implements CacheManager {
         }
     }
 
+    /** 是否已调用 close。 */
     @Override
     public boolean isClosed() {
         return closed.get();
     }
 
+    /**  unwrap 为 {@link JCacheManager} 本身。 */
     @Override
     public <T> T unwrap(Class<T> clazz) {
         if (clazz.isAssignableFrom(getClass())) {

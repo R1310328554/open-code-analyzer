@@ -18,7 +18,10 @@ package org.redisson.jcache;
 import javax.cache.Cache;
 
 /**
- * 
+ * JSR-107 {@link Cache.Entry} 的简单不可变实现。
+ * <p>
+ * 用于迭代器与批量操作返回键值对快照。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key
@@ -26,25 +29,31 @@ import javax.cache.Cache;
  */
 public class JCacheEntry<K, V> implements Cache.Entry<K, V> {
 
+    /** 缓存键。 */
     private final K key;
+    /** 缓存值。 */
     private final V value;
     
+    /** 构造只读 Entry 快照。 */
     public JCacheEntry(K key, V value) {
         super();
         this.key = key;
         this.value = value;
     }
 
+    /** 返回键。 */
     @Override
     public K getKey() {
         return key;
     }
 
+    /** 返回值。 */
     @Override
     public V getValue() {
         return value;
     }
 
+    /** 若 clazz 可赋值给本类则 cast，否则返回 null。 */
     @Override
     public <T> T unwrap(Class<T> clazz) {
         if (clazz.isAssignableFrom(getClass())) {

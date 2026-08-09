@@ -36,7 +36,11 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 
+ * Redisson 的 JSR-107 {@link CachingProvider} SPI 实现。
+ * <p>
+ * 按 {@code (ClassLoader, URI)} 缓存 {@link JCacheManager}；
+ * 默认 URI 对应 classpath 下的 {@code /redisson-jcache.yaml}。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -44,9 +48,12 @@ public class JCachingProvider implements CachingProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(JCachingProvider.class);
 
+    /** ClassLoader → (URI → CacheManager) 二级缓存。 */
     private final Map<ClassLoader, Map<URI, CacheManager>> managers = new ConcurrentHashMap<>();
     
+    /** 默认配置 URI 的 path 段。 */
     private static final String DEFAULT_URI_PATH = "jsr107-default-config";
+    /** 解析后的默认 URI 单例。 */
     private static URI defaulturi;
     
     static {
@@ -57,6 +64,10 @@ public class JCachingProvider implements CachingProvider {
         }
     }
     
+    /**
+     * 获取或创建 CacheManager：加载 YAML 配置创建 Redisson，
+     * 并发下 putIfAbsent 失败则 shutdown 多余实例。
+     */
     @Override
     public CacheManager getCacheManager(URI uri, ClassLoader classLoader, Properties properties) {
         if (uri == null) {
@@ -94,6 +105,7 @@ public class JCachingProvider implements CachingProvider {
         return manager;
     }
 
+    /** 从默认 classpath 资源或 URI 指向的 URL 加载 Redisson Config。 */
     private Config loadConfig(URI uri) {
         Config config = null;
         try {
@@ -111,36 +123,42 @@ public class JCachingProvider implements CachingProvider {
         } catch (YAMLException e) {
             throw new CacheException(e);
         } catch (IOException e) {
-            // skip
+            // IO 失败时返回 null，由调用方决定是否可无 Redisson 创建 Manager
         }
         return config;
     }
 
+    /** 默认使用 Provider 类的 ClassLoader。 */
     @Override
     public ClassLoader getDefaultClassLoader() {
         return getClass().getClassLoader();
     }
 
+    /** 返回静态默认 URI。 */
     @Override
     public URI getDefaultURI() {
         return defaulturi;
     }
 
+    /** 返回空 Properties。 */
     @Override
     public Properties getDefaultProperties() {
         return new Properties();
     }
 
+    /** 使用默认 Properties 获取 Manager。 */
     @Override
     public CacheManager getCacheManager(URI uri, ClassLoader classLoader) {
         return getCacheManager(uri, classLoader, getDefaultProperties());
     }
 
+    /** 使用默认 URI 与 ClassLoader。 */
     @Override
     public CacheManager getCacheManager() {
         return getCacheManager(getDefaultURI(), getDefaultClassLoader());
     }
 
+    /** 关闭所有 ClassLoader 下的全部 Manager。 */
     @Override
     public void close() {
         for (ClassLoader classLoader : managers.keySet()) {
@@ -148,6 +166,7 @@ public class JCachingProvider implements CachingProvider {
         }
     }
 
+    /** 关闭指定 ClassLoader 关联的全部 Manager。 */
     @Override
     public void close(ClassLoader classLoader) {
         Map<URI, CacheManager> uri2manager = managers.remove(classLoader);
@@ -160,6 +179,7 @@ public class JCachingProvider implements CachingProvider {
         }
     }
 
+    /** 关闭指定 URI 的单个 Manager。 */
     @Override
     public void close(URI uri, ClassLoader classLoader) {
         Map<URI, CacheManager> uri2manager = managers.get(classLoader);
@@ -179,7 +199,7 @@ public class JCachingProvider implements CachingProvider {
 
     @Override
     public boolean isSupported(OptionalFeature optionalFeature) {
-        // TODO implement support of store_by_reference
+        // store_by_reference 可选特性尚未实现
         return false;
     }
 

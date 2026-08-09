@@ -20,8 +20,10 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.EventType;
 
 /**
- * Entry event element passed to EventListener of JCache object
- * 
+ * 传递给 JCache 监听器的事件载体，扩展 {@link CacheEntryEvent}。
+ * <p>
+ * 支持携带变更后的 value 与可选 oldValue（UPDATE/REMOVE 等场景）。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key
@@ -31,10 +33,14 @@ public class JCacheEntryEvent<K, V> extends CacheEntryEvent<K, V> {
 
     private static final long serialVersionUID = -4601376694286796662L;
 
+    /** 事件关联的键（序列化后的 Object 存储）。 */
     private final Object key;
+    /** 事件关联的新值或当前值。 */
     private final Object value;
+    /** 变更前的旧值；无旧值时为 null。 */
     private final Object oldValue;
 
+    /** 构造不含 oldValue 的缓存条目事件。 */
     public JCacheEntryEvent(Cache<K, V> source, EventType eventType, Object key, Object value) {
         super(source, eventType);
         this.key = key;
@@ -42,6 +48,7 @@ public class JCacheEntryEvent<K, V> extends CacheEntryEvent<K, V> {
         this.oldValue = null;
     }
 
+    /** 构造含 oldValue 的缓存条目事件（如 UPDATE）。 */
     public JCacheEntryEvent(Cache<K, V> source, EventType eventType, Object key, Object value, Object oldValue) {
         super(source, eventType);
         this.key = key;
@@ -49,16 +56,19 @@ public class JCacheEntryEvent<K, V> extends CacheEntryEvent<K, V> {
         this.oldValue = oldValue;
     }
 
+    /** 返回事件键。 */
     @Override
     public K getKey() {
         return (K) key;
     }
 
+    /** 返回事件中的值。 */
     @Override
     public V getValue() {
         return (V) value;
     }
 
+    /** 类型 unwrap，支持转为 {@link JCacheEntryEvent}。 */
     @Override
     public <T> T unwrap(Class<T> clazz) {
         if (clazz.isAssignableFrom(getClass())) {
@@ -68,11 +78,13 @@ public class JCacheEntryEvent<K, V> extends CacheEntryEvent<K, V> {
         return null;
     }
 
+    /** 返回变更前的旧值。 */
     @Override
     public V getOldValue() {
         return (V) oldValue;
     }
 
+    /** 是否携带有效的 oldValue。 */
     @Override
     public boolean isOldValueAvailable() {
         return oldValue != null;
