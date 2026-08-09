@@ -29,31 +29,42 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 按消费组查询订阅关系的请求头：获取消费组对 Topic 的订阅配置。
+ * topic 可为空，表示查询该消费组全部订阅。
+ */
 @RocketMQAction(value = RequestCode.QUERY_SUBSCRIPTION_BY_CONSUMER, action = Action.GET)
 public class QuerySubscriptionByConsumerRequestHeader extends TopicRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String group;
+    /** 可选 Topic 名称，为空则返回全部订阅。 */
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回消费组名称。 */
     public String getGroup() {
         return group;
     }
 
+    /** 设置消费组名称。 */
     public void setGroup(String group) {
         this.group = group;
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }

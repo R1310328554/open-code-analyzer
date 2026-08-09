@@ -24,18 +24,25 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 查询消费位点的响应头：返回指定队列的消费进度 offset。
+ */
 public class QueryConsumerOffsetResponseHeader implements CommandCustomHeader {
+    /** 消费位点（逻辑 offset）。 */
     @CFNotNull
     private Long offset;
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回消费位点。 */
     public Long getOffset() {
         return offset;
     }
 
+    /** 设置消费位点。 */
     public void setOffset(Long offset) {
         this.offset = offset;
     }

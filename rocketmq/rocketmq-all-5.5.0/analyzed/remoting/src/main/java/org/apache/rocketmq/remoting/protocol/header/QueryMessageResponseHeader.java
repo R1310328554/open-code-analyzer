@@ -24,28 +24,39 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 按索引查询消息的响应头：返回索引文件最后更新的时间与物理 offset。
+ * 用于分页查询时判断索引是否已更新。
+ */
 public class QueryMessageResponseHeader implements CommandCustomHeader {
+    /** 索引文件最后更新时间戳（毫秒）。 */
     @CFNotNull
     private Long indexLastUpdateTimestamp;
+    /** 索引文件最后更新对应的物理 offset。 */
     @CFNotNull
     private Long indexLastUpdatePhyoffset;
 
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回索引最后更新时间戳。 */
     public Long getIndexLastUpdateTimestamp() {
         return indexLastUpdateTimestamp;
     }
 
+    /** 设置索引最后更新时间戳。 */
     public void setIndexLastUpdateTimestamp(Long indexLastUpdateTimestamp) {
         this.indexLastUpdateTimestamp = indexLastUpdateTimestamp;
     }
 
+    /** 返回索引最后更新物理 offset。 */
     public Long getIndexLastUpdatePhyoffset() {
         return indexLastUpdatePhyoffset;
     }
 
+    /** 设置索引最后更新物理 offset。 */
     public void setIndexLastUpdatePhyoffset(Long indexLastUpdatePhyoffset) {
         this.indexLastUpdatePhyoffset = indexLastUpdatePhyoffset;
     }

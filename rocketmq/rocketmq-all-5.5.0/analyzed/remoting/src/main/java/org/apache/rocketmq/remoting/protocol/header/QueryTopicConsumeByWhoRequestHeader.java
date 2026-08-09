@@ -29,21 +29,28 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.TopicRequestHeader;
 
+/**
+ * 查询 Topic 被哪些消费组消费的请求头：返回订阅该 Topic 的所有消费组列表。
+ */
 @RocketMQAction(value = RequestCode.QUERY_TOPIC_CONSUME_BY_WHO, action = Action.GET)
 public class QueryTopicConsumeByWhoRequestHeader extends TopicRequestHeader {
+    /** 目标 Topic 名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.TOPIC)
     private String topic;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Topic 名称。 */
     public String getTopic() {
         return topic;
     }
 
+    /** 设置 Topic 名称。 */
     public void setTopic(String topic) {
         this.topic = topic;
     }

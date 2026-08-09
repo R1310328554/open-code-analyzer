@@ -25,20 +25,27 @@ import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 
+/**
+ * 重置 Master 刷盘位点的请求头：用于 HA 同步场景下校正 Master 的 flush offset。
+ */
 @RocketMQAction(value = RequestCode.RESET_MASTER_FLUSH_OFFSET, resource = ResourceType.CLUSTER, action = Action.UPDATE)
 public class ResetMasterFlushOffsetHeader implements CommandCustomHeader {
+    /** 新的 Master 刷盘物理 offset。 */
     @CFNotNull
     private Long masterFlushOffset;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回 Master 刷盘 offset。 */
     public Long getMasterFlushOffset() {
         return masterFlushOffset;
     }
 
+    /** 设置 Master 刷盘 offset。 */
     public void setMasterFlushOffset(Long masterFlushOffset) {
         this.masterFlushOffset = masterFlushOffset;
     }

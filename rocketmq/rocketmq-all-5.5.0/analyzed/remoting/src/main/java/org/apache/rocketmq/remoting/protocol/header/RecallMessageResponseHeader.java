@@ -21,17 +21,24 @@ import org.apache.rocketmq.remoting.CommandCustomHeader;
 import org.apache.rocketmq.remoting.annotation.CFNotNull;
 import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
+/**
+ * 撤回消息的响应头：返回被撤回消息的消息 ID。
+ */
 public class RecallMessageResponseHeader implements CommandCustomHeader {
+    /** 被撤回消息的唯一 ID。 */
     @CFNotNull
     private String msgId;
+    /** 校验响应头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
     }
 
+    /** 返回被撤回消息 ID。 */
     public String getMsgId() {
         return msgId;
     }
 
+    /** 设置被撤回消息 ID。 */
     public void setMsgId(String msgId) {
         this.msgId = msgId;
     }

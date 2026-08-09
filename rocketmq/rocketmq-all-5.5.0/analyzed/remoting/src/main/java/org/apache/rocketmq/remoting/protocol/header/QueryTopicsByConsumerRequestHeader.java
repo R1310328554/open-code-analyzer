@@ -29,21 +29,28 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.rpc.RpcRequestHeader;
 
+/**
+ * 按消费组查询订阅 Topic 列表的请求头：返回该消费组当前订阅的所有 Topic。
+ */
 @RocketMQAction(value = RequestCode.QUERY_TOPICS_BY_CONSUMER, action = Action.GET)
 public class QueryTopicsByConsumerRequestHeader extends RpcRequestHeader {
+    /** 目标消费组名称。 */
     @CFNotNull
     @RocketMQResource(ResourceType.GROUP)
     private String group;
 
+    /** 校验请求头字段（本类无额外约束，空实现）。 */
     @Override
     public void checkFields() throws RemotingCommandException {
 
     }
 
+    /** 返回消费组名称。 */
     public String getGroup() {
         return group;
     }
 
+    /** 设置消费组名称。 */
     public void setGroup(String group) {
         this.group = group;
     }
