@@ -15,23 +15,8 @@
     "redisson-spring/redisson-spring-data/redisson-spring-data-33/src/main/java/org/redisson/spring/data/connection/RedissonStreamCommands.java",
     "redisson-spring/redisson-spring-data/redisson-spring-data-34/src/main/java/org/redisson/spring/data/connection/RedissonClusterConnection.java",
     "redisson-spring/redisson-spring-data/redisson-spring-data-34/src/main/java/org/redisson/spring/data/connection/RedissonConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-34/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStreamCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-34/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStringCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-34/src/main/java/org/redisson/spring/data/connection/RedissonReactiveZSetCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-34/src/main/java/org/redisson/spring/data/connection/RedissonStreamCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-35/src/main/java/org/redisson/spring/data/connection/RedissonClusterConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-35/src/main/java/org/redisson/spring/data/connection/RedissonConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-35/src/main/java/org/redisson/spring/data/connection/RedissonReactiveKeyCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-35/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStreamCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-35/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStringCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-35/src/main/java/org/redisson/spring/data/connection/RedissonReactiveZSetCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-35/src/main/java/org/redisson/spring/data/connection/RedissonStreamCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonClusterConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonConnection.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonReactiveHashCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonReactiveKeyCommands.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-40/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStreamCommands.java"
+    "redisson-spring/redisson-spring-data/redisson-spring-data-34/src/main/java/org/redisson/spring/data/connection/RedissonReactiveStreamCommands.java"
   ],
   "remaining_pending": 1172,
-  "done": 1620
+  "done": 1635
 }
