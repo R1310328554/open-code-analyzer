@@ -21,13 +21,14 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 /**
- * Special decompressor implementation that buffers input so that it can be processed piecemeal, similar to
- * {@link io.netty.handler.codec.ByteToMessageDecoder}.
+ * 带输入累积的 {@link Decompressor} 抽象基类，行为类似 {@link io.netty.handler.codec.ByteToMessageDecoder}：
+ * 分片输入先合并再按状态机逐步解压。
  */
 abstract class InputBufferingDecompressor implements Decompressor {
     protected final ByteBufAllocator allocator;
     private ByteBuf cumulation;
 
+    /** 使用给定分配器创建解压器。 */
     InputBufferingDecompressor(ByteBufAllocator allocator) {
         this.allocator = allocator;
     }
@@ -75,26 +76,20 @@ abstract class InputBufferingDecompressor implements Decompressor {
     }
 
     /**
-     * Process some input. The input buffer ownership <i>does not</i> transfer to this method: If there's still data
-     * unread after this method finishes, it will be buffered.
+     * 解析部分输入；未读完的数据由基类缓冲，所有权不转入本方法。
      *
      * @param buf The input buffer
      */
     abstract void processInput(ByteBuf buf) throws DecompressionException;
 
     /**
-     * Produce some output. The input buffer parameter may be read from to consume some more data, but note that this
-     * method <i>must</i> return a buffer even if the input is too short.
+     * 生成解压输出；可从 {@code buf} 继续消费数据，即使输入不足也必须返回缓冲（可为空）。
      *
      * @param buf The input buffer
      */
     abstract ByteBuf processOutput(ByteBuf buf) throws DecompressionException;
 
-    /**
-     * Number of buffered bytes.
-     *
-     * @return Number of buffered bytes
-     */
+    /** @return 当前累积缓冲中的可读字节数。 */
     final int available() {
         return cumulation == null ? 0 : cumulation.readableBytes();
     }

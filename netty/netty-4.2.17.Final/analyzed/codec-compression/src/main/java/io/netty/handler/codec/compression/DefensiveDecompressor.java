@@ -19,8 +19,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Most decompressor implementations play fast and loose with {@link Decompressor} API contracts. This wrapper makes
- * sure callers follow that contract.
+ * 防御性 {@link Decompressor} 包装器：校验调用方是否遵守状态机与生命周期约定。
+ * 多数具体实现并不严格检查 API 契约，本类在边界处强制校验。
  */
 final class DefensiveDecompressor implements Decompressor {
     private final Decompressor delegate;
@@ -28,6 +28,7 @@ final class DefensiveDecompressor implements Decompressor {
     private boolean closed;
     private boolean failed;
 
+    /** 包装给定解压器，对其所有调用做状态与就绪检查。 */
     DefensiveDecompressor(Decompressor delegate) {
         this.delegate = ObjectUtil.checkNotNull(delegate, "delegate");
     }
@@ -96,6 +97,7 @@ final class DefensiveDecompressor implements Decompressor {
         delegate.close();
     }
 
+    /** 确认未关闭且前次调用未失败。 */
     private void checkReady() {
         if (closed) {
             throw new IllegalStateException("Already closed");
@@ -105,6 +107,7 @@ final class DefensiveDecompressor implements Decompressor {
         }
     }
 
+    /** 确认当前缓存状态与 {@code expected} 一致。 */
     private void checkState(Status expected) {
         if (this.status != expected) {
             throw new IllegalStateException("Not in expected state " + expected + ", was " + this.status);

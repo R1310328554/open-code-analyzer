@@ -28,18 +28,14 @@ import static io.netty.handler.codec.compression.FastLz.MAGIC_NUMBER;
 import static io.netty.handler.codec.compression.FastLz.decompress;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded by {@link FastLzFrameEncoder} using the FastLZ algorithm.
- *
- * See <a href="https://github.com/netty/netty/issues/2750">FastLZ format</a>.
+ * 基于新 {@link Decompressor} API 的 FastLZ 帧解压器，解压 {@link FastLzFrameEncoder} 输出。
+ * 格式见 <a href="https://github.com/netty/netty/issues/2750">FastLZ format</a>。
  * <p>
- * This API is still in progress as part of the decompression migration tracked by
- * <a href="https://github.com/netty/netty/issues/16743">#16743</a>.
+ * 仍在演进，见 <a href="https://github.com/netty/netty/issues/16743">#16743</a>。
  */
 @UnstableApi
 public final class FastLzFrameDecompressor extends InputBufferingDecompressor {
-    /**
-     * Current state of decompression.
-     */
+    /** 解压状态机。 */
     private enum State {
         INIT_BLOCK,
         INIT_BLOCK_PARAMS,
@@ -49,35 +45,22 @@ public final class FastLzFrameDecompressor extends InputBufferingDecompressor {
 
     private State currentState = State.INIT_BLOCK;
 
-    /**
-     * Underlying checksum calculator in use.
-     */
+    /** 可选的块校验和计算器。 */
     private final ByteBufChecksum checksum;
 
-    /**
-     * Length of the current received chunk of data.
-     */
+    /** 当前块压缩数据长度。 */
     private int chunkLength;
 
-    /**
-     * Original length of the current received chunk of data.
-     * It is equal to {@link #chunkLength} for uncompressed chunks.
-     */
+    /** 当前块解压后原始长度；未压缩块等于 {@link #chunkLength}。 */
     private int originalLength;
 
-    /**
-     * Indicates whether this chunk is compressed.
-     */
+    /** 当前块是否经 FastLZ 压缩。 */
     private boolean isCompressed;
 
-    /**
-     * Indicates whether this chunk has a checksum.
-     */
+    /** 当前块是否携带校验和字段。 */
     private boolean hasChecksum;
 
-    /**
-     * Checksum value of the current received chunk of data when present.
-     */
+    /** 当前块期望的校验和值（若启用校验）。 */
     private int currentChecksum;
 
     FastLzFrameDecompressor(Builder builder, ByteBufAllocator allocator) {
@@ -214,7 +197,7 @@ public final class FastLzFrameDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * A checksum to use to validate each block. Defaults to no checksum validation.
+         * 设置块校验器；默认不校验。
          *
          * @param checksum The checksum to use for validation
          * @return This builder
@@ -225,11 +208,7 @@ public final class FastLzFrameDecompressor extends InputBufferingDecompressor {
             return this;
         }
 
-        /**
-         * Enable validation using the default checksum, Adler32.
-         *
-         * @return This builder
-         */
+        /** 启用默认 Adler32 块校验。 @return This builder */
         @UnstableApi
         public Builder defaultChecksum() {
             return checksum(new Adler32());

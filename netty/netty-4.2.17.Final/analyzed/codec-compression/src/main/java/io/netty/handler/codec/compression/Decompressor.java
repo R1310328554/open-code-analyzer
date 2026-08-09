@@ -20,83 +20,64 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.internal.UnstableApi;
 
 /**
- * Shared API for various decompression algorithms. A decompressor reports its current status using {@link #status()}.
- * Status documentation lists which operations are permitted for which status. Callers must observe the current
- * status before invoking an operation that is only valid for that status.
+ * 各类解压算法的统一 API；当前状态由 {@link #status()} 报告，调用方须按状态调用合法操作。
  * <p>
- * All methods may throw exceptions. If an exception is thrown, no further operations are permitted, except for
- * {@link #close()}.
+ * 任一方法抛异常后除 {@link #close()} 外不得再调用其他方法。
  * <p>
- * This API is still in progress as part of the decompression migration tracked by
- * <a href="https://github.com/netty/netty/issues/16743">#16743</a>.
+ * 该 API 仍在演进，见 <a href="https://github.com/netty/netty/issues/16743">#16743</a>。
  */
 @UnstableApi
 public interface Decompressor extends AutoCloseable {
     /**
-     * Get the current status. Like the other operations on this class, calling this method is not permitted if the
-     * decompressor has failed or was closed.
+     * 获取当前解压状态；失败或已关闭后不可调用。
      *
      * @return The current status
      */
     Status status() throws DecompressionException;
 
     /**
-     * Add a new input buffer. Only permitted for {@link Status#NEED_INPUT}.
+     * 追加输入缓冲；仅 {@link Status#NEED_INPUT} 时允许，所有权移交给解压器。
      *
      * @param buf The input buffer. Buffer ownership transfers to the decompressor (also on exception).
      */
     void addInput(ByteBuf buf) throws DecompressionException;
 
     /**
-     * Notify the decompressor that the end of input has been reached. Some implementations may flush remaining data or
-     * throw an exception if the input is truncated, but most implementations do nothing. Only permitted for
-     * {@link Status#NEED_INPUT}.
+     * 通知输入已结束；部分实现会刷出剩余数据或校验截断，多数为空操作。
+     * 仅 {@link Status#NEED_INPUT} 时允许。
      */
     void endOfInput() throws DecompressionException;
 
     /**
-     * Take a decompressed buffer from this decompressor. Only permitted for {@link Status#NEED_OUTPUT}. Buffer
-     * ownership transfers to the caller.
+     * 取出一帧解压输出；仅 {@link Status#NEED_OUTPUT} 时允许，所有权交给调用方。
      *
      * @return The decompressed buffer. May be empty.
      */
     ByteBuf takeOutput() throws DecompressionException;
 
-    /**
-     * Close this decompressor, cleaning up any associated resources. <b>This method is idempotent.</b>
-     */
+    /** 关闭解压器并释放资源；<b>幂等</b>，可重复调用。 */
     @Override
     void close() throws DecompressionException;
 
-    /**
-     * Current status of the decompressor. The status indicates which method may be called to make progress on
-     * decompression.
-     */
+    /** 解压器状态枚举，指示下一步应调用哪个方法以推进解压。 */
     @UnstableApi
     enum Status {
-        /**
-         * More input is required before decompression can proceed. Only calls to {@link #addInput} and
-         * {@link #endOfInput()} are permitted.
-         */
+        /** 需要更多输入；仅允许 {@link #addInput} 与 {@link #endOfInput()}。 */
         NEED_INPUT,
-        /**
-         * Output must be consumed before more input can be received. Only calls to {@link #takeOutput()} are
-         * permitted.
-         */
+        /** 须先消费输出再接收输入；仅允许 {@link #takeOutput()}。 */
         NEED_OUTPUT,
-        /**
-         * All data has been processed, and the format indicates that no more input may arrive. No further
-         * decompression operations are permitted, except {@link Decompressor#close()} to release resources.
-         */
+        /** 全部数据处理完毕；除 {@link Decompressor#close()} 外不得再调用解压操作。 */
         COMPLETE,
     }
 
+    /** {@link Decompressor} 构建器抽象基类。 */
     @UnstableApi
     abstract class AbstractDecompressorBuilder {
 
         protected AbstractDecompressorBuilder() {
         }
 
+        /** 使用给定 {@link ByteBufAllocator} 构建 {@link Decompressor} 实例。 */
         public abstract Decompressor build(ByteBufAllocator allocator) throws DecompressionException;
     }
 }

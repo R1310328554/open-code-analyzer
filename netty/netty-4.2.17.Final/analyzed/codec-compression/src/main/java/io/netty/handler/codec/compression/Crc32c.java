@@ -16,14 +16,12 @@
 package io.netty.handler.codec.compression;
 
 /**
- * Implements CRC32-C as defined in:
- * "Optimization of Cyclic Redundancy-CHeck Codes with 24 and 32 Parity Bits",
- * IEEE Transactions on Communications 41(6): 883-892 (1993).
- *
- * The implementation of this class has been sourced from the Appendix of RFC 3309,
- * but with masking due to Java not being able to support unsigned types.
+ * CRC32-C（Castagnoli）校验实现，算法定义见 IEEE Trans. Communications 1993 论文。
+ * <p>
+ * 查表逻辑源自 RFC 3309 附录；因 Java 无无符号整型，结果以掩码截断为 32 位。
  */
 class Crc32c extends ByteBufChecksum {
+    /** CRC32-C 预计算查找表。 */
     private static final int[] CRC_TABLE = {
             0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4,
             0xC79A971F, 0x35F1141C, 0x26A1E7E8, 0xD4CA64EB,
@@ -96,6 +94,7 @@ class Crc32c extends ByteBufChecksum {
 
     private int crc = ~0;
 
+    /** 用单字节更新 CRC32-C。 */
     @Override
     public void update(int b) {
         crc = crc32c(crc, b);
@@ -109,11 +108,13 @@ class Crc32c extends ByteBufChecksum {
         }
     }
 
+    /** @return 当前 CRC32-C 值（32 位无符号语义）。 */
     @Override
     public long getValue() {
         return (crc ^ LONG_MASK) & LONG_MASK;
     }
 
+    /** 重置 CRC 为初始状态 {@code 0xFFFFFFFF}。 */
     @Override
     public void reset() {
         crc = ~0;

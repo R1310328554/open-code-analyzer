@@ -16,11 +16,9 @@
 package io.netty.handler.codec.compression;
 
 /**
- * {@link CompressionOptions} provides compression options for
- * various types of compressor types, like Brotli.
- *
- * A {@link CompressionOptions} instance is thread-safe
- * and should be shared between multiple instances of Compressor.
+ * 压缩器配置选项的标记接口，供 Brotli、Deflate、Gzip 等各类压缩器共享参数。
+ * <p>
+ * {@link CompressionOptions} 实例线程安全，可在多个 Compressor 之间复用。
  */
 public interface CompressionOptions {
     // Empty

@@ -18,8 +18,8 @@ package io.netty.handler.codec.compression;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * {@link DeflateOptions} holds {@link #compressionLevel()},
- * {@link #memLevel()} and {@link #windowBits()} for Deflate compression.
+ * Deflate 压缩参数：{@link #compressionLevel()}、{@link #memLevel()} 与 {@link #windowBits()}。
+ * 实现 {@link CompressionOptions}，可在多个编码器间共享。
  */
 public class DeflateOptions implements CompressionOptions {
 
@@ -30,6 +30,7 @@ public class DeflateOptions implements CompressionOptions {
     /**
      * @see StandardCompressionOptions#deflate()
      */
+    /** 默认 Deflate 选项：级别 6、窗口 15、内存 8。 */
     static final DeflateOptions DEFAULT = new DeflateOptions(
             6, 15, 8
     );
@@ -37,20 +38,24 @@ public class DeflateOptions implements CompressionOptions {
     /**
      * @see StandardCompressionOptions#deflate(int, int, int)
      */
+    /** 构造 Deflate 选项并校验各参数合法范围。 */
     DeflateOptions(int compressionLevel, int windowBits, int memLevel) {
         this.compressionLevel = ObjectUtil.checkInRange(compressionLevel, 0, 9, "compressionLevel");
         this.windowBits = ObjectUtil.checkInRange(windowBits, 9, 15, "windowBits");
         this.memLevel = ObjectUtil.checkInRange(memLevel, 1, 9, "memLevel");
     }
 
+    /** @return Deflate 压缩级别（0–9）。 */
     public int compressionLevel() {
         return compressionLevel;
     }
 
+    /** @return 滑动窗口大小位数（9–15）。 */
     public int windowBits() {
         return windowBits;
     }
 
+    /** @return 压缩内存级别（1–9）。 */
     public int memLevel() {
         return memLevel;
     }

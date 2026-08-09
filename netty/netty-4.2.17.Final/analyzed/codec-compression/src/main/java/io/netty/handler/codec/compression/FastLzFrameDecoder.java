@@ -29,14 +29,11 @@ import static io.netty.handler.codec.compression.FastLz.MAGIC_NUMBER;
 import static io.netty.handler.codec.compression.FastLz.decompress;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded by {@link FastLzFrameEncoder} using the FastLZ algorithm.
- *
- * See <a href="https://github.com/netty/netty/issues/2750">FastLZ format</a>.
+ * 使用 FastLZ 算法解压 {@link FastLzFrameEncoder} 编码的 {@link ByteBuf}。
+ * 格式见 <a href="https://github.com/netty/netty/issues/2750">FastLZ format</a>。
  */
 public class FastLzFrameDecoder extends ByteToMessageDecoder {
-    /**
-     * Current state of decompression.
-     */
+    /** 解压状态机。 */
     private enum State {
         INIT_BLOCK,
         INIT_BLOCK_PARAMS,
@@ -46,64 +43,45 @@ public class FastLzFrameDecoder extends ByteToMessageDecoder {
 
     private State currentState = State.INIT_BLOCK;
 
-    /**
-     * Underlying checksum calculator in use.
-     */
+    /** 可选的块校验和计算器。 */
     private final ByteBufChecksum checksum;
 
-    /**
-     * Length of current received chunk of data.
-     */
+    /** 当前块压缩数据长度。 */
     private int chunkLength;
 
-    /**
-     * Original of current received chunk of data.
-     * It is equal to {@link #chunkLength} for non compressed chunks.
-     */
+    /** 当前块解压后原始长度；未压缩块等于 {@link #chunkLength}。 */
     private int originalLength;
 
-    /**
-     * Indicates is this chunk compressed or not.
-     */
+    /** 当前块是否经 FastLZ 压缩。 */
     private boolean isCompressed;
 
-    /**
-     * Indicates is this chunk has checksum or not.
-     */
+    /** 当前块是否携带校验和字段。 */
     private boolean hasChecksum;
 
-    /**
-     * Checksum value of current received chunk of data which has checksum.
-     */
+    /** 当前块期望的校验和值（若启用校验）。 */
     private int currentChecksum;
 
-    /**
-     * Creates the fastest FastLZ decoder without checksum calculation.
-     */
+    /** 创建不校验校验和的最快 FastLZ 解码器。 */
     public FastLzFrameDecoder() {
         this(false);
     }
 
     /**
-     * Creates a FastLZ decoder with calculation of checksums as specified.
+     * 创建 FastLZ 解码器并按需校验块校验和。
      *
      * @param validateChecksums
-     *        If true, the checksum field will be validated against the actual
-     *        uncompressed data, and if the checksums do not match, a suitable
-     *        {@link DecompressionException} will be thrown.
-     *        Note, that in this case decoder will use {@link java.util.zip.Adler32}
-     *        as a default checksum calculator.
+     *        为 {@code true} 时校验解压数据与块头校验和，不匹配则抛 {@link DecompressionException}；
+     *        默认使用 {@link java.util.zip.Adler32}。
      */
     public FastLzFrameDecoder(boolean validateChecksums) {
         this(validateChecksums ? new Adler32() : null);
     }
 
     /**
-     * Creates a FastLZ decoder with specified checksum calculator.
+     * 使用自定义 {@link Checksum} 创建 FastLZ 解码器。
      *
      * @param checksum
-     *        the {@link Checksum} instance to use to check data for integrity.
-     *        You may set {@code null} if you do not want to validate checksum of each block.
+     *        块完整性校验器；{@code null} 表示不校验。
      */
     public FastLzFrameDecoder(Checksum checksum) {
         this.checksum = checksum == null ? null : ByteBufChecksum.wrapChecksum(checksum);

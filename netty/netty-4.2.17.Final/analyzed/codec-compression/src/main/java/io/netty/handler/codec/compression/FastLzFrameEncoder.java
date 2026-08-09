@@ -38,64 +38,48 @@ import static io.netty.handler.codec.compression.FastLz.calculateOutputBufferLen
 import static io.netty.handler.codec.compression.FastLz.compress;
 
 /**
- * Compresses a {@link ByteBuf} using the FastLZ algorithm.
- *
- * See <a href="https://github.com/netty/netty/issues/2750">FastLZ format</a>.
+ * 使用 FastLZ 算法压缩 {@link ByteBuf} 并按 Netty 帧格式输出。
+ * 格式见 <a href="https://github.com/netty/netty/issues/2750">FastLZ format</a>。
  */
 public class FastLzFrameEncoder extends MessageToByteEncoder<ByteBuf> {
-    /**
-     * Compression level.
-     */
+    /** 压缩级别（{@link FastLz#LEVEL_AUTO} / {@link FastLz#LEVEL_1} / {@link FastLz#LEVEL_2}）。 */
     private final int level;
 
-    /**
-     * Underlying checksum calculator in use.
-     */
+    /** 可选的块校验和计算器。 */
     private final ByteBufChecksum checksum;
 
-    /**
-     * Creates a FastLZ encoder without checksum calculator and with auto detection of compression level.
-     */
+    /** 创建无校验和、自动选择压缩级别的 FastLZ 编码器。 */
     public FastLzFrameEncoder() {
         this(LEVEL_AUTO, null);
     }
 
     /**
-     * Creates a FastLZ encoder with specified compression level and without checksum calculator.
+     * 指定压缩级别、不计算校验和。
      *
      * @param level supports only these values:
-     *        0 - Encoder will choose level automatically depending on the length of the input buffer.
-     *        1 - Level 1 is the fastest compression and generally useful for short data.
-     *        2 - Level 2 is slightly slower but it gives better compression ratio.
+     *        0 - 按输入长度自动选级；1 - 最快；2 - 更高压缩率。
      */
     public FastLzFrameEncoder(int level) {
         this(level, null);
     }
 
     /**
-     * Creates a FastLZ encoder with auto detection of compression
-     * level and calculation of checksums as specified.
+     * 自动选级并按需为每块写入 Adler32 校验和。
      *
      * @param validateChecksums
-     *        If true, the checksum of each block will be calculated and this value
-     *        will be added to the header of block.
-     *        By default {@link FastLzFrameEncoder} uses {@link java.util.zip.Adler32}
-     *        for checksum calculation.
+     *        为 {@code true} 时在块头写入校验和，默认 {@link java.util.zip.Adler32}。
      */
     public FastLzFrameEncoder(boolean validateChecksums) {
         this(LEVEL_AUTO, validateChecksums ? new Adler32() : null);
     }
 
     /**
-     * Creates a FastLZ encoder with specified compression level and checksum calculator.
+     * 指定压缩级别与块校验计算器。
      *
      * @param level supports only these values:
-     *        0 - Encoder will choose level automatically depending on the length of the input buffer.
-     *        1 - Level 1 is the fastest compression and generally useful for short data.
-     *        2 - Level 2 is slightly slower but it gives better compression ratio.
+     *        0 - 自动；1 - 最快；2 - 更高压缩率。
      * @param checksum
-     *        the {@link Checksum} instance to use to check data for integrity.
-     *        You may set {@code null} if you don't want to validate checksum of each block.
+     *        块校验器；{@code null} 表示不写校验和。
      */
     public FastLzFrameEncoder(int level, Checksum checksum) {
         super(ByteBuf.class);
@@ -138,7 +122,7 @@ public class FastLzFrameEncoder extends MessageToByteEncoder<ByteBuf> {
                 out.setBytes(outputPtr, in, idx, length);
                 chunkLength = length;
             } else {
-                // try to compress
+                // 尝试 FastLZ 压缩，失败则原样存储
                 if (checksum != null) {
                     checksum.reset();
                     checksum.update(in, idx, length);

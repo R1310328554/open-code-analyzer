@@ -18,35 +18,27 @@ package io.netty.handler.codec.compression;
 import io.netty.handler.codec.DecoderException;
 
 /**
- * A {@link DecoderException} that is raised when decompression failed.
+ * 解压失败时抛出的 {@link DecoderException} 子类，表示数据损坏或格式非法。
  */
 public class DecompressionException extends DecoderException {
 
     private static final long serialVersionUID = 3546272712208105199L;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 构造无消息的解压异常。 */
     public DecompressionException() {
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 构造带消息与原因的解压异常。 */
     public DecompressionException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 构造带消息的解压异常。 */
     public DecompressionException(String message) {
         super(message);
     }
 
-    /**
-     * Creates a new instance.
-     */
+    /** 构造仅含原因的解压异常。 */
     public DecompressionException(Throwable cause) {
         super(cause);
     }

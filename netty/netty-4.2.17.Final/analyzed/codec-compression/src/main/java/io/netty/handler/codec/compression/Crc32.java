@@ -16,12 +16,10 @@
 package io.netty.handler.codec.compression;
 
 /**
- * A CRC32 calculator.
+ * 基于查表法的 CRC32 计算器，供 Gzip/Zlib 等格式校验使用。
  */
 final class Crc32 {
-    /**
-     * A static CRC lookup table.
-     */
+    /** CRC32 预计算查找表。 */
     private static final int[] crc32Table = {
             0x00000000, 0x04c11db7, 0x09823b6e, 0x0d4326d9,
             0x130476dc, 0x17c56b6b, 0x1a864db2, 0x1e475005,
@@ -89,20 +87,16 @@ final class Crc32 {
             0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
     };
 
-    /**
-     * The current CRC.
-     */
+    /** 当前累积 CRC 中间值（内部按 IEEE 802.3 约定取反）。 */
     private int crc = 0xffffffff;
 
-    /**
-     * @return The current CRC.
-     */
+    /** @return 最终 CRC32 值（已对内部状态按位取反）。 */
     public int getCRC() {
         return ~crc;
     }
 
     /**
-     * Update the CRC with a single byte.
+     * 用单字节更新 CRC。
      * @param value The value to update the CRC with
      */
     public void updateCRC(final int value) {
@@ -111,7 +105,7 @@ final class Crc32 {
     }
 
     /**
-     * Update the CRC with a sequence of identical bytes.
+     * 用同一字节值连续更新 CRC {@code count} 次。
      * @param value The value to update the CRC with
      * @param count The number of bytes
      */

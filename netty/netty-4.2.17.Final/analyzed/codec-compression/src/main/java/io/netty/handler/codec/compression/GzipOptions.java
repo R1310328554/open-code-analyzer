@@ -16,15 +16,15 @@
 package io.netty.handler.codec.compression;
 
 /**
- * {@link GzipOptions} holds {@link #compressionLevel()},
- * {@link #memLevel()} and {@link #windowBits()} for Gzip compression.
- * This class is an extension of {@link DeflateOptions}
+ * Gzip 压缩参数，继承 {@link DeflateOptions} 的级别、窗口与内存配置。
+ * 用于 Gzip 封装层的 Deflate 引擎选项。
  */
 public final class GzipOptions extends DeflateOptions {
 
     /**
      * @see StandardCompressionOptions#gzip()
      */
+    /** 默认 Gzip 选项：级别 6、窗口 15、内存 8。 */
     static final GzipOptions DEFAULT = new GzipOptions(
             6, 15, 8
     );
@@ -32,6 +32,7 @@ public final class GzipOptions extends DeflateOptions {
     /**
      * @see StandardCompressionOptions#gzip(int, int, int)
      */
+    /** 构造 Gzip 选项并委托 {@link DeflateOptions} 校验参数范围。 */
     GzipOptions(int compressionLevel, int windowBits, int memLevel) {
         super(compressionLevel, windowBits, memLevel);
     }

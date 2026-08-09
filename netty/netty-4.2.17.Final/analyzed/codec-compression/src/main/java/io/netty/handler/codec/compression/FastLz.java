@@ -18,13 +18,10 @@ package io.netty.handler.codec.compression;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Core of FastLZ compression algorithm.
- *
- * This class provides methods for compression and decompression of buffers and saves
- * constants which use by {@link FastLzFrameEncoder} and {@link FastLzFrameDecoder}.
- *
- * This is refactored code of <a href="https://code.google.com/p/jfastlz/">jfastlz</a>
- * library written by William Kinney.
+ * FastLZ 压缩算法核心：提供缓冲级压缩/解压及帧格式常量。
+ * 供 {@link FastLzFrameEncoder} 与 {@link FastLzFrameDecoder} 使用。
+ * <p>
+ * 源自 <a href="https://code.google.com/p/jfastlz/">jfastlz</a>（William Kinney）的重构实现。
  */
 final class FastLz {
 
@@ -40,44 +37,38 @@ final class FastLz {
 
     private static final int MIN_RECOMENDED_LENGTH_FOR_LEVEL_2 = 1024 * 64;
 
+    /** 帧头魔数 "FLZ"。 */
     static final int MAGIC_NUMBER = 'F' << 16 | 'L' << 8 | 'Z';
 
+    /** 块类型：未压缩存储。 */
     static final byte BLOCK_TYPE_NON_COMPRESSED = 0x00;
+    /** 块类型：FastLZ 压缩。 */
     static final byte     BLOCK_TYPE_COMPRESSED = 0x01;
+    /** 块选项：不含校验和。 */
     static final byte    BLOCK_WITHOUT_CHECKSUM = 0x00;
+    /** 块选项：含 Adler32 等校验和。 */
     static final byte       BLOCK_WITH_CHECKSUM = 0x10;
 
     static final int OPTIONS_OFFSET = 3;
     static final int CHECKSUM_OFFSET = 4;
 
+    /** 单块最大长度 65535 字节。 */
     static final int MAX_CHUNK_LENGTH = 0xFFFF;
 
-    /**
-     * Do not call {@link #compress(ByteBuf, int, int, ByteBuf, int, int)} for input buffers
-     * which length less than this value.
-     */
+    /** 输入长度低于此值时不调用 {@link #compress}，直接原样存储。 */
     static final int MIN_LENGTH_TO_COMPRESSION = 32;
 
-    /**
-     * In this case {@link #compress(ByteBuf, int, int, ByteBuf, int, int)} will choose level
-     * automatically depending on the length of the input buffer. If length less than
-     * {@link #MIN_RECOMENDED_LENGTH_FOR_LEVEL_2} {@link #LEVEL_1} will be chosen,
-     * otherwise {@link #LEVEL_2}.
-     */
+    /** 自动选择压缩级别：短数据用 {@link #LEVEL_1}，否则 {@link #LEVEL_2}。 */
     static final int LEVEL_AUTO = 0;
 
-    /**
-     * Level 1 is the fastest compression and generally useful for short data.
-     */
+    /** 级别 1：最快，适合短数据。 */
     static final int LEVEL_1 = 1;
 
-    /**
-     * Level 2 is slightly slower but it gives better compression ratio.
-     */
+    /** 级别 2：稍慢但压缩率更高。 */
     static final int LEVEL_2 = 2;
 
     /**
-     * The output buffer must be at least 6% larger than the input buffer and can not be smaller than 66 bytes.
+     * 计算输出缓冲最小容量：至少为输入的 106%，且不少于 66 字节。
      * @param inputLength length of input buffer
      * @return Maximum output buffer length
      */
@@ -87,10 +78,8 @@ final class FastLz {
     }
 
     /**
-     * Compress a block of data in the input buffer and returns the size of compressed block.
-     * The size of input buffer is specified by length. The minimum input buffer size is 32.
-     *
-     * If the input is not compressible, the return value might be larger than length (input buffer size).
+     * 压缩输入块并返回压缩后字节数；输入至少 32 字节。
+     * 不可压缩时返回值可能大于输入长度。
      */
     @SuppressWarnings("IdentityBinaryExpression")
     static int compress(final ByteBuf input, final int inOffset, final int inLength,
@@ -399,12 +388,8 @@ final class FastLz {
     }
 
     /**
-     * Decompress a block of compressed data and returns the size of the decompressed block.
-     * If error occurs, e.g. the compressed data is corrupted or the output buffer is not large
-     * enough, then 0 (zero) will be returned instead.
-     *
-     * Decompression is memory safe and guaranteed not to write the output buffer
-     * more than what is specified in outLength.
+     * 解压压缩块并返回解压字节数；数据损坏或输出不足时返回 0。
+     * 保证不会向输出缓冲写入超过 {@code outLength} 的字节。
      */
     static int decompress(final ByteBuf input, final int inOffset, final int inLength,
                           final ByteBuf output, final int outOffset, final int outLength) {
