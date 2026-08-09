@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:46:12Z",
-  "files": [
-    "client/src/main/java/org/apache/rocketmq/client/exception/RequestTimeoutException.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/CheckForbiddenContext.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/CheckForbiddenHook.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/ConsumeMessageContext.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/ConsumeMessageHook.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/EndTransactionContext.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/EndTransactionHook.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/FilterMessageContext.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/FilterMessageHook.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/SendMessageContext.java",
-    "client/src/main/java/org/apache/rocketmq/client/hook/SendMessageHook.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/ClientRemotingProcessor.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/CommunicationMode.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/FindBrokerResult.java",
-    "client/src/main/java/org/apache/rocketmq/client/impl/MQClientManager.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1218,
-  "done": 255
+  "done": 270
 }
