@@ -10,15 +10,4 @@ core/spring-boot/src/main/java/org/springframework/boot/logging/logback/LogbackL
 core/spring-boot/src/main/java/org/springframework/boot/logging/logback/SpringBootJoranConfigurator.java
 core/spring-boot/src/main/java/org/springframework/boot/ssl/pem/PemPrivateKeyParser.java
 core/spring-boot/src/main/java/org/springframework/boot/util/LambdaSafe.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/FilterRegistration.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/FilterRegistrationBean.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/RegistrationBean.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletContextInitializer.java
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletContextInitializerBeans.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletListenerRegistrationBean.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletRegistration.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletRegistrationBean.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ErrorPageFilter.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ErrorPageFilterConfiguration.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/ServletContextApplicationContextInitializer.java
-core/spring-boot/src/main/java/org/springframework/boot/web/servlet/support/SpringBootServletInitializer.java
