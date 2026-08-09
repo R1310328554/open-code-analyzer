@@ -30,7 +30,8 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
- * A traffic runner to simulate flow for different parameters.
+ * 热点参数流控压测 Runner：随机选取参数发起 {@link SphU#entry}，
+ * 按参数分别统计 pass/block 并每秒输出。
  *
  * @author Eric Zhao
  * @since 0.2.0
@@ -70,16 +71,13 @@ class ParamFlowQpsRunner<T> {
         }
     }
 
-    /**
-     * Pick one of provided parameters randomly.
-     *
-     * @return picked parameter
-     */
+    /** 从预设参数数组中随机选取一个。 */
     private T generateParam() {
         int i = ThreadLocalRandom.current().nextInt(0, params.length);
         return params[i];
     }
 
+    /** 启动多线程压测任务。 */
     void simulateTraffic() {
         for (int i = 0; i < threadCount; i++) {
             Thread t = new Thread(new RunTask());
@@ -88,6 +86,7 @@ class ParamFlowQpsRunner<T> {
         }
     }
 
+    /** 启动定时统计线程。 */
     void tick() {
         Thread timer = new Thread(new TimerTask());
         timer.setName("sentinel-timer-task");
@@ -113,13 +112,13 @@ class ParamFlowQpsRunner<T> {
                 T param = generateParam();
                 try {
                     entry = SphU.entry(resourceName, EntryType.IN, 1, param);
-                    // Add pass for parameter.
+                    // 该参数计为通过
                     passFor(param);
                 } catch (BlockException e) {
-                    // block.incrementAndGet();
+                    // 该参数计为被限流
                     blockFor(param);
                 } catch (Exception ex) {
-                    // biz exception
+                    // 业务异常
                     ex.printStackTrace();
                 } finally {
                     // total.incrementAndGet();
@@ -145,8 +144,8 @@ class ParamFlowQpsRunner<T> {
         @Override
         public void run() {
             long start = System.currentTimeMillis();
-            System.out.println("Begin to run! Go go go!");
-            System.out.println("See corresponding metrics.log for accurate statistic data");
+            System.out.println("Begin to run! Go go go!"); // 开始压测
+            System.out.println("See corresponding metrics.log for accurate statistic data"); // 精确数据见 metrics.log
 
             Map<T, Long> map = new HashMap<>(params.length);
             for (T param : params) {
@@ -155,8 +154,7 @@ class ParamFlowQpsRunner<T> {
             while (!stop) {
                 sleep(1000);
 
-                // There may be a mismatch for time window of internal sliding window.
-                // See corresponding `metrics.log` for accurate statistic log.
+                // 控制台统计与内部滑动窗口可能存在偏差，精确数据见 metrics.log
                 for (T param : params) {
 
                     System.out.println(String.format(

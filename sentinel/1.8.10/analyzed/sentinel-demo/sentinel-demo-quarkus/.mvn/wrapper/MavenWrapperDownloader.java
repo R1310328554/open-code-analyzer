@@ -18,12 +18,11 @@ import java.io.*;
 import java.nio.channels.*;
 import java.util.Properties;
 
+/** Maven Wrapper JAR 下载工具（Quarkus 演示工程附带）。 */
 public class MavenWrapperDownloader {
 
     private static final String WRAPPER_VERSION = "0.5.6";
-    /**
-     * Default URL to download the maven-wrapper.jar from, if no 'downloadUrl' is provided.
-     */
+    /** 未配置 downloadUrl 时使用的默认 maven-wrapper.jar 下载地址。 */
     private static final String DEFAULT_DOWNLOAD_URL = "https://repo.maven.apache.org/maven2/io/takari/maven-wrapper/"
         + WRAPPER_VERSION + "/maven-wrapper-" + WRAPPER_VERSION + ".jar";
 
@@ -50,8 +49,7 @@ public class MavenWrapperDownloader {
         File baseDirectory = new File(args[0]);
         System.out.println("- Using base directory: " + baseDirectory.getAbsolutePath());
 
-        // If the maven-wrapper.properties exists, read it and check if it contains a custom
-        // wrapperUrl parameter.
+        // 若存在 maven-wrapper.properties，读取其中的 wrapperUrl 覆盖默认地址
         File mavenWrapperPropertyFile = new File(baseDirectory, MAVEN_WRAPPER_PROPERTIES_PATH);
         String url = DEFAULT_DOWNLOAD_URL;
         if(mavenWrapperPropertyFile.exists()) {
@@ -69,7 +67,7 @@ public class MavenWrapperDownloader {
                         mavenWrapperPropertyFileInputStream.close();
                     }
                 } catch (IOException e) {
-                    // Ignore ...
+                    // 忽略关闭异常
                 }
             }
         }

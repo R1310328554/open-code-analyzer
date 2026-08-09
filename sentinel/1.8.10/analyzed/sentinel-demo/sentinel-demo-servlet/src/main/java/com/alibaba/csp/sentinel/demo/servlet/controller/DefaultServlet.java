@@ -6,7 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * class description
+ * 演示 Servlet：按 pathInfo 路由 /foo 与 /bar 请求。
  *
  * @author zhangxunwei
  * @date 2024/6/24
@@ -23,6 +23,7 @@ public class DefaultServlet implements Servlet {
     }
 
     @Override
+    /** 根据 pathInfo 前缀分发到 foo/bar 或返回 404。 */
     public void service(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException {
         String path = ((HttpServletRequest) servletRequest).getPathInfo();
 
@@ -35,6 +36,7 @@ public class DefaultServlet implements Servlet {
         }
     }
 
+    /** 返回 404 与路径未找到提示。 */
     private void notFound(ServletRequest servletRequest, ServletResponse servletResponse) throws IOException {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
         HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
@@ -45,6 +47,7 @@ public class DefaultServlet implements Servlet {
         httpServletResponse.getWriter().close();
     }
 
+    /** 处理 /bar 请求，返回 "bar"。 */
     private void handleBar(ServletRequest servletRequest, ServletResponse servletResponse) throws IOException {
         HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
 
@@ -54,6 +57,7 @@ public class DefaultServlet implements Servlet {
         httpServletResponse.getWriter().close();
     }
 
+    /** 处理 /foo/{id} 请求，返回 "Hello {id}"。 */
     private void handleFoo(ServletRequest servletRequest, ServletResponse servletResponse) throws IOException {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
         HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;

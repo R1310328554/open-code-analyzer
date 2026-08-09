@@ -20,9 +20,9 @@ import com.alibaba.csp.sentinel.SphU;
 import com.alibaba.csp.sentinel.slots.block.BlockException;
 
 /**
- * Demo for adding custom slot.
- * @see {@link DemoSlot}.
+ * 自定义 Slot SPI 演示入口：对资源 abc 发起 entry，触发 {@link DemoSlot}。
  *
+ * @see DemoSlot
  * @author Eric Zhao
  * @author cdfive
  */

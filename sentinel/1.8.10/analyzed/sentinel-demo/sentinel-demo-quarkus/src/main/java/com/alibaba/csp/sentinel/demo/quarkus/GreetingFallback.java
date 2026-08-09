@@ -19,15 +19,19 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
+ * {@link GreetingService} 的全局 blockHandler 与 defaultFallback 实现类。
+ *
  * @author sea
  */
 @RegisterForReflection
 public class GreetingFallback {
 
+    /** 被 Sentinel 限流/熔断时的全局 blockHandler。 */
     public static String globalBlockHandler(String name, BlockException ex) {
         return "globalBlockHandler, ex:" + ex.getMessage();
     }
 
+    /** 业务异常时的全局 defaultFallback。 */
     public static String globalDefaultFallback(String name, Throwable t) {
         return "globalDefaultFallback, ex:" + t.getMessage();
     }

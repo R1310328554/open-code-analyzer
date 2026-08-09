@@ -23,6 +23,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.concurrent.*;
 
+/**
+ * Quarkus REST 演示资源：流控、熔断、异步与异常映射等场景入口。
+ */
 @Path("/hello")
 public class GreetingResource {
 
@@ -36,6 +39,7 @@ public class GreetingResource {
     @GET
     @Path("/txt")
     @Produces(MediaType.TEXT_PLAIN)
+    /** 简单文本问候，延迟 300ms，资源名 GET:/hello/txt 受流控。 */
     public String hello() throws InterruptedException {
         TimeUnit.MILLISECONDS.sleep(300);
         return "hello";
@@ -44,6 +48,7 @@ public class GreetingResource {
     @GET
     @Path("/fallback/{name}")
     @Produces(MediaType.TEXT_PLAIN)
+    /** 演示 @SentinelResourceBinding 的全局 fallback/blockHandler。 */
     public String fallback(@PathParam(value = "name") String name) {
         return greetingService.greeting(name);
     }
@@ -51,6 +56,7 @@ public class GreetingResource {
     @GET
     @Path("/fallback2/{name}")
     @Produces(MediaType.TEXT_PLAIN)
+    /** 演示同类内 fallback 方法。 */
     public String fallback2(@PathParam(value = "name") String name) {
         return greetingService.greetingWithFallbackName(name);
     }
@@ -58,6 +64,7 @@ public class GreetingResource {
     @Path("/async")
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
+    /** 异步 JAX-RS 响应演示。 */
     public void asyncHello(@Suspended final AsyncResponse asyncResponse) {
         executor.submit(() -> {
             try {
@@ -72,6 +79,7 @@ public class GreetingResource {
     @Path("/ex")
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
+    /** 抛出 RuntimeException，测试异常映射。 */
     public String exception() {
         throw new RuntimeException("test exception mapper");
     }
@@ -79,6 +87,7 @@ public class GreetingResource {
     @Path("/400")
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
+    /** 抛出 WebApplicationException 返回 400。 */
     public String badRequest() {
         throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST)
                 .entity("test return 400")
@@ -88,6 +97,7 @@ public class GreetingResource {
     @Path("/delay/{seconds}")
     @GET
     @Produces({ MediaType.APPLICATION_JSON })
+    /** 按秒延迟响应，用于熔断/超时测试。 */
     public String delay(@PathParam(value = "seconds") long seconds) throws InterruptedException {
         TimeUnit.SECONDS.sleep(seconds);
         return "finish";

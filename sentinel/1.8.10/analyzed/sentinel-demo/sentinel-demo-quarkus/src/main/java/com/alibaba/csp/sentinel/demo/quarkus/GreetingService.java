@@ -21,6 +21,9 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import javax.enterprise.context.ApplicationScoped;
 
 /**
+ * 问候业务服务：通过 {@link com.alibaba.csp.sentinel.annotation.cdi.interceptor.SentinelResourceBinding}
+ * 演示流控、熔断与 fallback。
+ *
  * @author sea
  */
 @ApplicationScoped
@@ -28,6 +31,7 @@ import javax.enterprise.context.ApplicationScoped;
 public class GreetingService {
 
     @SentinelResourceBinding(value = "greeting1", fallback = "globalDefaultFallback", fallbackClass = GreetingFallback.class, blockHandler = "globalBlockHandler", blockHandlerClass = GreetingFallback.class)
+    /** 资源 greeting1：name=degrade 时抛异常触发熔断/fallback。 */
     public String greeting(String name) {
         if ("degrade".equals(name)) {
             throw new RuntimeException("test sentinel fallback");
@@ -36,6 +40,7 @@ public class GreetingService {
     }
 
     @SentinelResourceBinding(value = "greeting2", fallback = "greetingFallback")
+    /** 资源 greeting2：使用同类 fallback 方法。 */
     public String greetingWithFallbackName(String name) {
         if ("degrade".equals(name)) {
             throw new RuntimeException("test sentinel fallback");
@@ -43,6 +48,7 @@ public class GreetingService {
         return "hello " + name;
     }
 
+    /** greeting2 的业务 fallback。 */
     public String greetingFallback(String name, Throwable t) {
         return "greetingFallback: " + t.getClass().getSimpleName();
     }

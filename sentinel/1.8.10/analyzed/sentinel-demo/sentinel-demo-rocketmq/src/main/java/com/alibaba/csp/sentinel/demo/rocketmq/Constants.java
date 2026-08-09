@@ -15,10 +15,14 @@
  */
 package com.alibaba.csp.sentinel.demo.rocketmq;
 
+/** RocketMQ 演示用常量：消费组、Topic 与 NameServer 地址。 */
 public final class Constants {
 
+    /** 消费/生产组名。 */
     public static final String TEST_GROUP_NAME = "sentinel-group";
+    /** 演示 Topic 名。 */
     public static final String TEST_TOPIC_NAME = "SentinelTopicTest";
+    /** 本地 NameServer 地址。 */
     public static final String TEST_NAMESRV_ADDR = "127.0.0.1:9876";
 
     private Constants() {}

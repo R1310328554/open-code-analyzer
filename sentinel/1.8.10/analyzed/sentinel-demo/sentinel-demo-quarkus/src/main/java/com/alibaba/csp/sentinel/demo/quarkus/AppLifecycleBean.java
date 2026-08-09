@@ -31,6 +31,8 @@ import javax.enterprise.event.Observes;
 import java.util.Arrays;
 
 /**
+ * Quarkus 应用生命周期 Bean：启动时加载流控与熔断规则（演示用，生产建议走数据源）。
+ *
  * @author sea
  */
 @ApplicationScoped
@@ -38,10 +40,11 @@ public class AppLifecycleBean {
 
     private static final Logger LOGGER = Logger.getLogger("ListenerBean");
 
+    /** 应用启动时注册 FlowRule 与 DegradeRule。 */
     void onStart(@Observes StartupEvent ev) {
         LOGGER.info("The application is starting...");
 
-        // Only for test here. Actually it's recommended to configure rules via data-source.
+        // 仅演示用；生产环境建议通过数据源配置规则
         FlowRule rule1 = new FlowRule()
             .setCount(1)
             .setGrade(RuleConstant.FLOW_GRADE_QPS)

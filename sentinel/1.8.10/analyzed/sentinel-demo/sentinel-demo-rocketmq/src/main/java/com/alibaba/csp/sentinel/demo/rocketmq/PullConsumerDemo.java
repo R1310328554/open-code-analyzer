@@ -39,6 +39,9 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * RocketMQ Pull 消费演示：消息消费前经 Sentinel 匀速排队流控（QPS=5）。
+ */
 public class PullConsumerDemo {
 
     private static final String KEY = String.format("%s:%s", Constants.TEST_GROUP_NAME, Constants.TEST_TOPIC_NAME);
@@ -52,7 +55,7 @@ public class PullConsumerDemo {
     private static final AtomicLong FAIL_COUNT = new AtomicLong(0);
 
     public static void main(String[] args) throws MQClientException {
-        // First we init the flow control rule for Sentinel.
+        // 先加载 Sentinel 流控规则
         initFlowControlRule();
 
         DefaultMQPullConsumer consumer = new DefaultMQPullConsumer(Constants.TEST_GROUP_NAME);
@@ -107,11 +110,11 @@ public class PullConsumerDemo {
                 ContextUtil.enter(KEY);
                 entry = SphU.entry(KEY, EntryType.OUT);
 
-                // Your business logic here.
+                // 业务逻辑：打印收到的消息
                 System.out.printf("[%d][%s][Success: %d] Receive New Messages: %s %n", System.currentTimeMillis(),
                     Thread.currentThread().getName(), SUCCESS_COUNT.addAndGet(1), new String(message.getBody()));
             } catch (BlockException ex) {
-                // Blocked.
+                // 被 Sentinel 限流
                 System.out.println("Blocked: " + FAIL_COUNT.addAndGet(1));
             } finally {
                 if (entry != null) {
@@ -122,20 +125,18 @@ public class PullConsumerDemo {
         });
     }
 
+    /** 加载匀速排队流控：QPS=5，最大排队 5s。 */
     private static void initFlowControlRule() {
         FlowRule rule = new FlowRule();
         rule.setResource(KEY);
-        // Indicates the interval between two adjacent requests is 200 ms.
+        // QPS 阈值 5
         rule.setCount(5);
         rule.setGrade(RuleConstant.FLOW_GRADE_QPS);
         rule.setLimitApp("default");
 
-        // Enable rate limiting (uniform). This can ensure fixed intervals between two adjacent calls.
-        // In this example, intervals between two incoming calls (message consumption) will be 200 ms constantly.
+        // 启用匀速排队，相邻两次消费间隔约 200ms
         rule.setControlBehavior(RuleConstant.CONTROL_BEHAVIOR_RATE_LIMITER);
-        // If more requests are coming, they'll be put into the waiting queue.
-        // The queue has a queueing timeout. Requests that may exceed the timeout will be immediately blocked.
-        // In this example, the max timeout is 5s.
+        // 超出速率的消息进入等待队列，排队超过 5s 则直接拒绝
         rule.setMaxQueueingTimeMs(5 * 1000);
         FlowRuleManager.loadRules(Collections.singletonList(rule));
     }

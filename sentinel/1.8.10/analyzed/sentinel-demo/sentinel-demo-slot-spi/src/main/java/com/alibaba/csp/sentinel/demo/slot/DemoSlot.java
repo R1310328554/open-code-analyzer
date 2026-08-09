@@ -25,11 +25,11 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowSlot;
 import com.alibaba.csp.sentinel.spi.Spi;
 
 /**
- * A demo slot that records current context and entry resource.
- *
- * Note that the value of order attribute in `@Spi` is -1500, the smaller the value, the higher the order,
- * so this slot will be executed after {@link FlowSlot}(order=-2000) and before {@link DegradeSlot}(order=-1000),
- * refer to the constants for slot order definitions in {@link Constants}.
+ * 自定义 Slot 演示：在 entry/exit 时打印当前 Context 与资源名。
+ * <p>
+ * {@code @Spi(order = -1500)} 表示在 {@link FlowSlot}(-2000) 之后、
+ * {@link DegradeSlot}(-1000) 之前执行，详见 {@link Constants} 中的顺序常量。
+ * </p>
  *
  * @author Eric Zhao
  * @author cdfive
@@ -40,7 +40,7 @@ public class DemoSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
     @Override
     public void entry(Context context, ResourceWrapper resourceWrapper, DefaultNode node, int count, boolean prioritized, Object... args)
             throws Throwable {
-        System.out.println("------Entering for entry on DemoSlot------");
+        System.out.println("------Entering for entry on DemoSlot------"); // 进入 DemoSlot
         System.out.println("Current context: " + context.getName());
         System.out.println("Current entry resource: " + context.getCurEntry().getResourceWrapper().getName());
 
@@ -49,7 +49,7 @@ public class DemoSlot extends AbstractLinkedProcessorSlot<DefaultNode> {
 
     @Override
     public void exit(Context context, ResourceWrapper resourceWrapper, int count, Object... args) {
-        System.out.println("------Exiting for entry on DemoSlot------");
+        System.out.println("------Exiting for entry on DemoSlot------"); // 退出 DemoSlot
         System.out.println("Current context: " + context.getName());
         System.out.println("Current entry resource: " + context.getCurEntry().getResourceWrapper().getName());
 

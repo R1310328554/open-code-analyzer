@@ -23,6 +23,9 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 /**
+ * JAX-RS 全局异常映射（演示用，当前 @Provider 已注释）。
+ * 将未捕获异常转为 HTTP 500 与异常消息。
+ *
  * @author sea
  */
 //@Provider
@@ -31,6 +34,7 @@ public class CustomExceptionMapper implements ExceptionMapper<Throwable> {
 
     static final Logger log = Logger.getLogger(CustomExceptionMapper.class);
 
+    /** 记录异常并返回 500 响应。 */
     @Override
     public Response toResponse(Throwable exception) {
         log.error(exception.getMessage(), exception);
