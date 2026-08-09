@@ -16,18 +16,22 @@
 package org.redisson.api.keys;
 
 /**
- * MigrateArgs
+ * {@link org.redisson.api.RKeys#migrate(MigrateArgs)} 的键迁移参数入口。
+ * <p>
+ * 通过静态工厂 {@link #keys(String...)} 创建链式构建器，
+ * 逐步配置目标实例连接信息与可选认证参数。
  *
  * @author lyrric
  */
 public interface MigrateArgs {
 
     /**
-     * Defines keys to transfer
-     * Redis version >= 3.0.6
+     * 指定待迁移的键名列表。
+     * <p>
+     * 需要 Redis 3.0.6 及以上版本；键数组不可为空。
      *
-     * @param keys keys to migrate，not empty
-     * @return migrate conditions object
+     * @param keys 待迁移的键，不可为空
+     * @return 迁移条件构建器，可继续设置 host
      */
     static HostMigrateArgs keys(String... keys){
         return new MigrateParams(keys);

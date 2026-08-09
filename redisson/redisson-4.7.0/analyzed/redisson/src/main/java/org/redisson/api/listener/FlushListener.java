@@ -20,9 +20,9 @@ import org.redisson.api.ObjectListener;
 import java.net.InetSocketAddress;
 
 /**
- * Redisson Object Event listener for <b>flush</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的<b>清空数据库</b>（flushdb/flushall）键空间事件。
  * <p>
- * Requires Redis 6.0+
+ * 需要 Redis 6.0 及以上版本。
  *
  * @author Nikita Koksharov
  *
@@ -31,10 +31,9 @@ import java.net.InetSocketAddress;
 public interface FlushListener extends ObjectListener {
 
     /**
-     * Invoked when `flushdb` or `flushall` command
-     * was executed on Redis node.
+     * 当 Redis 节点执行 {@code flushdb} 或 {@code flushall} 命令时触发。
      *
-     * @param address
+     * @param address 执行清空命令的节点地址
      */
     void onFlush(InetSocketAddress address);
 

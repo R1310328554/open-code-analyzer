@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>lpush</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的双端队列<b>头部插入</b>（lpush）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain El letters
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code l} 字母。
  *
  * @author nhancdt
  */
@@ -28,9 +28,9 @@ import org.redisson.api.ObjectListener;
 public interface DequeAddFirstListener extends ObjectListener {
 
     /**
-     * Invoked when elements added to deque head
+     * 当元素被添加到双端队列头部时触发。
      *
-     * @param name object name
+     * @param name 对象名称（键名）
      */
     void onAddFirst(String name);
 

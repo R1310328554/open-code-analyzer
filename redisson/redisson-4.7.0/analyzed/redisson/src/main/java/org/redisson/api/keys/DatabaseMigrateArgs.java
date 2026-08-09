@@ -16,16 +16,22 @@
 package org.redisson.api.keys;
 
 /**
- * DatabaseMigrateArgs
+ * 键迁移参数链中的「目标数据库」配置步骤。
+ * <p>
+ * 在 {@link MigrateArgs#keys(String...)} 指定待迁移键后，
+ * 依次设置 host、port、database 与 timeout 等参数。
+ *
  * @author lyrric
  */
 public interface DatabaseMigrateArgs {
 
     /**
-     * Defines database of destination instance
+     * 指定目标 Redis 实例的逻辑数据库编号。
+     * <p>
+     * 数据库索引应大于等于 0。
      *
-     * @param database database, should be greater than or eq 0
-     * @return migrate conditions object
+     * @param database 目标数据库编号，应 ≥ 0
+     * @return 迁移条件构建器，可继续设置超时等参数
      */
     TimeoutMigrateArgs database(int database);
 }

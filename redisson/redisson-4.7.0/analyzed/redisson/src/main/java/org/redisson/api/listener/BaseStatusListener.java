@@ -16,7 +16,10 @@
 package org.redisson.api.listener;
 
 /**
- * Base status listener for Redis PubSub channel status changes
+ * Redis Pub/Sub 频道订阅状态变更的基类监听器。
+ * <p>
+ * 提供 {@link StatusListener} 的空实现，子类可按需覆盖
+ * {@link #onSubscribe(String)} 与 {@link #onUnsubscribe(String)}。
  *
  * @author Nikita Koksharov
  *
@@ -24,10 +27,12 @@ package org.redisson.api.listener;
  */
 public class BaseStatusListener implements StatusListener {
 
+    /** 频道订阅成功时的回调，默认空实现。 */
     @Override
     public void onSubscribe(String channel) {
     }
 
+    /** 取消频道订阅时的回调，默认空实现。 */
     @Override
     public void onUnsubscribe(String channel) {
     }

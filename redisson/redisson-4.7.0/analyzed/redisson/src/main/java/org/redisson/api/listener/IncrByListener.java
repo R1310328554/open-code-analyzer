@@ -18,9 +18,9 @@ package org.redisson.api.listener;
 import org.redisson.api.ObjectListener;
 
 /**
- * Redisson Object Event listener for <b>incrby</b> event published by Valkey or Redis.
+ * 监听 Valkey 或 Redis 发布的<b>计数器递增</b>（incrby）键空间事件。
  * <p>
- * Redis notify-keyspace-events setting should contain Ex letters
+ * 需在 Redis 配置 {@code notify-keyspace-events} 中包含 {@code E} 与 {@code x} 字母。
  *
  * @author Nikita Koksharov
  *
@@ -29,9 +29,9 @@ import org.redisson.api.ObjectListener;
 public interface IncrByListener extends ObjectListener {
 
     /**
-     * Invoked on counter change event
+     * 计数器数值发生变化时触发。
      *
-     * @param name - name of object
+     * @param name 对象名称（键名）
      */
     void onChange(String name);
 

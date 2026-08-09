@@ -19,7 +19,9 @@ import org.redisson.api.MigrateMode;
 
 
 /**
- * OptionalMigrateArgs
+ * 键迁移参数链中的可选配置步骤。
+ * <p>
+ * 在设置 timeout 之后，可进一步指定迁移模式与目标实例认证信息。
  *
  * @author lyrric
  */
@@ -27,35 +29,33 @@ public interface OptionalMigrateArgs extends MigrateArgs {
 
 
     /**
-     * Defines migrate mode
+     * 设置键迁移模式（迁移或复制）。
      * @see org.redisson.api.MigrateMode
      *
-     * @param mode migrate mode
-     * @return migrate conditions object
+     * @param mode 迁移模式
+     * @return 迁移条件构建器
      */
     OptionalMigrateArgs mode(MigrateMode mode);
 
     /**
-     * Defines username of destination instance
+     * 设置目标 Redis 实例的 ACL 用户名。
      * <p>
-     * Authenticate with the given username to the remote instance.
+     * 使用给定用户名对远程实例进行认证；若设置用户名则通常需同时设置密码。
      * <p>
-     * if username is set, then password should be set too.
-     * <p>
-     * Redis 6 or greater ACL auth style
+     * 适用于 Redis 6+ 的 ACL 认证方式。
      *
-     * @param username distinction username
-     * @return migrate conditions object
+     * @param username 目标实例用户名
+     * @return 迁移条件构建器
      */
     OptionalMigrateArgs username(String username);
 
     /**
-     * Defines password of destination instance
+     * 设置目标 Redis 实例的访问密码。
      * <p>
-     * Authenticate with the given password to the remote instance.
+     * 使用给定密码对远程实例进行认证。
      *
-     * @param password distinction password
-     * @return migrate conditions object
+     * @param password 目标实例密码
+     * @return 迁移条件构建器
      */
     OptionalMigrateArgs password(String password);
 

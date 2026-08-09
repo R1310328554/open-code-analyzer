@@ -17,15 +17,19 @@ package org.redisson.api.keys;
 
 
 /**
- * PortMigrateArgs
+ * 键迁移参数链中的「目标端口」配置步骤。
+ * <p>
+ * 在设置 host 之后调用，用于指定远程 Redis 监听端口。
+ *
  * @author lyrric
  */
 public interface PortMigrateArgs {
 
     /**
-     * Defines port of destination instance
-     * @param port port
-     * @return migrate conditions object
+     * 设置目标 Redis 实例的 TCP 端口。
+     *
+     * @param port 目标端口
+     * @return 迁移条件构建器，可继续设置数据库
      */
     DatabaseMigrateArgs port(int port);
 }

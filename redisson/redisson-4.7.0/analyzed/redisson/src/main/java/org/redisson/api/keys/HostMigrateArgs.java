@@ -17,16 +17,18 @@ package org.redisson.api.keys;
 
 
 /**
- * DatabaseMigrateArgs
+ * 键迁移参数链中的「目标主机」配置步骤。
+ * <p>
+ * 由 {@link MigrateArgs#keys(String...)} 返回，用于指定远程 Redis 地址。
  *
  * @author lyrric
  */
 public interface HostMigrateArgs {
     /**
-     * Defines host of destination instance
+     * 设置目标 Redis 实例的主机名或 IP 地址。
      *
-     * @param host host
-     * @return migrate conditions object
+     * @param host 目标主机
+     * @return 迁移条件构建器，可继续设置端口
      */
     PortMigrateArgs host(String host);
 }

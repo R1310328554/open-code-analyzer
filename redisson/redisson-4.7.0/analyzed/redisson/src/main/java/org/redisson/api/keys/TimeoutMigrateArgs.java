@@ -17,17 +17,21 @@ package org.redisson.api.keys;
 
 
 /**
- * TimeoutMigrateArgs
+ * 键迁移参数链中的「通信超时」配置步骤。
+ * <p>
+ * 在设置 database 之后调用，用于限制与目标实例通信的空闲时间。
  *
  * @author lyrric
  */
 public interface TimeoutMigrateArgs {
 
     /**
-     * Defines maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * 设置与目标实例通信过程中允许的最大空闲时间（毫秒）。
+     * <p>
+     * 超过该时间未收到响应则中断迁移操作。
      *
-     * @param timeout timeout
-     * @return migrate conditions object
+     * @param timeout 超时毫秒数
+     * @return 迁移条件构建器，可继续设置可选参数
      */
     OptionalMigrateArgs timeout(long timeout);
 }
