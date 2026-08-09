@@ -18,7 +18,11 @@ package org.apache.rocketmq.common.utils;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 始终返回非负整数的原子计数器：自增后与 {@code 0x7FFFFFFF} 按位与，避免溢出为负数。
+ */
 public class PositiveAtomicCounter {
+    /** 保留符号位为 0 的掩码。 */
     private static final int MASK = 0x7FFFFFFF;
     private final AtomicInteger atom;
 
@@ -28,6 +32,7 @@ public class PositiveAtomicCounter {
     }
 
 
+    /** 自增并返回保证为非负的结果值。 */
     public final int incrementAndGet() {
         final int rt = atom.incrementAndGet();
         return rt & MASK;

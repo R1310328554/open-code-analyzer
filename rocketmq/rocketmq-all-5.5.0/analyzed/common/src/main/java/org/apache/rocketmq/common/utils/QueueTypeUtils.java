@@ -24,12 +24,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * 根据 Topic 配置解析消费队列（CQ）类型，例如是否为 BatchCQ。
+ */
 public class QueueTypeUtils {
 
+    /** 判断 Topic 是否配置为 {@link CQType#BatchCQ}。 */
     public static boolean isBatchCq(Optional<TopicConfig> topicConfig) {
         return Objects.equals(CQType.BatchCQ, getCQType(topicConfig));
     }
 
+    /**
+     * 从 Topic 属性读取队列类型；配置缺失时使用 {@link TopicAttributes#QUEUE_TYPE_ATTRIBUTE} 默认值。
+     *
+     * @param topicConfig 可为空的 Topic 配置
+     */
     public static CQType getCQType(Optional<TopicConfig> topicConfig) {
         if (!topicConfig.isPresent()) {
             return CQType.valueOf(TopicAttributes.QUEUE_TYPE_ATTRIBUTE.getDefaultValue());
