@@ -18,6 +18,7 @@ package org.redisson.api.options;
 import org.redisson.client.codec.Codec;
 
 /**
+ * {@link CommonOptions} 的参数实现，绑定对象名称及通用调用选项。
  *
  * @author Nikita Koksharov
  *

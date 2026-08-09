@@ -18,26 +18,25 @@ package org.redisson.api.mapreduce;
 import java.io.Serializable;
 
 /**
- * Mapper task invoked during map phase of MapReduce process and launched across Redisson Nodes.
- * Every task stores transformed result of input key/value into {@link RCollector} instance. 
- * Collected results are handled by {@link RReducer} instance once 
- * all Mapper tasks have finished.
+ * MapReduce 流程 Map 阶段在各 Redisson 节点上执行的映射任务。
+ * 每个任务将输入键值对转换后的结果写入 {@link RCollector} 实例；
+ * 全部 Mapper 任务完成后，由 {@link RReducer} 对收集结果进行归约。
  * 
  * @author Nikita Koksharov
  *
- * @param <KIn> input key
- * @param <VIn> input value
- * @param <KOut> output key
- * @param <VOut> output value
+ * @param <KIn> 输入键类型
+ * @param <VIn> 输入值类型
+ * @param <KOut> 输出键类型
+ * @param <VOut> 输出值类型
  */
 public interface RMapper<KIn, VIn, KOut, VOut> extends Serializable {
 
     /**
-     * Invoked for each Map source entry
+     * 对 Map 数据源中的每条条目执行映射逻辑。
      * 
-     * @param key - input key
-     * @param value - input value
-     * @param collector - instance shared across all Mapper tasks
+     * @param key 输入键
+     * @param value 输入值
+     * @param collector 在所有 Mapper 任务间共享的收集器
      */
     void map(KIn key, VIn value, RCollector<KOut, VOut> collector);
     

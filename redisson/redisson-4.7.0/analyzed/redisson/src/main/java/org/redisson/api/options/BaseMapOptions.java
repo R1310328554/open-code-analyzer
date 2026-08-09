@@ -21,6 +21,7 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
+ * Map 相关选项的抽象基类，封装写入器、加载器及写后（write-behind）等通用配置。
  *
  * @author Nikita Koksharov
  *
@@ -100,10 +101,10 @@ class BaseMapOptions<T extends ExMapOptions<T, K, V>, K, V> extends BaseOptions<
     }
 
     /**
-     * Sets max retry attempts for {@link RetryableMapWriter} or {@link RetryableMapWriterAsync}
+     * 设置 {@link RetryableMapWriter} 或 {@link RetryableMapWriterAsync} 的最大重试次数。
      *
-     * @param writerRetryAttempts object
-     * @return MapOptions instance
+     * @param writerRetryAttempts 最大重试次数
+     * @return MapOptions 实例
      */
     public T writeRetryAttempts(int writerRetryAttempts) {
         if (writerRetryAttempts <= 0){
@@ -126,10 +127,10 @@ class BaseMapOptions<T extends ExMapOptions<T, K, V>, K, V> extends BaseOptions<
     }
 
     /**
-     * Sets {@link MapLoader} object.
+     * 设置 {@link MapLoader} 实例，用于按需从外部数据源加载条目。
      *
-     * @param loader object
-     * @return MapOptions instance
+     * @param loader MapLoader 实例
+     * @return MapOptions 实例
      */
     public T loader(MapLoader<K, V> loader) {
         this.loader = loader;

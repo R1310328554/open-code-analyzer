@@ -19,21 +19,21 @@ import java.io.Serializable;
 import java.util.Iterator;
 
 /**
- * Reduces values mapped by key into single value.
+ * 将同一键下 Map 阶段产生的多个值归约为单个结果。
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RReducer<K, V> extends Serializable {
 
     /**
-     * Invoked for each key
+     * 对每个键及其关联的值集合执行归约。
      * 
-     * @param reducedKey - key
-     * @param iter - collection of values
-     * @return value
+     * @param reducedKey 待归约的键
+     * @param iter 该键对应的值迭代器
+     * @return 归约后的单个值
      */
     V reduce(K reducedKey, Iterator<V> iter);
     

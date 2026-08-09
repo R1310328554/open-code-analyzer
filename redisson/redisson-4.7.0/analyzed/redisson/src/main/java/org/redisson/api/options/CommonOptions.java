@@ -16,7 +16,7 @@
 package org.redisson.api.options;
 
 /**
- * Object instance options
+ * 通用 Redisson 对象实例选项，通过名称创建并配置对象。
  *
  * @author Nikita Koksharov
  *
@@ -24,10 +24,10 @@ package org.redisson.api.options;
 public interface CommonOptions extends InvocationOptions<CommonOptions> {
 
     /**
-     * Creates options with the name of object instance
+     * 按对象实例名称创建选项。
      *
-     * @param name of object instance
-     * @return options instance
+     * @param name 对象实例名称（Redis 键名）
+     * @return 选项实例
      */
     static CommonOptions name(String name) {
         return new CommonParams(name);

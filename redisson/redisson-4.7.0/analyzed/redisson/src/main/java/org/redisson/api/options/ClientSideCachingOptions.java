@@ -18,6 +18,7 @@ package org.redisson.api.options;
 import java.time.Duration;
 
 /**
+ * 客户端侧缓存（Client Side Caching）配置选项。
  *
  * @author Nikita Koksharov
  *
@@ -27,82 +28,82 @@ public interface ClientSideCachingOptions {
     enum EvictionPolicy {
 
         /**
-         * Client cache without eviction.
+         * 不启用驱逐策略的客户端缓存。
          */
         NONE,
 
         /**
-         * Least Recently Used client cache eviction policy.
+         * 最近最少使用（LRU）驱逐策略。
          */
         LRU,
 
         /**
-         * Least Frequently Used client cache eviction policy.
+         * 最不经常使用（LFU）驱逐策略。
          */
         LFU,
 
         /**
-         * Client cache  eviction policy with Soft Reference used for values.
-         * All references will be collected by GC
+         * 对值使用软引用（Soft Reference）的驱逐策略，
+         * 当 JVM 内存不足时由 GC 回收缓存条目。
          */
         SOFT,
 
         /**
-         * Client cache eviction policy with Weak Reference used for values.
-         * All references will be collected by GC
+         * 对值使用弱引用（Weak Reference）的驱逐策略，
+         * 当引用变为弱可达时由 GC 回收缓存条目。
          */
         WEAK
     };
 
     /**
-     * Creates the default options
+     * 创建默认客户端侧缓存选项。
      *
-     * @return options instance
+     * @return 选项实例
      */
     static ClientSideCachingOptions defaults() {
         return new ClientSideCachingParams();
     }
 
     /**
-     * Defines client cache eviction policy.
+     * 设置客户端缓存驱逐策略。
      *
      * @param evictionPolicy
-     *         <p><code>LRU</code> - uses client cache with LRU (least recently used) eviction policy.
-     *         <p><code>LFU</code> - uses client cache with LFU (least frequently used) eviction policy.
-     *         <p><code>SOFT</code> - uses client cache with soft references. The garbage collector will evict items from the client cache when the JVM is running out of memory.
-     *         <p><code>WEAK</code> - uses client cache with weak references. The garbage collector will evict items from the client cache when it became weakly reachable.
-     *         <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
-     * @return options instance
+     *         <p><code>LRU</code> — 最近最少使用驱逐。
+     *         <p><code>LFU</code> — 最不经常使用驱逐。
+     *         <p><code>SOFT</code> — 软引用；JVM 内存不足时 GC 驱逐条目。
+     *         <p><code>WEAK</code> — 弱引用；引用弱可达时 GC 驱逐条目。
+     *         <p><code>NONE</code> — 不启用驱逐，但 timeToLive 与 maxIdle 仍生效。
+     * @return 选项实例
      */
     ClientSideCachingOptions evictionPolicy(EvictionPolicy evictionPolicy);
 
     /**
-     * Defines client cache size.
+     * 设置客户端缓存容量。
      * <p>
-     * If size is <code>0</code> then client cache is unbounded.
+     * 若 size 为 <code>0</code>，则缓存无上限。
      * <p>
-     * If size is <code>-1</code> then client cache is always empty and doesn't store data.
+     * 若 size 为 <code>-1</code>，则缓存始终为空、不存储数据。
      *
-     * @param size size of client cache
-     * @return options instance
+     * @param size 客户端缓存大小
+     * @return 选项实例
      */
     ClientSideCachingOptions size(int size);
 
     /**
-     * Defines time to live in milliseconds of each map entry in client cache.
-     * If value equals to <code>0</code> then timeout is not applied
+     * 设置客户端缓存中每条目的存活时间（TTL）。
+     * 若值为 <code>0</code>，则不应用超时。
      *
-     * @param ttl - time to live in milliseconds
-     * @return LocalCachedMapOptions instance
+     * @param ttl 存活时间
+     * @return LocalCachedMapOptions 实例
      */
     ClientSideCachingOptions timeToLive(Duration ttl);
 
     /**
-     * Defines max idle time in milliseconds of each map entry in client cache.
-     * If value equals to <code>0</code> then timeout is not applied
+     * 设置客户端缓存中每条目的最大空闲时间。
+     * 若值为 <code>0</code>，则不应用超时。
      *
-     * @param idleTime time to live in milliseconds
-     * @return LocalCachedMapOptions instance
+     * @param idleTime 最大空闲时间
+     * @return LocalCachedMapOptions 实例
      */
     ClientSideCachingOptions maxIdle(Duration idleTime);
 

@@ -22,6 +22,7 @@ import org.redisson.config.ReadMode;
 import java.time.Duration;
 
 /**
+ * Redisson 对象选项的抽象基类，持有编解码器、超时、重试及读模式等通用参数。
  *
  * @author Nikita Koksharov
  *

@@ -18,6 +18,7 @@ package org.redisson.api.options;
 import org.redisson.codec.JsonCodec;
 
 /**
+ * {@link JsonBucketOptions} 的参数实现，绑定 JSON Bucket 名称及通用调用选项。
  *
  * @author Nikita Koksharov
  *

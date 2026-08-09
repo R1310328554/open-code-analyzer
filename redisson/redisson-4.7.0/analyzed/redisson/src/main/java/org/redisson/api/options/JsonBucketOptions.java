@@ -18,7 +18,7 @@ package org.redisson.api.options;
 import org.redisson.codec.JsonCodec;
 
 /**
- * {@link org.redisson.api.RJsonBucket} instance options
+ * {@link org.redisson.api.RJsonBucket} 实例的配置选项。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +26,10 @@ import org.redisson.codec.JsonCodec;
 public interface JsonBucketOptions<V> extends CodecOptions<JsonBucketOptions<V>, JsonCodec> {
 
     /**
-     * Creates options with the name of object instance
+     * 按对象实例名称创建 JSON Bucket 选项。
      *
-     * @param name of object instance
-     * @return options instance
+     * @param name 对象实例名称
+     * @return 选项实例
      */
     static <V> JsonBucketOptions<V> name(String name) {
         return new JsonBucketParams<>(name);

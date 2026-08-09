@@ -21,6 +21,7 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
+ * {@link ExecutorOptions} 的参数实现，持有执行器名称、任务重试及 ID 生成配置。
  *
  * @author Nikita Koksharov
  *

@@ -16,6 +16,7 @@
 package org.redisson.api.options;
 
 /**
+ * 定义 Redis 中数据序列化所用编解码器的选项接口。
  *
  * @author Nikita Koksharov
  *
@@ -23,10 +24,10 @@ package org.redisson.api.options;
 public interface CodecOptions<T extends InvocationOptions<T>, C> extends InvocationOptions<T> {
 
     /**
-     * Defines codec used for data stored in Redis
+     * 指定写入 Redis 时使用的编解码器。
      *
-     * @param codec applied to object instance
-     * @return options object
+     * @param codec 应用于对象实例的编解码器
+     * @return 选项对象
      */
     T codec(C codec);
 

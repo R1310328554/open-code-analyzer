@@ -21,7 +21,7 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
- * {@link org.redisson.api.RExecutorService} instance options
+ * {@link org.redisson.api.RExecutorService} 实例的配置选项。
  *
  * @author Nikita Koksharov
  *
@@ -29,37 +29,34 @@ import java.time.Duration;
 public interface ExecutorOptions extends CodecOptions<ExecutorOptions, Codec> {
 
     /**
-     * Creates options with the name of object instance
+     * 按对象实例名称创建选项。
      *
-     * @param name of object instance
-     * @return options instance
+     * @param name 对象实例名称
+     * @return 选项实例
      */
     static ExecutorOptions name(String name) {
         return new ExecutorParams(name);
     }
 
     /**
-     * Defines task retry interval at the end of which task
-     * is executed again by ExecutorService worker.
+     * 设置任务重试间隔：自任务开始计时，到期后由 ExecutorService 工作线程再次执行。
      * <p>
-     * Counted from the task start moment.
-     * Applied only if the task was in progress but for some reason
-     * wasn't marked as completed (successful or unsuccessful).
+     * 仅当任务曾处于执行中但未标记为完成（成功或失败）时生效。
      * <p>
-     * Set <code>0</code> to disable.
+     * 设为 <code>0</code> 可禁用。
      * <p>
-     * Default is <code>5 minutes</code>
+     * 默认值为 <code>5 分钟</code>
      *
-     * @param interval value
-     * @return options instance
+     * @param interval 重试间隔
+     * @return 选项实例
      */
     ExecutorOptions taskRetryInterval(Duration interval);
 
     /**
-     * Defines identifier generator
+     * 设置任务标识符生成器。
      *
-     * @param idGenerator identifier generator
-     * @return options instance
+     * @param idGenerator 标识符生成器
+     * @return 选项实例
      */
     ExecutorOptions idGenerator(IdGenerator idGenerator);
 

@@ -19,6 +19,7 @@ import java.time.Duration;
 
 
 /**
+ * {@link ClientSideCachingOptions} 的默认实现，持有客户端侧缓存的各项参数。
  *
  * @author Nikita Koksharov
  *

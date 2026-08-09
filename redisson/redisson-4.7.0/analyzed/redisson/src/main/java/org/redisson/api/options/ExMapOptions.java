@@ -21,91 +21,92 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
+ * 扩展 Map 选项接口，涵盖写入器、加载器、写后模式及重试等配置。
  *
  * @author Nikita Koksharov
  *
- * @param <T> returned object type
- * @param <K> type of key
- * @param <V> type of value
+ * @param <T> 链式返回的类型
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface ExMapOptions<T extends ExMapOptions<T, K, V>, K, V> extends CodecOptions<T, Codec>, ReadModeOptions<T> {
 
     /**
-     * Defines {@link MapWriter} object which is invoked during write operation.
+     * 设置写操作期间调用的 {@link MapWriter}。
      *
-     * @param writer object
-     * @return MapOptions instance
+     * @param writer MapWriter 实例
+     * @return MapOptions 实例
      */
     T writer(MapWriter<K, V> writer);
 
     /**
-     * Defines {@link MapWriterAsync} object which is invoked during write operation.
+     * 设置写操作期间调用的异步 {@link MapWriterAsync}。
      *
-     * @param writer object
-     * @return MapOptions instance
+     * @param writer MapWriterAsync 实例
+     * @return MapOptions 实例
      */
     T writerAsync(MapWriterAsync<K, V> writer);
     /**
-     * Sets write behind tasks batch size.
-     * All updates accumulated into a batch of specified size and written with {@link MapWriter}.
+     * 设置写后（write-behind）任务的批处理大小。
+     * 累积的更新按指定批次大小通过 {@link MapWriter} 批量写入。
      * <p>
-     * Default is <code>50</code>
+     * 默认值为 <code>50</code>
      *
-     * @param writeBehindBatchSize size of batch
-     * @return MapOptions instance
+     * @param writeBehindBatchSize 批大小
+     * @return MapOptions 实例
      */
     T writeBehindBatchSize(int writeBehindBatchSize);
 
     /**
-     * Sets write behind tasks execution delay.
-     * All updates written with {@link MapWriter} and lag not more than specified delay.
+     * 设置写后任务的执行延迟（毫秒）。
+     * 所有更新通过 {@link MapWriter} 写入，且滞后不超过指定延迟。
      * <p>
-     * Default is <code>1000</code> milliseconds
+     * 默认值为 <code>1000</code> 毫秒
      *
-     * @param writeBehindDelay delay in milliseconds
-     * @return MapOptions instance
+     * @param writeBehindDelay 延迟（毫秒）
+     * @return MapOptions 实例
      */
     T writeBehindDelay(int writeBehindDelay);
 
     /**
-     * Sets write mode.
+     * 设置写入模式。
      * <p>
-     * Default is <code>{@link WriteMode#WRITE_THROUGH}</code>
+     * 默认值为 <code>{@link WriteMode#WRITE_THROUGH}</code>
      *
-     * @param writeMode write mode
-     * @return MapOptions instance
+     * @param writeMode 写入模式
+     * @return MapOptions 实例
      */
     T writeMode(WriteMode writeMode);
 
     /**
-     * Sets max write retry attempts
+     * 设置写入失败时的最大重试次数。
      *
-     * @param writerRetryAttempts object
-     * @return MapOptions instance
+     * @param writerRetryAttempts 最大重试次数
+     * @return MapOptions 实例
      */
     T writeRetryAttempts(int writerRetryAttempts);
 
     /**
-     * Sets write retry interval
+     * 设置写入重试间隔。
      *
-     * @param writerRetryInterval {@link Duration}
-     * @return MapOptions instance
+     * @param writerRetryInterval 重试间隔 {@link Duration}
+     * @return MapOptions 实例
      */
     T writeRetryInterval(Duration writerRetryInterval);
 
     /**
-     * Sets {@link MapLoader} object.
+     * 设置 {@link MapLoader}，用于缓存未命中时从外部加载条目。
      *
-     * @param loader object
-     * @return MapOptions instance
+     * @param loader MapLoader 实例
+     * @return MapOptions 实例
      */
     T loader(MapLoader<K, V> loader);
 
     /**
-     * Sets {@link MapLoaderAsync} object.
+     * 设置异步 {@link MapLoaderAsync}，用于缓存未命中时异步加载条目。
      *
-     * @param loaderAsync object
-     * @return MapOptions instance
+     * @param loaderAsync MapLoaderAsync 实例
+     * @return MapOptions 实例
      */
     T loaderAsync(MapLoaderAsync<K, V> loaderAsync);
 
