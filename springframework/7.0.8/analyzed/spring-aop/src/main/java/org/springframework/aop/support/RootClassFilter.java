@@ -24,39 +24,54 @@ import org.springframework.aop.ClassFilter;
 import org.springframework.util.Assert;
 
 /**
- * Simple ClassFilter implementation that passes classes (and optionally subclasses).
- *
+ * 传递类（以及可选的子类）的简单 ClassFilter 实现。
  * @author Rod Johnson
  * @author Sam Brannen
  */
 @SuppressWarnings("serial")
 public class RootClassFilter implements ClassFilter, Serializable {
 
+	/** `clazz`：该类的成员状态。 */
 	private final Class<?> clazz;
 
 
+	/**
+	 * 创建 `RootClassFilter` 的新实例。
+	 */
 	public RootClassFilter(Class<?> clazz) {
 		Assert.notNull(clazz, "Class must not be null");
 		this.clazz = clazz;
 	}
 
 
+	/**
+	 * 匹配：es（方法 `matches`）。
+	 */
 	@Override
 	public boolean matches(Class<?> candidate) {
 		return this.clazz.isAssignableFrom(candidate);
 	}
 
+	/**
+	 * 比较是否相等。
+	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof RootClassFilter that &&
 				this.clazz.equals(that.clazz)));
 	}
 
+	/**
+	 * 判断是否包含/具备 h Code。
+	 */
 	@Override
 	public int hashCode() {
 		return this.clazz.hashCode();
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return getClass().getName() + ": " + this.clazz.getName();

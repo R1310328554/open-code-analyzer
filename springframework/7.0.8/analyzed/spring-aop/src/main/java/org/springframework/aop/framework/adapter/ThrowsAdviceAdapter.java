@@ -25,20 +25,24 @@ import org.springframework.aop.Advisor;
 import org.springframework.aop.ThrowsAdvice;
 
 /**
- * Adapter to enable {@link org.springframework.aop.ThrowsAdvice} to be used
- * in the Spring AOP framework.
- *
+ * 使 {@link org.springframework.aop.ThrowsAdvice} 能够在 Spring AOP 框架中使用的适配器。
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 @SuppressWarnings("serial")
 class ThrowsAdviceAdapter implements AdvisorAdapter, Serializable {
 
+	/**
+	 * 方法 `supportsAdvice`：完成本类中与「supports Advice」相关的职责。
+	 */
 	@Override
 	public boolean supportsAdvice(Advice advice) {
 		return (advice instanceof ThrowsAdvice);
 	}
 
+	/**
+	 * 获取 Interceptor（`Interceptor`）。
+	 */
 	@Override
 	public MethodInterceptor getInterceptor(Advisor advisor) {
 		return new ThrowsAdviceInterceptor(advisor.getAdvice());

@@ -24,10 +24,7 @@ import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
- * Implementation of {@link AspectInstanceFactory} that is backed by a
- * specified singleton object, returning the same instance for every
- * {@link #getAspectInstance()} call.
- *
+ * 由指定单例对象支持的 {@link AspectInstanceFactory} 实现，为每个 {@link #getAspectInstance()} 调用返回相同的实例。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -36,12 +33,13 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class SingletonAspectInstanceFactory implements AspectInstanceFactory, Serializable {
 
+	/** `aspectInstance`：该类的成员状态。 */
 	private final Object aspectInstance;
 
 
 	/**
-	 * Create a new SingletonAspectInstanceFactory for the given aspect instance.
-	 * @param aspectInstance the singleton aspect instance
+	 * 为给定的方面实例创建一个新的 SingletonAspectInstanceFactory。
+	 * @param aspectInstance 单例方面实例
 	 */
 	public SingletonAspectInstanceFactory(Object aspectInstance) {
 		Assert.notNull(aspectInstance, "Aspect instance must not be null");
@@ -49,21 +47,24 @@ public class SingletonAspectInstanceFactory implements AspectInstanceFactory, Se
 	}
 
 
+	/**
+	 * 获取 Aspect Instance（`AspectInstance`）。
+	 */
 	@Override
 	public final Object getAspectInstance() {
 		return this.aspectInstance;
 	}
 
+	/**
+	 * 获取 Aspect Class Loader（`AspectClassLoader`）。
+	 */
 	@Override
 	public @Nullable ClassLoader getAspectClassLoader() {
 		return this.aspectInstance.getClass().getClassLoader();
 	}
 
 	/**
-	 * Determine the order for this factory's aspect instance,
-	 * either an instance-specific order expressed through implementing
-	 * the {@link org.springframework.core.Ordered} interface,
-	 * or a fallback order.
+	 * 确定该工厂方面实例的顺序，可以是通过实现 {@link org.springframework.core.Ordered} 接口表达的特定于实例的顺序，也可以是回退顺序。
 	 * @see org.springframework.core.Ordered
 	 * @see #getOrderForAspectClass
 	 */
@@ -76,11 +77,9 @@ public class SingletonAspectInstanceFactory implements AspectInstanceFactory, Se
 	}
 
 	/**
-	 * Determine a fallback order for the case that the aspect instance
-	 * does not express an instance-specific order through implementing
-	 * the {@link org.springframework.core.Ordered} interface.
-	 * <p>The default implementation simply returns {@code Ordered.LOWEST_PRECEDENCE}.
-	 * @param aspectClass the aspect class
+	 * 通过实现 {@link org.springframework.core.Ordered} 接口，确定方面实例不表达特定于实例的顺序的情况的回退顺序。
+	 * <p>默认实现只是返回{@code Ordered.LOWEST_PRECEDENCE}。
+	 * @param aspectClass 方面类
 	 */
 	protected int getOrderForAspectClass(Class<?> aspectClass) {
 		return Ordered.LOWEST_PRECEDENCE;

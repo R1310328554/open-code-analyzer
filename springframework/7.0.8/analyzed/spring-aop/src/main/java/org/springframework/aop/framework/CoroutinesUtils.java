@@ -24,8 +24,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 /**
- * Package-visible class designed to avoid a hard dependency on Kotlin and Coroutines dependency at runtime.
- *
+ * 包可见类旨在避免运行时对 Kotlin 和协程依赖的硬依赖。
  * @author Sebastien Deleuze
  * @since 6.1
  */

@@ -34,19 +34,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Convenient proxy factory bean for scoped objects.
- *
- * <p>Proxies created using this factory bean are thread-safe singletons
- * and may be injected into shared objects, with transparent scoping behavior.
- *
- * <p>Proxies returned by this class implement the {@link ScopedObject} interface.
- * This presently allows for removing the corresponding object from the scope,
- * seamlessly creating a new instance in the scope on next access.
- *
- * <p>Please note that the proxies created by this factory are
- * <i>class-based</i> proxies by default. This can be customized
- * through switching the "proxyTargetClass" property to "false".
- *
+ * 用于作用域对象的方便代理工厂 bean。
+ * 使用此工厂 bean 创建的 <p>Proxies 是线程安全的单例，可以注入到共享对象中，具有透明的作用域行为。
+ * <p>Proxies 由此类返回实现 {@link ScopedObject} 接口。目前，这允许从作用域中删除相应的对象，从而在下次访问时在作用域中无缝地创建新实例。
+ * <p>请注意，默认情况下，该工厂创建的代理是基于 <i> 类的 </i> 代理。这可以通过将“proxyTargetClass”属性切换为“false”来自定义。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -56,18 +47,21 @@ import org.springframework.util.ClassUtils;
 public class ScopedProxyFactoryBean extends ProxyConfig
 		implements FactoryBean<Object>, BeanFactoryAware, AopInfrastructureBean {
 
-	/** The TargetSource that manages scoping. */
+	/**
+	 */
 	private final SimpleBeanTargetSource scopedTargetSource = new SimpleBeanTargetSource();
 
-	/** The name of the target bean. */
+	/**
+	 */
 	private @Nullable String targetBeanName;
 
-	/** The cached singleton proxy. */
+	/**
+	 */
 	private @Nullable Object proxy;
 
 
 	/**
-	 * Create a new ScopedProxyFactoryBean instance.
+	 * 创建一个新的 ScopedProxyFactoryBean 实例。
 	 */
 	public ScopedProxyFactoryBean() {
 		setProxyTargetClass(true);
@@ -75,13 +69,16 @@ public class ScopedProxyFactoryBean extends ProxyConfig
 
 
 	/**
-	 * Set the name of the bean that is to be scoped.
+	 * 设置要限定范围的 bean 的名称。
 	 */
 	public void setTargetBeanName(String targetBeanName) {
 		this.targetBeanName = targetBeanName;
 		this.scopedTargetSource.setTargetBeanName(targetBeanName);
 	}
 
+	/**
+	 * 设置 Bean Factory（`BeanFactory`）。
+	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		if (!(beanFactory instanceof ConfigurableBeanFactory cbf)) {
@@ -103,18 +100,21 @@ public class ScopedProxyFactoryBean extends ProxyConfig
 			pf.setInterfaces(ClassUtils.getAllInterfacesForClass(beanType, cbf.getBeanClassLoader()));
 		}
 
-		// Add an introduction that implements only the methods on ScopedObject.
+		// 添加仅实现 ScopedObject 上的方法的介绍。
 		ScopedObject scopedObject = new DefaultScopedObject(cbf, this.scopedTargetSource.getTargetBeanName());
 		pf.addAdvice(new DelegatingIntroductionInterceptor(scopedObject));
 
-		// Add the AopInfrastructureBean marker to indicate that the scoped proxy
-		// itself is not subject to auto-proxying! Only its target bean is.
+		// 添加 AopInfrastructureBean 标记以指示作用域代理
+		// 本身不受自动代理的约束！只有它的目标 bean 是。
 		pf.addInterface(AopInfrastructureBean.class);
 
 		this.proxy = pf.getProxy(cbf.getBeanClassLoader());
 	}
 
 
+	/**
+	 * 获取 Object（`Object`）。
+	 */
 	@Override
 	public @Nullable Object getObject() {
 		if (this.proxy == null) {
@@ -123,6 +123,9 @@ public class ScopedProxyFactoryBean extends ProxyConfig
 		return this.proxy;
 	}
 
+	/**
+	 * 获取 Object Type（`ObjectType`）。
+	 */
 	@Override
 	public @Nullable Class<?> getObjectType() {
 		if (this.proxy != null) {
@@ -131,6 +134,9 @@ public class ScopedProxyFactoryBean extends ProxyConfig
 		return this.scopedTargetSource.getTargetClass();
 	}
 
+	/**
+	 * 判断是否 Singleton。
+	 */
 	@Override
 	public boolean isSingleton() {
 		return true;

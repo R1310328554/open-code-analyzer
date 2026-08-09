@@ -1,6 +1,5 @@
 /**
- * Various {@link org.springframework.aop.TargetSource} implementations for use
- * with Spring AOP.
+ * 与 Spring AOP 一起使用的各种 {@link org.springframework.aop.TargetSource} 实现。
  */
 @NullMarked
 package org.springframework.aop.target;

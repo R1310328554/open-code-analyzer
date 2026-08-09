@@ -30,35 +30,29 @@ import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.util.Assert;
 
-/* ===== [OCA 中文解析] =====
-class BeanFactoryAdvisorRetrievalHelper — 意图说明
-
-Bean 工厂：存在与获取 Bean 实例的核心入口；源文件: `spring-aop/src/main/java/org/springframework/aop/framework/autoproxy/BeanFactoryAdvisorRetrievalHelper.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Helper for retrieving standard Spring Advisors from a BeanFactory,
- * for use with auto-proxying.
- *
+ * 用于从 BeanFactory 检索标准 Spring Advisor 的帮助程序，用于自动代理。
  * @author Juergen Hoeller
  * @since 2.0.2
  * @see AbstractAdvisorAutoProxyCreator
  */
 public class BeanFactoryAdvisorRetrievalHelper {
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(BeanFactoryAdvisorRetrievalHelper.class);
 
-	// [OCA] 字段 `beanFactory`：类成员状态。
+	/** 底层 BeanFactory 引用。 */
 	private final ConfigurableListableBeanFactory beanFactory;
 
+	/** 名称相关状态（`cachedAdvisorBeanNames`）。 */
 	private volatile String @Nullable [] cachedAdvisorBeanNames;
 
 
 	/**
 	 * Create a new BeanFactoryAdvisorRetrievalHelper for the given BeanFactory.
-	 * @param beanFactory the ListableBeanFactory to scan
+	 * @param beanFactory 要扫描的 ListableBeanFactory
 	 */
 	public BeanFactoryAdvisorRetrievalHelper(ConfigurableListableBeanFactory beanFactory) {
 		Assert.notNull(beanFactory, "ListableBeanFactory must not be null");
@@ -66,23 +60,17 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-方法 findAdvisorBeans — 意图与阅读要点
-
-方法 `findAdvisorBeans` 复杂度较高（CCN≈12, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Find all eligible Advisor beans in the current bean factory,
-	 * ignoring FactoryBeans and excluding beans that are currently in creation.
-	 * @return the list of {@link org.springframework.aop.Advisor} beans
+	 * 查找当前 bean 工厂中所有符合条件的 Advisor bean，忽略 FactoryBeans 并排除当前正在创建的 bean。
+	 * @return {@link org.springframework.aop.Advisor} bean 列表
 	 * @see #isEligibleBean
 	 */
 	public List<Advisor> findAdvisorBeans() {
-		// Determine list of advisor bean names, if not cached already.
+		// 确定 Advisor bean 名称列表（如果尚未缓存）。
 		String[] advisorNames = this.cachedAdvisorBeanNames;
 		if (advisorNames == null) {
-			// Do not initialize FactoryBeans here: We need to leave all regular beans
-			// uninitialized to let the auto-proxy creator apply to them!
+			// 不要在这里初始化 FactoryBeans：我们需要保留所有常规 bean
+			// 未初始化，让自动代理创建者应用到它们！
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);
 			this.cachedAdvisorBeanNames = advisorNames;
@@ -112,8 +100,8 @@ public class BeanFactoryAdvisorRetrievalHelper {
 									logger.trace("Skipping advisor '" + name +
 											"' with dependency on currently created bean: " + ex.getMessage());
 								}
-								// Ignore: indicates a reference back to the bean we're trying to advise.
-								// We want to find advisors other than the currently created bean itself.
+								// 忽略：指示返回到我们试图建议的 bean 的引用。
+								// 我们想要找到除当前创建的 bean 本身之外的顾问程序。
 								continue;
 							}
 						}
@@ -126,10 +114,9 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	}
 
 	/**
-	 * Determine whether the aspect bean with the given name is eligible.
-	 * <p>The default implementation always returns {@code true}.
-	 * @param beanName the name of the aspect bean
-	 * @return whether the bean is eligible
+	 * 确定具有给定名称的方面 bean 是否合格。 <p>默认实现始终返回{@code true}。
+	 * @param beanName 方面 bean 的名称
+	 * @return 该豆子符合条件
 	 */
 	protected boolean isEligibleBean(String beanName) {
 		return true;

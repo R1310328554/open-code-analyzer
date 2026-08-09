@@ -33,13 +33,9 @@ import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
- * Utility class for handling registration of AOP auto-proxy creators.
- *
- * <p>Only a single auto-proxy creator should be registered yet multiple concrete
- * implementations are available. This class provides a simple escalation protocol,
- * allowing a caller to request a particular auto-proxy creator and know that creator,
- * <i>or a more capable variant thereof</i>, will be registered as a post-processor.
- *
+ * 用于处理 AOP 自动代理创建者注册的实用程序类。
+ * OCAJAVA0DCO仅应注册单个自动代理创建者，但可以使用多个具体实现。此类提供了一个简单的升级协议，允许调用者请求特定的自动代理创建者，并知道该创建者 OCAJAVA1DO
+ *  或其功能更强大的变体 </i> 将被注册为后处理器。
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Mark Fisher
@@ -49,62 +45,89 @@ import org.springframework.util.Assert;
 public abstract class AopConfigUtils {
 
 	/**
-	 * The bean name of the internally managed auto-proxy creator.
+	 * 内部管理的自动代理创建者的 bean 名称。
 	 */
 	public static final String AUTO_PROXY_CREATOR_BEAN_NAME =
 			"org.springframework.aop.config.internalAutoProxyCreator";
 
 	/**
-	 * Stores the auto proxy creator classes in escalation order.
+	 * 按升级顺序存储自动代理创建者类。
 	 */
 	private static final List<Class<?>> APC_PRIORITY_LIST = new ArrayList<>(3);
 
 	static {
-		// Set up the escalation list...
+		// 设置升级列表...
 		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);
 	}
 
 
+	/**
+	 * 注册：Auto Proxy Creator If Necessary（方法 `registerAutoProxyCreatorIfNecessary`）。
+	 */
 	public static @Nullable BeanDefinition registerAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
 		return registerAutoProxyCreatorIfNecessary(registry, null);
 	}
 
+	/**
+	 * 注册：Auto Proxy Creator If Necessary（方法 `registerAutoProxyCreatorIfNecessary`）。
+	 */
 	public static @Nullable BeanDefinition registerAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
 		return registerOrEscalateApcAsRequired(InfrastructureAdvisorAutoProxyCreator.class, registry, source);
 	}
 
+	/**
+	 * 注册：Aspect J Auto Proxy Creator If Necessary（方法 `registerAspectJAutoProxyCreatorIfNecessary`）。
+	 */
 	public static @Nullable BeanDefinition registerAspectJAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
 		return registerAspectJAutoProxyCreatorIfNecessary(registry, null);
 	}
 
+	/**
+	 * 注册：Aspect J Auto Proxy Creator If Necessary（方法 `registerAspectJAutoProxyCreatorIfNecessary`）。
+	 */
 	public static @Nullable BeanDefinition registerAspectJAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
 		return registerOrEscalateApcAsRequired(AspectJAwareAdvisorAutoProxyCreator.class, registry, source);
 	}
 
+	/**
+	 * 注册：Aspect J Annotation Auto Proxy Creator If Necessary（方法 `registerAspectJAnnotationAutoProxyCreatorIfNecessary`）。
+	 */
 	public static @Nullable BeanDefinition registerAspectJAnnotationAutoProxyCreatorIfNecessary(BeanDefinitionRegistry registry) {
 		return registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry, null);
 	}
 
+	/**
+	 * 注册：Aspect J Annotation Auto Proxy Creator If Necessary（方法 `registerAspectJAnnotationAutoProxyCreatorIfNecessary`）。
+	 */
 	public static @Nullable BeanDefinition registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
 		return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
 	}
 
+	/**
+	 * 方法 `forceAutoProxyCreatorToUseClassProxying`：完成本类中与「force Auto Proxy Creator To Use Class Proxying」相关的职责。
+	 */
 	public static void forceAutoProxyCreatorToUseClassProxying(BeanDefinitionRegistry registry) {
 		defaultProxyConfig(registry).getPropertyValues().add("proxyTargetClass", Boolean.TRUE);
 	}
 
+	/**
+	 * 方法 `forceAutoProxyCreatorToExposeProxy`：完成本类中与「force Auto Proxy Creator To Expose Proxy」相关的职责。
+	 */
 	public static void forceAutoProxyCreatorToExposeProxy(BeanDefinitionRegistry registry) {
 		defaultProxyConfig(registry).getPropertyValues().add("exposeProxy", Boolean.TRUE);
 	}
 
+	/**
+	 * 方法 `defaultProxyConfig`：完成本类中与「default Proxy Config」相关的职责。
+	 */
 	private static BeanDefinition defaultProxyConfig(BeanDefinitionRegistry registry) {
 		if (registry.containsBeanDefinition(AutoProxyUtils.DEFAULT_PROXY_CONFIG_BEAN_NAME)) {
 			return registry.getBeanDefinition(AutoProxyUtils.DEFAULT_PROXY_CONFIG_BEAN_NAME);
@@ -116,6 +139,9 @@ public abstract class AopConfigUtils {
 		return beanDefinition;
 	}
 
+	/**
+	 * 注册：Or Escalate Apc As Required（方法 `registerOrEscalateApcAsRequired`）。
+	 */
 	private static @Nullable BeanDefinition registerOrEscalateApcAsRequired(
 			Class<?> cls, BeanDefinitionRegistry registry, @Nullable Object source) {
 
@@ -141,10 +167,16 @@ public abstract class AopConfigUtils {
 		return beanDefinition;
 	}
 
+	/**
+	 * 查找：Priority For Class（方法 `findPriorityForClass`）。
+	 */
 	private static int findPriorityForClass(Class<?> clazz) {
 		return APC_PRIORITY_LIST.indexOf(clazz);
 	}
 
+	/**
+	 * 查找：Priority For Class（方法 `findPriorityForClass`）。
+	 */
 	private static int findPriorityForClass(@Nullable String className) {
 		for (int i = 0; i < APC_PRIORITY_LIST.size(); i++) {
 			Class<?> clazz = APC_PRIORITY_LIST.get(i);

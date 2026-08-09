@@ -24,33 +24,28 @@ import org.springframework.aop.TargetSource;
 import org.springframework.util.Assert;
 
 /**
- * {@link org.springframework.aop.TargetSource} implementation that
- * caches a local target object, but allows the target to be swapped
- * while the application is running.
- *
- * <p>If configuring an object of this class in a Spring IoC container,
- * use constructor injection.
- *
- * <p>This TargetSource is serializable if the target is at the time
- * of serialization.
- *
+ * {@link org.springframework.aop.TargetSource} 实现缓存本地目标对象，但允许在应用程序运行时交换目标。
+ * <p>如果在 Spring IoC 容器中配置此类的对象，请使用构造函数注入。
+ * <p> 如果目标在序列化时，则此 TargetSource 是可序列化的。
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public class HotSwappableTargetSource implements TargetSource, Serializable {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/**
+	 */
 	private static final long serialVersionUID = 7497929212653839187L;
 
 
-	/** The current target object. */
+	/**
+	 */
 	@SuppressWarnings("serial")
 	private Object target;
 
 
 	/**
-	 * Create a new HotSwappableTargetSource with the given initial target object.
-	 * @param initialTarget the initial target object
+	 * 使用给定的初始目标对象创建一个新的 HotSwappableTargetSource。
+	 * @param initialTarget 初始目标对象
 	 */
 	public HotSwappableTargetSource(Object initialTarget) {
 		Assert.notNull(initialTarget, "Target object must not be null");
@@ -59,14 +54,16 @@ public class HotSwappableTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Return the type of the current target object.
-	 * <p>The returned type should usually be constant across all target objects.
+	 * 返回当前目标对象的类型。 <p>返回的类型通常在所有目标对象中应该是不变的。
 	 */
 	@Override
 	public synchronized Class<?> getTargetClass() {
 		return this.target.getClass();
 	}
 
+	/**
+	 * 获取 Target（`Target`）。
+	 */
 	@Override
 	public synchronized Object getTarget() {
 		return this.target;
@@ -74,10 +71,10 @@ public class HotSwappableTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Swap the target, returning the old target object.
-	 * @param newTarget the new target object
-	 * @return the old target object
-	 * @throws IllegalArgumentException if the new target is invalid
+	 * 交换目标，返回旧的目标对象。
+	 * @param newTarget 新的目标对象
+	 * @return 旧目标对象
+	 * @throws IllegalArgumentException 如果新目标无效
 	 */
 	public synchronized Object swap(Object newTarget) throws IllegalArgumentException {
 		Assert.notNull(newTarget, "Target object must not be null");
@@ -88,7 +85,7 @@ public class HotSwappableTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Two HotSwappableTargetSources are equal if the current target objects are equal.
+	 * 如果当前目标对象相等，则两个 HotSwappableTargetSource 相等。
 	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
@@ -96,11 +93,17 @@ public class HotSwappableTargetSource implements TargetSource, Serializable {
 				this.target.equals(that.target)));
 	}
 
+	/**
+	 * 判断是否包含/具备 h Code。
+	 */
 	@Override
 	public int hashCode() {
 		return HotSwappableTargetSource.class.hashCode();
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return "HotSwappableTargetSource for target: " + this.target;

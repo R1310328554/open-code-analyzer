@@ -17,19 +17,18 @@
 package org.springframework.aop.target;
 
 /**
- * Simple {@link org.springframework.aop.TargetSource} implementation,
- * freshly obtaining the specified target bean from its containing
- * Spring {@link org.springframework.beans.factory.BeanFactory}.
- *
- * <p>Can obtain any kind of target bean: singleton, scoped, or prototype.
- * Typically used for scoped beans.
- *
+ * 简单的 {@link org.springframework.aop.TargetSource} 实现，从其包含的 Spring {@link
+ * org.springframework.beans.factory.BeanFactory} 中新鲜获取指定的目标 bean。
+ * <p>可以获取任何类型的目标bean：单例、作用域或原型。通常用于作用域 bean。
  * @author Juergen Hoeller
  * @since 2.0.3
  */
 @SuppressWarnings("serial")
 public class SimpleBeanTargetSource extends AbstractBeanFactoryBasedTargetSource {
 
+	/**
+	 * 获取 Target（`Target`）。
+	 */
 	@Override
 	public Object getTarget() throws Exception {
 		return getBeanFactory().getBean(getTargetBeanName());

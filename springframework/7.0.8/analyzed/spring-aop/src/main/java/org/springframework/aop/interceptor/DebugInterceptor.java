@@ -20,14 +20,9 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.Nullable;
 
 /**
- * AOP Alliance {@code MethodInterceptor} that can be introduced in a chain
- * to display verbose information about intercepted invocations to the logger.
- *
- * <p>Logs full invocation details on method entry and method exit,
- * including invocation arguments and invocation count. This is only
- * intended for debugging purposes; use {@code SimpleTraceInterceptor}
- * or {@code CustomizableTraceInterceptor} for pure tracing purposes.
- *
+ * AOP 联盟 {@code MethodInterceptor} 可以在链中引入，以向记录器显示有关拦截的调用的详细信息。
+ * <p>记录方法入口和方法出口的完整调用详细信息，包括调用参数和调用计数。这仅用于调试目的；使用 {@code SimpleTraceInterceptor} 或 {@code 
+ * CustomizableTraceInterceptor} 进行纯粹的跟踪目的。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see SimpleTraceInterceptor
@@ -36,19 +31,19 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings("serial")
 public class DebugInterceptor extends SimpleTraceInterceptor {
 
+	/** `count`：该类的成员状态。 */
 	private volatile long count;
 
 
 	/**
-	 * Create a new DebugInterceptor with a static logger.
+	 * 使用静态记录器创建一个新的 DebugInterceptor。
 	 */
 	public DebugInterceptor() {
 	}
 
 	/**
-	 * Create a new DebugInterceptor with dynamic or static logger,
-	 * according to the given flag.
-	 * @param useDynamicLogger whether to use a dynamic logger or a static logger
+	 * 根据给定的标志，使用动态或静态记录器创建一个新的 DebugInterceptor。
+	 * @param useDynamicLogger 是否使用动态记录器或静态记录器
 	 * @see #setUseDynamicLogger
 	 */
 	public DebugInterceptor(boolean useDynamicLogger) {
@@ -56,6 +51,9 @@ public class DebugInterceptor extends SimpleTraceInterceptor {
 	}
 
 
+	/**
+	 * 调用（方法 `invoke`）。
+	 */
 	@Override
 	public @Nullable Object invoke(MethodInvocation invocation) throws Throwable {
 		synchronized (this) {
@@ -64,6 +62,9 @@ public class DebugInterceptor extends SimpleTraceInterceptor {
 		return super.invoke(invocation);
 	}
 
+	/**
+	 * 获取 Invocation Description（`InvocationDescription`）。
+	 */
 	@Override
 	protected String getInvocationDescription(MethodInvocation invocation) {
 		return invocation + "; count=" + this.count;
@@ -71,14 +72,14 @@ public class DebugInterceptor extends SimpleTraceInterceptor {
 
 
 	/**
-	 * Return the number of times this interceptor has been invoked.
+	 * 返回该拦截器被调用的次数。
 	 */
 	public long getCount() {
 		return this.count;
 	}
 
 	/**
-	 * Reset the invocation count to zero.
+	 * 将调用计数重置为零。
 	 */
 	public synchronized void resetCount() {
 		this.count = 0;

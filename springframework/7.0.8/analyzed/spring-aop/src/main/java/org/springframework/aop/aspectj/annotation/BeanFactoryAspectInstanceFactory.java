@@ -29,14 +29,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link org.springframework.aop.aspectj.AspectInstanceFactory} implementation
- * backed by a Spring {@link org.springframework.beans.factory.BeanFactory}.
- *
- * <p>Note that this may instantiate multiple times if using a prototype,
- * which probably won't give the semantics you expect.
- * Use a {@link LazySingletonAspectInstanceFactoryDecorator}
- * to wrap this to ensure only one new aspect comes back.
- *
+ * 由 Spring {@link org.springframework.beans.factory.BeanFactory} 支持的 {@link
+ * org.springframework.aop.aspectj.AspectInstanceFactory} 实现。
+ * <p>注意，如果使用原型，这可能会实例化多次，这可能不会给出您期望的语义。使用 {@link LazySingletonAspectInstanceFactoryDecorat
+ * or} 来包装它以确保只返回一个新方面。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -46,32 +42,32 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInstanceFactory, Serializable {
 
+	/** 底层 BeanFactory 引用。 */
 	private final BeanFactory beanFactory;
 
+	/** 名称相关状态（`name`）。 */
 	private final String name;
 
+	/** `aspectMetadata`：该类的成员状态。 */
 	private final AspectMetadata aspectMetadata;
 
 
 	/**
-	 * Create a BeanFactoryAspectInstanceFactory. AspectJ will be called to
-	 * introspect to create AJType metadata using the type returned for the
-	 * given bean name from the BeanFactory.
-	 * @param beanFactory the BeanFactory to obtain instance(s) from
-	 * @param name the name of the bean
+	 * 创建 BeanFactoryAspectInstanceFactory。将调用 AspectJ 进行内省，以使用从 BeanFactory 为给定 bean
+	 * 名称返回的类型来创建 AJType 元数据。
+	 * @param beanFactory 从中获取实例的 BeanFactory
+	 * @param name 豆子的名字
 	 */
 	public BeanFactoryAspectInstanceFactory(BeanFactory beanFactory, String name) {
 		this(beanFactory, name, null);
 	}
 
 	/**
-	 * Create a BeanFactoryAspectInstanceFactory, providing a type that AspectJ should
-	 * introspect to create AJType metadata. Use if the BeanFactory may consider the type
-	 * to be a subclass (as when using CGLIB), and the information should relate to a superclass.
-	 * @param beanFactory the BeanFactory to obtain instance(s) from
-	 * @param name the name of the bean
-	 * @param type the type that should be introspected by AspectJ
-	 * ({@code null} indicates resolution through {@link BeanFactory#getType} via the bean name)
+	 * 创建 BeanFactoryAspectInstanceFactory，提供 AspectJ 应内省以创建 AJType 元数据的类型。如果 BeanFactory
+	 * 可能认为该类型是子类（如使用 CGLIB 时），并且信息应与超类相关，则使用。
+	 * @param beanFactory 从中获取实例的 BeanFactory
+	 * @param name 豆子的名字
+	 * @param type AspectJ 应该内省的类型（{@code null} 表示通过 {@link BeanFactory#getType} 通过 bean 名称进行解析）
 	 */
 	public BeanFactoryAspectInstanceFactory(BeanFactory beanFactory, String name, @Nullable Class<?> type) {
 		Assert.notNull(beanFactory, "BeanFactory must not be null");
@@ -87,41 +83,49 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 	}
 
 
+	/**
+	 * 获取 Aspect Instance（`AspectInstance`）。
+	 */
 	@Override
 	public Object getAspectInstance() {
 		return this.beanFactory.getBean(this.name);
 	}
 
+	/**
+	 * 获取 Aspect Class Loader（`AspectClassLoader`）。
+	 */
 	@Override
 	public @Nullable ClassLoader getAspectClassLoader() {
 		return (this.beanFactory instanceof ConfigurableBeanFactory cbf ?
 				cbf.getBeanClassLoader() : ClassUtils.getDefaultClassLoader());
 	}
 
+	/**
+	 * 获取 Aspect Metadata（`AspectMetadata`）。
+	 */
 	@Override
 	public AspectMetadata getAspectMetadata() {
 		return this.aspectMetadata;
 	}
 
+	/**
+	 * 获取 Aspect Creation Mutex（`AspectCreationMutex`）。
+	 */
 	@Override
 	public @Nullable Object getAspectCreationMutex() {
 		if (this.beanFactory.isSingleton(this.name)) {
-			// Rely on singleton semantics provided by the factory -> no local lock.
+			// 依赖工厂提供的单例语义 -> 无本地锁。
 			return null;
 		}
 		else {
-			// No singleton guarantees from the factory -> let's lock locally.
+			// 工厂没有单例保证 -> 让我们在本地锁定。
 			return this;
 		}
 	}
 
 	/**
-	 * Determine the order for this factory's target aspect, either
-	 * an instance-specific order expressed through implementing the
-	 * {@link org.springframework.core.Ordered} interface (only
-	 * checked for singleton beans), or an order expressed through the
-	 * {@link org.springframework.core.annotation.Order} annotation
-	 * at the class level.
+	 * 确定此工厂的目标方面的顺序，可以是通过实现 {@link org.springframework.core.Ordered} 接口表达的特定于实例的顺序（仅检查单例 bean）
+	 * ，也可以是通过类级别的 {@link org.springframework.core.annotation.Order} 注释表达的顺序。
 	 * @see org.springframework.core.Ordered
 	 * @see org.springframework.core.annotation.Order
 	 */
@@ -134,7 +138,7 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 					return this.beanFactory.getBean(this.name, Ordered.class).getOrder();
 				}
 				catch (BeanNotOfRequiredTypeException ex) {
-					// Not actually implementing Ordered -> possibly a NullBean.
+					// 实际上没有实现 Ordered -> 可能是 NullBean。
 				}
 			}
 			return OrderUtils.getOrder(type, Ordered.LOWEST_PRECEDENCE);
@@ -143,6 +147,9 @@ public class BeanFactoryAspectInstanceFactory implements MetadataAwareAspectInst
 	}
 
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + ": bean name '" + this.name + "'";

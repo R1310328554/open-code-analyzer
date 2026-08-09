@@ -26,8 +26,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.AfterAdvice;
 
 /**
- * Spring AOP advice wrapping an AspectJ after advice method.
- *
+ * Spring AOP 建议在建议方法之后包装 AspectJ。
  * @author Rod Johnson
  * @since 2.0
  */
@@ -35,6 +34,9 @@ import org.springframework.aop.AfterAdvice;
 public class AspectJAfterAdvice extends AbstractAspectJAdvice
 		implements MethodInterceptor, AfterAdvice, Serializable {
 
+	/**
+	 * 创建 `AspectJAfterAdvice` 的新实例。
+	 */
 	public AspectJAfterAdvice(
 			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
 
@@ -42,6 +44,9 @@ public class AspectJAfterAdvice extends AbstractAspectJAdvice
 	}
 
 
+	/**
+	 * 调用（方法 `invoke`）。
+	 */
 	@Override
 	public @Nullable Object invoke(MethodInvocation mi) throws Throwable {
 		try {
@@ -52,11 +57,17 @@ public class AspectJAfterAdvice extends AbstractAspectJAdvice
 		}
 	}
 
+	/**
+	 * 判断是否 Before Advice。
+	 */
 	@Override
 	public boolean isBeforeAdvice() {
 		return false;
 	}
 
+	/**
+	 * 判断是否 After Advice。
+	 */
 	@Override
 	public boolean isAfterAdvice() {
 		return true;

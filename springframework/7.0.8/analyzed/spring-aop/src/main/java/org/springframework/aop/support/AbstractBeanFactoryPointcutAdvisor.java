@@ -27,13 +27,8 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.util.Assert;
 
 /**
- * Abstract BeanFactory-based PointcutAdvisor that allows for any Advice
- * to be configured as reference to an Advice bean in a BeanFactory.
- *
- * <p>Specifying the name of an advice bean instead of the advice object itself
- * (if running within a BeanFactory) increases loose coupling at initialization time,
- * in order to not initialize the advice object until the pointcut actually matches.
- *
+ * 基于 BeanFactory 的抽象 PointcutAdvisor，允许将任何 Advice 配置为对 BeanFactory 中的 Advice bean 的引用。
+ * <p>指定通知 bean 的名称而不是通知对象本身（如果在 BeanFactory 中运行）会增加初始化时的松散耦合，以便在切入点实际匹配之前不初始化通知对象。
  * @author Juergen Hoeller
  * @since 2.0.2
  * @see #setAdviceBeanName
@@ -42,21 +37,24 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcutAdvisor implements BeanFactoryAware {
 
+	/** 名称相关状态（`adviceBeanName`）。 */
 	private @Nullable String adviceBeanName;
 
+	/** 底层 BeanFactory 引用。 */
 	private @Nullable BeanFactory beanFactory;
 
+	/** 通知相关状态（`advice`）。 */
 	private transient volatile @Nullable Advice advice;
 
+	/**
+	 * 方法 `Object`：完成本类中与「Object」相关的职责。
+	 */
 	private transient Object adviceMonitor = new Object();
 
 
 	/**
-	 * Specify the name of the advice bean that this advisor should refer to.
-	 * <p>An instance of the specified bean will be obtained on first access
-	 * of this advisor's advice. This advisor will only ever obtain at most one
-	 * single instance of the advice bean, caching the instance for the lifetime
-	 * of the advisor.
+	 * 指定该顾问程序应引用的建议 bean 的名称。 <p>A 指定 bean 的实例将在第一次访问该顾问的建议时获得。该顾问程序最多只能获取一个建议 bean 实例，并在顾问程序的
+	 * 生命周期内缓存该实例。
 	 * @see #getAdvice()
 	 */
 	public void setAdviceBeanName(@Nullable String adviceBeanName) {
@@ -64,20 +62,22 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 	}
 
 	/**
-	 * Return the name of the advice bean that this advisor refers to, if any.
+	 * 返回该顾问程序引用的建议 bean 的名称（如果有）。
 	 */
 	public @Nullable String getAdviceBeanName() {
 		return this.adviceBeanName;
 	}
 
+	/**
+	 * 设置 Bean Factory（`BeanFactory`）。
+	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
 	}
 
 	/**
-	 * Specify a particular instance of the target advice directly,
-	 * avoiding lazy resolution in {@link #getAdvice()}.
+	 * 直接指定目标建议的特定实例，避免 {@link #getAdvice()} 中的延迟解析。
 	 * @since 3.1
 	 */
 	public void setAdvice(Advice advice) {
@@ -86,6 +86,9 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 		}
 	}
 
+	/**
+	 * 获取 Advice（`Advice`）。
+	 */
 	@Override
 	public Advice getAdvice() {
 		Advice advice = this.advice;
@@ -97,13 +100,13 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 		Assert.state(this.beanFactory != null, "BeanFactory must be set to resolve 'adviceBeanName'");
 
 		if (this.beanFactory.isSingleton(this.adviceBeanName)) {
-			// Rely on singleton semantics provided by the factory.
+			// 依赖工厂提供的单例语义。
 			advice = this.beanFactory.getBean(this.adviceBeanName, Advice.class);
 			this.advice = advice;
 			return advice;
 		}
 		else {
-			// No singleton guarantees from the factory -> let's lock locally.
+			// 工厂没有单例保证 -> 让我们在本地锁定。
 			synchronized (this.adviceMonitor) {
 				advice = this.advice;
 				if (advice == null) {
@@ -115,6 +118,9 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 		}
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(getClass().getName());
@@ -130,14 +136,17 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 
 
 	//---------------------------------------------------------------------
-	// Serialization support
+	// 序列化支持
 	//---------------------------------------------------------------------
 
+	/**
+	 * 方法 `readObject`：完成本类中与「read Object」相关的职责。
+	 */
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-		// Rely on default serialization, just initialize state after deserialization.
+		// 依赖默认序列化，只需在反序列化后初始化状态即可。
 		ois.defaultReadObject();
 
-		// Initialize transient fields.
+		// 初始化瞬态字段。
 		this.adviceMonitor = new Object();
 	}
 

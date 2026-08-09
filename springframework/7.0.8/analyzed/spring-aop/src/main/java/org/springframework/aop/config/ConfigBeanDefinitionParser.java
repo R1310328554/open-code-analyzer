@@ -50,8 +50,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
 /**
- * {@link BeanDefinitionParser} for the {@code <aop:config>} tag.
- *
+ * {@link BeanDefinitionParser} 为 {@code <aop:config>} 标记。
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Adrian Colyer
@@ -93,9 +92,15 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	private static final int POINTCUT_INDEX = 1;
 	private static final int ASPECT_INSTANCE_FACTORY_INDEX = 2;
 
+	/**
+	 * 解析：State（方法 `ParseState`）。
+	 */
 	private final ParseState parseState = new ParseState();
 
 
+	/**
+	 * 解析（方法 `parse`）。
+	 */
 	@Override
 	public @Nullable BeanDefinition parse(Element element, ParserContext parserContext) {
 		CompositeComponentDefinition compositeDef =
@@ -119,9 +124,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Configures the auto proxy creator needed to support the {@link BeanDefinition BeanDefinitions}
-	 * created by the '{@code <aop:config/>}' tag. Will force class proxying if the
-	 * '{@code proxy-target-class}' attribute is set to '{@code true}'.
+	 * 配置支持“{@code <aop:config/>}”标签创建的 {@link BeanDefinition BeanDefinitions}
+	 * 所需的自动代理创建器。如果“{@code proxy-target-class}”属性设置为“{@code true}”，将强制进行类代理。
 	 * @see AopNamespaceUtils
 	 */
 	private void configureAutoProxyCreator(ParserContext parserContext, Element element) {
@@ -129,9 +133,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Parses the supplied {@code <advisor>} element and registers the resulting
-	 * {@link org.springframework.aop.Advisor} and any resulting {@link org.springframework.aop.Pointcut}
-	 * with the supplied {@link BeanDefinitionRegistry}.
+	 * 解析提供的 {@code <advisor>} 元素，并使用提供的 {@link BeanDefinitionRegistry} 注册生成的 {@link
+	 * org.springframework.aop.Advisor} 和任何生成的 {@link org.springframework.aop.Pointcut}。
 	 */
 	private void parseAdvisor(Element advisorElement, ParserContext parserContext) {
 		AbstractBeanDefinition advisorDef = createAdvisorBeanDefinition(advisorElement, parserContext);
@@ -165,8 +168,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Create a {@link RootBeanDefinition} for the advisor described in the supplied. Does <strong>not</strong>
-	 * parse any associated '{@code pointcut}' or '{@code pointcut-ref}' attributes.
+	 * 为所提供的顾问程序创建 {@link RootBeanDefinition}。 <strong>not</strong> 是否解析任何关联的“{@code
+	 * pointcut}”或“{@code pointcut-ref}”属性。
 	 */
 	private AbstractBeanDefinition createAdvisorBeanDefinition(Element advisorElement, ParserContext parserContext) {
 		RootBeanDefinition advisorDefinition = new RootBeanDefinition(DefaultBeanFactoryPointcutAdvisor.class);
@@ -190,6 +193,9 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		return advisorDefinition;
 	}
 
+	/**
+	 * 解析：Aspect（方法 `parseAspect`）。
+	 */
 	private void parseAspect(Element aspectElement, ParserContext parserContext) {
 		String aspectId = aspectElement.getAttribute(ID);
 		String aspectName = aspectElement.getAttribute(REF);
@@ -204,8 +210,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 				beanDefinitions.add(parseDeclareParents(declareParent, parserContext));
 			}
 
-			// We have to parse "advice" and all the advice kinds in one loop, to get the
-			// ordering semantics right.
+			// 我们必须在一个循环中解析“建议”和所有建议类型，以获得
+			// 正确排序语义。
 			NodeList nodeList = aspectElement.getChildNodes();
 			boolean adviceFoundAlready = false;
 			for (int i = 0; i < nodeList.getLength(); i++) {
@@ -243,6 +249,9 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		}
 	}
 
+	/**
+	 * 创建：Aspect Component Definition（方法 `createAspectComponentDefinition`）。
+	 */
 	private AspectComponentDefinition createAspectComponentDefinition(
 			Element aspectElement, String aspectId, List<BeanDefinition> beanDefs,
 			List<BeanReference> beanRefs, ParserContext parserContext) {
@@ -254,9 +263,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Return {@code true} if the supplied node describes an advice type. May be one of:
-	 * '{@code before}', '{@code after}', '{@code after-returning}',
-	 * '{@code after-throwing}' or '{@code around}'.
+	 * 如果提供的节点描述了建议类型，则返回 {@code true}。可能是以下之一：“{@code before}”、“{@code after}”、“{@code
+	 * after-returning}”、“{@code after-throwing}”或“{@code around}”。
 	 */
 	private boolean isAdviceNode(Node aNode, ParserContext parserContext) {
 		if (!(aNode instanceof Element)) {
@@ -270,9 +278,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Parse a '{@code declare-parents}' element and register the appropriate
-	 * DeclareParentsAdvisor with the BeanDefinitionRegistry encapsulated in the
-	 * supplied ParserContext.
+	 * 解析“{@code declare-parents}”元素并使用封装在提供的 ParserContext 中的 BeanDefinitionRegistry 注册适当的
+	 * DeclareParentsAdvisor。
 	 */
 	private AbstractBeanDefinition parseDeclareParents(Element declareParentsElement, ParserContext parserContext) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.rootBeanDefinition(DeclareParentsAdvisor.class);
@@ -301,10 +308,9 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Parses one of '{@code before}', '{@code after}', '{@code after-returning}',
-	 * '{@code after-throwing}' or '{@code around}' and registers the resulting
-	 * BeanDefinition with the supplied BeanDefinitionRegistry.
-	 * @return the generated advice RootBeanDefinition
+	 * 解析“{@code before}”、“{@code after}”、“{@code after-returning}”、“{@code
+	 * after-throwing}”或“{@code around}”之一，并使用提供的 BeanDefinitionRegistry 注册生成的 BeanDefinition。
+	 * @return 生成的建议 RootBeanDefinition
 	 */
 	private AbstractBeanDefinition parseAdvice(
 			String aspectName, int order, Element aspectElement, Element adviceElement, ParserContext parserContext,
@@ -313,24 +319,24 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		try {
 			this.parseState.push(new AdviceEntry(parserContext.getDelegate().getLocalName(adviceElement)));
 
-			// create the method factory bean
+			// 创建方法工厂 bean
 			RootBeanDefinition methodDefinition = new RootBeanDefinition(MethodLocatingFactoryBean.class);
 			methodDefinition.getPropertyValues().add("targetBeanName", aspectName);
 			methodDefinition.getPropertyValues().add("methodName", adviceElement.getAttribute("method"));
 			methodDefinition.setSynthetic(true);
 
-			// create instance factory definition
+			// 创建实例工厂定义
 			RootBeanDefinition aspectFactoryDef =
 					new RootBeanDefinition(SimpleBeanFactoryAwareAspectInstanceFactory.class);
 			aspectFactoryDef.getPropertyValues().add("aspectBeanName", aspectName);
 			aspectFactoryDef.setSynthetic(true);
 
-			// register the pointcut
+			// 注册切入点
 			AbstractBeanDefinition adviceDef = createAdviceDefinition(
 					adviceElement, parserContext, aspectName, order, methodDefinition, aspectFactoryDef,
 					beanDefinitions, beanReferences);
 
-			// configure the advisor
+			// 配置顾问
 			RootBeanDefinition advisorDefinition = new RootBeanDefinition(AspectJPointcutAdvisor.class);
 			advisorDefinition.setSource(parserContext.extractSource(adviceElement));
 			advisorDefinition.getConstructorArgumentValues().addGenericArgumentValue(adviceDef);
@@ -339,7 +345,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 						ORDER_PROPERTY, aspectElement.getAttribute(ORDER_PROPERTY));
 			}
 
-			// register the final advisor
+			// 注册最终顾问
 			parserContext.getReaderContext().registerWithGeneratedName(advisorDefinition);
 
 			return advisorDefinition;
@@ -350,10 +356,8 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Creates the RootBeanDefinition for a POJO advice bean. Also causes pointcut
-	 * parsing to occur so that the pointcut may be associate with the advice bean.
-	 * This same pointcut is also configured as the pointcut for the enclosing
-	 * Advisor definition using the supplied MutablePropertyValues.
+	 * 为 POJO 建议 bean 创建 RootBeanDefinition。还会导致切入点解析发生，以便切入点可以与通知 bean 相关联。还使用提供的
+	 * MutablePropertyValues 将同一切入点配置为封闭 Advisor 定义的切入点。
 	 */
 	private AbstractBeanDefinition createAdviceDefinition(
 			Element adviceElement, ParserContext parserContext, String aspectName, int order,
@@ -399,7 +403,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Gets the advice implementation class corresponding to the supplied {@link Element}.
+	 * 获取与提供的 {@link Element} 对应的建议实现类。
 	 */
 	private Class<?> getAdviceClass(Element adviceElement, ParserContext parserContext) {
 		String elementName = parserContext.getDelegate().getLocalName(adviceElement);
@@ -414,8 +418,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Parses the supplied {@code <pointcut>} and registers the resulting
-	 * Pointcut with the BeanDefinitionRegistry.
+	 * 解析提供的 {@code <pointcut>} 并使用 BeanDefinitionRegistry 注册生成的切入点。
 	 */
 	private AbstractBeanDefinition parsePointcut(Element pointcutElement, ParserContext parserContext) {
 		String id = pointcutElement.getAttribute(ID);
@@ -447,10 +450,9 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Parses the {@code pointcut} or {@code pointcut-ref} attributes of the supplied
-	 * {@link Element} and add a {@code pointcut} property as appropriate. Generates a
-	 * {@link org.springframework.beans.factory.config.BeanDefinition} for the pointcut if  necessary
-	 * and returns its bean name, otherwise returns the bean name of the referred pointcut.
+	 * 解析所提供的 {@link Element} 的 {@code pointcut} 或 {@code pointcut-ref} 属性，并根据需要添加 {@code
+	 * pointcut} 属性。如果需要，为切入点生成 {@link org.springframework.beans.factory.config.BeanDefinition}
+	 * 并返回其 bean 名称，否则返回引用的切入点的 bean 名称。
 	 */
 	private @Nullable Object parsePointcutProperty(Element element, ParserContext parserContext) {
 		if (element.hasAttribute(POINTCUT) && element.hasAttribute(POINTCUT_REF)) {
@@ -460,7 +462,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			return null;
 		}
 		else if (element.hasAttribute(POINTCUT)) {
-			// Create a pointcut for the anonymous pc and register it.
+			// 为匿名电脑创建切入点并注册它。
 			String expression = element.getAttribute(POINTCUT);
 			AbstractBeanDefinition pointcutDefinition = createPointcutDefinition(expression);
 			pointcutDefinition.setSource(parserContext.extractSource(element));
@@ -484,8 +486,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	/**
-	 * Creates a {@link BeanDefinition} for the {@link AspectJExpressionPointcut} class using
-	 * the supplied pointcut expression.
+	 * 使用提供的切入点表达式为 {@link AspectJExpressionPointcut} 类创建 {@link BeanDefinition}。
 	 */
 	protected AbstractBeanDefinition createPointcutDefinition(String expression) {
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(AspectJExpressionPointcut.class);

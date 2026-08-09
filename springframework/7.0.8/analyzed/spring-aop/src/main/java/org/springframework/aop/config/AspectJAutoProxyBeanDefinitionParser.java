@@ -28,16 +28,17 @@ import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 
 /**
- * {@link BeanDefinitionParser} for the {@code aspectj-autoproxy} tag,
- * enabling the automatic application of @AspectJ-style aspects found in
- * the {@link org.springframework.beans.factory.BeanFactory}.
- *
+ * {@link BeanDefinitionParser} 用于 {@code aspectj-autoproxy} 标记，支持自动应用 {@link
+ * org.springframework.beans.factory.BeanFactory} 中的 @AspectJ 样式方面。
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
  */
 class AspectJAutoProxyBeanDefinitionParser implements BeanDefinitionParser {
 
+	/**
+	 * 解析（方法 `parse`）。
+	 */
 	@Override
 	public @Nullable BeanDefinition parse(Element element, ParserContext parserContext) {
 		AopNamespaceUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(parserContext, element);
@@ -45,6 +46,9 @@ class AspectJAutoProxyBeanDefinitionParser implements BeanDefinitionParser {
 		return null;
 	}
 
+	/**
+	 * 方法 `extendBeanDefinition`：完成本类中与「extend Bean Definition」相关的职责。
+	 */
 	private void extendBeanDefinition(Element element, ParserContext parserContext) {
 		BeanDefinition beanDef =
 				parserContext.getRegistry().getBeanDefinition(AopConfigUtils.AUTO_PROXY_CREATOR_BEAN_NAME);
@@ -53,6 +57,9 @@ class AspectJAutoProxyBeanDefinitionParser implements BeanDefinitionParser {
 		}
 	}
 
+	/**
+	 * 添加：Include Patterns（方法 `addIncludePatterns`）。
+	 */
 	private void addIncludePatterns(Element element, ParserContext parserContext, BeanDefinition beanDef) {
 		ManagedList<TypedStringValue> includePatterns = new ManagedList<>();
 		NodeList childNodes = element.getChildNodes();

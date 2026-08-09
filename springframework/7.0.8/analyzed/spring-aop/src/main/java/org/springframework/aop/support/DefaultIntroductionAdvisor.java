@@ -32,9 +32,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Simple {@link org.springframework.aop.IntroductionAdvisor} implementation
- * that by default applies to any class.
- *
+ * 默认情况下适用于任何类的简单 {@link org.springframework.aop.IntroductionAdvisor} 实现。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 11.11.2003
@@ -42,6 +40,7 @@ import org.springframework.util.ClassUtils;
 @SuppressWarnings("serial")
 public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFilter, Ordered, Serializable {
 
+	/** 通知相关状态（`advice`）。 */
 	private final Advice advice;
 
 	private final Set<Class<?>> interfaces = new LinkedHashSet<>();
@@ -50,9 +49,8 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 
 
 	/**
-	 * Create a DefaultIntroductionAdvisor for the given advice.
-	 * @param advice the Advice to apply (may implement the
-	 * {@link org.springframework.aop.IntroductionInfo} interface)
+	 * 为给定的建议创建一个 DefaultIntroductionAdvisor。
+	 * @param advice 应用建议（可以实现 {@link org.springframework.aop.IntroductionInfo} 接口）
 	 * @see #addInterface
 	 */
 	public DefaultIntroductionAdvisor(Advice advice) {
@@ -60,10 +58,9 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 	}
 
 	/**
-	 * Create a DefaultIntroductionAdvisor for the given advice.
-	 * @param advice the Advice to apply
-	 * @param introductionInfo the IntroductionInfo that describes
-	 * the interface to introduce (may be {@code null})
+	 * 为给定的建议创建一个 DefaultIntroductionAdvisor。
+	 * @param advice 申请建议
+	 * @param introductionInfo 描述要引入的接口的IntroductionInfo（可能是{@code null}）
 	 */
 	public DefaultIntroductionAdvisor(Advice advice, @Nullable IntroductionInfo introductionInfo) {
 		Assert.notNull(advice, "Advice must not be null");
@@ -81,9 +78,9 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 	}
 
 	/**
-	 * Create a DefaultIntroductionAdvisor for the given advice.
-	 * @param advice the Advice to apply
-	 * @param ifc the interface to introduce
+	 * 为给定的建议创建一个 DefaultIntroductionAdvisor。
+	 * @param advice 申请建议
+	 * @param ifc 接口介绍
 	 */
 	public DefaultIntroductionAdvisor(DynamicIntroductionAdvice advice, Class<?> ifc) {
 		Assert.notNull(advice, "Advice must not be null");
@@ -93,8 +90,8 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 
 
 	/**
-	 * Add the specified interface to the list of interfaces to introduce.
-	 * @param ifc the interface to introduce
+	 * 将指定的接口添加到要引入的接口列表中。
+	 * @param ifc 接口介绍
 	 */
 	public void addInterface(Class<?> ifc) {
 		Assert.notNull(ifc, "Interface must not be null");
@@ -104,11 +101,17 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 		this.interfaces.add(ifc);
 	}
 
+	/**
+	 * 获取 Interfaces（`Interfaces`）。
+	 */
 	@Override
 	public Class<?>[] getInterfaces() {
 		return ClassUtils.toClassArray(this.interfaces);
 	}
 
+	/**
+	 * 校验：Interfaces（方法 `validateInterfaces`）。
+	 */
 	@Override
 	public void validateInterfaces() throws IllegalArgumentException {
 		for (Class<?> ifc : this.interfaces) {
@@ -120,31 +123,49 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 		}
 	}
 
+	/**
+	 * 设置 Order（`Order`）。
+	 */
 	public void setOrder(int order) {
 		this.order = order;
 	}
 
+	/**
+	 * 获取 Order（`Order`）。
+	 */
 	@Override
 	public int getOrder() {
 		return this.order;
 	}
 
+	/**
+	 * 获取 Advice（`Advice`）。
+	 */
 	@Override
 	public Advice getAdvice() {
 		return this.advice;
 	}
 
+	/**
+	 * 获取 Class Filter（`ClassFilter`）。
+	 */
 	@Override
 	public ClassFilter getClassFilter() {
 		return this;
 	}
 
+	/**
+	 * 匹配：es（方法 `matches`）。
+	 */
 	@Override
 	public boolean matches(Class<?> clazz) {
 		return true;
 	}
 
 
+	/**
+	 * 比较是否相等。
+	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof DefaultIntroductionAdvisor otherAdvisor &&
@@ -152,11 +173,17 @@ public class DefaultIntroductionAdvisor implements IntroductionAdvisor, ClassFil
 				this.interfaces.equals(otherAdvisor.interfaces)));
 	}
 
+	/**
+	 * 判断是否包含/具备 h Code。
+	 */
 	@Override
 	public int hashCode() {
 		return this.advice.hashCode() * 13 + this.interfaces.hashCode();
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return getClass().getName() + ": advice [" + this.advice + "]; interfaces " +

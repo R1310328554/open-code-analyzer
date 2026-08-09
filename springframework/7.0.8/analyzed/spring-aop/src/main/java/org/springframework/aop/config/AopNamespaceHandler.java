@@ -21,32 +21,20 @@ import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * {@code NamespaceHandler} for the {@code aop} namespace.
- *
- * <p>Provides a {@link org.springframework.beans.factory.xml.BeanDefinitionParser} for the
- * {@code <aop:config>} tag. A {@code config} tag can include nested
- * {@code pointcut}, {@code advisor} and {@code aspect} tags.
- *
- * <p>The {@code pointcut} tag allows for creation of named
- * {@link AspectJExpressionPointcut} beans using a simple syntax:
- * <pre class="code">
- * &lt;aop:pointcut id=&quot;getNameCalls&quot; expression=&quot;execution(* *..ITestBean.getName(..))&quot;/&gt;
+ * {@code NamespaceHandler} 为 {@code aop} 命名空间。
+ * <p> 为 {@code <aop:config>} 标记提供 {@link
+ * org.springframework.beans.factory.xml.BeanDefinitionParser}。 {@code config} 标签可以包含嵌套的
+ * {@code pointcut}、{@code advisor} 和 {@code aspect} 标签。
+ * <p>{@code pointcut} 标记允许使用简单语法创建命名 {@link AspectJExpressionPointcut} bean： <pre
+ * class="code"> <aop:pointcut id=“getNameCalls”表达式=“执行(* *..ITestBean.getName(..))”/>
  * </pre>
- *
- * <p>Using the {@code advisor} tag you can configure an {@link org.springframework.aop.Advisor}
- * and have it applied to all relevant beans in you {@link org.springframework.beans.factory.BeanFactory}
- * automatically. The {@code advisor} tag supports both in-line and referenced
- * {@link org.springframework.aop.Pointcut Pointcuts}:
- *
- * <pre class="code">
- * &lt;aop:advisor id=&quot;getAgeAdvisor&quot;
- *     pointcut=&quot;execution(* *..ITestBean.getAge(..))&quot;
- *     advice-ref=&quot;getAgeCounter&quot;/&gt;
- *
- * &lt;aop:advisor id=&quot;getNameAdvisor&quot;
- *     pointcut-ref=&quot;getNameCalls&quot;
- *     advice-ref=&quot;getNameCounter&quot;/&gt;</pre>
- *
+ * <p> 使用 {@code advisor} 标签，您可以配置 {@link org.springframework.aop.Advisor} 并将其自动应用于 {@link
+ * org.springframework.beans.factory.BeanFactory} 中的所有相关 bean。 {@code advisor} 标签支持内联和引用
+ * {@link org.springframework.aop.Pointcut Pointcuts}：
+ * <pre class="code"> <aop:advisor id="getAgeAdvisor";切入点=“执行(* *..ITestBean.getAge(..))”
+ * Advice-ref =“getAgeCounter”/>
+ * <aop:advisor id="getNameAdvisor"; pointcut-ref="getNameCalls";
+ * Advice-ref=“getNameCounter”/></pre>
  * @author Rob Harrop
  * @author Adrian Colyer
  * @author Juergen Hoeller
@@ -55,18 +43,17 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 public class AopNamespaceHandler extends NamespaceHandlerSupport {
 
 	/**
-	 * Register the {@link BeanDefinitionParser BeanDefinitionParsers} for the
-	 * '{@code config}', '{@code spring-configured}', '{@code aspectj-autoproxy}'
-	 * and '{@code scoped-proxy}' tags.
+	 * 为“{@code config}”、“{@code spring-configured}”、“{@code aspectj-autoproxy}”和“{@code
+	 * scoped-proxy}”标签注册 {@link BeanDefinitionParser BeanDefinitionParsers}。
 	 */
 	@Override
 	public void init() {
-		// In 2.0 XSD as well as in 2.5+ XSDs
+		// 在 2.0 XSD 以及 2.5+ XSD 中
 		registerBeanDefinitionParser("config", new ConfigBeanDefinitionParser());
 		registerBeanDefinitionParser("aspectj-autoproxy", new AspectJAutoProxyBeanDefinitionParser());
 		registerBeanDefinitionDecorator("scoped-proxy", new ScopedProxyBeanDefinitionDecorator());
 
-		// Only in 2.0 XSD: moved to context namespace in 2.5+
+		// 仅在 2.0 XSD 中：在 2.5+ 中移至上下文命名空间
 		registerBeanDefinitionParser("spring-configured", new SpringConfiguredBeanDefinitionParser());
 	}
 

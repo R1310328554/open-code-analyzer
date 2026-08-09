@@ -25,13 +25,10 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 /**
- * Extension of {@link AbstractAdvisingBeanPostProcessor} which implements
- * {@link BeanFactoryAware}, adds exposure of the original target class for each
- * proxied bean ({@link AutoProxyUtils#ORIGINAL_TARGET_CLASS_ATTRIBUTE}),
- * and participates in an externally enforced target-class mode for any given bean
- * ({@link AutoProxyUtils#PRESERVE_TARGET_CLASS_ATTRIBUTE}).
- * This post-processor is therefore aligned with {@link AbstractAutoProxyCreator}.
- *
+ * {@link AbstractAdvisingBeanPostProcessor} 的扩展实现了 {@link BeanFactoryAware}，为每个代理 bean
+ * ({@link AutoProxyUtils#ORIGINAL_TARGET_CLASS_ATTRIBUTE}) 添加了原始目标类的公开，并参与任何给定 bean
+ * ({@link AutoProxyUtils#PRESERVE_TARGET_CLASS_ATTRIBUTE}) 的外部强制目标类模式。因此，该后处理器与 {@link
+ * AbstractAutoProxyCreator} 保持一致。
  * @author Juergen Hoeller
  * @since 4.2.3
  * @see AutoProxyUtils#shouldProxyTargetClass
@@ -41,15 +38,22 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends AbstractAdvisingBeanPostProcessor
 		implements BeanFactoryAware {
 
+	/** 底层 BeanFactory 引用。 */
 	protected @Nullable ConfigurableListableBeanFactory beanFactory;
 
 
+	/**
+	 * 设置 Bean Factory（`BeanFactory`）。
+	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = (beanFactory instanceof ConfigurableListableBeanFactory clbf ? clbf : null);
 		AutoProxyUtils.applyDefaultProxyConfig(this, beanFactory);
 	}
 
+	/**
+	 * 准备：Proxy Factory（方法 `prepareProxyFactory`）。
+	 */
 	@Override
 	protected ProxyFactory prepareProxyFactory(Object bean, String beanName) {
 		if (this.beanFactory != null) {
@@ -74,6 +78,9 @@ public abstract class AbstractBeanFactoryAwareAdvisingPostProcessor extends Abst
 		return proxyFactory;
 	}
 
+	/**
+	 * 判断是否 Eligible。
+	 */
 	@Override
 	protected boolean isEligible(Object bean, String beanName) {
 		return (!AutoProxyUtils.isOriginalInstance(beanName, bean.getClass()) &&

@@ -19,22 +19,16 @@ package org.aopalliance.intercept;
 import java.lang.reflect.Method;
 
 /**
- * Description of an invocation to a method, given to an interceptor
- * upon method-call.
- *
- * <p>A method invocation is a joinpoint and can be intercepted by a
- * method interceptor.
- *
+ * 对方法调用的描述，在方法调用时提供给拦截器。
+ * <p>A 方法调用是一个连接点，可以被方法拦截器拦截。
  * @author Rod Johnson
  * @see MethodInterceptor
  */
 public interface MethodInvocation extends Invocation {
 
 	/**
-	 * Get the method being called.
-	 * <p>This method is a friendly implementation of the
-	 * {@link Joinpoint#getStaticPart()} method (same result).
-	 * @return the method being called
+	 * 获取被调用的方法。 <p>该方法是{@link Joinpoint#getStaticPart()}方法的友好实现（结果相同）。
+	 * @return
 	 */
 	Method getMethod();
 

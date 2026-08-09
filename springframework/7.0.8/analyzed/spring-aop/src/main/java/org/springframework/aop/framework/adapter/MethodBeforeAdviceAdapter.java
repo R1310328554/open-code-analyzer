@@ -25,20 +25,24 @@ import org.springframework.aop.Advisor;
 import org.springframework.aop.MethodBeforeAdvice;
 
 /**
- * Adapter to enable {@link org.springframework.aop.MethodBeforeAdvice}
- * to be used in the Spring AOP framework.
- *
+ * 使 {@link org.springframework.aop.MethodBeforeAdvice} 能够在 Spring AOP 框架中使用的适配器。
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 @SuppressWarnings("serial")
 class MethodBeforeAdviceAdapter implements AdvisorAdapter, Serializable {
 
+	/**
+	 * 方法 `supportsAdvice`：完成本类中与「supports Advice」相关的职责。
+	 */
 	@Override
 	public boolean supportsAdvice(Advice advice) {
 		return (advice instanceof MethodBeforeAdvice);
 	}
 
+	/**
+	 * 获取 Interceptor（`Interceptor`）。
+	 */
 	@Override
 	public MethodInterceptor getInterceptor(Advisor advisor) {
 		MethodBeforeAdvice advice = (MethodBeforeAdvice) advisor.getAdvice();

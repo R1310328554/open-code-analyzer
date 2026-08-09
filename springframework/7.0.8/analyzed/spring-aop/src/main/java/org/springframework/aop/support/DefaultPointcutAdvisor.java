@@ -24,12 +24,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.aop.Pointcut;
 
 /**
- * Convenient Pointcut-driven Advisor implementation.
- *
- * <p>This is the most commonly used Advisor implementation. It can be used
- * with any pointcut and advice type, except for introductions. There is
- * normally no need to subclass this class, or to implement custom Advisors.
- *
+ * 方便的切入点驱动的 Advisor 实施。
+ * <p>这是最常用的Advisor实现。它可以与任何切入点和建议类型一起使用，除了介绍之外。通常不需要子类化此类，或实现自定义顾问。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see #setPointcut
@@ -42,26 +38,24 @@ public class DefaultPointcutAdvisor extends AbstractGenericPointcutAdvisor imple
 
 
 	/**
-	 * Create an empty DefaultPointcutAdvisor.
-	 * <p>Advice must be set before using setter methods.
-	 * Pointcut will normally be set also, but defaults to {@code Pointcut.TRUE}.
+	 * 创建一个空的 DefaultPointcutAdvisor。在使用 setter 方法之前必须设置 <p>Advice。通常也会设置切入点，但默认为 {@code
+	 * Pointcut.TRUE}。
 	 */
 	public DefaultPointcutAdvisor() {
 	}
 
 	/**
-	 * Create a DefaultPointcutAdvisor that matches all methods.
-	 * <p>{@code Pointcut.TRUE} will be used as Pointcut.
-	 * @param advice the Advice to use
+	 * 创建一个与所有方法匹配的 DefaultPointcutAdvisor。 <p>{@code Pointcut.TRUE} 将用作切入点。
+	 * @param advice 使用建议
 	 */
 	public DefaultPointcutAdvisor(Advice advice) {
 		this(Pointcut.TRUE, advice);
 	}
 
 	/**
-	 * Create a DefaultPointcutAdvisor, specifying Pointcut and Advice.
-	 * @param pointcut the Pointcut targeting the Advice
-	 * @param advice the Advice to run when Pointcut matches
+	 * 创建一个 DefaultPointcutAdvisor，指定切入点和建议。
+	 * @param pointcut 针对建议的切入点
+	 * @param advice 切入点匹配时运行的建议
 	 */
 	public DefaultPointcutAdvisor(Pointcut pointcut, Advice advice) {
 		this.pointcut = pointcut;
@@ -70,20 +64,25 @@ public class DefaultPointcutAdvisor extends AbstractGenericPointcutAdvisor imple
 
 
 	/**
-	 * Specify the pointcut targeting the advice.
-	 * <p>Default is {@code Pointcut.TRUE}.
+	 * 指定针对建议的切入点。 <p>默认为 {@code Pointcut.TRUE}。
 	 * @see #setAdvice
 	 */
 	public void setPointcut(@Nullable Pointcut pointcut) {
 		this.pointcut = (pointcut != null ? pointcut : Pointcut.TRUE);
 	}
 
+	/**
+	 * 获取 Pointcut（`Pointcut`）。
+	 */
 	@Override
 	public Pointcut getPointcut() {
 		return this.pointcut;
 	}
 
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return getClass().getName() + ": pointcut [" + getPointcut() + "]; advice [" + getAdvice() + "]";

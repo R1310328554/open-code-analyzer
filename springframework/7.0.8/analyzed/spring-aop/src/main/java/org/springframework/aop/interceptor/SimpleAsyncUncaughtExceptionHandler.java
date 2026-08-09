@@ -23,17 +23,22 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A default {@link AsyncUncaughtExceptionHandler} that simply logs the exception.
- *
+ * 仅记录异常的默认 {@link AsyncUncaughtExceptionHandler}。
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @since 4.1
  */
 public class SimpleAsyncUncaughtExceptionHandler implements AsyncUncaughtExceptionHandler {
 
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(SimpleAsyncUncaughtExceptionHandler.class);
 
 
+	/**
+	 * 处理：Uncaught Exception（方法 `handleUncaughtException`）。
+	 */
 	@Override
 	public void handleUncaughtException(Throwable ex, Method method, @Nullable Object... params) {
 		if (logger.isErrorEnabled()) {

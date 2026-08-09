@@ -26,15 +26,11 @@ import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 
 /**
- * {@link BeanDefinitionParser} responsible for parsing the
- * {@code <aop:spring-configured/>} tag.
- *
- * <p><b>NOTE:</b> This is essentially a duplicate of Spring 2.5's
- * {@link org.springframework.context.config.SpringConfiguredBeanDefinitionParser}
- * for the {@code <context:spring-configured/>} tag, mirrored here for compatibility with
- * Spring 2.0's {@code <aop:spring-configured/>} tag (avoiding a direct dependency on the
- * context package).
- *
+ * {@link BeanDefinitionParser} 负责解析 {@code <aop:spring-configured/>} 标签。
+ * <p><b>NOTE:</b> 这本质上是 Spring 2.5 的 {@link
+ * org.springframework.context.config.SpringConfiguredBeanDefinitionParser} 的 {@code
+ * <context:spring-configured/>} 标签的副本，此处镜像是为了与 Spring 2.0 的 {@code
+ * <aop:spring-configured/>} 标签兼容（避免直接依赖于 context 包）。
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
@@ -42,15 +38,19 @@ import org.springframework.beans.factory.xml.ParserContext;
 class SpringConfiguredBeanDefinitionParser implements BeanDefinitionParser {
 
 	/**
-	 * The bean name of the internally managed bean configurer aspect.
+	 * 内部管理的 bean 配置器方面的 bean 名称。
 	 */
 	public static final String BEAN_CONFIGURER_ASPECT_BEAN_NAME =
 			"org.springframework.context.config.internalBeanConfigurerAspect";
 
+	/** 名称相关状态（`BEAN_CONFIGURER_ASPECT_CLASS_NAME`）。 */
 	private static final String BEAN_CONFIGURER_ASPECT_CLASS_NAME =
 			"org.springframework.beans.factory.aspectj.AnnotationBeanConfigurerAspect";
 
 
+	/**
+	 * 解析（方法 `parse`）。
+	 */
 	@Override
 	public @Nullable BeanDefinition parse(Element element, ParserContext parserContext) {
 		if (!parserContext.getRegistry().containsBeanDefinition(BEAN_CONFIGURER_ASPECT_BEAN_NAME)) {

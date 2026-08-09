@@ -23,46 +23,31 @@ import org.aspectj.bridge.IMessage;
 import org.aspectj.bridge.IMessage.Kind;
 import org.aspectj.bridge.IMessageHandler;
 
-/* ===== [OCA 中文解析] =====
-class AspectJWeaverMessageHandler — 意图说明
-
-class `AspectJWeaverMessageHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJWeaverMessageHandler.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Implementation of AspectJ's {@link IMessageHandler} interface that
- * routes AspectJ weaving messages through the same logging system as the
- * regular Spring messages.
- *
- * <p>Pass the option...
- *
- * <p><code class="code">-XmessageHandlerClass:org.springframework.aop.aspectj.AspectJWeaverMessageHandler</code>
- *
- * <p>to the weaver; for example, specifying the following in a
- * "{@code META-INF/aop.xml} file:
- *
- * <p><code class="code">&lt;weaver options="..."/&gt;</code>
- *
+ * AspectJ 的 {@link IMessageHandler} 接口的实现，通过与常规 Spring 消息相同的日志系统路由 AspectJ 编织消息。
+ * <p>通过选项...
+ * <p><code
+ * class="code">-XmessageHandlerClass:org.springframework.aop.aspectj.AspectJWeaverMessageHandler</code>
+ * <p>给织工；例如，在“{@code META-INF/aop.xml} 文件中指定以下内容：
+ * <p><code class="code"><weaver options="..."/></code>
  * @author Adrian Colyer
  * @author Juergen Hoeller
  * @since 2.0
  */
 public class AspectJWeaverMessageHandler implements IMessageHandler {
 
-	// [OCA] 字段 `AJ_ID`：类成员状态。
 	private static final String AJ_ID = "[AspectJ] ";
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog("AspectJ Weaver");
 
 
+	/**
+	 * 处理：Message（方法 `handleMessage`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 handleMessage — 意图与阅读要点
-
-方法 `handleMessage` 复杂度较高（CCN≈12, NLOC≈34）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public boolean handleMessage(IMessage message) throws AbortException {
 		Kind messageKind = message.getKind();
 		if (messageKind == IMessage.DEBUG) {
@@ -98,24 +83,36 @@ public class AspectJWeaverMessageHandler implements IMessageHandler {
 		return false;
 	}
 
+	/**
+	 * 方法 `makeMessageFor`：完成本类中与「make Message For」相关的职责。
+	 */
 	private String makeMessageFor(IMessage aMessage) {
 		return AJ_ID + aMessage.getMessage();
 	}
 
+	/**
+	 * 判断是否 Ignoring。
+	 */
 	@Override
 	public boolean isIgnoring(Kind messageKind) {
-		// We want to see everything, and allow configuration of log levels dynamically.
+		// 我们希望看到一切，并允许动态配置日志级别。
 		return false;
 	}
 
+	/**
+	 * 执行核心逻辑：nt Ignore（方法 `dontIgnore`）。
+	 */
 	@Override
 	public void dontIgnore(Kind messageKind) {
-		// We weren't ignoring anything anyway...
+		// 无论如何，我们并没有忽视任何事情......
 	}
 
+	/**
+	 * 方法 `ignore`：完成本类中与「ignore」相关的职责。
+	 */
 	@Override
 	public void ignore(Kind kind) {
-		// We weren't ignoring anything anyway...
+		// 无论如何，我们并没有忽视任何事情......
 	}
 
 }

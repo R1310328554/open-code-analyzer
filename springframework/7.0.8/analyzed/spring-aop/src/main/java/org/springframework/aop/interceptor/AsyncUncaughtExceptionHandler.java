@@ -21,13 +21,9 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A strategy for handling uncaught exceptions thrown from asynchronous methods.
- *
- * <p>An asynchronous method usually returns a {@link java.util.concurrent.Future}
- * instance that gives access to the underlying exception. When the method does
- * not provide that return type, this handler can be used to manage such
- * uncaught exceptions.
- *
+ * 处理异步方法引发的未捕获异常的策略。
+ * <p> 异步方法通常返回一个 {@link java.util.concurrent.Future} 实例，该实例提供对底层异常的访问。当该方法不提供该返回类型时，此处理程序可
+ * 用于管理此类未捕获的异常。
  * @author Stephane Nicoll
  * @since 4.1
  */
@@ -35,10 +31,10 @@ import org.jspecify.annotations.Nullable;
 public interface AsyncUncaughtExceptionHandler {
 
 	/**
-	 * Handle the given uncaught exception thrown from an asynchronous method.
-	 * @param ex the exception thrown from the asynchronous method
-	 * @param method the asynchronous method
-	 * @param params the parameters used to invoke the method
+	 * 处理从异步方法抛出的给定未捕获异常。
+	 * @param ex 异步方法抛出的异常
+	 * @param method 异步方法
+	 * @param params 用于调用该方法的参数
 	 */
 	void handleUncaughtException(Throwable ex, Method method, @Nullable Object... params);
 

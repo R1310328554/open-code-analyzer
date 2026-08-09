@@ -20,13 +20,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
 /**
- * BeanPostProcessor that registers {@link AdvisorAdapter} beans in the BeanFactory with
- * an {@link AdvisorAdapterRegistry} (by default the {@link GlobalAdvisorAdapterRegistry}).
- *
- * <p>The only requirement for it to work is that it needs to be defined
- * in application context along with "non-native" Spring AdvisorAdapters
- * that need to be "recognized" by Spring's AOP framework.
- *
+ * BeanPostProcessor，使用 {@link AdvisorAdapterRegistry}（默认为 {@link GlobalAdvisorAdapterRegis
+ * try}）在 BeanFactory 中注册 {@link AdvisorAdapter} bean。
+ * <p> 工作的唯一要求是它需要与需要被 Spring 的 AOP 框架“识别”的“非本机”Spring AdvisorAdapter 一起在应用程序上下文中定义。
  * @author Dmitriy Kopylenko
  * @author Juergen Hoeller
  * @since 27.02.2004
@@ -35,12 +31,14 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
  */
 public class AdvisorAdapterRegistrationManager implements BeanPostProcessor {
 
+	/**
+	 * 获取 Instance（`Instance`）。
+	 */
 	private AdvisorAdapterRegistry advisorAdapterRegistry = GlobalAdvisorAdapterRegistry.getInstance();
 
 
 	/**
-	 * Specify the AdvisorAdapterRegistry to register AdvisorAdapter beans with.
-	 * Default is the global AdvisorAdapterRegistry.
+	 * 指定 AdvisorAdapterRegistry 来注册 AdvisorAdapter bean。默认是全局 AdvisorAdapterRegistry。
 	 * @see GlobalAdvisorAdapterRegistry
 	 */
 	public void setAdvisorAdapterRegistry(AdvisorAdapterRegistry advisorAdapterRegistry) {
@@ -48,11 +46,17 @@ public class AdvisorAdapterRegistrationManager implements BeanPostProcessor {
 	}
 
 
+	/**
+	 * 方法 `postProcessBeforeInitialization`：完成本类中与「post Process Before Initialization」相关的职责。
+	 */
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		return bean;
 	}
 
+	/**
+	 * 方法 `postProcessAfterInitialization`：完成本类中与「post Process After Initialization」相关的职责。
+	 */
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 		if (bean instanceof AdvisorAdapter advisorAdapter) {

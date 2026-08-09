@@ -19,35 +19,41 @@ package org.springframework.aop;
 import java.io.Serializable;
 
 /**
- * Canonical ClassFilter instance that matches all classes.
- *
+ * 符合所有类的规范 ClassFilter 实例。
  * @author Rod Johnson
  */
 @SuppressWarnings("serial")
 final class TrueClassFilter implements ClassFilter, Serializable {
 
+	/**
+	 * 创建 `TrueClassFilter` 的新实例。
+	 */
 	public static final TrueClassFilter INSTANCE = new TrueClassFilter();
 
 	/**
-	 * Enforce Singleton pattern.
-	 */
+	* 强制执行单例模式。
+	*/
 	private TrueClassFilter() {
 	}
 
+	/**
+	 * 匹配：es（方法 `matches`）。
+	 */
 	@Override
 	public boolean matches(Class<?> clazz) {
 		return true;
 	}
 
 	/**
-	 * Required to support serialization. Replaces with canonical
-	 * instance on deserialization, protecting Singleton pattern.
-	 * Alternative to overriding {@code equals()}.
-	 */
+	* 需要支持序列化。替换反序列化时的规范实例，保护单例模式。替代 {@code equals()}。
+	*/
 	private Object readResolve() {
 		return INSTANCE;
 	}
 
+	/**
+	* 返回字符串表示。
+	*/
 	@Override
 	public String toString() {
 		return "ClassFilter.TRUE";

@@ -22,9 +22,7 @@ import java.util.List;
 import org.springframework.util.Assert;
 
 /**
- * Base class for proxy factories.
- * Provides convenient access to a configurable AopProxyFactory.
- *
+ * 代理工厂的基类。提供对可配置 AopProxyFactory 的便捷访问。
  * @author Juergen Hoeller
  * @since 2.0.3
  * @see #createAopProxy()
@@ -32,24 +30,26 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class ProxyCreatorSupport extends AdvisedSupport {
 
+	/** 工厂相关状态（`aopProxyFactory`）。 */
 	private AopProxyFactory aopProxyFactory;
 
 	private final List<AdvisedSupportListener> listeners = new ArrayList<>();
 
-	/** Set to true when the first AOP proxy has been created. */
+	/**
+	 */
 	private boolean active = false;
 
 
 	/**
-	 * Create a new ProxyCreatorSupport instance.
+	 * 创建一个新的 ProxyCreatorSupport 实例。
 	 */
 	public ProxyCreatorSupport() {
 		this.aopProxyFactory = DefaultAopProxyFactory.INSTANCE;
 	}
 
 	/**
-	 * Create a new ProxyCreatorSupport instance.
-	 * @param aopProxyFactory the AopProxyFactory to use
+	 * 创建一个新的 ProxyCreatorSupport 实例。
+	 * @param aopProxyFactory 要使用的 AopProxyFactory
 	 */
 	public ProxyCreatorSupport(AopProxyFactory aopProxyFactory) {
 		Assert.notNull(aopProxyFactory, "AopProxyFactory must not be null");
@@ -58,10 +58,8 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 
 
 	/**
-	 * Customize the AopProxyFactory, allowing different strategies
-	 * to be dropped in without changing the core framework.
-	 * <p>Default is {@link DefaultAopProxyFactory}, using dynamic JDK
-	 * proxies or CGLIB proxies based on the requirements.
+	 * 自定义AopProxyFactory，允许在不改变核心框架的情况下放入不同的策略。 <p>Default 为 {@link DefaultAopProxyFactory}，根据
+	 * 需求使用动态 JDK 代理或 CGLIB 代理。
 	 */
 	public void setAopProxyFactory(AopProxyFactory aopProxyFactory) {
 		Assert.notNull(aopProxyFactory, "AopProxyFactory must not be null");
@@ -69,15 +67,15 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	}
 
 	/**
-	 * Return the AopProxyFactory that this ProxyConfig uses.
+	 * 返回此 ProxyConfig 使用的 AopProxyFactory。
 	 */
 	public AopProxyFactory getAopProxyFactory() {
 		return this.aopProxyFactory;
 	}
 
 	/**
-	 * Add the given AdvisedSupportListener to this proxy configuration.
-	 * @param listener the listener to register
+	 * 将给定的 AdvisedSupportListener 添加到此代理配置中。
+	 * @param listener 监听者注册
 	 */
 	public void addListener(AdvisedSupportListener listener) {
 		Assert.notNull(listener, "AdvisedSupportListener must not be null");
@@ -85,8 +83,8 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	}
 
 	/**
-	 * Remove the given AdvisedSupportListener from this proxy configuration.
-	 * @param listener the listener to remove
+	 * 从此代理配置中删除给定的 AdvisedSupportListener。
+	 * @param listener 要删除的侦听器
 	 */
 	public void removeListener(AdvisedSupportListener listener) {
 		Assert.notNull(listener, "AdvisedSupportListener must not be null");
@@ -95,8 +93,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 
 
 	/**
-	 * Subclasses should call this to get a new AOP proxy. They should <b>not</b>
-	 * create an AOP proxy with {@code this} as an argument.
+	 * 子类应该调用它来获取新的 AOP 代理。他们应该 <b>not</b> 创建一个以 {@code this} 作为参数的 AOP 代理。
 	 */
 	protected final synchronized AopProxy createAopProxy() {
 		if (!this.active) {
@@ -106,7 +103,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	}
 
 	/**
-	 * Activate this proxy configuration.
+	 * 激活此代理配置。
 	 * @see AdvisedSupportListener#activated
 	 */
 	private void activate() {
@@ -117,7 +114,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	}
 
 	/**
-	 * Propagate advice change event to all AdvisedSupportListeners.
+	 * 将建议更改事件传播到所有 AdvisedSupportListener。
 	 * @see AdvisedSupportListener#adviceChanged
 	 */
 	@Override
@@ -133,7 +130,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 	}
 
 	/**
-	 * Subclasses can call this to check whether any AOP proxies have been created yet.
+	 * 子类可以调用它来检查是否已创建任何 AOP 代理。
 	 */
 	protected final synchronized boolean isActive() {
 		return this.active;

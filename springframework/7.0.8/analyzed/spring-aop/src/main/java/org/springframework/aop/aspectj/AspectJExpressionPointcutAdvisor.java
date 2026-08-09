@@ -24,46 +24,72 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 
 /**
- * Spring AOP Advisor that can be used for any AspectJ pointcut expression.
- *
+ * Spring AOP Advisor 可用于任何 AspectJ 切入点表达式。
  * @author Rob Harrop
  * @since 2.0
  */
 @SuppressWarnings("serial")
 public class AspectJExpressionPointcutAdvisor extends AbstractGenericPointcutAdvisor implements BeanFactoryAware {
 
+	/**
+	 * 方法 `AspectJExpressionPointcut`：完成本类中与「Aspect J Expression Pointcut」相关的职责。
+	 */
 	private final AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
 
 
+	/**
+	 * 设置 Expression（`Expression`）。
+	 */
 	public void setExpression(@Nullable String expression) {
 		this.pointcut.setExpression(expression);
 	}
 
+	/**
+	 * 获取 Expression（`Expression`）。
+	 */
 	public @Nullable String getExpression() {
 		return this.pointcut.getExpression();
 	}
 
+	/**
+	 * 设置 Location（`Location`）。
+	 */
 	public void setLocation(@Nullable String location) {
 		this.pointcut.setLocation(location);
 	}
 
+	/**
+	 * 获取 Location（`Location`）。
+	 */
 	public @Nullable String getLocation() {
 		return this.pointcut.getLocation();
 	}
 
+	/**
+	 * 设置 Parameter Names（`ParameterNames`）。
+	 */
 	public void setParameterNames(String... names) {
 		this.pointcut.setParameterNames(names);
 	}
 
+	/**
+	 * 设置 Parameter Types（`ParameterTypes`）。
+	 */
 	public void setParameterTypes(Class<?>... types) {
 		this.pointcut.setParameterTypes(types);
 	}
 
+	/**
+	 * 设置 Bean Factory（`BeanFactory`）。
+	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.pointcut.setBeanFactory(beanFactory);
 	}
 
+	/**
+	 * 获取 Pointcut（`Pointcut`）。
+	 */
 	@Override
 	public Pointcut getPointcut() {
 		return this.pointcut;

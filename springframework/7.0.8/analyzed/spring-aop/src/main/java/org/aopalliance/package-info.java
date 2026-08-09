@@ -1,5 +1,5 @@
 /**
- * Spring's variant of the AOP Alliance interfaces.
+ * Spring的AOP联盟接口的变体。
  */
 @NullMarked
 package org.aopalliance;

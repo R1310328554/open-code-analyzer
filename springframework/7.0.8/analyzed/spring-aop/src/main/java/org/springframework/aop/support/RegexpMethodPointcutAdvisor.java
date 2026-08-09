@@ -25,17 +25,10 @@ import org.springframework.aop.Pointcut;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Convenient class for regexp method pointcuts that hold an Advice,
- * making them an {@link org.springframework.aop.Advisor}.
- *
- * <p>Configure this class using the "pattern" and "patterns"
- * pass-through properties. These are analogous to the pattern
- * and patterns properties of {@link AbstractRegexpMethodPointcut}.
- *
- * <p>Can delegate to any {@link AbstractRegexpMethodPointcut} subclass.
- * By default, {@link JdkRegexpMethodPointcut} will be used. To choose
- * a specific one, override the {@link #createPointcut} method.
- *
+ * 用于保存建议的正则表达式方法切入点的便捷类，使它们成为 {@link org.springframework.aop.Advisor}。
+ * <p>使用“pattern”和“patterns”传递属性配置此类。这些类似于 {@link AbstractRegexpMethodPointcut} 的模式和模式属性。
+ * <p>可以委托给任何{@link AbstractRegexpMethodPointcut}子类。默认情况下，将使用 {@link
+ * JdkRegexpMethodPointcut}。要选择特定的方法，请覆盖 {@link #createPointcut} 方法。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see #setPattern
@@ -45,15 +38,20 @@ import org.springframework.util.ObjectUtils;
 @SuppressWarnings("serial")
 public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor {
 
+	/** `patterns`：该类的成员状态。 */
 	private String @Nullable [] patterns;
 
+	/** 切点相关状态（`pointcut`）。 */
 	private @Nullable AbstractRegexpMethodPointcut pointcut;
 
+	/**
+	 * 方法 `SerializableMonitor`：完成本类中与「Serializable Monitor」相关的职责。
+	 */
 	private final Object pointcutMonitor = new SerializableMonitor();
 
 
 	/**
-	 * Create an empty RegexpMethodPointcutAdvisor.
+	 * 创建一个空的 RegexpMethodPointcutAdvisor。
 	 * @see #setPattern
 	 * @see #setPatterns
 	 * @see #setAdvice
@@ -62,9 +60,8 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 	}
 
 	/**
-	 * Create a RegexpMethodPointcutAdvisor for the given advice.
-	 * The pattern still needs to be specified afterwards.
-	 * @param advice the advice to use
+	 * 为给定的建议创建一个 RegexpMethodPointcutAdvisor。之后仍需要指定模式。
+	 * @param advice 使用建议
 	 * @see #setPattern
 	 * @see #setPatterns
 	 */
@@ -73,9 +70,9 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 	}
 
 	/**
-	 * Create a RegexpMethodPointcutAdvisor for the given advice.
-	 * @param pattern the pattern to use
-	 * @param advice the advice to use
+	 * 为给定的建议创建一个 RegexpMethodPointcutAdvisor。
+	 * @param pattern 使用的模式
+	 * @param advice 使用建议
 	 */
 	public RegexpMethodPointcutAdvisor(String pattern, Advice advice) {
 		setPattern(pattern);
@@ -83,9 +80,9 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 	}
 
 	/**
-	 * Create a RegexpMethodPointcutAdvisor for the given advice.
-	 * @param patterns the patterns to use
-	 * @param advice the advice to use
+	 * 为给定的建议创建一个 RegexpMethodPointcutAdvisor。
+	 * @param patterns 使用的模式
+	 * @param advice 使用建议
 	 */
 	public RegexpMethodPointcutAdvisor(String[] patterns, Advice advice) {
 		setPatterns(patterns);
@@ -94,8 +91,7 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 
 
 	/**
-	 * Set the regular expression defining methods to match.
-	 * <p>Use either this method or {@link #setPatterns}, not both.
+	 * 设置正则表达式定义方法进行匹配。 <p> 使用此方法或 {@link #setPatterns}，而不是同时使用两者。
 	 * @see #setPatterns
 	 */
 	public void setPattern(String pattern) {
@@ -103,10 +99,7 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 	}
 
 	/**
-	 * Set the regular expressions defining methods to match.
-	 * To be passed through to the pointcut implementation.
-	 * <p>Matching will be the union of all these; if any of the
-	 * patterns matches, the pointcut matches.
+	 * 设置要匹配的定义方法的正则表达式。传递到切入点实现。 <p>Matching 将是所有这些的并集；如果任何模式匹配，则切入点匹配。
 	 * @see AbstractRegexpMethodPointcut#setPatterns
 	 */
 	public void setPatterns(String... patterns) {
@@ -115,7 +108,7 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 
 
 	/**
-	 * Initialize the singleton Pointcut held within this Advisor.
+	 * 初始化该 Advisor 中保存的单例切入点。
 	 */
 	@Override
 	public Pointcut getPointcut() {
@@ -131,14 +124,16 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 	}
 
 	/**
-	 * Create the actual pointcut: By default, a {@link JdkRegexpMethodPointcut}
-	 * will be used.
-	 * @return the Pointcut instance (never {@code null})
+	 * 创建实际切入点：默认情况下，将使用 {@link JdkRegexpMethodPointcut}。
+	 * @return 切入点实例（绝不是 {@code null}）
 	 */
 	protected AbstractRegexpMethodPointcut createPointcut() {
 		return new JdkRegexpMethodPointcut();
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return getClass().getName() + ": advice [" + getAdvice() +
@@ -147,7 +142,7 @@ public class RegexpMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor 
 
 
 	/**
-	 * Empty class used for a serializable monitor object.
+	 * 用于可序列化监视器对象的空类。
 	 */
 	private static class SerializableMonitor implements Serializable {
 	}

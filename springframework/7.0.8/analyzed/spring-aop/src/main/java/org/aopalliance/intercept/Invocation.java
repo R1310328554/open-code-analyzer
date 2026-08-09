@@ -19,21 +19,16 @@ package org.aopalliance.intercept;
 import org.jspecify.annotations.Nullable;
 
 /**
- * This interface represents an invocation in the program.
- *
- * <p>An invocation is a joinpoint and can be intercepted by an
- * interceptor.
- *
+ * 该接口代表程序中的一次调用。
+ * <p>调用是一个连接点，可以被拦截器拦截。
  * @author Rod Johnson
  */
 public interface Invocation extends Joinpoint {
 
 	/**
-	 * Get the arguments as an array object.
-	 * It is possible to change element values within this
-	 * array to change the arguments.
-	 * @return the argument of the invocation
-	 */
+	* 获取数组对象形式的参数。可以更改此数组中的元素值来更改参数。
+	* @return 调用的参数
+	*/
 	@Nullable Object[] getArguments();
 
 }

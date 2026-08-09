@@ -1,5 +1,5 @@
 /**
- * Annotation support for AOP pointcuts.
+ * AOP 切入点的注释支持。
  */
 @NullMarked
 package org.springframework.aop.support.annotation;

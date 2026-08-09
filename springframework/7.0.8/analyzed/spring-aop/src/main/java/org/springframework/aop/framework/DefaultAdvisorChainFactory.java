@@ -34,18 +34,8 @@ import org.springframework.aop.PointcutAdvisor;
 import org.springframework.aop.framework.adapter.AdvisorAdapterRegistry;
 import org.springframework.aop.framework.adapter.GlobalAdvisorAdapterRegistry;
 
-/* ===== [OCA 中文解析] =====
-class DefaultAdvisorChainFactory — 意图说明
-
-通知器：Pointcut + Advice 的组合；源文件: `spring-aop/src/main/java/org/springframework/aop/framework/DefaultAdvisorChainFactory.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * A simple but definitive way of working out an advice chain for a Method,
- * given an {@link Advised} object. Always rebuilds each advice chain;
- * caching can be provided by subclasses.
- *
+ * 在给定 {@link Advised} 对象的情况下，一种简单但明确的方法来制定方法的建议链。始终重建每个建议链；缓存可以由子类提供。
  * @author Juergen Hoeller
  * @author Rod Johnson
  * @author Adrian Colyer
@@ -54,25 +44,22 @@ class DefaultAdvisorChainFactory — 意图说明
 @SuppressWarnings("serial")
 public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializable {
 
-	// [OCA] 字段 `INSTANCE`：类成员状态。
 	/**
-	 * Singleton instance of this class.
+	 * 该类的单例实例。
 	 * @since 6.0.10
 	 */
 	public static final DefaultAdvisorChainFactory INSTANCE = new DefaultAdvisorChainFactory();
 
 
+	/**
+	 * 获取 Interceptors And Dynamic Interception Advice（`InterceptorsAndDynamicInterceptionAdvice`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 getInterceptorsAndDynamicInterceptionAdvice — 意图与阅读要点
-
-方法 `getInterceptorsAndDynamicInterceptionAdvice` 复杂度较高（CCN≈14, NLOC≈47）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(
 			Advised config, Method method, @Nullable Class<?> targetClass) {
 
-		// This is somewhat tricky... We have to process introductions first,
-		// but we need to preserve order in the ultimate list.
+		// 这有点棘手...我们必须先处理介绍，
+		// 但我们需要保留最终列表中的顺序。
 		AdvisorAdapterRegistry registry = GlobalAdvisorAdapterRegistry.getInstance();
 		Advisor[] advisors = config.getAdvisors();
 		List<Object> interceptorList = new ArrayList<>(advisors.length);
@@ -81,7 +68,7 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 
 		for (Advisor advisor : advisors) {
 			if (advisor instanceof PointcutAdvisor pointcutAdvisor) {
-				// Add it conditionally.
+				// 有条件地添加。
 				if (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) {
 					MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
 					boolean match;
@@ -97,8 +84,8 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 					if (match) {
 						MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
 						if (mm.isRuntime()) {
-							// Creating a new object instance in the getInterceptors() method
-							// isn't a problem as we normally cache created chains.
+							// 在 getInterceptors() 方法中创建一个新的对象实例
+							// 这不是问题，因为我们通常缓存创建的链。
 							for (MethodInterceptor interceptor : interceptors) {
 								interceptorList.add(new InterceptorAndDynamicMethodMatcher(interceptor, mm));
 							}
@@ -125,7 +112,7 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 	}
 
 	/**
-	 * Determine whether the Advisors contain matching introductions.
+	 * 确定顾问是否包含匹配的介绍。
 	 */
 	private static boolean hasMatchingIntroductions(Advisor[] advisors, Class<?> actualClass) {
 		for (Advisor advisor : advisors) {

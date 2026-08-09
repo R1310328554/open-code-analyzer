@@ -28,9 +28,7 @@ import org.springframework.objenesis.SpringObjenesis;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Objenesis-based extension of {@link CglibAopProxy} to create proxy instances
- * without invoking the constructor of the class. Used by default.
- *
+ * {@link CglibAopProxy} 基于 Objenesis 的扩展，可在不调用类的构造函数的情况下创建代理实例。默认使用。
  * @author Oliver Gierke
  * @author Juergen Hoeller
  * @since 4.0
@@ -38,25 +36,37 @@ import org.springframework.util.ReflectionUtils;
 @SuppressWarnings("serial")
 class ObjenesisCglibAopProxy extends CglibAopProxy {
 
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(ObjenesisCglibAopProxy.class);
 
+	/**
+	 * 方法 `SpringObjenesis`：完成本类中与「Spring Objenesis」相关的职责。
+	 */
 	private static final SpringObjenesis objenesis = new SpringObjenesis();
 
 
 	/**
-	 * Create a new ObjenesisCglibAopProxy for the given AOP configuration.
-	 * @param config the AOP configuration as AdvisedSupport object
+	 * 为给定的 AOP 配置创建一个新的 ObjenesisCglibAopProxy。
+	 * @param config AOP 配置为 AdvisedSupport 对象
 	 */
 	public ObjenesisCglibAopProxy(AdvisedSupport config) {
 		super(config);
 	}
 
 
+	/**
+	 * 创建：Proxy Class（方法 `createProxyClass`）。
+	 */
 	@Override
 	protected Class<?> createProxyClass(Enhancer enhancer) {
 		return enhancer.createClass();
 	}
 
+	/**
+	 * 创建：Proxy Class And Instance（方法 `createProxyClassAndInstance`）。
+	 */
 	@Override
 	protected Object createProxyClassAndInstance(Enhancer enhancer, Callback[] callbacks) {
 		Class<?> proxyClass = enhancer.createClass();
@@ -73,7 +83,7 @@ class ObjenesisCglibAopProxy extends CglibAopProxy {
 		}
 
 		if (proxyInstance == null) {
-			// Regular instantiation via default constructor...
+			// 通过默认构造函数定期实例化...
 			try {
 				Constructor<?> ctor = (this.constructorArgs != null ?
 						proxyClass.getDeclaredConstructor(this.constructorArgTypes) :

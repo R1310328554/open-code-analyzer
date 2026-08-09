@@ -29,9 +29,7 @@ import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.util.ClassUtils;
 
 /**
- * An AOT {@link BeanRegistrationAotProcessor} that detects the presence of
- * classes compiled with AspectJ and adds the related required field hints.
- *
+ * 一个 AOT {@link BeanRegistrationAotProcessor}，用于检测使用 AspectJ 编译的类是否存在并添加相关的必填字段提示。
  * @author Sebastien Deleuze
  * @since 6.1
  */
@@ -39,10 +37,16 @@ class AspectJAdvisorBeanRegistrationAotProcessor implements BeanRegistrationAotP
 
 	private static final String AJC_MAGIC = "ajc$";
 
+	/**
+	 * 判断是否 Present。
+	 */
 	private static final boolean ASPECTJ_PRESENT = ClassUtils.isPresent("org.aspectj.lang.annotation.Pointcut",
 			AspectJAdvisorBeanRegistrationAotProcessor.class.getClassLoader());
 
 
+	/**
+	 * 处理：Ahead Of Time（方法 `processAheadOfTime`）。
+	 */
 	@Override
 	public @Nullable BeanRegistrationAotContribution processAheadOfTime(RegisteredBean registeredBean) {
 		if (ASPECTJ_PRESENT) {
@@ -54,6 +58,9 @@ class AspectJAdvisorBeanRegistrationAotProcessor implements BeanRegistrationAotP
 		return null;
 	}
 
+	/**
+	 * 方法 `compiledByAjc`：完成本类中与「compiled By Ajc」相关的职责。
+	 */
 	private static boolean compiledByAjc(Class<?> clazz) {
 		for (Field field : clazz.getDeclaredFields()) {
 			if (field.getName().startsWith(AJC_MAGIC)) {

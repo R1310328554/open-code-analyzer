@@ -19,22 +19,16 @@ package org.aopalliance.intercept;
 import java.lang.reflect.Constructor;
 
 /**
- * Description of an invocation to a constructor, given to an
- * interceptor upon constructor-call.
- *
- * <p>A constructor invocation is a joinpoint and can be intercepted
- * by a constructor interceptor.
- *
+ * 对构造函数调用的描述，在构造函数调用时提供给拦截器。
+ * <p>A 构造函数调用是一个连接点，可以被构造函数拦截器拦截。
  * @author Rod Johnson
  * @see ConstructorInterceptor
  */
 public interface ConstructorInvocation extends Invocation {
 
 	/**
-	 * Get the constructor being called.
-	 * <p>This method is a friendly implementation of the
-	 * {@link Joinpoint#getStaticPart()} method (same result).
-	 * @return the constructor being called
+	 * 获取被调用的构造函数。 <p>该方法是{@link Joinpoint#getStaticPart()}方法的友好实现（结果相同）。
+	 * @return
 	 */
 	Constructor<?> getConstructor();
 

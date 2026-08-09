@@ -60,23 +60,10 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-/* ===== [OCA 中文解析] =====
-class AspectJExpressionPointcut — 意图说明
-
-表达式：解析与求值；源文件: `spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJExpressionPointcut.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Spring {@link org.springframework.aop.Pointcut} implementation
- * that uses the AspectJ weaver to evaluate a pointcut expression.
- *
- * <p>The pointcut expression value is an AspectJ expression. This can
- * reference other pointcuts and use composition and other operations.
- *
- * <p>Naturally, as this is to be processed by Spring AOP's proxy-based model,
- * only method execution pointcuts are supported.
- *
+ * Spring {@link org.springframework.aop.Pointcut} 实现使用 AspectJ 编织器来计算切入点表达式。
+ * <p>切入点表达式值是AspectJ表达式。这可以引用其他切入点并使用组合和其他操作。
+ * <p>自然地，由于这是由Spring AOP的基于代理的模型处理的，因此仅支持方法执行切入点。
  * @author Rob Harrop
  * @author Adrian Colyer
  * @author Rod Johnson
@@ -90,10 +77,11 @@ class AspectJExpressionPointcut — 意图说明
 public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		implements ClassFilter, IntroductionAwareMethodMatcher, BeanFactoryAware {
 
-	// [OCA] 字段 `AJC_MAGIC`：类成员状态。
 	private static final String AJC_MAGIC = "ajc$";
 
-	// [OCA] 字段 `SUPPORTED_PRIMITIVES`：类成员状态。
+	/**
+	 * 方法 `of`：完成本类中与「of」相关的职责。
+	 */
 	private static final Set<PointcutPrimitive> SUPPORTED_PRIMITIVES = Set.of(
 			PointcutPrimitive.EXECUTION,
 			PointcutPrimitive.ARGS,
@@ -106,40 +94,45 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 			PointcutPrimitive.AT_ARGS,
 			PointcutPrimitive.AT_TARGET);
 
-	// [OCA] 字段 `logger`：类成员状态。
+	/**
+	 * 获取 Log（`Log`）。
+	 */
 	private static final Log logger = LogFactory.getLog(AspectJExpressionPointcut.class);
 
+	/** 作用域相关状态（`pointcutDeclarationScope`）。 */
 	private @Nullable Class<?> pointcutDeclarationScope;
 
-	// [OCA] 字段 `aspectCompiledByAjc`：类成员状态。
+	/** `aspectCompiledByAjc`：该类的成员状态。 */
 	private boolean aspectCompiledByAjc;
 
-	// [OCA] 字段 `pointcutParameterNames`：类成员状态。
 	private String[] pointcutParameterNames = new String[0];
 
 	private Class<?>[] pointcutParameterTypes = new Class<?>[0];
 
+	/** 底层 BeanFactory 引用。 */
 	private @Nullable BeanFactory beanFactory;
 
+	/** 类相关状态（`pointcutClassLoader`）。 */
 	private transient volatile @Nullable ClassLoader pointcutClassLoader;
 
+	/** 切点相关状态（`pointcutExpression`）。 */
 	private transient volatile @Nullable PointcutExpression pointcutExpression;
 
-	// [OCA] 字段 `pointcutParsingFailed`：类成员状态。
+	/** 切点相关状态（`pointcutParsingFailed`）。 */
 	private transient volatile boolean pointcutParsingFailed;
 
 
 	/**
-	 * Create a new default AspectJExpressionPointcut.
+	 * 创建一个新的默认 AspectJExpressionPointcut。
 	 */
 	public AspectJExpressionPointcut() {
 	}
 
 	/**
-	 * Create a new AspectJExpressionPointcut with the given settings.
-	 * @param declarationScope the declaration scope for the pointcut
-	 * @param paramNames the parameter names for the pointcut
-	 * @param paramTypes the parameter types for the pointcut
+	 * 使用给定的设置创建一个新的 AspectJExpressionPointcut。
+	 * @param declarationScope 切入点的声明范围
+	 * @param paramNames 切入点的参数名称
+	 * @param paramTypes 切入点的参数类型
 	 */
 	public AspectJExpressionPointcut(Class<?> declarationScope, String[] paramNames, Class<?>[] paramTypes) {
 		setPointcutDeclarationScope(declarationScope);
@@ -153,7 +146,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 
 	/**
-	 * Set the declaration scope for the pointcut.
+	 * 设置切入点的声明范围。
 	 */
 	public void setPointcutDeclarationScope(Class<?> pointcutDeclarationScope) {
 		this.pointcutDeclarationScope = pointcutDeclarationScope;
@@ -161,31 +154,40 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 	/**
-	 * Set the parameter names for the pointcut.
+	 * 设置切入点的参数名称。
 	 */
 	public void setParameterNames(String... names) {
 		this.pointcutParameterNames = names;
 	}
 
 	/**
-	 * Set the parameter types for the pointcut.
+	 * 设置切入点的参数类型。
 	 */
 	public void setParameterTypes(Class<?>... types) {
 		this.pointcutParameterTypes = types;
 	}
 
+	/**
+	 * 设置 Bean Factory（`BeanFactory`）。
+	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
 	}
 
 
+	/**
+	 * 获取 Class Filter（`ClassFilter`）。
+	 */
 	@Override
 	public ClassFilter getClassFilter() {
 		checkExpression();
 		return this;
 	}
 
+	/**
+	 * 获取 Method Matcher（`MethodMatcher`）。
+	 */
 	@Override
 	public MethodMatcher getMethodMatcher() {
 		checkExpression();
@@ -194,7 +196,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 
 	/**
-	 * Check whether this pointcut is ready to match.
+	 * 检查这个切入点是否准备好匹配。
 	 */
 	private void checkExpression() {
 		if (getExpression() == null) {
@@ -203,7 +205,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 	/**
-	 * Lazily build the underlying AspectJ pointcut expression.
+	 * 延迟构建底层 AspectJ 切入点表达式。
 	 */
 	private PointcutExpression obtainPointcutExpression() {
 		PointcutExpression pointcutExpression = this.pointcutExpression;
@@ -217,7 +219,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 	/**
-	 * Determine the ClassLoader to use for pointcut evaluation.
+	 * 确定用于切入点评估的类加载器。
 	 */
 	private @Nullable ClassLoader determinePointcutClassLoader() {
 		if (this.beanFactory instanceof ConfigurableBeanFactory cbf) {
@@ -230,7 +232,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 	/**
-	 * Build the underlying AspectJ pointcut expression.
+	 * 构建底层 AspectJ 切入点表达式。
 	 */
 	private PointcutExpression buildPointcutExpression(@Nullable ClassLoader classLoader) {
 		PointcutParser parser = initializePointcutParser(classLoader);
@@ -243,6 +245,9 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 				this.pointcutDeclarationScope, pointcutParameters);
 	}
 
+	/**
+	 * 解析：Expression（方法 `resolveExpression`）。
+	 */
 	private String resolveExpression() {
 		String expression = getExpression();
 		Assert.state(expression != null, "No expression set");
@@ -250,7 +255,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 	/**
-	 * Initialize the underlying AspectJ pointcut parser.
+	 * 初始化底层 AspectJ 切入点解析器。
 	 */
 	private PointcutParser initializePointcutParser(@Nullable ClassLoader classLoader) {
 		PointcutParser parser = PointcutParser
@@ -262,10 +267,8 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 
 	/**
-	 * If a pointcut expression has been specified in XML, the user cannot
-	 * write "and" as "&&" (though {@code &amp;&amp;} will work).
-	 * <p>We also allow "and" between two pointcut sub-expressions.
-	 * <p>This method converts back to {@code &&} for the AspectJ pointcut parser.
+	 * 如果在 XML 中指定了切入点表达式，则用户不能将“and”写为“&&”（尽管 {@code &amp;&amp;} 可以工作）。 <p>我们还允许两个切入点子表达式之间存在“
+	 * and”。 <p>此方法转换回 AspectJ 切入点解析器的 {@code &&}。
 	 */
 	private String replaceBooleanOperators(String pcExpr) {
 		String result = StringUtils.replace(pcExpr, " and ", " && ");
@@ -276,25 +279,23 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 
 	/**
-	 * Return the underlying AspectJ pointcut expression.
+	 * 返回基础 AspectJ 切入点表达式。
 	 */
 	public PointcutExpression getPointcutExpression() {
 		return obtainPointcutExpression();
 	}
 
+	/**
+	 * 匹配：es（方法 `matches`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 matches — 意图与阅读要点
-
-方法 `matches` 复杂度较高（CCN≈9, NLOC≈30）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public boolean matches(Class<?> targetClass) {
 		if (this.pointcutParsingFailed) {
-			// Pointcut parsing failed before below -> avoid trying again.
+			// 在下面之前切入点解析失败 -> 避免重试。
 			return false;
 		}
 		if (this.aspectCompiledByAjc && compiledByAjc(targetClass)) {
-			// ajc-compiled aspect class for ajc-compiled target class -> already weaved.
+			// ajc 编译的目标类的 ajc 编译的方面类 -> 已经编织。
 			return false;
 		}
 
@@ -304,7 +305,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 			}
 			catch (ReflectionWorldException ex) {
 				logger.debug("PointcutExpression matching rejected target class - trying fallback expression", ex);
-				// Actually this is still a "maybe" - treat the pointcut as dynamic if we don't know enough yet
+				// 实际上这仍然是一个“也许”——如果我们还不够了解，请将切入点视为动态
 				PointcutExpression fallbackExpression = getFallbackPointcutExpression(targetClass);
 				if (fallbackExpression != null) {
 					return fallbackExpression.couldMatchJoinPointsInType(targetClass);
@@ -323,18 +324,16 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return false;
 	}
 
+	/**
+	 * 匹配：es（方法 `matches`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 matches — 意图与阅读要点
-
-方法 `matches` 复杂度较高（CCN≈9, NLOC≈30）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public boolean matches(Method method, Class<?> targetClass, boolean hasIntroductions) {
 		ShadowMatch shadowMatch = getTargetShadowMatch(method, targetClass);
 
-		// Special handling for this, target, @this, @target, @annotation
-		// in Spring - we can optimize since we know we have exactly this class,
-		// and there will never be matching subclass at runtime.
+		// 对 this、target、@this、@target、@annotation 的特殊处理
+		// 在 Spring - 我们可以优化，因为我们知道我们有这个类，
+		// 并且在运行时永远不会有匹配的子类。
 		if (shadowMatch.alwaysMatches()) {
 			return true;
 		}
@@ -342,45 +341,44 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 			return false;
 		}
 		else {
-			// the maybe case
+			// 可能的情况
 			if (hasIntroductions) {
 				return true;
 			}
-			// A match test returned maybe - if there are any subtype sensitive variables
-			// involved in the test (this, target, at_this, at_target, at_annotation) then
-			// we say this is not a match as in Spring there will never be a different
-			// runtime subtype.
+			// 可能返回匹配测试 - 如果有任何子类型敏感变量
+			// 参与测试(this, target, at_this, at_target, at_annotation) then
+			// 我们说这不是一场比赛，因为春天永远不会有不同的比赛
+			// 运行时子类型。
 			RuntimeTestWalker walker = getRuntimeTestWalker(shadowMatch);
 			return (!walker.testsSubtypeSensitiveVars() || walker.testTargetInstanceOfResidue(targetClass));
 		}
 	}
 
+	/**
+	 * 匹配：es（方法 `matches`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 matches — 意图与阅读要点
-
-方法 `matches` 复杂度较高（CCN≈9, NLOC≈30）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public boolean matches(Method method, Class<?> targetClass) {
 		return matches(method, targetClass, false);
 	}
 
+	/**
+	 * 判断是否 Runtime。
+	 */
 	@Override
 	public boolean isRuntime() {
 		return obtainPointcutExpression().mayNeedDynamicTest();
 	}
 
+	/**
+	 * 匹配：es（方法 `matches`）。
+	 */
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 matches — 意图与阅读要点
-
-方法 `matches` 复杂度较高（CCN≈9, NLOC≈30）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public boolean matches(Method method, Class<?> targetClass, @Nullable Object... args) {
 		ShadowMatch shadowMatch = getTargetShadowMatch(method, targetClass);
 
-		// Bind Spring AOP proxy to AspectJ "this" and Spring AOP target to AspectJ target,
-		// consistent with return of MethodInvocationProceedingJoinPoint
+		// 将 Spring AOP 代理绑定到 AspectJ“this”，将 Spring AOP 目标绑定到 AspectJ 目标，
+		// 与 MethodInitationProceedingJoinPoint 的返回一致
 		ProxyMethodInvocation pmi = null;
 		Object targetObject = null;
 		Object thisObject = null;
@@ -396,7 +394,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 			}
 		}
 		catch (IllegalStateException ex) {
-			// No current invocation...
+			// 当前没有调用...
 			if (logger.isDebugEnabled()) {
 				logger.debug("Could not access current invocation - matching with limited context: " + ex);
 			}
@@ -434,13 +432,16 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		}
 	}
 
+	/**
+	 * 获取 Current Proxied Bean Name（`CurrentProxiedBeanName`）。
+	 */
 	protected @Nullable String getCurrentProxiedBeanName() {
 		return ProxyCreationContext.getCurrentProxiedBeanName();
 	}
 
 
 	/**
-	 * Get a new pointcut expression based on a target class's loader rather than the default.
+	 * 根据目标类的加载器而不是默认的加载器获取新的切入点表达式。
 	 */
 	private @Nullable PointcutExpression getFallbackPointcutExpression(Class<?> targetClass) {
 		try {
@@ -455,6 +456,9 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return null;
 	}
 
+	/**
+	 * 获取 Runtime Test Walker（`RuntimeTestWalker`）。
+	 */
 	private RuntimeTestWalker getRuntimeTestWalker(ShadowMatch shadowMatch) {
 		if (shadowMatch instanceof DefensiveShadowMatch defensiveShadowMatch) {
 			return new RuntimeTestWalker(defensiveShadowMatch.primary);
@@ -462,23 +466,29 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return new RuntimeTestWalker(shadowMatch);
 	}
 
+	/**
+	 * 绑定：Parameters（方法 `bindParameters`）。
+	 */
 	private void bindParameters(ProxyMethodInvocation invocation, JoinPointMatch jpm) {
-		// Note: Can't use JoinPointMatch.getClass().getName() as the key, since
-		// Spring AOP does all the matching at a join point, and then all the invocations
-		// under this scenario, if we just use JoinPointMatch as the key, then
-		// 'last man wins' which is not what we want at all.
-		// Using the expression is guaranteed to be safe, since 2 identical expressions
-		// are guaranteed to bind in exactly the same way.
+		// 注意：不能使用 JoinPointMatch.getClass().getName() 作为键，因为
+		// Spring AOP 在连接点处进行所有匹配，然后进行所有调用
+		// 在这种情况下，如果我们只使用 JoinPointMatch 作为键，那么
+		// “最后一个人获胜”这根本不是我们想要的。
+		// 使用表达式保证是安全的，因为有 2 个相同的表达式
+		// 保证以完全相同的方式绑定。
 		invocation.setUserAttribute(resolveExpression(), jpm);
 	}
 
+	/**
+	 * 获取 Target Shadow Match（`TargetShadowMatch`）。
+	 */
 	private ShadowMatch getTargetShadowMatch(Method method, Class<?> targetClass) {
 		Method targetMethod = AopUtils.getMostSpecificMethod(method, targetClass);
 		if (targetMethod.getDeclaringClass().isInterface() && targetMethod.getDeclaringClass() != targetClass &&
 				obtainPointcutExpression().getPointcutExpression().contains("." + targetMethod.getName() + "(")) {
-			// Try to build the most specific interface possible for inherited methods to be
-			// considered for sub-interface matches as well, in particular for proxy classes.
-			// Note: AspectJ is only going to take Method.getDeclaringClass() into account.
+			// 尝试为继承的方法构建最具体的接口
+			// 也考虑子接口匹配，特别是代理类。
+			// 注意：AspectJ 仅考虑 Method.getDeclaringClass()。
 			Set<Class<?>> ifcs = ClassUtils.getAllInterfacesForClassAsSet(targetClass);
 			if (ifcs.size() > 1) {
 				try {
@@ -487,21 +497,17 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 					targetMethod = ClassUtils.getMostSpecificMethod(targetMethod, compositeInterface);
 				}
 				catch (IllegalArgumentException ex) {
-					// Implemented interfaces probably expose conflicting method signatures...
-					// Proceed with original target method.
+					// 实现的接口可能会暴露冲突的方法签名......
+					// 继续原来的目标方法。
 				}
 			}
 		}
 		return getShadowMatch(targetMethod, method);
 	}
 
-	/* ===== [OCA 中文解析] =====
-方法 getShadowMatch — 意图与阅读要点
-
-方法 `getShadowMatch` 复杂度较高（CCN≈18, NLOC≈63）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
-
+	/**
+	 * 获取 Shadow Match（`ShadowMatch`）。
+	 */
 	private ShadowMatch getShadowMatch(Method targetMethod, Method originalMethod) {
 		ShadowMatchKey key = new ShadowMatchKey(this, targetMethod);
 		ShadowMatch shadowMatch = ShadowMatchUtils.getShadowMatch(key);
@@ -519,8 +525,8 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 						shadowMatch = pointcutExpression.matchesMethodExecution(methodToMatch);
 					}
 					catch (ReflectionWorldException ex) {
-						// Failed to introspect target method, probably because it has been loaded
-						// in a special ClassLoader. Let's try the declaring ClassLoader instead...
+						// 无法自省目标方法，可能是因为它已被加载
+						// 在一个特殊的类加载器中。让我们尝试声明 ClassLoader...
 						try {
 							fallbackExpression = getFallbackPointcutExpression(methodToMatch.getDeclaringClass());
 							if (fallbackExpression != null) {
@@ -534,16 +540,16 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 					if (targetMethod != originalMethod && (shadowMatch == null ||
 							(Proxy.isProxyClass(targetMethod.getDeclaringClass()) &&
 									(shadowMatch.neverMatches() || containsAnnotationPointcut())))) {
-						// Fall back to the plain original method in case of no resolvable match or a
-						// negative match on a proxy class (which doesn't carry any annotations on its
-						// redeclared methods), as well as for annotation pointcuts.
+						// 如果没有可解析的匹配或
+						// 代理类上的负匹配（其上不带有任何注释）
+						// 重新声明的方法），以及注释切入点。
 						methodToMatch = originalMethod;
 						try {
 							shadowMatch = pointcutExpression.matchesMethodExecution(methodToMatch);
 						}
 						catch (ReflectionWorldException ex) {
-							// Could neither introspect the target class nor the proxy class ->
-							// let's try the original method's declaring class before we give up...
+							// 既不能内省目标类，也不能内省代理类 ->
+							// 在放弃之前让我们尝试一下原始方法的声明类......
 							try {
 								fallbackExpression = getFallbackPointcutExpression(methodToMatch.getDeclaringClass());
 								if (fallbackExpression != null) {
@@ -557,7 +563,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 					}
 				}
 				catch (Throwable ex) {
-					// Possibly AspectJ 1.8.10 encountering an invalid signature
+					// 可能 AspectJ 1.8.10 遇到无效签名
 					logger.debug("PointcutExpression matching rejected target method", ex);
 					fallbackExpression = null;
 				}
@@ -574,10 +580,16 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return shadowMatch;
 	}
 
+	/**
+	 * 方法 `containsAnnotationPointcut`：完成本类中与「contains Annotation Pointcut」相关的职责。
+	 */
 	private boolean containsAnnotationPointcut() {
 		return resolveExpression().contains("@annotation");
 	}
 
+	/**
+	 * 方法 `compiledByAjc`：完成本类中与「compiled By Ajc」相关的职责。
+	 */
 	private static boolean compiledByAjc(Class<?> clazz) {
 		for (Field field : clazz.getDeclaredFields()) {
 			if (field.getName().startsWith(AJC_MAGIC)) {
@@ -589,6 +601,9 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 
+	/**
+	 * 比较是否相等。
+	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof AspectJExpressionPointcut that &&
@@ -598,12 +613,18 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 				ObjectUtils.nullSafeEquals(this.pointcutParameterTypes, that.pointcutParameterTypes)));
 	}
 
+	/**
+	 * 判断是否包含/具备 h Code。
+	 */
 	@Override
 	public int hashCode() {
 		return ObjectUtils.nullSafeHash(getExpression(), this.pointcutDeclarationScope,
 				this.pointcutParameterNames, this.pointcutParameterTypes);
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("AspectJExpressionPointcut: (");
@@ -626,20 +647,9 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class BeanPointcutDesignatorHandler — 意图说明
-
-class `BeanPointcutDesignatorHandler`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJExpressionPointcut.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Handler for the Spring-specific {@code bean()} pointcut designator
-	 * extension to AspectJ.
-	 * <p>This handler must be added to each pointcut object that needs to
-	 * handle the {@code bean()} PCD. Matching context is obtained
-	 * automatically by examining a thread local variable and therefore a matching
-	 * context need not be set on the pointcut.
+	 * 用于 AspectJ 的 Spring 特定 {@code bean()} 切入点指示符扩展的处理程序。 <p>此处理程序必须添加到需要处理 {@code bean()} PC
+	 * D 的每个切入点对象中。匹配上下文是通过检查线程局部变量自动获得的，因此不需要在切入点上设置匹配上下文。
 	 */
 	private class BeanPointcutDesignatorHandler implements PointcutDesignatorHandler {
 
@@ -657,19 +667,9 @@ class `BeanPointcutDesignatorHandler`：请结合所属模块与调用方理解�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-class BeanContextMatcher — 意图说明
-
-class `BeanContextMatcher`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJExpressionPointcut.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Matcher class for the BeanNamePointcutDesignatorHandler.
-	 * <p>Dynamic match tests for this matcher always return true,
-	 * since the matching decision is made at the proxy creation time.
-	 * For static match tests, this matcher abstains to allow the overall
-	 * pointcut to match even when negation is used with the bean() pointcut.
+	 * BeanNamePointcutDesignatorHandler 的匹配器类。 <p> 此匹配器的动态匹配测试始终返回 true，因为匹配决策是在代理创建时做出的。对于静态匹
+	 * 配测试，即使在 bean() 切入点使用否定时，此匹配器也会放弃以允许整体切入点匹配。
 	 */
 	private class BeanContextMatcher implements ContextBasedMatcher {
 
@@ -711,7 +711,7 @@ class `BeanContextMatcher`：请结合所属模块与调用方理解其在整体
 		private FuzzyBoolean contextMatch(@Nullable Class<?> targetType) {
 			String advisedBeanName = getCurrentProxiedBeanName();
 			if (advisedBeanName == null) {  // no proxy creation in progress
-				// abstain; can't return YES, since that will make pointcut with negation fail
+				// 弃权；不能返回 YES，因为这会使切入点否定失败
 				return FuzzyBoolean.MAYBE;
 			}
 			if (BeanFactoryUtils.isGeneratedBeanName(advisedBeanName)) {
@@ -733,17 +733,6 @@ class `BeanContextMatcher`：请结合所属模块与调用方理解其在整体
 					this.expressionPattern::matches, advisedBeanName, beanFactory);
 		}
 	}
-
-
-	/* ===== [OCA 中文解析] =====
-class DefensiveShadowMatch — 意图说明
-
-class `DefensiveShadowMatch`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJExpressionPointcut.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
 
 
 	private static class DefensiveShadowMatch implements ShadowMatch {
@@ -790,17 +779,9 @@ class `DefensiveShadowMatch`：请结合所属模块与调用方理解其在整�
 	}
 
 
-	/* ===== [OCA 中文解析] =====
-record ShadowMatchKey — 意图说明
-
-record `ShadowMatchKey`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-aop/src/main/java/org/springframework/aop/aspectj/AspectJExpressionPointcut.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-
-
-	===== [OCA 中文解析结束] ===== */
-
-
+	/**
+	 * 方法 `ShadowMatchKey`：完成本类中与「Shadow Match Key」相关的职责。
+	 */
 	private record ShadowMatchKey(AspectJExpressionPointcut expression, Method method) {
 	}
 

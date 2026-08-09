@@ -25,32 +25,30 @@ import org.springframework.aop.TargetSource;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Canonical {@code TargetSource} when there is no target
- * (or just the target class known), and behavior is supplied
- * by interfaces and advisors only.
- *
+ * 当没有目标（或仅已知目标类）并且行为仅由接口和顾问提供时，规范 {@code TargetSource}。
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public final class EmptyTargetSource implements TargetSource, Serializable {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/**
+	 */
 	private static final long serialVersionUID = 3680494563553489691L;
 
 
 	//---------------------------------------------------------------------
-	// Static factory methods
+	// 静态工厂方法
 	//---------------------------------------------------------------------
 
 	/**
-	 * The canonical (Singleton) instance of this {@link EmptyTargetSource}.
+	 * 此 {@link EmptyTargetSource} 的规范（单例）实例。
 	 */
 	public static final EmptyTargetSource INSTANCE = new EmptyTargetSource(null, true);
 
 
 	/**
-	 * Return an EmptyTargetSource for the given target Class.
-	 * @param targetClass the target Class (may be {@code null})
+	 * 返回给定目标类的 EmptyTargetSource。
+	 * @param targetClass 目标类（可能是 {@code null}）
 	 * @see #getTargetClass()
 	 */
 	public static EmptyTargetSource forClass(@Nullable Class<?> targetClass) {
@@ -58,9 +56,9 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 	}
 
 	/**
-	 * Return an EmptyTargetSource for the given target Class.
-	 * @param targetClass the target Class (may be {@code null})
-	 * @param isStatic whether the TargetSource should be marked as static
+	 * 返回给定目标类的 EmptyTargetSource。
+	 * @param targetClass 目标类（可能是 {@code null}）
+	 * @param isStatic TargetSource 是否应标记为静态
 	 * @see #getTargetClass()
 	 */
 	public static EmptyTargetSource forClass(@Nullable Class<?> targetClass, boolean isStatic) {
@@ -69,20 +67,20 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 
 
 	//---------------------------------------------------------------------
-	// Instance implementation
+	// 实例实现
 	//---------------------------------------------------------------------
 
+	/** 类相关状态（`targetClass`）。 */
 	private final @Nullable Class<?> targetClass;
 
+	/** `isStatic`：该类的成员状态。 */
 	private final boolean isStatic;
 
 
 	/**
-	 * Create a new instance of the {@link EmptyTargetSource} class.
-	 * <p>This constructor is {@code private} to enforce the
-	 * Singleton pattern / factory method pattern.
-	 * @param targetClass the target class to expose (may be {@code null})
-	 * @param isStatic whether the TargetSource is marked as static
+	 * 创建 {@link EmptyTargetSource} 类的新实例。 <p>这个构造函数是{@code private}，用于强制执行单例模式/工厂方法模式。
+	 * @param targetClass 要公开的目标类（可能是 {@code null}）
+	 * @param isStatic TargetSource 是否标记为静态
 	 */
 	private EmptyTargetSource(@Nullable Class<?> targetClass, boolean isStatic) {
 		this.targetClass = targetClass;
@@ -91,7 +89,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Always returns the specified target Class, or {@code null} if none.
+	 * 始终返回指定的目标类，如果没有，则返回 {@code null}。
 	 */
 	@Override
 	public @Nullable Class<?> getTargetClass() {
@@ -99,7 +97,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 	}
 
 	/**
-	 * Always returns {@code true}.
+	 * 始终返回 {@code true}。
 	 */
 	@Override
 	public boolean isStatic() {
@@ -107,7 +105,7 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 	}
 
 	/**
-	 * Always returns {@code null}.
+	 * 始终返回 {@code null}。
 	 */
 	@Override
 	public @Nullable Object getTarget() {
@@ -116,13 +114,15 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Returns the canonical instance on deserialization in case
-	 * of no target class, thus protecting the Singleton pattern.
+	 * 如果没有目标类，则返回反序列化时的规范实例，从而保护单例模式。
 	 */
 	private Object readResolve() {
 		return (this.targetClass == null && this.isStatic ? INSTANCE : this);
 	}
 
+	/**
+	 * 比较是否相等。
+	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
 		return (this == other || (other instanceof EmptyTargetSource that &&
@@ -130,11 +130,17 @@ public final class EmptyTargetSource implements TargetSource, Serializable {
 				this.isStatic == that.isStatic));
 	}
 
+	/**
+	 * 判断是否包含/具备 h Code。
+	 */
 	@Override
 	public int hashCode() {
 		return Objects.hash(getClass(), this.targetClass);
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return "EmptyTargetSource: " +

@@ -22,9 +22,7 @@ import org.springframework.aop.ClassFilter;
 import org.springframework.aop.Pointcut;
 
 /**
- * Convenient class for name-match method pointcuts that hold an Advice,
- * making them an Advisor.
- *
+ * 用于保存建议的名称匹配方法切入点的便捷类，使它们成为顾问。
  * @author Juergen Hoeller
  * @author Rob Harrop
  * @see NameMatchMethodPointcut
@@ -32,20 +30,28 @@ import org.springframework.aop.Pointcut;
 @SuppressWarnings("serial")
 public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvisor {
 
+	/**
+	 * 方法 `NameMatchMethodPointcut`：完成本类中与「Name Match Method Pointcut」相关的职责。
+	 */
 	private final NameMatchMethodPointcut pointcut = new NameMatchMethodPointcut();
 
 
+	/**
+	 * 创建 `NameMatchMethodPointcutAdvisor` 的新实例。
+	 */
 	public NameMatchMethodPointcutAdvisor() {
 	}
 
+	/**
+	 * 创建 `NameMatchMethodPointcutAdvisor` 的新实例。
+	 */
 	public NameMatchMethodPointcutAdvisor(Advice advice) {
 		setAdvice(advice);
 	}
 
 
 	/**
-	 * Set the {@link ClassFilter} to use for this pointcut.
-	 * Default is {@link ClassFilter#TRUE}.
+	 * 设置用于此切入点的 {@link ClassFilter}。默认为 {@link ClassFilter#TRUE}。
 	 * @see NameMatchMethodPointcut#setClassFilter
 	 */
 	public void setClassFilter(ClassFilter classFilter) {
@@ -53,8 +59,7 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 	}
 
 	/**
-	 * Convenience method when we have only a single method name to match.
-	 * Use either this method or {@code setMappedNames}, not both.
+	 * 当我们只有一个方法名称需要匹配时，这是一种方便的方法。使用此方法或 {@code setMappedNames}，而不是同时使用两者。
 	 * @see #setMappedNames
 	 * @see NameMatchMethodPointcut#setMappedName
 	 */
@@ -63,9 +68,7 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 	}
 
 	/**
-	 * Set the method names defining methods to match.
-	 * Matching will be the union of all these; if any match,
-	 * the pointcut matches.
+	 * 设置定义要匹配的方法的方法名称。匹配将是所有这些的并集；如果有匹配，则切入点匹配。
 	 * @see NameMatchMethodPointcut#setMappedNames
 	 */
 	public void setMappedNames(String... mappedNames) {
@@ -73,11 +76,9 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 	}
 
 	/**
-	 * Add another eligible method name, in addition to those already named.
-	 * Like the set methods, this method is for use when configuring proxies,
-	 * before a proxy is used.
-	 * @param name the name of the additional method that will match
-	 * @return this pointcut to allow for multiple additions in one line
+	 * 除了已命名的方法名称之外，添加另一个符合条件的方法名称。与 set 方法一样，此方法用于在使用代理之前配置代理时使用。
+	 * @param name 将匹配的附加方法的名称
+	 * @return 切入点以允许在一行中进行多次添加
 	 * @see NameMatchMethodPointcut#addMethodName
 	 */
 	public NameMatchMethodPointcut addMethodName(String name) {
@@ -85,6 +86,9 @@ public class NameMatchMethodPointcutAdvisor extends AbstractGenericPointcutAdvis
 	}
 
 
+	/**
+	 * 获取 Pointcut（`Pointcut`）。
+	 */
 	@Override
 	public Pointcut getPointcut() {
 		return this.pointcut;

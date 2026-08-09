@@ -43,12 +43,8 @@ import org.springframework.core.SpringProperties;
 import org.springframework.core.annotation.AnnotationUtils;
 
 /**
- * Abstract base class for factories that can create Spring AOP Advisors
- * given AspectJ classes from classes honoring the AspectJ 5 annotation syntax.
- *
- * <p>This class handles annotation parsing and validation functionality.
- * It does not actually generate Spring AOP Advisors, which is deferred to subclasses.
- *
+ * 工厂的抽象基类，可以从遵循 AspectJ 5 注释语法的类中给定 AspectJ 类创建 Spring AOP Advisor。
+ * <p>该类处理注释解析和验证功能。它实际上并不生成 Spring AOP Advisor，而是推迟到子类。
  * @author Rod Johnson
  * @author Adrian Colyer
  * @author Juergen Hoeller
@@ -63,33 +59,40 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 	private static final String AJC_MAGIC = "ajc$";
 
 	/**
-	 * System property that instructs Spring to ignore ajc-compiled aspects
-	 * for Spring AOP proxying, restoring traditional Spring behavior for
-	 * scenarios where both weaving and AspectJ auto-proxying are enabled.
-	 * <p>The default is "false". Consider switching this to "true" if you
-	 * encounter double execution of your aspects in a given build setup.
-	 * Note that we recommend restructuring your AspectJ configuration to
-	 * avoid such double exposure of an AspectJ aspect to begin with.
+	 * 指示 Spring 忽略 Spring AOP 代理的 ajc 编译方面的系统属性，为同时启用编织和 AspectJ 自动代理的场景恢复传统的 Spring 行为。 <p>默认
+	 * 为“false”。如果您在给定的构建设置中遇到方面的双重执行，请考虑将其切换为“true”。请注意，我们建议重构您的 AspectJ 配置，以避免 AspectJ 方面的这种双
+	 * 重暴露。
 	 * @since 6.1.15
 	 */
 	public static final String IGNORE_AJC_PROPERTY_NAME = "spring.aop.ajc.ignore";
 
+	/** `shouldIgnoreAjcCompiledAspects`：该类的成员状态。 */
 	private static final boolean shouldIgnoreAjcCompiledAspects =
 			SpringProperties.getFlag(IGNORE_AJC_PROPERTY_NAME);
 
 
-	/** Logger available to subclasses. */
+	/**
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/**
+	 * 方法 `AspectJAnnotationParameterNameDiscoverer`：完成本类中与「Aspect J Annotation Parameter Name Discoverer」相关的职责。
+	 */
 	protected final ParameterNameDiscoverer parameterNameDiscoverer = new AspectJAnnotationParameterNameDiscoverer();
 
 
+	/**
+	 * 判断是否 Aspect。
+	 */
 	@Override
 	public boolean isAspect(Class<?> clazz) {
 		return (AnnotationUtils.findAnnotation(clazz, Aspect.class) != null &&
 				(!shouldIgnoreAjcCompiledAspects || !compiledByAjc(clazz)));
 	}
 
+	/**
+	 * 校验（方法 `validate`）。
+	 */
 	@Override
 	public void validate(Class<?> aspectClass) throws AopConfigException {
 		AjType<?> ajType = AjTypeSystem.getAjType(aspectClass);
@@ -108,8 +111,7 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 
 
 	/**
-	 * Find and return the first AspectJ annotation on the given method
-	 * (there <i>should</i> only be one anyway...).
+	 * 查找并返回给定方法上的第一个 AspectJ 注释（无论如何，<i> 应该 </i> 只能是一个......）。
 	 */
 	@SuppressWarnings("unchecked")
 	protected static @Nullable AspectJAnnotation findAspectJAnnotationOnMethod(Method method) {
@@ -122,6 +124,9 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 		return null;
 	}
 
+	/**
+	 * 查找：Annotation（方法 `findAnnotation`）。
+	 */
 	private static @Nullable AspectJAnnotation findAnnotation(Method method, Class<? extends Annotation> annotationType) {
 		Annotation annotation = AnnotationUtils.findAnnotation(method, annotationType);
 		if (annotation != null) {
@@ -132,6 +137,9 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 		}
 	}
 
+	/**
+	 * 方法 `compiledByAjc`：完成本类中与「compiled By Ajc」相关的职责。
+	 */
 	private static boolean compiledByAjc(Class<?> clazz) {
 		for (Field field : clazz.getDeclaredFields()) {
 			if (field.getName().startsWith(AJC_MAGIC)) {
@@ -143,7 +151,7 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 
 
 	/**
-	 * Enum for AspectJ annotation types.
+	 * AspectJ 注释类型的枚举。
 	 * @see AspectJAnnotation#getAnnotationType()
 	 */
 	protected enum AspectJAnnotationType {
@@ -153,8 +161,7 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 
 
 	/**
-	 * Class modeling an AspectJ annotation, exposing its type enumeration and
-	 * pointcut String.
+	 * 对 AspectJ 注释进行类建模，公开其类型枚举和切入点字符串。
 	 */
 	protected static class AspectJAnnotation {
 
@@ -232,8 +239,7 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 
 
 	/**
-	 * ParameterNameDiscoverer implementation that analyzes the arg names
-	 * specified at the AspectJ annotation level.
+	 * ParameterNameDiscoverer 实现，用于分析在 AspectJ 注释级别指定的参数名称。
 	 */
 	private static class AspectJAnnotationParameterNameDiscoverer implements ParameterNameDiscoverer {
 

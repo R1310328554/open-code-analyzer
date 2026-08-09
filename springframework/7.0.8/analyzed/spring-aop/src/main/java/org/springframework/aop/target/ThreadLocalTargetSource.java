@@ -27,21 +27,12 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.core.NamedThreadLocal;
 
 /**
- * Alternative to an object pool. This {@link org.springframework.aop.TargetSource}
- * uses a threading model in which every thread has its own copy of the target.
- * There's no contention for targets. Target object creation is kept to a minimum
- * on the running server.
- *
- * <p>Application code is written as to a normal pool; callers can't assume they
- * will be dealing with the same instance in invocations in different threads.
- * However, state can be relied on during the operations of a single thread:
- * for example, if one caller makes repeated calls on the AOP proxy.
- *
- * <p>Cleanup of thread-bound objects is performed on BeanFactory destruction,
- * calling their {@code DisposableBean.destroy()} method if available.
- * Be aware that many thread-bound objects can be around until the application
- * actually shuts down.
- *
+ * 对象池的替代方案。此 {@link org.springframework.aop.TargetSource} 使用线程模型，其中每个线程都有自己的目标副本。不存在对目标的争夺
+ * 。在运行的服务器上目标对象的创建保持在最低限度。
+ * <p>应用程序代码是按照普通池编写的；调用者不能假设他们将在不同线程的调用中处理相同的实例。但是，在单个线程的操作期间可以依赖状态：例如，如果一个调用者对 AOP 代理进行重复
+ * 调用。
+ * 线程绑定对象的 <p>Cleanup 在 BeanFactory 销毁时执行，调用它们的 {@code DisposableBean.destroy()} 方法（如果可用）。请
+ * 注意，许多线程绑定对象可能会一直存在，直到应用程序实际关闭为止。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -53,9 +44,8 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 		implements ThreadLocalTargetSourceStats, DisposableBean {
 
 	/**
-	 * ThreadLocal holding the target associated with the current
-	 * thread. Unlike most ThreadLocals, which are static, this variable
-	 * is meant to be per thread per instance of the ThreadLocalTargetSource class.
+	 * ThreadLocal 保存与当前线程关联的目标。与大多数静态 ThreadLocal 不同，此变量适用于 ThreadLocalTargetSource
+	 * 类的每个实例的每个线程。
 	 */
 	private final ThreadLocal<Object> targetInThread =
 			new NamedThreadLocal<>("Thread-local instance of bean") {
@@ -66,19 +56,19 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 			};
 
 	/**
-	 * Set of managed targets, enabling us to keep track of the targets we've created.
+	 * 一组托管目标，使我们能够跟踪我们创建的目标。
 	 */
 	private final Set<Object> targetSet = new HashSet<>();
 
+	/** `invocationCount`：该类的成员状态。 */
 	private int invocationCount;
 
+	/** `hitCount`：该类的成员状态。 */
 	private int hitCount;
 
 
 	/**
-	 * Implementation of abstract getTarget() method.
-	 * We look for a target held in a ThreadLocal. If we don't find one,
-	 * we create one and bind it to the thread. No synchronization is required.
+	 * 抽象 getTarget() 方法的实现。我们寻找 ThreadLocal 中保存的目标。如果找不到，我们就创建一个并将其绑定到线程。不需要同步。
 	 */
 	@Override
 	public Object getTarget() throws BeansException {
@@ -89,7 +79,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 				logger.debug("No target for prototype '" + this.targetBeanName + "' bound to thread: " +
 						"creating one and binding it to thread '" + Thread.currentThread().getName() + "'");
 			}
-			// Associate target with ThreadLocal.
+			// 将目标与 ThreadLocal 关联。
 			target = newPrototypeInstance();
 			this.targetInThread.set(target);
 			synchronized (this.targetSet) {
@@ -103,7 +93,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 	}
 
 	/**
-	 * Dispose of targets if necessary; clear ThreadLocal.
+	 * 如有必要，处置目标；清除ThreadLocal。
 	 * @see #destroyPrototypeInstance
 	 */
 	@Override
@@ -115,21 +105,30 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 			}
 			this.targetSet.clear();
 		}
-		// Clear ThreadLocal, just in case.
+		// 清除 ThreadLocal，以防万一。
 		this.targetInThread.remove();
 	}
 
 
+	/**
+	 * 获取 Invocation Count（`InvocationCount`）。
+	 */
 	@Override
 	public int getInvocationCount() {
 		return this.invocationCount;
 	}
 
+	/**
+	 * 获取 Hit Count（`HitCount`）。
+	 */
 	@Override
 	public int getHitCount() {
 		return this.hitCount;
 	}
 
+	/**
+	 * 获取 Object Count（`ObjectCount`）。
+	 */
 	@Override
 	public int getObjectCount() {
 		synchronized (this.targetSet) {
@@ -139,8 +138,7 @@ public class ThreadLocalTargetSource extends AbstractPrototypeBasedTargetSource
 
 
 	/**
-	 * Return an introduction advisor mixin that allows the AOP proxy to be
-	 * cast to ThreadLocalInvokerStats.
+	 * 返回一个引入顾问 mixin，允许将 AOP 代理强制转换为 ThreadLocalInvokerStats。
 	 */
 	public IntroductionAdvisor getStatsMixin() {
 		DelegatingIntroductionInterceptor dii = new DelegatingIntroductionInterceptor(this);

@@ -24,30 +24,18 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 /**
- * {@code TargetSourceCreator} that enforces a {@link LazyInitTargetSource} for
- * each bean that is defined as "lazy-init". This will lead to a proxy created for
- * each of those beans, allowing to fetch a reference to such a bean without
- * actually initializing the target bean instance.
- *
- * <p>To be registered as custom {@code TargetSourceCreator} for an auto-proxy
- * creator, in combination with custom interceptors for specific beans or for the
- * creation of lazy-init proxies only. For example, as an autodetected
- * infrastructure bean in an XML application context definition:
- *
- * <pre class="code">
- * &lt;bean class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator"&gt;
- *   &lt;property name="beanNames" value="*" /&gt; &lt;!-- apply to all beans --&gt;
- *   &lt;property name="customTargetSourceCreators"&gt;
- *     &lt;list&gt;
- *       &lt;bean class="org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator" /&gt;
- *     &lt;/list&gt;
- *   &lt;/property&gt;
- * &lt;/bean&gt;
- *
- * &lt;bean id="myLazyInitBean" class="mypackage.MyBeanClass" lazy-init="true"&gt;
- *   &lt;!-- ... --&gt;
- * &lt;/bean&gt;</pre>
- *
+ * {@code TargetSourceCreator} 为定义为“lazy-init”的每个 bean 强制执行 {@link
+ * LazyInitTargetSource}。这将导致为每个 bean 创建一个代理，允许获取对此类 bean 的引用，而无需实际初始化目标 bean 实例。
+ * <p> 注册为自动代理创建者的自定义 {@code TargetSourceCreator}，与特定 bean 的自定义拦截器结合使用或仅用于创建惰性初始化代理。例如，作为 X
+ * ML 应用程序上下文定义中自动检测的基础设施 bean：
+ * <pre class="code"> <bean
+ * class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">;
+ * &lt;属性名称=“beanNames”值=“*”/> <!-- 适用于所有豆类 --> <属性名称=“customTargetSourceCreators”> <列表>
+ * <bean
+ * class="org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator"/>/>
+ * &lt;/列表&gt; &lt;/属性&gt; &lt;/豆&gt;
+ * <bean id =“myLazyInitBean”class =“mypackage.MyBeanClass”lazy-init =“true”> <!-- ... -->
+ * </bean></pre>
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 1.2
@@ -57,11 +45,17 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
  */
 public class LazyInitTargetSourceCreator extends AbstractBeanFactoryBasedTargetSourceCreator {
 
+	/**
+	 * 判断是否 Prototype Based。
+	 */
 	@Override
 	protected boolean isPrototypeBased() {
 		return false;
 	}
 
+	/**
+	 * 创建：Bean Factory Based Target Source（方法 `createBeanFactoryBasedTargetSource`）。
+	 */
 	@Override
 	protected @Nullable AbstractBeanFactoryBasedTargetSource createBeanFactoryBasedTargetSource(
 			Class<?> beanClass, String beanName) {

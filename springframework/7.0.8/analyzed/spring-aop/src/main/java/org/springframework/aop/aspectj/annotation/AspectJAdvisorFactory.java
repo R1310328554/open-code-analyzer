@@ -27,9 +27,7 @@ import org.springframework.aop.aspectj.AspectJExpressionPointcut;
 import org.springframework.aop.framework.AopConfigException;
 
 /**
- * Interface for factories that can create Spring AOP Advisors from classes
- * annotated with AspectJ annotation syntax.
- *
+ * 可以从使用 AspectJ 注释语法注释的类创建 Spring AOP Advisor 的工厂接口。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -39,60 +37,48 @@ import org.springframework.aop.framework.AopConfigException;
 public interface AspectJAdvisorFactory {
 
 	/**
-	 * Determine whether the given class is an aspect, as reported
-	 * by AspectJ's {@link org.aspectj.lang.reflect.AjTypeSystem}.
-	 * <p>Will simply return {@code false} if the supposed aspect is
-	 * invalid (such as an extension of a concrete aspect class).
-	 * Will return true for some aspects that Spring AOP cannot process,
-	 * such as those with unsupported instantiation models.
-	 * Use the {@link #validate} method to handle these cases if necessary.
-	 * @param clazz the supposed annotation-style AspectJ class
-	 * @return whether this class is recognized by AspectJ as an aspect class
+	 * 确定给定的类是否是一个方面，如 AspectJ 的 {@link org.aspectj.lang.reflect.AjTypeSystem} 所报告的那样。如果假定的方面无效
+	 * （例如具体方面类的扩展），<p> 将简单地返回 {@code false}。对于 Spring AOP 无法处理的某些方面，例如那些不支持实例化模型的方面，将返回 true。如
+	 * 有必要，请使用 {@link #validate} 方法来处理这些情况。
+	 * @param clazz 假定的注释样式 AspectJ 类
+	 * @return 该类被 AspectJ 识别为切面类
 	 */
 	boolean isAspect(Class<?> clazz);
 
 	/**
-	 * Is the given class a valid AspectJ aspect class?
-	 * @param aspectClass the supposed AspectJ annotation-style class to validate
-	 * @throws AopConfigException if the class is an invalid aspect
-	 * (which can never be legal)
-	 * @throws NotAnAtAspectException if the class is not an aspect at all
-	 * (which may or may not be legal, depending on the context)
+	 * 给定的类是有效的 AspectJ 方面类吗？
+	 * @param aspectClass 假设要验证的 AspectJ 注释样式类
+	 * @throws AopConfigException 如果该类是无效的方面（永远不可能合法）
+	 * @throws NotAnAtAspectException 如果该类根本不是一个方面（这可能合法也可能不合法，具体取决于上下文）
 	 */
 	void validate(Class<?> aspectClass) throws AopConfigException;
 
 	/**
-	 * Build Spring AOP Advisors for all annotated At-AspectJ methods
-	 * on the specified aspect instance.
-	 * @param aspectInstanceFactory the aspect instance factory
-	 * (not the aspect instance itself in order to avoid eager instantiation)
-	 * @return a list of advisors for this class
+	 * 为指定方面实例上的所有带注释的 At-AspectJ 方法构建 Spring AOP Advisor。
+	 * @param aspectInstanceFactory 方面实例工厂（不是方面实例本身，以避免急于实例化）
+	 * @return 本课程的顾问名单
 	 */
 	List<Advisor> getAdvisors(MetadataAwareAspectInstanceFactory aspectInstanceFactory);
 
 	/**
-	 * Build a Spring AOP Advisor for the given AspectJ advice method.
-	 * @param candidateAdviceMethod the candidate advice method
-	 * @param aspectInstanceFactory the aspect instance factory
-	 * @param declarationOrder the declaration order within the aspect
-	 * @param aspectName the name of the aspect
-	 * @return {@code null} if the method is not an AspectJ advice method
-	 * or if it is a pointcut that will be used by other advice but will not
-	 * create a Spring advice in its own right
+	 * 为给定的 AspectJ 建议方法构建 Spring AOP Advisor。
+	 * @param candidateAdviceMethod 候选人建议法
+	 * @param aspectInstanceFactory 方面实例工厂
+	 * @param declarationOrder 方面内的声明顺序
+	 * @param aspectName 方面的名称
+	 * @return null} 如果该方法不是 AspectJ 建议方法，或者它是一个将被其他建议使用但不会自行创建 Spring 建议的切入点
 	 */
 	@Nullable Advisor getAdvisor(Method candidateAdviceMethod, MetadataAwareAspectInstanceFactory aspectInstanceFactory,
 			int declarationOrder, String aspectName);
 
 	/**
-	 * Build a Spring AOP Advice for the given AspectJ advice method.
-	 * @param candidateAdviceMethod the candidate advice method
-	 * @param expressionPointcut the AspectJ expression pointcut
-	 * @param aspectInstanceFactory the aspect instance factory
-	 * @param declarationOrder the declaration order within the aspect
-	 * @param aspectName the name of the aspect
-	 * @return {@code null} if the method is not an AspectJ advice method
-	 * or if it is a pointcut that will be used by other advice but will not
-	 * create a Spring advice in its own right
+	 * 为给定的 AspectJ 建议方法构建 Spring AOP 建议。
+	 * @param candidateAdviceMethod 候选人建议法
+	 * @param expressionPointcut AspectJ 表达式切入点
+	 * @param aspectInstanceFactory 方面实例工厂
+	 * @param declarationOrder 方面内的声明顺序
+	 * @param aspectName 方面的名称
+	 * @return null} 如果该方法不是 AspectJ 建议方法，或者它是一个将被其他建议使用但不会自行创建 Spring 建议的切入点
 	 * @see org.springframework.aop.aspectj.AspectJAroundAdvice
 	 * @see org.springframework.aop.aspectj.AspectJMethodBeforeAdvice
 	 * @see org.springframework.aop.aspectj.AspectJAfterAdvice

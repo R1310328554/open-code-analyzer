@@ -21,9 +21,7 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 /**
- * After returning advice is invoked only on normal method return, not if an
- * exception is thrown. Such advice can see the return value, but cannot change it.
- *
+ * 返回后通知仅在正常方法返回时调用，如果抛出异常则不会调用。此类通知可以看到返回值，但不能更改它。
  * @author Rod Johnson
  * @see MethodBeforeAdvice
  * @see ThrowsAdvice
@@ -31,16 +29,13 @@ import org.jspecify.annotations.Nullable;
 public interface AfterReturningAdvice extends AfterAdvice {
 
 	/**
-	 * Callback after a given method successfully returned.
-	 * @param returnValue the value returned by the method, if any
-	 * @param method the method being invoked
-	 * @param args the arguments to the method
-	 * @param target the target of the method invocation. May be {@code null}.
-	 * @throws Throwable if this object wishes to abort the call.
-	 * Any exception thrown will be returned to the caller if it's
-	 * allowed by the method signature. Otherwise the exception
-	 * will be wrapped as a runtime exception.
-	 */
+	* 给定方法成功返回后的回调。
+	* @param returnValue 该方法返回的值（如果有）
+	* @param method 被调用的方法
+	* @param args 该方法的参数
+	* @param target 方法调用的目标。可能是 {@code null}。
+	* @throws Throwable 如果该对象希望中止调用。如果方法签名允许，则抛出的任何异常都将返回给调用者。否则，异常将被包装为运行时异常。
+	*/
 	void afterReturning(@Nullable Object returnValue, Method method, @Nullable Object[] args, @Nullable Object target) throws Throwable;
 
 }

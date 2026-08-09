@@ -1,5 +1,5 @@
 /**
- * The core AOP Alliance advice marker.
+ * AOP 联盟的核心建议标记。
  */
 @NullMarked
 package org.aopalliance.aop;

@@ -19,11 +19,8 @@ package org.springframework.aop;
 import org.aopalliance.aop.Advice;
 
 /**
- * Common marker interface for before advice, such as {@link MethodBeforeAdvice}.
- *
- * <p>Spring supports only method before advice. Although this is unlikely to change,
- * this API is designed to allow field advice in future if desired.
- *
+ * before通知的通用标记接口，例如{@link MethodBeforeAdvice}。 <p>Spring 仅支持建议之前的方法。尽管这一点不太可能改变，但此 API 旨在
+ * 允许将来在需要时提供现场建议。
  * @author Rod Johnson
  * @see AfterAdvice
  */

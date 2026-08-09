@@ -26,9 +26,7 @@ import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
- * Convenient base class for Advisors that are also static pointcuts.
- * Serializable if Advice and subclass are.
- *
+ * Advisor 的方便基类，也是静态切入点。如果 Advice 和子类是可序列化的。
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
@@ -36,22 +34,22 @@ import org.springframework.util.Assert;
 public abstract class StaticMethodMatcherPointcutAdvisor extends StaticMethodMatcherPointcut
 		implements PointcutAdvisor, Ordered, Serializable {
 
+	/** 通知相关状态（`EMPTY_ADVICE`）。 */
 	private Advice advice = EMPTY_ADVICE;
 
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
 
 	/**
-	 * Create a new StaticMethodMatcherPointcutAdvisor,
-	 * expecting bean-style configuration.
+	 * 创建一个新的 StaticMethodMatcherPointcutAdvisor，需要 bean 样式的配置。
 	 * @see #setAdvice
 	 */
 	public StaticMethodMatcherPointcutAdvisor() {
 	}
 
 	/**
-	 * Create a new StaticMethodMatcherPointcutAdvisor for the given advice.
-	 * @param advice the Advice to use
+	 * 为给定的建议创建一个新的 StaticMethodMatcherPointcutAdvisor。
+	 * @param advice 使用建议
 	 */
 	public StaticMethodMatcherPointcutAdvisor(Advice advice) {
 		Assert.notNull(advice, "Advice must not be null");
@@ -59,24 +57,39 @@ public abstract class StaticMethodMatcherPointcutAdvisor extends StaticMethodMat
 	}
 
 
+	/**
+	 * 设置 Order（`Order`）。
+	 */
 	public void setOrder(int order) {
 		this.order = order;
 	}
 
+	/**
+	 * 获取 Order（`Order`）。
+	 */
 	@Override
 	public int getOrder() {
 		return this.order;
 	}
 
+	/**
+	 * 设置 Advice（`Advice`）。
+	 */
 	public void setAdvice(Advice advice) {
 		this.advice = advice;
 	}
 
+	/**
+	 * 获取 Advice（`Advice`）。
+	 */
 	@Override
 	public Advice getAdvice() {
 		return this.advice;
 	}
 
+	/**
+	 * 获取 Pointcut（`Pointcut`）。
+	 */
 	@Override
 	public Pointcut getPointcut() {
 		return this;

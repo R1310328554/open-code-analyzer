@@ -25,32 +25,29 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * Implementation of the {@link org.springframework.aop.TargetSource} interface
- * that holds a given object. This is the default implementation of the TargetSource
- * interface, as used by the Spring AOP framework. There is usually no need to
- * create objects of this class in application code.
- *
- * <p>This class is serializable. However, the actual serializability of a
- * SingletonTargetSource will depend on whether the target is serializable.
- *
+ * 保存给定对象的 {@link org.springframework.aop.TargetSource} 接口的实现。这是 Spring AOP 框架使用的
+ * TargetSource 接口的默认实现。通常不需要在应用程序代码中创建此类的对象。
+ * <p>该类是可序列化的。然而，SingletonTargetSource 的实际可序列化性将取决于目标是否可序列化。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see org.springframework.aop.framework.AdvisedSupport#setTarget(Object)
  */
 public class SingletonTargetSource implements TargetSource, Serializable {
 
-	/** use serialVersionUID from Spring 1.2 for interoperability. */
+	/**
+	 */
 	private static final long serialVersionUID = 9031246629662423738L;
 
 
-	/** Target cached and invoked using reflection. */
+	/**
+	 */
 	@SuppressWarnings("serial")
 	private final Object target;
 
 
 	/**
-	 * Create a new SingletonTargetSource for the given target.
-	 * @param target the target object
+	 * 为给定目标创建一个新的 SingletonTargetSource。
+	 * @param target 目标对象
 	 */
 	public SingletonTargetSource(Object target) {
 		Assert.notNull(target, "Target object must not be null");
@@ -58,16 +55,25 @@ public class SingletonTargetSource implements TargetSource, Serializable {
 	}
 
 
+	/**
+	 * 获取 Target Class（`TargetClass`）。
+	 */
 	@Override
 	public Class<?> getTargetClass() {
 		return this.target.getClass();
 	}
 
+	/**
+	 * 获取 Target（`Target`）。
+	 */
 	@Override
 	public Object getTarget() {
 		return this.target;
 	}
 
+	/**
+	 * 判断是否 Static。
+	 */
 	@Override
 	public boolean isStatic() {
 		return true;
@@ -75,8 +81,7 @@ public class SingletonTargetSource implements TargetSource, Serializable {
 
 
 	/**
-	 * Two invoker interceptors are equal if they have the same target or if the
-	 * targets or the targets are equal.
+	 * 如果两个调用者拦截器具有相同的目标或者目标或多个目标相等，则它们相等。
 	 */
 	@Override
 	public boolean equals(@Nullable Object other) {
@@ -85,13 +90,16 @@ public class SingletonTargetSource implements TargetSource, Serializable {
 	}
 
 	/**
-	 * SingletonTargetSource uses the hash code of the target object.
+	 * SingletonTargetSource 使用目标对象的哈希码。
 	 */
 	@Override
 	public int hashCode() {
 		return this.target.hashCode();
 	}
 
+	/**
+	 * 返回字符串表示。
+	 */
 	@Override
 	public String toString() {
 		return "SingletonTargetSource for target object [" + ObjectUtils.identityToString(this.target) + "]";

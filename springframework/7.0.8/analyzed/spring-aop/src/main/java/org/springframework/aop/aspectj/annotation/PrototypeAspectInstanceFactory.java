@@ -21,13 +21,10 @@ import java.io.Serializable;
 import org.springframework.beans.factory.BeanFactory;
 
 /**
- * {@link org.springframework.aop.aspectj.AspectInstanceFactory} backed by a
- * {@link BeanFactory}-provided prototype, enforcing prototype semantics.
- *
- * <p>Note that this may instantiate multiple times, which probably won't give the
- * semantics you expect. Use a {@link LazySingletonAspectInstanceFactoryDecorator}
- * to wrap this to ensure only one new aspect comes back.
- *
+ * {@link org.springframework.aop.aspectj.AspectInstanceFactory} 由 {@link BeanFactory}
+ * 提供的原型支持，强制执行原型语义。
+ * <p>请注意，这可能会实例化多次，这可能不会给出您期望的语义。使用 {@link LazySingletonAspectInstanceFactoryDecorator} 来包
+ * 装它以确保只返回一个新方面。
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @since 2.0
@@ -38,11 +35,10 @@ import org.springframework.beans.factory.BeanFactory;
 public class PrototypeAspectInstanceFactory extends BeanFactoryAspectInstanceFactory implements Serializable {
 
 	/**
-	 * Create a PrototypeAspectInstanceFactory. AspectJ will be called to
-	 * introspect to create AJType metadata using the type returned for the
-	 * given bean name from the BeanFactory.
-	 * @param beanFactory the BeanFactory to obtain instance(s) from
-	 * @param name the name of the bean
+	 * 创建一个 PrototypeAspectInstanceFactory。将调用 AspectJ 进行内省，以使用从 BeanFactory 为给定 bean
+	 * 名称返回的类型来创建 AJType 元数据。
+	 * @param beanFactory 从中获取实例的 BeanFactory
+	 * @param name 豆子的名字
 	 */
 	public PrototypeAspectInstanceFactory(BeanFactory beanFactory, String name) {
 		super(beanFactory, name);

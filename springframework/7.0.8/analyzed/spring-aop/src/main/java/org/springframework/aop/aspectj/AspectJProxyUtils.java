@@ -27,8 +27,7 @@ import org.springframework.lang.Contract;
 import org.springframework.util.StringUtils;
 
 /**
- * Utility methods for working with AspectJ proxies.
- *
+ * 使用 AspectJ 代理的实用方法。
  * @author Rod Johnson
  * @author Ramnivas Laddad
  * @author Juergen Hoeller
@@ -37,22 +36,19 @@ import org.springframework.util.StringUtils;
 public abstract class AspectJProxyUtils {
 
 	/**
-	 * Add special advisors if necessary to work with a proxy chain that contains AspectJ advisors:
-	 * concretely, {@link ExposeInvocationInterceptor} at the beginning of the list.
-	 * <p>This will expose the current Spring AOP invocation (necessary for some AspectJ pointcut
-	 * matching) and make available the current AspectJ JoinPoint. The call will have no effect
-	 * if there are no AspectJ advisors in the advisor chain.
-	 * @param advisors the advisors available
-	 * @return {@code true} if an {@link ExposeInvocationInterceptor} was added to the list,
-	 * otherwise {@code false}
+	 * 如果需要使用包含 AspectJ 顾问程序的代理链，请添加特殊顾问程序：具体来说，{@link ExposeInvocationInterceptor} 位于列表的开头。 <p
+	 * >这将公开当前的 Spring AOP 调用（某些 AspectJ 切入点匹配所必需的）并使当前的 AspectJ JoinPoint 可用。如果顾问程序链中没有 Aspect
+	 * J 顾问程序，则该调用将无效。
+	 * @param advisors 可用的顾问
+	 * @return true} 如果 {@link ExposeInvocationInterceptor} 已添加到列表中，否则 {@code false}
 	 */
 	public static boolean makeAdvisorChainAspectJCapableIfNecessary(List<Advisor> advisors) {
-		// Don't add advisors to an empty list; may indicate that proxying is just not required
+		// 不要将顾问添加到空列表中；可能表明不需要代理
 		if (!advisors.isEmpty()) {
 			boolean foundAspectJAdvice = false;
 			for (Advisor advisor : advisors) {
-				// Be careful not to get the Advice without a guard, as this might eagerly
-				// instantiate a non-singleton AspectJ aspect...
+				// 小心不要在没有守卫的情况下获取建议，因为这可能会急切地
+				// 实例化一个非单一 AspectJ 方面...
 				if (isAspectJAdvice(advisor)) {
 					foundAspectJAdvice = true;
 					break;
@@ -67,8 +63,8 @@ public abstract class AspectJProxyUtils {
 	}
 
 	/**
-	 * Determine whether the given Advisor contains an AspectJ advice.
-	 * @param advisor the Advisor to check
+	 * 确定给定的 Advisor 是否包含 AspectJ 建议。
+	 * @param advisor 顾问检查
 	 */
 	private static boolean isAspectJAdvice(Advisor advisor) {
 		return (advisor instanceof InstantiationModelAwarePointcutAdvisor ||
