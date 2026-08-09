@@ -21,17 +21,29 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 import io.reactivex.rxjava4.internal.operators.single.SingleZipArray.ZipCoordinator;
 
+/**
+ * 将 Iterable 中的 SingleSource 收集为数组后 zip：
+ * 全部 onSuccess 后以 zipper 合并为 R。
+ *
+ * @param <T> 各上游元素类型
+ * @param <R> 合并结果类型
+ */
 public final class SingleZipIterable<T, R> extends Single<R> {
 
     final Iterable<? extends SingleSource<? extends T>> sources;
 
     final Function<? super Object[], ? extends R> zipper;
 
+    /**
+     * @param sources 上游 SingleSource 的 Iterable
+     * @param zipper 将 Object[] 合并为 R 的函数
+     */
     public SingleZipIterable(Iterable<? extends SingleSource<? extends T>> sources, Function<? super Object[], ? extends R> zipper) {
         this.sources = sources;
         this.zipper = zipper;
     }
 
+    /** 迭代收集 sources 到数组，复用 ZipCoordinator 并行订阅。 */
     @Override
     protected void subscribeActual(SingleObserver<? super R> observer) {
         @SuppressWarnings("unchecked")

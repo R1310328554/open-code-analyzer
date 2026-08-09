@@ -22,7 +22,7 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Signals a {@code 0L} after the specified delay.
+ * 在指定 delay 后于 scheduler 上发射 {@code 0L}。
  */
 public final class SingleTimer extends Single<Long> {
 
@@ -30,12 +30,18 @@ public final class SingleTimer extends Single<Long> {
     final TimeUnit unit;
     final Scheduler scheduler;
 
+    /**
+     * @param delay 延迟时长
+     * @param unit 时间单位
+     * @param scheduler 执行定时任务的 Scheduler
+     */
     public SingleTimer(long delay, TimeUnit unit, Scheduler scheduler) {
         this.delay = delay;
         this.unit = unit;
         this.scheduler = scheduler;
     }
 
+    /** 创建 TimerDisposable 并 scheduleDirect 延迟任务。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super Long> observer) {
         TimerDisposable parent = new TimerDisposable(observer);
@@ -43,6 +49,7 @@ public final class SingleTimer extends Single<Long> {
         parent.setFuture(scheduler.scheduleDirect(parent, delay, unit));
     }
 
+    /** 定时 Disposable：run() 时 downstream.onSuccess(0L)。 */
     static final class TimerDisposable extends AtomicReference<Disposable> implements Disposable, Runnable {
 
         @Serial
@@ -53,6 +60,7 @@ public final class SingleTimer extends Single<Long> {
             this.downstream = downstream;
         }
 
+        /** 延迟到期后发射 0L。 */
         @Override
         public void run() {
             downstream.onSuccess(0L);

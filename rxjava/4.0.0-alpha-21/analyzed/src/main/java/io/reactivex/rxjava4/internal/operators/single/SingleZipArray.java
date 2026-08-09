@@ -24,17 +24,29 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 并行订阅 SingleSource 数组，全部 onSuccess 后
+ * 以 Object[] 调用 zipper 合并为 R 并发射。
+ *
+ * @param <T> 各上游元素类型
+ * @param <R> 合并结果类型
+ */
 public final class SingleZipArray<T, R> extends Single<R> {
 
     final SingleSource<? extends T>[] sources;
 
     final Function<? super Object[], ? extends R> zipper;
 
+    /**
+     * @param sources 上游 SingleSource 数组
+     * @param zipper 将 Object[] 合并为 R 的函数
+     */
     public SingleZipArray(SingleSource<? extends T>[] sources, Function<? super Object[], ? extends R> zipper) {
         this.sources = sources;
         this.zipper = zipper;
     }
 
+    /** n==1 时走 MapSingleObserver；否则 ZipCoordinator 并行订阅。 */
     @Override
     protected void subscribeActual(SingleObserver<? super R> observer) {
         SingleSource<? extends T>[] sources = this.sources;
@@ -65,6 +77,7 @@ public final class SingleZipArray<T, R> extends Single<R> {
         }
     }
 
+    /** 计数器初始为 n：各 innerSuccess 递减，归零时 zipper.apply 并 onSuccess。 */
     static final class ZipCoordinator<T, R> extends AtomicInteger implements Disposable {
 
         @Serial
@@ -107,6 +120,7 @@ public final class SingleZipArray<T, R> extends Single<R> {
             }
         }
 
+        /** 写入 values[index]；decrementAndGet==0 时 zipper 合并发射。 */
         void innerSuccess(T value, int index) {
             Object[] values = this.values;
             if (values != null) {
@@ -140,6 +154,7 @@ public final class SingleZipArray<T, R> extends Single<R> {
             }
         }
 
+        /** 首错时 disposeExcept 其余上游并 onError。 */
         void innerError(Throwable ex, int index) {
             if (getAndSet(0) > 0) {
                 disposeExcept(index);
@@ -151,6 +166,7 @@ public final class SingleZipArray<T, R> extends Single<R> {
         }
     }
 
+    /** 单路 zip Observer：onSuccess/onError 委托 ZipCoordinator。 */
     static final class ZipSingleObserver<T>
     extends AtomicReference<Disposable>
     implements SingleObserver<T> {

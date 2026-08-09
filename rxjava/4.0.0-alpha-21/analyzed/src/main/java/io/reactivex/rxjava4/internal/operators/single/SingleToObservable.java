@@ -21,35 +21,39 @@ import io.reactivex.rxjava4.internal.observers.DeferredScalarDisposable;
 import java.io.Serial;
 
 /**
- * Wraps a Single and exposes it as an Observable.
+ * 将 Single 包装为 Observable：成功时 onNext 后 onComplete，
+ * 错误时 onError（DeferredScalarDisposable 语义）。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class SingleToObservable<T> extends Observable<T> {
 
     final SingleSource<? extends T> source;
 
+    /** @param source 上游 SingleSource */
     public SingleToObservable(SingleSource<? extends T> source) {
         this.source = source;
     }
 
+    /** 订阅 create(observer) 返回的 SingleObserver。 */
     @Override
     public void subscribeActual(final Observer<? super T> observer) {
         source.subscribe(create(observer));
     }
 
     /**
-     * Creates a {@link SingleObserver} wrapper around a {@link Observer}.
+     * 为 {@link Observer} 创建 {@link SingleObserver} 包装。
      * <p>History: 2.0.1 - experimental
-     * @param <T> the value type
-     * @param downstream the downstream {@code Observer} to talk to
-     * @return the new SingleObserver instance
+     * @param <T> 元素类型
+     * @param downstream 下游 {@code Observer}
+     * @return 新的 SingleObserver 实例
      * @since 2.2
      */
     public static <T> SingleObserver<T> create(Observer<? super T> downstream) {
         return new SingleToObservableObserver<>(downstream);
     }
 
+    /** Single→Observable 适配：onSuccess 时 complete，dispose 时释放 upstream。 */
     static final class SingleToObservableObserver<T>
     extends DeferredScalarDisposable<T>
     implements SingleObserver<T> {
@@ -71,6 +75,7 @@ public final class SingleToObservable<T> extends Observable<T> {
             }
         }
 
+        /** 调用 DeferredScalarDisposable.complete 发射单元素。 */
         @Override
         public void onSuccess(T value) {
             complete(value);

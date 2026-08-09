@@ -21,9 +21,10 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Makes sure dispose() call from downstream happens on the specified scheduler.
+ * 确保下游 dispose() 在指定 scheduler 上执行 upstream.dispose()，
+ * 避免在错误线程取消订阅。
  * 
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class SingleUnsubscribeOn<T> extends Single<T> {
 
@@ -31,16 +32,22 @@ public final class SingleUnsubscribeOn<T> extends Single<T> {
 
     final Scheduler scheduler;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param scheduler 执行 dispose 的 Scheduler
+     */
     public SingleUnsubscribeOn(SingleSource<T> source, Scheduler scheduler) {
         this.source = source;
         this.scheduler = scheduler;
     }
 
+    /** 订阅 UnsubscribeOnSingleObserver 包装 dispose 调度。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         source.subscribe(new UnsubscribeOnSingleObserver<>(observer, scheduler));
     }
 
+    /** dispose 时 scheduleDirect(this) 在 scheduler 上执行 ds.dispose()。 */
     static final class UnsubscribeOnSingleObserver<T> extends AtomicReference<Disposable>
     implements SingleObserver<T>, Disposable, Runnable {
 
@@ -58,6 +65,7 @@ public final class SingleUnsubscribeOn<T> extends Single<T> {
             this.scheduler = scheduler;
         }
 
+        /** 缓存 upstream Disposable 并在 scheduler 上异步 dispose。 */
         @Override
         public void dispose() {
             Disposable d = getAndSet(DisposableHelper.DISPOSED);
@@ -67,6 +75,7 @@ public final class SingleUnsubscribeOn<T> extends Single<T> {
             }
         }
 
+        /** scheduler 线程上执行 ds.dispose()。 */
         @Override
         public void run() {
             ds.dispose();

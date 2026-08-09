@@ -24,6 +24,12 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 为上游 Single 设置超时：超时前 onSuccess/onError 正常转发；
+ * 超时后无 other 则 TimeoutException，有 other 则订阅备用 SingleSource。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleTimeout<T> extends Single<T> {
 
     final SingleSource<T> source;
@@ -36,6 +42,13 @@ public final class SingleTimeout<T> extends Single<T> {
 
     final SingleSource<? extends T> other;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param timeout 超时时长
+     * @param unit 时间单位
+     * @param scheduler 调度超时任务的 Scheduler
+     * @param other 超时后的备用 SingleSource（可为 null）
+     */
     public SingleTimeout(SingleSource<T> source, long timeout, TimeUnit unit, Scheduler scheduler,
                          SingleSource<? extends T> other) {
         this.source = source;
@@ -45,6 +58,7 @@ public final class SingleTimeout<T> extends Single<T> {
         this.other = other;
     }
 
+    /** 订阅 TimeoutMainObserver 并 scheduleDirect 超时任务。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
 
@@ -56,6 +70,7 @@ public final class SingleTimeout<T> extends Single<T> {
         source.subscribe(parent);
     }
 
+    /** 主 Observer：成功/错误时取消定时任务；run() 触发超时逻辑。 */
     static final class TimeoutMainObserver<T> extends AtomicReference<Disposable>
     implements SingleObserver<T>, Runnable, Disposable {
 
@@ -74,6 +89,7 @@ public final class SingleTimeout<T> extends Single<T> {
 
         final TimeUnit unit;
 
+        /** 备用 SingleSource 的 Observer：转发 onSuccess/onError。 */
         static final class TimeoutFallbackObserver<T> extends AtomicReference<Disposable>
         implements SingleObserver<T> {
 
@@ -114,6 +130,7 @@ public final class SingleTimeout<T> extends Single<T> {
             }
         }
 
+        /** 超时触发：dispose 主订阅后 onError 或订阅 other fallback。 */
         @Override
         public void run() {
             if (DisposableHelper.dispose(this)) {
@@ -132,6 +149,7 @@ public final class SingleTimeout<T> extends Single<T> {
             DisposableHelper.setOnce(this, d);
         }
 
+        /** 成功时 CAS 置 DISPOSED、取消 task 并 downstream.onSuccess。 */
         @Override
         public void onSuccess(T t) {
             Disposable d = get();
@@ -141,6 +159,7 @@ public final class SingleTimeout<T> extends Single<T> {
             }
         }
 
+        /** 错误时取消 task 并转发；已终止则 RxJavaPlugins.onError。 */
         @Override
         public void onError(Throwable e) {
             Disposable d = get();

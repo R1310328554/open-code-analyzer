@@ -16,10 +16,9 @@ package io.reactivex.rxjava4.internal.operators.streamable;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.operators.EnumerableSource;
 
-/// Marker interface to indicate a [Streamable] source will produce
-/// an [EnumerableSource]-enabled [Streamer] and thus enables
-/// optimizations and operator fusion during assembly time.
-/// @param <T> the element type of the `Streamable`
+/// 标记接口：表示 [Streamable] 源将产生支持 [EnumerableSource] 的 [Streamer]，
+/// 从而在组装阶段启用优化与算子融合。
+/// @param <T> `Streamable` 的元素类型
 /// @since 4.0.0
 public interface IsEnumerableStreamable<T> extends Streamable<T> {
 

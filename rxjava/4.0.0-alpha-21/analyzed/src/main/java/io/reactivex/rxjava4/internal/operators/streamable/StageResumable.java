@@ -21,10 +21,9 @@ import java.util.function.BiConsumer;
 import io.reactivex.rxjava4.annotations.*;
 
 /**
- * Represents a reusable ping-pong style notification exchange where
- * one use/thread can signal {@link #ready()} to wake up another use/thread
- * on a {@link #await()} call.
- * @param <T> the element type of the notification pass-around
+ * 可复用的乒乓式通知交换：一方调用 {@link #ready()} 完成 CompletableFuture，
+ * 唤醒另一方在 {@link #await()} 上等待的线程。
+ * @param <T> 通知传递的元素类型
  * @since 4.0.0
  */
 public final class StageResumable<T> extends AtomicReference<CompletableFuture<T>>
@@ -34,11 +33,10 @@ implements BiConsumer<T, Throwable> {
     private static final long serialVersionUID = -7518852864146380895L;
 
     /**
-     * When the producer has arranged the item transfer via some field or queue,
-     * call this method and call {@link CompletableFuture#complete(Object)}
-     * or {@link CompletableFuture#completeExceptionally(Throwable)} to
-     * signal resumption for any current or upcoming {@link #await()} caller.
-     * @return the {@code CompletableFuture} to complete in some way
+     * 生产者通过字段或队列准备好数据后调用；
+     * 对返回的 CompletableFuture 调用 complete/completeExceptionally
+     * 以唤醒当前或后续 {@link #await()} 调用方。
+     * @return 待完成的 {@code CompletableFuture}
      */
     @CheckReturnValue
     @NonNull
@@ -58,10 +56,9 @@ implements BiConsumer<T, Throwable> {
     }
 
     /**
-     * When the consumer is ready to receive an item, call this method
-     * and apply a continuation function, such as {@link CompletableFuture#whenComplete(BiConsumer)}
-     * to it to handle the signal and process any external data made ready.
-     * @return the {@code CompletableFuture} to observe a completion value or exception
+     * 消费者准备接收元素时调用；
+     * 返回 whenComplete(this) 包装的 CompletableFuture 以观察完成信号。
+     * @return 待观察完成值或异常的 {@code CompletableFuture}
      */
     @CheckReturnValue
     @NonNull
@@ -80,10 +77,9 @@ implements BiConsumer<T, Throwable> {
         return cf.whenComplete(this);
     }
 
-    /// Used to clear any waiting [CompletableFuture] when the await finishes
-    /// no concern to users and should not be called.
-    /// @param t the completion value if any, ignored
-    /// @param u the exception if any, ignored
+    /// await 完成时清除等待中的 [CompletableFuture]；用户无需调用。
+    /// @param t 完成值（若有），忽略
+    /// @param u 异常（若有），忽略
     @Override
     public void accept(T t, Throwable u) {
         getAndSet(null);

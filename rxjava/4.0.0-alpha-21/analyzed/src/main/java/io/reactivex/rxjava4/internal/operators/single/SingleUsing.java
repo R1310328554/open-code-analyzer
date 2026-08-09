@@ -24,6 +24,14 @@ import io.reactivex.rxjava4.functions.*;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 资源管理模式：resourceSupplier 获取资源 U，
+ * singleFunction 生成 SingleSource，终止时 disposer 释放资源；
+ * eager 控制资源在信号前还是后释放。
+ *
+ * @param <T> Single 结果类型
+ * @param <U> 资源类型
+ */
 public final class SingleUsing<T, U> extends Single<T> {
 
     final Supplier<U> resourceSupplier;
@@ -31,6 +39,12 @@ public final class SingleUsing<T, U> extends Single<T> {
     final Consumer<? super U> disposer;
     final boolean eager;
 
+    /**
+     * @param resourceSupplier 提供资源 U 的 Supplier
+     * @param singleFunction 将资源映射为 SingleSource 的函数
+     * @param disposer 释放资源的 Consumer
+     * @param eager true 时在 onSuccess/onError 前释放资源
+     */
     public SingleUsing(Supplier<U> resourceSupplier,
                        Function<? super U, ? extends SingleSource<? extends T>> singleFunction,
                        Consumer<? super U> disposer,
@@ -41,6 +55,7 @@ public final class SingleUsing<T, U> extends Single<T> {
         this.eager = eager;
     }
 
+    /** 获取资源、应用 singleFunction 并订阅 UsingSingleObserver。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
 
@@ -84,6 +99,7 @@ public final class SingleUsing<T, U> extends Single<T> {
         source.subscribe(new UsingSingleObserver<T, U>(observer, resource, eager, disposer));
     }
 
+    /** 持有资源引用：按 eager 标志在信号前后调用 disposer。 */
     static final class UsingSingleObserver<T, U> extends
     AtomicReference<Object> implements SingleObserver<T>, Disposable {
 
@@ -106,6 +122,7 @@ public final class SingleUsing<T, U> extends Single<T> {
             this.disposer = disposer;
         }
 
+        /** eager 时先 disposeResource 再 upstream.dispose，否则相反。 */
         @Override
         public void dispose() {
             if (eager) {
@@ -133,6 +150,7 @@ public final class SingleUsing<T, U> extends Single<T> {
             }
         }
 
+        /** eager 时先释放资源再 onSuccess；否则先 onSuccess 再释放。 */
         @SuppressWarnings("unchecked")
         @Override
         public void onSuccess(T value) {
@@ -160,6 +178,7 @@ public final class SingleUsing<T, U> extends Single<T> {
             }
         }
 
+        /** eager 时先释放资源再 onError；disposer 异常合并为 CompositeException。 */
         @SuppressWarnings("unchecked")
         @Override
         public void onError(Throwable e) {
@@ -186,6 +205,7 @@ public final class SingleUsing<T, U> extends Single<T> {
             }
         }
 
+        /** getAndSet 取出资源并 disposer.accept；异常走 RxJavaPlugins.onError。 */
         @SuppressWarnings("unchecked")
         void disposeResource() {
             Object u = getAndSet(this);

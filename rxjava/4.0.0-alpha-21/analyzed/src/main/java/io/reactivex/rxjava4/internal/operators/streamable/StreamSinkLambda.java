@@ -22,11 +22,10 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.Function;
 
 /**
- * Creates a {@link StreamSink} via lambda callbacks for {@link #next(Object)} and
- * {@link #finish(Throwable)}.
- * @param <T> the element type of the stream
- * @param onNext the callback for the {@code next} method
- * @param onFinish the callback for the {@code finish} method
+ * 通过 onNext/onFinish 两个 lambda 回调创建 {@link StreamSink}。
+ * @param <T> 流元素类型
+ * @param onNext {@code next} 方法的回调
+ * @param onFinish {@code finish} 方法的回调
  * @since 4.0.0
  */
 public record StreamSinkLambda<@NonNull T>(
@@ -34,6 +33,7 @@ public record StreamSinkLambda<@NonNull T>(
         @NonNull Function<? super Throwable, ? extends CompletionStage<Void>> onFinish
 ) implements StreamSink<T> {
 
+    /** 调用 onNext.apply；异常或 null 返回 failedStage。 */
     @Override
     public @NonNull CompletionStage<Boolean> next(@NonNull T item) {
         try {
@@ -44,6 +44,7 @@ public record StreamSinkLambda<@NonNull T>(
         }
     }
 
+    /** 调用 onFinish.apply；异常时 addSuppressed 原 throwable 并 failedStage。 */
     @Override
     public @NonNull CompletionStage<Void> finish(@Nullable Throwable throwable) {
         try {

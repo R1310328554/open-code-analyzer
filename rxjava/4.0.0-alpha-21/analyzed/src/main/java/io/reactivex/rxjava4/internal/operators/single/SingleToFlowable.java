@@ -23,23 +23,27 @@ import io.reactivex.rxjava4.internal.subscriptions.DeferredScalarSubscription;
 import java.io.Serial;
 
 /**
- * Wraps a Single and exposes it as a Flowable.
+ * 将 Single 包装为 Flowable：成功时发射单元素后 onComplete，
+ * 错误时 onError（DeferredScalarSubscription 背压语义）。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class SingleToFlowable<T> extends Flowable<T> {
 
     final SingleSource<? extends T> source;
 
+    /** @param source 上游 SingleSource */
     public SingleToFlowable(SingleSource<? extends T> source) {
         this.source = source;
     }
 
+    /** 订阅 SingleToFlowableObserver 将 Single 信号转为 Flowable。 */
     @Override
     public void subscribeActual(final Subscriber<? super T> s) {
         source.subscribe(new SingleToFlowableObserver<T>(s));
     }
 
+    /** Single→Flowable 适配：onSuccess 时 complete(value)，cancel 时 dispose upstream。 */
     static final class SingleToFlowableObserver<T> extends DeferredScalarSubscription<T>
     implements SingleObserver<T> {
 
@@ -61,6 +65,7 @@ public final class SingleToFlowable<T> extends Flowable<T> {
             }
         }
 
+        /** 调用 DeferredScalarSubscription.complete 发射单元素。 */
         @Override
         public void onSuccess(T value) {
             complete(value);

@@ -22,11 +22,11 @@ import io.reactivex.rxjava4.core.StreamSink;
 import io.reactivex.rxjava4.disposables.DisposableStreamerCancellation;
 
 /**
- * Wraps a {@link StreamSink} and uses the given {@link DisposableStreamerCancellation} to be
- * returned via {@link #cancellation()}.
- * @param <T> the element type of the stream
- * @param downstream the {@code StreamSink} to relay events to
- * @param cancellation the {@code DisposableContainer} to be used for indicating cancellation
+ * 包装 {@link StreamSink}，并通过 {@link #cancellation()} 返回
+ * 指定的 {@link DisposableStreamerCancellation}。
+ * @param <T> 流元素类型
+ * @param downstream 转发事件的 {@code StreamSink}
+ * @param cancellation 用于表示取消的 {@code DisposableStreamerCancellation}
  * @since 4.0.0
  */
 public record StreamSinkWithCancellation<@NonNull T>(
@@ -37,12 +37,14 @@ implements StreamSink<T> {
         Objects.requireNonNull(downstream, "downstream is null");
     }
 
+    /** 委托 downstream.next(item)。 */
     @Override
     @NonNull
     public CompletionStage<Boolean> next(@NonNull T item) {
         return downstream.next(item);
     }
 
+    /** 委托 downstream.finish(throwable)。 */
     @Override
     @NonNull
     public CompletionStage<Void> finish(@Nullable Throwable throwable) {

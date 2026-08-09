@@ -22,16 +22,16 @@ import io.reactivex.rxjava4.disposables.*;
 import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 
+/** Streamable 阻塞消费工具：blockingFirst/blockingLast 同步取首/末元素。 */
 public record StreamableBlocking() {
 
     /**
-     * Consumes the first item and finishes the {@link Streamable},
-     * throwing {@link NoSuchElementException} if the source is empty.
-     * @param <T> the element type
-     * @param source the source {@code Streamable}
-     * @return the first item
-     * @throws RuntimeException if the source signals an unchecked exception
-     * @throws CompletionException if the source signals a checked exception
+     * 阻塞消费首个元素并 awaitFinish；空序列抛 NoSuchElementException。
+     * @param <T> 元素类型
+     * @param source 源 {@code Streamable}
+     * @return 首个元素
+     * @throws RuntimeException 上游抛出 unchecked 异常时
+     * @throws CompletionException 上游抛出 checked 异常时
      */
     @CheckReturnValue
     @NonNull
@@ -40,17 +40,17 @@ public record StreamableBlocking() {
     }
 
     /**
-     * Consumes the first item and finishes the {@link Streamable},
-     * throwing {@link NoSuchElementException} if the source is empty.
-     * @param <T> the element type
-     * @param source the source {@code Streamable}
-     * @param cancellation the external cancellation manager
-     * @return the first item
-     * @throws RuntimeException if the source signals an unchecked exception
-     * @throws CompletionException if the source signals a checked exception
+     * 带外部 cancellation 的 blockingFirst：awaitNext 取首元素后 awaitFinish。
+     * @param <T> 元素类型
+     * @param source 源 {@code Streamable}
+     * @param cancellation 外部取消管理器
+     * @return 首个元素
+     * @throws RuntimeException 上游抛出 unchecked 异常时
+     * @throws CompletionException 上游抛出 checked 异常时
      */
     @CheckReturnValue
     @NonNull
+    /** awaitNext 取 current()，合并 next/finish 异常后返回或抛 NoSuchElementException。 */
     public static <T> T blockingFirst(Streamable<T> source, StreamerCancellation cancellation) {
         var streamer = source.stream(cancellation);
         Throwable nextException = null;
@@ -81,28 +81,27 @@ public record StreamableBlocking() {
     }
 
     /**
-     * Consumes all upstream items and returns the very last or throws
-     * a {@link NoSuchElementException}.
-     * @param <T> the element type
-     * @param source the source sequence
-     * @return the very last value
-     * @throws RuntimeException if the source signals an unchecked exception
-     * @throws CompletionException if the source signals a checked exception
+     * 阻塞消费全部元素并返回最后一个；空序列抛 NoSuchElementException。
+     * @param <T> 元素类型
+     * @param source 源序列
+     * @return 最后一个元素
+     * @throws RuntimeException 上游抛出 unchecked 异常时
+     * @throws CompletionException 上游抛出 checked 异常时
      */
     public static <T> T blockingLast(Streamable<T> source) {
         return blockingLast(source, new CompositeDisposable());
     }
 
     /**
-     * Consumes all upstream items and returns the very last or throws
-     * a {@link NoSuchElementException}.
-     * @param <T> the element type
-     * @param source the source sequence
-     * @param cancellation the external cancellation manager
-     * @return the very last value
-     * @throws RuntimeException if the source signals an unchecked exception
-     * @throws CompletionException if the source signals a checked exception
+     * 带 cancellation 的 blockingLast：while(awaitNext) 更新 result 后 awaitFinish。
+     * @param <T> 元素类型
+     * @param source 源序列
+     * @param cancellation 外部取消管理器
+     * @return 最后一个元素
+     * @throws RuntimeException 上游抛出 unchecked 异常时
+     * @throws CompletionException 上游抛出 checked 异常时
      */
+    /** while(awaitNext) 循环更新 result，awaitFinish 后返回末元素。 */
     public static <T> T blockingLast(Streamable<T> source, StreamerCancellation cancellation) {
         var streamer = source.stream(cancellation);
         Throwable nextException = null;

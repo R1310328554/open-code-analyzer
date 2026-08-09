@@ -16,10 +16,9 @@ package io.reactivex.rxjava4.internal.operators.streamable;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.operators.*;
 
-/// Marker interface to indicate a [Streamable] source will produce
-/// both an [IndexableSource] and an [EnumerableSource] capable
-/// [Streamer].
-/// @param <T> the element type of the `Streamable`
+/// 标记接口：表示 [Streamable] 源将产生同时支持 [IndexableSource]
+/// 与 [EnumerableSource] 的 [Streamer]（同步可枚举/可索引）。
+/// @param <T> `Streamable` 的元素类型
 /// @since 4.0.0
 public interface IsSynchronousStreamable<T> extends IsIndexableStreamable<T>, IsEnumerableStreamable<T> {
 
