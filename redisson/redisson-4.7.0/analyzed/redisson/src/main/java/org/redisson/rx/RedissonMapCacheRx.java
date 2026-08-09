@@ -18,6 +18,10 @@ package org.redisson.rx;
 import org.redisson.api.RMap;
 
 /**
+ * 带 TTL/最大空闲时间驱逐策略的 {@link RMap} 的 Rx 包装。
+ * <p>
+ * 继承 {@link RedissonMapRx} 的全部键值/条目迭代与 per-key 锁能力；
+ * 过期与 LRU 逻辑由底层 {@link RMap} 实例（MapCache）负责，本类不额外扩展 Rx API。
  *
  * @author Nikita Koksharov
  *

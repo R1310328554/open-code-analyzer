@@ -25,6 +25,10 @@ import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
 
 /**
+ * 时间序列（按时间戳索引的值集合）的 Rx 适配。
+ * <p>
+ * 通过内部 {@link SetRxIterator} 对 TimeSeries 执行 SCAN 式遍历，
+ * 将各时间桶中的值作为 {@link Publisher} 顺序下发（背压由 Rx 层处理）。
  *
  * @author Nikita Koksharov
  *
@@ -33,7 +37,9 @@ import org.redisson.client.RedisClient;
  */
 public class RedissonTimeSeriesRx<V, L> {
 
+    /** 底层 RTimeSeries。 */
     private final RTimeSeries<V, L> instance;
+    /** 保留 Rx 客户端引用（与同类 Rx 包装一致，便于扩展）。 */
     private final RedissonRxClient redisson;
 
     public RedissonTimeSeriesRx(RTimeSeries<V, L> instance, RedissonRxClient redisson) {
@@ -41,6 +47,7 @@ public class RedissonTimeSeriesRx<V, L> {
         this.redisson = redisson;
     }
 
+    /** 默认每批 10 条扫描时间序列中的值。 */
     public Publisher<V> iterator() {
         return new SetRxIterator<V>() {
             @Override

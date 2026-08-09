@@ -24,6 +24,10 @@ import org.redisson.api.*;
 import org.redisson.client.RedisClient;
 
 /**
+ * 带 TTL 的分布式 {@link java.util.Set}（SetCache）Rx 适配。
+ * <p>
+ * 提供 SSCAN 迭代、Publisher 批量 {@code addAll}，以及按集合元素值派生
+ * 锁/信号量 Rx 对象（键名由 {@link RedissonObject#getLockByValue} 生成）。
  *
  * @author Nikita Koksharov
  *
@@ -31,7 +35,9 @@ import org.redisson.client.RedisClient;
  */
 public class RedissonSetCacheRx<V> {
 
+    /** 底层 SetCache。 */
     private final RSetCache<V> instance;
+    /** Rx 客户端，用于按值名获取全局锁/信号量。 */
     private final RedissonRxClient redisson;
     
     public RedissonSetCacheRx(RSetCache<V> instance, RedissonRxClient redisson) {
@@ -39,6 +45,7 @@ public class RedissonSetCacheRx<V> {
         this.redisson = redisson;
     }
 
+    /** 默认每批 10 条的 SSCAN 成员流。 */
     public Publisher<V> iterator() {
         return new SetRxIterator<V>() {
             @Override
@@ -48,6 +55,7 @@ public class RedissonSetCacheRx<V> {
         }.create();
     }
 
+    /** 消费 Publisher 全部元素并依次 addAsync。 */
     public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
             @Override
@@ -57,26 +65,31 @@ public class RedissonSetCacheRx<V> {
         }.addAll(c);
     }
 
+    /** 以集合元素值为键派生可过期许可信号量。 */
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(V value) {
         String name = ((RedissonObject) instance).getLockByValue(value, "permitexpirablesemaphore");
         return redisson.getPermitExpirableSemaphore(name);
     }
 
+    /** 以集合元素值为键派生计数信号量。 */
     public RSemaphoreRx getSemaphore(V value) {
         String name = ((RedissonObject) instance).getLockByValue(value, "semaphore");
         return redisson.getSemaphore(name);
     }
     
+    /** 以集合元素值为键派生公平锁。 */
     public RLockRx getFairLock(V value) {
         String name = ((RedissonObject) instance).getLockByValue(value, "fairlock");
         return redisson.getFairLock(name);
     }
     
+    /** 以集合元素值为键派生读写锁。 */
     public RReadWriteLockRx getReadWriteLock(V value) {
         String name = ((RedissonObject) instance).getLockByValue(value, "rw_lock");
         return redisson.getReadWriteLock(name);
     }
     
+    /** 以集合元素值为键派生可重入锁。 */
     public RLockRx getLock(V value) {
         String name = ((RedissonObject) instance).getLockByValue(value, "lock");
         return redisson.getLock(name);

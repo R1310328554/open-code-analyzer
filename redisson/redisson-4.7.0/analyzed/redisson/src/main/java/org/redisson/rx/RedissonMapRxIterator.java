@@ -27,7 +27,11 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
- * 
+ * Redis HASH {@code HSCAN} 的 Rx 迭代器工厂。
+ * <p>
+ * 通过 {@link RxIteratorConsumer} 在订阅者 {@code request} 时驱动游标扫描；
+ * 子类可覆写 {@link #getValue} 以投影为键、值或可变 {@link Entry}。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -36,8 +40,11 @@ import io.reactivex.rxjava3.processors.ReplayProcessor;
  */
 public class RedissonMapRxIterator<K, V, M> {
 
+    /** 被扫描的 RedissonMap 实例。 */
     private final RedissonMap<K, V> map;
+    /** HSCAN 键匹配 glob，null 表示全部。 */
     private final String pattern;
+    /** 每次 SCAN 建议返回的字段数量 hint。 */
     private final int count;
 
     public RedissonMapRxIterator(RedissonMap<K, V> map, String pattern, int count) {
@@ -46,6 +53,12 @@ public class RedissonMapRxIterator<K, V, M> {
         this.count = count;
     }
     
+    /**
+     * 创建背压感知的 {@link Flowable}。
+     * <p>
+     * {@link ReplayProcessor} 缓存已发射元素；{@code scanIteratorAsync} 在单 Redis 连接上
+     * 顺序推进游标，直至 cursor 归零。
+     */
     public Flowable<M> create() {
         ReplayProcessor<M> p = ReplayProcessor.create();
         return p.doOnRequest(new RxIteratorConsumer<M>(p) {
@@ -66,10 +79,14 @@ public class RedissonMapRxIterator<K, V, M> {
         });
     }
 
+    /** 扫描遇错时是否重试；默认不重试。 */
     protected boolean tryAgain() {
         return false;
     }
 
+    /**
+     * 将 SCAN 原始条目包装为可写 {@link Entry}：{@code setValue} 会调用 {@code map.put}。
+     */
     M getValue(Entry<Object, Object> entry) {
         return (M) new AbstractMap.SimpleEntry<K, V>((K) entry.getKey(), (V) entry.getValue()) {
 

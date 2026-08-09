@@ -24,18 +24,29 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 
+ * 可靠主题（Reliable Topic）的 Rx 消息流适配。
+ * <p>
+ * 与 {@link RedissonTopicRx} 不同：消息由 Redis Stream/可靠队列语义保证至少一次投递；
+ * {@code getMessages} 在收到 {@code request(n)} 个元素后自动移除监听器并结束流。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReliableTopicRx {
 
+    /** 底层可靠主题实例。 */
     private final RReliableTopic topic;
 
     public RedissonReliableTopicRx(RReliableTopic topic) {
         this.topic = topic;
     }
 
+    /**
+     * 订阅至多 {@code n} 条类型为 {@code type} 的消息。
+     * <p>
+     * 流程：{@code doOnRequest} → 注册 {@code addListenerAsync} → 每条 {@code onNext} 递减计数 →
+     * 计数归零时 {@code removeListenerAsync} 并 {@code onComplete}；取消订阅同样移除监听。
+     */
     public <M> Flowable<M> getMessages(Class<M> type) {
         ReplayProcessor<M> p = ReplayProcessor.create();
         return p.doOnRequest(n -> {

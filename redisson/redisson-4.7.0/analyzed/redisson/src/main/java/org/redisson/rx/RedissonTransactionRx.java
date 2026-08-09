@@ -34,13 +34,20 @@ import org.redisson.transaction.RedissonTransaction;
 import io.reactivex.rxjava3.core.Completable;
 
 /**
- * 
+ * Redis 事务的 RxJava 3 门面（{@link RTransactionRx} 实现）。
+ * <p>
+ * 在 {@link RedissonTransaction} 之上暴露 bucket/map/set 等结构的 Rx 视图；
+ * {@link #commit()} / {@link #rollback()} 将异步事务结束操作包装为 {@link Completable}。
+ * 事务内所有命令在 commit 前仅缓冲于当前连接，未提交对其他客户端不可见。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonTransactionRx implements RTransactionRx {
 
+    /** 底层同步/异步事务对象。 */
     private final RTransaction transaction;
+    /** Rx 命令执行器，统一调度 commit/rollback 与代理方法。 */
     private final CommandRxExecutor executorService;
     
     public RedissonTransactionRx(CommandRxExecutor executorService, TransactionOptions options) {
@@ -114,11 +121,13 @@ public class RedissonTransactionRx implements RTransactionRx {
                 new RedissonSetCacheRx<V>(set, null), RSetCacheRx.class);
     }
 
+    /** 提交事务：{@code MULTI} 缓冲的命令原子执行。 */
     @Override
     public Completable commit() {
         return executorService.flowable(() -> transaction.commitAsync()).ignoreElements();
     }
 
+    /** 放弃事务：丢弃缓冲命令并释放 WATCH 键（若有）。 */
     @Override
     public Completable rollback() {
         return executorService.flowable(() -> transaction.rollbackAsync()).ignoreElements();

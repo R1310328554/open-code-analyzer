@@ -20,6 +20,10 @@ import org.redisson.api.RMapsImportRx;
 import org.redisson.api.map.MapsImportArgs;
 
 /**
+ * 多 map 批量导入（{@link RMaps}）的 Rx 门面。
+ * <p>
+ * 将 {@link RMaps#createImport} 返回的同步导入句柄包装为 {@link RMapsImportRx}，
+ * 使大批量 map 数据迁移可走 RxJava 异步链。
  *
  * @author Nikita Koksharov
  *
@@ -28,7 +32,9 @@ import org.redisson.api.map.MapsImportArgs;
  */
 public class RedissonMapsRx<K, V> {
 
+    /** 底层 RMaps 实例。 */
     private final RMaps<K, V> instance;
+    /** Rx 命令执行器，供 {@link RxProxyBuilder} 调度异步命令。 */
     private final CommandRxExecutor commandExecutor;
 
     public RedissonMapsRx(RMaps<K, V> instance, CommandRxExecutor commandExecutor) {
@@ -36,6 +42,7 @@ public class RedissonMapsRx<K, V> {
         this.commandExecutor = commandExecutor;
     }
 
+    /** 按 {@link MapsImportArgs} 创建响应式 map 导入会话。 */
     public RMapsImportRx<K, V> createImport(MapsImportArgs<K> args) {
         return RxProxyBuilder.create(commandExecutor, instance.createImport(args), RMapsImportRx.class);
     }

@@ -21,7 +21,11 @@ import org.redisson.api.RSetRx;
 import org.redisson.api.RedissonRxClient;
 
 /**
- * 
+ * Set 多映射（key → Set&lt;V&gt;）的 Rx 门面。
+ * <p>
+ * {@link #get(K)} 返回指定键下 Redis SET 的 {@link RSetRx} 视图，
+ * 通过 {@link RxProxyBuilder} 将 {@link RedissonSetRx} 与异步命令层绑定。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
@@ -29,8 +33,11 @@ import org.redisson.api.RedissonRxClient;
  */
 public class RedissonSetMultimapRx<K, V> {
 
+    /** Rx 客户端，供嵌套 Set 获取 per-value 锁。 */
     private final RedissonRxClient redisson;
+    /** Rx 命令执行器。 */
     private final CommandRxExecutor commandExecutor;
+    /** 底层 SetMultimap。 */
     private final RSetMultimap<K, V> instance;
     
     public RedissonSetMultimapRx(RSetMultimap<K, V> instance, CommandRxExecutor commandExecutor, RedissonRxClient redisson) {
@@ -39,6 +46,7 @@ public class RedissonSetMultimapRx<K, V> {
         this.commandExecutor = commandExecutor;
     }
 
+    /** 获取 multimap 中某键对应集合的 Rx 接口（含迭代、addAll 等）。 */
     public RSetRx<V> get(K key) {
         RedissonSet<V> set = (RedissonSet<V>) instance.get(key);
         return RxProxyBuilder.create(commandExecutor, set, 

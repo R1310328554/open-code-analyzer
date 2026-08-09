@@ -23,7 +23,10 @@ import org.redisson.BaseRedissonList;
 import org.redisson.api.RFuture;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.List}
+ * 分布式 {@link java.util.List} 的 RxJava 3 适配层。
+ * <p>
+ * 通过 {@link ReplayProcessor} 与 Reactive Streams 背压协议，将按索引顺序读取
+ * Redis 列表元素的异步操作暴露为 {@link Publisher}；批量追加则返回 {@link Single}。
  *
  * @author Nikita Koksharov
  *
@@ -31,28 +34,40 @@ import org.redisson.api.RFuture;
  */
 public class RedissonListRx<V> {
 
+    /** 底层同步/异步列表实现，所有 Redis 命令经此委托。 */
     private final BaseRedissonList<V> instance;
 
     public RedissonListRx(BaseRedissonList<V> instance) {
         this.instance = instance;
     }
 
+    /** 从列表末尾向前遍历，等价于 {@code iterator(-1, false)}。 */
     public Publisher<V> descendingIterator() {
         return iterator(-1, false);
     }
 
+    /** 从索引 0 起正向遍历整个列表。 */
     public Publisher<V> iterator() {
         return iterator(0, true);
     }
 
+    /** 从指定索引起向列表头部（索引递减）遍历。 */
     public Publisher<V> descendingIterator(int startIndex) {
         return iterator(startIndex, false);
     }
 
+    /** 从指定索引起向列表尾部（索引递增）遍历。 */
     public Publisher<V> iterator(int startIndex) {
         return iterator(startIndex, true);
     }
 
+    /**
+     * 构建按索引拉取的响应式迭代器。
+     * <p>
+     * 订阅者通过 {@code request(n)} 声明需求；{@link LongConsumer} 在每次请求时
+     * 递归调用 {@code getAsync}，遇 null 表示越界并 {@code onComplete}。
+     * 注意：索引游标在回调线程中更新，并发多次 request 可能导致乱序。
+     */
     private Publisher<V> iterator(int startIndex, boolean forward) {
         ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
@@ -93,6 +108,7 @@ public class RedissonListRx<V> {
         });
     }
     
+    /** 消费 {@link Publisher} 中全部元素并依次 {@code addAsync}，返回是否整体成功。 */
     public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
 

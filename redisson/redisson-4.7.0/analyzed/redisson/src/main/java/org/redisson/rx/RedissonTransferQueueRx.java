@@ -24,23 +24,34 @@ import org.redisson.RedissonTransferQueue;
 import org.redisson.api.RFuture;
 
 /**
- * 
+ * 传输队列（Transfer Queue）的 Rx 适配：支持阻塞转移与按索引快照迭代。
+ * <p>
+ * {@link #takeElements()} 经 {@link ElementsStream} 持续 {@code takeAsync}；
+ * {@link #iterator()} 与 {@link RedissonListRx} 类似，按索引拉取当前队列快照元素。
+ *
  * @author Nikita Koksharov
  *
  * @param <V> - value type
  */
 public class RedissonTransferQueueRx<V> {
 
+    /** 底层 TransferQueue 实现。 */
     private final RedissonTransferQueue<V> queue;
 
     public RedissonTransferQueueRx(RedissonTransferQueue<V> queue) {
         this.queue = queue;
     }
 
+    /** 阻塞式取出并转移元素的 {@link Flowable}（队列为空时异步等待）。 */
     public Flowable<V> takeElements() {
         return ElementsStream.takeElements(queue::takeAsync);
     }
 
+    /**
+     * 从索引 0 起按 Reactive Streams 背压顺序读取队列当前元素。
+     * <p>
+     * 每次 {@code request(n)} 触发至多 n 次 {@code getValueAsync}；null 表示已到尾部。
+     */
     public Publisher<V> iterator() {
         ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
@@ -78,6 +89,7 @@ public class RedissonTransferQueueRx<V> {
         });
     }
 
+    /** 将 Publisher 中元素依次 {@code addAsync} 追加到队列。 */
     public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
 
