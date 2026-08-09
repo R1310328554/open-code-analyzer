@@ -41,7 +41,6 @@ public class InvocationChannel extends SimpleChannel {
 
     @Override
     /** 写出响应时按 opaque 查找并触发上下文回调。 */
-    @Override
     public ChannelFuture writeAndFlush(Object msg) {
         if (msg instanceof RemotingCommand) {
             RemotingCommand responseCommand = (RemotingCommand) msg;
@@ -57,28 +56,24 @@ public class InvocationChannel extends SimpleChannel {
 
     @Override
     /** 存在在途请求时视为可写。 */
-    @Override
     public boolean isWritable() {
         return inFlightRequestMap.size() > 0;
     }
 
     @Override
     /** 注册 opaque 对应的在途调用上下文。 */
-    @Override
     public void registerInvocationContext(int opaque, InvocationContextInterface context) {
         inFlightRequestMap.put(opaque, context);
     }
 
     @Override
     /** 移除指定 opaque 的在途上下文。 */
-    @Override
     public void eraseInvocationContext(int opaque) {
         inFlightRequestMap.remove(opaque);
     }
 
     @Override
     /** 扫描并清理超时的在途请求。 */
-    @Override
     public void clearExpireContext() {
         Iterator<Map.Entry<Integer, InvocationContextInterface>> iterator = inFlightRequestMap.entrySet().iterator();
         int count = 0;

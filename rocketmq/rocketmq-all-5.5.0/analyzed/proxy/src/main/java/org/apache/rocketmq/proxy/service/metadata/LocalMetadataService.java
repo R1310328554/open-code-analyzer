@@ -41,7 +41,6 @@ public class LocalMetadataService implements MetadataService {
 
     @Override
     /** 从本地 Broker TopicConfigManager 读取消息类型。 */
-    @Override
     public TopicMessageType getTopicMessageType(ProxyContext ctx, String topic) {
         TopicConfig topicConfig = brokerController.getTopicConfigManager().selectTopicConfig(topic);
         if (topicConfig == null) {
@@ -52,21 +51,18 @@ public class LocalMetadataService implements MetadataService {
 
     @Override
     /** 从本地订阅组表读取配置。 */
-    @Override
     public SubscriptionGroupConfig getSubscriptionGroupConfig(ProxyContext ctx, String group) {
         return this.brokerController.getSubscriptionGroupManager().getSubscriptionGroupTable().get(group);
     }
 
     @Override
     /** 从本地 AuthenticationMetadataManager 获取用户。 */
-    @Override
     public CompletableFuture<User> getUser(ProxyContext ctx, String username) {
         return this.brokerController.getAuthenticationMetadataManager().getUser(username);
     }
 
     @Override
     /** 从本地 AuthorizationMetadataManager 获取 ACL。 */
-    @Override
     public CompletableFuture<Acl> getAcl(ProxyContext ctx, Subject subject) {
         return this.brokerController.getAuthorizationMetadataManager().getAcl(subject);
     }

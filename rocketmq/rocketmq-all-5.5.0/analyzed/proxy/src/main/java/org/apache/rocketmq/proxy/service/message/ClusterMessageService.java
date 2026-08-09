@@ -70,7 +70,6 @@ public class ClusterMessageService implements MessageService {
 
     @Override
     /** 向指定 Broker 队列异步发送单条或多条消息。 */
-    @Override
     public CompletableFuture<List<SendResult>> sendMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         List<Message> msgList, SendMessageRequestHeader requestHeader, long timeoutMillis) {
         CompletableFuture<List<SendResult>> future;
@@ -90,7 +89,6 @@ public class ClusterMessageService implements MessageService {
 
     @Override
     /** 按 ReceiptHandle 解析 Broker 并异步发送消息回退请求。 */
-    @Override
     public CompletableFuture<RemotingCommand> sendMessageBack(ProxyContext ctx, ReceiptHandle handle, String messageId,
         ConsumerSendMsgBackRequestHeader requestHeader, long timeoutMillis) {
         return this.mqClientAPIFactory.getClient().sendMessageBackAsync(
@@ -102,7 +100,6 @@ public class ClusterMessageService implements MessageService {
 
     @Override
     /** 单向提交或回滚事务。 */
-    @Override
     public CompletableFuture<Void> endTransactionOneway(ProxyContext ctx, String brokerName,
         EndTransactionRequestHeader requestHeader,
         long timeoutMillis) {
@@ -123,7 +120,6 @@ public class ClusterMessageService implements MessageService {
 
     @Override
     /** 异步 Pop 消费消息。 */
-    @Override
     public CompletableFuture<PopResult> popMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         PopMessageRequestHeader requestHeader, long timeoutMillis) {
         return this.mqClientAPIFactory.getClient().popMessageAsync(
@@ -162,7 +158,6 @@ public class ClusterMessageService implements MessageService {
 
     @Override
     /** 异步确认单条 Pop 消息。 */
-    @Override
     public CompletableFuture<AckResult> ackMessage(ProxyContext ctx, ReceiptHandle handle, String messageId,
         AckMessageRequestHeader requestHeader, long timeoutMillis) {
         return this.mqClientAPIFactory.getClient().ackMessageAsync(
@@ -188,7 +183,6 @@ public class ClusterMessageService implements MessageService {
 
     @Override
     /** 异步拉取消息。 */
-    @Override
     public CompletableFuture<PullResult> pullMessage(ProxyContext ctx, AddressableMessageQueue messageQueue,
         PullMessageRequestHeader requestHeader, long timeoutMillis) {
         return this.mqClientAPIFactory.getClient().pullMessageAsync(

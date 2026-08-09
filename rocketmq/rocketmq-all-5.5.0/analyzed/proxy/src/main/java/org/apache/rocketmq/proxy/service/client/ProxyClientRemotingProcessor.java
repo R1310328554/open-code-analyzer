@@ -56,7 +56,6 @@ public class ProxyClientRemotingProcessor extends ClientRemotingProcessor {
 
     @Override
     /** 按请求码分发至事务回查或 Lite 退订处理。 */
-    @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         if (request.getCode() == RequestCode.CHECK_TRANSACTION_STATE) { // 事务状态回查
@@ -69,7 +68,6 @@ public class ProxyClientRemotingProcessor extends ClientRemotingProcessor {
 
     @Override
     /** 解码消息并将事务回查请求转发至对应生产者通道。 */
-    @Override
     public RemotingCommand checkTransactionState(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final ByteBuffer byteBuffer = ByteBuffer.wrap(request.getBody());

@@ -128,7 +128,6 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
 
     @Override
     /** 从缓存读取 Topic 消息类型，缺失时返回 UNSPECIFIED。 */
-    @Override
     public TopicMessageType getTopicMessageType(ProxyContext ctx, String topic) {
         TopicConfigAndQueueMapping topicConfigAndQueueMapping;
         try {
@@ -144,7 +143,6 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
 
     @Override
     /** 从缓存读取订阅组配置。 */
-    @Override
     public SubscriptionGroupConfig getSubscriptionGroupConfig(ProxyContext ctx, String group) {
         SubscriptionGroupConfig config;
         try {
@@ -160,7 +158,6 @@ public class ClusterMetadataService extends AbstractStartAndShutdown implements 
 
     @Override
     /** 异步从缓存获取认证用户。 */
-    @Override
     public CompletableFuture<User> getUser(ProxyContext ctx, String username) {
         CompletableFuture<User> result = new CompletableFuture<>();
         try {

@@ -47,7 +47,6 @@ public class SimpleChannelHandlerContext implements ChannelHandlerContext {
 
     @Override
     /** 返回关联通道。 */
-    @Override
     public Channel channel() {
         return channel;
     }
@@ -199,14 +198,12 @@ public class SimpleChannelHandlerContext implements ChannelHandlerContext {
 
     @Override
     /** 委托底层 channel 写出并刷新。 */
-    @Override
     public ChannelFuture writeAndFlush(Object msg, ChannelPromise promise) {
         return channel.writeAndFlush(msg, promise);
     }
 
     @Override
     /** 委托底层 channel 写出并刷新。 */
-    @Override
     public ChannelFuture writeAndFlush(Object msg) {
         return channel.writeAndFlush(msg);
     }
@@ -253,7 +250,6 @@ public class SimpleChannelHandlerContext implements ChannelHandlerContext {
 
     @Override
     /** 本实现不支持属性，恒返回 false。 */
-    @Override
     public <T> boolean hasAttr(AttributeKey<T> attributeKey) {
         return false;
     }

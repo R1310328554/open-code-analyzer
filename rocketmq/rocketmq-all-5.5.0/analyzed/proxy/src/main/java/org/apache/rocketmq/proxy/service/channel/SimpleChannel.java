@@ -164,7 +164,6 @@ public class SimpleChannel extends AbstractChannel {
 
     @Override
     /** 120 秒内有访问则视为活跃。 */
-    @Override
     public boolean isActive() {
         return (System.currentTimeMillis() - lastAccessTime) <= 120L * 1000;
     }
@@ -176,7 +175,6 @@ public class SimpleChannel extends AbstractChannel {
 
     @Override
     /** 默认立即成功的 writeAndFlush，子类可覆盖。 */
-    @Override
     public ChannelFuture writeAndFlush(Object msg) {
         DefaultChannelPromise promise = new DefaultChannelPromise(this, GlobalEventExecutor.INSTANCE);
         promise.setSuccess();

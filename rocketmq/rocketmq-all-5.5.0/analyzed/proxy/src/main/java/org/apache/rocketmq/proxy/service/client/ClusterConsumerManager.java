@@ -49,7 +49,6 @@ public class ClusterConsumerManager extends ConsumerManager implements StartAndS
 
     @Override
     /** 注册消费者前先通知 HeartbeatSyncer 同步订阅信息。 */
-    @Override
     public boolean registerConsumer(String group, ClientChannelInfo clientChannelInfo,
         ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,
         Set<SubscriptionData> subList, boolean isNotifyConsumerIdsChangedEnable, boolean updateSubscription) {
@@ -61,7 +60,6 @@ public class ClusterConsumerManager extends ConsumerManager implements StartAndS
 
     @Override
     /** 注销消费者前先通知 HeartbeatSyncer。 */
-    @Override
     public void unregisterConsumer(String group, ClientChannelInfo clientChannelInfo,
         boolean isNotifyConsumerIdsChangedEnable) {
         this.heartbeatSyncer.onConsumerUnRegister(group, clientChannelInfo);
@@ -70,14 +68,12 @@ public class ClusterConsumerManager extends ConsumerManager implements StartAndS
 
     @Override
     /** 关闭 HeartbeatSyncer。 */
-    @Override
     public void shutdown() throws Exception {
         this.heartbeatSyncer.shutdown();
     }
 
     @Override
     /** 启动 HeartbeatSyncer。 */
-    @Override
     public void start() throws Exception {
         this.heartbeatSyncer.start();
     }
