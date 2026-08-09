@@ -1,26 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:26:59Z",
   "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/KeyHolder.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/MetaDataAccessException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLErrorCodes.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLErrorCodesFactory.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLExceptionSubclassTranslator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLExceptionTranslator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SQLStateSQLExceptionTranslator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SqlArrayValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/SqlValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/AbstractColumnMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/AbstractDataFieldMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/AbstractIdentityColumnMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/AbstractSequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/DataFieldMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/Db2LuwMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/Db2MainframeMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/DerbyMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/H2SequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/HanaSequenceMaxValueIncrementer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/HsqlMaxValueIncrementer.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/HsqlSequenceMaxValueIncrementer.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/MariaDBSequenceMaxValueIncrementer.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/support/incrementer/MySQLIdentityColumnMaxValueIncrementer.java",
@@ -43,5 +23,5 @@
     "spring-jdbc/src/main/java/org/springframework/jdbc/support/xml/Jdbc4SqlXmlHandler.java"
   ],
   "remaining_pending": 64,
-  "done": 1387
+  "done": 1407
 }
