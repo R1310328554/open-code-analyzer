@@ -1,17 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:45:08Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableConcatMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableConcatMapEager.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableConcatMapScheduler.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableFlatMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableGroupJoin.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableReplay.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWindowBoundarySelector.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableWindowTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelFromPublisher.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelJoin.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 14,
-  "done": 953
+  "done": 963
 }
