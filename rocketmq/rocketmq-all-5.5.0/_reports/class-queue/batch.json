@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:57:57Z",
-  "files": [
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageBatch.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageClientExt.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageClientIDSetter.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageConst.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageExt.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageExtBatch.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageExtBrokerInner.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageId.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageQueue.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageQueueAssignment.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageQueueForC.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageRequestMode.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageType.java",
-    "common/src/main/java/org/apache/rocketmq/common/message/MessageVersion.java",
-    "common/src/main/java/org/apache/rocketmq/common/metrics/MetricsExporterType.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1038,
-  "done": 435
+  "done": 450
 }
