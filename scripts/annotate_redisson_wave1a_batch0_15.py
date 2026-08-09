@@ -462,7 +462,6 @@ def main() -> int:
         "redisson/redisson-4.7.0/_reports/class-queue/done.txt",
         "redisson/redisson-4.7.0/_reports/class-queue/pending.txt",
         "redisson/redisson-4.7.0/_reports/class-queue/batch.json",
-        "redisson/redisson-4.7.0/_reports/class-queue/worker.log",
     ]
     queue_sha, _ = isolated_index_commit(
         f"queue: mark redisson redisson-4.7.0 {MARK_NOTE} done",
