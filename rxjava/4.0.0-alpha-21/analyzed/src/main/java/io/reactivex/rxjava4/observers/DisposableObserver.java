@@ -22,52 +22,20 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
 
 /**
- * An abstract {@link Observer} that allows asynchronous cancellation by implementing {@link Disposable}.
+ * 实现 {@link Disposable} 的 {@link Observer} 抽象基类：
+ * 在 onNext 中可调用 {@link #dispose()} 异步取消。
  *
- * <p>All pre-implemented final methods are thread-safe.
+ * <p>仅允许单次订阅；final 方法线程安全。
  *
- * <p>Use the public {@link #dispose()} method to dispose the sequence from within an
- * {@code onNext} implementation.
+ * <p>回调不应抛出未检查异常，否则用 safeSubscribe。
  *
- * <p>Like all other consumers, {@code DisposableObserver} can be subscribed only once.
- * Any subsequent attempt to subscribe it to a new source will yield an
- * {@link IllegalStateException} with message {@code "It is not allowed to subscribe with a(n) <class name> multiple times."}.
- *
- * <p>Implementation of {@code #onStart()}, {@link #onNext(Object)}, {@link #onError(Throwable)}
- * and {@link #onComplete()} are not allowed to throw any unchecked exceptions.
- * If for some reason this can't be avoided, use {@link io.reactivex.rxjava4.core.Observable#safeSubscribe(io.reactivex.rxjava4.core.Observer)}
- * instead of the standard {@code subscribe()} method.
- *
- * <p>Example<pre><code>
- * Disposable d =
- *     Observable.range(1, 5)
- *     .subscribeWith(new DisposableObserver&lt;Integer&gt;() {
- *         &#64;Override public void onStart() {
- *             System.out.println("Start!");
- *         }
- *         &#64;Override public void onNext(Integer t) {
- *             if (t == 3) {
- *                 dispose();
- *             }
- *             System.out.println(t);
- *         }
- *         &#64;Override public void onError(Throwable t) {
- *             t.printStackTrace();
- *         }
- *         &#64;Override public void onComplete() {
- *             System.out.println("Done!");
- *         }
- *     });
- * // ...
- * d.dispose();
- * </code></pre>
- *
- * @param <T> the received value type
+ * @param <T> 接收值类型
  */
 public abstract class DisposableObserver<T> implements Observer<T>, Disposable {
 
     final AtomicReference<Disposable> upstream = new AtomicReference<>();
 
+    /** setOnce 后 onStart()。 */
     @Override
     public final void onSubscribe(@NonNull Disposable d) {
         if (EndConsumerHelper.setOnce(this.upstream, d, getClass())) {
@@ -75,17 +43,17 @@ public abstract class DisposableObserver<T> implements Observer<T>, Disposable {
         }
     }
 
-    /**
-     * Called once the single upstream Disposable is set via onSubscribe.
-     */
+    /** 上游 Disposable 设置成功后调用。 */
     protected void onStart() {
     }
 
+    /** upstream 是否为 DISPOSED。 */
     @Override
     public final boolean isDisposed() {
         return upstream.get() == DisposableHelper.DISPOSED;
     }
 
+    /** DisposableHelper.dispose(upstream)。 */
     @Override
     public final void dispose() {
         DisposableHelper.dispose(upstream);

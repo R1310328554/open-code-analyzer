@@ -20,9 +20,10 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tracks the current underlying array size in a volatile field.
+ * 用 {@link AtomicInteger} 以 lazySet 维护 List 大小的包装器：
+ * {@link #size()} 读 volatile 计数，修改操作后更新计数，便于无锁观测长度。
  *
- * @param <T> the element type
+ * @param <T> 元素类型
  * @since 2.0.7
  */
 public final class VolatileSizeArrayList<T> extends AtomicInteger implements List<T>, RandomAccess {
@@ -30,16 +31,20 @@ public final class VolatileSizeArrayList<T> extends AtomicInteger implements Lis
     @Serial
     private static final long serialVersionUID = 3972397474470203923L;
 
+    /** 实际存储的 ArrayList。 */
     final ArrayList<T> list;
 
+    /** 空列表，初始 size 为 0。 */
     public VolatileSizeArrayList() {
         list = new ArrayList<>();
     }
 
+    /** @param initialCapacity 底层 ArrayList 初始容量 */
     public VolatileSizeArrayList(int initialCapacity) {
         list = new ArrayList<>(initialCapacity);
     }
 
+    /** 读 AtomicInteger 中的 volatile size，非 list.size() 同步读。 */
     @Override
     public int size() {
         return get();
@@ -70,6 +75,7 @@ public final class VolatileSizeArrayList<T> extends AtomicInteger implements Lis
         return list.toArray(a);
     }
 
+    /** add 成功后 lazySet 新 size。 */
     @Override
     public boolean add(T e) {
         boolean b = list.add(e);
@@ -117,6 +123,7 @@ public final class VolatileSizeArrayList<T> extends AtomicInteger implements Lis
         return b;
     }
 
+    /** 清空 list 并将 size lazySet 为 0。 */
     @Override
     public void clear() {
         list.clear();

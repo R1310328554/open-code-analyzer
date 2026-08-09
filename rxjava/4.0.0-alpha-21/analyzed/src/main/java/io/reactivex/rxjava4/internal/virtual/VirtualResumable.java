@@ -18,7 +18,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Fundamental primitive for suspending and resuming a Thread.
+ * 虚拟线程挂起/恢复原语：await 时 park，resume 时 unpark 或置 READY。
+ * 供 FlowableVirtual* 算子协调背压。
  * @since 4.0.0
  */
 public class VirtualResumable extends AtomicReference<Object> {
@@ -26,15 +27,12 @@ public class VirtualResumable extends AtomicReference<Object> {
     @Serial
     private static final long serialVersionUID = -3462467580179834124L;
 
-    /**
-     * Indicates the {@link #await()} can resume without parking the virtual thread.
-     */
+    /** 表示 await 可直接通过，无需 park。 */
     static final Object READY = "Ready";
 
     /**
-     * Wait for a resumption by a {@link #resume()} call.
-     * This method won't suspend the current virtual thread if there was already
-     * a resume indication.
+     * 等待 resume：无 READY 时 CAS 登记当前线程并 LockSupport.park。
+     * 若已 READY 则立即返回；退出时 clear 状态。
      */
     public final void await() {
         Thread toUnpark = Thread.currentThread();
@@ -59,18 +57,14 @@ public class VirtualResumable extends AtomicReference<Object> {
         clear();
     }
 
-    /**
-     * Clears any resumption/ready object from this VirtualResumable.
-     */
+    /** getAndSet(null)，清除 READY 或 parked 线程引用。 */
     public final void clear() {
         getAndSet(null);
     }
 
     /**
-     * Trigger a resumption of a virtual thread suspended in {@link #await()}.
-     * This method can be called from multiple threads and multiple times.
-     * Note that this method is not guaranteed to act as a full memory barrier
-     * if there was a resume() call previously and the suspend side didn't suspend yet.
+     * 触发恢复：置 READY 并对已 park 的线程 unpark。
+     * 可多次、多线程调用；与 await 之间不保证完整内存屏障。
      */
     public final void resume() {
         if (get() != READY) {

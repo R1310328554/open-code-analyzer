@@ -18,27 +18,29 @@
 
 package io.reactivex.rxjava4.internal.util;
 
+/**
+ * 2 的幂次工具（源自 JCTools Pow2）。
+ * 供队列/哈希表容量对齐使用。
+ */
 public final class Pow2 {
+    /** 工具类禁止实例化。 */
     private Pow2() {
         throw new IllegalStateException("No instances!");
     }
 
     /**
-     * Find the next larger positive power of two value up from the given value. If value is a power of two then
-     * this value will be returned.
-     *
-     * @param value from which next positive power of two will be found.
-     * @return the next positive power of 2 or this value if it is a power of 2.
+     * 返回不小于 value 的最小 2 的幂（value 本身为 2 的幂则原样返回）。
+     * @param value 输入值
+     * @return 2 的幂
      */
     public static int roundToPowerOfTwo(final int value) {
         return 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
     }
 
     /**
-     * Is this value a power of two.
-     *
-     * @param value to be tested to see if it is a power of two.
-     * @return true if the value is a power of 2 otherwise false.
+     * 判断 value 是否为 2 的幂。
+     * @param value 待测值
+     * @return 是 2 的幂则 true
      */
     public static boolean isPowerOfTwo(final int value) {
         return (value & (value - 1)) == 0;

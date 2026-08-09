@@ -17,14 +17,22 @@ import java.util.*;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * 对 List 原地排序的 {@link Function}，供 toSortedList 等算子使用。
+ *
+ * @param <T> 列表元素类型
+ */
 public final class SorterFunction<T> implements Function<List<T>, List<T>> {
 
+    /** 排序比较器。 */
     final Comparator<? super T> comparator;
 
+    /** @param comparator 用于 List.sort 的比较器 */
     public SorterFunction(Comparator<? super T> comparator) {
         this.comparator = comparator;
     }
 
+    /** 原地 sort 后返回同一 List 引用。 */
     @Override
     public List<T> apply(List<T> t) {
         t.sort(comparator);

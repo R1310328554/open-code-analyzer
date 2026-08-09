@@ -33,10 +33,10 @@ import io.reactivex.rxjava4.internal.util.BackpressureHelper;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 
 /**
- * Runs a generator callback on a virtual thread backed by a Worker of the given scheduler
- * and signals events emitted by the generator considering any downstream backpressure.
+ * 在虚拟线程（或 ExecutorService）上运行 {@link VirtualGenerator}，
+ * 通过 {@link VirtualResumable} 协调下游背压与 emit。
  *
- * @param <T> the element type of the flow
+ * @param <T> 流元素类型
  * @since 4.0.0
  */
 public final class FlowableVirtualCreateExecutor<T> extends Flowable<T> {
@@ -47,12 +47,18 @@ public final class FlowableVirtualCreateExecutor<T> extends Flowable<T> {
 
     final Scheduler scheduler;
 
+    /**
+     * @param generator 在虚拟线程中执行的生成器
+     * @param executor 非 null 时用其 submit；否则用 scheduler Worker
+     * @param scheduler 无 executor 时的调度源
+     */
     public FlowableVirtualCreateExecutor(VirtualGenerator<T> generator, ExecutorService executor, Scheduler scheduler) {
         this.generator = generator;
         this.executor = executor;
         this.scheduler = scheduler;
     }
 
+    /** 创建 Subscription、onSubscribe，再 submit/schedule 生成任务。 */
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
         var parent = new ExecutorVirtualCreateSubscription<>(s, generator);
@@ -85,6 +91,7 @@ public final class FlowableVirtualCreateExecutor<T> extends Flowable<T> {
 
         volatile boolean cancelled;
 
+        /** 下游 cancel 时 emit 抛出的哨兵异常。 */
         static final Throwable STOP = new Throwable("Downstream cancelled");
 
         long produced;
@@ -105,6 +112,7 @@ public final class FlowableVirtualCreateExecutor<T> extends Flowable<T> {
             call();
         }
 
+        /** 执行 generator.generate；正常结束 onComplete，finally 释放 worker。 */
         @Override
         public Void call() {
             try {
@@ -131,12 +139,14 @@ public final class FlowableVirtualCreateExecutor<T> extends Flowable<T> {
             return null;
         }
 
+        /** 累加背压计数并 resume 生成线程。 */
         @Override
         public void request(long n) {
             BackpressureHelper.add(this, n);
             consumerReady.resume();
         }
 
+        /** 置 cancelled、dispose canceller，request(1) 唤醒 await。 */
         @Override
         public void cancel() {
             cancelled = true;
@@ -144,6 +154,7 @@ public final class FlowableVirtualCreateExecutor<T> extends Flowable<T> {
             request(1);
         }
 
+        /** 等待 requested>produced 后 onNext；cancel 则抛 STOP。 */
         @Override
         public void emit(T item) throws Throwable {
             Objects.requireNonNull(item, "item is null");

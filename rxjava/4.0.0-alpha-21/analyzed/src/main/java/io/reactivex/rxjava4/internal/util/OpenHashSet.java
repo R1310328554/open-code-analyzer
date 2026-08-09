@@ -19,10 +19,10 @@
 package io.reactivex.rxjava4.internal.util;
 
 /**
- * A simple open hash set with add, remove and clear capabilities only.
- * <p>Doesn't support nor checks for {@code null}s.
+ * 开放寻址哈希集合：仅支持 add/remove，不支持 null。
+ * 借鉴 fastutil OpenHashSet，负载因子默认 0.75。
  *
- * @param <T> the element type
+ * @param <T> 元素类型
  */
 public final class OpenHashSet<T> {
     private static final int INT_PHI = 0x9E3779B9;
@@ -33,18 +33,23 @@ public final class OpenHashSet<T> {
     int maxSize;
     T[] keys;
 
+    /** 默认容量 16、负载因子 0.75。 */
     public OpenHashSet() {
         this(16, 0.75f);
     }
 
     /**
-     * Creates an OpenHashSet with the initial capacity and load factor of 0.75f.
-     * @param capacity the initial capacity
+     * 指定初始容量，负载因子 0.75。
+     * @param capacity 初始容量（会 round 到 2 的幂）
      */
     public OpenHashSet(int capacity) {
         this(capacity, 0.75f);
     }
 
+    /**
+     * @param capacity 初始容量
+     * @param loadFactor 负载因子，决定 rehash 阈值
+     */
     @SuppressWarnings("unchecked")
     public OpenHashSet(int capacity, float loadFactor) {
         this.loadFactor = loadFactor;
@@ -54,6 +59,7 @@ public final class OpenHashSet<T> {
         this.keys = (T[])new Object[c];
     }
 
+    /** 线性探测插入；已存在则 false；超 maxSize 时 rehash。 */
     public boolean add(T value) {
         final T[] a = keys;
         final int m = mask;
@@ -81,6 +87,7 @@ public final class OpenHashSet<T> {
         }
         return true;
     }
+    /** 线性探测删除；不存在则 false。 */
     public boolean remove(T value) {
         T[] a = keys;
         int m = mask;
@@ -104,6 +111,7 @@ public final class OpenHashSet<T> {
         }
     }
 
+    /** 删除 pos 处元素并回填后续可前移项（Knuth 算法 6.4R）。 */
     boolean removeEntry(int pos, T[] a, int m) {
         size--;
 
@@ -131,6 +139,7 @@ public final class OpenHashSet<T> {
         }
     }
 
+    /** 容量翻倍并重新分布所有非 null 键。 */
     @SuppressWarnings("unchecked")
     void rehash() {
         T[] a = keys;
@@ -159,15 +168,18 @@ public final class OpenHashSet<T> {
         this.keys = b;
     }
 
+    /** 用 INT_PHI 乘法与高位异或打散 hashCode。 */
     static int mix(int x) {
         final int h = x * INT_PHI;
         return h ^ (h >>> 16);
     }
 
+    /** 返回内部 keys 数组（仅供内部迭代，勿修改）。 */
     public Object[] keys() {
         return keys; // NOPMD
     }
 
+    /** 当前元素个数。 */
     public int size() {
         return size;
     }

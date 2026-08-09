@@ -22,39 +22,18 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
 
 /**
- * An abstract {@link CompletableObserver} that allows asynchronous cancellation by implementing Disposable.
+ * 实现 {@link Disposable} 的 {@link CompletableObserver} 抽象基类：
+ * AtomicReference 持有上游，支持异步 dispose。
  *
- * <p>All pre-implemented final methods are thread-safe.
+ * <p>仅允许单次订阅；final 方法线程安全。
  *
- * <p>Like all other consumers, {@code DisposableCompletableObserver} can be subscribed only once.
- * Any subsequent attempt to subscribe it to a new source will yield an
- * {@link IllegalStateException} with message {@code "It is not allowed to subscribe with a(n) <class name> multiple times."}.
- *
- * <p>Implementation of {@code #onStart()}, {@link #onError(Throwable)} and
- * {@link #onComplete()} are not allowed to throw any unchecked exceptions.
- *
- * <p>Example<pre><code>
- * Disposable d =
- *     Completable.complete().delay(1, TimeUnit.SECONDS)
- *     .subscribeWith(new DisposableMaybeObserver&lt;Integer&gt;() {
- *         &#64;Override public void onStart() {
- *             System.out.println("Start!");
- *         }
- *         &#64;Override public void onError(Throwable t) {
- *             t.printStackTrace();
- *         }
- *         &#64;Override public void onComplete() {
- *             System.out.println("Done!");
- *         }
- *     });
- * // ...
- * d.dispose();
- * </code></pre>
+ * <p>onStart/onError/onComplete 不应抛出未检查异常。
  */
 public abstract class DisposableCompletableObserver implements CompletableObserver, Disposable {
 
     final AtomicReference<Disposable> upstream = new AtomicReference<>();
 
+    /** setOnce 成功后调用 onStart()。 */
     @Override
     public final void onSubscribe(@NonNull Disposable d) {
         if (EndConsumerHelper.setOnce(this.upstream, d, getClass())) {
@@ -62,17 +41,17 @@ public abstract class DisposableCompletableObserver implements CompletableObserv
         }
     }
 
-    /**
-     * Called once the single upstream {@link Disposable} is set via {@link #onSubscribe(Disposable)}.
-     */
+    /** 上游 Disposable 设置成功后回调。 */
     protected void onStart() {
     }
 
+    /** upstream 是否为 DISPOSED。 */
     @Override
     public final boolean isDisposed() {
         return upstream.get() == DisposableHelper.DISPOSED;
     }
 
+    /** DisposableHelper.dispose(upstream)。 */
     @Override
     public final void dispose() {
         DisposableHelper.dispose(upstream);

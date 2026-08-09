@@ -26,6 +26,13 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SpscArrayQueue;
 
+/**
+ * 在虚拟线程上对上游 Flowable 逐元素调用 {@link VirtualTransformer}，
+ * 用 SPSC 队列缓冲上游，双 VirtualResumable 协调生产/消费背压。
+ *
+ * @param <T> 上游元素类型
+ * @param <R> 下游元素类型
+ */
 public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
 
     final Flowable<T> source;
@@ -38,6 +45,13 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
 
     final int prefetch;
 
+    /**
+     * @param source 上游 Flowable
+     * @param transformer 逐元素虚拟变换
+     * @param executor 可选执行器
+     * @param scheduler 无 executor 时的 Worker 来源
+     * @param prefetch 上游预取与队列容量
+     */
     public FlowableVirtualTransformExecutor(Flowable<T> source,
             VirtualTransformer<T, R> transformer,
             ExecutorService executor,
@@ -50,6 +64,7 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
         this.prefetch = prefetch;
     }
 
+    /** 订阅上游并 submit/schedule 变换循环。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> s) {
         var parent = new ExecutorVirtualTransformSubscriber<>(s, transformer, prefetch);
@@ -90,6 +105,7 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
 
         volatile boolean cancelled;
 
+        /** cancel 时 emit 抛出的哨兵。 */
         static final Throwable STOP = new Throwable("Downstream cancelled");
 
         long produced;
@@ -113,6 +129,7 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
             this.canceller = new CompositeDisposable();
         }
 
+        /** 保存 upstream、向下游 onSubscribe(this)、request(prefetch)。 */
         @Override
         public void onSubscribe(Subscription s) {
             upstream = s;
@@ -120,6 +137,7 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
             s.request(prefetch);
         }
 
+        /** 入队 SpscArrayQueue，首次 wip 时 resume 生产线程。 */
         @Override
         public void onNext(T t) {
             queue.offer(t);
@@ -142,6 +160,7 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
             }
         }
 
+        /** 等待 requested>produced 后 downstream.onNext。 */
         @Override
         public void emit(R item) throws Throwable {
             Objects.requireNonNull(item, "item is null");
@@ -166,6 +185,7 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
             consumerReady.resume();
         }
 
+        /** cancel 上游、dispose canceller/worker，双端 resume 唤醒 park。 */
         @Override
         public void cancel() {
             try {
@@ -190,6 +210,7 @@ public final class FlowableVirtualTransformExecutor<T, R> extends Flowable<R> {
             call();
         }
 
+        /** 主循环：poll 上游元素、transformer.transform、75% prefetch 时再 request。 */
         @Override
         public Void call() {
             try {

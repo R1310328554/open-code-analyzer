@@ -16,7 +16,8 @@ package io.reactivex.rxjava4.internal.util;
 import java.lang.annotation.*;
 
 /**
- * Suppress errors by the AnimalSniffer plugin.
+ * 标记方法/构造器/类型以抑制 AnimalSniffer 对
+ * Android/API 兼容性检查的误报。
  */
 @Retention(RetentionPolicy.CLASS)
 @Documented

@@ -22,15 +22,14 @@ import io.reactivex.rxjava4.core.Observer;
 import io.reactivex.rxjava4.disposables.Disposable;
 
 /**
- * Lightweight notification handling utility class.
+ * 轻量级通知编码工具：将 onNext/onError/onComplete/onSubscribe
+ * 统一表示为 {@link Object}，供队列与序列化场景复用。
  */
 public enum NotificationLite {
     COMPLETE
     ;
 
-    /**
-         * Wraps a Throwable.
-         */
+    /** 包装 Throwable 的错误通知 record。 */
         record ErrorNotification(Throwable e) implements Serializable {
 
             @Serial
@@ -50,9 +49,7 @@ public enum NotificationLite {
         }
     }
 
-    /**
-         * Wraps a Subscription.
-         */
+    /** 包装 {@link Subscription} 的订阅通知 record。 */
         record SubscriptionNotification(Subscription upstream) implements Serializable {
 
             @Serial
@@ -64,9 +61,7 @@ public enum NotificationLite {
             }
         }
 
-    /**
-         * Wraps a Disposable.
-         */
+    /** 包装 {@link Disposable} 的订阅通知 record。 */
         record DisposableNotification(Disposable upstream) implements Serializable {
 
             @Serial
@@ -79,121 +74,97 @@ public enum NotificationLite {
         }
 
     /**
-     * Converts a value into a notification value.
-     * @param <T> the actual value type
-     * @param value the value to convert
-     * @return the notification representing the value
+     * 将普通值编码为 onNext 通知（即原值本身）。
+     * @param <T> 元素类型
+     * @param value 待编码值
+     * @return 表示 onNext 的通知对象
      */
     public static <T> Object next(T value) {
         return value;
     }
 
-    /**
-     * Returns a complete notification.
-     * @return a complete notification
-     */
+    /** @return {@link #COMPLETE} 单例，表示 onComplete */
     public static Object complete() {
         return COMPLETE;
     }
 
     /**
-     * Converts a Throwable into a notification value.
-     * @param e the Throwable to convert
-     * @return the notification representing the Throwable
+     * 将 Throwable 包装为 {@link ErrorNotification}。
+     * @param e 错误
+     * @return 错误通知对象
      */
     public static Object error(Throwable e) {
         return new ErrorNotification(e);
     }
 
     /**
-     * Converts a Subscription into a notification value.
-     * @param s the Subscription to convert
-     * @return the notification representing the Subscription
+     * 将 Subscription 包装为 {@link SubscriptionNotification}。
+     * @param s 上游 Subscription
+     * @return 订阅通知对象
      */
     public static Object subscription(Subscription s) {
         return new SubscriptionNotification(s);
     }
 
     /**
-     * Converts a Disposable into a notification value.
-     * @param d the disposable to convert
-     * @return the notification representing the Disposable
+     * 将 Disposable 包装为 {@link DisposableNotification}。
+     * @param d 上游 Disposable
+     * @return 订阅通知对象
      */
     public static Object disposable(Disposable d) {
         return new DisposableNotification(d);
     }
 
-    /**
-     * Checks if the given object represents a complete notification.
-     * @param o the object to check
-     * @return true if the object represents a complete notification
-     */
+    /** 判断 o 是否为 COMPLETE 单例。 */
     public static boolean isComplete(Object o) {
         return o == COMPLETE;
     }
 
-    /**
-     * Checks if the given object represents an error notification.
-     * @param o the object to check
-     * @return true if the object represents an error notification
-     */
+    /** 判断 o 是否为 ErrorNotification。 */
     public static boolean isError(Object o) {
         return o instanceof ErrorNotification;
     }
 
-    /**
-     * Checks if the given object represents a subscription notification.
-     * @param o the object to check
-     * @return true if the object represents a subscription notification
-     */
+    /** 判断 o 是否为 SubscriptionNotification。 */
     public static boolean isSubscription(Object o) {
         return o instanceof SubscriptionNotification;
     }
 
+    /** 判断 o 是否为 DisposableNotification。 */
     public static boolean isDisposable(Object o) {
         return o instanceof DisposableNotification;
     }
 
     /**
-     * Extracts the value from the notification object.
-     * @param <T> the expected value type when unwrapped
-     * @param o the notification object
-     * @return the extracted value
+     * 从 onNext 通知中取出原值（强转）。
+     * @param <T> 期望类型
+     * @param o 通知对象
+     * @return 元素值
      */
     @SuppressWarnings("unchecked")
     public static <T> T getValue(Object o) {
         return (T)o;
     }
 
-    /**
-     * Extracts the Throwable from the notification object.
-     * @param o the notification object
-     * @return the extracted Throwable
-     */
+    /** 从 ErrorNotification 中取出 Throwable。 */
     public static Throwable getError(Object o) {
         return ((ErrorNotification)o).e;
     }
 
-    /**
-     * Extracts the Subscription from the notification object.
-     * @param o the notification object
-     * @return the extracted Subscription
-     */
+    /** 从 SubscriptionNotification 中取出 Subscription。 */
     public static Subscription getSubscription(Object o) {
         return ((SubscriptionNotification)o).upstream;
     }
 
+    /** 从 DisposableNotification 中取出 Disposable。 */
     public static Disposable getDisposable(Object o) {
         return ((DisposableNotification)o).upstream;
     }
 
     /**
-     * Calls the appropriate Subscriber method based on the type of the notification.
-     * <p>Does not check for a subscription notification, see {@link #acceptFull(Object, Subscriber)}.
-     * @param <T> the expected value type when unwrapped
-     * @param o the notification object
-     * @param s the subscriber to call methods on
-     * @return true if the notification was a terminal event (i.e., complete or error)
+     * 按通知类型调用 Subscriber 的 onComplete/onError/onNext。
+     * 不处理 Subscription 通知，见 {@link #acceptFull(Object, Subscriber)}。
+     * @return 若为终止事件（complete 或 error）则 true
      * @see #acceptFull(Object, Subscriber)
      */
     @SuppressWarnings("unchecked")
@@ -211,12 +182,9 @@ public enum NotificationLite {
     }
 
     /**
-     * Calls the appropriate Observer method based on the type of the notification.
-     * <p>Does not check for a subscription notification.
-     * @param <T> the expected value type when unwrapped
-     * @param o the notification object
-     * @param observer the Observer to call methods on
-     * @return true if the notification was a terminal event (i.e., complete or error)
+     * 按通知类型调用 Observer 的 onComplete/onError/onNext。
+     * 不处理 Disposable 订阅通知。
+     * @return 若为终止事件则 true
      */
     @SuppressWarnings("unchecked")
     public static <T> boolean accept(Object o, Observer<? super T> observer) {
@@ -233,11 +201,8 @@ public enum NotificationLite {
     }
 
     /**
-     * Calls the appropriate Subscriber method based on the type of the notification.
-     * @param <T> the expected value type when unwrapped
-     * @param o the notification object
-     * @param s the subscriber to call methods on
-     * @return true if the notification was a terminal event (i.e., complete or error)
+     * 完整版 accept：含 onSubscribe(Subscription) 分支。
+     * @return 若为 complete 或 error 则 true
      * @see #accept(Object, Subscriber)
      */
     @SuppressWarnings("unchecked")
@@ -259,11 +224,8 @@ public enum NotificationLite {
     }
 
     /**
-     * Calls the appropriate Observer method based on the type of the notification.
-     * @param <T> the expected value type when unwrapped
-     * @param o the notification object
-     * @param observer the subscriber to call methods on
-     * @return true if the notification was a terminal event (i.e., complete or error)
+     * 完整版 accept：含 onSubscribe(Disposable) 分支。
+     * @return 若为 complete 或 error 则 true
      * @see #accept(Object, Observer)
      */
     @SuppressWarnings("unchecked")
