@@ -30,7 +30,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 /**
- * Some common functions for Sentinel annotation aspect.
+ * {@link SentinelResourceAspect} 的公共支撑逻辑：资源名解析、fallback/blockHandler 反射调用与异常追踪。
  *
  * @author Eric Zhao
  * @author zhaoyuguang
@@ -44,7 +44,7 @@ public abstract class AbstractSentinelAspectSupport {
 
     protected void traceException(Throwable ex, SentinelResource annotation) {
         Class<? extends Throwable>[] exceptionsToIgnore = annotation.exceptionsToIgnore();
-        // The ignore list will be checked first.
+        // 优先检查 exceptionsToIgnore 列表
         if (exceptionsToIgnore.length > 0 && exceptionBelongsTo(ex, exceptionsToIgnore)) {
             return;
         }
@@ -54,7 +54,7 @@ public abstract class AbstractSentinelAspectSupport {
     }
 
     /**
-     * Check whether the exception is in provided list of exception classes.
+     * 判断异常是否属于给定异常类型列表。
      *
      * @param ex         provided throwable
      * @param exceptions list of exceptions
@@ -73,11 +73,11 @@ public abstract class AbstractSentinelAspectSupport {
     }
 
     protected String getResourceName(String resourceName, /*@NonNull*/ Method method) {
-        // If resource name is present in annotation, use this value.
+        // 注解 value 非空时直接使用
         if (StringUtil.isNotBlank(resourceName)) {
             return resourceName;
         }
-        // Parse name of target method.
+        // 否则按方法签名生成资源名
         return MethodUtil.resolveMethodName(method);
     }
 
@@ -90,10 +90,10 @@ public abstract class AbstractSentinelAspectSupport {
                                     Class<?>[] fallbackClass, Throwable ex) throws Throwable {
         Object[] originArgs = pjp.getArgs();
 
-        // Execute fallback function if configured.
+        // 若配置了 fallback 则优先执行
         Method fallbackMethod = extractFallbackMethod(pjp, fallback, fallbackClass);
         if (fallbackMethod != null) {
-            // Construct args.
+            // 构造 fallback 参数（可追加 Throwable）
             int paramCount = fallbackMethod.getParameterTypes().length;
             Object[] args;
             if (paramCount == originArgs.length) {
@@ -105,13 +105,13 @@ public abstract class AbstractSentinelAspectSupport {
 
             return invoke(pjp, fallbackMethod, args);
         }
-        // If fallback is absent, we'll try the defaultFallback if provided.
+        // fallback 缺失时尝试 defaultFallback
         return handleDefaultFallback(pjp, defaultFallback, fallbackClass, ex);
     }
 
     protected Object handleDefaultFallback(ProceedingJoinPoint pjp, String defaultFallback,
                                            Class<?>[] fallbackClass, Throwable ex) throws Throwable {
-        // Execute the default fallback function if configured.
+        // 执行 defaultFallback（无参或仅 Throwable 参数）
         Method fallbackMethod = extractDefaultFallbackMethod(pjp, defaultFallback, fallbackClass);
         if (fallbackMethod != null) {
             // Construct args.
@@ -119,14 +119,14 @@ public abstract class AbstractSentinelAspectSupport {
             return invoke(pjp, fallbackMethod, args);
         }
 
-        // If no any fallback is present, then directly throw the exception.
+        // 无任何 fallback 时原样抛出异常
         throw ex;
     }
 
     protected Object handleBlockException(ProceedingJoinPoint pjp, SentinelResource annotation, BlockException ex)
         throws Throwable {
 
-        // Execute block handler if configured.
+        // 若配置了 blockHandler 则调用
         Method blockHandlerMethod = extractBlockHandlerMethod(pjp, annotation.blockHandler(),
             annotation.blockHandlerClass());
         if (blockHandlerMethod != null) {
@@ -137,7 +137,7 @@ public abstract class AbstractSentinelAspectSupport {
             return invoke(pjp, blockHandlerMethod, args);
         }
 
-        // If no block handler is present, then go to fallback.
+        // 无 blockHandler 时降级到 fallback 链
         return handleFallback(pjp, annotation, ex);
     }
 
@@ -151,16 +151,14 @@ public abstract class AbstractSentinelAspectSupport {
             }
             return method.invoke(pjp.getTarget(), args);
         } catch (InvocationTargetException e) {
-            // throw the actual exception
+            // 解包 InvocationTargetException 抛出真实异常
             throw e.getTargetException();
         }
     }
 
     /**
-     * Make the given method accessible, explicitly setting it accessible if
-     * necessary. The {@code setAccessible(true)} method is only called
-     * when actually necessary, to avoid unnecessary conflicts with a JVM
-     * SecurityManager (if active).
+     * 在必要时将方法设为可访问，仅在确实需要时调用 {@code setAccessible(true)}，
+     * 以避免与 JVM SecurityManager 冲突。
      * @param method the method to make accessible
      * @see java.lang.reflect.Method#setAccessible
      */
@@ -181,9 +179,9 @@ public abstract class AbstractSentinelAspectSupport {
         Method originMethod = resolveMethod(pjp);
         MethodWrapper m = ResourceMetadataRegistry.lookupFallback(clazz, fallbackName, originMethod.getParameterTypes());
         if (m == null) {
-            // First time, resolve the fallback.
+            // 首次解析 fallback 并写入缓存
             Method method = resolveFallbackInternal(originMethod, fallbackName, clazz, mustStatic);
-            // Cache the method instance.
+            // 缓存解析结果
             ResourceMetadataRegistry.updateFallbackFor(clazz, fallbackName, originMethod.getParameterTypes(), method);
             return method;
         }
@@ -211,16 +209,15 @@ public abstract class AbstractSentinelAspectSupport {
 
         MethodWrapper m = ResourceMetadataRegistry.lookupDefaultFallback(clazz, defaultFallback);
         if (m == null) {
-            // First time, resolve the default fallback.
+            // 首次解析 defaultFallback
             Class<?> originReturnType = resolveMethod(pjp).getReturnType();
-            // Default fallback allows two kinds of parameter list.
-            // One is empty parameter list.
+            // defaultFallback 支持两种签名：无参
             Class<?>[] defaultParamTypes = new Class<?>[0];
-            // The other is a single parameter {@link Throwable} to get relevant exception info.
+            // 或单参数 {@link Throwable}
             Class<?>[] paramTypeWithException = new Class<?>[] {Throwable.class};
-            // We first find the default fallback with empty parameter list.
+            // 先查找无参 defaultFallback
             Method method = findMethod(mustStatic, clazz, defaultFallback, originReturnType, defaultParamTypes);
-            // If default fallback with empty params is absent, we then try to find the other one.
+            // 未找到时再查找带 Throwable 的版本
             if (method == null) {
                 method = findMethod(mustStatic, clazz, defaultFallback, originReturnType, paramTypeWithException);
             }
@@ -235,13 +232,13 @@ public abstract class AbstractSentinelAspectSupport {
     }
 
     private Method resolveFallbackInternal(Method originMethod, String name, Class<?> clazz, boolean mustStatic) {
-        // Fallback function allows two kinds of parameter list.
+        // fallback 支持与原方法相同签名，或末尾追加 Throwable
         Class<?>[] defaultParamTypes = originMethod.getParameterTypes();
         Class<?>[] paramTypesWithException = Arrays.copyOf(defaultParamTypes, defaultParamTypes.length + 1);
         paramTypesWithException[paramTypesWithException.length - 1] = Throwable.class;
-        // We first find the fallback matching the signature of origin method.
+        // 优先匹配与原方法相同参数列表
         Method method = findMethod(mustStatic, clazz, name, originMethod.getReturnType(), defaultParamTypes);
-        // If fallback matching the origin method is absent, we then try to find the other one.
+        // 未找到时再匹配带 Throwable 的版本
         if (method == null) {
             method = findMethod(mustStatic, clazz, name, originMethod.getReturnType(), paramTypesWithException);
         }
@@ -258,13 +255,13 @@ public abstract class AbstractSentinelAspectSupport {
         if (mustStatic) {
             clazz = locationClass[0];
         } else {
-            // By default current class.
+            // 默认在当前目标类中查找
             clazz = pjp.getTarget().getClass();
         }
         Method originMethod = resolveMethod(pjp);
         MethodWrapper m = ResourceMetadataRegistry.lookupBlockHandler(clazz, name, originMethod.getParameterTypes());
         if (m == null) {
-            // First time, resolve the block handler.
+            // 首次解析 blockHandler
             Method method = resolveBlockHandlerInternal(originMethod, name, clazz, mustStatic);
             // Cache the method instance.
             ResourceMetadataRegistry.updateBlockHandlerFor(clazz, name, originMethod.getParameterTypes(), method);
@@ -299,7 +296,7 @@ public abstract class AbstractSentinelAspectSupport {
                 return method;
             }
         }
-        // Current class not found, find in the super classes recursively.
+        // 当前类未找到则递归查找父类
         Class<?> superClass = clazz.getSuperclass();
         if (superClass != null && !Object.class.equals(superClass)) {
             return findMethod(mustStatic, superClass, name, returnType, parameterTypes);
@@ -328,8 +325,7 @@ public abstract class AbstractSentinelAspectSupport {
     }
 
     /**
-     * Get declared method with provided name and parameterTypes in given class and its super classes.
-     * All parameters should be valid.
+     * 在类及其父类中按名称与参数类型查找 declared 方法。
      *
      * @param clazz          class where the method is located
      * @param name           method name

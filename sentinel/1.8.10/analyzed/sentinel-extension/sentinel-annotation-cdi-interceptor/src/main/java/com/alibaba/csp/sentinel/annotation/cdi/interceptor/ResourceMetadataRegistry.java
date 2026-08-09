@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Registry for resource configuration metadata (e.g. fallback method)
+ * CDI 注解资源元数据注册表：缓存 fallback、defaultFallback 与 blockHandler。
  *
  * @author Eric Zhao
  * @author dowenliu-xyz(hawkdowen@hotmail.com)
@@ -122,7 +122,7 @@ final class ResourceMetadataRegistry {
     }
 
     /**
-     * Only for internal test.
+     * 仅供内部测试清理缓存。
      */
     static void clearFallbackMap() {
         FALLBACK_MAP.clear();

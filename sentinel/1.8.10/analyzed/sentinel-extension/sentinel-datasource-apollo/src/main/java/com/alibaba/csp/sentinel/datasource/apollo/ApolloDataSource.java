@@ -14,10 +14,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 /**
- * A read-only {@code DataSource} with <a href="http://github.com/ctripcorp/apollo">Apollo</a> as its configuration
- * source.
+ * 只读 {@code DataSource}，以 <a href="http://github.com/ctripcorp/apollo">Apollo</a> 为配置源。
  * <br />
- * When the rule is changed in Apollo, it will take effect in real time.
+ * Apollo 中规则变更后通过监听器实时刷新 Sentinel 规则。
  *
  * @author Jason Song
  * @author Haojun Ren
@@ -31,7 +30,7 @@ public class ApolloDataSource<T> extends AbstractDataSource<String, T> {
     private ConfigChangeListener configChangeListener;
 
     /**
-     * Constructs the Apollo data source
+     * 构造 Apollo 数据源。
      *
      * @param namespaceName        the namespace name in Apollo, should not be null or empty
      * @param ruleKey              the rule key in the namespace, should not be null or empty
@@ -78,7 +77,7 @@ public class ApolloDataSource<T> extends AbstractDataSource<String, T> {
             @Override
             public void onChange(ConfigChangeEvent changeEvent) {
                 ConfigChange change = changeEvent.getChange(ruleKey);
-                //change is never null because the listener will only notify for this key
+                // 监听器仅订阅 ruleKey，change 通常非 null
                 if (change != null) {
                     RecordLog.info("[ApolloDataSource] Received config changes: {}", change);
                 }

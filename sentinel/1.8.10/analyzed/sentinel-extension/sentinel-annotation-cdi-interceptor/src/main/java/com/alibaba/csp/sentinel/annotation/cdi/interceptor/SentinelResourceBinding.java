@@ -23,7 +23,7 @@ import javax.interceptor.InterceptorBinding;
 import java.lang.annotation.*;
 
 /**
- * The annotation indicates a definition of Sentinel resource.
+ * CDI 拦截器绑定注解：声明 Sentinel 资源名、流控方向及 fallback/blockHandler 配置。
  *
  * @author Eric Zhao
  * @author seasidesky
@@ -36,79 +36,69 @@ import java.lang.annotation.*;
 public @interface SentinelResourceBinding {
 
     /**
-     * @return name of the Sentinel resource
+     * @return Sentinel 资源名称
      */
     @Nonbinding
     String value() default "";
 
     /**
-     * @return the entry type (inbound or outbound), outbound by default
+     * @return 入口类型（IN/OUT），默认 OUT
      */
     @Nonbinding
     EntryType entryType() default EntryType.OUT;
 
     /**
-     * @return the classification (type) of the resource
+     * @return 资源分类类型编号
      */
     @Nonbinding
     int resourceType() default 0;
 
     /**
-     * @return name of the block exception function, empty by default
+     * @return blockHandler 方法名，默认空
      */
     @Nonbinding
     String blockHandler() default "";
 
     /**
-     * The {@code blockHandler} is located in the same class with the original method by default.
-     * However, if some methods share the same signature and intend to set the same block handler,
-     * then users can set the class where the block handler exists. Note that the block handler method
-     * must be static.
+     * 默认 {@code blockHandler} 与原方法同处一类；多方法共享时可指定外部类，且 handler 必须为 static。
      *
-     * @return the class where the block handler exists, should not provide more than one classes
+     * @return blockHandler 所在类（最多一个）
      */
     @Nonbinding
     Class<?>[] blockHandlerClass() default {};
 
     /**
-     * @return name of the fallback function, empty by default
+     * @return fallback 方法名，默认空
      */
     @Nonbinding
     String fallback() default "";
 
     /**
-     * The {@code defaultFallback} is used as the default universal fallback method.
-     * It should not accept any parameters, and the return type should be compatible
-     * with the original method.
+     * {@code defaultFallback} 为通用降级方法，应无参且返回类型与原方法兼容。
      *
-     * @return name of the default fallback method, empty by default
+     * @return defaultFallback 方法名，默认空
      */
     @Nonbinding
     String defaultFallback() default "";
 
     /**
-     * The {@code fallback} is located in the same class with the original method by default.
-     * However, if some methods share the same signature and intend to set the same fallback,
-     * then users can set the class where the fallback function exists. Note that the shared fallback method
-     * must be static.
+     * 默认 {@code fallback} 与原方法同处一类；共享时可指定外部类，且 fallback 必须为 static。
      *
-     * @return the class where the fallback method is located (only single class)
+     * @return fallback 所在类（仅一个）
      */
     @Nonbinding
     Class<?>[] fallbackClass() default {};
 
     /**
-     * @return the list of exception classes to trace, {@link Throwable} by default
+     * @return 需追踪的异常类型列表，默认 {@link Throwable}
      */
     @Nonbinding
     Class<? extends Throwable>[] exceptionsToTrace() default {Throwable.class};
 
     /**
-     * Indicates the exceptions to be ignored. Note that {@code exceptionsToTrace} should
-     * not appear with {@code exceptionsToIgnore} at the same time, or {@code exceptionsToIgnore}
-     * will be of higher precedence.
+     * 指定忽略的异常类型；与 {@code exceptionsToTrace} 同时出现时以 {@code exceptionsToIgnore} 为准。
      *
-     * @return the list of exception classes to ignore, empty by default
+     * @return 忽略的异常类型列表，默认空
      */
     @Nonbinding
     Class<? extends Throwable>[] exceptionsToIgnore() default {};

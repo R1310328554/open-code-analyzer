@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.annotation.cdi.interceptor;
 import java.lang.reflect.Method;
 
 /**
+ * 反射 {@link Method} 的可选包装，用于缓存 fallback/blockHandler 解析结果。
+ *
  * @author Eric Zhao
  */
 class MethodWrapper {

@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.annotation.aspectj;
 import java.lang.reflect.Method;
 
 /**
+ * 反射 {@link Method} 的可选包装：区分「已解析」与「不存在」两种缓存状态。
+ *
  * @author Eric Zhao
  */
 class MethodWrapper {

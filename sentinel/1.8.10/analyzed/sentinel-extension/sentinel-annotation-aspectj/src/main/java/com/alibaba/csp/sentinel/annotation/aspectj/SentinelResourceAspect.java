@@ -28,7 +28,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import java.lang.reflect.Method;
 
 /**
- * Aspect for methods with {@link SentinelResource} annotation.
+ * 拦截带 {@link SentinelResource} 注解的方法，自动创建 Sentinel 资源入口并处理阻塞/异常。
  *
  * @author Eric Zhao
  */
@@ -45,7 +45,7 @@ public class SentinelResourceAspect extends AbstractSentinelAspectSupport {
 
         SentinelResource annotation = originMethod.getAnnotation(SentinelResource.class);
         if (annotation == null) {
-            // Should not go through here.
+            // 不应进入此分支
             throw new IllegalStateException("Wrong state for SentinelResource annotation");
         }
         String resourceName = getResourceName(annotation.value(), originMethod);
@@ -59,7 +59,7 @@ public class SentinelResourceAspect extends AbstractSentinelAspectSupport {
             return handleBlockException(pjp, annotation, ex);
         } catch (Throwable ex) {
             Class<? extends Throwable>[] exceptionsToIgnore = annotation.exceptionsToIgnore();
-            // The ignore list will be checked first.
+            // 优先检查 exceptionsToIgnore
             if (exceptionsToIgnore.length > 0 && exceptionBelongsTo(ex, exceptionsToIgnore)) {
                 throw ex;
             }
@@ -68,7 +68,7 @@ public class SentinelResourceAspect extends AbstractSentinelAspectSupport {
                 return handleFallback(pjp, annotation, ex);
             }
 
-            // No fallback function can handle the exception, so throw it out.
+            // 无可用 fallback，原样抛出
             throw ex;
         } finally {
             if (entry != null) {

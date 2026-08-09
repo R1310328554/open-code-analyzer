@@ -21,7 +21,7 @@ import com.netflix.zuul.stats.BasicRequestMetricsPublisher;
 import com.netflix.zuul.stats.RequestMetricsPublisher;
 
 /**
- * Zuul Sample Module
+ * Zuul 2 示例 Guice 模块：绑定 Netty 服务器、过滤器链与监控组件。
  *
  * Author: Arthur Gonigberg
  * Date: November 20, 2017
@@ -29,32 +29,32 @@ import com.netflix.zuul.stats.RequestMetricsPublisher;
 public class ZuulSampleModule extends AbstractModule {
     @Override
     protected void configure() {
-        // sample specific bindings
+        // 示例专用绑定
         bind(BaseServerStartup.class).to(SampleServerStartup.class);
 
-        // use provided basic netty origin manager
+        // 使用 BasicNettyOriginManager 作为 Origin 管理器
         bind(OriginManager.class).to(BasicNettyOriginManager.class);
 
-        // zuul filter loading
+        // Zuul 核心过滤器加载
         install(new ZuulFiltersModule());
         bind(FilterFileManager.class).asEagerSingleton();
 
         install(new ZuulClasspathFiltersModule());
-        // general server bindings
-        // health/discovery status
+        // 通用服务器组件绑定
+        // 健康检查与服务发现状态
         bind(ServerStatusManager.class);
-        // decorate new sessions when requests come in
+        // 请求到达时装饰 SessionContext
         bind(SessionContextDecorator.class).to(ZuulSessionContextDecorator.class);
-        // atlas metrics registry
+        // Spectator/Atlas 指标注册表
         bind(Registry.class).to(DefaultRegistry.class);
-        // metrics post-request completion
+        // 请求完成后的指标回调
         bind(RequestCompleteHandler.class).to(BasicRequestCompleteHandler.class);
-        // discovery client
+        // Eureka 发现客户端可选参数
         bind(AbstractDiscoveryClientOptionalArgs.class).to(DiscoveryClient.DiscoveryClientOptionalArgs.class);
-        // timings publisher
+        // 请求耗时指标发布器
         bind(RequestMetricsPublisher.class).to(BasicRequestMetricsPublisher.class);
 
-        // access logger, including request ID generator
+        // 访问日志（含请求 UUID）
         bind(AccessLogPublisher.class).toInstance(new AccessLogPublisher("ACCESS",
                 (channel, httpRequest) -> ClientRequestReceiver.getRequestFromChannel(channel).getContext().getUUID()));
     }

@@ -27,8 +27,8 @@ import com.netflix.zuul.netty.server.BaseServerStartup;
 import com.netflix.zuul.netty.server.Server;
 
 /**
- * <p>The Zuul 2.x demo with Sentinel gateway flow control.</p>
- * <p>Run with {@code -Dcsp.sentinel.api.type=1} to mark the demo as API gateway.</p>
+ * <p>集成 Sentinel 网关流控的 Zuul 2.x 演示入口。</p>
+ * <p>启动时添加 {@code -Dcsp.sentinel.api.type=1} 将应用标记为 API 网关类型。</p>
  *
  * @author wavesZh
  */
@@ -41,7 +41,7 @@ public class ZuulBootstrap {
     public void start() {
         Server server;
         try {
-            // Load sample rules. You may also manage rules in Sentinel dashboard.
+            // 加载示例规则；亦可在 Sentinel Dashboard 中动态管理
             new GatewayRuleConfig().doInit();
 
             ConfigurationManager.loadCascadedPropertiesFromResources("application");
@@ -58,7 +58,7 @@ public class ZuulBootstrap {
     public static class ZuulModule extends ZuulSampleModule {
         @Override
         protected void configure() {
-            //DataCenterInfo
+            // Eureka 实例配置（DataCenterInfo）
             bind(EurekaInstanceConfig.class)
                 .toProvider(MyDataCenterInstanceConfigProvider.class)
                 .in(Scopes.SINGLETON);

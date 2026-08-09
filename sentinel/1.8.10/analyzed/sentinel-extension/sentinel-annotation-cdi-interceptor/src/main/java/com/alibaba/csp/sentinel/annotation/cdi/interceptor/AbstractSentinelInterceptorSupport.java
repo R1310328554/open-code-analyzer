@@ -30,7 +30,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 /**
- * Some common functions for Sentinel annotation CDI extension.
+ * CDI {@link SentinelResourceInterceptor} 的公共支撑：资源名、fallback/blockHandler 解析与异常追踪。
  *
  * @author Eric Zhao
  * @author seasidesky
@@ -44,7 +44,7 @@ public abstract class AbstractSentinelInterceptorSupport {
 
     protected void traceException(Throwable ex, SentinelResourceBinding annotation) {
         Class<? extends Throwable>[] exceptionsToIgnore = annotation.exceptionsToIgnore();
-        // The ignore list will be checked first.
+        // 优先检查 exceptionsToIgnore 列表
         if (exceptionsToIgnore.length > 0 && exceptionBelongsTo(ex, exceptionsToIgnore)) {
             return;
         }
@@ -54,7 +54,7 @@ public abstract class AbstractSentinelInterceptorSupport {
     }
 
     /**
-     * Check whether the exception is in provided list of exception classes.
+     * 判断异常是否属于给定异常类型列表。
      *
      * @param ex         provided throwable
      * @param exceptions list of exceptions
@@ -73,11 +73,11 @@ public abstract class AbstractSentinelInterceptorSupport {
     }
 
     protected String getResourceName(String resourceName, /*@NonNull*/ Method method) {
-        // If resource name is present in annotation, use this value.
+        // 注解 value 非空时直接使用
         if (StringUtil.isNotBlank(resourceName)) {
             return resourceName;
         }
-        // Parse name of target method.
+        // 否则按方法签名生成资源名
         return MethodUtil.resolveMethodName(method);
     }
 
@@ -90,10 +90,10 @@ public abstract class AbstractSentinelInterceptorSupport {
                                     Class<?>[] fallbackClass, Throwable ex) throws Throwable {
         Object[] originArgs = ctx.getParameters();
 
-        // Execute fallback function if configured.
+        // 若配置了 fallback 则优先执行
         Method fallbackMethod = extractFallbackMethod(ctx, fallback, fallbackClass);
         if (fallbackMethod != null) {
-            // Construct args.
+            // 构造 fallback 参数
             int paramCount = fallbackMethod.getParameterTypes().length;
             Object[] args;
             if (paramCount == originArgs.length) {
@@ -109,17 +109,17 @@ public abstract class AbstractSentinelInterceptorSupport {
                 }
                 return fallbackMethod.invoke(ctx.getTarget(), args);
             } catch (InvocationTargetException e) {
-                // throw the actual exception
+                // 解包 InvocationTargetException
                 throw e.getTargetException();
             }
         }
-        // If fallback is absent, we'll try the defaultFallback if provided.
+        // fallback 缺失时尝试 defaultFallback
         return handleDefaultFallback(ctx, defaultFallback, fallbackClass, ex);
     }
 
     protected Object handleDefaultFallback(InvocationContext ctx, String defaultFallback,
                                            Class<?>[] fallbackClass, Throwable ex) throws Throwable {
-        // Execute the default fallback function if configured.
+        // 执行 defaultFallback
         Method fallbackMethod = extractDefaultFallbackMethod(ctx, defaultFallback, fallbackClass);
         if (fallbackMethod != null) {
             // Construct args.
@@ -135,14 +135,14 @@ public abstract class AbstractSentinelInterceptorSupport {
             }
         }
 
-        // If no any fallback is present, then directly throw the exception.
+        // 无任何 fallback 时原样抛出
         throw ex;
     }
 
     protected Object handleBlockException(InvocationContext ctx, SentinelResourceBinding annotation, BlockException ex)
         throws Throwable {
 
-        // Execute block handler if configured.
+        // 若配置了 blockHandler 则调用
         Method blockHandlerMethod = extractBlockHandlerMethod(ctx, annotation.blockHandler(),
             annotation.blockHandlerClass());
         if (blockHandlerMethod != null) {
@@ -161,7 +161,7 @@ public abstract class AbstractSentinelInterceptorSupport {
             }
         }
 
-        // If no block handler is present, then go to fallback.
+        // 无 blockHandler 时降级到 fallback
         return handleFallback(ctx, annotation, ex);
     }
 
@@ -174,9 +174,9 @@ public abstract class AbstractSentinelInterceptorSupport {
         Method originMethod = resolveMethod(ctx);
         MethodWrapper m = ResourceMetadataRegistry.lookupFallback(clazz, fallbackName, originMethod.getParameterTypes());
         if (m == null) {
-            // First time, resolve the fallback.
+            // 首次解析 fallback
             Method method = resolveFallbackInternal(originMethod, fallbackName, clazz, mustStatic);
-            // Cache the method instance.
+            // 缓存解析结果
             ResourceMetadataRegistry.updateFallbackFor(clazz, fallbackName, originMethod.getParameterTypes(), method);
             return method;
         }
@@ -206,14 +206,13 @@ public abstract class AbstractSentinelInterceptorSupport {
         if (m == null) {
             // First time, resolve the default fallback.
             Class<?> originReturnType = resolveMethod(ctx).getReturnType();
-            // Default fallback allows two kinds of parameter list.
-            // One is empty parameter list.
+            // defaultFallback 支持无参
             Class<?>[] defaultParamTypes = new Class<?>[0];
-            // The other is a single parameter {@link Throwable} to get relevant exception info.
+            // 或单参数 {@link Throwable}
             Class<?>[] paramTypeWithException = new Class<?>[] {Throwable.class};
-            // We first find the default fallback with empty parameter list.
+            // 先查找无参版本
             Method method = findMethod(mustStatic, clazz, defaultFallback, originReturnType, defaultParamTypes);
-            // If default fallback with empty params is absent, we then try to find the other one.
+            // 未找到时再查找带 Throwable 的版本
             if (method == null) {
                 method = findMethod(mustStatic, clazz, defaultFallback, originReturnType, paramTypeWithException);
             }
@@ -228,13 +227,13 @@ public abstract class AbstractSentinelInterceptorSupport {
     }
 
     private Method resolveFallbackInternal(Method originMethod, String name, Class<?> clazz, boolean mustStatic) {
-        // Fallback function allows two kinds of parameter list.
+        // fallback 支持与原方法相同签名或末尾追加 Throwable
         Class<?>[] defaultParamTypes = originMethod.getParameterTypes();
         Class<?>[] paramTypesWithException = Arrays.copyOf(defaultParamTypes, defaultParamTypes.length + 1);
         paramTypesWithException[paramTypesWithException.length - 1] = Throwable.class;
-        // We first find the fallback matching the signature of origin method.
+        // 优先匹配原方法签名
         Method method = findMethod(mustStatic, clazz, name, originMethod.getReturnType(), defaultParamTypes);
-        // If fallback matching the origin method is absent, we then try to find the other one.
+        // 未找到时再匹配带 Throwable 的版本
         if (method == null) {
             method = findMethod(mustStatic, clazz, name, originMethod.getReturnType(), paramTypesWithException);
         }
@@ -251,7 +250,7 @@ public abstract class AbstractSentinelInterceptorSupport {
         if (mustStatic) {
             clazz = locationClass[0];
         } else {
-            // By default current class.
+            // 默认在当前目标类中查找
             clazz = ctx.getTarget().getClass();
         }
         Method originMethod = resolveMethod(ctx);
@@ -292,7 +291,7 @@ public abstract class AbstractSentinelInterceptorSupport {
                 return method;
             }
         }
-        // Current class not found, find in the super classes recursively.
+        // 当前类未找到则递归查找父类
         Class<?> superClass = clazz.getSuperclass();
         if (superClass != null && !Object.class.equals(superClass)) {
             return findMethod(mustStatic, superClass, name, returnType, parameterTypes);
@@ -320,8 +319,7 @@ public abstract class AbstractSentinelInterceptorSupport {
     }
 
     /**
-     * Get declared method with provided name and parameterTypes in given class and its super classes.
-     * All parameters should be valid.
+     * 在类及其父类中按名称与参数类型查找 declared 方法。
      *
      * @param clazz          class where the method is located
      * @param name           method name

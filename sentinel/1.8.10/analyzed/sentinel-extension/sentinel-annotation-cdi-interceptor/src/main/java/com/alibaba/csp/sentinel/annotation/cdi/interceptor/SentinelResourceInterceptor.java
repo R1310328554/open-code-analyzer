@@ -26,6 +26,8 @@ import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
 /**
+ * CDI 拦截器：对 {@link SentinelResourceBinding} 标注的方法执行 Sentinel 入口/出口与降级逻辑。
+ *
  * @author sea
  * @since 1.8.0
  */
@@ -38,7 +40,7 @@ public class SentinelResourceInterceptor extends AbstractSentinelInterceptorSupp
     Object aroundInvoke(InvocationContext ctx) throws Throwable {
         SentinelResourceBinding annotation = ctx.getMethod().getAnnotation(SentinelResourceBinding.class);
         if (annotation == null) {
-            // Should not go through here.
+            // 不应进入此分支
             throw new IllegalStateException("Wrong state for SentinelResource annotation");
         }
 
@@ -54,7 +56,7 @@ public class SentinelResourceInterceptor extends AbstractSentinelInterceptorSupp
             return handleBlockException(ctx, annotation, ex);
         } catch (Throwable ex) {
             Class<? extends Throwable>[] exceptionsToIgnore = annotation.exceptionsToIgnore();
-            // The ignore list will be checked first.
+            // 优先检查 exceptionsToIgnore
             if (exceptionsToIgnore.length > 0 && exceptionBelongsTo(ex, exceptionsToIgnore)) {
                 throw ex;
             }
@@ -63,7 +65,7 @@ public class SentinelResourceInterceptor extends AbstractSentinelInterceptorSupp
                 return handleFallback(ctx, annotation, ex);
             }
 
-            // No fallback function can handle the exception, so throw it out.
+            // 无可用 fallback，原样抛出
             throw ex;
         } finally {
             if (entry != null) {
