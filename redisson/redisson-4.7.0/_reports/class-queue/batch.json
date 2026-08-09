@@ -1,6 +1,9 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 2,
+  "claimed_at": "2026-08-09T21:55:57Z",
+  "files": [
+    "redisson/src/main/java/org/redisson/transaction/operation/set/RemoveOperation.java",
+    "redisson/src/main/java/org/redisson/transaction/operation/set/SetOperation.java"
+  ],
+  "remaining_pending": 0,
   "done": 2820
 }
