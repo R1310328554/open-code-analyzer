@@ -116,6 +116,10 @@ import io.reactivex.rxjava4.core.*;
 /// StreamableCollectPerf.benchmarkHidden   100000  thrpt    5      3529,826 ┬▒      71,479  ops/s
 /// StreamableCollectPerf.benchmarkHidden  1000000  thrpt    5       322,838 ┬▒       5,698  ops/s
 /// ```
+/**
+ * JMH 基准：Streamable.range.collect(maxBy) 的 trampoline-reducer 开销与优化迭代对比。
+ * 文件内 /// 注释含各优化阶段的实测数据。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -130,17 +134,20 @@ public class StreamableCollectPerf {
 
     Streamable<Optional<Integer>> resultHidden;
 
+    /** 构造带/不带 hide 的 maxBy collect 链路。 */
     @Setup
     public void setup() {
         result = Streamable.range(1, times).collect(Collectors.maxBy(Comparator.naturalOrder()));
         resultHidden = Streamable.range(1, times).hide().collect(Collectors.maxBy(Comparator.naturalOrder()));
     }
 
+    /** 标准 collect 路径 blockingFirst。 */
     @Benchmark
     public Object benchmark() {
         return result.blockingFirst();
     }
 
+    /** hide 后 collect，隔离 range 融合优化。 */
     @Benchmark
     public Object benchmarkHidden() {
         return resultHidden.blockingFirst();

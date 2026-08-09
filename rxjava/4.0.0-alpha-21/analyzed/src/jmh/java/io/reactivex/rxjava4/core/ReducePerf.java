@@ -21,6 +21,9 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import io.reactivex.rxjava4.functions.BiFunction;
 
+/**
+ * JMH 基准：Observable/Flowable fromArray.reduce 在 Single/Maybe 上的吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -40,11 +43,13 @@ public class ReducePerf implements BiFunction<Integer, Integer, Integer> {
 
     Maybe<Integer> flowMaybe;
 
+    /** reduce 累加函数。 */
     @Override
     public Integer apply(Integer t1, Integer t2) {
         return t1 + t2;
     }
 
+    /** 填充数组并构造四种 reduce 链路。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
@@ -59,6 +64,7 @@ public class ReducePerf implements BiFunction<Integer, Integer, Integer> {
         flowMaybe = Flowable.fromArray(array).reduce(this);
     }
 
+    /** Observable reduce 带初始值 → Single。 */
     @Benchmark
     public void obsSingle(Blackhole bh) {
         obsSingle.subscribe(new PerfConsumer(bh));
@@ -74,6 +80,7 @@ public class ReducePerf implements BiFunction<Integer, Integer, Integer> {
         obsMaybe.subscribe(new PerfConsumer(bh));
     }
 
+    /** Flowable reduce 无初始值 → Maybe。 */
     @Benchmark
     public void flowMaybe(Blackhole bh) {
         flowMaybe.subscribe(new PerfConsumer(bh));

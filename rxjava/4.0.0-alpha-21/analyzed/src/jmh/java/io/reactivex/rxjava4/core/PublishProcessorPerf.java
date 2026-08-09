@@ -21,6 +21,9 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.processors.PublishProcessor;
 import io.reactivex.rxjava4.subjects.PublishSubject;
 
+/**
+ * JMH 基准：PublishProcessor/PublishSubject onNext 吞吐（无界与有界背压订阅）。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -36,6 +39,7 @@ public class PublishProcessorPerf {
 
     PublishSubject<Integer> subject;
 
+    /** 构造无界/有界 Processor 与 Subject 并预订阅 consumer。 */
     @Setup
     public void setup(Blackhole bh) {
         unbounded = PublishProcessor.create();
@@ -60,6 +64,7 @@ public class PublishProcessorPerf {
         }
     }
 
+    /** 无界 Processor 连续 100 万次 onNext。 */
     @Benchmark
     public void unbounded1m() {
         for (int i = 0; i < 1000000; i++) {
@@ -72,6 +77,7 @@ public class PublishProcessorPerf {
         bounded.onNext(1);
     }
 
+    /** 有界背压 Processor 连续 1000 次 onNext。 */
     @Benchmark
     public void bounded1k() {
         for (int i = 0; i < 1000; i++) {
@@ -98,6 +104,7 @@ public class PublishProcessorPerf {
         }
     }
 
+    /** PublishSubject 连续 100 万次 onNext。 */
     @Benchmark
     public void subject1m() {
         for (int i = 0; i < 1000000; i++) {

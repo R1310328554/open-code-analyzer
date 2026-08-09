@@ -125,6 +125,10 @@ import io.reactivex.rxjava4.core.Streamable;
 /// StreamableConcatIterablePerf.benchmark   100000  thrpt    5     2103,477 ┬▒    360,090  ops/s
 /// StreamableConcatIterablePerf.benchmark  1000000  thrpt    5      207,888 ┬▒     22,014  ops/s
 /// ```
+/**
+ * JMH 基准：Streamable.concat(Iterable) 连接两段 range 的吞吐与分配优化对比。
+ * 文件内 /// 注释记录 whenComplete/wip 等优化实验数据。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -137,11 +141,13 @@ public class StreamableConcatIterablePerf {
 
     Streamable<Integer> result;
 
+    /** 连接两段等长 range Streamable。 */
     @Setup
     public void setup() {
         result = Streamable.concat(List.of(Streamable.range(1, times), Streamable.range(times + 1, times)));
     }
 
+    /** concat 全序列 blockingLast。 */
     @Benchmark
     public Object benchmark() {
         return result.blockingLast();

@@ -21,6 +21,9 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.internal.schedulers.SingleScheduler;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：Flowable.range 同步订阅吞吐（含 observeOn/subscribeOn 变体，部分已注释）。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -38,6 +41,7 @@ public class RangePerf {
 
     Flowable<Integer> rangeAsyncPipeline;
 
+    /** 按 times 构造 range 及异步/管道变体。 */
     @Setup
     public void setup() {
         range = Flowable.range(1, times);
@@ -47,6 +51,7 @@ public class RangePerf {
         rangeAsyncPipeline = range.subscribeOn(new SingleScheduler()).observeOn(Schedulers.single());
     }
 
+    /** 同步 subscribe PerfSubscriber。 */
     @Benchmark
     public Object rangeSync(Blackhole bh) {
         PerfSubscriber lo = new PerfSubscriber(bh);

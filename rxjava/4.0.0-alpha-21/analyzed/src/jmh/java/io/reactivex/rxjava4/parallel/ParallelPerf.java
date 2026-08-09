@@ -25,6 +25,9 @@ import io.reactivex.rxjava4.core.config.StandardConcurrentBufferedConfig;
 import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：flatMap/subscribeOn、groupBy+observeOn 与 Parallel.runOn 并行映射吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -55,6 +58,7 @@ public class ParallelPerf implements Function<Integer, Integer> {
         return t;
     }
 
+    /** 构造 flatMap、groupBy 与 parallel().runOn().sequential() 三条链路。 */
     @Setup
     public void setup() {
 
@@ -80,6 +84,7 @@ public class ParallelPerf implements Function<Integer, Integer> {
         parallel = source.parallel(cpu).runOn(Schedulers.computation()).map(this).sequential();
     }
 
+    /** 异步订阅 PerfAsyncConsumer 并 await 指定计数。 */
     void subscribe(Flowable<Integer> f, Blackhole bh) {
         PerfAsyncConsumer consumer = new PerfAsyncConsumer(bh);
         f.subscribe(consumer);
@@ -96,6 +101,7 @@ public class ParallelPerf implements Function<Integer, Integer> {
         subscribe(groupBy, bh);
     }
 
+    /** Parallel.runOn + map + sequential 基准。 */
     @Benchmark
     public void parallel(Blackhole bh) {
         subscribe(parallel, bh);

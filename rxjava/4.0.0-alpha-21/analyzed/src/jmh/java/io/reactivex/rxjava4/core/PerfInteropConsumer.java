@@ -19,8 +19,8 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 
 /**
- * A multi-type synchronous consumer that doesn't implement FlowableSubscriber and
- * thus should be treated by Flowable as a candidate for strict interop.
+ * 多类型同步 consumer：未实现 FlowableSubscriber，
+ * Flowable 将其视为 strict interop 互操作候选。
  */
 @SuppressWarnings("exports")
 public final class PerfInteropConsumer implements Subscriber<Object>, Observer<Object>,
@@ -28,6 +28,7 @@ SingleObserver<Object>, CompletableObserver, MaybeObserver<Object> {
 
     final Blackhole bh;
 
+    /** @param bh JMH 黑洞，消费元素以防死代码消除 */
     public PerfInteropConsumer(Blackhole bh) {
         this.bh = bh;
     }
@@ -41,6 +42,7 @@ SingleObserver<Object>, CompletableObserver, MaybeObserver<Object> {
     public void onSubscribe(Disposable d) {
     }
 
+    /** Flow Subscriber：无界 request。 */
     @Override
     public void onSubscribe(Subscription s) {
         s.request(Long.MAX_VALUE);
@@ -56,6 +58,7 @@ SingleObserver<Object>, CompletableObserver, MaybeObserver<Object> {
         t.printStackTrace();
     }
 
+    /** 完成时向 Blackhole 写入哨兵值。 */
     @Override
     public void onComplete() {
         bh.consume(true);

@@ -18,6 +18,9 @@ import java.util.concurrent.CountDownLatch;
 import org.openjdk.jmh.infra.Blackhole;
 import static java.util.concurrent.Flow.*;
 
+/**
+ * JMH 用 FlowableSubscriber：无界 request，Latch 同步，Blackhole 消费元素。
+ */
 @SuppressWarnings("exports")
 public class PerfSubscriber implements FlowableSubscriber<Object> {
 
@@ -28,6 +31,7 @@ public class PerfSubscriber implements FlowableSubscriber<Object> {
         this.bh = bh;
     }
 
+    /** 无界 request 以拉取全序列。 */
     @Override
     public void onSubscribe(Subscription s) {
         s.request(Long.MAX_VALUE);
@@ -43,6 +47,7 @@ public class PerfSubscriber implements FlowableSubscriber<Object> {
         latch.countDown();
     }
 
+    /** 将元素送入 Blackhole。 */
     @Override
     public void onNext(Object t) {
         bh.consume(t);

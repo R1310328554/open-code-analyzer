@@ -20,6 +20,9 @@ import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import static java.util.concurrent.Flow.*;
 
+/**
+ * JMH 基准：FlowableSubscriber 与 java.util.concurrent.Flow.Subscriber 严格互操作开销。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -36,6 +39,7 @@ public class StrictPerf {
 
     Flowable<Integer> source;
 
+    /** 按 count 填充 fromArray 源。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[count];
@@ -44,16 +48,19 @@ public class StrictPerf {
         source = Flowable.fromArray(array);
     }
 
+    /** 使用 FlowableSubscriber（内部协议）。 */
     @Benchmark
     public void internal(Blackhole bh) {
         source.subscribe(new InternalConsumer(bh, cpu));
     }
 
+    /** 使用 Flow.Subscriber（外部互操作路径）。 */
     @Benchmark
     public void external(Blackhole bh) {
         source.subscribe(new ExternalConsumer(bh, cpu));
     }
 
+    /** 内部 FlowableSubscriber，onNext 中 consumeCPU。 */
     record InternalConsumer(Blackhole bh, int cycles) implements FlowableSubscriber<Object> {
 
         @Override

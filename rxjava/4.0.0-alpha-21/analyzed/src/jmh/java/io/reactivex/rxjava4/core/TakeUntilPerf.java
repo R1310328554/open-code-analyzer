@@ -21,6 +21,9 @@ import io.reactivex.rxjava4.functions.*;
 import io.reactivex.rxjava4.internal.functions.Functions;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：Flowable/Observable takeUntil 与异步终止信号的竞争吞吐。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -43,6 +46,7 @@ public class TakeUntilPerf implements Consumer<Integer> {
         items++;
     }
 
+    /** 构造百万 range 与 subscribeOn 的 takeUntil 终止源。 */
     @Setup
     public void setup() {
 
@@ -59,6 +63,7 @@ public class TakeUntilPerf implements Consumer<Integer> {
         }).subscribeOn(Schedulers.single()));
     }
 
+    /** Flowable takeUntil 自旋等待完成。 */
     @Benchmark
     public void flowable() {
         final CountDownLatch cdl = new CountDownLatch(1);
@@ -68,6 +73,7 @@ public class TakeUntilPerf implements Consumer<Integer> {
         while (cdl.getCount() != 0) { }
     }
 
+    /** Observable takeUntil 自旋等待完成。 */
     @Benchmark
     public void observable() {
         final CountDownLatch cdl = new CountDownLatch(1);

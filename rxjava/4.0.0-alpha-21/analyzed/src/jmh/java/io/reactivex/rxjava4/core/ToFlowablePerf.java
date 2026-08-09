@@ -21,6 +21,9 @@ import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.functions.*;
 
+/**
+ * JMH 基准：Maybe/Observable reduce 经 toFlowable/toObservable 与 blocking 取值的吞吐。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -39,6 +42,7 @@ public class ToFlowablePerf {
 
     Observable<Integer> observableInner;
 
+    /** 构造 reduce 与 concatMap 嵌套 reduce 的 Maybe/Flowable/Observable 链路。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
@@ -59,6 +63,7 @@ public class ToFlowablePerf {
         observableInner = sourceObs.concatMap((Function<Integer, Observable<Integer>>) _ -> Observable.range(1, 50).reduce(second).toObservable());
     }
 
+    /** Maybe reduce blockingGet。 */
     @Benchmark
     public Object flowable() {
         return flowable.blockingGet();
@@ -74,6 +79,7 @@ public class ToFlowablePerf {
         return observable.blockingLast();
     }
 
+    /** Observable concatMap 内层 reduce blockingLast。 */
     @Benchmark
     public Object observableInner() {
         return observableInner.blockingLast();

@@ -22,6 +22,9 @@ import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：Flowable/Observable 各类 flatMap（Publisher/Single/Maybe/Completable/Iterable）吞吐矩阵。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -95,6 +98,7 @@ public class XMapYPerf {
 
     Observable<Integer> obsFlatMapIterableAsObs0;
 
+    /** 按 times 填充数组并构造 flatMap 全矩阵（含 asFlow/asObs 变体）。 */
     @Setup
     public void setup() {
         Integer[] values = new Integer[times];
@@ -190,6 +194,7 @@ public class XMapYPerf {
         flowFlatMapFlowable0.subscribe(new PerfConsumer(bh));
     }
 
+    /** Flowable flatMap(Flowable::just)。 */
     @Benchmark
     public void flowFlatMapFlowable1(Blackhole bh) {
         flowFlatMapFlowable1.subscribe(new PerfConsumer(bh));
@@ -210,6 +215,7 @@ public class XMapYPerf {
         flowFlatMapMaybe0.subscribe(new PerfConsumer(bh));
     }
 
+    /** Flowable flatMapCompletable(complete)。 */
     @Benchmark
     public void flowFlatMapCompletable0(Blackhole bh) {
         flowFlatMapCompletable0.subscribe(new PerfConsumer(bh));
@@ -264,6 +270,7 @@ public class XMapYPerf {
         obsFlatMapObservable0.subscribe(new PerfConsumer(bh));
     }
 
+    /** Observable flatMap(Observable::just)。 */
     @Benchmark
     public void obsFlatMapObservable1(Blackhole bh) {
         obsFlatMapObservable1.subscribe(new PerfConsumer(bh));

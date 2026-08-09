@@ -137,6 +137,10 @@ import io.reactivex.rxjava4.core.Streamable;
 /// StreamableFilterPerf.indexed      100000  thrpt    5       972,717 ┬▒      31,004  ops/s
 /// StreamableFilterPerf.indexed     1000000  thrpt    5        95,972 ┬▒       2,552  ops/s
 /// ```
+/**
+ * JMH 基准：Streamable.filter 与 collect(maxBy) 融合路径吞吐（range/Iterable 源对比）。
+ * 文件内 /// 注释含同步偏置与 EnumerableSource 优化数据。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -151,6 +155,7 @@ public class StreamableFilterPerf {
     Streamable<Optional<Integer>> indexedMax;
     Streamable<Optional<Integer>> enumeratedMax;
 
+    /** 构造 filter 奇数、indexed max 与 enumerated max 三条链路。 */
     @Setup
     public void setup() {
         result = Streamable.range(1, times).filter(v -> (v & 1) != 0);
@@ -160,6 +165,7 @@ public class StreamableFilterPerf {
                 .collect(Collectors.maxBy(Comparator.naturalOrder()));
     }
 
+    /** range.filter 直接 blockingLast。 */
     @Benchmark
     public Object basic() {
         return result.blockingLast();
@@ -170,6 +176,7 @@ public class StreamableFilterPerf {
         return indexedMax.blockingLast();
     }
 
+    /** fromIterable 源 filter+collect max blockingLast。 */
     @Benchmark
     public Object enumerated() {
         return enumeratedMax.blockingLast();

@@ -22,6 +22,9 @@ import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：Flowable 与 Observable range/flatMap 订阅吞吐对比。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -47,6 +50,7 @@ public class RxVsStreamPerf {
 
     List<Integer> values;
 
+    /** 构造 range 与 flatMap(just|range) 的 Flowable/Observable 变体。 */
     @Setup
     public void setup() {
         range = Flowable.range(1, times);
@@ -64,6 +68,7 @@ public class RxVsStreamPerf {
         values = range.toList().blockingGet();
     }
 
+    /** Flowable.range 同步订阅。 */
     @Benchmark
     public void range(Blackhole bh) {
         range.subscribe(new PerfSubscriber(bh));
@@ -79,6 +84,7 @@ public class RxVsStreamPerf {
         rangeFlatMap.subscribe(new PerfSubscriber(bh));
     }
 
+    /** Observable range.flatMap(range) 订阅。 */
     @Benchmark
     public void rangeObservableFlatMap(Blackhole bh) {
         rangeObservableFlatMap.subscribe(new PerfObserver(bh));
