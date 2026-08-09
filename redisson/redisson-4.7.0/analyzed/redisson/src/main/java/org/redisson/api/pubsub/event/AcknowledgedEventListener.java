@@ -18,8 +18,9 @@ package org.redisson.api.pubsub.event;
 import java.util.List;
 
 /**
- * Listener interface for acknowledged pubsub events.
- * This interface is triggered when messages are successfully acknowledged by consumers.
+ * 消息确认（ack）事件的监听器接口。
+ * <p>
+ * 当消费者成功确认消息时触发。
  *
  * @author Nikita Koksharov
  *
@@ -27,9 +28,9 @@ import java.util.List;
 public interface AcknowledgedEventListener extends ConsumerEventListener {
 
     /**
-     * Called when messages are acknowledged by a consumer.
+     * 消费者确认消息时调用。
      *
-     * @param ids message ids
+     * @param ids 消息 ID 列表
      */
     void onAcknowledged(List<String> ids);
 

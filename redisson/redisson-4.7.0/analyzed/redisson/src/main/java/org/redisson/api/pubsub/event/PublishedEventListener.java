@@ -18,9 +18,9 @@ package org.redisson.api.pubsub.event;
 import java.util.List;
 
 /**
- * Listener interface for pubsub topic addition events.
- * This interface is triggered when new messages
- * are added to a topic.
+ * 主题发布事件的监听器接口。
+ * <p>
+ * 当新消息写入主题时触发。
  *
  * @author Nikita Koksharov
  *
@@ -28,9 +28,9 @@ import java.util.List;
 public interface PublishedEventListener extends PubSubEventListener {
 
     /**
-     * Called when new messages are added to the topic.
+     * 新消息写入主题时调用。
      *
-     * @param ids message ids
+     * @param ids 消息 ID 列表
      */
     void onPublished(List<String> ids);
 

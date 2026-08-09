@@ -19,7 +19,7 @@ import java.io.Serializable;
 
 /**
  *
- * Reliable PubSub Subscription statistics interface.
+ * 可靠 PubSub 订阅的统计信息接口。
  *
  * @author Nikita Koksharov
  *
@@ -27,53 +27,53 @@ import java.io.Serializable;
 public interface SubscriptionStatistics extends Serializable {
 
     /**
-     * Returns subscription name.
+     * 返回订阅名称。
      *
-     * @return name
+     * @return 名称
      */
     String getSubscriptionName();
 
     /**
-     * Returns the number of existing consumers for this subscription.
+     * 返回本订阅下现有消费者的数量。
      *
-     * @return consumers count
+     * @return 消费者数量
      */
     long getConsumersCount();
 
     /**
-     * Returns the number of message redelivery attempts.
+     * 返回消息重新投递的尝试次数。
      *
-     * @return redelivery attempts count
+     * @return 重投递次数
      */
     long getRedeliveryAttemptsCount();
 
     /**
-     * Returns the number of unacknowledged messages awaiting acknowledgment.
+     * 返回尚未确认、等待 ack 的消息数量。
      *
-     * @return unacknowledged messages count
+     * @return 未确认消息数
      */
     long getUnacknowledgedMessagesCount();
 
     /**
-     * Return the total number of messages successfully acknowledged by consumers.
+     * 返回消费者已成功确认的消息总数。
      *
-     * @return acknowledged messages count
+     * @return 已确认消息数
      */
     long getAcknowledgedMessagesCount();
 
     /**
-     * Return the total number of messages negatively acknowledged by consumers.
+     * 返回消费者负向确认（nack）的消息总数。
      *
      * @return acknowledged messages count
      */
     long getNegativelyAcknowledgedMessagesCount();
 
     /**
-     * Returns the number of messages sent to the dead letter topic.
+     * 返回已发送到死信主题的消息数量。
      * <p>
-     * Messages are dead lettered when they exceed the delivery limit or negatively acknowledged as rejected.
+     * 当消息超过投递次数上限或被 nack 为拒绝时，会进入死信主题。
      *
-     * @return count of messages sent to the dead letter topic
+     * @return 死信消息数
      */
     long getDeadLetteredMessagesCount();
 

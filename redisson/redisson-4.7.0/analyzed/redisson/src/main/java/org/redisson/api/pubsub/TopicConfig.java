@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import java.time.Duration;
 
 /**
- * Defines reliable topic parameters.
+ * 定义可靠主题的各项参数。
  *
  * @author Nikita Koksharov
  *
@@ -26,95 +26,94 @@ import java.time.Duration;
 public interface TopicConfig {
 
     /**
-     * Creates a new TopicConfig instance with default settings.
+     * 创建使用默认设置的 {@link TopicConfig} 实例。
      *
-     * @return config object
+     * @return 配置对象
      */
     static TopicConfig defaults() {
         return new TopicConfigParams();
     }
 
     /**
-     * Sets the duration for which a message becomes invisible to other consumers after being polled.
-     * This prevents multiple consumers from processing the same message simultaneously.
-     * Can be overridden in a subscription, when pooling a message or defining push listener.
+     * 设置消息被拉取后对其它消费者不可见的时长。
+     * 用于防止同一条消息被多个消费者并发处理。
+     * 可在订阅、拉取消息或定义推送监听器时覆盖此值。
      * <p>
-     * Default value is 30 seconds.
+     * 默认值为 30 秒。
      *
-     * @param value the visibility timeout duration
+     * @param value 可见性超时时长
      * @return config object
      */
     TopicConfig visibility(Duration value);
 
     /**
-     * Sets the time-to-live duration for messages in the topic.
-     * Messages will be automatically removed from the topic after this duration expires.
-     * 0 value means expiration is not applied.
-     * Can be overridden when publishing a message.
+     * 设置主题中消息的存活时间（TTL）。
+     * 超过该时长后消息将从主题中自动移除。
+     * {@code 0} 表示不启用过期。
+     * 可在发布消息时覆盖此值。
      * <p>
-     * Default value is 0.
+     * 默认值为 {@code 0}。
      *
-     * @param value the time-to-live duration
+     * @param value 存活时长
      * @return config object
      */
     TopicConfig timeToLive(Duration value);
 
     /**
-     * Sets the maximum allowed size (in bytes) for a single message in the topic.
-     * Messages exceeding this size will be rejected.
-     * 0 value means size limit is not applied.
+     * 设置单条消息允许的最大字节数。
+     * 超出限制的消息将被拒绝。
+     * {@code 0} 表示不限制大小。
      * <p>
-     * Default value is 0.
+     * 默认值为 {@code 0}。
      *
-     * @param value the maximum message size in bytes
+     * @param value 最大消息大小（字节）
      * @return config object
      */
     TopicConfig maxMessageSize(int value);
 
     /**
-     * Sets the delay duration before a message becomes available for consumption after being added to the topic.
-     * 0 value means delay duration is not applied.
-     * Can be overridden when publishing a message.
+     * 设置消息写入主题后、可供消费前的延迟时长。
+     * {@code 0} 表示不启用延迟。
+     * 可在发布消息时覆盖此值。
      * <p>
-     * Default value is 0.
+     * 默认值为 {@code 0}。
      *
-     * @param delay the delay duration
+     * @param delay 延迟时长
      * @return config object
      */
     TopicConfig delay(Duration delay);
 
     /**
-     * Sets the maximum number of messages that can be stored in the topic.
-     * When the topic reaches this size, add messages operation may be blocked and/or return empty result.
-     * 0 value means topic size limit is not applied.
+     * 设置主题可存储的最大消息条数。
+     * 达到上限后，添加消息的操作可能被阻塞和/或返回空结果。
+     * {@code 0} 表示不限制主题大小。
      * <p>
-     * Default value is 0.
+     * 默认值为 {@code 0}。
      *
-     * @param value the maximum topic size
+     * @param value 最大主题容量
      * @return config object
      */
     TopicConfig maxSize(int value);
 
     /**
-     * Defines the maximum number of delivery attempts for a message.
-     * Once this limit is reached, the message may be moved to
-     * a dead letter topic if it's configured, otherwise it will be deleted.
-     * Can be overridden in a subscription or when publishing a message.
+     * 定义单条消息的最大投递次数。
+     * 达到上限后，若已配置死信主题则消息转入死信，否则被删除。
+     * 可在订阅或发布消息时覆盖此值。
      * <p>
-     * Default value is 10 attempts.
+     * 默认值为 10 次。
      *
-     * @param value the maximum number of delivery attempts
+     * @param value 最大投递次数
      * @return config object
      */
     TopicConfig deliveryLimit(int value);
 
     /**
-     * Defines the retention behavior for messages in a topic, controlling when messages
-     * are stored and when they may be discarded based on subscription state and processing status.
+     * 定义主题中消息的保留策略，控制消息何时存储以及
+     * 在何种订阅与处理状态下可被丢弃。
      * <p>
      * Default value is {@link RetentionMode#SUBSCRIPTION_OPTIONAL_RETAIN_ALL}
      *
-     * @param mode the retention mode
+     * @param mode 保留模式
      * @return config object
      */
     TopicConfig retentionMode(RetentionMode mode);

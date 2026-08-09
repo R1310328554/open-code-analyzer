@@ -20,13 +20,12 @@ import reactor.core.publisher.Mono;
 import java.util.Set;
 
 /**
- * Subscription to a reliable pubsub topic.
+ * 可靠 PubSub 主题的订阅（Reactive API）。
  * <p>
- * A subscription maintains its own offset and tracks message consumption independently
- * of other subscriptions on the same topic. Each subscription can have multiple
- * pull or push consumers that share the workload of processing messages.
+ * 每个订阅维护独立的偏移量，与同主题上的其他订阅互不影响地跟踪消息消费进度。
+ * 单个订阅可挂载多个拉取或推送消费者，共同分担消息处理负载。
  *
- * @param <V> the type of message values
+ * @param <V> 消息值的类型
  *
  * @author Nikita Koksharov
  *
@@ -34,31 +33,29 @@ import java.util.Set;
 public interface SubscriptionReactive<V> {
 
     /**
-     * Creates a new pull consumer with an auto-generated name.
+     * 创建使用自动生成名称的拉取消费者.
      * <p>
-     * Pull consumers retrieve messages on-demand, providing manual control
-     * over message consumption rate and timing.
+     * 拉取消费者按需获取消息，可手动控制消费速率与时机。
      *
-     * @return pull consumer object
+     * @return 拉取消费者对象
      */
     Mono<PullConsumerReactive<V>> createPullConsumer();
 
     /**
-     * Creates a new pull consumer with the specified configuration.
+     * 使用指定配置创建拉取消费者。
      * <p>
      * Pull consumers retrieve messages on-demand, providing manual control
      * over message consumption rate and timing.
      *
-     * @param config the consumer configuration
+     * @param config 消费者配置
      * @return pull consumer object
      */
     Mono<PullConsumerReactive<V>> createPullConsumer(ConsumerConfig config);
 
     /**
-     * Creates a new push consumer with an auto-generated name.
+     * 创建使用自动生成名称的推送消费者。
      * <p>
-     * Push consumers receive messages automatically via registered listener,
-     * enabling event-driven message processing.
+     * 推送消费者通过已注册的监听器自动接收消息，适合事件驱动式处理。
      *
      * @return pull consumer object
      */
@@ -67,8 +64,7 @@ public interface SubscriptionReactive<V> {
     /**
      * Creates a new push consumer with the specified configuration.
      * <p>
-     * Push consumers receive messages automatically via registered listeners,
-     * enabling event-driven message processing.
+     * 推送消费者通过已注册的监听器自动接收消息，适合事件驱动式处理。
      *
      * @param config the consumer configuration
      * @return pull consumer object
@@ -76,49 +72,48 @@ public interface SubscriptionReactive<V> {
     Mono<PushConsumerReactive<V>> createPushConsumer(ConsumerConfig config);
 
     /**
-     * Returns the names of all consumers registered to this subscription.
+     * 返回注册到本订阅的所有消费者名称。
      *
-     * @return a set of consumer names
+     * @return 消费者名称集合
      */
     Mono<Set<String>> getConsumerNames();
 
     /**
-     * Checks if a consumer with the specified name exists in this subscription.
+     * 检查指定名称的消费者是否存在于本订阅中。
      *
-     * @param name the consumer name to check
-     * @return {@code true} if the consumer exists, {@code false} otherwise
+     * @param name 待检查的消费者名称
+     * @return 存在返回 {@code true}，否则 {@code false}
      */
     Mono<Boolean> hasConsumer(String name);
 
     /**
-     * Removes the consumer with the specified name from this subscription.
+     * 从本订阅中移除指定名称的消费者。
      *
-     * @param name the consumer name to remove
-     * @return {@code true} if the consumer was removed, {@code false} if it did not exist
+     * @param name 待移除的消费者名称
+     * @return 移除成功返回 {@code true}，不存在则 {@code false}
      */
     Mono<Boolean> removeConsumer(String name);
 
     /**
-     * Returns the name of this subscription.
+     * 返回本订阅的名称。
      *
-     * @return the subscription name
+     * @return 订阅名称
      */
     String getName();
 
     /**
-     * Moves the subscription offset to the specified position.
+     * 将订阅偏移量移动到指定位置。
      * <p>
-     * This allows replaying messages from a specific point or skipping
-     * ahead to newer messages. Affects all consumers within this subscription.
+     * 可用于从某一点重放消息，或跳转到较新的消息；会影响本订阅内的所有消费者。
      *
-     * @param value the position to seek to
+     * @param value 目标位置
      */
     Mono<Void> seek(Position value);
 
     /**
-     * Returns statistics for this subscription.
+     * 返回本订阅的统计信息。
      *
-     * @return statistics object
+     * @return 统计对象
      */
     Mono<SubscriptionStatistics> getStatistics();
 

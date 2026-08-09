@@ -16,8 +16,9 @@
 package org.redisson.api.pubsub.event;
 
 /**
- * Enumeration representing the possible statuses for negatively acknowledged messages.
- * Used to indicate why a message was negatively acknowledged (NAcked).
+ * 负向确认（nack）消息的状态枚举。
+ * <p>
+ * 用于说明消息被 nack 的原因。
  *
  * @author Nikita Koksharov
  *
@@ -25,16 +26,14 @@ package org.redisson.api.pubsub.event;
 public enum NAckStatus {
 
     /**
-     * Indicates that the client application could process the message,
-     * but it was not accepted.
-     * The message is removed and moved to the Dead Letter Topic if configured.
+     * 客户端已处理消息但未接受。
+     * 消息将被移除；若已配置死信主题则转入死信。
      */
     REJECTED,
 
     /**
-     * Indicates that the client application failed to process the message.
-     * The message is redelivered. Allows to define the delay duration before
-     * the failed message is eligible for redelivery.
+     * 客户端处理消息失败。
+     * 消息将重新投递；可配置失败消息再次投递前的延迟时长。
      */
     FAILED
 

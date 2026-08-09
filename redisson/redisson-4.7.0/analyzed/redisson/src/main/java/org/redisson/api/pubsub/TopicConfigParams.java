@@ -19,6 +19,9 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
+ * {@link TopicConfig} 的可变参数实现类。
+ * <p>
+ * 持有可见性超时、TTL、消息大小上限、延迟、主题容量、投递次数及保留模式等默认值。
  *
  * @author Nikita Koksharov
  *
@@ -87,30 +90,37 @@ public final class TopicConfigParams implements TopicConfig {
         return this;
     }
 
+    /** @return 可见性超时时长 */
     public Duration getVisibilityTimeout() {
         return visibilityTimeout;
     }
 
+    /** @return 消息存活时间 */
     public Duration getTtl() {
         return ttl;
     }
 
+    /** @return 单条消息最大字节数 */
     public int getMaxMessageSize() {
         return maxMessageSize;
     }
 
+    /** @return 消息消费前延迟 */
     public Duration getDelay() {
         return delay;
     }
 
+    /** @return 主题最大消息条数 */
     public int getMaxSize() {
         return maxSize;
     }
 
+    /** @return 最大投递次数 */
     public int getDeliveryLimit() {
         return deliveryLimit;
     }
 
+    /** @return 消息保留模式 */
     public RetentionMode getRetentionMode() {
         return retentionMode;
     }

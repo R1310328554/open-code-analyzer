@@ -18,6 +18,9 @@ package org.redisson.api.pubsub;
 import java.time.Duration;
 
 /**
+ * {@link SubscriptionConfig} 的可变参数实现类。
+ * <p>
+ * 持有订阅名称、死信主题、投递次数上限、可见性超时、消费起始位置及 ack 后保留等配置。
  *
  * @author Nikita Koksharov
  *
@@ -32,6 +35,11 @@ public class SubscriptionConfigParams implements SubscriptionConfig {
 
     private final String name;
 
+    /**
+     * 使用指定订阅名称构造配置参数。
+     *
+     * @param name 订阅名称，可为 {@code null} 表示自动生成
+     */
     public SubscriptionConfigParams(String name) {
         this.name = name;
     }
@@ -66,26 +74,32 @@ public class SubscriptionConfigParams implements SubscriptionConfig {
         return this;
     }
 
+    /** @return 死信主题名称 */
     public String getDeadLetterTopicName() {
         return deadLetterTopicName;
     }
 
+    /** @return 最大投递次数 */
     public int getDeliveryLimit() {
         return deliveryLimit;
     }
 
+    /** @return 消息可见性超时 */
     public Duration getVisibility() {
         return visibility;
     }
 
+    /** @return 消费起始位置 */
     public Position getPosition() {
         return position;
     }
 
+    /** @return 订阅名称 */
     public String getName() {
         return name;
     }
 
+    /** @return 是否在 ack 后保留消息 */
     public boolean isRetainAfterAck() {
         return retainAfterAck;
     }

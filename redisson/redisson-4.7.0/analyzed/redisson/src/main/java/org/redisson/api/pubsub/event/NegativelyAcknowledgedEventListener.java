@@ -18,9 +18,9 @@ package org.redisson.api.pubsub.event;
 import java.util.List;
 
 /**
- * Listener interface for negatively acknowledged subscription events.
- * This interface is triggered when messages
- * in a subscription are negatively acknowledged by consumers.
+ * 负向确认（nack）订阅事件的监听器接口。
+ * <p>
+ * 当订阅中的消息被消费者 nack 时触发。
  *
  * @author Nikita Koksharov
  *
@@ -28,10 +28,10 @@ import java.util.List;
 public interface NegativelyAcknowledgedEventListener extends ConsumerEventListener {
 
     /**
-     * Called when messages are negatively acknowledged by a consumer.
+     * 消费者 nack 消息时调用。
      *
-     * @param status The reason for the negative acknowledgment
-     * @param ids message ids
+     * @param status nack 原因
+     * @param ids 消息 ID 列表
      */
     void onNegativelyAcknowledged(NAckStatus status, List<String> ids);
 

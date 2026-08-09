@@ -18,7 +18,7 @@ package org.redisson.api.pubsub;
 import java.io.Serializable;
 
 /**
- * Reliable PubSub Topic statistics interface.
+ * 可靠 PubSub 主题的统计信息接口。
  *
  * @author Nikita Koksharov
  *
@@ -26,32 +26,32 @@ import java.io.Serializable;
 public interface TopicStatistics extends Serializable {
 
     /**
-     * Returns topic name.
+     * 返回主题名称。
      *
      * @return name
      */
     String getTopicName();
 
     /**
-     * Returns the number of delayed messages in this topic.
+     * 返回主题中延迟投递的消息数量。
      * <p>
-     * Delayed messages are those scheduled for future delivery and not yet available for consumption.
+     * 延迟消息已排期在未来投递，当前尚不可消费。
      *
-     * @return delayed messages count
+     * @return 延迟消息数
      */
     long getDelayedMessagesCount();
 
     /**
-     * Returns the number of existing subscriptions for this topic.
+     * 返回本主题下现有订阅的数量。
      *
-     * @return subscriptions count
+     * @return 订阅数量
      */
     long getSubscriptionsCount();
 
     /**
-     * Return the number of published messages by this topic.
+     * 返回本主题已发布的消息总数。
      *
-     * @return acknowledged messages count
+     * @return 已发布消息数
      */
     long getPublishedMessagesCount();
 

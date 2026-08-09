@@ -16,7 +16,7 @@
 package org.redisson.api.pubsub.event;
 
 /**
- * Base interface for all pubsub consumer event listeners.
+ * 所有 PubSub 消费者事件监听器的基接口。
  *
  * @author Nikita Koksharov
  *

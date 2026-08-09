@@ -18,7 +18,7 @@ package org.redisson.api.pubsub.event;
 import java.util.EventListener;
 
 /**
- * Base interface for all pubsub event listeners.
+ * 所有 PubSub 事件监听器的基接口。
  *
  * @author Nikita Koksharov
  *

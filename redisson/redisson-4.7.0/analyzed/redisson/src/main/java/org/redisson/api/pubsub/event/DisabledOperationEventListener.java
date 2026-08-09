@@ -18,8 +18,9 @@ package org.redisson.api.pubsub.event;
 import org.redisson.api.pubsub.PubSubOperation;
 
 /**
- * Listener interface for pubsub disabled operations events.
- * This interface is triggered when pubsub operation switched to disabled state.
+ * PubSub 操作被禁用事件的监听器接口。
+ * <p>
+ * 当指定主题的某项 PubSub 操作切换为禁用状态时触发。
  *
  * @author Nikita Koksharov
  *
@@ -27,9 +28,10 @@ import org.redisson.api.pubsub.PubSubOperation;
 public interface DisabledOperationEventListener extends PubSubEventListener {
 
     /**
-     * Called when pubsub operation switched to disabled state.
+     * PubSub 操作切换为禁用状态时调用。
      *
-     * @param topicName name of topic
+     * @param topicName 主题名称
+     * @param operation 被禁用的操作
      */
     void onDisabled(String topicName, PubSubOperation operation);
 
