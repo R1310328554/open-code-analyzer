@@ -16,8 +16,14 @@
  */
 package org.apache.rocketmq.client.impl;
 
+/**
+ * Producer 发送消息的 Remoting 通信模式。
+ */
 public enum CommunicationMode {
+    /** 同步发送：阻塞等待 Broker 响应。 */
     SYNC,
+    /** 异步发送：通过回调通知结果。 */
     ASYNC,
+    /** 单向发送：不等待也不关心响应。 */
     ONEWAY,
 }

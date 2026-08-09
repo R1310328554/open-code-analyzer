@@ -16,8 +16,14 @@
  */
 package org.apache.rocketmq.client.hook;
 
+/**
+ * 事务消息结束钩子：在 Producer 向 Broker 提交或回滚半消息后触发，
+ * 用于监控、审计事务消息生命周期。
+ */
 public interface EndTransactionHook {
+    /** 返回钩子唯一名称。 */
     String hookName();
 
+    /** 事务结束（提交/回滚）时回调。 */
     void endTransaction(final EndTransactionContext context);
 }

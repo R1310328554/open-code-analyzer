@@ -16,10 +16,17 @@
  */
 package org.apache.rocketmq.client.hook;
 
+/**
+ * 消费消息钩子：在 Push/Pull 消费者执行业务监听器前后插入自定义逻辑，
+ * 常用于监控、审计与消息轨迹上报。
+ */
 public interface ConsumeMessageHook {
+    /** 返回钩子唯一名称。 */
     String hookName();
 
+    /** 消费监听器执行前回调。 */
     void consumeMessageBefore(final ConsumeMessageContext context);
 
+    /** 消费监听器执行后回调（含成功/失败状态）。 */
     void consumeMessageAfter(final ConsumeMessageContext context);
 }

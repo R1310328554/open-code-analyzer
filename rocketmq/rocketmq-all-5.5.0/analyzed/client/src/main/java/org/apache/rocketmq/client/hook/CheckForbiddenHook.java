@@ -19,8 +19,14 @@ package org.apache.rocketmq.client.hook;
 
 import org.apache.rocketmq.client.exception.MQClientException;
 
+/**
+ * 发送禁发校验钩子：在 Producer 发送消息前检查是否允许发往指定 Topic/队列，
+ * 不满足策略时抛出 {@link MQClientException} 阻断发送。
+ */
 public interface CheckForbiddenHook {
+    /** 返回钩子唯一名称，用于注册与排查。 */
     String hookName();
 
+    /** 执行禁发校验；不允许发送时抛出 {@link MQClientException}。 */
     void checkForbidden(final CheckForbiddenContext context) throws MQClientException;
 }

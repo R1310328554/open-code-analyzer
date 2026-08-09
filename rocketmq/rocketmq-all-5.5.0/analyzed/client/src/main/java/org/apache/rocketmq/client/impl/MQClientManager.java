@@ -26,27 +26,40 @@ import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 客户端实例管理器（单例）：按 clientId 复用 {@link MQClientInstance} 与
+ * {@link ProduceAccumulator}，避免同一 JVM 内重复创建网络连接与后台线程。
+ */
 public class MQClientManager {
+    /** 日志记录器。 */
     private final static Logger log = LoggerFactory.getLogger(MQClientManager.class);
+    /** 全局单例。 */
     private static MQClientManager instance = new MQClientManager();
+    /** 新建 MQClientInstance 时的递增序号。 */
     private AtomicInteger factoryIndexGenerator = new AtomicInteger();
+    /** clientId → MQClientInstance 映射表。 */
     private ConcurrentMap<String/* clientId */, MQClientInstance> factoryTable =
         new ConcurrentHashMap<>();
+    /** clientId → 发送累加器映射表。 */
     private ConcurrentMap<String/* clientId */, ProduceAccumulator> accumulatorTable =
         new ConcurrentHashMap<String, ProduceAccumulator>();
 
 
+    /** 私有构造，禁止外部实例化。 */
     private MQClientManager() {
 
     }
 
+    /** 返回全局单例。 */
     public static MQClientManager getInstance() {
         return instance;
     }
 
+    /** 按配置获取或创建 MQClientInstance（无 RPC Hook）。 */
     public MQClientInstance getOrCreateMQClientInstance(final ClientConfig clientConfig) {
         return getOrCreateMQClientInstance(clientConfig, null);
     }
+    /** 按配置与 RPC Hook 获取或创建 MQClientInstance；同 clientId 复用已有实例。 */
     public MQClientInstance getOrCreateMQClientInstance(final ClientConfig clientConfig, RPCHook rpcHook) {
         String clientId = clientConfig.buildMQClientId();
         MQClientInstance instance = this.factoryTable.get(clientId);
@@ -65,6 +78,7 @@ public class MQClientManager {
 
         return instance;
     }
+    /** 按 clientId 获取或创建发送累加器。 */
     public ProduceAccumulator getOrCreateProduceAccumulator(final ClientConfig clientConfig) {
         String clientId = clientConfig.buildMQClientId();
         ProduceAccumulator accumulator = this.accumulatorTable.get(clientId);
@@ -82,10 +96,12 @@ public class MQClientManager {
         return accumulator;
     }
 
+    /** 从工厂表移除指定 clientId 的实例（关闭后清理）。 */
     public void removeClientFactory(final String clientId) {
         this.factoryTable.remove(clientId);
     }
 
+    /** 返回 MQClientInstance 工厂表（测试或监控用）。 */
     public ConcurrentMap<String, MQClientInstance> getFactoryTable() {
         return factoryTable;
     }

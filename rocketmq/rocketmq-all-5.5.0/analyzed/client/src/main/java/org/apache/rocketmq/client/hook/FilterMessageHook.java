@@ -16,8 +16,14 @@
  */
 package org.apache.rocketmq.client.hook;
 
+/**
+ * 消息过滤钩子：在消费监听器之前对拉取到的消息批次做二次过滤或改写，
+ * 常用于灰度、租户隔离等场景。
+ */
 public interface FilterMessageHook {
+    /** 返回钩子唯一名称。 */
     String hookName();
 
+    /** 执行过滤逻辑，可修改 context 中的 msgList。 */
     void filterMessage(final FilterMessageContext context);
 }

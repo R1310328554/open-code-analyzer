@@ -19,17 +19,25 @@ package org.apache.rocketmq.client.exception;
 
 import org.apache.rocketmq.common.UtilAll;
 
+/**
+ * 请求超时异常：客户端向 Broker/NameServer 发起 Remoting 请求未在时限内收到响应时抛出。
+ * 携带响应码与错误描述，便于定位网络或 Broker 侧超时。
+ */
 public class RequestTimeoutException extends Exception {
     private static final long serialVersionUID = -5758410930844185841L;
+    /** Remoting 响应码，未知时为 -1。 */
     private int responseCode;
+    /** 错误描述信息。 */
     private String errorMessage;
 
+    /** 以自定义消息与根因构造超时异常，响应码默认为 -1。 */
     public RequestTimeoutException(String errorMessage, Throwable cause) {
         super(errorMessage, cause);
         this.responseCode = -1;
         this.errorMessage = errorMessage;
     }
 
+    /** 以响应码与错误描述构造；异常消息格式为 CODE/DESC。 */
     public RequestTimeoutException(int responseCode, String errorMessage) {
         super("CODE: " + UtilAll.responseCode2String(responseCode) + "  DESC: "
             + errorMessage);
@@ -37,19 +45,23 @@ public class RequestTimeoutException extends Exception {
         this.errorMessage = errorMessage;
     }
 
+    /** 返回 Remoting 响应码。 */
     public int getResponseCode() {
         return responseCode;
     }
 
+    /** 设置响应码并返回自身，便于链式调用。 */
     public RequestTimeoutException setResponseCode(final int responseCode) {
         this.responseCode = responseCode;
         return this;
     }
 
+    /** 返回错误描述。 */
     public String getErrorMessage() {
         return errorMessage;
     }
 
+    /** 设置错误描述。 */
     public void setErrorMessage(final String errorMessage) {
         this.errorMessage = errorMessage;
     }

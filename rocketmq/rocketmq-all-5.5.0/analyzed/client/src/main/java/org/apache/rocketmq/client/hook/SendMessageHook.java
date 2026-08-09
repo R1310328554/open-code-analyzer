@@ -16,10 +16,17 @@
  */
 package org.apache.rocketmq.client.hook;
 
+/**
+ * 发送消息钩子：在 Producer 向 Broker 发送消息前后插入自定义逻辑，
+ * 常用于监控、限流、消息轨迹与审计。
+ */
 public interface SendMessageHook {
+    /** 返回钩子唯一名称。 */
     String hookName();
 
+    /** 发送请求发出前回调。 */
     void sendMessageBefore(final SendMessageContext context);
 
+    /** 发送完成后回调（含结果或异常）。 */
     void sendMessageAfter(final SendMessageContext context);
 }

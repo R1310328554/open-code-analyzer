@@ -57,34 +57,42 @@ import org.apache.rocketmq.remoting.protocol.header.ResetOffsetRequestHeader;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 客户端 Remoting 入站处理器：处理 Broker 主动下发的请求，
+ * 包括事务回查、消费组变更通知、Offset 重置、Request-Reply 响应等。
+ */
 public class ClientRemotingProcessor implements NettyRequestProcessor {
+    /** 日志记录器。 */
     private final Logger logger = LoggerFactory.getLogger(ClientRemotingProcessor.class);
+    /** 所属 {@link MQClientInstance} 工厂。 */
     private final MQClientInstance mqClientFactory;
 
+    /** 绑定客户端实例。 */
     public ClientRemotingProcessor(final MQClientInstance mqClientFactory) {
         this.mqClientFactory = mqClientFactory;
     }
 
+    /** 按请求码分发到对应处理方法。 */
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         switch (request.getCode()) {
-            case RequestCode.CHECK_TRANSACTION_STATE:
+            case RequestCode.CHECK_TRANSACTION_STATE: // 事务状态回查
                 return this.checkTransactionState(ctx, request);
-            case RequestCode.NOTIFY_CONSUMER_IDS_CHANGED:
+            case RequestCode.NOTIFY_CONSUMER_IDS_CHANGED: // 消费实例列表变更
                 return this.notifyConsumerIdsChanged(ctx, request);
-            case RequestCode.RESET_CONSUMER_CLIENT_OFFSET:
+            case RequestCode.RESET_CONSUMER_CLIENT_OFFSET: // 重置消费位点
                 return this.resetOffset(ctx, request);
-            case RequestCode.GET_CONSUMER_STATUS_FROM_CLIENT:
+            case RequestCode.GET_CONSUMER_STATUS_FROM_CLIENT: // 查询消费进度（已废弃）
                 return this.getConsumeStatus(ctx, request);
 
-            case RequestCode.GET_CONSUMER_RUNNING_INFO:
+            case RequestCode.GET_CONSUMER_RUNNING_INFO: // 获取消费者运行信息
                 return this.getConsumerRunningInfo(ctx, request);
 
-            case RequestCode.CONSUME_MESSAGE_DIRECTLY:
+            case RequestCode.CONSUME_MESSAGE_DIRECTLY: // 直接消费单条消息（运维）
                 return this.consumeMessageDirectly(ctx, request);
 
-            case RequestCode.PUSH_REPLY_MESSAGE_TO_CLIENT:
+            case RequestCode.PUSH_REPLY_MESSAGE_TO_CLIENT: // Request-Reply 响应推送
                 return this.receiveReplyMessage(ctx, request);
             default:
                 break;
@@ -92,11 +100,13 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return null;
     }
 
+    /** 是否拒绝处理新请求；客户端始终返回 false。 */
     @Override
     public boolean rejectRequest() {
         return false;
     }
 
+    /** 处理 Broker 发起的事务状态回查，委托对应 Producer 执行本地事务检查。 */
     public RemotingCommand checkTransactionState(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final CheckTransactionStateRequestHeader requestHeader =
@@ -131,6 +141,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return null;
     }
 
+    /** 消费组在线实例变更时触发立即 Rebalance。 */
     public RemotingCommand notifyConsumerIdsChanged(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         try {
@@ -146,6 +157,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return null;
     }
 
+    /** 按 Broker 指令重置指定 Topic/Group 的消费位点。 */
     public RemotingCommand resetOffset(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final ResetOffsetRequestHeader requestHeader =
@@ -162,6 +174,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return null;
     }
 
+    /** 查询消费进度（已废弃，保留兼容）。 */
     @Deprecated
     public RemotingCommand getConsumeStatus(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
@@ -177,6 +190,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 返回消费者运行快照，可选附带 JVM 线程栈。 */
     private RemotingCommand getConsumerRunningInfo(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -201,6 +215,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 运维场景：绕过正常拉取流程直接消费单条消息。 */
     private RemotingCommand consumeMessageDirectly(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -224,6 +239,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 接收 Broker 推送的 Request-Reply 响应消息并匹配等待中的 Future。 */
     private RemotingCommand receiveReplyMessage(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
 
@@ -275,6 +291,7 @@ public class ClientRemotingProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 按 correlationId 将回复消息交给对应的 {@link RequestResponseFuture}。 */
     private void processReplyMessage(MessageExt replyMsg) {
         final String correlationId = replyMsg.getUserProperty(MessageConst.PROPERTY_CORRELATION_ID);
         final RequestResponseFuture requestResponseFuture = RequestFutureHolder.getInstance().getRequestFutureTable().get(correlationId);
