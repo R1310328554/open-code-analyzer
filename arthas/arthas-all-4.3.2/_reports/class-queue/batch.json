@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:00:38Z",
-  "files": [
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/DefaultMcpStreamableServerSessionFactory.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/EventStore.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/HttpHeaders.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpError.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpSchema.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpServerTransport.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpServerTransportProvider.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpSession.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpStatelessServerTransport.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpStreamableServerSession.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpStreamableServerTransport.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpStreamableServerTransportProvider.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/McpTransport.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/MissingMcpTransportSession.java",
-    "arthas-mcp-server/src/main/java/com/taobao/arthas/mcp/server/protocol/spec/ProtocolVersions.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 735,
-  "done": 45
+  "done": 60
 }
