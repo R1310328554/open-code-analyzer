@@ -34,8 +34,13 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * setCommitLogReadAheadMode 子命令：设置 CommitLog 文件的 read-ahead 预读模式。
+ */
 public class CommitLogSetReadAheadSubCommand implements SubCommand {
+    /** madvise 随机读模式（MADV_RANDOM）。 */
     private static final String MADV_RANDOM = "1";
+    /** madvise 默认顺序读模式（MADV_NORMAL）。 */
     private static final String MADV_NORMAL = "0";
     @Override
     public String commandName() {
@@ -43,21 +48,22 @@ public class CommitLogSetReadAheadSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Set read ahead mode for all commitlog files.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "set which broker");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "set which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("m", "commitLogReadAheadMode", true, "set the CommitLog read ahead mode; 0 is default, 1 random read");
+        opt = new Option("m", "commitLogReadAheadMode", true, "CommitLog 预读模式：0 默认顺序读，1 随机读");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -65,6 +71,7 @@ public class CommitLogSetReadAheadSubCommand implements SubCommand {
     }
 
     @Override
+    /** 校验模式参数并对指定 Broker 或集群设置 CommitLog 预读策略。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook)
         throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -83,6 +90,7 @@ public class CommitLogSetReadAheadSubCommand implements SubCommand {
             } else if (commandLine.hasOption('c')) {
                 String clusterName = commandLine.getOptionValue('c').trim();
                 defaultMQAdminExt.start();
+                // 集群模式：分别对 Master 及其 Slave 设置预读模式
                 Map<String, List<String>> masterAndSlaveMap = CommandUtil.fetchMasterAndSlaveDistinguish(defaultMQAdminExt, clusterName);
                 for (String masterAddr : masterAndSlaveMap.keySet()) {
                     setAndPrint(defaultMQAdminExt, String.format("============Master: %s============\n", masterAddr), masterAddr, mode);
@@ -98,6 +106,7 @@ public class CommitLogSetReadAheadSubCommand implements SubCommand {
         }
     }
 
+    /** 调用远程接口设置预读模式并打印结果。 */
     protected void setAndPrint(final MQAdminExt defaultMQAdminExt, final String printPrefix, final String addr, final String mode)
         throws InterruptedException, RemotingConnectException, UnsupportedEncodingException, RemotingTimeoutException, MQBrokerException, RemotingSendRequestException {
         System.out.print(" " + printPrefix);

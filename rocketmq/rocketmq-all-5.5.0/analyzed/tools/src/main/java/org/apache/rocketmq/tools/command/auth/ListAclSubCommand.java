@@ -32,8 +32,12 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * listAcl 子命令：列出指定 Broker 或集群上的 ACL 规则。
+ */
 public class ListAclSubCommand implements SubCommand {
 
+    /** ACL 列表表格输出格式。 */
     private static final String FORMAT = "%-16s  %-10s  %-22s  %-20s  %-24s  %-10s%n";
 
     @Override
@@ -42,6 +46,7 @@ public class ListAclSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "List acl from cluster.";
     }
@@ -50,20 +55,20 @@ public class ListAclSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("b", "brokerAddr", true, "list acl for which broker.");
+        Option opt = new Option("b", "brokerAddr", true, "查询目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "list acl for specified cluster.");
+        opt = new Option("c", "clusterName", true, "查询目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("s", "subject", true, "the subject of acl to filter.");
+        opt = new Option("s", "subject", true, "按 ACL 主体过滤（可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("r", "resource", true, "the resource of acl to filter.");
+        opt = new Option("r", "resource", true, "按 ACL 资源过滤（可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -71,6 +76,7 @@ public class ListAclSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取 ACL 列表并以表格形式打印全部策略条目。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -117,6 +123,7 @@ public class ListAclSubCommand implements SubCommand {
         }
     }
 
+    /** 格式化输出 ACL 列表及其策略条目。 */
     private void printAcl(List<AclInfo> acls) {
         System.out.printf(FORMAT, "#Subject", "#PolicyType", "#Resource", "#Actions", "#SourceIp", "#Decision");
         acls.forEach(acl -> {

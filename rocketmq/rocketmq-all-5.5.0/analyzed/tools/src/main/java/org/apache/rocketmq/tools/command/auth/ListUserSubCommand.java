@@ -32,8 +32,12 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * listUser 子命令：列出指定 Broker 或集群上的用户账户。
+ */
 public class ListUserSubCommand implements SubCommand {
 
+    /** 用户列表表格输出格式。 */
     private static final String FORMAT = "%-16s  %-22s  %-22s  %-22s%n";
 
     @Override
@@ -42,6 +46,7 @@ public class ListUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "List user from cluster.";
     }
@@ -50,16 +55,16 @@ public class ListUserSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("b", "brokerAddr", true, "list user for which broker");
+        Option opt = new Option("b", "brokerAddr", true, "查询目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "list user for specified cluster");
+        opt = new Option("c", "clusterName", true, "查询目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("f", "filter", true, "the filter to list users");
+        opt = new Option("f", "filter", true, "用户名过滤条件（可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -67,6 +72,7 @@ public class ListUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取用户列表并以表格形式打印。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -99,6 +105,7 @@ public class ListUserSubCommand implements SubCommand {
                     List<UserInfo> userInfos = defaultMQAdminExt.listUser(masterAddr, filter);
                     if (CollectionUtils.isNotEmpty(userInfos)) {
                         printUsers(userInfos);
+                        // 集群模式：首个有数据的 Master 即返回
                         System.out.printf("get user from %s success.%n", masterAddr);
                         break;
                     }
@@ -114,6 +121,7 @@ public class ListUserSubCommand implements SubCommand {
         }
     }
 
+    /** 格式化输出用户列表。 */
     private void printUsers(List<UserInfo> users) {
         System.out.printf(FORMAT, "#UserName", "#Password", "#UserType", "#UserStatus");
         users.forEach(user -> System.out.printf(FORMAT, user.getUsername(), user.getPassword(), user.getUserType(), user.getUserStatus()));

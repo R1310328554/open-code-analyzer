@@ -25,6 +25,9 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * cleanUnusedTopic 子命令：清理 Broker 上未被引用的 Topic 数据。
+ */
 public class CleanUnusedTopicCommand implements SubCommand {
 
     @Override
@@ -33,17 +36,18 @@ public class CleanUnusedTopicCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Clean unused topic on broker.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "Broker address");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "cluster name");
+        opt = new Option("c", "cluster", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -51,6 +55,7 @@ public class CleanUnusedTopicCommand implements SubCommand {
     }
 
     @Override
+    /** 触发 Broker 清理无用 Topic 并输出 success/false。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

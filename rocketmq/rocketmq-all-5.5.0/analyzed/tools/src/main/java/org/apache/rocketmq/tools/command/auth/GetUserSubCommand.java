@@ -31,8 +31,12 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getUser 子命令：查询指定 Broker 或集群上的用户账户信息。
+ */
 public class GetUserSubCommand implements SubCommand {
 
+    /** 用户信息表格输出格式。 */
     private static final String FORMAT = "%-16s  %-22s  %-22s  %-22s%n";
 
     @Override
@@ -41,6 +45,7 @@ public class GetUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get user from cluster.";
     }
@@ -49,16 +54,16 @@ public class GetUserSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("b", "brokerAddr", true, "get user for which broker");
+        Option opt = new Option("b", "brokerAddr", true, "查询目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "get user for specified cluster");
+        opt = new Option("c", "clusterName", true, "查询目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("u", "username", true, "the username of user to get");
+        opt = new Option("u", "username", true, "待查询的用户名（可选）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -66,6 +71,7 @@ public class GetUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取用户信息并以表格形式打印。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -94,6 +100,7 @@ public class GetUserSubCommand implements SubCommand {
                 if (CollectionUtils.isEmpty(masterSet)) {
                     throw new SubCommandException(this.getClass().getSimpleName() + " command failed, there is no broker in cluster.");
                 }
+                // 集群模式：遍历 Master 直到找到匹配用户
                 for (String masterAddr : masterSet) {
                     UserInfo userInfo = defaultMQAdminExt.getUser(masterAddr, username);
                     if (userInfo != null) {
@@ -112,6 +119,7 @@ public class GetUserSubCommand implements SubCommand {
         }
     }
 
+    /** 格式化输出单个用户信息。 */
     private void printUser(UserInfo user) {
         if (user == null) {
             return;

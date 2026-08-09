@@ -29,6 +29,9 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * updateUser 子命令：更新指定集群或 Broker 上的用户账户信息。
+ */
 public class UpdateUserSubCommand implements SubCommand {
 
     @Override
@@ -37,6 +40,7 @@ public class UpdateUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Update user to cluster.";
     }
@@ -45,27 +49,27 @@ public class UpdateUserSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("c", "clusterName", true, "update user to which cluster");
+        Option opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "update user to which broker");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("u", "username", true, "the username of user to update.");
+        opt = new Option("u", "username", true, "待更新的用户名");
         opt.setRequired(true);
         options.addOption(opt);
 
         optionGroup = new OptionGroup();
-        opt = new Option("p", "password", true, "the password of user to update");
+        opt = new Option("p", "password", true, "新密码（与 -t/-s 三选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("t", "userType", true, "the userType of user to update");
+        opt = new Option("t", "userType", true, "用户类型（与 -p/-s 三选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("s", "userStatus", true, "the userStatus of user to update");
+        opt = new Option("s", "userStatus", true, "用户状态（与 -p/-t 三选一）");
         optionGroup.addOption(opt);
         optionGroup.setRequired(true);
 
@@ -75,6 +79,7 @@ public class UpdateUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并在目标 Broker 上调用 updateUser。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -99,6 +104,7 @@ public class UpdateUserSubCommand implements SubCommand {
                 String clusterName = commandLine.getOptionValue('c').trim();
 
                 defaultMQAdminExt.start();
+                // 集群模式：遍历主从 Broker 逐一更新用户
                 Set<String> brokerAddrSet =
                     CommandUtil.fetchMasterAndSlaveAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String addr : brokerAddrSet) {

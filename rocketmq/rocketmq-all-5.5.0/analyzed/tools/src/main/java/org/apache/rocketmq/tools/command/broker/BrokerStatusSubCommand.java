@@ -35,6 +35,9 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * brokerStatus 子命令：查询 Broker 运行时状态指标（KV 键值对）。
+ */
 public class BrokerStatusSubCommand implements SubCommand {
 
     @Override
@@ -43,6 +46,7 @@ public class BrokerStatusSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Fetch broker runtime status data.";
     }
@@ -50,10 +54,10 @@ public class BrokerStatusSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
-        Option opt = new Option("b", "brokerAddr", true, "Broker address");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "which cluster");
+        opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
@@ -63,6 +67,7 @@ public class BrokerStatusSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取 Broker 运行时统计并按字典序打印。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
 
@@ -76,6 +81,7 @@ public class BrokerStatusSubCommand implements SubCommand {
             if (brokerAddr != null) {
                 printBrokerRuntimeStats(defaultMQAdminExt, brokerAddr, false);
             } else if (clusterName != null) {
+                // 集群模式：遍历主从 Broker 分别打印运行时状态
                 Set<String> masterSet =
                     CommandUtil.fetchMasterAndSlaveAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String ba : masterSet) {
@@ -94,6 +100,7 @@ public class BrokerStatusSubCommand implements SubCommand {
         }
     }
 
+    /** 拉取并格式化输出 Broker 运行时 KV 指标。 */
     public void printBrokerRuntimeStats(final DefaultMQAdminExt defaultMQAdminExt, final String brokerAddr,
         final boolean printBroker) throws InterruptedException, MQBrokerException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException {
         KVTable kvTable = defaultMQAdminExt.fetchBrokerRuntimeStats(brokerAddr);

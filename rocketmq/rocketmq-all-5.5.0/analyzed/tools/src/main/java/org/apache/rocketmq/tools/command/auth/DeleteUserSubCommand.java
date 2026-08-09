@@ -29,6 +29,9 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * deleteUser 子命令：从指定集群或 Broker 删除用户账户。
+ */
 public class DeleteUserSubCommand implements SubCommand {
 
     @Override
@@ -37,6 +40,7 @@ public class DeleteUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Delete user from cluster.";
     }
@@ -45,16 +49,16 @@ public class DeleteUserSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("c", "clusterName", true, "delete acl from which cluster");
+        Option opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "delete user from which broker");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("u", "username", true, "the username of user to delete.");
+        opt = new Option("u", "username", true, "待删除的用户名");
         opt.setRequired(true);
         options.addOption(opt);
 
@@ -62,6 +66,7 @@ public class DeleteUserSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并在目标 Broker 上调用 deleteUser。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -83,6 +88,7 @@ public class DeleteUserSubCommand implements SubCommand {
                 String clusterName = StringUtils.trim(commandLine.getOptionValue('c'));
 
                 defaultMQAdminExt.start();
+                // 集群模式：遍历主从 Broker 逐一删除用户
                 Set<String> brokerAddrSet =
                     CommandUtil.fetchMasterAndSlaveAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String addr : brokerAddrSet) {

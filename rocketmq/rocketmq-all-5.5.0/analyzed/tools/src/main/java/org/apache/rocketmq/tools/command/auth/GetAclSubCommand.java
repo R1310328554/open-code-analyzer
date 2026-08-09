@@ -32,8 +32,12 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getAcl 子命令：查询指定 Broker 或集群上的 ACL 规则详情。
+ */
 public class GetAclSubCommand implements SubCommand {
 
+    /** ACL 策略表格输出格式。 */
     private static final String FORMAT = "%-16s  %-10s  %-22s  %-20s  %-24s  %-10s%n";
 
     @Override
@@ -42,6 +46,7 @@ public class GetAclSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get acl from cluster.";
     }
@@ -50,22 +55,23 @@ public class GetAclSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("b", "brokerAddr", true, "get acl for which broker");
+        Option opt = new Option("b", "brokerAddr", true, "查询目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("c", "clusterName", true, "get acl for specified cluster");
+        opt = new Option("c", "clusterName", true, "查询目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("s", "subject", true, "the subject of acl to get");
+        opt = new Option("s", "subject", true, "ACL 主体过滤（可选）");
         options.addOption(opt);
 
         return options;
     }
 
     @Override
+    /** 拉取 ACL 信息并以表格形式打印策略条目。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -89,6 +95,7 @@ public class GetAclSubCommand implements SubCommand {
 
                 defaultMQAdminExt.start();
 
+                // 集群模式：仅查询各 Master Broker 上的 ACL
                 Set<String> masterSet =
                     CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
                 if (CollectionUtils.isEmpty(masterSet)) {
@@ -111,6 +118,7 @@ public class GetAclSubCommand implements SubCommand {
         }
     }
 
+    /** 格式化输出单条 ACL 及其策略条目。 */
     private void printAcl(AclInfo acl) {
         if (acl == null) {
             return;

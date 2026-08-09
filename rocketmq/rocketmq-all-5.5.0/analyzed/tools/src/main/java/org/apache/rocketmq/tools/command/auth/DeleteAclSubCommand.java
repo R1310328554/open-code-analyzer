@@ -29,6 +29,9 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * deleteAcl 子命令：从指定集群或 Broker 删除 ACL 访问控制规则。
+ */
 public class DeleteAclSubCommand implements SubCommand {
 
     @Override
@@ -37,6 +40,7 @@ public class DeleteAclSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Delete acl from cluster.";
     }
@@ -45,20 +49,20 @@ public class DeleteAclSubCommand implements SubCommand {
     public Options buildCommandlineOptions(Options options) {
         OptionGroup optionGroup = new OptionGroup();
 
-        Option opt = new Option("c", "clusterName", true, "delete acl from which cluster");
+        Option opt = new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）");
         optionGroup.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "delete acl from which broker");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         optionGroup.addOption(opt);
 
         optionGroup.setRequired(true);
         options.addOptionGroup(optionGroup);
 
-        opt = new Option("s", "subject", true, "the subject of acl to delete.");
+        opt = new Option("s", "subject", true, "待删除 ACL 的主体（用户名或角色）");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("r", "resources", true, "the resources of acl to delete");
+        opt = new Option("r", "resources", true, "待删除 ACL 资源（可选，逗号分隔）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -66,6 +70,7 @@ public class DeleteAclSubCommand implements SubCommand {
     }
 
     @Override
+    /** 解析 CLI 参数并在目标 Broker 上调用 deleteAcl。 */
     public void execute(CommandLine commandLine, Options options,
         RPCHook rpcHook) throws SubCommandException {
 
@@ -94,6 +99,7 @@ public class DeleteAclSubCommand implements SubCommand {
                 String clusterName = StringUtils.trim(commandLine.getOptionValue('c'));
 
                 defaultMQAdminExt.start();
+                // 集群模式：遍历主从 Broker 逐一删除 ACL
                 Set<String> brokerAddrSet =
                     CommandUtil.fetchMasterAndSlaveAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String addr : brokerAddrSet) {

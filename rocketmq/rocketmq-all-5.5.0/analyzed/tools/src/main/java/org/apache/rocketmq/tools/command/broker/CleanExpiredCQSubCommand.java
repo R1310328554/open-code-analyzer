@@ -25,6 +25,9 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * cleanExpiredCQ 子命令：清理 Broker 上过期的 ConsumeQueue 文件。
+ */
 public class CleanExpiredCQSubCommand implements SubCommand {
 
     @Override
@@ -33,17 +36,18 @@ public class CleanExpiredCQSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Clean expired ConsumeQueue on broker.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "Broker address");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "clustername");
+        opt = new Option("c", "cluster", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -51,6 +55,7 @@ public class CleanExpiredCQSubCommand implements SubCommand {
     }
 
     @Override
+    /** 触发 Broker 清理过期 ConsumeQueue 并输出 success/false。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));

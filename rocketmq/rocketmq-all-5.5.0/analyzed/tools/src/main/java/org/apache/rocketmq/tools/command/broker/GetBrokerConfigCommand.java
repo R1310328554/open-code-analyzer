@@ -38,6 +38,9 @@ import org.apache.rocketmq.tools.command.CommandUtil;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * getBrokerConfig 子命令：查询 Broker 运行时配置项（Properties）。
+ */
 public class GetBrokerConfigCommand implements SubCommand {
     @Override
     public String commandName() {
@@ -45,6 +48,7 @@ public class GetBrokerConfigCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Get broker config by cluster or special broker.";
     }
@@ -52,8 +56,8 @@ public class GetBrokerConfigCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(final Options options) {
         OptionGroup group = new OptionGroup();
-        group.addOption(new Option("b", "brokerAddr", true, "get which broker"));
-        group.addOption(new Option("c", "clusterName", true, "get which cluster"));
+        group.addOption(new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）"));
+        group.addOption(new Option("c", "clusterName", true, "目标集群名（与 -b 二选一）"));
         group.setRequired(true);
         options.addOptionGroup(group);
 
@@ -61,6 +65,7 @@ public class GetBrokerConfigCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取 Broker 配置并按 key=value 格式打印。 */
     public void execute(final CommandLine commandLine, final Options options,
         final RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
@@ -81,6 +86,7 @@ public class GetBrokerConfigCommand implements SubCommand {
                 String clusterName = commandLine.getOptionValue('c').trim();
                 defaultMQAdminExt.start();
 
+                // 集群模式：分别拉取 Master 及其 Slave 的配置
                 Map<String, List<String>> masterAndSlaveMap
                     = CommandUtil.fetchMasterAndSlaveDistinguish(defaultMQAdminExt, clusterName);
 
@@ -118,6 +124,7 @@ public class GetBrokerConfigCommand implements SubCommand {
         }
     }
 
+    /** 拉取指定 Broker 配置并以 key=value 格式输出。 */
     protected void getAndPrint(final MQAdminExt defaultMQAdminExt, final String printPrefix, final String addr)
         throws InterruptedException, RemotingConnectException,
         UnsupportedEncodingException, RemotingTimeoutException,
@@ -125,6 +132,7 @@ public class GetBrokerConfigCommand implements SubCommand {
 
         System.out.print(printPrefix);
 
+        // 占位符表示该 Broker 无 Master，跳过
         if (addr.equals(CommandUtil.NO_MASTER_PLACEHOLDER)) {
             return;
         }

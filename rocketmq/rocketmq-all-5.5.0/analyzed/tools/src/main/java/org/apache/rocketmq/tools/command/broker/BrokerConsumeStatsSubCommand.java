@@ -34,10 +34,15 @@ import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
 import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
+/**
+ * brokerConsumeStats 子命令：拉取 Broker 上各消费组的消费进度与堆积差值。
+ */
 public class BrokerConsumeStatsSubCommand implements SubCommand {
 
+    /** 复用的 MQAdmin 客户端实例。 */
     private DefaultMQAdminExt defaultMQAdminExt;
 
+    /** 懒创建并启动 {@link DefaultMQAdminExt}，避免重复初始化。 */
     private DefaultMQAdminExt createMQAdminExt(RPCHook rpcHook) throws SubCommandException {
         if (this.defaultMQAdminExt != null) {
             return defaultMQAdminExt;
@@ -60,25 +65,26 @@ public class BrokerConsumeStatsSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Fetch broker consume stats data.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("b", "brokerAddr", true, "Broker address");
+        Option opt = new Option("b", "brokerAddr", true, "目标 Broker 地址");
         opt.setRequired(true);
         options.addOption(opt);
 
-        opt = new Option("t", "timeoutMillis", true, "request timeout Millis");
+        opt = new Option("t", "timeoutMillis", true, "请求超时时间（毫秒，默认 50000）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("l", "level", true, "threshold of print diff");
+        opt = new Option("l", "level", true, "仅输出堆积量不低于该阈值的队列");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("o", "order", true, "order topic");
+        opt = new Option("o", "order", true, "是否按顺序 Topic 统计（true/false）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -86,6 +92,7 @@ public class BrokerConsumeStatsSubCommand implements SubCommand {
     }
 
     @Override
+    /** 拉取消费统计并按 Topic/Group/队列维度打印偏移与堆积差。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         try {
             defaultMQAdminExt =  createMQAdminExt(rpcHook);
@@ -126,6 +133,7 @@ public class BrokerConsumeStatsSubCommand implements SubCommand {
                             OffsetWrapper offsetWrapper = consumeStats.getOffsetTable().get(mq);
                             long diff = offsetWrapper.getBrokerOffset() - offsetWrapper.getConsumerOffset();
 
+                            // 过滤低于阈值的堆积差
                             if (diff < diffLevel) {
                                 continue;
                             }

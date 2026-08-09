@@ -26,7 +26,7 @@ import org.apache.rocketmq.tools.command.SubCommand;
 import org.apache.rocketmq.tools.command.SubCommandException;
 
 /**
- * MQAdmin command which deletes expired CommitLog files
+ * deleteExpiredCommitLog 子命令：删除 Broker 上过期的 CommitLog 文件。
  */
 public class DeleteExpiredCommitLogSubCommand implements SubCommand {
 
@@ -36,21 +36,22 @@ public class DeleteExpiredCommitLogSubCommand implements SubCommand {
     }
 
     @Override
+    /** 返回命令描述。 */
     public String commandDesc() {
         return "Delete expired CommitLog files.";
     }
 
     @Override
     public Options buildCommandlineOptions(Options options) {
-        Option opt = new Option("n", "namesrvAddr", true, "Name server address");
+        Option opt = new Option("n", "namesrvAddr", true, "NameServer 地址（可选，覆盖默认配置）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("b", "brokerAddr", true, "Broker address");
+        opt = new Option("b", "brokerAddr", true, "目标 Broker 地址（与 -c 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("c", "cluster", true, "clustername");
+        opt = new Option("c", "cluster", true, "目标集群名（与 -b 二选一）");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -58,6 +59,7 @@ public class DeleteExpiredCommitLogSubCommand implements SubCommand {
     }
 
     @Override
+    /** 触发 Broker 删除过期 CommitLog 并输出 success/false。 */
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) throws SubCommandException {
         DefaultMQAdminExt defaultMQAdminExt = new DefaultMQAdminExt(rpcHook);
         defaultMQAdminExt.setInstanceName(Long.toString(System.currentTimeMillis()));
