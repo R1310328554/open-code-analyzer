@@ -20,10 +20,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * Event raised when an {@code ApplicationContext} gets restarted.
+ * 当 {@code ApplicationContext} 重启时引发的事件。
  *
- * <p>Note that {@code ContextRestartedEvent} is a specialization of
- * {@link ContextStartedEvent}.
+ * <p>注意：{@code ContextRestartedEvent} 是 {@link ContextStartedEvent} 的特化。
  *
  * @author Sam Brannen
  * @since 7.0
@@ -35,9 +34,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class ContextRestartedEvent extends ContextStartedEvent {
 
 	/**
-	 * Create a new {@code ContextRestartedEvent}.
-	 * @param source the {@code ApplicationContext} that has been restarted
-	 * (must not be {@code null})
+	 * 创建新的 {@code ContextRestartedEvent}。
+	 * @param source 已重启的 {@code ApplicationContext}
+	 * （不得为 {@code null}）
 	 */
 	public ContextRestartedEvent(ApplicationContext source) {
 		super(source);

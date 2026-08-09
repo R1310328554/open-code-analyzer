@@ -28,58 +28,45 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.core.annotation.AliasFor;
 
 /**
- * Annotation that marks a method as a listener for application events.
+ * 将方法标记为应用事件监听器的注解。
  *
- * <p>If an annotated method supports a single event type, the method may
- * declare a single parameter that reflects the event type to listen to.
- * If an annotated method supports multiple event types, this annotation
- * may refer to one or more supported event types using the {@code classes}
- * attribute. See the {@link #classes} javadoc for further details.
+ * <p>若标注方法仅支持单一事件类型，可声明一个反映待监听事件类型的参数。
+ * 若标注方法支持多种事件类型，可通过 {@code classes} 属性引用一种或多种支持的事件类型。
+ * 详见 {@link #classes} 的 Javadoc。
  *
- * <p>Events can be {@link ApplicationEvent} instances as well as arbitrary
- * objects.
+ * <p>事件可以是 {@link ApplicationEvent} 实例，也可以是任意对象。
  *
- * <p>Processing of {@code @EventListener} annotations is performed via
- * the internal {@link EventListenerMethodProcessor} bean which gets
- * registered automatically when using Java config or manually via the
- * {@code <context:annotation-config/>} or {@code <context:component-scan/>}
- * element when using XML config.
+ * <p>{@code @EventListener} 注解的处理由内部 {@link EventListenerMethodProcessor} Bean 执行，
+ * 使用 Java 配置时会自动注册；使用 XML 配置时需通过 {@code <context:annotation-config/>}
+ * 或 {@code <context:component-scan/>} 元素手动启用。
  *
- * <p>Annotated methods may have a non-{@code void} return type. When they
- * do, the result of the method invocation is sent as a new event. If the
- * return type is either an array or a collection, each element is sent
- * as a new individual event.
+ * <p>标注方法的返回类型可以不是 {@code void}。此时，方法调用的结果将作为新事件发布。
+ * 若返回类型为数组或集合，则每个元素作为独立的新事件发布。
  *
- * <p>This annotation may be used as a <em>meta-annotation</em> to create custom
- * <em>composed annotations</em>.
+ * <p>本注解可作为<em>元注解</em>，用于创建自定义<em>组合注解</em>。
  *
- * <h3>Exception Handling</h3>
- * <p>While it is possible for an event listener to declare that it
- * throws arbitrary exception types, any checked exceptions thrown
- * from an event listener will be wrapped in an
- * {@link java.lang.reflect.UndeclaredThrowableException UndeclaredThrowableException}
- * since the event publisher can only handle runtime exceptions.
+ * <h3>异常处理</h3>
+ * <p>事件监听器可声明抛出任意异常类型，但监听器抛出的受检异常会被包装为
+ * {@link java.lang.reflect.UndeclaredThrowableException UndeclaredThrowableException}，
+ * 因为事件发布器只能处理运行时异常。
  *
- * <h3>Asynchronous Listeners</h3>
- * <p>If you want a particular listener to process events asynchronously, you
- * can use Spring's {@link org.springframework.scheduling.annotation.Async @Async}
- * support, but be aware of the following limitations when using asynchronous events.
+ * <h3>异步监听器</h3>
+ * <p>若希望特定监听器异步处理事件，可使用 Spring 的
+ * {@link org.springframework.scheduling.annotation.Async @Async} 支持，
+ * 但使用异步事件时需注意以下限制。
  *
  * <ul>
- * <li>If an asynchronous event listener throws an exception, it is not propagated
- * to the caller. See {@link org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler
- * AsyncUncaughtExceptionHandler} for more details.</li>
- * <li>Asynchronous event listener methods cannot publish a subsequent event by returning a
- * value. If you need to publish another event as the result of the processing, inject an
- * {@link org.springframework.context.ApplicationEventPublisher ApplicationEventPublisher}
- * to publish the event manually.</li>
+ * <li>若异步事件监听器抛出异常，异常不会传播给调用方。详见
+ * {@link org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler
+ * AsyncUncaughtExceptionHandler}。</li>
+ * <li>异步事件监听器方法不能通过返回值发布后续事件。若需将处理结果作为事件发布，
+ * 请注入 {@link org.springframework.context.ApplicationEventPublisher ApplicationEventPublisher}
+ * 手动发布。</li>
  * </ul>
  *
- * <h3>Ordering Listeners</h3>
- * <p>It is also possible to define the order in which listeners for a
- * certain event are to be invoked. To do so, add Spring's common
- * {@link org.springframework.core.annotation.Order @Order} annotation
- * alongside this event listener annotation.
+ * <h3>监听器排序</h3>
+ * <p>也可定义某类事件的监听器调用顺序。为此，在本事件监听器注解旁添加 Spring 通用的
+ * {@link org.springframework.core.annotation.Order @Order} 注解即可。
  *
  * @author Stephane Nicoll
  * @author Sam Brannen
@@ -94,54 +81,45 @@ import org.springframework.core.annotation.AliasFor;
 public @interface EventListener {
 
 	/**
-	 * Alias for {@link #classes}.
+	 * {@link #classes} 的别名。
 	 */
 	@AliasFor("classes")
 	Class<?>[] value() default {};
 
 	/**
-	 * The event classes that this listener handles.
-	 * <p>The annotated method may optionally accept a single parameter
-	 * of the given event class, or of a common base class or interface
-	 * for all given event classes.
+	 * 本监听器处理的事件类型。
+	 * <p>标注方法可（可选）接受给定事件类型的一个参数，
+	 * 或接受所有给定事件类型的公共基类/接口参数。
 	 */
 	@AliasFor("value")
 	Class<?>[] classes() default {};
 
 	/**
-	 * Spring Expression Language (SpEL) expression used for making the event
-	 * handling conditional.
-	 * <p>The event will be handled if the expression evaluates to boolean
-	 * {@code true} or one of the following strings: {@code "true"}, {@code "on"},
-	 * {@code "yes"}, or {@code "1"}.
-	 * <p>The default expression is {@code ""}, meaning the event is always handled.
-	 * <p>The SpEL expression will be evaluated against a dedicated context that
-	 * provides the following metadata:
+	 * 用于使事件处理具备条件的 Spring 表达式语言（SpEL）表达式。
+	 * <p>当表达式求值为布尔 {@code true}，或以下字符串之一时，将处理该事件：
+	 * {@code "true"}、{@code "on"}、{@code "yes"} 或 {@code "1"}。
+	 * <p>默认表达式为 {@code ""}，表示始终处理该事件。
+	 * <p>SpEL 表达式将在专用上下文中求值，提供以下元数据：
 	 * <ul>
-	 * <li>{@code #root.event} or {@code event} for references to the
-	 * {@link ApplicationEvent}</li>
-	 * <li>{@code #root.args} or {@code args} for references to the method
-	 * arguments array</li>
-	 * <li>Method arguments can be accessed by index. For example, the first
-	 * argument can be accessed via {@code #root.args[0]}, {@code args[0]},
-	 * {@code #a0}, or {@code #p0}.</li>
-	 * <li>Method arguments can be accessed by name (with a preceding hash tag)
-	 * if parameter names are available in the compiled byte code.</li>
+	 * <li>{@code #root.event} 或 {@code event}：引用 {@link ApplicationEvent}</li>
+	 * <li>{@code #root.args} 或 {@code args}：引用方法参数数组</li>
+	 * <li>方法参数可按索引访问。例如，第一个参数可通过
+	 * {@code #root.args[0]}、{@code args[0]}、{@code #a0} 或 {@code #p0} 访问。</li>
+	 * <li>若编译字节码中可用参数名，可按名称（前缀为井号）访问方法参数。</li>
 	 * </ul>
 	 */
 	String condition() default "";
 
 	/**
-	 * Whether the event should be handled by default, without any special
-	 * pre-conditions such as an active transaction. Declared here for overriding
-	 * in composed annotations such as {@code TransactionalEventListener}.
+	 * 事件是否默认处理，无需特殊前置条件（如活动事务）。
+	 * 在此声明以便在 {@code TransactionalEventListener} 等组合注解中覆盖。
 	 * @since 6.2
 	 */
 	boolean defaultExecution() default true;
 
 	/**
-	 * An optional identifier for the listener, defaulting to the fully-qualified
-	 * signature of the declaring method (for example, "mypackage.MyClass.myMethod()").
+	 * 监听器的可选标识符，默认为声明方法的完全限定签名
+	 * （例如 "mypackage.MyClass.myMethod()"）。
 	 * @since 5.3.5
 	 * @see SmartApplicationListener#getListenerId()
 	 * @see ApplicationEventMulticaster#removeApplicationListeners(Predicate)

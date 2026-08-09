@@ -31,8 +31,8 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 /**
- * Utility class for handling SpEL expression parsing for application events.
- * <p>Meant to be used as a reusable, thread-safe component.
+ * 处理应用事件 SpEL 表达式解析的工具类。
+ * <p>设计为可复用、线程安全的组件。
  *
  * @author Stephane Nicoll
  * @since 4.2
@@ -49,14 +49,16 @@ class EventExpressionEvaluator extends CachedExpressionEvaluator {
 	}
 
 	/**
-	 * Determine if the condition defined by the specified expression evaluates
-	 * to {@code true}.
+	 * 判断指定表达式定义的条件是否求值为 {@code true}。
 	 */
 	public boolean condition(String conditionExpression, ApplicationEvent event, Method targetMethod,
 			AnnotatedElementKey methodKey, @Nullable Object[] args) {
 
+		// 1. 构造 SpEL 根对象，封装事件与监听器方法参数
 		EventExpressionRootObject rootObject = new EventExpressionRootObject(event, args);
+		// 2. 基于根对象、目标方法与参数创建求值上下文
 		EvaluationContext evaluationContext = createEvaluationContext(rootObject, targetMethod, args);
+		// 3. 从缓存获取或解析条件表达式，并在上下文中求值为布尔值
 		return (Boolean.TRUE.equals(getExpression(this.conditionCache, methodKey, conditionExpression).getValue(
 				evaluationContext, Boolean.class)));
 	}
@@ -64,8 +66,10 @@ class EventExpressionEvaluator extends CachedExpressionEvaluator {
 	private EvaluationContext createEvaluationContext(EventExpressionRootObject rootObject,
 			Method method, @Nullable Object[] args) {
 
+		// 1. 创建基于方法的求值上下文，绑定根对象、方法与参数
 		MethodBasedEvaluationContext evaluationContext = new MethodBasedEvaluationContext(rootObject,
 				method, args, getParameterNameDiscoverer());
+		// 2. 将原始上下文的委托（如 Bean 解析器）应用到新上下文
 		this.originalEvaluationContext.applyDelegatesTo(evaluationContext);
 		return evaluationContext;
 	}

@@ -21,13 +21,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEvent;
 
 /**
- * Root object used during event listener SpEL expression evaluation.
+ * 事件监听器 SpEL 表达式求值期间使用的根对象。
  *
  * @author Stephane Nicoll
  * @author Sam Brannen
  * @since 4.2
- * @param event the application event
- * @param args the arguments supplied to the listener method
+ * @param event 应用事件
+ * @param args 传入监听器方法的参数
  * @see EventListener#condition()
  */
 record EventExpressionRootObject(ApplicationEvent event, @Nullable Object[] args) {
