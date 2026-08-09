@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:11:44Z",
-  "files": [
-    "redisson-micronaut/redisson-micronaut-30/src/main/java/org/redisson/micronaut/session/AttributesClearMessage.java",
-    "redisson-micronaut/redisson-micronaut-30/src/main/java/org/redisson/micronaut/session/AttributesPutAllMessage.java",
-    "redisson-micronaut/redisson-micronaut-30/src/main/java/org/redisson/micronaut/session/RedissonHttpSessionConfiguration.java",
-    "redisson-micronaut/redisson-micronaut-30/src/main/java/org/redisson/micronaut/session/RedissonSession.java",
-    "redisson-micronaut/redisson-micronaut-30/src/main/java/org/redisson/micronaut/session/RedissonSessionStore.java",
-    "redisson-micronaut/redisson-micronaut-30/src/main/java/org/redisson/micronaut/session/SessionCreatedMessage.java",
-    "redisson-micronaut/redisson-micronaut-30/src/main/java/org/redisson/micronaut/session/SessionDestroyedMessage.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/RedissonConfiguration.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/RedissonFactory.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/cache/BaseCacheConfiguration.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/cache/RedissonAsyncCache.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/cache/RedissonCacheConfiguration.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/cache/RedissonCacheNativeConfiguration.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/cache/RedissonSyncCache.java",
-    "redisson-micronaut/redisson-micronaut-40/src/main/java/org/redisson/micronaut/session/AttributeMessage.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2672,
-  "done": 135
+  "done": 150
 }
