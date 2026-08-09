@@ -75,25 +75,33 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Redisson connection
- * 
+ * 基于 Redisson 的 Spring Data Redis {@link RedisConnection} 实现。
+ * <p>将 Spring Data 键值/集合/事务/管道 API 映射为 Redisson 异步命令；
+ * 支持 MULTI/管道批处理、Pub/Sub 订阅与 Lua 脚本执行。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonConnection extends AbstractRedisConnection {
 
+    /** 连接是否已关闭。 */
     private boolean closed;
+    /** 底层 Redisson 客户端。 */
     protected final Redisson redisson;
 
+    /** 异步命令执行器（事务/管道时切换为 {@link CommandBatchService}）。 */
     CommandAsyncExecutor executorService;
+    /** Pub/Sub 订阅管理器。 */
     private RedissonSubscription subscription;
     
+    /** 绑定 Redisson 客户端并获取默认命令执行器。 */
     public RedissonConnection(RedissonClient redisson) {
         super();
         this.redisson = (Redisson) redisson;
         executorService = this.redisson.getCommandExecutor();
     }
 
+    /** 关闭连接；若处于 MULTI/管道模式则先 discard。 */
     @Override
     public void close() throws DataAccessException {
         super.close();
@@ -107,16 +115,19 @@ public class RedissonConnection extends AbstractRedisConnection {
         closed = true;
     }
     
+    /** 返回连接是否已关闭。 */
     @Override
     public boolean isClosed() {
         return closed;
     }
 
+    /** 返回底层 {@link Redisson} 客户端实例。 */
     @Override
     public Object getNativeConnection() {
         return redisson;
     }
 
+    /** 是否处于 MULTI 事务排队（REDIS_WRITE_ATOMIC 批处理）模式。 */
     @Override
     public boolean isQueueing() {
         if (executorService instanceof CommandBatchService) {
@@ -126,6 +137,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return false;
     }
 
+    /** 是否处于管道（IN_MEMORY）批处理模式。 */
     @Override
     public boolean isPipelined() {
         if (executorService instanceof CommandBatchService) {
@@ -143,6 +155,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return false;
     }
 
+    /** 开启管道批处理。 */
     @Override
     public void openPipeline() {
         BatchOptions options = BatchOptions.defaults()
@@ -150,6 +163,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         this.executorService = executorService.createCommandBatchService(options);
     }
 
+    /** 执行管道并返回各命令结果列表。 */
     @Override
     public List<Object> closePipeline() throws RedisPipelineException {
         if (isPipelined()) {
@@ -170,6 +184,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return Collections.emptyList();
     }
 
+    /** 执行原始 Redis 命令或集群节点命令。 */
     @Override
     public Object execute(String command, byte[]... args) {
         for (Method method : this.getClass().getDeclaredMethods()) {
@@ -220,11 +235,15 @@ public class RedissonConnection extends AbstractRedisConnection {
         return new RedisSystemException(ex.getMessage(), ex);
     }
     
+    /** 判断 key 是否存在。 */
+    // --- Redis key 命令 ---
+
     @Override
     public Boolean exists(byte[] key) {
         return read(key, StringCodec.INSTANCE, RedisCommands.EXISTS, key);
     }
     
+    /** 删除一个或多个 key。 */
     @Override
     public Long del(byte[]... keys) {
         return write(keys[0], LongCodec.INSTANCE, RedisCommands.DEL, Arrays.asList(keys).toArray());
@@ -232,6 +251,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", new DataTypeConvertor());
 
+    /** 返回 key 的 {@link DataType}。 */
     @Override
     public DataType type(byte[] key) {
         return read(key, StringCodec.INSTANCE, TYPE, key);
@@ -239,6 +259,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Set<byte[]>> KEYS = new RedisStrictCommand<Set<byte[]>>("KEYS", new SetReplayDecoder<byte[]>(ByteArrayCodec.INSTANCE.getValueDecoder()));
     
+    /** 按模式匹配返回 key 集合（慎用）。 */
     @Override
     public Set<byte[]> keys(byte[] pattern) {
         if (isQueueing()) {
@@ -253,6 +274,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return sync(new CompletableFutureWrapper<>(future));
     }
 
+    /** 增量 SCAN 迭代 key。 */
     @Override
     public Cursor<byte[]> scan(ScanOptions options) {
         return new ScanCursor<byte[]>(0, options) {
@@ -261,6 +283,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             private Iterator<MasterSlaveEntry> entries = executorService.getConnectionManager().getEntrySet().iterator();
             private MasterSlaveEntry entry = entries.next();
             
+            /** 集群模式 SCAN 实现。 */
             @Override
             protected ScanIteration<byte[]> doScan(long cursorId, ScanOptions options) {
                 if (isQueueing() || isPipelined()) {
@@ -304,6 +327,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }.open();
     }
 
+    /** 随机返回一个 key。 */
     @Override
     public byte[] randomKey() {
         if (isQueueing()) {
@@ -314,11 +338,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return sync(f);
     }
 
+    /** 重命名 key。 */
     @Override
     public void rename(byte[] oldName, byte[] newName) {
         write(oldName, StringCodec.INSTANCE, RedisCommands.RENAME, oldName, newName);
     }
 
+    /** 仅当新 key 不存在时重命名。 */
     @Override
     public Boolean renameNX(byte[] oldName, byte[] newName) {
         return write(oldName, StringCodec.INSTANCE, RedisCommands.RENAMENX, oldName, newName);
@@ -326,11 +352,13 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Boolean> EXPIRE = new RedisStrictCommand<Boolean>("EXPIRE", new BooleanReplayConvertor());
     
+    /** 设置 key 过期时间（秒）。 */
     @Override
     public Boolean expire(byte[] key, long seconds) {
         return write(key, StringCodec.INSTANCE, EXPIRE, key, seconds);
     }
 
+    /** 设置 key 过期时间（毫秒）。 */
     @Override
     public Boolean pExpire(byte[] key, long millis) {
         return write(key, StringCodec.INSTANCE, RedisCommands.PEXPIRE, key, millis);
@@ -338,21 +366,25 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Boolean> EXPIREAT = new RedisStrictCommand<Boolean>("EXPIREAT", new BooleanReplayConvertor());
     
+    /** 设置 key 过期 Unix 时间戳（秒）。 */
     @Override
     public Boolean expireAt(byte[] key, long unixTime) {
         return write(key, StringCodec.INSTANCE, EXPIREAT, key, unixTime);
     }
 
+    /** 设置 key 过期 Unix 时间戳（毫秒）。 */
     @Override
     public Boolean pExpireAt(byte[] key, long unixTimeInMillis) {
         return write(key, StringCodec.INSTANCE, RedisCommands.PEXPIREAT, key, unixTimeInMillis);
     }
 
+    /** 移除 key 的过期时间。 */
     @Override
     public Boolean persist(byte[] key) {
         return write(key, StringCodec.INSTANCE, RedisCommands.PERSIST, key);
     }
 
+    /** 将 key 移动到另一数据库。 */
     @Override
     public Boolean move(byte[] key, int dbIndex) {
         return write(key, StringCodec.INSTANCE, RedisCommands.MOVE, key, dbIndex);
@@ -360,6 +392,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> TTL = new RedisStrictCommand<Long>("TTL");
     
+    /** 返回 key 剩余生存时间（秒）。 */
     @Override
     public Long ttl(byte[] key) {
         return read(key, StringCodec.INSTANCE, TTL, key);
@@ -377,6 +410,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return syncFuture(f);
     }
 
+    /** 返回 key 剩余生存时间（秒）。 */
     @Override
     public Long ttl(byte[] key, TimeUnit timeUnit) {
         return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("TTL", new SecondsConvertor(timeUnit, TimeUnit.SECONDS) {
@@ -390,11 +424,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         }), key);
     }
 
+    /** 返回 key 剩余生存时间（毫秒）。 */
     @Override
     public Long pTtl(byte[] key) {
         return read(key, StringCodec.INSTANCE, RedisCommands.PTTL, key);
     }
 
+    /** 返回 key 剩余生存时间（毫秒）。 */
     @Override
     public Long pTtl(byte[] key, TimeUnit timeUnit) {
         return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("PTTL", new SecondsConvertor(timeUnit, TimeUnit.MILLISECONDS) {
@@ -408,6 +444,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }), key);
     }
 
+    /** 对列表/set 排序或 store 结果。 */
     @Override
     public List<byte[]> sort(byte[] key, SortParameters sortParams) {
         List<Object> params = new ArrayList<Object>();
@@ -450,6 +487,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Long> SORT_TO = new RedisCommand<Long>("SORT");
 
+    /** 对列表/set 排序或 store 结果。 */
     @Override
     public Long sort(byte[] key, SortParameters sortParams, byte[] storeKey) {
         List<Object> params = new ArrayList<Object>();
@@ -493,21 +531,25 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, SORT_TO, params.toArray());
     }
 
+    /** 序列化 key 值（DUMP）。 */
     @Override
     public byte[] dump(byte[] key) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, key);
     }
 
+    /** 从 DUMP 数据恢复 key。 */
     @Override
     public void restore(byte[] key, long ttlInMillis, byte[] serializedValue) {
         write(key, StringCodec.INSTANCE, RedisCommands.RESTORE, key, ttlInMillis, serializedValue);
     }
 
+    /** 获取字符串值。 */
     @Override
     public byte[] get(byte[] key) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.GET, key);
     }
 
+    /** 设置新值并返回旧值。 */
     @Override
     public byte[] getSet(byte[] key, byte[] value) {
         return write(key, ByteArrayCodec.INSTANCE, RedisCommands.GETSET, key, value);
@@ -515,16 +557,19 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<List<Object>> MGET = new RedisCommand<List<Object>>("MGET", new ObjectListReplayDecoder<Object>());
     
+    /** 批量 GET。 */
     @Override
     public List<byte[]> mGet(byte[]... keys) {
         return read(keys[0], ByteArrayCodec.INSTANCE, MGET, Arrays.asList(keys).toArray());
     }
 
+    /** 设置字符串值。 */
     @Override
     public void set(byte[] key, byte[] value) {
         write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value);
     }
 
+    /** 设置字符串值。 */
     @Override
     public void set(byte[] key, byte[] value, Expiration expiration, SetOption option) {
         if (expiration == null) {
@@ -552,6 +597,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
     }
 
+    /** 仅当 key 不存在时设置。 */
     @Override
     public Boolean setNX(byte[] key, byte[] value) {
         return write(key, StringCodec.INSTANCE, RedisCommands.SETNX, key, value);
@@ -559,16 +605,19 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     RedisCommand<Void> SETEX = new RedisCommand<Void>("SETEX", new VoidReplayConvertor());
     
+    /** 设置带秒级 TTL 的字符串。 */
     @Override
     public void setEx(byte[] key, long seconds, byte[] value) {
         write(key, StringCodec.INSTANCE, SETEX, key, seconds, value);
     }
 
+    /** 设置带毫秒级 TTL 的字符串。 */
     @Override
     public void pSetEx(byte[] key, long milliseconds, byte[] value) {
         write(key, StringCodec.INSTANCE, RedisCommands.PSETEX, key, milliseconds, value);
     }
 
+    /** 批量 SET。 */
     @Override
     public void mSet(Map<byte[], byte[]> tuple) {
         List<byte[]> params = convert(tuple);
@@ -584,27 +633,32 @@ public class RedissonConnection extends AbstractRedisConnection {
         return params;
     }
 
+    /** 批量 SET NX。 */
     @Override
     public Boolean mSetNX(Map<byte[], byte[]> tuple) {
         List<byte[]> params = convert(tuple);
         return write(tuple.keySet().iterator().next(), StringCodec.INSTANCE, RedisCommands.MSETNX, params.toArray());
     }
 
+    /** 字符串值自增 1。 */
     @Override
     public Long incr(byte[] key) {
         return write(key, StringCodec.INSTANCE, RedisCommands.INCR, key);
     }
 
+    /** 字符串值按增量自增。 */
     @Override
     public Long incrBy(byte[] key, long value) {
         return write(key, StringCodec.INSTANCE, RedisCommands.INCRBY, key, value);
     }
 
+    /** 字符串值按增量自增。 */
     @Override
     public Double incrBy(byte[] key, double value) {
         return write(key, StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, key, BigDecimal.valueOf(value).toPlainString());
     }
 
+    /** 字符串值自减 1。 */
     @Override
     public Long decr(byte[] key) {
         return write(key, StringCodec.INSTANCE, RedisCommands.DECR, key);
@@ -612,6 +666,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> DECRBY = new RedisStrictCommand<Long>("DECRBY");
     
+    /** 字符串值按增量自减。 */
     @Override
     public Long decrBy(byte[] key, long value) {
         return write(key, StringCodec.INSTANCE, DECRBY, key, value);
@@ -619,6 +674,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> APPEND = new RedisStrictCommand<Long>("APPEND");
     
+    /** 追加字符串。 */
     @Override
     public Long append(byte[] key, byte[] value) {
         return write(key, StringCodec.INSTANCE, APPEND, key, value);
@@ -626,6 +682,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Object> GETRANGE = new RedisCommand<Object>("GETRANGE");
 
+    /** 获取子串（GETRANGE）。 */
     @Override
     public byte[] getRange(byte[] key, long begin, long end) {
         return read(key, ByteArrayCodec.INSTANCE, GETRANGE, key, begin, end);
@@ -633,26 +690,31 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<Void> SETRANGE = new RedisCommand<Void>("SETRANGE", new VoidReplayConvertor());
 
+    /** 覆盖子串（SETRANGE）。 */
     @Override
     public void setRange(byte[] key, byte[] value, long offset) {
         write(key, ByteArrayCodec.INSTANCE, SETRANGE, key, offset, value);
     }
 
+    /** 获取位值。 */
     @Override
     public Boolean getBit(byte[] key, long offset) {
         return read(key, StringCodec.INSTANCE, RedisCommands.GETBIT, key, offset);
     }
 
+    /** 设置位值。 */
     @Override
     public Boolean setBit(byte[] key, long offset, boolean value) {
         return write(key, StringCodec.INSTANCE, RedisCommands.SETBIT, key, offset, value ? 1 : 0);
     }
 
+    /** 统计位为 1 的数量。 */
     @Override
     public Long bitCount(byte[] key) {
         return read(key, StringCodec.INSTANCE, RedisCommands.BITCOUNT, key);
     }
 
+    /** 统计位为 1 的数量。 */
     @Override
     public Long bitCount(byte[] key, long begin, long end) {
         return read(key, StringCodec.INSTANCE, RedisCommands.BITCOUNT, key, begin, end);
@@ -660,6 +722,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> BITOP = new RedisStrictCommand<Long>("BITOP");
     
+    /** 对多个 key 执行位运算。 */
     @Override
     public Long bitOp(BitOperation op, byte[] destination, byte[]... keys) {
         if (op == BitOperation.NOT && keys.length > 1) {
@@ -673,6 +736,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(keys[0], StringCodec.INSTANCE, BITOP, params.toArray());
     }
 
+    /** 返回字符串长度。 */
     @Override
     public Long strLen(byte[] key) {
         return read(key, StringCodec.INSTANCE, RedisCommands.STRLEN, key);
@@ -680,6 +744,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> RPUSH = new RedisStrictCommand<Long>("RPUSH");
     
+    /** 从列表右侧入队。 */
     @Override
     public Long rPush(byte[] key, byte[]... values) {
         List<Object> args = new ArrayList<Object>(values.length + 1);
@@ -690,6 +755,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Integer> LPUSH = new RedisStrictCommand<Integer>("LPUSH");
     
+    /** 从列表左侧入队。 */
     @Override
     public Long lPush(byte[] key, byte[]... values) {
         List<Object> args = new ArrayList<Object>(values.length + 1);
@@ -700,6 +766,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Integer> RPUSHX = new RedisStrictCommand<Integer>("RPUSHX");
     
+    /** 仅当列表存在时从右侧入队。 */
     @Override
     public Long rPushX(byte[] key, byte[] value) {
         return write(key, StringCodec.INSTANCE, RPUSHX, key, value);
@@ -707,6 +774,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Integer> LPUSHX = new RedisStrictCommand<Integer>("LPUSHX");
     
+    /** 仅当列表存在时从左侧入队。 */
     @Override
     public Long lPushX(byte[] key, byte[] value) {
         return write(key, StringCodec.INSTANCE, LPUSHX, key, value);
@@ -714,21 +782,25 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> LLEN = new RedisStrictCommand<Long>("LLEN");
     
+    /** 返回列表长度。 */
     @Override
     public Long lLen(byte[] key) {
         return read(key, StringCodec.INSTANCE, LLEN, key);
     }
 
+    /** 返回列表指定区间元素。 */
     @Override
     public List<byte[]> lRange(byte[] key, long start, long end) {
         return read(key, ByteArrayCodec.INSTANCE, LRANGE, key, start, end);
     }
 
+    /** 保留列表指定区间，其余删除。 */
     @Override
     public void lTrim(byte[] key, long start, long end) {
         write(key, StringCodec.INSTANCE, RedisCommands.LTRIM, key, start, end);
     }
 
+    /** 按索引获取列表元素。 */
     @Override
     public byte[] lIndex(byte[] key, long index) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.LINDEX, key, index);
@@ -736,6 +808,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> LINSERT = new RedisStrictCommand<Long>("LINSERT");
     
+    /** 在 pivot 前/后插入元素。 */
     @Override
     public Long lInsert(byte[] key, Position where, byte[] pivot, byte[] value) {
         return write(key, StringCodec.INSTANCE, LINSERT, key, where, pivot, value);
@@ -767,6 +840,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return sync(f);
     }
     
+    /** 按索引设置列表元素。 */
     @Override
     public void lSet(byte[] key, long index, byte[] value) {
         write(key, StringCodec.INSTANCE, RedisCommands.LSET, key, index, value);
@@ -774,21 +848,25 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> LREM = new RedisStrictCommand<Long>("LREM");
     
+    /** 删除列表中等于 value 的元素。 */
     @Override
     public Long lRem(byte[] key, long count, byte[] value) {
         return write(key, StringCodec.INSTANCE, LREM, key, count, value);
     }
     
+    /** 从列表左侧出队。 */
     @Override
     public byte[] lPop(byte[] key) {
         return write(key, ByteArrayCodec.INSTANCE, RedisCommands.LPOP, key);
     }
 
+    /** 从列表右侧出队。 */
     @Override
     public byte[] rPop(byte[] key) {
         return write(key, ByteArrayCodec.INSTANCE, RedisCommands.RPOP, key);
     }
 
+    /** 阻塞式左侧出队。 */
     @Override
     public List<byte[]> bLPop(int timeout, byte[]... keys) {
         List<Object> params = new ArrayList<Object>(keys.length + 1);
@@ -797,6 +875,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(keys[0], ByteArrayCodec.INSTANCE, RedisCommands.BLPOP, params.toArray());
     }
 
+    /** 阻塞式右侧出队。 */
     @Override
     public List<byte[]> bRPop(int timeout, byte[]... keys) {
         List<Object> params = new ArrayList<Object>(keys.length + 1);
@@ -805,11 +884,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(keys[0], ByteArrayCodec.INSTANCE, RedisCommands.BRPOP, params.toArray());
     }
 
+    /** 从源列表右侧弹出并推入目标列表左侧。 */
     @Override
     public byte[] rPopLPush(byte[] srcKey, byte[] dstKey) {
         return write(srcKey, ByteArrayCodec.INSTANCE, RedisCommands.RPOPLPUSH, srcKey, dstKey);
     }
 
+    /** 阻塞式 RPOPLPUSH。 */
     @Override
     public byte[] bRPopLPush(int timeout, byte[] srcKey, byte[] dstKey) {
         return write(srcKey, ByteArrayCodec.INSTANCE, RedisCommands.BRPOPLPUSH, srcKey, dstKey, timeout);
@@ -817,6 +898,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<Long> SADD = new RedisCommand<Long>("SADD");
     
+    /** 向集合添加成员。 */
     @Override
     public Long sAdd(byte[] key, byte[]... values) {
         List<Object> args = new ArrayList<Object>(values.length + 1);
@@ -828,6 +910,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> SREM = new RedisStrictCommand<Long>("SREM");
     
+    /** 从集合移除成员。 */
     @Override
     public Long sRem(byte[] key, byte[]... values) {
         List<Object> args = new ArrayList<Object>(values.length + 1);
@@ -837,11 +920,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, SREM, args.toArray());
     }
 
+    /** 随机弹出集合成员。 */
     @Override
     public byte[] sPop(byte[] key) {
         return write(key, ByteArrayCodec.INSTANCE, RedisCommands.SPOP, key);
     }
 
+    /** 将成员从源集合移动到目标集合。 */
     @Override
     public Boolean sMove(byte[] srcKey, byte[] destKey, byte[] value) {
         return write(srcKey, StringCodec.INSTANCE, RedisCommands.SMOVE, srcKey, destKey, value);
@@ -849,21 +934,25 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> SCARD = new RedisStrictCommand<Long>("SCARD");
     
+    /** 返回集合基数。 */
     @Override
     public Long sCard(byte[] key) {
         return read(key, StringCodec.INSTANCE, SCARD, key);
     }
 
+    /** 判断元素是否为集合成员。 */
     @Override
     public Boolean sIsMember(byte[] key, byte[] value) {
         return read(key, StringCodec.INSTANCE, RedisCommands.SISMEMBER, key, value);
     }
 
+    /** 返回集合交集。 */
     @Override
     public Set<byte[]> sInter(byte[]... keys) {
         return write(keys[0], ByteArrayCodec.INSTANCE, RedisCommands.SINTER, Arrays.asList(keys).toArray());
     }
 
+    /** 计算交集并存储。 */
     @Override
     public Long sInterStore(byte[] destKey, byte[]... keys) {
         List<Object> args = new ArrayList<Object>(keys.length + 1);
@@ -872,11 +961,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(keys[0], StringCodec.INSTANCE, RedisCommands.SINTERSTORE, args.toArray());
     }
 
+    /** 返回集合并集。 */
     @Override
     public Set<byte[]> sUnion(byte[]... keys) {
         return write(keys[0], ByteArrayCodec.INSTANCE, RedisCommands.SUNION, Arrays.asList(keys).toArray());
     }
 
+    /** 计算并集并存储。 */
     @Override
     public Long sUnionStore(byte[] destKey, byte[]... keys) {
         List<Object> args = new ArrayList<Object>(keys.length + 1);
@@ -885,11 +976,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(keys[0], StringCodec.INSTANCE, RedisCommands.SUNIONSTORE, args.toArray());
     }
 
+    /** 返回集合差集。 */
     @Override
     public Set<byte[]> sDiff(byte[]... keys) {
         return write(keys[0], ByteArrayCodec.INSTANCE, RedisCommands.SDIFF, Arrays.asList(keys).toArray());
     }
 
+    /** 计算差集并存储。 */
     @Override
     public Long sDiffStore(byte[] destKey, byte[]... keys) {
         List<Object> args = new ArrayList<Object>(keys.length + 1);
@@ -898,11 +991,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(keys[0], StringCodec.INSTANCE, RedisCommands.SDIFFSTORE, args.toArray());
     }
 
+    /** 返回集合全部成员。 */
     @Override
     public Set<byte[]> sMembers(byte[] key) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.SMEMBERS, key);
     }
 
+    /** 随机返回集合成员。 */
     @Override
     public byte[] sRandMember(byte[] key) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.SRANDMEMBER_SINGLE, key);
@@ -910,17 +1005,20 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<List<Object>> SRANDMEMBER = new RedisCommand<>("SRANDMEMBER", new ObjectListReplayDecoder<>());
 
+    /** 随机返回集合成员。 */
     @Override
     public List<byte[]> sRandMember(byte[] key, long count) {
         return read(key, ByteArrayCodec.INSTANCE, SRANDMEMBER, key, count);
     }
 
+    /** 增量 SCAN 集合成员。 */
     @Override
     public Cursor<byte[]> sScan(byte[] key, ScanOptions options) {
         return new KeyBoundCursor<byte[]>(key, 0, options) {
 
             private RedisClient client;
 
+            /** 集群模式 SCAN 实现。 */
             @Override
             protected ScanIteration<byte[]> doScan(byte[] key, long cursorId, ScanOptions options) {
                 if (isQueueing() || isPipelined()) {
@@ -947,11 +1045,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         }.open();
     }
 
+    /** 向有序集合添加成员及分数。 */
     @Override
     public Boolean zAdd(byte[] key, double score, byte[] value) {
         return write(key, StringCodec.INSTANCE, RedisCommands.ZADD_BOOL, key, BigDecimal.valueOf(score).toPlainString(), value);
     }
 
+    /** 向有序集合添加成员及分数。 */
     @Override
     public Long zAdd(byte[] key, Set<Tuple> tuples) {
         List<Object> params = new ArrayList<Object>(tuples.size()*2+1);
@@ -963,6 +1063,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, RedisCommands.ZADD, params.toArray());
     }
 
+    /** 从有序集合移除成员。 */
     @Override
     public Long zRem(byte[] key, byte[]... values) {
         List<Object> params = new ArrayList<Object>(values.length+1);
@@ -972,17 +1073,20 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, RedisCommands.ZREM_LONG, params.toArray());
     }
 
+    /** 有序集合成员分数增量更新。 */
     @Override
     public Double zIncrBy(byte[] key, double increment, byte[] value) {
         return write(key, DoubleCodec.INSTANCE, RedisCommands.ZINCRBY,
                             key, new BigDecimal(increment).toPlainString(), value);
     }
 
+    /** 返回成员升序排名。 */
     @Override
     public Long zRank(byte[] key, byte[] value) {
         return read(key, StringCodec.INSTANCE, RedisCommands.ZRANK, key, value);
     }
 
+    /** 返回成员降序排名。 */
     @Override
     public Long zRevRank(byte[] key, byte[] value) {
         return read(key, StringCodec.INSTANCE, RedisCommands.ZREVRANK, key, value);
@@ -990,6 +1094,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<Set<Object>> ZRANGE = new RedisCommand<Set<Object>>("ZRANGE", new ObjectSetReplayDecoder<Object>());
     
+    /** 按排名区间返回成员。 */
     @Override
     public Set<byte[]> zRange(byte[] key, long start, long end) {
         return read(key, ByteArrayCodec.INSTANCE, ZRANGE, key, start, end);
@@ -999,6 +1104,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Set<Tuple>> ZRANGE_ENTRY_V2 = new RedisCommand<Set<Tuple>>("ZRANGE",
             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
+    /** 按排名区间返回成员及分数。 */
     @Override
     public Set<Tuple> zRangeWithScores(byte[] key, long start, long end) {
         if (executorService.getServiceManager().isResp3()) {
@@ -1035,27 +1141,32 @@ public class RedissonConnection extends AbstractRedisConnection {
         return element.toString();
     }
 
+    /** 按分数区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, double min, double max) {
         return zRangeByScore(key, new Range().gte(min).lte(max));
     }
 
+    /** 按分数区间返回成员及分数。 */
     @Override
     public Set<Tuple> zRangeByScoreWithScores(byte[] key, Range range) {
         return zRangeByScoreWithScores(key, range, null);
     }
 
+    /** 按分数区间返回成员及分数。 */
     @Override
     public Set<Tuple> zRangeByScoreWithScores(byte[] key, double min, double max) {
         return zRangeByScoreWithScores(key, new Range().gte(min).lte(max));
     }
 
+    /** 按分数区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, double min, double max, long offset, long count) {
         return zRangeByScore(key, new Range().gte(min).lte(max),
                 new Limit().offset(Long.valueOf(offset).intValue()).count(Long.valueOf(count).intValue()));
     }
 
+    /** 按分数区间返回成员及分数。 */
     @Override
     public Set<Tuple> zRangeByScoreWithScores(byte[] key, double min, double max, long offset, long count) {
         return zRangeByScoreWithScores(key, new Range().gte(min).lte(max),
@@ -1067,6 +1178,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     private static final RedisCommand<Set<Tuple>> ZRANGEBYSCORE_V2 = new RedisCommand<Set<Tuple>>("ZRANGEBYSCORE",
             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
+    /** 按分数区间返回成员及分数。 */
     @Override
     public Set<Tuple> zRangeByScoreWithScores(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
@@ -1092,6 +1204,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<Set<Object>> ZREVRANGE = new RedisCommand<Set<Object>>("ZREVRANGE", new ObjectSetReplayDecoder<Object>());
 
+    /** 按排名区间降序返回成员。 */
     @Override
     public Set<byte[]> zRevRange(byte[] key, long start, long end) {
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE, key, start, end);
@@ -1102,6 +1215,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     private static final RedisCommand<Set<Tuple>> ZREVRANGE_ENTRY_V2 = new RedisCommand("ZREVRANGE",
             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
+    /** 按排名区间降序返回成员及分数。 */
     @Override
     public Set<Tuple> zRevRangeWithScores(byte[] key, long start, long end) {
         if (executorService.getServiceManager().isResp3()) {
@@ -1110,6 +1224,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE_ENTRY, key, start, end, "WITHSCORES");
     }
 
+    /** 按分数区间降序返回成员。 */
     @Override
     public Set<byte[]> zRevRangeByScore(byte[] key, double min, double max) {
         return zRevRangeByScore(key, new Range().gte(min).lte(max));
@@ -1121,22 +1236,26 @@ public class RedissonConnection extends AbstractRedisConnection {
     private static final RedisCommand<Set<Tuple>> ZREVRANGEBYSCOREWITHSCORES_V2 = new RedisCommand<Set<Tuple>>("ZREVRANGEBYSCORE",
             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
+    /** 按分数区间降序返回成员。 */
     @Override
     public Set<byte[]> zRevRangeByScore(byte[] key, Range range) {
         return zRevRangeByScore(key, range, null);
     }
 
+    /** 按分数区间降序返回成员及分数。 */
     @Override
     public Set<Tuple> zRevRangeByScoreWithScores(byte[] key, double min, double max) {
         return zRevRangeByScoreWithScores(key, new Range().gte(min).lte(max));
     }
 
+    /** 按分数区间降序返回成员。 */
     @Override
     public Set<byte[]> zRevRangeByScore(byte[] key, double min, double max, long offset, long count) {
         return zRevRangeByScore(key, new Range().gte(min).lte(max),
                 new Limit().offset(Long.valueOf(offset).intValue()).count(Long.valueOf(count).intValue()));
     }
 
+    /** 按分数区间降序返回成员。 */
     @Override
     public Set<byte[]> zRevRangeByScore(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
@@ -1156,17 +1275,20 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYSCORE, args.toArray());
     }
 
+    /** 按分数区间降序返回成员及分数。 */
     @Override
     public Set<Tuple> zRevRangeByScoreWithScores(byte[] key, double min, double max, long offset, long count) {
         return zRevRangeByScoreWithScores(key, new Range().gte(min).lte(max),
                 new Limit().offset(Long.valueOf(offset).intValue()).count(Long.valueOf(count).intValue()));
     }
 
+    /** 按分数区间降序返回成员及分数。 */
     @Override
     public Set<Tuple> zRevRangeByScoreWithScores(byte[] key, Range range) {
         return zRevRangeByScoreWithScores(key, range, null);
     }
 
+    /** 按分数区间降序返回成员及分数。 */
     @Override
     public Set<Tuple> zRevRangeByScoreWithScores(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
@@ -1189,11 +1311,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGEBYSCOREWITHSCORES, args.toArray());
     }
+    /** 统计分数区间内成员数。 */
     @Override
     public Long zCount(byte[] key, double min, double max) {
         return zCount(key, new Range().gte(min).lte(max));
     }
 
+    /** 统计分数区间内成员数。 */
     @Override
     public Long zCount(byte[] key, Range range) {
         String min = value(range.getMin(), "-inf");
@@ -1201,11 +1325,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, StringCodec.INSTANCE, RedisCommands.ZCOUNT, key, min, max);
     }
 
+    /** 返回有序集合基数。 */
     @Override
     public Long zCard(byte[] key) {
         return read(key, StringCodec.INSTANCE, RedisCommands.ZCARD, key);
     }
 
+    /** 返回成员分数。 */
     @Override
     public Double zScore(byte[] key, byte[] value) {
         return read(key, StringCodec.INSTANCE, RedisCommands.ZSCORE, key, value);
@@ -1214,16 +1340,19 @@ public class RedissonConnection extends AbstractRedisConnection {
     private static final RedisStrictCommand<Long> ZREMRANGEBYRANK = new RedisStrictCommand<Long>("ZREMRANGEBYRANK");
     private static final RedisStrictCommand<Long> ZREMRANGEBYSCORE = new RedisStrictCommand<Long>("ZREMRANGEBYSCORE");
     
+    /** 按排名区间删除成员。 */
     @Override
     public Long zRemRange(byte[] key, long start, long end) {
         return write(key, StringCodec.INSTANCE, ZREMRANGEBYRANK, key, start, end);
     }
 
+    /** 按分数区间删除成员。 */
     @Override
     public Long zRemRangeByScore(byte[] key, double min, double max) {
         return zRemRangeByScore(key, new Range().gte(min).lte(max));
     }
 
+    /** 按分数区间删除成员。 */
     @Override
     public Long zRemRangeByScore(byte[] key, Range range) {
         String min = value(range.getMin(), "-inf");
@@ -1231,6 +1360,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, ZREMRANGEBYSCORE, key, min, max);
     }
 
+    /** 计算有序集合并集并存储。 */
     @Override
     public Long zUnionStore(byte[] destKey, byte[]... sets) {
         return zUnionStore(destKey, null, null, sets);
@@ -1238,6 +1368,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisStrictCommand<Long> ZUNIONSTORE = new RedisStrictCommand<Long>("ZUNIONSTORE");
 
+    /** 计算有序集合并集并存储。 */
     @Override
     public Long zUnionStore(byte[] destKey, Aggregate aggregate, int[] weights, byte[]... sets) {
         List<Object> args = new ArrayList<Object>(sets.length*2 + 5);
@@ -1259,11 +1390,13 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> ZINTERSTORE = new RedisStrictCommand<Long>("ZINTERSTORE");
     
+    /** 计算有序集合交集并存储。 */
     @Override
     public Long zInterStore(byte[] destKey, byte[]... sets) {
         return zInterStore(destKey, null, null, sets);
     }
 
+    /** 计算有序集合交集并存储。 */
     @Override
     public Long zInterStore(byte[] destKey, Aggregate aggregate, int[] weights, byte[]... sets) {
         List<Object> args = new ArrayList<Object>(sets.length*2 + 5);
@@ -1285,12 +1418,14 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<>("ZSCAN", new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ScoredSortedListReplayDecoder()));
     
+    /** 增量 SCAN 有序集合成员。 */
     @Override
     public Cursor<Tuple> zScan(byte[] key, ScanOptions options) {
         return new KeyBoundCursor<Tuple>(key, 0, options) {
 
             private RedisClient client;
 
+            /** 集群模式 SCAN 实现。 */
             @Override
             protected ScanIteration<Tuple> doScan(byte[] key, long cursorId, ScanOptions options) {
                 if (isQueueing() || isPipelined()) {
@@ -1317,11 +1452,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         }.open();
     }
 
+    /** 按分数区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, String min, String max) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.ZRANGEBYSCORE, key, min, max);
     }
 
+    /** 按分数区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, Range range) {
         String min = value(range.getMin(), "-inf");
@@ -1329,11 +1466,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.ZRANGEBYSCORE, key, min, max);
     }
 
+    /** 按分数区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, String min, String max, long offset, long count) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.ZRANGEBYSCORE, key, min, max, "LIMIT", offset, count);
     }
 
+    /** 按分数区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-inf");
@@ -1353,6 +1492,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.ZRANGEBYSCORE, args.toArray());
     }
 
+    /** 按字典序区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByLex(byte[] key) {
         return zRangeByLex(key, Range.unbounded());
@@ -1360,6 +1500,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Set<Object>> ZRANGEBYLEX = new RedisCommand<Set<Object>>("ZRANGEBYLEX", new ObjectSetReplayDecoder<Object>());
 
+    /** 按字典序区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByLex(byte[] key, Range range) {
         List<Object> params = new ArrayList<Object>();
@@ -1379,6 +1520,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, ZRANGEBYLEX, params.toArray());
     }
 
+    /** 按字典序区间返回成员。 */
     @Override
     public Set<byte[]> zRangeByLex(byte[] key, Range range, Limit limit) {
         String min = value(range.getMin(), "-");
@@ -1398,16 +1540,19 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, ZRANGEBYLEX, args.toArray());
     }
 
+    /** 设置 hash 字段。 */
     @Override
     public Boolean hSet(byte[] key, byte[] field, byte[] value) {
         return write(key, StringCodec.INSTANCE, RedisCommands.HSET, key, field, value);
     }
 
+    /** 仅当字段不存在时设置 hash 字段。 */
     @Override
     public Boolean hSetNX(byte[] key, byte[] field, byte[] value) {
         return write(key, StringCodec.INSTANCE, RedisCommands.HSETNX, key, field, value);
     }
 
+    /** 获取 hash 字段值。 */
     @Override
     public byte[] hGet(byte[] key, byte[] field) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.HGET, key, field);
@@ -1415,6 +1560,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder<Object>());
     
+    /** 批量获取 hash 字段值。 */
     @Override
     public List<byte[]> hMGet(byte[] key, byte[]... fields) {
         List<Object> args = new ArrayList<Object>(fields.length + 1);
@@ -1423,6 +1569,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, HMGET, args.toArray());
     }
 
+    /** 批量设置 hash 字段。 */
     @Override
     public void hMSet(byte[] key, Map<byte[], byte[]> hashes) {
         List<Object> params = new ArrayList<Object>(hashes.size()*2 + 1);
@@ -1437,6 +1584,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Long> HINCRBY = new RedisCommand<Long>("HINCRBY");
 
+    /** hash 字段按整数增量自增。 */
     @Override
     public Long hIncrBy(byte[] key, byte[] field, long delta) {
         return write(key, StringCodec.INSTANCE, HINCRBY, key, field, delta);
@@ -1444,16 +1592,19 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Double> HINCRBYFLOAT = new RedisCommand<Double>("HINCRBYFLOAT", new DoubleReplayConvertor());
 
+    /** hash 字段按整数增量自增。 */
     @Override
     public Double hIncrBy(byte[] key, byte[] field, double delta) {
         return write(key, StringCodec.INSTANCE, HINCRBYFLOAT, key, field, BigDecimal.valueOf(delta).toPlainString());
     }
 
+    /** 判断 hash 字段是否存在。 */
     @Override
     public Boolean hExists(byte[] key, byte[] field) {
         return read(key, StringCodec.INSTANCE, RedisCommands.HEXISTS, key, field);
     }
 
+    /** 删除 hash 字段。 */
     @Override
     public Long hDel(byte[] key, byte[]... fields) {
         List<Object> args = new ArrayList<Object>(fields.length + 1);
@@ -1464,32 +1615,38 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisStrictCommand<Long> HLEN = new RedisStrictCommand<Long>("HLEN");
 
+    /** 返回 hash 字段数量。 */
     @Override
     public Long hLen(byte[] key) {
         return read(key, StringCodec.INSTANCE, HLEN, key);
     }
 
+    /** 返回 hash 全部字段名。 */
     @Override
     public Set<byte[]> hKeys(byte[] key) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.HKEYS, key);
     }
 
+    /** 返回 hash 全部字段值。 */
     @Override
     public List<byte[]> hVals(byte[] key) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.HVALS, key);
     }
 
+    /** 返回 hash 全部字段映射。 */
     @Override
     public Map<byte[], byte[]> hGetAll(byte[] key) {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.HGETALL, key);
     }
 
+    /** 增量 SCAN hash 字段。 */
     @Override
     public Cursor<Entry<byte[], byte[]>> hScan(byte[] key, ScanOptions options) {
         return new KeyBoundCursor<Entry<byte[], byte[]>>(key, 0, options) {
 
             private RedisClient client;
 
+            /** 集群模式 SCAN 实现。 */
             @Override
             protected ScanIteration<Entry<byte[], byte[]>> doScan(byte[] key, long cursorId, ScanOptions options) {
                 if (isQueueing() || isPipelined()) {
@@ -1516,6 +1673,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }.open();
     }
 
+    /** 开启 MULTI 事务。 */
     @Override
     public void multi() {
         if (isQueueing()) {
@@ -1534,6 +1692,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         this.executorService = executorService.createCommandBatchService(options);
     }
 
+    /** 执行 MULTI 队列中的命令。 */
     @Override
     public List<Object> exec() {
         if (isPipelinedAtomic()) {
@@ -1579,6 +1738,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         indexToRemove.clear();
     }
 
+    /** 放弃 MULTI 队列中的命令。 */
     @Override
     public void discard() {
         if (isQueueing()) {
@@ -1589,6 +1749,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
     }
 
+    /** 监视给定 key，用于乐观事务。 */
     @Override
     public void watch(byte[]... keys) {
         if (isQueueing()) {
@@ -1598,26 +1759,31 @@ public class RedissonConnection extends AbstractRedisConnection {
         syncFuture(executorService.writeAsync(null, RedisCommands.WATCH, keys));
     }
 
+    /** 取消对所有 key 的监视。 */
     @Override
     public void unwatch() {
         syncFuture(executorService.writeAsync(null, RedisCommands.UNWATCH));
     }
 
+    /** 是否处于订阅模式。 */
     @Override
     public boolean isSubscribed() {
         return subscription != null && subscription.isAlive();
     }
 
+    /** 返回 Pub/Sub 订阅句柄。 */
     @Override
     public Subscription getSubscription() {
         return subscription;
     }
 
+    /** 向频道发布消息。 */
     @Override
     public Long publish(byte[] channel, byte[] message) {
         return write(channel, StringCodec.INSTANCE, RedisCommands.PUBLISH, channel, message);
     }
 
+    /** 订阅频道。 */
     @Override
     public void subscribe(MessageListener listener, byte[]... channels) {
         checkSubscription();
@@ -1639,6 +1805,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
     }
 
+    /** 按模式订阅频道。 */
     @Override
     public void pSubscribe(MessageListener listener, byte[]... patterns) {
         checkSubscription();
@@ -1647,6 +1814,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         subscription.pSubscribe(patterns);
     }
 
+    /** 切换数据库索引。 */
     @Override
     public void select(int dbIndex) {
         throw new UnsupportedOperationException();
@@ -1654,31 +1822,37 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<Object> ECHO = new RedisCommand<Object>("ECHO");
     
+    /** ECHO 测试。 */
     @Override
     public byte[] echo(byte[] message) {
         return read(null, ByteArrayCodec.INSTANCE, ECHO, message);
     }
 
+    /** PING 测试连通性。 */
     @Override
     public String ping() {
         return read(null, StringCodec.INSTANCE, RedisCommands.PING);
     }
     
+    /** 触发 AOF 写入。 */
     @Override
     public void bgWriteAof() {
         throw new UnsupportedOperationException();
     }
 
+    /** 后台 AOF 重写。 */
     @Override
     public void bgReWriteAof() {
         write(null, StringCodec.INSTANCE, RedisCommands.BGREWRITEAOF);
     }
     
+    /** 后台 BGSAVE。 */
     @Override
     public void bgSave() {
         write(null, StringCodec.INSTANCE, RedisCommands.BGSAVE);
     }
     
+    /** 返回上次 RDB 持久化时间。 */
     @Override
     public Long lastSave() {
         return write(null, StringCodec.INSTANCE, RedisCommands.LASTSAVE);
@@ -1686,11 +1860,13 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisStrictCommand<Void> SAVE = new RedisStrictCommand<Void>("SAVE", new VoidReplayConvertor());
 
+    /** 同步 SAVE。 */
     @Override
     public void save() {
         write(null, StringCodec.INSTANCE, SAVE);
     }
 
+    /** 返回当前库 key 数量。 */
     @Override
     public Long dbSize() {
         if (isQueueing()) {
@@ -1704,6 +1880,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return sync(ff);
     }
 
+    /** 清空当前数据库。 */
     @Override
     public void flushDb() {
         if (isQueueing() || isPipelined()) {
@@ -1715,6 +1892,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         sync(f);
     }
 
+    /** 清空全部数据库。 */
     @Override
     public void flushAll() {
         RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.FLUSHALL);
@@ -1724,36 +1902,43 @@ public class RedissonConnection extends AbstractRedisConnection {
     private static final RedisStrictCommand<Properties> INFO_DEFAULT = new RedisStrictCommand<Properties>("INFO", "DEFAULT", new ObjectDecoder(new PropertiesDecoder()));
     private static final RedisStrictCommand<Properties> INFO = new RedisStrictCommand<Properties>("INFO", new ObjectDecoder(new PropertiesDecoder()));
     
+    /** 返回 INFO 信息。 */
     @Override
     public Properties info() {
         return read(null, StringCodec.INSTANCE, INFO_DEFAULT);
     }
 
+    /** 返回 INFO 信息。 */
     @Override
     public Properties info(String section) {
         return read(null, StringCodec.INSTANCE, INFO, section);
     }
 
+    /** 关闭 Redis 服务。 */
     @Override
     public void shutdown() {
         throw new UnsupportedOperationException();
     }
 
+    /** 关闭 Redis 服务。 */
     @Override
     public void shutdown(ShutdownOption option) {
         throw new UnsupportedOperationException();
     }
 
+    /** 读取 CONFIG GET。 */
     @Override
     public List<String> getConfig(String pattern) {
         return read(null, StringCodec.INSTANCE, RedisCommands.CONFIG_GET, pattern);
     }
 
+    /** 写入 CONFIG SET。 */
     @Override
     public void setConfig(String param, String value) {
         write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_SET, param, value);
     }
 
+    /** 重置 CONFIG 统计。 */
     @Override
     public void resetConfigStats() {
         write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_RESETSTAT);
@@ -1761,51 +1946,61 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisStrictCommand<Long> TIME = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());
     
+    /** 返回服务器时间。 */
     @Override
     public Long time() {
         return read(null, LongCodec.INSTANCE, TIME);
     }
 
+    /** 终止客户端连接。 */
     @Override
     public void killClient(String host, int port) {
         throw new UnsupportedOperationException();
     }
 
+    /** 设置当前连接客户端名。 */
     @Override
     public void setClientName(byte[] name) {
         throw new UnsupportedOperationException("Should be defined through Redisson Config object");
     }
 
+    /** 获取当前连接客户端名。 */
     @Override
     public String getClientName() {
         throw new UnsupportedOperationException();
     }
 
+    /** 返回 CLIENT LIST 信息。 */
     @Override
     public List<RedisClientInfo> getClientList() {
         return read(null, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
     }
 
+    /** 配置从节点复制主节点。 */
     @Override
     public void slaveOf(String host, int port) {
         throw new UnsupportedOperationException();
     }
 
+    /** 将从节点提升为独立主节点。 */
     @Override
     public void slaveOfNoOne() {
         throw new UnsupportedOperationException();
     }
 
+    /** 跨节点迁移 key。 */
     @Override
     public void migrate(byte[] key, RedisNode target, int dbIndex, MigrateOption option) {
         migrate(key, target, dbIndex, option, Long.MAX_VALUE);
     }
 
+    /** 跨节点迁移 key。 */
     @Override
     public void migrate(byte[] key, RedisNode target, int dbIndex, MigrateOption option, long timeout) {
         write(key, StringCodec.INSTANCE, RedisCommands.MIGRATE, target.getHost(), target.getPort(), key, dbIndex, timeout);
     }
 
+    /** 清空脚本缓存。 */
     @Override
     public void scriptFlush() {
         if (isQueueing() || isPipelined()) {
@@ -1816,11 +2011,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         sync(f);
     }
 
+    /** 终止正在执行的脚本。 */
     @Override
     public void scriptKill() {
         throw new UnsupportedOperationException();
     }
 
+    /** 加载 Lua 脚本并返回 SHA1。 */
     @Override
     public String scriptLoad(byte[] script) {
         if (isQueueing()) {
@@ -1836,6 +2033,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return sync(new CompletableFutureWrapper<>(s));
     }
 
+    /** 检查脚本 SHA1 是否已加载。 */
     @Override
     public List<Boolean> scriptExists(final String... scriptShas) {
         if (isQueueing() || isPipelined()) {
@@ -1857,6 +2055,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return sync(new CompletableFutureWrapper<>(s));
     }
 
+    /** 执行 Lua 脚本。 */
     @Override
     public <T> T eval(byte[] script, ReturnType returnType, int numKeys, byte[]... keysAndArgs) {
         if (isQueueing()) {
@@ -1894,6 +2093,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return new RedisCommand(c, name);
     }
 
+    /** 按 SHA1 执行已加载 Lua 脚本。 */
     @Override
     public <T> T evalSha(String scriptSha, ReturnType returnType, int numKeys, byte[]... keysAndArgs) {
         if (isQueueing()) {
@@ -1913,6 +2113,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, ByteArrayCodec.INSTANCE, c, params.toArray());
     }
 
+    /** 按 SHA1 执行已加载 Lua 脚本。 */
     @Override
     public <T> T evalSha(byte[] scriptSha, ReturnType returnType, int numKeys, byte[]... keysAndArgs) {
         RedisCommand<?> c = toCommand(returnType, "EVALSHA");
@@ -1932,16 +2133,19 @@ public class RedissonConnection extends AbstractRedisConnection {
         return null;
     }
 
+    /** 添加 GEO 位置。 */
     @Override
     public Long geoAdd(byte[] key, Point point, byte[] member) {
         return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, key, point.getX(), point.getY(), member);
     }
 
+    /** 添加 GEO 位置。 */
     @Override
     public Long geoAdd(byte[] key, GeoLocation<byte[]> location) {
         return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, key, location.getPoint().getX(), location.getPoint().getY(), location.getName());
     }
 
+    /** 添加 GEO 位置。 */
     @Override
     public Long geoAdd(byte[] key, Map<byte[], Point> memberCoordinateMap) {
         List<Object> params = new ArrayList<Object>(memberCoordinateMap.size()*3 + 1);
@@ -1954,6 +2158,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
     }
 
+    /** 添加 GEO 位置。 */
     @Override
     public Long geoAdd(byte[] key, Iterable<GeoLocation<byte[]>> locations) {
         List<Object> params = new ArrayList<Object>();
@@ -1966,11 +2171,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
     }
 
+    /** 计算两点距离。 */
     @Override
     public Distance geoDist(byte[] key, byte[] member1, byte[] member2) {
         return geoDist(key, member1, member2, DistanceUnit.METERS);
     }
 
+    /** 计算两点距离。 */
     @Override
     public Distance geoDist(byte[] key, byte[] member1, byte[] member2, Metric metric) {
         return read(key, DoubleCodec.INSTANCE, new RedisCommand<Distance>("GEODIST", new DistanceConvertor(metric)), key, member1, member2, getAbbreviation(metric));
@@ -1978,6 +2185,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<List<Object>> GEOHASH = new RedisCommand<List<Object>>("GEOHASH", new ObjectListReplayDecoder<Object>());
 
+    /** 返回 GEO 成员 geohash。 */
     @Override
     public List<String> geoHash(byte[] key, byte[]... members) {
         List<Object> params = new ArrayList<Object>(members.length + 1);
@@ -1988,6 +2196,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, StringCodec.INSTANCE, GEOHASH, params.toArray());
     }
 
+    /** 返回 GEO 成员坐标。 */
     @Override
     public List<Point> geoPos(byte[] key, byte[]... members) {
         List<Object> params = new ArrayList<Object>(members.length + 1);
@@ -2005,6 +2214,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private final MultiDecoder<GeoResults<GeoLocation<byte[]>>> postitionDecoder = new ListMultiDecoder2(new GeoResultsDecoder(), new CodecDecoder(), new PointDecoder(), new ObjectListReplayDecoder());
 
+    /** 按圆心半径查询附近成员。 */
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadius(byte[] key, Circle within) {
         RedisCommand<GeoResults<GeoLocation<byte[]>>> command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", new GeoResultsDecoder());
@@ -2013,6 +2223,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                         within.getRadius().getValue(), getAbbreviation(within.getRadius().getMetric()));
     }
     
+    /** 按圆心半径查询附近成员。 */
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadius(byte[] key, Circle within, GeoRadiusCommandArgs args) {
         List<Object> params = new ArrayList<Object>();
@@ -2050,6 +2261,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return metric.getAbbreviation();
     }
 
+    /** 以成员为圆心查询附近成员。 */
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, double radius) {
         return geoRadiusByMember(key, member, new Distance(radius, DistanceUnit.METERS));
@@ -2057,11 +2269,13 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     private static final RedisCommand<GeoResults<GeoLocation<byte[]>>> GEORADIUSBYMEMBER = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", new GeoResultsDecoder());
     
+    /** 以成员为圆心查询附近成员。 */
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, Distance radius) {
         return read(key, ByteArrayCodec.INSTANCE, GEORADIUSBYMEMBER, key, member, radius.getValue(), getAbbreviation(radius.getMetric()));
     }
 
+    /** 以成员为圆心查询附近成员。 */
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, Distance radius,
             GeoRadiusCommandArgs args) {
@@ -2092,6 +2306,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, command, params.toArray());
     }
 
+    /** 从 GEO 移除成员。 */
     @Override
     public Long geoRemove(byte[] key, byte[]... members) {
         return zRem(key, members);
@@ -2099,6 +2314,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     private static final RedisCommand<Long> PFADD = new RedisCommand<Long>("PFADD");
 
+    /** 向 HyperLogLog 添加元素。 */
     @Override
     public Long pfAdd(byte[] key, byte[]... values) {
         List<Object> params = new ArrayList<Object>(values.length + 1);
@@ -2110,6 +2326,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, PFADD, params.toArray());
     }
 
+    /** 返回 HyperLogLog 基数估计。 */
     @Override
     public Long pfCount(byte[]... keys) {
         Assert.notEmpty(keys, "PFCOUNT requires at least one non 'null' key.");
@@ -2118,6 +2335,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(keys[0], StringCodec.INSTANCE, RedisCommands.PFCOUNT, Arrays.asList(keys).toArray());
     }
 
+    /** 合并多个 HyperLogLog。 */
     @Override
     public void pfMerge(byte[] destinationKey, byte[]... sourceKeys) {
         List<Object> args = new ArrayList<Object>(sourceKeys.length + 1);

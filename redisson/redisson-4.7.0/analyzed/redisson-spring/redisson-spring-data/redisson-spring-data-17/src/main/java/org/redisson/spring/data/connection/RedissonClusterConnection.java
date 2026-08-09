@@ -46,16 +46,21 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Redisson 集群模式 {@link RedisClusterConnection} 实现。
+ * <p>扩展 {@link RedissonConnection}，提供 CLUSTER 管理命令、
+ * 槽位/key 路由及按节点执行服务端命令的能力。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonClusterConnection extends RedissonConnection implements RedisClusterConnection {
 
+    /** 绑定 Redisson 客户端并初始化集群连接。 */
     public RedissonClusterConnection(RedissonClient redisson) {
         super(redisson);
     }
 
+    /** 返回 CLUSTER NODES 解析结果。 */
     @Override
     public Iterable<RedisClusterNode> clusterGetNodes() {
         RedisStrictCommand<List<RedisClusterNode>> cluster
@@ -64,6 +69,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return read(null, StringCodec.INSTANCE, cluster);
     }
 
+    /** 返回指定 master 的 slave 节点。 */
     @Override
     public Collection<RedisClusterNode> clusterGetSlaves(RedisClusterNode master) {
         Iterable<RedisClusterNode> res = clusterGetNodes();
@@ -77,6 +83,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
             }
         }
         
+        // 未在 CLUSTER NODES 结果中找到匹配的 master 节点。
         if (masterNode == null) {
             throw new IllegalStateException("Unable to find master node: " + master);
         }
@@ -91,6 +98,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return (Collection<RedisClusterNode>) res;
     }
 
+    /** 返回 master 到 slaves 的映射。 */
     @Override
     public Map<RedisClusterNode, Collection<RedisClusterNode>> clusterGetMasterSlaveMap() {
         Iterable<RedisClusterNode> res = clusterGetNodes();
@@ -122,12 +130,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return result;
     }
 
+    /** 返回 key 的 CRC16 槽位。 */
     @Override
     public Integer clusterGetSlotForKey(byte[] key) {
         RFuture<Integer> f = executorService.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.KEYSLOT, key);
         return syncFuture(f);
     }
 
+    /** 返回槽位对应节点。 */
     @Override
     public RedisClusterNode clusterGetNodeForSlot(int slot) {
         Iterable<RedisClusterNode> res = clusterGetNodes();
@@ -139,12 +149,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return null;
     }
 
+    /** 返回 key 所在槽位对应节点。 */
     @Override
     public RedisClusterNode clusterGetNodeForKey(byte[] key) {
         int slot = executorService.getConnectionManager().calcSlot(key);
         return clusterGetNodeForSlot(slot);
     }
 
+    /** 返回 CLUSTER INFO 解析结果。 */
     @Override
     public ClusterInfo clusterGetClusterInfo() {
         RFuture<Map<String, String>> f = executorService.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_INFO);
@@ -157,6 +169,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return new ClusterInfo(props);
     }
 
+    /** 为当前节点分配槽位。 */
     @Override
     public void clusterAddSlots(RedisClusterNode node, int... slots) {
         RedisClient entry = getEntry(node);
@@ -173,11 +186,13 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return params;
     }
 
+    /** 为当前节点分配槽位。 */
     @Override
     public void clusterAddSlots(RedisClusterNode node, SlotRange range) {
         clusterAddSlots(node, range.getSlotsArray());
     }
 
+    /** 返回槽位内 key 数量。 */
     @Override
     public Long clusterCountKeysInSlot(int slot) {
         RedisClusterNode node = clusterGetNodeForSlot(slot);
@@ -186,6 +201,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return syncFuture(f);
     }
 
+    /** 删除当前节点槽位。 */
     @Override
     public void clusterDeleteSlots(RedisClusterNode node, int... slots) {
         RedisClient entry = getEntry(node);
@@ -194,17 +210,20 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         syncFuture(f);
     }
 
+    /** 删除槽位区间。 */
     @Override
     public void clusterDeleteSlotsInRange(RedisClusterNode node, SlotRange range) {
         clusterDeleteSlots(node, range.getSlotsArray());
     }
 
+    /** CLUSTER FORGET 移除节点。 */
     @Override
     public void clusterForget(RedisClusterNode node) {
         RFuture<Void> f = executorService.writeAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_FORGET, node.getId());
         syncFuture(f);
     }
 
+    /** CLUSTER MEET 加入节点。 */
     @Override
     public void clusterMeet(RedisClusterNode node) {
         Assert.notNull(node, "Cluster node must not be null for CLUSTER MEET command!");
@@ -215,6 +234,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         syncFuture(f);
     }
 
+    /** 设置槽位 IMPORTING/MIGRATING/STABLE/... */
     @Override
     public void clusterSetSlot(RedisClusterNode node, int slot, AddSlots mode) {
         RedisClient entry = getEntry(node);
@@ -224,12 +244,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     
     private static final RedisStrictCommand<List<String>> CLUSTER_GETKEYSINSLOT = new RedisStrictCommand<List<String>>("CLUSTER", "GETKEYSINSLOT", new ObjectListReplayDecoder<String>());
 
+    /** 返回槽位内 key 列表。 */
     @Override
     public List<byte[]> clusterGetKeysInSlot(int slot, Integer count) {
         RFuture<List<byte[]>> f = executorService.readAsync((String)null, ByteArrayCodec.INSTANCE, CLUSTER_GETKEYSINSLOT, slot, count);
         return syncFuture(f);
     }
 
+    /** 配置节点复制指定 master。 */
     @Override
     public void clusterReplicate(RedisClusterNode master, RedisClusterNode slave) {
         RedisClient entry = getEntry(master);
@@ -237,31 +259,37 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         syncFuture(f);
     }
 
+//    集群节点 PING 暂未启用（历史注释保留）。
 //    @Override
 //    public String ping(RedisClusterNode node) {
 //        return execute(node, RedisCommands.PING);
 //    }
 
+    /** 后台 AOF 重写。 */
     @Override
     public void bgReWriteAof(RedisClusterNode node) {
         execute(node, RedisCommands.BGREWRITEAOF);
     }
 
+    /** 后台 BGSAVE。 */
     @Override
     public void bgSave(RedisClusterNode node) {
         execute(node, RedisCommands.BGSAVE);
     }
 
+    /** 返回上次 RDB 持久化时间。 */
     @Override
     public Long lastSave(RedisClusterNode node) {
         return execute(node, RedisCommands.LASTSAVE);
     }
 
+    /** 同步 SAVE。 */
     @Override
     public void save(RedisClusterNode node) {
         execute(node, RedisCommands.SAVE);
     }
 
+    /** 返回当前库 key 数量。 */
     @Override
     public Long dbSize(RedisClusterNode node) {
         return execute(node, RedisCommands.DBSIZE);
@@ -280,16 +308,19 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return e.getClient();
     }
 
+    /** 清空当前数据库。 */
     @Override
     public void flushDb(RedisClusterNode node) {
         execute(node, RedisCommands.FLUSHDB);
     }
 
+    /** 清空全部数据库。 */
     @Override
     public void flushAll(RedisClusterNode node) {
         execute(node, RedisCommands.FLUSHALL);
     }
 
+    /** 返回 INFO 信息。 */
     @Override
     public Properties info(RedisClusterNode node) {
         Map<String, String> info = execute(node, RedisCommands.INFO_ALL);
@@ -300,6 +331,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return result;
     }
 
+    /** 返回 INFO 信息。 */
     @Override
     public Properties info(RedisClusterNode node, String section) {
         RedisStrictCommand<Map<String, String>> command = new RedisStrictCommand<Map<String, String>>("INFO", section, new StringMapDataDecoder());
@@ -314,6 +346,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
 
     private final RedisStrictCommand<List<byte[]>> KEYS = new RedisStrictCommand<>("KEYS");
 
+    /** 按模式匹配返回 key 集合（慎用）。 */
     @Override
     public Set<byte[]> keys(RedisClusterNode node, byte[] pattern) {
         RedisClient entry = getEntry(node);
@@ -322,6 +355,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return new HashSet<>(keys);
     }
 
+    /** 随机返回一个 key。 */
     @Override
     public byte[] randomKey(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
@@ -329,6 +363,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return syncFuture(f);
     }
 
+    /** 关闭 Redis 服务。 */
     @Override
     public void shutdown(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
@@ -336,6 +371,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         syncFuture(f);
     }
 
+    /** 读取 CONFIG GET。 */
     @Override
     public List<String> getConfig(RedisClusterNode node, String pattern) {
         RedisClient entry = getEntry(node);
@@ -343,6 +379,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return syncFuture(f);
     }
 
+    /** 写入 CONFIG SET。 */
     @Override
     public void setConfig(RedisClusterNode node, String param, String value) {
         RedisClient entry = getEntry(node);
@@ -350,6 +387,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         syncFuture(f);
     }
 
+    /** 重置 CONFIG 统计。 */
     @Override
     public void resetConfigStats(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
@@ -357,6 +395,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         syncFuture(f);
     }
 
+    /** 返回服务器时间。 */
     @Override
     public Long time(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
@@ -366,6 +405,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
 
     private static final StringToRedisClientInfoConverter CONVERTER = new StringToRedisClientInfoConverter();
     
+    /** 返回 CLIENT LIST 信息。 */
     @Override
     public List<RedisClientInfo> getClientList(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
@@ -374,6 +414,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return CONVERTER.convert(list.toArray(new String[list.size()]));
     }
 
+    /** 重命名 key。 */
     @Override
     public void rename(byte[] oldName, byte[] newName) {
 
@@ -404,6 +445,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         }
     }
 
+    /** 仅当新 key 不存在时重命名。 */
     @Override
     public Boolean renameNX(byte[] oldName, byte[] newName) {
         if (isPipelined()) {
@@ -436,6 +478,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return false;
     }
 
+    /** 删除一个或多个 key。 */
     @Override
     public Long del(byte[]... keys) {
         if (isQueueing() || isPipelined()) {
@@ -454,6 +497,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return b.getResponses().stream().collect(Collectors.summarizingLong(v -> v)).getSum();
     }
 
+    /** 批量 GET。 */
     @Override
     public List<byte[]> mGet(byte[]... keys) {
         if (isQueueing() || isPipelined()) {
@@ -471,6 +515,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return r.getResponses();
     }
 
+    /** 批量 SET。 */
     @Override
     public void mSet(Map<byte[], byte[]> tuple) {
         if (isQueueing() || isPipelined()) {
@@ -487,6 +532,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         es.execute();
     }
 
+    /** PING 测试连通性。 */
     @Override
     public String ping(RedisClusterNode node) {
         RedisClient entry = getEntry(node);

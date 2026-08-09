@@ -39,18 +39,23 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Spring Data Redis 响应式字符串命令实现。
+ * <p>继承 {@link RedissonBaseReactive}，封装 GET/SET/MGET 及位操作等
+ * {@link ReactiveStringCommands} 的 Reactor 适配。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveStringCommands extends RedissonBaseReactive implements ReactiveStringCommands {
 
+    /** 注入 Redisson 响应式命令执行器。 */
     RedissonReactiveStringCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
     private static final RedisCommand<Boolean> SET = new RedisCommand<Boolean>("SET", new BooleanReplayConvertor());
     
+    /** 设置字符串值。 */
     @Override
     public Flux<BooleanResponse<SetCommand>> set(Publisher<SetCommand> commands) {
         return execute(commands, command -> {
@@ -88,6 +93,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 获取字符串值。 */
     @Override
     public Flux<ByteBufferResponse<KeyCommand>> get(Publisher<KeyCommand> keys) {
         return execute(keys, command -> {
@@ -101,6 +107,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 设置新值并返回旧值。 */
     @Override
     public Flux<ByteBufferResponse<SetCommand>> getSet(Publisher<SetCommand> commands) {
         return execute(commands, command -> {
@@ -120,6 +127,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 批量 GET。 */
     @Override
     public Flux<MultiValueResponse<List<ByteBuffer>, ByteBuffer>> mGet(Publisher<List<ByteBuffer>> keysets) {
         return execute(keysets, coll -> {
@@ -141,6 +149,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 仅当 key 不存在时设置。 */
     @Override
     public Flux<BooleanResponse<SetCommand>> setNX(Publisher<SetCommand> values) {
         return execute(values, command -> {
@@ -162,6 +171,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisCommand<Boolean> SETEX = new RedisCommand<Boolean>("SETEX", new BooleanReplayConvertor());
     
+    /** 响应式 SET key 带秒级 TTL。 */
     @Override
     public Flux<BooleanResponse<SetCommand>> setEX(Publisher<SetCommand> commands) {
         return execute(commands, command -> {
@@ -184,6 +194,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisCommand<String> PSETEX = new RedisCommand<String>("PSETEX");
     
+    /** 响应式 SET key 带毫秒 TTL。 */
     @Override
     public Flux<BooleanResponse<SetCommand>> pSetEX(Publisher<SetCommand> commands) {
         return execute(commands, command -> {
@@ -206,6 +217,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisCommand<Boolean> MSET = new RedisCommand<Boolean>("MSET", new BooleanReplayConvertor());
     
+    /** 批量 SET。 */
     @Override
     public Flux<BooleanResponse<MSetCommand>> mSet(Publisher<MSetCommand> commands) {
         return execute(commands, command -> {
@@ -230,6 +242,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         return params;
     }
 
+    /** 批量 SET NX。 */
     @Override
     public Flux<BooleanResponse<MSetCommand>> mSetNX(Publisher<MSetCommand> source) {
         return execute(source, command -> {
@@ -245,6 +258,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisStrictCommand<Long> APPEND = new RedisStrictCommand<Long>("APPEND");
     
+    /** 追加字符串。 */
     @Override
     public Flux<NumericResponse<AppendCommand, Long>> append(Publisher<AppendCommand> commands) {
         return execute(commands, command -> {
@@ -262,6 +276,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisCommand<Object> GETRANGE = new RedisCommand<Object>("GETRANGE");
     
+    /** 获取子串（GETRANGE）。 */
     @Override
     public Flux<ByteBufferResponse<RangeCommand>> getRange(Publisher<RangeCommand> commands) {
         return execute(commands, command -> {
@@ -279,6 +294,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisCommand<Long> SETRANGE = new RedisCommand<Long>("SETRANGE");
     
+    /** 覆盖子串（SETRANGE）。 */
     @Override
     public Flux<NumericResponse<SetRangeCommand, Long>> setRange(Publisher<SetRangeCommand> commands) {
         return execute(commands, command -> {
@@ -294,6 +310,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 获取位值。 */
     @Override
     public Flux<BooleanResponse<GetBitCommand>> getBit(Publisher<GetBitCommand> commands) {
         return execute(commands, command -> {
@@ -307,6 +324,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 设置位值。 */
     @Override
     public Flux<BooleanResponse<SetBitCommand>> setBit(Publisher<SetBitCommand> commands) {
         return execute(commands, command -> {
@@ -320,6 +338,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 统计位为 1 的数量。 */
     @Override
     
     public Flux<NumericResponse<BitCountCommand, Long>> bitCount(Publisher<BitCountCommand> commands) {
@@ -347,6 +366,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisStrictCommand<Long> BITFIELD = new RedisStrictCommand<>("BITFIELD");
 
+    /** 执行 BITFIELD 子命令。 */
     @Override
     public Flux<MultiValueResponse<BitFieldCommand, Long>> bitField(Publisher<BitFieldCommand> commands) {
         return execute(commands, command -> {
@@ -393,6 +413,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
     private static final RedisStrictCommand<Long> BITOP = new RedisStrictCommand<Long>("BITOP");
     
+    /** 对多个 key 执行位运算。 */
     @Override
     public Flux<NumericResponse<BitOpCommand, Long>> bitOp(Publisher<BitOpCommand> commands) {
         return execute(commands, command -> {
@@ -416,6 +437,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
     
     private static final RedisStrictCommand<Long> BITPOS = new RedisStrictCommand<Long>("BITPOS");
 
+    /** 查找第一个指定位值的位置。 */
     @Override
     public Flux<NumericResponse<BitPosCommand, Long>> bitPos(Publisher<BitPosCommand> commands) {
         return execute(commands, command -> {
@@ -441,6 +463,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    /** 返回字符串长度。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> strLen(Publisher<KeyCommand> keys) {
         return execute(keys, command -> {

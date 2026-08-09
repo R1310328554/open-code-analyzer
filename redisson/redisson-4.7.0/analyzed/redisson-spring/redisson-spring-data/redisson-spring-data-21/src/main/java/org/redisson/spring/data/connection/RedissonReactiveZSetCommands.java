@@ -58,12 +58,15 @@ import java.util.stream.Collectors;
  */
 public class RedissonReactiveZSetCommands extends RedissonBaseReactive implements ReactiveZSetCommands {
 
+    /** 注入 Redisson 响应式命令执行器。 */
     RedissonReactiveZSetCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** ZADD INCR 模式使用的浮点结果解码命令。 */
     private static final RedisCommand<Double> ZADD_FLOAT = new RedisCommand<>("ZADD", new DoubleNullSafeReplayConvertor());
 
+    /** 向有序集合添加成员及分数。 */
     @Override
     public Flux<NumericResponse<ZAddCommand, Number>> zAdd(Publisher<ZAddCommand> commands) {
         return execute(commands, command -> {
@@ -104,6 +107,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** 从有序集合移除成员。 */
     @Override
     public Flux<NumericResponse<ZRemCommand, Long>> zRem(Publisher<ZRemCommand> commands) {
         return execute(commands, command -> {
@@ -120,6 +124,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** 有序集合成员分数增量更新。 */
     @Override
     public Flux<NumericResponse<ZIncrByCommand, Double>> zIncrBy(Publisher<ZIncrByCommand> commands) {
         return execute(commands, command -> {
@@ -135,6 +140,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** 返回成员升序排名。 */
     @Override
     public Flux<NumericResponse<ZRankCommand, Long>> zRank(Publisher<ZRankCommand> commands) {
         return execute(commands, command -> {
@@ -166,6 +172,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<Set<Object>> ZREVRANGE = new RedisCommand<>("ZREVRANGE", new ObjectSetReplayDecoder<Object>());
 
+    /** 按排名区间返回成员。 */
     @Override
     public Flux<CommandResponse<ZRangeCommand, Flux<Tuple>>> zRange(Publisher<ZRangeCommand> commands) {
         return execute(commands, command -> {
@@ -220,6 +227,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     private static final RedisCommand<Set<Tuple>> ZREVRANGEBYSCORE_V2 = new RedisCommand<Set<Tuple>>("ZREVRANGEBYSCORE",
             new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
 
+    /** 按分数区间返回成员。 */
     @Override
     public Flux<CommandResponse<ZRangeByScoreCommand, Flux<Tuple>>> zRangeByScore(
             Publisher<ZRangeByScoreCommand> commands) {
@@ -288,6 +296,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<ListScanResult<Tuple>> ZSCAN = new RedisCommand<>("ZSCAN", new ListMultiDecoder2(new ScoredSortedSetScanDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()));
 
+    /** 增量 SCAN 有序集合成员。 */
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<Tuple>>> zScan(Publisher<KeyScanCommand> commands) {
         return execute(commands, command -> {
@@ -297,6 +306,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             
             byte[] keyBuf = toByteArray(command.getKey());
             Flux<Tuple> flux = Flux.create(new SetReactiveIterator<Tuple>() {
+                /** 将 SCAN 结果包装为响应式迭代器。 */
                 @Override
                 protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                     if (command.getOptions().getPattern() == null) {
@@ -371,6 +381,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         return s.toString();
     }
 
+    /** 统计分数区间内成员数。 */
     @Override
     public Flux<NumericResponse<ZCountCommand, Long>> zCount(Publisher<ZCountCommand> commands) {
         return execute(commands, command -> {
@@ -386,6 +397,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** 返回有序集合基数。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> zCard(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -398,6 +410,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    /** 返回成员分数。 */
     @Override
     public Flux<NumericResponse<ZScoreCommand, Double>> zScore(Publisher<ZScoreCommand> commands) {
         return execute(commands, command -> {
@@ -414,6 +427,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZREMRANGEBYRANK = new RedisStrictCommand<Long>("ZREMRANGEBYRANK");
     
+    /** 按排名区间删除成员（响应式）。 */
     @Override
     public Flux<NumericResponse<ZRemRangeByRankCommand, Long>> zRemRangeByRank(
             Publisher<ZRemRangeByRankCommand> commands) {
@@ -432,6 +446,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     
     private static final RedisStrictCommand<Long> ZREMRANGEBYSCORE = new RedisStrictCommand<Long>("ZREMRANGEBYSCORE");
 
+    /** 按分数区间删除成员。 */
     @Override
     public Flux<NumericResponse<ZRemRangeByScoreCommand, Long>> zRemRangeByScore(
             Publisher<ZRemRangeByScoreCommand> commands) {
@@ -450,6 +465,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZUNIONSTORE = new RedisStrictCommand<Long>("ZUNIONSTORE");
     
+    /** 计算有序集合并集并存储。 */
     @Override
     public Flux<NumericResponse<ZUnionStoreCommand, Long>> zUnionStore(Publisher<ZUnionStoreCommand> commands) {
         return execute(commands, command -> {
@@ -479,6 +495,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     
     private static final RedisStrictCommand<Long> ZINTERSTORE = new RedisStrictCommand<Long>("ZINTERSTORE");
 
+    /** 计算有序集合交集并存储。 */
     @Override
     public Flux<NumericResponse<ZInterStoreCommand, Long>> zInterStore(Publisher<ZInterStoreCommand> commands) {
         return execute(commands, command -> {
@@ -509,6 +526,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     private static final RedisCommand<Set<Object>> ZRANGEBYLEX = new RedisCommand<Set<Object>>("ZRANGEBYLEX", new ObjectSetReplayDecoder<Object>());
     private static final RedisCommand<Set<Object>> ZREVRANGEBYLEX = new RedisCommand<Set<Object>>("ZREVRANGEBYLEX", new ObjectSetReplayDecoder<Object>());
 
+    /** 按字典序区间返回成员。 */
     @Override
     public Flux<CommandResponse<ZRangeByLexCommand, Flux<ByteBuffer>>> zRangeByLex(
             Publisher<ZRangeByLexCommand> commands) {

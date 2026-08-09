@@ -58,7 +58,10 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Spring configuration used with Spring Boot 2.6 and lower
+ * Spring Boot 2.6 及以下版本的 Redisson 自动配置。
+ * <p>注册 {@link RedisTemplate}、{@link RedissonConnectionFactory} 与
+ * {@link RedissonClient}；从 {@link RedisProperties} 或 {@link RedissonProperties}
+ * 推导单机/哨兵/集群 {@link Config}，并支持 {@link RedissonAutoConfigurationCustomizer} 回调。
  *
  * @author Nikita Koksharov
  * @author Nikos Kakavas (https://github.com/nikakis)
@@ -72,18 +75,23 @@ import java.util.List;
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfiguration {
 
+    /** 可选的 Redisson 配置定制器列表。 */
     @Autowired(required = false)
     private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
 
+    /** {@code spring.redis.redisson.*} 扩展属性。 */
     @Autowired
     private RedissonProperties redissonProperties;
 
+    /** Spring Boot 标准 {@code spring.redis.*} 属性。 */
     @Autowired
     private RedisProperties redisProperties;
 
+    /** Spring 应用上下文，用于加载配置 Resource 与 SSL bundle。 */
     @Autowired
     private ApplicationContext ctx;
 
+    /** 注册默认 {@link RedisTemplate}（若应用未自定义）。 */
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
@@ -92,6 +100,7 @@ public class RedissonAutoConfiguration {
         return template;
     }
 
+    /** 注册默认 {@link StringRedisTemplate}。 */
     @Bean
     @ConditionalOnMissingBean(StringRedisTemplate.class)
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
@@ -100,12 +109,14 @@ public class RedissonAutoConfiguration {
         return template;
     }
 
+    /** 将 {@link RedissonClient} 包装为 Spring Data {@link RedisConnectionFactory}。 */
     @Bean
     @ConditionalOnMissingBean(RedisConnectionFactory.class)
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
         return new RedissonConnectionFactory(redisson);
     }
 
+    /** 暴露 {@link RedissonReactiveClient}（懒加载）。 */
     @Bean
     @Lazy
     @ConditionalOnMissingBean(RedissonReactiveClient.class)
@@ -113,6 +124,7 @@ public class RedissonAutoConfiguration {
         return redisson.reactive();
     }
 
+    /** 暴露 {@link RedissonRxClient}（懒加载）。 */
     @Bean
     @Lazy
     @ConditionalOnMissingBean(RedissonRxClient.class)
@@ -120,6 +132,7 @@ public class RedissonAutoConfiguration {
         return redisson.rxJava();
     }
 
+    /** 检测 classpath 是否存在 Spring Boot 3 {@link RedisConnectionDetails}。 */
     private boolean hasConnectionDetails() {
         try {
             Class.forName("org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails");
@@ -129,6 +142,10 @@ public class RedissonAutoConfiguration {
         }
     }
 
+    /**
+     * 创建 {@link RedissonClient}：优先 YAML/文件配置，否则从 Spring Redis 属性推导。
+     * <p>支持单机、哨兵、集群；创建前应用全部 {@link RedissonAutoConfigurationCustomizer}。
+     */
     @SuppressWarnings("MethodLength")
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean(RedissonClient.class)
@@ -203,6 +220,7 @@ public class RedissonAutoConfiguration {
             } catch (Exception e) {
                 throw new IllegalArgumentException("Can't parse config", e);
             }
+        // 哨兵模式：从 RedisProperties 或 RedisConnectionDetails 构建 SentinelServersConfig。
         } else if (redisProperties.getSentinel() != null || isSentinel) {
             String[] nodes = {};
             String sentinelMaster = null;
@@ -251,6 +269,7 @@ public class RedissonAutoConfiguration {
                 c.setTimeout(timeout);
             }
             initSSL(config);
+        // 集群模式：解析节点列表并构建 ClusterServersConfig。
         } else if ((clusterMethod != null && ReflectionUtils.invokeMethod(clusterMethod, redisProperties) != null)
                     || isCluster) {
 
@@ -284,6 +303,7 @@ public class RedissonAutoConfiguration {
                 c.setTimeout(timeout);
             }
             initSSL(config);
+        // 单机模式：使用 host:port 或 RedisConnectionDetails.standalone。
         } else {
             config = new Config()
                     .setUsername(username)
@@ -312,6 +332,7 @@ public class RedissonAutoConfiguration {
             }
             initSSL(config);
         }
+        // 依次应用用户注册的 RedissonAutoConfigurationCustomizer。
         if (redissonAutoConfigurationCustomizers != null) {
             for (RedissonAutoConfigurationCustomizer customizer : redissonAutoConfigurationCustomizers) {
                 customizer.customize(config);
@@ -320,6 +341,7 @@ public class RedissonAutoConfiguration {
         return Redisson.create(config);
     }
 
+    /** 若配置了 SSL bundle，则注入信任库与密钥库到 {@link Config}。 */
     private void initSSL(Config config) {
         Method getSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "getSsl");
         if (getSSLMethod == null) {
@@ -346,6 +368,7 @@ public class RedissonAutoConfiguration {
         config.setSslKeyManagerFactory(b.getManagers().getKeyManagerFactory());
     }
 
+    /** 根据 SSL 配置返回 {@code redis://} 或 {@code rediss://} 地址前缀。 */
     private String getPrefix() {
         String prefix = RedisURI.REDIS_PROTOCOL;
         Method isSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "isSsl");
@@ -367,7 +390,9 @@ public class RedissonAutoConfiguration {
         return prefix;
     }
 
+    /** 通过 MethodHandle 读取 host/port（兼容 JDK 8 record 编译产物）。 */
     @SuppressWarnings("IllegalCatch")
+    /** 通过 MethodHandle 读取 host/port 并拼接节点地址。 */
     private String[] convertNodes(String prefix, List<?> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
         try {
@@ -389,6 +414,7 @@ public class RedissonAutoConfiguration {
         return nodes.toArray(new String[0]);
     }
 
+    /** 为节点地址补全协议前缀（若尚未包含）。 */
     private String[] convert(String prefix, List<String> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
         for (String node : nodesObject) {
@@ -401,6 +427,7 @@ public class RedissonAutoConfiguration {
         return nodes.toArray(new String[0]);
     }
 
+    /** 从 Spring {@link Resource} 加载 Redisson 配置文件流。 */
     private InputStream getConfigStream() throws IOException {
         Resource resource = ctx.getResource(redissonProperties.getFile());
         return resource.getInputStream();
