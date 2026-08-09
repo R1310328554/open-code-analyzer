@@ -43,6 +43,10 @@ import jline.console.ConsoleReader;
 import jline.console.KeyMap;
 
 /**
+ * Arthas Telnet 命令行客户端：交互式 REPL 或批处理（{@code -c}/{@code -f}）执行远程命令。
+ * <p>
+ * 基于 Commons Net Telnet 与 JLine，支持窗口尺寸协商、Ctrl+C 转发及静默连接模式。
+ *
  * @author ralf0131 2016-12-29 11:55.
  * @author hengyunabc 2018-11-01
  */
@@ -52,6 +56,7 @@ import jline.console.KeyMap;
         + "  java -jar arthas-client.jar -c 'dashboard -n 1' \n"
         + "  java -jar arthas-client.jar -f batch.as 127.0.0.1\n")
 public class TelnetConsole {
+    /** 批处理模式下识别命令执行完毕的提示符前缀。 */
     private static final String PROMPT = "[arthas@"; // [arthas@49603]$
     private static final int DEFAULT_CONNECTION_TIMEOUT = 5000; // 5000 ms
 
@@ -362,6 +367,7 @@ public class TelnetConsole {
 
     }
 
+    /** 批处理：按序发送命令，等待 prompt 出现后再发下一条，最后发送 quit。 */
     private static int batchModeRun(TelnetClient telnet, List<String> commands, final int executionTimeout)
             throws IOException, InterruptedException {
         if (commands.size() == 0) {
@@ -430,6 +436,7 @@ public class TelnetConsole {
         return STATUS_OK;
     }
 
+    /** 在行首查找 {@link #PROMPT}，避免匹配输出内容中的同名子串。 */
     private static int findPromptAtLineStart(StringBuilder output) {
         int fromIndex = 0;
         int index;

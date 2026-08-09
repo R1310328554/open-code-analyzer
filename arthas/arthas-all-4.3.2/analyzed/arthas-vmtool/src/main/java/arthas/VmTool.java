@@ -3,6 +3,10 @@ package arthas;
 import java.util.Map;
 
 /**
+ * 基于 JNI/JVMTI 的 JVM 内省工具单例，供 vmtool 命令与 JMX 使用。
+ * <p>
+ * 通过本地库 {@link #JNI_LIBRARY_NAME} 访问堆实例统计、强制 GC、glibc 内存 trim 等能力。
+ *
  * @author ZhangZiCheng 2021-02-12
  * @author hengyunabc 2021-04-26
  * @since 3.5.1
@@ -14,6 +18,7 @@ public class VmTool implements VmToolMXBean {
      */
     public final static String JNI_LIBRARY_NAME = "ArthasJniLibrary";
 
+    /** 全局单例，首次 {@link #getInstance(String)} 时加载 JNI 并创建。 */
     private static VmTool instance;
 
     private VmTool() {
@@ -23,6 +28,9 @@ public class VmTool implements VmToolMXBean {
         return getInstance(null);
     }
 
+    /**
+     * 获取 VmTool 单例；{@code libPath} 非空时从指定路径加载 JNI，否则 {@link System#loadLibrary}。
+     */
     public static synchronized VmTool getInstance(String libPath) {
         if (instance != null) {
             return instance;
@@ -83,6 +91,7 @@ public class VmTool implements VmToolMXBean {
     }
 
     @Override
+    /** 按线程 ID 查找并 {@link Thread#interrupt()} 目标线程。 */
     public void interruptSpecialThread(int threadId) {
         Map<Thread, StackTraceElement[]> allThread = Thread.getAllStackTraces();
         for (Map.Entry<Thread, StackTraceElement[]> entry : allThread.entrySet()) {

@@ -26,14 +26,14 @@ import com.taobao.arthas.common.JavaVersionUtils;
 import com.taobao.arthas.common.PidUtils;
 
 /**
+ * arthas-boot 进程选择与 attach 辅助：枚举 JVM、定位 JAVA_HOME/tools.jar、启动 core/client 子进程。
  *
  * @author hengyunabc 2018-11-06
- *
  */
 public class ProcessUtils {
     private static String FOUND_JAVA_HOME = null;
 
-    //status code from com.taobao.arthas.client.TelnetConsole
+    // 与 {@link com.taobao.arthas.client.TelnetConsole} 约定的退出状态码保持一致
     /**
      * Process success
      */
@@ -52,6 +52,11 @@ public class ProcessUtils {
     public static final int STATUS_EXEC_ERROR = 101;
 
     @SuppressWarnings("resource")
+    /**
+     * 交互式或按 {@code --select} 子串匹配选择目标 Java 进程 PID。
+     * <p>
+     * 优先 jps，失败则回退 jcmd；若 Telnet 端口已有监听进程则置顶显示。
+     */
     public static long select(boolean v, long telnetPortPid, String select) throws InputMismatchException {
         Map<Long, String> processMap = listProcessByJps(v);
         if (processMap.isEmpty()) {
@@ -61,7 +66,7 @@ public class ProcessUtils {
                 return -1;
             }
         }
-        // Put the port that is already listening at the first
+        // 已在监听 Telnet 端口的进程排在列表首位，便于快速重连
         if (telnetPortPid > 0 && processMap.containsKey(telnetPortPid)) {
             String telnetPortProcess = processMap.get(telnetPortPid);
             processMap.remove(telnetPortPid);
@@ -225,6 +230,7 @@ public class ProcessUtils {
      *
      * @return
      */
+    /** 解析 attach 所需的 JDK 根目录（含 JDK8 下 tools.jar 探测逻辑）。 */
     public static String findJavaHome() {
         if (FOUND_JAVA_HOME != null) {
             return FOUND_JAVA_HOME;
@@ -275,6 +281,7 @@ public class ProcessUtils {
         return FOUND_JAVA_HOME;
     }
 
+    /** 使用找到的 java 可执行文件 fork 子进程运行 arthas-core.jar attach 目标 PID。 */
     public static void startArthasCore(long targetPid, List<String> attachArgs) {
         // find java/java.exe, then try to find tools.jar
         String javaHome = findJavaHome();
@@ -357,6 +364,10 @@ public class ProcessUtils {
         }
     }
 
+    /**
+     * 反射调用 {@link com.taobao.arthas.client.TelnetConsole#process}，将 stdout/stderr 重定向到 {@code out}。
+     * @return TelnetConsole 状态码
+     */
     public static int startArthasClient(String arthasHomeDir, List<String> telnetArgs, OutputStream out) throws Throwable {
         // start java telnet client
         // find arthas-client.jar

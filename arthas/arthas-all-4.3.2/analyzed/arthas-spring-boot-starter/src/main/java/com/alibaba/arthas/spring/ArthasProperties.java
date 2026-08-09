@@ -5,12 +5,13 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 
- * @author hengyunabc 2020-06-23
+ * {@code arthas.*} 配置属性绑定类，对应 application.yml/properties 中的 Arthas 开关与网络参数。
  *
+ * @author hengyunabc 2020-06-23
  */
 @ConfigurationProperties(prefix = "arthas")
 public class ArthasProperties {
+	/** Agent 监听 IP，默认本机。 */
 	private String ip;
 	private int telnetPort;
 	private int httpPort;
@@ -20,14 +21,10 @@ public class ArthasProperties {
 
 	private String appName;
 
-	/**
-	 * report executed command
-	 */
+	/** 命令执行统计上报 URL。 */
 	private String statUrl;
 
-	/**
-	 * session timeout seconds
-	 */
+	/** 交互会话超时时间（秒）。 */
 	private long sessionTimeout;
 
     private String username;
@@ -35,13 +32,9 @@ public class ArthasProperties {
 
 	private String home;
 
-	/**
-	 * when arthas agent init error will throw exception by default.
-	 */
+	/** 为 true 时 Agent 初始化失败不抛异常，仅记录日志。 */
 	private boolean slientInit = false;
-	/**
-	 * disabled commands，default disable stop command
-	 */
+	/** 禁用的命令列表（逗号分隔），默认禁用 stop。 */
 	private String disabledCommands;
 	private String commandLocations;
 	private static final String DEFAULT_DISABLEDCOMMANDS = "stop";

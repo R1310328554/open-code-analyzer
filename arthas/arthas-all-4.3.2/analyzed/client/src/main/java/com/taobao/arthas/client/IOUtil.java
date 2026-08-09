@@ -8,21 +8,21 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
 /***
- * This is a utility class providing a reader/writer capability required by the
- * weatherTelnet, rexec, rshell, and rlogin example programs. The only point of
- * the class is to hold the static method readWrite which spawns a reader thread
- * and a writer thread. The reader thread reads from a local input source
- * (presumably stdin) and writes the data to a remote output destination. The
- * writer thread reads from a remote input source and writes to a local output
- * destination. The threads terminate when the remote input source closes.
+ * Telnet 交互 IO 桥接工具：启动读写双线程，在本地终端与远程 Telnet 流之间双向转发字节。
+ * <p>
+ * 读线程：本地输入（stdin）→ 远程输出；写线程：远程输入 → 本地 Writer。远程关闭时写线程结束并唤醒主线程。
  ***/
 
 public final class IOUtil {
 
+    /**
+     * 阻塞直到远程输入关闭：本地 keystroke 发往 remoteOutput，remoteInput 字符写入 localOutput。
+     */
     public static final void readWrite(final InputStream remoteInput, final OutputStream remoteOutput,
                     final InputStream localInput, final Writer localOutput) {
         Thread reader, writer;
 
+        // 本地 → 远程：逐字节转发 stdin 到 Telnet 输出流
         reader = new Thread() {
             @Override
             public void run() {
@@ -39,6 +39,7 @@ public final class IOUtil {
             }
         };
 
+        // 远程 → 本地：UTF-8 解码 Telnet 响应并写入控制台
         writer = new Thread() {
             @Override
             public void run() {

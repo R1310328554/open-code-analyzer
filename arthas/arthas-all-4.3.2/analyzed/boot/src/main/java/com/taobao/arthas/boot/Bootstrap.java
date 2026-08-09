@@ -39,8 +39,11 @@ import com.taobao.middleware.cli.annotations.Option;
 import com.taobao.middleware.cli.annotations.Summary;
 
 /**
- * @author hengyunabc 2018-10-26
+ * {@code arthas-boot.jar} 入口：选择目标 JVM、解析/下载 Arthas 发行包、attach Agent 并启动 Telnet 客户端。
+ * <p>
+ * 支持命令行指定 PID、端口、Tunnel、批处理脚本等；是命令行场景下最常用的 Arthas 启动器。
  *
+ * @author hengyunabc 2018-10-26
  */
 @Name("arthas-boot")
 @Summary("Bootstrap Arthas")
@@ -62,9 +65,11 @@ import com.taobao.middleware.cli.annotations.Summary;
                 + "  java -jar arthas-boot.jar --repo-mirror aliyun\n" + "WIKI:\n"
                 + "  https://arthas.aliyun.com/doc\n")
 public class Bootstrap {
+    /** 默认 Telnet 诊断端口。 */
     private static final int DEFAULT_TELNET_PORT = 3658;
     private static final int DEFAULT_HTTP_PORT = 8563;
     private static final String DEFAULT_TARGET_IP = "127.0.0.1";
+    /** 本地缓存 Arthas 版本的目录（{@code ~/.arthas/lib} 或环境变量 {@code ARTHAS_LIB_DIR}）。 */
     private static File ARTHAS_LIB_DIR;
 
     private boolean help = false;
@@ -365,7 +370,7 @@ public class Bootstrap {
             System.exit(0);
         }
 
-        // check telnet/http port
+        // 检查 Telnet/HTTP 端口是否已被其他进程占用
         long telnetPortPid = -1;
         long httpPortPid = -1;
         if (bootstrap.getTelnetPortOrDefault() > 0) {
@@ -382,7 +387,7 @@ public class Bootstrap {
         }
 
         long pid = bootstrap.getPid();
-        // select pid
+        // 未指定 PID 时交互式列出 JVM 进程供用户选择
         if (pid < 0) {
             try {
                 pid = ProcessUtils.select(bootstrap.isVerbose(), telnetPortPid, bootstrap.getSelect());
@@ -407,7 +412,7 @@ public class Bootstrap {
             System.exit(1);
         }
 
-        // find arthas home
+        // 按 --arthas-home、--use-version、jar 同目录、远程下载 等策略定位 arthas 安装目录
         File arthasHomeDir = null;
         if (bootstrap.getArthasHome() != null) {
             verifyArthasHome(bootstrap.getArthasHome());
@@ -513,7 +518,7 @@ public class Bootstrap {
                 AnsiLog.info("The target process already listen port {}, skip attach.", bootstrap.getTelnetPortOrDefault());
             } else {
 
-                // start arthas-core.jar
+                // 组装参数并 fork 子进程 attach 目标 PID
                 List<String> attachArgs = new ArrayList<String>();
                 attachArgs.add("-jar");
                 attachArgs.add(new File(arthasHomeDir, "arthas-core.jar").getAbsolutePath());
@@ -591,7 +596,7 @@ public class Bootstrap {
             System.exit(0);
         }
 
-        // start java telnet client
+        // attach 完成后（或非 attach-only 模式）启动 arthas-client 连接 Telnet
         // find arthas-client.jar
         URLClassLoader classLoader = new URLClassLoader(
                         new URL[] { new File(arthasHomeDir, "arthas-client.jar").toURI().toURL() });
@@ -628,6 +633,7 @@ public class Bootstrap {
         mainMethod.invoke(null, new Object[] { telnetArgs.toArray(new String[0]) });
     }
 
+    /** 校验 Telnet 端口占用进程与目标 PID 一致，避免连错 JVM。 */
     private static void checkTelnetPortPid(Bootstrap bootstrap, long telnetPortPid, long targetPid) {
         if (telnetPortPid > 0 && targetPid != telnetPortPid) {
             AnsiLog.error("The telnet port {} is used by process {} instead of target process {}, you will connect to an unexpected process.",
@@ -640,6 +646,7 @@ public class Bootstrap {
         }
     }
 
+    /** 通过 client 执行 session 命令探测端口上 Arthas 实例的真实 JAVA_PID。 */
     private static long findProcessByTelnetClient(String arthasHomeDir, int telnetPort) {
         // start java telnet client
         List<String> telnetArgs = new ArrayList<String>();
@@ -742,6 +749,7 @@ public class Bootstrap {
         return names;
     }
 
+    /** 确认目录存在且包含 core/agent/spy 三个必需 jar。 */
     private static void verifyArthasHome(String arthasHome) {
         File home = new File(arthasHome);
         if (home.isDirectory()) {

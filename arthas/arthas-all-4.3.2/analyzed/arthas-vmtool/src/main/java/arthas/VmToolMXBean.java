@@ -1,7 +1,7 @@
 package arthas;
 
 /**
- * VmTool interface for JMX server. How to register VmTool MBean:
+ * 供 JMX 暴露的 VmTool 管理接口。注册 MBean 示例：
  *
  * <pre>
  * {@code

@@ -17,11 +17,14 @@ import com.taobao.arthas.common.AnsiLog;
 import com.taobao.arthas.common.IOUtils;
 
 /**
+ * 从 Arthas 官方镜像下载指定版本发行包并解压到本地 lib 目录。
+ * <p>
+ * 提供最新版本查询、版本列表拉取及带进度日志的 HTTP 下载（支持 3xx 重定向）。
  *
  * @author hengyunabc 2018-11-06
- *
  */
 public class DownloadUtils {
+    /** 远程版本列表 API 地址。 */
     private static final String ARTHAS_VERSIONS_URL = "https://arthas.aliyun.com/api/versions";
     private static final String ARTHAS_LATEST_VERSIONS_URL = "https://arthas.aliyun.com/api/latest_version";
 
@@ -29,6 +32,7 @@ public class DownloadUtils {
 
     private static final int CONNECTION_TIMEOUT = 3000;
 
+    /** 从远程 API 读取当前最新 release 版本号字符串。 */
     public static String readLatestReleaseVersion() {
         InputStream inputStream = null;
         try {
@@ -44,6 +48,7 @@ public class DownloadUtils {
         return null;
     }
 
+    /** 拉取所有可下载的历史版本列表。 */
     public static List<String> readRemoteVersions() {
         InputStream inputStream = null;
         try {
@@ -67,6 +72,7 @@ public class DownloadUtils {
         return null;
     }
 
+    /** 下载指定版本 zip 到临时文件并解压到 {@code savePath/<version>/arthas}。 */
     public static void downArthasPackaging(String repoMirror, String arthasVersion, String savePath)
             throws IOException {
         File unzipDir = new File(savePath, arthasVersion + File.separator + "arthas");
@@ -129,7 +135,7 @@ public class DownloadUtils {
     }
 
     /**
-     * support redirect
+     * 打开 URL 连接，HTTP 3xx 时递归跟随 Location 重定向。
      *
      * @param url
      * @return

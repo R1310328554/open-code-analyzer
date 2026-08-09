@@ -22,17 +22,9 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 /***
- * The DatagramSocketFactory interface provides a means for the
- * programmer to control the creation of datagram sockets and
- * provide his own DatagramSocket implementations for use by all
- * classes derived from
- * {@link org.apache.commons.net.DatagramSocketClient}
- * .
- * This allows you to provide your own DatagramSocket implementations and
- * to perform security checks or browser capability requests before
- * creating a DatagramSocket.
- *
- *
+ * DatagramSocket 工厂接口：由 {@link DatagramSocketClient} 调用以创建可插拔的 UDP 套接字。
+ * <p>
+ * 便于在创建前做权限检查或注入自定义 Socket 实现。
  ***/
 
 public interface DatagramSocketFactory
@@ -44,6 +36,7 @@ public interface DatagramSocketFactory
      *
      * @exception SocketException If the socket could not be created.
      ***/
+    /** 在本地主机首个可用端口创建 DatagramSocket。 */
     public DatagramSocket createDatagramSocket() throws SocketException;
 
     /***

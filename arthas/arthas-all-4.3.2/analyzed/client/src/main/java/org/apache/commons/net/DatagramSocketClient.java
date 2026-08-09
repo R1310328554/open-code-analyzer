@@ -23,26 +23,10 @@ import java.net.SocketException;
 import java.nio.charset.Charset;
 
 /***
- * The DatagramSocketClient provides the basic operations that are required
- * of client objects accessing datagram sockets.  It is meant to be
- * subclassed to avoid having to rewrite the same code over and over again
- * to open a socket, close a socket, set timeouts, etc.  Of special note
- * is the {@link #setDatagramSocketFactory  setDatagramSocketFactory }
- * method, which allows you to control the type of DatagramSocket the
- * DatagramSocketClient creates for network communications.  This is
- * especially useful for adding things like proxy support as well as better
- * support for applets.  For
- * example, you could create a
- * {@link org.apache.commons.net.DatagramSocketFactory}
- *  that
- * requests browser security capabilities before creating a socket.
- * All classes derived from DatagramSocketClient should use the
- * {@link #_socketFactory_  _socketFactory_ } member variable to
- * create DatagramSocket instances rather than instantiating
- * them by directly invoking a constructor.  By honoring this contract
- * you guarantee that a user will always be able to provide his own
- * Socket implementations by substituting his own SocketFactory.
- *
+ * UDP 客户端抽象基类：封装 DatagramSocket 的打开、关闭、超时与工厂注入。
+ * <p>
+ * 子类应通过 {@link #_socketFactory_} 创建套接字，以便替换 {@link DatagramSocketFactory}
+ * 实现（如代理或 Applet 安全策略）。
  *
  * @see DatagramSocketFactory
  ***/
@@ -64,7 +48,7 @@ public abstract class DatagramSocketClient
     /*** The timeout to use after opening a socket. ***/
     protected int _timeout_;
 
-    /*** The datagram socket used for the connection. ***/
+    /** 当前连接使用的 UDP 套接字实例。 */
     protected DatagramSocket _socket_;
 
     /***
@@ -99,6 +83,7 @@ public abstract class DatagramSocketClient
      * @exception SocketException If the socket could not be opened or the
      *   timeout could not be set.
      ***/
+    /** 在本地任意可用端口打开 UDP 套接字并应用默认超时。 */
     public void open() throws SocketException
     {
         _socket_ = _socketFactory_.createDatagramSocket();
@@ -158,6 +143,7 @@ public abstract class DatagramSocketClient
      * If you call this method when the client socket is not open,
      * a NullPointerException is thrown.
      ***/
+    /** 关闭套接字并重置 {@link #_isOpen_} 状态。 */
     public void close()
     {
         if (_socket_ != null) {
