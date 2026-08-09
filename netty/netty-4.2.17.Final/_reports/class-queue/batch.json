@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T23:54:01Z",
-  "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyStreamStatus.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdySynReplyFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdySynStreamFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyUnknownFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyVersion.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyWindowUpdateFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/AbstractHttp2ConnectionHandlerBuilder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/AbstractHttp2StreamChannel.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/AbstractHttp2StreamFrame.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/AbstractInboundHttp2ToHttpAdapterBuilder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/CharSequenceMap.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/CleartextHttp2ServerUpgradeHandler.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/CompressorHttp2ConnectionEncoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DecoratingHttp2ConnectionDecoder.java",
-    "codec-http2/src/main/java/io/netty/handler/codec/http2/DecoratingHttp2ConnectionEncoder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1268,
-  "done": 645
+  "done": 660
 }
