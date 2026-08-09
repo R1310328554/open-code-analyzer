@@ -1258,3 +1258,17 @@
 2026-08-09T18:35:11Z DONE src/jmh/java/io/reactivex/rxjava4/streamable/StreamableCollectPerf.java wave29b [15:30]
 2026-08-09T18:35:11Z DONE src/jmh/java/io/reactivex/rxjava4/streamable/StreamableConcatIterablePerf.java wave29b [15:30]
 2026-08-09T18:35:11Z DONE src/jmh/java/io/reactivex/rxjava4/streamable/StreamableFilterPerf.java wave29b [15:30]
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapMaybePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapSinglePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapCompletablePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapMaybeEmptyPerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapMaybePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapSinglePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapCompletablePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapMaybeEmptyPerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapMaybePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapSinglePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapCompletablePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapMaybeEmptyPerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapMaybePerf.java wave30b
+2026-08-09T18:39:24Z DONE src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapSinglePerf.java wave30b

@@ -14,22 +14,8 @@
     "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapMaybePerf.java",
     "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapSinglePerf.java",
     "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapCompletablePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapMaybeEmptyPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapMaybePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapSinglePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapCompletablePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapMaybeEmptyPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapMaybePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableConcatMapSinglePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapCompletablePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapMaybeEmptyPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapMaybePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableFlatMapSinglePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapCompletablePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapMaybeEmptyPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapMaybePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapSinglePerf.java"
+    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapMaybeEmptyPerf.java"
   ],
   "remaining_pending": 64,
-  "done": 885
+  "done": 899
 }
