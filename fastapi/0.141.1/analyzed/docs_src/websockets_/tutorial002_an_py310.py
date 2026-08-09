@@ -1,3 +1,5 @@
+"""教程 002（Annotated）：WebSocket 路径参数、Query/Cookie 依赖与鉴权异常。"""
+
 from typing import Annotated
 
 from fastapi import (
@@ -11,7 +13,7 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse
 
-app = FastAPI()
+app = FastAPI()  # 创建 FastAPI 应用实例
 
 html = """
 <!DOCTYPE html>
@@ -55,11 +57,12 @@ html = """
         </script>
     </body>
 </html>
-"""
+"""  # 客户端手动拼接 item_id 与 token 查询参数后建立 WebSocket
 
 
 @app.get("/")
 async def get():
+    """返回带 Connect 按钮的测试页；需先连接再发送消息。"""
     return HTMLResponse(html)
 
 
@@ -68,6 +71,7 @@ async def get_cookie_or_token(
     session: Annotated[str | None, Cookie()] = None,
     token: Annotated[str | None, Query()] = None,
 ):
+    """依赖项：Cookie session 或 Query token 至少提供其一，否则以 WS_1008 拒绝握手。"""
     if session is None and token is None:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
     return session or token
@@ -81,6 +85,7 @@ async def websocket_endpoint(
     q: int | None = None,
     cookie_or_token: Annotated[str, Depends(get_cookie_or_token)],
 ):
+    """路径 item_id、可选 q、Depends 注入鉴权值；多帧回显 token、q 与消息内容。"""
     await websocket.accept()
     while True:
         data = await websocket.receive_text()
