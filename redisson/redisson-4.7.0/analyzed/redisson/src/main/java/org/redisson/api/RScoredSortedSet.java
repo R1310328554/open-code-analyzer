@@ -28,11 +28,12 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * Set containing elements sorted by score.
- * 
- * @author Nikita Koksharov
+ * 按分数排序的有序集合 {@link RScoredSortedSet}（Redis ZSET）同步 API。
+ * <p>封装 ZADD/ZREM、ZRANGE/ZREVRANGE、ZSCAN、ZUNION/ZINTER
+ * 及按分数/排名范围查询、MapReduce 等操作。
  *
- * @param <V> object type
+ * @author Nikita Koksharov
+ * @param <V> 成员类型
  */
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable, RSortable<Set<V>> {
 
@@ -41,16 +42,15 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
         SUM, MAX, MIN,
 
         /**
-         * Score of each member equals the count of input sets containing it,
-         * optionally scaled by WEIGHTS. Scores from input sets are ignored.
-         * Requires <b>Redis 8.8.0 or higher.</b>
+         * 成员分数等于包含该成员的输入集合数量（可按 WEIGHTS 缩放）；
+         * 忽略输入集合中的原始分数。需要 <b>Redis 8.8.0 及以上</b>。
          */
         COUNT
 
     }
     
     /**
-     * Returns <code>RMapReduce</code> object associated with this object
+     * 返回与当前集合关联的 {@link RCollectionMapReduce} 实例。
      * 
      * @param <KOut> output key
      * @param <VOut> output value
@@ -59,7 +59,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
     /**
-     * Removes and returns first available tail element of <b>any</b> sorted set,
+     * 从<b>任意</b>有序集合移除并返回最先可用的队尾元素，
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined sorted sets <b>including</b> this one.
      * <p>
@@ -75,7 +75,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Removes and returns first available tail elements of <b>any</b> sorted set,
+     * 从<b>任意</b>有序集合移除并返回最先可用的队尾元素，
      * waiting up to the specified wait time if necessary for elements to become available
      * in any of defined sorted sets <b>including</b> this one.
      * <p>
@@ -143,7 +143,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Removes and returns first available head elements of <b>any</b> sorted set,
+     * 从<b>任意</b>有序集合移除并返回最先可用的队首元素，
      * waiting up to the specified wait time if necessary for elements to become available
      * in any of defined sorted sets <b>including</b> this one.
      * <p>
@@ -157,7 +157,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<V> pollFirstFromAny(Duration duration, int count, String... queueNames);
 
     /**
-     * Removes and returns first available head elements
+     * 移除并返回最先可用的队首元素
      * of <b>any</b> sorted set <b>including</b> this one.
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
@@ -256,7 +256,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     void unsubscribe(int listenerId);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最小（队首）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -271,7 +271,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V pollFirst(long timeout, TimeUnit unit);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最小（队首）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -293,7 +293,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<V> pollFirst(Duration duration, int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最大（队尾）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -317,7 +317,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<V> pollLast(Duration duration, int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最大（队尾）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -342,7 +342,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> pollLast(int count);
     
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最小（队首）元素；空集合时返回 {@code null}。
      *
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
@@ -366,7 +366,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<ScoredEntry<V>> pollFirstEntries(int count);
 
     /**
-     * Removes and returns the head entries (value and its score).
+     * 移除并返回分数最小的多个条目（成员与分数）。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -378,7 +378,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最大（队尾）元素；空集合时返回 {@code null}。
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
@@ -400,7 +400,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<ScoredEntry<V>> pollLastEntries(int count);
 
     /**
-     * Removes and returns the head entries (value and its score).
+     * 移除并返回分数最小的多个条目（成员与分数）。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -566,7 +566,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Integer rank(V o);
 
     /**
-     * Returns rank and score of specified <code>value</code>,
+     * 返回指定成员的排名与分数；
      * with the ranks ordered from low to high.
      *
      * @param value object
@@ -583,7 +583,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Integer revRank(V o);
 
     /**
-     * Returns rank and score of specified <code>value</code>,
+     * 返回指定成员的排名与分数；
      * with the ranks ordered from high to low.
      *
      * @param value object
@@ -616,27 +616,27 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     List<Double> getScore(List<V> elements);
 
     /**
-     * Adds element to this set, overrides previous score if it has been already added.
+     * 向集合添加元素；若已存在则覆盖原分数。
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
     boolean add(double score, V object);
 
     /**
-     * Adds element to this set, overrides previous score if it has been already added.
+     * 向集合添加元素；若已存在则覆盖原分数。
      * Finally return the rank of the item
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return rank
      */
     Integer addAndGetRank(double score, V object);
 
     /**
-     * Adds element to this set, overrides previous score if it has been already added.
+     * 向集合添加元素；若已存在则覆盖原分数。
      * Finally return the reverse rank of the item
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return reverse rank
      */
@@ -653,7 +653,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Use {@link #addIfAbsent(double, Object)} instead
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -665,7 +665,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -676,7 +676,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -687,7 +687,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -698,7 +698,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -729,7 +729,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     boolean isEmpty();
     
     /**
-     * Returns stream of elements in this set.
+     * 返回本集合成员的 Stream。
      * Elements are loaded in batch. Batch size is 10. 
      * 
      * @return stream of elements
@@ -737,7 +737,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Stream<V> stream();
     
     /**
-     * Returns stream of elements in this set.
+     * 返回本集合成员的 Stream。
      * If <code>pattern</code> is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
@@ -746,7 +746,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Stream<V> stream(String pattern);
     
     /**
-     * Returns stream of elements in this set.
+     * 返回本集合成员的 Stream。
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
      * 
      * @param count - size of elements batch
@@ -755,7 +755,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Stream<V> stream(int count);
     
     /**
-     * Returns stream of elements in this set.
+     * 返回本集合成员的 Stream。
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
      * If pattern is not null then only elements match this pattern are loaded.
      * 
@@ -766,7 +766,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Stream<V> stream(String pattern, int count);
     
     /**
-     * Returns an iterator over elements in this set.
+     * 返回本集合成员的迭代器。
      * If <code>pattern</code> is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
@@ -775,7 +775,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Iterator<V> iterator(String pattern);
     
     /**
-     * Returns an iterator over elements in this set.
+     * 返回本集合成员的迭代器。
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
      * 
      * @param count - size of elements batch
@@ -784,7 +784,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Iterator<V> iterator(int count);
     
     /**
-     * Returns an iterator over elements in this set.
+     * 返回本集合成员的迭代器。
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
      * If pattern is not null then only elements match this pattern are loaded.
      * 
@@ -795,14 +795,14 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Iterator<V> iterator(String pattern, int count);
 
     /**
-     * Returns an iterator over entries (value and its score) in this set.
+     * 返回本集合条目（成员与分数）的迭代器。
      *
      * @return iterator
      */
     Iterator<ScoredEntry<V>> entryIterator();
 
     /**
-     * Returns an iterator over entries (value and its score) in this set.
+     * 返回本集合条目（成员与分数）的迭代器。
      * If <code>pattern</code> is not null then only entries match this pattern are loaded.
      *
      * @param pattern search pattern
@@ -811,7 +811,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Iterator<ScoredEntry<V>> entryIterator(String pattern);
 
     /**
-     * Returns an iterator over entries (value and its score) in this set.
+     * 返回本集合条目（成员与分数）的迭代器。
      * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
      *
      * @param count size of elements batch
@@ -820,7 +820,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Iterator<ScoredEntry<V>> entryIterator(int count);
 
     /**
-     * Returns an iterator over entries (value and its score) in this set.
+     * 返回本集合条目（成员与分数）的迭代器。
      * Entries are loaded in batch. Batch size is defined by <code>count</code> param.
      * If pattern is not null then only entries match this pattern are loaded.
      *
@@ -940,7 +940,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * Adds score to element and returns its rank
      * 
      * @param object - object itself
-     * @param value - object score
+     * @param value 成员 score
      * @return rank
      */
     Integer addScoreAndGetRank(V object, Number value);
@@ -949,7 +949,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * Adds score to element and returns its reverse rank
      * 
      * @param object - object itself
-     * @param value - object score
+     * @param value 成员 score
      * @return reverse rank
      */
     Integer addScoreAndGetRevRank(V object, Number value);
@@ -980,7 +980,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *                     to define infinity numbers
      *
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     int rangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -1000,7 +1000,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     int rangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
@@ -1030,7 +1030,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *                     to define infinity numbers
      *
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     int revRangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -1050,7 +1050,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     int revRangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
@@ -1106,7 +1106,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *                     to define infinity numbers
      * 
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     Collection<V> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -1122,12 +1122,12 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *                     to define infinity numbers
      * 
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目。
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -1156,7 +1156,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     Collection<V> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
@@ -1174,12 +1174,12 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目。
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -1197,7 +1197,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目 in reversed order.
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -1213,7 +1213,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目 in reversed order.
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -1242,16 +1242,16 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
-     * Read all values at once.
+     * 一次性读取全部值。.
      * 
-     * @return values
+     * @return 值集合
      */
     Collection<V> readAll();
 
     /**
-     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets 
+     * 对给定有序集合求交集并写入当前集合。 
      * and store result to current ScoredSortedSet
      * 
      * @param names - names of ScoredSortedSet
@@ -1261,9 +1261,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int intersection(String... names);
 
     /**
-     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets with defined aggregation method 
+     * 对给定有序集合求交集并写入当前集合。 with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
      * @param aggregate - score aggregation mode
@@ -1274,9 +1274,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int intersection(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
@@ -1286,9 +1286,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int intersection(Map<String, Double> nameWithWeight);
 
     /**
-     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1300,7 +1300,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int intersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
     /**
-     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier
      * with defined aggregation method
      * and store result to current ScoredSortedSet
      *
@@ -1310,9 +1310,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int intersection(SetIntersectionArgs args);
     
     /**
-     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets
+     * 对给定有序集合求交集并写入当前集合。
      * with current ScoredSortedSet without state change
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1324,9 +1324,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readIntersection(String... names);
 
     /**
-     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets with current ScoredSortedSet using defined aggregation method
+     * 对给定有序集合求交集并写入当前集合。 with current ScoredSortedSet using defined aggregation method
      * without state change
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1339,9 +1339,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readIntersection(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier
      * with current ScoredSortedSet without state change
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1353,7 +1353,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readIntersection(Map<String, Double> nameWithWeight);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计当前集合与指定集合交集的元素数量。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -1363,7 +1363,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Integer countIntersection(String... names);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计当前集合与指定集合交集的元素数量。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -1374,9 +1374,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Integer countIntersection(int limit, String... names);
 
     /**
-     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersection(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier
      * with current ScoredSortedSet using defined aggregation method
      * without state change
      * <p>
@@ -1390,7 +1390,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readIntersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
-     * Intersect provided ScoredSortedSets
+     * 对给定有序集合求交集并写入当前集合。
      * with current ScoredSortedSet
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1401,7 +1401,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readIntersection(SetIntersectionArgs args);
 
     /**
-     * Intersect provided ScoredSortedSets
+     * 对给定有序集合求交集并写入当前集合。
      * with current ScoredSortedSet
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1412,7 +1412,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<ScoredEntry<V>> readIntersectionEntries(SetIntersectionArgs args);
 
     /**
-     * Use {@link #union(SetUnionArgs)} instead.
+     * 请改用 {@link #union(SetUnionArgs)}。
      * <p>
      * Union provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
@@ -1424,7 +1424,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int union(String... names);
 
     /**
-     * Use {@link #union(SetUnionArgs)} instead.
+     * 请改用 {@link #union(SetUnionArgs)}。
      * <p>
      * Union provided ScoredSortedSets with defined aggregation method 
      * and store result to current ScoredSortedSet
@@ -1437,9 +1437,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int union(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #union(SetUnionArgs)} instead.
+     * 请改用 {@link #union(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合按权重求并集并写入当前集合。 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
@@ -1449,9 +1449,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int union(Map<String, Double> nameWithWeight);
 
     /**
-     * Use {@link #union(SetUnionArgs)} instead.
+     * 请改用 {@link #union(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合按权重求并集并写入当前集合。 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1463,7 +1463,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int union(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
     /**
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and store result to current ScoredSortedSet
      *
@@ -1473,7 +1473,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int union(SetUnionArgs args);
     
     /**
-     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnion(SetUnionArgs)}。
      * <p>
      * Union ScoredSortedSets specified by name with current ScoredSortedSet
      * without state change.
@@ -1487,7 +1487,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readUnion(String... names);
 
     /**
-     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnion(SetUnionArgs)}。
      * <p>
      * Union ScoredSortedSets specified by name with defined aggregation method
      * and current ScoredSortedSet without state change.
@@ -1502,9 +1502,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readUnion(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnion(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * and current ScoredSortedSet without state change.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1516,9 +1516,9 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readUnion(Map<String, Double> nameWithWeight);
 
     /**
-     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnion(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and current ScoredSortedSet without state change
      * <p>
@@ -1532,7 +1532,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readUnion(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and current ScoredSortedSet without state change
      * <p>
@@ -1544,7 +1544,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readUnion(SetUnionArgs args);
 
     /**
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and current ScoredSortedSet without state change
      * <p>
@@ -1556,7 +1556,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<ScoredEntry<V>> readUnionEntries(SetUnionArgs args);
 
     /**
-     * Diff ScoredSortedSets specified by name
+     * 对指定名称的有序集合求差集并写入当前集合。
      * with current ScoredSortedSet without state change.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1567,7 +1567,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readDiff(String... names);
 
     /**
-     * Diff ScoredSortedSets specified by name
+     * 对指定名称的有序集合求差集并写入当前集合。
      * with current ScoredSortedSet without state change.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1589,7 +1589,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int diff(String... names);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.ScoredSortedSetAddListener
@@ -1597,8 +1597,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     @Override
     int addListener(ObjectListener listener);

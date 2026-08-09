@@ -26,49 +26,47 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Map-based cache with ability to set TTL per entry.
- * Uses Redis native commands for entry expiration and not a scheduled eviction task.
- * <p>
- * Requires <b>Redis 7.4.0 and higher.</b>
+ * 基于 Redis 原生过期语义的 {@link RMapCacheNative} API。
+ * <p>条目 TTL 由 Redis 服务器维护，无需定时扫描淘汰任务。
+ * <p>需要 <b>Redis 7.4.0 及以上</b>。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<K, V> {
 
     /**
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
-     * @return previous associated value
+     * @return 先前关联的值
      */
     V put(K key, V value, Duration ttl);
 
     /**
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param time expire date
-     * @return previous associated value
+     * @return 先前关联的值
      */
     V put(K key, V value, Instant time);
 
     /**
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      * <p>
      * If the map previously contained a mapping for
@@ -77,8 +75,8 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * Works faster than usual {@link #put(Object, Object, Duration)}
      * as it not returns previous value.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      *
@@ -88,7 +86,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean fastPut(K key, V value, Duration ttl);
 
     /**
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      * <p>
      * If the map previously contained a mapping for
@@ -97,8 +95,8 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * Works faster than usual {@link #put(Object, Object, Duration)}
      * as it not returns previous value.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param time expire date
      *
      * @return <code>true</code> if key is a new key in the hash and value was set.
@@ -110,11 +108,11 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      *
@@ -126,11 +124,11 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param time expire date
      *
      * @return current associated value
@@ -143,10 +141,10 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * <p>
      * Specified time to live starts from the moment this method call was completed.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param ttl - time to live
-     * @return previous associated value
+     * @return 先前关联的值
      *         or {@code null} if key doesn't exist
      */
     V putIfExist(K key, V value, Duration ttl);
@@ -157,10 +155,10 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * <p>
      * Entry expires at specified instant.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param time - expiration instant
-     * @return previous associated value
+     * @return 先前关联的值
      *         or {@code null} if key doesn't exist
      */
     V putIfExist(K key, V value, Instant time);
@@ -169,14 +167,14 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      * <p>
      * Works faster than usual {@link #putIfAbsent(Object, Object, Duration)}
      * as it not returns previous value.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      *
@@ -190,14 +188,14 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      * <p>
      * Works faster than usual {@link #putIfAbsent(Object, Object, Duration)}
      * as it not returns previous value.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @param time expire date
      *
      * @return <code>true</code> if key is a new key in the hash and value was set.
@@ -206,7 +204,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean fastPutIfAbsent(K key, V value, Instant time);
 
     /**
-     * Remaining time to live of map entry associated with a <code>key</code>.
+     * 返回指定键对应条目的剩余 TTL。
      *
      * @param key map key
      * @return time in milliseconds
@@ -216,7 +214,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     long remainTimeToLive(K key);
 
     /**
-     * Remaining time to live of map entries associated with <code>keys</code>.
+     * 返回指定键集合对应条目的剩余 TTL 映射。
      *
      * @param keys map keys
      * @return Time to live mapped by key.
@@ -227,7 +225,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     Map<K, Long> remainTimeToLive(Set<K> keys);
 
     /**
-     * Use {@link #putAll(PutArgs)} method instead.
+     * 请改用 {@link #putAll(PutArgs)}。
      *
      * @param map - mappings to be stored in this map
      * @param ttl - time to live for all key\value entries.
@@ -237,7 +235,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     void putAll(java.util.Map<? extends K, ? extends V> map, Duration ttl);
 
     /**
-     * Stores map entries specified in the {@code args} parameter.
+     * 存储 {@code args} 中指定的 Map 条目。
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      * <p>
@@ -248,7 +246,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     void putAll(PutArgs<K, V> args);
 
     /**
-     * Stores the specified entries only if all specified keys already exist.
+     * 仅当全部指定键已存在时存储条目。
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      * <p>
@@ -260,7 +258,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean putIfAllKeysExist(PutArgs<K, V> args);
 
     /**
-     * Stores the specified entries only if none of the specified keys exist.
+     * 仅当全部指定键不存在时存储条目。
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      * <p>
@@ -272,7 +270,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean putIfAllKeysAbsent(PutArgs<K, V> args);
 
     /**
-     * Clears an expiration timeout or date of specified entry by key.
+     * 清除指定键条目的过期时间。
      *
      * @param key map key
      * @return <code>true</code> if timeout was removed
@@ -282,7 +280,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     Boolean clearExpire(K key);
 
     /**
-     * Clears an expiration timeout or date of specified entries by keys.
+     * 清除指定键集合条目的过期时间。
      *
      * @param keys map keys
      * @return Boolean mapped by key.
@@ -293,7 +291,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     Map<K, Boolean> clearExpire(Set<K> keys);
 
     /**
-     * Updates time to live of specified entry by key.
+     * 更新指定键条目的 TTL。
      * Entry expires when specified time to live was reached.
      * <p>
      * Returns <code>false</code> if entry already expired or doesn't exist,
@@ -312,7 +310,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntry(K key, Duration ttl);
 
     /**
-     * Updates time to live of specified entry by key.
+     * 更新指定键条目的 TTL。
      * Entry expires when specified time to live was reached.
      * <p>
      * Returns <code>false</code> if entry already expired or doesn't exist,
@@ -329,7 +327,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntry(K key, Instant time);
 
     /**
-     * Sets time to live of specified entry by key.
+     * 为指定键的条目设置 TTL。
      * If these parameters weren't set before.
      * Entry expires when specified time to live was reached.
      * <p>
@@ -349,7 +347,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntryIfNotSet(K key, Duration ttl);
 
     /**
-     * Sets time to live of specified entry by key.
+     * 为指定键的条目设置 TTL。
      * If these parameters weren't set before.
      * Entry expires when specified time to live was reached.
      * <p>
@@ -366,7 +364,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntryIfNotSet(K key, Instant time);
 
     /**
-     * Sets time to live of specified entry by key only if it's greater than timeout set before.
+     * 仅当新 TTL 大于已有 TTL 时为指定键条目设置过期时间。
      * Entry expires when specified time to live was reached.
      * <p>
      * Returns <code>false</code> if entry already has expiration time or doesn't exist,
@@ -385,7 +383,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntryIfGreater(K key, Duration ttl);
 
     /**
-     * Sets time to live of specified entry by key only if it's greater than timeout set before.
+     * 仅当新 TTL 大于已有 TTL 时为指定键条目设置过期时间。
      * Entry expires when specified time to live was reached.
      * <p>
      * Returns <code>false</code> if entry already has expiration time or doesn't exist,
@@ -401,7 +399,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntryIfGreater(K key, Instant time);
 
     /**
-     * Sets time to live of specified entry by key only if it's less than timeout set before.
+     * 仅当新 TTL 小于已有 TTL 时为指定键条目设置过期时间。
      * Entry expires when specified time to live was reached.
      * <p>
      * Returns <code>false</code> if entry already has expiration time or doesn't exist,
@@ -420,7 +418,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntryIfLess(K key, Duration ttl);
 
     /**
-     * Sets time to live of specified entry by key only if it's less than timeout set before.
+     * 仅当新 TTL 小于已有 TTL 时为指定键条目设置过期时间。
      * Entry expires when specified time to live was reached.
      * <p>
      * Returns <code>false</code> if entry already has expiration time or doesn't exist,
@@ -436,7 +434,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean expireEntryIfLess(K key, Instant time);
 
     /**
-     * Updates time to live of specified entries by keys.
+     * 更新指定键集合条目的 TTL。
      * Entries expires when specified time to live was reached.
      * <p>
      * Returns amount of updated entries.
@@ -453,7 +451,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntries(Set<K> keys, Duration ttl);
 
     /**
-     * Updates time to live of specified entries by keys.
+     * 更新指定键集合条目的 TTL。
      * Entries expires when specified time to live was reached.
      * <p>
      * Returns amount of updated entries.
@@ -467,7 +465,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntries(Set<K> keys, Instant time);
 
     /**
-     * Sets time to live of specified entries by keys only if it's greater than timeout set before.
+     * 仅当新 TTL 大于已有 TTL 时为指定键集合条目设置过期时间。
      * Entries expire when specified time to live was reached.
      * <p>
      * Returns amount of updated entries.
@@ -484,7 +482,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntriesIfGreater(Set<K> keys, Duration ttl);
 
     /**
-     * Sets time to live of specified entries by keys only if it's greater than timeout set before.
+     * 仅当新 TTL 大于已有 TTL 时为指定键集合条目设置过期时间。
      * Entries expire when specified time to live was reached.
      * <p>
      * Returns amount of updated entries.
@@ -498,7 +496,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntriesIfGreater(Set<K> keys, Instant time);
 
     /**
-     * Sets time to live of specified entries by keys only if it's less than timeout set before.
+     * 仅当新 TTL 小于已有 TTL 时为指定键集合条目设置过期时间。
      * Entries expire when specified time to live was reached.
      * <p>
      * Returns amount of updated entries.
@@ -515,7 +513,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntriesIfLess(Set<K> keys, Duration ttl);
 
     /**
-     * Sets time to live of specified entries by keys only if it's less than timeout set before.
+     * 仅当新 TTL 小于已有 TTL 时为指定键集合条目设置过期时间。
      * Entries expire when specified time to live was reached.
      * <p>
      * Returns amount of updated entries.
@@ -529,7 +527,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntriesIfLess(Set<K> keys, Instant time);
 
     /**
-     * Sets time to live of specified entries by keys.
+     * 为指定键集合的条目设置 TTL。
      * If these parameters weren't set before.
      * Entries expire when specified time to live was reached.
      * <p>
@@ -547,7 +545,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntriesIfNotSet(Set<K> keys, Duration ttl);
 
     /**
-     * Sets time to live of specified entries by keys.
+     * 为指定键集合的条目设置 TTL。
      * If these parameters weren't set before.
      * Entries expire when specified time to live was reached.
      * <p>
@@ -562,7 +560,7 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     int expireEntriesIfNotSet(Set<K> keys, Instant time);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.MapPutListener
@@ -571,8 +569,8 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     int addListener(ObjectListener listener);
 
@@ -580,10 +578,10 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * If the specified key is not already associated
      * with a value, attempts to compute its value using the given mapping function and enters it into this map .
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      *
-     * @param key - map key
+     * @param key 映射键
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      * @param mappingFunction the mapping function to compute a value
@@ -595,10 +593,10 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
      * If the specified key is not already associated
      * with a value, attempts to compute its value using the given mapping function and enters it into this map .
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      *
-     * @param key - map key
+     * @param key 映射键
      * @param time expire date for key\value entry
      * @param mappingFunction the mapping function to compute a value
      * @return current associated value
@@ -606,12 +604,12 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     V computeIfAbsent(K key, Instant time, Function<? super K, ? extends V> mappingFunction);
 
     /**
-     * Computes a new mapping for the specified key and its current mapped value.
+     * 根据键及其当前映射值计算新映射。
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      *
-     * @param key - map key
+     * @param key 映射键
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      * @param remappingFunction - function to compute a value
@@ -620,12 +618,12 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     V compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
 
     /**
-     * Computes a new mapping for the specified key and its current mapped value.
+     * 根据键及其当前映射值计算新映射。
      * <p>
-     * Stores value mapped by key with specified time to live.
+     * 存储键值对并设置 TTL。
      * Entry expires after specified time to live.
      *
-     * @param key - map key
+     * @param key 映射键
      * @param time expire date for key\value entry
      * @param remappingFunction - function to compute a value
      * @return the new value associated with the specified key, or {@code null} if none

@@ -28,98 +28,95 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Reactive interface for Redis based implementation
- * of {@link java.util.concurrent.ConcurrentMap} and {@link java.util.Map}
- * <p>
- * This map uses serialized state of key instead of hashCode or equals methods.
- * This map doesn't allow to store <code>null</code> as key or value.
+ * 基于 Redis 的 {@link java.util.concurrent.ConcurrentMap} 与 {@link java.util.Map} Reactor API。
+ * <p>使用键序列化状态而非 hashCode/equals；不允许 {@code null} 键或值。
+ * 各方法返回 {@link Mono}/{@link Flux}；支持 MapLoader/MapWriter 与 per-key 分布式锁。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RMapReactive<K, V> extends RExpirableReactive {
 
     /**
-     * Associates specified key with the given value if key isn't already associated with a value.
+     * 若键尚无映射则关联指定值；否则用 remapping 函数合并并更新值。
      * Otherwise, replaces the associated value with the results of the given
      * remapping function, or removes if the result is {@code null}.
      *
-     * @param key - map key
-     * @param value - value to be merged with the existing value
+     * @param key 映射键
+     * @param value 待合并的值
      *        associated with the key or to be associated with the key,
      *        if no existing value
-     * @param remappingFunction - the function is invoked with the existing value to compute new value
+     * @param remappingFunction 合并函数
      * @return new value associated with the specified key or
      *         {@code null} if no value associated with the key
      */
     Mono<V> merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction);
 
     /**
-     * Computes a new mapping for the specified key and its current mapped value.
+     * 根据键及其当前映射值计算新映射。
      *
-     * @param key - map key
+     * @param key 映射键
      * @param remappingFunction - function to compute a value
      * @return the new value associated with the specified key, or {@code null} if none
      */
     Mono<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
 
     /**
-     * Computes a mapping for the specified key if it's not mapped before.
+     * 仅当键尚未映射时计算并存储新值。
      *
-     * @param key - map key
-     * @param mappingFunction - function to compute a value
+     * @param key 映射键
+     * @param mappingFunction 映射函数
      * @return current or new computed value associated with
      *         the specified key, or {@code null} if the computed value is null
      */
     Mono<V> computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction);
 
     /**
-     * Computes a mapping for the specified key only if it's already mapped.
+     * 仅当键已有映射时计算并更新值。
      *
-     * @param key - map key
+     * @param key 映射键
      * @param remappingFunction - function to compute a value
      * @return the new value associated with the specified key, or null if none
      */
     Mono<V> computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
 
     /**
-     * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.
+     * 使用 {@link org.redisson.api.map.MapLoader} 加载全部映射条目。
      * 
-     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
-     * @param parallelism - parallelism level, used to increase speed of process execution
-     * @return void
+     * @param replaceExistingValues 是否替换已有值  
+     * @param parallelism 并行度
+     * @return 无返回值
      */
     Mono<Void> loadAll(boolean replaceExistingValues, int parallelism);
     
     /**
-     * Loads map entries using {@link org.redisson.api.map.MapLoader} whose keys are listed in defined <code>keys</code> parameter.
+     * 使用 {@link org.redisson.api.map.MapLoader} 加载指定 {@code keys} 的条目。
      * 
-     * @param keys - map keys
-     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
-     * @param parallelism - parallelism level, used to increase speed of process execution
-     * @return void
+     * @param keys 键集合
+     * @param replaceExistingValues 是否替换已有值
+     * @param parallelism 并行度
+     * @return 无返回值
      */
     Mono<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
 
     /**
      * Returns size of value mapped by key in bytes
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return size of value
      */
     Mono<Integer> valueSize(K key);
 
     /**
-     * Returns map slice contained the mappings with defined <code>keys</code>.
+     * 返回指定 {@code keys} 对应的 Map 切片。
      * <p>
      * If map doesn't contain value/values for specified key/keys and {@link MapLoader} is defined 
      * then value/values will be loaded in read-through mode. 
      * <p>
      * The returned map is <b>NOT</b> backed by the original map.
      *
-     * @param keys - map keys
+     * @param keys 键集合
      * @return Map slice
      */
     Mono<Map<K, V>> getAll(Set<K> keys);
@@ -130,7 +127,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * If {@link MapWriter} is defined then map entries will be stored in write-through mode.
      *
      * @param map mappings to be stored in this map
-     * @return void
+     * @return 无返回值
      */
     Mono<Void> putAll(Map<? extends K, ? extends V> map);
 
@@ -150,7 +147,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * {@link org.redisson.client.codec.LongCodec}
      *
-     * @param key - map key
+     * @param key 映射键
      * @param delta the value to add
      * @return the updated value
      */
@@ -160,24 +157,23 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * Returns <code>true</code> if this map contains any map entry
      * with specified <code>value</code>, otherwise <code>false</code>
      *
-     * @param value - map value
+     * @param value 映射值
      * @return <code>true</code> if this map contains any map entry
      *          with specified <code>value</code>, otherwise <code>false</code>
      */
     Mono<Boolean> containsValue(Object value);
 
     /**
-     * Returns <code>true</code> if this map contains map entry
-     * mapped by specified <code>key</code>, otherwise <code>false</code>
+     * 若包含指定 {@code key} 的映射条目则返回 {@code true}，否则 {@code false}。
      *
-     * @param key - map key
+     * @param key 映射键
      * @return <code>true</code> if this map contains map entry
      *          mapped by specified <code>key</code>, otherwise <code>false</code>
      */
     Mono<Boolean> containsKey(Object key);
 
     /**
-     * Returns size of this map
+     * 返回本 Map 的元素数量。
      *
      * @return size
      */
@@ -191,7 +187,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then <code>keys</code>are deleted in write-through mode.
      *
-     * @param keys - map keys
+     * @param keys 键集合
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
     Mono<Long> fastRemove(K... keys);
@@ -207,8 +203,8 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
@@ -226,61 +222,60 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if key is a new one in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and change hasn't been made.
      */
     Mono<Boolean> fastPutIfAbsent(K key, V value);
     
     /**
-     * Read all keys at once
+     * 一次性读取全部键。
      *
-     * @return keys
+     * @return 键集合
      */
     Mono<Set<K>> readAllKeySet();
 
     /**
-     * Read all values at once
+     * 一次性读取全部值。
      *
-     * @return values
+     * @return 值集合
      */
     Mono<Collection<V>> readAllValues();
 
     /**
-     * Read all map entries at once
+     * 一次性读取全部键值对。
      *
      * @return entries
      */
     Mono<Set<Entry<K, V>>> readAllEntrySet();
 
     /**
-     * Read all map as local instance at once
+     * 一次性读取全部 Map 条目到本地实例。
      *
      * @return map
      */
     Mono<Map<K, V>> readAllMap();
 
     /**
-     * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.
+     * 返回 {@code key} 映射的值；不存在时返回 {@code null}。
      * <p>
      * If map doesn't contain value for specified key and {@link MapLoader} is defined
      * then value will be loaded in read-through mode.
      *
-     * @param key the key
+     * @param key 键
      * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
      */
     Mono<V> get(K key);
 
     /**
-     * Stores the specified <code>value</code> mapped by specified <code>key</code>.
-     * Returns previous value if map entry with specified <code>key</code> already existed.
+     * 存储 {@code key}-{@code value}；键已存在时返回旧值。
      * <p>
      * If {@link MapWriter} is defined then map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
-     * @return previous associated value
+     * @param key 映射键
+     * @param value 映射值
+     * @return 先前关联的值
      */
     Mono<V> put(K key, V value);
 
@@ -289,7 +284,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
      *
-     * @param key - map key
+     * @param key 映射键
      * @return deleted value, <code>null</code> if map entry doesn't exist
      */
     Mono<V> remove(K key);
@@ -300,9 +295,9 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then new <code>value</code>is written in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
-     * @return previous associated value
+     * @param key 映射键
+     * @param value 映射值
+     * @return 先前关联的值
      *         or <code>null</code> if there is no map entry stored before and doesn't store new map entry
      */
     Mono<V> replace(K key, V value);
@@ -313,7 +308,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then <code>newValue</code>is written in write-through mode.
      *
-     * @param key - map key
+     * @param key 映射键
      * @param oldValue - map old value
      * @param newValue - map new value
      * @return <code>true</code> if value has been replaced otherwise <code>false</code>.
@@ -325,8 +320,8 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if map entry has been removed otherwise <code>false</code>.
      */
     Mono<Boolean> remove(Object key, Object value);
@@ -337,8 +332,8 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>null</code> if key is a new one in the hash and value was set.
      *         Previous value if key already exists in the hash and change hasn't been made.
      */
@@ -350,15 +345,15 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>null</code> if key doesn't exist in the hash and value hasn't been set.
      *         Previous value if key already exists in the hash and new value has been stored.
      */
     Mono<V> putIfExists(K key, V value);
 
     /**
-     * Returns random keys from this map limited by <code>count</code>
+     * 随机返回至多 {@code count} 个键。
      *
      * @param count - keys amount to return
      * @return random keys
@@ -366,7 +361,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Mono<Set<K>> randomKeys(int count);
 
     /**
-     * Returns random map entries from this map limited by <code>count</code>
+     * 随机返回至多 {@code count} 个键值对。
      *
      * @param count - entries amount to return
      * @return random entries
@@ -385,15 +380,15 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
-     * @param key - map key
-     * @param value - map value
+     * @param key 映射键
+     * @param value 映射值
      * @return <code>true</code> if key already exists in the hash and new value has been stored.
      *         <code>false</code> if key doesn't exist in the hash and value hasn't been set.
      */
     Mono<Boolean> fastPutIfExists(K key, V value);
 
     /**
-     * Returns iterator over map entries collection. 
+     * 返回 Map 条目集合的迭代器。 
      * Map entries are loaded in batch. Batch size is <code>10</code>.
      * 
      * @see #readAllEntrySet()
@@ -403,7 +398,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<Map.Entry<K, V>> entryIterator();
     
     /**
-     * Returns iterator over map entries collection.
+     * 返回 Map 条目集合的迭代器。
      * Map entries are loaded in batch. Batch size is defined by <code>count</code> param. 
      * 
      * @see #readAllEntrySet()
@@ -414,7 +409,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<Map.Entry<K, V>> entryIterator(int count);
     
     /**
-     * Returns iterator over map entries collection.
+     * 返回 Map 条目集合的迭代器。
      * Map entries are loaded in batch. Batch size is <code>10</code>. 
      * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
      * <p>
@@ -443,7 +438,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<Map.Entry<K, V>> entryIterator(String pattern);
     
     /**
-     * Returns iterator over map entries collection.
+     * 返回 Map 条目集合的迭代器。
      * Map entries are loaded in batch. Batch size is defined by <code>count</code> param. 
      * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
      * <p>
@@ -473,7 +468,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<Map.Entry<K, V>> entryIterator(String pattern, int count);
 
     /**
-     * Returns iterator over values collection of this map. 
+     * 返回本 Map 值集合的迭代器。 
      * Values are loaded in batch. Batch size is <code>10</code>.
      * 
      * @see #readAllValues()
@@ -483,7 +478,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<V> valueIterator();
     
     /**
-     * Returns iterator over values collection of this map.
+     * 返回本 Map 值集合的迭代器。
      * Values are loaded in batch. Batch size is defined by <code>count</code> param. 
      * 
      * @see #readAllValues()
@@ -494,7 +489,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<V> valueIterator(int count);
     
     /**
-     * Returns iterator over values collection of this map.
+     * 返回本 Map 值集合的迭代器。
      * Values are loaded in batch. Batch size is <code>10</code>. 
      * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
      * <p>
@@ -523,7 +518,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<V> valueIterator(String pattern);
     
     /**
-     * Returns iterator over values collection of this map.
+     * 返回本 Map 值集合的迭代器。
      * Values are loaded in batch. Batch size is defined by <code>count</code> param.
      * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
      * <p>
@@ -553,7 +548,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<V> valueIterator(String pattern, int count);
 
     /**
-     * Returns iterator over key set of this map. 
+     * 返回本 Map 键集合的迭代器。 
      * Keys are loaded in batch. Batch size is <code>10</code>.
      * 
      * @see #readAllKeySet()
@@ -563,7 +558,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<K> keyIterator();
     
     /**
-     * Returns iterator over key set of this map.
+     * 返回本 Map 键集合的迭代器。
      * Keys are loaded in batch. Batch size is defined by <code>count</code> param. 
      * 
      * @see #readAllKeySet()
@@ -574,7 +569,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<K> keyIterator(int count);
     
     /**
-     * Returns iterator over key set of this map. 
+     * 返回本 Map 键集合的迭代器。 
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
      * <p>
      * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
@@ -596,7 +591,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<K> keyIterator(String pattern);
 
     /**
-     * Returns iterator over key set of this map.
+     * 返回本 Map 键集合的迭代器。
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
      * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
      * <p>
@@ -620,47 +615,47 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Flux<K> keyIterator(String pattern, int count);
     
     /**
-     * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
+     * 返回与键关联的 {@link RPermitExpirableSemaphore}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return permitExpirableSemaphore
      */
     RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(K key);
 
     /**
-     * Returns <code>RSemaphore</code> instance associated with key
+     * 返回与键关联的 {@link RSemaphore}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return semaphore
      */
     RSemaphoreReactive getSemaphore(K key);
     
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与键关联的 {@link RLock}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return fairLock
      */
     RLockReactive getFairLock(K key);
     
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 返回与键关联的 {@link RReadWriteLock}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return readWriteLock
      */
     RReadWriteLockReactive getReadWriteLock(K key);
     
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与键关联的 {@link RLock}。
      * 
-     * @param key - map key
+     * @param key 映射键
      * @return lock
      */
     RLockReactive getLock(K key);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.MapPutListener
@@ -668,8 +663,8 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     Mono<Integer> addListener(ObjectListener listener);
 

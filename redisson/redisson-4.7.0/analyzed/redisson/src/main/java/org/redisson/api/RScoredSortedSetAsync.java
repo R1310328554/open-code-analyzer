@@ -27,15 +27,16 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link RScoredSortedSet} 异步 API；各方法返回 {@link RFuture}。
+ * <p>支持 ZADD/ZREM、范围查询、并集/交集/差集及 MapReduce。
  *
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <V> 成员类型
  */
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsync<Set<V>> {
 
     /**
-     * Removes and returns first available tail element of <b>any</b> sorted set,
+     * 从<b>任意</b>有序集合移除并返回最先可用的队尾元素，
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined sorted sets <b>including</b> this one.
      * <p>
@@ -51,7 +52,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Removes and returns first available tail elements of <b>any</b> sorted set,
+     * 从<b>任意</b>有序集合移除并返回最先可用的队尾元素，
      * waiting up to the specified wait time if necessary for elements to become available
      * in any of defined sorted sets <b>including</b> this one.
      * <p>
@@ -120,7 +121,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
 
     /**
-     * Removes and returns first available head elements of <b>any</b> sorted set,
+     * 从<b>任意</b>有序集合移除并返回最先可用的队首元素，
      * waiting up to the specified wait time if necessary for elements to become available
      * in any of defined sorted sets <b>including</b> this one.
      * <p>
@@ -134,7 +135,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<List<V>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames);
 
     /**
-     * Removes and returns first available head elements
+     * 移除并返回最先可用的队首元素
      * of <b>any</b> sorted set <b>including</b> this one.
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
@@ -172,7 +173,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Map<String, Map<V, Double>>> pollFirstEntriesFromAnyAsync(Duration duration, int count, String... queueNames);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最小（队首）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -187,7 +188,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最小（队首）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -223,7 +224,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> takeLastAsync();
     
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最大（队尾）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -248,7 +249,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<List<V>> pollLastAsync(Duration duration, int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最大（队尾）元素；空集合时返回 {@code null}。
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
      *
@@ -275,7 +276,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> pollLastAsync(int count);
 
     /**
-     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最小（队首）元素；空集合时返回 {@code null}。
      *
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
@@ -299,7 +300,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(int count);
 
     /**
-     * Removes and returns the head entries (value and its score).
+     * 移除并返回分数最小的多个条目（成员与分数）。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -310,7 +311,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(Duration duration, int count);
 
     /**
-     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * 移除并返回分数最大（队尾）元素；空集合时返回 {@code null}。
      *
      * @return the tail element or {@code null} if this sorted set is empty
      */
@@ -332,7 +333,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(int count);
 
     /**
-     * Removes and returns the head entries (value and its score).
+     * 移除并返回分数最小的多个条目（成员与分数）。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -498,7 +499,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> rankAsync(V o);
 
     /**
-     * Returns rank and score of specified <code>value</code>,
+     * 返回指定成员的排名与分数；
      * with the ranks ordered from low to high.
      *
      * @param value object
@@ -515,7 +516,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> revRankAsync(V o);
 
     /**
-     * Returns rank and score of specified <code>value</code>,
+     * 返回指定成员的排名与分数；
      * with the ranks ordered from high to low.
      *
      * @param value object
@@ -548,27 +549,27 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<List<Double>> getScoreAsync(Collection<V> elements);
 
     /**
-     * Adds element to this set, overrides previous score if it has been already added.
+     * 向集合添加元素；若已存在则覆盖原分数。
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
     RFuture<Boolean> addAsync(double score, V object);
 
     /**
-     * Adds element to this set, overrides previous score if it has been already added.
+     * 向集合添加元素；若已存在则覆盖原分数。
      * Finally return the rank of the item
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return rank
      */
     RFuture<Integer> addAndGetRankAsync(double score, V object);
 
     /**
-     * Adds element to this set, overrides previous score if it has been already added.
+     * 向集合添加元素；若已存在则覆盖原分数。
      * Finally return the reverse rank of the item
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return reverse rank
      */
@@ -585,7 +586,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     /**
      * Use {@link #addIfAbsentAsync(double, Object)} instead
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
@@ -597,7 +598,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -608,7 +609,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * <p>
      * Requires <b>Redis 3.0.2 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -619,7 +620,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -630,7 +631,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
      *
-     * @param score - object score
+     * @param score 成员分数
      * @param object - object itself
      * @return <code>true</code> if element added and <code>false</code> if not.
      */
@@ -713,7 +714,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Adds score to element and returns its reverse rank
      * 
      * @param object - object itself
-     * @param value - object score
+     * @param value 成员 score
      * @return reverse rank
      */
     RFuture<Integer> addScoreAndGetRevRankAsync(V object, Number value);
@@ -722,7 +723,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Adds score to element and returns its rank
      * 
      * @param object - object itself
-     * @param value - object score
+     * @param value 成员 score
      * @return rank
      */
     RFuture<Integer> addScoreAndGetRankAsync(V object, Number value);
@@ -751,7 +752,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *                     to define infinity numbers
      *
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     RFuture<Integer> rangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -771,7 +772,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     RFuture<Integer> rangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
@@ -799,7 +800,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *                     to define infinity numbers
      *
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     RFuture<Integer> revRangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -819,7 +820,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     RFuture<Integer> revRangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
@@ -877,7 +878,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *                     to define infinity numbers
      * 
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -893,12 +894,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *                     to define infinity numbers
      * 
      * @param endScoreInclusive - end score inclusive
-     * @return values
+     * @return 值集合
      */
     RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目。
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -927,7 +928,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
@@ -945,12 +946,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param endScoreInclusive - end score inclusive
      * @param offset - offset of sorted data
      * @param count - amount of sorted data
-     * @return values
+     * @return 值集合
      */
     RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目。
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -968,7 +969,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目 in reversed order.
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -984,7 +985,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
     /**
-     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 返回 {@code startScore} 到 {@code endScore} 区间内的全部条目 in reversed order.
      * 
      * @param startScore - start score. 
      *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
@@ -1013,16 +1014,16 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
-     * Read all values at once.
+     * 一次性读取全部值。.
      * 
-     * @return values
+     * @return 值集合
      */
     RFuture<Collection<V>> readAllAsync();
 
     /**
-     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets 
+     * 对给定有序集合求交集并写入当前集合。 
      * and store result to current ScoredSortedSet
      * 
      * @param names - names of ScoredSortedSet
@@ -1032,9 +1033,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> intersectionAsync(String... names);
 
     /**
-     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets with defined aggregation method 
+     * 对给定有序集合求交集并写入当前集合。 with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
      * @param aggregate - score aggregation mode
@@ -1045,9 +1046,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
@@ -1057,9 +1058,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> intersectionAsync(Map<String, Double> nameWithWeight);
 
     /**
-     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #intersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1071,7 +1072,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
     /**
-     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier
      * with defined aggregation method
      * and store result to current ScoredSortedSet
      *
@@ -1081,9 +1082,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> intersectionAsync(SetIntersectionArgs args);
     
     /**
-     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets
+     * 对给定有序集合求交集并写入当前集合。
      * with current ScoredSortedSet without state change
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1095,9 +1096,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readIntersectionAsync(String... names);
 
     /**
-     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets with current ScoredSortedSet using defined aggregation method
+     * 对给定有序集合求交集并写入当前集合。 with current ScoredSortedSet using defined aggregation method
      * without state change
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1110,9 +1111,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier
      * with current ScoredSortedSet without state change
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1124,9 +1125,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readIntersectionAsync(Map<String, Double> nameWithWeight);
 
     /**
-     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * 请改用 {@link #readIntersectionAsync(SetIntersectionArgs)}。
      * <p>
-     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合求交集并写入当前集合。 mapped to weight multiplier
      * with current ScoredSortedSet using defined aggregation method
      * without state change
      * <p>
@@ -1140,7 +1141,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
-     * Intersect provided ScoredSortedSets
+     * 对给定有序集合求交集并写入当前集合。
      * with current ScoredSortedSet
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1151,7 +1152,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readIntersectionAsync(SetIntersectionArgs args);
 
     /**
-     * Intersect provided ScoredSortedSets
+     * 对给定有序集合求交集并写入当前集合。
      * with current ScoredSortedSet
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1162,7 +1163,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<ScoredEntry<V>>> readIntersectionEntriesAsync(SetIntersectionArgs args);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计当前集合与指定集合交集的元素数量。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -1172,7 +1173,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> countIntersectionAsync(String... names);
 
     /**
-     * Counts elements of set as a result of sets intersection with current set.
+     * 统计当前集合与指定集合交集的元素数量。
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
      *
@@ -1183,7 +1184,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> countIntersectionAsync(int limit, String... names);
 
     /**
-     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #unionAsync(SetUnionArgs)}。
      * <p>
      * Union provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
@@ -1195,7 +1196,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> unionAsync(String... names);
 
     /**
-     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #unionAsync(SetUnionArgs)}。
      * <p>
      * Union provided ScoredSortedSets with defined aggregation method 
      * and store result to current ScoredSortedSet
@@ -1208,9 +1209,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> unionAsync(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #unionAsync(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合按权重求并集并写入当前集合。 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
@@ -1220,9 +1221,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> unionAsync(Map<String, Double> nameWithWeight);
 
     /**
-     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #unionAsync(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier 
+     * 对给定有序集合按权重求并集并写入当前集合。 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1234,7 +1235,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
     
     /**
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and store result to current ScoredSortedSet
      *
@@ -1244,7 +1245,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> unionAsync(SetUnionArgs args);
     
     /**
-     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnionAsync(SetUnionArgs)}。
      * <p>
      * Union ScoredSortedSets specified by name with current ScoredSortedSet
      * without state change.
@@ -1258,7 +1259,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readUnionAsync(String... names);
 
     /**
-     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnionAsync(SetUnionArgs)}。
      * <p>
      * Union ScoredSortedSets specified by name with defined aggregation method
      * and current ScoredSortedSet without state change.
@@ -1273,9 +1274,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, String... names);
 
     /**
-     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnionAsync(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * and current ScoredSortedSet without state change.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1287,9 +1288,9 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readUnionAsync(Map<String, Double> nameWithWeight);
 
     /**
-     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * 请改用 {@link #readUnionAsync(SetUnionArgs)}。
      * <p>
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and current ScoredSortedSet without state change
      * <p>
@@ -1303,7 +1304,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and current ScoredSortedSet without state change
      * <p>
@@ -1315,7 +1316,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readUnionAsync(SetUnionArgs args);
 
     /**
-     * Union provided ScoredSortedSets mapped to weight multiplier
+     * 对给定有序集合按权重求并集并写入当前集合。
      * with defined aggregation method
      * and current ScoredSortedSet without state change
      * <p>
@@ -1327,7 +1328,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<ScoredEntry<V>>> readUnionEntriesAsync(SetUnionArgs args);
 
     /**
-     * Diff ScoredSortedSets specified by name
+     * 对指定名称的有序集合求差集并写入当前集合。
      * with current ScoredSortedSet without state change.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1338,7 +1339,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readDiffAsync(String... names);
 
     /**
-     * Diff ScoredSortedSets specified by name
+     * 对指定名称的有序集合求差集并写入当前集合。
      * with current ScoredSortedSet without state change.
      * <p>
      * Requires <b>Redis 6.2.0 and higher.</b>
@@ -1360,7 +1361,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> diffAsync(String... names);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.ScoredSortedSetAddListener
@@ -1368,8 +1369,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 对象事件监听器
+     * @return 监听器 ID
      */
     @Override
     RFuture<Integer> addListenerAsync(ObjectListener listener);

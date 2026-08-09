@@ -23,20 +23,16 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * RxJava2 interface for Semaphore object with lease time parameter support for each acquired permit.
- * 
- * <p>Each permit identified by own id and could be released only using its id.
- * Permit id is a 128-bits unique random identifier generated each time during acquiring.
- *   
- * <p>Works in non-fair mode. Therefore order of acquiring is unpredictable.
- * 
- * @author Nikita Koksharov
+ * 可过期许可分布式信号量 {@link RPermitExpirableSemaphore} RxJava3 API。
+ * <p>每次 acquire 返回带 TTL 的 permitId（128 位随机标识），仅能用该 id 释放。
+ * <p>非公平模式，获取顺序不可预测。
  *
+ * @author Nikita Koksharov
  */
 public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
     
     /**
-     * Acquires a permit from this semaphore, blocking until one is
+     * 阻塞获取一个许可，直到可用或线程被中断。
      * available, or the thread is {@linkplain Thread#interrupt interrupted}.
      *
      * <p>Acquires a permit, if one is available and returns its id,
@@ -52,12 +48,12 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * the current thread.
      * </ul>
      * 
-     * @return permit id
+     * @return 许可 ID
      */
     Single<String> acquire();
 
     /**
-     * Acquires defined amount of <code>permits</code> from this semaphore, blocking until enough permits are
+     * 阻塞获取指定数量的许可，直到足够或线程被中断。
      * available, or the thread is {@linkplain Thread#interrupt interrupted}.
      *
      * <p>Acquires <code>permits</code> permits, if they are available and returns their ids,
@@ -97,8 +93,8 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * </ul>
      * 
      * @param leaseTime - permit lease time
-     * @param unit - time unit
-     * @return permit id
+     * @param unit 时间单位
+     * @return 许可 ID
      */
     Single<String> acquire(long leaseTime, TimeUnit unit);
 
@@ -122,7 +118,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      *
      * @param permits - the number of permits to acquire
      * @param leaseTime - permit lease time
-     * @param unit - time unit
+     * @param unit 时间单位
      * @return permits ids
      */
     Single<List<String>> acquire(int permits, long leaseTime, TimeUnit unit);
@@ -138,7 +134,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * <p>If no permit is available then this method will return
      * immediately with the value {@code null}.
      *
-     * @return permit id if a permit was acquired and {@code null}
+     * @return 许可 ID if a permit was acquired and {@code null}
      *         otherwise
      */
     Maybe<String> tryAcquire();
@@ -188,7 +184,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * 
      * @param waitTime the maximum time to wait for a permit
      * @param unit the time unit of the {@code timeout} argument
-     * @return permit id if a permit was acquired and {@code null}
+     * @return 许可 ID if a permit was acquired and {@code null}
      *         if the waiting time elapsed before a permit was acquired
      */
     Maybe<String> tryAcquire(long waitTime, TimeUnit unit);
@@ -223,7 +219,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * @param waitTime the maximum time to wait for a permit
      * @param leaseTime permit lease time
      * @param unit the time unit of the {@code timeout} argument
-     * @return permit id if a permit was acquired and {@code null}
+     * @return 许可 ID if a permit was acquired and {@code null}
      *         if the waiting time elapsed before a permit was acquired
      */
     Maybe<String> tryAcquire(long waitTime, long leaseTime, TimeUnit unit);
@@ -314,7 +310,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * <p>Throws an exception if permit id doesn't exist or has already been release
      * 
      * @param permitId - permit id
-     * @return void
+     * @return 无返回值
      */
     Completable release(String permitId);
 
@@ -333,7 +329,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * <p>Throws an exception if permit id doesn't exist or has already been release
      *
      * @param permitsIds - permits ids
-     * @return void
+     * @return 无返回值
      */
     Completable release(List<String> permitsIds);
 
@@ -379,7 +375,7 @@ public interface RPermitExpirableSemaphoreRx extends RExpirableRx {
      * Increases or decreases the number of available permits by defined value. 
      *
      * @param permits - number of permits to add/remove
-     * @return void
+     * @return 无返回值
      */
     Completable addPermits(int permits);
 
