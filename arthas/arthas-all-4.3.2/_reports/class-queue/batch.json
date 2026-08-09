@@ -15,23 +15,8 @@
     "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/StackTool.java",
     "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/TimeTunnelTool.java",
     "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/TraceTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/WatchTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/util/McpToolUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/util/McpAuthExtractor.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/util/McpObjectVOFilter.java",
-    "core/src/main/java/com/taobao/arthas/core/security/AuthUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/security/BasicPrincipal.java",
-    "core/src/main/java/com/taobao/arthas/core/security/BearerPrincipal.java",
-    "core/src/main/java/com/taobao/arthas/core/security/LocalConnectionPrincipal.java",
-    "core/src/main/java/com/taobao/arthas/core/security/SecurityAuthenticator.java",
-    "core/src/main/java/com/taobao/arthas/core/security/SecurityAuthenticatorImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/server/ArthasBootstrap.java",
-    "core/src/main/java/com/taobao/arthas/core/server/instrument/ClassLoader_Instrument.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/Shell.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/ShellServer.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/ShellServerOptions.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/cli/CliToken.java"
+    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/WatchTool.java"
   ],
   "remaining_pending": 315,
-  "done": 450
+  "done": 465
 }
