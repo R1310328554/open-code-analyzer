@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:42:50Z",
   "files": [
-    "redisson/src/main/java/org/redisson/misc/CompletableFutureWrapper.java",
-    "redisson/src/main/java/org/redisson/misc/CompositeAsyncIterator.java",
-    "redisson/src/main/java/org/redisson/misc/CompositeIterable.java",
-    "redisson/src/main/java/org/redisson/misc/CompositeIterator.java",
-    "redisson/src/main/java/org/redisson/misc/FastRemovalQueue.java",
-    "redisson/src/main/java/org/redisson/misc/Hash.java",
-    "redisson/src/main/java/org/redisson/misc/HashValue.java",
-    "redisson/src/main/java/org/redisson/misc/HighwayHash.java",
-    "redisson/src/main/java/org/redisson/misc/IdentityValue.java",
-    "redisson/src/main/java/org/redisson/misc/Injector.java",
-    "redisson/src/main/java/org/redisson/misc/LogHelper.java",
-    "redisson/src/main/java/org/redisson/misc/ProxyBuilder.java",
-    "redisson/src/main/java/org/redisson/misc/RandomXoshiro256PlusPlus.java",
-    "redisson/src/main/java/org/redisson/misc/ReclosableLatch.java",
-    "redisson/src/main/java/org/redisson/misc/RedisURI.java",
     "redisson/src/main/java/org/redisson/misc/SpinLock.java",
     "redisson/src/main/java/org/redisson/misc/Tuple.java",
     "redisson/src/main/java/org/redisson/misc/WrappedLock.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/reactive/IteratorConsumer.java"
   ],
   "remaining_pending": 152,
-  "done": 2640
+  "done": 2655
 }
