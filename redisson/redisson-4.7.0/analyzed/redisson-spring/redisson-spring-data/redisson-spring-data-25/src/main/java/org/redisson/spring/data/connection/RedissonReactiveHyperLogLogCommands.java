@@ -34,18 +34,22 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 HyperLogLog 命令实现。
+ * <p>封装 PFADD、PFCOUNT、PFMERGE，通过 {@link RedissonBaseReactive#write} 路由。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveHyperLogLogCommands extends RedissonBaseReactive implements ReactiveHyperLogLogCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveHyperLogLogCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
     private static final RedisCommand<Long> PFADD = new RedisCommand<Long>("PFADD");
     
+    /** PFADD：向 HyperLogLog 追加一个或多个元素，返回内部寄存器变更数。 */
     @Override
     public Flux<NumericResponse<PfAddCommand, Long>> pfAdd(Publisher<PfAddCommand> commands) {
         return execute(commands, command -> {
@@ -64,6 +68,7 @@ public class RedissonReactiveHyperLogLogCommands extends RedissonBaseReactive im
         });
     }
 
+    /** PFCOUNT：估算一个或多个 HLL key 的基数。 */
     @Override
     public Flux<NumericResponse<PfCountCommand, Long>> pfCount(Publisher<PfCountCommand> commands) {
         return execute(commands, command -> {
@@ -79,6 +84,7 @@ public class RedissonReactiveHyperLogLogCommands extends RedissonBaseReactive im
     
     private static final RedisStrictCommand<String> PFMERGE = new RedisStrictCommand<String>("PFMERGE");
 
+    /** PFMERGE：将多个源 HLL 合并到目标 key。 */
     @Override
     public Flux<BooleanResponse<PfMergeCommand>> pfMerge(Publisher<PfMergeCommand> commands) {
         return execute(commands, command -> {
