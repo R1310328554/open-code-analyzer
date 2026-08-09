@@ -19,21 +19,21 @@ package org.springframework.beans.factory;
 import org.springframework.core.env.Environment;
 
 /**
- * Contract for registering beans programmatically, typically imported with an
- * {@link org.springframework.context.annotation.Import @Import} annotation on
- * a {@link org.springframework.context.annotation.Configuration @Configuration}
- * class.
+ * 以编程方式注册 bean 的契约，通常通过在
+ * {@link org.springframework.context.annotation.Configuration @Configuration}
+ * 类上使用 {@link org.springframework.context.annotation.Import @Import} 导入。
  * <pre class="code">
  * &#064;Configuration
  * &#064;Import(MyBeanRegistrar.class)
  * class MyConfiguration {
  * }</pre>
- * Can also be applied to an application context via
- * {@link org.springframework.context.support.GenericApplicationContext#register(BeanRegistrar...)}.
+ * 也可通过
+ * {@link org.springframework.context.support.GenericApplicationContext#register(BeanRegistrar...)}
+ * 应用到应用上下文。
  *
  *
- * <p>Bean registrar implementations use {@link BeanRegistry} and {@link Environment}
- * APIs to register beans programmatically in a concise and flexible way.
+ * <p>Bean registrar 实现借助 {@link BeanRegistry} 与 {@link Environment}
+ * API，以简洁灵活的方式编程注册 bean。
  * <pre class="code">
  * class MyBeanRegistrar implements BeanRegistrar {
  *
@@ -52,12 +52,11 @@ import org.springframework.core.env.Environment;
  *     }
  * }</pre>
  *
- * <p>A {@code BeanRegistrar} implementing {@link org.springframework.context.annotation.ImportAware}
- * can optionally introspect import metadata when used in an import scenario, otherwise the
- * {@code setImportMetadata} method is simply not being called.
+ * <p>实现了 {@link org.springframework.context.annotation.ImportAware} 的
+ * {@code BeanRegistrar} 可在导入场景下按需检查导入元数据；
+ * 否则不会调用 {@code setImportMetadata} 方法。
  *
- * <p>In Kotlin, it is recommended to use {@code BeanRegistrarDsl} instead of
- * implementing {@code BeanRegistrar}.
+ * <p>在 Kotlin 中，建议使用 {@code BeanRegistrarDsl}，而不是实现 {@code BeanRegistrar}。
  *
  * @author Sebastien Deleuze
  * @since 7.0
@@ -66,9 +65,9 @@ import org.springframework.core.env.Environment;
 public interface BeanRegistrar {
 
 	/**
-	 * Register beans on the given {@link BeanRegistry} in a programmatic way.
-	 * @param registry the bean registry to operate on
-	 * @param env the environment that can be used to get the active profile or some properties
+	 * 在给定的 {@link BeanRegistry} 上以编程方式注册 bean。
+	 * @param registry 要操作的 bean 注册表
+	 * @param env 可用于获取激活 profile 或某些属性的环境
 	 */
 	void register(BeanRegistry registry, Environment env);
 

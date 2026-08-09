@@ -29,8 +29,8 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.env.Environment;
 
 /**
- * Used in {@link BeanRegistrar#register(BeanRegistry, Environment)} to expose
- * programmatic bean registration capabilities.
+ * 在 {@link BeanRegistrar#register(BeanRegistry, Environment)} 中使用，
+ * 用于暴露编程式 bean 注册能力。
  *
  * @author Sebastien Deleuze
  * @since 7.0
@@ -38,184 +38,174 @@ import org.springframework.core.env.Environment;
 public interface BeanRegistry {
 
 	/**
-	 * Register beans using the given {@link BeanRegistrar}.
-	 * @param registrar the bean registrar that will be called to register
-	 * additional beans
+	 * 使用给定的 {@link BeanRegistrar} 注册 bean。
+	 * @param registrar 将被调用以注册更多 bean 的注册器
 	 */
 	void register(BeanRegistrar registrar);
 
 	/**
-	 * Given a name, register an alias for it.
-	 * @param name the canonical name
-	 * @param alias the alias to be registered
-	 * @throws IllegalStateException if the alias is already in use
-	 * and may not be overridden
+	 * 为给定名称注册一个别名。
+	 * @param name 规范名称
+	 * @param alias 要注册的别名
+	 * @throws IllegalStateException 若该别名已在使用且不可覆盖
 	 */
 	void registerAlias(String name, String alias);
 
 	/**
-	 * Register a bean from the given class, which will be instantiated using the
-	 * related {@link BeanUtils#getResolvableConstructor resolvable constructor} if any.
-	 * <p>For registering a bean with a generic type, consider
-	 * {@link #registerBean(ParameterizedTypeReference)}.
-	 * @param beanClass the class of the bean
-	 * @return the generated bean name
+	 * 根据给定类注册 bean；若存在相关
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}，则用之实例化。
+	 * <p>若要注册带泛型类型的 bean，请考虑
+	 * {@link #registerBean(ParameterizedTypeReference)}。
+	 * @param beanClass bean 的类
+	 * @return 生成的 bean 名称
 	 * @see #registerBean(Class)
 	 */
 	<T> String registerBean(Class<T> beanClass);
 
 	/**
-	 * Register a bean from the given generics-containing type, which will be
-	 * instantiated using the related
-	 * {@link BeanUtils#getResolvableConstructor resolvable constructor} if any.
-	 * @param beanType the generics-containing type of the bean
-	 * @return the generated bean name
+	 * 根据给定含泛型的类型注册 bean；若存在相关
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}，则用之实例化。
+	 * @param beanType bean 的含泛型类型
+	 * @return 生成的 bean 名称
 	 */
 	<T> String registerBean(ParameterizedTypeReference<T> beanType);
 
 	/**
-	 * Register a bean from the given class, customizing it with the customizer
-	 * callback. The bean will be instantiated using the supplier that can be configured
-	 * in the customizer callback, or will be tentatively instantiated with its
-	 * {@link BeanUtils#getResolvableConstructor resolvable constructor} otherwise.
-	 * <p>For registering a bean with a generic type, consider
-	 * {@link #registerBean(ParameterizedTypeReference, Consumer)}.
-	 * @param beanClass the class of the bean
-	 * @param customizer the callback to customize other bean properties than the name
-	 * @return the generated bean name
+	 * 根据给定类注册 bean，并通过定制器回调进行定制。
+	 * 将使用可在定制器中配置的 supplier 实例化；否则尝试使用其
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}。
+	 * <p>若要注册带泛型类型的 bean，请考虑
+	 * {@link #registerBean(ParameterizedTypeReference, Consumer)}。
+	 * @param beanClass bean 的类
+	 * @param customizer 用于定制名称以外其他 bean 属性的回调
+	 * @return 生成的 bean 名称
 	 */
 	<T> String registerBean(Class<T> beanClass, Consumer<Spec<T>> customizer);
 
 	/**
-	 * Register a bean from the given generics-containing type, customizing it
-	 * with the customizer callback. The bean will be instantiated using the supplier
-	 * that can be configured in the customizer callback, or will be tentatively instantiated
-	 * with its {@link BeanUtils#getResolvableConstructor resolvable constructor} otherwise.
-	 * @param beanType the generics-containing type of the bean
-	 * @param customizer the callback to customize other bean properties than the name
-	 * @return the generated bean name
+	 * 根据给定含泛型的类型注册 bean，并通过定制器回调进行定制。
+	 * 将使用可在定制器中配置的 supplier 实例化；否则尝试使用其
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}。
+	 * @param beanType bean 的含泛型类型
+	 * @param customizer 用于定制名称以外其他 bean 属性的回调
+	 * @return 生成的 bean 名称
 	 */
 	<T> String registerBean(ParameterizedTypeReference<T> beanType, Consumer<Spec<T>> customizer);
 
 	/**
-	 * Register a bean from the given class, which will be instantiated using the
-	 * related {@link BeanUtils#getResolvableConstructor resolvable constructor} if any.
-	 * <p>For registering a bean with a generic type, consider
-	 * {@link #registerBean(String, ParameterizedTypeReference)}.
-	 * @param name the name of the bean
-	 * @param beanClass the class of the bean
+	 * 根据给定类注册 bean；若存在相关
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}，则用之实例化。
+	 * <p>若要注册带泛型类型的 bean，请考虑
+	 * {@link #registerBean(String, ParameterizedTypeReference)}。
+	 * @param name bean 名称
+	 * @param beanClass bean 的类
 	 */
 	<T> void registerBean(String name, Class<T> beanClass);
 
 	/**
-	 * Register a bean from the given generics-containing type, which
-	 * will be instantiated using the related
-	 * {@link BeanUtils#getResolvableConstructor resolvable constructor} if any.
-	 * @param name the name of the bean
-	 * @param beanType the generics-containing type of the bean
+	 * 根据给定含泛型的类型注册 bean；若存在相关
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}，则用之实例化。
+	 * @param name bean 名称
+	 * @param beanType bean 的含泛型类型
 	 */
 	<T> void registerBean(String name, ParameterizedTypeReference<T> beanType);
 
 	/**
-	 * Register a bean from the given class, customizing it with the customizer
-	 * callback. The bean will be instantiated using the supplier that can be configured
-	 * in the customizer callback, or will be tentatively instantiated with its
-	 * {@link BeanUtils#getResolvableConstructor resolvable constructor} otherwise.
-	 * <p>For registering a bean with a generic type, consider
-	 * {@link #registerBean(String, ParameterizedTypeReference, Consumer)}.
-	 * @param name the name of the bean
-	 * @param beanClass the class of the bean
-	 * @param customizer the callback to customize other bean properties than the name
+	 * 根据给定类注册 bean，并通过定制器回调进行定制。
+	 * 将使用可在定制器中配置的 supplier 实例化；否则尝试使用其
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}。
+	 * <p>若要注册带泛型类型的 bean，请考虑
+	 * {@link #registerBean(String, ParameterizedTypeReference, Consumer)}。
+	 * @param name bean 名称
+	 * @param beanClass bean 的类
+	 * @param customizer 用于定制名称以外其他 bean 属性的回调
 	 */
 	<T> void registerBean(String name, Class<T> beanClass, Consumer<Spec<T>> customizer);
 
 	/**
-	 * Register a bean from the given generics-containing type, customizing it
-	 * with the customizer callback. The bean will be instantiated using the supplier
-	 * that can be configured in the customizer callback, or will be tentatively instantiated
-	 * with its {@link BeanUtils#getResolvableConstructor resolvable constructor} otherwise.
-	 * @param name the name of the bean
-	 * @param beanType the generics-containing type of the bean
-	 * @param customizer the callback to customize other bean properties than the name
+	 * 根据给定含泛型的类型注册 bean，并通过定制器回调进行定制。
+	 * 将使用可在定制器中配置的 supplier 实例化；否则尝试使用其
+	 * {@link BeanUtils#getResolvableConstructor 可解析构造器}。
+	 * @param name bean 名称
+	 * @param beanType bean 的含泛型类型
+	 * @param customizer 用于定制名称以外其他 bean 属性的回调
 	 */
 	<T> void registerBean(String name, ParameterizedTypeReference<T> beanType, Consumer<Spec<T>> customizer);
 
 
 	/**
-	 * Specification for customizing a bean.
-	 * @param <T> the bean type
+	 * 用于定制 bean 的规格说明。
+	 * @param <T> bean 类型
 	 */
 	interface Spec<T> {
 
 		/**
-		 * Allow for instantiating this bean on a background thread.
+		 * 允许在后台线程中实例化此 bean。
 		 * @see AbstractBeanDefinition#setBackgroundInit(boolean)
 		 */
 		Spec<T> backgroundInit();
 
 		/**
-		 * Set a human-readable description of this bean.
+		 * 设置此 bean 的可读描述。
 		 * @see BeanDefinition#setDescription(String)
 		 */
 		Spec<T> description(String description);
 
 		/**
-		 * Configure this bean as a fallback autowire candidate.
+		 * 将此 bean 配置为回退自动装配候选。
 		 * @see BeanDefinition#setFallback(boolean)
 		 * @see #primary
 		 */
 		Spec<T> fallback();
 
 		/**
-		 * Hint that this bean has an infrastructure role, meaning it has no relevance
-		 * to the end-user.
+		 * 提示此 bean 扮演基础设施角色，即对最终用户无直接意义。
 		 * @see BeanDefinition#setRole(int)
 		 * @see BeanDefinition#ROLE_INFRASTRUCTURE
 		 */
 		Spec<T> infrastructure();
 
 		/**
-		 * Configure this bean as lazily initialized.
+		 * 将此 bean 配置为惰性初始化。
 		 * @see BeanDefinition#setLazyInit(boolean)
 		 */
 		Spec<T> lazyInit();
 
 		/**
-		 * Configure this bean as not a candidate for getting autowired into another bean.
+		 * 将此 bean 配置为不可作为自动装配进其他 bean 的候选。
 		 * @see BeanDefinition#setAutowireCandidate(boolean)
 		 */
 		Spec<T> notAutowirable();
 
 		/**
-		 * The sort order of this bean. This is analogous to the
-		 * {@code @Order} annotation.
+		 * 此 bean 的排序顺序。类似于 {@code @Order} 注解。
 		 * @see AbstractBeanDefinition#ORDER_ATTRIBUTE
 		 */
 		Spec<T> order(int order);
 
 		/**
-		 * Configure this bean as a primary autowire candidate.
+		 * 将此 bean 配置为首选自动装配候选。
 		 * @see BeanDefinition#setPrimary(boolean)
 		 * @see #fallback
 		 */
 		Spec<T> primary();
 
 		/**
-		 * Configure this bean with a prototype scope.
+		 * 将此 bean 配置为原型作用域。
 		 * @see BeanDefinition#setScope(String)
 		 * @see BeanDefinition#SCOPE_PROTOTYPE
 		 */
 		Spec<T> prototype();
 
 		/**
-		 * Configure this bean with a custom scope.
+		 * 为此 bean 配置自定义作用域。
 		 * @since 7.0.4
 		 * @see BeanDefinition#setScope(String)
 		 */
 		Spec<T> scope(String scope);
 
 		/**
-		 * Set the supplier to construct a bean instance.
+		 * 设置用于构造 bean 实例的 supplier。
 		 * @see AbstractBeanDefinition#setInstanceSupplier(Supplier)
 		 */
 		Spec<T> supplier(Function<SupplierContext, T> supplier);
@@ -223,63 +213,58 @@ public interface BeanRegistry {
 
 
 	/**
-	 * Context available from the bean instance supplier designed to give access
-	 * to bean dependencies.
+	 * bean 实例 supplier 可用的上下文，用于访问 bean 依赖。
 	 */
 	interface SupplierContext {
 
 		/**
-		 * Return the bean instance that uniquely matches the given type, if any.
-		 * @param beanClass the type the bean must match; can be an interface or superclass
-		 * @return an instance of the single bean matching the bean type
+		 * 返回唯一匹配给定类型的 bean 实例（若存在）。
+		 * @param beanClass bean 必须匹配的类型；可为接口或超类
+		 * @return 匹配该类型的唯一 bean 实例
 		 * @see BeanFactory#getBean(String)
 		 */
 		<T> T bean(Class<T> beanClass) throws BeansException;
 
 		/**
-		 * Return the bean instance that uniquely matches the given generics-containing type, if any.
-		 * @param beanType the generics-containing type the bean must match; can be an interface or superclass
-		 * @return an instance of the single bean matching the bean type
+		 * 返回唯一匹配给定含泛型类型的 bean 实例（若存在）。
+		 * @param beanType bean 必须匹配的含泛型类型；可为接口或超类
+		 * @return 匹配该类型的唯一 bean 实例
 		 * @see BeanFactory#getBean(String)
 		 */
 		<T> T bean(ParameterizedTypeReference<T> beanType) throws BeansException;
 
 		/**
-		 * Return an instance, which may be shared or independent, of the
-		 * specified bean.
-		 * @param name the name of the bean to retrieve
-		 * @param beanClass the type the bean must match; can be an interface or superclass
-		 * @return an instance of the bean.
+		 * 返回指定 bean 的实例，可能是共享的，也可能是独立的。
+		 * @param name 要获取的 bean 名称
+		 * @param beanClass bean 必须匹配的类型；可为接口或超类
+		 * @return bean 实例
 		 * @see BeanFactory#getBean(String, Class)
 		 */
 		<T> T bean(String name, Class<T> beanClass) throws BeansException;
 
 		/**
-		 * Return a provider for the specified bean, allowing for lazy on-demand retrieval
-		 * of instances, including availability and uniqueness options.
-		 * <p>For matching a generic type, consider {@link #beanProvider(ParameterizedTypeReference)}.
-		 * @param beanClass the type the bean must match; can be an interface or superclass
-		 * @return a corresponding provider handle
+		 * 返回指定 bean 的提供者，支持按需惰性获取实例，
+		 * 并提供可用性与唯一性相关选项。
+		 * <p>若要匹配泛型类型，请考虑 {@link #beanProvider(ParameterizedTypeReference)}。
+		 * @param beanClass bean 必须匹配的类型；可为接口或超类
+		 * @return 对应的提供者句柄
 		 * @see BeanFactory#getBeanProvider(Class)
 		 */
 		<T> ObjectProvider<T> beanProvider(Class<T> beanClass);
 
 		/**
-		 * Return a provider for the specified bean, allowing for lazy on-demand retrieval
-		 * of instances, including availability and uniqueness options. This variant allows
-		 * for specifying a generic type to match, similar to reflective injection points
-		 * with generic type declarations in method/constructor parameters.
-		 * <p>Note that collections of beans are not supported here, in contrast to reflective
-		 * injection points. For programmatically retrieving a list of beans matching a
-		 * specific type, specify the actual bean type as an argument here and subsequently
-		 * use {@link ObjectProvider#orderedStream()} or its lazy streaming/iteration options.
-		 * <p>Also, generics matching is strict here, as per the Java assignment rules.
-		 * For lenient fallback matching with unchecked semantics (similar to the 'unchecked'
-		 * Java compiler warning), consider calling {@link #beanProvider(Class)} with the
-		 * raw type as a second step if no full generic match is
-		 * {@link ObjectProvider#getIfAvailable() available} with this variant.
-		 * @param beanType the generics-containing type the bean must match; can be an interface or superclass
-		 * @return a corresponding provider handle
+		 * 返回指定 bean 的提供者，支持按需惰性获取实例，
+		 * 并提供可用性与唯一性相关选项。本重载允许指定要匹配的泛型类型，
+		 * 类似于方法/构造器参数上带泛型声明的反射注入点。
+		 * <p>注意：与反射注入点不同，此处不支持 bean 集合。若要以编程方式
+		 * 获取匹配某类型的 bean 列表，请在此传入实际 bean 类型，再使用
+		 * {@link ObjectProvider#orderedStream()} 或其惰性流式/迭代选项。
+		 * <p>此外，此处的泛型匹配遵循 Java 赋值规则，较为严格。
+		 * 若需类似 Java 编译器 {@code unchecked} 警告的宽松回退匹配，
+		 * 可在本变体无法 {@link ObjectProvider#getIfAvailable() 可用} 完整泛型匹配时，
+		 * 再调用 {@link #beanProvider(Class)} 并传入原始类型作为第二步。
+		 * @param beanType bean 必须匹配的含泛型类型；可为接口或超类
+		 * @return 对应的提供者句柄
 		 * @see BeanFactory#getBeanProvider(ResolvableType)
 		 */
 		<T> ObjectProvider<T> beanProvider(ParameterizedTypeReference<T> beanType);

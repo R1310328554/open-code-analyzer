@@ -21,8 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.FatalBeanException;
 
 /**
- * Exception thrown when the BeanFactory cannot load the specified class
- * of a given bean.
+ * BeanFactory 无法加载给定 bean 的指定类时抛出的异常。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -30,20 +29,22 @@ import org.springframework.beans.FatalBeanException;
 @SuppressWarnings("serial")
 public class CannotLoadBeanClassException extends FatalBeanException {
 
+	/** bean 定义来源资源的描述（若可知） */
 	private final @Nullable String resourceDescription;
 
+	/** 被请求的 bean 名称 */
 	private final String beanName;
 
+	/** 尝试加载的 bean 类名（若可知） */
 	private final @Nullable String beanClassName;
 
 
 	/**
-	 * Create a new CannotLoadBeanClassException.
-	 * @param resourceDescription description of the resource
-	 * that the bean definition came from
-	 * @param beanName the name of the bean requested
-	 * @param beanClassName the name of the bean class
-	 * @param cause the root cause
+	 * 创建一个新的 {@code CannotLoadBeanClassException}。
+	 * @param resourceDescription bean 定义来源资源的描述
+	 * @param beanName 被请求的 bean 名称
+	 * @param beanClassName bean 类名
+	 * @param cause 根因
 	 */
 	public CannotLoadBeanClassException(@Nullable String resourceDescription, String beanName,
 			@Nullable String beanClassName, ClassNotFoundException cause) {
@@ -56,12 +57,11 @@ public class CannotLoadBeanClassException extends FatalBeanException {
 	}
 
 	/**
-	 * Create a new CannotLoadBeanClassException.
-	 * @param resourceDescription description of the resource
-	 * that the bean definition came from
-	 * @param beanName the name of the bean requested
-	 * @param beanClassName the name of the bean class
-	 * @param cause the root cause
+	 * 创建一个新的 {@code CannotLoadBeanClassException}。
+	 * @param resourceDescription bean 定义来源资源的描述
+	 * @param beanName 被请求的 bean 名称
+	 * @param beanClassName bean 类名
+	 * @param cause 根因
 	 */
 	public CannotLoadBeanClassException(@Nullable String resourceDescription, String beanName,
 			@Nullable String beanClassName, LinkageError cause) {
@@ -76,22 +76,21 @@ public class CannotLoadBeanClassException extends FatalBeanException {
 
 
 	/**
-	 * Return the description of the resource that the bean
-	 * definition came from.
+	 * 返回 bean 定义来源资源的描述。
 	 */
 	public @Nullable String getResourceDescription() {
 		return this.resourceDescription;
 	}
 
 	/**
-	 * Return the name of the bean requested.
+	 * 返回被请求的 bean 名称。
 	 */
 	public String getBeanName() {
 		return this.beanName;
 	}
 
 	/**
-	 * Return the name of the class we were trying to load.
+	 * 返回我们尝试加载的类名。
 	 */
 	public @Nullable String getBeanClassName() {
 		return this.beanClassName;
