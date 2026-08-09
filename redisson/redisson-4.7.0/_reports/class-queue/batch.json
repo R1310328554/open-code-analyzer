@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:07:30Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/RReliableFanoutAsync.java",
-    "redisson/src/main/java/org/redisson/api/RReliableFanoutReactive.java",
-    "redisson/src/main/java/org/redisson/api/RReliableFanoutRx.java",
-    "redisson/src/main/java/org/redisson/api/RReliablePubSubTopic.java",
-    "redisson/src/main/java/org/redisson/api/RReliablePubSubTopicAsync.java",
-    "redisson/src/main/java/org/redisson/api/RReliablePubSubTopicReactive.java",
-    "redisson/src/main/java/org/redisson/api/RReliablePubSubTopicRx.java",
-    "redisson/src/main/java/org/redisson/api/RReliableQueue.java",
-    "redisson/src/main/java/org/redisson/api/RReliableQueueAsync.java",
-    "redisson/src/main/java/org/redisson/api/RReliableQueueReactive.java",
-    "redisson/src/main/java/org/redisson/api/RReliableQueueRx.java",
-    "redisson/src/main/java/org/redisson/api/RReliableTopic.java",
-    "redisson/src/main/java/org/redisson/api/RReliableTopicAsync.java",
-    "redisson/src/main/java/org/redisson/api/RReliableTopicReactive.java",
-    "redisson/src/main/java/org/redisson/api/RReliableTopicRx.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1382,
-  "done": 1425
+  "done": 1440
 }
