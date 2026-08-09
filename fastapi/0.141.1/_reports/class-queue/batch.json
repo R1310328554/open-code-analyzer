@@ -1,11 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:14:39Z",
-  "files": [
-    "docs_src/websockets_/tutorial002_py310.py",
-    "docs_src/websockets_/tutorial003_py310.py",
-    "docs_src/wsgi/__init__.py",
-    "docs_src/wsgi/tutorial001_py310.py"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 485
+  "done": 489
 }

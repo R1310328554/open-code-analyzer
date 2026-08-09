@@ -483,3 +483,7 @@ docs_src/settings/app02_py310/main.py
 docs_src/websockets_/__init__.py
 docs_src/websockets_/tutorial001_py310.py
 docs_src/websockets_/tutorial002_an_py310.py
+docs_src/websockets_/tutorial002_py310.py
+docs_src/websockets_/tutorial003_py310.py
+docs_src/wsgi/__init__.py
+docs_src/wsgi/tutorial001_py310.py
