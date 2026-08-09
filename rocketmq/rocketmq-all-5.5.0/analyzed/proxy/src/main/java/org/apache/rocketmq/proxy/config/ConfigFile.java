@@ -17,7 +17,11 @@
 
 package org.apache.rocketmq.proxy.config;
 
+/**
+ * 可初始化配置接口：JSON 反序列化后由实现类填充默认值与派生字段。
+ */
 public interface ConfigFile {
 
+    /** 加载配置后执行一次数据初始化与校验。 */
     void initData();
 }

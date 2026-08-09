@@ -16,9 +16,14 @@
  */
 package org.apache.rocketmq.proxy.common.utils;
 
+/**
+ * Proxy 通用常量与工具占位类。
+ */
 public class ProxyUtils {
 
+    /** 单次 POP 请求允许拉取的最大消息条数。 */
     public static final int MAX_MSG_NUMS_FOR_POP_REQUEST = 32;
 
+    /** 上下文或属性中 Broker 地址的键名。 */
     public static final String BROKER_ADDR = "brokerAddr";
 }

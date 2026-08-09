@@ -36,12 +36,17 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.proxy.config.ConfigurationManager;
 
+/**
+ * 回执句柄分组：按 messageId 管理多条 {@link MessageReceiptHandle}，支持并发安全的增删改与异步续期。
+ */
 public class ReceiptHandleGroup {
     protected final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
 
-    // The messages having the same messageId will be deduplicated based on the parameters of broker, queueId, and offset
+    // 相同 messageId 下按 broker、queueId、offset 去重存储回执句柄
+    /** messageId 到句柄映射表的二级索引。 */
     protected final Map<String /* msgID */, Map<HandleKey, HandleData>> receiptHandleMap = new ConcurrentHashMap<>();
 
+    /** 回执句柄唯一键：由 broker、队列与 offset 组成。 */
     public static class HandleKey {
         private final String originalHandle;
         private final String broker;
@@ -111,6 +116,7 @@ public class ReceiptHandleGroup {
             this.messageReceiptHandle = messageReceiptHandle;
         }
 
+        /** 尝试在超时时间内获取互斥锁，超时或锁过期时可强制接管。 */
         public Long lock(long timeoutMs) {
             try {
                 boolean result = this.semaphore.tryAcquire(timeoutMs, TimeUnit.MILLISECONDS);
@@ -119,7 +125,7 @@ public class ReceiptHandleGroup {
                     this.lastLockTimeMs.set(currentTimeMs);
                     return currentTimeMs;
                 } else {
-                    // if the lock is expired, can be acquired again
+                    // 锁过期后允许重新获取，避免死锁
                     long expiredTimeMs = ConfigurationManager.getProxyConfig().getLockTimeoutMsInHandleGroup() * 3;
                     if (currentTimeMs - this.lastLockTimeMs.get() > expiredTimeMs) {
                         synchronized (this) {
@@ -138,6 +144,7 @@ public class ReceiptHandleGroup {
             }
         }
 
+        /** 释放锁；若持锁时间已超过阈值则跳过释放。 */
         public void unlock(long lockTimeMs) {
             // if the lock is expired, we don't need to unlock it
             if (System.currentTimeMillis() - lockTimeMs > ConfigurationManager.getProxyConfig().getLockTimeoutMsInHandleGroup() * 2) {
@@ -172,6 +179,7 @@ public class ReceiptHandleGroup {
         }
     }
 
+    /** 写入或更新指定 messageId 下的回执句柄。 */
     public void put(String msgID, MessageReceiptHandle value) {
         long timeout = ConfigurationManager.getProxyConfig().getLockTimeoutMsInHandleGroup();
         Map<HandleKey, HandleData> handleMap = ConcurrentHashMapUtils.computeIfAbsent((ConcurrentHashMap<String, Map<HandleKey, HandleData>>) this.receiptHandleMap,
@@ -212,6 +220,7 @@ public class ReceiptHandleGroup {
         return this.receiptHandleMap.size();
     }
 
+    /** 按 messageId 与 handle 字符串读取句柄。 */
     public MessageReceiptHandle get(String msgID, String handle) {
         Map<HandleKey, HandleData> handleMap = this.receiptHandleMap.get(msgID);
         if (handleMap == null) {
@@ -237,6 +246,7 @@ public class ReceiptHandleGroup {
         return res.get();
     }
 
+    /** 标记删除并返回被移除的句柄。 */
     public MessageReceiptHandle remove(String msgID, String handle) {
         Map<HandleKey, HandleData> handleMap = this.receiptHandleMap.get(msgID);
         if (handleMap == null) {
@@ -284,6 +294,14 @@ public class ReceiptHandleGroup {
         computeIfPresent(msgID, handle, function, timeout);
     }
 
+    /**
+     * 若句柄存在则异步计算新值（如续期），完成后更新或移除。
+     *
+     * @param msgID 消息 ID
+     * @param handle 原始 receipt handle 字符串
+     * @param function 异步变换函数
+     * @param lockTimeout 加锁超时毫秒数
+     */
     public void computeIfPresent(String msgID, String handle,
         Function<MessageReceiptHandle, CompletableFuture<MessageReceiptHandle>> function, long lockTimeout) {
         Map<HandleKey, HandleData> handleMap = this.receiptHandleMap.get(msgID);

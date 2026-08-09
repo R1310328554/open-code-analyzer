@@ -20,19 +20,30 @@ package org.apache.rocketmq.proxy.common;
 import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.client.consumer.AckResult;
 
+/**
+ * 回执续期事件：投递至续期线程池，驱动 POP 消息的 invisible time 延长或停止续期。
+ */
 public class RenewEvent {
+    /** 目标分组键。 */
     protected ReceiptHandleGroupKey key;
+    /** 待续期的消息回执句柄。 */
     protected MessageReceiptHandle messageReceiptHandle;
     protected long renewTime;
     protected EventType eventType;
+    /** 续期完成后的异步结果。 */
     protected CompletableFuture<AckResult> future;
 
+    /** 续期事件类型。 */
     public enum EventType {
+        /** 执行一次续期。 */
         RENEW,
+        /** 停止对该句柄的自动续期。 */
         STOP_RENEW,
+        /** 清空整个分组下的续期任务。 */
         CLEAR_GROUP
     }
 
+    /** 构造续期事件并绑定回调 Future。 */
     public RenewEvent(ReceiptHandleGroupKey key, MessageReceiptHandle messageReceiptHandle, long renewTime,
         EventType eventType, CompletableFuture<AckResult> future) {
         this.key = key;

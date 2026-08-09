@@ -22,22 +22,31 @@ import com.google.common.base.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.rocketmq.common.consumer.ReceiptHandle;
 
+/**
+ * 消息回执句柄：封装 POP 消费场景下的 receipt handle、队列位置与续期计数。
+ */
 public class MessageReceiptHandle {
+    /** 消费者组名。 */
     private final String group;
+    /** 消息所属 Topic。 */
     private final String topic;
+    /** 消息所在队列 ID。 */
     private final int queueId;
+    /** 消息唯一标识。 */
     private final String messageId;
     private final long queueOffset;
     private final String originalReceiptHandleStr;
     private final ReceiptHandle originalReceiptHandle;
     private final int reconsumeTimes;
 
+    /** 续期失败重试次数。 */
     private final AtomicInteger renewRetryTimes = new AtomicInteger(0);
     private final AtomicInteger renewTimes = new AtomicInteger(0);
     private final long consumeTimestamp;
     private String liteTopic;
     private volatile String receiptHandleStr;
 
+    /** 构造回执句柄（不含 Lite Topic）。 */
     public MessageReceiptHandle(String group, String topic, int queueId, String receiptHandleStr, String messageId,
         long queueOffset, int reconsumeTimes) {
         this(group, topic, queueId, receiptHandleStr, messageId, queueOffset, reconsumeTimes, null);
@@ -45,6 +54,7 @@ public class MessageReceiptHandle {
 
     public MessageReceiptHandle(String group, String topic, int queueId, String receiptHandleStr, String messageId,
         long queueOffset, int reconsumeTimes, String liteTopic) {
+        // 解码原始 receipt handle 并记录首次消费时间
         this.originalReceiptHandle = ReceiptHandle.decode(receiptHandleStr);
         this.group = group;
         this.topic = topic;
@@ -134,10 +144,12 @@ public class MessageReceiptHandle {
         return consumeTimestamp;
     }
 
+    /** 续期成功后更新当前 receipt handle 字符串。 */
     public void updateReceiptHandle(String receiptHandleStr) {
         this.receiptHandleStr = receiptHandleStr;
     }
 
+    /** 续期失败时递增重试计数并返回新值。 */
     public int incrementAndGetRenewRetryTimes() {
         return this.renewRetryTimes.incrementAndGet();
     }

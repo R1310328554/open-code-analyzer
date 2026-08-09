@@ -16,11 +16,20 @@
  */
 package org.apache.rocketmq.proxy.common;
 
+/**
+ * Proxy 错误码枚举：映射 gRPC/Remoting 响应中的标准失败类型。
+ */
 public enum ProxyExceptionCode {
+    /** Broker 名称无效或不存在。 */
     INVALID_BROKER_NAME,
+    /** 事务消息关联数据未找到。 */
     TRANSACTION_DATA_NOT_FOUND,
+    /** 鉴权失败或无权访问资源。 */
     FORBIDDEN,
+    /** 消息属性与声明类型冲突。 */
     MESSAGE_PROPERTY_CONFLICT_WITH_TYPE,
+    /** receipt handle 无效或已过期。 */
     INVALID_RECEIPT_HANDLE,
+    /** Proxy 内部未预期错误。 */
     INTERNAL_SERVER_ERROR,
 }

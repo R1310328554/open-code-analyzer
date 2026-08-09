@@ -19,18 +19,23 @@ package org.apache.rocketmq.proxy.common.utils;
 import java.util.Set;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 订阅过滤工具：判断消息 Tag 是否匹配消费者订阅表达式。
+ */
 public class FilterUtils {
     /**
-     * Whether the message's tag matches consumerGroup's SubscriptionData
+     * 判断消息 Tag 是否匹配消费者组的 {@link SubscriptionData}。
      *
-     * @param tagsSet, tagSet in {@link SubscriptionData}, tagSet empty means SubscriptionData.SUB_ALL(*)
-     * @param tags,    message's tags, null means not tag attached to the message.
+     * @param tagsSet {@link SubscriptionData} 中的 tag 集合；空集合表示订阅全部（*）
+     * @param tags 消息 Tag；为 null 表示消息未携带 Tag
      */
     public static boolean isTagMatched(Set<String> tagsSet, String tags) {
+        // 空 tag 集合表示 SUB_ALL，直接匹配
         if (tagsSet.isEmpty()) {
             return true;
         }
 
+        // 消息无 Tag 时无法匹配具体 tag 过滤
         if (tags == null) {
             return false;
         }

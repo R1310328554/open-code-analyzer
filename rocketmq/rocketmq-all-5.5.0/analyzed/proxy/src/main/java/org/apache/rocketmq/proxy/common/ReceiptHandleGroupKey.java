@@ -21,15 +21,22 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import io.netty.channel.Channel;
 
+/**
+ * 回执句柄分组键：由 Netty 通道与消费者组唯一标识一个 {@link ReceiptHandleGroup}。
+ */
 public class ReceiptHandleGroupKey {
+    /** 客户端连接通道。 */
     protected final Channel channel;
+    /** 消费者组名。 */
     protected final String group;
 
+    /** 构造分组键。 */
     public ReceiptHandleGroupKey(Channel channel, String group) {
         this.channel = channel;
         this.group = group;
     }
 
+    /** 返回通道长 ID 文本，用于 equals/hashCode。 */
     protected String getChannelId() {
         return channel.id().asLongText();
     }
@@ -38,6 +45,7 @@ public class ReceiptHandleGroupKey {
         return group;
     }
 
+    /** 获取关联通道。 */
     public Channel getChannel() {
         return channel;
     }

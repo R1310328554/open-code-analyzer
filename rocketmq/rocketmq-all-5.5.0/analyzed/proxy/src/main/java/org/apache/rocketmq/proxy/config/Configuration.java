@@ -32,12 +32,17 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * Proxy 配置加载器：从文件或 classpath 读取 JSON 并解析为 {@link ProxyConfig} 与 {@link AuthConfig}。
+ */
 public class Configuration {
     private final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
     private final AtomicReference<ProxyConfig> proxyConfigReference = new AtomicReference<>();
     private final AtomicReference<AuthConfig> authConfigReference = new AtomicReference<>();
+    /** 系统属性键：指定 proxy 配置文件绝对路径。 */
     public static final String CONFIG_PATH_PROPERTY = "com.rocketmq.proxy.configPath";
 
+    /** 加载 JSON 配置并初始化 Proxy 与鉴权配置引用。 */
     public void init() throws Exception {
         String proxyConfigData = loadJsonConfig();
 
@@ -51,10 +56,12 @@ public class Configuration {
         authConfig.setClusterName(proxyConfig.getRocketMQClusterName());
     }
 
+    /** 按优先级从系统属性、测试资源或 RMQ_PROXY_HOME/conf 读取配置文件内容。 */
     private String loadJsonConfig() throws Exception {
         String configFileName = ProxyConfig.DEFAULT_CONFIG_FILE_NAME;
         String filePath = System.getProperty(CONFIG_PATH_PROPERTY);
         if (StringUtils.isBlank(filePath)) {
+            // 单元测试环境优先从 classpath 加载示例配置
             final String testResource = "rmq-proxy-home/conf/" + configFileName;
             try (InputStream inputStream = Configuration.class.getClassLoader().getResourceAsStream(testResource)) {
                 if (null != inputStream) {
@@ -66,6 +73,7 @@ public class Configuration {
 
         File file = new File(filePath);
         log.info("The current configuration file path is {}", filePath);
+        // 配置文件不存在则抛出运行时异常
         if (!file.exists()) {
             String msg = String.format("the config file %s not exist", filePath);
             log.warn(msg);
@@ -81,6 +89,7 @@ public class Configuration {
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 
+    /** 返回当前 Proxy 运行时配置快照。 */
     public ProxyConfig getProxyConfig() {
         return proxyConfigReference.get();
     }
@@ -93,6 +102,7 @@ public class Configuration {
         return authConfigReference.get();
     }
 
+    /** 更新鉴权配置引用。 */
     public void setAuthConfig(AuthConfig authConfig) {
         authConfigReference.set(authConfig);
     }

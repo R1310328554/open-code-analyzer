@@ -16,20 +16,27 @@
  */
 package org.apache.rocketmq.proxy.common;
 
+/**
+ * Proxy 业务异常：携带 {@link ProxyExceptionCode} 错误码供客户端识别失败原因。
+ */
 public class ProxyException extends RuntimeException {
 
+    /** 结构化错误码。 */
     private final ProxyExceptionCode code;
 
+    /** 构造带错误码与消息的异常。 */
     public ProxyException(ProxyExceptionCode code, String message) {
         super(message);
         this.code = code;
     }
 
+    /** 构造带根因的 Proxy 异常。 */
     public ProxyException(ProxyExceptionCode code, String message, Throwable cause) {
         super(message, cause);
         this.code = code;
     }
 
+    /** 返回异常对应的错误码。 */
     public ProxyExceptionCode getCode() {
         return code;
     }

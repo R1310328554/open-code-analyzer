@@ -23,8 +23,12 @@ import org.apache.rocketmq.remoting.protocol.subscription.RetryPolicy;
 import java.util.concurrent.TimeUnit;
 
 
+/**
+ * POP 回执续期间隔策略：实现 {@link RetryPolicy}，按续期次数递增等待时间。
+ */
 public class RenewStrategyPolicy implements RetryPolicy {
-    // 1m 3m 5m 6m 10m 30m 1h
+    // 默认续期间隔序列：1 分钟、3 分钟、5 分钟、10 分钟、30 分钟、1 小时
+    /** 各续期次数对应的下一次延迟（毫秒）。 */
     private long[] next = new long[]{
             TimeUnit.MINUTES.toMillis(1),
             TimeUnit.MINUTES.toMillis(3),
@@ -37,6 +41,7 @@ public class RenewStrategyPolicy implements RetryPolicy {
     public RenewStrategyPolicy() {
     }
 
+    /** 使用自定义间隔数组构造策略。 */
     public RenewStrategyPolicy(long[] next) {
         this.next = next;
     }
@@ -57,7 +62,9 @@ public class RenewStrategyPolicy implements RetryPolicy {
     }
 
     @Override
+    /** 根据已续期次数返回下一次延迟；超出数组长度时使用最后一档。 */
     public long nextDelayDuration(int renewTimes) {
+        // 负数续期次数按 0 处理
         if (renewTimes < 0) {
             renewTimes = 0;
         }

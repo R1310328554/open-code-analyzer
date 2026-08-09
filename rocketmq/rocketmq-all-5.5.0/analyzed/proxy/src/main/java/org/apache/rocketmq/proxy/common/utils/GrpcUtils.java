@@ -21,12 +21,18 @@ import io.grpc.Attributes;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 
+/**
+ * gRPC 辅助工具：安全地向 Metadata 写入头、从 ServerCall 读取 Attributes。
+ */
 public class GrpcUtils {
 
+    /** 工具类禁止实例化。 */
     private GrpcUtils() {
     }
 
+    /** 若 headers 中尚未存在 key 且 value 非空，则写入该头。 */
     public static <T> void putHeaderIfNotExist(Metadata headers, Metadata.Key<T> key, T value) {
+        // headers 为空时静默跳过
         if (headers == null) {
             return;
         }
@@ -35,6 +41,7 @@ public class GrpcUtils {
         }
     }
 
+    /** 从 ServerCall 的 Attributes 中读取指定键，缺失时返回 null。 */
     public static <R, W, T> T getAttribute(ServerCall<R, W> call, Attributes.Key<T> key) {
         Attributes attributes = call.getAttributes();
         if (attributes == null) {
