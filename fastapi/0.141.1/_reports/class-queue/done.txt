@@ -430,3 +430,13 @@ docs_src/security/tutorial001_an_py310.py
 docs_src/security/tutorial001_py310.py
 docs_src/security/tutorial002_an_py310.py
 docs_src/security/tutorial002_py310.py
+docs_src/response_model/tutorial004_py310.py
+docs_src/response_model/tutorial005_py310.py
+docs_src/response_model/tutorial006_py310.py
+docs_src/response_status_code/__init__.py
+docs_src/response_status_code/tutorial001_py310.py
+docs_src/response_status_code/tutorial002_py310.py
+docs_src/schema_extra_example/__init__.py
+docs_src/schema_extra_example/tutorial001_py310.py
+docs_src/schema_extra_example/tutorial002_py310.py
+docs_src/schema_extra_example/tutorial003_an_py310.py
