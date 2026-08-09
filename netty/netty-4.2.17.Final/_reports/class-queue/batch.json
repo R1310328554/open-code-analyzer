@@ -15,23 +15,8 @@
     "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker08.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker13.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshakerFactory.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientProtocolConfig.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientProtocolHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientProtocolHandshakeHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketCloseStatus.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketDecoderConfig.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketFrameAggregator.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketFrameDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketFrameEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketFrameMaskGenerator.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketHandshakeException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketProtocolHandler.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketScheme.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketServerHandshakeException.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketServerHandshaker.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketServerHandshaker00.java"
+    "codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientProtocolConfig.java"
   ],
   "remaining_pending": 1388,
-  "done": 510
+  "done": 525
 }
