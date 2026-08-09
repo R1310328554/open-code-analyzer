@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:35:20Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/eviction/JCacheEvictionTask.java",
-    "redisson/src/main/java/org/redisson/eviction/MapCacheEvictionTask.java",
-    "redisson/src/main/java/org/redisson/eviction/MultimapEvictionTask.java",
-    "redisson/src/main/java/org/redisson/eviction/ScoredSetEvictionTask.java",
-    "redisson/src/main/java/org/redisson/eviction/SetCacheEvictionTask.java",
-    "redisson/src/main/java/org/redisson/eviction/TimeSeriesEvictionTask.java",
-    "redisson/src/main/java/org/redisson/executor/CronExpression.java",
-    "redisson/src/main/java/org/redisson/executor/RedissonClassLoader.java",
-    "redisson/src/main/java/org/redisson/executor/RedissonCompletionService.java",
-    "redisson/src/main/java/org/redisson/executor/RedissonExecutorBatchFuture.java",
-    "redisson/src/main/java/org/redisson/executor/RedissonExecutorFuture.java",
-    "redisson/src/main/java/org/redisson/executor/RedissonExecutorFutureReference.java",
-    "redisson/src/main/java/org/redisson/executor/RedissonExecutorRemoteService.java",
-    "redisson/src/main/java/org/redisson/executor/RedissonScheduledFuture.java",
-    "redisson/src/main/java/org/redisson/executor/RemoteExecutorService.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 242,
-  "done": 2565
+  "done": 2580
 }
