@@ -21,6 +21,10 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：Flowable concatMap(Flowable::just)、concatMap(Single.just.toFlowable)
+ * 与 concatMapSingle(Single::just) 三种 Single 映射路径的吞吐对比。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -37,6 +41,7 @@ public class FlowableConcatMapSinglePerf {
 
     Flowable<Integer> flowablePlain;
 
+    /** 按 count 填充数组并构造 plain/convert/dedicated 三条 Single.just 链路。 */
     @Setup
     public void setup() {
         Integer[] sourceArray = new Integer[count];
@@ -51,16 +56,19 @@ public class FlowableConcatMapSinglePerf {
         flowableDedicated = source.concatMapSingle((Function<Integer, Single<? extends Integer>>) Single::just);
     }
 
+    /** concatMap(Flowable::just) 基准。 */
     @Benchmark
     public Object flowablePlain(Blackhole bh) {
         return flowablePlain.subscribeWith(new PerfConsumer(bh));
     }
 
+    /** concatMap(Single.just.toFlowable) 转换路径基准。 */
     @Benchmark
     public Object flowableConvert(Blackhole bh) {
         return flowableConvert.subscribeWith(new PerfConsumer(bh));
     }
 
+    /** concatMapSingle(Single::just) 专用算子基准。 */
     @Benchmark
     public Object flowableDedicated(Blackhole bh) {
         return flowableDedicated.subscribeWith(new PerfConsumer(bh));

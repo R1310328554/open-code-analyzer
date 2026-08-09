@@ -110,6 +110,10 @@ import io.reactivex.rxjava4.core.Streamable;
 /// StreamableSkipPerf.indexed      100000  thrpt    5        5153,256 ┬▒       310,895  ops/s
 /// StreamableSkipPerf.indexed     1000000  thrpt    5         259,912 ┬▒        76,746  ops/s
 /// ```
+/**
+ * JMH 基准：Streamable.skip 在 range 源及 indexed/enumerable 路径上的吞吐。
+ * 文件内 /// 注释含 whenComplete、wip 与同步偏置优化实验数据。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -124,6 +128,7 @@ public class StreamableSkipPerf {
     Streamable<List<Integer>> resultIndexed;
     Streamable<List<Integer>> resultEnumerable;
 
+    /** 构造 skip(times/2) 及 indexed/enumerable collect 变体。 */
     @Setup
     public void setup() {
         result = Streamable.range(1, times).skip(times / 2);
@@ -131,16 +136,19 @@ public class StreamableSkipPerf {
         resultEnumerable = Streamable.range(1, times).filter(_ -> true).skip(times / 2).collect(Collectors.toList());
     }
 
+    /** range.skip blockingLast 基准。 */
     @Benchmark
     public Object benchmark() {
         return result.blockingLast();
     }
 
+    /** skip+collect(toList) indexed 路径 blockingLast 基准。 */
     @Benchmark
     public Object indexed() {
         return resultIndexed.blockingLast();
     }
 
+    /** filter+skip+collect enumerable 路径 blockingLast 基准。 */
     @Benchmark
     public Object enumerable() {
         return resultEnumerable.blockingLast();

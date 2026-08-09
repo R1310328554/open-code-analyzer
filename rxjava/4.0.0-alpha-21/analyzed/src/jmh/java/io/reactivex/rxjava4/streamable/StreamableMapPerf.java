@@ -169,6 +169,10 @@ import io.reactivex.rxjava4.core.Streamable;
 /// StreamableMapPerf.indexed      100000  thrpt    5       2966,157 ┬▒       181,954  ops/s
 /// StreamableMapPerf.indexed     1000000  thrpt    5        286,102 ┬▒        52,939  ops/s
 /// ```
+/**
+ * JMH 基准：Streamable.map 与 collect(maxBy) 融合及算子融合优化对比。
+ * 文件内 /// 注释记录 whenComplete、indexable/enumerable 融合等实验数据。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -183,6 +187,7 @@ public class StreamableMapPerf {
     Streamable<Optional<Integer>> indexedMax;
     Streamable<Optional<Integer>> enumeratedMax;
 
+    /** 构造 map(v+1) 及 indexed/enumerated maxBy 三条链路。 */
     @Setup
     public void setup() {
         result = Streamable.range(1, times).map(v -> v + 1);
@@ -192,16 +197,19 @@ public class StreamableMapPerf {
                 .collect(Collectors.maxBy(Comparator.naturalOrder()));
     }
 
+    /** range.map blockingLast 基准。 */
     @Benchmark
     public Object basic() {
         return result.blockingLast();
     }
 
+    /** range 源 map+maxBy blockingLast 基准。 */
     @Benchmark
     public Object indexed() {
         return indexedMax.blockingLast();
     }
 
+    /** fromIterable 源 map+maxBy blockingLast 基准。 */
     @Benchmark
     public Object enumerated() {
         return enumeratedMax.blockingLast();

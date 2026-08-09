@@ -82,6 +82,10 @@ import io.reactivex.rxjava4.core.*;
 /// StreamableLastAsSinglePerf.benchmark   100000  thrpt    5      5094,499 ┬▒     405,946  ops/s
 /// StreamableLastAsSinglePerf.benchmark  1000000  thrpt    5       456,867 ┬▒      15,351  ops/s
 /// ```
+/**
+ * JMH 基准：Streamable.range.lastOrError 经 blockingGet 取末元素的吞吐。
+ * 文件内 /// 注释记录 whenComplete/wip 与同步消费循环等优化实验数据。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -94,11 +98,13 @@ public class StreamableLastAsSinglePerf {
 
     Single<Integer> result;
 
+    /** 按 times 构造 range.lastOrError 链路。 */
     @Setup
     public void setup() {
         result = Streamable.range(1, times).lastOrError();
     }
 
+    /** lastOrError blockingGet 基准。 */
     @Benchmark
     public Object benchmark() {
         return result.blockingGet();

@@ -111,6 +111,11 @@ import io.reactivex.rxjava4.core.Streamable;
 /// StreamableMapOptionalPerf.indexed      100000  thrpt    5      4528,836 ┬▒      509,763  ops/s
 /// StreamableMapOptionalPerf.indexed     1000000  thrpt    5       411,513 ┬▒       10,556  ops/s
 /// ```
+/**
+ * JMH 基准：Streamable.mapOptional 与 collect(maxBy) 融合路径吞吐
+ *（range 源、indexed 与 enumerated 源对比）。
+ * 文件内 /// 注释含状态机与 Deferred/EnumerableSource 优化数据。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -125,6 +130,7 @@ public class StreamableMapOptionalPerf {
     Streamable<Optional<Integer>> indexedMax;
     Streamable<Optional<Integer>> enumeratedMax;
 
+    /** 构造 mapOptional 奇数过滤及 indexed/enumerated maxBy 三条链路。 */
     @Setup
     public void setup() {
         result = Streamable.range(1, times)
@@ -136,16 +142,19 @@ public class StreamableMapOptionalPerf {
                 .collect(Collectors.maxBy(Comparator.naturalOrder()));
     }
 
+    /** range.mapOptional blockingLast 基准。 */
     @Benchmark
     public Object basic() {
         return result.blockingLast();
     }
 
+    /** range 源 mapOptional+maxBy blockingLast 基准。 */
     @Benchmark
     public Object indexed() {
         return indexedMax.blockingLast();
     }
 
+    /** fromIterable 源 mapOptional+maxBy blockingLast 基准。 */
     @Benchmark
     public Object enumerated() {
         return enumeratedMax.blockingLast();

@@ -21,6 +21,10 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：Flowable flatMap 空流、flatMap(Completable.toFlowable)
+ * 与 flatMapCompletable 三种 Completable 映射路径的吞吐对比。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -37,6 +41,7 @@ public class FlowableFlatMapCompletablePerf {
 
     Flowable<Integer> flowablePlain;
 
+    /** 按 count 填充数组并构造 plain/convert/dedicated 三条链路。 */
     @Setup
     public void setup() {
         Integer[] sourceArray = new Integer[count];
@@ -51,16 +56,19 @@ public class FlowableFlatMapCompletablePerf {
         flowableDedicated = source.flatMapCompletable((Function<Integer, Completable>) _ -> Completable.complete());
     }
 
+    /** flatMap 映射 Flowable.empty 基准。 */
     @Benchmark
     public Object flowablePlain(Blackhole bh) {
         return flowablePlain.subscribeWith(new PerfConsumer(bh));
     }
 
+    /** flatMap(Completable.complete().toFlowable) 转换路径基准。 */
     @Benchmark
     public Object flowableConvert(Blackhole bh) {
         return flowableConvert.subscribeWith(new PerfConsumer(bh));
     }
 
+    /** flatMapCompletable 专用算子基准。 */
     @Benchmark
     public Object flowableDedicated(Blackhole bh) {
         return flowableDedicated.subscribeWith(new PerfConsumer(bh));
