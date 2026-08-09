@@ -31,6 +31,8 @@ import com.weibo.api.motan.rpc.Response;
 import java.util.Map;
 
 /**
+ * Sentinel 集成的 Motan 服务 Provider 过滤器，对入站 RPC 调用执行流控。
+ *
  * @author zhangxn8
  */
 @Activation(key = MotanConstants.NODE_TYPE_SERVICE)

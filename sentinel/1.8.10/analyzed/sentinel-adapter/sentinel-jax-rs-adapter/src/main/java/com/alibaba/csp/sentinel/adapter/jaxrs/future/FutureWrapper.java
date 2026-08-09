@@ -20,7 +20,8 @@ import com.alibaba.csp.sentinel.AsyncEntry;
 import java.util.concurrent.*;
 
 /**
- * wrap Future to ensure entry exit
+ * 包装 {@link Future}，确保 {@link AsyncEntry} 在异步调用完成或取消时正确退出。
+ *
  * @author sea
  */
 public class FutureWrapper<V> implements Future<V> {

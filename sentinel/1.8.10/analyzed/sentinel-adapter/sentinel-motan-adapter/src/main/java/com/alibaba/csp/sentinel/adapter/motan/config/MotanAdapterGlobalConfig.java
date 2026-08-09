@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
+ * Motan 适配器全局配置，管理资源名前缀、接口 group/version 开关与降级处理器。
+ *
  * @author zhangxn8
  */
 public class MotanAdapterGlobalConfig {
@@ -50,10 +52,20 @@ public class MotanAdapterGlobalConfig {
 
     private MotanAdapterGlobalConfig() {}
 
+    /**
+     * 是否启用资源名前缀。
+     *
+     * @return 启用时返回 true
+     */
     public static boolean isUsePrefix() {
         return TRUE_STR.equalsIgnoreCase(SentinelConfig.getConfig(MOTAN_RES_NAME_WITH_PREFIX_KEY));
     }
 
+    /**
+     * 获取 Provider 侧资源名前缀。
+     *
+     * @return 前缀字符串，未启用时返回 null
+     */
     public static String getMotanProviderPrefix() {
         if (isUsePrefix()) {
             String config = SentinelConfig.getConfig(MOTAN_PROVIDER_RES_NAME_PREFIX_KEY);
@@ -62,6 +74,11 @@ public class MotanAdapterGlobalConfig {
         return null;
     }
 
+    /**
+     * 获取 Consumer 侧资源名前缀。
+     *
+     * @return 前缀字符串，未启用时返回 null
+     */
     public static String getMotanConsumerPrefix() {
         if (isUsePrefix()) {
             String config = SentinelConfig.getConfig(MOTAN_CONSUMER_RES_NAME_PREFIX_KEY);
@@ -70,23 +87,48 @@ public class MotanAdapterGlobalConfig {
         return null;
     }
 
+    /**
+     * 是否在接口资源名中使用 group 与 version。
+     *
+     * @return 启用时返回 true
+     */
     public static Boolean getMotanInterfaceGroupAndVersionEnabled() {
         return TRUE_STR.equalsIgnoreCase(SentinelConfig.getConfig(MOTAN_INTERFACE_GROUP_VERSION_ENABLED));
     }
 
+    /**
+     * 获取 Consumer 侧降级处理器。
+     *
+     * @return Consumer 降级处理器
+     */
     public static MotanFallback getConsumerFallback() {
         return consumerFallback;
     }
 
+    /**
+     * 设置 Consumer 侧降级处理器。
+     *
+     * @param consumerFallback Consumer 降级处理器
+     */
     public static void setConsumerFallback(MotanFallback consumerFallback) {
         AssertUtil.notNull(consumerFallback, "consumerFallback cannot be null");
         MotanAdapterGlobalConfig.consumerFallback = consumerFallback;
     }
 
+    /**
+     * 获取 Provider 侧降级处理器。
+     *
+     * @return Provider 降级处理器
+     */
     public static MotanFallback getProviderFallback() {
         return providerFallback;
     }
 
+    /**
+     * 设置 Provider 侧降级处理器。
+     *
+     * @param providerFallback Provider 降级处理器
+     */
     public static void setProviderFallback(MotanFallback providerFallback) {
         AssertUtil.notNull(providerFallback, "providerFallback cannot be null");
         MotanAdapterGlobalConfig.providerFallback = providerFallback;

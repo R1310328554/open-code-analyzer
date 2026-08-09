@@ -21,10 +21,11 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 /**
- * sentinel jax-rs adapter provide this exception mapper
- * in case of user throw exception which is not {@link javax.ws.rs.WebApplicationException} and not matched by any ExceptionMapper
- * this exception mapper convert exception to Response let ContainerResponseFilter to be called to exit sentinel entry
- * user can add custom ExceptionMapper and config with {@link javax.annotation.Priority} with lower value
+ * Sentinel JAX-RS 适配器提供的异常映射器。
+ * 当用户抛出非 {@link javax.ws.rs.WebApplicationException} 且未被其他 ExceptionMapper 捕获的异常时，
+ * 本映射器将异常转换为 Response，以便触发 ContainerResponseFilter 退出 Sentinel Entry。
+ * 用户可添加自定义 ExceptionMapper，并通过 {@link javax.annotation.Priority} 设置更小的优先级值。
+ *
  * @author sea
  */
 @Provider

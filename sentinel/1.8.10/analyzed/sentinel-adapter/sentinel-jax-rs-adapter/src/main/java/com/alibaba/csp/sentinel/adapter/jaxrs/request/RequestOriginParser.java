@@ -18,17 +18,17 @@ package com.alibaba.csp.sentinel.adapter.jaxrs.request;
 import javax.ws.rs.container.ContainerRequestContext;
 
 /**
- * The origin parser parses request origin (e.g. IP, user, appName) from HTTP request.
+ * 请求来源解析器，从 HTTP 请求中解析来源标识（如 IP、用户、应用名）。
  *
  * @author sea
  */
 public interface RequestOriginParser {
 
     /**
-     * Parse the origin from given HTTP request.
+     * 从给定 HTTP 请求中解析来源标识。
      *
-     * @param request HTTP request
-     * @return parsed origin
+     * @param request HTTP 请求
+     * @return 解析出的来源标识
      */
     String parseOrigin(ContainerRequestContext request);
 }

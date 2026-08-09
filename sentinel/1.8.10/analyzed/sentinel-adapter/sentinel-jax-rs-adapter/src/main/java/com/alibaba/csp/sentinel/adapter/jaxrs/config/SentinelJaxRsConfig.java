@@ -23,7 +23,9 @@ import com.alibaba.csp.sentinel.adapter.jaxrs.request.RequestOriginParser;
 import com.alibaba.csp.sentinel.adapter.jaxrs.request.ResourceNameParser;
 
 /**
- *  @author sea
+ * JAX-RS 适配器全局配置，管理资源名解析器、来源解析器与降级处理器。
+ *
+ * @author sea
  */
 public class SentinelJaxRsConfig {
 

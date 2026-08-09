@@ -22,6 +22,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
 /**
+ * JAX-RS 适配器默认降级实现，流控触发时返回 HTTP 429 响应。
+ *
  * @author sea
  */
 public class DefaultSentinelJaxRsFallback implements SentinelJaxRsFallback {

@@ -1,22 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:19:15Z",
-  "files": [
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/SentinelJaxRsProviderFilter.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/config/SentinelJaxRsConfig.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/exception/DefaultExceptionMapper.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/fallback/DefaultSentinelJaxRsFallback.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/fallback/SentinelJaxRsFallback.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/future/FutureWrapper.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/request/DefaultRequestOriginParser.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/request/DefaultResourceNameParser.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/request/RequestOriginParser.java",
-    "sentinel-adapter/sentinel-jax-rs-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/jaxrs/request/ResourceNameParser.java",
-    "sentinel-adapter/sentinel-motan-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/motan/MotanUtils.java",
-    "sentinel-adapter/sentinel-motan-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/motan/SentinelMotanConsumerFilter.java",
-    "sentinel-adapter/sentinel-motan-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/motan/SentinelMotanProviderFilter.java",
-    "sentinel-adapter/sentinel-motan-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/motan/config/MotanAdapterGlobalConfig.java",
-    "sentinel-adapter/sentinel-motan-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/motan/fallback/DefaultMotanFallback.java"
-  ],
-  "remaining_pending": 680,
-  "done": 255
+  "files": [],
+  "remaining_pending": 665,
+  "done": 270
 }

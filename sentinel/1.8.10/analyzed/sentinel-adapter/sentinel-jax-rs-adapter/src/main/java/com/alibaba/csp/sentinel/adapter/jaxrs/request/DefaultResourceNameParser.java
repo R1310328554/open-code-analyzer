@@ -20,6 +20,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ResourceInfo;
 
 /**
+ * 默认资源名解析器，格式为 HTTP 方法 + 类路径 + 方法路径。
+ *
  * @author sea
  */
 public class DefaultResourceNameParser implements ResourceNameParser {

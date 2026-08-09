@@ -29,6 +29,8 @@ import com.weibo.api.motan.rpc.Request;
 import com.weibo.api.motan.rpc.Response;
 
 /**
+ * Sentinel 集成的 Motan 服务 Consumer 过滤器，对出站 RPC 调用执行流控。
+ *
  * @author zhangxn8
  */
 @Activation(key = MotanConstants.NODE_TYPE_REFERER)

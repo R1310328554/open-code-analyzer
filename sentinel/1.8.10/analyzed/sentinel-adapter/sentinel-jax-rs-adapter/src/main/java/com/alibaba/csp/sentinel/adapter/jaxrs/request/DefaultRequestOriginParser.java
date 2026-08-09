@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.adapter.jaxrs.request;
 import javax.ws.rs.container.ContainerRequestContext;
 
 /**
+ * 默认请求来源解析器，始终返回空字符串。
+ *
  * @author sea
  */
 public class DefaultRequestOriginParser implements RequestOriginParser {

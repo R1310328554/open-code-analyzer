@@ -27,6 +27,8 @@ import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 
 /**
+ * JAX-RS 服务端 Provider 过滤器，在请求入口创建 Sentinel 资源并执行流控。
+ *
  * @author sea
  */
 @Provider
@@ -47,7 +49,7 @@ public class SentinelJaxRsProviderFilter implements ContainerRequestFilter, Cont
             String resourceName = getResourceName(containerRequestContext, resourceInfo);
 
             if (StringUtil.isNotEmpty(resourceName)) {
-                // Parse the request origin using registered origin parser.
+                // 使用已注册的来源解析器解析请求来源。
                 String origin = parseOrigin(containerRequestContext);
                 String contextName = getContextName(containerRequestContext);
                 ContextUtil.enter(contextName, origin);

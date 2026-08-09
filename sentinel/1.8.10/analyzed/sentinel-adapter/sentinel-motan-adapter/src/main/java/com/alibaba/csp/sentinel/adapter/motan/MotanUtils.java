@@ -22,16 +22,33 @@ import com.weibo.api.motan.rpc.Request;
 import com.weibo.api.motan.util.ReflectUtil;
 
 /**
+ * Motan 适配器工具类，用于构建接口与方法级 Sentinel 资源名。
+ *
  * @author zhangxn8
  */
 public class MotanUtils {
 
     private MotanUtils() {}
 
+    /**
+     * 获取 Motan RPC 方法资源名（不使用 group/version）。
+     *
+     * @param caller Motan 调用方
+     * @param request Motan 请求
+     * @return 方法资源名
+     */
     public static String getMethodResourceName(Caller<?> caller, Request request){
         return getMethodResourceName(caller, request, false);
     }
 
+    /**
+     * 获取 Motan RPC 方法资源名。
+     *
+     * @param caller Motan 调用方
+     * @param request Motan 请求
+     * @param useGroupAndVersion 是否在接口名中使用 group 与 version
+     * @return 方法资源名
+     */
     public static String getMethodResourceName(Caller<?> caller, Request request, Boolean useGroupAndVersion) {
         StringBuilder buf = new StringBuilder(64);
         String interfaceResource = useGroupAndVersion ? caller.getUrl().getPath(): caller.getInterface().getName();
@@ -56,6 +73,14 @@ public class MotanUtils {
         return buf.toString();
     }
 
+    /**
+     * 获取带前缀的 Motan RPC 方法资源名。
+     *
+     * @param caller Motan 调用方
+     * @param request Motan 请求
+     * @param prefix 资源名前缀
+     * @return 方法资源名
+     */
     public static String getMethodResourceName(Caller<?> caller, Request request, String prefix) {
         if (StringUtil.isNotBlank(prefix)) {
             return new StringBuilder(64)
@@ -67,14 +92,34 @@ public class MotanUtils {
         }
     }
 
+    /**
+     * 获取 Motan RPC 接口资源名（不使用 group/version）。
+     *
+     * @param caller Motan 调用方
+     * @return 接口资源名
+     */
     public static String getInterfaceName(Caller<?> caller) {
         return getInterfaceName(caller, false);
     }
 
+    /**
+     * 获取 Motan RPC 接口资源名。
+     *
+     * @param caller Motan 调用方
+     * @param useGroupAndVersion 是否在接口名中使用 group 与 version
+     * @return 接口资源名
+     */
     public static String getInterfaceName(Caller<?> caller, Boolean useGroupAndVersion) {
         return useGroupAndVersion ? caller.getUrl().getApplication() : caller.getInterface().getName();
     }
 
+    /**
+     * 获取带前缀的 Motan RPC 接口资源名。
+     *
+     * @param caller Motan 调用方
+     * @param prefix 资源名前缀
+     * @return 接口资源名
+     */
     public static String getInterfaceName(Caller<?> caller, String prefix) {
         if (StringUtil.isNotBlank(prefix)) {
             return new StringBuilder(64)

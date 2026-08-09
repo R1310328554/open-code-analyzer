@@ -22,6 +22,8 @@ import com.weibo.api.motan.rpc.Request;
 import com.weibo.api.motan.rpc.Response;
 
 /**
+ * Motan 适配器默认降级实现，将 {@link BlockException} 包装为运行时异常返回。
+ *
  * @author zhangxn8
  */
 public class DefaultMotanFallback implements MotanFallback{

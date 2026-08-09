@@ -19,25 +19,27 @@ import javax.ws.rs.core.Response;
 import java.util.concurrent.Future;
 
 /**
+ * JAX-RS 适配器降级处理器接口。
+ *
  * @author sea
  */
 public interface SentinelJaxRsFallback {
 
     /**
-     * Provides a fallback response based on the cause of the failed execution.
+     * 根据执行失败原因提供降级响应。
      *
-     * @param route The route the fallback is for
-     * @param cause cause of the main method failure, may be <code>null</code>
-     * @return the fallback response
+     * @param route 降级对应的路由
+     * @param cause 主方法失败原因，可能为 <code>null</code>
+     * @return 降级响应
      */
     Response fallbackResponse(String route, Throwable cause);
 
     /**
-     * Provides a fallback response future based on the cause of the failed execution.
+     * 根据执行失败原因提供异步降级响应 Future。
      *
-     * @param route The route the fallback is for
-     * @param cause cause of the main method failure, may be <code>null</code>
-     * @return the fallback response future
+     * @param route 降级对应的路由
+     * @param cause 主方法失败原因，可能为 <code>null</code>
+     * @return 降级响应 Future
      */
     Future<Response> fallbackFutureResponse(String route, Throwable cause);
 }

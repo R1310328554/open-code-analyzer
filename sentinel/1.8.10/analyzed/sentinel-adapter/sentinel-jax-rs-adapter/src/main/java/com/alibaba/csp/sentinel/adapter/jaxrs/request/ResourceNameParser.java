@@ -19,9 +19,18 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ResourceInfo;
 
 /**
+ * 资源名解析器，从 JAX-RS 请求上下文解析 Sentinel 资源名。
+ *
  * @author sea
  */
 public interface ResourceNameParser {
 
+    /**
+     * 解析 Sentinel 资源名。
+     *
+     * @param containerRequestContext 请求上下文
+     * @param resourceInfo 资源信息
+     * @return 资源名
+     */
     String parse(ContainerRequestContext containerRequestContext, ResourceInfo resourceInfo);
 }
