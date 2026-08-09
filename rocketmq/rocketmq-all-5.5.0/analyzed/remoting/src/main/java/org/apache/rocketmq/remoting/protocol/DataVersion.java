@@ -18,51 +18,67 @@ package org.apache.rocketmq.remoting.protocol;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 元数据版本号：由状态版本、时间戳与递增计数器组成，用于检测配置变更。
+ */
 public class DataVersion extends RemotingSerializable {
+    /** 业务状态版本，通常对应 Controller 选举轮次等。 */
     private long stateVersion = 0L;
+    /** 版本更新时间戳（毫秒）。 */
     private long timestamp = System.currentTimeMillis();
+    /** 同 stateVersion 下的单调递增计数器。 */
     private AtomicLong counter = new AtomicLong(0);
 
+    /** 从另一个 {@link DataVersion} 拷贝全部字段。 */
     public void assignNewOne(final DataVersion dataVersion) {
         this.timestamp = dataVersion.timestamp;
         this.stateVersion = dataVersion.stateVersion;
         this.counter.set(dataVersion.counter.get());
     }
 
+    /** 递增版本，stateVersion 保持不变。 */
     public void nextVersion() {
         this.nextVersion(0L);
     }
 
+    /** 指定新的 stateVersion 并递增计数器、刷新时间戳。 */
     public void nextVersion(long stateVersion) {
         this.timestamp = System.currentTimeMillis();
         this.stateVersion = stateVersion;
         this.counter.incrementAndGet();
     }
 
+    /** 返回状态版本。 */
     public long getStateVersion() {
         return stateVersion;
     }
 
+    /** 设置状态版本。 */
     public void setStateVersion(long stateVersion) {
         this.stateVersion = stateVersion;
     }
 
+    /** 返回时间戳。 */
     public long getTimestamp() {
         return timestamp;
     }
 
+    /** 设置时间戳。 */
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
+    /** 返回计数器引用。 */
     public AtomicLong getCounter() {
         return counter;
     }
 
+    /** 替换计数器实例。 */
     public void setCounter(AtomicLong counter) {
         this.counter = counter;
     }
 
+    /** 按 stateVersion、timestamp 与 counter 值比较相等性。 */
     @Override
     public boolean equals(final Object o) {
         if (this == o)
@@ -85,6 +101,7 @@ public class DataVersion extends RemotingSerializable {
 
     }
 
+    /** 基于三字段计算哈希码。 */
     @Override
     public int hashCode() {
         int result = (int) (getStateVersion() ^ (getStateVersion() >>> 32));
@@ -96,6 +113,7 @@ public class DataVersion extends RemotingSerializable {
         return result;
     }
 
+    /** 返回 timestamp 与 counter 的摘要字符串。 */
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("DataVersion[");
@@ -105,6 +123,7 @@ public class DataVersion extends RemotingSerializable {
         return sb.toString();
     }
 
+    /** 先比 stateVersion，再比 counter，最后比 timestamp；大者返回 1。 */
     public int compare(DataVersion dataVersion) {
         if (this.getStateVersion() > dataVersion.getStateVersion()) {
             return 1;

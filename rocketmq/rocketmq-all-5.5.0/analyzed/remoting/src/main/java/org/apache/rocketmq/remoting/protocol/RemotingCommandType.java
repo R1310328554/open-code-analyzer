@@ -16,7 +16,12 @@
  */
 package org.apache.rocketmq.remoting.protocol;
 
+/**
+ * Remoting 帧类型：区分请求与响应命令。
+ */
 public enum RemotingCommandType {
+    /** 客户端/服务端发出的请求帧。 */
     REQUEST_COMMAND,
+    /** 对请求的响应帧。 */
     RESPONSE_COMMAND;
 }

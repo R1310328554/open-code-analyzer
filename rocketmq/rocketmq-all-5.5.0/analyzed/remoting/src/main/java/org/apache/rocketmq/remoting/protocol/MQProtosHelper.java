@@ -23,9 +23,20 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.protocol.header.namesrv.RegisterBrokerRequestHeader;
 
+/**
+ * Remoting 协议辅助工具：封装向 NameServer 注册 Broker 的同步调用。
+ */
 public class MQProtosHelper {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /**
+     * 向指定 NameServer 同步注册 Broker。
+     *
+     * @param nsaddr NameServer 地址
+     * @param brokerAddr Broker 地址
+     * @param timeoutMillis 调用超时（毫秒）
+     * @return 响应码为 SUCCESS 时返回 true
+     */
     public static boolean registerBrokerToNameServer(final String nsaddr, final String brokerAddr,
         final long timeoutMillis) {
         RegisterBrokerRequestHeader requestHeader = new RegisterBrokerRequestHeader();

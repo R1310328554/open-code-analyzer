@@ -23,18 +23,23 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 高性能 Remoting 请求头：直接对 {@link ByteBuf} 编解码，绕过反射字段映射。
+ */
 public interface FastCodesHeader {
 
+    /** 从字段 Map 取值；缺失时记错误日志但不抛异常，保持与旧解码兼容。 */
     default String getAndCheckNotNull(HashMap<String, String> fields, String field) {
         String value = fields.get(field);
         if (value == null) {
             String headerClass = this.getClass().getSimpleName();
             RemotingCommand.log.error("the custom field {}.{} is null", headerClass, field);
-            // no exception throws, keep compatible with RemotingCommand.decodeCommandCustomHeader
+            // 不抛异常，与 RemotingCommand.decodeCommandCustomHeader 行为一致
         }
         return value;
     }
 
+    /** value 非空时按 RocketMQ 字符串格式写入键值对。 */
     default void writeIfNotNull(ByteBuf out, String key, Object value) {
         if (value != null) {
             RocketMQSerializable.writeStr(out, true, key);
@@ -42,8 +47,10 @@ public interface FastCodesHeader {
         }
     }
 
+    /** 将请求头字段序列化到 ByteBuf。 */
     void encode(ByteBuf out);
 
+    /** 从 extFields 解析并填充请求头。 */
     void decode(HashMap<String, String> fields) throws RemotingCommandException;
 
 

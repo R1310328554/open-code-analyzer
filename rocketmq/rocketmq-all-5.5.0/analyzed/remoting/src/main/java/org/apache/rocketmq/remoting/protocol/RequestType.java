@@ -17,15 +17,22 @@
 
 package org.apache.rocketmq.remoting.protocol;
 
+/**
+ * Remoting 请求子类型，目前仅定义流式请求。
+ */
 public enum RequestType {
+    /** 流式 RPC 请求。 */
     STREAM((byte) 0);
 
+    /** 协议单字节类型码。 */
     private final byte code;
 
+    /** 绑定类型码。 */
     RequestType(byte code) {
         this.code = code;
     }
 
+    /** 按字节码查找，未命中返回 null。 */
     public static RequestType valueOf(byte code) {
         for (RequestType requestType : RequestType.values()) {
             if (requestType.getCode() == code) {
@@ -35,6 +42,7 @@ public enum RequestType {
         return null;
     }
 
+    /** 返回类型码。 */
     public byte getCode() {
         return code;
     }

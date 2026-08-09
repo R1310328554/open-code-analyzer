@@ -26,16 +26,23 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 
+/**
+ * 请求头类型注册表：扫描 {@link CommandCustomHeader} 子类并按 {@link RequestCode} 建立映射。
+ */
 public class RequestHeaderRegistry {
 
+    /** 请求头类所在包，供 Reflections 扫描。 */
     private static final String PACKAGE_NAME = "org.apache.rocketmq.remoting.protocol.header";
 
+    /** RequestCode → 请求头 Class 映射。 */
     private final Map<Integer, Class<? extends CommandCustomHeader>> requestHeaderMap = new HashMap<>();
 
+    /** 返回单例注册表。 */
     public static RequestHeaderRegistry getInstance() {
         return RequestHeaderRegistryHolder.INSTANCE;
     }
 
+    /** 扫描 header 包并注册带 {@link RocketMQAction} 注解的请求头类。 */
     public void initialize() {
         Reflections reflections = new Reflections(new ConfigurationBuilder()
             .setUrls(ClasspathHelper.forPackage(PACKAGE_NAME))
@@ -46,10 +53,12 @@ public class RequestHeaderRegistry {
         classes.forEach(this::registerHeader);
     }
 
+    /** 按 RequestCode 查找对应请求头类型，未注册返回 null。 */
     public Class<? extends CommandCustomHeader> getRequestHeader(int requestCode) {
         return this.requestHeaderMap.get(requestCode);
     }
 
+    /** 读取 {@link RocketMQAction#value()} 并写入映射表。 */
     private void registerHeader(Class<? extends CommandCustomHeader> clazz) {
         if (!clazz.isAnnotationPresent(RocketMQAction.class)) {
             return;
@@ -58,6 +67,7 @@ public class RequestHeaderRegistry {
         this.requestHeaderMap.putIfAbsent(action.value(), clazz);
     }
 
+    /** 静态内部类持有单例，延迟加载。 */
     private static class RequestHeaderRegistryHolder {
         private static final RequestHeaderRegistry INSTANCE = new RequestHeaderRegistry();
     }

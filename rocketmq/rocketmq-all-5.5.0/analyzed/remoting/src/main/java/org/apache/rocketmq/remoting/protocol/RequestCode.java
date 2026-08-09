@@ -17,10 +17,15 @@
 
 package org.apache.rocketmq.remoting.protocol;
 
+/**
+ * Remoting 请求码常量表：Broker、NameServer、Proxy 与 Controller 各 RPC 的唯一整数标识。
+ */
 public class RequestCode {
 
+    /** 单条消息发送。 */
     public static final int SEND_MESSAGE = 10;
 
+    /** 拉模式消费。 */
     public static final int PULL_MESSAGE = 11;
 
     public static final int QUERY_MESSAGE = 12;
@@ -49,12 +54,14 @@ public class RequestCode {
 
     public static final int VIEW_MESSAGE_BY_ID = 33;
 
+    /** 客户端心跳注册。 */
     public static final int HEART_BEAT = 34;
 
     public static final int UNREGISTER_CLIENT = 35;
 
     public static final int CONSUMER_SEND_MSG_BACK = 36;
 
+    /** 提交或回滚半事务消息。 */
     public static final int END_TRANSACTION = 37;
     public static final int GET_CONSUMER_LIST_BY_GROUP = 38;
 
@@ -77,7 +84,9 @@ public class RequestCode {
 
     public static final int GET_TIMER_METRICS = 61;
 
+    /** Pop 消费拉取消息。 */
     public static final int POP_MESSAGE = 200050;
+    /** Pop 消费确认。 */
     public static final int ACK_MESSAGE = 200051;
     public static final int BATCH_ACK_MESSAGE = 200151;
     public static final int PEEK_MESSAGE = 200052;
@@ -90,7 +99,7 @@ public class RequestCode {
     public static final int LITE_SUBSCRIPTION_CTL = 200071;
     public static final int ACK_LITE_MESSAGE = 200072;
     public static final int NOTIFY_UNSUBSCRIBE_LITE = 200073;
-    // lite admin api
+    // Lite 管理面 API
     public static final int GET_BROKER_LITE_INFO = 200074;
     public static final int GET_PARENT_TOPIC_INFO = 200075;
     public static final int GET_LITE_TOPIC_INFO = 200076;
@@ -104,9 +113,11 @@ public class RequestCode {
 
     public static final int DELETE_KV_CONFIG = 102;
 
+    /** Broker 向 NameServer 注册。 */
     public static final int REGISTER_BROKER = 103;
 
     public static final int UNREGISTER_BROKER = 104;
+    /** 按 Topic 查询路由。 */
     public static final int GET_ROUTEINFO_BY_TOPIC = 105;
 
     public static final int GET_BROKER_CLUSTER_INFO = 106;
@@ -186,14 +197,10 @@ public class RequestCode {
 
     public static final int GET_BROKER_CONSUME_STATS = 317;
 
-    /**
-     * update the config of name server
-     */
+    /** 更新 NameServer 配置。 */
     public static final int UPDATE_NAMESRV_CONFIG = 318;
 
-    /**
-     * get config from name server
-     */
+    /** 读取 NameServer 配置。 */
     public static final int GET_NAMESRV_CONFIG = 319;
 
     public static final int SEND_BATCH_MESSAGE = 320;
@@ -202,9 +209,7 @@ public class RequestCode {
 
     public static final int QUERY_DATA_VERSION = 322;
 
-    /**
-     * resume logic of checking half messages that have been put in TRANS_CHECK_MAXTIME_TOPIC before
-     */
+    /** 恢复此前写入 TRANS_CHECK_MAXTIME_TOPIC 的半事务消息回查逻辑。 */
     public static final int RESUME_CHECK_HALF_MESSAGE = 323;
 
     public static final int SEND_REPLY_MESSAGE = 324;
@@ -251,11 +256,10 @@ public class RequestCode {
 
     public static final int RESET_MASTER_FLUSH_OFFSET = 908;
 
-    /**
-     * Controller code
-     */
+    /** Controller 模块请求码段。 */
     public static final int CONTROLLER_ALTER_SYNC_STATE_SET = 1001;
 
+    /** Controller 选举 Master。 */
     public static final int CONTROLLER_ELECT_MASTER = 1002;
 
     public static final int CONTROLLER_REGISTER_BROKER = 1003;
@@ -270,19 +274,13 @@ public class RequestCode {
 
     public static final int NOTIFY_BROKER_ROLE_CHANGED = 1008;
 
-    /**
-     * update the config of controller
-     */
+    /** 更新 Controller 配置。 */
     public static final int UPDATE_CONTROLLER_CONFIG = 1009;
 
-    /**
-     * get config from controller
-     */
+    /** 读取 Controller 配置。 */
     public static final int GET_CONTROLLER_CONFIG = 1010;
 
-    /**
-     * clean broker data
-     */
+    /** 清理 Broker 元数据。 */
     public static final int CLEAN_BROKER_DATA = 1011;
     public static final int CONTROLLER_GET_NEXT_BROKER_ID = 1012;
 
@@ -298,6 +296,7 @@ public class RequestCode {
     public static final int GET_COLD_DATA_FLOW_CTR_INFO = 2003;
     public static final int SET_COMMITLOG_READ_MODE = 2004;
 
+    /** ACL：创建用户。 */
     public static final int AUTH_CREATE_USER = 3001;
     public static final int AUTH_UPDATE_USER = 3002;
     public static final int AUTH_DELETE_USER = 3003;
@@ -310,5 +309,6 @@ public class RequestCode {
     public static final int AUTH_GET_ACL = 3009;
     public static final int AUTH_LIST_ACL = 3010;
 
+    /** 切换定时消息引擎。 */
     public static final int SWITCH_TIMER_ENGINE = 5001;
 }
