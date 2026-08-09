@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:01:33Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/search/index/TextIndex.java",
-    "redisson/src/main/java/org/redisson/api/search/index/TextIndexParams.java",
-    "redisson/src/main/java/org/redisson/api/search/index/VectorDimParam.java",
-    "redisson/src/main/java/org/redisson/api/search/index/VectorDistParam.java",
-    "redisson/src/main/java/org/redisson/api/search/index/VectorTypeParam.java",
-    "redisson/src/main/java/org/redisson/api/search/profile/AggregateProfileResult.java",
-    "redisson/src/main/java/org/redisson/api/search/profile/ProfileAggregationOptions.java",
-    "redisson/src/main/java/org/redisson/api/search/profile/ProfileQueryOptions.java",
-    "redisson/src/main/java/org/redisson/api/search/profile/SearchProfileResult.java",
-    "redisson/src/main/java/org/redisson/api/search/query/Document.java",
-    "redisson/src/main/java/org/redisson/api/search/query/GeoFilter.java",
-    "redisson/src/main/java/org/redisson/api/search/query/GeoFilterParams.java",
-    "redisson/src/main/java/org/redisson/api/search/query/GeoFilterRadius.java",
-    "redisson/src/main/java/org/redisson/api/search/query/HighlightOptions.java",
-    "redisson/src/main/java/org/redisson/api/search/query/NumericFilter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 722,
-  "done": 2085
+  "done": 2100
 }
