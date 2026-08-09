@@ -120,7 +120,7 @@ public class ParseException extends Exception {
     }
 
     /**
-     * The end of line string for this machine.
+     * 当前平台换行符。
      */
     protected String eol = System.getProperty("line.separator", "\n");
 

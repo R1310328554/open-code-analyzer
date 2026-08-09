@@ -34,6 +34,10 @@ public class MQFilterException extends Exception {
      * @param errorMessage 错误描述
      * @param cause 原始异常
      */
+    /** 由底层异常构造，响应码默认为 -1。
+     * @param errorMessage 错误描述
+     * @param cause 原始异常
+     */
     public MQFilterException(String errorMessage, Throwable cause) {
         super(cause);
         this.responseCode = -1;
@@ -46,16 +50,22 @@ public class MQFilterException extends Exception {
      * @param responseCode 业务响应码
      * @param errorMessage 错误描述
      */
+    /** 指定响应码与错误描述构造。
+     * @param responseCode 业务响应码
+     * @param errorMessage 错误描述
+     */
     public MQFilterException(int responseCode, String errorMessage) {
         this.responseCode = responseCode;
         this.errorMessage = errorMessage;
     }
 
     /** @return 响应码 */
+    /** @return 响应码 */
     public int getResponseCode() {
         return responseCode;
     }
 
+    /** @return 错误描述文本 */
     /** @return 错误描述文本 */
     public String getErrorMessage() {
         return errorMessage;

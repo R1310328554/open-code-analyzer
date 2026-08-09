@@ -27,11 +27,11 @@ public interface SelectorParserConstants {
     /** 文件结束标记。 */
     int EOF = 0;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int LINE_COMMENT = 6;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int BLOCK_COMMENT = 7;
     /** 关键字 NOT 的 token 序号。 */
@@ -41,53 +41,53 @@ public interface SelectorParserConstants {
     /** 逻辑或 OR。 */
     int OR = 10;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int BETWEEN = 11;
     /** 集合成员 IN 运算符。 */
     int IN = 12;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int TRUE = 13;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int FALSE = 14;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int NULL = 15;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int IS = 16;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int CONTAINS = 17;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int STARTSWITH = 18;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int ENDSWITH = 19;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int DECIMAL_LITERAL = 20;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int FLOATING_POINT_LITERAL = 21;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int EXPONENT = 22;
     /**
-     * RegularExpression Id.
+     * 正则表达式编号。
      */
     int STRING_LITERAL = 23;
     /** 标识符 token。 */

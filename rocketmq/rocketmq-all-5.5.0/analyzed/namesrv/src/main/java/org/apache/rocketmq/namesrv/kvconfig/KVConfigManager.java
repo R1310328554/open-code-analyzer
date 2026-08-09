@@ -32,6 +32,10 @@ import org.apache.rocketmq.remoting.protocol.body.KVTable;
  * NameServer KV 配置管理器：按命名空间维护键值表，支持加载、持久化与 RPC 读写。
  * <p>使用读写锁保证并发安全，变更后异步刷盘。</p>
  */
+/**
+ * NameServer KV 配置管理器：按命名空间维护键值表，支持加载、持久化与 RPC 读写。
+ * <p>使用读写锁保证并发安全。</p>
+ */
 public class KVConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
@@ -48,6 +52,7 @@ public class KVConfigManager {
     }
 
     /** 从 {@link NamesrvConfig#getKvConfigPath()} 加载 JSON 序列化的配置表。 */
+    /** 从磁盘加载 KV 配置表。 */
     public void load() {
         String content = null;
         try {
@@ -72,6 +77,7 @@ public class KVConfigManager {
      * @param key 配置键
      * @param value 配置值
      */
+    /** 写入或更新键值并持久化。 */
     public void putKVConfig(final String namespace, final String key, final String value) {
         try {
             this.lock.writeLock().lockInterruptibly();
@@ -102,6 +108,7 @@ public class KVConfigManager {
     }
 
     /** 将内存配置表序列化为 JSON 并写入磁盘。 */
+    /** 将配置表序列化并写入磁盘。 */
     public void persist() {
         try {
             this.lock.readLock().lockInterruptibly();
@@ -127,6 +134,7 @@ public class KVConfigManager {
     }
 
     /** 删除指定命名空间下的键，若命名空间为空则移除整个空间。 */
+    /** 删除指定键并持久化。 */
     public void deleteKVConfig(final String namespace, final String key) {
         try {
             this.lock.writeLock().lockInterruptibly();
@@ -167,6 +175,7 @@ public class KVConfigManager {
         return null;
     }
 
+    /** 按命名空间与键读取单个配置值。 */
     public String getKVConfig(final String namespace, final String key) {
         try {
             this.lock.readLock().lockInterruptibly();
@@ -185,6 +194,7 @@ public class KVConfigManager {
         return null;
     }
 
+    /** 定时打印全部配置，便于运维排查。 */
     public void printAllPeriodically() {
         try {
             this.lock.readLock().lockInterruptibly();

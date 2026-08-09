@@ -39,6 +39,10 @@ abstract public class UnaryInExpression extends UnaryExpression implements Boole
      * @param inList 比较用的值集合
      * @param not true 表示 NOT IN
      */
+    /** @param left 左操作数
+     * @param unaryType 一元类型
+     * @param inList 候选值集合
+     * @param not 是否 NOT IN */
     public UnaryInExpression(Expression left, UnaryType unaryType,
         Collection inList, boolean not) {
         super(left, unaryType);
@@ -48,12 +52,14 @@ abstract public class UnaryInExpression extends UnaryExpression implements Boole
     }
 
     /** 求值结果为 {@link Boolean#TRUE} 时视为匹配。 */
+    /** 求值结果为 {@link Boolean#TRUE} 时视为匹配。 */
     public boolean matches(EvaluationContext context) throws Exception {
         Object object = evaluate(context);
         return object != null && object == Boolean.TRUE;
     }
 
     /** @return 是否为 NOT IN 模式 */
+    /** @return 是否为 NOT IN */
     public boolean isNot() {
         return not;
     }
@@ -63,6 +69,7 @@ abstract public class UnaryInExpression extends UnaryExpression implements Boole
     }
 
     /** @return IN 列表引用 */
+    /** @return 候选值集合 */
     public Collection getInList() {
         return inList;
     }

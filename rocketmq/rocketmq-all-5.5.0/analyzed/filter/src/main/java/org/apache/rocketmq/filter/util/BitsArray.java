@@ -95,6 +95,7 @@ public class BitsArray implements Cloneable {
     }
 
     /** 与另一位数组按字节异或（长度取较短者）。 */
+    /** 与另一位数组按字节异或。 */
     public void xor(final BitsArray other) {
         checkInitialized(this);
         checkInitialized(other);
@@ -117,6 +118,7 @@ public class BitsArray implements Cloneable {
         }
     }
 
+    /** 与另一位数组按字节或运算。 */
     public void or(final BitsArray other) {
         checkInitialized(this);
         checkInitialized(other);
@@ -136,6 +138,7 @@ public class BitsArray implements Cloneable {
         }
     }
 
+    /** 与另一位数组按字节与运算。 */
     public void and(final BitsArray other) {
         checkInitialized(this);
         checkInitialized(other);
@@ -162,6 +165,7 @@ public class BitsArray implements Cloneable {
     }
 
     /** 将指定位设为 1 或 0。 */
+    /** 将指定位设为 0 或 1。 */
     public void setBit(int bitPos, boolean set) {
         checkBitPosition(bitPos, this);
         int sub = subscript(bitPos);
@@ -179,6 +183,7 @@ public class BitsArray implements Cloneable {
         this.bytes[bytePos] = set;
     }
 
+    /** 读取指定位是否为 1。 */
     /** 读取指定位是否为 1。 */
     public boolean getBit(int bitPos) {
         checkBitPosition(bitPos, this);

@@ -32,6 +32,7 @@ import java.util.List;
  */
 public abstract class UnaryExpression implements Expression {
 
+    /** Long.MIN_VALUE 的 BigDecimal 表示。 */
     private static final BigDecimal BD_LONG_MIN_VALUE = BigDecimal.valueOf(Long.MIN_VALUE);
     /** 被运算的子表达式（右操作数）。 */
     protected Expression right;
@@ -49,6 +50,7 @@ public abstract class UnaryExpression implements Expression {
     }
 
     /** 创建数值取反表达式（符号 {@code -}）。 */
+    /** 创建算术取负表达式。 */
     public static Expression createNegate(Expression left) {
         return new UnaryExpression(left, UnaryType.NEGATE) {
             @Override
@@ -150,6 +152,7 @@ public abstract class UnaryExpression implements Expression {
     }
 
     /** 创建逻辑 NOT 布尔表达式。 */
+    /** 创建逻辑 NOT 表达式。 */
     public static BooleanExpression createNOT(BooleanExpression left) {
         return new BooleanUnaryExpression(left, UnaryType.NOT) {
             @Override
@@ -169,6 +172,7 @@ public abstract class UnaryExpression implements Expression {
     }
 
     /** 将子表达式结果强制转换为布尔值。 */
+    /** 将子表达式强制转换为布尔值。 */
     public static BooleanExpression createBooleanCast(Expression left) {
         return new BooleanUnaryExpression(left, UnaryType.BOOLEANCAST) {
             @Override
@@ -195,6 +199,7 @@ public abstract class UnaryExpression implements Expression {
         };
     }
 
+    /** 对数值取负。 */
     private static Number negate(Number left) {
         Class clazz = left.getClass();
         if (clazz == Integer.class) {

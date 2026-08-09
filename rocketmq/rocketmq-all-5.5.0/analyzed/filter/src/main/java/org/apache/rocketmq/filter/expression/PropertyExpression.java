@@ -31,12 +31,14 @@ public class PropertyExpression implements Expression {
     }
 
     /** 从上下文按 {@link #name} 取值。 */
+    /** 从上下文按 {@link #name} 取值。 */
     @Override
     public Object evaluate(EvaluationContext context) throws Exception {
         return context.get(name);
     }
 
     /** @return 属性名称 */
+    /** @return 属性名 */
     public String getName() {
         return name;
     }

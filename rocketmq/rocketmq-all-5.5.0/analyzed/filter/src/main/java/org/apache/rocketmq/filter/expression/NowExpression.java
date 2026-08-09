@@ -23,16 +23,19 @@ package org.apache.rocketmq.filter.expression;
  */
 public class NowExpression extends ConstantExpression {
     /** 构造固定符号 {@code now} 的时间表达式。 */
+    /** 构造固定符号 {@code now} 的时间表达式。 */
     public NowExpression() {
         super("now");
     }
 
+    /** 在求值上下文中返回当前毫秒时间戳。 */
     /** 在求值上下文中返回当前毫秒时间戳。 */
     @Override
     public Object evaluate(EvaluationContext context) throws Exception {
         return new Long(System.currentTimeMillis());
     }
 
+    /** 直接获取当前毫秒时间戳，不依赖上下文。 */
     /** 直接获取当前毫秒时间戳，不依赖上下文。 */
     public Object getValue() {
         return new Long(System.currentTimeMillis());

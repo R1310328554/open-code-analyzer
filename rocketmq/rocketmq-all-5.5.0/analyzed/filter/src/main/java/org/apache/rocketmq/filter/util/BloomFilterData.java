@@ -32,6 +32,7 @@ public class BloomFilterData {
     private int bitNum;
 
     /** 无参构造，供序列化框架使用。 */
+    /** 无参构造，供序列化使用。 */
     public BloomFilterData() {
     }
 
@@ -42,11 +43,13 @@ public class BloomFilterData {
     }
 
     /** @return 位下标数组 */
+    /** @return 位下标数组 */
     public int[] getBitPos() {
         return bitPos;
     }
 
     /** @return 总位数 m */
+    /** @return 位数组总长度 */
     public int getBitNum() {
         return bitNum;
     }

@@ -60,6 +60,7 @@ public class NamesrvController {
     private static final Logger WATER_MARK_LOG = LoggerFactory.getLogger(LoggerName.NAMESRV_WATER_MARK_LOGGER_NAME);
 
     /** NameServer 业务配置。 */
+    /** NameServer 业务配置。 */
     private final NamesrvConfig namesrvConfig;
 
     private final NettyServerConfig nettyServerConfig;
@@ -81,7 +82,9 @@ public class NamesrvController {
 
     private final BrokerHousekeepingService brokerHousekeepingService;
 
+    /** 默认请求处理线程池。 */
     private ExecutorService defaultExecutor;
+    /** 客户端路由查询专用线程池。 */
     private ExecutorService clientRequestExecutor;
 
     private BlockingQueue<Runnable> defaultThreadPoolQueue;
@@ -107,6 +110,7 @@ public class NamesrvController {
     }
 
     /** 加载配置、启动网络组件、注册处理器并开启定时任务。 */
+    /** 初始化 NameServer 各组件。 */
     public boolean initialize() {
         loadConfig();
         initiateNetworkComponents();
@@ -119,11 +123,13 @@ public class NamesrvController {
     }
 
     /** 从磁盘加载 KV 配置表。 */
+    /** 从磁盘加载 KV 配置表。 */
     private void loadConfig() {
         this.kvConfigManager.load();
     }
 
     /** 调度 Broker 非活跃扫描、KV 定期打印与队列水位日志。 */
+    /** 启动定时扫描与监控任务。 */
     private void startScheduleService() {
         this.scanExecutorService.scheduleAtFixedRate(NamesrvController.this.routeInfoManager::scanNotActiveBroker,
             5000, this.namesrvConfig.getScanNotActiveBrokerInterval(), TimeUnit.MILLISECONDS);
@@ -140,6 +146,7 @@ public class NamesrvController {
         }, 10, 1, TimeUnit.SECONDS);
     }
 
+    /** 创建 Netty Remoting 服务端与客户端。 */
     /** 创建 Netty Remoting 服务端与客户端。 */
     private void initiateNetworkComponents() {
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
@@ -213,6 +220,7 @@ public class NamesrvController {
         return slowTimeMills;
     }
 
+    /** 注册请求 Processor。 */
     private void registerProcessor() {
         if (namesrvConfig.isClusterTest()) {
 
@@ -230,6 +238,7 @@ public class NamesrvController {
         this.remotingServer.registerRPCHook(new ZoneRouteRPCHook());
     }
 
+    /** 启动 Remoting 与路由管理器。 */
     public void start() throws Exception {
         this.remotingServer.start();
 
@@ -250,6 +259,7 @@ public class NamesrvController {
     }
 
     /** 关闭 Remoting、线程池、路由管理与文件监视服务。 */
+    /** 关闭全部组件。 */
     public void shutdown() {
         this.remotingClient.shutdown();
         this.remotingServer.shutdown();

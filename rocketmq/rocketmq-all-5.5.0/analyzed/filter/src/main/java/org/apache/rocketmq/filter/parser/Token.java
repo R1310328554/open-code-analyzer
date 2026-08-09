@@ -41,11 +41,11 @@ public class Token implements java.io.Serializable {
     /** 起始列号（从 1 计）。 */
     public int beginColumn;
     /**
-     * The line number of the last character of this Token.
+     * 结束行号。
      */
     public int endLine;
     /**
-     * The column number of the last character of this Token.
+     * 结束列号。
      */
     public int endColumn;
 

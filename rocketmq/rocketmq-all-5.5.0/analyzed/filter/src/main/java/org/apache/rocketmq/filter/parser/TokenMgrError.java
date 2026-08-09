@@ -33,7 +33,7 @@ public class TokenMgrError extends Error {
     private static final long serialVersionUID = 1L;
 
   /*
-   * Ordinals for various reasons why an Error of this type can be thrown.
+   * 下列序数表示抛出本 Error 的具体原因。
    */
 
     /** 发生词法错误。 */
@@ -151,7 +151,7 @@ public class TokenMgrError extends Error {
     }
 
     /**
-     * Full Constructor.
+     * 词法错误全参构造。
      */
     public TokenMgrError(boolean eofSeen, int lexState, int errorLine, int errorColumn, String errorAfter, char curChar,
         int reason) {

@@ -45,10 +45,15 @@ import org.apache.rocketmq.srvutil.ShutdownHookThread;
  * NameServer 进程入口：解析命令行与配置文件，启动 {@link NamesrvController}，
  * 可选内嵌 {@link ControllerManager}（JRaft 控制器）。
  */
+/**
+ * NameServer 进程入口：解析命令行与配置文件，启动 {@link NamesrvController}。
+ * <p>可选内嵌 {@link ControllerManager}。</p>
+ */
 public class NamesrvStartup {
 
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private static final Logger logConsole = LoggerFactory.getLogger(LoggerName.NAMESRV_CONSOLE_LOGGER_NAME);
+    /** 自配置文件加载的原始 Properties。 */
     /** 自配置文件加载的原始 Properties。 */
     private static Properties properties = null;
     private static NamesrvConfig namesrvConfig = null;
@@ -57,12 +62,14 @@ public class NamesrvStartup {
     private static ControllerConfig controllerConfig = null;
 
     /** JVM 入口：先启动 NameServer，再按需启动内嵌 Controller。 */
+    /** JVM 入口：先启动 NameServer，再按需启动 Controller。 */
     public static void main(String[] args) {
         main0(args);
         controllerManagerMain();
     }
 
     /** 启动 NameServer 核心逻辑，供 main 与测试调用。 */
+    /** 启动 NameServer 核心逻辑。 */
     public static NamesrvController main0(String[] args) {
         try {
             parseCommandlineAndConfigFile(args);
@@ -93,6 +100,7 @@ public class NamesrvStartup {
      * 解析命令行参数并加载配置文件到静态配置对象。
      * <p>支持 {@code -c} 指定配置文件、{@code -p} 打印配置后退出。</p>
      */
+    /** 解析命令行并加载配置文件。 */
     public static void parseCommandlineAndConfigFile(String[] args) throws Exception {
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
 
@@ -106,7 +114,7 @@ public class NamesrvStartup {
         namesrvConfig = new NamesrvConfig();
         nettyServerConfig = new NettyServerConfig();
         nettyClientConfig = new NettyClientConfig();
-        nettyServerConfig.setListenPort(9876);
+        nettyServerConfig.setListenPort(9876); // NameServer 默认端口
         if (commandLine.hasOption('c')) {
             String file = commandLine.getOptionValue('c');
             if (file != null) {
@@ -150,6 +158,7 @@ public class NamesrvStartup {
 
     }
 
+    /** 创建、启动 NameServer 并打印成功提示。 */
     public static NamesrvController createAndStartNamesrvController() throws Exception {
 
         NamesrvController controller = createNamesrvController();
@@ -164,7 +173,7 @@ public class NamesrvStartup {
     public static NamesrvController createNamesrvController() {
 
         final NamesrvController controller = new NamesrvController(namesrvConfig, nettyServerConfig, nettyClientConfig);
-        // remember all configs to prevent discard
+        // 保存原始 properties，避免配置丢失
         controller.getConfiguration().registerConfig(properties);
         return controller;
     }
@@ -203,7 +212,7 @@ public class NamesrvStartup {
     public static ControllerManager createControllerManager() throws Exception {
         NettyServerConfig controllerNettyServerConfig = (NettyServerConfig) nettyServerConfig.clone();
         ControllerManager controllerManager = new ControllerManager(controllerConfig, controllerNettyServerConfig, nettyClientConfig);
-        // remember all configs to prevent discard
+        // 保存原始 properties，避免配置丢失
         controllerManager.getConfiguration().registerConfig(properties);
         return controllerManager;
     }

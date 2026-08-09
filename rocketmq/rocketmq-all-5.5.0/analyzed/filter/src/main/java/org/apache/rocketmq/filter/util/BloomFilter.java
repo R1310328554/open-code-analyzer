@@ -50,7 +50,7 @@ public class BloomFilter {
     }
 
     /**
-     * Constructor.
+     * 私有构造：校验参数并计算 k、m。
      *
      * @param f error rate
      * @param n num will mapping to bit
@@ -231,28 +231,28 @@ public class BloomFilter {
     }
 
     /**
-     * error rate.
+     * @return 误判率百分比 f
      */
     public int getF() {
         return f;
     }
 
     /**
-     * expect mapping num.
+     * @return 期望元素数 n
      */
     public int getN() {
         return n;
     }
 
     /**
-     * hash function num.
+     * @return 哈希函数个数 k
      */
     public int getK() {
         return k;
     }
 
     /**
-     * total bit num.
+     * @return 位数组总长度 m
      */
     public int getM() {
         return m;
