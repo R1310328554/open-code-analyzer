@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:34:46Z",
   "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultCookie.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultFullHttpRequest.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultFullHttpResponse.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultHttpContent.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultHttpHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultHttpHeadersFactory.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultHttpMessage.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultHttpObject.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultHttpRequest.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultHttpResponse.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/DefaultLastHttpContent.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/EmptyHttpHeaders.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/FullHttpMessage.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/FullHttpRequest.java",
-    "codec-http/src/main/java/io/netty/handler/codec/http/FullHttpResponse.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/HttpChunkLineValidatingByteProcessor.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/HttpChunkedInput.java",
     "codec-http/src/main/java/io/netty/handler/codec/http/HttpClientCodec.java",
@@ -33,5 +18,5 @@
     "codec-http/src/main/java/io/netty/handler/codec/http/HttpHeaderValidationUtil.java"
   ],
   "remaining_pending": 1508,
-  "done": 390
+  "done": 405
 }
