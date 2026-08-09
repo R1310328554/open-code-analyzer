@@ -19,7 +19,7 @@ import com.alibaba.csp.sentinel.adapter.spring.webmvc.callback.BlockExceptionHan
 import com.alibaba.csp.sentinel.adapter.spring.webmvc.callback.RequestOriginParser;
 
 /**
- * Common base configuration for Spring Web MVC adapter.
+ * Spring Web MVC 适配器的公共基础配置。
  *
  * @author kaizi2009
  * @since 1.7.1
@@ -43,9 +43,9 @@ public abstract class BaseWebMvcConfig {
     }
     
     /**
-     * Paired with attr name used to track reference count.
-     * 
-     * @return
+     * 与请求属性名配对，用于跟踪引用计数。
+     *
+     * @return 引用计数属性名
      */
     public String getRequestRefName() {
         return requestRefName;

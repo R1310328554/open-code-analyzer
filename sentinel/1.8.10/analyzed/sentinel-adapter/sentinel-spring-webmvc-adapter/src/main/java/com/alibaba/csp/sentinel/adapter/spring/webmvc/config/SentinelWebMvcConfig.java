@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.adapter.spring.webmvc.config;
 import com.alibaba.csp.sentinel.adapter.spring.webmvc.callback.UrlCleaner;
 
 /**
+ * Spring Web MVC 适配器配置，支持 URL 清洗、HTTP 方法前缀与上下文统一等选项。
+ *
  * @author kaizi2009
  * @since 1.7.1
  */
@@ -26,17 +28,17 @@ public class SentinelWebMvcConfig extends BaseWebMvcConfig {
     public static final String DEFAULT_REQUEST_ATTRIBUTE_NAME = "$$sentinel_spring_web_entry_attr";
 
     /**
-     * Specify the URL cleaner that unifies the URL resources.
+     * 指定用于统一 URL 资源的清洗器。
      */
     private UrlCleaner urlCleaner;
 
     /**
-     * Specify whether the URL resource name should contain the HTTP method prefix (e.g. {@code POST:}).
+     * 指定 URL 资源名是否包含 HTTP 方法前缀（如 {@code POST:}）。
      */
     private boolean httpMethodSpecify;
 
     /**
-     * Specify whether unify web context(i.e. use the default context name), and is true by default.
+     * 指定是否统一 Web 上下文（即使用默认上下文名），默认为 {@code true}。
      *
      * @since 1.7.2
      */

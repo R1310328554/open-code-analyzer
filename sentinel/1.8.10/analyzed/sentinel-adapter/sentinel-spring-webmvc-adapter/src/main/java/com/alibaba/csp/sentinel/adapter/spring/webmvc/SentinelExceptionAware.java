@@ -25,8 +25,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Make exception visible to Sentinel.SentinelExceptionAware should be front of ExceptionHandlerExceptionResolver
- * whose order is 0 {@link  org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport#handlerExceptionResolver}
+ * 将业务异常暴露给 Sentinel 拦截器。
+ * {@code SentinelExceptionAware} 的优先级应高于 order 为 0 的 {@code ExceptionHandlerExceptionResolver}
+ * （参见 {@link org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport#handlerExceptionResolver}）。
  *
  * @author lemonJ
  */

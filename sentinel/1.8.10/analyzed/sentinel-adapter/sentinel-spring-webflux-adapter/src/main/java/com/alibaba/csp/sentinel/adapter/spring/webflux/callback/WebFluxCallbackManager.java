@@ -23,6 +23,8 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
+ * Spring WebFlux 适配器回调管理器，统一管理流控拦截处理器、URL 清洗器与请求来源解析器。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */
@@ -32,15 +34,15 @@ public final class WebFluxCallbackManager {
     private static final Function<ServerWebExchange, String> DEFAULT_ORIGIN_PARSER = (w) -> "";
 
     /**
-     * BlockRequestHandler: (serverExchange, exception) -> response
+     * 流控拦截处理器：{@code (serverExchange, exception) -> response}
      */
     private static volatile BlockRequestHandler blockHandler = new DefaultBlockRequestHandler();
     /**
-     * UrlCleaner: (serverExchange, originalUrl) -> finalUrl
+     * URL 清洗器：{@code (serverExchange, originalUrl) -> finalUrl}
      */
     private static volatile BiFunction<ServerWebExchange, String, String> urlCleaner = DEFAULT_URL_CLEANER;
     /**
-     * RequestOriginParser: (serverExchange) -> origin
+     * 请求来源解析器：{@code (serverExchange) -> origin}
      */
     private static volatile Function<ServerWebExchange, String> requestOriginParser = DEFAULT_ORIGIN_PARSER;
 

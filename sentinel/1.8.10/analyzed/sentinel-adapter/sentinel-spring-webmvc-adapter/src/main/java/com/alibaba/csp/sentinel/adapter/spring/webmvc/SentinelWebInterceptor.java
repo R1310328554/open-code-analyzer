@@ -24,9 +24,9 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import org.springframework.web.servlet.HandlerMapping;
 
 /**
- * Spring Web MVC interceptor that integrates with Sentinel.
+ * 与 Sentinel 集成的 Spring Web MVC 拦截器。
  * <p>
- * This will record resource as `${uri}`.
+ * 资源名将记录为 {@code ${uri}}（Spring 最佳匹配 URL 模式）。
  *
  * @author kaizi2009
  * @since 1.7.1
@@ -42,7 +42,7 @@ public class SentinelWebInterceptor extends AbstractSentinelInterceptor {
     public SentinelWebInterceptor(SentinelWebMvcConfig config) {
         super(config);
         if (config == null) {
-            // Use the default config by default.
+            // 默认使用内置配置。
             this.config = new SentinelWebMvcConfig();
         } else {
             this.config = config;
@@ -51,7 +51,7 @@ public class SentinelWebInterceptor extends AbstractSentinelInterceptor {
 
     @Override
     protected String getResourceName(HttpServletRequest request) {
-        // Resolve the Spring Web URL pattern from the request attribute.
+        // 从请求属性中解析 Spring Web URL 模式。
         Object resourceNameObject = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         if (resourceNameObject == null || !(resourceNameObject instanceof String)) {
             return null;
@@ -61,7 +61,7 @@ public class SentinelWebInterceptor extends AbstractSentinelInterceptor {
         if (urlCleaner != null) {
             resourceName = urlCleaner.clean(resourceName);
         }
-        // Add method specification if necessary
+        // 按需添加 HTTP 方法前缀
         if (StringUtil.isNotEmpty(resourceName) && config.isHttpMethodSpecify()) {
             resourceName = request.getMethod().toUpperCase() + ":" + resourceName;
         }

@@ -38,13 +38,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.Objects;
 
 /**
- * Since request may be reprocessed in flow if any forwarding or including or other action
- * happened (see {@link javax.servlet.ServletRequest#getDispatcherType()}) we will only
- * deal with the initial request. So we use <b>reference count</b> to track in
- * dispathing "onion" though which we could figure out whether we are in initial type "REQUEST".
- * That means the sub-requests which we rarely meet in practice will NOT be recorded in Sentinel.
+ * 请求在转发（forward）、包含（include）等调度动作中可能被重复处理
+ * （参见 {@link javax.servlet.ServletRequest#getDispatcherType()}），
+ * 因此本拦截器仅处理初始请求。通过<b>引用计数</b>跟踪调度"洋葱"层，
+ * 以判断当前是否处于初始类型 {@code REQUEST} 的请求。
+ * 这意味着实践中极少遇到的子请求不会被 Sentinel 记录。
  * <p>
- * How to implement a forward sub-request in your action:
+ * 在业务代码中实现转发子请求的示例：
  * <pre>
  * initalRequest() {
  *     ModelAndView mav = new ModelAndView();
@@ -73,13 +73,13 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
      * @param request
      * @param rcKey
      * @param step
-     * @return reference count after increasing (initial value as zero to be increased)
+     * @return 递增后的引用计数（初始值为 0，随后递增）
      */
     private Integer increaseReference(HttpServletRequest request, String rcKey, int step) {
         Object obj = request.getAttribute(rcKey);
 
         if (obj == null) {
-            // initial
+            // 初始值
             obj = 0;
         }
 
@@ -102,7 +102,7 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
                 return true;
             }
 
-            // Parse the request origin using registered origin parser.
+            // 使用已注册的来源解析器解析请求来源。
             String origin = parseOrigin(request);
             String contextName = getContextName(request);
             ContextUtil.enter(contextName, origin);
@@ -120,7 +120,7 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
     }
 
     /**
-     * Return the resource name of the target web resource.
+     * 返回目标 Web 资源的名称。
      *
      * @param request web request
      * @return the resource name of the target web resource.
@@ -128,7 +128,7 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
     protected abstract String getResourceName(HttpServletRequest request);
 
     /**
-     * Return the context name of the target web resource.
+     * 返回目标 Web 资源的上下文名称。
      *
      * @param request web request
      * @return the context name of the target web resource.
@@ -139,8 +139,8 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
 
 
     /**
-     * When a handler starts an asynchronous request, the DispatcherServlet exits without invoking postHandle and afterCompletion
-     * Called instead of postHandle and afterCompletion to exit the context and clean thread-local variables when the handler is being executed concurrently.
+     * 当处理器启动异步请求时，{@code DispatcherServlet} 会退出且不调用 {@code postHandle} 与 {@code afterCompletion}。
+     * 本方法在并发执行处理器时替代上述回调，用于退出上下文并清理线程局部变量。
      *
      * @param request  the current request
      * @param response the current response
@@ -170,7 +170,7 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
 
         Entry entry = getEntryInRequest(request, baseWebMvcConfig.getRequestAttributeName());
         if (entry == null) {
-            // should not happen
+            // 不应出现的情况
             RecordLog.warn("[{}] No entry found in request, key: {}",
                     getClass().getSimpleName(), baseWebMvcConfig.getRequestAttributeName());
             return;
@@ -203,7 +203,7 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
         if (request != null
                 && ex == null
                 && increaseReference(request, this.baseWebMvcConfig.getRequestRefName() + ":" + BaseWebMvcConfig.REQUEST_REF_EXCEPTION_NAME, 1) == 1) {
-            //Each interceptor can only catch exception once
+            // 每个拦截器仅捕获一次异常
             ex = (Exception) request.getAttribute(BaseWebMvcConfig.REQUEST_REF_EXCEPTION_NAME);
         }
 
@@ -218,7 +218,7 @@ public abstract class AbstractSentinelInterceptor implements AsyncHandlerInterce
         if (baseWebMvcConfig.getBlockExceptionHandler() != null) {
             baseWebMvcConfig.getBlockExceptionHandler().handle(request, response, e);
         } else {
-            // Throw BlockException directly. Users need to handle it in Spring global exception handler.
+            // 直接抛出 BlockException，由用户在 Spring 全局异常处理器中处理。
             throw e;
         }
     }

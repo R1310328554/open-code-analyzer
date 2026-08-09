@@ -21,14 +21,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Handler for the blocked request.
+ * 被 Sentinel 限流/熔断时的请求处理器。
  *
  * @author kaizi2009
  */
 public interface BlockExceptionHandler {
 
     /**
-     * Handle the request when blocked.
+     * 处理被 Sentinel 拦截的请求。
      *
      * @param request  Servlet request
      * @param response Servlet response

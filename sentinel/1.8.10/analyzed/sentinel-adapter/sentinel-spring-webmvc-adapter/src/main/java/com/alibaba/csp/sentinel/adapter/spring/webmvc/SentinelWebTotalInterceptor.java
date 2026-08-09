@@ -20,8 +20,8 @@ import com.alibaba.csp.sentinel.adapter.spring.webmvc.config.SentinelWebMvcTotal
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * The web interceptor for all requests, which will unify all URL as
- * a single resource name (configured in {@link SentinelWebMvcTotalConfig}).
+ * 针对所有请求的 Web 拦截器，将所有 URL 统一为单一资源名
+ * （在 {@link SentinelWebMvcTotalConfig} 中配置）。
  *
  * @author kaizi2009
  * @since 1.7.1

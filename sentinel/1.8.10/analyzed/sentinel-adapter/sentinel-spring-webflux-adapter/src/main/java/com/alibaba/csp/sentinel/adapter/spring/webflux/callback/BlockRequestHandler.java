@@ -20,7 +20,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive handler for the blocked request.
+ * 被 Sentinel 限流/熔断时的响应式请求处理器。
  *
  * @author Eric Zhao
  * @since 1.5.0
@@ -29,7 +29,7 @@ import reactor.core.publisher.Mono;
 public interface BlockRequestHandler {
 
     /**
-     * Handle the blocked request.
+     * 处理被 Sentinel 拦截的请求。
      *
      * @param exchange server exchange object
      * @param t block exception

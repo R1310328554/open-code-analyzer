@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono;
 import static org.springframework.web.reactive.function.BodyInserters.fromObject;
 
 /**
- * The default implementation of {@link BlockRequestHandler}.
+ * {@link BlockRequestHandler} 的默认实现。
  *
  * @author Eric Zhao
  * @since 1.5.0
@@ -41,7 +41,7 @@ public class DefaultBlockRequestHandler implements BlockRequestHandler {
         if (acceptsHtml(exchange)) {
             return htmlErrorResponse(ex);
         }
-        // JSON result by default.
+        // 默认返回 JSON 结果。
         return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS)
             .contentType(MediaType.APPLICATION_JSON_UTF8)
             .body(fromObject(buildErrorResult(ex)));
@@ -59,7 +59,7 @@ public class DefaultBlockRequestHandler implements BlockRequestHandler {
     }
 
     /**
-     * Reference from {@code DefaultErrorWebExceptionHandler} of Spring Boot.
+     * 参考 Spring Boot 的 {@code DefaultErrorWebExceptionHandler} 实现。
      */
     private boolean acceptsHtml(ServerWebExchange exchange) {
         try {

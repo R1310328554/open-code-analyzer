@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 
 /**
- * Default handler for the blocked request.
+ * 被 Sentinel 限流/熔断时的默认请求处理器。
  *
  * @author kaizi2009
  */
@@ -31,7 +31,7 @@ public class DefaultBlockExceptionHandler implements BlockExceptionHandler {
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, BlockException e) throws Exception {
-        // Return 429 (Too Many Requests) by default.
+        // 默认返回 429（Too Many Requests）。
         response.setStatus(429);
 
         PrintWriter out = response.getWriter();

@@ -16,14 +16,14 @@
 package com.alibaba.csp.sentinel.adapter.spring.webmvc.callback;
 
 /**
- * Unify the resource target.
+ * URL 清洗器，将原始 URL 统一为规范的资源名。
  *
  * @author kaizi2009
  */
 public interface UrlCleaner {
 
     /**
-     * Unify the resource target.
+     * 将原始 URL 清洗为统一的资源名。
      *
      * @param originUrl the original URL
      * @return the unified resource name

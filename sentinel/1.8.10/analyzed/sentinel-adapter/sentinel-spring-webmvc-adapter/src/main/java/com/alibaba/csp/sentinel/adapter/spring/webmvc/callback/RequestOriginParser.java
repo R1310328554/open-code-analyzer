@@ -18,14 +18,14 @@ package com.alibaba.csp.sentinel.adapter.spring.webmvc.callback;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * The origin parser parses request origin (e.g. IP, user, appName) from HTTP request.
+ * 请求来源解析器，从 HTTP 请求中解析来源标识（如 IP、用户、应用名等）。
  *
  * @author kaizi2009
  */
 public interface RequestOriginParser {
 
     /**
-     * Parse the origin from given HTTP request.
+     * 从给定 HTTP 请求中解析来源标识。
      *
      * @param request HTTP request
      * @return parsed origin

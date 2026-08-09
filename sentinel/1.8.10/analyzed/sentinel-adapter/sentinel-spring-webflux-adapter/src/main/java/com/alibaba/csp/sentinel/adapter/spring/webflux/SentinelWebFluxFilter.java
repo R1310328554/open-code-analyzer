@@ -31,6 +31,8 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 /**
+ * Spring WebFlux 全局过滤器，对请求路径执行 Sentinel 流控。
+ *
  * @author Eric Zhao
  * @since 1.5.0
  */
@@ -40,7 +42,7 @@ public class SentinelWebFluxFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        // Maybe we can get the URL pattern elsewhere via:
+        // 也可通过以下方式获取 URL 模式：
         // exchange.getAttributeOrDefault(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, path)
         String path = exchange.getRequest().getPath().value();
 
