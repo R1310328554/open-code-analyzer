@@ -72,24 +72,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * {@link QuicChannel} implementation that uses <a href="https://github.com/cloudflare/quiche">quiche</a>.
+ * 基于 <a href="https://github.com/cloudflare/quiche">quiche</a> 的 {@link QuicChannel} 实现，
+ * 管理连接生命周期、流多路复用、超时、路径事件与 SSL 握手。
  */
 final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(QuicheQuicChannel.class);
     private static final String QLOG_FILE_EXTENSION = ".qlog";
 
     enum StreamRecvResult {
-        /**
-         * Nothing more to read from the stream.
-         */
+        /** 流上已无更多数据可读。 */
         DONE,
-        /**
-         * FIN flag received.
-         */
+        /** 收到 FIN，流正常结束。 */
         FIN,
-        /**
-         * Normal read without FIN flag.
-         */
+        /** 普通读操作，尚未收到 FIN。 */
         OK
     }
 
@@ -240,7 +235,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
             if (array.length == MAX_ARRAY_LEN) {
                 return array;
             }
-            // Increase by 4 until we reach MAX_ARRAY_LEN
+            // 每次扩容 4 个槽位，直至达到数组上限
             return new long[Math.min(MAX_ARRAY_LEN, array.length + 4)];
         }
         return array;
@@ -303,13 +298,13 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
         connection.init(local, remote,
                 sniHostname -> pipeline().fireUserEventTriggered(new SniCompletionEvent(sniHostname)));
 
-        // Setup QLOG if needed.
+        // 按需配置 qlog 输出
         QLogConfiguration configuration = config.getQLogConfiguration();
         if (configuration != null) {
             final String fileName;
             File file = new File(configuration.path());
             if (file.isDirectory()) {
-                // Create directory if needed.
+                // 必要时创建 qlog 目录
                 file.mkdir();
                 if (this.traceId != null) {
                     fileName = configuration.path() + File.separatorChar + this.traceId + "-" +
@@ -558,14 +553,14 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     @Override
     @Nullable
     public QuicConnectionAddress localAddress() {
-        // Override so we never cache as the sourceId() can change over life-time.
+        // 源连接 ID 生命周期内可能变化，禁止缓存
         return localAddress0();
     }
 
     @Override
     @Nullable
     public QuicConnectionAddress remoteAddress() {
-        // Override so we never cache as the destinationId() can change over life-time.
+        // 目的连接 ID 生命周期内可能变化，禁止缓存
         return remoteAddress0();
     }
 
@@ -793,8 +788,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     }
 
     /**
-     * This may call {@link #flush()} on the parent channel if needed. The flush may be delayed until the read loop
-     * is over.
+     * 必要时在父 {@link Channel} 上调用 {@link #flush()}；读循环期间可能延迟 flush。
      */
     private void flushParent() {
         if (!inFireChannelReadCompleteQueue) {
@@ -803,7 +797,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     }
 
     /**
-     * Call {@link #flush()} on the parent channel.
+     * 立即在父 {@link Channel} 上执行 {@link #flush()}。
      */
     private void forceFlushParent() {
         parent().flush();
@@ -834,7 +828,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
         }
         final ClosedChannelException closedChannelException;
         if (isTimedOut()) {
-            // Close the streams because of a timeout.
+            // 因超时关闭所有子流
             closedChannelException = new QuicTimeoutClosedChannelException();
         } else {
             closedChannelException = new ClosedChannelException();
@@ -991,14 +985,14 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     }
 
     /**
-     * Receive some data on a QUIC connection.
+     * 在 QUIC 连接上接收 UDP 载荷（由 codec 调用）。
      */
     void recv(InetSocketAddress sender, InetSocketAddress recipient, ByteBuf buffer) {
         ((QuicChannelUnsafe) unsafe()).connectionRecv(sender, recipient, buffer);
     }
 
     /**
-     * Return all source connection ids that are retired and so should be removed to map to the channel.
+     * 返回已退役、应从连接 ID 映射中移除的源连接 ID 列表。
      *
      * @return retired ids.
      */
@@ -1151,9 +1145,8 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     }
 
     /**
-     * Called once we receive a channelReadComplete event. This method will take care of calling
-     * {@link ChannelPipeline#fireChannelReadComplete()} if needed and also to handle pending flushes of
-     * writable {@link QuicheQuicStreamChannel}s.
+     * 在 channelReadComplete 时调用：按需触发 pipeline readComplete，
+     * 并处理待 flush 的可写 {@link QuicheQuicStreamChannel}。
      */
     void recvComplete() {
         try {
@@ -1446,8 +1439,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     }
 
     /**
-     * Write datagrams if needed and return {@code true} if something was written and we need to call
-     * {@link Channel#flush()} at some point.
+     * 发送连接级 QUIC 报文（含 datagram）；若有数据写出则需在适当时机 flush 父通道。
      */
     private SendResult connectionSend(QuicheQuicConnection conn) {
         if (conn.isFreed()) {
@@ -2004,7 +1996,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
             }
             long connAddr = conn.address();
             int len = Quiche.quiche_conn_dgram_max_writable_len(connAddr);
-            // QUICHE_ERR_DONE means the remote peer does not support the extension.
+            // QUICHE_ERR_DONE 表示对端不支持该扩展
             if (len != Quiche.QUICHE_ERR_DONE) {
                 pipeline().fireUserEventTriggered(new QuicDatagramExtensionEvent(len));
             }
@@ -2021,7 +2013,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
     }
 
     /**
-     * Finish the connect operation of a client channel.
+     * 客户端连接建立完成后收尾：发送积压数据并 flush。
      */
     void finishConnect() {
         assert !server;
@@ -2051,7 +2043,7 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
             if (!freeIfClosed()) {
                 long connAddr = conn.address();
                 timeoutFuture = null;
-                // Notify quiche there was a timeout.
+                // 通知 Quiche 连接已超时
                 Quiche.quiche_conn_on_timeout(connAddr);
                 if (!freeIfClosed()) {
                     // We need to call connectionSend when a timeout was triggered.
@@ -2068,8 +2060,8 @@ final class QuicheQuicChannel extends AbstractChannel implements QuicChannel {
             }
         }
 
-        // Schedule timeout.
-        // See https://docs.rs/quiche/0.6.0/quiche/#generating-outgoing-packets
+        // 按 Quiche 建议调度下一次超时
+        // 参见 https://docs.rs/quiche/0.6.0/quiche/#generating-outgoing-packets
         void scheduleTimeout() {
             QuicheQuicConnection conn = connection;
             if (conn.isFreed()) {

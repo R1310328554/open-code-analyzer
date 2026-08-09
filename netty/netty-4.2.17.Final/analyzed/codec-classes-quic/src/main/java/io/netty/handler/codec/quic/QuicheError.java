@@ -19,8 +19,8 @@ import io.netty.util.collection.IntObjectHashMap;
 import io.netty.util.collection.IntObjectMap;
 
 /**
- * All QUIC error codes identified by Quiche.
- * See <a href="https://github.com/cloudflare/quiche/blob/0.6.0/src/lib.rs#L335-L380">Error</a>
+ * Quiche 库定义的全部 QUIC 错误码枚举。
+ * 参见 <a href="https://github.com/cloudflare/quiche/blob/0.6.0/src/lib.rs#L335-L380">Error</a>。
  */
 enum QuicheError {
     BUFFER_TOO_SHORT(Quiche.QUICHE_ERR_BUFFER_TOO_SHORT, "QUICHE_ERR_BUFFER_TOO_SHORT"),
@@ -72,6 +72,7 @@ enum QuicheError {
         return String.format("QuicError{code=%d, message=%s}", code, message);
     }
 
+    /** 按 Quiche 整数错误码解析枚举；未知码抛出 {@link IllegalArgumentException}。 */
     static QuicheError valueOf(int code) {
         final QuicheError errorCode = ERROR_MAP.get(code);
         if (errorCode == null) {

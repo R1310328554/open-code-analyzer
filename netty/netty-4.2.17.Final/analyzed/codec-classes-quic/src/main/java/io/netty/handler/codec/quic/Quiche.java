@@ -32,17 +32,20 @@ import java.nio.ByteOrder;
 
 import static io.netty.handler.codec.quic.QuicheError.STREAM_RESET;
 
+/**
+ * Cloudflare Quiche 库的 JNI 封装：加载原生库、暴露常量与 native 方法，
+ * 并将 Quiche 错误码映射为 {@link QuicTransportError} 与 Java 异常。
+ */
 final class Quiche {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Quiche.class);
     private static final boolean TRACE_LOGGING_ENABLED = logger.isTraceEnabled();
     private static final IntObjectHashMap<QuicTransportErrorHolder> ERROR_MAPPINGS = new IntObjectHashMap<>();
 
     static {
-        // Preload all classes that will be used in the OnLoad(...) function of JNI to eliminate the possibility of a
-        // class-loader deadlock. This is a workaround for https://github.com/netty/netty/issues/11209.
+        // 预加载 JNI OnLoad 中会用到的类，避免类加载器死锁
+        // 参见 https://github.com/netty/netty/issues/11209
 
-        // This needs to match all the classes that are loaded via NETTY_JNI_UTIL_LOAD_CLASS or looked up via
-        // NETTY_JNI_UTIL_FIND_CLASS.
+        // 须与 NETTY_JNI_UTIL_LOAD_CLASS / NETTY_JNI_UTIL_FIND_CLASS 加载的类一致
         ClassInitializerUtil.tryLoadClasses(Quiche.class,
                 // netty_quic_boringssl
                 byte[].class, String.class, BoringSSLCertificateCallback.class,
@@ -53,23 +56,21 @@ final class Quiche {
         );
 
         try {
-            // First, try calling a side-effect free JNI method to see if the library was already
-            // loaded by the application.
+            // 先调用无副作用 JNI 方法，检测应用是否已加载原生库
             quiche_version();
         } catch (UnsatisfiedLinkError ignore) {
-            // The library was not previously loaded, load it now.
+            // 尚未加载则在此加载
             loadNativeLibrary();
         }
 
-        // Let's enable debug logging for quiche if the TRACE level is enabled in our logger.
+        // 若 Netty 日志为 TRACE，则启用 Quiche 调试日志
         if (TRACE_LOGGING_ENABLED) {
             quiche_enable_debug_logging(new QuicheLogger(logger));
         }
     }
 
     private static void loadNativeLibrary() {
-        // This needs to be kept in sync with what is defined in netty_quic_quiche.c
-        // and pom.xml as jniLibPrefix.
+        // 库名须与 netty_quic_quiche.c 及 pom.xml 中 jniLibPrefix 保持一致
         String libName = "netty_quiche42";
         ClassLoader cl = PlatformDependent.getClassLoader(Quiche.class);
 
@@ -264,15 +265,15 @@ final class Quiche {
     static final int QUICHE_ERR_STREAM_STOPPED =
             QuicheNativeStaticallyReferencedJniMethods.quiche_err_stream_stopped();
 
-    // Too many identifiers were provided.
+    // 提供的连接 ID 数量过多
     static final int QUICHE_ERR_ID_LIMIT =
             QuicheNativeStaticallyReferencedJniMethods.quiche_err_id_limit();
 
-    // Not enough available identifiers.
+    // 可用连接 ID 不足
     static final int QUICHE_ERR_OUT_OF_IDENTIFIERS =
             QuicheNativeStaticallyReferencedJniMethods.quiche_err_out_of_identifiers();
 
-    // Error in key update.
+    // 密钥更新失败
     static final int QUICHE_ERR_KEY_UPDATE =
             QuicheNativeStaticallyReferencedJniMethods.quiche_err_key_update();
 
@@ -515,9 +516,8 @@ final class Quiche {
      * See
      * <a href="https://github.com/cloudflare/quiche/blob/0.6.0/include/quiche.h#L329">quiche_stream_iter_next</a>.
      *
-     * This method will fill the {@code streamIds} array and return the number of streams that were filled into
-     * the array. If the number is the same as the length of the array you should call it again until it returns
-     * less to ensure you process all the streams later on.
+     * 将可读/可写流 ID 填入 {@code streamIds} 数组并返回填入个数。
+     * 若返回值等于数组长度，应继续调用直至返回值变小，以处理全部流。
      */
     static native int quiche_stream_iter_next(long iterAddr, long[] streamIds);
 
@@ -729,10 +729,10 @@ final class Quiche {
     static native void quiche_config_enable_dgram(long configAddr, boolean enable,
                                                   int recv_queue_len, int send_queue_len);
 
-    // Sets the limit of active connection IDs.
+    // 设置活跃连接 ID 数量上限
     static native void quiche_config_set_active_connection_id_limit(long configAddr, long value);
 
-    // Sets the initial stateless reset token.
+    // 设置初始无状态重置令牌
     static native void quiche_config_set_stateless_reset_token(long configAddr, byte[] token);
 
     /**
@@ -753,7 +753,7 @@ final class Quiche {
     static native int sockaddr_cmp(long addr, long addr2);
 
     /**
-     * Returns the memory address if the {@link ByteBuf} taking the readerIndex into account.
+     * 返回 {@link ByteBuf} 在 {@link ByteBuf#readerIndex()} 处的本地内存地址。
      *
      * @param buf   the {@link ByteBuf} of which we want to obtain the memory address
      *              (taking its {@link ByteBuf#readerIndex()} into account).
@@ -764,7 +764,7 @@ final class Quiche {
     }
 
     /**
-     * Returns the memory address if the {@link ByteBuf} taking the writerIndex into account.
+     * 返回 {@link ByteBuf} 在 {@link ByteBuf#writerIndex()} 处的本地内存地址。
      *
      * @param buf   the {@link ByteBuf} of which we want to obtain the memory address
      *              (taking its {@link ByteBuf#writerIndex()} into account).
@@ -775,7 +775,7 @@ final class Quiche {
     }
 
     /**
-     * Returns the memory address if the {@link ByteBuf} taking the offset into account.
+     * 返回 {@link ByteBuf} 在指定 {@code offset} 处的本地内存地址。
      *
      * @param buf       the {@link ByteBuf} of which we want to obtain the memory address
      *                  (taking the {@code offset} into account).
@@ -792,8 +792,7 @@ final class Quiche {
     }
 
     /**
-     * Returns the memory address of the given {@link ByteBuffer} taking its current {@link ByteBuffer#position()} into
-     * account.
+     * 返回 {@link ByteBuffer} 在当前 {@link ByteBuffer#position()} 处的本地内存地址。
      *
      * @param buf   the {@link ByteBuffer} of which we want to obtain the memory address
      *              (taking its {@link ByteBuffer#position()} into account).
@@ -806,11 +805,10 @@ final class Quiche {
 
     @SuppressWarnings("deprecation")
     static ByteBuf allocateNativeOrder(int capacity) {
-        // Just use Unpooled as the life-time of these buffers is long.
+        // 生命周期较长，直接使用 Unpooled 分配
         ByteBuf buffer = Unpooled.directBuffer(capacity);
 
-        // As we use the buffers as pointers to int etc we need to ensure we use the right oder so we will
-        // see the right value when we read primitive values.
+        // 缓冲区用作原生结构体指针，须匹配平台字节序以便正确读取基本类型
         return PlatformDependent.BIG_ENDIAN_NATIVE_ORDER ? buffer : buffer.order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -819,7 +817,7 @@ final class Quiche {
     }
 
     /**
-     * Returns {@code true} if both {@link ByteBuffer}s have the same {@code sock_addr} stored.
+     * 比较两个 {@link ByteBuffer} 中存储的 {@code sock_addr} 是否相同。
      *
      * @param memory    the first {@link ByteBuffer} which holds a {@code quiche_recv_info}.
      * @param memory2   the second {@link ByteBuffer} which holds a {@code quiche_recv_info}.
@@ -866,7 +864,8 @@ final class Quiche {
         }
     }
 
-    // See https://github.com/cloudflare/quiche/commit/1d00ee1bb2256dfd99ba0cb2dfac72fe1e59407f
+    // Quiche 错误码到 RFC 9000 传输错误的映射
+    // 参见 https://github.com/cloudflare/quiche/commit/1d00ee1bb2256dfd99ba0cb2dfac72fe1e59407f
     static {
         ERROR_MAPPINGS.put(QUICHE_ERR_DONE,
                 new QuicTransportErrorHolder(QuicTransportError.NO_ERROR, "QUICHE_ERR_DONE"));
@@ -891,7 +890,7 @@ final class Quiche {
         ERROR_MAPPINGS.put(QUICHE_ERR_KEY_UPDATE,
                 new QuicTransportErrorHolder(QuicTransportError.KEY_UPDATE_ERROR, "QUICHE_ERR_KEY_UPDATE"));
 
-        // Should the code be something different ?
+        // TLS/加密失败暂映射为 0x0100 CRYPTO_ERROR
         ERROR_MAPPINGS.put(QUICHE_ERR_TLS_FAIL,
                 new QuicTransportErrorHolder(QuicTransportError.valueOf(0x0100), "QUICHE_ERR_TLS_FAIL"));
         ERROR_MAPPINGS.put(QUICHE_ERR_CRYPTO_FAIL,
@@ -922,7 +921,7 @@ final class Quiche {
     static Exception convertToException(int result, long code) {
         QuicTransportErrorHolder holder = ERROR_MAPPINGS.get(result);
         if (holder == null) {
-            // There is no mapping to a transport error, it's something internal so throw it directly.
+            // 无传输层映射时直接抛出 Quiche 内部错误
             QuicheError error = QuicheError.valueOf(result);
             if (error == STREAM_RESET) {
                 return new QuicStreamResetException(error.message(), code);

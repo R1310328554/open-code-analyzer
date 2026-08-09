@@ -20,7 +20,7 @@ import io.netty.util.internal.ObjectUtil;
 import java.util.Objects;
 
 /**
- * The priority of a {@link QuicStreamChannel}.
+ * {@link QuicStreamChannel} 的优先级描述，含紧急度与是否增量传输。
  */
 public final class QuicStreamPriority {
 
@@ -28,7 +28,7 @@ public final class QuicStreamPriority {
     private final boolean incremental;
 
     /**
-     * Create a new instance
+     * 创建流优先级实例。
      *
      * @param urgency       the urgency of the stream.
      * @param incremental   {@code true} if incremental.
@@ -39,7 +39,7 @@ public final class QuicStreamPriority {
     }
 
     /**
-     * The urgency of the stream. Smaller number means more urgent and so data will be send earlier.
+     * 流紧急度，数值越小越优先发送。
      *
      * @return  the urgency.
      */
@@ -48,7 +48,7 @@ public final class QuicStreamPriority {
     }
 
     /**
-     * {@code true} if incremental, {@code false} otherwise.
+     * 是否为增量流（{@code true} 表示增量，{@code false} 表示非增量）。
      *
      * @return  if incremental.
      */

@@ -20,119 +20,77 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * <a href="https://www.rfc-editor.org/rfc/rfc9000.html#name-transport-error-codes">
- *     RFC9000 20.1. Transport Error Codes</a>
+ * RFC 9000 定义的 QUIC 传输层错误码。
+ * 参见 <a href="https://www.rfc-editor.org/rfc/rfc9000.html#name-transport-error-codes">
+ *     RFC9000 20.1. Transport Error Codes</a>。
  */
 public final class QuicTransportError {
 
-    /**
-     * An endpoint uses this with CONNECTION_CLOSE to signal that the connection is being closed abruptly in the
-     * absence of any error.
-     */
+    /** 无错误情况下的正常关闭（CONNECTION_CLOSE 使用）。 */
     public static final QuicTransportError NO_ERROR =
             new QuicTransportError(0x0, "NO_ERROR");
 
-    /**
-     * The endpoint encountered an internal error and cannot continue with the connection.
-     */
+    /** 端点内部错误，无法继续连接。 */
     public static final QuicTransportError INTERNAL_ERROR =
             new QuicTransportError(0x1, "INTERNAL_ERROR");
 
-    /**
-     * The server refused to accept a new connection.
-     */
+    /** 服务端拒绝接受新连接。 */
     public static final QuicTransportError CONNECTION_REFUSED =
             new QuicTransportError(0x2, "CONNECTION_REFUSED");
 
-    /**
-     * An endpoint received more data than it permitted in its advertised data limits.
-     */
+    /** 接收数据超出通告的流量控制上限。 */
     public static final QuicTransportError FLOW_CONTROL_ERROR =
             new QuicTransportError(0x3, "FLOW_CONTROL_ERROR");
 
-    /**
-     * An endpoint received a frame for a stream identifier that exceeded its advertised stream limit for the
-     * corresponding stream type.
-     */
+    /** 收到超出已通告流数量上限的流标识符帧。 */
     public static final QuicTransportError STREAM_LIMIT_ERROR =
             new QuicTransportError(0x4, "STREAM_LIMIT_ERROR");
 
-    /**
-     * An endpoint received a frame for a stream that was not in a state that permitted that frame.
-     */
+    /** 在不允许当前帧的流状态下收到该帧。 */
     public static final QuicTransportError STREAM_STATE_ERROR =
             new QuicTransportError(0x5, "STREAM_STATE_ERROR");
 
-    /**
-     * (1) An endpoint received a STREAM frame containing data that exceeded the previously established final size,
-     * (2) an endpoint received a STREAM frame or a RESET_STREAM frame containing a final size that was lower than
-     * the size of stream data that was already received, or (3) an endpoint received a STREAM frame or a RESET_STREAM
-     * frame containing a different final size to the one already established.
-     */
+    /** 流最终大小不一致：超出已确立 final size、final size 小于已收数据，或与已确立值不同。 */
     public static final QuicTransportError FINAL_SIZE_ERROR =
             new QuicTransportError(0x6, "FINAL_SIZE_ERROR");
 
-    /**
-     * An endpoint received a frame that was badly formatted -- for instance, a frame of an unknown type or an ACK
-     * frame that has more acknowledgment ranges than the remainder of the packet could carry.
-     */
+    /** 帧格式错误，例如未知帧类型或 ACK 范围超出报文剩余空间。 */
     public static final QuicTransportError FRAME_ENCODING_ERROR =
             new QuicTransportError(0x7, "FRAME_ENCODING_ERROR");
 
-    /**
-     * An endpoint received transport parameters that were badly formatted, included an invalid value, omitted a
-     * mandatory transport parameter, included a forbidden transport parameter, or were otherwise in error.
-     */
+    /** 传输参数非法：格式错误、取值无效、缺少必填项、含禁止项等。 */
     public static final QuicTransportError TRANSPORT_PARAMETER_ERROR =
             new QuicTransportError(0x8, "TRANSPORT_PARAMETER_ERROR");
 
-    /**
-     * The number of connection IDs provided by the peer exceeds the advertised active_connection_id_limit.
-     */
+    /** 对端提供的连接 ID 数量超过 active_connection_id_limit。 */
     public static final QuicTransportError CONNECTION_ID_LIMIT_ERROR =
             new QuicTransportError(0x9, "CONNECTION_ID_LIMIT_ERROR");
 
-    /**
-     * An endpoint detected an error with protocol compliance that was not covered by more specific error codes.
-     */
+    /** 协议违规，且无法归入更具体的错误码。 */
     public static final QuicTransportError PROTOCOL_VIOLATION =
             new QuicTransportError(0xa, "PROTOCOL_VIOLATION");
 
-    /**
-     * A server received a client Initial that contained an invalid Token field.
-     */
+    /** 服务端收到含无效 Token 字段的客户端 Initial 报文。 */
     public static final QuicTransportError INVALID_TOKEN =
             new QuicTransportError(0xb, "INVALID_TOKEN");
 
-    /**
-     * The application or application protocol caused the connection to be closed.
-     */
+    /** 应用或应用层协议主动关闭连接。 */
     public static final QuicTransportError APPLICATION_ERROR =
             new QuicTransportError(0xc, "APPLICATION_ERROR");
 
-    /**
-     * An endpoint has received more data in CRYPTO frames than it can buffer.
-     */
+    /** CRYPTO 帧数据超出端点可缓冲容量。 */
     public static final QuicTransportError CRYPTO_BUFFER_EXCEEDED =
             new QuicTransportError(0xd, "CRYPTO_BUFFER_EXCEEDED");
 
-    /**
-     * An endpoint detected errors in performing key updates.
-     */
+    /** 密钥更新过程中检测到错误。 */
     public static final QuicTransportError KEY_UPDATE_ERROR =
             new QuicTransportError(0xe, "KEY_UPDATE_ERROR");
 
-    /**
-     * An endpoint has reached the confidentiality or integrity limit for the AEAD algorithm used by the given
-     * connection.
-     */
+    /** 连接所用 AEAD 算法达到机密性或完整性使用上限。 */
     public static final QuicTransportError AEAD_LIMIT_REACHED =
             new QuicTransportError(0xf, "AEAD_LIMIT_REACHED");
 
-    /**
-     * n endpoint has determined that the network path is incapable of supporting QUIC. An endpoint is unlikely to
-     * receive a CONNECTION_CLOSE frame carrying this code except when the path does not support a large enough MTU.
-     */
+    /** 网络路径无法支持 QUIC（常见于 MTU 过小）。 */
     public static final QuicTransportError NO_VIABLE_PATH =
             new QuicTransportError(0x10, "NO_VIABLE_PATH");
 
@@ -157,9 +115,8 @@ public final class QuicTransportError {
         errorList.add(AEAD_LIMIT_REACHED);
         errorList.add(NO_VIABLE_PATH);
 
-        // Crypto errors can have various codes.
-        //
-        // See https://www.rfc-editor.org/rfc/rfc9000.html#name-transport-error-codes:
+        // 加密握手错误码占用 0x0100–0x01ff 范围
+        // 参见 https://www.rfc-editor.org/rfc/rfc9000.html#name-transport-error-codes:
         // The cryptographic handshake failed. A range of 256 values is reserved for carrying error codes specific to
         // the cryptographic handshake that is used. Codes for errors occurring when TLS is used for the cryptographic
         // handshake are described in Section 4.8 of [QUIC-TLS].
@@ -176,15 +133,13 @@ public final class QuicTransportError {
         this.name = name;
     }
 
-    /**
-     * Returns true if this is a {@code CRYPTO_ERROR}.
-     */
+    /** 若错误码属于 {@code CRYPTO_ERROR} 范围（0x0100–0x01ff）则返回 {@code true}。 */
     public boolean isCryptoError() {
         return code >= 0x0100 && code <= 0x01ff;
     }
 
     /**
-     * Returns the name of the error as defined by RFC9000.
+     * 返回 RFC 9000 定义的错误名称。
      *
      * @return name
      */
@@ -192,13 +147,12 @@ public final class QuicTransportError {
         return name;
     }
 
-    /**
-     * Returns the code for this error used on the wire as defined by RFC9000.
-     */
+    /** 返回线上使用的传输错误码数值。 */
     public long code() {
         return code;
     }
 
+    /** 按数值解析传输错误码；未知值抛出 {@link IllegalArgumentException}。 */
     public static QuicTransportError valueOf(long value) {
         if (value > 17) {
             value -= 0x0100;

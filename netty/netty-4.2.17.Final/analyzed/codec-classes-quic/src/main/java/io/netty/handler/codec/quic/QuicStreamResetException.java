@@ -16,12 +16,13 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Signals a stream reset.
+ * 表示 QUIC 流被 RESET_STREAM 或等效操作重置时抛出的异常。
  */
 public final class QuicStreamResetException extends QuicException {
 
     private final long applicationProtocolCode;
 
+    /** 构造流重置异常，携带可选的应用层协议错误码。 */
     public QuicStreamResetException(String message, long applicationProtocolCode) {
         super(message);
 
@@ -29,9 +30,9 @@ public final class QuicStreamResetException extends QuicException {
     }
 
     /**
-     * Returns the optional application protocol error code set on {@code RESET_STREAM} frames.
+     * 返回 {@code RESET_STREAM} 帧中携带的应用层协议错误码；未提供时为 {@code -1}。
      *
-     * Note: this is not yet implemented for {@code STOP_SENDING} frames.
+     * 注意：{@code STOP_SENDING} 帧尚未实现此字段。
      *
      * @return the optional application protocol error code or {@code -1} when no such code is provided.
      */

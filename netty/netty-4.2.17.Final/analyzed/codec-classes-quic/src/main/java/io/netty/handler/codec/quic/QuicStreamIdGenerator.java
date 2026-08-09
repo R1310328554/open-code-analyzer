@@ -16,18 +16,20 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Generates and hands over the next stream id to use for a QUIC stream.
+ * 按 RFC 9000 流 ID 编码规则，为 QUIC 流分配下一个可用流标识符。
+ * 客户端与服务端起始 ID 不同，双向与单向流各自递增 4。
  */
 final class QuicStreamIdGenerator {
     private long nextBidirectionalStreamId;
     private long nextUnidirectionalStreamId;
 
     QuicStreamIdGenerator(boolean server) {
-        // See https://quicwg.org/base-drafts/rfc9000.html#name-stream-types-and-identifier
+        // 参见 RFC 9000 流类型与标识符编码：https://quicwg.org/base-drafts/rfc9000.html#name-stream-types-and-identifier
         nextBidirectionalStreamId = server ? 1 : 0;
         nextUnidirectionalStreamId = server ? 3 : 2;
     }
 
+    /** 返回下一个双向或单向流 ID，并推进内部计数器。 */
     long nextStreamId(boolean bidirectional) {
         if (bidirectional) {
             long stream = nextBidirectionalStreamId;

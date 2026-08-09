@@ -17,6 +17,10 @@ package io.netty.handler.codec.quic;
 
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Quiche {@code quiche_config} 的 Java 包装：根据 {@link QuicCodecBuilder} 参数
+ * 创建并持有原生配置指针，在 finalize 或显式 {@link #free()} 时释放。
+ */
 final class QuicheConfig {
     private final boolean isDatagramSupported;
     private long config = -1;
@@ -128,16 +132,17 @@ final class QuicheConfig {
         }
     }
 
+    /** 是否已启用 DATAGRAM 扩展。 */
     boolean isDatagramSupported() {
         return isDatagramSupported;
     }
 
+    /** 返回原生 quiche_config 指针地址。 */
     long nativeAddress() {
         return config;
     }
 
-    // Let's override finalize() as we want to ensure we never leak memory even if the user will miss to close
-    // Channel that uses this handler that used the config and just let it get GC'ed.
+    // 覆盖 finalize，即使用户未关闭 Channel 导致配置仅被 GC，也能释放原生内存
     @Override
     protected void finalize() throws Throwable {
         try {
@@ -147,6 +152,7 @@ final class QuicheConfig {
         }
     }
 
+    /** 释放底层 quiche_config；重复调用安全。 */
     void free() {
         if (config != -1) {
             try {

@@ -16,10 +16,12 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Event fired once the stream limit of a {@link QuicChannel} changes.
+ * {@link QuicChannel} 可创建流数量上限变化时触发的用户事件（单例）。
+ * 应用可据此更新本地流创建策略。
  */
 public final class QuicStreamLimitChangedEvent implements QuicEvent {
 
+    /** 全局单例事件实例，避免重复分配。 */
     static final QuicStreamLimitChangedEvent INSTANCE = new QuicStreamLimitChangedEvent();
 
     private QuicStreamLimitChangedEvent() { }

@@ -18,9 +18,10 @@ package io.netty.handler.codec.quic;
 import java.nio.channels.ClosedChannelException;
 
 /**
- * Special {@link ClosedChannelException} that is used in case of closure caused by the idle timeout.
+ * 因空闲超时导致通道关闭时使用的 {@link ClosedChannelException} 子类。
  */
 public final class QuicTimeoutClosedChannelException extends ClosedChannelException {
 
+    /** 包内构造，表示超时关闭。 */
     QuicTimeoutClosedChannelException() { }
 }

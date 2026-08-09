@@ -16,16 +16,12 @@
 package io.netty.handler.codec.quic;
 
 /**
- * The type of a {@link QuicStreamChannel}.
+ * {@link QuicStreamChannel} 的流类型：单向或双向。
  */
 public enum QuicStreamType {
 
-    /**
-     * An unidirectional stream.
-     */
+    /** 单向流，仅一端可发送。 */
     UNIDIRECTIONAL,
-    /**
-     * A bidirectional stream.
-     */
+    /** 双向流，两端均可发送与接收。 */
     BIDIRECTIONAL
 }

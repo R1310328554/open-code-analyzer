@@ -15,8 +15,13 @@
  */
 package io.netty.handler.codec.quic;
 
+/**
+ * 在类初始化阶段通过 JNI 读取的 Quiche 常量与 C 结构体字段偏移量，
+ * 供 {@link Quiche} 静态字段初始化使用，避免硬编码平台相关数值。
+ */
 final class QuicheNativeStaticallyReferencedJniMethods {
 
+    /** Quiche 支持的 QUIC 协议版本号。 */
     static native int quiche_protocol_version();
     static native int quiche_max_conn_id_len();
     static native int quiche_shutdown_read();
@@ -93,5 +98,6 @@ final class QuicheNativeStaticallyReferencedJniMethods {
     static native int quiche_path_event_reused_source_connection_id();
     static native int quiche_path_event_peer_migrated();
 
+    /** 工具类，禁止实例化。 */
     private QuicheNativeStaticallyReferencedJniMethods() { }
 }

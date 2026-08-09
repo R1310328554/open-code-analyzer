@@ -18,7 +18,7 @@ package io.netty.handler.codec.quic;
 import io.netty.util.internal.logging.InternalLogger;
 
 /**
- * Delegates QUICHE logging to {@link InternalLogger}.
+ * 将 Quiche 原生调试日志转发至 Netty {@link InternalLogger}（TRACE 级别）。
  */
 final class QuicheLogger {
     private final InternalLogger logger;
@@ -27,8 +27,9 @@ final class QuicheLogger {
         this.logger = logger;
     }
 
-    // Called from JNI.
+    // 由 JNI 回调调用
     @SuppressWarnings("unused")
+    /** 接收 Quiche 日志消息并写入 trace 日志。 */
     void log(String msg) {
         logger.trace(msg);
     }

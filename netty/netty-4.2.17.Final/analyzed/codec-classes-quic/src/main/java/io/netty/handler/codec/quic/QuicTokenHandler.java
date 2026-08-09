@@ -20,14 +20,14 @@ import io.netty.buffer.ByteBuf;
 import java.net.InetSocketAddress;
 
 /**
- * Handle token related operations.
+ * QUIC 地址验证 token 的生成与校验接口，用于服务端防放大攻击。
+ * 实现类负责在 Initial 报文中写入 token，并在客户端重连时验证。
  */
 public interface QuicTokenHandler {
 
     /**
-     * Generate a new token for the given destination connection id and address. This token is written to {@code out}.
-     * If no token should be generated and so no token validation should take place at all this method should return
-     * {@code false}.
+     * 为给定目的连接 ID 与客户端地址生成 token 并写入 {@code out}。
+     * 若不需要 token 验证（不写入 token），应返回 {@code false}。
      *
      * @param out       {@link ByteBuf} into which the token will be written.
      * @param dcid      the destination connection id. The {@link ByteBuf#readableBytes()} will be at most
@@ -38,7 +38,7 @@ public interface QuicTokenHandler {
     boolean writeToken(ByteBuf out, ByteBuf dcid, InetSocketAddress address);
 
     /**
-     * Validate the token and return the offset, {@code -1} is returned if the token is not valid.
+     * 校验 token 有效性；有效时返回 token 之后的数据起始偏移，无效时返回 {@code -1}。
      *
      * @param token     the {@link ByteBuf} that contains the token. The ownership is not transferred.
      * @param address   the {@link InetSocketAddress} of the sender.
@@ -47,7 +47,7 @@ public interface QuicTokenHandler {
     int validateToken(ByteBuf token, InetSocketAddress address);
 
     /**
-     * Return the maximal token length.
+     * 返回本实现支持的最大 token 长度。
      *
      * @return the maximal supported token length.
      */

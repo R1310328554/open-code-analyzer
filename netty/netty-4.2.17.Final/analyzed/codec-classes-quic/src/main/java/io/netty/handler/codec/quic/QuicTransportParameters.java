@@ -16,95 +16,94 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Transport parameters for QUIC.
+ * QUIC 连接协商后的传输参数只读视图，反映对端或本地生效的限值与选项。
  */
 public interface QuicTransportParameters {
 
-    /**
-     * The maximum idle timeout.
+    /** 最大空闲超时时间（毫秒）。
      * @return timeout.
      */
     long maxIdleTimeout();
 
     /**
-     * The maximum UDP payload size.
+     * 最大 UDP 载荷大小（字节）。
      *
      * @return maximum payload size.
      */
     long maxUdpPayloadSize();
 
     /**
-     * The initial flow control maximum data for the connection.
+     * 连接级初始最大数据量（流量控制）。
      *
      * @return flowcontrol.
      */
     long initialMaxData();
 
     /**
-     * The initial flow control maximum data for local bidirectional streams.
+     * 本地发起的双向流初始最大数据量。
      *
      * @return flowcontrol.
      */
     long initialMaxStreamDataBidiLocal();
 
     /**
-     * The initial flow control maximum data for remote bidirectional streams.
+     * 对端发起的双向流初始最大数据量。
      *
      * @return flowcontrol.
      */
     long initialMaxStreamDataBidiRemote();
 
     /**
-     * The initial flow control maximum data for unidirectional streams.
+     * 单向流初始最大数据量。
      *
      * @return flowcontrol.
      */
     long initialMaxStreamDataUni();
 
     /**
-     * The initial maximum bidirectional streams.
+     * 初始最大双向流数量。
      *
      * @return streams.
      */
     long initialMaxStreamsBidi();
 
     /**
-     * The initial maximum unidirectional streams.
+     * 初始最大单向流数量。
      *
      * @return streams.
      */
     long initialMaxStreamsUni();
 
     /**
-     * The ACK delay exponent
+     * ACK 延迟指数（用于解码 ACK 延迟字段）。
      *
      * @return exponent.
      */
     long ackDelayExponent();
 
     /**
-     * The max ACK delay.
+     * 最大 ACK 延迟（毫秒）。
      *
      * @return delay.
      */
     long maxAckDelay();
 
     /**
-     * Whether active migration is disabled.
+     * 是否禁用主动连接迁移。
      *
      * @return disabled.
      */
     boolean disableActiveMigration();
 
     /**
-     * The active connection ID limit.
+     * 活跃连接 ID 数量上限。
      *
      * @return limit.
      */
     long activeConnIdLimit();
 
     /**
-     * DATAGRAM frame extension parameter, if any.
+     * DATAGRAM 扩展参数：最大 datagram 帧载荷；未协商时为 0。
      *
      * @return param.
      */
