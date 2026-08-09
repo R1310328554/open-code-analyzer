@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:04:56Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelFilterTry.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelFlatMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelFlatMapIterable.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelFromArray.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelMapTry.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelPeek.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelReduce.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelReduceFull.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/parallel/ParallelSortedJoin.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleAmb.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleCache.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleContains.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleCreate.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/single/SingleDefer.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 362,
-  "done": 630
+  "done": 645
 }
