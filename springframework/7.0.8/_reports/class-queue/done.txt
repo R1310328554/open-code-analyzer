@@ -566,3 +566,13 @@ spring-context/src/main/java/org/springframework/context/event/EventExpressionEv
 spring-context/src/main/java/org/springframework/context/event/EventExpressionRootObject.java
 spring-context/src/main/java/org/springframework/context/event/EventListener.java
 spring-context/src/main/java/org/springframework/context/event/EventListenerFactory.java
+spring-context/src/main/java/org/springframework/context/support/FileSystemXmlApplicationContext.java
+spring-context/src/main/java/org/springframework/context/support/GenericGroovyApplicationContext.java
+spring-context/src/main/java/org/springframework/context/support/GenericXmlApplicationContext.java
+spring-context/src/main/java/org/springframework/context/support/MessageSourceAccessor.java
+spring-context/src/main/java/org/springframework/context/support/MessageSourceResourceBundle.java
+spring-context/src/main/java/org/springframework/context/support/MessageSourceSupport.java
+spring-context/src/main/java/org/springframework/context/support/PropertySourcesPlaceholderConfigurer.java
+spring-context/src/main/java/org/springframework/context/support/ResourceBundleMessageSource.java
+spring-context/src/main/java/org/springframework/context/support/SimpleThreadScope.java
+spring-context/src/main/java/org/springframework/context/support/StaticApplicationContext.java
