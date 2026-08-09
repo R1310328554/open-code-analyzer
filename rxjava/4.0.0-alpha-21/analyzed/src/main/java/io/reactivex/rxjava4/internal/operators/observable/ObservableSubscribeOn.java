@@ -20,6 +20,12 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 在指定 {@link Scheduler} 上执行对上游的 subscribe，
+ * 使订阅动作与下游调用线程分离；事件仍由上游所在线程发射。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSubscribeOn<T> extends AbstractObservableWithUpstream<T, T> {
     final Scheduler scheduler;
 
@@ -28,6 +34,7 @@ public final class ObservableSubscribeOn<T> extends AbstractObservableWithUpstre
         this.scheduler = scheduler;
     }
 
+    /** 先 onSubscribe(parent)，再 scheduleDirect(SubscribeTask) 在 scheduler 上订阅上游。 */
     @Override
     public void subscribeActual(final Observer<? super T> observer) {
         final SubscribeOnObserver<T> parent = new SubscribeOnObserver<>(observer);
@@ -37,6 +44,7 @@ public final class ObservableSubscribeOn<T> extends AbstractObservableWithUpstre
         parent.setDisposable(scheduler.scheduleDirect(new SubscribeTask(parent)));
     }
 
+    /** upstream 存上游 Disposable；自身 AtomicReference 存 scheduleDirect 返回的 Disposable。 */
     static final class SubscribeOnObserver<T> extends AtomicReference<Disposable> implements Observer<T>, Disposable {
 
         @Serial
@@ -86,6 +94,7 @@ public final class ObservableSubscribeOn<T> extends AbstractObservableWithUpstre
         }
     }
 
+    /** 在 scheduler 线程执行 source.subscribe(parent)。 */
     final class SubscribeTask implements Runnable {
         private final SubscribeOnObserver<T> parent;
 

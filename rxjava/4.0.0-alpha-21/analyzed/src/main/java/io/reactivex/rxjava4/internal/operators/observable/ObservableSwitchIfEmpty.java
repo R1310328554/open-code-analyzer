@@ -17,8 +17,18 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.SequentialDisposable;
 
+/**
+ * 若主序列在 onComplete 前未发射任何 onNext，则订阅 other 作为替代；
+ * 否则行为与主序列相同。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSwitchIfEmpty<T> extends AbstractObservableWithUpstream<T, T> {
     final ObservableSource<? extends T> other;
+    /**
+     * @param source 主 ObservableSource
+     * @param other 主序列空完成时的备用源
+     */
     public ObservableSwitchIfEmpty(ObservableSource<T> source, ObservableSource<? extends T> other) {
         super(source);
         this.other = other;
@@ -31,6 +41,7 @@ public final class ObservableSwitchIfEmpty<T> extends AbstractObservableWithUpst
         source.subscribe(parent);
     }
 
+    /** empty 初始 true；首个 onNext 置 false；空完成时 other.subscribe(this) 复用同一 Observer。 */
     static final class SwitchIfEmptyObserver<T> implements Observer<T> {
         final Observer<? super T> downstream;
         final ObservableSource<? extends T> other;
@@ -63,6 +74,7 @@ public final class ObservableSwitchIfEmpty<T> extends AbstractObservableWithUpst
             downstream.onError(t);
         }
 
+        /** empty 仍为 true 时切换订阅 other；否则正常 onComplete。 */
         @Override
         public void onComplete() {
             if (empty) {

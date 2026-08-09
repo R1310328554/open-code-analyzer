@@ -18,6 +18,13 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.observers.SerializedObserver;
 
+/**
+ * 在 other 发出首个信号（onNext 或 onComplete）之前丢弃主序列 onNext；
+ * 之后原样转发。other 的 onError 会终止整个流。
+ *
+ * @param <T> 主序列元素类型
+ * @param <U> 门控序列元素类型
+ */
 public final class ObservableSkipUntil<T, U> extends AbstractObservableWithUpstream<T, T> {
     final ObservableSource<U> other;
     public ObservableSkipUntil(ObservableSource<T> source, ObservableSource<U> other) {
@@ -25,6 +32,7 @@ public final class ObservableSkipUntil<T, U> extends AbstractObservableWithUpstr
         this.other = other;
     }
 
+    /** 用 SerializedObserver 包装下游，ArrayCompositeDisposable 管理双路订阅。 */
     @Override
     public void subscribeActual(Observer<? super T> child) {
 
@@ -41,6 +49,7 @@ public final class ObservableSkipUntil<T, U> extends AbstractObservableWithUpstr
         source.subscribe(sus);
     }
 
+    /** notSkipping 由 other 置 true；notSkippingLocal 保证首个放行项也下发。 */
     static final class SkipUntilObserver<T> implements Observer<T> {
 
         final Observer<? super T> downstream;
@@ -88,6 +97,7 @@ public final class ObservableSkipUntil<T, U> extends AbstractObservableWithUpstr
         }
     }
 
+    /** other 的 onNext 后 dispose 自身并打开主序列；onComplete 仅打开不 dispose。 */
     final class SkipUntil implements Observer<U> {
         final ArrayCompositeDisposable frc;
         final SkipUntilObserver<T> sus;

@@ -22,6 +22,12 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
+/**
+ * 按时间窗口跳过「最近 time 内」的元素：队列存 (timestamp, value)，
+ * 仅当队首时间戳早于 now-time 时才 poll 并发射。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSkipLastTimed<T> extends AbstractObservableWithUpstream<T, T> {
     final long time;
     final TimeUnit unit;
@@ -29,6 +35,14 @@ public final class ObservableSkipLastTimed<T> extends AbstractObservableWithUpst
     final int bufferSize;
     final boolean delayError;
 
+    /**
+     * @param source 上游
+     * @param time 时间窗口长度
+     * @param unit 时间单位
+     * @param scheduler 提供 now() 的调度器
+     * @param bufferSize SPSC 队列容量
+     * @param delayError true 时等队列排空再 onError
+     */
     public ObservableSkipLastTimed(ObservableSource<T> source,
             long time, TimeUnit unit, Scheduler scheduler, int bufferSize, boolean delayError) {
         super(source);
@@ -44,6 +58,7 @@ public final class ObservableSkipLastTimed<T> extends AbstractObservableWithUpst
         source.subscribe(new SkipLastTimedObserver<>(t, time, unit, scheduler, bufferSize, delayError));
     }
 
+    /** onNext 带时间戳入队；drain 循环释放已超出窗口的元素。 */
     static final class SkipLastTimedObserver<T> extends AtomicInteger implements Observer<T>, Disposable {
 
         @Serial
@@ -120,6 +135,7 @@ public final class ObservableSkipLastTimed<T> extends AbstractObservableWithUpst
             return cancelled;
         }
 
+        /** 队首时间戳 <= now-time 时 poll 时间戳与值并 onNext。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;

@@ -17,8 +17,17 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 跳过前 n 个 onNext，之后原样转发；onError/onComplete 不受影响。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSkip<T> extends AbstractObservableWithUpstream<T, T> {
     final long n;
+    /**
+     * @param source 上游 ObservableSource
+     * @param n 要跳过的元素个数
+     */
     public ObservableSkip(ObservableSource<T> source, long n) {
         super(source);
         this.n = n;
@@ -29,6 +38,7 @@ public final class ObservableSkip<T> extends AbstractObservableWithUpstream<T, T
         source.subscribe(new SkipObserver<>(observer, n));
     }
 
+    /** remaining 递减至 0 后开始向下游 onNext。 */
     static final class SkipObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> downstream;
         long remaining;
@@ -48,6 +58,7 @@ public final class ObservableSkip<T> extends AbstractObservableWithUpstream<T, T
             }
         }
 
+        /** remaining > 0 时仅递减；否则转发 t。 */
         @Override
         public void onNext(T t) {
             if (remaining != 0L) {

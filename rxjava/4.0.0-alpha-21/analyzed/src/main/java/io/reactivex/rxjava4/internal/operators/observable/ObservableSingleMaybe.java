@@ -18,10 +18,16 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 消费上游 Observable，恰有一个元素时 onSuccess，零个时 onComplete，多于一个时 onError。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSingleMaybe<T> extends Maybe<T> {
 
     final ObservableSource<T> source;
 
+    /** @param source 上游 ObservableSource */
     public ObservableSingleMaybe(ObservableSource<T> source) {
         this.source = source;
     }
@@ -31,6 +37,7 @@ public final class ObservableSingleMaybe<T> extends Maybe<T> {
         source.subscribe(new SingleElementObserver<>(t));
     }
 
+    /** 缓存首个 onNext；第二个 onNext 触发 IllegalArgumentException。 */
     static final class SingleElementObserver<T> implements Observer<T>, Disposable {
         final MaybeObserver<? super T> downstream;
 
@@ -86,6 +93,7 @@ public final class ObservableSingleMaybe<T> extends Maybe<T> {
             downstream.onError(t);
         }
 
+        /** 无缓存元素时 onComplete；否则 onSuccess 唯一元素。 */
         @Override
         public void onComplete() {
             if (done) {

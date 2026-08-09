@@ -20,6 +20,12 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 滑动窗口跳过最后 skip 个元素：用固定容量 {@link ArrayDeque} 缓冲，
+ * 队列满后再 onNext 时先 poll 队首再 offer 新项。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSkipLast<T> extends AbstractObservableWithUpstream<T, T> {
     final int skip;
 
@@ -33,6 +39,7 @@ public final class ObservableSkipLast<T> extends AbstractObservableWithUpstream<
         source.subscribe(new SkipLastObserver<>(observer, skip));
     }
 
+    /** 自身即容量为 skip 的 deque；满员后 emit poll() 再 offer 新值。 */
     static final class SkipLastObserver<T> extends ArrayDeque<T> implements Observer<T>, Disposable {
 
         @Serial
@@ -66,6 +73,7 @@ public final class ObservableSkipLast<T> extends AbstractObservableWithUpstream<
             return upstream.isDisposed();
         }
 
+        /** size()==skip 时先下发队首，再将 t 入队。 */
         @Override
         public void onNext(T t) {
             if (skip == size()) {

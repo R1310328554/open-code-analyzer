@@ -22,18 +22,29 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 import java.util.Objects;
 
+/**
+ * 对上游序列做 scan（累积）：首项原样发射，之后每项与累积值经 {@link BiFunction} 合并后发射。
+ *
+ * @param <T> 上下游元素类型
+ */
 public final class ObservableScan<T> extends AbstractObservableWithUpstream<T, T> {
     final BiFunction<T, T, T> accumulator;
+    /**
+     * @param source 上游 ObservableSource
+     * @param accumulator 累积函数 (accumulator, incoming) -> newValue
+     */
     public ObservableScan(ObservableSource<T> source, BiFunction<T, T, T> accumulator) {
         super(source);
         this.accumulator = accumulator;
     }
 
+    /** 订阅 {@link ScanObserver}，在 onNext 中维护累积状态。 */
     @Override
     public void subscribeActual(Observer<? super T> t) {
         source.subscribe(new ScanObserver<>(t, accumulator));
     }
 
+    /** 持有当前累积值；首项直接缓存并下发，后续项经 accumulator 合并。 */
     static final class ScanObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> downstream;
         final BiFunction<T, T, T> accumulator;
@@ -67,6 +78,7 @@ public final class ObservableScan<T> extends AbstractObservableWithUpstream<T, T
             return upstream.isDisposed();
         }
 
+        /** 首项直接发射；否则 apply 累积，null 结果触发 onError。 */
         @Override
         public void onNext(T t) {
             if (done) {

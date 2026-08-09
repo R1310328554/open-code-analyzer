@@ -26,23 +26,24 @@ import io.reactivex.rxjava4.operators.QueueDisposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Utility classes to work with scalar-sourced XMap operators (where X == { flat, concat, switch }).
+ * 处理标量（Supplier）来源的 XMap 算子工具类（X 为 flat、concat、switch）。
+ * 若上游已是标量，可短路映射并订阅，避免完整 Observable 链开销。
  */
 public final class ObservableScalarXMap {
 
-    /** Utility class. */
+    /** 工具类，禁止实例化。 */
     private ObservableScalarXMap() {
         throw new IllegalStateException("No instances!");
     }
 
     /**
-     * Tries to subscribe to a possible Supplier source's mapped ObservableSource.
-     * @param <T> the input value type
-     * @param <R> the output value type
-     * @param source the source ObservableSource
-     * @param observer the subscriber
-     * @param mapper the function mapping a scalar value into an ObservableSource
-     * @return true if successful, false if the caller should continue with the regular path.
+     * 尝试对可能为 {@link Supplier} 的上游做标量 XMap 订阅。
+     * @param <T> 输入标量类型
+     * @param <R> 映射后输出类型
+     * @param source 上游 ObservableSource
+     * @param observer 下游 Observer
+     * @param mapper 将标量映射为 ObservableSource 的函数
+     * @return 已走标量快路径时为 true；否则调用方应继续常规路径
      */
     @SuppressWarnings("unchecked")
     public static <T, R> boolean tryScalarXMapSubscribe(ObservableSource<T> source,
@@ -102,14 +103,13 @@ public final class ObservableScalarXMap {
     }
 
     /**
-     * Maps a scalar value into an Observable and emits its values.
+     * 将标量值映射为 Observable 并发射其元素。
      *
-     * @param <T> the scalar value type
-     * @param <U> the output value type
-     * @param value the scalar value to map
-     * @param mapper the function that gets the scalar value and should return
-     * an ObservableSource that gets streamed
-     * @return the new Observable instance
+     * @param <T> 标量类型
+     * @param <U> 输出元素类型
+     * @param value 待映射标量
+     * @param mapper 接收标量并返回待订阅 ObservableSource 的函数
+     * @return 包装 {@link ScalarXMapObservable} 的新 Observable
      */
     public static <T, U> Observable<U> scalarXMap(T value,
             Function<? super T, ? extends ObservableSource<? extends U>> mapper) {
@@ -117,10 +117,10 @@ public final class ObservableScalarXMap {
     }
 
     /**
-     * Maps a scalar value to an ObservableSource and subscribes to it.
+     * 将标量映射为 ObservableSource 并订阅；映射结果仍为 Supplier 时走 {@link ScalarDisposable}。
      *
-     * @param <T> the scalar value type
-     * @param <R> the mapped ObservableSource's element type.
+     * @param <T> 标量类型
+     * @param <R> 映射后 ObservableSource 元素类型
      */
     static final class ScalarXMapObservable<T, R> extends Observable<R> {
 
@@ -170,9 +170,9 @@ public final class ObservableScalarXMap {
     }
 
     /**
-     * Represents a Disposable that signals one onNext followed by an onComplete.
+     * 表示仅发射一次 onNext 后 onComplete 的 Disposable，支持同步融合。
      *
-     * @param <T> the value type
+     * @param <T> 标量元素类型
      */
     public static final class ScalarDisposable<T>
     extends AtomicInteger
@@ -244,6 +244,7 @@ public final class ObservableScalarXMap {
             return NONE;
         }
 
+        /** 在 START 状态下 CAS 到 ON_NEXT，发射标量后 onComplete。 */
         @Override
         public void run() {
             if (get() == START && compareAndSet(START, ON_NEXT)) {

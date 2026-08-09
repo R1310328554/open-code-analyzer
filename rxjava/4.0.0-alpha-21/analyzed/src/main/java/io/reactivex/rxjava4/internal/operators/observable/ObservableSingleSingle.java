@@ -20,12 +20,22 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 消费上游 Observable 并转为 Single：恰一个元素时 onSuccess；
+ * 零个时用 defaultValue 或 {@link NoSuchElementException}；多于一个时 onError。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSingleSingle<T> extends Single<T> {
 
     final ObservableSource<? extends T> source;
 
     final T defaultValue;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param defaultValue 上游为空时的默认值（null 表示无默认）
+     */
     public ObservableSingleSingle(ObservableSource<? extends T> source, T defaultValue) {
         this.source = source;
         this.defaultValue = defaultValue;
@@ -36,6 +46,7 @@ public final class ObservableSingleSingle<T> extends Single<T> {
         source.subscribe(new SingleElementObserver<>(t, defaultValue));
     }
 
+    /** 与 Maybe 版类似，onComplete 时应用 defaultValue 或 NoSuchElementException。 */
     static final class SingleElementObserver<T> implements Observer<T>, Disposable {
         final SingleObserver<? super T> downstream;
 
@@ -94,6 +105,7 @@ public final class ObservableSingleSingle<T> extends Single<T> {
             downstream.onError(t);
         }
 
+        /** 有唯一元素或 defaultValue 时 onSuccess，否则 onError(NoSuchElementException)。 */
         @Override
         public void onComplete() {
             if (done) {

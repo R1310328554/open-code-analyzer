@@ -19,8 +19,18 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.Predicate;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
+/**
+ * 在 predicate 对某元素返回 true 期间丢弃 onNext；
+ * 首次返回 false 的元素及之后所有元素原样转发。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSkipWhile<T> extends AbstractObservableWithUpstream<T, T> {
     final Predicate<? super T> predicate;
+    /**
+     * @param source 上游 ObservableSource
+     * @param predicate 返回 true 时继续跳过
+     */
     public ObservableSkipWhile(ObservableSource<T> source, Predicate<? super T> predicate) {
         super(source);
         this.predicate = predicate;
@@ -31,6 +41,7 @@ public final class ObservableSkipWhile<T> extends AbstractObservableWithUpstream
         source.subscribe(new SkipWhileObserver<>(observer, predicate));
     }
 
+    /** notSkipping 为 false 时对每项 test；首次 false 后永久转发。 */
     static final class SkipWhileObserver<T> implements Observer<T>, Disposable {
         final Observer<? super T> downstream;
         final Predicate<? super T> predicate;
@@ -59,6 +70,7 @@ public final class ObservableSkipWhile<T> extends AbstractObservableWithUpstream
             return upstream.isDisposed();
         }
 
+        /** 已放行则直接 onNext；否则 predicate.test，false 时开启转发并 emit t。 */
         @Override
         public void onNext(T t) {
             if (notSkipping) {

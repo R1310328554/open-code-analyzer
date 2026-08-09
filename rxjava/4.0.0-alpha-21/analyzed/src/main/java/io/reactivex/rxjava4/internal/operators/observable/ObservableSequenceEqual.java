@@ -23,12 +23,24 @@ import io.reactivex.rxjava4.functions.BiPredicate;
 import io.reactivex.rxjava4.internal.disposables.ArrayCompositeDisposable;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 
+/**
+ * 逐元素比较两个 Observable 序列是否相等，结果以 {@code Observable<Boolean>} 发射。
+ * 两路均完成且逐对匹配时发射 true；长度不等或某对不匹配时发射 false。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSequenceEqual<T> extends Observable<Boolean> {
     final ObservableSource<? extends T> first;
     final ObservableSource<? extends T> second;
     final BiPredicate<? super T, ? super T> comparer;
     final int bufferSize;
 
+    /**
+     * @param first 第一路 ObservableSource
+     * @param second 第二路 ObservableSource
+     * @param comparer 逐元素相等判定
+     * @param bufferSize 每路 SPSC 队列容量
+     */
     public ObservableSequenceEqual(ObservableSource<? extends T> first, ObservableSource<? extends T> second,
                                    BiPredicate<? super T, ? super T> comparer, int bufferSize) {
         this.first = first;
@@ -44,6 +56,7 @@ public final class ObservableSequenceEqual<T> extends Observable<Boolean> {
         ec.subscribe();
     }
 
+    /** 协调两路 EqualObserver，在 drain 中成对 poll 并 comparer.test。 */
     static final class EqualCoordinator<T> extends AtomicInteger implements Disposable {
 
         @Serial
@@ -111,6 +124,7 @@ public final class ObservableSequenceEqual<T> extends Observable<Boolean> {
             q2.clear();
         }
 
+        /** 成对取元素比较；任一路出错或不等则取消并下发结果/错误。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -217,6 +231,7 @@ public final class ObservableSequenceEqual<T> extends Observable<Boolean> {
         }
     }
 
+    /** 将 onNext 入队 SpscLinkedArrayQueue，并触发 parent.drain。 */
     static final class EqualObserver<T> implements Observer<T> {
         final EqualCoordinator<T> parent;
         final SpscLinkedArrayQueue<T> queue;

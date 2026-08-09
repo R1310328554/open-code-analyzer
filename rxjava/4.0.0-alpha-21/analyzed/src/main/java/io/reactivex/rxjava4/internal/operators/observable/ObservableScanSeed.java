@@ -22,16 +22,28 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 import java.util.Objects;
 
+/**
+ * 带初始种子值的 scan：订阅时先发射 seed，之后每项与累积值合并为 R 类型并发射。
+ *
+ * @param <T> 上游元素类型
+ * @param <R> 累积结果类型
+ */
 public final class ObservableScanSeed<T, R> extends AbstractObservableWithUpstream<T, R> {
     final BiFunction<R, ? super T, R> accumulator;
     final Supplier<R> seedSupplier;
 
+    /**
+     * @param source 上游 ObservableSource
+     * @param seedSupplier 初始累积值供应器
+     * @param accumulator (accumulator, incoming) -> newValue
+     */
     public ObservableScanSeed(ObservableSource<T> source, Supplier<R> seedSupplier, BiFunction<R, ? super T, R> accumulator) {
         super(source);
         this.accumulator = accumulator;
         this.seedSupplier = seedSupplier;
     }
 
+    /** 获取 seed 后立即 onNext(seed)，再订阅 ScanSeedObserver。 */
     @Override
     public void subscribeActual(Observer<? super R> t) {
         R r;
@@ -47,6 +59,7 @@ public final class ObservableScanSeed<T, R> extends AbstractObservableWithUpstre
         source.subscribe(new ScanSeedObserver<>(t, accumulator, r));
     }
 
+    /** onSubscribe 时向下游发射初始 seed；onNext 用 accumulator 更新并发射。 */
     static final class ScanSeedObserver<T, R> implements Observer<T>, Disposable {
         final Observer<? super R> downstream;
         final BiFunction<R, ? super T, R> accumulator;
@@ -63,6 +76,7 @@ public final class ObservableScanSeed<T, R> extends AbstractObservableWithUpstre
             this.value = value;
         }
 
+        /** 校验 Disposable 后 onSubscribe，并立即 onNext 当前 seed。 */
         @Override
         public void onSubscribe(Disposable d) {
             if (DisposableHelper.validate(this.upstream, d)) {

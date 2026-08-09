@@ -25,6 +25,12 @@ import io.reactivex.rxjava4.internal.fuseable.FuseToObservable;
 import io.reactivex.rxjava4.operators.SpscLinkedArrayQueue;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 与 {@link ObservableSequenceEqual} 相同逻辑，结果以 {@link Single} 的 onSuccess 交付。
+ * 实现 {@link FuseToObservable} 可融合回 Observable 形式。
+ *
+ * @param <T> 元素类型
+ */
 public final class ObservableSequenceEqualSingle<T> extends Single<Boolean> implements FuseToObservable<Boolean> {
     final ObservableSource<? extends T> first;
     final ObservableSource<? extends T> second;
@@ -46,11 +52,13 @@ public final class ObservableSequenceEqualSingle<T> extends Single<Boolean> impl
         ec.subscribe();
     }
 
+    /** 融合为 {@link ObservableSequenceEqual} 以便 operator fusion。 */
     @Override
     public Observable<Boolean> fuseToObservable() {
         return RxJavaPlugins.onAssembly(new ObservableSequenceEqual<>(first, second, comparer, bufferSize));
     }
 
+    /** 与 Observable 版类似，完成时调用 downstream.onSuccess 而非 onNext+onComplete。 */
     static final class EqualCoordinator<T> extends AtomicInteger implements Disposable {
 
         @Serial
@@ -173,6 +181,7 @@ public final class ObservableSequenceEqualSingle<T> extends Single<Boolean> impl
                     }
                     boolean e2 = v2 == null;
 
+                    /** 两路均完成且队列均空：序列相等。 */
                     if (d1 && d2 && e1 && e2) {
                         downstream.onSuccess(true);
                         return;
