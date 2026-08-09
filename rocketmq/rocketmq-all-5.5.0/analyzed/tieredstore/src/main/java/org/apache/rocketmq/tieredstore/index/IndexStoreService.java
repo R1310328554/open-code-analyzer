@@ -48,26 +48,39 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 分层存储索引文件管理服务：维护按时间戳排序的 {@link IndexFile} 表，负责本地/远程恢复、键写入、异步查询、压缩上传与过期清理。
+ */
 public class IndexStoreService extends ServiceThread implements IndexService {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
 
+    /** 分层索引文件根目录名。 */
     public static final String FILE_DIRECTORY_NAME = "tiered_index_file";
+    /** 索引压缩过程中的临时目录名。 */
     public static final String FILE_COMPACTED_DIRECTORY_NAME = "compacting";
 
     /**
-     * File status in table example:
-     * upload, upload, upload, sealed, sealed, unsealed
+     * 索引文件状态示例（timeStoreTable 中）：upload, sealed, unsealed。
      */
+    /** 分层存储配置。 */
     private final MessageStoreConfig storeConfig;
+    /** 按起始时间戳索引的 {@link IndexFile} 有序表。 */
     private final ConcurrentSkipListMap<Long /* timestamp */, IndexFile> timeStoreTable;
+    /** 索引表读写锁，保护查询与压缩/upload 互斥。 */
     private final ReadWriteLock readWriteLock;
+    /** 已完成压缩/upload 的最大时间戳游标。 */
     private final AtomicLong compactTimestamp;
+    /** 远程索引 FlatFile 路径标识。 */
     private final String filePath;
+    /** 分层 FlatFile 分配器。 */
     private final FlatFileFactory fileAllocator;
+    /** 恢复时若表为空是否自动创建新索引文件。 */
     private final boolean autoCreateNewFile;
 
+    /** 当前写入中的索引文件。 */
     private volatile IndexFile currentWriteFile;
+    /** 远程索引追加文件句柄。 */
     private volatile FlatAppendFile flatAppendFile;
 
     public IndexStoreService(FlatFileFactory flatFileFactory, String filePath) {
@@ -90,6 +103,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
         super.start();
     }
 
+    /** 将旧版固定文件名索引转换为时间戳命名。 */
     private void doConvertOldFormatFile(String filePath) {
         try {
             File file = new File(filePath);
@@ -109,14 +123,15 @@ public class IndexStoreService extends ServiceThread implements IndexService {
         }
     }
 
+    /** 从本地与远程恢复索引文件表。 */
     private void recover() {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
-        // delete compact file directory
+        // 删除压缩临时目录
         UtilAll.deleteFile(new File(Paths.get(storeConfig.getStorePathRootDir(),
             FILE_DIRECTORY_NAME, FILE_COMPACTED_DIRECTORY_NAME).toString()));
 
-        // recover local
+        // 恢复本地索引文件
         File dir = new File(Paths.get(storeConfig.getStorePathRootDir(), FILE_DIRECTORY_NAME).toString());
         this.doConvertOldFormatFile(Paths.get(dir.getPath(), "0000").toString());
         this.doConvertOldFormatFile(Paths.get(dir.getPath(), "1111").toString());
@@ -152,7 +167,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
             this.setCompactTimestamp(this.timeStoreTable.firstKey() - 1);
         }
 
-        // recover remote
+        // 恢复远程已上传索引段
         this.flatAppendFile = fileAllocator.createFlatFileForIndexFile(filePath);
 
         for (FileSegment fileSegment : flatAppendFile.getFileSegmentList()) {
@@ -170,6 +185,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
             timeStoreTable.size(), stopwatch.elapsed(TimeUnit.MILLISECONDS), dir.getAbsolutePath());
     }
 
+    /** 创建新的未封存索引文件。 */
     public void createNewIndexFile(long timestamp) {
         try {
             this.readWriteLock.writeLock().lock();
@@ -213,7 +229,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
             if (AppendResult.SUCCESS.equals(result)) {
                 return AppendResult.SUCCESS;
             } else if (AppendResult.FILE_FULL.equals(result)) {
-                // use current time to ensure the order of file
+                // 用当前时间创建新文件以保证时间序
                 this.createNewIndexFile(System.currentTimeMillis());
             }
         }
@@ -253,8 +269,8 @@ public class IndexStoreService extends ServiceThread implements IndexService {
 
             CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]))
                 .whenComplete((v, t) -> {
-                    // Try to return the query results as much as possible here
-                    // rather than directly throwing exceptions
+                    // 尽量返回部分查询结果
+                    // 而非直接抛出异常中断
                     if (t != null) {
                         log.error("IndexStoreService#queryAsync, topicId={}, key={}, maxCount={}, timestamp={}-{}",
                             topic, key, maxCount, beginTime, endTime, t);
@@ -284,7 +300,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
                 }
                 if (this.doCompactThenUploadFile(entry.getValue())) {
                     this.setCompactTimestamp(entry.getValue().getTimestamp());
-                    // The total number of files will not too much, prevent io too fast.
+                    // 文件总数有限，短暂 sleep 避免 IO 过快
                     TimeUnit.MILLISECONDS.sleep(50);
                 }
             }
@@ -296,6 +312,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
         }
     }
 
+    /** 压缩单个索引文件并上传至远程存储。 */
     public boolean doCompactThenUploadFile(IndexFile indexFile) {
         if (IndexFile.IndexStatusEnum.UPLOAD.equals(indexFile.getFileStatus())) {
             log.error("IndexStoreService file status not correct, so skip, timestamp: {}, status: {}",
@@ -341,8 +358,9 @@ public class IndexStoreService extends ServiceThread implements IndexService {
         return true;
     }
 
+    /** 删除过期且已上传的索引文件。 */
     public void destroyExpiredFile(long expireTimestamp) {
-        // delete file in time store table
+        // 从 timeStoreTable 删除过期条目
         readWriteLock.writeLock().lock();
         try {
             flatAppendFile.destroyExpiredFile(expireTimestamp);
@@ -360,10 +378,11 @@ public class IndexStoreService extends ServiceThread implements IndexService {
         }
     }
 
+    /** 销毁本地未上传与远程索引资源。 */
     public void destroy() {
         readWriteLock.writeLock().lock();
         try {
-            // delete local store file
+            // 销毁本地未上传索引文件
             for (Map.Entry<Long, IndexFile> entry : timeStoreTable.entrySet()) {
                 IndexFile indexFile = entry.getValue();
                 if (IndexFile.IndexStatusEnum.UPLOAD.equals(indexFile.getFileStatus())) {
@@ -371,7 +390,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
                 }
                 indexFile.destroy();
             }
-            // delete remote
+            // 销毁远程 FlatAppendFile
             if (flatAppendFile != null) {
                 flatAppendFile.destroy();
             }
@@ -387,11 +406,13 @@ public class IndexStoreService extends ServiceThread implements IndexService {
         return IndexStoreService.class.getSimpleName() + "_" + this.storeConfig.getBrokerName();
     }
 
+    /** 更新压缩进度时间戳游标。 */
     public void setCompactTimestamp(long timestamp) {
         this.compactTimestamp.set(timestamp);
         log.debug("IndexStoreService set compact timestamp to: {}", timestamp);
     }
 
+    /** 获取下一个待压缩的已封存索引文件。 */
     protected IndexFile getNextSealedFile() {
         Map.Entry<Long, IndexFile> entry =
             this.timeStoreTable.higherEntry(this.compactTimestamp.get());
@@ -404,7 +425,7 @@ public class IndexStoreService extends ServiceThread implements IndexService {
     @Override
     public void shutdown() {
         super.shutdown();
-        // Wait index service upload then clear time store table
+        // 等待上传完成后清空索引表
         while (!this.timeStoreTable.isEmpty()) {
             try {
                 TimeUnit.MILLISECONDS.sleep(50);

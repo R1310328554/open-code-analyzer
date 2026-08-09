@@ -127,19 +127,32 @@ import org.apache.rocketmq.tools.admin.common.AdminToolResult;
 import org.apache.rocketmq.tools.admin.common.AdminToolsResultCodeEnum;
 import org.apache.rocketmq.tools.command.CommandUtil;
 
+/**
+ * MQ 管理扩展核心实现：封装 {@link MQClientInstance} 与 Remoting API，完成 Topic/订阅组配置、消费统计、消息轨迹、偏移管理、NameServer/Controller 配置及并发批量运维。
+ */
 public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 
+    /** 环境变量名：SOCKS 代理 JSON 配置。 */
     private static final String SOCKS_PROXY_JSON = "socksProxyJson";
 
+    /** 管理扩展实现日志。 */
     private final Logger logger = LoggerFactory.getLogger(DefaultMQAdminExtImpl.class);
+    /** 关联的 {@link DefaultMQAdminExt} 配置与分组信息。 */
     private final DefaultMQAdminExt defaultMQAdminExt;
+    /** AdminExt 生命周期状态。 */
     private ServiceState serviceState = ServiceState.CREATE_JUST;
+    /** 底层 MQ 客户端实例，负责 Remoting 通信。 */
     private MQClientInstance mqClientInstance;
+    /** 可选 RPC 钩子（鉴权等）。 */
     private RPCHook rpcHook;
+    /** Remoting 默认超时（毫秒）。 */
     private long timeoutMillis = 20000;
+    /** 随机数，用于负载均衡选 Broker 等。 */
     private Random random = new Random();
 
+    /** shutdown 时需清理的 KV 命名空间列表。 */
     protected final List<String> kvNamespaceToDeleteList = Arrays.asList(NamesrvUtil.NAMESPACE_ORDER_TOPIC_CONFIG);
+    /** 并发管理操作线程池（Topic 统计、位点重置等）。 */
     protected ThreadPoolExecutor threadPoolExecutor;
 
     public DefaultMQAdminExtImpl(DefaultMQAdminExt defaultMQAdminExt, long timeoutMillis) {
@@ -152,6 +165,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.timeoutMillis = timeoutMillis;
     }
 
+    /** 启动管理客户端：注册 AdminExt、初始化 MQClient 与并发线程池。 */
     @Override
     public void start() throws MQClientException {
         switch (this.serviceState) {
@@ -193,6 +207,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 关闭管理客户端并释放 MQClient 与线程池资源。 */
     @Override
     public void shutdown() {
         switch (this.serviceState) {
@@ -213,18 +228,21 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 向 Broker 容器动态添加 Broker 实例。 */
     @Override
     public void addBrokerToContainer(String brokerContainerAddr,
         String brokerConfig) throws InterruptedException, MQBrokerException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException {
         this.mqClientInstance.getMQClientAPIImpl().addBroker(brokerContainerAddr, brokerConfig, 20000);
     }
 
+    /** 从 Broker 容器移除指定 Broker。 */
     @Override
     public void removeBrokerFromContainer(String brokerContainerAddr, String clusterName, String brokerName,
         long brokerId) throws InterruptedException, MQBrokerException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException {
         this.mqClientInstance.getMQClientAPIImpl().removeBroker(brokerContainerAddr, clusterName, brokerName, brokerId, 20000);
     }
 
+    /** 统一执行 {@link AdminToolHandler} 并映射异常为 {@link AdminToolResult}。 */
     public AdminToolResult adminToolExecute(AdminToolHandler handler) {
         try {
             return handler.doExecute();
@@ -243,42 +261,49 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 更新 Broker 运行时配置项。 */
     @Override
     public void updateBrokerConfig(String brokerAddr,
         Properties properties) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, UnsupportedEncodingException, InterruptedException, MQBrokerException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().updateBrokerConfig(brokerAddr, properties, timeoutMillis);
     }
 
+    /** 拉取 Broker 当前配置 Properties。 */
     @Override
     public Properties getBrokerConfig(
         final String brokerAddr) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, UnsupportedEncodingException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getBrokerConfig(brokerAddr, timeoutMillis);
     }
 
+    /** 在指定 Broker 创建或更新 Topic 配置。 */
     @Override
     public void createAndUpdateTopicConfig(String addr,
         TopicConfig config) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().createTopic(addr, this.defaultMQAdminExt.getCreateTopicKey(), config, timeoutMillis);
     }
 
+    /** 批量创建或更新 Topic 配置列表。 */
     @Override
     public void createAndUpdateTopicConfigList(final String brokerAddr,
         final List<TopicConfig> topicConfigList) throws RemotingException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().createTopicList(brokerAddr, topicConfigList, timeoutMillis);
     }
 
+    /** 创建或更新消费组订阅配置。 */
     @Override
     public void createAndUpdateSubscriptionGroupConfig(String addr,
         SubscriptionGroupConfig config) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().createSubscriptionGroup(addr, config, timeoutMillis);
     }
 
+    /** 批量创建或更新消费组订阅配置。 */
     @Override
     public void createAndUpdateSubscriptionGroupConfigList(String brokerAddr,
         List<SubscriptionGroupConfig> configs) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().createSubscriptionGroupList(brokerAddr, configs, timeoutMillis);
     }
 
+    /** 查询指定 Broker 上某消费组的订阅配置。 */
     @Override
     public SubscriptionGroupConfig examineSubscriptionGroupConfig(String addr,
         String group) throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
@@ -286,12 +311,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return wrapper.getSubscriptionGroupTable().get(group);
     }
 
+    /** 查询指定 Broker 上某 Topic 的配置。 */
     @Override
     public TopicConfig examineTopicConfig(String addr,
         String topic) throws InterruptedException, MQBrokerException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException {
         return this.mqClientInstance.getMQClientAPIImpl().getTopicConfig(addr, topic, timeoutMillis);
     }
 
+    /** 查询 Topic 在各 Broker 上的统计（min/max offset、TPS 等）。 */
     @Override
     public TopicStatsTable examineTopicStats(
         String topic) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
@@ -306,7 +333,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
             }
         }
 
-        //Get the static stats
+        // 合并静态 Topic 逻辑队列统计
         Map<String, TopicConfigAndQueueMapping> brokerConfigMap = MQAdminUtils.examineTopicConfigFromRoute(topic, topicRouteData, defaultMQAdminExt);
         MQAdminUtils.convertPhysicalTopicStats(topic, brokerConfigMap, topicStatsTable);
 
@@ -317,6 +344,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return topicStatsTable;
     }
 
+    /** 并发查询 Topic 统计并封装为 {@link AdminToolResult}。 */
     @Override
     public AdminToolResult<TopicStatsTable> examineTopicStatsConcurrent(final String topic) {
         return adminToolExecute(new AdminToolHandler() {
@@ -331,6 +359,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                 final CountDownLatch latch = new CountDownLatch(topicRouteData.getBrokerDatas().size());
                 for (final BrokerData bd : topicRouteData.getBrokerDatas()) {
                     threadPoolExecutor.submit(new Runnable() {
+                        /** 后台线程：过期清理、压缩上传与优雅关闭。 */
                         @Override
                         public void run() {
                             try {
@@ -355,29 +384,34 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         });
     }
 
+    /** 查询 Topic 在各 Broker 上的统计（min/max offset、TPS 等）。 */
     @Override
     public TopicStatsTable examineTopicStats(String brokerAddr,
         String topic) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getTopicStatsInfo(brokerAddr, topic, timeoutMillis);
     }
 
+    /** 从 NameServer 拉取全部 Topic 列表。 */
     @Override
     public TopicList fetchAllTopicList() throws RemotingException, MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getTopicListFromNameServer(timeoutMillis);
     }
 
+    /** 按集群名拉取 Topic 列表。 */
     @Override
     public TopicList fetchTopicsByCLuster(
         String clusterName) throws RemotingException, MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getTopicsByCluster(clusterName, timeoutMillis);
     }
 
+    /** 拉取 Broker 运行时 KV 指标。 */
     @Override
     public KVTable fetchBrokerRuntimeStats(
         final String brokerAddr) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getBrokerRuntimeInfo(brokerAddr, timeoutMillis);
     }
 
+    /** 查询消费组消费进度与 TPS（可指定 Topic/集群/Broker）。 */
     @Override
     public ConsumeStats examineConsumeStats(
         String consumerGroup,
@@ -385,12 +419,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return examineConsumeStats(null, consumerGroup, topic);
     }
 
+    /** 查询消费组消费进度与 TPS（可指定 Topic/集群/Broker）。 */
     @Override
     public ConsumeStats examineConsumeStats(
         String consumerGroup) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
         return examineConsumeStats(null, consumerGroup, null);
     }
 
+    /** 查询消费组消费进度与 TPS（可指定 Topic/集群/Broker）。 */
     @Override
     public ConsumeStats examineConsumeStats(String clusterName, String consumerGroup,
         String topic) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
@@ -402,7 +438,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
             routeTopics.add(KeyBuilder.buildPopRetryTopic(topic, consumerGroup));
         }
 
-        // Use clusterName topic to get topic route for lmq or rmq_sys_wheel_timer
+        // LMQ/定时 Topic 用 clusterName 作为路由键查询
         if (!StringUtils.isEmpty(topic) && (MixAll.isLmq(topic) || topic.equals(TopicValidator.SYSTEM_TOPIC_PREFIX + "wheel_timer")) && !StringUtils.isEmpty(clusterName)) {
             routeTopics.add(clusterName);
         }
@@ -442,8 +478,8 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 
             staticResult = new ConsumeStats();
             staticResult.setConsumeTps(result.getConsumeTps());
-            // for topic, we put the physical stats, how about group?
-            // staticResult.getOffsetTable().putAll(result.getOffsetTable());
+            // Topic 维度保留物理统计；消费组维度另行转换
+            // 静态 Topic 需单独转换逻辑 offset 表
 
             for (String currentTopic : topics) {
                 TopicRouteData currentRoute = this.examineTopicRouteInfo(currentTopic);
@@ -483,12 +519,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return staticResult;
     }
 
+    /** 查询消费组消费进度与 TPS（可指定 Topic/集群/Broker）。 */
     @Override
     public ConsumeStats examineConsumeStats(String brokerAddr, String consumerGroup, String topicName,
         long timeoutMillis) throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getConsumeStats(brokerAddr, consumerGroup, topicName, timeoutMillis);
     }
 
+    /** 并发汇总消费组消费统计。 */
     @Override
     public AdminToolResult<ConsumeStats> examineConsumeStatsConcurrent(final String consumerGroup, final String topic) {
 
@@ -521,6 +559,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                 final Map<String, Double> consumerTpsMap = new ConcurrentHashMap<>(topicRouteData.getBrokerDatas().size());
                 for (final BrokerData bd : topicRouteData.getBrokerDatas()) {
                     threadPoolExecutor.submit(new Runnable() {
+                        /** 后台线程：过期清理、压缩上传与优雅关闭。 */
                         @Override
                         public void run() {
                             try {
@@ -563,17 +602,20 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         });
     }
 
+    /** 从 NameServer 获取集群 Broker 拓扑信息。 */
     @Override
     public ClusterInfo examineBrokerClusterInfo() throws InterruptedException, MQBrokerException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException {
         return this.mqClientInstance.getMQClientAPIImpl().getBrokerClusterInfo(timeoutMillis);
     }
 
+    /** 查询 Topic 路由（Broker 与队列分布）。 */
     @Override
     public TopicRouteData examineTopicRouteInfo(
         String topic) throws RemotingException, MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getTopicRouteInfoFromNameServer(topic, timeoutMillis);
     }
 
+    /** 按 Topic 与 msgId 查看单条消息。 */
     @Override
     public MessageExt viewMessage(String topic,
         String msgId) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -586,6 +628,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQAdminImpl().queryMessageByUniqKey(topic, msgId);
     }
 
+    /** 按 Topic/Key 或集群条件索引查询消息。 */
     @Override
     public MessageExt queryMessage(String clusterName, String topic,
         String msgId) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -598,6 +641,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQAdminImpl().queryMessageByUniqKey(clusterName, topic, msgId);
     }
 
+    /** 查询消费组在线连接与订阅关系。 */
     @Override
     public ConsumerConnection examineConsumerConnectionInfo(
         String consumerGroup) throws InterruptedException, MQBrokerException,
@@ -622,6 +666,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 查询消费组在线连接与订阅关系。 */
     @Override
     public ConsumerConnection examineConsumerConnectionInfo(
         String consumerGroup, String brokerAddr) throws InterruptedException, MQBrokerException,
@@ -637,6 +682,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 查询指定 Topic 下生产者连接信息。 */
     @Override
     public ProducerConnection examineProducerConnectionInfo(String producerGroup,
         final String topic) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
@@ -659,29 +705,34 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 拉取 Broker 上全部生产者连接表。 */
     @Override
     public ProducerTableInfo getAllProducerInfo(
         final String brokerAddr) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getAllProducerInfo(brokerAddr, timeoutMillis);
     }
 
+    /** 返回当前配置的 NameServer 地址列表。 */
     @Override
     public List<String> getNameServerAddressList() {
         return this.mqClientInstance.getMQClientAPIImpl().getNameServerAddressList();
     }
 
+    /** 在 NameServer 上撤销 Broker 写权限。 */
     @Override
     public int wipeWritePermOfBroker(final String namesrvAddr,
         String brokerName) throws RemotingCommandException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQClientException {
         return this.mqClientInstance.getMQClientAPIImpl().wipeWritePermOfBroker(namesrvAddr, brokerName, timeoutMillis);
     }
 
+    /** 在 NameServer 上恢复 Broker 写权限。 */
     @Override
     public int addWritePermOfBroker(String namesrvAddr, String brokerName) throws RemotingCommandException,
         RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQClientException {
         return this.mqClientInstance.getMQClientAPIImpl().addWritePermOfBroker(namesrvAddr, brokerName, timeoutMillis);
     }
 
+    /** 本地写入 KV 配置（不经过 Broker）。 */
     @Override
     public void putKVConfig(String namespace, String key, String value) {
     }
@@ -692,12 +743,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQClientAPIImpl().getKVConfigValue(namespace, key, timeoutMillis);
     }
 
+    /** 按命名空间拉取 KV 配置表。 */
     @Override
     public KVTable getKVListByNamespace(
         String namespace) throws RemotingException, MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getKVListByNamespace(namespace, timeoutMillis);
     }
 
+    /** 从集群 Broker 与 NameServer 删除 Topic。 */
     @Override
     public void deleteTopic(String topicName,
         String clusterName) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -711,6 +764,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 从指定 Broker 集合删除 Topic。 */
     @Override
     public void deleteTopicInBroker(Set<String> addrs,
         String topic) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -719,6 +773,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 并发从多个 Broker 删除 Topic。 */
     @Override
     public AdminToolResult<BrokerOperatorResult> deleteTopicInBrokerConcurrent(final Set<String> addrs,
         final String topic) {
@@ -727,6 +782,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         final CountDownLatch latch = new CountDownLatch(addrs.size());
         for (final String addr : addrs) {
             threadPoolExecutor.submit(new Runnable() {
+                /** 后台线程：过期清理、压缩上传与优雅关闭。 */
                 @Override
                 public void run() {
                     try {
@@ -752,6 +808,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return AdminToolResult.success(result);
     }
 
+    /** 从 NameServer 删除 Topic 路由元数据。 */
     @Override
     public void deleteTopicInNameServer(Set<String> addrs,
         String topic) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -764,30 +821,35 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 删除 Broker 上指定消费组配置。 */
     @Override
     public void deleteSubscriptionGroup(String addr,
         String groupName) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().deleteSubscriptionGroup(addr, groupName, false, timeoutMillis);
     }
 
+    /** 删除 Broker 上指定消费组配置。 */
     @Override
     public void deleteSubscriptionGroup(String addr, String groupName,
         boolean removeOffset) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().deleteSubscriptionGroup(addr, groupName, removeOffset, timeoutMillis);
     }
 
+    /** 在 Broker/NameServer 创建或更新 KV 配置。 */
     @Override
     public void createAndUpdateKvConfig(String namespace, String key,
         String value) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().putKVConfigValue(namespace, key, value, timeoutMillis);
     }
 
+    /** 删除 KV 配置项。 */
     @Override
     public void deleteKvConfig(String namespace,
         String key) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().deleteKVConfigValue(namespace, key, timeoutMillis);
     }
 
+    /** 按时间戳重置消费位点（旧版 API，返回 RollbackStats）。 */
     public List<RollbackStats> resetOffsetByTimestampOld(String clusterName, String consumerGroup, String topic,
         long timestamp,
         boolean force) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -812,12 +874,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return rollbackStatsList;
     }
 
+    /** 按时间戳重置消费位点（旧版 API，返回 RollbackStats）。 */
     @Override
     public List<RollbackStats> resetOffsetByTimestampOld(String consumerGroup, String topic, long timestamp,
         boolean force) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         return resetOffsetByTimestampOld(null, consumerGroup, topic, timestamp, force);
     }
 
+    /** 按时间戳重置消费位点（旧版 API，返回 RollbackStats）。 */
     private List<RollbackStats> resetOffsetByTimestampOld(String brokerAddr, QueueData queueData, String consumerGroup,
         String topic, long timestamp,
         boolean force) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -850,12 +914,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return rollbackStatsList;
     }
 
+    /** 按时间戳重置消费位点到各队列。 */
     @Override
     public Map<MessageQueue, Long> resetOffsetByTimestamp(String topic, String group, long timestamp,
         boolean isForce) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         return resetOffsetByTimestamp(null, topic, group, timestamp, isForce, false);
     }
 
+    /** 新版按时间戳重置消费位点。 */
     @Override
     public void resetOffsetNew(String consumerGroup, String topic,
         long timestamp) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -870,6 +936,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 并发向各 Broker 执行新版位点重置。 */
     @Override
     public AdminToolResult<BrokerOperatorResult> resetOffsetNewConcurrent(final String group, final String topic,
         final long timestamp) {
@@ -890,6 +957,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                 final CountDownLatch latch = new CountDownLatch(topicRouteData.getBrokerDatas().size());
                 for (final BrokerData bd : topicRouteData.getBrokerDatas()) {
                     threadPoolExecutor.submit(new Runnable() {
+                        /** 后台线程：过期清理、压缩上传与优雅关闭。 */
                         @Override
                         public void run() {
                             String addr = bd.selectBrokerAddr();
@@ -940,6 +1008,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         });
     }
 
+    /** 按时间戳重置消费位点到各队列。 */
     public Map<MessageQueue, Long> resetOffsetByTimestamp(String clusterName, String topic, String group,
         long timestamp, boolean isForce,
         boolean isC) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -966,6 +1035,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return allOffsetTable;
     }
 
+    /** 向 Broker 发送单队列位点重置请求。 */
     private RollbackStats resetOffsetConsumeOffset(String brokerAddr, String consumeGroup, MessageQueue queue,
         OffsetWrapper offsetWrapper, long timestamp,
         boolean force) throws RemotingException, InterruptedException, MQBrokerException {
@@ -997,6 +1067,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return rollbackStats;
     }
 
+    /** 查询消费组各客户端队列消费状态。 */
     @Override
     public Map<String, Map<MessageQueue, Long>> getConsumeStatus(String topic, String group,
         String clientAddr) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -1011,6 +1082,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return Collections.EMPTY_MAP;
     }
 
+    /** 创建或更新顺序消息全局配置。 */
     @Override
     public void createOrUpdateOrderConf(String key, String value,
         boolean isCluster) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -1046,6 +1118,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 查询订阅指定 Topic 的消费组列表。 */
     @Override
     public GroupList queryTopicConsumeByWho(
         String topic) throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
@@ -1060,6 +1133,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return null;
     }
 
+    /** 查询消费组对某 Topic 的订阅表达式。 */
     @Override
     public SubscriptionData querySubscription(String group,
         String topic) throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
@@ -1074,6 +1148,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return null;
     }
 
+    /** 查询某消费组订阅的全部 Topic。 */
     @Override
     public TopicList queryTopicsByConsumer(
         String group) throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
@@ -1093,6 +1168,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 并发查询消费组订阅 Topic 列表。 */
     @Override
     public AdminToolResult<TopicList> queryTopicsByConsumerConcurrent(final String group) {
         return adminToolExecute(new AdminToolHandler() {
@@ -1108,6 +1184,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                 final CountDownLatch latch = new CountDownLatch(topicRouteData.getBrokerDatas().size());
                 for (final BrokerData bd : topicRouteData.getBrokerDatas()) {
                     threadPoolExecutor.submit(new Runnable() {
+                        /** 后台线程：过期清理、压缩上传与优雅关闭。 */
                         @Override
                         public void run() {
                             try {
@@ -1131,6 +1208,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         });
     }
 
+    /** 查询消费组在各队列上的消费时间跨度。 */
     @Override
     public List<QueueTimeSpan> queryConsumeTimeSpan(final String topic,
         final String group) throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
@@ -1145,6 +1223,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return spanSet;
     }
 
+    /** 并发查询消费时间跨度。 */
     @Override
     public AdminToolResult<List<QueueTimeSpan>> queryConsumeTimeSpanConcurrent(final String topic, final String group) {
         return adminToolExecute(new AdminToolHandler() {
@@ -1159,6 +1238,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                 final CountDownLatch latch = new CountDownLatch(topicRouteData.getBrokerDatas().size());
                 for (final BrokerData bd : topicRouteData.getBrokerDatas()) {
                     threadPoolExecutor.submit(new Runnable() {
+                        /** 后台线程：过期清理、压缩上传与优雅关闭。 */
                         @Override
                         public void run() {
                             try {
@@ -1181,6 +1261,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         });
     }
 
+    /** 清理集群内过期消费进度。 */
     @Override
     public boolean cleanExpiredConsumerQueue(
         String cluster) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
@@ -1201,6 +1282,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 遍历集群全部 Broker 清理过期消费进度。 */
     public boolean cleanExpiredConsumerQueueByCluster(ClusterInfo clusterInfo,
         String cluster) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
         boolean result = false;
@@ -1211,6 +1293,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 清理指定 Broker 上过期消费进度。 */
     @Override
     public boolean cleanExpiredConsumerQueueByAddr(
         String addr) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
@@ -1219,6 +1302,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 触发集群删除过期 CommitLog。 */
     @Override
     public boolean deleteExpiredCommitLog(
         String cluster) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
@@ -1239,6 +1323,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 遍历集群触发 CommitLog 过期删除。 */
     public boolean deleteExpiredCommitLogByCluster(ClusterInfo clusterInfo,
         String cluster) throws RemotingConnectException,
         RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
@@ -1250,6 +1335,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 触发指定 Broker 删除过期 CommitLog。 */
     @Override
     public boolean deleteExpiredCommitLogByAddr(
         String addr) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
@@ -1258,6 +1344,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 清理集群未使用 Topic。 */
     @Override
     public boolean cleanUnusedTopic(
         String cluster) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
@@ -1278,6 +1365,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 遍历集群清理未使用 Topic。 */
     public boolean cleanUnusedTopicByCluster(ClusterInfo clusterInfo,
         String cluster) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
         boolean result = false;
@@ -1288,6 +1376,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 清理指定 Broker 未使用 Topic。 */
     @Override
     public boolean cleanUnusedTopicByAddr(
         String addr) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
@@ -1296,12 +1385,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 拉取消费端运行态（订阅、ProcessQueue、可选 jstack/metrics）。 */
     @Override
     public ConsumerRunningInfo getConsumerRunningInfo(String consumerGroup, String clientId,
         boolean jstack) throws RemotingException, MQClientException, InterruptedException {
         return this.getConsumerRunningInfo(consumerGroup, clientId, jstack, false);
     }
 
+    /** 拉取消费端运行态（订阅、ProcessQueue、可选 jstack/metrics）。 */
     @Override
     public ConsumerRunningInfo getConsumerRunningInfo(String consumerGroup, String clientId, boolean jstack,
         boolean metrics) throws RemotingException, MQClientException, InterruptedException {
@@ -1319,6 +1410,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return null;
     }
 
+    /** 向指定消费端直接投递并消费一条消息（运维调试）。 */
     @Override
     public ConsumeMessageDirectlyResult consumeMessageDirectly(final String consumerGroup, final String clientId,
         final String topic,
@@ -1332,6 +1424,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 向指定消费端直接投递并消费一条消息（运维调试）。 */
     @Override
     public ConsumeMessageDirectlyResult consumeMessageDirectly(final String clusterName, final String consumerGroup,
         final String clientId,
@@ -1346,6 +1439,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 查询消息在各消费组的投递/消费轨迹。 */
     @Override
     public List<MessageTrack> messageTrackDetail(
         MessageExt msg) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
@@ -1433,6 +1527,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 并发查询消息轨迹详情。 */
     @Override
     public List<MessageTrack> messageTrackDetailConcurrent(
         final MessageExt msg) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
@@ -1445,6 +1540,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         for (final String group : groupList.getGroupList()) {
 
             threadPoolExecutor.submit(new Runnable() {
+                /** 后台线程：过期清理、压缩上传与优雅关闭。 */
                 @Override
                 public void run() {
                     MessageTrack mt = new MessageTrack();
@@ -1530,6 +1626,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return result;
     }
 
+    /** 判断消息是否已被指定消费组消费（同步）。 */
     public boolean consumed(final MessageExt msg,
         final String group) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
 
@@ -1557,6 +1654,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return false;
     }
 
+    /** 并发判断消息消费状态。 */
     public boolean consumedConcurrent(final MessageExt msg,
         final String group) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
 
@@ -1588,6 +1686,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return false;
     }
 
+    /** 将源消费组位点克隆到目标消费组。 */
     @Override
     public void cloneGroupOffset(String srcGroup, String destGroup, String topic,
         boolean isOffline) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
@@ -1602,24 +1701,28 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 查看 Broker 指定统计项明细。 */
     @Override
     public BrokerStatsData viewBrokerStatsData(String brokerAddr, String statsName,
         String statsKey) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().viewBrokerStatsData(brokerAddr, statsName, statsKey, timeoutMillis);
     }
 
+    /** 返回 Topic 所在集群名集合。 */
     @Override
     public Set<String> getClusterList(
         String topic) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getClusterList(topic, timeoutMillis);
     }
 
+    /** 拉取 Broker 上全部消费组统计。 */
     @Override
     public ConsumeStatsList fetchConsumeStatsInBroker(final String brokerAddr, boolean isOrder,
         long timeoutMillis) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().fetchConsumeStatsInBroker(brokerAddr, isOrder, timeoutMillis);
     }
 
+    /** 返回 Topic 关联的集群列表。 */
     @Override
     public Set<String> getTopicClusterList(
         final String topic) throws InterruptedException, MQBrokerException, MQClientException, RemotingException {
@@ -1638,6 +1741,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return clusterSet;
     }
 
+    /** 拉取 Broker 全部订阅组配置。 */
     @Override
     public SubscriptionGroupWrapper getAllSubscriptionGroup(final String brokerAddr, long timeoutMillis)
         throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException,
@@ -1645,6 +1749,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQClientAPIImpl().getAllSubscriptionGroup(brokerAddr, timeoutMillis);
     }
 
+    /** 拉取 Broker 用户订阅组配置（不含系统组）。 */
     @Override
     public SubscriptionGroupWrapper getUserSubscriptionGroup(final String brokerAddr, long timeoutMillis)
         throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException,
@@ -1662,6 +1767,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return subscriptionGroupWrapper;
     }
 
+    /** 拉取 Broker 全部 Topic 配置。 */
     @Override
     public TopicConfigSerializeWrapper getAllTopicConfig(final String brokerAddr, long timeoutMillis)
         throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException,
@@ -1669,6 +1775,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQClientAPIImpl().getAllTopicConfig(brokerAddr, timeoutMillis);
     }
 
+    /** 拉取 Broker 用户 Topic 配置。 */
     @Override
     public TopicConfigSerializeWrapper getUserTopicConfig(final String brokerAddr, final boolean specialTopic,
         long timeoutMillis) throws InterruptedException, RemotingException, MQBrokerException, MQClientException {
@@ -1690,18 +1797,21 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return topicConfigSerializeWrapper;
     }
 
+    /** 创建 Topic（指定队列数与属性）。 */
     @Override
     public void createTopic(String key, String newTopic, int queueNum,
         Map<String, String> attributes) throws MQClientException {
         createTopic(key, newTopic, queueNum, 0, attributes);
     }
 
+    /** 创建 Topic（指定队列数与属性）。 */
     @Override
     public void createTopic(String key, String newTopic, int queueNum, int topicSysFlag,
         Map<String, String> attributes) throws MQClientException {
         this.mqClientInstance.getMQAdminImpl().createTopic(key, newTopic, queueNum, topicSysFlag, attributes);
     }
 
+    /** 创建静态 Topic 并写入队列映射。 */
     @Override
     public void createStaticTopic(final String addr, final String defaultTopic, final TopicConfig topicConfig,
         final TopicQueueMappingDetail mappingDetail,
@@ -1709,30 +1819,36 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().createStaticTopic(addr, defaultTopic, topicConfig, mappingDetail, force, timeoutMillis);
     }
 
+    /** 按时间戳在队列中查找 offset。 */
     @Override
     public long searchOffset(MessageQueue mq, long timestamp) throws MQClientException {
         return this.mqClientInstance.getMQAdminImpl().searchOffset(mq, timestamp);
     }
 
+    /** 按时间戳在队列中查找 offset。 */
     public long searchOffset(MessageQueue mq, long timestamp, BoundaryType boundaryType) throws MQClientException {
         return this.mqClientInstance.getMQAdminImpl().searchOffset(mq, timestamp, boundaryType);
     }
 
+    /** 返回队列最大逻辑 offset。 */
     @Override
     public long maxOffset(MessageQueue mq) throws MQClientException {
         return this.mqClientInstance.getMQAdminImpl().maxOffset(mq);
     }
 
+    /** 返回队列最小逻辑 offset。 */
     @Override
     public long minOffset(MessageQueue mq) throws MQClientException {
         return this.mqClientInstance.getMQAdminImpl().minOffset(mq);
     }
 
+    /** 返回队列最早消息存储时间。 */
     @Override
     public long earliestMsgStoreTime(MessageQueue mq) throws MQClientException {
         return this.mqClientInstance.getMQAdminImpl().earliestMsgStoreTime(mq);
     }
 
+    /** 按 Topic/Key 或集群条件索引查询消息。 */
     @Override
     public QueryResult queryMessage(String topic, String key, int maxNum, long begin,
         long end) throws MQClientException, InterruptedException {
@@ -1740,14 +1856,17 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQAdminImpl().queryMessage(topic, key, maxNum, begin, end);
     }
 
+    /** 按 Topic/Key 或集群条件索引查询消息。 */
     public QueryResult queryMessage(String clusterName, String topic, String key, int maxNum, long begin,
         long end) throws MQClientException, InterruptedException, RemotingException {
         return this.mqClientInstance.getMQAdminImpl().queryMessage(clusterName, topic, key, maxNum, begin, end, false, MessageConst.INDEX_KEY_TYPE, null);
     }
 
+    /** 按 Topic/Key 或集群条件索引查询消息。 */
     public QueryResult queryMessage(String clusterName, String topic, String key, int maxNum, long begin, long end, String keyType, String lastKey) throws MQClientException, InterruptedException, RemotingException {
         return this.mqClientInstance.getMQAdminImpl().queryMessage(clusterName, topic, key, maxNum, begin, end, false, keyType, lastKey);
     }
+    /** 更新消费组在指定队列上的 commit offset。 */
     @Override
     public void updateConsumeOffset(String brokerAddr, String consumeGroup, MessageQueue mq,
         long offset) throws RemotingException, InterruptedException, MQBrokerException {
@@ -1760,18 +1879,21 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().updateConsumerOffset(brokerAddr, requestHeader, timeoutMillis);
     }
 
+    /** 更新 NameServer 配置（可指定 NS 列表）。 */
     @Override
     public void updateNameServerConfig(final Properties properties,
         final List<String> nameServers) throws InterruptedException, RemotingConnectException, UnsupportedEncodingException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, MQBrokerException {
         this.mqClientInstance.getMQClientAPIImpl().updateNameServerConfig(properties, nameServers, timeoutMillis);
     }
 
+    /** 拉取 NameServer 配置。 */
     @Override
     public Map<String, Properties> getNameServerConfig(
         final List<String> nameServers) throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException, MQClientException, UnsupportedEncodingException {
         return this.mqClientInstance.getMQClientAPIImpl().getNameServerConfig(nameServers, timeoutMillis);
     }
 
+    /** 分页查询 ConsumeQueue 条目。 */
     @Override
     public QueryConsumeQueueResponseBody queryConsumeQueue(String brokerAddr, String topic, int queueId, long index,
         int count,
@@ -1779,12 +1901,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQClientAPIImpl().queryConsumeQueue(brokerAddr, topic, queueId, index, count, consumerGroup, timeoutMillis);
     }
 
+    /** 检查 RocksDB ConsumeQueue 写入进度。 */
     @Override
     public CheckRocksdbCqWriteResult checkRocksdbCqWriteProgress(String brokerAddr, String topic, long checkStoreTime)
         throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException, MQClientException {
         return this.mqClientInstance.getMQClientAPIImpl().checkRocksdbCqWriteProgress(brokerAddr, topic, checkStoreTime, timeoutMillis);
     }
 
+    /** 导出 Broker RocksDB 配置为 JSON。 */
     @Override
     public void exportRocksDBConfigToJson(String brokerAddr,
         List<ExportRocksDBConfigToJsonRequestHeader.ConfigType> configType)
@@ -1792,6 +1916,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().exportRocksDBConfigToJson(brokerAddr, configType, timeoutMillis);
     }
 
+    /** 恢复半消息事务检查（事务消息运维）。 */
     @Override
     public boolean resumeCheckHalfMessage(final String topic,
         final String msgId) throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
@@ -1804,6 +1929,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 设置 Topic 消费组的 POP/Pull 请求模式。 */
     @Override
     public void setMessageRequestMode(final String brokerAddr, final String topic, final String consumerGroup,
         final MessageRequestMode mode, final int popShareQueueNum,
@@ -1812,17 +1938,20 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     }
 
     @Deprecated
+    /** 按时间戳在队列中查找 offset。 */
     @Override
     public long searchOffset(final String brokerAddr, final String topicName, final int queueId, final long timestamp,
         final long timeoutMillis) throws RemotingException, MQBrokerException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().searchOffset(brokerAddr, topicName, queueId, timestamp, timeoutMillis);
     }
 
+    /** 按 UniqKey 查询消息。 */
     public QueryResult queryMessageByUniqKey(String clusterName, String topic, String key, int maxNum, long begin,
         long end) throws MQClientException, InterruptedException {
         return this.mqClientInstance.getMQAdminImpl().queryMessageByUniqKey(clusterName, topic, key, maxNum, begin, end);
     }
 
+    /** 重置指定队列的消费位点。 */
     @Override
     public void resetOffsetByQueueId(final String brokerAddr, final String consumeGroup, final String topicName,
         final int queueId, final long resetOffset) throws RemotingException, InterruptedException, MQBrokerException {
@@ -1846,48 +1975,56 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 按时间戳重置消费位点到各队列。 */
     @Override
     public Map<MessageQueue, Long> resetOffsetByTimestamp(String clusterName, String topic, String group,
         long timestamp, boolean isForce) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         return resetOffsetByTimestamp(clusterName, topic, group, timestamp, isForce, false);
     }
 
+    /** 查询 Broker 主从复制 HA 状态。 */
     @Override
     public HARuntimeInfo getBrokerHAStatus(
         String brokerAddr) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getBrokerHAStatus(brokerAddr, timeoutMillis);
     }
 
+    /** 从 Controller 查询副本 InSync 状态。 */
     @Override
     public BrokerReplicasInfo getInSyncStateData(String controllerAddress,
         List<String> brokers) throws RemotingException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getInSyncStateData(controllerAddress, brokers);
     }
 
+    /** 拉取 Broker Epoch 缓存（Controller 协议）。 */
     @Override
     public EpochEntryCache getBrokerEpochCache(
         String brokerAddr) throws RemotingException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getBrokerEpochCache(brokerAddr);
     }
 
+    /** 获取 Controller 集群元数据。 */
     @Override
     public GetMetaDataResponseHeader getControllerMetaData(
         String controllerAddr) throws RemotingException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().getControllerMetaData(controllerAddr);
     }
 
+    /** 在 Slave 上重置 Master flush offset。 */
     @Override
     public void resetMasterFlushOffset(String brokerAddr,
         long masterFlushOffset) throws InterruptedException, MQBrokerException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException {
         this.mqClientInstance.getMQClientAPIImpl().resetMasterFlushOffset(brokerAddr, masterFlushOffset);
     }
 
+    /** 手动触发 Controller 选举 Broker Master。 */
     @Override
     public Pair<ElectMasterResponseHeader, BrokerMemberGroup> electMaster(String controllerAddr, String clusterName,
         String brokerName, Long brokerId) throws RemotingException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().electMaster(controllerAddr, clusterName, brokerName, brokerId);
     }
 
+    /** 更新并返回消费组 Topic 读禁止状态。 */
     @Override
     public GroupForbidden updateAndGetGroupReadForbidden(String brokerAddr, String groupName, String topicName,
         Boolean readable) throws RemotingException, InterruptedException, MQBrokerException {
@@ -1898,6 +2035,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQClientAPIImpl().updateAndGetGroupForbidden(brokerAddr, requestHeader, timeoutMillis);
     }
 
+    /** 从 NameServer 删除 Topic 路由元数据。 */
     @Override
     public void deleteTopicInNameServer(Set<String> addrs, String clusterName,
         String topic) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -1910,6 +2048,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         }
     }
 
+    /** 拉取 Controller 配置。 */
     @Override
     public Map<String, Properties> getControllerConfig(
         List<String> controllerServers) throws InterruptedException, RemotingTimeoutException,
@@ -1918,6 +2057,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQClientAPIImpl().getControllerConfig(controllerServers, timeoutMillis);
     }
 
+    /** 更新 Controller 配置。 */
     @Override
     public void updateControllerConfig(Properties properties,
         List<String> controllers) throws InterruptedException, RemotingConnectException, UnsupportedEncodingException,
@@ -1925,6 +2065,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().updateControllerConfig(properties, controllers, timeoutMillis);
     }
 
+    /** 清理 Controller 中 Broker 元数据。 */
     @Override
     public void cleanControllerBrokerData(String controllerAddr, String clusterName, String brokerName,
         String brokerIdSetToClean, boolean isCleanLivingBroker)
@@ -1932,10 +2073,12 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().cleanControllerBrokerData(controllerAddr, clusterName, brokerName, brokerIdSetToClean, isCleanLivingBroker);
     }
 
+    /** MQ 管理操作：getMqClientInstance。 */
     public MQClientInstance getMqClientInstance() {
         return mqClientInstance;
     }
 
+    /** 更新冷读流控消费组配置。 */
     @Override
     public void updateColdDataFlowCtrGroupConfig(String brokerAddr, Properties properties)
         throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
@@ -1943,6 +2086,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().updateColdDataFlowCtrGroupConfig(brokerAddr, properties, timeoutMillis);
     }
 
+    /** 移除冷读流控消费组配置。 */
     @Override
     public void removeColdDataFlowCtrGroupConfig(String brokerAddr, String consumerGroup)
         throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
@@ -1950,6 +2094,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().removeColdDataFlowCtrGroupConfig(brokerAddr, consumerGroup, timeoutMillis);
     }
 
+    /** 查询冷读流控配置 JSON。 */
     @Override
     public String getColdDataFlowCtrInfo(String brokerAddr)
         throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
@@ -1957,18 +2102,21 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         return this.mqClientInstance.getMQClientAPIImpl().getColdDataFlowCtrInfo(brokerAddr, timeoutMillis);
     }
 
+    /** 设置 CommitLog 预读模式。 */
     @Override
     public String setCommitLogReadAheadMode(String brokerAddr, String mode)
         throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
         return this.mqClientInstance.getMQClientAPIImpl().setCommitLogReadAheadMode(brokerAddr, mode, timeoutMillis);
     }
 
+    /** 在 Broker 创建用户账号。 */
     @Override
     public void createUser(String brokerAddr,
         UserInfo userInfo) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         this.mqClientInstance.getMQClientAPIImpl().createUser(brokerAddr, userInfo, timeoutMillis);
     }
 
+    /** 在 Broker 创建用户账号。 */
     @Override
     public void createUser(String brokerAddr, String username, String password,
         String userType) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
@@ -1976,6 +2124,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.createUser(brokerAddr, userInfo);
     }
 
+    /** 更新 Broker 用户账号。 */
     @Override
     public void updateUser(String brokerAddr, String username,
         String password, String userType,
@@ -1984,30 +2133,35 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.mqClientInstance.getMQClientAPIImpl().updateUser(brokerAddr, userInfo, timeoutMillis);
     }
 
+    /** 更新 Broker 用户账号。 */
     @Override
     public void updateUser(String brokerAddr,
         UserInfo userInfo) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         this.mqClientInstance.getMQClientAPIImpl().updateUser(brokerAddr, userInfo, timeoutMillis);
     }
 
+    /** 删除 Broker 用户。 */
     @Override
     public void deleteUser(String brokerAddr,
         String username) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         this.mqClientInstance.getMQClientAPIImpl().deleteUser(brokerAddr, username, timeoutMillis);
     }
 
+    /** 查询 Broker 用户信息。 */
     @Override
     public UserInfo getUser(String brokerAddr,
         String username) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getUser(brokerAddr, username, timeoutMillis);
     }
 
+    /** 列出 Broker 用户列表。 */
     @Override
     public List<UserInfo> listUser(String brokerAddr,
         String filter) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().listUser(brokerAddr, filter, timeoutMillis);
     }
 
+    /** 在 Broker 创建 ACL 规则。 */
     @Override
     public void createAcl(String brokerAddr, String subject, List<String> resources, List<String> actions,
         List<String> sourceIps,
@@ -2016,12 +2170,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.createAcl(brokerAddr, aclInfo);
     }
 
+    /** 在 Broker 创建 ACL 规则。 */
     @Override
     public void createAcl(String brokerAddr,
         AclInfo aclInfo) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         this.mqClientInstance.getMQClientAPIImpl().createAcl(brokerAddr, aclInfo, timeoutMillis);
     }
 
+    /** 更新 Broker ACL 规则。 */
     @Override
     public void updateAcl(String brokerAddr, String subject, List<String> resources, List<String> actions,
         List<String> sourceIps,
@@ -2030,54 +2186,63 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
         this.updateAcl(brokerAddr, aclInfo);
     }
 
+    /** 更新 Broker ACL 规则。 */
     @Override
     public void updateAcl(String brokerAddr,
         AclInfo aclInfo) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         this.mqClientInstance.getMQClientAPIImpl().updateAcl(brokerAddr, aclInfo, timeoutMillis);
     }
 
+    /** 删除 Broker ACL 规则。 */
     @Override
     public void deleteAcl(String brokerAddr, String subject,
         String resource) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         this.mqClientInstance.getMQClientAPIImpl().deleteAcl(brokerAddr, subject, resource, timeoutMillis);
     }
 
+    /** 查询 Broker ACL 规则。 */
     @Override
     public AclInfo getAcl(String brokerAddr,
         String subject) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getAcl(brokerAddr, subject, timeoutMillis);
     }
 
+    /** 列出 Broker ACL 规则。 */
     @Override
     public List<AclInfo> listAcl(String brokerAddr, String subjectFilter,
         String resourceFilter) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().listAcl(brokerAddr, subjectFilter, resourceFilter, timeoutMillis);
     }
 
+    /** 导出 Broker POP 消费记录。 */
     @Override
     public void exportPopRecords(String brokerAddr, long timeout) throws RemotingConnectException,
         RemotingSendRequestException, RemotingTimeoutException, MQBrokerException, InterruptedException {
         this.mqClientInstance.getMQClientAPIImpl().exportPopRecord(brokerAddr, timeout);
     }
 
+    /** 切换 Broker 定时消息引擎。 */
     @Override
     public void switchTimerEngine(String brokerAddr, String desTimerEngine) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, UnsupportedEncodingException, InterruptedException, MQBrokerException {
         this.mqClientInstance.getMQClientAPIImpl().switchTimerEngine(brokerAddr, desTimerEngine, timeoutMillis);
     }
 
 
+    /** 查询 Broker Lite 模式信息。 */
     @Override
     public GetBrokerLiteInfoResponseBody getBrokerLiteInfo(String brokerAddr)
         throws RemotingException, MQBrokerException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().getBrokerLiteInfo(brokerAddr, timeoutMillis);
     }
 
+    /** 查询 Lite 父 Topic 信息。 */
     @Override
     public GetParentTopicInfoResponseBody getParentTopicInfo(String brokerAddr, String topic)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         return this.mqClientInstance.getMQClientAPIImpl().getParentTopicInfo(brokerAddr, topic, timeoutMillis);
     }
 
+    /** 查询 Lite 子 Topic 信息。 */
     @Override
     public GetLiteTopicInfoResponseBody getLiteTopicInfo(String brokerAddr, String parentTopic, String liteTopic)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
@@ -2085,6 +2250,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
             timeoutMillis);
     }
 
+    /** 查询 Lite 消费端信息。 */
     @Override
     public GetLiteClientInfoResponseBody getLiteClientInfo(String brokerAddr, String parentTopic, String group,
         String clientId)
@@ -2093,12 +2259,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
          timeoutMillis);
     }
 
+    /** 查询 Lite 消费组 TopK 信息。 */
     @Override
     public GetLiteGroupInfoResponseBody getLiteGroupInfo(String brokerAddr, String group, String liteTopic, int topK)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         return this.mqClientInstance.getMQClientAPIImpl().getLiteGroupInfo(brokerAddr, group, liteTopic, topK, timeoutMillis);
     }
 
+    /** 触发 Lite 消费端消息分发。 */
     @Override
     public void triggerLiteDispatch(String brokerAddr, String group, String clientId)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
