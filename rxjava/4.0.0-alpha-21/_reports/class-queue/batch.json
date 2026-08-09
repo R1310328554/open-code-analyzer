@@ -1,21 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:37:49Z",
-  "files": [
-    "src/jmh/java/io/reactivex/rxjava4/streamable/StreamableLastAsSinglePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/streamable/StreamableMapOptionalPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/streamable/StreamableMapPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/streamable/StreamableSkipPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapCompletablePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapMaybeEmptyPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapMaybePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapSinglePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapCompletablePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapMaybeEmptyPerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapMaybePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapSinglePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapCompletablePerf.java",
-    "src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapMaybeEmptyPerf.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 64,
-  "done": 899
+  "done": 913
 }

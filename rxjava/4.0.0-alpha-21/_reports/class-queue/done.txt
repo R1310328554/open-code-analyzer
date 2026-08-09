@@ -897,3 +897,17 @@ src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapCompletablePerf.java
 src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapMaybeEmptyPerf.java
 src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapMaybePerf.java
 src/jmh/java/io/reactivex/rxjava4/xmapz/ObservableSwitchMapSinglePerf.java
+src/jmh/java/io/reactivex/rxjava4/streamable/StreamableLastAsSinglePerf.java
+src/jmh/java/io/reactivex/rxjava4/streamable/StreamableMapOptionalPerf.java
+src/jmh/java/io/reactivex/rxjava4/streamable/StreamableMapPerf.java
+src/jmh/java/io/reactivex/rxjava4/streamable/StreamableSkipPerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapCompletablePerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapMaybeEmptyPerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapMaybePerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableConcatMapSinglePerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapCompletablePerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapMaybeEmptyPerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapMaybePerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableFlatMapSinglePerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapCompletablePerf.java
+src/jmh/java/io/reactivex/rxjava4/xmapz/FlowableSwitchMapMaybeEmptyPerf.java
