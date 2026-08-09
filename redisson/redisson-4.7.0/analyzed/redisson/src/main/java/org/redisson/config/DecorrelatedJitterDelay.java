@@ -20,25 +20,28 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Decorrelated jitter strategy that increases delay exponentially while introducing
- * randomness influenced by the previous backoff duration. This approach helps avoid
- * exponential growth that could lead to excessively long delays while ensuring each
- * backoff duration is decorrelated from its predecessor.
+ * 去相关抖动（Decorrelated Jitter）延迟策略。
+ * <p>
+ * 以上一次退避时长为基准引入随机性，避免指数退避过快增长，
+ * 同时使相邻两次等待时长相互独立，降低重试风暴同步风险。
  *
  * @author Nikita Koksharov
  *
  */
 public class DecorrelatedJitterDelay implements DelayStrategy {
 
+    /** 最小延迟（基准值）。 */
     private final Duration minDelay;
+    /** 最大延迟上限。 */
     private final Duration maxDelay;
+    /** 上一次计算出的延迟，用于去相关随机。 */
     private Duration previousDelay;
 
     /**
-     * Creates a decorrelated jitter delay strategy.
+     * 创建去相关抖动延迟策略。
      *
-     * @param minDelay the minimum delay duration (base delay)
-     * @param maxDelay the maximum allowable delay duration
+     * @param minDelay 最小延迟（基准延迟）
+     * @param maxDelay 允许的最大延迟
      */
     public DecorrelatedJitterDelay(Duration minDelay, Duration maxDelay) {
         Objects.requireNonNull(minDelay);
@@ -49,6 +52,7 @@ public class DecorrelatedJitterDelay implements DelayStrategy {
         this.previousDelay = Duration.ZERO;
     }
 
+    /** 基于 minDelay 与 previousDelay 计算本次等待时长，并更新 previousDelay。 */
     @Override
     public Duration calcDelay(int attempt) {
         long previousMs;

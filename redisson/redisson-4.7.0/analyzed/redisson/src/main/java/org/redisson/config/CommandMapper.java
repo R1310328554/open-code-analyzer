@@ -16,7 +16,9 @@
 package org.redisson.config;
 
 /**
- * Maps Redis command names.
+ * Redis 命令名称映射接口，用于在发送前转换命令名。
+ * <p>
+ * 典型场景：代理层命令重命名、兼容不同 Redis 变种。
  *
  * @author Nikita Koksharov
  *
@@ -24,17 +26,17 @@ package org.redisson.config;
 public interface CommandMapper {
 
     /**
-     * Applies map function to the input Redis command <code>name</code>
+     * 将原始 Redis 命令名 <code>name</code> 映射为目标命令名。
      *
-     * @param name - original command name
-     * @return mapped command name
+     * @param name 原始命令名
+     * @return 映射后的命令名
      */
     String map(String name);
 
     /**
-     * Returns input Redis command name. Used by default
+     * 返回恒等映射实现（原样返回命令名），作为默认策略。
      *
-     * @return NameMapper instance
+     * @return CommandMapper 实例
      */
     static CommandMapper direct() {
         return new DefaultCommandMapper();

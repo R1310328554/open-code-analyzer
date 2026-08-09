@@ -18,11 +18,13 @@ package org.redisson.config;
 import org.redisson.misc.RedisURI;
 
 /**
+ * {@link NatMapper} 的默认实现：Redis URI 原样返回，适用于无 NAT/代理直连场景。
  *
  * @author Nikita Koksharov
  *
  */
 public class DefaultNatMapper implements NatMapper {
+    /** 不做 NAT 地址转换。 */
     @Override
     public RedisURI map(RedisURI uri) {
         return uri;

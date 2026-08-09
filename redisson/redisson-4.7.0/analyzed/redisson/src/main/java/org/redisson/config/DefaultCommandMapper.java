@@ -16,11 +16,13 @@
 package org.redisson.config;
 
 /**
+ * {@link CommandMapper} 的默认实现：原样返回命令名，不做任何映射。
  *
  * @author Nikita Koksharov
  *
  */
 public class DefaultCommandMapper implements CommandMapper {
+    /** 恒等映射，直接返回原始命令名。 */
     @Override
     public String map(String name) {
         return name;

@@ -20,21 +20,26 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Full jitter strategy that applies complete randomization to the exponential backoff delay.
+ * 全抖动（Full Jitter）延迟策略：对指数退避结果施加完全随机化。
+ * <p>
+ * 在 [0, exponentialBackoff] 区间均匀随机，最大化去同步效果，
+ * 是 AWS 推荐的退避策略之一。
  *
  * @author Nikita Koksharov
  *
  */
 public class FullJitterDelay implements DelayStrategy {
 
+    /** 首次重试的基础延迟。 */
     private final Duration baseDelay;
+    /** 指数退避的上限。 */
     private final Duration maxDelay;
 
     /**
-     * Creates a full jitter delay strategy with exponential backoff.
+     * 创建全抖动延迟策略。
      *
-     * @param baseDelay the base delay duration for the first retry attempt
-     * @param maxDelay the maximum delay duration to cap the exponential growth
+     * @param baseDelay 第一次重试的基础延迟
+     * @param maxDelay 延迟上限
      */
     public FullJitterDelay(Duration baseDelay, Duration maxDelay) {
         Objects.requireNonNull(baseDelay);
@@ -44,6 +49,7 @@ public class FullJitterDelay implements DelayStrategy {
         this.maxDelay = maxDelay;
     }
 
+    /** 计算指数退避后在 [0, backoff] 内均匀随机。 */
     @Override
     public Duration calcDelay(int attempt) {
         long baseMs = baseDelay.toMillis();

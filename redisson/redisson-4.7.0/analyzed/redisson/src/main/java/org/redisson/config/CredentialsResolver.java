@@ -20,8 +20,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Credentials resolver interface for dynamically managing Valkey or Redis
- * authentication credentials during connection and reconnection processes.
+ * 凭据解析器接口，在连接与重连过程中动态获取 Valkey/Redis 认证凭据。
+ * <p>
+ * 适用于令牌轮换、Entra ID 等外部认证场景；参见 {@link EntraIdCredentialsResolver}。
  *
  * @author Nikita Koksharov
  *
@@ -29,17 +30,15 @@ import java.util.concurrent.CompletionStage;
 public interface CredentialsResolver {
 
     /**
-     * Asynchronously resolves Credentials object
-     * for specified Valkey or Redis node <code>address</code> .
+     * 异步解析指定 Valkey/Redis 节点 <code>address</code> 的认证凭据。
      *
-     * @param address address of Valkey or Redis node
-     * @return Credentials object
+     * @param address Valkey 或 Redis 节点地址
+     * @return 包含 {@link Credentials} 的 CompletionStage
      */
     CompletionStage<Credentials> resolve(InetSocketAddress address);
 
     /**
-     * Returns a CompletionStage that completes when the next credential renewal
-     * is needed.
+     * 返回在下次需要刷新凭据时完成的 CompletionStage。
      * <p>
      * The returned CompletionStage should complete when an external authentication
      * system changed credentials and CompletionStage instance returned
@@ -48,11 +47,12 @@ public interface CredentialsResolver {
      * For continuous monitoring, implementations should return a new CompletionStage
      * instance after each credentials update to support chaining multiple renewal events.
      *
-     * @return CompletionStage that completes when credential renewal is needed.
+     * @return 凭据续期信号；完成时表示应重新调用 {@link #resolve(InetSocketAddress)}
      *
      * @see EntraIdCredentialsResolver
      *
      */
+    /** 默认实现返回永不完成的 Future（静态凭据场景无需续期）。 */
     default CompletionStage<Void> nextRenewal() {
         return new CompletableFuture<>();
     }

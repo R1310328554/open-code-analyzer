@@ -16,17 +16,20 @@
 package org.redisson.config;
 
 /**
+ * {@link NameMapper} 的默认实现：Redisson 对象名原样映射，不做前缀/后缀变换。
  *
  * @author Nikita Koksharov
- * 
+ *
  */
 public class DefaultNameMapper implements NameMapper {
 
+    /** 写入 Redis 前不做名称变换。 */
     @Override
     public String map(String name) {
         return name;
     }
 
+    /** 从 Redis 读取后不做名称还原。 */
     @Override
     public String unmap(String name) {
         return name;

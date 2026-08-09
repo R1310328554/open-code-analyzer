@@ -18,7 +18,10 @@ package org.redisson.config;
 import java.time.Duration;
 
 /**
- * Strategy interface for calculating delay durations between retry attempts.
+ * 重试间隔计算策略接口，用于连接失败、命令重试等场景的退避控制。
+ * <p>
+ * 常见实现：{@link ConstantDelay}、{@link EqualJitterDelay}、
+ * {@link FullJitterDelay}、{@link DecorrelatedJitterDelay}。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +29,10 @@ import java.time.Duration;
 public interface DelayStrategy {
 
     /**
-     * Calculates the delay duration to wait before the next retry attempt.
+     * 计算下次重试前应等待的时长。
      *
-     * @param attempt the zero-based retry attempt number (0 = first retry)
-     * @return the duration to wait before the next retry attempt
+     * @param attempt 从 0 开始的当前重试次数（0 表示第一次重试）
+     * @return 下次重试前的等待时长
      */
     Duration calcDelay(int attempt);
 

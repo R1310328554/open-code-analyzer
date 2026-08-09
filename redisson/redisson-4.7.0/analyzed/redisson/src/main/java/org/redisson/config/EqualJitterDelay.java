@@ -20,24 +20,26 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
- * This strategy keeps half of the exponential backoff delay and adds a random component
- * for the other half. The resulting delay is between backoff/2 and backoff, providing
- * a balance between predictability and randomness.
+ * 均等抖动（Equal Jitter）延迟策略：在指数退避基础上引入适度随机性。
+ * <p>
+ * 保留退避值的一半作为稳定部分，另一半随机取值；
+ * 最终延迟介于 backoff/2 与 backoff 之间，兼顾可预测性与去同步效果。
  *
  * @author Nikita Koksharov
  *
  */
 public class EqualJitterDelay implements DelayStrategy {
 
+    /** 首次重试的基础延迟。 */
     final Duration baseDelay;
+    /** 指数退避的上限。 */
     final Duration maxDelay;
 
     /**
-     * Creates an equal jitter delay strategy with exponential backoff.
+     * 创建均等抖动延迟策略。
      *
-     * @param baseDelay the base delay duration for the first retry attempt
-     * @param maxDelay the maximum delay duration to cap the exponential growth
+     * @param baseDelay 第一次重试的基础延迟
+     * @param maxDelay 延迟上限，限制指数增长
      */
     public EqualJitterDelay(Duration baseDelay, Duration maxDelay) {
         Objects.requireNonNull(baseDelay);
@@ -47,6 +49,7 @@ public class EqualJitterDelay implements DelayStrategy {
         this.maxDelay = maxDelay;
     }
 
+    /** 按 attempt 计算指数退避，再应用均等抖动。 */
     @Override
     public Duration calcDelay(int attempt) {
         long baseMs = baseDelay.toMillis();
@@ -76,10 +79,12 @@ public class EqualJitterDelay implements DelayStrategy {
 
 
 
+    /** 返回基础延迟配置。 */
     public Duration getBaseDelay() {
         return baseDelay;
     }
 
+    /** 返回最大延迟配置。 */
     public Duration getMaxDelay() {
         return maxDelay;
     }

@@ -18,29 +18,37 @@ package org.redisson.config;
 import java.io.Serializable;
 
 /**
- * Credentials object with username and password used for Redis connection.
+ * Redis 连接认证凭据，包含用户名与密码。
+ * <p>
+ * 实现 {@link Serializable}，可在配置序列化中传递。
  *
  * @author Nikita Koksharov
  *
  */
 public class Credentials implements Serializable {
 
+    /** 认证用户名（Redis 6.0+ ACL 支持）。 */
     private String username;
 
+    /** 认证密码或令牌。 */
     private String password;
 
+    /** 无参构造函数。 */
     public Credentials() {
     }
 
+    /** 使用用户名和密码构造凭据。 */
     public Credentials(String username, String password) {
         this.username = username;
         this.password = password;
     }
 
+    /** 返回认证密码。 */
     public String getPassword() {
         return password;
     }
 
+    /** 返回认证用户名。 */
     public String getUsername() {
         return username;
     }

@@ -39,129 +39,188 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redisson configuration
+ * Redisson 客户端全局配置入口，聚合连接模式、线程池、编解码、SSL 等全部参数。
+ * <p>
+ * 支持五种部署模式（互斥）：单节点 {@link #useSingleServer()}、主从 {@link #useMasterSlaveServers()}、
+ * 哨兵 {@link #useSentinelServers()}、集群 {@link #useClusterServers()}、复制 {@link #useReplicatedServers()}。
+ * 可通过 YAML 静态加载（{@link #fromYAML}）或编程式链式配置。
  *
  * @author Nikita Koksharov
  *
  */
 public class Config {
 
+    /** 哨兵模式配置（与单节点/主从/集群/复制互斥）。 */
     private SentinelServersConfig sentinelServersConfig;
 
+    /** 主从模式配置。 */
     private MasterSlaveServersConfig masterSlaveServersConfig;
 
+    /** 单节点模式配置。 */
     private SingleServerConfig singleServerConfig;
 
+    /** 集群模式配置。 */
     private ClusterServersConfig clusterServersConfig;
 
+    /** 复制模式配置（Azure/AWS 托管 Redis 常用）。 */
     private ReplicatedServersConfig replicatedServersConfig;
 
+    /** 全局 Redis 认证密码（可被各子配置覆盖）。 */
     private String password;
 
+    /** 全局 Redis 认证用户名（Redis 6.0+）。 */
     private String username;
 
+    /** 动态凭据解析器，支持令牌轮换等场景。 */
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
+    /** RTopic/RRemoteService/RExecutorService 共享的业务线程数。 */
     private int threads = 16;
 
+    /** 所有 Redis 客户端共享的 Netty I/O 线程数。 */
     private int nettyThreads = 32;
 
+    /** 外部 Netty 执行器（可选，调用方负责关闭）。 */
     private Executor nettyExecutor;
 
+    /** Redis 值编解码器，默认 Kryo5Codec。 */
     private Codec codec;
 
+    /** 外部业务线程池（可选）。 */
     private ExecutorService executor;
 
+    /** 是否启用 Redisson Reference 特性。 */
     private boolean referenceEnabled = true;
 
+    /** Netty 传输模式（NIO/EPOLL/KQUEUE 等）。 */
     private TransportMode transportMode = TransportMode.NIO;
 
+    /** 共享 EventLoopGroup，多 Redisson 实例可复用。 */
     private EventLoopGroup eventLoopGroup;
 
+    /** 分布式锁看门狗续期超时（毫秒）。 */
     private long lockWatchdogTimeout = 30 * 1000;
 
+    /** 单次看门狗批量续期的锁数量。 */
     private int lockWatchdogBatchSize = 100;
 
+    /** 公平锁默认最大等待时间（毫秒）。 */
     private long fairLockWaitTimeout = 5 * 60000;
 
+    /** 加锁后是否校验已同步从节点数量。 */
     private boolean checkLockSyncedSlaves = true;
 
+    /** 锁/信号量等操作的从节点同步超时（毫秒）。 */
     private long slavesSyncTimeout = 1000;
 
+    /** Reliable Topic 订阅者看门狗超时（毫秒）。 */
     private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
 
+    /** Pub/Sub 是否按到达顺序处理同频道消息。 */
     private boolean keepPubSubOrder = true;
 
+    /** 是否在 Redis 端缓存 Lua 脚本以提升性能。 */
     private boolean useScriptCache = true;
 
+    /** 过期条目清理的最小间隔（秒）。 */
     private int minCleanUpDelay = 5;
 
+    /** 过期条目清理的最大间隔（秒）。 */
     private int maxCleanUpDelay = 30*60;
 
+    /** 单次清理操作删除的过期键数量。 */
     private int cleanUpKeysAmount = 100;
 
+    /** Netty Bootstrap/Channel 钩子。 */
     private NettyHook nettyHook = new DefaultNettyHook();
 
+    /** 连接建立/断开事件监听器。 */
     private ConnectionListener connectionListener;
 
+    /** 是否向 Codec 提供线程上下文 ClassLoader。 */
     private boolean useThreadClassLoader = true;
 
+    /** DNS 地址解析组工厂。 */
     private AddressResolverGroupFactory addressResolverGroupFactory = new SequentialDnsAddressResolverFactory();
 
+    /** 是否延迟到首次 Redis 调用时才建立连接。 */
     private boolean lazyInitialization;
 
+    /** Redis 协议版本（RESP2/RESP3）。 */
     private Protocol protocol = Protocol.RESP2;
 
+    /** 声明需支持的 Valkey 能力集。 */
     private Set<ValkeyCapability> valkeyCapabilities = Collections.emptySet();
 
+    /** 全局 Redisson 对象名称映射器。 */
     private NameMapper nameMapper = NameMapper.direct();
 
+    /** 全局 Redis 命令名映射器。 */
     private CommandMapper commandMapper = CommandMapper.direct();
     
+    /** SSL 证书校验模式，防止中间人攻击。 */
     private SslVerificationMode sslVerificationMode = SslVerificationMode.STRICT;
-    
+
+    /** SSL 密钥库类型。 */
     private String sslKeystoreType;
-    
+
+    /** SSL 实现提供方（JDK/OpenSSL 等）。 */
     private SslProvider sslProvider = SslProvider.JDK;
-    
+
+    /** SSL 信任库路径。 */
     private URL sslTruststore;
-    
+
+    /** SSL 信任库密码（每次建连时可热加载）。 */
     private String sslTruststorePassword;
-    
+
+    /** SSL 密钥库路径。 */
     private URL sslKeystore;
-    
+
+    /** SSL 密钥库密码。 */
     private String sslKeystorePassword;
-    
+
+    /** 允许的 SSL/TLS 协议版本列表。 */
     private String[] sslProtocols;
-    
+
+    /** 允许的 SSL 密码套件列表。 */
     private String[] sslCiphers;
-    
+
+    /** 自定义 SSL TrustManagerFactory。 */
     private TrustManagerFactory sslTrustManagerFactory;
-    
+
+    /** 自定义 SSL KeyManagerFactory。 */
     private KeyManagerFactory sslKeyManagerFactory;
-    
+
+    /** 是否启用 TCP KeepAlive。 */
     private boolean tcpKeepAlive = true;
-    
+
+    /** KeepAlive 探测失败多少次后断开连接。 */
     private int tcpKeepAliveCount;
-    
+
+    /** 连接空闲多少秒后开始发送 KeepAlive 探测。 */
     private int tcpKeepAliveIdle;
-    
+
+    /** KeepAlive 探测包发送间隔（秒）。 */
     private int tcpKeepAliveInterval;
-    
+
+    /** 未确认数据最大保留时间（毫秒，Epoll/IoUring 生效）。 */
     private int tcpUserTimeout;
-    
+
+    /** 是否启用 TCP_NODELAY（禁用 Nagle 算法）。 */
     private boolean tcpNoDelay = true;
 
+    /** 创建空配置，尚未选择连接模式。 */
     public Config() {
     }
 
+    /** 从已有配置深拷贝，包括各子模式配置与全局参数。 */
     public Config(Config oldConf) {
         setNettyHook(oldConf.getNettyHook());
         setNettyExecutor(oldConf.getNettyExecutor());
         setExecutor(oldConf.getExecutor());
 
         if (oldConf.getCodec() == null) {
-            // use it by default
+            // 未指定编解码器时使用 Kryo5 作为默认
             oldConf.setCodec(new Kryo5Codec());
         }
 
@@ -227,10 +286,10 @@ public class Config {
     }
 
     /**
-     * Netty hook applied to Netty Bootstrap and Channel objects.
+     * 设置应用于 Netty Bootstrap 与 Channel 的钩子，用于自定义初始化逻辑。
      *
-     * @param nettyHook - netty hook object
-     * @return config
+     * @param nettyHook Netty 钩子实例
+     * @return 当前配置实例
      */
     public Config setNettyHook(NettyHook nettyHook) {
         this.nettyHook = nettyHook;
@@ -238,13 +297,13 @@ public class Config {
     }
 
     /**
-     * Redis data codec. Default is Kryo5Codec codec
+     * 设置 Redis 数据编解码器，默认为 Kryo5Codec。
      *
      * @see org.redisson.client.codec.Codec
      * @see org.redisson.codec.Kryo5Codec
      * 
-     * @param codec object
-     * @return config
+     * @param codec 编解码器实例
+     * @return 当前配置实例
      */
     public Config setCodec(Codec codec) {
         this.codec = codec;
@@ -256,31 +315,31 @@ public class Config {
     }
 
     /**
-     * Config option indicate whether Redisson Reference feature is enabled.
+     * 是否启用 Redisson Reference（跨 JVM 对象引用）特性。
      * <p>
      * Default value is <code>true</code>
      * 
-     * @return <code>true</code> if Redisson Reference feature enabled
+     * @return 若 Reference 特性已启用则返回 <code>true</code>
      */
     public boolean isReferenceEnabled() {
         return referenceEnabled;
     }
 
     /**
-     * Config option for enabling Redisson Reference feature
+     * 启用或禁用 Redisson Reference 特性。
      * <p>
      * Default value is <code>true</code>
      * 
-     * @param redissonReferenceEnabled flag
+     * @param redissonReferenceEnabled 是否启用
      */
     public void setReferenceEnabled(boolean redissonReferenceEnabled) {
         this.referenceEnabled = redissonReferenceEnabled;
     }
 
     /**
-     * Init cluster servers configuration
+     * 初始化并返回集群模式配置；与其他连接模式互斥。
      *
-     * @return config
+     * @return 集群配置实例
      */
     public ClusterServersConfig useClusterServers() {
         return useClusterServers(new ClusterServersConfig());
@@ -307,10 +366,9 @@ public class Config {
     }
 
     /**
-     * Init Replicated servers configuration.
-     * Most used with Azure Redis Cache or AWS Elasticache
+     * 初始化复制模式配置，常用于 Azure Redis Cache 或 AWS ElastiCache。
      *
-     * @return ReplicatedServersConfig
+     * @return 复制模式配置实例
      */
     public ReplicatedServersConfig useReplicatedServers() {
         return useReplicatedServers(new ReplicatedServersConfig());
@@ -337,9 +395,9 @@ public class Config {
     }
 
     /**
-     * Init single server configuration.
+     * 初始化单节点模式配置。
      *
-     * @return SingleServerConfig
+     * @return 单节点配置实例
      */
     public SingleServerConfig useSingleServer() {
         return useSingleServer(new SingleServerConfig());
@@ -366,9 +424,9 @@ public class Config {
     }
 
     /**
-     * Init sentinel servers configuration.
+     * 初始化哨兵模式配置。
      *
-     * @return SentinelServersConfig
+     * @return 哨兵配置实例
      */
     public SentinelServersConfig useSentinelServers() {
         return useSentinelServers(new SentinelServersConfig());
@@ -395,9 +453,9 @@ public class Config {
     }
 
     /**
-     * Init master/slave servers configuration.
+     * 初始化主从模式配置。
      *
-     * @return MasterSlaveServersConfig
+     * @return 主从配置实例
      */
     public MasterSlaveServersConfig useMasterSlaveServers() {
         return useMasterSlaveServers(new MasterSlaveServersConfig());
@@ -423,25 +481,28 @@ public class Config {
         this.masterSlaveServersConfig = masterSlaveConnectionConfig;
     }
 
+    /** 当前是否使用集群模式。 */
     public boolean isClusterConfig() {
         return clusterServersConfig != null;
     }
 
+    /** 当前是否使用哨兵模式。 */
     public boolean isSentinelConfig() {
         return sentinelServersConfig != null;
     }
 
+    /** 当前是否使用单节点模式。 */
     public boolean isSingleConfig() {
         return singleServerConfig != null;
     }
 
     /**
-     * Password for Redis authentication. Should be null if not needed.
+     * 设置 Redis 认证密码；无需认证时传 null。
      * <p>
      * Default is <code>null</code>
      *
-     * @param password for connection
-     * @return config
+     * @param password 连接密码
+     * @return 当前配置实例
      */
     public Config setPassword(String password) {
         this.password = password;
@@ -453,14 +514,14 @@ public class Config {
     }
 
     /**
-     * Username for Redis authentication. Should be null if not needed
+     * 设置 Redis 认证用户名（Redis 6.0+ ACL）；无需时传 null。
      * <p>
      * Default is <code>null</code>
      * <p>
      * Requires Redis 6.0+
      *
-     * @param username for connection
-     * @return config
+     * @param username 连接用户名
+     * @return 当前配置实例
      */
     public Config setUsername(String username) {
         this.username = username;
@@ -476,13 +537,12 @@ public class Config {
     }
 
     /**
-     * Defines Credentials resolver which is invoked during connection for Redis server authentication.
-     * It makes possible to specify dynamically changing Redis credentials.
+     * 设置凭据解析器，在连接建立时动态获取认证信息，支持令牌轮换。
      *
      * @see EntraIdCredentialsResolver
      *
-     * @param credentialsResolver Credentials resolver object
-     * @return config
+     * @param credentialsResolver 凭据解析器实例
+     * @return 当前配置实例
      */
     public Config setCredentialsResolver(CredentialsResolver credentialsResolver) {
         this.credentialsResolver = credentialsResolver;
@@ -494,46 +554,49 @@ public class Config {
     }
 
     /**
-     * Threads amount shared across all listeners of <code>RTopic</code> object, 
-     * invocation handlers of <code>RRemoteService</code> object  
-     * and <code>RExecutorService</code> tasks.
+     * 设置 RTopic 监听器、RRemoteService 调用处理器与 RExecutorService 任务共享的业务线程数。
      * <p>
      * Default is <code>16</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
-     * @param threads amount
-     * @return config
+     * @param threads 线程数量
+     * @return 当前配置实例
      */
     public Config setThreads(int threads) {
         this.threads = threads;
         return this;
     }
 
+    /** 确保尚未启用集群模式（连接模式互斥校验）。 */
     private void checkClusterServersConfig() {
         if (clusterServersConfig != null) {
             throw new IllegalStateException("cluster servers config already used!");
         }
     }
 
+    /** 确保尚未启用哨兵模式。 */
     private void checkSentinelServersConfig() {
         if (sentinelServersConfig != null) {
             throw new IllegalStateException("sentinel servers config already used!");
         }
     }
 
+    /** 确保尚未启用主从模式。 */
     private void checkMasterSlaveServersConfig() {
         if (masterSlaveServersConfig != null) {
             throw new IllegalStateException("master/slave servers already used!");
         }
     }
 
+    /** 确保尚未启用单节点模式。 */
     private void checkSingleServerConfig() {
         if (singleServerConfig != null) {
             throw new IllegalStateException("single server config already used!");
         }
     }
 
+    /** 确保尚未启用复制模式。 */
     private void checkReplicatedServersConfig() {
         if (replicatedServersConfig != null) {
             throw new IllegalStateException("Replication servers config already used!");
@@ -541,12 +604,12 @@ public class Config {
     }
 
     /**
-     * Transport mode
+     * 设置 Netty 传输模式（NIO/Epoll/KQueue 等）。
      * <p>
      * Default is {@link TransportMode#NIO}
      *
-     * @param transportMode param
-     * @return config
+     * @param transportMode 传输模式
+     * @return 当前配置实例
      */
     public Config setTransportMode(TransportMode transportMode) {
         this.transportMode = transportMode;
@@ -558,14 +621,14 @@ public class Config {
     }
 
     /**
-     * Threads amount shared between all redis clients used by Redisson.
+     * 设置 Redisson 所有 Redis 客户端共享的 Netty I/O 线程数。
      * <p>
      * Default is <code>32</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
-     * @param nettyThreads amount
-     * @return config
+     * @param nettyThreads Netty 线程数
+     * @return 当前配置实例
      */
     public Config setNettyThreads(int nettyThreads) {
         this.nettyThreads = nettyThreads;
@@ -581,14 +644,14 @@ public class Config {
     }
 
     /**
-     * Use external Executor for Netty.
+     * 使用外部 Executor 执行 Netty 任务（不推荐虚拟线程）。
      * <p>
      * Virtual threads are not recommended
      * <p>
      * The caller is responsible for closing the Executor.
      *
-     * @param nettyExecutor netty executor object
-     * @return config
+     * @param nettyExecutor Netty 执行器
+     * @return 当前配置实例
      */
     public Config setNettyExecutor(Executor nettyExecutor) {
         this.nettyExecutor = nettyExecutor;
@@ -596,15 +659,13 @@ public class Config {
     }
 
     /**
-     * Use external ExecutorService. ExecutorService processes 
-     * all listeners of <code>RTopic</code>, <code>RPatternTopic</code>
-     * <code>RRemoteService</code> invocation handlers  
-     * and <code>RExecutorService</code> tasks.
+     * 使用外部 ExecutorService 处理 RTopic/RPatternTopic 监听、
+     * RRemoteService 调用与 RExecutorService 任务。
      * <p>
      * The caller is responsible for closing the ExecutorService.
      * 
-     * @param executor object
-     * @return config
+     * @param executor 业务线程池
+     * @return 当前配置实例
      */
     public Config setExecutor(ExecutorService executor) {
         this.executor = executor;
@@ -616,11 +677,8 @@ public class Config {
     }
 
     /**
-     * Use external EventLoopGroup. EventLoopGroup processes all
-     * Netty connection tied to Redis servers. Each EventLoopGroup creates
-     * own threads and each Redisson client creates own EventLoopGroup by default.
-     * So if there are multiple Redisson instances in same JVM
-     * it would be useful to share one EventLoopGroup among them.
+     * 使用外部 EventLoopGroup 处理所有 Redis 连接的 Netty I/O。
+     * 同一 JVM 内多个 Redisson 实例可共享一个 EventLoopGroup 以节省线程。
      * <p>
      * Only {@link io.netty.channel.epoll.EpollEventLoopGroup}, 
      * {@link io.netty.channel.kqueue.KQueueEventLoopGroup}
@@ -628,8 +686,8 @@ public class Config {
      * <p>
      * The caller is responsible for closing the EventLoopGroup.
      *
-     * @param eventLoopGroup object
-     * @return config
+     * @param eventLoopGroup EventLoopGroup 实例
+     * @return 当前配置实例
      */
     public Config setEventLoopGroup(EventLoopGroup eventLoopGroup) {
         this.eventLoopGroup = eventLoopGroup;
@@ -641,17 +699,16 @@ public class Config {
     }
 
     /**
-     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition.
-     * Lock expires after <code>lockWatchdogTimeout</code> if watchdog
-     * didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
+     * 仅在未指定 leaseTimeout 加锁时生效：看门狗未续期时，锁在 lockWatchdogTimeout 后自动过期，
+     * 防止客户端崩溃导致死锁。
      * <p>
      * This prevents against infinity locked locks due to Redisson client crush or
      * any other reason when lock can't be released in proper way.
      * <p>
      * Default is 30000 milliseconds
      *
-     * @param lockWatchdogTimeout timeout in milliseconds
-     * @return config
+     * @param lockWatchdogTimeout 看门狗超时（毫秒）
+     * @return 当前配置实例
      */
     public Config setLockWatchdogTimeout(long lockWatchdogTimeout) {
         this.lockWatchdogTimeout = lockWatchdogTimeout;
@@ -664,12 +721,12 @@ public class Config {
 
 
     /**
-     * This parameter is only used if fair lock has been acquired without waitTimeout parameter definition
+     * 公平锁未指定 waitTimeout 时的默认最大等待时间。
      *
      * Default is 5*60000 milliseconds
      *
-     * @param fairLockWaitTimeout in milliseconds
-     * @return config
+     * @param fairLockWaitTimeout 等待超时（毫秒）
+     * @return 当前配置实例
      */
     public Config setFairLockWaitTimeout(long fairLockWaitTimeout) {
         this.fairLockWaitTimeout = fairLockWaitTimeout;
@@ -682,12 +739,12 @@ public class Config {
 
     /**
      * This parameter is only used if lock has been acquired without leaseTimeout parameter definition.
-     * Defines amount of locks utilized in a single lock watchdog execution.
+     * 单次看门狗执行批量续期的锁数量，影响续期效率与 Redis 负载。
      * <p>
      * Default is 100
      *
-     * @param lockWatchdogBatchSize amount of locks used by a single lock watchdog execution
-     * @return config
+     * @param lockWatchdogBatchSize 单次看门狗处理的锁数量
+     * @return 当前配置实例
      */
     public Config setLockWatchdogBatchSize(int lockWatchdogBatchSize) {
         this.lockWatchdogBatchSize = lockWatchdogBatchSize;
@@ -698,14 +755,12 @@ public class Config {
     }
 
     /**
-     * Defines whether to check synchronized slaves amount
-     * with actual slaves amount after lock acquisition.
+     * 加锁后是否校验已同步从节点数是否满足要求，保证读写一致性。
      * <p>
      * Default is <code>true</code>.
      *
-     * @param checkLockSyncedSlaves <code>true</code> if check required,
-     *                             <code>false</code> otherwise.
-     * @return config
+     * @param checkLockSyncedSlaves 是否校验从节点同步
+     * @return 当前配置实例
      */
     public Config setCheckLockSyncedSlaves(boolean checkLockSyncedSlaves) {
         this.checkLockSyncedSlaves = checkLockSyncedSlaves;
@@ -717,15 +772,14 @@ public class Config {
     }
 
     /**
-     * Defines whether to keep PubSub messages handling in arrival order 
-     * or handle messages concurrently. 
+     * 同一 Pub/Sub 频道内消息是否严格按到达顺序处理（否则可并发）。 
      * <p>
      * This setting applied only for PubSub messages per channel.
      * <p>
      * Default is <code>true</code>.
      * 
-     * @param keepPubSubOrder - <code>true</code> if order required, <code>false</code> otherwise.
-     * @return config
+     * @param keepPubSubOrder 是否保持顺序
+     * @return 当前配置实例
      */
     public Config setKeepPubSubOrder(boolean keepPubSubOrder) {
         this.keepPubSubOrder = keepPubSubOrder;
@@ -737,8 +791,7 @@ public class Config {
     }
 
     /**
-     * Used to switch between {@link io.netty.resolver.dns.DnsAddressResolverGroup} implementations.
-     * Switch to round robin {@link io.netty.resolver.dns.RoundRobinDnsAddressResolverGroup} when you need to optimize the url resolving.
+     * 切换 DNS 地址解析实现；高并发解析可改用 RoundRobinDnsAddressResolverGroup。
      * 
      * @param addressResolverGroupFactory
      * @return config
@@ -753,10 +806,10 @@ public class Config {
     }
 
     /**
-     * Read config object stored in YAML format from <code>String</code>
+     * 从 YAML 字符串加载配置。
      *
-     * @param content of config
-     * @return config
+     * @param content YAML 配置内容
+     * @return 解析后的 Config 实例
      */
     public static Config fromYAML(String content) {
         ConfigSupport support = new ConfigSupport();
@@ -764,10 +817,10 @@ public class Config {
     }
 
     /**
-     * Read config object stored in YAML format from <code>InputStream</code>
+     * 从 InputStream 读取 YAML 配置。
      *
-     * @param inputStream object
-     * @return config
+     * @param inputStream 输入流
+     * @return 解析后的 Config 实例
      */
     public static Config fromYAML(InputStream inputStream) {
         ConfigSupport support = new ConfigSupport();
@@ -775,11 +828,11 @@ public class Config {
     }
 
     /**
-     * Read config object stored in YAML format from <code>File</code>
+     * 从文件读取 YAML 配置。
      *
-     * @param file object
-     * @return config
-     * @throws IOException error
+     * @param file 配置文件
+     * @return 解析后的 Config 实例
+     * @throws IOException 读取失败
      */
     public static Config fromYAML(File file) throws IOException {
         return fromYAML(file, null);
@@ -791,11 +844,11 @@ public class Config {
     }
 
     /**
-     * Read config object stored in YAML format from <code>URL</code>
+     * 从 URL 读取 YAML 配置。
      *
-     * @param url object
-     * @return config
-     * @throws IOException error
+     * @param url 配置 URL
+     * @return 解析后的 Config 实例
+     * @throws IOException 读取失败
      */
     public static Config fromYAML(URL url) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -803,11 +856,11 @@ public class Config {
     }
 
     /**
-     * Read config object stored in YAML format from <code>Reader</code>
+     * 从 Reader 读取 YAML 配置。
      *
-     * @param reader object
-     * @return config
-     * @throws IOException error
+     * @param reader 字符读取器
+     * @return 解析后的 Config 实例
+     * @throws IOException 读取失败
      */
     public static Config fromYAML(Reader reader) throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -815,10 +868,10 @@ public class Config {
     }
 
     /**
-     * Convert current configuration to YAML format
+     * 将当前配置序列化为 YAML 字符串。
      *
-     * @return config in yaml format
-     * @throws IOException error
+     * @return YAML 格式配置
+     * @throws IOException 序列化失败
      */
     public String toYAML() throws IOException {
         ConfigSupport support = new ConfigSupport();
@@ -826,14 +879,14 @@ public class Config {
     }
 
     /**
-     * Defines whether to use Lua-script cache on Redis side. 
+     * 是否在 Redis 端缓存 Lua 脚本，可加速脚本类命令并减少网络流量。 
      * Most Redisson methods are Lua-script based and this setting turned
      * on could increase speed of such methods execution and save network traffic.
      * <p>
      * Default is <code>true</code>.
      * 
-     * @param useScriptCache - <code>true</code> if Lua-script caching is required, <code>false</code> otherwise.
-     * @return config
+     * @param useScriptCache 是否启用脚本缓存
+     * @return 当前配置实例
      */
     public Config setUseScriptCache(boolean useScriptCache) {
         this.useScriptCache = useScriptCache;
@@ -849,14 +902,14 @@ public class Config {
     }
     
     /**
-     * Defines minimum delay in seconds for clean up process of expired entries.
+     * 过期条目后台清理的最小间隔（秒），应用于带 TTL 的缓存结构。
      * <p>
      * Applied to JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects.
      * <p>
      * Default is <code>5</code>.
      * 
-     * @param minCleanUpDelay - delay in seconds
-     * @return config
+     * @param minCleanUpDelay 最小清理间隔（秒）
+     * @return 当前配置实例
      */
     public Config setMinCleanUpDelay(int minCleanUpDelay) {
         this.minCleanUpDelay = minCleanUpDelay;
@@ -868,14 +921,14 @@ public class Config {
     }
     
     /**
-     * Defines maximum delay in seconds for clean up process of expired entries.
+     * 过期条目后台清理的最大间隔（秒）。
      * <p>
      * Applied to JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects.
      * <p>
      * Default is <code>1800</code>.
      *
-     * @param maxCleanUpDelay - delay in seconds
-     * @return config
+     * @param maxCleanUpDelay 最大清理间隔（秒）
+     * @return 当前配置实例
      */
     public Config setMaxCleanUpDelay(int maxCleanUpDelay) {
         this.maxCleanUpDelay = maxCleanUpDelay;
@@ -887,14 +940,14 @@ public class Config {
     }
 
     /**
-     * Defines expired keys amount deleted per single operation during clean up process of expired entries.
+     * 单次清理任务最多删除的过期键数量。
      * <p>
      * Applied to JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects.
      * <p>
      * Default is <code>100</code>.
      *
-     * @param cleanUpKeysAmount - amount
-     * @return config
+     * @param cleanUpKeysAmount 单次删除键数量
+     * @return 当前配置实例
      */
     public Config setCleanUpKeysAmount(int cleanUpKeysAmount) {
         this.cleanUpKeysAmount = cleanUpKeysAmount;
@@ -906,14 +959,12 @@ public class Config {
     }
 
     /**
-     * Defines whether to supply Thread ContextClassLoader to Codec.
-     * Usage of Thread.getContextClassLoader() may resolve ClassNotFoundException error.
-     * For example, this error arise if Redisson is used in both Tomcat and deployed application.
+     * 是否向 Codec 提供线程上下文 ClassLoader，可解决 Tomcat 等容器中的 ClassNotFoundException。
      * <p>
      * Default is <code>true</code>.
      *
-     * @param useThreadClassLoader <code>true</code> if Thread ContextClassLoader is used, <code>false</code> otherwise.
-     * @return config
+     * @param useThreadClassLoader 是否使用上下文 ClassLoader
+     * @return 当前配置实例
      */
     public Config setUseThreadClassLoader(boolean useThreadClassLoader) {
         this.useThreadClassLoader = useThreadClassLoader;
@@ -925,16 +976,15 @@ public class Config {
     }
 
     /**
-     * Reliable Topic subscriber expires after <code>timeout</code> if watchdog
-     * didn't extend it to next <code>timeout</code> time interval.
+     * Reliable Topic 订阅者看门狗未续期时的过期时间，防止消息无限堆积。
      * <p>
      * This prevents against infinity grow of stored messages in topic due to Redisson client crush or
      * any other reason when subscriber can't consumer messages anymore.
      * <p>
      * Default is 600000 milliseconds
      *
-     * @param timeout timeout in milliseconds
-     * @return config
+     * @param timeout 超时（毫秒）
+     * @return 当前配置实例
      */
     public Config setReliableTopicWatchdogTimeout(long timeout) {
         this.reliableTopicWatchdogTimeout = timeout;
@@ -946,11 +996,10 @@ public class Config {
     }
 
     /**
-     * Sets connection listener which is triggered
-     * when Redisson connected/disconnected to Redis server
+     * 设置连接监听器，在连接建立或断开时回调。
      *
-     * @param connectionListener - connection listener
-     * @return config
+     * @param connectionListener 连接监听器
+     * @return 当前配置实例
      */
     public Config setConnectionListener(ConnectionListener connectionListener) {
         this.connectionListener = connectionListener;
@@ -962,8 +1011,7 @@ public class Config {
     }
 
     /**
-     * Defines slaves synchronization timeout applied to each operation of {@link org.redisson.api.RLock},
-     * {@link org.redisson.api.RSemaphore}, {@link org.redisson.api.RPermitExpirableSemaphore} objects.
+     * RLock/RSemaphore 等操作等待从节点同步的超时时间。
      * <p>
      * Default is <code>1000</code> milliseconds.
      *
@@ -980,14 +1028,12 @@ public class Config {
     }
 
     /**
-     * Defines whether Redisson connects to Redis only when
-     * first Redis call is made and not during Redisson instance creation.
+     * 是否延迟连接：true 表示首次 Redis 调用时才建连，false 表示创建 Redisson 时即连接。
      * <p>
      * Default value is <code>false</code>
      *
-     * @param lazyInitialization <code>true</code> connects to Redis only when first Redis call is made,
-     *                           <code>false</code> connects to Redis during Redisson instance creation.
-     * @return config
+     * @param lazyInitialization 是否延迟初始化连接
+     * @return 当前配置实例
      */
     public Config setLazyInitialization(boolean lazyInitialization) {
         this.lazyInitialization = lazyInitialization;
@@ -999,12 +1045,12 @@ public class Config {
     }
 
     /**
-     * Defines Redis protocol version.
+     * 设置 Redis 协议版本（RESP2/RESP3）。
      * <p>
      * Default value is <code>RESP2</code>
      *
-     * @param protocol Redis protocol version
-     * @return config
+     * @param protocol 协议版本
+     * @return 当前配置实例
      */
     public Config setProtocol(Protocol protocol) {
         this.protocol = protocol;
@@ -1016,10 +1062,10 @@ public class Config {
     }
 
     /**
-     * Allows to declare which Valkey capabilities should be supported.
+     * 声明客户端需支持的 Valkey 能力集合。
      *
-     * @param valkeyCapabilities Valkey capabilites
-     * @return config
+     * @param valkeyCapabilities Valkey 能力集合
+     * @return 当前配置实例
      */
     public Config setValkeyCapabilities(Set<ValkeyCapability> valkeyCapabilities) {
         this.valkeyCapabilities = valkeyCapabilities;
@@ -1031,11 +1077,10 @@ public class Config {
     }
 
     /**
-     * Defines Name mapper which maps Redisson object name.
-     * Applied to all Redisson objects.
+     * 设置全局 Redisson 对象名称映射器（如加前缀隔离环境）。
      *
-     * @param nameMapper name mapper object
-     * @return config
+     * @param nameMapper 名称映射器
+     * @return 当前配置实例
      */
     public Config setNameMapper(NameMapper nameMapper) {
         this.nameMapper = nameMapper;
@@ -1047,11 +1092,10 @@ public class Config {
     }
 
     /**
-     * Defines Command mapper which maps Redis command name.
-     * Applied to all Redis commands.
+     * 设置全局 Redis 命令名映射器。
      *
-     * @param commandMapper Redis command name mapper object
-     * @return config
+     * @param commandMapper 命令映射器
+     * @return 当前配置实例
      */
     public Config setCommandMapper(CommandMapper commandMapper) {
         this.commandMapper = commandMapper;
@@ -1063,12 +1107,12 @@ public class Config {
     }
     
     /**
-     * Defines SSL provider used to handle SSL connections.
+     * 设置 SSL 实现提供方（JDK 或 OpenSSL 等）。
      * <p>
      * Default is <code>JDK</code>
      *
-     * @param sslProvider ssl provider
-     * @return config
+     * @param sslProvider SSL 提供方
+     * @return 当前配置实例
      */
     public Config setSslProvider(SslProvider sslProvider) {
         this.sslProvider = sslProvider;
@@ -1080,12 +1124,12 @@ public class Config {
     }
     
     /**
-     * Defines path to SSL truststore
+     * 设置 SSL 信任库路径。
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslTruststore truststore path
-     * @return config
+     * @param sslTruststore 信任库 URL
+     * @return 当前配置实例
      */
     public Config setSslTruststore(URL sslTruststore) {
         this.sslTruststore = sslTruststore;
@@ -1097,13 +1141,12 @@ public class Config {
     }
     
     /**
-     * Defines password for SSL truststore.
-     * SSL truststore is read on each new connection creation and can be dynamically reloaded.
+     * 设置 SSL 信任库密码；每次新建连接时读取，支持热更新。
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslTruststorePassword - password
-     * @return config
+     * @param sslTruststorePassword 信任库密码
+     * @return 当前配置实例
      */
     public Config setSslTruststorePassword(String sslTruststorePassword) {
         this.sslTruststorePassword = sslTruststorePassword;
@@ -1115,13 +1158,12 @@ public class Config {
     }
     
     /**
-     * Defines path to SSL keystore.
-     * SSL keystore is read on each new connection creation and can be dynamically reloaded.
+     * 设置 SSL 密钥库路径，每次建连时读取。
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslKeystore path to keystore
-     * @return config
+     * @param sslKeystore 密钥库 URL
+     * @return 当前配置实例
      */
     public Config setSslKeystore(URL sslKeystore) {
         this.sslKeystore = sslKeystore;
@@ -1133,12 +1175,12 @@ public class Config {
     }
     
     /**
-     * Defines password for SSL keystore
+     * 设置 SSL 密钥库密码。
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslKeystorePassword password
-     * @return config
+     * @param sslKeystorePassword 密钥库密码
+     * @return 当前配置实例
      */
     public Config setSslKeystorePassword(String sslKeystorePassword) {
         this.sslKeystorePassword = sslKeystorePassword;
@@ -1150,13 +1192,12 @@ public class Config {
     }
     
     /**
-     * Defines SSL protocols.
-     * Example values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1
+     * 设置允许的 SSL/TLS 协议版本，如 TLSv1.3、TLSv1.2。
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslProtocols protocols
-     * @return config
+     * @param sslProtocols 协议版本数组
+     * @return 当前配置实例
      */
     public Config setSslProtocols(String[] sslProtocols) {
         this.sslProtocols = sslProtocols;
@@ -1168,12 +1209,12 @@ public class Config {
     }
     
     /**
-     * Defines SSL keystore type.
+     * 设置 SSL 密钥库类型（如 PKCS12、JKS）。
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslKeystoreType keystore type
-     * @return config
+     * @param sslKeystoreType 密钥库类型
+     * @return 当前配置实例
      */
     public Config setSslKeystoreType(String sslKeystoreType) {
         this.sslKeystoreType = sslKeystoreType;
@@ -1185,12 +1226,12 @@ public class Config {
     }
     
     /**
-     * Defines SSL ciphers.
+     * 设置允许的 SSL 密码套件列表。
      * <p>
      * Default is <code>null</code>
      *
-     * @param sslCiphers ciphers
-     * @return config
+     * @param sslCiphers 密码套件数组
+     * @return 当前配置实例
      */
     public Config setSslCiphers(String[] sslCiphers) {
         this.sslCiphers = sslCiphers;
@@ -1202,12 +1243,12 @@ public class Config {
     }
     
     /**
-     * Defines SSL TrustManagerFactory.
+     * 设置自定义 SSL TrustManagerFactory。
      * <p>
      * Default is <code>null</code>
      *
-     * @param trustManagerFactory trust manager value
-     * @return config
+     * @param trustManagerFactory TrustManagerFactory 实例
+     * @return 当前配置实例
      */
     public Config setSslTrustManagerFactory(TrustManagerFactory trustManagerFactory) {
         this.sslTrustManagerFactory = trustManagerFactory;
@@ -1219,12 +1260,12 @@ public class Config {
     }
     
     /**
-     * Defines SSL KeyManagerFactory.
+     * 设置自定义 SSL KeyManagerFactory。
      * <p>
      * Default is <code>null</code>
      *
-     * @param keyManagerFactory key manager value
-     * @return config
+     * @param keyManagerFactory KeyManagerFactory 实例
+     * @return 当前配置实例
      */
     public Config setSslKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
         this.sslKeyManagerFactory = keyManagerFactory;
@@ -1236,13 +1277,13 @@ public class Config {
     }
     
     /**
-     * Defines SSL verification mode, which prevents man-in-the-middle attacks.
+     * 设置 SSL 证书校验模式，防范中间人攻击。
      *
      * <p>
      * Default is <code>SslVerificationMode.STRICT</code>
      *
-     * @param sslVerificationMode mode value
-     * @return config
+     * @param sslVerificationMode 校验模式
+     * @return 当前配置实例
      */
     public Config setSslVerificationMode(SslVerificationMode sslVerificationMode) {
         this.sslVerificationMode = sslVerificationMode;
@@ -1254,12 +1295,12 @@ public class Config {
     }
     
     /**
-     * Enables TCP keepAlive for connection
+     * 启用 TCP KeepAlive，检测死连接。
      * <p>
      * Default is <code>true</code>
      *
-     * @param tcpKeepAlive boolean value
-     * @return config
+     * @param tcpKeepAlive 是否启用
+     * @return 当前配置实例
      */
     public Config setTcpKeepAlive(boolean tcpKeepAlive) {
         this.tcpKeepAlive = tcpKeepAlive;
@@ -1271,11 +1312,10 @@ public class Config {
     }
     
     /**
-     * Defines the maximum number of keepalive probes
-     * TCP should send before dropping the connection.
+     * 断开连接前允许发送的最大 KeepAlive 探测次数。
      *
-     * @param tcpKeepAliveCount maximum number of keepalive probes
-     * @return config
+     * @param tcpKeepAliveCount 最大探测次数
+     * @return 当前配置实例
      */
     public Config setTcpKeepAliveCount(int tcpKeepAliveCount) {
         this.tcpKeepAliveCount = tcpKeepAliveCount;
@@ -1287,11 +1327,10 @@ public class Config {
     }
     
     /**
-     * Defines the time in seconds the connection needs to remain idle
-     * before TCP starts sending keepalive probes,
+     * 连接空闲多少秒后开始发送 KeepAlive 探测包。
      *
-     * @param tcpKeepAliveIdle time in seconds
-     * @return config
+     * @param tcpKeepAliveIdle 空闲秒数
+     * @return 当前配置实例
      */
     public Config setTcpKeepAliveIdle(int tcpKeepAliveIdle) {
         this.tcpKeepAliveIdle = tcpKeepAliveIdle;
@@ -1303,10 +1342,10 @@ public class Config {
     }
     
     /**
-     * Defines the time in seconds between individual keepalive probes.
+     * KeepAlive 探测包之间的间隔（秒）。
      *
-     * @param tcpKeepAliveInterval time in seconds
-     * @return config
+     * @param tcpKeepAliveInterval 探测间隔（秒）
+     * @return 当前配置实例
      */
     public Config setTcpKeepAliveInterval(int tcpKeepAliveInterval) {
         this.tcpKeepAliveInterval = tcpKeepAliveInterval;
@@ -1318,14 +1357,12 @@ public class Config {
     }
     
     /**
-     * Defines the maximum amount of time in milliseconds that transmitted data may
-     * remain unacknowledged, or buffered data may remain untransmitted
-     * (due to zero window size) before TCP will forcibly close the connection.
+     * 未确认数据的最大保留时间（毫秒），超时则强制关闭连接；仅 Epoll/IoUring 传输生效。
      * <p>
      * This setting is applied only to Epoll and IoUring transport.
      *
-     * @param tcpUserTimeout time in milliseconds
-     * @return config
+     * @param tcpUserTimeout 超时（毫秒）
+     * @return 当前配置实例
      */
     public Config setTcpUserTimeout(int tcpUserTimeout) {
         this.tcpUserTimeout = tcpUserTimeout;
@@ -1337,12 +1374,12 @@ public class Config {
     }
     
     /**
-     * Enables TCP noDelay for connection
+     * 启用 TCP_NODELAY，降低小 packet 延迟（禁用 Nagle）。
      * <p>
      * Default is <code>true</code>
      *
-     * @param tcpNoDelay boolean value
-     * @return config
+     * @param tcpNoDelay 是否启用
+     * @return 当前配置实例
      */
     public Config setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;

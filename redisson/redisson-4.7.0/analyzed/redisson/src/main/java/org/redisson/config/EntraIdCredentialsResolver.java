@@ -26,12 +26,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Microsoft Entra ID (formerly Azure Active Directory) credentials resolver for Redis authentication.
- *
- * <p>This class implements the {@link CredentialsResolver} interface to provide authentication
- * credentials for connecting to Azure Cache for Redis or Azure Managed Redis instances using
- * Microsoft Entra ID authentication. It automatically handles token acquisition, refresh, and
- * authentication state management for secure, password-free Redis connections.</p>
+ * 基于 Microsoft Entra ID（原 Azure AD）的 Redis 凭据解析器。
+ * <p>
+ * 实现 {@link CredentialsResolver}，为 Azure Cache for Redis 或 Azure Managed Redis
+ * 提供无密码的令牌认证；自动处理令牌获取、刷新与续期通知。
  *
  * @author Nikita Koksharov
  *
@@ -41,11 +39,15 @@ public class EntraIdCredentialsResolver implements CredentialsResolver {
 
     private static final Logger log = LoggerFactory.getLogger(EntraIdCredentialsResolver.class);
 
+    /** 底层令牌管理器，负责 Entra ID 令牌生命周期。 */
     final TokenManager tokenManager;
 
+    /** 当前可用的凭据 Future；令牌更新时替换。 */
     volatile CompletableFuture<Credentials> future = new CompletableFuture<>();
+    /** 凭据续期信号 Future；新令牌就绪时完成旧实例。 */
     volatile CompletableFuture<Void> renewalFuture = new CompletableFuture<>();
 
+    /** 启动 TokenManager 并注册令牌变更监听器。 */
     public EntraIdCredentialsResolver(TokenManager tokenManager) {
         this.tokenManager = tokenManager;
 
@@ -54,7 +56,7 @@ public class EntraIdCredentialsResolver implements CredentialsResolver {
             @Override
             public void onTokenRenewed(Token token) {
                 if (!future.isDone()) {
-                    // update the initial future instance
+                    // 首次令牌就绪，完成初始 future
                     future.complete(new Credentials(token.getUser(), token.getValue()));
                 } else {
                     future = CompletableFuture.completedFuture(new Credentials(token.getUser(), token.getValue()));
@@ -81,11 +83,13 @@ public class EntraIdCredentialsResolver implements CredentialsResolver {
         }
     }
 
+    /** 返回当前凭据 Future（与节点地址无关，令牌全局有效）。 */
     @Override
     public CompletionStage<Credentials> resolve(InetSocketAddress address) {
         return future;
     }
 
+    /** 返回下次令牌续期时应关注的 Future。 */
     @Override
     public CompletionStage<Void> nextRenewal() {
         return renewalFuture;

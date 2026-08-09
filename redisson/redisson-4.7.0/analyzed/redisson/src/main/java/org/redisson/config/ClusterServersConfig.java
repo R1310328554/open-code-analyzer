@@ -21,35 +21,41 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * Redis 集群模式的服务器配置，继承 {@link BaseMasterSlaveServersConfig} 的通用连接参数。
+ * <p>
+ * 通过 {@link Config#useClusterServers()} 启用；需至少配置一个集群节点地址。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterServersConfig> {
 
+    /** NAT 地址映射器，用于将 Redis URI 映射为实际可达地址。 */
     private NatMapper natMapper = NatMapper.direct();
-    
-    /**
-     * Redis cluster node urls list
-     */
+
+    /** Redis 集群节点地址列表，格式为 host:port。 */
     private List<String> nodeAddresses = new ArrayList<>();
 
-    /**
-     * Redis cluster scan interval in milliseconds
-     */
+    /** 集群拓扑扫描间隔（毫秒），用于发现新增/下线节点。 */
     private int scanInterval = 5000;
 
+    /** 启动时是否校验集群槽位覆盖完整性。 */
     private boolean checkSlotsCoverage = true;
 
+    /** 是否检查从节点 INFO REPLICATION 中的 master-link-status。 */
     private boolean checkMasterLinkStatus = false;
 
+    /** 分片订阅模式（Redis 7.0+ 特性）。 */
     private ShardedSubscriptionMode shardedSubscriptionMode = ShardedSubscriptionMode.AUTO;
 
+    /** Valkey 连接使用的逻辑库编号（需 Valkey 9.0+）。 */
     private int database = 0;
 
+    /** 默认构造函数。 */
     public ClusterServersConfig() {
     }
 
+    /** 从已有配置深拷贝构造。 */
     ClusterServersConfig(ClusterServersConfig config) {
         super(config);
         setNodeAddresses(config.getNodeAddresses());
@@ -62,66 +68,71 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     }
 
     /**
-     * Add Redis cluster node address. Use follow format -- <code>host:port</code>
+     * 追加 Redis 集群节点地址，格式为 <code>host:port</code>。
      *
-     * @param addresses in <code>host:port</code> format
-     * @return config
+     * @param addresses <code>host:port</code> 格式的地址
+     * @return 当前配置实例（链式调用）
      */
     public ClusterServersConfig addNodeAddress(String... addresses) {
         nodeAddresses.addAll(Arrays.asList(addresses));
         return this;
     }
+    /** 返回集群节点地址列表。 */
     public List<String> getNodeAddresses() {
         return nodeAddresses;
     }
+    /** 设置集群节点地址列表。 */
     public void setNodeAddresses(List<String> nodeAddresses) {
         this.nodeAddresses = nodeAddresses;
     }
 
+    /** 返回集群扫描间隔（毫秒）。 */
     public int getScanInterval() {
         return scanInterval;
     }
     /**
-     * Redis cluster scan interval in milliseconds
+     * 设置 Redis 集群拓扑扫描间隔（毫秒）。
      * <p>
-     * Default is <code>5000</code>
+     * 默认值为 <code>5000</code>。
      *
-     * @param scanInterval in milliseconds
-     * @return config
+     * @param scanInterval 扫描间隔（毫秒）
+     * @return 当前配置实例
      */
     public ClusterServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;
         return this;
     }
 
+    /** 是否启用启动时槽位覆盖检查。 */
     public boolean isCheckSlotsCoverage() {
         return checkSlotsCoverage;
     }
 
     /**
-     * Enables cluster slots check during Redisson startup.
+     * 启用 Redisson 启动时的集群槽位覆盖检查。
      * <p>
-     * Default is <code>true</code>
+     * 默认值为 <code>true</code>。
      *
-     * @param checkSlotsCoverage boolean value
-     * @return config
+     * @param checkSlotsCoverage 是否检查槽位覆盖
+     * @return 当前配置实例
      */
     public ClusterServersConfig setCheckSlotsCoverage(boolean checkSlotsCoverage) {
         this.checkSlotsCoverage = checkSlotsCoverage;
         return this;
     }
 
+    /** 是否检查从节点主从链路状态。 */
     public boolean isCheckMasterLinkStatus() {
         return checkMasterLinkStatus;
     }
 
     /**
-     * Enable checking the 'master-link-status' of a slave from the INFO REPLICATION command.
+     * 启用对从节点 INFO REPLICATION 命令返回的 master-link-status 字段的检查。
      * <p>
-     * Default is <code>false</code>
+     * 默认值为 <code>false</code>。
      *
-     * @param checkMasterLinkStatus boolean value
-     * @return config
+     * @param checkMasterLinkStatus 是否检查主从链路状态
+     * @return 当前配置实例
      */
     public ClusterServersConfig setCheckMasterLinkStatus(boolean checkMasterLinkStatus) {
         this.checkMasterLinkStatus = checkMasterLinkStatus;
@@ -129,7 +140,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     }
 
     /*
-     * Use {@link #setNatMapper(NatMapper)}
+     * 请改用 {@link #setNatMapper(NatMapper)}
      */
     @Deprecated
     public ClusterServersConfig setNatMap(Map<String, String> natMap) {
@@ -139,39 +150,41 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         return this;
     }
 
+    /** 返回 NAT 地址映射器。 */
     public NatMapper getNatMapper() {
         return natMapper;
     }
 
     /**
-     * Defines NAT mapper which maps Redis URI object.
-     * Applied to all Redis connections.
+     * 定义 NAT 映射器，将 Redis URI 映射为实际连接地址。
+     * 应用于所有 Redis 连接。
      *
      * @see HostNatMapper
      * @see HostPortNatMapper
      *
-     * @param natMapper nat mapper object
-     * @return config
+     * @param natMapper NAT 映射器实例
+     * @return 当前配置实例
      */
     public ClusterServersConfig setNatMapper(NatMapper natMapper) {
         this.natMapper = natMapper;
         return this;
     }
 
+    /** 返回分片订阅模式。 */
     public ShardedSubscriptionMode getShardedSubscriptionMode() {
         return shardedSubscriptionMode;
     }
 
     /**
-     * Defines whether to use sharded subscription feature available in Redis 7.0+.
+     * 定义是否启用 Redis 7.0+ 提供的分片订阅（Sharded Pub/Sub）特性。
      * <p>
      * Used in RMapCache, RLocalCachedMap, RCountDownLatch, RLock, RPermitExpirableSemaphore,
      * RSemaphore, RLongAdder, RDoubleAdder, Micronaut Session, Apache Tomcat Manager objects.
      * <p>
-     * Default is <code>AUTO</code>
+     * 默认值为 <code>AUTO</code>。
      *
-     * @param shardedSubscriptionMode param
-     * @return config
+     * @param shardedSubscriptionMode 分片订阅模式
+     * @return 当前配置实例
      */
     public ClusterServersConfig setShardedSubscriptionMode(ShardedSubscriptionMode shardedSubscriptionMode) {
         this.shardedSubscriptionMode = shardedSubscriptionMode;
@@ -179,19 +192,20 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     }
 
     /**
-     * Database index used for Valkey connection.
+     * 设置 Valkey 连接使用的逻辑库编号。
      * <p>
      * Default is <code>0</code>
      * <p>
      * <b>Requires <b>Valkey 9.0.0 and higher.</b>
      *
-     * @param database number
-     * @return config
+     * @param database 逻辑库编号
+     * @return 当前配置实例
      */
     public ClusterServersConfig setDatabase(int database) {
         this.database = database;
         return this;
     }
+    /** 返回 Valkey 逻辑库编号。 */
     public int getDatabase() {
         return database;
     }

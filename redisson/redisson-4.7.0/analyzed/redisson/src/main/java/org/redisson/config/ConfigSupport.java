@@ -53,28 +53,38 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * Redisson 配置的 YAML 序列化/反序列化支持类。
+ * <p>
+ * 封装 SnakeYAML 自定义构造器与表示器，支持 DelayStrategy、Kryo5Codec 等
+ * 复杂类型的读写，以及环境变量占位符 {@code ${VAR:-default}} 解析。
  *
  * @author Nikita Koksharov
  *
  */
 public class ConfigSupport {
 
+    /** 加载类时使用的 ClassLoader（可为 null 表示默认）。 */
     private final ClassLoader classLoader;
+    /** YAML 属性名是否大小写不敏感。 */
     private final boolean useCaseInsensitive;
 
+    /** 默认构造：系统 ClassLoader，属性名区分大小写。 */
     public ConfigSupport() {
         this(false);
     }
 
+    /** 指定属性名是否大小写不敏感。 */
     public ConfigSupport(boolean useCaseInsensitive) {
         this(null, useCaseInsensitive);
     }
 
+    /** 指定 ClassLoader 与大小写敏感性。 */
     public ConfigSupport(ClassLoader classLoader, boolean useCaseInsensitive) {
         this.classLoader = classLoader;
         this.useCaseInsensitive = useCaseInsensitive;
     }
 
+    /** 创建带自定义构造器与表示器的 Yaml 解析器。 */
     private Yaml createYamlParser(ClassLoader classLoader, boolean useCaseInsensitive) {
         LoaderOptions loaderOptions = new LoaderOptions();
         loaderOptions.setTagInspector(tag -> true);
@@ -91,11 +101,14 @@ public class ConfigSupport {
         return new Yaml(constructor, representer, dumperOptions, loaderOptions);
     }
 
+    /** 自定义 JavaBean 属性工具：过滤废弃字段与不可序列化类型。 */
     private static class CustomPropertyUtils extends PropertyUtils {
+        /** YAML 读写时忽略的废弃或冗余属性名。 */
         private final Set<String> ignoredProperties = new HashSet<>(
                 Arrays.asList("slaveNotUsed", "clusterConfig", "sentinelConfig", "singleConfig", "retryInterval")
         );
 
+        /** 不可通过 YAML 直接序列化的 SSL 工厂类型。 */
         private final Set<Class<?>> ignoredClasses = new HashSet<>(Arrays.asList(
                 KeyManagerFactory.class,
                 TrustManagerFactory.class
@@ -200,7 +213,7 @@ public class ConfigSupport {
                     propertyMap.put(prop.getName(), prop);
                 }
             } catch (Exception e) {
-                // If standard property discovery fails, that's OK - we'll try protected methods
+                // 标准属性发现失败时继续尝试 protected 方法
             }
 
             for (Property prop : getProtectedProperties(type)) {
@@ -295,6 +308,7 @@ public class ConfigSupport {
         }
     }
 
+    /** 基于 getter/setter 反射的 SnakeYAML Property 实现，支持 protected 访问。 */
     private static class MethodProperty extends Property {
         private final Method getter;
         private final Method setter;
@@ -398,6 +412,7 @@ public class ConfigSupport {
         }
     }
 
+    /** 扩展 SnakeYAML 构造器，注册 DelayStrategy 与 Kryo5Codec 等自定义类型。 */
     private static class DelayConstructor extends Constructor {
         private final ClassLoader classLoader;
 
@@ -447,9 +462,9 @@ public class ConfigSupport {
                     tuples = mappingNode.getValue();
                 }
 
-                // If still empty after flatten, might be empty object {}
+                // 扁平化后仍为空，可能是空对象 {}
                 if (tuples.isEmpty()) {
-                    // Return default values based on class type
+                    // 按类型返回默认 DelayStrategy 实例
                     try {
                         if (clazz.getName().contains("ConstantDelay")) {
                             java.lang.reflect.Constructor<?> constructor = clazz.getConstructor(Duration.class);
@@ -463,7 +478,7 @@ public class ConfigSupport {
                     }
                 }
 
-                // Iterate through the key-value tuples
+                // 遍历 YAML 键值对解析 delay/baseDelay/maxDelay
                 for (NodeTuple tuple : tuples) {
                     Node keyNode = tuple.getKeyNode();
                     String key = null;
@@ -474,7 +489,7 @@ public class ConfigSupport {
 
                     if (key == null) continue;
 
-                    // Construct the value
+                    // 递归构造属性值
                     Object value = constructObject(tuple.getValueNode());
 
                     if ("delay".equals(key)) {
@@ -562,6 +577,7 @@ public class ConfigSupport {
         }
     }
 
+    /** 自定义 YAML 表示器：Duration/Enum/Set 格式化及类名标签处理。 */
     private static class CustomRepresenter extends Representer {
         private final Set<Class<?>> classTypedClasses = new HashSet<>(Arrays.asList(
                 ReferenceCodecProvider.class,
@@ -591,32 +607,32 @@ public class ConfigSupport {
             CustomPropertyUtils propUtils = new CustomPropertyUtils(useCaseInsensitive);
             this.setPropertyUtils(propUtils);
 
-            // Skip null values (equivalent to Jackson's NON_NULL)
+            // 跳过 null 值（类似 Jackson NON_NULL）
             this.setDefaultFlowStyle(dumperOptions.getDefaultFlowStyle());
 
-            // Remove default Set representer
+            // 移除默认 Set 表示器
             this.multiRepresenters.remove(Set.class);
 
-            // Add custom representers for Duration
+            // Duration 序列化为 ISO-8601 字符串
             this.addClassTag(Duration.class, Tag.STR);
             this.representers.put(Duration.class, data -> {
                 Duration duration = (Duration) data;
                 return representScalar(Tag.STR, duration.toString());
             });
 
-            // Represent Sets as sequences (arrays) - must be before Enum
+            // Set 表示为 YAML 序列
             this.multiRepresenters.put(Set.class, data -> {
                 Set<?> set = (Set<?>) data;
                 List<?> list = new ArrayList<>(set);
                 return representSequence(Tag.SEQ, list, DumperOptions.FlowStyle.AUTO);
             });
 
-            // Represent enums as quoted strings
+            // 枚举表示为带引号字符串
             this.multiRepresenters.put(Enum.class, data -> {
                 return representScalar(Tag.STR, ((Enum<?>) data).name(), DumperOptions.ScalarStyle.DOUBLE_QUOTED);
             });
 
-            // Don't use global tags for root Config object
+            // 根 Config 对象不使用全局类标签
             this.addClassTag(Config.class, Tag.MAP);
         }
 
@@ -642,13 +658,13 @@ public class ConfigSupport {
         protected MappingNode representJavaBean(Set<Property> properties, Object javaBean) {
             MappingNode node = super.representJavaBean(properties, javaBean);
 
-            // Override the tag for classes that need explicit class names
+            // 需显式类名的对象覆盖 YAML 标签
             if (shouldIncludeClassName(javaBean.getClass()) && !(javaBean instanceof Config)) {
-                // Set tag with just "!classname" - post-processing will convert to !<classname>
+                // 标签格式 !classname，后续 fixTagFormat 转为 !<classname>
                 node.setTag(new Tag("!" + javaBean.getClass().getName()));
             }
 
-            // Use flow style for small delay objects
+            // 小型 DelayStrategy 对象使用 flow 风格
             if (javaBean instanceof EqualJitterDelay
                     || javaBean instanceof FullJitterDelay
                         || javaBean instanceof DecorrelatedJitterDelay
@@ -656,7 +672,7 @@ public class ConfigSupport {
                 node.setFlowStyle(DumperOptions.FlowStyle.FLOW);
             } else if (shouldIncludeClassName(javaBean.getClass())
                             && !(javaBean instanceof Config)) {
-                // For other tagged objects (except Config), check if they're small enough for flow style
+                // 其他带标签的小对象也尝试 flow 风格
                 if (properties.size() <= 2 && hasOnlySimpleProperties(javaBean, properties)) {
                     node.setFlowStyle(DumperOptions.FlowStyle.FLOW);
                 }
@@ -672,18 +688,18 @@ public class ConfigSupport {
                 return null;
             }
 
-            // For delay strategy classes, include read-only properties (they're constructed via constructor)
+            // DelayStrategy 通过构造器创建，需输出只读属性
             boolean isDelayStrategy = javaBean instanceof EqualJitterDelay
                                                     || javaBean instanceof FullJitterDelay
                                                     || javaBean instanceof DecorrelatedJitterDelay
                                                     || javaBean instanceof ConstantDelay;
 
-            // Skip read-only properties (no setter) EXCEPT for delay strategies
+            // 无 setter 的只读属性默认跳过（DelayStrategy 除外）
             if (!property.isWritable() && !isDelayStrategy) {
                 return null;
             }
 
-            // Force double quotes for string values (but not keys)
+            // 字符串值强制双引号
             if (propertyValue instanceof String) {
                 Node valueNode = representScalar(Tag.STR, (String) propertyValue, DumperOptions.ScalarStyle.DOUBLE_QUOTED);
                 Node keyNode = representData(property.getName());
@@ -728,6 +744,7 @@ public class ConfigSupport {
         }
     }
 
+    /** 从 Readable 读取内容并解析环境变量占位符。 */
     private String resolveEnvParams(Readable in) {
         try (Scanner s = new Scanner(in).useDelimiter("\\A")) {
             if (s.hasNext()) {
@@ -740,6 +757,7 @@ public class ConfigSupport {
     private static final Pattern ENV_PARAM_PATTERN =
             Pattern.compile("\\$\\{([\\w\\.]+(:-.+?)?)\\}");
 
+    /** 将 ${ENV} 或 ${ENV:-default} 替换为系统属性或环境变量值。 */
     private String resolveEnvParams(String content) {
         Matcher m = ENV_PARAM_PATTERN.matcher(content);
         while (m.find()) {
@@ -755,6 +773,7 @@ public class ConfigSupport {
         return content;
     }
 
+    /** 从 YAML 字符串反序列化为指定配置类型。 */
     public <T> T fromYAML(String content, Class<T> configType) {
         content = resolveEnvParams(content);
         content = unfixTagFormat(content);
@@ -762,10 +781,12 @@ public class ConfigSupport {
         return yaml.loadAs(content, configType);
     }
 
+    /** 从文件读取 YAML 配置。 */
     public <T> T fromYAML(File file, Class<T> configType) throws IOException {
         return fromYAML(file, configType, null);
     }
 
+    /** 从文件读取 YAML，并使用指定 ClassLoader 加载类。 */
     public <T> T fromYAML(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
         LoaderOptions loaderOptions = new LoaderOptions();
         loaderOptions.setTagInspector(tag -> true); // Allow all tags
@@ -780,6 +801,7 @@ public class ConfigSupport {
         return yamlParser.loadAs(content, configType);
     }
 
+    /** 从 URL 读取 YAML 配置。 */
     public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
         String content = resolveEnvParams(new InputStreamReader(url.openStream()));
         content = unfixTagFormat(content);
@@ -787,6 +809,7 @@ public class ConfigSupport {
         return yaml.loadAs(content, configType);
     }
 
+    /** 从 Reader 读取 YAML 配置。 */
     public <T> T fromYAML(Reader reader, Class<T> configType) throws IOException {
         String content = resolveEnvParams(reader);
         content = unfixTagFormat(content);
@@ -794,6 +817,7 @@ public class ConfigSupport {
         return yaml.loadAs(content, configType);
     }
 
+    /** 从 InputStream 读取 YAML 配置。 */
     public <T> T fromYAML(InputStream inputStream, Class<T> configType) {
         String content = resolveEnvParams(new InputStreamReader(inputStream));
         content = unfixTagFormat(content);
@@ -801,6 +825,7 @@ public class ConfigSupport {
         return yaml.loadAs(content, configType);
     }
 
+    /** 将 Config 序列化为 YAML 字符串。 */
     public String toYAML(Config config) {
         Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
         String yamlStr = yaml.dump(config);
@@ -810,8 +835,7 @@ public class ConfigSupport {
     private static final Pattern TAG_FIX_PATTERN = Pattern.compile("!([a-zA-Z0-9_.]+)");
 
     private String fixTagFormat(String yaml) {
-        // Pattern to match tags like !className (with dots indicating a package)
-        // and convert them to !<className> format for verbatim tags
+        // 将 !package.Class 转为 !<package.Class> 字面量标签格式
         Matcher matcher = TAG_FIX_PATTERN.matcher(yaml);
         StringBuffer result = new StringBuffer();
 
@@ -827,8 +851,7 @@ public class ConfigSupport {
     private static final Pattern TAG_UNFIX_PATTERN = Pattern.compile("!<([a-zA-Z0-9_.]+)>");
 
     private String unfixTagFormat(String yaml) {
-        // Pattern to match tags like !<className>
-        // and convert them back to !!className format for parsing
+        // 解析前将 !<className> 转回 !!className
         Matcher matcher = TAG_UNFIX_PATTERN.matcher(yaml);
         StringBuffer result = new StringBuffer();
 
@@ -841,6 +864,7 @@ public class ConfigSupport {
         return result.toString();
     }
 
+    /** 从 Config 中提取当前生效的连接模式子配置并执行池大小校验。 */
     public static BaseConfig<?> getConfig(Config configCopy) {
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
@@ -862,12 +886,14 @@ public class ConfigSupport {
         throw new IllegalArgumentException("server(s) address(es) not defined!");
     }
 
+    /** 校验单节点连接池大小不小于最小空闲连接数。 */
     private static void validate(SingleServerConfig config) {
         if (config.getConnectionPoolSize() < config.getConnectionMinimumIdleSize()) {
             throw new IllegalArgumentException("connectionPoolSize can't be lower than connectionMinimumIdleSize");
         }
     }
 
+    /** 校验主从/集群等模式下主从与订阅连接池参数合法性。 */
     private static void validate(BaseMasterSlaveServersConfig<?> config) {
         if (config.getSlaveConnectionPoolSize() < config.getSlaveConnectionMinimumIdleSize()) {
             throw new IllegalArgumentException("slaveConnectionPoolSize can't be lower than slaveConnectionMinimumIdleSize");
