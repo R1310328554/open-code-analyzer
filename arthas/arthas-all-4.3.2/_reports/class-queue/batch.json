@@ -15,23 +15,8 @@
     "core/src/main/java/com/taobao/arthas/core/command/view/ShutdownView.java",
     "core/src/main/java/com/taobao/arthas/core/command/view/StackView.java",
     "core/src/main/java/com/taobao/arthas/core/command/view/StatusView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/SystemEnvView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/SystemPropertyView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/ThreadView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/TimeTunnelView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/TraceView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/VMOptionView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/VersionView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/ViewRenderUtil.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/VmToolView.java",
-    "core/src/main/java/com/taobao/arthas/core/command/view/WatchView.java",
-    "core/src/main/java/com/taobao/arthas/core/config/BinderUtils.java",
-    "core/src/main/java/com/taobao/arthas/core/config/Config.java",
-    "core/src/main/java/com/taobao/arthas/core/config/Configure.java",
-    "core/src/main/java/com/taobao/arthas/core/config/FeatureCodec.java",
-    "core/src/main/java/com/taobao/arthas/core/config/NestedConfig.java",
-    "core/src/main/java/com/taobao/arthas/core/distribution/CompositeResultDistributor.java"
+    "core/src/main/java/com/taobao/arthas/core/command/view/SystemEnvView.java"
   ],
   "remaining_pending": 405,
-  "done": 360
+  "done": 375
 }
