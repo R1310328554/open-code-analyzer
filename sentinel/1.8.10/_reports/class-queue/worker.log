@@ -1168,3 +1168,8 @@
 2026-08-09T18:47:49Z DONE sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/netty/HttpServer.java wave32a [0:15]
 2026-08-09T18:47:49Z DONE sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/netty/HttpServerHandler.java wave32a [0:15]
 2026-08-09T18:47:49Z DONE sentinel-transport/sentinel-transport-netty-http/src/main/java/com/alibaba/csp/sentinel/transport/command/netty/HttpServerInitializer.java wave32a [0:15]
+2026-08-09T18:49:44Z DONE sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/SentinelApiHandlerMapping.java wave33 final [0:5]
+2026-08-09T18:49:44Z DONE sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/SpringMvcHttpCommandCenter.java wave33 final [0:5]
+2026-08-09T18:49:44Z DONE sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/command/http/StatusCode.java wave33 final [0:5]
+2026-08-09T18:49:44Z DONE sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/SpringMvcHttpHeartbeatSender.java wave33 final [0:5]
+2026-08-09T18:49:44Z DONE sentinel-transport/sentinel-transport-spring-mvc/src/main/java/com/alibaba/csp/sentinel/transport/heartbeat/client/HttpClientsFactory.java wave33 final [0:5]
