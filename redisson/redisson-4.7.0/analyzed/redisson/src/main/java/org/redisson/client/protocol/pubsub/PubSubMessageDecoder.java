@@ -24,24 +24,32 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * 
+ * {@code message} 类型 Pub/Sub 推送的多段 RESP 解码器。
+ * <p>
+ * 将 {@code [type, channel, payload]} 三段数组解析为 {@link PubSubMessage}；
+ * 消息体字段使用构造时注入的 {@link Decoder} 解码。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PubSubMessageDecoder implements MultiDecoder<Object> {
 
+    /** 用于解码消息 payload 的解码器。 */
     private final Decoder<Object> decoder;
 
+    /** @param decoder 消息体解码器 */
     public PubSubMessageDecoder(Decoder<Object> decoder) {
         super();
         this.decoder = decoder;
     }
 
+    /** 始终返回构造时指定的 payload 解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return decoder;
     }
     
+    /** 从多段数组提取频道名与消息体，组装 {@link PubSubMessage}。 */
     @Override
     public PubSubMessage decode(List<Object> parts, State state) {
         ChannelName name = new ChannelName((byte[]) parts.get(1));

@@ -19,20 +19,27 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.dataformat.cbor.CBORFactory;
 
 /**
+ * 基于 Jackson 3 的 CBOR 二进制 JSON 编解码器。
+ * <p>
+ * 继承 {@link JsonJackson3Codec}，使用 {@link CBORFactory} 输出紧凑 CBOR 格式，
+ * 相比纯 JSON 体积更小、解析更快。
  *
  * @author Nikita Koksharov
  * 
  */
 public class CborJackson3Codec extends JsonJackson3Codec {
 
+    /** 使用默认 CBOR ObjectMapper 构造。 */
     public CborJackson3Codec() {
         super(new ObjectMapper(new CBORFactory()));
     }
 
+    /** 按 ClassLoader 创建 CBOR Mapper。 */
     public CborJackson3Codec(ClassLoader classLoader) {
         super(createMapper(classLoader, new ObjectMapper(new CBORFactory())));
     }
 
+    /** 从已有 Codec 复制 Mapper 配置并应用指定 ClassLoader。 */
     public CborJackson3Codec(ClassLoader classLoader, CborJackson3Codec codec) {
         super(createMapper(classLoader, codec.mapObjectMapper.rebuild().build()));
     }

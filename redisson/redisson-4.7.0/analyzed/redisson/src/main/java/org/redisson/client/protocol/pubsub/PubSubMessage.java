@@ -18,26 +18,34 @@ package org.redisson.client.protocol.pubsub;
 import org.redisson.client.ChannelName;
 
 /**
- * 
+ * Redis 频道订阅（{@code SUBSCRIBE}）推送的消息载体。
+ * <p>
+ * 封装频道名与已解码的消息体，实现 {@link Message} 供上层监听器消费。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PubSubMessage implements Message {
 
+    /** 消息来源频道。 */
     private final ChannelName channel;
+    /** 经 Codec 解码后的消息内容。 */
     private final Object value;
 
+    /** @param channel 频道名 @param value 消息体 */
     public PubSubMessage(ChannelName channel, Object value) {
         super();
         this.channel = channel;
         this.value = value;
     }
 
+    /** 返回消息所属频道。 */
     @Override
     public ChannelName getChannel() {
         return channel;
     }
 
+    /** 返回已解码的消息值。 */
     public Object getValue() {
         return value;
     }

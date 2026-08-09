@@ -18,16 +18,24 @@ package org.redisson.client.protocol.pubsub;
 import org.redisson.client.ChannelName;
 
 /**
- * 
+ * 模式订阅（{@code PSUBSCRIBE}）推送的消息载体。
+ * <p>
+ * 除实际频道与消息体外，还携带用户订阅时使用的模式字符串，
+ * 便于在通配符订阅场景下区分匹配来源。
+ *
  * @author Nikita Koksharov
  *
  */
 public class PubSubPatternMessage implements Message {
 
+    /** 用户订阅的模式（如 {@code news.*}）。 */
     private final ChannelName pattern;
+    /** 实际触发消息的频道名。 */
     private final ChannelName channel;
+    /** 经 Codec 解码后的消息内容。 */
     private final Object value;
 
+    /** @param pattern 订阅模式 @param channel 实际频道 @param value 消息体 */
     public PubSubPatternMessage(ChannelName pattern, ChannelName channel, Object value) {
         super();
         this.pattern = pattern;
@@ -35,15 +43,18 @@ public class PubSubPatternMessage implements Message {
         this.value = value;
     }
 
+    /** 返回订阅时使用的模式。 */
     public ChannelName getPattern() {
         return pattern;
     }
 
+    /** 返回实际发布消息的频道。 */
     @Override
     public ChannelName getChannel() {
         return channel;
     }
 
+    /** 返回已解码的消息值。 */
     public Object getValue() {
         return value;
     }

@@ -24,22 +24,36 @@ import org.redisson.client.protocol.Encoder;
 import java.io.IOException;
 
 /**
+ * 键空间通知（Keyspace Event）编解码器的抽象基类。
+ * <p>
+ * 不同操作系统下 Redis 推送的事件键名长度前缀字节序不同，
+ * 子类通过 {@link OSType} 选择正确的长度读取方式，再委托内层 {@link Codec} 解码键名。
  *
  * @author Nikita Koksharov
  *
  */
 public abstract class BaseEventCodec implements Codec {
 
+    /** 事件键名长度前缀的平台字节序变体。 */
     public enum OSType {WINDOWS, HPNONSTOP}
 
+    /** 内层键名/值编解码器。 */
     protected final Codec codec;
+    /** 当前运行平台类型，决定长度前缀解析方式。 */
     protected final OSType osType;
 
+    /** @param codec 内层编解码器 @param osType 平台类型 */
     public BaseEventCodec(Codec codec, OSType osType) {
         this.codec = codec;
         this.osType = osType;
     }
 
+    /**
+     * 从缓冲区读取长度前缀的键名并解码。
+     * <p>
+     * Windows 使用 4 字节小端整数；HP NonStop 使用 8 字节大端；
+     * 其余平台使用 8 字节小端。
+     */
     protected Object decode(ByteBuf buf, State state, Decoder<?> decoder) throws IOException {
         int keyLen;
         if (osType == OSType.WINDOWS) {
@@ -54,6 +68,7 @@ public abstract class BaseEventCodec implements Codec {
         return key;
     }
 
+    /** 事件 Codec 不支持 Map 值解码。 */
     @Override
     public Decoder<Object> getMapValueDecoder() {
         throw new UnsupportedOperationException();

@@ -18,15 +18,22 @@ package org.redisson.cluster;
 import java.util.Objects;
 
 /**
+ * Redis 集群槽位闭区间 {@code [startSlot, endSlot]}。
+ * <p>
+ * 对应 {@code CLUSTER NODES} 输出中的单槽或区间表示（如 {@code 0-5460}），
+ * 供 {@link ClusterNodeInfo} 与 {@link ClusterPartition} 维护槽位分配。
  *
  * @author Nikita Koksharov
  *
  */
 public class ClusterSlotRange {
 
+    /** 区间起始槽位（含）。 */
     private final int startSlot;
+    /** 区间结束槽位（含）。 */
     private final int endSlot;
 
+    /** @param startSlot 起始槽 @param endSlot 结束槽 */
     public ClusterSlotRange(int startSlot, int endSlot) {
         super();
         this.startSlot = startSlot;
@@ -41,10 +48,12 @@ public class ClusterSlotRange {
         return endSlot;
     }
 
+    /** 判断给定槽位是否落在此闭区间内。 */
     public boolean hasSlot(int slot) {
         return slot >= startSlot && slot <= endSlot;
     }
 
+    /** 返回区间包含的槽位数量。 */
     public int size() {
         return endSlot - startSlot + 1;
     }

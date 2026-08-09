@@ -19,20 +19,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 
 /**
+ * 基于 Jackson 2 的 CBOR 二进制 JSON 编解码器。
+ * <p>
+ * 继承 {@link JsonJacksonCodec}，使用 {@link CBORFactory} 输出紧凑 CBOR 格式，
+ * 相比纯 JSON 体积更小、解析更快。
  *
  * @author Faye Li
  * 
  */
 public class CborJacksonCodec extends JsonJacksonCodec {
     
+    /** 使用默认 CBOR ObjectMapper 构造。 */
     public CborJacksonCodec() {
         super(new ObjectMapper(new CBORFactory()));
     }
     
+    /** 按 ClassLoader 创建 CBOR Mapper。 */
     public CborJacksonCodec(ClassLoader classLoader) {
         super(createObjectMapper(classLoader, new ObjectMapper(new CBORFactory())));
     }
     
+    /** 从已有 Codec 复制 Mapper 配置并应用指定 ClassLoader。 */
     public CborJacksonCodec(ClassLoader classLoader, CborJacksonCodec codec) {
         super(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
     }
