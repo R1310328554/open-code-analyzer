@@ -20,136 +20,121 @@ import java.util.Set;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * Base RxJava2 interface for Multimap object
- * 
- * @author Nikita Koksharov
+ * Multimap 基础 RxJava API，一个键可映射多个值。
+ * <p>各方法返回 {@link Single}；基于 Redis Hash 结构。
  *
- * @param <K> key type
- * @param <V> value type
+ * @author Nikita Koksharov
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RMultimapRx<K, V> extends RExpirableRx {
 
     /**
-     * Returns the number of key-value pairs in this multimap.
+     * 返回 multimap 中键值对总数。
      *
-     * @return size of multimap
+     * @return multimap 大小
      */
     Single<Integer> size();
 
     /**
-     * Returns {@code true} if this multimap contains at least one key-value pair
-     * with the key {@code key}.
+     * 若 multimap 中存在键 {@code key} 的至少一个键值对则返回 {@code true}。
      * 
-     * @param key - map key
-     * @return <code>true</code> if contains a key
+     * @param key 映射键
+     * @return 包含该键时为 {@code true}
      */
     Single<Boolean> containsKey(Object key);
 
     /**
-     * Returns {@code true} if this multimap contains at least one key-value pair
-     * with the value {@code value}.
+     * 若 multimap 中存在值 {@code value} 的至少一个键值对则返回 {@code true}。
      * 
-     * @param value - map value
-     * @return <code>true</code> if contains a value
+     * @param value 映射值
+     * @return 包含该值时为 {@code true}
      */
     Single<Boolean> containsValue(Object value);
 
     /**
-     * Returns {@code true} if this multimap contains at least one key-value pair
-     * with the key {@code key} and the value {@code value}.
+     * 若 multimap 中存在键 {@code key} 且值 {@code value} 的键值对则返回 {@code true}。
      * 
-     * @param key - map key
-     * @param value - map value
-     * @return <code>true</code> if contains an entry
+     * @param key 映射键
+     * @param value 映射值
+     * @return 包含该条目时为 {@code true}
      */
     Single<Boolean> containsEntry(Object key, Object value);
 
     /**
-     * Stores a key-value pair in this multimap.
+     * 向 multimap 存入一个键值对。
      *
-     * <p>Some multimap implementations allow duplicate key-value pairs, in which
-     * case {@code put} always adds a new key-value pair and increases the
-     * multimap size by 1. Other implementations prohibit duplicates, and storing
-     * a key-value pair that's already in the multimap has no effect.
+     * <p>部分实现允许重复键值对，此时 {@code put} 总是新增并令大小加 1；
+     * 其他实现禁止重复，已存在的键值对再次写入无效。
      *
-     * @param key - map key
-     * @param value - map value
-     * @return {@code true} if the method increased the size of the multimap, or
-     *     {@code false} if the multimap already contained the key-value pair and
-     *     doesn't allow duplicates
+     * @param key 映射键
+     * @param value 映射值
+     * @return 若 multimap 大小增加则为 {@code true}；
+     *     若已存在且不允许重复则为 {@code false}
      */
     Single<Boolean> put(K key, V value);
 
     /**
-     * Removes a single key-value pair with the key {@code key} and the value
-     * {@code value} from this multimap, if such exists. If multiple key-value
-     * pairs in the multimap fit this description, which one is removed is
-     * unspecified.
+     * 移除键 {@code key} 且值 {@code value} 的一个键值对（若存在）。
+     * 若存在多个匹配项，移除哪一个未定义。
      *
-     * @param key - map key
-     * @param value - map value
-     * @return {@code true} if the multimap changed
+     * @param key 映射键
+     * @param value 映射值
+     * @return multimap 发生变化时为 {@code true}
      */
     Single<Boolean> remove(Object key, Object value);
 
     // Bulk Operations
 
     /**
-     * Stores a key-value pair in this multimap for each of {@code values}, all
-     * using the same key, {@code key}. Equivalent to (but expected to be more
-     * efficient than): <pre>   {@code
+     * 将 {@code values} 中每个值以同一键 {@code key} 写入 multimap。
+     * 等价于循环调用 {@code put(key, value)}，但通常更高效。
      *
-     *   for (V value : values) {
-     *     put(key, value);
-     *   }}</pre>
+     * <p>若 {@code values} 为空则为空操作。
      *
-     * <p>In particular, this is a no-op if {@code values} is empty.
-     *
-     * @param key - map key
-     * @param values - map values
-     * @return {@code true} if the multimap changed
+     * @param key 映射键
+     * @param values 映射值集合
+     * @return multimap 发生变化时为 {@code true}
      */
     Single<Boolean> putAll(K key, Iterable<? extends V> values);
 
     /**
-     * Returns the number of key-value pairs in this multimap.
+     * 返回 multimap 中不重复键的数量。
      *
-     * @return keys amount
+     * @return 键数量
      */
     Single<Integer> keySize();
 
     /**
-     * Stores a collection of values with the same key, replacing any existing
-     * values for that key. Is faster by not returning the values.
+     * 用 {@code values} 替换指定键的全部已有值（快速版，不返回旧值）。
      *
-     * @param key - map key
-     * @param values - map values
+     * @param key 映射键
+     * @param values 新值集合
      */
     Single<Void> fastReplaceValues(K key, Iterable<? extends V> values);
 
     /**
-     * Removes <code>keys</code> from map by one operation
+     * 一次操作移除多个键及其全部关联值。
      *
-     * Works faster than <code>RMultimap.remove</code> but not returning
-     * the value associated with <code>key</code>
+     * 比 {@code RMultimap.remove} 更快，但不返回被移除的值。
      *
-     * @param keys - map keys
-     * @return the number of keys that were removed from the hash, not including specified but non existing keys
+     * @param keys 待移除的映射键
+     * @return 实际从 hash 中移除的键数量（不含不存在的键）
      */
     Single<Long> fastRemove(K... keys);
 
     /**
-     * Removes <code>values</code> from map by one operation
+     * 一次操作从 multimap 中移除多个值。
      *
-     * @param values map values
-     * @return the number of values that were removed from the map
+     * @param values 待移除的映射值
+     * @return 实际移除的值数量
      */
     Single<Long> fastRemoveValue(V... values);
 
     /**
-     * Read all keys at once
+     * 一次性读取全部键。
      *
-     * @return keys
+     * @return 键集合
      */
     Single<Set<K>> readAllKeySet();
 

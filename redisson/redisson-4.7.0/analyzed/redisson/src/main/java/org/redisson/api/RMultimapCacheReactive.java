@@ -20,23 +20,22 @@ import reactor.core.publisher.Mono;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Reactive interface of {@link RMultimapCache} object.
+ * {@link RMultimapCache} 的 Reactor API。
+ * <p>各方法返回 {@link Mono}；支持为单个键设置过期时间。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RMultimapCacheReactive<K, V> {
 
     /**
-     * Set a timeout for key. After the timeout has expired, the key and its values will automatically be deleted.
+     * 为指定键设置过期时间；到期后键及其全部值自动删除。
      *
-     * @param key - map key
-     * @param timeToLive - timeout before key will be deleted
-     * @param timeUnit - timeout time unit
-     * @return A Single that will emit <code>true</code> if key exists and the timeout was set and <code>false</code>
-     * if key not exists
+     * @param key 映射键
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 发出 {@code true}（键存在且设置成功）或 {@code false}（键不存在）的 Mono/Single
      */
     Mono<Boolean> expireKey(K key, long timeToLive, TimeUnit timeUnit);
 }

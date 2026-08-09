@@ -20,332 +20,293 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Base Multimap interface. Allows to map multiple values per key.
+ * Multimap 基础接口，允许一个键映射多个值。
+ * <p>基于 Redis Hash 结构，键对应一组值集合；
+ * 具体实现可为 ListMultimap 或 SetMultimap。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
 
     /**
-     * Returns <code>RCountDownLatch</code> instance associated with key
+     * 返回与 {@code key} 关联的 {@link RCountDownLatch} 实例。
      * 
-     * @param key - map key
-     * @return countdownlatch
+     * @param key 映射键
+     * @return 倒计时门闩
      */
     RCountDownLatch getCountDownLatch(K key);
     
     /**
-     * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
+     * 返回与 {@code key} 关联的 {@link RPermitExpirableSemaphore} 实例。
      * 
-     * @param key - map key
-     * @return permitExpirableSemaphore
+     * @param key 映射键
+     * @return 可过期许可信号量
      */
     RPermitExpirableSemaphore getPermitExpirableSemaphore(K key);
 
     /**
-     * Returns <code>RSemaphore</code> instance associated with key
+     * 返回与 {@code key} 关联的 {@link RSemaphore} 实例。
      * 
-     * @param key - map key
-     * @return semaphore
+     * @param key 映射键
+     * @return 信号量
      */
     RSemaphore getSemaphore(K key);
     
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与 {@code key} 关联的公平 {@link RLock} 实例。
      * 
-     * @param key - map key
-     * @return fairlock
+     * @param key 映射键
+     * @return 公平锁
      */
     RLock getFairLock(K key);
 
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 返回与 {@code key} 关联的 {@link RReadWriteLock} 实例。
      * 
-     * @param key - map key
-     * @return readWriteLock
+     * @param key 映射键
+     * @return 读写锁
      */
     RReadWriteLock getReadWriteLock(K key);
     
     /**
-     * Returns <code>RLock</code> instance associated with key
+     * 返回与 {@code key} 关联的 {@link RLock} 实例。
      * 
-     * @param key - map key
-     * @return lock
+     * @param key 映射键
+     * @return 分布式锁
      */
     RLock getLock(K key);
     
     /**
-     * Returns the number of key-value pairs in this multimap.
+     * 返回 multimap 中键值对总数。
      *
-     * @return size of multimap
+     * @return multimap 大小
      */
     int size();
 
     /**
-     * Check is map empty
+     * 检查 multimap 是否为空。
      *
-     * @return <code>true</code> if empty
+     * @return 为空时返回 {@code true}
      */
     boolean isEmpty();
 
     /**
-     * Returns {@code true} if this multimap contains at least one key-value pair
-     * with the key {@code key}.
+     * 若 multimap 中存在键 {@code key} 的至少一个键值对则返回 {@code true}。
      * 
-     * @param key - map key
-     * @return <code>true</code> if contains a key
+     * @param key 映射键
+     * @return 包含该键时为 {@code true}
      */
     boolean containsKey(Object key);
 
     /**
-     * Returns {@code true} if this multimap contains at least one key-value pair
-     * with the value {@code value}.
+     * 若 multimap 中存在值 {@code value} 的至少一个键值对则返回 {@code true}。
      * 
-     * @param value - map value
-     * @return <code>true</code> if contains a value
+     * @param value 映射值
+     * @return 包含该值时为 {@code true}
      */
     boolean containsValue(Object value);
 
     /**
-     * Returns {@code true} if this multimap contains at least one key-value pair
-     * with the key {@code key} and the value {@code value}.
+     * 若 multimap 中存在键 {@code key} 且值 {@code value} 的键值对则返回 {@code true}。
      * 
-     * @param key - map key
-     * @param value - map value
-     * @return <code>true</code> if contains an entry
+     * @param key 映射键
+     * @param value 映射值
+     * @return 包含该条目时为 {@code true}
      */
     boolean containsEntry(Object key, Object value);
 
     /**
-     * Stores a key-value pair in this multimap.
+     * 向 multimap 存入一个键值对。
      *
-     * <p>Some multimap implementations allow duplicate key-value pairs, in which
-     * case {@code put} always adds a new key-value pair and increases the
-     * multimap size by 1. Other implementations prohibit duplicates, and storing
-     * a key-value pair that's already in the multimap has no effect.
+     * <p>部分实现允许重复键值对，此时 {@code put} 总是新增并令大小加 1；
+     * 其他实现禁止重复，已存在的键值对再次写入无效。
      *
-     * @param key - map key
-     * @param value - map value
-     * @return {@code true} if the method increased the size of the multimap, or
-     *     {@code false} if the multimap already contained the key-value pair and
-     *     doesn't allow duplicates
+     * @param key 映射键
+     * @param value 映射值
+     * @return 若 multimap 大小增加则为 {@code true}；
+     *     若已存在且不允许重复则为 {@code false}
      */
     boolean put(K key, V value);
 
     /**
-     * Removes a single key-value pair with the key {@code key} and the value
-     * {@code value} from this multimap, if such exists. If multiple key-value
-     * pairs in the multimap fit this description, which one is removed is
-     * unspecified.
+     * 移除键 {@code key} 且值 {@code value} 的一个键值对（若存在）。
+     * 若存在多个匹配项，移除哪一个未定义。
      *
-     * @param key - map key
-     * @param value - map value
-     * @return {@code true} if the multimap changed
+     * @param key 映射键
+     * @param value 映射值
+     * @return multimap 发生变化时为 {@code true}
      */
     boolean remove(Object key, Object value);
 
     /**
-     * Stores a key-value pair in this multimap for each of {@code values}, all
-     * using the same key, {@code key}. Equivalent to (but expected to be more
-     * efficient than): <pre>   {@code
+     * 将 {@code values} 中每个值以同一键 {@code key} 写入 multimap。
+     * 等价于循环调用 {@code put(key, value)}，但通常更高效。
      *
-     *   for (V value : values) {
-     *     put(key, value);
-     *   }}</pre>
-     *
-     * <p>In particular, this is a no-op if {@code values} is empty.
+     * <p>若 {@code values} 为空则为空操作。
      * 
-     * @param key - map key
-     * @param values - map values
-     * @return {@code true} if the multimap changed
+     * @param key 映射键
+     * @param values 映射值集合
+     * @return multimap 发生变化时为 {@code true}
      */
     boolean putAll(K key, Iterable<? extends V> values);
 
     /**
-     * Stores a collection of values with the same key, replacing any existing
-     * values for that key.
+     * 用 {@code values} 替换指定键的全部已有值。
      *
-     * <p>If {@code values} is empty, this is equivalent to
-     * {@link #removeAll(Object) removeAll(key)}.
+     * <p>若 {@code values} 为空，等价于 {@link #removeAll(Object) removeAll(key)}。
      *
-     * @param key - map key
-     * @param values - map values
-     * @return the collection of replaced values, or an empty collection if no
-     *     values were previously associated with the key. The collection
-     *     <i>may</i> be modifiable, but updating it will have no effect on the
-     *     multimap.
+     * @param key 映射键
+     * @param values 新值集合
+     * @return 被替换的旧值集合；修改返回集合不影响 multimap。
      */
     Collection<V> replaceValues(K key, Iterable<? extends V> values);
 
     /**
-     * Stores a collection of values with the same key, replacing any existing
-     * values for that key. Is faster than {@link #replaceValues} by not returning
-     * the values.
+     * 用 {@code values} 替换指定键的全部已有值（快速版，不返回旧值）。
+     * 比 {@link #replaceValues} 更快，但不返回被替换的值。
      *
-     * <p>If {@code values} is empty, this is equivalent to
-     * {@link #removeAll(Object) removeAll(key)}.
+     * <p>若 {@code values} 为空，等价于 {@link #removeAll(Object) removeAll(key)}。
      *
-     * @param key - map key
-     * @param values - map values
+     * @param key 映射键
+     * @param values 新值集合
      */
     void fastReplaceValues(K key, Iterable<? extends V> values);
 
     /**
-     * Removes all values associated with the key {@code key}.
+     * 移除与 {@code key} 关联的全部值。
      *
-     * <p>Once this method returns, {@code key} will not be mapped to any values
-     * <p>Use {@link RMultimap#fastRemove} if values are not needed.</p>
+     * <p>方法返回后 {@code key} 不再映射任何值。
+     * <p>若不需要返回值，可使用 {@link RMultimap#fastRemove}。</p>
      * 
-     * @param key - map key
-     * @return the values that were removed (possibly empty). The returned
-     *     collection <i>may</i> be modifiable, but updating it will have no
-     *     effect on the multimap.
+     * @param key 映射键
+     * @return 被移除的值集合（可能为空）；修改返回集合不影响 multimap。
      */
     Collection<V> removeAll(Object key);
 
     /**
-     * Removes all key-value pairs from the multimap, leaving it {@linkplain
-     * #isEmpty empty}.
+     * 清空 multimap 的全部键值对，使其 {@linkplain #isEmpty 为空}。
      */
     void clear();
 
     /**
-     * Returns a view collection of the values associated with {@code key} in this
-     * multimap, if any. Note that when {@code containsKey(key)} is false, this
-     * returns an empty collection, not {@code null}.
+     * 返回与 {@code key} 关联的值集合视图。
+     * 当 {@code containsKey(key)} 为 false 时返回空集合而非 {@code null}。
      *
-     * <p>Changes to the returned collection will update the underlying multimap,
-     * and vice versa.
+     * <p>对返回集合的修改会反映到底层 multimap，反之亦然。
      * 
-     * @param key - map key
-     * @return collection of values
+     * @param key 映射键
+     * @return 值集合
      */
     Collection<V> get(K key);
 
     /**
-     * Returns all elements at once. Result collection is <b>NOT</b> backed by map,
-     * so changes are not reflected in map.
+     * 一次性返回指定键的全部元素。
+     * 结果集合<b>不</b>与底层 map 绑定，修改结果不会影响 multimap。
      *
-     * @param key - map key
-     * @return collection of values 
+     * @param key 映射键
+     * @return 值集合
      */
     Collection<V> getAll(K key);
 
     /**
-     * Returns a view collection of all <i>distinct</i> keys contained in this
-     * multimap. Note that the key set contains a key if and only if this multimap
-     * maps that key to at least one value.
+     * 返回 multimap 中全部不重复键的集合视图。
+     * 仅当键至少映射一个值时才会出现在键集中。
      *
-     * <p>Changes to the returned set will update the underlying multimap, and
-     * vice versa. However, <i>adding</i> to the returned set is not possible.
+     * <p>对返回集合的修改会反映到底层 multimap，反之亦然；
+     * 但不支持向返回集合添加键。
      * 
-     * @return set of keys
+     * @return 键集合
      */
     Set<K> keySet();
 
     /**
-     * Returns a view collection of all distinct keys contained in this multimap.
-     * Keys are loaded in batches; batch size is defined by the <code>count</code> parameter.
-     * Larger values reduce the number of HSCAN round-trips when iterating large multimaps.
+     * 返回 multimap 中全部不重复键的集合视图（分批加载）。
+     * {@code count} 定义每批键数量；较大值可减少大 multimap 迭代时的 HSCAN 往返次数。
      *
-     * <p>Changes to the returned set will update the underlying multimap, and
-     * vice versa. However, <i>adding</i> to the returned set is not possible.
+     * <p>对返回集合的修改会反映到底层 multimap，反之亦然；
+     * 但不支持向返回集合添加键。
      *
-     * @param count - size of the keys batch
-     * @return set of keys
+     * @param count 每批键数量
+     * @return 键集合
      */
     default Set<K> keySet(int count) {
         return keySet();
     }
 
     /**
-     *  Returns the count of distinct keys in this multimap.
+     * 返回 multimap 中不重复键的数量。
      *  
-     *  @return keys amount
+     * @return 键数量
      */
     int keySize();
 
     /**
-     * Returns a view collection containing the <i>value</i> from each key-value
-     * pair contained in this multimap, without collapsing duplicates (so {@code
-     * values().size() == size()}).
+     * 返回 multimap 中每个键值对的值集合视图（不合并重复）。
+     * 因此 {@code values().size() == size()}。
      *
-     * <p>Changes to the returned collection will update the underlying multimap,
-     * and vice versa. However, <i>adding</i> to the returned collection is not
-     * possible.
+     * <p>对返回集合的修改会反映到底层 multimap，反之亦然；
+     * 但不支持向返回集合添加值。
      * 
-     * @return collection of values
+     * @return 值集合
      */
     Collection<V> values();
 
     /**
-     * Returns a view collection containing the <i>value</i> from each key-value
-     * pair contained in this multimap, without collapsing duplicates.
-     * Values are loaded in batches; batch size is defined by the <code>count</code> parameter.
-     * Larger values reduce the number of HSCAN round-trips on the key dimension when
-     * iterating large multimaps, and (for {@code RSetMultimap}) the number of SSCAN
-     * round-trips on the value dimension as well.
+     * 返回 multimap 中每个键值对的值集合视图（分批加载，不合并重复）。
+     * {@code count} 定义每批数量；较大值可减少 HSCAN/SSCAN 往返次数。
      *
-     * @param count size of the iteration batch
-     * @return collection of values
+     * @param count 每批迭代数量
+     * @return 值集合
      */
     default Collection<V> values(int count) {
         return values();
     }
 
     /**
-     * Returns a view collection of all key-value pairs contained in this
-     * multimap, as {@link Map.Entry} instances.
+     * 返回 multimap 中全部键值对的集合视图（{@link Map.Entry} 形式）。
      *
-     * <p>Changes to the returned collection or the entries it contains will
-     * update the underlying multimap, and vice versa. However, <i>adding</i> to
-     * the returned collection is not possible.
+     * <p>对返回集合或其条目的修改会反映到底层 multimap，反之亦然；
+     * 但不支持向返回集合添加条目。
      * 
-     * @return collection of entries
+     * @return 条目集合
      */
     Collection<Map.Entry<K, V>> entries();
 
     /**
-     * Returns a view collection of all key-value pairs contained in this multimap,
-     * as {@link Map.Entry} instances.
-     * Entries are loaded in batches; batch size is defined by the <code>count</code> parameter.
-     * Larger values reduce the number of HSCAN round-trips on the key dimension when
-     * iterating large multimaps, and (for {@code RSetMultimap}) the number of SSCAN
-     * round-trips on the value dimension as well.
+     * 返回 multimap 中全部键值对的集合视图（分批加载，{@link Map.Entry} 形式）。
+     * {@code count} 定义每批数量；较大值可减少 HSCAN/SSCAN 往返次数。
      *
-     * @param count size of the iteration batch
-     * @return collection of entries
+     * @param count 每批迭代数量
+     * @return 条目集合
      */
     default Collection<Map.Entry<K, V>> entries(int count) {
         return entries();
     }
 
     /**
-     * Removes <code>keys</code> from map by one operation
+     * 一次操作移除多个键及其全部关联值。
      *
-     * Works faster than <code>RMultimap.remove</code> but not returning
-     * the value associated with <code>key</code>
+     * 比 {@code RMultimap.remove} 更快，但不返回被移除的值。
      *
-     * @param keys - map keys
-     * @return the number of keys that were removed from the hash, not including specified but non existing keys
+     * @param keys 待移除的映射键
+     * @return 实际从 hash 中移除的键数量（不含不存在的键）
      */
     long fastRemove(K... keys);
 
     /**
-     * Removes <code>values</code> from map by one operation
+     * 一次操作从 multimap 中移除多个值。
      *
-     * @param values map values
-     * @return the number of values that were removed from the map
+     * @param values 待移除的映射值
+     * @return 实际移除的值数量
      */
     long fastRemoveValue(V... values);
 
     /**
-     * Read all keys at once
+     * 一次性读取全部键。
      *
-     * @return keys
+     * @return 键集合
      */
     Set<K> readAllKeySet();
 

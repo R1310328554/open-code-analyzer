@@ -18,23 +18,22 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Base Multimap interface. Allows to map multiple values per key and define expiration per key.
+ * 带 per-key TTL 的 Multimap 基础接口，一个键可映射多个值。
+ * <p>继承 {@link RMultimap} 全部能力，并支持为单个键设置过期时间。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key type
- * @param <V> value type
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public interface RMultimapCache<K, V> extends RMultimap<K, V>, RMultimapCacheAsync<K, V> {
 
     /**
-     * Set a timeout for key. After the timeout has expired,
-     * the key and its values will automatically be deleted.
+     * 为指定键设置过期时间；到期后键及其全部值自动删除。
      * 
-     * @param key - map key
-     * @param timeToLive - timeout before key will be deleted
-     * @param timeUnit - timeout time unit
-     * @return <code>true</code> if key exists and the timeout was set and <code>false</code> if key not exists
+     * @param key 映射键
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 键存在且设置成功时为 {@code true}；键不存在时为 {@code false}
      */
     boolean expireKey(K key, long timeToLive, TimeUnit timeUnit);
     

@@ -18,56 +18,52 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * Import session for Map objects sharing the same field names.
+ * 共享相同字段名的 Map 批量导入会话。
  * <p>
- * Buffered Map objects are written to Redis when the buffer reaches the configured
- * batch size and when {@link #flush()} is called. Objects added but not flushed are
- * never written, so {@link #flush()} has to be called before the import object is discarded.
+ * 缓冲达到配置的 batch 大小或调用 {@link #flush()} 时写入 Redis；
+ * 未 flush 的数据不会写入，丢弃导入对象前必须调用 {@link #flush()}。
  * <p>
- * Each imported Map object replaces the whole object stored under the same name.
+ * 每个导入的 Map 替换同名 Redis 对象的全部内容。
  * <p>
- * Map objects can be added from several threads.
+ * 支持多线程并发添加。
  *
  * @author Nikita Koksharov
- *
- * @param <K> field type
- * @param <V> value type
+ * @param <K> 字段类型
+ * @param <V> 值类型
  */
 public interface RMapsImport<K, V> extends RMapsImportAsync<K, V> {
 
     /**
-     * Adds Map object stored under the specified <code>name</code>.
+     * 添加存储于 {@code name} 下的 Map 对象（变参形式）。
      * <p>
-     * Values are matched to the field names defined for this import object by position,
-     * so the amount of values has to be equal to the amount of field names.
-     * Values are encoded immediately.
+     * 值按位置与导入对象定义的字段名一一对应，数量须与字段数相等；
+     * 值会立即编码。
      *
-     * @param name name of object
-     * @param values values ordered as the defined field names
+     * @param name Redis 对象名
+     * @param values 与字段名顺序对应的值
      */
     void add(String name, V... values);
 
     /**
-     * Adds Map object stored under the specified <code>name</code>.
+     * 添加存储于 {@code name} 下的 Map 对象（List 形式）。
      * <p>
-     * Values are matched to the field names defined for this import object by position,
-     * so the amount of values has to be equal to the amount of field names.
-     * Values are encoded immediately.
+     * 值按位置与导入对象定义的字段名一一对应，数量须与字段数相等；
+     * 值会立即编码。
      *
-     * @param name name of object
-     * @param values values ordered as the defined field names
+     * @param name Redis 对象名
+     * @param values 与字段名顺序对应的值
      */
     void add(String name, List<V> values);
 
     /**
-     * Writes all buffered Map objects.
+     * 将缓冲中的全部 Map 对象写入 Redis。
      */
     void flush();
 
     /**
-     * Returns the amount of Map objects written by this import object.
+     * 返回本导入对象已成功写入 Redis 的 Map 数量。
      *
-     * @return amount of Map objects
+     * @return 已导入的 Map 数量
      */
     long getImportedCount();
 

@@ -20,51 +20,49 @@ import io.reactivex.rxjava3.core.Completable;
 import java.util.List;
 
 /**
- * Rx import session for Map objects sharing the same field names.
+ * 共享相同字段名的 Map 批量导入 RxJava API。
  * <p>
- * Buffered Map objects are written when the buffer reaches the configured batch size
- * and when {@link #flush()} is called. Objects added but not flushed are never written.
+ * 缓冲达到 batch 大小或调用 {@link #flush()} 时写入；未 flush 的数据不会写入。
  *
  * @author Nikita Koksharov
- *
- * @param <K> field type
- * @param <V> value type
+ * @param <K> 字段类型
+ * @param <V> 值类型
  */
 public interface RMapsImportRx<K, V> {
 
     /**
-     * Adds Map object stored under the specified <code>name</code>.
+     * 添加存储于 {@code name} 下的 Map 对象（变参形式）。
      * <p>
-     * Values are matched to the field names defined for this import object by position.
+     * 值按位置与导入对象定义的字段名一一对应。
      *
-     * @param name name of object
-     * @param values values ordered as the defined field names
+     * @param name Redis 对象名
+     * @param values 与字段名顺序对应的值
      * @return void
      */
     Completable add(String name, V... values);
 
     /**
-     * Adds Map object stored under the specified <code>name</code>.
+     * 添加存储于 {@code name} 下的 Map 对象（List 形式）。
      * <p>
-     * Values are matched to the field names defined for this import object by position.
+     * 值按位置与导入对象定义的字段名一一对应。
      *
-     * @param name name of object
-     * @param values values ordered as the defined field names
+     * @param name Redis 对象名
+     * @param values 与字段名顺序对应的值
      * @return void
      */
     Completable add(String name, List<V> values);
 
     /**
-     * Writes all buffered Map objects.
+     * 将缓冲中的全部 Map 对象写入 Redis。
      *
      * @return void
      */
     Completable flush();
 
     /**
-     * Returns the amount of Map objects written by this import object.
+     * 返回本导入对象已成功写入 Redis 的 Map 数量。
      *
-     * @return amount of Map objects
+     * @return 已导入的 Map 数量
      */
     long getImportedCount();
 

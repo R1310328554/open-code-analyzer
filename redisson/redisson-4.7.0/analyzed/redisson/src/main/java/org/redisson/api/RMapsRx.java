@@ -21,41 +21,39 @@ import org.redisson.api.map.MapsImportArgs;
 import java.util.Map;
 
 /**
- * Rx interface for mass operations with Map objects.
+ * Map 批量操作的 RxJava API。
+ * <p>各方法返回 {@link Completable}；用于一次性或分批写入多个 Redis Hash。
  *
  * @author Nikita Koksharov
- *
- * @param <K> field type
- * @param <V> value type
+ * @param <K> 字段类型
+ * @param <V> 值类型
  */
 public interface RMapsRx<K, V> {
 
     /**
-     * Stores Map objects mapped by name. Each object replaces
-     * the whole Map object stored under the same name.
+     * 按名称批量写入 Map 对象，每个对象替换同名 Redis Map 的全部内容。
      *
-     * @param maps Map objects mapped by name
+     * @param maps Map 对象映射（键名为 Redis 对象名）
      * @return void
      */
     Completable set(Map<String, Map<K, V>> maps);
 
     /**
-     * Stores Map objects mapped by name. Each object replaces
-     * the whole Map object stored under the same name.
+     * 按名称批量写入 Map 对象，每个对象替换同名 Redis Map 的全部内容。
      * <p>
-     * Objects are written in portions defined by <code>batchSize</code>.
+     * 按 {@code batchSize} 分批写入，降低单次内存与网络压力。
      *
-     * @param maps Map objects mapped by name
-     * @param batchSize amount of Map objects written per portion
+     * @param maps Map 对象映射（键名为 Redis 对象名）
+     * @param batchSize 每批写入的 Map 数量
      * @return void
      */
     Completable set(Map<String, Map<K, V>> maps, int batchSize);
 
     /**
-     * Returns import object for Map objects sharing the field names defined in <code>args</code>.
+     * 返回共享 {@code args} 中字段名的 Map 批量导入对象。
      *
-     * @param args import arguments object
-     * @return import object
+     * @param args 导入参数
+     * @return 导入对象
      */
     RMapsImportRx<K, V> createImport(MapsImportArgs<K> args);
 

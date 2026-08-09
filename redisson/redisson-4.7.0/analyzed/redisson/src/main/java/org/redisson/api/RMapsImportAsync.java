@@ -18,43 +18,39 @@ package org.redisson.api;
 import java.util.List;
 
 /**
- * Async import session for Map objects sharing the same field names.
+ * 共享相同字段名的 Map 批量导入异步 API。
+ * <p>各方法返回 {@link RFuture}；缓冲满或 flush 时写入 Redis。
  *
  * @author Nikita Koksharov
- *
- * @param <K> field type
- * @param <V> value type
+ * @param <K> 字段类型
+ * @param <V> 值类型
  */
 public interface RMapsImportAsync<K, V> {
 
     /**
-     * Adds Map object stored under the specified <code>name</code> in async mode.
+     * 异步添加存储于 {@code name} 下的 Map 对象（变参形式）。
      * <p>
-     * Values are matched to the field names defined for this import object by position,
-     * so the amount of values has to be equal to the amount of field names.
-     * Values are encoded immediately.
+     * 值按位置与字段名一一对应，数量须与字段数相等；值会立即编码。
      *
-     * @param name name of object
-     * @param values values ordered as the defined field names
+     * @param name Redis 对象名
+     * @param values 与字段名顺序对应的值
      * @return void
      */
     RFuture<Void> addAsync(String name, V... values);
 
     /**
-     * Adds Map object stored under the specified <code>name</code> in async mode.
+     * 异步添加存储于 {@code name} 下的 Map 对象（List 形式）。
      * <p>
-     * Values are matched to the field names defined for this import object by position,
-     * so the amount of values has to be equal to the amount of field names.
-     * Values are encoded immediately.
+     * 值按位置与字段名一一对应，数量须与字段数相等；值会立即编码。
      *
-     * @param name name of object
-     * @param values values ordered as the defined field names
+     * @param name Redis 对象名
+     * @param values 与字段名顺序对应的值
      * @return void
      */
     RFuture<Void> addAsync(String name, List<V> values);
 
     /**
-     * Writes all buffered Map objects in async mode.
+     * 异步将缓冲中的全部 Map 对象写入 Redis。
      *
      * @return void
      */
