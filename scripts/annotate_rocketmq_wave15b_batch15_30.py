@@ -26,7 +26,7 @@ BATCH_LIST = [
 SCRIPT_NAME = "annotate_rocketmq_wave15b_batch15_30.py"
 REPLACEMENTS_NAME = "wave15b_replacements_rocketmq_common.py"
 MARK_NOTE = "wave15b [15:30]"
-INDEX_FILE = Path("/var/tmp/rmq15b.index")
+INDEX_FILE = Path("/var/tmp/rmq15b-retry.index")
 
 GUARD_FILES = [
     ROOT
