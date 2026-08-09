@@ -31,11 +31,11 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.function.ThrowingFunction;
 
 /**
- * {@link LoadTimeWeaver} implementation for JBoss's instrumentable ClassLoader.
- * Thanks to Ales Justin and Marius Bogoevici for the initial prototype.
+ * 面向 JBoss 可织入 ClassLoader 的 {@link LoadTimeWeaver} 实现。
+ * 感谢 Ales Justin 与 Marius Bogoevici 提供的初始原型。
  *
- * <p>This weaver supports WildFly 13-23 (DelegatingClassFileTransformer) as well as
- * WildFly 24+ (DelegatingClassTransformer).
+ * <p>支持 WildFly 13–23（DelegatingClassFileTransformer）以及
+ * WildFly 24+（DelegatingClassTransformer）。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -66,8 +66,7 @@ public class JBossLoadTimeWeaver implements LoadTimeWeaver {
 
 
 	/**
-	 * Create a new instance of the {@link JBossLoadTimeWeaver} class using
-	 * the default {@link ClassLoader class loader}.
+	 * 使用默认 {@link ClassLoader class loader} 创建新的 {@link JBossLoadTimeWeaver} 实例。
 	 * @see org.springframework.util.ClassUtils#getDefaultClassLoader()
 	 */
 	public JBossLoadTimeWeaver() {
@@ -75,9 +74,8 @@ public class JBossLoadTimeWeaver implements LoadTimeWeaver {
 	}
 
 	/**
-	 * Create a new instance of the {@link JBossLoadTimeWeaver} class using
-	 * the supplied {@link ClassLoader}.
-	 * @param classLoader the {@code ClassLoader} to delegate to for weaving
+	 * 使用提供的 {@link ClassLoader} 创建新的 {@link JBossLoadTimeWeaver} 实例。
+	 * @param classLoader 委托进行织入的 {@code ClassLoader}
 	 */
 	public JBossLoadTimeWeaver(@Nullable ClassLoader classLoader) {
 		Assert.notNull(classLoader, "ClassLoader must not be null");

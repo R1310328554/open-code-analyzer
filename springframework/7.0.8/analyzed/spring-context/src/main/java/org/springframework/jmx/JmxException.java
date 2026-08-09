@@ -19,8 +19,8 @@ package org.springframework.jmx;
 import org.springframework.core.NestedRuntimeException;
 
 /**
- * General base exception to be thrown on JMX errors.
- * Unchecked since JMX failures are usually fatal.
+ * JMX 错误时抛出的通用基类异常。
+ * 为 unchecked 异常，因 JMX 失败通常具有致命性。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -29,17 +29,17 @@ import org.springframework.core.NestedRuntimeException;
 public class JmxException extends NestedRuntimeException {
 
 	/**
-	 * Constructor for JmxException.
-	 * @param msg the detail message
+	 * JmxException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public JmxException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for JmxException.
-	 * @param msg the detail message
-	 * @param cause the root cause (usually a raw JMX API exception)
+	 * JmxException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 根因（通常为原始 JMX API 异常）
 	 */
 	public JmxException(String msg, Throwable cause) {
 		super(msg, cause);

@@ -21,8 +21,7 @@ import javax.management.JMRuntimeException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Thrown when trying to invoke an operation on a proxy that is not exposed
- * by the proxied MBean resource's management interface.
+ * 尝试在代理上调用未被被代理 MBean 资源管理接口暴露的操作时抛出。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -33,9 +32,8 @@ import org.jspecify.annotations.Nullable;
 public class InvalidInvocationException extends JMRuntimeException {
 
 	/**
-	 * Create a new {@code InvalidInvocationException} with the supplied
-	 * error message.
-	 * @param msg the detail message
+	 * 使用给定错误消息创建新的 {@code InvalidInvocationException}。
+	 * @param msg 详细消息
 	 */
 	public InvalidInvocationException(@Nullable String msg) {
 		super(msg);

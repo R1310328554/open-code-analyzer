@@ -625,3 +625,13 @@ spring-context/src/main/java/org/springframework/format/datetime/standard/DateTi
 spring-context/src/main/java/org/springframework/format/datetime/standard/DateTimeFormatterRegistrar.java
 spring-context/src/main/java/org/springframework/format/datetime/standard/DateTimeFormatterUtils.java
 spring-context/src/main/java/org/springframework/format/datetime/standard/DurationFormatAnnotationFormatterFactory.java
+spring-context/src/main/java/org/springframework/instrument/classloading/SimpleLoadTimeWeaver.java
+spring-context/src/main/java/org/springframework/instrument/classloading/SimpleThrowawayClassLoader.java
+spring-context/src/main/java/org/springframework/instrument/classloading/WeavingTransformer.java
+spring-context/src/main/java/org/springframework/instrument/classloading/glassfish/GlassFishLoadTimeWeaver.java
+spring-context/src/main/java/org/springframework/instrument/classloading/jboss/JBossLoadTimeWeaver.java
+spring-context/src/main/java/org/springframework/instrument/classloading/tomcat/TomcatLoadTimeWeaver.java
+spring-context/src/main/java/org/springframework/jmx/JmxException.java
+spring-context/src/main/java/org/springframework/jmx/MBeanServerNotFoundException.java
+spring-context/src/main/java/org/springframework/jmx/access/ConnectorDelegate.java
+spring-context/src/main/java/org/springframework/jmx/access/InvalidInvocationException.java

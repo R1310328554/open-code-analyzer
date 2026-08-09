@@ -28,10 +28,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link LoadTimeWeaver} implementation for GlassFish's
- * {@code org.glassfish.api.deployment.InstrumentableClassLoader InstrumentableClassLoader}.
+ * 面向 GlassFish
+ * {@code org.glassfish.api.deployment.InstrumentableClassLoader InstrumentableClassLoader}
+ * 的 {@link LoadTimeWeaver} 实现。
  *
- * <p>This weaver supports GlassFish 4+.
+ * <p>支持 GlassFish 4 及以上版本。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -51,8 +52,7 @@ public class GlassFishLoadTimeWeaver implements LoadTimeWeaver {
 
 
 	/**
-	 * Create a new instance of the {@link GlassFishLoadTimeWeaver} class using
-	 * the default {@link ClassLoader class loader}.
+	 * 使用默认 {@link ClassLoader class loader} 创建新的 {@link GlassFishLoadTimeWeaver} 实例。
 	 * @see org.springframework.util.ClassUtils#getDefaultClassLoader()
 	 */
 	public GlassFishLoadTimeWeaver() {
@@ -60,9 +60,8 @@ public class GlassFishLoadTimeWeaver implements LoadTimeWeaver {
 	}
 
 	/**
-	 * Create a new instance of the {@link GlassFishLoadTimeWeaver} class using
-	 * the supplied {@link ClassLoader}.
-	 * @param classLoader the {@code ClassLoader} to delegate to for weaving
+	 * 使用提供的 {@link ClassLoader} 创建新的 {@link GlassFishLoadTimeWeaver} 实例。
+	 * @param classLoader 委托进行织入的 {@code ClassLoader}
 	 */
 	public GlassFishLoadTimeWeaver(@Nullable ClassLoader classLoader) {
 		Assert.notNull(classLoader, "ClassLoader must not be null");
@@ -79,8 +78,8 @@ public class GlassFishLoadTimeWeaver implements LoadTimeWeaver {
 		}
 
 		ClassLoader clazzLoader = null;
-		// Detect transformation-aware ClassLoader by traversing the hierarchy
-		// (as in GlassFish, Spring can be loaded by the WebappClassLoader).
+		// 沿类加载器层次向上查找支持转换的 ClassLoader
+		// （在 GlassFish 中，Spring 可能由 WebappClassLoader 加载）。
 		for (ClassLoader cl = classLoader; cl != null && clazzLoader == null; cl = cl.getParent()) {
 			if (instrumentableLoaderClass.isInstance(cl)) {
 				clazzLoader = cl;
