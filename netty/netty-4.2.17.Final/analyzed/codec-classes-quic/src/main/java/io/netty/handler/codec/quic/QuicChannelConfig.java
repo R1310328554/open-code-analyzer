@@ -22,7 +22,7 @@ import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.WriteBufferWaterMark;
 
 /**
- * A QUIC {@link ChannelConfig}.
+ * QUIC {@link Channel} 的配置接口，链式 setter 均返回 {@link QuicChannelConfig}。
  */
 public interface QuicChannelConfig extends ChannelConfig {
 

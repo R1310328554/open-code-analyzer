@@ -18,29 +18,29 @@ package io.netty.handler.codec.quic;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Allows to configure a strategy for when flushes should be happening.
+ * 配置 QUIC 出站数据何时执行 {@code flush} 的策略接口。
  */
 public interface FlushStrategy {
 
     /**
-     * Default {@link FlushStrategy} implementation.
+     * 默认 {@link FlushStrategy}：累计写入约 20 个最大 UDP 负载后刷新。
      */
     FlushStrategy DEFAULT = afterNumBytes(20 * Quic.MAX_DATAGRAM_SIZE);
 
     /**
-     * Returns {@code true} if a flush should happen now, {@code false} otherwise.
+     * 判断当前是否应立即 flush。
      *
-     * @param numPackets    the number of packets that were written since the last flush.
-     * @param numBytes      the number of bytes that were written since the last flush.
-     * @return              {@code true} if a flush should be done now, {@code false} otherwise.
+     * @param numPackets    自上次 flush 以来已写入的包数。
+     * @param numBytes      自上次 flush 以来已写入的字节数。
+     * @return              若应立刻 flush 则 {@code true}，否则 {@code false}。
      */
     boolean shouldFlushNow(int numPackets, int numBytes);
 
     /**
-     * Implementation that flushes after a number of bytes.
+     * 按累计字节数触发 flush 的策略。
      *
-     * @param bytes the number of bytes after which we should issue a flush.
-     * @return the {@link FlushStrategy}.
+     * @param bytes 超过该字节数后执行 flush。
+     * @return 对应的 {@link FlushStrategy}。
      */
     static FlushStrategy afterNumBytes(int bytes) {
         ObjectUtil.checkPositive(bytes, "bytes");
@@ -48,10 +48,10 @@ public interface FlushStrategy {
     }
 
     /**
-     * Implementation that flushes after a number of packets.
+     * 按累计包数触发 flush 的策略。
      *
-     * @param packets the number of packets after which we should issue a flush.
-     * @return the {@link FlushStrategy}.
+     * @param packets 超过该包数后执行 flush。
+     * @return 对应的 {@link FlushStrategy}。
      */
     static FlushStrategy afterNumPackets(int packets) {
         ObjectUtil.checkPositive(packets, "packets");

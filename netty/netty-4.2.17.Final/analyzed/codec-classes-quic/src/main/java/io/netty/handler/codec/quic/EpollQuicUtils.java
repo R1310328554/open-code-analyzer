@@ -23,18 +23,18 @@ import io.netty.util.internal.ObjectUtil;
 import java.net.InetSocketAddress;
 
 /**
- * Class that provides utility methods to setup {@code QUIC} when using the {@code EPOLL} transport.
+ * 在使用 {@code EPOLL} 传输时配置 {@code QUIC} 的工具类。
  */
 public final class EpollQuicUtils {
 
     private EpollQuicUtils() { }
 
     /**
-     * Return a new {@link SegmentedDatagramPacketAllocator} that can be used while using
-     * {@link io.netty.channel.epoll.EpollDatagramChannel}.
+     * 返回可与 {@link io.netty.channel.epoll.EpollDatagramChannel} 配合使用的
+     * {@link SegmentedDatagramPacketAllocator}。
      *
-     * @param maxNumSegments the maximum number of segments that we try to send in one packet.
-     * @return a allocator.
+     * @param maxNumSegments 单个 UDP 报文中尝试发送的最大分段数。
+     * @return 分段报文分配器；不支持分段时返回 {@link SegmentedDatagramPacketAllocator#NONE}。
      */
     public static SegmentedDatagramPacketAllocator newSegmentedAllocator(int maxNumSegments) {
         ObjectUtil.checkInRange(maxNumSegments, 1, 64, "maxNumSegments");
@@ -44,8 +44,10 @@ public final class EpollQuicUtils {
         return SegmentedDatagramPacketAllocator.NONE;
     }
 
+    /** 基于 Epoll 的分段 UDP 报文分配器实现。 */
     private static final class EpollSegmentedDatagramPacketAllocator implements SegmentedDatagramPacketAllocator {
 
+        /** 单包最大分段数。 */
         private final int maxNumSegments;
 
         EpollSegmentedDatagramPacketAllocator(int maxNumSegments) {

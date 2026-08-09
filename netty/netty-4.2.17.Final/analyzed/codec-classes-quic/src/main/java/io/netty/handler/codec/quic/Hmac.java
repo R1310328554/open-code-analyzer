@@ -25,13 +25,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+/**
+ * QUIC 连接 ID 与 Reset Token 的 HMAC-SHA256 签名工具（线程本地 {@link Mac} 复用）。
+ */
 final class Hmac {
 
     private static final String ALGORITHM = "HmacSHA256";
 
-    // Two independent keys so that CID signing and reset-token signing are
-    // cryptographically decoupled: an observer cannot derive one output from
-    // the other even when both use the same input value (RFC 9000 §21.11).
+    // CID 与 Reset Token 使用独立密钥，使两类签名密码学解耦（RFC 9000 §21.11）：
+    // 即使输入相同，观察者也无法从一种输出推导另一种。
     private static final byte[] CID_KEY   = new byte[32];
     private static final byte[] TOKEN_KEY = new byte[32];
 
@@ -41,6 +43,7 @@ final class Hmac {
         rng.nextBytes(TOKEN_KEY);
     }
 
+    /** 每线程复用的 CID 签名 Mac 实例。 */
     private static final FastThreadLocal<Mac> CID_MACS = new FastThreadLocal<Mac>() {
         @Override
         protected Mac initialValue() {
@@ -48,6 +51,7 @@ final class Hmac {
         }
     };
 
+    /** 每线程复用的 Reset Token 签名 Mac 实例。 */
     private static final FastThreadLocal<Mac> TOKEN_MACS = new FastThreadLocal<Mac>() {
         @Override
         protected Mac initialValue() {
@@ -76,10 +80,12 @@ final class Hmac {
         return ByteBuffer.wrap(signBytes);
     }
 
+    /** 对输入做 CID 专用 HMAC 签名。 */
     static ByteBuffer signCid(ByteBuffer input, int outLength) {
         return sign(CID_MACS.get(), input, outLength);
     }
 
+    /** 对输入做 Reset Token 专用 HMAC 签名。 */
     static ByteBuffer signToken(ByteBuffer input, int outLength) {
         return sign(TOKEN_MACS.get(), input, outLength);
     }

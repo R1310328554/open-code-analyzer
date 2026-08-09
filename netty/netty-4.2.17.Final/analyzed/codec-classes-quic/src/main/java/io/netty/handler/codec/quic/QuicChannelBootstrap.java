@@ -35,14 +35,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Bootstrap that helps to bootstrap {@link QuicChannel}s and connecting these to remote peers.
+ * 引导 {@link QuicChannel} 建立客户端 QUIC 连接的 Bootstrap。
  */
 public final class QuicChannelBootstrap {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(QuicChannelBootstrap.class);
 
+    /** 作为 UDP 传输的父 Channel。 */
     private final Channel parent;
-    // The order in which ChannelOptions are applied is important they may depend on each other for validation
-    // purposes.
+    // ChannelOption 应用顺序可能影响相互校验，故使用 LinkedHashMap 保持插入顺序
     private final Map<ChannelOption<?>, Object> options = new LinkedHashMap<>();
     private final Map<AttributeKey<?>, Object> attrs = new HashMap<>();
     private final Map<ChannelOption<?>, Object> streamOptions = new LinkedHashMap<>();
@@ -56,12 +56,10 @@ public final class QuicChannelBootstrap {
     private ChannelHandler streamHandler;
 
     /**
-     * Creates a new instance which uses the given {@link Channel} to bootstrap the {@link QuicChannel}.
-     * This {@link io.netty.channel.ChannelPipeline} of the {@link Channel} needs to have the quic codec in the
-     * pipeline.
+     * 使用给定传输 {@link Channel} 创建 bootstrap；其 pipeline 须已包含 QUIC codec。
      *
-     * @param parent    the {@link Channel} that is used as the transport layer.
-     * @deprecated Use QuicChannel.newBootstrap() instead.
+     * @param parent    传输层 {@link Channel}。
+     * @deprecated 请改用 {@link QuicChannel#newBootstrap(Channel)}。
      */
     @Deprecated
     public QuicChannelBootstrap(Channel parent) {
@@ -70,13 +68,12 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link QuicChannel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * 为新建 {@link QuicChannel} 设置 {@link ChannelOption}；{@code null} 表示移除先前选项。
      *
-     * @param option    the {@link ChannelOption} to apply to the {@link QuicChannel}.
-     * @param value     the value of the option.
-     * @param <T>       the type of the value.
-     * @return          this instance.
+     * @param option    要应用的 {@link ChannelOption}。
+     * @param value     选项值。
+     * @param <T>       值类型。
+     * @return          本实例（链式调用）。
      */
     public <T> QuicChannelBootstrap option(ChannelOption<T> option, @Nullable T value) {
         Quic.updateOptions(options, option, value);
@@ -84,13 +81,12 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Allow to specify an initial attribute of the newly created {@link QuicChannel}.  If the {@code value} is
-     * {@code null}, the attribute of the specified {@code key} is removed.
+     * 为新建 {@link QuicChannel} 设置初始 {@link AttributeKey}；{@code null} 表示移除。
      *
-     * @param key       the {@link AttributeKey} to apply to the {@link QuicChannel}.
-     * @param value     the value of the attribute.
-     * @param <T>       the type of the value.
-     * @return          this instance.
+     * @param key       属性键。
+     * @param value     属性值。
+     * @param <T>       值类型。
+     * @return          本实例。
      */
     public <T> QuicChannelBootstrap attr(AttributeKey<T> key, @Nullable T value) {
         Quic.updateAttributes(attrs, key, value);
@@ -98,12 +94,10 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Set the {@link ChannelHandler} that is added to the {@link io.netty.channel.ChannelPipeline} of the
-     * {@link QuicChannel} once created.
+     * 设置创建后自动加入 {@link QuicChannel} pipeline 的 {@link ChannelHandler}。
      *
-     * @param handler   the {@link ChannelHandler} that is added to the {@link QuicChannel}s
-     *                  {@link io.netty.channel.ChannelPipeline}.
-     * @return          this instance.
+     * @param handler   连接级 handler。
+     * @return          本实例。
      */
     public QuicChannelBootstrap handler(ChannelHandler handler) {
         this.handler = ObjectUtil.checkNotNull(handler, "handler");
@@ -111,13 +105,12 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link QuicStreamChannel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * 为新建 {@link QuicStreamChannel} 设置 {@link ChannelOption}。
      *
-     * @param option    the {@link ChannelOption} to apply to the {@link QuicStreamChannel}s.
-     * @param value     the value of the option.
-     * @param <T>       the type of the value.
-     * @return          this instance.
+     * @param option    流级选项。
+     * @param value     选项值。
+     * @param <T>       值类型。
+     * @return          本实例。
      */
     public <T> QuicChannelBootstrap streamOption(ChannelOption<T> option, @Nullable T value) {
         Quic.updateOptions(streamOptions, option, value);
@@ -125,13 +118,12 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Allow to specify an initial attribute of the newly created {@link QuicStreamChannel}. If the {@code value} is
-     * {@code null}, the attribute of the specified {@code key} is removed.
+     * 为新建 {@link QuicStreamChannel} 设置初始属性。
      *
-     * @param key       the {@link AttributeKey} to apply to the {@link QuicStreamChannel}s.
-     * @param value     the value of the attribute.
-     * @param <T>       the type of the value.
-     * @return          this instance.
+     * @param key       属性键。
+     * @param value     属性值。
+     * @param <T>       值类型。
+     * @return          本实例。
      */
     public <T> QuicChannelBootstrap streamAttr(AttributeKey<T> key, @Nullable T value) {
         Quic.updateAttributes(streamAttrs, key, value);
@@ -139,12 +131,10 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Set the {@link ChannelHandler} that is added to the {@link io.netty.channel.ChannelPipeline} of the
-     * {@link QuicStreamChannel} once created.
+     * 设置创建后自动加入 {@link QuicStreamChannel} pipeline 的 handler。
      *
-     * @param streamHandler     the {@link ChannelHandler} that is added to the {@link QuicStreamChannel}s
-     *                          {@link io.netty.channel.ChannelPipeline}.
-     * @return                  this instance.
+     * @param streamHandler     流级 handler。
+     * @return                  本实例。
      */
     public QuicChannelBootstrap streamHandler(ChannelHandler streamHandler) {
         this.streamHandler = ObjectUtil.checkNotNull(streamHandler, "streamHandler");
@@ -152,10 +142,10 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Set the local address.
+     * 设置本地 UDP {@link SocketAddress}。
      *
-     * @param local    the {@link SocketAddress} of the local peer.
-     * @return          this instance.
+     * @param local    本地地址。
+     * @return          本实例。
      */
     public QuicChannelBootstrap localAddress(SocketAddress local) {
         this.local = ObjectUtil.checkNotNull(local, "local");
@@ -163,10 +153,10 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Set the remote address of the host to talk to.
+     * 设置要连接的远端 {@link SocketAddress}。
      *
-     * @param remote    the {@link SocketAddress} of the remote peer.
-     * @return          this instance.
+     * @param remote    远端地址。
+     * @return          本实例。
      */
     public QuicChannelBootstrap remoteAddress(SocketAddress remote) {
         this.remote = ObjectUtil.checkNotNull(remote, "remote");
@@ -174,12 +164,11 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Set the {@link QuicConnectionAddress} to use. If none is specified a random address is generated on your
-     * behalf.
+     * 设置本地 {@link QuicConnectionAddress}；未指定时在连接时随机生成。
      *
-     * @param connectionAddress     the {@link QuicConnectionAddress} to use.
-     * @return                      this instance.
-     * @deprecated                  use {@link #localConnectionAddress(QuicConnectionAddress)}.
+     * @param connectionAddress     本地 QUIC 连接地址。
+     * @return                      本实例。
+     * @deprecated                  请使用 {@link #localConnectionAddress(QuicConnectionAddress)}。
      */
     @Deprecated
     public QuicChannelBootstrap connectionAddress(QuicConnectionAddress connectionAddress) {
@@ -188,11 +177,10 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Set the {@link QuicConnectionAddress} to use. If none is specified a random address is generated on your
-     * behalf.
+     * 设置本地 {@link QuicConnectionAddress}；未指定时在连接时随机生成。
      *
-     * @param localConnectionAddress     the {@link QuicConnectionAddress} to use.
-     * @return                      this instance.
+     * @param localConnectionAddress     本地 QUIC 连接地址。
+     * @return                      本实例。
      */
     public QuicChannelBootstrap localConnectionAddress(QuicConnectionAddress localConnectionAddress) {
         this.localAddress = ObjectUtil.checkNotNull(localConnectionAddress, "localConnectionAddress");
@@ -200,14 +188,11 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Set the {@link QuicConnectionAddress} to use. If none is specified a random address is generated on your
-     * behalf. Be aware that the provided {@link QuicConnectionAddress} should be generated carefully in a random way
-     * that makes it impossible to predict it as otherwise the security of the quic connection might be too weak.
-     * Fore more details see
-     * <a href="https://datatracker.ietf.org/doc/html/rfc9000#section-7.2">RFC9000 Section 7.2</a>.
+     * 设置远端 {@link QuicConnectionAddress}；须不可预测以保证连接安全，详见
+     * <a href="https://datatracker.ietf.org/doc/html/rfc9000#section-7.2">RFC9000 §7.2</a>。
      *
-     * @param remoteConnectionAddress     the {@link QuicConnectionAddress} to use.
-     * @return                            this instance.
+     * @param remoteConnectionAddress     远端 QUIC 连接地址。
+     * @return                            本实例。
      */
     public QuicChannelBootstrap remoteConnectionAddress(QuicConnectionAddress remoteConnectionAddress) {
         this.remoteAddress = ObjectUtil.checkNotNull(remoteConnectionAddress, "remoteConnectionAddress");
@@ -215,20 +200,19 @@ public final class QuicChannelBootstrap {
     }
 
     /**
-     * Connects a {@link QuicChannel} to the remote peer and notifies the future once done.
+     * 连接远端并建立 {@link QuicChannel}，完成后通知 future。
      *
-     * @return {@link Future} which is notified once the operation completes.
+     * @return 连接完成时通知的 {@link Future}。
      */
     public Future<QuicChannel> connect() {
         return connect(parent.eventLoop().newPromise());
     }
 
     /**
-     * Connects a {@link QuicChannel} to the remote peer and notifies the promise once done.
+     * 连接远端并建立 {@link QuicChannel}，完成后通知 promise。
      *
-     * @param promise   the {@link Promise} which is notified once the operations completes.
-     * @return          {@link Future} which is notified once the operation completes.
-
+     * @param promise   完成时通知的 {@link Promise}。
+     * @return          同上的 {@link Future}。
      */
     public Future<QuicChannel> connect(Promise<QuicChannel> promise) {
         if (handler == null && streamHandler == null) {

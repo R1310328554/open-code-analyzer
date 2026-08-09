@@ -29,7 +29,7 @@ import javax.net.ssl.SSLEngine;
 import java.net.SocketAddress;
 
 /**
- * A QUIC {@link Channel}.
+ * QUIC 连接的 {@link Channel} 抽象：承载多路复用流、TLS 与连接级 QUIC 语义。
  */
 public interface QuicChannel extends Channel {
 
@@ -145,190 +145,173 @@ public interface QuicChannel extends Channel {
     QuicChannel flush();
 
     /**
-     * Returns the configuration of this channel.
+     * 返回本通道的配置。
      */
     @Override
     QuicChannelConfig config();
 
     /**
-     * Returns the used {@link SSLEngine} or {@code null} if none is used (yet).
+     * 返回当前使用的 {@link SSLEngine}，尚未建立 TLS 时为 {@code null}。
      *
-     * @return the engine.
+     * @return TLS 引擎实例。
      */
     @Nullable
     SSLEngine sslEngine();
 
     /**
-     * Returns the number of streams that can be created before stream creation will fail
-     * with {@link QuicTransportError#STREAM_LIMIT_ERROR} error.
+     * 返回对端仍允许创建的流数量；超出后新建流将失败并触发
+     * {@link QuicTransportError#STREAM_LIMIT_ERROR}。
      *
-     * @param type the stream type.
-     * @return the number of streams left.
+     * @param type 流类型（双向/单向等）。
+     * @return 剩余可创建流数。
      */
     long peerAllowedStreams(QuicStreamType type);
 
     /**
-     * Returns {@code true} if the connection was closed because of idle timeout.
+     * 连接是否因空闲超时而关闭。
      *
-     * @return {@code true} if the connection was closed because of idle timeout, {@code false}.
+     * @return 空闲超时关闭则 {@code true}，否则 {@code false}。
      */
     boolean isTimedOut();
 
     /**
-     * Returns the {@link QuicTransportParameters} of the peer once received, or {@code null} if not known yet.
+     * 返回已收到的对端 {@link QuicTransportParameters}，尚未收到时为 {@code null}。
      *
-     * @return peerTransportParams.
+     * @return 对端传输参数。
      */
     @Nullable
     QuicTransportParameters peerTransportParameters();
 
     /**
-     * Returns the local {@link QuicConnectionAddress}. This address might change over the life-time of the
-     * channel.
+     * 返回本地 {@link QuicConnectionAddress}；连接生命周期内可能变化。
      *
-     * @return  local   the local {@link QuicConnectionAddress} or {@code null} if none is assigned yet,
-     *                  or assigned anymore.
+     * @return  本地连接地址，尚未分配或已失效时为 {@code null}。
      */
     @Override
     @Nullable
     QuicConnectionAddress localAddress();
 
     /**
-     * Returns the remote {@link QuicConnectionAddress}. This address might change over the life-time of the
-     * channel.
+     * 返回远端 {@link QuicConnectionAddress}；连接生命周期内可能变化。
      *
-     * @return  remote   the remote {@link QuicConnectionAddress} or {@code null} if none is assigned yet,
-     *                   or assigned anymore.
+     * @return  远端连接地址，尚未分配或已失效时为 {@code null}。
      */
     @Override
     @Nullable
     QuicConnectionAddress remoteAddress();
 
     /**
-     * Returns the local {@link SocketAddress} of the underlying transport that received the data.
-     * This address might change over the life-time of the channel.
+     * 返回底层传输（UDP）接收数据所用的本地 {@link SocketAddress}。
      *
-     * @return  local   the local {@link SocketAddress} of the underlying transport or {@code null} if none is assigned
-     *                  yet, or assigned anymore.
+     * @return  底层本地套接字地址，未分配或已失效时为 {@code null}。
      */
     @Nullable
     SocketAddress localSocketAddress();
 
     /**
-     * Returns the remote {@link SocketAddress} of the underlying transport to which the data is sent.
-     * This address might change over the life-time of the channel.
+     * 返回底层传输发送数据所用的远端 {@link SocketAddress}。
      *
-     * @return  local   the remote {@link SocketAddress} of the underlying transport or {@code null} if none is assigned
-     *                  yet, or assigned anymore.
+     * @return  底层远端套接字地址，未分配或已失效时为 {@code null}。
      */
     @Nullable
     SocketAddress remoteSocketAddress();
 
     /**
-     * Creates a stream that is using this {@link QuicChannel} and notifies the {@link Future} once done.
-     * The {@link ChannelHandler} (if not {@code null}) is added to the {@link io.netty.channel.ChannelPipeline} of the
-     * {@link QuicStreamChannel} automatically.
+     * 在本 {@link QuicChannel} 上创建流，完成后通知 {@link Future}。
+     * 若 {@code handler} 非 {@code null}，将自动加入 {@link QuicStreamChannel} 的 pipeline。
      *
-     * @param type      the {@link QuicStreamType} of the {@link QuicStreamChannel}.
-     * @param handler   the {@link ChannelHandler} that will be added to the {@link QuicStreamChannel}s
-     *                  {@link io.netty.channel.ChannelPipeline} during the stream creation.
-     * @return          the {@link Future} that will be notified once the operation completes.
+     * @param type      {@link QuicStreamChannel} 的 {@link QuicStreamType}。
+     * @param handler   创建时加入流 pipeline 的 {@link ChannelHandler}。
+     * @return          操作完成时通知的 {@link Future}。
      */
     default Future<QuicStreamChannel> createStream(QuicStreamType type, @Nullable ChannelHandler handler) {
         return createStream(type, handler, eventLoop().newPromise());
     }
 
     /**
-     * Creates a stream that is using this {@link QuicChannel} and notifies the {@link Promise} once done.
-     * The {@link ChannelHandler} (if not {@code null}) is added to the {@link io.netty.channel.ChannelPipeline} of the
-     * {@link QuicStreamChannel} automatically.
+     * 在本 {@link QuicChannel} 上创建流，完成后通知 {@link Promise}。
      *
-     * @param type      the {@link QuicStreamType} of the {@link QuicStreamChannel}.
-     * @param handler   the {@link ChannelHandler} that will be added to the {@link QuicStreamChannel}s
-     *                  {@link io.netty.channel.ChannelPipeline} during the stream creation.
-     * @param promise   the {@link ChannelPromise} that will be notified once the operation completes.
-     * @return          the {@link Future} that will be notified once the operation completes.
+     * @param type      流类型。
+     * @param handler   创建时加入流 pipeline 的 handler。
+     * @param promise   操作完成时通知的 {@link ChannelPromise}。
+     * @return          同 {@link Promise} 对应的 {@link Future}。
      */
     Future<QuicStreamChannel> createStream(QuicStreamType type, @Nullable ChannelHandler handler,
                                            Promise<QuicStreamChannel> promise);
 
     /**
-     * Returns a new {@link QuicStreamChannelBootstrap} which makes it easy to bootstrap new {@link QuicStreamChannel}s
-     * with custom options and attributes. For simpler use-cases you may want to consider using
-     * {@link #createStream(QuicStreamType, ChannelHandler)} or
-     * {@link #createStream(QuicStreamType, ChannelHandler, Promise)} directly.
+     * 返回 {@link QuicStreamChannelBootstrap}，便于为新建流设置选项与属性。
+     * 简单场景可直接使用 {@link #createStream(QuicStreamType, ChannelHandler)}。
      *
-     * @return {@link QuicStreamChannelBootstrap} that can be used to bootstrap a {@link QuicStreamChannel}.
+     * @return 用于引导 {@link QuicStreamChannel} 的 bootstrap。
      */
     default QuicStreamChannelBootstrap newStreamBootstrap() {
         return new QuicStreamChannelBootstrap(this);
     }
 
     /**
-     * Close the {@link QuicChannel}
+     * 关闭 {@link QuicChannel}。
      *
-     * @param applicationClose  {@code true} if an application close should be used,
-     *                          {@code false} if a normal close should be used.
-     * @param error             the application error number, or {@code 0} if no special error should be signaled.
-     * @param reason            the reason for the closure (which may be an empty {@link ByteBuf}.
-     * @return                  the future that is notified.
+     * @param applicationClose  {@code true} 使用应用层关闭帧，{@code false} 使用普通关闭。
+     * @param error             应用错误码，无特殊错误时为 {@code 0}。
+     * @param reason            关闭原因（可为空 {@link ByteBuf}）。
+     * @return                  关闭完成时通知的 future。
      */
     default ChannelFuture close(boolean applicationClose, int error, ByteBuf reason) {
         return close(applicationClose, error, reason, newPromise());
     }
 
     /**
-     * Close the {@link QuicChannel}
+     * 关闭 {@link QuicChannel} 并绑定指定 {@link ChannelPromise}。
      *
-     * @param applicationClose  {@code true} if an application close should be used,
-     *                          {@code false} if a normal close should be used.
-     * @param error             the application error number, or {@code 0} if no special error should be signaled.
-     * @param reason            the reason for the closure (which may be an empty {@link ByteBuf}.
-     * @param promise           the {@link ChannelPromise} that will be notified.
-     * @return                  the future that is notified.
+     * @param applicationClose  是否应用层关闭。
+     * @param error             应用错误码。
+     * @param reason            关闭原因。
+     * @param promise           完成时通知的 promise。
+     * @return                  关闭 future。
      */
     ChannelFuture close(boolean applicationClose, int error, ByteBuf reason, ChannelPromise promise);
 
     /**
-     * Collects statistics about the connection and notifies the {@link Future} once done.
+     * 收集连接统计信息，完成后通知 {@link Future}。
      *
-     * @return the {@link Future} that is notified once the stats were collected.
+     * @return 统计收集完成时通知的 {@link Future}。
      */
     default Future<QuicConnectionStats> collectStats() {
         return collectStats(eventLoop().newPromise());
     }
 
     /**
-     * Collects statistics about the connection and notifies the {@link Promise} once done.
+     * 收集连接统计信息，完成后通知 {@link Promise}。
      *
-     * @param   promise the {@link ChannelPromise} that is notified once the stats were collected.
-     * @return          the {@link Future} that is notified once the stats were collected.
+     * @param   promise 统计完成时通知的 promise。
+     * @return          同上的 {@link Future}。
      */
     Future<QuicConnectionStats> collectStats(Promise<QuicConnectionStats> promise);
 
     /**
-     * Collects statistics about the path of the connection and notifies the {@link Future} once done.
+     * 收集指定路径索引的连接路径统计，完成后通知 {@link Future}。
      *
-     * @return the {@link Future} that is notified once the stats were collected.
+     * @param pathIdx 路径索引。
+     * @return 统计完成时通知的 {@link Future}。
      */
     default Future<QuicConnectionPathStats> collectPathStats(int pathIdx) {
         return collectPathStats(pathIdx, eventLoop().newPromise());
     }
 
     /**
-     * Collects statistics about the path of the connection and notifies the {@link Promise} once done.
+     * 收集连接路径统计，完成后通知 {@link Promise}。
      *
-     * @param   promise the {@link ChannelPromise} that is notified once the stats were collected.
-     * @return          the {@link Future} that is notified once the stats were collected.
+     * @param   promise 统计完成时通知的 promise。
+     * @return          同上的 {@link Future}。
      */
     Future<QuicConnectionPathStats> collectPathStats(int pathIdx, Promise<QuicConnectionPathStats> promise);
 
     /**
-     * Creates a new {@link QuicChannelBootstrap} that can be used to create and connect new {@link QuicChannel}s to
-     * endpoints using the given {@link Channel} as transport layer.
+     * 基于给定传输层 {@link Channel} 创建客户端 {@link QuicChannelBootstrap}。
      *
-     * @param channel   the {@link Channel} that is used as transport layer.
-     * @return          {@link QuicChannelBootstrap} that can be used to bootstrap a client side {@link QuicChannel}.
+     * @param channel   作为 UDP 传输的 {@link Channel}。
+     * @return          用于引导客户端 {@link QuicChannel} 的 bootstrap。
      */
     static QuicChannelBootstrap newBootstrap(Channel channel) {
         return new QuicChannelBootstrap(channel);

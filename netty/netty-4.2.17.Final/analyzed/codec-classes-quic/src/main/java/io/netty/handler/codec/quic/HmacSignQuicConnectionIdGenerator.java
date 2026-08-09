@@ -20,10 +20,10 @@ import java.nio.ByteBuffer;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * A {@link QuicConnectionIdGenerator} which creates new connection id by signing the given input
- * using hmac algorithms.
+ * 基于 HMAC 对给定输入签名以生成连接 ID 的 {@link QuicConnectionIdGenerator}。
  */
 final class HmacSignQuicConnectionIdGenerator implements QuicConnectionIdGenerator {
+    /** 单例实例。 */
     static final QuicConnectionIdGenerator INSTANCE = new HmacSignQuicConnectionIdGenerator();
 
     private HmacSignQuicConnectionIdGenerator() {

@@ -18,22 +18,25 @@ package io.netty.handler.codec.quic;
 import java.util.Objects;
 
 /**
- * Configuration used for setup
- * <a href="https://quiclog.github.io/internet-drafts/draft-marx-qlog-main-schema.html">qlog</a>.
+ * 配置
+ * <a href="https://quiclog.github.io/internet-drafts/draft-marx-qlog-main-schema.html">qlog</a>
+ * 日志输出路径与元数据。
  */
 public final class QLogConfiguration {
 
+    /** 日志文件路径（若不存在则创建；为目录时自动生成文件名）。 */
     private final String path;
+    /** 日志标题。 */
     private final String logTitle;
+    /** 日志描述。 */
     private final String logDescription;
 
     /**
-     * Create a new configuration.
+     * 创建 qlog 配置。
      *
-     * @param path              the path to the log file to use. This file must not exist yet. If the path is a
-     *                          directory the filename will be generated
-     * @param logTitle          the title to use when logging.
-     * @param logDescription    the description to use when logging.
+     * @param path              日志文件路径，文件尚不存在；若为目录则自动生成文件名。
+     * @param logTitle          写入 qlog 的标题。
+     * @param logDescription    写入 qlog 的描述。
      */
     public QLogConfiguration(String path, String logTitle, String logDescription) {
         this.path = Objects.requireNonNull(path, "path");
@@ -42,27 +45,27 @@ public final class QLogConfiguration {
     }
 
     /**
-     * Return the path to the log file.
+     * 返回日志文件路径。
      *
-     * @return the path.
+     * @return 路径字符串。
      */
     public String path() {
         return path;
     }
 
     /**
-     * Return the title.
+     * 返回日志标题。
      *
-     * @return the title.
+     * @return 标题。
      */
     public String logTitle() {
         return logTitle;
     }
 
     /**
-     * Return the description.
+     * 返回日志描述。
      *
-     * @return the description.
+     * @return 描述。
      */
     public String logDescription() {
         return logDescription;

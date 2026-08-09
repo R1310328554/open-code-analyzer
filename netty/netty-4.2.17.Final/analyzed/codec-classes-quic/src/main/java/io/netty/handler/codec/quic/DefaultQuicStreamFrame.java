@@ -18,10 +18,20 @@ package io.netty.handler.codec.quic;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 
+/**
+ * {@link QuicStreamFrame} 的默认实现，封装流数据与 FIN 标志。
+ */
 public final class DefaultQuicStreamFrame extends DefaultByteBufHolder implements QuicStreamFrame {
 
+    /** 是否为流的最后一帧（FIN 置位）。 */
     private final boolean fin;
 
+    /**
+     * 创建新的流帧。
+     *
+     * @param data  帧负载数据
+     * @param fin   是否标记流结束
+     */
     public DefaultQuicStreamFrame(ByteBuf data, boolean fin) {
         super(data);
         this.fin = fin;

@@ -19,8 +19,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 
+/**
+ * 包装 {@link ByteBufAllocator}，使 {@link #ioBuffer()} 系列方法始终分配直接内存缓冲，
+ * 便于 QUIC 零拷贝 I/O 路径。
+ */
 final class DirectIoByteBufAllocator implements ByteBufAllocator {
 
+    /** 被包装的实际分配器。 */
     private final ByteBufAllocator wrapped;
 
     DirectIoByteBufAllocator(ByteBufAllocator wrapped) {
@@ -30,6 +35,7 @@ final class DirectIoByteBufAllocator implements ByteBufAllocator {
         this.wrapped = wrapped;
     }
 
+    /** 返回底层被包装的分配器。 */
     ByteBufAllocator wrapped() {
         return wrapped;
     }

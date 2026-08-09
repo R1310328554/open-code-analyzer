@@ -20,10 +20,11 @@ import io.netty.buffer.ByteBuf;
 import java.net.InetSocketAddress;
 
 /**
- * {@link QuicTokenHandler} which will not use any token and so also fail to validate any given token.
+ * 不使用 address validation token 的 {@link QuicTokenHandler}：不写入 token，校验恒失败。
  */
 final class NoQuicTokenHandler implements QuicTokenHandler {
 
+    /** 单例实例。 */
     public static final QuicTokenHandler INSTANCE = new NoQuicTokenHandler();
 
     private NoQuicTokenHandler() {

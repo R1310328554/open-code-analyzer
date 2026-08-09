@@ -16,11 +16,17 @@
 package io.netty.handler.codec.quic;
 
 /**
- * Convert java naming to BoringSSL naming if possible and if not return the original name.
+ * 将 Java 椭圆曲线/密钥交换组命名转换为 BoringSSL 命名；无法映射时返回原名。
  */
 final class GroupsConverter {
 
-    // See https://tools.ietf.org/search/rfc4492#appendix-A and https://www.java.com/en/configure_crypto.html
+    // 参见 RFC4492 附录 A 与 Java 加密配置文档
+    /**
+     * 将 Java 侧组名转为 BoringSSL 可识别的名称。
+     *
+     * @param key Java 标准或常用别名（如 prime256v1、secp256r1）
+     * @return BoringSSL 组名，或无法映射时的原字符串
+     */
     static String toBoringSSL(String key) {
         switch (key) {
             case "secp224r1":

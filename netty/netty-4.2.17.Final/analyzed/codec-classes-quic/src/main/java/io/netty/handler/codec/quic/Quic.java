@@ -27,16 +27,22 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * QUIC 模块入口工具类：可用性检测、常量定义及 Channel 选项/属性辅助方法。
+ */
 public final class Quic {
     @SuppressWarnings("unchecked")
     static final Map.Entry<ChannelOption<?>, Object>[] EMPTY_OPTION_ARRAY = new Map.Entry[0];
     @SuppressWarnings("unchecked")
     static final Map.Entry<AttributeKey<?>, Object>[] EMPTY_ATTRIBUTE_ARRAY = new Map.Entry[0];
 
+    /** 推荐的最大 UDP 数据报负载（字节）。 */
     static final int MAX_DATAGRAM_SIZE = 1350;
 
+    /** Stateless Reset Token 固定长度（字节）。 */
     static final int RESET_TOKEN_LEN = 16;
 
+    /** 若 native Quiche 库加载失败则保存原因，否则为 {@code null}。 */
     private static final Throwable UNAVAILABILITY_CAUSE;
 
     static {
@@ -53,34 +59,33 @@ public final class Quic {
     }
 
     /**
-     * The maximum length of the <a href="https://www.rfc-editor.org/rfc/rfc9000.html#section-17.2">connection id</a>.
-     *
+     * <a href="https://www.rfc-editor.org/rfc/rfc9000.html#section-17.2">连接 ID</a> 的最大长度。
      */
     public static final int MAX_CONN_ID_LEN = 20;
 
     /**
-     * Return if the given QUIC version is supported.
+     * 判断指定 QUIC 协议版本是否受支持。
      *
-     * @param version   the version.
-     * @return          {@code true} if supported, {@code false} otherwise.
+     * @param version   协议版本号。
+     * @return          支持则 {@code true}，否则 {@code false}。
      */
     public static boolean isVersionSupported(int version) {
         return isAvailable() && Quiche.quiche_version_is_supported(version);
     }
 
     /**
-     * Returns {@code true} if and only if the QUIC implementation is usable on the running platform is available.
+     * 当前平台是否可使用本 QUIC 实现（native 库是否加载成功）。
      *
-     * @return {@code true} if this QUIC implementation can be used on the current platform, {@code false} otherwise.
+     * @return 可用则 {@code true}，否则 {@code false}。
      */
     public static boolean isAvailable() {
         return UNAVAILABILITY_CAUSE == null;
     }
 
     /**
-     * Ensure that QUIC implementation is usable on the running platform is available.
+     * 断言 QUIC 实现可用；不可用时抛出 {@link UnsatisfiedLinkError}。
      *
-     * @throws UnsatisfiedLinkError if unavailable
+     * @throws UnsatisfiedLinkError 若 native 库不可用
      */
     public static void ensureAvailability() {
         if (UNAVAILABILITY_CAUSE != null) {
@@ -90,19 +95,21 @@ public final class Quic {
     }
 
     /**
-     * Returns the cause of unavailability.
+     * 返回不可用的原因。
      *
-     * @return the cause if unavailable. {@code null} if available.
+     * @return 不可用时为异常原因；可用时为 {@code null}。
      */
     @Nullable
     public static Throwable unavailabilityCause() {
         return UNAVAILABILITY_CAUSE;
     }
 
+    /** 将选项 Map 转为数组，供 native/内部 API 使用。 */
     static Map.Entry<ChannelOption<?>, Object>[] toOptionsArray(Map<ChannelOption<?>, Object> opts) {
         return new HashMap<>(opts).entrySet().toArray(EMPTY_OPTION_ARRAY);
     }
 
+    /** 将属性 Map 转为数组，供 native/内部 API 使用。 */
     static Map.Entry<AttributeKey<?>, Object>[] toAttributesArray(Map<AttributeKey<?>, Object> attributes) {
         return new LinkedHashMap<>(attributes).entrySet().toArray(EMPTY_ATTRIBUTE_ARRAY);
     }
@@ -136,8 +143,7 @@ public final class Quic {
     }
 
     /**
-     * Allow to specify a {@link ChannelOption} which is used for the {@link QuicStreamChannel} instances once they got
-     * created. Use a value of {@code null} to remove a previous set {@link ChannelOption}.
+     * 为新建 {@link QuicStreamChannel} 指定 {@link ChannelOption}；{@code null} 值表示移除先前设置。
      */
     static <T> void updateOptions(Map<ChannelOption<?>, Object> options, ChannelOption<T> option, @Nullable T value) {
         ObjectUtil.checkNotNull(option, "option");
@@ -149,8 +155,7 @@ public final class Quic {
     }
 
     /**
-     * Allow to specify an initial attribute of the newly created {@link QuicStreamChannel}. If the {@code value} is
-     * {@code null}, the attribute of the specified {@code key} is removed.
+     * 为新建 {@link QuicStreamChannel} 指定初始 {@link AttributeKey}；{@code null} 值表示移除。
      */
     static <T> void updateAttributes(Map<AttributeKey<?>, Object> attributes, AttributeKey<T> key, @Nullable T value) {
         ObjectUtil.checkNotNull(key, "key");
@@ -161,6 +166,7 @@ public final class Quic {
         }
     }
 
+    /** 应用选项、属性并在 pipeline 末尾添加 handler（若提供）。 */
     static void setupChannel(Channel ch, Map.Entry<ChannelOption<?>, Object>[] options,
                              Map.Entry<AttributeKey<?>, Object>[] attrs, @Nullable ChannelHandler handler,
                              InternalLogger logger) {

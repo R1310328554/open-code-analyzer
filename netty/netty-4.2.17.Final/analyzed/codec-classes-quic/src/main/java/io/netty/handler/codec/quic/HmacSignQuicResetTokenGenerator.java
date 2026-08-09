@@ -20,10 +20,12 @@ import io.netty.util.internal.ObjectUtil;
 import java.nio.ByteBuffer;
 
 /**
- * A {@link QuicResetTokenGenerator} which creates new reset token by using the connection id by signing the given input
- * using <a href="https://www.ietf.org/archive/id/draft-ietf-quic-transport-29.html#section-10.4.2">HMAC algorithms</a>.
+ * 通过对连接 ID 做 HMAC 签名生成 Reset Token 的 {@link QuicResetTokenGenerator}。
+ * 算法参见
+ * <a href="https://www.ietf.org/archive/id/draft-ietf-quic-transport-29.html#section-10.4.2">QUIC 传输草案 §10.4.2</a>。
  */
 final class HmacSignQuicResetTokenGenerator implements QuicResetTokenGenerator {
+    /** 单例实例。 */
     static final QuicResetTokenGenerator INSTANCE = new HmacSignQuicResetTokenGenerator();
 
     private HmacSignQuicResetTokenGenerator() {

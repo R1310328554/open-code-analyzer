@@ -23,10 +23,9 @@ import io.netty.util.NetUtil;
 import java.net.InetSocketAddress;
 
 /**
- * Insecure {@link QuicTokenHandler} which only does basic token generation / validation without any
- * crypto.
+ * 不安全的 {@link QuicTokenHandler}：仅做简单拼接式 token 生成/校验，无密码学保护。
  *
- * <strong>This shouldn't be used in production.</strong>
+ * <strong>切勿用于生产环境。</strong>
  */
 public final class InsecureQuicTokenHandler implements QuicTokenHandler {
 
@@ -35,7 +34,7 @@ public final class InsecureQuicTokenHandler implements QuicTokenHandler {
     private static final ByteBuf SERVER_NAME_BUFFER = Unpooled.unreleasableBuffer(
             Unpooled.wrappedBuffer(SERVER_NAME_BYTES)).asReadOnly();
 
-    // Just package-private for unit tests
+    // 仅包内可见，供单元测试使用
     static final int MAX_TOKEN_LEN = Quic.MAX_CONN_ID_LEN +
             NetUtil.LOCALHOST6.getAddress().length + SERVER_NAME_BYTES.length;
 
@@ -43,6 +42,7 @@ public final class InsecureQuicTokenHandler implements QuicTokenHandler {
         Quic.ensureAvailability();
     }
 
+    /** 单例实例。 */
     public static final InsecureQuicTokenHandler INSTANCE = new InsecureQuicTokenHandler();
 
     @Override
