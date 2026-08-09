@@ -23,300 +23,301 @@ import org.redisson.api.keys.MigrateArgs;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Redis 键空间管理异步 API。
+ * <p>各方法返回 {@link RFuture}。
  *
+ * @author Nikita Koksharov
  */
 public interface RKeysAsync {
 
     /**
-     * Move object to another database
+     * 将对象移动到指定 Redis 数据库。
      *
-     * @param name of object
-     * @param database - Redis database number
-     * @return <code>true</code> if key was moved else <code>false</code>
+     * @param name 对象名称
+     * @param database 目标数据库编号
+     * @return 见方法说明
      */
     RFuture<Boolean> moveAsync(String name, int database);
     
     /**
-     * Transfer object from source Redis instance to destination Redis instance
-     * @deprecated use {@link #migrateAsync(MigrateArgs)}  instead
+     * 将对象从源 Redis 实例迁移到目标实例。
+     * @deprecated 已废弃， use {@link #migrateAsync(MigrateArgs)}  instead
      *
-     * @param name of object
-     * @param host - destination host
-     * @param port - destination port
-     * @param database - destination database
-     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
-     * @return void 
+     * @param name 对象名称
+     * @param host 目标主机
+     * @param port 目标端口
+     * @param database 目标数据库编号
+     * @param timeout 通信最大空闲时间（毫秒）
+     * @return 无返回值
      */
     RFuture<Void> migrateAsync(String name, String host, int port, int database, long timeout);
 
     /**
-     * Transfer object from source Redis instance to destination Redis instance
+     * 将对象从源 Redis 实例迁移到目标实例。
      *
-     * @param migrateArgs migrateArgs
+     * @param migrateArgs 迁移参数
      */
     RFuture<Void> migrateAsync(MigrateArgs migrateArgs);
 
     /**
-     * Copy object from source Redis instance to destination Redis instance
+     * 将对象从源 Redis 实例复制到目标实例。
      * in async mode
      *
-     * @deprecated use {@link #migrateAsync(MigrateArgs)}  instead
+     * @deprecated 已废弃， use {@link #migrateAsync(MigrateArgs)}  instead
      *
-     * @param name of object
-     * @param host - destination host
-     * @param port - destination port
-     * @param database - destination database
-     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
-     * @return void
+     * @param name 对象名称
+     * @param host 目标主机
+     * @param port 目标端口
+     * @param database 目标数据库编号
+     * @param timeout 通信最大空闲时间（毫秒）
+     * @return 无返回值
      */
     @Deprecated
     RFuture<Void> copyAsync(String name, String host, int port, int database, long timeout);
     
     /**
-     * Use {@link #expireAsync(Duration, String...)} instead.
+     * 已废弃，请改用 {@link #expireAsync(Duration, String...)}。
      *
-     * @param name of object
-     * @param timeToLive - timeout before object will be deleted
-     * @param timeUnit - timeout time unit
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param name 对象名称
+     * @param timeToLive 存活时间
+     * @param timeUnit 时间单位
+     * @return 见方法说明
      */
     @Deprecated
     RFuture<Boolean> expireAsync(String name, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Set a timeout for multiple objects. After the timeout has expired,
+     * 为多个对象设置相对过期时长；到期后 Redis 键将自动删除。
      * the keys will automatically be deleted.
      *
-     * @param duration timeout before keys will be deleted
-     * @param names object names
-     * @return number of keys for which the timeout was set successfully
+     * @param duration 过期时长
+     * @param names 对象名称
+     * @return 成功设置过期的键数量
      */
     RFuture<Long> expireAsync(Duration duration, String... names);
 
     /**
-     * Use {@link #expireAtAsync(Instant, String...)} instead.
+     * 已废弃，请改用 {@link #expireAtAsync(Instant, String...)}。
      * 
-     * @param name of object
-     * @param timestamp - expire date in milliseconds (Unix timestamp)
-     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     * @param name 对象名称
+     * @param timestamp 过期时间戳
+     * @return 见方法说明
      */
     @Deprecated
     RFuture<Boolean> expireAtAsync(String name, long timestamp);
 
     /**
-     * Set a timeout for multiple objects. After the timeout has expired,
+     * 为多个对象设置相对过期时长；到期后 Redis 键将自动删除。
      * the keys will automatically be deleted.
      *
-     * @param instant expiration date/time (Unix timestamp in milliseconds)
-     * @param names object names
-     * @return number of keys for which the timeout was set successfully
+     * @param instant 过期时刻
+     * @param names 对象名称
+     * @return 成功设置过期的键数量
      */
     RFuture<Long> expireAtAsync(Instant instant, String... names);
     /**
-     * Clear an expire timeout or expire date for object.
+     * 清除对象的过期时间或绝对过期时刻。
      *
-     * @param name of object
-     * @return <code>true</code> if timeout was removed
+     * @param name 对象名称
+     * @return 见方法说明
      *         <code>false</code> if object does not exist or does not have an associated timeout
      */
     RFuture<Boolean> clearExpireAsync(String name);
     
     /**
-     * Rename object with <code>oldName</code> to <code>newName</code>
-     * only if new key is not exists
+     * 仅当新键不存在时将 {@code oldName} 重命名为 {@code newName}。
+     * 仅当新键不存在时
      *
-     * @param oldName - old name of object
-     * @param newName - new name of object
-     * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
+     * @param oldName 原对象名称
+     * @param newName 新对象名称
+     * @return 见方法说明
      */
     RFuture<Boolean> renamenxAsync(String oldName, String newName);
     
     /**
-     * Rename current object key to <code>newName</code>
+     * 将当前对象键重命名为 {@code newName}。
      *
-     * @param currentName - current name of object
-     * @param newName - new name of object
-     * @return void
+     * @param currentName 当前对象名称
+     * @param newName 新对象名称
+     * @return 无返回值
      */
     RFuture<Void> renameAsync(String currentName, String newName);
     
     /**
-     * Remaining time to live of Redisson object that has a timeout
+     * 返回带过期时间的 Redisson 对象剩余存活时间。
      *
-     * @param name of key
-     * @return time in milliseconds
+     * @param name 对象名称
+     * @return 剩余毫秒数
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
     RFuture<Long> remainTimeToLiveAsync(String name);
     
     /**
-     * Update the last access time of an object. 
+     * 更新对象的最后访问时间。
      * 
-     * @param names of keys
-     * @return count of objects were touched
+     * @param names 对象名称
+     * @return 已 touch 的对象数量
      */
     RFuture<Long> touchAsync(String... names);
     
     /**
-     * Checks if provided keys exist
+     * 检查给定键是否存在。
      * 
-     * @param names of keys
-     * @return amount of existing keys
+     * @param names 对象名称
+     * @return 存在的键数量
      */
     RFuture<Long> countExistsAsync(String... names);
 
     /**
-     * Get all keys using iterable. Keys traversing with SCAN operation.
-     * Each SCAN operation loads up to <code>10</code> keys per request.
+     * 通过 SCAN 迭代获取所有键（异步 Iterable）。
+     * 每次 SCAN 请求最多加载 10 个键。
      *
-     * @return Asynchronous Iterable object
+     * @return 异步 Iterable
      */
     AsyncIterator<String> getKeysAsync();
 
     /**
-     * Get all keys using iterable. Keys traversing with SCAN operation.
+     * 通过 SCAN 迭代获取所有键（异步 Iterable）。
      *
-     * @param options scan options
-     * @return Asynchronous Iterable object
+     * @param options SCAN 选项
+     * @return 异步 Iterable
      */
     AsyncIterator<String> getKeysAsync(KeysScanOptions options);
 
     /**
-     * Get Redis object type by key
+     * 按键获取 Redis 对象类型。
      * 
-     * @param key - name of key
-     * @return type of key
+     * @param key 键名
+     * @return 键类型
      */
     RFuture<RType> getTypeAsync(String key);
     
     /**
-     * Get hash slot identifier for key in async mode.
-     * Available for cluster nodes only
+     * 异步获取键在 Cluster 中的 hash slot（仅集群模式）。
+     * 仅适用于 Cluster 节点
      *
-     * @param key - name of key
-     * @return slot
+     * @param key 键名
+     * @return hash slot 编号
      */
     RFuture<Integer> getSlotAsync(String key);
 
     /**
-     * Get random key in async mode
+     * 异步随机返回一个键。
      *
-     * @return random key
+     * @return 随机键名
      */
     RFuture<String> randomKeyAsync();
 
     /**
-     * Delete multiple objects by a key pattern.
+     * 按 glob 模式批量删除对象。
      * <p>
-     * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
+     * Cluster 模式下因 Lua 限制以<b>非原子</b>方式执行。
      * <p>
-     *  Supported glob-style patterns:
+     *  支持的 glob 模式示例：
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern - match pattern
-     * @return number of removed keys
+     * @param pattern 匹配模式
+     * @return 已删除键数量
      */
     RFuture<Long> deleteByPatternAsync(String pattern);
 
     /**
-     * Unlink multiple objects by a key pattern.
+     * 按 glob 模式批量异步解除链接（UNLINK）。
      * <p>
-     * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
+     * Cluster 模式下因 Lua 限制以<b>非原子</b>方式执行。
      * <p>
-     *  Supported glob-style patterns:
+     *  支持的 glob 模式示例：
      *    h?llo subscribes to hello, hallo and hxllo
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param pattern - match pattern
-     * @return number of removed keys
+     * @param pattern 匹配模式
+     * @return 已删除键数量
      */
     RFuture<Long> unlinkByPatternAsync(String pattern);
 
     /**
-     * Delete multiple objects
+     * 批量删除 Redisson 对象。
      *
-     * @param objects of Redisson
-     * @return number of removed keys
+     * @param objects Redisson 对象
+     * @return 已删除键数量
      */
     RFuture<Long> deleteAsync(RObject... objects);
     
     /**
-     * Delete multiple objects by name
+     * 按名称批量删除对象。
      *
-     * @param keys - object names
-     * @return number of removed keys
+     * @param keys Redis 键名
+     * @return 已删除键数量
      */
     RFuture<Long> deleteAsync(String... keys);
 
     /**
-     * Delete multiple objects by name.
-     * Actual removal will happen later asynchronously.
+     * 按名称批量删除对象。
+     * 实际删除将异步进行。
      * <p>
-     * Requires Redis 4.0+
+     * 需要 Redis 4.0+
      * 
-     * @param keys - object names
-     * @return number of removed keys
+     * @param keys Redis 键名
+     * @return 已删除键数量
      */
     RFuture<Long> unlinkAsync(String... keys);
     
     /**
-     * Returns the number of keys in the currently-selected database in async mode
+     * 异步返回当前选中数据库的键数量。
      *
-     * @return number of keys
+     * @return 键数量
      */
     RFuture<Long> countAsync();
 
     /**
-     * Swap two databases.
+     * 交换两个 Redis 数据库的内容。
      * <p>
-     * Requires Redis 4.0+
+     * 需要 Redis 4.0+
      *
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> swapdbAsync(int db1, int db2);
 
     /**
-     * Delete all keys of currently selected database
+     * 清空当前选中数据库的所有键。
      *
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> flushdbAsync();
 
     /**
-     * Delete all keys of all existing databases
+     * 清空所有数据库的所有键。
      *
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> flushallAsync();
 
     /**
-     * Delete all keys of currently selected database
-     * in background without blocking server.
+     * 清空当前选中数据库的所有键。
+     * 在后台执行，不阻塞服务器。
      * <p>
-     * Requires Redis 4.0+
+     * 需要 Redis 4.0+
      * 
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> flushdbParallelAsync();
 
     /**
-     * Delete all keys of all existing databases
-     * in background without blocking server.
+     * 清空所有数据库的所有键。
+     * 在后台执行，不阻塞服务器。
      * <p>
-     * Requires Redis 4.0+
+     * 需要 Redis 4.0+
      * 
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> flushallParallelAsync();
 
     /**
-     * Adds global object event listener
+     * 注册全局 Redisson 对象事件监听器。
      * which is invoked for each Redisson object.
      *
      * @see org.redisson.api.listener.TrackingListener
@@ -326,15 +327,15 @@ public interface RKeysAsync {
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *
-     * @param listener object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
     /**
-     * Removes global object event listener
+     * 移除全局对象事件监听器。
      *
-     * @param listenerId - listener id
+     * @param listenerId 监听器 ID
      */
     RFuture<Void> removeListenerAsync(int listenerId);
 
