@@ -42,7 +42,7 @@ import static com.alibaba.csp.sentinel.adapter.gateway.common.SentinelGatewayCon
 import static com.alibaba.csp.sentinel.dashboard.datasource.entity.gateway.GatewayFlowRuleEntity.*;
 
 /**
- * Gateway flow rule Controller for manage gateway flow rules.
+ * 网关流控规则 REST 控制器：查询/增删改规则并通过 {@link SentinelApiClient} 推送到客户端。
  *
  * @author cdfive
  * @since 1.7.0

@@ -39,6 +39,8 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleUtil;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 集群 Token 服务端全局配置管理器：监听传输、namespace 集合与流控统计配置。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
@@ -47,14 +49,14 @@ public final class ClusterServerConfigManager {
     private static boolean embedded = false;
 
     /**
-     * Server global transport and scope config.
+     * 服务端全局传输与 namespace 范围配置。
      */
     private static volatile int port = ClusterConstants.DEFAULT_CLUSTER_SERVER_PORT;
     private static volatile int idleSeconds = ServerTransportConfig.DEFAULT_IDLE_SECONDS;
     private static volatile Set<String> namespaceSet = Collections.singleton(ServerConstants.DEFAULT_NAMESPACE);
 
     /**
-     * Server global flow config.
+     * 服务端全局流控统计配置。
      */
     private static volatile double exceedCount = ServerFlowConfig.DEFAULT_EXCEED_COUNT;
     private static volatile double maxOccupyRatio = ServerFlowConfig.DEFAULT_MAX_OCCUPY_RATIO;
@@ -63,23 +65,22 @@ public final class ClusterServerConfigManager {
     private static volatile double maxAllowedQps = ServerFlowConfig.DEFAULT_MAX_ALLOWED_QPS;
 
     /**
-     * Namespace-specific flow config for token server.
-     * Format: (namespace, config).
+     * 按 namespace 的流控配置，格式 (namespace, config)。
      */
     private static final Map<String, ServerFlowConfig> NAMESPACE_CONF = new ConcurrentHashMap<>();
 
     private static final List<ServerTransportConfigObserver> TRANSPORT_CONFIG_OBSERVERS = new ArrayList<>();
 
     /**
-     * Property for cluster server global transport configuration.
+     * 集群服务端全局传输配置动态属性。
      */
     private static SentinelProperty<ServerTransportConfig> transportConfigProperty = new DynamicSentinelProperty<>();
     /**
-     * Property for cluster server namespace set.
+     * 集群服务端 namespace 集合动态属性。
      */
     private static SentinelProperty<Set<String>> namespaceSetProperty = new DynamicSentinelProperty<>();
     /**
-     * Property for cluster server global flow control configuration.
+     * 集群服务端全局流控统计动态属性。
      */
     private static SentinelProperty<ServerFlowConfig> globalFlowProperty = new DynamicSentinelProperty<>();
 
@@ -97,7 +98,7 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Register cluster server namespace set dynamic property.
+     * 注册集群服务端 namespace 集合动态属性。
      *
      * @param property server namespace set dynamic property
      */
@@ -114,7 +115,7 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Register cluster server transport configuration dynamic property.
+     * 注册集群服务端传输配置动态属性。
      *
      * @param property server transport configuration dynamic property
      */
@@ -131,7 +132,7 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Register cluster server global statistic (flow) configuration dynamic property.
+     * 注册集群服务端全局流控统计配置动态属性。
      *
      * @param property server flow configuration dynamic property
      */
@@ -148,7 +149,7 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Load provided server namespace set to property in memory.
+     * 将 namespace 集合加载到内存属性。
      *
      * @param namespaceSet valid namespace set
      */
@@ -157,7 +158,7 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Load provided server transport configuration to property in memory.
+     * 将传输配置加载到内存属性。
      *
      * @param config valid cluster server transport configuration
      */
@@ -166,7 +167,7 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Load provided server global statistic (flow) configuration to property in memory.
+     * 将全局流控统计配置加载到内存属性。
      *
      * @param config valid cluster server flow configuration for global
      */
@@ -175,20 +176,19 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Load server flow config for a specific namespace.
+     * 加载指定 namespace 的流控配置（当前仍写入全局属性）。
      *
      * @param namespace a valid namespace
      * @param config    valid flow config for the namespace
      */
     public static void loadFlowConfig(String namespace, ServerFlowConfig config) {
         AssertUtil.notEmpty(namespace, "namespace cannot be empty");
-        // TODO: Support namespace-scope server flow config.
+        // TODO：支持按 namespace 的服务端流控配置
         globalFlowProperty.updateValue(config);
     }
 
     /**
-     * Add a transport config observer. The observers will be called as soon as
-     * there are some changes in transport config (e.g. token server port).
+     * 添加传输配置观察者，端口等变更时回调。
      *
      * @param observer a valid transport config observer
      */
@@ -210,7 +210,7 @@ public final class ClusterServerConfigManager {
 
         @Override
         public synchronized void configUpdate(Set<String> set) {
-            // TODO: should debounce?
+            // TODO：是否需要防抖
             applyNamespaceSetChange(set);
         }
     }
@@ -226,20 +226,18 @@ public final class ClusterServerConfigManager {
         }
 
         newSet = new HashSet<>(newSet);
-        // Always add the `default` namespace to the namespace set.
+        // 始终将 default namespace 加入集合
         newSet.add(ServerConstants.DEFAULT_NAMESPACE);
 
         if (embedded) {
-            // In embedded server mode, the server itself is also a part of service,
-            // so it should be added to namespace set.
-            // By default, the added namespace is the appName.
+            // 嵌入式模式下服务端自身也是客户端，将应用 namespace 加入集合
             newSet.add(ConfigSupplierRegistry.getNamespaceSupplier().get());
         }
 
         Set<String> oldSet = ClusterServerConfigManager.namespaceSet;
         if (oldSet != null && !oldSet.isEmpty()) {
             for (String ns : oldSet) {
-                // Remove the cluster rule property for deprecated namespace set.
+                // 移除已下线 namespace 的集群规则属性
                 if (!newSet.contains(ns)) {
                     ClusterFlowRuleManager.removeProperty(ns);
                     ClusterParamFlowRuleManager.removeProperty(ns);
@@ -249,10 +247,10 @@ public final class ClusterServerConfigManager {
 
         ClusterServerConfigManager.namespaceSet = newSet;
         for (String ns : newSet) {
-            // Register the rule property if needed.
+            // 按需注册规则属性
             ClusterFlowRuleManager.registerPropertyIfAbsent(ns);
             ClusterParamFlowRuleManager.registerPropertyIfAbsent(ns);
-            // Initialize the global QPS limiter for the namespace.
+            // 初始化 namespace 全局 QPS 限流器
             GlobalRequestLimiter.initIfAbsent(ns);
         }
     }
@@ -337,7 +335,7 @@ public final class ClusterServerConfigManager {
                 } else {
                     intervalMs = newIntervalMs;
                     sampleCount = newSampleCount;
-                    // Reset all the metrics.
+                    // 窗口参数变更时重置全部指标
                     ClusterMetricStatistics.resetFlowMetrics();
                     ClusterParamMetricStatistics.resetFlowMetrics();
                 }
@@ -383,7 +381,7 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * Get sample count of provided namespace.
+     * 获取 namespace 采样桶数；无定制值时使用全局配置。
      *
      * @param namespace valid namespace
      * @return the sample count of namespace; if the namespace does not have customized value, use the global value
@@ -447,11 +445,8 @@ public final class ClusterServerConfigManager {
     }
 
     /**
-     * <p>Set the embedded mode flag for the token server. </p>
-     * <p>
-     * NOTE: developers SHOULD NOT manually invoke this method.
-     * The embedded flag should be initialized by Sentinel when starting token server.
-     * </p>
+     * <p>设置 Token Server 嵌入式模式标志。</p>
+     * <p>注意：开发者不应手动调用；由 Sentinel 启动 Token Server 时初始化。</p>
      *
      * @param embedded whether the token server is currently running in embedded mode
      */

@@ -18,74 +18,27 @@
 package com.alibaba.csp.sentinel.log.jul;
 
 
-// contributors: lizongbo: proposed special treatment of array parameter values
-// Joern Huxhorn: pointed out double[] omission, suggested deep array copy
+// 贡献者：lizongbo 提出数组参数的特殊处理；Joern Huxhorn 指出 double[] 遗漏并建议深拷贝
 
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Formats messages according to very simple substitution rules. Substitutions
- * can be made 1, 2 or more arguments.
- *
+ * 按 SLF4J 风格用 {@code {}} 占位符格式化日志消息，支持 1 个、2 个或多个参数替换。
  * <p>
- * For example,
- *
- * <pre>
- * MessageFormatter.format(&quot;Hi {}.&quot;, &quot;there&quot;)
- * </pre>
- *
- * will return the string "Hi there.".
+ * {@code {}} 称为<em>格式化锚点</em>，标记参数插入位置。
+ * 消息中含字面量 {@code {} } 时可对 {@code {} } 前的 {@code \} 转义；
+ * 对 {@code \} 本身再转义可恢复字面反斜杠语义。
+ * </p>
  * <p>
- * The {} pair is called the <em>formatting anchor</em>. It serves to designate
- * the location where arguments need to be substituted within the message
- * pattern.
+ * 约定与 JDK {@link MessageFormat} 不同，但实现约快 10 倍，
+ * 对整条日志处理链的性能影响显著。
+ * </p>
  * <p>
- * In case your message contains the '{' or the '}' character, you do not have
- * to do anything special unless the '}' character immediately follows '{'. For
- * example,
- *
- * <pre>
- * MessageFormatter.format(&quot;Set {1,2,3} is not equal to {}.&quot;, &quot;1,2&quot;);
- * </pre>
- *
- * will return the string "Set {1,2,3} is not equal to 1,2.".
- *
- * <p>
- * If for whatever reason you need to place the string "{}" in the message
- * without its <em>formatting anchor</em> meaning, then you need to escape the
- * '{' character with '\', that is the backslash character. Only the '{'
- * character should be escaped. There is no need to escape the '}' character.
- * For example,
- *
- * <pre>
- * MessageFormatter.format(&quot;Set \\{} is not equal to {}.&quot;, &quot;1,2&quot;);
- * </pre>
- *
- * will return the string "Set {} is not equal to 1,2.".
- *
- * <p>
- * The escaping behavior just described can be overridden by escaping the escape
- * character '\'. Calling
- *
- * <pre>
- * MessageFormatter.format(&quot;File name is C:\\\\{}.&quot;, &quot;file.zip&quot;);
- * </pre>
- *
- * will return the string "File name is C:\file.zip".
- *
- * <p>
- * The formatting conventions are different than those of {@link MessageFormat}
- * which ships with the Java platform. This is justified by the fact that
- * SLF4J's implementation is 10 times faster than that of {@link MessageFormat}.
- * This local performance difference is both measurable and significant in the
- * larger context of the complete logging processing chain.
- *
- * <p>
- * See also {@link #format(String, Object)},
- * {@link #format(String, Object, Object)} and
- * {@link #arrayFormat(String, Object[])} methods for more details.
+ * 详见 {@link #format(String, Object)}、{@link #format(String, Object, Object)}
+ * 与 {@link #arrayFormat(String, Object[])}。
+ * </p>
  *
  * @author Ceki G&uuml;lc&uuml;
  * @author Joern Huxhorn
@@ -97,17 +50,7 @@ final public class MessageFormatter {
     private static final char ESCAPE_CHAR = '\\';
 
     /**
-     * Performs single argument substitution for the 'messagePattern' passed as
-     * parameter.
-     * <p>
-     * For example,
-     *
-     * <pre>
-     * MessageFormatter.format(&quot;Hi {}.&quot;, &quot;there&quot;);
-     * </pre>
-     *
-     * will return the string "Hi there.".
-     * <p>
+     * 对消息模板做单参数占位符替换。
      *
      * @param messagePattern
      *          The message pattern which will be parsed and formatted
@@ -121,16 +64,7 @@ final public class MessageFormatter {
 
     /**
      *
-     * Performs a two argument substitution for the 'messagePattern' passed as
-     * parameter.
-     * <p>
-     * For example,
-     *
-     * <pre>
-     * MessageFormatter.format(&quot;Hi {}. My name is {}.&quot;, &quot;Alice&quot;, &quot;Bob&quot;);
-     * </pre>
-     *
-     * will return the string "Hi Alice. My name is Bob.".
+     * 对消息模板做双参数占位符替换。
      *
      * @param messagePattern
      *          The message pattern which will be parsed and formatted
@@ -190,7 +124,7 @@ final public class MessageFormatter {
 
         int i = 0;
         int j;
-        // use string builder for better multicore performance
+        // 使用 StringBuilder 提升多核下拼接性能
         StringBuilder sbuf = new StringBuilder(messagePattern.length() + 50);
 
         int L;
@@ -199,38 +133,35 @@ final public class MessageFormatter {
             j = messagePattern.indexOf(DELIM_STR, i);
 
             if (j == -1) {
-                // no more variables
-                if (i == 0) { // this is a simple string
+                // 无更多占位符
+                if (i == 0) { // 纯字符串，无占位符
                     return new FormattingTuple(messagePattern, argArray, throwable);
-                } else { // add the tail string which contains no variables and return
-                    // the result.
+                } else { // 追加尾部无占位符片段并返回
                     sbuf.append(messagePattern, i, messagePattern.length());
                     return new FormattingTuple(sbuf.toString(), argArray, throwable);
                 }
             } else {
                 if (isEscapedDelimeter(messagePattern, j)) {
                     if (!isDoubleEscaped(messagePattern, j)) {
-                        L--; // DELIM_START was escaped, thus should not be incremented
+                        L--; // 锚点被转义，参数索引不递增
                         sbuf.append(messagePattern, i, j - 1);
                         sbuf.append(DELIM_START);
                         i = j + 1;
                     } else {
-                        // The escape character preceding the delimiter start is
-                        // itself escaped: "abc x:\\{}"
-                        // we have to consume one backward slash
+                        // 转义符本身也被转义（如 "abc x:\{}"），需消费一个反斜杠
                         sbuf.append(messagePattern, i, j - 1);
                         deeplyAppendParameter(sbuf, argArray[L], new HashMap<Object[], Object>());
                         i = j + 2;
                     }
                 } else {
-                    // normal case
+                    // 正常替换
                     sbuf.append(messagePattern, i, j);
                     deeplyAppendParameter(sbuf, argArray[L], new HashMap<Object[], Object>());
                     i = j + 2;
                 }
             }
         }
-        // append the characters following the last {} pair.
+        // 追加最后一个 {} 之后的尾部文本
         sbuf.append(messagePattern, i, messagePattern.length());
         return new FormattingTuple(sbuf.toString(), argArray, throwable);
     }
@@ -256,7 +187,7 @@ final public class MessageFormatter {
         }
     }
 
-    // special treatment of array values was suggested by 'lizongbo'
+    // 数组参数的深度展开逻辑由 lizongbo 建议
     private static void deeplyAppendParameter(StringBuilder sbuf, Object o, Map<Object[], Object> seenMap) {
         if (o == null) {
             sbuf.append("null");
@@ -265,8 +196,7 @@ final public class MessageFormatter {
         if (!o.getClass().isArray()) {
             safeObjectAppend(sbuf, o);
         } else {
-            // check for primitive array types because they
-            // unfortunately cannot be cast to Object[]
+            // 基本类型数组无法强转为 Object[]，需分别处理
             if (o instanceof boolean[]) {
                 booleanArrayAppend(sbuf, (boolean[]) o);
             } else if (o instanceof byte[]) {
@@ -310,7 +240,7 @@ final public class MessageFormatter {
                     sbuf.append(", ");
                 }
             }
-            // allow repeats in siblings
+            // 兄弟节点允许重复引用
             seenMap.remove(a);
         } else {
             sbuf.append("...");

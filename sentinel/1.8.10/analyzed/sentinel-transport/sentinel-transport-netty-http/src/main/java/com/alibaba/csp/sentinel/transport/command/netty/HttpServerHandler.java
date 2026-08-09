@@ -55,9 +55,9 @@ import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERR
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 /**
- * Netty-based HTTP server handler for command center.
+ * 命令中心 Netty HTTP 请求处理器：解析 GET/POST 参数并调用 {@link CommandHandler}。
  *
- * Note: HTTP chunked is not tested!
+ * 注意：HTTP 分块传输未充分测试！
  *
  * @author Eric Zhao
  */
@@ -90,13 +90,13 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
     private void handleRequest(CommandRequest request, ChannelHandlerContext ctx, boolean keepAlive)
         throws Exception {
         String commandName = HttpCommandUtils.getTarget(request);
-        // Find the matching command handler.
+        // 查找匹配的命令处理器
         CommandHandler<?> commandHandler = getHandler(commandName);
         if (commandHandler != null) {
             CommandResponse<?> response = commandHandler.handle(request);
             writeResponse(response, ctx, keepAlive);
         } else {
-            // No matching command handler.
+            // 无匹配命令
             writeErrorResponse(BAD_REQUEST.code(), String.format("Unknown command \"%s\"", commandName), ctx);
         }
     }
@@ -169,7 +169,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
         QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
         CommandRequest serverRequest = new CommandRequest();
         Map<String, List<String>> paramMap = queryStringDecoder.parameters();
-        // Parse request parameters.
+        // 解析 URL 查询参数
         if (!paramMap.isEmpty()) {
             for (Entry<String, List<String>> p : paramMap.entrySet()) {
                 if (!p.getValue().isEmpty()) {
@@ -177,14 +177,14 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
                 }
             }
         }
-        // Deal with post method, parameter in post has more privilege compared to that in querystring
+        // POST 参数优先级高于 QueryString
         if (request.method().equals(HttpMethod.POST)) {
-            // support multi-part and form-urlencoded
+            // 支持 multipart 与 form-urlencoded
             HttpPostRequestDecoder postRequestDecoder = null;
             try {
                 postRequestDecoder = new HttpPostRequestDecoder(request);
                 for (InterfaceHttpData data : postRequestDecoder.getBodyHttpDatas()) {
-                    data.retain(); // must retain each attr before destroy
+                    data.retain(); // destroy 前必须 retain
                     if (data.getHttpDataType() == HttpDataType.Attribute) {
                         if (data instanceof HttpData) {
                             HttpData httpData = (HttpData) data;
@@ -203,10 +203,10 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
                 }
             }
         }
-        // Parse command name.
+        // 解析命令名
         String target = parseTarget(queryStringDecoder.rawPath());
         serverRequest.addMetadata(HttpCommandUtils.REQUEST_TARGET, target);
-        // Parse body.
+        // 解析请求体
         if (request.content().readableBytes() <= 0) {
             serverRequest.setBody(null);
         } else {
@@ -222,8 +222,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
             return "";
         }
 
-        // Remove the / of the uri as the target(command name)
-        // Usually the uri is start with /
+        // 去掉 URI 前缀 / 得到命令名
         int start = uri.indexOf('/');
         if (start != -1) {
             return uri.substring(start + 1);

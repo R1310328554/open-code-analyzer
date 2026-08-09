@@ -29,39 +29,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A simple SPI loading facility (refactored since 1.8.1).
+ * 轻量 SPI 加载器（1.8.1 起重构）。
  *
- * <p>SPI is short for Service Provider Interface.</p>
+ * <p>SPI（Service Provider Interface）中 Service 为接口或抽象类，
+ * Provider 为实现类，须有无参构造以便实例化。</p>
  *
- * <p>
- * Service is represented by a single type, that is, a single interface or an abstract class.
- * Provider is implementations of Service, that is, some classes which implement the interface or extends the abstract class.
- * </p>
+ * <p>配置文件位于 {@code META-INF/services/<接口全名>}：
+ * 每行一个实现类全名；空白行忽略；{@code #} 起为注释。</p>
  *
- * <p>
- * For Service type:
- * Must interface or abstract class.
- * </p>
- *
- * <p>
- * For Provider class:
- * Must have a zero-argument constructor so that they can be instantiated during loading.
- * </p>
- *
- * <p>
- * For Provider configuration file:
- * 1. The file contains a list of fully-qualified binary names of concrete provider classes, one per line.
- * 2. Space and tab characters surrounding each name, as well as blank lines, are ignored.
- * 3. The comment line character is #, all characters following it are ignored.
- * </p>
- *
- *
- * <p>{@code SpiLoader} provide common functions, such as:</p>
+ * <p>{@code SpiLoader} 支持：</p>
  * <ul>
- * <li>Load all Provider instance unsorted/sorted list.</li>
- * <li>Load highest/lowest order priority instance.</li>
- * <li>Load first-found or default instance.</li>
- * <li>Load instance by alias name or provider class.</li>
+ * <li>加载全部 Provider（有序/无序）；</li>
+ * <li>按 {@link Spi#order()} 取最高/最低优先级；</li>
+ * <li>加载首个或默认实现；</li>
+ * <li>按别名或类加载指定实例。</li>
  * </ul>
  *
  * @author Eric Zhao
@@ -72,40 +53,37 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class SpiLoader<S> {
 
-    // Default path for the folder of Provider configuration file
+    // Provider 配置文件默认目录前缀
     private static final String SPI_FILE_PREFIX = "META-INF/services/";
 
-    // Cache the SpiLoader instances, key: classname of Service, value: SpiLoader instance
+    // SpiLoader 实例缓存，键为 Service 类名
     private static final ConcurrentHashMap<String, SpiLoader> SPI_LOADER_MAP = new ConcurrentHashMap<>();
 
-    // Cache the classes of Provider
+    // 已加载的 Provider 类列表
     private final List<Class<? extends S>> classList = Collections.synchronizedList(new ArrayList<Class<? extends S>>());
 
-    // Cache the sorted classes of Provider
+    // 按 order 排序后的 Provider 类列表
     private final List<Class<? extends S>> sortedClassList = Collections.synchronizedList(new ArrayList<Class<? extends S>>());
 
     /**
-     * Cache the classes of Provider, key: aliasName, value: class of Provider.
-     * Note: aliasName is the value of {@link Spi} when the Provider class has {@link Spi} annotation and value is not empty,
-     * otherwise use classname of the Provider.
+     * Provider 类缓存：键为别名（{@link Spi#value()} 非空时）或类全名。
      */
     private final ConcurrentHashMap<String, Class<? extends S>> classMap = new ConcurrentHashMap<>();
 
-    // Cache the singleton instance of Provider, key: classname of Provider, value: Provider instance
+    // Provider 单例实例缓存
     private final ConcurrentHashMap<String, S> singletonMap = new ConcurrentHashMap<>();
 
-    // Whether this SpiLoader has been loaded, that is, loaded the Provider configuration file
+    // 是否已解析 SPI 配置文件
     private final AtomicBoolean loaded = new AtomicBoolean(false);
 
-    // Default provider class
+    // 标记 {@link Spi#isDefault()} 的默认 Provider 类
     private Class<? extends S> defaultClass = null;
 
-    // The Service class, must be interface or abstract class
+    // Service 接口或抽象类
     private Class<S> service;
 
     /**
-     * Create SpiLoader instance via Service class
-     * Cached by className, and load from cache first
+     * 按 Service 类获取 SpiLoader，按类名缓存。
      *
      * @param service Service class
      * @param <T>     Service type
@@ -132,8 +110,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Reset and clear all SpiLoader instances.
-     * Package privilege, used only in test cases.
+     * 重置并清空全部 SpiLoader 缓存（包内可见，仅测试使用）。
      */
     synchronized static void resetAndClearAll() {
         Set<Map.Entry<String, SpiLoader>> entries = SPI_LOADER_MAP.entrySet();
@@ -144,13 +121,13 @@ public final class SpiLoader<S> {
         SPI_LOADER_MAP.clear();
     }
 
-    // Private access
+    // 私有构造
     private SpiLoader(Class<S> service) {
         this.service = service;
     }
 
     /**
-     * Load all Provider instances of the specified Service
+     * 加载全部 Provider 实例（配置文件顺序）。
      *
      * @return Provider instances list
      */
@@ -161,7 +138,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load all Provider instances of the specified Service, sorted by order value in class's {@link Spi} annotation
+     * 加载全部 Provider 实例，按 {@link Spi#order()} 排序。
      *
      * @return Sorted Provider instances list
      */
@@ -172,7 +149,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load highest order priority instance, order value is defined in class's {@link Spi} annotation
+     * 加载 order 最小（优先级最高）的 Provider。
      *
      * @return Provider instance of highest order priority
      */
@@ -188,7 +165,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load lowest order priority instance, order value is defined in class's {@link Spi} annotation
+     * 加载 order 最大（优先级最低）的 Provider。
      *
      * @return Provider instance of lowest order priority
      */
@@ -204,7 +181,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load the first-found Provider instance
+     * 加载配置文件中首个 Provider。
      *
      * @return Provider instance of first-found specific
      */
@@ -221,7 +198,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load the first-found Provider instance,if not found, return default Provider instance
+     * 加载首个非默认 Provider；若无则返回默认实现。
      *
      * @return Provider instance
      */
@@ -238,8 +215,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load default Provider instance
-     * Provider class with @Spi(isDefault = true)
+     * 加载 {@code @Spi(isDefault=true)} 标记的默认 Provider。
      *
      * @return default Provider instance
      */
@@ -254,7 +230,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load instance by specific class type
+     * 按实现类加载 Provider 实例。
      *
      * @param clazz class type
      * @return Provider instance
@@ -276,7 +252,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load instance by aliasName of Provider class
+     * 按 {@link Spi#value()} 别名加载 Provider。
      *
      * @param aliasName aliasName of Provider class
      * @return Provider instance
@@ -295,7 +271,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Reset and clear all fields of current SpiLoader instance and remove instance in SPI_LOADER_MAP
+     * 清空当前 SpiLoader 并从全局缓存移除
      */
     synchronized void resetAndClear() {
         SPI_LOADER_MAP.remove(service.getName());
@@ -308,7 +284,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Load the Provider class from Provider configuration file
+     * 从 SPI 配置文件加载 Provider 类
      */
     public void load() {
         if (!loaded.compareAndSet(false, true)) {
@@ -348,14 +324,14 @@ public final class SpiLoader<S> {
                 String line;
                 while ((line = br.readLine()) != null) {
                     if (StringUtil.isBlank(line)) {
-                        // Skip blank line
+                        // 跳过空行
                         continue;
                     }
 
                     line = line.trim();
                     int commentIndex = line.indexOf("#");
                     if (commentIndex == 0) {
-                        // Skip comment line
+                        // 跳过注释行
                         continue;
                     }
 
@@ -432,7 +408,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Create Provider instance list
+     * 批量创建 Provider 实例。
      *
      * @param clazzList class types of Providers
      * @return Provider instance list
@@ -451,7 +427,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Create Provider instance
+     * 创建 Provider 实例（根据 {@link Spi#isSingleton()} 决定是否单例）。
      *
      * @param clazz class type of Provider
      * @return Provider class
@@ -466,7 +442,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Create Provider instance
+     * 创建 Provider 实例。
      *
      * @param clazz     class type of Provider
      * @param singleton if instance is singleton or prototype
@@ -496,7 +472,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Close all resources
+     * 关闭全部 {@link Closeable} 资源。
      *
      * @param closeables {@link Closeable} resources
      */
@@ -521,7 +497,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Throw {@link SpiLoaderException} with message
+     * 抛出带消息的 {@link SpiLoaderException}。
      *
      * @param msg error message
      */
@@ -531,7 +507,7 @@ public final class SpiLoader<S> {
     }
 
     /**
-     * Throw {@link SpiLoaderException} with message and Throwable
+     * 抛出带消息与原因的 {@link SpiLoaderException}。
      *
      * @param msg error message
      */

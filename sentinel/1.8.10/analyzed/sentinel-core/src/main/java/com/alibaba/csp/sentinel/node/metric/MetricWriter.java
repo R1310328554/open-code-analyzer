@@ -33,13 +33,13 @@ import com.alibaba.csp.sentinel.config.SentinelConfig;
 import com.alibaba.csp.sentinel.log.RecordLog;
 
 /**
- * This class is responsible for writing {@link MetricNode} to disk:
+ * 负责将 {@link MetricNode} 持久化到磁盘：
  * <ol>
- * <li>metric with the same second should write to the same file;</li>
- * <li>single file size must be controlled;</li>
- * <li>file name is like: {@code ${appName}-metrics.log.pid${pid}.yyyy-MM-dd.[number]}</li>
- * <li>metric of different day should in different file;</li>
- * <li>every metric file is accompanied with an index file, which file name is {@code ${metricFileName}.idx}</li>
+ * <li>同一秒内的指标写入同一文件；</li>
+ * <li>单文件大小受控；</li>
+ * <li>文件名形如 {@code ${appName}-metrics.log.pid${pid}.yyyy-MM-dd.[number]}；</li>
+ * <li>不同日期的指标分文件存储；</li>
+ * <li>每个指标文件配有索引文件，名为 {@code ${metricFileName}.idx}。</li>
  * </ol>
  *
  * @author Carpenter Lee
@@ -49,8 +49,7 @@ public class MetricWriter {
     private static final String CHARSET = SentinelConfig.charset();
     public static final String METRIC_BASE_DIR = LogBase.getLogBaseDir();
     /**
-     * Note: {@link MetricFileNameComparator}'s implementation relies on the metric file name,
-     * so we should be careful when changing the metric file name.
+     * 注意：{@link MetricFileNameComparator} 依赖指标文件名规则，修改命名格式时需同步调整比较器。
      *
      * @see #formMetricFileName(String, int)
      */
@@ -66,7 +65,7 @@ public class MetricWriter {
     private String baseDir;
     private String baseFileName;
     /**
-     * file must exist when writing
+     * 写入时指标文件与索引文件必须已存在
      */
     private File curMetricFile;
     private File curMetricIndexFile;
@@ -129,7 +128,7 @@ public class MetricWriter {
         if (appName == null) {
             appName = "";
         }
-        // first write, should create file
+        // 首次写入需创建文件
         if (curMetricFile == null) {
             baseFileName = formMetricFileName(appName, pid);
             closeAndNewFile(nextFileNameOfDay(time));
@@ -216,7 +215,7 @@ public class MetricWriter {
     }
 
     /**
-     * A comparator for metric file name. Metric file name is like: <br/>
+     * 指标文件名比较器。文件名示例：<br/>
      * <pre>
      * metrics.log.2018-03-06
      * metrics.log.2018-03-07
@@ -224,15 +223,14 @@ public class MetricWriter {
      * metrics.log.2018-03-06.100
      * </pre>
      * <p>
-     * File name with the early date is smaller, if date is same, the one with the small file number is smaller.
-     * Note that if the name is an absolute path, only the fileName({@link File#getName()}) part will be considered.
-     * So the above file names should be sorted as: <br/>
+     * 日期较早者更小；日期相同时序号较小者更小。
+     * 绝对路径仅比较 {@link File#getName()} 部分。
+     * 上述文件排序结果为：<br/>
      * <pre>
      * metrics.log.2018-03-06
      * metrics.log.2018-03-06.100
      * metrics.log.2018-03-07
      * metrics.log.2018-03-07.10
-     *
      * </pre>
      * </p>
      */
@@ -245,19 +243,19 @@ public class MetricWriter {
             String name2 = new File(o2).getName();
             String dateStr1 = name1.split("\\.")[2];
             String dateStr2 = name2.split("\\.")[2];
-            // in case of file name contains pid, skip it, like Sentinel-Admin-metrics.log.pid22568.2018-12-24
+            // 文件名含 pid 时跳过该段，如 Sentinel-Admin-metrics.log.pid22568.2018-12-24
             if (dateStr1.startsWith(pid)) {
                 dateStr1 = name1.split("\\.")[3];
                 dateStr2 = name2.split("\\.")[3];
             }
 
-            // compare date first
+            // 先比较日期
             int t = dateStr1.compareTo(dateStr2);
             if (t != 0) {
                 return t;
             }
 
-            // same date, compare file number
+            // 日期相同再比较文件序号
             t = name1.length() - name2.length();
             if (t != 0) {
                 return t;
@@ -267,11 +265,8 @@ public class MetricWriter {
     }
 
     /**
-     * Get all metric files' name in {@code baseDir}. The file name must like
-     * <pre>
-     * baseFileName + ".yyyy-MM-dd.number"
-     * </pre>
-     * and not endsWith {@link #METRIC_FILE_INDEX_SUFFIX} or ".lck".
+     * 列出 {@code baseDir} 下符合 {@code baseFileName + ".yyyy-MM-dd.number"} 的指标文件，
+     * 排除 {@link #METRIC_FILE_INDEX_SUFFIX} 与 ".lck" 后缀。
      *
      * @param baseDir      the directory to search.
      * @param baseFileName the file name pattern.
@@ -299,10 +294,7 @@ public class MetricWriter {
     }
 
     /**
-     * Test whether fileName matches baseFileName. fileName matches baseFileName when
-     * <pre>
-     * fileName = baseFileName + ".yyyy-MM-dd.number"
-     * </pre>
+     * 判断 {@code fileName} 是否匹配 {@code baseFileName + ".yyyy-MM-dd.number"} 模式。
      *
      * @param fileName     file name
      * @param baseFileName base file name.
@@ -311,7 +303,7 @@ public class MetricWriter {
     public static boolean fileNameMatches(String fileName, String baseFileName) {
         if (fileName.startsWith(baseFileName)) {
             String part = fileName.substring(baseFileName.length());
-            // part is like: ".yyyy-MM-dd.number", eg. ".2018-12-24.11"
+            // 后缀形如 ".yyyy-MM-dd.number"，如 ".2018-12-24.11"
             return part.matches("\\.[0-9]{4}-[0-9]{2}-[0-9]{2}(\\.[0-9]*)?");
         } else {
             return false;
@@ -363,11 +355,8 @@ public class MetricWriter {
     }
 
     /**
-     * Form metric file name use the specific appName and pid. Note that only
-     * form the file name, not include path.
-     *
-     * Note: {@link MetricFileNameComparator}'s implementation relays on the metric file name,
-     * we should be careful when changing the metric file name.
+     * 根据应用名与 pid 生成指标文件名（不含路径）。
+     * 修改命名规则时需同步维护 {@link MetricFileNameComparator}。
      *
      * @param appName
      * @param pid
@@ -377,7 +366,7 @@ public class MetricWriter {
         if (appName == null) {
             appName = "";
         }
-        // dot is special char that should be replaced.
+        // 应用名中的点号需替换为连字符
         final String dot = ".";
         final String separator = "-";
         if (appName.contains(dot)) {
@@ -391,7 +380,7 @@ public class MetricWriter {
     }
 
     /**
-     * Form index file name of the {@code metricFileName}
+     * 生成指标文件 {@code metricFileName} 对应的索引文件名。
      *
      * @param metricFileName
      * @return the index file name of the metricFileName

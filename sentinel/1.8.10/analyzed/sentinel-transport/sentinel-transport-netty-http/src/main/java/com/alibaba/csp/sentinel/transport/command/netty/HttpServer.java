@@ -34,6 +34,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 /**
+ * Netty HTTP 命令中心服务端：绑定端口、注册 {@link CommandHandler} 并分发请求。
+ *
  * @author Eric Zhao
  */
 @SuppressWarnings("rawtypes")
@@ -62,13 +64,13 @@ public final class HttpServer {
                     port = Integer.parseInt(TransportConfig.getPort());
                 }
             } catch (Exception e) {
-                // Will cause the application exit.
+                // 端口非法将导致应用退出
                 throw new IllegalArgumentException("Illegal port: " + TransportConfig.getPort());
             }
             
             int retryCount = 0;
             ChannelFuture channelFuture = null;
-            // loop for an successful binding
+            // 循环尝试绑定直至成功
             while (true) {
                 int newPort = getNewPort(port, retryCount);
                 try {
@@ -91,7 +93,7 @@ public final class HttpServer {
     }
     
     /**
-     * Increase port number every 3 tries.
+     * 每失败 3 次将端口递增 1。
      * 
      * @param basePort base port to start
      * @param retryCount retry count

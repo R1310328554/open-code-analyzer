@@ -20,7 +20,7 @@ import java.nio.charset.Charset;
 import com.alibaba.csp.sentinel.config.SentinelConfig;
 
 /**
- * Encode a string to a byte array.
+ * 将字符串按指定字符集编码为字节数组。
  *
  * @author Eric Zhao
  */

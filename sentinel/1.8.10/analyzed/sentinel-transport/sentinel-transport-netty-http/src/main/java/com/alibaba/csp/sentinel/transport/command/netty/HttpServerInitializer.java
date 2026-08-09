@@ -23,6 +23,8 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 
 /**
+ * Netty HTTP 命令通道初始化器：装配编解码器与 {@link HttpServerHandler}。
+ *
  * @author Eric Zhao
  */
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {

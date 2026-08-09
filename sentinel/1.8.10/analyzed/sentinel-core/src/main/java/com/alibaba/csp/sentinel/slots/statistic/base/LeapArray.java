@@ -25,12 +25,11 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
  * <p>
- * Basic data structure for statistic metrics in Sentinel.
+ * Sentinel 统计指标的滑动窗口基础数据结构。
  * </p>
  * <p>
- * Leap array use sliding window algorithm to count data. Each bucket cover {@code windowLengthInMs} time span,
- * and the total time span is {@link #intervalInMs}, so the total bucket amount is:
- * {@code sampleCount = intervalInMs / windowLengthInMs}.
+ * 滑动窗口将 {@link #intervalInMs} 划分为 {@code sampleCount} 个桶，
+ * 每桶跨度 {@code windowLengthInMs = intervalInMs / sampleCount}。
  * </p>
  *
  * @param <T> type of statistic data
@@ -48,12 +47,12 @@ public abstract class LeapArray<T> {
     protected final AtomicReferenceArray<WindowWrap<T>> array;
 
     /**
-     * The conditional (predicate) update lock is used only when current bucket is deprecated.
+     * 仅在当前桶过期需重置时使用的条件更新锁。
      */
     private final ReentrantLock updateLock = new ReentrantLock();
 
     /**
-     * The total bucket count is: {@code sampleCount = intervalInMs / windowLengthInMs}.
+     * 桶总数 {@code sampleCount = intervalInMs / windowLengthInMs}。
      *
      * @param sampleCount  bucket count of the sliding window
      * @param intervalInMs the total time interval of this {@link LeapArray} in milliseconds
@@ -72,7 +71,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get the bucket at current timestamp.
+     * 获取当前时间戳对应的窗口桶。
      *
      * @return the bucket at current timestamp
      */
@@ -81,7 +80,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Create a new statistic value for bucket.
+     * 为窗口桶创建新的统计值实例。
      *
      * @param timeMillis current time in milliseconds
      * @return the new empty bucket
@@ -89,7 +88,7 @@ public abstract class LeapArray<T> {
     public abstract T newEmptyBucket(long timeMillis);
 
     /**
-     * Reset given bucket to provided start time and reset the value.
+     * 将给定桶重置为指定起始时间并清空统计值。
      *
      * @param startTime  the start time of the bucket in milliseconds
      * @param windowWrap current bucket
@@ -99,7 +98,7 @@ public abstract class LeapArray<T> {
 
     private int calculateTimeIdx(/*@Valid*/ long timeMillis) {
         long timeId = timeMillis / windowLengthInMs;
-        // Calculate current index so we can map the timestamp to the leap array.
+        // 计算索引，将时间戳映射到环形数组
         return (int)(timeId % array.length());
     }
 
@@ -119,15 +118,14 @@ public abstract class LeapArray<T> {
         }
 
         int idx = calculateTimeIdx(timeMillis);
-        // Calculate current bucket start time.
+        // 计算当前桶起始时间
         long windowStart = calculateWindowStart(timeMillis);
 
         /*
-         * Get bucket item at given time from the array.
-         *
-         * (1) Bucket is absent, then just create a new bucket and CAS update to circular array.
-         * (2) Bucket is up-to-date, then just return the bucket.
-         * (3) Bucket is deprecated, then reset current bucket.
+         * 从数组获取对应时间的桶：
+         * (1) 桶不存在则 CAS 创建；
+         * (2) 桶仍有效则直接返回；
+         * (3) 桶已过期则重置。
          */
         while (true) {
             WindowWrap<T> old = array.get(idx);
@@ -138,18 +136,17 @@ public abstract class LeapArray<T> {
                  * 200     400     600     800     1000    1200  timestamp
                  *                             ^
                  *                          time=888
-                 *            bucket is empty, so create new and update
+                 *            桶为空，创建新桶并 CAS 更新
                  *
-                 * If the old bucket is absent, then we create a new bucket at {@code windowStart},
-                 * then try to update circular array via a CAS operation. Only one thread can
-                 * succeed to update, while other threads yield its time slice.
+                 * 旧桶不存在时在 {@code windowStart} 创建新桶并通过 CAS 写入；
+                 * 仅一个线程成功，其余线程 yield 等待。
                  */
                 WindowWrap<T> window = new WindowWrap<T>(windowLengthInMs, windowStart, newEmptyBucket(timeMillis));
                 if (array.compareAndSet(idx, null, window)) {
-                    // Successfully updated, return the created bucket.
+                    // CAS 成功，返回新桶
                     return window;
                 } else {
-                    // Contention failed, the thread will yield its time slice to wait for bucket available.
+                    // CAS 竞争失败，yield 等待桶可用
                     Thread.yield();
                 }
             } else if (windowStart == old.windowStart()) {
@@ -159,10 +156,9 @@ public abstract class LeapArray<T> {
                  * 200     400     600     800     1000    1200  timestamp
                  *                             ^
                  *                          time=888
-                 *            startTime of Bucket 3: 800, so it's up-to-date
+                 *            桶 3 起始 800，仍在当前窗口内
                  *
-                 * If current {@code windowStart} is equal to the start timestamp of old bucket,
-                 * that means the time is within the bucket, so directly return the bucket.
+                 * {@code windowStart} 与旧桶起始时间相同，说明仍在该桶时间范围内，直接返回。
                  */
                 return old;
             } else if (windowStart > old.windowStart()) {
@@ -173,19 +169,15 @@ public abstract class LeapArray<T> {
                  * ...    1200     1400    1600    1800    2000    2200  timestamp
                  *                              ^
                  *                           time=1676
-                 *          startTime of Bucket 2: 400, deprecated, should be reset
+                 *          桶 2 起始 400，已过期，需重置
                  *
-                 * If the start timestamp of old bucket is behind provided time, that means
-                 * the bucket is deprecated. We have to reset the bucket to current {@code windowStart}.
-                 * Note that the reset and clean-up operations are hard to be atomic,
-                 * so we need a update lock to guarantee the correctness of bucket update.
-                 *
-                 * The update lock is conditional (tiny scope) and will take effect only when
-                 * bucket is deprecated, so in most cases it won't lead to performance loss.
+                 * 旧桶起始时间落后于当前 {@code windowStart} 表示桶已过期，需重置。
+                 * 重置与清理难以原子化，故用更新锁保证正确性；
+                 * 锁仅在桶过期时生效，通常不影响性能。
                  */
                 if (updateLock.tryLock()) {
                     try {
-                        // Successfully get the update lock, now we reset the bucket.
+                        // 获取更新锁成功，重置桶
                         return resetWindowTo(old, windowStart);
                     } finally {
                         updateLock.unlock();
@@ -195,14 +187,14 @@ public abstract class LeapArray<T> {
                     Thread.yield();
                 }
             } else if (windowStart < old.windowStart()) {
-                // Should not go through here, as the provided time is already behind.
+                // 不应走到此分支：提供的时间早于旧桶起始时间
                 return new WindowWrap<T>(windowLengthInMs, windowStart, newEmptyBucket(timeMillis));
             }
         }
     }
 
     /**
-     * Get the previous bucket item before provided timestamp.
+     * 获取给定时间戳的前一个窗口桶。
      *
      * @param timeMillis a valid timestamp in milliseconds
      * @return the previous bucket item before provided timestamp
@@ -227,7 +219,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get the previous bucket item for current timestamp.
+     * 获取当前时间的前一个窗口桶。
      *
      * @return the previous bucket item for current timestamp
      */
@@ -236,7 +228,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get statistic value from bucket for provided timestamp.
+     * 获取给定时间戳对应桶的统计值；桶无效时返回 null。
      *
      * @param timeMillis a valid timestamp in milliseconds
      * @return the statistic value if bucket for provided timestamp is up-to-date; otherwise null
@@ -257,8 +249,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Check if a bucket is deprecated, which means that the bucket
-     * has been behind for at least an entire window time span.
+     * 判断桶是否已过期（落后至少一整段 {@link #intervalInMs}）。
      *
      * @param windowWrap a non-null bucket
      * @return true if the bucket is deprecated; otherwise false
@@ -272,8 +263,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get valid bucket list for entire sliding window.
-     * The list will only contain "valid" buckets.
+     * 返回滑动窗口内全部有效桶列表。
      *
      * @return valid bucket list for entire sliding window.
      */
@@ -297,7 +287,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get all buckets for entire sliding window including deprecated buckets.
+     * 返回滑动窗口内全部桶（含已过期桶）。
      *
      * @return all buckets for entire sliding window
      */
@@ -317,8 +307,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get aggregated value list for entire sliding window.
-     * The list will only contain value from "valid" buckets.
+     * 返回滑动窗口内全部有效桶的统计值列表。
      *
      * @return aggregated value list for entire sliding window
      */
@@ -344,14 +333,13 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get the valid "head" bucket of the sliding window for provided timestamp.
-     * Package-private for test.
+     * 获取给定时间对应的有效"头"桶（包内可见，供测试）。
      *
      * @param timeMillis a valid timestamp in milliseconds
      * @return the "head" bucket if it exists and is valid; otherwise null
      */
     WindowWrap<T> getValidHead(long timeMillis) {
-        // Calculate index for expected head time.
+        // 计算预期头桶索引
         int idx = calculateTimeIdx(timeMillis + windowLengthInMs);
 
         WindowWrap<T> wrap = array.get(idx);
@@ -363,7 +351,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get the valid "head" bucket of the sliding window at current timestamp.
+     * 获取当前时间的有效"头"桶。
      *
      * @return the "head" bucket if it exists and is valid; otherwise null
      */
@@ -372,7 +360,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get sample count (total amount of buckets).
+     * 获取采样桶数量。
      *
      * @return sample count
      */
@@ -381,7 +369,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get total interval length of the sliding window in milliseconds.
+     * 获取滑动窗口总时长（毫秒）。
      *
      * @return interval in second
      */
@@ -390,7 +378,7 @@ public abstract class LeapArray<T> {
     }
 
     /**
-     * Get total interval length of the sliding window.
+     * 获取滑动窗口总时长（秒）。
      *
      * @return interval in second
      */
@@ -409,12 +397,12 @@ public abstract class LeapArray<T> {
     }
 
     public long currentWaiting() {
-        // TODO: default method. Should remove this later.
+        // TODO：默认实现，后续应移除
         return 0;
     }
 
     public void addWaiting(long time, int acquireCount) {
-        // Do nothing by default.
+        // 默认无实现
         throw new UnsupportedOperationException();
     }
 }

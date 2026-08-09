@@ -22,29 +22,29 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import java.util.*;
 
 /**
- * This class provide a builder to build redis client connection config.
+ * Redis 客户端连接配置及 Builder，支持单机/Sentinel/Cluster。
  *
  * @author tiger
  */
 public class RedisConnectionConfig {
 
     /**
-     * The default redisSentinel port.
+     * Sentinel 默认端口。
      */
     public static final int DEFAULT_SENTINEL_PORT = 26379;
 
     /**
-     * The default redisCluster port.
+     * Cluster 默认端口。
      */
     public static final int DEFAULT_CLUSTER_PORT = 6379;
 
     /**
-     * The default redis port.
+     * Redis 单机默认端口。
      */
     public static final int DEFAULT_REDIS_PORT = 6379;
 
     /**
-     * Default timeout: 60 sec
+     * 默认超时：60 秒
      */
     public static final long DEFAULT_TIMEOUT_MILLISECONDS = 60 * 1000;
 
@@ -65,17 +65,17 @@ public class RedisConnectionConfig {
     private final List<RedisConnectionConfig> redisClusters = new ArrayList<RedisConnectionConfig>();
 
     /**
-     * Default empty constructor.
+     * 默认无参构造。
      */
     public RedisConnectionConfig() {
     }
 
     /**
-     * Constructor with host/port and timeout.
+     * 指定主机、端口与超时构造。
      *
-     * @param host    the host
-     * @param port    the port
-     * @param timeout timeout value . unit is mill seconds
+     * @param host 主机
+     * @param port 端口
+     * @param timeout 超时（毫秒）
      */
     public RedisConnectionConfig(String host, int port, long timeout) {
 
@@ -89,7 +89,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns a new {@link RedisConnectionConfig.Builder} to construct a {@link RedisConnectionConfig}.
+     * 返回用于构建 {@link RedisConnectionConfig} 的 {@link RedisConnectionConfig.Builder}。
      *
      * @return a new {@link RedisConnectionConfig.Builder} to construct a {@link RedisConnectionConfig}.
      */
@@ -98,7 +98,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns the host.
+     * 返回主机地址。
      *
      * @return the host.
      */
@@ -107,7 +107,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the Redis host.
+     * 设置 Redis 主机。
      *
      * @param host the host
      */
@@ -116,7 +116,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns the Sentinel Master Id.
+     * 返回 Sentinel Master ID。
      *
      * @return the Sentinel Master Id.
      */
@@ -125,7 +125,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the Sentinel Master Id.
+     * 设置 Sentinel Master ID。
      *
      * @param redisSentinelMasterId the Sentinel Master Id.
      */
@@ -134,7 +134,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns the Redis port.
+     * 返回 Redis 端口。
      *
      * @return the Redis port
      */
@@ -143,7 +143,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the Redis port. Defaults to {@link #DEFAULT_REDIS_PORT}.
+     * 设置 Redis 端口，默认 {@link #DEFAULT_REDIS_PORT}。
      *
      * @param port the Redis port
      */
@@ -152,7 +152,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns the password.
+     * 返回密码。
      *
      * @return the password
      */
@@ -161,9 +161,9 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the password. Use empty string to skip authentication.
+     * 设置密码；空字符串表示跳过认证。
      *
-     * @param password the password, must not be {@literal null}.
+     * @param password 密码，不可为 {@literal null}
      */
     public void setPassword(String password) {
 
@@ -172,9 +172,9 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the password. Use empty char array to skip authentication.
+     * 设置密码字符数组；空数组表示跳过认证。
      *
-     * @param password the password, must not be {@literal null}.
+     * @param password 密码, must not be {@literal null}.
      */
     public void setPassword(char[] password) {
 
@@ -183,7 +183,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns the command timeout for synchronous command execution.
+     * 返回同步命令执行超时（毫秒）。
      *
      * @return the Timeout
      */
@@ -192,9 +192,9 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the command timeout for synchronous command execution.
+     * 设置同步命令执行超时。
      *
-     * @param timeout the command timeout for synchronous command execution.
+     * @param timeout 同步命令超时
      */
     public void setTimeout(Long timeout) {
 
@@ -205,7 +205,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns the Redis database number. Databases are only available for Redis Standalone and Redis Master/Slave.
+     * 返回 Redis 库编号；仅单机/主从模式可用。
      *
      * @return database
      */
@@ -214,9 +214,9 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the Redis database number. Databases are only available for Redis Standalone and Redis Master/Slave.
+     * 设置 Redis 库编号。
      *
-     * @param database the Redis database number.
+     * @param database Redis 库编号
      */
     public void setDatabase(int database) {
 
@@ -226,7 +226,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Returns the client name.
+     * 返回客户端名称。
      *
      * @return
      */
@@ -235,23 +235,23 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Sets the client name to be applied on Redis connections.
+     * 设置 Redis 连接上的客户端名称。
      *
-     * @param clientName the client name.
+     * @param clientName 客户端名称
      */
     public void setClientName(String clientName) {
         this.clientName = clientName;
     }
 
     /**
-     * @return the list of {@link RedisConnectionConfig Redis Sentinel URIs}.
+     * @return {@link RedisConnectionConfig Sentinel 节点}列表。
      */
     public List<RedisConnectionConfig> getRedisSentinels() {
         return redisSentinels;
     }
 
     /**
-     * @return the list of {@link RedisConnectionConfig Redis Cluster URIs}.
+     * @return {@link RedisConnectionConfig Cluster 节点}列表。
      */
     public List<RedisConnectionConfig> getRedisClusters() {
         return redisClusters;
@@ -325,7 +325,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Builder for Redis RedisConnectionConfig.
+     * {@link RedisConnectionConfig} 构建器。
      */
     public static class Builder {
 
@@ -349,20 +349,20 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Set Redis host. Creates a new builder.
+         * 设置 Redis 主机并创建新 Builder。
          *
-         * @param host the host name
-         * @return New builder with Redis host/port.
+         * @param host 主机名
+         * @return 含 Redis 主机/端口的 Builder。
          */
         public static RedisConnectionConfig.Builder redis(String host) {
             return redis(host, DEFAULT_REDIS_PORT);
         }
 
         /**
-         * Set Redis host and port. Creates a new builder
+         * 设置 Redis 主机与端口并创建新 Builder。
          *
          * @param host the host name
-         * @param port the port
+         * @param port 端口
          * @return New builder with Redis host/port.
          */
         public static RedisConnectionConfig.Builder redis(String host, int port) {
@@ -375,10 +375,10 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Set Sentinel host. Creates a new builder.
+         * 设置 Sentinel 主机并创建新 Builder。
          *
          * @param host the host name
-         * @return New builder with Sentinel host/port.
+         * @return 含 Sentinel 主机/端口的 Builder。
          */
         public static RedisConnectionConfig.Builder redisSentinel(String host) {
 
@@ -389,7 +389,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Set Sentinel host and port. Creates a new builder.
+         * 设置 Sentinel 主机与端口并创建新 Builder。
          *
          * @param host the host name
          * @param port the port
@@ -405,10 +405,10 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Set Sentinel host and master id. Creates a new builder.
+         * 设置 Sentinel 主机与 Master ID 并创建新 Builder。
          *
          * @param host     the host name
-         * @param masterId redisSentinel master id
+         * @param masterId Sentinel Master ID
          * @return New builder with Sentinel host/port.
          */
         public static RedisConnectionConfig.Builder redisSentinel(String host, String masterId) {
@@ -416,7 +416,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Set Sentinel host, port and master id. Creates a new builder.
+         * 设置 Sentinel 主机、端口与 Master ID 并创建新 Builder。
          *
          * @param host     the host name
          * @param port     the port
@@ -433,17 +433,17 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Add a withRedisSentinel host to the existing builder.
+         * 向 Builder 追加 Sentinel 节点。
          *
          * @param host the host name
-         * @return the builder
+         * @return Builder 自身
          */
         public RedisConnectionConfig.Builder withRedisSentinel(String host) {
             return withRedisSentinel(host, DEFAULT_SENTINEL_PORT);
         }
 
         /**
-         * Add a withRedisSentinel host/port to the existing builder.
+         * 向 Builder 追加 Sentinel 主机与端口。
          *
          * @param host the host name
          * @param port the port
@@ -460,10 +460,10 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Set Cluster host. Creates a new builder.
+         * 设置 Cluster 主机并创建新 Builder。
          *
          * @param host the host name
-         * @return New builder with Cluster host/port.
+         * @return 含 Cluster 主机/端口的 Builder。
          */
         public static RedisConnectionConfig.Builder redisCluster(String host) {
 
@@ -474,7 +474,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Set Cluster host and port. Creates a new builder.
+         * 设置 Cluster 主机与端口并创建新 Builder。
          *
          * @param host the host name
          * @param port the port
@@ -490,7 +490,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Add a withRedisCluster host to the existing builder.
+         * 向 Builder 追加 Cluster 节点。
          *
          * @param host the host name
          * @return the builder
@@ -500,7 +500,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Add a withRedisCluster host/port to the existing builder.
+         * 向 Builder 追加 Cluster 主机与端口。
          *
          * @param host the host name
          * @param port the port
@@ -517,9 +517,9 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Adds host information to the builder. Does only affect Redis URI, cannot be used with Sentinel connections.
+         * 设置主机（仅单机模式，不可与 Sentinel 混用）。
          *
-         * @param host the port
+         * @param host 主机名
          * @return the builder
          */
         public RedisConnectionConfig.Builder withHost(String host) {
@@ -533,7 +533,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Adds port information to the builder. Does only affect Redis URI, cannot be used with Sentinel connections.
+         * 设置端口（需先设置主机）。
          *
          * @param port the port
          * @return the builder
@@ -548,7 +548,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Configures the database number.
+         * 配置库编号。
          *
          * @param database the database number
          * @return the builder
@@ -562,7 +562,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Configures a client name.
+         * 配置客户端名称。
          *
          * @param clientName the client name
          * @return the builder
@@ -577,7 +577,7 @@ public class RedisConnectionConfig {
 
 
         /**
-         * Configures authentication.
+         * 配置认证密码。
          *
          * @param password the password
          * @return the builder
@@ -604,7 +604,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Configures a timeout.
+         * 配置命令超时。
          *
          * @param timeout must not be {@literal null} or negative.
          * @return the builder
@@ -619,9 +619,9 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Configures a redisSentinel master Id.
+         * 配置 Sentinel Master ID。
          *
-         * @param sentinelMasterId redisSentinel master id, must not be empty or {@literal null}
+         * @param sentinelMasterId Sentinel Master ID，不可为空
          * @return the builder
          */
         public RedisConnectionConfig.Builder withSentinelMasterId(String sentinelMasterId) {
@@ -633,10 +633,10 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Sets the sslEnable.
+         * 设置是否启用 SSL。
          *
          * @param sslEnable sslEnable
-         * @return the value of Builder
+         * @return Builder 自身
          */
         public RedisConnectionConfig.Builder withSslEnable(boolean sslEnable) {
             this.sslEnable = sslEnable;
@@ -644,7 +644,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Sets the trustedCertificatesPath.
+         * 设置受信任证书路径。
          *
          * @param trustedCertificatesPath trustedCertificatesPath
          * @return the value of Builder
@@ -658,7 +658,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Sets the trustedCertificatesJksPassword.
+         * 设置受信任证书 JKS 密码。
          *
          * @param trustedCertificatesJksPassword trustedCertificatesJksPassword
          * @return the value of Builder
@@ -669,7 +669,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Sets the keyCertChainFilePath.
+         * 设置密钥证书链文件路径。
          *
          * @param keyCertChainFilePath keyCertChainFilePath
          * @return the value of Builder
@@ -680,7 +680,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Sets the keyFilePath.
+         * 设置私钥文件路径。
          *
          * @param keyFilePath keyFilePath
          * @return the value of Builder
@@ -691,7 +691,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * Sets the keyFilePassword.
+         * 设置私钥文件密码。
          *
          * @param keyFilePassword keyFilePassword
          * @return the value of Builder
@@ -702,7 +702,7 @@ public class RedisConnectionConfig {
         }
 
         /**
-         * @return the RedisConnectionConfig.
+         * @return 构建完成的 {@link RedisConnectionConfig}。
          */
         public RedisConnectionConfig build() {
 
@@ -751,14 +751,14 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Return true for valid port numbers.
+     * 判断端口是否在有效范围内。
      */
     private static boolean isValidPort(int port) {
         return port >= 0 && port <= 65535;
     }
 
     /**
-     * Gets the value of trustedCertificatesPath.
+     * 获取受信任证书路径。
      *
      * @return the value of trustedCertificatesPath
      */
@@ -778,7 +778,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Gets the value of trustedCertificatesJksPassword.
+     * 获取受信任证书 JKS 密码。
      *
      * @return the value of trustedCertificatesJksPassword
      */
@@ -798,7 +798,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Gets the value of keyCertChainFilePath.
+     * 获取密钥证书链文件路径。
      *
      * @return the value of keyCertChainFilePath
      */
@@ -818,7 +818,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Gets the value of keyFilePath.
+     * 获取私钥文件路径。
      *
      * @return the value of keyFilePath
      */
@@ -838,7 +838,7 @@ public class RedisConnectionConfig {
     }
 
     /**
-     * Gets the value of keyFilePassword.
+     * 获取私钥文件密码。
      *
      * @return the value of keyFilePassword
      */
@@ -870,7 +870,7 @@ public class RedisConnectionConfig {
 
 
     /**
-     * Gets the value of sslEnable.
+     * 获取是否启用 SSL。
      *
      * @return the value of sslEnable
      */

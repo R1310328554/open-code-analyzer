@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manager for cluster flow rules.
+ * 集群流控规则管理器：按 namespace 监听 {@link FlowRule} 动态属性并维护内存规则表。
  *
  * @author Eric Zhao
  * @since 1.4.0
@@ -46,8 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ClusterFlowRuleManager {
 
     /**
-     * The default cluster flow rule property supplier that creates a new dynamic property
-     * for a specific namespace to do rule management manually.
+     * 默认属性供应器：为 namespace 创建 {@link DynamicSentinelProperty} 以手动管理规则。
      */
     public static final Function<String, SentinelProperty<List<FlowRule>>> DEFAULT_PROPERTY_SUPPLIER =
             new Function<String, SentinelProperty<List<FlowRule>>>() {
@@ -58,17 +57,15 @@ public final class ClusterFlowRuleManager {
             };
 
     /**
-     * (flowId, clusterRule)
+     * (flowId, 集群流控规则)
      */
     private static final Map<Long, FlowRule> FLOW_RULES = new ConcurrentHashMap<>();
     /**
-     * (namespace, [flowId...])
+     * (namespace, flowId 集合)
      */
     private static final Map<String, Set<Long>> NAMESPACE_FLOW_ID_MAP = new ConcurrentHashMap<>();
     /**
-     * <p>This map (flowId, namespace) is used for getting connected count
-     * when checking a specific rule in {@code ruleId}:</p>
-     *
+     * <p>(flowId, namespace) 映射，校验规则 {@code ruleId} 时用于查询连接数：</p>
      * <pre>
      * ruleId -> namespace -> connection group -> connected count
      * </pre>
@@ -76,11 +73,11 @@ public final class ClusterFlowRuleManager {
     private static final Map<Long, String> FLOW_NAMESPACE_MAP = new ConcurrentHashMap<>();
 
     /**
-     * (namespace, property-listener wrapper)
+     * (namespace, 属性与监听器包装)
      */
     private static final Map<String, NamespaceFlowProperty<FlowRule>> PROPERTY_MAP = new ConcurrentHashMap<>();
     /**
-     * Cluster flow rule property supplier for a specific namespace.
+     * 按 namespace 提供集群流控规则动态属性的供应器。
      */
     private static volatile Function<String, SentinelProperty<List<FlowRule>>> propertySupplier
             = DEFAULT_PROPERTY_SUPPLIER;
@@ -92,8 +89,7 @@ public final class ClusterFlowRuleManager {
     }
 
     private static void initDefaultProperty() {
-        // The server should always support default namespace,
-        // so register a default property for default namespace.
+        // 服务端始终支持 default namespace，预注册默认属性
         SentinelProperty<List<FlowRule>> defaultProperty = new DynamicSentinelProperty<>();
         String defaultNamespace = ServerConstants.DEFAULT_NAMESPACE;
         registerPropertyInternal(defaultNamespace, defaultProperty);
@@ -105,8 +101,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for cluster {@link FlowRule}s.
-     * The property is the source of cluster {@link FlowRule}s for a specific namespace.
+     * 监听指定 namespace 的集群 {@link FlowRule} 动态属性。
      *
      * @param namespace namespace to register
      */
@@ -131,8 +126,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for cluster {@link FlowRule}s if current property for namespace is absent.
-     * The property is the source of cluster {@link FlowRule}s for a specific namespace.
+     * namespace 尚无属性时注册集群 {@link FlowRule} 动态属性。
      *
      * @param namespace namespace to register
      */
@@ -163,7 +157,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Remove cluster flow rule property for a specific namespace.
+     * 移除指定 namespace 的集群流控规则属性。
      *
      * @param namespace valid namespace
      */
@@ -194,7 +188,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Get flow rule by rule ID.
+     * 按 flowId 获取集群流控规则。
      *
      * @param id rule ID
      * @return flow rule
@@ -222,7 +216,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Get all cluster flow rules within a specific namespace.
+     * 获取 namespace 下全部集群流控规则。
      *
      * @param namespace valid namespace
      * @return cluster flow rules within the provided namespace
@@ -246,7 +240,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Load flow rules for a specific namespace. The former rules of the namespace will be replaced.
+     * 加载 namespace 集群流控规则，覆盖原有规则。
      *
      * @param namespace a valid namespace
      * @param rules     rule list
@@ -264,7 +258,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Clear all rules of the provided namespace and reset map.
+     * 清空 namespace 下全部规则并重置映射。
      *
      * @param namespace valid namespace
      */
@@ -302,7 +296,7 @@ public final class ClusterFlowRuleManager {
     }
 
     /**
-     * Get connected count for associated namespace of given {@code flowId}.
+     * 获取 flowId 对应 namespace 的客户端连接数。
      *
      * @param flowId unique flow ID
      * @return connected count
@@ -344,7 +338,7 @@ public final class ClusterFlowRuleManager {
                 rule.setLimitApp(RuleConstant.LIMIT_APP_DEFAULT);
             }
 
-            // Flow id should not be null after filtered.
+            // 过滤后 flowId 不应为空
             ClusterFlowConfig clusterConfig = rule.getClusterConfig();
             Long flowId = clusterConfig.getFlowId();
             if (flowId == null) {
@@ -357,12 +351,12 @@ public final class ClusterFlowRuleManager {
                 CurrentConcurrencyManager.put(flowId, 0);
             }
 
-            // Prepare cluster metric from valid flow ID.
+            // 为有效 flowId 初始化集群指标
             ClusterMetricStatistics.putMetricIfAbsent(flowId,
                     new ClusterMetric(clusterConfig.getSampleCount(), clusterConfig.getWindowIntervalMs()));
         }
 
-        // Cleanup unused cluster metrics.
+        // 清理不再使用的集群指标
         clearAndResetRulesConditional(namespace, new Predicate<Long>() {
             @Override
             public boolean test(Long flowId) {

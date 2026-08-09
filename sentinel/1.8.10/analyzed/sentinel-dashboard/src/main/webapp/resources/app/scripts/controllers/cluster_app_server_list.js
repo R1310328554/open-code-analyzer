@@ -12,7 +12,7 @@ app.controller('SentinelClusterAppServerListController', ['$scope', '$stateParam
         const DEFAULT_NAMESPACE = 'default';
         const DEFAULT_MAX_ALLOWED_QPS = 20000;
 
-        // tmp for dialog temporary data.
+        // 对话框临时数据
         $scope.tmp = {
             curClientChosen: [],
             curRemainingClientChosen: [],
@@ -141,10 +141,10 @@ app.controller('SentinelClusterAppServerListController', ['$scope', '$stateParam
                     let serverCommandPort = serverCommandPortMap.get(serverHostPort);
                     let g;
                     if (serverCommandPort < 0) {
-                        // Not belong to this app.
+                        // 不属于当前应用
                         g = tmpMap.get(serverHostPort);
                     } else {
-                        // Belong to this app.
+                        // 属于当前应用
                         g = tmpMap.get(targetServer + '@' + serverCommandPort);
                     }
                     g.clientSet.push(machineId);
@@ -157,7 +157,7 @@ app.controller('SentinelClusterAppServerListController', ['$scope', '$stateParam
                         belongToApp: false,
                     };
                     tmpMap.set(serverHostPort, group);
-                    // Indicates that it's not belonging to current app.
+                    // 标记该 Server 不属于当前应用
                     serverCommandPortMap.set(serverHostPort, -1);
                 }
 
@@ -320,7 +320,7 @@ app.controller('SentinelClusterAppServerListController', ['$scope', '$stateParam
                 return;
             }
             let serverData = $scope.serverAssignDialogData.serverData;
-            let belongToApp = serverData.serverType == 0; // don't modify here!
+            let belongToApp = serverData.serverType == 0; // 勿改：0 表示应用内 Server
             let machineId = serverData.currentServer;
             let request = {
                 clusterMap: {
@@ -559,7 +559,7 @@ app.controller('SentinelClusterAppServerListController', ['$scope', '$stateParam
             // confirmUnbindServerDialog.close();
         }
 
-        // Confirm function for confirm dialog.
+        // 确认对话框回调
         $scope.confirm = () => {
             if ($scope.confirmDialog.type === 'unbind_token_server') {
                 apiUnbindServerAssign($scope.pendingUnbindIds);

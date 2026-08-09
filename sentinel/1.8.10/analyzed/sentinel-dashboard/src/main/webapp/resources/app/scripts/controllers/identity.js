@@ -421,7 +421,7 @@ app.controller('IdentityCtl', ['$scope', '$stateParams', 'IdentityService',
       );
     }
 
-    // Fetch all machines by current app name.
+    // 按应用名拉取全部机器列表
     queryAppMachines();
 
     $scope.$watch('macInputModel', function () {

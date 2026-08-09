@@ -86,7 +86,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
- * Communicate with Sentinel client.
+ * 与 Sentinel 客户端机器通信的 HTTP 异步客户端，封装规则/集群/网关等命令 API。
  *
  * @author leyou
  */
@@ -164,8 +164,7 @@ public class SentinelApiClient {
     }
     
     /**
-     * Check whether target instance (identified by tuple of app-ip:port)
-     * supports the form of "xxxxx; xx=xx" in "Content-Type" header.
+     * 判断目标实例（app-ip:port）是否支持增强型 Content-Type 头格式。
      * 
      * @param app target app name
      * @param ip target node's address
@@ -198,7 +197,7 @@ public class SentinelApiClient {
     }
     
     /**
-     * Build an `HttpUriRequest` in POST way.
+     * 构造 POST 请求。
      * 
      * @param url
      * @param params
@@ -243,7 +242,7 @@ public class SentinelApiClient {
     }
     
     /**
-     * With no param
+     * 无参数命令请求。
      * 
      * @param ip
      * @param port
@@ -255,7 +254,7 @@ public class SentinelApiClient {
     }
     
     /**
-     * No app specified, force to GET
+     * 未指定 app，强制 GET 请求。
      * 
      * @param ip
      * @param port
@@ -268,7 +267,7 @@ public class SentinelApiClient {
     }
 
     /**
-     * Prefer to execute request using POST
+     * 优先使用 POST 执行命令（旧版本回退 GET）。
      * 
      * @param app
      * @param ip
@@ -298,7 +297,7 @@ public class SentinelApiClient {
             params = Collections.emptyMap();
         }
         if (!useHttpPost || !isSupportPost(app, ip, port)) {
-            // Using GET in older versions, append parameters after url
+            // 旧版客户端使用 GET，参数拼在 URL 后
             if (!params.isEmpty()) {
                 if (urlBuilder.indexOf("?") == -1) {
                     urlBuilder.append('?');
@@ -309,7 +308,7 @@ public class SentinelApiClient {
             }
             return executeCommand(new HttpGet(urlBuilder.toString()));
         } else {
-            // Using POST
+            // 新版使用 POST
             return executeCommand(
                     postRequest(urlBuilder.toString(), params, isSupportEnhancedContentType(app, ip, port)));
         }
@@ -451,7 +450,7 @@ public class SentinelApiClient {
     }
 
     /**
-     * Fetch cluster node.
+     * 拉取集群节点指标。
      *
      * @param ip          ip to fetch
      * @param port        port of the ip
@@ -497,7 +496,7 @@ public class SentinelApiClient {
     }
 
     /**
-     * Fetch all parameter flow rules from provided machine.
+     * 从指定机器拉取全部热点参数流控规则。
      *
      * @param app  application name
      * @param ip   machine client IP
@@ -522,7 +521,7 @@ public class SentinelApiClient {
     }
 
     /**
-     * Fetch all authority rules from provided machine.
+     * 从指定机器拉取全部授权规则。
      *
      * @param app  application name
      * @param ip   machine client IP
@@ -544,8 +543,7 @@ public class SentinelApiClient {
     }
 
     /**
-     * set rules of the machine. rules == null will return immediately;
-     * rules.isEmpty() means setting the rules to empty.
+     * 向机器下发规则；{@code rules==null} 直接返回 true，空列表表示清空规则。
      *
      * @param app
      * @param ip
@@ -621,7 +619,7 @@ public class SentinelApiClient {
         }
     }
 
-    // Cluster related
+    // 集群相关 API
 
     public CompletableFuture<ClusterStateSimpleEntity> fetchClusterMode(String ip, int port) {
         if (StringUtil.isBlank(ip) || port <= 0) {
