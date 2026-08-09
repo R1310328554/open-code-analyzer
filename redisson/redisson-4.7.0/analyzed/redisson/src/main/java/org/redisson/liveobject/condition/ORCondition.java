@@ -18,18 +18,25 @@ package org.redisson.liveobject.condition;
 import org.redisson.api.condition.Condition;
 
 /**
- * 
+ * 逻辑或（OR）组合条件，任一子条件满足即匹配。
+ * <p>
+ * 由 {@link org.redisson.api.condition.Conditions#or} 构建，
+ * 供 {@link LiveObjectSearch#find} 递归求并集。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ORCondition implements Condition {
     
+    /** 子条件数组，不可变。 */
     private final Condition[] conditions;
 
+    /** @param conditions 满足其一即可的子条件列表 */
     public ORCondition(Condition[] conditions) {
         this.conditions = conditions;
     }
 
+    /** 返回子条件数组。 */
     public Condition[] getConditions() {
         return conditions;
     }

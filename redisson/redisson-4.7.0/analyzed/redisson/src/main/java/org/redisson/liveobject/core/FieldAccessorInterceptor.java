@@ -30,11 +30,19 @@ import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.This;
 
 /**
+ * 动态字段名访问拦截器，支持 {@code get("fieldName")} / {@code set("fieldName", value)} 形式。
+ * <p>
+ * 通过反射调用实体上对应的 JavaBean getter/setter，
+ * 配合 {@link org.redisson.api.annotation.RGetter}/{@link RSetter} 使用。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class FieldAccessorInterceptor {
 
+    /**
+     * 拦截动态字段访问：args[0] 为字段名字符串，
+     * getter 调用 {@code getXxx()}，setter 调用 {@code setXxx(value)}。
+     */
     @RuntimeType
     public static Object intercept(
             @Origin Method method,
@@ -64,6 +72,7 @@ public class FieldAccessorInterceptor {
 
     }
 
+    /** 方法名为 get 或标注 {@link RGetter} 时视为 getter。 */
     private static boolean isGetter(Method method) {
         if (method.isAnnotationPresent(RGetter.class)) {
             return true;
@@ -71,6 +80,7 @@ public class FieldAccessorInterceptor {
         return "get".equals(method.getName());
     }
 
+    /** 方法名为 set 或标注 {@link RSetter} 时视为 setter。 */
     private static boolean isSetter(Method method) {
         if (method.isAnnotationPresent(RSetter.class)) {
             return true;

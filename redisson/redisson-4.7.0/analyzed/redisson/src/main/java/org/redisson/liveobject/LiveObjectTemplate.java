@@ -18,12 +18,18 @@ package org.redisson.liveobject;
 import org.redisson.api.RMap;
 
 /**
+ * Live Object 代理类的 ByteBuddy 模板基类。
+ * <p>
+ * 代理实例继承此类，持有 {@code liveObjectId} 与 {@code liveObjectLiveMap} 两个
+ * 由 {@link LiveObjectInterceptor} 注入的字段，供拦截器读写 Redis 映射数据。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class LiveObjectTemplate {
 
+    /** Live Object 主键（{@link org.redisson.api.annotation.RId} 标注字段）。 */
     private Object liveObjectId;
+    /** 存储实体字段序列化值的 Redis Hash 映射。 */
     private RMap liveObjectLiveMap;
 
 }

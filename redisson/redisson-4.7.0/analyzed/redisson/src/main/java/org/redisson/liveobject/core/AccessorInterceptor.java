@@ -44,23 +44,31 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
- * This class is going to be instantiated and becomes a <b>static</b> field of
- * the proxied target class. That is one instance of this class per proxied
- * class.
+ * Live Object 字段访问拦截器，由 ByteBuddy 注入为代理目标类的<b>静态</b>字段。
+ * <p>
+ * 每个被代理实体类对应一个实例，拦截 getter/setter 方法：
+ * 从 {@code liveObjectLiveMap} 读写 Redis Hash 字段值，并维护 {@link RIndex} 索引。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
  */
 public class AccessorInterceptor {
 
+    /** 识别 getter 方法名前缀（get/is）。 */
     private static final Pattern GETTER_PATTERN = Pattern.compile("^(get|is)");
+    /** 识别 setter 方法名前缀（set）。 */
     private static final Pattern SETTER_PATTERN = Pattern.compile("^(set)");
+    /** 从方法名剥离前缀以推导字段名。 */
     private static final Pattern FIELD_PATTERN = Pattern.compile("^(get|set|is)");
 
+    /** 异步命令执行器。 */
     private final CommandAsyncExecutor commandExecutor;
+    /** 被代理的实体类。 */
     private final Class<?> entityClass;
+    /** 解析/创建 liveObjectLiveMap 的策略。 */
     private final MapResolver mapResolver;
 
+    /** @param entityClass 实体类；@param commandExecutor 命令执行器；@param mapResolver Map 解析器 */
     public AccessorInterceptor(Class<?> entityClass, CommandAsyncExecutor commandExecutor,
                                MapResolver mapResolver) {
         this.entityClass = entityClass;
@@ -68,6 +76,11 @@ public class AccessorInterceptor {
         this.mapResolver = mapResolver;
     }
 
+    /**
+     * ByteBuddy 拦截入口：处理 RId getter/setter、普通字段 getter/setter。
+     * <p>
+     * transient 字段直接反射读写；{@link RIndex} 字段在 set 时同步更新 Redis 索引结构。
+     */
     @RuntimeType
     @SuppressWarnings("NestedIfDepth")
     public Object intercept(@Origin Method method,
@@ -212,9 +225,11 @@ public class AccessorInterceptor {
         return superMethod.call();
     }
 
+    /** 数值原始类型集合，索引移除时走 ZSET 分支。 */
     private static final Set<Class<?>> PRIMITIVE_CLASSES = new HashSet<>(Arrays.asList(
             byte.class, short.class, int.class, long.class, float.class, double.class));
 
+    /** 字段值变更或删除前，从 Redis 索引（ZSET 或 SetMultimap）移除旧条目。 */
     private void removeIndex(RMap<String, Object> liveMap, Object me, Field field) {
         if (field.getAnnotation(RIndex.class) == null) {
             return;
@@ -267,6 +282,7 @@ public class AccessorInterceptor {
         }
     }
 
+    /** 非集群模式下通过 Lua 脚本原子移除 SetMultimap 索引条目。 */
     private void removeAsync(CommandBatchService ce, String name, String mapName, Codec codec, Object value, String fieldName) {
         ByteBuf valueState = ce.encodeMapValue(codec, value);
         ce.evalWriteAsync(name, codec, RedisCommands.EVAL_VOID,
@@ -284,6 +300,7 @@ public class AccessorInterceptor {
                 valueState, ce.encodeMapKey(codec, fieldName));
     }
 
+    /** 字段写入后，将新值注册到 Redis 索引（数值→ZSET，其他→SetMultimap）。 */
     private void storeIndex(Field field, Object me, Object arg) {
         if (field.getAnnotation(RIndex.class) == null) {
             return;
@@ -337,6 +354,7 @@ public class AccessorInterceptor {
         }
     }
 
+    /** 从 getter/setter 方法名推导 Java 字段名（支持首字母大小写变体）。 */
     private String getFieldName(Class<?> clazz, Method method) {
         String fieldName = FIELD_PATTERN.matcher(method.getName()).replaceFirst("");
         String propName = fieldName.substring(0, 1).toLowerCase(Locale.ENGLISH) + fieldName.substring(1);
@@ -348,18 +366,22 @@ public class AccessorInterceptor {
         }
     }
 
+    /** 判断方法是否为指定字段的 getter。 */
     private boolean isGetter(Method method, String fieldName) {
         return GETTER_PATTERN.matcher(method.getName()).replaceFirst("").equalsIgnoreCase(fieldName);
     }
 
+    /** 判断方法是否为指定字段的 setter。 */
     private boolean isSetter(Method method, String fieldName) {
         return SETTER_PATTERN.matcher(method.getName()).replaceFirst("").equalsIgnoreCase(fieldName);
     }
 
+    /** 返回实体 {@link org.redisson.api.annotation.RId} 字段名。 */
     private static String getREntityIdFieldName(Object o) {
         return Introspectior.getREntityIdFieldName(o.getClass().getSuperclass());
     }
 
+    /** 为带 {@link RIndex} 的集合字段包装代理，在 add/remove 时同步索引。 */
     private Object wrapForIndexUpdates(final Collection<?> delegate, final Field field, final RLiveObject liveObj) {
         final NamingScheme ns = commandExecutor.getObjectBuilder().getNamingScheme(liveObj.getClass().getSuperclass());
         final String indexName = ns.getIndexName(liveObj.getClass().getSuperclass(), field.getName());
@@ -372,6 +394,7 @@ public class AccessorInterceptor {
                 () -> clearCollectionIndex(ns, indexName, liveObj));
     }
 
+    /** 集合 add 元素时写入 SetMultimap 索引。 */
     private void syncCollectionIndex(NamingScheme ns, String indexName, RLiveObject liveObj, Object element) {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
         new RedissonSetMultimap<>(ns.getCodec(), ce, indexName)
@@ -379,6 +402,7 @@ public class AccessorInterceptor {
         ce.execute();
     }
 
+    /** 集合 remove 元素时从 SetMultimap 索引删除。 */
     private void removeCollectionIndex(NamingScheme ns, String indexName, RLiveObject liveObj, Object element) {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
         new RedissonSetMultimap<>(ns.getCodec(), ce, indexName)
@@ -386,6 +410,7 @@ public class AccessorInterceptor {
         ce.execute();
     }
 
+    /** 集合元素替换时先删旧索引再写新索引。 */
     private void replaceCollectionIndex(NamingScheme ns, String indexName, RLiveObject liveObj,
                                          Object oldElement, Object newElement) {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
@@ -399,6 +424,7 @@ public class AccessorInterceptor {
         ce.execute();
     }
 
+    /** 集合 clear 时批量移除该 Live Object 在索引中的所有条目。 */
     private void clearCollectionIndex(NamingScheme ns, String indexName, RLiveObject liveObj) {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
         new RedissonSetMultimap<>(ns.getCodec(), ce, indexName)
@@ -406,6 +432,7 @@ public class AccessorInterceptor {
         ce.execute();
     }
 
+    /** 索引键：RLiveObject 取 ID，否则取元素本身。 */
     private static Object resolveKey(Object element) {
         if (element instanceof RLiveObject) {
             return ((RLiveObject) element).getLiveObjectId();

@@ -34,18 +34,25 @@ import java.util.Map.Entry;
 import java.util.function.BiFunction;
 
 /**
- * 
+ * Live Object 索引查询引擎，根据 {@link Condition} 在 Redis 索引结构中查找实体 ID 集合。
+ * <p>
+ * 支持 EQ/GT/GE/LT/LE 及 AND/OR 组合条件；数值字段使用 {@link RScoredSortedSet} 范围查询，
+ * 非数值或集合索引字段使用 {@link RSetMultimap} 反向索引。
+ *
  * @author Nikita Koksharov
  *
  */
 public class LiveObjectSearch {
     
+    /** 异步命令执行器，用于访问 Redis 索引结构。 */
     private final CommandAsyncExecutor commandExecutor;
 
+    /** @param commandExecutor Redisson 命令执行器 */
     public LiveObjectSearch(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
     }
 
+    /** 判断实体字段是否为集合类型或数组（索引策略不同）。 */
     private boolean isCollectionField(Class<?> entityClass, String fieldName) {
         try {
             Field field = ClassUtils.getDeclaredField(entityClass, fieldName);
@@ -55,6 +62,9 @@ public class LiveObjectSearch {
         }
     }
 
+    /**
+     * 对集合/数组索引字段做范围扫描：遍历 multimap 键，按 operator（gt/ge/lt/le）过滤后合并 ID。
+     */
     private Set<Object> collectionRangeFind(Class<?> entityClass, String fieldName, Number threshold, String operator) {
         NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
         String indexName = namingScheme.getIndexName(entityClass, fieldName);
@@ -82,6 +92,7 @@ public class LiveObjectSearch {
         return ids;
     }
 
+    /** AND 遍历中处理范围条件：集合字段直接求交集，数值字段登记到 numericMap 稍后批量查询。 */
     private boolean handleRangeAnd(Set<Object> allIds, Class<?> entityClass, String fieldName, Number value,
                                      String operator, Map<RScoredSortedSet<Object>, Number> numericMap,
                                      NamingScheme ns) {
@@ -99,6 +110,7 @@ public class LiveObjectSearch {
         return true;
     }
 
+    /** OR 遍历中处理范围条件：集合字段直接并入 allIds，数值字段登记到 numericMap。 */
     private void handleRangeOr(Set<Object> allIds, Class<?> entityClass, String fieldName, Number value,
                                 String operator, Map<RScoredSortedSet<Object>, Number> numericMap,
                                 NamingScheme ns) {
@@ -110,6 +122,12 @@ public class LiveObjectSearch {
         numericMap.put(new RedissonScoredSortedSet<>(ns.getCodec(), commandExecutor, indexName, null), value);
     }
 
+    /**
+     * 递归处理 AND 条件：各子条件结果求交集。
+     * <p>
+     * EQ 条件分数值（ZSET 精确匹配）与非数值（SET 交集）；
+     * 范围条件先处理集合字段，再对 numericMap 批量 valueRange 求交。
+     */
     private Set<Object> traverseAnd(ANDCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
         Set<Object> allIds = new HashSet<Object>();
         
@@ -229,6 +247,7 @@ public class LiveObjectSearch {
         return allIds;
     }
 
+    /** 对 numericMap 中每个 ZSET 执行 func 范围查询，结果与 allIds 求交；任一为空则返回 false。 */
     private boolean checkValueRange(Set<Object> allIds, Map<RScoredSortedSet<Object>, Number> numericNames, 
                         BiFunction<RScoredSortedSet<Object>, Number, Collection<Object>> func) {
         if (numericNames.isEmpty()) {
@@ -252,6 +271,7 @@ public class LiveObjectSearch {
         return true;
     }
 
+    /** 递归处理 OR 条件：各子条件结果求并集。 */
     private Set<Object> traverseOr(ORCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
         Set<Object> allIds = new HashSet<Object>();
         
@@ -336,6 +356,13 @@ public class LiveObjectSearch {
         return allIds;
     }
     
+    /**
+     * 根据条件在指定实体类的 Redis 索引中查找匹配的 Live Object ID 集合。
+     *
+     * @param entityClass 带 {@link org.redisson.api.annotation.REntity} 的实体类
+     * @param condition 查询条件（EQ/GT/GE/LT/LE/AND/OR）
+     * @return 匹配的实体 ID 集合
+     */
     public Set<Object> find(Class<?> entityClass, Condition condition) {
         NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
 

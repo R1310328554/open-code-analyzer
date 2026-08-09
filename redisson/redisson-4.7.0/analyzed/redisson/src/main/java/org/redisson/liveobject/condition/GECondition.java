@@ -18,24 +18,32 @@ package org.redisson.liveobject.condition;
 import org.redisson.api.condition.Condition;
 
 /**
- * 
+ * 大于等于（GE）数值范围条件。
+ * <p>
+ * 对数值索引字段使用 ZSET {@code valueRange(score, true, +∞, false)} 查询。
+ *
  * @author Nikita Koksharov
  *
  */
 public class GECondition implements Condition {
 
+    /** 索引字段名。 */
     private final String name;
+    /** 下界数值（含边界）。 */
     private final Number value;
     
+    /** @param name 字段名；@param value 下界 */
     public GECondition(String name, Number value) {
         super();
         this.name = name;
         this.value = value;
     }
 
+    /** 返回字段名。 */
     public String getName() {
         return name;
     }
+    /** 返回下界数值。 */
     public Number getValue() {
         return value;
     }

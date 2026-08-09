@@ -31,28 +31,40 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
+ * Live Object 核心拦截器，处理 ID 读写、删除及 {@link RMap} 方法委托。
+ * <p>
+ * 代理实例继承 {@link LiveObjectTemplate}，拦截 {@code getLiveObjectId}、
+ * {@code setLiveObjectId}、{@code delete} 与 {@code getLiveObjectLiveMap} 等生命周期方法。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
  */
 public class LiveObjectInterceptor {
 
+    /** ByteBuddy 字段代理：读取 liveObjectId / liveObjectLiveMap。 */
     public interface Getter {
 
         Object getValue();
     }
 
+    /** ByteBuddy 字段代理：写入 liveObjectId / liveObjectLiveMap。 */
     public interface Setter {
 
         void setValue(Object value);
     }
 
+    /** 异步命令执行器。 */
     private final CommandAsyncExecutor commandExecutor;
+    /** 实体类。 */
     private final Class<?> entityClass;
+    /** 实体 Redis 键命名方案。 */
     private final NamingScheme namingScheme;
+    /** Live Object 服务（delete 等操作）。 */
     private final RedissonLiveObjectService service;
+    /** liveObjectLiveMap 解析器。 */
     private final MapResolver mapResolver;
 
+    /** 构造拦截器并初始化命名方案。 */
     public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, RedissonLiveObjectService service, Class<?> entityClass,
                                  MapResolver mapResolver) {
         this.service = service;
@@ -62,6 +74,10 @@ public class LiveObjectInterceptor {
         this.namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
     }
 
+    /**
+     * 拦截 Live Object 方法：setLiveObjectId 重命名 Redis key；
+     * delete 批量清理索引与数据；其余方法委托给 liveObjectLiveMap。
+     */
     @RuntimeType
     public Object intercept(
             @Origin Method method,
@@ -94,7 +110,7 @@ public class LiveObjectInterceptor {
                         if (e.getMessage() == null || !e.getMessage().startsWith("ERR no such key")) {
                             throw e;
                         }
-                        //key may already renamed by others.
+                        // key 可能已被其他客户端重命名
                     }
                 }
             }
