@@ -30,12 +30,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Pub/Sub 命令实现。
+ * <p>通过 {@link #createSubscription(SubscriptionListener)} 创建
+ * {@link RedissonReactiveSubscription} 管理订阅；{@link #publish} 向频道发布消息。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactivePubSubCommands extends RedissonBaseReactive implements ReactivePubSubCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactivePubSubCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }

@@ -48,12 +48,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Spring Data Redis 响应式 GEO 命令实现。
+ * <p>封装 GEOADD、GEODIST、GEOHASH、GEOPOS、GEORADIUS、GEOSEARCH 等命令，
+ * 通过 {@link RedissonBaseReactive#write} / {@link RedissonBaseReactive#read} 路由。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements ReactiveGeoCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveGeoCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
@@ -165,11 +169,13 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             params.add(command.getDistance().getMetric().getAbbreviation());
             
             RedisCommand<GeoResults<GeoLocation<ByteBuffer>>> cmd;
+            // WITHCOORD：返回 member 与坐标。
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
                 cmd = new RedisCommand<>("GEORADIUS_RO", postitionDecoder);
                 params.add("WITHCOORD");
             } else {
                 MultiDecoder<GeoResults<GeoLocation<ByteBuffer>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
+                // WITHDIST：返回 member 与距离。
                 cmd = new RedisCommand<>("GEORADIUS_RO", distanceDecoder);
                 params.add("WITHDIST");
             }
@@ -207,6 +213,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             params.add(command.getDistance().getMetric().getAbbreviation());
             
             RedisCommand<GeoResults<GeoLocation<ByteBuffer>>> cmd;
+            // WITHCOORD：返回 member 与坐标。
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
                 cmd = new RedisCommand<>("GEORADIUSBYMEMBER_RO", postitionDecoder);
                 params.add("WITHCOORD");
@@ -229,10 +236,12 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** 将经度/纬度 double 转为 Redis 命令所需的 plain string。 */
     private String convert(double longitude) {
         return BigDecimal.valueOf(longitude).toPlainString();
     }
 
+    /** 经 {@link ByteArrayCodec} 编码 member 等命令参数。 */
     private ByteBuf encode(Object value) {
         return executorService.encode(ByteArrayCodec.INSTANCE, value);
     }
@@ -287,6 +296,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
                 }
             }
             RedisCommand<GeoResults<GeoLocation<ByteBuffer>>> cmd;
+            // WITHCOORD：返回 member 与坐标。
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
                 cmd = new RedisCommand<>("GEOSEARCH", postitionDecoder);
                 commandParams.add("WITHCOORD");
@@ -362,6 +372,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** 将 {@link Metrics#NEUTRAL} 映射为默认米制单位。 */
     private Metric convert(Metric metric) {
         if (metric == Metrics.NEUTRAL) {
             return RedisGeoCommands.DistanceUnit.METERS;

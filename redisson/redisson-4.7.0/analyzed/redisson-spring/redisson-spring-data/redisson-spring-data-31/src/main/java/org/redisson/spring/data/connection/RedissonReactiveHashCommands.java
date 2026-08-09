@@ -53,12 +53,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式 Hash 命令实现。
+ * <p>封装 HSET/HMSET、HMGET、HEXISTS、HDEL、HLEN、HKEYS、HVALS、HGETALL 等命令。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveHashCommands extends RedissonBaseReactive implements ReactiveHashCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveHashCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
@@ -73,6 +76,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
             Assert.notNull(command.getFieldValueMap(), "FieldValueMap must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
+            // 单 field-value 对使用 HSET 或 HSETNX。
             if (command.getFieldValueMap().size() == 1) {
                 Entry<ByteBuffer, ByteBuffer> entry = command.getFieldValueMap().entrySet().iterator().next();
                 byte[] mapKeyBuf = toByteArray(entry.getKey());
@@ -224,6 +228,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
             byte[] keyBuf = toByteArray(command.getKey());
             Flux<Entry<Object, Object>> flux = Flux.create(new MapReactiveIterator<Object, Object, Entry<Object, Object>>(null, null, 0) {
                 @Override
+                /** 分页拉取 HSCAN 游标，支持 MATCH/COUNT 选项。 */
                 public RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                     if (command.getOptions().getPattern() == null) {
                         return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HSCAN, 

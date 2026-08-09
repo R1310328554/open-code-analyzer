@@ -32,12 +32,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Spring Data Redis 响应式数值命令实现。
+ * <p>封装 INCR/DECR、INCRBYFLOAT 及 hash 字段 HINCRBYFLOAT。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveNumberCommands extends RedissonBaseReactive implements ReactiveNumberCommands {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveNumberCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
