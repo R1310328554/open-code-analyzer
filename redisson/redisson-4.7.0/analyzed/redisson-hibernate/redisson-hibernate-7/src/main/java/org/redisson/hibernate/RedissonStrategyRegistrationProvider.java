@@ -23,12 +23,14 @@ import org.hibernate.boot.registry.selector.StrategyRegistrationProvider;
 import org.hibernate.cache.spi.RegionFactory;
 
 /**
- * 
- * @author Nikita Koksharov
+ * Hibernate 启动时注册 Redisson {@link RegionFactory} 策略的 SPI 提供者（Hibernate 6/7）。
+ * <p>允许在配置中使用 {@code redisson} 短名或完整类名。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonStrategyRegistrationProvider implements StrategyRegistrationProvider {
 
+    /** 向 Hibernate 注册 {@link RedissonRegionFactory} 作为 {@link RegionFactory} 实现。 */
     @Override
     public Iterable<StrategyRegistration> getStrategyRegistrations() {
         return Collections.<StrategyRegistration>singleton(new SimpleStrategyRegistrationImpl(
