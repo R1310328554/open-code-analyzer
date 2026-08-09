@@ -19,12 +19,16 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterGeoCommands;
 
 /**
- * 
+ * 集群模式下 Spring Data Redis 响应式 GEO 命令适配器。
+ * <p>继承 {@link RedissonReactiveGeoCommands} 并实现 {@link ReactiveClusterGeoCommands}，
+在集群拓扑下复用单机响应式命令实现。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveClusterGeoCommands extends RedissonReactiveGeoCommands implements ReactiveClusterGeoCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveClusterGeoCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }

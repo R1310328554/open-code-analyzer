@@ -19,12 +19,16 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterHashCommands;
 
 /**
- * 
+ * 集群模式下 Spring Data Redis 响应式 Hash 命令适配器。
+ * <p>继承 {@link RedissonReactiveHashCommands} 并实现 {@link ReactiveClusterHashCommands}，
+在集群拓扑下复用单机响应式命令实现。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveClusterHashCommands extends RedissonReactiveHashCommands implements ReactiveClusterHashCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveClusterHashCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
