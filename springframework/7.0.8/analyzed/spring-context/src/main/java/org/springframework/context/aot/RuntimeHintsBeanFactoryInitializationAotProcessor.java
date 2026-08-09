@@ -39,11 +39,9 @@ import org.springframework.core.log.LogMessage;
 import org.springframework.util.CollectionUtils;
 
 /**
- * {@link BeanFactoryInitializationAotProcessor} implementation that processes
- * {@link RuntimeHintsRegistrar} implementations declared as
- * {@code spring.factories} or using
- * {@link ImportRuntimeHints @ImportRuntimeHints} annotated configuration
- * classes or bean methods.
+ * {@link BeanFactoryInitializationAotProcessor} 实现：处理通过 {@code spring.factories}
+ * 声明，或由带 {@link ImportRuntimeHints @ImportRuntimeHints} 的配置类或 Bean 方法
+ * 引入的 {@link RuntimeHintsRegistrar} 实现。
  *
  * @author Brian Clozel
  * @author Sebastien Deleuze

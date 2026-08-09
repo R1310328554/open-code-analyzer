@@ -38,12 +38,11 @@ import org.springframework.context.annotation.ClassPathScanningCandidateComponen
 import org.springframework.util.ClassUtils;
 
 /**
- * Builder for an {@linkplain BeanFactoryInitializationAotContribution AOT
- * contribution} that detects the presence of {@link Reflective @Reflective} on
- * annotated elements and invoke the underlying {@link ReflectiveProcessor}
- * implementations.
+ * 用于构建 {@linkplain BeanFactoryInitializationAotContribution AOT 贡献} 的构建器：
+ * 检测带注解元素上是否存在 {@link Reflective @Reflective}，并调用底层
+ * {@link ReflectiveProcessor} 实现。
  *
- * <p>Candidates can be provided explicitly or by scanning the classpath.
+ * <p>候选类可显式提供，也可通过扫描类路径发现。
  *
  * @author Stephane Nicoll
  * @since 6.2
@@ -58,11 +57,10 @@ public class ReflectiveProcessorAotContributionBuilder {
 
 
 	/**
-	 * Process the given classes by checking the ones that use {@link Reflective}.
-	 * <p>A class is candidate if it uses {@link Reflective} directly or via a
-	 * meta-annotation. Type, fields, constructors, methods and enclosed types
-	 * are inspected.
-	 * @param classes the classes to inspect
+	 * 处理给定类，筛选使用 {@link Reflective} 的类。
+	 * <p>若类直接使用 {@link Reflective} 或通过元注解间接使用，则视为候选。
+	 * 会检查类型、字段、构造器、方法及嵌套类型。
+	 * @param classes 待检查的类
 	 */
 	public ReflectiveProcessorAotContributionBuilder withClasses(Iterable<Class<?>> classes) {
 		this.classes.addAll(StreamSupport.stream(classes.spliterator(), false)
@@ -71,25 +69,21 @@ public class ReflectiveProcessorAotContributionBuilder {
 	}
 
 	/**
-	 * Process the given classes by checking the ones that use {@link Reflective}.
-	 * <p>A class is candidate if it uses {@link Reflective} directly or via a
-	 * meta-annotation. Type, fields, constructors, methods and enclosed types
-	 * are inspected.
-	 * @param classes the classes to inspect
+	 * 处理给定类，筛选使用 {@link Reflective} 的类。
+	 * <p>若类直接使用 {@link Reflective} 或通过元注解间接使用，则视为候选。
+	 * 会检查类型、字段、构造器、方法及嵌套类型。
+	 * @param classes 待检查的类
 	 */
 	public ReflectiveProcessorAotContributionBuilder withClasses(Class<?>[] classes) {
 		return withClasses(Arrays.asList(classes));
 	}
 
 	/**
-	 * Scan the given {@code packageNames} and their sub-packages for classes
-	 * that uses {@link Reflective}.
-	 * <p>This performs a "deep scan" by loading every class in the specified
-	 * packages and search for {@link Reflective} on types, constructors, methods,
-	 * and fields. Enclosed classes are candidates as well. Classes that fail to
-	 * load are ignored.
-	 * @param classLoader the classloader to use
-	 * @param packageNames the package names to scan
+	 * 扫描给定 {@code packageNames} 及其子包，查找使用 {@link Reflective} 的类。
+	 * <p>通过加载指定包中的每个类进行“深度扫描”，在类型、构造器、方法和字段上
+	 * 查找 {@link Reflective}；嵌套类同样视为候选。加载失败的类将被忽略。
+	 * @param classLoader 使用的类加载器
+	 * @param packageNames 要扫描的包名
 	 */
 	public ReflectiveProcessorAotContributionBuilder scan(@Nullable ClassLoader classLoader, String... packageNames) {
 		ReflectiveClassPathScanner scanner = new ReflectiveClassPathScanner(classLoader);

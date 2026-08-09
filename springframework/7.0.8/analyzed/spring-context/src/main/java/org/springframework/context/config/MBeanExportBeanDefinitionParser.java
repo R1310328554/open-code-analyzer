@@ -28,11 +28,11 @@ import org.springframework.jmx.support.RegistrationPolicy;
 import org.springframework.util.StringUtils;
 
 /**
- * Parser for the &lt;context:mbean-export/&gt; element.
+ * {@code <context:mbean-export/>} 元素的解析器。
  *
- * <p>Registers an instance of
+ * <p>在上下文中注册
  * {@link org.springframework.jmx.export.annotation.AnnotationMBeanExporter}
- * within the context.
+ * 的实例。
  *
  * @author Juergen Hoeller
  * @author Mark Fisher

@@ -34,9 +34,9 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.ClassUtils;
 
 /**
- * AOT {@code BeanFactoryInitializationAotProcessor} that detects the presence
- * of {@link Reflective @Reflective} on annotated elements of all registered
- * beans and invokes the underlying {@link ReflectiveProcessor} implementations.
+ * AOT {@code BeanFactoryInitializationAotProcessor}：检测所有已注册 Bean 的
+ * 带注解元素上是否存在 {@link Reflective @Reflective}，并调用底层
+ * {@link ReflectiveProcessor} 实现。
  *
  * @author Stephane Nicoll
  * @author Sebastien Deleuze

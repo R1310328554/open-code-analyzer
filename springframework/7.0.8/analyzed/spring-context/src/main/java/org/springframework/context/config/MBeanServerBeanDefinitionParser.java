@@ -27,11 +27,11 @@ import org.springframework.jmx.support.MBeanServerFactoryBean;
 import org.springframework.util.StringUtils;
 
 /**
- * Parser for the &lt;context:mbean-server/&gt; element.
+ * {@code <context:mbean-server/>} 元素的解析器。
  *
- * <p>Registers an instance of
+ * <p>在上下文中注册
  * {@link org.springframework.jmx.export.annotation.AnnotationMBeanExporter}
- * within the context.
+ * 的实例。
  *
  * @author Mark Fisher
  * @author Juergen Hoeller

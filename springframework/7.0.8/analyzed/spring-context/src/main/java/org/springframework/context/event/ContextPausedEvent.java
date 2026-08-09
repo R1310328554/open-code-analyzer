@@ -20,10 +20,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 
 /**
- * Event raised when an {@code ApplicationContext} gets paused.
+ * 当 {@code ApplicationContext} 暂停时引发的事件。
  *
- * <p>Note that {@code ContextPausedEvent} is a specialization of
- * {@link ContextStoppedEvent}.
+ * <p>注意：{@code ContextPausedEvent} 是 {@link ContextStoppedEvent} 的特化。
  *
  * @author Juergen Hoeller
  * @since 7.0
@@ -35,9 +34,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class ContextPausedEvent extends ContextStoppedEvent {
 
 	/**
-	 * Create a new {@code ContextPausedEvent}.
-	 * @param source the {@code ApplicationContext} that has been paused
-	 * (must not be {@code null})
+	 * 创建新的 {@code ContextPausedEvent}。
+	 * @param source 已暂停的 {@code ApplicationContext}
+	 * （不得为 {@code null}）
 	 */
 	public ContextPausedEvent(ApplicationContext source) {
 		super(source);
