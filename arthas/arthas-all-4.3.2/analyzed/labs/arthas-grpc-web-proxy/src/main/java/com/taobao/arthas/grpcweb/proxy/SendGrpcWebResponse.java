@@ -37,41 +37,42 @@ import java.util.Map;
  * <pre>
  * * https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md
  * * https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md
- * 
- * 据协议和抓包分析，grpc-web 回应需要以 HTTP chunk数据包，包装 grpc 本身的数据。
- * 
- * grpc-web 的 http1.1 Response 由三部分组成：
- * 1. headers , 返回 status 总是 200
- * 2. data chunk ，可能多个
- * 3. trailer chunk , grpc的 grpc-status, grpc-message 在这里
- * 
+ *
+ * 据协议与抓包分析，gRPC-Web 响应需用 HTTP/1.1 chunked 包装 gRPC 帧数据。
+ *
+ * gRPC-Web 的 HTTP/1.1 响应由三部分组成：
+ * 1. headers — HTTP 状态码恒为 200
+ * 2. data chunk — 可有多块 DATA 帧
+ * 3. trailer chunk — grpc-status、grpc-message 等在此
+ *
  * </pre>
- * 
+ *
  * @author hengyunabc 2023-09-06
  *
  */
 class SendGrpcWebResponse {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName());
 
+    /** 与请求一致的 Content-Type，决定二进制或 Base64 文本模式 */
     private final String contentType;
 
     /**
-     * 回应的 http1.1 header 是否已发送
+     * HTTP/1.1 响应头（非 chunk 体）是否已发送
      */
     private boolean isHeaderSent = false;
 
     /**
-     * 所有的 grpc message 都会转换为一个 HTTP Chunk，所有的 Chunk 发送完之后，需要发送一个空的 Chunk 结束
+     * 所有 gRPC 消息 chunk 发送完毕后，是否已发送空的结束 chunk
      */
     private boolean isEndChunkSent = false;
 
     /**
-     * 在 grpc 协议里，在发送完 DATA 后，最后可能发送一个 trailer，它也需要转换为 HTTP Chunk
+     * gRPC trailer 帧是否已通过 HTTP chunk 写出
      */
     private boolean isTrailerSent = false;
 
     /**
-     * 客户端主动断开连接后,需要断开相应的grpc连接, grpc服务端才能停止监听
+     * 向客户端写 DATA chunk 是否仍成功；失败时上层应关闭后端 gRPC 连接
      */
     private Boolean isSuccessSendData = true;
 
@@ -83,11 +84,16 @@ class SendGrpcWebResponse {
         this.ctx = ctx;
     }
 
+    /**
+     * 写出 HTTP 响应头（Transfer-Encoding: chunked）及 gRPC 初始 Metadata。
+     *
+     * @param headers 来自 gRPC 的响应头 Metadata，可为 null
+     */
     synchronized void writeHeaders(Metadata headers) {
         if (isHeaderSent) {
             return;
         }
-        // 发送 http1.1 开头部分的内容
+        // 发送 HTTP/1.1 起始行与响应头
         DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType).set(HttpHeaderNames.TRANSFER_ENCODING,
                 "chunked");
@@ -108,6 +114,7 @@ class SendGrpcWebResponse {
         isHeaderSent = true;
     }
 
+    /** 服务实现类未找到时，写出 UNIMPLEMENTED 状态的 trailer。 */
     synchronized void returnUnimplementedStatusCode(String className) {
         writeHeaders(null);
         writeTrailer(
@@ -115,7 +122,7 @@ class SendGrpcWebResponse {
                 null);
     }
 
-    // 发送最后的 http chunked 空块
+    /** 发送 HTTP chunked 传输的最后一个空块，标记响应结束。 */
     private void writeEndChunk() {
         if (isEndChunkSent) {
             return;
@@ -125,11 +132,15 @@ class SendGrpcWebResponse {
         isEndChunkSent = true;
     }
 
+    /** 出错路径：先写头再写带 grpc-status 的 trailer。 */
     synchronized void writeError(Status s) {
         writeHeaders(null);
         writeTrailer(s, null);
     }
 
+    /**
+     * 将 gRPC {@link Status} 与 trailer Metadata 编码为 TRAILER 帧并写出，随后发送结束 chunk。
+     */
     synchronized void writeTrailer(Status status, Metadata trailer) {
         if (isTrailerSent) {
             return;
@@ -153,10 +164,16 @@ class SendGrpcWebResponse {
         writeEndChunk();
     }
 
+    /** 写出一条 DATA 帧（protobuf 响应体）。 */
     synchronized boolean writeResponse(byte[] out) {
         return writeResponse(out, MessageFramer.Type.DATA);
     }
 
+    /**
+     * 组帧并写出 DATA 或 TRAILER chunk。
+     *
+     * @return 写出是否仍视为成功（监听 ChannelFuture 更新 {@link #isSuccessSendData}）
+     */
     private boolean writeResponse(byte[] out, MessageFramer.Type type) {
         if (isTrailerSent) {
             logger.error("grpcweb trailer sented, writeResponse can not be called, framer type: {}", type);
@@ -164,10 +181,10 @@ class SendGrpcWebResponse {
         }
 
         try {
-            // PUNT multiple frames not handled
+            // 当前未实现单条消息拆成多帧
             byte[] prefix = new MessageFramer().getPrefix(out, type);
             ByteArrayOutputStream oStream = new ByteArrayOutputStream();
-            // binary encode if it is "text" content type
+            // grpc-web-text 模式：帧头+payload 整体 Base64 编码
             if (MessageUtils.getContentType(contentType) == ContentType.GRPC_WEB_TEXT) {
                 byte[] concated = new byte[out.length + 5];
                 System.arraycopy(prefix, 0, concated, 0, 5);
@@ -188,7 +205,7 @@ class SendGrpcWebResponse {
                 @Override
                 public void operationComplete(ChannelFuture future) {
                     if (!future.isSuccess()) {
-                        // 写入操作失败
+                        // 客户端断开或网络错误导致写出失败
                         isSuccessSendData = false;
                     }
                 }

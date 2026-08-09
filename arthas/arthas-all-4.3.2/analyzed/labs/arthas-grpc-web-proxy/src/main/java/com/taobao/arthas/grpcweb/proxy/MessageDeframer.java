@@ -28,35 +28,50 @@ import java.util.Arrays;
 import java.util.Base64;
 
 /**
- * Reads frames from the input bytes and returns a single message.
+ * gRPC-Web 入站解帧器：从 HTTP 请求体读取一个或多个 DATA 帧，合并为单条 protobuf 消息字节。
+ *
+ * <p>帧格式：1 字节类型（DATA=0x00）+ 4 字节大端长度 + payload。
+ * {@link ContentType#GRPC_WEB_TEXT} 时先 Base64 解码再解帧。</p>
  */
 public class MessageDeframer {
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName());
+    /** DATA 帧类型标识字节 */
     static final byte DATA_BYTE = (byte) 0x00;
 
-    // TODO: fix this code to be able to handle upto 4GB input size.
+    // TODO: 当前实现无法处理超过 4GB 的输入
+    /** 已解析 payload 总长度 */
     private int mLength = 0;
+    /** 当前在 inBytes 中的读偏移 */
     private int mReadSoFar = 0;
 
+    /** 各 DATA 帧 payload 列表（多帧时再拼接） */
     private ArrayList<byte[]> mFrames = new ArrayList<>();
+    /** 合并后的完整消息字节 */
     private byte[] mMsg = null;
+    /** DATA 帧数量 */
     private int mNumFrames;
 
+    /** 返回解帧后的 protobuf 消息字节。 */
     byte[] getMessageBytes() {
         return mMsg;
     }
 
+    /** 返回 payload 总长度。 */
     int getLength() {
         return mLength;
     }
 
+    /** 返回解析到的 DATA 帧个数。 */
     int getNumberOfFrames() {
         return mNumFrames;
     }
 
     /**
-     * Reads the bytes from the given InputStream and populates bytes in
-     * {@link #mMsg}
+     * 从输入流读取并解帧，结果写入 {@link #mMsg}。
+     *
+     * @param in 请求体输入流
+     * @param contentType gRPC-Web 内容类型（决定是否 Base64 解码）
+     * @return 解帧成功返回 true
      */
     public boolean processInput(InputStream in, MessageUtils.ContentType contentType) {
         byte[] inBytes;
@@ -77,12 +92,12 @@ public class MessageDeframer {
         }
         mNumFrames = mFrames.size();
 
-        // common case is only one frame.
+        // 常见情况仅一帧，直接引用避免拷贝
         if (mNumFrames == 1) {
             mMsg = mFrames.get(0);
         } else {
-            // concatenate all frames into one byte array
-            // TODO: this is inefficient.
+            // 多帧时拼接为连续字节数组（当前实现效率一般）
+            // TODO: 大消息时可改为流式处理
             mMsg = new byte[mLength];
             int offset = 0;
             for (byte[] f : mFrames) {
@@ -94,27 +109,31 @@ public class MessageDeframer {
         return true;
     }
 
-    /** returns true if the next frame is a DATA frame */
+    /**
+     * 尝试从当前偏移解析下一 DATA 帧。
+     *
+     * @return 若成功解析且仍有未读字节则 true，否则 false
+     */
     private boolean getNextFrameBytes(byte[] inBytes) {
-        // Firstbyte should be 0x00 (for this to be a DATA frame)
+        // 首字节须为 0x00 表示 DATA 帧
         int firstByteValue = inBytes[mReadSoFar] | DATA_BYTE;
         if (firstByteValue != 0) {
             logger.debug("done with DATA bytes");
             return false;
         }
 
-        // Next 4 bytes = length of the bytes array starting after the 4 bytes.
+        // 随后 4 字节为大端 payload 长度
         int offset = mReadSoFar + 1;
         int len = ByteBuffer.wrap(inBytes, offset, 4).getInt();
 
-        // Empty message is special case.
-        // TODO: Can this is special handling be removed?
+        // 空消息：长度为 0 的特殊处理
+        // TODO: 评估是否可移除此分支
         if (len == 0) {
             mFrames.add(new byte[0]);
             return false;
         }
 
-        // Make sure we have enough bytes in the inputstream
+        // 校验缓冲区是否包含完整帧
         int expectedNumBytes = len + 5 + mReadSoFar;
         if (inBytes.length < expectedNumBytes) {
             logger.warn(String.format("input doesn't have enough bytes. expected: %d, found %d", expectedNumBytes,
@@ -122,13 +141,13 @@ public class MessageDeframer {
             return false;
         }
 
-        // Read "len" bytes into message
+        // 拷贝 len 字节 payload
         mLength += len;
         offset += 4;
         byte[] inputBytes = Arrays.copyOfRange(inBytes, offset, len + offset);
         mFrames.add(inputBytes);
         mReadSoFar += (len + 5);
-        // we have more frames to process, if there are bytes unprocessed
+        // 若还有剩余字节，可能还有后续帧
         return inBytes.length > mReadSoFar;
     }
 }

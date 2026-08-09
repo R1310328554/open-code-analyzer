@@ -21,13 +21,20 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * gRPC-Web 消息与 Content-Type 工具类。
+ *
+ * <p>校验 HTTP {@code Content-Type}、映射 gRPC-Web 变体，并将请求体字节反序列化为 RPC 入参 protobuf。</p>
+ */
 public class MessageUtils {
+    /** gRPC-Web 二进制或文本（Base64）传输模式 */
     @VisibleForTesting
     public
     enum ContentType {
         GRPC_WEB_BINARY, GRPC_WEB_TEXT;
     }
 
+    /** 标准 gRPC-Web MIME 类型到内部枚举的映射 */
     private static Map<String, ContentType> GRPC_GCP_CONTENT_TYPES = new HashMap<String, ContentType>() {
         {
             put("application/grpc-web", ContentType.GRPC_WEB_BINARY);
@@ -38,7 +45,11 @@ public class MessageUtils {
     };
 
     /**
-     * Validate the content-type
+     * 校验请求 Content-Type 是否为支持的 gRPC-Web 类型。
+     *
+     * @param contentType HTTP Content-Type 头值
+     * @return 对应的 {@link ContentType}
+     * @throws IllegalArgumentException 类型缺失或不支持时
      */
     public static ContentType validateContentType(String contentType) throws IllegalArgumentException {
         if (contentType == null || !GRPC_GCP_CONTENT_TYPES.containsKey(contentType)) {
@@ -47,19 +58,23 @@ public class MessageUtils {
         return getContentType(contentType);
     }
 
+    /** 按 MIME 字符串查找 ContentType，调用方需保证 key 已注册。 */
     static ContentType getContentType(String type) {
         return GRPC_GCP_CONTENT_TYPES.get(type);
     }
 
     /**
-     * Find the input arg protobuf class for the given rpc-method. Convert the given
-     * bytes to the input protobuf. return that.
+     * 根据 RPC 方法第一个参数类型，将字节数组反序列化为 protobuf 入参对象。
+     *
+     * @param rpcMethod Stub 上的 RPC 方法（反射）
+     * @param in 解帧后的 protobuf 字节
+     * @return {@code parseFrom(byte[])} 得到的入参实例
      */
     static Object getInputProtobufObj(Method rpcMethod, byte[] in) {
         Class[] inputArgs = rpcMethod.getParameterTypes();
         Class inputArgClass = inputArgs[0];
 
-        // use the inputArg classtype to create a protobuf object
+        // 通过 generated message 的 parseFrom(byte[]) 反序列化
         Method parseFromObj;
         try {
             parseFromObj = inputArgClass.getMethod("parseFrom", byte[].class);

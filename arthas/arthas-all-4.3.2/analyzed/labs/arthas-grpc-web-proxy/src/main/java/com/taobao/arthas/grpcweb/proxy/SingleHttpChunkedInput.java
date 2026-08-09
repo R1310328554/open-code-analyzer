@@ -24,18 +24,22 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.stream.ChunkedInput;
 
 /**
- * 和 LastHttpContent 对比，少了 LastHttpContent.EMPTY_LAST_CONTENT
- * 
+ * 单块 HTTP chunked 输入适配器：将 {@link ChunkedInput}{@code <ByteBuf>} 包装为 {@link HttpContent} 流。
+ *
+ * <p>与标准用法相比，不在此处自动追加 {@link LastHttpContent#EMPTY_LAST_CONTENT}，
+ * 由 {@link SendGrpcWebResponse#writeEndChunk()} 单独发送结束块，便于 gRPC-Web 协议分段控制。</p>
+ *
  * @see LastHttpContent
  * @see LastHttpContent#EMPTY_LAST_CONTENT
  */
 public class SingleHttpChunkedInput implements ChunkedInput<HttpContent> {
 
+    /** 底层字节分块源 */
     private final ChunkedInput<ByteBuf> input;
 
     /**
-     * Creates a new instance using the specified input.
-     * @param input {@link ChunkedInput} containing data to write
+     * 使用指定分块输入创建实例。
+     * @param input 待写入的 {@link ChunkedInput} 数据源
      */
     public SingleHttpChunkedInput(ChunkedInput<ByteBuf> input) {
         this.input = input;
@@ -43,11 +47,9 @@ public class SingleHttpChunkedInput implements ChunkedInput<HttpContent> {
     }
 
     /**
-     * Creates a new instance using the specified input. {@code lastHttpContent} will be written as the terminating
-     * chunk.
-     * @param input {@link ChunkedInput} containing data to write
-     * @param lastHttpContent {@link LastHttpContent} that will be written as the terminating chunk. Use this for
-     *            training headers.
+     * 使用指定分块输入创建实例；{@code lastHttpContent} 参数保留以兼容 Netty API，当前未使用。
+     * @param input 待写入的 {@link ChunkedInput} 数据源
+     * @param lastHttpContent 本实现中由外部单独发送终止 chunk，此参数未挂载
      */
     public SingleHttpChunkedInput(ChunkedInput<ByteBuf> input, LastHttpContent lastHttpContent) {
         this.input = input;
@@ -57,7 +59,7 @@ public class SingleHttpChunkedInput implements ChunkedInput<HttpContent> {
     @Override
     public boolean isEndOfInput() throws Exception {
         if (input.isEndOfInput()) {
-            // Only end of input after last HTTP chunk has been sent
+            // 底层输入读完即视为结束（终止 chunk 由调用方另行发送）
             return true;
         } else {
             return false;

@@ -16,20 +16,34 @@
 package com.taobao.arthas.grpcweb.proxy;
 
 /**
- * Creates frames from the input bytes.
+ * gRPC-Web 出站组帧器：为 payload 生成 5 字节帧头（类型 + 大端长度）。
+ *
+ * <p>与 {@link MessageDeframer} 对应，用于 {@link SendGrpcWebResponse} 写出 DATA 与 TRAILER 块。</p>
  */
 public class MessageFramer {
+  /** gRPC-Web 帧类型：DATA 或 TRAILER */
   public enum Type {
+    /** 数据帧，首字节 0x00 */
     DATA ((byte) 0x00),
+    /** Trailer 帧，首字节 0x80 */
     TRAILER ((byte) 0x80);
 
+    /** 写入帧头的类型字节 */
     public final byte value;
     Type(byte b) {
       value = b;
     }
   }
 
-  // TODO: handle more than single frame; i.e., input byte array size > (2GB - 1)
+  /**
+   * 生成帧前缀：1 字节类型 + 4 字节大端 payload 长度。
+   *
+   * <p>TODO: 暂不支持单条消息超过约 2GB 时需拆成多帧。</p>
+   *
+   * @param in payload 字节
+   * @param type DATA 或 TRAILER
+   * @return 5 字节帧头
+   */
   public byte[] getPrefix(byte[] in, Type type) {
     int len = in.length;
     return new byte[] {

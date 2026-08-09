@@ -19,12 +19,26 @@ import io.grpc.Metadata;
 import io.netty.handler.codec.http.HttpHeaders;
 import java.util.*;
 
+/**
+ * HTTP 头与 gRPC {@link Metadata} 的双向转换工具。
+ *
+ * <p>主要处理 {@code x-grpc-*} 自定义头；以 {@code -bin} 结尾的按二进制 Metadata 键处理。</p>
+ */
 class MetadataUtil {
+    /** 二进制 Metadata 键后缀 */
     private static final String BINARY_HEADER_SUFFIX = "-bin";
+    /** 需要复制到 gRPC Metadata 的 HTTP 头前缀 */
     private static final String GRPC_HEADER_PREFIX = "x-grpc-";
+    /** 由 gRPC-Web 协议本身处理、无需透传的头名（小写） */
     private static final List<String> EXCLUDED = Arrays.asList("x-grpc-web", "content-type", "grpc-accept-encoding",
             "grpc-encoding");
 
+    /**
+     * 从 Netty HTTP 请求头提取 {@code x-grpc-*} 并写入 gRPC {@link Metadata}。
+     *
+     * @param headers 入站 HTTP 头
+     * @return 供 Stub 附加的 Metadata
+     */
     static Metadata getHtpHeaders(HttpHeaders headers) {
         Metadata httpHeaders = new Metadata();
 
@@ -32,25 +46,22 @@ class MetadataUtil {
         if (headerNames == null) {
             return httpHeaders;
         }
-        // copy all headers "x-grpc-*" into Metadata
-        // TODO: do we need to copy all "x-*" headers instead?
+        // 复制所有 x-grpc-* 头（排除 EXCLUDED 列表）
+        // TODO: 是否需要复制全部 x-* 头而不仅是 x-grpc-*
         for (String headerName : headerNames) {
             if (EXCLUDED.contains(headerName.toLowerCase())) {
                 continue;
             }
             if (headerName.toLowerCase().startsWith(GRPC_HEADER_PREFIX)) {
-                // Get all the values of this header.
-
+                // 同一头名可能有多值
                 List<String> values = headers.getAll(headerName);
                 if (values != null) {
-                    // Java enumerations have klunky API. lets convert to a list.
-                    // this will be a short list usually.
                     for (String s : values) {
                         if (headerName.toLowerCase().endsWith(BINARY_HEADER_SUFFIX)) {
-                            // Binary header
+                            // 二进制 Metadata 键
                             httpHeaders.put(Metadata.Key.of(headerName, Metadata.BINARY_BYTE_MARSHALLER), s.getBytes());
                         } else {
-                            // String header
+                            // ASCII 字符串 Metadata 键
                             httpHeaders.put(Metadata.Key.of(headerName, Metadata.ASCII_STRING_MARSHALLER), s);
                         }
                     }
@@ -60,6 +71,12 @@ class MetadataUtil {
         return httpHeaders;
     }
 
+    /**
+     * 将 gRPC {@link Metadata}（响应头或 trailer）转为 HTTP 头 Map，供写出 gRPC-Web 响应。
+     *
+     * @param trailer gRPC Metadata
+     * @return 头名到头值的 Map
+     */
     static Map<String, String> getHttpHeadersFromMetadata(Metadata trailer) {
         Map<String, String> map = new HashMap<>();
         for (String key : trailer.keys()) {
@@ -67,7 +84,7 @@ class MetadataUtil {
                 continue;
             }
             if (key.endsWith(Metadata.BINARY_HEADER_SUFFIX)) {
-                // TODO allow any object type here
+                // TODO: 二进制值当前按 String 构造，后续可支持更丰富的类型
                 byte[] value = trailer.get(Metadata.Key.of(key, Metadata.BINARY_BYTE_MARSHALLER));
                 map.put(key, new String(value));
             } else {
