@@ -19,14 +19,15 @@ package org.springframework.jdbc.support.incrementer;
 import javax.sql.DataSource;
 
 /**
- * {@link DataFieldMaxValueIncrementer} 检索给定 SQL Server 序列的下一个值。
+ * 检索给定 SQL Server 序列下一个值的 {@link DataFieldMaxValueIncrementer}。
+ *
  * @author Mahmoud Ben Hassine
  * @since 6.0
  */
 public class SqlServerSequenceMaxValueIncrementer extends AbstractSequenceMaxValueIncrementer {
 
 	/**
-	 * bean 属性样式使用的默认构造函数。
+	 * 允许作为 JavaBean 使用的默认构造器。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 */
@@ -34,17 +35,14 @@ public class SqlServerSequenceMaxValueIncrementer extends AbstractSequenceMaxVal
 	}
 
 	/**
-	 * 方便构造函数。
-	 * @param dataSource 要使用的数据源
-	 * @param incrementerName 要使用的序列的名称
+	 * 便捷构造器。
+	 * @param dataSource 要使用的 DataSource
+	 * @param incrementerName 要使用的序列名
 	 */
 	public SqlServerSequenceMaxValueIncrementer(DataSource dataSource, String incrementerName) {
 		super(dataSource, incrementerName);
 	}
 
-	/**
-	 * 获取 Sequence Query（`SequenceQuery`）。
-	 */
 	@Override
 	protected String getSequenceQuery() {
 		return "select next value for " + getIncrementerName();

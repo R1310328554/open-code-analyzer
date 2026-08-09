@@ -29,19 +29,30 @@ import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- * {@link DataFieldMaxValueIncrementer} 增加给定 MySQL 表的最大值，相当于自动增量列。注意：如果您使用此类，您的 MySQL 键列应
- * <i>NOT</i> 自动递增，因为序列表会执行此操作。
- * <p>序列保存在一个表中；每个表应该有一个需要自动生成键的序列表。序列表使用的存储引擎可以是 MYISAM 或 INNODB，因为序列是使用单独的连接进行分配的，而不会受到可能
- * 正在进行的任何其他事务的影响。
+ * 递增给定 MySQL 表中相当于自增列的最大值的 {@link DataFieldMaxValueIncrementer}。
+ * 注意：使用本类时，MySQL 主键列<i>不应</i>设为 auto-increment，序列表负责生成键值。
+ *
+ * <p>序列保存在一张表中；每个需要自动生成主键的表应有一张对应的序列表。
+ * 序列表可使用 MYISAM 或 INNODB 存储引擎，因为序列通过独立连接分配，
+ * 不受其他进行中事务的影响。
+ *
  * <p>示例：
- * <pre class="code"> 创建表选项卡（id int unsigned not null 主键，text
- * varchar(100)）；创建表tab_sequence（值int不为空）；插入 tab_sequence 值(0);</pre>
- * <p> 如果设置了 {@code cacheSize}，则无需查询数据库即可提供中间值。如果服务器或您的应用程序停止或崩溃或事务回滚，则永远不会提供未使用的值。因此，编号中的最
- * 大孔尺寸是 {@code cacheSize} 的值。
- * <p>可以通过将“useNewConnection”属性设置为 false 来避免为增量器获取新连接。在这种情况下，您 <i>MUST</i> 在定义增量表时使用非事务性存储引
- * 擎（如 MYISAM）。
- * <p>注意，{@code MySQLMaxValueIncrementer}与<a
- * href="https://dev.mysql.com/doc/refman/8.0/en/mysql-tips.html#safe-updates">MySQL安全更新模式</a>兼容。
+ *
+ * <pre class="code">
+ * create table tab (id int unsigned not null primary key, text varchar(100));
+ * create table tab_sequence (value int not null);
+ * insert into tab_sequence values(0);</pre>
+ *
+ * <p>若设置了 {@code cacheSize}，中间值将不经查询数据库直接分配。
+ * 若服务器或应用停止、崩溃，或事务回滚，未使用的值将永远不会被分配。
+ * 因此编号中可能出现的最大空洞大小等于 {@code cacheSize} 的值。
+ *
+ * <p>可将 "useNewConnection" 属性设为 false 以避免为递增器获取新连接。
+ * 此时<i>必须</i>为序列表使用 MYISAM 等非事务性存储引擎。
+ *
+ * <p>{@code MySQLMaxValueIncrementer} 兼容
+ * <a href="https://dev.mysql.com/doc/refman/8.0/en/mysql-tips.html#safe-updates">MySQL 安全更新模式</a>。
+ *
  * @author Jean-Pierre Pawlak
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -49,25 +60,21 @@ import org.springframework.jdbc.support.JdbcUtils;
  */
 public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer {
 
-	/**
-	 */
+	/** 用于检索新序列值的 SQL 字符串。 */
 	private static final String VALUE_SQL = "select last_insert_id()";
 
-	/**
-	 */
+	/** 下一个待分配的 id。 */
 	private long nextId = 0;
 
-	/**
-	 */
+	/** 当前可分配的最大 id。 */
 	private long maxId = 0;
 
-	/**
-	 */
+	/** 是否为递增器使用新连接。 */
 	private boolean useNewConnection = true;
 
 
 	/**
-	 * bean 属性样式使用的默认构造函数。
+	 * 允许作为 JavaBean 使用的默认构造器。
 	 * @see #setDataSource
 	 * @see #setIncrementerName
 	 * @see #setColumnName
@@ -76,10 +83,10 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 	}
 
 	/**
-	 * 方便构造函数。
-	 * @param dataSource 要使用的数据源
-	 * @param incrementerName 要使用的序列表的名称
-	 * @param columnName 序列表中要使用的列的名称
+	 * 便捷构造器。
+	 * @param dataSource 要使用的 DataSource
+	 * @param incrementerName 要使用的序列表名
+	 * @param columnName 序列表中要使用的列名
 	 */
 	public MySQLMaxValueIncrementer(DataSource dataSource, String incrementerName, String columnName) {
 		super(dataSource, incrementerName, columnName);
@@ -87,8 +94,11 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 
 
 	/**
-	 * 设置增量器是否使用新连接。 <p>{@code true} 对于支持事务存储引擎是必要的，使用隔离的单独事务进行增量操作。如果序列表的存储引擎是非事务性的（如 MYISAM），
-	 * {@code false} 就足够了，避免了为增量操作获取额外的 {@code Connection} 的工作。 <p>默认为{@code true}。
+	 * 设置是否为递增器使用新连接。
+	 * <p>{@code true} 用于支持事务性存储引擎，递增操作在隔离的独立事务中执行。
+	 * 若序列表使用 MYISAM 等非事务性存储引擎，{@code false} 即可，
+	 * 无需为递增操作额外获取 {@code Connection}。
+	 * <p>默认为 {@code true}。
 	 * @since 4.3.6
 	 * @see DataSource#getConnection()
 	 */
@@ -97,19 +107,14 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 	}
 
 
-	/**
-	 * 获取 Next Key（`NextKey`）。
-	 */
 	@Override
 	protected synchronized long getNextKey() throws DataAccessException {
 		if (this.maxId == this.nextId) {
 			/*
-			* If useNewConnection is true, then we obtain a non-managed connection so our modifications
-			* are handled in a separate transaction. If it is false, then we use the current transaction's
-			* connection relying on the use of a non-transactional storage engine like MYISAM for the
-			* incrementer table. We also use straight JDBC code because we need to make sure that the insert
-			* and select are performed on the same connection (otherwise we can't be sure that last_insert_id()
-			* returned the correct value).
+			* 若 useNewConnection 为 true，则获取非托管连接，使修改在独立事务中处理。
+			* 若为 false，则使用当前事务的连接，依赖 MYISAM 等非事务性存储引擎的序列表。
+			* 同时使用原生 JDBC 代码，确保 insert 与 select 在同一连接上执行
+			* （否则无法保证 last_insert_id() 返回正确值）。
 			*/
 			Connection con = null;
 			Statement stmt = null;
@@ -129,7 +134,7 @@ public class MySQLMaxValueIncrementer extends AbstractColumnMaxValueIncrementer 
 				if (!this.useNewConnection) {
 					DataSourceUtils.applyTransactionTimeout(stmt, getDataSource());
 				}
-				// 增加序列列...
+				// 递增序列列...
 				String columnName = getColumnName();
 				try {
 					stmt.executeUpdate("update " + getIncrementerName() + " set " + columnName +
