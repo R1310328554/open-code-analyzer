@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T19:37:17Z",
   "files": [
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/AttributeRemoveMessage.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/AttributeUpdateMessage.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/AttributesClearMessage.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/AttributesPutAllMessage.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/JndiRedissonSessionManager.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/RedissonSingleSignOn.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/SessionCreatedMessage.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/SessionDestroyedMessage.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/UpdateValve.java",
-    "redisson-tomcat/redisson-tomcat-11/src/main/java/org/redisson/tomcat/UsageValve.java",
-    "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/AttributeMessage.java",
-    "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/AttributeRemoveMessage.java",
-    "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/AttributeUpdateMessage.java",
-    "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/AttributesClearMessage.java",
-    "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/AttributesPutAllMessage.java",
     "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/JndiRedissonSessionManager.java",
     "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/RedissonSingleSignOn.java",
     "redisson-tomcat/redisson-tomcat-7/src/main/java/org/redisson/tomcat/SessionCreatedMessage.java",
@@ -33,5 +18,5 @@
     "redisson-tomcat/redisson-tomcat-8/src/main/java/org/redisson/tomcat/SessionDestroyedMessage.java"
   ],
   "remaining_pending": 1712,
-  "done": 1080
+  "done": 1095
 }
