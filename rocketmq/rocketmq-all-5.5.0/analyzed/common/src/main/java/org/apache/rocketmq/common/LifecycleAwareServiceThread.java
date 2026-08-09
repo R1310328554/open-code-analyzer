@@ -19,10 +19,15 @@ package org.apache.rocketmq.common;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 可感知启动完成的服务线程：run 开始时置 started 并通知 awaitStarted 等待者。
+ */
 public abstract class LifecycleAwareServiceThread extends ServiceThread {
 
+    /** 线程是否已进入 run 逻辑。 */
     private final AtomicBoolean started = new AtomicBoolean(false);
 
+    /** 标记已启动并唤醒等待者，再执行 run0。 */
     @Override
     public void run() {
         started.set(true);
@@ -33,13 +38,14 @@ public abstract class LifecycleAwareServiceThread extends ServiceThread {
         run0();
     }
 
+    /** 子类实现的实际运行逻辑。 */
     public abstract void run0();
 
     /**
-     * Take spurious wakeup into account.
+     * 等待线程进入 run（考虑虚假唤醒）。
      *
-     * @param timeout amount of time in milliseconds
-     * @throws InterruptedException if interrupted
+     * @param timeout 最长等待毫秒数
+     * @throws InterruptedException 被中断时
      */
     public void awaitStarted(long timeout) throws InterruptedException {
         long expire = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);

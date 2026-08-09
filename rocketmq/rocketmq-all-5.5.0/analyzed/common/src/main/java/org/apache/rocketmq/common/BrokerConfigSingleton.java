@@ -19,10 +19,16 @@ package org.apache.rocketmq.common;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * BrokerConfig 进程级单例持有者：全局仅允许初始化一次。
+ */
 public class BrokerConfigSingleton {
+    /** 是否已完成初始化。 */
     private static AtomicBoolean isInit = new AtomicBoolean();
+    /** 全局 Broker 配置实例。 */
     private static BrokerConfig brokerConfig;
 
+    /** 获取 Broker 配置，未初始化时抛 IllegalArgumentException。 */
     public static BrokerConfig getBrokerConfig() {
         if (brokerConfig == null) {
             throw new IllegalArgumentException("brokerConfig Cannot be null !");
@@ -30,6 +36,7 @@ public class BrokerConfigSingleton {
         return brokerConfig;
     }
 
+    /** 设置 Broker 配置，重复初始化抛 IllegalArgumentException。 */
     public static void setBrokerConfig(BrokerConfig brokerConfig) {
         if (!isInit.compareAndSet(false, true)) {
             throw new IllegalArgumentException("broker config have inited !");

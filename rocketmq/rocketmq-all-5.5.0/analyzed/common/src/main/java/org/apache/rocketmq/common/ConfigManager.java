@@ -27,9 +27,14 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 配置持久化抽象基类：JSON 编码/解码、主文件与 .bak 备份的原子读写。
+ */
 public abstract class ConfigManager {
+    /** 配置管理日志器。 */
     private static final Logger log = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
 
+    /** 从主配置文件加载；失败或空文件时尝试 .bak 备份。 */
     public boolean load() {
         String fileName = null;
         try {
@@ -37,7 +42,7 @@ public abstract class ConfigManager {
             String jsonString = MixAll.file2String(fileName);
 
             if (null == jsonString || jsonString.length() == 0) {
-                // delete invalid file
+                // 删除无效主配置文件
                 Files.deleteIfExists(Paths.get(fileName));
                 return this.loadBak();
             } else {
@@ -59,6 +64,7 @@ public abstract class ConfigManager {
         }
     }
 
+    /** 从 .bak 备份文件加载配置。 */
     private boolean loadBak() {
         String fileName = null;
         try {
@@ -77,31 +83,34 @@ public abstract class ConfigManager {
         return true;
     }
 
+    /** 按 Topic 持久化（当前为 stub，委托 persist()）。 */
     public synchronized <T> void persist(String topicName, T t) {
-        // stub for future
+        // 预留扩展
         this.persist();
     }
 
+    /** 批量持久化（当前为 stub，委托 persist()）。 */
     public synchronized <T> void persist(Map<String, T> m) {
         // stub for future
         this.persist();
     }
 
+    /** 将 encode 结果原子写入配置文件（先备份再写入并 fsync）。 */
     public synchronized void persist() {
         String jsonString = this.encode(true);
         if (jsonString != null) {
             try {
-                // bak metrics file
+                // 备份现有配置文件
                 String config = configFilePath();
                 String backup = config + ".bak";
                 File configFile = new File(config);
                 File bakFile = new File(backup);
 
                 if (configFile.exists()) {
-                    // atomic move
+                    // 原子移动为 .bak
                     Files.move(configFile.toPath(), bakFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
 
-                    // sync the directory, ensure that the bak file is visible
+                    // fsync 目录确保备份可见
                     MixAll.fsyncDirectory(Paths.get(bakFile.getParent()));
                 }
 
@@ -113,7 +122,7 @@ public abstract class ConfigManager {
                 try (RandomAccessFile randomAccessFile = new RandomAccessFile(config, "rw")) {
                     randomAccessFile.write(jsonString.getBytes(StandardCharsets.UTF_8));
                     randomAccessFile.getChannel().force(true);
-                    // sync the directory, ensure that the config file is visible
+                    // fsync 目录确保新配置可见
                     MixAll.fsyncDirectory(Paths.get(configFile.getParent()));
                 }
             } catch (Throwable t) {
@@ -122,19 +131,25 @@ public abstract class ConfigManager {
         }
     }
 
+    /** 停止配置管理（默认可直接返回 true）。 */
     public boolean stop() {
         return true;
     }
 
+    /** 关闭并调用 stop()。 */
     public void shutdown() {
         stop();
     }
 
+    /** 配置文件路径。 */
     public abstract String configFilePath();
 
+    /** 编码为 JSON 字符串（默认格式）。 */
     public abstract String encode();
 
+    /** 编码为 JSON，可选美化格式。 */
     public abstract String encode(final boolean prettyFormat);
 
+    /** 从 JSON 字符串解码配置。 */
     public abstract void decode(final String jsonString);
 }

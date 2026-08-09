@@ -16,27 +16,27 @@
  */
 package org.apache.rocketmq.common;
 
+/** 边界类型：用于表示期望的下界或上界。 */
 public enum BoundaryType {
-    /**
-     * Indicate that lower boundary is expected.
-     */
+    /** 期望下界。 */
     LOWER("lower"),
 
-    /**
-     * Indicate that upper boundary is expected.
-     */
+    /** 期望上界。 */
     UPPER("upper");
 
+    /** 边界类型名称字符串。 */
     private String name;
 
     BoundaryType(String name) {
         this.name = name;
     }
 
+    /** 返回边界类型名称。 */
     public String getName() {
         return name;
     }
 
+    /** 按名称解析边界类型，无法识别时默认 LOWER。 */
     public static BoundaryType getType(String name) {
         if (BoundaryType.UPPER.getName().equalsIgnoreCase(name)) {
             return UPPER;

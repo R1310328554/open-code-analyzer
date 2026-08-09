@@ -19,8 +19,13 @@ package org.apache.rocketmq.common;
 import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 消费端队列加锁结果回调。
+ */
 public interface LockCallback {
+    /** 加锁成功，返回已锁定队列集合。 */
     void onSuccess(final Set<MessageQueue> lockOKMQSet);
 
+    /** 加锁失败或异常。 */
     void onException(final Throwable e);
 }

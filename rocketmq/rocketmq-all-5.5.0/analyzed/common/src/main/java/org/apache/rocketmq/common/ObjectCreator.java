@@ -16,6 +16,10 @@
  */
 package org.apache.rocketmq.common;
 
+/**
+ * 通用对象工厂接口，按可变参数创建实例。
+ */
 public interface ObjectCreator<T> {
+    /** 根据参数创建 T 类型对象。 */
     T create(Object... args);
 }

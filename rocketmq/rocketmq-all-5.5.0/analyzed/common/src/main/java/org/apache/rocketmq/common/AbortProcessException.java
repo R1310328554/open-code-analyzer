@@ -19,29 +19,25 @@ package org.apache.rocketmq.common;
 import org.apache.rocketmq.common.help.FAQUrl;
 
 /**
- *
- * This exception is used for broker hooks only : SendMessageHook, ConsumeMessageHook, RPCHook
- * This exception is not ignored while executing hooks and it means that
- * certain processor should return an immediate error response to the client. The
- * error response code is included in AbortProcessException.  it's naming might
- * be confusing, so feel free to refactor this class. Also when any class implements
- * the 3 hook interface mentioned above we should be careful if we want to throw
- * an AbortProcessException, because it will change the control flow of broker
- * and cause a RemotingCommand return error immediately. So be aware of the side
- * effect before throw AbortProcessException in your implementation.
- *
+ * Broker Hook 专用异常（SendMessageHook、ConsumeMessageHook、RPCHook）。
+ * 执行 Hook 时不会被忽略，表示处理器应立即向客户端返回错误响应；
+ * 错误码封装在本异常中。抛出后会改变 Broker 控制流，使 RemotingCommand 立即返回错误，使用前需了解副作用。
  */
 public class AbortProcessException extends RuntimeException {
     private static final long serialVersionUID = -5728810933841185841L;
+    /** 返回给客户端的响应码。 */
     private int responseCode;
+    /** 错误描述信息。 */
     private String errorMessage;
 
+    /** 携带错误信息与根因构造异常（responseCode 默认为 -1）。 */
     public AbortProcessException(String errorMessage, Throwable cause) {
         super(FAQUrl.attachDefaultURL(errorMessage), cause);
         this.responseCode = -1;
         this.errorMessage = errorMessage;
     }
 
+    /** 按响应码与错误描述构造异常。 */
     public AbortProcessException(int responseCode, String errorMessage) {
         super(FAQUrl.attachDefaultURL("CODE: " + UtilAll.responseCode2String(responseCode) + "  DESC: "
             + errorMessage));
@@ -49,19 +45,23 @@ public class AbortProcessException extends RuntimeException {
         this.errorMessage = errorMessage;
     }
 
+    /** 获取响应码。 */
     public int getResponseCode() {
         return responseCode;
     }
 
+    /** 设置响应码并返回自身（链式调用）。 */
     public AbortProcessException setResponseCode(final int responseCode) {
         this.responseCode = responseCode;
         return this;
     }
 
+    /** 获取错误描述。 */
     public String getErrorMessage() {
         return errorMessage;
     }
 
+    /** 设置错误描述。 */
     public void setErrorMessage(final String errorMessage) {
         this.errorMessage = errorMessage;
     }

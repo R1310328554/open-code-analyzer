@@ -16,20 +16,28 @@
  */
 package org.apache.rocketmq.common;
 
+/**
+ * 顺序消费粒度：按队列或按 Sharding Key。
+ */
 public enum OrderedConsumptionLevel {
+    /** 按消息队列顺序消费。 */
     QUEUE(0),
+    /** 按 Sharding Key 顺序消费。 */
     SHARDING_KEY(1);
 
+    /** 枚举整型值。 */
     private final int value;
 
     OrderedConsumptionLevel(int value) {
         this.value = value;
     }
 
+    /** 返回整型值。 */
     public int getValue() {
         return value;
     }
 
+    /** 按整型解析，1 为 SHARDING_KEY，否则 QUEUE。 */
     public static OrderedConsumptionLevel valueOf(int value) {
         if (value == 1) {
             return SHARDING_KEY;

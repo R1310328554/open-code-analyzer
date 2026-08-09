@@ -21,17 +21,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
- * Add reset feature for @see java.util.concurrent.CountDownLatch
+ * 在 {@link java.util.concurrent.CountDownLatch} 基础上增加 reset 能力。
  */
 public class CountDownLatch2 {
+    /** AQS 同步器。 */
     private final Sync sync;
 
     /**
-     * Constructs a {@code CountDownLatch2} initialized with the given count.
+     * 以给定计数初始化 CountDownLatch2。
      *
-     * @param count the number of times {@link #countDown} must be invoked before threads can pass through {@link
-     * #await}
-     * @throws IllegalArgumentException if {@code count} is negative
+     * @param count 需调用 {@link #countDown} 的次数，归零后等待线程可通过 {@link #await}
+     * @throws IllegalArgumentException count 为负时
      */
     public CountDownLatch2(int count) {
         if (count < 0)
@@ -40,127 +40,61 @@ public class CountDownLatch2 {
     }
 
     /**
-     * Causes the current thread to wait until the latch has counted down to
-     * zero, unless the thread is {@linkplain Thread#interrupt interrupted}.
+     * 阻塞直到计数归零，除非当前线程被中断。
+     * 计数已为 0 则立即返回；大于 0 则挂起直至 countDown 归零或被中断。
      *
-     * <p>If the current count is zero then this method returns immediately.
-     *
-     * <p>If the current count is greater than zero then the current
-     * thread becomes disabled for thread scheduling purposes and lies
-     * dormant until one of two things happen:
-     * <ul>
-     * <li>The count reaches zero due to invocations of the
-     * {@link #countDown} method; or
-     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
-     * the current thread.
-     * </ul>
-     *
-     * <p>If the current thread:
-     * <ul>
-     * <li>has its interrupted status set on entry to this method; or
-     * <li>is {@linkplain Thread#interrupt interrupted} while waiting,
-     * </ul>
-     * then {@link InterruptedException} is thrown and the current thread's
-     * interrupted status is cleared.
-     *
-     * @throws InterruptedException if the current thread is interrupted while waiting
+     * @throws InterruptedException 等待过程中被中断
      */
     public void await() throws InterruptedException {
         sync.acquireSharedInterruptibly(1);
     }
 
     /**
-     * Causes the current thread to wait until the latch has counted down to
-     * zero, unless the thread is {@linkplain Thread#interrupt interrupted},
-     * or the specified waiting time elapses.
+     * 限时等待计数归零。
      *
-     * <p>If the current count is zero then this method returns immediately
-     * with the value {@code true}.
-     *
-     * <p>If the current count is greater than zero then the current
-     * thread becomes disabled for thread scheduling purposes and lies
-     * dormant until one of three things happen:
-     * <ul>
-     * <li>The count reaches zero due to invocations of the
-     * {@link #countDown} method; or
-     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
-     * the current thread; or
-     * <li>The specified waiting time elapses.
-     * </ul>
-     *
-     * <p>If the count reaches zero then the method returns with the
-     * value {@code true}.
-     *
-     * <p>If the current thread:
-     * <ul>
-     * <li>has its interrupted status set on entry to this method; or
-     * <li>is {@linkplain Thread#interrupt interrupted} while waiting,
-     * </ul>
-     * then {@link InterruptedException} is thrown and the current thread's
-     * interrupted status is cleared.
-     *
-     * <p>If the specified waiting time elapses then the value {@code false}
-     * is returned.  If the time is less than or equal to zero, the method
-     * will not wait at all.
-     *
-     * @param timeout the maximum time to wait
-     * @param unit the time unit of the {@code timeout} argument
-     * @return {@code true} if the count reached zero and {@code false} if the waiting time elapsed before the count
-     * reached zero
-     * @throws InterruptedException if the current thread is interrupted while waiting
+     * @param timeout 最长等待时间
+     * @param unit 时间单位
+     * @return 计数归零返回 true，超时返回 false
+     * @throws InterruptedException 等待过程中被中断
      */
     public boolean await(long timeout, TimeUnit unit)
         throws InterruptedException {
         return sync.tryAcquireSharedNanos(1, unit.toNanos(timeout));
     }
 
-    /**
-     * Decrements the count of the latch, releasing all waiting threads if
-     * the count reaches zero.
-     *
-     * <p>If the current count is greater than zero then it is decremented.
-     * If the new count is zero then all waiting threads are re-enabled for
-     * thread scheduling purposes.
-     *
-     * <p>If the current count equals zero then nothing happens.
-     */
+    /** 计数减一，归零时唤醒所有等待线程。 */
     public void countDown() {
         sync.releaseShared(1);
     }
 
     /**
-     * Returns the current count.
+     * 返回当前计数（常用于调试与测试）。
      *
-     * <p>This method is typically used for debugging and testing purposes.
-     *
-     * @return the current count
+     * @return 当前计数
      */
     public long getCount() {
         return sync.getCount();
     }
 
+    /** 将计数重置为构造时的初始值。 */
     public void reset() {
         sync.reset();
     }
 
     /**
-     * Returns a string identifying this latch, as well as its state.
-     * The state, in brackets, includes the String {@code "Count ="}
-     * followed by the current count.
+     * 返回含当前计数的字符串表示。
      *
-     * @return a string identifying this latch, as well as its state
+     * @return 标识与状态字符串
      */
     public String toString() {
         return super.toString() + "[Count = " + sync.getCount() + "]";
     }
 
-    /**
-     * Synchronization control For CountDownLatch2.
-     * Uses AQS state to represent count.
-     */
+    /** CountDownLatch2 的 AQS 同步实现，用 state 表示计数。 */
     private static final class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = 4982264981922014374L;
 
+        /** 构造时的初始计数，供 reset 使用。 */
         private final int startCount;
 
         Sync(int count) {
@@ -168,18 +102,21 @@ public class CountDownLatch2 {
             setState(count);
         }
 
+        /** 读取当前 AQS state 作为计数。 */
         int getCount() {
             return getState();
         }
 
+        /** 共享获取：state 为 0 时成功。 */
         @Override
         protected int tryAcquireShared(int acquires) {
             return (getState() == 0) ? 1 : -1;
         }
 
+        /** 共享释放：CAS 递减 state，减至 0 时唤醒等待者。 */
         @Override
         protected boolean tryReleaseShared(int releases) {
-            // Decrement count; signal when transition to zero
+            // 递减计数，归零时发信号
             for (; ; ) {
                 int c = getState();
                 if (c == 0)
@@ -190,6 +127,7 @@ public class CountDownLatch2 {
             }
         }
 
+        /** 将 state 恢复为 startCount。 */
         protected void reset() {
             setState(startCount);
         }
