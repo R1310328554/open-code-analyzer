@@ -20,28 +20,8 @@
     "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/ShardingKeyDataSourceAdapter.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/ShardingKeyProvider.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/SimpleConnectionHandle.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/SimpleDriverDataSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/SingleConnectionDataSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/SmartDataSource.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/TransactionAwareDataSourceProxy.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/UserCredentialsDataSourceAdapter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/AbstractEmbeddedDatabaseConfigurer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/ConnectionProperties.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/DataSourceFactory.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/DerbyEmbeddedDatabaseConfigurer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabase.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseBuilder.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseConfigurer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseConfigurerDelegate.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseConfigurers.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseFactory.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseFactoryBean.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseFactoryRuntimeHints.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/EmbeddedDatabaseType.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/H2EmbeddedDatabaseConfigurer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/HsqlEmbeddedDatabaseConfigurer.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/embedded/OutputStreamFactory.java"
+    "spring-jdbc/src/main/java/org/springframework/jdbc/datasource/SimpleDriverDataSource.java"
   ],
   "remaining_pending": 144,
-  "done": 1307
+  "done": 1327
 }
