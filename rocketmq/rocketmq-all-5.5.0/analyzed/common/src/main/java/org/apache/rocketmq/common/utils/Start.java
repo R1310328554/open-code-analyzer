@@ -17,10 +17,6 @@
 
 package org.apache.rocketmq.common.utils;
 
-/**
- * 可启动组件的统一契约。
- */
 public interface Start {
-    /** 启动组件，完成初始化并开始对外服务。 */
     void start() throws Exception;
 }

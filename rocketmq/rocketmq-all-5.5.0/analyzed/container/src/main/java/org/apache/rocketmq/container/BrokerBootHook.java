@@ -19,32 +19,29 @@ package org.apache.rocketmq.container;
 
 import java.util.Properties;
 
-/**
- * Broker 启动生命周期钩子：在容器内 Broker 启动前后插入自定义逻辑。
- */
 public interface BrokerBootHook {
     /**
-     * 钩子名称，用于日志与去重识别。
+     * Name of the hook.
      *
-     * @return 钩子名称
+     * @return name of the hook
      */
     String hookName();
 
     /**
-     * Broker 启动前执行的代码。
+     * Code to execute before broker start.
      *
-     * @param innerBrokerController 待启动的内部 Broker 控制器
-     * @param properties            Broker 配置属性
-     * @throws Exception 钩子执行失败时抛出
+     * @param innerBrokerController inner broker to start
+     * @param properties broker properties
+     * @throws Exception when execute hook
      */
     void executeBeforeStart(InnerBrokerController innerBrokerController, Properties properties) throws Exception;
 
     /**
-     * Broker 启动完成后执行的代码。
+     * Code to execute after broker start.
      *
-     * @param innerBrokerController 已启动的内部 Broker 控制器
-     * @param properties            Broker 配置属性
-     * @throws Exception 钩子执行失败时抛出
+     * @param innerBrokerController inner broker to start
+     * @param properties broker properties
+     * @throws Exception when execute hook
      */
     void executeAfterStart(InnerBrokerController innerBrokerController, Properties properties) throws Exception;
 }

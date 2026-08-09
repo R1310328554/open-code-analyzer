@@ -21,9 +21,6 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.annotation.ImportantField;
 import org.apache.rocketmq.common.utils.NetworkUtil;
 
-/**
- * Broker 容器进程级配置：NameServer 地址拉取、容器 IP、配置黑名单等。
- */
 public class BrokerContainerConfig {
 
     private String rocketmqHome = MixAll.ROCKETMQ_HOME_DIR;
@@ -43,19 +40,20 @@ public class BrokerContainerConfig {
     private String brokerConfigPaths = null;
     
     /**
-     * 拉取 NameServer 地址的间隔，默认 10 秒。
+     * The interval to fetch namesrv addr, default value is 10 second
      */
     private long fetchNamesrvAddrInterval = 10 * 1000;
 
     /**
-     * 更新 NameServer 地址的间隔，默认 120 秒。
+     * The interval to update namesrv addr, default value is 120 second
      */
     private long updateNamesrvAddrInterval = 60 * 2 * 1000;
 
 
     /**
-     * 禁止通过命令行动态修改的配置项黑名单。
-     * 修改黑名单本身或黑名单内配置需重启进程生效。
+     * Config in this black list will be not allowed to update by command.
+     * Try to update this config black list by restart process.
+     * Try to update configures in black list by restart process.
      */
     private String configBlackList = "configBlackList;brokerConfigPaths";
 

@@ -33,9 +33,6 @@ import org.apache.rocketmq.common.thread.FutureTaskExtThreadPoolExecutor;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
-/**
- * 线程池与线程工厂创建、优雅停机的工具类（不可实例化）。
- */
 public final class ThreadUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.TOOLS_LOGGER_NAME);
 
@@ -131,12 +128,12 @@ public final class ThreadUtils {
     }
 
     /**
-     * 创建新线程并注册未捕获异常处理器。
+     * Create a new thread
      *
-     * @param name     线程名
-     * @param runnable 线程任务
-     * @param daemon   是否为守护线程（守护线程不阻止 JVM 退出）
-     * @return 尚未 start 的线程实例
+     * @param name     The name of the thread
+     * @param runnable The work for the thread to do
+     * @param daemon   Should the thread block JVM stop?
+     * @return The unstarted thread
      */
     public static Thread newThread(String name, Runnable runnable, boolean daemon) {
         Thread thread = new Thread(runnable, name);
@@ -150,19 +147,19 @@ public final class ThreadUtils {
     }
 
     /**
-     * 通过 interrupt 与 join 优雅停止线程（无限等待直至结束）。
+     * Shutdown passed thread using isAlive and join.
      *
-     * @param t 待停止线程
+     * @param t Thread to stop
      */
     public static void shutdownGracefully(final Thread t) {
         shutdownGracefully(t, 0);
     }
 
     /**
-     * 通过 interrupt 与 join 优雅停止线程。
+     * Shutdown passed thread using isAlive and join.
      *
-     * @param millis 每次 join 的超时毫秒数，0 表示一直等待
-     * @param t      待停止线程
+     * @param millis Pass 0 if we're to wait forever.
+     * @param t      Thread to stop
      */
     public static void shutdownGracefully(final Thread t, final long millis) {
         if (t == null)
@@ -178,36 +175,37 @@ public final class ThreadUtils {
     }
 
     /**
-     * 按 {@link ExecutorService} 推荐的两阶段流程优雅关闭线程池。
+     * An implementation of the graceful stop sequence recommended by
+     * {@link ExecutorService}.
      *
-     * @param executor 待关闭执行器
-     * @param timeout  等待超时
-     * @param timeUnit 超时单位
+     * @param executor executor
+     * @param timeout  timeout
+     * @param timeUnit timeUnit
      */
     public static void shutdownGracefully(ExecutorService executor, long timeout, TimeUnit timeUnit) {
-        // 停止接收新任务
+        // Disable new tasks from being submitted.
         executor.shutdown();
         try {
-            // 等待已在执行的任务结束
+            // Wait a while for existing tasks to terminate.
             if (!executor.awaitTermination(timeout, timeUnit)) {
                 executor.shutdownNow();
-                // 再等待一段时间以便任务响应取消
+                // Wait a while for tasks to respond to being cancelled.
                 if (!executor.awaitTermination(timeout, timeUnit)) {
                     LOGGER.warn(String.format("%s didn't terminate!", executor));
                 }
             }
         } catch (InterruptedException ie) {
-            // 当前线程被中断时再次尝试立即取消
+            // (Re-)Cancel if current thread also interrupted.
             executor.shutdownNow();
-            // 恢复中断状态
+            // Preserve interrupt status.
             Thread.currentThread().interrupt();
         }
     }
 
     /**
-     * 关闭指定 {@link ExecutorService}（不等待任务完成）。
+     * Shutdown the specific ExecutorService
      *
-     * @param executorService 执行器，可为 null
+     * @param executorService the executor
      */
     public static void shutdown(ExecutorService executorService) {
         if (executorService != null) {
@@ -216,10 +214,10 @@ public final class ThreadUtils {
     }
 
     /**
-     * 私有构造，禁止实例化工具类。
+     * A constructor to stop this class being constructed.
      */
     private ThreadUtils() {
-        // 未使用
+        // Unused
 
     }
 }

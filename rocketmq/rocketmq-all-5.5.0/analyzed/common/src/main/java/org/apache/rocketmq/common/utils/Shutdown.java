@@ -17,10 +17,6 @@
 
 package org.apache.rocketmq.common.utils;
 
-/**
- * 可优雅关闭组件的统一契约。
- */
 public interface Shutdown {
-    /** 执行关闭逻辑，释放资源。 */
     void shutdown() throws Exception;
 }
