@@ -16,12 +16,16 @@
 package org.redisson.api.queue;
 
 /**
+ * {@link DequeMoveArgs} 与 {@link DequeMoveDestination} 的可变参数实现。
+ * <p>
+ * 记录源端移除方向、目标队列名称及目标端插入方向。
  *
  * @author Nikita Koksharov
  *
  */
 public class DequeMoveParams implements DequeMoveDestination {
 
+    /** 双端队列的左（头）/右（尾）方向。 */
     public enum Direction {LEFT, RIGHT};
 
     private final Direction sourceDirection;

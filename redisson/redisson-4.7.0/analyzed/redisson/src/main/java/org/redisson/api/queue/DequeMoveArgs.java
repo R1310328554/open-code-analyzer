@@ -16,7 +16,7 @@
 package org.redisson.api.queue;
 
 /**
- * Arguments object for deque move method.
+ * 双端队列元素移动操作的参数对象。
  * <p>
  * {@link org.redisson.api.RDeque#move(DequeMoveArgs)}
  * {@link org.redisson.api.RDequeAsync#moveAsync(DequeMoveArgs)}
@@ -29,18 +29,18 @@ package org.redisson.api.queue;
 public interface DequeMoveArgs {
 
     /**
-     * Define to remove the tail element of this queue.
+     * 指定从队列尾部移除元素。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     static DequeMoveDestination pollLast() {
         return new DequeMoveParams(DequeMoveParams.Direction.RIGHT);
     }
 
     /**
-     * Define to remove the head element of this queue.
+     * 指定从队列头部移除元素。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     static DequeMoveDestination pollFirst() {
         return new DequeMoveParams(DequeMoveParams.Direction.LEFT);

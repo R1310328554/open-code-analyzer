@@ -16,7 +16,7 @@
 package org.redisson.api.queue;
 
 /**
- * Queue messages processing modes used by consumers.
+ * 队列消费者使用的消息处理模式。
  *
  * @author Nikita Koksharov
  *
@@ -24,13 +24,13 @@ package org.redisson.api.queue;
 public enum ProcessingMode {
 
     /**
-     * Defines that messages are consumed strictly in the order they arrive in the queue.
+     * 按消息入队顺序严格串行消费。
      *
      */
     SEQUENTIAL,
 
     /**
-     * Defines that multiple messages can be consumed concurrently.
+     * 允许多条消息并发消费。
      */
     PARALLEL
 

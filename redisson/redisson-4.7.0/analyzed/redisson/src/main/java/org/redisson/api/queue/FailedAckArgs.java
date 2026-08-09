@@ -18,7 +18,7 @@ package org.redisson.api.queue;
 import java.time.Duration;
 
 /**
- * Interface defining parameters for negative acknowledgment of queue messages.
+ * 定义队列消息处理失败时的负向确认（nack）参数。
  *
  * @author Nikita Koksharov
  *
@@ -26,11 +26,10 @@ import java.time.Duration;
 public interface FailedAckArgs extends QueueNegativeAckArgs {
 
     /**
-     * Specifies the delay duration before the failed message is eligible
-     * for redelivery.
+     * 指定处理失败的消息在重新投递前需等待的延迟时长。
      *
-     * @param value the delay duration before redelivery
-     * @return arguments object
+     * @param value 重新投递前的延迟时长
+     * @return 参数对象
      */
     QueueNegativeAckArgs delay(Duration value);
 

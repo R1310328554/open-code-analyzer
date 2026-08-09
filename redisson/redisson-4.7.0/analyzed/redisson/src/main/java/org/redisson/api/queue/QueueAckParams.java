@@ -18,6 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.api.BaseSyncParams;
 
 /**
+ * {@link QueueAckArgs} 的可变参数实现，持有待确认的消息 ID 列表。
  *
  * @author Nikita Koksharov
  *

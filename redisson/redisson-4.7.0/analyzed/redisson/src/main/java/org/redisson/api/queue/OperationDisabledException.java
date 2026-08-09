@@ -18,7 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.client.RedisException;
 
 /**
- * This error occurs when the queue operation is disabled.
+ * 当队列操作被禁用时抛出的异常。
  *
  * @author Nikita Koksharov
  *

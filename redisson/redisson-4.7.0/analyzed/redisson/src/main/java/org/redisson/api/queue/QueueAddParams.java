@@ -22,6 +22,9 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
+ * {@link QueueAddArgs} 的可变参数实现，持有待添加消息及超时、编解码等选项。
+ *
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *

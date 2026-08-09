@@ -16,8 +16,9 @@
 package org.redisson.api.pubsub.event;
 
 /**
- * Listener interface for topic config events.
- * This interface is triggered when topic config is set.
+ * 主题配置变更事件的监听器接口。
+ * <p>
+ * 当主题配置被设置或更新时触发。
  *
  * @author Nikita Koksharov
  *
@@ -25,9 +26,9 @@ package org.redisson.api.pubsub.event;
 public interface TopicConfigEventListener extends PubSubEventListener {
 
     /**
-     * Called when topic config was set.
+     * 主题配置被设置时调用。
      *
-     * @param topicName name of topic
+     * @param topicName 主题名称
      */
     void onSet(String topicName);
 

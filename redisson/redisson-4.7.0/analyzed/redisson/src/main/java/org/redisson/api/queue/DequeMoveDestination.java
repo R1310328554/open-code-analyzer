@@ -16,7 +16,9 @@
 package org.redisson.api.queue;
 
 /**
- * Arguments object for deque move method.
+ * 双端队列元素移动操作的目标端参数。
+ * <p>
+ * 在选定源端移除元素后，指定目标队列及插入位置。
  *
  * @author Nikita Koksharov
  *
@@ -24,18 +26,18 @@ package org.redisson.api.queue;
 public interface DequeMoveDestination extends DequeMoveArgs {
 
     /**
-     * Define to add removed element as the head element of destination queue.
+     * 将移除的元素作为目标队列的头部元素插入。
      *
-     * @param name - name of destination queue
-     * @return arguments object
+     * @param name 目标队列名称
+     * @return 参数对象
      */
     DequeMoveArgs addFirstTo(String name);
 
     /**
-     * Define to add removed element as the head element of specified queue.
+     * 将移除的元素作为目标队列的尾部元素插入。
      *
-     * @param name - name of destination queue
-     * @return arguments object
+     * @param name 目标队列名称
+     * @return 参数对象
      */
     DequeMoveArgs addLastTo(String name);
 

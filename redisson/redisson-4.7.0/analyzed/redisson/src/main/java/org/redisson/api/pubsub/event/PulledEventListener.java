@@ -18,7 +18,9 @@ package org.redisson.api.pubsub.event;
 import java.util.List;
 
 /**
- * Listener interface for pubsub subscription polling events.
+ * PubSub 订阅轮询事件的监听器接口。
+ * <p>
+ * 当消费者从订阅中拉取消息时触发。
  *
  * @author Nikita Koksharov
  *
@@ -26,9 +28,9 @@ import java.util.List;
 public interface PulledEventListener extends ConsumerEventListener {
 
     /**
-     * Called when messages are polled from the subscription.
+     * 从订阅中轮询到消息时调用。
      *
-     * @param ids message ids
+     * @param ids 消息 ID 列表
      */
     void onPulled(List<String> ids);
 

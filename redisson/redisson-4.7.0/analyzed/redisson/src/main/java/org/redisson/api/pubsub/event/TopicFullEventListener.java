@@ -16,8 +16,9 @@
 package org.redisson.api.pubsub.event;
 
 /**
- * Listener interface for pubsub topic full events.
- * This interface is triggered when the pubsub topic is full.
+ * PubSub 主题已满事件的监听器接口。
+ * <p>
+ * 当主题缓冲区达到容量上限、无法接受更多消息时触发。
  *
  * @author Nikita Koksharov
  *
@@ -25,9 +26,9 @@ package org.redisson.api.pubsub.event;
 public interface TopicFullEventListener extends PubSubEventListener {
 
     /**
-     * Called when the pubsub topic is full.
+     * PubSub 主题已满时调用。
      *
-     * @param topicName name of topic
+     * @param topicName 主题名称
      */
     void onFull(String topicName);
 

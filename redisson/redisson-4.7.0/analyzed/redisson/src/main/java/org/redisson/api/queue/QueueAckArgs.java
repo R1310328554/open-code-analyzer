@@ -18,7 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.api.SyncArgs;
 
 /**
- * Interface defining parameters for queue acknowledgment operations.
+ * 定义队列消息确认操作的参数。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +26,10 @@ import org.redisson.api.SyncArgs;
 public interface QueueAckArgs extends SyncArgs<QueueAckArgs> {
 
     /**
-     * Defines message IDs for acknowledgment process.
+     * 指定待确认的消息 ID。
      *
-     * @param ids the message identifiers to be acknowledged
-     * @return arguments object
+     * @param ids 待确认的消息标识符
+     * @return 参数对象
      */
     static QueueAckArgs ids(String... ids) {
         return new QueueAckParams(ids);

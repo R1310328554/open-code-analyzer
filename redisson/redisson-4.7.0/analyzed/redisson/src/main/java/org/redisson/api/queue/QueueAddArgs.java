@@ -22,9 +22,9 @@ import org.redisson.client.codec.Codec;
 import java.time.Duration;
 
 /**
- * Interface defining parameters for queue addition operations.
+ * 定义队列消息添加操作的参数。
  *
- * @param <V> type
+ * @param <V> 消息值类型
  *
  * @author Nikita Koksharov
  *
@@ -32,26 +32,26 @@ import java.time.Duration;
 public interface QueueAddArgs<V> extends SyncArgs<QueueAddArgs<V>> {
 
     /**
-     * Sets the maximum time to wait when adding messages to a full queue with a limited size.
+     * 设置向已满且容量受限的队列添加消息时的最长等待时间。
      *
-     * @param value the maximum time to wait
-     * @return arguments object
+     * @param value 最长等待时间
+     * @return 参数对象
      */
     QueueAddArgs<V> timeout(Duration value);
 
     /**
-     * Sets the codec to be used for encoding and decoding values of message headers.
+     * 设置用于编解码消息头字段值的 Codec。
      *
-     * @param codec the codec
-     * @return arguments object
+     * @param codec 编解码器
+     * @return 参数对象
      */
     QueueAddArgs<V> headersCodec(Codec codec);
 
     /**
-     * Defines messages to be added.
+     * 指定待添加的消息。
      *
-     * @param msgs The message arguments to be added to the queue
-     * @return arguments object
+     * @param msgs 要加入队列的消息参数
+     * @return 参数对象
      */
     @SafeVarargs
     static <V> QueueAddArgs<V> messages(MessageArgs<V>... msgs) {

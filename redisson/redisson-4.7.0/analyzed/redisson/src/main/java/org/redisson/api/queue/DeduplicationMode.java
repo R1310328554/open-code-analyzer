@@ -16,13 +16,22 @@
 package org.redisson.api.queue;
 
 /**
+ * 消息去重策略模式。
+ * <p>
+ * 指定可靠队列在指定时间窗口内判定重复消息的依据。
  *
  * @author Nikita Koksharov
  *
  */
 public enum DeduplicationMode {
 
+    /**
+     * 按消息内容哈希去重。
+     */
     HASH,
 
+    /**
+     * 按显式指定的去重 ID 去重。
+     */
     ID
 }
