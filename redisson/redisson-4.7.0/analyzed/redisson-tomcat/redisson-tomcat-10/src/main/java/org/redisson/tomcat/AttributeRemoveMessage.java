@@ -18,9 +18,9 @@ package org.redisson.tomcat;
 import java.util.Set;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨 Tomcat 节点广播：从指定 Session 移除一组属性名。
  *
+ * @author Nikita Koksharov
  */
 public class AttributeRemoveMessage extends AttributeMessage {
 
@@ -30,6 +30,7 @@ public class AttributeRemoveMessage extends AttributeMessage {
         super();
     }
 
+    /** @param names 待移除的属性名集合 */
     public AttributeRemoveMessage(String nodeId, String sessionId, Set<String> names) {
         super(nodeId, sessionId);
         this.names = names;

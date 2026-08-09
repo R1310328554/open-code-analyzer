@@ -25,10 +25,12 @@ import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ValveBase;
 
 /**
- * Redisson Valve object for Apache Tomcat
- * 
- * @author Nikita Koksharov
+ * Tomcat {@link org.apache.catalina.valves.ValveBase}：请求结束后将 Session 持久化到 Redis。
+ * <p>在 {@link org.apache.catalina.connector.Request} 处理完成后调用
+ * {@link RedissonSessionManager#store(jakarta.servlet.http.HttpSession)} 写回变更。
+ * <p>配合 {@link UsageValve} 跟踪 Session 使用计数，避免并发更新冲突。
  *
+ * @author Nikita Koksharov
  */
 public class UpdateValve extends ValveBase {
 
@@ -40,21 +42,24 @@ public class UpdateValve extends ValveBase {
         super(true);
     }
 
+    /** 递增 Valve 引用计数（{@link RedissonSessionManager} 生命周期管理）。 */
     public void incUsage() {
         usage.incrementAndGet();
     }
 
+    /** 递减引用计数并返回当前值。 */
     public int decUsage() {
         return usage.decrementAndGet();
     }
 
+    /** 委托后续 Valve；finally 块中将 Session 写回 Redis。 */
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
         if (getNext() == null) {
             return;
         }
 
-        //check if we already filtered/processed this request
+        // 防止同一请求在 Valve 链中重复触发持久化
         if (request.getNote(ALREADY_FILTERED_NOTE) == null) {
             request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);
             try {

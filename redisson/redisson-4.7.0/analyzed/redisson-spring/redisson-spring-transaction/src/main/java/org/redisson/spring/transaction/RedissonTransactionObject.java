@@ -18,32 +18,38 @@ package org.redisson.spring.transaction;
 import org.springframework.transaction.support.SmartTransactionObject;
 
 /**
- * 
- * @author Nikita Koksharov
+ * {@link RedissonTransactionManager} 使用的 {@link org.springframework.transaction.support.SmartTransactionObject}。
+ * <p>封装 {@link RedissonTransactionHolder} 与 rollback-only 标志，供 Spring 事务模板驱动 commit/rollback。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonTransactionObject implements SmartTransactionObject {
 
     private boolean isRollbackOnly;
     private RedissonTransactionHolder transactionHolder;
 
+    /** 返回关联的资源持有者；新事务开始时可能为 {@code null}。 */
     public RedissonTransactionHolder getTransactionHolder() {
         return transactionHolder;
     }
 
+    /** 绑定或清除事务持有者（挂起时置 {@code null}）。 */
     public void setTransactionHolder(RedissonTransactionHolder transaction) {
         this.transactionHolder = transaction;
     }
 
+    /** 设置 rollback-only 标志。 */
     public void setRollbackOnly(boolean isRollbackOnly) {
         this.isRollbackOnly = isRollbackOnly;
     }
     
+    /** 是否已标记为仅回滚。 */
     @Override
     public boolean isRollbackOnly() {
         return isRollbackOnly;
     }
 
+    /** Redisson 事务无 Hibernate 式 flush；此处为空实现。 */
     @Override
     public void flush() {
         // skip
