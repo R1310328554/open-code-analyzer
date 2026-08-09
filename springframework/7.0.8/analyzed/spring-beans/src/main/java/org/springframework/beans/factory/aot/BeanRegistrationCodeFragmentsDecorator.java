@@ -30,10 +30,10 @@ import org.springframework.javapoet.CodeBlock;
 import org.springframework.util.Assert;
 
 /**
- * A {@link BeanRegistrationCodeFragments} decorator implementation. Typically
- * used when part of the default code fragments have to customized, by extending
- * this class and using it as part of
- * {@link BeanRegistrationAotContribution#withCustomCodeFragments(UnaryOperator)}.
+ * {@link BeanRegistrationCodeFragments} 的装饰器实现。
+ * 当需要自定义部分默认代码片段时，通常通过扩展本类，
+ * 并将其作为 {@link BeanRegistrationAotContribution#withCustomCodeFragments(UnaryOperator)}
+ * 的一部分使用。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -41,6 +41,7 @@ import org.springframework.util.Assert;
  */
 public class BeanRegistrationCodeFragmentsDecorator implements BeanRegistrationCodeFragments {
 
+	/** 被装饰的委托对象。 */
 	private final BeanRegistrationCodeFragments delegate;
 
 

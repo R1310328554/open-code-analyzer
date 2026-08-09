@@ -21,8 +21,7 @@ import org.springframework.aot.generate.MethodReference;
 import org.springframework.javapoet.ClassName;
 
 /**
- * Interface that can be used to configure the code that will be generated to
- * perform bean factory initialization.
+ * 用于配置将生成的、执行 Bean 工厂初始化代码的接口。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -33,34 +32,32 @@ import org.springframework.javapoet.ClassName;
 public interface BeanFactoryInitializationCode {
 
 	/**
-	 * The recommended variable name to use to refer to the bean factory.
+	 * 引用 Bean 工厂时推荐使用的变量名。
 	 */
 	String BEAN_FACTORY_VARIABLE = "beanFactory";
 
 	/**
-	 * Get the {@link GeneratedMethods} used by the initializing code.
-	 * @return the generated methods
+	 * 获取初始化代码所使用的 {@link GeneratedMethods}。
+	 * @return 生成的方法集合
 	 */
 	GeneratedMethods getMethods();
 
 	/**
-	 * Return the name of the class used by the initializing code.
-	 * @return the generated class name
+	 * 返回初始化代码所使用的类名。
+	 * @return 生成类的名称
 	 * @since 7.0.2
 	 */
 	ClassName getClassName();
 
 	/**
-	 * Add an initializer method call. An initializer can use a flexible signature,
-	 * using any of the following:
+	 * 添加初始化器方法调用。初始化器可使用灵活的签名，支持以下任意参数：
 	 * <ul>
-	 * <li>{@code DefaultListableBeanFactory}, or {@code ConfigurableListableBeanFactory}
-	 * to use the bean factory.</li>
-	 * <li>{@code ConfigurableEnvironment} or {@code Environment} to access the
-	 * environment.</li>
-	 * <li>{@code ResourceLoader} to load resources.</li>
+	 * <li>{@code DefaultListableBeanFactory} 或 {@code ConfigurableListableBeanFactory}
+	 * 以使用 Bean 工厂。</li>
+	 * <li>{@code ConfigurableEnvironment} 或 {@code Environment} 以访问环境。</li>
+	 * <li>{@code ResourceLoader} 以加载资源。</li>
 	 * </ul>
-	 * @param methodReference a reference to the initialize method to call.
+	 * @param methodReference 待调用的初始化方法引用
 	 */
 	void addInitializer(MethodReference methodReference);
 

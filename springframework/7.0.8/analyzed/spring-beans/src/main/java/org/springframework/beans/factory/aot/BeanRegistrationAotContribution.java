@@ -24,8 +24,8 @@ import org.springframework.aot.generate.GenerationContext;
 import org.springframework.util.Assert;
 
 /**
- * AOT contribution from a {@link BeanRegistrationAotProcessor} used to register
- * a single bean definition.
+ * 来自 {@link BeanRegistrationAotProcessor} 的 AOT 贡献，
+ * 用于注册单个 Bean 定义。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -36,12 +36,11 @@ import org.springframework.util.Assert;
 public interface BeanRegistrationAotContribution {
 
 	/**
-	 * Customize the {@link BeanRegistrationCodeFragments} that will be used to
-	 * generate the bean registration code. Custom code fragments can be used if
-	 * default code generation isn't suitable.
-	 * @param generationContext the generation context
-	 * @param codeFragments the existing code fragments
-	 * @return the code fragments to use, may be the original instance or a wrapper
+	 * 自定义将用于生成 Bean 注册代码的 {@link BeanRegistrationCodeFragments}。
+	 * 若默认代码生成不适用，可使用自定义代码片段。
+	 * @param generationContext 生成上下文
+	 * @param codeFragments 现有代码片段
+	 * @return 要使用的代码片段，可为原实例或包装器
 	 */
 	default BeanRegistrationCodeFragments customizeBeanRegistrationCodeFragments(
 			GenerationContext generationContext, BeanRegistrationCodeFragments codeFragments) {
@@ -50,19 +49,19 @@ public interface BeanRegistrationAotContribution {
 	}
 
 	/**
-	 * Apply this contribution to the given {@link BeanRegistrationCode}.
-	 * @param generationContext the generation context
-	 * @param beanRegistrationCode the generated registration
+	 * 将本贡献应用到给定的 {@link BeanRegistrationCode}。
+	 * @param generationContext 生成上下文
+	 * @param beanRegistrationCode 生成的注册代码
 	 */
 	void applyTo(GenerationContext generationContext, BeanRegistrationCode beanRegistrationCode);
 
 	/**
-	 * Create a {@link BeanRegistrationAotContribution} that customizes
-	 * the {@link BeanRegistrationCodeFragments}. Typically used in
-	 * conjunction with an extension of {@link BeanRegistrationCodeFragmentsDecorator}
-	 * that overrides a specific callback.
-	 * @param defaultCodeFragments the default code fragments
-	 * @return a new {@link BeanRegistrationAotContribution} instance
+	 * 创建自定义 {@link BeanRegistrationCodeFragments} 的
+	 * {@link BeanRegistrationAotContribution}。通常与
+	 * {@link BeanRegistrationCodeFragmentsDecorator} 的扩展配合使用，
+	 * 以覆盖特定回调。
+	 * @param defaultCodeFragments 默认代码片段
+	 * @return 新的 {@link BeanRegistrationAotContribution} 实例
 	 * @see BeanRegistrationCodeFragmentsDecorator
 	 */
 	static BeanRegistrationAotContribution withCustomCodeFragments(
@@ -83,14 +82,12 @@ public interface BeanRegistrationAotContribution {
 	}
 
 	/**
-	 * Create a contribution that applies the contribution of the first contribution
-	 * followed by the second contribution. Any contribution can be {@code null} to be
-	 * ignored and the concatenated contribution is {@code null} if both inputs are
-	 * {@code null}.
-	 * @param a the first contribution
-	 * @param b the second contribution
-	 * @return the concatenation of the two contributions, or {@code null} if
-	 * they are both {@code null}.
+	 * 创建依次应用第一个贡献和第二个贡献的合并贡献。
+	 * 任一贡献可为 {@code null} 以被忽略；若两个输入均为 {@code null}，
+	 * 则合并结果为 {@code null}。
+	 * @param a 第一个贡献
+	 * @param b 第二个贡献
+	 * @return 两个贡献的串联结果；若两者均为 {@code null} 则返回 {@code null}
 	 * @since 6.1
 	 */
 	static @Nullable BeanRegistrationAotContribution concat(@Nullable BeanRegistrationAotContribution a,

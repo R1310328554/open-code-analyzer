@@ -23,8 +23,7 @@ import org.springframework.javapoet.ClassName;
 import org.springframework.util.function.ThrowingBiFunction;
 
 /**
- * Interface that can be used to configure the code that will be generated to
- * perform registration of a single bean.
+ * 用于配置将生成的、执行单个 Bean 注册代码的接口。
  *
  * @author Phillip Webb
  * @since 6.0
@@ -33,22 +32,21 @@ import org.springframework.util.function.ThrowingBiFunction;
 public interface BeanRegistrationCode {
 
 	/**
-	 * Return the name of the class being used for registrations.
-	 * @return the name of the class
+	 * 返回用于注册的类名。
+	 * @return 类名
 	 */
 	ClassName getClassName();
 
 	/**
-	 * Return a {@link GeneratedMethods} being used by the registrations code.
-	 * @return the generated methods
+	 * 返回注册代码所使用的 {@link GeneratedMethods}。
+	 * @return 生成的方法集合
 	 */
 	GeneratedMethods getMethods();
 
 	/**
-	 * Add an instance post processor method call to the registration code.
-	 * @param methodReference a reference to the post-process method to call.
-	 * The referenced method must have a functional signature compatible with
-	 * {@link InstanceSupplier#andThen}.
+	 * 向注册代码添加实例后处理器方法调用。
+	 * @param methodReference 待调用的后处理方法引用。
+	 * 所引用方法的函数签名须与 {@link InstanceSupplier#andThen} 兼容。
 	 * @see InstanceSupplier#andThen(ThrowingBiFunction)
 	 */
 	void addInstancePostProcessor(MethodReference methodReference);

@@ -20,8 +20,7 @@ import org.springframework.aot.generate.GeneratedMethods;
 import org.springframework.javapoet.ClassName;
 
 /**
- * Interface that can be used to configure the code that will be generated to
- * register beans.
+ * 用于配置将生成的 Bean 注册代码的接口。
  *
  * @author Phillip Webb
  * @since 6.0
@@ -29,14 +28,14 @@ import org.springframework.javapoet.ClassName;
 public interface BeanRegistrationsCode {
 
 	/**
-	 * Return the name of the class being used for registrations.
-	 * @return the generated class name.
+	 * 返回用于注册的类名。
+	 * @return 生成类的名称
 	 */
 	ClassName getClassName();
 
 	/**
-	 * Return a {@link GeneratedMethods} being used by the registrations code.
-	 * @return the method generator
+	 * 返回注册代码所使用的 {@link GeneratedMethods}。
+	 * @return 方法生成器
 	 */
 	GeneratedMethods getMethods();
 

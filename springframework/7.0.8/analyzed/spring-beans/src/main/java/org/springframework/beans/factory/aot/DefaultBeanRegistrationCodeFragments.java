@@ -47,21 +47,26 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.function.SingletonSupplier;
 
 /**
- * Internal {@link BeanRegistrationCodeFragments} implementation used by default.
+ * 默认使用的内部 {@link BeanRegistrationCodeFragments} 实现。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
  */
 class DefaultBeanRegistrationCodeFragments implements BeanRegistrationCodeFragments {
 
+	/** 默认值代码生成器。 */
 	private static final ValueCodeGenerator valueCodeGenerator = ValueCodeGenerator.withDefaults();
 
+	/** Bean 注册代码上下文。 */
 	private final BeanRegistrationsCode beanRegistrationsCode;
 
+	/** 当前正在生成代码的已注册 Bean。 */
 	private final RegisteredBean registeredBean;
 
+	/** Bean 定义方法生成器工厂。 */
 	private final BeanDefinitionMethodGeneratorFactory beanDefinitionMethodGeneratorFactory;
 
+	/** 延迟解析的实例化描述符。 */
 	private final Supplier<InstantiationDescriptor> instantiationDescriptor;
 
 
@@ -82,6 +87,7 @@ class DefaultBeanRegistrationCodeFragments implements BeanRegistrationCodeFragme
 			throw new AotBeanProcessingException(registeredBean, "instance supplier is not supported");
 		}
 		Class<?> target = extractDeclaringClass(registeredBean, this.instantiationDescriptor.get());
+		// 内部 Bean 的目标类可能是 java.* 包下的数组，需向上查找父 Bean
 		while (target.getName().startsWith("java.") && registeredBean.isInnerBean()) {
 			RegisteredBean parent = registeredBean.getParent();
 			Assert.state(parent != null, "No parent available for inner bean");
@@ -100,12 +106,11 @@ class DefaultBeanRegistrationCodeFragments implements BeanRegistrationCodeFragme
 	}
 
 	/**
-	 * Extract the target class of a public {@link FactoryBean} based on its
-	 * constructor. If the implementation does not resolve the target class
-	 * because it itself uses a generic, attempt to extract it from the bean type.
-	 * @param factoryBeanType the factory bean type
-	 * @param beanType the bean type
-	 * @return the target class to use
+	 * 根据公共 {@link FactoryBean} 的构造器提取其目标类。
+	 * 若实现因自身使用泛型而无法解析目标类，则尝试从 Bean 类型中提取。
+	 * @param factoryBeanType FactoryBean 类型
+	 * @param beanType Bean 类型
+	 * @return 要使用的目标类
 	 */
 	private Class<?> extractTargetClassFromFactoryBean(Class<?> factoryBeanType, ResolvableType beanType) {
 		ResolvableType target = ResolvableType.forType(factoryBeanType).as(FactoryBean.class).getGeneric(0);
@@ -210,6 +215,7 @@ class DefaultBeanRegistrationCodeFragments implements BeanRegistrationCodeFragme
 			code.addStatement("$L.setInstanceSupplier($L)", BEAN_DEFINITION_VARIABLE, instanceSupplierCode);
 			return code.build();
 		}
+		// 存在后处理器时，先创建变量再链式调用 andThen
 		code.addStatement("$T $L = $L",
 				ParameterizedTypeName.get(InstanceSupplier.class, this.registeredBean.getBeanClass()),
 				INSTANCE_SUPPLIER_VARIABLE, instanceSupplierCode);

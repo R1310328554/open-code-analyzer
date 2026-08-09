@@ -19,8 +19,7 @@ package org.springframework.beans.factory.aot;
 import org.springframework.beans.factory.support.RegisteredBean;
 
 /**
- * Filter that can be used to exclude AOT processing of a
- * {@link RegisteredBean}.
+ * 用于排除 {@link RegisteredBean} 的 AOT 处理与注册的过滤器。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -30,10 +29,9 @@ import org.springframework.beans.factory.support.RegisteredBean;
 public interface BeanRegistrationExcludeFilter {
 
 	/**
-	 * Return if the registered bean should be excluded from AOT processing and
-	 * registration.
-	 * @param registeredBean the registered bean
-	 * @return if the registered bean should be excluded
+	 * 判断已注册的 Bean 是否应从 AOT 处理与注册中排除。
+	 * @param registeredBean 已注册的 Bean
+	 * @return 是否应排除
 	 */
 	boolean isExcludedFromAotProcessing(RegisteredBean registeredBean);
 

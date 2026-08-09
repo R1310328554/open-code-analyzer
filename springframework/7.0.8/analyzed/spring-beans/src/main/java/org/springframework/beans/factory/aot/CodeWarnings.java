@@ -35,8 +35,7 @@ import org.springframework.javapoet.TypeSpec;
 import org.springframework.util.ClassUtils;
 
 /**
- * Helper class to register warnings that the compiler may trigger on
- * generated code.
+ * 辅助类，用于登记编译器可能在生成代码上触发的警告。
  *
  * @author Stephane Nicoll
  * @since 6.1
@@ -44,22 +43,22 @@ import org.springframework.util.ClassUtils;
  */
 public class CodeWarnings {
 
+	/** 已登记的警告集合。 */
 	private final Set<String> warnings = new LinkedHashSet<>();
 
 
 	/**
-	 * Register a warning to be included for this block. Does nothing if
-	 * the warning is already registered.
-	 * @param warning the warning to register, if it hasn't been already
+	 * 登记要包含在本代码块中的警告。若警告已登记则不做任何操作。
+	 * @param warning 待登记的警告
 	 */
 	public void register(String warning) {
 		this.warnings.add(warning);
 	}
 
 	/**
-	 * Detect the presence of {@link Deprecated} on the specified elements.
-	 * @param elements the elements to check
-	 * @return {@code this} instance
+	 * 检测指定元素上是否存在 {@link Deprecated} 注解。
+	 * @param elements 待检测的元素
+	 * @return 本实例
 	 */
 	public CodeWarnings detectDeprecation(AnnotatedElement... elements) {
 		for (AnnotatedElement element : elements) {
@@ -69,9 +68,9 @@ public class CodeWarnings {
 	}
 
 	/**
-	 * Detect the presence of {@link Deprecated} on the specified elements.
-	 * @param elements the elements to check
-	 * @return {@code this} instance
+	 * 检测指定元素上是否存在 {@link Deprecated} 注解。
+	 * @param elements 待检测的元素流
+	 * @return 本实例
 	 */
 	public CodeWarnings detectDeprecation(Stream<AnnotatedElement> elements) {
 		elements.forEach(element -> register(element.getAnnotation(Deprecated.class)));
@@ -79,10 +78,9 @@ public class CodeWarnings {
 	}
 
 	/**
-	 * Detect the presence of {@link Deprecated} on the signature of the
-	 * specified {@link ResolvableType}.
-	 * @param resolvableType a type signature
-	 * @return {@code this} instance
+	 * 检测指定 {@link ResolvableType} 签名上是否存在 {@link Deprecated} 注解。
+	 * @param resolvableType 类型签名
+	 * @return 本实例
 	 * @since 6.1.8
 	 */
 	public CodeWarnings detectDeprecation(ResolvableType resolvableType) {
@@ -100,25 +98,25 @@ public class CodeWarnings {
 	}
 
 	/**
-	 * Include {@link SuppressWarnings} on the specified method if necessary.
-	 * @param method the method to update
+	 * 如有必要，在指定方法上添加 {@link SuppressWarnings} 注解。
+	 * @param method 待更新的方法
 	 */
 	public void suppress(MethodSpec.Builder method) {
 		suppress(annotationBuilder -> method.addAnnotation(annotationBuilder.build()));
 	}
 
 	/**
-	 * Include {@link SuppressWarnings} on the specified type if necessary.
-	 * @param type the type to update
+	 * 如有必要，在指定类型上添加 {@link SuppressWarnings} 注解。
+	 * @param type 待更新的类型
 	 */
 	public void suppress(TypeSpec.Builder type) {
 		suppress(annotationBuilder -> type.addAnnotation(annotationBuilder.build()));
 	}
 
 	/**
-	 * Consume the builder for {@link SuppressWarnings} if necessary. If this
-	 * instance has no warnings registered, the consumer is not invoked.
-	 * @param annotationSpec a consumer of the {@link AnnotationSpec.Builder}
+	 * 如有必要，消费 {@link SuppressWarnings} 的构建器。
+	 * 若本实例未登记任何警告，则不调用消费者。
+	 * @param annotationSpec {@link AnnotationSpec.Builder} 的消费者
 	 * @see MethodSpec.Builder#addAnnotation(AnnotationSpec)
 	 * @see TypeSpec.Builder#addAnnotation(AnnotationSpec)
 	 * @see FieldSpec.Builder#addAnnotation(AnnotationSpec)
@@ -132,8 +130,8 @@ public class CodeWarnings {
 	}
 
 	/**
-	 * Return the currently registered warnings.
-	 * @return the warnings
+	 * 返回当前已登记的警告。
+	 * @return 警告集合
 	 */
 	protected Set<String> getWarnings() {
 		return Collections.unmodifiableSet(this.warnings);

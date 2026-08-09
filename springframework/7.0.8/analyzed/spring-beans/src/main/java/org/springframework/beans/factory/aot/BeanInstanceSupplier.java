@@ -55,42 +55,40 @@ import org.springframework.util.function.ThrowingFunction;
 import org.springframework.util.function.ThrowingSupplier;
 
 /**
- * Specialized {@link InstanceSupplier} that provides the factory {@link Method}
- * used to instantiate the underlying bean instance, if any. Transparently
- * handles resolution of {@link AutowiredArguments} if necessary. Typically used
- * in AOT-processed applications as a targeted alternative to the reflection
- * based injection.
+ * 专用的 {@link InstanceSupplier}，提供用于实例化底层 Bean 实例的工厂
+ * {@link Method}（若有）。必要时透明地处理 {@link AutowiredArguments} 的解析。
+ * 通常在 AOT 处理后的应用中作为基于反射注入的针对性替代方案使用。
  *
- * <p>If no {@code generator} is provided, reflection is used to instantiate the
- * bean instance, and full {@link ExecutableMode#INVOKE invocation} hints are
- * contributed. Multiple generator callback styles are supported:
+ * <p>若未提供 {@code generator}，则使用反射实例化 Bean 实例，
+ * 并贡献完整的 {@link ExecutableMode#INVOKE 调用}提示。支持多种生成器回调风格：
  * <ul>
- * <li>A function with the {@code registeredBean} and resolved {@code arguments}
- * for executables that require arguments resolution. An
- * {@link ExecutableMode#INTROSPECT introspection} hint is added so that
- * parameter annotations can be read </li>
- * <li>A function with only the {@code registeredBean} for simpler cases that
- * do not require resolution of arguments</li>
- * <li>A supplier when a method reference can be used</li>
+ * <li>接受 {@code registeredBean} 和已解析 {@code arguments} 的函数，
+ * 适用于需要解析参数的可执行对象。会添加
+ * {@link ExecutableMode#INTROSPECT 内省}提示以便读取参数注解。</li>
+ * <li>仅接受 {@code registeredBean} 的函数，适用于无需解析参数的较简单情形。</li>
+ * <li>可使用方法引用的供应器。</li>
  * </ul>
- * Generator callbacks handle checked exceptions so that the caller does not
- * have to deal with them.
+ * 生成器回调处理受检异常，调用方无需自行处理。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
  * @author Juergen Hoeller
  * @since 6.0
- * @param <T> the type of instance supplied by this supplier
+ * @param <T> 本供应器提供的实例类型
  * @see AutowiredArguments
  */
 public final class BeanInstanceSupplier<T> extends AutowiredElementResolver implements InstanceSupplier<T> {
 
+	/** 可执行对象（构造器或工厂方法）的查找策略。 */
 	private final ExecutableLookup lookup;
 
+	/** 无需参数解析的生成器函数。 */
 	private final @Nullable ThrowingFunction<RegisteredBean, T> generatorWithoutArguments;
 
+	/** 需要参数解析的生成器双函数。 */
 	private final @Nullable ThrowingBiFunction<RegisteredBean, AutowiredArguments, T> generatorWithArguments;
 
+	/** 直接按 Bean 名称注入的参数快捷方式。 */
 	private final String @Nullable [] shortcutBeanNames;
 
 
@@ -107,11 +105,10 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 
 
 	/**
-	 * Create a {@link BeanInstanceSupplier} that resolves
-	 * arguments for the specified bean constructor.
-	 * @param <T> the type of instance supplied
-	 * @param parameterTypes the constructor parameter types
-	 * @return a new {@link BeanInstanceSupplier} instance
+	 * 创建为指定 Bean 构造器解析参数的 {@link BeanInstanceSupplier}。
+	 * @param <T> 提供的实例类型
+	 * @param parameterTypes 构造器参数类型
+	 * @return 新的 {@link BeanInstanceSupplier} 实例
 	 */
 	public static <T> BeanInstanceSupplier<T> forConstructor(Class<?>... parameterTypes) {
 		Assert.notNull(parameterTypes, "'parameterTypes' must not be null");
@@ -120,13 +117,12 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 	}
 
 	/**
-	 * Create a new {@link BeanInstanceSupplier} that
-	 * resolves arguments for the specified factory method.
-	 * @param <T> the type of instance supplied
-	 * @param declaringClass the class that declares the factory method
-	 * @param methodName the factory method name
-	 * @param parameterTypes the factory method parameter types
-	 * @return a new {@link BeanInstanceSupplier} instance
+	 * 创建为指定工厂方法解析参数的 {@link BeanInstanceSupplier}。
+	 * @param <T> 提供的实例类型
+	 * @param declaringClass 声明工厂方法的类
+	 * @param methodName 工厂方法名
+	 * @param parameterTypes 工厂方法参数类型
+	 * @return 新的 {@link BeanInstanceSupplier} 实例
 	 */
 	public static <T> BeanInstanceSupplier<T> forFactoryMethod(
 			Class<?> declaringClass, String methodName, Class<?>... parameterTypes) {
@@ -146,12 +142,11 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 	}
 
 	/**
-	 * Return a new {@link BeanInstanceSupplier} instance that uses the specified
-	 * {@code generator} bi-function to instantiate the underlying bean.
-	 * @param generator a {@link ThrowingBiFunction} that uses the
-	 * {@link RegisteredBean} and resolved {@link AutowiredArguments} to
-	 * instantiate the underlying bean
-	 * @return a new {@link BeanInstanceSupplier} instance with the specified generator
+	 * 返回使用指定 {@code generator} 双函数实例化底层 Bean 的新
+	 * {@link BeanInstanceSupplier} 实例。
+	 * @param generator 使用 {@link RegisteredBean} 和已解析的
+	 * {@link AutowiredArguments} 实例化底层 Bean 的 {@link ThrowingBiFunction}
+	 * @return 带有指定生成器的新 {@link BeanInstanceSupplier} 实例
 	 */
 	public BeanInstanceSupplier<T> withGenerator(ThrowingBiFunction<RegisteredBean, AutowiredArguments, T> generator) {
 		Assert.notNull(generator, "'generator' must not be null");
@@ -159,11 +154,11 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 	}
 
 	/**
-	 * Return a new {@link BeanInstanceSupplier} instance that uses the specified
-	 * {@code generator} function to instantiate the underlying bean.
-	 * @param generator a {@link ThrowingFunction} that uses the
-	 * {@link RegisteredBean} to instantiate the underlying bean
-	 * @return a new {@link BeanInstanceSupplier} instance with the specified generator
+	 * 返回使用指定 {@code generator} 函数实例化底层 Bean 的新
+	 * {@link BeanInstanceSupplier} 实例。
+	 * @param generator 使用 {@link RegisteredBean} 实例化底层 Bean 的
+	 * {@link ThrowingFunction}
+	 * @return 带有指定生成器的新 {@link BeanInstanceSupplier} 实例
 	 */
 	public BeanInstanceSupplier<T> withGenerator(ThrowingFunction<RegisteredBean, T> generator) {
 		Assert.notNull(generator, "'generator' must not be null");
@@ -171,12 +166,10 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 	}
 
 	/**
-	 * Return a new {@link BeanInstanceSupplier} instance that uses
-	 * direct bean name injection shortcuts for specific parameters.
-	 * @param beanNames the bean names to use as shortcut (aligned with the
-	 * constructor or factory method parameters)
-	 * @return a new {@link BeanInstanceSupplier} instance that uses the
-	 * given shortcut bean names
+	 * 返回对特定参数使用直接 Bean 名称注入快捷方式的新
+	 * {@link BeanInstanceSupplier} 实例。
+	 * @param beanNames 用作快捷方式的 Bean 名称（与构造器或工厂方法参数对齐）
+	 * @return 使用给定快捷 Bean 名称的新 {@link BeanInstanceSupplier} 实例
 	 * @since 6.2
 	 */
 	public BeanInstanceSupplier<T> withShortcut(String... beanNames) {
@@ -200,6 +193,7 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 			return invokeBeanSupplier(executable, () -> this.generatorWithArguments.apply(registeredBean, arguments));
 		}
 		else {
+			// 无自定义生成器时，通过反射解析参数并实例化
 			Executable executable = this.lookup.get(registeredBean);
 			@Nullable Object[] arguments = resolveArguments(registeredBean, executable).toArray();
 			return invokeBeanSupplier(executable, () -> (T) instantiate(registeredBean, executable, arguments));
@@ -208,7 +202,7 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 
 	@Override
 	public @Nullable Method getFactoryMethod() {
-		// Cached factory method retrieval for qualifier introspection etc.
+		// 缓存工厂方法检索结果，供限定符内省等使用
 		if (this.lookup instanceof FactoryMethodLookup factoryMethodLookup) {
 			return factoryMethodLookup.get();
 		}
@@ -216,7 +210,7 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 	}
 
 	private @Nullable Method getFactoryMethodForGenerator() {
-		// Avoid unnecessary currentlyInvokedFactoryMethod exposure outside of full configuration classes.
+		// 避免在完整配置类之外不必要地暴露 currentlyInvokedFactoryMethod
 		if (this.lookup instanceof FactoryMethodLookup factoryMethodLookup &&
 				factoryMethodLookup.declaringClass.getName().contains(ClassUtils.CGLIB_CLASS_SEPARATOR)) {
 			return factoryMethodLookup.get();
@@ -232,9 +226,9 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 	}
 
 	/**
-	 * Resolve arguments for the specified registered bean.
-	 * @param registeredBean the registered bean
-	 * @return the resolved constructor or factory method arguments
+	 * 为指定的已注册 Bean 解析参数。
+	 * @param registeredBean 已注册的 Bean
+	 * @return 已解析的构造器或工厂方法参数
 	 */
 	AutowiredArguments resolveArguments(RegisteredBean registeredBean) {
 		Assert.notNull(registeredBean, "'registeredBean' must not be null");
@@ -249,6 +243,7 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 
 		ValueHolder[] argumentValues = resolveArgumentValues(registeredBean, executable);
 		Set<String> autowiredBeanNames = new LinkedHashSet<>(resolved.length * 2);
+		// 内部类构造器的第一个参数为外部类实例，跳过
 		int startIndex = (executable instanceof Constructor<?> constructor &&
 				ClassUtils.isInnerClass(constructor.getDeclaringClass())) ? 1 : 0;
 		for (int i = startIndex; i < parameterCount; i++) {
@@ -378,7 +373,7 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 
 
 	/**
-	 * Performs lookup of the {@link Executable}.
+	 * 执行 {@link Executable} 的查找。
 	 */
 	abstract static class ExecutableLookup {
 
@@ -387,10 +382,11 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 
 
 	/**
-	 * Performs lookup of the {@link Constructor}.
+	 * 执行 {@link Constructor} 的查找。
 	 */
 	private static class ConstructorLookup extends ExecutableLookup {
 
+		/** 构造器参数类型。 */
 		private final Class<?>[] parameterTypes;
 
 		ConstructorLookup(Class<?>[] parameterTypes) {
@@ -417,16 +413,20 @@ public final class BeanInstanceSupplier<T> extends AutowiredElementResolver impl
 
 
 	/**
-	 * Performs lookup of the factory {@link Method}.
+	 * 执行工厂 {@link Method} 的查找。
 	 */
 	private static class FactoryMethodLookup extends ExecutableLookup {
 
+		/** 声明工厂方法的类。 */
 		private final Class<?> declaringClass;
 
+		/** 工厂方法名。 */
 		private final String methodName;
 
+		/** 工厂方法参数类型。 */
 		private final Class<?>[] parameterTypes;
 
+		/** 缓存的已解析方法。 */
 		private volatile @Nullable Method resolvedMethod;
 
 		FactoryMethodLookup(Class<?> declaringClass, String methodName, Class<?>[] parameterTypes) {

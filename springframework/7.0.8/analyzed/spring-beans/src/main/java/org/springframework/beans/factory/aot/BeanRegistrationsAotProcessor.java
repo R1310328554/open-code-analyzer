@@ -26,8 +26,7 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.RegisteredBean;
 
 /**
- * {@link BeanFactoryInitializationAotProcessor} that contributes code to
- * register beans.
+ * 贡献注册 Bean 代码的 {@link BeanFactoryInitializationAotProcessor}。
  *
  * @author Phillip Webb
  * @author Sebastien Deleuze
@@ -43,6 +42,7 @@ class BeanRegistrationsAotProcessor implements BeanFactoryInitializationAotProce
 				new BeanDefinitionMethodGeneratorFactory(beanFactory);
 		List<Registration> registrations = new ArrayList<>();
 
+		// 遍历所有 Bean 定义，收集可生成注册代码的 Bean
 		for (String beanName : beanFactory.getBeanDefinitionNames()) {
 			RegisteredBean registeredBean = RegisteredBean.of(beanFactory, beanName);
 			BeanDefinitionMethodGenerator beanDefinitionMethodGenerator =

@@ -38,8 +38,8 @@ import org.springframework.javapoet.CodeBlock.Builder;
 import org.springframework.javapoet.MethodSpec;
 
 /**
- * AOT contribution from a {@link BeanRegistrationsAotProcessor} used to
- * register bean definitions and aliases.
+ * 来自 {@link BeanRegistrationsAotProcessor} 的 AOT 贡献，
+ * 用于注册 Bean 定义和别名。
  *
  * @author Phillip Webb
  * @author Sebastien Deleuze
@@ -51,15 +51,20 @@ import org.springframework.javapoet.MethodSpec;
 class BeanRegistrationsAotContribution
 		implements BeanFactoryInitializationAotContribution {
 
+	/** Bean 工厂方法参数名。 */
 	private static final String BEAN_FACTORY_PARAMETER_NAME = "beanFactory";
 
+	/** 每个生成文件的最大注册数。 */
 	private static final int MAX_REGISTRATIONS_PER_FILE = 5000;
 
+	/** 每个方法的最大注册数。 */
 	private static final int MAX_REGISTRATIONS_PER_METHOD = 1000;
 
+	/** 方法调用参数代码生成器。 */
 	private static final ArgumentCodeGenerator argumentCodeGenerator = ArgumentCodeGenerator
 			.of(DefaultListableBeanFactory.class, BEAN_FACTORY_PARAMETER_NAME);
 
+	/** 待注册的 Bean 信息列表。 */
 	private final List<Registration> registrations;
 
 
@@ -74,12 +79,15 @@ class BeanRegistrationsAotContribution
 
 		GeneratedClass generatedClass = createBeanFactoryRegistrationClass(generationContext);
 		BeanRegistrationsCodeGenerator codeGenerator = new BeanRegistrationsCodeGenerator(generatedClass);
+		// 生成 Bean 定义注册代码
 		GeneratedMethod generatedBeanDefinitionsMethod = generateBeanRegistrationCode(generationContext,
 				generatedClass, codeGenerator);
 		beanFactoryInitializationCode.addInitializer(generatedBeanDefinitionsMethod.toMethodReference());
+		// 生成别名注册代码
 		GeneratedMethod generatedAliasesMethod = codeGenerator.getMethods().add("registerAliases",
 				this::generateRegisterAliasesMethod);
 		beanFactoryInitializationCode.addInitializer(generatedAliasesMethod.toMethodReference());
+		// 注册反射提示
 		generateRegisterHints(generationContext.getRuntimeHints(), this.registrations);
 	}
 
@@ -88,6 +96,7 @@ class BeanRegistrationsAotContribution
 			return generateBeanRegistrationClass(generationContext, mainCodeGenerator, 0, this.registrations.size());
 		}
 		else {
+			// 注册数超过单文件上限时，拆分为多个生成类
 			return mainGeneratedClass.getMethods().add("registerBeanDefinitions", method -> {
 				method.addJavadoc("Register the bean definitions.");
 				method.addModifiers(Modifier.PUBLIC);
@@ -149,10 +158,10 @@ class BeanRegistrationsAotContribution
 	}
 
 	/**
-	 * Gather the necessary information to register a particular bean.
-	 * @param registeredBean the bean to register
-	 * @param methodGenerator the {@link BeanDefinitionMethodGenerator} to use
-	 * @param aliases the bean aliases, if any
+	 * 收集注册特定 Bean 所需的信息。
+	 * @param registeredBean 待注册的 Bean
+	 * @param methodGenerator 使用的 {@link BeanDefinitionMethodGenerator}
+	 * @param aliases Bean 别名（若有）
 	 */
 	record Registration(RegisteredBean registeredBean, BeanDefinitionMethodGenerator methodGenerator, String[] aliases) {
 
@@ -161,13 +170,12 @@ class BeanRegistrationsAotContribution
 		}
 
 		/**
-		 * Invoke an action for each slice of the given {@code registrations}. The
-		 * {@code action} is invoked for each slice with the start and end index of the
-		 * given list of registrations. Elements to process can be retrieved using
-		 * {@link List#subList(int, int)}.
-		 * @param registrations the registrations to process
-		 * @param sliceSize the size of a slice
-		 * @param action the action to invoke for each slice
+		 * 对给定 {@code registrations} 的每个切片调用操作。
+		 * 对每个切片，以注册列表的起始和结束索引调用 {@code action}。
+		 * 可使用 {@link List#subList(int, int)} 获取待处理的元素。
+		 * @param registrations 待处理的注册列表
+		 * @param sliceSize 切片大小
+		 * @param action 对每个切片调用的操作
 		 */
 		static void doWithSlice(List<Registration> registrations, int sliceSize,
 				BiConsumer<Integer, Integer> action) {
@@ -186,10 +194,11 @@ class BeanRegistrationsAotContribution
 
 
 	/**
-	 * {@link BeanRegistrationsCode} with generation support.
+	 * 支持代码生成的 {@link BeanRegistrationsCode}。
 	 */
 	static class BeanRegistrationsCodeGenerator implements BeanRegistrationsCode {
 
+		/** 生成的类。 */
 		private final GeneratedClass generatedClass;
 
 		public BeanRegistrationsCodeGenerator(GeneratedClass generatedClass) {
@@ -210,8 +219,8 @@ class BeanRegistrationsAotContribution
 	}
 
 	/**
-	 * Generate code for bean registrations. Limited to {@value #MAX_REGISTRATIONS_PER_METHOD}
-	 * beans per method to avoid hitting a limit.
+	 * 生成 Bean 注册代码。每个方法最多 {@value #MAX_REGISTRATIONS_PER_METHOD}
+	 * 个 Bean，以避免触及限制。
 	 */
 	static final class BeanDefinitionsRegistrationGenerator {
 
@@ -221,6 +230,7 @@ class BeanRegistrationsAotContribution
 
 		private final List<Registration> registrations;
 
+		/** 在全局注册列表中的起始偏移。 */
 		private final int globalStart;
 
 
@@ -238,6 +248,7 @@ class BeanRegistrationsAotContribution
 				generateRegisterBeanDefinitionMethods(method, this.registrations);
 			}
 			else {
+				// 注册数过多时，拆分为多个私有方法
 				Builder code = CodeBlock.builder();
 				code.add("// Registration is sliced to avoid exceeding size limit\n");
 				Registration.doWithSlice(this.registrations, MAX_REGISTRATIONS_PER_METHOD,
