@@ -16,15 +16,18 @@
 package org.redisson.tomcat;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 跨 Tomcat 节点广播：通知其他实例 Session 已销毁。
+ * <p>继承 {@link AttributeMessage}，携带节点 ID 与 Session ID。
  *
+ * @author Nikita Koksharov
  */
 public class SessionDestroyedMessage extends AttributeMessage {
 
     public SessionDestroyedMessage() {
     }
 
+    /** @param nodeId 销毁 Session 的节点
+     *  @param sessionId 已销毁 Session ID */
     public SessionDestroyedMessage(String nodeId, String sessionId) {
         super(nodeId, sessionId);
     }
