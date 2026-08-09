@@ -23,57 +23,47 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declares that a field or method parameter should be formatted as a date or time.
+ * 声明字段或方法参数应按日期或时间格式化。
  *
- * <p>Formatting applies to parsing a date/time object from a string as well as printing a
- * date/time object to a string.
+ * <p>格式化既适用于将日期/时间对象从字符串解析出来，也适用于将日期/时间对象打印为字符串。
  *
- * <p>Supports formatting by style pattern, ISO date/time pattern, or custom format pattern string.
- * Can be applied to {@link java.util.Date}, {@link java.util.Calendar}, {@link Long} (for
- * millisecond timestamps) as well as JSR-310 {@code java.time} value types.
+ * <p>支持按样式模式、ISO 日期/时间模式或自定义格式模式字符串进行格式化。
+ * 可应用于 {@link java.util.Date}、{@link java.util.Calendar}、{@link Long}（毫秒时间戳）
+ * 以及 JSR-310 {@code java.time} 值类型。
  *
- * <p>For style-based formatting, set the {@link #style} attribute to the desired style pattern code.
- * The first character of the code is the date style, and the second character is the time style.
- * Specify a character of 'S' for short style, 'M' for medium, 'L' for long, and 'F' for full.
- * The date or time may be omitted by specifying the style character '-'. For example,
- * 'M-' specifies a medium format for the date with no time. The supported style pattern codes
- * correlate to the enum constants defined in {@link java.time.format.FormatStyle}.
+ * <p>对于基于样式的格式化，将 {@link #style} 属性设为所需的样式模式代码。
+ * 代码的第一个字符表示日期样式，第二个字符表示时间样式。
+ * 使用 'S' 表示短样式，'M' 表示中等，'L' 表示长样式，'F' 表示完整样式。
+ * 可通过将样式字符设为 '-' 来省略日期或时间。例如，'M-' 表示中等日期格式且不包含时间。
+ * 支持的样式模式代码与 {@link java.time.format.FormatStyle} 中定义的枚举常量相对应。
  *
- * <p><strong>WARNING</strong>: Style-based formatting and parsing rely on locale-sensitive
- * patterns which may change depending on the Java runtime. Specifically, applications that
- * rely on date/time parsing and formatting may encounter incompatible changes in behavior
- * when running on JDK 20 or higher. Using an ISO standardized format or a concrete pattern
- * that you control allows for reliable system-independent and locale-independent parsing and
- * formatting of date/time values. The use of {@linkplain #fallbackPatterns() fallback patterns}
- * can also help to address compatibility issues. For further details, see the
+ * <p><strong>警告</strong>：基于样式的格式化与解析依赖与区域设置相关的模式，这些模式可能随 Java 运行时变化。
+ * 具体而言，依赖日期/时间解析与格式化的应用在 JDK 20 或更高版本上运行时，
+ * 可能遇到不兼容的行为变化。使用 ISO 标准化格式或您可控的具体模式，
+ * 可实现可靠、与系统及区域设置无关的日期/时间解析与格式化。
+ * 使用 {@linkplain #fallbackPatterns() 回退模式}也有助于解决兼容性问题。
+ * 更多细节请参阅 Spring Framework wiki 中的
  * <a href="https://github.com/spring-projects/spring-framework/wiki/Date-and-Time-Formatting-with-JDK-20-and-higher">
- * Date and Time Formatting with JDK 20 and higher</a> page in the Spring Framework wiki.
+ * Date and Time Formatting with JDK 20 and higher</a> 页面。
  *
- * <p>For ISO-based formatting, set the {@link #iso} attribute to the desired {@link ISO} format,
- * such as {@link ISO#DATE}.
+ * <p>对于基于 ISO 的格式化，将 {@link #iso} 属性设为所需的 {@link ISO} 格式，例如 {@link ISO#DATE}。
  *
- * <p>For custom formatting, set the {@link #pattern} attribute to a date time pattern, such as
- * {@code "yyyy/MM/dd hh:mm:ss a"}.
+ * <p>对于自定义格式化，将 {@link #pattern} 属性设为日期时间模式，例如 {@code "yyyy/MM/dd hh:mm:ss a"}。
  *
- * <p>Each attribute is mutually exclusive, so only set one attribute per annotation instance
- * (the one most convenient for your formatting needs).
+ * <p>各属性互斥，因此每个注解实例只应设置一个属性（选择最符合您格式化需求的那个）。
  *
  * <ul>
- * <li>When the pattern attribute is specified, it takes precedence over both the style and ISO attribute.</li>
- * <li>When the {@link #iso} attribute is specified, it takes precedence over the style attribute.</li>
- * <li>When no annotation attributes are specified, the default format applied is style-based
- * with a style code of 'SS' (short date, short time).</li>
+ * <li>指定 pattern 属性时，其优先级高于 style 与 ISO 属性。</li>
+ * <li>指定 {@link #iso} 属性时，其优先级高于 style 属性。</li>
+ * <li>未指定任何注解属性时，默认应用样式代码为 'SS'（短日期、短时间）的基于样式的格式。</li>
  * </ul>
  *
- * <h3>Time Zones</h3>
- * <p>Whenever the {@link #style} or {@link #pattern} attribute is used, the
- * {@linkplain java.util.TimeZone#getDefault() default time zone} of the JVM will
- * be used when formatting {@link java.util.Date} values. Whenever the {@link #iso}
- * attribute is used when formatting {@link java.util.Date} values, {@code UTC}
- * will be used as the time zone. The same time zone will be applied to any
- * {@linkplain #fallbackPatterns fallback patterns} as well. In order to enforce
- * consistent use of {@code UTC} as the time zone, you can bootstrap the JVM with
- * {@code -Duser.timezone=UTC}.
+ * <h3>时区</h3>
+ * <p>使用 {@link #style} 或 {@link #pattern} 属性时，格式化 {@link java.util.Date} 值将使用
+ * JVM 的 {@linkplain java.util.TimeZone#getDefault() 默认时区}。
+ * 使用 {@link #iso} 属性格式化 {@link java.util.Date} 值时，将使用 {@code UTC} 作为时区。
+ * 相同的时区也会应用于任何 {@linkplain #fallbackPatterns 回退模式}。
+ * 若要强制一致使用 {@code UTC} 作为时区，可在启动 JVM 时添加 {@code -Duser.timezone=UTC}。
  *
  * @author Keith Donald
  * @author Juergen Hoeller
@@ -89,86 +79,72 @@ import java.lang.annotation.Target;
 public @interface DateTimeFormat {
 
 	/**
-	 * The style pattern to use to format the field or method parameter.
-	 * <p>Defaults to 'SS' for short date, short time. Set this attribute when you
-	 * wish to format your field or method parameter in accordance with a common
-	 * style other than the default style.
-	 * <p>See the {@linkplain DateTimeFormat class-level documentation} for further
-	 * details.
+	 * 用于格式化字段或方法参数的样式模式。
+	 * <p>默认为 'SS'（短日期、短时间）。若希望按不同于默认样式的通用样式格式化字段或方法参数，请设置此属性。
+	 * <p>更多细节请参阅 {@linkplain DateTimeFormat 类级文档}。
 	 * @see #fallbackPatterns
 	 */
 	String style() default "SS";
 
 	/**
-	 * The ISO pattern to use to format the field or method parameter.
-	 * <p>Supported ISO patterns are defined in the {@link ISO} enum.
-	 * <p>Defaults to {@link ISO#NONE}, indicating this attribute should be ignored.
-	 * Set this attribute when you wish to format your field or method parameter
-	 * in accordance with an ISO format.
+	 * 用于格式化字段或方法参数的 ISO 模式。
+	 * <p>支持的 ISO 模式在 {@link ISO} 枚举中定义。
+	 * <p>默认为 {@link ISO#NONE}，表示应忽略此属性。
+	 * 若希望按 ISO 格式格式化字段或方法参数，请设置此属性。
 	 * @see #fallbackPatterns
 	 */
 	ISO iso() default ISO.NONE;
 
 	/**
-	 * The custom pattern to use to format the field or method parameter.
-	 * <p>Defaults to an empty String, indicating no custom pattern String has been
-	 * specified. Set this attribute when you wish to format your field or method
-	 * parameter in accordance with a custom date time pattern not represented by
-	 * a style or ISO format.
-	 * <p>Note: This pattern follows the original {@link java.text.SimpleDateFormat}
-	 * style, with strict parsing semantics towards overflows (for example, rejecting
-	 * a {@code Feb 29} value for a non-leap-year). As a consequence, 'yy'
-	 * characters indicate a year in the traditional style, not a "year-of-era" as in the
-	 * {@link java.time.format.DateTimeFormatter} specification (i.e. 'yy' turns into 'uu'
-	 * when going through a {@code DateTimeFormatter} with strict resolution mode).
+	 * 用于格式化字段或方法参数的自定义模式。
+	 * <p>默认为空字符串，表示未指定自定义模式。
+	 * 若希望按样式或 ISO 格式无法表示的自定义日期时间模式格式化字段或方法参数，请设置此属性。
+	 * <p>注意：此模式遵循原始 {@link java.text.SimpleDateFormat} 风格，
+	 * 对溢出采用严格解析语义（例如，拒绝非闰年的 {@code Feb 29} 值）。
+	 * 因此，'yy' 字符表示传统意义上的年份，而非 {@link java.time.format.DateTimeFormatter}
+	 * 规范中的“年代年份”（即 'yy' 在经严格解析模式的 {@code DateTimeFormatter} 转换时变为 'uu'）。
 	 * @see #fallbackPatterns
 	 */
 	String pattern() default "";
 
 	/**
-	 * The set of custom patterns to use as a fallback in case parsing fails for
-	 * the primary {@link #pattern}, {@link #iso}, or {@link #style} attribute.
-	 * <p>For example, if you wish to use the ISO date format for parsing and
-	 * printing but allow for lenient parsing of user input for various date
-	 * formats, you could configure something similar to the following.
+	 * 当主 {@link #pattern}、{@link #iso} 或 {@link #style} 属性解析失败时用作回退的自定义模式集合。
+	 * <p>例如，若希望使用 ISO 日期格式进行解析与打印，但允许对用户输入的各种日期格式进行宽松解析，
+	 * 可配置类似以下的内容。
 	 * <pre style="code">
 	 * {@literal @}DateTimeFormat(iso = ISO.DATE, fallbackPatterns = { "M/d/yy", "dd.MM.yyyy" })
 	 * </pre>
-	 * <p>Fallback patterns are only used for parsing. They are not used for
-	 * printing the value as a String. The primary {@link #pattern}, {@link #iso},
-	 * or {@link #style} attribute is always used for printing. For details on
-	 * which time zone is used for fallback patterns, see the
-	 * {@linkplain DateTimeFormat class-level documentation}.
+	 * <p>回退模式仅用于解析，不用于将值打印为字符串。
+	 * 打印时始终使用主 {@link #pattern}、{@link #iso} 或 {@link #style} 属性。
+	 * 关于回退模式使用哪个时区的细节，请参阅 {@linkplain DateTimeFormat 类级文档}。
 	 * @since 5.3.5
 	 */
 	String[] fallbackPatterns() default {};
 
 
 	/**
-	 * Common ISO date time format patterns.
+	 * 常用的 ISO 日期时间格式模式。
 	 */
 	enum ISO {
 
 		/**
-		 * The most common ISO Date Format {@code yyyy-MM-dd} &mdash; for example,
-		 * "2000-10-31".
+		 * 最常用的 ISO 日期格式 {@code yyyy-MM-dd} &mdash; 例如 "2000-10-31"。
 		 */
 		DATE,
 
 		/**
-		 * The most common ISO Time Format {@code HH:mm:ss.SSSXXX} &mdash; for example,
-		 * "01:30:00.000-05:00".
+		 * 最常用的 ISO 时间格式 {@code HH:mm:ss.SSSXXX} &mdash; 例如 "01:30:00.000-05:00"。
 		 */
 		TIME,
 
 		/**
-		 * The most common ISO Date Time Format {@code yyyy-MM-dd'T'HH:mm:ss.SSSXXX}
-		 * &mdash; for example, "2000-10-31T01:30:00.000-05:00".
+		 * 最常用的 ISO 日期时间格式 {@code yyyy-MM-dd'T'HH:mm:ss.SSSXXX}
+		 * &mdash; 例如 "2000-10-31T01:30:00.000-05:00"。
 		 */
 		DATE_TIME,
 
 		/**
-		 * Indicates that no ISO-based format pattern should be applied.
+		 * 表示不应应用任何基于 ISO 的格式模式。
 		 */
 		NONE
 	}

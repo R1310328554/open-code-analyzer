@@ -20,42 +20,39 @@ import java.lang.annotation.Annotation;
 import java.util.Set;
 
 /**
- * A factory that creates formatters to format values of fields annotated with a particular
- * {@link Annotation}.
+ * 为带有特定 {@link Annotation} 的字段创建格式化器的工厂。
  *
- * <p>For example, a {@code DateTimeFormatAnnotationFormatterFactory} might create a formatter
- * that formats {@code Date} values set on fields annotated with {@code @DateTimeFormat}.
+ * <p>例如，{@code DateTimeFormatAnnotationFormatterFactory} 可创建格式化器，
+ * 用于格式化标注了 {@code @DateTimeFormat} 的字段上的 {@code Date} 值。
  *
  * @author Keith Donald
  * @since 3.0
- * @param <A> the annotation type that should trigger formatting
+ * @param <A> 应触发格式化的注解类型
  */
 public interface AnnotationFormatterFactory<A extends Annotation> {
 
 	/**
-	 * The types of fields that may be annotated with the &lt;A&gt; annotation.
+	 * 可使用 &lt;A&gt; 注解标注的字段类型集合。
 	 */
 	Set<Class<?>> getFieldTypes();
 
 	/**
-	 * Get the Printer to print the value of a field of {@code fieldType} annotated with
-	 * {@code annotation}.
-	 * <p>If the type T the printer accepts is not assignable to {@code fieldType}, a
-	 * coercion from {@code fieldType} to T will be attempted before the Printer is invoked.
-	 * @param annotation the annotation instance
-	 * @param fieldType the type of field that was annotated
-	 * @return the printer
+	 * 获取用于打印标注了 {@code annotation}、类型为 {@code fieldType} 的字段值的 {@link Printer}。
+	 * <p>若 Printer 接受的类型 T 不可赋值给 {@code fieldType}，则在调用 Printer 之前
+	 * 会尝试将 {@code fieldType} 强制转换为 T。
+	 * @param annotation 注解实例
+	 * @param fieldType 被标注字段的类型
+	 * @return 打印器
 	 */
 	Printer<?> getPrinter(A annotation, Class<?> fieldType);
 
 	/**
-	 * Get the Parser to parse a submitted value for a field of {@code fieldType}
-	 * annotated with {@code annotation}.
-	 * <p>If the object the parser returns is not assignable to {@code fieldType},
-	 * a coercion to {@code fieldType} will be attempted before the field is set.
-	 * @param annotation the annotation instance
-	 * @param fieldType the type of field that was annotated
-	 * @return the parser
+	 * 获取用于解析标注了 {@code annotation}、类型为 {@code fieldType} 的字段所提交值的 {@link Parser}。
+	 * <p>若 Parser 返回的对象不可赋值给 {@code fieldType}，则在设置字段之前
+	 * 会尝试强制转换为 {@code fieldType}。
+	 * @param annotation 注解实例
+	 * @param fieldType 被标注字段的类型
+	 * @return 解析器
 	 */
 	Parser<?> getParser(A annotation, Class<?> fieldType);
 

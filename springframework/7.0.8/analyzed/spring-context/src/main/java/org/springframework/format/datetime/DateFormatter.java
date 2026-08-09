@@ -37,14 +37,13 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * A formatter for {@link java.util.Date} types.
+ * 用于 {@link java.util.Date} 类型的格式化器。
  *
- * <p>Supports the configuration of an explicit date time pattern, timezone,
- * locale, and fallback date time patterns for lenient parsing.
+ * <p>支持配置显式日期时间模式、时区、区域设置，以及用于宽松解析的回退日期时间模式。
  *
- * <p>Common ISO patterns for UTC instants are applied at millisecond precision.
- * Note that {@link org.springframework.format.datetime.standard.InstantFormatter}
- * is recommended for flexible UTC parsing into a {@link java.time.Instant} instead.
+ * <p>常用的 UTC 时刻 ISO 模式以毫秒精度应用。
+ * 注意，若需灵活地将 UTC 解析为 {@link java.time.Instant}，推荐使用
+ * {@link org.springframework.format.datetime.standard.InstantFormatter}。
  *
  * @author Keith Donald
  * @author Juergen Hoeller
@@ -95,13 +94,13 @@ public class DateFormatter implements Formatter<Date> {
 
 
 	/**
-	 * Create a new default {@code DateFormatter}.
+	 * 创建新的默认 {@code DateFormatter}。
 	 */
 	public DateFormatter() {
 	}
 
 	/**
-	 * Create a new {@code DateFormatter} for the given date time pattern.
+	 * 为给定日期时间模式创建新的 {@code DateFormatter}。
 	 */
 	public DateFormatter(String pattern) {
 		this.pattern = pattern;
@@ -109,13 +108,12 @@ public class DateFormatter implements Formatter<Date> {
 
 
 	/**
-	 * Set the source of the configuration for this {@code DateFormatter} &mdash;
-	 * for example, an instance of the {@link DateTimeFormat @DateTimeFormat}
-	 * annotation if such an annotation was used to configure this {@code DateFormatter}.
-	 * <p>The supplied source object will only be used for descriptive purposes
-	 * by invoking its {@code toString()} method &mdash; for example, when
-	 * generating an exception message to provide further context.
-	 * @param source the source of the configuration
+	 * 设置本 {@code DateFormatter} 的配置来源 &mdash;
+	 * 例如，若使用 {@link DateTimeFormat @DateTimeFormat} 注解配置本 {@code DateFormatter}，
+	 * 则可传入该注解的实例。
+	 * <p>所提供的源对象仅用于描述性目的，通过调用其 {@code toString()} 方法 &mdash;
+	 * 例如在生成异常消息以提供更多上下文时。
+	 * @param source 配置来源
 	 * @since 5.3.5
 	 */
 	public void setSource(Object source) {
@@ -123,18 +121,17 @@ public class DateFormatter implements Formatter<Date> {
 	}
 
 	/**
-	 * Set the pattern to use to format date values.
-	 * <p>If not specified, DateFormat's default style will be used.
+	 * 设置用于格式化日期值的模式。
+	 * <p>若未指定，将使用 DateFormat 的默认样式。
 	 */
 	public void setPattern(String pattern) {
 		this.pattern = pattern;
 	}
 
 	/**
-	 * Set additional patterns to use as a fallback in case parsing fails for the
-	 * configured {@linkplain #setPattern pattern}, {@linkplain #setIso ISO format},
-	 * {@linkplain #setStyle style}, or {@linkplain #setStylePattern style pattern}.
-	 * @param fallbackPatterns the fallback parsing patterns
+	 * 设置当已配置的 {@linkplain #setPattern 模式}、{@linkplain #setIso ISO 格式}、
+	 * {@linkplain #setStyle 样式} 或 {@linkplain #setStylePattern 样式模式} 解析失败时用作回退的附加模式。
+	 * @param fallbackPatterns 回退解析模式
 	 * @since 5.3.5
 	 * @see DateTimeFormat#fallbackPatterns()
 	 */
@@ -143,8 +140,8 @@ public class DateFormatter implements Formatter<Date> {
 	}
 
 	/**
-	 * Set the ISO format to use to format date values.
-	 * @param iso the {@link ISO} format
+	 * 设置用于格式化日期值的 ISO 格式。
+	 * @param iso {@link ISO} 格式
 	 * @since 3.2
 	 */
 	public void setIso(ISO iso) {
@@ -152,8 +149,8 @@ public class DateFormatter implements Formatter<Date> {
 	}
 
 	/**
-	 * Set the {@link DateFormat} style to use to format date values.
-	 * <p>If not specified, DateFormat's default style will be used.
+	 * 设置用于格式化日期值的 {@link DateFormat} 样式。
+	 * <p>若未指定，将使用 DateFormat 的默认样式。
 	 * @see DateFormat#DEFAULT
 	 * @see DateFormat#SHORT
 	 * @see DateFormat#MEDIUM
@@ -165,18 +162,17 @@ public class DateFormatter implements Formatter<Date> {
 	}
 
 	/**
-	 * Set the two characters to use to format date values.
-	 * <p>The first character is used for the date style; the second is used for
-	 * the time style.
-	 * <p>Supported characters:
+	 * 设置用于格式化日期值的两个字符。
+	 * <p>第一个字符用于日期样式；第二个用于时间样式。
+	 * <p>支持的字符：
 	 * <ul>
-	 * <li>'S' = Small</li>
-	 * <li>'M' = Medium</li>
-	 * <li>'L' = Long</li>
-	 * <li>'F' = Full</li>
-	 * <li>'-' = Omitted</li>
+	 * <li>'S' = Small（短）</li>
+	 * <li>'M' = Medium（中）</li>
+	 * <li>'L' = Long（长）</li>
+	 * <li>'F' = Full（完整）</li>
+	 * <li>'-' = Omitted（省略）</li>
 	 * </ul>
-	 * @param stylePattern two characters from the set {"S", "M", "L", "F", "-"}
+	 * @param stylePattern 来自集合 {"S", "M", "L", "F", "-"} 的两个字符
 	 * @since 3.2
 	 */
 	public void setStylePattern(String stylePattern) {
@@ -184,16 +180,16 @@ public class DateFormatter implements Formatter<Date> {
 	}
 
 	/**
-	 * Set the {@link TimeZone} to normalize the date values into, if any.
+	 * 设置用于将日期值规范化的 {@link TimeZone}（若有）。
 	 */
 	public void setTimeZone(TimeZone timeZone) {
 		this.timeZone = timeZone;
 	}
 
 	/**
-	 * Specify whether parsing is to be lenient. Default is {@code false}.
-	 * <p>With lenient parsing, the parser may allow inputs that do not precisely match the format.
-	 * With strict parsing, inputs must match the format exactly.
+	 * 指定解析是否宽松。默认为 {@code false}。
+	 * <p>宽松解析时，解析器可能允许与格式不完全匹配的输入。
+	 * 严格解析时，输入必须精确匹配格式。
 	 */
 	public void setLenient(boolean lenient) {
 		this.lenient = lenient;
