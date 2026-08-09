@@ -1,2 +1,0 @@
-core/spring-boot/src/main/java/org/springframework/boot/context/properties/source/ConfigurationPropertyName.java
-core/spring-boot/src/main/java/org/springframework/boot/json/JsonWriter.java

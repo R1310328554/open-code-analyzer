@@ -1,6 +1,9 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 2,
+  "claimed_at": "2026-08-09T17:49:00Z",
+  "files": [
+    "core/spring-boot/src/main/java/org/springframework/boot/context/properties/source/ConfigurationPropertyName.java",
+    "core/spring-boot/src/main/java/org/springframework/boot/json/JsonWriter.java"
+  ],
+  "remaining_pending": 0,
   "done": 623
 }
