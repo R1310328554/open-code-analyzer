@@ -57,6 +57,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
+/**
+ * Live Object 服务 {@link RLiveObjectService} 实现。
+ * <p>通过代理将标注 {@link org.redisson.api.annotation.REntity} 的 Java 对象
+ * 映射为 Redis Hash 字段，支持分布式引用、索引与 CRUD。
+ */
 public class RedissonLiveObjectService implements RLiveObjectService {
 
     private static final ConcurrentMap<Class<? extends RIdResolver<?>>, RIdResolver<?>> PROVIDER_CACHE = new ConcurrentHashMap<>();
@@ -74,6 +79,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         this.mapResolver = commandExecutor.getServiceManager().getLiveObjectMapResolver();
     }
 
+    /** Live Object addExpireListener 操作。 */
     private void addExpireListener(CommandAsyncExecutor commandExecutor) {
         if (!commandExecutor.getServiceManager().getLiveObjectLatch().compareAndSet(false, true)) {
             return;
@@ -103,6 +109,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
 
+    /** Live Object onExpired 操作。 */
     private void onExpired(CommandAsyncExecutor commandExecutor, CharSequence channel, String prefix) {
         String name = channel.toString().replace(prefix, "");
         Class<?> entity = resolveEntity(name);
@@ -115,6 +122,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         deleteExpired(id, entity);
     }
 
+    /** Live Object resolveEntity 操作。 */
     private Class<?> resolveEntity(String name) {
         String className = name.substring(name.lastIndexOf(":")+1);
         try {
@@ -140,10 +148,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        return instance;
 //    }
 
+    /** 获取 Map。 */
     private RMap<String, Object> getMap(Object proxied) {
         return asLiveObject(proxied).getLiveObjectLiveMap();
     }
 
+    /** Live Object generateId 操作。 */
     private <T> Object generateId(Class<T> entityClass, String idFieldName) throws NoSuchFieldException {
         RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
                 .getAnnotation(RId.class);
@@ -152,6 +162,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return id;
     }
 
+    /** 获取 Resolver。 */
     private RIdResolver<?> getResolver(Class<? extends RIdResolver<?>> resolverClass) {
         if (!PROVIDER_CACHE.containsKey(resolverClass)) {
             try {
@@ -163,12 +174,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return PROVIDER_CACHE.get(resolverClass);
     }
 
+    /** Live Object createLiveObject 操作。 */
     public <T> T createLiveObject(Class<T> entityClass, Object id) {
         registerClass(entityClass);
         Class<?> proxyClass = classCache.get(entityClass);
         return (T) instantiateLiveObject(proxyClass, id);
     }
 
+    /** Live Object createLiveObject 操作。 */
     private <T> T createLiveObject(Class<T> entityClass, Object id, CommandAsyncExecutor commandExecutor, Map<Class<?>, Class<?>> classCache) {
         Class<?> proxyClass = classCache.get(entityClass);
         if (proxyClass == null) {
@@ -179,6 +192,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return (T) instantiateLiveObject(proxyClass, id);
     }
 
+    /** JSON 路径读取。 */
     @Override
     public <T> T get(Class<T> entityClass, Object id) {
         addExpireListener(commandExecutor);
@@ -189,6 +203,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return null;
     }
 
+    /** Live Object find 操作。 */
     @Override
     public <T> Collection<T> find(Class<T> entityClass, Condition condition) {
         addExpireListener(commandExecutor);
@@ -199,6 +214,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .collect(Collectors.toList());
     }
 
+    /** Live Object count 操作。 */
     @Override
     public long count(Class<?> entityClass, Condition condition) {
         addExpireListener(commandExecutor);
@@ -206,6 +222,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return ids.size();
     }
 
+    /** 将已有对象附加为 Live Object。 */
     @Override
     public <T> T attach(T detachedObject) {
         addExpireListener(commandExecutor);
@@ -216,6 +233,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return createLiveObject(entityClass, id);
     }
 
+    /** 将已有对象附加为 Live Object。 */
     private <T> T attach(T detachedObject, CommandAsyncExecutor commandExecutor, Map<Class<?>, Class<?>> classCache) {
         validateDetached(detachedObject);
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
@@ -224,27 +242,32 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return createLiveObject(entityClass, id, commandExecutor, classCache);
     }
 
+    /** 按 remapping 函数合并值。 */
     @Override
     public <T> T merge(T detachedObject) {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
         return persist(detachedObject, alreadyPersisted, RCascadeType.MERGE);
     }
 
+    /** 持久化 Live Object 变更。 */
     @Override
     public <T> T persist(T detachedObject) {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
         return persist(detachedObject, alreadyPersisted, RCascadeType.PERSIST);
     }
 
+    /** 持久化 Live Object 变更。 */
     @Override
     public <T> List<T> persist(T... detachedObjects) {
         return persist(RCascadeType.PERSIST, detachedObjects);
     }
 
+    /** 按 remapping 函数合并值。 */
     public <T> List<T> merge(T... detachedObjects) {
         return persist(RCascadeType.MERGE, detachedObjects);
     }
 
+    /** 持久化 Live Object 变更。 */
     public <T> List<T> persist(RCascadeType type, T... detachedObjects) {
         addExpireListener(commandExecutor);
         CommandBatchService batchService = new CommandBatchService(commandExecutor);
@@ -319,6 +342,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return attachedObjects;
     }
 
+    /** 获取 Id。 */
     private <T> Object getId(T detachedObject) {
         String idFieldName = getRIdFieldName(detachedObject.getClass());
         Object id = ClassUtils.getField(detachedObject, idFieldName);
@@ -334,6 +358,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
 
+    /** 持久化 Live Object 变更。 */
     private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, RCascadeType type) {
         addExpireListener(commandExecutor);
         validateDetached(detachedObject);
@@ -461,6 +486,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return attachedObject;
     }
 
+    /** Live Object validateAnnotation 操作。 */
     private void validateAnnotation(Object instance, String fieldName) {
         Class<?> clazz = instance.getClass();
         if (isLiveObject(instance)) {
@@ -473,6 +499,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
 
+    /** Live Object checkCascade 操作。 */
     private <T> boolean checkCascade(Object instance, RCascadeType type, String fieldName) {
         Class<?> clazz = instance.getClass();
         if (isLiveObject(instance)) {
@@ -487,6 +514,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return false;
     }
 
+    /** 分离 Live Object 代理。 */
     @Override
     public <T> T detach(T attachedObject) {
         addExpireListener(commandExecutor);
@@ -495,6 +523,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @SuppressWarnings("unchecked")
+    /** 分离 Live Object 代理。 */
     private <T> T detach(T attachedObject, Map<String, Object> alreadyDetached) {
         validateAttached(attachedObject);
         T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
@@ -621,6 +650,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return detached;
     }
 
+    /** 删除 JSON 路径或键。 */
     @Override
     public <T> void delete(T attachedObject) {
         addExpireListener(commandExecutor);
@@ -628,6 +658,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         delete(attachedObject, deleted);
     }
 
+    /** 删除 JSON 路径或键。 */
     private <T> void delete(T attachedObject, Set<String> deleted) {
         validateAttached(attachedObject);
 
@@ -668,6 +699,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         asLiveObject(attachedObject).delete();
     }
 
+    /** Live Object deleteCollection 操作。 */
     private void deleteCollection(Set<String> deleted, Iterable<?> objs) {
         for (Object object : objs) {
             if (isLiveObject(object)) {
@@ -678,6 +710,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
 
+    /** 删除 JSON 路径或键。 */
     @Override
     public <T> long delete(Class<T> entityClass, Object... ids) {
         addExpireListener(commandExecutor);
@@ -696,6 +729,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .mapToLong(s -> (Long) s).sum();
     }
 
+    /** 删除 JSON 路径或键。 */
     private RFuture<Long> delete(Object id, Class<?> entityClass, NamingScheme namingScheme, CommandBatchService ce, Set<String> fieldNames) {
         String mapName = namingScheme.getName(entityClass, id);
         Object liveObjectId = namingScheme.resolveId(mapName);
@@ -740,6 +774,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return new RedissonKeys(ce).deleteAsync(mapName);
     }
 
+    /** Live Object deleteExpired 操作。 */
     private void deleteExpired(Object id, Class<?> entityClass) {
         CommandBatchService ce = new CommandBatchService(commandExecutor);
         FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
@@ -765,6 +800,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         ce.execute();
     }
 
+    /** Live Object deleteCollections 操作。 */
     private void deleteCollections(Object id, Class<?> entityClass, CommandBatchService ce) {
         for (InDefinedShape field : Introspectior.getAllFields(entityClass)) {
             try {
@@ -780,17 +816,20 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
 
+    /** 删除 JSON 路径或键。 */
     public RFuture<Long> delete(Object id, Class<?> entityClass, NamingScheme namingScheme, CommandBatchService ce) {
         FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
         Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
         return delete(id, entityClass, namingScheme, ce, fieldNames);
     }
 
+    /** Live Object findIds 操作。 */
     @Override
     public <K> Iterable<K> findIds(Class<?> entityClass) {
         return findIds(entityClass, 10);
     }
 
+    /** Live Object findIds 操作。 */
     @Override
     public <K> Iterable<K> findIds(Class<?> entityClass, int count) {
         addExpireListener(commandExecutor);
@@ -804,27 +843,32 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return result;
     }
 
+    /** Live Object asLiveObject 操作。 */
     @Override
     public <T> RLiveObject asLiveObject(T instance) {
         return (RLiveObject) instance;
     }
 
+    /** Live Object asRMap 操作。 */
     @Override
     public <T, K, V> RMap<K, V> asRMap(T instance) {
         return (RMap) instance;
     }
 
+    /** 是否LiveObject。 */
     @Override
     public <T> boolean isLiveObject(T instance) {
         return instance instanceof RLiveObject;
     }
 
+    /** 是否Exists。 */
     @Override
     public <T> boolean isExists(T instance) {
         addExpireListener(commandExecutor);
         return instance instanceof RLiveObject && asLiveObject(instance).isExists();
     }
 
+    /** Live Object registerClass 操作。 */
     @Override
     public void registerClass(Class<?> cls) {
         if (!classCache.containsKey(cls)) {
@@ -834,6 +878,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
 
+    /** 取消注册实体类。 */
     @Override
     public void unregisterClass(Class<?> cls) {
         if (cls.isAssignableFrom(RLiveObject.class)) {
@@ -845,20 +890,24 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
 
+    /** 是否ClassRegistered。 */
     @Override
     public boolean isClassRegistered(Class<?> cls) {
         return classCache.containsKey(cls) || classCache.containsValue(cls);
     }
 
+    /** 复制键到目标名称。 */
     private <T> void copy(T detachedObject, T attachedObject, List<String> excludedFields) {
         new AdvBeanCopy(detachedObject, attachedObject)
                 .copy(excludedFields);
     }
 
+    /** 获取 RIdFieldName。 */
     private String getRIdFieldName(Class<?> cls) {
         return Introspectior.getREntityIdFieldName(cls);
     }
 
+    /** Live Object instantiateLiveObject 操作。 */
     private <T> T instantiateLiveObject(Class<T> proxyClass, Object id) {
         if (id == null) {
             throw new IllegalStateException("Non-null value is required for the field with RId annotation.");
@@ -868,6 +917,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return instance;
     }
 
+    /** Live Object instantiateDetachedObject 操作。 */
     private <T, K> T instantiateDetachedObject(Class<T> cls, K id) {
         T instance = instantiate(cls);
         String fieldName = getRIdFieldName(cls);
@@ -877,6 +927,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return instance;
     }
 
+    /** Live Object instantiate 操作。 */
     private <T> T instantiate(Class<T> cls) {
         try {
             for (Constructor<?> constructor : cls.getDeclaredConstructors()) {
@@ -891,6 +942,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         throw new IllegalArgumentException("Can't find default constructor for " + cls);
     }
 
+    /** Live Object validateClass 操作。 */
     private <T> void validateClass(Class<T> entityClass) {
         if (entityClass.isAnonymousClass() || entityClass.isLocalClass()) {
             throw new IllegalArgumentException(entityClass.getName() + " is not publically accessable.");
@@ -930,18 +982,21 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
     }
 
+    /** Live Object validateDetached 操作。 */
     private <T> void validateDetached(T detachedObject) {
         if (detachedObject instanceof RLiveObject) {
             throw new IllegalArgumentException("The object supplied is already a RLiveObject");
         }
     }
 
+    /** Live Object validateAttached 操作。 */
     private <T> void validateAttached(T attachedObject) {
         if (!(attachedObject instanceof RLiveObject)) {
             throw new IllegalArgumentException("The object supplied is must be a RLiveObject");
         }
     }
 
+    /** Live Object createProxy 操作。 */
     private <T> Class<? extends T> createProxy(Class<T> entityClass, CommandAsyncExecutor commandExecutor) {
         DynamicType.Builder<T> builder = new ByteBuddy()
                 .subclass(entityClass);

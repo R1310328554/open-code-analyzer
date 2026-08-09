@@ -33,11 +33,11 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Redis {@code ARRAY} 环形缓冲区 {@link RCircularBuffer} 实现（Redis 8+）。
+ * <p>固定容量循环覆盖写入，支持 ARPUSH/ARLTRIM 等 ARRAY 命令。
  *
- * @param <V> value type
- *
+ * @param <V> 元素类型
  * @author Nikita Koksharov
- *
  */
 public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCircularBuffer<V> {
 
@@ -55,6 +55,7 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
 
     private static final RedisCommand<Boolean> ARLEN_BOOL = new RedisCommand<Boolean>("ARLEN", obj -> (Long) obj == 0);
 
+    /** 环形缓冲区容量配置的 Redis 键。 */
     private final String settingsName;
 
     public RedissonCircularBuffer(CommandAsyncExecutor commandExecutor, String name) {
@@ -67,43 +68,51 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
         settingsName = prefixName("redisson_acb", getRawName());
     }
 
+    /** 尝试设置环形缓冲区容量（仅首次）。 */
     @Override
     public boolean trySetCapacity(int capacity) {
         return get(trySetCapacityAsync(capacity));
     }
 
+    /** 异步 trySetCapacity。 */
     @Override
     public RFuture<Boolean> trySetCapacityAsync(int capacity) {
         checkCapacity(capacity);
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.SETNX, settingsName, capacity);
     }
 
+    /** 设置环形缓冲区容量。 */
     @Override
     public void setCapacity(int capacity) {
         get(setCapacityAsync(capacity));
     }
 
+    /** 设置CapacityAsync。 */
     @Override
     public RFuture<Void> setCapacityAsync(int capacity) {
         checkCapacity(capacity);
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.SET, settingsName, capacity);
     }
 
+    /** 返回当前容量。 */
     @Override
     public int capacity() {
         return get(capacityAsync());
     }
 
+    /** 异步执行 capacity。 */
     @Override
     public RFuture<Integer> capacityAsync() {
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, GET_INTEGER, settingsName);
     }
 
+    /** 返回剩余可写容量。 */
     @Override
     public int remainingCapacity() {
         return get(remainingCapacityAsync());
     }
 
+    /** 异步执行 remainingCapacity。 */
     @Override
     public RFuture<Integer> remainingCapacityAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
@@ -115,11 +124,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName(), settingsName));
     }
 
+    /** 追加元素（满则覆盖最旧）。 */
     @Override
     public boolean add(V value) {
         return get(addAsync(value));
     }
 
+    /** 异步追加元素。 */
     @Override
     public RFuture<Boolean> addAsync(V value) {
         Objects.requireNonNull(value, "Value can't be null");
@@ -131,11 +142,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName(), settingsName), encode(value));
     }
 
+    /** 环形缓冲区 addAll 操作。 */
     @Override
     public boolean addAll(Collection<? extends V> values) {
         return get(addAllAsync(values));
     }
 
+    /** 异步执行 addAll。 */
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> values) {
         Objects.requireNonNull(values, "Values can't be null");
@@ -155,11 +168,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName(), settingsName), args.toArray());
     }
 
+    /** JSON 路径写入。 */
     @Override
     public long set(int size, V... values) {
         return get(setAsync(size, values));
     }
 
+    /** 异步 JSON 写入。 */
     @Override
     public RFuture<Long> setAsync(int size, V... values) {
         checkCapacity(size);
@@ -184,22 +199,26 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName(), settingsName), args.toArray());
     }
 
+    /** JSON 路径读取。 */
     @Override
     public V get(long index) {
         return get(getAsync(index));
     }
 
+    /** 异步 JSON 读取。 */
     @Override
     public RFuture<V> getAsync(long index) {
         checkIndex(index);
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ARGET, getRawName(), index);
     }
 
+    /** 环形缓冲区 lastItems 操作。 */
     @Override
     public List<V> lastItems(int count, boolean reverse) {
         return get(lastItemsAsync(count, reverse));
     }
 
+    /** 异步执行 lastItems。 */
     @Override
     public RFuture<List<V>> lastItemsAsync(int count, boolean reverse) {
         if (count <= 0) {
@@ -212,11 +231,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ARLASTITEMS, getRawName(), count);
     }
 
+    /** 环形缓冲区 range 操作。 */
     @Override
     public List<V> range(long startIndex, long endIndex) {
         return get(rangeAsync(startIndex, endIndex));
     }
 
+    /** 异步执行 range。 */
     @Override
     public RFuture<List<V>> rangeAsync(long startIndex, long endIndex) {
         checkIndex(startIndex);
@@ -225,111 +246,133 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
                 RedisCommands.ARGETRANGE, getRawName(), startIndex, endIndex);
     }
 
+    /** 环形缓冲区 readAll 操作。 */
     @Override
     public List<V> readAll() {
         return get(readAllAsync());
     }
 
+    /** 异步执行 readAll。 */
     @Override
     public RFuture<List<V>> readAllAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ARLASTITEMS, getRawName(), Integer.MAX_VALUE);
     }
 
+    /** 返回元素/条目数量。 */
     @Override
     public int size() {
         return get(sizeAsync());
     }
 
+    /** 异步返回数量。 */
     @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, ARLEN_INTEGER, getRawName());
     }
 
+    /** 环形缓冲区 sum 操作。 */
     @Override
     public Double sum() {
         return get(sumAsync());
     }
 
+    /** 异步执行 sum。 */
     @Override
     public RFuture<Double> sumAsync() {
         return aggregateAllAsync("SUM");
     }
 
+    /** 环形缓冲区 sum 操作。 */
     @Override
     public Double sum(long startIndex, long endIndex) {
         return get(sumAsync(startIndex, endIndex));
     }
 
+    /** 异步执行 sum。 */
     @Override
     public RFuture<Double> sumAsync(long startIndex, long endIndex) {
         return doubleOperationAsync(startIndex, endIndex, "SUM");
     }
 
+    /** 环形缓冲区 min 操作。 */
     @Override
     public Double min() {
         return get(minAsync());
     }
 
+    /** 异步执行 min。 */
     @Override
     public RFuture<Double> minAsync() {
         return aggregateAllAsync("MIN");
     }
 
+    /** 环形缓冲区 min 操作。 */
     @Override
     public Double min(long startIndex, long endIndex) {
         return get(minAsync(startIndex, endIndex));
     }
 
+    /** 异步执行 min。 */
     @Override
     public RFuture<Double> minAsync(long startIndex, long endIndex) {
         return doubleOperationAsync(startIndex, endIndex, "MIN");
     }
 
+    /** 环形缓冲区 max 操作。 */
     @Override
     public Double max() {
         return get(maxAsync());
     }
 
+    /** 异步执行 max。 */
     @Override
     public RFuture<Double> maxAsync() {
         return aggregateAllAsync("MAX");
     }
 
+    /** 环形缓冲区 max 操作。 */
     @Override
     public Double max(long startIndex, long endIndex) {
         return get(maxAsync(startIndex, endIndex));
     }
 
+    /** 异步执行 max。 */
     @Override
     public RFuture<Double> maxAsync(long startIndex, long endIndex) {
         return doubleOperationAsync(startIndex, endIndex, "MAX");
     }
 
+    /** 清空全部条目。 */
     @Override
     public void clear() {
         get(clearAsync());
     }
 
+    /** 异步清空。 */
     @Override
     public RFuture<Void> clearAsync() {
         return commandExecutor.writeAsync(getRawName(), RedisCommands.DEL_VOID, getRawName());
     }
 
+    /** 是否为空。 */
     @Override
     public boolean isEmpty() {
         return get(isEmptyAsync());
     }
 
+    /** 是否EmptyAsync。 */
     @Override
     public RFuture<Boolean> isEmptyAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, ARLEN_BOOL, getRawName());
     }
 
+    /** 是否Full。 */
     @Override
     public boolean isFull() {
         return get(isFullAsync());
     }
 
+    /** 是否FullAsync。 */
     @Override
     public RFuture<Boolean> isFullAsync() {
         return commandExecutor.evalReadAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -342,21 +385,25 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName(), settingsName));
     }
 
+    /** 环形缓冲区 peekLast 操作。 */
     @Override
     public V peekLast() {
         return get(peekLastAsync());
     }
 
+    /** 异步执行 peekLast。 */
     @Override
     public RFuture<V> peekLastAsync() {
         return commandExecutor.readAsync(getRawName(), codec, PEEK_LAST, getRawName(), 1, "REV");
     }
 
+    /** 环形缓冲区 peekFirst 操作。 */
     @Override
     public V peekFirst() {
         return get(peekFirstAsync());
     }
 
+    /** 异步执行 peekFirst。 */
     @Override
     public RFuture<V> peekFirstAsync() {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
@@ -366,11 +413,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName(), settingsName));
     }
 
+    /** JSON 路径读取。 */
     @Override
     public List<V> get(long... indexes) {
         return get(getAsync(indexes));
     }
 
+    /** 异步 JSON 读取。 */
     @Override
     public RFuture<List<V>> getAsync(long... indexes) {
         if (indexes.length == 0) {
@@ -386,11 +435,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ARMGET, args.toArray());
     }
 
+    /** 环形缓冲区 count 操作。 */
     @Override
     public long count(V value) {
         return get(countAsync(value));
     }
 
+    /** 异步执行 count。 */
     @Override
     public RFuture<Long> countAsync(V value) {
         Objects.requireNonNull(value, "Value can't be null");
@@ -403,11 +454,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName()), encode(value));
     }
 
+    /** 环形缓冲区 contains 操作。 */
     @Override
     public boolean contains(V value) {
         return get(containsAsync(value));
     }
 
+    /** 异步执行 contains。 */
     @Override
     public RFuture<Boolean> containsAsync(V value) {
         Objects.requireNonNull(value, "Value can't be null");
@@ -420,11 +473,13 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName()), encode(value));
     }
 
+    /** 环形缓冲区 average 操作。 */
     @Override
     public Double average() {
         return get(averageAsync());
     }
 
+    /** 异步执行 average。 */
     @Override
     public RFuture<Double> averageAsync() {
         return commandExecutor.evalReadAsync(getRawName(), StringCodec.INSTANCE, EVAL_DOUBLE,
@@ -440,66 +495,79 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName()));
     }
 
+    /** 环形缓冲区 bitAnd 操作。 */
     @Override
     public Long bitAnd() {
         return get(bitAndAsync());
     }
 
+    /** 异步执行 bitAnd。 */
     @Override
     public RFuture<Long> bitAndAsync() {
         return longAggregateAllAsync("AND");
     }
 
+    /** 环形缓冲区 bitAnd 操作。 */
     @Override
     public Long bitAnd(long startIndex, long endIndex) {
         return get(bitAndAsync(startIndex, endIndex));
     }
 
+    /** 异步执行 bitAnd。 */
     @Override
     public RFuture<Long> bitAndAsync(long startIndex, long endIndex) {
         return longOperationAsync(startIndex, endIndex, "AND");
     }
 
+    /** 环形缓冲区 bitOr 操作。 */
     @Override
     public Long bitOr() {
         return get(bitOrAsync());
     }
 
+    /** 异步执行 bitOr。 */
     @Override
     public RFuture<Long> bitOrAsync() {
         return longAggregateAllAsync("OR");
     }
 
+    /** 环形缓冲区 bitOr 操作。 */
     @Override
     public Long bitOr(long startIndex, long endIndex) {
         return get(bitOrAsync(startIndex, endIndex));
     }
 
+    /** 异步执行 bitOr。 */
     @Override
     public RFuture<Long> bitOrAsync(long startIndex, long endIndex) {
         return longOperationAsync(startIndex, endIndex, "OR");
     }
 
+    /** 环形缓冲区 bitXor 操作。 */
     @Override
     public Long bitXor() {
         return get(bitXorAsync());
     }
 
+    /** 异步执行 bitXor。 */
     @Override
     public RFuture<Long> bitXorAsync() {
         return longAggregateAllAsync("XOR");
     }
 
+    /** 环形缓冲区 bitXor 操作。 */
     @Override
     public Long bitXor(long startIndex, long endIndex) {
         return get(bitXorAsync(startIndex, endIndex));
     }
 
+    /** 异步执行 bitXor。 */
     @Override
     public RFuture<Long> bitXorAsync(long startIndex, long endIndex) {
         return longOperationAsync(startIndex, endIndex, "XOR");
     }
 
+    /** 异步执行 longAggregateAll。 */
     private RFuture<Long> longAggregateAllAsync(String operation) {
         return commandExecutor.evalReadAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local len = redis.call('exists', KEYS[1]) == 1 and redis.call('ARLEN', KEYS[1]) or 0; "
@@ -510,6 +578,7 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName()), operation);
     }
 
+    /** 异步执行 longOperation。 */
     private RFuture<Long> longOperationAsync(long startIndex, long endIndex, String operation) {
         checkIndex(startIndex);
         checkIndex(endIndex);
@@ -517,6 +586,7 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
                 RedisCommands.AROP_LONG, getRawName(), startIndex, endIndex, operation);
     }
 
+    /** 异步执行 aggregateAll。 */
     private RFuture<Double> aggregateAllAsync(String operation) {
         return commandExecutor.evalReadAsync(getRawName(), StringCodec.INSTANCE, EVAL_DOUBLE,
                 "local len = redis.call('exists', KEYS[1]) == 1 and redis.call('ARLEN', KEYS[1]) or 0; "
@@ -531,6 +601,7 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
              Arrays.asList(getRawName()), operation);
     }
 
+    /** 异步执行 doubleOperation。 */
     private RFuture<Double> doubleOperationAsync(long startIndex, long endIndex, String operation) {
         checkIndex(startIndex);
         checkIndex(endIndex);
@@ -538,33 +609,39 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
                 RedisCommands.AROP_DOUBLE, getRawName(), startIndex, endIndex, operation);
     }
 
+    /** 环形缓冲区 checkIndex 操作。 */
     private void checkIndex(long index) {
         if (index < 0) {
             throw new IllegalArgumentException("Index must be non-negative");
         }
     }
 
+    /** 环形缓冲区 checkCapacity 操作。 */
     private void checkCapacity(int capacity) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive");
         }
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return super.expireAsync(timeToLive, timeUnit, param, getRawName(), settingsName);
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), settingsName);
     }
 
+    /** 异步清除 TTL。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return clearExpireAsync(getRawName(), settingsName);
     }
 
+    /** 异步 JSON 删除。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return super.deleteAsync(getRawName(), settingsName);

@@ -45,26 +45,18 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * <p>Map-based cache with ability to set TTL for each entry via
- * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)} methods.
- * And therefore has an complex lua-scripts inside.</p>
- *
- * <p>Current redis implementation doesnt have map entry eviction functionality.
- * Thus entries are checked for TTL expiration during any key/value/entry read operation.
- * If key/value/entry expired then it doesn't returns and clean task runs asynchronous.
- * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link EvictionScheduler}. This scheduler
- * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
- *
- * <p>If eviction is not required then it's better to use {@link RedissonMap} object.</p>
+ * 带逐条目 TTL 的 Map 缓存 {@link RMapCache} 实现。
+ * <p>通过 {@link #put(Object, Object, long, TimeUnit)} 等为每条记录设置过期；
+ * 读操作触发惰性过期检查，{@link EvictionScheduler} 定期批量清理（每次最多 100 条）。
+ * <p>若无需逐条 TTL，优先使用 {@link RedissonMap}。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCache<K, V> {
 
+    /** MapCache 过期条目淘汰调度器。 */
     private final EvictionScheduler evictionScheduler;
     protected String publishCommand;
     private String timeoutSetName;
@@ -104,11 +96,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         this.publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
     }
 
+    /** Map WithLease 操作。 */
     @Override
     public LeaseGetResult<V> getWithLease(K key, Duration leaseTimeToLive) {
         return get(getWithLeaseAsync(key, leaseTimeToLive));
     }
 
+    /** 异步 getWithLease。 */
     @Override
     public RFuture<LeaseGetResult<V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
         checkNotBatch();
@@ -193,11 +187,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Map/Cache removeWithLease 操作。 */
     @Override
     public boolean removeWithLease(K key) {
         return get(removeWithLeaseAsync(key));
     }
 
+    /** 异步执行 removeWithLease。 */
     @Override
     public RFuture<Boolean> removeWithLeaseAsync(K key) {
         checkNotBatch();
@@ -252,31 +248,37 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>(mapped);
     }
 
+    /** 写入并设置 Lease（Native 模式可能不支持）。 */
     @Override
     public boolean putWithLease(K key, V value, String leaseToken) {
         return get(putWithLeaseAsync(key, value, leaseToken));
     }
 
+    /** 异步执行 putWithLease。 */
     @Override
     public RFuture<Boolean> putWithLeaseAsync(K key, V value, String leaseToken) {
         return putWithLeaseAsync(key, value, Duration.ZERO, Duration.ZERO, leaseToken);
     }
 
+    /** 写入并设置 Lease（Native 模式可能不支持）。 */
     @Override
     public boolean putWithLease(K key, V value, Duration ttl, String leaseToken) {
         return get(putWithLeaseAsync(key, value, ttl, Duration.ZERO, leaseToken));
     }
 
+    /** 异步执行 putWithLease。 */
     @Override
     public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, String leaseToken) {
         return putWithLeaseAsync(key, value, ttl, Duration.ZERO, leaseToken);
     }
 
+    /** 写入并设置 Lease（Native 模式可能不支持）。 */
     @Override
     public boolean putWithLease(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken) {
         return get(putWithLeaseAsync(key, value, ttl, maxIdleTime, leaseToken));
     }
 
+    /** 异步执行 putWithLease。 */
     @Override
     public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken) {
         Objects.requireNonNull(ttl);
@@ -307,6 +309,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return fastPutOperationAsync(key, value, ttlMillis, ttlUnit, maxIdleMillis, maxIdleUnit, leaseToken);
     }
 
+    /** Map/Cache decodeLeaseToken 操作。 */
     private static String decodeLeaseToken(Object o) {
         if (o == null || Boolean.FALSE.equals(o)) {
             return null;
@@ -319,24 +322,29 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         throw new IllegalStateException("Unsupported lease token in Redis response: " + o);
     }
 
+    /** Map LeaseName 操作。 */
     protected String getLeaseName(String name) {
         return prefixName("redisson__map__lease", name) + ":";
     }
 
+    /** Map/Cache trySetMaxSize 操作。 */
     @Override
     public boolean trySetMaxSize(int maxSize) {
         return get(trySetMaxSizeAsync(maxSize));
     }
 
+    /** Map/Cache trySetMaxSize 操作。 */
     public boolean trySetMaxSize(int maxSize, EvictionMode mode) {
         return get(trySetMaxSizeAsync(maxSize, mode));
     }
 
+    /** 异步执行 trySetMaxSize。 */
     @Override
     public RFuture<Boolean> trySetMaxSizeAsync(int maxSize) {
         return trySetMaxSizeAsync(maxSize, EvictionMode.LRU);
     }
 
+    /** 异步执行 trySetMaxSize。 */
     public RFuture<Boolean> trySetMaxSizeAsync(int maxSize, EvictionMode mode) {
         if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
@@ -348,6 +356,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Collections.singletonList(optionsName), maxSize, mode);
     }
 
+    /** 若存在则计算新值。 */
     @Override
     public V compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         checkNotBatch();
@@ -374,6 +383,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
     }
 
+    /** 异步执行 compute。 */
     @Override
     public RFuture<V> computeAsync(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         checkNotBatch();
@@ -406,6 +416,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     }
 
+    /** 键不存在时计算并写入。 */
     @Override
     public V computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
         checkNotBatch();
@@ -438,6 +449,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
     }
 
+    /** 异步执行 computeIfAbsent。 */
     @Override
     public RFuture<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
         checkNotBatch();
@@ -475,20 +487,24 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 设置MaxSize。 */
     @Override
     public void setMaxSize(int maxSize) {
         get(setMaxSizeAsync(maxSize));
     }
 
+    /** 设置MaxSize。 */
     public void setMaxSize(int maxSize, EvictionMode mode) {
         get(setMaxSizeAsync(maxSize, mode));
     }
 
+    /** 设置MaxSizeAsync。 */
     @Override
     public RFuture<Void> setMaxSizeAsync(int maxSize) {
         return setMaxSizeAsync(maxSize, EvictionMode.LRU);
     }
 
+    /** 设置MaxSizeAsync。 */
     public RFuture<Void> setMaxSizeAsync(int maxSize, EvictionMode mode) {
         if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
@@ -504,6 +520,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HMSET, params.toArray());
     }
 
+    /** 异步执行 containsKeyOperation。 */
     @Override
     protected RFuture<Boolean> containsKeyOperationAsync(String name, Object key) {
         return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
@@ -545,6 +562,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    /** 异步执行 containsValue。 */
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
         checkValue(value);
@@ -593,6 +611,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapValue(value));
     }
 
+    /** 异步获取 AllOperation 或执行 AllOperation 操作。 */
     @Override
     public RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
         List<Object> args = new ArrayList<>(keys.size() + 1);
@@ -646,21 +665,25 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             args.toArray());
     }
 
+    /** 仅当键不存在时写入。 */
     @Override
     public V putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit) {
         return get(putIfAbsentAsync(key, value, ttl, ttlUnit));
     }
 
+    /** 异步 putIfAbsent。 */
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit) {
         return putIfAbsentAsync(key, value, ttl, ttlUnit, 0, null);
     }
 
+    /** 仅当键不存在时写入。 */
     @Override
     public V putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return get(putIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
     }
 
+    /** 异步 putIfAbsent。 */
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
@@ -704,6 +727,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return mapWriterFuture(future, task, r -> r == null);
     }
 
+    /** 异步执行 putIfAbsentOperation。 */
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta) {
         String name = getRawName(key);
         String leaseName = getLeaseName(name);
@@ -806,6 +830,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** 异步执行 removeOperation。 */
     @Override
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
         String name = getRawName(key);
@@ -853,6 +878,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 异步获取 Operation 或执行 Operation 操作。 */
     @Override
     public RFuture<V> getOperationAsync(K key) {
         String name = getRawName(key);
@@ -893,11 +919,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    /** 写入键值。 */
     @Override
     public V put(K key, V value, long ttl, TimeUnit unit) {
         return get(putAsync(key, value, ttl, unit));
     }
 
+    /** 异步执行 putOperation。 */
     @Override
     protected RFuture<V> putOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -989,6 +1017,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 异步执行 putIfExistsOperation。 */
     @Override
     protected RFuture<V> putIfExistsOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -1079,6 +1108,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 异步执行 putIfAbsentOperation。 */
     @Override
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -1161,11 +1191,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 批量写入 Multimap 条目。 */
     @Override
     public void putAll(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
         get(putAllAsync(map, ttl, ttlUnit));
     }
 
+    /** 异步批量写入。 */
     @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
         if (map.isEmpty()) {
@@ -1181,12 +1213,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return mapWriterFuture(future, listener);
     }
 
+    /** 批量写入 Multimap 条目。 */
     @Override
     public void putAll(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit,
                        long maxIdleTime, TimeUnit maxIdleUnit) {
         get(putAllAsync(map, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
     }
 
+    /** 异步批量写入。 */
     @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit,
                                      long maxIdleTime, TimeUnit maxIdleUnit) {
@@ -1218,11 +1252,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return mapWriterFuture(future, listener);
     }
 
+    /** 原子自增并返回新值。 */
     @Override
     public V addAndGet(K key, Number value) {
         return get(addAndGetAsync(key, value));
     }
 
+    /** 异步执行 addAndGetOperation。 */
     @Override
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -1315,21 +1351,25 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), keyState, new BigDecimal(value.toString()).toPlainString(), publishCommand);
     }
 
+    /** 快速写入（不返回旧值）。 */
     @Override
     public boolean fastPut(K key, V value, long ttl, TimeUnit ttlUnit) {
         return get(fastPutAsync(key, value, ttl, ttlUnit));
     }
 
+    /** 异步 fastPut。 */
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit) {
         return fastPutAsync(key, value, ttl, ttlUnit, 0, null);
     }
 
+    /** 快速写入（不返回旧值）。 */
     @Override
     public boolean fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return get(fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
     }
 
+    /** 异步 fastPut。 */
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
@@ -1362,10 +1402,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return mapWriterFuture(future, new MapWriterTask.Add(key, value));
     }
 
+    /** 异步执行 fastPutOperation。 */
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return fastPutOperationAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, null);
     }
 
+    /** 异步执行 fastPutOperation。 */
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String leaseToken) {
         long currentTime = System.currentTimeMillis();
         long ttlTimeout = 0;
@@ -1485,11 +1527,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** 更新条目过期时间。 */
     @Override
     public boolean updateEntryExpiration(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return get(updateEntryExpirationAsync(key, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
     }
 
+    /** 异步更新条目过期。 */
     @Override
     public RFuture<Boolean> updateEntryExpirationAsync(K key, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         Duration ttld = null;
@@ -1503,11 +1547,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return expireEntryAsync(key, ttld, idled);
     }
 
+    /** Map/Cache expireEntry 操作。 */
     @Override
     public boolean expireEntry(K key, Duration ttl, Duration maxIdleTime) {
         return get(expireEntryAsync(key, ttl, maxIdleTime));
     }
 
+    /** 异步执行 expireEntry。 */
     @Override
     public RFuture<Boolean> expireEntryAsync(K key, Duration ttl, Duration maxIdleTime) {
         checkKey(key);
@@ -1584,10 +1630,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** Map/Cache expireEntryIfNotSet 操作。 */
     public boolean expireEntryIfNotSet(K key, Duration ttl, Duration maxIdleTime) {
         return get(expireEntryIfNotSetAsync(key, ttl, maxIdleTime));
     }
 
+    /** 异步执行 expireEntryIfNotSet。 */
     public RFuture<Boolean> expireEntryIfNotSetAsync(K key, Duration ttl, Duration maxIdleTime) {
         checkKey(key);
 
@@ -1663,10 +1711,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** Map/Cache expireEntriesIfNotSet 操作。 */
     public int expireEntriesIfNotSet(Set<K> keys, Duration ttl, Duration maxIdleTime) {
         return get(expireEntriesIfNotSetAsync(keys, ttl, maxIdleTime));
     }
 
+    /** 异步执行 expireEntriesIfNotSet。 */
     public RFuture<Integer> expireEntriesIfNotSetAsync(Set<K> keys, Duration ttl, Duration maxIdleTime) {
         for (K key : keys) {
             checkKey(key);
@@ -1757,11 +1807,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
 
+    /** Map/Cache expireEntries 操作。 */
     @Override
     public int expireEntries(Set<K> keys, Duration ttl, Duration maxIdleTime) {
         return get(expireEntriesAsync(keys, ttl, maxIdleTime));
     }
 
+    /** 异步执行 expireEntries。 */
     @Override
     public RFuture<Integer> expireEntriesAsync(Set<K> keys, Duration ttl, Duration maxIdleTime) {
         for (K key : keys) {
@@ -1852,16 +1904,19 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** 异步写入键值。 */
     @Override
     public RFuture<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit) {
         return putAsync(key, value, ttl, ttlUnit, 0, null);
     }
 
+    /** 写入键值。 */
     @Override
     public V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return get(putAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
     }
 
+    /** 异步写入键值。 */
     @Override
     public RFuture<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
@@ -1908,6 +1963,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return mapWriterFuture(future, listener);
     }
 
+    /** 异步执行 putOperation。 */
     protected RFuture<V> putOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout,
             long maxIdleDelta, long ttlTimeoutDelta) {
         String name = getRawName(key);
@@ -2007,11 +2063,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** Map WithTTLOnly 操作。 */
     @Override
     public V getWithTTLOnly(K key) {
         return get(getWithTTLOnlyAsync(key));
     }
 
+    /** 异步获取 WithTTLOnlyOperation 或执行 WithTTLOnlyOperation 操作。 */
     private RFuture<V> getWithTTLOnlyOperationAsync(K key) {
         String name = getRawName(key);
         return commandExecutor.evalReadAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
@@ -2033,6 +2091,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    /** 异步获取 WithTTLOnly 或执行 WithTTLOnly 操作。 */
     @Override
     public RFuture<V> getWithTTLOnlyAsync(K key) {
         checkKey(key);
@@ -2051,11 +2110,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Map AllWithTTLOnly 操作。 */
     @Override
     public Map<K, V> getAllWithTTLOnly(Set<K> keys) {
         return get(getAllWithTTLOnlyAsync(keys));
     }
 
+    /** 异步获取 AllWithTTLOnly 或执行 AllWithTTLOnly 操作。 */
     @Override
     public RFuture<Map<K, V>> getAllWithTTLOnlyAsync(Set<K> keys) {
         if (keys.isEmpty()) {
@@ -2084,6 +2145,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步获取 AllWithTTLOnlyOperation 或执行 AllWithTTLOnlyOperation 操作。 */
     protected RFuture<Map<K, V>> getAllWithTTLOnlyOperationAsync(Set<K> keys) {
         List<Object> args = new ArrayList<>(keys.size() + 1);
         List<Object> plainKeys = new ArrayList<>(keys);
@@ -2119,11 +2181,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
 
+    /** 条目剩余 TTL（毫秒）。 */
     @Override
     public long remainTimeToLive(K key) {
         return get(remainTimeToLiveAsync(key));
     }
 
+    /** 异步返回条目 TTL。 */
     @Override
     public RFuture<Long> remainTimeToLiveAsync(K key) {
         checkKey(key);
@@ -2210,6 +2274,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
 
+    /** 异步执行 removeOperation。 */
     @Override
     protected RFuture<V> removeOperationAsync(K key) {
         String name = getRawName(key);
@@ -2251,6 +2316,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), publishCommand);
     }
 
+    /** 异步执行 fastRemoveOperationBatch。 */
     @Override
     protected RFuture<List<Long>> fastRemoveOperationBatchAsync(K... keys) {
         List<Object> args = new ArrayList<>(keys.length);
@@ -2290,6 +2356,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** 异步执行 fastRemoveOperation。 */
     @Override
     protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
         List<Object> params = new ArrayList<>(keys.length);
@@ -2332,6 +2399,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 params.toArray());
     }
 
+    /** 异步执行 scanKeyIterator。 */
     @Override
     public RFuture<ScanResult<Object>> scanKeyIteratorAsync(String name, RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<>();
@@ -2512,6 +2580,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>((CompletionStage<ScanResult<Map.Entry<Object, Object>>>) (Object) f);
     }
 
+    /** 异步执行 fastPutOperation。 */
     @Override
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -2599,6 +2668,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 异步执行 fastPutIfExistsOperation。 */
     @Override
     protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -2660,6 +2730,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 异步执行 fastPutIfAbsentOperation。 */
     @Override
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -2754,16 +2825,19 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** Map/Cache fastPutIfAbsent 操作。 */
     @Override
     public boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit) {
         return fastPutIfAbsent(key, value, ttl, ttlUnit, 0, null);
     }
 
+    /** Map/Cache fastPutIfAbsent 操作。 */
     @Override
     public boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return get(fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
     }
 
+    /** 异步执行 fastPutIfAbsent。 */
     @Override
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
@@ -2808,6 +2882,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return mapWriterFuture(future, listener, Function.identity());
     }
 
+    /** 异步执行 fastPutIfAbsentOperation。 */
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta) {
         String name = getRawName(key);
         RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
@@ -2903,6 +2978,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return future;
     }
 
+    /** 异步执行 replaceOperation。 */
     @Override
     protected RFuture<Boolean> replaceOperationAsync(K key, V oldValue, V newValue) {
         String name = getRawName(key);
@@ -2943,6 +3019,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue), publishCommand);
     }
 
+    /** 异步执行 fastReplaceOperation。 */
     @Override
     protected RFuture<Boolean> fastReplaceOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -2982,6 +3059,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 异步执行 replaceOperation。 */
     @Override
     protected RFuture<V> replaceOperationAsync(K key, V value) {
         String name = getRawName(key);
@@ -3021,6 +3099,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), publishCommand);
     }
 
+    /** 异步执行 putAllOperation。 */
     @Override
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
         List<Object> params = new ArrayList<Object>(map.size()*2 + 1);
@@ -3120,6 +3199,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             params.toArray());
     }
 
+    /** 异步执行 putAllOperation。 */
     private RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
         List<Object> params = new ArrayList<Object>(map.size()*2 + 2);
         params.add(System.currentTimeMillis());
@@ -3232,6 +3312,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             params.toArray());
     }
 
+    /** 异步执行 putAllOperation。 */
     private RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit,
                                                long maxIdleTime, TimeUnit maxIdleUnit) {
         List<Object> params = new ArrayList<Object>(map.size()*2 + 5);
@@ -3364,11 +3445,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private volatile MapCacheEventCodec.OSType osType;
     private volatile Codec topicCodec;
 
+    /** 注册 Map 变更监听器。 */
     @Override
     public int addListener(MapEntryListener listener) {
         return get(addListenerAsync(listener));
     }
 
+    /** Map Topic 操作。 */
     protected RTopic getTopic(String name) {
         if (getSubscribeService().isShardingSupported()) {
             return RedissonShardedTopic.createRaw(topicCodec, commandExecutor, name);
@@ -3376,6 +3459,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return RedissonTopic.createRaw(topicCodec, commandExecutor, name);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(MapEntryListener listener) {
         Objects.requireNonNull(listener);
@@ -3451,6 +3535,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         super.removeListener(listenerId);
@@ -3463,6 +3548,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         CompletionStage<Void> r = super.removeListenerAsync(listenerId);
@@ -3479,12 +3565,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return new CompletableFutureWrapper<>(r);
     }
 
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.asList(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName, optionsName);
         return super.sizeInMemoryAsync(keys);
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         String newName = (String) keys.get(1);
@@ -3493,6 +3581,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return super.copyAsync(kks, database, replace);
     }
 
+    /** 异步执行 rename。 */
     @Override
     public RFuture<Void> renameAsync(String nn) {
         String newName = mapName(nn);
@@ -3507,6 +3596,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         });
     }
 
+    /** 异步执行 renamenx。 */
     @Override
     public RFuture<Boolean> renamenxAsync(String nn) {
         String newName = mapName(nn);
@@ -3523,21 +3613,25 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         });
     }
 
+    /** 清空全部条目。 */
     @Override
     public void clear() {
         get(clearAsync());
     }
 
+    /** 异步清空。 */
     @Override
     public RFuture<Boolean> clearAsync() {
         return deleteAsync(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName);
     }
 
+    /** 异步 JSON 删除。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName, optionsName);
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -3566,6 +3660,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 timeUnit.toMillis(timeToLive), param);
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -3594,6 +3689,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 timestamp, param);
     }
 
+    /** 异步清除 TTL。 */
     @Override
     public RFuture<Boolean> clearExpireAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -3612,6 +3708,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.<Object>asList(getRawName(), timeoutSetName, idleSetName, lastAccessTimeSetName, optionsName));
     }
 
+    /** 异步执行 readAllKeySet。 */
     @Override
     public RFuture<Set<K>> readAllKeySetAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_MAP_KEY_SET,
@@ -3654,6 +3751,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis());
     }
 
+    /** 异步执行 readAllKeySet。 */
     @Override
     public RFuture<Set<K>> readAllKeySetAsync(String keyPattern) {
         if (keyPattern == null) {
@@ -3696,6 +3794,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), keyPattern);
     }
 
+    /** 异步执行 randomKeys。 */
     @Override
     public RFuture<Set<K>> randomKeysAsync(int count) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_MAP_KEY_SET,
@@ -3741,6 +3840,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), count);
     }
 
+    /** 异步执行 randomEntries。 */
     @Override
     public RFuture<Map<K, V>> randomEntriesAsync(int count) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_MAP,
@@ -3792,6 +3892,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return readAll(RedisCommands.EVAL_MAP_ENTRY);
     }
 
+    /** Map/Cache readAll 操作。 */
     private <R> RFuture<R> readAll(RedisCommand<?> evalCommandType) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, evalCommandType,
                 "local s = redis.call('hgetall', KEYS[1]); "
@@ -3877,12 +3978,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), keyPattern);
     }
 
+    /** 异步一次性读取全部 Map 条目。 */
     @Override
     public RFuture<Map<K, V>> readAllMapAsync() {
         return readAll(RedisCommands.EVAL_MAP);
     }
 
 
+    /** 异步执行 readAllValues。 */
     @Override
     public RFuture<Collection<V>> readAllValuesAsync() {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
@@ -3925,6 +4028,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis());
     }
 
+    /** 异步执行 readAllValues。 */
     @Override
     public RFuture<Collection<V>> readAllValuesAsync(String keyPattern) {
         if (keyPattern == null) {
@@ -3967,6 +4071,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), keyPattern);
     }
 
+    /** 销毁延迟队列后台任务。 */
     @Override
     public void destroy() {
         if (evictionScheduler != null) {

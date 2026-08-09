@@ -68,31 +68,37 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         super(codec, connectionManager, name, redisson);
     }
 
+    /** 异步追加元素。 */
     @Override
     public RFuture<Long> addAsync(double longitude, double latitude, V member) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEOADD, getRawName(), convert(longitude),
                 convert(latitude), encode(member));
     }
 
+    /** 地理空间 convert 操作。 */
     private String convert(double longitude) {
         return BigDecimal.valueOf(longitude).toPlainString();
     }
 
+    /** 追加元素（满则覆盖最旧）。 */
     @Override
     public long add(double longitude, double latitude, V member) {
         return get(addAsync(longitude, latitude, member));
     }
 
+    /** 追加元素（满则覆盖最旧）。 */
     @Override
     public long add(GeoEntry... entries) {
         return get(addAsync(entries));
     }
 
+    /** 异步追加元素。 */
     @Override
     public RFuture<Long> addAsync(GeoEntry... entries) {
         return addAsync("", entries);
     }
 
+    /** 异步追加元素。 */
     private RFuture<Long> addAsync(String subCommand, GeoEntry... entries) {
         List<Object> params = new ArrayList<>(entries.length + 2);
         params.add(getRawName());
@@ -107,16 +113,19 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
     }
 
+    /** 地理空间 addIfExists 操作。 */
     @Override
     public Boolean addIfExists(double longitude, double latitude, V member) {
         return get(addIfExistsAsync(longitude, latitude, member));
     }
 
+    /** 地理空间 addIfExists 操作。 */
     @Override
     public long addIfExists(GeoEntry... entries) {
         return get(addIfExistsAsync(entries));
     }
 
+    /** 异步执行 addIfExists。 */
     @Override
     public RFuture<Boolean> addIfExistsAsync(double longitude, double latitude, V member) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -130,48 +139,57 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 convert(longitude), convert(latitude), encode(member));
     }
 
+    /** 异步执行 addIfExists。 */
     @Override
     public RFuture<Long> addIfExistsAsync(GeoEntry... entries) {
         return addAsync("XX", entries);
     }
 
+    /** 地理空间 tryAdd 操作。 */
     @Override
     public boolean tryAdd(double longitude, double latitude, V member) {
         return get(tryAddAsync(longitude, latitude, member));
     }
 
+    /** 地理空间 tryAdd 操作。 */
     @Override
     public long tryAdd(GeoEntry... entries) {
         return get(tryAddAsync(entries));
     }
 
+    /** 异步执行 tryAdd。 */
     @Override
     public RFuture<Boolean> tryAddAsync(double longitude, double latitude, V member) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.GEOADD_BOOLEAN, getRawName(), "NX", convert(longitude),
                 convert(latitude), encode(member));
     }
 
+    /** 异步执行 tryAdd。 */
     @Override
     public RFuture<Long> tryAddAsync(GeoEntry... entries) {
         return addAsync("NX", entries);
     }
 
+    /** 地理空间 dist 操作。 */
     @Override
     public Double dist(V firstMember, V secondMember, GeoUnit geoUnit) {
         return get(distAsync(firstMember, secondMember, geoUnit));
     }
 
+    /** 异步执行 dist。 */
     @Override
     public RFuture<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.GEODIST, getRawName(),
                 encode(firstMember), encode(secondMember), geoUnit);
     }
 
+    /** 地理空间 hash 操作。 */
     @Override
     public Map<V, String> hash(V... members) {
         return get(hashAsync(members));
     }
 
+    /** 异步执行 hash。 */
     @Override
     public RFuture<Map<V, String>> hashAsync(V... members) {
         List<Object> params = new ArrayList<>(members.length + 1);
@@ -184,11 +202,13 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
     }
 
+    /** 地理空间 pos 操作。 */
     @Override
     public Map<V, GeoPosition> pos(V... members) {
         return get(posAsync(members));
     }
 
+    /** 异步执行 pos。 */
     @Override
     public RFuture<Map<V, GeoPosition>> posAsync(V... members) {
         List<Object> params = new ArrayList<>(members.length + 1);
@@ -204,11 +224,13 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
     }
 
+    /** 地理空间 search 操作。 */
     @Override
     public List<V> search(GeoSearchArgs args) {
         return get(searchAsync(args));
     }
 
+    /** 异步执行 search。 */
     @Override
     public RFuture<List<V>> searchAsync(GeoSearchArgs args) {
         GeoSearchParams params = (GeoSearchParams) args;
@@ -265,11 +287,13 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         return commandExecutor.readAsync(getRawName(), codec, command, commandParams.toArray());
     }
 
+    /** 地理空间 searchWithDistance 操作。 */
     @Override
     public Map<V, Double> searchWithDistance(GeoSearchArgs args) {
         return get(searchWithDistanceAsync(args));
     }
 
+    /** 异步执行 searchWithDistance。 */
     @Override
     public RFuture<Map<V, Double>> searchWithDistanceAsync(GeoSearchArgs args) {
         GeoSearchParams params = (GeoSearchParams) args;
@@ -332,11 +356,13 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         return commandExecutor.readAsync(getRawName(), codec, command, commandParams.toArray());
     }
 
+    /** 地理空间 searchWithPosition 操作。 */
     @Override
     public Map<V, GeoPosition> searchWithPosition(GeoSearchArgs args) {
         return get(searchWithPositionAsync(args));
     }
 
+    /** 异步执行 searchWithPosition。 */
     @Override
     public RFuture<Map<V, GeoPosition>> searchWithPositionAsync(GeoSearchArgs args) {
         GeoSearchParams params = (GeoSearchParams) args;
@@ -399,11 +425,13 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         return commandExecutor.readAsync(getRawName(), codec, command, commandParams.toArray());
     }
 
+    /** 地理空间 storeSearchTo 操作。 */
     @Override
     public long storeSearchTo(String destName, GeoSearchArgs args) {
         return get(storeSearchToAsync(destName, args));
     }
 
+    /** 异步执行 storeSearchTo。 */
     @Override
     public RFuture<Long> storeSearchToAsync(String destName, GeoSearchArgs args) {
         GeoSearchParams params = (GeoSearchParams) args;
@@ -467,11 +495,13 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, command, commandParams.toArray());
     }
 
+    /** 地理空间 storeSortedSearchTo 操作。 */
     @Override
     public long storeSortedSearchTo(String destName, GeoSearchArgs args) {
         return get(storeSortedSearchToAsync(destName, args));
     }
 
+    /** 异步执行 storeSortedSearchTo。 */
     @Override
     public RFuture<Long> storeSortedSearchToAsync(String destName, GeoSearchArgs args) {
         GeoSearchParams params = (GeoSearchParams) args;

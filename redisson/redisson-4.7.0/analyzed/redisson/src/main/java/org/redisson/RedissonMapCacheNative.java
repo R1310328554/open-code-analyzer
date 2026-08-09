@@ -38,14 +38,13 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Map-based cache with ability to set TTL per entry.
- * Uses Redis native commands for entry expiration and not a scheduled eviction task.
-
+ * 基于 Redis 原生过期语义的 {@link RMapCacheNative} 实现。
+ * <p>条目 TTL 由 Redis 服务器维护，无需 {@link EvictionScheduler} 定时扫描；
+ * 部分 Lease/max-idle 接口在 Native 模式下不可用。
  *
  * @author Nikita Koksharov
- *
- * @param <K> key
- * @param <V> value
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements RMapCacheNative<K, V> {
 
@@ -61,26 +60,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         super(codec, commandExecutor, name, redisson, options, writeBehindService);
     }
 
+    /** 写入键值。 */
     @Override
     public V put(K key, V value, Duration ttl) {
         return get(putAsync(key, value, ttl));
     }
 
+    /** 写入键值。 */
     @Override
     public V put(K key, V value, Instant time) {
         return get(putAsync(key, value, time));
     }
 
+    /** 异步写入键值。 */
     @Override
     public RFuture<V> putAsync(K key, V value, Duration ttl) {
         return putAsyncInternal(key, value, ttl.toMillis(), true);
     }
 
+    /** 异步写入键值。 */
     @Override
     public RFuture<V> putAsync(K key, V value, Instant time) {
         return putAsyncInternal(key, value, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache putAsyncInternal 操作。 */
     private RFuture<V> putAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
@@ -102,6 +106,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, listener);
     }
 
+    /** 异步执行 putOperation。 */
     protected RFuture<V> putOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
@@ -114,26 +119,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
+    /** 快速写入（不返回旧值）。 */
     @Override
     public boolean fastPut(K key, V value, Duration ttl) {
         return get(fastPutAsync(key, value, ttl));
     }
 
+    /** 快速写入（不返回旧值）。 */
     @Override
     public boolean fastPut(K key, V value, Instant time) {
         return get(fastPutAsync(key, value, time));
     }
 
+    /** 异步 fastPut。 */
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value, Duration ttl) {
         return fastPutAsyncInternal(key, value, ttl.toMillis(), true);
     }
 
+    /** 异步 fastPut。 */
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value, Instant time) {
         return fastPutAsyncInternal(key, value, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache fastPutAsyncInternal 操作。 */
     private RFuture<Boolean> fastPutAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
@@ -154,6 +164,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, new MapWriterTask.Add(key, value));
     }
 
+    /** 异步执行 fastPutOperation。 */
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
@@ -165,26 +176,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
+    /** 仅当键不存在时写入。 */
     @Override
     public V putIfAbsent(K key, V value, Duration ttl) {
         return get(putIfAbsentAsync(key, value, ttl));
     }
 
+    /** 仅当键不存在时写入。 */
     @Override
     public V putIfAbsent(K key, V value, Instant time) {
         return get(putIfAbsentAsync(key, value, time));
     }
 
+    /** 异步 putIfAbsent。 */
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value, Duration ttl) {
         return  putIfAbsentAsyncInternal(key, value, ttl.toMillis(), true);
     }
 
+    /** 异步 putIfAbsent。 */
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value, Instant time) {
         return putIfAbsentAsyncInternal(key, value, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache putIfAbsentAsyncInternal 操作。 */
     private RFuture<V> putIfAbsentAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
@@ -205,6 +221,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, task, r -> r == null);
     }
 
+    /** 异步执行 putIfAbsentOperation。 */
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
@@ -224,26 +241,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
+    /** Map/Cache fastPutIfAbsent 操作。 */
     @Override
     public boolean fastPutIfAbsent(K key, V value, Duration ttl) {
         return get(fastPutIfAbsentAsync(key, value, ttl));
     }
 
+    /** Map/Cache fastPutIfAbsent 操作。 */
     @Override
     public boolean fastPutIfAbsent(K key, V value, Instant time) {
         return get(fastPutIfAbsentAsync(key, value, time));
     }
 
+    /** 异步执行 fastPutIfAbsent。 */
     @Override
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, Duration ttl) {
         return fastPutIfAbsentAsyncInternal(key, value, ttl.toMillis(), true);
     }
 
+    /** 异步执行 fastPutIfAbsent。 */
     @Override
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, Instant time) {
         return fastPutIfAbsentAsyncInternal(key, value, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache fastPutIfAbsentAsyncInternal 操作。 */
     private RFuture<Boolean> fastPutIfAbsentAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
@@ -264,6 +286,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, task, Function.identity());
     }
 
+    /** 异步执行 fastPutIfAbsentOperation。 */
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
@@ -290,11 +313,13 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
+    /** 条目剩余 TTL（毫秒）。 */
     @Override
     public long remainTimeToLive(K key) {
         return get(remainTimeToLiveAsync(key));
     }
 
+    /** 异步返回条目 TTL。 */
     @Override
     public RFuture<Long> remainTimeToLiveAsync(K key) {
         checkKey(key);
@@ -303,11 +328,13 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.readAsync(name, StringCodec.INSTANCE, RedisCommands.HPTTL, name, "FIELDS", 1, encodeMapKey(key));
     }
 
+    /** 条目剩余 TTL（毫秒）。 */
     @Override
     public Map<K, Long> remainTimeToLive(Set<K> keys) {
         return get(remainTimeToLiveAsync(keys));
     }
 
+    /** 异步返回条目 TTL。 */
     @Override
     public RFuture<Map<K, Long>> remainTimeToLiveAsync(Set<K> keys) {
         List<Object> plainKeys = new ArrayList<>(keys);
@@ -323,16 +350,19 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
     }
 
+    /** 批量写入 Multimap 条目。 */
     @Override
     public void putAll(PutArgs<K, V> args) {
         get(putAllAsync(args));
     }
 
+    /** 异步批量写入。 */
     @Override
     public RFuture<Void> putAllAsync(PutArgs<K, V> args) {
         return putAllAsyncInternal(args);
     }
 
+    /** Map/Cache putAllAsyncInternal 操作。 */
     private RFuture<Void> putAllAsyncInternal(PutArgs<K, V> args) {
         PutParams<K, V> params = (PutParams<K, V>) args;
         if (params.getEntries().isEmpty()) {
@@ -348,6 +378,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, listener);
     }
 
+    /** 异步执行 putAllOperation。 */
     protected RFuture<Void> putAllOperationAsync(PutParams<K, V> params) {
         List<Object> cmdParams = new ArrayList<>(params.getEntries().size() * 2 + 4);
         cmdParams.add(getRawName());
@@ -369,16 +400,19 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HSETEX_VOID, cmdParams.toArray());
     }
 
+    /** 批量写入 Multimap 条目。 */
     @Override
     public void putAll(Map<? extends K, ? extends V> map, Duration ttl) {
         get(putAllAsync(map, ttl));
     }
 
+    /** 异步批量写入。 */
     @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, Duration ttl) {
         return putAllAsyncInternal(map, ttl.toMillis());
     }
 
+    /** Map/Cache putAllAsyncInternal 操作。 */
     private RFuture<Void> putAllAsyncInternal(Map<? extends K, ? extends V> map, long ms) {
         if (map.isEmpty()) {
             return CompletableFutureWrapper.completedNull();
@@ -393,6 +427,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, listener);
     }
 
+    /** 异步执行 putAllOperation。 */
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map, long ms) {
         List<Object> args = new ArrayList<>();
         args.add(ms);
@@ -406,26 +441,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 Collections.singletonList(name), args.toArray());
     }
 
+    /** Map/Cache expireEntry 操作。 */
     @Override
     public boolean expireEntry(K key, Duration ttl) {
         return get(expireEntryAsync(key, ttl));
     }
 
+    /** Map/Cache expireEntry 操作。 */
     @Override
     public boolean expireEntry(K key, Instant time) {
         return get(expireEntryAsync(key, time));
     }
 
+    /** 异步执行 expireEntry。 */
     @Override
     public RFuture<Boolean> expireEntryAsync(K key, Duration ttl) {
         return expireEntryAsyncInternal(key, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntry。 */
     @Override
     public RFuture<Boolean> expireEntryAsync(K key, Instant time) {
         return expireEntryAsyncInternal(key, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache expireEntryAsyncInternal 操作。 */
     private RFuture<Boolean> expireEntryAsyncInternal(K key, long ms, boolean isDuration) {
         String name = getRawName(key);
 
@@ -439,26 +479,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 ms, encodeMapKey(key), getExpireCommand(isDuration));
     }
 
+    /** Map/Cache expireEntryIfNotSet 操作。 */
     @Override
     public boolean expireEntryIfNotSet(K key, Duration ttl) {
         return get(expireEntryIfNotSetAsync(key, ttl));
     }
 
+    /** Map/Cache expireEntryIfNotSet 操作。 */
     @Override
     public boolean expireEntryIfNotSet(K key, Instant time) {
         return get(expireEntryIfNotSetAsync(key, time));
     }
 
+    /** 异步执行 expireEntryIfNotSet。 */
     @Override
     public RFuture<Boolean> expireEntryIfNotSetAsync(K key, Duration ttl) {
         return expireEntryAsync("NX", key, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntryIfNotSet。 */
     @Override
     public RFuture<Boolean> expireEntryIfNotSetAsync(K key, Instant time) {
         return expireEntryAsync("NX", key, time.toEpochMilli(), false);
     }
 
+    /** 异步执行 expireEntry。 */
     private RFuture<Boolean> expireEntryAsync(String param, K key, long ms, boolean isDuration) {
         String name = getRawName(key);
 
@@ -472,26 +517,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 ms, encodeMapKey(key), param, getExpireCommand(isDuration));
     }
 
+    /** Map/Cache expireEntries 操作。 */
     @Override
     public int expireEntries(Set<K> keys, Duration ttl) {
         return get(expireEntriesAsync(keys, ttl));
     }
 
+    /** Map/Cache expireEntries 操作。 */
     @Override
     public int expireEntries(Set<K> keys, Instant time) {
         return get(expireEntriesAsync(keys, time));
     }
 
+    /** 异步执行 expireEntries。 */
     @Override
     public RFuture<Integer> expireEntriesAsync(Set<K> keys, Duration ttl) {
         return expireEntriesAsyncInternal(keys, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntries。 */
     @Override
     public RFuture<Integer> expireEntriesAsync(Set<K> keys, Instant time) {
         return expireEntriesAsyncInternal(keys, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache expireEntriesAsyncInternal 操作。 */
     private RFuture<Integer> expireEntriesAsyncInternal(Set<K> keys, long ms, boolean isDuration) {
         List<Object> args = new ArrayList<>();
         args.add(ms);
@@ -511,26 +561,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 args.toArray());
     }
 
+    /** Map/Cache expireEntriesIfNotSet 操作。 */
     @Override
     public int expireEntriesIfNotSet(Set<K> keys, Duration ttl) {
         return get(expireEntriesIfNotSetAsync(keys, ttl));
     }
 
+    /** Map/Cache expireEntriesIfNotSet 操作。 */
     @Override
     public int expireEntriesIfNotSet(Set<K> keys, Instant time) {
         return get(expireEntriesIfNotSetAsync(keys, time));
     }
 
+    /** 异步执行 expireEntriesIfNotSet。 */
     @Override
     public RFuture<Integer> expireEntriesIfNotSetAsync(Set<K> keys, Duration ttl) {
         return expireEntriesAsyncInternal("NX", keys, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntriesIfNotSet。 */
     @Override
     public RFuture<Integer> expireEntriesIfNotSetAsync(Set<K> keys, Instant time) {
         return expireEntriesAsyncInternal("NX", keys, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache expireEntriesAsyncInternal 操作。 */
     private RFuture<Integer> expireEntriesAsyncInternal(String param, Set<K> keys, long ms, boolean isDuration) {
         List<Object> args = new ArrayList<>();
         args.add(param);
@@ -551,102 +606,122 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 args.toArray());
     }
 
+    /** Map/Cache expireEntryIfGreater 操作。 */
     @Override
     public boolean expireEntryIfGreater(K key, Duration ttl) {
         return get(expireEntryIfGreaterAsync(key, ttl));
     }
 
+    /** Map/Cache expireEntryIfGreater 操作。 */
     @Override
     public boolean expireEntryIfGreater(K key, Instant time) {
         return get(expireEntryIfGreaterAsync(key, time));
     }
 
+    /** Map/Cache expireEntryIfLess 操作。 */
     @Override
     public boolean expireEntryIfLess(K key, Duration ttl) {
         return get(expireEntryIfLessAsync(key, ttl));
     }
 
+    /** Map/Cache expireEntryIfLess 操作。 */
     @Override
     public boolean expireEntryIfLess(K key, Instant time) {
         return get(expireEntryIfLessAsync(key, time));
     }
 
+    /** Map/Cache expireEntriesIfGreater 操作。 */
     @Override
     public int expireEntriesIfGreater(Set<K> keys, Duration ttl) {
         return get(expireEntriesIfGreaterAsync(keys, ttl));
     }
 
+    /** Map/Cache expireEntriesIfGreater 操作。 */
     @Override
     public int expireEntriesIfGreater(Set<K> keys, Instant time) {
         return get(expireEntriesIfGreaterAsync(keys, time));
     }
 
+    /** Map/Cache expireEntriesIfLess 操作。 */
     @Override
     public int expireEntriesIfLess(Set<K> keys, Duration ttl) {
         return get(expireEntriesIfLessAsync(keys, ttl));
     }
 
+    /** Map/Cache expireEntriesIfLess 操作。 */
     @Override
     public int expireEntriesIfLess(Set<K> keys, Instant time) {
         return get(expireEntriesIfLessAsync(keys, time));
     }
 
+    /** 异步执行 expireEntryIfGreater。 */
     @Override
     public RFuture<Boolean> expireEntryIfGreaterAsync(K key, Duration ttl) {
         return expireEntryAsync("GT", key, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntryIfGreater。 */
     @Override
     public RFuture<Boolean> expireEntryIfGreaterAsync(K key, Instant time) {
         return expireEntryAsync("GT", key, time.toEpochMilli(), false);
     }
 
+    /** 异步执行 expireEntryIfLess。 */
     @Override
     public RFuture<Boolean> expireEntryIfLessAsync(K key, Duration ttl) {
         return expireEntryAsync("LT", key, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntryIfLess。 */
     @Override
     public RFuture<Boolean> expireEntryIfLessAsync(K key, Instant time) {
         return expireEntryAsync("LT", key, time.toEpochMilli(), false);
     }
 
+    /** 异步执行 expireEntriesIfGreater。 */
     @Override
     public RFuture<Integer> expireEntriesIfGreaterAsync(Set<K> keys, Duration ttl) {
         return expireEntriesAsyncInternal("GT", keys, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntriesIfGreater。 */
     @Override
     public RFuture<Integer> expireEntriesIfGreaterAsync(Set<K> keys, Instant time) {
         return expireEntriesAsyncInternal("GT", keys, time.toEpochMilli(), false);
     }
 
+    /** 异步执行 expireEntriesIfLess。 */
     @Override
     public RFuture<Integer> expireEntriesIfLessAsync(Set<K> keys, Duration ttl) {
         return expireEntriesAsyncInternal("LT", keys, ttl.toMillis(), true);
     }
 
+    /** 异步执行 expireEntriesIfLess。 */
     @Override
     public RFuture<Integer> expireEntriesIfLessAsync(Set<K> keys, Instant time) {
         return expireEntriesAsyncInternal("LT", keys, time.toEpochMilli(), false);
     }
 
+    /** 清除条目 TTL。 */
     @Override
     public Boolean clearExpire(K key) {
         return get(clearExpireAsync(key));
     }
 
+    /** 异步清除 TTL。 */
     @Override
     public RFuture<Boolean> clearExpireAsync(K key) {
         String name = getRawName(key);
         return commandExecutor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.HPERSIST, name, "FIELDS", 1, encodeMapKey(key));
     }
 
+    /** 清除条目 TTL。 */
     @Override
     public Map<K, Boolean> clearExpire(Set<K> keys) {
         return get(clearExpireAsync(keys));
     }
 
+    /** 异步清除 TTL。 */
     @Override
     public RFuture<Map<K, Boolean>> clearExpireAsync(Set<K> keys) {
         List<Object> plainKeys = new ArrayList<>(keys);
@@ -662,6 +737,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, command, params.toArray());
     }
 
+    /** 注册 Map 变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof MapExpiredListener) {
@@ -676,6 +752,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof MapExpiredListener) {
@@ -690,6 +767,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return super.addListenerAsync(listener);
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         removeListener(listenerId, "__subkeyevent@*:hexpired", "__keyevent@*:hexpired",
@@ -697,6 +775,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
@@ -704,17 +783,20 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 "__subkeyevent@*:hpersist", "__keyevent@*:hpersist");
     }
 
+    /** 若存在则计算新值。 */
     @Override
     public V compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         return computeInternal(key, ttl.toMillis(), true, remappingFunction);
     }
 
+    /** 若存在则计算新值。 */
     @Override
     public V compute(K key, Instant time, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         return computeInternal(key, time.toEpochMilli(), false, remappingFunction);
     }
 
 
+    /** Map/Cache computeInternal 操作。 */
     private V computeInternal(K key, long ms, boolean isDuration, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         checkNotBatch();
 
@@ -740,17 +822,20 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** 异步执行 compute。 */
     @Override
     public RFuture<V> computeAsync(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         return computeAsyncInternal(key, ttl.toMillis(), true, remappingFunction);
     }
 
+    /** 异步执行 compute。 */
     @Override
     public RFuture<V> computeAsync(K key, Instant time,
                                    BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         return computeAsyncInternal(key, time.toEpochMilli(), false, remappingFunction);
     }
 
+    /** Map/Cache computeAsyncInternal 操作。 */
     private RFuture<V> computeAsyncInternal(K key, long ms, boolean isDuration,
                                    BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         checkNotBatch();
@@ -783,16 +868,19 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 键不存在时计算并写入。 */
     @Override
     public V computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
         return computeIfAbsentInternal(key, ttl.toMillis(), true, mappingFunction);
     }
 
+    /** 键不存在时计算并写入。 */
     @Override
     public V computeIfAbsent(K key, Instant time, Function<? super K, ? extends V> mappingFunction) {
         return computeIfAbsentInternal(key, time.toEpochMilli(), false, mappingFunction);
     }
 
+    /** Map/Cache computeIfAbsentInternal 操作。 */
     private V computeIfAbsentInternal(K key, long ms, boolean isDuration, Function<? super K, ? extends V> mappingFunction) {
         checkNotBatch();
 
@@ -824,16 +912,19 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** 异步执行 computeIfAbsent。 */
     @Override
     public RFuture<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
         return computeIfAbsentAsyncInternal(key, ttl.toMillis(), true, mappingFunction);
     }
 
+    /** 异步执行 computeIfAbsent。 */
     @Override
     public RFuture<V> computeIfAbsentAsync(K key, Instant time, Function<? super K, ? extends V> mappingFunction) {
         return computeIfAbsentAsyncInternal(key, time.toEpochMilli(), false, mappingFunction);
     }
 
+    /** Map/Cache computeIfAbsentAsyncInternal 操作。 */
     public RFuture<V> computeIfAbsentAsyncInternal(K key, long ms, boolean isDuration, Function<? super K, ? extends V> mappingFunction) {
         checkNotBatch();
 
@@ -870,6 +961,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Map ExpireCommand 操作。 */
     private String getExpireCommand(boolean isDuration) {
         if (isDuration) {
             return "hpexpire";
@@ -878,26 +970,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return "hpexpireat";
     }
 
+    /** Map/Cache putIfExist 操作。 */
     @Override
     public V putIfExist(K key, V value, Duration ttl) {
         return get(putIfExistAsync(key, value, ttl));
     }
 
+    /** Map/Cache putIfExist 操作。 */
     @Override
     public V putIfExist(K key, V value, Instant time) {
         return get(putIfExistAsync(key, value, time));
     }
 
+    /** 异步执行 putIfExist。 */
     @Override
     public RFuture<V> putIfExistAsync(K key, V value, Duration ttl) {
         return putIfExistAsyncInternal(key, value, ttl.toMillis(), true);
     }
 
+    /** 异步执行 putIfExist。 */
     @Override
     public RFuture<V> putIfExistAsync(K key, V value, Instant time) {
         return putIfExistAsyncInternal(key, value, time.toEpochMilli(), false);
     }
 
+    /** Map/Cache putIfExistAsyncInternal 操作。 */
     private RFuture<V> putIfExistAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
 
@@ -917,6 +1014,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, task, r -> r != null);
     }
 
+    /** 异步执行 putIfExistOperation。 */
     protected RFuture<V> putIfExistOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
@@ -943,16 +1041,19 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                 ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
+    /** Map/Cache putIfAllKeysExist 操作。 */
     @Override
     public boolean putIfAllKeysExist(PutArgs<K, V> args) {
         return get(putIfAllKeysExistAsync(args));
     }
 
+    /** 异步执行 putIfAllKeysExist。 */
     @Override
     public RFuture<Boolean> putIfAllKeysExistAsync(PutArgs<K, V> args) {
         return putAllKeysAsync((PutParams<K, V>) args, "FXX");
     }
 
+    /** 异步执行 putAllKeys。 */
     protected RFuture<Boolean> putAllKeysAsync(PutParams<K, V> params, String condition) {
         if (params.getEntries().isEmpty()) {
             return new CompletableFutureWrapper<>(false);
@@ -967,6 +1068,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, listener, n -> n);
     }
 
+    /** 异步执行 putAllKeysOperation。 */
     protected RFuture<Boolean> putAllKeysOperationAsync(PutParams<K, V> params, String condition) {
         Map<K, V> map = params.getEntries();
         if (map.isEmpty()) {
@@ -994,11 +1096,13 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HSETEX, cmdParams.toArray());
     }
 
+    /** Map/Cache putIfAllKeysAbsent 操作。 */
     @Override
     public boolean putIfAllKeysAbsent(PutArgs<K, V> args) {
         return get(putIfAllKeysAbsentAsync(args));
     }
 
+    /** 异步执行 putIfAllKeysAbsent。 */
     @Override
     public RFuture<Boolean> putIfAllKeysAbsentAsync(PutArgs<K, V> args) {
         return putAllKeysAsync((PutParams<K, V>) args, "FNX");

@@ -63,9 +63,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * Redis 键空间管理 {@link RKeys} 实现。
+ * <p>封装 KEYS/SCAN、UNLINK、DUMP/RESTORE、MIGRATE 及跨库 MOVE 等键级操作。
  *
  * @author Nikita Koksharov
- *
  */
 public final class RedissonKeys implements RKeys {
 
@@ -76,34 +77,41 @@ public final class RedissonKeys implements RKeys {
         this.commandExecutor = commandExecutor;
     }
 
+    /** 键空间 CommandExecutor 操作。 */
     public CommandAsyncExecutor getCommandExecutor() {
         return commandExecutor;
     }
 
+    /** 键空间 ConnectionManager 操作。 */
     public ConnectionManager getConnectionManager() {
         return commandExecutor.getConnectionManager();
     }
 
+    /** 键空间 Type 操作。 */
     @Override
     public RType getType(String key) {
         return commandExecutor.get(getTypeAsync(key));
     }
 
+    /** 异步获取 Type 或执行 Type 操作。 */
     @Override
     public RFuture<RType> getTypeAsync(String key) {
         return commandExecutor.readAsync(map(key), RedisCommands.TYPE, map(key));
     }
 
+    /** 键空间 Slot 操作。 */
     @Override
     public int getSlot(String key) {
         return commandExecutor.get(getSlotAsync(key));
     }
 
+    /** 异步获取 Slot 或执行 Slot 操作。 */
     @Override
     public RFuture<Integer> getSlotAsync(String key) {
         return commandExecutor.readAsync(null, RedisCommands.KEYSLOT, map(key));
     }
 
+    /** 按模式匹配返回键集合。 */
     @Override
     public Iterable<String> getKeysByPattern(String pattern) {
         return getKeysByPattern(pattern, 10);
@@ -125,11 +133,13 @@ public final class RedissonKeys implements RKeys {
                 }
             }, new ObjectListReplayDecoder<String>()));
 
+    /** 按模式匹配返回键集合。 */
     @Override
     public Iterable<String> getKeysByPattern(String pattern, int count) {
         return getKeys(KeysScanOptions.defaults().pattern(pattern).chunkSize(count));
     }
 
+    /** 按模式匹配返回键集合。 */
     public <T> Iterable<T> getKeysByPattern(RedisCommand<?> command, String pattern, int limit, int count, RType type) {
         List<Iterable<T>> iterables = new ArrayList<>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
@@ -139,32 +149,38 @@ public final class RedissonKeys implements RKeys {
         return new CompositeIterable<T>(iterables, limit);
     }
 
+    /** 键空间 KeysWithLimit 操作。 */
     @Override
     public Iterable<String> getKeysWithLimit(int limit) {
         return getKeysWithLimit(null, limit);
     }
 
+    /** 键空间 KeysWithLimit 操作。 */
     @Override
     public Iterable<String> getKeysWithLimit(String pattern, int limit) {
         return getKeys(KeysScanOptions.defaults().pattern(pattern).limit(limit));
     }
 
+    /** 返回全部键（慎用）。 */
     @Override
     public Iterable<String> getKeys() {
         return getKeys(KeysScanOptions.defaults());
     }
 
+    /** 异步获取 Keys 或执行 Keys 操作。 */
     @Override
     public AsyncIterator<String> getKeysAsync() {
         return getKeysAsync(KeysScanOptions.defaults());
     }
 
+    /** 返回全部键（慎用）。 */
     @Override
     public Iterable<String> getKeys(KeysScanOptions options) {
         KeysScanParams params = (KeysScanParams) options;
         return getKeysByPattern(scan, params.getPattern(), params.getLimit(), params.getChunkSize(), params.getType());
     }
 
+    /** 异步获取 Keys 或执行 Keys 操作。 */
     @Override
     public AsyncIterator<String> getKeysAsync(KeysScanOptions options) {
         KeysScanParams params = (KeysScanParams) options;
@@ -182,11 +198,13 @@ public final class RedissonKeys implements RKeys {
         return new CompositeAsyncIterator<>(asyncIterators, params.getLimit());
     }
 
+    /** 返回全部键（慎用）。 */
     @Override
     public Iterable<String> getKeys(int count) {
         return getKeysByPattern(null, count);
     }
 
+    /** 异步 SCAN 迭代器。 */
     private RFuture<ScanResult<Object>> scanIteratorAsync(Codec codec, RedisClient client, MasterSlaveEntry entry, RedisCommand<?> command,
                                                           String startPos, String pattern, int count, RType type) {
         List<Object> args = new ArrayList<>();
@@ -208,11 +226,13 @@ public final class RedissonKeys implements RKeys {
         return commandExecutor.readAsync(client, entry, codec, command, args.toArray());
     }
 
+    /** 异步 SCAN 迭代器。 */
     public RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry,
                                                          String startPos, String pattern, int count, RType type) {
         return scanIteratorAsync(StringCodec.INSTANCE, client, entry, scan, startPos, pattern, count, type);
     }
 
+    /** 键管理 createKeysIterator 操作。 */
     private <T> Iterator<T> createKeysIterator(Codec codec, MasterSlaveEntry entry, RedisCommand<?> command,
                                                String pattern, int count, RType type) {
         return new RedissonBaseIterator<T>() {
@@ -231,11 +251,13 @@ public final class RedissonKeys implements RKeys {
         };
     }
 
+    /** 更新键的最后访问时间。 */
     @Override
     public long touch(String... names) {
         return commandExecutor.get(touchAsync(names));
     }
 
+    /** 异步执行 touch。 */
     @Override
     public RFuture<Long> touchAsync(String... names) {
         if (names.length == 0) {
@@ -245,11 +267,13 @@ public final class RedissonKeys implements RKeys {
         return commandExecutor.writeBatchedAsync(null, RedisCommands.TOUCH_LONG, new LongSlotCallback(), map(names));
     }
 
+    /** 统计存在的键数量。 */
     @Override
     public long countExists(String... names) {
         return commandExecutor.get(countExistsAsync(names));
     }
 
+    /** 异步执行 countExists。 */
     @Override
     public RFuture<Long> countExistsAsync(String... names) {
         if (names.length == 0) {
@@ -259,6 +283,7 @@ public final class RedissonKeys implements RKeys {
         return commandExecutor.readBatchedAsync(StringCodec.INSTANCE, RedisCommands.EXISTS_LONG, new LongSlotCallback(), map(names));
     }
 
+    /** 键管理 randomKey 操作。 */
     @Override
     public String randomKey() {
         return commandExecutor.get(randomKeyAsync());
@@ -271,31 +296,37 @@ public final class RedissonKeys implements RKeys {
         return unmap((String) obj);
     });
 
+    /** 异步执行 randomKey。 */
     @Override
     public RFuture<String> randomKeyAsync() {
         return commandExecutor.readRandomAsync(StringCodec.INSTANCE, randomKey);
     }
 
+    /** 键管理 deleteByPattern 操作。 */
     @Override
     public long deleteByPattern(String pattern) {
         return commandExecutor.get(deleteByPatternAsync(pattern));
     }
 
+    /** 异步执行 deleteByPattern。 */
     @Override
     public RFuture<Long> deleteByPatternAsync(String pattern) {
         return eraseByPatternAsync(RedisCommands.DEL, pattern);
     }
 
+    /** 键管理 unlinkByPattern 操作。 */
     @Override
     public long unlinkByPattern(String pattern) {
         return commandExecutor.get(unlinkByPatternAsync(pattern));
     }
 
+    /** 异步执行 unlinkByPattern。 */
     @Override
     public RFuture<Long> unlinkByPatternAsync(String pattern) {
         return eraseByPatternAsync(RedisCommands.UNLINK, pattern);
     }
 
+    /** 异步执行 eraseByPattern。 */
     private RFuture<Long> eraseByPatternAsync(RedisStrictCommand command, String pattern) {
         Function<Object[], Long> delegate = keys -> (Long) commandExecutor.get(commandExecutor.writeBatchedAsync(null, command, new LongSlotCallback(), keys));
 
@@ -369,16 +400,19 @@ public final class RedissonKeys implements RKeys {
         return new CompletableFutureWrapper<>(res);
     }
 
+    /** 删除 JSON 路径或键。 */
     @Override
     public long delete(String... keys) {
         return commandExecutor.get(deleteAsync(keys));
     }
 
+    /** 删除 JSON 路径或键。 */
     @Override
     public long delete(RObject... objects) {
         return commandExecutor.get(deleteAsync(objects));
     }
 
+    /** 异步 JSON 删除。 */
     @Override
     public RFuture<Long> deleteAsync(RObject... objects) {
         List<String> keys = new ArrayList<>();
@@ -389,11 +423,13 @@ public final class RedissonKeys implements RKeys {
         return deleteAsync(keys.toArray(new String[0]));
     }
 
+    /** 异步删除键（UNLINK）。 */
     @Override
     public long unlink(String... keys) {
         return commandExecutor.get(unlinkAsync(keys));
     }
 
+    /** 异步执行 unlink。 */
     @Override
     public RFuture<Long> unlinkAsync(String... keys) {
         if (keys.length == 0) {
@@ -403,6 +439,7 @@ public final class RedissonKeys implements RKeys {
         return commandExecutor.writeBatchedAsync(null, RedisCommands.UNLINK, new LongSlotCallback(), map(keys));
     }
 
+    /** 异步 JSON 删除。 */
     @Override
     public RFuture<Long> deleteAsync(String... keys) {
         if (keys.length == 0) {
@@ -412,31 +449,37 @@ public final class RedissonKeys implements RKeys {
         return commandExecutor.writeBatchedAsync(null, RedisCommands.DEL, new LongSlotCallback(), map(keys));
     }
 
+    /** 键管理 map 操作。 */
     private String map(String key) {
         return commandExecutor.getServiceManager().getNameMapper().map(key);
     }
 
+    /** 键管理 unmap 操作。 */
     private String unmap(String key) {
         return commandExecutor.getServiceManager().getNameMapper().unmap(key);
     }
 
+    /** 键管理 unmap 操作。 */
     private List<String> unmap(List<String> keys) {
         return keys.stream()
                 .map(k -> commandExecutor.getServiceManager().getNameMapper().unmap(k))
                 .collect(Collectors.toList());
     }
 
+    /** 键管理 map 操作。 */
     private String[] map(String[] keys) {
         return Arrays.stream(keys)
                 .map(k -> commandExecutor.getServiceManager().getNameMapper().map(k))
                 .toArray(String[]::new);
     }
 
+    /** 键管理 count 操作。 */
     @Override
     public long count() {
         return commandExecutor.get(countAsync());
     }
 
+    /** 异步执行 count。 */
     @Override
     public RFuture<Long> countAsync() {
         List<CompletableFuture<Long>> futures = commandExecutor.readAllAsync(RedisCommands.DBSIZE);
@@ -445,127 +488,152 @@ public final class RedissonKeys implements RKeys {
         return new CompletableFutureWrapper<>(s);
     }
 
+    /** 键管理 flushdbParallel 操作。 */
     @Override
     public void flushdbParallel() {
         commandExecutor.get(flushdbParallelAsync());
     }
 
+    /** 异步执行 flushdbParallel。 */
     @Override
     public RFuture<Void> flushdbParallelAsync() {
         return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHDB_ASYNC);
     }
 
+    /** 键管理 flushallParallel 操作。 */
     @Override
     public void flushallParallel() {
         commandExecutor.get(flushallParallelAsync());
     }
 
+    /** 异步执行 flushallParallel。 */
     @Override
     public RFuture<Void> flushallParallelAsync() {
         return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHALL_ASYNC);
     }
 
+    /** 键管理 flushdb 操作。 */
     @Override
     public void flushdb() {
         commandExecutor.get(flushdbAsync());
     }
 
+    /** 异步执行 flushdb。 */
     @Override
     public RFuture<Void> flushdbAsync() {
         return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHDB);
     }
 
+    /** 键管理 flushall 操作。 */
     @Override
     public void flushall() {
         commandExecutor.get(flushallAsync());
     }
 
+    /** 异步执行 flushall。 */
     @Override
     public RFuture<Void> flushallAsync() {
         return commandExecutor.writeAllVoidAsync(RedisCommands.FLUSHALL);
     }
 
+    /** 条目剩余 TTL（毫秒）。 */
     @Override
     public long remainTimeToLive(String name) {
         return commandExecutor.get(remainTimeToLiveAsync(name));
     }
 
+    /** 异步返回条目 TTL。 */
     @Override
     public RFuture<Long> remainTimeToLiveAsync(String name) {
         return commandExecutor.readAsync(map(name), StringCodec.INSTANCE, RedisCommands.PTTL, map(name));
     }
 
+    /** 重命名键。 */
     @Override
     public void rename(String currentName, String newName) {
         commandExecutor.get(renameAsync(currentName, newName));
     }
 
+    /** 异步执行 rename。 */
     @Override
     public RFuture<Void> renameAsync(String currentName, String newName) {
         return commandExecutor.writeAsync(map(currentName), RedisCommands.RENAME, map(currentName), map(newName));
     }
 
+    /** 键管理 renamenx 操作。 */
     @Override
     public boolean renamenx(String oldName, String newName) {
         return commandExecutor.get(renamenxAsync(oldName, newName));
     }
 
+    /** 异步执行 renamenx。 */
     @Override
     public RFuture<Boolean> renamenxAsync(String oldName, String newName) {
         return commandExecutor.writeAsync(map(oldName), RedisCommands.RENAMENX, map(oldName), map(newName));
     }
 
+    /** 清除条目 TTL。 */
     @Override
     public boolean clearExpire(String name) {
         return commandExecutor.get(clearExpireAsync(name));
     }
 
+    /** 异步清除 TTL。 */
     @Override
     public RFuture<Boolean> clearExpireAsync(String name) {
         return commandExecutor.writeAsync(map(name), StringCodec.INSTANCE, RedisCommands.PERSIST, map(name));
     }
 
+    /** 键管理 expireAt 操作。 */
     @Override
     public boolean expireAt(String name, long timestamp) {
         return commandExecutor.get(expireAtAsync(name, timestamp));
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     public RFuture<Boolean> expireAtAsync(String name, long timestamp) {
         return commandExecutor.writeAsync(map(name), StringCodec.INSTANCE, RedisCommands.PEXPIREAT, map(name), timestamp);
     }
 
+    /** 键管理 expireAt 操作。 */
     @Override
     public long expireAt(Instant instant, String... names) {
         return commandExecutor.get(expireAtAsync(instant, names));
     }
 
+    /** 异步执行 expireAt。 */
     @Override
     public RFuture<Long> expireAtAsync(Instant instant, String... names) {
         return expireAsyncInternal(RedisCommands.PEXPIREAT, instant.toEpochMilli(), names);
     }
 
+    /** 键管理 expire 操作。 */
     @Override
     public boolean expire(String name, long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.get(expireAsync(name, timeToLive, timeUnit));
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Boolean> expireAsync(String name, long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.writeAsync(map(name), StringCodec.INSTANCE, RedisCommands.PEXPIRE, map(name),
                 timeUnit.toMillis(timeToLive));
     }
 
+    /** 键管理 expire 操作。 */
     @Override
     public long expire(Duration duration, String... names) {
         return commandExecutor.get(expireAsync(duration, names));
     }
 
+    /** 异步执行 expire。 */
     @Override
     public RFuture<Long> expireAsync(Duration duration, String... names) {
         return expireAsyncInternal(RedisCommands.PEXPIRE, duration.toMillis(), names);
     }
 
+    /** 键管理 expireAsyncInternal 操作。 */
     private RFuture<Long> expireAsyncInternal(RedisCommand<?> command, long arg, String... names) {
         if (names.length == 0) {
             return new CompletableFutureWrapper<>(0L);
@@ -590,21 +658,25 @@ public final class RedissonKeys implements RKeys {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 将键迁移到另一 Redis 实例。 */
     @Override
     public void migrate(String name, String host, int port, int database, long timeout) {
         commandExecutor.get(migrateAsync(name, host, port, database, timeout));
     }
 
+    /** 将键迁移到另一 Redis 实例。 */
     @Override
     public void migrate(MigrateArgs migrateArgs) {
         commandExecutor.get(migrateAsync(migrateArgs));
     }
 
+    /** 异步执行 migrate。 */
     @Override
     public RFuture<Void> migrateAsync(String name, String host, int port, int database, long timeout) {
         return commandExecutor.writeAsync(map(name), RedisCommands.MIGRATE, host, port, map(name), database, timeout);
     }
 
+    /** 异步执行 migrate。 */
     @Override
     public RFuture<Void> migrateAsync(MigrateArgs migrateArgs) {
         MigrateParams migrateArgsParams = (MigrateParams) migrateArgs;
@@ -642,71 +714,85 @@ public final class RedissonKeys implements RKeys {
 
 
 
+    /** 复制键到目标名称。 */
     @Override
     public void copy(String name, String host, int port, int database, long timeout) {
         commandExecutor.get(copyAsync(name, host, port, database, timeout));
     }
 
+    /** 异步执行 copy。 */
     @Override
     public RFuture<Void> copyAsync(String name, String host, int port, int database, long timeout) {
         return commandExecutor.writeAsync(map(name), RedisCommands.MIGRATE, host, port, map(name), database, timeout, "COPY");
     }
 
+    /** 将键移动到指定数据库。 */
     @Override
     public boolean move(String name, int database) {
         return commandExecutor.get(moveAsync(name, database));
     }
 
+    /** 异步执行 move。 */
     @Override
     public RFuture<Boolean> moveAsync(String name, int database) {
         return commandExecutor.writeAsync(map(name), RedisCommands.MOVE, map(name), database);
     }
 
+    /** 按模式流式迭代键。 */
     @Override
     public Stream<String> getKeysStreamByPattern(String pattern) {
         return toStream(getKeysByPattern(pattern).iterator());
     }
 
+    /** 键管理 toStream 操作。 */
     protected <T> Stream<T> toStream(Iterator<T> iterator) {
         Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(iterator, Spliterator.NONNULL);
         return StreamSupport.stream(spliterator, false);
     }
 
+    /** 按模式流式迭代键。 */
     @Override
     public Stream<String> getKeysStreamByPattern(String pattern, int count) {
         return toStream(getKeysByPattern(pattern, count).iterator());
     }
 
+    /** 流式迭代键空间。 */
     @Override
     public Stream<String> getKeysStream() {
         return toStream(getKeys().iterator());
     }
 
+    /** 流式迭代键空间。 */
     @Override
     public Stream<String> getKeysStream(KeysScanOptions options) {
         return toStream(getKeys(options).iterator());
     }
 
+    /** 流式迭代键空间。 */
     @Override
     public Stream<String> getKeysStream(int count) {
         return toStream(getKeys(count).iterator());
     }
 
+    /** 键管理 swapdb 操作。 */
     @Override
     public void swapdb(int db1, int db2) {
         commandExecutor.get(swapdbAsync(db1, db2));
     }
 
+    /** 异步执行 swapdb。 */
     @Override
     public RFuture<Void> swapdbAsync(int db1, int db2) {
         return commandExecutor.writeAsync(null, RedisCommands.SWAPDB, db1, db2);
     }
 
+    /** 注册 Map 变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         return commandExecutor.get(addListenerAsync(listener));
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof NewObjectListener) {
@@ -733,6 +819,7 @@ public final class RedissonKeys implements RKeys {
         throw new IllegalArgumentException();
     }
 
+    /** 异步执行 addListener。 */
     private <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         return topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
@@ -740,11 +827,13 @@ public final class RedissonKeys implements RKeys {
         });
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         commandExecutor.get(removeListenerAsync(listenerId));
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
@@ -754,6 +843,7 @@ public final class RedissonKeys implements RKeys {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 removeListener。 */
     private RFuture<Void> removeListenerAsync(RFuture<Void> future, int listenerId, String... names) {
         List<CompletableFuture<Void>> futures = new ArrayList<>(names.length + 1);
         if (future != null) {

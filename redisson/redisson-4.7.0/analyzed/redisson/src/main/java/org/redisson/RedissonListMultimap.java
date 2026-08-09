@@ -35,10 +35,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 /**
- * @author Nikita Koksharov
+ * 列表型 Multimap {@link RListMultimap} 实现：一个键对应多个列表元素。
+ * <p>底层为 Redis LIST，支持按 key 追加/移除/读取元素集合。
  *
- * @param <K> key
- * @param <V> value
+ * @author Nikita Koksharov
+ * @param <K> 外层键类型
+ * @param <V> 列表元素类型
  */
 public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implements RListMultimap<K, V> {
 
@@ -52,6 +54,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         super(codec, connectionManager, name);
     }
 
+    /** 异步返回数量。 */
     @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
@@ -68,6 +71,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
                 prefix);
     }
 
+    /** 异步执行 fastRemoveValue。 */
     @Override
     public RFuture<Long> fastRemoveValueAsync(V... values) {
         List<Object> args = new ArrayList<>(values.length + 1);
@@ -92,6 +96,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
 
 
+    /** 异步执行 containsKey。 */
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         String keyHash = keyHash(key);
@@ -99,6 +104,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return commandExecutor.readAsync(getRawName(), codec, LLEN_VALUE, setName);
     }
 
+    /** 异步执行 containsValue。 */
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
         ByteBuf valueState = encodeMapValue(value);
@@ -122,11 +128,13 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
                 valueState, prefix);
     }
 
+    /** 是否包含指定键值对。 */
     @Override
     public boolean containsEntry(Object key, Object value) {
         return get(containsEntryAsync(key, value));
     }
 
+    /** 异步执行 containsEntry。 */
     @Override
     public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
         ByteBuf valueState = encodeMapValue(value);
@@ -145,11 +153,13 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
                 Collections.<Object>singletonList(setName), valueState);
     }
 
+    /** 写入键值。 */
     @Override
     public boolean put(K key, V value) {
         return get(putAsync(key, value));
     }
 
+    /** 异步写入键值。 */
     @Override
     public RFuture<Boolean> putAsync(K key, V value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -164,6 +174,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             Arrays.<Object>asList(getRawName(), setName), keyState, keyHash, valueState);
     }
 
+    /** 异步移除。 */
     @Override
     public RFuture<Boolean> removeAsync(Object key, Object value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -180,6 +191,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             Arrays.<Object>asList(getRawName(), setName), keyState, valueState);
     }
 
+    /** 异步批量写入。 */
     @Override
     public RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
         List<Object> params = new ArrayList<Object>();
@@ -204,6 +216,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
     }
 
 
+    /** JSON 路径读取。 */
     @Override
     public RList<V> get(K key) {
         String keyHash = keyHash(key);
@@ -212,11 +225,13 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return new InnerList(setName, key);
     }
 
+    /** 返回 Multimap 全部键值对。 */
     @Override
     public List<V> getAll(K key) {
         return (List<V>) get(getAllAsync(key));
     }
 
+    /** 异步返回全部键值对。 */
     @Override
     public RFuture<Collection<V>> getAllAsync(K key) {
         String keyHash = keyHash(key);
@@ -225,11 +240,13 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LRANGE, setName, 0, -1);
     }
 
+    /** 移除 key 下全部值。 */
     @Override
     public List<V> removeAll(Object key) {
         return (List<V>) get(removeAllAsync(key));
     }
 
+    /** 异步 removeAll。 */
     @Override
     public RFuture<Collection<V>> removeAllAsync(Object key) {
         ByteBuf keyState = encodeMapKey(key);
@@ -244,16 +261,19 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             Arrays.<Object>asList(getRawName(), setName), keyState);
     }
 
+    /** 替换 key 下全部值列表。 */
     @Override
     public List<V> replaceValues(K key, Iterable<? extends V> values) {
         return (List<V>) get(replaceValuesAsync(key, values));
     }
 
+    /** List Multimap fastReplaceValues 操作。 */
     @Override
     public void fastReplaceValues(final K key, final Iterable<? extends V> values) {
         get(fastReplaceValuesAsync(key, values));
     }
 
+    /** 异步执行 replaceValues。 */
     @Override
     public RFuture<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values) {
         List<Object> params = new ArrayList<Object>();
@@ -280,6 +300,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             Arrays.<Object>asList(getRawName(), setName), params.toArray());
     }
 
+    /** 异步执行 fastReplaceValues。 */
     @Override
     public RFuture<Void> fastReplaceValuesAsync(K key, Iterable<? extends V> values) {
         List<Object> params = new ArrayList<Object>();
@@ -334,6 +355,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return new RedissonListMultimapIterator<>(this, commandExecutor, codec, count);
     }
 
+    /** 注册 Map 变更监听器。 */
     @Override
     protected <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
         if (listener instanceof ListAddListener
@@ -344,6 +366,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return super.addListener(name, listener, consumer);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
         if (listener instanceof ListAddListener
@@ -354,6 +377,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return super.addListenerAsync(name, listener, consumer);
     }
 
+    /** 注册 Map 变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof ListAddListener) {
@@ -366,6 +390,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof ListAddListener) {
@@ -378,12 +403,14 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return super.addListenerAsync(listener);
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         removeListener(listenerId, "__keyevent@*:rpush", "__keyevent@*:lrem");
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(listenerId, "__keyevent@*:rpush", "__keyevent@*:lrem");

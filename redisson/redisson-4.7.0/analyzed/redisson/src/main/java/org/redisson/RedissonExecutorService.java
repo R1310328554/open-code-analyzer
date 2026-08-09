@@ -45,9 +45,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 分布式任务执行器 {@link RExecutorService} 实现。
+ * <p>将 {@link Runnable}/{@link Callable} 序列化后提交到 Redis 队列，由远程 Worker 执行；
+ * 支持任务取消、结果回调与 {@link org.redisson.api.annotation.RRemoteService} 远程调用。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonExecutorService implements RScheduledExecutorService {
 
@@ -179,36 +181,43 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         idGenerator = options.getIdGenerator();
     }
     
+    /** 返回队列中任务数量。 */
     @Override
     public int getTaskCount() {
         return commandExecutor.get(getTaskCountAsync());
     }
 
+    /** 异步获取 TaskCount 或执行 TaskCount 操作。 */
     @Override
     public RFuture<Integer> getTaskCountAsync() {
         return commandExecutor.readAsync(tasksCounterName, LongCodec.INSTANCE, RedisCommands.GET_INTEGER, tasksCounterName);
     }
 
+    /** 分布式执行器 hasTask 操作。 */
     @Override
     public boolean hasTask(String taskId) {
         return commandExecutor.get(hasTaskAsync(taskId));
     }
 
+    /** 获取 TaskIds。 */
     @Override
     public Set<String> getTaskIds() {
         return commandExecutor.get(getTaskIdsAsync());
     }
 
+    /** 异步获取 TaskIds 或执行 TaskIds 操作。 */
     @Override
     public RFuture<Set<String>> getTaskIdsAsync() {
         return commandExecutor.writeAsync(tasksName, StringCodec.INSTANCE, RedisCommands.HKEYS, tasksName);
     }
 
+    /** 异步执行 hasTask。 */
     @Override
     public RFuture<Boolean> hasTaskAsync(String taskId) {
         return commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE, RedisCommands.HEXISTS, tasksName, taskId);
     }
 
+    /** 分布式执行器 countActiveWorkers 操作。 */
     @Override
     public int countActiveWorkers() {
         String id = commandExecutor.getServiceManager().generateId();
@@ -229,11 +238,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return (int) result;
     }
     
+    /** 注册远程 Worker 执行器。 */
     @Override
     public void registerWorkers(int workers) {
         registerWorkers(WorkerOptions.defaults().workers(workers));
     }
     
+    /** 注册远程 Worker 执行器。 */
     @Override
     public void registerWorkers(WorkerOptions options) {
         if (options.getWorkers() == 0) {
@@ -325,11 +336,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
     
+    /** 注册远程 Worker 执行器。 */
     @Override
     public void registerWorkers(int workers, ExecutorService executor) {
         registerWorkers(WorkerOptions.defaults().workers(workers).executorService(executor));
     }
     
+    /** 提交分布式任务。 */
     @Override
     public void execute(Runnable task) {
         check(task);
@@ -338,6 +351,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         syncExecute(promise);
     }
     
+    /** 提交分布式任务。 */
     @Override
     public void execute(Runnable... tasks) {
         if (tasks.length == 0) {
@@ -357,6 +371,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
     }
 
+    /** 分布式执行器 createBatchService 操作。 */
     private TasksBatchService createBatchService() {
         TasksBatchService executorRemoteService = new TasksBatchService(codec, getName(), commandExecutor, executorId);
         executorRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
@@ -370,6 +385,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return executorRemoteService;
     }
     
+    /** 分布式执行器 encode 操作。 */
     private byte[] encode(Object task) {
         // erase RedissonClient field to avoid its serialization
         Injector.inject(task, null);
@@ -416,6 +432,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         
     }
 
+    /** 获取 ClassBody。 */
     private ClassBody getClassBody(Object task) {
         Class<?> c = task.getClass();
         ClassBody result = class2body.get(c);
@@ -462,6 +479,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return result;
     }
 
+    /** 分布式执行器 deregisterWorkers 操作。 */
     @Override
     public void deregisterWorkers() {
         queueTransferService.remove(getName());
@@ -471,6 +489,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
     }
 
+    /** 关闭执行器。 */
     @Override
     public void shutdown() {
         deregisterWorkers();
@@ -488,16 +507,19 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 SHUTDOWN_STATE, TERMINATED_STATE));
     }
 
+    /** 获取 Name。 */
     @Override
     public String getName() {
         return commandExecutor.getServiceManager().getNameMapper().unmap(name);
     }
     
+    /** 删除 JSON 路径或键。 */
     @Override
     public boolean delete() {
         return commandExecutor.get(deleteAsync());
     }
     
+    /** 异步 JSON 删除。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         RFuture<Long> deleteFuture = commandExecutor.writeBatchedAsync(null, RedisCommands.DEL, new LongSlotCallback(),
@@ -506,16 +528,19 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 分布式执行器 shutdownNow 操作。 */
     @Override
     public List<Runnable> shutdownNow() {
         throw new UnsupportedOperationException();
     }
 
+    /** 是否已关闭。 */
     @Override
     public boolean isShutdown() {
         return checkState(SHUTDOWN_STATE);
     }
 
+    /** 分布式执行器 checkState 操作。 */
     private boolean checkState(int state) {
         return commandExecutor.get(commandExecutor.evalWriteAsync(statusName, codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 1 and tonumber(redis.call('get', KEYS[1])) >= tonumber(ARGV[1]) then "
@@ -526,11 +551,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 state));
     }
 
+    /** 是否Terminated。 */
     @Override
     public boolean isTerminated() {
         return checkState(TERMINATED_STATE);
     }
 
+    /** 分布式执行器 awaitTermination 操作。 */
     @Override
     public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
         if (isTerminated()) {
@@ -555,6 +582,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return res;
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public <T> RExecutorFuture<T> submit(Callable<T> task) {
         RemotePromise<T> promise = (RemotePromise<T>) submitWithoutCheckAsync(idGenerator.generateId(), task).toCompletableFuture();
@@ -562,6 +590,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public <T> RExecutorFuture<T> submit(Callable<T> task, long timeToLive, TimeUnit timeUnit) {
         RemotePromise<T> promise = (RemotePromise<T>) submitWithoutCheckAsync(idGenerator.generateId(),
@@ -570,6 +599,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public <T> RExecutorFuture<T> submitAsync(Callable<T> task, long timeToLive, TimeUnit timeUnit) {
         RemotePromise<T> promise = (RemotePromise<T>) submitWithoutCheckAsync(idGenerator.generateId(),
@@ -577,11 +607,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public <T> RExecutorFuture<T> submitAsync(Callable<T> task) {
         return submitWithoutCheckAsync(idGenerator.generateId(), task);
     }
     
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public RExecutorBatchFuture submit(Callable<?>... tasks) {
         if (tasks.length == 0) {
@@ -609,10 +641,12 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new RedissonExecutorBatchFuture(future, result);
     }
 
+    /** 分布式执行器 createTaskParameters 操作。 */
     protected TaskParameters createTaskParameters(Callable<?> task) {
         return createTaskParameters(idGenerator.generateId(), task);
     }
 
+    /** 分布式执行器 createTaskParameters 操作。 */
     protected TaskParameters createTaskParameters(String taskId, Callable<?> task) {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
@@ -620,10 +654,12 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new TaskParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
     }
     
+    /** 分布式执行器 createTaskParameters 操作。 */
     protected TaskParameters createTaskParameters(Runnable task) {
         return createTaskParameters(idGenerator.generateId(), task);
     }
 
+    /** 分布式执行器 createTaskParameters 操作。 */
     protected TaskParameters createTaskParameters(String taskId, Runnable task) {
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
@@ -631,6 +667,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new TaskParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public RExecutorBatchFuture submitAsync(Callable<?>... tasks) {
         if (tasks.length == 0) {
@@ -673,6 +710,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
 
+    /** 注册 Map 变更监听器。 */
     private <T> void addListener(RemotePromise<T> result) {
         result.getAddFuture().whenComplete((res, e) -> {
             if (e != null) {
@@ -686,6 +724,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
     
+    /** 分布式执行器 check 操作。 */
     private void check(Object task) {
         if (task == null) {
             throw new NullPointerException("Task is not defined");
@@ -699,12 +738,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
     }
 
+    /** 分布式执行器 syncExecute 操作。 */
     private <T> RedissonScheduledFuture<T> syncExecute(RedissonScheduledFuture<T> future) {
         RemotePromise<?> rp = future.getInnerPromise();
         syncExecute(rp);
         return future;
     }
 
+    /** 分布式执行器 syncExecute 操作。 */
     private <T> void syncExecute(RemotePromise<T> promise) {
         CompletableFuture<Boolean> addFuture = promise.getAddFuture();
         try {
@@ -717,6 +758,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public <T> RExecutorFuture<T> submit(Runnable task, T result) {
         RemotePromise<T> future = (RemotePromise<T>) submit(task).toCompletableFuture();
@@ -724,6 +766,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new RedissonExecutorFuture<T>(f, future.getRequestId());
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public RExecutorBatchFuture submit(Runnable... tasks) {
         if (tasks.length == 0) {
@@ -751,6 +794,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new RedissonExecutorBatchFuture(future, result);
     }
     
+    /** 异步提交 Callable。 */
     @Override
     public RExecutorBatchFuture submitAsync(Runnable... tasks) {
         if (tasks.length == 0) {
@@ -793,6 +837,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public RExecutorFuture<?> submit(Runnable task) {
         RemotePromise<Void> promise = (RemotePromise<Void>) submitWithoutCheckAsync(idGenerator.generateId(), task).toCompletableFuture();
@@ -800,6 +845,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public RExecutorFuture<?> submit(Runnable task, long timeToLive, TimeUnit timeUnit) {
         RemotePromise<Void> promise = (RemotePromise<Void>) submitWithoutCheckAsync(idGenerator.generateId(),
@@ -808,16 +854,19 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public RExecutorFuture<?> submitAsync(Runnable task, long timeToLive, TimeUnit timeUnit) {
         return submitWithoutCheckAsync(idGenerator.generateId(), task, Duration.ofMillis(timeUnit.toMillis(timeToLive)));
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public RExecutorFuture<?> submitAsync(Runnable task) {
         return submitWithoutCheckAsync(idGenerator.generateId(), task);
     }
     
+    /** 分布式执行器 cancelResponseHandling 操作。 */
     private void cancelResponseHandling(String requestId) {
         responses.computeIfPresent(responseQueueName, (key, entry) -> {
             List<Result> list = entry.getResponses().remove(requestId);
@@ -833,23 +882,27 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
     
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public RScheduledFuture<?> schedule(Runnable task, long delay, TimeUnit unit) {
         return schedule(task, delay, unit, 0, unit);
     }
 
+    /** 分布式执行器 createFuture 操作。 */
     private <T> RExecutorFuture<T> createFuture(RemotePromise<T> promise) {
         RExecutorFuture<T> f = new RedissonExecutorFuture<T>(promise);
         storeReference(f, promise.getRequestId());
         return f;
     }
     
+    /** 分布式执行器 createFuture 操作。 */
     private <T> RScheduledFuture<T> createFuture(RemotePromise<T> promise, long scheduledExecutionTime) {
         RedissonScheduledFuture<T> f = new RedissonScheduledFuture<T>(promise, scheduledExecutionTime);
         storeReference(f, promise.getRequestId());
         return f;
     }
     
+    /** 分布式执行器 storeReference 操作。 */
     private void storeReference(RExecutorFuture<?> future, String requestId) {
         while (true) {
             RedissonExecutorFutureReference r = (RedissonExecutorFutureReference) referenceDueue.poll();
@@ -868,21 +921,25 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         references.add(reference);
     }
     
+    /** 异步执行 schedule。 */
     @Override
     public RScheduledFuture<?> scheduleAsync(Runnable task, long delay, TimeUnit unit) {
         return scheduleAsync(task, delay, unit, 0, unit);
     }
     
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public <V> RScheduledFuture<V> schedule(Callable<V> task, long delay, TimeUnit unit) {
         return schedule(task, delay, unit, 0, unit);
     }
     
+    /** 异步执行 schedule。 */
     @Override
     public <V> RScheduledFuture<V> scheduleAsync(Callable<V> task, long delay, TimeUnit unit) {
         return scheduleWithoutCheckAsync(idGenerator.generateId(), task, Duration.ofMillis(unit.toMillis(delay)), Duration.ZERO);
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public RScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit, long ttl, TimeUnit ttlUnit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckAsync(idGenerator.generateId(), command,
@@ -890,11 +947,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return syncExecute(future);
     }
 
+    /** 异步执行 schedule。 */
     @Override
     public RScheduledFuture<?> scheduleAsync(Runnable task, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit) {
         return scheduleWithoutCheckAsync(idGenerator.generateId(), task, Duration.ofMillis(unit.toMillis(delay)), Duration.ofMillis(ttlUnit.toMillis(timeToLive)));
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public <V> RScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleWithoutCheckAsync(idGenerator.generateId(), callable,
@@ -902,11 +961,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return syncExecute(future);
     }
 
+    /** 异步执行 schedule。 */
     @Override
     public <V> RScheduledFuture<V> scheduleAsync(Callable<V> task, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit) {
         return scheduleWithoutCheckAsync(idGenerator.generateId(), task, Duration.ofMillis(unit.toMillis(delay)), Duration.ofMillis(ttlUnit.toMillis(timeToLive)));
     }
 
+    /** 分布式执行器 createScheduledParameters 操作。 */
     private ScheduledParameters createScheduledParameters(String id, Duration timeToLive, ClassBody classBody, byte[] state, long startTime) {
         ScheduledParameters params = new ScheduledParameters(id, classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime);
         if (timeToLive.toMillis() > 0) {
@@ -915,6 +976,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return params;
     }
 
+    /** 分布式执行器 scheduleAtFixedRate 操作。 */
     @Override
     public RScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckAtFixedRateAsync(idGenerator.generateId(),
@@ -922,43 +984,51 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return syncExecute(future);
     }
     
+    /** 异步执行 scheduleAtFixedRate。 */
     @Override
     public RScheduledFuture<?> scheduleAtFixedRateAsync(Runnable task, long initialDelay, long period, TimeUnit unit) {
         return scheduleWithoutCheckAtFixedRateAsync(idGenerator.generateId(), task, Duration.ofMillis(unit.toMillis(initialDelay)), Duration.ofMillis(unit.toMillis(period)));
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public RScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckAsync(idGenerator.generateId(), task, cronSchedule);
         return syncExecute(future);
     }
     
+    /** 异步执行 schedule。 */
     @Override
     public RScheduledFuture<?> scheduleAsync(Runnable task, CronSchedule cronSchedule) {
         return scheduleWithoutCheckAsync(idGenerator.generateId(), task, cronSchedule);
     }
     
+    /** 分布式执行器 scheduleWithFixedDelay 操作。 */
     @Override
     public RScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckWithFixedDelayAsync(idGenerator.generateId(), task, Duration.ofMillis(unit.toMillis(initialDelay)), Duration.ofMillis(unit.toMillis(delay)));
         return syncExecute(future);
     }
     
+    /** 异步执行 scheduleWithFixedDelay。 */
     @Override
     public RScheduledFuture<?> scheduleWithFixedDelayAsync(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         return scheduleWithoutCheckWithFixedDelayAsync(idGenerator.generateId(), task, Duration.ofMillis(unit.toMillis(initialDelay)), Duration.ofMillis(unit.toMillis(delay)));
     }
 
+    /** 取消指定任务。 */
     @Override
     public Boolean cancelTask(String taskId) {
         return commandExecutor.get(cancelTaskAsync(taskId));
     }
 
+    /** 异步执行 cancelTask。 */
     @Override
     public RFuture<Boolean> cancelTaskAsync(String taskId) {
         return scheduledRemoteService.cancelExecutionAsync(taskId);
     }
 
+    /** 出队队首元素。 */
     private <T> T poll(List<CompletableFuture<?>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException, TimeoutException {
         CompletableFuture<Object> future = CompletableFuture.anyOf(futures.toArray(new CompletableFuture[0]));
         try {
@@ -972,6 +1042,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
     }
     
+    /** 分布式执行器 invokeAny 操作。 */
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
         try {
@@ -981,6 +1052,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
     }
 
+    /** 分布式执行器 invokeAny 操作。 */
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks,
                            long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
@@ -1001,6 +1073,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return result;
     }
 
+    /** 分布式执行器 invokeAll 操作。 */
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         if (tasks == null) {
@@ -1017,6 +1090,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return (List<Future<T>>) futures;
     }
 
+    /** 分布式执行器 invokeAll 操作。 */
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
                                          long timeout, TimeUnit unit) throws InterruptedException {
@@ -1036,6 +1110,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return (List<Future<T>>) futures;
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public <T> RExecutorFuture<T> submit(String id, Callable<T> task) {
         RemotePromise<T> promise = (RemotePromise<T>) submitAsync(id, task).toCompletableFuture();
@@ -1043,6 +1118,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public <T> RExecutorFuture<T> submitAsync(String id, Callable<T> task) {
         return executeWithCheckAsync(id, task, () -> {
@@ -1051,6 +1127,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 submitWithoutCheck。 */
     private <T> RExecutorFuture<T> submitWithoutCheckAsync(String id, Callable<T> task) {
         check(task);
         TaskParameters params = createTaskParameters(id, task);
@@ -1059,6 +1136,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result);
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public <T> RExecutorFuture<T> submit(String id, Callable<T> task, Duration timeToLive) {
         RemotePromise<T> promise = (RemotePromise<T>) submitAsync(id, task, timeToLive).toCompletableFuture();
@@ -1066,6 +1144,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public <T> RExecutorFuture<T> submitAsync(String id, Callable<T> task, Duration timeToLive) {
         return executeWithCheckAsync(id, task, () -> {
@@ -1075,6 +1154,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 submitWithoutCheck。 */
     private <T> RExecutorFuture<T> submitWithoutCheckAsync(String id, Callable<T> task, Duration timeToLive) {
         check(task);
         TaskParameters taskParameters = createTaskParameters(id, task);
@@ -1084,6 +1164,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result);
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public RExecutorFuture<?> submit(String id, Runnable task, Duration timeToLive) {
         RemotePromise<Void> promise = (RemotePromise<Void>) submitAsync(id, task, timeToLive).toCompletableFuture();
@@ -1091,6 +1172,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public RExecutorFuture<?> submitAsync(String id, Runnable task, Duration timeToLive) {
         return executeWithCheckAsync(id, task, () -> {
@@ -1100,6 +1182,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 submitWithoutCheck。 */
     private RExecutorFuture<?> submitWithoutCheckAsync(String id, Runnable task, Duration timeToLive) {
         check(task);
         TaskParameters taskParameters = createTaskParameters(id, task);
@@ -1109,6 +1192,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result);
     }
 
+    /** 提交 Callable 并返回 Future。 */
     @Override
     public RExecutorFuture<?> submit(String id, Runnable task) {
         RemotePromise<Void> promise = (RemotePromise<Void>) submitAsync(id, task).toCompletableFuture();
@@ -1116,6 +1200,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(promise);
     }
 
+    /** 异步提交 Callable。 */
     @Override
     public RExecutorFuture<?> submitAsync(String id, Runnable task) {
         return executeWithCheckAsync(id, task, () -> {
@@ -1124,16 +1209,19 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 executeWithCheck。 */
     private <T> RScheduledFuture<T> executeWithCheckAsync(String id, Object task, long starTime, Supplier<RFuture<T>> function) {
         RemotePromise<T> f = executeWithCheck(id, task, function);
         return createFuture(f, starTime);
     }
 
+    /** 异步执行 executeWithCheck。 */
     private <T> RExecutorFuture<T> executeWithCheckAsync(String id, Object task, Supplier<RFuture<T>> function) {
         RemotePromise<T> f = executeWithCheck(id, task, function);
         return createFuture(f);
     }
 
+    /** 分布式执行器 executeWithCheck 操作。 */
     private <T> RemotePromise<T> executeWithCheck(String id, Object task, Supplier<RFuture<T>> function) {
         check(task);
 
@@ -1197,6 +1285,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return promise;
     }
 
+    /** 异步执行 submitWithoutCheck。 */
     private RExecutorFuture<?> submitWithoutCheckAsync(String id, Runnable task) {
         check(task);
         RemotePromise<Void> result = (RemotePromise<Void>) asyncService.executeRunnable(createTaskParameters(id, task)).toCompletableFuture();
@@ -1204,23 +1293,27 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result);
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public RScheduledFuture<?> schedule(String id, Runnable command, Duration delay) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(id, command, delay);
         return syncExecute(future);
     }
 
+    /** 异步执行 schedule。 */
     @Override
     public RScheduledFuture<?> scheduleAsync(String id, Runnable task, Duration delay) {
         return scheduleAsync(id, task, delay, Duration.ZERO);
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public RScheduledFuture<?> schedule(String id, Runnable command, Duration delay, Duration timeToLive) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(id, command, delay, timeToLive);
         return syncExecute(future);
     }
 
+    /** 异步执行 schedule。 */
     @Override
     public RScheduledFuture<?> scheduleAsync(String id, Runnable task, Duration delay, Duration timeToLive) {
         long startTime = System.currentTimeMillis() + delay.toMillis();
@@ -1232,6 +1325,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 scheduleWithoutCheck。 */
     private RScheduledFuture<?> scheduleWithoutCheckAsync(String id, Runnable task, Duration delay, Duration timeToLive) {
         check(task);
         ClassBody classBody = getClassBody(task);
@@ -1243,23 +1337,27 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result, startTime);
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public <V> RScheduledFuture<V> schedule(String id, Callable<V> callable, Duration delay) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(id, callable, delay);
         return syncExecute(future);
     }
 
+    /** 异步执行 schedule。 */
     @Override
     public <V> RScheduledFuture<V> scheduleAsync(String id, Callable<V> task, Duration delay) {
         return scheduleAsync(id, task, delay, Duration.ZERO);
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public <V> RScheduledFuture<V> schedule(String id, Callable<V> callable, Duration delay, Duration timeToLive) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(id, callable, delay, timeToLive);
         return syncExecute(future);
     }
 
+    /** 异步执行 schedule。 */
     @Override
     public <V> RScheduledFuture<V> scheduleAsync(String id, Callable<V> task, Duration delay, Duration timeToLive) {
         long startTime = System.currentTimeMillis() + delay.toMillis();
@@ -1271,6 +1369,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 scheduleWithoutCheck。 */
     private <V> RScheduledFuture<V> scheduleWithoutCheckAsync(String id, Callable<V> task, Duration delay, Duration timeToLive) {
         check(task);
         ClassBody classBody = getClassBody(task);
@@ -1282,12 +1381,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result, startTime);
     }
 
+    /** 分布式执行器 scheduleAtFixedRate 操作。 */
     @Override
     public RScheduledFuture<?> scheduleAtFixedRate(String id, Runnable command, Duration initialDelay, Duration period) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAtFixedRateAsync(id, command, initialDelay, period);
         return syncExecute(future);
     }
 
+    /** 异步执行 scheduleAtFixedRate。 */
     @Override
     public RScheduledFuture<?> scheduleAtFixedRateAsync(String id, Runnable task, Duration initialDelay, Duration period) {
         long startTime = System.currentTimeMillis() + initialDelay.toMillis();
@@ -1308,6 +1409,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 scheduleWithoutCheckAtFixedRate。 */
     private RScheduledFuture<?> scheduleWithoutCheckAtFixedRateAsync(String id, Runnable task, Duration initialDelay, Duration period) {
         check(task);
         ClassBody classBody = getClassBody(task);
@@ -1328,12 +1430,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result, startTime);
     }
 
+    /** 分布式执行器 scheduleWithFixedDelay 操作。 */
     @Override
     public RScheduledFuture<?> scheduleWithFixedDelay(String id, Runnable command, Duration initialDelay, Duration delay) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithFixedDelayAsync(id, command, initialDelay, delay);
         return syncExecute(future);
     }
 
+    /** 异步执行 scheduleWithFixedDelay。 */
     @Override
     public RScheduledFuture<?> scheduleWithFixedDelayAsync(String id, Runnable task, Duration initialDelay, Duration delay) {
         long startTime = System.currentTimeMillis() + initialDelay.toMillis();
@@ -1354,6 +1458,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    /** 异步执行 scheduleWithoutCheckWithFixedDelay。 */
     private RScheduledFuture<?> scheduleWithoutCheckWithFixedDelayAsync(String id, Runnable task, Duration initialDelay, Duration delay) {
         check(task);
         ClassBody classBody = getClassBody(task);
@@ -1373,12 +1478,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return createFuture(result, startTime);
     }
 
+    /** 分布式执行器 schedule 操作。 */
     @Override
     public RScheduledFuture<?> schedule(String id, Runnable task, CronSchedule cronSchedule) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(id, task, cronSchedule);
         return syncExecute(future);
     }
 
+    /** 异步执行 schedule。 */
     @Override
     public RScheduledFuture<?> scheduleAsync(String id, Runnable task, CronSchedule cronSchedule) {
         ClassBody classBody = getClassBody(task);
@@ -1412,6 +1519,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return f;
     }
 
+    /** 异步执行 scheduleWithoutCheck。 */
     private RScheduledFuture<?> scheduleWithoutCheckAsync(String id, Runnable task, CronSchedule cronSchedule) {
         check(task);
         ClassBody classBody = getClassBody(task);

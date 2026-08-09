@@ -41,6 +41,14 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.*;
 
+/**
+ * 带本地缓存的分布式 Map {@link RLocalCachedMap} 实现。
+ * <p>在 {@link RedissonMap} 之上维护 JVM 本地 LRU/LFU 缓存，并通过 Pub/Sub
+ * 或 Redis 6+ Client Tracking 使多节点缓存失效保持一致。
+ *
+ * @param <K> 键类型
+ * @param <V> 值类型
+ */
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
     public static final String TOPIC_SUFFIX = "topic";
@@ -72,6 +80,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         init(options, evictionScheduler);
     }
 
+    /** Map/Cache init 操作。 */
     private void init(LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler) {
         if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE
                 && options.isUseObjectAsCacheKey()) {
@@ -109,10 +118,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** 获取 LocalCacheView。 */
     public LocalCacheView<K, V> getLocalCacheView() {
         return localCacheView;
     }
 
+    /** Map/Cache broadcastLocalCacheStore 操作。 */
     private CompletionStage<Void> broadcastLocalCacheStore(V value, ByteBuf mapKey, CacheKey cacheKey) {
         CompletionStage<Void> f = CompletableFuture.completedFuture(null);
         if (invalidateEntryOnChange != 0) {
@@ -130,6 +141,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return f;
     }
 
+    /** Map/Cache cachePut 操作。 */
     private CacheValue cachePut(CacheKey cacheKey, Object key, Object value) {
         if (listener.isDisabled(cacheKey)) {
             return null;
@@ -147,6 +159,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return oldValue;
     }
 
+    /** Map/Cache cachePutIfAbsent 操作。 */
     private CacheValue cachePutIfAbsent(CacheKey cacheKey, Object key, Object value) {
         if (listener.isDisabled(cacheKey)) {
             return null;
@@ -155,6 +168,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return cache.putIfAbsent(cacheKey, new CacheValue(key, value));
     }
 
+    /** Map/Cache cachePutIfExists 操作。 */
     private CacheValue cachePutIfExists(CacheKey cacheKey, Object key, Object value) {
         if (listener.isDisabled(cacheKey)) {
             return null;
@@ -172,6 +186,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** Map/Cache cacheReplace 操作。 */
     private CacheValue cacheReplace(CacheKey cacheKey, Object key, Object value) {
         if (listener.isDisabled(cacheKey)) {
             return null;
@@ -180,6 +195,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return cache.replace(cacheKey, new CacheValue(key, value));
     }
 
+    /** Map/Cache cacheReplace 操作。 */
     private boolean cacheReplace(CacheKey cacheKey, Object key, Object oldValue, Object newValue) {
         if (listener.isDisabled(cacheKey)) {
             return false;
@@ -188,6 +204,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return cache.replace(cacheKey, new CacheValue(key, oldValue), new CacheValue(key, newValue));
     }
 
+    /** Map/Cache cacheRemove 操作。 */
     private boolean cacheRemove(CacheKey cacheKey, Object key, Object value) {
         if (listener.isDisabled(cacheKey)) {
             return false;
@@ -198,6 +215,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return cache.remove(cacheKey, new CacheValue(key, value));
     }
 
+    /** Map/Cache cacheRemove 操作。 */
     private CacheValue cacheRemove(CacheKey cacheKey) {
         CacheValue v = cache.remove(cacheKey);
         if (isUseObjectAsCacheKey && v != null) {
@@ -210,6 +228,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return v;
     }
 
+    /** 异步返回数量。 */
     @Override
     public RFuture<Integer> sizeAsync() {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -218,6 +237,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return super.sizeAsync();
     }
 
+    /** 异步执行 containsKey。 */
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         checkKey(key);
@@ -266,6 +286,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(cacheValue.getValue() != null);
     }
 
+    /** 异步执行 containsValue。 */
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
         checkValue(value);
@@ -281,6 +302,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(true);
     }
     
+    /** 异步 JSON 读取。 */
     @Override
     protected RFuture<V> getAsync(K key, long threadId) {
         checkKey(key);
@@ -316,6 +338,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(result);
     }
     
+    /** Map/Cache generateLogEntryId 操作。 */
     protected byte[] generateLogEntryId(byte[] keyHash) {
         byte[] result = new byte[keyHash.length + 1 + 8];
         result[16] = ':';
@@ -327,6 +350,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
 
+    /** 异步执行 putOperation。 */
     @Override
     protected RFuture<V> putOperationAsync(K key, V value) {
         ByteBuf mapKey = encodeMapKey(key);
@@ -361,6 +385,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 mapKey, mapValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId, publishCommand);
     }
 
+    /** Map/Cache createSyncMessage 操作。 */
     protected ByteBuf createSyncMessage(ByteBuf mapKey, ByteBuf mapValue, CacheKey cacheKey) {
         if (syncStrategy == SyncStrategy.UPDATE) {
             return encode(new LocalCachedMapUpdate(instanceId, mapKey, mapValue));
@@ -368,6 +393,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
     }
 
+    /** 异步执行 fastPutOperation。 */
     @Override
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
         ByteBuf encodedKey = encodeMapKey(key);
@@ -401,6 +427,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 encodedKey, encodedValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId, publishCommand);
     }
     
+    /** 销毁延迟队列后台任务。 */
     @Override
     public void destroy() {
         super.destroy();
@@ -411,6 +438,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         listener.remove();
     }
 
+    /** 异步执行 removeOperation。 */
     @Override
     protected RFuture<V> removeOperationAsync(K key) {
         ByteBuf keyEncoded = encodeMapKey(key);
@@ -534,6 +562,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return future;
     }
     
+    /** 异步执行 fastRemoveOperation。 */
     @Override
     protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -626,12 +655,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HDEL, params.toArray());
     }
 
+    /** 异步执行 sizeInMemory。 */
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.<Object>asList(getRawName(), listener.getUpdatesLogName());
         return super.sizeInMemoryAsync(keys);
     }
     
+    /** 异步 JSON 删除。 */
     @Override
     public RFuture<Boolean> deleteAsync() {
         cache.clear();
@@ -654,6 +685,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
               msgEncoded, invalidateEntryOnChange, publishCommand);
     }
 
+    /** 异步返回全部键值对。 */
     @Override
     public RFuture<Map<K, V>> getAllAsync(Set<K> keys) {
         if (keys.isEmpty()) {
@@ -712,6 +744,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** Map/Cache cacheMap 操作。 */
     private void cacheMap(Map<?, ?> map) {
         for (java.util.Map.Entry<?, ?> entry : map.entrySet()) {
             CacheKey cacheKey = localCacheView.toCacheKey(entry.getKey());
@@ -719,6 +752,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** 异步执行 putAllOperation。 */
     @Override
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -809,6 +843,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 addAndGetOperation。 */
     @Override
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -839,6 +874,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 异步执行 fastPutIfAbsentOperation。 */
     @Override
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
         ByteBuf encodedKey = encodeMapKey(key);
@@ -883,6 +919,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 fastPutIfExistsOperation。 */
     @Override
     protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value) {
         ByteBuf encodedKey = encodeMapKey(key);
@@ -926,6 +963,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 readAllValues。 */
     @Override
     public RFuture<Collection<V>> readAllValuesAsync() {
         List<V> result = new ArrayList<V>();
@@ -971,6 +1009,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步一次性读取全部 Map 条目。 */
     @Override
     public RFuture<Map<K, V>> readAllMapAsync() {
         Map<K, V> result = new HashMap<K, V>();
@@ -1002,6 +1041,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 预加载本地缓存。 */
     @Override
     public void preloadCache() {
         for (Entry<K, V> entry : super.entrySet()) {
@@ -1010,6 +1050,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** 预加载本地缓存。 */
     @Override
     public void preloadCache(int count) {
         for (Entry<K, V> entry : super.entrySet(count)) {
@@ -1018,16 +1059,19 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** 清空本地缓存。 */
     @Override
     public void clearLocalCache() {
         get(clearLocalCacheAsync());
     }
     
+    /** 异步执行 clearLocalCache。 */
     @Override
     public RFuture<Void> clearLocalCacheAsync() {
         return listener.clearLocalCacheAsync();
     }
 
+    /** 异步执行 readAllEntrySet。 */
     @Override
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
         Set<Entry<K, V>> result = new HashSet<Entry<K, V>>();
@@ -1059,6 +1103,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Map/Cache readAll 操作。 */
     private <R> RFuture<R> readAll(RedisCommand<?> evalCommandType, List<Object> mapKeys, R result) {
         return commandExecutor.evalReadAsync(getRawName(), codec, evalCommandType,
                 "local entries = redis.call('hgetall', KEYS[1]); "
@@ -1082,6 +1127,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
               mapKeys.toArray());
     }
 
+    /** 异步执行 fastReplace。 */
     @Override
     public RFuture<Boolean> fastReplaceAsync(K key, V value) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -1108,6 +1154,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 异步执行 fastReplaceOperation。 */
     @Override
     protected RFuture<Boolean> fastReplaceOperationAsync(K key, V value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -1136,6 +1183,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
     
+    /** 异步执行 replaceOperation。 */
     @Override
     protected RFuture<V> replaceOperationAsync(K key, V value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -1165,6 +1213,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
     
+    /** 异步执行 replace。 */
     @Override
     public RFuture<V> replaceAsync(K key, V value) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -1192,6 +1241,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
     
+    /** 异步执行 replaceOperation。 */
     @Override
     protected RFuture<Boolean> replaceOperationAsync(K key, V oldValue, V newValue) {
         ByteBuf keyState = encodeMapKey(key);
@@ -1219,6 +1269,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 keyState, oldValueState, newValueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
 
+    /** 异步执行 replace。 */
     @Override
     public RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -1244,6 +1295,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 removeOperation。 */
     @Override
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -1270,6 +1322,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId, publishCommand);
     }
     
+    /** 异步移除。 */
     @Override
     public RFuture<Boolean> removeAsync(Object key, Object value) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -1295,6 +1348,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 putIfExistsOperation。 */
     @Override
     protected RFuture<V> putIfExistsOperationAsync(K key, V value) {
         ByteBuf encodedKey = encodeMapKey(key);
@@ -1339,6 +1393,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 putIfAbsentOperation。 */
     @Override
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
         ByteBuf encodedKey = encodeMapKey(key);
@@ -1383,6 +1438,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** Map/Cache encode 操作。 */
     @Override
     public ByteBuf encode(Object value) {
         try {
@@ -1392,26 +1448,31 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
     }
 
+    /** Map/Cache cachedKeySet 操作。 */
     @Override
     public Set<K> cachedKeySet() {
         return localCacheView.cachedKeySet();
     }
 
+    /** Map/Cache cachedValues 操作。 */
     @Override
     public Collection<V> cachedValues() {
         return localCacheView.cachedValues();
     }
     
+    /** Map/Cache cachedEntrySet 操作。 */
     @Override
     public Set<Entry<K, V>> cachedEntrySet() {
         return localCacheView.cachedEntrySet();
     }
     
+    /** 返回本地缓存 backing map。 */
     @Override
     public Map<K, V> getCachedMap() {
         return localCacheView.getCachedMap();
     }
 
+    /** 返回键集合视图。 */
     @Override
     public Set<K> keySet(String pattern, int count) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -1420,6 +1481,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return super.keySet(pattern, count);
     }
 
+    /** 返回值集合视图。 */
     @Override
     public Collection<V> values(String keyPattern, int count) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -1428,6 +1490,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return super.values(keyPattern, count);
     }
 
+    /** 返回条目集合视图。 */
     @Override
     public Set<Entry<K, V>> entrySet(String keyPattern, int count) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
@@ -1436,6 +1499,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return super.entrySet(keyPattern, count);
     }
 
+    /** 注册 Map 变更监听器。 */
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof LocalCacheInvalidateListener) {
@@ -1447,6 +1511,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return super.addListener(listener);
     }
 
+    /** 异步执行 addListener。 */
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof LocalCacheInvalidateListener) {
@@ -1460,12 +1525,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return super.addListenerAsync(listener);
     }
 
+    /** 移除监听器。 */
     @Override
     public void removeListener(int listenerId) {
         listener.removeListener(listenerId);
         super.removeListener(listenerId);
     }
 
+    /** 异步执行 removeListener。 */
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         listener.removeListener(listenerId);

@@ -36,23 +36,24 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.locks.Lock}
- * Implements reentrant lock.<br>
- * Lock will be removed automatically if client disconnects.
- * <p>
- * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order.
+ * 分布式可重入锁 {@link RLock} 实现（非公平）。
+ * <p>客户端断开连接时锁自动释放；基于 Lua 脚本与 Pub/Sub 唤醒等待线程。
+ * <p>默认启用看门狗自动续期（{@link org.redisson.config.Config#getLockWatchdogTimeout()}）。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonLock extends RedissonBaseLock {
 
+    /** 日志记录器。 */
     private static final Logger LOGGER = LoggerFactory.getLogger(RedissonLock.class);
 
+    /** 锁看门狗续期间隔（毫秒）。 */
     protected long internalLockLeaseTime;
 
+    /** 锁释放 Pub/Sub 通道。 */
     protected final LockPubSub pubSub;
 
+    /** 异步命令执行器。 */
     final CommandAsyncExecutor commandExecutor;
 
     public RedissonLock(CommandAsyncExecutor commandExecutor, String name) {
@@ -71,6 +72,7 @@ public class RedissonLock extends RedissonBaseLock {
         return prefixName("redisson_lock__channel", getRawName());
     }
 
+    /** 获取锁；阻塞直到成功（启用看门狗时自动续期）。 */
     @Override
     public void lock() {
         try {
@@ -80,6 +82,7 @@ public class RedissonLock extends RedissonBaseLock {
         }
     }
 
+    /** 获取锁；阻塞直到成功（启用看门狗时自动续期）。 */
     @Override
     public void lock(long leaseTime, TimeUnit unit) {
         try {
@@ -90,16 +93,19 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
 
+    /** 可中断地获取锁。 */
     @Override
     public void lockInterruptibly() throws InterruptedException {
         lock(-1, null, true);
     }
 
+    /** 可中断地获取锁。 */
     @Override
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
         lock(leaseTime, unit, true);
     }
 
+    /** 获取锁；阻塞直到成功（启用看门狗时自动续期）。 */
     private void lock(long leaseTime, TimeUnit unit, boolean interruptibly) throws InterruptedException {
         long threadId = Thread.currentThread().getId();
         Long ttl = tryAcquire(-1, leaseTime, unit, threadId);
@@ -149,14 +155,17 @@ public class RedissonLock extends RedissonBaseLock {
 //        get(lockAsync(leaseTime, unit));
     }
     
+    /** 分布式锁 tryAcquire 操作。 */
     private Long tryAcquire(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         return get(tryAcquireAsync0(waitTime, leaseTime, unit, threadId));
     }
 
+    /** 分布式锁 tryAcquireAsync0 操作。 */
     private RFuture<Long> tryAcquireAsync0(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         return getServiceManager().execute(() -> tryAcquireAsync(waitTime, leaseTime, unit, threadId));
     }
 
+    /** 异步执行 tryAcquireOnce。 */
     private RFuture<Boolean> tryAcquireOnceAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         CompletionStage<Boolean> acquiredFuture;
         if (leaseTime > 0) {
@@ -182,6 +191,7 @@ public class RedissonLock extends RedissonBaseLock {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 异步执行 tryAcquire。 */
     private RFuture<Long> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         CompletionStage<Long> ttlRemainingFuture;
         if (leaseTime > 0) {
@@ -206,6 +216,7 @@ public class RedissonLock extends RedissonBaseLock {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 尝试获取锁，支持等待超时与租约时间。 */
     @Override
     public boolean tryLock() {
         return get(tryLockAsync());
@@ -223,6 +234,7 @@ public class RedissonLock extends RedissonBaseLock {
                 Collections.singletonList(getRawName()), unit.toMillis(leaseTime), getLockName(threadId));
     }
 
+    /** 尝试获取锁，支持等待超时与租约时间。 */
     @Override
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
@@ -310,19 +322,23 @@ public class RedissonLock extends RedissonBaseLock {
 //        return get(tryLockAsync(waitTime, leaseTime, unit));
     }
 
+    /** 分布式锁 subscribe 操作。 */
     protected CompletableFuture<RedissonLockEntry> subscribe(long threadId) {
         return pubSub.subscribe(getEntryName(), getChannelName());
     }
 
+    /** 分布式锁 unsubscribe 操作。 */
     protected void unsubscribe(RedissonLockEntry entry, long threadId) {
         pubSub.unsubscribe(entry, getEntryName(), getChannelName());
     }
 
+    /** 尝试获取锁，支持等待超时与租约时间。 */
     @Override
     public boolean tryLock(long waitTime, TimeUnit unit) throws InterruptedException {
         return tryLock(waitTime, -1, unit);
     }
 
+    /** 分布式锁 cancelExpirationRenewal 操作。 */
     @Override
     protected void cancelExpirationRenewal(Long threadId, Boolean unlockResult) {
         super.cancelExpirationRenewal(threadId, unlockResult);
@@ -331,6 +347,7 @@ public class RedissonLock extends RedissonBaseLock {
         }
     }
 
+    /** 异步强制释放锁。 */
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null, null);
@@ -344,6 +361,7 @@ public class RedissonLock extends RedissonBaseLock {
                 Arrays.asList(getRawName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, getSubscribeService().getPublishCommand());
     }
 
+    /** 异步执行 unlockInner。 */
     protected RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, long timeout) {
         return evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                               "local val = redis.call('get', KEYS[3]); " +
@@ -370,6 +388,7 @@ public class RedissonLock extends RedissonBaseLock {
                                 getLockName(threadId), getSubscribeService().getPublishCommand(), timeout);
     }
 
+    /** 异步获取锁。 */
     @Override
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long currentThreadId) {
         CompletableFuture<Void> result = new CompletableFuture<>();
@@ -403,6 +422,7 @@ public class RedissonLock extends RedissonBaseLock {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 异步获取锁。 */
     private void lockAsync(long leaseTime, TimeUnit unit,
                            RedissonLockEntry entry, CompletableFuture<Void> result, long currentThreadId) {
         RFuture<Long> ttlFuture = tryAcquireAsync0(-1, leaseTime, unit, currentThreadId);
@@ -448,11 +468,13 @@ public class RedissonLock extends RedissonBaseLock {
         });
     }
 
+    /** 异步尝试获取锁。 */
     @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
         return getServiceManager().execute(() -> tryAcquireOnceAsync(-1, -1, null, threadId));
     }
 
+    /** 异步尝试获取锁。 */
     @Override
     public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit,
             long currentThreadId) {
@@ -517,6 +539,7 @@ public class RedissonLock extends RedissonBaseLock {
         return new CompletableFutureWrapper<>(result);
     }
 
+    /** 异步尝试获取锁。 */
     private void tryLockAsync(AtomicLong time, long waitTime, long leaseTime, TimeUnit unit,
                               RedissonLockEntry entry, CompletableFuture<Boolean> result, long currentThreadId) {
         if (result.isDone()) {
