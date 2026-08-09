@@ -18,8 +18,8 @@ package org.redisson.api.queue.event;
 import org.redisson.api.queue.QueueOperation;
 
 /**
- * Listener interface for queue enabled operations events.
- * This interface is triggered when queue operation switched to enabled state.
+ * 队列操作启用事件监听器。
+ * 当某队列操作切换为启用状态时触发。
  *
  * @author Nikita Koksharov
  *
@@ -27,9 +27,10 @@ import org.redisson.api.queue.QueueOperation;
 public interface EnabledOperationEventListener extends QueueEventListener {
 
     /**
-     * Called when queue operation switched to enabled state.
+     * 队列操作被启用时回调。
      *
-     * @param queueName name of queue
+     * @param queueName 队列名称
+     * @param operation 被启用的操作类型
      */
     void onEnabled(String queueName, QueueOperation operation);
 

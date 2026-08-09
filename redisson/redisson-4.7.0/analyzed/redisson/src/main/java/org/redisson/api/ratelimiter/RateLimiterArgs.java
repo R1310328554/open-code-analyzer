@@ -20,37 +20,36 @@ import org.redisson.api.RateType;
 import java.time.Duration;
 
 /**
- * Arguments object for {@code RRateLimiter.updateRate(...)} methods.
+ * {@code RRateLimiter.updateRate(...)} 方法的参数对象。
  */
 public interface RateLimiterArgs {
 
     /**
-     * Creates arguments with required parameters.
+     * 使用必填参数创建限流配置。
      *
-     * @param mode rate mode
-     * @param rate rate
-     * @param rateInterval rate time interval
-     * @return arguments instance
+     * @param mode 限流模式
+     * @param rate 速率（许可数）
+     * @param rateInterval 速率时间窗口
+     * @return 参数实例
      */
     static RateLimiterArgs of(RateType mode, long rate, Duration rateInterval) {
         return new RateLimiterParams(mode, rate, rateInterval);
     }
 
     /**
-     * Defines time to live of rate limiter keys.
+     * 设置限流器键的存活时间（TTL）。
      *
-     * @param keepAliveTime maximum time that limiter will wait for a new acquisition before deletion
-     * @return arguments instance
+     * @param keepAliveTime 无新获取请求后限流器被删除前的最长等待时间
+     * @return 参数实例
      */
     RateLimiterArgs keepAliveTime(Duration keepAliveTime);
 
     /**
-     * Defines whether to keep current state (available permits and used permits history) or reset it.
+     * 设置是否保留当前状态（可用许可与已用许可历史），或重置状态。
      *
-     * @param keepState {@code true} to keep state, {@code false} to reset state
-     * @return arguments instance
+     * @param keepState {@code true} 保留状态，{@code false} 重置状态
+     * @return 参数实例
      */
     RateLimiterArgs keepState(boolean keepState);
 
 }
-

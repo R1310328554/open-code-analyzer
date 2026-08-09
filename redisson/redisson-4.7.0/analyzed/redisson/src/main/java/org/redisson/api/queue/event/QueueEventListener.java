@@ -18,7 +18,7 @@ package org.redisson.api.queue.event;
 import java.util.EventListener;
 
 /**
- * Base interface for all queue event listeners.
+ * 所有队列事件监听器的基接口。
  *
  * @author Nikita Koksharov
  *

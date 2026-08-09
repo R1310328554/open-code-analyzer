@@ -18,9 +18,8 @@ package org.redisson.api.queue.event;
 import java.util.List;
 
 /**
- * Listener interface for queue polling events.
- * This interface extends QueueEventListener and is triggered when messages
- * are polled (retrieved) from a queue.
+ * 队列消息拉取（Poll）事件监听器。
+ * 当消息从队列中被拉取（消费）时触发。
  *
  * @author Nikita Koksharov
  *
@@ -28,9 +27,9 @@ import java.util.List;
 public interface PolledEventListener extends QueueEventListener {
 
     /**
-     * Called when messages are polled from the queue.
+     * 消息从队列被拉取时回调。
      *
-     * @param ids message ids
+     * @param ids 被拉取的消息 ID 列表
      */
     void onPolled(List<String> ids);
 

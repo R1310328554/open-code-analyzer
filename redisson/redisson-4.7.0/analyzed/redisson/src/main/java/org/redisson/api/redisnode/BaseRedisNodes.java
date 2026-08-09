@@ -18,7 +18,7 @@ package org.redisson.api.redisnode;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Base Redis nodes API interface
+ * Redis 节点 API 的基接口。
  *
  * @author Nikita Koksharov
  *
@@ -26,17 +26,17 @@ import java.util.concurrent.TimeUnit;
 public interface BaseRedisNodes {
 
     /**
-     * Ping all Redis nodes.
-     * Default timeout per Redis node is 1000 milliseconds
+     * 对所有 Redis 节点执行 PING。
+     * 每个节点的默认超时为 1000 毫秒。
      *
-     * @return <code>true</code> if all nodes replied "PONG", <code>false</code> in other case.
+     * @return 若所有节点均回复 "PONG" 则返回 <code>true</code>，否则返回 <code>false</code>。
      */
     boolean pingAll();
 
     /**
-     * Ping all Redis nodes with specified timeout per node
+     * 对所有 Redis 节点执行 PING，并指定每个节点的超时。
      *
-     * @return <code>true</code> if all nodes replied "PONG", <code>false</code> in other case.
+     * @return 若所有节点均回复 "PONG" 则返回 <code>true</code>，否则返回 <code>false</code>。
      */
     boolean pingAll(long timeout, TimeUnit timeUnit);
 

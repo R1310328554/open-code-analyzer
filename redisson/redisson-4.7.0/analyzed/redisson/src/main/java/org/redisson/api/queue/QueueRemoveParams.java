@@ -18,6 +18,7 @@ package org.redisson.api.queue;
 import org.redisson.api.BaseSyncParams;
 
 /**
+ * {@link QueueRemoveArgs} 的可变实现，保存待从队列中移除的消息 ID 列表。
  *
  * @author Nikita Koksharov
  *
@@ -26,10 +27,12 @@ public class QueueRemoveParams extends BaseSyncParams<QueueRemoveArgs> implement
 
     private final String[] ids;
 
+    /** 构造移除参数，绑定待移除的消息 ID 数组。 */
     public QueueRemoveParams(String[] ids) {
         this.ids = ids;
     }
 
+    /** 返回待移除的消息 ID 列表。 */
     public String[] getIds() {
         return ids;
     }

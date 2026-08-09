@@ -16,8 +16,8 @@
 package org.redisson.api.queue.event;
 
 /**
- * Enumeration representing the possible statuses for negatively acknowledged messages.
- * Used to indicate why a message was negatively acknowledged (NAcked).
+ * 负确认（NAck）消息的状态枚举。
+ * 用于说明消息被负确认的原因。
  *
  * @author Nikita Koksharov
  *
@@ -25,16 +25,14 @@ package org.redisson.api.queue.event;
 public enum NAckStatus {
 
     /**
-     * Indicates that the client application could process the message,
-     * but it was not accepted.
-     * The message is removed and moved to the Dead Letter Queue (DLQ) if configured.
+     * 客户端应用能处理该消息，但业务上拒绝接受。
+     * 消息将被移除；若配置了死信队列（DLQ）则移入 DLQ。
      */
     REJECTED,
 
     /**
-     * Indicates that the client application failed to process the message.
-     * The message is redelivered. Allows to define the delay duration before
-     * the failed message is eligible for redelivery.
+     * 客户端应用处理消息失败。
+     * 消息将被重新投递；可配置失败消息再次投递前的延迟时长。
      */
     FAILED
 

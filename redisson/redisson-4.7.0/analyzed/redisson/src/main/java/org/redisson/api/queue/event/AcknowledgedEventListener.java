@@ -18,9 +18,8 @@ package org.redisson.api.queue.event;
 import java.util.List;
 
 /**
- * Listener interface for acknowledged queue events.
- * This interface is triggered when messages
- * in a queue are successfully acknowledged by consumers.
+ * 队列消息确认（Ack）事件监听器。
+ * 当消费者成功确认队列中的消息时触发。
  *
  * @author Nikita Koksharov
  *
@@ -28,9 +27,9 @@ import java.util.List;
 public interface AcknowledgedEventListener extends QueueEventListener {
 
     /**
-     * Called when messages are acknowledged by a consumer.
+     * 消息被消费者确认时回调。
      *
-     * @param ids message ids
+     * @param ids 已确认的消息 ID 列表
      */
     void onAcknowledged(List<String> ids);
 

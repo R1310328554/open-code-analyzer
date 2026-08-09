@@ -16,8 +16,8 @@
 package org.redisson.api.queue.event;
 
 /**
- * Listener interface for config queue events.
- * This interface is triggered when queue config is set.
+ * 队列配置变更事件监听器。
+ * 当队列配置被设置或更新时触发。
  *
  * @author Nikita Koksharov
  *
@@ -25,9 +25,9 @@ package org.redisson.api.queue.event;
 public interface ConfigEventListener extends QueueEventListener {
 
     /**
-     * Called when queue config was set.
+     * 队列配置被设置时回调。
      *
-     * @param queueName name of queue
+     * @param queueName 队列名称
      */
     void onSet(String queueName);
 

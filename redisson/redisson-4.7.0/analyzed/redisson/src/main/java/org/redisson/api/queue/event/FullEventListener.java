@@ -16,8 +16,8 @@
 package org.redisson.api.queue.event;
 
 /**
- * Listener interface for queue full events.
- * This interface is triggered when the queue is full.
+ * 队列已满事件监听器。
+ * 当队列达到容量上限时触发。
  *
  * @author Nikita Koksharov
  *
@@ -25,9 +25,9 @@ package org.redisson.api.queue.event;
 public interface FullEventListener extends QueueEventListener {
 
     /**
-     * Called when the queue is full.
+     * 队列已满时回调。
      *
-     * @param queueName name of queue
+     * @param queueName 队列名称
      */
     void onFull(String queueName);
 

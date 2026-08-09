@@ -18,9 +18,8 @@ package org.redisson.api.queue.event;
 import java.util.List;
 
 /**
- * Listener interface for queue addition events.
- * This interface is triggered when new messages
- * are added to a queue.
+ * 队列消息入队事件监听器。
+ * 当新消息被添加到队列时触发。
  *
  * @author Nikita Koksharov
  *
@@ -28,9 +27,9 @@ import java.util.List;
 public interface AddedEventListener extends QueueEventListener {
 
     /**
-     * Called when new messages are added to the queue.
+     * 新消息入队时回调。
      *
-     * @param ids message ids
+     * @param ids 新入队的消息 ID 列表
      */
     void onAdded(List<String> ids);
 

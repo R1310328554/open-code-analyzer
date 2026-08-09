@@ -18,9 +18,8 @@ package org.redisson.api.queue.event;
 import java.util.List;
 
 /**
- * Listener interface for queue removal events.
- * This interface is triggered when messages
- * are removed from a queue.
+ * 队列消息移除事件监听器。
+ * 当消息从队列中被移除时触发。
  *
  * @author Nikita Koksharov
  *
@@ -28,9 +27,9 @@ import java.util.List;
 public interface RemovedEventListener extends QueueEventListener {
 
     /**
-     * Called when messages are removed from the queue.
+     * 消息从队列被移除时回调。
      *
-     * @param ids message ids
+     * @param ids 被移除的消息 ID 列表
      */
     void onRemoved(List<String> ids);
 

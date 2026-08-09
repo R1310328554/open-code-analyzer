@@ -18,9 +18,8 @@ package org.redisson.api.queue.event;
 import java.util.List;
 
 /**
- * Listener interface for negatively acknowledged queue events.
- * This interface is triggered when messages
- * in a queue are negatively acknowledged by consumers.
+ * 队列消息负确认（NAck）事件监听器。
+ * 当消费者负确认队列中的消息时触发。
  *
  * @author Nikita Koksharov
  *
@@ -28,10 +27,10 @@ import java.util.List;
 public interface NegativelyAcknowledgedEventListener extends QueueEventListener {
 
     /**
-     * Called when messages are negatively acknowledged by a consumer.
+     * 消息被消费者负确认时回调。
      *
-     * @param status The reason for the negative acknowledgment
-     * @param ids message ids
+     * @param status 负确认原因
+     * @param ids 被负确认的消息 ID 列表
      */
     void onNegativelyAcknowledged(NAckStatus status, List<String> ids);
 

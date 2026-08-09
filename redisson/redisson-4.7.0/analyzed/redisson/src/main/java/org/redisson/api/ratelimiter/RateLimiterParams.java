@@ -20,7 +20,7 @@ import org.redisson.api.RateType;
 import java.time.Duration;
 
 /**
- * Parameters holder for {@link RateLimiterArgs}.
+ * {@link RateLimiterArgs} 的参数实现，持有速率、时间窗口及状态保留配置。
  */
 public final class RateLimiterParams implements RateLimiterArgs {
 
@@ -48,24 +48,28 @@ public final class RateLimiterParams implements RateLimiterArgs {
         return this;
     }
 
+    /** 返回限流模式。 */
     public RateType getMode() {
         return mode;
     }
 
+    /** 返回速率（许可数）。 */
     public long getRate() {
         return rate;
     }
 
+    /** 返回速率时间窗口。 */
     public Duration getRateInterval() {
         return rateInterval;
     }
 
+    /** 返回限流器键的存活时间。 */
     public Duration getKeepAliveTime() {
         return keepAliveTime;
     }
 
+    /** 返回是否保留当前限流状态。 */
     public boolean isKeepState() {
         return keepState;
     }
 }
-
