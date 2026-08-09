@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * This class provides a unified interface for registering/unregistering of Metric MBean.
+ * Sentinel 指标 MBean 统一注册中心：管理 {@link MetricBean} 的注册、注销与查找。
  *
  * @author chenglu
  * @date 2021-07-01 20:02
@@ -54,14 +54,14 @@ public class MBeanRegistry {
         try {
             mBeanServer = ManagementFactory.getPlatformMBeanServer();
         } catch (Error e) {
-            // Account for running within IKVM and create a new MBeanServer
+            // IKVM 等环境无 PlatformMBeanServer 时自行创建
             // if the PlatformMBeanServer does not exist.
             mBeanServer =  MBeanServerFactory.createMBeanServer();
         }
     }
     
     /**
-     * Registers a new MBean with the platform MBean server.
+     * 向平台 MBeanServer 注册 {@link MetricBean}。
      * @param bean the bean being registered
      * @param mBeanName the mBeanName
      * @throws JMException MBean can not register exception
@@ -80,7 +80,7 @@ public class MBeanRegistry {
     }
     
     /**
-     * unregister the MetricBean
+     * 注销已注册的 {@link MetricBean}。
      * @param bean MetricBean
      */
     public void unRegister(MetricBean bean) {
@@ -100,7 +100,7 @@ public class MBeanRegistry {
     }
     
     /**
-     * find the MBean by BeanName
+     * 按 ObjectName 查找已注册的 MBean。
      * @param mBeanName mBeanName
      * @return MetricMBean
      */
@@ -112,7 +112,7 @@ public class MBeanRegistry {
     }
     
     /**
-     * list all MBeans which is registered into MBeanRegistry
+     * 列出当前注册表内全部 {@link MetricBean}。
      * @return MetricBeans
      */
     public List<MetricBean> listAllMBeans() {

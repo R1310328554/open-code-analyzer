@@ -24,8 +24,8 @@ import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * <p>
- * Define the configuration Loaded when spring application start.
- * Put it in META-INF/spring.factories, it will be auto loaded by Spring
+ * Spring Boot 启动阶段加载 Sentinel Config 数据源相关 Bean。
+ * 在 META-INF/spring.factories 中注册后可被 Spring 自动装配。
  * </p>
  *
  * @author lianglin

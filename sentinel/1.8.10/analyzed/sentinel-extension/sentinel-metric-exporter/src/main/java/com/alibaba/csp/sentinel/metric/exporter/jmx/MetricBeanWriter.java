@@ -29,8 +29,7 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
- * the metric bean writer, it provides {@link MetricBeanWriter#write} method for register the
- * MetricBean in {@link MBeanRegistry} or update the value of MetricBean
+ * 指标 MBean 写入器：通过 {@link MetricBeanWriter#write} 注册或更新 {@link MBeanRegistry} 中的 {@link MetricBean}。
  *
  * @author chenglu
  * @date 2021-07-01 20:02
@@ -45,11 +44,9 @@ public class MetricBeanWriter {
     private static final Pattern SPECIAL_CHARACTER_PATTERN = Pattern.compile("[*?=:\"\n]");
     
     /**
-     * write the MetricNode value to MetricBean
-     * if the MetricBean is not registered into {@link MBeanRegistry},
-     * it will be created and registered into {@link MBeanRegistry}.
-     * else it will update the value of MetricBean.
-     * Notes. if the MetricNode is null, then {@link MetricBean} will be reset.
+     * 将按资源分组的 {@link MetricNode} 写入对应 {@link MetricBean}。
+     * 未注册则创建并注册；已存在则更新数值。
+     * 若 map 为空则重置全部已注册 MBean。
      * @param map metricNode value group by resource
      * @throws Exception write failed exception
      */
@@ -69,10 +66,10 @@ public class MetricBeanWriter {
             appName = DEFAULT_APP_NAME;
         }
         long version = System.currentTimeMillis();
-        // set or update the new metric value
+        // 注册或更新本轮指标值
         for (MetricNode metricNode : map.values()) {
-            // Fix JMX Metrics export error: https://github.com/alibaba/Sentinel/issues/2989
-            // Without escape, it will throw "cannot add mbean for pattern name" or "invalid character in value part of property" exception
+            // 转义资源名中的 JMX 特殊字符，见 issue #2989
+            // 未转义会导致 ObjectName 非法
             String resourceName = escapeSpecialCharacter(metricNode.getResource());
             final String mBeanName = "Sentinel:type=Metric,resource=" + resourceName
                     +",classification=" + metricNode.getClassification()
@@ -89,7 +86,7 @@ public class MetricBeanWriter {
                 RecordLog.info("[MetricBeanWriter] Registering with JMX as Metric MBean [{}]", mBeanName);
             }
         }
-        // reset the old value
+        // 重置/注销本轮未更新的旧 MBean
         List<MetricBean> metricBeans = mBeanRegistry.listAllMBeans();
         if (metricBeans == null || metricBeans.isEmpty()) {
             return;
@@ -103,7 +100,7 @@ public class MetricBeanWriter {
     }
 
     /**
-     * escape only when arg has special character eg.(*,?,\n,\")
+     * 仅当资源名含 JMX 特殊字符（*、?、=、:、"、换行等）时进行转义 eg.(*,?,\n,\")
      *
      * @param resourceName need escape resource name
      * @return escaped characters

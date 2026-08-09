@@ -54,11 +54,9 @@ import static org.springframework.cloud.config.client.ConfigClientProperties.*;
 
 /**
  * <p>
- * {@link SentinelRuleLocator} which pulls Sentinel rules from remote server.
- * It retrieves configurations of spring-cloud-config client configurations from
- * {@link org.springframework.core.env.Environment}, such as {@code spring.cloud.config.uri=uri},
- * {@code spring.cloud.config.profile=profile}, and so on.
- * When rules are pulled successfully, it will be stored to {@link SentinelRuleStorage}.
+ * 从 Spring Cloud Config 远程服务器拉取 Sentinel 规则的 {@link PropertySourceLocator}。
+ * 从 {@link org.springframework.core.env.Environment} 读取客户端配置（如 {@code spring.cloud.config.uri}、
+ * {@code spring.cloud.config.profile} 等），拉取成功后写入 {@link SentinelRuleStorage}。
  * </p>
  *
  * @author lianglin
@@ -78,10 +76,10 @@ public class SentinelRuleLocator implements PropertySourceLocator {
     }
 
     /**
-     * Responsible for pull data from remote server
+     * 从 Config Server 拉取配置并组装为 {@link CompositePropertySource}。
      *
      * @param environment
-     * @return correct data if success else a empty propertySource or null
+     * @return 成功时返回属性源，否则返回空属性源或 null
      */
     @Override
     @Retryable(interceptor = "configServerRetryInterceptor")
@@ -101,13 +99,13 @@ public class SentinelRuleLocator implements PropertySourceLocator {
                     .commaDelimitedListToStringArray(properties.getLabel());
             }
             String state = ConfigClientStateHolder.getState();
-            // Try all the labels until one works
+            // 依次尝试各 label 直至拉取成功
             for (String label : labels) {
                 Environment result = getRemoteEnvironment(restTemplate, properties,
                     label.trim(), state);
                 if (result != null) {
                     log(result);
-                    // result.getPropertySources() can be null if using xml
+                    // 使用 XML 配置时 propertySources 可能为 null
                     if (result.getPropertySources() != null) {
                         for (PropertySource source : result.getPropertySources()) {
                             @SuppressWarnings("unchecked")
@@ -123,6 +121,7 @@ public class SentinelRuleLocator implements PropertySourceLocator {
             }
         } catch (HttpServerErrorException e) {
             error = e;
+            // 服务端错误时尝试解析 JSON 响应体
             if (MediaType.APPLICATION_JSON.includes(e.getResponseHeaders().getContentType())) {
                 errorBody = e.getResponseBodyAsString();
             }
@@ -242,7 +241,7 @@ public class SentinelRuleLocator implements PropertySourceLocator {
         RestTemplate template = new RestTemplate(requestFactory);
         Map<String, String> headers = new HashMap<>(client.getHeaders());
         if (headers.containsKey(AUTHORIZATION)) {
-            // To avoid redundant addition of header
+            // 避免重复添加 Authorization 头
             headers.remove(AUTHORIZATION);
         }
         if (!headers.isEmpty()) {

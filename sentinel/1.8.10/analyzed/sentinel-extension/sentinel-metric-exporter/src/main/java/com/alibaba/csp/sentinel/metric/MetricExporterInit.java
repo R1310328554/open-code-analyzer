@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The{@link MetricExporterInit} work on load Metric exporters.
+ * {@link InitFunc} 实现：加载并启动 {@link MetricExporter}，注册 JVM 关闭钩子。
  *
  * @author chenglu
  * @date 2021-07-01 19:58
@@ -35,23 +35,19 @@ import java.util.List;
  */
 public class MetricExporterInit implements InitFunc {
     
-    /**
-     * the list of metric exporters.
-     */
+    /** 已注册的指标导出器列表。 */
     private static List<MetricExporter> metricExporters = new ArrayList<>();
     
-    /*
-      load metric exporters.
-     */
+    /* 静态加载指标导出器 */
     static {
-        // now we use this simple way to load MetricExporter.
+        // 当前以硬编码方式注册 JMX 导出器
         metricExporters.add(new JMXMetricExporter());
     }
     
     @Override
     public void init() throws Exception {
         RecordLog.info("[MetricExporterInit] MetricExporter start init.");
-        // start the metric exporters.
+        // 启动各 MetricExporter
         for (MetricExporter metricExporter : metricExporters) {
            try {
                metricExporter.start();
@@ -61,7 +57,7 @@ public class MetricExporterInit implements InitFunc {
            }
         }
         
-        // add shutdown hook.
+        // 注册关闭钩子以优雅停止导出器
         Runtime.getRuntime().addShutdownHook(new Thread(
                 () -> metricExporters.forEach(metricExporter -> {
                     try {

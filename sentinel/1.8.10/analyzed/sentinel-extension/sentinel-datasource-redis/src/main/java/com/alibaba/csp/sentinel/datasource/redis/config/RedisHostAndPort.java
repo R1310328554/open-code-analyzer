@@ -19,7 +19,7 @@ package com.alibaba.csp.sentinel.datasource.redis.config;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * An immutable representation of a host and port.
+ * 主机与端口的不可变值对象，用于 Redis 连接地址解析。
  *
  * @author tiger
  */
@@ -32,7 +32,7 @@ public class RedisHostAndPort {
 
     /**
      * @param host must not be empty or {@literal null}.
-     * @param port
+     * @param port 端口号，{@link #NO_PORT} 表示未指定
      */
     private RedisHostAndPort(String host, int port) {
         AssertUtil.notNull(host, "host must not be null");
@@ -42,7 +42,7 @@ public class RedisHostAndPort {
     }
 
     /**
-     * Create a {@link RedisHostAndPort} of {@code host} and {@code port}
+     * 根据 {@code host} 与 {@code port} 创建 {@link RedisHostAndPort} 实例。
      *
      * @param host the hostname
      * @param port a valid port
@@ -54,21 +54,21 @@ public class RedisHostAndPort {
     }
 
     /**
-     * @return {@literal true} if has a port.
+     * @return 是否已指定有效端口号。
      */
     public boolean hasPort() {
         return port != NO_PORT;
     }
 
     /**
-     * @return the host text.
+     * @return 主机名文本。
      */
     public String getHost() {
         return host;
     }
 
     /**
-     * @return the port.
+     * @return 端口号；未指定时抛出 {@link IllegalStateException}。
      */
     public int getPort() {
         if (!hasPort()) {
@@ -98,7 +98,7 @@ public class RedisHostAndPort {
 
     /**
      * @param port the port number
-     * @return {@literal true} for valid port numbers.
+     * @return 端口是否在 0–65535 合法范围内。
      */
     private static boolean isValidPort(int port) {
         return port >= 0 && port <= 65535;

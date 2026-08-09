@@ -23,7 +23,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A read-only {@code DataSource} with ZooKeeper backend.
+ * 只读 {@code DataSource}，以 ZooKeeper 为后端存储 Sentinel 规则。
+ * 通过 Curator {@link CuratorCache} 监听节点变更并实时刷新规则。
  *
  * @author guonanjun
  */
@@ -57,7 +58,7 @@ public class ZookeeperDataSource<T> extends AbstractDataSource<String, T> {
     }
 
     /**
-     * This constructor is Nacos-style.
+     * Nacos 风格构造：{@code groupId/dataId} 映射为 ZK 路径 {@code /groupId/dataId}。
      */
     public ZookeeperDataSource(final String serverAddr, final String groupId, final String dataId,
                                Converter<String, T> parser) {
@@ -71,7 +72,7 @@ public class ZookeeperDataSource<T> extends AbstractDataSource<String, T> {
     }
 
     /**
-     * This constructor adds authentication information.
+     * 带 ZK 认证信息的 Nacos 风格构造。
      */
     public ZookeeperDataSource(final String serverAddr, final List<AuthInfo> authInfos, final String groupId, final String dataId,
                                Converter<String, T> parser) {
@@ -109,7 +110,7 @@ public class ZookeeperDataSource<T> extends AbstractDataSource<String, T> {
                     T newValue = loadConfig();
                     RecordLog.info("[ZookeeperDataSource] New property value received for ({}, {}): {}",
                             serverAddr, path, newValue);
-                    // Update the new value to the property.
+                    // 将新配置写入 Sentinel 属性
                     getProperty().updateValue(newValue);
                 } catch (Exception ex) {
                     RecordLog.warn("[ZookeeperDataSource] loadConfig exception", ex);

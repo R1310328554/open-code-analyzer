@@ -18,7 +18,7 @@
 package com.alibaba.csp.sentinel.metric.exporter.jmx;
 
 /**
- * the Metric JMX Bean interface.
+ * Sentinel 指标 JMX MBean 接口，暴露 QPS、RT、并发度等运行时统计。
  *
  * @author chenglu
  * @date 2021-07-01 20:02

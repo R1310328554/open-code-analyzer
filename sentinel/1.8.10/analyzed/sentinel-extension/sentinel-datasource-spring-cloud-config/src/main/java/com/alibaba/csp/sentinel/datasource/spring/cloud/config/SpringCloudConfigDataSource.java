@@ -24,15 +24,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>A read-only {@code DataSource} with Spring Cloud Config backend.</p>
+ * <p>只读 {@code DataSource}，以 Spring Cloud Config 为后端存储 Sentinel 规则。</p>
  * <p>
- * It retrieves the Spring Cloud Config data stored in {@link SentinelRuleStorage}.
- * When the data in the backend has been modified, {@link SentinelRuleStorage} will
- * invoke {@link SpringCloudConfigDataSource#updateValues()} to update values dynamically.
+ * 从 {@link SentinelRuleStorage} 读取配置；后端变更时由 {@link SentinelRuleStorage}
+ * 调用 {@link SpringCloudConfigDataSource#updateValues()} 动态刷新。
  * </p>
  * <p>
- * To notify the client that the remote config has changed, users could bind a git
- * webhook callback with the {@link SentinelRuleLocator#refresh()} API.
+ * 可通过 Git Webhook 回调 {@link SentinelRuleLocator#refresh()} 通知客户端配置已更新。
  * </p>
  *
  * @author lianglin

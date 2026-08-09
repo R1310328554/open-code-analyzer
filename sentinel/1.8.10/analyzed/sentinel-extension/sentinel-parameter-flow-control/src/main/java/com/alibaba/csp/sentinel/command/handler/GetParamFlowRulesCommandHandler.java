@@ -23,10 +23,12 @@ import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRuleManager;
 import com.alibaba.fastjson.JSON;
 
 /**
+ * 命令处理器：返回当前全部热点参数流控规则（JSON）。
+ *
  * @author Eric Zhao
  * @since 0.2.0
  */
-@CommandMapping(name = "getParamFlowRules", desc = "Get all parameter flow rules")
+@CommandMapping(name = "getParamFlowRules", desc = "获取全部热点参数流控规则")
 public class GetParamFlowRulesCommandHandler implements CommandHandler<String> {
 
     @Override

@@ -27,9 +27,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The JMX metric exporter, mainly for write metric datas to JMX bean. It implement {@link MetricExporter}, provide method
- * start, export and shutdown. The mainly design for the jmx is refresh the JMX bean data scheduled.
- * {@link JMXExportTask} work on export data to {@link MetricBean}.
+ * JMX 指标导出器：定时将 {@link MetricCollector} 采集的数据写入 {@link MetricBean}。
+ * 实现 {@link MetricExporter} 的 start/export/shutdown 生命周期；
+ * 内部 {@link JMXExportTask} 每秒调度一次导出。
  *
  * @author chenglu
  * @date 2021-07-01 20:02
@@ -37,19 +37,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class JMXMetricExporter implements MetricExporter {
     
-    /**
-     * schedule executor.
-     */
+    /** 定时调度线程池。 */
     private final ScheduledExecutorService jmxExporterSchedule;
     
-    /**
-     * JMX metric writer, write metric datas to {@link MetricBean}.
-     */
+    /** JMX 指标写入器，负责注册/更新 {@link MetricBean}。 */
     private final MetricBeanWriter metricBeanWriter = new MetricBeanWriter();
     
-    /**
-     * global metrics collector.
-     */
+    /** 全局指标采集器。 */
     private final MetricCollector metricCollector = new MetricCollector();
     
     public JMXMetricExporter() {
@@ -71,9 +65,7 @@ public class JMXMetricExporter implements MetricExporter {
         jmxExporterSchedule.shutdown();
     }
     
-    /**
-     * JMXExportTask mainly work on execute the JMX metric export.
-     */
+    /** 定时任务：调用 {@link #export()} 刷新 JMX MBean 数据。 */
     class JMXExportTask implements Runnable {
         
         @Override

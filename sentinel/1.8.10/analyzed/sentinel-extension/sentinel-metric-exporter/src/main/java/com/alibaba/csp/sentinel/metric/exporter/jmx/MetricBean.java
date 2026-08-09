@@ -20,7 +20,7 @@ package com.alibaba.csp.sentinel.metric.exporter.jmx;
 import com.alibaba.csp.sentinel.node.metric.MetricNode;
 
 /**
- * the MetricBean for JMX expose.
+ * JMX 暴露的 Sentinel 指标 MBean 实现，字段对应 {@link MetricNode} 各维度。
  *
  * @author chenglu
  * @date 2021-07-01 20:02
@@ -30,9 +30,7 @@ public class MetricBean implements MetricMXBean {
     
     private String resource;
     
-    /**
-     * Resource classification (e.g. SQL or RPC)
-     */
+    /** 资源分类（如 SQL、RPC 等）。 */
     private int classification;
     
     private long timestamp;
@@ -109,7 +107,7 @@ public class MetricBean implements MetricMXBean {
     }
 
     /**
-     * set the version to current Mbean.
+     * 设置当前导出批次版本号，用于识别过期 MBean。
      *
      * @param version current version.
      */
@@ -117,9 +115,7 @@ public class MetricBean implements MetricMXBean {
         this.version = version;
     }
 
-    /**
-     * reset the MBean value to the initialized value.
-     */
+    /** 将各计数器重置为初始零值。 */
     public void reset() {
         this.blockQps = 0;
         this.passQps = 0;
@@ -132,7 +128,7 @@ public class MetricBean implements MetricMXBean {
     }
     
     /**
-     * set the MetricBean's value which from MetricNode.
+     * 从 {@link MetricNode} 拷贝指标值到当前 MBean。
      *
      * @param metricNode metric Node for write file
      */

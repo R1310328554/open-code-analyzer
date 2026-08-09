@@ -18,8 +18,7 @@ package com.alibaba.csp.sentinel.datasource.spring.cloud.config;
 import org.springframework.core.env.PropertySource;
 
 /**
- * Storage data pull from spring-config-cloud server
- * And notice ${@link SpringCloudConfigDataSource} update latest values
+ * 缓存从 Spring Cloud Config 拉取的规则属性源，并通知 {@link SpringCloudConfigDataSource} 刷新。
  *
  * @author lianglin
  * @since 1.7.0

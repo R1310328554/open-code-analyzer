@@ -18,8 +18,8 @@
 package com.alibaba.csp.sentinel.metric.exporter;
 
 /**
- * {@link MetricExporter} work on export metric to target monitor.
- * you can implement your export ways by this class.
+ * 指标导出 SPI：将 Sentinel 运行时指标导出到目标监控系统。
+ * 可实现此接口自定义导出方式（如 JMX、Prometheus 等）。
  *
  * @author chenglu
  * @date 2021-07-01 21:16
@@ -27,21 +27,21 @@ package com.alibaba.csp.sentinel.metric.exporter;
 public interface MetricExporter {
     
     /**
-     * start the {@link MetricExporter}.
+     * 启动导出器（如注册定时任务）。
      *
      * @throws Exception start exception.
      */
     void start() throws Exception;
     
     /**
-     * export the data to target monitor by the implement.
+     * 执行一次指标导出。
      *
      * @throws Exception export exception.
      */
     void export() throws Exception;
     
     /**
-     * shutdown the {@link MetricExporter}.
+     * 关闭导出器并释放资源。
      *
      * @throws Exception shutdown exception.
      */

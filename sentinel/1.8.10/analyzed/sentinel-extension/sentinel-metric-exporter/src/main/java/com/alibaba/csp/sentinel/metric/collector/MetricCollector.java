@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The {@link MetricCollector} work on collecting metrics in {@link MetricNode}.
+ * 从各 {@link ClusterNode} 收集上一秒 {@link MetricNode} 指标并按资源名聚合。
  *
  * @author chenglu
  * @date 2021-07-01 20:01
@@ -38,7 +38,7 @@ import java.util.Map;
 public class MetricCollector {
     
     /**
-     * collect the metrics in {@link MetricNode}.
+     * 收集上一秒各资源的 {@link MetricNode} 快照。
      *
      * @return the metric grouped by resource name.
      */
@@ -58,7 +58,7 @@ public class MetricCollector {
     
     
     /**
-     * Get the last second {@link MetricNode} of {@link ClusterNode}
+     * 获取 {@link ClusterNode} 在 [minTime, maxTime) 区间内的 {@link MetricNode} 列表。
      * @param node {@link ClusterNode}
      * @param minTime the min time.
      * @param maxTime the max time.
@@ -70,7 +70,7 @@ public class MetricCollector {
     
     
     /**
-     * aggregate the metrics, the metrics under the same resource will left the lasted value
+     * 将 metrics 按资源名聚合，同一资源保留时间戳最新的一条。
      * @param metricNodeMap metrics map
      * @param metrics metrics info group by timestamp
      * @param node the node
@@ -84,7 +84,7 @@ public class MetricCollector {
             metricNode.setResource(resource);
             metricNode.setClassification(node.getResourceType());
             MetricNode existMetricNode = metricNodeMap.get(resource);
-            // always keep the MetricNode is the last
+            // 同一资源仅保留时间戳较新的 MetricNode
             if (existMetricNode != null && existMetricNode.getTimestamp() > metricNode.getTimestamp()) {
                 continue;
             }
