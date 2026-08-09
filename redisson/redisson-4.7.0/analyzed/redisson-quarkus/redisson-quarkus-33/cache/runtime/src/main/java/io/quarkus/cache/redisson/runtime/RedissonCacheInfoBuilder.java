@@ -20,12 +20,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * 将构建期缓存名集合与 {@link RedissonCachesConfig} 合并为 {@link RedissonCacheInfo} 集合。
+ * <p>命名缓存配置优先于 default 配置；未指定字段保持 {@link Optional#empty()}。
  *
  * @author Nikita Koksharov
- *
  */
 public class RedissonCacheInfoBuilder {
 
+    /** 为每个构建期注册的缓存名生成运行时 {@link RedissonCacheInfo}。 */
     public static Set<RedissonCacheInfo> build(Set<String> cacheNames,
                                                RedissonCachesConfig runtimeConfig) {
         if (cacheNames.isEmpty()) {
@@ -41,6 +43,7 @@ public class RedissonCacheInfoBuilder {
             RedissonCachesConfig.RedissonCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig();
             RedissonCachesConfig.RedissonCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig().get(cacheInfo.name);
 
+            // 命名缓存的 implementation 优先于全局 default。
             if (namedRuntimeConfig != null && namedRuntimeConfig.implementation().isPresent()) {
                 cacheInfo.implementation = namedRuntimeConfig.implementation();
             } else if (defaultRuntimeConfig.implementation().isPresent()) {

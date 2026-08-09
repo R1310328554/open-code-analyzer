@@ -26,20 +26,23 @@ import java.util.Optional;
 import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
 
 /**
+ * Quarkus {@code cache.redisson.*} 运行时配置根映射。
+ * <p>{@link #defaultConfig()} 为全局默认；{@link #cachesConfig()} 按缓存名覆盖。
  *
  * @author Nikita Koksharov
- *
  */
 @ConfigRoot(phase = RUN_TIME)
 @ConfigMapping(prefix = "cache.redisson")
 public interface RedissonCachesConfig {
 
+    /** 应用于所有 Redisson 缓存的默认配置（优先级最低）。 */
     /**
      * Default configuration applied to all Redis caches (lowest precedence)
      */
     @WithParentName
     RedissonCacheRuntimeConfig defaultConfig();
 
+    /** 按缓存名附加的配置（优先级最高，覆盖 default）。 */
     /**
      * Additional configuration applied to a specific Redis cache (highest precedence)
      */
@@ -48,6 +51,7 @@ public interface RedissonCachesConfig {
 
     interface RedissonCacheRuntimeConfig {
 
+        /** 缓存最大条目数；超出时 LRU 淘汰；{@code 0} 表示无界（默认）。 */
         /**
          * Specifies maximum size of this cache.
          * Superfluous elements are evicted using LRU algorithm.
@@ -55,18 +59,21 @@ public interface RedissonCachesConfig {
          */
         Optional<Integer> maxSize();
 
+        /** 写入后过期时间（对应 {@link RedissonCacheInfo#expireAfterWrite}）。 */
         /**
          * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
          * the entry's creation, or the most recent replacement of its value.
          */
         Optional<Duration> expireAfterWrite();
 
+        /** 访问后过期时间（max-idle，对应 {@link RedissonCacheInfo#expireAfterAccess}）。 */
         /**
          * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
          * the last access of its value.
          */
         Optional<Duration> expireAfterAccess();
 
+        /** 底层 Redis 结构实现（{@link CacheImplementation}）。 */
         /**
          * Specifies the cache implementation.
          */

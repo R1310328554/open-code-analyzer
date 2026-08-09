@@ -30,9 +30,10 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
+ * Quarkus 构建 Recorder：根据构建期缓存名与运行时配置组装 {@link CacheManager}。
+ * <p>仅在 {@code quarkus.cache.type=redisson} 且缓存启用时激活。
  *
  * @author Nikita Koksharov
- *
  */
 @Recorder
 public class RedissonCacheBuildRecorder {
@@ -45,9 +46,11 @@ public class RedissonCacheBuildRecorder {
         this.redisCacheConfigRV = redisCacheConfigRV;
     }
 
+    /** 返回 Redisson 缓存管理器供应商，供 {@link RedissonCacheProcessor} 注册。 */
     public CacheManagerInfo getCacheManagerSupplier() {
         return new CacheManagerInfo() {
             @Override
+            /** 缓存已启用且类型为 redisson 时返回 true。 */
             public boolean supports(Context context) {
                 return context.cacheEnabled() && "redisson".equals(context.cacheType());
             }
@@ -60,7 +63,7 @@ public class RedissonCacheBuildRecorder {
                     if (cacheInfos.isEmpty()) {
                         return new CacheManagerImpl(Collections.emptyMap());
                     } else {
-                        // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor for the caches map.
+                        // 构建期已知缓存数量，使用固定 initialCapacity 与 loadFactor 优化 HashMap。
                         Map<String, Cache> caches = new HashMap<>(cacheInfos.size() + 1, 1.0F);
                         for (RedissonCacheInfo cacheInfo : cacheInfos) {
                             if (LOGGER.isDebugEnabled()) {

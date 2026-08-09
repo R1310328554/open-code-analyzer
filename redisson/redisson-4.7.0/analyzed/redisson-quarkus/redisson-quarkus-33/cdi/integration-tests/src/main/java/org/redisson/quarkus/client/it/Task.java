@@ -19,10 +19,13 @@ import java.io.Serializable;
 import java.util.concurrent.Callable;
 
 /**
+ * 可序列化 {@link java.util.concurrent.Callable}，提交到分布式 Worker 执行。
+ *
  * @author Nikita Koksharov
  */
 public class Task implements Callable<String>, Serializable {
 
+    /** Worker 节点执行后返回 {@code "hello"}。 */
     @Override
     public String call() throws Exception {
         return "hello";

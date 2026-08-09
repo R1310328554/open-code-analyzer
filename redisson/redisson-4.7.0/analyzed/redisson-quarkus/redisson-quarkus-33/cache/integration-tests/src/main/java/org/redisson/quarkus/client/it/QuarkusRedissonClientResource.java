@@ -43,6 +43,10 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.ExecutionException;
 
+/**
+ * Quarkus Redisson 客户端集成测试 REST 资源。
+ * <p>{@link #cacheResult} 验证 {@link CacheResult} 注解缓存命中后 Redis 中存在对应键。
+ */
 @Path("/quarkus-redisson-client")
 public class QuarkusRedissonClientResource {
 
@@ -52,9 +56,11 @@ public class QuarkusRedissonClientResource {
     @Inject
     CachedService cachedService;
 
+    /** 调用 {@link CachedService} 两次相同参数，断言缓存命中且 Redis 键数量增加。 */
     @GET
     @Path("/cacheResult")
     public Boolean cacheResult() {
+        // 测试开始前 Redis 中应无缓存键。
         assert redisson.getKeys().count() == 0;
 
         String val1 = cachedService.cache1("key1");
@@ -69,6 +75,7 @@ public class QuarkusRedissonClientResource {
             throw new RuntimeException(e);
         }
 
+        // 两次 @CacheResult 调用后至少写入两个缓存条目。
         assert redisson.getKeys().count() >= 2;
 
         return val1.equals(val2) && val3.equals(val4);

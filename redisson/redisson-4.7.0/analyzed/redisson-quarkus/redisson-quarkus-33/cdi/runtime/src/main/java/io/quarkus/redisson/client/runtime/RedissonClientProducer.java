@@ -40,9 +40,10 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
+ * Quarkus 3.3 CDI 生产者：从 {@code redisson.yaml} 或 {@code quarkus.redisson.*} 构建 {@link RedissonClient}。
+ * <p>应用关闭时按 {@code quarkus.shutdown.timeout} 分阶段优雅停机。
  *
  * @author Nikita Koksharov
- *
  */
 @ApplicationScoped
 public class RedissonClientProducer {
@@ -53,11 +54,13 @@ public class RedissonClientProducer {
     @ConfigProperty(name = "quarkus.shutdown.timeout")
     Optional<Duration> shutdownTimeout;
 
+    /** 加载配置并创建单例 {@link RedissonClient}；配置缺失时抛出 {@link IllegalStateException}。 */
     @Produces
     @Singleton
     @DefaultBean
     public RedissonClient create() throws IOException {
         String config = null;
+        // 优先读取 quarkus.redisson.file，否则默认 classpath 上的 redisson.yaml。
         Optional<String> configFile = ConfigProvider.getConfig().getOptionalValue("quarkus.redisson.file", String.class);
         String configFileName = configFile.orElse("redisson.yaml");
         try (InputStream configStream = Optional.ofNullable(getClass().getResourceAsStream(configFileName))
@@ -70,6 +73,7 @@ public class RedissonClientProducer {
                 }
             }
         }
+        // 无 YAML 文件时，将 quarkus.redisson.* 属性聚合为 YAML。
         if (config == null) {
             Stream<String> s = StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false);
             config = PropertiesConvertor.toYaml("quarkus.redisson.", s.sorted().collect(Collectors.toList()), prop -> {
@@ -77,6 +81,7 @@ public class RedissonClientProducer {
             }, false);
         }
 
+        // 配置为空则拒绝启动，避免静默连接失败。
         if (config.isBlank()) {
             throw new IllegalStateException("Redisson settings aren't defined.");
         }
@@ -86,6 +91,7 @@ public class RedissonClientProducer {
         return redisson;
     }
 
+    /** 容器销毁时关闭 Redisson；若注入 shutdown timeout 则分阶段等待。 */
     @PreDestroy
     public void close() {
         if (redisson != null) {

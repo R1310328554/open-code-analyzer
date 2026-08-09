@@ -16,12 +16,13 @@
 package org.redisson.quarkus.client.it;
 
 /**
+ * {@link RRemoteService} 集成测试用远程服务接口。
  *
  * @author Nikita Koksharov
- *
  */
 public interface RemService {
 
+    /** 远程调用入口，返回执行结果字符串。 */
     String executeMe();
 
 }
