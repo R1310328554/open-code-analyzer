@@ -27,8 +27,8 @@ import org.springframework.jdbc.core.SqlOutParameter;
 import org.springframework.jdbc.core.SqlParameter;
 
 /**
- * Oracle-specific implementation for the {@link CallMetaDataProvider} interface.
- * This class is intended for internal use by the Simple JDBC classes.
+ * {@link CallMetaDataProvider} 的 Oracle 特定实现。
+ * 供 Simple JDBC 类内部使用。
  *
  * @author Thomas Risberg
  * @since 2.5

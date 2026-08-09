@@ -20,8 +20,10 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * The MySQL/MariaDB specific implementation of {@link TableMetaDataProvider}.
- * Sets {@link #setGeneratedKeysColumnNameArraySupported} to {@code false}.
+ * {@link TableMetaDataProvider} 的 MySQL/MariaDB 特定实现。
+ * MySQL 与 MariaDB 驱动在通过列名数组获取自增主键时行为不一致，
+ * 因此本实现将 {@link #setGeneratedKeysColumnNameArraySupported} 设为 {@code false}，
+ * 避免 SimpleJdbcInsert 等组件依赖不可靠的列名数组特性。
  *
  * @author Juergen Hoeller
  * @since 6.2.12

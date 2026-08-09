@@ -29,12 +29,10 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Oracle-specific implementation of the {@link org.springframework.jdbc.core.metadata.TableMetaDataProvider}.
- * Supports a feature for including synonyms in the meta-data lookup. Also supports lookup of current schema
- * using the {@code sys_context}.
+ * {@link org.springframework.jdbc.core.metadata.TableMetaDataProvider} 的 Oracle 特定实现。
+ * 支持在元数据查找中包含同义词，并支持通过 {@code sys_context} 查找当前 schema。
  *
- * <p>Thanks to Mike Youngstrom and Bruce Campbell for submitting the original suggestion for the Oracle
- * current schema lookup implementation.
+ * <p>感谢 Mike Youngstrom 与 Bruce Campbell 提出 Oracle 当前 schema 查找的原始建议。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -48,17 +46,17 @@ public class OracleTableMetaDataProvider extends GenericTableMetaDataProvider {
 
 
 	/**
-	 * Constructor used to initialize with provided database meta-data.
-	 * @param databaseMetaData meta-data to be used
+	 * 使用提供的数据库元数据初始化。
+	 * @param databaseMetaData 要使用的元数据
 	 */
 	public OracleTableMetaDataProvider(DatabaseMetaData databaseMetaData) throws SQLException {
 		this(databaseMetaData, false);
 	}
 
 	/**
-	 * Constructor used to initialize with provided database meta-data.
-	 * @param databaseMetaData meta-data to be used
-	 * @param includeSynonyms whether to include synonyms
+	 * 使用提供的数据库元数据初始化。
+	 * @param databaseMetaData 要使用的元数据
+	 * @param includeSynonyms 是否包含同义词
 	 */
 	public OracleTableMetaDataProvider(DatabaseMetaData databaseMetaData, boolean includeSynonyms)
 			throws SQLException {
@@ -70,7 +68,7 @@ public class OracleTableMetaDataProvider extends GenericTableMetaDataProvider {
 
 
 	/*
-	 * Oracle-based implementation for detecting the current schema.
+	 * 基于 Oracle 的当前 schema 检测实现。
 	 */
 	private static @Nullable String lookupDefaultSchema(DatabaseMetaData databaseMetaData) {
 		try {

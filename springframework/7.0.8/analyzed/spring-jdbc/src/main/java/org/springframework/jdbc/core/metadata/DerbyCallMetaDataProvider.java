@@ -23,8 +23,8 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Derby specific implementation for the {@link CallMetaDataProvider} interface.
- * This class is intended for internal use by the Simple JDBC classes.
+ * {@link CallMetaDataProvider} 的 Derby 特定实现。
+ * 供 Simple JDBC 类内部使用。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller

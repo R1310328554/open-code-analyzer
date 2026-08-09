@@ -22,10 +22,9 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The PostgreSQL specific implementation of {@link TableMetaDataProvider}.
- * Supports a feature for retrieving generated keys without the JDBC 3.0
- * {@code getGeneratedKeys} support. Also, it processes PostgreSQL-returned
- * catalog and schema names from {@code DatabaseMetaData} in the given case.
+ * {@link TableMetaDataProvider} 的 PostgreSQL 特定实现。
+ * 支持在无 JDBC 3.0 {@code getGeneratedKeys} 时获取生成键。
+ * 并按给定大小写处理 {@code DatabaseMetaData} 返回的 catalog 与 schema 名。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller

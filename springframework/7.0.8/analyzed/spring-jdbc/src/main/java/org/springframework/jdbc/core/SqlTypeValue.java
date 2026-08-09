@@ -24,15 +24,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- * Interface to be implemented for setting values for more complex database-specific
- * types not supported by the standard {@code setObject} method. This is
- * effectively an extended variant of {@link org.springframework.jdbc.support.SqlValue}.
+ * 用于设置标准 {@code setObject} 不支持的复杂数据库特定类型值的接口。
+ * 可视为 {@link org.springframework.jdbc.support.SqlValue} 的扩展变体。
  *
- * <p>Implementations perform the actual work of setting the actual values. They must
- * implement the callback method {@code setTypeValue} which can throw SQLExceptions
- * that will be caught and translated by the calling code. This callback method has
- * access to the underlying Connection via the given PreparedStatement object, if that
- * should be needed to create any database-specific objects.
+ * <p>实现类负责实际设值，须实现回调方法 {@code setTypeValue}；
+ * 该方法可能抛出 SQLException，由调用方捕获并翻译。
+ * 若需创建数据库特定对象，可通过给定 PreparedStatement 访问底层 Connection。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -45,9 +42,8 @@ import org.springframework.jdbc.support.JdbcUtils;
 public interface SqlTypeValue {
 
 	/**
-	 * Constant that indicates an unknown (or unspecified) SQL type.
-	 * Passed into {@code setTypeValue} if the original operation method
-	 * does not specify an SQL type.
+	 * 表示未知（或未指定）SQL 类型的常量。
+	 * 原始操作方法未指定 SQL 类型时传入 {@code setTypeValue}。
 	 * @see java.sql.Types
 	 * @see JdbcOperations#update(String, Object[])
 	 */
@@ -55,12 +51,12 @@ public interface SqlTypeValue {
 
 
 	/**
-	 * Set the type value on the given PreparedStatement.
-	 * @param ps the PreparedStatement to work on
-	 * @param paramIndex the index of the parameter for which we need to set the value
-	 * @param sqlType the SQL type of the parameter we are setting
-	 * @param typeName the type name of the parameter (optional)
-	 * @throws SQLException if an SQLException is encountered while setting parameter values
+	 * 在给定 PreparedStatement 上设置类型值。
+	 * @param ps 要操作的 PreparedStatement
+	 * @param paramIndex 待设值参数的索引
+	 * @param sqlType 参数的 SQL 类型
+	 * @param typeName 参数类型名（可选）
+	 * @throws SQLException 设参时遇到 SQLException
 	 * @see java.sql.Types
 	 * @see java.sql.PreparedStatement#setObject
 	 */

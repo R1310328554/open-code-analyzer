@@ -19,11 +19,11 @@ package org.springframework.jdbc.core;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface to be implemented by objects that can provide SQL strings.
+ * 由能提供 SQL 字符串的对象实现的接口。
  *
- * <p>Typically implemented by PreparedStatementCreators, CallableStatementCreators
- * and StatementCallbacks that want to expose the SQL they use to create their
- * statements, to allow for better contextual information in case of exceptions.
+ * <p>通常由 PreparedStatementCreator、CallableStatementCreator
+ * 及 StatementCallback 实现，用于暴露创建语句所用的 SQL，
+ * 以便异常时提供更完整的上下文信息。
  *
  * @author Juergen Hoeller
  * @since 16.03.2004
@@ -34,9 +34,9 @@ import org.jspecify.annotations.Nullable;
 public interface SqlProvider {
 
 	/**
-	 * Return the SQL string for this object, i.e.
-	 * typically the SQL used for creating statements.
-	 * @return the SQL string, or {@code null} if not available
+	 * 返回本对象的 SQL 字符串，
+	 * 通常为创建语句所用的 SQL。
+	 * @return SQL 字符串，不可用则 {@code null}
 	 */
 	@Nullable String getSql();
 

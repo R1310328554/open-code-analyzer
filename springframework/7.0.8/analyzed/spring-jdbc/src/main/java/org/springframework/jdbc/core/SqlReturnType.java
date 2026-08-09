@@ -22,14 +22,12 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface to be implemented for retrieving values for more complex database-specific
- * types not supported by the standard {@code CallableStatement.getObject} method.
+ * 用于读取标准 {@code CallableStatement.getObject} 不支持的
+ * 复杂数据库特定类型值的接口。
  *
- * <p>Implementations perform the actual work of getting the actual values. They must
- * implement the callback method {@code getTypeValue} which can throw SQLExceptions
- * that will be caught and translated by the calling code. This callback method has
- * access to the underlying Connection via the given CallableStatement object, if that
- * should be needed to create any database-specific objects.
+ * <p>实现类负责实际取值，须实现回调方法 {@code getTypeValue}；
+ * 该方法可能抛出 SQLException，由调用方捕获并翻译。
+ * 若需创建数据库特定对象，可通过给定 CallableStatement 访问底层 Connection。
  *
  * @author Thomas Risberg
  * @since 1.1
@@ -40,9 +38,8 @@ import org.jspecify.annotations.Nullable;
 public interface SqlReturnType {
 
 	/**
-	 * Constant that indicates an unknown (or unspecified) SQL type.
-	 * Passed into setTypeValue if the original operation method does
-	 * not specify an SQL type.
+	 * 表示未知（或未指定）SQL 类型的常量。
+	 * 原始操作方法未指定 SQL 类型时传入 setTypeValue。
 	 * @see java.sql.Types
 	 * @see JdbcOperations#update(String, Object[])
 	 */
@@ -50,14 +47,13 @@ public interface SqlReturnType {
 
 
 	/**
-	 * Get the type value from the specific object.
-	 * @param cs the CallableStatement to operate on
-	 * @param paramIndex the index of the parameter for which we need to set the value
-	 * @param sqlType the SQL type of the parameter we are setting
-	 * @param typeName the type name of the parameter (optional)
-	 * @return the target value
-	 * @throws SQLException if an SQLException is encountered setting parameter values
-	 * (that is, there's no need to catch SQLException)
+	 * 从特定对象获取类型值。
+	 * @param cs 要操作的 CallableStatement
+	 * @param paramIndex 待设值参数的索引
+	 * @param sqlType 参数的 SQL 类型
+	 * @param typeName 参数类型名（可选）
+	 * @return 目标值
+	 * @throws SQLException 设参时遇到 SQLException（无需自行捕获）
 	 * @see java.sql.Types
 	 * @see java.sql.CallableStatement#getObject
 	 */

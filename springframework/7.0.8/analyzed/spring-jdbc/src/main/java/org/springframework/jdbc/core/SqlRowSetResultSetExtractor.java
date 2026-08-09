@@ -27,10 +27,10 @@ import org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 
 /**
- * {@link ResultSetExtractor} implementation that returns a Spring {@link SqlRowSet}
- * representation for each given {@link ResultSet}.
+ * 为每个给定 {@link ResultSet} 返回 Spring {@link SqlRowSet} 表示的
+ * {@link ResultSetExtractor} 实现。
  *
- * <p>The default implementation uses a standard JDBC CachedRowSet underneath.
+ * <p>默认实现底层使用标准 JDBC CachedRowSet。
  *
  * @author Juergen Hoeller
  * @since 1.2
@@ -59,14 +59,13 @@ public class SqlRowSetResultSetExtractor implements ResultSetExtractor<SqlRowSet
 	}
 
 	/**
-	 * Create a {@link SqlRowSet} that wraps the given {@link ResultSet},
-	 * representing its data in a disconnected fashion.
-	 * <p>This implementation creates a Spring {@link ResultSetWrappingSqlRowSet}
-	 * instance that wraps a standard JDBC {@link CachedRowSet} instance.
-	 * Can be overridden to use a different implementation.
-	 * @param rs the original ResultSet (connected)
-	 * @return the disconnected SqlRowSet
-	 * @throws SQLException if thrown by JDBC methods
+	 * 创建包装给定 {@link ResultSet} 的 {@link SqlRowSet}，
+	 * 以断开连接方式表示其数据。
+	 * <p>本实现创建 Spring {@link ResultSetWrappingSqlRowSet}，
+	 * 包装标准 JDBC {@link CachedRowSet}；可覆盖以使用其他实现。
+	 * @param rs 原始 ResultSet（已连接）
+	 * @return 断开连接的 SqlRowSet
+	 * @throws SQLException JDBC 方法抛出时
 	 * @see #newCachedRowSet()
 	 * @see org.springframework.jdbc.support.rowset.ResultSetWrappingSqlRowSet
 	 */
@@ -77,11 +76,10 @@ public class SqlRowSetResultSetExtractor implements ResultSetExtractor<SqlRowSet
 	}
 
 	/**
-	 * Create a new {@link CachedRowSet} instance, to be populated by
-	 * the {@code createSqlRowSet} implementation.
-	 * <p>The default implementation uses JDBC's {@link RowSetFactory}.
-	 * @return a new CachedRowSet instance
-	 * @throws SQLException if thrown by JDBC methods
+	 * 创建新的 {@link CachedRowSet} 实例，供 {@code createSqlRowSet} 填充。
+	 * <p>默认实现使用 JDBC 的 {@link RowSetFactory}。
+	 * @return 新的 CachedRowSet 实例
+	 * @throws SQLException JDBC 方法抛出时
 	 * @see #createSqlRowSet
 	 * @see RowSetProvider#newFactory()
 	 * @see RowSetFactory#createCachedRowSet()

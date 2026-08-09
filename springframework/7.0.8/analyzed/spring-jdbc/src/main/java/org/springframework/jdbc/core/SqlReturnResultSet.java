@@ -17,13 +17,13 @@
 package org.springframework.jdbc.core;
 
 /**
- * Represents a returned {@link java.sql.ResultSet} from a stored procedure call.
+ * 表示存储过程调用返回的 {@link java.sql.ResultSet}。
  *
- * <p>A {@link ResultSetExtractor}, {@link RowCallbackHandler} or {@link RowMapper}
- * must be provided to handle any returned rows.
+ * <p>必须提供 {@link ResultSetExtractor}、{@link RowCallbackHandler}
+ * 或 {@link RowMapper} 以处理返回行。
  *
- * <p>Returned {@link java.sql.ResultSet ResultSets} - like all stored procedure
- * parameters - must have names.
+ * <p>返回的 {@link java.sql.ResultSet ResultSets} 与所有存储过程参数一样
+ * 必须具名。
  *
  * @author Thomas Risberg
  * @author Juergen Hoeller
@@ -31,27 +31,27 @@ package org.springframework.jdbc.core;
 public class SqlReturnResultSet extends ResultSetSupportingSqlParameter {
 
 	/**
-	 * Create a new instance of the {@link SqlReturnResultSet} class.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param extractor the {@link ResultSetExtractor} to use for parsing the {@link java.sql.ResultSet}
+	 * 创建 {@link SqlReturnResultSet} 新实例。
+	 * @param name 参数名，用于输入/输出映射
+	 * @param extractor 解析 {@link java.sql.ResultSet} 的 {@link ResultSetExtractor}
 	 */
 	public SqlReturnResultSet(String name, ResultSetExtractor<?> extractor) {
 		super(name, 0, extractor);
 	}
 
 	/**
-	 * Create a new instance of the {@link SqlReturnResultSet} class.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param handler the {@link RowCallbackHandler} to use for parsing the {@link java.sql.ResultSet}
+	 * 创建 {@link SqlReturnResultSet} 新实例。
+	 * @param name 参数名，用于输入/输出映射
+	 * @param handler 解析 {@link java.sql.ResultSet} 的 {@link RowCallbackHandler}
 	 */
 	public SqlReturnResultSet(String name, RowCallbackHandler handler) {
 		super(name, 0, handler);
 	}
 
 	/**
-	 * Create a new instance of the {@link SqlReturnResultSet} class.
-	 * @param name the name of the parameter, as used in input and output maps
-	 * @param mapper the {@link RowMapper} to use for parsing the {@link java.sql.ResultSet}
+	 * 创建 {@link SqlReturnResultSet} 新实例。
+	 * @param name 参数名，用于输入/输出映射
+	 * @param mapper 解析 {@link java.sql.ResultSet} 的 {@link RowMapper}
 	 */
 	public SqlReturnResultSet(String name, RowMapper<?> mapper) {
 		super(name, 0, mapper);
@@ -59,7 +59,7 @@ public class SqlReturnResultSet extends ResultSetSupportingSqlParameter {
 
 
 	/**
-	 * This implementation always returns {@code true}.
+	 * 本实现始终返回 {@code true}。
 	 */
 	@Override
 	public boolean isResultsParameter() {

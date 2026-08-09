@@ -20,9 +20,9 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * The HSQL specific implementation of {@link TableMetaDataProvider}.
- * Supports a feature for retrieving generated keys without the JDBC 3.0
- * {@code getGeneratedKeys} support.
+ * {@link TableMetaDataProvider} 的 HSQL 特定实现。
+ * 支持在无 JDBC 3.0 {@code getGeneratedKeys} 时
+ * 获取生成键的特性。
  *
  * @author Thomas Risberg
  * @since 2.5

@@ -20,8 +20,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 
 /**
- * SAP HANA specific implementation for the {@link CallMetaDataProvider} interface.
- * This class is intended for internal use by the Simple JDBC classes.
+ * {@link CallMetaDataProvider} 的 SAP HANA 特定实现。
+ * 供 Simple JDBC 类内部使用。
  *
  * @author Subhobrata Dey
  * @author Juergen Hoeller

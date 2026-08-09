@@ -19,18 +19,17 @@ package org.springframework.jdbc.core;
 import java.sql.Types;
 
 /**
- * Represents a returned update count from a stored procedure call.
+ * 表示存储过程调用返回的更新计数。
  *
- * <p>Returned update counts - like all stored procedure
- * parameters - <b>must</b> have names.
+ * <p>返回的更新计数与所有存储过程参数一样<b>必须</b>具名。
  *
  * @author Thomas Risberg
  */
 public class SqlReturnUpdateCount extends SqlParameter {
 
 	/**
-	 * Create a new SqlReturnUpdateCount.
-	 * @param name the name of the parameter, as used in input and output maps
+	 * 创建新的 SqlReturnUpdateCount。
+	 * @param name 参数名，用于输入/输出映射
 	 */
 	public SqlReturnUpdateCount(String name) {
 		super(name, Types.INTEGER);
@@ -38,7 +37,7 @@ public class SqlReturnUpdateCount extends SqlParameter {
 
 
 	/**
-	 * This implementation always returns {@code false}.
+	 * 本实现始终返回 {@code false}。
 	 */
 	@Override
 	public boolean isInputValueProvided() {
@@ -46,7 +45,7 @@ public class SqlReturnUpdateCount extends SqlParameter {
 	}
 
 	/**
-	 * This implementation always returns {@code true}.
+	 * 本实现始终返回 {@code true}。
 	 */
 	@Override
 	public boolean isResultsParameter() {
