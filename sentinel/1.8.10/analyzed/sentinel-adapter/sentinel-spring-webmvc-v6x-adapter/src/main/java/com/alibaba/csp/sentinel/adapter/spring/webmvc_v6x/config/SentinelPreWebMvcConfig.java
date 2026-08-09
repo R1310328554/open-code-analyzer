@@ -3,6 +3,8 @@ package com.alibaba.csp.sentinel.adapter.spring.webmvc_v6x.config;
 import com.alibaba.csp.sentinel.adapter.web.common.UrlCleaner;
 
 /**
+ * Sentinel 前置 Web MVC 拦截器配置（在 HandlerMapping 之前执行）。
+ *
  * @since 1.8.8
  */
 public class SentinelPreWebMvcConfig extends BaseWebMvcConfig {
@@ -12,12 +14,12 @@ public class SentinelPreWebMvcConfig extends BaseWebMvcConfig {
     private UrlCleaner urlCleaner;
 
     /**
-     * Specify whether the URL resource name should contain the HTTP method prefix (e.g. {@code POST:}).
+     * 是否在 URL 资源名中包含 HTTP 方法前缀（如 {@code POST:}）。
      */
     private boolean httpMethodSpecify;
 
     /**
-     * Specify whether unify web context(i.e. use the default context name), and is true by default.
+     * 是否统一 Web 上下文（即使用默认上下文名），默认为 true。
      *
      * @since 1.7.2
      */

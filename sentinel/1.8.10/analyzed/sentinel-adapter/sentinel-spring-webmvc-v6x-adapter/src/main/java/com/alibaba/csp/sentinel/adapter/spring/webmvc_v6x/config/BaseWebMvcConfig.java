@@ -20,7 +20,7 @@ import com.alibaba.csp.sentinel.adapter.spring.webmvc_v6x.callback.DefaultBlockE
 import com.alibaba.csp.sentinel.adapter.spring.webmvc_v6x.callback.RequestOriginParser;
 
 /**
- * Common base configuration for Spring Web MVC adapter.
+ * Spring Web MVC 适配器的公共基础配置。
  *
  * @since 1.8.8
  */
@@ -41,7 +41,7 @@ public abstract class BaseWebMvcConfig {
     }
     
     /**
-     * Paired with attr name used to track reference count.
+     * 与请求属性名配对，用于跟踪引用计数。
      * 
      * @return
      */

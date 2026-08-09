@@ -21,14 +21,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Handler for the blocked request.
+ * 被流控阻断请求的处理器接口。
  *
  * @since 1.8.8
  */
 public interface BlockExceptionHandler {
 
     /**
-     * Handle the request when blocked.
+     * 处理被流控阻断的请求。
      *
      * @param request  Servlet request
      * @param response Servlet response

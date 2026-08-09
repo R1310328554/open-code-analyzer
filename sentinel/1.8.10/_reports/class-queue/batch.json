@@ -1,22 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:25:51Z",
-  "files": [
-    "sentinel-adapter/sentinel-spring-webmvc-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc/config/SentinelWebMvcTotalConfig.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/AbstractSentinelInterceptor.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/SentinelWebInterceptor.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/SentinelWebPrefixInterceptor.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/SentinelWebTotalInterceptor.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/callback/BlockExceptionHandler.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/callback/DefaultBlockExceptionHandler.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/callback/RequestOriginParser.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/config/BaseWebMvcConfig.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/config/SentinelPreWebMvcConfig.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/config/SentinelWebMvcConfig.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/config/SentinelWebMvcTotalConfig.java",
-    "sentinel-adapter/sentinel-spring-webmvc-v6x-adapter/src/main/java/com/alibaba/csp/sentinel/adapter/spring/webmvc_v6x/config/WebServletLocalConfig.java",
-    "sentinel-adapter/sentinel-web-adapter-common/src/main/java/com/alibaba/csp/sentinel/adapter/web/common/UrlCleaner.java",
-    "sentinel-adapter/sentinel-web-servlet/src/main/java/com/alibaba/csp/sentinel/adapter/servlet/CommonFilter.java"
-  ],
-  "remaining_pending": 590,
-  "done": 345
+  "files": [],
+  "remaining_pending": 575,
+  "done": 360
 }

@@ -16,6 +16,8 @@
 package com.alibaba.csp.sentinel.adapter.spring.webmvc_v6x.config;
 
 /**
+ * Spring Web MVC 全量 URL 请求配置，将所有 URL 统一为单一 Sentinel 资源名。
+ *
  * @since 1.8.8
  */
 public class SentinelWebMvcTotalConfig extends BaseWebMvcConfig {

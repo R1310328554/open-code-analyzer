@@ -41,7 +41,7 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
- * Servlet filter that integrates with Sentinel.
+ * 与 Sentinel 集成的 Servlet 过滤器。
  *
  * @author youji.zj
  * @author Eric Zhao
@@ -50,13 +50,13 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 public class CommonFilter implements Filter {
 
     /**
-     * Specify whether the URL resource name should contain the HTTP method prefix (e.g. {@code POST:}).
+     * 是否在 URL 资源名中包含 HTTP 方法前缀（如 {@code POST:}）。
      */
     public static final String HTTP_METHOD_SPECIFY = "HTTP_METHOD_SPECIFY";
     /**
-     * If enabled, use the default context name, or else use the URL path as the context name,
-     * {@link WebServletConfig#WEB_SERVLET_CONTEXT_NAME}. Please pay attention to the number of context (EntranceNode),
-     * which may affect the memory footprint.
+     * 若启用则使用默认上下文名，否则以 URL 路径作为上下文名
+     * （参见 {@link WebServletConfig#WEB_SERVLET_CONTEXT_NAME}）。
+     * 请注意上下文（EntranceNode）数量可能影响内存占用。
      *
      * @since 1.7.0
      */
@@ -83,24 +83,24 @@ public class CommonFilter implements Filter {
 
         try {
             String target = FilterUtil.filterTarget(sRequest);
-            // Clean and unify the URL.
-            // For REST APIs, you have to clean the URL (e.g. `/foo/1` and `/foo/2` -> `/foo/:id`), or
-            // the amount of context and resources will exceed the threshold.
+            // 清洗并统一 URL。
+            // 对于 REST API，需清洗 URL（如 `/foo/1` 与 `/foo/2` -> `/foo/:id`），否则
+            // 上下文与资源数量可能超出阈值。
             UrlCleaner urlCleaner = WebCallbackManager.getUrlCleaner();
             if (urlCleaner != null) {
                 target = urlCleaner.clean(target);
             }
 
-            // If you intend to exclude some URLs, you can convert the URLs to the empty string ""
-            // in the UrlCleaner implementation.
+            // 若需排除某些 URL，可在 UrlCleaner 实现中将其转为空字符串 ""
+            // （见 UrlCleaner 实现）。
             if (!StringUtil.isEmpty(target)) {
-                // Parse the request origin using registered origin parser.
+                // 使用已注册的来源解析器解析请求来源。
                 String origin = parseOrigin(sRequest);
                 String contextName = webContextUnify ? WebServletConfig.WEB_SERVLET_CONTEXT_NAME : target;
                 ContextUtil.enter(contextName, origin);
 
                 if (httpMethodSpecify) {
-                    // Add HTTP method prefix if necessary.
+                    // 按需添加 HTTP 方法前缀。
                     String pathWithHttpMethod = sRequest.getMethod().toUpperCase() + COLON + target;
                     urlEntry = SphU.entry(pathWithHttpMethod, ResourceTypeConstants.COMMON_WEB, EntryType.IN);
                 } else {
@@ -110,7 +110,7 @@ public class CommonFilter implements Filter {
             chain.doFilter(request, response);
         } catch (BlockException e) {
             HttpServletResponse sResponse = (HttpServletResponse) response;
-            // Return the block page, or redirect to another URL.
+            // 返回阻断页或重定向至其他 URL。
             WebCallbackManager.getUrlBlockHandler().blocked(sRequest, sResponse, e);
         } catch (IOException | ServletException | RuntimeException e2) {
             Tracer.traceEntry(e2, urlEntry);

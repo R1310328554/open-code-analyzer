@@ -22,7 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 
 /**
- * Default handler for the blocked request.
+ * 被流控阻断请求的默认处理器。
  *
  * @since 1.8.8
  */
@@ -31,7 +31,7 @@ public class DefaultBlockExceptionHandler implements BlockExceptionHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, String resourceName, BlockException ex)
             throws Exception {
-        // Return 429 (Too Many Requests) by default.
+        // 默认返回 429（Too Many Requests）。
         response.setStatus(429);
 
         PrintWriter out = response.getWriter();

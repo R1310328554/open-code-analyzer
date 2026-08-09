@@ -19,9 +19,9 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Spring Web MVC interceptor that integrates with Sentinel.
+ * 与 Sentinel 集成的 Spring Web MVC 拦截器。
  * <p>
- * This will record resource as `${httpMethod}:${uri}`.
+ * 资源名将记录为 {@code ${httpMethod}:${uri}} 形式。
  *
  * @since 1.8.8
  */
@@ -30,7 +30,7 @@ public class SentinelWebPrefixInterceptor extends SentinelWebInterceptor {
     @Override
     protected String getResourceName(HttpServletRequest request) {
         String resourceName = super.getResourceName(request);
-        // Add method specification
+        // 添加 HTTP 方法前缀
         if (StringUtil.isNotEmpty(resourceName)) {
             resourceName = request.getMethod().toUpperCase() + ":" + resourceName;
         }

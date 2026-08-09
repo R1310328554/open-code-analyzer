@@ -16,14 +16,14 @@
 package com.alibaba.csp.sentinel.adapter.web.common;
 
 /**
- * Unify the resource target.
+ * URL 清洗器，统一规范化 Sentinel 资源目标。
  *
  * @since 1.8.8
  */
 public interface UrlCleaner {
 
     /**
-     * Unify the resource target.
+     * 将原始 URL 清洗为统一的资源名。
      *
      * @param originUrl the original URL
      * @return the unified resource name
