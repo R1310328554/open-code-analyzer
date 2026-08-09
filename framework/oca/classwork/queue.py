@@ -70,20 +70,68 @@ PRIORITY_FILES = [
 ]
 
 
+SOURCE_GLOBS = ("*.java", "*.kt", "*.py", "*.go", "*.ts", "*.js", "*.rs")
+SKIP_DIR_PARTS = {
+    ".git", "build", "target", "node_modules", ".gradle", "out", "dist",
+    "testdata", "vendor", "__pycache__", ".tox", ".venv", "venv",
+    "third_party", "third-party", "examples", "example", "samples", "sample",
+    "docs", "doc", "benchmarks", "benchmark",
+}
+
+
+def _should_skip(rel: str) -> bool:
+    parts = rel.split("/")
+    name = parts[-1]
+    if name.endswith("package-info.java"):
+        return True
+    if name.startswith("test_") or name.endswith("_test.go") or name.endswith("_test.py"):
+        return True
+    if "/test/" in f"/{rel}/" or "/tests/" in f"/{rel}/" or "/testing/" in f"/{rel}/":
+        return True
+    return any(p in SKIP_DIR_PARTS for p in parts)
+
+
 def build_queue(analyzed_or_original: Path, out_dir: Path, modules: list[str] | None = None) -> int:
-    """从 original/analyzed 扫描 main java，生成 pending 队列（优先核心类）。"""
+    """扫描源码生成 pending 队列（优先核心类）。
+
+    - 若给出 modules 且存在 ``<mod>/src/main/java``：按 Spring 风格模块扫描
+    - 否则：在整棵 original 树中按语言扩展名扫描（Java/Python/Go 等）
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
-    mods = modules or PRIORITY_MODULES
+    mods = modules or []
     files: list[str] = []
-    for mod in mods:
-        base = analyzed_or_original / mod / "src" / "main" / "java"
-        if not base.exists():
-            continue
-        for p in sorted(base.rglob("*.java")):
-            rel = str(p.relative_to(analyzed_or_original)).replace("\\", "/")
-            if rel.endswith("package-info.java"):
-                continue
-            files.append(rel)
+
+    spring_style = False
+    if mods:
+        for mod in mods:
+            base = analyzed_or_original / mod / "src" / "main" / "java"
+            if base.exists():
+                spring_style = True
+                for p in sorted(base.rglob("*.java")):
+                    rel = str(p.relative_to(analyzed_or_original)).replace("\\", "/")
+                    if not _should_skip(rel):
+                        files.append(rel)
+            else:
+                # 模块可能是路径前缀（如 src/java.base）
+                base2 = analyzed_or_original / mod
+                if base2.exists():
+                    for pat in SOURCE_GLOBS:
+                        for p in sorted(base2.rglob(pat)):
+                            rel = str(p.relative_to(analyzed_or_original)).replace("\\", "/")
+                            if not _should_skip(rel):
+                                files.append(rel)
+
+    if not files and not spring_style:
+        # 全仓多语言扫描
+        for pat in SOURCE_GLOBS:
+            for p in sorted(analyzed_or_original.rglob(pat)):
+                rel = str(p.relative_to(analyzed_or_original)).replace("\\", "/")
+                if _should_skip(rel):
+                    continue
+                files.append(rel)
+        # 若未指定 modules，保留 PRIORITY_MODULES 元信息供 spring 仓使用
+        if not mods:
+            mods = list(PRIORITY_MODULES)
 
     def sort_key(rel: str) -> tuple:
         name = Path(rel).name
@@ -107,7 +155,7 @@ def build_queue(analyzed_or_original: Path, out_dir: Path, modules: list[str] | 
         "total": len(files),
         "modules": mods,
         "mode": "class-by-class-understand",
-        "note": "逐个类精读：读懂代码后再英译中/补充注释，禁止批量查找替换机翻",
+        "note": "逐个类精读：读懂代码后再英译中/补充注释，禁止批量查找替换机翻；版权头保留英文",
     }
     (out_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return len(files)

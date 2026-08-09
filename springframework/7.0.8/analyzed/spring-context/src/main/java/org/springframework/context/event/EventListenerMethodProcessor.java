@@ -50,13 +50,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
-/* ===== [OCA 中文解析] =====
-class EventListenerMethodProcessor — 意图说明
-
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/context/event/EventListenerMethodProcessor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
  * Registers {@link EventListener} methods as individual {@link ApplicationListener} instances.
  * Implements {@link BeanFactoryPostProcessor} (as of 5.1) primarily for early retrieval,
@@ -72,7 +65,6 @@ class EventListenerMethodProcessor — 意图说明
 public class EventListenerMethodProcessor
 		implements SmartInitializingSingleton, ApplicationContextAware, BeanFactoryPostProcessor {
 
-	// [OCA] 字段 `logger`：类成员状态。
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private @Nullable ConfigurableApplicationContext applicationContext;
@@ -81,7 +73,6 @@ public class EventListenerMethodProcessor
 
 	private @Nullable List<EventListenerFactory> eventListenerFactories;
 
-	// [OCA] 字段 `originalEvaluationContext`：类成员状态。
 	private final StandardEvaluationContext originalEvaluationContext;
 
 	private final @Nullable EventExpressionEvaluator evaluator;
@@ -114,11 +105,6 @@ public class EventListenerMethodProcessor
 
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 afterSingletonsInstantiated — 意图与阅读要点
-
-方法 `afterSingletonsInstantiated` 复杂度较高（CCN≈11, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void afterSingletonsInstantiated() {
 		ConfigurableListableBeanFactory beanFactory = this.beanFactory;
 		Assert.state(beanFactory != null, "No ConfigurableListableBeanFactory set");
@@ -162,13 +148,6 @@ public class EventListenerMethodProcessor
 			}
 		}
 	}
-
-	/* ===== [OCA 中文解析] =====
-方法 processBean — 意图与阅读要点
-
-方法 `processBean` 复杂度较高（CCN≈13, NLOC≈47）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-
-	===== [OCA 中文解析结束] ===== */
 
 	private void processBean(final String beanName, final Class<?> targetType) {
 		if (!this.nonAnnotatedClasses.contains(targetType) &&
