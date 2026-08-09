@@ -24,14 +24,16 @@ import io.reactivex.rxjava4.core.Scheduler.Worker;
 import io.reactivex.rxjava4.exceptions.*;
 
 /**
- * Represents the state for a Scheduler -&gt; ExecutorService interface.
- * @param scheduler the scheduler to use
- * @param workerStore hosts the worker state
+ * 将 {@link Scheduler} 适配为 {@link ExecutorService}：
+ * workerStore 有 Worker 时走 w.schedule，否则 scheduleDirect。
+ * @param scheduler 底层 Scheduler
+ * @param workerStore 持有 Worker 状态的原子引用
  * @since 4.0.0
  */
 public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         @NonNull AtomicReference<Worker> workerStore) implements ExecutorService {
 
+    /** Worker 可用则 schedule，否则 scheduleDirect。 */
     @Override
     public void execute(Runnable command) {
         if (workerStore.get() instanceof Worker w) {
@@ -41,6 +43,7 @@ public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         }
     }
 
+    /** dispose Worker 或 getAndSet(SHUTDOWN) 后 dispose。 */
     @Override
     public void shutdown() {
         if (workerStore.get() instanceof Worker w) {
@@ -55,6 +58,7 @@ public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         }
     }
 
+    /** 同 shutdown，返回空列表。 */
     @Override
     public List<Runnable> shutdownNow() {
         if (workerStore.get() instanceof Worker w) {
@@ -81,6 +85,7 @@ public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         return isShutdown();
     }
 
+    /** 轮询 isTerminated 直至超时（Rx 场景下被动等待）。 */
     @Override
     public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
         // FIXME no idea how to passively wait, not really applicable in Rx
@@ -93,6 +98,7 @@ public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         return totalTime > 0;
     }
 
+    /** 通过 CompletableFuture.supplyAsync 在 Scheduler 上执行 Callable。 */
     @Override
     public <T> Future<T> submit(Callable<T> task) {
         return CompletableFuture.supplyAsync(() -> {
@@ -130,6 +136,7 @@ public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         }, this::execute);
     }
 
+    /** 逐个 submit 并阻塞 get 等待全部完成。 */
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         var result = new ArrayList<Future<T>>();
@@ -180,6 +187,7 @@ public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         return result;
     }
 
+    /** 并行 submit，首个 complete 的 CompletableFuture 胜出并 cancel 其余。 */
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
         if (tasks.isEmpty()) {
@@ -234,9 +242,11 @@ public record SchedulerToExecutorService(@NonNull Scheduler scheduler,
         throw new ExecutionException(composite);
     }
 
+    /** invokeAny 中记录获胜任务索引与返回值。 */
     record CompletedIndexValue<T>(int index, T value) {
     }
 
+    /** 计数 invokeAny/invokeAll 中未完成任务数，归零时 complete signal。 */
     static final class CompletionSignaller extends AtomicInteger {
         @Serial
         private static final long serialVersionUID = 4179219399191354619L;

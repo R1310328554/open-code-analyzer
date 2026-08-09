@@ -19,11 +19,13 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.disposables.Disposable;
 
 /**
- * Implements the Future interface and calls dispose() on cancel() but
- * the other methods are not implemented.
+ * 实现 {@link Future}：{@link #cancel} 时调用 upstream.dispose()，
+ * 其余 Future 方法为占位实现（始终未完成/未取消）。
  */
+/** @param upstream cancel 时要 dispose 的 Disposable */
 record DisposeOnCancel(Disposable upstream) implements Future<Object> {
 
+    /** 调用 upstream.dispose()；Future 语义上仍返回 false。 */
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
         upstream.dispose();

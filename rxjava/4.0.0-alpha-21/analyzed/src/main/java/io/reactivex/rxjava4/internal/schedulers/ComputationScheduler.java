@@ -23,28 +23,29 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.internal.functions.ObjectHelper;
 
 /**
- * Holds a fixed pool of worker threads and assigns them
- * to requested Scheduler.Workers in a round-robin fashion.
+ * 固定大小的工作线程池 Scheduler：以轮询方式为
+ * 请求的 {@link Scheduler.Worker} 分配底层 PoolWorker。
+ * 支持 {@link SchedulerMultiWorkerSupport} 批量创建 Worker。
  */
 public final class ComputationScheduler extends Scheduler implements SchedulerMultiWorkerSupport {
-    /** This will indicate no pool is active. */
+    /** 表示当前无活动线程池（已 shutdown）。 */
     static final FixedSchedulerPool NONE;
-    /** Manages a fixed number of workers. */
+    /** 管理固定数量的 PoolWorker 事件循环。 */
     private static final String THREAD_NAME_PREFIX = "RxComputationThreadPool";
     static final RxThreadFactory THREAD_FACTORY;
     /**
-     * Key to setting the maximum number of computation scheduler threads.
-     * Zero or less is interpreted as use available. Capped by available.
+     * 系统属性键：设置 computation 调度器最大线程数。
+     * 0 或更小表示使用可用 CPU 数，且不超过 availableProcessors。
      */
     static final String KEY_MAX_THREADS = "rxjava4.computation-threads";
-    /** The maximum number of computation scheduler threads. */
+    /** computation 调度器线程池上限。 */
     static final int MAX_THREADS;
 
     static final PoolWorker SHUTDOWN_WORKER;
 
     final ThreadFactory threadFactory;
     final AtomicReference<FixedSchedulerPool> pool;
-    /** The name of the system property for setting the thread priority for this Scheduler. */
+    /** 设置本 Scheduler 线程优先级的系统属性键。 */
     private static final String KEY_COMPUTATION_PRIORITY = "rxjava4.computation-priority";
 
     static {
@@ -62,6 +63,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
         NONE.shutdown();
     }
 
+    /** 将配置线程数限制在 (0, cpuCount] 范围内。 */
     static int cap(int cpuCount, int paramThreads) {
         return paramThreads <= 0 || paramThreads > cpuCount ? cpuCount : paramThreads;
     }
@@ -81,6 +83,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
             }
         }
 
+        /** 轮询返回下一个 PoolWorker；cores==0 时返回 SHUTDOWN_WORKER。 */
         public PoolWorker getEventLoop() {
             int c = cores;
             if (c == 0) {
@@ -90,6 +93,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
             return eventLoops[(int)(n++ % c)];
         }
 
+        /** 依次 dispose 所有 eventLoop Worker。 */
         public void shutdown() {
             for (PoolWorker w : eventLoops) {
                 w.dispose();
@@ -117,19 +121,17 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
     }
 
     /**
-     * Create a scheduler with pool size equal to the available processor
-     * count and using least-recent worker selection policy.
+     * 使用默认 THREAD_FACTORY 创建 Scheduler，
+     * 池大小等于可用处理器数。
      */
     public ComputationScheduler() {
         this(THREAD_FACTORY);
     }
 
     /**
-     * Create a scheduler with pool size equal to the available processor
-     * count and using least-recent worker selection policy.
+     * 使用指定 ThreadFactory 创建 Scheduler，池大小等于可用处理器数。
      *
-     * @param threadFactory thread factory to use for creating worker threads. Note that this takes precedence over any
-     *                      system properties for configuring new thread creation. Cannot be null.
+     * @param threadFactory 创建工作线程的 ThreadFactory，优先于系统属性配置，不可为 null
      */
     public ComputationScheduler(ThreadFactory threadFactory) {
         this.threadFactory = threadFactory;
@@ -137,6 +139,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
         start();
     }
 
+    /** 创建绑定单个 PoolWorker 的 EventLoopWorker。 */
     @NonNull
     @Override
     public Worker createWorker() {
@@ -163,6 +166,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
         return w.schedulePeriodicallyDirect(run, initialDelay, period, unit);
     }
 
+    /** CAS 将 NONE 替换为新 FixedSchedulerPool；失败则 shutdown 新建池。 */
     @Override
     public void start() {
         FixedSchedulerPool update = new FixedSchedulerPool(MAX_THREADS, threadFactory);
@@ -171,6 +175,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
         }
     }
 
+    /** getAndSet(NONE) 并 shutdown 当前 FixedSchedulerPool。 */
     @Override
     public void shutdown() {
         FixedSchedulerPool curr = pool.getAndSet(NONE);
@@ -179,6 +184,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
         }
     }
 
+    /** 包装单个 PoolWorker：serial/timed 分别追踪即时与延迟任务。 */
     static final class EventLoopWorker extends Scheduler.Worker {
         private final ListCompositeDisposable serial;
         private final CompositeDisposable timed;
@@ -196,6 +202,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
             this.both.add(timed);
         }
 
+        /** 置 disposed 并 dispose serial+timed 容器。 */
         @Override
         public void dispose() {
             if (!disposed) {
@@ -209,6 +216,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
             return disposed;
         }
 
+        /** 无延迟 schedule：委托 poolWorker.scheduleActual(..., serial)。 */
         @NonNull
         @Override
         public Disposable schedule(@NonNull Runnable action) {
@@ -219,6 +227,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
             return poolWorker.scheduleActual(action, 0, TimeUnit.MILLISECONDS, serial);
         }
 
+        /** 延迟 schedule：委托 poolWorker.scheduleActual(..., timed)。 */
         @NonNull
         @Override
         public Disposable schedule(@NonNull Runnable action, long delayTime, @NonNull TimeUnit unit) {
@@ -230,6 +239,7 @@ public final class ComputationScheduler extends Scheduler implements SchedulerMu
         }
     }
 
+    /** 基于 NewThreadWorker 的池内工作线程。 */
     static final class PoolWorker extends NewThreadWorker {
         PoolWorker(ThreadFactory threadFactory) {
             super(threadFactory);

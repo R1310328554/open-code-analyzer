@@ -14,8 +14,7 @@
 package io.reactivex.rxjava4.internal.schedulers;
 
 /**
- * Marker interface to indicate blocking is not recommended while running
- * on a Scheduler with a thread type implementing it.
+ * 标记接口：实现它的 Scheduler 线程上不推荐阻塞操作。
  */
 public interface NonBlockingThread {
 

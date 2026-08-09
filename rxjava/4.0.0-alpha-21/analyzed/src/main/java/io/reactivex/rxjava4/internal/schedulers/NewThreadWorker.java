@@ -22,15 +22,15 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Base class that manages a single-threaded ScheduledExecutorService as a
- * worker but doesn't perform task-tracking operations.
- *
+ * 管理单线程 {@link ScheduledExecutorService} 的 Worker 基类，
+ * 提供 scheduleDirect/schedulePeriodicallyDirect/scheduleActual 等底层调度。
  */
 public class NewThreadWorker extends Scheduler.Worker {
     private final ScheduledExecutorService executor;
 
     volatile boolean disposed;
 
+    /** 通过 {@link SchedulerPoolFactory#create} 创建单线程 executor。 */
     public NewThreadWorker(ThreadFactory threadFactory) {
         executor = SchedulerPoolFactory.create(threadFactory);
     }
@@ -51,12 +51,11 @@ public class NewThreadWorker extends Scheduler.Worker {
     }
 
     /**
-     * Schedules the given runnable on the underlying executor directly and
-     * returns its future wrapped into a Disposable.
-     * @param run the Runnable to execute in a delayed fashion
-     * @param delayTime the delay amount
-     * @param unit the delay time unit
-     * @return the ScheduledRunnable instance
+     * 直接在底层 executor 调度 Runnable，返回 Disposable 包装的 Future。
+     * @param run 待执行的 Runnable
+     * @param delayTime 延迟时长
+     * @param unit 时间单位
+     * @return ScheduledDirectTask 实例
      */
     public Disposable scheduleDirect(final Runnable run, long delayTime, TimeUnit unit) {
         ScheduledDirectTask task = new ScheduledDirectTask(RxJavaPlugins.onSchedule(run), true);
@@ -76,13 +75,14 @@ public class NewThreadWorker extends Scheduler.Worker {
     }
 
     /**
-     * Schedules the given runnable periodically on the underlying executor directly
-     * and returns its future wrapped into a Disposable.
-     * @param run the Runnable to execute in a periodic fashion
-     * @param initialDelay the initial delay amount
-     * @param period the repeat period amount
-     * @param unit the time unit for both the initialDelay and period
-     * @return the ScheduledRunnable instance
+     * 直接在底层 executor 周期调度 Runnable。
+     * period<=0 时用 {@link InstantPeriodicTask} 链式重调度；
+     * 否则 scheduleAtFixedRate + {@link ScheduledDirectPeriodicTask}。
+     * @param run 周期执行的 Runnable
+     * @param initialDelay 初始延迟
+     * @param period 周期间隔
+     * @param unit 时间单位
+     * @return Disposable 包装的任务
      */
     public Disposable schedulePeriodicallyDirect(Runnable run, long initialDelay, long period, TimeUnit unit) {
         final Runnable decoratedRun = RxJavaPlugins.onSchedule(run);
@@ -116,13 +116,13 @@ public class NewThreadWorker extends Scheduler.Worker {
     }
 
     /**
-     * Wraps and returns the given runnable into a ScheduledRunnable and schedules it
-     * on the underlying ScheduledExecutorService.
-     * @param run the runnable instance
-     * @param delayTime the time to delay the execution
-     * @param unit the time unit
-     * @param parent the optional tracker parent to add the created ScheduledRunnable instance to before it gets scheduled
-     * @return the ScheduledRunnable instance
+     * 包装为 {@link ScheduledRunnable} 并在 executor 上调度；
+     * parent 非 null 时先加入追踪容器。
+     * @param run Runnable 实例
+     * @param delayTime 延迟时长
+     * @param unit 时间单位
+     * @param parent 可选的任务追踪父容器
+     * @return ScheduledRunnable 实例
      */
     @NonNull
     public ScheduledRunnable scheduleActual(final Runnable run, long delayTime, @NonNull TimeUnit unit, @Nullable DisposableContainer parent) {
@@ -154,6 +154,7 @@ public class NewThreadWorker extends Scheduler.Worker {
         return sr;
     }
 
+    /** shutdownNow 并置 disposed。 */
     @Override
     public void dispose() {
         if (!disposed) {
@@ -163,7 +164,7 @@ public class NewThreadWorker extends Scheduler.Worker {
     }
 
     /**
-     * Shuts down the underlying executor in a non-interrupting fashion.
+     * 非中断方式 shutdown 底层 executor。
      */
     public void shutdown() {
         if (!disposed) {

@@ -21,7 +21,8 @@ import io.reactivex.rxjava4.internal.functions.Functions;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Wrapper for a regular task that gets immediately rescheduled when the task completed.
+ * 即时重调度周期任务包装：每次 run 完成后立即 submit 下一次，
+ * 用于 period<=0 时的“连续执行”语义。
  */
 final class InstantPeriodicTask implements Callable<Void>, Disposable {
 
@@ -45,6 +46,7 @@ final class InstantPeriodicTask implements Callable<Void>, Disposable {
         this.executor = executor;
     }
 
+    /** 执行 task 后在 executor 上 submit(this) 实现链式重调度。 */
     @Override
     public Void call() {
         runner = Thread.currentThread();
@@ -61,6 +63,7 @@ final class InstantPeriodicTask implements Callable<Void>, Disposable {
         return null;
     }
 
+    /** 将 first/rest Future 置为 CANCELLED 并 cancel 运行中任务。 */
     @Override
     public void dispose() {
         Future<?> current = first.getAndSet(CANCELLED);
@@ -78,6 +81,7 @@ final class InstantPeriodicTask implements Callable<Void>, Disposable {
         return first.get() == CANCELLED;
     }
 
+    /** CAS 设置首次 Future；已 CANCELLED 则 cancel 新 Future。 */
     void setFirst(Future<?> f) {
         for (;;) {
             Future<?> current = first.get();
@@ -91,6 +95,7 @@ final class InstantPeriodicTask implements Callable<Void>, Disposable {
         }
     }
 
+    /** CAS 设置后续 Future；已 CANCELLED 则 cancel 新 Future。 */
     void setRest(Future<?> f) {
         for (;;) {
             Future<?> current = rest.get();

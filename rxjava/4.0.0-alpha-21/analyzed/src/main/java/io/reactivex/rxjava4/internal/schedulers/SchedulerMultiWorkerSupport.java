@@ -17,34 +17,29 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.core.Scheduler;
 
 /**
- * Allows retrieving multiple workers from the implementing
- * {@link io.reactivex.rxjava4.core.Scheduler} in a way that when asking for
- * at most the parallelism level of the Scheduler, those
- * {@link io.reactivex.rxjava4.core.Scheduler.Worker} instances will be running
- * with different backing threads.
+ * 允许从实现类一次性获取多个 {@link Scheduler.Worker}：
+ * 请求数不超过并行度时，各 Worker 绑定不同底层线程。
  * <p>History: 2.1.8 - experimental
  * @since 2.2
  */
 public interface SchedulerMultiWorkerSupport {
 
     /**
-     * Creates the given number of {@link io.reactivex.rxjava4.core.Scheduler.Worker} instances
-     * that are possibly backed by distinct threads
-     * and calls the specified {@code Consumer} with them.
-     * @param number the number of workers to create, positive
-     * @param callback the callback to send worker instances to
+     * 创建 number 个可能由不同线程支撑的 Worker，
+     * 通过 callback 逐个回调。
+     * @param number 要创建的 Worker 数量，须为正数
+     * @param callback 接收 Worker 实例的回调
      */
     void createWorkers(int number, @NonNull WorkerCallback callback);
 
     /**
-     * The callback interface for the {@link SchedulerMultiWorkerSupport#createWorkers(int, WorkerCallback)}
-     * method.
+     * {@link #createWorkers(int, WorkerCallback)} 的回调接口。
      */
     interface WorkerCallback {
         /**
-         * Called with the Worker index and instance.
-         * @param index the worker index, zero-based
-         * @param worker the worker instance
+         * 回调 Worker 索引与实例。
+         * @param index Worker 索引，从 0 开始
+         * @param worker Worker 实例
          */
         void onWorker(int index, @NonNull Scheduler.Worker worker);
     }

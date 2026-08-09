@@ -18,8 +18,8 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.io.Serial;
 
 /**
- * A Callable to be submitted to an ExecutorService that runs a Runnable
- * action periodically and manages completion/cancellation.
+ * 提交给 ExecutorService 的周期 Runnable 包装，
+ * 管理完成/取消与 runner 线程中断策略。
  * @since 2.0.8
  */
 public final class ScheduledDirectPeriodicTask extends AbstractDirectTask implements Runnable {
@@ -31,6 +31,7 @@ public final class ScheduledDirectPeriodicTask extends AbstractDirectTask implem
         super(runnable, interruptOnCancel);
     }
 
+    /** 执行 runnable；异常时 dispose 并通过 RxJavaPlugins 上报。 */
     @Override
     public void run() {
         runner = Thread.currentThread();

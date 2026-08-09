@@ -19,7 +19,7 @@ import io.reactivex.rxjava4.annotations.NonNull;
 import io.reactivex.rxjava4.core.Scheduler;
 
 /**
- * Schedules work on a new thread.
+ * 每次 createWorker 创建独立 NewThreadWorker（新线程池）的 Scheduler。
  */
 public final class NewThreadScheduler extends Scheduler {
 
@@ -28,7 +28,7 @@ public final class NewThreadScheduler extends Scheduler {
     private static final String THREAD_NAME_PREFIX = "RxNewThreadScheduler";
     private static final RxThreadFactory THREAD_FACTORY;
 
-    /** The name of the system property for setting the thread priority for this Scheduler. */
+    /** 设置本 Scheduler 线程优先级的系统属性键。 */
     private static final String KEY_NEWTHREAD_PRIORITY = "rxjava4.newthread-priority";
 
     static {
@@ -42,10 +42,12 @@ public final class NewThreadScheduler extends Scheduler {
         this(THREAD_FACTORY);
     }
 
+    /** @param threadFactory 创建 NewThreadWorker 底层线程的工厂 */
     public NewThreadScheduler(ThreadFactory threadFactory) {
         this.threadFactory = threadFactory;
     }
 
+    /** 返回基于 threadFactory 的新 NewThreadWorker。 */
     @NonNull
     @Override
     public Worker createWorker() {

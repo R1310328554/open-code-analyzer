@@ -24,15 +24,9 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.schedulers.SchedulerRunnableIntrospection;
 
 /**
- * A Scheduler implementation that uses one of the Workers from another Scheduler
- * and shares the access to it through its own Workers.
- * <p>
- * Disposing a worker doesn't dispose the underlying shared worker so other
- * workers of this class can continue their work; use {@link #shutdown()} to release
- * the underlying shared worker.
- * <p>
- * This scheduler doesn't support {@link #start()} (it's a no-op) and once {@link #shutdown()}
- * it can't be revived.
+ * 共享底层 Worker 的 Scheduler：多个 SharedWorker 共用同一 worker，
+ * dispose SharedWorker 不会释放共享 worker，需 {@link #shutdown()}。
+ * 不支持 {@link #start()}，shutdown 后不可恢复。
  * @since 4.0.0
  */
 public final class SharedScheduler extends Scheduler {
@@ -40,13 +34,14 @@ public final class SharedScheduler extends Scheduler {
     final Worker worker;
 
     /**
-     * Constructs a SharedScheduler and uses the Worker instance provided.
-     * @param worker the worker to use, not null
+     * 使用给定 Worker 构造 SharedScheduler。
+     * @param worker 共享的 Worker，不可为 null
      */
     public SharedScheduler(Worker worker) {
         this.worker = worker;
     }
 
+    /** dispose 共享 worker。 */
     @Override
     public void shutdown() {
         worker.dispose();
@@ -72,11 +67,13 @@ public final class SharedScheduler extends Scheduler {
         return worker.now(unit);
     }
 
+    /** 创建绑定同一 worker 的 SharedWorker。 */
     @Override
     public Worker createWorker() {
         return new SharedWorker(worker);
     }
 
+    /** 在共享 worker 上调度任务，tasks 容器追踪本 Worker 的 SharedAction。 */
     static final class SharedWorker extends Worker {
 
         final Worker worker;
@@ -98,6 +95,7 @@ public final class SharedScheduler extends Scheduler {
             return tasks.isDisposed();
         }
 
+        /** 创建 SharedAction 加入 tasks，委托 worker.schedule 并 setFuture。 */
         @Override
         public Disposable schedule(Runnable run, long delay, TimeUnit unit) {
             if (isDisposed() || worker.isDisposed()) {
@@ -122,6 +120,7 @@ public final class SharedScheduler extends Scheduler {
             return worker.now(unit);
         }
 
+        /** 可取消的共享任务：run 后 complete 从 parent 移除。 */
         static final class SharedAction
         extends AtomicReference<DisposableContainer>
         implements Runnable, Disposable, SchedulerRunnableIntrospection {
@@ -138,6 +137,7 @@ public final class SharedScheduler extends Scheduler {
                 this.future = new AtomicReference<>();
             }
 
+            /** 执行 actual.run()，finally 调用 complete()。 */
             @Override
             public void run() {
                 try {
@@ -147,6 +147,7 @@ public final class SharedScheduler extends Scheduler {
                 }
             }
 
+            /** 从 parent 删除自身并将 future 置为 this。 */
             void complete() {
                 DisposableContainer cd = get();
                 if (cd != null && compareAndSet(cd, null)) {
@@ -160,6 +161,7 @@ public final class SharedScheduler extends Scheduler {
                 }
             }
 
+            /** 从 parent 移除并 DisposableHelper.dispose(future)。 */
             @Override
             public void dispose() {
                 DisposableContainer cd = getAndSet(null);

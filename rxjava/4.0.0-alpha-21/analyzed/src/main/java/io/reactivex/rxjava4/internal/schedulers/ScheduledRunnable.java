@@ -22,6 +22,10 @@ import io.reactivex.rxjava4.disposables.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import io.reactivex.rxjava4.schedulers.SchedulerRunnableIntrospection;
 
+/**
+ * 可追踪的调度任务：AtomicReferenceArray 存 parent/future/thread，
+ * 支持同步/异步 dispose 与 {@link SchedulerRunnableIntrospection}。
+ */
 public final class ScheduledRunnable extends AtomicReferenceArray<Object>
 implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospection {
 
@@ -30,11 +34,11 @@ implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospectio
     final Runnable actual;
     final boolean interruptOnCancel;
 
-    /** Indicates that the parent tracking this task has been notified about its completion. */
+    /** 父追踪容器已收到本任务完成通知。 */
     static final Object PARENT_DISPOSED = new Object();
-    /** Indicates dispose() was called from within the run/call method. */
+    /** dispose() 在 run/call 内部同线程调用。 */
     static final Object SYNC_DISPOSED = new Object();
-    /** Indicates dispose() was called from another thread. */
+    /** dispose() 从其他线程异步调用。 */
     static final Object ASYNC_DISPOSED = new Object();
 
     static final Object DONE = new Object();
@@ -44,23 +48,19 @@ implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospectio
     static final int THREAD_INDEX = 2;
 
     /**
-     * Creates a ScheduledRunnable by wrapping the given action and setting
-     * up the optional parent.
-     * The underlying future will be interrupted if the task is disposed asynchronously.
-     * @param actual the runnable to wrap, not-null (not verified)
-     * @param parent the parent tracking container or null if none
+     * 包装 Runnable 并设置可选 parent；默认 interruptOnCancel=true。
+     * @param actual 待包装的 Runnable（未校验非 null）
+     * @param parent 任务追踪容器，可为 null
      */
     public ScheduledRunnable(Runnable actual, DisposableContainer parent) {
         this(actual, parent, true);
     }
 
     /**
-     * Creates a ScheduledRunnable by wrapping the given action and setting
-     * up the optional parent.
-     * @param actual the runnable to wrap, not-null (not verified)
-     * @param parent the parent tracking container or null if none
-     * @param interruptOnCancel if true, the underlying future will be interrupted when disposing
-     *                          this task from a different thread than it is running on.
+     * 包装 Runnable 并设置 parent 与 interruptOnCancel 策略。
+     * @param actual 待包装的 Runnable（未校验非 null）
+     * @param parent 任务追踪容器，可为 null
+     * @param interruptOnCancel 异步 dispose 时是否 interrupt 底层 Future
      */
     public ScheduledRunnable(Runnable actual, DisposableContainer parent, boolean interruptOnCancel) {
         super(3);
@@ -69,6 +69,7 @@ implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospectio
         this.lazySet(0, parent);
     }
 
+    /** Callable 入口：调用 run() 以节省 ThreadPoolExecutor 分配。 */
     @Override
     public Object call() {
         // Being Callable saves an allocation in ThreadPoolExecutor
@@ -76,6 +77,7 @@ implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospectio
         return null;
     }
 
+    /** 执行 actual.run()，finally 中通知 parent 并清理 future/thread 槽位。 */
     @Override
     public void run() {
         lazySet(THREAD_INDEX, Thread.currentThread());
@@ -103,6 +105,7 @@ implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospectio
         }
     }
 
+    /** CAS 设置 Future；已 dispose 则按策略 cancel。 */
     public void setFuture(Future<?> f) {
         for (;;) {
             Object o = get(FUTURE_INDEX);
@@ -123,6 +126,7 @@ implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospectio
         }
     }
 
+    /** 标记 SYNC/ASYNC_DISPOSED 并 cancel Future；通知 parent 删除本任务。 */
     @Override
     public void dispose() {
         for (;;) {
@@ -157,6 +161,7 @@ implements Runnable, Callable<Object>, Disposable, SchedulerRunnableIntrospectio
         return o == PARENT_DISPOSED || o == DONE;
     }
 
+    /** 返回 Waiting/Running/Finished/Disposed 等状态摘要。 */
     @Override
     public String toString() {
         String state;

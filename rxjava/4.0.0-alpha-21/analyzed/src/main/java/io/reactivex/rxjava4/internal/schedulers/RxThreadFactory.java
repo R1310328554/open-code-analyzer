@@ -20,8 +20,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * A ThreadFactory that counts how many threads have been created and given a prefix,
- * sets the created Thread's name to {@code prefix-count}.
+ * 带计数前缀的 ThreadFactory：线程名为 {@code prefix-count}，
+ * nonBlocking 为 true 时使用实现 {@link NonBlockingThread} 的 RxCustomThread。
  */
 public final class RxThreadFactory extends AtomicLong implements ThreadFactory {
 
@@ -50,6 +50,7 @@ public final class RxThreadFactory extends AtomicLong implements ThreadFactory {
         this.nonBlocking = nonBlocking;
     }
 
+    /** 创建 daemon 线程并设置 priority；nonBlocking 时用 RxCustomThread。 */
     @Override
     public Thread newThread(@NonNull Runnable r) {
         StringBuilder nameBuilder = new StringBuilder(prefix).append('-').append(incrementAndGet());
@@ -86,6 +87,7 @@ public final class RxThreadFactory extends AtomicLong implements ThreadFactory {
         return "RxThreadFactory[" + prefix + "]";
     }
 
+    /** 标记为非阻塞 Scheduler 线程。 */
     static final class RxCustomThread extends Thread implements NonBlockingThread {
         RxCustomThread(Runnable run, String name) {
             super(run, name);

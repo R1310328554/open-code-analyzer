@@ -20,16 +20,14 @@ import io.reactivex.rxjava4.core.Scheduler;
 import io.reactivex.rxjava4.disposables.*;
 
 /**
- * A Scheduler partially implementing the API by allowing only non-delayed, non-periodic
- * task execution on the current thread immediately.
+ * 轻量即时 Scheduler：仅支持当前线程立即执行、无延迟/无周期任务。
  * <p>
- * Note that this doesn't support recursive scheduling and disposing the returned Disposable
- * has no effect (because when the schedule() method returns, the task has been already run).
+ * 不支持递归调度；返回的 Disposable dispose 无效（任务在 schedule 返回前已执行）。
  */
 public final class ImmediateThinScheduler extends Scheduler {
 
     /**
-     * The singleton instance of the immediate (thin) scheduler.
+     * 即时（thin）Scheduler 单例。
      */
     public static final Scheduler INSTANCE = new ImmediateThinScheduler();
 
@@ -46,6 +44,7 @@ public final class ImmediateThinScheduler extends Scheduler {
         // singleton class
     }
 
+    /** 同步 run.run() 并返回已 dispose 的 DISPOSED。 */
     @NonNull
     @Override
     public Disposable scheduleDirect(@NonNull Runnable run) {
@@ -53,6 +52,7 @@ public final class ImmediateThinScheduler extends Scheduler {
         return DISPOSED;
     }
 
+    /** 不支持延迟执行。 */
     @NonNull
     @Override
     public Disposable scheduleDirect(@NonNull Runnable run, long delay, TimeUnit unit) {
@@ -71,8 +71,10 @@ public final class ImmediateThinScheduler extends Scheduler {
         return WORKER;
     }
 
+    /** 无状态 Worker：schedule 立即执行，dispose 无效果。 */
     static final class ImmediateThinWorker extends Worker {
 
+        /** 无操作：本 Worker 不追踪任务。 */
         @Override
         public void dispose() {
             // This worker is always stateless and won't track tasks
@@ -83,6 +85,7 @@ public final class ImmediateThinScheduler extends Scheduler {
             return false; // dispose() has no effect
         }
 
+        /** 当前线程同步执行 run 并返回 DISPOSED。 */
         @NonNull
         @Override
         public Disposable schedule(@NonNull Runnable run) {

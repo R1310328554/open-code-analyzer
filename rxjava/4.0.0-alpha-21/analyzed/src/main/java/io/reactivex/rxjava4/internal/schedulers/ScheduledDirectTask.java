@@ -19,8 +19,8 @@ import java.util.concurrent.Callable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * A Callable to be submitted to an ExecutorService that runs a Runnable
- * action and manages completion/cancellation.
+ * 提交给 ExecutorService 的单次 Runnable 包装（Callable 形态），
+ * 管理完成/取消状态。
  * @since 2.0.8
  */
 public final class ScheduledDirectTask extends AbstractDirectTask implements Callable<Void> {
@@ -32,6 +32,7 @@ public final class ScheduledDirectTask extends AbstractDirectTask implements Cal
         super(runnable, interruptOnCancel);
     }
 
+    /** 记录 runner、执行 runnable，finally 中 lazySet(FINISHED)。 */
     @Override
     public Void call() {
         runner = Thread.currentThread();

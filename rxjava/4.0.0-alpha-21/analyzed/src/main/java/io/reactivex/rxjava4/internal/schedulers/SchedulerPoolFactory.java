@@ -19,10 +19,10 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.Function;
 
 /**
- * Manages the creating of ScheduledExecutorServices and sets up purging.
+ * 创建 {@link ScheduledExecutorService} 并配置 removeOnCancelPolicy（purge）。
  */
 public final class SchedulerPoolFactory {
-    /** Utility class. */
+    /** 工具类，不可实例化。 */
     private SchedulerPoolFactory() {
         throw new IllegalStateException("No instances!");
     }
@@ -60,9 +60,9 @@ public final class SchedulerPoolFactory {
     }
 
     /**
-     * Creates a ScheduledExecutorService with the given factory.
-     * @param factory the thread factory
-     * @return the ScheduledExecutorService
+     * 使用给定 ThreadFactory 创建单线程 ScheduledThreadPoolExecutor。
+     * @param factory 线程工厂
+     * @return ScheduledExecutorService
      */
     public static ScheduledExecutorService create(ThreadFactory factory) {
         final ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1, factory);
