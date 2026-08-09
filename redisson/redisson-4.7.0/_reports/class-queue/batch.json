@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/codec/JsonJacksonCodec.java",
     "redisson/src/main/java/org/redisson/codec/Kryo5Codec.java",
     "redisson/src/main/java/org/redisson/codec/Kryo5KeySetViewSerializer.java",
-    "redisson/src/main/java/org/redisson/codec/KryoCodec.java",
-    "redisson/src/main/java/org/redisson/codec/LZ4Codec.java",
-    "redisson/src/main/java/org/redisson/codec/LZ4CodecV2.java",
-    "redisson/src/main/java/org/redisson/codec/MapCacheEventCodec.java",
-    "redisson/src/main/java/org/redisson/codec/MsgPackJacksonCodec.java",
-    "redisson/src/main/java/org/redisson/codec/ObjectCodec.java",
-    "redisson/src/main/java/org/redisson/codec/ObjectCodecWrapper.java",
-    "redisson/src/main/java/org/redisson/codec/ProtobufCodec.java",
-    "redisson/src/main/java/org/redisson/codec/ReferenceCodecProvider.java",
-    "redisson/src/main/java/org/redisson/codec/SerializationCodec.java",
-    "redisson/src/main/java/org/redisson/codec/SetCacheEventCodec.java",
-    "redisson/src/main/java/org/redisson/codec/SmileJackson3Codec.java",
-    "redisson/src/main/java/org/redisson/codec/SmileJacksonCodec.java",
-    "redisson/src/main/java/org/redisson/codec/SnappyCodecV2.java",
-    "redisson/src/main/java/org/redisson/codec/TypedJsonJackson3Codec.java",
-    "redisson/src/main/java/org/redisson/codec/TypedJsonJacksonCodec.java"
+    "redisson/src/main/java/org/redisson/codec/KryoCodec.java"
   ],
   "remaining_pending": 362,
-  "done": 2430
+  "done": 2445
 }
