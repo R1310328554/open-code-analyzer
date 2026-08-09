@@ -1,3 +1,5 @@
+"""教程 001（Annotated）：SQLModel + SQLite——Hero CRUD 与 SessionDep 依赖注入。"""
+
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Query
@@ -5,6 +7,8 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 
 class Hero(SQLModel, table=True):
+    """英雄表模型；secret_name 不对外暴露时可配合 response_model 过滤。"""
+
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     age: int | None = Field(default=None, index=True)
@@ -14,31 +18,35 @@ class Hero(SQLModel, table=True):
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-connect_args = {"check_same_thread": False}
+connect_args = {"check_same_thread": False}  # SQLite 多线程访问所需
 engine = create_engine(sqlite_url, connect_args=connect_args)
 
 
 def create_db_and_tables():
+    """根据 SQLModel.metadata 创建所有已声明的表。"""
     SQLModel.metadata.create_all(engine)
 
 
 def get_session():
+    """请求级数据库会话；yield 后 FastAPI 自动关闭 session。"""
     with Session(engine) as session:
         yield session
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[Session, Depends(get_session)]  # 复用会话依赖类型别名
 
 app = FastAPI()
 
 
 @app.on_event("startup")
 def on_startup():
+    """应用启动时建表；生产环境通常改用 Alembic 迁移。"""
     create_db_and_tables()
 
 
 @app.post("/heroes/")
 def create_hero(hero: Hero, session: SessionDep) -> Hero:
+    """POST 创建英雄；commit 后 refresh 以获取数据库生成的 id。"""
     session.add(hero)
     session.commit()
     session.refresh(hero)
@@ -51,12 +59,14 @@ def read_heroes(
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
 ) -> list[Hero]:
+    """分页查询；limit 最大 100，防止一次拉取过多行。"""
     heroes = session.exec(select(Hero).offset(offset).limit(limit)).all()
     return heroes
 
 
 @app.get("/heroes/{hero_id}")
 def read_hero(hero_id: int, session: SessionDep) -> Hero:
+    """按主键查询；不存在时返回 404。"""
     hero = session.get(Hero, hero_id)
     if not hero:
         raise HTTPException(status_code=404, detail="Hero not found")
@@ -65,6 +75,7 @@ def read_hero(hero_id: int, session: SessionDep) -> Hero:
 
 @app.delete("/heroes/{hero_id}")
 def delete_hero(hero_id: int, session: SessionDep):
+    """删除英雄；成功返回 {"ok": true}。"""
     hero = session.get(Hero, hero_id)
     if not hero:
         raise HTTPException(status_code=404, detail="Hero not found")
