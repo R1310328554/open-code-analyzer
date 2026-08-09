@@ -20,37 +20,24 @@ package org.apache.rocketmq.client.consumer.store;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * The ControllableOffset class encapsulates a thread-safe offset value that can be
- * updated atomically. Additionally, this class allows for the offset to be "frozen,"
- * which prevents further updates after the freeze operation has been performed.
+ * 线程安全的可控消费偏移量：支持原子更新与冻结（freeze），冻结后不可再更新。
  * <p>
- * Concurrency Scenarios:
- * If {@code updateAndFreeze} is called before any {@code update} operations, it sets
- * {@code allowToUpdate} to false and updates the offset to the target value specified.
- * After this operation, further invocations of {@code update} will not affect the offset,
- * as it is considered frozen.
+ * 并发场景说明：
+ * 若在任意 {@code update} 之前调用 {@code updateAndFreeze}，会将 {@code allowToUpdate} 置为 false
+ * 并将偏移量设为目标值，此后 {@code update} 不再生效。
  * <p>
- * If {@code update} is in progress while {@code updateAndFreeze} is invoked concurrently,
- * the final outcome depends on the sequence of operations:
- * 1. If {@code update}'s atomic update operation completes before {@code updateAndFreeze},
- * the latter will overwrite the offset and set {@code allowToUpdate} to false,
- * preventing any further updates.
- * 2. If {@code updateAndFreeze} executes before the {@code update} finalizes its operation,
- * the ongoing {@code update} will not proceed with its changes. The {@link AtomicLong#getAndUpdate}
- * method used in both operations ensures atomicity and respects the final state imposed by
- * {@code updateAndFreeze}, even if the {@code update} function has already begun.
+ * 若 {@code update} 与 {@code updateAndFreeze} 并发执行，最终结果取决于操作顺序：
+ * 1. 若 {@code update} 的原子更新先完成，{@code updateAndFreeze} 会覆盖偏移量并禁止后续更新；
+ * 2. 若 {@code updateAndFreeze} 先执行，进行中的 {@code update} 不会生效。
+ * {@link AtomicLong#getAndUpdate} 保证原子性并尊重 {@code updateAndFreeze} 的最终状态。
  * <p>
- * In essence, once the {@code updateAndFreeze} operation is executed, the offset value remains
- * immutable to any subsequent {@code update} calls due to the immediate visibility of the
- * {@code allowToUpdate} state change, courtesy of its volatile nature.
- * <p>
- * The combination of an AtomicLong for the offset value and a volatile boolean flag for update
- * control provides a reliable mechanism for managing offset values in concurrent environments.
+ * 一旦执行 {@code updateAndFreeze}，由于 {@code allowToUpdate} 的 volatile 可见性，
+ * 后续 {@code update} 调用均无法改变偏移量。
  */
 public class ControllableOffset {
-    // Holds the current offset value in an atomic way.
+    // 原子方式保存当前偏移量
     private final AtomicLong value;
-    // Controls whether updates to the offset are allowed.
+    // 控制是否允许更新偏移量
     private volatile boolean allowToUpdate;
 
     public ControllableOffset(long value) {
@@ -59,15 +46,11 @@ public class ControllableOffset {
     }
 
     /**
-     * Attempts to update the offset to the target value. If increaseOnly is true,
-     * the offset will not be decreased. The update operation is atomic and thread-safe.
-     * The operation will respect the current allowToUpdate state, and if the offset
-     * has been frozen by a previous call to {@link #updateAndFreeze(long)},
-     * this method will not update the offset.
+     * 尝试将偏移量更新为目标值。{@code increaseOnly} 为 true 时仅允许增大。
+     * 操作原子且线程安全；若偏移量已被 {@link #updateAndFreeze(long)} 冻结则不再更新。
      *
-     * @param target       the new target offset value.
-     * @param increaseOnly if true, the offset will only be updated if the target value
-     *                     is greater than the current value.
+     * @param target 目标偏移量
+     * @param increaseOnly 为 true 时仅当目标值大于当前值才更新
      */
     public void update(long target, boolean increaseOnly) {
         if (allowToUpdate) {
@@ -86,21 +69,19 @@ public class ControllableOffset {
     }
 
     /**
-     * Overloaded method for updating the offset value unconditionally.
+     * 无条件更新偏移量。
      *
-     * @param target The new target value for the offset.
+     * @param target 目标偏移量
      */
     public void update(long target) {
         update(target, false);
     }
 
     /**
-     * Freezes the offset at the target value provided. Once frozen, the offset
-     * cannot be updated by subsequent calls to {@link #update(long, boolean)}.
-     * This method will set allowToUpdate to false and then update the offset,
-     * ensuring the new value is the final state of the offset.
+     * 将偏移量冻结为目标值；冻结后 {@link #update(long, boolean)} 无法再修改。
+     * 先将 allowToUpdate 置为 false 再更新偏移量，确保为最终状态。
      *
-     * @param target the new target offset value to freeze at.
+     * @param target 冻结时的目标偏移量
      */
     public void updateAndFreeze(long target) {
         value.getAndUpdate(val -> {
@@ -109,6 +90,7 @@ public class ControllableOffset {
         });
     }
 
+    /** 获取当前偏移量。 */
     public long getOffset() {
         return value.get();
     }

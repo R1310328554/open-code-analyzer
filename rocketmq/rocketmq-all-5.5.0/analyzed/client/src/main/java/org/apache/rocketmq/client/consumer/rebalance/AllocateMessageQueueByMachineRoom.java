@@ -22,9 +22,10 @@ import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * Computer room Hashing queue algorithm, such as Alipay logic room
+ * 按机房（逻辑机房/IDC）分配消息队列算法，如支付宝逻辑机房场景。
  */
 public class AllocateMessageQueueByMachineRoom extends AbstractAllocateMessageQueueStrategy {
+    /** 消费者所在机房（IDC）标识集合。 */
     private Set<String> consumeridcs;
 
     @Override
@@ -65,10 +66,12 @@ public class AllocateMessageQueueByMachineRoom extends AbstractAllocateMessageQu
         return "MACHINE_ROOM";
     }
 
+    /** 获取消费者 IDC 集合。 */
     public Set<String> getConsumeridcs() {
         return consumeridcs;
     }
 
+    /** 设置消费者 IDC 集合。 */
     public void setConsumeridcs(Set<String> consumeridcs) {
         this.consumeridcs = consumeridcs;
     }

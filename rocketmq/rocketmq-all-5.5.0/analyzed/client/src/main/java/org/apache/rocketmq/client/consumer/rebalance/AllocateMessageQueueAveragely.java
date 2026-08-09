@@ -21,7 +21,7 @@ import java.util.List;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * Average Hashing queue algorithm
+ * 平均分配消息队列算法：在消费组内按消费者数量均分队列。
  */
 public class AllocateMessageQueueAveragely extends AbstractAllocateMessageQueueStrategy {
 

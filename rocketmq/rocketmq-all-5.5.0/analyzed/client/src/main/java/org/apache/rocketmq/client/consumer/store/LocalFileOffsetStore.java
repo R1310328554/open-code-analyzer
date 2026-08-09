@@ -37,16 +37,21 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
- * Local storage implementation
+ * 消费偏移量本地文件存储实现：将偏移量持久化到客户端本地 JSON 文件。
  */
 public class LocalFileOffsetStore implements OffsetStore {
+    /** 本地偏移量存储根目录，可通过系统属性 rocketmq.client.localOffsetStoreDir 配置。 */
     public final static String LOCAL_OFFSET_STORE_DIR = System.getProperty(
         "rocketmq.client.localOffsetStoreDir",
         System.getProperty("user.home") + File.separator + ".rocketmq_offsets");
     private final static Logger log = LoggerFactory.getLogger(LocalFileOffsetStore.class);
+    /** MQ 客户端实例。 */
     private final MQClientInstance mQClientFactory;
+    /** 消费组名称。 */
     private final String groupName;
+    /** 偏移量 JSON 文件路径。 */
     private final String storePath;
+    /** 内存中的队列偏移量表。 */
     private ConcurrentMap<MessageQueue, ControllableOffset> offsetTable =
         new ConcurrentHashMap<>();
 
@@ -227,6 +232,7 @@ public class LocalFileOffsetStore implements OffsetStore {
         return cloneOffsetTable;
     }
 
+    /** 从本地文件读取偏移量，失败时尝试 .bak 备份文件。 */
     private OffsetSerializeWrapper readLocalOffset() throws MQClientException {
         String content = null;
         try {
@@ -250,6 +256,7 @@ public class LocalFileOffsetStore implements OffsetStore {
         }
     }
 
+    /** 从 .bak 备份文件读取偏移量。 */
     private OffsetSerializeWrapper readLocalOffsetBak() throws MQClientException {
         String content = null;
         try {

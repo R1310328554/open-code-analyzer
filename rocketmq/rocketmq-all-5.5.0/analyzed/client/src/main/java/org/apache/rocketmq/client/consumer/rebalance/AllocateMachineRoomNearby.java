@@ -26,16 +26,16 @@ import org.apache.rocketmq.client.consumer.AllocateMessageQueueStrategy;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * An allocate strategy proxy for based on machine room nearside priority. An actual allocate strategy can be
- * specified.
+ * 基于机房就近优先级的队列分配策略代理，可指定底层实际分配算法。
  *
- * If any consumer is alive in a machine room, the message queue of the broker which is deployed in the same machine
- * should only be allocated to those. Otherwise, those message queues can be shared along all consumers since there are
- * no alive consumer to monopolize them.
+ * 若某机房内有存活消费者，则部署在同一机房的 Broker 消息队列仅分配给该机房消费者；
+ * 若某机房无存活消费者，其队列可由全部消费者共享。
  */
 public class AllocateMachineRoomNearby extends AbstractAllocateMessageQueueStrategy {
 
-    private final AllocateMessageQueueStrategy allocateMessageQueueStrategy;//actual allocate strategy
+    /** 底层实际分配策略。 */
+    private final AllocateMessageQueueStrategy allocateMessageQueueStrategy;
+    /** 机房解析器，用于判定 Broker/消费者所属机房。 */
     private final MachineRoomResolver machineRoomResolver;
 
     public AllocateMachineRoomNearby(AllocateMessageQueueStrategy allocateMessageQueueStrategy,
@@ -61,7 +61,7 @@ public class AllocateMachineRoomNearby extends AbstractAllocateMessageQueueStrat
             return result;
         }
 
-        //group mq by machine room
+        // 按机房分组消息队列
         Map<String/*machine room */, List<MessageQueue>> mr2Mq = new TreeMap<>();
         for (MessageQueue mq : mqAll) {
             String brokerMachineRoom = machineRoomResolver.brokerDeployIn(mq);
@@ -75,7 +75,7 @@ public class AllocateMachineRoomNearby extends AbstractAllocateMessageQueueStrat
             }
         }
 
-        //group consumer by machine room
+        // 按机房分组消费者
         Map<String/*machine room */, List<String/*clientId*/>> mr2c = new TreeMap<>();
         for (String cid : cidAll) {
             String consumerMachineRoom = machineRoomResolver.consumerDeployIn(cid);
@@ -91,7 +91,7 @@ public class AllocateMachineRoomNearby extends AbstractAllocateMessageQueueStrat
 
         List<MessageQueue> allocateResults = new ArrayList<>();
 
-        //1.allocate the mq that deploy in the same machine room with the current consumer
+        // 1. 优先分配与当前消费者同机房的队列
         String currentMachineRoom = machineRoomResolver.consumerDeployIn(currentCID);
         List<MessageQueue> mqInThisMachineRoom = mr2Mq.remove(currentMachineRoom);
         List<String> consumerInThisMachineRoom = mr2c.get(currentMachineRoom);
@@ -99,9 +99,9 @@ public class AllocateMachineRoomNearby extends AbstractAllocateMessageQueueStrat
             allocateResults.addAll(allocateMessageQueueStrategy.allocate(consumerGroup, currentCID, mqInThisMachineRoom, consumerInThisMachineRoom));
         }
 
-        //2.allocate the rest mq to each machine room if there are no consumer alive in that machine room
+        // 2. 对无存活消费者的机房，将其剩余队列分配给全部消费者
         for (Entry<String, List<MessageQueue>> machineRoomEntry : mr2Mq.entrySet()) {
-            if (!mr2c.containsKey(machineRoomEntry.getKey())) { // no alive consumer in the corresponding machine room, so all consumers share these queues
+            if (!mr2c.containsKey(machineRoomEntry.getKey())) { // 对应机房无存活消费者，队列由全部消费者共享
                 allocateResults.addAll(allocateMessageQueueStrategy.allocate(consumerGroup, currentCID, machineRoomEntry.getValue(), cidAll));
             }
         }
@@ -115,15 +115,17 @@ public class AllocateMachineRoomNearby extends AbstractAllocateMessageQueueStrat
     }
 
     /**
-     * A resolver object to determine which machine room do the message queues or clients are deployed in.
+     * 解析消息队列与消费者所属机房的接口。
      *
-     * AllocateMachineRoomNearby will use the results to group the message queues and clients by machine room.
+     * {@link AllocateMachineRoomNearby} 据此按机房分组队列与消费者。
      *
-     * The result returned from the implemented method CANNOT be null.
+     * 实现方法返回值不可为 null。
      */
     public interface MachineRoomResolver {
+        /** 返回消息队列所在 Broker 的机房标识。 */
         String brokerDeployIn(MessageQueue messageQueue);
 
+        /** 返回消费者 clientID 所在机房标识。 */
         String consumerDeployIn(String clientID);
     }
 }

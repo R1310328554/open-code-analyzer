@@ -37,12 +37,15 @@ import org.apache.rocketmq.remoting.protocol.header.QueryConsumerOffsetRequestHe
 import org.apache.rocketmq.remoting.protocol.header.UpdateConsumerOffsetRequestHeader;
 
 /**
- * Remote storage implementation
+ * 消费偏移量远程 Broker 存储实现：偏移量持久化在 Broker 端。
  */
 public class RemoteBrokerOffsetStore implements OffsetStore {
     private final static Logger log = LoggerFactory.getLogger(RemoteBrokerOffsetStore.class);
+    /** MQ 客户端实例。 */
     private final MQClientInstance mQClientFactory;
+    /** 消费组名称。 */
     private final String groupName;
+    /** 内存中的队列偏移量表。 */
     private ConcurrentMap<MessageQueue, ControllableOffset> offsetTable =
         new ConcurrentHashMap<>();
 
@@ -100,11 +103,11 @@ public class RemoteBrokerOffsetStore implements OffsetStore {
                         this.updateOffset(mq, brokerOffset, false);
                         return brokerOffset;
                     }
-                    // No offset in broker
+                    // Broker 上无偏移量记录
                     catch (OffsetNotFoundException e) {
                         return -1;
                     }
-                    //Other exceptions
+                    // 其他异常
                     catch (Exception e) {
                         log.warn("fetchConsumeOffsetFromBroker exception, " + mq, e);
                         return -2;
@@ -192,16 +195,18 @@ public class RemoteBrokerOffsetStore implements OffsetStore {
         return cloneOffsetTable;
     }
 
-    /**
-     * Update the Consumer Offset in one way, once the Master is off, updated to Slave, here need to be optimized.
-     */
+    /** 单向更新 Broker 消费偏移量（Master 不可用时可能写入 Slave，待优化）。 */
     private void updateConsumeOffsetToBroker(MessageQueue mq, long offset) throws RemotingException,
         MQBrokerException, InterruptedException, MQClientException {
         updateConsumeOffsetToBroker(mq, offset, true);
     }
 
     /**
-     * Update the Consumer Offset synchronously, once the Master is off, updated to Slave, here need to be optimized.
+     * 同步更新 Broker 消费偏移量（Master 不可用时可能写入 Slave，待优化）。
+     *
+     * @param mq 消息队列
+     * @param offset 偏移量
+     * @param isOneway 是否单向发送
      */
     @Override
     public void updateConsumeOffsetToBroker(MessageQueue mq, long offset, boolean isOneway) throws RemotingException,
@@ -232,6 +237,7 @@ public class RemoteBrokerOffsetStore implements OffsetStore {
         }
     }
 
+    /** 从 Broker 查询消费偏移量。 */
     private long fetchConsumeOffsetFromBroker(MessageQueue mq) throws RemotingException, MQBrokerException,
         InterruptedException, MQClientException {
         FindBrokerResult findBrokerResult = this.mQClientFactory.findBrokerAddressInSubscribe(this.mQClientFactory.getBrokerNameFromMessageQueue(mq), MixAll.MASTER_ID, true);

@@ -16,17 +16,12 @@
  */
 package org.apache.rocketmq.client.consumer.store;
 
+/** 读取消费偏移量的数据来源策略。 */
 public enum ReadOffsetType {
-    /**
-     * From memory
-     */
+    /** 仅从内存读取。 */
     READ_FROM_MEMORY,
-    /**
-     * From storage
-     */
+    /** 仅从存储（本地文件或 Broker）读取。 */
     READ_FROM_STORE,
-    /**
-     * From memory,then from storage
-     */
+    /** 先读内存，未命中再读存储。 */
     MEMORY_FIRST_THEN_STORE;
 }

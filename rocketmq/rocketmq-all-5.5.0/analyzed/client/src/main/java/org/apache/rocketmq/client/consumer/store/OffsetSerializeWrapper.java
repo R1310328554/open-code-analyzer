@@ -23,16 +23,19 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
 /**
- * Wrapper class for offset serialization
+ * 消费偏移量序列化包装类，用于 JSON 持久化。
  */
 public class OffsetSerializeWrapper extends RemotingSerializable {
+    /** 消息队列到偏移量的映射表。 */
     private ConcurrentMap<MessageQueue, AtomicLong> offsetTable =
         new ConcurrentHashMap<>();
 
+    /** 获取偏移量映射表。 */
     public ConcurrentMap<MessageQueue, AtomicLong> getOffsetTable() {
         return offsetTable;
     }
 
+    /** 设置偏移量映射表。 */
     public void setOffsetTable(ConcurrentMap<MessageQueue, AtomicLong> offsetTable) {
         this.offsetTable = offsetTable;
     }

@@ -19,10 +19,16 @@ package org.apache.rocketmq.client.exception;
 import org.apache.rocketmq.common.UtilAll;
 import org.apache.rocketmq.common.help.FAQUrl;
 
+/**
+ * Broker 端返回错误时的客户端异常，携带响应码与 Broker 地址等信息。
+ */
 public class MQBrokerException extends Exception {
     private static final long serialVersionUID = 5975020272601250368L;
+    /** Broker 响应码。 */
     private final int responseCode;
+    /** 错误描述信息。 */
     private final String errorMessage;
+    /** 发生错误的 Broker 地址。 */
     private final String brokerAddr;
 
     MQBrokerException() {
@@ -47,14 +53,17 @@ public class MQBrokerException extends Exception {
         this.brokerAddr = brokerAddr;
     }
 
+    /** 获取响应码。 */
     public int getResponseCode() {
         return responseCode;
     }
 
+    /** 获取错误描述。 */
     public String getErrorMessage() {
         return errorMessage;
     }
 
+    /** 获取 Broker 地址。 */
     public String getBrokerAddr() {
         return brokerAddr;
     }

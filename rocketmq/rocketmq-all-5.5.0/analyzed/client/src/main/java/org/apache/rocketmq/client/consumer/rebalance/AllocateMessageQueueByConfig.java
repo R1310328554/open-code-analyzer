@@ -19,7 +19,11 @@ package org.apache.rocketmq.client.consumer.rebalance;
 import java.util.List;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 按配置固定返回指定消息队列列表的分配策略。
+ */
 public class AllocateMessageQueueByConfig extends AbstractAllocateMessageQueueStrategy {
+    /** 预配置的消息队列列表。 */
     private List<MessageQueue> messageQueueList;
 
     @Override
@@ -33,10 +37,12 @@ public class AllocateMessageQueueByConfig extends AbstractAllocateMessageQueueSt
         return "CONFIG";
     }
 
+    /** 获取配置的消息队列列表。 */
     public List<MessageQueue> getMessageQueueList() {
         return messageQueueList;
     }
 
+    /** 设置配置的消息队列列表。 */
     public void setMessageQueueList(List<MessageQueue> messageQueueList) {
         this.messageQueueList = messageQueueList;
     }

@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.client.exception;
 
+/**
+ * Broker 上未找到消费偏移量时抛出的异常（如首次消费）。
+ */
 public class OffsetNotFoundException extends MQBrokerException {
 
     public OffsetNotFoundException() {

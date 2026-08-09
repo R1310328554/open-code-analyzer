@@ -19,9 +19,14 @@ package org.apache.rocketmq.client.exception;
 import org.apache.rocketmq.common.UtilAll;
 import org.apache.rocketmq.common.help.FAQUrl;
 
+/**
+ * RocketMQ 客户端通用异常，封装响应码与错误信息。
+ */
 public class MQClientException extends Exception {
     private static final long serialVersionUID = -5758410930844185841L;
+    /** 响应码，-1 表示未设置。 */
     private int responseCode;
+    /** 错误描述信息。 */
     private String errorMessage;
 
     public MQClientException(String errorMessage, Throwable cause) {
@@ -44,19 +49,23 @@ public class MQClientException extends Exception {
         this.errorMessage = errorMessage;
     }
 
+    /** 获取响应码。 */
     public int getResponseCode() {
         return responseCode;
     }
 
+    /** 设置响应码并返回自身（链式调用）。 */
     public MQClientException setResponseCode(final int responseCode) {
         this.responseCode = responseCode;
         return this;
     }
 
+    /** 获取错误描述。 */
     public String getErrorMessage() {
         return errorMessage;
     }
 
+    /** 设置错误描述。 */
     public void setErrorMessage(final String errorMessage) {
         this.errorMessage = errorMessage;
     }

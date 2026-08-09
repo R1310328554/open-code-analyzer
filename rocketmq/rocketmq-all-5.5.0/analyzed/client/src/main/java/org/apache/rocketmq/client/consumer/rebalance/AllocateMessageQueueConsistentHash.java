@@ -25,11 +25,13 @@ import org.apache.rocketmq.common.consistenthash.Node;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * Consistent Hashing queue algorithm
+ * 一致性哈希消息队列分配算法：队列经哈希环路由到对应消费者。
  */
 public class AllocateMessageQueueConsistentHash extends AbstractAllocateMessageQueueStrategy {
 
+    /** 每个消费者的虚拟节点数量。 */
     private final int virtualNodeCnt;
+    /** 自定义哈希函数，null 时使用默认实现。 */
     private final HashFunction customHashFunction;
 
     public AllocateMessageQueueConsistentHash() {
@@ -62,7 +64,7 @@ public class AllocateMessageQueueConsistentHash extends AbstractAllocateMessageQ
             cidNodes.add(new ClientNode(cid));
         }
 
-        final ConsistentHashRouter<ClientNode> router; //for building hash ring
+        final ConsistentHashRouter<ClientNode> router; // 构建一致性哈希环
         if (customHashFunction != null) {
             router = new ConsistentHashRouter<>(cidNodes, virtualNodeCnt, customHashFunction);
         } else {
@@ -86,7 +88,9 @@ public class AllocateMessageQueueConsistentHash extends AbstractAllocateMessageQ
         return "CONSISTENT_HASH";
     }
 
+    /** 一致性哈希环上的消费者节点。 */
     private static class ClientNode implements Node {
+        /** 消费者 clientID。 */
         private final String clientID;
 
         public ClientNode(String clientID) {
