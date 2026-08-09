@@ -25,9 +25,12 @@ import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 可重用查询，其中具体子类必须实现抽象 mapRow(ResultSet, int) 方法以将 JDBC ResultSet 的每一行转换为对象。
- * <p>S 通过删除参数和上下文来简化 MappingSqlQueryWithParameters
- * API。大多数子类不会关心参数。如果您不使用上下文信息，请对其进行子类化而不是 MappingSqlQueryWithParameters。
+ * 可复用查询，具体子类必须实现抽象方法 mapRow(ResultSet, int)，
+ * 将 JDBC ResultSet 的每一行转换为对象。
+ *
+ * <p>通过省略参数和上下文简化 MappingSqlQueryWithParameters API。
+ * 大多数子类不关心参数；若不需要上下文信息，应继承本类而非 MappingSqlQueryWithParameters。
+ *
  * @author Rod Johnson
  * @author Thomas Risberg
  * @author Jean-Pierre Pawlak
@@ -37,15 +40,15 @@ import org.jspecify.annotations.Nullable;
 public abstract class MappingSqlQuery<T extends @Nullable Object> extends MappingSqlQueryWithParameters<T> {
 
 	/**
-	 * 允许用作 JavaBean 的构造函数。
+	 * 允许作为 JavaBean 使用的构造器。
 	 */
 	public MappingSqlQuery() {
 	}
 
 	/**
-	 * 带有 DataSource 和 SQL 字符串的便捷构造函数。
+	 * 便捷构造器，接收 DataSource 和 SQL 字符串。
 	 * @param ds 用于获取连接的 DataSource
-	 * @param sql 要运行的 SQL
+	 * @param sql 要执行的 SQL
 	 */
 	public MappingSqlQuery(DataSource ds, String sql) {
 		super(ds, sql);
@@ -53,7 +56,7 @@ public abstract class MappingSqlQuery<T extends @Nullable Object> extends Mappin
 
 
 	/**
-	 * 实现此方法是为了调用更简单的 mapRow 模板方法，忽略参数。
+	 * 本方法调用更简单的 mapRow 模板方法，忽略参数。
 	 * @see #mapRow(ResultSet, int)
 	 */
 	@Override
@@ -64,12 +67,14 @@ public abstract class MappingSqlQuery<T extends @Nullable Object> extends Mappin
 	}
 
 	/**
-	 * 子类必须实现此方法才能将 ResultSet 的每一行转换为结果类型的对象。与 MappingSqlQueryWithParameters 的直接子类相反，此类的 <p> 子类
-	 * 不需要关心查询对象的执行方法的参数。
-	 * @param rs 我们正在处理的 ResultSet
-	 * @param rowNum 我们要做的行号（从 0 开始）
+	 * 子类必须实现本方法，将 ResultSet 的每一行转换为结果类型的对象。
+	 * <p>与本类子类不同，MappingSqlQueryWithParameters 的直接子类
+	 * 无需关心查询对象 execute 方法的参数。
+	 * @param rs 正在遍历的 ResultSet
+	 * @param rowNum 当前行号（从 0 开始）
 	 * @return 结果类型的对象
-	 * @throws SQLException 如果提取数据时出现错误。子类根本无法捕获 SQLException，只能依靠框架来清理。
+	 * @throws SQLException 提取数据出错时抛出。
+	 * 子类通常无需捕获 SQLException，由框架负责清理。
 	 */
 	protected abstract T mapRow(ResultSet rs, int rowNum) throws SQLException;
 

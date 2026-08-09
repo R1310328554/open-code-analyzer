@@ -27,9 +27,13 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 
 /**
- * {@link KeyHolder} 接口的标准实现，用于保存自动生成的键（可能由 JDBC 插入语句返回）。
- * <p> 为每个插入操作创建该类的实例，并将其传递给相应的 {@link org.springframework.jdbc.core.JdbcTemplate} 或
+ * {@link KeyHolder} 接口的标准实现，用于保存自动生成的主键
+ * （可能由 JDBC insert 语句返回）。
+ *
+ * <p>每次 insert 操作创建本类实例，并传递给相应的
+ * {@link org.springframework.jdbc.core.JdbcTemplate} 或
  * {@link org.springframework.jdbc.object.SqlUpdate} 方法。
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @author Slawomir Dymitrow
@@ -37,37 +41,30 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
  */
 public class GeneratedKeyHolder implements KeyHolder {
 
-	/** `keyList`：该类的成员状态。 */
 	private final List<Map<String, Object>> keyList;
 
 
 	/**
-	 * 使用默认列表创建一个新的GenerateKeyHolder。
+	 * 使用默认列表创建 GeneratedKeyHolder。
 	 */
 	public GeneratedKeyHolder() {
 		this.keyList = new ArrayList<>(1);
 	}
 
 	/**
-	 * 使用给定列表创建一个新的GenerateKeyHolder。
-	 * @param keyList 保存键映射的列表
+	 * 使用给定列表创建 GeneratedKeyHolder。
+	 * @param keyList 存放键映射的列表
 	 */
 	public GeneratedKeyHolder(List<Map<String, Object>> keyList) {
 		this.keyList = keyList;
 	}
 
 
-	/**
-	 * 获取 Key（`Key`）。
-	 */
 	@Override
 	public @Nullable Number getKey() throws InvalidDataAccessApiUsageException, DataRetrievalFailureException {
 		return getKeyAs(Number.class);
 	}
 
-	/**
-	 * 获取 Key As（`KeyAs`）。
-	 */
 	@Override
 	public <T> @Nullable T getKeyAs(Class<T> keyType) throws InvalidDataAccessApiUsageException, DataRetrievalFailureException {
 		if (this.keyList.isEmpty()) {
@@ -95,9 +92,6 @@ public class GeneratedKeyHolder implements KeyHolder {
 		}
 	}
 
-	/**
-	 * 获取 Keys（`Keys`）。
-	 */
 	@Override
 	public @Nullable Map<String, Object> getKeys() throws InvalidDataAccessApiUsageException {
 		if (this.keyList.isEmpty()) {
@@ -111,9 +105,6 @@ public class GeneratedKeyHolder implements KeyHolder {
 		return this.keyList.get(0);
 	}
 
-	/**
-	 * 获取 Key List（`KeyList`）。
-	 */
 	@Override
 	public List<Map<String, Object>> getKeyList() {
 		return this.keyList;

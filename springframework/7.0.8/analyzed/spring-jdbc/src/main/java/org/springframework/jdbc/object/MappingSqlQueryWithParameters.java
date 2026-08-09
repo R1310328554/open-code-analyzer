@@ -27,10 +27,16 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.RowMapper;
 
 /**
- * 可重用的 RDBMS 查询，其中具体子类必须实现抽象 mapRow(ResultSet, int) 方法以将 JDBC ResultSet 的每一行映射到对象中。
- * <p>此类手动映射通常优于使用反射的“自动”映射，后者在重要情况下可能会变得复杂。例如，当前类允许不同的对象用于不同的行（例如，如果指示子类）。它允许设置计算字段。并且 Res
- * ultSet 列不需要与 bean 属性具有相同的名称。帕累托原则的实际应用：加倍努力实现提取过程的自动化，使框架变得更加复杂，并且几乎没有带来真正的好处。
- * 可以构建 <p> 子类，提供 SQL、参数类型和数据源。 SQL 在子类之间通常会有所不同。
+ * 可复用的 RDBMS 查询，具体子类必须实现抽象方法 mapRow(ResultSet, int)，
+ * 将 JDBC ResultSet 的每一行映射为对象。
+ *
+ * <p>这种手动映射通常优于基于反射的"自动"映射——后者在非平凡场景下会变得复杂。
+ * 例如，本类允许不同行使用不同对象（例如根据指示选择子类）、设置计算字段，
+ * 且 ResultSet 列名无需与 Bean 属性同名。
+ * 帕累托原则在此体现：为自动化提取过程额外投入会使框架复杂得多，收益却有限。
+ *
+ * <p>子类构造时可提供 SQL、参数类型和 DataSource，SQL 通常因子类而异。
+ *
  * @author Rod Johnson
  * @author Thomas Risberg
  * @author Jean-Pierre Pawlak
@@ -41,15 +47,15 @@ import org.springframework.jdbc.core.RowMapper;
 public abstract class MappingSqlQueryWithParameters<T extends @Nullable Object> extends SqlQuery<T> {
 
 	/**
-	 * 允许用作 JavaBean 的构造函数。
+	 * 允许作为 JavaBean 使用的构造器。
 	 */
 	public MappingSqlQueryWithParameters() {
 	}
 
 	/**
-	 * 带有 DataSource 和 SQL 字符串的便捷构造函数。
-	 * @param ds 用于获取连接的数据源
-	 * @param sql 要运行的 SQL
+	 * 便捷构造器，接收 DataSource 和 SQL 字符串。
+	 * @param ds 用于获取连接的 DataSource
+	 * @param sql 要执行的 SQL
 	 */
 	public MappingSqlQueryWithParameters(DataSource ds, String sql) {
 		super(ds, sql);
@@ -57,7 +63,7 @@ public abstract class MappingSqlQueryWithParameters<T extends @Nullable Object> 
 
 
 	/**
-	 * 受保护的抽象方法的实现。这将调用子类的 mapRow() 方法的实现。
+	 * 受保护抽象方法的实现，调用子类的 mapRow() 方法。
 	 */
 	@Override
 	protected RowMapper<T> newRowMapper(@Nullable Object @Nullable [] parameters, @Nullable Map<?, ?> context) {
@@ -65,20 +71,21 @@ public abstract class MappingSqlQueryWithParameters<T extends @Nullable Object> 
 	}
 
 	/**
-	 * 子类必须实现此方法才能将 ResultSet 的每一行转换为结果类型的对象。
-	 * @param rs 我们正在处理的 ResultSet
-	 * @param rowNum 我们要做的行号（从 0 开始）
-	 * @param parameters 到查询（传递给execute()方法）。子类很少对这些感兴趣。如果没有参数可以是{@code null}。
-	 * @param context 传递给execute()方法。如果不需要上下文信息，可以是 {@code null}。
+	 * 子类必须实现本方法，将 ResultSet 的每一行转换为结果类型的对象。
+	 * @param rs 正在遍历的 ResultSet
+	 * @param rowNum 当前行号（从 0 开始）
+	 * @param parameters 查询参数（传入 execute() 方法），子类通常不关心，无参数时可 {@code null}
+	 * @param context 传入 execute() 方法的上下文，无上下文信息时可 {@code null}
 	 * @return 结果类型的对象
-	 * @throws SQLException 如果提取数据时出现错误。子类根本无法捕获 SQLException，只能依靠框架来清理。
+	 * @throws SQLException 提取数据出错时抛出。
+	 * 子类通常无需捕获 SQLException，由框架负责清理。
 	 */
 	protected abstract T mapRow(ResultSet rs, int rowNum, @Nullable Object @Nullable [] parameters, @Nullable Map<?, ?> context)
 			throws SQLException;
 
 
 	/**
-	 * RowMapper 的实现，为每一行调用封闭类的 {@code mapRow} 方法。
+	 * RowMapper 实现，对每一行调用外部类的 {@code mapRow} 方法。
 	 */
 	protected class RowMapperImpl implements RowMapper<T> {
 
@@ -87,7 +94,7 @@ public abstract class MappingSqlQueryWithParameters<T extends @Nullable Object> 
 		private final @Nullable Map<?, ?> context;
 
 		/**
-		 * 使用数组结果。如果我们知道预期有多少结果，效率就会更高。
+		 * 构造 RowMapper 实现，若已知结果数量则更高效。
 		 */
 		public RowMapperImpl(@Nullable Object @Nullable [] parameters, @Nullable Map<?, ?> context) {
 			this.params = parameters;

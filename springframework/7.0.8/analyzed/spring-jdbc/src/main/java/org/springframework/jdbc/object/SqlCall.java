@@ -30,8 +30,11 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.util.Assert;
 
 /**
- * RdbmsOperation 使用 JdbcTemplate 并表示基于 SQL 的调用，例如存储过程或存储函数。
- * <p>根据声明的参数配置Call​​ableStatementCreatorFactory。
+ * 使用 JdbcTemplate 的 RdbmsOperation，表示基于 SQL 的调用，
+ * 如存储过程或存储函数。
+ *
+ * <p>根据声明的参数配置 CallableStatementCreatorFactory。
+ *
  * @author Rod Johnson
  * @author Thomas Risberg
  * @see CallableStatementCreatorFactory
@@ -39,29 +42,31 @@ import org.springframework.util.Assert;
 public abstract class SqlCall extends RdbmsOperation {
 
 	/**
-	 * 标志用于指示此调用是针对函数的，并使用 {? = 调用 get_invoice_count(?)} 语法。
+	 * 标志本调用是否为函数，并使用 {? = call get_invoice_count(?)} 语法。
 	 */
 	private boolean function = false;
 
 	/**
-	 * 用于指示此调用的 sql 应完全按照定义使用的标志。无需添加转义语法和参数占位符。
+	 * 标志本调用的 SQL 是否应原样使用，无需添加转义语法和参数占位符。
 	 */
 	private boolean sqlReadyForUse = false;
 
 	/**
-	 * 调用字符串如 java.sql.CallableStatement 中定义。形式为 {call add_invoice(?, ?, ?)} 或 {? = 如果
-	 * isFunction 设置为 true，则调用 get_invoice_count(?)}。添加每个参数后更新。
+	 * java.sql.CallableStatement 定义的调用字符串。
+	 * 形式为 {call add_invoice(?, ?, ?)} 或 {? = call get_invoice_count(?)}（isFunction 为 true 时）。
+	 * 每添加一个参数后更新。
 	 */
 	private @Nullable String callString;
 
 	/**
-	 * 对象使我们能够根据此类的声明参数有效地创建 CallableStatementCreators。
+	 * 基于本类声明的参数高效创建 CallableStatementCreator 的工厂对象。
 	 */
 	private @Nullable CallableStatementCreatorFactory callableStatementFactory;
 
 
 	/**
-	 * 允许用作 JavaBean 的构造函数。在调用 {@code compile} 方法和使用此对象之前，必须提供数据源、SQL 和任何参数。
+	 * 允许作为 JavaBean 使用的构造器。
+	 * 调用 {@code compile} 方法并使用本对象前，必须提供 DataSource、SQL 及参数。
 	 * @see #setDataSource
 	 * @see #setSql
 	 * @see #compile
@@ -70,8 +75,8 @@ public abstract class SqlCall extends RdbmsOperation {
 	}
 
 	/**
-	 * 使用 SQL 创建一个新的 SqlCall 对象，但不带参数。必须添加参数或不设置任何参数。
-	 * @param ds 从中获取连接的数据源
+	 * 创建带 SQL 但无参数的 SqlCall 对象，需添加参数或确认无参数。
+	 * @param ds 获取连接的 DataSource
 	 * @param sql 要执行的 SQL
 	 */
 	public SqlCall(DataSource ds, String sql) {
@@ -81,28 +86,28 @@ public abstract class SqlCall extends RdbmsOperation {
 
 
 	/**
-	 * 设置此调用是否针对函数。
+	 * 设置本调用是否为函数。
 	 */
 	public void setFunction(boolean function) {
 		this.function = function;
 	}
 
 	/**
-	 * 返回此调用是否针对函数。
+	 * 返回本调用是否为函数。
 	 */
 	public boolean isFunction() {
 		return this.function;
 	}
 
 	/**
-	 * 设置SQL是否可以按原样使用。
+	 * 设置 SQL 是否可直接使用。
 	 */
 	public void setSqlReadyForUse(boolean sqlReadyForUse) {
 		this.sqlReadyForUse = sqlReadyForUse;
 	}
 
 	/**
-	 * 返回SQL是否可以按原样使用。
+	 * 返回 SQL 是否可直接使用。
 	 */
 	public boolean isSqlReadyForUse() {
 		return this.sqlReadyForUse;
@@ -110,7 +115,7 @@ public abstract class SqlCall extends RdbmsOperation {
 
 
 	/**
-	 * 重写方法以根据我们声明的参数配置 CallableStatementCreatorFactory。
+	 * 重写方法，根据声明的参数配置 CallableStatementCreatorFactory。
 	 * @see RdbmsOperation#compileInternal()
 	 */
 	@Override
@@ -155,7 +160,7 @@ public abstract class SqlCall extends RdbmsOperation {
 	}
 
 	/**
-	 * 子类可以重写以对编译做出反应的钩子方法。这个实现什么也不做。
+	 * 子类可覆盖以响应编译的钩子方法，本实现为空操作。
 	 */
 	protected void onCompileInternal() {
 	}
@@ -168,8 +173,8 @@ public abstract class SqlCall extends RdbmsOperation {
 	}
 
 	/**
-	 * 返回 CallableStatementCreator 以使用这些参数执行操作。
-	 * @param inParams 参数。可能是 {@code null}。
+	 * 返回 CallableStatementCreator，以这些参数执行操作。
+	 * @param inParams 参数，可为 {@code null}
 	 */
 	protected CallableStatementCreator newCallableStatementCreator(@Nullable Map<String, ?> inParams) {
 		Assert.state(this.callableStatementFactory != null, "No CallableStatementFactory available");
@@ -177,8 +182,8 @@ public abstract class SqlCall extends RdbmsOperation {
 	}
 
 	/**
-	 * 返回 CallableStatementCreator 以使用从此 ParameterMapper 返回的参数执行操作。
-	 * @param inParamMapper 参数映射器。可能不是 {@code null}。
+	 * 返回 CallableStatementCreator，使用 ParameterMapper 返回的参数执行操作。
+	 * @param inParamMapper 参数映射器，不可为 {@code null}
 	 */
 	protected CallableStatementCreator newCallableStatementCreator(ParameterMapper inParamMapper) {
 		Assert.state(this.callableStatementFactory != null, "No CallableStatementFactory available");

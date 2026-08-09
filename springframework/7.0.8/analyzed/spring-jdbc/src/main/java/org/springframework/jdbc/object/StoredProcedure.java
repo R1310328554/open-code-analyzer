@@ -30,22 +30,25 @@ import org.springframework.jdbc.core.ParameterMapper;
 import org.springframework.jdbc.core.SqlParameter;
 
 /**
- * RDBMS 存储过程的对象抽象的超类。此类是抽象类，旨在让子类提供一个类型化方法来调用，该方法委托给所提供的 {@link #execute} 方法。
- * <p>继承的{@link #setSql sql}属性是RDBMS中存储过程的名称。
+ * RDBMS 存储过程对象抽象的父类。
+ * 本类为抽象类，子类应提供类型化调用方法，委托给 {@link #execute} 方法。
+ *
+ * <p>继承的 {@link #setSql sql} 属性为 RDBMS 中存储过程的名称。
+ *
  * @author Rod Johnson
  * @author Thomas Risberg
  */
 public abstract class StoredProcedure extends SqlCall {
 
 	/**
-	 * 允许用作 bean。
+	 * 允许作为 Bean 使用。
 	 */
 	protected StoredProcedure() {
 	}
 
 	/**
 	 * 为存储过程创建新的对象包装器。
-	 * @param ds 在该对象的整个生命周期中使用的 DataSource 来获取连接
+	 * @param ds 本对象生命周期内用于获取连接的 DataSource
 	 * @param name 数据库中存储过程的名称
 	 */
 	protected StoredProcedure(DataSource ds, String name) {
@@ -65,7 +68,7 @@ public abstract class StoredProcedure extends SqlCall {
 
 
 	/**
-	 * 默认情况下，StoredProcedure 参数映射允许包含实际不用作参数的附加条目。
+	 * StoredProcedure 的参数 Map 默认允许包含未实际用作参数的额外条目。
 	 */
 	@Override
 	protected boolean allowsUnusedParameters() {
@@ -73,11 +76,13 @@ public abstract class StoredProcedure extends SqlCall {
 	}
 
 	/**
-	 * 声明一个参数。 <p> 声明为 {@code SqlParameter} 和 {@code SqlInOutParameter} 的参数将始终用于提供输入值。除此之外，任何声明
-	 * 为 {@code SqlOutParameter} 并提供非空输入值的参数也将用作输入参数。 <b>注意：对declareParameter的调用必须按照它们在数据库的存储过程
-	 * 参数列表中出现的顺序进行。</b> <p>Names纯粹用于帮助映射。
+	 * 声明参数。
+	 * <p>声明为 {@code SqlParameter} 和 {@code SqlInOutParameter} 的参数始终用于提供输入值。
+	 * 此外，声明为 {@code SqlOutParameter} 且提供了非空输入值的参数也会作为输入参数。
+	 * <b>注意：declareParameter 调用顺序必须与数据库存储过程参数列表一致。</b>
+	 * <p>名称仅用于辅助映射。
 	 * @param param 参数对象
-	 * @throws InvalidDataAccessApiUsageException 如果参数没有名称，或者操作已经编译，因此无法进一步配置
+	 * @throws InvalidDataAccessApiUsageException 参数无名称或操作已编译无法继续配置时
 	 */
 	@Override
 	public void declareParameter(SqlParameter param) throws InvalidDataAccessApiUsageException {
@@ -88,9 +93,12 @@ public abstract class StoredProcedure extends SqlCall {
 	}
 
 	/**
-	 * 使用提供的参数值执行存储过程。这是一种方便的方法，其中传入参数值的顺序必须与声明参数的顺序相匹配。
-	 * @param inParams 输入参数的数量可变。输出参数不应包含在此映射中。值为 {@code null} 是合法的，这将使用存储过程的 NULL 参数产生正确的行为。
-	 * @return 输出参数，按参数声明中的名称键入。输出参数将出现在此处，以及调用存储过程后的值。
+	 * 以提供的参数值执行存储过程。
+	 * 便捷方法，传入参数值的顺序必须与声明顺序一致。
+	 * @param inParams 可变数量的输入参数，输出参数不应包含在内；值为 {@code null} 合法，
+	 * 将以 NULL 参数调用存储过程。
+	 * @return 输出参数映射，键为参数声明中的名称，
+	 * 存储过程调用后输出参数的值将出现在此映射中。
 	 */
 	public Map<String, @Nullable Object> execute(Object... inParams) {
 		Map<String, @Nullable Object> paramsToUse = new HashMap<>();
@@ -105,10 +113,11 @@ public abstract class StoredProcedure extends SqlCall {
 	}
 
 	/**
-	 * 执行存储过程。子类应该定义一个强类型执行方法（具有有意义的名称）来调用该方法，填充输入映射并从输出映射中提取类型值。子类执行方法通常将域对象作为参数和返回值。或者，它们可以返回
-	 *  void。
-	 * @param inParams 输入参数的映射，按参数声明中的名称键入。输出参数不需要（但可以）包含在此映射中。映射条目为 {@code null} 是合法的，这将使用存储过程的 NULL 参数产生正确的行为。
-	 * @return 输出参数，按参数声明中的名称键入。输出参数将出现在此处，以及调用存储过程后的值。
+	 * 执行存储过程。子类应定义强类型 execute 方法（有意义的名称）调用本方法，
+	 * 填充输入映射并从输出映射提取类型化值；子类 execute 方法通常接收领域对象并返回值，也可返回 void。
+	 * @param inParams 输入参数映射，键为参数声明中的名称；
+	 * 输出参数可不（但可）包含在内；值为 {@code null} 合法。
+	 * @return 输出参数映射，存储过程调用后输出参数的值将出现在此映射中。
 	 */
 	public Map<String, @Nullable Object> execute(Map<String, ?> inParams) throws DataAccessException {
 		validateParameters(inParams.values().toArray());
@@ -116,10 +125,11 @@ public abstract class StoredProcedure extends SqlCall {
 	}
 
 	/**
-	 * 执行存储过程。子类应该定义一个强类型执行方法（具有有意义的名称）来调用该方法，并传入将填充输入映射的 ParameterMapper。这允许映射数据库特定功能，因为 Param
-	 * eterMapper 可以访问 Connection 对象。执行方法还负责从输出映射中提取类型化值。子类执行方法通常将域对象作为参数和返回值。或者，它们可以返回 void。
-	 * @param inParamMapper 输入参数的映射，按参数声明中的名称键入。输出参数不需要（但可以）包含在此映射中。映射条目为 {@code null} 是合法的，这将使用存储过程的 NULL 参数产生正确的行为。
-	 * @return 输出参数，按参数声明中的名称键入。输出参数将出现在此处，以及调用存储过程后的值。
+	 * 执行存储过程。子类应定义强类型 execute 方法调用本方法，
+	 * 传入 ParameterMapper 填充输入映射；ParameterMapper 可访问 Connection，便于映射数据库特定特性。
+	 * execute 方法还负责从输出映射提取类型化值。
+	 * @param inParamMapper 参数映射器，填充输入参数映射
+	 * @return 输出参数映射，存储过程调用后输出参数的值将出现在此映射中。
 	 */
 	public Map<String, @Nullable Object> execute(ParameterMapper inParamMapper) throws DataAccessException {
 		checkCompiled();

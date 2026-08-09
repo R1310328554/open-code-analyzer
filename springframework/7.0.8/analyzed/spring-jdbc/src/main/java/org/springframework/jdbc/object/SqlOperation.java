@@ -26,29 +26,29 @@ import org.springframework.jdbc.core.namedparam.ParsedSql;
 import org.springframework.util.Assert;
 
 /**
- * 表示基于 SQL 的操作（例如查询或更新）的操作对象，而不是存储过程。
- * <p>根据声明的参数配置{@link org.springframework.jdbc.core.PreparedStatementCreatorFactory}。
+ * 表示基于 SQL 的操作（如查询或更新）的操作对象，区别于存储过程。
+ *
+ * <p>根据声明的参数配置 {@link org.springframework.jdbc.core.PreparedStatementCreatorFactory}。
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  */
 public abstract class SqlOperation extends RdbmsOperation {
 
 	/**
-	 * 对象使我们能够根据此类的声明参数有效地创建PreparedStatementCreators。
+	 * 基于本类声明的参数高效创建 PreparedStatementCreator 的工厂对象。
 	 */
 	private @Nullable PreparedStatementCreatorFactory preparedStatementFactory;
 
-	/**
-	 */
+	/** SQL 语句的解析表示。 */
 	private @Nullable ParsedSql cachedSql;
 
-	/**
-	 */
+	/** 用于锁定已解析 SQL 语句缓存表示的监视器。 */
 	private final Object parsedSqlMonitor = new Object();
 
 
 	/**
-	 * 重写方法以根据我们声明的参数配置PreparedStatementCreatorFactory。
+	 * 重写方法，根据声明的参数配置 PreparedStatementCreatorFactory。
 	 */
 	@Override
 	protected final void compileInternal() {
@@ -64,14 +64,15 @@ public abstract class SqlOperation extends RdbmsOperation {
 	}
 
 	/**
-	 * 子类可以覆盖后处理编译的钩子方法。这个实现什么也不做。
+	 * 子类可覆盖的后处理编译钩子方法，本实现为空操作。
 	 * @see #compileInternal
 	 */
 	protected void onCompileInternal() {
 	}
 
 	/**
-	 * 获取此操作的 SQL 语句的解析表示。 <p>通常用于命名参数解析。
+	 * 获取本操作 SQL 语句的解析表示。
+	 * <p>通常用于命名参数解析。
 	 */
 	protected ParsedSql getParsedSql() {
 		synchronized (this.parsedSqlMonitor) {
@@ -84,8 +85,8 @@ public abstract class SqlOperation extends RdbmsOperation {
 
 
 	/**
-	 * 返回一个PreparedStatementSetter以使用给定参数执行操作。
-	 * @param params 参数数组（可能是 {@code null}）
+	 * 返回 PreparedStatementSetter，以给定参数执行操作。
+	 * @param params 参数数组（可为 {@code null}）
 	 */
 	protected final PreparedStatementSetter newPreparedStatementSetter(@Nullable Object @Nullable [] params) {
 		Assert.state(this.preparedStatementFactory != null, "No PreparedStatementFactory available");
@@ -93,8 +94,8 @@ public abstract class SqlOperation extends RdbmsOperation {
 	}
 
 	/**
-	 * 返回一个PreparedStatementCreator以使用给定参数执行操作。
-	 * @param params 参数数组（可能是 {@code null}）
+	 * 返回 PreparedStatementCreator，以给定参数执行操作。
+	 * @param params 参数数组（可为 {@code null}）
 	 */
 	protected final PreparedStatementCreator newPreparedStatementCreator(@Nullable Object @Nullable [] params) {
 		Assert.state(this.preparedStatementFactory != null, "No PreparedStatementFactory available");
@@ -102,9 +103,9 @@ public abstract class SqlOperation extends RdbmsOperation {
 	}
 
 	/**
-	 * 返回一个PreparedStatementCreator以使用给定参数执行操作。
-	 * @param sqlToUse 要使用的实际 SQL 语句（如果与工厂的不同，例如由于命名参数扩展）
-	 * @param params 参数数组（可能是 {@code null}）
+	 * 返回 PreparedStatementCreator，以给定参数执行操作。
+	 * @param sqlToUse 实际使用的 SQL 语句（若与工厂不同，例如因命名参数展开）
+	 * @param params 参数数组（可为 {@code null}）
 	 */
 	protected final PreparedStatementCreator newPreparedStatementCreator(String sqlToUse, @Nullable Object @Nullable [] params) {
 		Assert.state(this.preparedStatementFactory != null, "No PreparedStatementFactory available");

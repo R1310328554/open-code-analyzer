@@ -25,7 +25,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.Assert;
 
 /**
- * {@link SqlQuery} 的具体变体，可以使用 {@link RowMapper} 进行配置。
+ * {@link SqlQuery} 的具体实现，可通过 {@link RowMapper} 配置结果映射。
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @since 3.0
@@ -35,16 +36,14 @@ import org.springframework.util.Assert;
  */
 public class GenericSqlQuery<T extends @Nullable Object> extends SqlQuery<T> {
 
-	/** 映射器相关状态（`rowMapper`）。 */
 	private @Nullable RowMapper<T> rowMapper;
 
-	/** 映射器相关状态（`rowMapperClass`）。 */
 	@SuppressWarnings("rawtypes")
 	private @Nullable Class<? extends RowMapper> rowMapperClass;
 
 
 	/**
-	 * 设置用于此查询的特定 {@link RowMapper} 实例。
+	 * 设置用于本查询的 {@link RowMapper} 实例。
 	 * @since 4.3.2
 	 */
 	public void setRowMapper(RowMapper<T> rowMapper) {
@@ -52,16 +51,13 @@ public class GenericSqlQuery<T extends @Nullable Object> extends SqlQuery<T> {
 	}
 
 	/**
-	 * 为此查询设置 {@link RowMapper} 类，每次执行创建一个新的 {@link RowMapper} 实例。
+	 * 设置本查询使用的 {@link RowMapper} 类，每次执行时创建新的 {@link RowMapper} 实例。
 	 */
 	@SuppressWarnings("rawtypes")
 	public void setRowMapperClass(Class<? extends RowMapper> rowMapperClass) {
 		this.rowMapperClass = rowMapperClass;
 	}
 
-	/**
-	 * 在…之后回调：Properties Set（方法 `afterPropertiesSet`）。
-	 */
 	@Override
 	public void afterPropertiesSet() {
 		super.afterPropertiesSet();
@@ -70,9 +66,6 @@ public class GenericSqlQuery<T extends @Nullable Object> extends SqlQuery<T> {
 	}
 
 
-	/**
-	 * 方法 `newRowMapper`：完成本类中与「new Row Mapper」相关的职责。
-	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	protected RowMapper<T> newRowMapper(@Nullable Object @Nullable [] parameters, @Nullable Map<?, ?> context) {

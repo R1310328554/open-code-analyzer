@@ -22,7 +22,9 @@ import java.sql.SQLException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * JdbcUtils 类使用的回调接口。该接口的实现执行提取数据库元数据的实际工作，但不需要担心异常处理。 JdbcUtils 类将捕获并正确处理 SQLException。
+ * JdbcUtils 类使用的回调接口。本接口的实现执行提取数据库元数据的实际工作，
+ * 无需担心异常处理——SQLException 将由 JdbcUtils 正确捕获和处理。
+ *
  * @author Thomas Risberg
  * @author Juergen Hoeller
  * @param <T> 结果类型
@@ -32,11 +34,11 @@ import org.jspecify.annotations.Nullable;
 public interface DatabaseMetaDataCallback<T extends @Nullable Object> {
 
 	/**
-	 * 实现必须实现此方法来处理传入的元数据。具体实现选择做什么取决于它。
-	 * @param dbmd 要处理的数据库元数据
-	 * @return 从元数据中提取的结果对象（可以是任意对象，根据实现的需要）
-	 * @throws SQLException 如果获取列值时遇到 SQLException（即无需捕获 SQLException）
-	 * @throws MetaDataAccessException 提取元数据时发生其他故障（例如反射故障）
+	 * 实现必须实现本方法处理传入的元数据，具体处理逻辑由实现决定。
+	 * @param dbmd 要处理的 DatabaseMetaData
+	 * @return 从元数据提取的结果对象（可为实现所需的任意对象）
+	 * @throws SQLException 获取列值时遇到 SQLException（无需自行捕获）
+	 * @throws MetaDataAccessException 提取元数据时其他失败（如反射失败）
 	 */
 	T processMetaData(DatabaseMetaData dbmd) throws SQLException, MetaDataAccessException;
 

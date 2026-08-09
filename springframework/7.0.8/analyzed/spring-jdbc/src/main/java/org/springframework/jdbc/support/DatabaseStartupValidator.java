@@ -31,46 +31,37 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
 
 /**
- * 检查数据库是否已经启动的 Bean。通过“depends-on”从依赖于数据库启动的 bean 进行引用，例如 Hibernate SessionFactory 或直接访问
- * DataSource 的自定义数据访问对象。
- * <p> 用于推迟应用程序初始化直到数据库启动。特别适合等待缓慢启动的 Oracle 数据库。
+ * 检查数据库是否已启动的 Bean。依赖数据库启动的 Bean（如 Hibernate SessionFactory
+ * 或直接访问 DataSource 的自定义 DAO）可通过 "depends-on" 引用本 Bean。
+ *
+ * <p>用于延迟应用初始化直至数据库启动，特别适合等待启动较慢的 Oracle 数据库。
+ *
  * @author Juergen Hoeller
  * @author Marten Deinum
  * @since 18.12.2003
  */
 public class DatabaseStartupValidator implements InitializingBean {
 
-	/**
-	 * 默认间隔。
-	 */
+	/** 默认重试间隔（秒）。 */
 	public static final int DEFAULT_INTERVAL = 1;
 
-	/**
-	 * 默认超时。
-	 */
+	/** 默认超时时间（秒）。 */
 	public static final int DEFAULT_TIMEOUT = 60;
 
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** 来源相关状态（`dataSource`）。 */
 	private @Nullable DataSource dataSource;
 
-	/** `validationQuery`：该类的成员状态。 */
 	private @Nullable String validationQuery;
 
-	/** `DEFAULT_INTERVAL`：该类的成员状态。 */
 	private int interval = DEFAULT_INTERVAL;
 
-	/** `DEFAULT_TIMEOUT`：该类的成员状态。 */
 	private int timeout = DEFAULT_TIMEOUT;
 
 
 	/**
-	 * 设置要验证的数据源。
+	 * 设置要验证的 DataSource。
 	 */
 	public void setDataSource(DataSource dataSource) {
 		this.dataSource = dataSource;
@@ -78,7 +69,7 @@ public class DatabaseStartupValidator implements InitializingBean {
 
 	/**
 	 * 设置用于验证的 SQL 查询字符串。
-	 * @deprecated 支持 JDBC 4.0 连接验证
+	 * @deprecated 建议使用 JDBC 4.0 连接验证
 	 */
 	@Deprecated(since = "5.3")
 	public void setValidationQuery(String validationQuery) {
@@ -86,14 +77,14 @@ public class DatabaseStartupValidator implements InitializingBean {
 	}
 
 	/**
-	 * 设置验证运行之间的间隔（以秒为单位）。默认为 {@value #DEFAULT_INTERVAL}。
+	 * 设置验证重试间隔（秒），默认 {@value #DEFAULT_INTERVAL}。
 	 */
 	public void setInterval(int interval) {
 		this.interval = interval;
 	}
 
 	/**
-	 * 设置超时（以秒为单位），超过该超时将引发致命异常。默认为 {@value #DEFAULT_TIMEOUT}。
+	 * 设置超时时间（秒），超时后抛出致命异常，默认 {@value #DEFAULT_TIMEOUT}。
 	 */
 	public void setTimeout(int timeout) {
 		this.timeout = timeout;
@@ -101,7 +92,8 @@ public class DatabaseStartupValidator implements InitializingBean {
 
 
 	/**
-	 * 检查是否可以在来自指定数据源的连接上执行验证查询，检查之间具有指定的间隔，直到指定的超时。
+	 * 检查指定 DataSource 的连接是否可执行验证查询，
+	 * 在指定间隔重试直至超时。
 	 */
 	@Override
 	public void afterPropertiesSet() {
@@ -172,7 +164,7 @@ public class DatabaseStartupValidator implements InitializingBean {
 			}
 		}
 		catch (InterruptedException ex) {
-			// 重新中断当前线程，以允许其他线程做出反应。
+			// Re-interrupt current thread, to allow other threads to react.
 			Thread.currentThread().interrupt();
 		}
 	}

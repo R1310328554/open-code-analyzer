@@ -26,9 +26,11 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 
 /**
- * {@link org.springframework.jdbc.core.JdbcTemplate} 和其他 JDBC 访问 DAO
- * 帮助程序的基类，定义常见属性，例如数据源和异常转换器。
- * <p> 不适合直接使用。请参阅 {@link org.springframework.jdbc.core.JdbcTemplate}。
+ * {@link org.springframework.jdbc.core.JdbcTemplate} 及其他 JDBC 访问 DAO 辅助类的基类，
+ * 定义 DataSource 和异常翻译器等公共属性。
+ *
+ * <p>不供直接使用，参见 {@link org.springframework.jdbc.core.JdbcTemplate}。
+ *
  * @author Juergen Hoeller
  * @author Sebastien Deleuze
  * @since 28.11.2003
@@ -36,38 +38,34 @@ import org.springframework.util.Assert;
  */
 public abstract class JdbcAccessor implements InitializingBean {
 
-	/**
-	 */
+	/** 供子类使用的 Logger。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** 来源相关状态（`dataSource`）。 */
 	private @Nullable DataSource dataSource;
 
-	/** 异常相关状态（`exceptionTranslator`）。 */
 	private volatile @Nullable SQLExceptionTranslator exceptionTranslator;
 
-	/** `true`：该类的成员状态。 */
 	private boolean lazyInit = true;
 
 
 	/**
-	 * 设置从中获取连接的 JDBC 数据源。
+	 * 设置用于获取连接的 JDBC DataSource。
 	 */
 	public void setDataSource(@Nullable DataSource dataSource) {
 		this.dataSource = dataSource;
 	}
 
 	/**
-	 * 返回此模板使用的数据源。
+	 * 返回本模板使用的 DataSource。
 	 */
 	public @Nullable DataSource getDataSource() {
 		return this.dataSource;
 	}
 
 	/**
-	 * 获取实际使用的DataSource。
-	 * @return 数据源（绝不是 {@code null}）
-	 * @throws IllegalStateException 如果没有设置数据源
+	 * 获取实际使用的 DataSource。
+	 * @return DataSource（永不为 {@code null}）
+	 * @throws IllegalStateException 未设置 DataSource 时
 	 * @since 5.0
 	 */
 	protected DataSource obtainDataSource() {
@@ -77,10 +75,9 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * 指定此访问器使用的 {@code DataSource} 的数据库产品名称。这允许初始化 {@link
-	 * SQLErrorCodeSQLExceptionTranslator}，而无需从 {@code DataSource} 获取 {@code Connection}
-	 * 来获取元数据。
-	 * @param dbName 标识错误代码条目的数据库产品名称
+	 * 指定本访问器使用的 {@code DataSource} 的数据库产品名称。
+	 * 无需从 {@code DataSource} 获取 {@code Connection} 读取元数据即可初始化 {@link SQLErrorCodeSQLExceptionTranslator}。
+	 * @param dbName 标识错误码条目的数据库产品名称
 	 * @see #setExceptionTranslator
 	 * @see SQLErrorCodeSQLExceptionTranslator#setDatabaseProductName
 	 * @see java.sql.DatabaseMetaData#getDatabaseProductName()
@@ -95,8 +92,9 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * 为此实例设置异常转换器。如果在类路径的根目录中找到用户提供的 `sql-error-codes.xml` 文件，则默认使用 <p>A {@link SQLErrorCodeSQ
-	 * LExceptionTranslator}。否则，从 6.0 开始，{@link SQLExceptionSubclassTranslator} 将作为默认转换器。
+	 * 设置本实例的异常翻译器。
+	 * <p>若类路径根目录存在用户提供的 `sql-error-codes.xml`，默认使用 {@link SQLErrorCodeSQLExceptionTranslator}；
+	 * 否则自 6.0 起默认使用 {@link SQLExceptionSubclassTranslator}。
 	 * @see org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator
 	 * @see org.springframework.jdbc.support.SQLExceptionSubclassTranslator
 	 */
@@ -105,7 +103,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * 返回用于此实例的异常转换器，并在必要时创建默认值。
+	 * 返回本实例使用的异常翻译器，必要时创建默认翻译器。
 	 * @see #setExceptionTranslator
 	 */
 	public SQLExceptionTranslator getExceptionTranslator() {
@@ -129,9 +127,9 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * 设置是否在第一次遇到 SQLException 时延迟初始化此访问器的
-	 * SQLExceptionTranslator。默认为“true”；可以切换为“false”以在启动时进行初始化。 <p>早期初始化仅在调用 {@code
-	 * afterPropertiesSet()} 时适用。
+	 * 设置是否在首次遇到 SQLException 时延迟初始化 SQLExceptionTranslator，默认 "true"；
+	 * 设为 "false" 可在启动时初始化。
+	 * <p>提前初始化仅在调用 {@code afterPropertiesSet()} 时生效。
 	 * @see #getExceptionTranslator()
 	 * @see #afterPropertiesSet()
 	 */
@@ -140,7 +138,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * 返回是否延迟初始化此访问器的 SQLExceptionTranslator。
+	 * 返回是否延迟初始化 SQLExceptionTranslator。
 	 * @see #getExceptionTranslator()
 	 */
 	public boolean isLazyInit() {
@@ -148,7 +146,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 	}
 
 	/**
-	 * 如果需要，请立即初始化异常转换器，如果没有设置，则为指定的数据源创建一个默认转换器。
+	 * 按需提前初始化异常翻译器，未设置时为指定 DataSource 创建默认翻译器。
 	 */
 	@Override
 	public void afterPropertiesSet() {

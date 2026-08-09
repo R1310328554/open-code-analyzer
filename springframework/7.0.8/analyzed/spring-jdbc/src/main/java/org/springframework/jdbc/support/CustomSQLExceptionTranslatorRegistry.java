@@ -24,21 +24,19 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 与特定数据库关联的自定义 {@link SQLExceptionTranslator}
- * 实例的注册表，允许基于名为“sql-error-codes.xml”的配置文件中包含的值覆盖翻译。
+ * 与特定数据库关联的自定义 {@link SQLExceptionTranslator} 实例注册表，
+ * 允许基于 "sql-error-codes.xml" 配置文件中的值覆盖翻译。
+ *
  * @author Thomas Risberg
  * @since 3.1.1
  * @see SQLErrorCodesFactory
  */
 public final class CustomSQLExceptionTranslatorRegistry {
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
 	private static final Log logger = LogFactory.getLog(CustomSQLExceptionTranslatorRegistry.class);
 
 	/**
-	 * 跟踪单个实例，以便我们可以将其返回给请求它的类。
+	 * 跟踪单例实例，以便返回给请求的类。
 	 */
 	private static final CustomSQLExceptionTranslatorRegistry instance = new CustomSQLExceptionTranslatorRegistry();
 
@@ -52,21 +50,22 @@ public final class CustomSQLExceptionTranslatorRegistry {
 
 
 	/**
-	 * 映射注册表以保存自定义翻译器特定数据库。键是 {@link org.springframework.jdbc.support.SQLErrorCodesFactory} 中定义
-	 * 的数据库产品名称。
+	 * 保存特定数据库自定义翻译器的映射注册表。
+	 * 键为 {@link org.springframework.jdbc.support.SQLErrorCodesFactory} 中定义的数据库产品名称。
 	 */
 	private final Map<String, SQLExceptionTranslator> translatorMap = new HashMap<>();
 
 
 	/**
-	 * 创建 {@link CustomSQLExceptionTranslatorRegistry} 类的新实例。 <p>不公开以强制实施单例设计模式。
+	 * 创建 {@link CustomSQLExceptionTranslatorRegistry} 新实例。
+	 * <p>非 public，以强制单例设计模式。
 	 */
 	private CustomSQLExceptionTranslatorRegistry() {
 	}
 
 
 	/**
-	 * 为指定的数据库名称注册新的自定义转换器。
+	 * 为指定数据库名称注册新的自定义翻译器。
 	 * @param dbName 数据库名称
 	 * @param translator 自定义翻译器
 	 */
@@ -87,7 +86,7 @@ public final class CustomSQLExceptionTranslatorRegistry {
 	/**
 	 * 查找指定数据库的自定义翻译器。
 	 * @param dbName 数据库名称
-	 * @return 自定义翻译器，或 {@code null}（如果未找到）
+	 * @return 自定义翻译器，未找到时 {@code null}
 	 */
 	public @Nullable SQLExceptionTranslator findTranslatorForDatabase(String dbName) {
 		return this.translatorMap.get(dbName);
