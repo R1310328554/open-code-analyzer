@@ -1,11 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:24:48Z",
-  "files": [
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/index/IndexStoreService.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExt.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExtImpl.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/admin/MQAdminExt.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 0,
-  "done": 1484
+  "done": 1488
 }

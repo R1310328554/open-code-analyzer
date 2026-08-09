@@ -1482,3 +1482,7 @@ tieredstore/src/main/java/org/apache/rocketmq/tieredstore/TieredMessageStore.jav
 tieredstore/src/main/java/org/apache/rocketmq/tieredstore/core/MessageStoreFetcherImpl.java
 tieredstore/src/main/java/org/apache/rocketmq/tieredstore/file/FlatMessageFile.java
 tieredstore/src/main/java/org/apache/rocketmq/tieredstore/index/IndexStoreFile.java
+tieredstore/src/main/java/org/apache/rocketmq/tieredstore/index/IndexStoreService.java
+tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExt.java
+tools/src/main/java/org/apache/rocketmq/tools/admin/DefaultMQAdminExtImpl.java
+tools/src/main/java/org/apache/rocketmq/tools/admin/MQAdminExt.java
