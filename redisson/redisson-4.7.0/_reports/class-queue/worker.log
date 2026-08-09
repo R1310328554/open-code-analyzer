@@ -2303,3 +2303,18 @@
 2026-08-09T21:15:34Z DONE redisson/src/main/java/org/redisson/client/protocol/RedisCommand.java wave76b [15:30]
 2026-08-09T21:15:34Z DONE redisson/src/main/java/org/redisson/client/protocol/RedisCommands.java wave76b [15:30]
 2026-08-09T21:15:34Z DONE redisson/src/main/java/org/redisson/client/protocol/RedisStrictCommand.java wave76b [15:30]
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/codec/LongCodec.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/codec/StringCodec.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/codec/TDigestDoubleCodec.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/BaseConnectionHandler.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/CommandBatchEncoder.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/CommandDecoder.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/CommandEncoder.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/CommandPubSubDecoder.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/CommandsQueue.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/CommandsQueuePubSub.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/ConnectionWatchdog.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/ErrorsLoggingHandler.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/PingConnectionHandler.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/PubSubEntry.java wave76a [0:15] repair after 76b wipe
+2026-08-09T21:16:07Z DONE redisson/src/main/java/org/redisson/client/handler/PubSubKey.java wave76a [0:15] repair after 76b wipe
