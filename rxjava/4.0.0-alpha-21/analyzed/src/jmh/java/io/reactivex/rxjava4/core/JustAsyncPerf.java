@@ -21,6 +21,10 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.internal.schedulers.SingleScheduler;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：just(1) 经 subscribeOn/observeOn/双调度管道
+ * 在 Flowable、Observable、Single、Completable、Maybe 上的异步吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -60,6 +64,7 @@ public class JustAsyncPerf {
 
     Maybe<Integer> pipelineMaybe;
 
+    /** 为各响应式类型构造 subscribeOn、observeOn 与 pipeline 链路。 */
     @Setup
     public void setup() {
 
@@ -106,6 +111,7 @@ public class JustAsyncPerf {
         pipelineMaybe = Maybe.just(1).subscribeOn(s).observeOn(s2);
     }
 
+    /** Flowable subscribeOn 基准。 */
     @Benchmark
     public void subscribeOnFlowable(Blackhole bh) {
         subscribeOnFlowable.subscribeWith(new PerfAsyncConsumer(bh)).await(1);
@@ -176,6 +182,7 @@ public class JustAsyncPerf {
         subscribeOnMaybe.subscribeWith(new PerfAsyncConsumer(bh)).await(1);
     }
 
+    /** Maybe subscribeOn+observeOn 管道基准。 */
     @Benchmark
     public void pipelineMaybe(Blackhole bh) {
         pipelineMaybe.subscribeWith(new PerfAsyncConsumer(bh)).await(1);

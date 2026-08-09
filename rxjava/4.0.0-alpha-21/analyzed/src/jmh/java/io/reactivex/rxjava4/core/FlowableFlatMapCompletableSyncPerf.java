@@ -22,6 +22,10 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.core.config.*;
 import io.reactivex.rxjava4.internal.functions.Functions;
 
+/**
+ * JMH 基准：Flowable flatMapCompletable 与 flatMap(Completable.toFlowable)
+ * 在同步 Completable.complete 下的吞吐对比。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -41,6 +45,7 @@ public class FlowableFlatMapCompletableSyncPerf {
 
     Flowable<Object> flatMap;
 
+    /** 按 items/maxConcurrency 构造同步 flatMapCompletable 与 flatMap 变体。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[items];
@@ -53,11 +58,13 @@ public class FlowableFlatMapCompletableSyncPerf {
                 .flatMap(Functions.justFunction(Completable.complete().toFlowable()), new StandardConcurrentBufferedConfig(false, maxConcurrency));
     }
 
+    /** flatMap(Completable.toFlowable) 同步基准。 */
     @Benchmark
     public Object flatMap(Blackhole bh) {
         return flatMap.subscribeWith(new PerfConsumer(bh));
     }
 
+    /** flatMapCompletable 同步基准。 */
     @Benchmark
     public Object flatMapCompletable(Blackhole bh) {
         return flatMapCompletable.subscribeWith(new PerfConsumer(bh));

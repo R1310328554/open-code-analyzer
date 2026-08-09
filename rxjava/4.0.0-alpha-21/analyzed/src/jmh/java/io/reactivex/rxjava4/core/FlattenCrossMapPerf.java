@@ -21,6 +21,10 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：fromArray.flatMapIterable 展开大 Iterable 时
+ * Flowable 与 Observable 的吞吐对比（交叉映射场景）。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -36,6 +40,7 @@ public class FlattenCrossMapPerf {
 
     Observable<Integer> observable;
 
+    /** 按 times 构造外层数组与内层 Iterable，并建立 flatMapIterable 链路。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
@@ -51,11 +56,13 @@ public class FlattenCrossMapPerf {
         observable = Observable.fromArray(array).flatMapIterable((Function<Integer, Iterable<Integer>>) _ -> list);
     }
 
+    /** Flowable flatMapIterable 基准。 */
     @Benchmark
     public void flowable(Blackhole bh) {
         flowable.subscribe(new PerfConsumer(bh));
     }
 
+    /** Observable flatMapIterable 基准。 */
     @Benchmark
     public void observable(Blackhole bh) {
         observable.subscribe(new PerfConsumer(bh));

@@ -19,10 +19,14 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import io.reactivex.rxjava4.disposables.Disposable;
 
+/**
+ * 带 CountDownLatch 的 SingleObserver：终止时将结果写入 Blackhole 并释放 latch。
+ */
 @SuppressWarnings("exports")
 public final class LatchedSingleObserver<T> implements SingleObserver<T> {
     final CountDownLatch cdl;
     final Blackhole bh;
+    /** @param bh JMH Blackhole，用于消费 onSuccess 值。 */
     public LatchedSingleObserver(Blackhole bh) {
         this.bh = bh;
         this.cdl = new CountDownLatch(1);
@@ -33,12 +37,14 @@ public final class LatchedSingleObserver<T> implements SingleObserver<T> {
 
     }
 
+    /** 消费成功值并 countDown latch。 */
     @Override
     public void onSuccess(T value) {
         bh.consume(value);
         cdl.countDown();
     }
 
+    /** 打印错误并 countDown latch。 */
     @Override
     public void onError(Throwable e) {
         e.printStackTrace();

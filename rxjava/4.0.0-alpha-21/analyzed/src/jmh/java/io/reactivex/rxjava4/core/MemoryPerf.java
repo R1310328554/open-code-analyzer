@@ -26,17 +26,19 @@ import io.reactivex.rxjava4.schedulers.Schedulers;
 import io.reactivex.rxjava4.subjects.*;
 
 /**
- * Measure various prepared flows about their memory usage and print the result
- * in a JMH compatible format; run {@link #main(String[])}.
+ * 内存占用探测：实例化各类 Flowable/Observable 链路并估算堆增量，
+ * 以 JMH 兼容格式输出；运行 {@link #main(String[])}。
  */
 public final class MemoryPerf {
 
     private MemoryPerf() { }
 
+    /** 读取当前堆已用字节数。 */
     static long memoryUse() {
         return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
     }
 
+    /** 最小 FlowableSubscriber，仅保存 Subscription 引用。 */
     static final class MyRx2Subscriber implements FlowableSubscriber<Object> {
 
         Subscription upstream;
@@ -62,6 +64,7 @@ public final class MemoryPerf {
         }
     }
 
+    /** 多类型 Observer 桩：保存 Disposable 以测量订阅对象内存。 */
     static final class MyRx2Observer implements io.reactivex.rxjava4.core.Observer<Object>, io.reactivex.rxjava4.core.SingleObserver<Object>,
     io.reactivex.rxjava4.core.MaybeObserver<Object>, io.reactivex.rxjava4.core.CompletableObserver {
 
@@ -96,6 +99,7 @@ public final class MemoryPerf {
         checkMemory(item, name, typeLib, 1000000);
     }
 
+    /** 批量创建 n 个实例并打印 name/typeLib 对应的 MB 增量。 */
     static <U> void checkMemory(Callable<U> item, String name, String typeLib, int n) throws Exception {
         // make sure classes are initialized
         item.call();
@@ -139,6 +143,7 @@ public final class MemoryPerf {
         Thread.sleep(100);
     }
 
+    /** 遍历 Observable/Flowable 工厂、算子与 Subject/Processor 的内存场景。 */
     public static void main(String[] args) throws Exception {
 
         System.out.println("Benchmark  (lib-type)   Mode  Cnt       Score       Error  Units");

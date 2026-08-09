@@ -21,7 +21,8 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 
 /**
- * A multi-type asynchronous consumer.
+ * 多类型异步消费者：实现 Flowable/Observer/Single/Completable/Maybe 接口，
+ * 终止时 countDown CountDownLatch。
  */
 @SuppressWarnings("exports")
 public final class PerfAsyncConsumer extends CountDownLatch implements FlowableSubscriber<Object>, Observer<Object>,
@@ -29,6 +30,7 @@ SingleObserver<Object>, CompletableObserver, MaybeObserver<Object> {
 
     final Blackhole bh;
 
+    /** @param bh JMH Blackhole，消费 onNext/onSuccess 值。 */
     public PerfAsyncConsumer(Blackhole bh) {
         super(1);
         this.bh = bh;
@@ -67,8 +69,8 @@ SingleObserver<Object>, CompletableObserver, MaybeObserver<Object> {
     }
 
     /**
-     * Wait for the terminal signal.
-     * @param count if less than 1001, a spin-wait is used
+     * 等待终止信号。
+     * @param count 小于 1001 时使用自旋等待
      * @return this
      */
     public PerfAsyncConsumer await(int count) {

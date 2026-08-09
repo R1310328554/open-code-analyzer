@@ -21,6 +21,10 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：fromArray.flatMapIterable 展开固定小 Iterable（1、2）时
+ * Flowable 与 Observable 的吞吐对比。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -36,6 +40,7 @@ public class FlattenRangePerf {
 
     Observable<Integer> observable;
 
+    /** 按 times 构造 flatMapIterable(1,2) 链路。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
@@ -48,11 +53,13 @@ public class FlattenRangePerf {
         observable = Observable.fromArray(array).flatMapIterable((Function<Integer, Iterable<Integer>>) _ -> list);
     }
 
+    /** Flowable flatMapIterable 基准。 */
     @Benchmark
     public void flowable(Blackhole bh) {
         flowable.subscribe(new PerfConsumer(bh));
     }
 
+    /** Observable flatMapIterable 基准。 */
     @Benchmark
     public void observable(Blackhole bh) {
         observable.subscribe(new PerfConsumer(bh));

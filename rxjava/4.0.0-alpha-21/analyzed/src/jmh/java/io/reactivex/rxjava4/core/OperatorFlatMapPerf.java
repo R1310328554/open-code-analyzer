@@ -21,11 +21,15 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：Flowable flatMap 同步/异步透传、双层嵌套等算子场景吞吐。
+ */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Thread)
 public class OperatorFlatMapPerf {
 
+    /** JMH 状态：继承递增整数输入，size 参数化元素个数。 */
     @State(Scope.Thread)
     public static class Input extends InputWithIncrementingInteger {
 
@@ -39,11 +43,13 @@ public class OperatorFlatMapPerf {
 
     }
 
+    /** 同步 flatMap(Flowable::just) 透传基准。 */
     @Benchmark
     public void flatMapIntPassthruSync(Input input) {
         input.flowable.flatMap((Function<Integer, Publisher<Integer>>) Flowable::just).subscribe(input.newSubscriber());
     }
 
+    /** 异步 flatMap(subscribeOn) 透传基准。 */
     @Benchmark
     public void flatMapIntPassthruAsync(Input input) throws InterruptedException {
         PerfSubscriber latchedObserver = input.newLatchedObserver();
@@ -55,6 +61,7 @@ public class OperatorFlatMapPerf {
         }
     }
 
+    /** 双层 flatMap 嵌套同步基准。 */
     @Benchmark
     public void flatMapTwoNestedSync(final Input input) {
         Flowable.range(1, 2).flatMap((Function<Integer, Publisher<Integer>>) _ -> input.flowable).subscribe(input.newSubscriber());

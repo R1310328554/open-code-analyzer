@@ -21,12 +21,16 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：Flowable.merge / mergeArray 在多种嵌套与并发配置下的吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 public class OperatorMergePerf {
 
     // flatMap
+    /** range.flatMap(just) 后 merge 单元素流基准。 */
     @Benchmark
     public void oneStreamOfNthatMergesIn1(final InputMillion input) throws InterruptedException {
         Flowable<Flowable<Integer>> os = Flowable.range(1, input.size)
@@ -67,6 +71,7 @@ public class OperatorMergePerf {
         }
     }
 
+    /** N 路异步 range 流 merge 基准。 */
     @Benchmark
     public void mergeNAsyncStreamsOfN(final InputThousand input) throws InterruptedException {
         Flowable<Flowable<Integer>> os = input.flowable.map(_ -> Flowable.range(0, input.size).subscribeOn(Schedulers.computation()));
@@ -102,6 +107,7 @@ public class OperatorMergePerf {
         }
     }
 
+    /** merge 输入：预构造 size 个 Flowable.just 列表。 */
     @State(Scope.Thread)
     public static class InputForMergeN {
         @Param({ "1", "100", "1000" })
@@ -125,6 +131,7 @@ public class OperatorMergePerf {
         }
     }
 
+    /** 百万级递增整数输入状态。 */
     @State(Scope.Thread)
     public static class InputMillion extends InputWithIncrementingInteger {
 

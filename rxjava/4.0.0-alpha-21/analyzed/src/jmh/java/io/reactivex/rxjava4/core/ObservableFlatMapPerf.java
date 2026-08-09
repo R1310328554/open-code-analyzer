@@ -21,6 +21,9 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：Observable fromArray.flatMap 嵌套内层 fromArray 的吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -34,6 +37,7 @@ public class ObservableFlatMapPerf {
 
     Observable<Integer> source;
 
+    /** 按 count 构造外层与内层数组并建立 flatMap 链路。 */
     @Setup
     public void setup() {
         int d = 1000000 / count;
@@ -50,6 +54,7 @@ public class ObservableFlatMapPerf {
         source = outer.flatMap((Function<Integer, Observable<Integer>>) _ -> inner);
     }
 
+    /** flatMap 嵌套 range 基准。 */
     @Benchmark
     public void flatMapXRange(Blackhole bh) {
         source.subscribe(new PerfObserver(bh));

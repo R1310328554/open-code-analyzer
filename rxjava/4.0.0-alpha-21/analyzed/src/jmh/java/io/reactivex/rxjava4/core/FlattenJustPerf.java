@@ -21,6 +21,10 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：fromArray.flatMapIterable 映射为单元素 Iterable 时
+ * Flowable 与 Observable 的吞吐对比。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -36,6 +40,7 @@ public class FlattenJustPerf {
 
     Observable<Integer> observable;
 
+    /** 按 times 填充数组并构造 flatMapIterable(singletonList) 链路。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
@@ -48,11 +53,13 @@ public class FlattenJustPerf {
         observable = Observable.fromArray(array).flatMapIterable((Function<Integer, Iterable<Integer>>) _ -> singletonList);
     }
 
+    /** Flowable flatMapIterable 基准。 */
     @Benchmark
     public void flowable(Blackhole bh) {
         flowable.subscribe(new PerfConsumer(bh));
     }
 
+    /** Observable flatMapIterable 基准。 */
     @Benchmark
     public void observable(Blackhole bh) {
         observable.subscribe(new PerfConsumer(bh));

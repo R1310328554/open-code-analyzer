@@ -23,10 +23,12 @@ import io.reactivex.rxjava4.internal.subscriptions.EmptySubscription;
 import io.reactivex.rxjava4.subscribers.DefaultSubscriber;
 
 /**
- * Exposes an Observable and Observer that increments n Integers and consumes them in a Blackhole.
+ * JMH 输入基类：提供递增整数 Iterable、Flowable 与 firehose Publisher，
+ * 供 flatMap/merge 等算子基准复用。
  */
 @SuppressWarnings("exports")
 public abstract class InputWithIncrementingInteger {
+    /** 将 onNext 整数消费到 Blackhole 的默认订阅者。 */
     final class DefaultSubscriberImpl extends DefaultSubscriber<Integer> {
         @Override
         public void onComplete() {
@@ -44,6 +46,7 @@ public abstract class InputWithIncrementingInteger {
         }
     }
 
+    /** 按需生成 0..size-1 递增整数的 Iterable。 */
     record IncrementingIterable(int size) implements Iterable<Integer> {
 
             final class IncrementingIterator implements Iterator<Integer> {
@@ -72,6 +75,7 @@ public abstract class InputWithIncrementingInteger {
             }
         }
 
+    /** 同步推送 0..size-1 的 Reactive Streams Publisher。 */
     record IncrementingPublisher(int size) implements Publisher<Integer> {
 
         @Override
@@ -91,6 +95,7 @@ public abstract class InputWithIncrementingInteger {
 
     public abstract int getSize();
 
+    /** 按 getSize() 初始化 range、unsafeCreate 与 iterable 输入源。 */
     @Setup
     public void setup(final Blackhole bh) {
         this.bh = bh;
@@ -102,10 +107,12 @@ public abstract class InputWithIncrementingInteger {
 
     }
 
+    /** 创建带 CountDownLatch 的 PerfSubscriber。 */
     public PerfSubscriber newLatchedObserver() {
         return new PerfSubscriber(bh);
     }
 
+    /** 创建消费到 Blackhole 的 FlowableSubscriber。 */
     public FlowableSubscriber<Integer> newSubscriber() {
         return new DefaultSubscriberImpl();
     }

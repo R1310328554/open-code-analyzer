@@ -24,6 +24,10 @@ import io.reactivex.rxjava4.functions.Action;
 import io.reactivex.rxjava4.internal.functions.Functions;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：Flowable flatMapCompletable 与 flatMap(Completable.toFlowable)
+ * 在 subscribeOn 异步 Completable 下的吞吐对比。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -46,11 +50,13 @@ public class FlowableFlatMapCompletableAsyncPerf implements Action {
 
     Flowable<Object> flatMap;
 
+    /** Action 回调：模拟 inner Completable 的 CPU 工作量。 */
     @Override
     public void run() {
         Blackhole.consumeCPU(work);
     }
 
+    /** 按 items/maxConcurrency 构造异步 flatMapCompletable 与 flatMap 变体。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[items];
@@ -70,6 +76,7 @@ public class FlowableFlatMapCompletableAsyncPerf implements Action {
         return flatMap.subscribeWith(new PerfAsyncConsumer(bh)).await(items);
     }
 
+    /** flatMapCompletable 异步基准。 */
     @Benchmark
     public Object flatMapCompletable(Blackhole bh) {
         return flatMapCompletable.subscribeWith(new PerfAsyncConsumer(bh)).await(items);

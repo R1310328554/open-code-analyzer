@@ -19,7 +19,7 @@ import org.openjdk.jmh.infra.Blackhole;
 import static java.util.concurrent.Flow.*;
 
 /**
- * Performance subscriber with a one-time request from the upstream.
+ * 带有限 request 的性能订阅者：onSubscribe 时仅向上游请求指定数量。
  */
 @SuppressWarnings("exports")
 public class PerfBoundedSubscriber extends CountDownLatch implements FlowableSubscriber<Object> {
@@ -28,12 +28,14 @@ public class PerfBoundedSubscriber extends CountDownLatch implements FlowableSub
 
     final long request;
 
+    /** @param bh Blackhole；@param request 首次 request 数量。 */
     public PerfBoundedSubscriber(Blackhole bh, long request) {
         super(1);
         this.bh = bh;
         this.request = request;
     }
 
+    /** 向上游请求有限数量。 */
     @Override
     public void onSubscribe(Subscription s) {
         s.request(request);

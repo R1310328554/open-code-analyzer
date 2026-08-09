@@ -19,7 +19,8 @@ import static java.util.concurrent.Flow.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 
 /**
- * A multi-type synchronous consumer.
+ * 多类型同步消费者：实现 Flowable/Observer/Single/Completable/Maybe 接口，
+ * 立即 request(Long.MAX_VALUE) 并消费事件到 Blackhole。
  */
 @SuppressWarnings("exports")
 public final class PerfConsumer implements FlowableSubscriber<Object>, Observer<Object>,
@@ -27,6 +28,7 @@ SingleObserver<Object>, CompletableObserver, MaybeObserver<Object> {
 
     final Blackhole bh;
 
+    /** @param bh JMH Blackhole。 */
     public PerfConsumer(Blackhole bh) {
         this.bh = bh;
     }
@@ -40,6 +42,7 @@ SingleObserver<Object>, CompletableObserver, MaybeObserver<Object> {
     public void onSubscribe(Disposable d) {
     }
 
+    /** 请求无界背压。 */
     @Override
     public void onSubscribe(Subscription s) {
         s.request(Long.MAX_VALUE);
