@@ -18,14 +18,14 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.DecoderException;
 
 /**
- * Thrown by {@link HttpObjectDecoder#handleTransferEncodingChunkedWithContentLength(HttpMessage)} by default.
+ * 同一消息同时含 {@code Transfer-Encoding} 与 {@code Content-Length} 时抛出。
  * <p>
- * The HTTP/1.1 specification, RFC 9112, disallow senders from including both {@code Tranfer-Encoding} and
- * {@code Content-Length headers in the same message, and permits servers to reject such requests.
+ * RFC 9112 禁止发送方在同一报文中同时携带两者，服务器可拒绝此类请求。
+ * 默认由 {@link HttpObjectDecoder#handleTransferEncodingChunkedWithContentLength(HttpMessage)} 抛出。
  */
 public final class ContentLengthNotAllowedException extends DecoderException {
     /**
-     * Create a new instance with the given message.
+     * 使用指定消息创建异常实例。
      * @param message The exception message.
      */
     public ContentLengthNotAllowedException(String message) {

@@ -18,34 +18,28 @@ package io.netty.handler.codec.haproxy;
 import io.netty.handler.codec.DecoderException;
 
 /**
- * A {@link DecoderException} which is thrown when an invalid HAProxy proxy protocol header is encountered
+ * 遇到无效 HAProxy PROXY 协议头部时抛出的 {@link DecoderException}。
+ * <p>
+ * 解码器在协议格式错误、长度超限等情况下抛出，并通常伴随连接关闭。
  */
 public class HAProxyProtocolException extends DecoderException {
 
     private static final long serialVersionUID = 713710864325167351L;
 
-    /**
-     * Creates a new instance
-     */
+    /** 创建无消息与原因的异常实例。 */
     public HAProxyProtocolException() { }
 
-    /**
-     * Creates a new instance
-     */
+    /** 创建带消息与原因的异常实例。 */
     public HAProxyProtocolException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    /**
-     * Creates a new instance
-     */
+    /** 创建带消息的异常实例。 */
     public HAProxyProtocolException(String message) {
         super(message);
     }
 
-    /**
-     * Creates a new instance
-     */
+    /** 创建带原因的异常实例。 */
     public HAProxyProtocolException(Throwable cause) {
         super(cause);
     }

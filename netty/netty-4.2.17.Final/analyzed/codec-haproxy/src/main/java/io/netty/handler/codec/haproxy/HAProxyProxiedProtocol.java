@@ -18,45 +18,31 @@ package io.netty.handler.codec.haproxy;
 import static io.netty.handler.codec.haproxy.HAProxyConstants.*;
 
 /**
- * A protocol proxied by HAProxy which is represented by its transport protocol and address family.
+ * HAProxy 代理的底层协议，由传输协议与地址族共同表示。
+ * <p>
+ * 含 TCP4/6、UDP4/6、UNIX 流/报文及 UNKNOWN 等组合。
  */
 public enum HAProxyProxiedProtocol {
-    /**
-     * The UNKNOWN represents a connection which was forwarded for an unknown protocol and an unknown address family.
-     */
+    /** 未知协议与地址族的转发连接。 */
     UNKNOWN(TPAF_UNKNOWN_BYTE, AddressFamily.AF_UNSPEC, TransportProtocol.UNSPEC),
-    /**
-     * The TCP4 represents a connection which was forwarded for an IPv4 client over TCP.
-     */
+    /** IPv4 客户端经 TCP 转发的连接。 */
     TCP4(TPAF_TCP4_BYTE, AddressFamily.AF_IPv4, TransportProtocol.STREAM),
-    /**
-     * The TCP6 represents a connection which was forwarded for an IPv6 client over TCP.
-     */
+    /** IPv6 客户端经 TCP 转发的连接。 */
     TCP6(TPAF_TCP6_BYTE, AddressFamily.AF_IPv6, TransportProtocol.STREAM),
-    /**
-     * The UDP4 represents a connection which was forwarded for an IPv4 client over UDP.
-     */
+    /** IPv4 客户端经 UDP 转发的连接。 */
     UDP4(TPAF_UDP4_BYTE, AddressFamily.AF_IPv4, TransportProtocol.DGRAM),
-    /**
-     * The UDP6 represents a connection which was forwarded for an IPv6 client over UDP.
-     */
+    /** IPv6 客户端经 UDP 转发的连接。 */
     UDP6(TPAF_UDP6_BYTE, AddressFamily.AF_IPv6, TransportProtocol.DGRAM),
-    /**
-     * The UNIX_STREAM represents a connection which was forwarded for a UNIX stream socket.
-     */
+    /** UNIX 流式套接字转发的连接。 */
     UNIX_STREAM(TPAF_UNIX_STREAM_BYTE, AddressFamily.AF_UNIX, TransportProtocol.STREAM),
-    /**
-     * The UNIX_DGRAM represents a connection which was forwarded for a UNIX datagram socket.
-     */
+    /** UNIX 数据报套接字转发的连接。 */
     UNIX_DGRAM(TPAF_UNIX_DGRAM_BYTE, AddressFamily.AF_UNIX, TransportProtocol.DGRAM);
 
     private final byte byteValue;
     private final AddressFamily addressFamily;
     private final TransportProtocol transportProtocol;
 
-    /**
-     * Creates a new instance.
-     */
+    /** 绑定规范字节值及地址族、传输协议。 */
     HAProxyProxiedProtocol(
             byte byteValue,
             AddressFamily addressFamily,
@@ -68,7 +54,7 @@ public enum HAProxyProxiedProtocol {
     }
 
     /**
-     * Returns the {@link HAProxyProxiedProtocol} represented by the specified byte.
+     * 从传输协议与地址族字节解析 {@link HAProxyProxiedProtocol}。
      *
      * @param tpafByte transport protocol and address family byte
      */
@@ -94,64 +80,44 @@ public enum HAProxyProxiedProtocol {
         }
     }
 
-    /**
-     * Returns the byte value of this protocol and address family.
-     */
+    /** 返回本协议组合的字节值。 */
     public byte byteValue() {
         return byteValue;
     }
 
-    /**
-     * Returns the {@link AddressFamily} of this protocol and address family.
-     */
+    /** 返回地址族部分。 */
     public AddressFamily addressFamily() {
         return addressFamily;
     }
 
-    /**
-     * Returns the {@link TransportProtocol} of this protocol and address family.
-     */
+    /** 返回传输协议部分。 */
     public TransportProtocol transportProtocol() {
         return transportProtocol;
     }
 
-    /**
-     * The address family of an HAProxy proxy protocol header.
-     */
+    /** PROXY 协议头部中的地址族。 */
     public enum AddressFamily {
-        /**
-         * The UNSPECIFIED address family represents a connection which was forwarded for an unknown protocol.
-         */
+        /** 未指定地址族（未知协议）。 */
         AF_UNSPEC(AF_UNSPEC_BYTE),
-        /**
-         * The IPV4 address family represents a connection which was forwarded for an IPV4 client.
-         */
+        /** IPv4 地址族。 */
         AF_IPv4(AF_IPV4_BYTE),
-        /**
-         * The IPV6 address family represents a connection which was forwarded for an IPV6 client.
-         */
+        /** IPv6 地址族。 */
         AF_IPv6(AF_IPV6_BYTE),
-        /**
-         * The UNIX address family represents a connection which was forwarded for a unix socket.
-         */
+        /** UNIX 域套接字地址族。 */
         AF_UNIX(AF_UNIX_BYTE);
 
-        /**
-         * The highest 4 bits of the transport protocol and address family byte contain the address family
-         */
+        /** 传输协议与地址族字节的高 4 位为地址族。 */
         private static final byte FAMILY_MASK = (byte) 0xf0;
 
         private final byte byteValue;
 
-        /**
-         * Creates a new instance
-         */
+        /** 绑定规范字节值。 */
         AddressFamily(byte byteValue) {
             this.byteValue = byteValue;
         }
 
         /**
-         * Returns the {@link AddressFamily} represented by the highest 4 bits of the specified byte.
+         * 从字节高 4 位解析 {@link AddressFamily}。
          *
          * @param tpafByte transport protocol and address family byte
          */
@@ -171,47 +137,33 @@ public enum HAProxyProxiedProtocol {
             }
         }
 
-        /**
-         * Returns the byte value of this address family.
-         */
+        /** 返回地址族字节值。 */
         public byte byteValue() {
             return byteValue;
         }
     }
 
-    /**
-     * The transport protocol of an HAProxy proxy protocol header
-     */
+    /** PROXY 协议头部中的传输协议。 */
     public enum TransportProtocol {
-        /**
-         * The UNSPEC transport protocol represents a connection which was forwarded for an unknown protocol.
-         */
+        /** 未指定传输协议。 */
         UNSPEC(TRANSPORT_UNSPEC_BYTE),
-        /**
-         * The STREAM transport protocol represents a connection which was forwarded for a TCP connection.
-         */
+        /** 流式传输（TCP 等）。 */
         STREAM(TRANSPORT_STREAM_BYTE),
-        /**
-         * The DGRAM transport protocol represents a connection which was forwarded for a UDP connection.
-         */
+        /** 数据报传输（UDP 等）。 */
         DGRAM(TRANSPORT_DGRAM_BYTE);
 
-        /**
-         * The transport protocol is specified in the lowest 4 bits of the transport protocol and address family byte
-         */
+        /** 传输协议位于字节低 4 位。 */
         private static final byte TRANSPORT_MASK = 0x0f;
 
         private final byte transportByte;
 
-        /**
-         * Creates a new instance.
-         */
+        /** 绑定规范字节值。 */
         TransportProtocol(byte transportByte) {
             this.transportByte = transportByte;
         }
 
         /**
-         * Returns the {@link TransportProtocol} represented by the lowest 4 bits of the specified byte.
+         * 从字节低 4 位解析 {@link TransportProtocol}。
          *
          * @param tpafByte transport protocol and address family byte
          */
@@ -229,9 +181,7 @@ public enum HAProxyProxiedProtocol {
             }
         }
 
-        /**
-         * Returns the byte value of this transport protocol.
-         */
+        /** 返回传输协议字节值。 */
         public byte byteValue() {
             return transportByte;
         }

@@ -32,17 +32,19 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * @deprecated Use {@link io.netty.handler.codec.http.cookie.ClientCookieDecoder}
- * or {@link io.netty.handler.codec.http.cookie.ServerCookieDecoder} instead.
- *
- * Decodes an HTTP header value into {@link Cookie}s.  This decoder can decode
- * the HTTP cookie version 0, 1, and 2.
+ * 将 HTTP Cookie 头值解码为 {@link Cookie} 集合（支持 version 0/1/2 语法）。
+ * <p>
+ * 提供 STRICT 与 LAX 两种模式；新代码请用 {@link io.netty.handler.codec.http.cookie.ClientCookieDecoder}
+ * 或 {@link io.netty.handler.codec.http.cookie.ServerCookieDecoder}。
  *
  * <pre>
  * {@link HttpRequest} req = ...;
  * String value = req.getHeader("Cookie");
  * Set&lt;{@link Cookie}&gt; cookies = {@link CookieDecoder}.decode(value);
  * </pre>
+ *
+ * @deprecated Use {@link io.netty.handler.codec.http.cookie.ClientCookieDecoder}
+ * or {@link io.netty.handler.codec.http.cookie.ServerCookieDecoder} instead.
  *
  * @see io.netty.handler.codec.http.cookie.ClientCookieDecoder
  * @see io.netty.handler.codec.http.cookie.ServerCookieDecoder
@@ -77,7 +79,7 @@ public final class CookieDecoder {
     }
 
     /**
-     * Decodes the specified HTTP header value into {@link Cookie}s.
+     * 解析 Cookie 头字符串，提取 name=value 及属性。
      *
      * @return the decoded {@link Cookie}s
      */
@@ -93,8 +95,7 @@ public final class CookieDecoder {
         int i;
         int version = 0;
 
-        // $Version is the only attribute that can appear before the actual
-        // cookie name-value pair.
+        // $Version 是唯一可出现在首个 name=value 之前的属性
         if (names.get(0).equalsIgnoreCase(VERSION)) {
             try {
                 version = Integer.parseInt(values.get(0));
@@ -107,7 +108,7 @@ public final class CookieDecoder {
         }
 
         if (names.size() <= i) {
-            // There's a version attribute, but nothing more.
+            // 仅有 Version 属性而无 Cookie 对
             return Collections.emptySet();
         }
 
@@ -203,7 +204,7 @@ public final class CookieDecoder {
         final int headerLen  = header.length();
         loop: for (int i = 0;;) {
 
-            // Skip spaces and separators.
+            // 跳过空白与分隔符
             for (;;) {
                 if (i == headerLen) {
                     break loop;
@@ -217,7 +218,7 @@ public final class CookieDecoder {
                 break;
             }
 
-            // Skip '$'.
+            // 跳过属性前缀 '$'
             for (;;) {
                 if (i == headerLen) {
                     break loop;
@@ -240,16 +241,16 @@ public final class CookieDecoder {
                 keyValLoop: for (;;) {
                     switch (header.charAt(i)) {
                     case ';':
-                        // NAME; (no value till ';')
+                        // NAME;（无等号值）
                         name = header.substring(newNameStart, i);
                         value = null;
                         break keyValLoop;
                     case '=':
-                        // NAME=VALUE
+                        // NAME=VALUE 键值对
                         name = header.substring(newNameStart, i);
                         i ++;
                         if (i == headerLen) {
-                            // NAME= (empty value, i.e. nothing after '=')
+                            // NAME=（空值）
                             value = "";
                             break keyValLoop;
                         }
@@ -257,7 +258,7 @@ public final class CookieDecoder {
                         int newValueStart = i;
                         char c = header.charAt(i);
                         if (c == '"' || c == '\'') {
-                            // NAME="VALUE" or NAME='VALUE'
+                            // NAME="VALUE" 或 NAME='VALUE' 引号值
                             StringBuilder newValueBuf = new StringBuilder(header.length() - i);
                             final char q = c;
                             boolean hadBackslash = false;
@@ -272,11 +273,11 @@ public final class CookieDecoder {
                                     c = header.charAt(i ++);
                                     switch (c) {
                                     case '\\': case '"': case '\'':
-                                        // Escape last backslash.
+                                        // 转义上一反斜杠
                                         newValueBuf.setCharAt(newValueBuf.length() - 1, c);
                                         break;
                                     default:
-                                        // Do not escape last backslash.
+                                        // 保留反斜杠不转义
                                         newValueBuf.append(c);
                                     }
                                 } else {
@@ -292,7 +293,7 @@ public final class CookieDecoder {
                                 }
                             }
                         } else {
-                            // NAME=VALUE;
+                            // NAME=VALUE; 无引号值
                             int semiPos = header.indexOf(';', i);
                             if (semiPos > 0) {
                                 value = header.substring(newValueStart, semiPos);
@@ -308,7 +309,7 @@ public final class CookieDecoder {
                     }
 
                     if (i == headerLen) {
-                        // NAME (no value till the end of string)
+                        // NAME（至字符串末尾无值）
                         name = header.substring(newNameStart);
                         value = null;
                         break;

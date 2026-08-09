@@ -18,16 +18,13 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 
 /**
- * A <a href="https://tools.ietf.org/html/rfc6265">RFC6265</a> compliant cookie encoder to be used client side,
- * so only name=value pairs are sent.
- *
- * User-Agents are not supposed to interpret cookies, so, if present, {@link Cookie#rawValue()} will be used.
- * Otherwise, {@link Cookie#value()} will be used unquoted.
- *
- * Note that multiple cookies are supposed to be sent at once in a single "Cookie" header.
+ * 客户端侧 RFC6265 兼容 Cookie 编码器，仅发送 name=value 对。
+ * <p>
+ * 若存在 {@link Cookie#rawValue()} 则优先使用；否则使用未加引号的 {@link Cookie#value()}。
+ * 多个 Cookie 应合并为单个 {@code Cookie} 请求头。
  *
  * <pre>
- * // Example
+ * // 示例
  * {@link HttpRequest} req = ...;
  * res.setHeader("Cookie", {@link ClientCookieEncoder}.encode("JSESSIONID", "1234"));
  * </pre>
@@ -38,7 +35,7 @@ import io.netty.handler.codec.http.cookie.ClientCookieDecoder;
 public final class ClientCookieEncoder {
 
     /**
-     * Encodes the specified cookie into a Cookie header value.
+     * 将指定 name/value 编码为 Cookie 请求头值。
      *
      * @param name the cookie name
      * @param value the cookie value
@@ -50,7 +47,7 @@ public final class ClientCookieEncoder {
     }
 
     /**
-     * Encodes the specified cookie into a Cookie header value.
+     * 将单个 {@link Cookie} 编码为 Cookie 请求头值。
      *
      * @param cookie the specified cookie
      * @return a Rfc6265 style Cookie header value
@@ -61,7 +58,7 @@ public final class ClientCookieEncoder {
     }
 
     /**
-     * Encodes the specified cookies into a single Cookie header value.
+     * 将多个 Cookie 编码为单个 Cookie 请求头值。
      *
      * @param cookies some cookies
      * @return a Rfc6265 style Cookie header value, null if no cookies are passed.
@@ -72,7 +69,7 @@ public final class ClientCookieEncoder {
     }
 
     /**
-     * Encodes the specified cookies into a single Cookie header value.
+     * 将 Iterable 中的 Cookie 编码为单个请求头值。
      *
      * @param cookies some cookies
      * @return a Rfc6265 style Cookie header value, null if no cookies are passed.
@@ -83,6 +80,6 @@ public final class ClientCookieEncoder {
     }
 
     private ClientCookieEncoder() {
-        // unused
+        // 工具类禁止实例化
     }
 }

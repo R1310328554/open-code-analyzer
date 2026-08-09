@@ -18,6 +18,9 @@ package io.netty.handler.codec.http;
 import java.util.BitSet;
 
 /**
+ * Cookie 名称/值合法性校验与引号unwrap工具（已废弃）。
+ * <p>
+ * 与 {@link io.netty.handler.codec.http.cookie.CookieUtil} 重复，仅供旧版 {@link CookieDecoder} 使用。
  * @deprecated Duplicate of package private ${@link io.netty.handler.codec.http.cookie.CookieUtil}
  */
 @Deprecated
@@ -27,25 +30,21 @@ final class CookieUtil {
 
     private static final BitSet VALID_COOKIE_NAME_OCTETS = validCookieNameOctets(VALID_COOKIE_VALUE_OCTETS);
 
-    // US-ASCII characters excluding CTLs, whitespace, DQUOTE, comma, semicolon, and backslash
+    // 合法 Cookie 值：US-ASCII 可打印字符，排除引号、逗号、分号、反斜杠
     private static BitSet validCookieValueOctets() {
         BitSet bits = new BitSet(8);
         for (int i = 35; i < 127; i++) {
-            // US-ASCII characters excluding CTLs (%x00-1F / %x7F)
+            // US-ASCII 可打印字符，排除控制字符
             bits.set(i);
         }
-        bits.set('"', false);  // exclude DQUOTE = %x22
-        bits.set(',', false);  // exclude comma = %x2C
-        bits.set(';', false);  // exclude semicolon = %x3B
-        bits.set('\\', false); // exclude backslash = %x5C
+        bits.set('"', false);  // 排除双引号
+        bits.set(',', false);  // 排除逗号
+        bits.set(';', false);  // 排除分号
+        bits.set('\\', false); // 排除反斜杠
         return bits;
     }
 
-    //    token          = 1*<any CHAR except CTLs or separators>
-    //    separators     = "(" | ")" | "<" | ">" | "@"
-    //                   | "," | ";" | ":" | "\" | <">
-    //                   | "/" | "[" | "]" | "?" | "="
-    //                   | "{" | "}" | SP | HT
+    // token 规则：不含 CTL 与分隔符的 CHAR 序列
     private static BitSet validCookieNameOctets(BitSet validCookieValueOctets) {
         BitSet bits = new BitSet(8);
         bits.or(validCookieValueOctets);
@@ -89,7 +88,7 @@ final class CookieUtil {
         final int len = cs.length();
         if (len > 0 && cs.charAt(0) == '"') {
             if (len >= 2 && cs.charAt(len - 1) == '"') {
-                // properly balanced
+                // 引号成对匹配
                 return len == 2 ? "" : cs.subSequence(1, len - 1);
             } else {
                 return null;
@@ -99,6 +98,6 @@ final class CookieUtil {
     }
 
     private CookieUtil() {
-        // Unused
+        // 工具类禁止实例化
     }
 }

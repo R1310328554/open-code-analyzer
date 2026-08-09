@@ -26,95 +26,64 @@ import java.util.List;
 import static io.netty.handler.codec.haproxy.HAProxyConstants.*;
 
 /**
- * Decodes an HAProxy proxy protocol header
+ * HAProxy PROXY 协议头部解码器，支持 v1 文本与 v2 二进制格式。
+ * <p>
+ * 解码完成后自动从 pipeline 移除自身（单次解码）。
  *
  * @see <a href="https://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt">Proxy Protocol Specification</a>
  */
 public class HAProxyMessageDecoder extends ByteToMessageDecoder {
-    /**
-     * Maximum possible length of a v1 proxy protocol header per spec
-     */
+    /** v1 头部最大长度（规范上限）。 */
     private static final int V1_MAX_LENGTH = 108;
 
-    /**
-     * Maximum possible length of a v2 proxy protocol header (fixed 16 bytes + max unsigned short)
-     */
+    /** v2 头部最大长度（16 字节固定头 + 最大 unsigned short 地址/TLV 块）。 */
     private static final int V2_MAX_LENGTH = 16 + 65535;
 
-    /**
-     * Minimum possible length of a fully functioning v2 proxy protocol header (fixed 16 bytes + v2 address info space)
-     */
+    /** v2 完整头部最小长度（16 字节 + 最大地址信息 216 字节）。 */
     private static final int V2_MIN_LENGTH = 16 + 216;
 
-    /**
-     * Maximum possible length for v2 additional TLV data (max unsigned short - max v2 address info space)
-     */
+    /** v2 附加 TLV 数据最大长度。 */
     private static final int V2_MAX_TLV = 65535 - 216;
 
-    /**
-     * Binary header prefix length
-     */
+    /** 二进制头部前缀长度。 */
     private static final int BINARY_PREFIX_LENGTH = BINARY_PREFIX.length;
 
-    /**
-     * {@link ProtocolDetectionResult} for {@link HAProxyProtocolVersion#V1}.
-     */
+    /** v1 协议检测结果常量。 */
     private static final ProtocolDetectionResult<HAProxyProtocolVersion> DETECTION_RESULT_V1 =
             ProtocolDetectionResult.detected(HAProxyProtocolVersion.V1);
 
-    /**
-     * {@link ProtocolDetectionResult} for {@link HAProxyProtocolVersion#V2}.
-     */
+    /** v2 协议检测结果常量。 */
     private static final ProtocolDetectionResult<HAProxyProtocolVersion> DETECTION_RESULT_V2 =
             ProtocolDetectionResult.detected(HAProxyProtocolVersion.V2);
 
-    /**
-     * Used to extract a header frame out of the {@link ByteBuf} and return it.
-     */
+    /** 从 {@link ByteBuf} 提取完整头部帧的提取器。 */
     private HeaderExtractor headerExtractor;
 
-    /**
-     * {@code true} if we're discarding input because we're already over maxLength
-     */
+    /** 是否因超出 maxLength 而正在丢弃输入。 */
     private boolean discarding;
 
-    /**
-     * Number of discarded bytes
-     */
+    /** 已丢弃的字节数。 */
     private int discardedBytes;
 
-    /**
-     * Whether or not to throw an exception as soon as we exceed maxLength.
-     */
+    /** 超出 maxLength 时是否立即抛异常（failFast）。 */
     private final boolean failFast;
 
-    /**
-     * {@code true} if we're finished decoding the proxy protocol header
-     */
+    /** 是否已完成 PROXY 头部解码。 */
     private boolean finished;
 
-    /**
-     * Protocol specification version
-     */
+    /** 检测到的协议版本（1 或 2），-1 表示尚未确定。 */
     private int version = -1;
 
-    /**
-     * The latest v2 spec (2014/05/18) allows for additional data to be sent in the proxy protocol header beyond the
-     * address information block so now we need a configurable max header size
-     */
+    /** v2 可配置的最大头部尺寸（含地址块与 TLV）。 */
     private final int v2MaxHeaderSize;
 
-    /**
-     * Creates a new decoder with no additional data (TLV) restrictions, and should throw an exception as soon as
-     * we exceed maxLength.
-     */
+    /** 创建无 TLV 限制、failFast 为 true 的解码器。 */
     public HAProxyMessageDecoder() {
         this(true);
     }
 
     /**
-     * Creates a new decoder with no additional data (TLV) restrictions, whether or not to throw an exception as soon
-     * as we exceed maxLength.
+     * 创建无 TLV 限制的解码器。
      *
      * @param failFast Whether or not to throw an exception as soon as we exceed maxLength
      */
@@ -124,12 +93,9 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new decoder with restricted additional data (TLV) size, and should throw an exception as soon as
-     * we exceed maxLength.
+     * 创建限制 v2 TLV 大小的解码器（failFast 为 true）。
      * <p>
-     * <b>Note:</b> limiting TLV size only affects processing of v2, binary headers. Also, as allowed by the 1.5 spec
-     * TLV data is currently ignored. For maximum performance it would be best to configure your upstream proxy host to
-     * <b>NOT</b> send TLV data and instantiate with a max TLV size of {@code 0}.
+     * <b>注意：</b> TLV 限制仅影响 v2 二进制头；为最佳性能建议上游不发送 TLV。
      * </p>
      *
      * @param maxTlvSize maximum number of bytes allowed for additional data (Type-Length-Value vectors) in a v2 header
@@ -139,8 +105,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new decoder with restricted additional data (TLV) size, whether or not to throw an exception as soon
-     * as we exceed maxLength.
+     * 创建限制 v2 TLV 大小并可配置 failFast 的解码器。
      *
      * @param maxTlvSize maximum number of bytes allowed for additional data (Type-Length-Value vectors) in a v2 header
      * @param failFast Whether or not to throw an exception as soon as we exceed maxLength
@@ -161,13 +126,10 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
         this.failFast = failFast;
     }
 
-    /**
-     * Returns the proxy protocol specification version in the buffer if the version is found.
-     * Returns -1 if no version was found in the buffer.
-     */
+    /** 检测缓冲中的协议版本；不足 13 字节或无法识别时返回 -1。 */
     private static int findVersion(final ByteBuf buffer) {
         final int n = buffer.readableBytes();
-        // per spec, the version number is found in the 13th byte
+        // 规范：版本号位于第 13 字节
         if (n < 13) {
             return -1;
         }
@@ -176,24 +138,21 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
         return match(BINARY_PREFIX, buffer, idx) ? buffer.getUnsignedByte(idx + BINARY_PREFIX_LENGTH) : 1;
     }
 
-    /**
-     * Returns the index in the buffer of the end of header if found.
-     * Returns -1 if no end of header was found in the buffer.
-     */
+    /** 返回 v2 头部结束位置（16 + 地址长度）；数据不足时返回 -1。 */
     private static int findEndOfHeader(final ByteBuf buffer) {
         final int n = buffer.readableBytes();
 
-        // per spec, the 15th and 16th bytes contain the address length in bytes
+        // 规范：第 15~16 字节为地址信息长度
         if (n < 16) {
             return -1;
         }
 
         int offset = buffer.readerIndex() + 14;
 
-        // the total header length will be a fixed 16 byte sequence + the dynamic address information block
+        // 总头部长度 = 16 字节固定头 + 动态地址块
         int totalHeaderBytes = 16 + buffer.getUnsignedShort(offset);
 
-        // ensure we actually have the full header available
+        // 确认缓冲中已有完整头部
         if (n >= totalHeaderBytes) {
             return totalHeaderBytes;
         } else {
@@ -201,10 +160,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
         }
     }
 
-    /**
-     * Returns the index in the buffer of the end of line found.
-     * Returns -1 if no end of line was found in the buffer.
-     */
+    /** 查找 v1 文本头部的 CRLF 行尾位置；未找到返回 -1。 */
     private static int findEndOfLine(final ByteBuf buffer) {
         final int n = buffer.writerIndex();
         for (int i = buffer.readerIndex(); i < n; i++) {
@@ -213,13 +169,12 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
                 return i;  // \r\n
             }
         }
-        return -1;  // Not found.
+        return -1;  // 未找到行尾
     }
 
     @Override
     public boolean isSingleDecode() {
-        // ByteToMessageDecoder uses this method to optionally break out of the decoding loop after each unit of work.
-        // Since we only ever want to decode a single header we always return true to save a bit of work here.
+        // 仅解码一次 PROXY 头，故始终返回 true 以提前退出解码循环
         return true;
     }
 
@@ -233,7 +188,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        // determine the specification version
+        // 确定协议版本（v1 或 v2）
         if (version == -1) {
             if ((version = findVersion(in)) == -1) {
                 return;
@@ -263,7 +218,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Create a frame out of the {@link ByteBuf} and return it.
+     * 从缓冲提取 v2 二进制头部帧。
      *
      * @param ctx     the {@link ChannelHandlerContext} which this {@link HAProxyMessageDecoder} belongs to
      * @param buffer  the {@link ByteBuf} from which to read data
@@ -278,7 +233,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Create a frame out of the {@link ByteBuf} and return it.
+     * 从缓冲提取 v1 文本行头部帧。
      *
      * @param ctx     the {@link ChannelHandlerContext} which this {@link HAProxyMessageDecoder} belongs to
      * @param buffer  the {@link ByteBuf} from which to read data
@@ -303,7 +258,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
 
     private void fail(final ChannelHandlerContext ctx, String errMsg, Exception e) {
         finished = true;
-        ctx.close(); // drop connection immediately per spec
+        ctx.close(); // 规范要求：协议错误时立即关闭连接
         HAProxyProtocolException ppex;
         if (errMsg != null && e != null) {
             ppex = new HAProxyProtocolException(errMsg, e);
@@ -317,9 +272,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
         throw ppex;
     }
 
-    /**
-     * Returns the {@link ProtocolDetectionResult} for the given {@link ByteBuf}.
-     */
+    /** 静态检测缓冲前缀，判断 v1/v2/无效/需更多数据。 */
     public static ProtocolDetectionResult<HAProxyProtocolVersion> detectProtocol(ByteBuf buffer) {
         if (buffer.readableBytes() < 12) {
             return ProtocolDetectionResult.needsMoreData();
@@ -346,11 +299,9 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
         return true;
     }
 
-    /**
-     * HeaderExtractor create a header frame out of the {@link ByteBuf}.
-     */
+    /** 从 {@link ByteBuf} 提取完整头部帧的抽象基类。 */
     private abstract class HeaderExtractor {
-        /** Header max size */
+        /** 允许的最大头部长度 */
         private final int maxHeaderSize;
 
         protected HeaderExtractor(int maxHeaderSize) {
@@ -409,8 +360,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
         }
 
         /**
-         * Find the end of the header from the given {@link ByteBuf}，the end may be a CRLF, or the length given by the
-         * header.
+         * 查找头部结束位置（CRLF 或由头部给出的长度）。
          *
          * @param buffer the buffer to be searched
          * @return {@code -1} if can not find the end, otherwise return the buffer index of end
@@ -418,7 +368,7 @@ public class HAProxyMessageDecoder extends ByteToMessageDecoder {
         protected abstract int findEndOfHeader(ByteBuf buffer);
 
         /**
-         * Get the length of the header delimiter.
+         * 返回头部分隔符长度（v1 为 CRLF，v2 为 0）。
          *
          * @param buffer the buffer where delimiter is located
          * @param eoh index of delimiter

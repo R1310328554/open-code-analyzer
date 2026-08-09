@@ -18,8 +18,9 @@ package io.netty.handler.codec.http;
 import java.util.Set;
 
 /**
- * An interface defining an
- * <a href="https://en.wikipedia.org/wiki/HTTP_cookie">HTTP cookie</a>.
+ * 定义 <a href="https://en.wikipedia.org/wiki/HTTP_cookie">HTTP Cookie</a> 的旧版接口。
+ * <p>
+ * 含 RFC6265 未收录的 comment、version、ports 等字段；新代码请用 {@link io.netty.handler.codec.http.cookie.Cookie}。
  * @deprecated Use {@link io.netty.handler.codec.http.cookie.Cookie} instead.
  */
 @Deprecated
@@ -56,7 +57,7 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     String getComment();
 
     /**
-     * Returns the comment of this {@link Cookie}.
+     * 返回本 Cookie 的 comment 属性。
      *
      * @return The comment of this {@link Cookie}
      *
@@ -66,7 +67,7 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     String comment();
 
     /**
-     * Sets the comment of this {@link Cookie}.
+     * 设置 comment 属性。
      *
      * @param comment The comment to use
      *
@@ -82,7 +83,7 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     long getMaxAge();
 
     /**
-     * Returns the maximum age of this {@link Cookie} in seconds or {@link Long#MIN_VALUE} if unspecified
+     * 返回最大存活秒数；未指定时为 {@link Long#MIN_VALUE}。
      *
      * @return The maximum age of this {@link Cookie}
      *
@@ -93,11 +94,7 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     long maxAge();
 
     /**
-     * Sets the maximum age of this {@link Cookie} in seconds.
-     * If an age of {@code 0} is specified, this {@link Cookie} will be
-     * automatically removed by browser because it will expire immediately.
-     * If {@link Long#MIN_VALUE} is specified, this {@link Cookie} will be removed when the
-     * browser is closed.
+     * 设置最大存活秒数：0 表示立即过期，{@link Long#MIN_VALUE} 表示会话 Cookie。
      *
      * @param maxAge The maximum age of this {@link Cookie} in seconds
      *
@@ -114,7 +111,7 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     int getVersion();
 
     /**
-     * Returns the version of this {@link Cookie}.
+     * 返回 Cookie 版本号（旧版 Set-Cookie 语法）。
      *
      * @return The version of this {@link Cookie}
      *
@@ -123,13 +120,7 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     @Deprecated
     int version();
 
-    /**
-     * Sets the version of this {@link Cookie}.
-     *
-     * @param version The new version to use
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 设置 Cookie 版本号。 @deprecated Not part of RFC6265 */
     @Deprecated
     void setVersion(int version);
 
@@ -139,46 +130,19 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     @Deprecated
     String getCommentUrl();
 
-    /**
-     * Returns the comment URL of this {@link Cookie}.
-     *
-     * @return The comment URL of this {@link Cookie}
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 返回 comment URL。 @deprecated Not part of RFC6265 */
     @Deprecated
     String commentUrl();
 
-    /**
-     * Sets the comment URL of this {@link Cookie}.
-     *
-     * @param commentUrl The comment URL to use
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 设置 comment URL。 @deprecated Not part of RFC6265 */
     @Deprecated
     void setCommentUrl(String commentUrl);
 
-    /**
-     * Checks to see if this {@link Cookie} is to be discarded by the browser
-     * at the end of the current session.
-     *
-     * @return True if this {@link Cookie} is to be discarded, otherwise false
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 是否为会话结束时丢弃的 Cookie。 @deprecated Not part of RFC6265 */
     @Deprecated
     boolean isDiscard();
 
-    /**
-     * Sets the discard flag of this {@link Cookie}.
-     * If set to true, this {@link Cookie} will be discarded by the browser
-     * at the end of the current session
-     *
-     * @param discard True if the {@link Cookie} is to be discarded
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 设置 discard 标志。 @deprecated Not part of RFC6265 */
     @Deprecated
     void setDiscard(boolean discard);
 
@@ -188,34 +152,15 @@ public interface Cookie extends io.netty.handler.codec.http.cookie.Cookie {
     @Deprecated
     Set<Integer> getPorts();
 
-    /**
-     * Returns the ports that this {@link Cookie} can be accessed on.
-     *
-     * @return The {@link Set} of ports that this {@link Cookie} can use
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 返回 Cookie 可访问的端口集合。 @deprecated Not part of RFC6265 */
     @Deprecated
     Set<Integer> ports();
 
-    /**
-     * Sets the ports that this {@link Cookie} can be accessed on.
-     *
-     * @param ports The ports that this {@link Cookie} can be accessed on
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 设置可访问端口（可变参数）。 @deprecated Not part of RFC6265 */
     @Deprecated
     void setPorts(int... ports);
 
-    /**
-     * Sets the ports that this {@link Cookie} can be accessed on.
-     *
-     * @param ports The {@link Iterable} collection of ports that this
-     *              {@link Cookie} can be accessed on.
-     *
-     * @deprecated Not part of RFC6265
-     */
+    /** 设置可访问端口（Iterable）。 @deprecated Not part of RFC6265 */
     @Deprecated
     void setPorts(Iterable<Integer> ports);
 }

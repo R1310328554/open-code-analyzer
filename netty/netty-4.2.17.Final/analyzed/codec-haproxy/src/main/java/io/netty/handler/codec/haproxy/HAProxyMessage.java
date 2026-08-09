@@ -31,11 +31,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Message container for decoded HAProxy proxy protocol parameters
+ * 已解码 HAProxy PROXY 协议参数的报文容器。
+ * <p>
+ * 承载协议版本、命令、代理协议类型、源/目的地址与端口，以及可选 TLV 扩展列表。
  */
 public final class HAProxyMessage extends AbstractReferenceCounted {
 
-    // Let's pick some conservative limit here.
+    // 嵌套 TLV 的最大递归深度上限
     private static final int MAX_NESTING_LEVEL = 128;
     private static final ResourceLeakDetector<HAProxyMessage> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(HAProxyMessage.class);
@@ -50,9 +52,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     private final int destinationPort;
     private final List<HAProxyTLV> tlvs;
 
-    /**
-     * Creates a new instance
-     */
+    /** 私有构造，由字符串端口参数创建实例。 */
     private HAProxyMessage(
             HAProxyProtocolVersion protocolVersion, HAProxyCommand command, HAProxyProxiedProtocol proxiedProtocol,
             String sourceAddress, String destinationAddress, String sourcePort, String destinationPort) {
@@ -62,7 +62,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Creates a new instance of HAProxyMessage.
+     * 创建不含 TLV 的 {@link HAProxyMessage} 实例。
      * @param protocolVersion the protocol version.
      * @param command the command.
      * @param proxiedProtocol the protocol containing the address family and transport protocol.
@@ -80,7 +80,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Creates a new instance of HAProxyMessage.
+     * 创建含 TLV 列表的完整 {@link HAProxyMessage} 实例，并校验地址与端口。
      * @param protocolVersion the protocol version.
      * @param command the command.
      * @param proxiedProtocol the protocol containing the address family and transport protocol.
@@ -118,7 +118,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Decodes a version 2, binary proxy protocol header.
+     * 解码 v2 二进制 PROXY 协议头部。
      *
      * @param header                     a version 2 proxy protocol header
      * @return                           {@link HAProxyMessage} instance
@@ -132,7 +132,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                     "incomplete header: " + header.readableBytes() + " bytes (expected: 16+ bytes)");
         }
 
-        // Per spec, the 13th byte is the protocol version and command byte
+        // 规范：第 13 字节为协议版本与命令
         header.skipBytes(12);
         final byte verCmdByte = header.readByte();
 
@@ -158,7 +158,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
             return unknownMsg(HAProxyProtocolVersion.V2, HAProxyCommand.LOCAL);
         }
 
-        // Per spec, the 14th byte is the protocol and address family byte
+        // 规范：第 14 字节为传输协议与地址族
         HAProxyProxiedProtocol protAndFam;
         try {
             protAndFam = HAProxyProxiedProtocol.valueOf(header.readByte());
@@ -181,7 +181,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         AddressFamily addressFamily = protAndFam.addressFamily();
 
         if (addressFamily == AddressFamily.AF_UNIX) {
-            // unix sockets require 216 bytes for address information
+            // UNIX 域套接字地址信息固定 216 字节
             if (addressInfoLen < 216 || header.readableBytes() < 216) {
                 throw new HAProxyProtocolException(
                     "incomplete UNIX socket address information: " +
@@ -205,12 +205,11 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                 addressLen = addressEnd - startIdx;
             }
             dstAddress = header.toString(startIdx, addressLen, CharsetUtil.US_ASCII);
-            // AF_UNIX defines that exactly 108 bytes are reserved for the address. The previous methods
-            // did not increase the reader index although we already consumed the information.
+            // AF_UNIX 每端地址固定 108 字节；前面解析未推进 readerIndex，此处统一跳过
             header.readerIndex(startIdx + 108);
         } else {
             if (addressFamily == AddressFamily.AF_IPv4) {
-                // IPv4 requires 12 bytes for address information
+                // IPv4 地址信息 12 字节（4+4 地址 + 2+2 端口）
                 if (addressInfoLen < 12 || header.readableBytes() < 12) {
                     throw new HAProxyProtocolException(
                         "incomplete IPv4 address information: " +
@@ -218,7 +217,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                 }
                 addressLen = 4;
             } else if (addressFamily == AddressFamily.AF_IPv6) {
-                // IPv6 requires 36 bytes for address information
+                // IPv6 地址信息 36 字节（16+16 地址 + 2+2 端口）
                 if (addressInfoLen < 36 || header.readableBytes() < 36) {
                     throw new HAProxyProtocolException(
                         "incomplete IPv6 address information: " +
@@ -230,7 +229,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                     "unable to parse address information (unknown address family: " + addressFamily + ')');
             }
 
-            // Per spec, the src address begins at the 17th byte
+            // 规范：源地址从第 17 字节起
             srcAddress = ipBytesToString(header, addressLen);
             dstAddress = ipBytesToString(header, addressLen);
             srcPort = header.readUnsignedShort();
@@ -247,7 +246,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         if (haProxyTLV == null) {
             return Collections.emptyList();
         }
-        // In most cases there are less than 4 TLVs available
+        // 多数场景 TLV 数量少于 4 个
         List<HAProxyTLV> haProxyTLVs = new ArrayList<HAProxyTLV>(4);
 
         try {
@@ -258,7 +257,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                 }
             } while ((haProxyTLV = readNextTLV(header, 0)) != null);
         } catch (Throwable t) {
-            // Release all previously read TLVs before rethrowing as otherwise we would leak.
+            // 异常前释放已读 TLV，避免泄漏
             releaseTlvs(haProxyTLVs);
             throw t;
         }
@@ -279,15 +278,12 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         for (HAProxyTLV tlv : tlvs) {
             if (skip > 0) {
                 skip--;
-                // This TLV is a flattened depth-1 child. If it encapsulates anything (depth-2+),
-                // those deeper children were NOT flattened, so we must release them recursively.
+                // 扁平化的 depth-1 子 TLV；若含更深层嵌套须递归释放
                 if (tlv instanceof HAProxySSLTLV) {
                     releaseDeep(((HAProxySSLTLV) tlv).encapsulatedTLVs());
                 }
             } else if (tlv instanceof HAProxySSLTLV) {
-                // This is a top-level (depth-0) SSL TLV.
-                // Its immediate children (depth-1) were flattened into this list,
-                // so we must skip them in the outer loop to avoid treating them as top-level TLVs.
+                // 顶层 SSL TLV 的子项已扁平化到列表，外层循环须跳过
                 skip = ((HAProxySSLTLV) tlv).encapsulatedTLVs().size();
             }
             tlv.release();
@@ -299,7 +295,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
             throw new HAProxyProtocolException(
                     "Maximum TLV nesting level reached: " + nestingLevel + " (expected: < " + MAX_NESTING_LEVEL + ')');
         }
-        // We need at least 4 bytes for a TLV
+        // TLV 头部至少 4 字节（type 1 + length 2 + 内容起始）
         if (header.readableBytes() < 4) {
             return null;
         }
@@ -317,8 +313,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                 throw new HAProxyProtocolException("TLV length must be smaller or equal the readable bytes (" +
                         header.readableBytes() + ") but was: " + length);
             }
-            // Slice the rawContent but only retain it if we didn't see an error as otherwise we might
-            // leak.
+            // 先 slice 原始内容，无异常时才 retain，避免泄漏
             final ByteBuf rawContent = header.slice(header.readerIndex(), length);
             final ByteBuf byteBuf = header.readSlice(length);
             final byte client = byteBuf.readByte();
@@ -344,7 +339,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                 return new HAProxySSLTLV(verify, client, encapsulatedTlvs, rawContent.retain());
             }
             return new HAProxySSLTLV(verify, client, Collections.<HAProxyTLV>emptyList(), rawContent.retain());
-        // If we're not dealing with an SSL Type, we can use the same mechanism
+        // 非 SSL 类型 TLV 统一按 type+length+content 读取
         case PP2_TYPE_ALPN:
         case PP2_TYPE_AUTHORITY:
         case PP2_TYPE_SSL_VERSION:
@@ -358,7 +353,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Decodes a version 1, human-readable proxy protocol header.
+     * 解码 v1 文本格式 PROXY 协议头部（空格分隔）。
      *
      * @param header                     a version 1 proxy protocol header
      * @return                           {@link HAProxyMessage} instance
@@ -412,15 +407,14 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Proxy protocol message for 'UNKNOWN' proxied protocols. Per spec, when the proxied protocol is
-     * 'UNKNOWN' we must discard all other header values.
+     * 代理协议为 UNKNOWN 时的占位消息；规范要求丢弃其余头部字段。
      */
     private static HAProxyMessage unknownMsg(HAProxyProtocolVersion version, HAProxyCommand command) {
         return new HAProxyMessage(version, command, HAProxyProxiedProtocol.UNKNOWN, null, null, 0, 0);
     }
 
     /**
-     * Convert ip address bytes to string representation
+     * 将缓冲中的 IP 地址字节转为可读字符串。
      *
      * @param header     buffer containing ip address bytes
      * @param addressLen number of bytes to read (4 bytes for IPv4, 16 bytes for IPv6)
@@ -446,7 +440,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Convert port to integer
+     * 将端口字符串解析为整数（1~65535）。
      *
      * @param value                      the port
      * @return                           port as an integer
@@ -468,7 +462,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Validate an address (IPv4, IPv6, Unix Socket)
+     * 校验地址格式（IPv4、IPv6 或 UNIX 域套接字）。
      *
      * @param address    human-readable address
      * @param addrFamily the {@link AddressFamily} to check the address against
@@ -490,7 +484,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
                     throw new IllegalArgumentException("invalid AF_UNIX address: " + address);
                 }
                 if (version == HAProxyProtocolVersion.V1) {
-                    // V1 is text-based and uses CR LF as header delimiters, and space as field delimiter.
+                    // V1 为文本格式，CR/LF 为行分隔、空格为字段分隔
                     for (int i = 0, len = address.length(); i < len; i++) {
                         char c = address.charAt(i);
                         if (c == '\r' || c == '\n' || c == ' ') {
@@ -520,7 +514,7 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
     }
 
     /**
-     * Validate the port depending on the addrFamily.
+     * 按地址族校验端口：IP 族允许 0~65535，UNIX/UNSPEC 必须为 0。
      *
      * @param port                       the UDP/TCP port
      * @throws IllegalArgumentException  if the port is out of range (0-65535 inclusive)
@@ -544,60 +538,45 @@ public final class HAProxyMessage extends AbstractReferenceCounted {
         }
     }
 
-    /**
-     * Returns the {@link HAProxyProtocolVersion} of this {@link HAProxyMessage}.
-     */
+    /** 返回本消息的 {@link HAProxyProtocolVersion}。 */
     public HAProxyProtocolVersion protocolVersion() {
         return protocolVersion;
     }
 
-    /**
-     * Returns the {@link HAProxyCommand} of this {@link HAProxyMessage}.
-     */
+    /** 返回本消息的 {@link HAProxyCommand}（LOCAL 或 PROXY）。 */
     public HAProxyCommand command() {
         return command;
     }
 
-    /**
-     * Returns the {@link HAProxyProxiedProtocol} of this {@link HAProxyMessage}.
-     */
+    /** 返回本消息的 {@link HAProxyProxiedProtocol}。 */
     public HAProxyProxiedProtocol proxiedProtocol() {
         return proxiedProtocol;
     }
 
-    /**
-     * Returns the human-readable source address of this {@link HAProxyMessage} or {@code null}
-     * if HAProxy performs health check with {@code send-proxy-v2}.
-     */
+    /** 返回可读源地址；HAProxy 健康检查（send-proxy-v2）时可能为 {@code null}。 */
     public String sourceAddress() {
         return sourceAddress;
     }
 
-    /**
-     * Returns the human-readable destination address of this {@link HAProxyMessage}.
-     */
+    /** 返回可读目的地址。 */
     public String destinationAddress() {
         return destinationAddress;
     }
 
-    /**
-     * Returns the UDP/TCP source port of this {@link HAProxyMessage}.
-     */
+    /** 返回 UDP/TCP 源端口。 */
     public int sourcePort() {
         return sourcePort;
     }
 
-    /**
-     * Returns the UDP/TCP destination port of this {@link HAProxyMessage}.
-     */
+    /** 返回 UDP/TCP 目的端口。 */
     public int destinationPort() {
         return destinationPort;
     }
 
     /**
-     * Returns a list of {@link HAProxyTLV} or an empty list if no TLVs are present.
+     * 返回 {@link HAProxyTLV} 列表；无 TLV 时返回空列表。
      * <p>
-     * TLVs are only available for the Proxy Protocol V2
+     * TLV 仅存在于 PROXY 协议 v2。
      */
     public List<HAProxyTLV> tlvs() {
         return tlvs;

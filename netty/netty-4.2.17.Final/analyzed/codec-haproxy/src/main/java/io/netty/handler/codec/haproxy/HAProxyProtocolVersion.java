@@ -18,34 +18,28 @@ package io.netty.handler.codec.haproxy;
 import static io.netty.handler.codec.haproxy.HAProxyConstants.*;
 
 /**
- * The HAProxy proxy protocol specification version.
+ * HAProxy PROXY 协议规范版本枚举。
+ * <p>
+ * v1 为可读文本头，v2 为二进制头；由头部第 13 字节高 4 位标识。
  */
 public enum HAProxyProtocolVersion {
-    /**
-     * The ONE proxy protocol version represents a version 1 (human-readable) header.
-     */
+    /** v1：人类可读文本格式头部。 */
     V1(VERSION_ONE_BYTE),
-    /**
-     * The TWO proxy protocol version represents a version 2 (binary) header.
-     */
+    /** v2：二进制格式头部。 */
     V2(VERSION_TWO_BYTE);
 
-    /**
-     * The highest 4 bits of the protocol version and command byte contain the version
-     */
+    /** 版本与命令字节的高 4 位为版本号。 */
     private static final byte VERSION_MASK = (byte) 0xf0;
 
     private final byte byteValue;
 
-    /**
-     * Creates a new instance
-     */
+    /** 枚举构造，绑定规范定义的字节值。 */
     HAProxyProtocolVersion(byte byteValue) {
         this.byteValue = byteValue;
     }
 
     /**
-     * Returns the {@link HAProxyProtocolVersion} represented by the highest 4 bits of the specified byte.
+     * 从版本与命令字节的高 4 位解析 {@link HAProxyProtocolVersion}。
      *
      * @param verCmdByte protocol version and command byte
      */
@@ -61,9 +55,7 @@ public enum HAProxyProtocolVersion {
         }
     }
 
-    /**
-     * Returns the byte value of this version.
-     */
+    /** 返回本版本对应的字节值。 */
     public byte byteValue() {
         return byteValue;
     }

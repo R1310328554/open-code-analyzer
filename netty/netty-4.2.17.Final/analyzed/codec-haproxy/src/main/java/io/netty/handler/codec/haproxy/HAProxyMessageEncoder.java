@@ -27,7 +27,9 @@ import java.util.List;
 import static io.netty.handler.codec.haproxy.HAProxyConstants.*;
 
 /**
- * Encodes an HAProxy proxy protocol message
+ * HAProxy PROXY 协议消息编码器，将 {@link HAProxyMessage} 写入 {@link ByteBuf}。
+ * <p>
+ * 支持 v1 文本与 v2 二进制格式，{@link #INSTANCE} 可共享使用。
  *
  * @see <a href="https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt">Proxy Protocol Specification</a>
  */
@@ -36,7 +38,7 @@ public final class HAProxyMessageEncoder extends MessageToByteEncoder<HAProxyMes
 
     private static final int V2_VERSION_BITMASK = 0x02 << 4;
 
-    // Length for source/destination addresses for the UNIX family must be 108 bytes each.
+    // UNIX 族源/目的地址各固定 108 字节
     static final int UNIX_ADDRESS_BYTES_LENGTH = 108;
     static final int TOTAL_UNIX_ADDRESS_BYTES_LENGTH = UNIX_ADDRESS_BYTES_LENGTH * 2;
 
@@ -86,7 +88,7 @@ public final class HAProxyMessageEncoder extends MessageToByteEncoder<HAProxyMes
             case AF_IPv6:
                 byte[] srcAddrBytes = NetUtil.createByteArrayFromIpAddressString(msg.sourceAddress());
                 byte[] dstAddrBytes = NetUtil.createByteArrayFromIpAddressString(msg.destinationAddress());
-                // srcAddrLen + dstAddrLen + 4 (srcPort + dstPort) + numTlvBytes
+                // 地址长度 + 端口 4 字节 + TLV 总字节数
                 out.writeShort(srcAddrBytes.length + dstAddrBytes.length + 4 + msg.tlvNumBytes());
                 out.writeBytes(srcAddrBytes);
                 out.writeBytes(dstAddrBytes);

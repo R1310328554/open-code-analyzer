@@ -24,8 +24,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Represents a {@link HAProxyTLV} of the type {@link HAProxyTLV.Type#PP2_TYPE_SSL}.
- * This TLV encapsulates other TLVs and has additional information like verification information and a client bitfield.
+ * 类型为 {@link HAProxyTLV.Type#PP2_TYPE_SSL} 的 TLV，封装 SSL 相关信息。
+ * <p>
+ * 含客户端位域、验证结果及嵌套子 TLV（ALPN、版本、CN 等）。
  */
 public final class HAProxySSLTLV extends HAProxyTLV {
 
@@ -34,7 +35,7 @@ public final class HAProxySSLTLV extends HAProxyTLV {
     private final byte clientBitField;
 
     /**
-     * Creates a new HAProxySSLTLV
+     * 创建 SSL TLV（空 rawContent）。
      *
      * @param verify the verification result as defined in the specification for the pp2_tlv_ssl struct (see
      * https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
@@ -46,7 +47,7 @@ public final class HAProxySSLTLV extends HAProxyTLV {
     }
 
     /**
-     * Creates a new HAProxySSLTLV
+     * 创建 SSL TLV 并保留原始内容缓冲。
      *
      * @param verify the verification result as defined in the specification for the pp2_tlv_ssl struct (see
      * https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
@@ -62,44 +63,32 @@ public final class HAProxySSLTLV extends HAProxyTLV {
         this.clientBitField = clientBitField;
     }
 
-    /**
-     * Returns {@code true} if the bit field for PP2_CLIENT_CERT_CONN was set
-     */
+    /** 客户端位域是否设置了 PP2_CLIENT_CERT_CONN。 */
     public boolean isPP2ClientCertConn() {
         return (clientBitField & 0x2) != 0;
     }
 
-    /**
-     * Returns {@code true} if the bit field for PP2_CLIENT_SSL was set
-     */
+    /** 客户端位域是否设置了 PP2_CLIENT_SSL。 */
     public boolean isPP2ClientSSL() {
         return (clientBitField & 0x1) != 0;
     }
 
-    /**
-     * Returns {@code true} if the bit field for PP2_CLIENT_CERT_SESS was set
-     */
+    /** 客户端位域是否设置了 PP2_CLIENT_CERT_SESS。 */
     public boolean isPP2ClientCertSess() {
         return (clientBitField & 0x4) != 0;
     }
 
-    /**
-     * Returns the client bit field
-     */
+    /** 返回客户端信息位域。 */
     public byte client() {
         return clientBitField;
     }
 
-    /**
-     * Returns the verification result
-     */
+    /** 返回 SSL 验证结果（pp2_tlv_ssl.verify）。 */
     public int verify() {
         return verify;
     }
 
-    /**
-     * Returns an unmodifiable Set of encapsulated {@link HAProxyTLV}s.
-     */
+    /** 返回不可修改的嵌套 {@link HAProxyTLV} 列表。 */
     public List<HAProxyTLV> encapsulatedTLVs() {
         return tlvs;
     }
@@ -110,7 +99,7 @@ public final class HAProxySSLTLV extends HAProxyTLV {
         for (int i = 0; i < tlvs.size(); i++) {
             tlvNumBytes += tlvs.get(i).totalNumBytes();
         }
-        return 5 + tlvNumBytes; // clientBit(1) + verify(4) + tlvs
+        return 5 + tlvNumBytes; // client 1 字节 + verify 4 字节 + 子 TLV
     }
 
     @Override

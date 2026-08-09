@@ -23,8 +23,9 @@ import io.netty.util.internal.StringUtil;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * A Type-Length Value (TLV vector) that can be added to the PROXY protocol
- * to include additional information like SSL information.
+ * PROXY 协议 v2 的 Type-Length-Value 扩展向量。
+ * <p>
+ * 可携带 ALPN、Authority、SSL 等附加信息；内容以 {@link ByteBuf} 持有并参与引用计数。
  *
  * @see HAProxySSLTLV
  */
@@ -33,10 +34,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
     private final Type type;
     private final byte typeByteValue;
 
-    /**
-     * The size of this tlv in bytes.
-     * @return the number of bytes.
-     */
+    /** 返回本 TLV 在报文中的总字节数（type 1 + length 2 + content）。 */
     int totalNumBytes() {
         return 3 + contentNumBytes(); // type(1) + length(2) + content
     }
@@ -45,9 +43,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
         return content().readableBytes();
     }
 
-    /**
-     * The registered types a TLV can have regarding the PROXY protocol 1.5 spec
-     */
+    /** PROXY 协议 1.5 规范注册的 TLV 类型。 */
     public enum Type {
         PP2_TYPE_ALPN,
         PP2_TYPE_AUTHORITY,
@@ -55,15 +51,11 @@ public class HAProxyTLV extends DefaultByteBufHolder {
         PP2_TYPE_SSL_VERSION,
         PP2_TYPE_SSL_CN,
         PP2_TYPE_NETNS,
-        /**
-         * A TLV type that is not officially defined in the spec. May be used for nonstandard TLVs
-         */
+        /** 规范未定义的自定义 TLV 类型。 */
         OTHER;
 
         /**
-         * Returns the {@link Type} for a specific byte value as defined in the PROXY protocol 1.5 spec
-         * <p>
-         * If the byte value is not an official one, it will return {@link Type#OTHER}.
+         * 按规范字节值解析 {@link Type}；非官方值返回 {@link Type#OTHER}。
          *
          * @param byteValue the byte for a type
          *
@@ -89,7 +81,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
         }
 
         /**
-         * Returns the byte value for the {@link Type} as defined in the PROXY protocol 1.5 spec.
+         * 返回规范定义的 {@link Type} 字节值。
          *
          * @param type the {@link Type}
          *
@@ -116,7 +108,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
     }
 
     /**
-     * Creates a new HAProxyTLV
+     * 按原始 type 字节创建 TLV（适用于非标准类型）。
      *
      * @param typeByteValue the byteValue of the TLV. This is especially important if non-standard TLVs are used
      * @param content the raw content of the TLV
@@ -126,7 +118,7 @@ public class HAProxyTLV extends DefaultByteBufHolder {
     }
 
     /**
-     * Creates a new HAProxyTLV
+     * 按 {@link Type} 创建 TLV。
      *
      * @param type the {@link Type} of the TLV
      * @param content the raw content of the TLV
@@ -135,29 +127,19 @@ public class HAProxyTLV extends DefaultByteBufHolder {
         this(type, Type.byteValueForType(type), content);
     }
 
-    /**
-     * Creates a new HAProxyTLV
-     *
-     * @param type the {@link Type} of the TLV
-     * @param typeByteValue the byteValue of the TLV. This is especially important if non-standard TLVs are used
-     * @param content the raw content of the TLV
-     */
+    /** 包内构造，同时指定 {@link Type} 与原始 type 字节。 */
     HAProxyTLV(final Type type, final byte typeByteValue, final ByteBuf content) {
         super(content);
         this.type = checkNotNull(type, "type");
         this.typeByteValue = typeByteValue;
     }
 
-    /**
-     * Returns the {@link Type} of this TLV
-     */
+    /** 返回本 TLV 的 {@link Type}。 */
     public Type type() {
         return type;
     }
 
-    /**
-     * Returns the type of the TLV as byte
-     */
+    /** 返回 TLV 类型的原始字节值。 */
     public byte typeByteValue() {
         return typeByteValue;
     }

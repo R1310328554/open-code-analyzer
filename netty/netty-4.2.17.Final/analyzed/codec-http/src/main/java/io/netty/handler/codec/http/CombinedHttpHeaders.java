@@ -36,13 +36,15 @@ import static io.netty.util.internal.StringUtil.COMMA;
 import static io.netty.util.internal.StringUtil.unescapeCsvFields;
 
 /**
- * Will add multiple values for the same header as single header with a comma separated list of values.
+ * 将同名头的多个值合并为逗号分隔的单条头字段（RFC 7230 §3.2.2）。
+ * <p>
+ * {@code Set-Cookie} 等不可合并的头仍保持独立条目。
  * <p>
  * Please refer to section <a href="https://tools.ietf.org/html/rfc7230#section-3.2.2">RFC 7230, 3.2.2</a>.
  */
 public class CombinedHttpHeaders extends DefaultHttpHeaders {
     /**
-     * Create a combined HTTP header object, with optional validation.
+     * 创建合并式 HTTP 头对象，可选启用值校验。
      *
      * @param validate Should Netty validate header values to ensure they aren't malicious.
      * @deprecated Prefer instead to configuring a {@link HttpHeadersFactory}
@@ -80,9 +82,7 @@ public class CombinedHttpHeaders extends DefaultHttpHeaders {
 
     private static final class CombinedHttpHeadersImpl
             extends DefaultHeaders<CharSequence, CharSequence, CombinedHttpHeadersImpl> {
-        /**
-         * An estimate of the size of a header value.
-         */
+        /** 合并后单值长度的估算值，用于预分配 StringBuilder。 */
         private static final int VALUE_LENGTH_ESTIMATE = 10;
         private CsvValueEscaper<Object> objectEscaper;
         private CsvValueEscaper<CharSequence> charSequenceEscaper;
@@ -172,7 +172,7 @@ public class CombinedHttpHeaders extends DefaultHttpHeaders {
 
         @Override
         public CombinedHttpHeadersImpl add(Headers<? extends CharSequence, ? extends CharSequence, ?> headers) {
-            // Override the fast-copy mechanism used by DefaultHeaders
+            // 覆写 DefaultHeaders 的快速拷贝逻辑
             if (headers == this) {
                 throw new IllegalArgumentException("can't add to itself.");
             }
@@ -181,7 +181,7 @@ public class CombinedHttpHeaders extends DefaultHttpHeaders {
                     // Can use the fast underlying copy
                     addImpl(headers);
                 } else {
-                    // Values are already escaped so don't escape again
+                    // 源已是转义后的 CSV，不再重复转义
                     for (Map.Entry<? extends CharSequence, ? extends CharSequence> header : headers) {
                         addEscapedValue(header.getKey(), header.getValue());
                     }
@@ -325,13 +325,13 @@ public class CombinedHttpHeaders extends DefaultHttpHeaders {
         }
 
         /**
-         * Escapes comma separated values (CSV).
+         * 逗号分隔值（CSV）转义策略接口。
          *
          * @param <T> The type that a concrete implementation handles
          */
         private interface CsvValueEscaper<T> {
             /**
-             * Appends the value to the specified {@link StringBuilder}, escaping if necessary.
+             * 对值进行 CSV 转义并返回可追加的字符序列。
              *
              * @param name the name of the header for the value being escaped
              * @param value the value to be appended, escaped if necessary

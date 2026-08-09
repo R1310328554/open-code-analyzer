@@ -20,19 +20,27 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderResult;
 
 
+/**
+ * 仅含尾部头（trailing headers）、无正文内容的 {@link LastHttpContent} 实现。
+ * <p>
+ * 用于 chunked 编码结束但需传递 trailing headers 的场景；{@link #content()} 恒为空缓冲。
+ */
 final class ComposedLastHttpContent implements LastHttpContent {
     private final HttpHeaders trailingHeaders;
     private DecoderResult result;
 
+    /** 创建仅含 trailing headers 的实例。 */
     ComposedLastHttpContent(HttpHeaders trailingHeaders) {
         this.trailingHeaders = trailingHeaders;
     }
 
+    /** 创建含 trailing headers 与解码结果的实例。 */
     ComposedLastHttpContent(HttpHeaders trailingHeaders, DecoderResult result) {
         this(trailingHeaders);
         this.result = result;
     }
 
+    /** 返回 chunked 尾部头。 */
     @Override
     public HttpHeaders trailingHeaders() {
         return trailingHeaders;
