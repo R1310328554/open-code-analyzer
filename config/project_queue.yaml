@@ -1,6 +1,3 @@
-# 多项目精读队列（按用户指定顺序）
-# 每个条目：url 必填；modules 可选（缩小超大仓范围）；languages 可选
-
 defaults:
   comment_language: zh-CN
   keep_license_english: true
@@ -8,110 +5,121 @@ defaults:
   parallel_agents_per_wave: 8
   files_per_agent: 12
   claim_max_lines: 450
-
 projects:
-  # —— 进行中 ——
-  - id: springframework
-    url: https://github.com/spring-projects/spring-framework
-    status: in_progress
-    version: "7.0.8"
-    modules: [spring-beans, spring-context, spring-tx, spring-aop, spring-jdbc]
-
-  # —— 用户指定后续（Java 生态优先小仓加速验证流水线）——
-  - id: spring-boot
-    url: https://github.com/spring-projects/spring-boot
-  - id: rocketmq
-    url: https://github.com/apache/rocketmq
-  - id: redisson
-    url: https://github.com/redisson/redisson
-    status: complete
-    version: "redisson-4.7.0"
-  - id: jdk
-    url: https://github.com/openjdk/jdk
-    # OpenJDK 体量极大：先核心 java.base 相关模块
-    modules_hint: [src/java.base]
-    note: 超大仓，分模块排队
-  - id: gson
-    url: https://github.com/google/gson
-    status: complete
-    version: "gson-parent-2.14.0"
-  - id: sentinel
-    url: https://github.com/alibaba/Sentinel
-  - id: hikaricp
-    url: https://github.com/brettwooldridge/HikariCP
-    status: complete
-    version: "dev-a4d93f4f8551"
-  - id: disruptor
-    url: https://github.com/LMAX-Exchange/disruptor
-    status: complete
-    version: "4.0.0"
-
-  # —— Python ——
-  - id: transformers
-    url: https://github.com/huggingface/transformers
-    languages: [python]
-  - id: django
-    url: https://github.com/django/django
-    languages: [python]
-  - id: flask
-    url: https://github.com/pallets/flask
-    languages: [python]
-  - id: sqlalchemy
-    url: https://github.com/sqlalchemy/sqlalchemy
-    languages: [python]
-  - id: pytorch
-    url: https://github.com/pytorch/pytorch
-    languages: [python]
-    note: 超大仓，先 python/torch 核心
-  - id: fastapi
-    url: https://github.com/fastapi/fastapi
-    languages: [python]
-  - id: paddleocr
-    url: https://github.com/PaddlePaddle/PaddleOCR
-    languages: [python]
-
-  # —— 更多 Java ——
-  - id: elasticsearch
-    url: https://github.com/elastic/elasticsearch
-    note: 超大仓，分模块
-  - id: rxjava
-    url: https://github.com/ReactiveX/RxJava
-  - id: arthas
-    url: https://github.com/alibaba/arthas
-    status: in_progress
-    version: "arthas-all-4.3.2"
-  - id: netty
-    url: https://github.com/netty/netty
-  - id: nacos
-    url: https://github.com/alibaba/nacos
-  - id: keycloak
-    url: https://github.com/keycloak/keycloak
-
-  # —— Go ——
-  - id: gin
-    url: https://github.com/gin-gonic/gin
-    languages: [go]
-    status: complete
-    version: "1.12.0"
-  - id: harness
-    url: https://github.com/harness/harness
-    languages: [go]
-  - id: ollama
-    url: https://github.com/ollama/ollama
-    languages: [go]
-  - id: kubernetes
-    url: https://github.com/kubernetes/kubernetes
-    languages: [go]
-    note: 超大仓，先 staging/pkg 核心
-  - id: go
-    url: https://github.com/golang/go
-    languages: [go]
-    note: 超大仓，先 src/ 标准库子集
-  - id: ragflow
-    url: https://github.com/infiniflow/ragflow
-  - id: prometheus
-    url: https://github.com/prometheus/prometheus
-    languages: [go]
-  - id: loki
-    url: https://github.com/grafana/loki
-    languages: [go]
+- id: springframework
+  url: https://github.com/spring-projects/spring-framework
+  status: complete
+  version: 7.0.8
+  modules:
+  - spring-beans
+  - spring-context
+  - spring-tx
+  - spring-aop
+  - spring-jdbc
+- id: spring-boot
+  url: https://github.com/spring-projects/spring-boot
+- id: rocketmq
+  url: https://github.com/apache/rocketmq
+- id: redisson
+  url: https://github.com/redisson/redisson
+  status: complete
+  version: redisson-4.7.0
+- id: jdk
+  url: https://github.com/openjdk/jdk
+  modules_hint:
+  - src/java.base
+  note: 超大仓，分模块排队
+- id: gson
+  url: https://github.com/google/gson
+  status: complete
+  version: gson-parent-2.14.0
+- id: sentinel
+  url: https://github.com/alibaba/Sentinel
+- id: hikaricp
+  url: https://github.com/brettwooldridge/HikariCP
+  status: complete
+  version: dev-a4d93f4f8551
+- id: disruptor
+  url: https://github.com/LMAX-Exchange/disruptor
+  status: complete
+  version: 4.0.0
+- id: transformers
+  url: https://github.com/huggingface/transformers
+  languages:
+  - python
+- id: django
+  url: https://github.com/django/django
+  languages:
+  - python
+- id: flask
+  url: https://github.com/pallets/flask
+  languages:
+  - python
+- id: sqlalchemy
+  url: https://github.com/sqlalchemy/sqlalchemy
+  languages:
+  - python
+- id: pytorch
+  url: https://github.com/pytorch/pytorch
+  languages:
+  - python
+  note: 超大仓，先 python/torch 核心
+- id: fastapi
+  url: https://github.com/fastapi/fastapi
+  languages:
+  - python
+- id: paddleocr
+  url: https://github.com/PaddlePaddle/PaddleOCR
+  languages:
+  - python
+- id: elasticsearch
+  url: https://github.com/elastic/elasticsearch
+  note: 超大仓，分模块
+- id: rxjava
+  url: https://github.com/ReactiveX/RxJava
+- id: arthas
+  url: https://github.com/alibaba/arthas
+  status: complete
+  version: arthas-all-4.3.2
+- id: netty
+  url: https://github.com/netty/netty
+  status: in_progress
+  version: netty-4.2.17.Final
+- id: nacos
+  url: https://github.com/alibaba/nacos
+- id: keycloak
+  url: https://github.com/keycloak/keycloak
+- id: gin
+  url: https://github.com/gin-gonic/gin
+  languages:
+  - go
+  status: complete
+  version: 1.12.0
+- id: harness
+  url: https://github.com/harness/harness
+  languages:
+  - go
+- id: ollama
+  url: https://github.com/ollama/ollama
+  languages:
+  - go
+- id: kubernetes
+  url: https://github.com/kubernetes/kubernetes
+  languages:
+  - go
+  note: 超大仓，先 staging/pkg 核心
+- id: go
+  url: https://github.com/golang/go
+  languages:
+  - go
+  note: 超大仓，先 src/ 标准库子集
+- id: ragflow
+  url: https://github.com/infiniflow/ragflow
+- id: prometheus
+  url: https://github.com/prometheus/prometheus
+  languages:
+  - go
+- id: loki
+  url: https://github.com/grafana/loki
+  languages:
+  - go

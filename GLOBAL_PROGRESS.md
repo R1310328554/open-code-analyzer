@@ -18,7 +18,8 @@
 | hikaricp | dev-a4d93f4f8551 | 49 | 0 ✅ |
 | disruptor | 4.0.0 | 171 | 0 ✅ |
 | gin | 1.12.0 | 56 | 0 ✅ |
-| arthas | arthas-all-4.3.2 | 0 | 795 |
+| arthas | arthas-all-4.3.2 | 795 | 0 ✅ |
+| netty | netty-4.2.17.Final | 0 | 1928 |
 
-已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin。  
-进行中：arthas（`src/main/java` 队列已初始化）。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas。  
+进行中：netty（核心 `src/main/java` 队列已初始化，已排除 testsuite/example/microbench）。
