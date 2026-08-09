@@ -16,41 +16,41 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol SYN_STREAM Frame
+ * SPDY SYN_STREAM 帧：在连接上创建新流并携带请求/推送头块。
+ * <p>除 {@link SpdyHeadersFrame} 的 stream ID 与头域外，还包含关联流、优先级与单向标志，
+ * 用于多路复用下的流调度与 server push 语义。
  */
 public interface SpdySynStreamFrame extends SpdyHeadersFrame {
 
     /**
-     * Returns the Associated-To-Stream-ID of this frame.
+     * 返回关联流 ID（Associated-To-Stream-ID）。
+     * <p>值为 0 表示独立新流；非零时本流与指定流关联（如 server push）。
      */
     int associatedStreamId();
 
     /**
-     * Sets the Associated-To-Stream-ID of this frame.
-     * The Associated-To-Stream-ID cannot be negative.
+     * 设置关联流 ID，不可为负数。
      */
     SpdySynStreamFrame setAssociatedStreamId(int associatedStreamId);
 
     /**
-     * Returns the priority of the stream.
+     * 返回流优先级，范围 0（最高）到 7（最低）。
      */
     byte priority();
 
     /**
-     * Sets the priority of the stream.
-     * The priority must be between 0 and 7 inclusive.
+     * 设置流优先级，必须在 0–7 之间（含端点）。
      */
     SpdySynStreamFrame setPriority(byte priority);
 
     /**
-     * Returns {@code true} if the stream created with this frame is to be
-     * considered half-closed to the receiver.
+     * 若创建后流对接收方呈 half-closed（仅发送方可继续写 DATA），返回 {@code true}。
+     * <p>用于 server push 等单向场景。
      */
     boolean isUnidirectional();
 
     /**
-     * Sets if the stream created with this frame is to be considered
-     * half-closed to the receiver.
+     * 设置新流是否对接收方 half-closed。
      */
     SpdySynStreamFrame setUnidirectional(boolean unidirectional);
 

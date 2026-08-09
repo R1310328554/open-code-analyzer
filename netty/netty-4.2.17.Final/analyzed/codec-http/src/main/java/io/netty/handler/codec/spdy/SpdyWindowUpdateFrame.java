@@ -16,28 +16,25 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol WINDOW_UPDATE Frame
+ * SPDY WINDOW_UPDATE 帧：为连接或单条流增加可发送字节窗口（流控信用）。
+ * <p>接收方消费 DATA 后通过本帧告知对端可再发送的字节增量；
+ * stream ID 为 0 时作用于连接级窗口，非零时仅更新对应流。
  */
 public interface SpdyWindowUpdateFrame extends SpdyFrame {
 
-    /**
-     * Returns the Stream-ID of this frame.
-     */
+    /** 目标流 ID；0 表示连接级窗口更新。 */
     int streamId();
 
-    /**
-     * Sets the Stream-ID of this frame.  The Stream-ID cannot be negative.
-     */
+    /** 设置流 ID，不可为负数。 */
     SpdyWindowUpdateFrame setStreamId(int streamID);
 
     /**
-     * Returns the Delta-Window-Size of this frame.
+     * 返回窗口增量（Delta-Window-Size），即本次释放的可发送字节数。
      */
     int deltaWindowSize();
 
     /**
-     * Sets the Delta-Window-Size of this frame.
-     * The Delta-Window-Size must be positive.
+     * 设置窗口增量，必须为正数。
      */
     SpdyWindowUpdateFrame setDeltaWindowSize(int deltaWindowSize);
 }

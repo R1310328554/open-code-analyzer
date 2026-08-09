@@ -18,80 +18,58 @@ package io.netty.handler.codec.spdy;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * The SPDY stream status code and its description.
+ * SPDY 流状态码及其语义描述，用于 {@link SpdyRstStreamFrame} 说明流被重置的原因。
+ * <p>与 HTTP 状态码不同，这些是协议层错误/终止码，由 RST_STREAM 帧携带。
  */
 public class SpdyStreamStatus implements Comparable<SpdyStreamStatus> {
 
-    /**
-     * 1 Protocol Error
-     */
+    /** 1 — 协议错误：帧格式或语义不符合 SPDY 规范。 */
     public static final SpdyStreamStatus PROTOCOL_ERROR =
         new SpdyStreamStatus(1, "PROTOCOL_ERROR");
 
-    /**
-     * 2 Invalid Stream
-     */
+    /** 2 — 无效流：引用的 stream ID 不存在或不可用。 */
     public static final SpdyStreamStatus INVALID_STREAM =
         new SpdyStreamStatus(2, "INVALID_STREAM");
 
-    /**
-     * 3 Refused Stream
-     */
+    /** 3 — 拒绝流：服务端拒绝创建该流（如超出并发限制）。 */
     public static final SpdyStreamStatus REFUSED_STREAM =
         new SpdyStreamStatus(3, "REFUSED_STREAM");
 
-    /**
-     * 4 Unsupported Version
-     */
+    /** 4 — 不支持的版本：对端 SPDY 版本不匹配。 */
     public static final SpdyStreamStatus UNSUPPORTED_VERSION =
         new SpdyStreamStatus(4, "UNSUPPORTED_VERSION");
 
-    /**
-     * 5 Cancel
-     */
+    /** 5 — 取消：应用层主动取消，非错误场景。 */
     public static final SpdyStreamStatus CANCEL =
         new SpdyStreamStatus(5, "CANCEL");
 
-    /**
-     * 6 Internal Error
-     */
+    /** 6 — 内部错误：端点内部故障导致无法继续处理该流。 */
     public static final SpdyStreamStatus INTERNAL_ERROR =
         new SpdyStreamStatus(6, "INTERNAL_ERROR");
 
-    /**
-     * 7 Flow Control Error
-     */
+    /** 7 — 流控错误：违反 WINDOW_UPDATE 或初始窗口约定。 */
     public static final SpdyStreamStatus FLOW_CONTROL_ERROR =
         new SpdyStreamStatus(7, "FLOW_CONTROL_ERROR");
 
-    /**
-     * 8 Stream In Use
-     */
+    /** 8 — 流 ID 已被占用：SYN_STREAM 使用了已激活的 stream ID。 */
     public static final SpdyStreamStatus STREAM_IN_USE =
         new SpdyStreamStatus(8, "STREAM_IN_USE");
 
-    /**
-     * 9 Stream Already Closed
-     */
+    /** 9 — 流已关闭：对已 half-closed 或 fully-closed 的流发送数据。 */
     public static final SpdyStreamStatus STREAM_ALREADY_CLOSED =
         new SpdyStreamStatus(9, "STREAM_ALREADY_CLOSED");
 
-    /**
-     * 10 Invalid Credentials
-     */
+    /** 10 — 凭证无效：客户端认证信息被拒绝。 */
     public static final SpdyStreamStatus INVALID_CREDENTIALS =
         new SpdyStreamStatus(10, "INVALID_CREDENTIALS");
 
-    /**
-     * 11 Frame Too Large
-     */
+    /** 11 — 帧过大：单帧 payload 超出 SETTINGS 允许的上限。 */
     public static final SpdyStreamStatus FRAME_TOO_LARGE =
         new SpdyStreamStatus(11, "FRAME_TOO_LARGE");
 
     /**
-     * Returns the {@link SpdyStreamStatus} represented by the specified code.
-     * If the specified code is a defined SPDY status code, a cached instance
-     * will be returned.  Otherwise, a new instance will be returned.
+     * 按数值解析 {@link SpdyStreamStatus}。
+     * 标准码（1–11）返回预置单例；未知码构造 {@code UNKNOWN (n)} 实例。
      */
     public static SpdyStreamStatus valueOf(int code) {
         if (code == 0) {
@@ -132,8 +110,9 @@ public class SpdyStreamStatus implements Comparable<SpdyStreamStatus> {
     private final String statusPhrase;
 
     /**
-     * Creates a new instance with the specified {@code code} and its
-     * {@code statusPhrase}.
+     * 构造自定义状态码实例。
+     * @param code 非零状态码（0 对 RST_STREAM 非法）
+     * @param statusPhrase 可读描述，通常为大写枚举名
      */
     public SpdyStreamStatus(int code, String statusPhrase) {
         if (code == 0) {
@@ -145,16 +124,12 @@ public class SpdyStreamStatus implements Comparable<SpdyStreamStatus> {
         this.code = code;
     }
 
-    /**
-     * Returns the code of this status.
-     */
+    /** 返回数值状态码。 */
     public int code() {
         return code;
     }
 
-    /**
-     * Returns the status phrase of this status.
-     */
+    /** 返回状态短语（如 {@code PROTOCOL_ERROR}）。 */
     public String statusPhrase() {
         return statusPhrase;
     }

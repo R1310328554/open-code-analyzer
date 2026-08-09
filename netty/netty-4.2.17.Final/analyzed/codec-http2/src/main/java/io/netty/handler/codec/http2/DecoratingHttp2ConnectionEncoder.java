@@ -17,7 +17,9 @@ package io.netty.handler.codec.http2;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A decorator around another {@link Http2ConnectionEncoder} instance.
+ * {@link Http2ConnectionEncoder} 的装饰器基类，同时继承 {@link DecoratingHttp2FrameWriter} 的写帧委托。
+ * <p>除帧写入外，还将连接、远端流控、SETTINGS 交换等编码器职责转发给 {@code delegate}，
+ * 便于在编码路径上叠加压缩、限流等横切能力。
  */
 public class DecoratingHttp2ConnectionEncoder extends DecoratingHttp2FrameWriter implements Http2ConnectionEncoder,
         Http2SettingsReceivedConsumer {

@@ -18,11 +18,17 @@ package io.netty.handler.codec.spdy;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
-/** A SPDY Control frame. */
-
+/**
+ * 无法识别或未注册的 SPDY 控制帧，保留原始 type/flags 与 payload。
+ * <p>解码器遇到未知帧类型时以此接口向上游透传，便于扩展或日志诊断；
+ * 同时继承 {@link ByteBufHolder} 以参与 Netty 引用计数生命周期。
+ */
 public interface SpdyUnknownFrame extends SpdyFrame, ByteBufHolder {
+
+    /** 帧类型字节（SPDY 控制帧 header 中的 type 字段）。 */
     int frameType();
 
+    /** 帧标志位（如 FIN、UNIDIRECTIONAL 等，依帧类型而定）。 */
     byte flags();
 
     @Override

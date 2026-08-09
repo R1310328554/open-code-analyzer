@@ -16,7 +16,9 @@
 package io.netty.handler.codec.spdy;
 
 /**
- * A SPDY Protocol SYN_REPLY Frame
+ * SPDY SYN_REPLY 帧：服务端对已有流的响应头块。
+ * <p>对应 HTTP 响应的状态行与头域，通过 {@link SpdyHeaders} 承载；
+ * 常与后续 DATA 帧组成完整响应。方法返回 {@code this} 类型以支持链式修改。
  */
 public interface SpdySynReplyFrame extends SpdyHeadersFrame {
 
@@ -26,6 +28,7 @@ public interface SpdySynReplyFrame extends SpdyHeadersFrame {
     @Override
     SpdySynReplyFrame setLast(boolean last);
 
+    /** 标记帧已损坏或不应再被编解码器处理。 */
     @Override
     SpdySynReplyFrame setInvalid();
 }

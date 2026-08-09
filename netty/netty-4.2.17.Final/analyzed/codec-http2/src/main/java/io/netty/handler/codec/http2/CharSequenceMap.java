@@ -23,13 +23,21 @@ import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 
 /**
+ * HTTP/2 内部使用的 {@link CharSequence} 键头表，基于 {@link DefaultHeaders}。
+ * <p>键为 {@link io.netty.util.AsciiString} 或普通 {@link CharSequence}，
+ * 可选大小写敏感/不敏感哈希；值类型由 {@link ValueConverter} 决定。
  * Internal use only!
  */
 public final class CharSequenceMap<V> extends DefaultHeaders<CharSequence, V, CharSequenceMap<V>> {
+
+    /** 默认大小写不敏感（HTTP 头名惯例）。 */
     public CharSequenceMap() {
         this(true);
     }
 
+    /**
+     * @param caseSensitive {@code true} 使用大小写敏感哈希；{@code false} 忽略大小写
+     */
     public CharSequenceMap(boolean caseSensitive) {
         this(caseSensitive, UnsupportedValueConverter.<V>instance());
     }

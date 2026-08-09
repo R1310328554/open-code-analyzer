@@ -22,7 +22,8 @@ import io.netty.channel.ChannelHandlerContext;
 import java.util.List;
 
 /**
- * Decorator around another {@link Http2ConnectionDecoder} instance.
+ * {@link Http2ConnectionDecoder} 的装饰器基类：所有方法委托给内部 {@code delegate}。
+ * <p>子类可覆写个别方法以插入日志、限流或协议扩展，而无需复制完整解码逻辑。
  */
 public class DecoratingHttp2ConnectionDecoder implements Http2ConnectionDecoder {
     private final Http2ConnectionDecoder delegate;

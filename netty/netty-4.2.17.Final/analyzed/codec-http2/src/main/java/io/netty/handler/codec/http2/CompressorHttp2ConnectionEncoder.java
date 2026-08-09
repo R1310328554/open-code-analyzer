@@ -57,11 +57,12 @@ import static io.netty.handler.codec.http.HttpHeaderValues.ZSTD;
 import static io.netty.handler.codec.http.HttpHeaderValues.SNAPPY;
 
 /**
- * A decorating HTTP2 encoder that will compress data frames according to the {@code content-encoding} header for each
- * stream. The compression provided by this class will be applied to the data for the entire stream.
+ * HTTP/2 编码器装饰器：按每条流的 {@code content-encoding} 头对 DATA 帧做压缩。
+ * <p>在 {@link #writeHeaders} 时解析编码类型、创建 per-stream {@link io.netty.channel.embedded.EmbeddedChannel} 压缩器，
+ * 在 {@link #writeData} 中将明文写入压缩器再写出压缩后的 DATA；流结束时释放压缩器。
  */
 public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionEncoder {
-    // We cannot remove this because it'll be breaking change
+    // 保留以兼容旧 API，不可删除
     public static final int DEFAULT_COMPRESSION_LEVEL = 6;
     public static final int DEFAULT_WINDOW_BITS = 15;
     public static final int DEFAULT_MEM_LEVEL = 8;
@@ -80,8 +81,7 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
     private SnappyOptions snappyOptions;
 
     /**
-     * Create a new {@link CompressorHttp2ConnectionEncoder} instance
-     * with default implementation of {@link StandardCompressionOptions}
+     * 使用 {@link StandardCompressionOptions} 默认算法集（gzip、deflate、snappy，及可选 brotli/zstd）创建实例。
      */
     public CompressorHttp2ConnectionEncoder(Http2ConnectionEncoder delegate) {
         this(delegate, defaultCompressionOptions());
@@ -127,8 +127,7 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
     }
 
     /**
-     * Create a new {@link CompressorHttp2ConnectionEncoder} with
-     * specified {@link StandardCompressionOptions}
+     * 按显式 {@link CompressionOptions} 配置支持的压缩算法创建实例。
      */
     public CompressorHttp2ConnectionEncoder(Http2ConnectionEncoder delegate,
                                             CompressionOptions... compressionOptionsArgs) {
@@ -179,12 +178,12 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
         final Http2Stream stream = connection().stream(streamId);
         final EmbeddedChannel channel = stream == null ? null : (EmbeddedChannel) stream.getProperty(propertyKey);
         if (channel == null) {
-            // The compressor may be null if no compatible encoding type was found in this stream's headers
+            // 该流无压缩器（未设置 content-encoding 或不支持），直接透传
             return super.writeData(ctx, streamId, data, padding, endOfStream, promise);
         }
 
         try {
-            // The channel will release the buffer after being written
+            // 压缩器会在 writeOutbound 后释放入站 buffer
             channel.writeOutbound(data);
             ByteBuf buf = nextReadableBuf(channel);
             if (buf == null) {
@@ -195,7 +194,7 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
                     return super.writeData(ctx, streamId, buf == null ? Unpooled.EMPTY_BUFFER : buf, padding,
                             true, promise);
                 }
-                // END_STREAM is not set and the assumption is data is still forthcoming.
+                // 尚未 END_STREAM，压缩器可能还有缓冲，先成功返回等待后续 DATA
                 promise.setSuccess();
                 return promise;
             }
@@ -216,7 +215,7 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
                     break;
                 }
 
-                padding = 0; // Padding is only communicated once on the first iteration
+                padding = 0; // padding 仅在首个压缩 DATA 分片上携带
                 buf = nextBuf;
             }
             combiner.finish(promise);
@@ -234,13 +233,13 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
     public ChannelFuture writeHeaders(ChannelHandlerContext ctx, int streamId, Http2Headers headers, int padding,
             boolean endStream, ChannelPromise promise) {
         try {
-            // Determine if compression is required and sanitize the headers.
+            // 根据 content-encoding 决定是否压缩，并清理/改写相关头域
             EmbeddedChannel compressor = newCompressor(ctx, headers, endStream);
 
-            // Write the headers and create the stream object.
+            // 写出 HEADERS 并创建 Http2Stream 对象
             ChannelFuture future = super.writeHeaders(ctx, streamId, headers, padding, endStream, promise);
 
-            // After the stream object has been created, then attach the compressor as a property for data compression.
+            // stream 创建后将压缩器绑定到流属性，供后续 writeData 使用
             bindCompressorToStream(compressor, streamId);
 
             return future;
@@ -255,14 +254,11 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
             final int streamDependency, final short weight, final boolean exclusive, final int padding,
             final boolean endOfStream, final ChannelPromise promise) {
         try {
-            // Determine if compression is required and sanitize the headers.
             EmbeddedChannel compressor = newCompressor(ctx, headers, endOfStream);
 
-            // Write the headers and create the stream object.
             ChannelFuture future = super.writeHeaders(ctx, streamId, headers, streamDependency, weight, exclusive,
                                                       padding, endOfStream, promise);
 
-            // After the stream object has been created, then attach the compressor as a property for data compression.
             bindCompressorToStream(compressor, streamId);
 
             return future;
@@ -273,14 +269,12 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
     }
 
     /**
-     * Returns a new {@link EmbeddedChannel} that encodes the HTTP2 message content encoded in the specified
-     * {@code contentEncoding}.
+     * 按 {@code content-encoding} 创建压缩用的 {@link EmbeddedChannel}。
      *
      * @param ctx the context.
-     * @param contentEncoding the value of the {@code content-encoding} header
-     * @return a new {@link ByteToMessageDecoder} if the specified encoding is supported. {@code null} otherwise
-     * (alternatively, you can throw a {@link Http2Exception} to block unknown encoding).
-     * @throws Http2Exception If the specified encoding is not supported and warrants an exception
+     * @param contentEncoding {@code content-encoding} 头取值
+     * @return 支持该编码的压缩通道；不支持或为 identity 时返回 {@code null}
+     * @throws Http2Exception 编码非法且应中断连接时
      */
     protected EmbeddedChannel newContentCompressor(ChannelHandlerContext ctx, CharSequence contentEncoding)
             throws Http2Exception {
@@ -316,7 +310,7 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
                     .handlers(new SnappyFrameEncoder())
                     .build();
         }
-        // 'identity' or unsupported
+        // 'identity' 或不支持的编码 — 不压缩
         return null;
     }
 
@@ -376,14 +370,12 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
     }
 
     /**
-     * Checks if a new compressor object is needed for the stream identified by {@code streamId}. This method will
-     * modify the {@code content-encoding} header contained in {@code headers}.
+     * 解析 {@code content-encoding}，必要时改写头域（移除 {@code Content-Length} 等）。
      *
      * @param ctx the context.
-     * @param headers Object representing headers which are to be written
-     * @param endOfStream Indicates if the stream has ended
-     * @return The channel used to compress data.
-     * @throws Http2Exception if any problems occur during initialization.
+     * @param headers 待写出的 HEADERS
+     * @param endOfStream 是否同时结束流（无 DATA 时不创建压缩器）
+     * @return 绑定到该流的压缩通道，或 {@code null}
      */
     private EmbeddedChannel newCompressor(ChannelHandlerContext ctx, Http2Headers headers, boolean endOfStream)
             throws Http2Exception {
@@ -404,9 +396,7 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
                 headers.set(CONTENT_ENCODING, targetContentEncoding);
             }
 
-            // The content length will be for the decompressed data. Since we will compress the data
-            // this content-length will not be correct. Instead of queuing messages or delaying sending
-            // header frames...just remove the content-length header
+            // Content-Length 针对未压缩体；压缩后长度未知，故删除以免误导对端
             headers.remove(CONTENT_LENGTH);
         }
 
@@ -428,10 +418,7 @@ public class CompressorHttp2ConnectionEncoder extends DecoratingHttp2ConnectionE
     }
 
     /**
-     * Release remaining content from {@link EmbeddedChannel} and remove the compressor from the {@link Http2Stream}.
-     *
-     * @param stream The stream for which {@code compressor} is the compressor for
-     * @param compressor The compressor for {@code stream}
+     * 释放 {@link EmbeddedChannel} 中剩余压缩输出，并从 {@link Http2Stream} 移除压缩器属性。
      */
     void cleanup(Http2Stream stream, EmbeddedChannel compressor) {
         compressor.finishAndReleaseAll();

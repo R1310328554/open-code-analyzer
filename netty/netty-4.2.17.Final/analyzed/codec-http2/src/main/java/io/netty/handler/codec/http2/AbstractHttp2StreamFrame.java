@@ -16,7 +16,9 @@
 package io.netty.handler.codec.http2;
 
 /**
- * Abstract implementation of {@link Http2StreamFrame}.
+ * {@link Http2StreamFrame} 的抽象基类，持有所属 {@link Http2FrameStream} 引用。
+ * <p>具体帧类型（HEADERS、DATA 等）继承此类后只需关注自身 payload；
+ * {@link #equals(Object)} / {@link #hashCode()} 以绑定的 stream 为语义键。
  */
 public abstract class AbstractHttp2StreamFrame implements Http2StreamFrame {
 
@@ -34,7 +36,7 @@ public abstract class AbstractHttp2StreamFrame implements Http2StreamFrame {
     }
 
     /**
-     * Returns {@code true} if {@code o} has equal {@code stream} to this object.
+     * 当 {@code o} 为 {@link Http2StreamFrame} 且二者绑定的 {@code stream} 相同时返回 {@code true}。
      */
     @Override
     public boolean equals(Object o) {
@@ -48,7 +50,7 @@ public abstract class AbstractHttp2StreamFrame implements Http2StreamFrame {
     @Override
     public int hashCode() {
         Http2FrameStream stream = this.stream;
-        // Must be consistent with equals; super.hashCode() is Object's identity hash.
+        // 须与 equals 一致；super.hashCode() 为 Object 身份哈希。
         if (stream == null) {
             return 0;
         }

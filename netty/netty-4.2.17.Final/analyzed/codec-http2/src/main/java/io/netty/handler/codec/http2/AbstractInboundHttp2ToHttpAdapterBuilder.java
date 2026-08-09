@@ -19,7 +19,9 @@ import io.netty.handler.codec.TooLongFrameException;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A skeletal builder implementation of {@link InboundHttp2ToHttpAdapter} and its subtypes.
+ * {@link InboundHttp2ToHttpAdapter} 及其子类的骨架 Builder。
+ * <p>将 HTTP/2 入站帧聚合为 {@link io.netty.handler.codec.http.HttpObject}，
+ * 子类实现 {@link #build(Http2Connection, int, boolean, boolean)} 以构造具体适配器实例。
  */
 public abstract class AbstractInboundHttp2ToHttpAdapterBuilder<
         T extends InboundHttp2ToHttpAdapter, B extends AbstractInboundHttp2ToHttpAdapterBuilder<T, B>> {
@@ -30,10 +32,9 @@ public abstract class AbstractInboundHttp2ToHttpAdapterBuilder<
     private boolean propagateSettings;
 
     /**
-     * Creates a new {@link InboundHttp2ToHttpAdapter} builder for the specified {@link Http2Connection}.
+     * 为指定 {@link Http2Connection} 创建 Builder；构建出的适配器会注册为连接监听器。
      *
-     * @param connection the object which will provide connection notification events
-     *                   for the current connection
+     * @param connection 提供当前连接的流生命周期与 SETTINGS 通知
      */
     protected AbstractInboundHttp2ToHttpAdapterBuilder(Http2Connection connection) {
         this.connection = checkNotNull(connection, "connection");
@@ -44,25 +45,20 @@ public abstract class AbstractInboundHttp2ToHttpAdapterBuilder<
         return (B) this;
     }
 
-    /**
-     * Returns the {@link Http2Connection}.
-     */
+    /** 返回绑定的 {@link Http2Connection}。 */
     protected Http2Connection connection() {
         return connection;
     }
 
-    /**
-     * Returns the maximum length of the message content.
-     */
+    /** 返回消息体（DATA 聚合）允许的最大长度。 */
     protected int maxContentLength() {
         return maxContentLength;
     }
 
     /**
-     * Specifies the maximum length of the message content.
+     * 设置消息体最大长度；超出时抛出 {@link TooLongFrameException}。
      *
-     * @param maxContentLength the maximum length of the message content. If the length of the message content
-     *        exceeds this value, a {@link TooLongFrameException} will be raised
+     * @param maxContentLength 聚合 DATA 帧后的内容上限（字节）
      * @return {@link AbstractInboundHttp2ToHttpAdapterBuilder} the builder for the {@link InboundHttp2ToHttpAdapter}
      */
     protected B maxContentLength(int maxContentLength) {
@@ -70,15 +66,13 @@ public abstract class AbstractInboundHttp2ToHttpAdapterBuilder<
         return self();
     }
 
-    /**
-     * Return {@code true} if HTTP header validation should be performed.
-     */
+    /** 是否对转换后的 HTTP 头执行 http-codec 校验。 */
     protected boolean isValidateHttpHeaders() {
         return validateHttpHeaders;
     }
 
     /**
-     * Specifies whether validation of HTTP headers should be performed.
+     * 指定是否在 http-codec 层校验 HTTP 头。
      *
      * @param validate
      * <ul>
@@ -92,15 +86,14 @@ public abstract class AbstractInboundHttp2ToHttpAdapterBuilder<
         return self();
     }
 
-    /**
-     * Returns {@code true} if a read settings frame should be propagated along the channel pipeline.
-     */
+    /** 是否将读到的 SETTINGS 帧继续向 pipeline 下游传播。 */
     protected boolean isPropagateSettings() {
         return propagateSettings;
     }
 
     /**
-     * Specifies whether a read settings frame should be propagated along the channel pipeline.
+     * 指定是否沿 pipeline 传播 SETTINGS 帧。
+     * <p>客户端可在收到对端 SETTINGS 后再发数据，避免违反初始窗口等约束。
      *
      * @param propagate if {@code true} read settings will be passed along the pipeline. This can be useful
      *                     to clients that need hold off sending data until they have received the settings.
@@ -112,7 +105,7 @@ public abstract class AbstractInboundHttp2ToHttpAdapterBuilder<
     }
 
     /**
-     * Builds/creates a new {@link InboundHttp2ToHttpAdapter} instance using this builder's current settings.
+     * 按当前配置构建 {@link InboundHttp2ToHttpAdapter}，并注册为 {@link Http2Connection} 监听器。
      */
     protected T build() {
         final T instance;
@@ -127,7 +120,7 @@ public abstract class AbstractInboundHttp2ToHttpAdapterBuilder<
     }
 
     /**
-     * Creates a new {@link InboundHttp2ToHttpAdapter} with the specified properties.
+     * 子类实现：用给定参数构造具体适配器实例。
      */
     protected abstract T build(Http2Connection connection, int maxContentLength,
                                boolean validateHttpHeaders, boolean propagateSettings) throws Exception;

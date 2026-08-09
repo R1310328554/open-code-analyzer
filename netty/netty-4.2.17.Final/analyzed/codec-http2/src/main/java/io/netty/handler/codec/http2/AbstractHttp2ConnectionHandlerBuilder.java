@@ -25,46 +25,22 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Abstract base class which defines commonly used features required to build {@link Http2ConnectionHandler} instances.
+ * 构建 {@link Http2ConnectionHandler} 的抽象 Builder，集中管理编解码器、流控与安全选项。
  *
- * <h3>Three ways to build a {@link Http2ConnectionHandler}</h3>
- * <h4>Let the builder create a {@link Http2ConnectionHandler}</h4>
- * Simply call all the necessary setter methods, and then use {@link #build()} to build a new
- * {@link Http2ConnectionHandler}. Setting the following properties are prohibited because they are used for
- * other ways of building a {@link Http2ConnectionHandler}.
- * conflicts with this option:
- * <ul>
- *   <li>{@link #connection(Http2Connection)}</li>
- *   <li>{@link #codec(Http2ConnectionDecoder, Http2ConnectionEncoder)}</li>
- * </ul>
+ * <h3>三种构建路径</h3>
+ * <h4>由 Builder 自动组装（默认）</h4>
+ * 配置各项 setter 后调用 {@link #build()}；不可再设置 {@link #connection(Http2Connection)} 或
+ * {@link #codec(Http2ConnectionDecoder, Http2ConnectionEncoder)}，否则会冲突。
  *
+ * <h4>注入已有 {@link Http2Connection}</h4>
+ * 调用 {@link #connection(Http2Connection)} 后不可再设 {@link #server(boolean)} 或 {@link #codec(...)}。
  *
- * <h4>Let the builder use the {@link Http2ConnectionHandler} you specified</h4>
- * Call {@link #connection(Http2Connection)} to tell the builder that you want to build the handler from the
- * {@link Http2Connection} you specified. Setting the following properties are prohibited and thus will trigger
- * an {@link IllegalStateException} because they conflict with this option.
- * <ul>
- *   <li>{@link #server(boolean)}</li>
- *   <li>{@link #codec(Http2ConnectionDecoder, Http2ConnectionEncoder)}</li>
- * </ul>
+ * <h4>注入已有 Decoder / Encoder</h4>
+ * 调用 {@link #codec(Http2ConnectionDecoder, Http2ConnectionEncoder)} 后不可再设
+ * {@link #server(boolean)}、{@link #connection(...)}、{@link #frameLogger(...)} 等由 Builder 创建编解码器的选项。
  *
- * <h4>Let the builder use the {@link Http2ConnectionDecoder} and {@link Http2ConnectionEncoder} you specified</h4>
- * Call {@link #codec(Http2ConnectionDecoder, Http2ConnectionEncoder)} to tell the builder that you want to built the
- * handler from the {@link Http2ConnectionDecoder} and {@link Http2ConnectionEncoder} you specified. Setting the
- * following properties are prohibited and thus will trigger an {@link IllegalStateException} because they conflict
- * with this option:
- * <ul>
- *   <li>{@link #server(boolean)}</li>
- *   <li>{@link #connection(Http2Connection)}</li>
- *   <li>{@link #frameLogger(Http2FrameLogger)}</li>
- *   <li>{@link #headerSensitivityDetector(SensitivityDetector)}</li>
- *   <li>{@link #encoderEnforceMaxConcurrentStreams(boolean)}</li>
- *   <li>{@link #encoderIgnoreMaxHeaderListSize(boolean)}</li>
- * </ul>
- *
- * <h3>Exposing necessary methods in a subclass</h3>
- * {@link #build()} method and all property access methods are {@code protected}. Choose the methods to expose to the
- * users of your builder implementation and make them {@code public}.
+ * <h3>子类暴露 API</h3>
+ * {@link #build()} 与各属性方法为 {@code protected}，子类按需改为 {@code public} 供用户使用。
  *
  * @param <T> The type of handler created by this builder.
  * @param <B> The concrete type of this builder.
@@ -76,28 +52,25 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
 
     private static final int DEFAULT_MAX_RST_FRAMES_PER_CONNECTION_FOR_SERVER = 200;
 
-    // The properties that can always be set.
+    // 任意构建路径均可设置的通用属性
     private Http2Settings initialSettings = Http2Settings.defaultSettings();
     private Http2FrameListener frameListener;
     private long gracefulShutdownTimeoutMillis = Http2CodecUtil.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
     private boolean decoupleCloseAndGoAway;
     private boolean flushPreface = true;
 
-    // The property that will prohibit connection() and codec() if set by server(),
-    // because this property is used only when this builder creates an Http2Connection.
+    // server() 设置后禁止 connection()/codec()：仅用于 Builder 自建 Http2Connection 的场景
     private Boolean isServer;
     private Integer maxReservedStreams;
 
-    // The property that will prohibit server() and codec() if set by connection().
+    // connection() 设置后禁止 server()/codec()
     private Http2Connection connection;
 
-    // The properties that will prohibit server() and connection() if set by codec().
+    // codec() 设置后禁止 server()/connection()
     private Http2ConnectionDecoder decoder;
     private Http2ConnectionEncoder encoder;
 
-    // The properties that are:
-    // * mutually exclusive against codec() and
-    // * OK to use with server() and connection()
+    // 与 codec() 互斥，但与 server()/connection() 可共存的安全/日志选项
     private Boolean validateHeaders;
     private Boolean validateRequiredPseudoHeaders;
     private Http2FrameLogger frameLogger;
@@ -116,7 +89,7 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
     private int maxSmallContinuationFrames = Http2CodecUtil.DEFAULT_MAX_SMALL_CONTINUATION_FRAME;
 
     /**
-     * Sets the {@link Http2Settings} to use for the initial connection settings exchange.
+     * 连接建立时用于 SETTINGS 交换的初始参数（窗口、并发流上限等）。
      */
     protected Http2Settings initialSettings() {
         return initialSettings;
@@ -597,7 +570,7 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
     }
 
     /**
-     * Create a new {@link Http2ConnectionHandler}.
+     * 创建新的 {@link Http2ConnectionHandler}：优先使用已注入的 codec，否则从 connection 或默认连接组装。
      */
     protected T build() {
         if (encoder != null) {
@@ -614,8 +587,7 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
     }
 
     private T buildFromConnection(Http2Connection connection) {
-        // Enforce the advertised maxConcurrentStreams limit on the remote endpoint immediately,
-        // without waiting for the SETTINGS_ACK round-trip.
+        // 立即按 initialSettings 限制远端并发流，无需等待 SETTINGS ACK 往返
         enforceMaxActiveStreams(connection, initialSettings);
 
         Long maxHeaderListSize = initialSettings.maxHeaderListSize();
@@ -639,7 +611,7 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
         }
         final int maxEncodedRstFrames;
         if (maxEncodedRstFramesPerWindow == null) {
-            // Only enable by default on the server.
+            // 默认仅服务端启用出站 RST 洪水防护
             if (isServer()) {
                 maxEncodedRstFrames = DEFAULT_MAX_RST_FRAMES_PER_CONNECTION_FOR_SERVER;
             } else {
@@ -670,8 +642,6 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
     }
 
     private T buildFromCodec(Http2ConnectionDecoder decoder, Http2ConnectionEncoder encoder) {
-        // Enforce the advertised maxConcurrentStreams limit on the remote endpoint immediately,
-        // without waiting for the SETTINGS_ACK round-trip.
         enforceMaxActiveStreams(encoder.connection(), initialSettings);
 
         int maxConsecutiveEmptyDataFrames = decoderEnforceMaxConsecutiveEmptyDataFrames();
@@ -680,7 +650,7 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
         }
         final int maxDecodedRstFrames;
         if (maxDecodedRstFramesPerWindow == null) {
-            // Only enable by default on the server.
+            // 默认仅服务端启用入站 RST 洪水防护
             if (isServer()) {
                 maxDecodedRstFrames = DEFAULT_MAX_RST_FRAMES_PER_CONNECTION_FOR_SERVER;
             } else {
@@ -694,7 +664,7 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
         }
         final T handler;
         try {
-            // Call the abstract build method
+            // 子类实现的工厂方法
             handler = build(decoder, encoder, initialSettings);
         } catch (Throwable t) {
             encoder.close();
@@ -702,7 +672,7 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
             throw new IllegalStateException("failed to build an Http2ConnectionHandler", t);
         }
 
-        // Setup post build options
+        // 补全 frameListener、graceful 关闭超时等后置配置
         handler.gracefulShutdownTimeoutMillis(gracefulShutdownTimeoutMillis);
         if (handler.decoder().frameListener() == null) {
             handler.decoder().frameListener(frameListener);
@@ -718,13 +688,9 @@ public abstract class AbstractHttp2ConnectionHandlerBuilder<T extends Http2Conne
     }
 
     /**
-     * Implement this method to create a new {@link Http2ConnectionHandler} or its subtype instance.
-     * <p>
-     * The return of this method will be subject to the following:
-     * <ul>
-     *   <li>{@link #frameListener(Http2FrameListener)} will be set if not already set in the decoder</li>
-     *   <li>{@link #gracefulShutdownTimeoutMillis(long)} will always be set</li>
-     * </ul>
+     * 子类实现：用已组装的 decoder/encoder 构造具体 {@link Http2ConnectionHandler}。
+     * <p>返回实例会自动设置 {@link #frameListener}（若 decoder 尚未绑定）与
+     * {@link #gracefulShutdownTimeoutMillis(long)}。
      */
     protected abstract T build(Http2ConnectionDecoder decoder, Http2ConnectionEncoder encoder,
                                Http2Settings initialSettings) throws Exception;

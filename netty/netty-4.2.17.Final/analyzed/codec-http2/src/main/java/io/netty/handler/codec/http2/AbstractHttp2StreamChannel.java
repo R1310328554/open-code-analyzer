@@ -62,8 +62,14 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.isStreamIdValid;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static java.lang.Math.min;
 
+/**
+ * {@link Http2StreamChannel} 的抽象实现：在父连接 Channel 之上为每条 HTTP/2 流模拟独立 {@link Channel}。
+ * <p>每条流拥有独立 pipeline、写水位与读缓冲；出站 DATA 经父 Channel 的 HTTP/2 编码器发送，
+ * 入站帧由 {@link Http2FrameCodec} 路由到对应子 Channel。用于 Multiplex 编程模型。
+ */
 abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements Http2StreamChannel {
 
+    /** 父连接可写时遍历所有活跃流，尝试恢复子 Channel 的可写状态。 */
     static final Http2FrameStreamVisitor WRITABLE_VISITOR = new Http2FrameStreamVisitor() {
         @Override
         public boolean visit(Http2FrameStream stream) {
@@ -88,13 +94,12 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
 
     /**
-     * Number of bytes to consider non-payload messages. 9 is arbitrary, but also the minimum size of an HTTP/2 frame.
-     * Primarily is non-zero.
+     * 非 DATA 帧在 {@link MessageSizeEstimator} 中按最小 HTTP/2 帧头长度（9 字节）计大小。
      */
     private static final int MIN_HTTP2_FRAME_SIZE = 9;
 
     /**
-     * {@link Http2FrameStreamVisitor} that fires the user event for every active stream pipeline.
+     * 向每条活跃流的 pipeline 广播同一 {@link io.netty.channel.ChannelHandlerContext#fireUserEventTriggered} 事件。
      */
     private static final class UserEventStreamVisitor implements Http2FrameStreamVisitor {
 
@@ -114,7 +119,7 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
     }
 
     /**
-     * Returns the flow-control size for DATA frames, and {@value MIN_HTTP2_FRAME_SIZE} for all other frames.
+     * DATA 帧按 {@link Http2DataFrame#initialFlowControlledBytes()} 计流控大小；其它帧按 {@value MIN_HTTP2_FRAME_SIZE}。
      */
     private static final class FlowControlledFrameSizeEstimator implements MessageSizeEstimator {
 
@@ -124,7 +129,7 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
             @Override
             public int size(Object msg) {
                 return msg instanceof Http2DataFrame ?
-                        // Guard against overflow.
+                        // 防止 long 累加溢出
                         (int) min(Integer.MAX_VALUE, ((Http2DataFrame) msg).initialFlowControlledBytes() +
                                 (long) MIN_HTTP2_FRAME_SIZE) : MIN_HTTP2_FRAME_SIZE;
             }
@@ -151,7 +156,7 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
                 cause = unwrappedCause;
             }
 
-            // Notify the child-channel and close it.
+            // 通知子 Channel 并以正确 Http2Error 关闭
             streamChannel.pipeline().fireExceptionCaught(cause);
             streamChannel.unsafe().close(streamChannel.unsafe().voidPromise());
         }
@@ -161,22 +166,16 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
             windowUpdateFrameWriteComplete(future, AbstractHttp2StreamChannel.this);
 
     /**
-     * The current status of the read-processing for a {@link AbstractHttp2StreamChannel}.
+     * 子 Channel 读状态机：协调 auto-read 与父 Channel 持续推送的帧。
      */
     private enum ReadStatus {
-        /**
-         * No read in progress and no read was requested (yet)
-         */
+        /** 无进行中的读，且尚未请求读 */
         IDLE,
 
-        /**
-         * Reading in progress
-         */
+        /** 正在执行读循环 */
         IN_PROGRESS,
 
-        /**
-         * A read operation was requested.
-         */
+        /** 已调用 {@link Channel#read()}，待 beginRead 消费 */
         REQUESTED
     }
 
@@ -192,23 +191,21 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
     private volatile long totalPendingSize;
     private volatile int unwritable;
 
-    // Cached to reduce GC
+    // 缓存 Runnable，减少 writability 变更时的 GC
     private Runnable fireChannelWritabilityChangedTask;
 
     private boolean outboundClosed;
     private int flowControlledBytes;
 
     /**
-     * This variable represents if a read is in progress for the current channel or was requested.
-     * Note that depending upon the {@link RecvByteBufAllocator} behavior a read may extend beyond the
-     * {@link Http2ChannelUnsafe#beginRead()} method scope. The {@link Http2ChannelUnsafe#beginRead()} loop may
-     * drain all pending data, and then if the parent channel is reading this channel may still accept frames.
+     * 是否已有读在进行或已被请求。
+     * 取决于 {@link RecvByteBufAllocator}，读循环可能超出 {@link Http2ChannelUnsafe#beginRead()} 单次调用范围。
      */
     private ReadStatus readStatus = ReadStatus.IDLE;
 
     private Queue<Object> inboundBuffer;
 
-    /** {@code true} after the first HEADERS frame has been written **/
+    /** 首帧 HEADERS 写出后为 {@code true}，用于流控与 half-close 语义 */
     private boolean firstFrameWritten;
     private boolean readCompletePending;
 
@@ -228,7 +225,7 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
 
             @Override
             protected void onUnhandledInboundException(Throwable cause) {
-                // Ensure we use the correct Http2Error to close the channel.
+                // 尽量映射为 Http2Error 再关闭，保证连接级协议一致性
                 if (cause instanceof Http2FrameStreamException) {
                     closeWithError(((Http2FrameStreamException) cause).error());
                     return;
@@ -269,21 +266,15 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
         }
 
         long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, -size);
-        // Once the totalPendingSize dropped below the low water-mark we can mark the child channel
-        // as writable again. Before doing so we also need to ensure the parent channel is writable to
-        // prevent excessive buffering in the parent outbound buffer. If the parent is not writable
-        // we will mark the child channel as writable once the parent becomes writable by calling
-        // trySetWritable() later.
+        // 待写字节低于低水位且父 Channel 可写时，恢复子 Channel 可写；
+        // 若父 Channel 仍不可写，则等 WRITABLE_VISITOR 稍后重试
         if (newWriteBufferSize < config().getWriteBufferLowWaterMark() && parent().isWritable()) {
             setWritable(invokeLater);
         }
     }
 
     final void trySetWritable() {
-        // The parent is writable again but the child channel itself may still not be writable.
-        // Lets try to set the child channel writable to match the state of the parent channel
-        // if (and only if) the totalPendingSize is smaller then the low water-mark.
-        // If this is not the case we will try again later once we drop under it.
+        // 父 Channel 恢复可写时，仅当子 Channel 待写字节低于低水位才标记可写
         if (totalPendingSize < config().getWriteBufferLowWaterMark()) {
             setWritable(false);
         }
@@ -343,8 +334,7 @@ abstract class AbstractHttp2StreamChannel extends DefaultAttributeMap implements
 
     void streamClosed() {
         unsafe.readEOS();
-        // Attempt to drain any queued data from the queue and deliver it to the application before closing this
-        // channel.
+        // 关闭前先尽量排空 inboundBuffer，把已排队帧交付给应用
         unsafe.doBeginRead();
     }
 
