@@ -33,7 +33,9 @@ import static io.netty.util.internal.StringUtil.COMMA;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * Utility methods useful in the HTTP context.
+ * HTTP 编解码与消息处理的工具方法集合（Keep-Alive、Content-Length、Expect、URI 形式等）。
+ * <p>
+ * 供 {@link HttpObjectDecoder}、服务端/客户端 handler 及 HTTP/2 解析共用。
  */
 public final class HttpUtil {
 
@@ -44,8 +46,7 @@ public final class HttpUtil {
     private HttpUtil() { }
 
     /**
-     * Determine if a uri is in origin-form according to
-     * <a href="https://datatracker.ietf.org/doc/html/rfc9112#section-3.2.1">RFC 9112, 3.2.1</a>.
+     * 判断 URI 是否为 origin-form（以 {@code /} 开头，RFC 9112 §3.2.1）。
      */
     public static boolean isOriginForm(URI uri) {
         return isOriginForm(uri.toString());
@@ -60,8 +61,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Determine if a uri is in asterisk-form according to
-     * <a href="https://datatracker.ietf.org/doc/html/rfc9112#section-3.2.4">RFC 9112, 3.2.4</a>.
+     * 判断 URI 是否为 asterisk-form（{@code *}，用于 OPTIONS 等，RFC 9112 §3.2.4）。
      */
     public static boolean isAsteriskForm(URI uri) {
         return isAsteriskForm(uri.toString());
@@ -120,10 +120,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Returns {@code true} if and only if the connection can remain open and
-     * thus 'kept alive'. This method respects the value of the
-     * {@code "Connection"} header first and then the return value of
-     * {@link HttpVersion#isKeepAliveDefault()}.
+     * 判断消息是否表示连接可保持：先看 Connection 头，再结合协议默认 keep-alive 策略。
      */
     public static boolean isKeepAlive(HttpMessage message) {
         return !message.headers().containsValue(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE, true) &&
@@ -191,10 +188,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Returns the length of the content. Please note that this value is
-     * not retrieved from {@link HttpContent#content()} but from the
-     * {@code "Content-Length"} header, and thus they are independent from each
-     * other.
+     * 从 Content-Length 头读取正文长度（与 {@link HttpContent#content()} 无关）。
      *
      * @return the content length
      *
@@ -297,9 +291,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Returns {@code true} if and only if the specified message contains an expect header and the only expectation
-     * present is the 100-continue expectation. Note that this method returns {@code false} if the expect header is
-     * not valid for the message (e.g., the message is a response, or the version on the message is HTTP/1.0).
+     * 判断是否为合法的 {@code Expect: 100-continue}（仅 HTTP/1.1+ 请求有效）。
      *
      * @param message the message
      * @return {@code true} if and only if the expectation 100-continue is present and it is the only expectation
@@ -331,8 +323,7 @@ public final class HttpUtil {
     private static boolean isExpectHeaderValid(final HttpMessage message) {
         /*
          * Expect: 100-continue is for requests only and it works only on HTTP/1.1 or later. Note further that RFC 7231
-         * section 5.1.1 says "A server that receives a 100-continue expectation in an HTTP/1.0 request MUST ignore
-         * that expectation."
+         * RFC 7231：HTTP/1.0 请求的 100-continue 须被忽略。
          */
         return message instanceof HttpRequest &&
                 message.protocolVersion().compareTo(HttpVersion.HTTP_1_1) >= 0;
@@ -354,7 +345,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Checks to see if the transfer encoding in a specified {@link HttpMessage} is chunked
+     * 判断 Transfer-Encoding 是否含 chunked。
      *
      * @param message The message to check
      * @return True if transfer encoding is chunked, otherwise false
@@ -397,7 +388,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Fetch charset from message's Content-Type header.
+     * 从 Content-Type 解析 charset，失败时返回 ISO-8859-1 或指定默认值。
      *
      * @param message entity to fetch Content-Type header from
      * @return the charset from message's Content-Type header or {@link CharsetUtil#ISO_8859_1}
@@ -577,8 +568,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Formats the host string of an address so it can be used for computing an HTTP component
-     * such as a URL or a Host header
+     * 格式化 {@link InetSocketAddress} 主机名供 URL 或 Host 头使用（IPv6 加方括号）。
      *
      * @param addr the address
      * @return the formatted String
@@ -615,7 +605,7 @@ public final class HttpUtil {
             return -1;
         }
 
-        // Guard against multiple Content-Length headers as stated in
+        // RFC 7230 §3.3.2：合并或拒绝重复的 Content-Length
         // https://tools.ietf.org/html/rfc7230#section-3.3.2:
         //
         // If a message is received that has multiple Content-Length header
@@ -674,8 +664,7 @@ public final class HttpUtil {
     }
 
     /**
-     * Validate a <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> contains only allowed
-     * characters.
+     * 校验 token（头名、方法名等）是否仅含 RFC 7230 允许的字符，返回首个非法位置。
      * <p>
      * The <a href="https://tools.ietf.org/html/rfc2616#section-2.2">token</a> format is used for variety of HTTP
      * components, like  <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>,

@@ -18,19 +18,18 @@ package io.netty.handler.codec.http;
 import io.netty.util.AsciiString;
 
 /**
- * Defines the common schemes used for the HTTP protocol as defined by
- * <a href="https://tools.ietf.org/html/rfc7230">rfc7230</a>.
+ * HTTP URI 方案常量（RFC 7230），封装方案名与默认端口。
+ * <p>
+ * {@link #HTTP} 对应 80 端口，{@link #HTTPS} 对应 443 端口。
  */
 public final class HttpScheme {
 
-    /**
-     * Scheme for non-secure HTTP connection.
-     */
+    /** 明文 HTTP 方案（{@code http}，默认端口 80） */
+
     public static final HttpScheme HTTP = new HttpScheme(80, "http");
 
-    /**
-     * Scheme for secure HTTP connection.
-     */
+    /** 安全 HTTP 方案（{@code https}，默认端口 443） */
+
     public static final HttpScheme HTTPS = new HttpScheme(443, "https");
 
     private final int port;
@@ -41,10 +40,12 @@ public final class HttpScheme {
         this.name = AsciiString.cached(name);
     }
 
+    /** 返回方案名（{@link AsciiString}，如 {@code http}） */
     public AsciiString name() {
         return name;
     }
 
+    /** 返回该方案的 IANA 默认端口 */
     public int port() {
         return port;
     }

@@ -18,12 +18,11 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.DecoderException;
 
 /**
- * Thrown when {@linkplain HttpDecoderConfig#isStrictLineParsing() strict line parsing} is enabled,
- * and HTTP start- and header field-lines are not separated by CR LF octet pairs.
+ * 启用 {@link HttpDecoderConfig#isStrictLineParsing()} 严格行解析时，
+ * 起始行或头字段行未以 CR LF 分隔则抛出此异常。
  * <p>
- * Strict line parsing is enabled by default since Netty 4.1.124 and 4.2.4.
- * This default can be overridden by setting the {@value HttpObjectDecoder#PROP_DEFAULT_STRICT_LINE_PARSING} system
- * property to {@code false}.
+ * Netty 4.1.124/4.2.4 起默认启用；可通过系统属性
+ * {@value HttpObjectDecoder#PROP_DEFAULT_STRICT_LINE_PARSING}={@code false} 关闭。
  * <p>
  * See <a href="https://datatracker.ietf.org/doc/html/rfc9112#name-message-format">RFC 9112 Section 2.1</a>.
  */

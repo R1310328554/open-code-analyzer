@@ -30,12 +30,14 @@ import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_MAX_HEADER_S
 import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_MAX_INITIAL_LINE_LENGTH;
 
 /**
- * A combination of {@link HttpRequestDecoder} and {@link HttpResponseEncoder}
- * which enables easier server side HTTP implementation.
+ * 服务端 HTTP 复合编解码器，组合 {@link HttpRequestDecoder} 与 {@link HttpResponseEncoder}。
+ * <p>
+ * 内部维护请求方法 FIFO 队列，使 HEAD/CONNECT 响应正确判定无消息体；
+ * 同时处理 TE+CL 冲突时响应后关闭连接。
  *
  * <h3>Header Validation</h3>
  *
- * It is recommended to always enable header validation.
+ * 建议始终启用头校验以防 CRLF 注入。It is recommended to always enable header validation.
  * <p>
  * Without header validation, your system can become vulnerable to
  * <a href="https://cwe.mitre.org/data/definitions/113.html">
@@ -50,8 +52,11 @@ import static io.netty.handler.codec.http.HttpObjectDecoder.DEFAULT_MAX_INITIAL_
 public final class HttpServerCodec extends CombinedChannelDuplexHandler<HttpRequestDecoder, HttpResponseEncoder>
         implements HttpServerUpgradeHandler.SourceCodec {
 
+    /** 请求方法标记：HEAD */
     private static final byte METHOD_FLAG_HEAD = 1;
+    /** 请求方法标记：CONNECT */
     private static final byte METHOD_FLAG_CONNECT = 2;
+    /** 请求方法标记：其他方法 */
     private static final byte METHOD_FLAG_OTHER = 3;
 
     // We only need 2 bits per request because we distinguish:
@@ -60,20 +65,15 @@ public final class HttpServerCodec extends CombinedChannelDuplexHandler<HttpRequ
     private static final int INLINE_QUEUE_CAPACITY = Long.SIZE / METHOD_FLAG_BITS; // 32
 
     /**
-     * FIFO of request method flags.
-     *
-     * The oldest entry is stored in the least-significant bits so poll is just a mask + unsigned shift.
-     * This avoids allocation for the common case of <= 32 outstanding requests.
-     *
-     * Once more than {@link #INLINE_QUEUE_CAPACITY} requests are queued, additional entries are appended
-     * to {@link #methodOverflowQueue}. Order is preserved by always draining the inline queue first.
+     * 请求方法 FIFO：低 2 位存最旧请求，poll 为掩码+移位，≤32 个并发请求无堆分配；
+     * 超出 {@link #INLINE_QUEUE_CAPACITY} 时溢出到 {@link #methodOverflowQueue}。
      */
     private long methodQueue;
     private int methodQueueSize;
     private Queue<Byte> methodOverflowQueue;
 
     /**
-     * When set, the connection will be closed after the next response is written.
+     * 为 true 时，下一完整响应写出后关闭连接（TE+CL 冲突等场景）。
      */
     private boolean mustCloseAfterResponse;
 
@@ -173,8 +173,7 @@ public final class HttpServerCodec extends CombinedChannelDuplexHandler<HttpRequ
     }
 
     /**
-     * Upgrades to another protocol from HTTP. Removes the {@link HttpRequestDecoder} and
-     * {@link HttpResponseEncoder} from the pipeline.
+     * 从 HTTP 升级到其他协议，从 pipeline 移除本编解码器。
      */
     @Override
     public void upgradeFrom(ChannelHandlerContext ctx) {
@@ -191,7 +190,7 @@ public final class HttpServerCodec extends CombinedChannelDuplexHandler<HttpRequ
             flag = METHOD_FLAG_OTHER;
         }
 
-        // Once we have overflow, always append there until it drains completely.
+        // 溢出队列非空时始终追加，直至完全排空
         Queue<Byte> overflowQueue = methodOverflowQueue;
         if (overflowQueue != null) {
             overflowQueue.add(flag);
@@ -210,7 +209,7 @@ public final class HttpServerCodec extends CombinedChannelDuplexHandler<HttpRequ
 
     private byte pollMethod() {
         if (methodQueueSize != 0) {
-            //(methodQueue & ((1L << METHOD_FLAG_BITS) - 1))
+            // 取最低 2 位作为最旧请求的方法标记
             byte flag = (byte) (methodQueue & 0x3L);
             methodQueue >>>= METHOD_FLAG_BITS;
             methodQueueSize--;
@@ -248,6 +247,7 @@ public final class HttpServerCodec extends CombinedChannelDuplexHandler<HttpRequ
         }
 
         @Override
+        /** 请求同时含 chunked TE 与 Content-Length 时，响应后必须关闭连接 */
         protected void handleTransferEncodingChunkedWithContentLength(HttpMessage message) {
             super.handleTransferEncodingChunkedWithContentLength(message);
             mustCloseAfterResponse = true;
@@ -288,6 +288,7 @@ public final class HttpServerCodec extends CombinedChannelDuplexHandler<HttpRequ
                 // left behind goes away with it. Just delegate to super method which has all the needed handling.
                 return super.isContentAlwaysEmpty(msg);
             }
+            // 与当前响应对应的请求若为 HEAD，则视为无消息体
             methodFlag = pollMethod();
             return methodFlag == METHOD_FLAG_HEAD || super.isContentAlwaysEmpty(msg);
         }

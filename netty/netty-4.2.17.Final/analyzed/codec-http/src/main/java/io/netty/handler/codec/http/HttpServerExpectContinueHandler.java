@@ -26,14 +26,12 @@ import static io.netty.handler.codec.http.HttpResponseStatus.CONTINUE;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * Sends a <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#sec8.2.3">100 CONTINUE</a>
- * {@link HttpResponse} to {@link HttpRequest}s which contain a 'expect: 100-continue' header. It
- * should only be used for applications which do <b>not</b> install the {@link HttpObjectAggregator}.
+ * 处理 {@code Expect: 100-continue} 的服务端入站处理器。
  * <p>
- * By default it accepts all expectations.
+ * 对含该头的 {@link HttpRequest} 先回 100 Continue（或子类自定义拒绝响应）；
+ * 适用于<b>未</b>安装 {@link HttpObjectAggregator} 的场景。默认接受所有期望。
  * <p>
- * Since {@link HttpServerExpectContinueHandler} expects {@link HttpRequest}s it should be added after {@link
- * HttpServerCodec} but before any other handlers that might send a {@link HttpResponse}. <blockquote>
+ * 须放在 {@link HttpServerCodec} 之后、会写 {@link HttpResponse} 的 handler 之前。 <blockquote>
  * <pre>
  *  {@link io.netty.channel.ChannelPipeline} p = ...;
  *  ...
@@ -58,15 +56,14 @@ public class HttpServerExpectContinueHandler extends ChannelInboundHandlerAdapte
     }
 
     /**
-     * Produces a {@link HttpResponse} for {@link HttpRequest}s which define an expectation. Returns {@code null} if the
-     * request should be rejected. See {@link #rejectResponse(HttpRequest)}.
+     * 为带 Expect 头的请求生成接受响应；返回 {@code null} 表示拒绝，将调用 {@link #rejectResponse}。
      */
     protected HttpResponse acceptMessage(@SuppressWarnings("unused") HttpRequest request) {
         return ACCEPT.retainedDuplicate();
     }
 
     /**
-     * Returns the appropriate 4XX {@link HttpResponse} for the given {@link HttpRequest}.
+     * 返回拒绝期望时使用的 4xx 响应（默认 417 Expectation Failed）。
      */
     protected HttpResponse rejectResponse(@SuppressWarnings("unused") HttpRequest request) {
         return EXPECTATION_FAILED.retainedDuplicate();
@@ -81,13 +78,14 @@ public class HttpServerExpectContinueHandler extends ChannelInboundHandlerAdapte
                 HttpResponse accept = acceptMessage(req);
 
                 if (accept == null) {
-                    // the expectation failed so we refuse the request.
+                    // 期望被拒绝：释放请求并返回拒绝响应
                     HttpResponse rejection = rejectResponse(req);
                     ReferenceCountUtil.release(msg);
                     ctx.writeAndFlush(rejection).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
                     return;
                 }
 
+                // 先回 100，再移除 Expect 头以便下游正常处理请求体
                 ctx.writeAndFlush(accept).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
                 req.headers().remove(HttpHeaderNames.EXPECT);
             }

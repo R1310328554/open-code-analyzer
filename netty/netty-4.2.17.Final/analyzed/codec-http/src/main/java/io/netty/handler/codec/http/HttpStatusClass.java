@@ -19,28 +19,26 @@ package io.netty.handler.codec.http;
 import io.netty.util.AsciiString;
 
 /**
- * The class of HTTP status.
+ * HTTP 状态码类别枚举（1xx 信息、2xx 成功、3xx 重定向、4xx 客户端错误、5xx 服务端错误）。
+ * <p>
+ * {@link #valueOf(int)} 通过快速除 100 映射到对应类别；未知码归为 {@link #UNKNOWN}。
  */
 public enum HttpStatusClass {
-    /**
-     * The informational class (1xx)
-     */
+    /** 1xx 信息性响应 */
+
     INFORMATIONAL(100, 200, "Informational"),
-    /**
-     * The success class (2xx)
-     */
+    /** 2xx 成功响应 */
+
     SUCCESS(200, 300, "Success"),
     /**
      * The redirection class (3xx)
      */
     REDIRECTION(300, 400, "Redirection"),
-    /**
-     * The client error class (4xx)
-     */
+    /** 4xx 客户端错误 */
+
     CLIENT_ERROR(400, 500, "Client Error"),
-    /**
-     * The server error class (5xx)
-     */
+    /** 5xx 服务端错误 */
+
     SERVER_ERROR(500, 600, "Server Error"),
     /**
      * The unknown class
@@ -72,6 +70,7 @@ public enum HttpStatusClass {
     }
 
     /**
+     * 快速整数除 100（魔数乘法实现，{@code dividend} 须 ≥ 0）。
      * @param dividend Must >= 0
      * @return dividend/100
      */
@@ -111,7 +110,7 @@ public enum HttpStatusClass {
     }
 
     /**
-     * Returns {@code true} if and only if the specified HTTP status code falls into this class.
+     * 判断给定状态码是否属于本类别（{@code min <= code < max}）。
      */
     public boolean contains(int code) {
         return code >= min && code < max;

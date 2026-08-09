@@ -34,15 +34,15 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static io.netty.util.internal.StringUtil.COMMA;
 
 /**
- * A server-side handler that receives HTTP requests and optionally performs a protocol switch if
- * the requested protocol is supported. Once an upgrade is performed, this handler removes itself
- * from the pipeline.
+ * 服务端 HTTP 协议升级处理器（如 WebSocket、HTTP/2）。
+ * <p>
+ * 继承 {@link HttpObjectAggregator} 聚合含 Upgrade 头的请求；
+ * 校验 CONNECTION/协议头后返回 101 并切换 pipeline，完成后移除自身。
  */
 public class HttpServerUpgradeHandler extends HttpObjectAggregator {
 
-    /**
-     * The source codec that is used in the pipeline initially.
-     */
+    /** 升级前 pipeline 中的源 HTTP 编解码器（如 {@link HttpServerCodec}） */
+
     public interface SourceCodec {
         /**
          * Removes this codec (i.e. all associated handlers) from the pipeline.
@@ -50,9 +50,8 @@ public class HttpServerUpgradeHandler extends HttpObjectAggregator {
         void upgradeFrom(ChannelHandlerContext ctx);
     }
 
-    /**
-     * A codec that the source can be upgraded to.
-     */
+    /** 目标升级协议编解码器，负责准备 101 响应头与替换 handler */
+
     public interface UpgradeCodec {
         /**
          * Gets all protocol-specific headers required by this protocol for a successful upgrade.
@@ -61,12 +60,8 @@ public class HttpServerUpgradeHandler extends HttpObjectAggregator {
         Collection<CharSequence> requiredUpgradeHeaders();
 
         /**
-         * Prepares the {@code upgradeHeaders} for a protocol update based upon the contents of {@code upgradeRequest}.
-         * This method returns a boolean value to proceed or abort the upgrade in progress. If {@code false} is
-         * returned, the upgrade is aborted and the {@code upgradeRequest} will be passed through the inbound pipeline
-         * as if no upgrade was performed. If {@code true} is returned, the upgrade will proceed to the next
-         * step which invokes {@link #upgradeTo}. When returning {@code true}, you can add headers to
-         * the {@code upgradeHeaders} so that they are added to the 101 Switching protocols response.
+         * 根据升级请求准备 101 响应头；返回 {@code false} 中止升级并透传请求，
+         * {@code true} 则继续调用 {@link #upgradeTo}。
          */
         boolean prepareUpgradeResponse(ChannelHandlerContext ctx, FullHttpRequest upgradeRequest,
                                     HttpHeaders upgradeHeaders);
@@ -96,9 +91,7 @@ public class HttpServerUpgradeHandler extends HttpObjectAggregator {
     }
 
     /**
-     * User event that is fired to notify about the completion of an HTTP upgrade
-     * to another protocol. Contains the original upgrade request so that the response
-     * (if required) can be sent using the new protocol.
+     * HTTP 升级完成时触发的用户事件，携带原始升级请求供新协议使用。
      */
     public static final class UpgradeEvent implements ReferenceCounted {
         private final CharSequence protocol;
@@ -274,7 +267,7 @@ public class HttpServerUpgradeHandler extends HttpObjectAggregator {
             throws Exception {
 
         if (!handlingUpgrade) {
-            // Not handling an upgrade request yet. Check if we received a new upgrade request.
+            // 尚未处理升级：检测 Upgrade 头并决定是否进入聚合流程
             if (msg instanceof HttpRequest) {
                 HttpRequest req = (HttpRequest) msg;
                 if (req.headers().contains(HttpHeaderNames.UPGRADE) &&
@@ -343,7 +336,7 @@ public class HttpServerUpgradeHandler extends HttpObjectAggregator {
     }
 
     /**
-     * Determines whether the specified upgrade {@link HttpRequest} should be handled by this handler or not.
+     * 判断是否处理该 Upgrade 请求；默认处理所有含 Upgrade 头的请求，可覆写以忽略特定协议。
      * This method will be invoked only when the request contains an {@code Upgrade} header.
      * It always returns {@code true} by default, which means any request with an {@code Upgrade} header
      * will be handled. You can override this method to ignore certain {@code Upgrade} headers, for example:
@@ -368,7 +361,7 @@ public class HttpServerUpgradeHandler extends HttpObjectAggregator {
      * @return {@code true} if the upgrade occurred, otherwise {@code false}.
      */
     private boolean upgrade(final ChannelHandlerContext ctx, final FullHttpRequest request) {
-        // Select the best protocol based on those requested in the UPGRADE header.
+        // 按客户端 UPGRADE 头中的协议优先级选择首个支持的 UpgradeCodec
         final List<CharSequence> requestedProtocols = splitHeader(request.headers().get(HttpHeaderNames.UPGRADE));
         final int numRequestedProtocols = requestedProtocols.size();
         UpgradeCodec upgradeCodec = null;
@@ -416,8 +409,7 @@ public class HttpServerUpgradeHandler extends HttpObjectAggregator {
             }
         }
 
-        // Prepare and send the upgrade response. Wait for this write to complete before upgrading,
-        // since we need the old codec in-place to properly encode the response.
+        // 先写 101 响应（旧 codec 仍在 pipeline），再切换协议并 fire UpgradeEvent
         final FullHttpResponse upgradeResponse = createUpgradeResponse(upgradeProtocol);
         if (!upgradeCodec.prepareUpgradeResponse(ctx, request, upgradeResponse.headers())) {
             return false;

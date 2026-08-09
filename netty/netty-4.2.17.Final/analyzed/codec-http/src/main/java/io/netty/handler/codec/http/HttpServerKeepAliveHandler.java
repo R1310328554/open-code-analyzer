@@ -24,15 +24,12 @@ import io.netty.channel.ChannelPromise;
 import static io.netty.handler.codec.http.HttpUtil.*;
 
 /**
- * HttpServerKeepAliveHandler helps close persistent connections when appropriate.
+ * 服务端 Keep-Alive 连接管理：在适当时机关闭持久连接。
  * <p>
- * The server channel is expected to set the proper 'Connection' header if it can handle persistent connections. {@link
- * HttpServerKeepAliveHandler} will automatically close the channel for any LastHttpContent that corresponds to a client
- * request for closing the connection, or if the HttpResponse associated with that LastHttpContent requested closing the
- * connection or didn't have a self defined message length.
+ * 跟踪客户端 pipelining 下的待完成响应数；若响应无法自描述消息长度
+（无 CL/chunked/multipart 等）或客户端/响应要求关闭，则在 LastHttpContent 后关闭通道。
  * <p>
- * Since {@link HttpServerKeepAliveHandler} expects {@link HttpObject}s it should be added after {@link HttpServerCodec}
- * but before any other handlers that might send a {@link HttpResponse}. <blockquote>
+ * 须放在 {@link HttpServerCodec} 之后、写 {@link HttpResponse} 的业务 handler 之前。 <blockquote>
  * <pre>
  *  {@link ChannelPipeline} p = ...;
  *  ...
@@ -48,12 +45,12 @@ public class HttpServerKeepAliveHandler extends ChannelDuplexHandler {
     private static final String MULTIPART_PREFIX = "multipart";
 
     private boolean persistentConnection = true;
-    // Track pending responses to support client pipelining: https://tools.ietf.org/html/rfc7230#section-6.3.2
+    /** 尚未完成写出的响应数（支持客户端 pipelining，RFC 7230 §6.3.2） */
     private int pendingResponses;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        // read message and track if it was keepAlive
+        // 入站：每收到请求递增待响应计数，并记录客户端是否希望 keep-alive
         if (msg instanceof HttpRequest) {
             final HttpRequest request = (HttpRequest) msg;
             if (persistentConnection) {
@@ -70,9 +67,9 @@ public class HttpServerKeepAliveHandler extends ChannelDuplexHandler {
         if (msg instanceof HttpResponse) {
             final HttpResponse response = (HttpResponse) msg;
             trackResponse(response);
-            // Assume the response writer knows if they can persist or not and sets isKeepAlive on the response
+            // 出站：根据响应 keep-alive 与是否自描述长度决定是否维持持久连接
             if (!isKeepAlive(response) || !isSelfDefinedMessageLength(response)) {
-                // No longer keep alive as the client can't tell when the message is done unless we close connection
+                // 无法自描述长度时客户端无法判断消息结束，须关闭连接
                 pendingResponses = 0;
                 persistentConnection = false;
             }
@@ -98,8 +95,7 @@ public class HttpServerKeepAliveHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Keep-alive only works if the client can detect when the message has ended without relying on the connection being
-     * closed.
+     * 持久连接要求客户端能判断消息结束（Content-Length、chunked、multipart、1xx/204 等）。
      * <p>
      * <ul>
      *     <li>See <a href="https://tools.ietf.org/html/rfc7230#section-6.3"/></li>

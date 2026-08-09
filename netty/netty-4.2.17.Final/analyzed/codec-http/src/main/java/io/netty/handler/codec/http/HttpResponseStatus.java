@@ -27,15 +27,15 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import static java.lang.Integer.parseInt;
 
 /**
- * The response code and its description of HTTP or its derived protocols, such as
- * <a href="https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol">RTSP</a> and
- * <a href="https://en.wikipedia.org/wiki/Internet_Content_Adaptation_Protocol">ICAP</a>.
+ * HTTP 响应状态码及其原因短语，也用于 RTSP、ICAP 等衍生协议。
+ * <p>
+ * 预定义常用常量（200 OK、404 Not Found 等）；{@link #valueOf(int)} 可解析并复用缓存实例。
+ * 相等性仅比较 {@link #code()}，原因短语不参与 equals。
  */
 public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
 
-    /**
-     * 100 Continue
-     */
+    /** 100 Continue：客户端可继续发送请求体 */
+
     public static final HttpResponseStatus CONTINUE = newStatus(100, "Continue");
 
     /**
@@ -53,9 +53,8 @@ public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
      */
     public static final HttpResponseStatus EARLY_HINTS = newStatus(103, "Early Hints");
 
-    /**
-     * 200 OK
-     */
+    /** 200 OK：请求成功 */
+
     public static final HttpResponseStatus OK = newStatus(200, "OK");
 
     /**
@@ -154,9 +153,8 @@ public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
      */
     public static final HttpResponseStatus FORBIDDEN = newStatus(403, "Forbidden");
 
-    /**
-     * 404 Not Found
-     */
+    /** 404 Not Found：资源未找到 */
+
     public static final HttpResponseStatus NOT_FOUND = newStatus(404, "Not Found");
 
     /**
@@ -275,9 +273,8 @@ public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
     public static final HttpResponseStatus REQUEST_HEADER_FIELDS_TOO_LARGE =
             newStatus(431, "Request Header Fields Too Large");
 
-    /**
-     * 500 Internal Server Error
-     */
+    /** 500 Internal Server Error：服务端内部错误 */
+
     public static final HttpResponseStatus INTERNAL_SERVER_ERROR = newStatus(500, "Internal Server Error");
 
     /**
@@ -327,14 +324,13 @@ public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
     public static final HttpResponseStatus NETWORK_AUTHENTICATION_REQUIRED =
             newStatus(511, "Network Authentication Required");
 
+    /** 创建带预编码字节缓存的标准状态实例 */
     private static HttpResponseStatus newStatus(int statusCode, String reasonPhrase) {
         return new HttpResponseStatus(statusCode, reasonPhrase, true);
     }
 
     /**
-     * Returns the {@link HttpResponseStatus} represented by the specified code.
-     * If the specified code is a standard HTTP status code, a cached instance
-     * will be returned.  Otherwise, a new instance will be returned.
+     * 按数字状态码查找；标准码返回缓存单例，否则新建实例。
      */
     public static HttpResponseStatus valueOf(int code) {
         HttpResponseStatus status = valueOf0(code);
@@ -476,7 +472,7 @@ public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
     }
 
     /**
-     * Parses the specified HTTP status line into a {@link HttpResponseStatus}. The expected formats of the line are:
+     * 解析状态行（仅码或「码 + 原因短语」）为 {@link HttpResponseStatus}。
      * <ul>
      * <li>{@code statusCode} (e.g. 200)</li>
      * <li>{@code statusCode} {@code reasonPhrase} (e.g. 404 Not Found)</li>
@@ -595,7 +591,7 @@ public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
     }
 
     /**
-     * Returns the class of this {@link HttpResponseStatus}
+     * 返回状态码所属类别（1xx/2xx/3xx/4xx/5xx）。
      */
     public HttpStatusClass codeClass() {
         return this.codeClass;
@@ -637,6 +633,7 @@ public class HttpResponseStatus implements Comparable<HttpResponseStatus> {
             .toString();
     }
 
+    /** 将 {@code code SP reason} 写入缓冲区（编码响应起始行时使用） */
     void encode(ByteBuf buf) {
         if (bytes == null) {
             ByteBufUtil.copy(codeAsText, buf);

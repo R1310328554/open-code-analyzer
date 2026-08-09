@@ -18,8 +18,9 @@ package io.netty.handler.codec.http;
 import io.netty.handler.codec.CorruptedFrameException;
 
 /**
- * Thrown when HTTP chunk extensions could not be parsed, typically due to incorrect use of CR LF delimiters.
+ * 分块传输 chunk 扩展解析失败时抛出（通常为 chunk 头行未使用 CR LF 终止）。
  * <p>
+ * RFC 9112 要求 chunk 头行必须以 CR LF 结束，不允许单独 LF。
  * <a href="https://datatracker.ietf.org/doc/html/rfc9112#name-chunked-transfer-coding">RFC 9112</a>
  * specifies that chunk header lines must be terminated in a CR LF pair,
  * and that a lone LF octet is not allowed within the chunk header line.

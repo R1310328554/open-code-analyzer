@@ -20,8 +20,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelPipeline;
 
 /**
- * Decodes {@link ByteBuf}s into {@link HttpResponse}s and
- * {@link HttpContent}s.
+ * 将 {@link ByteBuf} 解码为 {@link HttpResponse} 与 {@link HttpContent}（客户端侧）。
+ * <p>
+ * 继承 {@link HttpObjectDecoder}，解析状态行 {@code HTTP/1.x code reason} 及后续头与正文。
  *
  * <h3>Parameters that prevents excessive memory consumption</h3>
  * <table border="1">
@@ -78,9 +79,9 @@ import io.netty.channel.ChannelPipeline;
  *
  * <h3>Decoding a response for a <tt>HEAD</tt> request</h3>
  * <p>
- * Unlike other HTTP requests, the successful response of a <tt>HEAD</tt>
- * request does not have any content even if there is <tt>Content-Length</tt>
- * header.  Because {@link HttpResponseDecoder} is not able to determine if the
+ * HEAD 成功响应即使有 Content-Length 也不含消息体；本解码器无法自行判断对应请求是否为 HEAD，
+ * 须覆写 {@link #isContentAlwaysEmpty(HttpMessage)} 或在 pipeline 中使用 {@link HttpClientCodec}。
+ * Because {@link HttpResponseDecoder} is not able to determine if the
  * response currently being decoded is associated with a <tt>HEAD</tt> request,
  * you must override {@link #isContentAlwaysEmpty(HttpMessage)} to return
  * <tt>true</tt> for the response of the <tt>HEAD</tt> request.
@@ -106,6 +107,7 @@ import io.netty.channel.ChannelPipeline;
  *
  * <h3>Header Validation</h3>
  *
+ * 建议始终启用头校验，以防 HTTP 响应拆分（CWE-113）攻击。
  * It is recommended to always enable header validation.
  * <p>
  * Without header validation, your system can become vulnerable to
@@ -118,6 +120,7 @@ import io.netty.channel.ChannelPipeline;
  */
 public class HttpResponseDecoder extends HttpObjectDecoder {
 
+    /** 解析失败时构造占位响应使用的未知状态码 */
     private static final HttpResponseStatus UNKNOWN_STATUS = new HttpResponseStatus(999, "Unknown");
 
     /**
@@ -209,6 +212,7 @@ public class HttpResponseDecoder extends HttpObjectDecoder {
     }
 
     @Override
+    /** 从状态行数组 {@code [version, code, reason...]} 构造 {@link DefaultHttpResponse} */
     protected HttpMessage createMessage(String[] initialLine) {
         return new DefaultHttpResponse(
                 // Do strict version checking
@@ -223,6 +227,7 @@ public class HttpResponseDecoder extends HttpObjectDecoder {
     }
 
     @Override
+    /** 标识当前解码响应而非请求 */
     protected boolean isDecodingRequest() {
         return false;
     }

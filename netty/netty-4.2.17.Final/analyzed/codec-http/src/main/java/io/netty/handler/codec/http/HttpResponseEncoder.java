@@ -21,13 +21,16 @@ import io.netty.buffer.ByteBufUtil;
 import static io.netty.handler.codec.http.HttpConstants.*;
 
 /**
- * Encodes an {@link HttpResponse} or an {@link HttpContent} into
- * a {@link ByteBuf}.
+ * 将 {@link HttpResponse} 或 {@link HttpContent} 编码为 {@link ByteBuf}（服务端出站）。
+ * <p>
+ * 写入 {@code version SP status CRLF} 起始行，并按 RFC 7230 处理无正文响应的头清理。
  */
 public class HttpResponseEncoder extends HttpObjectEncoder<HttpResponse> {
 
     @Override
     public boolean acceptOutboundMessage(Object msg) throws Exception {
+        // 优先精确匹配 Default 实现类，避免 instanceof 链式检查开销；
+        // 同时排除被错误实现 HttpRequest 的子类。
         // JDK type checks vs non-implemented interfaces costs O(N), where
         // N is the number of interfaces already implemented by the concrete type that's being tested.
         // !(msg instanceof HttpRequest) is supposed to always be true (and meaning that msg isn't a HttpRequest),
@@ -56,8 +59,7 @@ public class HttpResponseEncoder extends HttpObjectEncoder<HttpResponse> {
             if (status.codeClass() == HttpStatusClass.INFORMATIONAL ||
                     status.code() == HttpResponseStatus.NO_CONTENT.code()) {
 
-                // Stripping Content-Length:
-                // See https://tools.ietf.org/html/rfc7230#section-3.3.2
+                // 1xx/204 等无正文响应：移除 Content-Length（RFC 7230 §3.3.2）
                 msg.headers().remove(HttpHeaderNames.CONTENT_LENGTH);
 
                 // Stripping Transfer-Encoding:
@@ -77,14 +79,13 @@ public class HttpResponseEncoder extends HttpObjectEncoder<HttpResponse> {
 
     @Override
     protected boolean isContentAlwaysEmpty(HttpResponse msg) {
-        // Correctly handle special cases as stated in:
-        // https://tools.ietf.org/html/rfc7230#section-3.3.3
+        // 按 RFC 7230 §3.3.3 判断响应是否必定无消息体（1xx/204/304/205 等）
         HttpResponseStatus status = msg.status();
 
         if (status.codeClass() == HttpStatusClass.INFORMATIONAL) {
 
             if (status.code() == HttpResponseStatus.SWITCHING_PROTOCOLS.code()) {
-                // We need special handling for WebSockets version 00 as it will include an body.
+                // WebSocket 00 版 101 响应可能含正文，需检查 SEC-WEBSOCKET-VERSION
                 // Fortunally this version should not really be used in the wild very often.
                 // See https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00#section-1.2
                 return msg.headers().contains(HttpHeaderNames.SEC_WEBSOCKET_VERSION);

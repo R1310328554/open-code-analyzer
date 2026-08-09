@@ -24,23 +24,21 @@ import java.util.Locale;
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
 /**
- * The version of HTTP or its derived protocols, such as
- * <a href="https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol">RTSP</a> and
- * <a href="https://en.wikipedia.org/wiki/Internet_Content_Adaptation_Protocol">ICAP</a>.
+ * HTTP 协议版本（如 HTTP/1.0、HTTP/1.1），亦用于 RTSP、ICAP 等衍生协议。
+ * <p>
+ * {@link #HTTP_1_1} 默认 keep-alive；{@link #valueOf(String)} 对常见版本返回单例。
  */
 public class HttpVersion implements Comparable<HttpVersion> {
 
     static final String HTTP_1_0_STRING = "HTTP/1.0";
     static final String HTTP_1_1_STRING = "HTTP/1.1";
 
-    /**
-     * HTTP/1.0
-     */
+    /** HTTP/1.0：默认非持久连接 */
+
     public static final HttpVersion HTTP_1_0 = new HttpVersion("HTTP", 1, 0, false, true);
 
-    /**
-     * HTTP/1.1
-     */
+    /** HTTP/1.1：默认持久连接（除非 Connection: close） */
+
     public static final HttpVersion HTTP_1_1 = new HttpVersion("HTTP", 1, 1, true, true);
 
     /**
@@ -70,9 +68,7 @@ public class HttpVersion implements Comparable<HttpVersion> {
             throw new IllegalArgumentException("text is empty (possibly HTTP/0.9)");
         }
 
-        // Try to match without convert to uppercase first as this is what 99% of all clients
-        // will send anyway. Also there is a change to the RFC to make it clear that it is
-        // expected to be case-sensitive
+        // 优先大小写敏感匹配（RFC 趋势）；常见 HTTP/1.0、HTTP/1.1 走快速路径
         //
         // See:
         // * https://trac.tools.ietf.org/wg/httpbis/trac/ticket/1
@@ -118,10 +114,7 @@ public class HttpVersion implements Comparable<HttpVersion> {
     }
 
     HttpVersion(String text, boolean strict, boolean keepAliveDefault) {
-        // toUpperCase() without an explicit Locale uses the JVM default. In Turkish locale
-        // (tr_TR) 'i' uppercases to 'İ' (U+0130), which would corrupt protocol strings such
-        // as "icap/1.0" or any custom HTTP-derived scheme that contains a lowercase 'i'.
-        // Control characters or whitespace at the token boundary must fail the checks below.
+        // 必须使用 Locale.US 转大写，避免土耳其语 locale 将 'i' 变为 'İ' 破坏协议名
         ObjectUtil.checkNotNull(text, "text");
         if (text.isEmpty()) {
             throw new IllegalArgumentException("text must not be empty");
@@ -262,8 +255,7 @@ public class HttpVersion implements Comparable<HttpVersion> {
     }
 
     /**
-     * Returns {@code true} if and only if the connection is kept alive unless
-     * the {@code "Connection"} header is set to {@code "close"} explicitly.
+     * 该版本是否默认保持连接（HTTP/1.1 为 true，HTTP/1.0 为 false）。
      */
     public boolean isKeepAliveDefault() {
         return keepAliveDefault;
@@ -310,6 +302,7 @@ public class HttpVersion implements Comparable<HttpVersion> {
         return minorVersion() - o.minorVersion();
     }
 
+    /** 将 {@code protocol/major.minor} 写入缓冲区（编码起始行时使用） */
     void encode(ByteBuf buf) {
         if (bytes == null) {
             buf.writeCharSequence(text, CharsetUtil.US_ASCII);
