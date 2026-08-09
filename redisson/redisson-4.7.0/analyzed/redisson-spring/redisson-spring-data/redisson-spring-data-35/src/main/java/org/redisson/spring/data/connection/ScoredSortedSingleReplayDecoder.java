@@ -26,9 +26,7 @@ import org.springframework.data.redis.connection.zset.Tuple;
 import java.util.List;
 
 /**
- * 单条 member/score 对解码为 {@link Tuple}；空响应返回 {@code null}。
- * <p>奇数下标参数经 {@link DoubleCodec} 解析 score，适用于仅含一对元素的 ZSET 命令响应。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
@@ -36,17 +34,14 @@ public class ScoredSortedSingleReplayDecoder implements MultiDecoder<Tuple> {
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
-        // 奇数下标为 score，使用 DoubleCodec。
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
-    /** 空列表返回 null，否则从 member/score 构造 {@link DefaultTuple}。 */
     @Override
     public Tuple decode(List<Object> parts, State state) {
-        // 无元素时返回 null（如 ZPOPMIN 空集合）。
         if (parts.isEmpty()) {
             return null;
         }

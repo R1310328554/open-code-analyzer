@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 嵌套列表合并解码器：将多层 {@link List} 响应扁平化为单层列表。
- * <p>用于 Redis 返回嵌套数组时，通过 {@code flatMap} 合并各子列表元素。
  *
  * @author Nikita Koksharov
  *
@@ -31,7 +29,6 @@ import java.util.stream.Collectors;
  */
 public class ListMergeDecoder implements MultiDecoder<List<Object>> {
 
-    /** 将 parts 中每个嵌套列表的元素合并为扁平 {@link List}。 */
     @Override
     public List<Object> decode(List<Object> parts, State state) {
         return parts.stream()

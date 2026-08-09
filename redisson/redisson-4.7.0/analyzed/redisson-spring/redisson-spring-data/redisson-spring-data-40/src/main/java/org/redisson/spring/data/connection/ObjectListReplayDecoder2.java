@@ -23,24 +23,19 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * 列表型 Redis 响应解码器（第二版）：将空嵌套列表规范为 {@code null}。
- * <p>用于 Spring Data Redis 批量读取时对齐空集合语义。
- *
+ * 
  * @author Nikita Koksharov
  *
  * @param <T> type
  */
 public class ObjectListReplayDecoder2<T> implements MultiDecoder<List<T>> {
 
-    /** 嵌套元素解码器；{@code null} 时使用默认 Codec。 */
     private final Decoder<Object> decoder;
     
-    /** 使用默认 Codec 解码嵌套元素。 */
     public ObjectListReplayDecoder2() {
         this(null);
     }
     
-    /** 指定嵌套元素解码器；{@code null} 时使用默认 Codec 解码。 */
     public ObjectListReplayDecoder2(Decoder<Object> decoder) {
         super();
         this.decoder = decoder;
@@ -52,8 +47,6 @@ public class ObjectListReplayDecoder2<T> implements MultiDecoder<List<T>> {
             Object object = parts.get(i);
             if (object instanceof List) {
                 if (((List) object).isEmpty()) {
-                    // 空子列表视为 null，与 Spring Data 空值约定一致。
-
                     parts.set(i, null);
                 }
             }
@@ -61,7 +54,6 @@ public class ObjectListReplayDecoder2<T> implements MultiDecoder<List<T>> {
         return (List<T>) parts;
     }
 
-    /** 返回构造时注入的元素解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         return decoder;

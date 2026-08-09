@@ -24,30 +24,24 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * Map 键值对回放解码器：将 Redis 扁平 key-value 序列解析为 {@link Entry} 列表。
- * <p>奇偶位分别使用 Codec 的 map key/value 解码器；结果保持插入顺序。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class ObjectMapEntryReplayDecoder implements MultiDecoder<List<Entry<Object, Object>>> {
 
-    /** 奇数位返回 value 解码器，偶数位返回 key 解码器。 */
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
-        // 奇数索引为 value，偶数索引为 key。
         if (paramNum % 2 != 0) {
             return codec.getMapValueDecoder();
         }
         return codec.getMapKeyDecoder();
     }
 
-    /** 将扁平 parts 按相邻 key-value 对组装为有序条目列表。 */
     @Override
     public List<Entry<Object, Object>> decode(List<Object> parts, State state) {
         Map<Object, Object> result = new LinkedHashMap<>(parts.size() / 2);
         for (int i = 0; i < parts.size(); i++) {
-            // 每两个元素构成一对 key-value。
             if (i % 2 != 0) {
                 result.put(parts.get(i-1), parts.get(i));
            }

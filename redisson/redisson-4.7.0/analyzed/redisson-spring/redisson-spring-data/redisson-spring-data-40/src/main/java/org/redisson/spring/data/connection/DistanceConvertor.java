@@ -20,24 +20,19 @@ import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.Metric;
 
 /**
- * 将 Redis GEO 距离数值（{@code double}）包装为 Spring {@link Distance}。
- * <p>构造时绑定 {@link Metric}（如 {@code Metrics.KILOMETERS}）。
- *
+ * 
  * @author Nikita Koksharov
  *
  */
 public class DistanceConvertor implements Convertor<Distance> {
 
-    /** 距离度量单位。 */
     private final Metric metric;
     
-    /** 指定 {@link Distance} 使用的 {@link Metric}。 */
     public DistanceConvertor(Metric metric) {
         super();
         this.metric = metric;
     }
 
-    /** 用 Redis 返回的浮点距离构造 {@link Distance}。 */
     @Override
     public Distance convert(Object obj) {
         return new Distance((Double)obj, metric);
