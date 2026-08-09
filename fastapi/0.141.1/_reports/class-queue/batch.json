@@ -1,17 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:20:45Z",
-  "files": [
-    "docs_src/metadata/tutorial002_py310.py",
-    "docs_src/metadata/tutorial003_py310.py",
-    "docs_src/metadata/tutorial004_py310.py",
-    "docs_src/middleware/__init__.py",
-    "docs_src/middleware/tutorial001_py310.py",
-    "docs_src/openapi_callbacks/__init__.py",
-    "docs_src/openapi_callbacks/tutorial001_py310.py",
-    "docs_src/openapi_webhooks/__init__.py",
-    "docs_src/openapi_webhooks/tutorial001_py310.py",
-    "docs_src/path_operation_advanced_configuration/__init__.py"
-  ],
+  "files": [],
   "remaining_pending": 227,
-  "done": 272
+  "done": 282
 }
