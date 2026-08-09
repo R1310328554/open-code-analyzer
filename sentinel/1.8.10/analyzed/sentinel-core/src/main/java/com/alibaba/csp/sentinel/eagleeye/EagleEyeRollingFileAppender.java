@@ -25,11 +25,15 @@ import java.nio.channels.FileLock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * 基于大小滚动的文件 Appender。
+ * <p>支持缓冲写入、定时 flush、文件锁滚动，以及多进程写入检测。</p>
+ */
 class EagleEyeRollingFileAppender extends EagleEyeAppender {
 
     private static final long LOG_FLUSH_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 
-    private static final int DEFAULT_BUFFER_SIZE = 4 * 1024; // 4KB
+    private static final int DEFAULT_BUFFER_SIZE = 4 * 1024; // 默认缓冲 4KB
 
     private final int maxBackupIndex = 3;
 
@@ -302,6 +306,9 @@ class EagleEyeRollingFileAppender extends EagleEyeAppender {
         }
     }
 
+    /**
+     * 等待当前滚动操作完成后再写入，避免并发冲突。
+     */
     void waitUntilRollFinish() {
         while (isRolling.get()) {
             try {

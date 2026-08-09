@@ -18,6 +18,10 @@ package com.alibaba.csp.sentinel.eagleeye;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
+/**
+ * 统计项聚合函数接口。
+ * <p>定义 count/sum、min/max 等不同统计类型的写入、读取与序列化行为。</p>
+ */
 interface StatEntryFunc {
 
     void appendTo(StringBuilder appender, char delimiter);
@@ -41,6 +45,9 @@ interface StatEntryFunc {
     void strArray(String... values);
 }
 
+/**
+ * 统计函数工厂，按类型创建 {@link StatEntryFunc} 实现。
+ */
 enum StatEntryFuncFactory {
     COUNT_SUM {
         @Override
@@ -58,6 +65,7 @@ enum StatEntryFuncFactory {
     abstract StatEntryFunc create();
 }
 
+/** 计数与求和统计实现。 */
 class StatEntryFuncCountAndSum implements StatEntryFunc {
 
     private LongAdder count = new LongAdder();
@@ -115,6 +123,7 @@ class StatEntryFuncCountAndSum implements StatEntryFunc {
     }
 }
 
+/** 最小值/最大值统计实现，可附带参考标识。 */
 class StatEntryFuncMinMax implements StatEntryFunc {
 
     private AtomicReference<ValueRef> max = new AtomicReference<ValueRef>(new ValueRef(Long.MIN_VALUE, null));

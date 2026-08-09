@@ -18,6 +18,10 @@ package com.alibaba.csp.sentinel.eagleeye;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 统计项键组合。
+ * <p>由若干 key 唯一标识一条统计记录，并通过 {@link StatLogger} 聚合 count、sum 或 min/max 等指标。</p>
+ */
 public final class StatEntry {
 
     private final StatLogger statLogger;
@@ -153,26 +157,44 @@ public final class StatEntry {
         return this.statLogger.getRollingData().getStatEntryFunc(this, factory);
     }
 
+    /**
+     * 计数加 1。
+     */
     public void count() {
         count(1);
     }
 
+    /**
+     * 增加指定计数值。
+     */
     public void count(long count) {
         getFunc(StatEntryFuncFactory.COUNT_SUM).count(count);
     }
 
+    /**
+     * 计数加 1 并累加给定数值。
+     */
     public void countAndSum(long valueToSum) {
         countAndSum(1, valueToSum);
     }
 
+    /**
+     * 增加指定计数并累加给定数值。
+     */
     public void countAndSum(long count, long valueToSum) {
         getFunc(StatEntryFuncFactory.COUNT_SUM).countAndSum(count, valueToSum);
     }
 
+    /**
+     * 更新当前时间窗口内的最小值与最大值。
+     */
     public void minMax(long candidate) {
         minMax(candidate, null);
     }
 
+    /**
+     * 更新最小/最大值，并附带达到极值时的参考标识。
+     */
     public void minMax(long candidate, String ref) {
         getFunc(StatEntryFuncFactory.MIN_MAX).minMax(candidate, ref);
     }

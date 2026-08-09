@@ -16,6 +16,9 @@
 package com.alibaba.csp.sentinel.context;
 
 /**
+ * 上下文名称定义异常。
+ * <p>尝试定义保留的默认上下文名称（如 {@code sentinel_default_context}）时抛出。</p>
+ *
  * @author qinan.qn
  */
 public class ContextNameDefineException extends RuntimeException {

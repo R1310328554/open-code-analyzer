@@ -19,6 +19,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * EagleEye 后台日志守护线程。
+ * <p>定期清理历史文件、刷新并重载被监视的 Appender，保证多进程/滚动场景下日志一致性。</p>
+ */
 class EagleEyeLogDaemon implements Runnable {
 
     private static final long LOG_CHECK_INTERVAL = TimeUnit.SECONDS.toMillis(20);
@@ -30,6 +34,9 @@ class EagleEyeLogDaemon implements Runnable {
     private static final CopyOnWriteArrayList<EagleEyeAppender> watchedAppenders
         = new CopyOnWriteArrayList<EagleEyeAppender>();
 
+    /**
+     * 注册 Appender 到守护线程监视列表。
+     */
     static EagleEyeAppender watch(EagleEyeAppender appender) {
         watchedAppenders.addIfAbsent(appender);
         return appender;
@@ -126,6 +133,9 @@ class EagleEyeLogDaemon implements Runnable {
         }
     }
 
+    /**
+     * 刷新全部被监视 Appender 并等待完成。
+     */
     static void flushAndWait() {
         for (EagleEyeAppender watchedAppender : watchedAppenders) {
             try {

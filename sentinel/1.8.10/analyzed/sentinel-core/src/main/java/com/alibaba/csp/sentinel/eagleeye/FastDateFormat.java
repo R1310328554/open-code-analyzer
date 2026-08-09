@@ -19,6 +19,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+/**
+ * 高性能日期格式化器。
+ * <p>在同一秒内复用字符缓冲区，仅更新毫秒部分，减少 {@link SimpleDateFormat} 调用开销。</p>
+ */
 class FastDateFormat {
 
     private final SimpleDateFormat fmt = createSimpleDateFormat();
@@ -28,6 +32,9 @@ class FastDateFormat {
     private long lastSecond = -1;
     private long lastMillis = -1;
 
+    /**
+     * 格式化毫秒时间戳为 {@code yyyy-MM-dd HH:mm:ss.SSS} 字符串。
+     */
     public String format(long timestamp) {
         formatToBuffer(timestamp);
         return new String(buffer, 0, 23);
@@ -62,6 +69,9 @@ class FastDateFormat {
         }
     }
 
+    /**
+     * 格式化为不含毫秒的 {@code yyyy-MM-dd HH:mm:ss} 字符串。
+     */
     String formatWithoutMs(long timestamp) {
         long diff = timestamp - lastSecond;
         if (diff < 0 || diff >= 1000) {

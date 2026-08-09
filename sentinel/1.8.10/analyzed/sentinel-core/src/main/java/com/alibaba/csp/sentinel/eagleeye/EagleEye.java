@@ -22,6 +22,10 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * EagleEye 日志框架入口类。
+ * <p>负责初始化自日志、后台守护线程与统计日志控制器，并提供统计日志器工厂方法。</p>
+ */
 public final class EagleEye {
 
     public static final String CLASS_LOCATION = getEagleEyeLocation();
@@ -38,7 +42,7 @@ public final class EagleEye {
 
     static final String EAGLEEYE_SELF_LOG_FILE = EagleEye.EAGLEEYE_LOG_DIR + "eagleeye-self.log";
 
-    // 200MB
+    // 自日志单文件上限 200MB
     static final long MAX_SELF_LOG_FILE_SIZE = 200 * 1024 * 1024;
 
     static EagleEyeAppender selfAppender = createSelfLogger();
@@ -160,6 +164,9 @@ public final class EagleEye {
 
     }
 
+    /**
+     * 关闭 EagleEye：刷新日志、停止统计控制器与日志守护线程。
+     */
     public static void shutdown() {
         selfLog("[WARN] EagleEye is shutting down (" + CLASS_LOCATION + ")");
 
@@ -202,6 +209,9 @@ public final class EagleEye {
         selfAppender = appender;
     }
 
+    /**
+     * 写入 EagleEye 自日志（内部诊断日志）。
+     */
     public static void selfLog(String log) {
         try {
             String timestamp = EagleEyeCoreUtils.formatTime(System.currentTimeMillis());
@@ -211,6 +221,9 @@ public final class EagleEye {
         }
     }
 
+    /**
+     * 写入带异常堆栈的自日志，并通过令牌桶限流避免刷屏。
+     */
     public static void selfLog(String log, Throwable e) {
         long now = System.currentTimeMillis();
         if (exceptionBucket.accept(now)) {
@@ -228,6 +241,9 @@ public final class EagleEye {
         }
     }
 
+    /**
+     * 刷新所有被监视 Appender 的缓冲输出。
+     */
     static public void flush() {
         EagleEyeLogDaemon.flushAndWait();
     }

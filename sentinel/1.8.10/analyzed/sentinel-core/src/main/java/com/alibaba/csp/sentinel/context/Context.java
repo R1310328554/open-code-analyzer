@@ -24,28 +24,24 @@ import com.alibaba.csp.sentinel.node.Node;
 import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
 
 /**
- * This class holds metadata of current invocation:<br/>
+ * 保存当前调用的元数据：<br/>
  *
  * <ul>
- * <li>the {@link EntranceNode}: the root of the current invocation
- * tree.</li>
- * <li>the current {@link Entry}: the current invocation point.</li>
- * <li>the current {@link Node}: the statistics related to the
- * {@link Entry}.</li>
- * <li>the origin: The origin is useful when we want to control different
- * invoker/consumer separately. Usually the origin could be the Service Consumer's app name
- * or origin IP. </li>
+ * <li>{@link EntranceNode}：当前调用树的根节点。</li>
+ * <li>current {@link Entry}：当前调用点。</li>
+ * <li>current {@link Node}：与 {@link Entry} 相关的统计节点。</li>
+ * <li>origin：来源标识，用于分别控制不同调用方/消费者。
+ * 通常来源可以是服务消费者的应用名或来源 IP。</li>
  * </ul>
  * <p>
- * Each {@link SphU}#entry() or {@link SphO}#entry() should be in a {@link Context},
- * if we don't invoke {@link ContextUtil}#enter() explicitly, DEFAULT context will be used.
+ * 每次 {@link SphU}#entry() 或 {@link SphO}#entry() 都应在某个 {@link Context} 中执行；
+ * 若未显式调用 {@link ContextUtil}#enter()，将使用 DEFAULT 上下文。
  * </p>
  * <p>
- * A invocation tree will be created if we invoke {@link SphU}#entry() multi times in
- * the same context.
+ * 在同一上下文中多次调用 {@link SphU}#entry() 会形成调用树。
  * </p>
  * <p>
- * Same resource in different context will count separately, see {@link NodeSelectorSlot}.
+ * 不同上下文中的相同资源分别计数，见 {@link NodeSelectorSlot}。
  * </p>
  *
  * @author jialiang.linjl
@@ -57,33 +53,33 @@ import com.alibaba.csp.sentinel.slots.nodeselector.NodeSelectorSlot;
 public class Context {
 
     /**
-     * Context name.
+     * 上下文名称。
      */
     private final String name;
 
     /**
-     * The entrance node of current invocation tree.
+     * 当前调用树的入口节点。
      */
     private DefaultNode entranceNode;
 
     /**
-     * Current processing entry.
+     * 当前正在处理的 Entry。
      */
     private Entry curEntry;
 
     /**
-     * The origin of this context (usually indicate different invokers, e.g. service consumer name or origin IP).
+     * 本上下文的来源（通常标识不同调用方，例如服务消费者名称或来源 IP）。
      */
     private String origin = "";
 
     private final boolean async;
 
     /**
-     * Create a new async context.
+     * 创建新的异步上下文。
      *
-     * @param entranceNode entrance node of the context
-     * @param name context name
-     * @return the new created context
+     * @param entranceNode 上下文的入口节点
+     * @param name 上下文名称
+     * @return 新创建的上下文
      * @since 0.2.0
      */
     public static Context newAsyncContext(DefaultNode entranceNode, String name) {
@@ -172,9 +168,9 @@ public class Context {
     }
 
     /**
-     * Get the parent {@link Node} of the current.
+     * 获取当前节点的父 {@link Node}。
      *
-     * @return the parent node of the current.
+     * @return 当前节点的父节点
      */
     public Node getLastNode() {
         if (curEntry != null && curEntry.getLastNode() != null) {

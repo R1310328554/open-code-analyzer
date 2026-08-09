@@ -26,6 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.alibaba.csp.sentinel.concurrent.NamedThreadFactory;
 
+/**
+ * 统计日志控制器。
+ * <p>管理 {@link StatLogger} 实例的全局注册表，并调度按时间窗口滚动与异步写入任务。</p>
+ */
 class StatLogController {
 
     private static final Map<String, StatLogger> statLoggers = new ConcurrentHashMap<String, StatLogger>();
@@ -42,6 +46,9 @@ class StatLogController {
 
     private static AtomicBoolean running = new AtomicBoolean(false);
 
+    /**
+     * 若不存在则创建并注册 StatLogger，并安排首次滚动任务。
+     */
     static StatLogger createLoggerIfNotExists(StatLoggerBuilder builder) {
         String loggerName = builder.getLoggerName();
         StatLogger statLogger = statLoggers.get(loggerName);
@@ -87,6 +94,9 @@ class StatLogController {
         }
     }
 
+    /**
+     * 延迟调度写入任务，留出统计条目冷却时间。
+     */
     static void scheduleWriteTask(StatRollingData statRollingData) {
         if (statRollingData != null) {
             try {
@@ -140,7 +150,7 @@ class StatLogController {
                 for (Entry<StatEntry, StatEntryFunc> entry : entrySet) {
                     buffer.delete(0, buffer.length());
                     StatEntryFunc func = entry.getValue();
-                    // time|statType|keys|values
+                    // 格式：time|statType|keys|values
                     buffer.append(timeStr).append(entryDelimiter);
                     buffer.append(func.getStatType()).append(entryDelimiter);
                     entry.getKey().appendTo(buffer, keyDelimiter);

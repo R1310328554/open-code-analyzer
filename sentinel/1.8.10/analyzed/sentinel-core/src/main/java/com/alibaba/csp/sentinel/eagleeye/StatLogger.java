@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * EagleEye 统计日志器。
+ * <p>按固定时间窗口聚合 {@link StatEntry} 指标，滚动后异步写入日志文件。</p>
+ *
  * @author jifeng
  */
 public final class StatLogger {
@@ -82,6 +85,9 @@ public final class StatLogger {
         return valueDelimiter;
     }
 
+    /**
+     * 滚动到下一时间窗口，返回上一窗口的聚合数据供写入。
+     */
     StatRollingData rolling() {
         do {
             long now = System.currentTimeMillis();
@@ -98,6 +104,9 @@ public final class StatLogger {
         } while (true);
     }
 
+    /**
+     * 创建单 key 统计项。
+     */
     public StatEntry stat(String key) {
         return new StatEntry(this, key);
     }

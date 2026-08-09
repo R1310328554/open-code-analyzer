@@ -23,6 +23,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * EagleEye 内部工具类。
+ * <p>提供字符串处理、日志字段转义、时间格式化、系统属性读取与线程池关闭等辅助方法。</p>
+ */
 final class EagleEyeCoreUtils {
 
     public static final String EMPTY_STRING = "";
@@ -146,6 +150,9 @@ final class EagleEyeCoreUtils {
             .ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
             .withZone(ZoneId.systemDefault());
 
+    /**
+     * 将毫秒时间戳格式化为 {@code yyyy-MM-dd HH:mm:ss.SSS}。
+     */
     public static String formatTime(long timestamp) {
         return dateFmt.format(Instant.ofEpochMilli(timestamp));
     }
@@ -174,6 +181,9 @@ final class EagleEyeCoreUtils {
         return ch >= '0' && ch <= '9';
     }
 
+    /**
+     * 优雅关闭线程池，超时后强制 shutdownNow。
+     */
     public static void shutdownThreadPool(ExecutorService pool, long awaitTimeMillis) {
         try {
             pool.shutdown();
