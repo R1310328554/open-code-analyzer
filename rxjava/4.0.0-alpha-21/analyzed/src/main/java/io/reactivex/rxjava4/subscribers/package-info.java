@@ -12,10 +12,10 @@
  */
 
 /**
- * Default wrappers and implementations for {@link java.util.concurrent.Flow.Subscriber Subscriber}-based consumer classes and interfaces,
- * including disposable ({@link io.reactivex.rxjava4.subscribers.DisposableSubscriber DisposableSubscriber}) and resource-tracking
- * ({@link io.reactivex.rxjava4.subscribers.ResourceSubscriber ResourceSubscriber})
- * variants and the {@link io.reactivex.rxjava4.subscribers.TestSubscriber TestSubscriber} that allows unit testing
- * {@link io.reactivex.rxjava4.core.Flowable Flowable}-based flows.
+ * 基于 {@link java.util.concurrent.Flow.Subscriber} 的 consumer 默认包装与实现，
+ * 含 {@link io.reactivex.rxjava4.subscribers.DisposableSubscriber DisposableSubscriber}、
+ * {@link io.reactivex.rxjava4.subscribers.ResourceSubscriber ResourceSubscriber} 与
+ * 用于单元测试 {@link io.reactivex.rxjava4.core.Flowable Flowable} 流的
+ * {@link io.reactivex.rxjava4.subscribers.TestSubscriber TestSubscriber}。
  */
 package io.reactivex.rxjava4.subscribers;

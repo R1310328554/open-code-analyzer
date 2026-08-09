@@ -22,16 +22,13 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Serializes access to the {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
- * {@link Subscriber#onComplete()} methods of another {@link Subscriber}.
+ * 对另一个 {@link Subscriber} 的 onNext/onError/onComplete 进行串行化访问。
  *
- * <p>Note that {@link #onSubscribe(Subscription)} is not serialized in respect of the other methods so
- * make sure the {@code onSubscribe} is called with a non-{@code null} {@link Subscription}
- * before any of the other methods are called.
+ * <p>onSubscribe 相对其他方法未串行化，须先以非 null Subscription 完成 onSubscribe。
  *
- * <p>The implementation assumes that the actual {@code Subscriber}'s methods don't throw.
+ * <p>假定实际 Subscriber 的方法不会抛出异常。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class SerializedSubscriber<T> implements FlowableSubscriber<T>, Subscription {
     final Subscriber<? super T> downstream;
@@ -47,25 +44,24 @@ public final class SerializedSubscriber<T> implements FlowableSubscriber<T>, Sub
     volatile boolean done;
 
     /**
-     * Construct a {@code SerializedSubscriber} by wrapping the given actual {@link Subscriber}.
-     * @param downstream the actual {@code Subscriber}, not null (not verified)
+     * 包装给定 {@link Subscriber} 构造 SerializedSubscriber。
+     * @param downstream 实际 Subscriber（未校验非 null）
      */
     public SerializedSubscriber(Subscriber<? super T> downstream) {
         this(downstream, false);
     }
 
     /**
-     * Construct a {@code SerializedSubscriber} by wrapping the given actual {@link Subscriber} and
-     * optionally delaying the errors till all regular values have been emitted
-     * from the internal buffer.
-     * @param actual the actual {@code Subscriber}, not {@code null} (not verified)
-     * @param delayError if {@code true}, errors are emitted after regular values have been emitted
+     * 包装 Subscriber 并可选择将错误延迟到缓冲中常规值全部发出后。
+     * @param actual 实际 Subscriber
+     * @param delayError 为 true 时错误在常规值之后发出
      */
     public SerializedSubscriber(@NonNull Subscriber<? super T> actual, boolean delayError) {
         this.downstream = actual;
         this.delayError = delayError;
     }
 
+    /** 校验 upstream 后以自身转发 onSubscribe。 */
     @Override
     public void onSubscribe(@NonNull Subscription s) {
         if (SubscriptionHelper.validate(this.upstream, s)) {
@@ -74,6 +70,7 @@ public final class SerializedSubscriber<T> implements FlowableSubscriber<T>, Sub
         }
     }
 
+    /** 串行化转发 onNext；emitting 时入队。 */
     @Override
     public void onNext(@NonNull T t) {
         if (done) {
@@ -105,6 +102,7 @@ public final class SerializedSubscriber<T> implements FlowableSubscriber<T>, Sub
         emitLoop();
     }
 
+    /** 串行化转发 onError；delayError 模式下错误入队。 */
     @Override
     public void onError(Throwable t) {
         if (done) {
@@ -146,6 +144,7 @@ public final class SerializedSubscriber<T> implements FlowableSubscriber<T>, Sub
         // no need to loop because this onError is the last event
     }
 
+    /** 串行化转发 onComplete；emitting 时入队 complete 标记。 */
     @Override
     public void onComplete() {
         if (done) {
@@ -172,6 +171,7 @@ public final class SerializedSubscriber<T> implements FlowableSubscriber<T>, Sub
         // no need to loop because this onComplete is the last event
     }
 
+    /** 排空内部队列并继续向下游发出事件。 */
     void emitLoop() {
         for (;;) {
             AppendOnlyLinkedArrayList<Object> q;
@@ -190,11 +190,13 @@ public final class SerializedSubscriber<T> implements FlowableSubscriber<T>, Sub
         }
     }
 
+    /** 委托 upstream.request。 */
     @Override
     public void request(long n) {
         upstream.request(n);
     }
 
+    /** 委托 upstream.cancel。 */
     @Override
     public void cancel() {
         upstream.cancel();

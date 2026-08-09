@@ -23,27 +23,27 @@ import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Wraps another {@link Subscriber} and ensures all {@code onXXX} methods conform the protocol
- * (except the requirement for serialized access).
+ * 包装另一个 {@link Subscriber}，确保 onXXX 符合协议（序列化要求除外）。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, Subscription {
-    /** The actual Subscriber. */
+    /** 实际下游 Subscriber。 */
     final Subscriber<? super T> downstream;
-    /** The subscription. */
+    /** 上游 Subscription。 */
     Subscription upstream;
-    /** Indicates a terminal state. */
+    /** 是否已进入终止状态。 */
     boolean done;
 
     /**
-     * Constructs a {@code SafeSubscriber} by wrapping the given actual {@link Subscriber}.
-     * @param downstream the actual {@code Subscriber} to wrap, not {@code null} (not validated)
+     * 包装给定 {@link Subscriber} 构造 SafeSubscriber。
+     * @param downstream 实际 Subscriber（未校验非 null）
      */
     public SafeSubscriber(@NonNull Subscriber<? super T> downstream) {
         this.downstream = downstream;
     }
 
+    /** 校验 upstream 后以自身转发 onSubscribe；异常时 cancel 并上报。 */
     @Override
     public void onSubscribe(@NonNull Subscription s) {
         if (SubscriptionHelper.validate(this.upstream, s)) {
@@ -66,6 +66,7 @@ public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, 
         }
     }
 
+    /** 校验 null 与订阅状态后安全转发 onNext。 */
     @Override
     public void onNext(@NonNull T t) {
         if (done) {
@@ -104,6 +105,7 @@ public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, 
         }
     }
 
+    /** 未设置 Subscription 时以 EmptySubscription 订阅并向下游 onError。 */
     void onNextNoSubscription() {
         done = true;
         Throwable ex = new NullPointerException("Subscription not set!");
@@ -125,6 +127,7 @@ public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, 
         }
     }
 
+    /** 安全转发 onError；已终止或未订阅时上报 RxJavaPlugins。 */
     @Override
     public void onError(@NonNull Throwable t) {
         if (done) {
@@ -167,6 +170,7 @@ public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, 
         }
     }
 
+    /** 安全转发 onComplete；未订阅时走 onCompleteNoSubscription。 */
     @Override
     public void onComplete() {
         if (done) {
@@ -187,6 +191,7 @@ public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, 
         }
     }
 
+    /** 未设置 Subscription 时以 EmptySubscription 订阅并向下游 onError。 */
     void onCompleteNoSubscription() {
 
         Throwable ex = new NullPointerException("Subscription not set!");
@@ -208,6 +213,7 @@ public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, 
         }
     }
 
+    /** 安全转发 request；异常时 cancel 并上报。 */
     @Override
     public void request(long n) {
         try {
@@ -225,6 +231,7 @@ public final class SafeSubscriber<@NonNull T> implements FlowableSubscriber<T>, 
         }
     }
 
+    /** 安全转发 cancel；异常上报 RxJavaPlugins。 */
     @Override
     public void cancel() {
         try {

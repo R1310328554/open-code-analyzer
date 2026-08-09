@@ -18,6 +18,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
 
+/**
+ * JMH 基准：大数组 Flowable/Observable 的 blockingFirst/blockingLast 吞吐。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
@@ -32,6 +35,7 @@ public class BlockingPerf {
 
     Observable<Integer> observable;
 
+    /** 按 times 填充数组并构造 fromArray 源。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
@@ -47,6 +51,7 @@ public class BlockingPerf {
         return flowable.blockingFirst();
     }
 
+    /** Flowable.blockingLast 基准。 */
     @Benchmark
     public Object flowableBlockingLast() {
         return flowable.blockingLast();
@@ -57,6 +62,7 @@ public class BlockingPerf {
         return observable.blockingLast();
     }
 
+    /** Observable.blockingFirst 基准。 */
     @Benchmark
     public Object observableBlockingFirst() {
         return observable.blockingFirst();

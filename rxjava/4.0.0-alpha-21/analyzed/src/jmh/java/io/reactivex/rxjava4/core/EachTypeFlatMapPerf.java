@@ -21,6 +21,9 @@ import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：range/flatMap(just|range) 在 Flowable、Observable、Single 上的吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -43,6 +46,7 @@ public class EachTypeFlatMapPerf {
     Flowable<Integer> bpRangeMapRange;
     Observable<Integer> nbpRangeMapRange;
 
+    /** 构造 range 与 flatMap just/range 变体。 */
     @Setup
     public void setup() {
         bpRange = Flowable.range(1, times);
@@ -63,6 +67,7 @@ public class EachTypeFlatMapPerf {
         bpRange.subscribe(new PerfSubscriber(bh));
     }
 
+    /** Flowable range.flatMap(just) 基准。 */
     @Benchmark
     public void bpRangeMapJust(Blackhole bh) {
         bpRangeMapJust.subscribe(new PerfSubscriber(bh));
@@ -93,6 +98,7 @@ public class EachTypeFlatMapPerf {
         singleJust.subscribe(new LatchedSingleObserver<>(bh));
     }
 
+    /** Single.flatMap(just) 基准。 */
     @Benchmark
     public void singleJustMapJust(Blackhole bh) {
         singleJustMapJust.subscribe(new LatchedSingleObserver<>(bh));

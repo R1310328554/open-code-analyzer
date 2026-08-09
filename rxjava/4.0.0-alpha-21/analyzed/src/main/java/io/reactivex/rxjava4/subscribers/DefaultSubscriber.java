@@ -20,34 +20,17 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
 
 /**
- * Abstract base implementation of a {@link java.util.concurrent.Flow.Subscriber Subscriber} with
- * support for requesting via {@code #request(long)}, cancelling via
- * {@code #cancel()} (both synchronously) and calls {@code #onStart()}
- * when the subscription happens.
+ * {@link java.util.concurrent.Flow.Subscriber} 抽象基类：支持同步 {@link #request(long)} 与
+ * {@link #cancel()}，订阅建立时调用 {@link #onStart()}。
  *
- * <p>All pre-implemented final methods are thread-safe.
+ * <p>预置 final 方法线程安全；默认 onStart 请求 {@link Long#MAX_VALUE}。
  *
- * <p>The default {@code #onStart()} requests {@link Long#MAX_VALUE} by default. Override
- * the method to request a custom <em>positive</em> amount.
+ * <p>onStart 内 request 可能异步触发 onNext，须先完成初始化。
+ * onNext 内 request 安全（上游 onNext 非重入）。
  *
- * <p>Note that calling {@code #request(long)} from {@code #onStart()} may trigger
- * an immediate, asynchronous emission of data to {@link #onNext(Object)}. Make sure
- * all initialization happens before the call to {@code request()} in {@code onStart()}.
- * Calling {@code #request(long)} inside {@link #onNext(Object)} can happen at any time
- * because by design, {@code onNext} calls from upstream are non-reentrant and non-overlapping.
+ * <p>仅允许单次订阅；回调不应抛出未检查异常，否则用 safeSubscribe。
  *
- * <p>Use the protected {@code #cancel()} to cancel the sequence from within an
- * {@code onNext} implementation.
- *
- * <p>Like all other consumers, {@code DefaultSubscriber} can be subscribed only once.
- * Any subsequent attempt to subscribe it to a new source will yield an
- * {@link IllegalStateException} with message {@code "It is not allowed to subscribe with a(n) <class name> multiple times."}.
- *
- * <p>Implementation of {@code #onStart()}, {@link #onNext(Object)}, {@link #onError(Throwable)}
- * and {@link #onComplete()} are not allowed to throw any unchecked exceptions.
- * If for some reason this can't be avoided, use {@link io.reactivex.rxjava4.core.Flowable#safeSubscribe(java.util.concurrent.Flow.Subscriber)}
- * instead of the standard {@code subscribe()} method.
- * @param <T> the value type
+ * @param <T> 元素类型
  *
  * <p>Example<pre><code>
  * Flowable.range(1, 5)
@@ -76,6 +59,7 @@ public abstract class DefaultSubscriber<T> implements FlowableSubscriber<T> {
 
     Subscription upstream;
 
+    /** validate 通过后保存 upstream 并调用 onStart()。 */
     @Override
     public final void onSubscribe(Subscription s) {
         if (EndConsumerHelper.validate(this.upstream, s, getClass())) {
@@ -85,8 +69,8 @@ public abstract class DefaultSubscriber<T> implements FlowableSubscriber<T> {
     }
 
     /**
-     * Requests from the upstream {@link Subscription}.
-     * @param n the request amount, positive
+     * 向上游 {@link Subscription} 请求元素。
+     * @param n 请求数量，须为正
      */
     protected final void request(long n) {
         Subscription s = this.upstream;
@@ -95,19 +79,15 @@ public abstract class DefaultSubscriber<T> implements FlowableSubscriber<T> {
         }
     }
 
-    /**
-     * Cancels the upstream's {@link Subscription}.
-     */
+    /** 取消上游 {@link Subscription} 并将 upstream 置 CANCELLED。 */
     protected final void cancel() {
         Subscription s = this.upstream;
         this.upstream = SubscriptionHelper.CANCELLED;
         s.cancel();
     }
     /**
-     * Called once the subscription has been set on this observer; override this
-     * to perform initialization or issue an initial request.
-     * <p>
-     * The default implementation requests {@link Long#MAX_VALUE}.
+     * 订阅建立后回调，可覆写做初始化或发出初始 request。
+     * <p>默认请求 {@link Long#MAX_VALUE}。
      */
     protected void onStart() {
         request(Long.MAX_VALUE);

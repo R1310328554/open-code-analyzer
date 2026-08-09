@@ -21,6 +21,9 @@ import static java.util.concurrent.Flow.*;
 
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：fromArray.flatMap(just) 在 Flowable 与 Observable 上的吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -36,6 +39,7 @@ public class FlatMapJustPerf {
 
     Observable<Integer> observable;
 
+    /** 按 times 构造 flatMap(just) 链路。 */
     @Setup
     public void setup() {
         Integer[] array = new Integer[times];
@@ -45,11 +49,13 @@ public class FlatMapJustPerf {
         observable = Observable.fromArray(array).flatMap((Function<Integer, Observable<Integer>>) Observable::just);
     }
 
+    /** Flowable flatMap just 基准。 */
     @Benchmark
     public void flowable(Blackhole bh) {
         flowable.subscribe(new PerfConsumer(bh));
     }
 
+    /** Observable flatMap just 基准。 */
     @Benchmark
     public void observable(Blackhole bh) {
         observable.subscribe(new PerfConsumer(bh));

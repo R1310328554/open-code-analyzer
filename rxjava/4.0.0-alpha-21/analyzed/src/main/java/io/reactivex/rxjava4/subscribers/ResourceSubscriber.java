@@ -25,40 +25,15 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
 
 /**
- * An abstract Subscriber that allows asynchronous cancellation of its
- * subscription and associated resources.
+ * 支持异步取消订阅并管理关联资源的 Subscriber 抽象基类。
  *
- * <p>All pre-implemented final methods are thread-safe.
+ * <p>在 onError/onComplete 中应显式 {@link #dispose()}；
+ * 通过 {@link #add(Disposable)} 关联资源，dispose 时一并清理。
  *
- * <p>To release the associated resources, one has to call {@link #dispose()}
- * in {@code onError()} and {@code onComplete()} explicitly.
+ * <p>默认 onStart 无界 request；request 支持 onSubscribe 前 deferred 累积。
  *
- * <p>Use {@link #add(Disposable)} to associate resources (as {@link io.reactivex.rxjava4.disposables.Disposable Disposable}s)
- * with this {@code ResourceSubscriber} that will be cleaned up when {@link #dispose()} is called.
- * Removing previously associated resources is not possible but one can create a
- * {@link io.reactivex.rxjava4.disposables.CompositeDisposable CompositeDisposable}, associate it with this
- * {@code ResourceSubscriber} and then add/remove resources to/from the {@code CompositeDisposable}
- * freely.
- *
- * <p>The default {@code #onStart()} requests {@link Long#MAX_VALUE} by default. Override
- * the method to request a custom <em>positive</em> amount. Use the protected {@code #request(long)}
- * to request more items and {@link #dispose()} to cancel the sequence from within an
- * {@code onNext} implementation.
- *
- * <p>Note that calling {@code #request(long)} from {@code #onStart()} may trigger
- * an immediate, asynchronous emission of data to {@link #onNext(Object)}. Make sure
- * all initialization happens before the call to {@code request()} in {@code onStart()}.
- * Calling {@code #request(long)} inside {@link #onNext(Object)} can happen at any time
- * because by design, {@code onNext} calls from upstream are non-reentrant and non-overlapping.
- *
- * <p>Like all other consumers, {@code ResourceSubscriber} can be subscribed only once.
- * Any subsequent attempt to subscribe it to a new source will yield an
- * {@link IllegalStateException} with message {@code "It is not allowed to subscribe with a(n) <class name> multiple times."}.
- *
- * <p>Implementation of {@code #onStart()}, {@link #onNext(Object)}, {@link #onError(Throwable)}
- * and {@link #onComplete()} are not allowed to throw any unchecked exceptions.
- * If for some reason this can't be avoided, use {@link io.reactivex.rxjava4.core.Flowable#safeSubscribe(java.util.concurrent.Flow.Subscriber)}
- * instead of the standard {@code subscribe()} method.
+ * <p>仅允许单次订阅；回调不应抛出未检查异常。
+
  *
  * <p>Example<pre><code>
  * Disposable d =
@@ -90,30 +65,30 @@ import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
  * d.dispose();
  * </code></pre>
  *
- * @param <T> the value type
+ *
+ * @param <T> 元素类型
  */
 public abstract class ResourceSubscriber<T> implements FlowableSubscriber<T>, Disposable {
-    /** The active subscription. */
+    /** 当前活跃的上游订阅。 */
     private final AtomicReference<Subscription> upstream = new AtomicReference<>();
 
-    /** The resource composite, can never be null. */
+    /** 资源复合容器，永不为 null。 */
     private final ListCompositeDisposable resources = new ListCompositeDisposable();
 
-    /** Remembers the request(n) counts until a subscription arrives. */
+    /** 在 Subscription 到达前缓存 request(n) 计数。 */
     private final AtomicLong missedRequested = new AtomicLong();
 
     /**
-     * Adds a resource to this {@code ResourceSubscriber}.
-     *
-     * @param resource the resource to add
-     *
-     * @throws NullPointerException if {@code resource} is {@code null}
+     * 向本 {@code ResourceSubscriber} 添加资源。
+     * @param resource 要添加的资源
+     * @throws NullPointerException 若 resource 为 null
      */
     public final void add(Disposable resource) {
         Objects.requireNonNull(resource, "resource is null");
         resources.add(resource);
     }
 
+    /** setOnce 后 flush missedRequested 并 onStart()。 */
     @Override
     public final void onSubscribe(Subscription s) {
         if (EndConsumerHelper.setOnce(this.upstream, s, getClass())) {
@@ -126,34 +101,21 @@ public abstract class ResourceSubscriber<T> implements FlowableSubscriber<T>, Di
     }
 
     /**
-     * Called once the upstream sets a {@link Subscription} on this {@code ResourceSubscriber}.
-     *
-     * <p>You can perform initialization at this moment. The default
-     * implementation requests {@link Long#MAX_VALUE} from upstream.
+     * 上游设置 Subscription 后调用；默认 request(Long.MAX_VALUE)。
      */
     protected void onStart() {
         request(Long.MAX_VALUE);
     }
 
     /**
-     * Request the specified amount of elements from upstream.
-     *
-     * <p>This method can be called before the upstream calls {@link #onSubscribe(Subscription)}.
-     * When the subscription happens, all missed requests are requested.
-     *
-     * @param n the request amount, must be positive
+     * 向上游请求元素；可在 onSubscribe 前调用，订阅时一并发出。
+     * @param n 请求数量，须为正
      */
     protected final void request(long n) {
         SubscriptionHelper.deferredRequest(upstream, missedRequested, n);
     }
 
-    /**
-     * Cancels the subscription (if any) and disposes the resources associated with
-     * this {@code ResourceSubscriber} (if any).
-     *
-     * <p>This method can be called before the upstream calls {@link #onSubscribe(Subscription)} at which
-     * case the {@link Subscription} will be immediately cancelled.
-     */
+    /** 取消订阅并 dispose 关联资源；可在 onSubscribe 前调用。 */
     @Override
     public final void dispose() {
         if (SubscriptionHelper.cancel(upstream)) {
@@ -162,8 +124,8 @@ public abstract class ResourceSubscriber<T> implements FlowableSubscriber<T>, Di
     }
 
     /**
-     * Returns true if this {@code ResourceSubscriber} has been disposed/cancelled.
-     * @return true if this {@code ResourceSubscriber} has been disposed/cancelled
+     * 是否已 dispose/取消。
+     * @return 已 dispose/取消则为 true
      */
     @Override
     public final boolean isDisposed() {

@@ -11,6 +11,9 @@
  * the License for the specific language governing permissions and limitations under the License.
  */
 
+/**
+ * RxJava 4 模块描述符：导出 core、operators、plugins、subscribers 等公共 API 包。
+ */
 module io.reactivex.rxjava4 {
     exports io.reactivex.rxjava4.annotations;
     exports io.reactivex.rxjava4.core;

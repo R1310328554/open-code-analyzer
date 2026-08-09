@@ -23,29 +23,13 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
 
 /**
- * An abstract Subscriber that allows asynchronous, external cancellation by implementing {@link Disposable}.
+ * 实现 {@link Disposable} 的 Subscriber 抽象基类，支持异步外部取消。
  *
- * <p>All pre-implemented final methods are thread-safe.
+ * <p>final 方法线程安全；默认 onStart 无界 request。
+ * 在 onNext 中可用 {@link #request(long)} 与 {@link #cancel()}。
  *
- * <p>The default {@code #onStart()} requests {@link Long#MAX_VALUE} by default. Override
- * the method to request a custom <em>positive</em> amount. Use the protected {@code #request(long)}
- * to request more items and {@code #cancel()} to cancel the sequence from within an
- * {@code onNext} implementation.
- *
- * <p>Note that calling {@code #request(long)} from {@code #onStart()} may trigger
- * an immediate, asynchronous emission of data to {@link #onNext(Object)}. Make sure
- * all initialization happens before the call to {@code request()} in {@code onStart()}.
- * Calling {@code #request(long)} inside {@link #onNext(Object)} can happen at any time
- * because by design, {@code onNext} calls from upstream are non-reentrant and non-overlapping.
- *
- * <p>Like all other consumers, {@code DisposableSubscriber} can be subscribed only once.
- * Any subsequent attempt to subscribe it to a new source will yield an
- * {@link IllegalStateException} with message {@code "It is not allowed to subscribe with a(n) <class name> multiple times."}.
- *
- * <p>Implementation of {@code #onStart()}, {@link #onNext(Object)}, {@link #onError(Throwable)}
- * and {@link #onComplete()} are not allowed to throw any unchecked exceptions.
- * If for some reason this can't be avoided, use {@link io.reactivex.rxjava4.core.Flowable#safeSubscribe(java.util.concurrent.Flow.Subscriber)}
- * instead of the standard {@code subscribe()} method.
+ * <p>仅允许单次订阅；回调不应抛出未检查异常。
+
  *
  * <p>Example<pre><code>
  * Disposable d =
@@ -71,11 +55,13 @@ import io.reactivex.rxjava4.internal.util.EndConsumerHelper;
  * // ...
  * d.dispose();
  * </code></pre>
- * @param <T> the received value type.
+ *
+ * @param <T> 接收的元素类型
  */
 public abstract class DisposableSubscriber<T> implements FlowableSubscriber<T>, Disposable {
     final AtomicReference<Subscription> upstream = new AtomicReference<>();
 
+    /** setOnce 成功后调用 onStart()。 */
     @Override
     public final void onSubscribe(Subscription s) {
         if (EndConsumerHelper.setOnce(this.upstream, s, getClass())) {
@@ -83,39 +69,32 @@ public abstract class DisposableSubscriber<T> implements FlowableSubscriber<T>, 
         }
     }
 
-    /**
-     * Called once the single upstream {@link Subscription} is set via {@link #onSubscribe(Subscription)}.
-     */
+    /** 上游 {@link Subscription} 通过 onSubscribe 设置成功后调用。 */
     protected void onStart() {
         upstream.get().request(Long.MAX_VALUE);
     }
 
     /**
-     * Requests the specified amount from the upstream if its {@link Subscription} is set via
-     * onSubscribe already.
-     * <p>Note that calling this method before a {@link Subscription} is set via {@link #onSubscribe(Subscription)}
-     * leads to {@link NullPointerException} and meant to be called from inside {@link #onStart()} or
-     * {@link #onNext(Object)}.
-     * @param n the request amount, positive
+     * 向上游请求指定数量（须已 onSubscribe）。
+     * <p>onSubscribe 前调用会 NPE；应在 onStart 或 onNext 内调用。
+     * @param n 请求数量，须为正
      */
     protected final void request(long n) {
         upstream.get().request(n);
     }
 
-    /**
-     * Cancels the Subscription set via {@link #onSubscribe(Subscription)} or makes sure a
-     * {@link Subscription} set asynchronously (later) is cancelled immediately.
-     * <p>This method is thread-safe and can be exposed as a public API.
-     */
+    /** 取消订阅；线程安全，等价于 dispose()。 */
     protected final void cancel() {
         dispose();
     }
 
+    /** upstream 是否为 CANCELLED。 */
     @Override
     public final boolean isDisposed() {
         return upstream.get() == SubscriptionHelper.CANCELLED;
     }
 
+    /** SubscriptionHelper.cancel(upstream)。 */
     @Override
     public final void dispose() {
         SubscriptionHelper.cancel(upstream);

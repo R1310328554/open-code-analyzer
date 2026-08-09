@@ -24,35 +24,33 @@ import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.rxjava4.observers.BaseTestConsumer;
 
 /**
- * A {@link Subscriber} implementation that records events and allows making assertions about them.
+ * 记录事件的 {@link Subscriber} 实现，支持断言。
  *
- * <p>You can override the {@link #onSubscribe(Subscription)}, {@link #onNext(Object)}, {@link #onError(Throwable)} and
- * {@link #onComplete()} methods but not the others (this is by design).
+ * <p>可覆盖 onSubscribe/onNext/onError/onComplete，其余方法不可覆盖。
  *
- * <p>When calling the default request method, you are requesting on behalf of the
- * wrapped actual {@link Subscriber} if any.
+ * <p>request 代表被包装的实际 Subscriber 向上游请求。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public class TestSubscriber<T>
 extends BaseTestConsumer<T, TestSubscriber<T>>
 implements FlowableSubscriber<T>, Subscription {
-    /** The actual subscriber to forward events to. */
+    /** 转发事件的实际 Subscriber。 */
     private final Subscriber<? super T> downstream;
 
-    /** Makes sure the incoming Subscriptions get cancelled immediately. */
+    /** 标记是否已 cancel。 */
     private volatile boolean cancelled;
 
-    /** Holds the current subscription if any. */
+    /** 当前 Subscription（若有）。 */
     private final AtomicReference<Subscription> upstream;
 
-    /** Holds the requested amount until a subscription arrives. */
+    /** 在 Subscription 到达前缓存 request 数量。 */
     private final AtomicLong missedRequested;
 
     /**
-     * Creates a {@code TestSubscriber} with {@link Long#MAX_VALUE} initial request amount.
-     * @param <T> the value type
-     * @return the new {@code TestSubscriber} instance.
+     * 创建初始 request 为 {@link Long#MAX_VALUE} 的 TestSubscriber。
+     * @param <T> 元素类型
+     * @return 新实例
      * @see #create(long)
      */
     @NonNull
@@ -61,10 +59,9 @@ implements FlowableSubscriber<T>, Subscription {
     }
 
     /**
-     * Creates a {@code TestSubscriber} with the given initial request amount.
-     * @param <T> the value type
-     * @param initialRequested the initial requested amount
-     * @return the new {@code TestSubscriber} instance.
+     * 以给定初始 request 创建 TestSubscriber。
+     * @param initialRequested 初始请求量
+     * @return 新实例
      */
     @NonNull
     public static <T> TestSubscriber<T> create(long initialRequested) {
@@ -72,27 +69,22 @@ implements FlowableSubscriber<T>, Subscription {
     }
 
     /**
-     * Constructs a forwarding {@code TestSubscriber}.
-     * @param <T> the value type received
-     * @param delegate the actual {@link Subscriber} to forward events to
-     * @return the new TestObserver instance
+     * 创建转发事件的 TestSubscriber。
+     * @param delegate 转发目标 Subscriber
+     * @return 新实例
      */
     public static <T> TestSubscriber<T> create(@NonNull Subscriber<? super T> delegate) {
         return new TestSubscriber<>(delegate);
     }
 
-    /**
-     * Constructs a non-forwarding {@code TestSubscriber} with an initial request value of {@link Long#MAX_VALUE}.
-     */
+    /** 构造不转发、初始 request 为 MAX_VALUE 的 TestSubscriber。 */
     public TestSubscriber() {
         this(EmptySubscriber.INSTANCE, Long.MAX_VALUE);
     }
 
     /**
-     * Constructs a non-forwarding {@code TestSubscriber} with the specified initial request value.
-     * <p>The {@code TestSubscriber} doesn't validate the {@code initialRequest} amount so one can
-     * test sources with invalid values as well.
-     * @param initialRequest the initial request amount
+     * 构造不转发、指定初始 request 的 TestSubscriber（不校验 initialRequest）。
+     * @param initialRequest 初始请求量
      */
     public TestSubscriber(long initialRequest) {
         this(EmptySubscriber.INSTANCE, initialRequest);
@@ -124,6 +116,7 @@ implements FlowableSubscriber<T>, Subscription {
         this.missedRequested = new AtomicLong(initialRequest);
     }
 
+    /** 记录线程与 upstream，flush missedRequested 后 onStart。 */
     @Override
     public void onSubscribe(@NonNull Subscription s) {
         try {
@@ -154,13 +147,12 @@ implements FlowableSubscriber<T>, Subscription {
         }
     }
 
-    /**
-     * Called after the onSubscribe is called and handled.
-     */
+    /** onSubscribe 处理完成后的钩子方法。 */
     protected void onStart() {
 
     }
 
+    /** 记录值与线程，校验订阅顺序后转发 downstream。 */
     @Override
     public void onNext(@NonNull T t) {
         if (!checkSubscriptionOnce) {
@@ -180,6 +172,7 @@ implements FlowableSubscriber<T>, Subscription {
         downstream.onNext(t);
     }
 
+    /** 记录错误，转发 downstream 并 countDown done。 */
     @Override
     public void onError(@NonNull Throwable t) {
         if (!checkSubscriptionOnce) {
@@ -199,6 +192,7 @@ implements FlowableSubscriber<T>, Subscription {
         }
     }
 
+    /** 递增 completions，转发 downstream 并 countDown done。 */
     @Override
     public void onComplete() {
         if (!checkSubscriptionOnce) {
@@ -217,11 +211,13 @@ implements FlowableSubscriber<T>, Subscription {
         }
     }
 
+    /** deferredRequest 向上游请求。 */
     @Override
     public final void request(long n) {
         SubscriptionHelper.deferredRequest(upstream, missedRequested, n);
     }
 
+    /** 取消 upstream 并置 cancelled。 */
     @Override
     public final void cancel() {
         if (!cancelled) {
@@ -231,8 +227,8 @@ implements FlowableSubscriber<T>, Subscription {
     }
 
     /**
-     * Returns true if this {@code TestSubscriber} has been cancelled.
-     * @return true if this {@code TestSubscriber} has been cancelled
+     * 是否已 cancel。
+     * @return 已 cancel 则为 true
      */
     public final boolean isCancelled() {
         return cancelled;
@@ -251,8 +247,8 @@ implements FlowableSubscriber<T>, Subscription {
     // state retrieval methods
 
     /**
-     * Returns true if this {@code TestSubscriber} received a {@link Subscription} via {@link #onSubscribe(Subscription)}.
-     * @return true if this {@code TestSubscriber} received a {@link Subscription} via {@link #onSubscribe(Subscription)}
+     * 是否已通过 onSubscribe 收到 Subscription。
+     * @return 已收到则为 true
      */
     public final boolean hasSubscription() {
         return upstream.get() != null;
@@ -261,7 +257,7 @@ implements FlowableSubscriber<T>, Subscription {
     // assertion methods
 
     /**
-     * Assert that the {@link #onSubscribe(Subscription)} method was called exactly once.
+     * 断言 onSubscribe 恰好调用一次。
      * @return this
      */
     @Override
@@ -273,11 +269,9 @@ implements FlowableSubscriber<T>, Subscription {
     }
 
     /**
-     * Calls {@link #request(long)} and returns this.
-     * <p>History: 2.0.1 - experimental
-     * @param n the request amount
+     * 调用 request(n) 并返回 this。
+     * @param n 请求数量
      * @return this
-     * @since 2.1
      */
     public final TestSubscriber<T> requestMore(long n) {
         request(n);
@@ -285,17 +279,15 @@ implements FlowableSubscriber<T>, Subscription {
     }
 
     /**
-     * Expose this {@code TestSubscriber} as a {@link Disposable} object.
-     * @return the {@code Disposable} view of this {@code TestSubscriber}
+     * 将本 TestSubscriber 暴露为 {@link Disposable} 视图。
+     * @return Disposable 包装
      * @since 4.0.0
      */
     public final Disposable asDisposable() {
         return new TestSubscriberDisposable(this);
     }
 
-    /**
-     * A subscriber that ignores all events and does not report errors.
-     */
+    /** 忽略所有事件且不上报错误的 Subscriber。 */
     enum EmptySubscriber implements FlowableSubscriber<Object> {
         INSTANCE;
 

@@ -17,6 +17,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.*;
 
+/**
+ * JMH 基准：各响应式类型 blockingFirst/blockingLast/blockingGet/blockingAwait 吞吐。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)
@@ -34,6 +37,7 @@ public class BlockingGetPerf {
 
     Completable completable;
 
+    /** 构造 just/complete 单元素源。 */
     @Setup
     public void setup() {
         flowable = Flowable.just(1);
@@ -47,6 +51,7 @@ public class BlockingGetPerf {
         completable = Completable.complete();
     }
 
+    /** Flowable.blockingFirst 基准。 */
     @Benchmark
     public Object flowableBlockingFirst() {
         return flowable.blockingFirst();
@@ -77,6 +82,7 @@ public class BlockingGetPerf {
         return maybe.blockingGet();
     }
 
+    /** Completable.blockingAwait 基准。 */
     @Benchmark
     public void completable() {
         completable.blockingAwait();

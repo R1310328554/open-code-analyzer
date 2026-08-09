@@ -12,15 +12,14 @@
  */
 
 /**
- * Classes representing so-called hot sources, aka <strong>subjects</strong>, that implement a base reactive class and
- * the respective consumer type at once to allow forms of multicasting events to multiple
- * consumers as well as consuming another base reactive type of their kind.
+ * 表示热源（<strong>Subject</strong>）的类型：同时实现基础响应式类与对应 consumer 接口，
+ * 可向多个 consumer 多播事件，也可作为 consumer 订阅同类源流。
  * <p>
- * Available subject classes with their respective base classes and consumer interfaces:
+ * 各 Subject 与基础类、consumer 接口对应关系：
  * <br>
  * <table border="1" style="border-collapse: collapse;">
- * <caption>The available subject classes with their respective base classes and consumer interfaces.</caption>
- * <tr><td><b>Subject type</b></td><td><b>Base class</b></td><td><b>Consumer interface</b></td></tr>
+ * <caption>可用 Subject 类及其基础类与 consumer 接口。</caption>
+ * <tr><td><b>Subject 类型</b></td><td><b>基础类</b></td><td><b>Consumer 接口</b></td></tr>
  * <tr>
  *     <td>{@link io.reactivex.rxjava4.subjects.Subject Subject}
  *     <br>&nbsp;&nbsp;&nbsp;{@link io.reactivex.rxjava4.subjects.AsyncSubject AsyncSubject}
@@ -49,8 +48,8 @@
  * </tr>
  * </table>
  * <p>
- * The backpressure-aware variants of the {@code Subject} class are called
- * {@link java.util.concurrent.Flow.Processor}s and reside in the {@code io.reactivex.processors} package.
+ * 支持背压的 {@code Subject} 变体为 {@link java.util.concurrent.Flow.Processor}，
+ * 位于 {@code io.reactivex.processors} 包。
  * @see io.reactivex.rxjava4.processors
  */
 package io.reactivex.rxjava4.subjects;

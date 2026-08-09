@@ -20,6 +20,10 @@ import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：Single/Maybe/Completable 经 flatMap/flattenAs/andThen
+ * 展开为 Flowable/Observable 的吞吐对比（含 hide 变体）。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -63,6 +67,7 @@ public class BinaryFlatMapPerf {
 
     Observable<Integer> completableFlattenAsObservable;
 
+    /** 按 times 构造各类型 flatMap 链路与 hide 变体。 */
     @Setup
     public void setup() {
 
@@ -119,6 +124,7 @@ public class BinaryFlatMapPerf {
 
     }
 
+    /** Single.flatMapPublisher 基准。 */
     @Benchmark
     public void singleFlatMapPublisher(Blackhole bh) {
         singleFlatMapPublisher.subscribe(new PerfConsumer(bh));
@@ -194,6 +200,7 @@ public class BinaryFlatMapPerf {
         completableFlatMapObservable.subscribe(new PerfConsumer(bh));
     }
 
+    /** Completable.andThen Observable 基准。 */
     @Benchmark
     public void completableFlattenAsObservable(Blackhole bh) {
         completableFlattenAsObservable.subscribe(new PerfConsumer(bh));

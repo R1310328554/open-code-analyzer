@@ -21,6 +21,9 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.internal.schedulers.SingleScheduler;
 import io.reactivex.rxjava4.schedulers.Schedulers;
 
+/**
+ * JMH 基准：fromCallable 经 subscribeOn/observeOn 管道在各类型上的异步吞吐。
+ */
 @SuppressWarnings("exports")
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
@@ -60,6 +63,7 @@ public class CallableAsyncPerf {
 
     Maybe<Integer> pipelineMaybe;
 
+    /** 构造 subscribeOn/observeOn/双调度 pipeline 链路。 */
     @Setup
     public void setup() {
 
@@ -108,6 +112,7 @@ public class CallableAsyncPerf {
         pipelineMaybe = Maybe.fromCallable(c).subscribeOn(s).observeOn(s2);
     }
 
+    /** Flowable subscribeOn 基准。 */
     @Benchmark
     public void subscribeOnFlowable(Blackhole bh) {
         subscribeOnFlowable.subscribeWith(new PerfAsyncConsumer(bh)).await(1);
@@ -178,6 +183,7 @@ public class CallableAsyncPerf {
         subscribeOnMaybe.subscribeWith(new PerfAsyncConsumer(bh)).await(1);
     }
 
+    /** Maybe subscribeOn+observeOn 管道基准。 */
     @Benchmark
     public void pipelineMaybe(Blackhole bh) {
         pipelineMaybe.subscribeWith(new PerfAsyncConsumer(bh)).await(1);
