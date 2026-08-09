@@ -21,10 +21,8 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.util.ReferenceCounted;
 
 /**
- * Server exception during handshaking process.
- *
- * <p><b>IMPORTANT</b>: This exception does not contain any {@link ReferenceCounted} fields
- * e.g. {@link FullHttpRequest}, so no special treatment is needed.
+ * 服务端 WebSocket 握手失败异常，可选附带请求快照（非 {@link ReferenceCounted}，无需 release）。
+ * <p><b>注意</b>：不持有 {@link FullHttpRequest} 等引用计数对象。
  */
 public final class WebSocketServerHandshakeException extends WebSocketHandshakeException {
 
@@ -47,7 +45,7 @@ public final class WebSocketServerHandshakeException extends WebSocketHandshakeE
     }
 
     /**
-     * Returns a {@link HttpRequest request} if exception occurs during request validation otherwise {@code null}.
+     * 校验失败时返回请求副本，否则 {@code null}。
      */
     public HttpRequest request() {
         return request;

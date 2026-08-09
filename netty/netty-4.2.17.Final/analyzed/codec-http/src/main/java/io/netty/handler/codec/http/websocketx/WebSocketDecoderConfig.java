@@ -18,7 +18,7 @@ package io.netty.handler.codec.http.websocketx;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Frames decoder configuration.
+ * WebSocket 帧解码器配置：最大载荷、掩码期望、扩展位与 UTF-8 校验等。
  */
 public final class WebSocketDecoderConfig {
 
@@ -33,7 +33,7 @@ public final class WebSocketDecoderConfig {
     private final boolean withUTF8Validator;
 
     /**
-     * Constructor
+     * 私有构造；请使用 {@link #newBuilder()} 或 {@link Builder#build()}。
      *
      * @param maxFramePayloadLength
      *            Maximum length of a frame's payload. Setting this to an appropriate value for you application
@@ -64,26 +64,32 @@ public final class WebSocketDecoderConfig {
         this.withUTF8Validator = withUTF8Validator;
     }
 
+    /** 单帧载荷最大字节数，防 DoS 超长帧 */
     public int maxFramePayloadLength() {
         return maxFramePayloadLength;
     }
 
+    /** 服务端应为 true（要求入站帧带 mask）；客户端为 false */
     public boolean expectMaskedFrames() {
         return expectMaskedFrames;
     }
 
+    /** 为 true 时放宽 mask 校验（非标准兼容） */
     public boolean allowMaskMismatch() {
         return allowMaskMismatch;
     }
 
+    /** 是否允许使用 RSV 扩展位 */
     public boolean allowExtensions() {
         return allowExtensions;
     }
 
+    /** 协议违规时是否立即发送 Close 并断开 */
     public boolean closeOnProtocolViolation() {
         return closeOnProtocolViolation;
     }
 
+    /** 是否在 pipeline 中自动加入 {@link Utf8FrameValidator} */
     public boolean withUTF8Validator() {
         return withUTF8Validator;
     }
@@ -100,10 +106,12 @@ public final class WebSocketDecoderConfig {
             "]";
     }
 
+    /** 基于当前配置创建可变 {@link Builder} */
     public Builder toBuilder() {
         return new Builder(this);
     }
 
+    /** 从 {@link #DEFAULT} 默认值开始构建 */
     public static Builder newBuilder() {
         return new Builder(DEFAULT);
     }

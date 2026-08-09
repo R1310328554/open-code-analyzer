@@ -31,6 +31,10 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * WebSocket 协议通用 handler 基类：自动回复 Ping、可选丢弃 Pong、出站 Close 握手。
+ * <p>客户端 {@link WebSocketClientProtocolHandler} 与服务端 {@link WebSocketServerProtocolHandler} 均继承此类。
+ */
 abstract class WebSocketProtocolHandler extends MessageToMessageDecoder<WebSocketFrame>
         implements ChannelOutboundHandler {
 
@@ -40,15 +44,14 @@ abstract class WebSocketProtocolHandler extends MessageToMessageDecoder<WebSocke
     private ChannelPromise closeSent;
 
     /**
-     * Creates a new {@link WebSocketProtocolHandler} that will <i>drop</i> {@link PongWebSocketFrame}s.
+     * 默认丢弃入站 {@link PongWebSocketFrame}（通常由本 handler 响应 Ping 产生）。
      */
     WebSocketProtocolHandler() {
         this(true);
     }
 
     /**
-     * Creates a new {@link WebSocketProtocolHandler}, given a parameter that determines whether or not to drop {@link
-     * PongWebSocketFrame}s.
+     * 指定是否丢弃 Pong 帧。
      *
      * @param dropPongFrames
      *            {@code true} if {@link PongWebSocketFrame}s should be dropped
@@ -66,6 +69,7 @@ abstract class WebSocketProtocolHandler extends MessageToMessageDecoder<WebSocke
         this.forceCloseTimeoutMillis = forceCloseTimeoutMillis;
     }
 
+    /** Ping 自动回 Pong；可选丢弃 Pong；其余帧 retain 后下游处理 */
     @Override
     protected void decode(ChannelHandlerContext ctx, WebSocketFrame frame, List<Object> out) throws Exception {
         if (frame instanceof PingWebSocketFrame) {
@@ -88,6 +92,7 @@ abstract class WebSocketProtocolHandler extends MessageToMessageDecoder<WebSocke
         }
     }
 
+    /** 若配置了 {@code closeStatus}，先写 {@link CloseWebSocketFrame} 再关闭通道 */
     @Override
     public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
         if (closeStatus == null || !ctx.channel().isActive()) {
@@ -137,8 +142,7 @@ abstract class WebSocketProtocolHandler extends MessageToMessageDecoder<WebSocke
     }
 
     /**
-     * Returns a {@link WebSocketHandshakeException} that depends on which client or server pipeline
-     * this handler belongs. Should be overridden in implementation otherwise a default exception is used.
+     * 子类可覆盖以返回客户端/服务端特定的握手异常类型。
      */
     protected WebSocketHandshakeException buildHandshakeException(String message) {
         return new WebSocketHandshakeException(message);

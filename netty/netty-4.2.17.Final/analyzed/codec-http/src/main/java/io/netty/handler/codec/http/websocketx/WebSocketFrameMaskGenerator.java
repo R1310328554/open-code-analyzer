@@ -16,13 +16,13 @@
 package io.netty.handler.codec.http.websocketx;
 
 /**
- * Allows to customize how the mask is generated that is used to mask the {@link WebSocketFrame}. Masking
- * is only be done on the client-side.
+ * 自定义客户端出站 {@link WebSocketFrame} 载荷掩码的 32 位 mask 生成策略。
+ * <p>仅客户端发送的数据帧需要 mask（RFC 6455）；默认见 {@link RandomWebSocketFrameMaskGenerator}。
  */
 public interface WebSocketFrameMaskGenerator {
 
     /**
-     * Return the next mask that is used to mask the payload of the {@link WebSocketFrame}.
+     * 返回下一个用于 XOR 掩码载荷的 32 位整数。
      *
      * @return  mask.
      */

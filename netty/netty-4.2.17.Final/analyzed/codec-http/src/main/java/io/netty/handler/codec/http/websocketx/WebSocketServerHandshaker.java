@@ -51,7 +51,8 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
- * Base class for server side web socket opening and closing handshakes
+ * 服务端 WebSocket 开/关握手抽象基类：生成 101 响应、安装帧编解码器、协商子协议。
+ * <p>具体协议版本由 {@link WebSocketServerHandshaker00}、{@link WebSocketServerHandshaker07} 等实现。
  */
 public abstract class WebSocketServerHandshaker {
     protected static final InternalLogger logger = InternalLoggerFactory.getInstance(WebSocketServerHandshaker.class);
@@ -66,9 +67,8 @@ public abstract class WebSocketServerHandshaker {
 
     private String selectedSubprotocol;
 
-    /**
-     * Use this as wildcard to support all requested sub-protocols
-     */
+    /** 子协议通配符 {@code *}，接受客户端请求的任意子协议 */
+
     public static final String SUB_PROTOCOL_WILDCARD = "*";
 
     /**
@@ -122,7 +122,7 @@ public abstract class WebSocketServerHandshaker {
     }
 
     /**
-     * Returns the URL of the web socket
+     * 返回 WebSocket 资源 URL（已弃用）。
      */
     @Deprecated
     public String uri() {
@@ -130,7 +130,7 @@ public abstract class WebSocketServerHandshaker {
     }
 
     /**
-     * Returns the CSV of supported sub protocols
+     * 返回服务端支持的子协议集合。
      */
     public Set<String> subprotocols() {
         Set<String> ret = new LinkedHashSet<String>();
@@ -139,14 +139,14 @@ public abstract class WebSocketServerHandshaker {
     }
 
     /**
-     * Returns the version of the specification being supported
+     * 返回本 handshaker 实现的 WebSocket 协议版本。
      */
     public WebSocketVersion version() {
         return version;
     }
 
     /**
-     * Gets the maximum length for any frame's payload.
+     * 单帧最大载荷长度（来自 {@link WebSocketDecoderConfig}）。
      *
      * @return The maximum length for a frame's payload
      */
@@ -155,7 +155,7 @@ public abstract class WebSocketServerHandshaker {
     }
 
     /**
-     * Gets this decoder configuration.
+     * 返回握手完成后帧解码器使用的配置。
      *
      * @return This decoder configuration.
      */
@@ -268,7 +268,7 @@ public abstract class WebSocketServerHandshaker {
         ChannelHandlerContext ctx = p.context(HttpRequestDecoder.class);
         final String encoderName;
         if (ctx == null) {
-            // this means the user use an HttpServerCodec
+            // 未找到 HttpRequestDecoder，尝试 HttpServerCodec
             ctx = p.context(HttpServerCodec.class);
             if (ctx == null) {
                 promise.setFailure(
@@ -410,8 +410,7 @@ public abstract class WebSocketServerHandshaker {
         String aggregatorCtx = ctx.name();
         if (HttpUtil.isContentLengthSet(req) || HttpUtil.isTransferEncodingChunked(req) ||
             version == WebSocketVersion.V00) {
-            // Add aggregator and ensure we feed the HttpRequest so it is aggregated. A limit of 8192 should be
-            // more then enough for the websockets handshake payload.
+            // 分块请求需先聚合为 FullHttpRequest（8192 足够握手体）
             aggregatorCtx = "httpAggregator";
             p.addAfter(ctx.name(), aggregatorCtx, new HttpObjectAggregator(8192));
         }
@@ -435,7 +434,7 @@ public abstract class WebSocketServerHandshaker {
 
             @Override
             public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-                // Remove ourself and fail the handshake promise.
+                // 异常时移除临时 handler 并失败 promise
                 ctx.pipeline().remove(this);
                 promise.tryFailure(cause);
                 ctx.fireExceptionCaught(cause);
@@ -444,7 +443,7 @@ public abstract class WebSocketServerHandshaker {
             @Override
             public void channelInactive(ChannelHandlerContext ctx) throws Exception {
                 try {
-                    // Fail promise if Channel was closed
+                    // 通道关闭时失败握手 promise
                     if (!promise.isDone()) {
                         promise.tryFailure(new ClosedChannelException());
                     }
@@ -505,7 +504,7 @@ public abstract class WebSocketServerHandshaker {
     }
 
     /**
-     * Returns a new {@link FullHttpResponse) which will be used for as response to the handshake request.
+     * 构造 HTTP 101 握手响应（子类按协议版本实现）。
      */
     protected abstract FullHttpResponse newHandshakeResponse(FullHttpRequest req,
                                          HttpHeaders responseHeaders);
@@ -575,7 +574,7 @@ public abstract class WebSocketServerHandshaker {
     }
 
     /**
-     * Selects the first matching supported sub protocol
+     * 从客户端请求的 CSV 子协议中选取首个与服务端列表匹配的项。
      *
      * @param requestedSubprotocols
      *            CSV of protocols to be supported. e.g. "chat, superchat"
@@ -599,27 +598,24 @@ public abstract class WebSocketServerHandshaker {
             }
         }
 
-        // No match found
+        // 无匹配子协议
         return null;
     }
 
     /**
-     * Returns the selected subprotocol. Null if no subprotocol has been selected.
-     * <p>
-     * This is only available AFTER <tt>handshake()</tt> has been called.
-     * </p>
+     * 返回协商选中的子协议；仅 {@code handshake()} 成功后有效。
      */
     public String selectedSubprotocol() {
         return selectedSubprotocol;
     }
 
     /**
-     * Returns the decoder to use after handshake is complete.
+     * 握手完成后加入 pipeline 的帧解码器。
      */
     protected abstract WebSocketFrameDecoder newWebsocketDecoder();
 
     /**
-     * Returns the encoder to use after the handshake is complete.
+     * 握手完成后加入 pipeline 的帧编码器。
      */
     protected abstract WebSocketFrameEncoder newWebSocketEncoder();
 

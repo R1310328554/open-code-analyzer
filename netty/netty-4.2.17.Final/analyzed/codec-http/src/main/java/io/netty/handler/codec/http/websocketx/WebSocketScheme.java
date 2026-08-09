@@ -18,18 +18,16 @@ package io.netty.handler.codec.http.websocketx;
 import io.netty.util.AsciiString;
 
 /**
- * Defines the common schemes used for the WebSocket protocol as defined by
- * <a href="https://tools.ietf.org/html/rfc6455">rfc6455</a>.
+ * RFC 6455 WebSocket URI 方案常量：{@link #WS}（明文）与 {@link #WSS}（TLS）。
+ * <p>各含默认端口与 {@link AsciiString} 方案名。
  */
 public final class WebSocketScheme {
-    /**
-     * Scheme for non-secure WebSocket connection.
-     */
+    /** 非加密 WebSocket，默认端口 80，方案名 {@code ws} */
+
     public static final WebSocketScheme WS = new WebSocketScheme(80, "ws");
 
-    /**
-     * Scheme for secure WebSocket connection.
-     */
+    /** TLS WebSocket，默认端口 443，方案名 {@code wss} */
+
     public static final WebSocketScheme WSS = new WebSocketScheme(443, "wss");
 
     private final int port;
@@ -40,10 +38,12 @@ public final class WebSocketScheme {
         this.name = AsciiString.cached(name);
     }
 
+    /** 返回方案名字符串（如 {@code ws}） */
     public AsciiString name() {
         return name;
     }
 
+    /** 返回该方案默认端口 */
     public int port() {
         return port;
     }

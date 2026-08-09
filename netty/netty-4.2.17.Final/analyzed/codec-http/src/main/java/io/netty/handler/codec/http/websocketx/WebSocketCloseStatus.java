@@ -18,7 +18,8 @@ package io.netty.handler.codec.http.websocketx;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * WebSocket status codes specified in RFC-6455.
+ * RFC 6455 定义的 WebSocket 关闭状态码及 IANA 扩展码。
+ * <p>WebSocket status codes specified in RFC-6455.
  * <pre>
  *
  * RFC-6455 The WebSocket Protocol, December 2011:
@@ -165,8 +166,7 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  *    these codes is undefined by this protocol.
  * </pre>
  * <p>
- * While {@link WebSocketCloseStatus} is enum-like structure, its instances should NOT be compared by reference.
- * Instead, either {@link #equals(Object)} should be used or direct comparison of {@link #code()} value.
+ * <p>{@link WebSocketCloseStatus} 类似枚举但勿用引用比较；应使用 {@link #equals(Object)} 或比较 {@link #code()}。
  */
 public final class WebSocketCloseStatus implements Comparable<WebSocketCloseStatus> {
 
@@ -206,7 +206,7 @@ public final class WebSocketCloseStatus implements Comparable<WebSocketCloseStat
     public static final WebSocketCloseStatus BAD_GATEWAY =
         new WebSocketCloseStatus(1014, "Bad Gateway");
 
-    // 1004, 1005, 1006, 1015 are reserved and should never be used by user
+    // 1004/1005/1006/1015 为保留码，应用层不应在 Close 帧中主动发送
     //public static final WebSocketCloseStatus SPECIFIC_MEANING = register(1004, "...");
 
     public static final WebSocketCloseStatus EMPTY =
@@ -222,6 +222,7 @@ public final class WebSocketCloseStatus implements Comparable<WebSocketCloseStat
     private final String reasonText;
     private String text;
 
+    /** 构造关闭状态，默认校验 RFC 6455 合法性 */
     public WebSocketCloseStatus(int statusCode, String reasonText) {
         this(statusCode, reasonText, true);
     }
@@ -235,16 +236,18 @@ public final class WebSocketCloseStatus implements Comparable<WebSocketCloseStat
         this.reasonText = checkNotNull(reasonText, "reasonText");
     }
 
+    /** 返回 16 位关闭状态码 */
     public int code() {
         return statusCode;
     }
 
+    /** 返回默认英文原因描述（写入 Close 帧时可覆盖） */
     public String reasonText() {
         return reasonText;
     }
 
     /**
-     * Order of {@link WebSocketCloseStatus} only depends on {@link #code()}.
+     * 排序仅按 {@link #code()} 数值。
      */
     @Override
     public int compareTo(WebSocketCloseStatus o) {
@@ -252,7 +255,7 @@ public final class WebSocketCloseStatus implements Comparable<WebSocketCloseStat
     }
 
     /**
-     * Equality of {@link WebSocketCloseStatus} only depends on {@link #code()}.
+     * 相等性仅比较 {@link #code()}，忽略原因文本。
      */
     @Override
     public boolean equals(Object o) {
@@ -277,12 +280,13 @@ public final class WebSocketCloseStatus implements Comparable<WebSocketCloseStat
     public String toString() {
         String text = this.text;
         if (text == null) {
-            // E.g.: "1000 Bye", "1009 Message too big"
+            // 例如 "1000 Bye"、"1009 Message too big"
             this.text = text = code() + " " + reasonText();
         }
         return text;
     }
 
+    /** 判断状态码是否允许出现在 Close 帧载荷中（含 3000+ 私有码） */
     public static boolean isValidStatusCode(int code) {
         return code < 0 ||
             1000 <= code && code <= 1003 ||
@@ -290,6 +294,7 @@ public final class WebSocketCloseStatus implements Comparable<WebSocketCloseStat
             3000 <= code;
     }
 
+    /** 按整数码返回预定义常量，未知码构造带占位原因的实例 */
     public static WebSocketCloseStatus valueOf(int code) {
         switch (code) {
             case 1000:

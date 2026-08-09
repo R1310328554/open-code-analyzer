@@ -36,14 +36,8 @@ import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * <p>
- * Performs server side opening and closing handshakes for web socket specification version <a
- * href="https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00" >draft-ietf-hybi-thewebsocketprotocol-
- * 00</a>
- * </p>
- * <p>
- * A very large portion of this code was taken from the Netty 3.2 HTTP example.
- * </p>
+ * HyBi-00 / Hixie 草案版服务端 WebSocket 握手实现（{@link WebSocketVersion#V00}）。
+ * <p>支持 Hixie-75/76 双 Key 挑战与旧版单 Origin 握手；大量逻辑源自 Netty 3.2 示例。
  */
 public class WebSocketServerHandshaker00 extends WebSocketServerHandshaker {
 
@@ -130,24 +124,24 @@ public class WebSocketServerHandshaker00 extends WebSocketServerHandshaker {
             throw new WebSocketServerHandshakeException("Invalid WebSocket handshake method: " + method, req);
         }
 
-        // Serve the WebSocket handshake request.
+        // 校验 Upgrade/Connection 头
         if (!req.headers().containsValue(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true)
                 || !HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(req.headers().get(HttpHeaderNames.UPGRADE))) {
             throw new WebSocketServerHandshakeException("not a WebSocket handshake request: missing upgrade", req);
         }
 
-        // Hixie 75 does not contain these headers while Hixie 76 does
+        // Hixie-76 含 Sec-WebSocket-Key1/Key2，75 不含
         boolean isHixie76 = req.headers().contains(HttpHeaderNames.SEC_WEBSOCKET_KEY1) &&
                             req.headers().contains(HttpHeaderNames.SEC_WEBSOCKET_KEY2);
 
         String origin = req.headers().get(HttpHeaderNames.ORIGIN);
-        //throw before allocating FullHttpResponse
+        // 在分配响应前校验 Origin，失败则抛异常
         if (origin == null && !isHixie76) {
             throw new WebSocketServerHandshakeException("Missing origin header, got only " + req.headers().names(),
                                                         req);
         }
 
-        // Create the WebSocket handshake response.
+        // 构造 101 握手响应
         FullHttpResponse res = new DefaultFullHttpResponse(HTTP_1_1, new HttpResponseStatus(101,
                 isHixie76 ? "WebSocket Protocol Handshake" : "Web Socket Protocol Handshake"),
                 req.content().alloc().buffer(0));
@@ -158,9 +152,9 @@ public class WebSocketServerHandshaker00 extends WebSocketServerHandshaker {
         res.headers().set(HttpHeaderNames.UPGRADE, HttpHeaderValues.WEBSOCKET)
                      .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE);
 
-        // Fill in the headers and contents depending on handshake getMethod.
+        // 按 Hixie-76 或 75 填充响应头与正文
         if (isHixie76) {
-            // New handshake getMethod with a challenge:
+            // Hixie-76：计算 Key 挑战 MD5 写入响应体
             res.headers().add(HttpHeaderNames.SEC_WEBSOCKET_ORIGIN, origin);
             res.headers().add(HttpHeaderNames.SEC_WEBSOCKET_LOCATION, uri());
 
@@ -176,7 +170,7 @@ public class WebSocketServerHandshaker00 extends WebSocketServerHandshaker {
                 }
             }
 
-            // Calculate the answer of the challenge.
+            // 对 Key1/Key2 与 8 字节 body 做 MD5
             String key1 = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_KEY1);
             String key2 = req.headers().get(HttpHeaderNames.SEC_WEBSOCKET_KEY2);
             int a = (int) (Long.parseLong(BEGINNING_DIGIT.matcher(key1).replaceAll("")) /
@@ -190,7 +184,7 @@ public class WebSocketServerHandshaker00 extends WebSocketServerHandshaker {
             input.writeLong(c);
             res.content().writeBytes(WebSocketUtil.md5(input.array()));
         } else {
-            // Old Hixie 75 handshake getMethod with no challenge:
+            // Hixie-75：无挑战，仅 Origin/Location 头
             res.headers().add(HttpHeaderNames.WEBSOCKET_ORIGIN, origin);
             res.headers().add(HttpHeaderNames.WEBSOCKET_LOCATION, uri());
 
@@ -203,7 +197,7 @@ public class WebSocketServerHandshaker00 extends WebSocketServerHandshaker {
     }
 
     /**
-     * Echo back the closing frame
+     * V00 关闭握手：原样回写 Close 帧（无 RFC 6455 双工关闭序列）。
      *
      * @param channel
      *            the {@link Channel} to use.

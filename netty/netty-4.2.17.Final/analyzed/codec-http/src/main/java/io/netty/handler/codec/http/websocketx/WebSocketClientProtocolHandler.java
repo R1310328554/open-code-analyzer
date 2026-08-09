@@ -32,56 +32,40 @@ import static io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConf
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * This handler does all the heavy lifting for you to run a websocket client.
- *
- * It takes care of websocket handshaking as well as processing of Ping, Pong frames. Text and Binary
- * data frames are passed to the next handler in the pipeline (implemented by you) for processing.
- * Also the close frame is passed to the next handler as you may want inspect it before close the connection if
- * the {@code handleCloseFrames} is {@code false}, default is {@code true}.
- *
- * This implementation will establish the websocket connection once the connection to the remote server was complete.
- *
- * To know once a handshake was done you can intercept the
- * {@link ChannelInboundHandler#userEventTriggered(ChannelHandlerContext, Object)} and check if the event was of type
- * {@link ClientHandshakeStateEvent#HANDSHAKE_ISSUED} or {@link ClientHandshakeStateEvent#HANDSHAKE_COMPLETE}.
+ * WebSocket 客户端协议处理器：自动完成握手，并处理 Ping/Pong 控制帧。
+ * <p>Text/Binary 数据帧交给 pipeline 下游业务 handler；若 {@code handleCloseFrames} 为 false（默认 true），
+ * Close 帧也会透传以便在关闭前检查。
+ * <p>TCP 连接建立后发起 WebSocket 升级；可通过 {@link ChannelInboundHandler#userEventTriggered} 监听
+ * {@link ClientHandshakeStateEvent#HANDSHAKE_ISSUED} 与 {@link ClientHandshakeStateEvent#HANDSHAKE_COMPLETE}。
  */
 public class WebSocketClientProtocolHandler extends WebSocketProtocolHandler {
     private final WebSocketClientHandshaker handshaker;
     private final WebSocketClientProtocolConfig clientConfig;
 
-    /**
-     * Returns the used handshaker
-     */
+    /** 返回用于握手的 {@link WebSocketClientHandshaker} */
+
     public WebSocketClientHandshaker handshaker() {
         return handshaker;
     }
 
-    /**
-     * Events that are fired to notify about handshake status
-     */
+    /** 握手生命周期用户事件，经 {@code userEventTriggered} 投递 */
+
     public enum ClientHandshakeStateEvent {
-        /**
-         * The Handshake was timed out
-         */
+        /** 握手超时（见 {@code handshakeTimeoutMillis}） */
+
         HANDSHAKE_TIMEOUT,
 
-        /**
-         * The Handshake was started but the server did not response yet to the request
-         */
+        /** 握手请求已发出，等待服务端 HTTP 101 响应 */
+
         HANDSHAKE_ISSUED,
 
-        /**
-         * The Handshake was complete successful and so the channel was upgraded to websockets
-         */
+        /** 握手成功，通道已升级为 WebSocket 帧协议 */
+
         HANDSHAKE_COMPLETE
     }
 
-    /**
-     * Base constructor
-     *
-     * @param clientConfig
-     *            Client protocol configuration.
-     */
+    /** 基于 {@link WebSocketClientProtocolConfig} 构造，内部创建对应 {@link WebSocketClientHandshaker} */
+
     public WebSocketClientProtocolHandler(WebSocketClientProtocolConfig clientConfig) {
         super(checkNotNull(clientConfig, "clientConfig").dropPongFrames(),
               clientConfig.sendCloseFrame(), clientConfig.forceCloseTimeoutMillis());
@@ -403,6 +387,7 @@ public class WebSocketClientProtocolHandler extends WebSocketProtocolHandler {
         this(handshaker, DEFAULT_HANDLE_CLOSE_FRAMES, handshakeTimeoutMillis);
     }
 
+    /** 若配置处理 Close 帧则直接关闭通道，否则委托父类转发 */
     @Override
     protected void decode(ChannelHandlerContext ctx, WebSocketFrame frame, List<Object> out) throws Exception {
         if (clientConfig.handleCloseFrames() && frame instanceof CloseWebSocketFrame) {
@@ -421,12 +406,12 @@ public class WebSocketClientProtocolHandler extends WebSocketProtocolHandler {
     public void handlerAdded(ChannelHandlerContext ctx) {
         ChannelPipeline cp = ctx.pipeline();
         if (cp.get(WebSocketClientProtocolHandshakeHandler.class) == null) {
-            // Add the WebSocketClientProtocolHandshakeHandler before this one.
+            // 在本 handler 前插入握手 handler
             ctx.pipeline().addBefore(ctx.name(), WebSocketClientProtocolHandshakeHandler.class.getName(),
                 new WebSocketClientProtocolHandshakeHandler(handshaker, clientConfig.handshakeTimeoutMillis()));
         }
         if (clientConfig.withUTF8Validator() && cp.get(Utf8FrameValidator.class) == null) {
-            // Add the UFT8 checking before this one.
+            // 可选：在本 handler 前插入 UTF-8 校验
             ctx.pipeline().addBefore(ctx.name(), Utf8FrameValidator.class.getName(),
                     new Utf8FrameValidator());
         }

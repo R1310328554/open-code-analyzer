@@ -16,7 +16,8 @@
 package io.netty.handler.codec.http.websocketx;
 
 /**
- * Exception during handshaking process
+ * WebSocket HTTP 升级握手过程中的运行时异常基类。
+ * <p>子类包括 {@link WebSocketClientHandshakeException} 与 {@link WebSocketServerHandshakeException}。
  */
 public class WebSocketHandshakeException extends RuntimeException {
 

@@ -20,19 +20,15 @@ import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.util.internal.StringUtil;
 
 /**
- * Base class for web socket frames.
+ * 所有 WebSocket 帧的抽象基类，继承 {@link DefaultByteBufHolder} 持有载荷 {@link ByteBuf}。
+ * <p>子类包括 {@link TextWebSocketFrame}、{@link BinaryWebSocketFrame}、控制帧等。
  */
 public abstract class WebSocketFrame extends DefaultByteBufHolder {
 
-    /**
-     * Flag to indicate if this frame is the final fragment in a message. The first fragment (frame) may also be the
-     * final fragment.
-     */
+    /** FIN 位：是否为消息最后一个分片（单帧消息首帧即 FIN） */
     private final boolean finalFragment;
 
-    /**
-     * RSV1, RSV2, RSV3 used for extensions
-     */
+    /** RSV1/2/3 扩展位（如 permessage-deflate） */
     private final int rsv;
 
     protected WebSocketFrame(ByteBuf binaryData) {
@@ -46,15 +42,14 @@ public abstract class WebSocketFrame extends DefaultByteBufHolder {
     }
 
     /**
-     * Flag to indicate if this frame is the final fragment in a message. The first fragment (frame) may also be the
-     * final fragment.
+     * 是否为消息最后一个分片。
      */
     public boolean isFinalFragment() {
         return finalFragment;
     }
 
     /**
-     * Bits used for extensions to the standard.
+     * 协议扩展使用的 RSV 位。
      */
     public int rsv() {
         return rsv;

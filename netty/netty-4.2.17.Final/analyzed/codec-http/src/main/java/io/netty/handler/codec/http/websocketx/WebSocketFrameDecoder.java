@@ -19,9 +19,8 @@ import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
 
 /**
- * Marker interface which all WebSocketFrame decoders need to implement.
- *
- * This makes it easier to access the added encoder later in the {@link ChannelPipeline}.
+ * WebSocket 帧解码器标记接口，便于在 {@link ChannelPipeline} 中按类型查找解码 handler。
+ * <p>实现类如 {@link WebSocket08FrameDecoder}、{@link WebSocket00FrameDecoder}。
  */
 public interface WebSocketFrameDecoder extends ChannelInboundHandler {
 }

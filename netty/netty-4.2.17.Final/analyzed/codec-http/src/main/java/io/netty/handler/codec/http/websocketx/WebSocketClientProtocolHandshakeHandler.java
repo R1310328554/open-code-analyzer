@@ -27,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 
 import static io.netty.util.internal.ObjectUtil.*;
 
+/**
+ * 客户端 WebSocket 握手入站处理器：连接激活后发起 HTTP 升级，收到 101 响应后完成握手并移除自身。
+ * <p>支持握手超时；通道在握手完成前关闭则失败 {@link WebSocketClientHandshakeException}。
+ */
 class WebSocketClientProtocolHandshakeHandler extends ChannelInboundHandlerAdapter {
     private static final long DEFAULT_HANDSHAKE_TIMEOUT_MS = 10000L;
 
@@ -35,6 +39,7 @@ class WebSocketClientProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
     private ChannelHandlerContext ctx;
     private ChannelPromise handshakePromise;
 
+    /** 使用默认 10 秒握手超时 */
     WebSocketClientProtocolHandshakeHandler(WebSocketClientHandshaker handshaker) {
         this(handshaker, DEFAULT_HANDSHAKE_TIMEOUT_MS);
     }
@@ -50,6 +55,7 @@ class WebSocketClientProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
         handshakePromise = ctx.newPromise();
     }
 
+    /** 连接就绪后发起握手，成功则触发 {@link ClientHandshakeStateEvent#HANDSHAKE_ISSUED} */
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         ctx.fireChannelActive();
@@ -75,6 +81,7 @@ class WebSocketClientProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
         super.channelInactive(ctx);
     }
 
+    /** 收到 {@link FullHttpResponse} 时完成握手并触发 {@link ClientHandshakeStateEvent#HANDSHAKE_COMPLETE} */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (!(msg instanceof FullHttpResponse)) {
@@ -98,6 +105,7 @@ class WebSocketClientProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
         }
     }
 
+    /** 调度握手超时任务，完成或失败时取消定时器 */
     private void applyHandshakeTimeout() {
         final ChannelPromise localHandshakePromise = handshakePromise;
         if (handshakeTimeoutMillis <= 0 || localHandshakePromise.isDone()) {
@@ -119,12 +127,12 @@ class WebSocketClientProtocolHandshakeHandler extends ChannelInboundHandlerAdapt
             }
         }, handshakeTimeoutMillis, TimeUnit.MILLISECONDS);
 
-        // Cancel the handshake timeout when handshake is finished.
+        // 握手结束（成功或失败）时取消超时任务
         localHandshakePromise.addListener(f -> timeoutFuture.cancel(false));
     }
 
     /**
-     * This method is visible for testing.
+     * 供测试获取握手 {@link ChannelFuture}。
      *
      * @return current handshake future
      */
