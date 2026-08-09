@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:47:06Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/redisnode/RedissonBaseNodes.java",
-    "redisson/src/main/java/org/redisson/redisnode/RedissonClusterNodes.java",
-    "redisson/src/main/java/org/redisson/redisnode/RedissonMasterSlaveNodes.java",
-    "redisson/src/main/java/org/redisson/redisnode/RedissonSentinelMasterSlaveNodes.java",
-    "redisson/src/main/java/org/redisson/redisnode/RedissonSingleNode.java",
-    "redisson/src/main/java/org/redisson/redisnode/SentinelRedisNode.java",
-    "redisson/src/main/java/org/redisson/remote/AsyncRemoteProxy.java",
-    "redisson/src/main/java/org/redisson/remote/BaseRemoteProxy.java",
-    "redisson/src/main/java/org/redisson/remote/BaseRemoteService.java",
-    "redisson/src/main/java/org/redisson/remote/RRemoteServiceResponse.java",
-    "redisson/src/main/java/org/redisson/remote/ReactiveRemoteProxy.java",
-    "redisson/src/main/java/org/redisson/remote/RemoteServiceAck.java",
-    "redisson/src/main/java/org/redisson/remote/RemoteServiceAckTimeoutException.java",
-    "redisson/src/main/java/org/redisson/remote/RemoteServiceCancelRequest.java",
-    "redisson/src/main/java/org/redisson/remote/RemoteServiceCancelResponse.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 92,
-  "done": 2715
+  "done": 2730
 }
