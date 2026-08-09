@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T21:51:31Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/rx/RedissonVectorSetRx.java",
-    "redisson/src/main/java/org/redisson/rx/RxIteratorConsumer.java",
-    "redisson/src/main/java/org/redisson/rx/RxProxyBuilder.java",
-    "redisson/src/main/java/org/redisson/rx/SetRxIterator.java",
-    "redisson/src/main/java/org/redisson/transaction/BaseTransactionalMap.java",
-    "redisson/src/main/java/org/redisson/transaction/BaseTransactionalMapCache.java",
-    "redisson/src/main/java/org/redisson/transaction/BaseTransactionalObject.java",
-    "redisson/src/main/java/org/redisson/transaction/BaseTransactionalSet.java",
-    "redisson/src/main/java/org/redisson/transaction/HashKey.java",
-    "redisson/src/main/java/org/redisson/transaction/HashValue.java",
-    "redisson/src/main/java/org/redisson/transaction/RedissonTransaction.java",
-    "redisson/src/main/java/org/redisson/transaction/RedissonTransactionalBucket.java",
-    "redisson/src/main/java/org/redisson/transaction/RedissonTransactionalBuckets.java",
-    "redisson/src/main/java/org/redisson/transaction/RedissonTransactionalLocalCachedMap.java",
-    "redisson/src/main/java/org/redisson/transaction/RedissonTransactionalLock.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 32,
-  "done": 2775
+  "done": 2790
 }
