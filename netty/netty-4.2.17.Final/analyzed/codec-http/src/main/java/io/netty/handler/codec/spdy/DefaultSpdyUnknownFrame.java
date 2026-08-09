@@ -19,10 +19,22 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.util.internal.StringUtil;
 
+/**
+ * {@link SpdyUnknownFrame} 的默认实现：承载解码器无法识别的 SPDY 帧类型。
+ * <p>保留原始 {@code frameType}、{@code flags} 与载荷，便于扩展帧透传或日志诊断；
+ * 实现 {@link ByteBuf} 引用计数语义。
+ */
 public final class DefaultSpdyUnknownFrame extends DefaultByteBufHolder implements SpdyUnknownFrame {
+    /** 未知帧的类型字段（SPDY 帧头 16 位） */
     private final int frameType;
+    /** 原始帧标志位 */
     private final byte flags;
 
+    /**
+     * @param frameType 帧类型码
+     * @param flags     帧标志
+     * @param data      帧载荷
+     */
     public DefaultSpdyUnknownFrame(int frameType, byte flags, ByteBuf data) {
         super(data);
         this.frameType = frameType;

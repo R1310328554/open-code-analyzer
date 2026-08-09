@@ -18,7 +18,9 @@ package io.netty.handler.codec.rtsp;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
- * The getStatus code and its description of a RTSP response.
+ * RTSP 响应状态码常量表。
+ * <p>复用 {@link io.netty.handler.codec.http.HttpResponseStatus} 承载 HTTP 通用码，
+ * 并补充 RTSP 专有码（250、451–463、505、551 等）。{@link #valueOf(int)} 对已知 RTSP 码返回缓存单例。
  */
 public final class RtspResponseStatuses {
 
@@ -37,9 +39,7 @@ public final class RtspResponseStatuses {
      */
     public static final HttpResponseStatus CREATED = HttpResponseStatus.CREATED;
 
-    /**
-     * 250 Low on Storage Space
-     */
+    /** 250 存储空间不足（RTSP 专有，录制/缓存资源告警） */
     public static final HttpResponseStatus LOW_STORAGE_SPACE = new HttpResponseStatus(
             250, "Low on Storage Space");
 
@@ -53,9 +53,7 @@ public final class RtspResponseStatuses {
      */
     public static final HttpResponseStatus MOVED_PERMANENTLY = HttpResponseStatus.MOVED_PERMANENTLY;
 
-    /**
-     * 302 Moved Temporarily
-     */
+    /** 302 临时重定向（RTSP 描述为 Moved Temporarily，与 HTTP 302 语义一致） */
     public static final HttpResponseStatus MOVED_TEMPORARILY = new HttpResponseStatus(
             302, "Moved Temporarily");
     /**
@@ -144,81 +142,57 @@ public final class RtspResponseStatuses {
      */
     public static final HttpResponseStatus UNSUPPORTED_MEDIA_TYPE = HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 
-    /**
-     * 451 Parameter Not Understood
-     */
+    // ---- RTSP 4xx 专有错误码（451–463）----
+
+    /** 451 无法理解的参数（SET_PARAMETER/GET_PARAMETER 等） */
     public static final HttpResponseStatus PARAMETER_NOT_UNDERSTOOD = new HttpResponseStatus(
             451, "Parameter Not Understood");
 
-    /**
-     * 452 Conference Not Found
-     */
+    /** 452 会议/会话组不存在 */
     public static final HttpResponseStatus CONFERENCE_NOT_FOUND = new HttpResponseStatus(
             452, "Conference Not Found");
 
-    /**
-     * 453 Not Enough Bandwidth
-     */
+    /** 453 带宽不足，无法建立或维持流 */
     public static final HttpResponseStatus NOT_ENOUGH_BANDWIDTH = new HttpResponseStatus(
             453, "Not Enough Bandwidth");
 
-    /**
-     * 454 Session Not Found
-     */
+    /** 454 RTSP 会话不存在或已过期 */
     public static final HttpResponseStatus SESSION_NOT_FOUND = new HttpResponseStatus(
             454, "Session Not Found");
 
-    /**
-     * 455 Method Not Valid in This State
-     */
+    /** 455 当前会话状态下不允许该 RTSP 方法 */
     public static final HttpResponseStatus METHOD_NOT_VALID = new HttpResponseStatus(
             455, "Method Not Valid in This State");
 
-    /**
-     * 456 Header Field Not Valid for Resource
-     */
+    /** 456 头部字段对该资源无效 */
     public static final HttpResponseStatus HEADER_FIELD_NOT_VALID = new HttpResponseStatus(
             456, "Header Field Not Valid for Resource");
 
-    /**
-     * 457 Invalid Range
-     */
+    /** 457 Range 头无效（如 PLAY 请求的时域/字节范围） */
     public static final HttpResponseStatus INVALID_RANGE = new HttpResponseStatus(
             457, "Invalid Range");
 
-    /**
-     * 458 Parameter Is Read-Only
-     */
+    /** 458 参数为只读，SET_PARAMETER 不可修改 */
     public static final HttpResponseStatus PARAMETER_IS_READONLY = new HttpResponseStatus(
             458, "Parameter Is Read-Only");
 
-    /**
-     * 459 Aggregate operation not allowed
-     */
+    /** 459 不允许聚合操作（aggregate control） */
     public static final HttpResponseStatus AGGREGATE_OPERATION_NOT_ALLOWED = new HttpResponseStatus(
             459, "Aggregate operation not allowed");
 
-    /**
-     * 460 Only Aggregate operation allowed
-     */
+    /** 460 仅允许聚合操作 */
     public static final HttpResponseStatus ONLY_AGGREGATE_OPERATION_ALLOWED = new HttpResponseStatus(
             460, "Only Aggregate operation allowed");
 
-    /**
-     * 461 Unsupported transport
-     */
+    /** 461 不支持的传输方式（Transport 头协商失败） */
     public static final HttpResponseStatus UNSUPPORTED_TRANSPORT = new HttpResponseStatus(
             461, "Unsupported transport");
 
-    /**
-     * 462 Destination unreachable
-     */
+    /** 462 目标不可达（如 multicast 地址无效） */
     public static final HttpResponseStatus DESTINATION_UNREACHABLE = new HttpResponseStatus(
             462, "Destination unreachable");
 
-    /**
-     * 463 Key management failure
-     */
+    /** 463 密钥管理失败（安全/加密相关） */
     public static final HttpResponseStatus KEY_MANAGEMENT_FAILURE = new HttpResponseStatus(
             463, "Key management failure");
 
@@ -247,22 +221,19 @@ public final class RtspResponseStatuses {
      */
     public static final HttpResponseStatus GATEWAY_TIMEOUT = HttpResponseStatus.GATEWAY_TIMEOUT;
 
-    /**
-     * 505 RTSP Version not supported
-     */
+    /** 505 不支持的 RTSP 版本 */
     public static final HttpResponseStatus RTSP_VERSION_NOT_SUPPORTED = new HttpResponseStatus(
             505, "RTSP Version not supported");
 
-    /**
-     * 551 Option not supported
-     */
+    /** 551 不支持的选项（OPTIONS 响应中拒绝某 capability） */
     public static final HttpResponseStatus OPTION_NOT_SUPPORTED = new HttpResponseStatus(
             551, "Option not supported");
 
     /**
-     * Returns the {@link HttpResponseStatus} represented by the specified code.
-     * If the specified code is a standard RTSP getStatus code, a cached instance
-     * will be returned.  Otherwise, a new instance will be returned.
+     * 按整数码返回对应的 {@link HttpResponseStatus}。
+     * <p>RTSP 专有码返回本类缓存常量；其余委托 {@link HttpResponseStatus#valueOf(int)}。
+     *
+     * @param code RTSP/HTTP 状态码
      */
     public static HttpResponseStatus valueOf(int code) {
         switch (code) {

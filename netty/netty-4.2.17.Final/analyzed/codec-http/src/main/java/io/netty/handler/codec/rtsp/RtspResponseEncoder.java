@@ -16,6 +16,9 @@
 package io.netty.handler.codec.rtsp;
 
 /**
+ * RTSP 响应编码器（已废弃）。
+ * <p>历史兼容类，功能与 {@link RtspEncoder} 完全相同；新代码应直接使用 {@link RtspEncoder}。
+ *
  * @deprecated Use {@link RtspEncoder} directly instead
  */
 @Deprecated

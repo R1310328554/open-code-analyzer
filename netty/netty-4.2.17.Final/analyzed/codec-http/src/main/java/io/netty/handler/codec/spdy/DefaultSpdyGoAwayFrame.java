@@ -20,15 +20,19 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link SpdyGoAwayFrame} implementation.
+ * {@link SpdyGoAwayFrame} 的默认实现：通知对端关闭 SPDY 会话。
+ * <p>携带 {@code lastGoodStreamId}（最后成功处理的流 ID）与 {@link SpdySessionStatus}
+ * 状态码，对端收到后应停止新建流并清理会话。
  */
 public class DefaultSpdyGoAwayFrame implements SpdyGoAwayFrame {
 
+    /** 最后成功处理的 Stream-ID */
     private int lastGoodStreamId;
+    /** 会话关闭原因 */
     private SpdySessionStatus status;
 
     /**
-     * Creates a new instance.
+     * 创建 GOAWAY 帧，状态码默认为 OK（0）。
      *
      * @param lastGoodStreamId the Last-good-stream-ID of this frame
      */
@@ -37,7 +41,7 @@ public class DefaultSpdyGoAwayFrame implements SpdyGoAwayFrame {
     }
 
     /**
-     * Creates a new instance.
+     * 以整型状态码创建 GOAWAY 帧。
      *
      * @param lastGoodStreamId the Last-good-stream-ID of this frame
      * @param statusCode       the Status code of this frame
@@ -47,7 +51,7 @@ public class DefaultSpdyGoAwayFrame implements SpdyGoAwayFrame {
     }
 
     /**
-     * Creates a new instance.
+     * 以 {@link SpdySessionStatus} 创建 GOAWAY 帧。
      *
      * @param lastGoodStreamId the Last-good-stream-ID of this frame
      * @param status           the status of this frame

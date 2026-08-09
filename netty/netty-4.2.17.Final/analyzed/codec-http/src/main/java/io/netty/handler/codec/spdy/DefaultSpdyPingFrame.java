@@ -18,14 +18,16 @@ package io.netty.handler.codec.spdy;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link SpdyPingFrame} implementation.
+ * {@link SpdyPingFrame} 的默认实现：SPDY 会话级心跳/RTT 测量帧。
+ * <p>发送方填入唯一 {@code id}，对端原样回显；常用于检测连接存活与往返时延。
  */
 public class DefaultSpdyPingFrame implements SpdyPingFrame {
 
+    /** _ping 标识，发送方应保证在会话内唯一 */
     private int id;
 
     /**
-     * Creates a new instance.
+     * 创建 PING 帧。
      *
      * @param id the unique ID of this frame
      */

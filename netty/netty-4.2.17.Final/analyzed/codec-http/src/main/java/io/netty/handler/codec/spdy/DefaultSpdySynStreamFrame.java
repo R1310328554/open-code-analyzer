@@ -20,17 +20,22 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link SpdySynStreamFrame} implementation.
+ * {@link SpdySynStreamFrame} 的默认实现：客户端发起新 SPDY 流的请求帧。
+ * <p>携带请求头部、关联流 ID（推送场景）、优先级（0–7）及单向标志；
+ * 等价于 HTTP 请求行 + 头部，不含 body。
  */
 public class DefaultSpdySynStreamFrame extends DefaultSpdyHeadersFrame
         implements SpdySynStreamFrame {
 
+    /** 关联流 ID（server push 时指向父流，0 表示无关联） */
     private int associatedStreamId;
+    /** 流优先级，0 最高、7 最低 */
     private byte priority;
+    /** 是否为单向流（仅接收数据，如 server push） */
     private boolean unidirectional;
 
     /**
-     * Creates a new instance.
+     * 创建 SYN_STREAM 帧（默认校验头部）。
      *
      * @param streamId           the Stream-ID of this frame
      * @param associatedStreamId the Associated-To-Stream-ID of this frame
@@ -41,7 +46,7 @@ public class DefaultSpdySynStreamFrame extends DefaultSpdyHeadersFrame
     }
 
     /**
-     * Creates a new instance.
+     * 创建 SYN_STREAM 帧，可选头部校验。
      *
      * @param streamId           the Stream-ID of this frame
      * @param associatedStreamId the Associated-To-Stream-ID of this frame

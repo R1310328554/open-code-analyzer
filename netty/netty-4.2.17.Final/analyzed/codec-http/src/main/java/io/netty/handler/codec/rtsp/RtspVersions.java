@@ -21,20 +21,22 @@ import io.netty.util.internal.ObjectUtil;
 import java.util.Locale;
 
 /**
- * The version of RTSP.
+ * RTSP 协议版本常量与解析工具。
+ * <p>目前仅定义 {@link #RTSP_1_0}；{@link #valueOf(String)} 对已知版本返回单例，其余构造新实例。
  */
 public final class RtspVersions {
 
     /**
-     * RTSP/1.0
+     * RTSP/1.0 标准版本（RFC 2326）。
      */
     public static final HttpVersion RTSP_1_0 = new HttpVersion("RTSP", 1, 0, true);
 
     /**
-     * Returns an existing or new {@link HttpVersion} instance which matches to
-     * the specified RTSP version string.  If the specified {@code text} is
-     * equal to {@code "RTSP/1.0"}, {@link #RTSP_1_0} will be returned.
-     * Otherwise, a new {@link HttpVersion} instance will be returned.
+     * 解析 RTSP 版本字符串，返回匹配的 {@link HttpVersion} 实例。
+     * <p>若 {@code text} 等于 {@code "RTSP/1.0"}（大小写不敏感），返回 {@link #RTSP_1_0}；
+     * 否则构造新的 {@link HttpVersion}。
+     *
+     * @param text RTSP 版本字符串，如 {@code "RTSP/1.0"}
      */
     public static HttpVersion valueOf(String text) {
         ObjectUtil.checkNotNull(text, "text");
@@ -42,8 +44,7 @@ public final class RtspVersions {
         if (text.isEmpty()) {
             throw new IllegalArgumentException("text must not be empty");
         }
-        // toUpperCase() must specify Locale.US so the comparison against "RTSP/1.0" is not
-        // affected by the JVM default locale (e.g. Turkish, where 'i' uppercases to 'İ').
+        // 必须指定 Locale.US，避免土耳其语等 locale 将 'i' 转为 'İ' 导致匹配失败
         String upper = text.toUpperCase(Locale.US);
         if ("RTSP/1.0".equals(upper)) {
             return RTSP_1_0;

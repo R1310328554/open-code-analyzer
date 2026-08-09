@@ -21,15 +21,19 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link SpdyWindowUpdateFrame} implementation.
+ * {@link SpdyWindowUpdateFrame} 的默认实现：增量更新流或会话的接收窗口。
+ * <p>{@code streamId=0} 更新会话级窗口；正 {@code streamId} 更新对应流窗口。
+ * {@code deltaWindowSize} 必须为正，表示允许对端再发送的字节数。
  */
 public class DefaultSpdyWindowUpdateFrame implements SpdyWindowUpdateFrame {
 
+    /** 目标流 ID，0 表示会话级窗口 */
     private int streamId;
+    /** 窗口增量（字节） */
     private int deltaWindowSize;
 
     /**
-     * Creates a new instance.
+     * 创建 WINDOW_UPDATE 帧。
      *
      * @param streamId        the Stream-ID of this frame
      * @param deltaWindowSize the Delta-Window-Size of this frame

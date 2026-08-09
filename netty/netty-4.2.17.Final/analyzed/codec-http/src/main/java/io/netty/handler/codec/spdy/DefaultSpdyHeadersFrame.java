@@ -20,17 +20,22 @@ import io.netty.util.internal.StringUtil;
 import java.util.Map;
 
 /**
- * The default {@link SpdyHeadersFrame} implementation.
+ * {@link SpdyHeadersFrame} 的默认实现：携带 HTTP 风格头部的 SPDY 流帧基类。
+ * <p>子类包括 SYN_STREAM、SYN_REPLY 及 HEADERS 变体；{@code invalid} 标记协议违规，
+ * {@code truncated} 表示头部因大小限制被截断。
  */
 public class DefaultSpdyHeadersFrame extends DefaultSpdyStreamFrame
         implements SpdyHeadersFrame {
 
+    /** 帧内容是否违反 SPDY 协议（解码器置位） */
     private boolean invalid;
+    /** 头部是否因超出限制被截断 */
     private boolean truncated;
+    /** 帧内头部集合 */
     private final SpdyHeaders headers;
 
     /**
-     * Creates a new instance.
+     * 创建带默认校验的 HEADERS 帧。
      *
      * @param streamId the Stream-ID of this frame
      */
@@ -39,7 +44,7 @@ public class DefaultSpdyHeadersFrame extends DefaultSpdyStreamFrame
     }
 
     /**
-     * Creates a new instance.
+     * 创建 HEADERS 帧，可选是否校验头部名/值。
      *
      * @param streamId the Stream-ID of this frame
      * @param validate validate the header names and values when adding them to the {@link SpdyHeaders}
@@ -108,6 +113,7 @@ public class DefaultSpdyHeadersFrame extends DefaultSpdyStreamFrame
         return buf.toString();
     }
 
+    /** 子类可覆盖以定制头部 dump 格式 */
     protected void appendHeaders(StringBuilder buf) {
         for (Map.Entry<CharSequence, CharSequence> e: headers()) {
             buf.append("    ");

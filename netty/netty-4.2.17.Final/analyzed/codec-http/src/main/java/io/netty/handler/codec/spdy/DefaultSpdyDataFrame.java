@@ -22,14 +22,17 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link SpdyDataFrame} implementation.
+ * {@link SpdyDataFrame} 的默认实现：承载 SPDY 流上的应用层数据载荷。
+ * <p>继承 {@link DefaultSpdyStreamFrame} 的 streamId/last 语义；payload 受
+ * {@link SpdyCodecUtil#SPDY_MAX_LENGTH} 限制，并实现 {@link ByteBuf} 引用计数。
  */
 public class DefaultSpdyDataFrame extends DefaultSpdyStreamFrame implements SpdyDataFrame {
 
+    /** 帧载荷，生命周期由本对象管理（retain/release） */
     private final ByteBuf data;
 
     /**
-     * Creates a new instance.
+     * 创建空载荷的 DATA 帧。
      *
      * @param streamId the Stream-ID of this frame
      */
@@ -38,7 +41,7 @@ public class DefaultSpdyDataFrame extends DefaultSpdyStreamFrame implements Spdy
     }
 
     /**
-     * Creates a new instance.
+     * 创建带指定载荷的 DATA 帧。
      *
      * @param streamId  the Stream-ID of this frame
      * @param data      the payload of the frame. Can not exceed {@link SpdyCodecUtil#SPDY_MAX_LENGTH}
@@ -49,6 +52,7 @@ public class DefaultSpdyDataFrame extends DefaultSpdyStreamFrame implements Spdy
                 ObjectUtil.checkNotNull(data, "data"));
     }
 
+    /** 校验载荷长度不超过 SPDY 帧上限 */
     private static ByteBuf validate(ByteBuf data) {
         if (data.readableBytes() > SpdyCodecUtil.SPDY_MAX_LENGTH) {
             throw new IllegalArgumentException("data payload cannot exceed "

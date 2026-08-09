@@ -18,15 +18,18 @@ package io.netty.handler.codec.spdy;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link SpdyRstStreamFrame} implementation.
+ * {@link SpdyRstStreamFrame} 的默认实现：异常终止单个 SPDY 流。
+ * <p>携带 {@link SpdyStreamStatus} 说明重置原因（如协议错误、流拒绝等），
+ * 对端收到后应释放该流相关资源。
  */
 public class DefaultSpdyRstStreamFrame extends DefaultSpdyStreamFrame
         implements SpdyRstStreamFrame {
 
+    /** 流重置状态码 */
     private SpdyStreamStatus status;
 
     /**
-     * Creates a new instance.
+     * 以整型状态码创建 RST_STREAM 帧。
      *
      * @param streamId   the Stream-ID of this frame
      * @param statusCode the Status code of this frame
@@ -36,7 +39,7 @@ public class DefaultSpdyRstStreamFrame extends DefaultSpdyStreamFrame
     }
 
     /**
-     * Creates a new instance.
+     * 以 {@link SpdyStreamStatus} 创建 RST_STREAM 帧。
      *
      * @param streamId the Stream-ID of this frame
      * @param status   the status of this frame

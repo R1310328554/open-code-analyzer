@@ -22,11 +22,15 @@ import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * The default {@link SpdySettingsFrame} implementation.
+ * {@link SpdySettingsFrame} 的默认实现：协商或更新 SPDY 会话/流级 SETTINGS 参数。
+ * <p>每项设置含 ID、值及 persist/persisted 标志（SPDY/3 持久化扩展）；
+ * {@code clear} 表示清除对端先前持久化的设置。
  */
 public class DefaultSpdySettingsFrame implements SpdySettingsFrame {
 
+    /** 是否清除对端先前持久化的 SETTINGS */
     private boolean clear;
+    /** 按 setting ID 索引的设置项（TreeMap 保证有序 dump） */
     private final Map<Integer, Setting> settingsMap = new TreeMap<Integer, Setting>();
 
     @Override
@@ -145,6 +149,7 @@ public class DefaultSpdySettingsFrame implements SpdySettingsFrame {
         return buf.toString();
     }
 
+    /** 单个 SETTINGS 项：值 + 持久化标志 */
     private static final class Setting {
 
         private int value;

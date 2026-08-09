@@ -26,7 +26,13 @@ import java.util.Map.Entry;
 import static io.netty.util.AsciiString.CASE_INSENSITIVE_HASHER;
 import static io.netty.util.AsciiString.CASE_SENSITIVE_HASHER;
 
+/**
+ * {@link SpdyHeaders} 的默认实现：SPDY 流/会话级头部容器。
+ * <p>基于 {@link DefaultHeaders}，默认大小写不敏感；可选开启名称/值校验
+ * （{@link SpdyCodecUtil#validateHeaderName}/{@link SpdyCodecUtil#validateHeaderValue}）。
+ */
 public class DefaultSpdyHeaders extends DefaultHeaders<CharSequence, CharSequence, SpdyHeaders> implements SpdyHeaders {
+    /** SPDY 头部名称校验器，委托 SpdyCodecUtil */
     private static final NameValidator<CharSequence> SpdyNameValidator = new NameValidator<CharSequence>() {
         @Override
         public void validateName(CharSequence name) {
@@ -34,11 +40,15 @@ public class DefaultSpdyHeaders extends DefaultHeaders<CharSequence, CharSequenc
         }
     };
 
+    /** 默认开启名称与值校验 */
     public DefaultSpdyHeaders() {
         this(true);
     }
 
     @SuppressWarnings("unchecked")
+    /**
+     * @param validate {@code true} 时校验头部名/值合法性
+     */
     public DefaultSpdyHeaders(boolean validate) {
         super(CASE_INSENSITIVE_HASHER,
                 validate ? HeaderValueConverterAndValidator.INSTANCE : CharSequenceValueConverter.INSTANCE,
@@ -71,6 +81,7 @@ public class DefaultSpdyHeaders extends DefaultHeaders<CharSequence, CharSequenc
                 ignoreCase ? CASE_INSENSITIVE_HASHER : CASE_SENSITIVE_HASHER);
     }
 
+    /** 写入值前额外校验 SPDY 头部值格式 */
     private static final class HeaderValueConverterAndValidator extends CharSequenceValueConverter {
         public static final HeaderValueConverterAndValidator INSTANCE = new HeaderValueConverterAndValidator();
 

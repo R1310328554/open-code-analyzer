@@ -18,12 +18,13 @@ package io.netty.handler.codec.spdy;
 import io.netty.util.internal.StringUtil;
 
 /**
- * The default {@link SpdySynReplyFrame} implementation.
+ * {@link SpdySynReplyFrame} 的默认实现：服务端对 SYN_STREAM 的响应头部帧。
+ * <p>等价于 HTTP 响应行 + 头部，不含 body；通常紧随 DATA 帧发送响应体。
  */
 public class DefaultSpdySynReplyFrame extends DefaultSpdyHeadersFrame implements SpdySynReplyFrame {
 
     /**
-     * Creates a new instance.
+     * 创建 SYN_REPLY 帧（默认校验头部）。
      *
      * @param streamId the Stream-ID of this frame
      */
@@ -32,7 +33,7 @@ public class DefaultSpdySynReplyFrame extends DefaultSpdyHeadersFrame implements
     }
 
     /**
-     * Creates a new instance.
+     * 创建 SYN_REPLY 帧，可选头部校验。
      *
      * @param streamId        the Stream-ID of this frame
      * @param validateHeaders validate the header names and values when adding them to the {@link SpdyHeaders}

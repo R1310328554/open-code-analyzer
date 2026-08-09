@@ -18,15 +18,19 @@ package io.netty.handler.codec.spdy;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
- * The default {@link SpdyStreamFrame} implementation.
+ * {@link SpdyStreamFrame} 的抽象基类：所有绑定 Stream-ID 的 SPDY 帧共用字段。
+ * <p>{@code streamId} 必须为正整数；{@code last} 标记该帧是否为该流上最后一条消息
+ * （SPDY/3 半关闭语义）。
  */
 public abstract class DefaultSpdyStreamFrame implements SpdyStreamFrame {
 
+    /** SPDY 流标识，0 为会话级控制流 */
     private int streamId;
+    /** 是否为该流上的最后一帧（半关闭标志） */
     private boolean last;
 
     /**
-     * Creates a new instance.
+     * 创建流帧基类实例。
      *
      * @param streamId the Stream-ID of this frame
      */
