@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/RPermitExpirableSemaphoreRx.java",
     "redisson/src/main/java/org/redisson/api/RScoredSortedSet.java",
     "redisson/src/main/java/org/redisson/api/RScoredSortedSetAsync.java",
-    "redisson/src/main/java/org/redisson/api/RScoredSortedSetReactive.java",
-    "redisson/src/main/java/org/redisson/api/RScoredSortedSetRx.java",
-    "redisson/src/main/java/org/redisson/api/RSet.java",
-    "redisson/src/main/java/org/redisson/api/RStream.java",
-    "redisson/src/main/java/org/redisson/api/RStreamAsync.java",
-    "redisson/src/main/java/org/redisson/api/RStreamReactive.java",
-    "redisson/src/main/java/org/redisson/api/RStreamRx.java",
-    "redisson/src/main/java/org/redisson/api/RTimeSeries.java",
-    "redisson/src/main/java/org/redisson/api/RTimeSeriesAsync.java",
-    "redisson/src/main/java/org/redisson/api/RTimeSeriesReactive.java",
-    "redisson/src/main/java/org/redisson/api/RTimeSeriesRx.java",
-    "redisson/src/main/java/org/redisson/api/RedissonClient.java",
-    "redisson/src/main/java/org/redisson/api/RedissonReactiveClient.java",
-    "redisson/src/main/java/org/redisson/api/RedissonRxClient.java",
-    "redisson/src/main/java/org/redisson/api/bitset/BitOffset.java",
-    "redisson/src/main/java/org/redisson/api/bitvector/MatchArgs.java"
+    "redisson/src/main/java/org/redisson/api/RScoredSortedSetReactive.java"
   ],
   "remaining_pending": 1052,
-  "done": 1740
+  "done": 1755
 }
