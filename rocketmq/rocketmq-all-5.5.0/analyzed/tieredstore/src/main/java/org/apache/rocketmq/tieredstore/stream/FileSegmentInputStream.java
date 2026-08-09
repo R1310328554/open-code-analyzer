@@ -24,40 +24,29 @@ import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.rocketmq.tieredstore.common.FileSegmentType;
 
+/**
+ * 文件段上传输入流：串联多个 ByteBuffer 供组提交读取。
+ */
 public class FileSegmentInputStream extends InputStream {
 
-    /**
-     * file type, can be commitlog, consume queue or indexfile now
-     */
+    /** 文件段类型：CommitLog、ConsumeQueue 或 Index。 */
     protected final FileSegmentType fileType;
 
-    /**
-     * hold bytebuffer
-     */
+    /** 待上传的 ByteBuffer 列表。 */
     protected final List<ByteBuffer> bufferList;
 
-    /**
-     * total remaining of bytebuffer list
-     */
+    /** ByteBuffer 列表的总可读字节数。 */
     protected final int contentLength;
 
-    /**
-     * readPosition is the now position in the stream
-     */
+    /** 当前在流中的全局读位置。 */
     protected int readPosition = 0;
 
-    /**
-     * curReadBufferIndex is the index of the buffer in uploadBufferList which is being read
-     */
+    /** 当前正在读取的 bufferList 索引。 */
     protected int curReadBufferIndex = 0;
-    /**
-     * readPosInCurBuffer is the position in the buffer which is being read
-     */
+    /** 当前 buffer 内的读位置。 */
     protected int readPosInCurBuffer = 0;
 
-    /**
-     * curBuffer is the buffer which is being read, it is the same as uploadBufferList.get(curReadBufferIndex)
-     */
+    /** 当前正在读取的 ByteBuffer，等同于 bufferList.get(curReadBufferIndex)。 */
     protected ByteBuffer curBuffer;
 
     private int markReadPosition = -1;
@@ -101,6 +90,7 @@ public class FileSegmentInputStream extends InputStream {
         }
     }
 
+    /** 重置所有缓冲与读指针到起始位置。 */
     public synchronized void rewind() {
         this.readPosition = 0;
         this.curReadBufferIndex = 0;
@@ -113,6 +103,7 @@ public class FileSegmentInputStream extends InputStream {
         }
     }
 
+    /** 返回流总内容长度。 */
     public int getContentLength() {
         return contentLength;
     }
@@ -174,7 +165,7 @@ public class FileSegmentInputStream extends InputStream {
             curBuf = bufferList.get(bufIndex);
             int remaining = curBuf.remaining() - posInCurBuffer;
             int readLen = Math.min(remaining, needRead);
-            // read from curBuf
+            // 从当前 ByteBuffer 读取
             curBuf.position(posInCurBuffer);
             curBuf.get(b, off, readLen);
             curBuf.position(0);
@@ -184,7 +175,7 @@ public class FileSegmentInputStream extends InputStream {
             pos += readLen;
             posInCurBuffer += readLen;
             if (posInCurBuffer == curBuf.remaining()) {
-                // read from next buf
+                // 切换到下一段缓冲
                 bufIndex++;
                 posInCurBuffer = 0;
             }

@@ -26,33 +26,43 @@ import org.apache.rocketmq.tieredstore.common.SelectBufferResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 消息格式工具：解析 CommitLog/ConsumeQueue 字段并按 CQ 切分消息缓冲。
+ */
 public class MessageFormatUtil {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
 
+    /** MsgId 长度：storeHost(8) + offset(8)。 */
     public static final int MSG_ID_LENGTH = 8 + 8;
+    /** 魔数字段在消息头中的偏移。 */
     public static final int MAGIC_CODE_POSITION = 4;
+    /** 队列逻辑偏移字段偏移。 */
     public static final int QUEUE_OFFSET_POSITION = 20;
+    /** CommitLog 物理偏移字段偏移。 */
     public static final int PHYSICAL_OFFSET_POSITION = 28;
+    /** 系统标志字段起始偏移（物理偏移字段结束位置）。 */
     public static final int SYS_FLAG_OFFSET_POSITION = 36;
+    /** 存储时间戳字段偏移。 */
     public static final int STORE_TIMESTAMP_POSITION = 56;
+    /** storeHost 字段偏移。 */
     public static final int STORE_HOST_POSITION = 64;
 
     /**
-     * item size:           int, 4 bytes
-     * magic code:          int, 4 bytes
-     * max store timestamp: long, 8 bytes
+     * CommitLog coda 大小：itemSize(4) + magicCode(4) + maxStoreTimestamp(8)。
      */
+    /** CommitLog 段尾 coda 字节长度。 */
     public static final int COMMIT_LOG_CODA_SIZE = 4 + 8 + 4;
+    /** 空白消息魔数，用于跳过 coda 占位。 */
     public static final int BLANK_MAGIC_CODE = 0xBBCCDDEE ^ 1880681586 + 8;
 
     /**
-     * commit log offset: long, 8 bytes
-     * message size: int, 4 bytes
-     * tag hash code: long, 8 bytes
+     * ConsumeQueue 单元大小：commitLogOffset(8) + size(4) + tagHash(8)。
      */
+    /** 单条 ConsumeQueue 索引条目字节长度。 */
     public static final int CONSUME_QUEUE_UNIT_SIZE = 8 + 4 + 8;
 
+    /** 读取消息总大小（含头部）。 */
     public static int getTotalSize(ByteBuffer message) {
         return message.getInt(message.position());
     }
@@ -65,6 +75,7 @@ public class MessageFormatUtil {
         return message.getLong(message.position() + QUEUE_OFFSET_POSITION);
     }
 
+    /** 读取消息 CommitLog 物理偏移。 */
     public static long getCommitLogOffset(ByteBuffer message) {
         return message.getLong(message.position() + PHYSICAL_OFFSET_POSITION);
     }
@@ -101,6 +112,7 @@ public class MessageFormatUtil {
         return cqItem.getLong(cqItem.position() + 12);
     }
 
+    /** 按 ConsumeQueue 缓冲切分 CommitLog 消息并校验魔数与长度。 */
     public static List<SelectBufferResult> splitMessageBuffer(ByteBuffer cqBuffer, ByteBuffer msgBuffer) {
 
         if (cqBuffer == null || msgBuffer == null) {

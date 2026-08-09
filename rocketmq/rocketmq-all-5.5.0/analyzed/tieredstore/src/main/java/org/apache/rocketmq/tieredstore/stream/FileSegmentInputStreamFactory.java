@@ -21,8 +21,12 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.rocketmq.tieredstore.common.FileSegmentType;
 
+/**
+ * 文件段输入流工厂：按文件段类型构建对应 InputStream。
+ */
 public class FileSegmentInputStreamFactory {
 
+    /** 按类型创建 FileSegmentInputStream，CommitLog 使用物理偏移重写流。 */
     public static FileSegmentInputStream build(
         FileSegmentType fileType, long offset, List<ByteBuffer> bufferList, ByteBuffer byteBuffer, int length) {
 

@@ -24,17 +24,29 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 分层存储通用工具：路径格式化、偏移文件名与人类可读字节数。
+ */
 public class MessageStoreUtil {
 
+    /** 分层存储 SLF4J Logger 名称。 */
     public static final String TIERED_STORE_LOGGER_NAME = "RocketmqTieredStore";
+    /** 系统 Index Topic 名称。 */
     public static final String RMQ_SYS_TIERED_STORE_INDEX_TOPIC = "rmq_sys_INDEX";
 
+    /** 1 字节常量。 */
     public static final long BYTE = 1L;
+    /** 1 KB 字节数。 */
     public static final long KB = BYTE << 10;
+    /** 1 MB 字节数。 */
     public static final long MB = KB << 10;
+    /** 1 GB 字节数。 */
     public static final long GB = MB << 10;
+    /** 1 TB 字节数。 */
     public static final long TB = GB << 10;
+    /** 1 PB 字节数。 */
     public static final long PB = TB << 10;
+    /** 1 EB 字节数。 */
     public static final long EB = PB << 10;
 
     private static final DecimalFormat DEC_FORMAT = new DecimalFormat("#.##");
@@ -43,6 +55,7 @@ public class MessageStoreUtil {
         return DEC_FORMAT.format((double) size / divider) + unitName;
     }
 
+    /** 将字节数格式化为 B/KB/MB… 人类可读字符串。 */
     public static String toHumanReadable(long size) {
         if (size < 0)
             return String.valueOf(size);
@@ -61,6 +74,7 @@ public class MessageStoreUtil {
         return formatSize(size, BYTE, "B");
     }
 
+    /** 计算字符串 MD5 前 8 位十六进制哈希。 */
     public static String getHash(String str) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -72,14 +86,17 @@ public class MessageStoreUtil {
         }
     }
 
+    /** 将 MessageQueue 格式化为 broker/topic/queueId 路径。 */
     public static String toFilePath(MessageQueue mq) {
         return String.format("%s/%s/%s", mq.getBrokerName(), mq.getTopic(), mq.getQueueId());
     }
 
+    /** 返回系统 Index 文件的相对路径。 */
     public static String getIndexFilePath(String brokerName) {
         return toFilePath(new MessageQueue(RMQ_SYS_TIERED_STORE_INDEX_TOPIC, brokerName, 0));
     }
 
+    /** 将逻辑偏移编码为 hash+20 位数字的文件名。 */
     public static String offset2FileName(final long offset) {
         final NumberFormat numberFormat = NumberFormat.getInstance();
         numberFormat.setMinimumIntegerDigits(20);
@@ -96,6 +113,7 @@ public class MessageStoreUtil {
         }
     }
 
+    /** 从文件名解析逻辑偏移（取末 20 位数字）。 */
     public static long fileName2Offset(final String fileName) {
         return Long.parseLong(fileName.substring(fileName.length() - 20));
     }

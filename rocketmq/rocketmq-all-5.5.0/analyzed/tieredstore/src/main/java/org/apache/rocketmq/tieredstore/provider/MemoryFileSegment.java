@@ -26,13 +26,20 @@ import org.apache.rocketmq.tieredstore.util.MessageStoreUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 内存文件段实现：用于单元测试，数据保存在堆内 ByteBuffer。
+ */
 public class MemoryFileSegment extends FileSegment {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
 
+    /** 堆内模拟存储缓冲。 */
     protected final ByteBuffer memStore;
+    /** 测试用提交阻塞 Future。 */
     protected CompletableFuture<Boolean> blocker;
+    /** 模拟文件大小（checkSize 关闭时使用）。 */
     protected int size = 0;
+    /** 是否返回固定测试大小 1000。 */
     protected boolean checkSize = true;
 
     public MemoryFileSegment(MessageStoreConfig storeConfig,
@@ -52,10 +59,12 @@ public class MemoryFileSegment extends FileSegment {
     public void createFile() {
     }
 
+    /** 返回底层内存缓冲（测试用）。 */
     public ByteBuffer getMemStore() {
         return memStore;
     }
 
+    /** 设置是否使用固定测试文件大小。 */
     public void setCheckSize(boolean checkSize) {
         this.checkSize = checkSize;
     }
@@ -73,11 +82,13 @@ public class MemoryFileSegment extends FileSegment {
         return size;
     }
 
+    /** 设置模拟文件大小。 */
     public void setSize(int size) {
         this.size = size;
     }
 
     @Override
+    /** 从内存缓冲切片读取指定区间。 */
     public CompletableFuture<ByteBuffer> read0(long position, int length) {
         ByteBuffer buffer = memStore.duplicate();
         buffer.position((int) position);
@@ -87,6 +98,7 @@ public class MemoryFileSegment extends FileSegment {
     }
 
     @Override
+    /** 将输入流数据写入内存缓冲（测试用）。 */
     public CompletableFuture<Boolean> commit0(
         FileSegmentInputStream inputStream, long position, int length, boolean append) {
 

@@ -45,18 +45,24 @@ import static org.apache.rocketmq.tieredstore.metrics.TieredStoreMetricsConstant
 import static org.apache.rocketmq.tieredstore.metrics.TieredStoreMetricsConstant.LABEL_SUCCESS;
 
 /**
- * this class is experimental and may change without notice.
+ * 基于本地 POSIX 文件系统的 FileSegment 实现（实验性，可能无预告变更）。
  */
 public class PosixFileSegment extends FileSegment {
 
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
 
+    /** POSIX 读操作指标标签值。 */
     private static final String OPERATION_POSIX_READ = "read";
+    /** POSIX 写操作指标标签值。 */
     private static final String OPERATION_POSIX_WRITE = "write";
 
+    /** 本地磁盘完整文件路径。 */
     private final String fullPath;
+    /** 底层本地文件对象。 */
     private volatile File file;
+    /** 只读 FileChannel。 */
     private volatile FileChannel readFileChannel;
+    /** 读写 FileChannel（提交时 force）。 */
     private volatile FileChannel writeFileChannel;
 
     public PosixFileSegment(MessageStoreConfig storeConfig,
@@ -64,11 +70,11 @@ public class PosixFileSegment extends FileSegment {
 
         super(storeConfig, fileType, filePath, baseOffset, executor);
 
-        // basePath
+        // 分层存储根目录
         String basePath = StringUtils.defaultString(storeConfig.getTieredStoreFilePath(),
             StringUtils.appendIfMissing(storeConfig.getTieredStoreFilePath(), File.separator));
 
-        // fullPath: basePath/hash_cluster/broker/topic/queueId/fileType/baseOffset
+        // 完整路径：basePath/hash_cluster/broker/topic/queueId/fileType/baseOffset
         String clusterName = storeConfig.getBrokerClusterName();
         String clusterBasePath = String.format("%s_%s", MessageStoreUtil.getHash(clusterName), clusterName);
         fullPath = Paths.get(basePath, clusterBasePath, filePath,
@@ -78,6 +84,7 @@ public class PosixFileSegment extends FileSegment {
         this.createFile();
     }
 
+    /** 创建带 path 与 file_type 标签的指标 Attributes。 */
     protected AttributesBuilder newAttributesBuilder() {
         return TieredStoreMetricsManager.newAttributesBuilder()
             .put(LABEL_PATH, filePath)
@@ -165,6 +172,7 @@ public class PosixFileSegment extends FileSegment {
     }
 
     @Override
+    /** 异步从本地文件读取并记录 RPC 与下载字节指标。 */
     public CompletableFuture<ByteBuffer> read0(long position, int length) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         AttributesBuilder attributesBuilder = newAttributesBuilder()
@@ -198,6 +206,7 @@ public class PosixFileSegment extends FileSegment {
 
     @Override
     @SuppressWarnings("ResultOfMethodCallIgnored")
+    /** 异步写入本地文件并 force 刷盘，记录上传指标。 */
     public CompletableFuture<Boolean> commit0(
         FileSegmentInputStream inputStream, long position, int length, boolean append) {
 

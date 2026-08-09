@@ -23,11 +23,18 @@ import org.apache.rocketmq.tieredstore.MessageStoreExecutor;
 import org.apache.rocketmq.tieredstore.common.FileSegmentType;
 import org.apache.rocketmq.tieredstore.metadata.MetadataStore;
 
+/**
+ * 文件段工厂：按配置反射创建 {@link FileSegment} 实现实例。
+ */
 public class FileSegmentFactory {
 
+    /** 元数据存储引用。 */
     private final MetadataStore metadataStore;
+    /** 分层存储配置。 */
     private final MessageStoreConfig storeConfig;
+    /** 异步 I/O 执行器。 */
     private final MessageStoreExecutor executor;
+    /** 反射得到的 FileSegment 构造器。 */
     private final Constructor<? extends FileSegment> fileSegmentConstructor;
 
     public FileSegmentFactory(MetadataStore metadataStore,
@@ -46,14 +53,17 @@ public class FileSegmentFactory {
         }
     }
 
+    /** 返回关联的元数据存储。 */
     public MetadataStore getMetadataStore() {
         return metadataStore;
     }
 
+    /** 返回分层存储配置。 */
     public MessageStoreConfig getStoreConfig() {
         return storeConfig;
     }
 
+    /** 创建指定类型与偏移的文件段。 */
     public FileSegment createSegment(FileSegmentType fileType, String filePath, long baseOffset) {
         try {
             return fileSegmentConstructor.newInstance(this.storeConfig, fileType, filePath, baseOffset, executor);
@@ -62,14 +72,17 @@ public class FileSegmentFactory {
         }
     }
 
+    /** 创建 CommitLog 文件段。 */
     public FileSegment createCommitLogFileSegment(String filePath, long baseOffset) {
         return this.createSegment(FileSegmentType.COMMIT_LOG, filePath, baseOffset);
     }
 
+    /** 创建 ConsumeQueue 文件段。 */
     public FileSegment createConsumeQueueFileSegment(String filePath, long baseOffset) {
         return this.createSegment(FileSegmentType.CONSUME_QUEUE, filePath, baseOffset);
     }
 
+    /** 创建 Index 文件段。 */
     public FileSegment createIndexServiceFileSegment(String filePath, long baseOffset) {
         return this.createSegment(FileSegmentType.INDEX, filePath, baseOffset);
     }

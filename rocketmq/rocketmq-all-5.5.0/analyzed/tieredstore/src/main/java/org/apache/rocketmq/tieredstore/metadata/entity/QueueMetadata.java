@@ -19,25 +19,33 @@ package org.apache.rocketmq.tieredstore.metadata.entity;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+/**
+ * 队列元数据：记录 MessageQueue 在分层存储中的最小/最大偏移及更新时间。
+ */
 public class QueueMetadata {
 
+    /** 关联的 MessageQueue（Topic、Broker、QueueId）。 */
     @JSONField(ordinal = 1)
     private MessageQueue queue;
 
+    /** 分层存储中该队列的最小逻辑偏移。 */
     @JSONField(ordinal = 2)
     private long minOffset;
 
+    /** 分层存储中该队列的最大逻辑偏移。 */
     @JSONField(ordinal = 3)
     private long maxOffset;
 
+    /** 元数据最后更新时间戳。 */
     @JSONField(ordinal = 4)
     private long updateTimestamp;
 
-    // default constructor is used by fastjson
+    // fastjson 反序列化使用的默认构造器
     @SuppressWarnings("unused")
     public QueueMetadata() {
     }
 
+    /** 构造队列元数据并设置当前更新时间。 */
     public QueueMetadata(MessageQueue queue, long minOffset, long maxOffset) {
         this.queue = queue;
         this.minOffset = minOffset;

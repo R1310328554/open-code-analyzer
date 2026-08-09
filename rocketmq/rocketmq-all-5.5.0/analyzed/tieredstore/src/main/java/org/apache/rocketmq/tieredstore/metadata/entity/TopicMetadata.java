@@ -18,28 +18,37 @@ package org.apache.rocketmq.tieredstore.metadata.entity;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 
+/**
+ * Topic 元数据：维护 Topic 数值 ID、名称、保留时长与状态。
+ */
 public class TopicMetadata {
 
+    /** Topic 数值 ID，用于索引与路径哈希。 */
     @JSONField(ordinal = 1)
     private long topicId;
 
+    /** Topic 名称。 */
     @JSONField(ordinal = 2)
     private String topic;
 
+    /** Topic 在分层存储中的状态。 */
     @JSONField(ordinal = 3)
     private int status;
 
+    /** 消息保留时长（毫秒）。 */
     @JSONField(ordinal = 4)
     private long reserveTime;
 
+    /** 元数据最后更新时间戳。 */
     @JSONField(ordinal = 5)
     private long updateTimestamp;
 
-    // default constructor is used by fastjson
+    // fastjson 反序列化使用的默认构造器
     @SuppressWarnings("unused")
     public TopicMetadata() {
     }
 
+    /** 构造 Topic 元数据并记录更新时间。 */
     public TopicMetadata(long topicId, String topic, long reserveTime) {
         this.topicId = topicId;
         this.topic = topic;

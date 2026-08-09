@@ -23,17 +23,22 @@ import java.util.List;
 import org.apache.rocketmq.tieredstore.common.FileSegmentType;
 import org.apache.rocketmq.tieredstore.util.MessageFormatUtil;
 
+/**
+ * CommitLog 上传输入流：读取时重写物理偏移字段以匹配分层存储偏移。
+ */
 public class CommitLogInputStream extends FileSegmentInputStream {
 
-    /**
-     * commitLogOffset is the real physical offset of the commitLog buffer which is being read
-     */
+    /** 当前正在读取的 CommitLog 缓冲对应的物理偏移。 */
+    /** 流起始 CommitLog 物理偏移。 */
     private final long startCommitLogOffset;
 
+    /** 当前读指针对应的 CommitLog 物理偏移。 */
     private long commitLogOffset;
 
+    /** CommitLog 段尾 coda 缓冲（可选）。 */
     private final ByteBuffer codaBuffer;
 
+    /** mark 时保存的 CommitLog 偏移。 */
     private long markCommitLogOffset = -1;
 
     public CommitLogInputStream(FileSegmentType fileType, long startOffset,
@@ -134,13 +139,13 @@ public class CommitLogInputStream extends FileSegmentInputStream {
         while (needRead > 0 && bufIndex <= bufferList.size()) {
             int readLen, remaining, realReadLen = 0;
             if (bufIndex == bufferList.size()) {
-                // read from coda buffer
+                // 从 coda 尾段缓冲读取
                 remaining = codaBuffer.remaining() - posInCurBuffer;
                 readLen = Math.min(remaining, needRead);
                 codaBuffer.position(posInCurBuffer);
                 codaBuffer.get(b, off, readLen);
                 codaBuffer.position(0);
-                // update flags
+                // 更新读指针与偏移
                 off += readLen;
                 needRead -= readLen;
                 pos += readLen;
@@ -152,13 +157,13 @@ public class CommitLogInputStream extends FileSegmentInputStream {
             curBuf = bufferList.get(bufIndex);
             if (posInCurBuffer < MessageFormatUtil.PHYSICAL_OFFSET_POSITION) {
                 realReadLen = Math.min(MessageFormatUtil.PHYSICAL_OFFSET_POSITION - posInCurBuffer, readLen);
-                // read from commitLog buffer
+                // 从 CommitLog 缓冲读取
                 curBuf.position(posInCurBuffer);
                 curBuf.get(b, off, realReadLen);
                 curBuf.position(0);
             } else if (posInCurBuffer < MessageFormatUtil.SYS_FLAG_OFFSET_POSITION) {
                 realReadLen = Math.min(MessageFormatUtil.SYS_FLAG_OFFSET_POSITION - posInCurBuffer, readLen);
-                // read from converted PHYSICAL_OFFSET_POSITION
+                // 从转换后的物理偏移字段读取
                 byte[] physicalOffsetBytes = new byte[realReadLen];
                 for (int i = 0; i < realReadLen; i++) {
                     physicalOffsetBytes[i] = (byte) ((curCommitLogOffset >> (8 * (MessageFormatUtil.SYS_FLAG_OFFSET_POSITION - posInCurBuffer - i - 1))) & 0xff);
@@ -177,7 +182,7 @@ public class CommitLogInputStream extends FileSegmentInputStream {
             pos += realReadLen;
             posInCurBuffer += realReadLen;
             if (posInCurBuffer == curBuf.remaining()) {
-                // read from next buf
+                // 切换到下一段缓冲
                 bufIndex++;
                 curCommitLogOffset += posInCurBuffer;
                 posInCurBuffer = 0;

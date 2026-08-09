@@ -20,58 +20,60 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import org.apache.rocketmq.tieredstore.stream.FileSegmentInputStream;
 
+/**
+ * 后端文件段 Provider 接口：定义路径、大小、读写与生命周期操作。
+ */
 public interface FileSegmentProvider {
 
     /**
-     * Get file path in backend file system
+     * 获取后端文件系统中的文件路径。
      *
-     * @return file real path
+     * @return 文件实际路径
      */
     String getPath();
 
     /**
-     * Get the real length of the file.
-     * Return 0 if the file does not exist,
-     * Return -1 if system get size failed.
+     * 获取文件实际长度。
+     * 文件不存在时返回 0，获取失败时返回 -1。
      *
-     * @return file real size
+     * @return 文件实际字节大小
      */
     long getSize();
 
     /**
-     * Is file exists in backend file system
+     * 判断后端文件系统中文件是否存在。
      *
-     * @return <code>true</code> if file with given path exists; <code>false</code> otherwise
+     * @return 存在返回 <code>true</code>，否则 <code>false</code>
      */
     boolean exists();
 
     /**
-     * Create file in backend file system
+     * 在后端文件系统中创建文件。
      */
     void createFile();
 
     /**
-     * Destroy file with given path in backend file system
+     * 销毁后端文件系统中指定路径的文件。
      */
     void destroyFile();
 
     /**
-     * Get data from backend file system
+     * 从后端文件系统读取数据。
      *
-     * @param position the index from where the file will be read
-     * @param length   the data size will be read
-     * @return data to be read
+     * @param position 读取起始文件内偏移
+     * @param length   读取字节数
+     * @return 读取到的数据缓冲
      */
     CompletableFuture<ByteBuffer> read0(long position, int length);
 
     /**
-     * Put data to backend file system
+     * 向后端文件系统写入数据。
      *
-     * @param inputStream data stream
-     * @param position    backend file position to put, used in append mode
-     * @param length      data size in stream
-     * @param append      try to append or create a new file
-     * @return put result, <code>true</code> if data successfully write; <code>false</code> otherwise
+     * @param inputStream 待写入的数据流
+     * @param position    写入起始文件内偏移（追加模式）
+     * @param length      流中数据字节数
+     * @param append      是否以追加方式写入
+     * @return 写入成功返回 <code>true</code>，否则 <code>false</code>
      */
     CompletableFuture<Boolean> commit0(FileSegmentInputStream inputStream, long position, int length, boolean append);
 }

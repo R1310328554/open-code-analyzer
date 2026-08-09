@@ -74,33 +74,55 @@ import static org.apache.rocketmq.tieredstore.metrics.TieredStoreMetricsConstant
 import static org.apache.rocketmq.tieredstore.metrics.TieredStoreMetricsConstant.LABEL_TOPIC;
 import static org.apache.rocketmq.tieredstore.metrics.TieredStoreMetricsConstant.STORAGE_MEDIUM_BLOB;
 
+/**
+ * 分层存储指标管理器：注册 OpenTelemetry 指标并采集分发、缓存与存储用量。
+ */
 public class TieredStoreMetricsManager {
 
+    /** 分层存储模块日志。 */
     private static final Logger log = LoggerFactory.getLogger(MessageStoreUtil.TIERED_STORE_LOGGER_NAME);
+    /** 全局 Attributes 构建器供应器。 */
     public static Supplier<AttributesBuilder> attributesBuilderSupplier;
+    /** 当前存储介质标识（默认 blob）。 */
     private static String storageMedium = STORAGE_MEDIUM_BLOB;
 
+    /** 分层 Store API 延迟直方图。 */
     public static LongHistogram apiLatency = new NopLongHistogram();
 
-    // tiered store provider metrics
+    // 分层存储 Provider 侧指标
+    /** Provider RPC 延迟直方图。 */
     public static LongHistogram providerRpcLatency = new NopLongHistogram();
+    /** 上传字节数直方图。 */
     public static LongHistogram uploadBytes = new NopLongHistogram();
+    /** 下载字节数直方图。 */
     public static LongHistogram downloadBytes = new NopLongHistogram();
 
+    /** 分发滞后消息数 Gauge。 */
     public static ObservableLongGauge dispatchBehind = new NopObservableLongGauge();
+    /** 分发延迟 Gauge。 */
     public static ObservableLongGauge dispatchLatency = new NopObservableLongGauge();
+    /** 已分发消息总数 Counter。 */
     public static LongCounter messagesDispatchTotal = new NopLongCounter();
+    /** 对外输出消息总数 Counter。 */
     public static LongCounter messagesOutTotal = new NopLongCounter();
+    /** 拉取回退下层 Store 次数 Counter。 */
     public static LongCounter fallbackTotal = new NopLongCounter();
 
+    /** 预读缓存消息条数 Gauge。 */
     public static ObservableLongGauge cacheCount = new NopObservableLongGauge();
+    /** 预读缓存占用字节 Gauge。 */
     public static ObservableLongGauge cacheBytes = new NopObservableLongGauge();
+    /** 缓存访问次数 Counter。 */
     public static LongCounter cacheAccess = new NopLongCounter();
+    /** 缓存命中次数 Counter。 */
     public static LongCounter cacheHit = new NopLongCounter();
 
+    /** Broker 分层存储占用字节 Gauge。 */
     public static ObservableLongGauge storageSize = new NopObservableLongGauge();
+    /** 消息保留时长 Gauge。 */
     public static ObservableLongGauge storageMessageReserveTime = new NopObservableLongGauge();
 
+    /** 返回分层存储直方图的自定义分桶 View 配置。 */
     public static List<Pair<InstrumentSelector, ViewBuilder>> getMetricsView() {
         ArrayList<Pair<InstrumentSelector, ViewBuilder>> res = new ArrayList<>();
 
@@ -139,10 +161,12 @@ public class TieredStoreMetricsManager {
         return res;
     }
 
+    /** 设置存储介质标签值。 */
     public static void setStorageMedium(String storageMedium) {
         TieredStoreMetricsManager.storageMedium = storageMedium;
     }
 
+    /** 注册全部 OpenTelemetry 指标并绑定回调采集逻辑。 */
     public static void init(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier,
         MessageStoreConfig storeConfig, MessageStoreFetcher fetcher,
         FlatFileStore flatFileStore, MessageStore next) {
@@ -336,6 +360,7 @@ public class TieredStoreMetricsManager {
             });
     }
 
+    /** 创建带 storage_type=tiered 与介质标签的 Attributes 构建器。 */
     public static AttributesBuilder newAttributesBuilder() {
         AttributesBuilder builder = attributesBuilderSupplier != null ? attributesBuilderSupplier.get() : Attributes.builder();
         return builder.put(LABEL_STORAGE_TYPE, "tiered")
