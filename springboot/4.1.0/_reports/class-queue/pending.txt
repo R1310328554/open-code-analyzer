@@ -1,4 +1,3 @@
-core/spring-boot/src/main/java/org/springframework/boot/SpringApplication.java
 core/spring-boot/src/main/java/org/springframework/boot/context/config/LocationResourceLoader.java
 core/spring-boot/src/main/java/org/springframework/boot/context/config/Profiles.java
 core/spring-boot/src/main/java/org/springframework/boot/context/config/ProfilesValidator.java
