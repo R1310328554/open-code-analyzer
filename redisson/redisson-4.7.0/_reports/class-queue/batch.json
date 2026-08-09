@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:08:40Z",
   "files": [
-    "redisson-hibernate/redisson-hibernate-6/src/main/java/org/redisson/hibernate/RedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-6/src/main/java/org/redisson/hibernate/RedissonRegionNativeFactory.java",
-    "redisson-hibernate/redisson-hibernate-6/src/main/java/org/redisson/hibernate/RedissonStorage.java",
-    "redisson-hibernate/redisson-hibernate-6/src/main/java/org/redisson/hibernate/RedissonStrategyRegistrationProvider.java",
-    "redisson-hibernate/redisson-hibernate-7/src/main/java/org/redisson/hibernate/JndiRedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-7/src/main/java/org/redisson/hibernate/JndiRedissonRegionNativeFactory.java",
-    "redisson-hibernate/redisson-hibernate-7/src/main/java/org/redisson/hibernate/RedissonCacheKeysFactory.java",
-    "redisson-hibernate/redisson-hibernate-7/src/main/java/org/redisson/hibernate/RedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-7/src/main/java/org/redisson/hibernate/RedissonRegionNativeFactory.java",
-    "redisson-hibernate/redisson-hibernate-7/src/main/java/org/redisson/hibernate/RedissonStorage.java",
-    "redisson-hibernate/redisson-hibernate-7/src/main/java/org/redisson/hibernate/RedissonStrategyRegistrationProvider.java",
-    "redisson-hibernate/redisson-hibernate-72/src/main/java/org/redisson/hibernate/JndiRedissonRegionFactory.java",
-    "redisson-hibernate/redisson-hibernate-72/src/main/java/org/redisson/hibernate/JndiRedissonRegionNativeFactory.java",
-    "redisson-hibernate/redisson-hibernate-72/src/main/java/org/redisson/hibernate/RedissonCacheKeysFactory.java",
-    "redisson-hibernate/redisson-hibernate-72/src/main/java/org/redisson/hibernate/RedissonRegionFactory.java",
     "redisson-hibernate/redisson-hibernate-72/src/main/java/org/redisson/hibernate/RedissonRegionNativeFactory.java",
     "redisson-hibernate/redisson-hibernate-72/src/main/java/org/redisson/hibernate/RedissonStorage.java",
     "redisson-hibernate/redisson-hibernate-72/src/main/java/org/redisson/hibernate/RedissonStrategyRegistrationProvider.java",
@@ -33,5 +18,5 @@
     "redisson-micronaut/redisson-micronaut-20/src/main/java/org/redisson/micronaut/session/AttributesPutAllMessage.java"
   ],
   "remaining_pending": 2702,
-  "done": 90
+  "done": 105
 }
