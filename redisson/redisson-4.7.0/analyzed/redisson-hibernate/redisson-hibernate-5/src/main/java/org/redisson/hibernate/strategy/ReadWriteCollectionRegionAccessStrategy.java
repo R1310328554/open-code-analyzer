@@ -26,27 +26,35 @@ import org.redisson.api.RMapCache;
 import org.redisson.hibernate.region.RedissonCollectionRegion;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 集合并发策略 {@code read-write} 的 Redisson 区域访问实现（Hibernate 5）。
+ * <p>基于 {@link AbstractReadWriteAccessStrategy}，利用 {@link RMapCache} 提供读写一致性。
  *
+ * @author Nikita Koksharov
  */
 public class ReadWriteCollectionRegionAccessStrategy extends AbstractReadWriteAccessStrategy implements CollectionRegionAccessStrategy {
 
+    /** @param settings Hibernate 缓存配置
+     * @param region 集合缓存区域
+     * @param mapCache 底层 Redisson 带 TTL 的 Map 缓存
+     */
     public ReadWriteCollectionRegionAccessStrategy(Settings settings, GeneralDataRegion region,
             RMapCache<Object, Object> mapCache) {
         super(settings, region, mapCache);
     }
 
+    /** 返回强类型 {@link CollectionRegion} 视图。 */
     @Override
     public CollectionRegion getRegion() {
         return (CollectionRegion) region;
     }
 
+    /** 通过 {@link RedissonCollectionRegion} 的键工厂生成集合缓存键。 */
     @Override
     public Object generateCacheKey(Object id, CollectionPersister persister, SessionFactoryImplementor factory, String tenantIdentifier) {
         return ((RedissonCollectionRegion)region).getCacheKeysFactory().createCollectionKey( id, persister, factory, tenantIdentifier );
     }
 
+    /** 从缓存键反解集合标识符。 */
     @Override
     public Object getCacheKeyId(Object cacheKey) {
         return ((RedissonCollectionRegion)region).getCacheKeysFactory().getCollectionId(cacheKey);

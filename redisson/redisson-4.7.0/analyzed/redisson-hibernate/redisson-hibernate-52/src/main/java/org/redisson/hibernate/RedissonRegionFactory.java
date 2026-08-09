@@ -39,11 +39,10 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Hibernate Cache region factory based on Redisson. 
- * Creates own Redisson instance during region start.
- * 
- * @author Nikita Koksharov
+ * 基于 Redisson 的 Hibernate 二级缓存 {@link RegionFactory} 实现（Hibernate 5.2）。
+ * <p>在 Region 启动时创建并持有独立的 {@link RedissonClient} 实例。
  *
+ * @author Nikita Koksharov
  */
 public class RedissonRegionFactory implements RegionFactory {
     
@@ -51,26 +50,37 @@ public class RedissonRegionFactory implements RegionFactory {
 
     private static final long serialVersionUID = 3785315696581773811L;
 
+    /** 查询结果缓存区域的默认配置键后缀。 */
     public static final String QUERY_DEF = "query";
     
+    /** 集合缓存区域的默认配置键后缀。 */
     public static final String COLLECTION_DEF = "collection";
     
+    /** 实体缓存区域的默认配置键后缀。 */
     public static final String ENTITY_DEF = "entity";
     
+    /** 自然 ID 缓存区域的默认配置键后缀。 */
     public static final String NATURAL_ID_DEF = "naturalid";
     
+    /** 时间戳缓存区域的默认配置键后缀。 */
     public static final String TIMESTAMPS_DEF = "timestamps";
     
+    /** Region 最大条目数配置键后缀。 */
     public static final String MAX_ENTRIES_SUFFIX = ".eviction.max_entries";
 
+    /** Region TTL 配置键后缀。 */
     public static final String TTL_SUFFIX = ".expiration.time_to_live";
 
+    /** Region 最大空闲时间配置键后缀。 */
     public static final String MAX_IDLE_SUFFIX = ".expiration.max_idle_time";
     
+    /** Hibernate 属性中 Redisson 相关配置的前缀。 */
     public static final String CONFIG_PREFIX = "hibernate.cache.redisson.";
     
+    /** Redisson 配置文件路径对应的 Hibernate 属性键。 */
     public static final String REDISSON_CONFIG_PATH = CONFIG_PREFIX + "config";
 
+    /** 是否在 Redis 不可用时启用本地降级模式的属性键。 */
     public static final String FALLBACK = CONFIG_PREFIX + "fallback";
 
     private static AtomicLong currentTime = new AtomicLong();
@@ -80,6 +90,7 @@ public class RedissonRegionFactory implements RegionFactory {
     private CacheKeysFactory cacheKeysFactory;
     private boolean fallback;
 
+    /** 加载 Redisson 配置、初始化客户端并解析 fallback 与缓存键工厂。 */
     @Override
     public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
@@ -93,6 +104,7 @@ public class RedissonRegionFactory implements RegionFactory {
         fallback = Boolean.parseBoolean(fallbackValue);
     }
 
+    /** 从类路径或指定路径加载 YAML/JSON 配置并创建 {@link RedissonClient}。 */
     protected RedissonClient createRedissonClient(Properties properties) {
         Config config = null;
         if (!properties.containsKey(REDISSON_CONFIG_PATH)) {
@@ -135,21 +147,25 @@ public class RedissonRegionFactory implements RegionFactory {
         return null;
     }
 
+    /** 关闭 Redisson 客户端并释放连接。 */
     @Override
     public void stop() {
         redisson.shutdown();
     }
 
+    /** 默认启用最小化 put 策略以减少缓存写入。 */
     @Override
     public boolean isMinimalPutsEnabledByDefault() {
         return true;
     }
 
+    /** 默认缓存并发访问策略为 {@link AccessType#TRANSACTIONAL}。 */
     @Override
     public AccessType getDefaultAccessType() {
         return AccessType.TRANSACTIONAL;
     }
 
+    /** 通过 Redis Lua 脚本生成全局递增时间戳；失败且启用 fallback 时使用本地 CAS 递增。 */
     @Override
     public long nextTimestamp() {
         long time = System.currentTimeMillis() << 12;
@@ -184,6 +200,7 @@ public class RedissonRegionFactory implements RegionFactory {
         }
     }
 
+    /** 构建实体二级缓存 Region。 */
     @Override
     public EntityRegion buildEntityRegion(String regionName, Properties properties, CacheDataDescription metadata)
             throws CacheException {
@@ -227,6 +244,7 @@ public class RedissonRegionFactory implements RegionFactory {
         return new RedissonTimestampsRegion(mapCache, ((Redisson)redisson).getServiceManager(),this, properties, TIMESTAMPS_DEF);
     }
     
+    /** 获取指定 Region 名称对应的 {@link RMapCache} 实例。 */
     protected RMapCache<Object, Object> getCache(String regionName, Properties properties, String defaultKey) {
         return redisson.getMapCache(regionName);
     }

@@ -28,21 +28,27 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.redisson.hibernate.region.RedissonCollectionRegion;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 集合并发策略 {@code transactional} 的 Redisson 区域访问实现（Hibernate 5）。
+ * <p>缓存写入与 JTA 事务边界对齐；解锁为空操作。
  *
+ * @author Nikita Koksharov
  */
 public class TransactionalCollectionRegionAccessStrategy extends BaseRegionAccessStrategy implements CollectionRegionAccessStrategy {
 
+    /** @param settings Hibernate 缓存配置
+     * @param region 集合缓存区域
+     */
     public TransactionalCollectionRegionAccessStrategy(Settings settings, GeneralDataRegion region) {
         super(settings, region);
     }
 
+    /** 返回强类型 {@link CollectionRegion} 视图。 */
     @Override
     public CollectionRegion getRegion() {
         return (CollectionRegion) region;
     }
 
+    /** 在当前会话上下文中读取缓存条目。 */
     @Override
     public Object get(SessionImplementor session, Object key, long txTimestamp) throws CacheException {
         return region.get(session, key);
@@ -51,6 +57,7 @@ public class TransactionalCollectionRegionAccessStrategy extends BaseRegionAcces
     @Override
     public boolean putFromLoad(SessionImplementor session, Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride)
             throws CacheException {
+        // 最小写入模式下键已存在则跳过写入。
         if (minimalPutOverride && region.contains(key)) {
             return false;
         }
@@ -59,15 +66,18 @@ public class TransactionalCollectionRegionAccessStrategy extends BaseRegionAcces
         return true;
     }
 
+    /** 事务策略不提供项级软锁。 */
     @Override
     public SoftLock lockItem(SessionImplementor session, Object key, Object version) throws CacheException {
         return null;
     }
 
+    /** 解锁为空操作，事务回滚由 Hibernate 协调。 */
     @Override
     public void unlockItem(SessionImplementor session, Object key, SoftLock lock) throws CacheException {
     }
     
+    /** 移除指定键对应的缓存条目。 */
     @Override
     public void remove(SessionImplementor session, Object key) throws CacheException {
         region.evict(key);

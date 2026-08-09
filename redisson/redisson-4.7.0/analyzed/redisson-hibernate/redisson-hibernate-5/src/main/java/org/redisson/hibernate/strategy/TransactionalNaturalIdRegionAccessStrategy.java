@@ -27,16 +27,21 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.redisson.hibernate.region.RedissonNaturalIdRegion;
 
 /**
- * 
- * @author Nikita Koksharov
+ * 自然 ID 并发策略 {@code transactional} 的 Redisson 区域访问实现（Hibernate 5）。
+ * <p>插入/更新在事务阶段立即写入缓存，after 阶段返回 {@code false}。
  *
+ * @author Nikita Koksharov
  */
 public class TransactionalNaturalIdRegionAccessStrategy extends BaseRegionAccessStrategy implements NaturalIdRegionAccessStrategy {
 
+    /** @param settings Hibernate 缓存配置
+     * @param region 自然 ID 缓存区域
+     */
     public TransactionalNaturalIdRegionAccessStrategy(Settings settings, GeneralDataRegion region) {
         super(settings, region);
     }
 
+    /** 在当前会话上下文中读取缓存条目。 */
     @Override
     public Object get(SessionImplementor session, Object key, long txTimestamp) throws CacheException {
         return region.get(session, key);
@@ -45,6 +50,7 @@ public class TransactionalNaturalIdRegionAccessStrategy extends BaseRegionAccess
     @Override
     public boolean putFromLoad(SessionImplementor session, Object key, Object value, long txTimestamp, Object version, boolean minimalPutOverride)
             throws CacheException {
+        // 最小写入模式下键已存在则跳过写入。
         if (minimalPutOverride && region.contains(key)) {
             return false;
         }
@@ -53,41 +59,49 @@ public class TransactionalNaturalIdRegionAccessStrategy extends BaseRegionAccess
         return true;
     }
 
+    /** 事务策略不提供项级软锁。 */
     @Override
     public SoftLock lockItem(SessionImplementor session, Object key, Object version) throws CacheException {
         return null;
     }
 
+    /** 解锁为空操作。 */
     @Override
     public void unlockItem(SessionImplementor session, Object key, SoftLock lock) throws CacheException {
     }
 
+    /** 返回强类型 {@link NaturalIdRegion} 视图。 */
     @Override
     public NaturalIdRegion getRegion() {
         return (NaturalIdRegion) region;
     }
     
+    /** 移除指定自然 ID 对应的缓存条目。 */
     @Override
     public void remove(SessionImplementor session, Object key) throws CacheException {
         region.evict(key);
     }
 
+    /** 插入阶段立即写入缓存。 */
     @Override
     public boolean insert(SessionImplementor session, Object key, Object value) throws CacheException {
         region.put(session, key, value);
         return true;
     }
 
+    /** 插入后阶段不再重复写入。 */
     @Override
     public boolean afterInsert(SessionImplementor session, Object key, Object value) throws CacheException {
         return false;
     }
 
+    /** 更新阶段复用 insert 逻辑立即写入。 */
     @Override
     public boolean update(SessionImplementor session, Object key, Object value) throws CacheException {
         return insert(session, key, value);
     }
 
+    /** 更新后阶段不再重复写入。 */
     @Override
     public boolean afterUpdate(SessionImplementor session, Object key, Object value, SoftLock lock) throws CacheException {
         return false;
