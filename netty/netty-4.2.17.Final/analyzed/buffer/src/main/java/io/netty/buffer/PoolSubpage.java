@@ -23,6 +23,12 @@ import static io.netty.buffer.PoolChunk.SIZE_SHIFT;
 import static io.netty.buffer.PoolChunk.IS_USED_SHIFT;
 import static io.netty.buffer.PoolChunk.IS_SUBPAGE_SHIFT;
 
+/**
+ * 将一页 run 切分为多个等长小对象的 Subpage 分配器。
+ * <p>
+ * 使用位图跟踪各元素占用；同尺寸 Subpage 在 {@link PoolArena#smallSubpagePools} 中组成双向链表。
+ * 当 Subpage 完全空闲且池中存在同类 Subpage 时，整页 run 可归还 Chunk。
+ */
 final class PoolSubpage<T> implements PoolSubpageMetric {
 
     final PoolChunk<T> chunk;
@@ -47,7 +53,7 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
     // TODO: Test if adding padding helps under contention
     //private long pad0, pad1, pad2, pad3, pad4, pad5, pad6, pad7;
 
-    /** Special constructor that creates a linked list head */
+    /** 构造 Subpage 池链表头节点（非真实 Subpage） */
     PoolSubpage(int headIndex) {
         chunk = null;
         lock = new ReentrantLock();
@@ -85,7 +91,7 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
     }
 
     /**
-     * Returns the bitmap index of the subpage allocation.
+     * 分配一个元素，返回编码后的 handle（含 bitmap 索引）。
      */
     long allocate() {
         if (numAvail == 0 || !doNotDestroy) {
@@ -94,7 +100,7 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
 
         final int bitmapIdx = getNextAvail();
         if (bitmapIdx < 0) {
-            removeFromPool(); // Subpage appear to be in an invalid state. Remove to prevent repeated errors.
+            removeFromPool(); // 状态异常，移出池以防重复错误
             throw new AssertionError("No next available bitmap index found (bitmapIdx = " + bitmapIdx + "), " +
                     "even though there are supposed to be (numAvail = " + numAvail + ") " +
                     "out of (maxNumElems = " + maxNumElems + ") available indexes.");
@@ -112,8 +118,8 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
     }
 
     /**
-     * @return {@code true} if this subpage is in use.
-     *         {@code false} if this subpage is not used by its chunk and thus it's OK to be released.
+     * 释放指定 bitmap 索引的元素。
+     * @return {@code true} 表示 Subpage 仍在使用；{@code false} 表示可整页归还 Chunk
      */
     boolean free(PoolSubpage<T> head, int bitmapIdx) {
         int q = bitmapIdx >>> 6;
@@ -125,10 +131,10 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
 
         if (numAvail ++ == 0) {
             addToPool(head);
-            /* When maxNumElems == 1, the maximum numAvail is also 1.
-             * Each of these PoolSubpages will go in here when they do free operation.
-             * If they return true directly from here, then the rest of the code will be unreachable
-             * and they will not actually be recycled. So return true only on maxNumElems > 1. */
+            /* maxNumElems == 1 时 numAvail 最大也为 1；
+             * 此类 Subpage 每次 free 都会进入此分支；
+             * 若此处直接 return true，后续回收逻辑不可达，
+             * Subpage 无法被回收；故仅在 maxNumElems > 1 时 return true */
             if (maxNumElems > 1) {
                 return true;
             }
@@ -137,13 +143,13 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
         if (numAvail != maxNumElems) {
             return true;
         } else {
-            // Subpage not in use (numAvail == maxNumElems)
+            // Subpage 已完全空闲（numAvail == maxNumElems）
             if (prev == next) {
-                // Do not remove if this subpage is the only one left in the pool.
+                // 池中仅剩本 Subpage 时不移除，保留空池头
                 return true;
             }
 
-            // Remove this subpage from the pool if there are other subpages left in the pool.
+            // 池中尚有其他 Subpage 时移出本节点，允许整页释放
             doNotDestroy = false;
             removeFromPool();
             return false;
@@ -218,7 +224,7 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
     public String toString() {
         final int numAvail;
         if (chunk == null) {
-            // This is the head so there is no need to synchronize at all as these never change.
+            // 链表头节点无需同步
             numAvail = 0;
         } else {
             final boolean doNotDestroy;
@@ -231,7 +237,7 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
                 head.unlock();
             }
             if (!doNotDestroy) {
-                // Not used for creating the String.
+                // 已标记销毁，toString 仅返回占位信息
                 return "(" + runOffset + ": not in use)";
             }
         }
@@ -248,7 +254,7 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
     @Override
     public int numAvailable() {
         if (chunk == null) {
-            // It's the head.
+            // 链表头节点
             return 0;
         }
         PoolSubpage<T> head = chunk.arena.smallSubpagePools[headIndex];

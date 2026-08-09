@@ -30,10 +30,13 @@ import java.nio.channels.ScatteringByteChannel;
 import java.util.Collections;
 
 /**
- * {@link ByteBuf} implementation which allows to wrap an array of {@link ByteBuf} in a read-only mode.
- * This is useful to write an array of {@link ByteBuf}s.
+ * 将多个 {@link ByteBuf} 以只读方式组合为单一视图的 {@link ByteBuf} 实现。
+ * <p>
+ * 常用于 {@link CompositeByteBuf#consolidate()} 等场景，一次性写出多个组件；
+ * 所有组件须具有相同 {@link ByteOrder}。
  */
 final class FixedCompositeByteBuf extends AbstractReferenceCountedByteBuf {
+    /** 空组件数组的占位常量 */
     private static final ByteBuf[] EMPTY = { Unpooled.EMPTY_BUFFER };
     private final int nioBufferCount;
     private final int capacity;
@@ -226,6 +229,7 @@ final class FixedCompositeByteBuf extends AbstractReferenceCountedByteBuf {
         return direct;
     }
 
+    /** 根据绝对索引定位所属组件，必要时将数组槽位缓存为 {@link Component} */
     private Component findComponent(int index) {
         int readable = 0;
         for (int i = 0 ; i < buffers.length; i++) {
@@ -238,8 +242,7 @@ final class FixedCompositeByteBuf extends AbstractReferenceCountedByteBuf {
             readable += b.readableBytes();
             if (index < readable) {
                 if (comp == null) {
-                    // Create a new component and store it in the array so it not create a new object
-                    // on the next access.
+                    // 首次访问时包装为 Component 并写回数组，避免重复创建
                     comp = new Component(i, readable - b.readableBytes(), b);
                     buffers[i] = comp;
                 }
@@ -250,7 +253,7 @@ final class FixedCompositeByteBuf extends AbstractReferenceCountedByteBuf {
     }
 
     /**
-     * Return the {@link ByteBuf} stored at the given index of the array.
+     * 返回数组指定下标处的底层 {@link ByteBuf}（解包 {@link Component}）。
      */
     private ByteBuf buffer(int i) {
         ByteBuf b = buffers[i];
@@ -673,6 +676,7 @@ final class FixedCompositeByteBuf extends AbstractReferenceCountedByteBuf {
         return result + ", components=" + buffers.length + ')';
     }
 
+    /** 组合视图中的单个组件：记录全局偏移与结束位置，加速跨组件随机访问 */
     private static final class Component extends WrappedByteBuf {
         private final int index;
         private final int offset;

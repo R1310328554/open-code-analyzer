@@ -18,10 +18,13 @@ package io.netty.buffer;
 import java.util.Arrays;
 
 /**
- * Internal primitive priority queue, used by {@link PoolChunk}.
- * The implementation is based on the binary heap, as described in Algorithms by Sedgewick and Wayne.
+ * {@link PoolChunk} 内部使用的整型最小堆优先队列。
+ * <p>
+ * 实现基于 Sedgewick & Wayne《Algorithms》中的二叉堆；
+ * 元素为 run handle 的高位部分，堆顶为最小值，便于按偏移优先分配。
  */
 final class IntPriorityQueue {
+    /** 队列空时的哨兵返回值 */
     public static final int NO_VALUE = -1;
     private int[] array = new int[9];
     private int size;
@@ -32,7 +35,7 @@ final class IntPriorityQueue {
         }
         size++;
         if (size == array.length) {
-            // Grow queue capacity.
+            // 容量不足时按 (cap-1)*2+1 扩容
             array = Arrays.copyOf(array, 1 + (array.length - 1) * 2);
         }
         array[size] = handle;
@@ -73,6 +76,7 @@ final class IntPriorityQueue {
         return size == 0;
     }
 
+    /** 上浮：将 index 处元素向根调整以满足堆序 */
     private void lift(int index) {
         int parentIndex;
         while (index > 1 && subord(parentIndex = index >> 1, index)) {
@@ -81,6 +85,7 @@ final class IntPriorityQueue {
         }
     }
 
+    /** 下沉：将 index 处元素向叶调整以满足堆序 */
     private void sink(int index) {
         int child;
         while ((child = index << 1) <= size) {
@@ -95,6 +100,7 @@ final class IntPriorityQueue {
         }
     }
 
+    /** 比较 a 是否应排在 b 之后（a 的值更大） */
     private boolean subord(int a, int b) {
         return array[a] > array[b];
     }

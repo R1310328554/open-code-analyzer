@@ -16,27 +16,27 @@
 package io.netty.buffer;
 
 /**
- * Metrics for a sub-page.
+ * {@link PoolSubpage} 的监控指标接口。
  */
 public interface PoolSubpageMetric {
 
     /**
-     * Return the number of maximal elements that can be allocated out of the sub-page.
+     * Subpage 可切分的最大元素个数。
      */
     int maxNumElements();
 
     /**
-     * Return the number of available elements to be allocated.
+     * 当前仍可分配的元素个数。
      */
     int numAvailable();
 
     /**
-     * Return the size (in bytes) of the elements that will be allocated.
+     * 每个元素的字节大小。
      */
     int elementSize();
 
     /**
-     * Return the page size (in bytes) of this page.
+     * 本 Subpage 所属物理页大小（字节）。
      */
     int pageSize();
 }

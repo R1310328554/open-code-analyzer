@@ -19,158 +19,160 @@ package io.netty.buffer;
 import java.util.List;
 
 /**
- * Expose metrics for an arena.
+ * {@link PoolArena} 的监控指标接口。
+ * <p>
+ * 暴露线程缓存数、Subpage/Chunk 列表、各尺寸档分配/释放计数及当前活跃字节数。
  */
 public interface PoolArenaMetric extends SizeClassesMetric {
 
     /**
-     * Returns the number of thread caches backed by this arena.
+     * 返回绑定到本 Arena 的 {@link PoolThreadCache} 数量。
      */
     int numThreadCaches();
 
     /**
-     * Returns the number of tiny sub-pages for the arena.
+     * 返回 Arena 中 tiny 级 Subpage 数量。
      *
-     * @deprecated Tiny sub-pages have been merged into small sub-pages.
+     * @deprecated Tiny 已与 Small 合并。
      */
     @Deprecated
     int numTinySubpages();
 
     /**
-     * Returns the number of small sub-pages for the arena.
+     * 返回 Arena 中 small 级 Subpage 池数量。
      */
     int numSmallSubpages();
 
     /**
-     * Returns the number of chunk lists for the arena.
+     * 返回 Arena 中 {@link PoolChunkList} 链表档位数。
      */
     int numChunkLists();
 
     /**
-     * Returns an unmodifiable {@link List} which holds {@link PoolSubpageMetric}s for tiny sub-pages.
+     * 返回 tiny Subpage 的不可变 {@link PoolSubpageMetric} 列表。
      *
-     * @deprecated Tiny sub-pages have been merged into small sub-pages.
+     * @deprecated Tiny 已与 Small 合并。
      */
     @Deprecated
     List<PoolSubpageMetric> tinySubpages();
 
     /**
-     * Returns an unmodifiable {@link List} which holds {@link PoolSubpageMetric}s for small sub-pages.
+     * 返回 small Subpage 的不可变 {@link PoolSubpageMetric} 列表。
      */
     List<PoolSubpageMetric> smallSubpages();
 
     /**
-     * Returns an unmodifiable {@link List} which holds {@link PoolChunkListMetric}s.
+     * 返回各使用率档位 {@link PoolChunkListMetric} 的不可变列表。
      */
     List<PoolChunkListMetric> chunkLists();
 
     /**
-     * Return the number of allocations done via the arena. This includes all sizes.
+     * 经本 Arena 完成的分配总次数（含所有尺寸档）。
      */
     long numAllocations();
 
     /**
-     * Return the number of tiny allocations done via the arena.
+     * Tiny 档分配次数。
      *
-     * @deprecated Tiny allocations have been merged into small allocations.
+     * @deprecated Tiny 已与 Small 合并。
      */
     @Deprecated
     long numTinyAllocations();
 
     /**
-     * Return the number of small allocations done via the arena.
+     * Small 档（Subpage）分配次数。
      */
     long numSmallAllocations();
 
     /**
-     * Return the number of normal allocations done via the arena.
+     * Normal 档（整 run）分配次数。
      */
     long numNormalAllocations();
 
     /**
-     * Return the number of huge allocations done via the arena.
+     * Huge 档（超出 Chunk 规格）分配次数。
      */
     long numHugeAllocations();
 
     /**
-     * Return the number of chunks allocations done via the arena, or -1 if not defined.
+     * 池化 Chunk 新建次数，未定义时返回 -1。
      */
     default long numChunkAllocations() {
         return -1;
     }
 
     /**
-     * Return the number of deallocations done via the arena. This includes all sizes.
+     * 经本 Arena 完成的释放总次数（含所有尺寸档）。
      */
     long numDeallocations();
 
     /**
-     * Return the number of tiny deallocations done via the arena.
+     * Tiny 档释放次数。
      *
-     * @deprecated Tiny deallocations have been merged into small deallocations.
+     * @deprecated Tiny 已与 Small 合并。
      */
     @Deprecated
     long numTinyDeallocations();
 
     /**
-     * Return the number of small deallocations done via the arena.
+     * Small 档释放次数。
      */
     long numSmallDeallocations();
 
     /**
-     * Return the number of normal deallocations done via the arena.
+     * Normal 档释放次数。
      */
     long numNormalDeallocations();
 
     /**
-     * Return the number of huge deallocations done via the arena.
+     * Huge 档释放次数。
      */
     long numHugeDeallocations();
 
     /**
-     * Return the number of chunk deallocations done via the arena, or -1 if nor defined.
+     * 池化 Chunk 销毁次数，未定义时返回 -1。
      */
     default long numChunkDeallocations() {
         return -1;
     }
 
     /**
-     * Return the number of currently active allocations.
+     * 当前仍存活的分配总数（分配减释放）。
      */
     long numActiveAllocations();
 
     /**
-     * Return the number of currently active tiny allocations.
+     * 当前存活的 Tiny 分配数。
      *
-     * @deprecated Tiny allocations have been merged into small allocations.
+     * @deprecated Tiny 已与 Small 合并。
      */
     @Deprecated
     long numActiveTinyAllocations();
 
     /**
-     * Return the number of currently active small allocations.
+     * 当前存活的 Small 分配数。
      */
     long numActiveSmallAllocations();
 
     /**
-     * Return the number of currently active normal allocations.
+     * 当前存活的 Normal 分配数。
      */
     long numActiveNormalAllocations();
 
     /**
-     * Return the number of currently active huge allocations.
+     * 当前存活的 Huge 分配数。
      */
     long numActiveHugeAllocations();
 
     /**
-     * Return the number of currently active chunks, or -1 if not defined
+     * 当前存活的池化 Chunk 数，未定义时返回 -1。
      */
     default long numActiveChunks() {
         return -1;
     }
 
     /**
-     * Return the number of active bytes that are currently allocated by the arena.
+     * Arena 当前占用的活跃字节总数。
      */
     long numActiveBytes();
 }

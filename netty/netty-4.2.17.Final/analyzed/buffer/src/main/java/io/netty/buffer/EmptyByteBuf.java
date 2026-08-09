@@ -35,10 +35,14 @@ import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
 
 /**
- * An empty {@link ByteBuf} whose capacity and maximum capacity are all {@code 0}.
+ * 容量与最大容量均为 {@code 0} 的空 {@link ByteBuf} 单例实现。
+ * <p>
+ * 所有写操作抛出 {@link ReadOnlyBufferException}；读操作返回零值或空数组，
+ * 供 {@link Unpooled#EMPTY_BUFFER} 等场景作为零长度占位缓冲区。
  */
 public final class EmptyByteBuf extends ByteBuf {
 
+    /** 空缓冲区的固定 hashCode */
     static final int EMPTY_BYTE_BUF_HASH_CODE = 1;
     private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocateDirect(0);
     private static final long EMPTY_BYTE_BUFFER_ADDRESS;
@@ -50,7 +54,7 @@ public final class EmptyByteBuf extends ByteBuf {
                 emptyByteBufferAddress = PlatformDependent.directBufferAddress(EMPTY_BYTE_BUFFER);
             }
         } catch (Throwable t) {
-            // Ignore
+            // 无法获取 direct 地址时忽略
         }
         EMPTY_BYTE_BUFFER_ADDRESS = emptyByteBufferAddress;
     }
@@ -58,6 +62,7 @@ public final class EmptyByteBuf extends ByteBuf {
     private final ByteBufAllocator alloc;
     private final ByteOrder order;
     private final String str;
+    /** 字节序交换后的缓存实例（BE/LE 各一份） */
     private EmptyByteBuf swapped;
 
     public EmptyByteBuf(ByteBufAllocator alloc) {

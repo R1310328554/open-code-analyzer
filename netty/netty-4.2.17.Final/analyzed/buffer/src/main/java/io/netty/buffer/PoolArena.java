@@ -32,9 +32,16 @@ import java.util.concurrent.locks.ReentrantLock;
 import static io.netty.buffer.PoolChunk.isSubpage;
 import static java.lang.Math.max;
 
+/**
+ * 池化分配器的核心 Arena：管理 Chunk、Subpage 与线程缓存，负责 Small/Normal/Huge 三档分配与释放。
+ * <p>
+ * 堆实现为 {@link HeapArena}，direct 实现为 {@link DirectArena}；
+ * Chunk 按使用率分布在 qInit→q100 多档 {@link PoolChunkList} 链表中。
+ */
 abstract class PoolArena<T> implements PoolArenaMetric {
     private static final boolean HAS_UNSAFE = PlatformDependent.hasUnsafe();
 
+    /** 分配尺寸分类：Small（Subpage）与 Normal（整 run） */
     enum SizeClass {
         Small,
         Normal
@@ -53,9 +60,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
 
     private final List<PoolChunkListMetric> chunkListMetrics;
 
-    // Metrics for allocations and deallocations
+    // 各档分配/释放计数（部分用 LongAdder 避免持锁）
     private long allocationsNormal;
-    // We need to use the LongCounter here as this is not guarded via synchronized block.
+    // 此处无 synchronized 保护，使用 LongAdder 累加
     private final LongAdder allocationsSmall = new LongAdder();
     private final LongAdder allocationsHuge = new LongAdder();
     private final LongAdder activeBytesHuge = new LongAdder();
@@ -69,7 +76,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
     // We need to use the LongCounter here as this is not guarded via synchronized block.
     private final LongAdder deallocationsHuge = new LongAdder();
 
-    // Number of thread caches backed by this arena.
+    // 绑定本 Arena 的 PoolThreadCache 计数
     final AtomicInteger numThreadCaches = new AtomicInteger();
 
     // TODO: Test if adding padding helps under contention
@@ -151,13 +158,12 @@ abstract class PoolArena<T> implements PoolArenaMetric {
                                      final int sizeIdx) {
 
         if (cache.allocateSmall(this, buf, reqCapacity, sizeIdx)) {
-            // was able to allocate out of the cache so move on
+            // 线程缓存命中，无需进入 Arena
             return;
         }
 
         /*
-         * Synchronize on the head. This is needed as {@link PoolChunk#allocateSubpage(int)} and
-         * {@link PoolChunk#free(long)} may modify the doubly linked list as well.
+         * 在 Subpage 池头节点上同步：allocateSubpage/free 也会修改双向链表。
          */
         final PoolSubpage<T> head = smallSubpagePools[sizeIdx];
         final boolean needsNormalAllocation;
@@ -213,7 +219,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
             return;
         }
 
-        // Add a new chunk.
+        // 各档均无可用空间，新建 Chunk 并加入 qInit
         PoolChunk<T> c = newChunk(sizeClass.pageSize, sizeClass.nPSizes, sizeClass.pageShifts, sizeClass.chunkSize);
         PooledByteBufAllocator.onAllocateChunk(c, true);
         boolean success = c.allocate(buf, reqCapacity, sizeIdx, threadCache);
@@ -244,7 +250,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
         } else {
             SizeClass sizeClass = sizeClass(handle);
             if (cache != null && cache.add(this, chunk, nioBuffer, handle, normCapacity, sizeClass)) {
-                // cached so not free it.
+                // 已入线程缓存，暂不归还 Chunk
                 return;
             }
 
@@ -261,7 +267,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
         final boolean destroyChunk;
         lock();
         try {
-            // We only call this if freeChunk is not called because of the PoolThreadCache finalizer as otherwise this
+            // 非 PoolThreadCache finalizer 路径才更新 deallocation 计数（避免 Tomcat 等懒加载 class 问题）
             // may fail due lazy class-loading in for example tomcat.
             if (!finalizer) {
                 switch (sizeClass) {
@@ -277,14 +283,14 @@ abstract class PoolArena<T> implements PoolArenaMetric {
             }
             destroyChunk = !chunk.parent.free(chunk, handle, normCapacity, nioBuffer);
             if (destroyChunk) {
-                // all other destroyChunk calls come from the arena itself being finalized, so don't need to be counted
+                // Arena finalize 触发的 destroy 不计入 pooledChunkDeallocations
                 ++pooledChunkDeallocations;
             }
         } finally {
             unlock();
         }
         if (destroyChunk) {
-            // destroyChunk not need to be called while holding the synchronized lock.
+            // destroyChunk 在锁外调用，缩短持锁时间
             destroyChunk(chunk);
         }
     }
@@ -301,12 +307,12 @@ abstract class PoolArena<T> implements PoolArenaMetric {
         final int oldMaxLength;
         final PoolThreadCache oldCache;
 
-        // We synchronize on the ByteBuf itself to ensure there is no "concurrent" reallocations for the same buffer.
+        // 在 ByteBuf 上同步，防止同一 buffer 并发 reallocate 破坏内部状态
         // We do this to ensure the ByteBuf internal fields that are used to allocate / free are not accessed
         // concurrently. This is important as otherwise we might end up corrupting our internal state of our data
         // structures.
         //
-        // Also note we don't use a Lock here but just synchronized even tho this might seem like a bad choice for Loom.
+        // 使用 synchronized 而非 Lock 以降低每 ByteBuf 开销；阻塞时间通常很短，对 Loom 影响有限
         // This is done to minimize the overhead per ByteBuf. The time this would block another thread should be
         // relative small and so not be a problem for Loom.
         // See https://github.com/netty/netty/issues/13467
@@ -324,7 +330,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
             oldMaxLength = buf.maxLength;
             oldCache = buf.cache;
 
-            // This does not touch buf's reader/writer indices
+            // reallocate 不改变 reader/writer 索引（由 memoryCopy 后 trim 处理）
             allocate(parent.threadCache(), buf, newCapacity);
         }
         int bytesToCopy;
@@ -559,8 +565,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
     }
 
     /**
-     * Return an estimate of the number of bytes that are currently pinned to buffer instances, by the arena. The
-     * pinned memory is not accessible for use by any other allocation, until the buffers using have all been released.
+     * 估算当前被 {@link ByteBuf} 实例 pin 住的字节数。
+     * <p>
+     * 在对应 buffer release 前，这部分内存不可再分配。
      */
     public long numPinnedBytes() {
         long val = activeBytesHuge.sum(); // Huge chunks are exact-sized for the buffers they were allocated to.
@@ -684,7 +691,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
                         chunk.pageSize == pageSize &&
                         chunk.maxPageIdx == maxPageIdx &&
                         chunk.pageShifts == pageShifts;
-                return chunk; // The parameters are always the same, so it's fine to reuse a previously allocated chunk.
+                return chunk; // 参数恒定，可复用最近销毁的 Chunk 对象与 backing array
             }
             return new PoolChunk<byte[]>(
                     this, null, null, newByteArray(chunkSize), pageSize, pageShifts, chunkSize, maxPageIdx);
@@ -698,9 +705,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
         @Override
         protected void destroyChunk(PoolChunk<byte[]> chunk) {
             PooledByteBufAllocator.onDeallocateChunk(chunk, !chunk.unpooled);
-            // Rely on GC. But keep one chunk for reuse.
+            // 堆 Chunk 依赖 GC 回收数组，但保留一个供复用
             if (!chunk.unpooled && lastDestroyedChunk.get() == null) {
-                lastDestroyedChunk.set(chunk); // The check-and-set does not need to be atomic.
+                lastDestroyedChunk.set(chunk); // 非原子 check-and-set 即可
             }
         }
 
@@ -793,7 +800,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
                         PlatformDependent.directBufferAddress(src) + srcOffset,
                         PlatformDependent.directBufferAddress(dstBuf.memory) + dstBuf.offset, length);
             } else {
-                // We must duplicate the NIO buffers because they may be accessed by other Netty buffers.
+                // 无 Unsafe 时须 duplicate NIO buffer，因可能被其他 Netty buffer 共享
                 src = src.duplicate();
                 ByteBuffer dst = dstBuf.internalNioBuffer();
                 src.position(srcOffset).limit(srcOffset + length);

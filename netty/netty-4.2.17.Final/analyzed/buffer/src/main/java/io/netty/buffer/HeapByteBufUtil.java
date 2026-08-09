@@ -18,7 +18,10 @@ package io.netty.buffer;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * Utility class for heap buffers.
+ * 堆 {@link ByteBuf} 的底层读写工具类。
+ * <p>
+ * 在 {@code byte[]} 上按大端/小端读写基本类型；
+ * 若支持 VarHandle 则优先走 {@link VarHandleByteBufferAccess} 以提升性能。
  */
 final class HeapByteBufUtil {
 

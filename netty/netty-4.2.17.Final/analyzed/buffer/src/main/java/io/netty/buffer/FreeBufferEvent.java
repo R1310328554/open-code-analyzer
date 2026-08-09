@@ -23,13 +23,16 @@ import jdk.jfr.Name;
 @Label("Buffer Deallocation")
 @Name(FreeBufferEvent.NAME)
 @Description("Triggered when a buffer is freed from an allocator")
+/**
+ * 缓冲区从分配器释放时触发的 JFR 事件。
+ * <p>
+ * 继承 {@link AbstractBufferEvent} 的容量、direct 地址等通用字段。
+ */
 final class FreeBufferEvent extends AbstractBufferEvent {
     private static final FreeBufferEvent INSTANCE = new FreeBufferEvent();
     static final String NAME = "io.netty.FreeBuffer";
 
-    /**
-     * Statically check if this event is enabled.
-     */
+    /** 静态检查该 JFR 事件是否已启用 */
     public static boolean isEventEnabled() {
         return INSTANCE.isEnabled();
     }

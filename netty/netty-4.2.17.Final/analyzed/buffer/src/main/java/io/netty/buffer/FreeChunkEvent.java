@@ -23,17 +23,21 @@ import jdk.jfr.Name;
 @Label("Chunk Free")
 @Name(FreeChunkEvent.NAME)
 @Description("Triggered when a memory chunk is freed from an allocator")
+/**
+ * 内存 Chunk 从分配器释放时触发的 JFR 事件。
+ * <p>
+ * 记录 Chunk 是否来自池化，便于区分池化回收与一次性分配释放。
+ */
 final class FreeChunkEvent extends AbstractChunkEvent {
     static final String NAME = "io.netty.FreeChunk";
     private static final FreeChunkEvent INSTANCE = new FreeChunkEvent();
 
-    /**
-     * Statically check if this event is enabled.
-     */
+    /** 静态检查该 JFR 事件是否已启用 */
     public static boolean isEventEnabled() {
         return INSTANCE.isEnabled();
     }
 
+    /** Chunk 是否来自池化（否则为单 buffer 一次性分配） */
     @Description("Was this chunk pooled, or was it a one-off allocation for a single buffer?")
     public boolean pooled;
 }
