@@ -48,7 +48,10 @@ import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 
 /**
- * https://book.tidb.io/session1/chapter3/tidb-kv-to-relation.html
+ * Broker 配置 RocksDB 存储层：以 KV 形式持久化 Topic、订阅组等元数据，
+ * 并负责 WAL 刷盘与同步。键值布局参考 TiDB KV 映射模型。
+ *
+ * @see <a href="https://book.tidb.io/session1/chapter3/tidb-kv-to-relation.html">Table, Key Value Mapping</a>
  */
 public class ConfigStorage extends AbstractRocksDBStorage {
 
@@ -57,9 +60,7 @@ public class ConfigStorage extends AbstractRocksDBStorage {
 
     private final ScheduledExecutorService scheduledExecutorService;
 
-    /**
-     * Number of write ops since previous flush.
-     */
+    /** 自上次 WAL 刷盘以来累计的写操作次数。 */
     private final AtomicInteger writeOpsCounter;
 
     private final AtomicLong estimateWalFileSize = new AtomicLong(0L);
@@ -68,6 +69,7 @@ public class ConfigStorage extends AbstractRocksDBStorage {
 
     private final FlushSyncService flushSyncService;
 
+    /** 在消息存储根目录下创建 {@code config/rdb} 子库并启动 WAL 刷盘后台线程。 */
     public ConfigStorage(MessageStoreConfig messageStoreConfig) {
         super(messageStoreConfig.getStorePathRootDir() + File.separator + "config" + File.separator + "rdb");
         this.messageStoreConfig = messageStoreConfig;
@@ -81,11 +83,13 @@ public class ConfigStorage extends AbstractRocksDBStorage {
         this.flushSyncService.setDaemon(true);
     }
 
+    /** 周期性输出 Netty 池化内存分配器指标。 */
     private void statNettyMemory() {
         PooledByteBufAllocatorMetric metric = AbstractRocksDBStorage.POOLED_ALLOCATOR.metric();
         LOGGER.info("Netty Memory Usage: {}", metric);
     }
 
+    /** 启动 RocksDB 并调度统计任务与 {@link FlushSyncService}。 */
     @Override
     public synchronized boolean start() {
         boolean started = super.start();
@@ -99,6 +103,7 @@ public class ConfigStorage extends AbstractRocksDBStorage {
         return started;
     }
 
+    /** 校验 Unsafe 可用性、创建目录并打开默认列族。 */
     @Override
     protected boolean postLoad() {
         if (!PlatformDependent.hasUnsafe()) {
@@ -125,17 +130,20 @@ public class ConfigStorage extends AbstractRocksDBStorage {
         return true;
     }
 
+    /** 关闭定时任务与 WAL 刷盘服务。 */
     @Override
     protected void preShutdown() {
         scheduledExecutorService.shutdown();
         flushSyncService.shutdown();
     }
 
+    /** 使用 {@link ConfigHelper} 初始化配置库专用 DB 选项。 */
     protected void initOptions() {
         this.options = ConfigHelper.createConfigDBOptions();
         super.initOptions();
     }
 
+    /** 配置 WAL 写入选项：保留 WAL、不同步 fdatasync 以避免每次写入开销。 */
     @Override
     protected void initAbleWalWriteOptions() {
         this.ableWalWriteOptions = new WriteOptions();
@@ -150,22 +158,26 @@ public class ConfigStorage extends AbstractRocksDBStorage {
         this.ableWalWriteOptions.setNoSlowdown(false);
     }
 
+    /** 按 ByteBuffer 键读取默认列族中的配置值。 */
     public byte[] get(ByteBuffer key) throws RocksDBException {
         byte[] keyBytes = new byte[key.remaining()];
         key.get(keyBytes);
         return super.get(getDefaultCFHandle(), totalOrderReadOptions, keyBytes);
     }
 
+    /** 批量写入并累计写操作计数与 WAL 估算大小。 */
     public void write(WriteBatch writeBatch) throws RocksDBException {
         db.write(ableWalWriteOptions, writeBatch);
         accountWriteOps(writeBatch.getDataSize());
     }
 
+    /** 累加写次数与 WAL 数据量估算。 */
     private void accountWriteOps(long dataSize) {
         writeOpsCounter.incrementAndGet();
         estimateWalFileSize.addAndGet(dataSize);
     }
 
+    /** 在 [beginKey, endKey) 范围内全序扫描配置键。 */
     public RocksIterator iterate(ByteBuffer beginKey, ByteBuffer endKey) {
         try (ReadOptions readOptions = new ReadOptions()) {
             readOptions.setTotalOrderSeek(true);
@@ -186,11 +198,10 @@ public class ConfigStorage extends AbstractRocksDBStorage {
     }
 
     /**
-     * RocksDB writes contain 3 stages: application memory buffer --> OS Page Cache --> Disk.
-     * Given that we are having DBOptions::manual_wal_flush, we need to manually call DB::FlushWAL and DB::SyncWAL
-     * Note: DB::FlushWAL(true) will internally call DB::SyncWAL.
+     * WAL 刷盘同步后台服务：RocksDB 写入经应用缓冲、页缓存到磁盘三阶段，
+     * 在 {@code manual_wal_flush} 模式下需手动调用 {@code FlushWAL}/{@code SyncWAL}。
      * <p>
-     * See <a href="https://rocksdb.org/blog/2017/08/25/flushwal.html">Flush And Sync WAL</a>
+     * 参见 <a href="https://rocksdb.org/blog/2017/08/25/flushwal.html">Flush And Sync WAL</a>
      */
     class FlushSyncService extends ServiceThread {
 
@@ -202,11 +213,13 @@ public class ConfigStorage extends AbstractRocksDBStorage {
 
         private final FlushOptions flushOptions = new FlushOptions();
 
+        /** 返回服务线程名称。 */
         @Override
         public String getServiceName() {
             return "FlushSyncService";
         }
 
+        /** 周期性刷 WAL，退出前执行最终同步。 */
         @Override
         public void run() {
             flushOptions.setAllowWriteStall(false);
@@ -230,6 +243,7 @@ public class ConfigStorage extends AbstractRocksDBStorage {
             log.info("{} service end", this.getServiceName());
         }
 
+        /** 按写次数、时间间隔或 WAL 滚动阈值触发刷盘与同步。 */
         private void flushAndSyncWAL(boolean onExit) throws RocksDBException {
             int writeOps = writeOpsCounter.get();
             if (0 == writeOps) {

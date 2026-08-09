@@ -24,16 +24,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Evaluation context from message.
+ * 消息属性求值上下文：将用户属性 Map 暴露给 {@link org.apache.rocketmq.filter.expression.Expression} 引擎。
  */
 public class MessageEvaluationContext implements EvaluationContext {
 
     private Map<String, String> properties;
 
+    /** 使用消息用户属性构造上下文。 */
     public MessageEvaluationContext(Map<String, String> properties) {
         this.properties = properties;
     }
 
+    /** 按属性名读取值，无属性表时返回 null。 */
     @Override
     public Object get(final String name) {
         if (this.properties == null) {
@@ -42,6 +44,7 @@ public class MessageEvaluationContext implements EvaluationContext {
         return this.properties.get(name);
     }
 
+    /** 返回属性键值副本供表达式遍历。 */
     @Override
     public Map<String, Object> keyValues() {
         if (properties == null) {

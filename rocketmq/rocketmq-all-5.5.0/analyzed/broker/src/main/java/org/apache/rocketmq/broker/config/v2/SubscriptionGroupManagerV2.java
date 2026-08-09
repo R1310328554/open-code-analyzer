@@ -29,20 +29,27 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
+/**
+ * 基于 RocksDB {@link ConfigStorage} 的订阅组配置管理器：
+ * 从 KV 存储加载/持久化 {@link SubscriptionGroupConfig}。
+ */
 public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
 
     private final ConfigStorage configStorage;
 
+    /** 绑定 broker 控制器与配置存储实例。 */
     public SubscriptionGroupManagerV2(BrokerController brokerController, ConfigStorage configStorage) {
         super(brokerController);
         this.configStorage = configStorage;
     }
 
+    /** 加载数据版本与全部订阅组配置。 */
     @Override
     public boolean load() {
         return loadDataVersion() && loadSubscriptions();
     }
 
+    /** 从 {@link TableId#SUBSCRIPTION_GROUP} 表读取并应用数据版本。 */
     public boolean loadDataVersion() {
         try {
             ConfigHelper.loadDataVersion(configStorage, TableId.SUBSCRIPTION_GROUP)
@@ -56,6 +63,7 @@ public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
         return true;
     }
 
+    /** 扫描订阅组表前缀范围内的全部 KV 并反序列化。 */
     private boolean loadSubscriptions() {
         int keyLen = 1 /* table prefix */ + 2 /* table-id */ + 1 /* record-type-prefix */;
         ByteBuf beginKey = AbstractRocksDBStorage.POOLED_ALLOCATOR.buffer(keyLen);
@@ -83,6 +91,7 @@ public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
         return true;
     }
 
+    /** 解析 RocksDB 键值对为 {@link SubscriptionGroupConfig}（当前仅支持 JSON）。 */
     private SubscriptionGroupConfig parseSubscription(byte[] key, byte[] value) {
         ByteBuf keyBuf = Unpooled.wrappedBuffer(key);
         ByteBuf valueBuf = Unpooled.wrappedBuffer(value);
@@ -108,6 +117,7 @@ public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
         return null;
     }
 
+    /** 强制刷 WAL 到磁盘（核心元数据变更后调用）。 */
     @Override
     public synchronized void persist() {
         try {
@@ -117,6 +127,7 @@ public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
         }
     }
 
+    /** 查询订阅组；LMQ 组名返回默认配置而不查库。 */
     @Override
     public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {
         if (MixAll.isLmq(group)) {
@@ -127,6 +138,7 @@ public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
         return super.findSubscriptionGroupConfig(group);
     }
 
+    /** 更新内存并写入 RocksDB，同时戳记数据版本。 */
     @Override
     public void updateSubscriptionGroupConfig(final SubscriptionGroupConfig config) {
         if (config == null || MixAll.isLmq(config.getGroupName())) {
@@ -150,6 +162,7 @@ public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
         }
     }
 
+    /** LMQ 组名恒视为存在。 */
     @Override
     public boolean containsSubscriptionGroup(String group) {
         if (MixAll.isLmq(group)) {
@@ -159,6 +172,7 @@ public class SubscriptionGroupManagerV2 extends SubscriptionGroupManager {
         }
     }
 
+    /** 从 RocksDB 删除键并更新内存缓存。 */
     @Override
     protected SubscriptionGroupConfig removeSubscriptionGroupConfig(String groupName) {
         ByteBuf keyBuf = ConfigHelper.keyBufOf(TableId.SUBSCRIPTION_GROUP, groupName);

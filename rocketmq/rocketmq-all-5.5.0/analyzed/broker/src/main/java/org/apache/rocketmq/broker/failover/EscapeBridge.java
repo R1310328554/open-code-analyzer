@@ -54,6 +54,10 @@ import org.apache.rocketmq.store.PutMessageResult;
 import org.apache.rocketmq.store.PutMessageStatus;
 import org.apache.rocketmq.tieredstore.TieredMessageStore;
 
+/**
+ * 故障逃逸桥：主不可用时将写/读请求转发至远程 broker，
+ * 支持从节点代主（slave acting master）与远程逃逸模式。
+ */
 public class EscapeBridge {
     protected static final Logger LOG = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long SEND_TIMEOUT = 3000L;
@@ -65,12 +69,14 @@ public class EscapeBridge {
 
     private ExecutorService defaultAsyncSenderExecutor;
 
+    /** 初始化内部生产者/消费者组名前缀。 */
     public EscapeBridge(BrokerController brokerController) {
         this.brokerController = brokerController;
         this.innerProducerGroupName = "InnerProducerGroup_" + brokerController.getBrokerConfig().getBrokerName() + "_" + brokerController.getBrokerConfig().getBrokerId();
         this.innerConsumerGroupName = "InnerConsumerGroup_" + brokerController.getBrokerConfig().getBrokerName() + "_" + brokerController.getBrokerConfig().getBrokerId();
     }
 
+    /** 启用远程逃逸时创建异步发送线程池。 */
     public void start() throws Exception {
         if (brokerController.getBrokerConfig().isEnableSlaveActingMaster() && brokerController.getBrokerConfig().isEnableRemoteEscape()) {
             final BlockingQueue<Runnable> asyncSenderThreadPoolQueue = new LinkedBlockingQueue<>(50000);
@@ -86,12 +92,14 @@ public class EscapeBridge {
         }
     }
 
+    /** 关闭异步发送线程池。 */
     public void shutdown() {
         if (null != this.defaultAsyncSenderExecutor) {
             this.defaultAsyncSenderExecutor.shutdown();
         }
     }
 
+    /** 优先写本地主；否则远程逃逸发送并转换结果。 */
     public PutMessageResult putMessage(MessageExtBrokerInner messageExt) {
         BrokerController masterBroker = this.brokerController.peekMasterBroker();
         if (masterBroker != null) {
@@ -114,6 +122,7 @@ public class EscapeBridge {
         }
     }
 
+    /** 按路由选择目标 broker 并同步发送消息（含半事务消息转换）。 */
     public SendResult putMessageToRemoteBroker(MessageExtBrokerInner messageExt, String brokerNameToSend) {
         if (this.brokerController.getBrokerConfig().getBrokerName().equals(brokerNameToSend)) { // not remote broker
             return null;
@@ -175,6 +184,7 @@ public class EscapeBridge {
         return null;
     }
 
+    /** 异步写入：本地主可用则本地写，否则异步远程发送。 */
     public CompletableFuture<PutMessageResult> asyncPutMessage(MessageExtBrokerInner messageExt) {
         BrokerController masterBroker = this.brokerController.peekMasterBroker();
         if (masterBroker != null) {
@@ -211,6 +221,7 @@ public class EscapeBridge {
         }
     }
 
+    /** 从消息属性读取生产者组，缺省使用内部组名。 */
     private String getProducerGroup(MessageExtBrokerInner messageExt) {
         if (null == messageExt) {
             return this.innerProducerGroupName;
@@ -222,6 +233,7 @@ public class EscapeBridge {
         return producerGroup;
     }
 
+    /** 写入指定队列：本地主或阻塞等待远程异步结果。 */
     public PutMessageResult putMessageToSpecificQueue(MessageExtBrokerInner messageExt) {
         BrokerController masterBroker = this.brokerController.peekMasterBroker();
         if (masterBroker != null) {
@@ -235,6 +247,7 @@ public class EscapeBridge {
         }
     }
 
+    /** 异步写入指定队列。 */
     public CompletableFuture<PutMessageResult> asyncPutMessageToSpecificQueue(MessageExtBrokerInner messageExt) {
         BrokerController masterBroker = this.brokerController.peekMasterBroker();
         if (masterBroker != null) {
@@ -243,6 +256,7 @@ public class EscapeBridge {
         return asyncRemotePutMessageToSpecificQueue(messageExt);
     }
 
+    /** 按 Topic+StoreHost 哈希选队列并异步远程发送。 */
     public CompletableFuture<PutMessageResult> asyncRemotePutMessageToSpecificQueue(MessageExtBrokerInner messageExt) {
         if (this.brokerController.getBrokerConfig().isEnableSlaveActingMaster()
             && this.brokerController.getBrokerConfig().isEnableRemoteEscape()) {
@@ -278,6 +292,7 @@ public class EscapeBridge {
         }
     }
 
+    /** 将客户端 {@link SendResult} 映射为存储层 {@link PutMessageResult}。 */
     private PutMessageResult transformSendResult2PutResult(SendResult sendResult) {
         if (sendResult == null) {
             return new PutMessageResult(PutMessageStatus.PUT_TO_REMOTE_BROKER_FAIL, null, true);
@@ -296,12 +311,14 @@ public class EscapeBridge {
         }
     }
 
+    /** 同步拉取单条消息（本地或远程）。 */
     public Triple<MessageExt, String, Boolean> getMessage(String topic, long offset, int queueId, String brokerName,
         boolean deCompressBody) {
         return getMessageAsync(topic, offset, queueId, brokerName, deCompressBody).join();
     }
 
-    // Triple<MessageExt, info, needRetry>, check info and retry if and only if MessageExt is null
+    // Triple<MessageExt, 说明, needRetry>：仅当 MessageExt 为 null 时根据 needRetry 决定是否重试
+    /** 异步拉取：优先本地 {@link MessageStore}，否则远程 Pull。 */
     public CompletableFuture<Triple<MessageExt, String, Boolean>> getMessageAsync(String topic, long offset,
         int queueId, String brokerName, boolean deCompressBody) {
         MessageStore messageStore = brokerController.getMessageStoreByBrokerName(brokerName);
@@ -328,6 +345,7 @@ public class EscapeBridge {
         }
     }
 
+    /** 解码 {@link GetMessageResult} 缓冲区列表为 {@link MessageExt} 列表。 */
     protected List<MessageExt> decodeMsgList(GetMessageResult getMessageResult, boolean deCompressBody) {
         List<MessageExt> foundList = new ArrayList<>();
         try {
@@ -356,12 +374,14 @@ public class EscapeBridge {
         return foundList;
     }
 
+    /** 同步从远程 broker Pull 单条消息。 */
     protected Triple<MessageExt, String, Boolean> getMessageFromRemote(String topic, long offset, int queueId,
         String brokerName) {
         return getMessageFromRemoteAsync(topic, offset, queueId, brokerName).join();
     }
 
     // Triple<MessageExt, info, needRetry>, check info and retry if and only if MessageExt is null
+    /** 异步从远程 broker Pull；地址缺失时刷新路由后重试。 */
     protected CompletableFuture<Triple<MessageExt, String, Boolean>> getMessageFromRemoteAsync(String topic,
         long offset, int queueId, String brokerName) {
         try {

@@ -16,25 +16,35 @@
  */
 package org.apache.rocketmq.broker.config.v2;
 
+/**
+ * 配置值序列化格式：写入 RocksDB 时在值首部携带的类型标识。
+ */
 public enum SerializationType {
+    /** 未指定格式。 */
     UNSPECIFIED((byte) 0),
 
+    /** JSON 文本序列化。 */
     JSON((byte) 1),
 
+    /** Protocol Buffers 二进制序列化。 */
     PROTOBUF((byte) 2),
 
+    /** FlatBuffers 二进制序列化。 */
     FLAT_BUFFERS((byte) 3);
 
     private final byte value;
 
+    /** 绑定单字节编码值。 */
     SerializationType(byte value) {
         this.value = value;
     }
 
+    /** 返回序列化类型的字节值。 */
     public byte getValue() {
         return value;
     }
 
+    /** 按字节值解析序列化类型，未知时返回 {@link #UNSPECIFIED}。 */
     public static SerializationType valueOf(byte value) {
         for (SerializationType type : SerializationType.values()) {
             if (type.getValue() == value) {

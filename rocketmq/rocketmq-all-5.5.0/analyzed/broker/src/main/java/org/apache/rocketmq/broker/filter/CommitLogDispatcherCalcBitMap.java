@@ -30,7 +30,8 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * Calculate bit map of filter.
+ * CommitLog 分发器：在消息落盘时为各消费者订阅表达式预计算 Bloom 位图，
+ * 供 Pull 阶段快速过滤。
  */
 public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
 
@@ -39,11 +40,13 @@ public class CommitLogDispatcherCalcBitMap implements CommitLogDispatcher {
     protected final BrokerConfig brokerConfig;
     protected final ConsumerFilterManager consumerFilterManager;
 
+    /** 注入 broker 配置与消费者过滤器管理器。 */
     public CommitLogDispatcherCalcBitMap(BrokerConfig brokerConfig, ConsumerFilterManager consumerFilterManager) {
         this.brokerConfig = brokerConfig;
         this.consumerFilterManager = consumerFilterManager;
     }
 
+    /** 遍历 Topic 下全部 {@link ConsumerFilterData}，求值表达式并写入位图。 */
     @Override
     public void dispatch(DispatchRequest request) {
         if (!this.brokerConfig.isEnableCalcFilterBitMap()) {

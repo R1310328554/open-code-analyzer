@@ -35,8 +35,9 @@ import org.apache.rocketmq.remoting.netty.RequestTask;
 import org.apache.rocketmq.remoting.protocol.RemotingSysResponseCode;
 
 /**
- * BrokerFastFailure will cover {@link BrokerController#getSendThreadPoolQueue()} and {@link
- * BrokerController#getPullThreadPoolQueue()}
+ * Broker 快速失败：监控各 Remoting 线程池队列，在 OS 页缓存繁忙或
+ * 排队超时时主动拒绝请求，覆盖 {@link BrokerController#getSendThreadPoolQueue()}、
+ * {@link BrokerController#getPullThreadPoolQueue()} 等队列。
  */
 public class BrokerFastFailure {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
@@ -47,6 +48,7 @@ public class BrokerFastFailure {
 
     private final List<Pair<BlockingQueue<Runnable>, Supplier<Long>>> cleanExpiredRequestQueueList = new ArrayList<>();
 
+    /** 注册待清理队列并创建定时调度器。 */
     public BrokerFastFailure(final BrokerController brokerController) {
         this.brokerController = brokerController;
         initCleanExpiredRequestQueueList();
@@ -55,6 +57,7 @@ public class BrokerFastFailure {
                 brokerController == null ? null : brokerController.getBrokerConfig()));
     }
 
+    /** 初始化 Send/Pull/LitePull/Heartbeat/事务/Ack/Admin 等队列及超时阈值。 */
     private void initCleanExpiredRequestQueueList() {
         cleanExpiredRequestQueueList.add(new Pair<>(this.brokerController.getSendThreadPoolQueue(), () -> this.brokerController.getBrokerConfig().getWaitTimeMillsInSendQueue()));
         cleanExpiredRequestQueueList.add(new Pair<>(this.brokerController.getPullThreadPoolQueue(), () -> this.brokerController.getBrokerConfig().getWaitTimeMillsInPullQueue()));
@@ -65,6 +68,7 @@ public class BrokerFastFailure {
         cleanExpiredRequestQueueList.add(new Pair<>(this.brokerController.getAdminBrokerThreadPoolQueue(), () -> this.brokerController.getBrokerConfig().getWaitTimeMillsInAdminBrokerQueue()));
     }
 
+    /** 从 {@link FutureTaskExt} 包装中提取 {@link RequestTask}。 */
     public static RequestTask castRunnable(final Runnable runnable) {
         try {
             if (runnable instanceof FutureTaskExt) {
@@ -78,6 +82,7 @@ public class BrokerFastFailure {
         return null;
     }
 
+    /** 每 10ms 检查是否启用快速失败并清理过期请求。 */
     public void start() {
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -89,6 +94,7 @@ public class BrokerFastFailure {
         }, 1000, 10, TimeUnit.MILLISECONDS);
     }
 
+    /** 页缓存繁忙时优先丢弃 Send 队列任务，再逐队列清理超时任务。 */
     private void cleanExpiredRequest() {
 
         while (this.brokerController.getMessageStore().isOSPageCacheBusy()) {
@@ -119,6 +125,7 @@ public class BrokerFastFailure {
         }
     }
 
+    /** 从队首移除等待超过阈值的 {@link RequestTask} 并返回 SYSTEM_BUSY。 */
     void cleanExpiredRequestInQueue(final BlockingQueue<Runnable> blockingQueue, final long maxWaitTimeMillsInQueue) {
         while (true) {
             try {
@@ -153,11 +160,13 @@ public class BrokerFastFailure {
         }
     }
 
+    /** 动态注册额外待清理队列及超时供应函数。 */
     public synchronized void addCleanExpiredRequestQueue(BlockingQueue<Runnable> cleanExpiredRequestQueue,
         Supplier<Long> maxWaitTimeMillsInQueueSupplier) {
         cleanExpiredRequestQueueList.add(new Pair<>(cleanExpiredRequestQueue, maxWaitTimeMillsInQueueSupplier));
     }
 
+    /** 关闭定时调度器。 */
     public void shutdown() {
         this.scheduledExecutorService.shutdown();
     }

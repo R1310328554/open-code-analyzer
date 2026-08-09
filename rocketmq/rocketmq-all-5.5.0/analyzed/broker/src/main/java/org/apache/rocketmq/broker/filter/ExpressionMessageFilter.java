@@ -30,6 +30,10 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.store.ConsumeQueueExt;
 import org.apache.rocketmq.store.MessageFilter;
 
+/**
+ * 基于 SQL92/属性表达式的消息过滤器：ConsumeQueue 阶段用 Bloom 位图，
+ * CommitLog 阶段直接对消息属性求值。
+ */
 public class ExpressionMessageFilter implements MessageFilter {
 
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.FILTER_LOGGER_NAME);
@@ -39,6 +43,7 @@ public class ExpressionMessageFilter implements MessageFilter {
     protected final ConsumerFilterManager consumerFilterManager;
     protected final boolean bloomDataValid;
 
+    /** 绑定订阅数据、消费者过滤元数据与管理器，并校验 Bloom 数据有效性。 */
     public ExpressionMessageFilter(SubscriptionData subscriptionData, ConsumerFilterData consumerFilterData,
         ConsumerFilterManager consumerFilterManager) {
         this.subscriptionData = subscriptionData;
@@ -56,6 +61,7 @@ public class ExpressionMessageFilter implements MessageFilter {
         }
     }
 
+    /** TAG 模式按 tagsCode 匹配；表达式模式用预计算位图做 Bloom 命中判断。 */
     @Override
     public boolean isMatchedByConsumeQueue(Long tagsCode, ConsumeQueueExt.CqExtUnit cqExtUnit) {
         if (null == subscriptionData) {
@@ -113,6 +119,7 @@ public class ExpressionMessageFilter implements MessageFilter {
         return true;
     }
 
+    /** 解码消息属性并对编译表达式求值，非布尔或 null 视为不匹配。 */
     @Override
     public boolean isMatchedByCommitLog(ByteBuffer msgBuffer, Map<String, String> properties) {
         if (subscriptionData == null) {

@@ -33,6 +33,9 @@ import org.apache.rocketmq.store.DefaultMessageStore;
 import org.apache.rocketmq.store.config.BrokerRole;
 import org.apache.rocketmq.store.dledger.DLedgerCommitLog;
 
+/**
+ * DLedger 角色变更处理器：在选举结果变化时将 broker 切换为主/从并协调同步任务。
+ */
 public class DLedgerRoleChangeHandler implements DLedgerLeaderElector.RoleChangeHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
@@ -44,6 +47,7 @@ public class DLedgerRoleChangeHandler implements DLedgerLeaderElector.RoleChange
     private Future<?> slaveSyncFuture;
     private long lastSyncTimeMs = System.currentTimeMillis();
 
+    /** 绑定 broker 与消息存储，并创建单线程执行器处理角色切换。 */
     public DLedgerRoleChangeHandler(BrokerController brokerController, DefaultMessageStore messageStore) {
         this.brokerController = brokerController;
         this.messageStore = messageStore;
@@ -53,6 +57,7 @@ public class DLedgerRoleChangeHandler implements DLedgerLeaderElector.RoleChange
             new ThreadFactoryImpl("DLegerRoleChangeHandler_", brokerController.getBrokerIdentity()));
     }
 
+    /** 异步处理 CANDIDATE/FOLLOWER/LEADER 角色变更逻辑。 */
     @Override
     public void handle(long term, MemberState.Role role) {
         Runnable runnable = new Runnable() {
@@ -103,6 +108,7 @@ public class DLedgerRoleChangeHandler implements DLedgerLeaderElector.RoleChange
         executorService.submit(runnable);
     }
 
+    /** 从节点时启动定时全量/Checkpoint 同步；主节点时取消同步任务。 */
     private void handleSlaveSynchronize(BrokerRole role) {
         if (role == BrokerRole.SLAVE) {
             if (null != slaveSyncFuture) {
@@ -133,6 +139,7 @@ public class DLedgerRoleChangeHandler implements DLedgerLeaderElector.RoleChange
         }
     }
 
+    /** 切换为从 broker：更新 ID/角色、关闭特殊服务并重新注册。 */
     public void changeToSlave(int brokerId) {
         LOGGER.info("Begin to change to slave brokerName={} brokerId={}", this.brokerController.getBrokerConfig().getBrokerName(), brokerId);
 
@@ -153,6 +160,7 @@ public class DLedgerRoleChangeHandler implements DLedgerLeaderElector.RoleChange
         LOGGER.info("Finish to change to slave brokerName={} brokerId={}", this.brokerController.getBrokerConfig().getBrokerName(), brokerId);
     }
 
+    /** 切换为主 broker：恢复服务、设置 brokerId=0 并重新注册。 */
     public void changeToMaster(BrokerRole role) {
         if (role == BrokerRole.SLAVE) {
             return;
@@ -176,11 +184,13 @@ public class DLedgerRoleChangeHandler implements DLedgerLeaderElector.RoleChange
         LOGGER.info("Finish to change to master brokerName={}", this.brokerController.getBrokerConfig().getBrokerName());
     }
 
+    /** 启动钩子（当前无额外逻辑）。 */
     @Override
     public void startup() {
 
     }
 
+    /** 关闭角色变更执行器。 */
     @Override
     public void shutdown() {
         executorService.shutdown();

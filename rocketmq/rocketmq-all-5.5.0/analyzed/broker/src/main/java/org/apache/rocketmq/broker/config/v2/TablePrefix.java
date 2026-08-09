@@ -16,16 +16,23 @@
  */
 package org.apache.rocketmq.broker.config.v2;
 
+/**
+ * 配置键表级前缀：标识该键属于逻辑表命名空间（区别于其他 KV 用途）。
+ */
 public enum TablePrefix {
+    /** 未指定前缀。 */
     UNSPECIFIED((byte) 0),
+    /** 标准配置表前缀。 */
     TABLE((byte) 1);
 
     private final byte value;
 
+    /** 绑定单字节前缀值。 */
     TablePrefix(byte value) {
         this.value = value;
     }
 
+    /** 返回表前缀的字节值。 */
     public byte getValue() {
         return value;
     }

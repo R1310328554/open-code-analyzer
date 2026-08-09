@@ -31,22 +31,27 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
 /**
- * Key layout: [table-prefix, 1 byte][table-id, 2 bytes][record-type-prefix, 1 byte][topic-len, 2 bytes][topic-bytes]
- * Value layout: [serialization-type, 1 byte][topic-config-bytes]
+ * 基于 RocksDB {@link ConfigStorage} 的 Topic 配置管理器。
+ * <p>
+ * 键布局：[table-prefix, 1 byte][table-id, 2 bytes][record-type-prefix, 1 byte][topic-len, 2 bytes][topic-bytes]
+ * 值布局：[serialization-type, 1 byte][topic-config-bytes]
  */
 public class TopicConfigManagerV2 extends TopicConfigManager {
     private final ConfigStorage configStorage;
 
+    /** 绑定 broker 控制器与配置存储。 */
     public TopicConfigManagerV2(BrokerController brokerController, ConfigStorage configStorage) {
         super(brokerController);
         this.configStorage = configStorage;
     }
 
+    /** 加载数据版本与全部 Topic 配置。 */
     @Override
     public boolean load() {
         return loadDataVersion() && loadTopicConfig();
     }
 
+    /** 从 {@link TableId#TOPIC} 表读取并应用数据版本。 */
     public boolean loadDataVersion() {
         try {
             ConfigHelper.loadDataVersion(configStorage, TableId.TOPIC)
@@ -58,6 +63,7 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
         return true;
     }
 
+    /** 扫描 Topic 表前缀范围内全部 KV 并加载到内存。 */
     private boolean loadTopicConfig() {
         int keyLen = 1 /* table-prefix */ + 2 /* table-id */ + 1 /* record-type-prefix */;
         ByteBuf beginKey = AbstractRocksDBStorage.POOLED_ALLOCATOR.buffer(keyLen);
@@ -88,12 +94,14 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
     }
 
     /**
-     * Key layout: [table-prefix, 1 byte][table-id, 2 bytes][record-type-prefix, 1 byte][topic-len, 2 bytes][topic-bytes]
-     * Value layout: [serialization-type, 1 byte][topic-config-bytes]
+     * 将 RocksDB 键值对解码为 {@link TopicConfig}。
+     * <p>
+     * 键布局：[table-prefix, 1 byte][table-id, 2 bytes][record-type-prefix, 1 byte][topic-len, 2 bytes][topic-bytes]
+     * 值布局：[serialization-type, 1 byte][topic-config-bytes]
      *
-     * @param key   Topic config key representation in RocksDB
-     * @param value Topic config value representation in RocksDB
-     * @return decoded topic config
+     * @param key   RocksDB 中的 Topic 配置键
+     * @param value RocksDB 中的 Topic 配置值
+     * @return 解码后的 Topic 配置，格式不支持时返回 null
      */
     private TopicConfig parseTopicConfig(byte[] key, byte[] value) {
         ByteBuf keyBuf = Unpooled.wrappedBuffer(key);
@@ -122,6 +130,7 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
         return null;
     }
 
+    /** 强制刷 WAL 到磁盘。 */
     @Override
     public synchronized void persist() {
         try {
@@ -131,6 +140,7 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
         }
     }
 
+    /** 查询 Topic 配置；LMQ Topic 返回简化默认配置。 */
     @Override
     public TopicConfig selectTopicConfig(final String topic) {
         if (MixAll.isLmq(topic)) {
@@ -139,6 +149,7 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
         return super.selectTopicConfig(topic);
     }
 
+    /** 更新内存并写入 RocksDB，同时戳记数据版本。 */
     @Override
     public void updateTopicConfig(final TopicConfig topicConfig) {
         if (topicConfig == null || MixAll.isLmq(topicConfig.getTopicName())) {
@@ -163,6 +174,7 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
         }
     }
 
+    /** 从 RocksDB 删除 Topic 键并更新内存。 */
     @Override
     protected TopicConfig removeTopicConfig(String topicName) {
         ByteBuf keyBuf = ConfigHelper.keyBufOf(TableId.TOPIC, topicName);
@@ -179,6 +191,7 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
         return super.removeTopicConfig(topicName);
     }
 
+    /** LMQ Topic 恒视为存在。 */
     @Override
     public boolean containsTopic(String topic) {
         if (MixAll.isLmq(topic)) {
@@ -187,6 +200,7 @@ public class TopicConfigManagerV2 extends TopicConfigManager {
         return super.containsTopic(topic);
     }
 
+    /** 为 LMQ Topic 构造最小读写权限配置。 */
     private TopicConfig simpleLmqTopicConfig(String topic) {
         return new TopicConfig(topic, 1, 1, PermName.PERM_READ | PermName.PERM_WRITE);
     }

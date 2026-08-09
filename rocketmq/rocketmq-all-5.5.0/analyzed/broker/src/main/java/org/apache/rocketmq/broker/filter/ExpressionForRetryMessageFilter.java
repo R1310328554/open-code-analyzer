@@ -27,15 +27,17 @@ import org.apache.rocketmq.common.message.MessageDecoder;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
 /**
- * Support filter to retry topic.
- * <br>It will decode properties first in order to get real topic.
+ * 重试 Topic 专用表达式过滤器：先解码消息属性以获取原始 Topic，
+ * 再使用对应消费者组的 {@link ConsumerFilterData} 求值。
  */
 public class ExpressionForRetryMessageFilter extends ExpressionMessageFilter {
+    /** 构造重试消息过滤器，继承 {@link ExpressionMessageFilter} 行为。 */
     public ExpressionForRetryMessageFilter(SubscriptionData subscriptionData, ConsumerFilterData consumerFilterData,
         ConsumerFilterManager consumerFilterManager) {
         super(subscriptionData, consumerFilterData, consumerFilterManager);
     }
 
+    /** 对重试 Topic 解析真实 Topic 与消费组后再执行表达式匹配。 */
     @Override
     public boolean isMatchedByCommitLog(ByteBuffer msgBuffer, Map<String, String> properties) {
         if (subscriptionData == null) {

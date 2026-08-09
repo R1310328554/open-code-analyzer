@@ -16,17 +16,25 @@
  */
 package org.apache.rocketmq.broker.config.v2;
 
+/**
+ * 配置记录类型前缀：标识 RocksDB 键值对中的记录语义（版本元数据或业务数据）。
+ */
 public enum RecordPrefix {
+    /** 未指定类型。 */
     UNSPECIFIED((byte)0),
+    /** 数据版本记录。 */
     DATA_VERSION((byte)1),
+    /** 业务配置数据记录。 */
     DATA((byte)2);
 
     private final byte value;
 
+    /** 绑定单字节编码值。 */
     RecordPrefix(byte value) {
         this.value = value;
     }
 
+    /** 返回记录前缀的字节值。 */
     public byte getValue() {
         return value;
     }
