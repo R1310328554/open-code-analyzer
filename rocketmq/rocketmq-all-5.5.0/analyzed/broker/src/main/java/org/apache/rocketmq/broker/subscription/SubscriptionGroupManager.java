@@ -46,12 +46,18 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
 @SuppressWarnings("Duplicates")
+/**
+ * 订阅组配置管理器：维护 group → {@link SubscriptionGroupConfig} 及
+ * forbiddenTable（topic 级读写禁言），启动时预置系统消费组。
+ */
 public class SubscriptionGroupManager extends ConfigManager {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
+    /** 消费组名 → 订阅组配置。 */
     protected ConcurrentMap<String, SubscriptionGroupConfig> subscriptionGroupTable =
         new ConcurrentHashMap<>(1024);
 
+    /** group → (topic → 禁言位图 PermName 索引)。 */
     private ConcurrentMap<String, ConcurrentMap<String, Integer>> forbiddenTable =
         new ConcurrentHashMap<>(4);
 
@@ -73,6 +79,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         }
     }
 
+    /** 预置 TOOLS/FILTERSRV/SELF_TEST/ONS 等系统消费组默认配置。 */
     protected void init() {
         {
             SubscriptionGroupConfig subscriptionGroupConfig = new SubscriptionGroupConfig();
@@ -136,6 +143,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         return this.subscriptionGroupTable.putIfAbsent(subscriptionGroupConfig.getGroupName(), subscriptionGroupConfig);
     }
 
+    /** 内部读取订阅组配置（子类可覆盖）。 */
     protected SubscriptionGroupConfig getSubscriptionGroupConfig(String groupName) {
         return this.subscriptionGroupTable.get(groupName);
     }
@@ -144,6 +152,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         return this.subscriptionGroupTable.remove(groupName);
     }
 
+    /** 更新订阅组配置并持久化。 */
     public void updateSubscriptionGroupConfig(final SubscriptionGroupConfig config) {
         updateSubscriptionGroupConfigWithoutPersist(config);
         this.persist();
@@ -179,6 +188,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         this.persist();
     }
 
+    /** 更新 group@topic 的读/写禁言位图。 */
     public void updateForbidden(String group, String topic, int forbiddenIndex, boolean setOrClear) {
         if (setOrClear) {
             setForbidden(group, topic, forbiddenIndex);
@@ -223,6 +233,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         return topicForbidden;
     }
 
+    /** 写入 forbiddenTable 并刷新 dataVersion。 */
     protected void updateForbiddenValue(String group, String topic, Integer forbidden) {
         if (forbidden == null || forbidden <= 0) {
             this.forbiddenTable.remove(group);
@@ -255,6 +266,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         }
     }
 
+    /** 查询消费组配置，不存在返回 null。 */
     public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {
         SubscriptionGroupConfig subscriptionGroupConfig = getSubscriptionGroupConfig(group);
         if (null == subscriptionGroupConfig) {
@@ -315,6 +327,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         }
     }
 
+    /** 返回完整订阅组表（Admin/Slave 同步用）。 */
     public ConcurrentMap<String, SubscriptionGroupConfig> getSubscriptionGroupTable() {
         return subscriptionGroupTable;
     }
@@ -384,6 +397,7 @@ public class SubscriptionGroupManager extends ConfigManager {
         }
     }
 
+    /** 删除订阅组并持久化。 */
     public void deleteSubscriptionGroupConfig(final String groupName) {
         SubscriptionGroupConfig old = removeSubscriptionGroupConfig(groupName);
         this.forbiddenTable.remove(groupName);

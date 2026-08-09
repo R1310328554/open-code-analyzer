@@ -70,13 +70,21 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_CON
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_IS_SYSTEM;
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 
+/**
+ * 发送消息处理器抽象基类：封装 CONSUMER_SEND_MSG_BACK（重试/DLQ）、
+ * SendMessageHook/ConsumeMessageHook 回调及 Topic/消息合法性校验。
+ * 子类 {@link SendMessageProcessor}、{@link ReplyMessageProcessor} 实现具体发送逻辑。
+ */
 public abstract class AbstractSendMessageProcessor implements NettyRequestProcessor {
     protected static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     protected static final Logger DLQ_LOG = LoggerFactory.getLogger(LoggerName.DLQ_LOGGER_NAME);
 
+    /** 消费侧 Hook 链（SendBack 完成后触发）。 */
     protected List<ConsumeMessageHook> consumeMessageHookList;
 
+    /** 每个消费组 DLQ 默认队列数。 */
     protected final static int DLQ_NUMS_PER_GROUP = 1;
+    /** 所属 Broker 控制器。 */
     protected final BrokerController brokerController;
     protected final Random random = new Random(System.currentTimeMillis());
     private List<SendMessageHook> sendMessageHookList;
@@ -95,7 +103,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
         final ConsumerSendMsgBackRequestHeader requestHeader =
             (ConsumerSendMsgBackRequestHeader) request.decodeCommandCustomHeader(ConsumerSendMsgBackRequestHeader.class);
 
-        // The send back requests sent to SlaveBroker will be forwarded to the master broker beside
+        // Slave 收到的 SendBack 请求需转发到 Master 处理
         final BrokerController masterBroker = this.brokerController.peekMasterBroker();
         if (null == masterBroker) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
@@ -103,8 +111,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
             return response;
         }
 
-        // The broker that received the request.
-        // It may be a master broker or a slave broker
+        // 当前处理请求的 Broker（可能是 Master 或 Slave）
         final BrokerController currentBroker = this.brokerController;
 
         SubscriptionGroupConfig subscriptionGroupConfig =
@@ -137,7 +144,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
             topicSysFlag = TopicSysFlag.buildSysFlag(false, true);
         }
 
-        // Create retry topic to master broker
+        // 在 Master 上创建/获取重试 topic
         TopicConfig topicConfig = masterBroker.getTopicConfigManager().createTopicInSendMessageBackMethod(
             newTopic,
             subscriptionGroupConfig.getRetryQueueNums(),
@@ -154,7 +161,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
             return response;
         }
 
-        // Look message from the origin message store
+        // 从原消息存储按物理 offset 读取消息体
         MessageExt msgExt = currentBroker.getMessageStore().lookMessageByOffset(requestHeader.getOffset());
         if (null == msgExt) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
@@ -193,7 +200,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
             newTopic = MixAll.getDLQTopic(requestHeader.getGroup());
             queueIdInt = randomQueueId(DLQ_NUMS_PER_GROUP);
 
-            // Create DLQ topic to master broker
+            // 超过最大重试次数，在 Master 创建 DLQ topic
             topicConfig = masterBroker.getTopicConfigManager().createTopicInSendMessageBackMethod(newTopic,
                 DLQ_NUMS_PER_GROUP,
                 PermName.PERM_WRITE | PermName.PERM_READ, 0);
@@ -233,7 +240,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
 
         boolean succeeded = false;
 
-        // Put retry topic to master message store
+        // 将重试/DLQ 消息写入 Master MessageStore
         PutMessageResult putMessageResult = masterBroker.getMessageStore().putMessage(msgInner);
         if (putMessageResult != null) {
             String commercialOwner = request.getExtFields().get(BrokerStatsManager.COMMERCIAL_OWNER);
@@ -318,7 +325,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
             context.setRcvStat(isDLQ ? BrokerStatsManager.StatsType.SEND_BACK_TO_DLQ : BrokerStatsManager.StatsType.SEND_BACK);
             context.setSuccess(succeeded);
             context.setRcvMsgNum(1);
-            //Set msg body size 0 when sent back by consumer.
+            // SendBack 场景 Hook 统计中消息体大小置 0
             context.setRcvMsgSize(0);
             context.setCommercialRcvMsgNum(succeeded ? 1 : 0);
 
@@ -343,12 +350,13 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
                 try {
                     hook.consumeMessageAfter(context);
                 } catch (Throwable e) {
-                    // Ignore
+                    // Hook 异常不影响主流程
                 }
             }
         }
     }
 
+    /** 构造 SendMessageHook 上下文：解析消息类型（顺序/延迟/事务/普通）。 */
     protected SendMessageContext buildMsgContext(ChannelHandlerContext ctx,
         SendMessageRequestHeader requestHeader, RemotingCommand request) {
         String namespace = NamespaceUtil.getNamespaceFromResource(requestHeader.getTopic());
@@ -397,6 +405,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
         return sendMessageHookList != null && !this.sendMessageHookList.isEmpty();
     }
 
+    /** 根据请求头与 topic 配置构造 Broker 内部消息对象。 */
     protected MessageExtBrokerInner buildInnerMsg(final ChannelHandlerContext ctx,
         final SendMessageRequestHeader requestHeader, final byte[] body, TopicConfig topicConfig) {
         int queueIdInt = requestHeader.getQueueId();
@@ -433,6 +442,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
         return brokerController.getStoreHost();
     }
 
+    /** 校验 topic 长度、属性长度与消息体大小上限。 */
     protected RemotingCommand msgContentCheck(final ChannelHandlerContext ctx,
         final SendMessageRequestHeader requestHeader, RemotingCommand request,
         final RemotingCommand response) {
@@ -461,6 +471,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
         return response;
     }
 
+    /** 校验写权限、topic 合法性、自动创建 topic 及 queueId 范围。 */
     protected RemotingCommand msgCheck(final ChannelHandlerContext ctx,
         final SendMessageRequestHeader requestHeader, final RemotingCommand request,
         final RemotingCommand response) {
@@ -546,6 +557,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
         NettyRemotingAbstract.writeResponse(ctx.channel(), request, response, null, brokerController.getBrokerMetricsManager().getRemotingMetricsManager());
     }
 
+    /** 发送前执行 SendMessageHook；AbortProcessException 可中断发送。 */
     public void executeSendMessageHookBefore(SendMessageContext context) {
         if (hasSendMessageHook()) {
             for (SendMessageHook hook : this.sendMessageHookList) {
@@ -554,7 +566,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
                 } catch (AbortProcessException e) {
                     throw e;
                 } catch (Throwable e) {
-                    //ignore
+                    // Hook 异常忽略
                 }
             }
         }

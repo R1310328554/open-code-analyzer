@@ -60,12 +60,18 @@ import org.apache.rocketmq.tieredstore.metadata.entity.TopicMetadata;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Topic 配置管理器：维护 topic → {@link TopicConfig}，
+ * 启动时初始化系统 topic（schedule、retry、benchmark 等），支持自动创建与静态 Topic。
+ */
 public class TopicConfigManager extends ConfigManager {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long LOCK_TIMEOUT_MILLIS = 3000;
+    /** 延迟消息系统 topic 默认队列数。 */
     private static final int SCHEDULE_TOPIC_QUEUE_NUM = 18;
 
     private transient final Lock topicConfigTableLock = new ReentrantLock();
+    /** topic 名 → TopicConfig。 */
     protected ConcurrentMap<String, TopicConfig> topicConfigTable = new ConcurrentHashMap<>(1024);
     protected DataVersion dataVersion = new DataVersion();
     protected transient BrokerController brokerController;
@@ -85,6 +91,7 @@ public class TopicConfigManager extends ConfigManager {
         }
     }
 
+    /** 注册 SELF_TEST、BENCHMARK、集群/broker 名、schedule、retry 等系统 topic。 */
     protected void init() {
         {
             String topic = TopicValidator.RMQ_SYS_SELF_TEST_TOPIC;
@@ -246,6 +253,7 @@ public class TopicConfigManager extends ConfigManager {
         }
     }
 
+    /** 注册或覆盖单条 topic 配置。 */
     public TopicConfig putTopicConfig(TopicConfig topicConfig) {
         return this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
     }
@@ -258,10 +266,12 @@ public class TopicConfigManager extends ConfigManager {
         return this.topicConfigTable.remove(topicName);
     }
 
+    /** 查询 topic 配置，不存在返回 null。 */
     public TopicConfig selectTopicConfig(final String topic) {
         return getTopicConfig(topic);
     }
 
+    /** 发送路径自动创建 topic（需 enableAutoCreateTopic）。 */
     public TopicConfig createTopicInSendMessageMethod(final String topic, final String defaultTopic,
         final String remoteAddress, final int clientDefaultTopicQueueNums, final int topicSysFlag) {
         TopicConfig topicConfig = null;
@@ -373,6 +383,7 @@ public class TopicConfigManager extends ConfigManager {
         return getTopicConfig(topicConfig.getTopicName());
     }
 
+    /** SendBack 路径创建重试/DLQ topic。 */
     public TopicConfig createTopicInSendMessageBackMethod(
         final String topic,
         final int clientDefaultTopicQueueNums,
@@ -543,6 +554,7 @@ public class TopicConfigManager extends ConfigManager {
         updateDataVersion();
     }
 
+    /** 更新 topic 配置并持久化。 */
     public void updateTopicConfig(final TopicConfig topicConfig) {
         updateSingleTopicConfigWithoutPersist(topicConfig);
         this.persist(topicConfig.getTopicName(), topicConfig);
@@ -606,6 +618,7 @@ public class TopicConfigManager extends ConfigManager {
         return TopicAttributes.ALL;
     }
 
+    /** 判断 topic 是否开启顺序消息属性。 */
     public boolean isOrderTopic(final String topic) {
         TopicConfig topicConfig = getTopicConfig(topic);
         if (topicConfig == null) {
@@ -615,6 +628,7 @@ public class TopicConfigManager extends ConfigManager {
         }
     }
 
+    /** 删除 topic 配置并持久化。 */
     public void deleteTopicConfig(final String topic) {
         TopicConfig old = removeTopicConfig(topic);
         if (old != null) {
@@ -626,6 +640,7 @@ public class TopicConfigManager extends ConfigManager {
         }
     }
 
+    /** 导出 topic 配置表与 dataVersion（Slave 同步/备份用）。 */
     public TopicConfigSerializeWrapper buildTopicConfigSerializeWrapper() {
         TopicConfigSerializeWrapper topicConfigSerializeWrapper = new TopicConfigSerializeWrapper();
         topicConfigSerializeWrapper.setTopicConfigTable(this.topicConfigTable);

@@ -241,10 +241,17 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_IS_
 import static org.apache.rocketmq.common.message.MessageConst.TIMER_ENGINE_TYPE;
 import static org.apache.rocketmq.remoting.protocol.RemotingCommand.buildErrorResponse;
 
+/**
+ * Broker 管理处理器：处理 mqadmin/Controller 发起的 Topic、订阅组、位点、
+ * 运行时统计、ACL、HA、Timer、Pop 回滚等数十种管理 RPC。
+ * 是运维与集群管控的核心入口。
+ */
 public class AdminBrokerProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     protected final BrokerController brokerController;
+    /** Broker 配置更新黑名单（不可通过 RPC 修改的键）。 */
     protected Set<String> configBlackList = new HashSet<>();
+    /** 异步执行耗时管理命令的线程池（如清理过期 CQ）。 */
     private final ExecutorService asyncExecuteWorker = new ThreadPoolExecutor(0, 4, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
 
     public AdminBrokerProcessor(final BrokerController brokerController) {
@@ -264,11 +271,11 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
     public RemotingCommand processRequest(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         switch (request.getCode()) {
-            case RequestCode.UPDATE_AND_CREATE_TOPIC:
+            case RequestCode.UPDATE_AND_CREATE_TOPIC:  // 创建/更新 Topic
                 return this.updateAndCreateTopic(ctx, request);
             case RequestCode.UPDATE_AND_CREATE_TOPIC_LIST:
                 return this.updateAndCreateTopicList(ctx, request);
-            case RequestCode.DELETE_TOPIC_IN_BROKER:
+            case RequestCode.DELETE_TOPIC_IN_BROKER:  // 删除 Broker 上 Topic
                 return this.deleteTopic(ctx, request);
             case RequestCode.GET_ALL_TOPIC_CONFIG:
                 return this.getAllTopicConfig(ctx, request);
@@ -276,7 +283,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getTimerCheckPoint(ctx, request);
             case RequestCode.GET_TIMER_METRICS:
                 return this.getTimerMetrics(ctx, request);
-            case RequestCode.UPDATE_BROKER_CONFIG:
+            case RequestCode.UPDATE_BROKER_CONFIG:  // 更新 Broker 配置
                 return this.updateBrokerConfig(ctx, request);
             case RequestCode.GET_BROKER_CONFIG:
                 return this.getBrokerConfig(ctx, request);
@@ -302,7 +309,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.lockBatchMQ(ctx, request);
             case RequestCode.UNLOCK_BATCH_MQ:
                 return this.unlockBatchMQ(ctx, request);
-            case RequestCode.UPDATE_AND_CREATE_SUBSCRIPTIONGROUP:
+            case RequestCode.UPDATE_AND_CREATE_SUBSCRIPTIONGROUP:  // 创建/更新订阅组
                 return this.updateAndCreateSubscriptionGroup(ctx, request);
             case RequestCode.UPDATE_AND_CREATE_SUBSCRIPTIONGROUP_LIST:
                 return this.updateAndCreateSubscriptionGroupList(ctx, request);
@@ -318,7 +325,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getProducerConnectionList(ctx, request);
             case RequestCode.GET_ALL_PRODUCER_INFO:
                 return this.getAllProducerInfo(ctx, request);
-            case RequestCode.GET_CONSUME_STATS:
+            case RequestCode.GET_CONSUME_STATS:  // 查询消费统计
                 return this.getConsumeStats(ctx, request);
             case RequestCode.GET_ALL_CONSUMER_OFFSET:
                 return this.getAllConsumerOffset(ctx, request);
@@ -326,7 +333,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getAllDelayOffset(ctx, request);
             case RequestCode.GET_ALL_MESSAGE_REQUEST_MODE:
                 return this.getAllMessageRequestMode(ctx, request);
-            case RequestCode.INVOKE_BROKER_TO_RESET_OFFSET:
+            case RequestCode.INVOKE_BROKER_TO_RESET_OFFSET:  // 重置消费位点
                 return this.resetOffset(ctx, request);
             case RequestCode.INVOKE_BROKER_TO_GET_CONSUMER_STATUS:
                 return this.getConsumerStatus(ctx, request);
@@ -340,7 +347,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.queryConsumeTimeSpan(ctx, request);
             case RequestCode.GET_SYSTEM_TOPIC_LIST_FROM_BROKER:
                 return this.getSystemTopicListFromBroker(ctx, request);
-            case RequestCode.CLEAN_EXPIRED_CONSUMEQUEUE:
+            case RequestCode.CLEAN_EXPIRED_CONSUMEQUEUE:  // 清理过期 ConsumeQueue
                 return this.cleanExpiredConsumeQueue();
             case RequestCode.DELETE_EXPIRED_COMMITLOG:
                 return this.deleteExpiredCommitLog();
@@ -350,7 +357,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getConsumerRunningInfo(ctx, request);
             case RequestCode.QUERY_CORRECTION_OFFSET:
                 return this.queryCorrectionOffset(ctx, request);
-            case RequestCode.CONSUME_MESSAGE_DIRECTLY:
+            case RequestCode.CONSUME_MESSAGE_DIRECTLY:  // 直接消费消息（运维）
                 return this.consumeMessageDirectly(ctx, request);
             case RequestCode.CLONE_GROUP_OFFSET:
                 return this.cloneGroupOffset(ctx, request);
@@ -386,7 +393,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getBrokerEpochCache(ctx, request);
             case RequestCode.NOTIFY_BROKER_ROLE_CHANGED:
                 return this.notifyBrokerRoleChanged(ctx, request);
-            case RequestCode.AUTH_CREATE_USER:
+            case RequestCode.AUTH_CREATE_USER:  // 创建 ACL 用户
                 return this.createUser(ctx, request);
             case RequestCode.AUTH_UPDATE_USER:
                 return this.updateUser(ctx, request);
@@ -396,7 +403,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getUser(ctx, request);
             case RequestCode.AUTH_LIST_USER:
                 return this.listUser(ctx, request);
-            case RequestCode.AUTH_CREATE_ACL:
+            case RequestCode.AUTH_CREATE_ACL:  // 创建 ACL 规则
                 return this.createAcl(ctx, request);
             case RequestCode.AUTH_UPDATE_ACL:
                 return this.updateAcl(ctx, request);
@@ -406,9 +413,9 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
                 return this.getAcl(ctx, request);
             case RequestCode.AUTH_LIST_ACL:
                 return this.listAcl(ctx, request);
-            case RequestCode.POP_ROLLBACK:
+            case RequestCode.POP_ROLLBACK:  // Pop 状态回滚到文件存储
                 return this.transferPopToFsStore(ctx, request);
-            case RequestCode.SWITCH_TIMER_ENGINE:
+            case RequestCode.SWITCH_TIMER_ENGINE:  // 切换 Timer 引擎类型
                 return this.switchTimerEngine(ctx, request);
             default:
                 return getUnknownCmdResponse(ctx, request);
@@ -416,10 +423,12 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
     }
 
     /**
-     * @param ctx
-     * @param request
-     * @return
-     * @throws RemotingCommandException
+     * 查询单个订阅组配置。
+     *
+     * @param ctx 通道上下文
+     * @param request 请求
+     * @return JSON 序列化的 SubscriptionGroupConfig
+     * @throws RemotingCommandException 解码异常
      */
     private RemotingCommand getSubscriptionGroup(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
@@ -450,9 +459,11 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
     }
 
     /**
-     * @param ctx
-     * @param request
-     * @return
+     * 更新或查询 group@topic 读写禁言状态。
+     *
+     * @param ctx 通道上下文
+     * @param request 请求
+     * @return 操作结果
      */
     private RemotingCommand updateAndGetGroupForbidden(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
@@ -547,6 +558,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 创建或更新 Topic 配置并持久化，可选同步 NameServer。 */
     private synchronized RemotingCommand updateAndCreateTopic(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         long startTime = System.currentTimeMillis();
@@ -758,6 +770,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 删除 Topic 及相关消费位点、映射、过滤数据。 */
     private synchronized RemotingCommand deleteTopic(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -1406,6 +1419,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 返回 Broker 运行时 KV 信息（版本、TPS、磁盘、HA 状态等）。 */
     private RemotingCommand getBrokerRuntimeInfo(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -1421,6 +1435,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 批量锁定 MessageQueue（顺序消费客户端 rebalance 用）。 */
     private RemotingCommand lockBatchMQ(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -1866,6 +1881,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 查询指定 group/topic 的消费 TPS 与堆积量。 */
     private RemotingCommand getConsumeStats(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -2098,16 +2114,14 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
     }
 
     /**
-     * Reset consumer offset.
+     * 重置消费位点（Slave 禁止执行）。
      *
-     * @param topic     Required, not null.
-     * @param group     Required, not null.
-     * @param queueId   if target queue ID is negative, all message queues will be reset; otherwise, only the target queue
-     *                  would get reset.
-     * @param timestamp if timestamp is negative, offset would be reset to broker offset at the time being; otherwise,
-     *                  binary search is performed to locate target offset.
-     * @param offset    Target offset to reset to if target queue ID is properly provided.
-     * @return Affected queues and their new offset
+     * @param topic 目标 topic（必填）
+     * @param group 消费组（必填）
+     * @param queueId 队列 ID；<0 表示重置该 topic 全部队列
+     * @param timestamp 时间戳；<0 表示重置到当前 broker offset
+     * @param offset 指定目标 offset（queueId 有效时使用）
+     * @return 各队列新 offset 映射
      */
     private RemotingCommand resetOffsetInner(String topic, String group, int queueId, long timestamp, Long offset) {
         RemotingCommand response = RemotingCommand.createResponseCommand(ResponseCode.SUCCESS, null);
@@ -2120,7 +2134,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
 
         Map<Integer, Long> queueOffsetMap = new HashMap<>();
 
-        // Reset offset for all queues belonging to the specified topic
+        // 重置指定 topic 下全部（或单个）队列的位点
         TopicConfig topicConfig = brokerController.getTopicConfigManager().selectTopicConfig(topic);
         if (null == topicConfig) {
             response.setCode(ResponseCode.TOPIC_NOT_EXIST);
@@ -2418,6 +2432,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 运维接口：绕过客户端直接拉取并消费指定消息。 */
     private RemotingCommand consumeMessageDirectly(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final ConsumeMessageDirectlyResultRequestHeader requestHeader = (ConsumeMessageDirectlyResultRequestHeader) request
@@ -3082,6 +3097,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** ACL：创建 Broker 本地用户。 */
     private RemotingCommand createUser(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -3424,6 +3440,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
             doCheckCqWriteProgress(requestHeader.getTopic(), requestHeader.getCheckStoreTime(), StoreType.DEFAULT, StoreType.DEFAULT_ROCKSDB);
     }
 
+    /** Pop 状态从 RocksDB 回滚到文件存储（POP_ROLLBACK）。 */
     private RemotingCommand transferPopToFsStore(ChannelHandlerContext ctx, RemotingCommand request) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
         try {
@@ -3439,6 +3456,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    /** 切换 Timer 消息引擎类型（Local/RocksDB 等）。 */
     private synchronized RemotingCommand switchTimerEngine(ChannelHandlerContext ctx, RemotingCommand request) {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
         if (!this.brokerController.getMessageStoreConfig().isTimerWheelEnable()) {

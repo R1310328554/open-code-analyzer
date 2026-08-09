@@ -99,6 +99,10 @@ import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESPONSE_CODE;
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.LABEL_RESULT;
 
+/**
+ * 标准 POP 消息处理器：处理 POP 请求、长轮询、PopCheckPoint 写入，
+ * 协调 {@link PopBufferMergeService} 缓冲合并与队列级顺序消费。
+ */
 public class PopMessageProcessor implements NettyRequestProcessor {
 
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
@@ -106,10 +110,14 @@ public class PopMessageProcessor implements NettyRequestProcessor {
 
     private final BrokerController brokerController;
     private final Random random = new Random(System.currentTimeMillis());
+    /** 集群 POP 复活系统 topic。 */
     private final String reviveTopic;
 
+    /** POP 长轮询服务。 */
     private final PopLongPollingService popLongPollingService;
+    /** CK/ACK 缓冲合并服务。 */
     private final PopBufferMergeService popBufferMergeService;
+    /** 队列级 POP 互斥锁管理器。 */
     private final QueueLockManager queueLockManager;
     private final AtomicLong ckMessageNumber;
 
@@ -145,6 +153,7 @@ public class PopMessageProcessor implements NettyRequestProcessor {
         return queueLockManager;
     }
 
+    /** 生成 AckMsg 唯一标识：topic@queueId@offset@popTime。 */
     public static String genAckUniqueId(AckMsg ackMsg) {
         return ackMsg.getTopic()
             + PopAckConstants.SPLIT + ackMsg.getQueueId()
@@ -223,6 +232,7 @@ public class PopMessageProcessor implements NettyRequestProcessor {
     }
 
     @Override
+    /** POP 主流程：校验 → getPopResult → 长轮询或零拷贝返回。 */
     public RemotingCommand processRequest(final ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
 
@@ -652,6 +662,7 @@ public class PopMessageProcessor implements NettyRequestProcessor {
         return null;
     }
 
+    /** 从指定 topic 异步 POP 消息并填充 GetMessageResult。 */
     private CompletableFuture<Long> popMsgFromTopic(TopicConfig topicConfig, boolean isRetry, GetMessageResult getMessageResult,
         PopMessageRequestHeader requestHeader, int reviveQid, Channel channel, long popTime,
         ExpressionMessageFilter messageFilter, StringBuilder startOffsetInfo,
@@ -730,11 +741,11 @@ public class PopMessageProcessor implements NettyRequestProcessor {
 
             // Current requests would calculate the total number of messages
             // waiting to be filtered for new message arrival notifications in
-            // the long-polling service, need disregarding the backlog in order
+            // 长轮询场景下顺序 topic 可忽略堆积量
             // consumption scenario. If rest message num including the blocked
             // queue accumulation would lead to frequent unnecessary wake-ups
             // of long-polling requests, resulting unnecessary CPU usage.
-            // When client ack message, long-polling request would be notifications
+            // 客户端 ACK 后会唤醒对应的长轮询请求
             // by AckMessageProcessor.ackOrderly() and message will not be delayed.
             if (isOrder) {
                 if (brokerController.getConsumerOrderInfoManager().checkBlock(
@@ -1001,6 +1012,7 @@ public class PopMessageProcessor implements NettyRequestProcessor {
         return resetOffset;
     }
 
+    /** 将 GetMessageResult 序列化为响应 body 字节数组。 */
     private byte[] readGetMessageResult(final GetMessageResult getMessageResult, final String group, final String topic,
         final int queueId) {
         final ByteBuffer byteBuffer = ByteBuffer.allocate(getMessageResult.getBufferTotalSize());
@@ -1055,6 +1067,7 @@ public class PopMessageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 按 topic@cid@queueId 维护 TimedLock，防止并发 POP 冲突。 */
     public class QueueLockManager extends ServiceThread {
         private final ConcurrentHashMap<String, TimedLock> expiredLocalCache = new ConcurrentHashMap<>(100000);
 

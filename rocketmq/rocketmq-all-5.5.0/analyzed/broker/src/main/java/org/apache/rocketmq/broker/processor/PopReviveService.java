@@ -64,16 +64,24 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_CON
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_IS_SYSTEM;
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 
+/**
+ * POP 消息复活服务：扫描 revive topic 上的 PopCheckPoint，
+ * 对超时未 ACK 的消息执行重试投递或写入重试 topic。
+ * 每个 revive 队列对应一个 PopReviveService 实例。
+ */
 public class PopReviveService extends ServiceThread {
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
+    /** CK 重写间隔（秒）阶梯，用于 inflight 请求重试调度。 */
     private final int[] ckRewriteIntervalsInSeconds = new int[] { 10, 20, 30, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 1200, 1800, 3600, 7200 };
 
     private int queueId;
     private BrokerController brokerController;
     private String reviveTopic;
     private long currentReviveMessageTimestamp = -1;
+    /** 是否运行复活逻辑（通常仅 Master brokerId=0）。 */
     private volatile boolean shouldRunPopRevive = false;
 
+    /** 进行中的复活 RPC 请求：oldCK → (发起时间, 是否成功)。 */
     private final NavigableMap<PopCheckPoint/* oldCK */, Pair<Long/* timestamp */, Boolean/* result */>> inflightReviveRequestMap = Collections.synchronizedNavigableMap(new TreeMap<>());
     private long reviveOffset;
 
@@ -104,6 +112,7 @@ public class PopReviveService extends ServiceThread {
         return shouldRunPopRevive;
     }
 
+    /** 将超时消息写入 Pop 重试 topic 并更新 inflight 计数。 */
     private boolean reviveRetry(PopCheckPoint popCheckPoint, MessageExt messageExt) {
         MessageExtBrokerInner msgInner = new MessageExtBrokerInner();
         if (!popCheckPoint.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
@@ -163,6 +172,7 @@ public class PopReviveService extends ServiceThread {
         }
     }
 
+    /** 确保 Pop 重试 topic 已在 TopicConfigManager 中注册。 */
     public void addRetryTopicIfNotExist(String retryTopic, String consumerGroup) {
         if (brokerController != null) {
             TopicConfig topicConfig = brokerController.getTopicConfigManager().selectTopicConfig(retryTopic);
@@ -193,6 +203,7 @@ public class PopReviveService extends ServiceThread {
         }
     }
 
+    /** 按消息 key 哈希选择重试队列 ID。 */
     private int getRetryQueueId(String retryTopic, MessageExt messageExt) {
         if (!brokerController.getBrokerConfig().isUseSeparateRetryQueue()) {
             return 0;
@@ -333,6 +344,7 @@ public class PopReviveService extends ServiceThread {
         return foundList;
     }
 
+    /** 从 revive topic 拉取消息并解析为 PopCheckPoint 映射。 */
     protected void consumeReviveMessage(ConsumeReviveObj consumeReviveObj) {
         HashMap<String, PopCheckPoint> map = consumeReviveObj.map;
         HashMap<String, PopCheckPoint> mockPointMap = new HashMap<>();
@@ -496,6 +508,7 @@ public class PopReviveService extends ServiceThread {
         return point;
     }
 
+    /** 合并同批 CK 并按超时策略执行重试投递或 ACK。 */
     protected void mergeAndRevive(ConsumeReviveObj consumeReviveObj) throws Throwable {
         ArrayList<PopCheckPoint> sortList = consumeReviveObj.genSortList();
         POP_LOGGER.info("reviveQueueId={}, ck listSize={}", queueId, sortList.size());
@@ -513,7 +526,7 @@ public class PopReviveService extends ServiceThread {
                 break;
             }
 
-            // check normal topic, skip ck , if normal topic is not exist
+            // 原 topic 不存在则跳过该 CK
             String normalTopic = KeyBuilder.parseNormalTopic(popCheckPoint.getTopic(), popCheckPoint.getCId());
             if (brokerController.getTopicConfigManager().selectTopicConfig(normalTopic) == null) {
                 POP_LOGGER.warn("reviveQueueId={}, can not get normal topic {}, then continue", queueId, popCheckPoint.getTopic());
@@ -649,12 +662,13 @@ public class PopReviveService extends ServiceThread {
         if (currentReviveMessageTimestamp <= 0) {
             return 0;
         }
-        // the next pull offset is reviveOffset + 1
+        // 下次拉取起点为 reviveOffset + 1
         long diff = brokerController.getMessageStore().getMaxOffsetInQueue(reviveTopic, queueId) - reviveOffset - 1;
         return Math.max(0, diff);
     }
 
     @Override
+    /** 主循环：拉取 revive topic → 解析 CK → 重试或 ACK。 */
     public void run() {
         int slow = 1;
         while (!this.isStopped()) {

@@ -1,0 +1,250 @@
+"""RocketMQ 5.5.0 wave47b broker pop/processor/schedule/subscription/topic [15:30] replacements."""
+
+R: dict[str, list[tuple[str, str]]] = {}
+
+R['broker/src/main/java/org/apache/rocketmq/broker/pop/orderly/QueueLevelConsumerManager.java'] = [
+    ('public class QueueLevelConsumerManager extends ConfigManager implements ConsumerOrderInfoManager {', '/**\n * 队列级顺序 POP 消费状态管理器：维护 topic@group → queueId → {@link OrderInfo} 映射，\n * 支持 POP 阻塞判定、ACK 位图提交、可见性时间更新及磁盘持久化。\n * 实现 {@link ConsumerOrderInfoManager} 的 QUEUE 粒度策略。\n */\npublic class QueueLevelConsumerManager extends ConfigManager implements ConsumerOrderInfoManager {'),
+    ('    private static final String TOPIC_GROUP_SEPARATOR = "@";', '    /** topic 与 group 复合键分隔符。 */\n    private static final String TOPIC_GROUP_SEPARATOR = "@";'),
+    ('    private static final long CLEAN_SPAN_FROM_LAST = 24 * 3600 * 1000;', '    /** 超过该毫秒数未消费的 orderInfo 可被 autoClean 清理。 */\n    private static final long CLEAN_SPAN_FROM_LAST = 24 * 3600 * 1000;'),
+    ('    private ConcurrentHashMap<String/* topic@group*/, ConcurrentHashMap<Integer/*queueId*/, OrderInfo>> table =\n        new ConcurrentHashMap<>(128);', '    /** topic@group → (queueId → 顺序消费快照)。 */\n    private ConcurrentHashMap<String/* topic@group*/, ConcurrentHashMap<Integer/*queueId*/, OrderInfo>> table =\n        new ConcurrentHashMap<>(128);'),
+    ('    /**\n     * update the message list received\n     *\n     * @param isRetry is retry topic or not\n     * @param topic topic\n     * @param group group\n     * @param queueId queue id of message\n     * @param popTime the time of pop message\n     * @param invisibleTime invisible time\n     * @param msgQueueOffsetList the queue offsets of messages\n     * @param orderInfoBuilder will append order info to this builder\n     */', '    /**\n     * POP 成功后更新本批消息的接收状态，合并 offset 位图并写入 orderInfoBuilder。\n     *\n     * @param isRetry 是否为重试 topic\n     * @param topic topic\n     * @param group group\n     * @param queueId 队列 ID\n     * @param popTime POP 时刻\n     * @param invisibleTime 不可见时长（毫秒）\n     * @param msgQueueOffsetList 消息队列 offset 列表\n     * @param orderInfoBuilder 追加 orderInfo 的 StringBuilder\n     */'),
+    ('                // offsetConsumedCount only save messages which consumed count is greater than 0\n                // if size not equal, means there are some new messages', '                // offsetConsumedCount 仅保存消费次数>0 的 offset；size 不等说明有新消息'),
+    ('        // for compatibility\n        // the old pop sdk use queueId to get consumedTimes from orderCountInfo', '        // 兼容旧 SDK：通过 queueId 从 orderCountInfo 读取 consumedTimes'),
+    ('    /**\n     * mark message is consumed finished. return the consumer offset\n     *\n     * @param topic topic\n     * @param group group\n     * @param queueId queue id of message\n     * @param queueOffset queue offset of message\n     * @return -1 : illegal, -2 : no need commit, >= 0 : commit\n     */', '    /**\n     * ACK 时标记消息已消费并返回下一可提交 offset。\n     *\n     * @param topic topic\n     * @param group group\n     * @param queueId 队列 ID\n     * @param queueOffset 消息队列 offset\n     * @return -1 非法；-2 无需提交；>=0 应提交的 offset\n     */'),
+    ('    /**\n     * update next visible time of this message\n     *\n     * @param topic topic\n     * @param group group\n     * @param queueId queue id of message\n     * @param queueOffset queue offset of message\n     * @param nextVisibleTime nex visible time\n     */', '    /**\n     * 更新指定消息的下次可见时间（延迟重消费 / 修改不可见时间）。\n     *\n     * @param topic topic\n     * @param group group\n     * @param queueId 队列 ID\n     * @param queueOffset 消息 offset\n     * @param nextVisibleTime 下次可见时间戳\n     */'),
+    ('    public void autoClean() {', '    /** 定时清理：移除 topic/group 不存在或长期无消费的 orderInfo 条目。 */\n    public void autoClean() {'),
+    ('    public static class OrderInfo {', '    /** 单次 POP 批次的顺序消费快照，可 JSON 持久化到磁盘。 */\n    public static class OrderInfo {'),
+    ('        /**\n         * the invisibleTime when pop message\n         */', '        /** POP 时的不可见时长（毫秒）。 */'),
+    ('        /**\n         * offset\n         * offsetList[0] is the queue offset of message\n         * offsetList[i] (i > 0) is the distance between current message and offsetList[0]\n         */', '        /**\n         * 压缩存储的 offset 列表：\n         * offsetList[0] 为首条消息的 queue offset；\n         * offsetList[i]（i>0）为相对首条的差值。\n         */'),
+    ('        /**\n         * next visible timestamp for message\n         * key: message queue offset\n         */', '        /** offset → 下次可见时间戳（修改不可见时间时使用）。 */'),
+    ('        /**\n         * message consumed count for offset\n         * key: message queue offset\n         */', '        /** offset → 该消息已被 POP 的次数（重试计数）。 */'),
+    ('        /**\n         * commit offset bit\n         */', '        /** ACK 位图：第 i 位为 1 表示 offsetList[i] 已确认。 */'),
+    ('                // all ack', '                // 全部 ACK 完毕'),
+    ('        /**\n         * convert the offset at the index of offsetList to queue offset\n         *\n         * @param offsetIndex the index of offsetList\n         * @return queue offset of message\n         */', '        /**\n         * 将 offsetList 下标转换为真实 queue offset。\n         *\n         * @param offsetIndex offsetList 下标\n         * @return 消息 queue offset\n         */'),
+    ('        /**\n         * calculate message consumed count of each message, and put nonzero value into offsetConsumedCount\n         *\n         * @param prevOffsetConsumedCount the offset list of message\n         */', '        /**\n         * 合并上一批 POP 的消费次数，写入 offsetConsumedCount（仅保留非零值）。\n         *\n         * @param prevOffsetConsumedCount 上一批 offset 消费计数表\n         */'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/AbstractSendMessageProcessor.java'] = [
+    ('public abstract class AbstractSendMessageProcessor implements NettyRequestProcessor {', '/**\n * 发送消息处理器抽象基类：封装 CONSUMER_SEND_MSG_BACK（重试/DLQ）、\n * SendMessageHook/ConsumeMessageHook 回调及 Topic/消息合法性校验。\n * 子类 {@link SendMessageProcessor}、{@link ReplyMessageProcessor} 实现具体发送逻辑。\n */\npublic abstract class AbstractSendMessageProcessor implements NettyRequestProcessor {'),
+    ('    protected List<ConsumeMessageHook> consumeMessageHookList;', '    /** 消费侧 Hook 链（SendBack 完成后触发）。 */\n    protected List<ConsumeMessageHook> consumeMessageHookList;'),
+    ('    protected final static int DLQ_NUMS_PER_GROUP = 1;', '    /** 每个消费组 DLQ 默认队列数。 */\n    protected final static int DLQ_NUMS_PER_GROUP = 1;'),
+    ('    protected final BrokerController brokerController;', '    /** 所属 Broker 控制器。 */\n    protected final BrokerController brokerController;'),
+    ('        // The send back requests sent to SlaveBroker will be forwarded to the master broker beside', '        // Slave 收到的 SendBack 请求需转发到 Master 处理'),
+    ('        // The broker that received the request.\n        // It may be a master broker or a slave broker', '        // 当前处理请求的 Broker（可能是 Master 或 Slave）'),
+    ('        // Create retry topic to master broker', '        // 在 Master 上创建/获取重试 topic'),
+    ('        // Look message from the origin message store', '        // 从原消息存储按物理 offset 读取消息体'),
+    ('            // Create DLQ topic to master broker', '            // 超过最大重试次数，在 Master 创建 DLQ topic'),
+    ('        // Put retry topic to master message store', '        // 将重试/DLQ 消息写入 Master MessageStore'),
+    ('            //Set msg body size 0 when sent back by consumer.', '            // SendBack 场景 Hook 统计中消息体大小置 0'),
+    ('                    // Ignore', '                    // Hook 异常不影响主流程'),
+    ('    protected SendMessageContext buildMsgContext(ChannelHandlerContext ctx,', '    /** 构造 SendMessageHook 上下文：解析消息类型（顺序/延迟/事务/普通）。 */\n    protected SendMessageContext buildMsgContext(ChannelHandlerContext ctx,'),
+    ('    protected MessageExtBrokerInner buildInnerMsg(final ChannelHandlerContext ctx,', '    /** 根据请求头与 topic 配置构造 Broker 内部消息对象。 */\n    protected MessageExtBrokerInner buildInnerMsg(final ChannelHandlerContext ctx,'),
+    ('    protected RemotingCommand msgContentCheck(final ChannelHandlerContext ctx,', '    /** 校验 topic 长度、属性长度与消息体大小上限。 */\n    protected RemotingCommand msgContentCheck(final ChannelHandlerContext ctx,'),
+    ('    protected RemotingCommand msgCheck(final ChannelHandlerContext ctx,', '    /** 校验写权限、topic 合法性、自动创建 topic 及 queueId 范围。 */\n    protected RemotingCommand msgCheck(final ChannelHandlerContext ctx,'),
+    ('    public void executeSendMessageHookBefore(SendMessageContext context) {', '    /** 发送前执行 SendMessageHook；AbortProcessException 可中断发送。 */\n    public void executeSendMessageHookBefore(SendMessageContext context) {'),
+    ('                    //ignore', '                    // Hook 异常忽略'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/AckMessageProcessor.java'] = [
+    ('public class AckMessageProcessor implements NettyRequestProcessor {', '/**\n * POP 消息 ACK 处理器：处理单条/批量 ACK，写入 AckMsg/BatchAckMsg 到 CommitLog，\n * 更新消费位点与顺序消费状态，并管理 {@link PopReviveService} 复活线程池。\n */\npublic class AckMessageProcessor implements NettyRequestProcessor {'),
+    ('    private final String reviveTopic;', '    /** 集群级 POP 复活系统 topic。 */\n    private final String reviveTopic;'),
+    ('    private final PopReviveService[] popReviveServices;', '    /** 按 revive 队列数分片的复活服务数组。 */\n    private final PopReviveService[] popReviveServices;'),
+    ('    public void startPopReviveService() {', '    /** 启动全部 PopReviveService 后台线程。 */\n    public void startPopReviveService() {'),
+    ('    public void setPopReviveServiceStatus(boolean shouldStart) {', '    /** 控制复活服务是否运行（通常仅 Master brokerId=0 启用）。 */\n    public void setPopReviveServiceStatus(boolean shouldStart) {'),
+    ('            // single ack', '            // 单条 ACK'),
+    ('            // batch ack', '            // 批量 ACK'),
+    ('                // Maintain consistency with the old implementation code style', '                // 保持与旧实现一致的代码风格'),
+    ('            // double check', '            // 二次校验 offset 合法性'),
+    ('    /**\n     * Currently, batch ack for lite messages is not supported, so we should ensure that all acknowledgements are individual.\n     */', '    /**\n     * Lite 消息暂不支持批量 ACK，须逐条确认。\n     */'),
+    ('    protected RemotingCommand ackLite(AckMessageRequestHeader requestHeader, BatchAckMessageRequestBody batchAckBody,', '    /** Lite topic 单条 ACK：校验 bind topic 与 LMQ offset 后提交位点。 */\n    protected RemotingCommand ackLite(AckMessageRequestHeader requestHeader, BatchAckMessageRequestBody batchAckBody,'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/ChangeInvisibleTimeProcessor.java'] = [
+    ('public class ChangeInvisibleTimeProcessor implements NettyRequestProcessor {', '/**\n * POP 修改不可见时间处理器：延长或缩短已 POP 消息的 invisibleTime，\n * 写入新 PopCheckPoint 并 ACK 原 checkpoint，支持异步 append 模式。\n */\npublic class ChangeInvisibleTimeProcessor implements NettyRequestProcessor {'),
+    ('    private final String reviveTopic;', '    /** 集群 POP 复活 topic，用于写入新 checkpoint。 */\n    private final String reviveTopic;'),
+    ('    private RemotingCommand processRequest(final Channel channel, RemotingCommand request,', '    /** 同步/异步分支：appendCkAsync 且 appendAckAsync 时 fire-and-forget 响应。 */\n    private RemotingCommand processRequest(final Channel channel, RemotingCommand request,'),
+    ('    public CompletableFuture<RemotingCommand> processRequestAsync(final Channel channel, RemotingCommand request,', '    /** 校验 topic/queueId，构造新 PopCheckPoint 并异步落盘。 */\n    public CompletableFuture<RemotingCommand> processRequestAsync(final Channel channel, RemotingCommand request,'),
+    ('        if (brokerController.getBrokerConfig().isAppendCkAsync() && brokerController.getBrokerConfig().isAppendAckAsync()) {', '        // 双异步模式：响应在 Future 完成时异步写回'),
+    ('    private CompletableFuture<Boolean> appendCheckPointThenAckOrigin(', '    /** 先 append 新 PopCheckPoint，成功后再 ACK 原 checkpoint。 */\n    private CompletableFuture<Boolean> appendCheckPointThenAckOrigin('),
+    ('    protected void doResponse(Channel channel, RemotingCommand request,', '    /** 将响应写回客户端通道。 */\n    protected void doResponse(Channel channel, RemotingCommand request,'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/LiteManagerProcessor.java'] = [
+    ('public class LiteManagerProcessor implements NettyRequestProcessor {', '/**\n * Lite/LMQ 管理处理器：响应 GET_BROKER_LITE_INFO、GET_LITE_TOPIC_INFO 等\n * 管理查询，以及 TRIGGER_LITE_DISPATCH 触发消息分发。\n */\npublic class LiteManagerProcessor implements NettyRequestProcessor {'),
+    ('    private static final int MAX_RETURN_COUNT = 10000;', '    /** 单次查询返回条目数上限。 */\n    private static final int MAX_RETURN_COUNT = 10000;'),
+    ('            case RequestCode.GET_BROKER_LITE_INFO:', '            case RequestCode.GET_BROKER_LITE_INFO:  // 获取 Broker Lite 元信息'),
+    ('            case RequestCode.GET_PARENT_TOPIC_INFO:', '            case RequestCode.GET_PARENT_TOPIC_INFO:  // 查询父 topic 信息'),
+    ('            case RequestCode.GET_LITE_TOPIC_INFO:', '            case RequestCode.GET_LITE_TOPIC_INFO:  // 查询 Lite topic 列表'),
+    ('            case RequestCode.GET_LITE_CLIENT_INFO:', '            case RequestCode.GET_LITE_CLIENT_INFO:  // 查询 Lite 客户端连接'),
+    ('            case RequestCode.GET_LITE_GROUP_INFO:', '            case RequestCode.GET_LITE_GROUP_INFO:  // 查询 Lite 消费组'),
+    ('            case RequestCode.TRIGGER_LITE_DISPATCH:', '            case RequestCode.TRIGGER_LITE_DISPATCH:  // 触发 Lite 消息分发'),
+    ('    protected RemotingCommand getBrokerLiteInfo(ChannelHandlerContext ctx,', '    /** 返回 storeType、LMQ 数量、订阅数、orderInfo 规模等 Broker Lite 概览。 */\n    protected RemotingCommand getBrokerLiteInfo(ChannelHandlerContext ctx,'),
+    ('    protected RemotingCommand getParentTopicInfo(ChannelHandlerContext ctx,', '    /** 按 parentTopic 返回 LMQ 子 topic 与 TTL 元数据。 */\n    protected RemotingCommand getParentTopicInfo(ChannelHandlerContext ctx,'),
+    ('    protected RemotingCommand triggerLiteDispatch(ChannelHandlerContext ctx,', '    /** 手动触发 Lite 事件分发（运维/调试）。 */\n    protected RemotingCommand triggerLiteDispatch(ChannelHandlerContext ctx,'),
+    ('    protected RemotingCommand getLiteTopicInfo(ChannelHandlerContext ctx,', '    /** 分页返回 Lite topic 列表及 LMQ 元数据。 */\n    protected RemotingCommand getLiteTopicInfo(ChannelHandlerContext ctx,'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/PopBufferMergeService.java'] = [
+    ('public class PopBufferMergeService extends ServiceThread {', '/**\n * POP Checkpoint/Ack 缓冲合并服务：将高频 CK/ACK 写入内存 buffer，\n * 定时批量落盘并推进 consumerOffset，降低 CommitLog 写入压力。\n */\npublic class PopBufferMergeService extends ServiceThread {'),
+    ('    ConcurrentHashMap<String/*mergeKey*/, PopCheckPointWrapper>\n        buffer = new ConcurrentHashMap<>(1024 * 16);', '    /** mergeKey → 待合并的 PopCheckPoint 包装。 */\n    ConcurrentHashMap<String/*mergeKey*/, PopCheckPointWrapper>\n        buffer = new ConcurrentHashMap<>(1024 * 16);'),
+    ('    ConcurrentHashMap<String/*topic@cid@queueId*/, QueueWithTime<PopCheckPointWrapper>> commitOffsets =\n        new ConcurrentHashMap<>();', '    /** topic@cid@queueId → 待提交 offset 的 CK 队列。 */\n    ConcurrentHashMap<String/*topic@cid@queueId*/, QueueWithTime<PopCheckPointWrapper>> commitOffsets =\n        new ConcurrentHashMap<>();'),
+    ('    private volatile boolean serving = true;', '    /** 服务是否处于正常合并状态（shutdown 时置 false）。 */\n    private volatile boolean serving = true;'),
+    ('        // scan', '        // 主循环：scan + 定期 scanGarbage'),
+    ('                    // slave', '                    // Slave 清空 buffer，等待切 Master'),
+    ('                // 1. just offset & stored, not processed by scan\n                // 2. ck is buffer(acked)\n                // 3. ck is buffer(not all acked), all ak are stored and ck is stored', '                // 1. 仅 offset 已存储  2. CK 已 ACK  3. 全部 ACK 已存储且 CK 已存储'),
+    ('    public boolean addCk(PopCheckPoint point, int reviveQueueId, long reviveQueueOffset, long nextBeginOffset) {', '    /** 将 PopCheckPoint 放入 buffer，必要时触发异步落盘。 */\n    public boolean addCk(PopCheckPoint point, int reviveQueueId, long reviveQueueOffset, long nextBeginOffset) {'),
+    ('    public boolean addCkJustOffset(PopCheckPoint point, int reviveQueueId, long reviveQueueOffset,', '    /** 仅记录 offset 的轻量 CK（无消息体），用于 commitOffset 推进。 */\n    public boolean addCkJustOffset(PopCheckPoint point, int reviveQueueId, long reviveQueueOffset,'),
+    ('    private void scan() {', '    /** 扫描 buffer：合并 CK/ACK、落盘、提交 offset。 */\n    private void scan() {'),
+    ('    private void scanGarbage() {', '    /** 清理超时未完成的 buffer 条目，防止内存泄漏。 */\n    private void scanGarbage() {'),
+    ('    public class PopCheckPointWrapper {', '    /** PopCheckPoint 及其关联 AckMsg 列表的缓冲包装。 */\n    public class PopCheckPointWrapper {'),
+    ('    public class QueueWithTime<T> {', '    /** 带最后更新时间的阻塞队列，用于 commitOffset 调度。 */\n    public class QueueWithTime<T> {'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/PopLiteMessageProcessor.java'] = [
+    ('/**\n * Pop lite implementation, support FIFO consuming.\n * This processor uses independent in-memory consumer order info and lock service,\n * along with a specialized long polling service.\n */', '/**\n * Lite POP 消息处理器：支持 FIFO 顺序消费。\n * 使用独立的内存 orderInfo 管理器、PopConsumerLockService 及 PopLiteLongPollingService。\n */'),
+    ('    private static final String BORN_TIME = "bornTime";', '    /** 请求扩展字段：长轮询 bornTime 基准。 */\n    private static final String BORN_TIME = "bornTime";'),
+    ('    private final PopLiteLongPollingService popLiteLongPollingService;', '    /** Lite 专用长轮询服务。 */\n    private final PopLiteLongPollingService popLiteLongPollingService;'),
+    ('    private final ConsumerOrderInfoManager consumerOrderInfoManager;', '    /** 内存级顺序消费状态（MemoryConsumerOrderInfoManager）。 */\n    private final ConsumerOrderInfoManager consumerOrderInfoManager;'),
+    ('    public RemotingCommand processRequest(final ChannelHandlerContext ctx, RemotingCommand request)', '    /** Lite POP 入口：preCheck → popByClientId → 长轮询或返回消息。 */\n    public RemotingCommand processRequest(final ChannelHandlerContext ctx, RemotingCommand request)'),
+    ('    public RemotingCommand preCheck(ChannelHandlerContext ctx,', '    /** 校验 topic、group、LMQ 分片及不可见时间参数。 */\n    public RemotingCommand preCheck(ChannelHandlerContext ctx,'),
+    ('    public Pair<StringBuilder, GetMessageResult> popByClientId(String clientHost, String parentTopic, String group,', '    /** 按 clientId 在 LMQ 上分片 POP，维护顺序锁与 orderInfo。 */\n    public Pair<StringBuilder, GetMessageResult> popByClientId(String clientHost, String parentTopic, String group,'),
+    ('    public ConsumerOrderInfoManager getConsumerOrderInfoManager() {', '    /** 供 LiteManagerProcessor 等查询 orderInfo 规模。 */\n    public ConsumerOrderInfoManager getConsumerOrderInfoManager() {'),
+    ('    public PopLiteLongPollingService getPopLiteLongPollingService() {', '    /** 返回 Lite 长轮询服务实例。 */\n    public PopLiteLongPollingService getPopLiteLongPollingService() {'),
+    ('    public class PopLiteLockManager extends ServiceThread {', '    /** clientId 粒度互斥锁，保证同一 client 顺序 POP。 */\n    public class PopLiteLockManager extends ServiceThread {'),
+    ('    public void startPopLiteLockManager() {', '    /** 启动 PopLite 锁管理后台线程。 */\n    public void startPopLiteLockManager() {'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/PopMessageProcessor.java'] = [
+    ('public class PopMessageProcessor implements NettyRequestProcessor {', '/**\n * 标准 POP 消息处理器：处理 POP 请求、长轮询、PopCheckPoint 写入，\n * 协调 {@link PopBufferMergeService} 缓冲合并与队列级顺序消费。\n */\npublic class PopMessageProcessor implements NettyRequestProcessor {'),
+    ('    private final String reviveTopic;', '    /** 集群 POP 复活系统 topic。 */\n    private final String reviveTopic;'),
+    ('    private final PopLongPollingService popLongPollingService;', '    /** POP 长轮询服务。 */\n    private final PopLongPollingService popLongPollingService;'),
+    ('    private final PopBufferMergeService popBufferMergeService;', '    /** CK/ACK 缓冲合并服务。 */\n    private final PopBufferMergeService popBufferMergeService;'),
+    ('    private final QueueLockManager queueLockManager;', '    /** 队列级 POP 互斥锁管理器。 */\n    private final QueueLockManager queueLockManager;'),
+    ('    public static String genAckUniqueId(AckMsg ackMsg) {', '    /** 生成 AckMsg 唯一标识：topic@queueId@offset@popTime。 */\n    public static String genAckUniqueId(AckMsg ackMsg) {'),
+    ('    public RemotingCommand processRequest(final ChannelHandlerContext ctx, RemotingCommand request)', '    /** POP 主流程：校验 → getPopResult → 长轮询或零拷贝返回。 */\n    public RemotingCommand processRequest(final ChannelHandlerContext ctx, RemotingCommand request)'),
+    ('    private CompletableFuture<Long> popMsgFromTopic(TopicConfig topicConfig, boolean isRetry, GetMessageResult getMessageResult,', '    /** 从指定 topic 异步 POP 消息并填充 GetMessageResult。 */\n    private CompletableFuture<Long> popMsgFromTopic(TopicConfig topicConfig, boolean isRetry, GetMessageResult getMessageResult,'),
+    ('    private byte[] readGetMessageResult(final GetMessageResult getMessageResult, final String group, final String topic,', '    /** 将 GetMessageResult 序列化为响应 body 字节数组。 */\n    private byte[] readGetMessageResult(final GetMessageResult getMessageResult, final String group, final String topic,'),
+    ('    public class QueueLockManager extends ServiceThread {', '    /** 按 topic@cid@queueId 维护 TimedLock，防止并发 POP 冲突。 */\n    public class QueueLockManager extends ServiceThread {'),
+    ('            // the long-polling service, need disregarding the backlog in order', '            // 长轮询场景下顺序 topic 可忽略堆积量'),
+    ('            // When client ack message, long-polling request would be notifications', '            // 客户端 ACK 后会唤醒对应的长轮询请求'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/PopReviveService.java'] = [
+    ('public class PopReviveService extends ServiceThread {', '/**\n * POP 消息复活服务：扫描 revive topic 上的 PopCheckPoint，\n * 对超时未 ACK 的消息执行重试投递或写入重试 topic。\n * 每个 revive 队列对应一个 PopReviveService 实例。\n */\npublic class PopReviveService extends ServiceThread {'),
+    ('    private final int[] ckRewriteIntervalsInSeconds = new int[] { 10, 20, 30, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 1200, 1800, 3600, 7200 };', '    /** CK 重写间隔（秒）阶梯，用于 inflight 请求重试调度。 */\n    private final int[] ckRewriteIntervalsInSeconds = new int[] { 10, 20, 30, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 1200, 1800, 3600, 7200 };'),
+    ('    private volatile boolean shouldRunPopRevive = false;', '    /** 是否运行复活逻辑（通常仅 Master brokerId=0）。 */\n    private volatile boolean shouldRunPopRevive = false;'),
+    ('    private final NavigableMap<PopCheckPoint/* oldCK */, Pair<Long/* timestamp */, Boolean/* result */>> inflightReviveRequestMap = Collections.synchronizedNavigableMap(new TreeMap<>());', '    /** 进行中的复活 RPC 请求：oldCK → (发起时间, 是否成功)。 */\n    private final NavigableMap<PopCheckPoint/* oldCK */, Pair<Long/* timestamp */, Boolean/* result */>> inflightReviveRequestMap = Collections.synchronizedNavigableMap(new TreeMap<>());'),
+    ('    private boolean reviveRetry(PopCheckPoint popCheckPoint, MessageExt messageExt) {', '    /** 将超时消息写入 Pop 重试 topic 并更新 inflight 计数。 */\n    private boolean reviveRetry(PopCheckPoint popCheckPoint, MessageExt messageExt) {'),
+    ('    protected void mergeAndRevive(ConsumeReviveObj consumeReviveObj) throws Throwable {', '    /** 合并同批 CK 并按超时策略执行重试投递或 ACK。 */\n    protected void mergeAndRevive(ConsumeReviveObj consumeReviveObj) throws Throwable {'),
+    ('    public void run() {', '    /** 主循环：拉取 revive topic → 解析 CK → 重试或 ACK。 */\n    public void run() {'),
+    ('    protected void consumeReviveMessage(ConsumeReviveObj consumeReviveObj) {', '    /** 从 revive topic 拉取消息并解析为 PopCheckPoint 映射。 */\n    protected void consumeReviveMessage(ConsumeReviveObj consumeReviveObj) {'),
+    ('    public void addRetryTopicIfNotExist(String retryTopic, String consumerGroup) {', '    /** 确保 Pop 重试 topic 已在 TopicConfigManager 中注册。 */\n    public void addRetryTopicIfNotExist(String retryTopic, String consumerGroup) {'),
+    ('    private int getRetryQueueId(String retryTopic, MessageExt messageExt) {', '    /** 按消息 key 哈希选择重试队列 ID。 */\n    private int getRetryQueueId(String retryTopic, MessageExt messageExt) {'),
+    ('            // check normal topic, skip ck , if normal topic is not exist', '            // 原 topic 不存在则跳过该 CK'),
+    ('        // the next pull offset is reviveOffset + 1', '        // 下次拉取起点为 reviveOffset + 1'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/PullMessageProcessor.java'] = [
+    ('public class PullMessageProcessor implements NettyRequestProcessor {', '/**\n * Pull 消息处理器：处理 PULL_MESSAGE / LITE_PULL_MESSAGE 请求，\n * 支持静态 Topic 逻辑队列转发、SQL/Tag 过滤、长轮询及冷数据流控。\n */\npublic class PullMessageProcessor implements NettyRequestProcessor {'),
+    ('    private PullMessageResultHandler pullMessageResultHandler;', '    /** 插件化 Pull 结果处理器（默认 {@link DefaultPullMessageResultHandler}）。 */\n    private PullMessageResultHandler pullMessageResultHandler;'),
+    ('            // if the leader? consider the order consumer, which will lock the mq', '            // 非 leader 时拒绝 Pull（顺序消费需锁定队列）'),
+    ('                //handleOffsetMoved', '                // 物理队列复用时需独立处理 PULL_OFFSET_MOVED'),
+    ('            //below are physical info', '            // 以下为物理 queueId/offset'),
+    ('                //just let it go, do the local pull process', '                // leader 在本 Broker，走本地 Pull'),
+    ('    public RemotingCommand processRequest(final ChannelHandlerContext ctx,', '    /** Pull 入口：静态 Topic 重写 → 权限校验 → getMessages → Hook/长轮询。 */\n    public RemotingCommand processRequest(final ChannelHandlerContext ctx,'),
+    ('    protected RemotingCommand rewriteResponseForStaticTopic(PullMessageRequestHeader requestHeader,', '    /** 静态 Topic：将物理 offset 映射回全局逻辑 offset。 */\n    protected RemotingCommand rewriteResponseForStaticTopic(PullMessageRequestHeader requestHeader,'),
+    ('    protected void composeResponseHeader(PullMessageRequestHeader requestHeader, GetMessageResult getMessageResult,', '    /** 根据 GetMessageResult 填充 Pull 响应头（nextBeginOffset 等）。 */\n    protected void composeResponseHeader(PullMessageRequestHeader requestHeader, GetMessageResult getMessageResult,'),
+    ('    public void registerConsumeMessageHook(List<ConsumeMessageHook> consumeMessageHookList) {', '    /** 注册 Pull 消费 Hook。 */\n    public void registerConsumeMessageHook(List<ConsumeMessageHook> consumeMessageHookList) {'),
+    ('        if (request.getCode() == RequestCode.LITE_PULL_MESSAGE && !this.brokerController.getBrokerConfig().isLitePullMessageEnable()) {', '        // Lite Pull 未开启时拒绝 LITE_PULL_MESSAGE 请求'),
+    ('     * @param getMessageResult        - the result of the GetMessage request', '     * @param getMessageResult        GetMessage 请求结果'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/SendMessageProcessor.java'] = [
+    ('public class SendMessageProcessor extends AbstractSendMessageProcessor implements NettyRequestProcessor {', '/**\n * 发送消息处理器：处理 SEND_MESSAGE / SEND_BATCH_MESSAGE / CONSUMER_SEND_MSG_BACK，\n * 支持静态 Topic 映射、批量发送、重试/DLQ 路由及事务半消息。\n */\npublic class SendMessageProcessor extends AbstractSendMessageProcessor implements NettyRequestProcessor {'),
+    ('            case RequestCode.CONSUMER_SEND_MSG_BACK:', '            case RequestCode.CONSUMER_SEND_MSG_BACK:  // 消费失败 SendBack'),
+    ('    /**\n     * If the response is not null, it meets some errors\n     *\n     * @return\n     */', '    /**\n     * 静态 Topic 响应重写：将物理 offset 映射为逻辑 offset。\n     *\n     * @return 非 null 表示映射出错\n     */'),
+    ('            //no need to care the broker name', '            // 静态 Topic 响应无需关心 broker 名'),
+    ('                //if the logic offset is -1, just let it go', '                // logic offset 为 -1 时放行（可能需动态配置）'),
+    ('    private boolean handleRetryAndDLQ(SendMessageRequestHeader requestHeader, RemotingCommand response,', '    /** 重试 topic 发送时检查 reconsumeTimes，超限则路由到 DLQ。 */\n    private boolean handleRetryAndDLQ(SendMessageRequestHeader requestHeader, RemotingCommand response,'),
+    ('    public RemotingCommand sendMessage(final ChannelHandlerContext ctx,', '    /** 单条发送：msgCheck → buildInnerMsg → putMessage → 响应头填充。 */\n    public RemotingCommand sendMessage(final ChannelHandlerContext ctx,'),
+    ('    private RemotingCommand sendBatchMessage(final ChannelHandlerContext ctx,', '    /** 批量发送：解码 MessageExtBatch 并逐条或批量落盘。 */\n    private RemotingCommand sendBatchMessage(final ChannelHandlerContext ctx,'),
+    ('    private RemotingCommand handlePutMessageResult(PutMessageResult putMessageResult,', '    /** 处理落盘结果：填充 msgId/queueOffset 并更新 Broker 统计。 */\n    private RemotingCommand handlePutMessageResult(PutMessageResult putMessageResult,'),
+    ('        if (!this.brokerController.getBrokerConfig().isEnableSlaveActingMaster() && this.brokerController.getMessageStoreConfig().getBrokerRole() == BrokerRole.SLAVE) {', '        // 非 ActingMaster 模式下 Slave 拒绝发送'),
+    ('        if (this.brokerController.getMessageStore().isOSPageCacheBusy() || this.brokerController.getMessageStore().isTransientStorePoolDeficient()) {', '        // PageCache 繁忙或 TransientPool 不足时快速失败'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/schedule/ScheduleMessageService.java'] = [
+    ('public class ScheduleMessageService extends ConfigManager {', '/**\n * 延迟消息调度服务：维护 delayLevel → 投递时间映射与各级别消费位点，\n * 定时扫描 RMQ_SYS_SCHEDULE_TOPIC 并在到期时将消息转发到真实 topic。\n */\npublic class ScheduleMessageService extends ConfigManager {'),
+    ('    private static final long FIRST_DELAY_TIME = 1000L;', '    /** 启动后首次扫描延迟（毫秒）。 */\n    private static final long FIRST_DELAY_TIME = 1000L;'),
+    ('    private final ConcurrentSkipListMap<Integer /* level */, Long/* delay timeMillis */> delayLevelTable =\n        new ConcurrentSkipListMap<>();', '    /** 延迟级别 → 延迟毫秒数（来自 messageDelayLevel 配置）。 */\n    private final ConcurrentSkipListMap<Integer /* level */, Long/* delay timeMillis */> delayLevelTable =\n        new ConcurrentSkipListMap<>();'),
+    ('    private final ConcurrentMap<Integer /* level */, Long/* offset */> offsetTable =\n        new ConcurrentHashMap<>(32);', '    /** 延迟级别 → 已扫描到的 schedule topic 物理 offset。 */\n    private final ConcurrentMap<Integer /* level */, Long/* offset */> offsetTable =\n        new ConcurrentHashMap<>(32);'),
+    ('    public static int queueId2DelayLevel(final int queueId) {', '    /** schedule topic queueId 转 delayLevel（queueId+1）。 */\n    public static int queueId2DelayLevel(final int queueId) {'),
+    ('    public long computeDeliverTimestamp(final int delayLevel, final long storeTimestamp) {', '    /** 计算消息目标投递时间戳 = storeTimestamp + delayLevel 对应毫秒数。 */\n    public long computeDeliverTimestamp(final int delayLevel, final long storeTimestamp) {'),
+    ('    public void start() {', '    /** 加载位点配置并为每个 delayLevel 启动定时投递线程。 */\n    public void start() {'),
+    ('    public void shutdown() {', '    /** 停止投递线程并持久化 offsetTable。 */\n    public void shutdown() {'),
+    ('        private PutResultProcess deliverMessage(MessageExtBrokerInner msgInner, String msgId, long offset,', '        /** 将到期延迟消息投递到真实 topic，支持同步/异步落盘。 */\n        private PutResultProcess deliverMessage(MessageExtBrokerInner msgInner, String msgId, long offset,'),
+    ('    public boolean isStarted() {', '    /** 调度服务是否已启动。 */\n    public boolean isStarted() {'),
+    ('    class PutResultProcess {', '    /** 异步投递模式下单条消息的落盘结果跟踪。 */\n    class PutResultProcess {'),
+    ('        public PutResultProcess thenProcess() {', '        /** 注册 CompletableFuture 回调，落盘成功后更新 offset 与统计。 */\n        public PutResultProcess thenProcess() {'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/subscription/SubscriptionGroupManager.java'] = [
+    ('public class SubscriptionGroupManager extends ConfigManager {', '/**\n * 订阅组配置管理器：维护 group → {@link SubscriptionGroupConfig} 及\n * forbiddenTable（topic 级读写禁言），启动时预置系统消费组。\n */\npublic class SubscriptionGroupManager extends ConfigManager {'),
+    ('    protected ConcurrentMap<String, SubscriptionGroupConfig> subscriptionGroupTable =\n        new ConcurrentHashMap<>(1024);', '    /** 消费组名 → 订阅组配置。 */\n    protected ConcurrentMap<String, SubscriptionGroupConfig> subscriptionGroupTable =\n        new ConcurrentHashMap<>(1024);'),
+    ('    private ConcurrentMap<String, ConcurrentMap<String, Integer>> forbiddenTable =\n        new ConcurrentHashMap<>(4);', '    /** group → (topic → 禁言位图 PermName 索引)。 */\n    private ConcurrentMap<String, ConcurrentMap<String, Integer>> forbiddenTable =\n        new ConcurrentHashMap<>(4);'),
+    ('    protected void init() {', '    /** 预置 TOOLS/FILTERSRV/SELF_TEST/ONS 等系统消费组默认配置。 */\n    protected void init() {'),
+    ('    public void updateSubscriptionGroupConfig(final SubscriptionGroupConfig config) {', '    /** 更新订阅组配置并持久化。 */\n    public void updateSubscriptionGroupConfig(final SubscriptionGroupConfig config) {'),
+    ('    public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {', '    /** 查询消费组配置，不存在返回 null。 */\n    public SubscriptionGroupConfig findSubscriptionGroupConfig(final String group) {'),
+    ('    public void deleteSubscriptionGroupConfig(final String groupName) {', '    /** 删除订阅组并持久化。 */\n    public void deleteSubscriptionGroupConfig(final String groupName) {'),
+    ('    public void updateForbidden(String group, String topic, int forbiddenIndex, boolean setOrClear) {', '    /** 更新 group@topic 的读/写禁言位图。 */\n    public void updateForbidden(String group, String topic, int forbiddenIndex, boolean setOrClear) {'),
+    ('    protected void updateForbiddenValue(String group, String topic, Integer forbidden) {', '    /** 写入 forbiddenTable 并刷新 dataVersion。 */\n    protected void updateForbiddenValue(String group, String topic, Integer forbidden) {'),
+    ('    protected SubscriptionGroupConfig getSubscriptionGroupConfig(String groupName) {', '    /** 内部读取订阅组配置（子类可覆盖）。 */\n    protected SubscriptionGroupConfig getSubscriptionGroupConfig(String groupName) {'),
+    ('    public ConcurrentMap<String, SubscriptionGroupConfig> getSubscriptionGroupTable() {', '    /** 返回完整订阅组表（Admin/Slave 同步用）。 */\n    public ConcurrentMap<String, SubscriptionGroupConfig> getSubscriptionGroupTable() {'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/topic/TopicConfigManager.java'] = [
+    ('public class TopicConfigManager extends ConfigManager {', '/**\n * Topic 配置管理器：维护 topic → {@link TopicConfig}，\n * 启动时初始化系统 topic（schedule、retry、benchmark 等），支持自动创建与静态 Topic。\n */\npublic class TopicConfigManager extends ConfigManager {'),
+    ('    private static final int SCHEDULE_TOPIC_QUEUE_NUM = 18;', '    /** 延迟消息系统 topic 默认队列数。 */\n    private static final int SCHEDULE_TOPIC_QUEUE_NUM = 18;'),
+    ('    protected ConcurrentMap<String, TopicConfig> topicConfigTable = new ConcurrentHashMap<>(1024);', '    /** topic 名 → TopicConfig。 */\n    protected ConcurrentMap<String, TopicConfig> topicConfigTable = new ConcurrentHashMap<>(1024);'),
+    ('    protected void init() {', '    /** 注册 SELF_TEST、BENCHMARK、集群/broker 名、schedule、retry 等系统 topic。 */\n    protected void init() {'),
+    ('    public TopicConfig selectTopicConfig(final String topic) {', '    /** 查询 topic 配置，不存在返回 null。 */\n    public TopicConfig selectTopicConfig(final String topic) {'),
+    ('    public TopicConfig createTopicInSendMessageMethod(final String topic, final String defaultTopic,', '    /** 发送路径自动创建 topic（需 enableAutoCreateTopic）。 */\n    public TopicConfig createTopicInSendMessageMethod(final String topic, final String defaultTopic,'),
+    ('    public TopicConfig createTopicInSendMessageBackMethod(', '    /** SendBack 路径创建重试/DLQ topic。 */\n    public TopicConfig createTopicInSendMessageBackMethod('),
+    ('    public void updateTopicConfig(final TopicConfig topicConfig) {', '    /** 更新 topic 配置并持久化。 */\n    public void updateTopicConfig(final TopicConfig topicConfig) {'),
+    ('    public void deleteTopicConfig(final String topic) {', '    /** 删除 topic 配置并持久化。 */\n    public void deleteTopicConfig(final String topic) {'),
+    ('    public boolean isOrderTopic(final String topic) {', '    /** 判断 topic 是否开启顺序消息属性。 */\n    public boolean isOrderTopic(final String topic) {'),
+    ('    public TopicConfigSerializeWrapper buildTopicConfigSerializeWrapper() {', '    /** 导出 topic 配置表与 dataVersion（Slave 同步/备份用）。 */\n    public TopicConfigSerializeWrapper buildTopicConfigSerializeWrapper() {'),
+    ('    public TopicConfig putTopicConfig(TopicConfig topicConfig) {', '    /** 注册或覆盖单条 topic 配置。 */\n    public TopicConfig putTopicConfig(TopicConfig topicConfig) {'),
+]
+
+R['broker/src/main/java/org/apache/rocketmq/broker/processor/AdminBrokerProcessor.java'] = [
+    ('public class AdminBrokerProcessor implements NettyRequestProcessor {', '/**\n * Broker 管理处理器：处理 mqadmin/Controller 发起的 Topic、订阅组、位点、\n * 运行时统计、ACL、HA、Timer、Pop 回滚等数十种管理 RPC。\n * 是运维与集群管控的核心入口。\n */\npublic class AdminBrokerProcessor implements NettyRequestProcessor {'),
+    ('    protected Set<String> configBlackList = new HashSet<>();', '    /** Broker 配置更新黑名单（不可通过 RPC 修改的键）。 */\n    protected Set<String> configBlackList = new HashSet<>();'),
+    ('    private final ExecutorService asyncExecuteWorker = new ThreadPoolExecutor(0, 4, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());', '    /** 异步执行耗时管理命令的线程池（如清理过期 CQ）。 */\n    private final ExecutorService asyncExecuteWorker = new ThreadPoolExecutor(0, 4, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());'),
+    ('            case RequestCode.UPDATE_AND_CREATE_TOPIC:', '            case RequestCode.UPDATE_AND_CREATE_TOPIC:  // 创建/更新 Topic'),
+    ('            case RequestCode.DELETE_TOPIC_IN_BROKER:', '            case RequestCode.DELETE_TOPIC_IN_BROKER:  // 删除 Broker 上 Topic'),
+    ('            case RequestCode.UPDATE_BROKER_CONFIG:', '            case RequestCode.UPDATE_BROKER_CONFIG:  // 更新 Broker 配置'),
+    ('            case RequestCode.UPDATE_AND_CREATE_SUBSCRIPTIONGROUP:', '            case RequestCode.UPDATE_AND_CREATE_SUBSCRIPTIONGROUP:  // 创建/更新订阅组'),
+    ('            case RequestCode.GET_CONSUME_STATS:', '            case RequestCode.GET_CONSUME_STATS:  // 查询消费统计'),
+    ('            case RequestCode.INVOKE_BROKER_TO_RESET_OFFSET:', '            case RequestCode.INVOKE_BROKER_TO_RESET_OFFSET:  // 重置消费位点'),
+    ('            case RequestCode.CLEAN_EXPIRED_CONSUMEQUEUE:', '            case RequestCode.CLEAN_EXPIRED_CONSUMEQUEUE:  // 清理过期 ConsumeQueue'),
+    ('            case RequestCode.CONSUME_MESSAGE_DIRECTLY:', '            case RequestCode.CONSUME_MESSAGE_DIRECTLY:  // 直接消费消息（运维）'),
+    ('            case RequestCode.AUTH_CREATE_USER:', '            case RequestCode.AUTH_CREATE_USER:  // 创建 ACL 用户'),
+    ('            case RequestCode.AUTH_CREATE_ACL:', '            case RequestCode.AUTH_CREATE_ACL:  // 创建 ACL 规则'),
+    ('            case RequestCode.POP_ROLLBACK:', '            case RequestCode.POP_ROLLBACK:  // Pop 状态回滚到文件存储'),
+    ('            case RequestCode.SWITCH_TIMER_ENGINE:', '            case RequestCode.SWITCH_TIMER_ENGINE:  // 切换 Timer 引擎类型'),
+    ('    /**\n     * @param ctx\n     * @param request\n     * @return\n     * @throws RemotingCommandException\n     */', '    /**\n     * 查询单个订阅组配置。\n     *\n     * @param ctx 通道上下文\n     * @param request 请求\n     * @return JSON 序列化的 SubscriptionGroupConfig\n     * @throws RemotingCommandException 解码异常\n     */'),
+    ('    /**\n     * @param ctx\n     * @param request\n     * @return\n     */', '    /**\n     * 更新或查询 group@topic 读写禁言状态。\n     *\n     * @param ctx 通道上下文\n     * @param request 请求\n     * @return 操作结果\n     */'),
+    ('    /**\n     * Reset consumer offset.\n     *\n     * @param topic     Required, not null.\n     * @param group     Required, not null.\n     * @param queueId   if target queue ID is negative, all message queues will be reset; otherwise, only the target queue\n     *                  would get reset.\n     * @param timestamp if timestamp is negative, offset would be reset to broker offset at the time being; otherwise,\n     *                  binary search is performed to locate target offset.\n     * @param offset    Target offset to reset to if target queue ID is properly provided.\n     * @return Affected queues and their new offset\n     */', '    /**\n     * 重置消费位点（Slave 禁止执行）。\n     *\n     * @param topic 目标 topic（必填）\n     * @param group 消费组（必填）\n     * @param queueId 队列 ID；<0 表示重置该 topic 全部队列\n     * @param timestamp 时间戳；<0 表示重置到当前 broker offset\n     * @param offset 指定目标 offset（queueId 有效时使用）\n     * @return 各队列新 offset 映射\n     */'),
+    ('        // Reset offset for all queues belonging to the specified topic', '        // 重置指定 topic 下全部（或单个）队列的位点'),
+    ('    private synchronized RemotingCommand updateAndCreateTopic(ChannelHandlerContext ctx,', '    /** 创建或更新 Topic 配置并持久化，可选同步 NameServer。 */\n    private synchronized RemotingCommand updateAndCreateTopic(ChannelHandlerContext ctx,'),
+    ('    private synchronized RemotingCommand deleteTopic(ChannelHandlerContext ctx,', '    /** 删除 Topic 及相关消费位点、映射、过滤数据。 */\n    private synchronized RemotingCommand deleteTopic(ChannelHandlerContext ctx,'),
+    ('    private RemotingCommand getBrokerRuntimeInfo(ChannelHandlerContext ctx, RemotingCommand request)', '    /** 返回 Broker 运行时 KV 信息（版本、TPS、磁盘、HA 状态等）。 */\n    private RemotingCommand getBrokerRuntimeInfo(ChannelHandlerContext ctx, RemotingCommand request)'),
+    ('    private RemotingCommand lockBatchMQ(ChannelHandlerContext ctx,', '    /** 批量锁定 MessageQueue（顺序消费客户端 rebalance 用）。 */\n    private RemotingCommand lockBatchMQ(ChannelHandlerContext ctx,'),
+    ('    private RemotingCommand getConsumeStats(ChannelHandlerContext ctx,', '    /** 查询指定 group/topic 的消费 TPS 与堆积量。 */\n    private RemotingCommand getConsumeStats(ChannelHandlerContext ctx,'),
+    ('    private RemotingCommand consumeMessageDirectly(ChannelHandlerContext ctx,', '    /** 运维接口：绕过客户端直接拉取并消费指定消息。 */\n    private RemotingCommand consumeMessageDirectly(ChannelHandlerContext ctx,'),
+    ('    private RemotingCommand createUser(ChannelHandlerContext ctx,', '    /** ACL：创建 Broker 本地用户。 */\n    private RemotingCommand createUser(ChannelHandlerContext ctx,'),
+    ('    private synchronized RemotingCommand switchTimerEngine(ChannelHandlerContext ctx, RemotingCommand request) {', '    /** 切换 Timer 消息引擎类型（Local/RocksDB 等）。 */\n    private synchronized RemotingCommand switchTimerEngine(ChannelHandlerContext ctx, RemotingCommand request) {'),
+    ('    private RemotingCommand transferPopToFsStore(ChannelHandlerContext ctx, RemotingCommand request) {', '    /** Pop 状态从 RocksDB 回滚到文件存储（POP_ROLLBACK）。 */\n    private RemotingCommand transferPopToFsStore(ChannelHandlerContext ctx, RemotingCommand request) {'),
+]
+

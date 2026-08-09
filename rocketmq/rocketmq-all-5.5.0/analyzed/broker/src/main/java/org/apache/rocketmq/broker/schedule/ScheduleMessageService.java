@@ -63,18 +63,25 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_IS_
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_MESSAGE_TYPE;
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 
+/**
+ * 延迟消息调度服务：维护 delayLevel → 投递时间映射与各级别消费位点，
+ * 定时扫描 RMQ_SYS_SCHEDULE_TOPIC 并在到期时将消息转发到真实 topic。
+ */
 public class ScheduleMessageService extends ConfigManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
+    /** 启动后首次扫描延迟（毫秒）。 */
     private static final long FIRST_DELAY_TIME = 1000L;
     private static final long DELAY_FOR_A_WHILE = 100L;
     private static final long DELAY_FOR_A_PERIOD = 10000L;
     private static final long WAIT_FOR_SHUTDOWN = 5000L;
     private static final long DELAY_FOR_A_SLEEP = 10L;
 
+    /** 延迟级别 → 延迟毫秒数（来自 messageDelayLevel 配置）。 */
     private final ConcurrentSkipListMap<Integer /* level */, Long/* delay timeMillis */> delayLevelTable =
         new ConcurrentSkipListMap<>();
 
+    /** 延迟级别 → 已扫描到的 schedule topic 物理 offset。 */
     private final ConcurrentMap<Integer /* level */, Long/* offset */> offsetTable =
         new ConcurrentHashMap<>(32);
     private final AtomicBoolean started = new AtomicBoolean(false);
@@ -96,6 +103,7 @@ public class ScheduleMessageService extends ConfigManager {
             new ThreadFactoryImpl("ScheduleMessageServicePersistThread", true, brokerController.getBrokerConfig()));
     }
 
+    /** schedule topic queueId 转 delayLevel（queueId+1）。 */
     public static int queueId2DelayLevel(final int queueId) {
         return queueId + 1;
     }
@@ -123,6 +131,7 @@ public class ScheduleMessageService extends ConfigManager {
         }
     }
 
+    /** 计算消息目标投递时间戳 = storeTimestamp + delayLevel 对应毫秒数。 */
     public long computeDeliverTimestamp(final int delayLevel, final long storeTimestamp) {
         Long time = this.delayLevelTable.get(delayLevel);
         if (time != null) {
@@ -132,6 +141,7 @@ public class ScheduleMessageService extends ConfigManager {
         return storeTimestamp + 1000;
     }
 
+    /** 加载位点配置并为每个 delayLevel 启动定时投递线程。 */
     public void start() {
         if (started.compareAndSet(false, true)) {
             this.load();
@@ -165,6 +175,7 @@ public class ScheduleMessageService extends ConfigManager {
         }
     }
 
+    /** 停止投递线程并持久化 offsetTable。 */
     public void shutdown() {
         stop();
         ThreadUtils.shutdown(scheduledPersistService);
@@ -197,6 +208,7 @@ public class ScheduleMessageService extends ConfigManager {
         return true;
     }
 
+    /** 调度服务是否已启动。 */
     public boolean isStarted() {
         return started.get();
     }
@@ -529,6 +541,7 @@ public class ScheduleMessageService extends ConfigManager {
             return true;
         }
 
+        /** 将到期延迟消息投递到真实 topic，支持同步/异步落盘。 */
         private PutResultProcess deliverMessage(MessageExtBrokerInner msgInner, String msgId, long offset,
             long offsetPy, int sizePy, boolean autoResend) {
             CompletableFuture<PutMessageResult> future =
@@ -605,6 +618,7 @@ public class ScheduleMessageService extends ConfigManager {
         }
     }
 
+    /** 异步投递模式下单条消息的落盘结果跟踪。 */
     class PutResultProcess {
         private String topic;
         private long offset;
@@ -698,6 +712,7 @@ public class ScheduleMessageService extends ConfigManager {
             return resendCount;
         }
 
+        /** 注册 CompletableFuture 回调，落盘成功后更新 offset 与统计。 */
         public PutResultProcess thenProcess() {
             this.future.thenAccept(this::handleResult);
 

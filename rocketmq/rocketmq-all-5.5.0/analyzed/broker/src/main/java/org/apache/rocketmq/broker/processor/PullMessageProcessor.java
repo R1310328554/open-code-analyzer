@@ -80,9 +80,14 @@ import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
 import static org.apache.rocketmq.remoting.protocol.RemotingCommand.buildErrorResponse;
 
+/**
+ * Pull 消息处理器：处理 PULL_MESSAGE / LITE_PULL_MESSAGE 请求，
+ * 支持静态 Topic 逻辑队列转发、SQL/Tag 过滤、长轮询及冷数据流控。
+ */
 public class PullMessageProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private List<ConsumeMessageHook> consumeMessageHookList;
+    /** 插件化 Pull 结果处理器（默认 {@link DefaultPullMessageResultHandler}）。 */
     private PullMessageResultHandler pullMessageResultHandler;
     private final BrokerController brokerController;
 
@@ -100,7 +105,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
             TopicQueueMappingDetail mappingDetail = mappingContext.getMappingDetail();
             String topic = mappingContext.getTopic();
             Integer globalId = mappingContext.getGlobalId();
-            // if the leader? consider the order consumer, which will lock the mq
+            // 非 leader 时拒绝 Pull（顺序消费需锁定队列）
             if (!mappingContext.isLeader()) {
                 return buildErrorResponse(ResponseCode.NOT_LEADER_FOR_QUEUE, String.format("%s-%d cannot find mapping item in request process of current broker %s", topic, globalId, mappingDetail.getBname()));
             }
@@ -110,11 +115,11 @@ public class PullMessageProcessor implements NettyRequestProcessor {
             mappingContext.setCurrentItem(mappingItem);
 
             if (globalOffset < mappingItem.getLogicOffset()) {
-                //handleOffsetMoved
+                // 物理队列复用时需独立处理 PULL_OFFSET_MOVED
                 //If the physical queue is reused, we should handle the PULL_OFFSET_MOVED independently
                 //Otherwise, we could just transfer it to the physical process
             }
-            //below are physical info
+            // 以下为物理 queueId/offset
             String bname = mappingItem.getBname();
             Integer phyQueueId = mappingItem.getQueueId();
             Long phyQueueOffset = mappingItem.computePhysicalQueueOffset(globalOffset);
@@ -126,7 +131,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
             }
 
             if (mappingDetail.getBname().equals(bname)) {
-                //just let it go, do the local pull process
+                // leader 在本 Broker，走本地 Pull
                 return null;
             }
 
@@ -156,6 +161,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 静态 Topic：将物理 offset 映射回全局逻辑 offset。 */
     protected RemotingCommand rewriteResponseForStaticTopic(PullMessageRequestHeader requestHeader,
         PullMessageResponseHeader responseHeader,
         TopicQueueMappingContext mappingContext, final int code) {
@@ -287,6 +293,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
     }
 
     @Override
+    /** Pull 入口：静态 Topic 重写 → 权限校验 → getMessages → Hook/长轮询。 */
     public RemotingCommand processRequest(final ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         return this.processRequest(ctx.channel(), request, true, true);
@@ -322,7 +329,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
             return response;
         }
 
-        if (request.getCode() == RequestCode.LITE_PULL_MESSAGE && !this.brokerController.getBrokerConfig().isLitePullMessageEnable()) {
+        // Lite Pull 未开启时拒绝 LITE_PULL_MESSAGE 请求
             response.setCode(ResponseCode.NO_PERMISSION);
             responseHeader.setForbiddenType(ForbiddenType.BROKER_FORBIDDEN);
             response.setRemark(
@@ -617,12 +624,13 @@ public class PullMessageProcessor implements NettyRequestProcessor {
      * Composes the header of the response message to be sent back to the client
      *
      * @param requestHeader           - the header of the request message
-     * @param getMessageResult        - the result of the GetMessage request
+     * @param getMessageResult        GetMessage 请求结果
      * @param topicSysFlag            - the system flag of the topic
      * @param subscriptionGroupConfig - configuration of the subscription group
      * @param response                - the response message to be sent back to the client
      * @param clientAddress           - the address of the client
      */
+    /** 根据 GetMessageResult 填充 Pull 响应头（nextBeginOffset 等）。 */
     protected void composeResponseHeader(PullMessageRequestHeader requestHeader, GetMessageResult getMessageResult,
         int topicSysFlag, SubscriptionGroupConfig subscriptionGroupConfig, RemotingCommand response,
         String clientAddress) {
@@ -833,6 +841,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
         this.brokerController.getPullMessageExecutor().submit(new RequestTask(run, channel, request));
     }
 
+    /** 注册 Pull 消费 Hook。 */
     public void registerConsumeMessageHook(List<ConsumeMessageHook> consumeMessageHookList) {
         this.consumeMessageHookList = consumeMessageHookList;
     }

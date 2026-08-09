@@ -79,6 +79,10 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_MES
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 import static org.apache.rocketmq.remoting.protocol.RemotingCommand.buildErrorResponse;
 
+/**
+ * 发送消息处理器：处理 SEND_MESSAGE / SEND_BATCH_MESSAGE / CONSUMER_SEND_MSG_BACK，
+ * 支持静态 Topic 映射、批量发送、重试/DLQ 路由及事务半消息。
+ */
 public class SendMessageProcessor extends AbstractSendMessageProcessor implements NettyRequestProcessor {
 
     public SendMessageProcessor(final BrokerController brokerController) {
@@ -90,7 +94,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
         RemotingCommand request) throws RemotingCommandException {
         SendMessageContext sendMessageContext;
         switch (request.getCode()) {
-            case RequestCode.CONSUMER_SEND_MSG_BACK:
+            case RequestCode.CONSUMER_SEND_MSG_BACK:  // 消费失败 SendBack
                 return this.consumerSendMsgBack(ctx, request);
             default:
                 SendMessageRequestHeader requestHeader = parseRequestHeader(request);
@@ -128,11 +132,11 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
 
     @Override
     public boolean rejectRequest() {
-        if (!this.brokerController.getBrokerConfig().isEnableSlaveActingMaster() && this.brokerController.getMessageStoreConfig().getBrokerRole() == BrokerRole.SLAVE) {
+        // 非 ActingMaster 模式下 Slave 拒绝发送
             return true;
         }
 
-        if (this.brokerController.getMessageStore().isOSPageCacheBusy() || this.brokerController.getMessageStore().isTransientStorePoolDeficient()) {
+        // PageCache 繁忙或 TransientPool 不足时快速失败
             return true;
         }
 
@@ -146,9 +150,9 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
     }
 
     /**
-     * If the response is not null, it meets some errors
+     * 静态 Topic 响应重写：将物理 offset 映射为逻辑 offset。
      *
-     * @return
+     * @return 非 null 表示映射出错
      */
 
     private RemotingCommand rewriteResponseForStaticTopic(SendMessageResponseHeader responseHeader,
@@ -163,10 +167,10 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
             if (mappingItem == null) {
                 return buildErrorResponse(ResponseCode.NOT_LEADER_FOR_QUEUE, String.format("%s-%d does not exit in request process of current broker %s", mappingContext.getTopic(), mappingContext.getGlobalId(), mappingDetail.getBname()));
             }
-            //no need to care the broker name
+            // 静态 Topic 响应无需关心 broker 名
             long staticLogicOffset = mappingItem.computeStaticQueueOffsetLoosely(responseHeader.getQueueOffset());
             if (staticLogicOffset < 0) {
-                //if the logic offset is -1, just let it go
+                // logic offset 为 -1 时放行（可能需动态配置）
                 //maybe we need a dynamic config
                 //return buildErrorResponse(ResponseCode.NOT_LEADER_FOR_QUEUE, String.format("%s-%d convert offset error in current broker %s", mappingContext.getTopic(), mappingContext.getGlobalId(), mappingDetail.getBname()));
             }
@@ -178,6 +182,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
         return null;
     }
 
+    /** 重试 topic 发送时检查 reconsumeTimes，超限则路由到 DLQ。 */
     private boolean handleRetryAndDLQ(SendMessageRequestHeader requestHeader, RemotingCommand response,
         RemotingCommand request,
         MessageExt msg, TopicConfig topicConfig, Map<String, String> properties) {
@@ -240,6 +245,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
         return true;
     }
 
+    /** 单条发送：msgCheck → buildInnerMsg → putMessage → 响应头填充。 */
     public RemotingCommand sendMessage(final ChannelHandlerContext ctx,
         final RemotingCommand request,
         final SendMessageContext sendMessageContext,
@@ -382,6 +388,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
         }
     }
 
+    /** 处理落盘结果：填充 msgId/queueOffset 并更新 Broker 统计。 */
     private RemotingCommand handlePutMessageResult(PutMessageResult putMessageResult, RemotingCommand response,
         RemotingCommand request, MessageExt msg, SendMessageResponseHeader responseHeader,
         SendMessageContext sendMessageContext, ChannelHandlerContext ctx, int queueIdInt, long beginTimeMillis,
@@ -562,6 +569,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
         return response;
     }
 
+    /** 批量发送：解码 MessageExtBatch 并逐条或批量落盘。 */
     private RemotingCommand sendBatchMessage(final ChannelHandlerContext ctx,
         final RemotingCommand request,
         final SendMessageContext sendMessageContext,

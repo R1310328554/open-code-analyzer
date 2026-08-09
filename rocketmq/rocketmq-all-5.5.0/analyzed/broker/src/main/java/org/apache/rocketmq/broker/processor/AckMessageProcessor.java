@@ -54,11 +54,17 @@ import org.apache.rocketmq.store.exception.ConsumeQueueException;
 import org.apache.rocketmq.store.pop.AckMsg;
 import org.apache.rocketmq.store.pop.BatchAckMsg;
 
+/**
+ * POP 消息 ACK 处理器：处理单条/批量 ACK，写入 AckMsg/BatchAckMsg 到 CommitLog，
+ * 更新消费位点与顺序消费状态，并管理 {@link PopReviveService} 复活线程池。
+ */
 public class AckMessageProcessor implements NettyRequestProcessor {
 
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
     private final BrokerController brokerController;
+    /** 集群级 POP 复活系统 topic。 */
     private final String reviveTopic;
+    /** 按 revive 队列数分片的复活服务数组。 */
     private final PopReviveService[] popReviveServices;
 
     public AckMessageProcessor(final BrokerController brokerController) {
@@ -82,6 +88,7 @@ public class AckMessageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 启动全部 PopReviveService 后台线程。 */
     public void startPopReviveService() {
         for (PopReviveService popReviveService : popReviveServices) {
             popReviveService.start();
@@ -94,6 +101,7 @@ public class AckMessageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 控制复活服务是否运行（通常仅 Master brokerId=0 启用）。 */
     public void setPopReviveServiceStatus(boolean shouldStart) {
         for (PopReviveService popReviveService : popReviveServices) {
             popReviveService.setShouldRunPopRevive(shouldStart);
@@ -206,7 +214,7 @@ public class AckMessageProcessor implements NettyRequestProcessor {
         AckMsg ackMsg;
         int ackCount = 0;
         if (batchAck == null) {
-            // single ack
+            // 单条 ACK
             extraInfo = ExtraInfoUtil.split(requestHeader.getExtraInfo());
             brokerName = ExtraInfoUtil.getBrokerName(extraInfo);
             consumeGroup = requestHeader.getConsumerGroup();
@@ -226,7 +234,7 @@ public class AckMessageProcessor implements NettyRequestProcessor {
             ackMsg = new AckMsg();
             ackCount = 1;
         } else {
-            // batch ack
+            // 批量 ACK
             consumeGroup = batchAck.getConsumerGroup();
             topic = ExtraInfoUtil.getRealTopic(batchAck.getTopic(), batchAck.getConsumerGroup(), batchAck.getRetry());
             qId = batchAck.getQueueId();
@@ -362,7 +370,7 @@ public class AckMessageProcessor implements NettyRequestProcessor {
                 }
 
                 int ackCount = 0;
-                // Maintain consistency with the old implementation code style
+                // 保持与旧实现一致的代码风格
                 BitSet bitSet = batchAck.getBitSet();
                 for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1)) {
                     if (i == Integer.MAX_VALUE) {
@@ -455,7 +463,7 @@ public class AckMessageProcessor implements NettyRequestProcessor {
         }
 
         try {
-            // double check
+            // 二次校验 offset 合法性
             oldOffset = consumerOffsetManager.queryOffset(consumeGroup, topic, qId);
             if (ackOffset < oldOffset) {
                 return;
@@ -491,8 +499,9 @@ public class AckMessageProcessor implements NettyRequestProcessor {
     }
 
     /**
-     * Currently, batch ack for lite messages is not supported, so we should ensure that all acknowledgements are individual.
+     * Lite 消息暂不支持批量 ACK，须逐条确认。
      */
+    /** Lite topic 单条 ACK：校验 bind topic 与 LMQ offset 后提交位点。 */
     protected RemotingCommand ackLite(AckMessageRequestHeader requestHeader, BatchAckMessageRequestBody batchAckBody,
         final RemotingCommand response, final Channel channel) {
         if (batchAckBody != null) {

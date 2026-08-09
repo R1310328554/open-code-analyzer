@@ -40,12 +40,20 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 import org.apache.rocketmq.remoting.protocol.header.ExtraInfoUtil;
 import org.apache.rocketmq.store.GetMessageResult;
 
+/**
+ * 队列级顺序 POP 消费状态管理器：维护 topic@group → queueId → {@link OrderInfo} 映射，
+ * 支持 POP 阻塞判定、ACK 位图提交、可见性时间更新及磁盘持久化。
+ * 实现 {@link ConsumerOrderInfoManager} 的 QUEUE 粒度策略。
+ */
 public class QueueLevelConsumerManager extends ConfigManager implements ConsumerOrderInfoManager {
 
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
+    /** topic 与 group 复合键分隔符。 */
     private static final String TOPIC_GROUP_SEPARATOR = "@";
+    /** 超过该毫秒数未消费的 orderInfo 可被 autoClean 清理。 */
     private static final long CLEAN_SPAN_FROM_LAST = 24 * 3600 * 1000;
 
+    /** topic@group → (queueId → 顺序消费快照)。 */
     private ConcurrentHashMap<String/* topic@group*/, ConcurrentHashMap<Integer/*queueId*/, OrderInfo>> table =
         new ConcurrentHashMap<>(128);
 
@@ -83,16 +91,16 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
     }
 
     /**
-     * update the message list received
+     * POP 成功后更新本批消息的接收状态，合并 offset 位图并写入 orderInfoBuilder。
      *
-     * @param isRetry is retry topic or not
+     * @param isRetry 是否为重试 topic
      * @param topic topic
      * @param group group
-     * @param queueId queue id of message
-     * @param popTime the time of pop message
-     * @param invisibleTime invisible time
-     * @param msgQueueOffsetList the queue offsets of messages
-     * @param orderInfoBuilder will append order info to this builder
+     * @param queueId 队列 ID
+     * @param popTime POP 时刻
+     * @param invisibleTime 不可见时长（毫秒）
+     * @param msgQueueOffsetList 消息队列 offset 列表
+     * @param orderInfoBuilder 追加 orderInfo 的 StringBuilder
      */
     public void update(String attemptId, boolean isRetry, String topic, String group, int queueId, long popTime,
         long invisibleTime,
@@ -130,16 +138,14 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
             }
 
             if (offsetConsumedCount.size() != orderInfo.offsetList.size()) {
-                // offsetConsumedCount only save messages which consumed count is greater than 0
-                // if size not equal, means there are some new messages
+                // offsetConsumedCount 仅保存消费次数>0 的 offset；size 不等说明有新消息
                 minConsumedTimes = 0;
             }
         } else {
             minConsumedTimes = 0;
         }
 
-        // for compatibility
-        // the old pop sdk use queueId to get consumedTimes from orderCountInfo
+        // 兼容旧 SDK：通过 queueId 从 orderCountInfo 读取 consumedTimes
         ExtraInfoUtil.buildQueueIdOrderCountInfo(orderInfoBuilder, topic, queueId, minConsumedTimes);
         updateLockFreeTimestamp(topic, group, queueId, orderInfo);
     }
@@ -199,13 +205,13 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
     }
 
     /**
-     * mark message is consumed finished. return the consumer offset
+     * ACK 时标记消息已消费并返回下一可提交 offset。
      *
      * @param topic topic
      * @param group group
-     * @param queueId queue id of message
-     * @param queueOffset queue offset of message
-     * @return -1 : illegal, -2 : no need commit, >= 0 : commit
+     * @param queueId 队列 ID
+     * @param queueOffset 消息队列 offset
+     * @return -1 非法；-2 无需提交；>=0 应提交的 offset
      */
     @Override
     public long commitAndNext(String topic, String group, int queueId, long queueOffset, long popTime) {
@@ -259,13 +265,13 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
     }
 
     /**
-     * update next visible time of this message
+     * 更新指定消息的下次可见时间（延迟重消费 / 修改不可见时间）。
      *
      * @param topic topic
      * @param group group
-     * @param queueId queue id of message
-     * @param queueOffset queue offset of message
-     * @param nextVisibleTime nex visible time
+     * @param queueId 队列 ID
+     * @param queueOffset 消息 offset
+     * @param nextVisibleTime 下次可见时间戳
      */
     @Override
     public void updateNextVisibleTime(String topic, String group, int queueId, long queueOffset, long popTime,
@@ -291,6 +297,7 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
         updateLockFreeTimestamp(topic, group, queueId, orderInfo);
     }
 
+    /** 定时清理：移除 topic/group 不存在或长期无消费的 orderInfo 条目。 */
     public void autoClean() {
         if (brokerController == null) {
             return;
@@ -396,30 +403,23 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
         return queueLevelConsumerOrderInfoLockManager;
     }
 
+    /** 单次 POP 批次的顺序消费快照，可 JSON 持久化到磁盘。 */
     public static class OrderInfo {
         private long popTime;
-        /**
-         * the invisibleTime when pop message
-         */
+        /** POP 时的不可见时长（毫秒）。 */
         @JSONField(name = "i")
         private Long invisibleTime;
         /**
-         * offset
-         * offsetList[0] is the queue offset of message
-         * offsetList[i] (i > 0) is the distance between current message and offsetList[0]
+         * 压缩存储的 offset 列表：
+         * offsetList[0] 为首条消息的 queue offset；
+         * offsetList[i]（i>0）为相对首条的差值。
          */
         @JSONField(name = "o")
         private List<Long> offsetList;
-        /**
-         * next visible timestamp for message
-         * key: message queue offset
-         */
+        /** offset → 下次可见时间戳（修改不可见时间时使用）。 */
         @JSONField(name = "ot")
         private Map<Long, Long> offsetNextVisibleTime;
-        /**
-         * message consumed count for offset
-         * key: message queue offset
-         */
+        /** offset → 该消息已被 POP 的次数（重试计数）。 */
         @JSONField(name = "oc")
         private Map<Long, Integer> offsetConsumedCount;
         /**
@@ -427,9 +427,7 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
          */
         @JSONField(name = "l")
         private long lastConsumeTimestamp;
-        /**
-         * commit offset bit
-         */
+        /** ACK 位图：第 i 位为 1 表示 offsetList[i] 已确认。 */
         @JSONField(name = "cm")
         private long commitOffsetBit;
         @JSONField(name = "a")
@@ -634,17 +632,17 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
                 }
             }
             if (i == num) {
-                // all ack
+                // 全部 ACK 完毕
                 return getQueueOffset(num - 1) + 1;
             }
             return getQueueOffset(i);
         }
 
         /**
-         * convert the offset at the index of offsetList to queue offset
+         * 将 offsetList 下标转换为真实 queue offset。
          *
-         * @param offsetIndex the index of offsetList
-         * @return queue offset of message
+         * @param offsetIndex offsetList 下标
+         * @return 消息 queue offset
          */
         @JSONField(serialize = false, deserialize = false)
         public long getQueueOffset(int offsetIndex) {
@@ -664,9 +662,9 @@ public class QueueLevelConsumerManager extends ConfigManager implements Consumer
         }
 
         /**
-         * calculate message consumed count of each message, and put nonzero value into offsetConsumedCount
+         * 合并上一批 POP 的消费次数，写入 offsetConsumedCount（仅保留非零值）。
          *
-         * @param prevOffsetConsumedCount the offset list of message
+         * @param prevOffsetConsumedCount 上一批 offset 消费计数表
          */
         @JSONField(serialize = false, deserialize = false)
         public void mergeOffsetConsumedCount(String preAttemptId, List<Long> preOffsetList,

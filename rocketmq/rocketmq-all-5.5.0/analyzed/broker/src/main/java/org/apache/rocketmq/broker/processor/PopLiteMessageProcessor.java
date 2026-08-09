@@ -71,18 +71,20 @@ import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_IS_
 import static org.apache.rocketmq.broker.metrics.BrokerMetricsConstant.LABEL_TOPIC;
 
 /**
- * Pop lite implementation, support FIFO consuming.
- * This processor uses independent in-memory consumer order info and lock service,
- * along with a specialized long polling service.
+ * Lite POP 消息处理器：支持 FIFO 顺序消费。
+ * 使用独立的内存 orderInfo 管理器、PopConsumerLockService 及 PopLiteLongPollingService。
  */
 public class PopLiteMessageProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
+    /** 请求扩展字段：长轮询 bornTime 基准。 */
     private static final String BORN_TIME = "bornTime";
 
     private final BrokerController brokerController;
+    /** Lite 专用长轮询服务。 */
     private final PopLiteLongPollingService popLiteLongPollingService;
     private final PopConsumerLockService lockService;
     private final LiteEventDispatcher liteEventDispatcher;
+    /** 内存级顺序消费状态（MemoryConsumerOrderInfoManager）。 */
     private final ConsumerOrderInfoManager consumerOrderInfoManager;
     private final PopLiteLockManager popLiteLockManager;
 
@@ -101,6 +103,7 @@ public class PopLiteMessageProcessor implements NettyRequestProcessor {
     }
 
     @Override
+    /** Lite POP 入口：preCheck → popByClientId → 长轮询或返回消息。 */
     public RemotingCommand processRequest(final ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
 
@@ -166,6 +169,7 @@ public class PopLiteMessageProcessor implements NettyRequestProcessor {
     }
 
     @VisibleForTesting
+    /** 校验 topic、group、LMQ 分片及不可见时间参数。 */
     public RemotingCommand preCheck(ChannelHandlerContext ctx,
         PopLiteMessageRequestHeader requestHeader, RemotingCommand response) {
         if (requestHeader.isTimeoutTooMuch()) {
@@ -247,6 +251,7 @@ public class PopLiteMessageProcessor implements NettyRequestProcessor {
         return byteBuffer.array();
     }
 
+    /** 按 clientId 在 LMQ 上分片 POP，维护顺序锁与 orderInfo。 */
     public Pair<StringBuilder, GetMessageResult> popByClientId(String clientHost, String parentTopic, String group,
         String clientId, long popTime, long invisibleTime, int maxNum, String attemptId) {
         GetMessageResult getMessageResult = new GetMessageResult();
@@ -437,6 +442,7 @@ public class PopLiteMessageProcessor implements NettyRequestProcessor {
         return result;
     }
 
+    /** clientId 粒度互斥锁，保证同一 client 顺序 POP。 */
     public class PopLiteLockManager extends ServiceThread {
         private static final long AUTO_CLEAN_INTERVAL = 5 * 60 * 1000;
         private long lastCleanTime = System.currentTimeMillis();
@@ -465,6 +471,7 @@ public class PopLiteMessageProcessor implements NettyRequestProcessor {
         }
     }
 
+    /** 返回 Lite 长轮询服务实例。 */
     public PopLiteLongPollingService getPopLiteLongPollingService() {
         return popLiteLongPollingService;
     }
@@ -473,10 +480,12 @@ public class PopLiteMessageProcessor implements NettyRequestProcessor {
         return lockService;
     }
 
+    /** 供 LiteManagerProcessor 等查询 orderInfo 规模。 */
     public ConsumerOrderInfoManager getConsumerOrderInfoManager() {
         return consumerOrderInfoManager;
     }
 
+    /** 启动 PopLite 锁管理后台线程。 */
     public void startPopLiteLockManager() {
         popLiteLockManager.start();
     }

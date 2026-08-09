@@ -52,9 +52,14 @@ import org.apache.rocketmq.store.exception.ConsumeQueueException;
 import org.apache.rocketmq.store.pop.AckMsg;
 import org.apache.rocketmq.store.pop.PopCheckPoint;
 
+/**
+ * POP 修改不可见时间处理器：延长或缩短已 POP 消息的 invisibleTime，
+ * 写入新 PopCheckPoint 并 ACK 原 checkpoint，支持异步 append 模式。
+ */
 public class ChangeInvisibleTimeProcessor implements NettyRequestProcessor {
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
     private final BrokerController brokerController;
+    /** 集群 POP 复活 topic，用于写入新 checkpoint。 */
     private final String reviveTopic;
 
     public ChangeInvisibleTimeProcessor(final BrokerController brokerController) {
@@ -73,12 +78,13 @@ public class ChangeInvisibleTimeProcessor implements NettyRequestProcessor {
         return false;
     }
 
+    /** 同步/异步分支：appendCkAsync 且 appendAckAsync 时 fire-and-forget 响应。 */
     private RemotingCommand processRequest(final Channel channel, RemotingCommand request,
         boolean brokerAllowSuspend) throws RemotingCommandException {
 
         CompletableFuture<RemotingCommand> responseFuture = processRequestAsync(channel, request, brokerAllowSuspend);
 
-        if (brokerController.getBrokerConfig().isAppendCkAsync() && brokerController.getBrokerConfig().isAppendAckAsync()) {
+        // 双异步模式：响应在 Future 完成时异步写回
             responseFuture.thenAccept(response -> doResponse(channel, request, response)).exceptionally(throwable -> {
                 RemotingCommand response = RemotingCommand.createResponseCommand(ChangeInvisibleTimeResponseHeader.class);
                 response.setCode(ResponseCode.SYSTEM_ERROR);
@@ -102,6 +108,7 @@ public class ChangeInvisibleTimeProcessor implements NettyRequestProcessor {
         return null;
     }
 
+    /** 校验 topic/queueId，构造新 PopCheckPoint 并异步落盘。 */
     public CompletableFuture<RemotingCommand> processRequestAsync(final Channel channel, RemotingCommand request,
         boolean brokerAllowSuspend) throws RemotingCommandException {
         final ChangeInvisibleTimeRequestHeader requestHeader = (ChangeInvisibleTimeRequestHeader) request.decodeCommandCustomHeader(ChangeInvisibleTimeRequestHeader.class);
@@ -307,6 +314,7 @@ public class ChangeInvisibleTimeProcessor implements NettyRequestProcessor {
         });
     }
 
+    /** 先 append 新 PopCheckPoint，成功后再 ACK 原 checkpoint。 */
     private CompletableFuture<Boolean> appendCheckPointThenAckOrigin(
         final ChangeInvisibleTimeRequestHeader requestHeader,
         int reviveQid,
@@ -416,6 +424,7 @@ public class ChangeInvisibleTimeProcessor implements NettyRequestProcessor {
         return CompletableFuture.completedFuture(response);
     }
 
+    /** 将响应写回客户端通道。 */
     protected void doResponse(Channel channel, RemotingCommand request,
         final RemotingCommand response) {
         NettyRemotingAbstract.writeResponse(channel, request, response, null, brokerController.getBrokerMetricsManager().getRemotingMetricsManager());

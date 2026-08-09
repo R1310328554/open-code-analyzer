@@ -67,9 +67,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Lite/LMQ 管理处理器：响应 GET_BROKER_LITE_INFO、GET_LITE_TOPIC_INFO 等
+ * 管理查询，以及 TRIGGER_LITE_DISPATCH 触发消息分发。
+ */
 public class LiteManagerProcessor implements NettyRequestProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LITE_LOGGER_NAME);
 
+    /** 单次查询返回条目数上限。 */
     private static final int MAX_RETURN_COUNT = 10000;
     private final BrokerController brokerController;
     private final AbstractLiteLifecycleManager liteLifecycleManager;
@@ -85,17 +90,17 @@ public class LiteManagerProcessor implements NettyRequestProcessor {
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         switch (request.getCode()) {
-            case RequestCode.GET_BROKER_LITE_INFO:
+            case RequestCode.GET_BROKER_LITE_INFO:  // 获取 Broker Lite 元信息
                 return this.getBrokerLiteInfo(ctx, request);
-            case RequestCode.GET_PARENT_TOPIC_INFO:
+            case RequestCode.GET_PARENT_TOPIC_INFO:  // 查询父 topic 信息
                 return this.getParentTopicInfo(ctx, request);
-            case RequestCode.GET_LITE_TOPIC_INFO:
+            case RequestCode.GET_LITE_TOPIC_INFO:  // 查询 Lite topic 列表
                 return this.getLiteTopicInfo(ctx, request);
-            case RequestCode.GET_LITE_CLIENT_INFO:
+            case RequestCode.GET_LITE_CLIENT_INFO:  // 查询 Lite 客户端连接
                 return this.getLiteClientInfo(ctx, request);
-            case RequestCode.GET_LITE_GROUP_INFO:
+            case RequestCode.GET_LITE_GROUP_INFO:  // 查询 Lite 消费组
                 return this.getLiteGroupInfo(ctx, request);
-            case RequestCode.TRIGGER_LITE_DISPATCH:
+            case RequestCode.TRIGGER_LITE_DISPATCH:  // 触发 Lite 消息分发
                 return this.triggerLiteDispatch(ctx, request);
             default:
                 break;
@@ -104,6 +109,7 @@ public class LiteManagerProcessor implements NettyRequestProcessor {
     }
 
     @VisibleForTesting
+    /** 返回 storeType、LMQ 数量、订阅数、orderInfo 规模等 Broker Lite 概览。 */
     protected RemotingCommand getBrokerLiteInfo(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
@@ -133,6 +139,7 @@ public class LiteManagerProcessor implements NettyRequestProcessor {
     }
 
     @VisibleForTesting
+    /** 按 parentTopic 返回 LMQ 子 topic 与 TTL 元数据。 */
     protected RemotingCommand getParentTopicInfo(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final GetParentTopicInfoRequestHeader requestHeader =
@@ -168,6 +175,7 @@ public class LiteManagerProcessor implements NettyRequestProcessor {
     }
 
     @VisibleForTesting
+    /** 分页返回 Lite topic 列表及 LMQ 元数据。 */
     protected RemotingCommand getLiteTopicInfo(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final GetLiteTopicInfoRequestHeader requestHeader =
@@ -360,6 +368,7 @@ public class LiteManagerProcessor implements NettyRequestProcessor {
     }
 
     @VisibleForTesting
+    /** 手动触发 Lite 事件分发（运维/调试）。 */
     protected RemotingCommand triggerLiteDispatch(ChannelHandlerContext ctx, RemotingCommand request)
         throws RemotingCommandException {
         final TriggerLiteDispatchRequestHeader requestHeader =

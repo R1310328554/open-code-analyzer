@@ -44,12 +44,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * POP Checkpoint/Ack 缓冲合并服务：将高频 CK/ACK 写入内存 buffer，
+ * 定时批量落盘并推进 consumerOffset，降低 CommitLog 写入压力。
+ */
 public class PopBufferMergeService extends ServiceThread {
     private static final Logger POP_LOGGER = LoggerFactory.getLogger(LoggerName.ROCKETMQ_POP_LOGGER_NAME);
+    /** mergeKey → 待合并的 PopCheckPoint 包装。 */
     ConcurrentHashMap<String/*mergeKey*/, PopCheckPointWrapper>
         buffer = new ConcurrentHashMap<>(1024 * 16);
+    /** topic@cid@queueId → 待提交 offset 的 CK 队列。 */
     ConcurrentHashMap<String/*topic@cid@queueId*/, QueueWithTime<PopCheckPointWrapper>> commitOffsets =
         new ConcurrentHashMap<>();
+    /** 服务是否处于正常合并状态（shutdown 时置 false）。 */
     private volatile boolean serving = true;
     private AtomicInteger counter = new AtomicInteger(0);
     private int scanTimes = 0;
@@ -89,11 +96,11 @@ public class PopBufferMergeService extends ServiceThread {
 
     @Override
     public void run() {
-        // scan
+        // 主循环：scan + 定期 scanGarbage
         while (!this.isStopped()) {
             try {
                 if (!isShouldRunning()) {
-                    // slave
+                    // Slave 清空 buffer，等待切 Master
                     this.waitForRunning(interval * 200 * 5);
                     POP_LOGGER.info("Broker is {}, {}, clear all data",
                         brokerController.getMessageStoreConfig().getBrokerRole(), this.master);
@@ -141,9 +148,7 @@ public class PopBufferMergeService extends ServiceThread {
             LinkedBlockingDeque<PopCheckPointWrapper> queue = entry.getValue().get();
             PopCheckPointWrapper pointWrapper;
             while ((pointWrapper = queue.peek()) != null) {
-                // 1. just offset & stored, not processed by scan
-                // 2. ck is buffer(acked)
-                // 3. ck is buffer(not all acked), all ak are stored and ck is stored
+                // 1. 仅 offset 已存储  2. CK 已 ACK  3. 全部 ACK 已存储且 CK 已存储
                 if (pointWrapper.isJustOffset() && pointWrapper.isCkStored() || isCkDone(pointWrapper)
                     || isCkDoneForFinish(pointWrapper) && pointWrapper.isCkStored()) {
                     if (commitOffset(pointWrapper)) {
@@ -185,6 +190,7 @@ public class PopBufferMergeService extends ServiceThread {
         return getLatestOffset(KeyBuilder.buildPollingKey(topic, group, queueId));
     }
 
+    /** 清理超时未完成的 buffer 条目，防止内存泄漏。 */
     private void scanGarbage() {
         Iterator<Map.Entry<String, QueueWithTime<PopCheckPointWrapper>>> iterator = commitOffsets.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -223,6 +229,7 @@ public class PopBufferMergeService extends ServiceThread {
     }
 
 
+    /** 扫描 buffer：合并 CK/ACK、落盘、提交 offset。 */
     private void scan() {
         long startTime = System.currentTimeMillis();
         AtomicInteger count = new AtomicInteger(0);
@@ -443,6 +450,7 @@ public class PopBufferMergeService extends ServiceThread {
      * @param nextBeginOffset
      * @return
      */
+    /** 仅记录 offset 的轻量 CK（无消息体），用于 commitOffset 推进。 */
     public boolean addCkJustOffset(PopCheckPoint point, int reviveQueueId, long reviveQueueOffset,
         long nextBeginOffset) {
         PopCheckPointWrapper pointWrapper = new PopCheckPointWrapper(reviveQueueId, reviveQueueOffset, point, nextBeginOffset, true);
@@ -487,6 +495,7 @@ public class PopBufferMergeService extends ServiceThread {
         }
     }
 
+    /** 将 PopCheckPoint 放入 buffer，必要时触发异步落盘。 */
     public boolean addCk(PopCheckPoint point, int reviveQueueId, long reviveQueueOffset, long nextBeginOffset) {
         // key: point.getT() + point.getC() + point.getQ() + point.getSo() + point.getPt()
         if (!brokerController.getBrokerConfig().isEnablePopBufferMerge()) {
@@ -818,6 +827,7 @@ public class PopBufferMergeService extends ServiceThread {
         return true;
     }
 
+    /** 带最后更新时间的阻塞队列，用于 commitOffset 调度。 */
     public class QueueWithTime<T> {
         private final LinkedBlockingDeque<T> queue;
         private long time;
@@ -840,6 +850,7 @@ public class PopBufferMergeService extends ServiceThread {
         }
     }
 
+    /** PopCheckPoint 及其关联 AckMsg 列表的缓冲包装。 */
     public class PopCheckPointWrapper {
         private final int reviveQueueId;
         // -1: not stored, >=0: stored, Long.MAX: storing.
