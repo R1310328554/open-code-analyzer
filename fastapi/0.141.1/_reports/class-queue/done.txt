@@ -220,3 +220,13 @@ docs_src/dependencies/tutorial014_an_py310.py
 docs_src/dependency_testing/__init__.py
 docs_src/dependency_testing/tutorial001_an_py310.py
 docs_src/dependency_testing/tutorial001_py310.py
+docs_src/extra_data_types/tutorial001_py310.py
+docs_src/extra_models/__init__.py
+docs_src/extra_models/tutorial001_py310.py
+docs_src/extra_models/tutorial002_py310.py
+docs_src/extra_models/tutorial003_py310.py
+docs_src/extra_models/tutorial004_py310.py
+docs_src/extra_models/tutorial005_py310.py
+docs_src/first_steps/__init__.py
+docs_src/first_steps/tutorial001_py310.py
+docs_src/first_steps/tutorial003_py310.py
