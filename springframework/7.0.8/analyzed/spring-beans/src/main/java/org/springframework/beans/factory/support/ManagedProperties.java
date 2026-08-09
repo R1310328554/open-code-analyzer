@@ -24,8 +24,8 @@ import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.Mergeable;
 
 /**
- * Tag class which represents a Spring-managed {@link Properties} instance
- * that supports merging of parent/child definitions.
+ * 标记类，表示由 Spring 管理的 {@link Properties} 实例，
+ * 并支持父子 Bean 定义之间的合并。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -34,14 +34,16 @@ import org.springframework.beans.Mergeable;
 @SuppressWarnings("serial")
 public class ManagedProperties extends Properties implements Mergeable, BeanMetadataElement {
 
+	/** 该元数据元素对应的配置来源对象。 */
 	private @Nullable Object source;
 
+	/** 是否允许与父级集合值合并。 */
 	private boolean mergeEnabled;
 
 
 	/**
-	 * Set the configuration source {@code Object} for this metadata element.
-	 * <p>The exact type of the object will depend on the configuration mechanism used.
+	 * 设置该元数据元素的配置来源 {@code Object}。
+	 * <p>对象的具体类型取决于所使用的配置机制。
 	 */
 	public void setSource(@Nullable Object source) {
 		this.source = source;
@@ -53,8 +55,8 @@ public class ManagedProperties extends Properties implements Mergeable, BeanMeta
 	}
 
 	/**
-	 * Set whether merging should be enabled for this collection,
-	 * in case of a 'parent' collection value being present.
+	 * 设置是否允许合并本集合；
+	 * 当存在「父级」集合值时可与父级合并。
 	 */
 	public void setMergeEnabled(boolean mergeEnabled) {
 		this.mergeEnabled = mergeEnabled;
@@ -77,6 +79,7 @@ public class ManagedProperties extends Properties implements Mergeable, BeanMeta
 		if (!(parent instanceof Properties properties)) {
 			throw new IllegalArgumentException("Cannot merge with object of type [" + parent.getClass() + "]");
 		}
+		// 先复制父级属性，再叠加当前属性（同名键由当前值覆盖）
 		Properties merged = new ManagedProperties();
 		merged.putAll(properties);
 		merged.putAll(this);

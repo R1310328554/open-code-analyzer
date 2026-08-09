@@ -26,8 +26,8 @@ import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.Mergeable;
 
 /**
- * Tag collection class used to hold managed Map values, which may
- * include runtime bean references (to be resolved into bean objects).
+ * 标记集合类，用于承载受 Spring 管理的 {@code Map} 值；
+ * 值中可能包含运行时 Bean 引用（后续会解析为实际 Bean 对象）。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -38,31 +38,38 @@ import org.springframework.beans.Mergeable;
 @SuppressWarnings("serial")
 public class ManagedMap<K, V> extends LinkedHashMap<K, V> implements Mergeable, BeanMetadataElement {
 
+	/** 该元数据元素对应的配置来源对象。 */
 	private @Nullable Object source;
 
+	/** 映射键的默认类型名（全限定类名）。 */
 	private @Nullable String keyTypeName;
 
+	/** 映射值的默认类型名（全限定类名）。 */
 	private @Nullable String valueTypeName;
 
+	/** 是否允许与父级集合值合并。 */
 	private boolean mergeEnabled;
 
 
+	/** 构造空映射。 */
 	public ManagedMap() {
 	}
 
+	/**
+	 * 构造具有指定初始容量的映射。
+	 * @param initialCapacity 初始容量
+	 */
 	public ManagedMap(int initialCapacity) {
 		super(initialCapacity);
 	}
 
 
 	/**
-	 * Return a new instance containing keys and values extracted from the
-	 * given entries. The entries themselves are not stored in the map.
-	 * @param entries {@code Map.Entry}s containing the keys and values
-	 * from which the map is populated
+	 * 根据给定条目创建新实例；条目对象本身不会存入映射。
+	 * @param entries 用于填充映射的 {@code Map.Entry}，包含键与值
 	 * @param <K> the {@code Map}'s key type
 	 * @param <V> the {@code Map}'s value type
-	 * @return a {@code Map} containing the specified mappings
+	 * @return 包含指定映射关系的 {@code Map}
 	 * @since 5.3.16
 	 */
 	@SafeVarargs
@@ -76,8 +83,8 @@ public class ManagedMap<K, V> extends LinkedHashMap<K, V> implements Mergeable, 
 	}
 
 	/**
-	 * Set the configuration source {@code Object} for this metadata element.
-	 * <p>The exact type of the object will depend on the configuration mechanism used.
+	 * 设置该元数据元素的配置来源 {@code Object}。
+	 * <p>对象的具体类型取决于所使用的配置机制。
 	 */
 	public void setSource(@Nullable Object source) {
 		this.source = source;
@@ -89,36 +96,36 @@ public class ManagedMap<K, V> extends LinkedHashMap<K, V> implements Mergeable, 
 	}
 
 	/**
-	 * Set the default key type name (class name) to be used for this map.
+	 * 设置本映射使用的默认键类型名（类名）。
 	 */
 	public void setKeyTypeName(@Nullable String keyTypeName) {
 		this.keyTypeName = keyTypeName;
 	}
 
 	/**
-	 * Return the default key type name (class name) to be used for this map.
+	 * 返回本映射使用的默认键类型名（类名）。
 	 */
 	public @Nullable String getKeyTypeName() {
 		return this.keyTypeName;
 	}
 
 	/**
-	 * Set the default value type name (class name) to be used for this map.
+	 * 设置本映射使用的默认值类型名（类名）。
 	 */
 	public void setValueTypeName(@Nullable String valueTypeName) {
 		this.valueTypeName = valueTypeName;
 	}
 
 	/**
-	 * Return the default value type name (class name) to be used for this map.
+	 * 返回本映射使用的默认值类型名（类名）。
 	 */
 	public @Nullable String getValueTypeName() {
 		return this.valueTypeName;
 	}
 
 	/**
-	 * Set whether merging should be enabled for this collection,
-	 * in case of a 'parent' collection value being present.
+	 * 设置是否允许合并本集合；
+	 * 当存在「父级」集合值时可与父级合并。
 	 */
 	public void setMergeEnabled(boolean mergeEnabled) {
 		this.mergeEnabled = mergeEnabled;
@@ -141,6 +148,7 @@ public class ManagedMap<K, V> extends LinkedHashMap<K, V> implements Mergeable, 
 		if (!(parent instanceof Map)) {
 			throw new IllegalArgumentException("Cannot merge with object of type [" + parent.getClass() + "]");
 		}
+		// 先放入父级条目，再用当前映射覆盖/追加
 		Map<K, V> merged = new ManagedMap<>();
 		merged.putAll((Map<K, V>) parent);
 		merged.putAll(this);

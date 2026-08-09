@@ -26,8 +26,8 @@ import org.springframework.beans.BeanMetadataElement;
 import org.springframework.beans.Mergeable;
 
 /**
- * Tag collection class used to hold managed List elements, which may
- * include runtime bean references (to be resolved into bean objects).
+ * 标记集合类，用于承载受 Spring 管理的 {@code List} 元素；
+ * 元素中可能包含运行时 Bean 引用（后续会解析为实际 Bean 对象）。
  *
  * @author Rod Johnson
  * @author Rob Harrop
@@ -40,26 +40,34 @@ import org.springframework.beans.Mergeable;
 @SuppressWarnings("serial")
 public class ManagedList<E> extends ArrayList<E> implements Mergeable, BeanMetadataElement {
 
+	/** 该元数据元素对应的配置来源对象。 */
 	private @Nullable Object source;
 
+	/** 列表元素的默认类型名（全限定类名）。 */
 	private @Nullable String elementTypeName;
 
+	/** 是否允许与父级集合值合并。 */
 	private boolean mergeEnabled;
 
 
+	/** 构造空列表。 */
 	public ManagedList() {
 	}
 
+	/**
+	 * 构造具有指定初始容量的列表。
+	 * @param initialCapacity 初始容量
+	 */
 	public ManagedList(int initialCapacity) {
 		super(initialCapacity);
 	}
 
 
 	/**
-	 * Create a new instance containing an arbitrary number of elements.
-	 * @param elements the elements to be contained in the list
+	 * 创建包含任意数量元素的新实例。
+	 * @param elements 要放入列表的元素
 	 * @param <E> the {@code List}'s element type
-	 * @return a {@code ManagedList} containing the specified elements
+	 * @return 包含指定元素的 {@code ManagedList}
 	 * @since 5.3.16
 	 */
 	@SafeVarargs
@@ -71,8 +79,8 @@ public class ManagedList<E> extends ArrayList<E> implements Mergeable, BeanMetad
 	}
 
 	/**
-	 * Set the configuration source {@code Object} for this metadata element.
-	 * <p>The exact type of the object will depend on the configuration mechanism used.
+	 * 设置该元数据元素的配置来源 {@code Object}。
+	 * <p>对象的具体类型取决于所使用的配置机制。
 	 */
 	public void setSource(@Nullable Object source) {
 		this.source = source;
@@ -84,22 +92,22 @@ public class ManagedList<E> extends ArrayList<E> implements Mergeable, BeanMetad
 	}
 
 	/**
-	 * Set the default element type name (class name) to be used for this list.
+	 * 设置本列表使用的默认元素类型名（类名）。
 	 */
 	public void setElementTypeName(String elementTypeName) {
 		this.elementTypeName = elementTypeName;
 	}
 
 	/**
-	 * Return the default element type name (class name) to be used for this list.
+	 * 返回本列表使用的默认元素类型名（类名）。
 	 */
 	public @Nullable String getElementTypeName() {
 		return this.elementTypeName;
 	}
 
 	/**
-	 * Set whether merging should be enabled for this collection,
-	 * in case of a 'parent' collection value being present.
+	 * 设置是否允许合并本集合；
+	 * 当存在「父级」集合值时可与父级合并。
 	 */
 	public void setMergeEnabled(boolean mergeEnabled) {
 		this.mergeEnabled = mergeEnabled;
@@ -122,6 +130,7 @@ public class ManagedList<E> extends ArrayList<E> implements Mergeable, BeanMetad
 		if (!(parent instanceof List)) {
 			throw new IllegalArgumentException("Cannot merge with object of type [" + parent.getClass() + "]");
 		}
+		// 先放入父级元素，再追加当前列表元素
 		List<E> merged = new ManagedList<>();
 		merged.addAll((List<E>) parent);
 		merged.addAll(this);

@@ -27,11 +27,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Extension of {@link MethodOverride} that represents an arbitrary
- * override of a method by the IoC container.
+ * {@link MethodOverride} 的扩展，表示 IoC 容器对某方法的任意覆盖。
  *
- * <p>Any non-final method can be overridden, irrespective of its
- * parameters and return types.
+ * <p>任何非 final 方法均可被覆盖，与其参数及返回类型无关。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -39,15 +37,17 @@ import org.springframework.util.Assert;
  */
 public class ReplaceOverride extends MethodOverride {
 
+	/** 实现 {@link MethodReplacer} 的 Bean 名称。 */
 	private final String methodReplacerBeanName;
 
+	/** 用于消歧重载方法的参数类型标识片段列表。 */
 	private final List<String> typeIdentifiers = new ArrayList<>();
 
 
 	/**
-	 * Construct a new ReplaceOverride.
-	 * @param methodName the name of the method to override
-	 * @param methodReplacerBeanName the bean name of the {@link MethodReplacer}
+	 * 构造新的 ReplaceOverride。
+	 * @param methodName 要覆盖的方法名
+	 * @param methodReplacerBeanName {@link MethodReplacer} 的 Bean 名称
 	 */
 	public ReplaceOverride(String methodName, String methodReplacerBeanName) {
 		super(methodName);
@@ -56,10 +56,10 @@ public class ReplaceOverride extends MethodOverride {
 	}
 
 	/**
-	 * Construct a new ReplaceOverride.
-	 * @param methodName the name of the method to override
-	 * @param methodReplacerBeanName the bean name of the {@link MethodReplacer}
-	 * @param typeIdentifiers a list of type identifiers for parameter types
+	 * 构造新的 ReplaceOverride。
+	 * @param methodName 要覆盖的方法名
+	 * @param methodReplacerBeanName {@link MethodReplacer} 的 Bean 名称
+	 * @param typeIdentifiers 参数类型的类型标识列表
 	 * @since 6.2.9
 	 */
 	public ReplaceOverride(String methodName, String methodReplacerBeanName, List<String> typeIdentifiers) {
@@ -71,23 +71,23 @@ public class ReplaceOverride extends MethodOverride {
 
 
 	/**
-	 * Return the name of the bean implementing MethodReplacer.
+	 * 返回实现 MethodReplacer 的 Bean 名称。
 	 */
 	public String getMethodReplacerBeanName() {
 		return this.methodReplacerBeanName;
 	}
 
 	/**
-	 * Add a fragment of a class string, like "Exception"
-	 * or "java.lang.Exc", to identify a parameter type.
-	 * @param identifier a substring of the fully qualified class name
+	 * 添加类名字符串片段（如 "Exception" 或 "java.lang.Exc"），
+	 * 用于标识某一参数类型。
+	 * @param identifier 全限定类名的子串
 	 */
 	public void addTypeIdentifier(String identifier) {
 		this.typeIdentifiers.add(identifier);
 	}
 
 	/**
-	 * Return the list of registered type identifiers (fragments of a class string).
+	 * 返回已注册的类型标识列表（类名字符串片段）。
 	 * @since 6.2.9
 	 * @see #addTypeIdentifier
 	 */
@@ -102,10 +102,10 @@ public class ReplaceOverride extends MethodOverride {
 			return false;
 		}
 		if (!isOverloaded()) {
-			// Not overloaded: don't worry about arg type matching...
+			// 非重载：无需匹配参数类型
 			return true;
 		}
-		// If we get here, we need to insist on precise argument matching...
+		// 重载方法：必须精确匹配参数类型标识
 		if (this.typeIdentifiers.size() != method.getParameterCount()) {
 			return false;
 		}
