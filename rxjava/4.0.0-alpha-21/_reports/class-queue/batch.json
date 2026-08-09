@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:01:57Z",
   "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableScalarXMap.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableScan.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableScanSeed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSequenceEqual.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSequenceEqualSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSerialized.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSingleMaybe.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSingleSingle.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSkip.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSkipLast.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSkipLastTimed.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSkipUntil.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSkipWhile.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSubscribeOn.java",
-    "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSwitchIfEmpty.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableSwitchMap.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTake.java",
     "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableTakeLast.java",
@@ -33,5 +18,5 @@
     "src/main/java/io/reactivex/rxjava4/internal/operators/observable/ObservableToList.java"
   ],
   "remaining_pending": 392,
-  "done": 585
+  "done": 600
 }
