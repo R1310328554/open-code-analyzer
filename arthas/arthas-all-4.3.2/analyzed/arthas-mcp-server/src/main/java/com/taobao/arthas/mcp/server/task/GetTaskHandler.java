@@ -10,7 +10,9 @@ import com.taobao.arthas.mcp.server.protocol.spec.McpSchema;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Optional custom handler for {@code tasks/get} requests.
+ * {@code tasks/get} 的可选自定义处理器。
+ * <p>
+ * 若返回非 null，{@link DefaultTaskManager} 将直接使用该结果；否则回退到 TaskStore 查询。
  *
  * @author Yeaury
  */

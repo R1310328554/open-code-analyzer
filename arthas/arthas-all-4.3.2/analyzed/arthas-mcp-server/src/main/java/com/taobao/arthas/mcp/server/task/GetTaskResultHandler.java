@@ -10,7 +10,9 @@ import com.taobao.arthas.mcp.server.protocol.spec.McpSchema;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Optional custom handler for {@code tasks/result} requests.
+ * {@code tasks/result} 的可选自定义处理器。
+ * <p>
+ * 用于在默认轮询/取 payload 逻辑之前注入工具专属的结果组装行为。
  *
  * @author Yeaury
  */

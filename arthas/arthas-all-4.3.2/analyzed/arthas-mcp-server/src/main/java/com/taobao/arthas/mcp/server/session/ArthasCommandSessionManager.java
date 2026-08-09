@@ -12,8 +12,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manager for MCP-to-Command session bindings.
- * Handles the lifecycle of command sessions associated with MCP sessions.
+ * MCP 会话与 Arthas 命令会话的绑定管理器。
+ * <p>
+ * 维护 MCP session ID 到 Arthas session/consumer 的映射，支持过期重建、认证注入
+ * 以及独立于 MCP 会话的 Task 专用隔离 session。
  */
 public class ArthasCommandSessionManager {
     private static final Logger logger = LoggerFactory.getLogger(ArthasCommandSessionManager.class);
@@ -24,6 +26,7 @@ public class ArthasCommandSessionManager {
 
     private final CommandExecutor commandExecutor;
     private final int maxConcurrentTaskSessions;
+    /** MCP 会话 ID -> 命令会话绑定。 */
     private final ConcurrentHashMap<String, CommandSessionBinding> sessionBindings = new ConcurrentHashMap<>();
 
     // 独立管理 task session
@@ -38,6 +41,7 @@ public class ArthasCommandSessionManager {
         this.maxConcurrentTaskSessions = maxConcurrentTaskSessions;
     }
 
+    /** MCP 与 Arthas 会话的一对一绑定快照，含创建与最后访问时间。 */
     public static class CommandSessionBinding {
         private final String mcpSessionId;
         private final String arthasSessionId;
@@ -73,11 +77,13 @@ public class ArthasCommandSessionManager {
             return lastAccessTime;
         }
         
+        /** 刷新最后访问时间，用于空闲过期判断。 */
         public void updateAccessTime() {
             this.lastAccessTime = System.currentTimeMillis();
         }
     }
 
+    /** 在 Arthas 侧创建新 session 并封装为绑定对象（尚未注册到 map）。 */
     public CommandSessionBinding createCommandSession(String mcpSessionId) {
         Map<String, Object> result = commandExecutor.createSession(true);
         
@@ -154,6 +160,7 @@ public class ArthasCommandSessionManager {
         return true;
     }
 
+    /** 关闭并移除指定 MCP 会话对应的命令 session。 */
     public void closeCommandSession(String mcpSessionId) {
         CommandSessionBinding binding = sessionBindings.remove(mcpSessionId);
         if (binding != null) {
@@ -162,6 +169,7 @@ public class ArthasCommandSessionManager {
         }
     }
 
+    /** 关闭所有已注册的 MCP 命令 session。 */
     public void closeAllSessions() {
         sessionBindings.keySet().forEach(this::closeCommandSession);
     }
@@ -194,6 +202,7 @@ public class ArthasCommandSessionManager {
         }
     }
 
+    /** 关闭并移除指定 Task 的隔离 session。 */
     public void closeTaskSession(String taskId) {
         CommandSessionBinding binding = taskSessionBindings.remove(taskId);
         if (binding != null) {
@@ -208,6 +217,7 @@ public class ArthasCommandSessionManager {
         }
     }
 
+    /** 返回当前活跃的 Task 隔离 session 数量。 */
     public int getActiveTaskSessionCount() {
         return taskSessionBindings.size();
     }

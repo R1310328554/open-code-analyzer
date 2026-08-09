@@ -14,10 +14,9 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * In-memory {@link TaskMessageQueue} implementation.
- *
- * <p>Uses two separate queues per task: actionable (Request/Notification, returned by
- * dequeue/dequeueAll) and response (Response, retrieved via waitForResponse only).
+ * {@link TaskMessageQueue} 的内存实现，按 Task ID 维护双队列。
+ * <p>
+ * 可执行队列存放 Request/Notification（dequeue 消费）；响应队列仅由 {@link #waitForResponse} 按 requestId 匹配取出。
  *
  * @author Yeaury
  */
@@ -25,9 +24,11 @@ public class InMemoryTaskMessageQueue implements TaskMessageQueue {
 
     private static final Logger logger = LoggerFactory.getLogger(InMemoryTaskMessageQueue.class);
 
+    /** taskId -> 待处理的 Request/Notification 队列。 */
     private final ConcurrentHashMap<String, ConcurrentLinkedQueue<QueuedMessage>> actionableQueues
         = new ConcurrentHashMap<>();
 
+    /** taskId -> 客户端响应队列（按 requestId 匹配）。 */
     private final ConcurrentHashMap<String, ConcurrentLinkedQueue<QueuedMessage.Response>> responseQueues
         = new ConcurrentHashMap<>();
 
@@ -155,19 +156,19 @@ public class InMemoryTaskMessageQueue implements TaskMessageQueue {
         });
     }
 
-    /** Returns the actionable message count for a task (for testing/monitoring). */
+    /** 返回指定 Task 可执行队列长度（测试/监控用）。 */
     public int getActionableMessageCount(String taskId) {
         ConcurrentLinkedQueue<QueuedMessage> queue = actionableQueues.get(taskId);
         return queue != null ? queue.size() : 0;
     }
 
-    /** Returns the response message count for a task (for testing/monitoring). */
+    /** 返回指定 Task 响应队列长度（测试/监控用）。 */
     public int getResponseMessageCount(String taskId) {
         ConcurrentLinkedQueue<QueuedMessage.Response> queue = responseQueues.get(taskId);
         return queue != null ? queue.size() : 0;
     }
 
-    /** Returns the total message count across all tasks (for testing/monitoring). */
+    /** 返回所有 Task 的消息总数（测试/监控用）。 */
     public int getTotalMessageCount() {
         int total = actionableQueues.values().stream().mapToInt(ConcurrentLinkedQueue::size).sum();
         total += responseQueues.values().stream().mapToInt(ConcurrentLinkedQueue::size).sum();

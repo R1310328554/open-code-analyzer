@@ -20,7 +20,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Default {@link TaskManager} implementation handling task orchestration and side-channel messaging.
+ * {@link TaskManager} 默认实现：编排 Task 生命周期、注册标准 tasks/* 处理器并驱动 side-channel 消息。
+ * <p>
+ * 入站请求可包装 relatedTask 元数据；出站请求/通知在关联 Task 时入队，由 INPUT_REQUIRED 轮询消费。
  *
  * @see TaskManager
  * @see NullTaskManager
@@ -36,10 +38,10 @@ class DefaultTaskManager implements TaskManager {
     private final Duration defaultPollInterval;
     private final Duration pollTimeout;
 
-    /** Pending request resolvers awaiting side-channel responses. */
+    /** 等待 side-channel 响应的挂起请求解析器（messageId -> 回调）。 */
     private final Map<Object, RequestResolver> requestResolvers = new ConcurrentHashMap<>();
 
-    /** Stores response and error handlers for a pending request. */
+    /** 单个挂起请求的响应与错误回调对。 */
     private static class RequestResolver {
         final Consumer<Object> responseHandler;
         final Consumer<Throwable> errorHandler;
@@ -225,7 +227,7 @@ class DefaultTaskManager implements TaskManager {
         return this.defaultPollInterval;
     }
 
-    // Private helpers
+    // 私有辅助：从请求参数解析 relatedTask 与 task 创建参数
 
     @SuppressWarnings("unchecked")
     private String extractRelatedTaskId(Object requestParams) {
@@ -274,7 +276,7 @@ class DefaultTaskManager implements TaskManager {
         return null;
     }
 
-    // Handler implementations
+    // 标准 MCP Task 方法处理器：get / result / list / cancel
 
     private CompletableFuture<McpSchema.Result> handleGetTask(String requestMethod, Object requestParams,
                                                                TaskManagerHost.TaskHandlerContext ctx) {
@@ -359,7 +361,7 @@ class DefaultTaskManager implements TaskManager {
                             taskId, task.getStatus(),
                             this.messageQueue != null ? "present" : "null");
 
-                    // Handle INPUT_REQUIRED: process queued side-channel messages first
+                    // INPUT_REQUIRED：先消费 side-channel 队列再尝试取结果
                     if (task.getStatus() == McpSchema.TaskStatus.INPUT_REQUIRED && this.messageQueue != null) {
                         logger.debug("handleGetTaskResult: Task {} is INPUT_REQUIRED, starting side-channel processing",
                                 taskId);
@@ -373,7 +375,7 @@ class DefaultTaskManager implements TaskManager {
                 });
     }
 
-    /** Tries the custom tasks/result handler, falling back to default store lookup. */
+    /** 优先尝试自定义 tasks/result 处理器，否则走 TaskStore 默认逻辑。 */
     private CompletableFuture<McpSchema.Result> tryCustomHandlerOrDefault(
             String taskId, McpSchema.GetTaskPayloadRequest typedRequest,
             TaskManagerHost.TaskHandlerContext ctx, String sessionId) {
@@ -388,7 +390,7 @@ class DefaultTaskManager implements TaskManager {
                 });
     }
 
-    /** Default tasks/result implementation using the TaskStore. */
+    /** 基于 TaskStore 的默认 tasks/result：终态直接取结果，否则 watch 直至完成。 */
     private CompletableFuture<McpSchema.Result> defaultGetTaskResult(String taskId, String sessionId) {
         return this.taskStore.getTask(taskId, sessionId)
                 .thenCompose(storeResult -> {
@@ -411,10 +413,10 @@ class DefaultTaskManager implements TaskManager {
                 });
     }
 
-    /** Fetches the result of a terminal task. */
+    /** 读取已终态 Task 的 payload；CANCELLED 无存储时构造语义化响应。 */
     @SuppressWarnings("unchecked")
     private CompletableFuture<McpSchema.Result> fetchTaskResult(String taskId, String sessionId) {
-        // Re-fetch the task to get its current status for fallback construction.
+        // 重新读取 Task 以获取最新状态，用于构造 CANCELLED 等兜底响应
         return this.taskStore.getTask(taskId, sessionId).thenCompose(storeResult -> {
             final McpSchema.Task task = storeResult != null ? storeResult.task() : null;
             TaskStore<McpSchema.Result> store = (TaskStore<McpSchema.Result>) this.taskStore;
@@ -423,19 +425,19 @@ class DefaultTaskManager implements TaskManager {
                         if (result != null) {
                             return result;
                         }
-                        // CANCELLED tasks never store a payload — construct a semantic response.
+                        // CANCELLED 通常无 payload，构造带说明的 CallToolResult
                         if (task != null && task.getStatus() == McpSchema.TaskStatus.CANCELLED) {
                             String msg = "Task was cancelled" +
                                     (task.getStatusMessage() != null ? ": " + task.getStatusMessage() : "");
                             return (McpSchema.Result) new McpSchema.CallToolResult(msg, true, null);
                         }
-                        // Should not reach here for FAILED tasks (payload stored by failTask).
+                        // FAILED 应由 failTask 写入 payload，不应走到此分支
                         throw new RuntimeException("Task result not found");
                     });
         });
     }
 
-    /** Watches a task until terminal, then fetches its result. */
+    /** 订阅 Task 状态变更直至终态或超时，再拉取结果。 */
     private CompletableFuture<McpSchema.Result> watchAndFetchResult(String taskId, String sessionId) {
         long timeoutMs = this.pollTimeout.toMillis();
         return this.taskStore.watchTaskUntilTerminal(taskId, sessionId, timeoutMs)
@@ -472,7 +474,7 @@ class DefaultTaskManager implements TaskManager {
     }
 
     /**
-     * Processes all queued side-channel messages for an INPUT_REQUIRED task, then waits for terminal state.
+     * 处理 INPUT_REQUIRED Task 的全部 side-channel 队列消息，随后轮询直至终态。
      */
     private CompletableFuture<McpSchema.Result> processQueuedMessagesAndWaitForTerminal(
             TaskManagerHost.TaskHandlerContext ctx, String taskId, String sessionId) {
@@ -486,7 +488,7 @@ class DefaultTaskManager implements TaskManager {
                 });
     }
 
-    /** Dequeues and processes all actionable messages for a task. */
+    /** 出队并顺序处理 Task 的全部可执行消息（Request/Notification）。 */
     private CompletableFuture<Void> processAllQueuedMessages(TaskManagerHost.TaskHandlerContext ctx, String taskId) {
         return this.messageQueue.dequeueAll(taskId)
                 .thenCompose(messages -> {
@@ -498,7 +500,7 @@ class DefaultTaskManager implements TaskManager {
                 });
     }
 
-    /** Dispatches a single queued message to the client. */
+    /** 将单条队列消息转发给 MCP 客户端（请求或通知）。 */
     private CompletableFuture<Void> processMessage(TaskManagerHost.TaskHandlerContext ctx, QueuedMessage msg,
                                                      String taskId) {
         if (msg instanceof QueuedMessage.Request) {
@@ -514,7 +516,7 @@ class DefaultTaskManager implements TaskManager {
         return CompletableFuture.completedFuture(null);
     }
 
-    /** Sends a request to the client and enqueues the response for waitForResponse() to retrieve. */
+    /** 向客户端发送 side-channel 请求，并将响应重新入队供后续 waitForResponse 消费。 */
     private CompletableFuture<Void> sendRequestAndEnqueueResponse(TaskManagerHost.TaskHandlerContext ctx,
                                                                     QueuedMessage.Request req, String taskId) {
         String requestId = String.valueOf(req.requestId());
@@ -533,7 +535,7 @@ class DefaultTaskManager implements TaskManager {
                 });
     }
 
-    /** Returns the result class for a known side-channel method. */
+    /** 根据 side-channel 方法名返回期望的 MCP 结果类型。 */
     private Class<? extends McpSchema.Result> getResultClass(String method) {
         if (McpSchema.METHOD_ELICITATION_CREATE.equals(method)) {
             return McpSchema.ElicitResult.class;
@@ -544,14 +546,14 @@ class DefaultTaskManager implements TaskManager {
         }
     }
 
-    /** Sends a notification to the client without waiting for a response. */
+    /** 向客户端发送带 relatedTask 元数据的通知，不等待响应。 */
     private CompletableFuture<Void> sendNotificationToClient(TaskManagerHost.TaskHandlerContext ctx,
                                                               QueuedMessage.Notification notif, String taskId) {
         Object notification = TaskMetadataUtils.addRelatedTaskMetadata(taskId, notif.notification());
         return ctx.sendNotification(notif.method(), notification);
     }
 
-    /** Polls and processes messages until the task reaches a terminal state. */
+    /** 在 pollTimeout 内轮询 Task 状态并处理 INPUT_REQUIRED 队列，直至终态。 */
     private CompletableFuture<McpSchema.Result> pollAndProcessUntilTerminal(
             TaskManagerHost.TaskHandlerContext ctx, String taskId, String sessionId) {
 
@@ -570,7 +572,7 @@ class DefaultTaskManager implements TaskManager {
                 .thenApply(obj -> (McpSchema.Result) obj);
     }
 
-    /** Recursive poll-and-process loop. */
+    /** 递归轮询：按 Task pollInterval 休眠后再次检查状态与队列。 */
     private CompletableFuture<McpSchema.Result> doPollAndProcess(
             TaskManagerHost.TaskHandlerContext ctx, String taskId, String sessionId) {
         return this.taskStore.getTask(taskId, sessionId)
@@ -677,7 +679,7 @@ class DefaultTaskManager implements TaskManager {
         return null;
     }
 
-    /** Shared scheduler to avoid creating a new thread pool per delay() call. */
+    /** 共享延迟调度器，避免每次 delay() 新建线程池。 */
     private static final java.util.concurrent.ScheduledExecutorService DELAY_SCHEDULER =
             java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "task-manager-delay");
@@ -685,7 +687,7 @@ class DefaultTaskManager implements TaskManager {
                 return t;
             });
 
-    /** Delays for the given number of milliseconds. */
+    /** 异步延迟指定毫秒数后完成 Future。 */
     private CompletableFuture<Void> delay(long milliseconds) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         DELAY_SCHEDULER.schedule(() -> future.complete(null), milliseconds, java.util.concurrent.TimeUnit.MILLISECONDS);

@@ -10,7 +10,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
- * No-op {@link TaskManager} used when task support is not configured.
+ * 未配置 Task 支持时使用的空实现 {@link TaskManager}。
+ * <p>
+ * 所有入站/出站 Task 相关钩子均透传或返回“未处理”，不注册 tasks/* 处理器。
  *
  * @author Yeaury
  */
@@ -20,6 +22,7 @@ final class NullTaskManager implements TaskManager {
 
     private NullTaskManager() {}
 
+    /** 返回单例 NullTaskManager。 */
     static TaskManager getInstance() {
         return INSTANCE;
     }

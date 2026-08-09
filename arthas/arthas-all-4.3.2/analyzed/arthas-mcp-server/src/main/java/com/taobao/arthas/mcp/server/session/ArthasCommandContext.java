@@ -13,26 +13,35 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Command execution context for MCP server.
- * Manages command execution lifecycle and result collection.
+ * MCP 服务端命令执行上下文，封装 {@link CommandExecutor} 与可选的会话绑定。
+ * <p>
+ * 负责同步/异步执行 Arthas 命令、收集输出结果，并在会话模式下管理认证与用户标识。
  */
 public class ArthasCommandContext {
 
     private static final Logger logger = LoggerFactory.getLogger(ArthasCommandContext.class);
 
+    /** 同步命令执行默认超时（毫秒）。 */
     private static final long DEFAULT_SYNC_TIMEOUT = 30000L;
 
+    /** 底层命令执行器，实际调用 Arthas 内核。 */
     private final CommandExecutor commandExecutor;
+    /** 与 MCP 会话绑定的 Arthas session；临时模式下为 null。 */
     private final ArthasCommandSessionManager.CommandSessionBinding binding;
+    /** 标记当前命令执行是否已结束。 */
     private volatile boolean executionComplete = false;
+    /** 命令输出片段列表，线程安全追加。 */
     private final List<Object> results = new CopyOnWriteArrayList<>();
+    /** 保护结果读写与完成状态的互斥锁。 */
     private final Lock resultLock = new ReentrantLock();
 
+    /** 临时模式构造：无会话绑定，仅支持同步执行。 */
     public ArthasCommandContext(CommandExecutor commandExecutor) {
         this.commandExecutor = Objects.requireNonNull(commandExecutor, "commandExecutor cannot be null");
         this.binding = null;
     }
 
+    /** 会话模式构造：绑定 MCP/Arthas 会话，支持异步拉取与中断。 */
     public ArthasCommandContext(CommandExecutor commandExecutor, ArthasCommandSessionManager.CommandSessionBinding binding) {
         this.commandExecutor = Objects.requireNonNull(commandExecutor, "commandExecutor cannot be null");
         this.binding = binding;
@@ -47,13 +56,14 @@ public class ArthasCommandContext {
     }
 
     /**
-     * Alias for getSessionId() for compatibility
+     * {@link #getSessionId()} 的别名，供需要显式 Arthas session ID 的调用方使用。
      */
     public String getArthasSessionId() {
         requireSessionSupport();
         return binding.getArthasSessionId();
     }
 
+    /** 校验当前上下文已绑定会话，否则抛出非法状态异常。 */
     private void requireSessionSupport() {
         if (binding == null) {
             throw new IllegalStateException("Session-based operations are not supported in temporary mode. " +
@@ -94,21 +104,21 @@ public class ArthasCommandContext {
     }
 
     /**
-     * Execute command synchronously with default timeout
+     * 以默认超时同步执行命令行。
      */
     public Map<String, Object> executeSync(String commandLine) {
         return executeSync(commandLine, DEFAULT_SYNC_TIMEOUT);
     }
 
     /**
-     * Execute command synchronously with specified timeout
+     * 以指定超时同步执行命令行。
      */
     public Map<String, Object> executeSync(String commandLine, long timeout) {
         return commandExecutor.executeSync(commandLine, timeout);
     }
 
     /**
-     * Execute command synchronously with auth subject
+     * 携带认证主体同步执行命令（无 userId 统计）。
      */
     public Map<String, Object> executeSync(String commandStr, Object authSubject) {
         return commandExecutor.executeSync(commandStr, DEFAULT_SYNC_TIMEOUT, null, authSubject, null);
@@ -127,7 +137,7 @@ public class ArthasCommandContext {
     }
 
     /**
-     * Execute command asynchronously
+     * 在绑定的 Arthas 会话上异步提交命令，立即返回。
      */
     public Map<String, Object> executeAsync(String commandLine) {
         requireSessionSupport();
@@ -135,7 +145,7 @@ public class ArthasCommandContext {
     }
 
     /**
-     * Pull command execution results
+     * 按 consumerId 从会话拉取异步命令的输出块。
      */
     public Map<String, Object> pullResults() {
         requireSessionSupport();
@@ -143,7 +153,7 @@ public class ArthasCommandContext {
     }
 
     /**
-     * Interrupt the current job
+     * 中断当前会话上正在执行的 Arthas 作业。
      */
     public Map<String, Object> interruptJob() {
         if (binding != null) {
@@ -152,6 +162,7 @@ public class ArthasCommandContext {
         return null;
     }
 
+    /** 将会话关联的用户 ID 写入 Arthas session，用于统计上报。 */
     public void setSessionUserId(String userId) {
         if (binding != null && userId != null) {
             commandExecutor.setSessionUserId(binding.getArthasSessionId(), userId);

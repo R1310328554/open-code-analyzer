@@ -10,7 +10,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handler for task creation. Implementations start async work and return immediately with a task.
+ * Task 创建处理器：启动异步工作后立即返回 {@link McpSchema.CreateTaskResult}。
+ * <p>
+ * 典型流程：在 {@link CreateTaskContext} 上 createTask，后台线程执行 Arthas 命令，
+ * 完成后调用 completeTask 或 failTask。
  *
  * @author Yeaury
  */

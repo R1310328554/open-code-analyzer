@@ -18,12 +18,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * In-memory {@link TaskStore} implementation with TTL-based cleanup.
+ * 带 TTL 定期清理的内存 {@link TaskStore} 实现。
+ * <p>
+ * 使用 {@link ConcurrentSkipListMap} 按 taskId 排序，支持 O(log n) 游标分页；
+ * 协作取消信号在过期 Task 移除后仍保留一段时间供后台 worker 观测。
  *
- * <p>Uses {@link ConcurrentSkipListMap} for O(log n) sorted access and efficient
- * cursor-based pagination via {@code tailMap()}.
- *
- * @param <R> result type
+ * @param <R> Task 结果 payload 类型
  * @author Yeaury
  */
 public class InMemoryTaskStore<R extends McpSchema.Result> implements TaskStore<R> {
@@ -38,10 +38,13 @@ public class InMemoryTaskStore<R extends McpSchema.Result> implements TaskStore<
 
     private static final int DEFAULT_MAX_TASKS = TaskDefaults.DEFAULT_MAX_TASKS;
 
+    /** taskId -> Task 元数据与上下文条目。 */
     private final NavigableMap<String, TaskEntry> tasks = new ConcurrentSkipListMap<>();
 
+    /** 终态 Task 的结果 payload 缓存。 */
     private final Map<String, R> results = new ConcurrentHashMap<>();
 
+    /** 已请求取消但可能仍在执行的 taskId 集合。 */
     private final Set<String> cancellationRequests = ConcurrentHashMap.newKeySet();
 
     private final Map<String, Long> expiredCancellationDeadlines = new ConcurrentHashMap<>();
@@ -154,8 +157,10 @@ public class InMemoryTaskStore<R extends McpSchema.Result> implements TaskStore<
         }
     }
 
+    /** 创建 Task 时的互斥锁，配合 maxTasks 上限检查。 */
     private final Object createTaskLock = new Object();
 
+    /** 校验请求 sessionId 与 Task 所属 session 一致（null 视为通过）。 */
     private boolean isSessionValid(TaskEntry entry, String requestSessionId) {
         if (requestSessionId == null) return true;
         String taskSessionId = entry.sessionId();
@@ -306,7 +311,7 @@ public class InMemoryTaskStore<R extends McpSchema.Result> implements TaskStore<
             List<McpSchema.Task> taskList = new ArrayList<>();
             String nextCursor = null;
 
-            // Use tailMap for O(log n) cursor lookup; handles missing cursors gracefully
+            // 使用 tailMap 实现 O(log n) 游标定位；无效 cursor 时从首条开始
             NavigableMap<String, TaskEntry> view = cursor != null
                     ? tasks.tailMap(cursor, false)
                     : tasks;
@@ -390,9 +395,9 @@ public class InMemoryTaskStore<R extends McpSchema.Result> implements TaskStore<
     public CompletableFuture<Boolean> isCancellationRequested(String taskId, String sessionId) {
         return CompletableFuture.supplyAsync(() -> {
             TaskEntry entry = tasks.get(taskId);
-            // Bug fix: entry == null means TTL cleanup already removed the task.
-            // We must NOT suppress the cancellation signal — if cancellationRequests still
-            // contains the taskId, the background thread must see it and exit cleanly.
+            // 修复：entry 为 null 表示 TTL 清理已移除 Task，
+            // 仍须暴露取消信号——若 cancellationRequests 仍含 taskId，
+            // 后台线程必须能观察到并干净退出。
             if (entry != null && !isSessionValid(entry, sessionId)) return false;
             return cancellationRequests.contains(taskId);
         });
@@ -469,7 +474,7 @@ public class InMemoryTaskStore<R extends McpSchema.Result> implements TaskStore<
         });
     }
 
-    /** Package-visible for testing. */
+    /** 包可见：供测试触发过期 Task 与取消信号清理。 */
     void cleanupExpiredTasks() {
         Instant now = Instant.now();
         long nowMillis = now.toEpochMilli();
@@ -550,6 +555,7 @@ public class InMemoryTaskStore<R extends McpSchema.Result> implements TaskStore<
         });
     }
 
+    /** Task 元数据、原始请求、不透明上下文与所属 sessionId。 */
     private static class TaskEntry {
         private final McpSchema.Task task;
         private final McpSchema.Request originatingRequest;

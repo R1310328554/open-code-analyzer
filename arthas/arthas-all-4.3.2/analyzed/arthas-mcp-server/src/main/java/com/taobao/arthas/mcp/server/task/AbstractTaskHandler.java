@@ -12,17 +12,22 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Abstract base for task handlers, managing TaskStore and TaskManager lifecycle.
+ * Task 处理器抽象基类，统一创建 {@link TaskManager}、注册自定义方法并管理关闭流程。
+ * <p>
+ * 子类可覆写 {@link #findAndInvokeCustomHandler} 以拦截 tasks/get、tasks/result 等请求。
  *
- * @param <S> result type stored in TaskStore
+ * @param <S> {@link TaskStore} 中存储的结果类型
  * @author Yeaury
  */
 public abstract class AbstractTaskHandler<S extends McpSchema.Result> implements TaskManagerHost {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractTaskHandler.class);
 
+    /** 任务持久化存储；未配置时为 null。 */
     protected final TaskStore<S> taskStore;
+    /** 任务编排器；未配置 Task 时使用 {@link NullTaskManager}。 */
     protected final TaskManager taskManager;
+    /** 按 MCP 方法名注册的自定义 Task 请求处理器表。 */
     protected final TaskHandlerRegistry taskHandlerRegistry = new TaskHandlerRegistry();
 
     protected AbstractTaskHandler(TaskStore<S> taskStore, TaskManagerOptions taskOptions) {
@@ -66,7 +71,7 @@ public abstract class AbstractTaskHandler<S extends McpSchema.Result> implements
                 });
     }
 
-    /** Hook for subclasses to find and invoke tool-specific custom handlers. Returns null by default. */
+    /** 子类钩子：查找并调用工具专属的自定义 Task 处理器；默认返回 null 走内置逻辑。 */
     protected <T extends McpSchema.Result> CompletableFuture<T> findAndInvokeCustomHandler(
             GetTaskFromStoreResult storeResult, String method, McpSchema.Request request,
             TaskHandlerContext context, Class<T> resultType) {
@@ -81,6 +86,7 @@ public abstract class AbstractTaskHandler<S extends McpSchema.Result> implements
         return this.taskManager;
     }
 
+    /** 关闭 TaskManager 并等待 TaskStore 优雅停机。 */
     public void close() {
         if (this.taskManager != null) {
             try {
@@ -100,6 +106,7 @@ public abstract class AbstractTaskHandler<S extends McpSchema.Result> implements
         }
     }
 
+    /** 异步关闭：通知 TaskManager 并返回 TaskStore shutdown Future。 */
     public CompletableFuture<Void> closeGracefully() {
         if (this.taskManager != null) {
             this.taskManager.onClose();
@@ -108,9 +115,10 @@ public abstract class AbstractTaskHandler<S extends McpSchema.Result> implements
     }
 
     // ---------------------------------------
-    // Handler Context Factory
+    // 处理器上下文工厂：为 Task 侧 RPC 封装 session 与发送函数
     // ---------------------------------------
 
+    /** 构造匿名 {@link TaskManagerHost.TaskHandlerContext}，桥接请求/通知发送回调。 */
     protected static TaskManagerHost.TaskHandlerContext createTaskHandlerContext(
             String sessionId,
             TriFunction<String, Object, Class<? extends McpSchema.Result>, CompletableFuture<? extends McpSchema.Result>> requestSender,

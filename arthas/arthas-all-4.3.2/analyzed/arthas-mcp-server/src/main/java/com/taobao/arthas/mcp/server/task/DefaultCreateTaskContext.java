@@ -15,7 +15,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
- * Default implementation of {@link CreateTaskContext}.
+ * {@link CreateTaskContext} 的默认实现，将 MCP 交换、TaskStore 与 SessionManager 桥接在一起。
+ * <p>
+ * 创建隔离 session 时会从 {@link McpNettyServerExchange} 传输上下文复制认证主体。
  *
  * @author Yeaury
  */
@@ -111,10 +113,12 @@ public class DefaultCreateTaskContext implements CreateTaskContext {
         return taskStore.updateTaskStatus(taskId, sessionId, McpSchema.TaskStatus.INPUT_REQUIRED, message);
     }
 
+    /** 供同包组件访问底层 TaskStore。 */
     TaskStore<McpSchema.ServerTaskPayloadResult> taskStore() {
         return taskStore;
     }
 
+    /** 供同包组件访问 side-channel 消息队列。 */
     TaskMessageQueue taskMessageQueue() {
         return messageQueue;
     }
@@ -130,6 +134,7 @@ public class DefaultCreateTaskContext implements CreateTaskContext {
     }
 
     @Override
+    /** 创建 Task 专用 Arthas session，并从当前 exchange 注入 MCP 认证主体。 */
     public ArthasCommandContext createIsolatedTaskSession(String taskId) {
         if (sessionManager == null) {
             throw new IllegalStateException("SessionManager is not available");
@@ -146,6 +151,7 @@ public class DefaultCreateTaskContext implements CreateTaskContext {
     }
 
     @Override
+    /** 委托 SessionManager 关闭 Task 隔离 session。 */
     public void cleanupTaskSession(String taskId) {
         if (sessionManager != null) {
             sessionManager.closeTaskSession(taskId);
@@ -153,6 +159,7 @@ public class DefaultCreateTaskContext implements CreateTaskContext {
     }
 
     @Override
+    /** 无 SessionManager 时视为未达上限。 */
     public boolean isAtConcurrencyLimit() {
         if (sessionManager == null) {
             return false;
