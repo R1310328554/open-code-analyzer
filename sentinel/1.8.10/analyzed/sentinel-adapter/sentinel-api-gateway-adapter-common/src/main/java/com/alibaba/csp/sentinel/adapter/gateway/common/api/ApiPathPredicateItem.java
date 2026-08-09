@@ -20,28 +20,36 @@ import java.util.Objects;
 import com.alibaba.csp.sentinel.adapter.gateway.common.SentinelGatewayConstants;
 
 /**
+ * 基于 URL 路径的 API 谓词项，支持精确/前缀/正则匹配策略。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public class ApiPathPredicateItem implements ApiPredicateItem {
 
+    /** URL 路径匹配模式。 */
     private String pattern;
+    /** URL 匹配策略，默认精确匹配。 */
     private int matchStrategy = SentinelGatewayConstants.URL_MATCH_STRATEGY_EXACT;
 
+    /** 设置路径匹配模式。 */
     public ApiPathPredicateItem setPattern(String pattern) {
         this.pattern = pattern;
         return this;
     }
 
+    /** 设置 URL 匹配策略。 */
     public ApiPathPredicateItem setMatchStrategy(int matchStrategy) {
         this.matchStrategy = matchStrategy;
         return this;
     }
 
+    /** 获取路径匹配模式。 */
     public String getPattern() {
         return pattern;
     }
 
+    /** 获取 URL 匹配策略。 */
     public int getMatchStrategy() {
         return matchStrategy;
     }

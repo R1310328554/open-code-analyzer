@@ -18,10 +18,13 @@ package com.alibaba.csp.sentinel.adapter.apache.httpclient.extractor;
 import org.apache.http.client.methods.HttpRequestWrapper;
 
 /**
+ * Apache HttpClient 默认资源名提取器，从请求 URI 提取 Sentinel 资源名。
+ *
  * @author zhaoyuguang
  */
 public class DefaultApacheHttpClientResourceExtractor implements ApacheHttpClientResourceExtractor {
 
+    /** 从请求行 URI 提取资源名。 */
     @Override
     public String extractor(HttpRequestWrapper request) {
         return request.getRequestLine().getUri();

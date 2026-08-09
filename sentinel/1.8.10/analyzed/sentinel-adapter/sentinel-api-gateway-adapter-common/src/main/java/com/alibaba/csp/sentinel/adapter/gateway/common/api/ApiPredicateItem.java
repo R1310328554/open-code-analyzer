@@ -18,13 +18,15 @@ package com.alibaba.csp.sentinel.adapter.gateway.common.api;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * 网关 API 谓词项标记接口，用于定义 URL 或参数匹配条件。
+ *
  * @author Eric Zhao
  * @since 1.6.0
  */
 public interface ApiPredicateItem {
 
     /**
-     * Combine two {@link ApiPredicateItem}.
+     * 将两个 {@link ApiPredicateItem} 组合为 AND 关系（已注释）。
      *
      * @param item another predicate item
      * @return combined predicate group item
