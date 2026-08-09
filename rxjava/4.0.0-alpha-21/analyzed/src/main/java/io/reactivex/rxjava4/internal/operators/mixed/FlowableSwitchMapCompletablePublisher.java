@@ -19,9 +19,9 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.functions.Function;
 
 /**
- * Switch between subsequent {@link CompletableSource}s emitted by a {@link Publisher}.
- * Reuses {@link FlowableSwitchMapCompletable} internals.
- * @param <T> the upstream value type
+ * 对 {@link Publisher} 发出的各元素映射并切换 {@link CompletableSource}。
+ * 复用 {@link FlowableSwitchMapCompletable} 内部实现。
+ * @param <T> 上游元素类型
  * @since 3.0.0
  */
 public final class FlowableSwitchMapCompletablePublisher<T> extends Completable {
@@ -32,6 +32,11 @@ public final class FlowableSwitchMapCompletablePublisher<T> extends Completable 
 
     final boolean delayErrors;
 
+    /**
+     * @param source 上游 Publisher
+     * @param mapper 由 T 映射 CompletableSource 的函数
+     * @param delayErrors 是否延迟合并 inner 错误
+     */
     public FlowableSwitchMapCompletablePublisher(Publisher<T> source,
             Function<? super T, ? extends CompletableSource> mapper, boolean delayErrors) {
         this.source = source;
@@ -39,6 +44,7 @@ public final class FlowableSwitchMapCompletablePublisher<T> extends Completable 
         this.delayErrors = delayErrors;
     }
 
+    /** 复用 SwitchMapCompletableObserver 订阅任意 Publisher。 */
     @Override
     protected void subscribeActual(CompletableObserver observer) {
         source.subscribe(new FlowableSwitchMapCompletable.SwitchMapCompletableObserver<>(observer, mapper, delayErrors));

@@ -27,11 +27,10 @@ import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 import io.reactivex.rxjava4.internal.subscriptions.SubscriptionHelper;
 
 /**
- * Maps the success value of a Maybe onto a Publisher and
- * relays its signals to the downstream subscriber.
- *
- * @param <T> the success value type of the Maybe source
- * @param <R> the result type of the Publisher and this operator
+ * Maybe onSuccess 时将值映射为 {@link Publisher} 并订阅，
+ * 将其信号 relay 到下游 {@link Subscriber}（支持背压）。
+ * @param <T> Maybe 成功值类型
+ * @param <R> Publisher 及本算子结果类型
  * @since 2.1.15
  */
 public final class MaybeFlatMapPublisher<T, R> extends Flowable<R> {
@@ -40,17 +39,23 @@ public final class MaybeFlatMapPublisher<T, R> extends Flowable<R> {
 
     final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
+    /**
+     * @param source 上游 MaybeSource
+     * @param mapper 由成功值映射 Publisher 的函数
+     */
     public MaybeFlatMapPublisher(MaybeSource<T> source,
             Function<? super T, ? extends Publisher<? extends R>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 订阅 FlatMapPublisherSubscriber 并在 onSuccess 时切换 Publisher。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> s) {
         source.subscribe(new FlatMapPublisherSubscriber<>(s, mapper));
     }
 
+    /** 先作为 MaybeObserver 等待 onSuccess，再作为 Subscriber 转发 inner Publisher。 */
     static final class FlatMapPublisherSubscriber<T, R>
     extends AtomicReference<Subscription>
     implements FlowableSubscriber<R>, MaybeObserver<T>, Subscription {
@@ -106,6 +111,7 @@ public final class MaybeFlatMapPublisher<T, R> extends Flowable<R> {
             }
         }
 
+        /** apply mapper 得 Publisher 并 subscribe(this)。 */
         @Override
         public void onSuccess(T t) {
             Publisher<? extends R> p;
@@ -123,6 +129,7 @@ public final class MaybeFlatMapPublisher<T, R> extends Flowable<R> {
             }
         }
 
+        /** inner Publisher onSubscribe：deferredSetOnce 处理背压 request。 */
         @Override
         public void onSubscribe(Subscription s) {
             SubscriptionHelper.deferredSetOnce(this, requested, s);

@@ -26,10 +26,10 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 
 /**
- * Maps the upstream items into {@link CompletableSource}s and subscribes to them one after the
- * other completes or terminates (in error-delaying mode).
+ * 将上游元素映射为 {@link CompletableSource}，
+ * 在前一个完成或终止后再串行订阅下一个（错误延迟模式下可延后终止）。
  * <p>History: 2.1.11 - experimental
- * @param <T> the upstream value type
+ * @param <T> 上游元素类型
  * @since 2.2
  */
 public final class FlowableConcatMapCompletable<T> extends Completable {
@@ -42,6 +42,12 @@ public final class FlowableConcatMapCompletable<T> extends Completable {
 
     final int prefetch;
 
+    /**
+     * @param source 上游 Flowable
+     * @param mapper 由 T 映射 CompletableSource 的函数
+     * @param errorMode 错误处理模式
+     * @param prefetch 预取队列容量
+     */
     public FlowableConcatMapCompletable(Flowable<T> source,
             Function<? super T, ? extends CompletableSource> mapper,
             ErrorMode errorMode,
@@ -52,11 +58,13 @@ public final class FlowableConcatMapCompletable<T> extends Completable {
         this.prefetch = prefetch;
     }
 
+    /** 订阅 ConcatMapCompletableObserver 串行执行 inner Completable。 */
     @Override
     protected void subscribeActual(CompletableObserver observer) {
         source.subscribe(new ConcatMapCompletableObserver<>(observer, mapper, errorMode, prefetch));
     }
 
+    /** 管理队列、背压与 inner Completable 串行 drain。 */
     static final class ConcatMapCompletableObserver<T>
     extends ConcatMapXMainSubscriber<T>
     implements Disposable {
@@ -103,6 +111,7 @@ public final class FlowableConcatMapCompletable<T> extends Completable {
             return cancelled;
         }
 
+        /** inner onError：IMMEDIATE 立即终止，否则 active=false 继续 drain。 */
         void innerError(Throwable ex) {
             if (errors.tryAddThrowableOrReport(ex)) {
                 if (errorMode == ErrorMode.IMMEDIATE) {
@@ -118,6 +127,7 @@ public final class FlowableConcatMapCompletable<T> extends Completable {
             }
         }
 
+        /** inner onComplete 后 active=false 并继续 drain 下一项。 */
         void innerComplete() {
             active = false;
             drain();
@@ -202,6 +212,7 @@ public final class FlowableConcatMapCompletable<T> extends Completable {
             } while (decrementAndGet() != 0);
         }
 
+        /** 订阅单个 inner Completable 并将信号 relay 到 parent。 */
         static final class ConcatMapInnerObserver extends AtomicReference<Disposable>
         implements CompletableObserver {
 

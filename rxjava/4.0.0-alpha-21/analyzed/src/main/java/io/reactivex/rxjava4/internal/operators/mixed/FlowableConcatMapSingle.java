@@ -28,12 +28,11 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.operators.SimpleQueue;
 
 /**
- * Maps each upstream item into a {@link SingleSource}, subscribes to them one after the other terminates
- * and relays their success values, optionally delaying any errors till the main and inner sources
- * terminate.
+ * 将上游各元素映射为 {@link SingleSource}，串行订阅并在 inner 终止后
+ * 转发 onSuccess 值；可选将错误延迟到主流与 inner 均终止后再上报。
  * <p>History: 2.1.11 - experimental
- * @param <T> the upstream element type
- * @param <R> the output element type
+ * @param <T> 上游元素类型
+ * @param <R> 下游元素类型
  * @since 2.2
  */
 public final class FlowableConcatMapSingle<T, R> extends Flowable<R> {
@@ -46,6 +45,12 @@ public final class FlowableConcatMapSingle<T, R> extends Flowable<R> {
 
     final int prefetch;
 
+    /**
+     * @param source 上游 Flowable
+     * @param mapper 由 T 映射 SingleSource 的函数
+     * @param errorMode 错误处理模式
+     * @param prefetch 预取队列容量
+     */
     public FlowableConcatMapSingle(Flowable<T> source,
             Function<? super T, ? extends SingleSource<? extends R>> mapper,
                     ErrorMode errorMode, int prefetch) {
@@ -55,11 +60,13 @@ public final class FlowableConcatMapSingle<T, R> extends Flowable<R> {
         this.prefetch = prefetch;
     }
 
+    /** 订阅 ConcatMapSingleSubscriber 串行映射 Single 并背压发射。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> s) {
         source.subscribe(new ConcatMapSingleSubscriber<>(s, mapper, prefetch, errorMode));
     }
 
+    /** 串行 inner Single、管理 STATE 与背压 request。 */
     static final class ConcatMapSingleSubscriber<T, R>
     extends ConcatMapXMainSubscriber<T> implements Subscription {
 
@@ -82,11 +89,11 @@ public final class FlowableConcatMapSingle<T, R> extends Flowable<R> {
 
         volatile int state;
 
-        /** No inner SingleSource is running. */
+        /** 无 inner SingleSource 在运行。 */
         static final int STATE_INACTIVE = 0;
-        /** An inner SingleSource is running but there are no results yet. */
+        /** inner SingleSource 运行中但尚无结果。 */
         static final int STATE_ACTIVE = 1;
-        /** The inner SingleSource succeeded with a value in {@link #item}. */
+        /** inner SingleSource 已成功，值缓存在 {@link #item}。 */
         static final int STATE_RESULT_VALUE = 2;
 
         ConcatMapSingleSubscriber(Subscriber<? super R> downstream,
@@ -125,12 +132,14 @@ public final class FlowableConcatMapSingle<T, R> extends Flowable<R> {
             inner.dispose();
         }
 
+        /** inner onSuccess：缓存 item 并置 STATE_RESULT_VALUE。 */
         void innerSuccess(R item) {
             this.item = item;
             this.state = STATE_RESULT_VALUE;
             drain();
         }
 
+        /** inner onError：按 errorMode 取消上游或继续 drain。 */
         void innerError(Throwable ex) {
             if (errors.tryAddThrowableOrReport(ex)) {
                 if (errorMode != ErrorMode.END) {
@@ -251,6 +260,7 @@ public final class FlowableConcatMapSingle<T, R> extends Flowable<R> {
             }
         }
 
+        /** 订阅单个 inner Single 并将信号 relay 到 parent。 */
         static final class ConcatMapSingleObserver<R>
         extends AtomicReference<Disposable>
         implements SingleObserver<R> {

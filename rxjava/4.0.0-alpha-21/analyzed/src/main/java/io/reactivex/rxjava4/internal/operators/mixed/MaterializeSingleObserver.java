@@ -18,10 +18,10 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * A consumer that implements the consumer types of Maybe, Single and Completable
- * and turns their signals into Notifications for a SingleObserver.
+ * 同时实现 Maybe、Single、Completable 的 Observer 接口，
+ * 将各信号转为 {@link Notification} 并以 {@link SingleObserver#onSuccess} 向下游发射。
  * <p>History: 2.2.4 - experimental
- * @param <T> the element type of the source
+ * @param <T> 源元素类型
  * @since 3.0.0
  */
 public final class MaterializeSingleObserver<T>
@@ -31,6 +31,7 @@ implements SingleObserver<T>, MaybeObserver<T>, CompletableObserver, Disposable 
 
     Disposable upstream;
 
+    /** @param downstream 接收 Notification 的 SingleObserver */
     public MaterializeSingleObserver(SingleObserver<? super Notification<T>> downstream) {
         this.downstream = downstream;
     }
@@ -43,16 +44,19 @@ implements SingleObserver<T>, MaybeObserver<T>, CompletableObserver, Disposable 
         }
     }
 
+    /** onComplete 转为 Notification.createOnComplete 并 onSuccess。 */
     @Override
     public void onComplete() {
         downstream.onSuccess(Notification.createOnComplete());
     }
 
+    /** onSuccess 转为 Notification.createOnNext 并 onSuccess。 */
     @Override
     public void onSuccess(T t) {
         downstream.onSuccess(Notification.createOnNext(t));
     }
 
+    /** onError 转为 Notification.createOnError 并 onSuccess。 */
     @Override
     public void onError(Throwable e) {
         downstream.onSuccess(Notification.createOnError(e));

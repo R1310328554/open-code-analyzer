@@ -24,11 +24,10 @@ import io.reactivex.rxjava4.functions.Function;
 import io.reactivex.rxjava4.internal.disposables.DisposableHelper;
 
 /**
- * Maps the success value of a Maybe onto an ObservableSource and
- * relays its signals to the downstream observer.
- *
- * @param <T> the success value type of the Maybe source
- * @param <R> the result type of the ObservableSource and this operator
+ * Maybe onSuccess 时将值映射为 {@link ObservableSource} 并订阅，
+ * 将其信号 relay 到下游 {@link Observer}。
+ * @param <T> Maybe 成功值类型
+ * @param <R> ObservableSource 及本算子结果类型
  * @since 2.1.15
  */
 public final class MaybeFlatMapObservable<T, R> extends Observable<R> {
@@ -37,12 +36,17 @@ public final class MaybeFlatMapObservable<T, R> extends Observable<R> {
 
     final Function<? super T, ? extends ObservableSource<? extends R>> mapper;
 
+    /**
+     * @param source 上游 MaybeSource
+     * @param mapper 由成功值映射 ObservableSource 的函数
+     */
     public MaybeFlatMapObservable(MaybeSource<T> source,
             Function<? super T, ? extends ObservableSource<? extends R>> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 先 onSubscribe FlatMapObserver，再订阅 Maybe。 */
     @Override
     protected void subscribeActual(Observer<? super R> observer) {
         FlatMapObserver<T, R> parent = new FlatMapObserver<>(observer, mapper);
@@ -50,6 +54,7 @@ public final class MaybeFlatMapObservable<T, R> extends Observable<R> {
         source.subscribe(parent);
     }
 
+    /** onSuccess 时 flatMap 订阅 inner Observable 并 relay 信号。 */
     static final class FlatMapObserver<T, R>
     extends AtomicReference<Disposable>
     implements Observer<R>, MaybeObserver<T>, Disposable {
@@ -96,6 +101,7 @@ public final class MaybeFlatMapObservable<T, R> extends Observable<R> {
             DisposableHelper.replace(this, d);
         }
 
+        /** apply mapper 得 ObservableSource 并 subscribe(this)。 */
         @Override
         public void onSuccess(T t) {
             ObservableSource<? extends R> o;

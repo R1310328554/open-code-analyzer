@@ -29,12 +29,11 @@ import io.reactivex.rxjava4.internal.util.*;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Maps the upstream items into {@link MaybeSource}s and switches (subscribes) to the newer ones
- * while disposing the older ones and emits the latest success value if available, optionally delaying
- * errors from the main source or the inner sources.
+ * 将上游元素映射为 {@link MaybeSource} 并 switch 到最新 inner，
+ * dispose 旧 inner 后发射最新 onSuccess 值；可选延迟主流或 inner 错误。
  * <p>History: 2.1.11 - experimental
- * @param <T> the upstream value type
- * @param <R> the downstream value type
+ * @param <T> 上游元素类型
+ * @param <R> 下游元素类型
  * @since 2.2
  */
 public final class FlowableSwitchMapMaybe<T, R> extends Flowable<R> {
@@ -45,6 +44,11 @@ public final class FlowableSwitchMapMaybe<T, R> extends Flowable<R> {
 
     final boolean delayErrors;
 
+    /**
+     * @param source 上游 Flowable
+     * @param mapper 由 T 映射 MaybeSource 的函数
+     * @param delayErrors 是否延迟合并错误
+     */
     public FlowableSwitchMapMaybe(Flowable<T> source,
             Function<? super T, ? extends MaybeSource<? extends R>> mapper,
             boolean delayErrors) {
@@ -53,11 +57,13 @@ public final class FlowableSwitchMapMaybe<T, R> extends Flowable<R> {
         this.delayErrors = delayErrors;
     }
 
+    /** 订阅 SwitchMapMaybeSubscriber，背压下发射 inner onSuccess。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> s) {
         source.subscribe(new SwitchMapMaybeSubscriber<>(s, mapper, delayErrors));
     }
 
+    /** 切换 inner Maybe、背压 drain 发射 item。 */
     static final class SwitchMapMaybeSubscriber<T, R> extends AtomicInteger
     implements FlowableSubscriber<T>, Subscription {
 
@@ -107,6 +113,7 @@ public final class FlowableSwitchMapMaybe<T, R> extends Flowable<R> {
             }
         }
 
+        /** dispose 当前 inner，映射并 CAS 订阅新 MaybeSource。 */
         @Override
         @SuppressWarnings({ "unchecked", "rawtypes" })
         public void onNext(T t) {
@@ -180,6 +187,7 @@ public final class FlowableSwitchMapMaybe<T, R> extends Flowable<R> {
             errors.tryTerminateAndReport();
         }
 
+        /** inner onError：按 delayErrors 决定 cancel 或继续 drain。 */
         void innerError(SwitchMapMaybeObserver<R> sender, Throwable ex) {
             if (inner.compareAndSet(sender, null)) {
                 if (errors.tryAddThrowableOrReport(ex)) {
@@ -200,6 +208,7 @@ public final class FlowableSwitchMapMaybe<T, R> extends Flowable<R> {
             }
         }
 
+        /** 背压下从 inner.item 取值的 missed-drain 循环。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -254,6 +263,7 @@ public final class FlowableSwitchMapMaybe<T, R> extends Flowable<R> {
             }
         }
 
+        /** 缓存 onSuccess 的 item 并触发 parent.drain。 */
         static final class SwitchMapMaybeObserver<R>
         extends AtomicReference<Disposable> implements MaybeObserver<R> {
 

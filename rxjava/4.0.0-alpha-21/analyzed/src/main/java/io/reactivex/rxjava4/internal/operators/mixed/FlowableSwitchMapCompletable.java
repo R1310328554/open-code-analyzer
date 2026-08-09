@@ -29,11 +29,10 @@ import io.reactivex.rxjava4.internal.util.AtomicThrowable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Maps the upstream values into {@link CompletableSource}s, subscribes to the newer one while
- * disposing the subscription to the previous {@code CompletableSource}, thus keeping at most one
- * active {@code CompletableSource} running.
+ * 将上游元素映射为 {@link CompletableSource}，
+ * 新元素到达时 dispose 旧 inner 并订阅新 inner，至多保持一个 active inner。
  * <p>History: 2.1.11 - experimental
- * @param <T> the upstream value type
+ * @param <T> 上游元素类型
  * @since 2.2
  */
 public final class FlowableSwitchMapCompletable<T> extends Completable {
@@ -44,6 +43,11 @@ public final class FlowableSwitchMapCompletable<T> extends Completable {
 
     final boolean delayErrors;
 
+    /**
+     * @param source 上游 Flowable
+     * @param mapper 由 T 映射 CompletableSource 的函数
+     * @param delayErrors 是否延迟合并 inner 错误
+     */
     public FlowableSwitchMapCompletable(Flowable<T> source,
             Function<? super T, ? extends CompletableSource> mapper, boolean delayErrors) {
         this.source = source;
@@ -51,11 +55,13 @@ public final class FlowableSwitchMapCompletable<T> extends Completable {
         this.delayErrors = delayErrors;
     }
 
+    /** 订阅 SwitchMapCompletableObserver，onNext 时切换 inner Completable。 */
     @Override
     protected void subscribeActual(CompletableObserver observer) {
         source.subscribe(new SwitchMapCompletableObserver<>(observer, mapper, delayErrors));
     }
 
+    /** 管理 inner 切换、delayErrors 与主流终止逻辑。 */
     static final class SwitchMapCompletableObserver<T> implements FlowableSubscriber<T>, Disposable {
 
         final CompletableObserver downstream;
@@ -92,6 +98,7 @@ public final class FlowableSwitchMapCompletable<T> extends Completable {
             }
         }
 
+        /** 映射并 CAS 切换 inner；旧 inner dispose 后订阅新 Completable。 */
         @Override
         public void onNext(T t) {
             CompletableSource c;
@@ -161,6 +168,7 @@ public final class FlowableSwitchMapCompletable<T> extends Completable {
             return inner.get() == INNER_DISPOSED;
         }
 
+        /** inner onError：delayErrors 时等主流完成，否则 cancel 并终止。 */
         void innerError(SwitchMapInnerObserver sender, Throwable error) {
             if (inner.compareAndSet(sender, null)) {
                 if (errors.tryAddThrowableOrReport(error)) {
@@ -179,6 +187,7 @@ public final class FlowableSwitchMapCompletable<T> extends Completable {
             }
         }
 
+        /** inner onComplete：若主流已 done 则向下游 onComplete/onError。 */
         void innerComplete(SwitchMapInnerObserver sender) {
             if (inner.compareAndSet(sender, null)) {
                 if (done) {
@@ -187,6 +196,7 @@ public final class FlowableSwitchMapCompletable<T> extends Completable {
             }
         }
 
+        /** 单个 inner Completable 的 Observer，信号 relay 到 parent。 */
         static final class SwitchMapInnerObserver extends AtomicReference<Disposable>
         implements CompletableObserver {
 

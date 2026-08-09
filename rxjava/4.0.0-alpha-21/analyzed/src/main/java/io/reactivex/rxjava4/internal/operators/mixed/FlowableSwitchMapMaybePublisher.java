@@ -19,10 +19,10 @@ import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.functions.Function;
 
 /**
- * Switch between subsequent {@link MaybeSource}s emitted by a {@link Publisher}.
- * Reuses {@link FlowableSwitchMapMaybe} internals.
- * @param <T> the upstream value type
- * @param <R> the downstream value type
+ * 对 {@link Publisher} 各元素映射并切换 {@link MaybeSource}。
+ * 复用 {@link FlowableSwitchMapMaybe} 内部实现。
+ * @param <T> 上游元素类型
+ * @param <R> 下游元素类型
  * @since 3.0.0
  */
 public final class FlowableSwitchMapMaybePublisher<T, R> extends Flowable<R> {
@@ -33,6 +33,11 @@ public final class FlowableSwitchMapMaybePublisher<T, R> extends Flowable<R> {
 
     final boolean delayErrors;
 
+    /**
+     * @param source 上游 Publisher
+     * @param mapper 由 T 映射 MaybeSource 的函数
+     * @param delayErrors 是否延迟合并错误
+     */
     public FlowableSwitchMapMaybePublisher(Publisher<T> source,
             Function<? super T, ? extends MaybeSource<? extends R>> mapper,
             boolean delayErrors) {
@@ -41,6 +46,7 @@ public final class FlowableSwitchMapMaybePublisher<T, R> extends Flowable<R> {
         this.delayErrors = delayErrors;
     }
 
+    /** 复用 SwitchMapMaybeSubscriber 订阅任意 Publisher。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> s) {
         source.subscribe(new FlowableSwitchMapMaybe.SwitchMapMaybeSubscriber<>(s, mapper, delayErrors));

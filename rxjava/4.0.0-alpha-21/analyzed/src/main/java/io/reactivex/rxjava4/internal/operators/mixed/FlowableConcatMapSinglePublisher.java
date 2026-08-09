@@ -21,12 +21,11 @@ import io.reactivex.rxjava4.internal.operators.mixed.FlowableConcatMapSingle.Con
 import io.reactivex.rxjava4.core.ErrorMode;
 
 /**
- * Maps each upstream item into a {@link SingleSource}, subscribes to them one after the other terminates
- * and relays their success values, optionally delaying any errors till the main and inner sources
- * terminate.
+ * 将 {@link Publisher} 各元素映射为 {@link SingleSource} 并串行订阅，
+ * 转发 inner onSuccess 值；复用 {@link FlowableConcatMapSingle} 的 Subscriber 实现。
  * <p>History: 2.1.11 - experimental
- * @param <T> the upstream element type
- * @param <R> the output element type
+ * @param <T> 上游元素类型
+ * @param <R> 下游元素类型
  * @since 2.2
  */
 public final class FlowableConcatMapSinglePublisher<T, R> extends Flowable<R> {
@@ -39,6 +38,12 @@ public final class FlowableConcatMapSinglePublisher<T, R> extends Flowable<R> {
 
     final int prefetch;
 
+    /**
+     * @param source 上游 Publisher
+     * @param mapper 由 T 映射 SingleSource 的函数
+     * @param errorMode 错误处理模式
+     * @param prefetch 预取队列容量
+     */
     public FlowableConcatMapSinglePublisher(Publisher<T> source,
             Function<? super T, ? extends SingleSource<? extends R>> mapper,
                     ErrorMode errorMode, int prefetch) {
@@ -48,6 +53,7 @@ public final class FlowableConcatMapSinglePublisher<T, R> extends Flowable<R> {
         this.prefetch = prefetch;
     }
 
+    /** 复用 ConcatMapSingleSubscriber 订阅任意 Publisher。 */
     @Override
     protected void subscribeActual(Subscriber<? super R> s) {
         source.subscribe(new ConcatMapSingleSubscriber<>(s, mapper, prefetch, errorMode));
