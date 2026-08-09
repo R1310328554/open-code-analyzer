@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:02:53Z",
   "files": [
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/DeleteAclSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/DeleteUserSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/GetAclSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/GetUserSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/ListAclSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/ListUserSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/UpdateAclSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/auth/UpdateUserSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/broker/BrokerConsumeStatsSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/broker/BrokerStatusSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/broker/CleanExpiredCQSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/broker/CleanUnusedTopicCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/broker/CommitLogSetReadAheadSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/broker/DeleteExpiredCommitLogSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/broker/GetBrokerConfigCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/broker/GetBrokerEpochSubCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/broker/GetColdDataFlowCtrInfoSubCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/command/broker/RemoveColdDataFlowCtrGroupConfigSubCommand.java",
@@ -33,5 +18,5 @@
     "tools/src/main/java/org/apache/rocketmq/tools/command/consumer/ConsumerSubCommand.java"
   ],
   "remaining_pending": 198,
-  "done": 1260
+  "done": 1275
 }
