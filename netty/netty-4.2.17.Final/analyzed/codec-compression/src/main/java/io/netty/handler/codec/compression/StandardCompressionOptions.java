@@ -19,25 +19,21 @@ import com.aayushatharva.brotli4j.encoder.Encoder;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * Standard Compression Options for {@link BrotliOptions},
- * {@link GzipOptions} and {@link DeflateOptions}
+ * 标准压缩选项工厂，提供 Brotli、Gzip、Deflate、Zstd、Snappy 等默认与自定义配置。
  */
 public final class StandardCompressionOptions {
 
     private StandardCompressionOptions() {
-        // Prevent outside initialization
+        // 工具类，禁止实例化
     }
 
-    /**
-     * Default implementation of {@link BrotliOptions} with {@link Encoder.Parameters#setQuality(int)} set to 4
-     * and {@link Encoder.Parameters#setMode(Encoder.Mode)} set to {@link Encoder.Mode#TEXT}
-     */
+    /** 默认 Brotli 选项：质量 4、模式 TEXT。 */
     public static BrotliOptions brotli() {
         return BrotliOptions.DEFAULT;
     }
 
     /**
-     * Create a new {@link BrotliOptions}
+     * 由 {@link Encoder.Parameters} 构造 Brotli 选项。
      *
      * @param parameters {@link Encoder.Parameters} Instance
      * @throws NullPointerException If {@link Encoder.Parameters} is {@code null}
@@ -49,7 +45,7 @@ public final class StandardCompressionOptions {
     }
 
     /**
-     * Create a new {@link BrotliOptions}
+     * 按质量、窗口与模式创建 Brotli 选项。
      *
      * @param quality Specifies the compression level.
      * @param window  Specifies the size of the sliding window when compressing.
@@ -68,17 +64,13 @@ public final class StandardCompressionOptions {
         return new BrotliOptions(parameters);
     }
 
-    /**
-     * Default implementation of {@link ZstdOptions} with{compressionLevel(int)} set to
-     * {@link ZstdConstants#DEFAULT_COMPRESSION_LEVEL},{@link ZstdConstants#DEFAULT_BLOCK_SIZE},
-     * {@link ZstdConstants#DEFAULT_MAX_ENCODE_SIZE}
-     */
+    /** 默认 Zstd 选项：默认压缩级别、64KB 块大小、最大编码尺寸。 */
     public static ZstdOptions zstd() {
         return ZstdOptions.DEFAULT;
     }
 
     /**
-     * Create a new {@link ZstdOptions}
+     * 创建自定义 Zstd 压缩选项。
      *
      * @param blockSize        is used to calculate the compressionLevel
      * @param maxEncodeSize    specifies the size of the largest compressed object
@@ -88,23 +80,18 @@ public final class StandardCompressionOptions {
         return new ZstdOptions(compressionLevel, blockSize, maxEncodeSize);
     }
 
-    /**
-     * Create a new {@link SnappyOptions}
-     */
+    /** 创建 Snappy 压缩选项（当前无额外参数）。 */
     public static SnappyOptions snappy() {
         return new SnappyOptions();
     }
 
-    /**
-     * Default implementation of {@link GzipOptions} with
-     * {@code compressionLevel()} set to 6, {@code windowBits()} set to 15 and {@code memLevel()} set to 8.
-     */
+    /** 默认 Gzip 选项：级别 6、窗口 15、内存 8。 */
     public static GzipOptions gzip() {
         return GzipOptions.DEFAULT;
     }
 
     /**
-     * Create a new {@link GzipOptions} Instance
+     * 创建自定义 Gzip 压缩选项。
      *
      * @param compressionLevel {@code 1} yields the fastest compression and {@code 9} yields the
      *                         best compression.  {@code 0} means no compression.  The default
@@ -122,16 +109,13 @@ public final class StandardCompressionOptions {
         return new GzipOptions(compressionLevel, windowBits, memLevel);
     }
 
-    /**
-     * Default implementation of {@link DeflateOptions} with
-     * {@code compressionLevel} set to 6, {@code windowBits} set to 15 and {@code memLevel} set to 8.
-     */
+    /** 默认 Deflate 选项：级别 6、窗口 15、内存 8。 */
     public static DeflateOptions deflate() {
         return DeflateOptions.DEFAULT;
     }
 
     /**
-     * Create a new {@link DeflateOptions} Instance
+     * 创建自定义 Deflate 压缩选项。
      *
      * @param compressionLevel {@code 1} yields the fastest compression and {@code 9} yields the
      *                         best compression.  {@code 0} means no compression.  The default

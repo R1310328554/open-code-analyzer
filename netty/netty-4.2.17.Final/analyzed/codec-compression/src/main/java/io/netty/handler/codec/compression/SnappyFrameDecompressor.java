@@ -22,13 +22,14 @@ import io.netty.util.internal.UnstableApi;
 import static io.netty.handler.codec.compression.Snappy.validateChecksum;
 
 /**
- * Uncompresses a {@link ByteBuf} encoded with the Snappy framing format.
- *
- * See <a href="https://github.com/google/snappy/blob/master/framing_format.txt">Snappy framing format</a>.
+ * 基于 {@link InputBufferingDecompressor} 的 Snappy 分帧解压器，按状态机逐块解压。
+ * <p>
+ * 格式见 <a href="https://github.com/google/snappy/blob/master/framing_format.txt">Snappy framing format</a>。
  */
 @UnstableApi
 public final class SnappyFrameDecompressor extends InputBufferingDecompressor {
 
+    /** Snappy 分帧块类型。 */
     private enum ChunkType {
         STREAM_IDENTIFIER,
         COMPRESSED_DATA,
@@ -40,13 +41,13 @@ public final class SnappyFrameDecompressor extends InputBufferingDecompressor {
     private static final int SNAPPY_IDENTIFIER_LEN = 6;
     // See https://github.com/google/snappy/blob/1.1.9/framing_format.txt#L95
     private static final int MAX_UNCOMPRESSED_DATA_SIZE = 65536 + 4;
-    // An uncompressed chunk contains a 4-byte masked checksum followed by the data.
+    // 未压缩块：4 字节掩码校验和 + 原始数据。
     private static final int MIN_UNCOMPRESSED_DATA_SIZE = 4;
     // See https://github.com/google/snappy/blob/1.1.9/framing_format.txt#L82
     private static final int MAX_DECOMPRESSED_DATA_SIZE = 65536;
     // See https://github.com/google/snappy/blob/1.1.9/framing_format.txt#L82
     private static final int MAX_COMPRESSED_CHUNK_SIZE = 16777216 - 1;
-    // A compressed chunk contains a 4-byte masked checksum followed by a Snappy stream.
+    // 压缩块：4 字节掩码校验和 + Snappy 压缩流。
     private static final int MIN_COMPRESSED_CHUNK_SIZE = 5;
 
     private final Snappy snappy = new Snappy();
@@ -58,6 +59,7 @@ public final class SnappyFrameDecompressor extends InputBufferingDecompressor {
     private ByteBuf pendingOutput;
     private boolean eof;
 
+    /** 由 Builder 构造解压器实例。 */
     SnappyFrameDecompressor(Builder builder, ByteBufAllocator allocator) {
         super(allocator);
         this.validateChecksums = builder.validateChecksums;
@@ -95,20 +97,19 @@ public final class SnappyFrameDecompressor extends InputBufferingDecompressor {
     void processInput(ByteBuf in) throws DecompressionException {
         while (in.isReadable()) {
             if (numBytesToSkip != 0) {
-                // The last chunkType we detected was RESERVED_SKIPPABLE and we still have some bytes to skip.
+                // 上一块为 RESERVED_SKIPPABLE，尚有字节待跳过。
                 int skipBytes = Math.min(numBytesToSkip, in.readableBytes());
                 in.skipBytes(skipBytes);
                 numBytesToSkip -= skipBytes;
 
-                // Let's return and try again.
+                // 数据不足，等待更多输入。
                 continue;
             }
 
             int idx = in.readerIndex();
             final int inSize = in.readableBytes();
             if (inSize < 4) {
-                // We need to be at least able to read the chunk type identifier (one byte),
-                // and the length of the chunk (3 bytes) in order to proceed
+                // 至少需要 1 字节块类型 + 3 字节长度才能继续解析
                 return;
             }
 
@@ -149,15 +150,12 @@ public final class SnappyFrameDecompressor extends InputBufferingDecompressor {
                     int skipBytes = Math.min(chunkLength, in.readableBytes());
                     in.skipBytes(skipBytes);
                     if (skipBytes != chunkLength) {
-                        // We could skip all bytes, let's store the remaining so we can do so once we receive more
-                        // data.
+                        // 输入不足，记录剩余待跳过字节数
                         numBytesToSkip = chunkLength - skipBytes;
                     }
                     break;
                 case RESERVED_UNSKIPPABLE:
-                    // The spec mandates that reserved unskippable chunks must immediately
-                    // return an error, as we must assume that we cannot decode the stream
-                    // correctly
+                    // 规范要求：不可跳过的保留块必须立即报错
                     throw new DecompressionException(
                             "Found reserved unskippable chunk type: 0x" + Integer.toHexString(chunkTypeVal));
                 case UNCOMPRESSED_DATA:
@@ -255,10 +253,10 @@ public final class SnappyFrameDecompressor extends InputBufferingDecompressor {
     }
 
     /**
-     * Decodes the chunk type from the type tag byte.
+     * 根据类型标签字节解析分块类型。
      *
      * @param type The tag byte extracted from the stream
-     * @return The appropriate {@link ChunkType}, defaulting to {@link ChunkType#RESERVED_UNSKIPPABLE}
+     * @return 对应的 {@link ChunkType}，无法识别时返回 {@link ChunkType#RESERVED_UNSKIPPABLE}
      */
     private static ChunkType mapChunkType(byte type) {
         if (type == 0) {
@@ -287,9 +285,7 @@ public final class SnappyFrameDecompressor extends InputBufferingDecompressor {
         }
 
         /**
-         * If true, the checksum field will be validated against the actual
-         * uncompressed data, and if the checksums do not match, a suitable
-         * {@link DecompressionException} will be thrown. Off by default.
+         * 为 {@code true} 时校验分块校验和与解压数据是否一致，不一致则抛出 {@link DecompressionException}；默认关闭。
          *
          * @param validateChecksums Whether to validate the checksums
          * @return This builder

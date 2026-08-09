@@ -20,6 +20,9 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
+/**
+ * Zstd 运行时可用性探测：检测 zstd-jni 是否在 classpath 且本地库可加载。
+ */
 public final class Zstd {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(Zstd.class);
@@ -37,7 +40,7 @@ public final class Zstd {
                 "zstd-jni not in the classpath; Zstd support will be unavailable.");
         }
 
-        // If in the classpath, try to load the native library and initialize zstd.
+        // classpath 存在时尝试加载本地库并初始化 zstd
         if (t == null) {
             try {
                 com.github.luben.zstd.util.Native.load();
@@ -49,17 +52,13 @@ public final class Zstd {
         cause = t;
     }
 
-    /**
-     *
-     * @return true when zstd-jni is in the classpath
-     * and native library is available on this platform and could be loaded
-     */
+    /** @return zstd-jni 在 classpath 且本地库已成功加载时为 {@code true}。 */
     public static boolean isAvailable() {
         return cause == null;
     }
 
     /**
-     * Throws when zstd support is missing from the classpath or is unavailable on this platform
+     * 在 Zstd 不可用时抛出底层原因（缺依赖或本地库加载失败）。
      * @throws Throwable a ClassNotFoundException if zstd-jni is missing
      * or a ExceptionInInitializerError if zstd native lib can't be loaded
      */
@@ -69,9 +68,7 @@ public final class Zstd {
         }
     }
 
-    /**
-     * Returns {@link Throwable} of unavailability cause
-     */
+    /** @return 不可用时的根因 {@link Throwable}，可用时为 {@code null}。 */
     public static Throwable cause() {
         return cause;
     }

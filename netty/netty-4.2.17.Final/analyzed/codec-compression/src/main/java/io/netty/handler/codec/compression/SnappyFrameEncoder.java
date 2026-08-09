@@ -22,33 +22,21 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import static io.netty.handler.codec.compression.Snappy.calculateChecksum;
 
 /**
- * Compresses a {@link ByteBuf} using the Snappy framing format.
- *
- * See <a href="https://github.com/google/snappy/blob/master/framing_format.txt">Snappy framing format</a>.
+ * 将 {@link ByteBuf} 按 Snappy 分帧格式压缩输出。
+ * <p>
+ * 格式见 <a href="https://github.com/google/snappy/blob/master/framing_format.txt">Snappy framing format</a>。
  */
 public class SnappyFrameEncoder extends MessageToByteEncoder<ByteBuf> {
 
     private static final short SNAPPY_SLICE_SIZE = Short.MAX_VALUE;
 
-    /**
-     * Both
-     * {@value io.netty.handler.codec.compression.SnappyFrameEncoder#SNAPPY_SLICE_SIZE}
-     * and {@value io.netty.handler.codec.compression.SnappyFrameEncoder#SNAPPY_SLICE_JUMBO_SIZE}
-     * are valid lengths for the Snappy framing format
-     */
+    /** Snappy 分帧格式允许的两种分片大小上限。 */
     private static final int SNAPPY_SLICE_JUMBO_SIZE = 65535;
 
-    /**
-     * The minimum amount that we'll consider actually attempting to compress.
-     * This value is preamble + the minimum length our Snappy service will
-     * compress (instead of just emitting a literal).
-     */
+    /** 尝试 Snappy 压缩的最小输入长度（低于此值直接以未压缩块输出）。 */
     private static final int MIN_COMPRESSIBLE_LENGTH = 18;
 
-    /**
-     * All streams should start with the "Stream identifier", containing chunk
-     * type 0xff, a length field of 0x6, and 'sNaPpY' in ASCII.
-     */
+    /** 流起始标识块：类型 0xff、长度 6、ASCII 字符串 sNaPpY。 */
     private static final byte[] STREAM_START = {
         (byte) 0xff, 0x06, 0x00, 0x00, 0x73, 0x4e, 0x61, 0x50, 0x70, 0x59
     };
@@ -57,11 +45,7 @@ public class SnappyFrameEncoder extends MessageToByteEncoder<ByteBuf> {
         this(SNAPPY_SLICE_SIZE);
     }
 
-    /**
-     * Create a new instance with a
-     * {@value io.netty.handler.codec.compression.SnappyFrameEncoder#SNAPPY_SLICE_JUMBO_SIZE}
-     * chunk size.
-     */
+    /** 创建分片大小为 {@value io.netty.handler.codec.compression.SnappyFrameEncoder#SNAPPY_SLICE_JUMBO_SIZE} 的编码器。 */
     public static SnappyFrameEncoder snappyEncoderWithJumboFrames() {
         return new SnappyFrameEncoder(SNAPPY_SLICE_JUMBO_SIZE);
     }
@@ -132,7 +116,7 @@ public class SnappyFrameEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Writes the 2-byte chunk length to the output buffer.
+     * 向输出缓冲写入 3 字节小端块长度。
      *
      * @param out The buffer to write to
      * @param chunkLength The length to write
@@ -142,7 +126,7 @@ public class SnappyFrameEncoder extends MessageToByteEncoder<ByteBuf> {
     }
 
     /**
-     * Calculates and writes the 4-byte checksum to the output buffer
+     * 计算数据掩码校验和并写入 4 字节小端值。
      *
      * @param slice The data to calculate the checksum for
      * @param out The output buffer to write the checksum to

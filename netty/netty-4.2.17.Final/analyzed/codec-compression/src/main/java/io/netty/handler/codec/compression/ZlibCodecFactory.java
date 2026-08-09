@@ -21,7 +21,7 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
- * Creates a new {@link ZlibEncoder} and a new {@link ZlibDecoder}.
+ * Zlib 编解码器工厂：按 classpath 与系统属性在 JDK 与 JZlib 实现间选择。
  */
 public final class ZlibCodecFactory {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ZlibCodecFactory.class);
@@ -55,9 +55,7 @@ public final class ZlibCodecFactory {
         JZLIB_AVAILABLE = jzlibAvailable;
     }
 
-    /**
-     * Returns {@code true} if specify a custom window size and mem level is supported.
-     */
+    /** @return  classpath 含 JZlib 时为 {@code true}，可自定义窗口与内存级别。 */
     public static boolean isSupportingWindowSizeAndMemLevel() {
         return JZLIB_AVAILABLE;
     }
@@ -121,7 +119,7 @@ public final class ZlibCodecFactory {
     }
 
     /**
-     * Create a new decoder instance.
+     * 创建 Zlib 解码器（无分配上限）。
      *
      * @deprecated Use {@link ZlibCodecFactory#newZlibDecoder(int)}.
      */
@@ -131,7 +129,7 @@ public final class ZlibCodecFactory {
     }
 
     /**
-     * Create a new decoder instance with specified maximum buffer allocation.
+     * 创建带解压缓冲上限的 Zlib 解码器。
      *
      * @param maxAllocation
      *           Maximum size of the decompression buffer. Must be &gt;= 0.
@@ -146,7 +144,7 @@ public final class ZlibCodecFactory {
     }
 
     /**
-     * Create a new decoder instance with the specified wrapper.
+     * 按封装格式创建 Zlib 解码器（无分配上限）。
      *
      * @deprecated Use {@link ZlibCodecFactory#newZlibDecoder(ZlibWrapper, int)}.
      */
@@ -156,7 +154,7 @@ public final class ZlibCodecFactory {
     }
 
     /**
-     * Create a new decoder instance with the specified wrapper and maximum buffer allocation.
+     * 按封装格式与缓冲上限创建 Zlib 解码器。
      *
      * @param maxAllocation
      *          Maximum size of the decompression buffer. Must be &gt;= 0.
@@ -171,9 +169,7 @@ public final class ZlibCodecFactory {
     }
 
     /**
-     * Create a new decoder instance with the specified preset dictionary. The wrapper
-     * is always {@link ZlibWrapper#ZLIB} because it is the only format that
-     * supports the preset dictionary.
+     * 使用预设字典创建 Zlib 解码器（仅 {@link ZlibWrapper#ZLIB} 支持字典）。
      *
      * @deprecated Use {@link ZlibCodecFactory#newZlibDecoder(byte[], int)}.
      */
@@ -183,9 +179,8 @@ public final class ZlibCodecFactory {
     }
 
     /**
-     * Create a new decoder instance with the specified preset dictionary and maximum buffer allocation.
-     * The wrapper is always {@link ZlibWrapper#ZLIB} because it is the only format that
-     * supports the preset dictionary.
+     * 使用预设字典与缓冲上限创建 Zlib 解码器。
+     * 封装格式固定为 {@link ZlibWrapper#ZLIB}（唯一支持预设字典的格式）。
      *
      * @param maxAllocation
      *          Maximum size of the decompression buffer. Must be &gt;= 0.
@@ -200,6 +195,6 @@ public final class ZlibCodecFactory {
     }
 
     private ZlibCodecFactory() {
-        // Unused
+        // 工具类，禁止实例化
     }
 }

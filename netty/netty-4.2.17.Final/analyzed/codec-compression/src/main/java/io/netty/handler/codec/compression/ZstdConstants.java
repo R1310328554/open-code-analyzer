@@ -17,30 +17,21 @@ package io.netty.handler.codec.compression;
 
 import com.github.luben.zstd.Zstd;
 
+/** Zstd 编解码默认常量（压缩级别、块大小、编码上限）。 */
 final class ZstdConstants {
 
-    /**
-     * Default compression level
-     */
+    /** 默认压缩级别。 */
     static final int DEFAULT_COMPRESSION_LEVEL = Zstd.defaultCompressionLevel();
 
-    /**
-     * Min compression level
-     */
+    /** 最小压缩级别。 */
     static final int MIN_COMPRESSION_LEVEL = Zstd.minCompressionLevel();
 
-    /**
-     * Max compression level
-     */
+    /** 最大压缩级别。 */
     static final int MAX_COMPRESSION_LEVEL = Zstd.maxCompressionLevel();
 
-    /**
-     * Max encode size
-     */
+    /** 单次编码允许的最大尺寸。 */
     static final int DEFAULT_MAX_ENCODE_SIZE = Integer.MAX_VALUE;
-    /**
-     * Default block size
-     */
+    /** 默认块大小（64 KB）。 */
     static final int DEFAULT_BLOCK_SIZE = 1 << 16;  // 64 KB
 
     private ZstdConstants() { }

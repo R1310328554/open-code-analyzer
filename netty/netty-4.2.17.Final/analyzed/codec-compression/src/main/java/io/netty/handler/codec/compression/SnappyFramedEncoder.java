@@ -17,9 +17,9 @@
 package io.netty.handler.codec.compression;
 
 /**
- * @deprecated Use {@link SnappyFrameEncoder} instead.
+ * @deprecated 请改用 {@link SnappyFrameEncoder}。
  */
 @Deprecated
 public class SnappyFramedEncoder extends SnappyFrameEncoder {
-    // Nothing new. Just staying here for backward compatibility.
+    // 仅为向后兼容保留，无新增逻辑。
 }

@@ -21,7 +21,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
- * Compresses a {@link ByteBuf} using the deflate algorithm.
+ * Zlib/Deflate 压缩抽象基类，子类实现 JDK 或 JZlib 后端。
  */
 public abstract class ZlibEncoder extends MessageToByteEncoder<ByteBuf> {
 
@@ -29,24 +29,16 @@ public abstract class ZlibEncoder extends MessageToByteEncoder<ByteBuf> {
         super(ByteBuf.class, false);
     }
 
-    /**
-     * Returns {@code true} if and only if the end of the compressed stream
-     * has been reached.
-     */
+    /** @return 压缩流是否已结束。 */
     public abstract boolean isClosed();
 
     /**
-     * Close this {@link ZlibEncoder} and so finish the encoding.
-     *
-     * The returned {@link ChannelFuture} will be notified once the
-     * operation completes.
+     * 关闭编码器并完成压缩流；返回的 {@link ChannelFuture} 在操作完成时通知。
      */
     public abstract ChannelFuture close();
 
     /**
-     * Close this {@link ZlibEncoder} and so finish the encoding.
-     * The given {@link ChannelFuture} will be notified once the operation
-     * completes and will also be returned.
+     * 关闭编码器并完成压缩流；给定 {@link ChannelFuture} 在完成时通知并作为返回值。
      */
     public abstract ChannelFuture close(ChannelPromise promise);
 

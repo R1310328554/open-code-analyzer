@@ -16,9 +16,9 @@
 package io.netty.handler.codec.compression;
 
 /**
- * {@link SnappyOptions} holds config for
- * Snappy compression.
+ * Snappy 压缩配置占位类，实现 {@link CompressionOptions}；
+ * 当前 Snappy 尚无额外可配置项。
  */
 public final class SnappyOptions implements CompressionOptions {
-    // Will add config if Snappy supports this
+    // 待 Snappy 支持更多参数时再扩展
 }

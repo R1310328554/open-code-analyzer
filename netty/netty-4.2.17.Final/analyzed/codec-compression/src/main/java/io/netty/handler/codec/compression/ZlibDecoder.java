@@ -23,24 +23,20 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 /**
- * Decompresses a {@link ByteBuf} using the deflate algorithm.
+ * Zlib/Deflate 解压抽象基类，子类实现 JDK 或 JZlib 后端。
  */
 public abstract class ZlibDecoder extends ByteToMessageDecoder {
 
-    /**
-     * Maximum allowed size of the decompression buffer.
-     */
+    /** 解压输出缓冲允许的最大容量（0 表示由分配器决定）。 */
     protected final int maxAllocation;
 
-    /**
-     * Same as {@link #ZlibDecoder(int)} with maxAllocation = 0.
-     */
+    /** 等价于 {@link #ZlibDecoder(int)}，{@code maxAllocation = 0}。 */
     public ZlibDecoder() {
         this(0);
     }
 
     /**
-     * Construct a new ZlibDecoder.
+     * 构造 Zlib 解码器。
      * @param maxAllocation
      *          Maximum size of the decompression buffer. Must be &gt;= 0.
      *          If zero, maximum size is decided by the {@link ByteBufAllocator}.
@@ -49,15 +45,12 @@ public abstract class ZlibDecoder extends ByteToMessageDecoder {
         this.maxAllocation = checkPositiveOrZero(maxAllocation, "maxAllocation");
     }
 
-    /**
-     * Returns {@code true} if and only if the end of the compressed stream
-     * has been reached.
-     */
+    /** @return 压缩流是否已结束。 */
     public abstract boolean isClosed();
 
     /**
-     * Allocate or expand the decompression buffer, without exceeding the maximum allocation.
-     * Calls {@link #decompressionBufferExhausted(ByteBuf)} if the buffer is full and cannot be expanded further.
+     * 分配或扩展解压缓冲，不超过 {@link #maxAllocation}；无法继续扩展时调用
+     * {@link #decompressionBufferExhausted(ByteBuf)} 并抛出 {@link DecompressionException}。
      */
     protected ByteBuf prepareDecompressBuffer(ChannelHandlerContext ctx, ByteBuf buffer, int preferredSize) {
         if (buffer == null) {
@@ -68,13 +61,9 @@ public abstract class ZlibDecoder extends ByteToMessageDecoder {
             return ctx.alloc().heapBuffer(Math.min(preferredSize, maxAllocation), maxAllocation);
         }
 
-        // this always expands the buffer if possible, even if the expansion is less than preferredSize
-        // we throw the exception only if the buffer could not be expanded at all
-        // this means that one final attempt to deserialize will always be made with the buffer at maxAllocation
+        // 尽可能扩展缓冲；仅当完全无法扩展时才抛异常，保证在 maxAllocation 下做最后一次解压尝试
         if (buffer.ensureWritable(preferredSize, true) == 1) {
-            // buffer must be consumed so subclasses don't add it to output
-            // we therefore duplicate it when calling decompressionBufferExhausted() to guarantee non-interference
-            // but wait until after to consume it so the subclass can tell how much output is really in the buffer
+            // 调用 decompressionBufferExhausted 前 duplicate 缓冲，避免子类误将已满缓冲写入输出
             decompressionBufferExhausted(buffer.duplicate());
             buffer.skipBytes(buffer.readableBytes());
             throw new DecompressionException("Decompression buffer has reached maximum size: " + buffer.maxCapacity());
@@ -84,10 +73,7 @@ public abstract class ZlibDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Called when the decompression buffer cannot be expanded further.
-     * Default implementation is a no-op, but subclasses can override in case they want to
-     * do something before the {@link DecompressionException} is thrown, such as log the
-     * data that was decompressed so far.
+     * 解压缓冲无法继续扩展时的钩子；默认空实现，子类可记录已解压数据等。
      */
     protected void decompressionBufferExhausted(ByteBuf buffer) {
     }

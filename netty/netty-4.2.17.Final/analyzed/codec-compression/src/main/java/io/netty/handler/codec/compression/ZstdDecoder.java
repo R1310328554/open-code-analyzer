@@ -27,11 +27,11 @@ import java.io.InputStream;
 import java.util.List;
 
 /**
- * Decompresses a compressed block {@link ByteBuf} using the Zstandard algorithm.
- * See <a href="https://facebook.github.io/zstd">Zstandard</a>.
+ * 使用 Zstandard 算法解压 {@link ByteBuf} 压缩块。
+ * 详见 <a href="https://facebook.github.io/zstd">Zstandard</a>。
  */
 public final class ZstdDecoder extends ByteToMessageDecoder {
-    // Don't use static here as we want to still allow to load the classes.
+    // 实例初始化块：加载类时校验 Zstd 可用性
     {
         try {
             Zstd.ensureAvailability();
@@ -41,14 +41,9 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
     }
 
     private static final int DEFAULT_MAX_FORWARD_BYTES = CompressionUtil.DEFAULT_MAX_FORWARD_BYTES;
-    /**
-     * Default maximum size of a single output buffer, in bytes (4 MiB).
-     */
+    /** 单次输出缓冲默认上限（4 MiB）。 */
     public static final int DEFAULT_MAXIMUM_ALLOCATION_SIZE = 4 * 1024 * 1024;
-    /**
-     * Default upper bound on the {@code Window_Log} accepted by the decoder.
-     * {@code 27} corresponds to a 128 MiB decompression window.
-     */
+    /** 解码器接受的默认 {@code Window_Log} 上限；27 对应 128 MiB 解压窗口。 */
     public static final int DEFAULT_MAX_WINDOW_LOG = 27;
     private static final int MIN_WINDOW_LOG = 10;
     private static final int MAX_WINDOW_LOG = 31;
@@ -61,20 +56,16 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
     private boolean needsRead;
     private State currentState = State.DECOMPRESS_DATA;
 
-    /**
-     * Current state of stream.
-     */
+    /** 解码器内部状态。 */
     private enum State {
         DECOMPRESS_DATA,
         CORRUPTED
     }
 
     /**
-     * Creates a new decoder with the {@link #DEFAULT_MAXIMUM_ALLOCATION_SIZE},
-     * and the {@link #DEFAULT_MAX_WINDOW_LOG} window log size.
+     * 使用默认输出上限 {@link #DEFAULT_MAXIMUM_ALLOCATION_SIZE} 与窗口对数 {@link #DEFAULT_MAX_WINDOW_LOG} 创建解码器。
      * <p>
-     * The window log size bounds the memory usage of the sliding window for ZSTD frame decompression.
-     * Frames declaring a larger window will be rejected to bound the memory the decoder may allocate per stream.
+     * 窗口对数限制 ZSTD 帧解压滑动窗口内存；声明更大窗口的帧将被拒绝。
      *
      */
     public ZstdDecoder() {
@@ -82,11 +73,9 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new decoder with the given maximum allocation size,
-     * and the {@link #DEFAULT_MAX_WINDOW_LOG} window log size.
+     * 指定单次输出缓冲上限，窗口对数使用 {@link #DEFAULT_MAX_WINDOW_LOG}。
      * <p>
-     * The window log size bounds the memory usage of the sliding window for ZSTD frame decompression.
-     * Frames declaring a larger window will be rejected to bound the memory the decoder may allocate per stream.
+     * 窗口对数限制解压滑动窗口内存占用。
      *
      * @param maximumAllocationSize maximum size of a single output buffer.
      */
@@ -95,7 +84,7 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * Creates a new decoder with an explicit upper bound on the accepted {@code Window_Log}.
+     * 同时指定输出缓冲上限与接受的 {@code Window_Log} 上限。
      *
      * @param maximumAllocationSize maximum size of a single output buffer.
      * @param maxWindowLog          upper bound on the {@code Window_Log} field of incoming
@@ -133,8 +122,7 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
                             in.array(), in.readerIndex() + in.arrayOffset(), in.readableBytes());
                 }
                 if (uncompressedLength <= 0) {
-                    // Let's start with the compressedLength * 2 as often we will not have everything
-                    // we need in the in buffer and don't want to reserve too much memory.
+                    // 未知解压大小时先按压缩长度 2 倍预分配，避免过度预留
                     uncompressedLength = compressedLength * 2L;
                 }
 
@@ -173,7 +161,7 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        // Discard bytes of the cumulation buffer if needed.
+        // 必要时丢弃累积缓冲中已读字节
         discardSomeReadBytes();
 
         if (needsRead && !ctx.channel().config().isAutoRead()) {
@@ -187,8 +175,7 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
         super.handlerAdded(ctx);
         zstdIs = new ZstdInputStreamNoFinalizer(inputStream);
         zstdIs.setContinuous(true);
-        // Bound the decompression window to mitigate memory amplification from frames that
-        // declare an oversized Window_Size.
+        // 限制解压窗口，防止帧声明过大 Window_Size 导致内存放大
         zstdIs.setLongMax(maxWindowLog);
     }
 
@@ -206,11 +193,12 @@ public final class ZstdDecoder extends ByteToMessageDecoder {
             try {
                 closeable.close();
             } catch (IOException ignore) {
-                // ignore
+                // 关闭流时忽略 IO 异常
             }
         }
     }
 
+    /** 可变指向当前 {@link ByteBuf} 的 {@link InputStream} 适配器，供 ZstdInputStream 读取。 */
     private static final class MutableByteBufInputStream extends InputStream {
         ByteBuf current;
 

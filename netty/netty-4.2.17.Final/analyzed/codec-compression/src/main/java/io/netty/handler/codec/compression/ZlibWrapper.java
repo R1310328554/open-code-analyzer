@@ -16,25 +16,15 @@
 package io.netty.handler.codec.compression;
 
 /**
- * The container file formats that wrap the stream compressed by the DEFLATE
- * algorithm.
+ * DEFLATE 压缩流的外层封装格式枚举。
  */
 public enum ZlibWrapper {
-    /**
-     * The ZLIB wrapper as specified in <a href="https://tools.ietf.org/html/rfc1950">RFC 1950</a>.
-     */
+    /** RFC 1950 定义的 ZLIB 封装（含 Adler-32 校验）。 */
     ZLIB,
-    /**
-     * The GZIP wrapper as specified in <a href="https://tools.ietf.org/html/rfc1952">RFC 1952</a>.
-     */
+    /** RFC 1952 定义的 GZIP 封装（含 CRC32 与长度尾）。 */
     GZIP,
-    /**
-     * Raw DEFLATE stream only (no header and no footer).
-     */
+    /** 裸 DEFLATE 流，无头尾封装。 */
     NONE,
-    /**
-     * Try {@link #ZLIB} first and then {@link #NONE} if the first attempt fails.
-     * Please note that you can specify this wrapper type only when decompressing.
-     */
+    /** 解压时先尝试 {@link #ZLIB}，失败再试 {@link #NONE}；仅用于解码。 */
     ZLIB_OR_NONE
 }
