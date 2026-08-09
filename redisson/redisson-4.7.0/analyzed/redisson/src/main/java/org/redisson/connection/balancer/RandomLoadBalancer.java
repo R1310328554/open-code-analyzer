@@ -22,17 +22,28 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 
+ * 随机负载均衡器：从可用从节点连接池中均匀随机选取一个入口。
+ * <p>
+ * 继承 {@link BaseLoadBalancer}，先过滤冻结/不健康节点再随机选择。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RandomLoadBalancer extends BaseLoadBalancer {
 
+    /** 忽略命令类型，随机选取一个可用连接入口。 */
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
         return getEntry(clientsCopy, null);
     }
 
+    /**
+     * 过滤后从候选列表中随机选取一个 {@link ClientConnectionsEntry}。
+     *
+     * @param clientsCopy 候选连接入口列表（会被 filter 过滤）
+     * @param redisCommand 当前 Redis 命令（本实现未使用）
+     * @return 选中的入口，无可用节点时返回 null
+     */
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
         clientsCopy = filter(clientsCopy);
@@ -40,6 +51,7 @@ public class RandomLoadBalancer extends BaseLoadBalancer {
             return null;
         }
 
+        // 在过滤后的列表中均匀随机选取索引
         int ind = ThreadLocalRandom.current().nextInt(clientsCopy.size());
         return clientsCopy.get(ind);
     }

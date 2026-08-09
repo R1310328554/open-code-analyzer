@@ -24,26 +24,35 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * RMap {@code getAll} 响应解码器，将扁平 value 列表与请求 key 列表配对为 LinkedHashMap。
+ * <p>
+ * 保持 key 请求顺序；可选跳过 null value。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
 
+    /** key 在 args 中的索引偏移。 */
     private final int shiftIndex;
+    /** 请求 key 列表。 */
     private final List<Object> args;
+    /** 是否保留 null value。 */
     private final boolean allowNulls;
 
+    /** 默认过滤 null value。 */
     public MapGetAllDecoder(List<Object> args, int shiftIndex) {
         this(args, shiftIndex, false);
     }
     
+    /** @param allowNulls 为 true 时保留 null value */
     public MapGetAllDecoder(List<Object> args, int shiftIndex, boolean allowNulls) {
         this.args = args;
         this.shiftIndex = shiftIndex;
         this.allowNulls = allowNulls;
     }
 
+    /** 按索引将 parts 中的 value 与 args 中对应 key 组装为有序 Map。 */
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

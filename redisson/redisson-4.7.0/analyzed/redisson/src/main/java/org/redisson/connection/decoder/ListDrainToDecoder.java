@@ -21,14 +21,22 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * 将 Redis 批量响应元素追加到外部集合并返回元素个数的解码器。
+ * <p>
+ * 常用于管道化命令，由调用方提供可变集合接收结果。
+ */
 public class ListDrainToDecoder<V> implements MultiDecoder<Integer> {
 
+    /** 接收解码元素的 target 集合（通常为 ArrayList）。 */
     private Collection<Object> list;
 
+    /** @param list 用于接收响应元素的集合 */
     public ListDrainToDecoder(Collection<Object> list) {
         this.list = list;
     }
 
+    /** 将全部 parts 追加到 list 并返回本次追加的元素数量。 */
     @Override
     public Integer decode(List<Object> parts, State state) {
         list.addAll(parts);

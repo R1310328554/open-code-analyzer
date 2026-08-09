@@ -24,20 +24,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ * 原生 Map 结构（如 RMapNative）批量读取解码器。
+ * <p>
+ * Redis 返回 Long 序列；-2 表示 key 不存在；Boolean 类型时将 1/0 转为 true/false。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MapNativeAllDecoder implements MultiDecoder<Map<Object, Object>> {
 
+    /** 请求 key 列表。 */
     private final List<Object> args;
+    /** 目标 value Java 类型（Long 或 Boolean）。 */
     private final Class<?> valueClass;
 
+    /** @param args key 列表；@param valueClass 期望的 value 类型 */
     public MapNativeAllDecoder(List<Object> args, Class<?> valueClass) {
         this.args = args;
         this.valueClass = valueClass;
     }
 
+    /** 将 Long 响应按 valueClass 转换后配对为 Map；-2 对非 Long 类型表示缺失 key。 */
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

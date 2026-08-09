@@ -23,18 +23,22 @@ import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
 
 /**
- * Connection pool for slave node
- * 
+ * 从节点普通命令连接池，读操作通过负载均衡在从节点间分配。
+ * <p>
+ * 继承 {@link ConnectionPool} 的 getTuple 逻辑，由 {@link LoadBalancer} 选取目标从节点。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SlaveConnectionPool extends ConnectionPool<RedisConnection> {
 
+    /** 构造从节点连接池。 */
     public SlaveConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager,
             MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
     }
 
+    /** 支持 CLIENT TRACKING 时使用 trackedConnectionsHolder。 */
     @Override
     protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges) {
         if (trackChanges) {

@@ -23,23 +23,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Eviction scheduler.
- * Deletes expired entries in time interval between 5 seconds to 2 hours.
- * It analyzes deleted amount of expired keys
- * and 'tune' next execution delay depending on it.
+ * 过期条目清理调度器。
+ * <p>
+ * 在 5 秒至 2 小时的可调间隔内删除 Redis 中已过期的 key；
+ * 根据每次清理数量动态调整下次执行延迟（见 {@link EvictionTask}）。
  *
  * @author Nikita Koksharov
  *
  */
 public final class EvictionScheduler {
 
+    /** 按对象名称索引的清理任务映射（同一名称仅注册一次）。 */
     private final Map<String, EvictionTask> tasks = new ConcurrentHashMap<>();
+    /** 异步命令执行器，供各 EvictionTask 访问 Redis。 */
     private final CommandAsyncExecutor executor;
 
+    /** @param executor Redisson 异步命令执行器 */
     public EvictionScheduler(CommandAsyncExecutor executor) {
         this.executor = executor;
     }
 
+    /** 按名称注册清理任务，已存在则跳过（computeIfAbsent 保证幂等）。 */
     private void addTask(String name, Supplier<EvictionTask> supplier) {
         tasks.computeIfAbsent(name, k -> {
             EvictionTask task = supplier.get();
@@ -48,29 +52,36 @@ public final class EvictionScheduler {
         });
     }
 
+    /** 为 RMultimap 注册过期清理任务。 */
     public void scheduleCleanMultimap(String name, String timeoutSetName) {
         addTask(name, () -> new MultimapEvictionTask(name, timeoutSetName, executor));
     }
 
+    /** 为 JCache 兼容结构注册清理任务并发布过期事件。 */
     public void scheduleJCache(String name, String timeoutSetName, String expiredChannelName) {
         addTask(name, () -> new JCacheEvictionTask(name, timeoutSetName, expiredChannelName, executor));
     }
 
+    /** 为 RTimeSeries 注册过期清理任务。 */
     public void scheduleTimeSeries(String name, String timeoutSetName) {
         addTask(name, () -> new TimeSeriesEvictionTask(name, timeoutSetName, executor));
     }
 
+    /** 为 RScoredSortedSet 注册带时间偏移的清理任务。 */
     public void schedule(String name, long shiftInMilliseconds) {
         addTask(name, () -> new ScoredSetEvictionTask(name, executor, shiftInMilliseconds));
     }
 
+    /** 为 RSetCache 注册清理任务并通过指定命令发布过期通知。 */
     public void scheduleSetCache(String name, String expiredChannelName, String publishCommand) {
         addTask(name, () -> new SetCacheEvictionTask(name, expiredChannelName, executor, publishCommand));
     }
 
-    public void schedule(String name, String timeoutSetName, String maxIdleSetName,
-                         String expiredChannelName, String lastAccessTimeSetName, MapCacheOptions<?, ?> options,
-                         String publishCommand) {
+    /**
+     * 为 RMapCache 注册综合清理任务（TTL、maxIdle、最后访问时间等）。
+     *
+     * @param options 可为 null；非 null 时读取 removeEmptyEvictionTask 选项
+     */
         boolean removeEmpty;
         if (options != null) {
             removeEmpty = options.isRemoveEmptyEvictionTask();
@@ -82,6 +93,7 @@ public final class EvictionScheduler {
                 executor, removeEmpty, this, publishCommand));
     }
 
+    /** 取消并移除指定名称的清理任务。 */
     public void remove(String name) {
         tasks.computeIfPresent(name, (k, task) -> {
             task.cancel();

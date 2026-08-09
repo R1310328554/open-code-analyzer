@@ -36,31 +36,45 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Base connection pool class 
- * 
+ * 连接池抽象基类，负责从 {@link MasterSlaveEntry} 选取节点并获取连接。
+ * <p>
+ * 通过 {@link LoadBalancer} 在可用从节点间分配负载；
+ * 连接获取失败时触发 {@link FailedNodeDetector} 并从池归还连接。
+ *
  * @author Nikita Koksharov
  *
- * @param <T> - connection type
+ * @param <T> 连接类型（{@link RedisConnection} 或 {@link RedisPubSubConnection}）
  */
 abstract class ConnectionPool<T extends RedisConnection> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    /** 全局连接管理器。 */
     final ConnectionManager connectionManager;
 
+    /** 主从服务器配置（含负载均衡器、失败检测器等）。 */
     final MasterSlaveServersConfig config;
 
+    /** 所属主从条目，聚合各节点连接入口。 */
     final MasterSlaveEntry masterSlaveEntry;
 
+    /** 绑定配置、连接管理器与主从条目。 */
     ConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         this.config = config;
         this.masterSlaveEntry = masterSlaveEntry;
         this.connectionManager = connectionManager;
     }
 
+    /** 返回指定入口对应的连接持有者（普通/PubSub/追踪连接）。 */
     protected abstract ConnectionsHolder<T> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges);
 
-    public Tuple<CompletableFuture<T>, Throwable> getTuple(RedisCommand<?> command, boolean trackChanges) {
+    /**
+     * 尝试获取连接，返回 Future 与异常的元组（无可用节点时 T1 为 null）。
+     *
+     * @param command 待执行的 Redis 命令（影响负载均衡选择）
+     * @param trackChanges 是否使用 CLIENT TRACKING 连接池
+     */
+        // 收集所有节点入口，排除冻结及失败检测标记为不可用的从节点
         Collection<ClientConnectionsEntry> entries = masterSlaveEntry.getAllEntries();
         List<ClientConnectionsEntry> entriesCopy = new ArrayList<>(entries);
         entriesCopy.removeIf(n -> n.isFreezed() || !isHealthy(n));
@@ -95,6 +109,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return new Tuple<>(null, exception);
     }
 
+    /** 获取连接；无可用节点时返回已完成 exceptionally 的 Future。 */
     public CompletableFuture<T> get(RedisCommand<?> command, boolean trackChanges) {
         Tuple<CompletableFuture<T>, Throwable> tuple = getTuple(command, trackChanges);
         if (tuple.getT2() != null) {
@@ -105,11 +120,16 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return tuple.getT1();
     }
 
+    /** 从指定连接入口直接获取连接（跳过负载均衡）。 */
     public CompletableFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry, boolean trackChanges) {
         return acquireConnection(command, entry, trackChanges);
     }
 
-    protected final CompletableFuture<T> acquireConnection(RedisCommand<?> command, ClientConnectionsEntry entry, boolean trackChanges) {
+    /**
+     * 从指定入口的 ConnectionsHolder 异步获取连接。
+     * <p>
+     * 从节点连接失败时通知 FailedNodeDetector，必要时触发 shutdownAndReconnectAsync。
+     */
         ConnectionsHolder<T> handler = getConnectionHolder(entry, trackChanges);
         CompletableFuture<T> result = handler.acquireConnection(command);
         CompletableFuture<T> cancelableFuture = new CompletableFuture<>();
@@ -146,6 +166,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return cancelableFuture;
     }
         
+    /** 从节点若被失败检测器标记为 failed 则视为不健康。 */
     private boolean isHealthy(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE
                 && entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {

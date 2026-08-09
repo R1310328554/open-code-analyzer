@@ -23,26 +23,37 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 
+ * RMapCache {@code getAll} 响应解码器，将每 4 个字段一组展开为扁平五元组列表。
+ * <p>
+ * 每组对应：key、value、idle、ttl、remainIdleToLive。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MapCacheGetAllDecoder implements MultiDecoder<List<Object>> {
 
+    /** key 在 args 列表中的索引偏移量。 */
     private final int shiftIndex;
+    /** 请求时的 key 参数列表，用于还原 key。 */
     private final List<Object> args;
+    /** 是否保留 value 为 null 的条目。 */
     private final boolean allowNulls;
 
+    /** 默认不允许 null value。 */
     public MapCacheGetAllDecoder(List<Object> args, int shiftIndex) {
         this(args, shiftIndex, false);
     }
     
+    /** @param allowNulls 为 true 时保留 null value 条目 */
     public MapCacheGetAllDecoder(List<Object> args, int shiftIndex, boolean allowNulls) {
         this.args = args;
         this.shiftIndex = shiftIndex;
         this.allowNulls = allowNulls;
     }
 
+    /**
+     * 每 4 个响应字段（value、idle、ttl、remain）对应一个 key，展开为 [key,value,idle,ttl,remain,...]。
+     */
     @Override
     public List<Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

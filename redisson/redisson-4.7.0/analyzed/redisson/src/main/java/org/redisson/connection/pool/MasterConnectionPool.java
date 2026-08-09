@@ -27,18 +27,23 @@ import java.util.concurrent.CompletableFuture;
 
 
 /**
- * Connection pool for master node
- * 
+ * 主节点普通命令连接池。
+ * <p>
+ * 写操作及强制走主的读操作通过此池获取 {@link RedisConnection}；
+ * 始终绑定 {@link MasterSlaveEntry#getEntry()} 主节点入口。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
 
+    /** 构造主节点连接池。 */
     public MasterConnectionPool(MasterSlaveServersConfig config,
             ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
     }
 
+    /** trackChanges 为 true 时使用 CLIENT TRACKING 专用连接池。 */
     @Override
     protected ConnectionsHolder<RedisConnection> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges) {
         if (trackChanges) {
@@ -47,6 +52,7 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
         return entry.getConnectionsHolder();
     }
 
+    /** 直接从主节点入口获取连接，不经过负载均衡。 */
     @Override
     public CompletableFuture<RedisConnection> get(RedisCommand<?> command, boolean trackChanges) {
         return acquireConnection(command, masterSlaveEntry.getEntry(), trackChanges);

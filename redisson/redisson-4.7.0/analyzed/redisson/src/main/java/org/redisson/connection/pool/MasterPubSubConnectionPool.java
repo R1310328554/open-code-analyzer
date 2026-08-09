@@ -24,18 +24,22 @@ import org.redisson.connection.MasterSlaveEntry;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Connection pool for Publish/Subscribe used with single node
- * 
+ * 单节点模式下的主节点 Pub/Sub 连接池。
+ * <p>
+ * 订阅/发布命令固定从主节点 {@link MasterSlaveEntry#getEntry()} 获取连接。
+ *
  * @author Nikita Koksharov
  *
  */
 public class MasterPubSubConnectionPool extends PubSubConnectionPool {
 
+    /** 构造主节点 Pub/Sub 连接池。 */
     public MasterPubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager,
             MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
     }
 
+    /** 从主节点入口获取 Pub/Sub 连接。 */
     @Override
     public CompletableFuture<RedisPubSubConnection> get(RedisCommand<?> command, boolean trackChanges) {
         return acquireConnection(command, masterSlaveEntry.getEntry(), trackChanges);
