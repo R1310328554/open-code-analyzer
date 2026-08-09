@@ -1,11 +1,12 @@
 package com.taobao.arthas.common;
 
 /**
- * 
- * @author hengyunabc 2021-04-27
+ * 按当前 OS/CPU 架构选择 Arthas JNI 本地库文件名（供 VmTool 等加载）。
  *
+ * @author hengyunabc 2021-04-27
  */
 public class VmToolUtils {
+    /** 检测到的本地库文件名，不支持的平台可能为 null */
     private static String libName = null;
     static {
         if (OSUtils.isMac()) {
@@ -32,6 +33,7 @@ public class VmToolUtils {
         }
     }
 
+    /** 返回当前平台对应的 JNI 库名 */
     public static String detectLibName() {
         return libName;
     }

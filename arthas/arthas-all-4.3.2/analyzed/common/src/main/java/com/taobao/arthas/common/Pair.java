@@ -1,5 +1,11 @@
 package com.taobao.arthas.common;
 
+/**
+ * 不可变二元组，用于同时携带两个关联值（类似 Map.Entry 但更简单）。
+ *
+ * @param <X> 第一个元素类型
+ * @param <Y> 第二个元素类型
+ */
 public class Pair<X, Y> {
     private final X x;
     private final Y y;
@@ -9,14 +15,17 @@ public class Pair<X, Y> {
         this.y = y;
     }
 
+    /** 第一个元素 */
     public X getFirst() {
         return x;
     }
 
+    /** 第二个元素 */
     public Y getSecond() {
         return y;
     }
 
+    /** 工厂方法创建 Pair */
     public static <A, B> Pair<A, B> make(A a, B b) {
         return new Pair<A, B>(a, b);
     }

@@ -41,16 +41,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * An alternative weak-key {@link ConcurrentMap} which is similar to
- * {@link ConcurrentHashMap}.
- * @param <K> the type of keys maintained by this map
- * @param <V> the type of mapped values
+ * 弱键并发哈希表：键以 {@link WeakReference} 持有，GC 后条目可被回收；
+ * 分段锁设计类似 {@link ConcurrentHashMap}，适用于 ClassLoader 等缓存场景。
+ *
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 public final class ConcurrentWeakKeyHashMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> {
 
     /*
-     * The basic strategy is to subdivide the table among Segments,
-     * each of which itself is a concurrently readable hash table.
+     * 基本策略：将表划分为多个 Segment，每个 Segment 本身是可并发读的哈希表。
      */
 
     /**
@@ -1061,15 +1061,8 @@ public final class ConcurrentWeakKeyHashMap<K, V> extends AbstractMap<K, V> impl
     }
 
     /**
-     * Removes any stale entries whose keys have been finalized. Use of this
-     * method is normally not necessary since stale entries are automatically
-     * removed lazily, when blocking operations are required. However, there are
-     * some cases where this operation should be performed eagerly, such as
-     * cleaning up old references to a ClassLoader in a multi-classloader
-     * environment.
-     *
-     * Note: this method will acquire locks, one at a time, across all segments
-     * of this table, so if it is to be used, it should be used sparingly.
+     * 主动清理键已被 GC 的过期条目。通常阻塞操作会惰性清理；多 ClassLoader 场景可显式调用。
+     * 会依次锁定各 Segment，不宜频繁调用。
      */
     public void purgeStaleEntries() {
         for (Segment<K, V> segment: segments) {

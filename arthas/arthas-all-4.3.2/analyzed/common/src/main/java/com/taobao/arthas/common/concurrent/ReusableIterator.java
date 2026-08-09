@@ -17,6 +17,12 @@ package com.taobao.arthas.common.concurrent;
 
 import java.util.Iterator;
 
+/**
+ * 可重置的迭代器：遍历结束后可 {@link #rewind()} 从头再扫，避免重复分配 Iterator。
+ *
+ * @param <E> 元素类型
+ */
 public interface ReusableIterator<E> extends Iterator<E> {
+    /** 重置迭代位置到起始 */
     void rewind();
 }

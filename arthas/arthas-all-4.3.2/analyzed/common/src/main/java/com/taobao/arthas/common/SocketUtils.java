@@ -14,21 +14,19 @@ import java.util.concurrent.TimeoutException;
 import javax.net.ServerSocketFactory;
 
 /**
+ * TCP 端口可用性检测、随机选端口及占用进程 PID 查询（跨 Windows/Unix）。
  *
  * @author hengyunabc 2018-11-07
- *
  */
 public class SocketUtils {
 
     /**
-     * The default minimum value for port ranges used when finding an available
-     * socket port.
+     * 查找可用端口时的默认最小端口号。
      */
     public static final int PORT_RANGE_MIN = 1024;
 
     /**
-     * The default maximum value for port ranges used when finding an available
-     * socket port.
+     * 查找可用端口时的默认最大端口号。
      */
     public static final int PORT_RANGE_MAX = 65535;
 
@@ -37,8 +35,13 @@ public class SocketUtils {
     private SocketUtils() {
     }
 
+    /**
+     * 查找监听指定 TCP 端口的进程 PID；超时或失败返回 -1。
+     *
+     * @param port 端口号
+     */
     public static long findTcpListenProcess(int port) {
-        // Add a timeout of 5 seconds to prevent blocking
+        // 5 秒超时，避免 netstat/lsof 阻塞
         final int TIMEOUT_SECONDS = 5;
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
@@ -77,6 +80,7 @@ public class SocketUtils {
         return -1;
     }
 
+    /** 解析 Windows {@code netstat -ano} 输出 */
     private static long findTcpListenProcessOnWindows(int port) {
         String[] command = { "netstat", "-ano", "-p", "TCP" };
         List<String> lines = ExecutingCommand.runNative(command);
@@ -94,6 +98,7 @@ public class SocketUtils {
         return -1;
     }
 
+    /** 通过 lsof 查找 Unix 上监听端口的 PID */
     private static long findTcpListenProcessOnUnix(int port) {
         String pid = ExecutingCommand.getFirstAnswer("lsof -t -s TCP:LISTEN -i TCP:" + port);
         if (pid != null && !pid.trim().isEmpty()) {
@@ -106,6 +111,7 @@ public class SocketUtils {
         return -1;
     }
 
+    /** 尝试在 localhost 绑定端口以判断是否可用 */
     public static boolean isTcpPortAvailable(int port) {
         try {
             ServerSocket serverSocket = ServerSocketFactory.getDefault().createServerSocket(port, 1,
@@ -118,49 +124,45 @@ public class SocketUtils {
     }
 
     /**
-     * Find an available TCP port randomly selected from the range
-     * [{@value #PORT_RANGE_MIN}, {@value #PORT_RANGE_MAX}].
+     * 在 [{@value #PORT_RANGE_MIN}, {@value #PORT_RANGE_MAX}] 内随机选取可用 TCP 端口。
      * 
-     * @return an available TCP port number
-     * @throws IllegalStateException if no available port could be found
+     * @return 可用端口号
+     * @throws IllegalStateException 范围内无可用端口
      */
     public static int findAvailableTcpPort() {
         return findAvailableTcpPort(PORT_RANGE_MIN);
     }
 
     /**
-     * Find an available TCP port randomly selected from the range [{@code minPort},
-     * {@value #PORT_RANGE_MAX}].
+     * 在 [{@code minPort}, {@value #PORT_RANGE_MAX}] 内随机选取可用 TCP 端口。
      * 
-     * @param minPort the minimum port number
-     * @return an available TCP port number
-     * @throws IllegalStateException if no available port could be found
+     * @param minPort 最小端口
+     * @return 可用端口号
+     * @throws IllegalStateException 范围内无可用端口
      */
     public static int findAvailableTcpPort(int minPort) {
         return findAvailableTcpPort(minPort, PORT_RANGE_MAX);
     }
 
     /**
-     * Find an available TCP port randomly selected from the range [{@code minPort},
-     * {@code maxPort}].
+     * 在 [{@code minPort}, {@code maxPort}] 内随机选取可用 TCP 端口。
      * 
-     * @param minPort the minimum port number
-     * @param maxPort the maximum port number
-     * @return an available TCP port number
-     * @throws IllegalStateException if no available port could be found
+     * @param minPort 最小端口
+     * @param maxPort 最大端口
+     * @return 可用端口号
+     * @throws IllegalStateException 范围内无可用端口
      */
     public static int findAvailableTcpPort(int minPort, int maxPort) {
         return findAvailablePort(minPort, maxPort);
     }
 
     /**
-     * Find an available port for this {@code SocketType}, randomly selected from
-     * the range [{@code minPort}, {@code maxPort}].
+     * 随机试探直至找到可绑定的端口。
      * 
-     * @param minPort the minimum port number
-     * @param maxPort the maximum port number
-     * @return an available port number for this socket type
-     * @throws IllegalStateException if no available port could be found
+     * @param minPort 最小端口
+     * @param maxPort 最大端口
+     * @return 可用端口号
+     * @throws IllegalStateException 范围内无可用端口
      */
     private static int findAvailablePort(int minPort, int maxPort) {
 
@@ -181,12 +183,11 @@ public class SocketUtils {
     }
 
     /**
-     * Find a pseudo-random port number within the range [{@code minPort},
-     * {@code maxPort}].
+     * 在 [{@code minPort}, {@code maxPort}] 内生成伪随机端口。
      * 
-     * @param minPort the minimum port number
-     * @param maxPort the maximum port number
-     * @return a random port number within the specified range
+     * @param minPort 最小端口
+     * @param maxPort 最大端口
+     * @return 随机端口
      */
     private static int findRandomPort(int minPort, int maxPort) {
         int portRange = maxPort - minPort;

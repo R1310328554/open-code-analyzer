@@ -23,7 +23,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * from spring
+ * 反射与动态类加载工具集（源自 Spring/CGLIB），含 JDK 9+ 下 defineClass 多种回退路径。
+ *
  * @version $Id: ReflectUtils.java,v 1.30 2009/01/11 19:47:49 herbyderby Exp $
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -38,7 +39,7 @@ public class ReflectUtils {
 
     private static final ClassLoader defaultLoader = ReflectUtils.class.getClassLoader();
 
-    // SPRING PATCH BEGIN
+    // SPRING PATCH BEGIN — JDK 模块系统下 defineClass 所需 Method 句柄
     private static final Method privateLookupInMethod;
 
     private static final Method lookupDefineClassMethod;
@@ -134,6 +135,7 @@ public class ReflectUtils {
         transforms.put("boolean", "Z");
     }
 
+    /** 特权读取类的 ProtectionDomain */
     public static ProtectionDomain getProtectionDomain(final Class source) {
         if (source == null) {
             return null;
@@ -145,6 +147,7 @@ public class ReflectUtils {
         });
     }
 
+    /** 按描述字符串查找构造器，使用默认 ClassLoader */
     public static Constructor findConstructor(String desc) {
         return findConstructor(desc, defaultLoader);
     }
@@ -161,6 +164,7 @@ public class ReflectUtils {
         }
     }
 
+    /** 按 {@code ClassName.method(Args)} 描述查找方法 */
     public static Method findMethod(String desc) {
         return findMethod(desc, defaultLoader);
     }
@@ -415,7 +419,8 @@ public class ReflectUtils {
         return methods[0];
     }
 
-    // SPRING PATCH BEGIN
+    // SPRING PATCH BEGIN — 动态注入字节码，优先 Lookup API，回退 ClassLoader.defineClass
+    /** 在指定 ClassLoader 中定义类（无 ProtectionDomain） */
     public static Class defineClass(String className, byte[] b, ClassLoader loader) throws Exception {
         return defineClass(className, b, loader, null, null);
     }

@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.Properties;
 
 /**
- * Arthas启动器
+ * Arthas 启动器：解析 CLI 参数后通过 Attach API 向目标 JVM 加载 agent。
  */
 public class Arthas {
 
@@ -27,6 +27,7 @@ public class Arthas {
         attachAgent(parse(args));
     }
 
+    /** 将命令行参数解析为 {@link Configure} */
     private Configure parse(String[] args) {
         Option pid = new TypedOption<Long>().setType(Long.class).setShortName("pid").setRequired(true);
         Option core = new TypedOption<String>().setType(String.class).setShortName("core").setRequired(true);
@@ -88,6 +89,9 @@ public class Arthas {
         return configure;
     }
 
+    /**
+     * Attach 到目标进程并加载 Arthas agent；agent 参数字符串为 core 路径与 Configure 序列化。
+     */
     private void attachAgent(Configure configure) throws Exception {
         VirtualMachineDescriptor virtualMachineDescriptor = null;
         for (VirtualMachineDescriptor descriptor : VirtualMachine.list()) {
@@ -118,7 +122,7 @@ public class Arthas {
             }
 
             String arthasAgentPath = configure.getArthasAgent();
-            //convert jar path to unicode string
+            // 将 jar 路径转为 URL 编码，避免路径含空格或中文
             configure.setArthasAgent(encodeArg(arthasAgentPath));
             configure.setArthasCore(encodeArg(configure.getArthasCore()));
             try {
@@ -151,6 +155,7 @@ public class Arthas {
         }
     }
 
+    /** UTF-8 URL 编码 agent/core 路径参数 */
     private static String encodeArg(String arg) {
         try {
             return URLEncoder.encode(arg, "utf-8");

@@ -4,17 +4,21 @@ import java.io.File;
 import java.util.Locale;
 
 /**
+ * 操作系统与 CPU 架构探测：启动时解析 {@code os.name}/{@code os.arch}，供端口、JNI、ANSI 等分支使用。
  *
  * @author hengyunabc 2018-11-08
- *
  */
 public class OSUtils {
+    /** 小写化的 {@code os.name} */
     private static final String OPERATING_SYSTEM_NAME = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+    /** 小写化的 {@code os.arch} */
     private static final String OPERATING_SYSTEM_ARCH = System.getProperty("os.arch").toLowerCase(Locale.ENGLISH);
     private static final String UNKNOWN = "unknown";
 
+    /** 当前平台枚举 */
     static PlatformEnum platform;
 
+    /** 归一化后的架构标识，如 x86_64、aarch_64 */
     static String arch;
 
     static {
@@ -34,18 +38,24 @@ public class OSUtils {
     private OSUtils() {
     }
 
+    /** 是否为 Windows */
     public static boolean isWindows() {
         return platform == PlatformEnum.WINDOWS;
     }
 
+    /** 是否为 Linux */
     public static boolean isLinux() {
         return platform == PlatformEnum.LINUX;
     }
 
+    /** 是否为 macOS */
     public static boolean isMac() {
         return platform == PlatformEnum.MACOSX;
     }
 
+    /**
+     * 是否在 Cygwin 或 MinGW 环境下运行（Windows 上仍可使用 ANSI 颜色等 Unix 特性）。
+     */
     public static boolean isCygwinOrMinGW() {
         if (isWindows()) {
             if ((System.getenv("MSYSTEM") != null && System.getenv("MSYSTEM").startsWith("MINGW"))
@@ -56,6 +66,7 @@ public class OSUtils {
         return false;
     }
 
+	/** 返回归一化架构字符串 */
 	public static String arch() {
 		return arch;
 	}
@@ -76,11 +87,13 @@ public class OSUtils {
 		return "x86_64".equals(arch);
 	}
 
+       /** 是否为龙芯 LoongArch64 */
        public static boolean isLoongArch64() {
                return "loongarch_64".equals(arch);
        }
 
 
+	/** 将多种 os.arch 写法映射为统一内部名称 */
 	private static String normalizeArch(String value) {
 		value = normalize(value);
 		if (value.matches("^(x8664|amd64|ia32e|em64t|x64)$")) {
@@ -140,6 +153,7 @@ public class OSUtils {
 		return value;
 	}
 
+	/** 是否使用 musl libc（通过动态链接器路径判断） */
 	public static boolean isMuslLibc() {
 		File ld_musl_x86_64_file = new File("/lib/ld-musl-x86_64.so.1");
 		File ld_musl_aarch64_file = new File("/lib/ld-musl-aarch64.so.1");

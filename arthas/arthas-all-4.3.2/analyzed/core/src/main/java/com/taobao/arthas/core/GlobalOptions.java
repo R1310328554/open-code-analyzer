@@ -9,10 +9,11 @@ import com.taobao.arthas.common.UnsafeUtils;
 import ognl.OgnlRuntime;
 
 /**
- * 全局开关
+ * 全局开关：通过 {@code options} 命令修改的静态字段集合，影响增强、输出与 OGNL 行为。
  * Created by vlinux on 15/6/4.
  */
 public class GlobalOptions {
+    /** strict 模式关闭时的提示文案 */
     public static final String STRICT_MESSAGE = "By default, strict mode is true, "
             + "not allowed to set object properties. "
             + "Want to set object properties, execute `options strict false`";
@@ -154,6 +155,9 @@ public class GlobalOptions {
     )
     public static volatile boolean strict = true;
 
+    /**
+     * 通过 Unsafe 直接写入 OGNL 内部 strict 标志，与 {@link #strict} 字段保持同步。
+     */
     public static void updateOnglStrict(boolean strict) {
         try {
             Field field = OgnlRuntime.class.getDeclaredField("_useStricterInvocation");

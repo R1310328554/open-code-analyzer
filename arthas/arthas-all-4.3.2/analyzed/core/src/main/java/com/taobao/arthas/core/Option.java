@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Arthas全局选项
+ * 标记 {@link GlobalOptions} 中可通过 {@code options} 命令读写的全局配置字段。
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

@@ -1,7 +1,7 @@
 package com.taobao.arthas.common;
 
 /**
- * Enum of supported operating systems.
+ * Arthas 支持的操作系统平台枚举。
  *
  */
 public enum PlatformEnum {
@@ -10,7 +10,7 @@ public enum PlatformEnum {
      */
     WINDOWS,
     /**
-     * A flavor of Linux
+     * Linux 及其发行版
      */
     LINUX,
     /**
@@ -18,5 +18,6 @@ public enum PlatformEnum {
      */
     MACOSX,
 
+    /** 未识别平台 */
     UNKNOWN
 }
