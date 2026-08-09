@@ -32,6 +32,10 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * {@link ConsumerIdsChangeListener} 默认实现：维护消费者组变更通知队列，
+ * 支持实时推送或定时批量通知客户端 consumerId 变化。
+ */
 public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListener {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;
@@ -44,6 +48,7 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
 
     private final ConcurrentHashMap<String, NotifyTaskControl> activeGroupNotifyMap = new ConcurrentHashMap<>();
 
+    /** 绑定 broker 并启动定时通知任务（初始延迟 30s，间隔 15s）。 */
     public DefaultConsumerIdsChangeListener(BrokerController brokerController) {
         this.brokerController = brokerController;
 
@@ -60,6 +65,7 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
         }, 30, 15, TimeUnit.SECONDS);
     }
 
+    /** 按事件类型更新过滤管理器或向组内通道推送 consumerId 变更。 */
     @Override
     public void handle(ConsumerGroupEvent event, String group, Object... args) {
         if (event == null) {
@@ -115,6 +121,7 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
         }
     }
 
+    /** 定时任务：冲刷缓存的组→通道映射并调用 {@code notifyConsumerIdsChanged}。 */
     private void notifyConsumerChange() {
 
         if (consumerChannelMap.isEmpty()) {
@@ -140,29 +147,35 @@ public class DefaultConsumerIdsChangeListener implements ConsumerIdsChangeListen
         }
     }
 
+    /** 关闭定时通知线程池。 */
     @Override
     public void shutdown() {
         this.scheduledExecutorService.shutdown();
     }
 
+    /** 实时通知任务控制块：支持被新任务中断以避免重复推送。 */
     private static class NotifyTaskControl {
 
         private final AtomicBoolean interrupted = new AtomicBoolean(false);
 
         private final List<Channel> channels;
 
+        /** 绑定待通知的通道列表。 */
         public NotifyTaskControl(List<Channel> channels) {
             this.channels = channels;
         }
 
+        /** 当前通知任务是否已被更新的任务取代。 */
         public boolean isInterrupted() {
             return interrupted.get();
         }
 
+        /** 标记任务为已中断。 */
         public void interrupt() {
             interrupted.set(true);
         }
 
+        /** 返回待通知通道列表。 */
         public List<Channel> getChannels() {
             return channels;
         }

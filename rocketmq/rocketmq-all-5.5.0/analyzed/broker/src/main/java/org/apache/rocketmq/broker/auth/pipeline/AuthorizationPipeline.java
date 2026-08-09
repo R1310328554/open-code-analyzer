@@ -33,16 +33,21 @@ import org.apache.rocketmq.remoting.pipeline.RequestPipeline;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/**
+ * 授权请求管道：在认证通过后对请求资源执行 ACL 策略评估。
+ */
 public class AuthorizationPipeline implements RequestPipeline {
     protected static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final AuthConfig authConfig;
     private final AuthorizationEvaluator evaluator;
 
+    /** 按 {@link AuthConfig} 创建授权评估器。 */
     public AuthorizationPipeline(AuthConfig authConfig) {
         this.authConfig = authConfig;
         this.evaluator = AuthorizationFactory.getEvaluator(authConfig);
     }
 
+    /** 若启用授权则构建上下文列表并评估；权限不足时抛出 {@link AbortProcessException}。 */
     @Override
     public void execute(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         if (!authConfig.isAuthorizationEnabled()) {
@@ -59,6 +64,7 @@ public class AuthorizationPipeline implements RequestPipeline {
         }
     }
 
+    /** 为当前请求解析出待评估的 {@link AuthorizationContext} 列表。 */
     protected List<AuthorizationContext> newContexts(ChannelHandlerContext ctx, RemotingCommand request) {
         return AuthorizationFactory.newContexts(authConfig, ctx, request);
     }

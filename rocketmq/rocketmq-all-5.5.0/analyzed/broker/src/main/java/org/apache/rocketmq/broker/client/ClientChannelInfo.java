@@ -19,6 +19,9 @@ package org.apache.rocketmq.broker.client;
 import io.netty.channel.Channel;
 import org.apache.rocketmq.remoting.protocol.LanguageCode;
 
+/**
+ * 客户端通道元数据：绑定 Netty {@link Channel} 与 clientId、语言、协议版本及心跳时间戳。
+ */
 public class ClientChannelInfo {
     private final Channel channel;
     private final String clientId;
@@ -26,10 +29,12 @@ public class ClientChannelInfo {
     private final int version;
     private volatile long lastUpdateTimestamp = System.currentTimeMillis();
 
+    /** 仅绑定通道，其余字段使用默认值。 */
     public ClientChannelInfo(Channel channel) {
         this(channel, null, null, 0);
     }
 
+    /** 构造完整客户端通道描述。 */
     public ClientChannelInfo(Channel channel, String clientId, LanguageCode language, int version) {
         this.channel = channel;
         this.clientId = clientId;
@@ -37,26 +42,32 @@ public class ClientChannelInfo {
         this.version = version;
     }
 
+    /** 返回底层 Netty 通道。 */
     public Channel getChannel() {
         return channel;
     }
 
+    /** 返回客户端唯一标识。 */
     public String getClientId() {
         return clientId;
     }
 
+    /** 返回客户端 SDK 语言类型。 */
     public LanguageCode getLanguage() {
         return language;
     }
 
+    /** 返回 Remoting 协议版本号。 */
     public int getVersion() {
         return version;
     }
 
+    /** 返回最近一次心跳或注册更新时间戳（毫秒）。 */
     public long getLastUpdateTimestamp() {
         return lastUpdateTimestamp;
     }
 
+    /** 更新最近活跃时间戳。 */
     public void setLastUpdateTimestamp(long lastUpdateTimestamp) {
         this.lastUpdateTimestamp = lastUpdateTimestamp;
     }

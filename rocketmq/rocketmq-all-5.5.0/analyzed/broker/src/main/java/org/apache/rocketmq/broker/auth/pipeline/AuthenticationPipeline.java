@@ -31,16 +31,21 @@ import org.apache.rocketmq.remoting.pipeline.RequestPipeline;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.ResponseCode;
 
+/**
+ * 认证请求管道：在 Remoting 请求进入业务处理器前调用 {@link AuthenticationEvaluator} 校验身份。
+ */
 public class AuthenticationPipeline implements RequestPipeline {
     protected static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final AuthConfig authConfig;
     private final AuthenticationEvaluator evaluator;
 
+    /** 按 {@link AuthConfig} 创建认证评估器。 */
     public AuthenticationPipeline(AuthConfig authConfig) {
         this.authConfig = authConfig;
         this.evaluator = AuthenticationFactory.getEvaluator(authConfig);
     }
 
+    /** 若启用认证则构建上下文并评估；失败时抛出 {@link AbortProcessException}。 */
     @Override
     public void execute(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         if (!authConfig.isAuthenticationEnabled()) {
@@ -57,6 +62,7 @@ public class AuthenticationPipeline implements RequestPipeline {
         }
     }
 
+    /** 为当前 Netty 通道与请求构造 {@link AuthenticationContext}。 */
     protected AuthenticationContext newContext(ChannelHandlerContext ctx, RemotingCommand request) {
         return AuthenticationFactory.newContext(authConfig, ctx, request);
     }

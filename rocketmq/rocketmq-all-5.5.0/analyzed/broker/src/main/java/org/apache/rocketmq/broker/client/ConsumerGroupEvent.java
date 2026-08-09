@@ -16,26 +16,19 @@
  */
 package org.apache.rocketmq.broker.client;
 
+/**
+ * 消费者组生命周期事件：供 {@link ConsumerIdsChangeListener} 等组件响应组内成员变化。
+ */
 public enum ConsumerGroupEvent {
 
-    /**
-     * Some consumers in the group are changed.
-     */
+    /** 组内消费者成员或订阅发生变化。 */
     CHANGE,
-    /**
-     * The group of consumer is unregistered.
-     */
+    /** 整个消费者组被注销。 */
     UNREGISTER,
-    /**
-     * The group of consumer is registered.
-     */
+    /** 消费者组完成注册。 */
     REGISTER,
-    /**
-     * The client of this consumer is new registered.
-     */
+    /** 组内某个客户端新注册上线。 */
     CLIENT_REGISTER,
-    /**
-     * The client of this consumer is unregistered.
-     */
+    /** 组内某个客户端下线注销。 */
     CLIENT_UNREGISTER
 }

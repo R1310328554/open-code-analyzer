@@ -16,13 +16,12 @@
  */
 package org.apache.rocketmq.broker.client;
 
+/**
+ * 生产者组生命周期事件：供 {@link ProducerChangeListener} 响应组注销或客户端下线。
+ */
 public enum ProducerGroupEvent {
-    /**
-     * The group of producer is unregistered.
-     */
+    /** 整个生产者组被注销。 */
     GROUP_UNREGISTER,
-    /**
-     * The client of this producer is unregistered.
-     */
+    /** 组内某个生产者客户端下线注销。 */
     CLIENT_UNREGISTER
 }

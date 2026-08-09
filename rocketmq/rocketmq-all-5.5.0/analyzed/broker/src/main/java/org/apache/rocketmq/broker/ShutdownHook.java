@@ -16,11 +16,14 @@
  */
 package org.apache.rocketmq.broker;
 
+/**
+ * Broker 关闭钩子：在控制器停机流程中插入自定义清理逻辑。
+ */
 public interface ShutdownHook {
     /**
-     * Code to execute before broker shutdown.
+     * Broker 关闭前执行的钩子逻辑。
      *
-     * @param controller broker to shutdown
+     * @param controller 待关闭的 broker 控制器
      */
     void beforeShutdown(BrokerController controller);
 }

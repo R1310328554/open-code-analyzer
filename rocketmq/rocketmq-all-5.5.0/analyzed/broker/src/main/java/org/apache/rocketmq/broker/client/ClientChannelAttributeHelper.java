@@ -23,23 +23,31 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Netty 通道属性辅助类：在同一 {@link Channel} 上记录该连接关联的生产者/消费者组名。
+ * 组名以 {@code |} 分隔存储，便于单连接多组场景。
+ */
 public class ClientChannelAttributeHelper {
     private static final AttributeKey<String> ATTR_CG = AttributeKey.valueOf("CHANNEL_CONSUMER_GROUP");
     private static final AttributeKey<String> ATTR_PG = AttributeKey.valueOf("CHANNEL_PRODUCER_GROUP");
     private static final String SEPARATOR = "|";
 
+    /** 向通道追加生产者组名（去重）。 */
     public static void addProducerGroup(Channel channel, String group) {
         addGroup(channel, group, ATTR_PG);
     }
 
+    /** 向通道追加消费者组名（去重）。 */
     public static void addConsumerGroup(Channel channel, String group) {
         addGroup(channel, group, ATTR_CG);
     }
 
+    /** 读取通道上已登记的生产者组列表。 */
     public static List<String> getProducerGroups(Channel channel) {
         return getGroups(channel, ATTR_PG);
     }
 
+    /** 读取通道上已登记的消费者组列表。 */
     public static List<String> getConsumerGroups(Channel channel) {
         return getGroups(channel, ATTR_CG);
     }

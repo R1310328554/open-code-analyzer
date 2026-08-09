@@ -33,6 +33,9 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.ConsumeType;
 import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 
+/**
+ * 单个消费者组的运行时视图：维护组内通道、订阅关系及消费模式等元数据。
+ */
 public class ConsumerGroupInfo {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final String groupName;
@@ -45,6 +48,7 @@ public class ConsumerGroupInfo {
     private volatile ConsumeFromWhere consumeFromWhere;
     private volatile long lastUpdateTimestamp = System.currentTimeMillis();
 
+    /** 创建带完整消费参数的消费者组信息。 */
     public ConsumerGroupInfo(String groupName, ConsumeType consumeType, MessageModel messageModel,
         ConsumeFromWhere consumeFromWhere) {
         this.groupName = groupName;
@@ -53,10 +57,12 @@ public class ConsumerGroupInfo {
         this.consumeFromWhere = consumeFromWhere;
     }
 
+    /** 仅指定组名，消费参数后续由 {@link #updateChannel} 填充。 */
     public ConsumerGroupInfo(String groupName) {
         this.groupName = groupName;
     }
 
+    /** 按 clientId 查找组内通道信息。 */
     public ClientChannelInfo findChannel(final String clientId) {
         Iterator<Entry<Channel, ClientChannelInfo>> it = this.channelInfoTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -69,18 +75,22 @@ public class ConsumerGroupInfo {
         return null;
     }
 
+    /** 返回 topic → {@link SubscriptionData} 订阅表。 */
     public ConcurrentMap<String, SubscriptionData> getSubscriptionTable() {
         return subscriptionTable;
     }
 
+    /** 按 Netty 通道查找客户端信息。 */
     public ClientChannelInfo findChannel(final Channel channel) {
         return this.channelInfoTable.get(channel);
     }
 
+    /** 返回通道 → 客户端信息的并发映射表。 */
     public ConcurrentMap<Channel, ClientChannelInfo> getChannelInfoTable() {
         return channelInfoTable;
     }
 
+    /** 返回组内全部 Netty 通道列表。 */
     public List<Channel> getAllChannel() {
         List<Channel> result = new ArrayList<>();
 
@@ -89,6 +99,7 @@ public class ConsumerGroupInfo {
         return result;
     }
 
+    /** 返回组内全部 clientId 列表。 */
     public List<String> getAllClientId() {
         List<String> result = new ArrayList<>();
 
@@ -103,6 +114,7 @@ public class ConsumerGroupInfo {
         return result;
     }
 
+    /** 主动注销指定客户端通道；成功移除时返回 true。 */
     public boolean unregisterChannel(final ClientChannelInfo clientChannelInfo) {
         ClientChannelInfo old = this.channelInfoTable.remove(clientChannelInfo.getChannel());
         if (old != null) {
@@ -112,6 +124,7 @@ public class ConsumerGroupInfo {
         return false;
     }
 
+    /** Netty 连接关闭/异常时移除通道并记录日志。 */
     public ClientChannelInfo doChannelCloseEvent(final String remoteAddr, final Channel channel) {
         final ClientChannelInfo info = this.channelInfoTable.remove(channel);
         if (info != null) {
@@ -124,13 +137,13 @@ public class ConsumerGroupInfo {
     }
 
     /**
-     * Update {@link #channelInfoTable} in {@link ConsumerGroupInfo}
+     * 更新 {@link #channelInfoTable} 中的客户端通道，并同步组级消费参数。
      *
-     * @param infoNew Channel info of new client.
-     * @param consumeType consume type of new client.
-     * @param messageModel message consuming model (CLUSTERING/BROADCASTING) of new client.
-     * @param consumeFromWhere indicate the position when the client consume message firstly.
-     * @return the result that if new connector is connected or not.
+     * @param infoNew 新客户端的通道信息
+     * @param consumeType 新客户端的消费类型
+     * @param messageModel 新客户端的消息模式（CLUSTERING/BROADCASTING）
+     * @param consumeFromWhere 客户端首次消费时的起始位点策略
+     * @return 是否新增了连接（true 表示有新客户端接入）
      */
     public boolean updateChannel(final ClientChannelInfo infoNew, ConsumeType consumeType,
         MessageModel messageModel, ConsumeFromWhere consumeFromWhere) {
@@ -166,10 +179,10 @@ public class ConsumerGroupInfo {
     }
 
     /**
-     * Update subscription.
+     * 批量更新订阅关系：新增、升级版本或移除不再订阅的 topic。
      *
-     * @param subList set of {@link SubscriptionData}
-     * @return the boolean indicates the subscription has changed or not.
+     * @param subList {@link SubscriptionData} 集合
+     * @return 订阅表是否发生变更
      */
     public boolean updateSubscription(final Set<SubscriptionData> subList) {
         boolean updated = false;
@@ -221,46 +234,57 @@ public class ConsumerGroupInfo {
         return updated;
     }
 
+    /** 返回当前已订阅的全部 topic 名称。 */
     public Set<String> getSubscribeTopics() {
         return subscriptionTable.keySet();
     }
 
+    /** 按 topic 查找订阅详情。 */
     public SubscriptionData findSubscriptionData(final String topic) {
         return this.subscriptionTable.get(topic);
     }
 
+    /** 返回组级消费类型。 */
     public ConsumeType getConsumeType() {
         return consumeType;
     }
 
+    /** 设置组级消费类型。 */
     public void setConsumeType(ConsumeType consumeType) {
         this.consumeType = consumeType;
     }
 
+    /** 返回组级消息模式。 */
     public MessageModel getMessageModel() {
         return messageModel;
     }
 
+    /** 设置组级消息模式。 */
     public void setMessageModel(MessageModel messageModel) {
         this.messageModel = messageModel;
     }
 
+    /** 返回消费者组名。 */
     public String getGroupName() {
         return groupName;
     }
 
+    /** 返回组信息最近更新时间戳。 */
     public long getLastUpdateTimestamp() {
         return lastUpdateTimestamp;
     }
 
+    /** 设置组信息最近更新时间戳。 */
     public void setLastUpdateTimestamp(long lastUpdateTimestamp) {
         this.lastUpdateTimestamp = lastUpdateTimestamp;
     }
 
+    /** 返回首次消费起始位点策略。 */
     public ConsumeFromWhere getConsumeFromWhere() {
         return consumeFromWhere;
     }
 
+    /** 设置首次消费起始位点策略。 */
     public void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) {
         this.consumeFromWhere = consumeFromWhere;
     }

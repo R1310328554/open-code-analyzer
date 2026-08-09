@@ -17,11 +17,12 @@
 package org.apache.rocketmq.broker.client;
 
 /**
- * producer manager will call this listener when something happen
+ * 生产者变更监听器：{@code ProducerManager} 在组或客户端状态变化时回调。
  * <p>
- * event type: {@link ProducerGroupEvent}
+ * 事件类型见 {@link ProducerGroupEvent}。
  */
 public interface ProducerChangeListener {
 
+    /** 处理指定生产者组事件及关联客户端通道信息。 */
     void handle(ProducerGroupEvent event, String group, ClientChannelInfo clientChannelInfo);
 }

@@ -31,8 +31,12 @@ import org.apache.rocketmq.auth.authorization.model.Resource;
 import org.apache.rocketmq.common.action.Action;
 import org.apache.rocketmq.remoting.protocol.body.AclInfo;
 
+/**
+ * ACL 模型转换器：在 Remoting 协议体 {@link AclInfo} 与授权域模型 {@link Acl} 之间双向转换。
+ */
 public class AclConverter {
 
+    /** 将 {@link AclInfo} 转为内存 {@link Acl}；入参为 null 时返回 null。 */
     public static Acl convertAcl(AclInfo aclInfo) {
         if (aclInfo == null) {
             return null;
@@ -75,6 +79,7 @@ public class AclConverter {
         return Acl.of(subject, policies);
     }
 
+    /** 批量将 {@link Acl} 列表转为 {@link AclInfo} 列表。 */
     public static List<AclInfo> convertAcls(List<Acl> acls) {
         if (CollectionUtils.isEmpty(acls)) {
             return null;
@@ -83,6 +88,7 @@ public class AclConverter {
             .collect(Collectors.toList());
     }
 
+    /** 将 {@link Acl} 转为 {@link AclInfo}；入参为 null 时返回 null。 */
     public static AclInfo convertAcl(Acl acl) {
         if (acl == null) {
             return null;
@@ -99,6 +105,7 @@ public class AclConverter {
         return aclInfo;
     }
 
+    /** 将 {@link Policy} 转为 {@link AclInfo.PolicyInfo}。 */
     private static AclInfo.PolicyInfo convertPolicy(Policy policy) {
         AclInfo.PolicyInfo policyInfo = new AclInfo.PolicyInfo();
         if (policy.getPolicyType() != null) {
@@ -113,6 +120,7 @@ public class AclConverter {
         return policyInfo;
     }
 
+    /** 将 {@link PolicyEntry} 转为 {@link AclInfo.PolicyEntryInfo}。 */
     private static AclInfo.PolicyEntryInfo convertPolicyEntry(PolicyEntry entry) {
         AclInfo.PolicyEntryInfo entryInfo = new AclInfo.PolicyEntryInfo();
         entryInfo.setResource(entry.toResourceStr());

@@ -16,9 +16,14 @@
  */
 package org.apache.rocketmq.broker.client;
 
+/**
+ * 消费者 ID 变更监听器：响应 {@link ConsumerGroupEvent} 以同步过滤规则或通知客户端重平衡。
+ */
 public interface ConsumerIdsChangeListener {
 
+    /** 处理指定组的事件；args 含义随 event 类型变化。 */
     void handle(ConsumerGroupEvent event, String group, Object... args);
 
+    /** 释放监听器持有的后台资源。 */
     void shutdown();
 }

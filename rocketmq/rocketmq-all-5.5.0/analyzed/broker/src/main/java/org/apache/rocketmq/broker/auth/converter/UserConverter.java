@@ -23,13 +23,18 @@ import org.apache.rocketmq.auth.authentication.enums.UserType;
 import org.apache.rocketmq.auth.authentication.model.User;
 import org.apache.rocketmq.remoting.protocol.body.UserInfo;
 
+/**
+ * 用户模型转换器：在 {@link User} 域对象与 Remoting {@link UserInfo} 之间互转。
+ */
 public class UserConverter {
 
+    /** 批量将 {@link User} 转为 {@link UserInfo}。 */
     public static List<UserInfo> convertUsers(List<User> users) {
         return users.stream().map(UserConverter::convertUser)
             .collect(Collectors.toList());
     }
 
+    /** 将 {@link User} 转为 {@link UserInfo}，枚举字段输出为名称字符串。 */
     public static UserInfo convertUser(User user) {
         UserInfo result = new UserInfo();
         result.setUsername(user.getUsername());
@@ -43,6 +48,7 @@ public class UserConverter {
         return result;
     }
 
+    /** 将 {@link UserInfo} 还原为 {@link User} 域对象。 */
     public static User convertUser(UserInfo userInfo) {
         User result = new User();
         result.setUsername(userInfo.getUsername());
