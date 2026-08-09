@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:07:07Z",
-  "files": [
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetInputListener.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetInputStream.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetNotificationHandler.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetOption.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetOptionHandler.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TelnetOutputStream.java",
-    "client/src/main/java/org/apache/commons/net/telnet/TerminalTypeOptionHandler.java",
-    "client/src/main/java/org/apache/commons/net/telnet/WindowSizeOptionHandler.java",
-    "client/src/main/java/org/apache/commons/net/util/ListenerList.java",
-    "common/src/main/java/com/taobao/arthas/common/AnsiLog.java",
-    "common/src/main/java/com/taobao/arthas/common/ArthasConstants.java",
-    "common/src/main/java/com/taobao/arthas/common/ExecutingCommand.java",
-    "common/src/main/java/com/taobao/arthas/common/FileUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/IOUtils.java",
-    "common/src/main/java/com/taobao/arthas/common/JavaVersionUtils.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 645,
-  "done": 135
+  "done": 150
 }
