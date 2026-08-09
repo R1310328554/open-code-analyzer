@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:54:47Z",
-  "files": [
-    "common/src/main/java/org/apache/rocketmq/common/attribute/AttributeParser.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/AttributeUtil.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/BooleanAttribute.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/CQType.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/CleanupPolicy.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/EnumAttribute.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/LiteSubModel.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/LongRangeAttribute.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/StringAttribute.java",
-    "common/src/main/java/org/apache/rocketmq/common/attribute/TopicMessageType.java",
-    "common/src/main/java/org/apache/rocketmq/common/chain/Handler.java",
-    "common/src/main/java/org/apache/rocketmq/common/chain/HandlerChain.java",
-    "common/src/main/java/org/apache/rocketmq/common/coldctr/AccAndTimeStamp.java",
-    "common/src/main/java/org/apache/rocketmq/common/compression/CompressionType.java",
-    "common/src/main/java/org/apache/rocketmq/common/compression/Compressor.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1098,
-  "done": 375
+  "done": 390
 }
