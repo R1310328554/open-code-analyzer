@@ -19,8 +19,15 @@ import io.netty.util.internal.EmptyArrays;
 
 import java.security.PrivateKey;
 
+/**
+ * Keyless TLS 场景下的占位 {@link PrivateKey}。
+ * <p>
+ * 私钥材料不在 JVM 内，{@link #getEncoded()} 始终返回空数组；实际签名由
+ * {@link BoringSSLAsyncPrivateKeyMethod} 在 BoringSSL 回调中异步完成。
+ */
 final class BoringSSLKeylessPrivateKey implements PrivateKey {
 
+    /** 单例占位私钥，供 {@link BoringSSLKeylessManagerFactory} 的虚拟 KeyStore 使用。 */
     static final BoringSSLKeylessPrivateKey INSTANCE = new BoringSSLKeylessPrivateKey();
 
     private BoringSSLKeylessPrivateKey() {
@@ -38,6 +45,7 @@ final class BoringSSLKeylessPrivateKey implements PrivateKey {
 
     @Override
     public byte[] getEncoded() {
+        // 无本地密钥材料，编码为空
         return EmptyArrays.EMPTY_BYTES;
     }
 }

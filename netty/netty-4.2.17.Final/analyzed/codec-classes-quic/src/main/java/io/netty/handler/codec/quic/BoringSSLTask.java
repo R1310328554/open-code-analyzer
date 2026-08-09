@@ -16,18 +16,20 @@
 package io.netty.handler.codec.quic;
 
 /**
- * A SSL related task that will be returned by {@link BoringSSL#SSL_getTask(long)}.
+ * 由 {@link BoringSSL#SSL_getTask(long)} 返回的 SSL 相关异步任务基类。
+ * <p>
+ * 实现 {@link Runnable}，在 EventLoop 上执行；{@code returnValue} 与 {@code complete} 由 JNI 轮询读取。
  */
 abstract class BoringSSLTask implements Runnable {
     private final long ssl;
     protected boolean didRun;
 
-    // These fields are accessed via JNI.
+    // 以下字段由 JNI 直接访问
     private int returnValue;
     private volatile boolean complete;
 
     protected BoringSSLTask(long ssl) {
-        // It is important that this constructor never throws. Be sure to not change this!
+        // 构造函数绝不能抛异常，否则 native 层无法安全构造任务对象
         this.ssl = ssl;
     }
 
@@ -43,17 +45,18 @@ abstract class BoringSSLTask implements Runnable {
     }
 
     /**
-     * Called once the task should be destroyed.
+     * 任务销毁时调用，子类可释放资源；默认无操作。
      */
     protected void destroy() {
         // Noop
     }
 
     /**
-     * Run the task and return the return value that should be passed back to OpenSSL.
+     * 执行具体任务逻辑，完成后通过 callback 将结果码回传给 OpenSSL/BoringSSL。
      */
     protected abstract void runTask(long ssl, TaskCallback callback);
 
+    /** 任务完成时的结果回调，{@code result} 为 native 层约定的状态码。 */
     interface TaskCallback {
         void onResult(long ssl, int result);
     }

@@ -20,6 +20,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import javax.net.ssl.SSLEngine;
 
+/** 将 NSS 密钥日志行以 DEBUG 级别写入 Netty 内部日志的 {@link BoringSSLKeylog} 实现。 */
 final class BoringSSLLoggingKeylog implements BoringSSLKeylog {
     static final BoringSSLLoggingKeylog INSTANCE = new BoringSSLLoggingKeylog();
 
@@ -30,6 +31,7 @@ final class BoringSSLLoggingKeylog implements BoringSSLKeylog {
 
     @Override
     public void logKey(SSLEngine engine, String key) {
+        // engine 参数保留供扩展；默认实现仅输出密钥行本身
         logger.debug(key);
     }
 }

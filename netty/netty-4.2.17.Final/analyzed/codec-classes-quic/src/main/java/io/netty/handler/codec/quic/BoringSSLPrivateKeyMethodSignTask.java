@@ -17,6 +17,9 @@ package io.netty.handler.codec.quic;
 
 import java.util.function.BiConsumer;
 
+/**
+ * 私钥签名异步任务：将握手摘要与签名算法交给 {@link BoringSSLPrivateKeyMethod#sign} 处理。
+ */
 final class BoringSSLPrivateKeyMethodSignTask extends BoringSSLPrivateKeyMethodTask {
     private final int signatureAlgorithm;
     private final byte[] digest;
@@ -25,7 +28,7 @@ final class BoringSSLPrivateKeyMethodSignTask extends BoringSSLPrivateKeyMethodT
             long ssl, int signatureAlgorithm, byte[] digest, BoringSSLPrivateKeyMethod method) {
         super(ssl, method);
         this.signatureAlgorithm = signatureAlgorithm;
-        // It's OK to not clone the arrays as we create these in JNI and not reuse.
+        // 数组由 JNI 创建且不复用，无需克隆
         this.digest = digest;
     }
 

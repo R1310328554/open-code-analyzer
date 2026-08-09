@@ -18,6 +18,9 @@ package io.netty.handler.codec.quic;
 
 import javax.net.ssl.SSLEngine;
 
+/**
+ * JNI 层密钥日志回调：将 native {@code ssl} 指针映射为 {@link SSLEngine} 后委托给 {@link BoringSSLKeylog}。
+ */
 final class BoringSSLKeylogCallback {
 
     private final QuicheQuicSslEngineMap engineMap;

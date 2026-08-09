@@ -26,6 +26,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * TLS 新会话建立时的 JNI 回调：将 BoringSSL 会话数据编码后写入 {@link QuicClientSessionCache}。
+ */
 final class BoringSSLSessionCallback {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(BoringSSLSessionCallback.class);
     private final QuicClientSessionCache sessionCache;
@@ -66,7 +69,7 @@ final class BoringSSLSessionCallback {
         }
     }
 
-    // Mimic the encoding of quiche: https://github.com/cloudflare/quiche/blob/0.10.0/src/lib.rs#L1668
+    // 编码格式与 quiche 一致: https://github.com/cloudflare/quiche/blob/0.10.0/src/lib.rs#L1668
     private static byte @Nullable [] toQuicheQuicSession(byte @Nullable [] sslSession, byte @Nullable [] peerParams) {
         if (sslSession != null && peerParams != null) {
             try (ByteArrayOutputStream bos = new ByteArrayOutputStream();

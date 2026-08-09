@@ -19,17 +19,17 @@ import javax.net.ssl.SSLEngine;
 
 
 /**
- * Allow to log keys, logging keys are following
+ * TLS 密钥日志接口，输出格式遵循
  * <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/Key_Log_Format">
- *     NSS Key Log Format</a>. This is intended for debugging use with tools like Wireshark.
+ *     NSS Key Log Format</a>，便于 Wireshark 等工具解密抓包流量（仅用于调试）。
  */
 public interface BoringSSLKeylog {
 
     /**
-     * Called when a key should be logged.
+     * BoringSSL 生成会话密钥时回调，由实现方记录一行 NSS 格式的密钥日志。
      *
-     * @param engine    the engine.
-     * @param key       the key.
+     * @param engine    关联的 {@link SSLEngine}。
+     * @param key       NSS 密钥日志格式的单行字符串。
      */
     void logKey(SSLEngine engine, String key);
 }

@@ -17,6 +17,9 @@ package io.netty.handler.codec.quic;
 
 import io.netty.util.Mapping;
 
+/**
+ * TLS 扩展 SNI（Server Name Indication）回调：根据客户端请求的主机名选择 {@link QuicSslContext}。
+ */
 final class BoringSSLTlsextServernameCallback {
 
     private final QuicheQuicSslEngineMap engineMap;
@@ -32,7 +35,7 @@ final class BoringSSLTlsextServernameCallback {
     long selectCtx(long ssl, String serverName) {
         final QuicheQuicSslEngine engine = engineMap.get(ssl);
         if (engine == null) {
-            // May be null if it was destroyed in the meantime.
+            // 连接可能已在回调前被销毁
             return -1;
         }
 
@@ -40,6 +43,7 @@ final class BoringSSLTlsextServernameCallback {
         if (context == null) {
             return -1;
         }
+        // 将引擎切换到与 SNI 匹配的 SSL 上下文，返回新 native ctx 指针
         return engine.moveTo(serverName, (QuicheQuicSslContext) context);
     }
 }

@@ -17,11 +17,16 @@ package io.netty.handler.codec.quic;
 
 import java.util.function.BiConsumer;
 
+/**
+ * 私钥方法相关 {@link BoringSSLTask} 的抽象基类。
+ * <p>
+ * 子类实现 {@link #runMethod} 调用签名或解密；成功时将结果写入 {@link #resultBytes} 供 JNI 读取。
+ */
 abstract class BoringSSLPrivateKeyMethodTask extends BoringSSLTask {
 
     private final BoringSSLPrivateKeyMethod method;
 
-    // Will be accessed via JNI.
+    // 由 JNI 通过字段反射读取
     private byte[] resultBytes;
 
     BoringSSLPrivateKeyMethodTask(long ssl, BoringSSLPrivateKeyMethod method) {
@@ -33,6 +38,7 @@ abstract class BoringSSLPrivateKeyMethodTask extends BoringSSLTask {
     protected final void runTask(long ssl, TaskCallback callback) {
         runMethod(ssl, method, (result, error) -> {
             if (result == null || error != null) {
+                // -1 表示失败，native 层据此终止当前 SSL 操作
                 callback.onResult(ssl, -1);
             } else {
                 resultBytes = result;
@@ -41,6 +47,7 @@ abstract class BoringSSLPrivateKeyMethodTask extends BoringSSLTask {
         });
     }
 
+    /** 执行具体的签名或解密逻辑，完成后通过 callback 回传字节或异常。 */
     protected abstract void runMethod(long ssl, BoringSSLPrivateKeyMethod method,
                                       BiConsumer<byte[], Throwable> callback);
 }

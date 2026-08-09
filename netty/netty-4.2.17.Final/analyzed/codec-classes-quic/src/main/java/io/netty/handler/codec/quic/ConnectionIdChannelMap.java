@@ -25,8 +25,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * We use a custom hash that uses SipHash 1-3 to prevent
- * <a href="https://github.com/ncc-pbottine/QUIC-Hash-Dos-Advisory">Hash Denial-of-Service Attacks</a>.
+ * QUIC Connection ID 到 {@link QuicheQuicChannel} 的映射表。
+ * <p>
+ * 使用 SipHash 1-3 作为哈希函数，降低
+ * <a href="https://github.com/ncc-pbottine/QUIC-Hash-Dos-Advisory">哈希拒绝服务攻击</a> 风险。
  */
 final class ConnectionIdChannelMap {
     private static final SecureRandom random = new SecureRandom();
@@ -37,10 +39,11 @@ final class ConnectionIdChannelMap {
     ConnectionIdChannelMap() {
         byte[] seed = new byte[SipHash.SEED_LENGTH];
         random.nextBytes(seed);
-        // Use SipHash 1-3 for now which is also what rust is using by default.
+        // 与 Rust/quiche 默认一致，采用 SipHash 1-3
         sipHash = new SipHash(1, 3, seed);
     }
 
+    /** 由 Connection ID 计算 SipHash 并构造复合键（哈希 + 原始 CID）。 */
     private ConnectionIdKey key(ByteBuffer cid) {
         long hash = sipHash.macHash(cid);
         return new ConnectionIdKey(hash, cid);
@@ -65,6 +68,7 @@ final class ConnectionIdChannelMap {
         channelMap.clear();
     }
 
+    /** Map 键：SipHash 值与 Connection ID 字节内容共同决定相等性。 */
     private static final class ConnectionIdKey implements Comparable<ConnectionIdKey> {
         private final long hash;
         private final ByteBuffer key;

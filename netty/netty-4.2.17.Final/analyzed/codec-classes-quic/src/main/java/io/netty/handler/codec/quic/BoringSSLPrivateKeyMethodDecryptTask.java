@@ -17,12 +17,15 @@ package io.netty.handler.codec.quic;
 
 import java.util.function.BiConsumer;
 
+/**
+ * RSA 私钥解密异步任务：将 JNI 传入的密文交给 {@link BoringSSLPrivateKeyMethod#decrypt} 处理。
+ */
 final class BoringSSLPrivateKeyMethodDecryptTask extends BoringSSLPrivateKeyMethodTask {
     private final byte[] input;
 
     BoringSSLPrivateKeyMethodDecryptTask(long ssl, byte[] input, BoringSSLPrivateKeyMethod method) {
         super(ssl, method);
-        // It's OK to not clone the arrays as we create these in JNI and not reuse.
+        // 数组由 JNI 创建且不复用，无需克隆
         this.input = input;
     }
 

@@ -43,10 +43,13 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link KeyManagerFactory} that can be used to support custom key signing via {@link BoringSSLAsyncPrivateKeyMethod}.
+ * 支持通过 {@link BoringSSLAsyncPrivateKeyMethod} 实现远程/无本地私钥签名的 {@link KeyManagerFactory}。
+ * <p>
+ * 私钥不在本地存储，TLS 握手所需的签名与解密由外部回调完成，证书链仍由本工厂提供。
  */
 public final class BoringSSLKeylessManagerFactory extends KeyManagerFactory {
 
+    /** 异步私钥操作方法，握手时由 BoringSSL 回调触发签名或解密。 */
     final BoringSSLAsyncPrivateKeyMethod privateKeyMethod;
 
     private BoringSSLKeylessManagerFactory(KeyManagerFactory keyManagerFactory,
@@ -57,16 +60,16 @@ public final class BoringSSLKeylessManagerFactory extends KeyManagerFactory {
     }
 
     /**
-     * Creates a new factory instance.
+     * 从证书链文件创建无密钥 KeyManager 工厂。
      *
-     * @param privateKeyMethod              the {@link BoringSSLAsyncPrivateKeyMethod} that is used for key signing.
-     * @param chain                         the {@link File} that contains the {@link X509Certificate} chain.
-     * @return                              a new factory instance.
-     * @throws CertificateException         on error.
-     * @throws IOException                  on error.
-     * @throws KeyStoreException            on error.
-     * @throws NoSuchAlgorithmException     on error.
-     * @throws UnrecoverableKeyException    on error.
+     * @param privateKeyMethod              用于密钥签名的 {@link BoringSSLAsyncPrivateKeyMethod}。
+     * @param chain                         包含 {@link X509Certificate} 证书链的 {@link File}。
+     * @return                              新的工厂实例。
+     * @throws CertificateException         证书解析失败时抛出。
+     * @throws IOException                  读取文件失败时抛出。
+     * @throws KeyStoreException            KeyStore 操作失败时抛出。
+     * @throws NoSuchAlgorithmException     算法不可用时抛出。
+     * @throws UnrecoverableKeyException    密钥不可恢复时抛出。
      */
     public static BoringSSLKeylessManagerFactory newKeyless(BoringSSLAsyncPrivateKeyMethod privateKeyMethod, File chain)
             throws CertificateException, IOException,
@@ -77,16 +80,16 @@ public final class BoringSSLKeylessManagerFactory extends KeyManagerFactory {
     }
 
     /**
-     * Creates a new factory instance.
+     * 从证书链输入流创建无密钥 KeyManager 工厂。
      *
-     * @param privateKeyMethod              the {@link BoringSSLAsyncPrivateKeyMethod} that is used for key signing.
-     * @param chain                         the {@link InputStream} that contains the {@link X509Certificate} chain.
-     * @return                              a new factory instance.
-     * @throws CertificateException         on error.
-     * @throws IOException                  on error.
-     * @throws KeyStoreException            on error.
-     * @throws NoSuchAlgorithmException     on error.
-     * @throws UnrecoverableKeyException    on error.
+     * @param privateKeyMethod              用于密钥签名的 {@link BoringSSLAsyncPrivateKeyMethod}。
+     * @param chain                         包含 {@link X509Certificate} 证书链的 {@link InputStream}。
+     * @return                              新的工厂实例。
+     * @throws CertificateException         证书解析失败时抛出。
+     * @throws IOException                  读取流失败时抛出。
+     * @throws KeyStoreException            KeyStore 操作失败时抛出。
+     * @throws NoSuchAlgorithmException     算法不可用时抛出。
+     * @throws UnrecoverableKeyException    密钥不可恢复时抛出。
      */
     public static BoringSSLKeylessManagerFactory newKeyless(BoringSSLAsyncPrivateKeyMethod privateKeyMethod,
                                                             InputStream chain)
@@ -96,16 +99,16 @@ public final class BoringSSLKeylessManagerFactory extends KeyManagerFactory {
     }
 
     /**
-     * Creates a new factory instance.
+     * 从已解析的 X509 证书链创建无密钥 KeyManager 工厂。
      *
-     * @param privateKeyMethod              the {@link BoringSSLAsyncPrivateKeyMethod} that is used for key signing.
-     * @param certificateChain              the {@link X509Certificate} chain.
-     * @return                              a new factory instance.
-     * @throws CertificateException         on error.
-     * @throws IOException                  on error.
-     * @throws KeyStoreException            on error.
-     * @throws NoSuchAlgorithmException     on error.
-     * @throws UnrecoverableKeyException    on error.
+     * @param privateKeyMethod              用于密钥签名的 {@link BoringSSLAsyncPrivateKeyMethod}。
+     * @param certificateChain              {@link X509Certificate} 证书链。
+     * @return                              新的工厂实例。
+     * @throws CertificateException         证书处理失败时抛出。
+     * @throws IOException                  I/O 异常时抛出。
+     * @throws KeyStoreException            KeyStore 操作失败时抛出。
+     * @throws NoSuchAlgorithmException     算法不可用时抛出。
+     * @throws UnrecoverableKeyException    密钥不可恢复时抛出。
      */
     public static BoringSSLKeylessManagerFactory newKeyless(BoringSSLAsyncPrivateKeyMethod privateKeyMethod,
                                                             X509Certificate... certificateChain)
@@ -120,6 +123,7 @@ public final class BoringSSLKeylessManagerFactory extends KeyManagerFactory {
         return factory;
     }
 
+    /** 委托给底层 KeyManagerFactory 的 SPI 实现，仅转发 init 与 getKeyManagers。 */
     private static final class KeylessManagerFactorySpi extends KeyManagerFactorySpi {
 
         private final KeyManagerFactory keyManagerFactory;
@@ -144,6 +148,10 @@ public final class BoringSSLKeylessManagerFactory extends KeyManagerFactory {
             return keyManagerFactory.getKeyManagers();
         }
     }
+
+    /**
+     * 只读虚拟 KeyStore：仅暴露证书链，私钥返回 {@link BoringSSLKeylessPrivateKey} 占位符。
+     */
     private static final class KeylessKeyStore extends KeyStore {
         private static final String ALIAS = "key";
         private KeylessKeyStore(final X509Certificate[] certificateChain) {
@@ -155,6 +163,7 @@ public final class BoringSSLKeylessManagerFactory extends KeyManagerFactory {
                 @Nullable
                 public Key engineGetKey(String alias, char[] password) {
                     if (engineContainsAlias(alias)) {
+                        // 返回占位私钥，实际签名由 BoringSSLAsyncPrivateKeyMethod 完成
                         return BoringSSLKeylessPrivateKey.INSTANCE;
                     }
                     return null;

@@ -18,23 +18,30 @@ package io.netty.handler.codec.quic;
 import io.netty.util.internal.PlatformDependent;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * TLS 会话票证（Session Ticket）密钥的 JNI 桥接类。
+ * <p>
+ * 配置的密钥数量通常较少，故用二维字节数组存储；JNI 通过 {@link #findSessionTicket} 按名称查找。
+ */
 final class BoringSSLSessionTicketCallback {
 
-    // As we dont assume to have a lot of keys configured we will just use an array for now as a data store.
+    // 密钥条目不多，直接用数组存储
     private volatile byte[][] sessionKeys;
 
-    // Accessed via JNI.
+    // 由 JNI 调用，根据 keyname 返回 49 字节的二进制密钥块
     byte @Nullable [] findSessionTicket(byte @Nullable [] keyname) {
         byte[][] keys = this.sessionKeys;
         if (keys == null || keys.length == 0) {
             return null;
         }
         if (keyname == null) {
+            // 无名称时返回首选（第一个）密钥
             return keys[0];
         }
 
         for (int i = 0; i < keys.length; i++) {
             byte[] key = keys[i];
+            // key[1..] 为 16 字节名称，与 keyname 比较
             if (PlatformDependent.equals(keyname, 0, key, 1, keyname.length)) {
                 return key;
             }
@@ -42,13 +49,14 @@ final class BoringSSLSessionTicketCallback {
         return null;
     }
 
+    /** 将 {@link SslSessionTicketKey} 数组转换为 native 层所需的二进制格式并更新缓存。 */
     void setSessionTicketKeys(SslSessionTicketKey @Nullable [] keys) {
         if (keys != null && keys.length != 0) {
             byte[][] sessionKeys = new byte[keys.length][];
             for (int i = 0; i < keys.length; ++i) {
                 SslSessionTicketKey key = keys[i];
                 byte[] binaryKey = new byte[49];
-                // We mark the first key as preferred by using 1 as byte marker
+                // 首字节标记首选密钥：1 表示 preferred，0 表示备选
                 binaryKey[0] = i == 0 ? (byte) 1 : (byte) 0;
                 int dstCurPos = 1;
                 System.arraycopy(key.name, 0, binaryKey, dstCurPos, 16);

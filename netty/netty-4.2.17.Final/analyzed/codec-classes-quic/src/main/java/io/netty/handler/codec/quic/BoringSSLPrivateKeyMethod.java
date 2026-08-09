@@ -18,7 +18,9 @@ package io.netty.handler.codec.quic;
 import java.util.function.BiConsumer;
 
 /**
- * Allows to customize private key signing / decrypt (when using RSA).
+ * 自定义 TLS 私钥签名与 RSA 解密的回调接口（由 BoringSSL JNI 在握手过程中调用）。
+ * <p>
+ * 常量值在类加载时从 native 层同步，与 {@link BoringSSLNativeStaticallyReferencedJniMethods} 一致。
  */
 interface BoringSSLPrivateKeyMethod {
     int SSL_SIGN_RSA_PKCS1_SHA1 = BoringSSLNativeStaticallyReferencedJniMethods.ssl_sign_rsa_pkcs_sha1();
@@ -39,7 +41,7 @@ interface BoringSSLPrivateKeyMethod {
     int SSL_SIGN_RSA_PKCS1_MD5_SHA1 = BoringSSLNativeStaticallyReferencedJniMethods.ssl_sign_rsa_pkcs1_md5_sha1();
 
     /**
-     * Sign the input with given EC key and returns the signed bytes.
+     * 使用指定算法对握手摘要签名，结果通过 callback 异步回传。
      *
      * @param ssl the SSL instance
      * @param signatureAlgorithm the algorithm to use for signing
@@ -49,7 +51,7 @@ interface BoringSSLPrivateKeyMethod {
     void sign(long ssl, int signatureAlgorithm, byte[] input, BiConsumer<byte[], Throwable> callback);
 
     /**
-     * Decrypts the input with the given RSA key and returns the decrypted bytes.
+     * 使用 RSA 私钥解密输入（如 ClientKeyExchange），结果通过 callback 异步回传。
      *
      * @param ssl the SSL instance
      * @param input the input which should be decrypted
