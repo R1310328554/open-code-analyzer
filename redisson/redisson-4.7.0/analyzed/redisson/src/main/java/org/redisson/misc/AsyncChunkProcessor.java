@@ -23,8 +23,10 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
- * Utility for processing chunks from an iterator asynchronously without stack overflow.
- * Uses trampoline pattern to prevent StackOverflowError with large iterators.
+ * 异步分块迭代工具：以蹦床（trampoline）模式处理 Iterator 分块，
+ * 避免大迭代器上递归回调导致 {@link StackOverflowError}。
+ * <p>
+ * 同步完成的 chunk 在同栈循环中继续；异步完成则注册 whenComplete 再递归 processNext。
  *
  * @author Konstantin Subbotin
  */
@@ -34,8 +36,8 @@ public final class AsyncChunkProcessor {
     }
 
     /**
-     * Represents a chunk execution: the async operation and its success handler.
-     * Return null from chunk handler to signal iteration complete.
+     * 单次分块执行上下文：异步 Future 与成功回调。
+     * chunkHandler 返回 null 表示迭代结束。
      *
      * @param <R> the result type of the async operation
      */
@@ -58,8 +60,8 @@ public final class AsyncChunkProcessor {
     }
 
     /**
-     * Processes chunks from the iterator until exhausted or handler returns null.
-     * Stack-safe: handles both synchronous and asynchronous completions without stack growth.
+     * 按 chunkHandler 驱动迭代器分块处理，直至 handler 返回 null 或迭代耗尽。
+     * 栈安全：同步/异步完成均不增长调用栈深度。
      *
      * @param <R> the result type of each chunk operation
      * @param iter the iterator to process
@@ -83,11 +85,11 @@ public final class AsyncChunkProcessor {
             BiFunction<Iterator<String>, Integer, ChunkExecution<R>> chunkHandler,
             CompletableFuture<Void> result) {
 
-        // Loop handles synchronous completions without stack growth
+        // 循环处理同步完成的 chunk，避免栈增长
         while (true) {
             ChunkExecution<R> execution = chunkHandler.apply(iter, chunkSize);
 
-            // Null signals completion
+            // null 表示所有分块已处理完毕
             if (execution == null) {
                 result.complete(null);
                 return;
@@ -95,24 +97,24 @@ public final class AsyncChunkProcessor {
 
             CompletableFuture<R> cf = execution.future().toCompletableFuture();
 
-            // Synchronous completion: process in loop (no stack growth)
+            // 同步完成：在当前栈帧继续下一 chunk
             if (cf.isDone()) {
                 if (cf.isCompletedExceptionally()) {
                     propagateException(cf, result);
                     return;
                 }
                 execution.onSuccess().accept(cf.join());
-                continue; // Next chunk in same stack frame
+                continue; // 同栈帧处理下一 chunk
             }
 
-            // Async: register callback and return (breaks stack chain)
+            // 异步完成：注册回调后返回，打断栈链
             cf.whenComplete((r, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(unwrap(ex));
                     return;
                 }
                 execution.onSuccess().accept(r);
-                processNext(iter, chunkSize, chunkHandler, result); // Trampoline
+                processNext(iter, chunkSize, chunkHandler, result); // 蹦床递归
             });
             return;
         }

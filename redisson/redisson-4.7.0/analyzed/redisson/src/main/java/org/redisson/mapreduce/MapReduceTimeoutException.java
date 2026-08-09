@@ -18,7 +18,12 @@ package org.redisson.mapreduce;
 import org.redisson.client.RedisException;
 
 /**
- * 
+ * MapReduce 作业整体或某阶段等待超时异常。
+ * <p>
+ * 继承 {@link org.redisson.client.RedisException}，
+ * 由 {@link CoordinatorTask}、{@link SubTasksExecutor} 及
+ * {@link MapReduceExecutor} 的超时调度抛出。
+ *
  * @author Nikita Koksharov
  *
  */

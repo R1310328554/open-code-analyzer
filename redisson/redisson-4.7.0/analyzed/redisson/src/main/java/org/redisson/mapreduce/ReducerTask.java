@@ -28,7 +28,10 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * 
+ * MapReduce Reduce 阶段远程任务：读取单个分片 {@link org.redisson.api.RListMultimap}，
+ * 对每个 key 调用 {@link org.redisson.api.mapreduce.RReducer} 聚合 value 列表，
+ * 写入最终结果 {@link org.redisson.api.RMap}，完成后删除中间 multimap。
+ *
  * @author Nikita Koksharov
  *
  * @param <KOut> key
@@ -41,11 +44,16 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
     @RInject
     private RedissonClient redisson;
     
+    /** 本分片 Collector multimap 的 Redis 键名。 */
     private String name;
+    /** 聚合结果写入的目标 Map 名称。 */
     private String resultMapName;
+    /** 用户 Reducer 逻辑。 */
     private RReducer<KOut, VOut> reducer;
+    /** 编解码器 Class，Worker 端反射实例化。 */
     private Class<?> codecClass;
     private Codec codec;
+    /** 结果 Map TTL（毫秒）。 */
     private long timeout;
 
     public ReducerTask() {
@@ -59,6 +67,7 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
         this.timeout = timeout;
     }
 
+    /** 遍历分片 multimap 各 key，reduce 后 put 到 resultMap。 */
     @Override
     public void run() {
         try {
@@ -71,6 +80,7 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
         
         RMap<KOut, VOut> map = redisson.getMap(resultMapName);
         RListMultimap<KOut, VOut> multimap = redisson.getListMultimap(name, codec);
+        // 对每个中间 key 聚合 value 列表
         for (KOut key : multimap.keySet()) {
             if (Thread.currentThread().isInterrupted()) {
                 break;
@@ -79,6 +89,7 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
             VOut out = reducer.reduce(key, values.iterator());
             map.put(key, out);
         }
+        // 为结果 Map 设置 TTL 并清理中间数据
         if (timeout > 0) {
             map.expire(Duration.ofMillis(timeout));
         }

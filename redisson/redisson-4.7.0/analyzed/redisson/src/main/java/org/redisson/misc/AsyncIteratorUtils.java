@@ -22,8 +22,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 /**
- * Utility for iterating over elements asynchronously without stack overflow.
- * Uses trampoline pattern to prevent StackOverflowError with large iterators.
+ * 异步顺序迭代工具：对 Iterator 中每个元素依次应用异步 processor，
+ * 采用蹦床模式避免大集合迭代时栈溢出。
  *
  * @author Konstantin Subbotin
  */
@@ -33,8 +33,8 @@ public final class AsyncIteratorUtils {
     }
 
     /**
-     * Processes each element from the iterator sequentially using the provided async function.
-     * Stack-safe: handles both synchronous and asynchronous completions without stack growth.
+     * 顺序处理迭代器每个元素：processor 返回 CompletionStage，
+     * 全部完成后 result 以 Void 完成。
      *
      * @param <T> the type of elements in the iterator
      * @param iter the iterator to process
@@ -51,7 +51,7 @@ public final class AsyncIteratorUtils {
     private static <T> void processNext(Iterator<T> iter,
                                          Function<T, CompletionStage<Void>> processor,
                                          CompletableFuture<Void> result) {
-        // Loop handles synchronous completions without stack growth
+        // 同步完成路径在同栈循环中推进
         while (true) {
             if (!iter.hasNext()) {
                 result.complete(null);
@@ -62,7 +62,7 @@ public final class AsyncIteratorUtils {
             CompletionStage<Void> stage = processor.apply(element);
             CompletableFuture<Void> cf = stage.toCompletableFuture();
 
-            // Synchronous completion: process in loop (no stack growth)
+            // 已同步完成则直接处理下一元素
             if (cf.isDone()) {
                 if (cf.isCompletedExceptionally()) {
                     try {
@@ -78,16 +78,16 @@ public final class AsyncIteratorUtils {
                     }
                     return;
                 }
-                continue; // Next element in same stack frame
+                continue; // 同栈帧继续
             }
 
-            // Async: register callback and return (breaks stack chain)
+            // 异步路径：注册回调后返回
             cf.whenComplete((r, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(unwrap(ex));
                     return;
                 }
-                processNext(iter, processor, result); // Trampoline
+                processNext(iter, processor, result); // 蹦床
             });
             return;
         }

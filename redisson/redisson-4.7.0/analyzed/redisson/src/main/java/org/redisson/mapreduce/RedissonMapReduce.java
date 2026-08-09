@@ -27,7 +27,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 基于 Redis Map 的 MapReduce 流式 API 实现，
+ * 实现 {@link org.redisson.api.mapreduce.RMapReduce}。
+ * <p>
+ * 链式配置 timeout、{@link org.redisson.api.mapreduce.RMapper}、
+ * {@link org.redisson.api.mapreduce.RReducer}，execute 时提交
+ * {@link MapperTask} 经 {@link CoordinatorTask} 完成分布式计算。
+ *
  * @author Nikita Koksharov
  *
  * @param <KIn> input key type
@@ -38,16 +44,19 @@ import java.util.concurrent.TimeUnit;
 public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<RMapper<KIn, VIn, KOut, VOut>, VIn, KOut, VOut> 
                                                         implements RMapReduce<KIn, VIn, KOut, VOut> {
 
+    /** 绑定源 Map RObject。 */
     public RedissonMapReduce(RObject object, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         super(object, redisson, commandExecutor);
     }
 
+    /** 设置作业超时。 */
     @Override
     public RMapReduce<KIn, VIn, KOut, VOut> timeout(long timeout, TimeUnit unit) {
         this.timeout = unit.toMillis(timeout);
         return this;
     }
 
+    /** 配置 Map Mapper。 */
     @Override
     public RMapReduce<KIn, VIn, KOut, VOut> mapper(RMapper<KIn, VIn, KOut, VOut> mapper) {
         check(mapper);
@@ -55,6 +64,7 @@ public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<R
         return this;
     }
 
+    /** 配置 Reducer。 */
     @Override
     public RMapReduce<KIn, VIn, KOut, VOut> reducer(RReducer<KOut, VOut> reducer) {
         check(reducer);
@@ -62,6 +72,7 @@ public class RedissonMapReduce<KIn, VIn, KOut, VOut> extends MapReduceExecutor<R
         return this;
     }
 
+    /** 创建 MapperTask + CoordinatorTask  Callable。 */
     @Override
     protected Callable<Object> createTask(String resultMapName, RCollator<KOut, VOut, Object> collator) {
         MapperTask<KIn, VIn, KOut, VOut> mapperTask = new MapperTask<KIn, VIn, KOut, VOut>(mapper, objectClass, objectCodec.getClass());

@@ -25,7 +25,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.misc.Injector;
 
 /**
- * 
+ * Map 型 MapReduce 的 Mapper 远程任务：遍历 Redis Map/MapCache 条目，
+ * 调用 {@link org.redisson.api.mapreduce.RMapper} 将 (key, value) 映射到
+ * {@link Collector} 分区中间结果。
+ *
  * @author Nikita Koksharov
  *
  * @param <KIn> input key type
@@ -37,6 +40,7 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
 
     private static final long serialVersionUID = 2441161019495880394L;
     
+    /** 用户定义的 Map Mapper。 */
     protected RMapper<KIn, VIn, KOut, VOut> mapper;
     
     public MapperTask() {
@@ -47,6 +51,7 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
         this.mapper = mapper;
     }
 
+    /** 打开源 Map，逐 entry 调用 mapper.map(key, value, collector)。 */
     @Override
     public void run() {
         Codec codec;
@@ -57,10 +62,12 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
         }
         
         Injector.inject(mapper, redisson);
+        // 创建按 Worker 数分区的中间结果收集器
         RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount, timeout);
 
         for (String objectName : objectNames) {
             RMap<KIn, VIn> map = null;
+            // MapCache 带 TTL 语义，普通 Map 无
             if (RMapCache.class.isAssignableFrom(objectClass)) {
                 map = redisson.getMapCache(objectName, codec);
             } else {

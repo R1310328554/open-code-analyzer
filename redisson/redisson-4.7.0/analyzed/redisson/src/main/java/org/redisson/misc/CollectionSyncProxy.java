@@ -22,10 +22,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Wraps a collection with a proxy that fires callbacks on mutation.
- * Supported mutations: add, addAll, remove, removeAll, clear, set.
- * Unsupported: removeIf, retainAll, replaceAll, sort.
- * subList returns an unmodifiable view.
+ * 集合变更同步代理：用 JDK 动态代理包装 {@link Collection}，
+ * 在 add/remove/clear/set 等变更操作时触发用户回调，便于与外部存储同步。
+ * <p>
+ * 支持：add、addAll、remove、removeAll、clear、set 及迭代器 remove；
+ * 不支持 removeIf、retainAll、replaceAll、sort；subList 返回不可修改视图。
  *
  * @author ngyngcphu
  */
@@ -34,6 +35,14 @@ public final class CollectionSyncProxy {
     private CollectionSyncProxy() {
     }
 
+    /**
+     * 包装 delegate 集合并注册变更回调。
+     *
+     * @param onAdd 元素添加时调用
+     * @param onRemove 元素移除时调用
+     * @param onReplace set/replace 时调用 (旧值, 新值)
+     * @param onClear clear 时调用
+     */
     public static <E> Collection<E> wrap(
             Collection<E> delegate,
             Consumer<E> onAdd,
@@ -41,11 +50,13 @@ public final class CollectionSyncProxy {
             BiConsumer<E, E> onReplace,
             Runnable onClear) {
 
+        // 按方法名拦截变更操作，只读方法直接委托
         InvocationHandler handler = (proxy, method, args) -> {
             String name = method.getName();
 
             switch (name) {
                 case "iterator":
+                    // 包装迭代器以捕获 Iterator.remove
                     return wrapIterator(delegate, onRemove);
                 case "listIterator":
                     if (delegate instanceof List) {
@@ -53,6 +64,7 @@ public final class CollectionSyncProxy {
                     }
                     return method.invoke(delegate, args);
                 case "subList":
+                    // subList 不可变，避免绕过代理
                     return Collections.unmodifiableList(
                             ((List<?>) delegate).subList((Integer) args[0], (Integer) args[1]));
                 case "contains": case "containsAll": case "size": case "isEmpty":
@@ -127,6 +139,7 @@ public final class CollectionSyncProxy {
                 }
 
                 default:
+                    // 未显式支持的方法一律拒绝
                     throw new UnsupportedOperationException(
                             method.getName() + " is not supported on indexed collections. "
                             + "Use add/remove/iterator() instead.");
@@ -143,6 +156,7 @@ public final class CollectionSyncProxy {
                 handler);
     }
 
+    /** 包装 Iterator，在 remove() 时触发 onRemove。 */
     private static <E> Iterator<E> wrapIterator(Collection<E> delegate, Consumer<E> onRemove) {
         Iterator<E> it = delegate.iterator();
         return new Iterator<E>() {
@@ -164,6 +178,7 @@ public final class CollectionSyncProxy {
         };
     }
 
+    /** 包装 ListIterator，拦截 add/set/remove 变更。 */
     private static <E> ListIterator<E> wrapListIterator(
             List<E> delegate, Object[] args, Consumer<E> onAdd, Consumer<E> onRemove, BiConsumer<E, E> onReplace) {
         ListIterator<E> it;

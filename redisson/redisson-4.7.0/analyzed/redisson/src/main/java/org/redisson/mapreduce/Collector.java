@@ -27,7 +27,11 @@ import java.time.Duration;
 import java.util.BitSet;
 
 /**
- * 
+ * MapReduce 中间结果收集器，实现 {@link org.redisson.api.mapreduce.RCollector}。
+ * <p>
+ * 对 key 做 64 位 hash 后取模，将 (key, value) 写入对应分片的
+ * {@link org.redisson.api.RListMultimap}；首次写入分片时按 timeout 设置过期。
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key
@@ -35,13 +39,20 @@ import java.util.BitSet;
  */
 public class Collector<K, V> implements RCollector<K, V> {
 
+    /** Redisson 客户端，用于访问分区 multimap。 */
     private RedissonClient client;
+    /** Collector 根名称，实际 Redis key 为 name:part。 */
     private String name;
+    /** 分区数量，与 MapReduce Worker 数一致。 */
     private int parts;
+    /** 中间结果的编解码器。 */
     private Codec codec;
+    /** 中间数据 TTL（毫秒），0 表示不过期。 */
     private long timeout;
+    /** 记录已为哪些分片设置过 expire，避免重复调用。 */
     private BitSet expirationsBitSet = new BitSet();
     
+    /** 构造 Collector，parts 通常等于活跃 Worker 数量。 */
     public Collector(Codec codec, RedissonClient client, String name, int parts, long timeout) {
         super();
         this.client = client;
@@ -52,9 +63,14 @@ public class Collector<K, V> implements RCollector<K, V> {
         expirationsBitSet = new BitSet(parts);
     }
 
+    /**
+     * 发射一条中间键值对：hash(key) % parts 决定目标分片，
+     * 写入 RListMultimap 后按需为分片设置过期时间。
+     */
     @Override
     public void emit(K key, V value) {
         try {
+            // 编码 key 并计算分片索引
             ByteBuf encodedKey = codec.getValueEncoder().encode(key);
             long hash = Hash.hash64(encodedKey);
             encodedKey.release();
@@ -63,6 +79,7 @@ public class Collector<K, V> implements RCollector<K, V> {
             
             RListMultimap<K, V> multimap = client.getListMultimap(partName, codec);
             multimap.put(key, value);
+            // 每个分片仅设置一次 TTL
             if (timeout > 0 && !expirationsBitSet.get(part)) {
                 multimap.expire(Duration.ofMillis(timeout));
                 expirationsBitSet.set(part);

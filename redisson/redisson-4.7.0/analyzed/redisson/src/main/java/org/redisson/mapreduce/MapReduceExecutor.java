@@ -32,7 +32,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 
+ * Redisson MapReduce 执行器抽象基类，实现 {@link org.redisson.api.mapreduce.RMapReduceExecutor}。
+ * <p>
+ * 负责校验 Mapper/Reducer 可序列化、创建唯一 resultMap 名称、
+ * 通过 {@link CoordinatorTask} 异步提交作业，并在 execute 时批量读取并删除结果 Map。
+ *
  * @author Nikita Koksharov
  *
  * @param <M> mapper type
@@ -42,20 +46,31 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecutor<VIn, KOut, VOut> {
 
+    /** Redisson 客户端。 */
     private final RedissonClient redisson;
+    /** MapReduce 专用远程执行器。 */
     private final RExecutorService executorService;
+    /** 本次作业自动生成的结果 Map Redis 键名。 */
     final String resultMapName;
     
+    /** 源 Redis 对象的编解码器。 */
     final Codec objectCodec;
+    /** 源 Redis 对象名称。 */
     final String objectName;
+    /** 源 Redis 对象运行时 Class。 */
     final Class<?> objectClass;
+    /** 异步命令执行器，用于阻塞 get 与超时调度。 */
     final CommandAsyncExecutor commandExecutor;
 
 
+    /** 用户配置的 Reducer。 */
     RReducer<KOut, VOut> reducer;
+    /** 用户配置的 Mapper。 */
     M mapper;
+    /** 作业超时（毫秒）。 */
     long timeout;
     
+    /** 从源 RObject 提取名称/编解码器，并生成唯一 resultMap 后缀。 */
     MapReduceExecutor(RObject object, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         this.objectName = object.getName();
         this.objectCodec = object.getCodec();
@@ -68,6 +83,10 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         this.commandExecutor = commandExecutor;
     }
 
+    /**
+     * 校验任务类可远程序列化：非 null、非匿名类、
+     * 内部类必须为 static。
+     */
     protected void check(Object task) {
         if (task == null) {
             throw new NullPointerException("Task is not defined");
@@ -81,11 +100,16 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         }
     }
     
+    /** 同步执行 MapReduce 并返回结果 Map。 */
     @Override
     public Map<KOut, VOut> execute() {
         return commandExecutor.get(executeAsync());
     }
     
+    /**
+     * 异步执行：Mapper 完成后批量 readAllMap 并 delete resultMap；
+     * 若配置 timeout 则注册超时回调。
+     */
     @Override
     public RFuture<Map<KOut, VOut>> executeAsync() {
         AtomicReference<RFuture<BatchResult<?>>> batchRef = new AtomicReference<>();
@@ -130,6 +154,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     }
 
 
+    /** 构造 CoordinatorTask 并提交到 MapReduce 执行器。 */
     private <R> RFuture<R> executeMapperAsync(String resultMapName, RCollator<KOut, VOut, R> collator) {
         if (mapper == null) {
             throw new NullPointerException("Mapper is not defined");
@@ -142,6 +167,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         return (RFuture<R>) executorService.submit(task);
     }
 
+    /** 由子类创建具体的 CoordinatorTask（绑定 Mapper 类型）。 */
     protected abstract Callable<Object> createTask(String resultMapName, RCollator<KOut, VOut, Object> collator);
     
     @Override

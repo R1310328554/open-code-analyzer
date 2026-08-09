@@ -26,15 +26,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * 
+ * MapReduce 子任务批量提交与等待工具。
+ * <p>
+ * 将多个 Runnable 异步提交到 {@link org.redisson.api.RExecutorService}，
+ * 使用 {@link CompletableFuture#allOf} 等待全部完成，支持整体超时与中断取消。
+ *
  * @author Nikita Koksharov
  *
  */
 public class SubTasksExecutor {
 
+    /** 已提交子任务的 CompletableFuture 列表。 */
     private final List<CompletableFuture<?>> futures = new ArrayList<>();
+    /** MapReduce 远程执行器。 */
     private final RExecutorService executor;
+    /** 协调任务开始时间，用于计算剩余超时。 */
     private final long startTime;
+    /** 整体超时（毫秒）。 */
     private final long timeout;
 
     public SubTasksExecutor(RExecutorService executor, long startTime, long timeout) {
@@ -43,11 +51,13 @@ public class SubTasksExecutor {
         this.timeout = timeout;
     }
     
+    /** 异步提交一个子任务并记录 Future。 */
     public void submit(Runnable runnable) {
         RFuture<?> future = executor.submitAsync(runnable);
         futures.add(future.toCompletableFuture());
     }
     
+    /** 取消所有未完成的子任务 Future。 */
     private void cancel(List<CompletableFuture<?>> futures) {
         for (CompletableFuture<?> future : futures) {
             future.cancel(true);
@@ -58,6 +68,10 @@ public class SubTasksExecutor {
         return timeSpent > timeout && timeout > 0;
     }
     
+    /**
+     * 等待所有子任务完成。超时或中断返回 false 并取消任务；
+     * timeout==0 时无限等待，ExecutionException 向上抛出。
+     */
     public boolean await() throws Exception {
         if (Thread.currentThread().isInterrupted()) {
             cancel(futures);

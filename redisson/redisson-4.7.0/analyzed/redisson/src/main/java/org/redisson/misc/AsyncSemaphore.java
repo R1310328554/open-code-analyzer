@@ -20,23 +20,33 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ * 异步信号量：基于 {@link CompletableFuture} 的 acquire/release，
+ * 支持可选 {@link java.util.concurrent.ExecutorService} 在栈过深时分叉执行，
+ * 避免高并发 acquire 链导致栈溢出。等待队列使用 {@link FastRemovalQueue}。
+ *
  * @author Nikita Koksharov
  *
  */
 public final class AsyncSemaphore {
 
+    /** 可选线程池，栈深度超阈值时将 tryRun 提交到池内执行。 */
     private final ExecutorService executorService;
+    /** 当前分叉到线程池的任务计数。 */
     private final AtomicInteger tasksLatch = new AtomicInteger(1);
+    /** 当前栈上 complete 嵌套深度。 */
     private final AtomicInteger stackSize = new AtomicInteger();
 
+    /** 可用许可计数（acquire 减、release 增）。 */
     private final AtomicInteger counter;
+    /** 等待 acquire 的 CompletableFuture 队列。 */
     private final FastRemovalQueue<CompletableFuture<Void>> listeners = new FastRemovalQueue<>();
 
+    /** 创建指定许可数的信号量（无线程池分叉）。 */
     public AsyncSemaphore(int permits) {
         this(permits, null);
     }
 
+    /** 创建信号量并绑定可选 ExecutorService 用于栈过深时分叉。 */
     public AsyncSemaphore(int permits, ExecutorService executorService) {
         counter = new AtomicInteger(permits);
         this.executorService = executorService;
@@ -50,6 +60,7 @@ public final class AsyncSemaphore {
         listeners.clear();
     }
 
+    /** 异步获取许可，无可用许可时 Future 挂起直至 release。 */
     public CompletableFuture<Void> acquire() {
         CompletableFuture<Void> future = new CompletableFuture<>();
         listeners.add(future);
@@ -62,6 +73,7 @@ public final class AsyncSemaphore {
         return future;
     }
 
+    /** 栈深度超 25×tasksLatch 时提交到线程池，否则直接 tryRun。 */
     private void tryForkAndRun() {
         if (executorService != null) {
             int val = tasksLatch.get();
@@ -78,6 +90,7 @@ public final class AsyncSemaphore {
         tryRun();
     }
 
+    /** 循环消耗许可并 complete 队首等待者；处理竞态与已取消 Future。 */
     private void tryRun() {
         while (true) {
             if (counter.decrementAndGet() >= 0) {
@@ -102,8 +115,7 @@ public final class AsyncSemaphore {
                     return;
                 } else {
                     counter.incrementAndGet();
-                    // dead waiter already gave the permit back above; continue instead of
-                    // falling through to the trailing increment, which would double-count it
+                    // 已取消的等待者已在上方归还许可，继续循环避免重复 increment
                     continue;
                 }
             }
@@ -118,6 +130,7 @@ public final class AsyncSemaphore {
         return counter.get();
     }
 
+    /** 释放一个许可并尝试唤醒等待队列。 */
     public void release() {
         counter.incrementAndGet();
         tryForkAndRun();
