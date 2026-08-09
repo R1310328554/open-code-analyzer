@@ -1,26 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:08:29Z",
   "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/JdbcUpdateAffectedIncorrectNumberOfRowsException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/LobRetrievalFailureException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/SQLWarningException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/UncategorizedSQLException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/config/DatabasePopulatorConfigUtils.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/config/EmbeddedDatabaseBeanDefinitionParser.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/config/InitializeDatabaseBeanDefinitionParser.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/config/JdbcNamespaceHandler.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/config/SortedResourcesFactoryBean.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/AggregatedBatchUpdateException.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ArgumentPreparedStatementSetter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ArgumentTypePreparedStatementSetter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/BatchPreparedStatementSetter.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/CallableStatementCallback.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/CallableStatementCreator.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/CallableStatementCreatorFactory.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ColumnMapRowMapper.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/ConnectionCallback.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/DataClassRowMapper.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/DisposableSqlTypeValue.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/InterruptibleBatchPreparedStatementSetter.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/ParameterDisposer.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/ParameterMapper.java",
@@ -43,5 +23,5 @@
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlParameterValue.java"
   ],
   "remaining_pending": 224,
-  "done": 1227
+  "done": 1247
 }
