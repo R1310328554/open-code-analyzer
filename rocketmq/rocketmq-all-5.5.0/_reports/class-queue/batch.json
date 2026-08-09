@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:05:53Z",
-  "files": [
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/PrintMessageByQueueCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/PrintMessageSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/QueryMsgByIdSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/QueryMsgByKeySubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/QueryMsgByOffsetSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/QueryMsgByUniqueKeySubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/QueryMsgTraceByIdSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/message/SendMessageCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/metadata/RocksDBConfigToJsonCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/AddWritePermSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/DeleteKvConfigCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/GetNamesrvConfigCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/UpdateKvConfigCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/UpdateNamesrvConfigCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/WipeWritePermSubCommand.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 138,
-  "done": 1335
+  "done": 1350
 }
