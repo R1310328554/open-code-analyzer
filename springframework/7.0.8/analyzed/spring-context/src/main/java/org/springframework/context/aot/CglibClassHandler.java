@@ -30,8 +30,8 @@ import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.core.io.ByteArrayResource;
 
 /**
- * Handle CGLIB classes by adding them to a {@link GenerationContext},
- * and register the necessary hints so that they can be instantiated.
+ * 处理 CGLIB 类：将其加入 {@link GenerationContext}，
+ * 并注册实例化所需的运行时提示。
  *
  * @author Stephane Nicoll
  * @since 6.0
@@ -44,8 +44,10 @@ class CglibClassHandler {
 	private static final Consumer<Builder> instantiateCglibProxy = hint ->
 			hint.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
+	/** AOT 运行时反射提示。 */
 	private final RuntimeHints runtimeHints;
 
+	/** 生成文件写入目标。 */
 	private final GeneratedFiles generatedFiles;
 
 
@@ -56,9 +58,9 @@ class CglibClassHandler {
 
 
 	/**
-	 * Handle the specified generated CGLIB class.
-	 * @param cglibClassName the name of the generated class
-	 * @param content the bytecode of the generated class
+	 * 处理指定的 CGLIB 生成类。
+	 * @param cglibClassName 生成类的名称
+	 * @param content 生成类的字节码
 	 */
 	public void handleGeneratedClass(String cglibClassName, byte[] content) {
 		registerHints(TypeReference.of(cglibClassName));
@@ -67,8 +69,8 @@ class CglibClassHandler {
 	}
 
 	/**
-	 * Handle the specified loaded CGLIB class.
-	 * @param cglibClass a cglib class that has been loaded
+	 * 处理已加载的 CGLIB 类。
+	 * @param cglibClass 已加载的 CGLIB 类
 	 */
 	public void handleLoadedClass(Class<?> cglibClass) {
 		registerHints(TypeReference.of(cglibClass));

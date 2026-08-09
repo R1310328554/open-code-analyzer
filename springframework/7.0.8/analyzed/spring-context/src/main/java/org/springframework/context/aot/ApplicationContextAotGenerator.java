@@ -28,9 +28,8 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.javapoet.ClassName;
 
 /**
- * Process an {@link ApplicationContext} and its {@link BeanFactory} to generate
- * code that represents the state of the bean factory, as well as the necessary
- * hints that can be used at runtime in a constrained environment.
+ * 处理 {@link ApplicationContext} 及其 {@link BeanFactory}，生成表示 Bean 工厂状态的代码，
+ * 以及在受限运行时环境中所需的提示信息。
  *
  * @author Stephane Nicoll
  * @author Phillip Webb
@@ -39,14 +38,11 @@ import org.springframework.javapoet.ClassName;
 public class ApplicationContextAotGenerator {
 
 	/**
-	 * Process the specified {@link GenericApplicationContext} ahead-of-time using
-	 * the specified {@link GenerationContext}.
-	 * <p>Return the {@link ClassName} of the {@link ApplicationContextInitializer}
-	 * to use to restore an optimized state of the application context.
-	 * @param applicationContext the non-refreshed application context to process
-	 * @param generationContext the generation context to use
-	 * @return the {@code ClassName} of the {@code ApplicationContextInitializer}
-	 * entry point
+	 * 使用指定的 {@link GenerationContext} 对 {@link GenericApplicationContext} 进行提前处理。
+	 * <p>返回用于恢复应用上下文优化状态的 {@link ApplicationContextInitializer} 的 {@link ClassName}。
+	 * @param applicationContext 待处理的未刷新应用上下文
+	 * @param generationContext 使用的生成上下文
+	 * @return {@code ApplicationContextInitializer} 入口点的 {@code ClassName}
 	 */
 	public ClassName processAheadOfTime(GenericApplicationContext applicationContext,
 			GenerationContext generationContext) {
@@ -61,6 +57,9 @@ public class ApplicationContextAotGenerator {
 		});
 	}
 
+	/**
+	 * 在 CGLIB 类处理器上下文中执行任务，确保生成的代理类被正确捕获。
+	 */
 	private <T> T withCglibClassHandler(CglibClassHandler cglibClassHandler, Supplier<T> task) {
 		try {
 			ReflectUtils.setLoadedClassHandler(cglibClassHandler::handleLoadedClass);

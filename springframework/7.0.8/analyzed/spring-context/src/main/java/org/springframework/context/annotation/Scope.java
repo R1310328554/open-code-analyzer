@@ -26,30 +26,21 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.core.annotation.AliasFor;
 
 /**
- * When used as a type-level annotation in conjunction with
- * {@link org.springframework.stereotype.Component @Component},
- * {@code @Scope} indicates the name of a scope to use for instances of
- * the annotated type.
+ * 与 {@link org.springframework.stereotype.Component @Component} 配合作为类型级注解时，
+ * {@code @Scope} 指定注解类型实例应使用的作用域名称。
  *
- * <p>When used as a method-level annotation in conjunction with
- * {@link Bean @Bean}, {@code @Scope} indicates the name of a scope to use
- * for the instance returned from the method.
+ * <p>与 {@link Bean @Bean} 配合作为方法级注解时，{@code @Scope} 指定方法返回实例应使用的作用域名称。
  *
- * <p><b>NOTE:</b> {@code @Scope} annotations are only introspected on the
- * concrete bean class (for annotated components) or the factory method
- * (for {@code @Bean} methods). In contrast to XML bean definitions,
- * there is no notion of bean definition inheritance, and inheritance
- * hierarchies at the class level are irrelevant for metadata purposes.
+ * <p><b>注意：</b>{@code @Scope} 注解仅在具体 Bean 类（带注解的组件）或工厂方法
+ * （{@code @Bean} 方法）上被内省。与 XML Bean 定义不同，不存在 Bean 定义继承的概念，
+ * 类级继承层次对元数据无意义。
  *
- * <p>In this context, <em>scope</em> means the lifecycle of an instance,
- * such as {@code singleton}, {@code prototype}, and so forth. Scopes
- * provided out of the box in Spring may be referred to using the
- * {@code SCOPE_*} constants available in the {@link ConfigurableBeanFactory}
- * and {@code WebApplicationContext} interfaces.
+ * <p>此处的<em>作用域</em>指实例的生命周期，例如 {@code singleton}、{@code prototype} 等。
+ * Spring 内置作用域可通过 {@link ConfigurableBeanFactory} 与 {@code WebApplicationContext}
+ * 接口中的 {@code SCOPE_*} 常量引用。
  *
- * <p>To register additional custom scopes, see
- * {@link org.springframework.beans.factory.config.CustomScopeConfigurer
- * CustomScopeConfigurer}.
+ * <p>要注册额外的自定义作用域，请参阅
+ * {@link org.springframework.beans.factory.config.CustomScopeConfigurer CustomScopeConfigurer}。
  *
  * @author Mark Fisher
  * @author Chris Beams
@@ -64,16 +55,16 @@ import org.springframework.core.annotation.AliasFor;
 public @interface Scope {
 
 	/**
-	 * Alias for {@link #scopeName}.
+	 * {@link #scopeName} 的别名。
 	 * @see #scopeName
 	 */
 	@AliasFor("scopeName")
 	String value() default "";
 
 	/**
-	 * Specifies the name of the scope to use for the annotated component/bean.
-	 * <p>Defaults to an empty string ({@code ""}) which implies
-	 * {@link ConfigurableBeanFactory#SCOPE_SINGLETON SCOPE_SINGLETON}.
+	 * 指定带注解组件/Bean 应使用的作用域名称。
+	 * <p>默认为空字符串（{@code ""}），表示
+	 * {@link ConfigurableBeanFactory#SCOPE_SINGLETON SCOPE_SINGLETON}。
 	 * @since 4.2
 	 * @see ConfigurableBeanFactory#SCOPE_PROTOTYPE
 	 * @see ConfigurableBeanFactory#SCOPE_SINGLETON
@@ -85,12 +76,10 @@ public @interface Scope {
 	String scopeName() default "";
 
 	/**
-	 * Specifies whether a component should be configured as a scoped proxy
-	 * and if so, whether the proxy should be interface-based or subclass-based.
-	 * <p>Defaults to {@link ScopedProxyMode#DEFAULT}, which typically indicates
-	 * that no scoped proxy should be created unless a different default
-	 * has been configured at the component-scan instruction level.
-	 * <p>Analogous to {@code <aop:scoped-proxy/>} support in Spring XML.
+	 * 指定组件是否应配置为作用域代理，以及代理应基于接口还是子类。
+	 * <p>默认为 {@link ScopedProxyMode#DEFAULT}，通常表示除非在组件扫描指令级别
+	 * 配置了不同默认值，否则不创建作用域代理。
+	 * <p>类似于 Spring XML 中的 {@code <aop:scoped-proxy/>} 支持。
 	 * @see ScopedProxyMode
 	 */
 	ScopedProxyMode proxyMode() default ScopedProxyMode.DEFAULT;

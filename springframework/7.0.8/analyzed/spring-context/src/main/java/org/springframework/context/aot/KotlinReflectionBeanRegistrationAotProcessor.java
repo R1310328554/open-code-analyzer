@@ -27,8 +27,7 @@ import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.core.KotlinDetector;
 
 /**
- * AOT {@code BeanRegistrationAotProcessor} that adds additional hints
- * required by Kotlin reflection.
+ * 为 Kotlin 反射添加额外运行时提示的 AOT {@code BeanRegistrationAotProcessor}。
  *
  * @author Sebastien Deleuze
  * @since 6.0.4
@@ -47,6 +46,7 @@ class KotlinReflectionBeanRegistrationAotProcessor implements BeanRegistrationAo
 
 	private static class AotContribution implements BeanRegistrationAotContribution {
 
+		/** 需要注册反射提示的 Kotlin Bean 类。 */
 		private final Class<?> beanClass;
 
 		public AotContribution(Class<?> beanClass) {
@@ -58,6 +58,7 @@ class KotlinReflectionBeanRegistrationAotProcessor implements BeanRegistrationAo
 			registerHints(this.beanClass, generationContext.getRuntimeHints());
 		}
 
+		/** 递归为 Kotlin 类型及其父类、外部类注册反射提示。 */
 		private void registerHints(Class<?> type, RuntimeHints runtimeHints) {
 			if (KotlinDetector.isKotlinType(type)) {
 				runtimeHints.reflection().registerType(type);

@@ -32,14 +32,15 @@ import org.springframework.beans.factory.aot.BeanFactoryInitializationCode;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
- * A collection of {@link BeanFactoryInitializationAotContribution AOT contributions}
- * obtained from {@link BeanFactoryInitializationAotProcessor AOT processors}.
+ * 从 {@link BeanFactoryInitializationAotProcessor AOT 处理器} 收集得到的
+ * {@link BeanFactoryInitializationAotContribution AOT 贡献} 集合。
  *
  * @author Phillip Webb
  * @since 6.0
  */
 class BeanFactoryInitializationAotContributions {
 
+	/** 各处理器产出的 AOT 贡献列表。 */
 	private final List<BeanFactoryInitializationAotContribution> contributions;
 
 
@@ -55,6 +56,7 @@ class BeanFactoryInitializationAotContributions {
 	private static List<BeanFactoryInitializationAotProcessor> getProcessors(AotServices.Loader loader) {
 		List<BeanFactoryInitializationAotProcessor> processors = new ArrayList<>(
 				loader.load(BeanFactoryInitializationAotProcessor.class).asList());
+		// 始终追加运行时提示处理器
 		processors.add(new RuntimeHintsBeanFactoryInitializationAotProcessor());
 		return Collections.unmodifiableList(processors);
 	}
@@ -87,6 +89,9 @@ class BeanFactoryInitializationAotContributions {
 		}
 	}
 
+	/**
+	 * 将所有贡献应用到生成上下文与 Bean 工厂初始化代码生成器。
+	 */
 	void applyTo(GenerationContext generationContext,
 			BeanFactoryInitializationCode beanFactoryInitializationCode) {
 

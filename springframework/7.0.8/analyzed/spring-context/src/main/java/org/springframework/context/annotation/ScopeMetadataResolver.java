@@ -19,7 +19,7 @@ package org.springframework.context.annotation;
 import org.springframework.beans.factory.config.BeanDefinition;
 
 /**
- * Strategy interface for resolving the scope of bean definitions.
+ * 解析 Bean 定义作用域的策略接口。
  *
  * @author Mark Fisher
  * @since 2.5
@@ -29,16 +29,12 @@ import org.springframework.beans.factory.config.BeanDefinition;
 public interface ScopeMetadataResolver {
 
 	/**
-	 * Resolve the {@link ScopeMetadata} appropriate to the supplied
-	 * bean {@code definition}.
-	 * <p>Implementations can of course use any strategy they like to
-	 * determine the scope metadata, but some implementations that spring
-	 * immediately to mind might be to use source level annotations
-	 * present on {@link BeanDefinition#getBeanClassName() the class} of the
-	 * supplied {@code definition}, or to use metadata present in the
-	 * {@link BeanDefinition#attributeNames()} of the supplied {@code definition}.
-	 * @param definition the target bean definition
-	 * @return the relevant scope metadata; never {@code null}
+	 * 为给定的 Bean {@code definition} 解析合适的 {@link ScopeMetadata}。
+	 * <p>实现可采用任意策略确定作用域元数据，例如读取
+	 * {@link BeanDefinition#getBeanClassName() 类}上的源码级注解，
+	 * 或利用 {@link BeanDefinition#attributeNames()} 中的元数据。
+	 * @param definition 目标 Bean 定义
+	 * @return 相关作用域元数据；永不为 {@code null}
 	 */
 	ScopeMetadata resolveScopeMetadata(BeanDefinition definition);
 

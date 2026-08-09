@@ -27,16 +27,13 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.util.Assert;
 
 /**
- * Extension of the {@link org.springframework.beans.factory.support.GenericBeanDefinition}
- * class, based on an ASM ClassReader, with support for annotation metadata exposed
- * through the {@link AnnotatedBeanDefinition} interface.
+ * 基于 ASM {@code ClassReader} 的 {@link org.springframework.beans.factory.support.GenericBeanDefinition}
+ * 扩展，通过 {@link AnnotatedBeanDefinition} 接口暴露注解元数据。
  *
- * <p>This class does <i>not</i> load the bean {@code Class} early.
- * It rather retrieves all relevant metadata from the ".class" file itself,
- * parsed with the ASM ClassReader. It is functionally equivalent to
- * {@link AnnotatedGenericBeanDefinition#AnnotatedGenericBeanDefinition(AnnotationMetadata)}
- * but distinguishes by type beans that have been <em>scanned</em> vs those that have
- * been otherwise registered or detected by other means.
+ * <p>本类<i>不会</i>过早加载 Bean 的 {@code Class}，而是从 {@code .class} 文件本身
+ * 解析全部相关元数据。功能上等价于
+ * {@link AnnotatedGenericBeanDefinition#AnnotatedGenericBeanDefinition(AnnotationMetadata)}，
+ * 但通过类型区分经<em>扫描</em>发现的 Bean 与通过其他方式注册或检测到的 Bean。
  *
  * @author Juergen Hoeller
  * @author Chris Beams
@@ -49,13 +46,13 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class ScannedGenericBeanDefinition extends GenericBeanDefinition implements AnnotatedBeanDefinition {
 
+	/** 从扫描目标类解析得到的注解元数据。 */
 	private final AnnotationMetadata metadata;
 
 
 	/**
-	 * Create a new ScannedGenericBeanDefinition for the class that the
-	 * given MetadataReader describes.
-	 * @param metadataReader the MetadataReader for the scanned target class
+	 * 为给定 {@link MetadataReader} 所描述的类创建新的 {@code ScannedGenericBeanDefinition}。
+	 * @param metadataReader 扫描目标类的 MetadataReader
 	 */
 	public ScannedGenericBeanDefinition(MetadataReader metadataReader) {
 		Assert.notNull(metadataReader, "MetadataReader must not be null");

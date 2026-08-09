@@ -21,8 +21,7 @@ import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 
 /**
- * Delegate factory class used to just introduce an AOP framework dependency
- * when actually creating a scoped proxy.
+ * 委托工厂类，仅在真正创建作用域代理时才引入 AOP 框架依赖。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -34,12 +33,18 @@ final class ScopedProxyCreator {
 	}
 
 
+	/**
+	 * 创建作用域代理 Bean 定义持有者。
+	 */
 	public static BeanDefinitionHolder createScopedProxy(
 			BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry, boolean proxyTargetClass) {
 
 		return ScopedProxyUtils.createScopedProxy(definitionHolder, registry, proxyTargetClass);
 	}
 
+	/**
+	 * 获取作用域代理背后的目标 Bean 名称。
+	 */
 	public static String getTargetBeanName(String originalBeanName) {
 		return ScopedProxyUtils.getTargetBeanName(originalBeanName);
 	}

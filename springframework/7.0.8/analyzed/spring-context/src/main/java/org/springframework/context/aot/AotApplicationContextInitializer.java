@@ -29,30 +29,27 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Specialized {@link ApplicationContextInitializer} used to initialize a
- * {@link ConfigurableApplicationContext} using artifacts that were generated
- * ahead-of-time.
+ * 专用于使用提前生成的构件初始化 {@link ConfigurableApplicationContext} 的
+ * {@link ApplicationContextInitializer}。
  * <p>
- * Instances of this initializer are usually created using
- * {@link #forInitializerClasses(String...)}, passing in the names of code
- * generated initializer classes.
+ * 实例通常通过 {@link #forInitializerClasses(String...)} 创建，
+ * 传入代码生成的初始化器类名。
  *
  * @author Stephane Nicoll
  * @author Phillip Webb
  * @since 6.0
- * @param <C> the application context type
+ * @param <C> 应用上下文类型
  */
 @FunctionalInterface
 public interface AotApplicationContextInitializer<C extends ConfigurableApplicationContext>
 		extends ApplicationContextInitializer<C> {
 
 	/**
-	 * Factory method to create a new {@link AotApplicationContextInitializer}
-	 * instance that delegates to other initializers loaded from the given set
-	 * of class names.
-	 * @param <C> the application context type
-	 * @param initializerClassNames the class names of the initializers to load
-	 * @return a new {@link AotApplicationContextInitializer} instance
+	 * 工厂方法：创建委托给给定类名集合所加载初始化器的新
+	 * {@link AotApplicationContextInitializer} 实例。
+	 * @param <C> 应用上下文类型
+	 * @param initializerClassNames 要加载的初始化器类名
+	 * @return 新的 {@link AotApplicationContextInitializer} 实例
 	 */
 	static <C extends ConfigurableApplicationContext> AotApplicationContextInitializer<C> forInitializerClasses(
 			String... initializerClassNames) {

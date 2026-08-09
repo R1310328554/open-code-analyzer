@@ -34,10 +34,9 @@ import org.springframework.javapoet.ClassName;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Filesystem-based ahead-of-time (AOT) processing base implementation.
+ * 基于文件系统的提前（AOT）处理基类实现。
  *
- * <p>Concrete implementations are typically used to kick off optimization of an
- * application in a build tool.
+ * <p>具体实现通常在构建工具中用于启动应用优化。
  *
  * @author Stephane Nicoll
  * @author Andy Wilkinson
@@ -48,14 +47,14 @@ import org.springframework.util.CollectionUtils;
  */
 public abstract class ContextAotProcessor extends AbstractAotProcessor<ClassName> {
 
+	/** 应用入口类（通常含 {@code main()} 方法）。 */
 	private final Class<?> applicationClass;
 
 
 	/**
-	 * Create a new processor for the specified application entry point and
-	 * common settings.
-	 * @param applicationClass the application entry point (class with a {@code main()} method)
-	 * @param settings the settings to apply
+	 * 为指定应用入口点与通用设置创建新处理器。
+	 * @param applicationClass 应用入口点（含 {@code main()} 方法的类）
+	 * @param settings 要应用的设置
 	 */
 	protected ContextAotProcessor(Class<?> applicationClass, Settings settings) {
 		super(settings);
@@ -64,7 +63,7 @@ public abstract class ContextAotProcessor extends AbstractAotProcessor<ClassName
 
 
 	/**
-	 * Get the application entry point (typically a class with a {@code main()} method).
+	 * 获取应用入口点（通常为含 {@code main()} 方法的类）。
 	 */
 	protected Class<?> getApplicationClass() {
 		return this.applicationClass;
@@ -72,10 +71,8 @@ public abstract class ContextAotProcessor extends AbstractAotProcessor<ClassName
 
 
 	/**
-	 * Invoke the processing by clearing output directories first, followed by
-	 * {@link #performAotProcessing(GenericApplicationContext)}.
-	 * @return the {@code ClassName} of the {@code ApplicationContextInitializer}
-	 * entry point
+	 * 先清空输出目录，再调用 {@link #performAotProcessing(GenericApplicationContext)} 执行处理。
+	 * @return {@code ApplicationContextInitializer} 入口点的 {@code ClassName}
 	 */
 	@Override
 	protected ClassName doProcess() {
@@ -86,18 +83,15 @@ public abstract class ContextAotProcessor extends AbstractAotProcessor<ClassName
 	}
 
 	/**
-	 * Prepare the {@link GenericApplicationContext} for the specified
-	 * application entry point to be used against an {@link ApplicationContextAotGenerator}.
-	 * @return a non-refreshed {@link GenericApplicationContext}
+	 * 为指定应用入口点准备 {@link GenericApplicationContext}，供 {@link ApplicationContextAotGenerator} 使用。
+	 * @return 未刷新的 {@link GenericApplicationContext}
 	 */
 	protected abstract GenericApplicationContext prepareApplicationContext(Class<?> applicationClass);
 
 	/**
-	 * Perform ahead-of-time processing of the specified context.
-	 * <p>Code, resources, and generated classes are stored in the configured
-	 * output directories. In addition, run-time hints are registered for the
-	 * application and its entry point.
-	 * @param applicationContext the context to process
+	 * 对指定上下文执行提前处理。
+	 * <p>代码、资源与生成类写入配置的输出目录；同时为应用及其入口点注册运行时提示。
+	 * @param applicationContext 待处理的上下文
 	 */
 	protected ClassName performAotProcessing(GenericApplicationContext applicationContext) {
 		FileSystemGeneratedFiles generatedFiles = createFileSystemGeneratedFiles();
@@ -113,25 +107,21 @@ public abstract class ContextAotProcessor extends AbstractAotProcessor<ClassName
 	}
 
 	/**
-	 * Callback to customize the {@link ClassNameGenerator}.
-	 * <p>By default, a standard {@link ClassNameGenerator} using the configured
-	 * {@linkplain #getApplicationClass() application entry point} as the default
-	 * target is used.
-	 * @return the class name generator
+	 * 自定义 {@link ClassNameGenerator} 的回调。
+	 * <p>默认使用以配置的 {@linkplain #getApplicationClass() 应用入口点}
+	 * 为默认目标的 {@link ClassNameGenerator}。
+	 * @return 类名生成器
 	 */
 	protected ClassNameGenerator createClassNameGenerator() {
 		return new ClassNameGenerator(ClassName.get(getApplicationClass()));
 	}
 
 	/**
-	 * Return the native image arguments to use.
-	 * <p>By default, the main class to use, as well as standard application flags
-	 * are added.
-	 * <p>If the returned list is empty, no {@code native-image.properties} is
-	 * contributed.
-	 * @param applicationClassName the fully qualified class name of the application
-	 * entry point
-	 * @return the native image options to contribute
+	 * 返回要使用的 native image 参数。
+	 * <p>默认添加主类及标准应用标志。
+	 * <p>若返回空列表，则不贡献 {@code native-image.properties}。
+	 * @param applicationClassName 应用入口点的全限定类名
+	 * @return 要贡献的 native image 选项
 	 */
 	protected List<String> getDefaultNativeImageArguments(String applicationClassName) {
 		List<String> args = new ArrayList<>();

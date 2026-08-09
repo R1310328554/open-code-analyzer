@@ -49,7 +49,7 @@ import org.springframework.javapoet.TypeName;
 import org.springframework.javapoet.TypeSpec;
 
 /**
- * Internal code generator to create the {@link ApplicationContextInitializer}.
+ * 内部代码生成器，用于创建 {@link ApplicationContextInitializer}。
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
@@ -61,10 +61,13 @@ class ApplicationContextInitializationCodeGenerator implements BeanFactoryInitia
 
 	private static final String APPLICATION_CONTEXT_VARIABLE = "applicationContext";
 
+	/** 待生成初始化代码的应用上下文。 */
 	private final GenericApplicationContext applicationContext;
 
+	/** 生成的初始化器类。 */
 	private final GeneratedClass generatedClass;
 
+	/** 待写入 {@code initialize} 方法的初始化器方法引用列表。 */
 	private final List<MethodReference> initializers = new ArrayList<>();
 
 
@@ -112,6 +115,7 @@ class ApplicationContextInitializationCodeGenerator implements BeanFactoryInitia
 		return code.build();
 	}
 
+	/** 若激活的 profile 与默认值不同，生成恢复激活 profile 的代码。 */
 	private CodeBlock generateActiveProfilesInitializeCode() {
 		CodeBlock.Builder code = CodeBlock.builder();
 		ConfigurableEnvironment environment = this.applicationContext.getEnvironment();
@@ -142,6 +146,7 @@ class ApplicationContextInitializationCodeGenerator implements BeanFactoryInitia
 		this.initializers.add(methodReference);
 	}
 
+	/** 将常见初始化器方法参数类型映射为生成代码中的变量引用。 */
 	private static class InitializerMethodArgumentCodeGenerator implements Function<TypeName, @Nullable CodeBlock> {
 
 		@Override

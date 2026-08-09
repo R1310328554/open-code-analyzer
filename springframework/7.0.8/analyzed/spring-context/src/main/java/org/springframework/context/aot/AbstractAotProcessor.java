@@ -30,17 +30,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.FileSystemUtils;
 
 /**
- * Abstract base class for filesystem-based ahead-of-time (AOT) processing.
+ * 基于文件系统的提前（AOT）处理抽象基类。
  *
- * <p>Concrete implementations should override {@link #doProcess()} that kicks
- * off the optimization of the target, usually an application.
+ * <p>具体实现应重写 {@link #doProcess()}，启动对目标（通常是应用）的优化。
  *
  * @author Stephane Nicoll
  * @author Andy Wilkinson
  * @author Phillip Webb
  * @author Sam Brannen
  * @since 6.0
- * @param <T> the type of the processing result
+ * @param <T> 处理结果的类型
  * @see FileSystemGeneratedFiles
  * @see FileNativeConfigurationWriter
  * @see org.springframework.context.aot.ContextAotProcessor
@@ -49,17 +48,18 @@ import org.springframework.util.FileSystemUtils;
 public abstract class AbstractAotProcessor<T> {
 
 	/**
-	 * The name of a system property that is made available when the processor runs.
+	 * 处理器运行时可用的系统属性名称。
 	 * @since 6.2
 	 * @see #doProcess()
 	 */
 	public static final String AOT_PROCESSING = "spring.aot.processing";
 
+	/** AOT 处理器的通用设置。 */
 	private final Settings settings;
 
 
 	/**
-	 * Create a new processor instance with the supplied {@linkplain Settings settings}.
+	 * 使用提供的 {@linkplain Settings 设置} 创建新的处理器实例。
 	 * @see Settings#builder()
 	 */
 	protected AbstractAotProcessor(Settings settings) {
@@ -68,15 +68,15 @@ public abstract class AbstractAotProcessor<T> {
 
 
 	/**
-	 * Get the {@linkplain Settings settings} for this AOT processor.
+	 * 获取本 AOT 处理器的 {@linkplain Settings 设置}。
 	 */
 	protected Settings getSettings() {
 		return this.settings;
 	}
 
 	/**
-	 * Run AOT processing.
-	 * @return the result of the processing.
+	 * 运行 AOT 处理。
+	 * @return 处理结果
 	 */
 	public final T process() {
 		try {
@@ -91,7 +91,7 @@ public abstract class AbstractAotProcessor<T> {
 	protected abstract T doProcess();
 
 	/**
-	 * Delete the source, resource, and class output directories.
+	 * 删除源码、资源与类输出目录。
 	 */
 	protected void deleteExistingOutput() {
 		deleteExistingOutput(getSettings().getSourceOutput(),
@@ -129,18 +129,23 @@ public abstract class AbstractAotProcessor<T> {
 
 
 	/**
-	 * Common settings for AOT processors.
+	 * AOT 处理器的通用设置。
 	 */
 	public static final class Settings {
 
+		/** 生成源码的输出目录。 */
 		private final Path sourceOutput;
 
+		/** 生成资源的输出目录。 */
 		private final Path resourceOutput;
 
+		/** 生成类的输出目录。 */
 		private final Path classOutput;
 
+		/** 应用的 group ID。 */
 		private final String groupId;
 
+		/** 应用的 artifact ID。 */
 		private final String artifactId;
 
 		private Settings(Path sourceOutput, Path resourceOutput, Path classOutput, String groupId, String artifactId) {
@@ -152,42 +157,42 @@ public abstract class AbstractAotProcessor<T> {
 		}
 
 		/**
-		 * Create a new {@link Builder} for {@link Settings}.
+		 * 创建 {@link Settings} 的 {@link Builder}。
 		 */
 		public static Builder builder() {
 			return new Builder();
 		}
 
 		/**
-		 * Get the output directory for generated sources.
+		 * 获取生成源码的输出目录。
 		 */
 		public Path getSourceOutput() {
 			return this.sourceOutput;
 		}
 
 		/**
-		 * Get the output directory for generated resources.
+		 * 获取生成资源的输出目录。
 		 */
 		public Path getResourceOutput() {
 			return this.resourceOutput;
 		}
 
 		/**
-		 * Get the output directory for generated classes.
+		 * 获取生成类的输出目录。
 		 */
 		public Path getClassOutput() {
 			return this.classOutput;
 		}
 
 		/**
-		 * Get the group ID of the application.
+		 * 获取应用的 group ID。
 		 */
 		public String getGroupId() {
 			return this.groupId;
 		}
 
 		/**
-		 * Get the artifact ID of the application.
+		 * 获取应用的 artifact ID。
 		 */
 		public String getArtifactId() {
 			return this.artifactId;
@@ -195,7 +200,7 @@ public abstract class AbstractAotProcessor<T> {
 
 
 		/**
-		 * Fluent builder API for {@link Settings}.
+		 * {@link Settings} 的流式构建器 API。
 		 */
 		public static final class Builder {
 
@@ -214,9 +219,9 @@ public abstract class AbstractAotProcessor<T> {
 			}
 
 			/**
-			 * Set the output directory for generated sources.
-			 * @param sourceOutput the location of generated sources
-			 * @return this builder for method chaining
+			 * 设置生成源码的输出目录。
+			 * @param sourceOutput 生成源码的位置
+			 * @return 本构建器，支持链式调用
 			 */
 			public Builder sourceOutput(Path sourceOutput) {
 				this.sourceOutput = sourceOutput;
@@ -224,9 +229,9 @@ public abstract class AbstractAotProcessor<T> {
 			}
 
 			/**
-			 * Set the output directory for generated resources.
-			 * @param resourceOutput the location of generated resources
-			 * @return this builder for method chaining
+			 * 设置生成资源的输出目录。
+			 * @param resourceOutput 生成资源的位置
+			 * @return 本构建器，支持链式调用
 			 */
 			public Builder resourceOutput(Path resourceOutput) {
 				this.resourceOutput = resourceOutput;
@@ -234,9 +239,9 @@ public abstract class AbstractAotProcessor<T> {
 			}
 
 			/**
-			 * Set the output directory for generated classes.
-			 * @param classOutput the location of generated classes
-			 * @return this builder for method chaining
+			 * 设置生成类的输出目录。
+			 * @param classOutput 生成类的位置
+			 * @return 本构建器，支持链式调用
 			 */
 			public Builder classOutput(Path classOutput) {
 				this.classOutput = classOutput;
@@ -244,10 +249,9 @@ public abstract class AbstractAotProcessor<T> {
 			}
 
 			/**
-			 * Set the group ID of the application.
-			 * @param groupId the group ID of the application, used to locate
-			 * {@code native-image.properties}
-			 * @return this builder for method chaining
+			 * 设置应用的 group ID。
+			 * @param groupId 应用的 group ID，用于定位 {@code native-image.properties}
+			 * @return 本构建器，支持链式调用
 			 */
 			public Builder groupId(String groupId) {
 				Assert.hasText(groupId, "'groupId' must not be empty");
@@ -256,10 +260,9 @@ public abstract class AbstractAotProcessor<T> {
 			}
 
 			/**
-			 * Set the artifact ID of the application.
-			 * @param artifactId the artifact ID of the application, used to locate
-			 * {@code native-image.properties}
-			 * @return this builder for method chaining
+			 * 设置应用的 artifact ID。
+			 * @param artifactId 应用的 artifact ID，用于定位 {@code native-image.properties}
+			 * @return 本构建器，支持链式调用
 			 */
 			public Builder artifactId(String artifactId) {
 				Assert.hasText(artifactId, "'artifactId' must not be empty");
@@ -268,7 +271,7 @@ public abstract class AbstractAotProcessor<T> {
 			}
 
 			/**
-			 * Build the {@link Settings} configured in this {@code Builder}.
+			 * 构建本 {@code Builder} 中配置的 {@link Settings}。
 			 */
 			public Settings build() {
 				Assert.notNull(this.sourceOutput, "'sourceOutput' must not be null");
