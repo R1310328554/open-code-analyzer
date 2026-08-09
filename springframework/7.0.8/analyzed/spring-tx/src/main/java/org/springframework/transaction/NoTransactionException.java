@@ -17,10 +17,9 @@
 package org.springframework.transaction;
 
 /**
- * Exception thrown when an operation is attempted that
- * relies on an existing transaction (such as setting
- * rollback status) and there is no existing transaction.
- * This represents an illegal usage of the transaction API.
+ * 尝试执行依赖现有事务的操作（如设置回滚状态）
+ * 但不存在现有事务时抛出。
+ * 表示对事务 API 的非法使用。
  *
  * @author Rod Johnson
  * @since 17.03.2003
@@ -29,17 +28,17 @@ package org.springframework.transaction;
 public class NoTransactionException extends TransactionUsageException {
 
 	/**
-	 * Constructor for NoTransactionException.
-	 * @param msg the detail message
+	 * NoTransactionException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public NoTransactionException(String msg) {
 		super(msg);
 	}
 
 	/**
-	 * Constructor for NoTransactionException.
-	 * @param msg the detail message
-	 * @param cause the root cause from the transaction API in use
+	 * NoTransactionException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 所用事务 API 的根因
 	 */
 	public NoTransactionException(String msg, Throwable cause) {
 		super(msg, cause);

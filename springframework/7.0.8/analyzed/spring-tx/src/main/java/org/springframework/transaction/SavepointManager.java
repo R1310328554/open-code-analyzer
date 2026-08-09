@@ -17,16 +17,15 @@
 package org.springframework.transaction;
 
 /**
- * Interface that specifies an API to programmatically manage transaction
- * savepoints in a generic fashion. Extended by TransactionStatus to
- * expose savepoint management functionality for a specific transaction.
+ * 以通用方式编程管理事务保存点的 API 接口。
+ * 由 TransactionStatus 扩展，为特定事务暴露保存点管理功能。
  *
- * <p>Note that savepoints can only work within an active transaction.
- * Just use this programmatic savepoint handling for advanced needs;
- * else, a subtransaction with PROPAGATION_NESTED is preferable.
+ * <p>注意，保存点仅在活动事务内有效。
+ * 仅在高级需求时使用本编程式保存点处理；
+ * 否则更宜使用 PROPAGATION_NESTED 的子事务。
  *
- * <p>This interface is inspired by JDBC's Savepoint mechanism
- * but is independent of any specific persistence technology.
+ * <p>本接口受 JDBC Savepoint 机制启发，
+ * 但不依赖任何特定持久化技术。
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -37,44 +36,36 @@ package org.springframework.transaction;
 public interface SavepointManager {
 
 	/**
-	 * Create a new savepoint. You can roll back to a specific savepoint
-	 * via {@code rollbackToSavepoint}, and explicitly release a savepoint
-	 * that you don't need anymore via {@code releaseSavepoint}.
-	 * <p>Note that most transaction managers will automatically release
-	 * savepoints at transaction completion.
-	 * @return a savepoint object, to be passed into
-	 * {@link #rollbackToSavepoint} or {@link #releaseSavepoint}
-	 * @throws NestedTransactionNotSupportedException if the underlying
-	 * transaction does not support savepoints
-	 * @throws TransactionException if the savepoint could not be created,
-	 * for example because the transaction is not in an appropriate state
+	 * 创建新保存点。可通过 {@code rollbackToSavepoint} 回滚到特定保存点，
+	 * 通过 {@code releaseSavepoint} 显式释放不再需要的保存点。
+	 * <p>注意，多数事务管理器会在事务完成时自动释放保存点。
+	 * @return 保存点对象，传入 {@link #rollbackToSavepoint} 或 {@link #releaseSavepoint}
+	 * @throws NestedTransactionNotSupportedException 底层事务不支持保存点时
+	 * @throws TransactionException 无法创建保存点时，
+	 * 例如事务状态不合适
 	 * @see java.sql.Connection#setSavepoint
 	 */
 	Object createSavepoint() throws TransactionException;
 
 	/**
-	 * Roll back to the given savepoint.
-	 * <p>The savepoint will <i>not</i> be automatically released afterwards.
-	 * You may explicitly call {@link #releaseSavepoint(Object)} or rely on
-	 * automatic release on transaction completion.
-	 * @param savepoint the savepoint to roll back to
-	 * @throws NestedTransactionNotSupportedException if the underlying
-	 * transaction does not support savepoints
-	 * @throws TransactionException if the rollback failed
+	 * 回滚到给定保存点。
+	 * <p>保存点之后<i>不会</i>自动释放。
+	 * 可显式调用 {@link #releaseSavepoint(Object)} 或依赖事务完成时的自动释放。
+	 * @param savepoint 要回滚到的保存点
+	 * @throws NestedTransactionNotSupportedException 底层事务不支持保存点时
+	 * @throws TransactionException 回滚失败时
 	 * @see java.sql.Connection#rollback(java.sql.Savepoint)
 	 */
 	void rollbackToSavepoint(Object savepoint) throws TransactionException;
 
 	/**
-	 * Explicitly release the given savepoint.
-	 * <p>Note that most transaction managers will automatically release
-	 * savepoints on transaction completion.
-	 * <p>Implementations should fail as silently as possible if proper
-	 * resource cleanup will eventually happen at transaction completion.
-	 * @param savepoint the savepoint to release
-	 * @throws NestedTransactionNotSupportedException if the underlying
-	 * transaction does not support savepoints
-	 * @throws TransactionException if the release failed
+	 * 显式释放给定保存点。
+	 * <p>注意，多数事务管理器会在事务完成时自动释放保存点。
+	 * <p>若事务完成时最终会正确清理资源，
+	 * 实现应尽可能静默失败。
+	 * @param savepoint 要释放的保存点
+	 * @throws NestedTransactionNotSupportedException 底层事务不支持保存点时
+	 * @throws TransactionException 释放失败时
 	 * @see java.sql.Connection#releaseSavepoint
 	 */
 	void releaseSavepoint(Object savepoint) throws TransactionException;
