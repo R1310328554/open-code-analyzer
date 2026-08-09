@@ -22,18 +22,24 @@ import org.redisson.client.protocol.Encoder;
 import java.util.Objects;
 
 /**
+ * 将 {@link JsonCodec} 适配为 Redisson 标准 {@link org.redisson.client.codec.Codec} 的包装器。
+ * <p>
+ * 仅委托值的编解码；Map 键/值编解码沿用 {@link BaseCodec} 默认行为（通常与值相同）。
  *
  * @author Nikita Koksharov
  *
  */
 public class JsonCodecWrapper extends BaseCodec {
 
+    /** 内层 JSON 编解码器。 */
     private JsonCodec innerCodec;
 
+    /** @param innerCodec 被包装的 JsonCodec 实例 */
     public JsonCodecWrapper(JsonCodec innerCodec) {
         this.innerCodec = innerCodec;
     }
 
+    /** 按 ClassLoader 复制内层编解码器。 */
     public JsonCodecWrapper(ClassLoader classLoader, JsonCodecWrapper codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
@@ -48,6 +54,7 @@ public class JsonCodecWrapper extends BaseCodec {
         return innerCodec.getEncoder();
     }
 
+    /** 仅比较内层 JsonCodec 是否相同。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -31,15 +31,16 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Kryo 4 codec
+ * Kryo 4 二进制编解码器，通过 {@link ConcurrentLinkedQueue} 复用 Kryo 实例实现线程安全。
  * <p>
- * Fully thread-safe.
+ * 禁用 Kryo 引用（{@code setReferences(false)}）；可预注册指定 Class 列表。
  *
  * @author Nikita Koksharov
  *
  */
 public class KryoCodec extends BaseCodec {
 
+    /** 包装底层异常并保留原始堆栈的 RuntimeException。 */
     public class RedissonKryoCodecException extends RuntimeException {
 
         private static final long serialVersionUID = 9172336149805414947L;
@@ -50,10 +51,14 @@ public class KryoCodec extends BaseCodec {
         }
     }
 
+    /** Kryo 实例复用队列。 */
     private final Queue<Kryo> objects = new ConcurrentLinkedQueue<>();
+    /** 构造时预注册的 Class 列表。 */
     private final List<Class<?>> classes;
+    /** 可选 ClassLoader。 */
     private final ClassLoader classLoader;
 
+    /** 从 ByteBuf 反序列化；异常时包装为 RedissonKryoCodecException。 */
     private final Decoder<Object> decoder = (buf, state) -> {
         Kryo kryo = null;
         try {
@@ -71,6 +76,7 @@ public class KryoCodec extends BaseCodec {
         }
     };
 
+    /** 序列化到 ByteBuf；失败时 release 缓冲区。 */
     private final Encoder encoder = in -> {
         Kryo kryo = null;
         ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
@@ -94,6 +100,7 @@ public class KryoCodec extends BaseCodec {
         }
     };
 
+    /** 无预注册类、默认 ClassLoader。 */
     public KryoCodec() {
         this(Collections.<Class<?>>emptyList());
     }
@@ -102,6 +109,7 @@ public class KryoCodec extends BaseCodec {
         this(Collections.<Class<?>>emptyList(), classLoader);
     }
     
+    /** 复制预注册类列表并绑定 ClassLoader。 */
     public KryoCodec(ClassLoader classLoader, KryoCodec codec) {
         this(codec.classes, classLoader);
     }
@@ -115,6 +123,7 @@ public class KryoCodec extends BaseCodec {
         this.classLoader = classLoader;
     }
 
+    /** 从队列取出 Kryo，空则 createInstance。 */
     public Kryo get() {
         Kryo kryo = objects.poll();
         if (kryo == null) {
@@ -123,14 +132,15 @@ public class KryoCodec extends BaseCodec {
         return kryo;
     }
 
+    /** 使用完毕后归还 Kryo 到队列。 */
     public void offer(Kryo kryo) {
         objects.offer(kryo);
     }
 
     /**
-     * Sub classes can customize the Kryo instance by overriding this method
+     * 子类可覆盖以自定义 Kryo 配置。
      *
-     * @return create Kryo instance
+     * @return 新创建的 Kryo 实例
      */
     protected Kryo createInstance(List<Class<?>> classes, ClassLoader classLoader) {
         Kryo kryo = new Kryo();

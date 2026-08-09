@@ -37,15 +37,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Jackson Json codec.
+ * Jackson 2 泛型 JSON 编解码器，实现 {@link JsonCodec}。
  * <p>
- * Fully thread-safe.
+ * 支持 {@code Class<T>} 或 {@link TypeReference} 指定反序列化类型；
+ * 默认 NON_NULL、字段 ANY 可见、忽略未知属性；完全线程安全。
  *
  * @author Nikita Koksharov
  *
  */
 public class JacksonCodec<T> implements JsonCodec {
 
+    /** JSON 序列化到 ByteBuf。 */
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
@@ -61,6 +63,7 @@ public class JacksonCodec<T> implements JsonCodec {
         }
     };
 
+    /** 从 ByteBuf 反序列化为指定类型。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -76,6 +79,7 @@ public class JacksonCodec<T> implements JsonCodec {
 
     private final ObjectMapper mapObjectMapper;
 
+    /** 按 Class 构造并应用默认 init 配置。 */
     public JacksonCodec(Class<T> valueClass) {
         if (valueClass == null) {
             throw new NullPointerException("valueClass isn't defined");
@@ -85,6 +89,7 @@ public class JacksonCodec<T> implements JsonCodec {
         init(mapObjectMapper);
     }
 
+    /** 按 TypeReference 构造。 */
     public JacksonCodec(TypeReference<T> valueTypeReference) {
         if (valueTypeReference == null) {
             throw new NullPointerException("valueTypeReference isn't defined");
@@ -94,6 +99,7 @@ public class JacksonCodec<T> implements JsonCodec {
         init(mapObjectMapper);
     }
 
+    /** 使用已有 ObjectMapper 与 TypeReference。 */
     public JacksonCodec(ObjectMapper mapObjectMapper, TypeReference<T> valueTypeReference) {
         if (mapObjectMapper == null) {
             throw new NullPointerException("mapObjectMapper isn't defined");
@@ -105,6 +111,7 @@ public class JacksonCodec<T> implements JsonCodec {
         this.valueTypeReference = valueTypeReference;
     }
 
+    /** 使用已有 ObjectMapper 与 Class。 */
     public JacksonCodec(ObjectMapper mapObjectMapper, Class<T> valueClass) {
         if (mapObjectMapper == null) {
             throw new NullPointerException("mapObjectMapper isn't defined");
@@ -116,18 +123,21 @@ public class JacksonCodec<T> implements JsonCodec {
         this.valueClass = valueClass;
     }
 
+    /** 复制类型信息并按 ClassLoader 重建 Mapper。 */
     public JacksonCodec(ClassLoader classLoader, JacksonCodec<T> codec) {
         this.valueClass = codec.valueClass;
         this.valueTypeReference = codec.valueTypeReference;
         this.mapObjectMapper = createObjectMapper(classLoader, codec.mapObjectMapper.copy());
     }
 
+    /** 为 ObjectMapper 设置带 ClassLoader 的 TypeFactory。 */
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
         TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
         om.setTypeFactory(tf);
         return om;
     }
 
+    /** Redisson 默认 Jackson 2 序列化/反序列化选项。 */
     protected void init(ObjectMapper objectMapper) {
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.setVisibility(objectMapper.getSerializationConfig()

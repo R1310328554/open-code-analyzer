@@ -52,9 +52,9 @@ import java.util.stream.Collectors;
 import static com.esotericsoftware.kryo.util.Util.className;
 
 /**
- * Kryo 5 codec
+ * Kryo 5 二进制编解码器，使用对象池保证线程安全。
  * <p>
- * Fully thread-safe.
+ * 支持类白名单、可选对象引用（{@code useReferences}）、Collections 包装类与 JDK 常用类型的默认序列化器。
  *
  * @author Nikita Koksharov
  *
@@ -62,8 +62,10 @@ import static com.esotericsoftware.kryo.util.Util.className;
 public class Kryo5Codec extends BaseCodec {
 
     private static final Logger logger = LoggerFactory.getLogger(Kryo5Codec.class);
+    /** Collections 内部包装类名片段，需用 JavaSerializer 处理。 */
     private static final List<String> MISSED_COLLECTION_CLASSES = Arrays.asList("Unmodifiable", "Synchronized", "Checked");
 
+    /** 优先无参构造实例化，失败时回退 Objenesis StdInstantiatorStrategy。 */
     private static final class SimpleInstantiatorStrategy implements org.objenesis.strategy.InstantiatorStrategy {
 
         private final StdInstantiatorStrategy ss = new StdInstantiatorStrategy();
@@ -94,12 +96,18 @@ public class Kryo5Codec extends BaseCodec {
         }
     }
 
+    /** Kryo 实例池（最大 1024）。 */
     private final Pool<Kryo> kryoPool;
+    /** Input 缓冲池。 */
     private final Pool<Input> inputPool;
+    /** Output 缓冲池。 */
     private final Pool<Output> outputPool;
+    /** 允许序列化的类名；非空时 requireRegistration。 */
     private final Set<String> allowedClasses;
+    /** 是否启用 Kryo 对象引用图。 */
     private final boolean useReferences;
 
+    /** 默认：无白名单、不启用引用。 */
     public Kryo5Codec() {
         this(null, Collections.emptySet(), false);
     }
@@ -108,6 +116,7 @@ public class Kryo5Codec extends BaseCodec {
         this(null, allowedClasses, useReferences);
     }
 
+    /** 从已有 Codec 复制配置并绑定 ClassLoader。 */
     public Kryo5Codec(ClassLoader classLoader, Kryo5Codec codec) {
         this(classLoader, codec.allowedClasses, codec.useReferences);
     }
@@ -116,6 +125,13 @@ public class Kryo5Codec extends BaseCodec {
         this(classLoader, Collections.emptySet(), false);
     }
 
+    /**
+     * 初始化三个对象池并保存白名单与引用选项。
+     *
+     * @param classLoader 类加载器
+     * @param allowedClasses 允许序列化的类全限定名
+     * @param useReferences 是否启用 Kryo 引用
+     */
     public Kryo5Codec(ClassLoader classLoader, Set<String> allowedClasses, boolean useReferences) {
         this.allowedClasses = allowedClasses.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
         this.useReferences = useReferences;
@@ -154,6 +170,12 @@ public class Kryo5Codec extends BaseCodec {
         };
     }
 
+    /**
+     * 创建并配置 Kryo 实例：实例化策略、默认序列化器、白名单注册等。
+     *
+     * @param classLoader 类加载器
+     * @param useReferences 是否启用引用
+     */
     protected Kryo createKryo(ClassLoader classLoader, boolean useReferences) throws ClassNotFoundException {
         Kryo kryo = new Kryo();
         if (classLoader != null) {
@@ -191,6 +213,7 @@ public class Kryo5Codec extends BaseCodec {
         return kryo;
     }
 
+    /** 从池中借 Kryo/Input，readClassAndObject 后归还。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -211,6 +234,7 @@ public class Kryo5Codec extends BaseCodec {
         }
     };
 
+    /** 从池中借 Kryo/Output，writeClassAndObject 写入 ByteBuf。 */
     private final Encoder encoder = new Encoder() {
         @Override
         @SuppressWarnings("IllegalCatch")

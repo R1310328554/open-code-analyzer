@@ -18,23 +18,27 @@ package org.redisson.codec;
 import tools.jackson.dataformat.ion.IonObjectMapper;
 
 /**
- * Amazon Ion codec based on Jackson implementation.
+ * 基于 Jackson 3 的 Amazon Ion 二进制编解码器。
  * <p>
- * Fully thread-safe.
+ * 继承 {@link JsonJackson3Codec}，使用 {@link IonObjectMapper} 读写 Ion 格式；
+ * 完全线程安全。
  *
  * @author Nikita Koksharov
  *
  */
 public class IonJackson3Codec extends JsonJackson3Codec {
 
+    /** 使用默认 IonObjectMapper。 */
     public IonJackson3Codec() {
         super(new IonObjectMapper());
     }
 
+    /** 按 ClassLoader 创建 Ion Mapper。 */
     public IonJackson3Codec(ClassLoader classLoader) {
         super(createMapper(classLoader, new IonObjectMapper()));
     }
 
+    /** 从已有 Codec 复制 Mapper 并应用指定 ClassLoader。 */
     public IonJackson3Codec(ClassLoader classLoader, IonJackson3Codec codec) {
         super(createMapper(classLoader, codec.mapObjectMapper.rebuild().build()));
     }

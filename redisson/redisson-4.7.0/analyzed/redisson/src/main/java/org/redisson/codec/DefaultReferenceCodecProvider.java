@@ -26,13 +26,24 @@ import org.redisson.config.Config;
 import org.redisson.liveobject.misc.ClassUtils;
 
 /**
+ * {@link ReferenceCodecProvider} 的默认实现：按 Codec 类型缓存单例，并从注解解析编解码器。
+ * <p>
+ * Live Object 实体 {@link REntity} 与字段 {@link RObjectField} 可通过注解指定 Codec 类，
+ * 未指定时使用 {@link Config#getCodec()} 的全局默认编解码器。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
 
+    /** Codec 类型 → 实例缓存，避免重复反射构造。 */
     private final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = new ConcurrentHashMap<>();
 
+    /**
+     * 获取指定 Codec 类的单例实例；缓存未命中时通过无参构造器创建。
+     *
+     * @param codecClass Codec 类型
+     * @return Codec 实例
+     */
     @Override
     public <T extends Codec> T getCodec(Class<T> codecClass) {
         Codec codec = codecCache.get(codecClass);
@@ -47,6 +58,13 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
         return (T) codec;
     }
 
+    /**
+     * 根据 {@link REntity} 注解解析实体级编解码器。
+     *
+     * @param anno REntity 注解实例
+     * @param cls 实体类
+     * @param config Redisson 配置
+     */
     @Override
     public <T extends Codec> T getCodec(REntity anno, Class<?> cls, Config config) {
         if (!ClassUtils.isAnnotationPresent(cls, anno.annotationType())) {
@@ -63,6 +81,15 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
         return this.getCodec((Class<T>) codecClass);
     }
 
+    /**
+     * 根据 {@link RObjectField} 注解解析字段级编解码器。
+     *
+     * @param anno RObjectField 注解
+     * @param cls 声明字段的类
+     * @param rObjectClass RObject 具体实现类（不可为接口）
+     * @param fieldName 字段名
+     * @param config Redisson 配置
+     */
     @Override
     public <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, Config config) {
         if (!ClassUtils.isAnnotationPresent(cls, anno.annotationType())) {
@@ -82,6 +109,12 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
         return this.getCodec((Class<T>) codecClass);
     }
     
+    /**
+     * 注册自定义 Codec 实例到缓存（仅当该类型尚未缓存时生效）。
+     *
+     * @param cls Codec 类型
+     * @param codec 要注册的实例
+     */
     @Override
     public <T extends Codec> void registerCodec(Class<T> cls, T codec) {
         if (!cls.isInstance(codec)) {

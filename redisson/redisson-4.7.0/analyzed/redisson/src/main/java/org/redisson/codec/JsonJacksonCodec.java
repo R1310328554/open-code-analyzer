@@ -40,10 +40,10 @@ import java.io.OutputStream;
 import java.util.UUID;
 
 /**
- * Json codec based on Jackson implementation.
+ * 基于 Jackson 2 的通用 JSON 编解码器。
  * https://github.com/FasterXML/jackson
  * <p>
- * Fully thread-safe.
+ * 支持多态 {@code @class}、Throwable/UUID MixIn、Long 精度保护等；完全线程安全。
  *
  * @see org.redisson.codec.CborJacksonCodec
  * @see org.redisson.codec.MsgPackJacksonCodec
@@ -53,8 +53,10 @@ import java.util.UUID;
  */
 public class JsonJacksonCodec extends BaseCodec {
 
+    /** 共享单例。 */
     public static final JsonJacksonCodec INSTANCE = new JsonJacksonCodec();
 
+    /** Throwable 序列化 MixIn：使用 {@code @id} 避免循环引用栈溢出。 */
     @JsonIdentityInfo(generator=ObjectIdGenerators.IntSequenceGenerator.class, property="@id")
     @JsonAutoDetect(fieldVisibility = Visibility.NON_PRIVATE,
                     getterVisibility = Visibility.PUBLIC_ONLY, 
@@ -64,6 +66,7 @@ public class JsonJacksonCodec extends BaseCodec {
         
     }
 
+    /** UUID MixIn：字符串形式读写。 */
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
     public abstract static class UuidMixin {
 
@@ -79,8 +82,10 @@ public class JsonJacksonCodec extends BaseCodec {
         }
     }
     
+    /** 底层 ObjectMapper。 */
     protected final ObjectMapper mapObjectMapper;
 
+    /** JSON 编码到 ByteBuf。 */
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
@@ -99,6 +104,7 @@ public class JsonJacksonCodec extends BaseCodec {
         }
     };
 
+    /** 反序列化为 Object（含默认类型信息）。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -106,20 +112,25 @@ public class JsonJacksonCodec extends BaseCodec {
         }
     };
     
+    /** 默认空 ObjectMapper 并 init。 */
     public JsonJacksonCodec() {
         this(new ObjectMapper());
     }
     
+    /** 按 ClassLoader 创建 Mapper。 */
     public JsonJacksonCodec(ClassLoader classLoader) {
         this(createObjectMapper(classLoader, new ObjectMapper()));
     }
 
+    /** 从已有 Codec 复制 Mapper 并绑定 ClassLoader。 */
     public JsonJacksonCodec(ClassLoader classLoader, JsonJacksonCodec codec) {
         this(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
     }
 
+    /** 是否已完成 JVM 预热（避免首包慢）。 */
     private static boolean warmedup = false;
 
+    /** 首次使用时执行一次编解码预热。 */
     private void warmup() {
         if (getValueEncoder() == null || getValueDecoder() == null || warmedup) {
             return;
@@ -139,17 +150,20 @@ public class JsonJacksonCodec extends BaseCodec {
         }
     }
 
+    /** 为 Mapper 设置带 ClassLoader 的 TypeFactory。 */
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
         TypeFactory tf = om.getTypeFactory().withClassLoader(classLoader);
         om.setTypeFactory(tf);
         return om;
     }
 
+    /** 拷贝 Mapper、init 并 warmup。 */
     public JsonJacksonCodec(ObjectMapper mapObjectMapper) {
         this(mapObjectMapper, true);
         warmup();
     }
 
+    /** @param copy 是否 copy ObjectMapper */
     public JsonJacksonCodec(ObjectMapper mapObjectMapper, boolean copy) {
         if (copy) {
             this.mapObjectMapper = mapObjectMapper.copy();
@@ -161,6 +175,10 @@ public class JsonJacksonCodec extends BaseCodec {
         warmup();
     }
 
+    /**
+     * 配置 Jackson 2 默认多态类型解析：NON_FINAL 类型写入 {@code @class}；
+     * Long 强制保留类型信息；XMLGregorianCalendar 排除在外。
+     */
     protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
         mapObjectMapper.addMixIn(UUID.class, UuidMixin.class);
         TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
@@ -196,6 +214,7 @@ public class JsonJacksonCodec extends BaseCodec {
         mapObjectMapper.setDefaultTyping(mapTyper);
     }
 
+    /** Redisson 标准 Jackson 2 序列化选项与 Throwable MixIn。 */
     protected void init(ObjectMapper objectMapper) {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setVisibility(objectMapper.getSerializationConfig()
@@ -230,6 +249,7 @@ public class JsonJacksonCodec extends BaseCodec {
         return super.getClassLoader();
     }
 
+    /** 暴露内部 ObjectMapper。 */
     public ObjectMapper getObjectMapper() {
         return mapObjectMapper;
     }

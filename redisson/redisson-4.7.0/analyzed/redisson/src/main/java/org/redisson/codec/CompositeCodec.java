@@ -23,20 +23,35 @@ import org.redisson.client.protocol.Encoder;
 import java.util.Objects;
 
 /**
- * 
+ * 组合编解码器：为 Map 键、Map 值与普通值分别指定不同的 {@link Codec}。
+ * <p>
+ * 典型场景是 Map 的键用字符串编解码、值用 JSON 或 Kryo 等，而普通 RBucket 仍走默认 Codec。
+ * 各 {@code get*Encoder/Decoder} 方法直接委托给对应的内层编解码器。
+ *
  * @author Nikita Koksharov
  *
  */
 public class CompositeCodec implements Codec {
 
+    /** Map 键编解码器。 */
     private final Codec mapKeyCodec;
+    /** Map 值编解码器。 */
     private final Codec mapValueCodec;
+    /** 普通值编解码器；可为 null，此时 value 相关方法会 NPE。 */
     private final Codec valueCodec;
     
+    /** 仅指定 Map 键/值编解码器，普通值编解码器为 null。 */
     public CompositeCodec(Codec mapKeyCodec, Codec mapValueCodec) {
         this(mapKeyCodec, mapValueCodec, null);
     }
     
+    /**
+     * 为 Map 键、Map 值与普通值分别指定编解码器。
+     *
+     * @param mapKeyCodec Map 键编解码器
+     * @param mapValueCodec Map 值编解码器
+     * @param valueCodec 普通值编解码器，可为 null
+     */
     public CompositeCodec(Codec mapKeyCodec, Codec mapValueCodec, Codec valueCodec) {
         super();
         this.mapKeyCodec = mapKeyCodec;
@@ -44,6 +59,7 @@ public class CompositeCodec implements Codec {
         this.valueCodec = valueCodec;
     }
 
+    /** 按 ClassLoader 深拷贝内层三个编解码器，用于跨 ClassLoader 场景。 */
     public CompositeCodec(ClassLoader classLoader, CompositeCodec codec) throws ReflectiveOperationException {
         super();
         this.mapKeyCodec = BaseCodec.copy(classLoader, codec.mapKeyCodec);
@@ -86,6 +102,7 @@ public class CompositeCodec implements Codec {
         return getClass().getClassLoader();
     }
 
+    /** 比较三个内层编解码器是否一致。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

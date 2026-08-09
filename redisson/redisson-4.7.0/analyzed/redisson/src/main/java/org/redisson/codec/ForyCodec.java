@@ -36,27 +36,34 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * <a href="https://github.com/apache/fory">Apache Fory</a> codec
+ * 基于 <a href="https://github.com/apache/fory">Apache Fory</a> 的高性能二进制编解码器。
  * <p>
- * Fully thread-safe.
+ * 线程安全（{@link ThreadSafeFory}）；可选类白名单与 {@link Language}（默认 Java）。
+ * 序列化/反序列化优先零拷贝写入 Netty {@link ByteBuf} 的堆内存或 NIO 缓冲区。
  *
  * @author Nikita Koksharov
  *
  */
 public class ForyCodec extends BaseCodec {
 
+    /** 线程安全的 Fory 实例。 */
     private final ThreadSafeFory fory;
+    /** 允许序列化的类全限定名；非空时启用类注册限制。 */
     private final Set<String> allowedClasses;
+    /** 序列化语言模式。 */
     private final Language language;
 
+    /** 默认 Java 语言、无类白名单。 */
     public ForyCodec() {
         this(null, Collections.emptySet(), Language.JAVA);
     }
 
+    /** 指定类白名单。 */
     public ForyCodec(Set<String> allowedClasses) {
         this(null, allowedClasses, Language.JAVA);
     }
 
+    /** 指定序列化语言。 */
     public ForyCodec(Language language) {
         this(null, Collections.emptySet(), language);
     }
@@ -65,6 +72,7 @@ public class ForyCodec extends BaseCodec {
         this(null, allowedClasses, language);
     }
 
+    /** 从已有 Codec 复制配置并应用新 ClassLoader。 */
     public ForyCodec(ClassLoader classLoader, ForyCodec codec) {
         this(classLoader, codec.allowedClasses, codec.language);
     }
@@ -73,6 +81,13 @@ public class ForyCodec extends BaseCodec {
         this(classLoader, Collections.emptySet(), Language.JAVA);
     }
 
+    /**
+     * 完整构造：配置 ClassLoader、白名单与语言，并预注册白名单中的类。
+     *
+     * @param classLoader 类加载器，可为 null
+     * @param allowedClasses 允许序列化的类名集合
+     * @param language Fory 语言模式
+     */
     public ForyCodec(ClassLoader classLoader, Set<String> allowedClasses, Language language) {
         this.allowedClasses = allowedClasses;
         this.language = language;
@@ -94,10 +109,12 @@ public class ForyCodec extends BaseCodec {
         }
     }
 
+    /** 子类可覆盖以自定义 Fory 构建方式。 */
     protected ThreadSafeFory create(ForyBuilder builder) {
         return builder.buildThreadSafeFory();
     }
 
+    /** 反序列化：单 NIO 缓冲区时零拷贝，否则走流式读取。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -114,6 +131,7 @@ public class ForyCodec extends BaseCodec {
         }
     };
 
+    /** 序列化：尽量直接写入 ByteBuf 底层数组或 NIO 缓冲区，否则回退到 OutputStream。 */
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {

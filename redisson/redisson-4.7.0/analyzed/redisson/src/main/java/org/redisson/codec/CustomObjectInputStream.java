@@ -22,26 +22,44 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 
+ * 自定义 {@link ObjectInputStream}，支持指定 ClassLoader 与反序列化类白名单。
+ * <p>
+ * 在 Java 序列化场景下，优先用传入的 ClassLoader 加载类；
+ * 若配置了 {@code allowedClasses}，则只允许白名单内的类名通过，否则抛出 {@link InvalidClassException}。
+ *
  * @author Nikita Koksharov
  *
  */
 public class CustomObjectInputStream extends ObjectInputStream {
 
+    /** 用于加载反序列化类的 ClassLoader。 */
     private final ClassLoader classLoader;
+    /** 允许反序列化的全限定类名集合；null 表示不限制。 */
     private Set<String> allowedClasses;
 
+    /**
+     * 带 ClassLoader 与白名单的构造器。
+     *
+     * @param classLoader 类加载器
+     * @param in 底层输入流
+     * @param allowedClasses 允许反序列化的类名集合
+     */
     public CustomObjectInputStream(ClassLoader classLoader, InputStream in, Set<String> allowedClasses) throws IOException {
         super(in);
         this.classLoader = classLoader;
         this.allowedClasses = allowedClasses;
     }
 
+    /** 仅指定 ClassLoader，不限制可反序列化类。 */
     public CustomObjectInputStream(ClassLoader classLoader, InputStream in) throws IOException {
         super(in);
         this.classLoader = classLoader;
     }
     
+    /**
+     * 解析普通类：先校验白名单，再用指定 ClassLoader 加载；
+     * 加载失败时回退到父类默认行为。
+     */
     @Override
     protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
         try {
@@ -55,6 +73,9 @@ public class CustomObjectInputStream extends ObjectInputStream {
         }
     }
     
+    /**
+     * 解析动态代理类：用指定 ClassLoader 加载各接口并生成代理类。
+     */
     @Override
     protected Class<?> resolveProxyClass(String[] interfaces) throws IOException, ClassNotFoundException {
         List<Class<?>> loadedClasses = new ArrayList<Class<?>>(interfaces.length);

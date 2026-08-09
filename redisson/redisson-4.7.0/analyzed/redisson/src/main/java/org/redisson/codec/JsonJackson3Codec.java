@@ -40,13 +40,16 @@ import java.io.OutputStream;
 import java.util.UUID;
 
 /**
- * Jackson 3.x based JSON codec.
+ * 基于 Jackson 3.x 的通用 JSON 编解码器，Redisson 默认 JSON Codec 之一。
+ * <p>
+ * 支持多态类型（{@code @class} 属性）、UUID MixIn、NON_NULL 等 Redisson 约定配置。
  *
  * @author Nikita Koksharov
  *
  */
 public class JsonJackson3Codec extends BaseCodec {
 
+    /** UUID 的 Jackson MixIn：序列化为字符串、反序列化 via fromString。 */
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
     public abstract static class UuidMixin {
 
@@ -62,10 +65,13 @@ public class JsonJackson3Codec extends BaseCodec {
         }
     }
 
+    /** 共享单例实例。 */
     public static final JsonJackson3Codec INSTANCE = new JsonJackson3Codec();
 
+    /** 底层 Jackson 3 ObjectMapper。 */
     final ObjectMapper mapObjectMapper;
 
+    /** 序列化任意对象为 JSON 写入 ByteBuf。 */
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
@@ -81,6 +87,7 @@ public class JsonJackson3Codec extends BaseCodec {
         }
     };
 
+    /** 反序列化为 Object.class（含多态类型信息）。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -89,40 +96,41 @@ public class JsonJackson3Codec extends BaseCodec {
     };
 
     /**
-     * Creates a codec with default settings.
+     * 使用默认 Redisson 配置创建编解码器。
      */
     public JsonJackson3Codec() {
         this.mapObjectMapper = createDefaultMapper();
     }
 
     /**
-     * Creates a codec with the specified class loader.
+     * 使用指定 ClassLoader 创建编解码器。
      *
-     * @param classLoader the class loader to use for type resolution
+     * @param classLoader 用于类型解析的类加载器
      */
     public JsonJackson3Codec(ClassLoader classLoader) {
         this.mapObjectMapper = createDefaultMapper(classLoader);
     }
 
     /**
-     * Creates a codec with the specified class loader and existing codec for cloning.
+     * 从已有 Codec 复制 Mapper 并绑定 ClassLoader。
      *
-     * @param classLoader the class loader to use
-     * @param codec the existing codec to copy settings from
+     * @param classLoader 类加载器
+     * @param codec 源编解码器
      */
     public JsonJackson3Codec(ClassLoader classLoader, JsonJackson3Codec codec) {
         this(createMapper(classLoader, codec.mapObjectMapper.rebuild().build()));
     }
 
     /**
-     * Creates a codec with a pre-configured ObjectMapper.
+     * 使用预配置的 ObjectMapper。
      *
-     * @param mapObjectMapper the ObjectMapper to use for serialization/deserialization
+     * @param mapObjectMapper 序列化/反序列化用的 ObjectMapper
      */
     public JsonJackson3Codec(ObjectMapper mapObjectMapper) {
         this.mapObjectMapper = mapObjectMapper;
     }
 
+    /** @param copy 为 true 时对传入 Mapper 执行 rebuild 拷贝 */
     public JsonJackson3Codec(ObjectMapper mapObjectMapper, boolean copy) {
         if (copy) {
             this.mapObjectMapper = mapObjectMapper.rebuild().build();
@@ -132,6 +140,7 @@ public class JsonJackson3Codec extends BaseCodec {
     }
 
 
+    /** 配置多态类型嵌入（{@code @class}）与 UUID MixIn。 */
     protected void initTypeInclusion(JsonMapper.Builder builder) {
         PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
                 .allowIfBaseType(Object.class)
@@ -144,19 +153,19 @@ public class JsonJackson3Codec extends BaseCodec {
     }
 
     /**
-     * Creates a default ObjectMapper with standard Redisson configuration.
+     * 创建带 Redisson 标准配置的默认 ObjectMapper。
      *
-     * @return a configured ObjectMapper
+     * @return 配置完成的 ObjectMapper
      */
     protected ObjectMapper createDefaultMapper() {
         return createDefaultMapper(null);
     }
 
     /**
-     * Creates a default ObjectMapper with the specified class loader.
+     * 创建默认 ObjectMapper，可选绑定 ClassLoader。
      *
-     * @param classLoader the class loader to use, or null for the default
-     * @return a configured ObjectMapper
+     * @param classLoader 类加载器，null 表示使用默认
+     * @return 配置完成的 ObjectMapper
      */
     protected ObjectMapper createDefaultMapper(ClassLoader classLoader) {
         TypeFactory typeFactory = TypeFactory.createDefaultInstance();
@@ -183,6 +192,7 @@ public class JsonJackson3Codec extends BaseCodec {
         return b.build();
     }
 
+    /** 复制已有 Mapper 并可选替换 TypeFactory 的 ClassLoader。 */
     protected static ObjectMapper createMapper(ClassLoader classLoader, ObjectMapper existingMapper) {
         TypeFactory typeFactory = existingMapper.getTypeFactory();
         if (classLoader != null) {
@@ -195,9 +205,9 @@ public class JsonJackson3Codec extends BaseCodec {
     }
 
     /**
-     * Gets the ObjectMapper used by this codec.
+     * 返回内部 ObjectMapper，供高级定制使用。
      *
-     * @return the ObjectMapper
+     * @return ObjectMapper 实例
      */
     public ObjectMapper getObjectMapper() {
         return mapObjectMapper;
@@ -213,6 +223,7 @@ public class JsonJackson3Codec extends BaseCodec {
         return encoder;
     }
 
+    /** 优先返回 Mapper TypeFactory 绑定的 ClassLoader。 */
     @Override
     public ClassLoader getClassLoader() {
         TypeFactory tf = mapObjectMapper.getTypeFactory();

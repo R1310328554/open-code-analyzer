@@ -38,15 +38,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Jackson 3 JSON codec.
+ * Jackson 3 泛型 JSON 编解码器，实现 {@link JsonCodec}。
  * <p>
- * Fully thread-safe.
+ * 通过 {@code Class<T>} 或 {@link TypeReference} 指定反序列化目标类型；
+ * 默认忽略 null 字段、未知属性，字段可见性 ANY、getter/setter 隐藏；完全线程安全。
  *
  * @author Nikita Koksharov
  *
  */
 public class Jackson3Codec<T> implements JsonCodec {
 
+    /** 将对象写入 ByteBuf 输出流。 */
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) {
@@ -62,6 +64,7 @@ public class Jackson3Codec<T> implements JsonCodec {
         }
     };
 
+    /** 按 valueClass 或 valueTypeReference 从 ByteBuf 反序列化。 */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) {
@@ -72,11 +75,14 @@ public class Jackson3Codec<T> implements JsonCodec {
         }
     };
 
+    /** 反序列化目标 Class；与 valueTypeReference 二选一。 */
     private Class<T> valueClass;
     private TypeReference<T> valueTypeReference;
 
+    /** 共享的 Jackson 3 ObjectMapper。 */
     private final ObjectMapper mapObjectMapper;
 
+    /** 指定具体类型 Class 构造。 */
     public Jackson3Codec(Class<T> valueClass) {
         if (valueClass == null) {
             throw new NullPointerException("valueClass isn't defined");
@@ -85,6 +91,7 @@ public class Jackson3Codec<T> implements JsonCodec {
         this.mapObjectMapper = createDefaultMapper();
     }
 
+    /** 指定泛型 TypeReference 构造。 */
     public Jackson3Codec(TypeReference<T> valueTypeReference) {
         if (valueTypeReference == null) {
             throw new NullPointerException("valueTypeReference isn't defined");
@@ -93,6 +100,7 @@ public class Jackson3Codec<T> implements JsonCodec {
         this.mapObjectMapper = createDefaultMapper();
     }
 
+    /** 使用外部 ObjectMapper 与 TypeReference。 */
     public Jackson3Codec(ObjectMapper mapObjectMapper, TypeReference<T> valueTypeReference) {
         if (mapObjectMapper == null) {
             throw new NullPointerException("mapObjectMapper isn't defined");
@@ -104,6 +112,7 @@ public class Jackson3Codec<T> implements JsonCodec {
         this.valueTypeReference = valueTypeReference;
     }
 
+    /** 使用外部 ObjectMapper 与 Class。 */
     public Jackson3Codec(ObjectMapper mapObjectMapper, Class<T> valueClass) {
         if (mapObjectMapper == null) {
             throw new NullPointerException("mapObjectMapper isn't defined");
@@ -115,12 +124,14 @@ public class Jackson3Codec<T> implements JsonCodec {
         this.valueClass = valueClass;
     }
 
+    /** 复制类型信息并按 ClassLoader 重建 Mapper。 */
     public Jackson3Codec(ClassLoader classLoader, Jackson3Codec<T> codec) {
         this.valueClass = codec.valueClass;
         this.valueTypeReference = codec.valueTypeReference;
         this.mapObjectMapper = createObjectMapper(classLoader, codec.mapObjectMapper.rebuild().build());
     }
 
+    /** 为 Mapper 绑定指定 ClassLoader 的 TypeFactory。 */
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper sourceMapper) {
         TypeFactory tf = TypeFactory.createDefaultInstance().withClassLoader(classLoader);
         return sourceMapper.rebuild()
@@ -128,10 +139,16 @@ public class Jackson3Codec<T> implements JsonCodec {
                 .build();
     }
 
+    /** 创建带 Redisson 默认选项的 JsonMapper。 */
     ObjectMapper createDefaultMapper() {
         return init(JsonMapper.builder()).build();
     }
 
+    /**
+     * 配置 Redisson 默认 Jackson 3 选项：NON_NULL、字段可见、忽略未知属性等。
+     *
+     * @param builder JsonMapper 构建器
+     */
     protected JsonMapper.Builder init(JsonMapper.Builder builder) {
         return builder.changeDefaultPropertyInclusion(incl -> incl
                             .withValueInclusion(JsonInclude.Include.NON_NULL)

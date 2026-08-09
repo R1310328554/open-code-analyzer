@@ -35,24 +35,31 @@ import com.esotericsoftware.kryo.io.Output;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Serializer for {@link ConcurrentHashMap.KeySetView}.
+ * {@link ConcurrentHashMap.KeySetView} 的 Kryo 5 序列化器。
+ * <p>
+ * 从 Kryo 上游 vendored 引入（尚未包含在已发布 Kryo5 中）。
+ * 序列化时写入底层 Map 与 mappedValue，反序列化时通过 {@code map.keySet(mappedValue)} 重建视图。
  *
  * @author Andreas Bergander
  */
 class Kryo5KeySetViewSerializer extends Serializer<ConcurrentHashMap.KeySetView> {
+    /** 写入底层 ConcurrentHashMap 与 mappedValue。 */
     public void write(Kryo kryo, Output output, ConcurrentHashMap.KeySetView set) {
         kryo.writeClassAndObject(output, set.getMap());
         kryo.writeClassAndObject(output, set.getMappedValue());
     }
 
+    /** 读取 Map 与 mappedValue 并重建 KeySetView。 */
     public ConcurrentHashMap.KeySetView read(Kryo kryo, Input input, Class<? extends ConcurrentHashMap.KeySetView> type) {
         return createKeySetView((ConcurrentHashMap) kryo.readClassAndObject(input), kryo.readClassAndObject(input));
     }
 
+    /** 深拷贝 Map 与 mappedValue 后重建视图。 */
     public ConcurrentHashMap.KeySetView copy(Kryo kryo, ConcurrentHashMap.KeySetView original) {
         return createKeySetView(kryo.copy(original.getMap()), kryo.copy(original.getMappedValue()));
     }
 
+    /** 调用 ConcurrentHashMap.keySet(mappedValue) 构造 KeySetView。 */
     private ConcurrentHashMap.KeySetView createKeySetView(ConcurrentHashMap map, Object mappedValue) {
         return map.keySet(mappedValue);
     }
