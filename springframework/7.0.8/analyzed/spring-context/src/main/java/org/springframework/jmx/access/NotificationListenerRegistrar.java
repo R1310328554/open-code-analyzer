@@ -37,9 +37,9 @@ import org.springframework.jmx.support.NotificationListenerHolder;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Registrar object that associates a specific {@link javax.management.NotificationListener}
- * with one or more MBeans in an {@link javax.management.MBeanServer}
- * (typically via a {@link javax.management.MBeanServerConnection}).
+ * 注册器对象，将特定的 {@link javax.management.NotificationListener}
+ * 与一个或多个 {@link javax.management.MBeanServer} 中的 MBean 关联
+ * （通常通过 {@link javax.management.MBeanServerConnection}）。
  *
  * @author Juergen Hoeller
  * @since 2.5.2
@@ -50,7 +50,7 @@ import org.springframework.util.CollectionUtils;
 public class NotificationListenerRegistrar extends NotificationListenerHolder
 		implements InitializingBean, DisposableBean {
 
-	/** Logger available to subclasses. */
+	/** 子类可用的 Logger。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	private final ConnectorDelegate connector = new ConnectorDelegate();
@@ -67,15 +67,14 @@ public class NotificationListenerRegistrar extends NotificationListenerHolder
 
 
 	/**
-	 * Set the {@code MBeanServerConnection} used to connect to the
-	 * MBean which all invocations are routed to.
+	 * 设置用于连接所有调用所路由到的 MBean 的 {@code MBeanServerConnection}。
 	 */
 	public void setServer(MBeanServerConnection server) {
 		this.server = server;
 	}
 
 	/**
-	 * Specify the environment for the JMX connector.
+	 * 指定 JMX 连接器的环境。
 	 * @see javax.management.remote.JMXConnectorFactory#connect(javax.management.remote.JMXServiceURL, java.util.Map)
 	 */
 	public void setEnvironment(@Nullable Map<String, ?> environment) {
@@ -83,30 +82,27 @@ public class NotificationListenerRegistrar extends NotificationListenerHolder
 	}
 
 	/**
-	 * Allow {@code Map} access to the environment to be set for the connector,
-	 * with the option to add or override specific entries.
-	 * <p>Useful for specifying entries directly, for example via
-	 * {@code environment[myKey]}. This is particularly useful for
-	 * adding or overriding entries in child bean definitions.
+	 * 允许以 {@code Map} 方式访问要为连接器设置的环境，并可选择添加或覆盖特定条目。
+	 * <p>适用于直接指定条目，例如通过 {@code environment[myKey]}；
+	 * 在子 bean 定义中添加或覆盖条目时尤其有用。
 	 */
 	public @Nullable Map<String, ?> getEnvironment() {
 		return this.environment;
 	}
 
 	/**
-	 * Set the service URL of the remote {@code MBeanServer}.
+	 * 设置远程 {@code MBeanServer} 的服务 URL。
 	 */
 	public void setServiceUrl(String url) throws MalformedURLException {
 		this.serviceUrl = new JMXServiceURL(url);
 	}
 
 	/**
-	 * Set the agent id of the {@code MBeanServer} to locate.
-	 * <p>Default is none. If specified, this will result in an
-	 * attempt being made to locate the attendant MBeanServer, unless
-	 * the {@link #setServiceUrl "serviceUrl"} property has been set.
+	 * 设置要定位的 {@code MBeanServer} 的 agent id。
+	 * <p>默认为无。若指定，将尝试定位对应的 MBeanServer，除非已设置
+	 * {@link #setServiceUrl "serviceUrl"} 属性。
 	 * @see javax.management.MBeanServerFactory#findMBeanServer(String)
-	 * <p>Specifying the empty String indicates the platform MBeanServer.
+	 * <p>指定空字符串表示平台 MBeanServer。
 	 */
 	public void setAgentId(String agentId) {
 		this.agentId = agentId;
@@ -125,9 +121,8 @@ public class NotificationListenerRegistrar extends NotificationListenerHolder
 	}
 
 	/**
-	 * Registers the specified {@code NotificationListener}.
-	 * <p>Ensures that an {@code MBeanServerConnection} is configured and attempts
-	 * to detect a local connection if one is not supplied.
+	 * 注册指定的 {@code NotificationListener}。
+	 * <p>确保已配置 {@code MBeanServerConnection}，若未提供则尝试检测本地连接。
 	 */
 	public void prepare() {
 		if (this.server == null) {
@@ -155,7 +150,7 @@ public class NotificationListenerRegistrar extends NotificationListenerHolder
 	}
 
 	/**
-	 * Unregisters the specified {@code NotificationListener}.
+	 * 注销指定的 {@code NotificationListener}。
 	 */
 	@Override
 	public void destroy() {

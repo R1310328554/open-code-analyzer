@@ -26,20 +26,15 @@ import org.springframework.jmx.MBeanServerNotFoundException;
 import org.springframework.util.ClassUtils;
 
 /**
- * Creates a proxy to a managed resource running either locally or remotely.
- * The "proxyInterface" property defines the interface that the generated
- * proxy is supposed to implement. This interface should define methods and
- * properties that correspond to operations and attributes in the management
- * interface of the resource you wish to proxy.
+ * 创建指向本地或远程运行的受管资源的代理。
+ * {@code proxyInterface} 属性定义生成的代理应实现的接口；该接口应定义与
+ * 待代理资源的管理接口中的操作和属性相对应的方法与属性。
  *
- * <p>There is no need for the managed resource to implement the proxy interface,
- * although you may find it convenient to do. It is not required that every
- * operation and attribute in the management interface is matched by a
- * corresponding property or method in the proxy interface.
+ * <p>受管资源不必实现代理接口，但这样做可能更方便。管理接口中的每个操作和属性
+ * 并不要求在代理接口中都有对应的属性或方法。
  *
- * <p>Attempting to invoke or access any method or property on the proxy
- * interface that does not correspond to the management interface will lead
- * to an {@code InvalidInvocationException}.
+ * <p>尝试在代理接口上调用或访问与管理接口不对应的方法或属性时，
+ * 将抛出 {@code InvalidInvocationException}。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -58,10 +53,9 @@ public class MBeanProxyFactoryBean extends MBeanClientInterceptor
 
 
 	/**
-	 * Set the interface that the generated proxy will implement.
-	 * <p>This will usually be a management interface that matches the target MBean,
-	 * exposing bean property setters and getters for MBean attributes and
-	 * conventional Java methods for MBean operations.
+	 * 设置生成的代理将实现的接口。
+	 * <p>通常是与目标 MBean 匹配的管理接口，为 MBean 属性暴露 bean 属性 setter/getter，
+	 * 为 MBean 操作暴露常规 Java 方法。
 	 * @see #setObjectName
 	 */
 	public void setProxyInterface(Class<?> proxyInterface) {
@@ -74,8 +68,7 @@ public class MBeanProxyFactoryBean extends MBeanClientInterceptor
 	}
 
 	/**
-	 * Checks that the {@code proxyInterface} has been specified and then
-	 * generates the proxy for the target MBean.
+	 * 检查是否已指定 {@code proxyInterface}，然后为目标 MBean 生成代理。
 	 */
 	@Override
 	public void afterPropertiesSet() throws MBeanServerNotFoundException, MBeanInfoRetrievalException {
