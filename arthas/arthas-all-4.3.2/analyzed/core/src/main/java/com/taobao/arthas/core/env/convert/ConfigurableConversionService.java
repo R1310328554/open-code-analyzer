@@ -19,14 +19,11 @@ package com.taobao.arthas.core.env.convert;
 import com.taobao.arthas.core.env.ConversionService;
 
 /**
- * Configuration interface to be implemented by most if not all
- * {@link ConversionService} types. Consolidates the read-only operations
- * exposed by {@link ConversionService} and the mutating operations of
- * {@link ConverterRegistry} to allow for convenient ad-hoc addition and removal
- * of {@link org.springframework.core.convert.converter.Converter Converters}
- * through. The latter is particularly useful when working against a
- * {@link org.springframework.core.env.ConfigurableEnvironment
- * ConfigurableEnvironment} instance in application context bootstrapping code.
+ * 可配置的 {@link ConversionService} 标记接口。
+ * <p>
+ * 合并 {@link ConversionService} 的只读转换能力与 {@link ConverterRegistry} 的
+ * 注册/移除 {@link org.springframework.core.convert.converter.Converter} 能力，
+ * 便于在启动阶段向 {@link ConfigurableEnvironment} 动态添加类型转换器。
  *
  * @author Chris Beams
  * @since 3.1

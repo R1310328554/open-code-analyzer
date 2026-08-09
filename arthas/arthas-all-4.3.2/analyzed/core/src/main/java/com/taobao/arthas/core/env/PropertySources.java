@@ -17,7 +17,10 @@
 package com.taobao.arthas.core.env;
 
 /**
- * Holder containing one or more {@link PropertySource} objects.
+ * 属性源容器接口，聚合一个或多个 {@link PropertySource}。
+ * <p>
+ * 实现类（如 {@link MutablePropertySources}）维护搜索顺序；
+ * {@link PropertySourcesPropertyResolver} 按迭代顺序解析属性。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -27,18 +30,16 @@ package com.taobao.arthas.core.env;
 public interface PropertySources extends Iterable<PropertySource<?>> {
 
     /**
-     * Return whether a property source with the given name is contained.
+     * 判断是否包含指定名称的属性源。
      * 
-     * @param name the {@linkplain PropertySource#getName() name of the property
-     *             source} to find
+     * @param name 待查找的 {@linkplain PropertySource#getName() 属性源名称}
      */
     boolean contains(String name);
 
     /**
-     * Return the property source with the given name, {@code null} if not found.
+     * 按名称获取属性源，未找到返回 {@code null}。
      * 
-     * @param name the {@linkplain PropertySource#getName() name of the property
-     *             source} to find
+     * @param name 待查找的 {@linkplain PropertySource#getName() 属性源名称}
      */
     PropertySource<?> get(String name);
 

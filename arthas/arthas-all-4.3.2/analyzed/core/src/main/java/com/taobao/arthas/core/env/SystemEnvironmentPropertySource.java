@@ -19,12 +19,11 @@ package com.taobao.arthas.core.env;
 import java.util.Map;
 
 /**
- * Specialization of {@link MapPropertySource} designed for use with
- * {@linkplain AbstractEnvironment#getSystemEnvironment() system environment
- * variables}. Compensates for constraints in Bash and other shells that do not
- * allow for variables containing the period character and/or hyphen character;
- * also allows for uppercase variations on property names for more idiomatic
- * shell use.
+ * 专用于系统环境变量的 {@link MapPropertySource} 子类。
+ * <p>
+ * 兼容 Shell 限制：环境变量名不能含点号/连字符，故 {@link #getProperty(String)} 会尝试
+ * 原名、下划线替换、大写及组合变体（如 {@code foo.bar} → {@code FOO_BAR}）。
+ * 便于通过 {@code SPRING_PROFILES_ACTIVE} 等形式指定 profile。
  *
  * <p>
  * For example, a call to {@code getProperty("foo.bar")} will attempt to find a
@@ -107,6 +106,7 @@ public class SystemEnvironmentPropertySource extends MapPropertySource {
      * or any underscore / uppercase variation thereof. Return the resolved name if
      * one is found or otherwise the original name. Never returns {@code null}.
      */
+    /** 解析属性名：依次尝试原名、大写、点/连字符转下划线等变体，找到即返回 */
     protected final String resolvePropertyName(String name) {
         String resolvedName = checkPropertyName(name);
         if (resolvedName != null) {
@@ -122,27 +122,28 @@ public class SystemEnvironmentPropertySource extends MapPropertySource {
         return name;
     }
 
+    /** 在底层 map 中按多种命名变体查找实际存在的键 */
     private String checkPropertyName(String name) {
-        // Check name as-is
+        // 1. 原样匹配
         if (containsKey(name)) {
             return name;
         }
-        // Check name with just dots replaced
+        // 2. 仅将点号替换为下划线
         String noDotName = name.replace('.', '_');
         if (!name.equals(noDotName) && containsKey(noDotName)) {
             return noDotName;
         }
-        // Check name with just hyphens replaced
+        // 3. 仅将连字符替换为下划线
         String noHyphenName = name.replace('-', '_');
         if (!name.equals(noHyphenName) && containsKey(noHyphenName)) {
             return noHyphenName;
         }
-        // Check name with dots and hyphens replaced
+        // 4. 点号与连字符均替换为下划线
         String noDotNoHyphenName = noDotName.replace('-', '_');
         if (!noDotName.equals(noDotNoHyphenName) && containsKey(noDotNoHyphenName)) {
             return noDotNoHyphenName;
         }
-        // Give up
+        // 5. 全部变体均未命中
         return null;
     }
 
@@ -150,6 +151,7 @@ public class SystemEnvironmentPropertySource extends MapPropertySource {
         return (isSecurityManagerPresent() ? this.source.keySet().contains(name) : this.source.containsKey(name));
     }
 
+    /** 是否存在 SecurityManager，影响 containsKey 是否直接调 map.containsKey */
     protected boolean isSecurityManagerPresent() {
         return (System.getSecurityManager() != null);
     }

@@ -17,13 +17,10 @@
 package com.taobao.arthas.core.env;
 
 /**
- * Helper class for resolving placeholders in texts. Usually applied to file
- * paths.
- *
+ * 系统属性占位符解析工具，常用于文件路径等文本。
  * <p>
- * A text may contain {@code ${...}} placeholders, to be resolved as system
- * properties: e.g. {@code ${user.dir}}. Default values can be supplied using
- * the ":" separator between key and value.
+ * 将 {@code ${user.dir}} 等形式替换为 {@link System#getProperty(String)} 或
+ * {@link System#getenv(String)} 的值；支持 {@code key:default} 默认值语法。
  *
  * @author Juergen Hoeller
  * @author Rob Harrop
@@ -35,18 +32,23 @@ package com.taobao.arthas.core.env;
  */
 public abstract class SystemPropertyUtils {
 
-    /** Prefix for system property placeholders: "${". */
+    /** 系统属性占位符前缀："${" */
+
     public static final String PLACEHOLDER_PREFIX = "${";
 
-    /** Suffix for system property placeholders: "}". */
+    /** 系统属性占位符后缀："}" */
+
     public static final String PLACEHOLDER_SUFFIX = "}";
 
-    /** Value separator for system property placeholders: ":". */
+    /** 占位符内键与默认值的分隔符：":" */
+
     public static final String VALUE_SEPARATOR = ":";
 
+    /** 严格模式：无法解析的占位符抛异常 */
     private static final PropertyPlaceholderHelper strictHelper = new PropertyPlaceholderHelper(PLACEHOLDER_PREFIX,
             PLACEHOLDER_SUFFIX, VALUE_SEPARATOR, false);
 
+    /** 宽松模式：无法解析的占位符原样保留 */
     private static final PropertyPlaceholderHelper nonStrictHelper = new PropertyPlaceholderHelper(PLACEHOLDER_PREFIX,
             PLACEHOLDER_SUFFIX, VALUE_SEPARATOR, true);
 
@@ -84,10 +86,8 @@ public abstract class SystemPropertyUtils {
         return helper.replacePlaceholders(text, new SystemPropertyPlaceholderResolver(text));
     }
 
-    /**
-     * PlaceholderResolver implementation that resolves against system properties
-     * and system environment variables.
-     */
+    /** 占位符解析器：先查系统属性，再回退到环境变量 */
+
     private static class SystemPropertyPlaceholderResolver implements PropertyPlaceholderHelper.PlaceholderResolver {
 
         private final String text;
@@ -101,11 +101,12 @@ public abstract class SystemPropertyUtils {
             try {
                 String propVal = System.getProperty(placeholderName);
                 if (propVal == null) {
-                    // Fall back to searching the system environment.
+                    // 系统属性未命中时回退到环境变量
                     propVal = System.getenv(placeholderName);
                 }
                 return propVal;
             } catch (Throwable ex) {
+                // SecurityManager 等异常时打印 stderr 并返回 null
                 System.err.println("Could not resolve placeholder '" + placeholderName + "' in [" + this.text
                         + "] as system property: " + ex);
                 return null;

@@ -17,8 +17,10 @@
 package com.taobao.arthas.core.env;
 
 /**
- * {@link PropertyResolver} implementation that resolves property values against
- * an underlying set of {@link PropertySources}.
+ * 基于 {@link PropertySources} 的 {@link PropertyResolver} 实现。
+ * <p>
+ * 按属性源优先级顺序查找键，找到后可选递归解析嵌套占位符，
+ * 并通过 {@link ConversionService} 转换为目标类型。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -29,6 +31,7 @@ package com.taobao.arthas.core.env;
  */
 public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 
+    /** 按优先级排序的属性源集合 */
     private final PropertySources propertySources;
 
     /**
@@ -42,6 +45,7 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 
     @Override
     public boolean containsProperty(String key) {
+        // 任一属性源包含该键即返回 true
         if (this.propertySources != null) {
             for (PropertySource<?> propertySource : this.propertySources) {
                 if (propertySource.containsProperty(key)) {
@@ -83,6 +87,7 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
 //		return null;
 //	}
 
+    /** 核心查找逻辑：按顺序遍历 PropertySource，首个非 null 值经占位符解析与类型转换后返回 */
     protected <T> T getProperty(String key, Class<T> targetValueType, boolean resolveNestedPlaceholders) {
         if (this.propertySources != null) {
             for (PropertySource<?> propertySource : this.propertySources) {
@@ -92,6 +97,7 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
                     if (resolveNestedPlaceholders && value instanceof String) {
                         value = resolveNestedPlaceholders((String) value);
                     }
+                    // 类型不可转换时抛异常，避免静默失败
                     if (!this.conversionService.canConvert(valueType, targetValueType)) {
                         throw new IllegalArgumentException(
                                 String.format("Cannot convert value [%s] from source type [%s] to target type [%s]",
@@ -119,6 +125,7 @@ public class PropertySourcesPropertyResolver extends AbstractPropertyResolver {
      * @param value          the corresponding value
      * @since 4.3.1
      */
+    /** 调试钩子：子类可覆盖以记录键在哪个 PropertySource 中被找到（默认不输出值以防泄露敏感信息） */
     protected void logKeyFound(String key, PropertySource<?> propertySource, Object value) {
 //		if (logger.isDebugEnabled()) {
 //			logger.debug("Found key '" + key + "' in PropertySource '" + propertySource.getName() +

@@ -19,40 +19,15 @@ package com.taobao.arthas.core.env;
 import java.util.Arrays;
 
 /**
- * Abstract base class representing a source of name/value property pairs. The
- * underlying {@linkplain #getSource() source object} may be of any type
- * {@code T} that encapsulates properties. Examples include
- * {@link java.util.Properties} objects, {@link java.util.Map} objects,
- * {@code ServletContext} and {@code ServletConfig} objects (for access to init
- * parameters). Explore the {@code PropertySource} type hierarchy to see
- * provided implementations.
- *
+ * 属性源抽象基类，封装 name/value 属性对的底层对象。
  * <p>
- * {@code PropertySource} objects are not typically used in isolation, but
- * rather through a {@link PropertySources} object, which aggregates property
- * sources and in conjunction with a {@link PropertyResolver} implementation
- * that can perform precedence-based searches across the set of
- * {@code PropertySources}.
- *
- * <p>
- * {@code PropertySource} identity is determined not based on the content of
- * encapsulated properties, but rather based on the {@link #getName() name} of
- * the {@code PropertySource} alone. This is useful for manipulating
- * {@code PropertySource} objects when in collection contexts. See operations in
- * {@link MutablePropertySources} as well as the {@link #named(String)} and
- * {@link #toString()} methods for details.
- *
- * <p>
- * Note that when working
- * with @{@link org.springframework.context.annotation.Configuration
- * Configuration} classes that
- * the @{@link org.springframework.context.annotation.PropertySource
- * PropertySource} annotation provides a convenient and declarative way of
- * adding property sources to the enclosing {@code Environment}.
+ * 底层 {@linkplain #getSource() source} 可为 Properties、Map、ServletContext 等；
+ * 通常由 {@link PropertySources} 聚合，再经 {@link PropertyResolver} 按优先级搜索。
+ * 身份仅由 {@link #getName()} 决定（与内容无关），便于在 {@link MutablePropertySources} 中管理。
  *
  * @author Chris Beams
  * @since 3.1
- * @param <T> the source type
+ * @param <T> 底层 source 类型
  * @see PropertySources
  * @see PropertyResolver
  * @see PropertySourcesPropertyResolver
@@ -61,8 +36,10 @@ import java.util.Arrays;
  */
 public abstract class PropertySource<T> {
 
+    /** 属性源唯一名称，用于集合比较与管理 */
     protected final String name;
 
+    /** 封装属性的底层对象 */
     protected final T source;
 
     /**
@@ -108,6 +85,7 @@ public abstract class PropertySource<T> {
      * 
      * @param name the property name to find
      */
+    /** 默认通过 {@link #getProperty(String)} 是否为 null 判断存在性；子类可优化 */
     public boolean containsProperty(String name) {
         return (getProperty(name) != null);
     }
@@ -188,6 +166,10 @@ public abstract class PropertySource<T> {
      * 
      * @param name the name of the comparison {@code PropertySource} to be created
      *             and returned.
+     */
+    /**
+     * 创建仅用于集合比较的占位 PropertySource（仅支持 equals/hashCode/toString）。
+     * @param name 比较用名称
      */
     public static PropertySource<?> named(String name) {
         return new ComparisonPropertySource(name);
@@ -276,15 +258,18 @@ public abstract class PropertySource<T> {
      * @see org.springframework.web.context.support.StandardServletEnvironment
      * @see org.springframework.web.context.support.ServletContextPropertySource
      */
+    /**
+     * 占位属性源：应用上下文创建时尚无法初始化的 PropertySource 的 stub，
+     * 上下文刷新后会被真实源替换。
+     */
     public static class StubPropertySource extends PropertySource<Object> {
 
         public StubPropertySource(String name) {
             super(name, new Object());
         }
 
-        /**
-         * Always returns {@code null}.
-         */
+        /** 占位实现，始终返回 {@code null} */
+
         @Override
         public String getProperty(String name) {
             return null;
@@ -296,6 +281,7 @@ public abstract class PropertySource<T> {
      */
     static class ComparisonPropertySource extends StubPropertySource {
 
+        /** 误调用 getProperty 等 mutating 方法时的错误提示 */
         private static final String USAGE_ERROR = "ComparisonPropertySource instances are for use with collection comparison only";
 
         public ComparisonPropertySource(String name) {

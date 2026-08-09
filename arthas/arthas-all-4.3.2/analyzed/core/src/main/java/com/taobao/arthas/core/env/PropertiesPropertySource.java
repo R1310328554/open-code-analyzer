@@ -20,16 +20,11 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * {@link PropertySource} implementation that extracts properties from a
- * {@link java.util.Properties} object.
- *
+ * 基于 {@link java.util.Properties} 的 {@link PropertySource} 实现。
  * <p>
- * Note that because a {@code Properties} object is technically an
- * {@code <Object, Object>} {@link java.util.Hashtable Hashtable}, one may
- * contain non-{@code String} keys or values. This implementation, however is
- * restricted to accessing only {@code String}-based keys and values, in the
- * same fashion as {@link Properties#getProperty} and
- * {@link Properties#setProperty}.
+ * 继承 {@link MapPropertySource}，底层为 Properties（本质是 Hashtable）；
+ * 仅支持 String 键值访问，与 {@link Properties#getProperty} 语义一致。
+ * {@link #getPropertyNames()} 对 source 加 synchronized 保证线程安全。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -48,6 +43,7 @@ public class PropertiesPropertySource extends MapPropertySource {
 
     @Override
     public String[] getPropertyNames() {
+        // Properties/Hashtable 非线程安全，枚举键时加锁
         synchronized (this.source) {
             return super.getPropertyNames();
         }

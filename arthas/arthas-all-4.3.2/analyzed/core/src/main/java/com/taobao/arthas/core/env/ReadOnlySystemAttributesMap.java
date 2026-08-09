@@ -22,16 +22,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Read-only {@code Map<String, String>} implementation that is backed by system
- * properties or environment variables.
- *
+ * 只读 {@code Map<String, String>}，底层为系统属性或环境变量。
  * <p>
- * Used by {@link AbstractApplicationContext} when a {@link SecurityManager}
- * prohibits access to {@link System#getProperties()} or
- * {@link System#getenv()}. It is for this reason that the implementations of
- * {@link #keySet()}, {@link #entrySet()}, and {@link #values()} always return
- * empty even though {@link #get(Object)} may in fact return non-null if the
- * current security manager allows access to individual keys.
+ * 当 {@link SecurityManager} 禁止访问 {@link System#getProperties()} 或
+ * {@link System#getenv()} 时使用；{@link #keySet()}/{@link #entrySet()}/{@link #values()}
+ * 恒返回空集合，但 {@link #get(Object)} 仍可能按单键权限返回值。
  *
  * @author Arjen Poutsma
  * @author Chris Beams
@@ -71,9 +66,13 @@ abstract class ReadOnlySystemAttributesMap implements Map<String, String> {
      * Implementations typically call {@link System#getProperty(String)} or
      * {@link System#getenv(String)} here.
      */
+    /**
+     * 模板方法：读取单个系统属性或环境变量。
+     * <p>实现类通常调用 {@link System#getProperty(String)} 或 {@link System#getenv(String)}。
+     */
     protected abstract String getSystemAttribute(String attributeName);
 
-    // Unsupported
+    // 以下为 Map 变更操作，只读实现一律不支持
 
     @Override
     public int size() {
@@ -102,6 +101,7 @@ abstract class ReadOnlySystemAttributesMap implements Map<String, String> {
 
     @Override
     public Set<String> keySet() {
+        // SecurityManager 下无法枚举全部键，返回空集
         return Collections.emptySet();
     }
 

@@ -21,7 +21,10 @@ import java.util.Map;
 import org.apache.logging.log4j.util.PropertiesPropertySource;
 
 /**
- * {@link PropertySource} that reads keys and values from a {@code Map} object.
+ * 基于 {@code Map} 的 {@link PropertySource} 实现。
+ * <p>
+ * 直接从 {@code Map<String, Object>} 读取键值；{@link #containsProperty(String)} 与
+ * {@link #getPropertyNames()} 分别委托 {@code containsKey} 与 {@code keySet}。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -36,16 +39,19 @@ public class MapPropertySource extends EnumerablePropertySource<Map<String, Obje
 
     @Override
     public Object getProperty(String name) {
+        // 直接 map 查找，不存在则返回 null
         return this.source.get(name);
     }
 
     @Override
     public boolean containsProperty(String name) {
+        // 比父类遍历 getPropertyNames 更高效
         return this.source.containsKey(name);
     }
 
     @Override
     public String[] getPropertyNames() {
+        // 将 keySet 转为 String 数组供枚举
         return this.source.keySet().toArray(new String[0]);
     }
 

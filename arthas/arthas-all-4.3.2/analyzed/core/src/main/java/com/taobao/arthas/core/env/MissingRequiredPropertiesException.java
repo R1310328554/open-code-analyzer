@@ -20,7 +20,11 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Exception thrown when required properties are not found.
+ * 必填属性校验失败时抛出的异常。
+ * <p>
+ * 当 {@link ConfigurablePropertyResolver#validateRequiredProperties()} 发现
+ * 通过 {@link ConfigurablePropertyResolver#setRequiredProperties(String...)} 声明的
+ * 属性在环境中无法解析时抛出；{@link #getMissingRequiredProperties()} 返回缺失键集合。
  *
  * @author Chris Beams
  * @since 3.1
@@ -33,19 +37,20 @@ public class MissingRequiredPropertiesException extends IllegalStateException {
 
     private final Set<String> missingRequiredProperties = new LinkedHashSet<String>();
 
+    /** 内部方法：记录一个未能解析的必填属性键 */
     void addMissingRequiredProperty(String key) {
         this.missingRequiredProperties.add(key);
     }
 
     @Override
     public String getMessage() {
+        // 英文消息列出全部缺失的必填属性
         return "The following properties were declared as required but could not be resolved: "
                 + getMissingRequiredProperties();
     }
 
     /**
-     * Return the set of properties marked as required but not present upon
-     * validation.
+     * 返回校验时被标记为必填但未能解析的属性名集合。
      * 
      * @see ConfigurablePropertyResolver#setRequiredProperties(String...)
      * @see ConfigurablePropertyResolver#validateRequiredProperties()
