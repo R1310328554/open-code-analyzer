@@ -42,6 +42,6 @@
     "core/spring-boot/src/main/java/org/springframework/boot/context/config/InactiveConfigDataAccessException.java",
     "core/spring-boot/src/main/java/org/springframework/boot/context/config/InvalidConfigDataPropertyException.java"
   ],
-  "remaining_pending": 385,
-  "done": 220
+  "remaining_pending": 384,
+  "done": 241
 }
