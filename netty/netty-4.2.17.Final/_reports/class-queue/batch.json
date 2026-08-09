@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T23:50:55Z",
   "files": [
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyCodecUtil.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyDataFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyFrameCodec.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyFrameDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyFrameDecoderDelegate.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyFrameEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyGoAwayFrame.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockJZlibEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockRawDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockRawEncoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockZlibDecoder.java",
-    "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaderBlockZlibEncoder.java",
     "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeaders.java",
     "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHeadersFrame.java",
     "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyHttpCodec.java",
@@ -33,5 +18,5 @@
     "codec-http/src/main/java/io/netty/handler/codec/spdy/SpdyStreamFrame.java"
   ],
   "remaining_pending": 1298,
-  "done": 600
+  "done": 615
 }
