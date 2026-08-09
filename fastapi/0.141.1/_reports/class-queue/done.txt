@@ -170,3 +170,13 @@ docs_src/custom_response/tutorial009b_py310.py
 docs_src/custom_response/tutorial009c_py310.py
 docs_src/custom_response/tutorial010_py310.py
 docs_src/dataclasses_/__init__.py
+docs_src/dataclasses_/tutorial001_py310.py
+docs_src/dataclasses_/tutorial002_py310.py
+docs_src/dataclasses_/tutorial003_py310.py
+docs_src/debugging/__init__.py
+docs_src/debugging/tutorial001_py310.py
+docs_src/dependencies/__init__.py
+docs_src/dependencies/tutorial001_02_an_py310.py
+docs_src/dependencies/tutorial001_an_py310.py
+docs_src/dependencies/tutorial001_py310.py
+docs_src/dependencies/tutorial002_an_py310.py
