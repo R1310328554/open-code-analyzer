@@ -19,10 +19,15 @@ package org.apache.rocketmq.auth.authorization.enums;
 import com.alibaba.fastjson2.annotation.JSONField;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * ACL 策略类型：区分用户自定义策略与系统默认策略。
+ */
 public enum PolicyType {
 
+    /** 用户自定义策略。 */
     CUSTOM((byte) 1, "Custom"),
 
+    /** 系统默认策略。 */
     DEFAULT((byte) 2, "Default");
 
     @JSONField(value = true)
@@ -34,6 +39,7 @@ public enum PolicyType {
         this.name = name;
     }
 
+    /** 按名称（忽略大小写）查找策略类型；未匹配时返回 null。 */
     public static PolicyType getByName(String name) {
         for (PolicyType policyType : PolicyType.values()) {
             if (StringUtils.equalsIgnoreCase(policyType.getName(), name)) {
@@ -43,10 +49,12 @@ public enum PolicyType {
         return null;
     }
 
+    /** 返回持久化用的数值编码。 */
     public byte getCode() {
         return code;
     }
 
+    /** 返回可读名称。 */
     public String getName() {
         return name;
     }

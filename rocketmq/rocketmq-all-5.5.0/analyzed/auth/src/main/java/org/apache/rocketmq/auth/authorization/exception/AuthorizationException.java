@@ -18,16 +18,22 @@ package org.apache.rocketmq.auth.authorization.exception;
 
 import org.slf4j.helpers.MessageFormatter;
 
+/**
+ * 授权异常：ACL 校验失败或元数据操作出错时抛出。
+ */
 public class AuthorizationException extends RuntimeException {
 
+    /** 使用固定消息构造异常。 */
     public AuthorizationException(String message) {
         super(message);
     }
 
+    /** 使用消息与根因构造异常。 */
     public AuthorizationException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /** 使用 SLF4J 风格占位符模板构造异常消息。 */
     public AuthorizationException(String messagePattern, Object... argArray) {
         super(MessageFormatter.arrayFormat(messagePattern, argArray).getMessage());
     }

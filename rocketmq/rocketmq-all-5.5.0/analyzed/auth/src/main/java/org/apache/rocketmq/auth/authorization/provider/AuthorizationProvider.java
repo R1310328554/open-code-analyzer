@@ -25,15 +25,25 @@ import java.util.function.Supplier;
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 授权提供者 SPI：封装上下文构建与授权责任链执行。
+ *
+ * @param <AuthorizationContext> 授权上下文类型
+ */
 public interface AuthorizationProvider<AuthorizationContext> {
 
+    /** 仅注入配置初始化提供者。 */
     void initialize(AuthConfig config);
 
+    /** 注入配置与元数据服务初始化提供者。 */
     void initialize(AuthConfig config, Supplier<?> metadataService);
 
+    /** 对给定上下文执行授权责任链。 */
     CompletableFuture<Void> authorize(AuthorizationContext context);
 
+    /** 从 gRPC Metadata 与 Protobuf 请求构建授权上下文列表。 */
     List<AuthorizationContext> newContexts(Metadata metadata, GeneratedMessageV3 message);
 
+    /** 从 Netty 通道与 Remoting 命令构建授权上下文列表。 */
     List<AuthorizationContext> newContexts(ChannelHandlerContext context, RemotingCommand command);
 }

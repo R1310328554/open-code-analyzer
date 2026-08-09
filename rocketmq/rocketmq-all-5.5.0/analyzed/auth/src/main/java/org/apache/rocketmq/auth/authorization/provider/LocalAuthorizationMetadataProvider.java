@@ -42,6 +42,9 @@ import org.apache.rocketmq.common.config.ConfigRocksDBStorage;
 import org.apache.rocketmq.common.thread.ThreadPoolMonitor;
 import org.rocksdb.RocksDB;
 
+/**
+ * 本地 ACL 元数据提供者：使用 RocksDB 持久化并以 Caffeine 缓存加速读取。
+ */
 public class LocalAuthorizationMetadataProvider implements AuthorizationMetadataProvider {
 
     private final static String AUTH_METADATA_COLUMN_FAMILY = new String(RocksDB.DEFAULT_COLUMN_FAMILY,
@@ -53,6 +56,7 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
 
     protected ThreadPoolExecutor cacheRefreshExecutor;
 
+    /** 打开 RocksDB 存储并配置 ACL 本地缓存。 */
     @Override
     public void initialize(AuthConfig authConfig, Supplier<?> metadataService) {
         this.storage = ConfigRocksDBStorage.getStore(authConfig.getAuthConfigPath() + File.separator + "acls", false);
@@ -76,6 +80,7 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
             .build(new AclCacheLoader(this.storage));
     }
 
+    /** 写入 ACL 到 RocksDB 并失效缓存。 */
     @Override
     public CompletableFuture<Void> createAcl(Acl acl) {
         try {
@@ -91,6 +96,7 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
         return CompletableFuture.completedFuture(null);
     }
 
+    /** 从 RocksDB 删除 ACL 并失效缓存。 */
     @Override
     public CompletableFuture<Void> deleteAcl(Subject subject) {
         try {
@@ -104,6 +110,7 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
         return CompletableFuture.completedFuture(null);
     }
 
+    /** 更新 RocksDB 中的 ACL 并失效缓存。 */
     @Override
     public CompletableFuture<Void> updateAcl(Acl acl) {
         try {
@@ -119,6 +126,7 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
         return CompletableFuture.completedFuture(null);
     }
 
+    /** 从 Caffeine 缓存读取 ACL；空占位符映射为 null。 */
     @Override
     public CompletableFuture<Acl> getAcl(Subject subject) {
         Acl acl = aclCache.get(subject.getSubjectKey());
@@ -128,6 +136,7 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
         return CompletableFuture.completedFuture(acl);
     }
 
+    /** 遍历 RocksDB 并按主体/资源子串过滤后返回 ACL 列表。 */
     @Override
     public CompletableFuture<List<Acl>> listAcl(String subjectFilter, String resourceFilter) {
         List<Acl> result = new ArrayList<>();
@@ -169,6 +178,7 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
         return future;
     }
 
+    /** 关闭 RocksDB 与缓存刷新线程池。 */
     @Override
     public void shutdown() {
         if (this.storage != null) {
@@ -179,14 +189,17 @@ public class LocalAuthorizationMetadataProvider implements AuthorizationMetadata
         }
     }
 
+    /** Caffeine 缓存加载器：从 RocksDB 反序列化 ACL。 */
     private static class AclCacheLoader implements CacheLoader<String, Acl> {
         private final ConfigRocksDBStorage storage;
         public static final Acl EMPTY_ACL = new Acl();
 
+        /** 绑定 RocksDB 存储实例。 */
         public AclCacheLoader(ConfigRocksDBStorage storage) {
             this.storage = storage;
         }
 
+        /** 按主体键从 RocksDB 加载 ACL；不存在时返回 {@link #EMPTY_ACL}。 */
         @Override
         public Acl load(String subjectKey) {
             try {

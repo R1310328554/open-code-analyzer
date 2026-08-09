@@ -25,16 +25,21 @@ import org.apache.rocketmq.auth.authorization.enums.Decision;
 import org.apache.rocketmq.auth.authorization.enums.PolicyType;
 import org.apache.rocketmq.common.action.Action;
 
+/**
+ * 访问控制列表：绑定 {@link Subject} 与其 {@link Policy} 集合。
+ */
 public class Acl {
 
     private Subject subject;
 
     private List<Policy> policies;
 
+    /** 以单条策略创建 ACL。 */
     public static Acl of(Subject subject, Policy policy) {
         return of(subject, Lists.newArrayList(policy));
     }
 
+    /** 以策略列表创建 ACL。 */
     public static Acl of(Subject subject, List<Policy> policies) {
         Acl acl = new Acl();
         acl.setSubject(subject);
@@ -42,6 +47,7 @@ public class Acl {
         return acl;
     }
 
+    /** 从资源、动作、环境与决策快速构建单策略 ACL。 */
     public static Acl of(Subject subject, List<Resource> resources, List<Action> actions, Environment environment,
         Decision decision) {
         Acl acl = new Acl();
@@ -51,10 +57,12 @@ public class Acl {
         return acl;
     }
 
+    /** 合并单条策略到现有 ACL。 */
     public void updatePolicy(Policy policy) {
         this.updatePolicy(Lists.newArrayList(policy));
     }
 
+    /** 按策略类型合并多条策略；同类型则更新条目。 */
     public void updatePolicy(List<Policy> policies) {
         if (this.policies == null) {
             this.policies = new ArrayList<>();
@@ -69,6 +77,7 @@ public class Acl {
         });
     }
 
+    /** 删除指定类型下某资源的策略条目；策略为空时移除该策略。 */
     public void deletePolicy(PolicyType policyType, Resource resource) {
         Policy policy = getPolicy(policyType);
         if (policy == null) {
@@ -80,6 +89,7 @@ public class Acl {
         }
     }
 
+    /** 按类型查找策略；不存在时返回 null。 */
     public Policy getPolicy(PolicyType policyType) {
         if (CollectionUtils.isEmpty(this.policies)) {
             return null;
@@ -92,18 +102,22 @@ public class Acl {
         return null;
     }
 
+    /** 返回 ACL 所属主体。 */
     public Subject getSubject() {
         return subject;
     }
 
+    /** 设置 ACL 所属主体。 */
     public void setSubject(Subject subject) {
         this.subject = subject;
     }
 
+    /** 返回策略列表。 */
     public List<Policy> getPolicies() {
         return policies;
     }
 
+    /** 设置策略列表。 */
     public void setPolicies(List<Policy> policies) {
         this.policies = policies;
     }

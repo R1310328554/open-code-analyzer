@@ -37,6 +37,10 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 默认授权提供者：组装 {@link DefaultAuthorizationContextBuilder} 与
+ * User/Acl 责任链，并在完成后写审计日志。
+ */
 public class DefaultAuthorizationProvider implements AuthorizationProvider<DefaultAuthorizationContext> {
 
     protected final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_AUTH_AUDIT_LOGGER_NAME);
@@ -44,11 +48,13 @@ public class DefaultAuthorizationProvider implements AuthorizationProvider<Defau
     protected Supplier<?> metadataService;
     protected AuthorizationContextBuilder authorizationContextBuilder;
 
+    /** 委托双参数 initialize，元数据服务为 null。 */
     @Override
     public void initialize(AuthConfig config) {
         this.initialize(config, null);
     }
 
+    /** 保存配置并创建 {@link DefaultAuthorizationContextBuilder}。 */
     @Override
     public void initialize(AuthConfig config, Supplier<?> metadataService) {
         this.authConfig = config;
@@ -56,28 +62,33 @@ public class DefaultAuthorizationProvider implements AuthorizationProvider<Defau
         this.authorizationContextBuilder = new DefaultAuthorizationContextBuilder(config);
     }
 
+    /** 执行责任链并在完成时写审计日志。 */
     @Override
     public CompletableFuture<Void> authorize(DefaultAuthorizationContext context) {
         return this.newHandlerChain().handle(context)
             .whenComplete((nil, ex) -> doAuditLog(context, ex));
     }
 
+    /** 从 gRPC 请求构建授权上下文。 */
     @Override
     public List<DefaultAuthorizationContext> newContexts(Metadata metadata, GeneratedMessageV3 message) {
         return this.authorizationContextBuilder.build(metadata, message);
     }
 
+    /** 从 Remoting 请求构建授权上下文。 */
     @Override
     public List<DefaultAuthorizationContext> newContexts(ChannelHandlerContext context, RemotingCommand command) {
         return this.authorizationContextBuilder.build(context, command);
     }
 
+    /** 构建 User → Acl 授权责任链。 */
     protected HandlerChain<DefaultAuthorizationContext, CompletableFuture<Void>> newHandlerChain() {
         return HandlerChain.<DefaultAuthorizationContext, CompletableFuture<Void>>create()
             .addNext(new UserAuthorizationHandler(authConfig, metadataService))
             .addNext(new AclAuthorizationHandler(authConfig, metadataService));
     }
 
+    /** 记录授权审计日志；拒绝时 INFO，允许时 DEBUG。 */
     protected void doAuditLog(DefaultAuthorizationContext context, Throwable ex) {
         if (context.getSubject() == null) {
             return;

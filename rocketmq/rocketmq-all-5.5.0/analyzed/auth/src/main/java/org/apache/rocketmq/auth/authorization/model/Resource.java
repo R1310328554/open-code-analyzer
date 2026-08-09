@@ -27,6 +27,10 @@ import org.apache.rocketmq.common.resource.ResourcePattern;
 import org.apache.rocketmq.common.constant.CommonConstants;
 import org.apache.rocketmq.remoting.protocol.NamespaceUtil;
 
+/**
+ * 授权资源：由 {@link ResourceType}、名称与 {@link ResourcePattern} 组成，
+ * 支持字面量、前缀与通配匹配。
+ */
 public class Resource {
 
     private ResourceType resourceType;
@@ -35,14 +39,17 @@ public class Resource {
 
     private ResourcePattern resourcePattern;
 
+    /** 创建集群字面量资源。 */
     public static Resource ofCluster(String clusterName) {
         return of(ResourceType.CLUSTER, clusterName, ResourcePattern.LITERAL);
     }
 
+    /** 创建 Topic 字面量资源。 */
     public static Resource ofTopic(String topicName) {
         return of(ResourceType.TOPIC, topicName, ResourcePattern.LITERAL);
     }
 
+    /** 创建消费组字面量资源；自动剥离重试/DLQ 前缀。 */
     public static Resource ofGroup(String groupName) {
         if (NamespaceUtil.isRetryTopic(groupName)) {
             groupName = NamespaceUtil.withOutRetryAndDLQ(groupName);
@@ -50,6 +57,7 @@ public class Resource {
         return of(ResourceType.GROUP, groupName, ResourcePattern.LITERAL);
     }
 
+    /** 按类型、名称与匹配模式构建资源。 */
     public static Resource of(ResourceType resourceType, String resourceName, ResourcePattern resourcePattern) {
         Resource resource = new Resource();
         resource.resourceType = resourceType;
@@ -58,6 +66,7 @@ public class Resource {
         return resource;
     }
 
+    /** 批量解析资源键字符串为 {@link Resource} 列表。 */
     public static List<Resource> of(List<String> resourceKeys) {
         if (CollectionUtils.isEmpty(resourceKeys)) {
             return null;
@@ -65,6 +74,7 @@ public class Resource {
         return resourceKeys.stream().map(Resource::of).collect(Collectors.toList());
     }
 
+    /** 解析 {@code type:name} 格式资源键，支持 * 与前缀通配。 */
     public static Resource of(String resourceKey) {
         if (StringUtils.isBlank(resourceKey)) {
             return null;
@@ -89,6 +99,7 @@ public class Resource {
         return of(resourceType, resourceName, resourcePattern);
     }
 
+    /** 序列化为 {@code type:name} 资源键；不参与 JSON 序列化。 */
     @JSONField(serialize = false)
     public String getResourceKey() {
         if (resourceType == ResourceType.ANY) {
@@ -106,6 +117,7 @@ public class Resource {
         }
     }
 
+    /** 判断请求资源是否被本资源模式覆盖。 */
     public boolean isMatch(Resource resource) {
         if (this.resourceType == ResourceType.ANY) {
             return true;
@@ -142,26 +154,32 @@ public class Resource {
         return Objects.hash(resourceType, resourceName, resourcePattern);
     }
 
+    /** 返回资源类型。 */
     public ResourceType getResourceType() {
         return resourceType;
     }
 
+    /** 设置资源类型。 */
     public void setResourceType(ResourceType resourceType) {
         this.resourceType = resourceType;
     }
 
+    /** 返回资源名称。 */
     public String getResourceName() {
         return resourceName;
     }
 
+    /** 设置资源名称。 */
     public void setResourceName(String resourceName) {
         this.resourceName = resourceName;
     }
 
+    /** 返回资源匹配模式。 */
     public ResourcePattern getResourcePattern() {
         return resourcePattern;
     }
 
+    /** 设置资源匹配模式。 */
     public void setResourcePattern(ResourcePattern resourcePattern) {
         this.resourcePattern = resourcePattern;
     }

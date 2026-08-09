@@ -37,6 +37,10 @@ import org.apache.rocketmq.auth.authorization.strategy.StatelessAuthorizationStr
 import org.apache.rocketmq.auth.config.AuthConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * 授权组件工厂：按 {@link AuthConfig} 缓存并装配 Provider、元数据提供者、
+ * {@link AuthorizationEvaluator} 与 {@link AuthorizationStrategy} 实例。
+ */
 public class AuthorizationFactory {
 
     private static final Map<String, Object> INSTANCE_MAP = new HashMap<>();
@@ -45,6 +49,7 @@ public class AuthorizationFactory {
     private static final String EVALUATOR_PREFIX = "EVALUATOR_";
 
     @SuppressWarnings("unchecked")
+    /** 获取或创建 {@link AuthorizationProvider}；config 为 null 时返回 null。 */
     public static AuthorizationProvider<AuthorizationContext> getProvider(AuthConfig config) {
         if (config == null) {
             return null;
@@ -64,15 +69,18 @@ public class AuthorizationFactory {
         });
     }
 
+    /** 获取授权元数据提供者（无外部元数据服务）。 */
     public static AuthorizationMetadataProvider getMetadataProvider(AuthConfig config) {
         return getMetadataProvider(config, null);
     }
 
+    /** 创建 {@link AuthorizationMetadataManagerImpl} 管理 ACL 生命周期。 */
     public static AuthorizationMetadataManager getMetadataManager(AuthConfig config) {
         return new AuthorizationMetadataManagerImpl(config);
     }
 
     @SuppressWarnings("unchecked")
+    /** 获取授权元数据提供者并调用 {@link AuthorizationMetadataProvider#initialize}。 */
     public static AuthorizationMetadataProvider getMetadataProvider(AuthConfig config, Supplier<?> metadataService) {
         if (config == null) {
             return null;
@@ -93,15 +101,18 @@ public class AuthorizationFactory {
         });
     }
 
+    /** 获取或创建 {@link AuthorizationEvaluator}。 */
     public static AuthorizationEvaluator getEvaluator(AuthConfig config) {
         return computeIfAbsent(EVALUATOR_PREFIX + config.getConfigName(), key -> new AuthorizationEvaluator(config));
     }
 
+    /** 获取带元数据服务的 {@link AuthorizationEvaluator}。 */
     public static AuthorizationEvaluator getEvaluator(AuthConfig config, Supplier<?> metadataService) {
         return computeIfAbsent(EVALUATOR_PREFIX + config.getConfigName(), key -> new AuthorizationEvaluator(config, metadataService));
     }
 
     @SuppressWarnings("unchecked")
+    /** 反射实例化 {@link AuthorizationStrategy}，默认 {@link StatelessAuthorizationStrategy}。 */
     public static AuthorizationStrategy getStrategy(AuthConfig config, Supplier<?> metadataService) {
         try {
             Class<? extends AuthorizationStrategy> clazz = StatelessAuthorizationStrategy.class;
@@ -114,6 +125,7 @@ public class AuthorizationFactory {
         }
     }
 
+    /** 从 gRPC 请求构建授权上下文列表。 */
     public static List<AuthorizationContext> newContexts(AuthConfig config, Metadata metadata,
         GeneratedMessageV3 message) {
         AuthorizationProvider<AuthorizationContext> authorizationProvider = getProvider(config);
@@ -123,6 +135,7 @@ public class AuthorizationFactory {
         return authorizationProvider.newContexts(metadata, message);
     }
 
+    /** 从 Remoting 请求构建授权上下文列表。 */
     public static List<AuthorizationContext> newContexts(AuthConfig config, ChannelHandlerContext context,
         RemotingCommand command) {
         AuthorizationProvider<AuthorizationContext> authorizationProvider = getProvider(config);

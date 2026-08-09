@@ -25,17 +25,22 @@ import org.apache.rocketmq.common.action.Action;
 import org.apache.rocketmq.auth.authorization.enums.Decision;
 import org.apache.rocketmq.auth.authorization.enums.PolicyType;
 
+/**
+ * ACL 策略：按 {@link PolicyType} 分组的一组 {@link PolicyEntry}。
+ */
 public class Policy {
 
     private PolicyType policyType;
 
     private List<PolicyEntry> entries;
 
+    /** 以 {@link PolicyType#CUSTOM} 从资源与动作列表构建策略。 */
     public static Policy of(List<Resource> resources, List<Action> actions, Environment environment,
         Decision decision) {
         return of(PolicyType.CUSTOM, resources, actions, environment, decision);
     }
 
+    /** 指定策略类型，为每个资源生成一条 {@link PolicyEntry}。 */
     public static Policy of(PolicyType policyType, List<Resource> resources, List<Action> actions,
         Environment environment,
         Decision decision) {
@@ -48,6 +53,7 @@ public class Policy {
         return policy;
     }
 
+    /** 直接以条目列表构建策略。 */
     public static Policy of(PolicyType type, List<PolicyEntry> entries) {
         Policy policy = new Policy();
         policy.setPolicyType(type);
@@ -55,6 +61,7 @@ public class Policy {
         return policy;
     }
 
+    /** 合并新条目；同资源则更新动作、环境与决策。 */
     public void updateEntry(List<PolicyEntry> newEntries) {
         if (this.entries == null) {
             this.entries = new ArrayList<>();
@@ -69,6 +76,7 @@ public class Policy {
         });
     }
 
+    /** 删除指定资源对应的策略条目。 */
     public void deleteEntry(Resource resources) {
         PolicyEntry entry = getEntry(resources);
         if (entry != null) {
@@ -88,18 +96,22 @@ public class Policy {
         return null;
     }
 
+    /** 返回策略类型。 */
     public PolicyType getPolicyType() {
         return policyType;
     }
 
+    /** 设置策略类型。 */
     public void setPolicyType(PolicyType policyType) {
         this.policyType = policyType;
     }
 
+    /** 返回策略条目列表。 */
     public List<PolicyEntry> getEntries() {
         return entries;
     }
 
+    /** 设置策略条目列表。 */
     public void setEntries(List<PolicyEntry> entries) {
         this.entries = entries;
     }

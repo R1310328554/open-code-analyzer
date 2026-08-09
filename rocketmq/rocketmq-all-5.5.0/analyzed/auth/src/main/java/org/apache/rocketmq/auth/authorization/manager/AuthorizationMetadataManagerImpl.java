@@ -39,17 +39,23 @@ import org.apache.rocketmq.common.action.Action;
 import org.apache.rocketmq.common.utils.ExceptionUtils;
 import org.apache.rocketmq.common.utils.IPAddressUtils;
 
+/**
+ * {@link AuthorizationMetadataManager} 默认实现：校验 ACL 结构、
+ * 确认主体存在后委托 {@link AuthorizationMetadataProvider} 持久化。
+ */
 public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataManager {
 
     private final AuthorizationMetadataProvider authorizationMetadataProvider;
 
     private final AuthenticationMetadataProvider authenticationMetadataProvider;
 
+    /** 从 {@link AuthorizationFactory} 获取认证与授权元数据提供者。 */
     public AuthorizationMetadataManagerImpl(AuthConfig authConfig) {
         this.authorizationMetadataProvider = AuthorizationFactory.getMetadataProvider(authConfig);
         this.authenticationMetadataProvider = AuthenticationFactory.getMetadataProvider(authConfig);
     }
 
+    /** 依次关闭认证与授权元数据提供者。 */
     @Override
     public void shutdown() {
         if (this.authenticationMetadataProvider != null) {
@@ -60,6 +66,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 校验并初始化 ACL，存在则合并策略否则新建。 */
     @Override
     public CompletableFuture<Void> createAcl(Acl acl) {
         try {
@@ -93,6 +100,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 校验后更新 ACL；不存在时创建。 */
     @Override
     public CompletableFuture<Void> updateAcl(Acl acl) {
         try {
@@ -126,11 +134,13 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 删除主体的全部 ACL（委托带 null 过滤的重载）。 */
     @Override
     public CompletableFuture<Void> deleteAcl(Subject subject) {
         return this.deleteAcl(subject, null, null);
     }
 
+    /** 删除指定资源条目；策略为空时删除整个 ACL。 */
     @Override
     public CompletableFuture<Void> deleteAcl(Subject subject, PolicyType policyType, Resource resource) {
         try {
@@ -174,6 +184,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 校验主体存在后查询 ACL。 */
     @Override
     public CompletableFuture<Acl> getAcl(Subject subject) {
         try {
@@ -198,11 +209,13 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 委托元数据提供者列出 ACL。 */
     @Override
     public CompletableFuture<List<Acl>> listAcl(String subjectFilter, String resourceFilter) {
         return this.getAuthorizationMetadataProvider().listAcl(subjectFilter, resourceFilter);
     }
 
+    /** 为未指定类型的策略设置 {@link PolicyType#CUSTOM}。 */
     private static void initAcl(Acl acl) {
         acl.getPolicies().forEach(policy -> {
             if (policy.getPolicyType() == null) {
@@ -211,6 +224,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         });
     }
 
+    /** 校验 ACL 主体类型与策略列表非空。 */
     private void validate(Acl acl) {
         Subject subject = acl.getSubject();
         if (subject.getSubjectType() == null) {
@@ -225,6 +239,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 校验策略条目列表非空。 */
     private void validate(Policy policy) {
         List<PolicyEntry> policyEntries = policy.getEntries();
         if (CollectionUtils.isEmpty(policyEntries)) {
@@ -235,6 +250,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 校验资源、动作、来源 IP 与决策字段合法。 */
     private void validate(PolicyEntry entry) {
         Resource resource = entry.getResource();
         if (resource == null) {
@@ -268,6 +284,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         }
     }
 
+    /** 将异常包装为 exceptionally 完成的 Future。 */
     private <T> CompletableFuture<T> handleException(Exception e) {
         CompletableFuture<T> result = new CompletableFuture<>();
         Throwable throwable = ExceptionUtils.getRealException(e);
@@ -275,6 +292,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         return result;
     }
 
+    /** 返回已配置的认证元数据提供者。 */
     private AuthenticationMetadataProvider getAuthenticationMetadataProvider() {
         if (authenticationMetadataProvider == null) {
             throw new IllegalStateException("The authenticationMetadataProvider is not configured.");
@@ -282,6 +300,7 @@ public class AuthorizationMetadataManagerImpl implements AuthorizationMetadataMa
         return authenticationMetadataProvider;
     }
 
+    /** 返回已配置的授权元数据提供者。 */
     private AuthorizationMetadataProvider getAuthorizationMetadataProvider() {
         if (authorizationMetadataProvider == null) {
             throw new IllegalStateException("The authorizationMetadataProvider is not configured.");

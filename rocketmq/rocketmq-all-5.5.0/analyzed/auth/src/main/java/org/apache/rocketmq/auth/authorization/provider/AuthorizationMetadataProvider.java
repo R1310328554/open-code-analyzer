@@ -23,19 +23,29 @@ import org.apache.rocketmq.auth.authentication.model.Subject;
 import org.apache.rocketmq.auth.authorization.model.Acl;
 import org.apache.rocketmq.auth.config.AuthConfig;
 
+/**
+ * 授权元数据提供者：负责 ACL 的持久化 CRUD 与查询。
+ */
 public interface AuthorizationMetadataProvider {
 
+    /** 初始化存储后端，绑定 {@link AuthConfig} 与可选元数据服务。 */
     void initialize(AuthConfig authConfig, Supplier<?> metadataService);
 
+    /** 关闭 RocksDB 与缓存线程等资源。 */
     void shutdown();
 
+    /** 持久化新建 ACL。 */
     CompletableFuture<Void> createAcl(Acl acl);
 
+    /** 删除主体的 ACL 记录。 */
     CompletableFuture<Void> deleteAcl(Subject subject);
 
+    /** 更新已有 ACL 记录。 */
     CompletableFuture<Void> updateAcl(Acl acl);
 
+    /** 按主体查询 ACL。 */
     CompletableFuture<Acl> getAcl(Subject subject);
 
+    /** 列出 ACL，支持主体与资源子串过滤。 */
     CompletableFuture<List<Acl>> listAcl(String subjectFilter, String resourceFilter);
 }
