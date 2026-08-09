@@ -30,16 +30,22 @@ import org.apache.rocketmq.remoting.protocol.body.ConsumerRunningInfo;
 import org.apache.rocketmq.remoting.protocol.header.ConsumeMessageDirectlyResultRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.GetConsumerRunningInfoRequestHeader;
 
+/**
+ * 本地模式 Proxy 中继服务：将管理请求写回内嵌 Broker Remoting 层。
+ */
 public class LocalProxyRelayService extends AbstractProxyRelayService {
 
+    /** 内嵌 {@link BrokerController} 实例。 */
     private final BrokerController brokerController;
 
+    /** 绑定本地 Broker 与事务服务。 */
     public LocalProxyRelayService(BrokerController brokerController, TransactionService transactionService) {
         super(transactionService);
         this.brokerController = brokerController;
     }
 
     @Override
+    /** 异步获取消费者运行信息并通过 Remoting 回写响应。 */
     public CompletableFuture<ProxyRelayResult<ConsumerRunningInfo>> processGetConsumerRunningInfo(
         ProxyContext context, RemotingCommand command, GetConsumerRunningInfoRequestHeader header) {
         CompletableFuture<ProxyRelayResult<ConsumerRunningInfo>> future = new CompletableFuture<>();
@@ -63,6 +69,7 @@ public class LocalProxyRelayService extends AbstractProxyRelayService {
     }
 
     @Override
+    /** 异步触发直接消费并将结果编码写回 Remoting 响应。 */
     public CompletableFuture<ProxyRelayResult<ConsumeMessageDirectlyResult>> processConsumeMessageDirectly(
         ProxyContext context, RemotingCommand command,
         ConsumeMessageDirectlyResultRequestHeader header) {

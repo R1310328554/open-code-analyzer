@@ -21,10 +21,16 @@ import io.netty.channel.Channel;
 import org.apache.rocketmq.proxy.common.MessageReceiptHandle;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 
+/**
+ * 回执句柄管理接口：登记、移除与统计未 ACK 消息。
+ */
 public interface ReceiptHandleManager {
+    /** 登记消费回执句柄。 */
     void addReceiptHandle(ProxyContext context, Channel channel, String group, String msgID, MessageReceiptHandle messageReceiptHandle);
 
+    /** 移除并返回匹配的回执句柄。 */
     MessageReceiptHandle removeReceiptHandle(ProxyContext context, Channel channel, String group, String msgID, String receiptHandle);
 
+    /** 返回未 ACK 消息数量。 */
     int getUnackedMessageCount(ProxyContext context, Channel channel, String group);
 }

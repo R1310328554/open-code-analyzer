@@ -32,12 +32,19 @@ import org.apache.rocketmq.remoting.protocol.route.BrokerData;
 import org.apache.rocketmq.remoting.protocol.route.QueueData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * 本地模式 Topic 路由服务：基于内嵌 Broker 配置构建路由。
+ */
 public class LocalTopicRouteService extends TopicRouteService {
 
+    /** 内嵌 Broker 控制器。 */
     private final BrokerController brokerController;
+    /** 本地单 Broker 路由数据列表。 */
     private final List<BrokerData> brokerDataList;
+    /** Proxy gRPC 服务端口，写入客户端路由。 */
     private final int grpcPort;
 
+    /** 从 Broker 配置初始化本地路由数据与 gRPC 端口。 */
     public LocalTopicRouteService(BrokerController brokerController, MQClientAPIFactory mqClientAPIFactory) {
         super(mqClientAPIFactory);
         this.brokerController = brokerController;
@@ -51,12 +58,14 @@ public class LocalTopicRouteService extends TopicRouteService {
     }
 
     @Override
+    /** 从本地 Topic 配置表构建消息队列视图。 */
     public MessageQueueView getCurrentMessageQueueView(ProxyContext ctx, String topic) throws Exception {
         TopicConfig topicConfig = this.brokerController.getTopicConfigManager().getTopicConfigTable().get(topic);
         return new MessageQueueView(topic, toTopicRouteData(topicConfig), null);
     }
 
     @Override
+    /** 返回含 gRPC 端口的 Proxy 路由数据。 */
     public ProxyTopicRouteData getTopicRouteForProxy(ProxyContext ctx, List<Address> requestHostAndPortList,
         String topicName) throws Exception {
         MessageQueueView messageQueueView = getAllMessageQueueView(ctx, topicName);
@@ -65,6 +74,7 @@ public class LocalTopicRouteService extends TopicRouteService {
     }
 
     @Override
+    /** 返回本地 Broker 监听地址。 */
     public String getBrokerAddr(ProxyContext ctx, String brokerName) throws Exception {
         return this.brokerController.getBrokerAddr();
     }
@@ -75,6 +85,7 @@ public class LocalTopicRouteService extends TopicRouteService {
         return new AddressableMessageQueue(messageQueue, brokerAddress);
     }
 
+    /** 将 {@link TopicConfig} 转换为 {@link TopicRouteData}。 */
     protected TopicRouteData toTopicRouteData(TopicConfig topicConfig) {
         TopicRouteData topicRouteData = new TopicRouteData();
         topicRouteData.setBrokerDatas(brokerDataList);

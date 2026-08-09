@@ -48,13 +48,20 @@ import org.apache.rocketmq.remoting.protocol.header.ConsumeMessageDirectlyResult
 import org.apache.rocketmq.remoting.protocol.header.GetConsumerRunningInfoRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.NotifyUnsubscribeLiteRequestHeader;
 
+/**
+ * Proxy 虚拟通道抽象类：拦截 {@link RemotingCommand} 并委派中继服务处理。
+ */
 public abstract class ProxyChannel extends SimpleChannel {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 远端套接字地址。 */
     protected final SocketAddress remoteSocketAddress;
+    /** 本地套接字地址。 */
     protected final SocketAddress localSocketAddress;
 
+    /** 中继服务，处理事务回查与管理类请求。 */
     protected final ProxyRelayService proxyRelayService;
 
+    /** 使用父通道与地址构造 Proxy 通道。 */
     protected ProxyChannel(ProxyRelayService proxyRelayService, Channel parent, String remoteAddress,
         String localAddress) {
         super(parent, remoteAddress, localAddress);
@@ -63,6 +70,7 @@ public abstract class ProxyChannel extends SimpleChannel {
         this.localSocketAddress = NetworkUtil.string2SocketAddress(localAddress);
     }
 
+    /** 指定 {@link ChannelId} 构造 Proxy 通道。 */
     protected ProxyChannel(ProxyRelayService proxyRelayService, Channel parent, ChannelId id, String remoteAddress,
         String localAddress) {
         super(parent, id, remoteAddress, localAddress);
@@ -72,6 +80,7 @@ public abstract class ProxyChannel extends SimpleChannel {
     }
 
     @Override
+    /** 按请求码分发 Remoting 命令至对应中继处理逻辑。 */
     public ChannelFuture writeAndFlush(Object msg) {
         CompletableFuture<Void> processFuture = new CompletableFuture<>();
 
@@ -130,21 +139,26 @@ public abstract class ProxyChannel extends SimpleChannel {
         return promise;
     }
 
+    /** 处理非 Remoting 消息的扩展点。 */
     protected abstract CompletableFuture<Void> processOtherMessage(Object msg);
 
+    /** 处理事务状态回查请求。 */
     protected abstract CompletableFuture<Void> processCheckTransaction(
         CheckTransactionStateRequestHeader header,
         MessageExt messageExt,
         TransactionData transactionData,
         CompletableFuture<ProxyRelayResult<Void>> responseFuture);
 
+    /** 处理 Lite 取消订阅通知。 */
     protected abstract CompletableFuture<Void> processNotifyUnsubscribeLite(NotifyUnsubscribeLiteRequestHeader header);
 
+    /** 处理获取消费者运行信息请求。 */
     protected abstract CompletableFuture<Void> processGetConsumerRunningInfo(
         RemotingCommand command,
         GetConsumerRunningInfoRequestHeader header,
         CompletableFuture<ProxyRelayResult<ConsumerRunningInfo>> responseFuture);
 
+    /** 处理直接消费消息请求。 */
     protected abstract CompletableFuture<Void> processConsumeMessageDirectly(
         RemotingCommand command,
         ConsumeMessageDirectlyResultRequestHeader header,

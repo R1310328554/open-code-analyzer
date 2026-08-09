@@ -26,15 +26,20 @@ import org.apache.rocketmq.remoting.protocol.header.ConsumeMessageDirectlyResult
 import org.apache.rocketmq.remoting.protocol.header.GetConsumerRunningInfoRequestHeader;
 
 /**
- * not implement yet
+ * 集群模式 Proxy 中继服务（尚未实现）。
+ */
+/**
+ * 集群模式中继实现占位类，管理类请求暂返回 null。
  */
 public class ClusterProxyRelayService extends AbstractProxyRelayService {
 
+    /** 注入事务服务。 */
     public ClusterProxyRelayService(TransactionService transactionService) {
         super(transactionService);
     }
 
     @Override
+    /** 获取消费者运行信息（集群模式未实现）。 */
     public CompletableFuture<ProxyRelayResult<ConsumerRunningInfo>> processGetConsumerRunningInfo(
         ProxyContext context, RemotingCommand command,
         GetConsumerRunningInfoRequestHeader header) {
@@ -42,6 +47,7 @@ public class ClusterProxyRelayService extends AbstractProxyRelayService {
     }
 
     @Override
+    /** 直接消费消息（集群模式未实现）。 */
     public CompletableFuture<ProxyRelayResult<ConsumeMessageDirectlyResult>> processConsumeMessageDirectly(
         ProxyContext context, RemotingCommand command,
         ConsumeMessageDirectlyResultRequestHeader header) {

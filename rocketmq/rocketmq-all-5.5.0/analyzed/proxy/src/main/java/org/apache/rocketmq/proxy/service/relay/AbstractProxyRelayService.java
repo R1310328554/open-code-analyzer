@@ -29,15 +29,21 @@ import org.apache.rocketmq.proxy.service.transaction.TransactionService;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.header.CheckTransactionStateRequestHeader;
 
+/**
+ * Proxy 中继服务抽象基类：封装事务状态回查的公共逻辑。
+ */
 public abstract class AbstractProxyRelayService implements ProxyRelayService {
 
+    /** 事务消息数据服务。 */
     protected final TransactionService transactionService;
 
+    /** 注入事务服务依赖。 */
     public AbstractProxyRelayService(TransactionService transactionService) {
         this.transactionService = transactionService;
     }
 
     @Override
+    /** 登记事务回查数据并返回中继 {@link RelayData}。 */
     public RelayData<TransactionData, Void> processCheckTransactionState(ProxyContext context,
         RemotingCommand command, CheckTransactionStateRequestHeader header, MessageExt messageExt) {
         CompletableFuture<ProxyRelayResult<Void>> future = new CompletableFuture<>();

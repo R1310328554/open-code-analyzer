@@ -26,12 +26,12 @@ import org.apache.rocketmq.common.message.MessageQueue;
 public interface MessageQueuePenalizer<Q extends MessageQueue> {
 
     /**
-     * Returns the penalty value for the given MessageQueue; lower is better.
+     * 返回给定 {@link MessageQueue} 的惩罚值；数值越小越优。
      */
     int penaltyOf(Q messageQueue);
 
     /**
-     * Aggregates penalties from multiple penalizers for the same MessageQueue (by summing them up).
+     * 对同一队列聚合多个惩罚器的得分（求和）。
      */
     static <Q extends MessageQueue> int evaluatePenalty(Q messageQueue, List<MessageQueuePenalizer<Q>> penalizers) {
         Objects.requireNonNull(messageQueue, "messageQueue");
@@ -46,22 +46,19 @@ public interface MessageQueuePenalizer<Q extends MessageQueue> {
     }
 
     /**
-     * Selects the queue with the lowest evaluated penalty from the given queue list.
+     * 从候选队列中选取综合惩罚值最小者。
      *
-     * <p>The method iterates through all queues exactly once, but starts from a rotating index
-     * derived from {@code startIndex} (round-robin) to avoid always scanning from position 0 .</p>
+     * <p>遍历全部队列一次，起始下标由 {@code startIndex} 轮询决定，避免总从 0 扫描。</p>
      *
-     * <p>For each queue, it computes a penalty via {@link #evaluatePenalty} using
-     * the provided {@code penalizers}. The queue with the smallest penalty is selected.</p>
+     * <p>各队列通过 {@link #evaluatePenalty} 与 {@code penalizers} 计算惩罚，取最小者。</p>
      *
-     * <p>Short-circuit rule: if any queue has a {@code penalty<= 0}, it is returned immediately,
-     * since no better result than 0 is expected.</p>
+     * <p>短路规则：若某队列 {@code penalty <= 0} 则立即返回（无法更优）。</p>
      *
-     * @param queues candidate queues to select from
-     * @param penalizers penalty evaluators applied to each queue
-     * @param startIndex atomic counter used to determine the rotating start position (round-robin)
-     * @param <Q> queue type
-     * @return a {@code Pair} of (selected queue, penalty), or {@code null} if {@code queues} is null/empty
+     * @param queues 候选队列列表
+     * @param penalizers 应用于各队列的惩罚评估器
+     * @param startIndex 轮询起始位置的原子计数器
+     * @param <Q> 队列类型
+     * @return 选中队列与惩罚值的 {@code Pair}；{@code queues} 为空时返回 {@code null}
      */
     static <Q extends MessageQueue> Pair<Q, Integer> selectLeastPenalty(List<Q> queues,
         List<MessageQueuePenalizer<Q>> penalizers, AtomicInteger startIndex) {
@@ -76,7 +73,7 @@ public interface MessageQueuePenalizer<Q extends MessageQueue> {
             Q messageQueue = queues.get(index);
             int penalty = evaluatePenalty(messageQueue, penalizers);
 
-            // Short-circuit: cannot do better than 0
+            // 短路：惩罚值已无法优于 0
             if (penalty <= 0) {
                 return Pair.of(messageQueue, penalty);
             }
@@ -90,23 +87,19 @@ public interface MessageQueuePenalizer<Q extends MessageQueue> {
     }
 
     /**
-     * Selects a queue with the lowest computed penalty from multiple priority groups.
+     * 从多优先级队列组中选取综合惩罚最小者。
      *
-     * <p>The input {@code queuesWithPriority} is a list of queue groups ordered by priority.
-     * For each priority group, this method delegates to {@link #selectLeastPenalty} to pick the best queue
-     * within that group and obtain its penalty.</p>
+     * <p>{@code queuesWithPriority} 按优先级排序，每组委托 {@link #selectLeastPenalty} 选最优队列。</p>
      *
-     * <p>Short-circuit rule: if any priority group yields a queue whose {@code penalty <= 0},
-     * that result is returned immediately.</p>
+     * <p>短路规则：任一组出现 {@code penalty <= 0} 的队列则立即返回。</p>
      *
-     * <p>Otherwise, it returns the queue with the smallest positive penalty among all groups.
-     * If multiple groups produce the same minimum penalty, the first encountered one wins.</p>
+     * <p>否则返回各组最小正惩罚队列；同分取先遇到者。</p>
      *
-     * @param queuesWithPriority priority-ordered groups of queues; each inner list represents one priority level
-     * @param penalizers penalty calculators used by {@code selectLeastPenalty} to score queues
-     * @param startIndex round-robin start index forwarded to {@code selectLeastPenalty} to reduce contention/hotspots
-     * @param <Q> queue type
-     * @return a {@code Pair} of (selected queue, penalty), or {@code null} if {@code queuesWithPriority} is null/empty
+     * @param queuesWithPriority 按优先级分组的队列列表
+     * @param penalizers 供 {@code selectLeastPenalty} 使用的惩罚计算器
+     * @param startIndex 转发给 {@code selectLeastPenalty} 的轮询起始下标
+     * @param <Q> 队列类型
+     * @return 选中队列与惩罚值的 {@code Pair}；输入为空时返回 {@code null}
      */
     static <Q extends MessageQueue> Pair<Q, Integer> selectLeastPenaltyWithPriority(List<List<Q>> queuesWithPriority,
         List<MessageQueuePenalizer<Q>> penalizers, AtomicInteger startIndex) {

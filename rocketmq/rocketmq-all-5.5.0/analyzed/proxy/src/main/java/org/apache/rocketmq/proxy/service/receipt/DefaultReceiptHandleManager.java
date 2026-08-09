@@ -60,18 +60,27 @@ import org.apache.rocketmq.proxy.service.metadata.MetadataService;
 import org.apache.rocketmq.remoting.protocol.subscription.RetryPolicy;
 import org.apache.rocketmq.remoting.protocol.subscription.SubscriptionGroupConfig;
 
+/**
+ * 默认回执句柄管理器：维护消费回执、定时续期与客户端离线清理。
+ */
 public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implements ReceiptHandleManager {
     protected final static Logger log = LoggerFactory.getLogger(LoggerName.PROXY_LOGGER_NAME);
+    /** 订阅组元数据查询服务。 */
     protected final MetadataService metadataService;
+    /** 消费者组与通道管理器。 */
     protected final ConsumerManager consumerManager;
+    /** 按通道与消费者组索引的回执句柄分组表。 */
     protected final ConcurrentMap<ReceiptHandleGroupKey, ReceiptHandleGroup> receiptHandleGroupMap;
+    /** 续期/清理事件监听器，触发 Broker 侧 ACK 操作。 */
     protected final StateEventListener<RenewEvent> eventListener;
+    /** 续期重试间隔策略。 */
     protected final static RetryPolicy RENEW_POLICY = new RenewStrategyPolicy();
     protected final ScheduledExecutorService scheduledExecutorService =
         ThreadUtils.newSingleThreadScheduledExecutor(new ThreadFactoryImpl("RenewalScheduledThread_"));
     protected final ThreadPoolExecutor renewalWorkerService;
     protected final ThreadPoolExecutor returnHandleGroupWorkerService;
 
+    /** 初始化线程池、消费者注销监听与定时续期任务。 */
     public DefaultReceiptHandleManager(MetadataService metadataService, ConsumerManager consumerManager, StateEventListener<RenewEvent> eventListener) {
         this.metadataService = metadataService;
         this.consumerManager = consumerManager;
@@ -101,7 +110,7 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
                     if (args[0] instanceof ClientChannelInfo) {
                         ClientChannelInfo clientChannelInfo = (ClientChannelInfo) args[0];
                         if (ChannelHelper.isRemote(clientChannelInfo.getChannel())) {
-                            // if the channel sync from other proxy is expired, not to clear data of connect to current proxy
+                            // 来自其他 Proxy 同步的远程通道过期时不清理本机连接数据
                             return;
                         }
                         clearGroup(new ReceiptHandleGroupKey(clientChannelInfo.getChannel(), group));
@@ -132,11 +141,13 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         });
     }
 
+    /** 将消息回执句柄登记到指定通道与消费者组。 */
     public void addReceiptHandle(ProxyContext context, Channel channel, String group, String msgID, MessageReceiptHandle messageReceiptHandle) {
         ConcurrentHashMapUtils.computeIfAbsent(this.receiptHandleGroupMap, new ReceiptHandleGroupKey(channel, group),
             k -> new ReceiptHandleGroup()).put(msgID, messageReceiptHandle);
     }
 
+    /** ACK 成功后移除对应回执句柄并返回被移除实例。 */
     public MessageReceiptHandle removeReceiptHandle(ProxyContext context, Channel channel, String group, String msgID, String receiptHandle) {
         ReceiptHandleGroup handleGroup = receiptHandleGroupMap.get(new ReceiptHandleGroupKey(channel, group));
         if (handleGroup == null) {
@@ -145,15 +156,18 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         return handleGroup.remove(msgID, receiptHandle);
     }
 
+    /** 统计指定通道与消费者组下未 ACK 消息数量。 */
     public int getUnackedMessageCount(ProxyContext context, Channel channel, String group) {
         ReceiptHandleGroup handleGroup = receiptHandleGroupMap.get(new ReceiptHandleGroupKey(channel, group));
         return handleGroup == null ? 0 : handleGroup.getMsgCount();
     }
 
+    /** 判断消费者通道是否已从 {@link ConsumerManager} 注销。 */
     protected boolean clientIsOffline(ReceiptHandleGroupKey groupKey) {
         return this.consumerManager.findChannel(groupKey.getGroup(), groupKey.getChannel()) == null;
     }
 
+    /** 定时扫描各分组，对即将过期的回执提交续期任务。 */
     protected void scheduleRenewTask() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
@@ -183,6 +197,7 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         log.debug("scan for renewal done. cost:{}ms", stopwatch.elapsed().toMillis());
     }
 
+    /** 在分组锁内触发单条消息回执续期。 */
     protected void renewMessage(ProxyContext context, ReceiptHandleGroupKey key, ReceiptHandleGroup group, String msgID, String handleStr) {
         try {
             group.computeIfPresent(msgID, handleStr, messageReceiptHandle -> startRenewMessage(context, key, messageReceiptHandle), 0);
@@ -191,6 +206,7 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         }
     }
 
+    /** 发起续期或停止续期（NACK）并更新回执状态。 */
     protected CompletableFuture<MessageReceiptHandle> startRenewMessage(ProxyContext context, ReceiptHandleGroupKey key, MessageReceiptHandle messageReceiptHandle) {
         CompletableFuture<MessageReceiptHandle> resFuture = new CompletableFuture<>();
         ProxyConfig proxyConfig = ConfigurationManager.getProxyConfig();
@@ -246,6 +262,7 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         return resFuture;
     }
 
+    /** 移除分组并异步归还其中全部回执句柄。 */
     protected void clearGroup(ReceiptHandleGroupKey key) {
         if (key == null) {
             return;
@@ -254,8 +271,7 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         returnHandleGroupWorkerService.submit(() -> returnHandleGroup(key, handleGroup));
     }
 
-    // There is no longer any waiting for lock, and only the locked handles will be processed immediately,
-    // while the handles that cannot be acquired will be kept waiting for the next scheduling.
+    // 不再阻塞等待锁；仅立即处理已加锁句柄，未获锁的留待下次调度
     private void returnHandleGroup(ReceiptHandleGroupKey key, ReceiptHandleGroup handleGroup) {
         if (handleGroup == null || handleGroup.isEmpty()) {
             return;
@@ -272,13 +288,14 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
                 log.error("error when clear handle for group. key:{}", key, e);
             }
         });
-        // scheduleRenewTask will trigger cleanup again
+        // scheduleRenewTask 将再次触发清理
         if (!handleGroup.isEmpty()) {
             log.warn("The handle cannot be completely cleared, the remaining quantity is {}, key:{}", handleGroup.getHandleNum(), key);
             receiptHandleGroupMap.putIfAbsent(key, handleGroup);
         }
     }
 
+    /** 关闭时清空全部回执句柄分组。 */
     protected void clearAllHandle() {
         log.info("start clear all handle in receiptHandleProcessor");
         Set<ReceiptHandleGroupKey> keySet = receiptHandleGroupMap.keySet();
@@ -288,6 +305,7 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         log.info("clear all handle in receiptHandleProcessor done");
     }
 
+    /** 判断续期异常是否可重试（无效 Broker/句柄不重试）。 */
     protected boolean renewExceptionNeedRetry(Throwable t) {
         t = ExceptionUtils.getRealException(t);
         if (t instanceof ProxyException) {
@@ -300,6 +318,7 @@ public class DefaultReceiptHandleManager extends AbstractStartAndShutdown implem
         return true;
     }
 
+    /** 创建内部调用的 {@link ProxyContext}。 */
     protected ProxyContext createContext(String actionName) {
         return ProxyContext.createForInner(this.getClass().getSimpleName() + actionName);
     }

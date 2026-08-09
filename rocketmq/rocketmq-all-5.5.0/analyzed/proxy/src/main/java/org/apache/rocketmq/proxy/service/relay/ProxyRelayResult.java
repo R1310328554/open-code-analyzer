@@ -17,17 +17,25 @@
 
 package org.apache.rocketmq.proxy.service.relay;
 
+/**
+ * Proxy 中继操作结果：封装响应码、备注与载荷。
+ */
 public class ProxyRelayResult<T> {
+    /** Remoting 响应码。 */
     private int code;
+    /** 响应备注信息。 */
     private String remark;
+    /** 业务结果载荷。 */
     private T result;
 
+    /** 构造中继结果三元组。 */
     public ProxyRelayResult(int code, String remark, T result) {
         this.code = code;
         this.remark = remark;
         this.result = result;
     }
 
+    /** 返回响应码。 */
     public int getCode() {
         return code;
     }
@@ -36,6 +44,7 @@ public class ProxyRelayResult<T> {
         this.code = code;
     }
 
+    /** 返回响应备注。 */
     public String getRemark() {
         return remark;
     }
@@ -44,6 +53,7 @@ public class ProxyRelayResult<T> {
         this.remark = remark;
     }
 
+    /** 返回业务载荷。 */
     public T getResult() {
         return result;
     }

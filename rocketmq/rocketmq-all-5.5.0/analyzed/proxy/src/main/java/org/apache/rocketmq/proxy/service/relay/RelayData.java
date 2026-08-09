@@ -19,15 +19,22 @@ package org.apache.rocketmq.proxy.service.relay;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 中继处理数据对：同步处理结果与异步中继响应 Future。
+ */
 public class RelayData<T, R> {
+    /** 同步处理阶段产物（如 {@link TransactionData}）。 */
     private T processResult;
+    /** 异步中继响应 Future。 */
     private CompletableFuture<ProxyRelayResult<R>> relayFuture;
 
+    /** 构造处理结果与中继 Future 组合。 */
     public RelayData(T processResult, CompletableFuture<ProxyRelayResult<R>> relayFuture) {
         this.processResult = processResult;
         this.relayFuture = relayFuture;
     }
 
+    /** 返回中继响应 Future。 */
     public CompletableFuture<ProxyRelayResult<R>> getRelayFuture() {
         return relayFuture;
     }
@@ -37,6 +44,7 @@ public class RelayData<T, R> {
         this.relayFuture = relayFuture;
     }
 
+    /** 返回同步处理结果。 */
     public T getProcessResult() {
         return processResult;
     }

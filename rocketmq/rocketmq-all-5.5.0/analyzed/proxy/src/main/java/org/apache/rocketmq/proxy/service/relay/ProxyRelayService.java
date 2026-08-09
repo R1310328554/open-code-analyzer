@@ -27,20 +27,26 @@ import org.apache.rocketmq.remoting.protocol.header.CheckTransactionStateRequest
 import org.apache.rocketmq.remoting.protocol.header.ConsumeMessageDirectlyResultRequestHeader;
 import org.apache.rocketmq.remoting.protocol.header.GetConsumerRunningInfoRequestHeader;
 
+/**
+ * Proxy 中继服务接口：处理管理类 Remoting 请求与事务回查。
+ */
 public interface ProxyRelayService {
 
+    /** 获取消费者运行信息。 */
     CompletableFuture<ProxyRelayResult<ConsumerRunningInfo>> processGetConsumerRunningInfo(
         ProxyContext context,
         RemotingCommand command,
         GetConsumerRunningInfoRequestHeader header
     );
 
+    /** 直接消费指定消息。 */
     CompletableFuture<ProxyRelayResult<ConsumeMessageDirectlyResult>> processConsumeMessageDirectly(
         ProxyContext context,
         RemotingCommand command,
         ConsumeMessageDirectlyResultRequestHeader header
     );
 
+    /** 处理 Broker 发起的事务状态回查。 */
     RelayData<TransactionData, Void> processCheckTransactionState(
         ProxyContext context,
         RemotingCommand command,

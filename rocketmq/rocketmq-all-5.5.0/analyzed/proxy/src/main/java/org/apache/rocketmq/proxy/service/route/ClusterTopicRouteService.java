@@ -23,18 +23,24 @@ import org.apache.rocketmq.proxy.common.Address;
 import org.apache.rocketmq.proxy.common.ProxyContext;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
+/**
+ * 集群模式 Topic 路由服务：通过 NameServer 查询全量路由。
+ */
 public class ClusterTopicRouteService extends TopicRouteService {
 
+    /** 注入 MQ 客户端 API 工厂。 */
     public ClusterTopicRouteService(MQClientAPIFactory mqClientAPIFactory) {
         super(mqClientAPIFactory);
     }
 
     @Override
+    /** 返回 Topic 当前全量消息队列视图。 */
     public MessageQueueView getCurrentMessageQueueView(ProxyContext ctx, String topicName) throws Exception {
         return getAllMessageQueueView(ctx, topicName);
     }
 
     @Override
+    /** 构建面向客户端的 Proxy 路由数据。 */
     public ProxyTopicRouteData getTopicRouteForProxy(ProxyContext ctx, List<Address> requestHostAndPortList,
         String topicName) throws Exception {
         TopicRouteData topicRouteData = getAllMessageQueueView(ctx, topicName).getTopicRouteData();
@@ -42,12 +48,14 @@ public class ClusterTopicRouteService extends TopicRouteService {
     }
 
     @Override
+    /** 按 Broker 名称解析 Master 地址。 */
     public String getBrokerAddr(ProxyContext ctx, String brokerName) throws Exception {
         TopicRouteWrapper topicRouteWrapper = getAllMessageQueueView(ctx, brokerName).getTopicRouteWrapper();
         return topicRouteWrapper.getMasterAddr(brokerName);
     }
 
     @Override
+    /** 为逻辑队列填充 Broker 物理地址。 */
     public AddressableMessageQueue buildAddressableMessageQueue(ProxyContext ctx, MessageQueue messageQueue) throws Exception {
         String brokerAddress = getBrokerAddr(ctx, messageQueue.getBrokerName());
         return new AddressableMessageQueue(messageQueue, brokerAddress);

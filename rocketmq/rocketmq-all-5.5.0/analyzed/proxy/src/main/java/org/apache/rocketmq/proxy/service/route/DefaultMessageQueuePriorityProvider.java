@@ -17,8 +17,12 @@
 
 package org.apache.rocketmq.proxy.service.route;
 
+/**
+ * 默认消息队列优先级提供者：所有队列优先级均为 0。
+ */
 public class DefaultMessageQueuePriorityProvider implements MessageQueuePriorityProvider<AddressableMessageQueue> {
     @Override
+    /** 返回固定优先级 0（最高）。 */
     public int priorityOf(AddressableMessageQueue queue) {
         return 0;
     }

@@ -25,49 +25,42 @@ import java.util.TreeMap;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * A functional interface for providing priority values for message queues.
- * This interface allows custom priority determination logic to be applied to message queues,
- * enabling queue selection and routing based on priority levels.
+ * 消息队列优先级提供函数式接口：支持自定义优先级以辅助路由与选队。
  * <p>
- * The priority value follows the convention that smaller numeric values indicate higher priority.
- * For example, priority 0 is higher than priority 1.
+ * 数值越小优先级越高，例如 0 高于 1。
  * </p>
  *
- * @param <Q> the type of message queue, must extend {@link MessageQueue}
+ * @param <Q> 消息队列类型，须继承 {@link MessageQueue}
  */
 @FunctionalInterface
 public interface MessageQueuePriorityProvider<Q extends MessageQueue> {
 
     /**
-     * Determines the priority value of the given message queue.
+     * 计算给定消息队列的优先级。
      * <p>
-     * Smaller values indicate higher priority. For example:
+     * 数值越小优先级越高，例如：
      * <ul>
-     *   <li>Priority 0: Highest priority</li>
-     *   <li>Priority 1: Medium priority</li>
-     *   <li>Priority 2: Lower priority</li>
+     *   <li>优先级 0：最高</li>
+     *   <li>优先级 1：中等</li>
+     *   <li>优先级 2：较低</li>
      * </ul>
      * </p>
      *
-     * @param q the message queue to evaluate
-     * @return the priority value, where smaller values indicate higher priority
+     * @param q 待评估的消息队列
+     * @return 优先级数值，越小越高
      */
     int priorityOf(Q q);
 
     /**
-     * Groups message queues by their priority levels and returns them in priority order.
+     * 按优先级将消息队列分组并返回有序列表。
      * <p>
-     * This static utility method takes a list of message queues and a priority provider,
-     * then organizes the queues into groups based on their priority values.
-     * The returned list is ordered from highest priority to lowest priority.
+     * 根据 {@code provider} 计算各队列优先级，按从高到低排列各组。
      * </p>
      *
-     * @param <Q>      the type of message queue, must extend {@link MessageQueue}
-     * @param queues   the list of message queues to group by priority, can be null or empty
-     * @param provider the priority provider to determine the priority of each queue
-     * @return a list of lists, where each inner list contains queues of the same priority level,
-     *         ordered from highest priority (smallest value) to lowest priority (largest value).
-     *         Returns an empty list if the input queues are null or empty.
+     * @param <Q> 消息队列类型，须继承 {@link MessageQueue}
+     * @param queues 待分组的队列列表，可为 null 或空
+     * @param provider 优先级计算提供者
+     * @return 按优先级排序的分组列表；输入为空时返回空列表
      */
     static <Q extends MessageQueue> List<List<Q>> buildPriorityGroups(List<Q> queues, MessageQueuePriorityProvider<Q> provider) {
         if (queues == null || queues.isEmpty()) {
