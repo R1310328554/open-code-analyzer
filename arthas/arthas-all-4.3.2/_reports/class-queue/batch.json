@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:31:56Z",
-  "files": [
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/jvm300/VMToolTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/ClassLoaderTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/DumpClassTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/JadTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/MemoryCompilerTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/RedefineTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/RetransformTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/SearchClassTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/klass100/SearchMethodTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/MonitorTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/ProfilerTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/StackTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/TimeTunnelTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/TraceTool.java",
-    "core/src/main/java/com/taobao/arthas/core/mcp/tool/function/monitor200/WatchTool.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 315,
-  "done": 465
+  "done": 480
 }
