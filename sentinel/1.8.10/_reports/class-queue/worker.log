@@ -838,3 +838,18 @@
 2026-08-09T18:06:44Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/repository/rule/RuleRepository.java wave21b
 2026-08-09T18:06:44Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/rule/DynamicRuleProvider.java wave21b
 2026-08-09T18:06:44Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/rule/DynamicRulePublisher.java wave21b
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/AppClusterServerStateWrapVO.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/ClusterClientStateVO.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/ClusterRequestLimitVO.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/ClusterServerStateVO.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/ClusterStateSimpleEntity.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/ClusterUniversalStatePairVO.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/cluster/state/ClusterUniversalStateVO.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/MachineInfoVo.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/MetricVo.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/ResourceVo.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/api/AddApiReqVo.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/api/ApiPredicateItemVo.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/api/UpdateApiReqVo.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/AddFlowRuleReqVo.java wave21a [0:15]
+2026-08-09T18:08:27Z DONE sentinel-dashboard/src/main/java/com/alibaba/csp/sentinel/dashboard/domain/vo/gateway/rule/GatewayParamFlowItemVo.java wave21a [0:15]
