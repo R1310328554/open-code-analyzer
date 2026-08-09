@@ -16,22 +16,14 @@
  */
 package org.apache.rocketmq.client.consumer;
 
+/** POP 拉取结果状态枚举。 */
 public enum PopStatus {
-    /**
-     * Founded
-     */
+    /** 拉取到消息。 */
     FOUND,
-    /**
-     * No new message can be pull after polling time out
-     * delete after next release
-     */
+    /** 长轮询超时且无新消息（后续版本将删除）。 */
     NO_NEW_MSG,
-    /**
-     * polling pool is full, do not try again immediately.
-     */
+    /** 长轮询池已满，不宜立即重试。 */
     POLLING_FULL,
-    /**
-     * polling time out but no message find
-     */
+    /** 长轮询超时但未找到消息。 */
     POLLING_NOT_FOUND
 }

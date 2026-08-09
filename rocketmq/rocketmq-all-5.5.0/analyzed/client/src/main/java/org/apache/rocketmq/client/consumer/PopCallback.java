@@ -17,10 +17,12 @@
 package org.apache.rocketmq.client.consumer;
 
 /**
- * Async message pop interface
+ * POP 消息异步拉取回调接口。
  */
 public interface PopCallback {
+    /** Pop 成功时回调。 */
     void onSuccess(final PopResult popResult);
 
+    /** Pop 失败或异常时回调。 */
     void onException(final Throwable e);
 }

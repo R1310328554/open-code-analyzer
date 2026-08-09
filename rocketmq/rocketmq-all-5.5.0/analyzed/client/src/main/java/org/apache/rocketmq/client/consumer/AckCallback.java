@@ -16,8 +16,13 @@
  */
 package org.apache.rocketmq.client.consumer;
 
+/**
+ * POP 消息确认（Ack）异步回调接口。
+ */
 public interface AckCallback {
+    /** Ack 成功时回调。 */
     void onSuccess(final AckResult ackResult);
 
+    /** Ack 失败或发生异常时回调。 */
     void onException(final Throwable e);
 }

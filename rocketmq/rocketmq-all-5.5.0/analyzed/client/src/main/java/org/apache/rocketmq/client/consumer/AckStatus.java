@@ -16,13 +16,10 @@
  */
 package org.apache.rocketmq.client.consumer;
 
+/** POP 消息 Ack 结果状态枚举。 */
 public enum AckStatus {
-    /**
-     * ack success
-     */
+    /** 确认成功。 */
     OK,
-    /**
-     * msg not exist
-     */
+    /** 消息不存在。 */
     NO_EXIST,
 }

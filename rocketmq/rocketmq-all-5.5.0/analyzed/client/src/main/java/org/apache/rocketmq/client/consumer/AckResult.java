@@ -17,31 +17,41 @@
 package org.apache.rocketmq.client.consumer;
 
 
+/** POP 消息 Ack 操作的结果封装。 */
 public class AckResult {
+    /** Ack 状态。 */
     private AckStatus status;
+    /** 附加信息（如错误详情）。 */
     private String extraInfo;
+    /** Pop 操作时间戳。 */
     private long popTime;
 
+    /** 设置 Pop 时间戳。 */
     public void setPopTime(long popTime) {
         this.popTime = popTime;
     }
 
+    /** 获取 Pop 时间戳。 */
     public long getPopTime() {
         return popTime;
     }
 
+    /** 获取 Ack 状态。 */
     public AckStatus getStatus() {
         return status;
     }
 
+    /** 设置 Ack 状态。 */
     public void setStatus(AckStatus status) {
         this.status = status;
     }
 
+    /** 设置附加信息。 */
     public void setExtraInfo(String extraInfo) {
         this.extraInfo = extraInfo;
     }
 
+    /** 获取附加信息。 */
     public String getExtraInfo() {
         return extraInfo;
     }

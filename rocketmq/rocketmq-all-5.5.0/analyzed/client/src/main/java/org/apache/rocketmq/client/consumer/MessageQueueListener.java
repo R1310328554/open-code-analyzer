@@ -20,13 +20,14 @@ import java.util.Set;
 import org.apache.rocketmq.common.message.MessageQueue;
 
 /**
- * A MessageQueueListener is implemented by the application and may be specified when a message queue changed
+ * 消息队列变更监听器，由应用在队列分配变化时实现回调。
  */
 public interface MessageQueueListener {
     /**
-     * @param topic message topic
-     * @param mqAll all queues in this message topic
-     * @param mqAssigned collection of queues, assigned to the current consumer
+     * 队列集合变更时回调。
+     * @param topic 消息 Topic
+     * @param mqAll 该 Topic 下全部队列
+     * @param mqAssigned 分配给当前消费者的队列子集
      */
     void messageQueueChanged(final String topic, final Set<MessageQueue> mqAll, final Set<MessageQueue> mqAssigned);
 }

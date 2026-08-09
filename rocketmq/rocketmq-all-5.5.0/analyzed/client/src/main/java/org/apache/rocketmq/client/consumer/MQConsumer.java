@@ -25,29 +25,27 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
 /**
- * Message queue consumer interface
+ * 消息队列消费者基础接口，继承 {@link org.apache.rocketmq.client.MQAdmin} 管理能力。
  */
 public interface MQConsumer extends MQAdmin {
     /**
-     * If consuming of messages failed, they will be sent back to the brokers for another delivery attempt after
-     * interval specified in delay level.
+     * 消费失败时将消息发回 Broker，按 delayLevel 延迟后重投（已废弃）。
      */
     @Deprecated
     void sendMessageBack(final MessageExt msg, final int delayLevel) throws RemotingException,
         MQBrokerException, InterruptedException, MQClientException;
 
     /**
-     * If consuming of messages failed, they will be sent back to the brokers for another delivery attempt after
-     * interval specified in delay level.
+     * 消费失败时将消息发回指定 Broker，按 delayLevel 延迟后重投。
      */
     void sendMessageBack(final MessageExt msg, final int delayLevel, final String brokerName)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
 
     /**
-     * Fetch message queues from consumer cache pertaining to the given topic.
+     * 从消费者缓存获取已订阅 Topic 的消息队列集合。
      *
-     * @param topic message topic
-     * @return queue set
+     * @param topic 消息 Topic
+     * @return 队列集合
      */
     Set<MessageQueue> fetchSubscribeMessageQueues(final String topic) throws MQClientException;
 }

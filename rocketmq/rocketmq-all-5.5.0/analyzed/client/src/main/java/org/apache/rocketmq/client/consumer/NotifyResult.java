@@ -16,22 +16,29 @@
  */
 package org.apache.rocketmq.client.consumer;
 
+/** POP 长轮询通知结果。 */
 public class NotifyResult {
+    /** 是否有新消息。 */
     private boolean hasMsg;
+    /** 长轮询池是否已满。 */
     private boolean pollingFull;
 
+    /** 是否有新消息。 */
     public boolean isHasMsg() {
         return hasMsg;
     }
 
+    /** 长轮询池是否已满。 */
     public boolean isPollingFull() {
         return pollingFull;
     }
 
+    /** 设置是否有新消息。 */
     public void setHasMsg(boolean hasMsg) {
         this.hasMsg = hasMsg;
     }
 
+    /** 设置长轮询池是否已满。 */
     public void setPollingFull(boolean pollingFull) {
         this.pollingFull = pollingFull;
     }

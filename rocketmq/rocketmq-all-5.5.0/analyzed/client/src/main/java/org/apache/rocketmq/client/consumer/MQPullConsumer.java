@@ -24,171 +24,141 @@ import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
 /**
- * Pulling consumer interface
+ * 主动拉取型消费者接口：支持同步/异步 pull 与偏移量管理。
  */
 public interface MQPullConsumer extends MQConsumer {
-    /**
-     * Start the consumer
-     */
+    /** 启动消费者。 */
     void start() throws MQClientException;
 
-    /**
-     * Shutdown the consumer
-     */
+    /** 关闭消费者。 */
     void shutdown();
 
-    /**
-     * Register the message queue listener
-     */
+    /** 注册消息队列变更监听器。 */
     void registerMessageQueueListener(final String topic, final MessageQueueListener listener);
 
     /**
-     * Pulling the messages,not blocking
+     * 非阻塞拉取消息（Tag 表达式）。
      *
-     * @param mq from which message queue
-     * @param subExpression subscription expression.it only support or operation such as "tag1 || tag2 || tag3" <br> if
-     * null or * expression,meaning subscribe all
-     * @param offset from where to pull
-     * @param maxNums max pulling numbers
-     * @return The resulting {@code PullRequest}
+     * @param mq 目标消息队列
+     * @param subExpression Tag 子表达式，null 或 * 表示全部
+     * @param offset 起始偏移量
+     * @param maxNums 最大拉取条数
+     * @return {@code PullResult}
      */
     PullResult pull(final MessageQueue mq, final String subExpression, final long offset,
         final int maxNums) throws MQClientException, RemotingException, MQBrokerException,
         InterruptedException;
 
     /**
-     * Pulling the messages in the specified timeout
+     * 带超时的拉取（Tag 表达式）。
      *
-     * @return The resulting {@code PullRequest}
+     * @return {@code PullResult}
      */
     PullResult pull(final MessageQueue mq, final String subExpression, final long offset,
         final int maxNums, final long timeout) throws MQClientException, RemotingException,
         MQBrokerException, InterruptedException;
 
     /**
-     * Pulling the messages, not blocking
-     * <p>
-     * support other message selection, such as {@link org.apache.rocketmq.common.filter.ExpressionType#SQL92}
-     * </p>
+     * 非阻塞拉取（支持 {@link MessageSelector}，含 SQL92 等）。
      *
-     * @param mq from which message queue
-     * @param selector message selector({@link MessageSelector}), can be null.
-     * @param offset from where to pull
-     * @param maxNums max pulling numbers
-     * @return The resulting {@code PullRequest}
+     * @param mq 目标消息队列
+     * @param selector 消息选择器（{@link MessageSelector}），可为 null
+     * @param offset 起始偏移量
+     * @param maxNums 最大拉取条数
+     * @return {@code PullResult}
      */
     PullResult pull(final MessageQueue mq, final MessageSelector selector, final long offset,
         final int maxNums) throws MQClientException, RemotingException, MQBrokerException,
         InterruptedException;
 
     /**
-     * Pulling the messages in the specified timeout
-     * <p>
-     * support other message selection, such as {@link org.apache.rocketmq.common.filter.ExpressionType#SQL92}
-     * </p>
+     * 带超时的拉取（支持 {@link MessageSelector}）。
      *
-     * @param mq from which message queue
-     * @param selector message selector({@link MessageSelector}), can be null.
-     * @param offset from where to pull
-     * @param maxNums max pulling numbers
-     * @param timeout Pulling the messages in the specified timeout
-     * @return The resulting {@code PullRequest}
+     * @param mq 目标消息队列
+     * @param selector 消息选择器
+     * @param offset 起始偏移量
+     * @param maxNums 最大拉取条数
+     * @param timeout 超时毫秒数
+     * @return {@code PullResult}
      */
     PullResult pull(final MessageQueue mq, final MessageSelector selector, final long offset,
         final int maxNums, final long timeout) throws MQClientException, RemotingException, MQBrokerException,
         InterruptedException;
 
-    /**
-     * Pulling the messages in a async. way
-     */
+    /** 异步拉取（Tag 表达式，无超时参数）。 */
     void pull(final MessageQueue mq, final String subExpression, final long offset, final int maxNums,
         final PullCallback pullCallback) throws MQClientException, RemotingException,
         InterruptedException;
 
-    /**
-     * Pulling the messages in a async. way
-     */
+    /** 异步拉取（Tag 表达式，带超时）。 */
     void pull(final MessageQueue mq, final String subExpression, final long offset, final int maxNums,
         final PullCallback pullCallback, long timeout) throws MQClientException, RemotingException,
         InterruptedException;
 
-    /**
-     * Pulling the messages in a async. way
-     */
+    /** 异步拉取（Tag 表达式，带 maxSize 与超时）。 */
     void pull(final MessageQueue mq, final String subExpression, final long offset, final int maxNums, final int maxSize,
         final PullCallback pullCallback, long timeout) throws MQClientException, RemotingException,
         InterruptedException;
 
-    /**
-     * Pulling the messages in a async way. Support message selection
-     */
+    /** 异步拉取（{@link MessageSelector}，无超时）。 */
     void pull(final MessageQueue mq, final MessageSelector selector, final long offset, final int maxNums,
         final PullCallback pullCallback) throws MQClientException, RemotingException,
         InterruptedException;
 
-    /**
-     * Pulling the messages in a async. way. Support message selection
-     */
+    /** 异步拉取（{@link MessageSelector}，带超时）。 */
     void pull(final MessageQueue mq, final MessageSelector selector, final long offset, final int maxNums,
         final PullCallback pullCallback, long timeout) throws MQClientException, RemotingException,
         InterruptedException;
 
     /**
-     * Pulling the messages,if no message arrival,blocking some time
+     * 无消息时阻塞等待的拉取（Tag 表达式）。
      *
-     * @return The resulting {@code PullRequest}
+     * @return {@code PullResult}
      */
     PullResult pullBlockIfNotFound(final MessageQueue mq, final String subExpression,
         final long offset, final int maxNums) throws MQClientException, RemotingException,
         MQBrokerException, InterruptedException;
 
-    /**
-     * Pulling the messages through callback function,if no message arrival,blocking.
-     */
+    /** 无消息时阻塞的异步拉取（Tag 表达式）。 */
     void pullBlockIfNotFound(final MessageQueue mq, final String subExpression, final long offset,
         final int maxNums, final PullCallback pullCallback) throws MQClientException, RemotingException,
         InterruptedException;
 
-    /**
-     * Pulling the messages through callback function,if no message arrival,blocking. Support message selection
-     */
+    /** 无消息时阻塞的异步拉取（{@link MessageSelector}）。 */
     void pullBlockIfNotFoundWithMessageSelector(final MessageQueue mq, final MessageSelector selector,
         final long offset, final int maxNums,
         final PullCallback pullCallback) throws MQClientException, RemotingException,
         InterruptedException;
 
     /**
-     * Pulling the messages,if no message arrival,blocking some time. Support message selection
+     * 无消息时阻塞等待的拉取（{@link MessageSelector}）。
      *
-     * @return The resulting {@code PullRequest}
+     * @return {@code PullResult}
      */
     PullResult pullBlockIfNotFoundWithMessageSelector(final MessageQueue mq, final MessageSelector selector,
         final long offset, final int maxNums) throws MQClientException, RemotingException,
         MQBrokerException, InterruptedException;
 
-    /**
-     * Update the offset
-     */
+    /** 更新本地消费偏移量。 */
     void updateConsumeOffset(final MessageQueue mq, final long offset) throws MQClientException;
 
     /**
-     * Fetch the offset
+     * 获取消费偏移量。
      *
-     * @return The fetched offset of given queue
+     * @return 指定队列的偏移量
      */
     long fetchConsumeOffset(final MessageQueue mq, final boolean fromStore) throws MQClientException;
 
     /**
-     * Fetch the message queues according to the topic
+     * 获取负载均衡后分配给本消费者的 Topic 队列。
      *
-     * @param topic message topic
-     * @return message queue set
+     * @param topic 消息 Topic
+     * @return 队列集合
      */
     Set<MessageQueue> fetchMessageQueuesInBalance(final String topic) throws MQClientException;
 
     /**
-     * If consuming failure,message will be send back to the broker,and delay consuming in some time later.<br>
-     * Mind! message can only be consumed in the same group.
+     * 消费失败时将消息发回 Broker 并延迟重投；仅能在同一消费组内消费。
      */
     void sendMessageBack(MessageExt msg, int delayLevel, String brokerName, String consumerGroup)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
