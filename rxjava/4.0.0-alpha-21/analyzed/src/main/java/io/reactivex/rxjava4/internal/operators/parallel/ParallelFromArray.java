@@ -19,14 +19,14 @@ import io.reactivex.rxjava4.parallel.ParallelFlowable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Wraps multiple Publishers into a ParallelFlowable which runs them
- * in parallel.
+ * 将多个 Publisher 包装为 ParallelFlowable，各 Publisher 对应一条并行轨道。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class ParallelFromArray<T> extends ParallelFlowable<T> {
     final Publisher<T>[] sources;
 
+    /** @param sources 与并行度等长的 Publisher 数组 */
     public ParallelFromArray(Publisher<T>[] sources) {
         this.sources = sources;
     }
@@ -36,6 +36,7 @@ public final class ParallelFromArray<T> extends ParallelFlowable<T> {
         return sources.length;
     }
 
+    /** 按索引将 sources[i] 订阅至 subscribers[i]。 */
     @Override
     public void subscribe(Subscriber<? super T>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);

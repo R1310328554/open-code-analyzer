@@ -21,15 +21,26 @@ import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 竞态订阅多个 SingleSource：首个 onSuccess/onError 获胜，
+ * 其余结果被丢弃（winner CAS 门控）。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleAmb<T> extends Single<T> {
     private final SingleSource<? extends T>[] sources;
     private final Iterable<? extends SingleSource<? extends T>> sourcesIterable;
 
+    /**
+     * @param sources SingleSource 数组（可为 null，此时用 sourcesIterable）
+     * @param sourcesIterable 可迭代的 SingleSource 集合
+     */
     public SingleAmb(SingleSource<? extends T>[] sources, Iterable<? extends SingleSource<? extends T>> sourcesIterable) {
         this.sources = sources;
         this.sourcesIterable = sourcesIterable;
     }
 
+    /** 并行订阅全部 SingleSource，AmbSingleObserver 以 winner 决定唯一结果。 */
     @Override
     @SuppressWarnings("unchecked")
     protected void subscribeActual(final SingleObserver<? super T> observer) {
@@ -85,6 +96,7 @@ public final class SingleAmb<T> extends Single<T> {
         }
     }
 
+    /** 竞态 Observer：winner CAS 成功时 dispose 集合并转发结果。 */
     static final class AmbSingleObserver<T> implements SingleObserver<T> {
 
         final CompositeDisposable set;
@@ -107,6 +119,7 @@ public final class SingleAmb<T> extends Single<T> {
             set.add(d);
         }
 
+        /** winner 时 dispose 集合并 downstream.onSuccess。 */
         @Override
         public void onSuccess(T value) {
             if (winner.compareAndSet(false, true)) {
@@ -116,6 +129,7 @@ public final class SingleAmb<T> extends Single<T> {
             }
         }
 
+        /** winner 时 dispose 并 onError；否则 RxJavaPlugins.onError。 */
         @Override
         public void onError(Throwable e) {
             if (winner.compareAndSet(false, true)) {

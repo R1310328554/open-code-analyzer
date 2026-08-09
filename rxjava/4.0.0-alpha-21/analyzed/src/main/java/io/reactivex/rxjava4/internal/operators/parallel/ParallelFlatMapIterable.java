@@ -21,10 +21,10 @@ import io.reactivex.rxjava4.parallel.ParallelFlowable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Flattens the generated {@link Iterable}s on each rail.
+ * 对每条并行轨道将元素经 mapper 映射为 Iterable 并逐元素展开发射。
  *
- * @param <T> the input value type
- * @param <R> the output value type
+ * @param <T> 输入元素类型
+ * @param <R> 输出元素类型
  * @since 3.0.0
  */
 public final class ParallelFlatMapIterable<T, R> extends ParallelFlowable<R> {
@@ -35,6 +35,11 @@ public final class ParallelFlatMapIterable<T, R> extends ParallelFlowable<R> {
 
     final int prefetch;
 
+    /**
+     * @param source 并行上游
+     * @param mapper 将元素映射为 Iterable 的函数
+     * @param prefetch 预取数量
+     */
     public ParallelFlatMapIterable(
             ParallelFlowable<T> source,
             Function<? super T, ? extends Iterable<? extends R>> mapper,
@@ -49,6 +54,7 @@ public final class ParallelFlatMapIterable<T, R> extends ParallelFlowable<R> {
         return source.parallelism();
     }
 
+    /** 每条轨道用 FlowableFlattenIterable.subscribe 包装下游 Subscriber。 */
     @Override
     public void subscribe(Subscriber<? super R>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);

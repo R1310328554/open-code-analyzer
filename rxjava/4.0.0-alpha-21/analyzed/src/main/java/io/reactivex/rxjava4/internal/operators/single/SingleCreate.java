@@ -24,14 +24,21 @@ import io.reactivex.rxjava4.internal.disposables.*;
 import io.reactivex.rxjava4.internal.util.ExceptionHelper;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
+/**
+ * 由 SingleOnSubscribe 回调驱动：订阅时创建 Emitter 并调用 source.subscribe。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleCreate<T> extends Single<T> {
 
     final SingleOnSubscribe<T> source;
 
+    /** @param source 定义如何向 Emitter 发射结果的回调 */
     public SingleCreate(SingleOnSubscribe<T> source) {
         this.source = source;
     }
 
+    /** 创建 Emitter 并调用 source.subscribe；异常转 parent.onError。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         Emitter<T> parent = new Emitter<>(observer);
@@ -45,6 +52,7 @@ public final class SingleCreate<T> extends Single<T> {
         }
     }
 
+    /** SingleEmitter 实现：onSuccess/onError 后 dispose 并置 DISPOSED。 */
     static final class Emitter<T>
     extends AtomicReference<Disposable>
     implements SingleEmitter<T>, Disposable {
@@ -58,6 +66,7 @@ public final class SingleCreate<T> extends Single<T> {
             this.downstream = downstream;
         }
 
+        /** 非 DISPOSED 时 onSuccess 并 dispose 关联 Disposable。 */
         @Override
         public void onSuccess(T value) {
             if (get() != DisposableHelper.DISPOSED) {
@@ -85,6 +94,7 @@ public final class SingleCreate<T> extends Single<T> {
             }
         }
 
+        /** 非 DISPOSED 时 onError 并 dispose；已 dispose 返回 false。 */
         @Override
         public boolean tryOnError(Throwable t) {
             if (t == null) {

@@ -25,11 +25,10 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Maps each 'rail' of the source ParallelFlowable with a mapper function
- * and handle any failure based on a handler function.
+ * 对每条并行轨道用 mapper 映射；mapper 异常时由 errorHandler 决定 RETRY/SKIP/STOP。
  * <p>History: 2.0.8 - experimental
- * @param <T> the input value type
- * @param <R> the output value type
+ * @param <T> 输入元素类型
+ * @param <R> 输出元素类型
  * @since 2.2
  */
 public final class ParallelMapTry<T, R> extends ParallelFlowable<R> {
@@ -40,6 +39,11 @@ public final class ParallelMapTry<T, R> extends ParallelFlowable<R> {
 
     final BiFunction<? super Long, ? super Throwable, ParallelFailureHandling> errorHandler;
 
+    /**
+     * @param source 并行上游
+     * @param mapper 映射函数
+     * @param errorHandler 映射异常时的失败处理策略
+     */
     public ParallelMapTry(ParallelFlowable<T> source, Function<? super T, ? extends R> mapper,
             BiFunction<? super Long, ? super Throwable, ParallelFailureHandling> errorHandler) {
         this.source = source;
@@ -76,6 +80,7 @@ public final class ParallelMapTry<T, R> extends ParallelFlowable<R> {
         return source.parallelism();
     }
 
+    /** 普通 Subscriber 上的带重试 map 实现。 */
     static final class ParallelMapTrySubscriber<T, R> implements ConditionalSubscriber<T>, Subscription {
 
         final Subscriber<? super R> downstream;
@@ -121,6 +126,7 @@ public final class ParallelMapTry<T, R> extends ParallelFlowable<R> {
             }
         }
 
+        /** mapper 成功后 downstream.onNext；异常走 errorHandler 循环。 */
         @Override
         public boolean tryOnNext(T t) {
             if (done) {
@@ -188,6 +194,7 @@ public final class ParallelMapTry<T, R> extends ParallelFlowable<R> {
         }
 
     }
+    /** ConditionalSubscriber 上的带重试 map 实现。 */
     static final class ParallelMapTryConditionalSubscriber<T, R> implements ConditionalSubscriber<T>, Subscription {
 
         final ConditionalSubscriber<? super R> downstream;

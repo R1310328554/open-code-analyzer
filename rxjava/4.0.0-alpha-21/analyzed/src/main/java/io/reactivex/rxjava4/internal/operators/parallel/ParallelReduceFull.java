@@ -28,10 +28,10 @@ import io.reactivex.rxjava4.parallel.ParallelFlowable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Reduces all 'rails' into a single value which then gets reduced into a single
- * Publisher sequence.
+ * 将所有并行轨道归约为单个值：各轨道先局部 reduce，
+ * 再以 SlotPair 两两合并，最终发射至单一 Flowable 下游。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class ParallelReduceFull<T> extends Flowable<T> {
 
@@ -39,11 +39,16 @@ public final class ParallelReduceFull<T> extends Flowable<T> {
 
     final BiFunction<T, T, T> reducer;
 
+    /**
+     * @param source 并行上游
+     * @param reducer 两值合并函数
+     */
     public ParallelReduceFull(ParallelFlowable<? extends T> source, BiFunction<T, T, T> reducer) {
         this.source = source;
         this.reducer = reducer;
     }
 
+    /** 创建 MainSubscriber 并订阅各 inner 轨道。 */
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
         ParallelReduceFullMainSubscriber<T> parent = new ParallelReduceFullMainSubscriber<>(s, source.parallelism(), reducer);
@@ -52,6 +57,7 @@ public final class ParallelReduceFull<T> extends Flowable<T> {
         source.subscribe(parent.subscribers);
     }
 
+    /** 协调各 inner 完成值，经 addValue 两两归并后 complete。 */
     static final class ParallelReduceFullMainSubscriber<T> extends DeferredScalarSubscription<T> {
 
         @Serial
@@ -79,6 +85,7 @@ public final class ParallelReduceFull<T> extends Flowable<T> {
             remaining.lazySet(n);
         }
 
+        /** CAS 获取 SlotPair 双槽，凑齐一对后返回供 reducer 合并。 */
         SlotPair<T> addValue(T value) {
             for (;;) {
                 SlotPair<T> curr = current.get();
@@ -127,6 +134,7 @@ public final class ParallelReduceFull<T> extends Flowable<T> {
             }
         }
 
+        /** 接收轨道局部结果，循环 addValue+reducer 直至 remaining 归零。 */
         void innerComplete(T value) {
             if (value != null) {
                 for (;;) {
@@ -161,6 +169,7 @@ public final class ParallelReduceFull<T> extends Flowable<T> {
         }
     }
 
+    /** 单轨道局部 reduce：逐 onNext 累加，onComplete 时 innerComplete(value)。 */
     static final class ParallelReduceFullInnerSubscriber<T>
     extends AtomicReference<Subscription>
     implements FlowableSubscriber<T> {
@@ -186,6 +195,7 @@ public final class ParallelReduceFull<T> extends Flowable<T> {
             SubscriptionHelper.setOnce(this, s, Long.MAX_VALUE);
         }
 
+        /** 首值缓存，其后 reducer.apply 累加至 value。 */
         @Override
         public void onNext(T t) {
             if (!done) {
@@ -232,6 +242,7 @@ public final class ParallelReduceFull<T> extends Flowable<T> {
         }
     }
 
+    /** 双槽配对结构：tryAcquireSlot 占槽，releaseSlot 凑齐后可供合并。 */
     static final class SlotPair<T> extends AtomicInteger {
 
         @Serial

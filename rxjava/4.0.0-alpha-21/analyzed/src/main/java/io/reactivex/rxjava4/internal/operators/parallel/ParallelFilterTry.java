@@ -25,9 +25,10 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Filters each 'rail' of the source ParallelFlowable with a predicate function.
+ * 对 ParallelFlowable 每条并行轨道用 predicate 过滤；
+ * predicate 异常时由 errorHandler 决定 RETRY/SKIP/STOP。
  *
- * @param <T> the input value type
+ * @param <T> 输入元素类型
  */
 public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
 
@@ -37,6 +38,11 @@ public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
 
     final BiFunction<? super Long, ? super Throwable, ParallelFailureHandling> errorHandler;
 
+    /**
+     * @param source 并行上游 ParallelFlowable
+     * @param predicate 过滤谓词
+     * @param errorHandler 谓词异常时的失败处理策略
+     */
     public ParallelFilterTry(ParallelFlowable<T> source, Predicate<? super T> predicate,
             BiFunction<? super Long, ? super Throwable, ParallelFailureHandling> errorHandler) {
         this.source = source;
@@ -44,6 +50,7 @@ public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
         this.errorHandler = errorHandler;
     }
 
+    /** 按 ConditionalSubscriber 分支创建各轨道 Filter Subscriber 并订阅上游。 */
     @Override
     public void subscribe(Subscriber<? super T>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);
@@ -73,6 +80,7 @@ public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
         return source.parallelism();
     }
 
+    /** 过滤基类：tryOnNext 失败且未 done 时 request(1) 补偿。 */
     abstract static class BaseFilterSubscriber<T> implements ConditionalSubscriber<T>, Subscription {
         final Predicate<? super T> predicate;
 
@@ -97,6 +105,7 @@ public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
             upstream.cancel();
         }
 
+        /** tryOnNext 返回 false 且未 done 时向上游 request(1)。 */
         @Override
         public final void onNext(T t) {
             if (!tryOnNext(t) && !done) {
@@ -105,6 +114,7 @@ public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
         }
     }
 
+    /** 普通 Subscriber 上的带重试过滤实现。 */
     static final class ParallelFilterSubscriber<T> extends BaseFilterSubscriber<T> {
 
         final Subscriber<? super T> downstream;
@@ -124,6 +134,7 @@ public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
             }
         }
 
+        /** predicate 为 true 时 downstream.onNext；异常走 errorHandler 循环。 */
         @Override
         public boolean tryOnNext(T t) {
             if (!done) {
@@ -193,6 +204,7 @@ public final class ParallelFilterTry<T> extends ParallelFlowable<T> {
         }
     }
 
+    /** ConditionalSubscriber 上的带重试过滤实现。 */
     static final class ParallelFilterConditionalSubscriber<T> extends BaseFilterSubscriber<T> {
 
         final ConditionalSubscriber<? super T> downstream;

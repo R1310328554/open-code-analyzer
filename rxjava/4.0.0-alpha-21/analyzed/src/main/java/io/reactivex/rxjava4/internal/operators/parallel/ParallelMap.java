@@ -26,10 +26,10 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Maps each 'rail' of the source ParallelFlowable with a mapper function.
+ * 对 ParallelFlowable 每条并行轨道用 mapper 逐元素映射。
  *
- * @param <T> the input value type
- * @param <R> the output value type
+ * @param <T> 输入元素类型
+ * @param <R> 输出元素类型
  */
 public final class ParallelMap<T, R> extends ParallelFlowable<R> {
 
@@ -37,11 +37,16 @@ public final class ParallelMap<T, R> extends ParallelFlowable<R> {
 
     final Function<? super T, ? extends R> mapper;
 
+    /**
+     * @param source 并行上游
+     * @param mapper 映射函数
+     */
     public ParallelMap(ParallelFlowable<T> source, Function<? super T, ? extends R> mapper) {
         this.source = source;
         this.mapper = mapper;
     }
 
+    /** 按 ConditionalSubscriber 分支创建各轨道 Map Subscriber 并订阅上游。 */
     @Override
     public void subscribe(Subscriber<? super R>[] subscribers) {
         subscribers = RxJavaPlugins.onSubscribe(this, subscribers);
@@ -71,6 +76,7 @@ public final class ParallelMap<T, R> extends ParallelFlowable<R> {
         return source.parallelism();
     }
 
+    /** 普通 Subscriber 上的并行 map 实现。 */
     static final class ParallelMapSubscriber<T, R> implements FlowableSubscriber<T>, Subscription {
 
         final Subscriber<? super R> downstream;
@@ -105,6 +111,7 @@ public final class ParallelMap<T, R> extends ParallelFlowable<R> {
             }
         }
 
+        /** 应用 mapper 后 downstream.onNext；异常 cancel 并 onError。 */
         @Override
         public void onNext(T t) {
             if (done) {
@@ -144,6 +151,7 @@ public final class ParallelMap<T, R> extends ParallelFlowable<R> {
         }
 
     }
+    /** ConditionalSubscriber 上的并行 map 实现。 */
     static final class ParallelMapConditionalSubscriber<T, R> implements ConditionalSubscriber<T>, Subscription {
 
         final ConditionalSubscriber<? super R> downstream;
@@ -197,6 +205,7 @@ public final class ParallelMap<T, R> extends ParallelFlowable<R> {
             downstream.onNext(v);
         }
 
+        /** 映射后 downstream.tryOnNext；异常 cancel 并 onError。 */
         @Override
         public boolean tryOnNext(T t) {
             if (done) {

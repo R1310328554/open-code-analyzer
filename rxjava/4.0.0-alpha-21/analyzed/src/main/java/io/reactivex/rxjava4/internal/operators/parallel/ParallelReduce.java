@@ -26,10 +26,10 @@ import java.io.Serial;
 import java.util.Objects;
 
 /**
- * Reduce the sequence of values in each 'rail' to a single value.
+ * 将每条并行轨道的元素序列归约为单个值（各轨道独立 reduce）。
  *
- * @param <T> the input value type
- * @param <R> the result value type
+ * @param <T> 输入元素类型
+ * @param <R> 归约结果类型
  */
 public final class ParallelReduce<T, R> extends ParallelFlowable<R> {
 
@@ -39,6 +39,11 @@ public final class ParallelReduce<T, R> extends ParallelFlowable<R> {
 
     final BiFunction<R, ? super T, R> reducer;
 
+    /**
+     * @param source 并行上游
+     * @param initialSupplier 每条轨道的初始累加器 Supplier
+     * @param reducer 累加函数 (acc, value) -> acc
+     */
     public ParallelReduce(ParallelFlowable<? extends T> source, Supplier<R> initialSupplier, BiFunction<R, ? super T, R> reducer) {
         this.source = source;
         this.initialSupplier = initialSupplier;
@@ -75,6 +80,7 @@ public final class ParallelReduce<T, R> extends ParallelFlowable<R> {
         source.subscribe(parents);
     }
 
+    /** initialSupplier 失败时向所有 Subscriber 发送 EmptySubscription.error。 */
     void reportError(Subscriber<?>[] subscribers, Throwable ex) {
         for (Subscriber<?> s : subscribers) {
             EmptySubscription.error(ex, s);
@@ -86,6 +92,7 @@ public final class ParallelReduce<T, R> extends ParallelFlowable<R> {
         return source.parallelism();
     }
 
+    /** 单轨道 reduce：逐 onNext 更新 accumulator，onComplete 时 complete。 */
     static final class ParallelReduceSubscriber<T, R> extends DeferredScalarSubscriber<T, R> {
 
         @Serial
@@ -114,6 +121,7 @@ public final class ParallelReduce<T, R> extends ParallelFlowable<R> {
             }
         }
 
+        /** reducer.apply(accumulator, t) 更新累加器；异常 cancel 并 onError。 */
         @Override
         public void onNext(T t) {
             if (!done) {
@@ -143,6 +151,7 @@ public final class ParallelReduce<T, R> extends ParallelFlowable<R> {
             downstream.onError(t);
         }
 
+        /** 发射最终 accumulator 并 complete。 */
         @Override
         public void onComplete() {
             if (!done) {

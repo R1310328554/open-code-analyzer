@@ -20,14 +20,22 @@ import io.reactivex.rxjava4.internal.disposables.EmptyDisposable;
 
 import java.util.Objects;
 
+/**
+ * 每次订阅时调用 singleSupplier 获取新的 SingleSource 并订阅，
+ * 实现延迟/工厂式 Single 创建。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleDefer<T> extends Single<T> {
 
     final Supplier<? extends SingleSource<? extends T>> singleSupplier;
 
+    /** @param singleSupplier 每次订阅时提供 SingleSource 的 Supplier */
     public SingleDefer(Supplier<? extends SingleSource<? extends T>> singleSupplier) {
         this.singleSupplier = singleSupplier;
     }
 
+    /** 调用 singleSupplier.get() 后 subscribe 返回的 SingleSource。 */
     @Override
     protected void subscribeActual(SingleObserver<? super T> observer) {
         SingleSource<? extends T> next;

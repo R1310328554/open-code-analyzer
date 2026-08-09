@@ -25,9 +25,9 @@ import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 import java.util.Objects;
 
 /**
- * Execute a Consumer in each 'rail' for the current element passing through.
+ * 在每条并行轨道上于元素流经时执行一组 Consumer/Action 回调（peek 副作用）。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class ParallelPeek<T> extends ParallelFlowable<T> {
 
@@ -42,6 +42,17 @@ public final class ParallelPeek<T> extends ParallelFlowable<T> {
     final LongConsumer onRequest;
     final Action onCancel;
 
+    /**
+     * @param source 并行上游
+     * @param onNext 元素到达时回调
+     * @param onAfterNext 转发后回调
+     * @param onError 错误时回调
+     * @param onComplete 完成时回调
+     * @param onAfterTerminated 终止后回调
+     * @param onSubscribe 订阅建立时回调
+     * @param onRequest request 时回调
+     * @param onCancel cancel 时回调
+     */
     public ParallelPeek(ParallelFlowable<T> source,
             Consumer<? super T> onNext,
             Consumer<? super T> onAfterNext,
@@ -88,6 +99,7 @@ public final class ParallelPeek<T> extends ParallelFlowable<T> {
         return source.parallelism();
     }
 
+    /** 单轨道 peek：在转发前后调用 parent 中注册的回调。 */
     static final class ParallelPeekSubscriber<T> implements FlowableSubscriber<T>, Subscription {
 
         final Subscriber<? super T> downstream;
@@ -103,6 +115,7 @@ public final class ParallelPeek<T> extends ParallelFlowable<T> {
             this.parent = parent;
         }
 
+        /** 先 onRequest.accept 再 upstream.request。 */
         @Override
         public void request(long n) {
             try {
@@ -144,6 +157,7 @@ public final class ParallelPeek<T> extends ParallelFlowable<T> {
             }
         }
 
+        /** onNext → downstream.onNext → onAfterNext；回调异常转 onError。 */
         @Override
         public void onNext(T t) {
             if (!done) {
@@ -166,6 +180,7 @@ public final class ParallelPeek<T> extends ParallelFlowable<T> {
             }
         }
 
+        /** onError 回调后转发错误，再 onAfterTerminated。 */
         @Override
         public void onError(Throwable t) {
             if (done) {

@@ -18,6 +18,12 @@ import io.reactivex.rxjava4.disposables.Disposable;
 import io.reactivex.rxjava4.exceptions.Exceptions;
 import io.reactivex.rxjava4.functions.BiPredicate;
 
+/**
+ * 订阅上游 Single，用 BiPredicate 比较成功值与给定 value，
+ * 发射比较结果 Boolean。
+ *
+ * @param <T> 上游元素类型
+ */
 public final class SingleContains<T> extends Single<Boolean> {
 
     final SingleSource<T> source;
@@ -26,18 +32,25 @@ public final class SingleContains<T> extends Single<Boolean> {
 
     final BiPredicate<Object, Object> comparer;
 
+    /**
+     * @param source 上游 SingleSource
+     * @param value 待比较的目标值
+     * @param comparer 比较函数 (upstream, value) -> boolean
+     */
     public SingleContains(SingleSource<T> source, Object value, BiPredicate<Object, Object> comparer) {
         this.source = source;
         this.value = value;
         this.comparer = comparer;
     }
 
+    /** 订阅 ContainsSingleObserver 比较上游成功值。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super Boolean> observer) {
 
         source.subscribe(new ContainsSingleObserver(observer));
     }
 
+    /** onSuccess 时 comparer.test(v, value) 并发射 Boolean 结果。 */
     final class ContainsSingleObserver implements SingleObserver<T> {
 
         private final SingleObserver<? super Boolean> downstream;
@@ -51,6 +64,7 @@ public final class SingleContains<T> extends Single<Boolean> {
             downstream.onSubscribe(d);
         }
 
+        /** comparer.test 后 downstream.onSuccess(b)；异常转 onError。 */
         @Override
         public void onSuccess(T v) {
             boolean b;

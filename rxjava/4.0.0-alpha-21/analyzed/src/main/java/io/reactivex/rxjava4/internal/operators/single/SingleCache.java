@@ -19,6 +19,12 @@ import java.util.concurrent.atomic.*;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.disposables.Disposable;
 
+/**
+ * 缓存 Single 的首个 onSuccess/onError 结果，
+ * 后续订阅者直接重放缓存值（wip 门控仅订阅一次上游）。
+ *
+ * @param <T> 元素类型
+ */
 public final class SingleCache<T> extends Single<T> implements SingleObserver<T> {
 
     @SuppressWarnings("rawtypes")
@@ -36,6 +42,7 @@ public final class SingleCache<T> extends Single<T> implements SingleObserver<T>
 
     Throwable error;
 
+    /** @param source 被缓存的 SingleSource */
     @SuppressWarnings("unchecked")
     public SingleCache(SingleSource<? extends T> source) {
         this.source = source;
@@ -43,6 +50,7 @@ public final class SingleCache<T> extends Single<T> implements SingleObserver<T>
         this.observers = new AtomicReference<CacheDisposable<T>[]>(EMPTY);
     }
 
+    /** add 观察者；wip==0 时首次 subscribe 上游，已终止则直接重放缓存。 */
     @Override
     protected void subscribeActual(final SingleObserver<? super T> observer) {
         CacheDisposable<T> d = new CacheDisposable<>(observer, this);
@@ -67,6 +75,7 @@ public final class SingleCache<T> extends Single<T> implements SingleObserver<T>
         }
     }
 
+    /** CAS 将 observer 追加至 observers 数组。 */
     boolean add(CacheDisposable<T> observer) {
         for (;;) {
             CacheDisposable<T>[] a = observers.get();
@@ -84,6 +93,7 @@ public final class SingleCache<T> extends Single<T> implements SingleObserver<T>
         }
     }
 
+    /** dispose 时 CAS 从 observers 数组移除 observer。 */
     @SuppressWarnings("unchecked")
     void remove(CacheDisposable<T> observer) {
         for (;;) {
@@ -125,6 +135,7 @@ public final class SingleCache<T> extends Single<T> implements SingleObserver<T>
         // not supported by this operator
     }
 
+    /** 缓存 value 并向 TERMINATED 前全部 observer 广播 onSuccess。 */
     @SuppressWarnings("unchecked")
     @Override
     public void onSuccess(T value) {
@@ -137,6 +148,7 @@ public final class SingleCache<T> extends Single<T> implements SingleObserver<T>
         }
     }
 
+    /** 缓存 error 并向全部 observer 广播 onError。 */
     @SuppressWarnings("unchecked")
     @Override
     public void onError(Throwable e) {
@@ -149,6 +161,7 @@ public final class SingleCache<T> extends Single<T> implements SingleObserver<T>
         }
     }
 
+    /** 下游 Disposable 包装：dispose 时从 parent 移除自身。 */
     static final class CacheDisposable<T>
     extends AtomicBoolean
     implements Disposable {

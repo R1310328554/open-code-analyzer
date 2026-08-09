@@ -27,12 +27,12 @@ import io.reactivex.rxjava4.parallel.ParallelFlowable;
 import io.reactivex.rxjava4.plugins.RxJavaPlugins;
 
 /**
- * Given sorted rail sequences (according to the provided comparator) as List
- * emit the smallest item from these parallel Lists to the Subscriber.
+ * 各并行轨道各发射一个已排序 List，按 comparator 多路归并
+ * 依次向下游发射当前最小元素（类似 sorted merge）。
  * <p>
- * It expects the source to emit exactly one list (which could be empty).
+ * 期望每条轨道恰好发射一个 List（可为空）。
  *
- * @param <T> the value type
+ * @param <T> 元素类型
  */
 public final class ParallelSortedJoin<T> extends Flowable<T> {
 
@@ -40,11 +40,16 @@ public final class ParallelSortedJoin<T> extends Flowable<T> {
 
     final Comparator<? super T> comparator;
 
+    /**
+     * @param source 各轨道发射 List 的并行上游
+     * @param comparator 元素比较器
+     */
     public ParallelSortedJoin(ParallelFlowable<List<T>> source, Comparator<? super T> comparator) {
         this.source = source;
         this.comparator = comparator;
     }
 
+    /** 创建 SortedJoinSubscription 并订阅各 inner 轨道。 */
     @Override
     protected void subscribeActual(Subscriber<? super T> s) {
         SortedJoinSubscription<T> parent = new SortedJoinSubscription<>(s, source.parallelism(), comparator);
@@ -53,6 +58,7 @@ public final class ParallelSortedJoin<T> extends Flowable<T> {
         source.subscribe(parent.subscribers);
     }
 
+    /** 多路归并协调器：收集各轨道 List 后 drain 发射最小元素。 */
     static final class SortedJoinSubscription<T>
     extends AtomicInteger
     implements Subscription {
@@ -121,6 +127,7 @@ public final class ParallelSortedJoin<T> extends Flowable<T> {
             }
         }
 
+        /** 存储第 index 轨道的 List；全部到齐后触发 drain。 */
         void innerNext(List<T> value, int index) {
             lists[index] = value;
             if (remaining.decrementAndGet() == 0) {
@@ -138,6 +145,7 @@ public final class ParallelSortedJoin<T> extends Flowable<T> {
             }
         }
 
+        /** wip 门控：跨轨道找最小元素 onNext，耗尽则 onComplete。 */
         void drain() {
             if (getAndIncrement() != 0) {
                 return;
@@ -257,6 +265,7 @@ public final class ParallelSortedJoin<T> extends Flowable<T> {
         }
     }
 
+    /** 单轨道：接收 List 后交给 parent.innerNext。 */
     static final class SortedJoinInnerSubscriber<T>
     extends AtomicReference<Subscription>
     implements FlowableSubscriber<List<T>> {
