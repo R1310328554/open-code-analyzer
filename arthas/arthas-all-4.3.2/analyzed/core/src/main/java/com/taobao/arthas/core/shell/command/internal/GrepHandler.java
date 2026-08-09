@@ -11,6 +11,11 @@ import com.taobao.middleware.cli.CommandLine;
 import com.taobao.middleware.cli.annotations.CLIConfigurator;
 
 /**
+ * Shell 管道中的 grep 过滤器，按关键字或正则匹配行并支持上下文与行号。
+ * <p>
+ * 由 {@link StdoutHandler#inject} 根据管道首 Token 解析 {@link GrepCommand} 参数后构造；
+ * {@code -c} 计数模式返回 {@link GrepCountHandler} 实现 {@link StatisticsFunction}。
+ *
  * @author beiwei30 on 12/12/2016.
  */
 public class GrepHandler extends StdoutHandler {
@@ -18,36 +23,32 @@ public class GrepHandler extends StdoutHandler {
 
     private String keyword;
     private boolean ignoreCase;
-    /**
-     * select non-matching lines
-     */
+    /** 为 true 时输出不匹配行（grep -v） */
+
     private final boolean invertMatch;
 
     private final Pattern pattern;
 
-    /**
-     * print line number with output lines
-     */
+    /** 为 true 时在每行前输出行号（grep -n） */
+
     private final boolean showLineNumber;
 
     private boolean trimEnd;
 
-    /**
-     * print NUM lines of leading context
-     */
+    /** 匹配行前保留的上下文行数（-B） */
+
     private final Integer beforeLines;
-    /**
-     * print NUM lines of trailing context
-     */
+    /** 匹配行后保留的上下文行数（-A） */
+
     private final Integer afterLines;
 
-    /**
-     * stop after NUM selected lines
-     */
+    /** 最多输出多少条匹配行后停止（-m） */
+
     protected final Integer maxCount;
 
     private static CLI cli = null;
 
+    /** 从管道 Token 解析 grep 参数并返回对应 {@link StdoutHandler} 实例 */
     public static StdoutHandler inject(List<CliToken> tokens) {
         List<String> args = StdoutHandler.parseArgs(tokens, NAME);
 
@@ -74,6 +75,7 @@ public class GrepHandler extends StdoutHandler {
                 afterLines = context;
             }
         }
+        // -c 模式：仅统计匹配行数，不输出正文
         if (grepCommand.isCount()) {
             return new GrepCountHandler(grepCommand.getPattern(), grepCommand.isIgnoreCase(),
                             grepCommand.isInvertMatch(), grepCommand.isRegEx(), grepCommand.isTrimEnd(),
@@ -93,6 +95,7 @@ public class GrepHandler extends StdoutHandler {
         this.beforeLines = beforeLines > 0 ? beforeLines : 0;
         this.afterLines = afterLines > 0 ? afterLines : 0;
         this.maxCount = maxCount > 0 ? maxCount : 0;
+        // 正则模式：编译 Pattern；否则使用子串 contains 匹配
         if (regexpMode) {
             final int flags = ignoreCase ? Pattern.CASE_INSENSITIVE : 0;
             this.pattern = Pattern.compile(keyword, flags);
@@ -119,6 +122,7 @@ public class GrepHandler extends StdoutHandler {
             }
             lineNum++;
 
+            // 命中：处理 -B/-A 上下文并追加当前行
             if (isSelectedLine(line)) {
                 matchCount++;
                 if (beforeLines > continueCount) {
@@ -153,7 +157,8 @@ public class GrepHandler extends StdoutHandler {
                 if (maxCount > 0 && matchCount >= maxCount) {
                     break;
                 }
-            } else { // not match
+            } else { // 未命中：重置连续上下文计数
+
                 if (continueCount > 0) {
                     lastContinueLineNum = lineNum - 1;
                     continueCount = 0;
@@ -171,6 +176,7 @@ public class GrepHandler extends StdoutHandler {
         return line;
     }
 
+    /** 判断一行是否应被选中（含 invertMatch 取反逻辑） */
     protected boolean isSelectedLine(String line) {
         final boolean match;
         if (pattern == null) {
@@ -188,6 +194,7 @@ public class GrepHandler extends StdoutHandler {
         output.append(line).append('\n');
     }
 
+    /** grep -c：累积匹配行数，最终通过 {@link StatisticsFunction#result()} 输出 */
     private static class GrepCountHandler extends GrepHandler implements StatisticsFunction {
 
         private int count;

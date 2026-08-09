@@ -9,10 +9,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 管道 wc 处理器：统计上游输出行数（当前仅支持 {@code wc -l}）。
+ * <p>
+ * 实现 {@link StatisticsFunction}；{@link #apply} 按行累加，Job 结束通过 {@link #result()} 输出总数。
+ *
  * @author ralf0131 2017-02-23 23:28.
  */
 public class WordCountHandler extends StdoutHandler implements StatisticsFunction  {
 
+    /** 管道子命令名 */
     public static final String NAME = "wc";
 
     private boolean lineMode;
@@ -20,6 +25,7 @@ public class WordCountHandler extends StdoutHandler implements StatisticsFunctio
     private String result = null;
     private final AtomicInteger total = new AtomicInteger(0);
 
+    /** 解析 -l 标志并构造 WordCountHandler */
     public static StdoutHandler inject(List<CliToken> tokens) {
         List<String> args = StdoutHandler.parseArgs(tokens, NAME);
         CommandLine commandLine = CLIs.create(NAME)
@@ -34,8 +40,10 @@ public class WordCountHandler extends StdoutHandler implements StatisticsFunctio
     }
 
     @Override
+    /** 行模式下按换行分割累加行数；非 -l 模式返回提示信息 */
     public String apply(String input) {
         if (!this.lineMode) {
+            // TODO 默认行为应对齐 `wc -l -w -c`，当前仅实现 -l
             // TODO the default behavior should be equivalent to `wc -l -w -c`
             result = "wc currently only support wc -l!\n";
         } else {
@@ -48,6 +56,7 @@ public class WordCountHandler extends StdoutHandler implements StatisticsFunctio
     }
 
     @Override
+    /** @return 累计行数加换行，或错误提示文本 */
     public String result() {
         if (result != null) {
             return result;

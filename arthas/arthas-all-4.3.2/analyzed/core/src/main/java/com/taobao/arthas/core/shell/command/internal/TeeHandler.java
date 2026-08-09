@@ -11,13 +11,19 @@ import java.io.*;
 import java.util.List;
 
 /**
+ * 管道 tee 处理器：将 stdout 同时写入终端与文件（类似 Unix tee）。
+ * <p>
+ * 通过 {@link TeeCommand} 解析路径与 append 标志；实现 {@link CloseFunction} 关闭文件流。
+ *
  * @author min.yang
  */
 public class TeeHandler extends StdoutHandler implements CloseFunction {
+    /** 管道子命令名 */
     public static final String NAME = "tee";
     private PrintWriter out;
     private static CLI cli = null;
 
+    /** 打开目标文件；空路径时仅透传不写文件 */
     public TeeHandler(String filePath, boolean append) throws IOException {
         if (StringUtils.isEmpty(filePath)) {
             return;
@@ -37,6 +43,7 @@ public class TeeHandler extends StdoutHandler implements CloseFunction {
         out = new PrintWriter(new BufferedWriter(new FileWriter(file, append)));
     }
 
+    /** 从 Token 解析 {@link TeeCommand} 并构造 TeeHandler */
     public static StdoutHandler inject(List<CliToken> tokens) {
         List<String> args = StdoutHandler.parseArgs(tokens, NAME);
 
@@ -62,6 +69,7 @@ public class TeeHandler extends StdoutHandler implements CloseFunction {
     }
 
     @Override
+    /** 写入文件并原样返回 data，保证下游管道仍能收到输出 */
     public String apply(String data) {
         data = super.apply(data);
         if (out != null) {
@@ -72,6 +80,7 @@ public class TeeHandler extends StdoutHandler implements CloseFunction {
     }
 
     @Override
+    /** 关闭底层 {@link PrintWriter} */
     public void close() {
         if (out != null) {
             out.close();
