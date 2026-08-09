@@ -24,38 +24,38 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- *  list functions
+ * 分布式 List 的 RxJava3 API。
+ * <p>各方法返回 {@link Single}、{@link Maybe}、{@link Completable} 或 {@link Flowable}。
  *
  * @author Nikita Koksharov
- *
- * @param <V> the type of elements held in this collection
+ * @param <V> 元素类型
  */
-// TODO add sublist support
+// TODO 添加 subList 支持
 public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
 
     /**
-     * Loads elements by specified <code>indexes</code>
+     * 按指定下标批量加载元素。
      * 
-     * @param indexes of elements
-     * @return elements
+     * @param indexes 元素下标
+     * @return 元素列表
      */
     Single<List<V>> get(int... indexes);
     
     /**
-     * Add <code>element</code> after <code>elementToFind</code>
+     * 在 {@code elementToFind} 之后插入 {@code element}。
      * 
-     * @param elementToFind - object to find
-     * @param element - object to add
-     * @return new list size
+     * @param elementToFind 锚点元素
+     * @param element 待插入/设置的元素
+     * @return 新列表长度
      */
     Single<Integer> addAfter(V elementToFind, V element);
     
     /**
-     * Add <code>element</code> before <code>elementToFind</code>
+     * 在 {@code elementToFind} 之前插入 {@code element}。
      * 
-     * @param elementToFind - object to find
-     * @param element - object to add
-     * @return new list size
+     * @param elementToFind 锚点元素
+     * @param element 待插入/设置的元素
+     * @return 新列表长度
      */
     Single<Integer> addBefore(V elementToFind, V element);
     
@@ -66,11 +66,11 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
     Flowable<V> iterator(int startIndex);
 
     /**
-     * Returns last index of <code>element</code> or 
+     * 返回 {@code element} 最后一次出现的下标；未找到则返回 -1。
      * -1 if element isn't found
      * 
-     * @param element to find
-     * @return index of -1 if element isn't found
+     * @param element 待插入/设置的元素
+     * @return 下标；未找到则为 -1
      */
     Single<Integer> lastIndexOf(Object element);
 
@@ -84,108 +84,106 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
     Single<Integer> indexOf(Object element);
 
     /**
-     * Inserts <code>element</code> at <code>index</code>. 
-     * Subsequent elements are shifted. 
+     * 在 {@code index} 处插入 {@code element}，后续元素后移。
+     * 后续元素后移。 
      * 
-     * @param index - index number
-     * @param element - element to insert
+     * @param index 下标
+     * @param element 待插入/设置的元素
      * @return {@code true} if list was changed
      */
     Completable add(int index, V element);
 
     /**
-     * Inserts <code>elements</code> at <code>index</code>. 
-     * Subsequent elements are shifted. 
+     * 在 {@code index} 处批量插入 {@code elements}，后续元素后移。
+     * 后续元素后移。 
      * 
-     * @param index - index number
-     * @param elements - elements to insert
+     * @param index 下标
+     * @param elements 待插入的元素集合
      * @return {@code true} if list changed
      *      or {@code false} if element isn't found
      */
     Single<Boolean> addAll(int index, Collection<? extends V> elements);
 
     /**
-     * Set <code>element</code> at <code>index</code>.
-     * Works faster than {@link #set(int, Object)} but 
-     * doesn't return previous element.
+     * 在 {@code index} 处设置 {@code element}（不返回旧值，比 {@link #set(int, Object)} 更快）。
      * 
-     * @param index - index of object
-     * @param element - object
-     * @return void
+     * @param index 下标
+     * @param element 待插入/设置的元素
+     * @return 无返回值
      */
     Completable fastSet(int index, V element);
 
     /**
-     * Set <code>element</code> at <code>index</code> and returns previous element.
+     * 在 {@code index} 处设置 {@code element} 并返回旧值。
      * 
-     * @param index - index of object
-     * @param element - object
-     * @return previous element or <code>null</code> if element wasn't set.
+     * @param index 下标
+     * @param element 待插入/设置的元素
+     * @return 旧元素；未设置时为 null
      */
     Maybe<V> set(int index, V element);
 
     /**
-     * Get element at <code>index</code>
+     * 获取 {@code index} 处的元素。
      * 
-     * @param index - index of object
-     * @return element
+     * @param index 下标
+     * @return 元素
      */
     Maybe<V> get(int index);
 
     /**
-     * Removes element at <code>index</code>.
+     * 移除 {@code index} 处的元素。
      * 
-     * @param index - index of object
-     * @return element or <code>null</code> if element wasn't set.
+     * @param index 下标
+     * @return 被移除的元素；不存在时为 null
      */
     Maybe<V> remove(int index);
     
     /**
-     * Read all elements at once
+     * 一次性读取全部元素。
      *
-     * @return list of values
+     * @return 全部元素列表
      */
     Single<List<V>> readAll();
 
     /**
-     * Trim list and remains elements only in specified range
+     * 裁剪列表，仅保留 {@code fromIndex}（含）到 {@code toIndex}（含）范围内的元素。
      * <code>fromIndex</code>, inclusive, and <code>toIndex</code>, inclusive.
      *
-     * @param fromIndex - from index
-     * @param toIndex - to index
-     * @return void
+     * @param fromIndex 起始下标
+     * @param toIndex 结束下标
+     * @return 无返回值
      */
     Completable trim(int fromIndex, int toIndex);
 
     /**
-     * Remove object by specified index
+     * 按指定下标快速移除元素。
      * 
-     * @param index - index of object
-     * @return void
+     * @param index 下标
+     * @return 无返回值
      */
     Completable fastRemove(int index);
 
     /**
-     * Returns range of values from 0 index to <code>toIndex</code>. Indexes are zero based. 
-     * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 返回从 0 到 {@code toIndex} 的元素区间（下标从 0 起）。
+     * {@code -1} 表示最后一个元素，{@code -2} 表示倒数第二个，依此类推。
      * 
-     * @param toIndex - end index
-     * @return elements
+     * @param toIndex 结束下标
+     * @return 元素列表
      */
     Single<List<V>> range(int toIndex);
     
     /**
-     * Returns range of values from <code>fromIndex</code> to <code>toIndex</code> index including.
-     * Indexes are zero based. <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 返回 {@code fromIndex} 到 {@code toIndex}（含）闭区间内的元素。
+     * 下标从 0 起计。 <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
      * 
-     * @param fromIndex - start index
-     * @param toIndex - end index
-     * @return elements
+     * @param fromIndex 起始下标
+     * @param toIndex 结束下标
+     * @return 元素列表
      */
     Single<List<V>> range(int fromIndex, int toIndex);
 
     /**
-     * Adds object event listener
+     * 注册对象事件监听器。
      *
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.ExpiredObjectListener
@@ -196,8 +194,8 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @see org.redisson.api.listener.ListRemoveListener
      * @see org.redisson.api.listener.ListTrimListener
      *
-     * @param listener - object event listener
-     * @return listener id
+     * @param listener 事件监听器
+     * @return 监听器 ID
      */
     Single<Integer> addListener(ObjectListener listener);
 

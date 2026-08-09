@@ -16,24 +16,25 @@
 package org.redisson.api;
 
 /**
+ * Live Object（实时对象）接口，代表已持久化到 Redis 的实体代理。
+ * <p>实现类通过 {@link RLiveObjectService} 创建，getter/setter 自动映射到 Redis。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public interface RLiveObject extends RExpirable {
 
     /**
-     * Returns the value of the field that has the RId annotation.
-     * @return liveObjectId
+     * 返回标注 {@code @RId} 的主键字段值。
+     * @return Live Object 主键
      */
     Object getLiveObjectId();
 
     /**
-     * Change the value of the field that has the RId annotation. Since the 
-     * liveObjectId is encoded as a part of the name of the underlying RMap,
-     * this action will result in renaming the underlying RMap based on the
-     * naming scheme specified in the REntity annotation of the instance class.
+     * 修改 {@code @RId} 主键字段值。由于 liveObjectId 编码在底层 {@link RMap} 键名中，
+     * liveObjectId 编码在底层 {@link RMap} 键名中，
+     * 此操作将按实例类 {@code @REntity} 命名规则重命名底层 {@link RMap}。
      * 
-     * @param liveObjectId the liveObjectId to set
+     * @param liveObjectId Live Object 主键
      * @see org.redisson.api.RMap
      */
     void setLiveObjectId(Object liveObjectId);

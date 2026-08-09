@@ -16,15 +16,13 @@
 package org.redisson.api;
 
 /**
- * Map object with local entry cache support.
+ * 带条目过期与本地缓存的 Map RxJava API。
  * <p>
- * Each instance maintains local cache to achieve fast read operations.
- * Suitable for maps which used mostly for read operations and network roundtrip delays are undesirable.
- * 
- * @author Nikita Koksharov
+ * 组合 {@link RMapCacheRx} 与 {@link RLocalCachedMapRx} 能力。
  *
- * @param <K> map key
- * @param <V> map value
+ * @author Nikita Koksharov
+ * @param <K> Map 键类型
+ * @param <V> Map 值类型
  */
 public interface RLocalCachedMapCacheRx<K, V> extends RMapCacheRx<K, V>, RLocalCachedMapRx<K, V> {
 

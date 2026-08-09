@@ -16,22 +16,20 @@
 package org.redisson.api;
 
 /**
- * Map object with entry expiration and local cache support.
+ * 带条目过期与本地缓存的 Map 同步 API。
  * <p>
- * Each instance maintains local cache to achieve fast read operations.
- * Suitable for maps which used mostly for read operations and network roundtrip delays are undesirable.
- * 
- * @author Nikita Koksharov
+ * 继承 {@link RMapCache} 的 TTL 能力，并在实例侧维护本地缓存以加速读操作。
  *
- * @param <K> map key
- * @param <V> map value
+ * @author Nikita Koksharov
+ * @param <K> Map 键类型
+ * @param <V> Map 值类型
  */
 public interface RLocalCachedMapCache<K, V> extends RMapCache<K, V>, RLocalCachedMap<K, V> {
 
     /**
-     * Pre-warm the cached values.  Not guaranteed to load ALL values, but statistically
+     * 预热本地缓存值；不保证加载全部值，适合无逐出策略且整表本地缓存的场景。
      * will preload approximately all (all if no concurrent mutating activity)
-     * Intended for use with no-eviction caches where entire maps are locally cached
+     * 适用于无逐出策略、整表本地缓存的场景
      */
     void preloadCache();
 

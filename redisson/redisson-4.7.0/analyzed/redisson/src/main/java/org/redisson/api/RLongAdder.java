@@ -18,41 +18,39 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.atomic.LongAdder}
- * <p>
- * Internal state maintained on client side.
- * 
- * @author Nikita Koksharov
+ * {@link java.util.concurrent.atomic.LongAdder} 的分布式实现。
+ * <p>客户端维护内部状态，{@link #sum()} 聚合所有实例的计数。
  *
+ * @author Nikita Koksharov
  */
 public interface RLongAdder extends RExpirable, RDestroyable {
 
     /**
-     * Adds value
+     * 累加指定值。
      * 
-     * @param x - value
+     * @param x 累加值
      */
     void add(long x);
     
     /**
-     * Increments value
+     * 将计数加 1。
      */
     void increment();
 
     /**
-     * Decrements value
+     * 将计数减 1。
      */
     void decrement();
     
     /**
-     * Accumulates sum across all RLongAdder instances
+     * 聚合所有 {@link RLongAdder} 实例的计数总和。
      * 
-     * @return accumulated sum
+     * @return 聚合后的总和
      */
     long sum();
     
     /**
-     * Resets value across all RLongAdder instances
+     * 重置所有 {@link RLongAdder} 实例的计数。
      */
     void reset();
     
@@ -64,31 +62,31 @@ public interface RLongAdder extends RExpirable, RDestroyable {
     RFuture<Long> sumAsync();
 
     /**
-     * Accumulates sum across all RLongAdder instances 
-     * within defined <code>timeout</code>.
+     * 聚合所有 {@link RLongAdder} 实例的计数总和。
+     * 在指定 {@code timeout} 内完成。
      * 
-     * @param timeout for accumulation
-     * @param timeUnit for timeout
+     * @param timeout 操作超时
+     * @param timeUnit 时间单位
      * 
-     * @return accumulated sum
+     * @return 聚合后的总和
      */
     RFuture<Long> sumAsync(long timeout, TimeUnit timeUnit);
     
     /**
-     * Resets value across all RLongAdder instances
+     * 重置所有 {@link RLongAdder} 实例的计数。
      * 
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> resetAsync();
     
     /**
-     * Resets value across all RLongAdder instances 
-     * within defined <code>timeout</code>.
+     * 重置所有 {@link RLongAdder} 实例的计数。
+     * 在指定 {@code timeout} 内完成。
      * 
-     * @param timeout for reset
-     * @param timeUnit for timeout
+     * @param timeout 操作超时
+     * @param timeUnit 时间单位
      * 
-     * @return void
+     * @return 无返回值
      */
     RFuture<Void> resetAsync(long timeout, TimeUnit timeUnit);
 

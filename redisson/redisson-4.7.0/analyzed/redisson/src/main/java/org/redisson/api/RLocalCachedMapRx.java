@@ -22,50 +22,48 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Map object with local entry cache support.
+ * 带本地条目缓存的 Map RxJava API。
  * <p>
- * Each instance maintains local cache to achieve fast read operations.
- * Suitable for maps which used mostly for read operations and network roundtrip delays are undesirable.
+ * 各方法返回 {@link Completable} 或 {@link Single}；本地缓存视图方法同步返回。
  *
  * @author Nikita Koksharov
- *
- * @param <K> map key
- * @param <V> map value
+ * @param <K> Map 键类型
+ * @param <V> Map 值类型
  */
 public interface RLocalCachedMapRx<K, V> extends RMapRx<K, V> {
 
     /**
-     * Clears local cache across all instances
+     * 清除所有实例上的本地缓存。
      *
-     * @return void
+     * @return 无返回值
      */
     Completable clearLocalCache();
 
     /**
-     * Returns all keys stored in local cache
+     * 返回本地缓存中的全部键。
      *
-     * @return keys
+     * @return 键集合
      */
     Set<K> cachedKeySet();
 
     /**
-     * Returns all values stored in local cache
+     * 返回本地缓存中的全部值。
      *
-     * @return values
+     * @return 值集合
      */
     Collection<V> cachedValues();
 
     /**
-     * Returns all map entries stored in local cache
+     * 返回本地缓存中的全部 Map 条目。
      *
-     * @return entries
+     * @return 条目集合
      */
     Set<Map.Entry<K, V>> cachedEntrySet();
 
     /**
-     * Returns state of local cache
+     * 返回本地缓存的当前快照（键值映射）。
      *
-     * @return map
+     * @return 本地缓存快照
      */
     Map<K, V> getCachedMap();
 

@@ -22,23 +22,20 @@ import org.redisson.api.condition.Condition;
 import org.redisson.api.condition.Conditions;
 
 /**
- * The pre-registration of each entity class is not necessary.
- *
- * Entity's getters and setters operations gets redirected to Redis
- * automatically.
+ * Live Object 服务：将 Java 实体透明映射为 Redis 存储。
+ * <p>实体类无需预注册；getter/setter 调用自动重定向到 Redis。
  *
  * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
- *
  */
 public interface RLiveObjectService {
 
     /**
-     * Finds the entity from Redis with the id.
+     * 按 ID 从 Redis 查找实体。
      *
-     * The entityClass should have a field annotated with RId, and the
-     * entityClass itself should have REntity annotated. The type of the RId can
-     * be anything <b>except</b> the followings:
+     * 实体类需有 {@code @RId} 标注字段，且
+     * 类本身需标注 {@code @REntity}。{@code @RId} 类型
+     * 不可为以下类型：
      * <ol>
      * <li>An array i.e. byte[], int[], Integer[], etc.</li>
      * <li>or a RObject i.e. RedissonMap</li>
@@ -46,20 +43,20 @@ public interface RLiveObjectService {
      * </ol>
      *
      *
-     * @param entityClass - entity class
-     * @param id identifier
+     * @param entityClass 实体类
+     * @param id 实体 ID
      * @param <T> Entity type
-     * @return a proxied object if it exists in redis, or null if not.
+     * @return 代理对象；不存在时为 null
      */
     <T> T get(Class<T> entityClass, Object id);
     
     /**
-     * Finds the entities matches specified <code>condition</code>.
+     * 按条件查找匹配的实体集合。
      * <p><strong>
      * NOTE: open-source version is slow.<br>
-     * Use <a href="https://redisson.pro">Redisson PRO</a> instead.
+     * 建议使用 <a href="https://redisson.pro">Redisson PRO</a>。
      * </strong><p>
-     * Usage example:
+     * 用法示例：
      * <pre>
      * Collection objects = liveObjectService.find(MyObject.class, Conditions.or(Conditions.in("field", "value1", "value2"), 
      *                          Conditions.and(Conditions.eq("field2", "value2"), Conditions.eq("field3", "value5"))));
@@ -68,19 +65,19 @@ public interface RLiveObjectService {
      * @see Conditions
      * 
      * @param <T> Entity type
-     * @param entityClass - entity class
-     * @param condition - condition object 
-     * @return collection of live objects or empty collection.
+     * @param entityClass 实体类
+     * @param condition 查询条件
+     * @return Live Object 集合（可能为空）
      */
     <T> Collection<T> find(Class<T> entityClass, Condition condition);
 
     /**
-     * Counts the entities matches specified <code>condition</code>.
+     * 统计满足条件的实体数量。
      * <p><strong>
      * NOTE: open-source version is slow.<br>
-     * Use <a href="https://redisson.pro">Redisson PRO</a> instead.
+     * 建议使用 <a href="https://redisson.pro">Redisson PRO</a>。
      * </strong><p>
-     * Usage example:
+     * 用法示例：
      * <pre>
      * long objectsAmount = liveObjectService.count(MyObject.class, Conditions.or(Conditions.in("field", "value1", "value2"),
      *                          Conditions.and(Conditions.eq("field2", "value2"), Conditions.eq("field3", "value5"))));
@@ -88,225 +85,224 @@ public interface RLiveObjectService {
      *
      * @see Conditions
      *
-     * @param entityClass - entity class
-     * @param condition - condition object
-     * @return amount of live objects.
+     * @param entityClass 实体类
+     * @param condition 查询条件
+     * @return 实体数量
      */
     long count(Class<?> entityClass, Condition condition);
 
     /**
-     * Returns iterator for all entry ids by specified <code>entityClass</code>.
-     * Ids traversed with SCAN operation. Each SCAN operation loads
-     * up to <code>count</code> keys per request.
+     * 返回指定实体类的全部 ID 迭代器（SCAN 遍历）。
+     * 通过 SCAN 遍历 ID；每次 SCAN 最多加载
+     * 个键。
      *
-     * @param entityClass - entity class
+     * @param entityClass 实体类
      * @param <K> Key type
      * @return collection of ids or empty collection.
      */
     <K> Iterable<K> findIds(Class<?> entityClass);
 
     /**
-     * Returns iterator for all entry ids by specified <code>entityClass</code>.
-     * Ids traversed with SCAN operation. Each SCAN operation loads
-     * up to <code>count</code> keys per request.
+     * 返回指定实体类的全部 ID 迭代器（SCAN 遍历）。
+     * 通过 SCAN 遍历 ID；每次 SCAN 最多加载
+     * 个键。
      *
-     * @param entityClass - entity class
-     * @param count - keys loaded per request to Redis
+     * @param entityClass 实体类
+     * @param count 每次 SCAN 加载的键数量
      * @param <K> Key type
      * @return collection of ids or empty collection.
      */
     <K> Iterable<K> findIds(Class<?> entityClass, int count);
 
     /**
-     * Returns proxied object for the detached object. Discard all the
-     * field values already in the detached instance.
+     * 为游离对象返回代理实例，并丢弃游离对象中已有的字段值。
+     * 游离对象中已有的字段值将被丢弃。
      *
-     * The class representing this object should have a field annotated with
-     * RId, and the object should hold a non null value in that field.
+     * 对象类需有字段标注
+     * {@code @RId}，且该字段值非 null。
      *
-     * If this object is not in redis then a new <b>blank</b> proxied instance
-     * with the same RId field value will be created.
+     * Redis 中不存在时创建<b>空白</b>代理实例，
+     * 主键与游离对象相同。
      *
      * @param <T> Entity type
-     * @param detachedObject - not proxied object
-     * @return proxied object
+     * @param detachedObject 游离（未代理）对象
+     * @return 代理对象
      * @throws IllegalArgumentException if the object is is a RLiveObject instance.
      */
     <T> T attach(T detachedObject);
 
     /**
-     * Returns proxied object for the detached object. Transfers all the
-     * <b>NON NULL</b> field values to the redis server. It does not delete any
-     * existing data in redis in case of the field value is null.
+     * 为游离对象返回代理实例，将所有<b>非 null</b>字段值写入 Redis。
+     * 将<b>非 null</b>字段值写入 Redis，不会删除
+     * 字段值为 null 时 Redis 中的已有数据。
      * 
-     * The class representing this object should have a field annotated with
-     * RId, and the object should hold a non null value in that field.
+     * 对象类需有字段标注
+     * {@code @RId}，且该字段值非 null。
      * 
-     * If this object is not in redis then a new hash key will be created to
-     * store it. Otherwise overrides current object state in Redis with the given object state.
+     * Redis 中不存在时创建新 hash 键以
+     * 存储；已存在则用给定对象状态覆盖 Redis 中的当前状态。
      *
      * @param <T> Entity type
-     * @param detachedObject - not proxied object
-     * @return proxied object
+     * @param detachedObject 游离（未代理）对象
+     * @return 代理对象
      * @throws IllegalArgumentException if the object is is a RLiveObject instance.
      */
     <T> T merge(T detachedObject);
 
     /**
-     * Returns proxied object for the detached object. Transfers all the
-     * <b>NON NULL</b> field values to the redis server. It does not delete any
-     * existing data in redis in case of the field value is null.
+     * 为游离对象返回代理实例，将所有<b>非 null</b>字段值写入 Redis。
+     * 将<b>非 null</b>字段值写入 Redis，不会删除
+     * 字段值为 null 时 Redis 中的已有数据。
      *
-     * The class representing this object should have a field annotated with
-     * RId, and the object should hold a non null value in that field.
+     * 对象类需有字段标注
+     * {@code @RId}，且该字段值非 null。
      *
-     * If this object is not in redis then a new hash key will be created to
-     * store it. Otherwise overrides current object state in Redis with the given object state.
+     * Redis 中不存在时创建新 hash 键以
+     * 存储；已存在则用给定对象状态覆盖 Redis 中的当前状态。
      *
      * @param <T> Entity type
-     * @param detachedObjects - not proxied objects
-     * @return proxied object
+     * @param detachedObjects 游离对象数组
+     * @return 代理对象
      * @throws IllegalArgumentException if the object is is a RLiveObject instance.
      */
     <T> List<T> merge(T... detachedObjects);
 
     /**
-     * Returns proxied attached object for the detached object. Transfers all the
+     * 为游离对象返回代理实例，仅在 Redis 中不存在时写入<b>非 null</b>字段值。
      * <b>NON NULL</b> field values to the redis server. Only when the it does
-     * not already exist.
+     * 写入数据。
      * 
      * @param <T> Entity type
-     * @param detachedObject - not proxied object
-     * @return proxied object
+     * @param detachedObject 游离（未代理）对象
+     * @return 代理对象
      */
     <T> T persist(T detachedObject);
 
     /**
-     * Returns proxied attached objects for the detached objects. Stores all the
+     * 为多个游离对象返回代理实例，批量写入<b>非 null</b>字段值。
      * <b>NON NULL</b> field values.
      * <p>
-     * Executed in a batch mode.
+     * 以批处理模式执行。
      *
      * @param <T> Entity type
-     * @param detachedObjects - not proxied objects
+     * @param detachedObjects 游离对象数组
      * @return list of proxied objects
      */
     <T> List<T> persist(T... detachedObjects);
 
     /**
-     * Returns unproxied detached object for the attached object.
+     * 将已附加（代理）对象转为未代理的游离对象。
      *
      * @param <T> Entity type
-     * @param attachedObject - proxied object
-     * @return detachedObject object - not proxied object
+     * @param attachedObject 已附加（代理）对象
+     * @return 游离对象
      */
     <T> T detach(T attachedObject);
 
     /**
-     * Deletes attached object including all nested objects.
+     * 删除已附加对象及其所有嵌套对象。
      *
      * @param <T> Entity type
-     * @param attachedObject - proxied object
+     * @param attachedObject 已附加（代理）对象
      */
     <T> void delete(T attachedObject);
 
     /**
-     * Deletes object by class and ids including all nested objects.
+     * 按实体类与 ID 批量删除对象（含嵌套对象）。
      *
      * @param <T> Entity type
-     * @param entityClass - object class
-     * @param ids - object ids
+     * @param entityClass 实体类
+     * @param ids 实体 ID 列表
      * 
-     * @return amount of deleted objects
+     * @return 已删除对象数量
      */
     <T> long delete(Class<T> entityClass, Object... ids);
     
     /**
-     * To cast the instance to RLiveObject instance.
+     * 将实例转换为 {@link RLiveObject}。
      * 
      * @param <T> type of instance
-     * @param instance - live object
-     * @return RLiveObject compatible object
+     * @param instance Live Object 实例
+     * @return RLiveObject 兼容对象
      */
     <T> RLiveObject asLiveObject(T instance);
 
     /**
-     * To cast the instance to RMap instance.
+     * 将实例转换为 {@link RMap}。
      * 
      * @param <T> type of instance
      * @param <K> type of key
      * @param <V> type of value
-     * @param instance - live object
-     * @return RMap compatible object
+     * @param instance Live Object 实例
+     * @return RMap 兼容对象
      */
     <T, K, V> RMap<K, V> asRMap(T instance);
 
     /**
-     * Returns true if the instance is a instance of RLiveObject.
+     * 判断实例是否为 {@link RLiveObject}。
      * 
      * @param <T> type of instance
-     * @param instance - live object
-     * @return <code>true</code> object is RLiveObject
+     * @param instance Live Object 实例
+     * @return 见方法说明
      */
     <T> boolean isLiveObject(T instance);
     
     /**
-     * Returns true if the RLiveObject already exists in redis. It will return false if
+     * 判断 {@link RLiveObject} 是否已存在于 Redis；非 Live Object 实例返回 false。
      * the passed object is not a RLiveObject.
      * 
      * @param <T> type of instance
-     * @param instance - live object
-     * @return <code>true</code> object exists
+     * @param instance Live Object 实例
+     * @return 见方法说明
      */
     <T> boolean isExists(T instance);
     
     /**
-     * Pre register the class with the service, registering all the classes on
-     * startup can speed up the instance creation. This is <b>NOT</b> mandatory
-     * since the class will also be registered lazily when it is first used.
+     * 预注册实体类；启动时批量注册可加速实例创建（非强制，首次使用时也会懒注册）。
+     * 可加速实例创建；<b>非</b>强制，
+     * 首次使用时也会懒注册。
      * 
-     * All classed registered with the service is stored in a class cache.
+     * 已注册类保存在类缓存中。
      * 
-     * The cache is independent between different RedissonClient instances. When
-     * a class is registered in one RLiveObjectService instance it is also
-     * accessible in another RLiveObjectService instance so long as they are 
-     * created by the same RedissonClient instance.
+     * 缓存在不同 RedissonClient 实例间独立；
+     * 在一个 RLiveObjectService 中注册的类，
+     * 在同一 RedissonClient 创建的其他实例中也可访问。 
      * 
-     * @param cls - class 
+     * 
+     * @param cls 实体类
      */
     void registerClass(Class<?> cls);
     
     /**
-     * Unregister the class with the service. This is useful after you decide
-     * the class is no longer required. 
+     * 从服务注销实体类；代理或创建失败时也会自动注销。
+     * 类不再需要时注销。 
      * 
-     * A class will be automatically unregistered if the service encountered any
-     * errors during proxying or creating the object, since those errors are not
-     * recoverable.
+     * 代理或创建失败时会自动注销，
+     * 因该类错误不可恢复。
      * 
-     * All classed registered with the service is stored in a class cache.
+     * 已注册类保存在类缓存中。
      * 
-     * The cache is independent between different RedissonClient instances. When
-     * a class is registered in one RLiveObjectService instance it is also 
-     * accessible in another RLiveObjectService instance so long as they are 
-     * created by the same RedissonClient instance.
+     * 缓存在不同 RedissonClient 实例间独立；
+     * 在一个 RLiveObjectService 中注册的类， 
+     * 在同一 RedissonClient 创建的其他实例中也可访问。 
      * 
-     * @param cls It can be either the proxied class or the unproxied conterpart.
+     * 
+     * @param cls 实体类
      */
     void unregisterClass(Class<?> cls);
     
     /**
-     * Check if the class is registered in the cache. 
+     * 检查实体类是否已在缓存中注册。
      * 
-     * All classed registered with the service is stored in a class cache.
+     * 已注册类保存在类缓存中。
      * 
-     * The cache is independent between different RedissonClient instances. When
-     * a class is registered in one RLiveObjectService instance it is also 
-     * accessible in another RLiveObjectService instance so long as they are 
-     * created by the same RedissonClient instance.
+     * 缓存在不同 RedissonClient 实例间独立；
+     * 在一个 RLiveObjectService 中注册的类， 
+     * 在同一 RedissonClient 创建的其他实例中也可访问。 
      * 
-     * @param cls - type of instance
-     * @return <code>true</code> if class already registered
+     * 
+     * @param cls 实体类
+     * @return 见方法说明
      */
     boolean isClassRegistered(Class<?> cls);
 }
