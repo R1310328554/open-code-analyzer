@@ -49,12 +49,7 @@ public enum JsonToken {
    */
   NAME,
 
-<<<<<<< Updated upstream
   /** JSON 字符串。 */
-=======
-  /**
-   */
->>>>>>> Stashed changes
   STRING,
 
   /**
@@ -62,19 +57,10 @@ public enum JsonToken {
    */
   NUMBER,
 
-<<<<<<< Updated upstream
   /** JSON 布尔值 {@code true} 或 {@code false}。 */
   BOOLEAN,
 
   /** JSON {@code null}。 */
-=======
-  /**
-   */
-  BOOLEAN,
-
-  /**
-   */
->>>>>>> Stashed changes
   NULL,
 
   /**
