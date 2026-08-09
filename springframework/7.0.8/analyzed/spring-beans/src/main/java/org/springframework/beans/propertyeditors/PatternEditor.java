@@ -22,8 +22,8 @@ import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Editor for {@code java.util.regex.Pattern}, to directly populate a Pattern property.
- * Expects the same syntax as Pattern's {@code compile} method.
+ * {@code java.util.regex.Pattern} 的属性编辑器，用于直接填充 Pattern 属性。
+ * 语法与 Pattern 的 {@code compile} 方法相同。
  *
  * @author Juergen Hoeller
  * @since 2.0.1
@@ -32,19 +32,20 @@ import org.jspecify.annotations.Nullable;
  */
 public class PatternEditor extends PropertyEditorSupport {
 
+	/** 编译正则时应用的 {@code java.util.regex.Pattern} 标志位。 */
 	private final int flags;
 
 
 	/**
-	 * Create a new PatternEditor with default settings.
+	 * 使用默认设置创建新的 PatternEditor。
 	 */
 	public PatternEditor() {
 		this.flags = 0;
 	}
 
 	/**
-	 * Create a new PatternEditor with the given settings.
-	 * @param flags the {@code java.util.regex.Pattern} flags to apply
+	 * 使用给定标志位创建新的 PatternEditor。
+	 * @param flags 要应用的 {@code java.util.regex.Pattern} 标志位
 	 * @see java.util.regex.Pattern#compile(String, int)
 	 * @see java.util.regex.Pattern#CASE_INSENSITIVE
 	 * @see java.util.regex.Pattern#MULTILINE

@@ -27,14 +27,13 @@ import org.springframework.core.io.support.EncodedResource;
 import org.springframework.util.Assert;
 
 /**
- * One-way PropertyEditor which can convert from a text String to a
- * {@code java.io.Reader}, interpreting the given String as a Spring
- * resource location (for example, a URL String).
+ * 单向 {@link java.beans.PropertyEditor}：将文本字符串转换为 {@code java.io.Reader}，
+ * 把给定字符串解释为 Spring 资源位置（例如 URL 字符串）。
  *
- * <p>Supports Spring-style URL notation: any fully qualified standard URL
- * ("file:", "http:", etc.) and Spring's special "classpath:" pseudo-URL.
+ * <p>支持 Spring 风格 URL 记法：任意完全限定的标准 URL（{@code file:}、{@code http:} 等）
+ * 以及 Spring 特有的 {@code classpath:} 伪 URL。
  *
- * <p>Note that such readers usually do not get closed by Spring itself!
+ * <p>注意：此类 Reader 通常不会由 Spring 自行关闭！
  *
  * @author Juergen Hoeller
  * @since 4.2
@@ -45,19 +44,20 @@ import org.springframework.util.Assert;
  */
 public class ReaderEditor extends PropertyEditorSupport {
 
+	/** 底层用于解析资源位置的 {@link ResourceEditor}。 */
 	private final ResourceEditor resourceEditor;
 
 
 	/**
-	 * Create a new ReaderEditor, using the default ResourceEditor underneath.
+	 * 创建新的 ReaderEditor，使用默认的 ResourceEditor 作为底层实现。
 	 */
 	public ReaderEditor() {
 		this.resourceEditor = new ResourceEditor();
 	}
 
 	/**
-	 * Create a new ReaderEditor, using the given ResourceEditor underneath.
-	 * @param resourceEditor the ResourceEditor to use
+	 * 创建新的 ReaderEditor，使用给定的 ResourceEditor 作为底层实现。
+	 * @param resourceEditor 要使用的 ResourceEditor
 	 */
 	public ReaderEditor(ResourceEditor resourceEditor) {
 		Assert.notNull(resourceEditor, "ResourceEditor must not be null");
@@ -78,8 +78,7 @@ public class ReaderEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * This implementation returns {@code null} to indicate that
-	 * there is no appropriate text representation.
+	 * 本实现返回 {@code null}，表示不存在合适的文本表示形式（单向转换）。
 	 */
 	@Override
 	public @Nullable String getAsText() {

@@ -26,14 +26,13 @@ import java.util.Properties;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Custom {@link java.beans.PropertyEditor} for {@link Properties} objects.
+ * {@link Properties} 对象的自定义 {@link java.beans.PropertyEditor}。
  *
- * <p>Handles conversion from content {@link String} to {@code Properties} object.
- * Also handles {@link Map} to {@code Properties} conversion, for populating
- * a {@code Properties} object via XML "map" entries.
+ * <p>处理从内容 {@link String} 到 {@code Properties} 对象的转换。
+ * 也支持 {@link Map} 到 {@code Properties} 的转换，用于通过 XML {@code map} 条目
+ * 填充 {@code Properties} 对象。
  *
- * <p>The required format is defined in the standard {@code Properties}
- * documentation. Each property must be on a new line.
+ * <p>所需格式见标准 {@code Properties} 文档，每个属性须独占一行。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -42,16 +41,15 @@ import org.jspecify.annotations.Nullable;
 public class PropertiesEditor extends PropertyEditorSupport {
 
 	/**
-	 * Convert {@link String} into {@link Properties}, considering it as
-	 * properties content.
-	 * @param text the text to be so converted
+	 * 将 {@link String} 转换为 {@link Properties}，按 properties 内容格式解析。
+	 * @param text 待转换的文本
 	 */
 	@Override
 	public void setAsText(@Nullable String text) throws IllegalArgumentException {
 		Properties props = new Properties();
 		if (text != null) {
 			try {
-				// Must use the ISO-8859-1 encoding because Properties.load(stream) expects it.
+				// Properties.load(stream) 要求 ISO-8859-1 编码
 				props.load(new ByteArrayInputStream(text.getBytes(StandardCharsets.ISO_8859_1)));
 			}
 			catch (IOException ex) {
@@ -64,7 +62,7 @@ public class PropertiesEditor extends PropertyEditorSupport {
 	}
 
 	/**
-	 * Take {@link Properties} as-is; convert {@link Map} into {@code Properties}.
+	 * 直接接受 {@link Properties}；将 {@link Map} 转换为 {@code Properties}。
 	 */
 	@Override
 	public void setValue(Object value) {

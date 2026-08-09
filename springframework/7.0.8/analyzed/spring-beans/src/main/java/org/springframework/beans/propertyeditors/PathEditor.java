@@ -29,24 +29,16 @@ import org.springframework.core.io.ResourceEditor;
 import org.springframework.util.Assert;
 import org.springframework.util.ResourceUtils;
 
-/* ===== [OCA 中文解析] =====
-class PathEditor — 意图说明
-
-class `PathEditor`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-beans/src/main/java/org/springframework/beans/propertyeditors/PathEditor.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * Editor for {@code java.nio.file.Path}, to directly populate a Path
- * property instead of using a String property as bridge.
+ * {@code java.nio.file.Path} 的属性编辑器，用于直接填充 Path 属性，
+ * 而无需以 String 属性作为桥梁。
  *
- * <p>Based on {@link Paths#get(URI)}'s resolution algorithm, checking
- * registered NIO file system providers, including the default file system
- * for "file:..." paths. Also supports Spring-style URL notation: any fully
- * qualified standard URL and Spring's special "classpath:" pseudo-URL, as
- * well as Spring's context-specific relative file paths. As a fallback, a
- * path will be resolved in the file system via {@code Paths#get(String)}
- * if no existing context-relative resource could be found.
+ * <p>基于 {@link Paths#get(URI)} 的解析算法，检查已注册的 NIO 文件系统提供程序，
+ * 包括对 {@code file:...} 路径使用默认文件系统。
+ * 同时支持 Spring 风格 URL 记法：任意完全限定的标准 URL 以及 Spring 特有的
+ * {@code classpath:} 伪 URL，还有 Spring 上下文相关的相对文件路径。
+ * 若找不到已存在的上下文相对资源，则回退到通过 {@code Paths#get(String)}
+ * 在文件系统中解析路径。
  *
  * @author Juergen Hoeller
  * @since 4.3.2
@@ -59,20 +51,20 @@ class `PathEditor`：请结合所属模块与调用方理解其在整体架构�
  */
 public class PathEditor extends PropertyEditorSupport {
 
-	// [OCA] 字段 `resourceEditor`：类成员状态。
+	/** 底层用于解析 Spring 资源位置的 {@link ResourceEditor}。 */
 	private final ResourceEditor resourceEditor;
 
 
 	/**
-	 * Create a new PathEditor, using the default ResourceEditor underneath.
+	 * 创建新的 PathEditor，使用默认的 ResourceEditor 作为底层实现。
 	 */
 	public PathEditor() {
 		this.resourceEditor = new ResourceEditor();
 	}
 
 	/**
-	 * Create a new PathEditor, using the given ResourceEditor underneath.
-	 * @param resourceEditor the ResourceEditor to use
+	 * 创建新的 PathEditor，使用给定的 ResourceEditor 作为底层实现。
+	 * @param resourceEditor 要使用的 ResourceEditor
 	 */
 	public PathEditor(ResourceEditor resourceEditor) {
 		Assert.notNull(resourceEditor, "ResourceEditor must not be null");
@@ -81,33 +73,27 @@ public class PathEditor extends PropertyEditorSupport {
 
 
 	@Override
-	/* ===== [OCA 中文解析] =====
-方法 setAsText — 意图与阅读要点
-
-方法 `setAsText` 复杂度较高（CCN≈12, NLOC≈41）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
-	===== [OCA 中文解析结束] ===== */
 	public void setAsText(String text) throws IllegalArgumentException {
+		// 非 classpath: 前缀的路径可能是 NIO 路径候选
 		boolean nioPathCandidate = !text.startsWith(ResourceUtils.CLASSPATH_URL_PREFIX);
 		if (nioPathCandidate && !text.startsWith("/")) {
 			try {
 				URI uri = ResourceUtils.toURI(text);
 				String scheme = uri.getScheme();
 				if (scheme != null) {
-					// No NIO candidate except for "C:" style drive letters
+					// 除 "C:" 风格盘符外，不再视为 NIO 候选
 					nioPathCandidate = (scheme.length() == 1);
-					// Let's try NIO file system providers via Paths.get(URI)
+					// 尝试通过 Paths.get(URI) 使用 NIO 文件系统提供程序
 					setValue(Paths.get(uri).normalize());
 					return;
 				}
 			}
 			catch (URISyntaxException ex) {
-				// Not a valid URI; potentially a Windows-style path after
-				// a file prefix (let's try as Spring resource location)
+				// 非合法 URI；可能是 file 前缀后的 Windows 风格路径（改走 Spring 资源解析）
 				nioPathCandidate = !text.startsWith(ResourceUtils.FILE_URL_PREFIX);
 			}
 			catch (FileSystemNotFoundException | IllegalArgumentException ex) {
-				// URI scheme not registered for NIO or not meeting Paths requirements:
-				// let's try URL protocol handlers via Spring's resource mechanism.
+				// URI scheme 未在 NIO 中注册或不满足 Paths 要求：改走 Spring 资源机制
 			}
 		}
 
@@ -117,6 +103,7 @@ public class PathEditor extends PropertyEditorSupport {
 			setValue(null);
 		}
 		else if (nioPathCandidate && (!resource.isFile() || !resource.exists())) {
+			// 资源不存在或非文件：按本地路径字符串解析
 			setValue(Paths.get(text).normalize());
 		}
 		else {

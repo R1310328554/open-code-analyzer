@@ -24,13 +24,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link java.beans.PropertyEditor} implementation for standard JDK
- * {@link java.util.ResourceBundle ResourceBundles}.
+ * 标准 JDK {@link java.util.ResourceBundle ResourceBundle} 的
+ * {@link java.beans.PropertyEditor} 实现。
  *
- * <p>Only supports conversion <i>from</i> a String, but not <i>to</i> a String.
+ * <p>仅支持从 String <i>转换到</i> ResourceBundle，不支持反向转换。
  *
- * Find below some examples of using this class in a (properly configured)
- * Spring container using XML-based metadata:
+ * <p>以下示例展示在（已正确配置的）基于 XML 元数据的 Spring 容器中的用法：
  *
  * <pre class="code"> &lt;bean id="errorDialog" class="..."&gt;
  *    &lt;!--
@@ -47,9 +46,9 @@ import org.springframework.util.StringUtils;
  *    &lt;property name="messages" value="com/messages/DialogMessages"/&gt;
  * &lt;/bean&gt;</pre>
  *
- * <p>A 'properly configured' Spring {@link org.springframework.context.ApplicationContext container}
- * might contain a {@link org.springframework.beans.factory.config.CustomEditorConfigurer}
- * definition such that the conversion can be effected transparently:
+ * <p>「正确配置」的 Spring {@link org.springframework.context.ApplicationContext} 容器
+ * 可注册 {@link org.springframework.beans.factory.config.CustomEditorConfigurer}，
+ * 使转换透明生效：
  *
  * <pre class="code"> &lt;bean class="org.springframework.beans.factory.config.CustomEditorConfigurer"&gt;
  *    &lt;property name="customEditors"&gt;
@@ -61,10 +60,9 @@ import org.springframework.util.StringUtils;
  *    &lt;/property&gt;
  * &lt;/bean&gt;</pre>
  *
- * <p>Please note that this {@link java.beans.PropertyEditor} is <b>not</b>
- * registered by default with any of the Spring infrastructure.
+ * <p>请注意，此 {@link java.beans.PropertyEditor} <b>不会</b>由 Spring 基础设施默认注册。
  *
- * <p>Thanks to David Leal Valmana for the suggestion and initial prototype.
+ * <p>感谢 David Leal Valmana 的建议与初始原型。
  *
  * @author Rick Evans
  * @author Juergen Hoeller
@@ -73,8 +71,7 @@ import org.springframework.util.StringUtils;
 public class ResourceBundleEditor extends PropertyEditorSupport {
 
 	/**
-	 * The separator used to distinguish between the base name and the locale
-	 * (if any) when {@link #setAsText(String) converting from a String}.
+	 * {@link #setAsText(String) 从 String 转换}时，用于分隔基名与区域（若有）的分隔符。
 	 */
 	public static final String BASE_NAME_SEPARATOR = "_";
 
@@ -86,10 +83,11 @@ public class ResourceBundleEditor extends PropertyEditorSupport {
 
 		int separator = name.indexOf(BASE_NAME_SEPARATOR);
 		if (separator == -1) {
+			// 无区域后缀：使用默认 Locale 加载
 			setValue(ResourceBundle.getBundle(name));
 		}
 		else {
-			// The name potentially contains locale information
+			// 名称可能包含区域信息
 			String baseName = name.substring(0, separator);
 			if (!StringUtils.hasText(baseName)) {
 				throw new IllegalArgumentException("Invalid ResourceBundle name: '" + text + "'");

@@ -25,16 +25,14 @@ import org.springframework.core.io.ResourceEditor;
 import org.springframework.util.Assert;
 
 /**
- * Editor for {@code java.net.URL}, to directly populate a URL property
- * instead of using a String property as bridge.
+ * {@code java.net.URL} 的属性编辑器，用于直接填充 URL 属性，
+ * 而无需以 String 属性作为桥梁。
  *
- * <p>Supports Spring-style URL notation: any fully qualified standard URL
- * ("file:", "http:", etc) and Spring's special "classpath:" pseudo-URL,
- * as well as Spring's context-specific relative file paths.
+ * <p>支持 Spring 风格 URL 记法：任意完全限定的标准 URL（{@code file:}、{@code http:} 等）、
+ * Spring 特有的 {@code classpath:} 伪 URL，以及 Spring 上下文相关的相对文件路径。
  *
- * <p>Note: A URL must specify a valid protocol, else it will be rejected
- * upfront. However, the target resource does not necessarily have to exist
- * at the time of URL creation; this depends on the specific resource type.
+ * <p>注意：URL 必须指定合法协议，否则会在创建时被拒绝。
+ * 但目标资源在创建 URL 时不一定必须存在，这取决于具体资源类型。
  *
  * @author Juergen Hoeller
  * @since 15.12.2003
@@ -46,19 +44,20 @@ import org.springframework.util.Assert;
  */
 public class URLEditor extends PropertyEditorSupport {
 
+	/** 底层用于解析 Spring 资源位置的 {@link ResourceEditor}。 */
 	private final ResourceEditor resourceEditor;
 
 
 	/**
-	 * Create a new URLEditor, using a default ResourceEditor underneath.
+	 * 创建新的 URLEditor，使用默认 ResourceEditor 作为底层实现。
 	 */
 	public URLEditor() {
 		this.resourceEditor = new ResourceEditor();
 	}
 
 	/**
-	 * Create a new URLEditor, using the given ResourceEditor underneath.
-	 * @param resourceEditor the ResourceEditor to use
+	 * 创建新的 URLEditor，使用给定的 ResourceEditor 作为底层实现。
+	 * @param resourceEditor 要使用的 ResourceEditor
 	 */
 	public URLEditor(ResourceEditor resourceEditor) {
 		Assert.notNull(resourceEditor, "ResourceEditor must not be null");

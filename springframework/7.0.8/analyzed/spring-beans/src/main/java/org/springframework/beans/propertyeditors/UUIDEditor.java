@@ -22,8 +22,7 @@ import java.util.UUID;
 import org.springframework.util.StringUtils;
 
 /**
- * Editor for {@code java.util.UUID}, translating UUID
- * String representations into UUID objects and back.
+ * {@code java.util.UUID} 的属性编辑器，在 UUID 字符串表示与 UUID 对象之间双向转换。
  *
  * @author Juergen Hoeller
  * @since 3.0.1

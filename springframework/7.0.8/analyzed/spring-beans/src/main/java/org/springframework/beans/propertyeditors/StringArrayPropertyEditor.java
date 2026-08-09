@@ -24,10 +24,10 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Custom {@link java.beans.PropertyEditor} for String arrays.
+ * String 数组的自定义 {@link java.beans.PropertyEditor}。
  *
- * <p>Strings must be in CSV format, with a customizable separator.
- * By default, values in the result are trimmed of whitespace.
+ * <p>字符串须为 CSV 格式，分隔符可自定义。
+ * 默认情况下，解析结果中的各元素会去除首尾空白。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -38,83 +38,78 @@ import org.springframework.util.StringUtils;
 public class StringArrayPropertyEditor extends PropertyEditorSupport {
 
 	/**
-	 * Default separator for splitting a String: a comma (",").
+	 * 拆分 String 的默认分隔符：逗号（{@code ,}）。
 	 */
 	public static final String DEFAULT_SEPARATOR = ",";
 
 
+	/** 用于拆分字符串的分隔符。 */
 	private final String separator;
 
+	/** 除修剪外还要删除的字符集；可为 null。 */
 	private final @Nullable String charsToDelete;
 
+	/** 空数组是否转换为 {@code null}。 */
 	private final boolean emptyArrayAsNull;
 
+	/** 是否对解析出的数组元素执行 trim。 */
 	private final boolean trimValues;
 
 
 	/**
-	 * Create a new {@code StringArrayPropertyEditor} with the default separator
-	 * (a comma).
-	 * <p>An empty text (without elements) will be turned into an empty array.
+	 * 使用默认分隔符（逗号）创建新的 {@code StringArrayPropertyEditor}。
+	 * <p>空文本（无元素）将转换为空数组。
 	 */
 	public StringArrayPropertyEditor() {
 		this(DEFAULT_SEPARATOR, null, false);
 	}
 
 	/**
-	 * Create a new {@code StringArrayPropertyEditor} with the given separator.
-	 * <p>An empty text (without elements) will be turned into an empty array.
-	 * @param separator the separator to use for splitting a {@link String}
+	 * 使用给定分隔符创建新的 {@code StringArrayPropertyEditor}。
+	 * <p>空文本（无元素）将转换为空数组。
+	 * @param separator 用于拆分 {@link String} 的分隔符
 	 */
 	public StringArrayPropertyEditor(String separator) {
 		this(separator, null, false);
 	}
 
 	/**
-	 * Create a new {@code StringArrayPropertyEditor} with the given separator.
-	 * @param separator the separator to use for splitting a {@link String}
-	 * @param emptyArrayAsNull {@code true} if an empty String array
-	 * is to be transformed into {@code null}
+	 * 使用给定分隔符创建新的 {@code StringArrayPropertyEditor}。
+	 * @param separator 用于拆分 {@link String} 的分隔符
+	 * @param emptyArrayAsNull 空 String 数组是否转换为 {@code null}
 	 */
 	public StringArrayPropertyEditor(String separator, boolean emptyArrayAsNull) {
 		this(separator, null, emptyArrayAsNull);
 	}
 
 	/**
-	 * Create a new {@code StringArrayPropertyEditor} with the given separator.
-	 * @param separator the separator to use for splitting a {@link String}
-	 * @param emptyArrayAsNull {@code true} if an empty String array
-	 * is to be transformed into {@code null}
-	 * @param trimValues {@code true} if the values in the parsed arrays
-	 * are to be trimmed of whitespace (default is {@code true})
+	 * 使用给定分隔符创建新的 {@code StringArrayPropertyEditor}。
+	 * @param separator 用于拆分 {@link String} 的分隔符
+	 * @param emptyArrayAsNull 空 String 数组是否转换为 {@code null}
+	 * @param trimValues 是否对解析出的数组元素去除首尾空白（默认为 {@code true}）
 	 */
 	public StringArrayPropertyEditor(String separator, boolean emptyArrayAsNull, boolean trimValues) {
 		this(separator, null, emptyArrayAsNull, trimValues);
 	}
 
 	/**
-	 * Create a new {@code StringArrayPropertyEditor} with the given separator.
-	 * @param separator the separator to use for splitting a {@link String}
-	 * @param charsToDelete a set of characters to delete, in addition to
-	 * trimming an input String. Useful for deleting unwanted line breaks:
-	 * for example, "\r\n\f" will delete all new lines and line feeds in a String.
-	 * @param emptyArrayAsNull {@code true} if an empty String array
-	 * is to be transformed into {@code null}
+	 * 使用给定分隔符创建新的 {@code StringArrayPropertyEditor}。
+	 * @param separator 用于拆分 {@link String} 的分隔符
+	 * @param charsToDelete 除修剪外要删除的字符集；可用于删除多余换行，
+	 * 例如 {@code \r\n\f} 会删除所有换行与换页符
+	 * @param emptyArrayAsNull 空 String 数组是否转换为 {@code null}
 	 */
 	public StringArrayPropertyEditor(String separator, @Nullable String charsToDelete, boolean emptyArrayAsNull) {
 		this(separator, charsToDelete, emptyArrayAsNull, true);
 	}
 
 	/**
-	 * Create a new {@code StringArrayPropertyEditor} with the given separator.
-	 * @param separator the separator to use for splitting a {@link String}
-	 * @param charsToDelete a set of characters to delete, in addition to
-	 * trimming an input String. Useful for deleting unwanted line breaks:
-	 * for example, "\r\n\f" will delete all new lines and line feeds in a String.
-	 * @param emptyArrayAsNull {@code true} if an empty String array
-	 * is to be transformed into {@code null}
-	 * @param trimValues {@code true} if the values in the parsed arrays
-	 * are to be trimmed of whitespace (default is {@code true})
+	 * 使用给定分隔符创建新的 {@code StringArrayPropertyEditor}。
+	 * @param separator 用于拆分 {@link String} 的分隔符
+	 * @param charsToDelete 除修剪外要删除的字符集；可用于删除多余换行，
+	 * 例如 {@code \r\n\f} 会删除所有换行与换页符
+	 * @param emptyArrayAsNull 空 String 数组是否转换为 {@code null}
+	 * @param trimValues 是否对解析出的数组元素去除首尾空白（默认为 {@code true}）
 	 */
 	public StringArrayPropertyEditor(
 			String separator, @Nullable String charsToDelete, boolean emptyArrayAsNull, boolean trimValues) {
