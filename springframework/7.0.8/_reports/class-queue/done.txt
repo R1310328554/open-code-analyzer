@@ -579,3 +579,13 @@ spring-context/src/main/java/org/springframework/context/support/PropertySources
 spring-context/src/main/java/org/springframework/context/support/ResourceBundleMessageSource.java
 spring-context/src/main/java/org/springframework/context/support/SimpleThreadScope.java
 spring-context/src/main/java/org/springframework/context/support/StaticApplicationContext.java
+spring-context/src/main/java/org/springframework/context/i18n/LocaleContextThreadLocalAccessor.java
+spring-context/src/main/java/org/springframework/context/i18n/SimpleLocaleContext.java
+spring-context/src/main/java/org/springframework/context/i18n/SimpleTimeZoneAwareLocaleContext.java
+spring-context/src/main/java/org/springframework/context/i18n/TimeZoneAwareLocaleContext.java
+spring-context/src/main/java/org/springframework/context/index/CandidateComponentsIndex.java
+spring-context/src/main/java/org/springframework/context/index/CandidateComponentsIndexLoader.java
+spring-context/src/main/java/org/springframework/context/support/AbstractMessageSource.java
+spring-context/src/main/java/org/springframework/context/support/AbstractRefreshableApplicationContext.java
+spring-context/src/main/java/org/springframework/context/support/AbstractRefreshableConfigApplicationContext.java
+spring-context/src/main/java/org/springframework/context/support/AbstractResourceBasedMessageSource.java
