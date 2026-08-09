@@ -17,21 +17,38 @@
 package org.aopalliance.intercept;
 
 /**
- * <p>用户应实现{@link
- * #construct(ConstructorInvocation)}方法来原始行为。例如，下面的类实现了一个单实例拦截器（只允许被拦截的类有一个唯一的实例）： <pre
- * class=code> 类 DebuggingInterceptor 实现 ConstructorInterceptor { 对象实例=null; 拦截器修改新对象的构造。
- * 对象构造（ConstructorInitation i）抛出Throwable { if（instance==null）{ return instance=i.proceed（
- * ）; } else { throw new Exception("单例不允许多实例"); </pre>
+ * 拦截新对象的构造过程。
+ *
+ * <p>用户应实现 {@link #construct(ConstructorInvocation)} 方法
+ * 以修改原始行为。例如，以下类实现单例拦截器
+ * （被拦截类仅允许一个唯一实例）：
+ *
+ * <pre class=code>
+ * class DebuggingInterceptor implements ConstructorInterceptor {
+ *   Object instance=null;
+ *
+ *   Object construct(ConstructorInvocation i) throws Throwable {
+ *     if(instance==null) {
+ *       return instance=i.proceed();
+ *     } else {
+ *       throw new Exception("singleton does not allow multiple instance");
+ *     }
+ *   }
+ * }
+ * </pre>
+ *
  * @author Rod Johnson
  */
 public interface ConstructorInterceptor extends Interceptor {
 
 	/**
-	* 实现此方法可以在构造新对象之前和之后执行额外的处理。礼貌的实现肯定会调用 {@link Joinpoint#proceed()}。
-	* @param invocation 施工连接点
-	* @return 新创建的对象，也是调用{@link Joinpoint#proceed()}的结果；可能会被拦截器取代
-	* @throws Throwable 如果拦截器或目标对象抛出异常
-	*/
+	 * 实现此方法以在新对象构造前后执行额外处理。
+	 * 规范的实现通常会调用 {@link Joinpoint#proceed()}。
+	 * @param invocation 构造连接点
+	 * @return 新创建的对象，也是调用 {@link Joinpoint#proceed()} 的结果；
+	 * 拦截器可替换该对象
+	 * @throws Throwable 若拦截器或目标对象抛出异常
+	 */
 	Object construct(ConstructorInvocation invocation) throws Throwable;
 
 }

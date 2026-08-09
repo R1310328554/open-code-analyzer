@@ -21,17 +21,17 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.transaction.TransactionStatus;
 
 /**
- * Callback interface for transactional code. Used with {@link TransactionTemplate}'s
- * {@code execute} method, often as anonymous class within a method implementation.
+ * 事务代码的回调接口。与 {@link TransactionTemplate} 的
+ * {@code execute} 方法配合使用，常在方法实现中以匿名类形式出现。
  *
- * <p>Typically used to assemble various calls to transaction-unaware data access
- * services into a higher-level service method with transaction demarcation. As an
- * alternative, consider the use of declarative transaction demarcation (for example, through
- * Spring's {@link org.springframework.transaction.annotation.Transactional} annotation).
+ * <p>通常用于将多个对无事务感知数据访问服务的调用
+ * 组装到带事务边界的高层服务方法中。
+ * 也可考虑声明式事务边界（例如通过 Spring 的
+ * {@link org.springframework.transaction.annotation.Transactional} 注解）。
  *
  * @author Juergen Hoeller
  * @since 17.03.2003
- * @param <T> the result type
+ * @param <T> 结果类型
  * @see TransactionTemplate
  * @see CallbackPreferringPlatformTransactionManager
  */
@@ -39,17 +39,15 @@ import org.springframework.transaction.TransactionStatus;
 public interface TransactionCallback<T extends @Nullable Object> {
 
 	/**
-	 * Gets called by {@link TransactionTemplate#execute} within a transactional context.
-	 * Does not need to care about transactions itself, although it can retrieve and
-	 * influence the status of the current transaction via the given status object,
-	 * for example, setting rollback-only.
-	 * <p>Allows for returning a result object created within the transaction, i.e. a
-	 * domain object or a collection of domain objects. A RuntimeException thrown by the
-	 * callback is treated as application exception that enforces a rollback. Any such
-	 * exception will be propagated to the caller of the template, unless there is a
-	 * problem rolling back, in which case a TransactionException will be thrown.
-	 * @param status associated transaction status
-	 * @return a result object, or {@code null}
+	 * 在事务上下文中由 {@link TransactionTemplate#execute} 调用。
+	 * 本身无需关心事务，但可通过给定 status 对象获取并影响当前事务状态，
+	 * 例如设置 rollback-only。
+	 * <p>允许返回在事务内创建的结果对象，即领域对象或领域对象集合。
+	 * 回调抛出的 RuntimeException 视为强制回滚的应用异常。
+	 * 此类异常会传播给模板调用方，除非回滚出现问题，
+	 * 此时将抛出 TransactionException。
+	 * @param status 关联的事务状态
+	 * @return 结果对象，或 {@code null}
 	 * @see TransactionTemplate#execute
 	 * @see CallbackPreferringPlatformTransactionManager#execute
 	 */

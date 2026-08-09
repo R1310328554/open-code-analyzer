@@ -19,13 +19,11 @@ package org.springframework.transaction.support;
 import java.io.Flushable;
 
 /**
- * Interface to be implemented by transaction objects that are able to
- * return an internal rollback-only marker, typically from another
- * transaction that has participated and marked it as rollback-only.
+ * 由能够返回内部 rollback-only 标记的事务对象实现的接口，
+ * 该标记通常来自已参与并将之标记为 rollback-only 的其他事务。
  *
- * <p>Autodetected by {@link DefaultTransactionStatus} in order to always
- * return a current rollbackOnly flag even if not resulting from the current
- * TransactionStatus.
+ * <p>由 {@link DefaultTransactionStatus} 自动检测，
+ * 以便即使非当前 TransactionStatus 所致也能始终返回当前的 rollbackOnly 标志。
  *
  * @author Juergen Hoeller
  * @since 1.1
@@ -34,9 +32,9 @@ import java.io.Flushable;
 public interface SmartTransactionObject extends Flushable {
 
 	/**
-	 * Return whether the transaction is internally marked as rollback-only.
-	 * Can, for example, check the JTA UserTransaction.
-	 * <p>The default implementation returns {@code false}.
+	 * 返回事务是否在内部被标记为 rollback-only。
+	 * 例如可检查 JTA UserTransaction。
+	 * <p>默认实现返回 {@code false}。
 	 * @see jakarta.transaction.UserTransaction#getStatus
 	 * @see jakarta.transaction.Status#STATUS_MARKED_ROLLBACK
 	 */
@@ -45,9 +43,9 @@ public interface SmartTransactionObject extends Flushable {
 	}
 
 	/**
-	 * Flush the underlying sessions to the datastore, if applicable:
-	 * for example, all affected Hibernate/JPA sessions.
-	 * <p>The default implementation is empty, considering flush as a no-op.
+	 * 若适用，将底层 Session flush 到数据存储：
+	 * 例如所有受影响的 Hibernate/JPA Session。
+	 * <p>默认实现为空，将 flush 视为无操作。
 	 */
 	@Override
 	default void flush() {

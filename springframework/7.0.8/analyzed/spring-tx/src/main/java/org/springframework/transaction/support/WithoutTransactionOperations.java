@@ -24,8 +24,8 @@ import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 
 /**
- * A {@link TransactionOperations} implementation which executes a given
- * {@link TransactionCallback} without an actual transaction.
+ * 在无实际事务的情况下执行给定 {@link TransactionCallback} 的
+ * {@link TransactionOperations} 实现。
  *
  * @author Juergen Hoeller
  * @since 5.2

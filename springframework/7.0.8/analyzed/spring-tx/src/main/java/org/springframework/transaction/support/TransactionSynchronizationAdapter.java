@@ -19,18 +19,17 @@ package org.springframework.transaction.support;
 import org.springframework.core.Ordered;
 
 /**
- * Simple {@link TransactionSynchronization} adapter containing empty
- * method implementations, for easier overriding of single methods.
+ * 简单的 {@link TransactionSynchronization} 适配器，
+ * 包含空方法实现，便于单独覆盖某个方法。
  *
- * <p>Also implements the {@link Ordered} interface to enable the execution
- * order of synchronizations to be controlled declaratively. The default
- * {@link #getOrder() order} is {@link Ordered#LOWEST_PRECEDENCE}, indicating
- * late execution; return a lower value for earlier execution.
+ * <p>同时实现 {@link Ordered} 接口，
+ * 以便声明式控制同步的执行顺序。
+ * 默认 {@link #getOrder() order} 为 {@link Ordered#LOWEST_PRECEDENCE}，
+ * 表示较晚执行；返回更小值可更早执行。
  *
  * @author Juergen Hoeller
  * @since 22.01.2004
- * @deprecated as of 5.3, in favor of the default methods on the
- * {@link TransactionSynchronization} interface
+ * @deprecated 自 5.3 起，推荐使用 {@link TransactionSynchronization} 接口上的默认方法
  */
 @Deprecated(since = "5.3")
 public abstract class TransactionSynchronizationAdapter implements TransactionSynchronization, Ordered {

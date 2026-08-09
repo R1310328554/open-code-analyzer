@@ -17,16 +17,15 @@
 package org.springframework.transaction.support;
 
 /**
- * A simple {@link org.springframework.transaction.TransactionStatus}
- * implementation. Derives from {@link AbstractTransactionStatus} and
- * adds an explicit {@link #isNewTransaction() "newTransaction"} flag.
+ * 简单的 {@link org.springframework.transaction.TransactionStatus} 实现。
+ * 继承 {@link AbstractTransactionStatus} 并添加显式的
+ * {@link #isNewTransaction() "newTransaction"} 标志。
  *
- * <p>This class is not used by any of Spring's pre-built
- * {@link org.springframework.transaction.PlatformTransactionManager}
- * implementations. It is mainly provided as a start for custom transaction
- * manager implementations and as a static mock for testing transactional
- * code (either as part of a mock {@code PlatformTransactionManager} or
- * as argument passed into a {@link TransactionCallback} to be tested).
+ * <p>Spring 预置的 {@link org.springframework.transaction.PlatformTransactionManager}
+ * 实现均未使用此类。它主要供自定义事务管理器实现起步，
+ * 以及作为测试事务代码的静态模拟
+ * （作为模拟 {@code PlatformTransactionManager} 的一部分，
+ * 或作为传入待测 {@link TransactionCallback} 的参数）。
  *
  * @author Juergen Hoeller
  * @since 1.2.3
@@ -38,16 +37,16 @@ public class SimpleTransactionStatus extends AbstractTransactionStatus {
 
 
 	/**
-	 * Create a new {@code SimpleTransactionStatus} instance,
-	 * indicating a new transaction.
+	 * 创建新的 {@code SimpleTransactionStatus} 实例，
+	 * 表示新事务。
 	 */
 	public SimpleTransactionStatus() {
 		this(true);
 	}
 
 	/**
-	 * Create a new {@code SimpleTransactionStatus} instance.
-	 * @param newTransaction whether to indicate a new transaction
+	 * 创建新的 {@code SimpleTransactionStatus} 实例。
+	 * @param newTransaction 是否表示新事务
 	 */
 	public SimpleTransactionStatus(boolean newTransaction) {
 		this.newTransaction = newTransaction;

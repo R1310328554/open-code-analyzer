@@ -17,9 +17,8 @@
 package org.springframework.transaction.support;
 
 /**
- * Generic interface to be implemented by resource holders.
- * Allows Spring's transaction infrastructure to introspect
- * and reset the holder when necessary.
+ * 资源持有者应实现的通用接口。
+ * 允许 Spring 事务基础设施在必要时内省并重置持有者。
  *
  * @author Juergen Hoeller
  * @since 2.5.5
@@ -29,18 +28,18 @@ package org.springframework.transaction.support;
 public interface ResourceHolder {
 
 	/**
-	 * Reset the transactional state of this holder.
+	 * 重置此持有者的事务状态。
 	 */
 	void reset();
 
 	/**
-	 * Notify this holder that it has been unbound from transaction synchronization.
+	 * 通知此持有者已从事务同步中解绑。
 	 */
 	void unbound();
 
 	/**
-	 * Determine whether this holder is considered as 'void',
-	 * i.e. as a leftover from a previous thread.
+	 * 判断此持有者是否被视为「无效」，
+	 * 即是否为上一线程遗留的对象。
 	 */
 	boolean isVoid();
 

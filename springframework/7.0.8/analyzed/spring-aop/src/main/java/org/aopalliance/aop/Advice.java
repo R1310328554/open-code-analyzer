@@ -17,7 +17,9 @@
 package org.aopalliance.aop;
 
 /**
- * 建议的标签接口。实现可以是任何类型的建议，例如拦截器。
+ * Advice 的标记接口。实现可以是任意类型的通知，
+ * 例如 Interceptor。
+ *
  * @author Rod Johnson
  * @version $Id: Advice.java,v 1.1 2004/03/19 17:02:16 johnsonr Exp $
  */

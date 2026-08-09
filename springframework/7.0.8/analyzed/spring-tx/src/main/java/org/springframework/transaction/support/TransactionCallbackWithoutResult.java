@@ -23,14 +23,14 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.transaction.TransactionStatus;
 
 /**
- * Simple convenience class for TransactionCallback implementation.
- * Allows for implementing a doInTransaction version without result,
- * i.e. without the need for a return statement.
+ * TransactionCallback 实现的简单便捷类。
+ * 允许实现无返回值的 doInTransaction 版本，
+ * 即无需 return 语句。
  *
  * @author Juergen Hoeller
  * @since 28.03.2003
  * @see TransactionTemplate
- * @deprecated as of 7.0, superseded by {@link TransactionOperations#executeWithoutResult(Consumer)}
+ * @deprecated 自 7.0 起，由 {@link TransactionOperations#executeWithoutResult(Consumer)} 取代
  */
 @Deprecated(since = "7.0")
 public abstract class TransactionCallbackWithoutResult implements TransactionCallback<@Nullable Object> {
@@ -42,17 +42,14 @@ public abstract class TransactionCallbackWithoutResult implements TransactionCal
 	}
 
 	/**
-	 * Gets called by {@code TransactionTemplate.execute} within a transactional
-	 * context. Does not need to care about transactions itself, although it can retrieve
-	 * and influence the status of the current transaction via the given status object,
-	 * for example, setting rollback-only.
-	 * <p>A RuntimeException thrown by the callback is treated as application
-	 * exception that enforces a rollback. An exception gets propagated to the
-	 * caller of the template.
-	 * <p>Note when using JTA: JTA transactions only work with transactional
-	 * JNDI resources, so implementations need to use such resources if they
-	 * want transaction support.
-	 * @param status associated transaction status
+	 * 在事务上下文中由 {@code TransactionTemplate.execute} 调用。
+	 * 本身无需关心事务，但可通过给定 status 对象获取并影响当前事务状态，
+	 * 例如设置 rollback-only。
+	 * <p>回调抛出的 RuntimeException 视为强制回滚的应用异常，
+	 * 异常会传播给模板调用方。
+	 * <p>使用 JTA 时注意：JTA 事务仅对事务性 JNDI 资源有效，
+	 * 若需要事务支持，实现须使用此类资源。
+	 * @param status 关联的事务状态
 	 * @see TransactionTemplate#execute
 	 */
 	protected abstract void doInTransactionWithoutResult(TransactionStatus status);

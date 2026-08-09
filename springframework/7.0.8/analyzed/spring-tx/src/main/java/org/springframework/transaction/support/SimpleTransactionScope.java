@@ -26,14 +26,14 @@ import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.config.Scope;
 
 /**
- * A simple transaction-backed {@link Scope} implementation, delegating to
- * {@link TransactionSynchronizationManager}'s resource binding mechanism.
+ * 简单的基于事务的 {@link Scope} 实现，
+ * 委托给 {@link TransactionSynchronizationManager} 的资源绑定机制。
  *
- * <p><b>NOTE:</b> Like {@link org.springframework.context.support.SimpleThreadScope},
- * this transaction scope is not registered by default in common contexts. Instead,
- * you need to explicitly assign it to a scope key in your setup, either through
- * {@link org.springframework.beans.factory.config.ConfigurableBeanFactory#registerScope}
- * or through a {@link org.springframework.beans.factory.config.CustomScopeConfigurer} bean.
+ * <p><b>注意：</b>与 {@link org.springframework.context.support.SimpleThreadScope} 类似，
+ * 此事务作用域在常见上下文中默认未注册。
+ * 需在配置中显式将其分配给某个作用域键，
+ * 可通过 {@link org.springframework.beans.factory.config.ConfigurableBeanFactory#registerScope}
+ * 或 {@link org.springframework.beans.factory.config.CustomScopeConfigurer} Bean 完成。
  *
  * @author Juergen Hoeller
  * @since 4.2
@@ -51,8 +51,8 @@ public class SimpleTransactionScope implements Scope {
 			TransactionSynchronizationManager.registerSynchronization(new CleanupSynchronization(scopedObjects));
 			TransactionSynchronizationManager.bindResource(this, scopedObjects);
 		}
-		// NOTE: Do NOT modify the following to use Map::computeIfAbsent. For details,
-		// see https://github.com/spring-projects/spring-framework/issues/25801.
+		// 注意：请勿将以下代码改为使用 Map::computeIfAbsent。详情见
+		// https://github.com/spring-projects/spring-framework/issues/25801。
 		Object scopedObject = scopedObjects.scopedInstances.get(name);
 		if (scopedObject == null) {
 			scopedObject = objectFactory.getObject();
@@ -88,7 +88,7 @@ public class SimpleTransactionScope implements Scope {
 
 
 	/**
-	 * Holder for scoped objects.
+	 * 作用域对象的持有者。
 	 */
 	static class ScopedObjectsHolder {
 

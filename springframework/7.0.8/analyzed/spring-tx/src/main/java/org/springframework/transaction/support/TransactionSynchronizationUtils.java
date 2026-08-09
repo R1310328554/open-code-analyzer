@@ -28,8 +28,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * Utility methods for triggering specific {@link TransactionSynchronization}
- * callback methods on all currently registered synchronizations.
+ * 用于在所有当前已注册同步上触发特定 {@link TransactionSynchronization}
+ * 回调方法的工具方法。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -45,8 +45,7 @@ public abstract class TransactionSynchronizationUtils {
 
 
 	/**
-	 * Check whether the given resource transaction manager refers to the given
-	 * (underlying) resource factory.
+	 * 检查给定资源事务管理器是否指向给定（底层）资源工厂。
 	 * @see ResourceTransactionManager#getResourceFactory()
 	 * @see InfrastructureProxy#getWrappedObject()
 	 */
@@ -55,20 +54,19 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Unwrap the given resource handle if necessary; otherwise return
-	 * the given handle as-is.
+	 * 必要时解包给定资源句柄；否则原样返回。
 	 * @since 5.3.4
 	 * @see InfrastructureProxy#getWrappedObject()
 	 */
 	public static Object unwrapResourceIfNecessary(Object resource) {
 		Assert.notNull(resource, "Resource must not be null");
 		Object resourceRef = resource;
-		// unwrap infrastructure proxy
+		// 解包基础设施代理
 		if (resourceRef instanceof InfrastructureProxy infrastructureProxy) {
 			resourceRef = infrastructureProxy.getWrappedObject();
 		}
 		if (SPRING_AOP_PRESENT) {
-			// now unwrap scoped proxy
+			// 再解包作用域代理
 			resourceRef = ScopedProxyUnwrapper.unwrapIfNecessary(resourceRef);
 		}
 		return resourceRef;
@@ -76,8 +74,8 @@ public abstract class TransactionSynchronizationUtils {
 
 
 	/**
-	 * Trigger {@code flush} callbacks on all currently registered synchronizations.
-	 * @throws RuntimeException if thrown by a {@code flush} callback
+	 * 在所有当前已注册同步上触发 {@code flush} 回调。
+	 * @throws RuntimeException 若 {@code flush} 回调抛出
 	 * @see TransactionSynchronization#flush()
 	 */
 	public static void triggerFlush() {
@@ -89,8 +87,8 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Trigger {@code flush} callbacks on all currently registered synchronizations.
-	 * @throws RuntimeException if thrown by a {@code savepoint} callback
+	 * 在所有当前已注册同步上触发 {@code savepoint} 回调。
+	 * @throws RuntimeException 若 {@code savepoint} 回调抛出
 	 * @since 6.2
 	 * @see TransactionSynchronization#savepoint
 	 */
@@ -103,8 +101,8 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Trigger {@code flush} callbacks on all currently registered synchronizations.
-	 * @throws RuntimeException if thrown by a {@code savepointRollback} callback
+	 * 在所有当前已注册同步上触发 {@code savepointRollback} 回调。
+	 * @throws RuntimeException 若 {@code savepointRollback} 回调抛出
 	 * @since 6.2
 	 * @see TransactionSynchronization#savepointRollback
 	 */
@@ -117,9 +115,9 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Trigger {@code beforeCommit} callbacks on all currently registered synchronizations.
-	 * @param readOnly whether the transaction is defined as read-only transaction
-	 * @throws RuntimeException if thrown by a {@code beforeCommit} callback
+	 * 在所有当前已注册同步上触发 {@code beforeCommit} 回调。
+	 * @param readOnly 事务是否定义为只读事务
+	 * @throws RuntimeException 若 {@code beforeCommit} 回调抛出
 	 * @see TransactionSynchronization#beforeCommit(boolean)
 	 */
 	public static void triggerBeforeCommit(boolean readOnly) {
@@ -129,7 +127,7 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Trigger {@code beforeCompletion} callbacks on all currently registered synchronizations.
+	 * 在所有当前已注册同步上触发 {@code beforeCompletion} 回调。
 	 * @see TransactionSynchronization#beforeCompletion()
 	 */
 	public static void triggerBeforeCompletion() {
@@ -144,8 +142,8 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Trigger {@code afterCommit} callbacks on all currently registered synchronizations.
-	 * @throws RuntimeException if thrown by a {@code afterCommit} callback
+	 * 在所有当前已注册同步上触发 {@code afterCommit} 回调。
+	 * @throws RuntimeException 若 {@code afterCommit} 回调抛出
 	 * @see TransactionSynchronizationManager#getSynchronizations()
 	 * @see TransactionSynchronization#afterCommit()
 	 */
@@ -154,9 +152,9 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Actually invoke the {@code afterCommit} methods of the
-	 * given Spring TransactionSynchronization objects.
-	 * @param synchronizations a List of TransactionSynchronization objects
+	 * 实际调用给定 Spring TransactionSynchronization 对象的
+	 * {@code afterCommit} 方法。
+	 * @param synchronizations TransactionSynchronization 对象列表
 	 * @see TransactionSynchronization#afterCommit()
 	 */
 	public static void invokeAfterCommit(@Nullable List<TransactionSynchronization> synchronizations) {
@@ -168,9 +166,9 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Trigger {@code afterCompletion} callbacks on all currently registered synchronizations.
-	 * @param completionStatus the completion status according to the
-	 * constants in the TransactionSynchronization interface
+	 * 在所有当前已注册同步上触发 {@code afterCompletion} 回调。
+	 * @param completionStatus 根据 TransactionSynchronization 接口中
+	 * 常量表示的完成状态
 	 * @see TransactionSynchronizationManager#getSynchronizations()
 	 * @see TransactionSynchronization#afterCompletion(int)
 	 * @see TransactionSynchronization#STATUS_COMMITTED
@@ -183,11 +181,11 @@ public abstract class TransactionSynchronizationUtils {
 	}
 
 	/**
-	 * Actually invoke the {@code afterCompletion} methods of the
-	 * given Spring TransactionSynchronization objects.
-	 * @param synchronizations a List of TransactionSynchronization objects
-	 * @param completionStatus the completion status according to the
-	 * constants in the TransactionSynchronization interface
+	 * 实际调用给定 Spring TransactionSynchronization 对象的
+	 * {@code afterCompletion} 方法。
+	 * @param synchronizations TransactionSynchronization 对象列表
+	 * @param completionStatus 根据 TransactionSynchronization 接口中
+	 * 常量表示的完成状态
 	 * @see TransactionSynchronization#afterCompletion(int)
 	 * @see TransactionSynchronization#STATUS_COMMITTED
 	 * @see TransactionSynchronization#STATUS_ROLLED_BACK
@@ -210,7 +208,7 @@ public abstract class TransactionSynchronizationUtils {
 
 
 	/**
-	 * Inner class to avoid hard-coded dependency on AOP module.
+	 * 内部类，避免对 AOP 模块的硬编码依赖。
 	 */
 	private static class ScopedProxyUnwrapper {
 
