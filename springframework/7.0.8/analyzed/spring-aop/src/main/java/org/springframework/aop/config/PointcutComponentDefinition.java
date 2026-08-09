@@ -23,25 +23,21 @@ import org.springframework.beans.factory.parsing.AbstractComponentDefinition;
 import org.springframework.util.Assert;
 
 /**
- * 保存切入点定义的 {@link org.springframework.beans.factory.parsing.ComponentDefinition} 实现。
+ * {@link org.springframework.beans.factory.parsing.ComponentDefinition}
+ * implementation that holds a pointcut definition.
+ *
  * @author Rob Harrop
  * @since 2.0
  */
 public class PointcutComponentDefinition extends AbstractComponentDefinition {
 
-	/** 名称相关状态（`pointcutBeanName`）。 */
 	private final String pointcutBeanName;
 
-	/** 切点相关状态（`pointcutDefinition`）。 */
 	private final BeanDefinition pointcutDefinition;
 
-	/** `description`：该类的成员状态。 */
 	private final String description;
 
 
-	/**
-	 * 创建 `PointcutComponentDefinition` 的新实例。
-	 */
 	public PointcutComponentDefinition(String pointcutBeanName, BeanDefinition pointcutDefinition, String expression) {
 		Assert.notNull(pointcutBeanName, "Bean name must not be null");
 		Assert.notNull(pointcutDefinition, "Pointcut definition must not be null");
@@ -52,33 +48,21 @@ public class PointcutComponentDefinition extends AbstractComponentDefinition {
 	}
 
 
-	/**
-	 * 获取 Name（`Name`）。
-	 */
 	@Override
 	public String getName() {
 		return this.pointcutBeanName;
 	}
 
-	/**
-	 * 获取 Description（`Description`）。
-	 */
 	@Override
 	public String getDescription() {
 		return this.description;
 	}
 
-	/**
-	 * 获取 Bean Definitions（`BeanDefinitions`）。
-	 */
 	@Override
 	public BeanDefinition[] getBeanDefinitions() {
 		return new BeanDefinition[] {this.pointcutDefinition};
 	}
 
-	/**
-	 * 获取 Source（`Source`）。
-	 */
 	@Override
 	public @Nullable Object getSource() {
 		return this.pointcutDefinition.getSource();

@@ -19,28 +19,25 @@ package org.springframework.aop.config;
 import org.springframework.beans.factory.parsing.ParseState;
 
 /**
- * 表示切入点的 {@link ParseState} 条目。
+ * {@link ParseState} entry representing a pointcut.
+ *
  * @author Mark Fisher
  * @since 2.0
  */
 public class PointcutEntry implements ParseState.Entry {
 
-	/** 名称相关状态（`name`）。 */
 	private final String name;
 
 
 	/**
-	 * 创建一个新的 {@code PointcutEntry} 实例。
-	 * @param name 切入点的 bean 名称
+	 * Create a new {@code PointcutEntry} instance.
+	 * @param name the bean name of the pointcut
 	 */
 	public PointcutEntry(String name) {
 		this.name = name;
 	}
 
 
-	/**
-	 * 返回字符串表示。
-	 */
 	@Override
 	public String toString() {
 		return "Pointcut '" + this.name + "'";

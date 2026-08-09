@@ -27,8 +27,10 @@ import org.springframework.aop.AfterReturningAdvice;
 import org.springframework.util.Assert;
 
 /**
- * 用于包装 {@link org.springframework.aop.AfterReturningAdvice}
- * 的拦截器。由AOP框架内部使用；应用程序开发人员不需要直接使用此类。
+ * Interceptor to wrap an {@link org.springframework.aop.AfterReturningAdvice}.
+ * Used internally by the AOP framework; application developers should not need
+ * to use this class directly.
+ *
  * @author Rod Johnson
  * @see MethodBeforeAdviceInterceptor
  * @see ThrowsAdviceInterceptor
@@ -36,13 +38,12 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class AfterReturningAdviceInterceptor implements MethodInterceptor, AfterAdvice, Serializable {
 
-	/** 通知相关状态（`advice`）。 */
 	private final AfterReturningAdvice advice;
 
 
 	/**
-	 * 为给定的建议创建一个新的 AfterReturningAdviceInterceptor。
-	 * @param advice 要包装的 AfterReturningAdvice
+	 * Create a new AfterReturningAdviceInterceptor for the given advice.
+	 * @param advice the AfterReturningAdvice to wrap
 	 */
 	public AfterReturningAdviceInterceptor(AfterReturningAdvice advice) {
 		Assert.notNull(advice, "Advice must not be null");
@@ -50,9 +51,6 @@ public class AfterReturningAdviceInterceptor implements MethodInterceptor, After
 	}
 
 
-	/**
-	 * 调用（方法 `invoke`）。
-	 */
 	@Override
 	public @Nullable Object invoke(MethodInvocation mi) throws Throwable {
 		Object retVal = mi.proceed();

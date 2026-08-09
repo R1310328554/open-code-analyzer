@@ -27,11 +27,12 @@ import org.springframework.aop.Advisor;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 
 /**
- * {@link AdvisorAdapterRegistry} 接口的默认实现。支持{@link
- * org.aopalliance.intercept.MethodInterceptor}、{@link
- * org.springframework.aop.MethodBeforeAdvice}、{@link
- * org.springframework.aop.AfterReturningAdvice}、{@link
- * org.springframework.aop.ThrowsAdvice}。
+ * Default implementation of the {@link AdvisorAdapterRegistry} interface.
+ * Supports {@link org.aopalliance.intercept.MethodInterceptor},
+ * {@link org.springframework.aop.MethodBeforeAdvice},
+ * {@link org.springframework.aop.AfterReturningAdvice},
+ * {@link org.springframework.aop.ThrowsAdvice}.
+ *
  * @author Rod Johnson
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -46,7 +47,7 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 
 
 	/**
-	 * 创建一个新的 DefaultAdvisorAdapterRegistry，注册众所周知的适配器。
+	 * Create a new DefaultAdvisorAdapterRegistry, registering well-known adapters.
 	 */
 	public DefaultAdvisorAdapterRegistry() {
 		registerAdvisorAdapter(new MethodBeforeAdviceAdapter());
@@ -55,9 +56,6 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 	}
 
 
-	/**
-	 * 方法 `wrap`：完成本类中与「wrap」相关的职责。
-	 */
 	@Override
 	public Advisor wrap(Object adviceObject) throws UnknownAdviceTypeException {
 		if (adviceObject instanceof Advisor advisor) {
@@ -67,11 +65,11 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 			throw new UnknownAdviceTypeException(adviceObject);
 		}
 		if (advice instanceof MethodInterceptor) {
-			// 如此众所周知，它甚至不需要适配器。
+			// So well-known it doesn't even need an adapter.
 			return new DefaultPointcutAdvisor(advice);
 		}
 		for (AdvisorAdapter adapter : this.adapters) {
-			// 检查是否受支持。
+			// Check that it is supported.
 			if (adapter.supportsAdvice(advice)) {
 				return new DefaultPointcutAdvisor(advice);
 			}
@@ -79,9 +77,6 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 		throw new UnknownAdviceTypeException(advice);
 	}
 
-	/**
-	 * 获取 Interceptors（`Interceptors`）。
-	 */
 	@Override
 	public MethodInterceptor[] getInterceptors(Advisor advisor) throws UnknownAdviceTypeException {
 		List<MethodInterceptor> interceptors = new ArrayList<>(3);
@@ -100,9 +95,6 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 		return interceptors.toArray(EMPTY_METHOD_INTERCEPTOR_ARRAY);
 	}
 
-	/**
-	 * 注册：Advisor Adapter（方法 `registerAdvisorAdapter`）。
-	 */
 	@Override
 	public void registerAdvisorAdapter(AdvisorAdapter adapter) {
 		this.adapters.add(adapter);

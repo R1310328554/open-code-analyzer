@@ -1,6 +1,27 @@
 {
-  "claimed_at": null,
-  "files": [],
-  "remaining_pending": 127,
+  "claimed_at": "2026-08-09T17:58:08Z",
+  "files": [
+    "docs_src/request_files/tutorial001_03_an_py310.py",
+    "docs_src/request_files/tutorial001_03_py310.py",
+    "docs_src/request_files/tutorial001_an_py310.py",
+    "docs_src/request_files/tutorial001_py310.py",
+    "docs_src/request_files/tutorial002_an_py310.py",
+    "docs_src/request_files/tutorial002_py310.py",
+    "docs_src/request_files/tutorial003_an_py310.py",
+    "docs_src/request_files/tutorial003_py310.py",
+    "docs_src/request_form_models/__init__.py",
+    "docs_src/request_form_models/tutorial001_an_py310.py",
+    "docs_src/request_form_models/tutorial001_py310.py",
+    "docs_src/request_form_models/tutorial002_an_py310.py",
+    "docs_src/request_form_models/tutorial002_py310.py",
+    "docs_src/request_forms/__init__.py",
+    "docs_src/request_forms/tutorial001_an_py310.py",
+    "docs_src/request_forms/tutorial001_py310.py",
+    "docs_src/request_forms_and_files/__init__.py",
+    "docs_src/request_forms_and_files/tutorial001_an_py310.py",
+    "docs_src/request_forms_and_files/tutorial001_py310.py",
+    "docs_src/response_change_status_code/__init__.py"
+  ],
+  "remaining_pending": 107,
   "done": 382
 }

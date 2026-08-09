@@ -27,31 +27,28 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 /**
- * {@link AspectInstanceFactory} 的实现，使用配置的 bean 名称从 {@link
- * org.springframework.beans.factory.BeanFactory} 中定位方面。
+ * Implementation of {@link AspectInstanceFactory} that locates the aspect from the
+ * {@link org.springframework.beans.factory.BeanFactory} using a configured bean name.
+ *
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
  */
 public class SimpleBeanFactoryAwareAspectInstanceFactory implements AspectInstanceFactory, BeanFactoryAware {
 
-	/** 名称相关状态（`aspectBeanName`）。 */
 	private @Nullable String aspectBeanName;
 
-	/** 底层 BeanFactory 引用。 */
 	private @Nullable BeanFactory beanFactory;
 
 
 	/**
-	 * 设置方面 bean 的名称。这是调用 {@link #getAspectInstance()} 时返回的 bean。
+	 * Set the name of the aspect bean. This is the bean that is returned when calling
+	 * {@link #getAspectInstance()}.
 	 */
 	public void setAspectBeanName(String aspectBeanName) {
 		this.aspectBeanName = aspectBeanName;
 	}
 
-	/**
-	 * 设置 Bean Factory（`BeanFactory`）。
-	 */
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
@@ -60,7 +57,7 @@ public class SimpleBeanFactoryAwareAspectInstanceFactory implements AspectInstan
 
 
 	/**
-	 * 从 {@link BeanFactory} 查找方面 bean 并返回它。
+	 * Look up the aspect bean from the {@link BeanFactory} and return it.
 	 * @see #setAspectBeanName
 	 */
 	@Override
@@ -70,9 +67,6 @@ public class SimpleBeanFactoryAwareAspectInstanceFactory implements AspectInstan
 		return this.beanFactory.getBean(this.aspectBeanName);
 	}
 
-	/**
-	 * 获取 Aspect Class Loader（`AspectClassLoader`）。
-	 */
 	@Override
 	public @Nullable ClassLoader getAspectClassLoader() {
 		if (this.beanFactory instanceof ConfigurableBeanFactory cbf) {
@@ -83,9 +77,6 @@ public class SimpleBeanFactoryAwareAspectInstanceFactory implements AspectInstan
 		}
 	}
 
-	/**
-	 * 获取 Order（`Order`）。
-	 */
 	@Override
 	public int getOrder() {
 		if (this.beanFactory != null && this.aspectBeanName != null &&

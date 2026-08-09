@@ -21,11 +21,13 @@ import org.aopalliance.intercept.MethodInterceptor;
 import org.springframework.aop.MethodMatcher;
 
 /**
- * 内部框架记录，将 {@link MethodInterceptor} 实例与 {@link MethodMatcher} 相结合，用作顾问链中的元素。
+ * Internal framework record, combining a {@link MethodInterceptor} instance
+ * with a {@link MethodMatcher} for use as an element in the advisor chain.
+ *
  * @author Rod Johnson
  * @author Sam Brannen
- * @param interceptor {@code MethodInterceptor}
- * @param matcher {@code MethodMatcher}
+ * @param interceptor the {@code MethodInterceptor}
+ * @param matcher the {@code MethodMatcher}
  */
 record InterceptorAndDynamicMethodMatcher(MethodInterceptor interceptor, MethodMatcher matcher) {
 }
