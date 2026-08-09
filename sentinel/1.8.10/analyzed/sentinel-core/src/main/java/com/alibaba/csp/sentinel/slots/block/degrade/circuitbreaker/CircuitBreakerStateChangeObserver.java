@@ -18,24 +18,26 @@ package com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
 
 /**
+ * 熔断器状态变更观察者接口。
+ *
  * @author Eric Zhao
  * @since 1.8.0
  */
 public interface CircuitBreakerStateChangeObserver {
 
     /**
-     * <p>Observer method triggered when circuit breaker state changed. The transformation could be:</p>
+     * <p>熔断器状态变更时触发的回调。可能的转换包括：</p>
      * <ul>
-     * <li>From {@code CLOSED} to {@code OPEN} (with the triggered metric)</li>
-     * <li>From {@code OPEN} to {@code HALF_OPEN}</li>
-     * <li>From {@code OPEN} to {@code CLOSED}</li>
-     * <li>From {@code HALF_OPEN} to {@code OPEN} (with the triggered metric)</li>
+     * <li>{@code CLOSED} → {@code OPEN}（携带触发指标）</li>
+     * <li>{@code OPEN} → {@code HALF_OPEN}</li>
+     * <li>{@code OPEN} → {@code CLOSED}</li>
+     * <li>{@code HALF_OPEN} → {@code OPEN}（携带触发指标）</li>
      * </ul>
      *
-     * @param prevState     previous state of the circuit breaker
-     * @param newState      new state of the circuit breaker
-     * @param rule          associated rule
-     * @param snapshotValue triggered value on circuit breaker opens (null if the new state is CLOSED or HALF_OPEN)
+     * @param prevState     熔断器先前状态
+     * @param newState      熔断器新状态
+     * @param rule          关联规则
+     * @param snapshotValue 熔断打开时的触发值（新状态为 CLOSED 或 HALF_OPEN 时为 null）
      */
     void onStateChange(CircuitBreaker.State prevState, CircuitBreaker.State newState, DegradeRule rule,
                        Double snapshotValue);

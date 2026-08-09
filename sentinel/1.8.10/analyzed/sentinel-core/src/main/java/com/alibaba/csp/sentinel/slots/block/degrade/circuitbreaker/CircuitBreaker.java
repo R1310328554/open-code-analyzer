@@ -20,62 +20,55 @@ import com.alibaba.csp.sentinel.slotchain.ResourceWrapper;
 import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
 
 /**
- * <p>Basic <a href="https://martinfowler.com/bliki/CircuitBreaker.html">circuit breaker</a> interface.</p>
+ * <p>基础<a href="https://martinfowler.com/bliki/CircuitBreaker.html">熔断器</a>接口。</p>
  *
  * @author Eric Zhao
  */
 public interface CircuitBreaker {
 
     /**
-     * Get the associated circuit breaking rule.
+     * 获取关联的熔断规则。
      *
-     * @return associated circuit breaking rule
+     * @return 关联的熔断规则
      */
     DegradeRule getRule();
 
     /**
-     * Acquires permission of an invocation only if it is available at the time of invoking.
+     * 仅在调用时刻可用时获取一次调用的许可。
      *
-     * @param context context of current invocation
-     * @return {@code true} if permission was acquired and {@code false} otherwise
+     * @param context 当前调用上下文
+     * @return 获取成功返回 {@code true}，否则返回 {@code false}
      */
     boolean tryPass(Context context);
 
     /**
-     * Get current state of the circuit breaker.
+     * 获取熔断器当前状态。
      *
-     * @return current state of the circuit breaker
+     * @return 熔断器当前状态
      */
     State currentState();
 
     /**
-     * <p>Record a completed request with the context and handle state transformation of the circuit breaker.</p>
-     * <p>Called when a <strong>passed</strong> invocation finished.</p>
+     * <p>记录一次已完成请求并处理熔断器状态转换。</p>
+     * <p>在<strong>已通过</strong>的调用结束时调用。</p>
      *
-     * @param context context of current invocation
+     * @param context 当前调用上下文
      */
     void onRequestComplete(Context context);
 
     /**
-     * Circuit breaker state.
+     * 熔断器状态枚举。
      */
     enum State {
-        /**
-         * In {@code OPEN} state, all requests will be rejected until the next recovery time point.
-         */
+        /** {@code OPEN} 状态下，所有请求将被拒绝，直至到达下次恢复时间点。 */
         OPEN,
         /**
-         * In {@code HALF_OPEN} state, the circuit breaker will allow a "probe" invocation.
-         * If the invocation is abnormal according to the strategy (e.g. it's slow), the circuit breaker
-         * will re-transform to the {@code OPEN} state and wait for the next recovery time point;
-         * otherwise the resource will be regarded as "recovered" and the circuit breaker
-         * will cease cutting off requests and transform to {@code CLOSED} state.
+         * {@code HALF_OPEN} 状态下允许一次“探测”调用。
+         * 若调用按策略判定为异常（如慢调用），则重新转为 {@code OPEN} 并等待下次恢复；
+         * 否则视为资源已恢复，停止熔断并转为 {@code CLOSED}。
          */
         HALF_OPEN,
-        /**
-         * In {@code CLOSED} state, all requests are permitted. When current metric value exceeds the threshold,
-         * the circuit breaker will transform to {@code OPEN} state.
-         */
+        /** {@code CLOSED} 状态下允许所有请求；当指标超过阈值时转为 {@code OPEN}。 */
         CLOSED
     }
 }

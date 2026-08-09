@@ -20,12 +20,14 @@ import java.util.Comparator;
 import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 
 /**
- * Comparator for flow rules.
+ * 流控规则比较器，用于规则加载时的排序。
+ * <p>集群模式规则排在末尾；默认来源（default）规则优先级最低。</p>
  *
  * @author jialiang.linjl
  */
 public class FlowRuleComparator implements Comparator<FlowRule> {
 
+    /** 比较两条流控规则的优先级顺序。 */
     @Override
     public int compare(FlowRule o1, FlowRule o2) {
         // the FlowRule in Clustered mode will be put at the end.

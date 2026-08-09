@@ -28,6 +28,8 @@ import com.alibaba.csp.sentinel.util.AssertUtil;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
+ * 基于响应时间（慢调用比例）的熔断器实现。
+ *
  * @author Eric Zhao
  * @since 1.8.0
  */
@@ -38,10 +40,12 @@ public class ResponseTimeCircuitBreaker extends AbstractCircuitBreaker {
 
     private final LeapArray<SlowRequestCounter> slidingCounter;
 
+    /** 根据降级规则构造 RT 熔断器。 */
     public ResponseTimeCircuitBreaker(DegradeRule rule) {
         this(rule, new SlowRequestLeapArray(1, rule.getStatIntervalMs()));
     }
 
+    /** 指定统计窗口构造 RT 熔断器（包内可见，便于测试）。 */
     ResponseTimeCircuitBreaker(DegradeRule rule, LeapArray<SlowRequestCounter> stat) {
         super(rule);
         AssertUtil.isTrue(rule.getGrade() == RuleConstant.DEGRADE_GRADE_RT, "rule metric type should be RT");
@@ -52,12 +56,14 @@ public class ResponseTimeCircuitBreaker extends AbstractCircuitBreaker {
         this.slidingCounter = stat;
     }
 
+    /** 重置当前桶的慢调用计数。 */
     @Override
     public void resetStat() {
         // Reset current bucket (bucket count = 1).
         slidingCounter.currentWindow().value().reset();
     }
 
+    /** 请求完成后统计 RT，更新慢调用比例并检查是否触发熔断。 */
     @Override
     public void onRequestComplete(Context context) {
         SlowRequestCounter counter = slidingCounter.currentWindow().value();
@@ -114,6 +120,7 @@ public class ResponseTimeCircuitBreaker extends AbstractCircuitBreaker {
         }
     }
 
+    /** 滑动窗口内的慢调用计数器。 */
     static class SlowRequestCounter {
         private LongAdder slowCount;
         private LongAdder totalCount;
@@ -131,6 +138,7 @@ public class ResponseTimeCircuitBreaker extends AbstractCircuitBreaker {
             return totalCount;
         }
 
+        /** 重置慢调用数与总数。 */
         public SlowRequestCounter reset() {
             slowCount.reset();
             totalCount.reset();
@@ -146,17 +154,20 @@ public class ResponseTimeCircuitBreaker extends AbstractCircuitBreaker {
         }
     }
 
+    /** 慢调用计数的滑动窗口数组。 */
     static class SlowRequestLeapArray extends LeapArray<SlowRequestCounter> {
 
         public SlowRequestLeapArray(int sampleCount, int intervalInMs) {
             super(sampleCount, intervalInMs);
         }
 
+        /** 创建空的慢调用计数桶。 */
         @Override
         public SlowRequestCounter newEmptyBucket(long timeMillis) {
             return new SlowRequestCounter();
         }
 
+        /** 重置窗口起始时间并清空计数。 */
         @Override
         protected WindowWrap<SlowRequestCounter> resetWindowTo(WindowWrap<SlowRequestCounter> w, long startTime) {
             w.resetTo(startTime);

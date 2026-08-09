@@ -23,7 +23,7 @@ import java.util.Map;
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
- * <p>Registry for circuit breaker event observers.</p>
+ * <p>熔断器事件观察者的注册表（单例）。</p>
  *
  * @author Eric Zhao
  * @since 1.8.0
@@ -33,10 +33,10 @@ public class EventObserverRegistry {
     private final Map<String, CircuitBreakerStateChangeObserver> stateChangeObserverMap = new HashMap<>();
 
     /**
-     * Register a circuit breaker state change observer.
+     * 注册熔断器状态变更观察者。
      *
-     * @param name observer name
-     * @param observer a valid observer
+     * @param name 观察者名称
+     * @param observer 有效的观察者实例
      */
     public void addStateChangeObserver(String name, CircuitBreakerStateChangeObserver observer) {
         AssertUtil.notNull(name, "name cannot be null");
@@ -44,20 +44,22 @@ public class EventObserverRegistry {
         stateChangeObserverMap.put(name, observer);
     }
 
+    /** 按名称移除状态变更观察者。 */
     public boolean removeStateChangeObserver(String name) {
         AssertUtil.notNull(name, "name cannot be null");
         return stateChangeObserverMap.remove(name) != null;
     }
 
     /**
-     * Get all registered state chane observers.
+     * 获取所有已注册的状态变更观察者。
      *
-     * @return all registered state chane observers
+     * @return 所有已注册的状态变更观察者
      */
     public List<CircuitBreakerStateChangeObserver> getStateChangeObservers() {
         return new ArrayList<>(stateChangeObserverMap.values());
     }
 
+    /** 返回全局单例注册表。 */
     public static EventObserverRegistry getInstance() {
         return InstanceHolder.instance;
     }

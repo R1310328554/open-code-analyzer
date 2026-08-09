@@ -36,10 +36,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
- * One resources can have multiple rules. And these rules take effects in the following order:
+ * 一个资源可配置多条流控规则，生效顺序如下：
  * <ol>
- * <li>requests from specified caller</li>
- * <li>no specified caller</li>
+ * <li>指定调用来源的规则</li>
+ * <li>未指定调用来源的规则</li>
  * </ol>
  * </p>
  *
@@ -65,13 +65,11 @@ public class FlowRuleManager {
     }
 
     /**
-     * <p> Start the MetricTimerListener
+     * <p>启动 {@link MetricTimerListener} 定时任务：</p>
      * <ol>
-     *     <li>If the flushInterval more than 0,
-     * the timer will run with the flushInterval as the rate </li>.
-     *      <li>If the flushInterval less than 0(include) or value is not valid,
-     * then means the timer will not be started </li>
-     * <ol></p>
+     *     <li>flushInterval &gt; 0 时，按该间隔周期性运行；</li>
+     *     <li>flushInterval ≤ 0 或配置无效时，不启动定时器。</li>
+     * </ol>
      */
     private static void startMetricTimerListener() {
         long flushInterval = SentinelConfig.metricLogFlushIntervalSec();
@@ -85,10 +83,10 @@ public class FlowRuleManager {
     }
 
     /**
-     * Listen to the {@link SentinelProperty} for {@link FlowRule}s. The property is the source of {@link FlowRule}s.
-     * Flow rules can also be set by {@link #loadRules(List)} directly.
+     * 监听 {@link FlowRule} 的动态配置源 {@link SentinelProperty}。
+     * 也可通过 {@link #loadRules(List)} 直接加载规则。
      *
-     * @param property the property to listen.
+     * @param property 待监听的配置属性
      */
     public static void register2Property(SentinelProperty<List<FlowRule>> property) {
         AssertUtil.notNull(property, "property cannot be null");
@@ -101,31 +99,34 @@ public class FlowRuleManager {
     }
 
     /**
-     * Get a copy of the rules.
+     * 获取全部流控规则的副本。
      *
-     * @return a new copy of the rules.
+     * @return 规则列表副本
      */
     public static List<FlowRule> getRules() {
         return flowRules.getRules();
     }
 
     /**
-     * Load {@link FlowRule}s, former rules will be replaced.
+     * 加载 {@link FlowRule} 列表，替换原有规则。
      *
-     * @param rules new rules to load.
+     * @param rules 新规则列表
      */
     public static void loadRules(List<FlowRule> rules) {
         currentProperty.updateValue(rules);
     }
 
+    /** 获取指定资源名下的流控规则（包内可见）。 */
     static List<FlowRule> getFlowRules(String resource) {
         return flowRules.getRules(resource);
     }
 
+    /** 判断资源是否已配置流控规则。 */
     public static boolean hasConfig(String resource) {
         return flowRules.hasConfig(resource);
     }
 
+    /** 判断来源是否为该资源的“其他”来源（未单独配置的 caller）。 */
     public static boolean isOtherOrigin(String origin, String resourceName) {
         if (StringUtil.isEmpty(origin)) {
             return false;

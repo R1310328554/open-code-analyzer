@@ -35,12 +35,13 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 import com.alibaba.csp.sentinel.util.function.Function;
 
 /**
- * Rule checker for flow control rules.
+ * 流控规则检查器，负责本地与集群模式的令牌校验。
  *
  * @author Eric Zhao
  */
 public class FlowRuleChecker {
 
+    /** 对资源应用全部流控规则，任一不通过则抛出 {@link FlowException}。 */
     public void checkFlow(Function<String, Collection<FlowRule>> ruleProvider, ResourceWrapper resource,
                           Context context, DefaultNode node, int count, boolean prioritized) throws BlockException {
         if (ruleProvider == null || resource == null) {
@@ -56,11 +57,13 @@ public class FlowRuleChecker {
         }
     }
 
+    /** 检查单条规则是否允许通过（非优先级请求）。 */
     public boolean canPassCheck(/*@NonNull*/ FlowRule rule, Context context, DefaultNode node,
                                                     int acquireCount) {
         return canPassCheck(rule, context, node, acquireCount, false);
     }
 
+    /** 检查单条规则是否允许通过，支持优先级请求。 */
     public boolean canPassCheck(/*@NonNull*/ FlowRule rule, Context context, DefaultNode node, int acquireCount,
                                                     boolean prioritized) {
         String limitApp = rule.getLimitApp();
@@ -85,6 +88,7 @@ public class FlowRuleChecker {
         return rule.getRater().canPass(selectedNode, acquireCount, prioritized);
     }
 
+    /** 按策略选择关联或链路流控的统计节点。 */
     static Node selectReferenceNode(FlowRule rule, Context context, DefaultNode node) {
         String refResource = rule.getRefResource();
         int strategy = rule.getStrategy();
@@ -112,6 +116,7 @@ public class FlowRuleChecker {
         return !RuleConstant.LIMIT_APP_DEFAULT.equals(origin) && !RuleConstant.LIMIT_APP_OTHER.equals(origin);
     }
 
+    /** 根据调用来源与流控策略选择用于计数的节点。 */
     static Node selectNodeByRequesterAndStrategy(/*@NonNull*/ FlowRule rule, Context context, DefaultNode node) {
         // The limit app should not be empty.
         String limitApp = rule.getLimitApp();

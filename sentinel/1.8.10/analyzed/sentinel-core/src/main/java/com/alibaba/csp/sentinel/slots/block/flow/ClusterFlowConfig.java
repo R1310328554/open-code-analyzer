@@ -21,56 +21,40 @@ import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 import java.util.Objects;
 
 /**
- * Flow rule config in cluster mode.
+ * 集群模式下的流控规则配置。
  *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public class ClusterFlowConfig {
 
-    /**
-     * Global unique ID.
-     */
+    /** 全局唯一流控 ID。 */
     private Long flowId;
 
-    /**
-     * Threshold type (average by local value or global value).
-     */
+    /** 阈值类型（按本地均分或全局阈值）。 */
     private int thresholdType = ClusterRuleConstant.FLOW_THRESHOLD_AVG_LOCAL;
     private boolean fallbackToLocalWhenFail = true;
 
-    /**
-     * 0: normal.
-     */
+    /** 集群策略：0 表示普通模式。 */
     private int strategy = ClusterRuleConstant.FLOW_CLUSTER_STRATEGY_NORMAL;
 
     private int sampleCount = ClusterRuleConstant.DEFAULT_CLUSTER_SAMPLE_COUNT;
-    /**
-     * The time interval length of the statistic sliding window (in milliseconds)
-     */
+    /** 统计滑动窗口的时间长度（毫秒）。 */
     private int windowIntervalMs = RuleConstant.DEFAULT_WINDOW_INTERVAL_MS;
 
-    /**
-     * if the client keep the token for more than resourceTimeout,resourceTimeoutStrategy will work.
-     */
+    /** 客户端持有令牌超过 resourceTimeout 时，resourceTimeoutStrategy 生效。 */
     private long resourceTimeout = 2000;
 
-    /**
-     * 0:ignore,1:release the token.
-     */
+    /** 令牌超时策略：0 忽略，1 释放令牌。 */
     private int resourceTimeoutStrategy = RuleConstant.DEFAULT_RESOURCE_TIMEOUT_STRATEGY;
 
     /**
-     * if the request(prioritized=true) is block,acquireRefuseStrategy will work..
-     * 0:ignore and block.
-     * 1:try again .
-     * 2:try until success.
+     * 优先级请求（prioritized=true）被阻断时，acquireRefuseStrategy 生效：
+     * 0 忽略并阻断；1 重试一次；2 重试直至成功。
      */
     private int acquireRefuseStrategy = RuleConstant.DEFAULT_BLOCK_STRATEGY;
 
-    /**
-     * if a client is offline,the server will delete all the token the client holds after clientOfflineTime.
-     */
+    /** 客户端离线后，服务端在 clientOfflineTime 之后删除其持有的全部令牌。 */
     private long clientOfflineTime = 2000;
 
     public long getResourceTimeout() {

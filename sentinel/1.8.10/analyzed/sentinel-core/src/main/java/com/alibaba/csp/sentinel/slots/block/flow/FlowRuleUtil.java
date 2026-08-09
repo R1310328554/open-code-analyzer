@@ -32,39 +32,41 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 流控规则工具类：构建规则映射、校验规则合法性并生成流量整形控制器。
+ *
  * @author Eric Zhao
  * @since 1.4.0
  */
 public final class FlowRuleUtil {
 
     /**
-     * Build the flow rule map from raw list of flow rules, grouping by resource name.
+     * 从原始流控规则列表按资源名分组构建规则映射。
      *
-     * @param list raw list of flow rules
-     * @return constructed new flow rule map; empty map if list is null or empty, or no valid rules
+     * @param list 原始流控规则列表
+     * @return 新构建的规则映射；列表为空或无有效规则时返回空映射
      */
     public static Map<String, List<FlowRule>> buildFlowRuleMap(List<FlowRule> list) {
         return buildFlowRuleMap(list, null);
     }
 
     /**
-     * Build the flow rule map from raw list of flow rules, grouping by resource name.
+     * 从原始流控规则列表按资源名分组构建规则映射，支持过滤器。
      *
-     * @param list   raw list of flow rules
-     * @param filter rule filter
-     * @return constructed new flow rule map; empty map if list is null or empty, or no wanted rules
+     * @param list   原始流控规则列表
+     * @param filter 规则过滤器
+     * @return 新构建的规则映射；无匹配规则时返回空映射
      */
     public static Map<String, List<FlowRule>> buildFlowRuleMap(List<FlowRule> list, Predicate<FlowRule> filter) {
         return buildFlowRuleMap(list, filter, true);
     }
 
     /**
-     * Build the flow rule map from raw list of flow rules, grouping by resource name.
+     * 从原始流控规则列表按资源名分组构建规则映射，可选排序。
      *
-     * @param list       raw list of flow rules
-     * @param filter     rule filter
-     * @param shouldSort whether the rules should be sorted
-     * @return constructed new flow rule map; empty map if list is null or empty, or no wanted rules
+     * @param list       原始流控规则列表
+     * @param filter     规则过滤器
+     * @param shouldSort 是否对规则排序
+     * @return 新构建的规则映射
      */
     public static Map<String, List<FlowRule>> buildFlowRuleMap(List<FlowRule> list, Predicate<FlowRule> filter,
                                                                boolean shouldSort) {
@@ -72,14 +74,14 @@ public final class FlowRuleUtil {
     }
 
     /**
-     * Build the flow rule map from raw list of flow rules, grouping by provided group function.
+     * 从原始流控规则列表按自定义分组函数构建规则映射。
      *
-     * @param list          raw list of flow rules
-     * @param groupFunction grouping function of the map (by key)
-     * @param filter        rule filter
-     * @param shouldSort    whether the rules should be sorted
-     * @param <K>           type of key
-     * @return constructed new flow rule map; empty map if list is null or empty, or no wanted rules
+     * @param list          原始流控规则列表
+     * @param groupFunction 分组键提取函数
+     * @param filter        规则过滤器
+     * @param shouldSort    是否对规则排序
+     * @param <K>           映射键类型
+     * @return 新构建的规则映射
      */
     public static <K> Map<K, List<FlowRule>> buildFlowRuleMap(List<FlowRule> list, Function<FlowRule, K> groupFunction,
                                                               Predicate<FlowRule> filter, boolean shouldSort) {
@@ -150,20 +152,20 @@ public final class FlowRuleUtil {
     }
 
     /**
-     * Check whether provided ID can be a valid cluster flow ID.
+     * 校验集群流控 ID 是否有效。
      *
-     * @param id flow ID to check
-     * @return true if valid, otherwise false
+     * @param id 待校验的流控 ID
+     * @return 有效返回 true，否则 false
      */
     public static boolean validClusterRuleId(Long id) {
         return id != null && id > 0;
     }
 
     /**
-     * Check whether provided flow rule is valid.
+     * 校验流控规则是否合法。
      *
-     * @param rule flow rule to check
-     * @return true if valid, otherwise false
+     * @param rule 待校验的流控规则
+     * @return 合法返回 true，否则 false
      */
     public static boolean isValidRule(FlowRule rule) {
         boolean baseValid = rule != null && !StringUtil.isBlank(rule.getResource()) && rule.getCount() >= 0
@@ -185,6 +187,7 @@ public final class FlowRuleUtil {
 
     }
 
+    /** 校验线程数流控的集群配置字段。 */
     public static boolean checkClusterConcurrentField(/*@NonNull*/ FlowRule rule) {
         if (!rule.isClusterMode()) {
             return true;
@@ -230,6 +233,7 @@ public final class FlowRuleUtil {
         }
     }
 
+    /** 校验滑动窗口采样数与时间间隔是否合法（间隔须能被采样数整除）。 */
     public static boolean isWindowConfigValid(int sampleCount, int windowIntervalMs) {
         return sampleCount > 0 && windowIntervalMs > 0 && windowIntervalMs % sampleCount == 0;
     }

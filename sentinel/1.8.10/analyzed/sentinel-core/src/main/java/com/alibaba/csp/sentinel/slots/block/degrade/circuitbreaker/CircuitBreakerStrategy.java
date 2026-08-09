@@ -16,22 +16,18 @@
 package com.alibaba.csp.sentinel.slots.block.degrade.circuitbreaker;
 
 /**
+ * 熔断策略枚举，定义触发熔断的指标类型。
+ *
  * @author Eric Zhao
  * @since 1.8.0
  */
 public enum CircuitBreakerStrategy {
 
-    /**
-     * Circuit breaker opens (cuts off) when slow request ratio exceeds the threshold.
-     */
+    /** 慢调用比例超过阈值时打开熔断（切断请求）。 */
     SLOW_REQUEST_RATIO(0),
-    /**
-     * Circuit breaker opens (cuts off) when error ratio exceeds the threshold.
-     */
+    /** 异常比例超过阈值时打开熔断（切断请求）。 */
     ERROR_RATIO(1),
-    /**
-     * Circuit breaker opens (cuts off) when error count exceeds the threshold.
-     */
+    /** 异常数超过阈值时打开熔断（切断请求）。 */
     ERROR_COUNT(2);
 
     private int type;
@@ -40,6 +36,7 @@ public enum CircuitBreakerStrategy {
         this.type = type;
     }
 
+    /** 返回策略对应的数值类型标识。 */
     public int getType() {
         return type;
     }

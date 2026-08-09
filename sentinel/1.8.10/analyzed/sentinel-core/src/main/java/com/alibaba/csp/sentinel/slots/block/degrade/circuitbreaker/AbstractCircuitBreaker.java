@@ -27,6 +27,9 @@ import com.alibaba.csp.sentinel.util.TimeUtil;
 import com.alibaba.csp.sentinel.util.function.BiConsumer;
 
 /**
+ * 熔断器抽象基类，实现 {@link CircuitBreaker} 的状态机与通用逻辑。
+ * <p>管理 CLOSED / OPEN / HALF_OPEN 三态转换，并通知 {@link CircuitBreakerStateChangeObserver}。</p>
+ *
  * @author Eric Zhao
  * @since 1.8.0
  */
@@ -41,10 +44,12 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
     protected final AtomicReference<State> currentState = new AtomicReference<>(State.CLOSED);
     protected volatile long nextRetryTimestamp;
 
+    /** 使用默认 {@link EventObserverRegistry} 实例构造熔断器。 */
     public AbstractCircuitBreaker(DegradeRule rule) {
         this(rule, EventObserverRegistry.getInstance());
     }
 
+    /** 指定状态变更观察者注册表构造熔断器（包内可见，便于测试）。 */
     AbstractCircuitBreaker(DegradeRule rule, EventObserverRegistry observerRegistry) {
         AssertUtil.notNull(observerRegistry, "observerRegistry cannot be null");
         if (!DegradeRuleManager.isValidRule(rule)) {
@@ -55,16 +60,19 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
         this.recoveryTimeoutMs = rule.getTimeWindow() * 1000;
     }
 
+    /** 返回关联的降级规则。 */
     @Override
     public DegradeRule getRule() {
         return rule;
     }
 
+    /** 返回当前熔断器状态。 */
     @Override
     public State currentState() {
         return currentState.get();
     }
 
+    /** 尝试获取调用许可：CLOSED 直接放行；OPEN 在恢复超时后转入 HALF_OPEN 并允许探测请求。 */
     @Override
     public boolean tryPass(Context context) {
         // Template implementation.
@@ -79,18 +87,21 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
     }
 
     /**
-     * Reset the statistic data.
+     * 重置统计数据。
      */
     abstract void resetStat();
 
+    /** 判断是否已到达下次重试时间点。 */
     protected boolean retryTimeoutArrived() {
         return TimeUtil.currentTimeMillis() >= nextRetryTimestamp;
     }
 
+    /** 根据恢复超时时间更新下次重试时间戳。 */
     protected void updateNextRetryTimestamp() {
         this.nextRetryTimestamp = TimeUtil.currentTimeMillis() + recoveryTimeoutMs;
     }
 
+    /** 从 CLOSED 转换到 OPEN，并通知观察者。 */
     protected boolean fromCloseToOpen(double snapshotValue) {
         State prev = State.CLOSED;
         if (currentState.compareAndSet(prev, State.OPEN)) {
@@ -102,6 +113,7 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
         return false;
     }
 
+    /** 从 OPEN 转换到 HALF_OPEN，注册 Entry 终止钩子以处理被后续规则阻断的探测请求。 */
     protected boolean fromOpenToHalfOpen(Context context) {
         if (currentState.compareAndSet(State.OPEN, State.HALF_OPEN)) {
             notifyObservers(State.OPEN, State.HALF_OPEN, null);
@@ -130,6 +142,7 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
         }
     }
 
+    /** 从 HALF_OPEN 回退到 OPEN。 */
     protected boolean fromHalfOpenToOpen(double snapshotValue) {
         if (currentState.compareAndSet(State.HALF_OPEN, State.OPEN)) {
             updateNextRetryTimestamp();
@@ -139,6 +152,7 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
         return false;
     }
 
+    /** 从 HALF_OPEN 恢复到 CLOSED，并重置统计。 */
     protected boolean fromHalfOpenToClose() {
         if (currentState.compareAndSet(State.HALF_OPEN, State.CLOSED)) {
             resetStat();
@@ -148,6 +162,7 @@ public abstract class AbstractCircuitBreaker implements CircuitBreaker {
         return false;
     }
 
+    /** 根据当前状态将熔断器转换到 OPEN。 */
     protected void transformToOpen(double triggerValue) {
         State cs = currentState.get();
         switch (cs) {

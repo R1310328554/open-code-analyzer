@@ -29,6 +29,8 @@ import static com.alibaba.csp.sentinel.slots.block.RuleConstant.DEGRADE_GRADE_EX
 import static com.alibaba.csp.sentinel.slots.block.RuleConstant.DEGRADE_GRADE_EXCEPTION_RATIO;
 
 /**
+ * 基于异常指标（异常比例或异常数）的熔断器实现。
+ *
  * @author Eric Zhao
  * @since 1.8.0
  */
@@ -40,10 +42,12 @@ public class ExceptionCircuitBreaker extends AbstractCircuitBreaker {
 
     private final LeapArray<SimpleErrorCounter> stat;
 
+    /** 根据降级规则构造异常熔断器。 */
     public ExceptionCircuitBreaker(DegradeRule rule) {
         this(rule, new SimpleErrorCounterLeapArray(1, rule.getStatIntervalMs()));
     }
 
+    /** 指定统计窗口构造异常熔断器（包内可见，便于测试）。 */
     ExceptionCircuitBreaker(DegradeRule rule, LeapArray<SimpleErrorCounter> stat) {
         super(rule);
         this.strategy = rule.getGrade();
@@ -55,12 +59,14 @@ public class ExceptionCircuitBreaker extends AbstractCircuitBreaker {
         this.stat = stat;
     }
 
+    /** 重置当前桶的异常计数。 */
     @Override
     protected void resetStat() {
         // Reset current bucket (bucket count = 1).
         stat.currentWindow().value().reset();
     }
 
+    /** 请求完成后更新异常/总数统计，并检查是否触发熔断。 */
     @Override
     public void onRequestComplete(Context context) {
         Entry entry = context.getCurEntry();
@@ -117,6 +123,7 @@ public class ExceptionCircuitBreaker extends AbstractCircuitBreaker {
         }
     }
 
+    /** 滑动窗口内的简单异常计数器。 */
     static class SimpleErrorCounter {
         private LongAdder errorCount;
         private LongAdder totalCount;
@@ -134,6 +141,7 @@ public class ExceptionCircuitBreaker extends AbstractCircuitBreaker {
             return totalCount;
         }
 
+        /** 重置异常数与总数。 */
         public SimpleErrorCounter reset() {
             errorCount.reset();
             totalCount.reset();
@@ -149,17 +157,20 @@ public class ExceptionCircuitBreaker extends AbstractCircuitBreaker {
         }
     }
 
+    /** 异常计数的滑动窗口数组。 */
     static class SimpleErrorCounterLeapArray extends LeapArray<SimpleErrorCounter> {
 
         public SimpleErrorCounterLeapArray(int sampleCount, int intervalInMs) {
             super(sampleCount, intervalInMs);
         }
 
+        /** 创建空的异常计数桶。 */
         @Override
         public SimpleErrorCounter newEmptyBucket(long timeMillis) {
             return new SimpleErrorCounter();
         }
 
+        /** 重置窗口起始时间并清空计数。 */
         @Override
         protected WindowWrap<SimpleErrorCounter> resetWindowTo(WindowWrap<SimpleErrorCounter> w, long startTime) {
             // Update the start time and reset value.

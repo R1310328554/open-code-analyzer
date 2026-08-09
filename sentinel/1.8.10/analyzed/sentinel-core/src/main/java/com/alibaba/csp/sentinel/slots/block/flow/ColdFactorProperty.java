@@ -18,9 +18,12 @@ package com.alibaba.csp.sentinel.slots.block.flow;
 import com.alibaba.csp.sentinel.config.SentinelConfig;
 
 /**
+ * 预热流控的冷启动因子配置，默认取自 {@link com.alibaba.csp.sentinel.config.SentinelConfig}。
+ *
  * @author jialiang.linjl
  */
 class ColdFactorProperty {
 
+    /** 冷启动因子，可在运行时调整。 */
     public static volatile int coldFactor = SentinelConfig.coldFactor();
 }
