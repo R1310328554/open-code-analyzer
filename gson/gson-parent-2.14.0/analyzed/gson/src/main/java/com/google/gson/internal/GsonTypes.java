@@ -35,7 +35,7 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Static methods for working with types.
+ * 处理类型的静态方法。
  *
  * @author Bob Lee
  * @author Jesse Wilson
@@ -48,7 +48,7 @@ public final class GsonTypes {
   }
 
   /**
-   * Returns a new parameterized type, applying {@code typeArguments} to {@code rawType} and
+   * 返回新参数化类型, applying {@code typeArguments} to {@code rawType} and
    * enclosed by {@code ownerType}.
    *
    * @return a parameterized type.
@@ -59,7 +59,7 @@ public final class GsonTypes {
   }
 
   /**
-   * Returns an array type whose elements are all instances of {@code componentType}.
+   * 返回元素均为指定类型的数组类型 are all instances of {@code componentType}.
    *
    * @return a generic array type.
    */

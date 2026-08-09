@@ -29,7 +29,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation that indicates the Gson {@link TypeAdapter} to use with a class or field.
+ * 标注类或字段使用的 Gson {@link TypeAdapter} 的注解。
  *
  * <p>Here is an example of how this annotation is used:
  *

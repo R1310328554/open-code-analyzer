@@ -47,9 +47,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * This is the main class for using Gson. Gson is typically used by first constructing a Gson
+ * 使用 Gson 的主类。 Gson is typically used by first constructing a Gson
  * instance and then invoking {@link #toJson(Object)} or {@link #fromJson(String, Class)} methods on
- * it. Gson instances are Thread-safe so you can reuse them freely across multiple threads.
+ * it. Gson 实例线程安全，可在多线程间复用。
  *
  * <p>You can create a Gson instance by invoking {@code new Gson()} if the default configuration is
  * all you need. You can also use {@link GsonBuilder} to build a Gson instance with various
@@ -89,7 +89,7 @@ import java.util.concurrent.ConcurrentMap;
  * <p>See the <a href="https://github.com/google/gson/blob/main/UserGuide.md">Gson User Guide</a>
  * for a more complete set of examples.
  *
- * <h2 id="default-lenient">JSON Strictness handling</h2>
+ * <h2 id="default-lenient">JSON 严格性处理</h2>
  *
  * For legacy reasons most of the {@code Gson} methods allow JSON data which does not comply with
  * the JSON specification when no explicit {@linkplain Strictness strictness} is set (the default).
@@ -137,7 +137,7 @@ public final class Gson {
   private static final String JSON_NON_EXECUTABLE_PREFIX = ")]}'\n";
 
   /**
-   * This thread local guards against reentrant calls to {@link #getAdapter(TypeToken)}. In certain
+   * ThreadLocal 防止 {@link #getAdapter(TypeToken)} 重入。 In certain
    * object graphs, creating an adapter for a type may recursively require an adapter for the same
    * type! Without intervention, the recursive lookup would stack overflow. We cheat by returning a
    * proxy type adapter, {@link FutureTypeAdapter}, which is wired up once the initial adapter has
@@ -181,7 +181,7 @@ public final class Gson {
   final List<ReflectionAccessFilter> reflectionFilters;
 
   /**
-   * Constructs a Gson object with default configuration. The default configuration has the
+   * 以默认配置构造 Gson。 The default configuration has the
    * following settings:
    *
    * <ul>
@@ -257,8 +257,7 @@ public final class Gson {
   }
 
   /**
-   * Returns a new GsonBuilder containing all custom factories and configuration used by the current
-   * instance.
+   * 返回包含当前实例配置的 GsonBuilder。
    *
    * @return a GsonBuilder instance.
    * @since 2.8.3
@@ -306,7 +305,7 @@ public final class Gson {
   }
 
   /**
-   * Returns the type adapter for {@code type}.
+   * 返回 {@code type} 的类型适配器。
    *
    * <p>When calling this method concurrently from multiple threads and requesting an adapter for
    * the same type this method may return different {@code TypeAdapter} instances. However, that
@@ -319,7 +318,7 @@ public final class Gson {
   public <T> TypeAdapter<T> getAdapter(TypeToken<T> type) {
     Objects.requireNonNull(type, "type must not be null");
     TypeAdapter<?> cached = typeTokenCache.get(type);
-    if (cached != null) {
+    if (cached != null) { // 缓存命中
       @SuppressWarnings("unchecked")
       TypeAdapter<T> adapter = (TypeAdapter<T>) cached;
       return adapter;
@@ -327,12 +326,12 @@ public final class Gson {
 
     Map<TypeToken<?>, TypeAdapter<?>> threadCalls = threadLocalAdapterResults.get();
     boolean isInitialAdapterRequest = false;
-    if (threadCalls == null) {
+    if (threadCalls == null) { // 初始化 ThreadLocal
       threadCalls = new HashMap<>();
       threadLocalAdapterResults.set(threadCalls);
       isInitialAdapterRequest = true;
     } else {
-      // the key and value type parameters always agree
+      // 键值类型参数一致
       @SuppressWarnings("unchecked")
       TypeAdapter<T> ongoingCall = (TypeAdapter<T>) threadCalls.get(type);
       if (ongoingCall != null) {
@@ -345,11 +344,11 @@ public final class Gson {
       FutureTypeAdapter<T> call = new FutureTypeAdapter<>();
       threadCalls.put(type, call);
 
-      for (TypeAdapterFactory factory : factories) {
+      for (TypeAdapterFactory factory : factories) { // 遍历工厂链
         candidate = factory.create(this, type);
         if (candidate != null) {
           call.setDelegate(candidate);
-          // Replace future adapter with actual adapter
+      // 用实际适配器替换 Future
           threadCalls.put(type, candidate);
           break;
         }
@@ -378,7 +377,7 @@ public final class Gson {
   }
 
   /**
-   * Returns the type adapter for {@code type}.
+   * 返回 {@code type} 的类型适配器。
    *
    * @throws IllegalArgumentException if this Gson instance cannot serialize and deserialize {@code
    *     type}.
@@ -988,7 +987,8 @@ public final class Gson {
   // https://github.com/google/gson/pull/1700#discussion_r973764414
 
   /**
-   * 从 {@code reader} 读取下一个 JSON 值并转换为 {@code typeOfT} 类型对象。若 {@code reader} 已到 EOF 则返回 {@code null}。
+   * Reads the next JSON value from {@code reader} and converts it to an object of type {@code
+   * typeOfT}. Returns {@code null}, if the {@code reader} is at EOF.
    *
    * <p>Since {@code Type} is not parameterized by T, this method is not type-safe and should be
    * used carefully. If you are creating the {@code Type} from a {@link TypeToken}, prefer using
@@ -1025,7 +1025,8 @@ public final class Gson {
   }
 
   /**
-   * 从 {@code reader} 读取下一个 JSON 值并转换为 {@code typeOfT} 类型对象。若 {@code reader} 已到 EOF 则返回 {@code null}。 This method is useful if the
+   * Reads the next JSON value from {@code reader} and converts it to an object of type {@code
+   * typeOfT}. Returns {@code null}, if the {@code reader} is at EOF. This method is useful if the
    * specified object is a generic type. For non-generic objects, {@link #fromJson(JsonReader,
    * Type)} can be called, or {@link TypeToken#get(Class)} can be used to create the type token.
    *
@@ -1204,7 +1205,7 @@ public final class Gson {
   }
 
   /**
-   * Proxy type adapter for cyclic type graphs.
+   * 循环类型图的代理类型适配器。
    *
    * <p><b>Important:</b> Setting the delegate adapter is not thread-safe; instances of {@code
    * FutureTypeAdapter} must only be published to other threads after the delegate has been set.

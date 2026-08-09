@@ -16,7 +16,7 @@
 package com.google.gson;
 
 /**
- * This exception is raised when Gson attempts to read (or write) a malformed JSON element.
+ * Gson 读取或写入格式错误 JSON 元素时抛出。
  *
  * @author Inderjeet Singh
  * @author Joel Leitch
@@ -34,10 +34,7 @@ public final class JsonSyntaxException extends JsonParseException {
   }
 
   /**
-   * Creates exception with the specified cause. Consider using {@link #JsonSyntaxException(String,
-   * Throwable)} instead if you can describe what actually happened.
-   *
-   * @param cause root exception that caused this exception to be thrown.
+   * @param cause 根异常；若能描述实际情况建议用带消息的构造器
    */
   public JsonSyntaxException(Throwable cause) {
     super(cause);

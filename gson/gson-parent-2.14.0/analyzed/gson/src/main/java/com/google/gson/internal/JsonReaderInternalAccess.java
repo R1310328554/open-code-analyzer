@@ -19,13 +19,11 @@ package com.google.gson.internal;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 
-/** Internal-only APIs of JsonReader available only to other classes in Gson. */
+/** Gson 内部专用的 {@link JsonReader} 内部 API。 */
 public abstract class JsonReaderInternalAccess {
-  // Suppress warnings because field is initialized by `JsonReader` class during class loading
-  // (and therefore should be thread-safe), and any usage appears after `JsonReader` was loaded
   @SuppressWarnings({"ConstantField", "NonFinalStaticField"})
   public static volatile JsonReaderInternalAccess INSTANCE;
 
-  /** Changes the type of the current property name token to a string value. */
+  /** 将当前属性名 token 提升为字符串值。 */
   public abstract void promoteNameToValue(JsonReader reader) throws IOException;
 }

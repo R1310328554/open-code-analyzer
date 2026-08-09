@@ -19,7 +19,7 @@ package com.google.gson;
 import com.google.gson.internal.bind.TypeAdapters;
 
 /**
- * Defines the expected format for a {@code long} or {@code Long} type when it is serialized.
+ * 定义序列化时 {@code long}/{@code Long} 的预期输出格式。
  *
  * @since 1.3
  * @author Inderjeet Singh
@@ -27,11 +27,8 @@ import com.google.gson.internal.bind.TypeAdapters;
  */
 public enum LongSerializationPolicy {
   /**
-   * This is the "default" serialization policy that will output a {@code Long} object as a JSON
-   * number. For example, assume an object has a long field named "f" then the serialized output
-   * would be: {@code {"f":123}}
-   *
-   * <p>A {@code null} value is serialized as {@link JsonNull}.
+   * 默认策略：{@code Long} 输出为 JSON 数字，例如 {@code {"f":123}}。
+   * {@code null} 序列化为 {@link JsonNull}。
    */
   DEFAULT() {
     @Override
@@ -49,10 +46,8 @@ public enum LongSerializationPolicy {
   },
 
   /**
-   * Serializes a long value as a quoted string. For example, assume an object has a long field
-   * named "f" then the serialized output would be: {@code {"f":"123"}}
-   *
-   * <p>A {@code null} value is serialized as {@link JsonNull}.
+   * 将 long 序列化为带引号字符串，例如 {@code {"f":"123"}}。
+   * {@code null} 序列化为 {@link JsonNull}。
    */
   STRING() {
     @Override
@@ -70,14 +65,13 @@ public enum LongSerializationPolicy {
   };
 
   /**
-   * Serialize this {@code value} using this serialization policy.
+   * 使用此策略序列化 {@code value}。
    *
-   * @param value the long value to be serialized into a {@link JsonElement}
-   * @return the serialized version of {@code value}
+   * @param value 待序列化的 long 值
+   * @return 序列化后的 {@link JsonElement}
    */
   public abstract JsonElement serialize(Long value);
 
-  /** Returns the corresponding {@link TypeAdapter} for this serialization policy. */
-  // Internal method
+  /** 返回与此策略对应的 {@link TypeAdapter}。 */
   abstract TypeAdapter<Number> typeAdapter();
 }

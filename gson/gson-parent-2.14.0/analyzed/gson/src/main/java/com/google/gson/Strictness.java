@@ -4,13 +4,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 
 /**
- * Modes that indicate how strictly a JSON {@linkplain JsonReader reader} or {@linkplain JsonWriter
- * writer} follows the syntax laid out in the <a href="https://www.ietf.org/rfc/rfc8259.txt">RFC
- * 8259 JSON specification</a>.
- *
- * <p>You can look at {@link JsonReader#setStrictness(Strictness)} to see how the strictness affects
- * the {@link JsonReader} and you can look at {@link JsonWriter#setStrictness(Strictness)} to see
- * how the strictness affects the {@link JsonWriter}.
+ * 表示 JSON {@linkplain JsonReader 读取器} 或 {@linkplain JsonWriter 写入器} 遵循
+ * <a href="https://www.ietf.org/rfc/rfc8259.txt">RFC 8259</a> 语法时的严格程度模式。
  *
  * @see GsonBuilder#setStrictness(Strictness)
  * @see JsonReader#setStrictness(Strictness)
@@ -18,12 +13,10 @@ import com.google.gson.stream.JsonWriter;
  * @since 2.11.0
  */
 public enum Strictness {
-  /** Allow large deviations from the JSON specification. */
+  /** 允许与 JSON 规范有较大偏离。 */
   LENIENT,
-
-  /** Allow certain small deviations from the JSON specification for legacy reasons. */
+  /** 出于历史兼容，允许少量偏离。 */
   LEGACY_STRICT,
-
-  /** Strict compliance with the JSON specification. */
+  /** 严格遵循 JSON 规范。 */
   STRICT
 }

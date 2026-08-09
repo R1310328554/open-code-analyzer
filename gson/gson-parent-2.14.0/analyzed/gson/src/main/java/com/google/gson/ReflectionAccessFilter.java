@@ -20,8 +20,7 @@ import com.google.gson.internal.ReflectionAccessFilterHelper;
 import java.lang.reflect.AccessibleObject;
 
 /**
- * Filter for determining whether reflection based serialization and deserialization is allowed for
- * a class.
+ * 判断某类是否允许基于反射序列化/反序列化的过滤器。
  *
  * <p>A filter can be useful in multiple scenarios, for example when upgrading to newer Java
  * versions which use the Java Platform Module System (JPMS). A filter then allows to {@linkplain

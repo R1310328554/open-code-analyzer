@@ -22,16 +22,17 @@ import java.io.ObjectStreamException;
 import java.math.BigDecimal;
 
 /**
- * This class holds a number value that is lazily converted to a specific number type
+ * 持有数值，在需要时延迟解析为具体数字类型。
  *
  * @author Inderjeet Singh
  */
-@SuppressWarnings("serial") // ignore warning about missing serialVersionUID
+@SuppressWarnings("serial")
 public final class LazilyParsedNumber extends Number {
+  /** 以字符串保存的原始数值。 */
   private final String value;
 
   /**
-   * @param value must not be null
+   * @param value 不得为 null
    */
   public LazilyParsedNumber(String value) {
     this.value = value;
@@ -78,17 +79,12 @@ public final class LazilyParsedNumber extends Number {
     return value;
   }
 
-  /**
-   * If somebody is unlucky enough to have to serialize one of these, serialize it as a BigDecimal
-   * so that they won't need Gson on the other side to deserialize it.
-   */
+  /** 序列化时转为 BigDecimal，反序列化端无需 Gson。 */
   private Object writeReplace() throws ObjectStreamException {
     return asBigDecimal();
   }
 
   private void readObject(ObjectInputStream in) throws IOException {
-    // Don't permit directly deserializing this class; writeReplace() should have written a
-    // replacement
     throw new InvalidObjectException("Deserialization is unsupported");
   }
 

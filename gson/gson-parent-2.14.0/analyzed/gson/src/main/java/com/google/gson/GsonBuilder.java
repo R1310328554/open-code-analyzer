@@ -53,9 +53,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 /**
- * 需要非默认配置时，用此构建器构造 {@link Gson} 实例。 默认配置下用 {@code new Gson()} 更简单。{@code GsonBuilder} 宜先创建，再调用各配置方法，最后 create。
+ * 需要非默认配置时用此构建器构造 {@link Gson}。 For {@link Gson} with default configuration, it is simpler to use {@code
+ * new Gson()}. {@code GsonBuilder} is best used by creating it, and then invoking its various
+ * configuration methods, and finally calling create.
  *
- * <p>使用 {@code GsonBuilder} 构造 Gson 的示例：
+ * <p>The following example shows how to use the {@code GsonBuilder} to construct a Gson instance:
  *
  * <pre>
  * Gson gson = new GsonBuilder()
@@ -147,8 +149,7 @@ public final class GsonBuilder {
   final ArrayDeque<ReflectionAccessFilter> reflectionFilters = new ArrayDeque<>();
 
   /**
-   * Creates a GsonBuilder instance that can be used to build Gson with various configuration
-   * settings. GsonBuilder follows the builder pattern, and it is typically used by first invoking
+   * 创建可配置构建 Gson 的 GsonBuilder。 GsonBuilder follows the builder pattern, and it is typically used by first invoking
    * various configuration methods to set desired options, and finally calling {@link #create()}.
    */
   public GsonBuilder() {}
@@ -183,7 +184,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * Configures Gson to enable versioning support. Versioning support works based on the annotation
+   * 配置 Gson 启用版本支持。 Versioning support works based on the annotation
    * types {@link Since} and {@link Until}. It allows including or excluding fields and classes
    * based on the specified version. See the documentation of these annotation types for more
    * information.
@@ -258,7 +259,8 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 序列化 null 字段。默认序列化时省略所有 null 字段。
+   * 配置 Gson 序列化 null 字段。 By default, Gson omits all fields that are null
+   * during serialization.
    *
    * @return a reference to this {@code GsonBuilder} object to fulfill the "Builder" pattern
    * @since 1.2
@@ -270,7 +272,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * Configures Gson to serialize {@code Map} objects with complex keys as JSON arrays. Enabling
+   * 配置 Gson 将复杂键 Map 序列化为 JSON 数组。 Enabling
    * this feature will only change the serialized form if the map key is a complex type (i.e.
    * non-primitive) in its <strong>serialized</strong> JSON form. The default implementation of map
    * serialization uses {@code toString()} on the key; however, when this is called then one of the
@@ -385,7 +387,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * Configures Gson to apply a specific serialization policy for {@code Long} and {@code long}
+   * 配置 Gson 对 Long/long 应用特定序列化策略
    * objects.
    *
    * @param serializationPolicy the particular policy to use for serializing longs.
@@ -399,7 +401,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * Configures Gson to apply a specific naming policy to an object's fields during serialization
+   * 配置 Gson 对字段应用特定命名策略
    * and deserialization.
    *
    * <p>This method just delegates to {@link #setFieldNamingStrategy(FieldNamingStrategy)}.
@@ -428,7 +430,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 在将 JSON 反序列化为 {@link Object} 时应用特定数字策略。
+   * Configures Gson to apply a specific number strategy during deserialization of {@link Object}.
    *
    * @param objectToNumberStrategy the actual object-to-number strategy
    * @return a reference to this {@code GsonBuilder} object to fulfill the "Builder" pattern
@@ -442,7 +444,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 在将 JSON 反序列化为 {@link Number} 时应用特定数字策略。
+   * Configures Gson to apply a specific number strategy during deserialization of {@link Number}.
    *
    * @param numberToNumberStrategy the actual number-to-number strategy
    * @return a reference to this {@code GsonBuilder} object to fulfill the "Builder" pattern
@@ -456,7 +458,8 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 在序列化与反序列化时应用一组排除策略。 Each of the {@code strategies} will be applied as a disjunction rule. This
+   * Configures Gson to apply a set of exclusion strategies during both serialization and
+   * deserialization. Each of the {@code strategies} will be applied as a disjunction rule. This
    * means that if one of the {@code strategies} suggests that a field (or class) should be skipped
    * then that field (or object) is skipped during serialization/deserialization. The strategies are
    * added to the existing strategies (if any); the existing strategies are not replaced.
@@ -489,7 +492,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 在序列化时应用传入的排除策略。 If this method
+   * Configures Gson to apply the passed in exclusion strategy during serialization. If this method
    * is invoked numerous times with different exclusion strategy objects then the exclusion
    * strategies that were added will be applied as a disjunction rule. This means that if one of the
    * added exclusion strategies suggests that a field (or class) should be skipped then that field
@@ -510,7 +513,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 在反序列化时应用传入的排除策略。 If this
+   * Configures Gson to apply the passed in exclusion strategy during deserialization. If this
    * method is invoked numerous times with different exclusion strategy objects then the exclusion
    * strategies that were added will be applied as a disjunction rule. This means that if one of the
    * added exclusion strategies suggests that a field (or class) should be skipped then that field
@@ -531,7 +534,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 输出适合页面展示的美化 JSON。 This option only
+   * Configures Gson to output JSON that fits in a page for pretty printing. This option only
    * affects JSON serialization.
    *
    * <p>This is a convenience method which simply calls {@link #setFormattingStyle(FormattingStyle)}
@@ -611,7 +614,7 @@ public final class GsonBuilder {
   }
 
   /**
-   * 配置 Gson 按给定模式序列化 {@code Date}。 You can
+   * Configures Gson to serialize {@code Date} objects according to the pattern provided. You can
    * call this method or {@link #setDateFormat(int, int)} multiple times, but only the last
    * invocation will be used to decide the serialization format.
    *
@@ -914,7 +917,7 @@ public final class GsonBuilder {
    * @return an instance of Gson configured with the options currently set in this builder
    */
   public Gson create() {
-    // 用当前构建器配置实例化 Gson
+    // 用当前配置实例化 Gson
     return new Gson(this);
   }
 
@@ -923,20 +926,20 @@ public final class GsonBuilder {
       JsonAdapterAnnotationTypeAdapterFactory jsonAdapterFactory) {
     ArrayList<TypeAdapterFactory> factories = new ArrayList<>();
 
-    // 内置、不可覆盖的类型适配器
+    // 内置不可覆盖适配器
     factories.add(TypeAdapters.JSON_ELEMENT_FACTORY);
     factories.add(ObjectTypeAdapter.getFactory(objectToNumberStrategy));
 
-    // Excluder 须先于处理用户类型的适配器
+    // Excluder 须先于用户类型适配器
     factories.add(excluder);
 
-    // 用户注册的类型适配器
+    // 用户适配器
     addUserDefinedAdapters(factories);
 
-    // 自定义 Date 适配器
+    // Date 适配器
     addDateTypeAdapters(factories);
 
-    // 基础平台类型的适配器
+    // 平台基础类型适配器
     factories.add(TypeAdapters.STRING_FACTORY);
     factories.add(TypeAdapters.INTEGER_FACTORY);
     factories.add(TypeAdapters.BOOLEAN_FACTORY);

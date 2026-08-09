@@ -41,7 +41,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-/** Returns a function that can construct an instance of a requested type. */
+/** 返回能构造请求类型实例的函数。 */
 public final class ConstructorConstructor {
   private final Map<Type, InstanceCreator<?>> instanceCreators;
   private final boolean useJdkUnsafe;
@@ -94,7 +94,7 @@ public final class ConstructorConstructor {
   }
 
   /**
-   * Retrieves an object constructor for the given type.
+   * 获取给定类型的对象构造器。
    *
    * @param typeToken type for which a constructor should be retrieved
    * @param allowUnsafe whether to allow usage of JDK Unsafe; has no effect if {@link #useJdkUnsafe}
@@ -104,7 +104,7 @@ public final class ConstructorConstructor {
     Type type = typeToken.getType();
     Class<? super T> rawType = typeToken.getRawType();
 
-    // first try an instance creator
+    // 1. InstanceCreator
 
     @SuppressWarnings("unchecked") // types must agree
     InstanceCreator<T> typeCreator = (InstanceCreator<T>) instanceCreators.get(type);
@@ -166,12 +166,12 @@ public final class ConstructorConstructor {
       return new ThrowingObjectConstructor<>(message);
     }
 
-    // finally try unsafe
+    // 4. Unsafe
     return newUnsafeAllocator(rawType);
   }
 
   /**
-   * Creates constructors for special JDK collection types which do not have a public no-args
+   * 为特殊 JDK 集合类型创建构造器 which do not have a public no-args
    * constructor.
    */
   private static <T> ObjectConstructor<T> newSpecialCollectionConstructor(
@@ -284,7 +284,7 @@ public final class ConstructorConstructor {
     };
   }
 
-  /** Constructors for common interface types like Map and List and their subtypes. */
+  /** 为 Map/List 等常见接口提供构造器 and their subtypes. */
   private static <T> ObjectConstructor<T> newDefaultImplementationConstructor(
       Type type, Class<? super T> rawType) {
 

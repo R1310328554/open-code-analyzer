@@ -34,8 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A map of comparable keys to values. Unlike {@code TreeMap}, this class uses insertion order for
- * iteration order. Comparison order is only used as an optimization for efficient insertion and
+ * 可比较键到值的映射；迭代顺序为插入顺序，而非 TreeMap 的比较顺序。 Comparison order is only used as an optimization for efficient insertion and
  * removal.
  *
  * <p>This implementation was derived from Android 4.1's TreeMap class.
@@ -70,7 +69,7 @@ public final class LinkedTreeMap<K, V> extends AbstractMap<K, V> implements Seri
   }
 
   /**
-   * Create a natural order, empty tree map whose keys must be mutually comparable and non-null.
+   * 创建自然顺序空树映射，键须可比较且非 null。
    *
    * @param allowNullValues whether {@code null} is allowed as entry value
    */

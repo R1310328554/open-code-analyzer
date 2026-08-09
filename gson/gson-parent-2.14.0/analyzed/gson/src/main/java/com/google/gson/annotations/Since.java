@@ -24,29 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation that indicates the version number since a member or a type has been present. This
- * annotation is useful to manage versioning of your JSON classes for a web-service.
- *
- * <p>This annotation has no effect unless you build {@link com.google.gson.Gson} with a {@code
- * GsonBuilder} and invoke the {@link GsonBuilder#setVersion(double)} method.
- *
- * <p>Here is an example of how this annotation is meant to be used:
- *
- * <pre>
- * public class User {
- *   private String firstName;
- *   private String lastName;
- *   &#64;Since(1.0) private String emailAddress;
- *   &#64;Since(1.0) private String password;
- *   &#64;Since(1.1) private Address address;
- * }
- * </pre>
- *
- * <p>If you created Gson with {@code new Gson()}, the {@code toJson()} and {@code fromJson()}
- * methods will use all the fields for serialization and deserialization. However, if you created
- * Gson with {@code Gson gson = new GsonBuilder().setVersion(1.0).create()} then the {@code
- * toJson()} and {@code fromJson()} methods of Gson will exclude the {@code address} field since
- * it's version number is set to {@code 1.1}.
+ * 标注成员或类型自某版本起存在；用于 Web 服务 JSON 类版本控制。
+ * 须 {@link GsonBuilder#setVersion(double)} 才生效。
  *
  * @author Inderjeet Singh
  * @author Joel Leitch
@@ -57,9 +36,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.TYPE})
 public @interface Since {
-  /**
-   * The value indicating a version number since this member or type has been present. The number is
-   * inclusive; annotated elements will be included if {@code gsonVersion >= value}.
-   */
+  /** 自该版本起存在（含）：{@code gsonVersion >= value} */
   double value();
 }

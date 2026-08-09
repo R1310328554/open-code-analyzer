@@ -23,8 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation that indicates this member should be serialized to JSON with the provided name
- * value as its field name.
+ * 标注成员序列化时使用指定字段名的注解。
  *
  * <p>This annotation will override any {@link com.google.gson.FieldNamingPolicy}, including the
  * default field naming policy, that may have been set on the {@link com.google.gson.Gson} instance.

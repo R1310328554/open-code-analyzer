@@ -28,7 +28,7 @@ import java.io.StringReader;
 import java.io.Writer;
 
 /**
- * Converts Java objects to and from JSON.
+ * 在 Java 对象与 JSON 之间转换。
  *
  * <h2>Defining a type's JSON form</h2>
  *
@@ -125,7 +125,7 @@ public abstract class TypeAdapter<T> {
   /**
    * Writes one JSON value (an array, object, string, number, boolean or null) for {@code value}.
    *
-   * @param value the Java object to write. May be null.
+   * @param value 待写入对象，可为 null
    */
   public abstract void write(JsonWriter out, T value) throws IOException;
 
@@ -136,7 +136,7 @@ public abstract class TypeAdapter<T> {
    * customize this behavior, create a {@link JsonWriter}, configure it and then use {@link
    * #write(JsonWriter, Object)} instead.
    *
-   * @param value the Java object to convert. May be {@code null}.
+   * @param value 待转换对象，可为 {@code null}
    * @since 2.2
    */
   public final void toJson(Writer out, T value) throws IOException {
@@ -153,7 +153,7 @@ public abstract class TypeAdapter<T> {
    *
    * @throws JsonIOException wrapping {@code IOException}s thrown by {@link #write(JsonWriter,
    *     Object)}
-   * @param value the Java object to convert. May be {@code null}.
+   * @param value 待转换对象，可为 {@code null}
    * @since 2.2
    */
   public final String toJson(T value) {
@@ -169,7 +169,7 @@ public abstract class TypeAdapter<T> {
   /**
    * Converts {@code value} to a JSON tree.
    *
-   * @param value the Java object to convert. May be {@code null}.
+   * @param value 待转换对象，可为 {@code null}
    * @return the converted JSON tree. May be {@link JsonNull}.
    * @throws JsonIOException wrapping {@code IOException}s thrown by {@link #write(JsonWriter,
    *     Object)}
@@ -189,7 +189,7 @@ public abstract class TypeAdapter<T> {
    * Reads one JSON value (an array, object, string, number, boolean or null) and converts it to a
    * Java object. Returns the converted object.
    *
-   * @return the converted Java object. May be {@code null}.
+   * @return 转换后的对象，可为 {@code null}
    */
   public abstract T read(JsonReader in) throws IOException;
 
@@ -204,7 +204,7 @@ public abstract class TypeAdapter<T> {
    * <p>No exception is thrown if the JSON data has multiple top-level JSON elements, or if there is
    * trailing data.
    *
-   * @return the converted Java object. May be {@code null}.
+   * @return 转换后的对象，可为 {@code null}
    * @since 2.2
    */
   public final T fromJson(Reader in) throws IOException {
@@ -223,7 +223,7 @@ public abstract class TypeAdapter<T> {
    * <p>No exception is thrown if the JSON data has multiple top-level JSON elements, or if there is
    * trailing data.
    *
-   * @return the converted Java object. May be {@code null}.
+   * @return 转换后的对象，可为 {@code null}
    * @since 2.2
    */
   public final T fromJson(String json) throws IOException {
@@ -234,7 +234,7 @@ public abstract class TypeAdapter<T> {
    * Converts {@code jsonTree} to a Java object.
    *
    * @param jsonTree the JSON element to convert. May be {@link JsonNull}.
-   * @return the converted Java object. May be {@code null}.
+   * @return 转换后的对象，可为 {@code null}
    * @throws JsonIOException wrapping {@code IOException}s thrown by {@link #read(JsonReader)}
    * @since 2.2
    */

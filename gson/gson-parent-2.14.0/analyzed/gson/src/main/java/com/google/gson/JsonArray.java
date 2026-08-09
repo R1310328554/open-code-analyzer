@@ -25,14 +25,16 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A class representing an array type in JSON. An array is a list of {@link JsonElement}s each of
- * which can be of a different type. 有序列表，添加顺序会被保留。 本类不支持 {@code null} 值； If {@code null}
+ * 表示 JSON 数组类型的类。 数组是 {@link JsonElement} 列表 each of
+ * which can be of a different type. 有序列表, meaning that the order in which
+ * elements are added is preserved. This class does not support {@code null} values. If {@code null}
  * is provided as element argument to any of the methods, it is converted to a {@link JsonNull}.
  *
  * <p>{@code JsonArray} only implements the {@link Iterable} interface but not the {@link List}
  * interface. A {@code List} view of it can be obtained with {@link #asList()}.
  *
- * <p>转换 {@code JsonArray} 及一般 {@code JsonElement} 与 JSON 的详情见 {@link JsonElement} 文档。
+ * <p>See the {@link JsonElement} documentation for details on how to convert {@code JsonArray} and
+ * generally any {@code JsonElement} from and to JSON.
  *
  * @author Inderjeet Singh
  * @author Joel Leitch
@@ -40,7 +42,7 @@ import java.util.List;
 public final class JsonArray extends JsonElement implements Iterable<JsonElement> {
   private final ArrayList<JsonElement> elements;
 
-  /** Creates an empty JsonArray. */
+  /** 创建空 JsonArray。 */
   @SuppressWarnings("deprecation") // superclass constructor
   public JsonArray() {
     elements = new ArrayList<>();
@@ -59,7 +61,7 @@ public final class JsonArray extends JsonElement implements Iterable<JsonElement
   }
 
   /**
-   * Creates a deep copy of this element and all its children.
+   * 深拷贝此元素及子元素。
    *
    * @since 2.8.2
    */
@@ -76,7 +78,7 @@ public final class JsonArray extends JsonElement implements Iterable<JsonElement
   }
 
   /**
-   * Adds the specified boolean to self.
+   * 添加布尔值。
    *
    * @param bool the boolean that needs to be added to the array.
    * @since 2.4
@@ -116,7 +118,7 @@ public final class JsonArray extends JsonElement implements Iterable<JsonElement
   }
 
   /**
-   * Adds the specified element to self.
+   * 添加元素。
    *
    * @param element the element that needs to be added to the array.
    */
@@ -189,7 +191,7 @@ public final class JsonArray extends JsonElement implements Iterable<JsonElement
   }
 
   /**
-   * Returns the number of elements in the array.
+   * 返回元素个数。
    *
    * @return the number of elements in the array.
    */
@@ -219,7 +221,7 @@ public final class JsonArray extends JsonElement implements Iterable<JsonElement
   }
 
   /**
-   * Returns the i-th element of the array.
+   * 返回第 i 个元素。
    *
    * @param i the index of the element that is being sought.
    * @return the element present at the i-th index.
@@ -400,7 +402,7 @@ public final class JsonArray extends JsonElement implements Iterable<JsonElement
   }
 
   /**
-   * Returns a mutable {@link List} view of this {@code JsonArray}. Changes to the {@code List} are
+   * 返回可变 List 视图。 Changes to the {@code List} are
    * visible in this {@code JsonArray} and the other way around.
    *
    * <p>The {@code List} does not permit {@code null} elements. Unlike {@code JsonArray}'s {@code

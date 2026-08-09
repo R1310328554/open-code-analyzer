@@ -36,7 +36,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * This class selects which fields and types to omit. It is configurable, supporting version
+ * 选择应省略字段和类型的类。 It is configurable, supporting version
  * attributes {@link Since} and {@link Until}, modifiers, synthetic fields, anonymous and local
  * classes, inner classes, and fields with the {@link Expose} annotation.
  *
@@ -120,7 +120,7 @@ public final class Excluder implements TypeAdapterFactory, Cloneable {
 
     return new TypeAdapter<T>() {
       /**
-       * The delegate is lazily created because it may not be needed, and creating it may fail.
+       * 委托适配器延迟创建 because it may not be needed, and creating it may fail.
        * Field has to be {@code volatile} because {@link Gson} guarantees to be thread-safe.
        */
       private volatile TypeAdapter<T> delegate;

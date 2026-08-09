@@ -24,19 +24,14 @@ import java.io.IOException;
 import java.math.BigDecimal;
 
 /**
- * An enumeration that defines two standard number reading strategies and a couple of strategies to
- * overcome some historical Gson limitations while deserializing numbers as {@link Object} and
- * {@link Number}.
+ * 定义两种标准数字读取策略，以及克服 Gson 将数字反序列化为 {@link Object}/{@link Number} 时历史局限的策略。
  *
  * @see ToNumberStrategy
  * @since 2.8.9
  */
 public enum ToNumberPolicy implements ToNumberStrategy {
 
-  /**
-   * Using this policy will ensure that numbers will be read as {@link Double} values. This is the
-   * default strategy used during deserialization of numbers as {@link Object}.
-   */
+  /** 数字以 {@link Double} 读取；反序列化为 {@link Object} 时的默认策略。 */
   DOUBLE {
     @Override
     public Double readNumber(JsonReader in) throws IOException {
@@ -44,10 +39,7 @@ public enum ToNumberPolicy implements ToNumberStrategy {
     }
   },
 
-  /**
-   * Using this policy will ensure that numbers will be read as a lazily parsed number backed by a
-   * string. This is the default strategy used during deserialization of numbers as {@link Number}.
-   */
+  /** 以字符串支撑的延迟解析数字读取；反序列化为 {@link Number} 时的默认策略。 */
   LAZILY_PARSED_NUMBER {
     @Override
     public Number readNumber(JsonReader in) throws IOException {
@@ -55,15 +47,7 @@ public enum ToNumberPolicy implements ToNumberStrategy {
     }
   },
 
-  /**
-   * Using this policy will ensure that numbers will be read as {@link Long} or {@link Double}
-   * values depending on how JSON numbers are represented: {@code Long} if the JSON number can be
-   * parsed as a {@code Long} value, or otherwise {@code Double} if it can be parsed as a {@code
-   * Double} value. If the parsed double-precision number results in a positive or negative infinity
-   * ({@link Double#isInfinite()}) or a NaN ({@link Double#isNaN()}) value and the {@code
-   * JsonReader} is not {@link JsonReader#isLenient() lenient}, a {@link MalformedJsonException} is
-   * thrown.
-   */
+  /** 根据 JSON 表示读取为 {@link Long} 或 {@link Double}；非宽松模式下拒绝无穷/NaN。 */
   LONG_OR_DOUBLE {
     @Override
     public Number readNumber(JsonReader in) throws IOException, JsonParseException {
@@ -94,10 +78,7 @@ public enum ToNumberPolicy implements ToNumberStrategy {
     }
   },
 
-  /**
-   * Using this policy will ensure that numbers will be read as numbers of arbitrary length using
-   * {@link BigDecimal}.
-   */
+  /** 以 {@link BigDecimal} 读取任意长度数字。 */
   BIG_DECIMAL {
     @Override
     public BigDecimal readNumber(JsonReader in) throws IOException {

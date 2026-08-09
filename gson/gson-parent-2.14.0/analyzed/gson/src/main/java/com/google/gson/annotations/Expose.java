@@ -23,8 +23,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation that indicates this member should be exposed for JSON serialization or
- * deserialization.
+ * 标注成员参与 JSON 序列化/反序列化的注解。
  *
  * <p>This annotation has no effect unless you build {@link com.google.gson.Gson} with a {@link
  * com.google.gson.GsonBuilder} and invoke {@link

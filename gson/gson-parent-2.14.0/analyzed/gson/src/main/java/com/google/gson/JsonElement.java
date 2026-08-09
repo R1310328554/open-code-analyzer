@@ -24,7 +24,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
- * A class representing an element of JSON. It could either be a {@link JsonObject}, a {@link
+ * 表示 JSON 元素的抽象类。 It could either be a {@link JsonObject}, a {@link
  * JsonArray}, a {@link JsonPrimitive} or a {@link JsonNull}.
  *
  * <p>This class provides multiple {@code getAs} methods which allow
@@ -103,7 +103,7 @@ public abstract class JsonElement {
   public JsonElement() {}
 
   /**
-   * Returns a deep copy of this element. Immutable elements like primitives and nulls are not
+   * 返回深拷贝。 Immutable elements like primitives and nulls are not
    * copied.
    *
    * @since 2.8.2
@@ -111,7 +111,7 @@ public abstract class JsonElement {
   public abstract JsonElement deepCopy();
 
   /**
-   * Provides a check for verifying if this element is a JSON array or not.
+   * 检查是否为 JSON 数组。
    *
    * @return true if this element is of type {@link JsonArray}, false otherwise.
    */
@@ -148,7 +148,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link JsonObject}. If this element is of some
+   * 便捷方法：作为 {@link JsonObject}. If this element is of some
    * other type, an {@link IllegalStateException} will result. Hence it is best to use this method
    * after ensuring that this element is of the desired type by calling {@link #isJsonObject()}
    * first.
@@ -164,7 +164,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link JsonArray}. If this element is of some other
+   * 便捷方法：作为 {@link JsonArray}. If this element is of some other
    * type, an {@link IllegalStateException} will result. Hence it is best to use this method after
    * ensuring that this element is of the desired type by calling {@link #isJsonArray()} first.
    *
@@ -179,7 +179,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link JsonPrimitive}. If this element is of some
+   * 便捷方法：作为 {@link JsonPrimitive}. If this element is of some
    * other type, an {@link IllegalStateException} will result. Hence it is best to use this method
    * after ensuring that this element is of the desired type by calling {@link #isJsonPrimitive()}
    * first.
@@ -195,7 +195,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link JsonNull}. If this element is of some other
+   * 便捷方法：作为 {@link JsonNull}. If this element is of some other
    * type, an {@link IllegalStateException} will result. Hence it is best to use this method after
    * ensuring that this element is of the desired type by calling {@link #isJsonNull()} first.
    *
@@ -212,7 +212,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a boolean value.
+   * 便捷方法：作为 boolean value.
    *
    * @return this element as a primitive boolean value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -225,7 +225,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link Number}.
+   * 便捷方法：作为 {@link Number}.
    *
    * @return this element as a {@link Number}.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -238,7 +238,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a string value.
+   * 便捷方法：作为 string value.
    *
    * @return this element as a string value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -251,7 +251,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a primitive double value.
+   * 便捷方法：作为 primitive double value.
    *
    * @return this element as a primitive double value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -265,7 +265,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a primitive float value.
+   * 便捷方法：作为 primitive float value.
    *
    * @return this element as a primitive float value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -279,7 +279,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a primitive long value.
+   * 便捷方法：作为 primitive long value.
    *
    * @return this element as a primitive long value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -293,7 +293,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a primitive integer value.
+   * 便捷方法：作为 primitive integer value.
    *
    * @return this element as a primitive integer value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -307,7 +307,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a primitive byte value.
+   * 便捷方法：作为 primitive byte value.
    *
    * @return this element as a primitive byte value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -339,7 +339,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link BigDecimal}.
+   * 便捷方法：作为 {@link BigDecimal}.
    *
    * @return this element as a {@link BigDecimal}.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -354,7 +354,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a {@link BigInteger}.
+   * 便捷方法：作为 {@link BigInteger}.
    *
    * @return this element as a {@link BigInteger}.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -369,7 +369,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Convenience method to get this element as a primitive short value.
+   * 便捷方法：作为 primitive short value.
    *
    * @return this element as a primitive short value.
    * @throws UnsupportedOperationException if this element is not a {@link JsonPrimitive} or {@link
@@ -383,7 +383,7 @@ public abstract class JsonElement {
   }
 
   /**
-   * Converts this element to a JSON string.
+   * 转换为 JSON 字符串。
    *
    * <p>For example:
    *
