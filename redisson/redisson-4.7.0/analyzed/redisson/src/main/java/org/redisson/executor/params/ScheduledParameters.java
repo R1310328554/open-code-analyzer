@@ -16,30 +16,39 @@
 package org.redisson.executor.params;
 
 /**
- * 
+ * 一次性或带开始时间的调度任务参数基类。
+ * <p>
+ * 在 {@link TaskParameters} 基础上增加 {@code startTime}（毫秒时间戳）。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ScheduledParameters extends TaskParameters {
 
+    /** 计划开始执行的 Unix 毫秒时间戳。 */
     private long startTime;
 
+    /** 无参构造。 */
     public ScheduledParameters() {
     }
 
+    /** @param requestId 任务请求 ID */
     public ScheduledParameters(String requestId) {
         super(requestId);
     }
 
+    /** 完整构造，包含序列化载荷与开始时间。 */
     public ScheduledParameters(String id, String className, byte[] classBody, byte[] lambdaBody, byte[] state, long startTime) {
         super(id, className, classBody, lambdaBody, state);
         this.startTime = startTime;
     }
 
+    /** 返回计划开始时间戳。 */
     public long getStartTime() {
         return startTime;
     }
 
+    /** 设置计划开始时间戳。 */
     public void setStartTime(long startTime) {
         this.startTime = startTime;
     }

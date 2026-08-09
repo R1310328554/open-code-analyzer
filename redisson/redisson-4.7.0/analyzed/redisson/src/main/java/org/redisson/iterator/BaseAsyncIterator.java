@@ -26,23 +26,33 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
+ * 基于 Redis SCAN 的异步迭代器抽象基类。
+ * <p>
+ * 实现 {@link org.redisson.api.AsyncIterator}，按游标分批拉取元素，
+ * 在 {@link #hasNext()} 与 {@link #next()} 中通过 {@link CompletionStage} 非阻塞推进。
  *
  * @author seakider
  *
  */
 public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
+    /** 当前 SCAN 批次内的元素迭代器。 */
     private Iterator<E> lastIt;
+    /** 下一批 SCAN 的游标位置（{@code null} 表示迭代结束）。 */
     protected String nextItPos;
+    /** 当前 SCAN 命令所连接的 Redis 节点客户端。 */
     protected RedisClient client;
 
+    /** 初始化游标为 {@link #initValue()}（默认 "0"）。 */
     protected BaseAsyncIterator() {
         nextItPos = initValue();
     }
 
+    /** SCAN 起始游标，子类可覆写。 */
     protected String initValue() {
         return "0";
     }
 
+    /** 异步判断是否还有下一元素，必要时触发新一轮 SCAN。 */
     @Override
     public CompletionStage<Boolean> hasNext() {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
@@ -76,6 +86,7 @@ public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
         return result;
     }
     
+    /** 异步返回下一元素，无元素时以 {@link NoSuchElementException} 完成 exceptionally。 */
     @Override
     public CompletionStage<V> next() {
         CompletableFuture<V> result = new CompletableFuture<>();
@@ -94,8 +105,10 @@ public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
         return result;
     }
     
+    /** 子类实现：对指定游标执行 SCAN 并返回 {@link ScanResult}。 */
     protected abstract RFuture<ScanResult<E>> iterator(RedisClient client, String nextItPos);
     
+    /** 将 SCAN 条目转换为对外暴露的值类型，默认同类型强转。 */
     protected V getValue(E entry) {
         return (V) entry;
     }

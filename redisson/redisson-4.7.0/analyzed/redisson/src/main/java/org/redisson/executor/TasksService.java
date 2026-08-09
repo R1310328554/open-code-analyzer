@@ -33,23 +33,37 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * 分布式执行器客户端任务提交服务，继承 {@link org.redisson.remote.BaseRemoteService}。
+ * <p>
+ * 负责将 {@link TaskParameters} 写入 Redis 队列、取消任务及查询任务是否存在。
+ *
  * @author Nikita Koksharov
  *
  */
 public class TasksService extends BaseRemoteService {
 
+    /** 终止通知 Pub/Sub 主题。 */
     protected String terminationTopicName;
+    /** 活跃任务计数 Redis key。 */
     protected String tasksCounterName;
+    /** 执行器状态 key。 */
     protected String statusName;
+    /** 任务元数据哈希 key。 */
     protected String tasksName;
+    /** 任务 latch key 前缀。 */
     protected String tasksLatchName;
+    /** 调度 ZSET key。 */
     protected String schedulerQueueName;
+    /** 调度变更通知频道。 */
     protected String schedulerChannelName;
+    /** 失败重试间隔 key。 */
     protected String tasksRetryIntervalName;
+    /** 任务 TTL 过期 ZSET key。 */
     protected String tasksExpirationTimeName;
+    /** 默认任务重试间隔（毫秒）。 */
     protected long tasksRetryInterval;
     
+    /** 构造任务服务，绑定编解码器与 Redis 命令执行器。 */
     public TasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
         super(codec, name, commandExecutor, executorId);
     }
@@ -94,6 +108,7 @@ public class TasksService extends BaseRemoteService {
         this.schedulerQueueName = scheduledQueueName;
     }
 
+    /** 入队并将 add Future 关联到 {@link RemotePromise}，失败时抛 IllegalStateException。 */
     @Override
     protected final CompletableFuture<Boolean> addAsync(String requestQueueName,
                                                         RemoteServiceRequest request, RemotePromise<Object> result) {
@@ -109,10 +124,12 @@ public class TasksService extends BaseRemoteService {
         });
     }
 
+    /** 返回用于 add 脚本的命令执行器，子类可覆写为批量模式。 */
     protected CommandAsyncExecutor getAddCommandExecutor() {
         return commandExecutor;
     }
     
+    /** 原子将任务写入 Redis：哈希、执行队列、调度 ZSET 及过期时间。 */
     protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         TaskParameters params = (TaskParameters) request.getArgs()[0];
 
@@ -128,7 +145,7 @@ public class TasksService extends BaseRemoteService {
         }
 
         RFuture<Boolean> f = getAddCommandExecutor().evalWriteNoRetryAsync(tasksCounterName, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        // check if executor service not in shutdown state
+                        // 检查执行器是否未处于 shutdown 状态
                         "if redis.call('exists', KEYS[2]) == 0 then "
                             + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
                             + "redis.call('del', KEYS[9]);"
@@ -144,8 +161,7 @@ public class TasksService extends BaseRemoteService {
                                 + "redis.call('set', KEYS[7], ARGV[4]);"
                                 + "redis.call('zadd', KEYS[3], ARGV[1], scheduledName);"
                                 + "local v = redis.call('zrange', KEYS[3], 0, 0); "
-                                // if new task added to queue head then publish its startTime
-                                // to all scheduler workers
+                                // 新任务成为调度队首时 publish 开始时间
                                 + "if v[1] == scheduledName then "
                                     + "redis.call('publish', KEYS[4], ARGV[1]); "
                                 + "end; "
@@ -159,6 +175,7 @@ public class TasksService extends BaseRemoteService {
         return f.toCompletableFuture();
     }
     
+    /** 从队列、调度 ZSET 与 tasks 哈希中移除任务并更新计数器。 */
     @Override
     protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(requestQueueName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -173,7 +190,7 @@ public class TasksService extends BaseRemoteService {
 
               + "local removed = redis.call('lrem', KEYS[1], 1, ARGV[1]); "
 
-               // remove from executor queue
+               // 从执行器队列移除
               + "if task ~= false and removed > 0 then "
                   + "if redis.call('decr', KEYS[3]) == 0 then "
                      + "redis.call('del', KEYS[3]);"
@@ -195,12 +212,14 @@ public class TasksService extends BaseRemoteService {
         return f.toCompletableFuture();
     }
 
+    /** 使用 TaskParameters 中预设的 requestId。 */
     @Override
     protected String generateRequestId(Object[] args) {
         TaskParameters params = (TaskParameters) args[0];
         return params.getRequestId();
     }
 
+    /** 异步取消：先尝试从队列移除，否则发送 cancel 请求并轮询响应。 */
     public RFuture<Boolean> cancelExecutionAsync(String requestId) {
         String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
         CompletableFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
@@ -234,6 +253,7 @@ public class TasksService extends BaseRemoteService {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /** 每 3 秒轮询 cancel 响应 map，直至收到确认或确认任务已不存在。 */
     private CompletableFuture<RemoteServiceCancelResponse> scheduleCancelResponseCheck(String mapName, String requestId) {
         CompletableFuture<RemoteServiceCancelResponse> cancelResponse = new CompletableFuture<>();
 
@@ -270,6 +290,7 @@ public class TasksService extends BaseRemoteService {
         return cancelResponse;
     }
 
+    /** 异步检查 taskId 是否仍存在于 tasks 哈希表。 */
     public RFuture<Boolean> hasTaskAsync(String taskId) {
         return commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE, RedisCommands.HEXISTS, tasksName, taskId);
     }

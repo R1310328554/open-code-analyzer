@@ -19,18 +19,25 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 
 /**
+ * 基于 Spring 的 {@link TasksInjector} 实现。
+ * <p>
+ * 在 Worker 端反序列化任务后，通过
+ * {@link AutowiredAnnotationBeanPostProcessor} 注入 {@code @Autowired} 依赖。
  *
  * @author Nikita Koksharov
  *
  */
 public class SpringTasksInjector implements TasksInjector {
 
+    /** Spring 容器，用于解析并注入 Bean 依赖。 */
     private BeanFactory beanFactory;
 
+    /** @param beanFactory Spring BeanFactory */
     public SpringTasksInjector(BeanFactory beanFactory) {
         this.beanFactory = beanFactory;
     }
 
+    /** 对任务实例执行 Spring 字段/方法注入。 */
     @Override
     public void inject(Object task) {
         AutowiredAnnotationBeanPostProcessor bpp = new AutowiredAnnotationBeanPostProcessor();

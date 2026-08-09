@@ -16,12 +16,17 @@
 package org.redisson.executor;
 
 /**
+ * 远程任务实例的依赖注入扩展点。
+ * <p>
+ * Worker 端 {@link TasksRunnerService} 在反序列化任务后调用，
+ * 默认实现为 {@link SpringTasksInjector}。
  *
  * @author Nikita Koksharov
  *
  */
 public interface TasksInjector {
 
+    /** 对反序列化后的任务对象注入外部依赖（如 Spring Bean）。 */
     void inject(Object task);
 
 }

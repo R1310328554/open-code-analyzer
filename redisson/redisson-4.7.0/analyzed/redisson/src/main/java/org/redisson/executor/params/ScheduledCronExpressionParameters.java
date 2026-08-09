@@ -16,40 +16,54 @@
 package org.redisson.executor.params;
 
 /**
- * 
+ * 基于 Cron 表达式的调度任务参数。
+ * <p>
+ * 使用 {@link org.redisson.executor.CronExpression} 计算下次触发时间。
+ *
  * @author Nikita Koksharov
  *
  */
 public class ScheduledCronExpressionParameters extends ScheduledParameters {
 
+    /** Cron 表达式字符串（Quartz 语法）。 */
     private String cronExpression;
+    /** 解析 Cron 时使用的时区 ID。 */
     private String timezone; 
+    /** 目标执行器实例 ID。 */
     private String executorId;
 
+    /** 无参构造。 */
     public ScheduledCronExpressionParameters() {
     }
 
+    /** @param requestId 任务请求 ID */
     public ScheduledCronExpressionParameters(String requestId) {
         super(requestId);
     }
 
+    /** 返回 Cron 表达式。 */
     public String getCronExpression() {
         return cronExpression;
     }
+    /** 设置 Cron 表达式。 */
     public void setCronExpression(String cronExpression) {
         this.cronExpression = cronExpression;
     }
     
+    /** 返回时区 ID。 */
     public String getTimezone() {
         return timezone;
     }
+    /** 设置 Cron 解析时区。 */
     public void setTimezone(String timezone) {
         this.timezone = timezone;
     }
 
+    /** 返回目标执行器 ID。 */
     public String getExecutorId() {
         return executorId;
     }
+    /** 设置目标执行器 ID。 */
     public void setExecutorId(String executorId) {
         this.executorId = executorId;
     }

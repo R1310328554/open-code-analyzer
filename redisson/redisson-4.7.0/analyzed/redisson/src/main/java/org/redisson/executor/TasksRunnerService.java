@@ -51,8 +51,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Executor service runs Callable and Runnable tasks.
- * 
+ * 分布式执行器 Worker 端实现，运行 Callable 与 Runnable 任务。
+ * <p>
+ * 实现 {@link RemoteExecutorService}：反序列化任务、注入依赖、
+ * 执行逻辑并在 Redis 中更新任务计数与调度状态。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -60,28 +63,45 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     private static final Logger log = LoggerFactory.getLogger(TasksRunnerService.class);
 
+    /** 任务类字节码哈希到专用 Codec 的 LRU 缓存，避免重复创建 ClassLoader。 */
     private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<>(500, 0, 0);
     
+    /** 默认编解码器。 */
     private final Codec codec;
+    /** 执行器服务名称（Redis key 前缀）。 */
     private final String name;
+    /** 异步 Redis 命令执行器。 */
     private final CommandAsyncExecutor commandExecutor;
 
+    /** 注入到任务中的 Redisson 客户端引用。 */
     private final RedissonClient redisson;
     
+    /** 活跃任务计数器 Redis key。 */
     private String tasksCounterName;
+    /** 执行器状态（running/shutdown/terminated）Redis key。 */
     private String statusName;
+    /** 终止通知 Pub/Sub 频道名。 */
     private String terminationTopicName;
+    /** 任务参数哈希表 Redis key。 */
     private String tasksName;
+    /** 任务 latch 前缀 key。 */
     private String tasksLatchName;
+    /** 调度队列（ZSET）Redis key。 */
     private String schedulerQueueName;
+    /** 调度变更通知频道。 */
     private String schedulerChannelName;
+    /** 失败重试间隔配置 key。 */
     private String tasksRetryIntervalName;
+    /** 任务过期时间 ZSET key。 */
     private String tasksExpirationTimeName;
 
+    /** 可选的自定义任务依赖注入器。 */
     private TasksInjector tasksInjector;
 
+    /** 调度任务迟到阈值（毫秒），超时则跳过本次执行。 */
     private long taskLateThreshold;
 
+    /** 构造 Worker 端任务运行服务。 */
     public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
@@ -89,10 +109,12 @@ public class TasksRunnerService implements RemoteExecutorService {
         this.codec = codec;
     }
 
+    /** 设置任务依赖注入器（如 SpringTasksInjector）。 */
     public void setTasksInjector(TasksInjector tasksInjector) {
         this.tasksInjector = tasksInjector;
     }
 
+    /** 设置调度任务允许的最大迟到毫秒数。 */
     public void setTaskLateThreshold(long taskLateThreshold) {
         this.taskLateThreshold = taskLateThreshold;
     }
@@ -133,6 +155,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         this.tasksLatchName = tasksLatchName;
     }
 
+    /** 执行本轮 fixed-rate 任务并按周期计算下次开始时间后重调度。 */
     @Override
     public void scheduleAtFixedRate(ScheduledAtFixedRateParameters params) {
         long start = System.nanoTime();
@@ -151,12 +174,14 @@ public class TasksRunnerService implements RemoteExecutorService {
         asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
     }
 
+    /** 检查任务是否仍存在于 tasks 哈希表中（未被取消）。 */
     private boolean hasTask(String requestId) {
         RFuture<Boolean> f = commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE,
                 RedisCommands.HEXISTS, tasksName, requestId);
         return commandExecutor.get(f);
     }
 
+    /** 按 Cron 表达式计算下次触发时间并执行/重调度。 */
     @Override
     public void schedule(ScheduledCronExpressionParameters params) {
         CronExpression expression = new CronExpression(params.getCronExpression());
@@ -174,10 +199,12 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
 
     /**
-     * Creates RemoteExecutorServiceAsync with special executor which overrides requestId generation
-     * and uses current requestId. Because recurring tasks should use the same requestId.
-     * 
-     * @return
+     * 创建用于周期重调度的 {@link RemoteExecutorServiceAsync} 代理。
+     * <p>
+     * 使用 {@link ScheduledTasksService} 并固定 {@code requestId}，
+     * 使 recurring 任务始终复用同一标识。
+     *
+     * @return 无 ack/result 的异步远程代理
      */
     private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed(String executorId, String requestId) {
         ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, name, commandExecutor, executorId);
@@ -195,6 +222,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         return asyncScheduledServiceAtFixed;
     }
     
+    /** 执行本轮任务，完成后延迟 {@code delay} 毫秒再重调度。 */
     @Override
     public void scheduleWithFixedDelay(ScheduledWithFixedDelayParameters params) {
         executeRunnable(params, false);
@@ -204,16 +232,19 @@ public class TasksRunnerService implements RemoteExecutorService {
         asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleWithFixedDelay(params);
     }
     
+    /** 调度 Callable 等价于立即执行 {@link #executeCallable}。 */
     @Override
     public Object scheduleCallable(ScheduledParameters params) {
         return executeCallable(params);
     }
     
+    /** 调度 Runnable 等价于 {@link #executeRunnable}。 */
     @Override
     public void scheduleRunnable(ScheduledParameters params) {
         executeRunnable(params);
     }
     
+    /** 反序列化 Callable、执行并在 Redis 中标记任务完成。 */
     @Override
     public Object executeCallable(TaskParameters params) {
         Object res;
@@ -243,6 +274,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         return res;
     }
 
+    /** 定时续期失败重试任务的调度时间（shutdown 期间仍保留在 ZSET）。 */
     protected void scheduleRetryTimeRenewal(String requestId, Long retryInterval) {
         if (retryInterval == null) {
             return;
@@ -252,9 +284,10 @@ public class TasksRunnerService implements RemoteExecutorService {
                                                     Math.max(1000, retryInterval / 2), TimeUnit.MILLISECONDS);
     }
 
+    /** 若执行器 shutdown 且任务仍存在，则延长其在 scheduler 队列中的 score。 */
     protected RFuture<Long> renewRetryTime(String requestId) {
         RFuture<Long> future = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
-                // check if executor service not in shutdown state
+                // 检查执行器是否未处于 shutdown 状态
                   "local name = ARGV[2];"
                 + "local scheduledName = ARGV[2];"
                 + "if string.sub(scheduledName, 1, 3) ~= 'ff:' then "
@@ -268,8 +301,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "local startTime = tonumber(ARGV[1]) + tonumber(retryInterval);"
                     + "redis.call('zadd', KEYS[2], startTime, scheduledName);"
                     + "local v = redis.call('zrange', KEYS[2], 0, 0); "
-                    // if new task added to queue head then publish its startTime 
-                    // to all scheduler workers 
+                    // 若重试任务成为队首则 publish 开始时间通知 scheduler worker
                     + "if v[1] == scheduledName then "
                         + "redis.call('publish', KEYS[3], startTime); "
                     + "end;"
@@ -291,6 +323,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         return future;
     }
 
+    /** 计算 classpath 中指定类文件的 MurmurHash128。 */
     private HashValue hash(ClassLoader classLoader, String className) throws IOException {
         String classAsPath = className.replace('.', '/') + ".class";
         InputStream classStream = classLoader.getResourceAsStream(classAsPath);
@@ -305,6 +338,11 @@ public class TasksRunnerService implements RemoteExecutorService {
         return hash;
     }
     
+    /**
+     * 从 {@link TaskParameters} 反序列化 Callable/Runnable 实例。
+     * <p>
+     * 支持 lambda 与普通序列化；注入 RedissonClient 与 requestId。
+     */
     @SuppressWarnings("unchecked")
     private <T> T decode(TaskParameters params) {
         ByteBuf classBodyBuf = Unpooled.wrappedBuffer(params.getClassBody());
@@ -329,8 +367,8 @@ public class TasksRunnerService implements RemoteExecutorService {
             if (params.getLambdaBody() != null) {
                 ByteArrayInputStream is = new ByteArrayInputStream(params.getLambdaBody());
                 
-                //set thread context class loader to be the classLoaderCodec.getClassLoader() variable as there could be reflection
-                //done while reading from input stream which reflection will use thread class loader to load classes on demand
+                // 反序列化 lambda 时将线程上下文 ClassLoader 设为任务 ClassLoader，
+                // 避免反射加载类时使用错误的 loader
                 ClassLoader currentThreadClassLoader = Thread.currentThread().getContextClassLoader();                
                 try {
                     Thread.currentThread().setContextClassLoader(classLoaderCodec.getClassLoader());
@@ -361,9 +399,9 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
 
     /**
-     * Determines whether a scheduled task is too late to run, based on the
-     * worker-level lateness threshold. Recurring tasks are still rescheduled
-     * by their caller after a skip, so only the stale execution is dropped.
+     * 根据 Worker 级迟到阈值判断调度任务是否应跳过本次执行。
+     * <p>
+     * 周期任务跳过后仍由调用方重调度，仅丢弃过期的一次执行。
      */
     private boolean skipAsLate(TaskParameters params) {
         if (taskLateThreshold <= 0 || !(params instanceof ScheduledParameters)) {
@@ -378,6 +416,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         return false;
     }
 
+    /** 执行 Runnable；{@code removeTask} 控制 finish 时是否从 Redis 删除任务条目。 */
     public void executeRunnable(TaskParameters params, boolean removeTask) {
         if (skipAsLate(params)) {
             finish(params.getRequestId(), removeTask);
@@ -412,21 +451,20 @@ public class TasksRunnerService implements RemoteExecutorService {
         finish(params.getRequestId(), removeTask);
     }
     
+    /** 执行 Runnable 并在完成后移除任务。 */
     @Override
     public void executeRunnable(TaskParameters params) {
         executeRunnable(params, true);
     }
 
     /**
-     * Check shutdown state. If tasksCounter equals <code>0</code>
-     * and executor in <code>shutdown</code> state, then set <code>terminated</code> state 
-     * and notify terminationTopicName
+     * 任务结束时递减计数器；若归零且处于 shutdown 则转为 terminated 并发布通知。
      * <p>
-     * If <code>scheduledRequestId</code> is not null then
-     * delete scheduled task
-     * 
-     * @param requestId
+     * {@code removeTask} 为 true 时同时从 tasks 哈希与过期 ZSET 删除条目。
+     *
+     * @param requestId 任务请求 ID
      */
+    /** 执行 finish Lua：更新计数、清理调度项、必要时触发 terminated。 */
     void finish(String requestId, boolean removeTask) {
         if (Thread.currentThread().isInterrupted()) {
             return;
