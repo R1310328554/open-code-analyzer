@@ -16,9 +16,13 @@
  */
 package org.apache.rocketmq.remoting.exception;
 
+/**
+ * Remoting 并发限流异常：异步/oneway 请求超过信号量许可上限时抛出。
+ */
 public class RemotingTooMuchRequestException extends RemotingException {
     private static final long serialVersionUID = 4326919581254519654L;
 
+    /** 以限流说明信息构造异常。 */
     public RemotingTooMuchRequestException(String message) {
         super(message);
     }

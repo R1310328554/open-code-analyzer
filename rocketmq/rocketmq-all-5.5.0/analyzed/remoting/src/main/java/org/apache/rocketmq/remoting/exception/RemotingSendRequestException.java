@@ -16,13 +16,18 @@
  */
 package org.apache.rocketmq.remoting.exception;
 
+/**
+ * Remoting 发送请求异常：向远端写入请求数据失败时抛出。
+ */
 public class RemotingSendRequestException extends RemotingException {
     private static final long serialVersionUID = 5391285827332471674L;
 
+    /** 向 {@code addr} 发送请求失败。 */
     public RemotingSendRequestException(String addr) {
         this(addr, null);
     }
 
+    /** 向 {@code addr} 发送请求失败，并携带底层异常。 */
     public RemotingSendRequestException(String addr, Throwable cause) {
         super("send request to <" + addr + "> failed", cause);
     }

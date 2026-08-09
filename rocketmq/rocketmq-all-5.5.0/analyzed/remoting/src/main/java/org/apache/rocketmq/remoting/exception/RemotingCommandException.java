@@ -16,13 +16,18 @@
  */
 package org.apache.rocketmq.remoting.exception;
 
+/**
+ * Remoting 命令异常：序列化/反序列化或扩展头字段校验失败时抛出。
+ */
 public class RemotingCommandException extends RemotingException {
     private static final long serialVersionUID = -6061365915274953096L;
 
+    /** 以描述信息构造异常。 */
     public RemotingCommandException(String message) {
         super(message, null);
     }
 
+    /** 以描述信息与根因构造异常。 */
     public RemotingCommandException(String message, Throwable cause) {
         super(message, cause);
     }

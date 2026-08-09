@@ -18,17 +18,20 @@
 package org.apache.rocketmq.remoting.common;
 
 /**
- * For server, three SSL modes are supported: disabled, permissive and enforcing.
+ * 服务端 TLS/SSL 工作模式枚举，支持三种策略：
  * <ol>
- *     <li><strong>disabled:</strong> SSL is not supported; any incoming SSL handshake will be rejected, causing connection closed.</li>
- *     <li><strong>permissive:</strong> SSL is optional, aka, server in this mode can serve client connections with or without SSL;</li>
- *     <li><strong>enforcing:</strong> SSL is required, aka, non SSL connection will be rejected.</li>
+ *     <li><strong>disabled：</strong> 禁用 SSL；任何 SSL 握手将被拒绝并关闭连接。</li>
+ *     <li><strong>permissive：</strong> 可选 SSL；服务端同时接受明文与 TLS 连接。</li>
+ *     <li><strong>enforcing：</strong> 强制 SSL；非 TLS 连接将被拒绝。</li>
  * </ol>
  */
 public enum TlsMode {
 
+    /** 禁用 TLS。 */
     DISABLED("disabled"),
+    /** 可选 TLS（兼容明文）。 */
     PERMISSIVE("permissive"),
+    /** 强制 TLS。 */
     ENFORCING("enforcing");
 
     private String name;
@@ -37,6 +40,7 @@ public enum TlsMode {
         this.name = name;
     }
 
+    /** 按配置字符串解析模式，无法识别时默认 {@link #PERMISSIVE}。 */
     public static TlsMode parse(String mode) {
         for (TlsMode tlsMode : TlsMode.values()) {
             if (tlsMode.name.equals(mode)) {
@@ -47,6 +51,7 @@ public enum TlsMode {
         return PERMISSIVE;
     }
 
+    /** 返回模式对应的配置名称字符串。 */
     public String getName() {
         return name;
     }

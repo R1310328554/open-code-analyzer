@@ -16,13 +16,18 @@
  */
 package org.apache.rocketmq.remoting.exception;
 
+/**
+ * Remoting 层通用受检异常基类，涵盖连接、发送、超时与命令处理等错误。
+ */
 public class RemotingException extends Exception {
     private static final long serialVersionUID = -5690687334570505110L;
 
+    /** 以描述信息构造异常。 */
     public RemotingException(String message) {
         super(message);
     }
 
+    /** 以描述信息与根因构造异常。 */
     public RemotingException(String message, Throwable cause) {
         super(message, cause);
     }

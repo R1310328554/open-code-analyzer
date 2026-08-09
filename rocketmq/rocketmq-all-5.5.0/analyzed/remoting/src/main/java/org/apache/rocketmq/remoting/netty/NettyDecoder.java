@@ -26,17 +26,28 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * Remoting 帧解码器：按 4 字节长度字段拆包并反序列化为 {@link RemotingCommand}。
+ */
 public class NettyDecoder extends LengthFieldBasedFrameDecoder {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.ROCKETMQ_REMOTING_NAME);
 
+    /** 单帧最大字节数，可通过系统属性 com.rocketmq.remoting.frameMaxLength 配置。 */
     private static final int FRAME_MAX_LENGTH =
         Integer.parseInt(System.getProperty("com.rocketmq.remoting.frameMaxLength", "16777216"));
 
+    /** 使用默认最大帧长与长度字段偏移构造解码器。 */
     public NettyDecoder() {
         super(FRAME_MAX_LENGTH, 0, 4, 0, 4);
     }
 
     @Override
+    /**
+     * 解码一帧 Remoting 报文；失败时记录日志并关闭通道。
+     *
+     * @param ctx Netty 通道上下文
+     * @param in  输入字节缓冲
+     */
     public Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
         ByteBuf frame = null;
         Stopwatch timer = Stopwatch.createStarted();

@@ -41,13 +41,18 @@ import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.RESUL
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.RESULT_SUCCESS;
 import static org.apache.rocketmq.remoting.metrics.RemotingMetricsConstant.RESULT_WRITE_CHANNEL_FAILED;
 
+/**
+ * Remoting 指标管理器：注册 RPC 延迟直方图并统一构建 OpenTelemetry 属性。
+ */
 public class RemotingMetricsManager {
+    /** RPC 延迟直方图，未初始化时为无操作实现。 */
     private LongHistogram rpcLatency = new NopLongHistogram();
     private Supplier<AttributesBuilder> attributesBuilderSupplier;
 
     public RemotingMetricsManager() {
     }
 
+    /** 创建带默认 protocol_type=remoting 标签的属性构建器。 */
     public AttributesBuilder newAttributesBuilder() {
         if (this.attributesBuilderSupplier == null) {
             return Attributes.builder();
@@ -56,15 +61,22 @@ public class RemotingMetricsManager {
             .put(LABEL_PROTOCOL_TYPE, PROTOCOL_TYPE_REMOTING);
     }
 
+    /**
+     * 注册 RPC 延迟直方图并绑定公共属性提供者。
+     *
+     * @param meter OpenTelemetry Meter
+     * @param attributesBuilderSupplier 公共标签构建器工厂
+     */
     public void initMetrics(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier) {
         this.attributesBuilderSupplier = attributesBuilderSupplier;
         this.rpcLatency = meter.histogramBuilder(HISTOGRAM_RPC_LATENCY)
-            .setDescription("Rpc latency")
+            .setDescription("RPC 调用延迟")
             .setUnit("milliseconds")
             .ofLongs()
             .build();
     }
 
+    /** 返回 RPC 延迟直方图的桶边界视图配置。 */
     public List<Pair<InstrumentSelector, ViewBuilder>> getMetricsView() {
         List<Double> rpcCostTimeBuckets = Arrays.asList(
             (double) Duration.ofMillis(1).toMillis(),
@@ -86,6 +98,7 @@ public class RemotingMetricsManager {
         return Lists.newArrayList(new Pair<>(selector, viewBuilder));
     }
 
+    /** 根据 Netty writeAndFlush 的 {@link Future} 状态映射为 result 标签值。 */
     public String getWriteAndFlushResult(Future<?> future) {
         String result = RESULT_SUCCESS;
         if (future.isCancelled()) {
@@ -96,7 +109,7 @@ public class RemotingMetricsManager {
         return result;
     }
 
-    // Getter methods for external access
+    // 供外部读取已注册指标的 getter
     public LongHistogram getRpcLatency() {
         return rpcLatency;
     }
@@ -105,7 +118,7 @@ public class RemotingMetricsManager {
         return attributesBuilderSupplier;
     }
 
-    // Setter methods for testing
+    // 供单元测试注入 mock 依赖的 setter
     public void setAttributesBuilderSupplier(Supplier<AttributesBuilder> attributesBuilderSupplier) {
         this.attributesBuilderSupplier = attributesBuilderSupplier;
     }

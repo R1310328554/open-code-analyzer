@@ -20,22 +20,28 @@ import org.apache.rocketmq.remoting.common.TlsMode;
 
 import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
 
+/**
+ * Netty Remoting 客户端配置：线程池、信号量、超时、TLS 与写缓冲水位等参数。
+ */
 public class NettyClientConfig {
-    /**
-     * Worker thread number
-     */
+    /** Netty 客户端 Worker 线程数。 */
     private int clientWorkerThreads = NettySystemConfig.clientWorkerSize;
+    /** 异步回调线程池大小，默认为 CPU 核数。 */
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
+    /** oneway 并发请求信号量上限。 */
     private int clientOnewaySemaphoreValue = NettySystemConfig.CLIENT_ONEWAY_SEMAPHORE_VALUE;
+    /** 异步 RPC 并发请求信号量上限。 */
     private int clientAsyncSemaphoreValue = NettySystemConfig.CLIENT_ASYNC_SEMAPHORE_VALUE;
+    /** TCP 连接超时毫秒数。 */
     private int connectTimeoutMillis = NettySystemConfig.connectTimeoutMillis;
+    /** 通道非活跃状态判定间隔（毫秒）。 */
     private long channelNotActiveInterval = 1000 * 60;
 
+    /** 是否扫描并连接可用的 NameServer 地址。 */
     private boolean isScanAvailableNameSrv = true;
 
     /**
-     * IdleStateEvent will be triggered when neither read nor write was performed for
-     * the specified period of this time. Specify {@code 0} to disable
+     * 通道读写均空闲超过该秒数时触发 IdleStateEvent；{@code 0} 表示禁用。
      */
     private int clientChannelMaxIdleTimeSeconds = NettySystemConfig.clientChannelMaxIdleTimeSeconds;
 
@@ -44,6 +50,7 @@ public class NettyClientConfig {
     private boolean clientPooledByteBufAllocatorEnable = false;
     private boolean clientCloseSocketIfTimeout = NettySystemConfig.clientCloseSocketIfTimeout;
 
+    /** 是否启用 TLS，可由系统属性 {@link TlsSystemConfig#TLS_ENABLE} 覆盖。 */
     private boolean useTLS = Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
         String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING)));
 
@@ -52,11 +59,15 @@ public class NettyClientConfig {
     private int writeBufferHighWaterMark = NettySystemConfig.writeBufferHighWaterMark;
     private int writeBufferLowWaterMark = NettySystemConfig.writeBufferLowWaterMark;
 
+    /** 为 true 时禁用独立回调线程池。 */
     private boolean disableCallbackExecutor = false;
+    /** 为 true 时禁用 Netty Worker EventLoopGroup。 */
     private boolean disableNettyWorkerGroup = false;
 
+    /** 断线重连的最大间隔秒数。 */
     private long maxReconnectIntervalTimeSeconds = 60;
 
+    /** 收到 HTTP/2 GOAWAY 等信号时是否自动重连。 */
     private boolean enableReconnectForGoAway = true;
 
     public boolean isClientCloseSocketIfTimeout() {

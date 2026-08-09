@@ -16,18 +16,24 @@
  */
 package org.apache.rocketmq.remoting.exception;
 
+/**
+ * Remoting 超时异常：同步/异步调用在指定时间内未收到响应时抛出。
+ */
 public class RemotingTimeoutException extends RemotingException {
 
     private static final long serialVersionUID = 4106899185095245979L;
 
+    /** 以自定义超时描述构造异常。 */
     public RemotingTimeoutException(String message) {
         super(message);
     }
 
+    /** 等待 {@code addr} 通道响应超过 {@code timeoutMillis} 毫秒。 */
     public RemotingTimeoutException(String addr, long timeoutMillis) {
         this(addr, timeoutMillis, null);
     }
 
+    /** 等待 {@code addr} 响应超时，并携带底层异常。 */
     public RemotingTimeoutException(String addr, long timeoutMillis, Throwable cause) {
         super("wait response on the channel <" + addr + "> timeout, " + timeoutMillis + "(ms)", cause);
     }

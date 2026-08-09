@@ -29,22 +29,19 @@ import java.nio.channels.WritableByteChannel;
 
 /**
  * <p>
- *     By default, file region are directly transferred to socket channel which is known as zero copy. In case we need
- *     to encrypt transmission, data being sent should go through the {@link SslHandler}. This encoder ensures this
- *     process.
+ *     默认情况下 {@link FileRegion} 经零拷贝直接写入 Socket；启用 TLS 时需经 {@link SslHandler}
+ *     加密，本编码器将文件区域读入 {@link ByteBuf} 以走 SSL 管道。
  * </p>
  */
 public class FileRegionEncoder extends MessageToByteEncoder<FileRegion> {
 
     /**
-     * Encode a message into a {@link io.netty.buffer.ByteBuf}. This method will be called for each written message that
-     * can be handled by this encoder.
+     * 将 {@link FileRegion} 分块读入 {@code out}，供后续 SSL 加密发送。
      *
-     * @param ctx the {@link io.netty.channel.ChannelHandlerContext} which this {@link
-     * io.netty.handler.codec.MessageToByteEncoder} belongs to
-     * @param msg the message to encode
-     * @param out the {@link io.netty.buffer.ByteBuf} into which the encoded message will be written
-     * @throws Exception is thrown if an error occurs
+     * @param ctx 当前 {@link ChannelHandlerContext}
+     * @param msg 待编码的文件区域
+     * @param out 目标 {@link ByteBuf}
+     * @throws Exception 传输过程中发生 I/O 错误时抛出
      */
     @Override
     protected void encode(ChannelHandlerContext ctx, FileRegion msg, final ByteBuf out) throws Exception {

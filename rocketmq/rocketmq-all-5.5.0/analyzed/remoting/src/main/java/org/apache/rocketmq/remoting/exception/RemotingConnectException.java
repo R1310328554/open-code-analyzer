@@ -16,13 +16,18 @@
  */
 package org.apache.rocketmq.remoting.exception;
 
+/**
+ * Remoting 连接异常：无法与远端地址建立 TCP 连接时抛出。
+ */
 public class RemotingConnectException extends RemotingException {
     private static final long serialVersionUID = -5565366231695911316L;
 
+    /** 连接 {@code addr} 失败。 */
     public RemotingConnectException(String addr) {
         this(addr, null);
     }
 
+    /** 连接 {@code addr} 失败，并携带底层 I/O 异常。 */
     public RemotingConnectException(String addr, Throwable cause) {
         super("connect to " + addr + " failed", cause);
     }
