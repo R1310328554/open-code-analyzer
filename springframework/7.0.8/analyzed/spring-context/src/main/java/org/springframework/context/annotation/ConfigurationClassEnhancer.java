@@ -63,18 +63,15 @@ import org.springframework.util.ReflectionUtils;
 /* ===== [OCA 中文解析] =====
 class ConfigurationClassEnhancer — 意图说明
 
-class `ConfigurationClassEnhancer`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassEnhancer.java`
+class `ConfigurationClassEnhancer`：用 CGLIB 增强 @Configuration 类，使 @Bean 方法调用走容器单例/作用域语义而非直接 new。；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassEnhancer.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Enhances {@link Configuration} classes by generating a CGLIB subclass which
- * interacts with the Spring container to respect bean scoping semantics for
- * {@code @Bean} methods. Each such {@code @Bean} method will be overridden in
- * the generated subclass, only delegating to the actual {@code @Bean} method
- * implementation if the container actually requests the construction of a new
- * instance. Otherwise, a call to such an {@code @Bean} method serves as a
- * reference back to the container, obtaining the corresponding bean by name.
+ * 通过生成 CGLIB 子类增强 {@link Configuration} 类，
+ * 使其与 Spring 容器协作以遵守 {@code @Bean} 方法的作用域语义。
+ * 生成的子类会覆盖每个 {@code @Bean} 方法：仅当容器确实需要新实例时才
+ * 委托给真实实现；否则调用返回容器中同名 Bean 的引用。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -111,10 +108,9 @@ class ConfigurationClassEnhancer {
 方法 `enhance` 复杂度较高（CCN≈10, NLOC≈36）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Loads the specified class and generates a CGLIB subclass of it equipped with
-	 * container-aware callbacks capable of respecting scoping and other bean semantics.
-	 * @return the enhanced subclass
-	 */
+ * 加载指定类并生成带容器感知回调的 CGLIB 子类，以尊重作用域等 Bean 语义。
+ * @return 增强后的子类
+ */
 	public Class<?> enhance(Class<?> configClass, @Nullable ClassLoader classLoader) {
 		if (EnhancedConfiguration.class.isAssignableFrom(configClass)) {
 			if (logger.isDebugEnabled()) {
@@ -161,9 +157,8 @@ class ConfigurationClassEnhancer {
 方法 `reliesOnPackageVisibility` 复杂度较高（CCN≈10, NLOC≈21）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Checks whether the given config class relies on package visibility, either for
-	 * the class and any of its constructors or for any of its {@code @Bean} methods.
-	 */
+ * 检查给定配置类是否依赖包可见性（类/构造器或 {@code @Bean} 方法）。
+ */
 	private boolean reliesOnPackageVisibility(Class<?> configSuperClass) {
 		int mod = configSuperClass.getModifiers();
 		if (!Modifier.isPublic(mod) && !Modifier.isProtected(mod)) {
@@ -243,15 +238,10 @@ interface `EnhancedConfiguration`：请结合所属模块与调用方理解其�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Marker interface to be implemented by all @Configuration CGLIB subclasses.
-	 * Facilitates idempotent behavior for {@link ConfigurationClassEnhancer#enhance}
-	 * through checking to see if candidate classes are already assignable to it.
-	 * <p>Also extends {@link BeanFactoryAware}, as all enhanced {@code @Configuration}
-	 * classes require access to the {@link BeanFactory} that created them.
-	 * <p>Note that this interface is intended for framework-internal use only, however
-	 * must remain public in order to allow access to subclasses generated from other
-	 * packages (i.e. user code).
-	 */
+ * 所有 @Configuration CGLIB 子类应实现的标记接口，
+ * 便于 {@link ConfigurationClassEnhancer#enhance} 幂等检测。
+ * <p>同时扩展 {@link BeanFactoryAware}，增强的配置类需要访问创建它的 {@link BeanFactory}。
+ */
 	public interface EnhancedConfiguration extends BeanFactoryAware {
 	}
 
@@ -264,9 +254,9 @@ interface `ConditionalCallback`：请结合所属模块与调用方理解其在�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Conditional {@link Callback}.
-	 * @see ConditionalCallbackFilter
-	 */
+ * 条件 {@link Callback}。
+ * @see ConditionalCallbackFilter
+ */
 	private interface ConditionalCallback extends Callback {
 
 		boolean isMatch(Method candidateMethod);
@@ -281,9 +271,8 @@ class `ConditionalCallbackFilter`：请结合所属模块与调用方理解其�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * A {@link CallbackFilter} that works by interrogating {@link Callback Callbacks} in the order
-	 * that they are defined via {@link ConditionalCallback}.
-	 */
+ * 按 {@link ConditionalCallback} 定义顺序询问各 {@link Callback} 的 {@link CallbackFilter}。
+ */
 	private static class ConditionalCallbackFilter implements CallbackFilter {
 
 		private final Callback[] callbacks;
@@ -323,10 +312,9 @@ Bean 工厂：存在与获取 Bean 实例的核心入口；源文件: `spring-co
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Custom extension of CGLIB's DefaultGeneratorStrategy, introducing a {@link BeanFactory} field.
-	 * Also exposes the application ClassLoader as thread context ClassLoader for the time of
-	 * class generation (in order for ASM to pick it up when doing common superclass resolution).
-	 */
+ * CGLIB DefaultGeneratorStrategy 的扩展，引入 {@link BeanFactory} 字段；
+ * 生成类期间将应用 ClassLoader 设为线程上下文 ClassLoader（供 ASM 解析公共超类）。
+ */
 	private static class BeanFactoryAwareGeneratorStrategy extends ClassLoaderAwareGeneratorStrategy {
 
 		public BeanFactoryAwareGeneratorStrategy(@Nullable ClassLoader classLoader) {
@@ -355,10 +343,9 @@ Bean 工厂：存在与获取 Bean 实例的核心入口；源文件: `spring-co
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Intercepts the invocation of any {@link BeanFactoryAware#setBeanFactory(BeanFactory)} on
-	 * {@code @Configuration} class instances for the purpose of recording the {@link BeanFactory}.
-	 * @see EnhancedConfiguration
-	 */
+ * 拦截 {@code @Configuration} 实例上对 {@link BeanFactoryAware#setBeanFactory(BeanFactory)} 的调用以记录 {@link BeanFactory}。
+ * @see EnhancedConfiguration
+ */
 	private static class BeanFactoryAwareMethodInterceptor implements MethodInterceptor, ConditionalCallback {
 
 		@Override
@@ -397,11 +384,10 @@ class BeanMethodInterceptor — 意图说明
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Intercepts the invocation of any {@link Bean}-annotated methods in order to ensure proper
-	 * handling of bean semantics such as scoping and AOP proxying.
-	 * @see Bean
-	 * @see ConfigurationClassEnhancer
-	 */
+ * 拦截所有 {@link Bean} 标注方法的调用，确保正确处理作用域与 AOP 代理等 Bean 语义。
+ * @see Bean
+ * @see ConfigurationClassEnhancer
+ */
 	private static class BeanMethodInterceptor implements MethodInterceptor, ConditionalCallback {
 
 		/**

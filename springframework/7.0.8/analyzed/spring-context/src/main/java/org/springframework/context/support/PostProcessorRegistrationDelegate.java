@@ -54,12 +54,12 @@ import org.springframework.core.metrics.StartupStep;
 /* ===== [OCA 中文解析] =====
 class PostProcessorRegistrationDelegate — 意图说明
 
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/context/support/PostProcessorRegistrationDelegate.java`
+内部委托类：按 PriorityOrdered/Ordered 契约有序调用 BeanFactoryPostProcessor 与 BeanPostProcessor；源文件: `spring-context/src/main/java/org/springframework/context/support/PostProcessorRegistrationDelegate.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Delegate for AbstractApplicationContext's post-processor handling.
+ * {@link AbstractApplicationContext} 后处理器处理的委托类。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -315,12 +315,10 @@ final class PostProcessorRegistrationDelegate {
 	}
 
 	/**
-	 * Load and sort the post-processors of the specified type.
-	 * @param beanFactory the bean factory to use
-	 * @param beanPostProcessorType the post-processor type
-	 * @param <T> the post-processor type
-	 * @return a list of sorted post-processors for the specified type
-	 */
+ * 加载并排序指定类型的后处理器。
+ * @param beanFactory Bean 工厂
+ * @param beanFactoryPostProcessors 已知的 BFPP 实例
+ */
 	static <T extends BeanPostProcessor> List<T> loadBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, Class<T> beanPostProcessorType) {
 

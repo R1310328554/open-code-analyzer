@@ -47,44 +47,22 @@ import org.springframework.util.StringUtils;
 /* ===== [OCA 中文解析] =====
 class ReloadableResourceBundleMessageSource — 意图说明
 
-class `ReloadableResourceBundleMessageSource`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/support/ReloadableResourceBundleMessageSource.java`
+class `ReloadableResourceBundleMessageSource`：可热刷新的国际化 MessageSource，按 basename 加载 properties/XML 并缓存。；源文件: `spring-context/src/main/java/org/springframework/context/support/ReloadableResourceBundleMessageSource.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Spring-specific {@link org.springframework.context.MessageSource} implementation
- * that accesses resource bundles using specified basenames, participating in the
- * Spring {@link org.springframework.context.ApplicationContext}'s resource loading.
+ * Spring 专用的 {@link org.springframework.context.MessageSource} 实现，
+ * 通过 basename 访问资源 bundle，并参与 Spring {@link org.springframework.context.ResourceLoaderAware} 资源加载。
  *
- * <p>In contrast to the JDK-based {@link ResourceBundleMessageSource}, this class uses
- * {@link java.util.Properties} instances as its custom data structure for messages,
- * loading them via a {@link org.springframework.util.PropertiesPersister} strategy
- * from Spring {@link Resource} handles. This strategy is not only capable of
- * reloading files based on timestamp changes, but also of loading properties files
- * with a specific character encoding. It will detect XML property files as well.
+ * <p>与 {@link ResourceBundleMessageSource} 的 "basenames" 类似但不完全相同：
+ * 遵循 ResourceBundle 不写扩展名/语言码的规则，但可指向任意 Spring 资源位置。
  *
- * <p>Note that the basenames set as {@link #setBasenames "basenames"} property
- * are treated in a slightly different fashion than the "basenames" property of
- * {@link ResourceBundleMessageSource}. It follows the basic ResourceBundle rule of not
- * specifying file extension or language codes, but can refer to any Spring resource
- * location (instead of being restricted to classpath resources). With a "classpath:"
- * prefix, resources can still be loaded from the classpath, but "cacheSeconds" values
- * other than "-1" (caching forever) might not work reliably in this case.
+ * <p>典型 Web 应用可将消息文件放在 {@code WEB-INF} 下，例如 basename "WEB-INF/messages"。
+ * 先找到的 bundle 中定义会覆盖后找到的（顺序查找）。
  *
- * <p>For a typical web application, message files could be placed in {@code WEB-INF}:
- * for example, a "WEB-INF/messages" basename would find a "WEB-INF/messages.properties",
- * "WEB-INF/messages_en.properties" etc arrangement as well as "WEB-INF/messages.xml",
- * "WEB-INF/messages_en.xml" etc. Note that message definitions in a <i>previous</i>
- * resource bundle will override ones in a later bundle, due to sequential lookup.
-
- * <p>This MessageSource can easily be used outside an
- * {@link org.springframework.context.ApplicationContext}: it will use a
- * {@link org.springframework.core.io.DefaultResourceLoader} as default,
- * simply getting overridden with the ApplicationContext's resource loader
- * if running in a context. It does not have any other specific dependencies.
- *
- * <p>Thanks to Thomas Achleitner for providing the initial implementation of
- * this message source!
+ * <p>可在 {@link org.springframework.context.ApplicationContext} 外使用；
+ * 默认 {@link org.springframework.core.io.DefaultResourceLoader}，在上下文中会被覆盖。
  *
  * @author Juergen Hoeller
  * @author Sebastien Deleuze
@@ -684,11 +662,9 @@ class `PropertiesHolder`：请结合所属模块与调用方理解其在整体�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * PropertiesHolder for caching.
-	 * Stores the last-modified timestamp of the source file for efficient
-	 * change detection, and the timestamp of the last refresh attempt
-	 * (updated every time the cache entry gets re-validated).
-	 */
+ * 用于缓存的 PropertiesHolder：记录源文件最后修改时间以高效检测变更，
+ * 以及上次刷新尝试的时间戳（每次重新验证缓存条目时更新）。
+ */
 	protected class PropertiesHolder {
 
 		private final @Nullable Properties properties;
@@ -699,7 +675,7 @@ class `PropertiesHolder`：请结合所属模块与调用方理解其在整体�
 
 		private final Lock refreshLock = new ReentrantLock();
 
-		/** Cache to hold already generated MessageFormats per message code. */
+		/** 缓存已生成的 MessageFormat（按消息代码）。 */
 		private final ConcurrentMap<String, Map<Locale, MessageFormat>> cachedMessageFormats =
 				new ConcurrentHashMap<>();
 

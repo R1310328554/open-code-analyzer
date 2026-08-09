@@ -62,17 +62,16 @@ import org.springframework.util.StringUtils;
 /* ===== [OCA 中文解析] =====
 class ConfigurationClassBeanDefinitionReader — 意图说明
 
-Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassBeanDefinitionReader.java`
+将已解析的 @Configuration 类（含 @Bean、@Import 等）转化为 BeanDefinition 并注册到容器；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassBeanDefinitionReader.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Reads a given fully-populated set of ConfigurationClass instances, registering bean
- * definitions with the given {@link BeanDefinitionRegistry} based on its contents.
+ * 读取已完整解析的 {@link ConfigurationClass} 集合，
+ * 并根据其内容向 {@link BeanDefinitionRegistry} 注册 Bean 定义。
  *
- * <p>This class was modeled after the {@link BeanDefinitionReader} hierarchy, but does
- * not implement/extend any of its artifacts as a set of configuration classes is not a
- * {@link Resource}.
+ * <p>建模自 {@link BeanDefinitionReader} 层次，但配置类集合并非 {@link Resource}，
+ * 故不实现/继承该层次中的类型。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -461,7 +460,7 @@ class ConfigurationClassBeanDefinitionReader {
 	/* ===== [OCA 中文解析] =====
 class ConfigurationClassBeanDefinition — 意图说明
 
-Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassBeanDefinitionReader.java`
+标记自 @Configuration 创建的 RootBeanDefinition，用于 Bean 覆盖场景下区分配置源；源文件: `spring-context/src/main/java/org/springframework/context/annotation/ConfigurationClassBeanDefinitionReader.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
@@ -537,9 +536,8 @@ class `TrackedConditionEvaluator`：请结合所属模块与调用方理解其�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Evaluate {@code @Conditional} annotations, tracking results and taking into
-	 * account 'imported by'.
-	 */
+ * 评估 {@code @Conditional} 注解，跟踪结果并考虑 "imported by" 关系。
+ */
 	private class TrackedConditionEvaluator {
 
 		private final Map<ConfigurationClass, Boolean> skipped = new HashMap<>();

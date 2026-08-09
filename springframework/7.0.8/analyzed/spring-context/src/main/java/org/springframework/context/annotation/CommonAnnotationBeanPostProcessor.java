@@ -81,60 +81,42 @@ import org.springframework.util.StringValueResolver;
 /* ===== [OCA 中文解析] =====
 class CommonAnnotationBeanPostProcessor — 意图说明
 
-处理器：容器生命周期中的扩展钩子；源文件: `spring-context/src/main/java/org/springframework/context/annotation/CommonAnnotationBeanPostProcessor.java`
+Bean 后处理器：解析 @Resource/@EJB/@PostConstruct/@PreDestroy 等 Jakarta 通用注解并完成注入或生命周期回调；源文件: `spring-context/src/main/java/org/springframework/context/annotation/CommonAnnotationBeanPostProcessor.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * {@link org.springframework.beans.factory.config.BeanPostProcessor} implementation
- * that supports common Java annotations out of the box, in particular the common
- * annotations in the {@code jakarta.annotation} package. These common Java
- * annotations are supported in many Jakarta EE technologies (for example, JSF and JAX-RS).
+ * 开箱即用支持常见 Java 注解的
+ * {@link org.springframework.beans.factory.config.BeanPostProcessor} 实现，
+ * 尤其是 {@code jakarta.annotation} 包中的通用注解。
+ * 这些注解在多种 Jakarta EE 技术（如 JSF、JAX-RS）中广泛使用。
  *
- * <p>This post-processor includes support for the {@link jakarta.annotation.PostConstruct}
- * and {@link jakarta.annotation.PreDestroy} annotations - as init annotation
- * and destroy annotation, respectively - through inheriting from
- * {@link InitDestroyAnnotationBeanPostProcessor} with pre-configured annotation types.
+ * <p>本后处理器通过继承 {@link InitDestroyAnnotationBeanPostProcessor}
+ * 并预配置注解类型，支持 {@link jakarta.annotation.PostConstruct} 与
+ * {@link jakarta.annotation.PreDestroy} 分别作为 init/destroy 注解。
  *
- * <p>The central element is the {@link jakarta.annotation.Resource} annotation
- * for annotation-driven injection of named beans, by default from the containing
- * Spring BeanFactory, with only {@code mappedName} references resolved in JNDI.
- * The {@link #setAlwaysUseJndiLookup "alwaysUseJndiLookup" flag} enforces JNDI lookups
- * equivalent to standard Jakarta EE resource injection for {@code name} references
- * and default names as well. The target beans can be simple POJOs, with no special
- * requirements other than the type having to match.
+ * <p>核心是对 {@link jakarta.annotation.Resource} 的支持：按名称注入 Bean，
+ * 默认从当前 Spring BeanFactory 解析，仅 {@code mappedName} 走 JNDI。
+ * {@link #setAlwaysUseJndiLookup "alwaysUseJndiLookup" 标志} 可强制对 {@code name}
+ * 及默认名称也执行 JNDI 查找，等效于标准 Jakarta EE 资源注入。
  *
- * <p>This post-processor also supports the EJB {@link jakarta.ejb.EJB} annotation,
- * analogous to {@link jakarta.annotation.Resource}, with the capability to
- * specify both a local bean name and a global JNDI name for fallback retrieval.
- * The target beans can be plain POJOs as well as EJB Session Beans in this case.
+ * <p>同样支持 EJB {@link jakarta.ejb.EJB} 注解，可指定本地 Bean 名与全局 JNDI 名作为回退。
  *
- * <p>For default usage, resolving resource names as Spring bean names,
- * simply define the following in your application context:
+ * <p>默认用法（资源名解析为 Spring Bean 名）：
  *
  * <pre class="code">
  * &lt;bean class="org.springframework.context.annotation.CommonAnnotationBeanPostProcessor"/&gt;</pre>
  *
- * For direct JNDI access, resolving resource names as JNDI resource references
- * within the Jakarta EE application's "java:comp/env/" namespace, use the following:
+ * 直接 JNDI 访问时：
  *
  * <pre class="code">
  * &lt;bean class="org.springframework.context.annotation.CommonAnnotationBeanPostProcessor"&gt;
  *   &lt;property name="alwaysUseJndiLookup" value="true"/&gt;
  * &lt;/bean&gt;</pre>
  *
- * {@code mappedName} references will always be resolved in JNDI,
- * allowing for global JNDI names (including "java:" prefix) as well. The
- * "alwaysUseJndiLookup" flag just affects {@code name} references and
- * default names (inferred from the field name / property name).
- *
- * <p><b>NOTE:</b> A default CommonAnnotationBeanPostProcessor will be registered
- * by the "context:annotation-config" and "context:component-scan" XML tags.
- * Remove or turn off the default annotation configuration there if you intend
- * to specify a custom CommonAnnotationBeanPostProcessor bean definition!
- * <p><b>NOTE:</b> Annotation injection will be performed <i>before</i> XML injection;
- * thus the latter configuration will override the former for properties wired through
- * both approaches.
+ * <p><b>注意：</b>{@code context:annotation-config} 与 {@code context:component-scan}
+ * 会注册默认实例；若需自定义定义请移除默认配置。
+ * 注解注入<b>先于</b> XML 注入，后者可覆盖前者。
  *
  * @author Juergen Hoeller
  * @author Sam Brannen
@@ -142,7 +124,6 @@ class CommonAnnotationBeanPostProcessor — 意图说明
  * @see #setAlwaysUseJndiLookup
  * @see #setResourceFactory
  * @see org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor
- * @see org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
  */
 @SuppressWarnings("serial")
 public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
@@ -553,14 +534,11 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 方法 `autowireResource` 复杂度较高（CCN≈10, NLOC≈32）。阅读时建议先抓住主路径，再看分支/异常/缓存等旁路逻辑；关注它在调用链中上下游的契约（入参约束、返回值语义、抛出的异常）。
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Obtain a resource object for the given name and type through autowiring
-	 * based on the given factory.
-	 * @param factory the factory to autowire against
-	 * @param element the descriptor for the annotated field/method
-	 * @param requestingBeanName the name of the requesting bean
-	 * @return the resource object (never {@code null})
-	 * @throws NoSuchBeanDefinitionException if no corresponding target resource found
-	 */
+ * 通过给定工厂的自动装配获取指定名称与类型的资源对象。
+ * @param factory 用于自动装配的工厂
+ * @param element 标注字段/方法的描述符
+ * @param requestingBeanName 请求 Bean 的名称
+ */
 	protected Object autowireResource(BeanFactory factory, LookupElement element, @Nullable String requestingBeanName)
 			throws NoSuchBeanDefinitionException {
 
@@ -619,9 +597,8 @@ class `LookupElement`：请结合所属模块与调用方理解其在整体架�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Class representing generic injection information about an annotated field
-	 * or setter method, supporting @Resource and related annotations.
-	 */
+ * 表示标注字段或 setter 方法上通用注入信息的类，支持 @Resource 及相关注解。
+ */
 	protected abstract static class LookupElement extends InjectionMetadata.InjectedElement {
 
 		protected String name = "";
@@ -683,9 +660,8 @@ class `ResourceElement`：请结合所属模块与调用方理解其在整体架
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Class representing injection information about an annotated field
-	 * or setter method, supporting the @Resource annotation.
-	 */
+ * 表示 @Resource 标注字段或 setter 方法注入信息的类。
+ */
 	private class ResourceElement extends LookupElement {
 
 		private final boolean lazyLookup;
@@ -741,9 +717,8 @@ class `EjbRefElement`：请结合所属模块与调用方理解其在整体架�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Class representing injection information about an annotated field
-	 * or setter method, supporting the @EJB annotation.
-	 */
+ * 表示 @EJB 标注字段或 setter 方法注入信息的类。
+ */
 	private class EjbRefElement extends LookupElement {
 
 		private final String beanName;
@@ -804,8 +779,8 @@ class `AotContribution`：请结合所属模块与调用方理解其在整体架
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * {@link BeanRegistrationAotContribution} to inject resources on fields and methods.
-	 */
+ * 在字段与方法上注入资源的 {@link BeanRegistrationAotContribution}。
+ */
 	private static class AotContribution implements BeanRegistrationAotContribution {
 
 		private static final String REGISTERED_BEAN_PARAMETER = "registeredBean";

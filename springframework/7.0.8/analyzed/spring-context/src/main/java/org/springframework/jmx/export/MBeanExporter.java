@@ -72,40 +72,32 @@ import org.springframework.util.ObjectUtils;
 /* ===== [OCA 中文解析] =====
 class MBeanExporter — 意图说明
 
-class `MBeanExporter`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/jmx/export/MBeanExporter.java`
+class `MBeanExporter`：Spring JMX 导出核心，将容器 Bean 注册为 MBean/MXBean 并管理 ObjectName 与生命周期。；源文件: `spring-context/src/main/java/org/springframework/jmx/export/MBeanExporter.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * JMX exporter that allows for exposing any <i>Spring-managed bean</i> to a
- * JMX {@link javax.management.MBeanServer}, without the need to define any
- * JMX-specific information in the bean classes.
+ * JMX 导出器，可将任意<i>Spring 管理的 Bean</i>暴露到 JMX {@link javax.management.MBeanServer}，
+ * 无需在 Bean 类中定义 JMX 专用信息。
  *
- * <p>If a bean implements one of the JMX management interfaces, MBeanExporter can
- * simply register the MBean with the server through its auto-detection process.
- *
- * <p>If a bean does not implement one of the JMX management interfaces, MBeanExporter
- * will create the management information using the supplied {@link MBeanInfoAssembler}.
- *
- * <p>A list of {@link MBeanExporterListener MBeanExporterListeners} can be registered
- * via the {@link #setListeners(MBeanExporterListener[]) listeners} property, allowing
- * application code to be notified of MBean registration and unregistration events.
- *
- * <p>This exporter is compatible with MBeans as well as MXBeans.
+ * <p>若 Bean 已实现 JMX 管理接口，可通过自动检测直接注册。
+ * <p>否则由 {@link MBeanInfoAssembler} 生成管理信息。
+ * <p>可通过 {@link #setListeners(MBeanExporterListener[]) listeners} 注册
+ * {@link MBeanExporterListener} 以接收注册/注销事件。
+ * <p>兼容 MBean 与 MXBean。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @author Rick Evans
  * @author Mark Fisher
  * @author Stephane Nicoll
- * @author Sam Brannen
  * @since 1.2
  * @see #setBeans
  * @see #setAutodetect
  * @see #setAssembler
- * @see #setListeners
+ * @see #setNamingStrategy
  * @see org.springframework.jmx.export.assembler.MBeanInfoAssembler
- * @see MBeanExporterListener
+ * @see org.springframework.jmx.export.naming.ObjectNamingStrategy
  */
 public class MBeanExporter extends MBeanRegistrationSupport implements MBeanExportOperations,
 		BeanClassLoaderAware, BeanFactoryAware, InitializingBean, SmartInitializingSingleton, DisposableBean {
@@ -1151,10 +1143,9 @@ class `NotificationPublisherAwareLazyTargetSource`：请结合所属模块与调
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Extension of {@link LazyInitTargetSource} that will inject a
-	 * {@link org.springframework.jmx.export.notification.NotificationPublisher}
-	 * into the lazy resource as it is created if required.
-	 */
+ * {@link LazyInitTargetSource} 的扩展，在创建 lazy 资源时按需注入
+ * {@link org.springframework.jmx.export.notification.NotificationPublisher}。
+ */
 	@SuppressWarnings("serial")
 	private class NotificationPublisherAwareLazyTargetSource extends LazyInitTargetSource {
 

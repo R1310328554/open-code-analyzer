@@ -73,24 +73,18 @@ import org.springframework.util.StringUtils;
 /* ===== [OCA 中文解析] =====
 class MBeanClientInterceptor — 意图说明
 
-拦截器：调用链中的前置/后置逻辑；源文件: `spring-context/src/main/java/org/springframework/jmx/access/MBeanClientInterceptor.java`
+AOP 拦截器：将本地方法调用转发到远程或本地 MBeanServerConnection 上的 MBean 操作；源文件: `spring-context/src/main/java/org/springframework/jmx/access/MBeanClientInterceptor.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * {@link org.aopalliance.intercept.MethodInterceptor} that routes calls to an
- * MBean running on the supplied {@code MBeanServerConnection}.
- * Works for both local and remote {@code MBeanServerConnection}s.
+ * 将调用路由到给定 {@code MBeanServerConnection} 上 MBean 的
+ * {@link org.aopalliance.intercept.MethodInterceptor}，支持本地与远程连接。
  *
- * <p>By default, the {@code MBeanClientInterceptor} will connect to the
- * {@code MBeanServer} and cache MBean metadata at startup. This can
- * be undesirable when running against a remote {@code MBeanServer}
- * that may not be running when the application starts. Through setting the
- * {@link #setConnectOnStartup(boolean) connectOnStartup} property to "false",
- * you can defer this process until the first invocation against the proxy.
+ * <p>默认启动时连接 {@code MBeanServer} 并缓存 MBean 元数据；
+ * 远程服务器可能未启动时可设 {@link #setConnectOnStartup(boolean)} 为 false 延迟连接。
  *
- * <p>This functionality is usually used through {@link MBeanProxyFactoryBean}.
- * See the javadoc of that class for more information.
+ * <p>通常通过 {@link MBeanProxyFactoryBean} 使用。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -645,9 +639,8 @@ class `MethodCacheKey`：请结合所属模块与调用方理解其在整体架�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Simple wrapper class around a method name and its signature.
-	 * Used as the key when caching methods.
-	 */
+ * 方法名与其签名的简单包装类，用作方法缓存的键。
+ */
 	private static final class MethodCacheKey implements Comparable<MethodCacheKey> {
 
 		private final String name;
@@ -655,11 +648,10 @@ class `MethodCacheKey`：请结合所属模块与调用方理解其在整体架�
 		private final Class<?>[] parameterTypes;
 
 		/**
-		 * Create a new instance of {@code MethodCacheKey} with the supplied
-		 * method name and parameter list.
-		 * @param name the name of the method
-		 * @param parameterTypes the arguments in the method signature
-		 */
+ * 用给定方法名与参数列表创建 {@code MethodCacheKey}。
+ * @param name 方法名
+ * @param parameterTypes 方法签名中的参数类型
+ */
 		public MethodCacheKey(String name, Class<?> @Nullable [] parameterTypes) {
 			this.name = name;
 			this.parameterTypes = (parameterTypes != null ? parameterTypes : new Class<?>[0]);

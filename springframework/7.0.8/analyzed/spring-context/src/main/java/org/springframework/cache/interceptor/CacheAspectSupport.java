@@ -72,25 +72,21 @@ import org.springframework.util.function.SupplierUtils;
 /* ===== [OCA 中文解析] =====
 class CacheAspectSupport — 意图说明
 
-class `CacheAspectSupport`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/cache/interceptor/CacheAspectSupport.java`
+class `CacheAspectSupport`：Spring 缓存 AOP 的核心基类，协调 CacheOperationSource、KeyGenerator、CacheResolver 完成 @Cacheable/@CachePut/@CacheEvict 拦截。；源文件: `spring-context/src/main/java/org/springframework/cache/interceptor/CacheAspectSupport.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Base class for caching aspects, such as the {@link CacheInterceptor} or an
- * AspectJ aspect.
+ * 缓存切面的基类，例如 {@link CacheInterceptor} 或 AspectJ 切面。
  *
- * <p>This enables the underlying Spring caching infrastructure to be used easily
- * to implement an aspect for any aspect system.
+ * <p>便于底层 Spring 缓存基础设施为任意切面系统实现缓存切面。
  *
- * <p>Subclasses are responsible for calling relevant methods in the correct order.
+ * <p>子类负责按正确顺序调用相关方法。
  *
- * <p>Uses the <b>Strategy</b> design pattern. A {@link CacheOperationSource} is
- * used for determining caching operations, a {@link KeyGenerator} will build the
- * cache keys, and a {@link CacheResolver} will resolve the actual cache(s) to use.
+ * <p>采用<b>策略</b>设计模式：{@link CacheOperationSource} 决定缓存操作，
+ * {@link KeyGenerator} 构建缓存键，{@link CacheResolver} 解析实际使用的 Cache。
  *
- * <p>Note: A cache aspect is serializable but does not perform any actual caching
- * after deserialization.
+ * <p>注意：缓存切面可序列化，但反序列化后不再执行实际缓存。
  *
  * @author Costin Leau
  * @author Juergen Hoeller
@@ -863,9 +859,8 @@ class `CacheOperationMetadata`：请结合所属模块与调用方理解其在�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Metadata of a cache operation that does not depend on a particular invocation
-	 * which makes it a good candidate for caching.
-	 */
+ * 不依赖特定调用的缓存操作元数据，适合缓存复用。
+ */
 	protected static class CacheOperationMetadata {
 
 		private final CacheOperation operation;
@@ -905,8 +900,8 @@ class `CacheOperationContext`：请结合所属模块与调用方理解其在整
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * A {@link CacheOperationInvocationContext} context for a {@link CacheOperation}.
-	 */
+ * {@link CacheOperation} 对应的 {@link CacheOperationInvocationContext} 上下文。
+ */
 	protected class CacheOperationContext implements CacheOperationInvocationContext<CacheOperation> {
 
 		private final CacheOperationMetadata metadata;
@@ -1150,9 +1145,8 @@ class `CachePutListSubscriber`：请结合所属模块与调用方理解其在�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Reactive Streams Subscriber for exhausting the Flux and collecting a List
-	 * to cache.
-	 */
+ * Reactive Streams Subscriber，用于消费 Flux 并收集为 List 以写入缓存。
+ */
 	private final class CachePutListSubscriber implements Subscriber<Object> {
 
 		private final CachePutRequest request;
@@ -1190,8 +1184,8 @@ class `ReactiveCachingHandler`：请结合所属模块与调用方理解其在�
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 	===== [OCA 中文解析结束] ===== */
 	/**
-	 * Inner class to avoid a hard dependency on the Reactive Streams API at runtime.
-	 */
+ * 内部类，避免在运行时硬依赖 Reactive Streams API。
+ */
 	private class ReactiveCachingHandler {
 
 		public static final Object NOT_HANDLED = new Object();

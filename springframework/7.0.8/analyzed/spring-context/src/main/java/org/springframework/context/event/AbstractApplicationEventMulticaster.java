@@ -47,23 +47,18 @@ import org.springframework.util.ObjectUtils;
 /* ===== [OCA 中文解析] =====
 class AbstractApplicationEventMulticaster — 意图说明
 
-class `AbstractApplicationEventMulticaster`：请结合所属模块与调用方理解其在整体架构中的职责。；源文件: `spring-context/src/main/java/org/springframework/context/event/AbstractApplicationEventMulticaster.java`
+class `AbstractApplicationEventMulticaster`：应用事件广播器的抽象基类，管理监听器注册与按事件类型检索监听器。；源文件: `spring-context/src/main/java/org/springframework/context/event/AbstractApplicationEventMulticaster.java`
 
 （本注释由 open-code-analyzer 生成，置于原有文档注释之前）
 ===== [OCA 中文解析结束] ===== */
 /**
- * Abstract implementation of the {@link ApplicationEventMulticaster} interface,
- * providing the basic listener registration facility.
+ * {@link ApplicationEventMulticaster} 的抽象实现，提供基本监听器注册能力。
  *
- * <p>Doesn't permit multiple instances of the same listener by default,
- * as it keeps listeners in a linked Set. The collection class used to hold
- * ApplicationListener objects can be overridden through the "collectionClass"
- * bean property.
+ * <p>默认使用 LinkedHashSet 存储监听器，不允许同一监听器多次注册；
+ * 可通过 "collectionClass" 属性覆盖集合类型。
  *
- * <p>Implementing ApplicationEventMulticaster's actual {@link #multicastEvent} method
- * is left to subclasses. {@link SimpleApplicationEventMulticaster} simply multicasts
- * all events to all registered listeners, invoking them in the calling thread by
- * default. Alternative implementations could be more sophisticated in those respects.
+ * <p>{@link #multicastEvent} 的具体分发策略由子类实现。
+ * {@link SimpleApplicationEventMulticaster} 默认在调用线程向所有监听器广播。
  *
  * @author Juergen Hoeller
  * @author Stephane Nicoll
