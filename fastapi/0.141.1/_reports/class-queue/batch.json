@@ -1,16 +1,6 @@
 {
   "claimed_at": "2026-08-09T17:20:45Z",
   "files": [
-    "docs_src/header_params/tutorial001_py310.py",
-    "docs_src/header_params/tutorial002_an_py310.py",
-    "docs_src/header_params/tutorial002_py310.py",
-    "docs_src/header_params/tutorial003_an_py310.py",
-    "docs_src/header_params/tutorial003_py310.py",
-    "docs_src/json_base64_bytes/__init__.py",
-    "docs_src/json_base64_bytes/tutorial001_py310.py",
-    "docs_src/metadata/__init__.py",
-    "docs_src/metadata/tutorial001_1_py310.py",
-    "docs_src/metadata/tutorial001_py310.py",
     "docs_src/metadata/tutorial002_py310.py",
     "docs_src/metadata/tutorial003_py310.py",
     "docs_src/metadata/tutorial004_py310.py",
@@ -23,5 +13,5 @@
     "docs_src/path_operation_advanced_configuration/__init__.py"
   ],
   "remaining_pending": 227,
-  "done": 262
+  "done": 272
 }
