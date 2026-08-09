@@ -645,3 +645,13 @@ spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedNo
 spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedOperation.java
 spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedOperationParameter.java
 spring-context/src/main/java/org/springframework/jmx/export/annotation/ManagedOperationParameters.java
+spring-context/src/main/java/org/springframework/jmx/access/InvocationFailureException.java
+spring-context/src/main/java/org/springframework/jmx/access/MBeanConnectFailureException.java
+spring-context/src/main/java/org/springframework/jmx/access/MBeanInfoRetrievalException.java
+spring-context/src/main/java/org/springframework/jmx/access/MBeanProxyFactoryBean.java
+spring-context/src/main/java/org/springframework/jmx/access/NotificationListenerRegistrar.java
+spring-context/src/main/java/org/springframework/jmx/export/MBeanExportException.java
+spring-context/src/main/java/org/springframework/jmx/export/MBeanExportOperations.java
+spring-context/src/main/java/org/springframework/jmx/export/MBeanExporterListener.java
+spring-context/src/main/java/org/springframework/jmx/export/NotificationListenerBean.java
+spring-context/src/main/java/org/springframework/jmx/export/SpringModelMBean.java
