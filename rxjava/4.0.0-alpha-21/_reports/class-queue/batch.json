@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:23:16Z",
-  "files": [
-    "src/main/java/io/reactivex/rxjava4/internal/util/NotificationLite.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/ObservableQueueDrain.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/OpenHashSet.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/Pow2.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/QueueDrain.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/SorterFunction.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/SuppressAnimalSniffer.java",
-    "src/main/java/io/reactivex/rxjava4/internal/util/VolatileSizeArrayList.java",
-    "src/main/java/io/reactivex/rxjava4/internal/virtual/FlowableVirtualCreateExecutor.java",
-    "src/main/java/io/reactivex/rxjava4/internal/virtual/FlowableVirtualTransformExecutor.java",
-    "src/main/java/io/reactivex/rxjava4/internal/virtual/VirtualResumable.java",
-    "src/main/java/io/reactivex/rxjava4/observers/DefaultObserver.java",
-    "src/main/java/io/reactivex/rxjava4/observers/DisposableCompletableObserver.java",
-    "src/main/java/io/reactivex/rxjava4/observers/DisposableMaybeObserver.java",
-    "src/main/java/io/reactivex/rxjava4/observers/DisposableObserver.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 182,
-  "done": 780
+  "done": 795
 }
