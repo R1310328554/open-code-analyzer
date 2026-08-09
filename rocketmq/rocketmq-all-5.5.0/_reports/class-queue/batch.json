@@ -1,13 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:07:30Z",
   "files": [
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicRouteSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicStatusSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateOrderConfCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateStaticTopicSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicListSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicPermSubCommand.java",
-    "tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicSubCommand.java",
     "tools/src/main/java/org/apache/rocketmq/tools/monitor/DefaultMonitorListener.java",
     "tools/src/main/java/org/apache/rocketmq/tools/monitor/DeleteMsgsEvent.java",
     "tools/src/main/java/org/apache/rocketmq/tools/monitor/FailedMsgs.java",
@@ -17,5 +10,5 @@
     "tools/src/main/java/org/apache/rocketmq/tools/monitor/UndoneMsgs.java"
   ],
   "remaining_pending": 124,
-  "done": 1350
+  "done": 1357
 }

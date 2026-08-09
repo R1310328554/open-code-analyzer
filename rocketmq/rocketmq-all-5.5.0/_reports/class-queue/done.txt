@@ -1348,3 +1348,10 @@ tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/GetNamesrvConfigCo
 tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/UpdateKvConfigCommand.java
 tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/UpdateNamesrvConfigCommand.java
 tools/src/main/java/org/apache/rocketmq/tools/command/namesrv/WipeWritePermSubCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicRouteSubCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/command/topic/TopicStatusSubCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateOrderConfCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateStaticTopicSubCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicListSubCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicPermSubCommand.java
+tools/src/main/java/org/apache/rocketmq/tools/command/topic/UpdateTopicSubCommand.java
