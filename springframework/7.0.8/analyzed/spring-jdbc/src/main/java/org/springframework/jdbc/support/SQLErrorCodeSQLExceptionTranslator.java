@@ -65,12 +65,12 @@ public class SQLErrorCodeSQLExceptionTranslator extends AbstractFallbackSQLExcep
 	private static final int MESSAGE_SQL_THROWABLE_CONSTRUCTOR = 4;
 	private static final int MESSAGE_SQL_SQLEX_CONSTRUCTOR = 5;
 
-	/** `userProvidedErrorCodesFilePresent`：该类的成员状态。 */
+	/** 是否已提供用户自定义错误码文件。 */
 	private static final boolean userProvidedErrorCodesFilePresent =
 			new ClassPathResource(SQLErrorCodesFactory.SQL_ERROR_CODE_OVERRIDE_PATH,
 					SQLErrorCodesFactory.class.getClassLoader()).exists();
 
-	/** `sqlErrorCodes`：该类的成员状态。 */
+	/** 本转换器使用的 {@link SQLErrorCodes}。 */
 	private @Nullable SingletonSupplier<SQLErrorCodes> sqlErrorCodes;
 
 
@@ -152,7 +152,10 @@ public class SQLErrorCodeSQLExceptionTranslator extends AbstractFallbackSQLExcep
 
 
 	/**
-	 * 执行核心逻辑：Translate（方法 `doTranslate`）。
+	 * 基于 SQL 错误码将 {@link SQLException} 翻译为 Spring {@link DataAccessException}。
+	 * @param task 发生异常的任务描述
+	 * @param sql 导致异常的 SQL（若有）
+	 * @param ex 原始 SQLException
 	 */
 	@SuppressWarnings("deprecation")
 	@Override
@@ -381,7 +384,8 @@ public class SQLErrorCodeSQLExceptionTranslator extends AbstractFallbackSQLExcep
 	}
 
 	/**
-	 * 方法 `logTranslation`：完成本类中与「log Translation」相关的职责。
+	 * 在 debug 级别记录 SQLException 翻译信息。
+	 * @param custom 是否为自定义翻译
 	 */
 	private void logTranslation(String task, @Nullable String sql, SQLException sqlEx, boolean custom) {
 		if (logger.isDebugEnabled()) {

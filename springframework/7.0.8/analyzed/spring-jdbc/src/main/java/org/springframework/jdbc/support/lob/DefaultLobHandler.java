@@ -66,18 +66,16 @@ import org.jspecify.annotations.Nullable;
 @Deprecated(since = "6.2")
 public class DefaultLobHandler extends AbstractLobHandler {
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
+	/** 日志记录器。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/** `false`：该类的成员状态。 */
+	/** 是否将字节数组/String 包装为 JDBC Blob/Clob 提交。 */
 	private boolean wrapAsLob = false;
 
-	/** `false`：该类的成员状态。 */
+	/** 是否以 JDBC 4.0 LOB 流方式提交二进制/字符流。 */
 	private boolean streamAsLob = false;
 
-	/** `false`：该类的成员状态。 */
+	/** 是否通过 JDBC 4.0 创建临时 Blob/Clob。 */
 	private boolean createTemporaryLob = false;
 
 

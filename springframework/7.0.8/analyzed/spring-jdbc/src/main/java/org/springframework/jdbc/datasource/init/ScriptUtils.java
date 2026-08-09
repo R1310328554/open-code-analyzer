@@ -280,7 +280,7 @@ public abstract class ScriptUtils {
 	}
 
 	/**
-	 * 方法 `logSqlWarnings`：完成本类中与「log Sql Warnings」相关的职责。
+	 * 以 debug 级别记录 Statement 上的 SQLWarning 链。
 	 */
 	private static void logSqlWarnings(Statement stmt) throws SQLException {
 		SQLWarning warningToLog = stmt.getWarnings();
@@ -311,7 +311,7 @@ public abstract class ScriptUtils {
 	}
 
 	/**
-	 * 方法 `readScript`：完成本类中与「read Script」相关的职责。
+	 * 从 {@link LineNumberReader} 逐行读取脚本并拼接为字符串。
 	 */
 	private static String readScript(LineNumberReader lineNumberReader, String @Nullable [] commentPrefixes,
 			@Nullable String separator, @Nullable String blockCommentEndDelimiter) throws IOException {
@@ -333,7 +333,7 @@ public abstract class ScriptUtils {
 	}
 
 	/**
-	 * 方法 `appendSeparatorToScriptIfNecessary`：完成本类中与「append Separator To Script If Necessary」相关的职责。
+	 * 若语句分隔符末尾含空白，则在脚本末尾追加必要部分。
 	 */
 	private static void appendSeparatorToScriptIfNecessary(StringBuilder scriptBuilder, @Nullable String separator) {
 		if (separator == null) {
@@ -525,7 +525,7 @@ public abstract class ScriptUtils {
 	}
 
 	/**
-	 * 启动：s With Any（方法 `startsWithAny`）。
+	 * 检查脚本在指定偏移处是否以任一前缀开头。
 	 */
 	private static boolean startsWithAny(String script, String[] prefixes, int offset) {
 		for (String prefix : prefixes) {

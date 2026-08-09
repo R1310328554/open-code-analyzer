@@ -249,7 +249,10 @@ public abstract class SqlQuery<T extends @Nullable Object> extends SqlOperation 
 	}
 
 	/**
-	 * 方法 `queryByNamedParam`：完成本类中与「query By Named Param」相关的职责。
+	 * 按命名参数执行查询的核心方法，所有命名参数执行均经由此方法。
+	 * @param paramMap 命名参数映射
+	 * @param context 传给 {@code mapRow} 回调的上下文
+	 * @param queryFunction 实际查询函数（list 或 stream）
 	 */
 	private <R> R queryByNamedParam(Map<String, ?> paramMap, @Nullable Map<?, ?> context, BiFunction<PreparedStatementCreator, RowMapper<T>, R> queryFunction) {
 		validateNamedParameters(paramMap);

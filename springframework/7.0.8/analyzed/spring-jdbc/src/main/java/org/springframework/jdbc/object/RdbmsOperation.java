@@ -52,26 +52,24 @@ import org.springframework.util.Assert;
  */
 public abstract class RdbmsOperation implements InitializingBean {
 
-	/**
-	 */
+	/** 子类可用的 Logger。 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	/**
-	 */
+	/** 用于执行 SQL 的底层 {@link JdbcTemplate}。 */
 	private JdbcTemplate jdbcTemplate = new JdbcTemplate();
 
 	private int resultSetType = ResultSet.TYPE_FORWARD_ONLY;
 
-	/** `false`：该类的成员状态。 */
+	/** 是否返回可更新 ResultSet。 */
 	private boolean updatableResults = false;
 
-	/** `false`：该类的成员状态。 */
+	/** 是否返回生成键。 */
 	private boolean returnGeneratedKeys = false;
 
-	/** 名称相关状态（`generatedKeysColumnNames`）。 */
+	/** 生成键列名数组。 */
 	private String @Nullable [] generatedKeysColumnNames;
 
-	/** `sql`：该类的成员状态。 */
+	/** 本操作的 SQL 语句。 */
 	private @Nullable String sql;
 
 	private final List<SqlParameter> declaredParameters = new ArrayList<>();

@@ -38,7 +38,7 @@ import org.springframework.util.StringUtils;
  * SQLException SQLExceptions} 并将它们转换为相应的 Spring {@link InvalidResultSetAccessException}。
  * <p> 如果 SqlRowSet 应该以断开连接的方式使用，则传入的 ResultSet 应该已经断开连接。这意味着您通常会传入一个实现 ResultSet 接口的
  * {@code javax.sql.rowset.CachedRowSet}。
- * <p>Note：从 JDBC 4.0 开始，已经明确任何使用 String 来标识列的方法都应该使用列标签。列标签是使用 SQL 查询字符串中的 ALIAS
+ * <p>注意：自 JDBC 4.0 起，已经明确任何使用 String 来标识列的方法都应该使用列标签。列标签是使用 SQL 查询字符串中的 ALIAS
  * 关键字分配的。当查询不使用别名时，默认标签是列名。大多数 JDBC ResultSet 实现都遵循此模式，但也有例外，例如 {@code
  * com.sun.rowset.CachedRowSetImpl} 类仅使用列名称，忽略任何列标签。 {@code ResultSetWrappingSqlRowSet}
  * 会将列标签转换为正确的列索引，以便为 {@code com.sun.rowset.CachedRowSetImpl} 提供更好的支持，这是 {@link
@@ -54,19 +54,18 @@ import org.springframework.util.StringUtils;
  */
 public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 
-	/**
-	 */
+	/** 序列化版本 UID。 */
 	private static final long serialVersionUID = -4688694393146734764L;
 
-	/** 结果相关状态（`resultSet`）。 */
+	/** 被包装的 {@link ResultSet}（通常为断开连接的 CachedRowSet）。 */
 	@SuppressWarnings("serial")
 	private final ResultSet resultSet;
 
-	/** `rowSetMetaData`：该类的成员状态。 */
+	/** 本 RowSet 的元数据。 */
 	@SuppressWarnings("serial")
 	private final SqlRowSetMetaData rowSetMetaData;
 
-	/** `columnLabelMap`：该类的成员状态。 */
+	/** 列标签到列索引的映射。 */
 	@SuppressWarnings("serial")
 	private final Map<String, Integer> columnLabelMap;
 
@@ -130,6 +129,7 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 返回本 RowSet 的元数据。
 	 * @see java.sql.ResultSetMetaData#getCatalogName(int)
 	 */
 	@Override
@@ -138,6 +138,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将给定的列标签映射到其列索引。
+	 * @param columnLabel 列的名称
+	 * @return 给定列标签的列索引
 	 * @see java.sql.ResultSet#findColumn(String)
 	 */
 	@Override
@@ -160,7 +163,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	// 用于提取数据值的 RowSet 方法
 
 	/**
-	 * @see java.sql.ResultSet#getBigDecimal(int)
+	 * 以 BigDecimal 对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的 BigDecimal 对象
+	 * @see java.sql.ResultSet#getBigDecimal(String)
 	 */
 	@Override
 	public @Nullable BigDecimal getBigDecimal(int columnIndex) throws InvalidResultSetAccessException {
@@ -173,6 +179,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以 BigDecimal 对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的 BigDecimal 对象
 	 * @see java.sql.ResultSet#getBigDecimal(String)
 	 */
 	@Override
@@ -181,7 +190,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getBoolean(int)
+	 * 以布尔值形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的布尔值
+	 * @see java.sql.ResultSet#getBoolean(String)
 	 */
 	@Override
 	public boolean getBoolean(int columnIndex) throws InvalidResultSetAccessException {
@@ -194,6 +206,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以布尔值形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的布尔值
 	 * @see java.sql.ResultSet#getBoolean(String)
 	 */
 	@Override
@@ -202,7 +217,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getByte(int)
+	 * 以字节形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字节
+	 * @see java.sql.ResultSet#getByte(String)
 	 */
 	@Override
 	public byte getByte(int columnIndex) throws InvalidResultSetAccessException {
@@ -215,6 +233,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以字节形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字节
 	 * @see java.sql.ResultSet#getByte(String)
 	 */
 	@Override
@@ -223,7 +244,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getDate(int)
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的日期对象
+	 * @see java.sql.ResultSet#getDate(String, Calendar)
 	 */
 	@Override
 	public @Nullable Date getDate(int columnIndex) throws InvalidResultSetAccessException {
@@ -236,7 +261,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getDate(String)
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的日期对象
+	 * @see java.sql.ResultSet#getDate(String, Calendar)
 	 */
 	@Override
 	public @Nullable Date getDate(String columnLabel) throws InvalidResultSetAccessException {
@@ -244,7 +273,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getDate(int, Calendar)
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的日期对象
+	 * @see java.sql.ResultSet#getDate(String, Calendar)
 	 */
 	@Override
 	public @Nullable Date getDate(int columnIndex, Calendar cal) throws InvalidResultSetAccessException {
@@ -257,6 +290,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以 Date 对象的形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的日期对象
 	 * @see java.sql.ResultSet#getDate(String, Calendar)
 	 */
 	@Override
@@ -265,7 +302,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getDouble(int)
+	 * 以 Double 对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的双精度对象
+	 * @see java.sql.ResultSet#getDouble(String)
 	 */
 	@Override
 	public double getDouble(int columnIndex) throws InvalidResultSetAccessException {
@@ -278,6 +318,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以 Double 对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的双精度对象
 	 * @see java.sql.ResultSet#getDouble(String)
 	 */
 	@Override
@@ -286,7 +329,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getFloat(int)
+	 * 以浮点数形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的浮点数
+	 * @see java.sql.ResultSet#getFloat(String)
 	 */
 	@Override
 	public float getFloat(int columnIndex) throws InvalidResultSetAccessException {
@@ -299,6 +345,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以浮点数形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的浮点数
 	 * @see java.sql.ResultSet#getFloat(String)
 	 */
 	@Override
@@ -307,7 +356,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getInt(int)
+	 * 以 int 形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return int 表示列值
+	 * @see java.sql.ResultSet#getInt(String)
 	 */
 	@Override
 	public int getInt(int columnIndex) throws InvalidResultSetAccessException {
@@ -320,6 +372,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以 int 形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return int 表示列值
 	 * @see java.sql.ResultSet#getInt(String)
 	 */
 	@Override
@@ -328,7 +383,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getLong(int)
+	 * 以 long 形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return long 代表列值
+	 * @see java.sql.ResultSet#getLong(String)
 	 */
 	@Override
 	public long getLong(int columnIndex) throws InvalidResultSetAccessException {
@@ -341,6 +399,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以 long 形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return long 代表列值
 	 * @see java.sql.ResultSet#getLong(String)
 	 */
 	@Override
@@ -349,7 +410,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getNString(int)
+	 * 以字符串形式检索当前行中指定列的值（对于 NCHAR、NVARCHAR、LONGNVARCHAR 列）。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字符串
+	 * @since 4.1.3
+	 * @see java.sql.ResultSet#getNString(String)
 	 */
 	@Override
 	public @Nullable String getNString(int columnIndex) throws InvalidResultSetAccessException {
@@ -362,6 +427,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以字符串形式检索当前行中指定列的值（对于 NCHAR、NVARCHAR、LONGNVARCHAR 列）。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字符串
+	 * @since 4.1.3
 	 * @see java.sql.ResultSet#getNString(String)
 	 */
 	@Override
@@ -370,7 +439,12 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getObject(int)
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
+	 * @since 4.1.3
+	 * @see java.sql.ResultSet#getObject(String, Class)
 	 */
 	@Override
 	public @Nullable Object getObject(int columnIndex) throws InvalidResultSetAccessException {
@@ -383,7 +457,12 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getObject(String)
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
+	 * @since 4.1.3
+	 * @see java.sql.ResultSet#getObject(String, Class)
 	 */
 	@Override
 	public @Nullable Object getObject(String columnLabel) throws InvalidResultSetAccessException {
@@ -391,7 +470,12 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getObject(int, Map)
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
+	 * @since 4.1.3
+	 * @see java.sql.ResultSet#getObject(String, Class)
 	 */
 	@Override
 	public @Nullable Object getObject(int columnIndex, Map<String, Class<?>> map) throws InvalidResultSetAccessException {
@@ -404,7 +488,12 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getObject(String, Map)
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
+	 * @since 4.1.3
+	 * @see java.sql.ResultSet#getObject(String, Class)
 	 */
 	@Override
 	public @Nullable Object getObject(String columnLabel, Map<String, Class<?>> map) throws InvalidResultSetAccessException {
@@ -412,7 +501,12 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getObject(int, Class)
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
+	 * @since 4.1.3
+	 * @see java.sql.ResultSet#getObject(String, Class)
 	 */
 	@Override
 	public <T> @Nullable T getObject(int columnIndex, Class<T> type) throws InvalidResultSetAccessException {
@@ -425,6 +519,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以对象形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @param type 将指定列转换为的 Java 类型
+	 * @return 表示列值的对象
+	 * @since 4.1.3
 	 * @see java.sql.ResultSet#getObject(String, Class)
 	 */
 	@Override
@@ -433,7 +532,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getShort(int)
+	 * 检索当前行中指定列的值作为短值。
+	 * @param columnLabel 列标签
+	 * @return 短表示列值
+	 * @see java.sql.ResultSet#getShort(String)
 	 */
 	@Override
 	public short getShort(int columnIndex) throws InvalidResultSetAccessException {
@@ -446,6 +548,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 检索当前行中指定列的值作为短值。
+	 * @param columnLabel 列标签
+	 * @return 短表示列值
 	 * @see java.sql.ResultSet#getShort(String)
 	 */
 	@Override
@@ -454,7 +559,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getString(int)
+	 * 以字符串形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字符串
+	 * @see java.sql.ResultSet#getString(String)
 	 */
 	@Override
 	public @Nullable String getString(int columnIndex) throws InvalidResultSetAccessException {
@@ -467,6 +575,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以字符串形式检索当前行中指定列的值。
+	 * @param columnLabel 列标签
+	 * @return 表示列值的字符串
 	 * @see java.sql.ResultSet#getString(String)
 	 */
 	@Override
@@ -475,7 +586,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getTime(int)
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间对象
+	 * @see java.sql.ResultSet#getTime(String, Calendar)
 	 */
 	@Override
 	public @Nullable Time getTime(int columnIndex) throws InvalidResultSetAccessException {
@@ -488,7 +603,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getTime(String)
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间对象
+	 * @see java.sql.ResultSet#getTime(String, Calendar)
 	 */
 	@Override
 	public @Nullable Time getTime(String columnLabel) throws InvalidResultSetAccessException {
@@ -496,7 +615,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getTime(int, Calendar)
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间对象
+	 * @see java.sql.ResultSet#getTime(String, Calendar)
 	 */
 	@Override
 	public @Nullable Time getTime(int columnIndex, Calendar cal) throws InvalidResultSetAccessException {
@@ -509,6 +632,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以 Time 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间对象
 	 * @see java.sql.ResultSet#getTime(String, Calendar)
 	 */
 	@Override
@@ -517,7 +644,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getTimestamp(int)
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间戳对象
+	 * @see java.sql.ResultSet#getTimestamp(String, Calendar)
 	 */
 	@Override
 	public @Nullable Timestamp getTimestamp(int columnIndex) throws InvalidResultSetAccessException {
@@ -530,7 +661,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getTimestamp(String)
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间戳对象
+	 * @see java.sql.ResultSet#getTimestamp(String, Calendar)
 	 */
 	@Override
 	public @Nullable Timestamp getTimestamp(String columnLabel) throws InvalidResultSetAccessException {
@@ -538,7 +673,11 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
-	 * @see java.sql.ResultSet#getTimestamp(int, Calendar)
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间戳对象
+	 * @see java.sql.ResultSet#getTimestamp(String, Calendar)
 	 */
 	@Override
 	public @Nullable Timestamp getTimestamp(int columnIndex, Calendar cal) throws InvalidResultSetAccessException {
@@ -551,6 +690,10 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 以 Timestamp 对象的形式检索当前行中指示列的值。
+	 * @param columnLabel 列标签
+	 * @param cal 用于构造日期的日历
+	 * @return 表示列值的时间戳对象
 	 * @see java.sql.ResultSet#getTimestamp(String, Calendar)
 	 */
 	@Override
@@ -562,6 +705,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	// RowSet 导航方法
 
 	/**
+	 * 将光标移动到行集中最后一行之后的给定行号。
+	 * @param row 光标应移动的行号
+	 * @return true} 如果光标位于行集上，否则为 {@code false}
 	 * @see java.sql.ResultSet#absolute(int)
 	 */
 	@Override
@@ -575,6 +721,7 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将光标移至该行集的末尾。
 	 * @see java.sql.ResultSet#afterLast()
 	 */
 	@Override
@@ -588,6 +735,7 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将光标移动到该行集的前面，就在第一行之前。
 	 * @see java.sql.ResultSet#beforeFirst()
 	 */
 	@Override
@@ -601,6 +749,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将光标移至该行集的第一行。
+	 * @return true} 如果光标位于有效行上，否则为 {@code false}
 	 * @see java.sql.ResultSet#first()
 	 */
 	@Override
@@ -614,6 +764,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 检索当前行号。
+	 * @return 当前行号
 	 * @see java.sql.ResultSet#getRow()
 	 */
 	@Override
@@ -627,6 +779,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 检索光标是否位于该行集的最后一行之后。
+	 * @return true} 如果光标位于最后一行之后，否则为 {@code false}
 	 * @see java.sql.ResultSet#isAfterLast()
 	 */
 	@Override
@@ -640,6 +794,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 检索光标是否位于该行集的第一行之前。
+	 * @return true} 如果光标位于第一行之前，否则为 {@code false}
 	 * @see java.sql.ResultSet#isBeforeFirst()
 	 */
 	@Override
@@ -653,6 +809,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 检索光标是否位于该行集的第一行。
+	 * @return true} 如果光标位于第一行之后，否则为 {@code false}
 	 * @see java.sql.ResultSet#isFirst()
 	 */
 	@Override
@@ -666,6 +824,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 检索光标是否位于该行集的最后一行。
+	 * @return true} 如果光标位于最后一行之后，否则为 {@code false}
 	 * @see java.sql.ResultSet#isLast()
 	 */
 	@Override
@@ -679,6 +839,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将光标移至该行集的最后一行。
+	 * @return true} 如果光标位于有效行上，否则为 {@code false}
 	 * @see java.sql.ResultSet#last()
 	 */
 	@Override
@@ -692,6 +854,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将光标移至下一行。
+	 * @return true} 如果新行有效，则 {@code false} 如果没有更多行
 	 * @see java.sql.ResultSet#next()
 	 */
 	@Override
@@ -705,6 +869,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将光标移至上一行。
+	 * @return true} 如果新行有效，则 {@code false} 如果它不在行集内
 	 * @see java.sql.ResultSet#previous()
 	 */
 	@Override
@@ -718,6 +884,8 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 将光标移动相对行数（正数或负数）。
+	 * @return true} 如果光标位于一行，否则为 {@code false}
 	 * @see java.sql.ResultSet#relative(int)
 	 */
 	@Override
@@ -731,6 +899,9 @@ public class ResultSetWrappingSqlRowSet implements SqlRowSet {
 	}
 
 	/**
+	 * 报告最后读取的列是否具有 SQL {@code NULL} 值。 <p>请注意，您必须首先调用其中一个 getter 方法，然后再调用 {@code wasNull()} 方法
+	 * 。
+	 * @return true} 如果最近检索到的列是 SQL {@code NULL}，否则为 {@code false}
 	 * @see java.sql.ResultSet#wasNull()
 	 */
 	@Override

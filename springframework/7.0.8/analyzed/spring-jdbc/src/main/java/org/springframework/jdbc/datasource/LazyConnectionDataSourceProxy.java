@@ -33,26 +33,35 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * 目标数据源的代理，延迟获取实际的 JDBC 连接，即直到第一次创建语句时才获取。连接初始化属性（例如自动提交模式、事务隔离和只读模式）将被保留，并在获取实际连接（如果有）后立即
- * 应用于实际的 JDBC 连接。因此，如果没有创建任何语句，提交和回滚调用将被忽略。从 6.1.2 开始，除了常规目标数据源之外，还特别支持在只读事务期间使用 {@link #s
- * etReadOnlyDataSource read-only DataSource}。
- * <p> 此数据源代理允许避免从池中获取 JDBC 连接，除非确实有必要。 JDBC 事务控制无需从池中获取连接或与数据库通信即可进行；这将在第一次创建 JDBC 语句时延迟完成
- * 。作为奖励，这允许在路由数据源（例如 {@link org.springframework.jdbc.datasource.lookup.IsolationLevelDataS
- * ourceRouter}）中考虑事务同步只读标志和/或隔离级别。
- * <p><b>如果您同时配置 LazyConnectionDataSourceProxy 和
- * TransactionAwareDataSourceProxy，请确保后者是最外层的 DataSource。</b> 在这种情况下，数据访问代码将与事务感知
- * DataSource 通信，而事务感知 DataSource 将与 LazyConnectionDataSourceProxy 一起工作。从 6.1.2
- * 开始，LazyConnectionDataSourceProxy 将在第一次连接访问时初始化其默认连接特性；要在启动时强制执行此操作，请调用 {@link
- * #checkDefaultConnectionProperties()}。
- * <p>L 物理 JDBC 连接的快速获取在通用事务划分环境中特别有用。它允许您在可能执行数据访问的所有方法上划分事务，如果没有发生实际的数据访问，则不会造成性能损失。
- * <p>此数据源代理为您提供类似于 JTA 和事务性 JNDI 数据源（由 Jakarta EE 服务器提供）的行为，甚至使用
- * DataSourceTransactionManager 或 HibernateTransactionManager 等本地事务策略。它不会使用 Spring 的
- * JtaTransactionManager 作为事务策略来增加价值。
- * 对于 Hibernate 的只读操作，还建议使用 <p>Lazy 获取 JDBC 连接，特别是当在二级缓存中解析结果的机会很高时。这根本不需要与数据库进行此类只读操作的通信。对
- * 于非事务性读取，您将获得相同的效果，但 JDBC 连接的延迟获取允许您仍然在事务中执行读取。
- * 在 6.2.6 的 <p>A 中，此数据源代理还会在连接同时关闭的超时情况下抑制回滚尝试。
- * <p><b>NOTE:</b> 此数据源代理需要返回包装的连接（实现 {@link ConnectionProxy} 接口），以便处理实际 JDBC 连接的延迟获取。使用
- * {@link Connection#unwrap} 检索本机 JDBC 连接。
+ * 目标 {@link DataSource} 的代理，延迟获取实际 JDBC Connection，即直到首次创建 Statement 时才获取。
+ * 连接初始化属性（自动提交模式、事务隔离、只读模式）将被保留，并在获取实际 Connection 后立即应用。
+ * 因此，若未创建任何 Statement，commit 与 rollback 调用将被忽略。
+ * 自 6.1.2 起，除常规目标 DataSource 外，还支持在只读事务期间使用 {@link #setReadOnlyDataSource read-only DataSource}。
+ *
+ * <p>本代理可避免在确实不需要时从连接池获取 JDBC Connection：JDBC 事务控制可在不取连接、不与数据库通信的情况下进行，
+ * 首次创建 JDBC Statement 时才真正完成。此外，可在路由 DataSource（如
+ * {@link org.springframework.jdbc.datasource.lookup.IsolationLevelDataSourceRouter}）中
+ * 考虑事务同步的只读标志和/或隔离级别。
+ *
+ * <p><b>若同时配置 LazyConnectionDataSourceProxy 与 TransactionAwareDataSourceProxy，
+ * 请确保后者为最外层 DataSource。</b> 此时数据访问代码与事务感知 DataSource 交互，
+ * 后者再与 LazyConnectionDataSourceProxy 协作。自 6.1.2 起，LazyConnectionDataSourceProxy 在首次 Connection 访问时
+ * 初始化默认连接特性；若要在启动时强制执行，请调用 {@link #checkDefaultConnectionProperties()}。
+ *
+ * <p>在通用事务划分环境中，延迟获取物理 JDBC Connection 尤其有益：可在所有可能执行数据访问的方法上划分事务，
+ * 而实际未发生数据访问时不会产生性能损失。
+ *
+ * <p>本代理提供类似 JTA 与 Jakarta EE 服务器所提供的事务性 JNDI DataSource 的行为，
+ * 即使使用 DataSourceTransactionManager 或 HibernateTransactionManager 等本地事务策略也适用。
+ * 若使用 Spring 的 JtaTransactionManager 作为事务策略则收益有限。
+ *
+ * <p>对 Hibernate 只读操作也建议延迟获取 JDBC Connection，尤其当二级缓存命中概率较高时，
+ * 此类只读操作完全无需与数据库通信。非事务性读取效果相同，但延迟获取仍允许在事务中执行读取。
+ *
+ * <p>自 6.2.6 起，若超时期间 Connection 已被关闭，本代理还会抑制 rollback 尝试。
+ *
+ * <p><b>注意：</b>本代理须返回包装 Connection（实现 {@link ConnectionProxy}），以支持延迟获取实际 JDBC Connection。
+ * 使用 {@link Connection#unwrap} 获取原生 JDBC Connection。
  * @author Juergen Hoeller
  * @author Sam Brannen
  * @since 1.1.4
@@ -72,18 +81,16 @@ public class LazyConnectionDataSourceProxy extends DelegatingDataSource {
 			"TRANSACTION_SERIALIZABLE", Connection.TRANSACTION_SERIALIZABLE
 		);
 
-	/**
-	 * 获取 Log（`Log`）。
-	 */
+	/** 日志记录器。 */
 	private static final Log logger = LogFactory.getLog(LazyConnectionDataSourceProxy.class);
 
-	/** 来源相关状态（`readOnlyDataSource`）。 */
+	/** 只读事务期间使用的目标 DataSource。 */
 	private @Nullable DataSource readOnlyDataSource;
 
-	/** `defaultAutoCommit`：该类的成员状态。 */
+	/** 默认自动提交模式（尚未获取目标 Connection 时使用）。 */
 	private volatile @Nullable Boolean defaultAutoCommit;
 
-	/** 事务相关状态（`defaultTransactionIsolation`）。 */
+	/** 默认事务隔离级别（尚未获取目标 Connection 时使用）。 */
 	private volatile @Nullable Integer defaultTransactionIsolation;
 
 
