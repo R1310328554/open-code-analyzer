@@ -26,14 +26,17 @@ import io.netty.handler.codec.http.websocketx.extensions.WebSocketExtensionFilte
 import java.util.List;
 
 /**
- * Per-message implementation of deflate compressor.
+ * permessage-deflate 压缩编码器：整条逻辑消息（含分片）共享一次 Deflate 流。
+ * <p>首帧 Text/Binary 置 RSV1 启动压缩，Continuation 帧延续同一 zlib 上下文；
+ * 仅在消息末帧（FIN）移除 {@link DeflateEncoder} 的帧尾标记。
  */
 class PerMessageDeflateEncoder extends DeflateEncoder {
 
+    /** 是否处于一条多帧压缩消息的编码过程中 */
     private boolean compressing;
 
     /**
-     * Constructor
+     * 构造压缩器（默认不过滤任何帧）。
      *
      * @param compressionLevel compression level of the compressor.
      * @param windowSize maximum size of the window compressor buffer.
@@ -44,7 +47,7 @@ class PerMessageDeflateEncoder extends DeflateEncoder {
     }
 
     /**
-     * Constructor
+     * 构造压缩器，可指定扩展过滤器以跳过特定帧。
      *
      * @param compressionLevel compression level of the compressor.
      * @param windowSize maximum size of the window compressor buffer.
@@ -57,7 +60,7 @@ class PerMessageDeflateEncoder extends DeflateEncoder {
     }
 
     /**
-     * Constructor
+     * 构造压缩器，可指定 zlib 内存级别与扩展过滤器。
      *
      * @param compressionLevel compression level of the compressor.
      * @param windowSize maximum size of the window compressor buffer.
@@ -71,6 +74,7 @@ class PerMessageDeflateEncoder extends DeflateEncoder {
     }
 
     @Override
+    /** 接受未压缩的首帧或压缩进行中的 Continuation；filter 跳过且进行中则抛异常 */
     public boolean acceptOutboundMessage(Object msg) throws Exception {
         if (!super.acceptOutboundMessage(msg)) {
             return false;
@@ -90,17 +94,20 @@ class PerMessageDeflateEncoder extends DeflateEncoder {
     }
 
     @Override
+    /** 首帧 Text/Binary 置 RSV1 标记压缩，Continuation 保持原 RSV */
     protected int rsv(WebSocketFrame msg) {
         return msg instanceof TextWebSocketFrame || msg instanceof BinaryWebSocketFrame?
                 msg.rsv() | WebSocketExtension.RSV1 : msg.rsv();
     }
 
     @Override
+    /** 仅在消息末帧（FIN）移除 Deflate 帧尾 */
     protected boolean removeFrameTail(WebSocketFrame msg) {
         return msg.isFinalFragment();
     }
 
     @Override
+    /** 编码后更新 compressing 状态：末帧清零，首帧置位 */
     protected void encode(ChannelHandlerContext ctx, WebSocketFrame msg,
                           List<Object> out) throws Exception {
         super.encode(ctx, msg, out);

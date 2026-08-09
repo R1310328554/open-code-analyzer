@@ -18,15 +18,14 @@ package io.netty.handler.codec.http.websocketx.extensions.compression;
 import io.netty.handler.codec.http.websocketx.extensions.WebSocketServerExtensionHandler;
 
 /**
- * Extends <tt>io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketServerExtensionHandler</tt>
- * to handle the most common WebSocket Compression Extensions.
- *
- * See <tt>io.netty.example.http.websocketx.html5.WebSocketServer</tt> for usage.
+ * WebSocket 服务端压缩扩展处理器：预注册 permessage-deflate 与 x-deflate-frame 握手器。
+ * <p>继承 {@link WebSocketServerExtensionHandler}，开箱即用常见压缩扩展；
+ * 用法参见 {@code io.netty.example.http.websocketx.html5.WebSocketServer}。
  */
 public class WebSocketServerCompressionHandler extends WebSocketServerExtensionHandler {
 
     /**
-     * Constructor with default configuration.
+     * 默认配置（已弃用，请使用带 maxAllocation 的构造器）。
      *
      * @deprecated
      *            Use {@link WebSocketServerCompressionHandler#WebSocketServerCompressionHandler(int)}.
@@ -37,7 +36,7 @@ public class WebSocketServerCompressionHandler extends WebSocketServerExtensionH
     }
 
     /**
-     * Constructor with default configuration.
+     * 构造服务端压缩处理器，注册 permessage-deflate 与 deflate-frame 扩展。
      *
      * @param maxAllocation
      *            Maximum size of the decompression buffer. Must be &gt;= 0. If zero, maximum size is not limited.

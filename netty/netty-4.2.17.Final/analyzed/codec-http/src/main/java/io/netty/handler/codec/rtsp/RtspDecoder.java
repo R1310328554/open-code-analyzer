@@ -28,60 +28,48 @@ import io.netty.handler.codec.http.HttpObjectDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
- * Decodes {@link io.netty.buffer.ByteBuf}s into RTSP messages represented in
- * {@link HttpMessage}s.
+ * 将 {@link io.netty.buffer.ByteBuf} 解码为以 {@link HttpMessage} 表示的 RTSP 消息。
+ * <p>RTSP 报文格式与 HTTP 类似，复用 {@link HttpObjectDecoder} 框架；首行以
+ * {@code RTSP/x.x} 开头则为响应，否则为请求。
  * <p>
- * <h3>Parameters that prevents excessive memory consumption</h3>
+ * <h3>防止内存过度占用的参数</h3>
  * <table border="1">
  * <tr>
  * <th>Name</th><th>Meaning</th>
  * </tr>
  * <tr>
  * <td>{@code maxInitialLineLength}</td>
- * <td>The maximum length of the initial line
- *     (e.g. {@code "SETUP / RTSP/1.0"} or {@code "RTSP/1.0 200 OK"})
- *     If the length of the initial line exceeds this value, a
- *     {@link io.netty.handler.codec.TooLongFrameException} will be raised.</td>
+ * <td>首行最大长度（如 {@code "SETUP / RTSP/1.0"} 或 {@code "RTSP/1.0 200 OK"}），
+ *     超出则抛出 {@link io.netty.handler.codec.TooLongFrameException}。</td>
  * </tr>
  * <tr>
  * <td>{@code maxHeaderSize}</td>
- * <td>The maximum length of all headers. If the sum of the length of each
- *     header exceeds this value, a {@link io.netty.handler.codec.TooLongFrameException} will be
- *     raised.</td>
+ * <td>所有头字段总长度上限，超出则抛出 {@link io.netty.handler.codec.TooLongFrameException}。</td>
  * </tr>
  * <tr>
  * <td>{@code maxContentLength}</td>
- * <td>The maximum length of the content.  If the content length exceeds this
- *     value, a {@link io.netty.handler.codec.TooLongFrameException} will be raised.</td>
+ * <td>消息体最大长度，超出则抛出 {@link io.netty.handler.codec.TooLongFrameException}。</td>
  * </tr>
  * </table>
  */
 public class RtspDecoder extends HttpObjectDecoder {
     /**
-     * Status code for unknown responses.
+     * 未知响应的状态码占位（999 Unknown）。
      */
     private static final HttpResponseStatus UNKNOWN_STATUS =
             new HttpResponseStatus(999, "Unknown");
-    /**
-     * True if the message to decode is a request.
-     * False if the message to decode is a response.
-     */
+    /** 当前正在解码的是请求（true）还是响应（false） */
     private boolean isDecodingRequest;
 
-    /**
-     * Regex used on first line in message to detect if it is a response.
-     */
+    /** 匹配首行 RTSP 版本串，用于区分请求与响应 */
     private static final Pattern versionPattern = Pattern.compile("RTSP/\\d\\.\\d");
 
-    /**
-     * Constant for default max content length.
-     */
+    /** 默认消息体最大长度（8192 字节） */
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 8192;
 
     /**
-     * Creates a new instance with the default
-     * {@code maxInitialLineLength (4096)}, {@code maxHeaderSize (8192)}, and
-     * {@code maxContentLength (8192)}.
+     * 使用默认 {@code maxInitialLineLength (4096)}、{@code maxHeaderSize (8192)}、
+     * {@code maxContentLength (8192)} 创建解码器。
      */
     public RtspDecoder() {
         this(DEFAULT_MAX_INITIAL_LINE_LENGTH,
@@ -90,7 +78,7 @@ public class RtspDecoder extends HttpObjectDecoder {
     }
 
     /**
-     * Creates a new instance with the specified parameters.
+     * 按指定长度限制创建解码器。
      * @param maxInitialLineLength The max allowed length of initial line
      * @param maxHeaderSize The max allowed size of header
      * @param maxContentLength The max allowed content length
@@ -128,7 +116,7 @@ public class RtspDecoder extends HttpObjectDecoder {
     }
 
     /**
-     * Creates a new instance with the specified configuration.
+     * 使用 {@link HttpDecoderConfig} 创建解码器；RTSP 不支持 chunked 传输。
      */
     public RtspDecoder(HttpDecoderConfig config) {
         super(config.clone()
@@ -139,8 +127,7 @@ public class RtspDecoder extends HttpObjectDecoder {
     @Override
     protected HttpMessage createMessage(final String[] initialLine)
             throws Exception {
-        // If the first element of the initial line is a version string then
-        // this is a response
+        // 首元素匹配 RTSP 版本则为响应，否则为请求
         if (versionPattern.matcher(initialLine[0]).matches()) {
             isDecodingRequest = false;
             return new DefaultHttpResponse(RtspVersions.valueOf(initialLine[0]),
@@ -158,8 +145,7 @@ public class RtspDecoder extends HttpObjectDecoder {
 
     @Override
     protected boolean isContentAlwaysEmpty(final HttpMessage msg) {
-        // Unlike HTTP, RTSP always assumes zero-length body if Content-Length
-        // header is absent.
+        // RTSP 与 HTTP 不同：缺少 Content-Length 时一律视为零长度消息体
         return super.isContentAlwaysEmpty(msg) || !msg.headers().contains(RtspHeaderNames.CONTENT_LENGTH);
     }
 

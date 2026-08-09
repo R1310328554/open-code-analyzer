@@ -16,7 +16,7 @@
 package io.netty.handler.codec.rtsp;
 
 /**
- * @deprecated Use {@link RtspDecoder} directly instead
+ * @deprecated 请直接使用 {@link RtspDecoder}，本类仅为兼容旧 API 的空子类。
  */
 @Deprecated
 public class RtspRequestDecoder extends RtspDecoder {

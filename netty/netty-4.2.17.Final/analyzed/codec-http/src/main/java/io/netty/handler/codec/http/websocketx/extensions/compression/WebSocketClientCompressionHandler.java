@@ -19,10 +19,9 @@ import io.netty.channel.ChannelHandler;
 import io.netty.handler.codec.http.websocketx.extensions.WebSocketClientExtensionHandler;
 
 /**
- * Extends <tt>io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientExtensionHandler</tt>
- * to handle the most common WebSocket Compression Extensions.
- *
- * See <tt>io.netty.example.http.websocketx.client.WebSocketClient</tt> for usage.
+ * WebSocket 客户端压缩扩展处理器：预注册 permessage-deflate 与 x-deflate-frame 握手器。
+ * <p>继承 {@link WebSocketClientExtensionHandler}，开箱即用常见压缩扩展；
+ * 用法参见 {@code io.netty.example.http.websocketx.client.WebSocketClient}。
  */
 @ChannelHandler.Sharable
 public final class WebSocketClientCompressionHandler extends WebSocketClientExtensionHandler {
@@ -38,7 +37,7 @@ public final class WebSocketClientCompressionHandler extends WebSocketClientExte
     }
 
     /**
-     * Constructor with default configuration.
+     * 构造客户端压缩处理器，注册 permessage-deflate 与两种 deflate-frame 模式。
      * @param maxAllocation
      *            Maximum size of the decompression buffer. Must be &gt;= 0. If zero, maximum size is not limited.
      */

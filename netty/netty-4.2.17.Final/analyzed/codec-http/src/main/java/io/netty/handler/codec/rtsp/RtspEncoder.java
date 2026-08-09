@@ -28,19 +28,22 @@ import io.netty.util.CharsetUtil;
 import static io.netty.handler.codec.http.HttpConstants.*;
 
 /**
- * Encodes an RTSP message represented in {@link HttpMessage} or an {@link HttpContent} into
- * a {@link ByteBuf}.
+ * 将 {@link HttpMessage} 或 {@link HttpContent} 编码为 RTSP 报文 {@link ByteBuf}。
+ * <p>首行格式：请求为 {@code METHOD URI RTSP/x.x}，响应为 {@code RTSP/x.x CODE Reason}。
  */
 public class RtspEncoder extends HttpObjectEncoder<HttpMessage> {
+    /** 预计算的 CRLF 短整型，用于快速写入行尾 */
     private static final int CRLF_SHORT = (CR << 8) | LF;
 
     @Override
+    /** 仅接受 HttpRequest 与 HttpResponse 类型的出站消息 */
     public boolean acceptOutboundMessage(final Object msg)
            throws Exception {
         return super.acceptOutboundMessage(msg) && ((msg instanceof HttpRequest) || (msg instanceof HttpResponse));
     }
 
     @Override
+    /** 写入 RTSP 首行（请求或响应格式） */
     protected void encodeInitialLine(final ByteBuf buf, final HttpMessage message)
            throws Exception {
         if (message instanceof HttpRequest) {

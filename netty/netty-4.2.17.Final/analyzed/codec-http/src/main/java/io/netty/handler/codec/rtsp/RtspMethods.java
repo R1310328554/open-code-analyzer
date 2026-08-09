@@ -24,77 +24,63 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The request getMethod of RTSP.
+ * RTSP 请求方法常量（RFC 2326）。
+ * <p>标准方法缓存在 {@link #methodMap} 中，{@link #valueOf(String)} 按 US Locale 大写查找。
  */
 public final class RtspMethods {
 
     /**
-     * The OPTIONS getMethod represents a request for information about the communication options
-     * available on the request/response chain identified by the Request-URI. This getMethod allows
-     * the client to determine the options and/or requirements associated with a resource, or the
-     * capabilities of a server, without implying a resource action or initiating a resource
-     * retrieval.
+     * OPTIONS：查询服务器或资源支持的通信选项，不触发媒体传输。
      */
     public static final HttpMethod OPTIONS = HttpMethod.OPTIONS;
 
     /**
-     * The DESCRIBE getMethod retrieves the description of a presentation or
-     * media object identified by the request URL from a server.
+     * DESCRIBE：获取指定 URI 的 SDP 媒体描述。
      */
     public static final HttpMethod DESCRIBE = HttpMethod.valueOf("DESCRIBE");
 
     /**
-     * The ANNOUNCE posts the description of a presentation or media object
-     * identified by the request URL to a server, or updates the client-side
-     * session description in real-time.
+     * ANNOUNCE：向服务器发布或实时更新 SDP 描述。
      */
     public static final HttpMethod ANNOUNCE = HttpMethod.valueOf("ANNOUNCE");
 
     /**
-     * The SETUP request for a URI specifies the transport mechanism to be
-     * used for the streamed media.
+     * SETUP：为 URI 指定 RTP/RTCP 传输机制并建立会话。
      */
     public static final HttpMethod SETUP = HttpMethod.valueOf("SETUP");
 
     /**
-     * The PLAY getMethod tells the server to start sending data via the
-     * mechanism specified in SETUP.
+     * PLAY：按 SETUP 协商的传输方式开始发送媒体数据。
      */
     public static final HttpMethod PLAY = HttpMethod.valueOf("PLAY");
 
     /**
-     * The PAUSE request causes the stream delivery to be interrupted
-     * (halted) temporarily.
+     * PAUSE：临时中断媒体流传输。
      */
     public static final HttpMethod PAUSE = HttpMethod.valueOf("PAUSE");
 
     /**
-     * The TEARDOWN request stops the stream delivery for the given URI,
-     * freeing the resources associated with it.
+     * TEARDOWN：停止流传输并释放 URI 关联的资源。
      */
     public static final HttpMethod TEARDOWN = HttpMethod.valueOf("TEARDOWN");
 
     /**
-     * The GET_PARAMETER request retrieves the value of a parameter of a
-     * presentation or stream specified in the URI.
+     * GET_PARAMETER：读取演示或流的参数值。
      */
     public static final HttpMethod GET_PARAMETER = HttpMethod.valueOf("GET_PARAMETER");
 
     /**
-     * The SET_PARAMETER requests to set the value of a parameter for a
-     * presentation or stream specified by the URI.
+     * SET_PARAMETER：设置演示或流的参数值。
      */
     public static final HttpMethod SET_PARAMETER = HttpMethod.valueOf("SET_PARAMETER");
 
     /**
-     * The REDIRECT request informs the client that it must connect to another
-     * server location.
+     * REDIRECT：通知客户端连接至新的服务器地址。
      */
     public static final HttpMethod REDIRECT = HttpMethod.valueOf("REDIRECT");
 
     /**
-     * The RECORD getMethod initiates recording a range of media data according to
-     * the presentation description.
+     * RECORD：按 SDP 描述开始录制指定范围的媒体数据。
      */
     public static final HttpMethod RECORD = HttpMethod.valueOf("RECORD");
 
@@ -115,14 +101,11 @@ public final class RtspMethods {
     }
 
     /**
-     * Returns the {@link HttpMethod} represented by the specified name.
-     * If the specified name is a standard RTSP getMethod name, a cached instance
-     * will be returned.  Otherwise, a new instance will be returned.
+     * 按名称返回 {@link HttpMethod}；标准 RTSP 方法返回缓存实例，否则新建。
      */
     public static HttpMethod valueOf(String name) {
-        // RFC 2326 RTSP method names are ASCII tokens. toUpperCase() without an explicit Locale
-        // uses the JVM default, which in Turkish (tr_TR) maps 'i' to 'İ' (U+0130) and breaks the
-        // lookup of methods such as "describe" or "redirect" against the cached uppercase keys.
+        // RFC 2326 方法名为 ASCII token；必须用 Locale.US 大写，否则土耳其语 locale
+        // 会把 'i' 映射为 'İ'，导致 "describe"/"redirect" 等查找失败
         name = checkNonEmptyAfterTrim(name, "name").toUpperCase(Locale.US);
         HttpMethod result = methodMap.get(name);
         if (result != null) {

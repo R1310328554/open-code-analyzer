@@ -23,42 +23,34 @@ import io.netty.handler.codec.http.HttpObjectDecoder;
 import static io.netty.handler.codec.rtsp.RtspDecoder.DEFAULT_MAX_CONTENT_LENGTH;
 
 /**
- * Decodes {@link ByteBuf}s into RTSP messages represented in
- * {@link HttpMessage}s.
+ * 将 {@link ByteBuf} 解码为 {@link HttpMessage} 形式的 RTSP 消息（旧版抽象基类）。
  * <p>
- * <h3>Parameters that prevents excessive memory consumption</h3>
+ * <h3>防止内存过度占用的参数</h3>
  * <table border="1">
  * <tr>
  * <th>Name</th><th>Meaning</th>
  * </tr>
  * <tr>
  * <td>{@code maxInitialLineLength}</td>
- * <td>The maximum length of the initial line
- *     (e.g. {@code "SETUP / RTSP/1.0"} or {@code "RTSP/1.0 200 OK"})
- *     If the length of the initial line exceeds this value, a
- *     {@link TooLongFrameException} will be raised.</td>
+ * <td>首行最大长度，超出则抛出 {@link TooLongFrameException}。</td>
  * </tr>
  * <tr>
  * <td>{@code maxHeaderSize}</td>
- * <td>The maximum length of all headers.  If the sum of the length of each
- *     header exceeds this value, a {@link TooLongFrameException} will be raised.</td>
+ * <td>头字段总长度上限，超出则抛出 {@link TooLongFrameException}。</td>
  * </tr>
  * <tr>
  * <td>{@code maxContentLength}</td>
- * <td>The maximum length of the content.  If the content length exceeds this
- *     value, a {@link TooLongFrameException} will be raised.</td>
+ * <td>消息体最大长度，超出则抛出 {@link TooLongFrameException}。</td>
  * </tr>
  * </table>
  *
- * @deprecated Use {@link RtspDecoder} instead.
+ * @deprecated 请改用 {@link RtspDecoder}。
  */
 @Deprecated
 public abstract class RtspObjectDecoder extends HttpObjectDecoder {
 
     /**
-     * Creates a new instance with the default
-     * {@code maxInitialLineLength (4096)}, {@code maxHeaderSize (8192)}, and
-     * {@code maxContentLength (8192)}.
+     * 使用默认长度限制创建解码器。
      */
     protected RtspObjectDecoder() {
         this(DEFAULT_MAX_INITIAL_LINE_LENGTH, DEFAULT_MAX_HEADER_SIZE, DEFAULT_MAX_CONTENT_LENGTH);
@@ -78,8 +70,7 @@ public abstract class RtspObjectDecoder extends HttpObjectDecoder {
 
     @Override
     protected boolean isContentAlwaysEmpty(HttpMessage msg) {
-        // Unlike HTTP, RTSP always assumes zero-length body if Content-Length
-        // header is absent.
+        // RTSP：缺少 Content-Length 时视为零长度消息体
         boolean empty = super.isContentAlwaysEmpty(msg);
         if (empty) {
             return true;

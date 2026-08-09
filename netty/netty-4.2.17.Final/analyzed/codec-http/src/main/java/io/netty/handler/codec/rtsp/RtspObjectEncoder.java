@@ -22,10 +22,10 @@ import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpObjectEncoder;
 
 /**
- * Encodes an RTSP message represented in {@link FullHttpMessage} into
- * a {@link ByteBuf}.
+ * 将 {@link FullHttpMessage} 编码为 RTSP 报文 {@link ByteBuf}（旧版抽象基类）。
+ * <p>仅接受完整消息（含消息体），子类实现具体首行格式。
  *
- * @deprecated Use {@link RtspEncoder} instead.
+ * @deprecated 请改用 {@link RtspEncoder}。
  */
 @Sharable
 @Deprecated
@@ -38,6 +38,7 @@ public abstract class RtspObjectEncoder<H extends HttpMessage> extends HttpObjec
     }
 
     @Override
+    /** 仅编码 FullHttpMessage（聚合后的完整 RTSP 消息） */
     public boolean acceptOutboundMessage(Object msg) throws Exception {
         return msg instanceof FullHttpMessage;
     }

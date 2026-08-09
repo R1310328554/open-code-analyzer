@@ -20,10 +20,10 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.util.AsciiString;
 
 /**
- * Standard RTSP header names.
+ * 标准 RTSP 头字段名常量（{@link AsciiString}，小写缓存）。
  * <p>
- * These are all defined as lowercase to support HTTP/2 requirements while also not
- * violating RTSP/1.x requirements.  New header names should always be lowercase.
+ * 统一小写以兼容 HTTP/2 要求，同时不违反 RTSP/1.x 大小写不敏感语义；
+ * 新增头名应始终使用小写。
  */
 public final class RtspHeaderNames {
     /**
@@ -90,9 +90,7 @@ public final class RtspHeaderNames {
      * {@code "content-type"}
      */
     public static final AsciiString CONTENT_TYPE = HttpHeaderNames.CONTENT_TYPE;
-    /**
-     * {@code "cseq"}
-     */
+    /** RTSP 命令序号（{@code "cseq"}，每条请求递增） */
     public static final AsciiString CSEQ = AsciiString.cached("cseq");
     /**
      * {@code "date"}
@@ -154,17 +152,13 @@ public final class RtspHeaderNames {
      * {@code "retry-after"}
      */
     public static final AsciiString RETRT_AFTER = HttpHeaderNames.RETRY_AFTER;
-    /**
-     * {@code "rtp-info"}
-     */
+    /** RTP 同步信息（{@code "rtp-info"}，PLAY 响应中携带 seq/rtptime） */
     public static final AsciiString RTP_INFO = AsciiString.cached("rtp-info");
     /**
      * {@code "scale"}
      */
     public static final AsciiString SCALE = AsciiString.cached("scale");
-    /**
-     * {@code "session"}
-     */
+    /** 会话标识（{@code "session"}，SETUP 后由服务端分配） */
     public static final AsciiString SESSION = AsciiString.cached("session");
     /**
      * {@code "server"}
@@ -178,9 +172,7 @@ public final class RtspHeaderNames {
      * {@code "timestamp"}
      */
     public static final AsciiString TIMESTAMP = AsciiString.cached("timestamp");
-    /**
-     * {@code "transport"}
-     */
+    /** 传输参数（{@code "transport"}，SETUP 时协商 RTP/RTCP 通道） */
     public static final AsciiString TRANSPORT = AsciiString.cached("transport");
     /**
      * {@code "unsupported"}
@@ -203,5 +195,6 @@ public final class RtspHeaderNames {
      */
     public static final AsciiString WWW_AUTHENTICATE = HttpHeaderNames.WWW_AUTHENTICATE;
 
+    /** 工具类禁止实例化 */
     private RtspHeaderNames() { }
 }

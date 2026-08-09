@@ -20,16 +20,15 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.util.AsciiString;
 
 /**
- * Standard RTSP header names.
+ * 标准 RTSP 头字段值常量（{@link AsciiString}，小写缓存）。
+ * <p>涵盖 Transport 参数、RTP 协议标识及 HTTP 通用缓存指令等。
  */
 public final class RtspHeaderValues {
     /**
      * {@code "append"}
      */
     public static final AsciiString APPEND = AsciiString.cached("append");
-    /**
-     * {@code "AVP"}
-     */
+    /** RTP/AVP 传输配置文件（{@code "AVP"}） */
     public static final AsciiString AVP = AsciiString.cached("AVP");
     /**
      * {@code "bytes"}
@@ -75,9 +74,7 @@ public final class RtspHeaderValues {
      * {@code "identity"}
      */
     public static final AsciiString IDENTITY = HttpHeaderValues.IDENTITY;
-    /**
-     * {@code "interleaved"}
-     */
+    /** 交织传输模式（{@code "interleaved"}，RTP 复用在 RTSP TCP 连接上） */
     public static final AsciiString INTERLEAVED = AsciiString.cached("interleaved");
     /**
      * {@code "keep-alive"}
@@ -103,9 +100,7 @@ public final class RtspHeaderValues {
      * {@code "mode"}
      */
     public static final AsciiString MODE = AsciiString.cached("mode");
-    /**
-     * {@code "multicast"}
-     */
+    /** 组播传输（{@code "multicast"}） */
     public static final AsciiString MULTICAST = AsciiString.cached("multicast");
     /**
      * {@code "must-revalidate"}
@@ -183,14 +178,13 @@ public final class RtspHeaderValues {
      * {@code "UDP"}
      */
     public static final AsciiString UDP = AsciiString.cached("UDP");
-    /**
-     * {@code "unicast"}
-     */
+    /** 单播传输（{@code "unicast"}） */
     public static final AsciiString UNICAST = AsciiString.cached("unicast");
     /**
      * {@code "url"}
      */
     public static final AsciiString URL = AsciiString.cached("url");
 
+    /** 工具类禁止实例化 */
     private RtspHeaderValues() { }
 }

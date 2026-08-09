@@ -30,12 +30,15 @@ import java.util.Map.Entry;
 import static io.netty.util.internal.ObjectUtil.*;
 
 /**
- * <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-18">permessage-deflate</a>
- * handshake implementation.
+ * 服务端 <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-18">permessage-deflate</a>
+ * 扩展握手实现：解析客户端 Sec-WebSocket-Extensions 参数，协商窗口大小、
+ * context takeover 与压缩级别，并生成对应的编解码器。
  */
 public final class PerMessageDeflateServerExtensionHandshaker implements WebSocketServerExtensionHandshaker {
 
+    /** Deflate 滑动窗口位数下限（2^8） */
     public static final int MIN_WINDOW_SIZE = 8;
+    /** Deflate 滑动窗口位数上限（2^15，RFC 7692 默认值） */
     public static final int MAX_WINDOW_SIZE = 15;
 
     static final String PERMESSAGE_DEFLATE_EXTENSION = "permessage-deflate";
@@ -45,10 +48,12 @@ public final class PerMessageDeflateServerExtensionHandshaker implements WebSock
     static final String SERVER_NO_CONTEXT = "server_no_context_takeover";
 
     /**
-     * Default memory level used for deflate compression (zlib MAX_MEM_LEVEL).
+     * Deflate 压缩默认内存级别（zlib MAX_MEM_LEVEL）。
      */
     public static final int DEFAULT_MEM_LEVEL = 8;
+    /** zlib 内存级别下限 */
     public static final int MIN_MEM_LEVEL = 1;
+    /** zlib 内存级别上限 */
     public static final int MAX_MEM_LEVEL = 9;
 
     private final int compressionLevel;
@@ -295,6 +300,7 @@ public final class PerMessageDeflateServerExtensionHandshaker implements WebSock
     }
 
     @Override
+    /** 协商 permessage-deflate 参数；无法兼容时返回 null 拒绝该扩展 */
     public WebSocketServerExtension handshakeExtension(WebSocketExtensionData extensionData) {
         if (!PERMESSAGE_DEFLATE_EXTENSION.equals(extensionData.name())) {
             return null;
@@ -312,45 +318,45 @@ public final class PerMessageDeflateServerExtensionHandshaker implements WebSock
             Entry<String, String> parameter = parametersIterator.next();
 
             if (CLIENT_MAX_WINDOW.equalsIgnoreCase(parameter.getKey())) {
-                // RFC 7692: client_max_window_bits may have a value or no value
+                // RFC 7692：client_max_window_bits 可带数值或不带（由服务端指定偏好值）
                 String value = parameter.getValue();
                 if (value != null) {
-                    // Let NumberFormatException bubble up if value is invalid
+                    // 非法数值让 NumberFormatException 向上抛出
                     clientWindowSize = Integer.parseInt(value);
                     if (clientWindowSize > MAX_WINDOW_SIZE || clientWindowSize < MIN_WINDOW_SIZE) {
                         deflateEnabled = false;
                     }
                 } else {
-                    // No value specified, use preferred client window size
+                    // 未指定数值时使用服务端偏好的客户端窗口大小
                     clientWindowSize = preferredClientWindowSize;
                 }
             } else if (SERVER_MAX_WINDOW.equalsIgnoreCase(parameter.getKey())) {
-                // use provided windowSize if it is allowed
+                // 仅在允许客户端定制服务端窗口时才接受该参数
                 if (allowServerWindowSize) {
                     int clientOfferedServerWindowSize = Integer.parseInt(parameter.getValue());
                     if (clientOfferedServerWindowSize > MAX_WINDOW_SIZE
                             || clientOfferedServerWindowSize < MIN_WINDOW_SIZE) {
                         deflateEnabled = false;
                     } else {
-                        // RFC 7692 §7.1.2.1: server accepts with the same or smaller value than the offer.
-                        // Cap at the configured serverWindowSize so the server's memory bound is respected.
+                        // RFC 7692 §7.1.2.1：服务端以不大于客户端提议的值应答；
+                        // 再受 serverWindowSize 上限约束以控制内存占用
                         negotiatedServerWindowSize = Math.min(clientOfferedServerWindowSize, this.serverWindowSize);
                     }
                 } else {
                     deflateEnabled = false;
                 }
             } else if (CLIENT_NO_CONTEXT.equalsIgnoreCase(parameter.getKey())) {
-                // use preferred clientNoContext because client is compatible with customization
+                // 客户端支持时按服务端偏好决定是否禁用客户端 context takeover
                 clientNoContext = preferredClientNoContext;
             } else if (SERVER_NO_CONTEXT.equalsIgnoreCase(parameter.getKey())) {
-                // use server no context if allowed
+                // 仅在允许时才激活 server_no_context_takeover
                 if (allowServerNoContext) {
                     serverNoContext = true;
                 } else {
                     deflateEnabled = false;
                 }
             } else {
-                // unknown parameter
+                // 未知参数导致拒绝扩展
                 deflateEnabled = false;
             }
         }
@@ -364,6 +370,7 @@ public final class PerMessageDeflateServerExtensionHandshaker implements WebSock
         }
     }
 
+    /** 协商成功后封装扩展实例，负责创建编解码器与应答 Sec-WebSocket-Extensions 头 */
     private static class PermessageDeflateExtension implements WebSocketServerExtension {
 
         private final int compressionLevel;
@@ -406,6 +413,7 @@ public final class PerMessageDeflateServerExtensionHandshaker implements WebSock
         }
 
         @Override
+        /** 构建握手应答中的 Sec-WebSocket-Extensions 参数 */
         public WebSocketExtensionData newReponseData() {
             HashMap<String, String> parameters = new HashMap<String, String>(4);
             if (serverNoContext) {

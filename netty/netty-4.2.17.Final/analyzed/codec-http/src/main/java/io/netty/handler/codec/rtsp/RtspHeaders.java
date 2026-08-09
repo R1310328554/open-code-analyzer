@@ -19,8 +19,9 @@ import io.netty.handler.codec.http.HttpHeaders;
 
 
 /**
- * @deprecated Use {@link RtspHeaderNames} or {@link RtspHeaderValues} instead.
-
+ * @deprecated 请改用 {@link RtspHeaderNames} 或 {@link RtspHeaderValues}。
+ * <p>旧版 RTSP 头名/头值 String 常量容器，保留仅为向后兼容。
+ *
  * Standard RTSP header names and values.
  */
 @Deprecated
