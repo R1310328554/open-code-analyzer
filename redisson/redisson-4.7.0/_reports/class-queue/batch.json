@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:41:52Z",
-  "files": [
-    "redisson/src/main/java/org/redisson/api/listener/ListRemoveListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ListSetListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ListTrimListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/LocalCacheInvalidateListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/LocalCacheUpdateListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/MapClearExpireListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/MapExpiredListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/MapIncrListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/MapPutListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/MapRemoveListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/MessageListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/NewObjectListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/PatternMessageListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/PatternStatusListener.java",
-    "redisson/src/main/java/org/redisson/api/listener/ScoredSortedSetAddListener.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 962,
-  "done": 1845
+  "done": 1860
 }
