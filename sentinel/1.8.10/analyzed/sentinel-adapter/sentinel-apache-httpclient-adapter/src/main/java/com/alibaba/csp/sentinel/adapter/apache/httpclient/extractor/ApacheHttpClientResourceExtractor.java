@@ -18,6 +18,8 @@ package com.alibaba.csp.sentinel.adapter.apache.httpclient.extractor;
 import org.apache.http.client.methods.HttpRequestWrapper;
 
 /**
+ * 从 Apache HttpClient 请求中提取 Sentinel 资源名的接口。
+ *
  * @author zhaoyuguang
  */
 public interface ApacheHttpClientResourceExtractor {

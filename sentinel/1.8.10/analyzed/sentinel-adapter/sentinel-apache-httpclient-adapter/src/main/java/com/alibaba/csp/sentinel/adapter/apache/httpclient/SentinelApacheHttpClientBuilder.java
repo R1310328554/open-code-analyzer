@@ -31,6 +31,8 @@ import org.apache.http.impl.execchain.ClientExecChain;
 import java.io.IOException;
 
 /**
+ * 集成 Sentinel 流控的 Apache HttpClient 构建器，在出站请求执行链中创建资源入口。
+ *
  * @author zhaoyuguang
  */
 public class SentinelApacheHttpClientBuilder extends HttpClientBuilder {

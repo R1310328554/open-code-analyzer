@@ -20,7 +20,7 @@ import org.apache.dubbo.rpc.Invocation;
 import org.apache.dubbo.rpc.Invoker;
 
 /**
- * Default Dubbo origin parser.
+ * 默认 Dubbo 来源解析器，从调用 attachment 中读取远程应用名。
  *
  * @author jingzian
  */

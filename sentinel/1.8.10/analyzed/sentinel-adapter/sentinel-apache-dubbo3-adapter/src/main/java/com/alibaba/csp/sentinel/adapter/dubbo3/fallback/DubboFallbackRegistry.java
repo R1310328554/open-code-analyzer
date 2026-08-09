@@ -18,10 +18,10 @@ package com.alibaba.csp.sentinel.adapter.dubbo3.fallback;
 import com.alibaba.csp.sentinel.adapter.dubbo3.config.DubboAdapterGlobalConfig;
 
 /**
- * <p>Global fallback registry for Dubbo.</p>
+ * <p>Dubbo 全局降级处理器注册表。</p>
  *
  * @author Eric Zhao
- * @deprecated use {@link DubboAdapterGlobalConfig} instead since 1.8.0.
+ * @deprecated 自 1.8.0 起请改用 {@link DubboAdapterGlobalConfig}。
  */
 @Deprecated
 public final class DubboFallbackRegistry {

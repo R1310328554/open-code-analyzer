@@ -26,6 +26,8 @@ import org.apache.dubbo.rpc.RpcContext;
 import static org.apache.dubbo.common.constants.CommonConstants.REMOTE_APPLICATION_KEY;
 
 /**
+ * Dubbo 适配器工具类，用于解析应用名与 Sentinel 资源名。
+ *
  * @author Eric Zhao
  */
 public final class DubboUtils {
@@ -36,7 +38,7 @@ public final class DubboUtils {
         if (invocation == null || invocation.getAttachments() == null) {
             throw new IllegalArgumentException("Bad invocation instance");
         }
-        // 1. try to get application from dubbo context
+        // 1. 尝试从 Dubbo 上下文获取应用名
         String remoteApplication = invocation.getAttachment(REMOTE_APPLICATION_KEY);
         if (StringUtils.isEmpty(remoteApplication)) {
             remoteApplication = RpcContext.getServerAttachment().getAttachment(REMOTE_APPLICATION_KEY);
@@ -44,7 +46,7 @@ public final class DubboUtils {
         if (StringUtils.isNotEmpty(remoteApplication)) {
             return remoteApplication;
         }
-        // 2. fallback to sentinel application
+        // 2. 回退到 Sentinel 写入的应用名
         return invocation.getAttachment(SENTINEL_DUBBO_APPLICATION_KEY, defaultValue);
     }
 

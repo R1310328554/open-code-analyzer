@@ -31,9 +31,9 @@ import java.util.Optional;
 import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER;
 
 /**
- * <p>Dubbo service consumer filter for Sentinel. Auto activated by default.</p>
+ * <p>Sentinel 集成的 Dubbo 服务 Consumer 过滤器，默认自动激活。</p>
  * <p>
- * If you want to disable the consumer filter, you can configure:
+ * 如需禁用 Consumer 过滤器，可配置：
  * <pre>
  * &lt;dubbo:consumer filter="-sentinel.dubbo.consumer.filter"/&gt;
  * </pre>

@@ -22,6 +22,8 @@ import com.alibaba.csp.sentinel.adapter.apache.httpclient.fallback.DefaultApache
 import com.alibaba.csp.sentinel.util.AssertUtil;
 
 /**
+ * Apache HttpClient Sentinel 适配器配置，包含资源名前缀、提取器与降级处理器。
+ *
  * @author zhaoyuguang
  */
 public class SentinelApacheHttpClientConfig {

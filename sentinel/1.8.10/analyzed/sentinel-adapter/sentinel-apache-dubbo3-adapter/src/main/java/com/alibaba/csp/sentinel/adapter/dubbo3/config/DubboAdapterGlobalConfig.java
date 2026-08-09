@@ -25,7 +25,7 @@ import com.alibaba.csp.sentinel.util.StringUtil;
 
 /**
  * <p>
- * Responsible for dubbo service provider, consumer attribute configuration
+ * 负责 Dubbo 服务 Provider 与 Consumer 侧的属性配置。
  * </p>
  *
  * @author lianglin
@@ -91,9 +91,9 @@ public final class DubboAdapterGlobalConfig {
     }
 
     /**
-     * Get the origin parser of Dubbo adapter.
+     * 获取 Dubbo 适配器的来源解析器。
      *
-     * @return the origin parser
+     * @return 来源解析器
      * @since 1.8.0
      */
     public static DubboOriginParser getOriginParser() {
@@ -101,9 +101,9 @@ public final class DubboAdapterGlobalConfig {
     }
 
     /**
-     * Set the origin parser of Dubbo adapter.
+     * 设置 Dubbo 适配器的来源解析器。
      *
-     * @param originParser the origin parser
+     * @param originParser 来源解析器
      * @since 1.8.0
      */
     public static void setOriginParser(DubboOriginParser originParser) {

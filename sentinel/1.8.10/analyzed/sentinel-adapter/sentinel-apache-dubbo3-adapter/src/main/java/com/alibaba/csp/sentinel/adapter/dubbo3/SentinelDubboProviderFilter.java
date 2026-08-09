@@ -31,10 +31,10 @@ import org.apache.dubbo.rpc.RpcException;
 import static org.apache.dubbo.common.constants.CommonConstants.PROVIDER;
 
 /**
- * <p>Apache Dubbo service provider filter that enables integration with Sentinel. Auto activated by default.</p>
- * <p>Note: this only works for Apache Dubbo 2.7.x or above version.</p>
+ * <p>集成 Sentinel 的 Apache Dubbo 服务 Provider 过滤器，默认自动激活。</p>
+ * <p>注意：仅适用于 Apache Dubbo 2.7.x 及以上版本。</p>
  * <p>
- * If you want to disable the provider filter, you can configure:
+ * 如需禁用 Provider 过滤器，可配置：
  * <pre>
  * &lt;dubbo:provider filter="-sentinel.dubbo.provider.filter"/&gt;
  * </pre>
@@ -61,7 +61,7 @@ public class SentinelDubboProviderFilter extends BaseSentinelDubboFilter impleme
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
-        // Get origin caller.
+        // 获取调用方来源。
         String origin = DubboAdapterGlobalConfig.getOriginParser().parse(invoker, invocation);
         if (null == origin) {
             origin = "";
@@ -72,8 +72,7 @@ public class SentinelDubboProviderFilter extends BaseSentinelDubboFilter impleme
         String interfaceResourceName = getInterfaceName(invoker, prefix);
         String methodResourceName = getMethodName(invoker, invocation, prefix);
         try {
-            // Only need to create entrance context at provider side, as context will take effect
-            // at entrance of invocation chain only (for inbound traffic).
+            // 仅在 Provider 侧创建入口 Context，Context 仅在调用链入口（入站流量）生效。
             ContextUtil.enter(methodResourceName, origin);
             interfaceEntry = SphU.entry(interfaceResourceName, ResourceTypeConstants.COMMON_RPC, EntryType.IN);
             methodEntry = SphU.entry(methodResourceName, ResourceTypeConstants.COMMON_RPC, EntryType.IN,

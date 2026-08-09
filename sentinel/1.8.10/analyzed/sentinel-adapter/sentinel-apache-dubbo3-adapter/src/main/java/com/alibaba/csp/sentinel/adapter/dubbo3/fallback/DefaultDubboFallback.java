@@ -23,13 +23,15 @@ import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.Result;
 
 /**
+ * Dubbo 阻断时的默认降级处理器，将 {@link BlockException} 包装为运行时异常返回。
+ *
  * @author Eric Zhao
  */
 public class DefaultDubboFallback implements DubboFallback {
 
     @Override
     public Result handle(Invoker<?> invoker, Invocation invocation, BlockException ex) {
-        // Just wrap the exception.
+        // 将异常包装后返回。
         return AsyncRpcResult.newDefaultAsyncResult(ex.toRuntimeException(), invocation);
     }
 }

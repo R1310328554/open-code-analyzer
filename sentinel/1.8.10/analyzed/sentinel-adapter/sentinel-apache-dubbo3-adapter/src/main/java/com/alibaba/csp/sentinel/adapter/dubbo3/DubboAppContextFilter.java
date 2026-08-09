@@ -26,7 +26,7 @@ import org.apache.dubbo.rpc.model.ApplicationModel;
 import static org.apache.dubbo.common.constants.CommonConstants.CONSUMER;
 
 /**
- * Puts current consumer's application name in the attachment of each invocation.
+ * 将当前 Consumer 的应用名写入每次调用的 attachment。
  *
  * @author Eric Zhao
  */
