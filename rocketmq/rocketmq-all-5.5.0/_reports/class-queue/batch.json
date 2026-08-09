@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:00:18Z",
-  "files": [
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/metadata/entity/FileSegmentMetadata.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/metadata/entity/QueueMetadata.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/metadata/entity/TopicMetadata.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/metrics/TieredStoreMetricsConstant.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/metrics/TieredStoreMetricsManager.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/provider/FileSegment.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/provider/FileSegmentFactory.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/provider/FileSegmentProvider.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/provider/MemoryFileSegment.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/provider/PosixFileSegment.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/stream/CommitLogInputStream.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/stream/FileSegmentInputStream.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/stream/FileSegmentInputStreamFactory.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/util/MessageFormatUtil.java",
-    "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/util/MessageStoreUtil.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 228,
-  "done": 1245
+  "done": 1260
 }
