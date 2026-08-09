@@ -38,8 +38,10 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * Redisson Session Manager for Apache Tomcat
- * 
+ * Apache Tomcat {@link org.apache.catalina.Manager} 的 Redisson 实现。
+ * <p>管理 Session 生命周期、Redis 存储、Pub/Sub 集群同步
+与 ReadMode/UpdateMode 配置。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -50,6 +52,7 @@ public class RedissonSessionManager extends ManagerBase {
     
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
     
+    /** Redisson 客户端，用于 Session 存储与 Pub/Sub。 */
     protected RedissonClient redisson;
     private String configPath;
     private Config config;
@@ -67,77 +70,96 @@ public class RedissonSessionManager extends ManagerBase {
     
     private Codec codecToUse;
 
+    /** 返回当前 Tomcat 节点唯一标识。 */
     public String getNodeId() { return nodeId; }
 
+    /** 返回 Session 更新模式（DEFAULT/AFTER_REQUEST）。 */
     public String getUpdateMode() {
         return updateMode.toString();
     }
 
+    /** 设置 Session 更新模式。 */
     public void setUpdateMode(String updateMode) {
         this.updateMode = UpdateMode.valueOf(updateMode);
     }
 
+    /** 是否广播 Session 创建/销毁事件。 */
     public boolean isBroadcastSessionEvents() {
         return broadcastSessionEvents;
     }
     
+    /** 设置是否广播 Session 生命周期事件。 */
     public void setBroadcastSessionEvents(boolean replicateSessionEvents) {
         this.broadcastSessionEvents = replicateSessionEvents;
     }
 
+    /** 是否广播 Session 属性变更。 */
     public boolean isBroadcastSessionUpdates() {
         return broadcastSessionUpdates;
     }
 
+    /** 设置是否广播属性变更到集群。 */
     public void setBroadcastSessionUpdates(boolean broadcastSessionUpdates) {
         this.broadcastSessionUpdates = broadcastSessionUpdates;
     }
 
+    /** 返回 Session 读取模式（REDIS/MEMORY）。 */
     public String getReadMode() {
         return readMode.toString();
     }
 
+    /** 设置 Session 读取模式。 */
     public void setReadMode(String readMode) {
         this.readMode = ReadMode.valueOf(readMode);
     }
     
+    /** 设置 Redisson YAML/JSON 配置文件路径。 */
     public void setConfigPath(String configPath) {
         this.configPath = configPath;
     }
     
+    /** 返回 Redisson 配置文件路径。 */
     public String getConfigPath() {
         return configPath;
     }
 
+    /** CONFIG SET：设置配置项。 */
     public void setConfig(Config config) {
         this.config = config;
     }
 
+    /** CONFIG GET：读取配置项。 */
     public Config getConfig() {
         return config;
     }
 
+    /** 返回 Redis key 前缀。 */
     public String getKeyPrefix() {
         return keyPrefix;
     }
 
+    /** 设置 Session 在 Redis 中的 key 前缀。 */
     public void setKeyPrefix(String keyPrefix) {
         this.keyPrefix = keyPrefix;
     }
 
+    /** getName：Redis 命令实现。 */
     @Override
     public String getName() {
         return RedissonSessionManager.class.getSimpleName();
     }
     
+    /** 从 Redis RMap 加载 Session 属性到内存。 */
     @Override
     public void load() throws ClassNotFoundException, IOException {
     }
 
+    /** unload：Redis 命令实现。 */
     @Override
     public void unload() throws IOException {
     }
 
+    /** 创建新的 {@link RedissonSession} 实例。 */
     @Override
     public Session createSession(String sessionId) {
         Session session = super.createSession(sessionId);
@@ -148,22 +170,26 @@ public class RedissonSessionManager extends ManagerBase {
         return session;
     }
 
+    /** getNotifiedNodes：Redis 命令实现。 */
     public RSet<String> getNotifiedNodes(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         String name = keyPrefix + separator + "redisson:tomcat_notified_nodes:" + sessionId;
         return redisson.getSet(name, StringCodec.INSTANCE);
     }
     
+    /** getTomcatSessionKeyName：Redis 命令实现。 */
     public String getTomcatSessionKeyName(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         return keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
     }
 
+    /** getMap：Redis 命令实现。 */
     public RMap<String, Object> getMap(String sessionId) {
         String name = getTomcatSessionKeyName(sessionId);
         return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, codecToUse, codecToUse));
     }
 
+    /** 返回 Pub/Sub 主题，用于跨节点 Session 同步。 */
     public RTopic getTopic() {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         final String name = keyPrefix + separator + "redisson:tomcat_session_updates:" + getContext().getName();
@@ -174,11 +200,13 @@ public class RedissonSessionManager extends ManagerBase {
         return redisson.getTopic(name);
     }
     
+    /** 按 ID 查找 Session，不存在则返回 null。 */
     @Override
     public Session findSession(String id) throws IOException {
         return findSession(id, true);
     }
     
+    /** 按 ID 查找 Session，不存在则返回 null。 */
     private Session findSession(String id, boolean notify) throws IOException {
         RedissonSession result = (RedissonSession) super.findSession(id);
         if (result == null) {
@@ -212,6 +240,7 @@ public class RedissonSessionManager extends ManagerBase {
         return result;
     }
     
+    /** createEmptySession：Redis 命令实现。 */
     @Override
     public Session createEmptySession() {
         Session session = new RedissonSession(this, readMode, updateMode, broadcastSessionEvents, this.broadcastSessionUpdates);
@@ -226,10 +255,12 @@ public class RedissonSessionManager extends ManagerBase {
         return session;
     }
     
+    /** superRemove：Redis 命令实现。 */
     public void superRemove(Session session) {
         super.remove(session, false);
     }
 
+    /** remove：Redis 命令实现。 */
     @Override
     public void remove(Session session, boolean update) {
         super.remove(session, update);
@@ -240,20 +271,24 @@ public class RedissonSessionManager extends ManagerBase {
         }
     }
     
+    /** superAdd：Redis 命令实现。 */
     public void superAdd(Session session) {
         super.add(session);
     }
 
+    /** add：Redis 命令实现。 */
     @Override
     public void add(Session session) {
         super.add(session);
         ((RedissonSession)session).save();
     }
     
+    /** getRedisson：Redis 命令实现。 */
     public RedissonClient getRedisson() {
         return redisson;
     }
     
+    /** Tomcat 生命周期：初始化 Redisson 客户端与 Pub/Sub 监听。 */
     @Override
     protected void startInternal() throws LifecycleException {
         super.startInternal();
@@ -362,6 +397,7 @@ public class RedissonSessionManager extends ManagerBase {
         setState(LifecycleState.STARTING);
     }
 
+    /** buildClient：Redis 命令实现。 */
     protected RedissonClient buildClient() throws LifecycleException {
         if (config == null) {
             if (configPath == null) {
@@ -382,6 +418,7 @@ public class RedissonSessionManager extends ManagerBase {
         }
     }
 
+    /** Tomcat 生命周期：关闭 Redisson 客户端并清理资源。 */
     @Override
     protected void stopInternal() throws LifecycleException {
         super.stopInternal();
@@ -421,12 +458,14 @@ public class RedissonSessionManager extends ManagerBase {
         
     }
 
+    /** shutdownRedisson：Redis 命令实现。 */
     protected void shutdownRedisson() {
         if (redisson != null) {
             redisson.shutdown();
         }
     }
 
+    /** 将 Session 状态持久化到 Redis RMap。 */
     public void store(HttpSession session) throws IOException {
         if (session == null) {
             return;
@@ -440,6 +479,7 @@ public class RedissonSessionManager extends ManagerBase {
         }
     }
 
+    /** tryInitSsoValve：Redis 命令实现。 */
     private void tryInitSsoValve() {
         Container c = getContext();
         // SSO valve has to be in defined in Host

@@ -33,8 +33,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Redisson Session object for Apache Tomcat
- * 
+ * Apache Tomcat 分布式 HTTP Session 实现。
+ * <p>继承 {@link org.apache.catalina.session.StandardSession}，
+将 Session 属性存储于 Redisson {@link org.redisson.api.RMap}，
+支持 ReadMode/UpdateMode 与跨节点属性变更广播。
+ *
  * @author Nikita Koksharov
  *
  */
@@ -59,6 +62,7 @@ public class RedissonSession extends StandardSession {
     
     private boolean isExpirationLocked;
     private boolean loaded;
+    /** 所属 {@link RedissonSessionManager}。 */
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
@@ -74,6 +78,7 @@ public class RedissonSession extends StandardSession {
     private final boolean broadcastSessionEvents;
     private final boolean broadcastSessionUpdates;
 
+    /** 构造 Session 并初始化 ReadMode/UpdateMode 与属性容器。 */
     public RedissonSession(RedissonSessionManager manager, ReadMode readMode, UpdateMode updateMode, boolean broadcastSessionEvents, boolean broadcastSessionUpdates) {
         super(manager);
         this.redissonManager = manager;
@@ -101,6 +106,7 @@ public class RedissonSession extends StandardSession {
 
     private static final long serialVersionUID = -2518607181636076487L;
 
+    /** 读取 Session 属性；ReadMode=REDIS 时按需从 Redis 加载。 */
     @Override
     public Object getAttribute(String name) {
         if (readMode == ReadMode.REDIS) {
@@ -141,6 +147,7 @@ public class RedissonSession extends StandardSession {
         return super.getAttribute(name);
     }
     
+    /** 返回 Session 全部属性名集合。 */
     @Override
     public Enumeration<String> getAttributeNames() {
         if (readMode == ReadMode.REDIS) {
@@ -177,6 +184,7 @@ public class RedissonSession extends StandardSession {
         return keys();
     }
     
+    /** 从 Redis 删除 Session 数据并广播销毁事件。 */
     public void delete() {
         if (map == null) {
             map = redissonManager.getMap(id);
@@ -199,6 +207,7 @@ public class RedissonSession extends StandardSession {
         updatedAttributes.clear();
     }
     
+    /** setCreationTime：Redis 命令实现。 */
     @Override
     public void setCreationTime(long time) {
         super.setCreationTime(time);
@@ -215,6 +224,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** 更新最后访问时间并触发 ReadMode 加载逻辑。 */
     @Override
     public void access() {
         super.access();
@@ -223,14 +233,17 @@ public class RedissonSession extends StandardSession {
         expireSession();
     }
 
+    /** superAccess：Redis 命令实现。 */
     public void superAccess() {
         super.access();
     }
 
+    /** superEndAccess：Redis 命令实现。 */
     public void superEndAccess() {
         super.endAccess();
     }
 
+    /** expireSession：Redis 命令实现。 */
     protected void expireSession() {
         RMap<String, Object> m = map;
         if (isExpirationLocked || m == null) {
@@ -241,6 +254,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** createPutAllMessage：Redis 命令实现。 */
     protected AttributesPutAllMessage createPutAllMessage(Map<String, Object> newMap) {
         try {
             return new AttributesPutAllMessage(redissonManager, getId(), newMap, this.map.getCodec().getMapValueEncoder());
@@ -249,6 +263,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** setMaxInactiveInterval：Redis 命令实现。 */
     @Override
     public void setMaxInactiveInterval(int interval) {
         super.setMaxInactiveInterval(interval);
@@ -257,6 +272,7 @@ public class RedissonSession extends StandardSession {
         expireSession();
     }
 
+    /** fastPut：Redis 命令实现。 */
     private void fastPut(String name, Object value) {
         RMap<String, Object> m = map;
         if (m == null) {
@@ -273,6 +289,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** setPrincipal：Redis 命令实现。 */
     @Override
     public void setPrincipal(Principal principal) {
         super.setPrincipal(principal);
@@ -284,6 +301,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** setAuthType：Redis 命令实现。 */
     @Override
     public void setAuthType(String authType) {
         super.setAuthType(authType);
@@ -295,6 +313,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** setValid：Redis 命令实现。 */
     @Override
     public void setValid(boolean isValid) {
         super.setValid(isValid);
@@ -308,6 +327,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** setNew：Redis 命令实现。 */
     @Override
     public void setNew(boolean isNew) {
         super.setNew(isNew);
@@ -315,6 +335,7 @@ public class RedissonSession extends StandardSession {
         fastPut(IS_NEW_ATTR, isNew);
     }
     
+    /** 请求结束时将变更写回 Redis 并释放引用计数。 */
     @Override
     public void endAccess() {
         boolean oldValue = isNew;
@@ -336,6 +357,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** 设置 Session 属性并记录变更以便持久化。 */
     @Override
     public void setAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
@@ -355,10 +377,12 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** superRemoveAttributeInternal：Redis 命令实现。 */
     public void superRemoveAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
     }
 
+    /** getIdleTimeInternal：Redis 命令实现。 */
     @Override
     public long getIdleTimeInternal() {
         long idleTime = super.getIdleTimeInternal();
@@ -371,6 +395,7 @@ public class RedissonSession extends StandardSession {
         return idleTime;
     }
 
+    /** removeAttributeInternal：Redis 命令实现。 */
     @Override
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
@@ -378,6 +403,7 @@ public class RedissonSession extends StandardSession {
         removeRedisAttribute(name);
     }
 
+    /** removeRedisAttribute：Redis 命令实现。 */
     private void removeRedisAttribute(String name) {
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
@@ -394,6 +420,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** setId：Redis 命令实现。 */
     @Override
     public void setId(String id, boolean notify) {
         if ((this.id != null) && (manager != null)) {
@@ -423,6 +450,7 @@ public class RedissonSession extends StandardSession {
         }
     }
 
+    /** SAVE：同步保存 RDB 快照。 */
     public void save() {
         if (map == null) {
             map = redissonManager.getMap(id);
@@ -474,6 +502,7 @@ public class RedissonSession extends StandardSession {
         expireSession();
     }
 
+    /** copy：Redis 命令实现。 */
     private Object copy(Object value) {
         try {
             if (value instanceof Collection) {
@@ -492,6 +521,7 @@ public class RedissonSession extends StandardSession {
         return value;
     }
     
+    /** 从 Redis RMap 加载 Session 属性到内存。 */
     public void load(Map<String, Object> attrs) {
         Number creationTime = (Number) attrs.remove(CREATION_TIME_ATTR);
         if (creationTime != null) {
@@ -537,6 +567,7 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    /** recycle：Redis 命令实现。 */
     @Override
     public void recycle() {
         super.recycle();
@@ -546,10 +577,12 @@ public class RedissonSession extends StandardSession {
         removedAttributes.clear();
     }
 
+    /** startUsage：Redis 命令实现。 */
     public void startUsage() {
         usages.incrementAndGet();
     }
 
+    /** endUsage：Redis 命令实现。 */
     public void endUsage() {
         // don't decrement usages if startUsage wasn't called
 //        if (usages.decrementAndGet() == 0) {

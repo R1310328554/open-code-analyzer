@@ -45,16 +45,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * Spring Data Redis 响应式 Key 命令实现。
+ * <p>封装 EXISTS、TYPE、KEYS、RENAME、DEL、EXPIRE、TTL、MOVE 等通用 key 操作。
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements ReactiveKeyCommands {
 
+    /** 注入响应式命令执行器。 */
     public RedissonReactiveKeyCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** EXISTS：判断 key 是否存在。 */
+    /** EXISTS：判断 key 是否存在。 */
     @Override
     public Flux<BooleanResponse<KeyCommand>> exists(Publisher<KeyCommand> keys) {
         return execute(keys, key -> {
@@ -69,6 +74,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
     
     private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", obj -> DataType.fromCode(obj.toString()));
 
+    /** TYPE：返回 key 的 {@link DataType}。 */
+    /** TYPE：返回 key 的数据类型。 */
     @Override
     public Flux<CommandResponse<KeyCommand, DataType>> type(Publisher<KeyCommand> keys) {
         return execute(keys, key -> {
@@ -81,6 +88,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
     
+    /** TOUCH：更新 key 的最后访问时间。 */
     @Override
     public Flux<NumericResponse<Collection<ByteBuffer>, Long>> touch(Publisher<Collection<ByteBuffer>> keys) {
         return execute(keys, coll -> {
@@ -94,6 +102,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** KEYS：按模式匹配返回 key 列表（生产环境慎用）。 */
+    /** KEYS：按模式匹配返回 key 集合。 */
     @Override
     public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
         return execute(patterns, pattern -> {
@@ -108,6 +118,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** SCAN：增量迭代 key 空间。 */
     @Override
     public Flux<ByteBuffer> scan(ScanOptions options) {
         RedissonKeysReactive reactive = new RedissonKeysReactive(executorService);
@@ -117,6 +128,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         return reactive.getKeysByPattern(options.getPattern()).map(t -> ByteBuffer.wrap(t.getBytes()));
     }
 
+    /** RANDOMKEY：随机返回一个 key。 */
+    /** RANDOMKEY：随机返回一个 key。 */
     @Override
     public Mono<ByteBuffer> randomKey() {
         return executorService.reactive(() -> {
@@ -126,6 +139,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     static final RedisStrictCommand<String> RENAME = new RedisStrictCommand<String>("RENAME");
     
+    /** RENAME：重命名 key。 */
+    /** RENAME：重命名 key。 */
     @Override
     public Flux<BooleanResponse<RenameCommand>> rename(Publisher<RenameCommand> commands) {
         return execute(commands, command -> {
@@ -140,6 +155,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** RENAMENX：仅当新 key 不存在时重命名。 */
     @Override
     public Flux<BooleanResponse<RenameCommand>> renameNX(Publisher<RenameCommand> commands) {
         return execute(commands, command -> {
@@ -154,6 +170,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** DEL：删除单个 key 并返回删除数量。 */
+    /** DEL：删除一个或多个 key。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> del(Publisher<KeyCommand> keys) {
         Flux<KeyCommand> s = Flux.from(keys);
@@ -167,6 +185,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** 批量 DEL：一次删除多个 key。 */
+    /** 批量 DEL：一次删除多个 key。 */
     @Override
     public Flux<NumericResponse<List<ByteBuffer>, Long>> mDel(Publisher<List<ByteBuffer>> keys) {
         return execute(keys, coll -> {
@@ -180,6 +200,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** UNLINK：异步删除 key。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> unlink(Publisher<KeyCommand> keys) {
         return execute(keys, command -> {
@@ -192,6 +213,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
    }
 
+    /** mUnlink：Redis 命令实现。 */
     @Override
     public Flux<NumericResponse<List<ByteBuffer>, Long>> mUnlink(Publisher<List<ByteBuffer>> keys) {
         return execute(keys, coll -> {
@@ -207,6 +229,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     private static final RedisStrictCommand<Boolean> EXPIRE = new RedisStrictCommand<Boolean>("EXPIRE", new BooleanReplayConvertor());
     
+    /** EXPIRE：以秒为单位设置 key 过期时间。 */
+    /** EXPIRE：以秒为单位设置过期时间。 */
     @Override
     public Flux<BooleanResponse<ExpireCommand>> expire(Publisher<ExpireCommand> commands) {
         return execute(commands, command -> {
@@ -219,6 +243,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** PEXPIRE：以毫秒为单位设置过期时间。 */
     @Override
     public Flux<BooleanResponse<ExpireCommand>> pExpire(Publisher<ExpireCommand> commands) {
         return execute(commands, command -> {
@@ -234,6 +259,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     private static final RedisStrictCommand<Boolean> EXPIREAT = new RedisStrictCommand<>("EXPIREAT", new BooleanReplayConvertor());
     
+    /** EXPIREAT：按 Unix 秒时间戳设置过期。 */
     @Override
     public Flux<BooleanResponse<ExpireAtCommand>> expireAt(Publisher<ExpireAtCommand> commands) {
         return execute(commands, command -> {
@@ -246,6 +272,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** PEXPIREAT：按 Unix 毫秒时间戳设置过期。 */
     @Override
     public Flux<BooleanResponse<ExpireAtCommand>> pExpireAt(Publisher<ExpireAtCommand> commands) {
         return execute(commands, command -> {
@@ -258,6 +285,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** PERSIST：移除 key 的过期时间。 */
     @Override
     public Flux<BooleanResponse<KeyCommand>> persist(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -272,6 +300,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
     
     private static final RedisStrictCommand<Long> TTL = new RedisStrictCommand<Long>("TTL");
 
+    /** TTL：返回 key 剩余存活秒数。 */
+    /** TTL：返回 key 剩余存活秒数。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> ttl(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -284,6 +314,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** PTTL：返回 key 剩余存活毫秒数。 */
     @Override
     public Flux<NumericResponse<KeyCommand, Long>> pTtl(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
@@ -296,6 +327,8 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** MOVE：将 key 迁移到指定数据库编号。 */
+    /** MOVE：将 key 迁移到指定数据库。 */
     @Override
     public Flux<BooleanResponse<MoveCommand>> move(Publisher<MoveCommand> commands) {
         return execute(commands, command -> {
@@ -311,6 +344,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
     
     private static final RedisStrictCommand<ValueEncoding> OBJECT_ENCODING = new RedisStrictCommand<ValueEncoding>("OBJECT", "ENCODING", obj -> ValueEncoding.of((String) obj));
 
+    /** OBJECT ENCODING：返回 key 内部编码。 */
     @Override
     public Mono<ValueEncoding> encodingOf(ByteBuffer key) {
         Assert.notNull(key, "Key must not be null!");
@@ -321,6 +355,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     private static final RedisStrictCommand<Long> OBJECT_IDLETIME = new RedisStrictCommand<Long>("OBJECT", "IDLETIME");
     
+    /** OBJECT IDLETIME：返回 key 空闲秒数。 */
     @Override
     public Mono<Duration> idletime(ByteBuffer key) {
         Assert.notNull(key, "Key must not be null!");
@@ -332,6 +367,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
     
     private static final RedisStrictCommand<Long> OBJECT_REFCOUNT = new RedisStrictCommand<Long>("OBJECT", "REFCOUNT");
 
+    /** OBJECT REFCOUNT：返回 key 引用计数。 */
     @Override
     public Mono<Long> refcount(ByteBuffer key) {
         Assert.notNull(key, "Key must not be null!");
@@ -340,6 +376,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         return read(keyBuf, StringCodec.INSTANCE, OBJECT_REFCOUNT, keyBuf);
     }
 
+    /** copy：Redis 命令实现。 */
     @Override
     public Flux<BooleanResponse<CopyCommand>> copy(Publisher<CopyCommand> commands) {
         return execute(commands, command -> {
@@ -362,6 +399,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** EXISTS：判断 key 是否存在。 */
     @Override
     public Mono<Long> exists(List<ByteBuffer> keys) {
         Assert.notEmpty(keys, "Keys must not be empty!");
@@ -374,6 +412,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         return read((byte[]) args.get(0), LongCodec.INSTANCE, RedisCommands.EXISTS_LONG, args.toArray());
     }
 
+    /** applyExpiration：Redis 命令实现。 */
     @Override
     public Flux<BooleanResponse<ExpireCommand>> applyExpiration(Publisher<ExpireCommand> commands) {
         return execute(commands, command -> {
@@ -422,6 +461,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
     }
 
 
+    /** delex：Redis 命令实现。 */
     @Override
     public Flux<BooleanResponse<DelexCommand>> delex(Publisher<DelexCommand> commands) {
         return execute(commands, command -> {
@@ -438,6 +478,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    /** toComparisonToken：Redis 命令实现。 */
     private static String toComparisonToken(CompareCondition condition) {
         boolean equals = condition.getOperator() == CompareCondition.ComparisonOperator.EQUALS;
         switch (condition.getComparison()) {
@@ -450,6 +491,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
     }
 
 
+    /** digest：Redis 命令实现。 */
     @Override
     public Flux<CommandResponse<KeyCommand, String>> digest(Publisher<KeyCommand> commands) {
         return execute(commands, command -> {
