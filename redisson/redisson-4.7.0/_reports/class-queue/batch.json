@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:37:49Z",
-  "files": [
-    "redisson-spring/redisson-spring-data/redisson-spring-data-20/src/main/java/org/redisson/spring/data/connection/SecondsConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-20/src/main/java/org/redisson/spring/data/connection/SetReplayDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/BinaryConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/ByteBufferGeoResultsDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/DataTypeConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/DistanceConvertor.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/GeoResultsDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/ObjectListReplayDecoder2.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/PointDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/PropertiesDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/PropertiesListDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedisClusterNodeDecoder.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonBaseReactive.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonConnectionFactory.java",
-    "redisson-spring/redisson-spring-data/redisson-spring-data-21/src/main/java/org/redisson/spring/data/connection/RedissonExceptionConverter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2462,
-  "done": 345
+  "done": 360
 }
