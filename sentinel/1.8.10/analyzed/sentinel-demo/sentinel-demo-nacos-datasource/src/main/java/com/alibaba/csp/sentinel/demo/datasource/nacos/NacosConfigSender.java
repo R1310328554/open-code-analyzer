@@ -19,7 +19,8 @@ import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
 
 /**
- * Nacos config sender for demo.
+ * Nacos 规则写入工具：向 Nacos 发布 TestResource 流控规则 JSON，
+ * 供 {@link NacosDataSourceDemo} 读取验证。
  *
  * @author Eric Zhao
  */

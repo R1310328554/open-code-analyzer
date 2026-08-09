@@ -24,6 +24,8 @@ import javax.ws.rs.core.Response;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * JAX-RS Client 演示：通过 {@link SentinelJaxRsClientTemplate} 对 GET /hello/1 发起受 Sentinel 保护的出站请求。
+ *
  * @author sea
  */
 public class JaxRsClientDemo {
@@ -34,8 +36,10 @@ public class JaxRsClientDemo {
                 .readTimeout(3, TimeUnit.SECONDS)
                 .build();
 
+        // Provider 基址，需先启动 JaxRsDemoApplication
         final String host = "http://127.0.0.1:8181";
         final String url = "/hello/1";
+        // 资源名格式与 Provider Filter 一致：METHOD:path
         String resourceName = "GET:" + url;
         Response response = SentinelJaxRsClientTemplate.execute(resourceName, new Supplier<Response>() {
 

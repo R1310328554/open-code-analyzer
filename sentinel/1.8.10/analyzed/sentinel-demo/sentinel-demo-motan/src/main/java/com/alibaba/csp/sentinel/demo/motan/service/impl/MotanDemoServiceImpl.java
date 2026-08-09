@@ -18,10 +18,13 @@ package com.alibaba.csp.sentinel.demo.motan.service.impl;
 import com.alibaba.csp.sentinel.demo.motan.service.MotanDemoService;
 
 /**
+ * {@link MotanDemoService} Provider 实现。
+ *
  * @author zhangxn8
  */
 public class MotanDemoServiceImpl implements MotanDemoService {
 
+    /** 打印 name 并返回问候语。 */
     @Override
     public String hello(String name) {
         System.out.println(name);

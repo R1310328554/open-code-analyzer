@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Motan Consumer 演示：直连 Provider 并循环调用 hello，验证接口/方法级 QPS 流控。
+ *
  * @author zhangxn8
  */
 public class SentinelMotanConsumerService {
@@ -46,11 +48,11 @@ public class SentinelMotanConsumerService {
         // 配置注册中心直连调用
         RegistryConfig registry = new RegistryConfig();
 
-        //use direct registry
+        // 使用 direct 协议直连 Provider
         registry.setRegProtocol("direct");
         registry.setAddress("127.0.0.1:8002");
 
-        // use ZooKeeper: 2181  or consul:8500 registry
+        // 亦可改用 ZooKeeper:2181 或 consul:8500 注册中心
 //        registry.setRegProtocol("consul");
 //        registry.setAddress("127.0.0.1:8500");
         motanDemoServiceReferer.setRegistry(registry);
@@ -62,6 +64,7 @@ public class SentinelMotanConsumerService {
         motanDemoServiceReferer.setProtocol(protocol);
         motanDemoServiceReferer.setDirectUrl("localhost:8002");  // 注册中心直连调用需添加此配置
 
+        // 接口级 QPS=5；method=true 时额外限制 hello 方法
         initFlowRule(5, false);
 
         // 使用服务
@@ -73,6 +76,7 @@ public class SentinelMotanConsumerService {
         System.exit(0);
     }
 
+    /** 加载接口级及可选的方法级 {@link FlowRule}。 */
     private static void initFlowRule(int interfaceFlowLimit, boolean method) {
         FlowRule flowRule = new FlowRule(INTERFACE_RES_KEY)
                 .setCount(interfaceFlowLimit)

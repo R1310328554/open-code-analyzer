@@ -27,24 +27,23 @@ import com.alibaba.fastjson.TypeReference;
 import com.alibaba.nacos.api.PropertyKeyConst;
 
 /**
- * This demo demonstrates how to use Nacos as the data source of Sentinel rules.
- * Before you start, you need to start a Nacos server in local first, and then
- * use {@link NacosConfigSender} to publish initial rule configuration to Nacos.
+ * Nacos 动态数据源演示：从 Nacos 读取流控规则并注册到 {@link FlowRuleManager}。
+ * 运行前需先启动本地 Nacos，并用 {@link NacosConfigSender} 发布初始规则。
  *
  * @author Eric Zhao
  */
 public class NacosDataSourceDemo {
 
     private static final String KEY = "TestResource";
-    // nacos server ip
+    // Nacos 服务地址
     private static final String remoteAddress = "localhost:8848";
-    // nacos group
+    // Nacos groupId
     private static final String groupId = "Sentinel_Demo";
-    // nacos dataId
+    // Nacos dataId
     private static final String dataId = "com.alibaba.csp.sentinel.demo.flow.rule";
-    // if change to true, should be config NACOS_NAMESPACE_ID
+    // 设为 true 时使用命名空间，需配置 NACOS_NAMESPACE_ID
     private static boolean isDemoNamespace = false;
-    // fill your namespace id,if you want to use namespace. for example: 0f5c7314-4983-4022-ad5a-347de1d1057d,you can get it on nacos's console
+    // 命名空间 ID，可在 Nacos 控制台获取，例如 0f5c7314-4983-4022-ad5a-347de1d1057d
     private static final String NACOS_NAMESPACE_ID = "${namespace}";
 
     public static void main(String[] args) {
@@ -54,12 +53,13 @@ public class NacosDataSourceDemo {
             loadRules();
         }
 
-        // Assume we config: resource is `TestResource`, initial QPS threshold is 5.
+        // 假定 Nacos 中资源 TestResource 初始 QPS 阈值为 5
         FlowQpsRunner runner = new FlowQpsRunner(KEY, 1, 100);
         runner.simulateTraffic();
         runner.tick();
     }
 
+    /** 默认命名空间：直连 Nacos 并注册流控规则 Property。 */
     private static void loadRules() {
         ReadableDataSource<String, List<FlowRule>> flowRuleDataSource = new NacosDataSource<>(remoteAddress, groupId, dataId,
                 source -> JSON.parseObject(source, new TypeReference<List<FlowRule>>() {
@@ -67,6 +67,7 @@ public class NacosDataSourceDemo {
         FlowRuleManager.register2Property(flowRuleDataSource.getProperty());
     }
 
+    /** 指定命名空间：通过 Properties 连接 Nacos 并注册规则 Property。 */
     private static void loadMyNamespaceRules() {
         Properties properties = new Properties();
         properties.put(PropertyKeyConst.SERVER_ADDR, remoteAddress);

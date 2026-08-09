@@ -20,11 +20,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * 注册 {@link SentinelJaxRsProviderFilter}，对入站 JAX-RS 请求自动创建 Sentinel 资源。
+ *
  * @author sea
  */
 @Configuration(proxyBeanMethods = false)
 public class SentinelJaxRsConfig {
 
+    /** 向 Spring 容器注册 Provider 侧 Sentinel 过滤器。 */
     @Bean
     public SentinelJaxRsProviderFilter sentinelJaxRsProviderFilter() {
         return new SentinelJaxRsProviderFilter();

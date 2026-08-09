@@ -30,6 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 
 /**
+ * OkHttp 出站限流演示控制器：自调用 /okhttp/back 接口并归一化资源名。
+ *
  * @author zhaoyuguang
  */
 @RestController
@@ -38,6 +40,7 @@ public class OkHttpTestController {
     @Value("${server.port}")
     private Integer port;
 
+    /** 带 {@link SentinelOkHttpInterceptor} 的客户端，资源名格式 method:url。 */
     private final OkHttpClient client = new OkHttpClient.Builder()
         .addInterceptor(new SentinelOkHttpInterceptor(new SentinelOkHttpConfig((request, connection) -> {
             String regex = "/okhttp/back/";
@@ -49,26 +52,31 @@ public class OkHttpTestController {
         }, new DefaultOkHttpFallback())))
         .build();
 
+    /** 本地回显接口（无路径参数）。 */
     @RequestMapping("/okhttp/back")
     public String back() {
         return "Welcome Back!";
     }
 
+    /** 本地回显接口（带 id 路径参数）。 */
     @RequestMapping("/okhttp/back/{id}")
     public String back(@PathVariable String id) {
         return "Welcome Back! " + id;
     }
 
+    /** 通过 OkHttp 调用 /okhttp/back/{id}，触发 Sentinel 出站限流。 */
     @RequestMapping("/okhttp/testcase/{id}")
     public String testcase(@PathVariable String id) throws Exception {
         return getRemoteString(id);
     }
 
+    /** 通过 OkHttp 调用 /okhttp/back（无 id）。 */
     @RequestMapping("/okhttp/testcase")
     public String testcase() throws Exception {
         return getRemoteString(null);
     }
 
+    /** 构造本地 URL 并用 OkHttp 同步 GET 请求。 */
     private String getRemoteString(String id) throws IOException {
         Request request = new Request.Builder()
             .url("http://localhost:" + port + "/okhttp/back" + (id == null ? "" : "/" + id))

@@ -19,6 +19,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
+ * OkHttp 适配器演示 Spring Boot 入口：通过 {@link OkHttpTestController} 发起受 Sentinel 保护的出站 HTTP 请求。
+ *
  * @author zhaoyuguang
  */
 @SpringBootApplication

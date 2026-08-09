@@ -16,10 +16,13 @@
 package com.alibaba.csp.sentinel.demo.motan.service;
 
 /**
+ * Motan RPC 演示服务接口。
+ *
  * @author zhangxn8
  */
 public interface MotanDemoService {
 
+    /** 问候 RPC，Consumer 流控主要测试资源。 */
     String hello(String name);
 
 }

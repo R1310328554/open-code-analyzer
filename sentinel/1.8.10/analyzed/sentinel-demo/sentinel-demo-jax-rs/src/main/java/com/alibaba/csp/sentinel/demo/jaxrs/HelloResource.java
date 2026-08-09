@@ -27,7 +27,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * HelloResource
+ * JAX-RS Hello REST 资源：提供 /hello 系列 JSON 接口，供 Provider 侧 Sentinel 限流演示。
+ *
  * @author sea
  */
 @Path("/hello")
@@ -35,17 +36,20 @@ import java.util.stream.IntStream;
 @Component
 public class HelloResource {
 
+    /** GET /hello：返回固定问候 {@link HelloEntity}。 */
     @GET
     public HelloEntity sayHello() {
         return new HelloEntity("hello");
     }
 
+    /** GET /hello/{id}：按 id 返回 {@link HelloEntity}。 */
     @GET
     @Path("/{id}")
     public HelloEntity get(@PathParam(value = "id") Long id) {
         return new HelloEntity(id, "hello");
     }
 
+    /** GET /hello/list：返回 1..1000 共 1000 条实体，用于压测。 */
     @GET
     @Path("/list")
     public List<HelloEntity> getAll() {
@@ -54,6 +58,7 @@ public class HelloResource {
                 .collect(Collectors.toList());
     }
 
+    /** GET /hello/ex：故意抛异常，验证 {@link CustomExceptionMapper}。 */
     @Path("/ex")
     @GET
     @Produces({ MediaType.APPLICATION_JSON })

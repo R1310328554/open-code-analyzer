@@ -25,12 +25,15 @@ import com.weibo.api.motan.config.ServiceConfig;
 import com.weibo.api.motan.util.MotanSwitcherUtil;
 
 /**
+ * Motan Provider 演示：导出 MotanDemoService 于 motan:8002，供 Consumer 直连调用。
+ *
  * @author zhangxn8
  */
 public class SentinelMotanProviderService {
 
     public static void main(String[] args) {
 
+        // 初始化 Sentinel（含 Motan 适配 Filter SPI）
         InitExecutor.doInit();
 
         ServiceConfig<MotanDemoService> motanDemoService = new ServiceConfig<MotanDemoService>();
@@ -46,14 +49,14 @@ public class SentinelMotanProviderService {
         // 配置注册中心直连调用
         RegistryConfig registry = new RegistryConfig();
 
-        //use local registry
+        // 使用 local 协议，无需外部注册中心
         registry.setRegProtocol("local");
 
-        // use ZooKeeper: 2181  or consul:8500 registry
+        // 亦可改用 ZooKeeper:2181 或 consul:8500 注册中心
 //        registry.setRegProtocol("consul");
 //        registry.setAddress("127.0.0.1:8500");
 
-        // registry.setCheck("false"); //是否检查是否注册成功
+        // registry.setCheck("false"); // 是否校验注册成功
         motanDemoService.setRegistry(registry);
 
         // 配置RPC协议

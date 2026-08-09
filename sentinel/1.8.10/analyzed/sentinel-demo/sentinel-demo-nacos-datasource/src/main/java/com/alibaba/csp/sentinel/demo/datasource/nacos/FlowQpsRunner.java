@@ -25,7 +25,8 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 
 /**
- * Flow QPS runner.
+ * Nacos 动态数据源演示用的 QPS 流量压测 Runner：
+ * 多线程对指定资源发起 {@link SphU#entry} 调用并每秒统计 pass/block 数量。
  *
  * @author Carpenter Lee
  * @author Eric Zhao
@@ -36,6 +37,7 @@ class FlowQpsRunner {
     private final int threadCount;
     private int seconds;
 
+    /** 构造压测 Runner：指定资源名、并发线程数与统计时长（秒）。 */
     public FlowQpsRunner(String resourceName, int threadCount, int seconds) {
         this.resourceName = resourceName;
         this.threadCount = threadCount;
@@ -48,6 +50,7 @@ class FlowQpsRunner {
 
     private volatile boolean stop = false;
 
+    /** 启动 {@link #threadCount} 个线程持续对资源发起 entry 请求。 */
     public void simulateTraffic() {
         for (int i = 0; i < threadCount; i++) {
             Thread t = new Thread(new RunTask());
@@ -56,6 +59,7 @@ class FlowQpsRunner {
         }
     }
 
+    /** 启动定时统计线程，每秒输出 pass/block QPS。 */
     public void tick() {
         Thread timer = new Thread(new TimerTask());
         timer.setName("sentinel-timer-task");
@@ -70,12 +74,12 @@ class FlowQpsRunner {
 
                 try {
                     entry = SphU.entry(resourceName);
-                    // token acquired, means pass
+                    // 成功获取令牌，计为通过
                     pass.addAndGet(1);
                 } catch (BlockException e1) {
                     block.incrementAndGet();
                 } catch (Exception e2) {
-                    // biz exception
+                    // 业务异常（本 demo 未模拟）
                 } finally {
                     total.incrementAndGet();
                     if (entry != null) {
@@ -87,7 +91,7 @@ class FlowQpsRunner {
                 try {
                     TimeUnit.MILLISECONDS.sleep(random2.nextInt(50));
                 } catch (InterruptedException e) {
-                    // ignore
+                    // 忽略中断
                 }
             }
         }

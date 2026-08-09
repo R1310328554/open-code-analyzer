@@ -19,7 +19,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * <p>Add the JVM parameter to connect to the dashboard:</p>
+ * JAX-RS Provider 演示 Spring Boot 入口，默认端口 8181。
+ * <p>连接 Dashboard 请添加 JVM 参数：</p>
  * {@code -Dcsp.sentinel.dashboard.server=127.0.0.1:8080 -Dproject.name=sentinel-demo-jax-rs}
  *
  * @author sea

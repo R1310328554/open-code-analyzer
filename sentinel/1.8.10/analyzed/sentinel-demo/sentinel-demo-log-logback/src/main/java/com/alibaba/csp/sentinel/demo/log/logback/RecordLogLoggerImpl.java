@@ -22,14 +22,13 @@ import com.alibaba.csp.sentinel.log.RecordLog;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is a demo shows how to create a customized logger implementation.
+ * 自定义 {@link RecordLog} 日志实现，将 Sentinel 记录日志委托给 Logback。
  *
  * <ul>
- * <li>1. Create a class which implements the {@link Logger} SPI interface</li>
- * <li>2. Use a {@link LogTarget} to specify the log type</li>
- * <li>3. Implement your own method </li>
- * <li>4. Add your logger in {@code com.alibaba.csp.sentinel.log.Logger} file which is stored in
- * {@code resources/META-INF/services/} directory </li>
+ * <li>1. 实现 {@link Logger} SPI 接口</li>
+ * <li>2. 用 {@link LogTarget} 指定日志类型</li>
+ * <li>3. 实现各级别日志方法</li>
+ * <li>4. 在 {@code resources/META-INF/services/com.alibaba.csp.sentinel.log.Logger} 中注册</li>
  * </ul>
  *
  * @author xue8
