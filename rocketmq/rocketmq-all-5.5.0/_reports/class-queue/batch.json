@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T20:16:24Z",
-  "files": [
-    "proxy/src/main/java/org/apache/rocketmq/proxy/processor/DefaultMessagingProcessor.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/processor/MessagingProcessor.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/remoting/RemotingProtocolServer.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/service/message/LocalMessageService.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/netty/NettyRemotingAbstract.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/netty/NettyRemotingClient.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/netty/NettyRemotingServer.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/RemotingCommand.java",
-    "remoting/src/main/java/org/apache/rocketmq/remoting/protocol/statictopic/TopicQueueMappingUtils.java",
-    "store/src/main/java/org/apache/rocketmq/store/CommitLog.java",
-    "store/src/main/java/org/apache/rocketmq/store/ConsumeQueue.java",
-    "store/src/main/java/org/apache/rocketmq/store/ConsumeQueueExt.java",
-    "store/src/main/java/org/apache/rocketmq/store/DefaultMessageStore.java",
-    "store/src/main/java/org/apache/rocketmq/store/MappedFileQueue.java",
-    "store/src/main/java/org/apache/rocketmq/store/MessageExtEncoder.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 34,
-  "done": 1439
+  "done": 1454
 }
