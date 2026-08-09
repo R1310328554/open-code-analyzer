@@ -22,17 +22,25 @@ import java.net.SocketAddress;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * DNS 响应解码抽象基类，解析报文头与各 section 记录。
+ * <p>
+ * 子类通过 {@link #newResponse} 创建具体传输层响应对象（如 UDP/TCP）。
+ *
+ * @param <A> 发送方/接收方地址类型
+ */
 abstract class DnsResponseDecoder<A extends SocketAddress> {
 
     private final DnsRecordDecoder recordDecoder;
 
     /**
-     * Creates a new decoder with the specified {@code recordDecoder}.
+     * 使用指定 {@code recordDecoder} 创建解码器。
      */
     DnsResponseDecoder(DnsRecordDecoder recordDecoder) {
         this.recordDecoder = checkNotNull(recordDecoder, "recordDecoder");
     }
 
+    /** 从缓冲区解码完整 DNS 响应。 */
     final DnsResponse decode(A sender, A recipient, ByteBuf buffer) throws Exception {
         final int id = buffer.readUnsignedShort();
 
@@ -80,6 +88,7 @@ abstract class DnsResponseDecoder<A extends SocketAddress> {
         }
     }
 
+    /** 子类实现：创建带地址信息的 {@link DnsResponse} 实例。 */
     protected abstract DnsResponse newResponse(A sender, A recipient, int id,
                                                DnsOpCode opCode, DnsResponseCode responseCode) throws Exception;
 
@@ -94,7 +103,7 @@ abstract class DnsResponseDecoder<A extends SocketAddress> {
         for (int i = count; i > 0; i --) {
             final DnsRecord r = recordDecoder.decodeRecord(buf);
             if (r == null) {
-                // Truncated response
+                // 截断响应：剩余记录无法完整解析
                 return false;
             }
 

@@ -21,296 +21,136 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Represents a DNS record type.
+ * DNS 资源记录类型（TYPE），对应 RFC 中各 RR 类型编号。
+ * <p>
+ * 提供常用类型的命名常量，并支持按数值或名称解析。
  */
 public class DnsRecordType implements Comparable<DnsRecordType> {
 
-    /**
-     * Address record RFC 1035 Returns a 32-bit IPv4 address, most commonly used
-     * to map hostnames to an IP address of the host, but also used for DNSBLs,
-     * storing subnet masks in RFC 1101, etc.
-     */
+    /** IPv4 地址记录（A，RFC 1035），将主机名映射为 32 位 IPv4 地址。 */
     public static final DnsRecordType A = new DnsRecordType(0x0001, "A");
 
-    /**
-     * Name server record RFC 1035 Delegates a DNS zone to use the given
-     * authoritative name servers
-     */
+    /** 域名服务器记录（NS，RFC 1035），委派区域至权威名称服务器。 */
     public static final DnsRecordType NS = new DnsRecordType(0x0002, "NS");
 
-    /**
-     * Canonical name record RFC 1035 Alias of one name to another: the DNS
-     * lookup will continue by retrying the lookup with the new name.
-     */
+    /** 规范名称别名记录（CNAME，RFC 1035），解析时继续查询目标名称。 */
     public static final DnsRecordType CNAME = new DnsRecordType(0x0005, "CNAME");
 
-    /**
-     * Start of [a zone of] authority record RFC 1035 and RFC 2308 Specifies
-     * authoritative information about a DNS zone, including the primary name
-     * server, the email of the domain administrator, the domain serial number,
-     * and several timers relating to refreshing the zone.
-     */
+    /** 起始授权记录（SOA，RFC 1035/2308），描述区域权威信息与刷新参数。 */
     public static final DnsRecordType SOA = new DnsRecordType(0x0006, "SOA");
 
-    /**
-     * Pointer record RFC 1035 Pointer to a canonical name. Unlike a CNAME, DNS
-     * processing does NOT proceed, just the name is returned. The most common
-     * use is for implementing reverse DNS lookups, but other uses include such
-     * things as DNS-SD.
-     */
+    /** 指针记录（PTR，RFC 1035），常用于反向 DNS 解析，不继续递归查询。 */
     public static final DnsRecordType PTR = new DnsRecordType(0x000c, "PTR");
 
-    /**
-     * Mail exchange record RFC 1035 Maps a domain name to a list of message
-     * transfer agents for that domain.
-     */
+    /** 邮件交换记录（MX，RFC 1035），指定域的邮件服务器优先级列表。 */
     public static final DnsRecordType MX = new DnsRecordType(0x000f, "MX");
 
-    /**
-     * Text record RFC 1035 Originally for arbitrary human-readable text in a
-     * DNS record. Since the early 1990s, however, this record more often
-     * carries machine-readable data, such as specified by RFC 1464,
-     * opportunistic encryption, Sender Policy Framework, DKIM, DMARC DNS-SD,
-     * etc.
-     */
+    /** 文本记录（TXT，RFC 1035），常用于 SPF、DKIM、DMARC 等机器可读数据。 */
     public static final DnsRecordType TXT = new DnsRecordType(0x0010, "TXT");
 
-    /**
-     * Responsible person record RFC 1183 Information about the responsible
-     * person(s) for the domain. Usually an email address with the @ replaced by
-     * a .
-     */
+    /** 负责人记录（RP，RFC 1183），描述域管理员联系信息。 */
     public static final DnsRecordType RP = new DnsRecordType(0x0011, "RP");
 
-    /**
-     * AFS database record RFC 1183 Location of database servers of an AFS cell.
-     * This record is commonly used by AFS clients to contact AFS cells outside
-     * their local domain. A subtype of this record is used by the obsolete
-     * DCE/DFS file system.
-     */
+    /** AFS 数据库记录（AFSDB，RFC 1183），定位 AFS 单元数据库服务器。 */
     public static final DnsRecordType AFSDB = new DnsRecordType(0x0012, "AFSDB");
 
-    /**
-     * Signature record RFC 2535 Signature record used in SIG(0) (RFC 2931) and
-     * TKEY (RFC 2930). RFC 3755 designated RRSIG as the replacement for SIG for
-     * use within DNSSEC.
-     */
+    /** 签名记录（SIG，RFC 2535），DNSSEC 中已由 RRSIG 取代。 */
     public static final DnsRecordType SIG = new DnsRecordType(0x0018, "SIG");
 
-    /**
-     * key record RFC 2535 and RFC 2930 Used only for SIG(0) (RFC 2931) and TKEY
-     * (RFC 2930). RFC 3445 eliminated their use for application keys and
-     * limited their use to DNSSEC. RFC 3755 designates DNSKEY as the
-     * replacement within DNSSEC. RFC 4025 designates IPSECKEY as the
-     * replacement for use with IPsec.
-     */
+    /** 密钥记录（KEY，RFC 2535/2930），DNSSEC 中由 DNSKEY 取代。 */
     public static final DnsRecordType KEY = new DnsRecordType(0x0019, "KEY");
 
-    /**
-     * IPv6 address record RFC 3596 Returns a 128-bit IPv6 address, most
-     * commonly used to map hostnames to an IP address of the host.
-     */
+    /** IPv6 地址记录（AAAA，RFC 3596），将主机名映射为 128 位 IPv6 地址。 */
     public static final DnsRecordType AAAA = new DnsRecordType(0x001c, "AAAA");
 
-    /**
-     * Location record RFC 1876 Specifies a geographical location associated
-     * with a domain name.
-     */
+    /** 地理位置记录（LOC，RFC 1876），关联域名的地理坐标信息。 */
     public static final DnsRecordType LOC = new DnsRecordType(0x001d, "LOC");
 
-    /**
-     * Service locator RFC 2782 Generalized service location record, used for
-     * newer protocols instead of creating protocol-specific records such as MX.
-     */
+    /** 服务定位记录（SRV，RFC 2782），通用服务主机与端口发现。 */
     public static final DnsRecordType SRV = new DnsRecordType(0x0021, "SRV");
 
-    /**
-     * Naming Authority Pointer record RFC 3403 Allows regular expression based
-     * rewriting of domain names which can then be used as URIs, further domain
-     * names to lookups, etc.
-     */
+    /** 命名权威指针记录（NAPTR，RFC 3403），支持正则重写与 URI 解析。 */
     public static final DnsRecordType NAPTR = new DnsRecordType(0x0023, "NAPTR");
 
-    /**
-     * Key eXchanger record RFC 2230 Used with some cryptographic systems (not
-     * including DNSSEC) to identify a key management agent for the associated
-     * domain-name. Note that this has nothing to do with DNS Security. It is
-     * Informational status, rather than being on the IETF standards-track. It
-     * has always had limited deployment, but is still in use.
-     */
+    /** 密钥交换记录（KX，RFC 2230），标识域的密钥管理代理。 */
     public static final DnsRecordType KX = new DnsRecordType(0x0024, "KX");
 
-    /**
-     * Certificate record RFC 4398 Stores PKIX, SPKI, PGP, etc.
-     */
+    /** 证书记录（CERT，RFC 4398），存储 PKIX/SPKI/PGP 等证书。 */
     public static final DnsRecordType CERT = new DnsRecordType(0x0025, "CERT");
 
-    /**
-     * Delegation name record RFC 2672 DNAME creates an alias for a name and all
-     * its subnames, unlike CNAME, which aliases only the exact name in its
-     * label. Like the CNAME record, the DNS lookup will continue by retrying
-     * the lookup with the new name.
-     */
+    /** 委派名称记录（DNAME，RFC 2672），为整棵子树创建别名（区别于 CNAME）。 */
     public static final DnsRecordType DNAME = new DnsRecordType(0x0027, "DNAME");
 
-    /**
-     * Option record RFC 2671 This is a pseudo DNS record type needed to support
-     * EDNS.
-     */
+    /** 选项伪记录（OPT，RFC 2671），用于 EDNS(0) 扩展。 */
     public static final DnsRecordType OPT = new DnsRecordType(0x0029, "OPT");
 
-    /**
-     * Address Prefix List record RFC 3123 Specify lists of address ranges, e.g.
-     * in CIDR format, for various address families. Experimental.
-     */
+    /** 地址前缀列表记录（APL，RFC 3123，实验性），以 CIDR 等形式描述地址范围。 */
     public static final DnsRecordType APL = new DnsRecordType(0x002a, "APL");
 
-    /**
-     * Delegation signer record RFC 4034 The record used to identify the DNSSEC
-     * signing key of a delegated zone.
-     */
+    /** 委派签名者记录（DS，RFC 4034），标识子区域的 DNSSEC 签名密钥。 */
     public static final DnsRecordType DS = new DnsRecordType(0x002b, "DS");
 
-    /**
-     * SSH Public Key Fingerprint record RFC 4255 Resource record for publishing
-     * SSH public host key fingerprints in the DNS System, in order to aid in
-     * verifying the authenticity of the host. RFC 6594 defines ECC SSH keys and
-     * SHA-256 hashes. See the IANA SSHFP RR parameters registry for details.
-     */
+    /** SSH 公钥指纹记录（SSHFP，RFC 4255），在 DNS 中发布 SSH 主机密钥指纹。 */
     public static final DnsRecordType SSHFP = new DnsRecordType(0x002c, "SSHFP");
 
-    /**
-     * IPsec Key record RFC 4025 Key record that can be used with IPsec.
-     */
+    /** IPsec 密钥记录（IPSECKEY，RFC 4025），供 IPsec 使用的密钥。 */
     public static final DnsRecordType IPSECKEY = new DnsRecordType(0x002d, "IPSECKEY");
 
-    /**
-     * DNSSEC signature record RFC 4034 Signature for a DNSSEC-secured record
-     * set. Uses the same format as the SIG record.
-     */
+    /** DNSSEC 签名记录（RRSIG，RFC 4034），对 RR 集进行密码学签名。 */
     public static final DnsRecordType RRSIG = new DnsRecordType(0x002e, "RRSIG");
 
-    /**
-     * Next-Secure record RFC 4034 Part of DNSSEC, used to prove a name does not
-     * exist. Uses the same format as the (obsolete) NXT record.
-     */
+    /** 下一安全记录（NSEC，RFC 4034），DNSSEC 中证明名称不存在。 */
     public static final DnsRecordType NSEC = new DnsRecordType(0x002f, "NSEC");
 
-    /**
-     * DNS Key record RFC 4034 The key record used in DNSSEC. Uses the same
-     * format as the KEY record.
-     */
+    /** DNS 密钥记录（DNSKEY，RFC 4034），DNSSEC 区域签名公钥。 */
     public static final DnsRecordType DNSKEY = new DnsRecordType(0x0030, "DNSKEY");
 
-    /**
-     * DHCP identifier record RFC 4701 Used in conjunction with the FQDN option
-     * to DHCP.
-     */
+    /** DHCP 标识记录（DHCID，RFC 4701），与 DHCP FQDN 选项配合使用。 */
     public static final DnsRecordType DHCID = new DnsRecordType(0x0031, "DHCID");
 
-    /**
-     * NSEC record version 3 RFC 5155 An extension to DNSSEC that allows proof
-     * of nonexistence for a name without permitting zonewalking.
-     */
+    /** NSEC 第 3 版记录（NSEC3，RFC 5155），防区域遍历的存在性证明。 */
     public static final DnsRecordType NSEC3 = new DnsRecordType(0x0032, "NSEC3");
 
-    /**
-     * NSEC3 parameters record RFC 5155 Parameter record for use with NSEC3.
-     */
+    /** NSEC3 参数记录（NSEC3PARAM，RFC 5155），配置 NSEC3 哈希参数。 */
     public static final DnsRecordType NSEC3PARAM = new DnsRecordType(0x0033, "NSEC3PARAM");
 
-    /**
-     * TLSA certificate association record RFC 6698 A record for DNS-based
-     * Authentication of Named Entities (DANE). RFC 6698 defines The TLSA DNS
-     * resource record is used to associate a TLS server certificate or public
-     * key with the domain name where the record is found, thus forming a 'TLSA
-     * certificate association'.
-     */
+    /** TLSA 证书关联记录（TLSA，RFC 6698），DANE 中绑定 TLS 证书与域名。 */
     public static final DnsRecordType TLSA = new DnsRecordType(0x0034, "TLSA");
 
-    /**
-     * Host Identity Protocol record RFC 5205 Method of separating the end-point
-     * identifier and locator roles of IP addresses.
-     */
+    /** 主机身份协议记录（HIP，RFC 5205），分离端点标识与定位角色。 */
     public static final DnsRecordType HIP = new DnsRecordType(0x0037, "HIP");
 
-    /**
-     * Sender Policy Framework record RFC 4408 Specified as part of the SPF
-     * protocol as an alternative to of storing SPF data in TXT records. Uses
-     * the same format as the earlier TXT record.
-     */
+    /** SPF 记录（RFC 4408），发件人策略框架，格式同 TXT。 */
     public static final DnsRecordType SPF = new DnsRecordType(0x0063, "SPF");
 
-    /**
-     * Secret key record RFC 2930 A method of providing keying material to be
-     * used with TSIG that is encrypted under the public key in an accompanying
-     * KEY RR..
-     */
+    /** 事务密钥记录（TKEY，RFC 2930），为 TSIG 提供加密密钥材料。 */
     public static final DnsRecordType TKEY = new DnsRecordType(0x00f9, "TKEY");
 
-    /**
-     * Transaction Signature record RFC 2845 Can be used to authenticate dynamic
-     * updates as coming from an approved client, or to authenticate responses
-     * as coming from an approved recursive name server similar to DNSSEC.
-     */
+    /** 事务签名记录（TSIG，RFC 2845），认证动态更新或递归响应来源。 */
     public static final DnsRecordType TSIG = new DnsRecordType(0x00fa, "TSIG");
 
-    /**
-     * Incremental Zone Transfer record RFC 1996 Requests a zone transfer of the
-     * given zone but only differences from a previous serial number. This
-     * request may be ignored and a full (AXFR) sent in response if the
-     * authoritative server is unable to fulfill the request due to
-     * configuration or lack of required deltas.
-     */
+    /** 增量区域传送记录（IXFR，RFC 1996），仅传输自指定序列号以来的变更。 */
     public static final DnsRecordType IXFR = new DnsRecordType(0x00fb, "IXFR");
 
-    /**
-     * Authoritative Zone Transfer record RFC 1035 Transfer entire zone file
-     * from the master name server to secondary name servers.
-     */
+    /** 权威区域传送记录（AXFR，RFC 1035），完整传输区域文件至辅服务器。 */
     public static final DnsRecordType AXFR = new DnsRecordType(0x00fc, "AXFR");
 
-    /**
-     * All cached records RFC 1035 Returns all records of all types known to the
-     * name server. If the name server does not have any information on the
-     * name, the request will be forwarded on. The records returned may not be
-     * complete. For example, if there is both an A and an MX for a name, but
-     * the name server has only the A record cached, only the A record will be
-     * returned. Sometimes referred to as ANY, for example in Windows nslookup
-     * and Wireshark.
-     */
+    /** 任意类型查询（ANY，RFC 1035），请求服务器返回该名称的所有已知记录。 */
     public static final DnsRecordType ANY = new DnsRecordType(0x00ff, "ANY");
 
-    /**
-     * Certification Authority Authorization record RFC 6844 CA pinning,
-     * constraining acceptable CAs for a host/domain.
-     */
+    /** 证书颁发机构授权记录（CAA，RFC 6844），限制可为域签发证书的 CA。 */
     public static final DnsRecordType CAA = new DnsRecordType(0x0101, "CAA");
 
-    /**
-     * DNSSEC Trust Authorities record N/A Part of a deployment proposal for
-     * DNSSEC without a signed DNS root. See the IANA database and Weiler Spec
-     * for details. Uses the same format as the DS record.
-     */
+    /** DNSSEC 信任锚记录（TA），无签名根场景下的信任锚，格式同 DS。 */
     public static final DnsRecordType TA = new DnsRecordType(0x8000, "TA");
 
-    /**
-     * DNSSEC Lookaside Validation record RFC 4431 For publishing DNSSEC trust
-     * anchors outside of the DNS delegation chain. Uses the same format as the
-     * DS record. RFC 5074 describes a way of using these records.
-     */
+    /** DNSSEC 旁路验证记录（DLV，RFC 4431），在委派链外发布信任锚。 */
     public static final DnsRecordType DLV = new DnsRecordType(0x8001, "DLV");
 
-    /**
-     * Service Binding and Parameter Specification via the DNS (SVCB and HTTPS Resource Records).
-     * See <a href="https://www.rfc-editor.org/rfc/rfc9460.html#section-14.1">RFC9460 SVCB RR Type</a>.
-     */
+    /** 服务绑定记录（SVCB，RFC 9460），通过 DNS 描述服务参数与替代端点。 */
     public static final DnsRecordType SVCB = new DnsRecordType(0x0040, "SVCB");
 
-    /**
-     * Service Binding and Parameter Specification via the DNS (SVCB and HTTPS Resource Records).
-     * See <a href="https://www.rfc-editor.org/rfc/rfc9460.html#section-14.2">RFC9460 HTTPS RR Type</a>.
-     */
+    /** HTTPS 服务绑定记录（HTTPS，RFC 9460），SVCB 的 HTTPS 专用类型。 */
     public static final DnsRecordType HTTPS = new DnsRecordType(0x0041, "HTTPS");
 
     private static final Map<String, DnsRecordType> BY_NAME = new HashMap<String, DnsRecordType>();
@@ -374,16 +214,12 @@ public class DnsRecordType implements Comparable<DnsRecordType> {
         this.name = name;
     }
 
-    /**
-     * Returns the name of this type, as seen in bind config files
-     */
+    /** 返回类型名称（与 BIND 配置文件中的写法一致）。 */
     public String name() {
         return name;
     }
 
-    /**
-     * Returns the value of this DnsType as it appears in DNS protocol
-     */
+    /** 返回该类型在 DNS 协议中的 16 位数值。 */
     public int intValue() {
         return intValue;
     }

@@ -20,18 +20,23 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * 基于 TCP 的 DNS 查询解码器（RFC 7766）。
+ * <p>
+ * 先按 2 字节长度字段拆帧，再解析为 {@link DnsQuery}。
+ */
 public final class TcpDnsQueryDecoder extends LengthFieldBasedFrameDecoder {
     private final DnsRecordDecoder decoder;
 
     /**
-     * Creates a new decoder with {@linkplain DnsRecordDecoder#DEFAULT the default record decoder}.
+     * 使用 {@linkplain DnsRecordDecoder#DEFAULT 默认记录解码器} 创建解码器。
      */
     public TcpDnsQueryDecoder() {
         this(DnsRecordDecoder.DEFAULT, 65535);
     }
 
     /**
-     * Creates a new decoder with the specified {@code decoder}.
+     * 使用指定 {@code decoder} 与 {@code maxFrameLength} 创建解码器。
      */
     public TcpDnsQueryDecoder(DnsRecordDecoder decoder, int maxFrameLength) {
         super(maxFrameLength, 0, 2, 0, 2);

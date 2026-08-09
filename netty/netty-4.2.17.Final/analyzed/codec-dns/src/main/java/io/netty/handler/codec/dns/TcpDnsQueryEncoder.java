@@ -20,20 +20,25 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+/**
+ * 基于 TCP 的 DNS 查询编码器（RFC 7766）。
+ * <p>
+ * 在报文前写入 2 字节长度前缀，再编码 {@link DnsQuery} 主体。
+ */
 @ChannelHandler.Sharable
 public final class TcpDnsQueryEncoder extends MessageToByteEncoder<DnsQuery> {
 
     private final DnsQueryEncoder encoder;
 
     /**
-     * Creates a new encoder with {@linkplain DnsRecordEncoder#DEFAULT the default record encoder}.
+     * 使用 {@linkplain DnsRecordEncoder#DEFAULT 默认记录编码器} 创建编码器。
      */
     public TcpDnsQueryEncoder() {
         this(DnsRecordEncoder.DEFAULT);
     }
 
     /**
-     * Creates a new encoder with the specified {@code recordEncoder}.
+     * 使用指定 {@code recordEncoder} 创建编码器。
      */
     public TcpDnsQueryEncoder(DnsRecordEncoder recordEncoder) {
         super(DnsQuery.class);
@@ -42,12 +47,12 @@ public final class TcpDnsQueryEncoder extends MessageToByteEncoder<DnsQuery> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, DnsQuery msg, ByteBuf out) throws Exception {
-        // Length is two octets as defined by RFC-7766
+        // RFC 7766：长度字段为 2 字节
         // See https://tools.ietf.org/html/rfc7766#section-8
         out.writerIndex(out.writerIndex() + 2);
         encoder.encode(msg, out);
 
-        // Now fill in the correct length based on the amount of data that we wrote the ByteBuf.
+        // 回填实际报文长度（不含长度字段本身）
         out.setShort(0, out.readableBytes() - 2);
     }
 

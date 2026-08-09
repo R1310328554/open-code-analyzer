@@ -16,59 +16,55 @@
 package io.netty.handler.codec.dns;
 
 /**
- * A DNS response message.
+ * DNS 响应报文接口，QR 位为 1 表示服务端返回的应答。
+ * <p>
+ * 在 {@link DnsMessage} 基础上扩展 AA/TC/RA 标志与 {@link DnsResponseCode}。
  */
 public interface DnsResponse extends DnsMessage {
 
     /**
-     * Returns {@code true} if responding server is authoritative for the domain
-     * name in the query message.
+     * 响应服务器是否对该域名具有权威（{@code AA} 标志）。
      */
     boolean isAuthoritativeAnswer();
 
     /**
-     * Set to {@code true} if responding server is authoritative for the domain
-     * name in the query message.
+     * 设置权威应答（{@code AA}）标志。
      *
-     * @param authoritativeAnswer flag for authoritative answer
+     * @param authoritativeAnswer 是否为权威应答
      */
     DnsResponse setAuthoritativeAnswer(boolean authoritativeAnswer);
 
     /**
-     * Returns {@code true} if response has been truncated, usually if it is
-     * over 512 bytes.
+     * 响应是否被截断（{@code TC} 标志，UDP 超过 512 字节时常见）。
      */
     boolean isTruncated();
 
     /**
-     * Set to {@code true} if response has been truncated (usually happens for
-     * responses over 512 bytes).
+     * 设置截断（{@code TC}）标志。
      *
-     * @param truncated flag for truncation
+     * @param truncated 是否截断
      */
     DnsResponse setTruncated(boolean truncated);
 
     /**
-     * Returns {@code true} if DNS server can handle recursive queries.
+     * 服务器是否支持递归查询（{@code RA} 标志）。
      */
     boolean isRecursionAvailable();
 
     /**
-     * Set to {@code true} if DNS server can handle recursive queries.
+     * 设置递归可用（{@code RA}）标志。
      *
-     * @param recursionAvailable flag for recursion availability
+     * @param recursionAvailable 是否支持递归
      */
     DnsResponse setRecursionAvailable(boolean recursionAvailable);
 
-    /**
-     * Returns the 4 bit return code.
-     */
+    /** 返回 4 位响应码 {@code RCODE}。 */
     DnsResponseCode code();
 
     /**
-     * Sets the response code for this message.
+     * 设置响应码。
      *
-     * @param code the response code
+     * @param code 响应码
      */
     DnsResponse setCode(DnsResponseCode code);
 

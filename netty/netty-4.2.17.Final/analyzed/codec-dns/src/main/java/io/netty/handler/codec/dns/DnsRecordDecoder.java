@@ -18,27 +18,28 @@ package io.netty.handler.codec.dns;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Decodes a DNS record into its object representation.
+ * 将 DNS 记录从二进制格式解码为 Java 对象。
  *
  * @see DatagramDnsResponseDecoder
  */
 public interface DnsRecordDecoder {
 
+    /** 默认解码器实例。 */
     DnsRecordDecoder DEFAULT = new DefaultDnsRecordDecoder();
 
     /**
-     * Decodes a DNS question into its object representation.
+     * 将 DNS 问题段解码为 {@link DnsQuestion}。
      *
-     * @param in the input buffer which contains a DNS question at its reader index
+     * @param in 读指针处含一条 DNS 问题的输入缓冲区
      */
     DnsQuestion decodeQuestion(ByteBuf in) throws Exception;
 
     /**
-     * Decodes a DNS record into its object representation.
+     * 将 DNS 资源记录解码为 {@link DnsRecord} 子类型。
      *
-     * @param in the input buffer which contains a DNS record at its reader index
+     * @param in 读指针处含一条 DNS 记录的输入缓冲区
      *
-     * @return the decoded record, or {@code null} if there are not enough data in the input buffer
+     * @return 解码后的记录；输入数据不足时返回 {@code null}
      */
     <T extends DnsRecord> T decodeRecord(ByteBuf in) throws Exception;
 }

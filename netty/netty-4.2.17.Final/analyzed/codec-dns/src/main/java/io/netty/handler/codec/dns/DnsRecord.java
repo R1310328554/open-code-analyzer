@@ -16,54 +16,40 @@
 package io.netty.handler.codec.dns;
 
 /**
- * A DNS resource record.
+ * DNS 资源记录（Resource Record）公共接口。
+ * <p>
+ * 每条记录包含域名、类型、类、TTL 等头部字段；RDATA 由具体子类型承载。
  */
 public interface DnsRecord {
 
-    /**
-     * DNS resource record class: {@code IN}
-     */
+    /** DNS 资源记录类：{@code IN}（Internet）。 */
     int CLASS_IN = 0x0001;
 
-    /**
-     * DNS resource record class: {@code CSNET}
-     */
+    /** DNS 资源记录类：{@code CSNET}。 */
     int CLASS_CSNET = 0x0002;
 
-    /**
-     * DNS resource record class: {@code CHAOS}
-     */
+    /** DNS 资源记录类：{@code CHAOS}。 */
     int CLASS_CHAOS = 0x0003;
 
-    /**
-     * DNS resource record class: {@code HESIOD}
-     */
+    /** DNS 资源记录类：{@code HESIOD}。 */
     int CLASS_HESIOD = 0x0004;
 
-    /**
-     * DNS resource record class: {@code NONE}
-     */
+    /** DNS 资源记录类：{@code NONE}。 */
     int CLASS_NONE = 0x00fe;
 
-    /**
-     * DNS resource record class: {@code ANY}
-     */
+    /** DNS 资源记录类：{@code ANY}（任意类）。 */
     int CLASS_ANY = 0x00ff;
 
-    /**
-     * Returns the name of this resource record.
-     */
+    /** 返回该资源记录的域名。 */
     String name();
 
-    /**
-     * Returns the type of this resource record.
-     */
+    /** 返回该资源记录的类型。 */
     DnsRecordType type();
 
     /**
-     * Returns the class of this resource record.
+     * 返回该资源记录的类（Class）。
      *
-     * @return the class value, usually one of the following:
+     * @return 类值，通常为以下常量之一：
      *         <ul>
      *             <li>{@link #CLASS_IN}</li>
      *             <li>{@link #CLASS_CSNET}</li>
@@ -75,8 +61,6 @@ public interface DnsRecord {
      */
     int dnsClass();
 
-    /**
-     * Returns the time to live after reading for this resource record.
-     */
+    /** 返回该资源记录的 TTL（生存时间，秒）。 */
     long timeToLive();
 }

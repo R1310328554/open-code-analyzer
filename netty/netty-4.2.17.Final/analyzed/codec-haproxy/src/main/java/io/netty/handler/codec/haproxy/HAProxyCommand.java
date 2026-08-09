@@ -16,38 +16,34 @@
 package io.netty.handler.codec.haproxy;
 
 /**
- * The command of an HAProxy proxy protocol header
+ * HAProxy 代理协议头部的命令字段。
+ * <p>
+ * 标识连接是代理主动建立（LOCAL）还是代客户端转发（PROXY）。
  */
 public enum HAProxyCommand {
     /**
-     * The LOCAL command represents a connection that was established on purpose by the proxy
-     * without being relayed.
+     * LOCAL：代理自身发起的连接，非代客户端转发。
      */
     LOCAL(HAProxyConstants.COMMAND_LOCAL_BYTE),
     /**
-     * The PROXY command represents a connection that was established on behalf of another node,
-     * and reflects the original connection endpoints.
+     * PROXY：代客户端建立的连接，头部携带原始源/目的地址。
      */
     PROXY(HAProxyConstants.COMMAND_PROXY_BYTE);
 
-    /**
-     * The command is specified in the lowest 4 bits of the protocol version and command byte
-     */
+    /** 命令编码在版本/命令字节的低 4 位。 */
     private static final byte COMMAND_MASK = 0x0f;
 
     private final byte byteValue;
 
-    /**
-     * Creates a new instance
-     */
+    /** 创建枚举常量。 */
     HAProxyCommand(byte byteValue) {
         this.byteValue = byteValue;
     }
 
     /**
-     * Returns the {@link HAProxyCommand} represented by the lowest 4 bits of the specified byte.
+     * 根据字节低 4 位解析 {@link HAProxyCommand}。
      *
-     * @param verCmdByte protocol version and command byte
+     * @param verCmdByte 协议版本与命令合并字节
      */
     public static HAProxyCommand valueOf(byte verCmdByte) {
         int cmd = verCmdByte & COMMAND_MASK;
@@ -61,9 +57,7 @@ public enum HAProxyCommand {
         }
     }
 
-    /**
-     * Returns the byte value of this command.
-     */
+    /** 返回该命令的字节值。 */
     public byte byteValue() {
         return byteValue;
     }

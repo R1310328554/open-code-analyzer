@@ -23,19 +23,24 @@ import io.netty.util.internal.ObjectUtil;
 
 import java.util.List;
 
+/**
+ * 基于 TCP 的 DNS 响应编码器（RFC 7766）。
+ * <p>
+ * 编码 {@link DnsResponse} 并在报文前写入 2 字节长度前缀。
+ */
 @ChannelHandler.Sharable
 public final class TcpDnsResponseEncoder extends MessageToMessageEncoder<DnsResponse> {
     private final DnsRecordEncoder encoder;
 
     /**
-     * Creates a new encoder with {@linkplain DnsRecordEncoder#DEFAULT the default record encoder}.
+     * 使用 {@linkplain DnsRecordEncoder#DEFAULT 默认记录编码器} 创建编码器。
      */
     public TcpDnsResponseEncoder() {
         this(DnsRecordEncoder.DEFAULT);
     }
 
     /**
-     * Creates a new encoder with the specified {@code encoder}.
+     * 使用指定 {@code encoder} 创建编码器。
      */
     public TcpDnsResponseEncoder(DnsRecordEncoder encoder) {
         super(DnsResponse.class);

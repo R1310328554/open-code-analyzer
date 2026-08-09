@@ -16,49 +16,51 @@
 
 package io.netty.handler.codec.haproxy;
 
+/** HAProxy 代理协议内部常量（命令、版本、传输层与地址族等字节值）。 */
 final class HAProxyConstants {
 
-    /**
-     * Command byte constants
-     */
+    /** 命令字节：LOCAL。 */
     static final byte COMMAND_LOCAL_BYTE = 0x00;
+    /** 命令字节：PROXY。 */
     static final byte COMMAND_PROXY_BYTE = 0x01;
 
-    /**
-     * Version byte constants
-     */
+    /** 协议版本字节：v1（文本行格式）。 */
     static final byte VERSION_ONE_BYTE = 0x10;
+    /** 协议版本字节：v2（二进制格式）。 */
     static final byte VERSION_TWO_BYTE = 0x20;
 
-    /**
-     * Transport protocol byte constants
-     */
+    /** 传输协议：未指定。 */
     static final byte TRANSPORT_UNSPEC_BYTE = 0x00;
+    /** 传输协议：流式（TCP 等）。 */
     static final byte TRANSPORT_STREAM_BYTE = 0x01;
+    /** 传输协议：数据报（UDP 等）。 */
     static final byte TRANSPORT_DGRAM_BYTE = 0x02;
 
-    /**
-     * Address family byte constants
-     */
+    /** 地址族：未指定。 */
     static final byte AF_UNSPEC_BYTE = 0x00;
+    /** 地址族：IPv4。 */
     static final byte AF_IPV4_BYTE = 0x10;
+    /** 地址族：IPv6。 */
     static final byte AF_IPV6_BYTE = 0x20;
+    /** 地址族：Unix 域套接字。 */
     static final byte AF_UNIX_BYTE = 0x30;
 
-    /**
-     * Transport protocol and address family byte constants
-     */
+    /** 传输协议与地址族组合：未知。 */
     static final byte TPAF_UNKNOWN_BYTE = 0x00;
+    /** 传输协议与地址族组合：TCP over IPv4。 */
     static final byte TPAF_TCP4_BYTE = 0x11;
+    /** 传输协议与地址族组合：TCP over IPv6。 */
     static final byte TPAF_TCP6_BYTE = 0x21;
+    /** 传输协议与地址族组合：UDP over IPv4。 */
     static final byte TPAF_UDP4_BYTE = 0x12;
+    /** 传输协议与地址族组合：UDP over IPv6。 */
     static final byte TPAF_UDP6_BYTE = 0x22;
+    /** 传输协议与地址族组合：Unix 流式套接字。 */
     static final byte TPAF_UNIX_STREAM_BYTE = 0x31;
+    /** 传输协议与地址族组合：Unix 数据报套接字。 */
     static final byte TPAF_UNIX_DGRAM_BYTE = 0x32;
 
-    /**
-     * V2 protocol binary header prefix
-     */
+    /** v2 二进制协议固定 12 字节魔数前缀。 */
     static final byte[] BINARY_PREFIX = {
             (byte) 0x0D,
             (byte) 0x0A,
@@ -74,6 +76,7 @@ final class HAProxyConstants {
             (byte) 0x0A
     };
 
+    /** v1 文本协议行前缀 "PROXY"。 */
     static final byte[] TEXT_PREFIX = {
             (byte) 'P',
             (byte) 'R',

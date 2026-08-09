@@ -19,7 +19,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 
 /**
- * A generic {@link DnsRecord} that contains an undecoded {@code RDATA}.
+ * 通用 {@link DnsRecord}，RDATA 以未解码的 {@link ByteBuf} 形式保存。
+ * <p>
+ * 同时继承 {@link ByteBufHolder}，支持引用计数与缓冲区复制操作。
  */
 public interface DnsRawRecord extends DnsRecord, ByteBufHolder {
     @Override

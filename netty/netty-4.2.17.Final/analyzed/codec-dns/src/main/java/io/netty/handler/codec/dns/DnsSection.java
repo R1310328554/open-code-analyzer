@@ -16,23 +16,17 @@
 package io.netty.handler.codec.dns;
 
 /**
- * Represents a section of a {@link DnsMessage}.
+ * {@link DnsMessage} 的 section（区段）枚举。
+ * <p>
+ * DNS 报文按 RFC 1035 分为问题、应答、权威、附加四个 section。
  */
 public enum DnsSection {
-    /**
-     * The section that contains {@link DnsQuestion}s.
-     */
+    /** 问题段，包含 {@link DnsQuestion}。 */
     QUESTION,
-    /**
-     * The section that contains the answer {@link DnsRecord}s.
-     */
+    /** 应答段，包含应答 {@link DnsRecord}。 */
     ANSWER,
-    /**
-     * The section that contains the authority {@link DnsRecord}s.
-     */
+    /** 权威段，包含权威服务器 {@link DnsRecord}。 */
     AUTHORITY,
-    /**
-     * The section that contains the additional {@link DnsRecord}s.
-     */
+    /** 附加段，包含额外 {@link DnsRecord}（如 EDNS OPT）。 */
     ADDITIONAL
 }

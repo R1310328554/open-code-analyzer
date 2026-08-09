@@ -18,25 +18,26 @@ package io.netty.handler.codec.dns;
 import io.netty.buffer.ByteBuf;
 
 /**
- * Encodes a {@link DnsRecord} into binary representation.
+ * 将 {@link DnsRecord} 编码为 DNS 二进制格式。
  *
  * @see DatagramDnsQueryEncoder
  */
 public interface DnsRecordEncoder {
 
+    /** 默认编码器实例。 */
     DnsRecordEncoder DEFAULT = new DefaultDnsRecordEncoder();
 
     /**
-     * Encodes a {@link DnsQuestion}.
+     * 编码 {@link DnsQuestion}。
      *
-     * @param out the output buffer where the encoded question will be written to
+     * @param out 写入编码后问题段的输出缓冲区
      */
     void encodeQuestion(DnsQuestion question, ByteBuf out) throws Exception;
 
     /**
-     * Encodes a {@link DnsRecord}.
+     * 编码 {@link DnsRecord}。
      *
-     * @param out the output buffer where the encoded record will be written to
+     * @param out 写入编码后资源记录的输出缓冲区
      */
     void encodeRecord(DnsRecord record, ByteBuf out) throws Exception;
 }

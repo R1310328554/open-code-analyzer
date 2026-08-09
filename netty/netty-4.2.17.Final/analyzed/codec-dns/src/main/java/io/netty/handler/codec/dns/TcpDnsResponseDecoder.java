@@ -21,22 +21,27 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 import java.net.SocketAddress;
 
+/**
+ * 基于 TCP 的 DNS 响应解码器（RFC 7766）。
+ * <p>
+ * 按 2 字节长度拆帧后，委托 {@link DnsResponseDecoder} 解析为 {@link DnsResponse}。
+ */
 public final class TcpDnsResponseDecoder extends LengthFieldBasedFrameDecoder {
 
     private final DnsResponseDecoder<SocketAddress> responseDecoder;
 
     /**
-     * Creates a new decoder with {@linkplain DnsRecordDecoder#DEFAULT the default record decoder}.
+     * 使用 {@linkplain DnsRecordDecoder#DEFAULT 默认记录解码器} 创建解码器。
      */
     public TcpDnsResponseDecoder() {
         this(DnsRecordDecoder.DEFAULT, 64 * 1024);
     }
 
     /**
-     * Creates a new decoder with the specified {@code recordDecoder} and {@code maxFrameLength}
+     * 使用指定 {@code recordDecoder} 与 {@code maxFrameLength} 创建解码器。
      */
     public TcpDnsResponseDecoder(DnsRecordDecoder recordDecoder, int maxFrameLength) {
-        // Length is two octets as defined by RFC-7766
+        // RFC 7766：长度字段为 2 字节
         // See https://tools.ietf.org/html/rfc7766#section-8
         super(maxFrameLength, 0, 2, 0, 2);
 
