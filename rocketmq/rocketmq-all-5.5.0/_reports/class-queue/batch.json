@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T20:20:31Z",
   "files": [
-    "store/src/main/java/org/apache/rocketmq/store/MessageStore.java",
-    "store/src/main/java/org/apache/rocketmq/store/StoreStatsService.java",
-    "store/src/main/java/org/apache/rocketmq/store/config/MessageStoreConfig.java",
-    "store/src/main/java/org/apache/rocketmq/store/dledger/DLedgerCommitLog.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/DefaultHAClient.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/DefaultHAConnection.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/autoswitch/AutoSwitchHAClient.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/autoswitch/AutoSwitchHAConnection.java",
-    "store/src/main/java/org/apache/rocketmq/store/ha/autoswitch/AutoSwitchHAService.java",
-    "store/src/main/java/org/apache/rocketmq/store/index/IndexService.java",
-    "store/src/main/java/org/apache/rocketmq/store/kv/CompactionLog.java",
-    "store/src/main/java/org/apache/rocketmq/store/logfile/DefaultMappedFile.java",
-    "store/src/main/java/org/apache/rocketmq/store/plugin/AbstractPluginMessageStore.java",
-    "store/src/main/java/org/apache/rocketmq/store/queue/BatchConsumeQueue.java",
-    "store/src/main/java/org/apache/rocketmq/store/queue/CombineConsumeQueueStore.java",
     "store/src/main/java/org/apache/rocketmq/store/queue/ConsumeQueueStore.java",
     "store/src/main/java/org/apache/rocketmq/store/queue/RocksDBConsumeQueue.java",
     "store/src/main/java/org/apache/rocketmq/store/queue/RocksDBConsumeQueueOffsetTable.java",
@@ -33,5 +18,5 @@
     "tieredstore/src/main/java/org/apache/rocketmq/tieredstore/index/IndexStoreFile.java"
   ],
   "remaining_pending": 4,
-  "done": 1454
+  "done": 1469
 }
