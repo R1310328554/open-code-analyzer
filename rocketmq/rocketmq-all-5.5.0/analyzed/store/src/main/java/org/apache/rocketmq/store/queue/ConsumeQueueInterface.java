@@ -25,185 +25,140 @@ import org.apache.rocketmq.store.DispatchRequest;
 import org.apache.rocketmq.store.MessageFilter;
 import org.rocksdb.RocksDBException;
 
+/**
+ * 消费队列接口：定义索引遍历、偏移查询与 dispatch 写入契约。
+ */
 public interface ConsumeQueueInterface extends FileQueueLifeCycle {
-    /**
-     * Get the topic name
-     * @return the topic this cq belongs to.
-     */
+    /** 返回本消费队列所属主题名。 */
     String getTopic();
 
-    /**
-     * Get queue id
-     * @return the queue id this cq belongs to.
-     */
+    /** 返回本消费队列的 queueId。 */
     int getQueueId();
 
     /**
-     * Get the units from the start offset.
+     * 从指定逻辑索引起迭代 CqUnit。
      *
-     * @param startIndex start index
-     * @return the unit iterateFrom
+     * @param startIndex 起始索引
+     * @return CqUnit 迭代器
      */
     ReferredIterator<CqUnit> iterateFrom(long startIndex);
 
     /**
-     * Get the units from the start offset.
+     * 从指定索引起迭代至多 count 条 CqUnit。
      *
-     * @param startIndex start index
-     * @param count the unit counts will be iterated
-     * @return the unit iterateFrom
-     * @throws RocksDBException only in rocksdb mode
+     * @param startIndex 起始索引
+     * @param count 最多迭代条数
+     * @return CqUnit 迭代器
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     ReferredIterator<CqUnit> iterateFrom(long startIndex, int count) throws RocksDBException;
 
-    /**
-     * Get cq unit at specified index
-     * @param index index
-     * @return the cq unit at index
-     */
+    /** 按逻辑索引读取单条 CqUnit。 */
     CqUnit get(long index);
 
-    /**
-     * Get earliest cq unit
-     * @return the cq unit and message storeTime at index
-     */
+    /** 返回指定索引处的 CqUnit 及对应存储时间。 */
     Pair<CqUnit, Long> getCqUnitAndStoreTime(long index);
 
-    /**
-     * Get earliest cq unit
-     * @return earliest cq unit and message storeTime
-     */
+    /** 返回最早 CqUnit 及其存储时间。 */
     Pair<CqUnit, Long> getEarliestUnitAndStoreTime();
 
-    /**
-     * Get earliest cq unit
-     * @return earliest cq unit
-     */
+    /** 返回最早 CqUnit。 */
     CqUnit getEarliestUnit();
 
-    /**
-     * Get last cq unit
-     * @return last cq unit
-     */
+    /** 返回最新 CqUnit。 */
     CqUnit getLatestUnit();
 
-    /**
-     * Get last commit log offset
-     * @return last commit log offset
-     */
+    /** 返回最后一条消息对应的 CommitLog 物理偏移。 */
     long getLastOffset();
 
-    /**
-     * Get min offset(index) in queue
-     * @return the min offset(index) in queue
-     */
+    /** 返回队列最小逻辑偏移（索引）。 */
     long getMinOffsetInQueue();
 
-    /**
-     * Get max offset(index) in queue
-     * @return the max offset(index) in queue
-     */
+    /** 返回队列最大逻辑偏移（索引）。 */
     long getMaxOffsetInQueue();
 
-    /**
-     * Get total message count
-     * @return total message count
-     */
+    /** 返回队列中消息总条数。 */
     long getMessageTotalInQueue();
 
     /**
-     * Get the message whose timestamp is the smallest, greater than or equal to the given time.
-     * @param timestamp timestamp
-     * @return the offset(index)
+     * 查找存储时间 ≥ 给定时间戳的最小消息对应的逻辑偏移。
+     *
+     * @param timestamp 目标时间戳
+     * @return 逻辑偏移（索引）
      */
     long getOffsetInQueueByTime(final long timestamp);
 
     /**
-     * Get the message whose timestamp is the smallest, greater than or equal to the given time and when there are more
-     * than one message satisfy the condition, decide which one to return based on boundaryType.
-     * @param timestamp    timestamp
-     * @param boundaryType Lower or Upper
-     * @return the offset(index)
+     * 按时间戳查找逻辑偏移；多条满足时由 boundaryType 决定取 Lower 或 Upper。
+     *
+     * @param timestamp 目标时间戳
+     * @param boundaryType 边界类型（Lower/Upper）
+     * @return 逻辑偏移（索引）
      */
     long getOffsetInQueueByTime(final long timestamp, final BoundaryType boundaryType);
 
     /**
-     * The max physical offset of commitlog has been dispatched to this queue.
-     * It should be exclusive.
+     * 已 dispatch 到本队列的最大 CommitLog 物理偏移（不含该偏移）。
      *
-     * @return the max physical offset point to commitlog
+     * @return 最大物理偏移
      */
     long getMaxPhysicOffset();
 
     /**
-     * Usually, the cq files are not exactly consistent with the commitlog, there maybe some redundant data in the first
-     * cq file.
+     * 消费队列文件与 CommitLog 可能不完全对齐，首文件或有冗余数据。
      *
-     * @return the minimal effective pos of the cq file.
+     * @return 消费队列文件中最小有效物理位置
      */
     long getMinLogicOffset();
 
-    /**
-     * Get cq type
-     * @return cq type
-     */
+    /** 返回消费队列实现类型。 */
     CQType getCQType();
 
-    /**
-     * Gets the occupied size of CQ file on disk
-     * @return total size
-     */
+    /** 返回消费队列在磁盘上占用的总字节数。 */
     long getTotalSize();
 
-    /**
-     * Get the unit size of this CQ which is different in different CQ impl
-     * @return cq unit size
-     */
+    /** 返回单条 CqUnit 的字节大小（因实现而异）。 */
     int getUnitSize();
 
-    /**
-     * Correct min offset by min commit log offset.
-     * @param minCommitLogOffset min commit log offset
-     */
+    /** 根据 CommitLog 最小物理偏移校正队列最小逻辑偏移。 */
     void correctMinOffset(long minCommitLogOffset);
 
-    /**
-     * Do dispatch.
-     * @param request the request containing dispatch information.
-     */
+    /** 执行 dispatch，将消息位置信息写入消费队列。 */
     void putMessagePositionInfoWrapper(DispatchRequest request);
 
     /**
-     * Assign queue offset.
-     * @param queueOffsetAssigner the delegated queue offset assigner
-     * @param msg message itself
-     * @throws RocksDBException only in rocksdb mode
+     * 为消息分配队列逻辑偏移。
+     *
+     * @param queueOffsetAssigner 偏移分配器
+     * @param msg 待写入消息
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     void assignQueueOffset(QueueOffsetOperator queueOffsetAssigner, MessageExtBrokerInner msg) throws RocksDBException;
 
     /**
-     * Increase queue offset.
-     * @param queueOffsetAssigner the delegated queue offset assigner
-     * @param msg message itself
-     * @param messageNum message number
+     * 按消息条数递增队列逻辑偏移。
+     *
+     * @param queueOffsetAssigner 偏移分配器
+     * @param msg 消息体
+     * @param messageNum 消息条数
      */
     void increaseQueueOffset(QueueOffsetOperator queueOffsetAssigner, MessageExtBrokerInner msg, short messageNum);
 
     /**
-     * Estimate number of records matching given filter.
+     * 估算指定区间内满足过滤条件的消息条数。
      *
-     * @param from Lower boundary, inclusive.
-     * @param to Upper boundary, inclusive.
-     * @param filter Specified filter criteria
-     * @return Number of matching records.
+     * @param from 起始索引（含）
+     * @param to 结束索引（含）
+     * @param filter 消息过滤器
+     * @return 匹配条数
      */
     long estimateMessageCount(long from, long to, MessageFilter filter);
 
     /**
-     * Initialize cq and set max offset and min offset to given offset
+     * 初始化消费队列，将最大/最小逻辑偏移设为给定值。
      *
-     * @param offset       set max and min offset to given offset
-     * @param minPhyOffset min physical offset, used to correct min offset
+     * @param offset 初始逻辑偏移
+     * @param minPhyOffset 最小物理偏移，用于校正 min offset
      */
     void initializeWithOffset(long offset, long minPhyOffset);
 }

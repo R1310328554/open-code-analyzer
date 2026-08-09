@@ -21,16 +21,22 @@ import org.rocksdb.RocksDBException;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * RocksDB 偏移初始化器：从 RocksDBConsumeQueueStore 查询 LMQ 最大偏移。
+ */
 public class OffsetInitializerRocksDBImpl implements OffsetInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OffsetInitializerRocksDBImpl.class);
 
+    /** 底层 RocksDB 消费队列存储。 */
     private final RocksDBConsumeQueueStore consumeQueueStore;
 
+    /** 绑定 RocksDB 消费队列存储实例。 */
     public OffsetInitializerRocksDBImpl(RocksDBConsumeQueueStore consumeQueueStore) {
         this.consumeQueueStore = consumeQueueStore;
     }
 
+    /** 从 RocksDB 查询 LMQ 最大逻辑偏移并记录日志。 */
     @Override
     public long maxConsumeQueueOffset(String topic, int queueId) throws ConsumeQueueException {
         try {

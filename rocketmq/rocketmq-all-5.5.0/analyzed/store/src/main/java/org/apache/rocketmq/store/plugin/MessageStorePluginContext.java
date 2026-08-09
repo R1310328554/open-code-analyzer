@@ -24,11 +24,19 @@ import org.apache.rocketmq.store.MessageArrivingListener;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.apache.rocketmq.store.stats.BrokerStatsManager;
 
+/**
+ * 消息存储插件上下文：向插件注入 Store 配置、统计、监听与 Broker 配置。
+ */
 public class MessageStorePluginContext {
+    /** 消息存储配置。 */
     private MessageStoreConfig messageStoreConfig;
+    /** Broker 统计管理器。 */
     private BrokerStatsManager brokerStatsManager;
+    /** 消息到达监听器。 */
     private MessageArrivingListener messageArrivingListener;
+    /** Broker 运行时配置。 */
     private BrokerConfig brokerConfig;
+    /** 远程配置中心句柄。 */
     private final Configuration configuration;
 
     public MessageStorePluginContext(MessageStoreConfig messageStoreConfig,
@@ -42,22 +50,27 @@ public class MessageStorePluginContext {
         this.configuration = configuration;
     }
 
+    /** 返回消息存储配置。 */
     public MessageStoreConfig getMessageStoreConfig() {
         return messageStoreConfig;
     }
 
+    /** 返回 Broker 统计管理器。 */
     public BrokerStatsManager getBrokerStatsManager() {
         return brokerStatsManager;
     }
 
+    /** 返回消息到达监听器。 */
     public MessageArrivingListener getMessageArrivingListener() {
         return messageArrivingListener;
     }
 
+    /** 返回 Broker 配置。 */
     public BrokerConfig getBrokerConfig() {
         return brokerConfig;
     }
 
+    /** 将远程配置属性注入对象并注册到配置中心。 */
     public void registerConfiguration(Object config) {
         MixAll.properties2Object(configuration.getAllConfigs(), config);
         configuration.registerConfig(config);

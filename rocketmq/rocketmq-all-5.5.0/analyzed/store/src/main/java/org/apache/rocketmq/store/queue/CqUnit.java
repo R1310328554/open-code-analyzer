@@ -21,21 +21,32 @@ import org.apache.rocketmq.store.ConsumeQueueExt;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 消费队列单元：映射逻辑偏移到 CommitLog 物理位置与标签码。
+ */
 public class CqUnit {
+    /** 队列逻辑偏移。 */
     private final long queueOffset;
+    /** CommitLog 中消息体字节长度。 */
     private final int size;
+    /** 消息在 CommitLog 中的物理偏移。 */
     private final long pos;
+    /** 批次内消息条数。 */
     private final short batchNum;
     /**
-     * Be careful, the tagsCode is reused as an address for extent file. To prevent accident mistake, we follow the
-     * rules: 1. If the cqExtUnit is not null, make tagsCode == cqExtUnit.getTagsCode() 2. If the cqExtUnit is null, and
-     * the tagsCode is smaller than 0, it is an invalid tagsCode, which means failed to get cqExtUnit by address
+     * 注意：tagsCode 同时用作扩展文件地址。规则：1) cqExtUnit 非空时 tagsCode 须与其一致；
+     * 2) cqExtUnit 为空且 tagsCode &lt; 0 表示无效地址、扩展单元读取失败。
      */
+    /** 标签哈希码或扩展文件地址。 */
     private long tagsCode;
+    /** 关联的扩展单元（大 tags 等场景）。 */
     private ConsumeQueueExt.CqExtUnit cqExtUnit;
+    /** 指向底层映射缓冲区的引用（用于就地修正）。 */
     private final ByteBuffer nativeBuffer;
+    /** 压缩偏移在 nativeBuffer 中的位置。 */
     private final int compactedOffset;
 
+    /** 构造单条消息的 CqUnit（batchNum 默认为 1）。 */
     public CqUnit(long queueOffset, long pos, int size, long tagsCode) {
         this(queueOffset, pos, size, tagsCode, (short) 1, 0, null);
     }
@@ -63,6 +74,7 @@ public class CqUnit {
         return tagsCode;
     }
 
+    /** 返回有效 tagsCode；扩展地址或无效值时返回 null。 */
     public Long getValidTagsCodeAsLong() {
         if (!isTagsCodeValid()) {
             return null;
@@ -70,6 +82,7 @@ public class CqUnit {
         return tagsCode;
     }
 
+    /** 判断 tagsCode 是否为有效标签码（非扩展地址）。 */
     public boolean isTagsCodeValid() {
         return !ConsumeQueueExt.isExtAddr(tagsCode);
     }
@@ -94,6 +107,7 @@ public class CqUnit {
         return batchNum;
     }
 
+    /** 在 nativeBuffer 中修正压缩偏移字段。 */
     public void correctCompactOffset(int correctedOffset) {
         this.nativeBuffer.putInt(correctedOffset);
     }
@@ -102,6 +116,7 @@ public class CqUnit {
         return compactedOffset;
     }
 
+    /** 返回包含各字段的可读字符串。 */
     @Override
     public String toString() {
         return "CqUnit{" +

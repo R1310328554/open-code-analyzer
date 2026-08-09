@@ -22,17 +22,25 @@ import javax.annotation.Nonnull;
 import org.apache.rocketmq.store.DispatchRequest;
 
 /**
- * Use Record when Java 16 is available
+ * Dispatch 条目：扁平化存储 dispatch 请求的关键字段（Java 16 后可改用 Record）。
  */
 public class DispatchEntry {
+    /** 主题名 UTF-8 字节数组。 */
     public byte[] topic;
+    /** 队列 ID。 */
     public int queueId;
+    /** 队列逻辑偏移。 */
     public long queueOffset;
+    /** CommitLog 物理偏移。 */
     public long commitLogOffset;
+    /** 消息体字节长度。 */
     public int messageSize;
+    /** 标签哈希码。 */
     public long tagCode;
+    /** 消息存储时间戳。 */
     public long storeTimestamp;
 
+    /** 从 {@link DispatchRequest} 构建 DispatchEntry。 */
     public static DispatchEntry from(@Nonnull DispatchRequest request) {
         DispatchEntry entry = new DispatchEntry();
         entry.topic = request.getTopic().getBytes(StandardCharsets.UTF_8);

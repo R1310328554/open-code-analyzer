@@ -19,68 +19,52 @@ package org.apache.rocketmq.store.queue;
 import org.apache.rocketmq.store.Swappable;
 
 /**
- * FileQueueLifeCycle contains life cycle methods of ConsumerQueue that is directly implemented by FILE.
+ * 文件型消费队列生命周期接口：定义加载、恢复、刷盘与销毁等操作。
  */
 public interface FileQueueLifeCycle extends Swappable {
-    /**
-     * Load from file.
-     * @return true if loaded successfully.
-     */
+    /** 从磁盘加载队列文件，成功返回 true。 */
     boolean load();
 
-    /**
-     * Recover from file.
-     */
+    /** 从文件恢复队列索引与偏移。 */
     void recover();
 
-    /**
-     * Check files.
-     */
+    /** 自检队列文件完整性。 */
     void checkSelf();
 
     /**
-     * Flush cache to file.
-     * @param flushLeastPages  the minimum number of pages to be flushed
-     * @return true if any data has been flushed.
+     * 将缓存刷入文件。
+     *
+     * @param flushLeastPages 至少刷盘的页数
+     * @return 是否有数据被刷盘
      */
     boolean flush(int flushLeastPages);
 
-    /**
-     * Destroy files.
-     */
+    /** 销毁队列文件并释放资源。 */
     void destroy();
 
-    /**
-     * Truncate dirty logic files starting at max commit log position.
-     * @param maxCommitLogPos max commit log position
-     */
+    /** 从 maxCommitLogPos 起截断脏逻辑文件。 */
     void truncateDirtyLogicFiles(long maxCommitLogPos);
 
     /**
-     * Delete expired files ending at min commit log position.
-     * @param minCommitLogPos min commit log position
-     * @return deleted file numbers.
+     * 删除 minCommitLogPos 之前的过期文件。
+     *
+     * @param minCommitLogPos CommitLog 最小物理位置
+     * @return 删除的文件数
      */
     int deleteExpiredFile(long minCommitLogPos);
 
     /**
-     * Roll to next file.
-     * @param nextBeginOffset next begin offset
-     * @return the beginning offset of the next file
+     * 滚动到下一个队列文件。
+     *
+     * @param nextBeginOffset 下一文件起始逻辑偏移
+     * @return 下一文件的起始偏移
      */
     long rollNextFile(final long nextBeginOffset);
 
-    /**
-     * Is the first file available?
-     * @return true if it's available
-     */
+    /** 首个队列文件是否可用。 */
     boolean isFirstFileAvailable();
 
-    /**
-     * Does the first file exist?
-     *
-     * @return true if it exists
-     */
+    /** 首个队列文件是否存在。 */
     boolean isFirstFileExist();
 
     boolean shutdown();

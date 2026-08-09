@@ -22,19 +22,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * 批量 Pop 确认消息：在 {@link AckMsg} 基础上携带多条 ack 偏移列表。
+ */
 public class BatchAckMsg extends AckMsg {
+    /** 批量 ack 的队列偏移列表。 */
     @JSONField(name = "aol", alternateNames = {"ackOffsetList"})
     private List<Long> ackOffsetList = new ArrayList(32);
 
 
+    /** 返回 ack 偏移列表。 */
     public List<Long> getAckOffsetList() {
         return ackOffsetList;
     }
 
+    /** 设置 ack 偏移列表。 */
     public void setAckOffsetList(List<Long> ackOffsetList) {
         this.ackOffsetList = ackOffsetList;
     }
 
+    /** 返回包含批量 ack 字段的可读字符串。 */
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("BatchAckMsg{");

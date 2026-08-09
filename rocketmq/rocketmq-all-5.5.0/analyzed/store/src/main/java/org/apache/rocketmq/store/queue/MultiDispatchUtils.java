@@ -25,8 +25,12 @@ import org.apache.rocketmq.common.topic.TopicValidator;
 import org.apache.rocketmq.store.DispatchRequest;
 import org.apache.rocketmq.store.config.MessageStoreConfig;
 
+/**
+ * 多路 dispatch 工具：判断 LMQ/多队列场景下是否需要额外 dispatch。
+ */
 public class MultiDispatchUtils {
 
+    /** 构造 LMQ 队列键：queueName-0。 */
     public static String lmqQueueKey(String queueName) {
         StringBuilder keyBuilder = new StringBuilder();
         keyBuilder.append(queueName);
@@ -36,6 +40,7 @@ public class MultiDispatchUtils {
         return keyBuilder.toString();
     }
 
+    /** 判断是否需处理多路 dispatch（排除重试/系统/定时主题）。 */
     public static boolean isNeedHandleMultiDispatch(MessageStoreConfig messageStoreConfig, String topic) {
         return messageStoreConfig.isEnableMultiDispatch()
             && !topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)
@@ -43,12 +48,13 @@ public class MultiDispatchUtils {
             && !topic.equals(TopicValidator.RMQ_SYS_SCHEDULE_TOPIC);
     }
 
+    /** 检查 dispatch 请求是否携带多队列属性且需写入文件型 CQ。 */
     public static boolean checkMultiDispatchQueue(MessageStoreConfig messageStoreConfig, DispatchRequest dispatchRequest) {
         if (!isNeedHandleMultiDispatch(messageStoreConfig, dispatchRequest.getTopic())) {
             return false;
         }
         if (messageStoreConfig.isRocksdbCQDoubleWriteEnable() && messageStoreConfig.isCombineCQUseRocksdbForLmq()) {
-            return false; // no need to dispatch file CQ here
+            return false; // 此处无需 dispatch 文件型 CQ
         }
         Map<String, String> prop = dispatchRequest.getPropertiesMap();
         if (prop == null || prop.isEmpty()) {

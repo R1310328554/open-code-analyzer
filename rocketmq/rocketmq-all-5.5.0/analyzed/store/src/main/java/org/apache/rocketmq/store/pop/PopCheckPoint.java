@@ -21,30 +21,46 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Pop 消费检查点：跟踪 invisible 窗口、位图 ack 状态及 revive 偏移。
+ */
 public class PopCheckPoint implements Comparable<PopCheckPoint> {
+    /** 检查点覆盖的起始队列偏移。 */
     @JSONField(name = "so")
     private long startOffset;
+    /** Pop 操作时间戳。 */
     @JSONField(name = "pt")
     private long popTime;
+    /** 消息不可见时长（毫秒）。 */
     @JSONField(name = "it")
     private long invisibleTime;
+    /** 位图：标记各偏移是否已 ack。 */
     @JSONField(name = "bm")
     private int bitMap;
+    /** 本检查点覆盖的消息条数。 */
     @JSONField(name = "n")
     private byte num;
+    /** 队列 ID。 */
     @JSONField(name = "q")
     private int queueId;
+    /** 主题名。 */
     @JSONField(name = "t")
     private String topic;
+    /** 消费者标识（consumer id）。 */
     private String cid;
+    /** Revive 队列中的偏移位置。 */
     @JSONField(name = "ro")
     private long reviveOffset;
+    /** 新版检查点：相对 startOffset 的偏移差值列表。 */
     @JSONField(name = "d")
     private List<Integer> queueOffsetDiff;
+    /** Broker 名称。 */
     @JSONField(name = "bn")
     String brokerName;
+    /** 检查点重新投递次数。 */
     @JSONField(name = "rp")
     String rePutTimes; // ck rePut times
+    /** 是否挂起（nack 时不增加重试次数，默认 false）。 */
     @JSONField(name = "sp")
     private boolean suspend; // nack without inc reconsume times, false default.
 
@@ -80,6 +96,7 @@ public class PopCheckPoint implements Comparable<PopCheckPoint> {
         return invisibleTime;
     }
 
+    /** 返回 revive 触发时间（popTime + invisibleTime）。 */
     public long getReviveTime() {
         return popTime + invisibleTime;
     }
@@ -158,6 +175,7 @@ public class PopCheckPoint implements Comparable<PopCheckPoint> {
         this.suspend = suspend;
     }
 
+    /** 追加一条相对 startOffset 的偏移差值。 */
     public void addDiff(int diff) {
         if (this.queueOffsetDiff == null) {
             this.queueOffsetDiff = new ArrayList<>(8);
@@ -165,12 +183,13 @@ public class PopCheckPoint implements Comparable<PopCheckPoint> {
         this.queueOffsetDiff.add(diff);
     }
 
+    /** 根据 ack 偏移查找在位图/差值列表中的索引，未找到返回 -1。 */
     public int indexOfAck(long ackOffset) {
         if (ackOffset < startOffset) {
             return -1;
         }
 
-        // old version of checkpoint
+        // 旧版检查点：按连续偏移计算索引
         if (queueOffsetDiff == null || queueOffsetDiff.isEmpty()) {
 
             if (ackOffset - startOffset < num) {
@@ -180,10 +199,11 @@ public class PopCheckPoint implements Comparable<PopCheckPoint> {
             return -1;
         }
 
-        // new version of checkpoint
+        // 新版检查点：在 queueOffsetDiff 中查找
         return queueOffsetDiff.indexOf((int) (ackOffset - startOffset));
     }
 
+    /** 根据索引反查对应的 ack 队列偏移。 */
     public long ackOffsetByIndex(byte index) {
         // old version of checkpoint
         if (queueOffsetDiff == null || queueOffsetDiff.isEmpty()) {
@@ -193,6 +213,7 @@ public class PopCheckPoint implements Comparable<PopCheckPoint> {
         return startOffset + queueOffsetDiff.get(index);
     }
 
+    /** 解析 rePutTimes 字符串为整数，失败时返回 Byte.MAX_VALUE。 */
     public int parseRePutTimes() {
         if (null == rePutTimes) {
             return 0;
@@ -210,6 +231,7 @@ public class PopCheckPoint implements Comparable<PopCheckPoint> {
             + ", reviveOffset=" + reviveOffset + ", diff=" + queueOffsetDiff + ", brokerName=" + brokerName + ", rePutTimes=" + rePutTimes + ", suspend=" + suspend + "]";
     }
 
+    /** 按 startOffset 升序比较两个检查点。 */
     @Override
     public int compareTo(PopCheckPoint o) {
         return (int) (this.getStartOffset() - o.getStartOffset());

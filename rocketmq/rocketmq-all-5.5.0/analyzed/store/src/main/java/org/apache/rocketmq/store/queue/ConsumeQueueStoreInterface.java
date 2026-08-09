@@ -25,180 +25,160 @@ import org.apache.rocketmq.store.exception.ConsumeQueueException;
 import org.apache.rocketmq.store.exception.StoreException;
 import org.rocksdb.RocksDBException;
 
+/**
+ * 消费队列存储接口：管理全部 topic-queue 的生命周期与 dispatch。
+ */
 public interface ConsumeQueueStoreInterface extends CommitLogDispatchStore {
 
-    /**
-     * Load from file.
-     *
-     * @return true if loaded successfully.
-     */
+    /** 从磁盘加载消费队列数据，成功返回 true。 */
     boolean load();
 
     /**
-     * Recover from file.
-     * @param concurrently whether to recover concurrently
+     * 从文件恢复消费队列索引。
+     *
+     * @param concurrently 是否并发恢复
      */
     void recover(boolean concurrently) throws RocksDBException;
 
-    /**
-     * Start the consumeQueueStore
-     */
+    /** 启动消费队列存储服务。 */
     void start();
 
-    /**
-     * Shutdown the consumeQueueStore
-     * @return true if shutdown successfully.
-     */
+    /** 关闭消费队列存储，成功返回 true。 */
     boolean shutdown();
 
     /**
-     * destroy all consumeQueues
-     * @param loadAfterDestroy reload store after destroy, only used in RocksDB mode
+     * 销毁全部消费队列。
+     *
+     * @param loadAfterDestroy 销毁后是否重新加载（仅 RocksDB 模式）
      */
     void destroy(boolean loadAfterDestroy);
 
-    /**
-     * delete topic
-     */
+    /** 删除指定主题的全部消费队列。 */
     boolean deleteTopic(String topic);
 
     /**
-     * Flush all nested consume queues to disk
+     * 将全部消费队列刷盘。
      *
-     * @throws StoreException if there is an error during flush
+     * @throws StoreException 刷盘失败时抛出
      */
     void flush() throws StoreException;
 
-    /**
-     * clean expired data from minCommitLogOffset
-     * @param minCommitLogOffset Minimum commit log offset
-     */
+    /** 从 minCommitLogOffset 起清理过期消费队列数据。 */
     void cleanExpired(long minCommitLogOffset);
 
-    /**
-     * Check files.
-     */
+    /** 自检消费队列文件完整性。 */
     void checkSelf();
 
     /**
-     * truncate dirty data
-     * @param offsetToTruncate
-     * @throws RocksDBException only in rocksdb mode
+     * 截断脏数据。
+     *
+     * @param offsetToTruncate 截断边界偏移
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     void truncateDirty(long offsetToTruncate) throws RocksDBException;
 
     /**
-     * Apply the dispatched request. This function should be idempotent.
+     * 应用 dispatch 请求（幂等）。
      *
-     * @param request dispatch request
-     * @throws RocksDBException only in rocksdb mode will throw exception
+     * @param request dispatch 请求
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     void putMessagePositionInfoWrapper(DispatchRequest request) throws RocksDBException;
 
-    /**
-     * get consumeQueue table
-     * @return the consumeQueue table
-     */
+    /** 返回 topic → queueId → 消费队列 的映射表。 */
     ConcurrentMap<String, ConcurrentMap<Integer, ConsumeQueueInterface>> getConsumeQueueTable();
 
     /**
-     * Assign queue offset.
-     * @param msg message itself
-     * @throws RocksDBException only in rocksdb mode
+     * 为消息分配队列逻辑偏移。
+     *
+     * @param msg 消息体
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     void assignQueueOffset(MessageExtBrokerInner msg) throws RocksDBException;
 
-    /**
-     * Increase queue offset.
-     * @param msg message itself
-     * @param messageNum message number
-     */
+    /** 按 messageNum 递增队列逻辑偏移。 */
     void increaseQueueOffset(MessageExtBrokerInner msg, short messageNum);
 
     /**
-     * Increase lmq offset
-     * @param topic Topic/Queue name
-     * @param queueId Queue ID
-     * @param delta amount to increase
+     * 递增 LMQ 逻辑偏移。
+     *
+     * @param topic 主题或 LMQ 名
+     * @param queueId 队列 ID
+     * @param delta 递增量
      */
     void increaseLmqOffset(String topic, int queueId, short delta) throws ConsumeQueueException;
 
     /**
-     * get lmq queue offset
-     * @param topic
-     * @param queueId
-     * @return
+     * 查询 LMQ 当前逻辑偏移。
+     *
+     * @param topic 主题名
+     * @param queueId 队列 ID
+     * @return 当前偏移
      */
     long getLmqQueueOffset(String topic, int queueId) throws ConsumeQueueException;
 
-    /**
-     * recover topicQueue table by minPhyOffset
-     * @param minPhyOffset
-     */
+    /** 根据 minPhyOffset 恢复 topicQueue 偏移表。 */
     void recoverOffsetTable(long minPhyOffset);
 
     /**
-     * get maxOffset of specific topic-queueId in topicQueue table
+     * 查询 topic-queue 在偏移表中的最大逻辑偏移。
      *
-     * @param topic Topic name
-     * @param queueId Queue identifier
-     * @return the max offset in QueueOffsetOperator
-     * @throws ConsumeQueueException if there is an error while retrieving max consume queue offset
+     * @param topic 主题名
+     * @param queueId 队列 ID
+     * @return QueueOffsetOperator 中的最大偏移
+     * @throws ConsumeQueueException 查询失败时抛出
      */
     Long getMaxOffset(String topic, int queueId) throws ConsumeQueueException;
 
     /**
-     * get min logic offset of specific topic-queueId in consumeQueue
-     * @param topic
-     * @param queueId
-     * @return the min logic offset of specific topic-queueId in consumeQueue
-     * @throws RocksDBException only in rocksdb mode
+     * 查询指定 topic-queue 的最小逻辑偏移。
+     *
+     * @param topic 主题名
+     * @param queueId 队列 ID
+     * @return 最小逻辑偏移
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     long getMinOffsetInQueue(final String topic, final int queueId) throws RocksDBException;
 
     /**
-     * Get the message whose timestamp is the smallest, greater than or equal to the given time and when there are more
-     * than one message satisfy the condition, decide which one to return based on boundaryType.
-     * @param timestamp    timestamp
-     * @param boundaryType Lower or Upper
-     * @return the offset(index)
-     * @throws RocksDBException only in rocksdb mode
+     * 按时间戳在指定 topic-queue 中查找逻辑偏移。
+     *
+     * @param timestamp 目标时间戳
+     * @param boundaryType 边界类型
+     * @return 逻辑偏移
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     long getOffsetInQueueByTime(String topic, int queueId, long timestamp, BoundaryType boundaryType) throws RocksDBException;
 
     /**
-     * find or create the consumeQueue
-     * @param topic
-     * @param queueId
-     * @return the consumeQueue
+     * 查找或创建消费队列。
+     *
+     * @param topic 主题名
+     * @param queueId 队列 ID
+     * @return 消费队列实例
      */
     ConsumeQueueInterface findOrCreateConsumeQueue(String topic, int queueId);
 
     /**
-     * only find consumeQueue
+     * 仅查找消费队列，不存在时不创建。
      *
-     * @param topic
-     * @param queueId
-     * @return the consumeQueue
+     * @param topic 主题名
+     * @param queueId 队列 ID
+     * @return 消费队列实例或 null
      */
     ConsumeQueueInterface getConsumeQueue(String topic, int queueId);
 
-    /**
-     * get the total size of all consumeQueue
-     * @return the total size of all consumeQueue
-     */
+    /** 返回全部消费队列占用的磁盘总字节数。 */
     long getTotalSize();
 
-    /**
-     * get lmq consume queue count
-     * @return the count of lmq
-     */
+    /** 返回 LMQ 消费队列数量。 */
     int getLmqNum();
 
     /**
-     * Check if the LMQ exists, this is different from getConsumeQueue()
-     * @param lmqTopic
-     * @return exist or not
+     * 判断 LMQ 是否存在（语义不同于 getConsumeQueue）。
+     *
+     * @param lmqTopic LMQ 主题名
+     * @return 是否存在
      */
     boolean isLmqExist(String lmqTopic);
 

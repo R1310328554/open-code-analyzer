@@ -19,14 +19,23 @@ package org.apache.rocketmq.store.queue;
 
 import org.apache.rocketmq.store.logfile.MappedFile;
 
+/**
+ * 批量消息偏移索引：映射 CommitLog 物理位置与批次大小。
+ */
 public class BatchOffsetIndex {
 
+    /** 索引条目所在的映射文件。 */
     private final MappedFile mappedFile;
+    /** 索引在映射文件内的字节偏移。 */
     private final int indexPos;
+    /** 消息在 CommitLog 中的物理偏移。 */
     private final long msgOffset;
+    /** 本批次包含的消息条数。 */
     private final short batchSize;
+    /** 消息存储时间戳。 */
     private final long storeTimestamp;
 
+    /** 构造批量偏移索引条目。 */
     public BatchOffsetIndex(MappedFile file, int pos, long msgOffset, short size, long storeTimestamp) {
         mappedFile = file;
         indexPos = pos;
@@ -35,22 +44,27 @@ public class BatchOffsetIndex {
         this.storeTimestamp = storeTimestamp;
     }
 
+    /** 返回映射文件。 */
     public MappedFile getMappedFile() {
         return mappedFile;
     }
 
+    /** 返回索引在文件内的位置。 */
     public int getIndexPos() {
         return indexPos;
     }
 
+    /** 返回 CommitLog 物理偏移。 */
     public long getMsgOffset() {
         return msgOffset;
     }
 
+    /** 返回批次大小。 */
     public short getBatchSize() {
         return batchSize;
     }
 
+    /** 返回存储时间戳。 */
     public long getStoreTimestamp() {
         return storeTimestamp;
     }

@@ -28,14 +28,22 @@ import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.apache.rocketmq.store.exception.ConsumeQueueException;
 import org.rocksdb.RocksDBException;
 
+/**
+ * 消费队列存储抽象基类：维护 topic-queue 表与队列偏移操作器。
+ */
 public abstract class AbstractConsumeQueueStore implements ConsumeQueueStoreInterface {
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    /** 所属 DefaultMessageStore 实例。 */
     protected final DefaultMessageStore messageStore;
+    /** 消息存储配置。 */
     protected final MessageStoreConfig messageStoreConfig;
+    /** 队列逻辑偏移操作器。 */
     protected final QueueOffsetOperator queueOffsetOperator = new QueueOffsetOperator();
+    /** topic → queueId → 消费队列 的二级映射表。 */
     protected final ConcurrentMap<String/* topic */, ConcurrentMap<Integer/* queueId */, ConsumeQueueInterface>> consumeQueueTable;
 
+    /** 绑定 MessageStore，LMQ 模式下预分配更大哈希表。 */
     public AbstractConsumeQueueStore(DefaultMessageStore messageStore) {
         this.messageStore = messageStore;
         this.messageStoreConfig = messageStore.getMessageStoreConfig();
@@ -46,10 +54,12 @@ public abstract class AbstractConsumeQueueStore implements ConsumeQueueStoreInte
         }
     }
 
+    /** 将 dispatch 请求写入指定消费队列。 */
     public void putMessagePositionInfoWrapper(ConsumeQueueInterface consumeQueue, DispatchRequest request) {
         consumeQueue.putMessagePositionInfoWrapper(request);
     }
 
+    /** 从偏移表查询 topic-queue 的当前最大逻辑偏移。 */
     @Override
     public Long getMaxOffset(String topic, int queueId) throws ConsumeQueueException {
         return this.queueOffsetOperator.currentQueueOffset(topic + "-" + queueId);
@@ -60,12 +70,14 @@ public abstract class AbstractConsumeQueueStore implements ConsumeQueueStoreInte
         this.queueOffsetOperator.setLmqTopicQueueTable(topicQueueTable);
     }
 
+    /** 为消息分配队列逻辑偏移（find-or-create 消费队列）。 */
     @Override
     public void assignQueueOffset(MessageExtBrokerInner msg) throws RocksDBException {
         ConsumeQueueInterface consumeQueue = findOrCreateConsumeQueue(msg.getTopic(), msg.getQueueId());
         consumeQueue.assignQueueOffset(this.queueOffsetOperator, msg);
     }
 
+    /** 按消息条数递增队列逻辑偏移。 */
     @Override
     public void increaseQueueOffset(MessageExtBrokerInner msg, short messageNum) {
         ConsumeQueueInterface consumeQueue = findOrCreateConsumeQueue(msg.getTopic(), msg.getQueueId());
@@ -91,6 +103,7 @@ public abstract class AbstractConsumeQueueStore implements ConsumeQueueStoreInte
         return this.consumeQueueTable;
     }
 
+    /** 根据 CqUnit 物理位置从 CommitLog 提取存储时间戳。 */
     public long getStoreTime(CqUnit cqUnit) {
         if (cqUnit != null) {
             try {
@@ -105,21 +118,22 @@ public abstract class AbstractConsumeQueueStore implements ConsumeQueueStoreInte
     }
 
     /**
-     * get max physic offset in consumeQueue
+     * 获取消费队列中已 dispatch 的最大物理偏移。
      *
-     * @return the max physic offset in consumeQueue
-     * @throws RocksDBException only in rocksdb mode
+     * @return 消费队列最大物理偏移
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     public abstract long getMaxPhyOffsetInConsumeQueue() throws RocksDBException;
 
     /**
-     * destroy the specific consumeQueue
+     * 销毁指定消费队列并释放资源。
      *
-     * @param consumeQueue consumeQueue to be destroyed
-     * @throws RocksDBException only in rocksdb mode
+     * @param consumeQueue 待销毁的消费队列
+     * @throws RocksDBException 仅 RocksDB 模式可能抛出
      */
     protected abstract void destroy(ConsumeQueueInterface consumeQueue) throws RocksDBException;
 
+    /** 删除主题下全部消费队列并清理偏移表项。 */
     @Override
     public boolean deleteTopic(String topic) {
         ConcurrentMap<Integer, ConsumeQueueInterface> queueTable = this.consumeQueueTable.get(topic);
@@ -138,7 +152,7 @@ public abstract class AbstractConsumeQueueStore implements ConsumeQueueStoreInte
             removeTopicQueueTable(cq.getTopic(), cq.getQueueId());
         }
 
-        // remove topic from cq table
+        // 从消费队列表移除该 topic
         this.consumeQueueTable.remove(topic);
         return true;
     }

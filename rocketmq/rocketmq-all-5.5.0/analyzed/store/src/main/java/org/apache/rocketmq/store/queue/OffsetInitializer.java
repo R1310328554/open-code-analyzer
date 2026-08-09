@@ -18,6 +18,10 @@ package org.apache.rocketmq.store.queue;
 
 import org.apache.rocketmq.store.exception.ConsumeQueueException;
 
+/**
+ * 偏移初始化器：在缓存未命中时从持久层加载 LMQ 最大偏移。
+ */
 public interface OffsetInitializer {
+    /** 查询 topic-queue 的最大消费队列逻辑偏移。 */
     long maxConsumeQueueOffset(String topic, int queueId) throws ConsumeQueueException;
 }

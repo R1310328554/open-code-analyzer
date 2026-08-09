@@ -18,29 +18,40 @@ package org.apache.rocketmq.store.pop;
 
 import com.alibaba.fastjson2.annotation.JSONField;
 
+/**
+ * Pop 消费确认消息：记录 ack 偏移、主题、队列及 pop 时间等元数据。
+ */
 public class AckMsg {
 
+    /** 已确认的队列逻辑偏移。 */
     @JSONField(name = "ao", alternateNames = {"ackOffset"})
     private long ackOffset;
 
+    /** 本次 pop 批次的起始偏移。 */
     @JSONField(name = "so", alternateNames = {"startOffset"})
     private long startOffset;
 
+    /** 消费者组名。 */
     @JSONField(name = "c", alternateNames = {"consumerGroup"})
     private String consumerGroup;
 
+    /** 主题名。 */
     @JSONField(name = "t", alternateNames = {"topic"})
     private String topic;
 
+    /** 队列 ID。 */
     @JSONField(name = "q", alternateNames = {"queueId"})
     private int queueId;
 
+    /** Pop 操作发生的时间戳。 */
     @JSONField(name = "pt", alternateNames = {"popTime"})
     private long popTime;
 
+    /** 处理 pop 的 Broker 名称。 */
     @JSONField(name = "bn", alternateNames = {"brokerName"})
     private String brokerName;
 
+    /** 返回 pop 时间戳。 */
     public long getPopTime() {
         return popTime;
     }
@@ -65,10 +76,12 @@ public class AckMsg {
         return topic;
     }
 
+    /** 返回 ack 偏移。 */
     public long getAckOffset() {
         return ackOffset;
     }
 
+    /** 返回消费者组名。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
@@ -81,6 +94,7 @@ public class AckMsg {
         this.ackOffset = ackOffset;
     }
 
+    /** 返回起始偏移。 */
     public long getStartOffset() {
         return startOffset;
     }
@@ -89,6 +103,7 @@ public class AckMsg {
         this.startOffset = startOffset;
     }
 
+    /** 返回 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
@@ -97,6 +112,7 @@ public class AckMsg {
         this.brokerName = brokerName;
     }
 
+    /** 返回包含各字段的可读字符串。 */
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AckMsg{");
