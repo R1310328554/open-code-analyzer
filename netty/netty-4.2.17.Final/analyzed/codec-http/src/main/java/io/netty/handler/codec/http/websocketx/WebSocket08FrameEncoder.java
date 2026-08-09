@@ -64,10 +64,8 @@ import java.nio.ByteOrder;
 import java.util.List;
 
 /**
- * <p>
- * Encodes a web socket frame into wire protocol version 8 format. This code was forked from <a
- * href="https://github.com/joewalnes/webbit">webbit</a> and modified.
- * </p>
+ * WebSocket 协议版本 8（HyBi-10）帧编码器，将 {@link WebSocketFrame} 写回线格式。
+ * <p>实现源自 <a href="https://github.com/joewalnes/webbit">webbit</a> 并做了 Netty 适配。
  */
 public class WebSocket08FrameEncoder extends MessageToMessageEncoder<WebSocketFrame> implements WebSocketFrameEncoder {
 
@@ -81,17 +79,15 @@ public class WebSocket08FrameEncoder extends MessageToMessageEncoder<WebSocketFr
     private static final byte OPCODE_PONG = 0xA;
 
     /**
-     * The size threshold for gathering writes. Non-Masked messages bigger than this size will be sent fragmented as
-     * a header and a content ByteBuf whereas messages smaller than the size will be merged into a single buffer and
-     * sent at once.<br>
-     * Masked messages will always be sent at once.
+     * 聚集写阈值：未掩码且超过此大小的消息拆成 header + content 两次写；
+     * 小于阈值则合并为单 buffer。掩码帧始终一次写出。
      */
     private static final int GATHERING_WRITE_THRESHOLD = 1024;
 
     private final WebSocketFrameMaskGenerator maskGenerator;
 
     /**
-     * Constructor
+     * 构造编码器。
      *
      * @param maskPayload
      *            Web socket clients must set this to true to mask payload. Server implementations must set this to
@@ -102,7 +98,7 @@ public class WebSocket08FrameEncoder extends MessageToMessageEncoder<WebSocketFr
     }
 
     /**
-     * Constructor
+     * 使用自定义掩码生成器构造编码器。
      *
      * @param maskGenerator
      *            Web socket clients must set this to {@code non null} to mask payload.
@@ -167,12 +163,12 @@ public class WebSocket08FrameEncoder extends MessageToMessageEncoder<WebSocketFr
                 buf.writeLong(length);
             }
 
-            // Write payload
+            // 写入载荷（按需掩码）
             if (maskGenerator != null) {
                 int mask = maskGenerator.nextMask();
                 buf.writeInt(mask);
 
-                // If the mask is 0 we can skip all the XOR operations.
+                // 掩码为 0 时可跳过全部 XOR
                 if (mask != 0) {
                     if (length > 0) {
                         ByteOrder srcOrder = data.order();
@@ -182,13 +178,12 @@ public class WebSocket08FrameEncoder extends MessageToMessageEncoder<WebSocketFr
                         int end = data.writerIndex();
 
                         if (srcOrder == dstOrder) {
-                            // Use the optimized path only when byte orders match.
+                            // 字节序一致时使用批量 XOR 优化路径
                             // Avoid sign extension on widening primitive conversion
                             long longMask = mask & 0xFFFFFFFFL;
                             longMask |= longMask << 32;
 
-                            // If the byte order of our buffers it little endian we have to bring our mask
-                            // into the same format, because getInt() and writeInt() will use a reversed byte order
+                            // 小端序时需反转掩码以匹配 getInt/writeInt 的字节序
                             if (srcOrder == ByteOrder.LITTLE_ENDIAN) {
                                 longMask = Long.reverseBytes(longMask);
                             }
@@ -223,6 +218,7 @@ public class WebSocket08FrameEncoder extends MessageToMessageEncoder<WebSocketFr
         }
     }
 
+    /** 根据帧类型返回 opcode 字节。 */
     private static byte getOpCode(WebSocketFrame msg) {
         if (msg instanceof TextWebSocketFrame) {
             return OPCODE_TEXT;
@@ -245,10 +241,11 @@ public class WebSocket08FrameEncoder extends MessageToMessageEncoder<WebSocketFr
         throw new UnsupportedOperationException("Cannot encode frame of type: " + msg.getClass().getName());
     }
 
+    /** 将 header 与 data 合并或分两次写出，小载荷合并更省开销。 */
     private static void addBuffers(ByteBuf buf, ByteBuf data, List<Object> out) {
         int readableBytes = data.readableBytes();
         if (buf.writableBytes() >= readableBytes) {
-            // merge buffers as this is cheaper then a gathering write if the payload is small enough
+            // 载荷较小，合并到同一 buffer
             buf.writeBytes(data);
             out.add(buf);
         } else {

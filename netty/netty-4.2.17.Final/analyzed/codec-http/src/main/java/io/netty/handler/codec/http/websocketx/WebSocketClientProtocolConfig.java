@@ -26,7 +26,7 @@ import static io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConf
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
- * WebSocket server configuration.
+ * WebSocket 客户端协议配置（不可变），通过 {@link Builder} 构建。
  */
 public final class WebSocketClientProtocolConfig {
 
@@ -90,66 +90,82 @@ public final class WebSocketClientProtocolConfig {
         this.withUTF8Validator = withUTF8Validator;
     }
 
+    /** 返回 WebSocket 连接 URI。 */
     public URI webSocketUri() {
         return webSocketUri;
     }
 
+    /** 返回请求的 subprotocol。 */
     public String subprotocol() {
         return subprotocol;
     }
 
+    /** 返回 WebSocket 协议版本。 */
     public WebSocketVersion version() {
         return version;
     }
 
+    /** 是否允许使用帧 RSV 扩展位。 */
     public boolean allowExtensions() {
         return allowExtensions;
     }
 
+    /** 返回握手请求的自定义 HTTP 头。 */
     public HttpHeaders customHeaders() {
         return customHeaders;
     }
 
+    /** 返回帧载荷最大长度。 */
     public int maxFramePayloadLength() {
         return maxFramePayloadLength;
     }
 
+    /** 出站帧是否掩码（客户端应为 true）。 */
     public boolean performMasking() {
         return performMasking;
     }
 
+    /** 是否容忍掩码不符合规范的入站帧。 */
     public boolean allowMaskMismatch() {
         return allowMaskMismatch;
     }
 
+    /** 是否在 handler 内自动处理 Close 帧（不向上游转发）。 */
     public boolean handleCloseFrames() {
         return handleCloseFrames;
     }
 
+    /** 未手动发送时自动发出的 Close 帧状态；{@code null} 表示禁用。 */
     public WebSocketCloseStatus sendCloseFrame() {
         return sendCloseFrame;
     }
 
+    /** 是否丢弃 Pong 帧（不向上游转发）。 */
     public boolean dropPongFrames() {
         return dropPongFrames;
     }
 
+    /** 握手超时（毫秒）。 */
     public long handshakeTimeoutMillis() {
         return handshakeTimeoutMillis;
     }
 
+    /** 关闭握手后强制断开连接的超时（毫秒）。 */
     public long forceCloseTimeoutMillis() {
         return forceCloseTimeoutMillis;
     }
 
+    /** Upgrade 请求是否使用绝对 URL（经 HTTP 代理时常用）。 */
     public boolean absoluteUpgradeUrl() {
         return absoluteUpgradeUrl;
     }
 
+    /** 是否自动生成 Origin / Sec-WebSocket-Origin 头。 */
     public boolean generateOriginHeader() {
         return generateOriginHeader;
     }
 
+    /** 是否对文本帧载荷做 UTF-8 校验。 */
     public boolean withUTF8Validator() {
         return withUTF8Validator;
     }
@@ -175,10 +191,12 @@ public final class WebSocketClientProtocolConfig {
                "}";
     }
 
+    /** 基于当前配置创建 {@link Builder} 副本。 */
     public Builder toBuilder() {
         return new Builder(this);
     }
 
+    /** 创建带默认值的 {@link Builder}。 */
     public static Builder newBuilder() {
         return new Builder(
                 URI.create("https://localhost/"),
@@ -199,6 +217,7 @@ public final class WebSocketClientProtocolConfig {
                 DEFAULT_WITH_UTF8_VALIDATOR);
     }
 
+    /** 客户端协议配置的流式构建器。 */
     public static final class Builder {
         private URI webSocketUri;
         private String subprotocol;
@@ -271,150 +290,119 @@ public final class WebSocketClientProtocolConfig {
         }
 
         /**
-         * URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
-         * sent to this URL.
+         * WebSocket 连接 URI，例如 {@code ws://myhost.com/mypath}。
          */
         public Builder webSocketUri(String webSocketUri) {
             return webSocketUri(URI.create(webSocketUri));
         }
 
         /**
-         * URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
-         * sent to this URL.
+         * WebSocket 连接 URI。
          */
         public Builder webSocketUri(URI webSocketUri) {
             this.webSocketUri = webSocketUri;
             return this;
         }
 
-        /**
-         * Sub protocol request sent to the server.
-         */
+        /** 请求的 subprotocol。 */
         public Builder subprotocol(String subprotocol) {
             this.subprotocol = subprotocol;
             return this;
         }
 
-        /**
-         * Version of web socket specification to use to connect to the server
-         */
+        /** WebSocket 协议版本。 */
         public Builder version(WebSocketVersion version) {
             this.version = version;
             return this;
         }
 
-        /**
-         * Allow extensions to be used in the reserved bits of the web socket frame
-         */
+        /** 是否允许帧 RSV 扩展位。 */
         public Builder allowExtensions(boolean allowExtensions) {
             this.allowExtensions = allowExtensions;
             return this;
         }
 
-        /**
-         * Map of custom headers to add to the client request
-         */
+        /** 握手请求的自定义 HTTP 头。 */
         public Builder customHeaders(HttpHeaders customHeaders) {
             this.customHeaders = customHeaders;
             return this;
         }
 
-        /**
-         * Maximum length of a frame's payload
-         */
+        /** 帧载荷最大长度。 */
         public Builder maxFramePayloadLength(int maxFramePayloadLength) {
             this.maxFramePayloadLength = maxFramePayloadLength;
             return this;
         }
 
         /**
-         * Whether to mask all written websocket frames. This must be set to true in order to be fully compatible
-         * with the websocket specifications. Client applications that communicate with a non-standard server
-         * which doesn't require masking might set this to false to achieve a higher performance.
+         * 出站帧是否掩码；符合规范时客户端必须为 true，
+         * 与非标准服务端通信时可设为 false 以提升性能。
          */
         public Builder performMasking(boolean performMasking) {
             this.performMasking = performMasking;
             return this;
         }
 
-        /**
-         * When set to true, frames which are not masked properly according to the standard will still be accepted.
-         */
+        /** 是否接受掩码不符合 RFC 的入站帧。 */
         public Builder allowMaskMismatch(boolean allowMaskMismatch) {
             this.allowMaskMismatch = allowMaskMismatch;
             return this;
         }
 
-        /**
-         * {@code true} if close frames should not be forwarded and just close the channel
-         */
+        /** {@code true} 时在 handler 内处理 Close 帧并关闭连接，不向上游转发。 */
         public Builder handleCloseFrames(boolean handleCloseFrames) {
             this.handleCloseFrames = handleCloseFrames;
             return this;
         }
 
-        /**
-         * Close frame to send, when close frame was not send manually. Or {@code null} to disable proper close.
-         */
+        /** 未手动关闭时自动发送的 Close 帧；{@code null} 禁用。 */
         public Builder sendCloseFrame(WebSocketCloseStatus sendCloseFrame) {
             this.sendCloseFrame = sendCloseFrame;
             return this;
         }
 
-        /**
-         * {@code true} if pong frames should not be forwarded
-         */
+        /** {@code true} 时不向上游转发 Pong 帧。 */
         public Builder dropPongFrames(boolean dropPongFrames) {
             this.dropPongFrames = dropPongFrames;
             return this;
         }
 
         /**
-         * Handshake timeout in mills, when handshake timeout, will trigger user
-         * event {@link ClientHandshakeStateEvent#HANDSHAKE_TIMEOUT}
+         * 握手超时（毫秒）；超时触发 {@link ClientHandshakeStateEvent#HANDSHAKE_TIMEOUT}。
          */
         public Builder handshakeTimeoutMillis(long handshakeTimeoutMillis) {
             this.handshakeTimeoutMillis = handshakeTimeoutMillis;
             return this;
         }
 
-        /**
-         * Close the connection if it was not closed by the server after timeout specified
-         */
+        /** 关闭握手后若服务端未断开，强制关闭连接的超时（毫秒）。 */
         public Builder forceCloseTimeoutMillis(long forceCloseTimeoutMillis) {
             this.forceCloseTimeoutMillis = forceCloseTimeoutMillis;
             return this;
         }
 
-        /**
-         * Use an absolute url for the Upgrade request, typically when connecting through an HTTP proxy over clear HTTP
-         */
+        /** Upgrade 请求使用绝对 URL（经 HTTP 代理连接时常用）。 */
         public Builder absoluteUpgradeUrl(boolean absoluteUpgradeUrl) {
             this.absoluteUpgradeUrl = absoluteUpgradeUrl;
             return this;
         }
 
         /**
-         * Allows to generate the `Origin`|`Sec-WebSocket-Origin` header value for handshake request
-         * according the given webSocketURI. Usually it's not necessary and can be disabled,
-         * but for backward compatibility is set to {@code true} as default.
+         * 是否根据 webSocketURI 自动生成 {@code Origin} / {@code Sec-WebSocket-Origin} 头；
+         * 默认 {@code true} 以保持向后兼容。
          */
         public Builder generateOriginHeader(boolean generateOriginHeader) {
             this.generateOriginHeader = generateOriginHeader;
             return this;
         }
 
-        /**
-         * Toggles UTF8 validation for payload of text websocket frames. By default validation is enabled.
-         */
+        /** 是否对文本 WebSocket 帧载荷启用 UTF-8 校验（默认开启）。 */
         public Builder withUTF8Validator(boolean withUTF8Validator) {
             this.withUTF8Validator = withUTF8Validator;
             return this;
         }
 
-        /**
-         * Build unmodifiable client protocol configuration.
-         */
+        /** 构建不可变的 {@link WebSocketClientProtocolConfig}。 */
         public WebSocketClientProtocolConfig build() {
             return new WebSocketClientProtocolConfig(
                 webSocketUri,

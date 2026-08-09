@@ -32,21 +32,16 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * <p>
- * Performs client side opening and closing handshakes for web socket specification version <a
- * href="https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00" >draft-ietf-hybi-thewebsocketprotocol-
- * 00</a>
- * </p>
- * <p>
- * A very large portion of this code was taken from the Netty 3.2 HTTP example.
- * </p>
+ * HyBi-00 草案 WebSocket 客户端握手实现（Opening / Closing Handshake）。
+ * <p>大量逻辑来自 Netty 3.2 HTTP 示例。
  */
 public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
 
+    /** 期望的服务端 challenge 响应（MD5）。 */
     private ByteBuf expectedChallengeResponseBytes;
 
     /**
-     * Creates a new instance with the specified destination WebSocket location and version to initiate.
+     * 创建握手器实例。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -67,7 +62,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
     }
 
     /**
-     * Creates a new instance with the specified destination WebSocket location and version to initiate.
+     * 创建握手器实例（含强制关闭超时）。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -90,7 +85,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
     }
 
     /**
-     * Creates a new instance with the specified destination WebSocket location and version to initiate.
+     * 创建握手器实例（含强制关闭超时）。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -117,7 +112,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
     }
 
     /**
-     * Creates a new instance with the specified destination WebSocket location and version to initiate.
+     * 创建握手器实例（含强制关闭超时）。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -148,8 +143,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
     }
 
     /**
-     * <p>
-     * Sends the opening request to the server:
+     * 向服务端发送 Opening Handshake 请求（HyBi-00 格式）。
      * </p>
      *
      * <pre>
@@ -167,7 +161,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
      */
     @Override
     protected FullHttpRequest newHandshakeRequest() {
-        // Make keys
+        // 生成 Key1/Key2 与 8 字节随机 key3，并计算期望的 MD5 challenge
         int spaces1 = WebSocketUtil.randomNumber(1, 12);
         int spaces2 = WebSocketUtil.randomNumber(1, 12);
 
@@ -206,7 +200,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
 
         URI wsURL = uri();
 
-        // Format request
+        // 组装 HTTP Upgrade 请求
         FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, upgradeUrl(wsURL),
                 Unpooled.wrappedBuffer(key3));
         HttpHeaders headers = request.headers();
@@ -237,15 +231,13 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
             headers.set(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL, expectedSubprotocol);
         }
 
-        // Set Content-Length to workaround some known defect.
-        // See also: https://www.ietf.org/mail-archive/web/hybi/current/msg02149.html
+        // 设置 Content-Length 以规避部分已知服务端缺陷
         headers.set(HttpHeaderNames.CONTENT_LENGTH, key3.length);
         return request;
     }
 
     /**
-     * <p>
-     * Process server response:
+     * 校验服务端 Opening Handshake 响应。
      * </p>
      *
      * <pre>
@@ -287,6 +279,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
         }
     }
 
+    /** 在 key 字符串中随机插入可打印字符。 */
     private static String insertRandomCharacters(String key) {
         int count = WebSocketUtil.randomNumber(1, 12);
 
@@ -310,6 +303,7 @@ public class WebSocketClientHandshaker00 extends WebSocketClientHandshaker {
         return key;
     }
 
+    /** 在 key 中插入指定数量的空格以满足 HyBi-00 格式。 */
     private static String insertSpaces(String key, int spaces) {
         for (int i = 0; i < spaces; i++) {
             int split = WebSocketUtil.randomNumber(1, key.length() - 1);

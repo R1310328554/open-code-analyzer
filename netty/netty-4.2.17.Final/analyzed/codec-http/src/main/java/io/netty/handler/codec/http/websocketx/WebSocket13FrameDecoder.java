@@ -54,12 +54,12 @@
 package io.netty.handler.codec.http.websocketx;
 
 /**
- * Decodes a web socket frame from wire protocol version 13 format. V13 is essentially the same as V8.
+ * RFC 6455（WebSocket 13）帧解码器；帧格式与 V8 相同，继承 {@link WebSocket08FrameDecoder}。
  */
 public class WebSocket13FrameDecoder extends WebSocket08FrameDecoder {
 
     /**
-     * Constructor
+     * 构造解码器。
      *
      * @param expectMaskedFrames
      *            Web socket servers must set this to true processed incoming masked payload. Client implementations
@@ -75,7 +75,7 @@ public class WebSocket13FrameDecoder extends WebSocket08FrameDecoder {
     }
 
     /**
-     * Constructor
+     * 构造解码器，可容忍掩码与预期不一致的帧。
      *
      * @param expectMaskedFrames
      *            Web socket servers must set this to true processed incoming masked payload. Client implementations
@@ -100,7 +100,7 @@ public class WebSocket13FrameDecoder extends WebSocket08FrameDecoder {
     }
 
     /**
-     * Constructor
+     * 以 {@link WebSocketDecoderConfig} 构造解码器。
      *
      * @param decoderConfig
      *            Frames decoder configuration.

@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
- * Base class for web socket client handshake implementations
+ * WebSocket 客户端握手基类，负责发起 Upgrade 请求、校验响应并在 pipeline 中切换编解码器。
  */
 public abstract class WebSocketClientHandshaker {
 
@@ -87,7 +87,7 @@ public abstract class WebSocketClientHandshaker {
     protected final boolean generateOriginHeader;
 
     /**
-     * Base constructor
+     * 基类构造器。
      *
      * @param uri
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -107,7 +107,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Base constructor
+     * 基类构造器。
      *
      * @param uri
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -130,7 +130,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Base constructor
+     * 基类构造器。
      *
      * @param uri
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -157,7 +157,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Base constructor
+     * 基类构造器。
      *
      * @param uri
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -193,29 +193,23 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Returns the URI to the web socket. e.g. "ws://myhost.com/path"
+     * 返回 WebSocket 连接 URI，例如 {@code ws://myhost.com/path}。
      */
     public URI uri() {
         return uri;
     }
 
-    /**
-     * Version of the web socket specification that is being used
-     */
+    /** 使用的 WebSocket 协议版本。 */
     public WebSocketVersion version() {
         return version;
     }
 
-    /**
-     * Returns the max length for any frame's payload
-     */
+    /** 返回帧载荷的最大允许长度。 */
     public int maxFramePayloadLength() {
         return maxFramePayloadLength;
     }
 
-    /**
-     * Flag to indicate if the opening handshake is complete
-     */
+    /** 握手是否已完成。 */
     public boolean isHandshakeComplete() {
         return handshakeComplete;
     }
@@ -224,16 +218,14 @@ public abstract class WebSocketClientHandshaker {
         handshakeComplete = true;
     }
 
-    /**
-     * Returns the CSV of requested subprotocol(s) sent to the server as specified in the constructor
-     */
+    /** 返回构造时请求的 subprotocol CSV 字符串。 */
     public String expectedSubprotocol() {
         return expectedSubprotocol;
     }
 
     /**
-     * Returns the subprotocol response sent by the server. Only available after end of handshake.
-     * Null if no subprotocol was requested or confirmed by the server.
+     * 返回服务端确认的 subprotocol；握手完成前不可用。
+     * 未请求或未确认时为 null。
      */
     public String actualSubprotocol() {
         return actualSubprotocol;
@@ -248,15 +240,14 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Flag to indicate if the closing handshake was initiated because of timeout.
-     * For testing only.
+     * 超时后是否因强制关闭而结束（仅供测试）。
      */
     protected boolean isForceCloseComplete() {
         return forceCloseComplete;
     }
 
     /**
-     * Sets timeout to close the connection if it was not closed by the server.
+     * 设置服务端未主动关闭连接时的强制关闭超时（毫秒）。
      *
      * @param forceCloseTimeoutMillis
      *            Close the connection if it was not closed by the server after timeout specified
@@ -267,7 +258,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Begins the opening handshake
+     * 发起 WebSocket Opening Handshake。
      *
      * @param channel
      *            Channel
@@ -278,7 +269,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Begins the opening handshake
+     * 发起 Opening Handshake 并在发送完成后通知 {@link ChannelPromise}。
      *
      * @param channel
      *            Channel
@@ -343,12 +334,12 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Returns a new {@link FullHttpRequest) which will be used for the handshake.
+     * 构造并返回用于握手的 {@link FullHttpRequest}。
      */
     protected abstract FullHttpRequest newHandshakeRequest();
 
     /**
-     * Validates and finishes the opening handshake initiated by {@link #handshake}}.
+     * 校验响应并完成 Opening Handshake（由 {@link #handshake} 发起）。
      *
      * @param channel
      *            Channel
@@ -358,19 +349,18 @@ public abstract class WebSocketClientHandshaker {
     public final void finishHandshake(Channel channel, FullHttpResponse response) {
         verify(response);
 
-        // Verify the subprotocol that we received from the server.
-        // This must be one of our expected subprotocols - or null/empty if we didn't want to speak a subprotocol
+        // 校验服务端返回的 subprotocol
         String receivedProtocol = response.headers().get(HttpHeaderNames.SEC_WEBSOCKET_PROTOCOL);
         receivedProtocol = receivedProtocol != null ? receivedProtocol.trim() : null;
         String expectedProtocol = expectedSubprotocol != null ? expectedSubprotocol : "";
         boolean protocolValid = false;
 
         if (expectedProtocol.isEmpty() && receivedProtocol == null) {
-            // No subprotocol required and none received
+            // 未请求 subprotocol 且服务端未返回
             protocolValid = true;
             setActualSubprotocol(expectedSubprotocol); // null or "" - we echo what the user requested
         } else if (!expectedProtocol.isEmpty() && receivedProtocol != null && !receivedProtocol.isEmpty()) {
-            // We require a subprotocol and received one -> verify it
+            // 请求了 subprotocol 且服务端有回应，逐项匹配
             for (String protocol : expectedProtocol.split(",")) {
                 if (protocol.trim().equals(receivedProtocol)) {
                     protocolValid = true;
@@ -389,13 +379,13 @@ public abstract class WebSocketClientHandshaker {
         setHandshakeComplete();
 
         final ChannelPipeline p = channel.pipeline();
-        // Remove decompressor from pipeline if its in use
+        // 移除 HTTP 解压器（握手后不再需要）
         HttpContentDecompressor decompressor = p.get(HttpContentDecompressor.class);
         if (decompressor != null) {
             p.remove(decompressor);
         }
 
-        // Remove aggregator if present before
+        // 移除聚合器（若存在）
         HttpObjectAggregator aggregator = p.get(HttpObjectAggregator.class);
         if (aggregator != null) {
             p.remove(aggregator);
@@ -409,14 +399,12 @@ public abstract class WebSocketClientHandshaker {
                         "an HttpRequestEncoder or HttpClientCodec");
             }
             final HttpClientCodec codec =  (HttpClientCodec) ctx.handler();
-            // Remove the encoder part of the codec as the user may start writing frames after this method returns.
+            // 移除 codec 出站部分，用户此后可直接写 WebSocketFrame
             codec.removeOutboundHandler();
 
             p.addAfter(ctx.name(), "ws-decoder", newWebsocketDecoder());
 
-            // Delay the removal of the decoder so the user can setup the pipeline if needed to handle
-            // WebSocketFrame messages.
-            // See https://github.com/netty/netty/issues/4533
+            // 延迟移除 decoder，便于用户先配置 pipeline 处理 WebSocketFrame（netty#4533）
             channel.eventLoop().execute(new Runnable() {
                 @Override
                 public void run() {
@@ -425,15 +413,13 @@ public abstract class WebSocketClientHandshaker {
             });
         } else {
             if (p.get(HttpRequestEncoder.class) != null) {
-                // Remove the encoder part of the codec as the user may start writing frames after this method returns.
+                // 移除 codec 出站部分，用户此后可直接写 WebSocketFrame
                 p.remove(HttpRequestEncoder.class);
             }
             final ChannelHandlerContext context = ctx;
             p.addAfter(context.name(), "ws-decoder", newWebsocketDecoder());
 
-            // Delay the removal of the decoder so the user can setup the pipeline if needed to handle
-            // WebSocketFrame messages.
-            // See https://github.com/netty/netty/issues/4533
+            // 延迟移除 decoder，便于用户先配置 pipeline 处理 WebSocketFrame（netty#4533）
             channel.eventLoop().execute(new Runnable() {
                 @Override
                 public void run() {
@@ -444,7 +430,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Process the opening handshake initiated by {@link #handshake}}.
+     * 处理 Opening Handshake 响应（异步聚合 body）。
      *
      * @param channel
      *            Channel
@@ -458,7 +444,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Process the opening handshake initiated by {@link #handshake}}.
+     * 处理 Opening Handshake 响应并通过 {@link ChannelPromise} 通知结果。
      *
      * @param channel
      *            Channel
@@ -492,8 +478,7 @@ public abstract class WebSocketClientHandshaker {
             String aggregatorCtx = ctx.name();
             // Content-Length and Transfer-Encoding must not be sent in any response with a status code of 1xx or 204.
             if (version == WebSocketVersion.V00) {
-                // Add aggregator and ensure we feed the HttpResponse so it is aggregated. A limit of 8192 should be
-                // more then enough for the websockets handshake payload.
+                // V00 需聚合响应体（握手载荷通常不超过 8192 字节）
                 aggregatorCtx = "httpAggregator";
                 p.addAfter(ctx.name(), aggregatorCtx, new HttpObjectAggregator(8192));
             }
@@ -597,25 +582,24 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Verify the {@link FullHttpResponse} and throws a {@link WebSocketHandshakeException} if something is wrong.
+     * 校验 {@link FullHttpResponse}，失败时抛出 {@link WebSocketHandshakeException}。
      */
     protected abstract void verify(FullHttpResponse response);
 
     /**
-     * Returns the decoder to use after handshake is complete.
+     * 握手完成后使用的帧解码器。
      */
     protected abstract WebSocketFrameDecoder newWebsocketDecoder();
 
     /**
-     * Returns the encoder to use after the handshake is complete.
+     * 握手完成后使用的帧编码器。
      */
     protected abstract WebSocketFrameEncoder newWebSocketEncoder();
 
     /**
-     * Performs the closing handshake.
-     *
-     * When called from within a {@link ChannelHandler} you most likely want to use
-     * {@link #close(ChannelHandlerContext, CloseWebSocketFrame)}.
+     * 执行 Closing Handshake。
+     * <p>在 {@link ChannelHandler} 内调用时，优先使用
+     * {@link #close(ChannelHandlerContext, CloseWebSocketFrame)}。
      *
      * @param channel
      *            Channel
@@ -628,10 +612,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Performs the closing handshake
-     *
-     * When called from within a {@link ChannelHandler} you most likely want to use
-     * {@link #close(ChannelHandlerContext, CloseWebSocketFrame, ChannelPromise)}.
+     * 执行 Closing Handshake 并在完成时通知 {@link ChannelPromise}。
      *
      * @param channel
      *            Channel
@@ -646,7 +627,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Performs the closing handshake
+     * 执行 Closing Handshake（从 {@link ChannelHandlerContext} 调用）。
      *
      * @param ctx
      *            the {@link ChannelHandlerContext} to use.
@@ -659,7 +640,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Performs the closing handshake
+     * 执行 Closing Handshake 并通过 {@link ChannelPromise} 通知结果。
      *
      * @param ctx
      *            the {@link ChannelHandlerContext} to use.
@@ -683,10 +664,7 @@ public abstract class WebSocketClientHandshaker {
         }
 
         promise.addListener(future -> {
-            // If flush operation failed, there is no reason to expect
-            // a server to receive CloseFrame. Thus this should be handled
-            // by the application separately.
-            // Also, close might be called twice from different threads.
+            // flush 失败或并发 close 时不安排强制关闭
             if (future.isSuccess() && channel.isActive() &&
                     FORCE_CLOSE_INIT_UPDATER.compareAndSet(handshaker, 0, 1)) {
                 final Future<?> forceCloseFuture = channel.eventLoop().schedule(new Runnable() {
@@ -705,7 +683,7 @@ public abstract class WebSocketClientHandshaker {
     }
 
     /**
-     * Return the constructed raw path for the give {@link URI}.
+     * 根据 {@link URI} 构造 Upgrade 请求的路径（或绝对 URL）。
      */
     protected String upgradeUrl(URI wsURL) {
         if (absoluteUpgradeUrl) {
@@ -736,8 +714,7 @@ public abstract class WebSocketClientHandshaker {
                     host : NetUtil.toSocketAddressString(host, port);
         }
 
-        // if the port is not standard (80/443) its needed to add the port to the header.
-        // See https://tools.ietf.org/html/rfc6454#section-6.2
+        // 非标准端口需在 Host 头中附带端口号（RFC 6454 §6.2）
         return NetUtil.toSocketAddressString(host, port);
     }
 
@@ -757,7 +734,7 @@ public abstract class WebSocketClientHandshaker {
             defaultPort = WebSocketScheme.WS.port();
         }
 
-        // Convert uri-host to lower case (by RFC 6454, chapter 4 "Origin of a URI")
+        // Origin 的 host 须小写（RFC 6454 §4）
         String host = wsURL.getHost().toLowerCase(Locale.US);
 
         if (port != defaultPort && port != -1) {

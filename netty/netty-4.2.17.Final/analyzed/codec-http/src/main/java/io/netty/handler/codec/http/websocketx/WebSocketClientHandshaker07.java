@@ -32,17 +32,15 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import java.net.URI;
 
 /**
- * <p>
- * Performs client side opening and closing handshakes for web socket specification version <a
- * href="https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-07" >draft-ietf-hybi-thewebsocketprotocol-
- * 10</a>
- * </p>
+ * HyBi-07 草案 WebSocket 客户端握手实现。
  */
 public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(WebSocketClientHandshaker07.class);
+    /** RFC 6455 规定的 GUID，用于计算 Sec-WebSocket-Accept。 */
     public static final String MAGIC_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+    /** 期望的 Sec-WebSocket-Accept 值。 */
     private String expectedChallengeResponseString;
 
     private final boolean allowExtensions;
@@ -50,7 +48,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     private final boolean allowMaskMismatch;
 
     /**
-     * Creates a new instance.
+     * 创建 V07 握手器实例。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -72,7 +70,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     }
 
     /**
-     * Creates a new instance.
+     * 创建 V07 握手器实例。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -103,7 +101,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     }
 
     /**
-     * Creates a new instance.
+     * 创建 V07 握手器实例。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -136,7 +134,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     }
 
     /**
-     * Creates a new instance.
+     * 创建 V07 握手器实例。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -173,7 +171,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     }
 
     /**
-     * Creates a new instance.
+     * 创建 V07 握手器实例。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath". Subsequent web socket frames will be
@@ -216,9 +214,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     }
 
     /**
-     * /**
-     * <p>
-     * Sends the opening request to the server:
+     * 构造并发送 V07 Opening Handshake 请求。
      * </p>
      *
      * <pre>
@@ -237,7 +233,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     protected FullHttpRequest newHandshakeRequest() {
         URI wsURL = uri();
 
-        // Get 16 bit nonce and base 64 encode it
+        // 16 字节随机 nonce，Base64 编码为 Sec-WebSocket-Key
         byte[] nonce = WebSocketUtil.randomBytes(16);
         String key = WebSocketUtil.base64(nonce);
 
@@ -286,8 +282,7 @@ public class WebSocketClientHandshaker07 extends WebSocketClientHandshaker {
     }
 
     /**
-     * <p>
-     * Process server response:
+     * 校验 V07 Opening Handshake 响应。
      * </p>
      *
      * <pre>

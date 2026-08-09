@@ -69,18 +69,25 @@ import java.util.List;
 import static io.netty.buffer.ByteBufUtil.readBytes;
 
 /**
- * Decodes a web socket frame from wire protocol version 8 format. This code was forked from <a
- * href="https://github.com/joewalnes/webbit">webbit</a> and modified.
+ * WebSocket 协议版本 8（HyBi-10）帧解码器，将 {@link ByteBuf} 解析为 {@link WebSocketFrame}。
+ * <p>实现源自 <a href="https://github.com/joewalnes/webbit">webbit</a> 并做了 Netty 适配。
  */
 public class WebSocket08FrameDecoder extends ByteToMessageDecoder
         implements WebSocketFrameDecoder {
 
+    /** 解码状态机各阶段。 */
     enum State {
+        /** 读取首字节（FIN/RSV/opcode）。 */
         READING_FIRST,
+        /** 读取第二字节（MASK/载荷长度低 7 位）。 */
         READING_SECOND,
+        /** 读取扩展载荷长度（126/127）。 */
         READING_SIZE,
+        /** 读取 4 字节掩码键。 */
         MASKING_KEY,
+        /** 读取并解掩码载荷。 */
         PAYLOAD,
+        /** 协议违规后进入，丢弃后续字节。 */
         CORRUPT
     }
 
@@ -107,7 +114,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
     private State state = State.READING_FIRST;
 
     /**
-     * Constructor
+     * 构造解码器。
      *
      * @param expectMaskedFrames
      *            Web socket servers must set this to true processed incoming masked payload. Client implementations
@@ -123,7 +130,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
     }
 
     /**
-     * Constructor
+     * 构造解码器，可容忍掩码与预期不一致的帧。
      *
      * @param expectMaskedFrames
      *            Web socket servers must set this to true processed incoming masked payload. Client implementations
@@ -148,7 +155,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
     }
 
     /**
-     * Constructor
+     * 以 {@link WebSocketDecoderConfig} 构造解码器。
      *
      * @param decoderConfig
      *            Frames decoder configuration.
@@ -159,7 +166,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        // Discard all data received if closing handshake was received before.
+        // 已收到关闭握手后丢弃后续数据
         if (receivedClosingHandshake) {
             in.skipBytes(actualReadableBytes());
             return;
@@ -173,7 +180,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
 
             framePayloadLength = 0;
 
-            // FIN, RSV, OPCODE
+            // FIN、RSV、opcode
             byte b = in.readByte();
             frameFinalFlag = (b & 0x80) != 0;
             frameRsv = (b & 0x70) >> 4;
@@ -188,7 +195,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
             if (!in.isReadable()) {
                 return;
             }
-            // MASK, PAYLOAD LEN 1
+            // MASK 位与载荷长度低 7 位
             b = in.readByte();
             frameMasked = (b & 0x80) != 0;
             framePayloadLen1 = b & 0x7F;
@@ -203,21 +210,21 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
                 return;
             }
 
-            if (frameOpcode > 7) { // control frame (have MSB in opcode set)
+            if (frameOpcode > 7) { // 控制帧（opcode 最高位为 1）
 
-                // control frames MUST NOT be fragmented
+                // 控制帧不得分片
                 if (!frameFinalFlag) {
                     protocolViolation(ctx, in, "fragmented control frame");
                     return;
                 }
 
-                // control frames MUST have payload 125 octets or less
+                // 控制帧载荷不得超过 125 字节
                 if (framePayloadLen1 > 125) {
                     protocolViolation(ctx, in, "control frame with payload length > 125 octets");
                     return;
                 }
 
-                // check for reserved control frame opcodes
+                // 校验保留的控制帧 opcode
                 if (!(frameOpcode == OPCODE_CLOSE || frameOpcode == OPCODE_PING
                       || frameOpcode == OPCODE_PONG)) {
                     protocolViolation(ctx, in, "control frame using reserved opcode " + frameOpcode);
@@ -231,21 +238,21 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
                     protocolViolation(ctx, in, "received close control frame with payload len 1");
                     return;
                 }
-            } else { // data frame
-                // check for reserved data frame opcodes
+            } else { // 数据帧
+                // 校验保留的数据帧 opcode
                 if (!(frameOpcode == OPCODE_CONT || frameOpcode == OPCODE_TEXT
                       || frameOpcode == OPCODE_BINARY)) {
                     protocolViolation(ctx, in, "data frame using reserved opcode " + frameOpcode);
                     return;
                 }
 
-                // check opcode vs message fragmentation state 1/2
+                // 分片状态校验 1/2：首帧不能是 CONT
                 if (fragmentedFramesCount == 0 && frameOpcode == OPCODE_CONT) {
                     protocolViolation(ctx, in, "received continuation data frame outside fragmented message");
                     return;
                 }
 
-                // check opcode vs message fragmentation state 2/2
+                // 分片状态校验 2/2：分片中间帧必须是 CONT
                 if (fragmentedFramesCount != 0 && frameOpcode != OPCODE_CONT) {
                     protocolViolation(ctx, in,
                                       "received non-continuation data frame while inside fragmented message");
@@ -256,7 +263,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
             state = State.READING_SIZE;
         case READING_SIZE:
 
-            // Read frame payload length
+            // 读取帧载荷长度
             if (framePayloadLen1 == 126) {
                 if (in.readableBytes() < 2) {
                     return;
@@ -314,17 +321,15 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
                     payloadBuffer = readBytes(ctx.alloc(), in, toFrameLength(framePayloadLength));
                 }
 
-                // Now we have all the data, the next checkpoint must be the next
-                // frame
+                // 下一帧从 READING_FIRST 重新开始
                 state = State.READING_FIRST;
 
-                // Unmask data if needed
+                // 按需解掩码
                 if (frameMasked & framePayloadLength > 0) {
                     unmask(payloadBuffer);
                 }
 
-                // Processing ping/pong/close frames because they cannot be
-                // fragmented
+                // ping/pong/close 控制帧不可分片，单独处理
                 if (frameOpcode == OPCODE_PING) {
                     out.add(new PingWebSocketFrame(frameFinalFlag, frameRsv, payloadBuffer));
                     payloadBuffer = null;
@@ -343,18 +348,16 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
                     return;
                 }
 
-                // Processing for possible fragmented messages for text and binary
-                // frames
+                // 文本/二进制分片消息的处理
                 if (frameFinalFlag) {
-                    // Final frame of the sequence. Apparently ping frames are
-                    // allowed in the middle of a fragmented message
+                    // 消息最后一帧
                     fragmentedFramesCount = 0;
                 } else {
-                    // Increment counter
+                    // 分片计数递增
                     fragmentedFramesCount++;
                 }
 
-                // Return the frame
+                // 构造对应类型的 WebSocketFrame
                 if (frameOpcode == OPCODE_TEXT) {
                     out.add(new TextWebSocketFrame(frameFinalFlag, frameRsv, payloadBuffer));
                     payloadBuffer = null;
@@ -379,8 +382,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
             }
         case CORRUPT:
             if (in.isReadable()) {
-                // If we don't keep reading Netty will throw an exception saying
-                // we can't return null if no bytes read and state not changed.
+                // 持续读字节以免 ByteToMessageDecoder 在无状态变更时报错
                 in.readByte();
             }
             return;
@@ -389,6 +391,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
         }
     }
 
+    /** 对载荷按 4 字节掩码键做 XOR 解掩码。 */
     private void unmask(ByteBuf frame) {
         int i = frame.readerIndex();
         int end = frame.writerIndex();
@@ -397,7 +400,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
 
         int intMask = mask;
         if (intMask == 0) {
-            // If the mask is 0 we can just return directly as the XOR operations will just produce the same value.
+            // 掩码为 0 时 XOR 无效果，直接返回
             return;
         }
         // Avoid sign extension on widening primitive conversion
@@ -431,12 +434,12 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
         protocolViolation(ctx, in, new CorruptedWebSocketFrameException(status, reason));
     }
 
+    /** 协议违规：进入 CORRUPT 状态并可选发送关闭帧。 */
     private void protocolViolation(ChannelHandlerContext ctx, ByteBuf in, CorruptedWebSocketFrameException ex) {
         state = State.CORRUPT;
         int readableBytes = in.readableBytes();
         if (readableBytes > 0) {
-            // Fix for memory leak, caused by ByteToMessageDecoder#channelRead:
-            // buffer 'cumulation' is released ONLY when no more readable bytes available.
+            // 释放 cumulation 缓冲区，避免内存泄漏（见 ByteToMessageDecoder#channelRead）
             in.skipBytes(readableBytes);
         }
         if (ctx.channel().isActive() && config.closeOnProtocolViolation()) {
@@ -464,7 +467,7 @@ public class WebSocket08FrameDecoder extends ByteToMessageDecoder
         }
     }
 
-    /** */
+    /** 校验 Close 帧体：状态码合法且原因字符串为 UTF-8。 */
     protected void checkCloseFrameBody(
             ChannelHandlerContext ctx, ByteBuf buffer) {
         if (buffer == null || !buffer.isReadable()) {

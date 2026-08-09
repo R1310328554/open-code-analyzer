@@ -22,18 +22,17 @@ import io.netty.handler.stream.ChunkedInput;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * A {@link ChunkedInput} that fetches data chunk by chunk for use with WebSocket chunked transfers.
- * <p>
- * Each chunk from the input data will be wrapped within a {@link ContinuationWebSocketFrame}.
- * At the end of the input data, {@link ContinuationWebSocketFrame} with finalFragment will be written.
- * <p>
+ * 将 {@link ChunkedInput} 适配为 WebSocket 分片传输：每块数据包装为 {@link ContinuationWebSocketFrame}，
+ * 最后一块的 {@code finalFragment} 为 true。
  */
 public final class WebSocketChunkedInput implements ChunkedInput<WebSocketFrame> {
+    /** 底层字节块输入源。 */
     private final ChunkedInput<ByteBuf> input;
+    /** RSV 扩展位（RSV1/RSV2/RSV3）。 */
     private final int rsv;
 
     /**
-     * Creates a new instance using the specified input.
+     * 以指定 {@link ChunkedInput} 创建实例。
      * @param input {@link ChunkedInput} containing data to write
      */
     public WebSocketChunkedInput(ChunkedInput<ByteBuf> input) {
@@ -41,7 +40,7 @@ public final class WebSocketChunkedInput implements ChunkedInput<WebSocketFrame>
     }
 
     /**
-     * Creates a new instance using the specified input.
+     * 创建实例并指定 RSV 扩展位。
      * @param input {@link ChunkedInput} containing data to write
      * @param rsv RSV1, RSV2, RSV3 used for extensions
      *
@@ -53,8 +52,7 @@ public final class WebSocketChunkedInput implements ChunkedInput<WebSocketFrame>
     }
 
     /**
-     * @return {@code true} if and only if there is no data left in the stream
-     * and the stream has reached at its end.
+     * @return 流已结束且无剩余数据时为 {@code true}。
      */
     @Override
     public boolean isEndOfInput() throws Exception {
@@ -62,7 +60,7 @@ public final class WebSocketChunkedInput implements ChunkedInput<WebSocketFrame>
     }
 
     /**
-     * Releases the resources associated with the input.
+     * 释放底层输入源资源。
      */
     @Override
     public void close() throws Exception {
@@ -72,9 +70,8 @@ public final class WebSocketChunkedInput implements ChunkedInput<WebSocketFrame>
     /**
      * @deprecated Use {@link #readChunk(ByteBufAllocator)}.
      *
-     * Fetches a chunked data from the stream. Once this method returns the last chunk
-     * and thus the stream has reached at its end, any subsequent {@link #isEndOfInput()}
-     * call must return {@code true}.
+     * 从流中读取一块数据并包装为 {@link WebSocketFrame}；返回最后一块后，
+     * 后续 {@link #isEndOfInput()} 应返回 {@code true}。
      *
      * @param ctx {@link ChannelHandlerContext} context of channelHandler
      * @return {@link WebSocketFrame} contain chunk of data
@@ -86,9 +83,7 @@ public final class WebSocketChunkedInput implements ChunkedInput<WebSocketFrame>
     }
 
     /**
-     * Fetches a chunked data from the stream. Once this method returns the last chunk
-     * and thus the stream has reached at its end, any subsequent {@link #isEndOfInput()}
-     * call must return {@code true}.
+     * 从流中读取一块数据并包装为 {@link WebSocketFrame}。
      *
      * @param allocator {@link ByteBufAllocator}
      * @return {@link WebSocketFrame} contain chunk of data

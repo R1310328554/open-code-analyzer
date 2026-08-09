@@ -22,18 +22,16 @@ import java.net.URI;
 import static io.netty.handler.codec.http.websocketx.WebSocketVersion.*;
 
 /**
- * Creates a new {@link WebSocketClientHandshaker} of desired protocol version.
+ * 按协议版本创建 {@link WebSocketClientHandshaker} 的工厂类。
  */
 public final class WebSocketClientHandshakerFactory {
 
-    /**
-     * Private constructor so this static class cannot be instanced.
-     */
+    /** 私有构造器，禁止实例化。 */
     private WebSocketClientHandshakerFactory() {
     }
 
     /**
-     * Creates a new handshaker.
+     * 创建握手器（默认 maxFramePayloadLength 65536）。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -54,7 +52,7 @@ public final class WebSocketClientHandshakerFactory {
     }
 
     /**
-     * Creates a new handshaker.
+     * 创建握手器并指定最大帧载荷长度。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -79,7 +77,7 @@ public final class WebSocketClientHandshakerFactory {
     }
 
     /**
-     * Creates a new handshaker.
+     * 创建握手器并指定最大帧载荷长度。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -112,7 +110,7 @@ public final class WebSocketClientHandshakerFactory {
     }
 
     /**
-     * Creates a new handshaker.
+     * 创建握手器并指定最大帧载荷长度。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -166,7 +164,7 @@ public final class WebSocketClientHandshakerFactory {
     }
 
     /**
-     * Creates a new handshaker.
+     * 创建握手器并指定最大帧载荷长度。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".
@@ -224,7 +222,7 @@ public final class WebSocketClientHandshakerFactory {
     }
 
     /**
-     * Creates a new handshaker.
+     * 创建握手器并指定最大帧载荷长度。
      *
      * @param webSocketURL
      *            URL for web socket communications. e.g "ws://myhost.com/mypath".

@@ -54,14 +54,12 @@
 package io.netty.handler.codec.http.websocketx;
 
 /**
- * <p>
- * Encodes a web socket frame into wire protocol version 7 format. V7 is essentially the same as V8.
- * </p>
+ * WebSocket 协议版本 7 的帧编码器；线格式与 V8 相同，继承 {@link WebSocket08FrameEncoder}。
  */
 public class WebSocket07FrameEncoder extends WebSocket08FrameEncoder {
 
     /**
-     * Constructor
+     * 构造编码器。
      *
      * @param maskPayload
      *            Web socket clients must set this to true to mask payload. Server implementations must set this to
@@ -72,7 +70,7 @@ public class WebSocket07FrameEncoder extends WebSocket08FrameEncoder {
     }
 
     /**
-     * Constructor
+     * 使用自定义掩码生成器构造编码器。
      *
      * @param maskGenerator
      *            Web socket clients must set this to {@code non null} to mask payload.

@@ -21,21 +21,24 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.util.ReferenceCounted;
 
 /**
- * Client exception during handshaking process.
+ * WebSocket 客户端握手过程中的异常。
  *
- *  <p><b>IMPORTANT</b>: This exception does not contain any {@link ReferenceCounted} fields
- *  e.g. {@link FullHttpResponse}, so no special treatment is needed.
+ *  <p><b>IMPORTANT</b>: 本异常不包含 {@link ReferenceCounted} 字段（如 {@link FullHttpResponse}），
+ *  无需特殊引用计数处理。
  */
 public final class WebSocketClientHandshakeException extends WebSocketHandshakeException {
 
     private static final long serialVersionUID = 1L;
 
+    /** 校验失败时附带的 HTTP 响应（仅含协议版本、状态码与头，不含 body）。 */
     private final HttpResponse response;
 
+    /** 以消息构造，无附带响应。 */
     public WebSocketClientHandshakeException(String message) {
         this(message, null);
     }
 
+    /** 以消息与可选 HTTP 响应构造。 */
     public WebSocketClientHandshakeException(String message, HttpResponse httpResponse) {
         super(message);
         if (httpResponse != null) {
@@ -47,7 +50,7 @@ public final class WebSocketClientHandshakeException extends WebSocketHandshakeE
     }
 
     /**
-     * Returns a {@link HttpResponse response} if exception occurs during response validation otherwise {@code null}.
+     * 返回校验失败时的 {@link HttpResponse}；非校验阶段异常时返回 {@code null}。
      */
     public HttpResponse response() {
         return response;

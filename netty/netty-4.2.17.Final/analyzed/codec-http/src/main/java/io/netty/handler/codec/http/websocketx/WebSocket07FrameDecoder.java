@@ -54,12 +54,12 @@
 package io.netty.handler.codec.http.websocketx;
 
 /**
- * Decodes a web socket frame from wire protocol version 7 format. V7 is essentially the same as V8.
+ * WebSocket 协议版本 7 的帧解码器；线格式与 V8 基本一致，直接继承 {@link WebSocket08FrameDecoder}。
  */
 public class WebSocket07FrameDecoder extends WebSocket08FrameDecoder {
 
     /**
-     * Constructor
+     * 构造解码器。
      *
      * @param expectMaskedFrames
      *            Web socket servers must set this to true processed incoming masked payload. Client implementations
@@ -79,7 +79,7 @@ public class WebSocket07FrameDecoder extends WebSocket08FrameDecoder {
     }
 
     /**
-     * Constructor
+     * 构造解码器，可容忍掩码与预期不一致的帧。
      *
      * @param expectMaskedFrames
      *            Web socket servers must set this to true processed incoming masked payload. Client implementations
@@ -104,7 +104,7 @@ public class WebSocket07FrameDecoder extends WebSocket08FrameDecoder {
     }
 
     /**
-     * Constructor
+     * 以 {@link WebSocketDecoderConfig} 构造解码器。
      *
      * @param decoderConfig
      *            Frames decoder configuration.
