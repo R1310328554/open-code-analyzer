@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-09T21:03:46Z",
   "files": [
-    "redisson/src/main/java/org/redisson/api/search/query/NumericFilterMax.java",
-    "redisson/src/main/java/org/redisson/api/search/query/NumericFilterParams.java",
-    "redisson/src/main/java/org/redisson/api/search/query/QueryFilter.java",
-    "redisson/src/main/java/org/redisson/api/search/query/QueryOptions.java",
-    "redisson/src/main/java/org/redisson/api/search/query/ReturnAttribute.java",
-    "redisson/src/main/java/org/redisson/api/search/query/SearchResult.java",
-    "redisson/src/main/java/org/redisson/api/search/query/SummarizeOptions.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/Combine.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineLinearParams.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineLinearStep.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineReciprocalRankFusionFinalStep.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineReciprocalRankFusionStep.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineRrfParams.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/HybridQueryArgs.java",
-    "redisson/src/main/java/org/redisson/api/search/query/hybrid/HybridQueryParams.java",
     "redisson/src/main/java/org/redisson/api/search/query/hybrid/HybridSearchResult.java",
     "redisson/src/main/java/org/redisson/api/search/query/hybrid/ParamsStep.java",
     "redisson/src/main/java/org/redisson/api/search/query/hybrid/QueryStep.java",
@@ -33,5 +18,5 @@
     "redisson/src/main/java/org/redisson/api/stream/RefPolicy.java"
   ],
   "remaining_pending": 692,
-  "done": 2100
+  "done": 2115
 }

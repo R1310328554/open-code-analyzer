@@ -2138,3 +2138,18 @@
 2026-08-09T21:03:37Z DONE redisson/src/main/java/org/redisson/api/search/query/GeoFilterRadius.java wave70b [15:30] repair-after-70a-wipe
 2026-08-09T21:03:37Z DONE redisson/src/main/java/org/redisson/api/search/query/HighlightOptions.java wave70b [15:30] repair-after-70a-wipe
 2026-08-09T21:03:37Z DONE redisson/src/main/java/org/redisson/api/search/query/NumericFilter.java wave70b [15:30] repair-after-70a-wipe
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/NumericFilterMax.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/NumericFilterParams.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/QueryFilter.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/QueryOptions.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/ReturnAttribute.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/SearchResult.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/SummarizeOptions.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/Combine.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineLinearParams.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineLinearStep.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineReciprocalRankFusionFinalStep.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineReciprocalRankFusionStep.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/CombineRrfParams.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/HybridQueryArgs.java wave71a [0:15]
+2026-08-09T21:04:47Z DONE redisson/src/main/java/org/redisson/api/search/query/hybrid/HybridQueryParams.java wave71a [0:15]
