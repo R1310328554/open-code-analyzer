@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T22:37:52Z",
-  "files": [
-    "core/src/main/java/com/taobao/arthas/core/shell/system/Process.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/system/ProcessAware.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/system/impl/CommandCompletion.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/system/impl/GlobalJobControllerImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/system/impl/InternalCommandManager.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/system/impl/JobControllerImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/system/impl/JobImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/system/impl/ProcessImpl.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/SignalHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/Term.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/TermServer.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/Tty.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/CompletionAdaptor.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/CompletionHandler.java",
-    "core/src/main/java/com/taobao/arthas/core/shell/term/impl/FunctionInvocationHandler.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 225,
-  "done": 555
+  "done": 570
 }
