@@ -23,22 +23,31 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Broker 成员组：同一 brokerName 下各 brokerId 与地址映射，用于路由与 HA 选举。
+ */
 public class BrokerMemberGroup extends RemotingSerializable {
+    /** 所属集群名。 */
     private String cluster;
+    /** Broker 逻辑名称。 */
     private String brokerName;
+    /** brokerId → 访问地址。 */
     private Map<Long/* brokerId */, String/* broker address */> brokerAddrs;
 
-    // Provide default constructor for serializer
+    // 供 JSON/Remoting 反序列化使用的无参构造
+    /** 默认构造，初始化空地址表。 */
     public BrokerMemberGroup() {
         this.brokerAddrs = new HashMap<>();
     }
 
+    /** 指定集群与 Broker 名构造成员组。 */
     public BrokerMemberGroup(final String cluster, final String brokerName) {
         this.cluster = cluster;
         this.brokerName = brokerName;
         this.brokerAddrs = new HashMap<>();
     }
 
+    /** 返回当前成员中最小 brokerId，空表时返回 0。 */
     public long minimumBrokerId() {
         if (this.brokerAddrs.isEmpty()) {
             return 0;
@@ -46,6 +55,7 @@ public class BrokerMemberGroup extends RemotingSerializable {
         return Collections.min(brokerAddrs.keySet());
     }
 
+    /** 返回集群名。 */
     public String getCluster() {
         return cluster;
     }
@@ -62,6 +72,7 @@ public class BrokerMemberGroup extends RemotingSerializable {
         this.brokerName = brokerName;
     }
 
+    /** 返回 brokerId 地址映射。 */
     public Map<Long, String> getBrokerAddrs() {
         return brokerAddrs;
     }
@@ -70,6 +81,7 @@ public class BrokerMemberGroup extends RemotingSerializable {
         this.brokerAddrs = brokerAddrs;
     }
 
+    /** 按 cluster、brokerName、brokerAddrs 判等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -89,6 +101,7 @@ public class BrokerMemberGroup extends RemotingSerializable {
         return Objects.hashCode(cluster, brokerName, brokerAddrs);
     }
 
+    /** 返回成员组可读字符串。 */
     @Override
     public String toString() {
         return "BrokerMemberGroup{" +

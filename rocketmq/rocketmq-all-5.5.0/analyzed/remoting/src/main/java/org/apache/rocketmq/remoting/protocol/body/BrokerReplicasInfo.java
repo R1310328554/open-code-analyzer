@@ -23,17 +23,24 @@ import java.util.Objects;
 
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * 集群 Broker 副本拓扑：各 brokerName 的 Master/ISR 与滞后副本信息。
+ */
 public class BrokerReplicasInfo extends RemotingSerializable  {
+    /** brokerName → 副本详情。 */
     private Map<String/*brokerName*/, ReplicasInfo> replicasInfoTable;
 
+    /** 默认构造，初始化空副本表。 */
     public BrokerReplicasInfo() {
         this.replicasInfoTable = new HashMap<>();
     }
 
+    /** 注册或覆盖某 Broker 的副本信息。 */
     public void addReplicaInfo(final String brokerName, final ReplicasInfo replicasInfo) {
         this.replicasInfoTable.put(brokerName, replicasInfo);
     }
 
+    /** 返回副本信息表。 */
     public Map<String, ReplicasInfo> getReplicasInfoTable() {
         return replicasInfoTable;
     }
@@ -43,14 +50,21 @@ public class BrokerReplicasInfo extends RemotingSerializable  {
         this.replicasInfoTable = replicasInfoTable;
     }
 
+    /** 单 Broker 副本集：Master 身份、epoch 及同步/非同步副本列表。 */
     public static class ReplicasInfo extends RemotingSerializable {
 
+        /** 当前 Master 的 brokerId。 */
         private Long masterBrokerId;
 
+        /** Master 访问地址。 */
         private String masterAddress;
+        /** Master epoch（Controller  fencing 用）。 */
         private Integer masterEpoch;
+        /** 同步副本集 epoch。 */
         private Integer syncStateSetEpoch;
+        /** 在同步副本集（ISR）内的副本。 */
         private List<ReplicaIdentity> inSyncReplicas;
+        /** 滞后或未入 ISR 的副本。 */
         private List<ReplicaIdentity> notInSyncReplicas;
 
         public ReplicasInfo(Long masterBrokerId, String masterAddress, int masterEpoch, int syncStateSetEpoch,
@@ -113,26 +127,35 @@ public class BrokerReplicasInfo extends RemotingSerializable  {
             return masterBrokerId;
         }
 
+        /** 判断指定副本是否在 ISR 列表中。 */
         public boolean isExistInSync(String brokerName, Long brokerId, String brokerAddress) {
             return this.getInSyncReplicas().contains(new ReplicaIdentity(brokerName, brokerId, brokerAddress));
         }
 
+        /** 判断指定副本是否在非同步列表中。 */
         public boolean isExistInNotSync(String brokerName, Long brokerId, String brokerAddress) {
             return this.getNotInSyncReplicas().contains(new ReplicaIdentity(brokerName, brokerId, brokerAddress));
         }
 
+        /** 判断副本是否存在于 ISR 或非同步列表任一之中。 */
         public boolean isExistInAllReplicas(String brokerName, Long brokerId, String brokerAddress) {
             return this.isExistInSync(brokerName, brokerId, brokerAddress) || this.isExistInNotSync(brokerName, brokerId, brokerAddress);
         }
     }
 
+    /** 副本身份：brokerName、brokerId、地址及存活标记。 */
     public static class ReplicaIdentity extends RemotingSerializable {
+        /** Broker 逻辑名。 */
         private String brokerName;
+        /** 副本 brokerId。 */
         private Long brokerId;
 
+        /** 副本访问地址。 */
         private String brokerAddress;
+        /** 副本是否存活（心跳探测结果）。 */
         private Boolean alive;
 
+        /** 构造副本身份，alive 默认 false。 */
         public ReplicaIdentity(String brokerName, Long brokerId, String brokerAddress) {
             this.brokerName = brokerName;
             this.brokerId = brokerId;
@@ -189,6 +212,7 @@ public class BrokerReplicasInfo extends RemotingSerializable  {
                     '}';
         }
 
+        /** 按 brokerName、brokerId、brokerAddress 判等。 */
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;

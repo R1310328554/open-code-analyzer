@@ -26,9 +26,15 @@ import org.apache.rocketmq.remoting.exception.RemotingCommandException;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * RocketMQ 原生二进制 Remoting 头序列化/反序列化工具。
+ * 支持 {@link ByteBuf} 零拷贝编码与 {@link ByteBuffer} 数组编码两种路径。
+ */
 public class RocketMQSerializable {
+    /** Remoting 字符串字段统一 UTF-8 编码。 */
     private static final Charset CHARSET_UTF8 = StandardCharsets.UTF_8;
 
+    /** 写入长度前缀 UTF-8 字符串；useShortLength 为 true 时长度占 2 字节，否则 4 字节。 */
     public static void writeStr(ByteBuf buf, boolean useShortLength, String str) {
         int lenIndex = buf.writerIndex();
         if (useShortLength) {
@@ -44,6 +50,7 @@ public class RocketMQSerializable {
         }
     }
 
+    /** 读取长度前缀字符串，超长时抛出 {@link RemotingCommandException}。 */
     private static String readStr(ByteBuf buf, boolean useShortLength, int limit) throws RemotingCommandException {
         int len = useShortLength ? buf.readShort() : buf.readInt();
         if (len == 0) {
@@ -56,9 +63,10 @@ public class RocketMQSerializable {
         return cs == null ? null : cs.toString();
     }
 
+    /** 将 Remoting 命令头编码到 ByteBuf，返回写入字节数。 */
     public static int rocketMQProtocolEncode(RemotingCommand cmd, ByteBuf out) {
         int beginIndex = out.writerIndex();
-        // int code(~32767)
+        // 请求/响应码（short）
         out.writeShort(cmd.getCode());
         // LanguageCode language
         out.writeByte(cmd.getLanguage().getCode());
@@ -78,6 +86,7 @@ public class RocketMQSerializable {
 
         int mapLenIndex = out.writerIndex();
         out.writeInt(0);
+        // FastCodesHeader 走快速二进制编码路径
         if (cmd.readCustomHeader() instanceof FastCodesHeader) {
             ((FastCodesHeader) cmd.readCustomHeader()).encode(out);
         }
@@ -94,6 +103,7 @@ public class RocketMQSerializable {
         return out.writerIndex() - beginIndex;
     }
 
+    /** 将 Remoting 命令头编码为 byte[]（非 Netty 路径）。 */
     public static byte[] rocketMQProtocolEncode(RemotingCommand cmd) {
         // String remark
         byte[] remarkBytes = null;
@@ -142,6 +152,7 @@ public class RocketMQSerializable {
         return headerBuffer.array();
     }
 
+    /** 将扩展字段 HashMap 序列化为 keySize+key+valSize+val 二进制块。 */
     public static byte[] mapSerialize(HashMap<String, String> map) {
         // keySize+key+valSize+val
         if (null == map || map.isEmpty())
@@ -183,6 +194,7 @@ public class RocketMQSerializable {
         return content.array();
     }
 
+    /** 计算 Remoting 头固定字段 + remark + extFields 的总长度。 */
     private static int calTotalLen(int remark, int ext) {
         // int code(~32767)
         int length = 2
@@ -202,6 +214,7 @@ public class RocketMQSerializable {
         return length;
     }
 
+    /** 从 ByteBuf 解码 Remoting 命令头；headerLen 用于校验 extFields 边界。 */
     public static RemotingCommand rocketMQProtocolDecode(final ByteBuf headerBuffer,
         int headerLen) throws RemotingCommandException {
         RemotingCommand cmd = new RemotingCommand();
@@ -229,6 +242,7 @@ public class RocketMQSerializable {
         return cmd;
     }
 
+    /** 反序列化扩展字段 Map，len 为 extFields 段字节长度。 */
     public static HashMap<String, String> mapDeserialize(ByteBuf byteBuffer, int len) throws RemotingCommandException {
 
         HashMap<String, String> map = new HashMap<>(128);

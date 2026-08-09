@@ -17,14 +17,20 @@
 
 package org.apache.rocketmq.remoting.protocol;
 
+/**
+ * Remoting 业务响应码：在 {@link RemotingSysResponseCode} 系统码之上扩展 Broker/Consumer/Controller 等场景。
+ */
 public class ResponseCode extends RemotingSysResponseCode {
 
+    /** 刷盘超时。 */
     public static final int FLUSH_DISK_TIMEOUT = 10;
 
+    /** 从节点不可用。 */
     public static final int SLAVE_NOT_AVAILABLE = 11;
 
     public static final int FLUSH_SLAVE_TIMEOUT = 12;
 
+    /** 消息非法（格式或属性校验失败）。 */
     public static final int MESSAGE_ILLEGAL = 13;
 
     public static final int SERVICE_NOT_AVAILABLE = 14;
@@ -33,8 +39,10 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     public static final int NO_PERMISSION = 16;
 
+    /** Topic 不存在。 */
     public static final int TOPIC_NOT_EXIST = 17;
     public static final int TOPIC_EXIST_ALREADY = 18;
+    /** Pull 未找到可消费消息。 */
     public static final int PULL_NOT_FOUND = 19;
 
     public static final int PULL_RETRY_IMMEDIATELY = 20;
@@ -55,10 +63,13 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     public static final int FILTER_DATA_NOT_LATEST = 28;
 
+    /** 请求参数无效。 */
     public static final int INVALID_PARAMETER = 29;
 
+    /** 半消息事务应提交。 */
     public static final int TRANSACTION_SHOULD_COMMIT = 200;
 
+    /** 半消息事务应回滚。 */
     public static final int TRANSACTION_SHOULD_ROLLBACK = 201;
 
     public static final int TRANSACTION_STATE_UNKNOW = 202;
@@ -68,6 +79,7 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     public static final int NOT_IN_CURRENT_UNIT = 205;
 
+    /** 消费者不在线。 */
     public static final int CONSUMER_NOT_ONLINE = 206;
 
     public static final int CONSUME_MSG_TIMEOUT = 207;
@@ -84,22 +96,25 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     public static final int BROADCAST_CONSUMPTION = 213;
 
+    /** 服务端流控拒绝。 */
     public static final int FLOW_CONTROL = 215;
 
+    /** 当前 Broker 非该队列 Leader。 */
     public static final int NOT_LEADER_FOR_QUEUE = 501;
 
     public static final int ILLEGAL_OPERATION = 604;
 
+    /** RPC 未知错误。 */
     public static final int RPC_UNKNOWN = -1000;
     public static final int RPC_ADDR_IS_NULL = -1002;
     public static final int RPC_SEND_TO_CHANNEL_FAILED = -1004;
     public static final int RPC_TIME_OUT = -1006;
 
+    /** 服务端要求客户端断开并重连（如优雅下线）。 */
     public static final int GO_AWAY = 1500;
 
-    /**
-     * Controller response code
-     */
+    /** Controller 模块专用响应码起始段。 */
+    /** Controller：Master epoch 已被 fencing。 */
     public static final int CONTROLLER_FENCED_MASTER_EPOCH = 2000;
     public static final int CONTROLLER_FENCED_SYNC_STATE_SET_EPOCH = 2001;
     public static final int CONTROLLER_INVALID_MASTER = 2002;
@@ -107,6 +122,7 @@ public class ResponseCode extends RemotingSysResponseCode {
     public static final int CONTROLLER_MASTER_NOT_AVAILABLE = 2004;
     public static final int CONTROLLER_INVALID_REQUEST = 2005;
     public static final int CONTROLLER_BROKER_NOT_ALIVE = 2006;
+    /** Controller：当前节点非 Leader。 */
     public static final int CONTROLLER_NOT_LEADER = 2007;
 
     public static final int CONTROLLER_BROKER_METADATA_NOT_EXIST = 2008;
@@ -127,10 +143,12 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     public static final int CONTROLLER_BROKER_LIVE_INFO_NOT_EXISTS = 2016;
 
+    /** 轻量消息队列（LMQ）配额超限。 */
     public static final int LMQ_QUOTA_EXCEEDED = 2017;
 
     public static final int LITE_SUBSCRIPTION_QUOTA_EXCEEDED = 2018;
 
+    /** ACL 用户不存在。 */
     public static final int USER_NOT_EXIST = 3001;
 
     public static final int POLICY_NOT_EXIST = 3002;

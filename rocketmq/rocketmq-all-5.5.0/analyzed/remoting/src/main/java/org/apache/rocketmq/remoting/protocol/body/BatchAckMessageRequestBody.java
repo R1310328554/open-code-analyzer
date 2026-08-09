@@ -21,22 +21,31 @@ import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
 import java.util.List;
 
+/**
+ * 批量 Ack Pop 消息的请求体：指定 Broker 及 {@link BatchAck} 列表。
+ */
 public class BatchAckMessageRequestBody extends RemotingSerializable {
+    /** 目标 Broker 名称。 */
     private String brokerName;
+    /** 待提交的批量 Ack 条目。 */
     private List<BatchAck> acks;
 
+    /** 返回 Broker 名称。 */
     public String getBrokerName() {
         return brokerName;
     }
 
+    /** 设置 Broker 名称。 */
     public void setBrokerName(String brokerName) {
         this.brokerName = brokerName;
     }
 
+    /** 返回 Ack 列表。 */
     public List<BatchAck> getAcks() {
         return acks;
     }
 
+    /** 设置 Ack 列表。 */
     public void setAcks(List<BatchAck> acks) {
         this.acks = acks;
     }

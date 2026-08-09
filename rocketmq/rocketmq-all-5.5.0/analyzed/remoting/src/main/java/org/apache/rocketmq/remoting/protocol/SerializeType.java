@@ -17,16 +17,24 @@
 
 package org.apache.rocketmq.remoting.protocol;
 
+/**
+ * Remoting 命令头/体的序列化方式标识。
+ */
 public enum SerializeType {
+    /** JSON 文本序列化。 */
     JSON((byte) 0),
+    /** RocketMQ 原生二进制协议。 */
     ROCKETMQ((byte) 1);
 
+    /** 协议层单字节类型码。 */
     private byte code;
 
+    /** 绑定序列化类型码。 */
     SerializeType(byte code) {
         this.code = code;
     }
 
+    /** 按类型码查找枚举，未知码返回 null。 */
     public static SerializeType valueOf(byte code) {
         for (SerializeType serializeType : SerializeType.values()) {
             if (serializeType.getCode() == code) {
@@ -36,6 +44,7 @@ public enum SerializeType {
         return null;
     }
 
+    /** 返回协议类型码。 */
     public byte getCode() {
         return code;
     }

@@ -17,31 +17,43 @@
 
 package org.apache.rocketmq.remoting.protocol.body;
 
+/**
+ * Broker 单时间窗口统计项：累计量、TPS 与平均处理耗时。
+ */
 public class BrokerStatsItem {
+    /** 窗口内累计计数（如消息条数）。 */
     private long sum;
+    /** 吞吐量（条/秒）。 */
     private double tps;
+    /** 平均处理耗时（毫秒/条）。 */
     private double avgpt;
 
+    /** 返回累计量。 */
     public long getSum() {
         return sum;
     }
 
+    /** 设置累计量。 */
     public void setSum(long sum) {
         this.sum = sum;
     }
 
+    /** 返回 TPS。 */
     public double getTps() {
         return tps;
     }
 
+    /** 设置 TPS。 */
     public void setTps(double tps) {
         this.tps = tps;
     }
 
+    /** 返回平均耗时。 */
     public double getAvgpt() {
         return avgpt;
     }
 
+    /** 设置平均耗时。 */
     public void setAvgpt(double avgpt) {
         this.avgpt = avgpt;
     }

@@ -16,40 +16,55 @@
  */
 package org.apache.rocketmq.remoting.protocol.admin;
 
+/**
+ * 单队列偏移量快照：Broker 最大位点、消费者已提交位点、Pull 位点及更新时间。
+ */
 public class OffsetWrapper {
+    /** Broker 端该队列最大逻辑偏移。 */
     private long brokerOffset;
+    /** 消费组已提交消费位点。 */
     private long consumerOffset;
+    /** 最近一次 Pull 请求的位点（在途消息上界）。 */
     private long pullOffset;
+    /** 偏移量最后更新时间戳（毫秒）。 */
     private long lastTimestamp;
 
+    /** 返回 Broker 偏移。 */
     public long getBrokerOffset() {
         return brokerOffset;
     }
 
+    /** 设置 Broker 偏移。 */
     public void setBrokerOffset(long brokerOffset) {
         this.brokerOffset = brokerOffset;
     }
 
+    /** 返回消费者偏移。 */
     public long getConsumerOffset() {
         return consumerOffset;
     }
 
+    /** 设置消费者偏移。 */
     public void setConsumerOffset(long consumerOffset) {
         this.consumerOffset = consumerOffset;
     }
 
+    /** 返回 Pull 偏移。 */
     public long getPullOffset() {
         return pullOffset;
     }
 
+    /** 设置 Pull 偏移。 */
     public void setPullOffset(long pullOffset) {
         this.pullOffset = pullOffset;
     }
 
+    /** 返回最后更新时间。 */
     public long getLastTimestamp() {
         return lastTimestamp;
     }
 
+    /** 设置最后更新时间。 */
     public void setLastTimestamp(long lastTimestamp) {
         this.lastTimestamp = lastTimestamp;
     }

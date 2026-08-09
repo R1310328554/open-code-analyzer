@@ -19,22 +19,31 @@ package org.apache.rocketmq.remoting.protocol.body;
 
 import org.apache.rocketmq.remoting.protocol.RemotingSerializable;
 
+/**
+ * Broker 运行统计聚合：分钟/小时/天三个时间粒度的 {@link BrokerStatsItem}。
+ */
 public class BrokerStatsData extends RemotingSerializable {
 
+    /** 分钟级统计。 */
     private BrokerStatsItem statsMinute;
 
+    /** 小时级统计。 */
     private BrokerStatsItem statsHour;
 
+    /** 天级统计。 */
     private BrokerStatsItem statsDay;
 
+    /** 返回分钟统计。 */
     public BrokerStatsItem getStatsMinute() {
         return statsMinute;
     }
 
+    /** 设置分钟统计。 */
     public void setStatsMinute(BrokerStatsItem statsMinute) {
         this.statsMinute = statsMinute;
     }
 
+    /** 返回小时统计。 */
     public BrokerStatsItem getStatsHour() {
         return statsHour;
     }
@@ -43,6 +52,7 @@ public class BrokerStatsData extends RemotingSerializable {
         this.statsHour = statsHour;
     }
 
+    /** 返回天级统计。 */
     public BrokerStatsItem getStatsDay() {
         return statsDay;
     }

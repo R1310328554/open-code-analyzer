@@ -22,26 +22,39 @@ import org.apache.rocketmq.remoting.protocol.BitSetSerializerDeserializer;
 import java.io.Serializable;
 import java.util.BitSet;
 
+/**
+ * Pop 消费批量 Ack 单元：以 BitSet 标记相对 startOffset 的已确认消息。
+ */
 public class BatchAck implements Serializable {
+    /** 消费组名。 */
     @JSONField(name = "c", alternateNames = {"consumerGroup"})
     private String consumerGroup;
+    /** Topic 名称。 */
     @JSONField(name = "t", alternateNames = {"topic"})
     private String topic;
     @JSONField(name = "r", alternateNames = {"retry"})
+    /** 是否为重试 Topic（"1" 表示是）。 */
     private String retry; // "1" if is retry topic
+    /** BitSet 基准起始偏移。 */
     @JSONField(name = "so", alternateNames = {"startOffset"})
     private long startOffset;
+    /** 消息队列 ID。 */
     @JSONField(name = "q", alternateNames = {"queueId"})
     private int queueId;
+    /** 复活队列 ID（Pop 超时重投）。 */
     @JSONField(name = "rq", alternateNames = {"reviveQueueId"})
     private int reviveQueueId;
+    /** Pop 请求时间戳。 */
     @JSONField(name = "pt", alternateNames = {"popTime"})
     private long popTime;
+    /** 消息不可见时长（毫秒）。 */
     @JSONField(name = "it", alternateNames = {"invisibleTime"})
     private long invisibleTime;
     @JSONField(name = "b", alternateNames = {"bitSet"}, serializeUsing = BitSetSerializerDeserializer.class, deserializeUsing = BitSetSerializerDeserializer.class)
+    /** 相对 startOffset 的已 Ack 偏移位图。 */
     private BitSet bitSet; // ack offsets bitSet
 
+    /** 返回消费组。 */
     public String getConsumerGroup() {
         return consumerGroup;
     }
@@ -106,6 +119,7 @@ public class BatchAck implements Serializable {
         this.invisibleTime = invisibleTime;
     }
 
+    /** 返回 Ack 位图。 */
     public BitSet getBitSet() {
         return bitSet;
     }
@@ -114,6 +128,7 @@ public class BatchAck implements Serializable {
         this.bitSet = bitSet;
     }
 
+    /** 返回 BatchAck 调试字符串。 */
     @Override
     public String toString() {
         return "BatchAck{" +
