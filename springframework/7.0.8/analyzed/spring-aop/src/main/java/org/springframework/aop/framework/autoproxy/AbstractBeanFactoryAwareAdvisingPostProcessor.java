@@ -25,12 +25,10 @@ import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 /**
- * Extension of {@link AbstractAdvisingBeanPostProcessor} which implements
- * {@link BeanFactoryAware}, adds exposure of the original target class for each
- * proxied bean ({@link AutoProxyUtils#ORIGINAL_TARGET_CLASS_ATTRIBUTE}),
- * and participates in an externally enforced target-class mode for any given bean
- * ({@link AutoProxyUtils#PRESERVE_TARGET_CLASS_ATTRIBUTE}).
- * This post-processor is therefore aligned with {@link AbstractAutoProxyCreator}.
+ * {@link AbstractAdvisingBeanPostProcessor} 的扩展，实现 {@link BeanFactoryAware}，
+ * 为每个被代理 Bean 暴露原始目标类（{@link AutoProxyUtils#ORIGINAL_TARGET_CLASS_ATTRIBUTE}），
+ * 并参与对给定 Bean 的外部强制目标类模式（{@link AutoProxyUtils#PRESERVE_TARGET_CLASS_ATTRIBUTE}）。
+ * 因此本后处理器与 {@link AbstractAutoProxyCreator} 保持一致。
  *
  * @author Juergen Hoeller
  * @since 4.2.3

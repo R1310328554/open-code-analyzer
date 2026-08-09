@@ -22,8 +22,8 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 /**
- * Auto-proxy creator that considers infrastructure Advisor beans only,
- * ignoring any application-defined Advisors.
+ * 仅考虑基础设施 Advisor Bean 的自动代理创建器，
+ * 忽略所有应用定义的 Advisor。
  *
  * @author Juergen Hoeller
  * @since 2.0.7

@@ -28,12 +28,10 @@ import org.springframework.aop.support.DelegatingIntroductionInterceptor;
 import org.springframework.beans.factory.NamedBean;
 
 /**
- * Convenient methods for creating advisors that may be used when autoproxying beans
- * created with the Spring IoC container, binding the bean name to the current
- * invocation. May support a {@code bean()} pointcut designator with AspectJ.
+ * 创建 Advisor 的便捷方法，可用于自动代理 Spring IoC 容器创建的 Bean，
+ * 将 Bean 名称绑定到当前调用。可支持 AspectJ 的 {@code bean()} 切入点指示符。
  *
- * <p>Typically used in Spring auto-proxying, where the bean name is known
- * at proxy creation time.
+ * <p>通常用于 Spring 自动代理，此时 Bean 名称在代理创建时已知。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -43,29 +41,27 @@ import org.springframework.beans.factory.NamedBean;
 public abstract class ExposeBeanNameAdvisors {
 
 	/**
-	 * Binding for the bean name of the bean which is currently being invoked
-	 * in the ReflectiveMethodInvocation userAttributes Map.
+	 * ReflectiveMethodInvocation userAttributes Map 中
+	 * 当前被调用 Bean 名称的绑定键。
 	 */
 	private static final String BEAN_NAME_ATTRIBUTE = ExposeBeanNameAdvisors.class.getName() + ".BEAN_NAME";
 
 
 	/**
-	 * Find the bean name for the current invocation. Assumes that an ExposeBeanNameAdvisor
-	 * has been included in the interceptor chain, and that the invocation is exposed
-	 * with ExposeInvocationInterceptor.
-	 * @return the bean name (never {@code null})
-	 * @throws IllegalStateException if the bean name has not been exposed
+	 * 查找当前调用的 Bean 名称。假设拦截器链中已包含 ExposeBeanNameAdvisor，
+	 * 且调用已通过 ExposeInvocationInterceptor 暴露。
+	 * @return Bean 名称（永不为 {@code null}）
+	 * @throws IllegalStateException 若 Bean 名称尚未暴露
 	 */
 	public static String getBeanName() throws IllegalStateException {
 		return getBeanName(ExposeInvocationInterceptor.currentInvocation());
 	}
 
 	/**
-	 * Find the bean name for the given invocation. Assumes that an ExposeBeanNameAdvisor
-	 * has been included in the interceptor chain.
-	 * @param mi the MethodInvocation that should contain the bean name as an attribute
-	 * @return the bean name (never {@code null})
-	 * @throws IllegalStateException if the bean name has not been exposed
+	 * 查找给定调用的 Bean 名称。假设拦截器链中已包含 ExposeBeanNameAdvisor。
+	 * @param mi 应包含 Bean 名称作为属性的 MethodInvocation
+	 * @return Bean 名称（永不为 {@code null}）
+	 * @throws IllegalStateException 若 Bean 名称尚未暴露
 	 */
 	public static String getBeanName(MethodInvocation mi) throws IllegalStateException {
 		if (!(mi instanceof ProxyMethodInvocation pmi)) {
@@ -79,19 +75,17 @@ public abstract class ExposeBeanNameAdvisors {
 	}
 
 	/**
-	 * Create a new advisor that will expose the given bean name,
-	 * with no introduction.
-	 * @param beanName bean name to expose
+	 * 创建将暴露给定 Bean 名称的新 Advisor，无 Introduction。
+	 * @param beanName 要暴露的 Bean 名称
 	 */
 	public static Advisor createAdvisorWithoutIntroduction(String beanName) {
 		return new DefaultPointcutAdvisor(new ExposeBeanNameInterceptor(beanName));
 	}
 
 	/**
-	 * Create a new advisor that will expose the given bean name, introducing
-	 * the NamedBean interface to make the bean name accessible without forcing
-	 * the target object to be aware of this Spring IoC concept.
-	 * @param beanName the bean name to expose
+	 * 创建将暴露给定 Bean 名称的新 Advisor，引入 NamedBean 接口
+	 * 使 Bean 名称可访问，而无需强制目标对象感知此 Spring IoC 概念。
+	 * @param beanName 要暴露的 Bean 名称
 	 */
 	public static Advisor createAdvisorIntroducingNamedBean(String beanName) {
 		return new DefaultIntroductionAdvisor(new ExposeBeanNameIntroduction(beanName));
@@ -99,7 +93,7 @@ public abstract class ExposeBeanNameAdvisors {
 
 
 	/**
-	 * Interceptor that exposes the specified bean name as invocation attribute.
+	 * 将指定 Bean 名称作为调用属性暴露的拦截器。
 	 */
 	private static class ExposeBeanNameInterceptor implements MethodInterceptor {
 
@@ -121,7 +115,7 @@ public abstract class ExposeBeanNameAdvisors {
 
 
 	/**
-	 * Introduction that exposes the specified bean name as invocation attribute.
+	 * 将指定 Bean 名称作为调用属性暴露的 Introduction。
 	 */
 	@SuppressWarnings("serial")
 	private static class ExposeBeanNameIntroduction extends DelegatingIntroductionInterceptor implements NamedBean {

@@ -20,13 +20,13 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.Nullable;
 
 /**
- * AOP Alliance {@code MethodInterceptor} that can be introduced in a chain
- * to display verbose information about intercepted invocations to the logger.
+ * 可引入拦截器链以向 Logger 显示被拦截调用详细信息的
+ * AOP Alliance {@code MethodInterceptor}。
  *
- * <p>Logs full invocation details on method entry and method exit,
- * including invocation arguments and invocation count. This is only
- * intended for debugging purposes; use {@code SimpleTraceInterceptor}
- * or {@code CustomizableTraceInterceptor} for pure tracing purposes.
+ * <p>在方法进入和退出时记录完整调用细节，
+ * 包括调用参数和调用计数。仅用于调试目的；
+ * 纯跟踪目的请使用 {@code SimpleTraceInterceptor}
+ * 或 {@code CustomizableTraceInterceptor}。
  *
  * @author Rod Johnson
  * @author Juergen Hoeller
@@ -40,15 +40,14 @@ public class DebugInterceptor extends SimpleTraceInterceptor {
 
 
 	/**
-	 * Create a new DebugInterceptor with a static logger.
+	 * 使用静态 Logger 创建新的 DebugInterceptor。
 	 */
 	public DebugInterceptor() {
 	}
 
 	/**
-	 * Create a new DebugInterceptor with dynamic or static logger,
-	 * according to the given flag.
-	 * @param useDynamicLogger whether to use a dynamic logger or a static logger
+	 * 根据给定标志使用动态或静态 Logger 创建新的 DebugInterceptor。
+	 * @param useDynamicLogger 是否使用动态 Logger 或静态 Logger
 	 * @see #setUseDynamicLogger
 	 */
 	public DebugInterceptor(boolean useDynamicLogger) {
@@ -71,14 +70,14 @@ public class DebugInterceptor extends SimpleTraceInterceptor {
 
 
 	/**
-	 * Return the number of times this interceptor has been invoked.
+	 * 返回本拦截器被调用的次数。
 	 */
 	public long getCount() {
 		return this.count;
 	}
 
 	/**
-	 * Reset the invocation count to zero.
+	 * 将调用计数重置为零。
 	 */
 	public synchronized void resetCount() {
 		this.count = 0;

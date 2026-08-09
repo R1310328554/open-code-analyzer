@@ -21,8 +21,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.NamedThreadLocal;
 
 /**
- * Holder for the current proxy creation context, as exposed by auto-proxy creators
- * such as {@link AbstractAdvisorAutoProxyCreator}.
+ * 当前代理创建上下文的持有者，
+ * 由 {@link AbstractAdvisorAutoProxyCreator} 等自动代理创建器暴露。
  *
  * @author Juergen Hoeller
  * @author Ramnivas Laddad
@@ -30,7 +30,7 @@ import org.springframework.core.NamedThreadLocal;
  */
 public final class ProxyCreationContext {
 
-	/** ThreadLocal holding the current proxied bean name during Advisor matching. */
+	/** 在 Advisor 匹配期间持有当前被代理 Bean 名称的 ThreadLocal。 */
 	private static final ThreadLocal<String> currentProxiedBeanName =
 			new NamedThreadLocal<>("Name of currently proxied bean");
 
@@ -40,16 +40,16 @@ public final class ProxyCreationContext {
 
 
 	/**
-	 * Return the name of the currently proxied bean instance.
-	 * @return the name of the bean, or {@code null} if none available
+	 * 返回当前被代理 Bean 实例的名称。
+	 * @return Bean 名称，若无则 {@code null}
 	 */
 	public static @Nullable String getCurrentProxiedBeanName() {
 		return currentProxiedBeanName.get();
 	}
 
 	/**
-	 * Set the name of the currently proxied bean instance.
-	 * @param beanName the name of the bean, or {@code null} to reset it
+	 * 设置当前被代理 Bean 实例的名称。
+	 * @param beanName Bean 名称，或 {@code null} 以重置
 	 */
 	static void setCurrentProxiedBeanName(@Nullable String beanName) {
 		if (beanName != null) {

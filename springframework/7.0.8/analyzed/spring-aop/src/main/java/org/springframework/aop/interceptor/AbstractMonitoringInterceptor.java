@@ -22,13 +22,13 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Base class for monitoring interceptors, such as performance monitors.
- * Provides configurable "prefix and "suffix" properties that help to
- * classify/group performance monitoring results.
+ * 监控拦截器（如性能监控器）的基类。
+ * 提供可配置的 "prefix" 和 "suffix" 属性，
+ * 用于分类/分组性能监控结果。
  *
- * <p>In their {@link #invokeUnderTrace} implementation, subclasses should call the
- * {@link #createInvocationTraceName} method to create a name for the given trace,
- * including information about the method invocation along with a prefix/suffix.
+ * <p>在 {@link #invokeUnderTrace} 实现中，子类应调用
+ * {@link #createInvocationTraceName} 方法为给定跟踪创建名称，
+ * 包含方法调用信息及前缀/后缀。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -48,40 +48,39 @@ public abstract class AbstractMonitoringInterceptor extends AbstractTraceInterce
 
 
 	/**
-	 * Set the text that will get appended to the trace data.
-	 * <p>Default is none.
+	 * 设置追加到跟踪数据后的文本。
+	 * <p>默认为无。
 	 */
 	public void setPrefix(@Nullable String prefix) {
 		this.prefix = (prefix != null ? prefix : "");
 	}
 
 	/**
-	 * Return the text that will get appended to the trace data.
+	 * 返回追加到跟踪数据后的文本。
 	 */
 	protected String getPrefix() {
 		return this.prefix;
 	}
 
 	/**
-	 * Set the text that will get prepended to the trace data.
-	 * <p>Default is none.
+	 * 设置前置到跟踪数据前的文本。
+	 * <p>默认为无。
 	 */
 	public void setSuffix(@Nullable String suffix) {
 		this.suffix = (suffix != null ? suffix : "");
 	}
 
 	/**
-	 * Return the text that will get prepended to the trace data.
+	 * 返回前置到跟踪数据前的文本。
 	 */
 	protected String getSuffix() {
 		return this.suffix;
 	}
 
 	/**
-	 * Set whether to log the invocation on the target class, if applicable
-	 * (i.e. if the method is actually delegated to the target class).
-	 * <p>Default is "false", logging the invocation based on the proxy
-	 * interface/class name.
+	 * 设置是否记录目标类上的调用（若适用，
+	 * 即方法实际委托给目标类）。
+	 * <p>默认为 "false"，基于代理接口/类名记录调用。
 	 */
 	public void setLogTargetClassInvocation(boolean logTargetClassInvocation) {
 		this.logTargetClassInvocation = logTargetClassInvocation;
@@ -89,10 +88,8 @@ public abstract class AbstractMonitoringInterceptor extends AbstractTraceInterce
 
 
 	/**
-	 * Create a {@code String} name for the given {@code MethodInvocation}
-	 * that can be used for trace/logging purposes. This name is made up of the
-	 * configured prefix, followed by the fully-qualified name of the method being
-	 * invoked, followed by the configured suffix.
+	 * 为给定 {@code MethodInvocation} 创建可用于跟踪/日志的 {@code String} 名称。
+	 * 该名称由配置的前缀、被调用方法的全限定名及配置的后缀组成。
 	 * @see #setPrefix
 	 * @see #setSuffix
 	 */

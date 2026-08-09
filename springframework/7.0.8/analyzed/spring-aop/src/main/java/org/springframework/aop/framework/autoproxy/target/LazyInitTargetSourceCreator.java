@@ -24,19 +24,17 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 
 /**
- * {@code TargetSourceCreator} that enforces a {@link LazyInitTargetSource} for
- * each bean that is defined as "lazy-init". This will lead to a proxy created for
- * each of those beans, allowing to fetch a reference to such a bean without
- * actually initializing the target bean instance.
+ * 为每个定义为 "lazy-init" 的 Bean 强制使用 {@link LazyInitTargetSource} 的
+ * {@code TargetSourceCreator}。这将为每个此类 Bean 创建代理，
+ * 允许获取其引用而无需实际初始化目标 Bean 实例。
  *
- * <p>To be registered as custom {@code TargetSourceCreator} for an auto-proxy
- * creator, in combination with custom interceptors for specific beans or for the
- * creation of lazy-init proxies only. For example, as an autodetected
- * infrastructure bean in an XML application context definition:
+ * <p>作为自动代理创建器的自定义 {@code TargetSourceCreator} 注册，
+ * 可与针对特定 Bean 的自定义拦截器组合，或仅用于创建 lazy-init 代理。
+ * 例如作为 XML 应用上下文定义中自动检测的基础设施 Bean：
  *
  * <pre class="code">
  * &lt;bean class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator"&gt;
- *   &lt;property name="beanNames" value="*" /&gt; &lt;!-- apply to all beans --&gt;
+ *   &lt;property name="beanNames" value="*" /&gt; &lt;!-- 应用于所有 Bean --&gt;
  *   &lt;property name="customTargetSourceCreators"&gt;
  *     &lt;list&gt;
  *       &lt;bean class="org.springframework.aop.framework.autoproxy.target.LazyInitTargetSourceCreator" /&gt;

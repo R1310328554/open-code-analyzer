@@ -28,16 +28,15 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.util.Assert;
 
 /**
- * Base {@code MethodInterceptor} implementation for tracing.
+ * 用于跟踪的 {@code MethodInterceptor} 基类实现。
  *
- * <p>By default, log messages are written to the log for the interceptor class,
- * not the class which is being intercepted. Setting the {@code useDynamicLogger}
- * bean property to {@code true} causes all log messages to be written to
- * the {@code Log} for the target class being intercepted.
+ * <p>默认情况下，日志消息写入拦截器类的日志，
+ * 而非被拦截类的日志。将 {@code useDynamicLogger} Bean 属性
+ * 设为 {@code true} 时，所有日志消息写入被拦截目标类的 {@code Log}。
  *
- * <p>Subclasses must implement the {@code invokeUnderTrace} method, which
- * is invoked by this class ONLY when a particular invocation SHOULD be traced.
- * Subclasses should write to the {@code Log} instance provided.
+ * <p>子类必须实现 {@code invokeUnderTrace} 方法，
+ * 本类仅在特定调用应被跟踪时才调用它。
+ * 子类应写入提供的 {@code Log} 实例。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -49,32 +48,30 @@ import org.springframework.util.Assert;
 public abstract class AbstractTraceInterceptor implements MethodInterceptor, Serializable {
 
 	/**
-	 * The default {@code Log} instance used to write trace messages.
-	 * This instance is mapped to the implementing {@code Class}.
+	 * 用于写入跟踪消息的默认 {@code Log} 实例。
+	 * 该实例映射到实现 {@code Class}。
 	 */
 	protected transient @Nullable Log defaultLogger = LogFactory.getLog(getClass());
 
 	/**
-	 * Indicates whether proxy class names should be hidden when using dynamic loggers.
+	 * 使用动态 Logger 时是否隐藏代理类名。
 	 * @see #setUseDynamicLogger
 	 */
 	private boolean hideProxyClassNames = false;
 
 	/**
-	 * Indicates whether to pass an exception to the logger.
+	 * 是否将异常传递给 Logger。
 	 * @see #writeToLog(Log, String, Throwable)
 	 */
 	private boolean logExceptionStackTrace = true;
 
 
 	/**
-	 * Set whether to use a dynamic logger or a static logger.
-	 * Default is a static logger for this trace interceptor.
-	 * <p>Used to determine which {@code Log} instance should be used to write
-	 * log messages for a particular method invocation: a dynamic one for the
-	 * {@code Class} getting called, or a static one for the {@code Class}
-	 * of the trace interceptor.
-	 * <p><b>NOTE:</b> Specify either this property or "loggerName", not both.
+	 * 设置使用动态 Logger 还是静态 Logger。
+	 * 默认为本跟踪拦截器的静态 Logger。
+	 * <p>用于确定特定方法调用应使用哪个 {@code Log} 实例写入日志：
+	 * 被调用 {@code Class} 的动态 Logger，或跟踪拦截器 {@code Class} 的静态 Logger。
+	 * <p><b>注意：</b>请指定此属性或 "loggerName" 之一，不可同时指定。
 	 * @see #getLoggerForInvocation(org.aopalliance.intercept.MethodInvocation)
 	 */
 	public void setUseDynamicLogger(boolean useDynamicLogger) {
@@ -83,13 +80,11 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 	}
 
 	/**
-	 * Set the name of the logger to use. The name will be passed to the
-	 * underlying logger implementation through Commons Logging, getting
-	 * interpreted as log category according to the logger's configuration.
-	 * <p>This can be specified to not log into the category of a class
-	 * (whether this interceptor's class or the class getting called)
-	 * but rather into a specific named category.
-	 * <p><b>NOTE:</b> Specify either this property or "useDynamicLogger", not both.
+	 * 设置要使用的 Logger 名称。名称通过 Commons Logging 传递给底层 Logger 实现，
+	 * 根据 Logger 配置解释为日志类别。
+	 * <p>可指定不写入类类别（无论是本拦截器类还是被调用类），
+	 * 而是写入特定命名类别。
+	 * <p><b>注意：</b>请指定此属性或 "useDynamicLogger" 之一，不可同时指定。
 	 * @see org.apache.commons.logging.LogFactory#getLog(String)
 	 * @see java.util.logging.Logger#getLogger(String)
 	 */
@@ -98,18 +93,17 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 	}
 
 	/**
-	 * Set to "true" to have {@link #setUseDynamicLogger dynamic loggers} hide
-	 * proxy class names wherever possible. Default is "false".
+	 * 设为 "true" 时，{@link #setUseDynamicLogger 动态 Logger} 尽可能隐藏代理类名。
+	 * 默认为 "false"。
 	 */
 	public void setHideProxyClassNames(boolean hideProxyClassNames) {
 		this.hideProxyClassNames = hideProxyClassNames;
 	}
 
 	/**
-	 * Set whether to pass an exception to the logger, suggesting inclusion
-	 * of its stack trace into the log. Default is "true"; set this to "false"
-	 * in order to reduce the log output to just the trace message (which may
-	 * include the exception class name and exception message, if applicable).
+	 * 设置是否将异常传递给 Logger，建议将其堆栈跟踪写入日志。
+	 * 默认为 "true"；设为 "false" 可将日志输出缩减为仅跟踪消息
+	 * （可能包含异常类名和异常消息）。
 	 * @since 4.3.10
 	 */
 	public void setLogExceptionStackTrace(boolean logExceptionStackTrace) {
@@ -118,9 +112,8 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 
 
 	/**
-	 * Determines whether logging is enabled for the particular {@code MethodInvocation}.
-	 * If not, the method invocation proceeds as normal, otherwise the method invocation is passed
-	 * to the {@code invokeUnderTrace} method for handling.
+	 * 判断特定 {@code MethodInvocation} 是否启用日志。
+	 * 若否，方法调用正常进行；否则将方法调用传递给 {@code invokeUnderTrace} 处理。
 	 * @see #invokeUnderTrace(org.aopalliance.intercept.MethodInvocation, org.apache.commons.logging.Log)
 	 */
 	@Override
@@ -135,13 +128,11 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 	}
 
 	/**
-	 * Return the appropriate {@code Log} instance to use for the given
-	 * {@code MethodInvocation}. If the {@code useDynamicLogger} flag
-	 * is set, the {@code Log} instance will be for the target class of the
-	 * {@code MethodInvocation}, otherwise the {@code Log} will be the
-	 * default static logger.
-	 * @param invocation the {@code MethodInvocation} being traced
-	 * @return the {@code Log} instance to use
+	 * 返回给定 {@code MethodInvocation} 应使用的合适 {@code Log} 实例。
+	 * 若设置了 {@code useDynamicLogger} 标志，{@code Log} 实例
+	 * 对应 {@code MethodInvocation} 的目标类；否则为默认静态 Logger。
+	 * @param invocation 正在跟踪的 {@code MethodInvocation}
+	 * @return 要使用的 {@code Log} 实例
 	 * @see #setUseDynamicLogger
 	 */
 	protected Log getLoggerForInvocation(MethodInvocation invocation) {
@@ -156,9 +147,9 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 	}
 
 	/**
-	 * Determine the class to use for logging purposes.
-	 * @param target the target object to introspect
-	 * @return the target class for the given object
+	 * 确定用于日志目的的类。
+	 * @param target 要内省的目标对象
+	 * @return 给定对象的目标类
 	 * @see #setHideProxyClassNames
 	 */
 	protected Class<?> getClassForLogging(Object target) {
@@ -166,13 +157,11 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 	}
 
 	/**
-	 * Determine whether the interceptor should kick in, that is,
-	 * whether the {@code invokeUnderTrace} method should be called.
-	 * <p>Default behavior is to check whether the given {@code Log}
-	 * instance is enabled. Subclasses can override this to apply the
-	 * interceptor in other cases as well.
-	 * @param invocation the {@code MethodInvocation} being traced
-	 * @param logger the {@code Log} instance to check
+	 * 判断拦截器是否应生效，即是否应调用 {@code invokeUnderTrace} 方法。
+	 * <p>默认行为是检查给定 {@code Log} 实例是否启用。
+	 * 子类可覆盖以在其他情况下也应用拦截器。
+	 * @param invocation 正在跟踪的 {@code MethodInvocation}
+	 * @param logger 要检查的 {@code Log} 实例
 	 * @see #invokeUnderTrace
 	 * @see #isLogEnabled
 	 */
@@ -181,20 +170,20 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 	}
 
 	/**
-	 * Determine whether the given {@link Log} instance is enabled.
-	 * <p>Default is {@code true} when the "trace" level is enabled.
-	 * Subclasses can override this to change the level under which 'tracing' occurs.
-	 * @param logger the {@code Log} instance to check
+	 * 判断给定 {@link Log} 实例是否启用。
+	 * <p>默认在 "trace" 级别启用时为 {@code true}。
+	 * 子类可覆盖以更改发生「跟踪」的级别。
+	 * @param logger 要检查的 {@code Log} 实例
 	 */
 	protected boolean isLogEnabled(Log logger) {
 		return logger.isTraceEnabled();
 	}
 
 	/**
-	 * Write the supplied trace message to the supplied {@code Log} instance.
-	 * <p>To be called by {@link #invokeUnderTrace} for enter/exit messages.
-	 * <p>Delegates to {@link #writeToLog(Log, String, Throwable)} as the
-	 * ultimate delegate that controls the underlying logger invocation.
+	 * 将提供的跟踪消息写入提供的 {@code Log} 实例。
+	 * <p>由 {@link #invokeUnderTrace} 调用以处理进入/退出消息。
+	 * <p>委托给 {@link #writeToLog(Log, String, Throwable)} 作为
+	 * 控制底层 Logger 调用的最终委托。
 	 * @since 4.3.10
 	 * @see #writeToLog(Log, String, Throwable)
 	 */
@@ -203,14 +192,12 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 	}
 
 	/**
-	 * Write the supplied trace message and {@link Throwable} to the
-	 * supplied {@code Log} instance.
-	 * <p>To be called by {@link #invokeUnderTrace} for enter/exit outcomes,
-	 * potentially including an exception. Note that an exception's stack trace
-	 * won't get logged when {@link #setLogExceptionStackTrace} is "false".
-	 * <p>By default messages are written at {@code TRACE} level. Subclasses
-	 * can override this method to control which level the message is written
-	 * at, typically also overriding {@link #isLogEnabled} accordingly.
+	 * 将提供的跟踪消息和 {@link Throwable} 写入提供的 {@code Log} 实例。
+	 * <p>由 {@link #invokeUnderTrace} 调用以处理进入/退出结果，
+	 * 可能包含异常。注意当 {@link #setLogExceptionStackTrace} 为 "false" 时
+	 * 不会记录异常堆栈跟踪。
+	 * <p>默认以 {@code TRACE} 级别写入消息。子类可覆盖以控制写入级别，
+	 * 通常也相应覆盖 {@link #isLogEnabled}。
 	 * @since 4.3.10
 	 * @see #setLogExceptionStackTrace
 	 * @see #isLogEnabled
@@ -226,19 +213,15 @@ public abstract class AbstractTraceInterceptor implements MethodInterceptor, Ser
 
 
 	/**
-	 * Subclasses must override this method to perform any tracing around the
-	 * supplied {@code MethodInvocation}. Subclasses are responsible for
-	 * ensuring that the {@code MethodInvocation} actually executes by
-	 * calling {@code MethodInvocation.proceed()}.
-	 * <p>By default, the passed-in {@code Log} instance will have log level
-	 * "trace" enabled. Subclasses do not have to check for this again, unless
-	 * they overwrite the {@code isInterceptorEnabled} method to modify
-	 * the default behavior, and may delegate to {@code writeToLog} for actual
-	 * messages to be written.
-	 * @param logger the {@code Log} to write trace messages to
-	 * @return the result of the call to {@code MethodInvocation.proceed()}
-	 * @throws Throwable if the call to {@code MethodInvocation.proceed()}
-	 * encountered any errors
+	 * 子类必须覆盖本方法以对提供的 {@code MethodInvocation} 执行跟踪。
+	 * 子类负责通过调用 {@code MethodInvocation.proceed()} 确保
+	 * {@code MethodInvocation} 实际执行。
+	 * <p>默认情况下，传入的 {@code Log} 实例已启用 "trace" 级别。
+	 * 子类无需再次检查，除非覆盖 {@code isInterceptorEnabled} 修改默认行为，
+	 * 并可委托 {@code writeToLog} 写入实际消息。
+	 * @param logger 写入跟踪消息的 {@code Log}
+	 * @return 对 {@code MethodInvocation.proceed()} 调用的结果
+	 * @throws Throwable 若 {@code MethodInvocation.proceed()} 调用遇到错误
 	 * @see #isLogEnabled
 	 * @see #writeToLog(Log, String)
 	 * @see #writeToLog(Log, String, Throwable)

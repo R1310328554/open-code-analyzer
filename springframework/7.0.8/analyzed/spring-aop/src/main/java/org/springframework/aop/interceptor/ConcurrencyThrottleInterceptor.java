@@ -25,16 +25,14 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.ConcurrencyThrottleSupport;
 
 /**
- * Interceptor that throttles concurrent access, blocking invocations
- * if a specified concurrency limit is reached.
+ * 限制并发访问的拦截器，达到指定并发上限时阻塞调用。
  *
- * <p>Can be applied to methods of local services that involve heavy use
- * of system resources, in a scenario where it is more efficient to
- * throttle concurrency for a specific service rather than restrict
- * the entire thread pool (for example, the web container's thread pool).
+ * <p>可应用于涉及大量系统资源的本地服务方法，
+ * 在针对特定服务限制并发比限制整个线程池
+ * （例如 Web 容器线程池）更高效的场景中。
  *
- * <p>The default concurrency limit of this interceptor is 1.
- * Specify the "concurrencyLimit" bean property to change this value.
+ * <p>本拦截器默认并发上限为 1。
+ * 通过 "concurrencyLimit" Bean 属性更改此值。
  *
  * @author Juergen Hoeller
  * @since 11.02.2004
@@ -45,16 +43,14 @@ public class ConcurrencyThrottleInterceptor extends ConcurrencyThrottleSupport
 		implements MethodInterceptor, Serializable {
 
 	/**
-	 * Create a default {@code ConcurrencyThrottleInterceptor}
-	 * with concurrency limit 1.
+	 * 创建并发上限为 1 的默认 {@code ConcurrencyThrottleInterceptor}。
 	 */
 	public ConcurrencyThrottleInterceptor() {
 		this(1);
 	}
 
 	/**
-	 * Create a {@code ConcurrencyThrottleInterceptor}
-	 * with the given concurrency limit.
+	 * 使用给定并发上限创建 {@code ConcurrencyThrottleInterceptor}。
 	 * @since 7.0
 	 */
 	public ConcurrencyThrottleInterceptor(int concurrencyLimit) {

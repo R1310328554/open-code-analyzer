@@ -31,8 +31,8 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.util.Assert;
 
 /**
- * Helper for retrieving standard Spring Advisors from a BeanFactory,
- * for use with auto-proxying.
+ * 从 BeanFactory 检索标准 Spring Advisor 的辅助类，
+ * 供自动代理使用。
  *
  * @author Juergen Hoeller
  * @since 2.0.2
@@ -48,8 +48,8 @@ public class BeanFactoryAdvisorRetrievalHelper {
 
 
 	/**
-	 * Create a new BeanFactoryAdvisorRetrievalHelper for the given BeanFactory.
-	 * @param beanFactory the ListableBeanFactory to scan
+	 * 为给定 BeanFactory 创建新的 BeanFactoryAdvisorRetrievalHelper。
+	 * @param beanFactory 要扫描的 ListableBeanFactory
 	 */
 	public BeanFactoryAdvisorRetrievalHelper(ConfigurableListableBeanFactory beanFactory) {
 		Assert.notNull(beanFactory, "ListableBeanFactory must not be null");
@@ -58,17 +58,17 @@ public class BeanFactoryAdvisorRetrievalHelper {
 
 
 	/**
-	 * Find all eligible Advisor beans in the current bean factory,
-	 * ignoring FactoryBeans and excluding beans that are currently in creation.
-	 * @return the list of {@link org.springframework.aop.Advisor} beans
+	 * 查找当前 BeanFactory 中所有合格的 Advisor Bean，
+	 * 忽略 FactoryBean 并排除正在创建中的 Bean。
+	 * @return {@link org.springframework.aop.Advisor} Bean 列表
 	 * @see #isEligibleBean
 	 */
 	public List<Advisor> findAdvisorBeans() {
-		// Determine list of advisor bean names, if not cached already.
+		// 若尚未缓存，则确定 Advisor Bean 名称列表。
 		String[] advisorNames = this.cachedAdvisorBeanNames;
 		if (advisorNames == null) {
-			// Do not initialize FactoryBeans here: We need to leave all regular beans
-			// uninitialized to let the auto-proxy creator apply to them!
+			// 此处不初始化 FactoryBean：需保持所有普通 Bean 未初始化，
+			// 以便自动代理创建器对其生效！
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);
 			this.cachedAdvisorBeanNames = advisorNames;
@@ -98,8 +98,8 @@ public class BeanFactoryAdvisorRetrievalHelper {
 									logger.trace("Skipping advisor '" + name +
 											"' with dependency on currently created bean: " + ex.getMessage());
 								}
-								// Ignore: indicates a reference back to the bean we're trying to advise.
-								// We want to find advisors other than the currently created bean itself.
+								// 忽略：表示回引到正试图被增强的 Bean。
+								// 我们要找的是除当前正在创建的 Bean 自身以外的 Advisor。
 								continue;
 							}
 						}
@@ -112,10 +112,10 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	}
 
 	/**
-	 * Determine whether the aspect bean with the given name is eligible.
-	 * <p>The default implementation always returns {@code true}.
-	 * @param beanName the name of the aspect bean
-	 * @return whether the bean is eligible
+	 * 判断给定名称的切面 Bean 是否合格。
+	 * <p>默认实现始终返回 {@code true}。
+	 * @param beanName 切面 Bean 名称
+	 * @return 该 Bean 是否合格
 	 */
 	protected boolean isEligibleBean(String beanName) {
 		return true;

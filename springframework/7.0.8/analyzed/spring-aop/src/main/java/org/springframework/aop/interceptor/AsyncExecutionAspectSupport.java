@@ -45,14 +45,14 @@ import org.springframework.util.StringValueResolver;
 import org.springframework.util.function.SingletonSupplier;
 
 /**
- * Base class for asynchronous method execution aspects, such as
+ * 异步方法执行切面的基类，例如
  * {@code org.springframework.scheduling.annotation.AnnotationAsyncExecutionInterceptor}
- * or {@code org.springframework.scheduling.aspectj.AnnotationAsyncExecutionAspect}.
+ * 或 {@code org.springframework.scheduling.aspectj.AnnotationAsyncExecutionAspect}。
  *
- * <p>Provides support for <i>executor qualification</i> on a method-by-method basis.
- * {@code AsyncExecutionAspectSupport} objects must be constructed with a default {@code
- * Executor}, but each individual method may further qualify a specific {@code Executor}
- * bean to be used when executing it, for example, through an annotation attribute.
+ * <p>支持按方法逐方法进行<i>执行器限定</i>。
+ * {@code AsyncExecutionAspectSupport} 对象必须以默认 {@code Executor} 构造，
+ * 但每个方法可进一步限定执行时使用的特定 {@code Executor} Bean，
+ * 例如通过注解属性。
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -64,9 +64,8 @@ import org.springframework.util.function.SingletonSupplier;
 public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 
 	/**
-	 * The default name of the {@link TaskExecutor} bean to pick up: "taskExecutor".
-	 * <p>Note that the initial lookup happens by type; this is just the fallback
-	 * in case of multiple executor beans found in the context.
+	 * 要选取的 {@link TaskExecutor} Bean 的默认名称："taskExecutor"。
+	 * <p>注意初始查找按类型进行；这只是在上下文中找到多个执行器 Bean 时的回退。
 	 * @since 4.2.6
 	 */
 	public static final String DEFAULT_TASK_EXECUTOR_BEAN_NAME = "taskExecutor";
@@ -86,11 +85,10 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 
 
 	/**
-	 * Create a new instance with a default {@link AsyncUncaughtExceptionHandler}.
-	 * @param defaultExecutor the {@code Executor} (typically a Spring {@code AsyncTaskExecutor}
-	 * or {@link java.util.concurrent.ExecutorService}) to delegate to, unless a more specific
-	 * executor has been requested via a qualifier on the async method, in which case the
-	 * executor will be looked up at invocation time against the enclosing bean factory
+	 * 使用默认 {@link AsyncUncaughtExceptionHandler} 创建新实例。
+	 * @param defaultExecutor 要委托的 {@code Executor}（通常是 Spring {@code AsyncTaskExecutor}
+	 * 或 {@link java.util.concurrent.ExecutorService}），除非异步方法上的限定符
+	 * 请求了更具体的执行器，此时将在调用时从 enclosing BeanFactory 查找
 	 */
 	public AsyncExecutionAspectSupport(@Nullable Executor defaultExecutor) {
 		this.defaultExecutor = new SingletonSupplier<>(defaultExecutor, () -> getDefaultExecutor(this.beanFactory));
@@ -98,12 +96,11 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	}
 
 	/**
-	 * Create a new {@link AsyncExecutionAspectSupport} with the given exception handler.
-	 * @param defaultExecutor the {@code Executor} (typically a Spring {@code AsyncTaskExecutor}
-	 * or {@link java.util.concurrent.ExecutorService}) to delegate to, unless a more specific
-	 * executor has been requested via a qualifier on the async method, in which case the
-	 * executor will be looked up at invocation time against the enclosing bean factory
-	 * @param exceptionHandler the {@link AsyncUncaughtExceptionHandler} to use
+	 * 使用给定异常处理器创建新的 {@link AsyncExecutionAspectSupport}。
+	 * @param defaultExecutor 要委托的 {@code Executor}（通常是 Spring {@code AsyncTaskExecutor}
+	 * 或 {@link java.util.concurrent.ExecutorService}），除非异步方法上的限定符
+	 * 请求了更具体的执行器，此时将在调用时从 enclosing BeanFactory 查找
+	 * @param exceptionHandler 要使用的 {@link AsyncUncaughtExceptionHandler}
 	 */
 	public AsyncExecutionAspectSupport(@Nullable Executor defaultExecutor, AsyncUncaughtExceptionHandler exceptionHandler) {
 		this.defaultExecutor = new SingletonSupplier<>(defaultExecutor, () -> getDefaultExecutor(this.beanFactory));
@@ -112,8 +109,8 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 
 
 	/**
-	 * Configure this aspect with the given executor and exception handler suppliers,
-	 * applying the corresponding default if a supplier is not resolvable.
+	 * 使用给定执行器和异常处理器 Supplier 配置本切面，
+	 * 若 Supplier 不可解析则应用对应默认值。
 	 * @since 5.1
 	 */
 	public void configure(@Nullable Supplier<? extends @Nullable Executor> defaultExecutor,
@@ -124,11 +121,10 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	}
 
 	/**
-	 * Supply the executor to be used when executing async methods.
-	 * @param defaultExecutor the {@code Executor} (typically a Spring {@code AsyncTaskExecutor}
-	 * or {@link java.util.concurrent.ExecutorService}) to delegate to, unless a more specific
-	 * executor has been requested via a qualifier on the async method, in which case the
-	 * executor will be looked up at invocation time against the enclosing bean factory
+	 * 提供执行异步方法时使用的执行器。
+	 * @param defaultExecutor 要委托的 {@code Executor}（通常是 Spring {@code AsyncTaskExecutor}
+	 * 或 {@link java.util.concurrent.ExecutorService}），除非异步方法上的限定符
+	 * 请求了更具体的执行器，此时将在调用时从 enclosing BeanFactory 查找
 	 * @see #getExecutorQualifier(Method)
 	 * @see #setBeanFactory(BeanFactory)
 	 * @see #getDefaultExecutor(BeanFactory)
@@ -138,16 +134,16 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	}
 
 	/**
-	 * Supply the {@link AsyncUncaughtExceptionHandler} to use to handle exceptions
-	 * thrown by invoking asynchronous methods with a {@code void} return type.
+	 * 提供用于处理调用 {@code void} 返回类型异步方法时
+	 * 抛出异常的 {@link AsyncUncaughtExceptionHandler}。
 	 */
 	public void setExceptionHandler(AsyncUncaughtExceptionHandler exceptionHandler) {
 		this.exceptionHandler = SingletonSupplier.of(exceptionHandler);
 	}
 
 	/**
-	 * Set the {@link BeanFactory} to be used when looking up executors by qualifier
-	 * or when relying on the default executor lookup algorithm.
+	 * 设置按限定符查找执行器或依赖默认执行器查找算法时
+	 * 使用的 {@link BeanFactory}。
 	 * @see #findQualifiedExecutor(BeanFactory, String)
 	 * @see #getDefaultExecutor(BeanFactory)
 	 */
@@ -162,8 +158,8 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 
 
 	/**
-	 * Determine the specific executor to use when executing the given method.
-	 * @return the executor to use (or {@code null}, but just if no default executor is available)
+	 * 确定执行给定方法时使用的特定执行器。
+	 * @return 要使用的执行器（或 {@code null}，但仅在没有默认执行器时）
 	 */
 	protected @Nullable AsyncTaskExecutor determineAsyncExecutor(Method method) {
 		AsyncTaskExecutor executor = this.executors.get(method);
@@ -190,22 +186,21 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	}
 
 	/**
-	 * Return the qualifier or bean name of the executor to be used when executing the
-	 * given async method, typically specified in the form of an annotation attribute.
-	 * <p>Returning an empty string or {@code null} indicates that no specific executor has
-	 * been specified and that the {@linkplain #setExecutor(Executor) default executor}
-	 * should be used.
-	 * @param method the method to inspect for executor qualifier metadata
-	 * @return the qualifier if specified, otherwise empty String or {@code null}
+	 * 返回执行给定异步方法时要使用的执行器限定符或 Bean 名称，
+	 * 通常以注解属性形式指定。
+	 * <p>返回空字符串或 {@code null} 表示未指定特定执行器，
+	 * 应使用 {@linkplain #setExecutor(Executor) 默认执行器}。
+	 * @param method 要检查执行器限定符元数据的方法
+	 * @return 若指定则返回限定符，否则空 String 或 {@code null}
 	 * @see #determineAsyncExecutor(Method)
 	 * @see #findQualifiedExecutor(BeanFactory, String)
 	 */
 	protected abstract @Nullable String getExecutorQualifier(Method method);
 
 	/**
-	 * Retrieve a target executor for the given qualifier.
-	 * @param qualifier the qualifier to resolve
-	 * @return the target executor, or {@code null} if none available
+	 * 检索给定限定符的目标执行器。
+	 * @param qualifier 要解析的限定符
+	 * @return 目标执行器，若无则 {@code null}
 	 * @since 4.2.6
 	 * @see #getExecutorQualifier(Method)
 	 */
@@ -218,13 +213,13 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	}
 
 	/**
-	 * Retrieve or build a default executor for this advice instance.
-	 * <p>An executor returned from here will be cached for further use.
-	 * <p>The default implementation searches for a unique {@link TaskExecutor} bean
-	 * in the context, or for an {@link Executor} bean named "taskExecutor" otherwise.
-	 * If neither of the two is resolvable, this implementation will return {@code null}.
-	 * @param beanFactory the BeanFactory to use for a default executor lookup
-	 * @return the default executor, or {@code null} if none available
+	 * 检索或构建本 advice 实例的默认执行器。
+	 * <p>从此处返回的执行器将被缓存以供后续使用。
+	 * <p>默认实现搜索上下文中唯一的 {@link TaskExecutor} Bean，
+	 * 否则查找名为 "taskExecutor" 的 {@link Executor} Bean。
+	 * 若两者均不可解析，本实现返回 {@code null}。
+	 * @param beanFactory 用于默认执行器查找的 BeanFactory
+	 * @return 默认执行器，若无则 {@code null}
 	 * @since 4.2.6
 	 * @see #findQualifiedExecutor(BeanFactory, String)
 	 * @see #DEFAULT_TASK_EXECUTOR_BEAN_NAME
@@ -232,9 +227,9 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	protected @Nullable Executor getDefaultExecutor(@Nullable BeanFactory beanFactory) {
 		if (beanFactory != null) {
 			try {
-				// Search for TaskExecutor bean... not plain Executor since that would
-				// match with ScheduledExecutorService as well, which is unusable for
-				// our purposes here. TaskExecutor is more clearly designed for it.
+				// 搜索 TaskExecutor Bean... 而非普通 Executor，
+				// 因为后者也会匹配 ScheduledExecutorService，
+				// 对我们此处用途不可用。TaskExecutor 设计更明确。
 				return beanFactory.getBean(TaskExecutor.class);
 			}
 			catch (NoUniqueBeanDefinitionException ex) {
@@ -261,7 +256,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 					logger.info("No task executor bean found for async processing: " +
 							"no bean of type TaskExecutor and no bean named 'taskExecutor' either");
 				}
-				// Giving up -> either using local default executor or none at all...
+				// 放弃 -> 要么使用本地默认执行器，要么完全没有...
 			}
 		}
 		return null;
@@ -269,11 +264,11 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 
 
 	/**
-	 * Delegate for actually executing the given task with the chosen executor.
-	 * @param task the task to execute
-	 * @param executor the chosen executor
-	 * @param returnType the declared return type (potentially a {@link Future} variant)
-	 * @return the execution result (potentially a corresponding {@link Future} handle)
+	 * 实际使用所选执行器执行给定任务的委托。
+	 * @param task 要执行的任务
+	 * @param executor 所选执行器
+	 * @param returnType 声明的返回类型（可能是 {@link Future} 变体）
+	 * @return 执行结果（可能是对应的 {@link Future} 句柄）
 	 */
 	protected @Nullable Object doSubmit(Callable<Object> task, AsyncTaskExecutor executor, Class<?> returnType) {
 		if (CompletableFuture.class.isAssignableFrom(returnType)) {
@@ -293,23 +288,21 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	}
 
 	/**
-	 * Handles a fatal error thrown while asynchronously invoking the specified
-	 * {@link Method}.
-	 * <p>If the return type of the method is a {@link Future} object, the original
-	 * exception can be propagated by just throwing it at the higher level. However,
-	 * for all other cases, the exception will not be transmitted back to the client.
-	 * In that later case, the current {@link AsyncUncaughtExceptionHandler} will be
-	 * used to manage such exception.
-	 * @param ex the exception to handle
-	 * @param method the method that was invoked
-	 * @param params the parameters used to invoke the method
+	 * 处理异步调用指定 {@link Method} 时抛出的致命错误。
+	 * <p>若方法返回类型为 {@link Future} 对象，
+	 * 可通过在更高层直接抛出原始异常来传播。
+	 * 但在其他情况下，异常不会传回客户端。
+	 * 后一种情况下，当前 {@link AsyncUncaughtExceptionHandler} 将用于处理此类异常。
+	 * @param ex 要处理的异常
+	 * @param method 被调用的方法
+	 * @param params 用于调用方法的参数
 	 */
 	protected void handleError(Throwable ex, Method method, @Nullable Object... params) throws Exception {
 		if (Future.class.isAssignableFrom(method.getReturnType())) {
 			ReflectionUtils.rethrowException(ex);
 		}
 		else {
-			// Could not transmit the exception to the caller with default executor
+			// 无法使用默认执行器将异常传递给调用者
 			try {
 				this.exceptionHandler.obtain().handleUncaughtException(ex, method, params);
 			}
