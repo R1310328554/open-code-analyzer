@@ -16,13 +16,18 @@ import io.termd.core.tty.TtyConnection;
 import com.taobao.arthas.common.ArthasConstants;
 
 /**
- * 
- * @author hengyunabc 2020-09-02
+ * JVM 内 {@link LocalChannel} TTY 服务器 Pipeline 初始化器。
+ * <p>
+ * 用于 Agent 与 Bootstrap 同进程通信（{@link ArthasConstants#NETTY_LOCAL_ADDRESS}），
+ * 无 HTTP 认证 handler，Pipeline 与 {@link TtyServerInitializer} 类似但走本地通道。
  *
+ * @author hengyunabc 2020-09-02
  */
 public class LocalTtyServerInitializer extends ChannelInitializer<LocalChannel> {
 
+    /** 活跃 WebSocket channel 组，便于统一关闭 */
     private final ChannelGroup group;
+    /** TTY 连接就绪回调 */
     private final Consumer<TtyConnection> handler;
     private EventExecutorGroup workerGroup;
 
@@ -34,6 +39,7 @@ public class LocalTtyServerInitializer extends ChannelInitializer<LocalChannel> 
     }
 
     @Override
+    /** 组装 HTTP 编解码 → 聚合 → 请求路由 → WebSocket → 空闲检测 → TTY handler */
     protected void initChannel(LocalChannel ch) throws Exception {
 
         ChannelPipeline pipeline = ch.pipeline();

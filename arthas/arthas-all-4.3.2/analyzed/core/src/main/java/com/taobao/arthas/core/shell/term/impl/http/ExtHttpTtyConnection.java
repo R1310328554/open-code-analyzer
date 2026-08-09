@@ -17,15 +17,20 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.termd.core.http.HttpTtyConnection;
 
 /**
- * 从http请求传递过来的 session 信息。解析websocket创建的 term 还需要登录验证问题
- * 
- * @author hengyunabc 2021-03-04
+ * 扩展 termd {@link HttpTtyConnection}，将 HTTP Session 注入 WebSocket TTY。
+ * <p>
+ * WebSocket 握手前 {@link BasicHttpAuthenticatorHandler} 已写入 Subject/userId；
+ * 本类在 {@link #extSessions()} 中传递给 Arthas {@link Session}。
  *
+ * @author hengyunabc 2021-03-04
  */
 public class ExtHttpTtyConnection extends HttpTtyConnection {
+    /** Netty channel 上下文，用于写 WebSocket 帧与调度任务 */
     private ChannelHandlerContext context;
+    /** 是否为 quiet 模式（URL {@code ?quiet=true}，减少交互输出） */
     private final boolean quiet;
 
+    /** @param context WebSocket 升级后的 channel 上下文 */
     public ExtHttpTtyConnection(ChannelHandlerContext context) {
         this(context, false);
     }
@@ -36,6 +41,7 @@ public class ExtHttpTtyConnection extends HttpTtyConnection {
     }
 
     @Override
+    /** 将 TTY 输出编码为 {@link TextWebSocketFrame} 写出 */
     protected void write(byte[] buffer) {
         ByteBuf byteBuf = Unpooled.buffer();
         byteBuf.writeBytes(buffer);
@@ -65,6 +71,7 @@ public class ExtHttpTtyConnection extends HttpTtyConnection {
         }
     }
 
+    /** 收集 HTTP Session 中的 Subject、userId 及 quiet 标志供 Shell 使用 */
     public Map<String, Object> extSessions() {
         Map<String, Object> result = new HashMap<String, Object>();
         if (quiet) {
@@ -77,7 +84,7 @@ public class ExtHttpTtyConnection extends HttpTtyConnection {
                 if (subject != null) {
                     result.put(ArthasConstants.SUBJECT_KEY, subject);
                 }
-                // pass userId from httpSession to arthas session
+                // 将 HTTP Session 中的 userId 传递给 Arthas Session
                 Object userId = httpSession.getAttribute(ArthasConstants.USER_ID_KEY);
                 if (userId != null) {
                     result.put(ArthasConstants.USER_ID_KEY, userId);

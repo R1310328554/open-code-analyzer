@@ -25,6 +25,11 @@ import static com.taobao.arthas.core.util.HttpUtils.createResponse;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
+ * HTTP 请求总入口：REST API、MCP、Web UI 静态资源与输出目录浏览。
+ * <p>
+ * WebSocket 升级路径透传给后续 handler；其余路径按 api → mcp → classpath
+ * → {@link DirectoryBrowser} 顺序解析。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author hengyunabc 2019-11-06
  * @author gongdewei 2020-03-18
@@ -32,18 +37,23 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger logger = LoggerFactory.getLogger(HttpRequestHandler.class);
 
+    /** WebSocket 升级路径（如 /ws） */
     private final String wsUri;
 
+    /** 可浏览的输出根目录（arthas-output） */
     private File dir;
 
+    /** {@code /api} REST 处理器 */
     private HttpApiHandler httpApiHandler;
 
+    /** MCP 协议 HTTP 处理器（可为 null） */
     private McpHttpRequestHandler mcpRequestHandler;
 
     public HttpRequestHandler(String wsUri) {
         this(wsUri, ArthasBootstrap.getInstance().getOutputPath());
     }
 
+    /** @param wsUri WebSocket 路径；@param dir 输出目录根路径 */
     public HttpRequestHandler(String wsUri, File dir) {
         this.wsUri = wsUri;
         this.dir = dir;
@@ -71,12 +81,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             boolean isFileResponseFinished = false;
             boolean isMcpHandled = false;
             try {
-                //handle http restful api
+                // 处理 /api REST 接口
                 if ("/api".equals(path)) {
                     response = httpApiHandler.handle(ctx, request);
                 }
 
-                //handle mcp request
+                // 处理 MCP 端点请求
                 if (mcpRequestHandler != null) {
                     String mcpEndpoint = mcpRequestHandler.getMcpEndpoint();
                     if (mcpEndpoint.equals(path)) {
@@ -86,7 +96,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                     }
                 }
 
-                //handle webui requests
+                // Web UI 路径重定向与 index
                 if (path.equals("/ui")) {
                     response = createRedirectResponse(request, "/ui/");
                 }
@@ -94,25 +104,25 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                     path += "index.html";
                 }
 
-                //try classpath resource first
+                // 优先从 classpath 加载静态资源
                 if (response == null) {
                     response = readFileFromResource(request, path);
                 }
 
-                //try output dir later, avoid overlay classpath resources files
+                // 再从输出目录查找，避免覆盖 classpath 资源
                 if (response == null) {
                     response = DirectoryBrowser.directView(dir, path, request, ctx);
                     isFileResponseFinished = response != null;
                 }
 
-                //not found
+                // 均未命中则 404
                 if (response == null) {
                     response = createResponse(request, HttpResponseStatus.NOT_FOUND, "Not found");
                 }
             } catch (Throwable e) {
                 logger.error("arthas process http request error: " + request.uri(), e);
             } finally {
-                //If it is null, an error may occur
+                // 异常或未命中时兜底 500
                 if (response == null) {
                     response = createResponse(request, HttpResponseStatus.INTERNAL_SERVER_ERROR, "Server error");
                 }
@@ -125,7 +135,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     }
 
     private ChannelFuture writeResponse(ChannelHandlerContext ctx, HttpResponse response) {
-        // try to add content-length header for DefaultFullHttpResponse
+        // 为 FullHttpResponse 补充 Content-Length 并关闭连接
         if (!HttpUtil.isTransferEncodingChunked(response)
                 && response instanceof DefaultFullHttpResponse) {
             response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
@@ -134,7 +144,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             return ctx.writeAndFlush(response);
         }
 
-        //chunk response
+        // 分块响应：写 header 后发送 EMPTY_LAST_CONTENT
         ctx.write(response);
         return ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
     }

@@ -28,26 +28,39 @@ import io.termd.core.tty.TtyConnection;
 import io.termd.core.util.Helper;
 
 /**
+ * {@link Term} 的 termd 实现：readline、stdin/stdout、信号与终端尺寸。
+ * <p>
+ * 桥接 {@link TtyConnection} 与 Arthas Shell，管理命令行编辑、历史、补全及
+ * Ctrl-C/Ctrl-Z 等控制字符；HTTP/Telnet 终端均通过本类与 Shell 交互。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class TermImpl implements Term {
 
+    /** SPI 加载的 readline 扩展函数列表（含 history 搜索等） */
     private static final List<Function> readlineFunctions = Helper.loadServices(Function.class.getClassLoader(), Function.class);
 
+    /** termd readline 引擎，负责行编辑与历史 */
     private Readline readline;
+    /** 默认 stdin 处理器：echo 模式下的字符回显 */
     private Consumer<int[]> echoHandler;
+    /** 底层 TTY 连接（Telnet 或 WebSocket） */
     private TtyConnection conn;
+    /** 非 readline 模式下 Shell 注册的 stdin 回调 */
     private volatile Handler<String> stdinHandler;
     private List<io.termd.core.function.Function<String, String>> stdoutHandlerChain;
     private SignalHandler interruptHandler;
     private SignalHandler suspendHandler;
     private Session session;
+    /** 是否处于 readline 阻塞读行状态，防止重入 */
     private boolean inReadline;
 
+    /** 使用默认 keymap 构造 Term */
     public TermImpl(TtyConnection conn) {
         this(com.taobao.arthas.core.shell.term.impl.Helper.loadKeymap(), conn);
     }
 
+    /** @param keymap 键位映射；@param conn TTY 连接 */
     public TermImpl(Keymap keymap, TtyConnection conn) {
         this.conn = conn;
         readline = new Readline(keymap);
@@ -84,6 +97,7 @@ public class TermImpl implements Term {
     }
 
     @Override
+    /** 启动 readline 读一行命令（无 Tab 补全） */
     public void readline(String prompt, Handler<String> lineHandler) {
         if (conn.getStdinHandler() != echoHandler) {
             throw new IllegalStateException();
@@ -95,6 +109,7 @@ public class TermImpl implements Term {
         readline.readline(conn, prompt, new RequestHandler(this, lineHandler));
     }
 
+    /** 启动 readline 并注册 Tab 补全处理器 */
     public void readline(String prompt, Handler<String> lineHandler, Handler<Completion> completionHandler) {
         if (conn.getStdinHandler() != echoHandler) {
             throw new IllegalStateException();
@@ -116,6 +131,7 @@ public class TermImpl implements Term {
         return this;
     }
 
+    /** @return 底层连接最后访问时间戳 */
     public long lastAccessedTime() {
         return conn.lastAccessedTime();
     }
@@ -135,6 +151,7 @@ public class TermImpl implements Term {
         return conn.size() != null ? conn.size().y() : -1;
     }
 
+    /** 递归消费 readline 队列中待处理的 stdin 事件 */
     void checkPending() {
         if (stdinHandler != null && readline.hasEvent()) {
             stdinHandler.handle(Helper.fromCodePoints(readline.nextEvent().buffer().array()));
@@ -190,16 +207,19 @@ public class TermImpl implements Term {
         return this;
     }
 
+    /** 注册 Ctrl-C（INTR）信号处理器 */
     public TermImpl interruptHandler(SignalHandler handler) {
         interruptHandler = handler;
         return this;
     }
 
+    /** 注册 Ctrl-Z（SUSP）信号处理器 */
     public TermImpl suspendHandler(SignalHandler handler) {
         suspendHandler = handler;
         return this;
     }
 
+    /** 关闭 TTY 连接并将 readline 历史持久化到磁盘 */
     public void close() {
         conn.close();
         FileUtils.saveCommandHistory(readline.getHistory(), new File(Constants.CMD_HISTORY_FILE));
@@ -218,14 +238,16 @@ public class TermImpl implements Term {
         return readline;
     }
 
+    /** 处理中断键：优先交给 interruptHandler，否则 echo ^C */
     public void handleIntr(Integer key) {
         if (interruptHandler == null || !interruptHandler.deliver(key)) {
             echo(key, '\n');
         }
     }
 
+    /** 处理 EOF（Ctrl-D）：转发 stdin 或入队 readline 事件 */
     public void handleEof(Integer key) {
-        // Pseudo signal
+        // 伪信号：EOF 在无 stdinHandler 时入队 readline
         if (stdinHandler != null) {
             stdinHandler.handle(Helper.fromCodePoints(new int[]{key}));
         } else {
@@ -234,6 +256,7 @@ public class TermImpl implements Term {
         }
     }
 
+    /** 处理挂起键：优先 suspendHandler，否则 echo ^Z */
     public void handleSusp(Integer key) {
         if (suspendHandler == null || !suspendHandler.deliver(key)) {
             echo(key, 'Z' - 64);
@@ -244,6 +267,7 @@ public class TermImpl implements Term {
         return conn;
     }
 
+    /** 将 Unicode 码点按 TTY 规则渲染到 stdout（控制字符转义显示） */
     public void echo(int... codePoints) {
         Consumer<int[]> out = conn.stdoutHandler();
         for (int codePoint : codePoints) {

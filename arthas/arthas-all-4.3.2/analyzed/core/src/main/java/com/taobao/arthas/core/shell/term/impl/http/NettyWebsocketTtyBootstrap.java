@@ -26,12 +26,16 @@ import io.termd.core.util.CompletableFuture;
 import io.termd.core.util.Helper;
 
 /**
- * Convenience class for quickly starting a Netty Tty server.
+ * Netty WebSocket TTY 服务器快速启动引导类。
+ * <p>
+ * 同时绑定 TCP 端口（Web Console）与 {@link LocalAddress}（进程内通信）；
+ * {@link #stop()} 关闭全部 channel 并优雅 shutdown EventLoop。
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class NettyWebsocketTtyBootstrap {
 
+    /** 所有活跃连接，stop 时批量 close */
     private final ChannelGroup channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
     private String host;
     private int port;
@@ -40,6 +44,7 @@ public class NettyWebsocketTtyBootstrap {
     private EventExecutorGroup workerGroup;
     private HttpSessionManager httpSessionManager;
 
+    /** @param workerGroup HTTP 业务线程池；@param httpSessionManager 会话管理 */
     public NettyWebsocketTtyBootstrap(EventExecutorGroup workerGroup, HttpSessionManager httpSessionManager) {
         this.workerGroup = workerGroup;
         this.host = "localhost";
@@ -87,13 +92,13 @@ public class NettyWebsocketTtyBootstrap {
             });
         }
 
-        // listen local address in VM communication
+        // 额外绑定 LocalAddress 供 JVM 内 Agent 通信
         ServerBootstrap b2 = new ServerBootstrap();
         b2.group(group).channel(LocalServerChannel.class).handler(new LoggingHandler(LogLevel.INFO))
                 .childHandler(new LocalTtyServerInitializer(channelGroup, handler, workerGroup));
 
         ChannelFuture bindLocalFuture = b2.bind(new LocalAddress(ArthasConstants.NETTY_LOCAL_ADDRESS));
-        if (this.port < 0) { // 保证回调doneHandler
+        if (this.port < 0) { // 仅本地监听时也需触发 doneHandler
             bindLocalFuture.addListener(new GenericFutureListener<Future<? super Void>>() {
                 @Override
                 public void operationComplete(Future<? super Void> future) throws Exception {
@@ -107,12 +112,14 @@ public class NettyWebsocketTtyBootstrap {
         }
     }
 
+    /** 异步启动并返回 CompletableFuture */
     public CompletableFuture<Void> start(Consumer<TtyConnection> handler) {
         CompletableFuture<Void> fut = new CompletableFuture<Void>();
         start(handler, Helper.startedHandler(fut));
         return fut;
     }
 
+    /** 关闭监听 channel 与 channelGroup，并 shutdown EventLoopGroup */
     public void stop(final Consumer<Throwable> doneHandler) {
         if (channel != null) {
             channel.close();

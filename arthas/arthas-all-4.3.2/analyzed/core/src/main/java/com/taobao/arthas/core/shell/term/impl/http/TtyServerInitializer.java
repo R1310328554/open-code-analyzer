@@ -18,11 +18,18 @@ import io.termd.core.tty.TtyConnection;
 
 
 /**
+ * 对外 TCP {@link SocketChannel} 的 Netty Pipeline 初始化器。
+ * <p>
+ * 在 HTTP 聚合器之后插入 {@link BasicHttpAuthenticatorHandler}，再路由静态资源
+ * 与 WebSocket 升级；与 {@link LocalTtyServerInitializer} 相比多 HTTP 认证环节。
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class TtyServerInitializer extends ChannelInitializer<SocketChannel> {
 
+  /** WebSocket 活跃连接组 */
   private final ChannelGroup group;
+  /** TTY 连接建立后的 Shell 回调 */
   private final Consumer<TtyConnection> handler;
   private EventExecutorGroup workerGroup;
   private HttpSessionManager httpSessionManager;
@@ -35,6 +42,7 @@ public class TtyServerInitializer extends ChannelInitializer<SocketChannel> {
   }
 
   @Override
+  /** 配置 HTTP → 认证 → 静态/API → WebSocket → TTY 完整 pipeline */
   protected void initChannel(SocketChannel ch) throws Exception {
 
     ChannelPipeline pipeline = ch.pipeline();

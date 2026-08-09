@@ -40,14 +40,19 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 /**
- * 
- * @author hengyunabc 2019-11-06
+ * Arthas 输出目录 HTTP 静态文件浏览与下载。
+ * <p>
+ * 为 {@code arthas-output} 等目录生成 HTML 索引页；小文件内存发送，
+ * 大文件使用 {@link DefaultFileRegion} 零拷贝传输。
  *
+ * @author hengyunabc 2019-11-06
  */
 public class DirectoryBrowser {
 
+    /** HTTP Date 响应头格式字符串 */
     public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
+    /** 超过此字节数改用 FileRegion/ChunkedFile 发送 */
     public static final long MIN_NETTY_DIRECT_SEND_SIZE = ArthasConstants.MAX_HTTP_CONTENT_LENGTH;
     private static final Logger logger = LoggerFactory.getLogger(DirectoryBrowser.class);
     //@formatter:off
@@ -83,6 +88,7 @@ public class DirectoryBrowser {
     private static String linePart1Str = "<a href=\"%s\" title=\"%s\">";
     private static String linePart2Str = "%-60s";
 
+    /** 渲染目录 HTML 列表页（子目录优先、再文件，含修改时间与大小） */
     static String renderDir(File dir, boolean printParentLink) {
         File[] listFiles = dir.listFiles();
 
@@ -139,21 +145,21 @@ public class DirectoryBrowser {
     }
 
     /**
-     *  write data here,still return not null just to know succeeded.
-     * @param dir
-     * @param path
-     * @param request
-     * @param ctx
-     * @return
-     * @throws IOException
+     * 直接写出文件/目录内容到 channel；成功时返回非 null 响应占位。
+     *
+     * @param dir 允许访问的根目录（如 outputPath）
+     * @param path 请求 URI 路径
+     * @param request 完整 HTTP 请求
+     * @param ctx Netty 上下文
+     * @return 已处理的响应对象，路径非法或不存在时 null
+     * @throws IOException 读写文件失败
      */
     public static DefaultFullHttpResponse directView(File dir, String path, FullHttpRequest request, ChannelHandlerContext ctx) throws IOException {
         if (path.startsWith("/")) {
             path = path.substring(1);
         }
 
-        // path maybe: arthas-output/20201225-203454.svg 
-        // 需要取 dir的parent来去掉前缀
+        // 路径如 arthas-output/xxx.svg；用 dir 的 parent 拼接真实文件路径
         File file = new File(dir.getParent(), path);
         HttpVersion version = request.protocolVersion();
         if (isSubFile(dir, file)) {
@@ -270,9 +276,10 @@ public class DirectoryBrowser {
 
     private static void setContentTypeHeader(HttpResponse response, File file) {
         String contentType = "application/octet-stream";
-        // 暂时hardcode 大文件的content-type
+        // 大文件暂固定 application/octet-stream
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
     }
+    /** 校验 child 规范路径是否在 parent 目录树内（防目录穿越） */
     public static boolean isSubFile(File parent, File child) throws IOException {
         String parentPath = parent.getCanonicalPath();
         String childPath = child.getCanonicalPath();
@@ -282,6 +289,7 @@ public class DirectoryBrowser {
         return false;
     }
 
+    /** 比较两文件规范路径是否相同 */
     public static boolean isSameFile(File a, File b) {
         try {
             return a.getCanonicalPath().equals(b.getCanonicalPath());

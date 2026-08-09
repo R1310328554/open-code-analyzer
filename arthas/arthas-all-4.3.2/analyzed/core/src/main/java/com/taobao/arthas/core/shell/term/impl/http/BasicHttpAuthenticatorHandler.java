@@ -30,15 +30,20 @@ import static com.taobao.arthas.mcp.server.util.McpAuthExtractor.SUBJECT_ATTRIBU
 
 
 /**
- * 
- * @author hengyunabc 2021-03-03
+ * HTTP Basic/Bearer 认证 Netty 处理器，位于 pipeline 最前段。
+ * <p>
+ * 校验 {@link SecurityAuthenticator} 登录态；支持 Session 复用、URL 参数、
+ * Authorization 头及本地连接免认证；MCP 端点额外支持 Bearer Token。
  *
+ * @author hengyunabc 2021-03-03
  */
 public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
     private static final Logger logger = LoggerFactory.getLogger(BasicHttpAuthenticatorHandler.class);
 
+    /** HTTP 会话管理器，维护 cookie 与 Subject */
     private HttpSessionManager httpSessionManager;
 
+    /** 全局安全认证器，决定是否需登录及校验凭据 */
     private SecurityAuthenticator securityAuthenticator = ArthasBootstrap.getInstance().getSecurityAuthenticator();
 
     public BasicHttpAuthenticatorHandler(HttpSessionManager httpSessionManager) {
@@ -47,7 +52,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        // 先处理非 HttpRequest 消息
+        // 非 HttpRequest 消息直接透传
         if (!(msg instanceof HttpRequest)) {
             ctx.fireChannelRead(msg);
             return;
@@ -56,7 +61,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
         HttpRequest httpRequest = (HttpRequest) msg;
         HttpSession session = httpSessionManager.getOrCreateHttpSession(ctx, httpRequest);
 
-        // 无论是否需要登录认证，都从 URL 中提取 userId
+        // 无论是否强制登录，均从 URL 提取 userId 写入 Session
         extractAndSetUserIdFromUrl(httpRequest, session);
 
         if (!securityAuthenticator.needLogin()) {
@@ -66,7 +71,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
 
         boolean authed = false;
 
-        // 判断session里是否有已登录信息
+        // 检查 Session 是否已有已认证的 Subject
         if (session != null) {
             Object subjectObj = session.getAttribute(ArthasConstants.SUBJECT_KEY);
             if (subjectObj != null) {
@@ -88,7 +93,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
                 }
             }
             if (principal == null) {
-                // 判断是否本地连接
+                // 本地回环连接可自动授予 localPrincipal
                 principal = AuthUtils.localPrincipal(ctx);
             }
             Subject subject = securityAuthenticator.login(principal);
@@ -99,7 +104,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
         }
 
         if (!authed) {
-            // restricted resource, so send back 401 to require valid username/password
+            // 受保护资源：返回 401 并要求有效凭据
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNAUTHORIZED);
 
             if (isMcpRequest) {
@@ -114,7 +119,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
             response.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
 
             ctx.writeAndFlush(response);
-            // close the channel
+            // 认证失败则关闭连接
             ctx.channel().close();
             return;
         }
@@ -132,7 +137,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof HttpResponse) {
-            // write cookie
+            // 响应写出时附加 Session Cookie
             HttpResponse response = (HttpResponse) msg;
             Attribute<HttpSession> attribute = ctx.channel().attr(HttpSessionManager.SESSION_KEY);
             HttpSession session = attribute.get();
@@ -144,10 +149,10 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * 从 url 参数里提取 userId 并存入 HttpSession
-     * 
-     * @param request
-     * @param session
+     * 从 URL 查询参数提取 userId 并存入 {@link HttpSession}。
+     *
+     * @param request HTTP 请求
+     * @param session 当前 HTTP 会话
      */
     protected static void extractAndSetUserIdFromUrl(HttpRequest request, HttpSession session) {
         if (session == null) {
@@ -167,10 +172,10 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * 从 url 参数里提取 ?username=hello&password=world
-     * 
-     * @param request
-     * @return
+     * 从 URL 参数提取 Basic 凭据（{@code ?username=&password=}）。
+     *
+     * @param request HTTP 请求
+     * @return 解析出的 {@link BasicPrincipal}，缺省密码时返回 null
      */
     protected static BasicPrincipal extractBasicAuthSubjectFromUrl(HttpRequest request) {
         QueryStringDecoder queryDecoder = new QueryStringDecoder(request.uri());
@@ -193,14 +198,11 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Extracts the username and password details from the HTTP basic header
-     * Authorization.
-     * <p/>
-     * This requires that the <tt>Authorization</tt> HTTP header is provided, and
-     * its using Basic. Currently Digest is <b>not</b> supported.
+     * 从 {@code Authorization: Basic ...} 头解析用户名与密码。
+     * <p>
+     * 仅支持 Basic 方案，不支持 Digest。
      *
-     * @return {@link HttpPrincipal} with username and password details, or
-     *         <tt>null</tt> if not possible to extract
+     * @return 凭据 {@link BasicPrincipal}，无法解析时返回 null
      */
     protected static BasicPrincipal extractBasicAuthSubject(HttpRequest request) {
         String auth = request.headers().get(HttpHeaderNames.AUTHORIZATION);
@@ -213,7 +215,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
                         logger.error("Extracted Basic Auth principal failed, bad auth String: {}", auth);
                         return null;
                     }
-                    // the decoded part is base64 encoded, so we need to decode that
+                    // Base64 解码得到 user:password 明文
                     ByteBuf buf = Unpooled.wrappedBuffer(decoded.getBytes());
                     ByteBuf out = Base64.decode(buf);
                     String userAndPw = out.toString(Charset.defaultCharset());
@@ -229,9 +231,9 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * 判断是否为MCP请求
-     * 
-     * @param request
+     * 判断请求路径是否匹配 MCP 服务端点配置。
+     *
+     * @param request HTTP 请求
      */
     protected static boolean isMcpRequest(HttpRequest request) {
         try {
@@ -242,7 +244,7 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
 
             String mcpEndpoint = ArthasBootstrap.getInstance().getConfigure().getMcpEndpoint();
             if (mcpEndpoint == null || mcpEndpoint.trim().isEmpty()) {
-                // MCP 服务器未配置，不处理 MCP 请求
+                // MCP 端点未配置则不走 MCP 认证分支
                 return false;
             }
             
@@ -254,31 +256,31 @@ public final class BasicHttpAuthenticatorHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * 为MCP请求提取认证主体，支持Bearer Token和Basic Auth两种方式
-     * 
-     * @param request
+     * 为 MCP 请求提取认证主体：Bearer → Basic 头 → URL 参数。
+     *
+     * @param request HTTP 请求
      */
     protected static Principal extractMcpAuthSubject(HttpRequest request) {
-        // 首先尝试Bearer Token认证
+        // 优先尝试 Bearer Token
         BearerPrincipal tokenPrincipal = extractBearerTokenSubject(request);
         if (tokenPrincipal != null) {
             return tokenPrincipal;
         }
 
-        // 然后尝试Basic Auth认证
+        // 其次尝试 Basic Auth 头
         BasicPrincipal basicPrincipal = extractBasicAuthSubject(request);
         if (basicPrincipal != null) {
             return basicPrincipal;
         }
 
-        // 最后尝试从URL参数提取
+        // 最后回退 URL 参数凭据
         return extractBasicAuthSubjectFromUrl(request);
     }
 
     /**
-     * 从Authorization header中提取Bearer Token
-     * 
-     * @param request
+     * 从 {@code Authorization: Bearer ...} 头提取 Token。
+     *
+     * @param request HTTP 请求
      */
     protected static BearerPrincipal extractBearerTokenSubject(HttpRequest request) {
         String auth = request.headers().get(HttpHeaderNames.AUTHORIZATION);
