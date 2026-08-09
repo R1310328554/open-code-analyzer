@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T19:16:57Z",
-  "files": [
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/DefaultGrpcMessagingActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/GrpcMessagingActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/channel/GrpcChannelManager.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/channel/GrpcClientChannel.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/common/GrpcClientSettingsManager.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/common/GrpcConverter.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/common/GrpcProxyException.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/common/GrpcValidator.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/common/ResponseBuilder.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/common/ResponseWriter.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/consumer/AckMessageActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/consumer/ChangeInvisibleDurationActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/consumer/PopMessageResultFilterImpl.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/consumer/ReceiveMessageActivity.java",
-    "proxy/src/main/java/org/apache/rocketmq/proxy/grpc/v2/consumer/ReceiveMessageResponseStreamWriter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 828,
-  "done": 645
+  "done": 660
 }
