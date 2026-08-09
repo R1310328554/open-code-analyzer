@@ -15,23 +15,8 @@
     "sentinel-extension/sentinel-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/exporter/jmx/MetricBean.java",
     "sentinel-extension/sentinel-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/exporter/jmx/MetricBeanWriter.java",
     "sentinel-extension/sentinel-metric-exporter/src/main/java/com/alibaba/csp/sentinel/metric/exporter/jmx/MetricMXBean.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/command/handler/GetParamFlowRulesCommandHandler.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/command/handler/ModifyParamFlowRulesCommandHandler.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/init/ParamFlowStatisticSlotCallbackInit.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/HotParamSlotChainBuilder.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowArgument.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowChecker.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowClusterConfig.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowException.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowItem.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowRule.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowRuleManager.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowRuleUtil.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParamFlowSlot.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParameterMetric.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/ParameterMetricStorage.java",
-    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/slots/block/flow/param/RollingParamEvent.java"
+    "sentinel-extension/sentinel-parameter-flow-control/src/main/java/com/alibaba/csp/sentinel/command/handler/GetParamFlowRulesCommandHandler.java"
   ],
   "remaining_pending": 95,
-  "done": 825
+  "done": 840
 }
