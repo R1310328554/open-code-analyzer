@@ -41,16 +41,21 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * Spring Data Redis 响应式 Stream 命令实现。
+ * <p>封装 XADD/XACK/XDEL、XRANGE/XREVRANGE、XREAD/XREADGROUP、
+XCLAIM/XPENDING、XINFO 及 XGROUP 消费者组管理。
  *
  * @author Nikita Koksharov
  *
  */
 public class RedissonReactiveStreamCommands extends RedissonBaseReactive implements ReactiveStreamCommands {
 
+    /** 注入响应式命令执行器。 */
     RedissonReactiveStreamCommands(CommandReactiveExecutor executorService) {
         super(executorService);
     }
 
+    /** 将 RecordId 列表转为 Redis 命令参数字符串列表。 */
     private static List<String> toStringList(List<RecordId> recordIds) {
         return recordIds.stream().map(RecordId::getValue).collect(Collectors.toList());
     }
