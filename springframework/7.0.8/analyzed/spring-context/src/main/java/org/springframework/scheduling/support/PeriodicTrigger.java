@@ -29,21 +29,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 /**
- * A trigger for periodic task execution. The period may be applied as either
- * fixed-rate or fixed-delay, and an initial delay value may also be configured.
- * The default initial delay is 0, and the default behavior is fixed-delay
- * (i.e. the interval between successive executions is measured from each
- * <i>completion</i> time). To measure the interval between the
- * scheduled <i>start</i> time of each execution instead, set the
- * 'fixedRate' property to {@code true}.
+ * 用于周期性任务执行的触发器。周期可按固定速率或固定延迟应用，
+ * 也可配置初始延迟。默认初始延迟为 0，默认行为为固定延迟
+ *（即连续两次执行之间的间隔从每次<i>完成</i>时刻起算）。
+ * 若要从各次调度的<i>开始</i>时刻起算间隔，
+ * 将 {@code fixedRate} 属性设为 {@code true}。
  *
- * <p>Note that the TaskScheduler interface already defines methods for scheduling
- * tasks at fixed-rate or with fixed-delay. Both also support an optional value
- * for the initial delay. Those methods should be used directly whenever
- * possible. The value of this Trigger implementation is that it can be used
- * within components that rely on the Trigger abstraction. For example, it may
- * be convenient to allow periodic triggers, cron-based triggers, and even
- * custom Trigger implementations to be used interchangeably.
+ * <p>注意：{@link TaskScheduler} 接口已定义固定速率与固定延迟的调度方法，
+ * 且均支持可选的初始延迟。应尽可能直接使用这些方法。
+ * 本 {@link Trigger} 实现的价值在于可在依赖 Trigger 抽象层的组件中使用，
+ * 例如便于周期触发器、cron 触发器乃至自定义 Trigger 实现互换使用。
  *
  * @author Mark Fisher
  * @since 3.0
@@ -60,8 +55,8 @@ public class PeriodicTrigger implements Trigger {
 
 
 	/**
-	 * Create a trigger with the given period in milliseconds.
-	 * @deprecated as of 6.0, in favor on {@link #PeriodicTrigger(Duration)}
+	 * 以给定毫秒周期创建触发器。
+	 * @deprecated 自 6.0 起，请改用 {@link #PeriodicTrigger(Duration)}
 	 */
 	@Deprecated(since = "6.0")
 	public PeriodicTrigger(long period) {
@@ -69,10 +64,9 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Create a trigger with the given period and time unit. The time unit will
-	 * apply not only to the period but also to any 'initialDelay' value, if
-	 * configured on this Trigger later via {@link #setInitialDelay(long)}.
-	 * @deprecated as of 6.0, in favor on {@link #PeriodicTrigger(Duration)}
+	 * 以给定周期与时间单位创建触发器。该时间单位不仅作用于周期，
+	 * 也作用于后续通过 {@link #setInitialDelay(long)} 配置的 initialDelay。
+	 * @deprecated 自 6.0 起，请改用 {@link #PeriodicTrigger(Duration)}
 	 */
 	@Deprecated(since = "6.0")
 	public PeriodicTrigger(long period, @Nullable TimeUnit timeUnit) {
@@ -89,7 +83,7 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Create a trigger with the given period as a duration.
+	 * 以给定 {@link Duration} 周期创建触发器。
 	 * @since 6.0
 	 */
 	public PeriodicTrigger(Duration period) {
@@ -110,9 +104,9 @@ public class PeriodicTrigger implements Trigger {
 
 
 	/**
-	 * Return this trigger's period.
+	 * 返回本触发器的周期。
 	 * @since 5.0.2
-	 * @deprecated as of 6.0, in favor on {@link #getPeriodDuration()}
+	 * @deprecated 自 6.0 起，请改用 {@link #getPeriodDuration()}
 	 */
 	@Deprecated(since = "6.0")
 	public long getPeriod() {
@@ -125,7 +119,7 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Return this trigger's period.
+	 * 返回本触发器的周期。
 	 * @since 6.0
 	 */
 	public Duration getPeriodDuration() {
@@ -133,9 +127,9 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Return this trigger's time unit (milliseconds by default).
+	 * 返回本触发器的时间单位（默认为毫秒）。
 	 * @since 5.0.2
-	 * @deprecated as of 6.0, with no direct replacement
+	 * @deprecated 自 6.0 起，无直接替代方法
 	 */
 	@Deprecated(since = "6.0")
 	public TimeUnit getTimeUnit() {
@@ -148,10 +142,9 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Specify the delay for the initial execution. It will be evaluated in
-	 * terms of this trigger's {@link TimeUnit}. If no time unit was explicitly
-	 * provided upon instantiation, the default is milliseconds.
-	 * @deprecated as of 6.0, in favor of {@link #setInitialDelay(Duration)}
+	 * 指定首次执行的延迟，按本触发器的 {@link TimeUnit} 解释。
+	 * 若实例化时未显式提供时间单位，则默认为毫秒。
+	 * @deprecated 自 6.0 起，请改用 {@link #setInitialDelay(Duration)}
 	 */
 	@Deprecated(since = "6.0")
 	public void setInitialDelay(long initialDelay) {
@@ -164,7 +157,7 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Specify the delay for the initial execution.
+	 * 指定首次执行的延迟。
 	 * @since 6.0
 	 */
 	public void setInitialDelay(Duration initialDelay) {
@@ -172,9 +165,9 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Return the initial delay, or 0 if none.
+	 * 返回初始延迟；若无则返回 0。
 	 * @since 5.0.2
-	 * @deprecated as of 6.0, in favor on {@link #getInitialDelayDuration()}
+	 * @deprecated 自 6.0 起，请改用 {@link #getInitialDelayDuration()}
 	 */
 	@Deprecated(since = "6.0")
 	public long getInitialDelay() {
@@ -193,7 +186,7 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Return the initial delay, or {@code null} if none.
+	 * 返回初始延迟；若无则返回 {@code null}。
 	 * @since 6.0
 	 */
 	public @Nullable Duration getInitialDelayDuration() {
@@ -201,17 +194,15 @@ public class PeriodicTrigger implements Trigger {
 	}
 
 	/**
-	 * Specify whether the periodic interval should be measured between the
-	 * scheduled start times rather than between actual completion times.
-	 * The latter, "fixed delay" behavior, is the default.
+	 * 指定周期间隔是否按各次调度的开始时间（而非实际完成时间）计量。
+	 * 后者即“固定延迟”行为，为默认方式。
 	 */
 	public void setFixedRate(boolean fixedRate) {
 		this.fixedRate = fixedRate;
 	}
 
 	/**
-	 * Return whether this trigger uses fixed rate ({@code true}) or
-	 * fixed delay ({@code false}) behavior.
+	 * 返回本触发器是否使用固定速率（{@code true}）或固定延迟（{@code false}）。
 	 * @since 5.0.2
 	 */
 	public boolean isFixedRate() {
@@ -220,7 +211,7 @@ public class PeriodicTrigger implements Trigger {
 
 
 	/**
-	 * Returns the time after which a task should run again.
+	 * 返回任务下次应执行的时间。
 	 */
 	@Override
 	public Instant nextExecution(TriggerContext triggerContext) {

@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.NestedRuntimeException;
 
 /**
- * Exception to be thrown on script compilation failure.
+ * 脚本编译失败时抛出的异常。
  *
  * @author Juergen Hoeller
  * @since 2.0
@@ -33,8 +33,8 @@ public class ScriptCompilationException extends NestedRuntimeException {
 
 
 	/**
-	 * Constructor for ScriptCompilationException.
-	 * @param msg the detail message
+	 * ScriptCompilationException 构造函数。
+	 * @param msg 详细消息
 	 */
 	public ScriptCompilationException(String msg) {
 		super(msg);
@@ -42,9 +42,9 @@ public class ScriptCompilationException extends NestedRuntimeException {
 	}
 
 	/**
-	 * Constructor for ScriptCompilationException.
-	 * @param msg the detail message
-	 * @param cause the root cause (usually from using an underlying script compiler API)
+	 * ScriptCompilationException 构造函数。
+	 * @param msg 详细消息
+	 * @param cause 根因（通常来自底层脚本编译 API）
 	 */
 	public ScriptCompilationException(String msg, Throwable cause) {
 		super(msg, cause);
@@ -52,9 +52,9 @@ public class ScriptCompilationException extends NestedRuntimeException {
 	}
 
 	/**
-	 * Constructor for ScriptCompilationException.
-	 * @param scriptSource the source for the offending script
-	 * @param msg the detail message
+	 * ScriptCompilationException 构造函数。
+	 * @param scriptSource 出错脚本的来源
+	 * @param msg 详细消息
 	 * @since 4.2
 	 */
 	public ScriptCompilationException(ScriptSource scriptSource, String msg) {
@@ -63,9 +63,9 @@ public class ScriptCompilationException extends NestedRuntimeException {
 	}
 
 	/**
-	 * Constructor for ScriptCompilationException.
-	 * @param scriptSource the source for the offending script
-	 * @param cause the root cause (usually from using an underlying script compiler API)
+	 * ScriptCompilationException 构造函数。
+	 * @param scriptSource 出错脚本的来源
+	 * @param cause 根因（通常来自底层脚本编译 API）
 	 */
 	public ScriptCompilationException(ScriptSource scriptSource, Throwable cause) {
 		super("Could not compile " + scriptSource, cause);
@@ -73,10 +73,10 @@ public class ScriptCompilationException extends NestedRuntimeException {
 	}
 
 	/**
-	 * Constructor for ScriptCompilationException.
-	 * @param scriptSource the source for the offending script
-	 * @param msg the detail message
-	 * @param cause the root cause (usually from using an underlying script compiler API)
+	 * ScriptCompilationException 构造函数。
+	 * @param scriptSource 出错脚本的来源
+	 * @param msg 详细消息
+	 * @param cause 根因（通常来自底层脚本编译 API）
 	 */
 	public ScriptCompilationException(ScriptSource scriptSource, String msg, Throwable cause) {
 		super("Could not compile " + scriptSource + ": " + msg, cause);
@@ -85,8 +85,8 @@ public class ScriptCompilationException extends NestedRuntimeException {
 
 
 	/**
-	 * Return the source for the offending script.
-	 * @return the source, or {@code null} if not available
+	 * 返回出错脚本的来源。
+	 * @return 脚本来源，若不可用则为 {@code null}
 	 */
 	public @Nullable ScriptSource getScriptSource() {
 		return this.scriptSource;

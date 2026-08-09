@@ -26,11 +26,11 @@ import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.StringUtils;
 
 /**
- * A {@link BeanDefinitionParser} for use when loading scripting XML.
+ * 加载脚本 XML 时使用的 {@link BeanDefinitionParser}。
  *
  * @author Mark Fisher
  * @since 2.5
- * @deprecated with no replacement as not actively maintained anymore
+ * @deprecated 无替代方案，已不再积极维护
  */
 @Deprecated(since = "7.0")
 class ScriptingDefaultsParser implements BeanDefinitionParser {

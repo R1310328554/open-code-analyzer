@@ -29,10 +29,10 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 
 /**
- * A basic, no operation {@link TaskScheduler} implementation suitable
- * for disabling scheduling, typically used for test setups.
+ * 基础的空操作 {@link TaskScheduler} 实现，适用于禁用调度，
+ * 通常用于测试环境配置。
  *
- * <p>Will accept any scheduling request but never actually execute it.
+ * <p>接受任何调度请求，但从不实际执行。
  *
  * @author Juergen Hoeller
  * @since 6.1.3

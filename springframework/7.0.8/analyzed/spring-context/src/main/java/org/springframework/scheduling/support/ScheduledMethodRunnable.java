@@ -29,9 +29,8 @@ import org.springframework.scheduling.SchedulingAwareRunnable;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Variant of {@link MethodInvokingRunnable} meant to be used for processing
- * of no-arg scheduled methods. Propagates user exceptions to the caller,
- * assuming that an error strategy for Runnables is in place.
+ * {@link MethodInvokingRunnable} 的变体，用于处理无参调度方法。
+ * 将用户异常传播给调用方，前提是已为 Runnable 配置错误处理策略。
  *
  * @author Juergen Hoeller
  * @author Brian Clozel
@@ -53,13 +52,12 @@ public class ScheduledMethodRunnable implements SchedulingAwareRunnable {
 
 
 	/**
-	 * Create a {@code ScheduledMethodRunnable} for the given target instance,
-	 * calling the specified method.
-	 * @param target the target instance to call the method on
-	 * @param method the target method to call
-	 * @param qualifier a qualifier associated with this Runnable,
-	 * for example, for determining a scheduler to run this scheduled method on
-	 * @param observationRegistrySupplier a supplier for the observation registry to use
+	 * 为给定目标实例创建 {@code ScheduledMethodRunnable}，调用指定方法。
+	 * @param target 要调用方法的目标实例
+	 * @param method 要调用的目标方法
+	 * @param qualifier 与本 Runnable 关联的限定符，
+	 * 例如用于确定运行该调度方法的调度器
+	 * @param observationRegistrySupplier 观测注册表的供应器
 	 * @since 6.1
 	 */
 	public ScheduledMethodRunnable(Object target, Method method, @Nullable String qualifier,
@@ -72,21 +70,19 @@ public class ScheduledMethodRunnable implements SchedulingAwareRunnable {
 	}
 
 	/**
-	 * Create a {@code ScheduledMethodRunnable} for the given target instance,
-	 * calling the specified method.
-	 * @param target the target instance to call the method on
-	 * @param method the target method to call
+	 * 为给定目标实例创建 {@code ScheduledMethodRunnable}，调用指定方法。
+	 * @param target 要调用方法的目标实例
+	 * @param method 要调用的目标方法
 	 */
 	public ScheduledMethodRunnable(Object target, Method method) {
 		this(target, method, null, () -> ObservationRegistry.NOOP);
 	}
 
 	/**
-	 * Create a {@code ScheduledMethodRunnable} for the given target instance,
-	 * calling the specified method by name.
-	 * @param target the target instance to call the method on
-	 * @param methodName the name of the target method
-	 * @throws NoSuchMethodException if the specified method does not exist
+	 * 为给定目标实例创建 {@code ScheduledMethodRunnable}，按名称调用指定方法。
+	 * @param target 要调用方法的目标实例
+	 * @param methodName 目标方法名
+	 * @throws NoSuchMethodException 若指定方法不存在
 	 */
 	public ScheduledMethodRunnable(Object target, String methodName) throws NoSuchMethodException {
 		this(target, target.getClass().getMethod(methodName));
@@ -94,14 +90,14 @@ public class ScheduledMethodRunnable implements SchedulingAwareRunnable {
 
 
 	/**
-	 * Return the target instance to call the method on.
+	 * 返回要调用方法的目标实例。
 	 */
 	public Object getTarget() {
 		return this.target;
 	}
 
 	/**
-	 * Return the target method to call.
+	 * 返回要调用的目标方法。
 	 */
 	public Method getMethod() {
 		return this.method;

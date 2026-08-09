@@ -20,8 +20,8 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 
 /**
- * Interface for an {@link ObservationConvention} for
- * {@link ScheduledTaskObservationDocumentation#TASKS_SCHEDULED_EXECUTION scheduled task executions}.
+ * 用于{@link ScheduledTaskObservationDocumentation#TASKS_SCHEDULED_EXECUTION 调度任务执行}
+ * 的 {@link ObservationConvention} 接口。
  *
  * @author Brian Clozel
  * @since 6.1

@@ -23,8 +23,8 @@ import io.micrometer.observation.Observation;
 import org.springframework.util.ClassUtils;
 
 /**
- * Context that holds information for observation metadata collection during the
- * {@link ScheduledTaskObservationDocumentation#TASKS_SCHEDULED_EXECUTION execution of scheduled tasks}.
+ * 在{@link ScheduledTaskObservationDocumentation#TASKS_SCHEDULED_EXECUTION 调度任务执行}
+ * 期间保存观测元数据收集信息的上下文。
  *
  * @author Brian Clozel
  * @since 6.1
@@ -39,10 +39,9 @@ public class ScheduledTaskObservationContext extends Observation.Context {
 
 
 	/**
-	 * Create a new observation context for a task, given the target object
-	 * and the method to be called.
-	 * @param target the target object that is called for task execution
-	 * @param method the method that is called for task execution
+	 * 根据目标对象与待调用方法，为任务创建新的观测上下文。
+	 * @param target 任务执行时调用的目标对象
+	 * @param method 任务执行时调用的方法
 	 */
 	public ScheduledTaskObservationContext(Object target, Method method) {
 		this.targetClass = ClassUtils.getUserClass(target);
@@ -51,31 +50,30 @@ public class ScheduledTaskObservationContext extends Observation.Context {
 
 
 	/**
-	 * Return the type of the target object.
+	 * 返回目标对象的类型。
 	 */
 	public Class<?> getTargetClass() {
 		return this.targetClass;
 	}
 
 	/**
-	 * Return the method that is called for task execution.
+	 * 返回任务执行时调用的方法。
 	 */
 	public Method getMethod() {
 		return this.method;
 	}
 
 	/**
-	 * Return whether the task execution is complete.
-	 * <p>If an observation has ended and the task is not complete, this means
-	 * that an {@link #getError() error} was raised or that the task execution got cancelled
-	 * during its execution.
+	 * 返回任务执行是否已完成。
+	 * <p>若观测已结束而任务未完成，表示执行期间发生了
+	 * {@link #getError() 错误}或任务被取消。
 	 */
 	public boolean isComplete() {
 		return this.complete;
 	}
 
 	/**
-	 * Set whether the task execution has completed.
+	 * 设置任务执行是否已完成。
 	 */
 	public void setComplete(boolean complete) {
 		this.complete = complete;

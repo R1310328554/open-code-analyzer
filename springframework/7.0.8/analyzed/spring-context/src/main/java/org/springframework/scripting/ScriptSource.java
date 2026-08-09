@@ -21,8 +21,7 @@ import java.io.IOException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Interface that defines the source of a script.
- * Tracks whether the underlying script has been modified.
+ * 定义脚本来源的接口，跟踪底层脚本是否已修改。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
@@ -31,23 +30,22 @@ import org.jspecify.annotations.Nullable;
 public interface ScriptSource {
 
 	/**
-	 * Retrieve the current script source text as String.
-	 * @return the script text
-	 * @throws IOException if script retrieval failed
+	 * 以 String 形式获取当前脚本文本。
+	 * @return 脚本文本
+	 * @throws IOException 若脚本获取失败
 	 */
 	String getScriptAsString() throws IOException;
 
 	/**
-	 * Indicate whether the underlying script data has been modified since
-	 * the last time {@link #getScriptAsString()} was called.
-	 * Returns {@code true} if the script has not been read yet.
-	 * @return whether the script data has been modified
+	 * 指示自上次调用 {@link #getScriptAsString()} 以来底层脚本数据是否已修改。
+	 * 若脚本尚未读取则返回 {@code true}。
+	 * @return 脚本数据是否已修改
 	 */
 	boolean isModified();
 
 	/**
-	 * Determine a class name for the underlying script.
-	 * @return the suggested class name, or {@code null} if none available
+	 * 确定底层脚本的类名。
+	 * @return 建议的类名；若无可用名称则为 {@code null}
 	 */
 	@Nullable String suggestedClassName();
 

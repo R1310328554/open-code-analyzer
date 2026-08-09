@@ -23,11 +23,10 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 /**
- * Documented {@link io.micrometer.common.KeyValue KeyValues} for the observations on
- * executions of {@link org.springframework.scheduling.annotation.Scheduled scheduled tasks}
+ * 针对 {@link org.springframework.scheduling.annotation.Scheduled 调度任务}
+ * 执行观测的已文档化 {@link io.micrometer.common.KeyValue KeyValue}。
  *
- * <p>This class is used by automated tools to document KeyValues attached to the
- * {@code @Scheduled} observations.
+ * <p>本类供自动化工具记录附加于 {@code @Scheduled} 观测的 KeyValue。
  *
  * @author Brian Clozel
  * @since 6.1
@@ -35,7 +34,7 @@ import io.micrometer.observation.docs.ObservationDocumentation;
 public enum ScheduledTaskObservationDocumentation implements ObservationDocumentation {
 
 	/**
-	 * Observations on executions of {@link org.springframework.scheduling.annotation.Scheduled} tasks.
+	 * 对 {@link org.springframework.scheduling.annotation.Scheduled} 任务执行的观测。
 	 */
 	TASKS_SCHEDULED_EXECUTION {
 		@Override
@@ -56,7 +55,7 @@ public enum ScheduledTaskObservationDocumentation implements ObservationDocument
 	public enum LowCardinalityKeyNames implements KeyName {
 
 		/**
-		 * Name of the method that is executed for the scheduled task.
+		 * 调度任务所执行方法的名称。
 		 */
 		CODE_FUNCTION {
 			@Override
@@ -66,7 +65,7 @@ public enum ScheduledTaskObservationDocumentation implements ObservationDocument
 		},
 
 		/**
-		 * {@link Class#getCanonicalName() Canonical name} of the target type that owns the scheduled method.
+		 * 拥有调度方法的目标类型的 {@link Class#getCanonicalName() 规范名称}。
 		 */
 		CODE_NAMESPACE {
 			@Override
@@ -76,7 +75,7 @@ public enum ScheduledTaskObservationDocumentation implements ObservationDocument
 		},
 
 		/**
-		 * Name of the exception thrown during task execution, or {@value KeyValue#NONE_VALUE} if no exception was thrown.
+		 * 任务执行期间抛出的异常名称；若未抛出异常则为 {@value KeyValue#NONE_VALUE}。
 		 */
 		EXCEPTION {
 			@Override
@@ -86,7 +85,7 @@ public enum ScheduledTaskObservationDocumentation implements ObservationDocument
 		},
 
 		/**
-		 * Outcome of the scheduled task execution.
+		 * 调度任务执行的结果。
 		 */
 		OUTCOME {
 			@Override

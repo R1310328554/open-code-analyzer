@@ -33,41 +33,37 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Utility methods for handling BeanShell-scripted objects.
+ * 处理 BeanShell 脚本化对象的实用方法。
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
- * @deprecated with no replacement as not actively maintained anymore
+ * @deprecated 无替代方案，已不再积极维护
  */
 @Deprecated(since = "7.0")
 public abstract class BshScriptUtils {
 
 	/**
-	 * Create a new BeanShell-scripted object from the given script source.
-	 * <p>With this {@code createBshObject} variant, the script needs to
-	 * declare a full class or return an actual instance of the scripted object.
-	 * @param scriptSource the script source text
-	 * @return the scripted Java object
-	 * @throws EvalError in case of BeanShell parsing failure
+	 * 从给定脚本文本创建新的 BeanShell 脚本化对象。
+	 * <p>此 {@code createBshObject} 变体要求脚本声明完整类
+	 * 或返回脚本化对象的实际实例。
+	 * @param scriptSource 脚本文本
+	 * @return 脚本化 Java 对象
+	 * @throws EvalError BeanShell 解析失败时
 	 */
 	public static Object createBshObject(String scriptSource) throws EvalError {
 		return createBshObject(scriptSource, null, null);
 	}
 
 	/**
-	 * Create a new BeanShell-scripted object from the given script source,
-	 * using the default ClassLoader.
-	 * <p>The script may either be a simple script that needs a corresponding proxy
-	 * generated (implementing the specified interfaces), or declare a full class
-	 * or return an actual instance of the scripted object (in which case the
-	 * specified interfaces, if any, need to be implemented by that class/instance).
-	 * @param scriptSource the script source text
-	 * @param scriptInterfaces the interfaces that the scripted Java object is
-	 * supposed to implement (may be {@code null} or empty if the script itself
-	 * declares a full class or returns an actual instance of the scripted object)
-	 * @return the scripted Java object
-	 * @throws EvalError in case of BeanShell parsing failure
+	 * 使用默认 ClassLoader 从给定脚本文本创建 BeanShell 脚本化对象。
+	 * <p>脚本可以是需生成对应代理的简单脚本，也可声明完整类或返回实例
+	 *（此时指定接口须由该类/实例实现）。
+	 * @param scriptSource 脚本文本
+	 * @param scriptInterfaces 脚本化 Java 对象应实现的接口
+	 *（若脚本自行声明完整类或返回实例，可为 {@code null} 或空）
+	 * @return 脚本化 Java 对象
+	 * @throws EvalError BeanShell 解析失败时
 	 * @see #createBshObject(String, Class[], ClassLoader)
 	 */
 	public static Object createBshObject(String scriptSource, Class<?> @Nullable ... scriptInterfaces) throws EvalError {
@@ -75,18 +71,15 @@ public abstract class BshScriptUtils {
 	}
 
 	/**
-	 * Create a new BeanShell-scripted object from the given script source.
-	 * <p>The script may either be a simple script that needs a corresponding proxy
-	 * generated (implementing the specified interfaces), or declare a full class
-	 * or return an actual instance of the scripted object (in which case the
-	 * specified interfaces, if any, need to be implemented by that class/instance).
-	 * @param scriptSource the script source text
-	 * @param scriptInterfaces the interfaces that the scripted Java object is
-	 * supposed to implement (may be {@code null} or empty if the script itself
-	 * declares a full class or returns an actual instance of the scripted object)
-	 * @param classLoader the ClassLoader to use for evaluating the script
-	 * @return the scripted Java object
-	 * @throws EvalError in case of BeanShell parsing failure
+	 * 从给定脚本文本创建 BeanShell 脚本化对象。
+	 * <p>脚本可以是需生成对应代理的简单脚本，也可声明完整类或返回实例
+	 *（此时指定接口须由该类/实例实现）。
+	 * @param scriptSource 脚本文本
+	 * @param scriptInterfaces 脚本化 Java 对象应实现的接口
+	 *（若脚本自行声明完整类或返回实例，可为 {@code null} 或空）
+	 * @param classLoader 用于求值脚本的 ClassLoader
+	 * @return 脚本化 Java 对象
+	 * @throws EvalError BeanShell 解析失败时
 	 */
 	public static Object createBshObject(String scriptSource, Class<?> @Nullable [] scriptInterfaces, @Nullable ClassLoader classLoader)
 			throws EvalError {
@@ -106,15 +99,13 @@ public abstract class BshScriptUtils {
 	}
 
 	/**
-	 * Evaluate the specified BeanShell script based on the given script source,
-	 * returning the Class defined by the script.
-	 * <p>The script may either declare a full class or return an actual instance of
-	 * the scripted object (in which case the Class of the object will be returned).
-	 * In any other case, the returned Class will be {@code null}.
-	 * @param scriptSource the script source text
-	 * @param classLoader the ClassLoader to use for evaluating the script
-	 * @return the scripted Java class, or {@code null} if none could be determined
-	 * @throws EvalError in case of BeanShell parsing failure
+	 * 根据给定脚本文本求值 BeanShell 脚本，返回脚本定义的 Class。
+	 * <p>脚本可声明完整类或返回脚本化对象实例（此时返回该对象的 Class）；
+	 * 其他情况返回 {@code null}。
+	 * @param scriptSource 脚本文本
+	 * @param classLoader 用于求值脚本的 ClassLoader
+	 * @return 脚本化 Java 类；若无法确定则为 {@code null}
+	 * @throws EvalError BeanShell 解析失败时
 	 */
 	static @Nullable Class<?> determineBshObjectType(String scriptSource, @Nullable ClassLoader classLoader) throws EvalError {
 		Assert.hasText(scriptSource, "Script source must not be empty");
@@ -135,19 +126,14 @@ public abstract class BshScriptUtils {
 	}
 
 	/**
-	 * Evaluate the specified BeanShell script based on the given script source,
-	 * keeping a returned script Class or script Object as-is.
-	 * <p>The script may either be a simple script that needs a corresponding proxy
-	 * generated (implementing the specified interfaces), or declare a full class
-	 * or return an actual instance of the scripted object (in which case the
-	 * specified interfaces, if any, need to be implemented by that class/instance).
-	 * @param scriptSource the script source text
-	 * @param scriptInterfaces the interfaces that the scripted Java object is
-	 * supposed to implement (may be {@code null} or empty if the script itself
-	 * declares a full class or returns an actual instance of the scripted object)
-	 * @param classLoader the ClassLoader to use for evaluating the script
-	 * @return the scripted Java class or Java object
-	 * @throws EvalError in case of BeanShell parsing failure
+	 * 根据给定脚本文本求值 BeanShell 脚本，原样保留返回的 Class 或 Object。
+	 * <p>脚本可以是需生成对应代理的简单脚本，也可声明完整类或返回实例
+	 *（此时指定接口须由该类/实例实现）。
+	 * @param scriptSource 脚本文本
+	 * @param scriptInterfaces 脚本化 Java 对象应实现的接口
+	 * @param classLoader 用于求值脚本的 ClassLoader
+	 * @return 脚本化 Java 类或 Java 对象
+	 * @throws EvalError BeanShell 解析失败时
 	 */
 	static Object evaluateBshScript(
 			String scriptSource, Class<?> @Nullable [] scriptInterfaces, @Nullable ClassLoader classLoader)
@@ -173,7 +159,7 @@ public abstract class BshScriptUtils {
 
 
 	/**
-	 * InvocationHandler that invokes a BeanShell script method.
+	 * 调用 BeanShell 脚本方法的 InvocationHandler。
 	 */
 	private static class BshObjectInvocationHandler implements InvocationHandler {
 
@@ -220,7 +206,7 @@ public abstract class BshScriptUtils {
 
 
 	/**
-	 * Exception to be thrown on script execution failure.
+	 * 脚本执行失败时抛出的异常。
 	 */
 	@SuppressWarnings("serial")
 	public static final class BshExecutionException extends NestedRuntimeException {

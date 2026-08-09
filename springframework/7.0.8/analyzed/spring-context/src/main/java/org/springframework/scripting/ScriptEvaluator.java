@@ -21,11 +21,11 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Spring's strategy interface for evaluating a script.
+ * Spring 用于求值脚本的策略接口。
  *
- * <p>Aside from language-specific implementations, Spring also ships
- * a version based on the standard {@code javax.script} package (JSR-223):
- * {@link org.springframework.scripting.support.StandardScriptEvaluator}.
+ * <p>除各语言专用实现外，Spring 还提供基于标准
+ * {@code javax.script} 包（JSR-223）的实现：
+ * {@link org.springframework.scripting.support.StandardScriptEvaluator}。
  *
  * @author Juergen Hoeller
  * @author Costin Leau
@@ -34,22 +34,19 @@ import org.jspecify.annotations.Nullable;
 public interface ScriptEvaluator {
 
 	/**
-	 * Evaluate the given script.
-	 * @param script the ScriptSource for the script to evaluate
-	 * @return the return value of the script, if any
-	 * @throws ScriptCompilationException if the evaluator failed to read,
-	 * compile or evaluate the script
+	 * 求值给定脚本。
+	 * @param script 待求值脚本的 ScriptSource
+	 * @return 脚本返回值（若有）
+	 * @throws ScriptCompilationException 若读取、编译或求值失败
 	 */
 	@Nullable Object evaluate(ScriptSource script) throws ScriptCompilationException;
 
 	/**
-	 * Evaluate the given script with the given arguments.
-	 * @param script the ScriptSource for the script to evaluate
-	 * @param arguments the key-value pairs to expose to the script,
-	 * typically as script variables (may be {@code null} or empty)
-	 * @return the return value of the script, if any
-	 * @throws ScriptCompilationException if the evaluator failed to read,
-	 * compile or evaluate the script
+	 * 以给定参数求值脚本。
+	 * @param script 待求值脚本的 ScriptSource
+	 * @param arguments 暴露给脚本的键值对，通常作为脚本变量（可为 {@code null} 或空）
+	 * @return 脚本返回值（若有）
+	 * @throws ScriptCompilationException 若读取、编译或求值失败
 	 */
 	@Nullable Object evaluate(ScriptSource script, @Nullable Map<String, Object> arguments) throws ScriptCompilationException;
 

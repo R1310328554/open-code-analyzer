@@ -19,10 +19,9 @@ package org.springframework.scripting.config;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
- * {@code NamespaceHandler} that supports the wiring of
- * objects backed by dynamic languages such as Groovy, JRuby and
- * BeanShell. The following is an example (from the reference
- * documentation) that details the wiring of a Groovy backed bean:
+ * 支持装配 Groovy、JRuby、BeanShell 等动态语言
+ * 所支持对象的 {@code NamespaceHandler}。以下为参考文档中
+ * 装配 Groovy Bean 的示例：
  *
  * <pre class="code">
  * &lt;lang:groovy id="messenger"
@@ -36,7 +35,7 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  * @author Juergen Hoeller
  * @author Mark Fisher
  * @since 2.0
- * @deprecated with no replacement as not actively maintained anymore
+ * @deprecated 无替代方案，已不再积极维护
  */
 @Deprecated(since = "7.0")
 public class LangNamespaceHandler extends NamespaceHandlerSupport {

@@ -25,7 +25,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.scheduling.TriggerContext;
 
 /**
- * Simple data holder implementation of the {@link TriggerContext} interface.
+ * {@link TriggerContext} 接口的简单数据持有者实现。
  *
  * @author Juergen Hoeller
  * @since 3.0
@@ -42,20 +42,19 @@ public class SimpleTriggerContext implements TriggerContext {
 
 
 	/**
-	 * Create a SimpleTriggerContext with all time values set to {@code null},
-	 * exposing the system clock for the default time zone.
+	 * 创建所有时间值均为 {@code null} 的 SimpleTriggerContext，
+	 * 使用默认时区的系统时钟。
 	 */
 	public SimpleTriggerContext() {
 		this.clock = Clock.systemDefaultZone();
 	}
 
 	/**
-	 * Create a SimpleTriggerContext with the given time values,
-	 * exposing the system clock for the default time zone.
-	 * @param lastScheduledExecutionTime last <i>scheduled</i> execution time
-	 * @param lastActualExecutionTime last <i>actual</i> execution time
-	 * @param lastCompletionTime last completion time
-	 * @deprecated as of 6.0, in favor of {@link #SimpleTriggerContext(Instant, Instant, Instant)}
+	 * 以给定时间值创建 SimpleTriggerContext，使用默认时区的系统时钟。
+	 * @param lastScheduledExecutionTime 上次<i>计划</i>执行时间
+	 * @param lastActualExecutionTime 上次<i>实际</i>执行时间
+	 * @param lastCompletionTime 上次完成时间
+	 * @deprecated 自 6.0 起，请改用 {@link #SimpleTriggerContext(Instant, Instant, Instant)}
 	 */
 	@Deprecated(since = "6.0")
 	public SimpleTriggerContext(@Nullable Date lastScheduledExecutionTime, @Nullable Date lastActualExecutionTime,
@@ -69,11 +68,10 @@ public class SimpleTriggerContext implements TriggerContext {
 	}
 
 	/**
-	 * Create a SimpleTriggerContext with the given time values,
-	 * exposing the system clock for the default time zone.
-	 * @param lastScheduledExecution last <i>scheduled</i> execution time
-	 * @param lastActualExecution last <i>actual</i> execution time
-	 * @param lastCompletion last completion time
+	 * 以给定时间值创建 SimpleTriggerContext，使用默认时区的系统时钟。
+	 * @param lastScheduledExecution 上次<i>计划</i>执行时间
+	 * @param lastActualExecution 上次<i>实际</i>执行时间
+	 * @param lastCompletion 上次完成时间
 	 */
 	public SimpleTriggerContext(@Nullable Instant lastScheduledExecution, @Nullable Instant lastActualExecution,
 			@Nullable Instant lastCompletion) {
@@ -85,9 +83,8 @@ public class SimpleTriggerContext implements TriggerContext {
 	}
 
 	/**
-	 * Create a SimpleTriggerContext with all time values set to {@code null},
-	 * exposing the given clock.
-	 * @param clock the clock to use for trigger calculation
+	 * 创建所有时间值均为 {@code null} 的 SimpleTriggerContext，使用给定时钟。
+	 * @param clock 用于触发器计算的时钟
 	 * @since 5.3
 	 * @see #update(Instant, Instant, Instant)
 	 */
@@ -97,11 +94,11 @@ public class SimpleTriggerContext implements TriggerContext {
 
 
 	/**
-	 * Update this holder's state with the latest time values.
- 	 * @param lastScheduledExecutionTime last <i>scheduled</i> execution time
-	 * @param lastActualExecutionTime last <i>actual</i> execution time
-	 * @param lastCompletionTime last completion time
-	 * @deprecated as of 6.0, in favor of {@link #update(Instant, Instant, Instant)}
+	 * 以最新时间值更新本持有者的状态。
+ 	 * @param lastScheduledExecutionTime 上次<i>计划</i>执行时间
+	 * @param lastActualExecutionTime 上次<i>实际</i>执行时间
+	 * @param lastCompletionTime 上次完成时间
+	 * @deprecated 自 6.0 起，请改用 {@link #update(Instant, Instant, Instant)}
 	 */
 	@Deprecated(since = "6.0")
 	public void update(@Nullable Date lastScheduledExecutionTime, @Nullable Date lastActualExecutionTime,
@@ -111,10 +108,10 @@ public class SimpleTriggerContext implements TriggerContext {
 	}
 
 	/**
-	 * Update this holder's state with the latest time values.
- 	 * @param lastScheduledExecution last <i>scheduled</i> execution time
-	 * @param lastActualExecution last <i>actual</i> execution time
-	 * @param lastCompletion last completion time
+	 * 以最新时间值更新本持有者的状态。
+ 	 * @param lastScheduledExecution 上次<i>计划</i>执行时间
+	 * @param lastActualExecution 上次<i>实际</i>执行时间
+	 * @param lastCompletion 上次完成时间
 	 */
 	public void update(@Nullable Instant lastScheduledExecution, @Nullable Instant lastActualExecution,
 			@Nullable Instant lastCompletion) {

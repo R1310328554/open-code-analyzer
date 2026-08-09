@@ -34,86 +34,63 @@ import org.springframework.scripting.support.ScriptFactoryPostProcessor;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
-/* ===== [OCA 中文解析] =====
-class ScriptBeanDefinitionParser — 意图说明
-
-Bean 定义元数据：描述如何创建与装配一个 Bean；源文件: `spring-context/src/main/java/org/springframework/scripting/config/ScriptBeanDefinitionParser.java`
-
-（本注释由 open-code-analyzer 生成，置于原有文档注释之前）
-===== [OCA 中文解析结束] ===== */
 /**
- * BeanDefinitionParser implementation for the '{@code <lang:groovy/>}',
- * '{@code <lang:std/>}' and '{@code <lang:bsh/>}' tags.
- * Allows for objects written using dynamic languages to be easily exposed with
- * the {@link org.springframework.beans.factory.BeanFactory}.
+ * '{@code <lang:groovy/>}'、'{@code <lang:std/>}' 与 '{@code <lang:bsh/>}'
+ * 标签的 BeanDefinitionParser 实现，便于将通过动态语言编写的对象
+ * 暴露给 {@link org.springframework.beans.factory.BeanFactory}。
  *
- * <p>The script for each object can be specified either as a reference to the
- * resource containing it (using the '{@code script-source}' attribute) or inline
- * in the XML configuration itself (using the '{@code inline-script}' attribute.
+ * <p>每个对象的脚本可通过引用资源（'{@code script-source}' 属性）
+ * 或在 XML 配置中内联（'{@code inline-script}' 属性）指定。
  *
- * <p>By default, dynamic objects created with these tags are <strong>not</strong>
- * refreshable. To enable refreshing, specify the refresh check delay for each
- * object (in milliseconds) using the '{@code refresh-check-delay}' attribute.
+ * <p>默认情况下，通过这些标签创建的动态对象<strong>不可</strong>刷新。
+ * 要启用刷新，请用 '{@code refresh-check-delay}' 属性（毫秒）指定刷新检查延迟。
  *
  * @author Rob Harrop
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @author Mark Fisher
  * @since 2.0
- * @deprecated with no replacement as not actively maintained anymore
+ * @deprecated 无替代方案，已不再积极维护
  */
 @Deprecated(since = "7.0")
 class ScriptBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
-	// [OCA] 字段 `ENGINE_ATTRIBUTE`：类成员状态。
 	private static final String ENGINE_ATTRIBUTE = "engine";
 
-	// [OCA] 字段 `SCRIPT_SOURCE_ATTRIBUTE`：类成员状态。
 	private static final String SCRIPT_SOURCE_ATTRIBUTE = "script-source";
 
-	// [OCA] 字段 `INLINE_SCRIPT_ELEMENT`：类成员状态。
 	private static final String INLINE_SCRIPT_ELEMENT = "inline-script";
 
-	// [OCA] 字段 `SCOPE_ATTRIBUTE`：类成员状态。
 	private static final String SCOPE_ATTRIBUTE = "scope";
 
-	// [OCA] 字段 `AUTOWIRE_ATTRIBUTE`：类成员状态。
 	private static final String AUTOWIRE_ATTRIBUTE = "autowire";
 
-	// [OCA] 字段 `DEPENDS_ON_ATTRIBUTE`：类成员状态。
 	private static final String DEPENDS_ON_ATTRIBUTE = "depends-on";
 
-	// [OCA] 字段 `INIT_METHOD_ATTRIBUTE`：类成员状态。
 	private static final String INIT_METHOD_ATTRIBUTE = "init-method";
 
-	// [OCA] 字段 `DESTROY_METHOD_ATTRIBUTE`：类成员状态。
 	private static final String DESTROY_METHOD_ATTRIBUTE = "destroy-method";
 
-	// [OCA] 字段 `SCRIPT_INTERFACES_ATTRIBUTE`：类成员状态。
 	private static final String SCRIPT_INTERFACES_ATTRIBUTE = "script-interfaces";
 
-	// [OCA] 字段 `REFRESH_CHECK_DELAY_ATTRIBUTE`：类成员状态。
 	private static final String REFRESH_CHECK_DELAY_ATTRIBUTE = "refresh-check-delay";
 
-	// [OCA] 字段 `PROXY_TARGET_CLASS_ATTRIBUTE`：类成员状态。
 	private static final String PROXY_TARGET_CLASS_ATTRIBUTE = "proxy-target-class";
 
-	// [OCA] 字段 `CUSTOMIZER_REF_ATTRIBUTE`：类成员状态。
 	private static final String CUSTOMIZER_REF_ATTRIBUTE = "customizer-ref";
 
 
-	// [OCA] 字段 `scriptFactoryClassName`：类成员状态。
 	/**
-	 * The {@link org.springframework.scripting.ScriptFactory} class that this
-	 * parser instance will create bean definitions for.
+	 * 本解析器实例将为其创建 Bean 定义的
+	 * {@link org.springframework.scripting.ScriptFactory} 类。
 	 */
 	private final String scriptFactoryClassName;
 
 
 	/**
-	 * Create a new instance of this parser, creating bean definitions for the
-	 * supplied {@link org.springframework.scripting.ScriptFactory} class.
-	 * @param scriptFactoryClassName the ScriptFactory class to operate on
+	 * 创建本解析器的新实例，为给定的
+	 * {@link org.springframework.scripting.ScriptFactory} 类创建 Bean 定义。
+	 * @param scriptFactoryClassName 要操作的 ScriptFactory 类
 	 */
 	public ScriptBeanDefinitionParser(String scriptFactoryClassName) {
 		this.scriptFactoryClassName = scriptFactoryClassName;
@@ -121,8 +98,8 @@ class ScriptBeanDefinitionParser extends AbstractBeanDefinitionParser {
 
 
 	/**
-	 * Parses the dynamic object element and returns the resulting bean definition.
-	 * Registers a {@link ScriptFactoryPostProcessor} if needed.
+	 * 解析动态对象元素并返回生成的 Bean 定义。
+	 * 必要时注册 {@link ScriptFactoryPostProcessor}。
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
@@ -232,9 +209,9 @@ class ScriptBeanDefinitionParser extends AbstractBeanDefinitionParser {
 	}
 
 	/**
-	 * Resolves the script source from either the '{@code script-source}' attribute or
-	 * the '{@code inline-script}' element. Logs and {@link XmlReaderContext#error} and
-	 * returns {@code null} if neither or both of these values are specified.
+	 * 从 '{@code script-source}' 属性或 '{@code inline-script}' 元素解析脚本来源。
+	 * 若两者均未指定或同时指定，则记录日志、调用 {@link XmlReaderContext#error}
+	 * 并返回 {@code null}。
 	 */
 	private @Nullable String resolveScriptSource(Element element, XmlReaderContext readerContext) {
 		boolean hasScriptSource = element.hasAttribute(SCRIPT_SOURCE_ATTRIBUTE);
@@ -257,7 +234,7 @@ class ScriptBeanDefinitionParser extends AbstractBeanDefinitionParser {
 	}
 
 	/**
-	 * Scripted beans may be anonymous as well.
+	 * 脚本化 Bean 也可以是匿名的。
 	 */
 	@Override
 	protected boolean shouldGenerateIdAsFallback() {
