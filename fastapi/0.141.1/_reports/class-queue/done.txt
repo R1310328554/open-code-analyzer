@@ -160,3 +160,13 @@ docs_src/custom_response/tutorial002_py310.py
 docs_src/custom_response/tutorial003_py310.py
 docs_src/custom_response/tutorial004_py310.py
 docs_src/custom_response/tutorial005_py310.py
+docs_src/custom_response/tutorial006_py310.py
+docs_src/custom_response/tutorial006b_py310.py
+docs_src/custom_response/tutorial006c_py310.py
+docs_src/custom_response/tutorial007_py310.py
+docs_src/custom_response/tutorial008_py310.py
+docs_src/custom_response/tutorial009_py310.py
+docs_src/custom_response/tutorial009b_py310.py
+docs_src/custom_response/tutorial009c_py310.py
+docs_src/custom_response/tutorial010_py310.py
+docs_src/dataclasses_/__init__.py
