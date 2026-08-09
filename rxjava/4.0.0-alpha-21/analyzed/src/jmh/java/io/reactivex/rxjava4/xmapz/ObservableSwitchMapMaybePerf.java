@@ -22,6 +22,9 @@ import org.openjdk.jmh.infra.Blackhole;
 import io.reactivex.rxjava4.core.*;
 import io.reactivex.rxjava4.functions.Function;
 
+/**
+ * JMH 基准：Observable switchMap(Observable::just) 与 switchMap(Maybe.toObservable())、专用 switchMapMaybe 的吞吐对比。
+ */
 @BenchmarkMode(Mode.Throughput)
 @Warmup(iterations = 5)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -38,6 +41,7 @@ public class ObservableSwitchMapMaybePerf {
 
     Observable<Integer> observablePlain;
 
+    /** 按 count 填充源数组，构造 plain/convert/dedicated 三条基准链路。 */
     @Setup
     public void setup() {
         Integer[] sourceArray = new Integer[count];
@@ -52,16 +56,19 @@ public class ObservableSwitchMapMaybePerf {
         observableDedicated = source.switchMapMaybe((Function<Integer, Maybe<Integer>>) Maybe::just);
     }
 
+    /** plain：switchMap(Observable::just) 基准。 */
     @Benchmark
     public Object observablePlain(Blackhole bh) {
         return observablePlain.subscribeWith(new PerfConsumer(bh));
     }
 
+    /** convert：经 Maybe.toObservable 转换路径。 */
     @Benchmark
     public Object observableConvert(Blackhole bh) {
         return observableConvert.subscribeWith(new PerfConsumer(bh));
     }
 
+    /** dedicated：switchMapMaybe 专用算子。 */
     @Benchmark
     public Object observableDedicated(Blackhole bh) {
         return observableDedicated.subscribeWith(new PerfConsumer(bh));
