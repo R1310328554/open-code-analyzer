@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
+ * {@link StreamPendingRangeArgs} 的默认实现，封装待处理消息范围查询参数。
  *
  * @author seakider
  *
@@ -26,13 +27,21 @@ import java.util.Objects;
 public class StreamPendingRangeParams implements StreamPendingRangeArgs,
         StreamStartIdArgs<StreamCountArgs>,
         StreamEndIdArgs<StreamCountArgs>, StreamCountArgs {
+    /** 消费者组名称。 */
     private String groupName;
+    /** 消费者名称，可选。 */
     private String consumerName;
+    /** 范围起始消息 ID。 */
     private StreamMessageId startId;
+    /** 范围结束消息 ID。 */
     private StreamMessageId endId;
+    /** 起始 ID 是否排除边界。 */
     private boolean startIdExclusive;
+    /** 结束 ID 是否排除边界。 */
     private boolean endIdExclusive;
+    /** 返回条目数量上限。 */
     private int count;
+    /** 最小空闲时长过滤条件。 */
     private Duration idleTime;
 
     StreamPendingRangeParams(String groupName) {
@@ -83,34 +92,42 @@ public class StreamPendingRangeParams implements StreamPendingRangeArgs,
         return this;
     }
 
+    /** 返回消费者组名称。 */
     public String getGroupName() {
         return groupName;
     }
 
+    /** 返回范围起始消息 ID。 */
     public StreamMessageId getStartId() {
         return startId;
     }
 
+    /** 返回范围结束消息 ID。 */
     public StreamMessageId getEndId() {
         return endId;
     }
 
+    /** 起始 ID 是否为开区间（不包含边界）。 */
     public boolean isStartIdExclusive() {
         return startIdExclusive;
     }
 
+    /** 结束 ID 是否为开区间（不包含边界）。 */
     public boolean isEndIdExclusive() {
         return endIdExclusive;
     }
 
+    /** 返回条目数量上限。 */
     public int getCount() {
         return count;
     }
 
+    /** 返回消费者名称，未设置时可能为 null。 */
     public String getConsumerName() {
         return consumerName;
     }
 
+    /** 返回最小空闲时长过滤条件。 */
     public Duration getIdleTime() {
         return idleTime;
     }

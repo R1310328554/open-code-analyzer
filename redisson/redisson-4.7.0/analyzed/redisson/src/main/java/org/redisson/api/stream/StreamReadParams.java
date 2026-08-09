@@ -18,16 +18,22 @@ package org.redisson.api.stream;
 import java.time.Duration;
 
 /**
+ * {@link StreamReadArgs} 的默认实现，封装单流读取参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class StreamReadParams implements StreamReadArgs {
 
+    /** 上次读取的消息 ID。 */
     private final StreamMessageId id1;
+    /** 返回数据条数上限。 */
     private int count;
+    /** 条目总数上限。 */
     private int maxCount;
+    /** 条目总字节数上限。 */
     private long maxSize;
+    /** 等待超时时间。 */
     private Duration timeout;
 
     StreamReadParams(StreamMessageId id1) {
@@ -58,22 +64,27 @@ public final class StreamReadParams implements StreamReadArgs {
         return this;
     }
 
+    /** 返回上次读取的消息 ID。 */
     public StreamMessageId getId1() {
         return id1;
     }
 
+    /** 返回数据条数上限。 */
     public int getCount() {
         return count;
     }
 
+    /** 返回条目总数上限。 */
     public int getMaxCount() {
         return maxCount;
     }
 
+    /** 返回条目总字节数上限。 */
     public long getMaxSize() {
         return maxSize;
     }
 
+    /** 返回等待超时时间。 */
     public Duration getTimeout() {
         return timeout;
     }

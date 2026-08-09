@@ -18,15 +18,21 @@ package org.redisson.api.stream;
 import java.util.Objects;
 
 /**
+ * {@link StreamRangeArgs} 的默认实现，封装流范围查询参数。
  *
  * @author seakider
  *
  */
 public final class StreamRangeParams implements StreamRangeArgs, StreamEndIdArgs {
+    /** 范围起始消息 ID。 */
     private StreamMessageId startId;
+    /** 范围结束消息 ID。 */
     private StreamMessageId endId;
+    /** 起始 ID 是否排除边界。 */
     private boolean startIdExclusive;
+    /** 结束 ID 是否排除边界。 */
     private boolean endIdExclusive;
+    /** 返回条目数量上限。 */
     private int count;
 
     StreamRangeParams(StreamMessageId startId, boolean startIdExclusive) {
@@ -53,22 +59,27 @@ public final class StreamRangeParams implements StreamRangeArgs, StreamEndIdArgs
         return this;
     }
 
+    /** 起始 ID 是否为开区间（不包含边界）。 */
     public boolean isStartIdExclusive() {
         return startIdExclusive;
     }
 
+    /** 结束 ID 是否为开区间（不包含边界）。 */
     public boolean isEndIdExclusive() {
         return endIdExclusive;
     }
 
+    /** 返回范围起始消息 ID。 */
     public StreamMessageId getStartId() {
         return startId;
     }
 
+    /** 返回范围结束消息 ID。 */
     public StreamMessageId getEndId() {
         return endId;
     }
 
+    /** 返回条目数量上限。 */
     public int getCount() {
         return count;
     }

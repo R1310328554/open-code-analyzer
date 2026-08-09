@@ -16,35 +16,35 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments for RStream.range() method
+ * {@code RStream.range()} 流范围查询方法的参数对象。
  *
  * @author seakider
  */
 public interface StreamRangeArgs {
 
     /**
-     * Defines stream range size limit.
+     * 设置范围查询返回的条目数量上限。
      *
-     * @param count stream range size limit
-     * @return arguments object
+     * @param count 范围条目数量上限
+     * @return 参数对象
      */
     StreamRangeArgs count(int count);
 
     /**
-     * Defines startId in range inclusive
+     * 设置范围起始消息 ID（包含边界）。
      *
-     * @param startId
-     * @return next options
+     * @param startId 起始消息 ID
+     * @return 下一步参数选项
      */
     static StreamEndIdArgs<StreamRangeArgs> startId(StreamMessageId startId) {
         return new StreamRangeParams(startId, false);
     }
 
     /**
-     * Defines startId in range exclusive
+     * 设置范围起始消息 ID（不包含边界）。
      *
-     * @param startId
-     * @return next options
+     * @param startId 起始消息 ID
+     * @return 下一步参数选项
      */
     static StreamEndIdArgs<StreamRangeArgs> startIdExclusive(StreamMessageId startId) {
         return new StreamRangeParams(startId, true);

@@ -18,7 +18,7 @@ package org.redisson.api.stream;
 import java.time.Duration;
 
 /**
- * Arguments object for RStream.readGroup() methods.
+ * {@code RStream.readGroup()} 单流消费者组读取方法的参数对象。
  *
  * @author Nikita Koksharov
  *
@@ -26,73 +26,71 @@ import java.time.Duration;
 public interface StreamReadGroupArgs {
 
     /**
-     * Defines claim messages which have been pending for at least the minimal idle time.
+     * 认领空闲时间至少达到指定最小时长的待处理消息。
      *
-     * @param minIdle minimal idle time
-     * @return arguments object
+     * @param minIdle 最小空闲时长
+     * @return 参数对象
      */
     StreamReadGroupArgs claim(Duration minIdle);
 
     /**
-     * Defines avoid of adding messages to Pending Entries List.
+     * 设置读取后不将消息加入待处理条目列表（PEL）。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     StreamReadGroupArgs noAck();
 
     /**
-     * Defines stream data size limit.
+     * 设置返回的数据条数上限。
      *
-     * @param count stream data size limit
-     * @return arguments object
+     * @param count 数据条数上限
+     * @return 参数对象
      */
     StreamReadGroupArgs count(int count);
 
     /**
-     * Defines the total limit of entries returned in the command reply.
+     * 设置命令回复中返回的条目总数上限。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上版本。</b>
      *
-     * @param maxCount total entries limit
-     * @return arguments object
+     * @param maxCount 条目总数上限
+     * @return 参数对象
      */
     StreamReadGroupArgs maxCount(int maxCount);
 
     /**
-     * Defines the total size limit in bytes of entries returned in the command reply.
+     * 设置命令回复中返回条目的总字节数上限。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上版本。</b>
      *
-     * @param maxSize total entries size limit in bytes
-     * @return arguments object
+     * @param maxSize 条目总字节数上限
+     * @return 参数对象
      */
     StreamReadGroupArgs maxSize(long maxSize);
 
     /**
-     * Defines time interval to wait for stream data availability.
-     * <code>0</code> is used to wait infinitely.
+     * 设置等待流数据可用的时间间隔。
+     * 使用 <code>0</code> 表示无限等待。
      *
-     * @param timeout timeout duration
-     * @return arguments object
+     * @param timeout 超时时间
+     * @return 参数对象
      */
     StreamReadGroupArgs timeout(Duration timeout);
 
     /**
-     * Defines to return messages of current Stream
-     * never delivered to any other consumer.
+     * 读取当前流中从未投递给任何消费者的新消息。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     static StreamReadGroupArgs neverDelivered() {
         return greaterThan(null);
     }
 
     /**
-     * Defines to return messages of current Stream
-     * with ids greater than defined message id.
+     * 读取当前流中消息 ID 大于指定 ID 的消息。
      *
-     * @param id message id
-     * @return arguments object
+     * @param id 消息 ID
+     * @return 参数对象
      */
     static StreamReadGroupArgs greaterThan(StreamMessageId id) {
         return new StreamReadGroupParams(id);

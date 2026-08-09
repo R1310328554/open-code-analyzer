@@ -18,35 +18,35 @@ package org.redisson.api.stream;
 import java.time.Duration;
 
 /**
- * Arguments object for RStream.listPending() methods.
+ * {@code RStream.listPending()} 待处理消息范围查询的参数对象。
  *
  * @author seakider
  *
  */
 public interface StreamPendingRangeArgs {
     /**
-     * Defines groupName of pending messages
+     * 指定待处理消息所属的消费者组名称。
      *
-     * @param groupName name of group
-     * @return next options
+     * @param groupName 消费者组名称
+     * @return 下一步参数选项
      */
     static StreamStartIdArgs<StreamCountArgs> groupName(String groupName) {
         return new StreamPendingRangeParams(groupName);
     }
 
     /**
-     * Defines consumerName of pending messages
+     * 指定待处理消息所属的消费者名称。
      *
-     * @param consumerName name of consumer
-     * @return arguments object
+     * @param consumerName 消费者名称
+     * @return 参数对象
      */
     StreamPendingRangeArgs consumerName(String consumerName);
 
     /**
-     * Defines minimum idle time limit.
+     * 设置消息的最小空闲时长过滤条件。
      *
-     * @param idleTime minimum idle time of messages
-     * @return arguments object
+     * @param idleTime 最小空闲时长
+     * @return 参数对象
      */
     StreamPendingRangeArgs idleTime(Duration idleTime);
 }

@@ -16,7 +16,7 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for RStream.nack() method.
+ * {@code RStream.nack()} 否定确认方法的参数对象。
  *
  * @author lamnt2008
  *
@@ -24,27 +24,26 @@ package org.redisson.api.stream;
 public interface StreamNackArgs {
 
     /**
-     * Defines retry count to set for negatively acknowledged messages.
+     * 设置被否定确认消息的重试次数。
      *
-     * @param count retry count
-     * @return arguments object
+     * @param count 重试次数
+     * @return 参数对象
      */
     StreamNackArgs retryCount(long count);
 
     /**
-     * Defines whether to create a pending entry for an existing stream message
-     * that is not already pending.
+     * 强制为尚未处于待处理状态的已有流消息创建待处理条目。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     StreamNackArgs force();
 
     /**
-     * Defines group name and negative acknowledgement mode.
+     * 指定消费者组名称及否定确认模式。
      *
-     * @param groupName name of group
-     * @param mode negative acknowledgement mode
-     * @return next options
+     * @param groupName 消费者组名称
+     * @param mode 否定确认模式
+     * @return 下一步参数选项
      */
     static StreamMessageIdArgs<StreamNackArgs> group(String groupName, StreamNackMode mode) {
         return new StreamNackParams(groupName, mode);

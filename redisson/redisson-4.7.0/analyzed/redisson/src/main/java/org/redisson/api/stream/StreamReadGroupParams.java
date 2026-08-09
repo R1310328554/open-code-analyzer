@@ -18,18 +18,26 @@ package org.redisson.api.stream;
 import java.time.Duration;
 
 /**
+ * {@link StreamReadGroupArgs} 的默认实现，封装单流消费者组读取参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class StreamReadGroupParams implements StreamReadGroupArgs {
 
+    /** 认领待处理消息的最小空闲时长。 */
     private Duration minIdleTime;
+    /** 是否启用 noAck 模式（不加入 PEL）。 */
     private boolean noAck;
+    /** 上次读取的消息 ID。 */
     private final StreamMessageId id1;
+    /** 返回数据条数上限。 */
     private int count;
+    /** 条目总数上限。 */
     private int maxCount;
+    /** 条目总字节数上限。 */
     private long maxSize;
+    /** 等待超时时间。 */
     private Duration timeout;
 
     StreamReadGroupParams(StreamMessageId id1) {
@@ -72,30 +80,37 @@ public final class StreamReadGroupParams implements StreamReadGroupArgs {
         return this;
     }
 
+    /** 是否启用 noAck 模式。 */
     public boolean isNoAck() {
         return noAck;
     }
 
+    /** 返回上次读取的消息 ID。 */
     public StreamMessageId getId1() {
         return id1;
     }
 
+    /** 返回数据条数上限。 */
     public int getCount() {
         return count;
     }
 
+    /** 返回条目总数上限。 */
     public int getMaxCount() {
         return maxCount;
     }
 
+    /** 返回条目总字节数上限。 */
     public long getMaxSize() {
         return maxSize;
     }
 
+    /** 返回等待超时时间。 */
     public Duration getTimeout() {
         return timeout;
     }
 
+    /** 返回认领待处理消息的最小空闲时长。 */
     public Duration getMinIdleTime() {
         return minIdleTime;
     }

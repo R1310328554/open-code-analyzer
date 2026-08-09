@@ -18,7 +18,7 @@ package org.redisson.api.stream;
 import java.time.Duration;
 
 /**
- * Arguments object for RStream.read() methods.
+ * {@code RStream.read()} 单流读取方法的参数对象。
  *
  * @author Nikita Koksharov
  *
@@ -26,48 +26,47 @@ import java.time.Duration;
 public interface StreamReadArgs {
 
     /**
-     * Defines stream data size limit.
+     * 设置返回的数据条数上限。
      *
-     * @param count stream data size limit
-     * @return arguments object
+     * @param count 数据条数上限
+     * @return 参数对象
      */
     StreamReadArgs count(int count);
 
     /**
-     * Defines the total limit of entries returned in the command reply.
+     * 设置命令回复中返回的条目总数上限。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上版本。</b>
      *
-     * @param maxCount total entries limit
-     * @return arguments object
+     * @param maxCount 条目总数上限
+     * @return 参数对象
      */
     StreamReadArgs maxCount(int maxCount);
 
     /**
-     * Defines the total size limit in bytes of entries returned in the command reply.
+     * 设置命令回复中返回条目的总字节数上限。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上版本。</b>
      *
-     * @param maxSize total entries size limit in bytes
-     * @return arguments object
+     * @param maxSize 条目总字节数上限
+     * @return 参数对象
      */
     StreamReadArgs maxSize(long maxSize);
 
     /**
-     * Defines time interval to wait for stream data availability.
-     * <code>0</code> is used to wait infinitely.
+     * 设置等待流数据可用的时间间隔。
+     * 使用 <code>0</code> 表示无限等待。
      *
-     * @param timeout timeout duration
-     * @return arguments object
+     * @param timeout 超时时间
+     * @return 参数对象
      */
     StreamReadArgs timeout(Duration timeout);
 
     /**
-     * Defines last stream id received from current Stream.
-     * Read stream data with ids greater than defined id.
+     * 读取当前流中消息 ID 大于指定 ID 的数据。
      *
-     * @param id0 last stream id of current stream
-     * @return arguments object
+     * @param id0 当前流的上次读取消息 ID
+     * @return 参数对象
      */
     static StreamReadArgs greaterThan(StreamMessageId id0) {
         return new StreamReadParams(id0);

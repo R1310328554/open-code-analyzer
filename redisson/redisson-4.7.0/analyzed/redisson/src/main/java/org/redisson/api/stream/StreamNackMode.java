@@ -16,16 +16,19 @@
 package org.redisson.api.stream;
 
 /**
- * Negative acknowledgement mode used by RStream.nack() method.
+ * {@code RStream.nack()} 否定确认操作使用的模式枚举。
  *
  * @author lamnt2008
  *
  */
 public enum StreamNackMode {
 
+    /** 静默模式，不抛出异常。 */
     SILENT,
 
+    /** 失败模式，操作失败时抛出异常。 */
     FAIL,
 
+    /** 致命模式，遇到错误时立即终止。 */
     FATAL
 }

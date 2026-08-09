@@ -16,16 +16,22 @@
 package org.redisson.api.stream;
 
 /**
+ * {@link StreamNackArgs} 的默认实现，封装否定确认参数。
  *
  * @author lamnt2008
  *
  */
 public class StreamNackParams implements StreamNackArgs, StreamMessageIdArgs<StreamNackArgs> {
 
+    /** 消费者组名称。 */
     private final String groupName;
+    /** 否定确认模式。 */
     private final StreamNackMode mode;
+    /** 待否定确认的消息 ID 数组。 */
     private StreamMessageId[] ids;
+    /** 重试次数，未设置时为 null。 */
     private Long retryCount;
+    /** 是否强制创建待处理条目。 */
     private boolean force;
 
     public StreamNackParams(String groupName, StreamNackMode mode) {
@@ -51,22 +57,27 @@ public class StreamNackParams implements StreamNackArgs, StreamMessageIdArgs<Str
         return this;
     }
 
+    /** 返回消费者组名称。 */
     public String getGroupName() {
         return groupName;
     }
 
+    /** 返回否定确认模式。 */
     public StreamNackMode getMode() {
         return mode;
     }
 
+    /** 返回待否定确认的消息 ID 数组。 */
     public StreamMessageId[] getIds() {
         return ids;
     }
 
+    /** 返回设置的重试次数，未设置时返回 null。 */
     public Long getRetryCount() {
         return retryCount;
     }
 
+    /** 是否启用了强制创建待处理条目。 */
     public boolean isForce() {
         return force;
     }

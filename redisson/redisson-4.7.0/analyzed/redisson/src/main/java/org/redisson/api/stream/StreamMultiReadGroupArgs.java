@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Arguments object for RStream.readGroup() methods.
+ * {@code RStream.readGroup()} 多流读取方法的参数对象。
  *
  * @author Nikita Koksharov
  *
@@ -29,72 +29,69 @@ import java.util.Map;
 public interface StreamMultiReadGroupArgs {
 
     /**
-     * Defines claim messages which have been pending for at least the minimal idle time.
+     * 认领空闲时间至少达到指定最小时长的待处理消息。
      *
-     * @param duration minimal idle time
-     * @return arguments object
+     * @param duration 最小空闲时长
+     * @return 参数对象
      */
     StreamMultiReadGroupArgs claim(Duration duration);
 
     /**
-     * Defines avoid of adding messages to Pending Entries List.
+     * 设置读取后不将消息加入待处理条目列表（PEL）。
      *
-     * @return arguments object
+     * @return 参数对象
      */
     StreamMultiReadGroupArgs noAck();
 
     /**
-     * Defines stream data size limit.
+     * 设置单个流返回的数据条数上限。
      *
-     * @param count stream data size limit
-     * @return arguments object
+     * @param count 单流数据条数上限
+     * @return 参数对象
      */
     StreamMultiReadGroupArgs count(int count);
 
     /**
-     * Defines the total limit of entries returned by the command.
+     * 设置命令返回的条目总数上限。
      * <p>
-     * Unlike {@link #count(int)}, which is applied per stream,
-     * this limit is applied to the cumulative amount of entries
-     * returned for all streams.
+     * 与 {@link #count(int)} 按流分别限制不同，
+     * 此限制作用于所有流返回条目的累计数量。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上版本。</b>
      *
-     * @param maxCount total entries limit
-     * @return arguments object
+     * @param maxCount 条目总数上限
+     * @return 参数对象
      */
     StreamMultiReadGroupArgs maxCount(int maxCount);
 
     /**
-     * Defines the total limit in bytes of entries returned by the command.
+     * 设置命令返回条目的总字节数上限。
      * <p>
-     * The limit is applied to the cumulative size of entries
-     * returned for all streams.
+     * 限制作用于所有流返回条目的累计字节大小。
      * <p>
-     * Requires <b>Redis 8.10.0 and higher.</b>
+     * 需要 <b>Redis 8.10.0 及以上版本。</b>
      *
-     * @param maxSize total entries size limit in bytes
-     * @return arguments object
+     * @param maxSize 条目总字节数上限
+     * @return 参数对象
      */
     StreamMultiReadGroupArgs maxSize(long maxSize);
 
     /**
-     * Defines time interval to wait for stream data availability.
-     * <code>0</code> is used to wait infinitely.
+     * 设置等待流数据可用的时间间隔。
+     * 使用 <code>0</code> 表示无限等待。
      *
-     * @param timeout timeout duration
-     * @return arguments object
+     * @param timeout 超时时间
+     * @return 参数对象
      */
     StreamMultiReadGroupArgs timeout(Duration timeout);
 
     /**
-     * Defines to return messages of all Streams
-     * with ids greater than defined message ids.
+     * 从所有指定流中读取消息 ID 大于给定起始 ID 的消息。
      *
-     * @param id1 last stream id of current stream
-     * @param stream2 name of 2nd stream
-     * @param id2 last stream id of 2nd stream
-     * @return arguments object
+     * @param id1 当前流的上次读取消息 ID
+     * @param stream2 第二个流的名称
+     * @param id2 第二个流的上次读取消息 ID
+     * @return 参数对象
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
                                            String stream2, StreamMessageId id2) {
@@ -102,15 +99,14 @@ public interface StreamMultiReadGroupArgs {
     }
 
     /**
-     * Defines to return messages of all Streams
-     * with ids greater than defined message ids.
+     * 从所有指定流中读取消息 ID 大于给定起始 ID 的消息。
      *
-     * @param id1 last stream id of current stream
-     * @param stream2 name of 2nd stream
-     * @param id2 last stream id of 2nd stream
-     * @param stream3 name of 3rd stream
-     * @param id3 last stream id of 3rd stream
-     * @return arguments object
+     * @param id1 当前流的上次读取消息 ID
+     * @param stream2 第二个流的名称
+     * @param id2 第二个流的上次读取消息 ID
+     * @param stream3 第三个流的名称
+     * @param id3 第三个流的上次读取消息 ID
+     * @return 参数对象
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
                                             String stream2, StreamMessageId id2,
@@ -122,17 +118,16 @@ public interface StreamMultiReadGroupArgs {
     }
 
     /**
-     * Defines to return messages of all Streams
-     * with ids greater than defined message ids.
+     * 从所有指定流中读取消息 ID 大于给定起始 ID 的消息。
      *
-     * @param id1 last stream id of current stream
-     * @param stream2 name of 2nd stream
-     * @param id2 last stream id of 2nd stream
-     * @param stream3 name of 3rd stream
-     * @param id3 last stream id of 3rd stream
-     * @param stream4 name of 4th stream
-     * @param id4 last stream id of 4th stream
-     * @return arguments object
+     * @param id1 当前流的上次读取消息 ID
+     * @param stream2 第二个流的名称
+     * @param id2 第二个流的上次读取消息 ID
+     * @param stream3 第三个流的名称
+     * @param id3 第三个流的上次读取消息 ID
+     * @param stream4 第四个流的名称
+     * @param id4 第四个流的上次读取消息 ID
+     * @return 参数对象
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
                                             String stream2, StreamMessageId id2,
@@ -146,19 +141,18 @@ public interface StreamMultiReadGroupArgs {
     }
 
     /**
-     * Defines to return messages of all Streams
-     * with ids greater than defined message ids.
+     * 从所有指定流中读取消息 ID 大于给定起始 ID 的消息。
      *
-     * @param id1 last stream id of current stream
-     * @param stream2 name of 2nd stream
-     * @param id2 last stream id of 2nd stream
-     * @param stream3 name of 3rd stream
-     * @param id3 last stream id of 3rd stream
-     * @param stream4 name of 4th stream
-     * @param id4 last stream id of 4th stream
-     * @param stream5 name of 4th stream
-     * @param id5 last stream id of 4th stream
-     * @return arguments object
+     * @param id1 当前流的上次读取消息 ID
+     * @param stream2 第二个流的名称
+     * @param id2 第二个流的上次读取消息 ID
+     * @param stream3 第三个流的名称
+     * @param id3 第三个流的上次读取消息 ID
+     * @param stream4 第四个流的名称
+     * @param id4 第四个流的上次读取消息 ID
+     * @param stream5 第五个流的名称
+     * @param id5 第五个流的上次读取消息 ID
+     * @return 参数对象
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id1,
                                             String stream2, StreamMessageId id2,
@@ -174,12 +168,11 @@ public interface StreamMultiReadGroupArgs {
     }
 
     /**
-     * Defines to return messages of all Streams
-     * with ids greater than defined message ids.
+     * 从所有指定流中读取消息 ID 大于给定起始 ID 的消息。
      *
-     * @param id last stream id of current stream
-     * @param offsets last stream id mapped by stream name
-     * @return arguments object
+     * @param id 当前流的上次读取消息 ID
+     * @param offsets 各流名称到上次读取消息 ID 的映射
+     * @return 参数对象
      */
     static StreamMultiReadGroupArgs greaterThan(StreamMessageId id, Map<String, StreamMessageId> offsets) {
         return new StreamMultiReadGroupParams(id, offsets);

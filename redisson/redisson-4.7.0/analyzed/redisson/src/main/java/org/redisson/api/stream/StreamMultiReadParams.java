@@ -19,14 +19,17 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
+ * {@link StreamMultiReadArgs} 的默认实现，封装多流读取参数。
  *
  * @author Nikita Koksharov
  *
  */
 public final class StreamMultiReadParams implements StreamMultiReadArgs {
 
+    /** 单流读取参数。 */
     private final StreamReadParams params;
 
+    /** 各附加流的上次读取消息 ID 映射。 */
     private final Map<String, StreamMessageId> offsets;
 
     StreamMultiReadParams(StreamMessageId id1, Map<String, StreamMessageId> offsets) {
@@ -58,26 +61,32 @@ public final class StreamMultiReadParams implements StreamMultiReadArgs {
         return this;
     }
 
+    /** 返回当前流的上次读取消息 ID。 */
     public StreamMessageId getId1() {
         return params.getId1();
     }
 
+    /** 返回单流数据条数上限。 */
     public int getCount() {
         return params.getCount();
     }
 
+    /** 返回条目总数上限。 */
     public int getMaxCount() {
         return params.getMaxCount();
     }
 
+    /** 返回条目总字节数上限。 */
     public long getMaxSize() {
         return params.getMaxSize();
     }
 
+    /** 返回等待超时时间。 */
     public Duration getTimeout() {
         return params.getTimeout();
     }
 
+    /** 返回各附加流的上次读取消息 ID 映射。 */
     public Map<String, StreamMessageId> getOffsets() {
         return offsets;
     }

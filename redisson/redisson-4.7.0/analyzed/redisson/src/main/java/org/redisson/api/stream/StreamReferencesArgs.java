@@ -16,38 +16,36 @@
 package org.redisson.api.stream;
 
 /**
+ * 流裁剪时消费者组引用策略的参数接口。
  *
  * @author seakider
  *
  */
 public interface StreamReferencesArgs<T> {
     /**
-     * Defines DELREF reference policy for consumer groups when trimming.
-     * When trimming, removes all references from consumer groups’ PEL
+     * 设置 DELREF 引用策略：裁剪时移除消费者组 PEL 中的所有引用。
+     * <p>
+     * 需要 <b>Redis 8.2.0 及以上版本。</b>
      *
-     * Requires <b>Redis 8.2.0 and higher.</b>
-     *
-     * @return arguments object
+     * @return 参数对象
      */
     T removeReferences();
 
     /**
-     * Defines KEEPREF reference policy for consumer groups when trimming.
-     * When trimming, preserves references in consumer groups’ PEL
+     * 设置 KEEPREF 引用策略：裁剪时保留消费者组 PEL 中的引用。
+     * <p>
+     * 需要 <b>Redis 8.2.0 及以上版本。</b>
      *
-     * Requires <b>Redis 8.2.0 and higher.</b>
-     *
-     * @return arguments object
+     * @return 参数对象
      */
     T keepReferences();
 
     /**
-     * Defines ACKED reference policy for consumer groups when trimming.
-     * When trimming, only removes entries acknowledged by all consumer groups
+     * 设置 ACKED 引用策略：裁剪时仅移除已被所有消费者组确认的消息。
+     * <p>
+     * 需要 <b>Redis 8.2.0 及以上版本。</b>
      *
-     * Requires <b>Redis 8.2.0 and higher.</b>
-     *
-     * @return arguments object
+     * @return 参数对象
      */
     T removeAcknowledgedOnly();
 }
