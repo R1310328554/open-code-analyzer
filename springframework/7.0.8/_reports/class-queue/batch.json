@@ -1,26 +1,6 @@
 {
   "claimed_at": "2026-08-09T18:11:43Z",
   "files": [
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlReturnResultSet.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlReturnType.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlReturnUpdateCount.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlRowSetResultSetExtractor.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/SqlTypeValue.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/StatementCallback.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/CallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/CallMetaDataProviderFactory.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/CallParameterMetaData.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/Db2CallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/DerbyCallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/DerbyTableMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/HanaCallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/HsqlTableMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/MySQLTableMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/OracleCallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/OracleTableMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/PostgresCallMetaDataProvider.java",
-    "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/PostgresTableMetaDataProvider.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/SqlServerCallMetaDataProvider.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/SybaseCallMetaDataProvider.java",
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/metadata/TableMetaDataProvider.java",
@@ -43,5 +23,5 @@
     "spring-jdbc/src/main/java/org/springframework/jdbc/core/support/AbstractLobCreatingPreparedStatementCallback.java"
   ],
   "remaining_pending": 184,
-  "done": 1267
+  "done": 1287
 }
