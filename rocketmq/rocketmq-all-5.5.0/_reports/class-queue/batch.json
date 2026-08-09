@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-09T18:53:22Z",
-  "files": [
-    "common/src/main/java/org/apache/rocketmq/common/AbortProcessException.java",
-    "common/src/main/java/org/apache/rocketmq/common/BoundaryType.java",
-    "common/src/main/java/org/apache/rocketmq/common/BrokerConfigSingleton.java",
-    "common/src/main/java/org/apache/rocketmq/common/BrokerIdentity.java",
-    "common/src/main/java/org/apache/rocketmq/common/CheckRocksdbCqWriteResult.java",
-    "common/src/main/java/org/apache/rocketmq/common/ConfigManager.java",
-    "common/src/main/java/org/apache/rocketmq/common/ControllerConfig.java",
-    "common/src/main/java/org/apache/rocketmq/common/CountDownLatch2.java",
-    "common/src/main/java/org/apache/rocketmq/common/JraftConfig.java",
-    "common/src/main/java/org/apache/rocketmq/common/KeyBuilder.java",
-    "common/src/main/java/org/apache/rocketmq/common/LifecycleAwareServiceThread.java",
-    "common/src/main/java/org/apache/rocketmq/common/LockCallback.java",
-    "common/src/main/java/org/apache/rocketmq/common/ObjectCreator.java",
-    "common/src/main/java/org/apache/rocketmq/common/OrderedConsumptionLevel.java",
-    "common/src/main/java/org/apache/rocketmq/common/Pair.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1128,
-  "done": 345
+  "done": 360
 }
