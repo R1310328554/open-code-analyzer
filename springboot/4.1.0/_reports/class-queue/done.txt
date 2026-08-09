@@ -622,3 +622,4 @@ core/spring-boot/src/main/java/org/springframework/boot/ssl/pem/PemPrivateKeyPar
 core/spring-boot/src/main/java/org/springframework/boot/util/LambdaSafe.java
 core/spring-boot/src/main/java/org/springframework/boot/web/servlet/ServletContextInitializerBeans.java
 core/spring-boot/src/main/java/org/springframework/boot/context/properties/source/ConfigurationPropertyName.java
+core/spring-boot/src/main/java/org/springframework/boot/json/JsonWriter.java
