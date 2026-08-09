@@ -15,23 +15,8 @@
     "redisson/src/main/java/org/redisson/api/bloomfilter/CapacityBloomFilterInitArgs.java",
     "redisson/src/main/java/org/redisson/api/bloomfilter/ErrorRateBloomFilterInitArgs.java",
     "redisson/src/main/java/org/redisson/api/bloomfilter/OptionalBloomFilterInitArgs.java",
-    "redisson/src/main/java/org/redisson/api/bloomfilter/OptionalBloomFilterInsertArgs.java",
-    "redisson/src/main/java/org/redisson/api/bucket/CompareAndDeleteArgs.java",
-    "redisson/src/main/java/org/redisson/api/bucket/CompareAndDeleteParams.java",
-    "redisson/src/main/java/org/redisson/api/bucket/CompareAndSetArgs.java",
-    "redisson/src/main/java/org/redisson/api/bucket/CompareAndSetParams.java",
-    "redisson/src/main/java/org/redisson/api/bucket/CompareAndSetStep.java",
-    "redisson/src/main/java/org/redisson/api/bucket/ConditionType.java",
-    "redisson/src/main/java/org/redisson/api/bucket/SetArgs.java",
-    "redisson/src/main/java/org/redisson/api/bucket/SetParams.java",
-    "redisson/src/main/java/org/redisson/api/condition/Condition.java",
-    "redisson/src/main/java/org/redisson/api/condition/Conditions.java",
-    "redisson/src/main/java/org/redisson/api/cuckoofilter/CuckooFilterAddArgs.java",
-    "redisson/src/main/java/org/redisson/api/cuckoofilter/CuckooFilterAddArgsImpl.java",
-    "redisson/src/main/java/org/redisson/api/cuckoofilter/CuckooFilterInitArgs.java",
-    "redisson/src/main/java/org/redisson/api/cuckoofilter/CuckooFilterInitArgsImpl.java",
-    "redisson/src/main/java/org/redisson/api/executor/TaskFailureListener.java"
+    "redisson/src/main/java/org/redisson/api/bloomfilter/OptionalBloomFilterInsertArgs.java"
   ],
   "remaining_pending": 1022,
-  "done": 1770
+  "done": 1785
 }
