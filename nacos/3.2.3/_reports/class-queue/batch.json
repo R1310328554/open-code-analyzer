@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:13:28Z",
-  "files": [
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/RemoteParamCheckFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/filter/NacosGrpcServerTransportFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/filter/NacosGrpcServerTransportFilterServiceLoader.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/interceptor/NacosGrpcServerInterceptor.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/interceptor/NacosGrpcServerInterceptorServiceLoader.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/AbstractProtocolNegotiatorBuilderSingleton.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/ClusterProtocolNegotiatorBuilderSingleton.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/NacosGrpcProtocolNegotiator.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/ProtocolNegotiatorBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/SdkProtocolNegotiatorBuilderSingleton.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/ClusterDefaultTlsProtocolNegotiatorBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/DefaultTlsContextBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/OptionalTlsProtocolNegotiator.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/grpc/negotiator/tls/SdkDefaultTlsProtocolNegotiatorBuilder.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/tls/RpcServerSslContextRefresher.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 797,
-  "done": 1725
+  "done": 1740
 }
