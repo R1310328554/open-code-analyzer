@@ -73,6 +73,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
 
+/**
+ * 组织群组管理 REST 子资源：对单个组织群组执行查询、更新、删除及成员管理。
+ * <p>提供子群组 CRUD、角色映射、成员加入/离开等 Admin API；前置权限由 {@link OrganizationGroupsResource#getGroupById(String)} 校验。</p>
+ */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class OrganizationGroupResource {
 
@@ -83,6 +87,7 @@ public class OrganizationGroupResource {
     private final AdminEventBuilder adminEvent;
     private final AdminPermissionEvaluator auth;
 
+    /** @param session Keycloak 会话 @param organizationProvider 组织 Provider @param organization 所属组织 @param group 目标群组 @param adminEvent 管理事件构建器 @param auth 权限评估器 */
     public OrganizationGroupResource(KeycloakSession session, OrganizationProvider organizationProvider, OrganizationModel organization, GroupModel group, AdminEventBuilder adminEvent, AdminPermissionEvaluator auth) {
         this.session = session;
         this.organizationProvider = organizationProvider;
@@ -93,9 +98,8 @@ public class OrganizationGroupResource {
     }
 
     /**
-     * Precondition: caller must have passed through {@link OrganizationsResource#get(String)}
-     * which enforces {@code auth.orgs().requireView(organization)}, and then through
-     * {@link OrganizationGroupsResource#getGroupById(String)} which enforces the same check.
+     * 前置条件：调用方须已通过 {@link OrganizationsResource#get(String)} 与
+     * {@link OrganizationGroupsResource#getGroupById(String)} 的 {@code auth.orgs().requireView(organization)} 校验。
      */
     @GET
     @NoCache
@@ -112,6 +116,7 @@ public class OrganizationGroupResource {
         return rep;
     }
 
+    /** 返回该组织群组的角色映射子资源。 */
     @Path("role-mappings")
     public RoleMapperResource getRoleMappings() {
         AdminPermissionEvaluator.RequirePermissionCheck manageCheck = () -> auth.orgs().requireManage(organization);
@@ -158,7 +163,7 @@ public class OrganizationGroupResource {
                 throw ErrorResponse.error("Invalid group id", Response.Status.BAD_REQUEST);
             }
 
-            // name changed: fire path change event
+            // 群组名称变更时触发路径变更事件
             if (!Objects.equals(groupName, group.getName())) {
                 String previousPath = KeycloakModelUtils.buildGroupPath(group);
                 group.setName(groupName);
@@ -166,12 +171,12 @@ public class OrganizationGroupResource {
                 GroupModel.GroupPathChangeEvent.fire(group, newPath, previousPath, session);
             }
 
-            // description
+            // 更新描述
             if (!Objects.equals(rep.getDescription(), group.getDescription())) {
                 group.setDescription(rep.getDescription());
             }
 
-            //attributes
+            // 同步属性：更新已有、移除多余
             if (rep.getAttributes() != null) {
                 Set<String> attrsToRemove = new HashSet<>(group.getAttributes().keySet());
                 attrsToRemove.removeAll(rep.getAttributes().keySet());
@@ -192,9 +197,8 @@ public class OrganizationGroupResource {
     }
 
     /**
-     * Precondition: caller must have passed through {@link OrganizationsResource#get(String)}
-     * which enforces {@code auth.orgs().requireView(organization)}, and then through
-     * {@link OrganizationGroupsResource#getGroupById(String)} which enforces the same check.
+     * 前置条件：调用方须已通过 {@link OrganizationsResource#get(String)} 与
+     * {@link OrganizationGroupsResource#getGroupById(String)} 的 {@code auth.orgs().requireView(organization)} 校验。
      */
     @GET
     @Path("children")
@@ -254,7 +258,7 @@ public class OrganizationGroupResource {
             GroupModel child;
 
             if (rep.getId() != null) {
-                // MOVE existing group to this parent
+                // 将已有群组移动为当前群组的子群组
                 child = session.groups().getGroupById(realm, rep.getId());
                 if (child == null) {
                     throw new NotFoundException("Could not find child by id");
@@ -278,7 +282,7 @@ public class OrganizationGroupResource {
                 adminEvent.operation(OperationType.UPDATE);
 
             } else {
-                // CREATE new subgroup
+                // 创建新的子群组
                 child = organizationProvider.createGroup(organization, groupName, group);
                 URI uri = session.getContext().getUri().getAbsolutePathBuilder()
                         .path(child.getId()).build();
@@ -299,10 +303,7 @@ public class OrganizationGroupResource {
     }
 
     /**
-     * Precondition: caller must have passed through {@link OrganizationsResource#get(String)}
-     * which enforces {@code auth.orgs().requireView(organization)}, and then through
-     * {@link OrganizationGroupsResource#getGroupById(String)} which enforces the same check.
-     * This method additionally requires {@code auth.users().requireQuery()}.
+     * 前置条件：须已通过组织/群组查看权限校验；本方法额外要求 {@code auth.users().requireQuery()}。
      */
     @GET
     @NoCache
@@ -330,6 +331,7 @@ public class OrganizationGroupResource {
                 .map(user -> toMemberRepresentation(user, briefRepresentation));
     }
 
+    /** 将 {@link UserModel} 转为含成员类型的 {@link MemberRepresentation}。 */
     private MemberRepresentation toMemberRepresentation(UserModel user, Boolean briefRepresentation) {
         boolean briefRep = Boolean.TRUE.equals(briefRepresentation);
         UserRepresentation userRep = ModelToRepresentation.toRepresentation(session, user, briefRep);

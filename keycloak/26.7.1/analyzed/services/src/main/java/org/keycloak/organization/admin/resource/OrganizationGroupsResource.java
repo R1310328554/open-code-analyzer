@@ -66,6 +66,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 组织群组集合 REST 资源：管理组织内顶层群组及按路径/属性检索。
+ * <p>支持创建/移动顶层群组、按名称或属性搜索、构建层级结构；子资源 {@link OrganizationGroupResource} 处理单个群组操作。</p>
+ */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class OrganizationGroupsResource {
 
@@ -76,6 +80,7 @@ public class OrganizationGroupsResource {
     private final AdminEventBuilder adminEvent;
     private final AdminPermissionEvaluator auth;
 
+    /** @param session Keycloak 会话 @param organization 目标组织 @param adminEvent 管理事件构建器 @param auth 权限评估器 */
     public OrganizationGroupsResource(KeycloakSession session, OrganizationModel organization, AdminEventBuilder adminEvent, AdminPermissionEvaluator auth) {
         this.realm = session == null ? null : session.getContext().getRealm();
         this.session = session;
@@ -113,7 +118,7 @@ public class OrganizationGroupsResource {
             GroupModel group;
 
             if (rep.getId() != null) {
-                // MOVE existing group to top-level
+                // 将已有组织群组移动为顶层群组
                 group = session.groups().getGroupById(realm, rep.getId());
                 if (group == null) {
                     throw new NotFoundException("Could not find group by id");
@@ -130,7 +135,7 @@ public class OrganizationGroupsResource {
                     throw ErrorResponse.error("Group does not belong to this organization", Response.Status.BAD_REQUEST);
                 }
 
-                // Get internal org group (the real top-level parent for org groups)
+                // 获取组织内部根群组（组织群组的实际顶层父节点）
                 GroupModel internalGroup = organizationProvider.getOrganizationGroup(organization);
 
                 // Move the group if it's not already a top-level group
@@ -142,10 +147,10 @@ public class OrganizationGroupsResource {
                 adminEvent.operation(OperationType.UPDATE);
 
             } else {
-                // CREATE new top-level org group
+                // 创建新的顶层组织群组
                 group = organizationProvider.createGroup(organization, groupName, null);
 
-                // set description and attributes
+                // 设置描述与属性
                 if (rep.getDescription() != null) {
                     group.setDescription(rep.getDescription());
                 }
@@ -207,7 +212,7 @@ public class OrganizationGroupsResource {
             groups = organizationProvider.getTopLevelGroups(organization, first, max);
         }
 
-        // builds hierarchy mainly for admin UI
+        // 构建层级结构，主要用于管理控制台 UI
         if (populateHierarchy) {
             String internalGroupId = organizationProvider.getOrganizationGroup(organization).getId();
             return GroupUtils.populateGroupHierarchyFromSubGroups(session, realm, groups, !briefRepresentation, subGroupsCount, internalGroupId);
@@ -251,6 +256,7 @@ public class OrganizationGroupsResource {
         return rep;
     }
 
+    /** 按 ID 返回单个组织群组的子资源；校验群组归属当前组织。 */
     @Path("{group-id}")
     public OrganizationGroupResource getGroupById(@PathParam("group-id") String id) {
         auth.orgs().requireView(organization);

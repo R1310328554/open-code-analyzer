@@ -24,11 +24,17 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.workflow.ResourceType;
 import org.keycloak.models.workflow.WorkflowStepProviderFactory;
 
+/**
+ * 禁用客户端工作流步骤工厂，ID 为 {@code disable-client}。
+ * <p>创建 {@link DisableClientStepProvider}，仅支持 {@link ResourceType#CLIENTS} 资源类型，用于在工作流中停用客户端而不删除实体。</p>
+ */
 public class DisableClientStepProviderFactory implements
         WorkflowStepProviderFactory<DisableClientStepProvider> {
 
+    /** 步骤工厂标识 {@code disable-client}。 */
     public static final String ID = "disable-client";
 
+    /** 创建绑定会话与组件模型的 {@link DisableClientStepProvider}。 */
     @Override
     public DisableClientStepProvider create(KeycloakSession session, ComponentModel model) {
         return new DisableClientStepProvider(session, model);
@@ -39,11 +45,13 @@ public class DisableClientStepProviderFactory implements
         return ID;
     }
 
+    /** @return 仅支持客户端资源类型 */
     @Override
     public Set<ResourceType> getSupportedResourceTypes() {
         return Set.of(ResourceType.CLIENTS);
     }
 
+    /** @return 管理控制台步骤说明文本 */
     @Override
     public String getHelpText() {
         return "Disables the client";

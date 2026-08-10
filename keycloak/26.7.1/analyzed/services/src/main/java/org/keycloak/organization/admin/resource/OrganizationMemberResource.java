@@ -69,6 +69,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 组织成员管理 REST 资源：添加、查询、移除成员及邀请用户加入组织。
+ * <p>支持按条件搜索成员、查询成员所属组织与群组；委托 {@link OrganizationInvitationResource} 处理邀请流程。</p>
+ */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class OrganizationMemberResource {
 
@@ -79,6 +83,7 @@ public class OrganizationMemberResource {
     private final AdminEventBuilder adminEvent;
     private final AdminPermissionEvaluator auth;
 
+    /** @param session Keycloak 会话 @param organization 目标组织 @param adminEvent 管理事件构建器 @param auth 权限评估器 */
     public OrganizationMemberResource(KeycloakSession session, OrganizationModel organization, AdminEventBuilder adminEvent, AdminPermissionEvaluator auth) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -104,7 +109,7 @@ public class OrganizationMemberResource {
     })
     public Response addMember(String id) {
         auth.orgs().requireManage(organization);
-        id = id.trim().replaceAll("^\"|\"$", ""); // fixes https://github.com/keycloak/keycloak/issues/34401
+        id = id.trim().replaceAll("^\"|\"$", ""); // 去除首尾引号，修复 #34401
 
         UserModel user = getUser(id);
         auth.users().requireManage(user);
@@ -161,9 +166,7 @@ public class OrganizationMemberResource {
     }
 
     /**
-     * Precondition: caller must have passed through {@link OrganizationsResource#get(String)}
-     * which enforces {@code auth.orgs().requireView(organization)}. This method additionally
-     * requires {@code auth.users().requireQuery()}.
+     * 前置条件：须已通过 {@link OrganizationsResource#get(String)} 的组织查看权限校验；本方法额外要求 {@code auth.users().requireQuery()}。
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -185,7 +188,7 @@ public class OrganizationMemberResource {
     ) {
         auth.users().requireQuery();
 
-        // if a dedicated admin can query, but cannot view (and FGAP is not enabled) - we can return empty list right away to save a roundtrip to the DB
+        // 专用管理员可查询但不可查看且未启用 FGAP 时直接返回空列表，避免多余数据库查询
         if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm) && !auth.users().canView()) {
             return Stream.empty();
         }
@@ -204,9 +207,7 @@ public class OrganizationMemberResource {
     }
 
     /**
-     * Precondition: caller must have passed through {@link OrganizationsResource#get(String)}
-     * which enforces {@code auth.orgs().requireView(organization)}. This method additionally
-     * requires {@code auth.users().requireView(member)}.
+     * 前置条件：须已通过组织查看权限校验；本方法额外要求 {@code auth.users().requireView(member)}。
      */
     @Path("{member-id}")
     @GET
@@ -265,13 +266,7 @@ public class OrganizationMemberResource {
     }
 
     /**
-     * Precondition: when reached via the per-org path, the caller must have passed through
-     * {@link OrganizationsResource#get(String)} which enforces {@code auth.orgs().requireView(organization)}.
-     * When reached via the collection-level path ({@code /organizations/members/{id}/organizations}),
-     * the caller passes through {@link OrganizationsResource#getOrganizations(String)} which enforces
-     * {@code auth.orgs().requireQuery()}. This method additionally requires
-     * {@code auth.users().requireView(member)} and filters returned organizations by
-     * {@code auth.orgs().canView(org)}.
+     * 前置条件：按组织路径须已通过 {@code requireView(organization)}；按集合路径须已通过 {@code requireQuery()}；本方法额外要求 {@code requireView(member)} 并按 {@code canView(org)} 过滤结果。
      */
     @Path("{member-id}/organizations")
     @GET
@@ -295,7 +290,7 @@ public class OrganizationMemberResource {
         UserModel member = organization == null ? getUser(memberId) : getMember(memberId);
         auth.users().requireView(member);
 
-        // if a dedicated admin can query, but cannot view (and FGAP is not enabled) - we can return empty list right away to save a roundtrip to the DB
+        // 专用管理员可查询但不可查看且未启用 FGAP 时直接返回空列表，避免多余数据库查询
         if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm) && !auth.orgs().canView()) {
             return Stream.empty();
         }
@@ -306,9 +301,7 @@ public class OrganizationMemberResource {
     }
 
     /**
-     * Precondition: caller must have passed through {@link OrganizationsResource#get(String)}
-     * which enforces {@code auth.orgs().requireView(organization)}. This method additionally
-     * requires {@code auth.users().requireView(member)}.
+     * 前置条件：须已通过组织查看权限校验；本方法额外要求 {@code auth.users().requireView(member)}。
      */
     @Path("{member-id}/groups")
     @GET
@@ -340,9 +333,7 @@ public class OrganizationMemberResource {
     }
 
     /**
-     * Precondition: caller must have passed through {@link OrganizationsResource#get(String)}
-     * which enforces {@code auth.orgs().requireView(organization)}. This method additionally
-     * requires {@code auth.users().requireQuery()}.
+     * 前置条件：须已通过 {@link OrganizationsResource#get(String)} 的组织查看权限校验；本方法额外要求 {@code auth.users().requireQuery()}。
      */
     @Path("count")
     @GET
@@ -357,7 +348,7 @@ public class OrganizationMemberResource {
     public Long count() {
         auth.users().requireQuery();
 
-        // if a dedicated admin can query, but cannot view (and FGAP is not enabled) - we can return 0L right away to save a roundtrip to the DB
+        // 专用管理员可查询但不可查看且未启用 FGAP 时直接返回 0，避免多余数据库查询
         if (!AdminPermissionsSchema.SCHEMA.isAdminPermissionsEnabled(realm) && !auth.users().canView()) {
             return 0L;
         }
@@ -365,6 +356,7 @@ public class OrganizationMemberResource {
         return provider.getMembersCount(organization);
     }
 
+    /** 按 ID 获取组织成员；不存在时按查询权限返回 404 或 403。 */
     private UserModel getMember(String id) {
         UserModel member = provider.getMemberById(organization, id);
 
@@ -375,6 +367,7 @@ public class OrganizationMemberResource {
         return member;
     }
 
+    /** 按 ID 获取 Realm 用户；不存在时按查询权限返回 404 或 403。 */
     private UserModel getUser(String id) {
         UserModel user = session.users().getUserById(realm, id);
 
@@ -385,6 +378,7 @@ public class OrganizationMemberResource {
         return user;
     }
 
+    /** 将用户转为含托管/非托管成员类型的 {@link MemberRepresentation}。 */
     private MemberRepresentation toRepresentation(UserModel member, boolean brief) {
         MemberRepresentation result = new MemberRepresentation(ModelToRepresentation.toRepresentation(session, member, brief));
         result.setMembershipType(provider.isManagedMember(organization, member) ? MembershipType.MANAGED : MembershipType.UNMANAGED);

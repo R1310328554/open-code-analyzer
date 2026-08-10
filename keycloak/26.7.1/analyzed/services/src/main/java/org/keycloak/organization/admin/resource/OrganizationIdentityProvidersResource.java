@@ -59,6 +59,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.NoCache;
 
+/**
+ * 组织身份提供方关联 REST 资源：管理组织与 Realm IdP 的绑定关系。
+ * <p>支持添加/查询/移除已关联的身份提供方，并按 IdP 列出可用于映射器的组织群组。</p>
+ */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
 public class OrganizationIdentityProvidersResource {
 
@@ -69,6 +73,7 @@ public class OrganizationIdentityProvidersResource {
     private final AdminEventBuilder adminEvent;
     private final AdminPermissionEvaluator auth;
 
+    /** @param session Keycloak 会话 @param organization 目标组织 @param adminEvent 管理事件构建器 @param auth 权限评估器 */
     public OrganizationIdentityProvidersResource(KeycloakSession session, OrganizationModel organization, AdminEventBuilder adminEvent, AdminPermissionEvaluator auth) {
         this.realm = session == null ? null : session.getContext().getRealm();
         this.session = session;
@@ -95,7 +100,7 @@ public class OrganizationIdentityProvidersResource {
     public Response addIdentityProvider(String id) {
         auth.orgs().requireManage(organization);
         auth.realm().requireManageIdentityProviders();
-        id = id.trim().replaceAll("^\"|\"$", ""); // fixes https://github.com/keycloak/keycloak/issues/34401
+        id = id.trim().replaceAll("^\"|\"$", ""); // 去除首尾引号，修复 #34401
 
         try {
             IdentityProviderModel identityProvider = session.identityProviders().getByIdOrAlias(id);
@@ -155,20 +160,17 @@ public class OrganizationIdentityProvidersResource {
     }
 
     /**
-     * Returns organization groups for the identity provider with the specified alias.
-     * It allows filtering and displaying only the organization groups that are valid for the given identity provider.
+     * 返回指定 IdP 别名关联的组织群组，供身份提供方映射器选用。
+     * <p>仅当 IdP 已关联组织且组织已启用时返回群组，否则返回错误或空流。</p>
      *
-     * Only returns groups if the identity provider is associated with the organization and the organization
-     * is enabled. Otherwise, returns an error or empty stream.
-     *
-     * @param alias the identity provider alias
-     * @param search a string to search for in group names
-     * @param searchQuery a query to search for group attributes, in the format 'key1:value1 key2:value2'
-     * @param exact if true, perform exact match on the search parameter
-     * @param first the position of the first result (pagination offset)
-     * @param max the maximum number of results to return
-     * @param briefRepresentation if true, return brief group representation; otherwise return full representation
-     * @return a stream of organization groups associated with the organization
+     * @param alias 身份提供方别名
+     * @param search 群组名称搜索字符串
+     * @param searchQuery 属性搜索查询，格式 {@code key1:value1 key2:value2}
+     * @param exact 是否精确匹配搜索参数
+     * @param first 分页偏移
+     * @param max 最大返回数量
+     * @param briefRepresentation 是否返回简要群组表示
+     * @return 组织群组流
      */
     @Path("{alias}/groups")
     @GET
@@ -193,7 +195,7 @@ public class OrganizationIdentityProvidersResource {
             @Parameter(description = "If true, return brief representation; otherwise return full representation") @QueryParam("briefRepresentation") @DefaultValue("true") boolean briefRepresentation,
             @Parameter(description = "If true, include subgroups count in the response") @QueryParam("subGroupsCount") @DefaultValue("false") boolean subGroupsCount) {
 
-        // Validate that the identity provider is associated with the organization and the caller can view the org
+        // 校验 IdP 已关联组织且调用方具有查看权限
         getIdentityProvider(alias);
 
         OrganizationGroupsResource groupsResource = new OrganizationGroupsResource(session, organization, adminEvent, auth);
@@ -229,10 +231,12 @@ public class OrganizationIdentityProvidersResource {
         throw ErrorResponse.error("Identity provider not associated with the organization", Status.BAD_REQUEST);
     }
 
+    /** 将 {@link IdentityProviderModel} 转为脱敏后的 REST 表示。 */
     private IdentityProviderRepresentation toRepresentation(IdentityProviderModel idp) {
         return StripSecretsUtils.stripSecrets(session, ModelToRepresentation.toRepresentation(session, realm, idp));
     }
 
+    /** 判断 IdP 是否已绑定当前组织。 */
     private boolean isOrganizationBroker(IdentityProviderModel broker) {
         return broker != null && organization.getId().equals(broker.getOrganizationId());
     }

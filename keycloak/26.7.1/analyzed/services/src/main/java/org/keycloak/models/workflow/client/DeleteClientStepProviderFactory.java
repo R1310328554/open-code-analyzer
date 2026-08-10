@@ -24,11 +24,17 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.workflow.ResourceType;
 import org.keycloak.models.workflow.WorkflowStepProviderFactory;
 
+/**
+ * 删除客户端工作流步骤工厂，ID 为 {@code delete-client}。
+ * <p>创建 {@link DeleteClientStepProvider}，仅支持 {@link ResourceType#CLIENTS} 资源类型，用于在工作流中永久移除客户端实体。</p>
+ */
 public class DeleteClientStepProviderFactory implements
         WorkflowStepProviderFactory<DeleteClientStepProvider> {
 
+    /** 步骤工厂标识 {@code delete-client}。 */
     public static final String ID = "delete-client";
 
+    /** 创建绑定会话与组件模型的 {@link DeleteClientStepProvider}。 */
     @Override
     public DeleteClientStepProvider create(KeycloakSession session, ComponentModel model) {
         return new DeleteClientStepProvider(session, model);
@@ -39,11 +45,13 @@ public class DeleteClientStepProviderFactory implements
         return ID;
     }
 
+    /** @return 仅支持客户端资源类型 */
     @Override
     public Set<ResourceType> getSupportedResourceTypes() {
         return Set.of(ResourceType.CLIENTS);
     }
 
+    /** @return 管理控制台步骤说明文本 */
     @Override
     public String getHelpText() {
         return "Deletes the client";

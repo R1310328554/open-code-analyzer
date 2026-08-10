@@ -20,14 +20,20 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderEvent;
 import org.keycloak.provider.ProviderEventListener;
 
+/**
+ * 工作流事件监听器：将用户事件、管理事件与 {@link ProviderEvent} 转换为 {@link WorkflowEvent} 并提交调度。
+ * <p>委托所有已注册的 {@link WorkflowEventProvider} 创建事件，由 {@link WorkflowProvider#submit} 异步执行工作流。</p>
+ */
 public class WorkflowEventListener implements EventListenerProvider, ProviderEventListener {
 
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public WorkflowEventListener(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 处理用户域事件并尝试调度匹配的工作流。 */
     @Override
     public void onEvent(Event event) {
         session.getAllProviders(WorkflowEventProvider.class).stream()
@@ -36,6 +42,7 @@ public class WorkflowEventListener implements EventListenerProvider, ProviderEve
                 .forEach(this::trySchedule);
     }
 
+    /** 处理管理域事件并尝试调度匹配的工作流。 */
     @Override
     public void onEvent(AdminEvent event, boolean includeRepresentation) {
         session.getAllProviders(WorkflowEventProvider.class).stream()
@@ -44,6 +51,7 @@ public class WorkflowEventListener implements EventListenerProvider, ProviderEve
                 .forEach(this::trySchedule);
     }
 
+    /** 处理 {@link ProviderEvent}；无 Realm 上下文时直接返回。 */
     @Override
     public void onEvent(ProviderEvent event) {
         RealmModel realm = session.getContext().getRealm();
@@ -56,6 +64,7 @@ public class WorkflowEventListener implements EventListenerProvider, ProviderEve
                 .forEach(this::trySchedule);
     }
 
+    /** 将非空 {@link WorkflowEvent} 提交至 {@link WorkflowProvider}。 */
     private void trySchedule(WorkflowEvent event) {
         if (event != null) {
             session.getProvider(WorkflowProvider.class).submit(event);

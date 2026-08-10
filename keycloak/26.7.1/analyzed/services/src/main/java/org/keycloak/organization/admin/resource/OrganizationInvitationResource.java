@@ -77,6 +77,9 @@ import static org.keycloak.representations.idm.OrganizationInvitationRepresentat
 
 
 /**
+ * 组织成员邀请 REST 资源：发送、查询、删除与重发组织邀请。
+ * <p>支持按邮箱邀请新用户（注册链接）或已有用户（Action Token 链接），并持久化 {@link OrganizationInvitationModel} 记录。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Extension(name = KeycloakOpenAPI.Profiles.ADMIN, value = "")
@@ -89,6 +92,7 @@ public class OrganizationInvitationResource {
     private final AdminEventBuilder adminEvent;
     private final AdminPermissionEvaluator auth;
 
+    /** @param session Keycloak 会话 @param organization 目标组织 @param adminEvent 管理事件构建器 @param auth 权限评估器 */
     public OrganizationInvitationResource(KeycloakSession session, OrganizationModel organization, AdminEventBuilder adminEvent, AdminPermissionEvaluator auth) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -97,6 +101,7 @@ public class OrganizationInvitationResource {
         this.auth = auth;
     }
 
+    /** 按邮箱邀请成员：已有用户发邀请链接，新用户发注册链接。 */
     public Response inviteUser(String email, String firstName, String lastName) {
         auth.orgs().requireManage(organization);
 
@@ -135,7 +140,7 @@ public class OrganizationInvitationResource {
             return sendInvitation(user);
         }
 
-        // Create temporary user for new registrations
+        // 为新用户注册创建临时内存用户对象
         user = new InMemoryUserAdapter(session, realm, null);
         user.setEmail(email);
 
@@ -147,6 +152,7 @@ public class OrganizationInvitationResource {
         return sendInvitation(user);
     }
 
+    /** 按用户 ID 邀请已有 Realm 用户加入组织。 */
     public Response inviteExistingUser(String id) {
         auth.orgs().requireManage(organization);
 
@@ -173,10 +179,11 @@ public class OrganizationInvitationResource {
         return sendInvitation(user);
     }
 
+    /** 创建邀请记录、生成链接并发送组织邀请邮件。 */
     private Response sendInvitation(UserModel user) {
         OrganizationProvider provider = session.getProvider(OrganizationProvider.class);
         InvitationManager invitationManager = provider.getInvitationManager();
-        // Create persistent invitation record
+        // 创建持久化邀请记录
         OrganizationInvitationModel invitation = invitationManager.create(
             organization,
             user.getEmail(),
@@ -207,16 +214,19 @@ public class OrganizationInvitationResource {
         return Response.noContent().build();
     }
 
+    /** @return 管理员生成的 Action Token 有效期（秒） */
     private int getActionTokenLifespan() {
         return realm.getActionTokenGeneratedByAdminLifespan();
     }
 
+    /** 为已有用户生成 Action Token 邀请链接。 */
     private String createInvitationLink(UserModel user, OrganizationInvitationModel invitation) {
         return LoginActionsService.actionTokenProcessor(session.getContext().getUri())
                 .queryParam("key", createToken(user, invitation))
                 .build(realm.getName()).toString();
     }
 
+    /** 为新用户生成 OIDC 注册链接（含邀请 Token）。 */
     private String createRegistrationLink(UserModel user, OrganizationInvitationModel invitation) {
         return OIDCLoginProtocolService.registrationsUrl(session.getContext().getUri().getBaseUriBuilder())
                 .queryParam(OAuth2Constants.RESPONSE_TYPE, OIDCResponseType.CODE)
@@ -225,6 +235,7 @@ public class OrganizationInvitationResource {
                 .buildFromMap(Map.of("realm", realm.getName(), "protocol", OIDCLoginProtocol.LOGIN_PROTOCOL)).toString();
     }
 
+    /** 创建并序列化 {@link InviteOrgActionToken}。 */
     private String createToken(UserModel user, OrganizationInvitationModel invitation) {
         InviteOrgActionToken token = new InviteOrgActionToken(user.getId(), invitation.getExpiresAt(), user.getEmail(), Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
 
@@ -240,6 +251,7 @@ public class OrganizationInvitationResource {
         return token.serialize(session, realm, session.getContext().getUri());
     }
 
+    /** 解析账户管理客户端基础 URL 作为默认重定向地址。 */
     private String resolveAccountClientBaseUrl() {
         ClientModel accountClient = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
 
@@ -362,6 +374,7 @@ public class OrganizationInvitationResource {
         return inviteUser(invitation.getEmail(), invitation.getFirstName(), invitation.getLastName());
     }
 
+    /** 校验邀请 ID 存在且属于当前组织。 */
     private OrganizationInvitationModel verifyInvitationById(InvitationManager invitationManager, String id) {
         OrganizationInvitationModel invitation = invitationManager.getById(id);
 
@@ -372,7 +385,7 @@ public class OrganizationInvitationResource {
         return invitation;
     }
 
-    // Helper method to convert model to representation
+    // 将邀请模型转为完整 REST 表示
     private OrganizationInvitationRepresentation toRepresentation(OrganizationInvitationModel model) {
         if (model == null) return null;
 
@@ -394,6 +407,7 @@ public class OrganizationInvitationResource {
         return rep;
     }
 
+    /** 转为仅含 ID、邮箱与组织 ID 的精简表示（用于审计事件）。 */
     private OrganizationInvitationRepresentation toMinimalRepresentation(OrganizationInvitationModel model) {
         if (model == null) return null;
 

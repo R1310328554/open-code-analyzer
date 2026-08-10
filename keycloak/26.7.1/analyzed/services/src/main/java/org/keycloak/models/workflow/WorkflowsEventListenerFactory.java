@@ -36,25 +36,33 @@ import org.keycloak.timer.TimerProvider;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 工作流事件监听器工厂，ID 为 {@code workflow-event-listener}。
+ * <p>创建全局 {@link WorkflowEventListener}，注册 {@link ProviderEvent} 回调，并按配置间隔调度 {@link WorkflowRunnerScheduledTask} 集群感知定时任务。</p>
+ */
 public class WorkflowsEventListenerFactory implements EventListenerProviderFactory, EnvironmentDependentProviderFactory {
 
     private static final Logger logger = Logger.getLogger(WorkflowsEventListenerFactory.class);
 
+    /** 事件监听器工厂标识 {@code workflow-event-listener}。 */
     public static final String ID = "workflow-event-listener";
     private static final long DEFAULT_STEP_RUNNER_TASK_INTERVAL = Duration.ofHours(12).toMillis();
     private long stepRunnerTaskInterval;
     private LocalTime stepRunnerTaskStartTime;
 
+    /** 创建绑定当前会话的 {@link WorkflowEventListener}。 */
     @Override
     public EventListenerProvider create(KeycloakSession session) {
         return new WorkflowEventListener(session);
     }
 
+    /** @return 全局监听器，跨 Realm 共享实例 */
     @Override
     public boolean isGlobal() {
         return true;
     }
 
+    /** 从配置读取步骤运行器间隔 {@code stepRunnerTaskInterval} 与起始时间 {@code stepRunnerTaskStartTime}。 */
     @Override
     public void init(Scope config) {
         String taskIntervalStr = config.get("stepRunnerTaskInterval");
@@ -71,6 +79,7 @@ public class WorkflowsEventListenerFactory implements EventListenerProviderFacto
         }
     }
 
+    /** 注册 Provider 事件回调并调度 {@link WorkflowRunnerScheduledTask}。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         factory.register(event -> {
@@ -83,6 +92,7 @@ public class WorkflowsEventListenerFactory implements EventListenerProviderFacto
         scheduleStepRunnerTask(factory);
     }
 
+    /** 将 {@link ProviderEvent} 转发至工作流事件监听器。 */
     private void onEvent(ProviderEvent event, KeycloakSession session) {
         WorkflowEventListener provider = (WorkflowEventListener) session.getProvider(EventListenerProvider.class, getId());
         provider.onEvent(event);
@@ -97,11 +107,13 @@ public class WorkflowsEventListenerFactory implements EventListenerProviderFacto
         return ID;
     }
 
+    /** @return 是否启用 {@link Profile.Feature#WORKFLOWS} 功能 */
     @Override
     public boolean isSupported(Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.WORKFLOWS);
     }
 
+    /** 通过 {@link ClusterAwareScheduledTaskRunner} 注册集群感知定时任务。 */
     private void scheduleStepRunnerTask(KeycloakSessionFactory factory) {
         long initialDelay = computeInitialDelay();
 
@@ -119,14 +131,11 @@ public class WorkflowsEventListenerFactory implements EventListenerProviderFacto
     }
 
     /**
-     * Computes the initial delay before the first task execution.
+     * 计算首次定时任务执行前的初始延迟。
      * <p>
-     * If a start time is configured, it is used as an anchor to align executions to a predictable
-     * schedule. For example, with a start time of 18:00 and an interval of 2 hours, the execution
-     * grid is 00:00, 02:00, 04:00, ..., 16:00, 18:00, 20:00, 22:00. The initial delay is calculated
-     * so that the first execution occurs at the next grid point after the current time.
+     * 若配置了起始时间，则以其为锚点对齐执行网格（例如 18:00 起始、2 小时间隔 → 00:00、02:00…）。初始延迟使首次执行落在当前时间之后的下一网格点。
      * <p>
-     * If no start time is configured, the initial delay equals the interval (current default behavior).
+     * 未配置起始时间时，初始延迟等于执行间隔（默认行为）。
      */
     long computeInitialDelay() {
         if (stepRunnerTaskStartTime == null) {

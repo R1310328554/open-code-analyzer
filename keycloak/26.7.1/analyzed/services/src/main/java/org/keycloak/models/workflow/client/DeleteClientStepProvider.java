@@ -26,20 +26,26 @@ import org.keycloak.models.workflow.WorkflowStepProvider;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 工作流步骤：删除工作流上下文中的目标客户端。
+ * <p>按资源 ID 查找 {@link ClientModel} 并调用 {@link org.keycloak.models.ClientProvider#removeClient} 永久移除。</p>
+ */
 public class DeleteClientStepProvider implements WorkflowStepProvider {
 
     private final KeycloakSession session;
     private final Logger log = Logger.getLogger(DeleteClientStepProvider.class);
 
+    /** @param session Keycloak 会话 @param model 工作流步骤组件配置（本步骤未使用） */
     public DeleteClientStepProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
     }
 
     @Override
     public void close() {
-        // nothing to close
+        // 无需要释放的资源
     }
 
+    /** 查找并删除目标客户端；客户端不存在时静默返回。 */
     @Override
     public void run(WorkflowExecutionContext context) {
         RealmModel realm = session.getContext().getRealm();

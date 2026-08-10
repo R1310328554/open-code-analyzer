@@ -10,7 +10,8 @@ import org.keycloak.timer.ScheduledTask;
 import org.jboss.logging.Logger;
 
 /**
- * A {@link ScheduledTask} that runs all the scheduled steps for resources on a per-realm basis.
+ * 工作流定时任务：按 Realm 逐个执行已调度的资源工作流步骤。
+ * <p>实现 {@link ScheduledTask}，遍历所有 Realm 并在独立事务中调用 {@link WorkflowProvider#runScheduledSteps()}。</p>
  */
 final class WorkflowRunnerScheduledTask implements ScheduledTask {
 
@@ -18,17 +19,19 @@ final class WorkflowRunnerScheduledTask implements ScheduledTask {
 
     private final KeycloakSessionFactory sessionFactory;
 
+    /** @param sessionFactory Keycloak 会话工厂 */
     WorkflowRunnerScheduledTask(KeycloakSessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
 
+    /** 遍历所有 Realm 并委托 {@link #runScheduledTasksOnRealm(String)} 执行定时步骤。 */
     @Override
     public void run(KeycloakSession session) {
-        // TODO: Depending on how many realms and the steps in use, this task can consume a lot of gears (e.g.: cpu, memory, and network)
-        // we need a smarter mechanism that process realms in batches with some window interval
+        // TODO：Realm 与步骤数量较多时可能消耗大量 CPU/内存/网络，后续需分批与窗口间隔优化
         session.realms().getRealmsStream().map(RealmModel::getId).forEach(this::runScheduledTasksOnRealm);
     }
 
+    /** 在独立事务中为指定 Realm 执行定时工作流步骤并发布成功事件。 */
     private void runScheduledTasksOnRealm(String id) {
         KeycloakModelUtils.runJobInTransaction(sessionFactory, (KeycloakSession session) -> {
             try {
@@ -45,6 +48,7 @@ final class WorkflowRunnerScheduledTask implements ScheduledTask {
         });
     }
 
+    /** @return 定时任务名称 {@code workflow-runner-task} */
     @Override
     public String getTaskName() {
         return "workflow-runner-task";
