@@ -1,5 +1,8 @@
 package writer
 
+// Canary 批量推送写入器：在内存中聚合多条日志后统一序列化推送，
+// 降低 push 请求频率并复用底层 Push 的通道与重试逻辑。
+
 import (
 	"context"
 	"sync"
@@ -17,6 +20,7 @@ const (
 	DefaultLogBatchTimeout = 30 // every 'n' seconds, force the batch to flush if it's not empty
 )
 
+// BatchedPush 包装 Push，按条数上限、超时或关闭信号触发 flush。
 // BatchedPush is wrapper around the `Push` writer.  This writer delegates
 // the standard `EntryWriter` functions to the wrapped `Push` writer, but
 // reimplements the push mechanism:
@@ -29,11 +33,13 @@ const (
 //
 // This writer utilizes the wrapped `Push` struct's internals for listening for logs,
 // building serializable objects, etc.
+// BatchedPush 持有 Push 引用与内存批次大小上限。
 type BatchedPush struct {
 	pusher       *Push
 	logBatchSize int
 }
 
+// buildPayload 将多条 entry 组装为 snappy 压缩的 PushRequest 字节流。
 // `buildPayload` receives the array of log lines and converts them
 // to a serialized byte array which may be pushed to the loki endpoint.
 func (p *BatchedPush) buildPayload(logs []entry) ([]byte, error) {
@@ -56,6 +62,7 @@ func (p *BatchedPush) Stop() {
 	p.pusher.Stop()
 }
 
+// run 从 Push 通道消费日志，满批或定时强制刷出并带退避重试。
 // `run` pulls lines from the `Push` channel and batches them to before sending
 // to Loki.  Once the batch is "full", or after 30s has transpired, the log lines
 // are then serialized to a byte array and the `Push.send()` function is used

@@ -1,5 +1,8 @@
 package chunkenc
 
+// Chunk 核心接口与错误定义：描述压缩日志块的追加、迭代、
+// 序列化及块级访问契约，并区分乱序与过旧条目错误。
+
 import (
 	"context"
 	"errors"
@@ -14,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/filter"
 )
 
+// 包级错误变量标识块满、乱序、无效尺寸与校验失败等状态。
 // Errors returned by the chunk interface.
 var (
 	ErrChunkFull       = errors.New("chunk full")
@@ -23,6 +27,7 @@ var (
 	ErrInvalidChecksum = errors.New("invalid chunk checksum")
 )
 
+// errTooFarBehind 表示条目时间戳早于流允许的最旧时间。
 type errTooFarBehind struct {
 	// original timestamp of the entry itself.
 	entryTs time.Time
@@ -48,6 +53,7 @@ func IsOutOfOrderErr(err error) bool {
 	return err == ErrOutOfOrder || IsErrTooFarBehind(err)
 }
 
+// Chunk 接口定义 Loki 内存/持久化日志块的全部读写操作。
 // Chunk is the interface for the compressed logs chunk format.
 type Chunk interface {
 	Bounds() (time.Time, time.Time)
@@ -72,6 +78,7 @@ type Chunk interface {
 	Rewrite(filter filter.Func) (Chunk, error)
 }
 
+// Block 表示 Chunk 内一个已压缩的时间有序日志子块。
 // Block is a chunk block.
 type Block interface {
 	// MinTime is the minimum time of entries in the block

@@ -1,5 +1,8 @@
 package chunkenc
 
+// Cortex Chunk 兼容门面：将 chunkenc.Chunk 适配为 cortex chunk.Data，
+// 供 Loki 复用 Cortex 块存储的序列化与注册机制。
+
 import (
 	"io"
 	"time"
@@ -8,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/filter"
 )
 
+// GzipLogChunk 为已弃用的 Cortex 编码类型标识（128）。
 // GzipLogChunk is a cortex encoding type for our chunks.
 // Deprecated: the chunk encoding/compression format is inside the chunk data.
 const GzipLogChunk = chunk.Encoding(128)
@@ -24,6 +28,7 @@ func init() {
 	})
 }
 
+// Facade 包装内部 Chunk 并实现 chunk.Data 的 Marshal/Unmarshal。
 // Facade for compatibility with cortex chunk type, so we can use its chunk store.
 type Facade struct {
 	c          Chunk
@@ -101,6 +106,7 @@ func (f Facade) Entries() int {
 	return f.c.Size()
 }
 
+// LokiChunk 暴露底层 chunkenc.Chunk 供 Loki 内部逻辑直接访问。
 // LokiChunk returns the chunkenc.Chunk.
 func (f Facade) LokiChunk() Chunk {
 	return f.c
@@ -116,6 +122,7 @@ func (f Facade) Rewrite(filter filter.Func) (chunk.Data, error) {
 	}, nil
 }
 
+// UncompressedSize 通过类型断言安全获取 Facade 内 Chunk 的未压缩大小。
 // UncompressedSize is a helper function to hide the type assertion kludge when wanting the uncompressed size of the Cortex interface encoding.Chunk.
 func UncompressedSize(c chunk.Data) (int, bool) {
 	f, ok := c.(*Facade)

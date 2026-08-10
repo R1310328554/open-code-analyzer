@@ -1,5 +1,8 @@
 package chunkenc
 
+// 多样本提取器迭代器：对单条日志行并行运行多个 StreamSampleExtractor，
+// 展开为多条带不同标签的 logproto.Sample 供 LogQL 采样查询使用。
+
 import (
 	"context"
 
@@ -11,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// newMultiExtractorSampleIterator 构造支持多提取器的采样迭代器。
 func newMultiExtractorSampleIterator(
 	ctx context.Context,
 	pool compression.ReaderPool,
@@ -26,6 +30,7 @@ func newMultiExtractorSampleIterator(
 	}
 }
 
+// multiExtractorSampleBufferedIterator 为多变体查询实验性实现，后续可能合并。
 // TODO(twhitney): Once multi-variant queries have been validated,
 // we should merge this into the regular sampledBufferedIterator.
 type multiExtractorSampleBufferedIterator struct {
@@ -39,6 +44,7 @@ type multiExtractorSampleBufferedIterator struct {
 	currBaseLabels []log.LabelsResult
 }
 
+// Next 逐条解压日志并对每个 extractor 生成 Sample 切片。
 func (e *multiExtractorSampleBufferedIterator) Next() bool {
 	if len(e.cur) > 1 {
 		e.cur = e.cur[1:]

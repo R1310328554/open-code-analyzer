@@ -1,5 +1,8 @@
 package writer
 
+// Canary 日志生成器：按固定间隔产生带纳秒时间戳的测试日志，
+// 可配置乱序比例与行大小，并通过 EntryWriter 接口输出。
+
 import (
 	"fmt"
 	"math/rand"
@@ -15,12 +18,14 @@ const (
 )
 
 type EntryWriter interface {
+// WriteEntry 须非阻塞，以保证定时器驱动的写入节奏稳定。
 	// WriteEntry handles sending the log to the output
 	// To maintain consistent log timing, Write is expected to be non-blocking
 	WriteEntry(ts time.Time, entry string)
 	Stop()
 }
 
+// Writer 定时生成日志并通过 sent 通道通知 Comparator。
 type Writer struct {
 	w                    EntryWriter
 	sent                 chan time.Time
@@ -71,6 +76,7 @@ func (w *Writer) Stop() {
 	}
 }
 
+// run 按 interval 触发写入，随机注入乱序时间戳并填充固定长度。
 func (w *Writer) run() {
 	t := time.NewTicker(w.interval)
 	defer func() {

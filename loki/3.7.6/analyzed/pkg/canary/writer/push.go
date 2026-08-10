@@ -1,5 +1,8 @@
 package writer
 
+// Canary 直推写入器：将单条日志序列化为 protobuf 并经 snappy 压缩，
+// 通过 HTTP POST 推送到 Loki /loki/api/v1/push 端点。
+
 import (
 	"bufio"
 	"bytes"
@@ -32,6 +35,7 @@ const (
 
 var defaultUserAgent = fmt.Sprintf("canary-push/%s", build.GetVersion().Version)
 
+// Push 实现 EntryWriter，为单个租户维护推送通道与重试退避。
 // Push is a io.Writer, that writes given log entries by pushing
 // directly to the given loki server URL. Each `Push` instance handles for a single tenant.
 type Push struct {
@@ -62,6 +66,7 @@ type Push struct {
 	logBatchSize int
 }
 
+// NewPush 按 logBatchSize 返回 Push 或 BatchedPush 实例。
 // `NewPush` creates an instance of `EntryWriter` which writes logs directly to the given `lokiAddr`
 //
 // Depending on the `logBatchSize` passed to this function, the implementing `EntryWriter` instance
@@ -183,6 +188,7 @@ func (p *Push) buildPayload(e entry) ([]byte, error) {
 	return p.serializePayload(req)
 }
 
+// buildStream 为单条日志构造带标签指纹的 logproto.Stream。
 func (p *Push) buildStream(e entry) logproto.Stream {
 	labels := model.LabelSet{
 		model.LabelName(p.labelName):  model.LabelValue(p.labelValue),
@@ -212,6 +218,7 @@ func (p *Push) serializePayload(req *logproto.PushRequest) ([]byte, error) {
 	return payload, nil
 }
 
+// run 从 entries 通道逐条构建 payload 并带退避重试发送。
 // run pulls lines out of the channel and sends them to Loki
 func (p *Push) run() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -258,6 +265,7 @@ func (p *Push) run() {
 	}
 }
 
+// send 执行一次 HTTP POST 推送并解析非 2xx 响应错误。
 // send makes one attempt to send the payload to Loki
 func (p *Push) send(ctx context.Context, payload []byte) (int, error) {
 	var (

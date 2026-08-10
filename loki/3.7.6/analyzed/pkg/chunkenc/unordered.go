@@ -1,5 +1,8 @@
 package chunkenc
 
+// 无序 HeadBlock 实现：基于 rangetree 按纳秒时间戳索引日志，
+// 支持同时间戳多条目、结构化元数据及格式间转换。
+
 import (
 	"bytes"
 	"context"
@@ -24,6 +27,7 @@ import (
 
 var noopStreamPipeline = log.NewNoopPipeline().ForStream(labels.Labels{})
 
+// HeadBlock 定义内存 head 块的追加、序列化、检查点与迭代接口。
 type HeadBlock interface {
 	IsEmpty() bool
 	CheckpointTo(w io.Writer) error
@@ -55,6 +59,7 @@ type HeadBlock interface {
 
 type unorderedHeadBlock struct {
 	format HeadBlockFmt
+// unorderedHeadBlock 选用 rangetree 以节省空间并支持 O(log n) 插入。
 	// Opted for range tree over skiplist for space reduction.
 	// Inserts: O(log(n))
 	// Scans: (O(k+log(n))) where k=num_scanned_entries & n=total_entries
@@ -97,6 +102,7 @@ func (hb *unorderedHeadBlock) Reset() {
 	*hb = *x
 }
 
+// nsEntry 保存单条日志行及其结构化元数据符号引用。
 type nsEntry struct {
 	line                      string
 	structuredMetadataSymbols symbols
@@ -112,6 +118,7 @@ func (e *nsEntries) ValueAtDimension(_ uint64) int64 {
 	return e.ts
 }
 
+// Append 在同一纳秒内去重相同行与元数据，返回是否重复。
 // unorderedHeadBlock will return true if the entry is a duplicate, false otherwise
 func (hb *unorderedHeadBlock) Append(ts int64, line string, structuredMetadata labels.Labels) (bool, error) {
 	if hb.format < UnorderedWithStructuredMetadataHeadBlockFmt {

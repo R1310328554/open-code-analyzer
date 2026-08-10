@@ -1,5 +1,8 @@
 package writer
 
+// Canary 流式写入器：将日志条目直接写入 io.Writer（如 stdout），
+// 用于本地调试或不依赖 Loki 推送的测试场景。
+
 import (
 	"fmt"
 	"io"
@@ -21,6 +24,7 @@ func NewStreamWriter(w io.Writer, logger log.Logger) *StreamWriter {
 	}
 }
 
+// WriteEntry 同步写入日志行，失败时记录错误日志。
 func (s *StreamWriter) WriteEntry(ts time.Time, entry string) {
 	_, err := fmt.Fprint(s.w, entry)
 	if err != nil {

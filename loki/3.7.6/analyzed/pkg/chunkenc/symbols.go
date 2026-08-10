@@ -1,5 +1,8 @@
 package chunkenc
 
+// 标签符号化器：将 labels.Labels 映射为整数符号以去重存储，
+// 支持压缩序列化、检查点恢复及 OTLP 标签名规范化。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -20,6 +23,7 @@ import (
 
 var errSymbolizerReadOnly = errors.New("writes not allowed when symbolizer is in read-only mode")
 
+// symbol 用两个 uint32 索引引用符号表中的标签名与值。
 // symbol holds reference to a label name and value pair
 type symbol struct {
 	Name, Value uint32
@@ -39,6 +43,7 @@ func (s symbols) Equal(other symbols) bool {
 	return true
 }
 
+// symbolizer 维护标签字符串表与首次出现时的递增符号编号。
 // symbolizer holds a collection of label names and values and assign symbols to them.
 // symbols are actually index numbers assigned based on when the entry is seen for the first time.
 type symbolizer struct {
@@ -59,6 +64,7 @@ func newSymbolizer() *symbolizer {
 	}
 }
 
+// Add 为标签集分配符号，只读模式下返回 errSymbolizerReadOnly。
 // Add adds new labels pairs to the collection and returns back a symbol for each existing and new label pair
 func (s *symbolizer) Add(lbls labels.Labels) (symbols, error) {
 	if s.readOnly {
@@ -104,6 +110,7 @@ func (s *symbolizer) add(lbl string) uint32 {
 	return idx
 }
 
+// Lookup 将符号还原为 labels.Labels 并对名称做 OTLP 规范化。
 // Lookup coverts and returns labels pairs for the given symbols
 func (s *symbolizer) Lookup(syms symbols, buf *labels.ScratchBuilder) (labels.Labels, error) {
 	if len(syms) == 0 {
@@ -198,6 +205,7 @@ func (s *symbolizer) CheckpointSize() int {
 	return size
 }
 
+// SerializeTo 压缩写入全部标签并返回字节数与 CRC32 校验和。
 // SerializeTo serializes all the labels and writes to the writer in compressed format.
 // It returns back the number of bytes written and a checksum of the data written.
 func (s *symbolizer) SerializeTo(w io.Writer, pool compression.WriterPool) (int, []byte, error) {

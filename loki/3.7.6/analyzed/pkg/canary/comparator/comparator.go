@@ -1,5 +1,8 @@
 package comparator
 
+// Loki Canary 比对器：跟踪写入与 WebSocket 接收的日志时间戳，
+// 执行剪枝、抽查、指标与缓存一致性测试，并上报 Prometheus 指标。
+
 import (
 	"fmt"
 	"io"
@@ -105,6 +108,7 @@ var (
 	}, []string{"status"}) // status=success/failure
 )
 
+// Comparator 维护待确认条目队列及多种异步健康检查任务。
 type Comparator struct {
 	entMtx              sync.Mutex // Locks access to []entries and []ackdEntries
 	missingMtx          sync.Mutex // Locks access to []missingEntries
@@ -145,6 +149,7 @@ type Comparator struct {
 	done             chan struct{}
 }
 
+// NewComparator 初始化比对器并启动 run 协程处理收发与定时任务。
 func NewComparator(writer io.Writer,
 	wait time.Duration,
 	maxWait time.Duration,
@@ -226,6 +231,7 @@ func (c *Comparator) entrySent(ts time.Time) {
 	c.spotEntMtx.Unlock()
 }
 
+// entryReceived 从缓冲区移除已收条目，检测乱序、重复与意外条目。
 // entryReceived removes the received entry from the buffer if it exists, reports on out of order entries received
 func (c *Comparator) entryReceived(ts time.Time) {
 	c.entMtx.Lock()
@@ -381,6 +387,7 @@ func (c *Comparator) cacheTest(currTime time.Time) {
 	}
 }
 
+// metricTest 用 count_over_time 校验 Canary 写入量是否符合预期。
 // check that the expected # of log lines have been written to Loki
 func (c *Comparator) metricTest(currTime time.Time) {
 	// Always make sure to set the running state back to false
@@ -409,6 +416,7 @@ func (c *Comparator) metricTest(currTime time.Time) {
 	metricTestActual.Set(actualCount)
 }
 
+// spotCheck 通过 LogQL 查询确认日志已持久化到对象存储而非仅驻留内存。
 // spotCheck is used to ensure that log data is actually available after being flushed from the
 // ingesters in memory storage and  persisted to disk/blob storage, which the tail check cannot confirm.
 // It keeps a sampled slice of log lines written by the canary and checks for them periodically until
@@ -594,6 +602,7 @@ func (c *Comparator) confirmMissing(currentTime time.Time) {
 	}
 }
 
+// pruneList 原地过滤时间戳切片，对移除项调用回调并压缩结果。
 func pruneList(list []*time.Time, shouldRemove func(int, *time.Time) bool, handleRemoved func(int, *time.Time)) []*time.Time {
 	// Prune the acknowledged list, remove anything older than our maxwait
 	k := 0

@@ -1,5 +1,8 @@
 package chunkenc
 
+// 简易内存 Chunk 实现：用于测试与基准，顺序追加 logproto.Entry，
+// 无压缩与块切分，提供基本迭代与容量检查能力。
+
 import (
 	"context"
 	"io"
@@ -17,6 +20,7 @@ const (
 	tmpNumEntries = 1024
 )
 
+// NewDumbChunk 返回仅适合测试的朴素 Chunk 实例。
 // NewDumbChunk returns a new chunk that isn't very good.
 func NewDumbChunk() Chunk {
 	return &dumbChunk{}
@@ -37,6 +41,7 @@ func (c *dumbChunk) SpaceFor(_ *logproto.Entry) bool {
 	return len(c.entries) < tmpNumEntries
 }
 
+// Append 不检测重复，满容或乱序时返回相应错误。
 // The dumbChunk does not check for duplicates, and will always return false
 func (c *dumbChunk) Append(entry *logproto.Entry) (bool, error) {
 	if len(c.entries) == tmpNumEntries {
@@ -72,6 +77,7 @@ func (c *dumbChunk) Utilization() float64 {
 
 func (c *dumbChunk) Encoding() compression.Codec { return compression.None }
 
+// Iterator 按时间范围与方向返回 dumbChunkIterator 遍历子切片。
 // Returns an iterator that goes from _most_ recent to _least_ recent (ie,
 // backwards).
 func (c *dumbChunk) Iterator(_ context.Context, from, through time.Time, direction logproto.Direction, _ log.StreamPipeline) (iter.EntryIterator, error) {
@@ -129,6 +135,7 @@ func (c *dumbChunk) Rewrite(_ filter.Func) (Chunk, error) {
 	return nil, nil
 }
 
+// dumbChunkIterator 支持 FORWARD 与 BACKWARD 两种遍历方向。
 type dumbChunkIterator struct {
 	direction logproto.Direction
 	i         int

@@ -1,5 +1,8 @@
 package chunkenc
 
+// MemChunk 压缩日志块主实现：管理 head 块与已切分 block 列表，
+// 支持多种 Chunk 格式版本、符号表与结构化元数据的序列化。
+
 import (
 	"bytes"
 	"context"
@@ -49,6 +52,7 @@ const (
 
 var HeadBlockFmts = []HeadBlockFmt{OrderedHeadBlockFmt, UnorderedHeadBlockFmt, UnorderedWithStructuredMetadataHeadBlockFmt}
 
+// HeadBlockFmt 区分有序、无序及带结构化元数据的无序 head 块格式。
 type HeadBlockFmt byte
 
 func (f HeadBlockFmt) Byte() byte { return byte(f) }
@@ -86,6 +90,7 @@ const (
 	UnorderedWithStructuredMetadataHeadBlockFmt
 )
 
+// ChunkHeadFormatFor 根据 Chunk 格式版本选择匹配的 HeadBlockFmt。
 // ChunkHeadFormatFor returns corresponding head block format for the given `chunkfmt`.
 func ChunkHeadFormatFor(chunkfmt byte) HeadBlockFmt {
 	if chunkfmt < ChunkFormatV3 {
@@ -117,6 +122,7 @@ func newCRC32() hash.Hash32 {
 	return crc32.New(castagnoliTable)
 }
 
+// MemChunk 是生产环境使用的压缩日志 Chunk 核心数据结构。
 // MemChunk implements compressed log chunks.
 type MemChunk struct {
 	// The number of uncompressed bytes per block.
@@ -141,6 +147,7 @@ type MemChunk struct {
 	compressedSize int
 }
 
+// block 保存一段已压缩日志字节及时间范围与条目计数元数据。
 type block struct {
 	// This is compressed bytes.
 	b          []byte
@@ -357,6 +364,7 @@ type entry struct {
 }
 
 // NewMemChunk returns a new in-mem chunk.
+// NewMemChunk 创建指定块大小、目标尺寸与编码的空 MemChunk。
 func NewMemChunk(chunkFormat byte, enc compression.Codec, head HeadBlockFmt, blockSize, targetSize int) *MemChunk {
 	return newMemChunkWithFormat(chunkFormat, enc, head, blockSize, targetSize)
 }

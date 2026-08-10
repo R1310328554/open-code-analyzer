@@ -1,11 +1,15 @@
 package chunkenc
 
+// Chunk 二进制编解码辅助类型：encbuf 顺序写入各类整数与哈希，
+// decbuf 安全读取并累积 ErrInvalidSize 等解析错误。
+
 import (
 	"encoding/binary"
 	"hash"
 	"hash/crc32"
 )
 
+// encbuf 复用固定 scratch 缓冲高效追加大端与 uvarint 编码。
 // encbuf is a helper type to populate a byte slice with various types.
 type encbuf struct {
 	b []byte
@@ -40,6 +44,7 @@ func (e *encbuf) putVarint64(x int64) {
 	e.b = append(e.b, e.c[:n]...)
 }
 
+// putHash 对当前缓冲区内容计算哈希并追加到末尾。
 // putHash appends a hash over the buffers current contents to the buffer.
 func (e *encbuf) putHash(h hash.Hash) {
 	h.Reset()
@@ -50,6 +55,7 @@ func (e *encbuf) putHash(h hash.Hash) {
 	e.b = h.Sum(e.b)
 }
 
+// decbuf 在越界时设置 e 错误，调用方须先检查 err()。
 // decbuf provides safe methods to extract data from a byte slice. It does all
 // necessary bounds checking and advancing of the byte slice.
 // Several datums can be extracted without checking for errors. However, before using
@@ -61,6 +67,7 @@ type decbuf struct {
 
 func (d *decbuf) uvarint() int { return int(d.uvarint64()) }
 
+// crc32 对剩余字节计算 Castagnoli 多项式校验和。
 // crc32 returns a CRC32 checksum over the remaining bytes.
 func (d *decbuf) crc32() uint32 {
 	return crc32.Checksum(d.b, castagnoliTable)
