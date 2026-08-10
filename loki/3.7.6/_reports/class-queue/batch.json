@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T21:12:36Z",
   "files": [
-    "clients/cmd/docker-driver/config.go",
-    "clients/cmd/docker-driver/driver.go",
-    "clients/cmd/docker-driver/http.go",
-    "clients/cmd/docker-driver/loki.go",
-    "clients/cmd/docker-driver/main.go",
-    "clients/cmd/fluent-bit/buffer.go",
-    "clients/cmd/fluent-bit/client.go",
-    "clients/cmd/fluent-bit/config.go",
-    "clients/cmd/fluent-bit/dque.go",
-    "clients/cmd/fluent-bit/loki.go",
-    "clients/cmd/fluent-bit/out_grafana_loki.go",
-    "clients/pkg/logentry/logql/ast.go",
-    "clients/pkg/logentry/logql/expr.y.go",
-    "clients/pkg/logentry/logql/parser.go",
-    "clients/pkg/logentry/metric/counters.go",
     "clients/pkg/logentry/metric/gauges.go",
     "clients/pkg/logentry/metric/histograms.go",
     "clients/pkg/logentry/metric/metricvec.go",
@@ -33,5 +18,5 @@
     "clients/pkg/logentry/stages/logfmt.go"
   ],
   "remaining_pending": 1522,
-  "done": 0
+  "done": 15
 }
