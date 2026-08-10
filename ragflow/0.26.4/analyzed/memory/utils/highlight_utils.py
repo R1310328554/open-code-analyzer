@@ -14,7 +14,7 @@
 #  limitations under the License.
 #
 
-"""Highlight helpers for search results (wraps keywords in <em>)."""
+"""检索结果高亮辅助：将关键词包裹为 <em> 标签。"""
 
 import re
 from collections.abc import Callable
@@ -25,11 +25,11 @@ def highlight_text(
     keywords: list[str],
     is_english_fn: Callable[[str], bool] | None = None,
 ) -> str:
-    """Wrap keyword matches in text with <em>, by sentence.
+    """按句子将命中关键词包裹 <em>。
 
-    - If is_english_fn(sentence) is True: use word-boundary regex.
-    - Otherwise: literal replace (longest keywords first).
-    Only sentences that contain a match are included.
+    - 英文句：词边界正则匹配；
+    - 非英文：字面替换（长关键词优先）。
+    仅保留含命中片段的句子。
     """
     if not txt or not keywords:
         return ""
@@ -71,7 +71,7 @@ def get_highlight_from_messages(
     field_name: str,
     is_english_fn: Callable[[str], bool] | None = None,
 ) -> dict[str, str]:
-    """Build id -> highlighted text from a list of message dicts."""
+    """从消息列表构建 id → 高亮文本映射。"""
     if not messages or not keywords:
         return {}
 

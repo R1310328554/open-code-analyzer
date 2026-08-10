@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+记忆消息 Infinity 向量库连接器：字段转换、混合检索与 DataFrame CRUD。
+"""
+
+
 
 import re
 import json
@@ -29,16 +34,17 @@ from common.time_utils import date_string_to_timestamp
 
 @singleton
 class InfinityConnection(InfinityConnectionBase):
+    # 单例 Infinity 连接，表名前缀 memory_
     def __init__(self):
         super().__init__(mapping_file_name="message_infinity_mapping.json", table_name_prefix="memory_")
 
     """
-    Dataframe and fields convert
+    DataFrame 与字段名转换
     """
 
     @staticmethod
     def field_keyword(field_name: str):
-        # no keywords right now
+        # 当前无 keyword 类型字段
         return False
 
     @staticmethod
@@ -97,7 +103,7 @@ class InfinityConnection(InfinityConnectionBase):
                 return field_name
 
     """
-    CRUD operations
+    增删改查操作
     """
 
     def search(
@@ -116,7 +122,7 @@ class InfinityConnection(InfinityConnectionBase):
         hide_forgotten: bool = True,
     ) -> tuple[pd.DataFrame, int]:
         """
-        BUG: Infinity returns empty for a highlight field if the query string doesn't use that field.
+        注意：若查询串未命中某高亮字段，Infinity 对该字段返回空。
         """
         if isinstance(index_names, str):
             index_names = index_names.split(",")
@@ -152,10 +158,10 @@ class InfinityConnection(InfinityConnectionBase):
                     output.append(score_func)
             output = [f for f in output if f != "_score"]
             if limit <= 0:
-                # ElasticSearch default limit is 10000
+                # 对齐 ES 默认上限 10000
                 limit = 10000
 
-            # Prepare expressions common to all tables
+            # 准备跨表共用的过滤与全文表达式
             filter_cond = None
             filter_fulltext = ""
             if condition:
@@ -278,6 +284,7 @@ class InfinityConnection(InfinityConnectionBase):
         return res, total_hits_count
 
     def get_forgotten_messages(self, select_fields: list[str], index_name: str, memory_id: str, limit: int = 512):
+        # 查询 forget_at_flt 已设置的消息
         condition = {"memory_id": memory_id, "exists": "forget_at_flt"}
         order_by = OrderByExpr()
         order_by.asc("forget_at_flt")
@@ -367,6 +374,7 @@ class InfinityConnection(InfinityConnectionBase):
         return {self.convert_infinity_field_to_message(k): v for k, v in res_fields[message_id].items()} if res_fields.get(message_id) else {}
 
     def insert(self, documents: list[dict], index_name: str, memory_id: str = None) -> list[str]:
+        # 将消息批量插入 Infinity 表并返回 id
         if not documents:
             return []
         inf_conn = self.connPool.get_conn()
@@ -484,6 +492,7 @@ class InfinityConnection(InfinityConnectionBase):
     """
 
     def get_fields(self, res: tuple[pd.DataFrame, int] | pd.DataFrame, fields: list[str]) -> dict[str, dict]:
+        # 将 Infinity 查询 DataFrame 转为 id → 字段字典
         if isinstance(res, tuple):
             res_df = res[0]
         else:

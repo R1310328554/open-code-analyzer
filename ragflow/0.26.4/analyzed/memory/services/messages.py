@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+记忆消息服务：索引生命周期、消息 CRUD、列表检索与 FIFO 容量清理。
+"""
+
+
 import os
 import sys
 from typing import List
@@ -23,22 +28,27 @@ from common.doc_store.doc_store_base import OrderByExpr, MatchExpr
 
 
 def _es_index_prefix() -> str:
+    # 读取 ES 索引前缀环境变量
     return os.environ.get("ES_INDEX_PREFIX", "").strip()
 
 
 def index_name(uid: str):
+    # 生成租户级记忆索引名 memory_{prefix}_{uid}
     prefix = _es_index_prefix()
     return f"memory_{prefix}_{uid}" if prefix else f"memory_{uid}"
 
 
 class MessageService:
+    # 记忆消息领域服务，委托 settings.msgStoreConn 访问文档存储
     @classmethod
     def has_index(cls, uid: str, memory_id: str):
+        # 判断指定 memory 子索引/表是否存在
         index = index_name(uid)
         return settings.msgStoreConn.index_exist(index, memory_id)
 
     @classmethod
     def create_index(cls, uid: str, memory_id: str, vector_size: int):
+        # 创建带向量维度的记忆存储结构
         index = index_name(uid)
         return settings.msgStoreConn.create_idx(index, memory_id, vector_size)
 
@@ -49,6 +59,7 @@ class MessageService:
 
     @classmethod
     def insert_message(cls, messages: List[dict], uid: str, memory_id: str):
+        # 批量写入消息，合成 id 并将 status 规范为 0/1
         index = index_name(uid)
         [m.update({"id": f"{memory_id}_{m['message_id']}", "status": 1 if m["status"] else 0}) for m in messages]
         return settings.msgStoreConn.insert(messages, index, memory_id)
@@ -67,6 +78,7 @@ class MessageService:
 
     @classmethod
     def list_message(cls, uid: str, memory_id: str, agent_ids: List[str] = None, keywords: str = None, page: int = 1, page_size: int = 50):
+        # 分页列出 RAW 消息并关联其 EXTRACT 衍生消息
         index = index_name(uid)
         filter_dict = {}
         if agent_ids:
@@ -123,6 +135,7 @@ class MessageService:
 
     @classmethod
     def get_recent_messages(cls, uid_list: List[str], memory_ids: List[str], agent_id: str, session_id: str, limit: int):
+        # 按 agent/session 取最近若干条有效消息（含 content）
         index_names = [index_name(uid) for uid in uid_list]
         condition_dict = {"agent_id": agent_id, "session_id": session_id}
         order_by = OrderByExpr()
@@ -149,8 +162,9 @@ class MessageService:
 
     @classmethod
     def search_message(cls, memory_ids: List[str], condition_dict: dict, uid_list: List[str], match_expressions: list[MatchExpr], top_n: int):
+        # 跨租户索引执行全文/向量混合检索
         index_names = [index_name(uid) for uid in uid_list]
-        # filter only valid messages by default
+        # 默认仅检索 status=1 的有效消息
         if "status" not in condition_dict:
             condition_dict["status"] = 1
 
@@ -178,12 +192,14 @@ class MessageService:
 
     @staticmethod
     def calculate_message_size(message: dict):
+        # 估算单条消息文本与 embedding 向量占用字节
         content_embed = message.get("content_embed")
         embed_size = sys.getsizeof(content_embed[0]) * len(content_embed) if content_embed is not None and len(content_embed) > 0 else 0
         return sys.getsizeof(message.get("content", "")) + embed_size
 
     @classmethod
     def calculate_memory_size(cls, memory_ids: List[str], uid_list: List[str]):
+        # 按 memory_id 聚合全部消息存储大小
         index_names = [index_name(uid) for uid in uid_list]
         order_by = OrderByExpr()
         order_by.desc("valid_at")
@@ -216,6 +232,7 @@ class MessageService:
 
     @classmethod
     def pick_messages_to_delete_by_fifo(cls, memory_id: str, uid: str, size_to_delete: int):
+        # FIFO 选取待删 message_id：优先已遗忘，再按 valid_at 升序
         select_fields = ["message_id", "content", "content_embed"]
         _index_name = index_name(uid)
         res = settings.msgStoreConn.get_forgotten_messages(select_fields, _index_name, memory_id)
@@ -257,6 +274,7 @@ class MessageService:
 
     @classmethod
     def get_missing_field_messages(cls, memory_id: str, uid: str, field_name: str):
+        # 查找缺少指定字段的消息（补全 embedding 等场景）
         select_fields = ["message_id", "content"]
         _index_name = index_name(uid)
         res = settings.msgStoreConn.get_missing_field_message(select_fields=select_fields, index_name=_index_name, memory_id=memory_id, field_name=field_name)
@@ -273,6 +291,7 @@ class MessageService:
 
     @classmethod
     def get_max_message_id(cls, uid_list: List[str], memory_ids: List[str]):
+        # 返回当前最大 message_id，空库时默认为 1
         order_by = OrderByExpr()
         order_by.desc("message_id")
         index_names = [index_name(uid) for uid in uid_list]

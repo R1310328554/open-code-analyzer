@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+记忆文本检索查询：将用户问题转为 ES/Infinity 全文表达式与稠密向量 MatchExpr。
+"""
+
+
 import re
 import logging
 import json
@@ -25,6 +30,7 @@ from rag.utils.redis_conn import REDIS_CONN
 
 
 def get_vector(txt, emb_mdl, topk=10, similarity=0.1):
+    # 编码查询文本并构造 MatchDenseExpr 向量检索表达式
     if isinstance(similarity, str) and len(similarity) > 0:
         try:
             similarity = float(similarity)
@@ -41,12 +47,14 @@ def get_vector(txt, emb_mdl, topk=10, similarity=0.1):
 
 
 class MsgTextQuery(QueryBase):
+    # 记忆消息 content 字段的全文检索查询构建器
     def __init__(self):
         self.tw = term_weight.Dealer()
         self.syn = synonym.Dealer(redis=REDIS_CONN.REDIS if REDIS_CONN.is_alive() else None)
         self.query_fields = ["content"]
 
     def question(self, txt, tbl="messages", min_match: float = 0.6):
+        # 中英文分支：分词、同义词扩展并生成 MatchTextExpr
         original_query = txt
         txt = MsgTextQuery.add_space_between_eng_zh(txt)
         txt = re.sub(
@@ -69,8 +77,8 @@ class MsgTextQuery(QueryBase):
             syns = []
             for tk, w in tks_w[:256]:
                 syn = self.syn.lookup(tk)
-                # Strip single quotes to avoid Infinity lexer TokenError
-                # (e.g. WordNet returns "cat-o'-nine-tails" for "cat")
+                # 去除单引号避免 Infinity 词法分析 TokenError
+                # （如 WordNet 同义词含 cat-o'-nine-tails）
                 syn = re.sub(r"'", "", rag_tokenizer.tokenize(" ".join(syn))).split()
                 keywords.extend(syn)
                 syn = ['"{}"^{:.4f}'.format(s, w / 4.0) for s in syn if s.strip()]

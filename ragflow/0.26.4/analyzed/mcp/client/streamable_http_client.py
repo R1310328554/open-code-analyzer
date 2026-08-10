@@ -13,15 +13,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+MCP Streamable HTTP 客户端示例：连接 RAGFlow MCP 服务并调用 ragflow_retrieval 工具。
+"""
+
+
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 
 async def main():
+    # 演示 Streamable HTTP 传输下初始化会话、列举工具并发起检索
     try:
-        # To access RAGFlow server in `host` mode, you need to attach `api_key` for each request to indicate identification.
+        # host 模式下需在请求头携带 api_key 或 OAuth Bearer Token 完成鉴权
         # async with streamablehttp_client("http://localhost:9382/mcp/", headers={"api_key": "ragflow-fixS-TicrohljzFkeLLWIaVhW7XlXPXIUW5solFor6o"}) as (read_stream, write_stream, _):
-        # Or follow the requirements of OAuth 2.1 Section 5 with Authorization header
+        # 亦可按 OAuth 2.1 第 5 节使用 Authorization: Bearer 头
         # async with streamablehttp_client("http://localhost:9382/mcp/", headers={"Authorization": "Bearer ragflow-fixS-TicrohljzFkeLLWIaVhW7XlXPXIUW5solFor6o"}) as (read_stream, write_stream, _):
         async with streamablehttp_client("http://localhost:9382/mcp/") as (read_stream, write_stream, _):
             async with ClientSession(read_stream, write_stream) as session:

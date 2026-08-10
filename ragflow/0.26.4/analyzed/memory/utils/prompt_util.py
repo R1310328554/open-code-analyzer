@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+记忆抽取提示词组装：按语义/情节/程序类型生成系统与用户 Prompt。
+"""
+
+
 from typing import Optional, List
 
 from common.constants import MemoryType
@@ -20,6 +25,7 @@ from common.time_utils import current_timestamp
 
 
 class PromptAssembler:
+    # 根据 memory_type 配置拼装 LLM 记忆抽取提示词模板
     SYSTEM_BASE_TEMPLATE = """**Memory Extraction Specialist**
 You are an expert at analyzing conversations to extract structured memory.
 
@@ -112,6 +118,7 @@ You are an expert at analyzing conversations to extract structured memory.
 
     @classmethod
     def assemble_system_prompt(cls, config: dict) -> str:
+        # 合并类型说明、输出 JSON 格式与示例，生成系统提示
         types_to_extract = cls._get_types_to_extract(config["memory_type"])
 
         type_instructions = cls._generate_type_instructions(types_to_extract)
@@ -132,6 +139,7 @@ You are an expert at analyzing conversations to extract structured memory.
 
     @staticmethod
     def _get_types_to_extract(requested_types: List[str]) -> List[str]:
+        # 过滤有效 MemoryType（排除 RAW）
         types = set()
         for rt in requested_types:
             if rt in [e.name.lower() for e in MemoryType] and rt != MemoryType.RAW.name.lower():
@@ -179,6 +187,7 @@ You are an expert at analyzing conversations to extract structured memory.
 
     @classmethod
     def assemble_user_prompt(cls, conversation: str, conversation_time: Optional[str] = None, current_time: Optional[str] = None) -> str:
+        # 填充对话正文与时间戳，生成用户侧抽取请求
         return cls.BASE_USER_PROMPT.format(
             conversation=conversation,
             conversation_time=conversation_time or "Not specified",

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAGFlow MCP 服务端：通过 SSE 或 Streamable HTTP 暴露检索、数据集与聊天助手工具。
+"""
+
+
 
 import json
 import logging
@@ -36,11 +41,13 @@ from enum import StrEnum
 
 
 class LaunchMode(StrEnum):
+    # MCP 启动模式：自托管或 host（按请求鉴权）
     SELF_HOST = "self-host"
     HOST = "host"
 
 
 class Transport(StrEnum):
+    # 支持的传输协议：SSE 或 Streamable HTTP
     SSE = "sse"
     STEAMABLE_HTTP = "streamable-http"
 
@@ -56,6 +63,7 @@ JSON_RESPONSE = True
 
 
 class RAGFlowConnector:
+    # 封装 RAGFlow REST API：数据集/文档元数据缓存与检索调用
     _MAX_DATASET_CACHE = 32
     _CACHE_TTL = 300
     # Keep in sync with api.utils.pagination_utils.REST_API_MAX_PAGE_SIZE.
@@ -140,7 +148,7 @@ class RAGFlowConnector:
         id: str | None = None,
         name: str | None = None,
     ):
-        """Fetch one structured page of accessible datasets from the backend API."""
+        """从后端分页拉取当前用户可访问的数据集。"""
         params = {"page": page, "page_size": page_size, "orderby": orderby, "desc": desc}
         if id:
             params["id"] = id
@@ -164,7 +172,7 @@ class RAGFlowConnector:
         return res_json
 
     async def list_chats(self, *, api_key: str, page: int = 1, page_size: int = 30, orderby: str = "create_time", desc: bool = True):
-        """Return accessible chat assistants as newline-delimited JSON for MCP tool descriptions."""
+        """返回可访问聊天助手的 JSON 行文本，供 MCP 工具描述拼接。"""
         logging.info("Listing chat assistants via MCP (page=%s, page_size=%s)", page, page_size)
         params = {"page": page, "page_size": page_size, "orderby": orderby, "desc": json.dumps(desc)}
         res = await self._get("/chats", params, api_key=api_key)
@@ -202,7 +210,7 @@ class RAGFlowConnector:
         id: str | None = None,
         name: str | None = None,
     ):
-        """Fetch all accessible datasets without exceeding the REST API page-size limit."""
+        """分页遍历全部可访问数据集，不超过 REST API 单页上限。"""
         datasets = []
         page = 1
 
@@ -232,7 +240,7 @@ class RAGFlowConnector:
         return datasets
 
     async def list_datasets(self, *, api_key: str, page: int = 1, page_size: int = -1, orderby: str = "create_time", desc: bool = True, id: str | None = None, name: str | None = None):
-        """Return accessible datasets as newline-delimited JSON for MCP tool descriptions."""
+        """返回可访问数据集的 JSON 行文本，供 MCP 工具描述拼接。"""
         if page_size == -1:
             datasets = await self._fetch_all_datasets(api_key=api_key, orderby=orderby, desc=desc, id=id, name=name)
         else:
@@ -247,7 +255,7 @@ class RAGFlowConnector:
         return "\n".join(result_list)
 
     async def resolve_dataset_ids(self, *, api_key: str):
-        """Resolve all accessible dataset IDs for MCP retrieval fallback."""
+        """解析全部可访问 dataset_id，供未指定 dataset_ids 时的检索回退。"""
         logging.info("Resolving accessible dataset IDs for MCP retrieval")
         try:
             datasets = await self._fetch_all_datasets(api_key=api_key)
@@ -308,15 +316,15 @@ class RAGFlowConnector:
             data = res["data"]
             chunks = []
 
-            # Cache document metadata and dataset information
+            # 缓存文档与数据集元数据，用于增强分块字段映射
             document_cache, dataset_cache = await self._get_document_metadata_cache(dataset_ids, api_key=api_key, force_refresh=force_refresh)
 
-            # Process chunks with enhanced field mapping including per-chunk metadata
+            # 逐条映射检索分块并附加文档级元数据
             for chunk_data in data.get("chunks", []):
                 enhanced_chunk = self._map_chunk_fields(chunk_data, dataset_cache, document_cache)
                 chunks.append(enhanced_chunk)
 
-            # Build structured response (no longer need response-level document_metadata)
+            # 组装结构化响应（文档元数据已下沉至各 chunk）
             response = {
                 "chunks": chunks,
                 "pagination": {
@@ -439,12 +447,14 @@ class RAGFlowConnector:
 
 
 class RAGFlowCtx:
+    # MCP 应用生命周期上下文，持有 RAGFlowConnector 实例
     def __init__(self, connector: RAGFlowConnector):
         self.conn = connector
 
 
 @asynccontextmanager
 async def sse_lifespan(server: Server) -> AsyncIterator[dict]:
+    # SSE 模式 lifespan：创建连接器并在关闭时释放 HTTP 客户端
     ctx = RAGFlowCtx(RAGFlowConnector(base_url=BASE_URL))
 
     logging.info("Legacy SSE application started with StreamableHTTP session manager!")
@@ -466,6 +476,7 @@ def _to_text(value: Any) -> str:
 
 
 def _extract_token_from_headers(headers: Any) -> str | None:
+    # 从 Authorization Bearer 或 api_key/X-API-Key 头提取令牌
     if not headers or not hasattr(headers, "get"):
         return None
 
@@ -492,6 +503,7 @@ def _extract_token_from_headers(headers: Any) -> str | None:
 
 
 def _extract_token_from_request(request: Any) -> str | None:
+    # 优先读 request.state 缓存，否则解析请求头并回写 state
     if request is None:
         return None
 
@@ -509,6 +521,7 @@ def _extract_token_from_request(request: Any) -> str | None:
 
 
 def with_api_key(required: bool = True):
+    # 装饰器：host 模式从请求注入 API Key，self-host 使用全局 HOST_API_KEY
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -535,6 +548,7 @@ def with_api_key(required: bool = True):
 @app.list_tools()
 @with_api_key(required=True)
 async def list_tools(*, connector: RAGFlowConnector, api_key: str) -> list[types.Tool]:
+    # 注册 ragflow_retrieval / list_datasets / list_chats 三个 MCP 工具
     dataset_description = await connector.list_datasets(api_key=api_key)
     chat_description = await connector.list_chats(api_key=api_key)
 
@@ -653,6 +667,7 @@ async def list_tools(*, connector: RAGFlowConnector, api_key: str) -> list[types
 @app.call_tool()
 @with_api_key(required=True)
 async def call_tool(
+    # 按工具名分发至 connector 检索或列表接口
     name: str,
     arguments: dict,
     *,
@@ -703,12 +718,14 @@ async def call_tool(
 
 
 def create_starlette_app():
+    # 组装 Starlette 应用：可选 Auth 中间件、SSE 与 Streamable HTTP 路由
     routes = []
     middleware = None
     if MODE == LaunchMode.HOST:
         from starlette.types import ASGIApp, Receive, Scope, Send
 
         class AuthMiddleware:
+            # host 模式下校验 /sse、/mcp、/messages 路径的 Bearer/api_key
             def __init__(self, app: ASGIApp):
                 self.app = app
 
@@ -732,7 +749,7 @@ def create_starlette_app():
 
         middleware = [Middleware(AuthMiddleware)]
 
-    # Add SSE routes if enabled
+    # 启用时挂载传统 SSE 传输路由
     if TRANSPORT_SSE_ENABLED:
         from mcp.server.sse import SseServerTransport
 
@@ -750,7 +767,7 @@ def create_starlette_app():
             ]
         )
 
-    # Add streamable HTTP route if enabled
+    # 启用时挂载 Streamable HTTP 会话管理器与 /mcp 入口
     streamablehttp_lifespan = None
     if TRANSPORT_STREAMABLE_HTTP_ENABLED:
         from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
@@ -820,6 +837,7 @@ def create_starlette_app():
     help="Enable or disable JSON response mode for streamable-http (default: enabled)",
 )
 def main(base_url, host, port, mode, api_key, transport_sse_enabled, transport_streamable_http_enabled, json_response):
+    # CLI 入口：配置全局常量并启动 uvicorn
     import os
 
     import uvicorn

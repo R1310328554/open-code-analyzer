@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+记忆消息 OceanBase/MySQL 连接器：表结构定义、全文/向量检索与 CRUD。
+"""
+
+
 
 import re
 from typing import Optional
@@ -32,7 +37,7 @@ from common.float_utils import get_float
 from rag.nlp import is_english
 from rag.nlp.rag_tokenizer import tokenize, fine_grained_tokenize
 
-# Column definitions for memory message table
+# 记忆消息表列定义（SQLAlchemy Column）
 COLUMN_DEFINITIONS: list[Column] = [
     Column("id", String(256), primary_key=True, comment="unique record id"),
     Column("message_id", String(256), nullable=False, index=True, comment="message id"),
@@ -53,14 +58,14 @@ COLUMN_DEFINITIONS: list[Column] = [
 
 COLUMN_NAMES: list[str] = [col.name for col in COLUMN_DEFINITIONS]
 
-# Index columns for creating indexes
+# 建索引使用的列
 INDEX_COLUMNS: list[str] = [
     "message_id",
     "memory_id",
     "status_int",
 ]
 
-# Full-text search columns
+# 全文检索列（含分词与细粒度分词字段）
 FTS_COLUMNS: list[str] = [
     "content_ltks",
     "tokenized_content_ltks",
@@ -68,25 +73,27 @@ FTS_COLUMNS: list[str] = [
 
 
 class SearchResult(BaseModel):
+    # 检索结果封装：总数与消息列表
     total: int
     messages: list[dict]
 
 
 @singleton
 class OBConnection(OBConnectionBase):
+    # 单例 OB 连接，实现记忆消息的关系型存储与检索
     def __init__(self):
         super().__init__(logger_name="ragflow.memory_ob_conn")
         self._fulltext_search_columns = FTS_COLUMNS
 
     """
-    Template method implementations
+    模板方法实现（列定义、锁前缀等）
     """
 
     def get_index_columns(self) -> list[str]:
         return INDEX_COLUMNS
 
     def get_fulltext_columns(self) -> list[str]:
-        """Return list of column names that need fulltext indexes (without weight suffix)."""
+        """返回需建全文索引的列名（不含权重后缀）。"""
         return [col.split("^")[0] for col in self._fulltext_search_columns]
 
     def get_column_definitions(self) -> list[Column]:
@@ -188,7 +195,7 @@ class OBConnection(OBConnectionBase):
         return message
 
     """
-    CRUD operations
+    增删改查操作
     """
 
     def search(
@@ -206,7 +213,7 @@ class OBConnection(OBConnectionBase):
         rank_feature: dict | None = None,
         hide_forgotten: bool = True,
     ):
-        """Search messages in memory storage."""
+        """在记忆存储中执行混合全文/向量检索。"""
         if isinstance(index_names, str):
             index_names = index_names.split(",")
         assert isinstance(index_names, list) and len(index_names) > 0
@@ -219,7 +226,7 @@ class OBConnection(OBConnectionBase):
         if "_score" in output_fields:
             output_fields.remove("_score")
 
-        # Handle content_embed field - resolve to actual vector column name
+        # 将 content_embed 解析为表内实际向量列名
         has_content_embed = "content_embed" in output_fields
         actual_vector_column: Optional[str] = None
         if has_content_embed:
@@ -249,7 +256,7 @@ class OBConnection(OBConnectionBase):
         filters: list[str] = self._get_filters(condition_dict)
         filters_expr = " AND ".join(filters) if filters else "1=1"
 
-        # Parse match expressions
+        # 解析 MatchText/MatchDense/Fusion 表达式为 SQL 片段
         fulltext_query: Optional[str] = None
         fulltext_topn: Optional[int] = None
         fulltext_search_expr: dict[str, str] = {}
@@ -436,6 +443,7 @@ class OBConnection(OBConnectionBase):
         return self.get_message_from_ob_doc(doc)
 
     def insert(self, documents: list[dict], index_name: str, memory_id: str = None) -> list[str]:
+        # 批量 INSERT 消息行
         """Insert messages into memory storage."""
         if not documents:
             return []
@@ -568,6 +576,7 @@ class OBConnection(OBConnectionBase):
         return res_fields
 
     def get_highlight(self, res, keywords: list[str], field_name: str):
+        # 对检索结果生成关键词高亮片段
         """Get highlighted text for search results."""
         if isinstance(res, tuple):
             res = res[0]
@@ -575,6 +584,7 @@ class OBConnection(OBConnectionBase):
         return get_highlight_from_messages(messages, keywords, field_name, is_english_fn=lambda s: is_english([s]))
 
     def get_aggregation(self, res, field_name: str):
+        # 按字段聚合统计并委托 aggregation_utils
         """Get aggregation for search results."""
         if isinstance(res, tuple):
             res_obj = res[0]

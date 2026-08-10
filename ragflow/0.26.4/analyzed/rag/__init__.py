@@ -13,6 +13,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+rag 包：RAG 核心 NLP 与检索工具（分词、同义词、向量检索等）。
+"""
 
+
+
+# 可选：启用 beartype 运行时类型检查（当前注释掉）
 # from beartype.claw import beartype_this_package
 # beartype_this_package()

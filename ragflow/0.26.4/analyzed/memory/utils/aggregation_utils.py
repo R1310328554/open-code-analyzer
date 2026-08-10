@@ -14,14 +14,15 @@
 #  limitations under the License.
 #
 
-"""Pure aggregation helpers for search results (no heavy dependencies)."""
+"""检索结果纯聚合辅助函数（无重型依赖）。"""
 
 
 def aggregate_by_field(messages: list | None, field_name: str) -> list[tuple[str, int]]:
-    """Aggregate message documents by a field; returns [(value, count), ...].
+    # 统计指定字段取值频次，合并预聚合与逐条计数
+    """按字段聚合消息文档，返回 [(值, 计数), ...]。
 
-    Handles pre-aggregated rows (dicts with "value" and "count") and
-    per-doc field values (str or list of str).
+    支持已聚合行（含 "value"/"count"）与
+    逐文档字段值（str 或 str 列表）。
     """
     if not messages:
         return []

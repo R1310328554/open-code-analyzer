@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+记忆消息 Elasticsearch 连接器：字段映射、混合检索与 CRUD。
+"""
+
+
 
 import re
 import json
@@ -34,8 +39,10 @@ ATTEMPT_TIME = 2
 
 @singleton
 class ESConnection(ESConnectionBase):
+    # 单例 ES 连接，实现记忆消息的索引映射与检索
     @staticmethod
     def convert_field_name(field_name: str, use_tokenized_content=False) -> str:
+        # 将逻辑字段名映射为 ES 存储字段（如 content → content_ltks）
         match field_name:
             case "message_type":
                 return "message_type_kwd"
@@ -51,7 +58,7 @@ class ESConnection(ESConnectionBase):
     @staticmethod
     def map_message_to_es_fields(message: dict) -> dict:
         """
-        Map message dictionary fields to Elasticsearch document/Infinity fields.
+        将消息字典字段映射为 ES/Infinity 索引文档结构。
 
         :param message: A dictionary containing message details.
         :return: A dictionary formatted for Elasticsearch/Infinity indexing.
@@ -79,7 +86,7 @@ class ESConnection(ESConnectionBase):
     @staticmethod
     def get_message_from_es_doc(doc: dict) -> dict:
         """
-        Convert an Elasticsearch/Infinity document back to a message dictionary.
+        将 ES/Infinity 文档反序列化为业务消息字典。
 
         :param doc: A dictionary representing the Elasticsearch/Infinity document.
         :return: A dictionary formatted as a message.
@@ -106,7 +113,7 @@ class ESConnection(ESConnectionBase):
         return message
 
     """
-    CRUD operations
+    增删改查操作
     """
 
     def search(
@@ -125,7 +132,7 @@ class ESConnection(ESConnectionBase):
         hide_forgotten: bool = True,
     ):
         """
-        Refers to https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
+        构建 bool 查询并融合全文、向量与过滤条件（参见 ES Query DSL）。
         """
         if isinstance(index_names, str):
             index_names = index_names.split(",")
@@ -138,7 +145,7 @@ class ESConnection(ESConnectionBase):
 
         bool_query = Q("bool", must=[], must_not=[])
         if hide_forgotten:
-            # filter not forget
+            # 默认排除已设置 forget_at 的遗忘消息
             bool_query.must_not.append(Q("exists", field="forget_at"))
 
         condition["memory_id"] = memory_ids
@@ -261,6 +268,7 @@ class ESConnection(ESConnectionBase):
         raise Exception("ESConnection.search timeout.")
 
     def get_forgotten_messages(self, select_fields: list[str], index_name: str, memory_id: str, limit: int = 512):
+        # 检索已标记 forget_at 的消息
         bool_query = Q("bool", must=[])
         bool_query.must.append(Q("exists", field="forget_at"))
         bool_query.filter.append(Q("term", memory_id=memory_id))
@@ -304,6 +312,7 @@ class ESConnection(ESConnectionBase):
         raise Exception("ESConnection.search timeout.")
 
     def get_missing_field_message(self, select_fields: list[str], index_name: str, memory_id: str, field_name: str, limit: int = 512):
+        # 查找缺少指定字段的消息文档
         if not self.index_exist(index_name):
             return None
         bool_query = Q("bool", must=[])
@@ -370,6 +379,7 @@ class ESConnection(ESConnectionBase):
         raise Exception("ESConnection.get timeout.")
 
     def insert(self, documents: list[dict], index_name: str, memory_id: str = None) -> list[str]:
+        # 批量写入消息并返回文档 id 列表
         # Refers to https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
         operations = []
         for d in documents:
@@ -406,6 +416,7 @@ class ESConnection(ESConnectionBase):
         return res
 
     def update(self, condition: dict, new_value: dict, index_name: str, memory_id: str) -> bool:
+        # 按条件 UpdateByQuery 更新消息字段
         doc = copy.deepcopy(new_value)
         update_dict = {self.convert_field_name(k): v for k, v in doc.items()}
         if "content_ltks" in update_dict:
@@ -496,6 +507,7 @@ class ESConnection(ESConnectionBase):
         return False
 
     def delete(self, condition: dict, index_name: str, memory_id: str) -> int:
+        # 按条件删除消息并返回删除条数
         assert "_id" not in condition
         condition_dict = {self.convert_field_name(k): v for k, v in condition.items()}
         condition_dict["memory_id"] = memory_id
@@ -546,6 +558,7 @@ class ESConnection(ESConnectionBase):
     """
 
     def get_fields(self, res, fields: list[str]) -> dict[str, dict]:
+        # 从 ES 搜索结果提取 id → 字段子集映射
         res_fields = {}
         if not fields:
             return {}
