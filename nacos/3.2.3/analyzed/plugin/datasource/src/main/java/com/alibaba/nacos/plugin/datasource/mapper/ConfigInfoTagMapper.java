@@ -23,7 +23,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The config tag info mapper.
+ * 配置标签信息 Mapper 接口。
+ *
+ * <p>负责 {@code config_info_tag} 表的 SQL 映射，支持带标签的配置 CAS 更新及全量导出分页查询。</p>
  *
  * @author hyx
  **/
@@ -31,13 +33,13 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 public interface ConfigInfoTagMapper extends Mapper {
     
     /**
-     * Update tag configuration information.
-     * The default sql:
+     * 按标签 CAS 更新配置内容。
+     * 默认 SQL：
      * UPDATE config_info_tag SET content=?, md5 = ?, src_ip=?,src_user=?,gmt_modified=?,app_name=? WHERE
      * data_id=? AND group_id=? AND tenant_id=? AND tag_id=? AND (md5=? or md5 is null or md5='')
      *
-     * @param context sql paramMap
-     * @return The sql of updating tag configuration information.
+     * @param context SQL 参数映射
+     * @return 更新标签配置的 SQL 及参数列表
      */
     default MapperResult updateConfigInfo4TagCas(MapperContext context) {
         Object content = context.getUpdateParameter(FieldConstant.CONTENT);
@@ -62,14 +64,14 @@ public interface ConfigInfoTagMapper extends Mapper {
     }
     
     /**
-     * Query all tag config info for dump task.
-     * The default sql:
+     * 分页查询全部标签配置，供 dump 任务使用。
+     * 默认 SQL：
      * SELECT t.id,data_id,group_id,tenant_id,tag_id,app_name,content,md5,gmt_modified
      * FROM (  SELECT id FROM config_info_tag  ORDER BY id LIMIT startRow,pageSize ) g,
      * config_info_tag t  WHERE g.id = t.id
      *
-     * @param context The start index.
-     * @return The sql of querying all tag config info for dump task.
+     * @param context 分页起始行等查询参数
+     * @return 分页导出标签配置的 SQL 及参数
      */
     MapperResult findAllConfigInfoTagForDumpAllFetchRows(MapperContext context);
     

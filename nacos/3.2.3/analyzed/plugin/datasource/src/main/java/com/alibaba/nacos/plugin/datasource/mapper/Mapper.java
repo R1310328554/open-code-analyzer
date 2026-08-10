@@ -19,7 +19,10 @@ package com.alibaba.nacos.plugin.datasource.mapper;
 import java.util.List;
 
 /**
- * The parent class of the all mappers.
+ * 所有 Mapper 的父接口。
+ *
+ * <p>定义通用 CRUD SQL 片段生成方法，以及表名、数据源类型、
+ * 主键生成策略与数据库函数映射等元信息访问契约。</p>
  *
  * @author hyx
  **/
@@ -27,68 +30,75 @@ import java.util.List;
 public interface Mapper {
     
     /**
-     * The select method contains columns and where params.
-     * @param columns The columns
-     * @param where The where params
-     * @return The sql of select
+     * 生成 SELECT 语句，包含列名与 WHERE 条件参数。
+     *
+     * @param columns 待查询列名列表
+     * @param where   WHERE 条件参数列表
+     * @return SELECT SQL 字符串
      */
     String select(List<String> columns, List<String> where);
     
     /**
-     * The insert method contains columns.
-     * @param columns The columns
-     * @return The sql of insert
+     * 生成 INSERT 语句，包含待插入列名。
+     *
+     * @param columns 待插入列名列表
+     * @return INSERT SQL 字符串
      */
     String insert(List<String> columns);
     
     /**
-     * The update method contains columns and where params.
-     * @param columns The columns
-     * @param where The where params
-     * @return The sql of update
+     * 生成 UPDATE 语句，包含 SET 列与 WHERE 条件参数。
+     *
+     * @param columns SET 子句列名列表
+     * @param where   WHERE 条件参数列表
+     * @return UPDATE SQL 字符串
      */
     String update(List<String> columns, List<String> where);
     
     /**
-     * The delete method contains.
-     * @param params The params
-     * @return The sql of delete
+     * 生成 DELETE 语句。
+     *
+     * @param params DELETE 条件参数列表
+     * @return DELETE SQL 字符串
      */
     String delete(List<String> params);
     
     /**
-     * The count method contains where params.
+     * 生成 COUNT 语句，包含 WHERE 条件参数。
      *
-     * @param where The where params
-     * @return The sql of count
+     * @param where WHERE 条件参数列表
+     * @return COUNT SQL 字符串
      */
     String count(List<String> where);
     
     /**
-     * Get the name of table.
-     * @return The name of table.
+     * 获取映射表名。
+     *
+     * @return 表名
      */
     String getTableName();
     
     /**
-     * Get the datasource name.
-     * @return The name of datasource.
+     * 获取数据源类型标识。
+     *
+     * @return 数据源名称（如 mysql、derby）
      */
     String getDataSource();
     
     /**
-     * Get config_info table primary keys name.
-     * The old default value: Statement.RETURN_GENERATED_KEYS
-     * The new default value: new String[]{"id"}
-     * @return an array of column names indicating the columns
+     * 获取 config_info 表主键生成策略列名。
+     * 旧默认值：Statement.RETURN_GENERATED_KEYS
+     * 新默认值：new String[]{"id"}
+     *
+     * @return 主键列名数组
      */
     String[] getPrimaryKeyGeneratedKeys();
     
     /**
-     * Get function by functionName.
+     * 按函数名获取当前数据库方言的函数表达式。
      *
-     * @param functionName functionName
-     * @return function
+     * @param functionName 函数名
+     * @return 方言化函数 SQL 片段
      */
     String getFunction(String functionName);
 }

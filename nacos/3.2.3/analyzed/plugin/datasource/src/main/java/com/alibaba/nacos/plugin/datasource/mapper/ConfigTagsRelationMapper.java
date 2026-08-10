@@ -28,7 +28,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The config with tags mapper.
+ * 配置与标签关联 Mapper 接口。
+ *
+ * <p>通过 {@code config_info} 与 {@code config_tags_relation} 联表，
+ * 支持按标签精确/模糊分页检索配置。</p>
  *
  * @author hyx
  **/
@@ -36,13 +39,12 @@ import java.util.List;
 public interface ConfigTagsRelationMapper extends Mapper {
     
     /**
-     * Get the count of config info.
-     * The default sql:
+     * 统计符合标签条件的配置数量。
+     * 默认 SQL：
      * SELECT count(*) FROM config_info WHERE ...
      *
-     * @param context The map of params, the key is the parameter name(dataId, groupId, tenantId, appName, startTime,
-     *                endTime, content), the value is the key's value.
-     * @return The sql of get config info.
+     * @param context 参数映射，键含 dataId、groupId、tenantId、appName、tagArr 等
+     * @return 配置计数 SQL 及参数
      */
     default MapperResult findConfigInfo4PageCountRows(final MapperContext context) {
         final String appName = (String) context.getWhereParameter(FieldConstant.APP_NAME);
@@ -89,23 +91,23 @@ public interface ConfigTagsRelationMapper extends Mapper {
     }
     
     /**
-     * Find config info.
-     * The default sql:
+     * 分页查询符合标签条件的配置列表。
+     * 默认 SQL：
      * SELECT a.id,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content FROM config_info  a LEFT JOIN
      * config_tags_relation b ON a.id=b.i ...
      *
-     * @param context The keys and values are dataId and group.
-     * @return The sql of finding config info.
+     * @param context 查询键值，含 dataId、group 等
+     * @return 配置分页查询 SQL 及参数
      */
     MapperResult findConfigInfo4PageFetchRows(final MapperContext context);
     
     /**
-     * Get the count of config information by config tags relation.
-     * The default sql:
+     * 按标签关联模糊条件统计配置数量。
+     * 默认 SQL：
      * SELECT count(*) FROM config_info  a LEFT JOIN config_tags_relation b ON a.id=b.id
      *
-     * @param context the keys and values are dataId and group.
-     * @return The sql of getting the count of config information.
+     * @param context 查询键值，含 dataId、group、tagArr、type 等
+     * @return 模糊计数 SQL 及参数
      */
     default MapperResult findConfigInfoLike4PageCountRows(final MapperContext context) {
         final String appName = (String) context.getWhereParameter(FieldConstant.APP_NAME);
@@ -150,13 +152,13 @@ public interface ConfigTagsRelationMapper extends Mapper {
     }
     
     /**
-     * Query config info.
-     * The default sql:
+     * 按标签关联模糊条件分页查询配置。
+     * 默认 SQL：
      * SELECT a.id,a.data_id,a.group_id,a.tenant_id,a.app_name,a.content,a.type,a.md5
      * FROM config_info a LEFT JOIN config_tags_relation b ON a.id=b.id
      *
-     * @param context the keys and values are dataId and group.
-     * @return The sql of querying config info.
+     * @param context 查询键值，含 dataId、group 等
+     * @return 配置模糊分页查询 SQL 及参数
      */
     MapperResult findConfigInfoLike4PageFetchRows(final MapperContext context);
     

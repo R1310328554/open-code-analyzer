@@ -21,95 +21,99 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The group capacity info mapper.
+ * 分组容量 Mapper 接口。
+ *
+ * <p>管理 {@code group_capacity} 表的配额与用量，支持按分组查询、
+ * 插入初始化及用量增减修正等操作。</p>
  *
  * @author lixiaoshuang
  */
 public interface GroupCapacityMapper extends Mapper {
     
     /**
-     * Select group_capacity table by group id.
+     * 按分组 ID 查询 group_capacity 记录。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 查询 SQL 及参数
      */
     MapperResult select(MapperContext context);
     
     /**
-     * INSERT INTO SELECT statement.
+     * INSERT INTO…SELECT 语句，初始化分组容量。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 插入 SQL 及参数
      */
     MapperResult insertIntoSelect(MapperContext context);
     
     /**
-     * INSERT INTO SELECT statement. Used to insert query results into a table.
+     * 带 WHERE 条件的 INSERT INTO…SELECT，将查询结果写入容量表。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 条件插入 SQL 及参数
      */
     MapperResult insertIntoSelectByWhere(MapperContext context);
     
     /**
-     * Used to increment usage field.
+     * 在配额为零时递增 usage 字段。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 递增 SQL 及参数
      */
     MapperResult incrementUsageByWhereQuotaEqualZero(MapperContext context);
     
     /**
-     * Used to increment usage field.
+     * 在配额非零时递增 usage 字段。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 递增 SQL 及参数
      */
     MapperResult incrementUsageByWhereQuotaNotEqualZero(MapperContext context);
     
     /**
-     * Used to increment usage field.
+     * 按条件递增 usage 字段。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 递增 SQL 及参数
      */
     MapperResult incrementUsageByWhere(MapperContext context);
     
     /**
-     * Used to decrement usage field.
-     * @param context sql paramMap
-     * @return sql.
+     * 按条件递减 usage 字段。
+     *
+     * @param context SQL 参数映射
+     * @return 递减 SQL 及参数
      */
     MapperResult decrementUsageByWhere(MapperContext context);
     
     /**
-     * Used to update usage field.
+     * 直接更新 usage 字段。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 更新 SQL 及参数
      */
     MapperResult updateUsage(MapperContext context);
     
     /**
-     * Used to update usage field.
+     * 按 WHERE 条件更新 usage 字段。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 条件更新 SQL 及参数
      */
     MapperResult updateUsageByWhere(MapperContext context);
     
     /**
-     * Used to select group info.
+     * 按分组规模查询分组信息。
      *
-     * @param context sql paramMap
-     * @return sql.
+     * @param context SQL 参数映射
+     * @return 分组信息查询 SQL 及参数
      */
     MapperResult selectGroupInfoBySize(MapperContext context);
     
     /**
-     * Return table name.
+     * 返回表名。
      *
-     * @return table name
+     * @return 表名
      */
     default String getTableName() {
         return TableConstant.GROUP_CAPACITY;

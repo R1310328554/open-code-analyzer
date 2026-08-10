@@ -19,7 +19,9 @@ package com.alibaba.nacos.plugin.datasource.mapper;
 import com.alibaba.nacos.plugin.datasource.constants.TableConstant;
 
 /**
- * The tenant info mapper. If there is a new non-universal sql, you can add it here.
+ * 租户信息 Mapper 接口。
+ *
+ * <p>映射 {@code tenant_info} 表；若有新的非通用 SQL，可在此接口扩展。</p>
  *
  * @author hyx
  **/

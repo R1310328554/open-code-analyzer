@@ -26,7 +26,10 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * EncryptionHandler.
+ * 配置加解密处理器。
+ *
+ * <p>根据 dataId 前缀 {@code cipher-} 解析算法名，
+ * 委托 {@link EncryptionPluginManager} 查找对应 SPI 实现完成加解密。</p>
  *
  * @author lixiaoshuang
  */
@@ -34,17 +37,15 @@ public class EncryptionHandler {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptionHandler.class);
     
-    /**
-     * For example：cipher-AES-dataId.
-     */
+    /** dataId 加密前缀，格式示例：cipher-AES-dataId。 */
     private static final String PREFIX = "cipher-";
     
     /**
-     * Execute encryption.
+     * 执行加密：生成密钥、加密内容并封装密钥密文。
      *
-     * @param dataId  dataId
-     * @param content Content that needs to be encrypted.
-     * @return Return key and ciphertext.
+     * @param dataId  配置 dataId，含算法标识
+     * @param content 待加密的明文内容
+     * @return 密钥密文与内容密文的 Pair
      */
     public static Pair<String, String> encryptHandler(String dataId, String content) {
         if (!checkCipher(dataId)) {
@@ -65,12 +66,12 @@ public class EncryptionHandler {
     }
     
     /**
-     * Execute decryption.
+     * 执行解密：解密密钥后解密配置内容。
      *
-     * @param dataId    dataId
-     * @param secretKey Decryption key.
-     * @param content   Content that needs to be decrypted.
-     * @return Return key and plaintext.
+     * @param dataId    配置 dataId，含算法标识
+     * @param secretKey 存储的密钥密文
+     * @param content   待解密的密文内容
+     * @return 明文密钥与明文内容的 Pair
      */
     public static Pair<String, String> decryptHandler(String dataId, String secretKey,
         String content) {
@@ -92,20 +93,20 @@ public class EncryptionHandler {
     }
     
     /**
-     * Parse encryption algorithm name.
+     * 从 dataId 解析加密算法名（{@code cipher-} 后第一段）。
      *
-     * @param dataId dataId
-     * @return algorithm name
+     * @param dataId 配置 dataId
+     * @return 算法名 Optional
      */
     private static Optional<String> parseAlgorithmName(String dataId) {
         return Stream.of(dataId.split("-")).skip(1).findFirst();
     }
     
     /**
-     * Check if encryption and decryption is needed.
+     * 判断 dataId 是否需要加解密（以 {@code cipher-} 开头且非前缀本身）。
      *
-     * @param dataId dataId
-     * @return boolean whether data id needs encrypt
+     * @param dataId 配置 dataId
+     * @return 是否需要加解密
      */
     private static boolean checkCipher(String dataId) {
         return dataId.startsWith(PREFIX) && !PREFIX.equals(dataId);

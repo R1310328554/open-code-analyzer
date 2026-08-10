@@ -33,7 +33,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * DataSource plugin Mapper sql proxy.
+ * 数据源插件 Mapper SQL 调用代理。
+ *
+ * <p>通过 JDK 动态代理拦截 {@link Mapper} 方法调用，
+ * 在启用日志时将 SQL 与参数序列化输出，便于调试与审计。</p>
  *
  * @author hyx
  **/
@@ -41,12 +44,18 @@ public class MapperProxy implements InvocationHandler {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MapperProxy.class);
     
+    /** 被代理的 Mapper 实现实例。 */
     private Mapper mapper;
     
+    /** 按类名缓存的单例代理，避免重复创建。 */
     private static final Map<String, Mapper> SINGLE_MAPPER_PROXY_MAP = new ConcurrentHashMap<>(16);
     
     /**
-     * Creates a proxy instance for the sub-interfaces of Mapper.class implemented by the given object.
+     * 为给定 Mapper 实现创建动态代理，覆盖其所有 Mapper 子接口。
+     *
+     * @param mapper Mapper 实现
+     * @param <R>    Mapper 子类型
+     * @return 代理后的 Mapper 实例
      */
     public <R> R createProxy(Mapper mapper) {
         this.mapper = mapper;
@@ -63,7 +72,11 @@ public class MapperProxy implements InvocationHandler {
     }
     
     /**
-     * create proxy-mapper single instead of using method createProxy.
+     * 创建并缓存单例代理，替代每次调用 {@link #createProxy(Mapper)}。
+     *
+     * @param mapper Mapper 实现
+     * @param <R>    Mapper 子类型
+     * @return 缓存的单例代理实例
      */
     public static <R> R createSingleProxy(Mapper mapper) {
         return (R) SINGLE_MAPPER_PROXY_MAP.computeIfAbsent(mapper.getClass().getSimpleName(),
@@ -82,6 +95,7 @@ public class MapperProxy implements InvocationHandler {
         } else {
             sql = invoke.toString();
         }
+        // 记录 Mapper 方法名、SQL 及入参，便于排查方言差异
         LOGGER.info("[{}] METHOD : {}, SQL : {}, ARGS : {}", className, methodName, sql,
             JacksonUtils.toJson(args));
         return invoke;

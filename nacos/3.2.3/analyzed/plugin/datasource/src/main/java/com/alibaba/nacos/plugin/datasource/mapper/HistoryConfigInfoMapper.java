@@ -27,7 +27,10 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * The history config info mapper.
+ * 历史配置信息 Mapper 接口。
+ *
+ * <p>负责 {@code his_config_info} 表的 SQL 映射，支持历史清理、
+ * 变更记录查询、删除配置追踪及灰度历史遍历。</p>
  *
  * @author hyx
  **/
@@ -35,19 +38,18 @@ import java.util.List;
 public interface HistoryConfigInfoMapper extends Mapper {
     
     /**
-     * Delete data before startTime. The default sql: DELETE FROM his_config_info WHERE gmt_modified < ? LIMIT ?
+     * 删除指定时间之前的历史数据。默认 SQL：DELETE FROM his_config_info WHERE gmt_modified &lt; ? LIMIT ?
      *
-     * @param context sql paramMap
-     * @return The sql of deleting data before startTime.
+     * @param context SQL 参数映射
+     * @return 历史清理 SQL 及参数
      */
     MapperResult removeConfigHistory(MapperContext context);
     
     /**
-     * Get the number of configurations before the specified time. The default sql: SELECT count(*) FROM his_config_info
-     * WHERE gmt_modified < ?
+     * 统计指定时间之前的配置历史条数。默认 SQL：SELECT count(*) FROM his_config_info WHERE gmt_modified &lt; ?
      *
-     * @param context sql paramMap
-     * @return The sql of getting the number of configurations before the specified time.
+     * @param context SQL 参数映射
+     * @return 历史计数 SQL 及参数
      */
     default MapperResult findConfigHistoryCountByTime(MapperContext context) {
         return new MapperResult("SELECT count(*) FROM his_config_info WHERE gmt_modified < ?",
@@ -55,11 +57,11 @@ public interface HistoryConfigInfoMapper extends Mapper {
     }
     
     /**
-     * Query deleted config. The default sql: SELECT DISTINCT data_id, group_id, tenant_id FROM his_config_info WHERE
-     * op_type = 'D' AND gmt_modified >=? AND gmt_modified <= ?
+     * 查询已删除配置记录。默认 SQL：SELECT DISTINCT data_id, group_id, tenant_id FROM his_config_info WHERE
+     * op_type = 'D' AND gmt_modified &gt;= ? AND gmt_modified &lt;= ?
      *
-     * @param context sql paramMap
-     * @return The sql of querying deleted config.
+     * @param context SQL 参数映射
+     * @return 删除配置查询 SQL 及参数
      */
     default MapperResult findDeletedConfig(MapperContext context) {
         return new MapperResult(
@@ -73,12 +75,12 @@ public interface HistoryConfigInfoMapper extends Mapper {
     }
     
     /**
-     * List configuration history change record. The default sql: SELECT
+     * 列出指定配置的历史变更记录。默认 SQL：SELECT
      * nid,data_id,group_id,tenant_id,app_name,src_ip,src_user,op_type,gmt_create,gmt_modified FROM his_config_info
      * WHERE data_id = ? AND group_id = ? AND tenant_id = ? ORDER BY nid DESC
      *
-     * @param context sql paramMap
-     * @return The sql of listing configuration history change record.
+     * @param context SQL 参数映射
+     * @return 历史变更列表 SQL 及参数
      */
     default MapperResult findConfigHistoryFetchRows(MapperContext context) {
         return new MapperResult(
@@ -91,22 +93,22 @@ public interface HistoryConfigInfoMapper extends Mapper {
     }
     
     /**
-     * page search List configuration history. SELECT
+     * 分页查询配置历史记录。SELECT
      * nid,data_id,group_id,tenant_id,app_name,src_ip,src_user,op_type,gmt_create,gmt_modified FROM his_config_info
      * WHERE data_id = ? AND group_id = ? AND tenant_id = ? ORDER BY nid DESC limit ?,?
      *
-     * @param context pageNo
-     * @return
+     * @param context 含 pageNo 等分页参数
+     * @return 分页历史查询 SQL 及参数
      */
     MapperResult pageFindConfigHistoryFetchRows(MapperContext context);
     
     /**
-     * Get previous config detail. The default sql: SELECT
+     * 获取上一版本配置详情。默认 SQL：SELECT
      * nid,data_id,group_id,tenant_id,app_name,content,md5,src_user,src_ip,op_type,gmt_create,gmt_modified FROM
      * his_config_info WHERE nid = (SELECT max(nid) FROM his_config_info WHERE id = ?)
      *
-     * @param context sql paramMap
-     * @return The sql of getting previous config detail.
+     * @param context SQL 参数映射
+     * @return 上一版本详情 SQL 及参数
      */
     default MapperResult detailPreviousConfigHistory(MapperContext context) {
         return new MapperResult(
@@ -125,13 +127,13 @@ public interface HistoryConfigInfoMapper extends Mapper {
     }
     
     /**
-     * Get updated history config detail of the history config. The default sql: SELECT
+     * 获取指定 nid 之后下一条历史配置详情。默认 SQL：SELECT
      * nid,data_id,group_id,tenant_id,app_name,content,md5,src_user,src_ip,op_type,gmt_create,gmt_modified FROM
      * his_config_info WHERE data_id = ? AND group_id = ? AND tenant_id = ? AND publish_type = ? AND gray_name = ?
-     * AND nid > ? ORDER BY nid LIMIT 1
+     * AND nid &gt; ? ORDER BY nid LIMIT 1
      *
-     * @param context sql paramMap
-     * @return The sql of getting the next history config detail of the history config.
+     * @param context SQL 参数映射
+     * @return 下一条历史详情 SQL 及参数
      */
     default MapperResult getNextHistoryInfo(MapperContext context) {
         String sql =

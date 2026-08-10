@@ -33,7 +33,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Encryption Plugin Management.
+ * 加密插件管理器。
+ *
+ * <p>通过 SPI 加载 {@link EncryptionPluginService} 实现，
+ * 按算法名索引，并支持插件启用状态检查与运行时动态注册。</p>
  *
  * @author lixiaoshuang
  */
@@ -41,9 +44,11 @@ public class EncryptionPluginManager {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(EncryptionPluginManager.class);
     
+    /** 算法名 → 加密插件服务实例。 */
     private static final Map<String, EncryptionPluginService> ENCRYPTION_SPI_MAP =
         new ConcurrentHashMap<>();
     
+    /** 单例实例。 */
     private static final EncryptionPluginManager INSTANCE = new EncryptionPluginManager();
     
     private EncryptionPluginManager() {
@@ -51,7 +56,7 @@ public class EncryptionPluginManager {
     }
     
     /**
-     * Load initial.
+     * 初始化加载所有 SPI 注册的加密插件。
      */
     private void loadInitial() {
         Collection<EncryptionPluginService> encryptionPluginServices = NacosServiceLoader.load(
@@ -73,19 +78,19 @@ public class EncryptionPluginManager {
     }
     
     /**
-     * Get EncryptionPluginManager instance.
+     * 获取 EncryptionPluginManager 单例。
      *
-     * @return EncryptionPluginManager
+     * @return EncryptionPluginManager 实例
      */
     public static EncryptionPluginManager instance() {
         return INSTANCE;
     }
     
     /**
-     * get EncryptionPluginService instance.
+     * 按算法名查找加密插件服务；若插件被禁用则返回空。
      *
-     * @param algorithmName algorithmName, mark a EncryptionPluginService instance.
-     * @return EncryptionPluginService instance.
+     * @param algorithmName 算法名，标识一个 EncryptionPluginService 实例
+     * @return 加密插件服务 Optional
      */
     public Optional<EncryptionPluginService> findEncryptionService(String algorithmName) {
         Optional<PluginStateChecker> checker = PluginStateCheckerHolder.getInstance();
@@ -99,9 +104,9 @@ public class EncryptionPluginManager {
     }
     
     /**
-     * Injection realization.
+     * 运行时注入加密插件实现。
      *
-     * @param encryptionPluginService Encryption implementation
+     * @param encryptionPluginService 加密插件实现
      */
     public static synchronized void join(EncryptionPluginService encryptionPluginService) {
         if (Objects.isNull(encryptionPluginService)) {
@@ -112,9 +117,9 @@ public class EncryptionPluginManager {
     }
     
     /**
-     * Get all encryption plugin services.
+     * 获取所有已注册的加密插件服务。
      *
-     * @return unmodifiable map of all encryption plugin services
+     * @return 不可修改的算法名 → 插件服务映射
      */
     public Map<String, EncryptionPluginService> getAllPlugins() {
         return Collections.unmodifiableMap(ENCRYPTION_SPI_MAP);

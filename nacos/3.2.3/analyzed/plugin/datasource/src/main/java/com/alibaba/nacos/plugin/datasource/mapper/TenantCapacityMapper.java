@@ -21,80 +21,83 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The tenant capacity info mapper.
+ * 租户容量 Mapper 接口。
+ *
+ * <p>管理 {@code tenant_capacity} 表的配额与用量，
+ * 支持按租户查询、用量增减、配额修正及初始化插入。</p>
  *
  * @author KiteSoar
  **/
 public interface TenantCapacityMapper extends Mapper {
     
     /**
-     * Select tenant_capacity table by tenant id.
+     * 按租户 ID 查询 tenant_capacity 记录。
      *
-     * @param context sql paramMap
-     * @return The sql of select.
+     * @param context SQL 参数映射
+     * @return 查询 SQL 及参数
      */
     MapperResult select(MapperContext context);
     
     /**
-     * Increment UsageWithDefaultQuotaLimit.
+     * 在默认配额限制下递增用量。
      *
-     * @param context sql paramMap
-     * @return The sql of increment UsageWithDefaultQuotaLimit.
+     * @param context SQL 参数映射
+     * @return 递增 SQL 及参数
      */
     MapperResult incrementUsageWithDefaultQuotaLimit(MapperContext context);
     
     /**
-     * Increment UsageWithQuotaLimit.
+     * 在自定义配额限制下递增用量。
      *
-     * @param context sql paramMap
-     * @return The sql of Increment UsageWithQuotaLimit.
+     * @param context SQL 参数映射
+     * @return 递增 SQL 及参数
      */
     MapperResult incrementUsageWithQuotaLimit(MapperContext context);
     
     /**
-     * Increment Usage.
+     * 无条件递增用量。
      *
-     * @param context sql paramMap
-     * @return The sql of increment UsageWithQuotaLimit.
+     * @param context SQL 参数映射
+     * @return 递增 SQL 及参数
      */
     MapperResult incrementUsage(MapperContext context);
     
     /**
-     * Decrement Usage.
+     * 递减用量。
      *
-     * @param context sql paramMap
-     * @return The sql of decrementUsage.
+     * @param context SQL 参数映射
+     * @return 递减 SQL 及参数
      */
     MapperResult decrementUsage(MapperContext context);
     
     /**
-     * Correct Usage.
+     * 修正用量至实际值。
      *
-     * @param context sql paramMap`
-     * @return The sql of correcting Usage.
+     * @param context SQL 参数映射
+     * @return 修正 SQL 及参数
      */
     MapperResult correctUsage(MapperContext context);
     
     /**
-     * Get TenantCapacity List, only including id and tenantId value.
+     * 获取租户容量列表，仅含 id 与 tenantId 字段，供用量修正任务使用。
      *
-     * @param context sql paramMap
-     * @return The sql of getting TenantCapacity List, only including id and tenantId value.
+     * @param context SQL 参数映射
+     * @return 容量列表查询 SQL 及参数
      */
     MapperResult getCapacityList4CorrectUsage(MapperContext context);
     
     /**
-     * Insert TenantCapacity.
+     * 插入租户容量记录。
      *
-     * @param context sql paramMap
-     * @return The sql of inserting TenantCapacity.
+     * @param context SQL 参数映射
+     * @return 插入 SQL 及参数
      */
     MapperResult insertTenantCapacity(MapperContext context);
     
     /**
-     * Get Table Name.
+     * 获取表名。
      *
-     * @return table name.
+     * @return 表名
      */
     default String getTableName() {
         return TableConstant.TENANT_CAPACITY;

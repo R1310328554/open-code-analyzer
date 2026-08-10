@@ -23,7 +23,10 @@ import com.alibaba.nacos.plugin.encryption.spi.EncryptionPluginService;
 import java.util.Map;
 
 /**
- * Encryption plugin provider implementation.
+ * 加密插件 Provider 实现。
+ *
+ * <p>向 Nacos 插件框架暴露 {@link PluginType#ENCRYPTION} 类型
+ * 及 {@link EncryptionPluginManager} 中已加载的全部加密服务。</p>
  *
  * @author WangzJi
  * @since 3.2.0

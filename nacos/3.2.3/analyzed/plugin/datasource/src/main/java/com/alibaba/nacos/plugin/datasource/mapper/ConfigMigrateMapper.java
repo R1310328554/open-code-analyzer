@@ -26,16 +26,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The interface Config migrate mapper.
+ * 配置迁移 Mapper 接口。
+ *
+ * <p>支持将空租户（{@code ''}）配置迁移至 {@code public} 命名空间，
+ * 涵盖正式配置与灰度配置的冲突检测、增量扫描及批量插入。</p>
+ *
  * @author Sunrisea
  */
 public interface ConfigMigrateMapper extends Mapper {
     
     /**
-     * Gets namespace conflict count.
+     * 统计 public 与空租户间存在 MD5 冲突的配置数量。
      *
-     * @param context the context
-     * @return the namespace conflict count
+     * @param context 查询上下文，含 {@code src_user} 等条件
+     * @return 冲突配置计数 SQL 及参数
      */
     default MapperResult getConfigConflictCount(MapperContext context) {
         String sql = "SELECT COUNT(*) AS count FROM config_info ci1"
@@ -48,10 +52,10 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Find config id need migrate mapper result.
+     * 分页查找需从空租户插入到 public 的配置 ID。
      *
-     * @param context the context
-     * @return the mapper result
+     * @param context 含游标 ID 与分页大小
+     * @return 待插入配置 ID 查询 SQL 及参数
      */
     default MapperResult findConfigIdNeedInsertMigrate(MapperContext context) {
         String sql = "SELECT ci.id FROM config_info ci WHERE ci.tenant_id = '' AND NOT EXISTS "
@@ -63,10 +67,10 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Find config id need update migrate from empty mapper result.
+     * 分页查找需从空租户更新到 public 的配置（public 侧内容较旧）。
      *
-     * @param context the context
-     * @return the mapper result
+     * @param context 含源/目标租户、src_user、游标 ID 与分页大小
+     * @return 待更新配置查询 SQL 及参数
      */
     default MapperResult findConfigNeedUpdateMigrate(MapperContext context) {
         String sql = "SELECT ci.id, ci.data_id, ci.group_id, ci.tenant_id"
@@ -86,10 +90,10 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Find config gray id need update migrate from empty mapper result.
+     * 分页查找需从空租户更新到 public 的灰度配置。
      *
-     * @param context the context
-     * @return the mapper result
+     * @param context 含源/目标租户、src_user、游标 ID 与分页大小
+     * @return 待更新灰度配置查询 SQL 及参数
      */
     default MapperResult findConfigGrayNeedUpdateMigrate(MapperContext context) {
         String sql = "SELECT ci.id, ci.data_id, ci.group_id, ci.tenant_id, ci.gray_name "
@@ -109,10 +113,10 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Migrate config by ids mapper result.
+     * 按 ID 列表将空租户配置批量插入 public 命名空间。
      *
-     * @param context the context
-     * @return the mapper result
+     * @param context 含待迁移 ID 列表与 src_user
+     * @return INSERT…SELECT 迁移 SQL 及参数
      */
     default MapperResult migrateConfigInsertByIds(MapperContext context) {
         ArrayList<Object> paramList = new ArrayList<>();
@@ -136,10 +140,10 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Gets config gray conflict count.
+     * 统计 public 与空租户间灰度配置 MD5 冲突数量。
      *
-     * @param context the context
-     * @return the config gray conflict count
+     * @param context 查询上下文，含 {@code src_user} 等条件
+     * @return 灰度冲突计数 SQL 及参数
      */
     default MapperResult getConfigGrayConflictCount(MapperContext context) {
         String sql =
@@ -153,10 +157,10 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Find config id need migrate mapper result.
+     * 分页查找需从空租户插入到 public 的灰度配置 ID。
      *
-     * @param context the context
-     * @return the mapper result
+     * @param context 含游标 ID 与分页大小
+     * @return 待插入灰度配置 ID 查询 SQL 及参数
      */
     default MapperResult findConfigGrayIdNeedInsertMigrate(MapperContext context) {
         String sql = "SELECT ci.id FROM config_info_gray ci WHERE ci.tenant_id = '' AND NOT EXISTS "
@@ -169,10 +173,10 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Migrate config by ids mapper result.
+     * 按 ID 列表将空租户灰度配置批量插入 public 命名空间。
      *
-     * @param context the context
-     * @return the mapper result
+     * @param context 含待迁移 ID 列表与 src_user
+     * @return 灰度配置 INSERT…SELECT 迁移 SQL 及参数
      */
     default MapperResult migrateConfigGrayInsertByIds(MapperContext context) {
         StringBuilder sql = new StringBuilder(
@@ -196,9 +200,9 @@ public interface ConfigMigrateMapper extends Mapper {
     }
     
     /**
-     * Get table name ,the migrate_config actually not exist, just for implements mapper method.
+     * 获取逻辑表名；{@code migrate_config} 表实际不存在，仅用于满足 Mapper 接口约定。
      *
-     * @return the mapper result
+     * @return 迁移逻辑表名常量
      */
     @Override
     default String getTableName() {
