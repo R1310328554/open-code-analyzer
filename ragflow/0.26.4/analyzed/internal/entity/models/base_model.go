@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// base_model.go — 模型驱动公共基类与 HTTP 工具：BaseURL 区域解析、SSE 流解析、JSON POST 与模型列表规范化。
 //
 
 package models
@@ -28,6 +30,7 @@ import (
 	"time"
 )
 
+// BaseModel 各 SaaS 驱动的共享 HTTP 客户端与 BaseURL/URLSuffix 配置
 type BaseModel struct {
 	BaseURL          map[string]string
 	URLSuffix        URLSuffix
@@ -35,6 +38,7 @@ type BaseModel struct {
 	AllowEmptyAPIKey bool
 }
 
+// APIConfigCheck 校验 API 密钥非空（AllowEmptyAPIKey 时跳过）
 func (b *BaseModel) APIConfigCheck(apiConfig *APIConfig) error {
 	if b.AllowEmptyAPIKey {
 		return nil
@@ -47,8 +51,7 @@ func (b *BaseModel) APIConfigCheck(apiConfig *APIConfig) error {
 	return nil
 }
 
-// BearerAuth returns the Bearer token for Authorization header,
-// or empty string if apiConfig or its ApiKey is nil/empty.
+// BearerAuth 从 APIConfig 构造 Authorization Bearer 头；密钥为空时返回空串
 func BearerAuth(apiConfig *APIConfig) string {
 	if apiConfig == nil || apiConfig.ApiKey == nil {
 		return ""
@@ -60,6 +63,7 @@ func BearerAuth(apiConfig *APIConfig) string {
 	return fmt.Sprintf("Bearer %s", key)
 }
 
+// GetBaseURL 按 region 或 apiConfig.BaseURL 解析端点基址
 func (b *BaseModel) GetBaseURL(apiConfig *APIConfig) (string, error) {
 	if apiConfig != nil && apiConfig.BaseURL != nil && *apiConfig.BaseURL != "" {
 		return strings.TrimSuffix(*apiConfig.BaseURL, "/"), nil
@@ -85,11 +89,7 @@ func (b *BaseModel) GetBaseURL(apiConfig *APIConfig) (string, error) {
 	return baseURL, nil
 }
 
-// ParseSSEStream reads the body of an OpenAI-compatible Server-Sent Events
-// response and calls onEvent for each successfully-parsed JSON payload.
-// A malformed JSON payload after "data:" returns an error wrapped as
-// "invalid SSE event" so the caller cannot silently swallow truncated or
-// corrupted streams.
+// ParseSSEStream 解析 OpenAI 兼容 SSE 流；data: 行 JSON 解析失败时返回 invalid SSE event 错误，避免静默吞掉截断流
 func ParseSSEStream[T any](r io.Reader, onEvent func(event T) error) (done bool, err error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
@@ -116,10 +116,7 @@ func ParseSSEStream[T any](r io.Reader, onEvent func(event T) error) (done bool,
 	return false, scanner.Err()
 }
 
-// ParseSSEStreamTolerant is like ParseSSEStream but silently skips
-// malformed JSON payloads. Use this only for drivers whose upstream is
-// known to interleave invalid frames the test suite documents as safe
-// to ignore.
+// ParseSSEStreamTolerant 与 ParseSSEStream 类似，但跳过畸形 JSON 帧；仅用于上游偶发脏帧且测试已确认安全的驱动
 func ParseSSEStreamTolerant[T any](r io.Reader, onEvent func(event T) error) (done bool, err error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
@@ -146,8 +143,7 @@ func ParseSSEStreamTolerant[T any](r io.Reader, onEvent func(event T) error) (do
 	return false, scanner.Err()
 }
 
-// ParseListModel Parse model list. Empty/whitespace IDs are skipped so
-// upstream typos do not surface as blank entries in the UI.
+// ParseListModel 规范化 /models 列表响应；跳过空 ID，并通过 ProviderManager 补全维度/token 元数据
 func ParseListModel(modelList ModelList) []ListModelResponse {
 	var models []ListModelResponse
 	pm := GetProviderManager()
@@ -179,7 +175,7 @@ func ParseListModel(modelList ModelList) []ListModelResponse {
 	return models
 }
 
-// NewDriverHTTPClient returns an *http.Client with the standard connection-pool
+// NewDriverHTTPClient 返回带标准连接池与 60s 响应头超时的 HTTP 客户端
 func NewDriverHTTPClient() *http.Client {
 	var t *http.Transport
 	if dt, ok := http.DefaultTransport.(*http.Transport); ok {
@@ -195,7 +191,7 @@ func NewDriverHTTPClient() *http.Client {
 	return &http.Client{Transport: t}
 }
 
-// PostJSONRequest marshals body to JSON, creates a POST request to url
+// PostJSONRequest 序列化 body 为 JSON 并发起 POST（可选 Authorization 头）
 func PostJSONRequest(ctx context.Context, client *http.Client, url, auth string, body map[string]interface{}) (*http.Response, error) {
 	data, err := json.Marshal(body)
 	if err != nil {
@@ -212,8 +208,10 @@ func PostJSONRequest(ctx context.Context, client *http.Client, url, auth string,
 	return client.Do(req)
 }
 
-// ReadErrorBody reads all bytes from r and returns them as a string suitable
+// ReadErrorBody 读取错误响应体全文，供日志与错误消息拼接
 func ReadErrorBody(r io.Reader) string {
 	b, _ := io.ReadAll(r)
 	return string(b)
 }
+
+// BaseModel 被各厂商驱动嵌入；GetBaseURL 优先租户自定义 BaseURL，否则按 region 键查 BaseURL map。ParseSSEStream 遇 [DONE] 终止；NewDriverHTTPClient 克隆 DefaultTransport 并设置 MaxIdleConns=100。

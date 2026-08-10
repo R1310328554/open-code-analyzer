@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// anthropic.go — Anthropic Claude Messages API 驱动：非 OpenAI 线协议，使用 x-api-key 与 anthropic-version 头。
 //
 
 package models
@@ -29,12 +31,12 @@ import (
 
 const anthropicVersion = "2023-06-01"
 
-// AnthropicModel implements ModelDriver for Claude models through the
-// Anthropic Messages API.
+// AnthropicModel Claude 系列 ModelDriver，走 Anthropic Messages API（非 chat/completions）
 type AnthropicModel struct {
 	baseModel BaseModel
 }
 
+// NewAnthropicModel 创建 Anthropic 驱动
 func NewAnthropicModel(baseURL map[string]string, urlSuffix URLSuffix) *AnthropicModel {
 	return &AnthropicModel{
 		baseModel: BaseModel{
@@ -45,14 +47,17 @@ func NewAnthropicModel(baseURL map[string]string, urlSuffix URLSuffix) *Anthropi
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Anthropic 驱动实例
 func (a *AnthropicModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewAnthropicModel(baseURL, a.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "anthropic"，供工厂层路由
 func (a *AnthropicModel) Name() string {
 	return "anthropic"
 }
 
+// region 解析 API 区域，默认 default
 func (a *AnthropicModel) region(apiConfig *APIConfig) string {
 	if apiConfig != nil && apiConfig.Region != nil && *apiConfig.Region != "" {
 		return *apiConfig.Region
@@ -60,6 +65,7 @@ func (a *AnthropicModel) region(apiConfig *APIConfig) string {
 	return "default"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (a *AnthropicModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -367,6 +373,7 @@ func parseAnthropicChatResponse(body []byte) (string, string, error) {
 	return answer.String(), reasoning.String(), nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (a *AnthropicModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -427,27 +434,33 @@ func (a *AnthropicModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, 
 	return models, nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (a *AnthropicModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := a.ListModels(apiConfig)
 	return err
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (a *AnthropicModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", a.Name())
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (a *AnthropicModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (a *AnthropicModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (a *AnthropicModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (a *AnthropicModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", a.Name())
 }
@@ -456,26 +469,34 @@ func (a *AnthropicModel) AudioSpeech(modelName *string, audioContent *string, ap
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (a *AnthropicModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", a.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (a *AnthropicModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (a *AnthropicModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// Balance 查询账户余额（若上游支持）
 func (a *AnthropicModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (a *AnthropicModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (a *AnthropicModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
+
+// anthropicMessages 将 OpenAI 风格 history 转为 Messages API 格式并提取 system；流式 ChatStreamlyWithSender 当前未实现。ListModels 返回静态 Claude 模型 catalog。

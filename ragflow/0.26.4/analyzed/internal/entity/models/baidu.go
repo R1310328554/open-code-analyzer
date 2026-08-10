@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// baidu.go — 百度千帆/文心 ModelDriver：Chat/Embed/Rerank/OCR，access_token 鉴权与 ERNIE API 形态。
 //
 
 package models
@@ -28,14 +30,17 @@ import (
 	"strings"
 )
 
+// BaiduModel 百度千帆 ModelDriver
 type BaiduModel struct {
 	baseModel BaseModel
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Baidu 驱动实例
 func (b *BaiduModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewBaiduModel(baseURL, b.baseModel.URLSuffix)
 }
 
+// NewBaiduModel 创建百度驱动
 func NewBaiduModel(baseURL map[string]string, urlSuffix URLSuffix) *BaiduModel {
 	return &BaiduModel{
 		baseModel: BaseModel{
@@ -46,10 +51,12 @@ func NewBaiduModel(baseURL map[string]string, urlSuffix URLSuffix) *BaiduModel {
 	}
 }
 
+// Name 返回提供商标识 "baidu"，供工厂层路由
 func (b *BaiduModel) Name() string {
 	return "baidu"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (b *BaiduModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -221,6 +228,7 @@ func (b *BaiduModel) ChatWithMessages(modelName string, messages []Message, apiC
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (b *BaiduModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -424,6 +432,7 @@ type baiduUsage struct {
 	TotalTokens  int `json:"total_tokens"`
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (b *BaiduModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -521,6 +530,7 @@ func (b *BaiduModel) Embed(modelName *string, texts []string, apiConfig *APIConf
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (b *BaiduModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -602,25 +612,29 @@ func (b *BaiduModel) Rerank(modelName *string, query string, documents []string,
 	return &rerankResponse, nil
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio 百度暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (b *BaiduModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (b *BaiduModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", b.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 百度暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (b *BaiduModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (b *BaiduModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", b.Name())
 }
 
-// OCRFile OCR file
+// OCRFile 对图片/PDF 调用百度 OCR API
 type qianfanOCRResponse struct {
 	Id     string `json:"id"`
 	Result struct {
@@ -632,6 +646,7 @@ type qianfanOCRResponse struct {
 	} `json:"result"`
 }
 
+// OCRFile 支持字节流或 fileURL 输入，返回识别文本块
 func (b *BaiduModel) OCRFile(modelName *string, content []byte, fileURL *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -722,6 +737,7 @@ func (b *BaiduModel) OCRFile(modelName *string, content []byte, fileURL *string,
 	return &ocrResponse, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (b *BaiduModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -775,23 +791,30 @@ func (b *BaiduModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, erro
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (b *BaiduModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (b *BaiduModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := b.ListModels(apiConfig)
 	return err
 }
 
+// ParseFile 解析文档为结构化文本
 func (b *BaiduModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (b *BaiduModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (b *BaiduModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
+
+// 百度驱动通过 api_key/secret_key 换取 access_token；Chat 走 ERNIE 消息格式；Embed/Rerank/OCR 各有独立 endpoint。ListModels 返回平台预置模型 catalog。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// astraflow.go — UCloud Astraflow（ModelVerse）OpenAI 兼容网关：单一 Bearer API 聚合多厂商模型，SSE 流含 reasoning_content。
 //
 
 package models
@@ -26,28 +28,12 @@ import (
 	"strings"
 )
 
-// AstraflowModel implements ModelDriver for Astraflow (UCloud
-// ModelVerse). Astraflow is a SaaS, OpenAI-compatible inference
-// gateway hosting Anthropic, OpenAI, Qwen, DeepSeek, Kimi, GLM,
-// MiniMax, and Gemini families behind a single Bearer-token API at
-// https://api-us-ca.umodelverse.ai/v1. Reference docs:
-// https://astraflow.ucloud.cn/reference/modelverse.
-//
-// Wire shape matches the OpenAI convention exactly:
-//   - POST /v1/chat/completions with {model, messages, stream, ...}
-//   - GET  /v1/models for the catalog
-//   - Authorization: Bearer <api-key> on every call
-//   - SSE response with `data:` lines and a [DONE] terminator
-//
-// Reasoning models surface chain-of-thought in `reasoning_content`
-// (OpenAI o-series shape), so the same handling as LongCat /
-// DeepSeek-R1 applies and there's no need for an inline <think>...
-// extractor like Novita's.
+// AstraflowModel UCloud ModelVerse OpenAI 兼容网关驱动；POST /v1/chat/completions、GET /v1/models、Bearer 鉴权、SSE data:[DONE] 终止；推理模型通过 reasoning_content 字段输出思维链（同 DeepSeek-R1 处理方式）
 type AstraflowModel struct {
 	baseModel BaseModel
 }
 
-// NewAstraflowModel creates a new Astraflow model instance.
+// NewAstraflowModel 创建 Astraflow 驱动实例
 func NewAstraflowModel(baseURL map[string]string, urlSuffix URLSuffix) *AstraflowModel {
 	return &AstraflowModel{
 		baseModel: BaseModel{
@@ -58,15 +44,18 @@ func NewAstraflowModel(baseURL map[string]string, urlSuffix URLSuffix) *Astraflo
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Astraflow 驱动实例
 func (a *AstraflowModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewAstraflowModel(baseURL, a.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "astraflow"，供工厂层路由
 func (a *AstraflowModel) Name() string {
 	return "astraflow"
 }
 
-// ChatWithMessages sends a non-streaming chat request
+// ChatWithMessages 非流式 chat/completions 请求
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (a *AstraflowModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -177,6 +166,7 @@ func (a *AstraflowModel) ChatWithMessages(modelName string, messages []Message, 
 }
 
 // ChatStreamlyWithSender opens the SSE chat-completions
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (a *AstraflowModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -300,6 +290,7 @@ func (a *AstraflowModel) ChatStreamlyWithSender(modelName string, messages []Mes
 	return nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (a *AstraflowModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -347,11 +338,13 @@ func (a *AstraflowModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, 
 	return ParseListModel(modelList), nil
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (a *AstraflowModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := a.ListModels(apiConfig)
 	return err
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (a *AstraflowModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -429,6 +422,7 @@ func (a *AstraflowModel) Embed(modelName *string, texts []string, apiConfig *API
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (a *AstraflowModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -507,18 +501,22 @@ func (a *AstraflowModel) Rerank(modelName *string, query string, documents []str
 	return &rerankResponse, nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (a *AstraflowModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (a *AstraflowModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (a *AstraflowModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", a.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (a *AstraflowModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -579,22 +577,29 @@ func (a *AstraflowModel) AudioSpeech(modelName *string, audioContent *string, ap
 	return &TTSResponse{Audio: body}, nil
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (a *AstraflowModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", a.Name())
 }
 
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (a *AstraflowModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// ParseFile 解析文档为结构化文本
 func (a *AstraflowModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// ListTasks 列出异步任务状态
 func (a *AstraflowModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (a *AstraflowModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
+
+// Astraflow 线协议与 OpenAI 完全一致；reasoning_content 由 ChatModel 层统一包装为 <think>。ListModels 走 GET /v1/models 并 ParseListModel 规范化。

@@ -12,11 +12,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// memory.go — Agent 长期记忆实体：嵌入/LLM 绑定、遗忘策略、权限与提示词模板。
 //
 
 package entity
 
-// Memory memory model
+// Memory Agent 记忆库配置（向量模型、LLM、容量、FIFO 遗忘策略、温度）
 type Memory struct {
 	ID               string  `gorm:"column:id;primaryKey;size:32" json:"id"`
 	Name             string  `gorm:"column:name;size:128;not null" json:"name"`
@@ -38,16 +40,15 @@ type Memory struct {
 	BaseModel
 }
 
-// TableName specify table name
+// TableName 返回表名 memory
 func (Memory) TableName() string {
 	return "memory"
 }
 
-// MemoryListItem represents a memory record with owner name from JOIN query.
-// Uses struct embedding to extend Memory struct with owner_name from user table JOIN.
-// Note: MemoryType is kept as int64 from Memory embedding; conversion to []string
-// happens in the Service layer via CreateMemoryResponse.
+// MemoryListItem 记忆列表项：嵌入 Memory 并附加 owner_name（来自 user 表 JOIN）；MemoryType 在 Service 层转为 []string 供 API 响应。
 type MemoryListItem struct {
 	Memory
 	OwnerName *string `json:"owner_name,omitempty"`
 }
+
+// storage_type 默认 table；permissions 控制 me/team 可见性；forgetting_policy 默认 FIFO；memory_size 默认 5MB。embd_id/llm_id 关联租户或平台级模型配置。

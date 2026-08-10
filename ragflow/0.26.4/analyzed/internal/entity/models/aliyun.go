@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// aliyun.go — 阿里云百炼/通义 ModelDriver：DashScope 兼容 Chat、Embed、Rerank 与模型列表 API。
 //
 
 package models
@@ -27,12 +29,12 @@ import (
 	"strings"
 )
 
-// AliyunModel implements ModelDriver for Aliyun
+// AliyunModel 阿里云 ModelDriver，对接 DashScope OpenAI 兼容端点
 type AliyunModel struct {
 	baseModel BaseModel
 }
 
-// NewAliyunModel creates a new Aliyun model instance
+// NewAliyunModel 创建阿里云驱动实例
 func NewAliyunModel(baseURL map[string]string, urlSuffix URLSuffix) *AliyunModel {
 	return &AliyunModel{
 		baseModel: BaseModel{
@@ -43,14 +45,17 @@ func NewAliyunModel(baseURL map[string]string, urlSuffix URLSuffix) *AliyunModel
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Aliyun 驱动实例
 func (a *AliyunModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewAliyunModel(baseURL, a.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "aliyun"，供工厂层路由
 func (a *AliyunModel) Name() string {
 	return "aliyun"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (a *AliyunModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -192,7 +197,8 @@ func (a *AliyunModel) ChatWithMessages(modelName string, messages []Message, api
 	return chatResponse, nil
 }
 
-// ChatStreamlyWithSender sends messages and streams response via sender function (best performance, no channel)
+// ChatStreamlyWithSender 流式对话，经 sender 回调推送 delta（无 channel 开销）
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (a *AliyunModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -348,7 +354,8 @@ type aliyunUsage struct {
 	TotalTokens  int `json:"total_tokens"`
 }
 
-// Embed embeds a list of texts into embeddings
+// Embed 批量文本向量化
+// Embed 将文本列表编码为向量嵌入
 func (a *AliyunModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -437,6 +444,7 @@ type aliyunRerankResponse struct {
 	} `json:"results"`
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (a *AliyunModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -509,39 +517,47 @@ func (a *AliyunModel) Rerank(modelName *string, query string, documents []string
 	return &rerankResponse, nil
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio 暂不支持，返回 no such method
+// TranscribeAudio 语音转文字（ASR）
 func (a *AliyunModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (a *AliyunModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", a.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (a *AliyunModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (a *AliyunModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", a.Name())
 }
 
-// OCRFile OCR file
+// OCRFile 暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (a *AliyunModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
-// ParseFile parse file
+// ParseFile 暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (a *AliyunModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// AliyunModelItem 阿里云模型列表 API 单条模型元数据
 type AliyunModelItem struct {
 	ModelName    string `json:"model_name"`
 	BaseCapacity int    `json:"base_capacity"`
 }
 
+// AliyunModelOutput 分页模型列表 output 段
 type AliyunModelOutput struct {
 	Models   []AliyunModelItem `json:"models"`
 	PageNo   int               `json:"page_no"`
@@ -549,11 +565,13 @@ type AliyunModelOutput struct {
 	Total    int               `json:"total"`
 }
 
+// AliyunModelList 阿里云 ListModels 原始响应结构
 type AliyunModelList struct {
 	RequestID string            `json:"request_id"`
 	Output    AliyunModelOutput `json:"output"`
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (a *AliyunModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -609,10 +627,12 @@ func (a *AliyunModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, err
 	return ParseListModel(modelList), nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (a *AliyunModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (a *AliyunModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := a.ListModels(apiConfig)
 	if err != nil {
@@ -621,10 +641,14 @@ func (a *AliyunModel) CheckConnection(apiConfig *APIConfig) error {
 	return nil
 }
 
+// ListTasks 列出异步任务状态
 func (a *AliyunModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (a *AliyunModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", a.Name())
 }
+
+// Aliyun 驱动主要实现 Chat/Embed/Rerank/ListModels；ListModels 解析 AliyunModelList 并映射为 ListModelResponse。Rerank 走独立 rerank API 路径。

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// 302ai.go — 302.AI 聚合网关驱动：OpenAI 兼容 Chat/Embed/Rerank/ASR/OCR/文档解析等多模态 API。
 //
 
 package models
@@ -32,10 +34,12 @@ import (
 	"strings"
 )
 
+// AI302Model 302.AI 平台 ModelDriver，嵌入 BaseModel 复用 HTTP/SSE 工具
 type AI302Model struct {
 	baseModel BaseModel
 }
 
+// NewAI302Model 创建 302.AI 驱动实例
 func NewAI302Model(baseURL map[string]string, urlSuffix URLSuffix) *AI302Model {
 	return &AI302Model{
 		baseModel: BaseModel{
@@ -46,10 +50,12 @@ func NewAI302Model(baseURL map[string]string, urlSuffix URLSuffix) *AI302Model {
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 302ai 驱动实例
 func (a *AI302Model) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewAI302Model(baseURL, a.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "302ai"，供工厂层路由
 func (a *AI302Model) Name() string {
 	return "302ai"
 }
@@ -70,6 +76,7 @@ func validateAI302DocumentURL(rawURL string) (string, error) {
 	return documentURL, nil
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (a *AI302Model) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -218,6 +225,7 @@ func (a *AI302Model) ChatWithMessages(modelName string, messages []Message, apiC
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (a *AI302Model) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -364,6 +372,7 @@ func (a *AI302Model) ChatStreamlyWithSender(modelName string, messages []Message
 	return sender(&endOfStream, nil)
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (a *AI302Model) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -445,6 +454,7 @@ func (a *AI302Model) Embed(modelName *string, texts []string, apiConfig *APIConf
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (a *AI302Model) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -534,6 +544,7 @@ func (a *AI302Model) Rerank(modelName *string, query string, documents []string,
 	return &rerankResponse, nil
 }
 
+// TranscribeAudio 语音转文字（ASR）
 func (a *AI302Model) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -662,19 +673,23 @@ func (a *AI302Model) TranscribeAudio(modelName *string, file *string, apiConfig 
 	return &ASRResponse{Text: result.Text}, nil
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (a *AI302Model) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", a.Name())
 }
 
+// AudioSpeech 文字转语音（TTS）
 func (a *AI302Model) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	// TODO https://302ai-en.apifox.cn/225254060e0
 	return nil, fmt.Errorf("%s no such method", a.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (a *AI302Model) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s no such method", a.Name())
 }
 
+// OCRFile 对图片执行 OCR（支持 URL 或字节内容）
 func (a *AI302Model) OCRFile(modelName *string, content []byte, urls *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -770,6 +785,7 @@ func (a *AI302Model) OCRFile(modelName *string, content []byte, urls *string, ap
 	}, nil
 }
 
+// ParseFile 解析远程文档 URL 为结构化文本
 func (a *AI302Model) ParseFile(modelName *string, content []byte, documentURL *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -842,6 +858,7 @@ func (a *AI302Model) ParseFile(modelName *string, content []byte, documentURL *s
 	}, nil
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (a *AI302Model) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -894,19 +911,23 @@ func (a *AI302Model) ListModels(apiConfig *APIConfig) ([]ListModelResponse, erro
 	return models, nil
 }
 
+// Balance 查询账户余额（若上游支持）
 func (a *AI302Model) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s no such method", a.Name())
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (a *AI302Model) CheckConnection(apiConfig *APIConfig) error {
 	_, err := a.ListModels(apiConfig)
 	return err
 }
 
+// ListTasks 列出异步任务状态
 func (a *AI302Model) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s no such method", a.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (a *AI302Model) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	if err := a.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -983,3 +1004,5 @@ func (a *AI302Model) ShowTask(taskID string, apiConfig *APIConfig) (*TaskRespons
 		},
 	}, nil
 }
+
+// 302.AI 驱动覆盖对话、向量、重排、语音、OCR 与文件解析；API 形态与 OpenAI 兼容，Bearer 鉴权。TranscribeAudio 支持 multipart 上传与 URL 两种输入。

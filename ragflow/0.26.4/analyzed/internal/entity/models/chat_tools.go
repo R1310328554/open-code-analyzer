@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// chat_tools.go — ChatModel 工具调用循环：非流式/流式多轮 tool_calls 编排、并发执行与 token 用量聚合。
 //
 
 package models
@@ -25,10 +27,7 @@ import (
 	"ragflow/internal/tokenizer"
 )
 
-// recordUsageFromResponse records one chat call's token usage to both
-// cm.LastUsage and the context-level run sink (if installed). Callers
-// should invoke this after each ChatWithMessages / ChatStreamlyWithSender
-// call so the canvas-layer aggregator and Langfuse both see the split.
+// recordUsageFromResponse 将单次调用的 token 用量写入 cm.LastUsage 与 context 级 run sink，供画布聚合与 Langfuse 追踪
 func recordUsageFromResponse(ctx context.Context, cm *ChatModel) {
 	if cm == nil {
 		return
@@ -44,7 +43,7 @@ const (
 	defaultMaxRounds  = 5
 )
 
-// ChatWithTools runs the non-streaming tool-calling loop.
+// ChatWithTools 非流式工具调用主循环：解析 tools JSON、多轮 ChatWithMessages、重试与超时
 func (cm *ChatModel) ChatWithTools(ctx context.Context, system string, history []Message, chatCfg *ChatConfig) (string, int, error) {
 	tc := cm.ToolConfig
 	if tc == nil {
@@ -178,7 +177,7 @@ func runToolLoop(ctx context.Context, cm *ChatModel, history []Message, toolsLis
 	return *resp.Answer, totalTokens, nil
 }
 
-// ChatStreamlyWithTools runs the streaming tool-calling loop.
+// ChatStreamlyWithTools 流式工具调用主循环：SSE 增量推送、推理块 <think> 包装
 func (cm *ChatModel) ChatStreamlyWithTools(ctx context.Context, system string, history []Message, chatCfg *ChatConfig, sender func(*string, *string) error) (int, error) {
 	tc := cm.ToolConfig
 	if tc == nil {
@@ -361,8 +360,7 @@ func runStreamToolLoop(ctx context.Context, cm *ChatModel, history []Message, to
 	return totalTokens, err
 }
 
-// appendToolResults executes tool calls concurrently, appends the assistant
-// message with tool_calls and individual tool result messages to history.
+// appendToolResults 并发执行 tool_calls，将 assistant/tool 消息追加到 history；无 ToolCallSession 时返回配置错误占位
 func appendToolResults(history []Message, toolCalls []map[string]interface{}, session ToolCallSession) []Message {
 	if session == nil {
 		history = append(history, Message{
@@ -444,3 +442,5 @@ func appendToolResults(history []Message, toolCalls []map[string]interface{}, se
 func boolPtr(b bool) *bool {
 	return &b
 }
+
+// runToolLoop/runStreamToolLoop 跨轮次累加 token（修复 PR #16420 覆盖 bug）；maxRounds 默认 5、maxRetries 默认 3；commitRound 优先 API usage，缺失时用 tiktoken 估算。

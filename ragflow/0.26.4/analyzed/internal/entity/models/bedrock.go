@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// bedrock.go — AWS Bedrock ModelDriver：SigV4 签名、Converse/ConverseStream、多 auth_mode（access_key/iam_role/assume_role）。
 //
 
 package models
@@ -36,11 +38,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-// Default Bedrock URL suffixes used when conf/models/bedrock.json
-// does not override them. Hard-coding sane defaults lets the driver
-// still work when the configuration loader supplies a zero-value
-// URLSuffix, while honouring an operator override (e.g. fronting
-// Bedrock through a corporate VPC endpoint at a non-AWS path).
+// defaultBedrockURLSuffix Bedrock 默认 URL 后缀；conf 未覆盖时使用，支持 VPC endpoint 自定义
 const (
 	defaultBedrockChatSuffix       = "converse"
 	defaultBedrockStreamSuffix     = "converse-stream"
@@ -49,11 +47,7 @@ const (
 	bedrockStreamSuffixSuffix      = "-stream"
 )
 
-// Bedrock signing services and endpoint hostnames.
-//
-// The control plane (foundation-model catalog) and the runtime plane
-// (Converse / Converse-Stream) sit on different subdomains and sign
-// against different SigV4 service names.
+// Bedrock 控制面（模型目录）与运行时（Converse）使用不同子域与 SigV4 service 名
 const (
 	bedrockRuntimeService  = "bedrock-runtime"
 	bedrockControlService  = "bedrock"
@@ -61,43 +55,22 @@ const (
 	bedrockControlHostTmpl = "bedrock.%s.amazonaws.com"
 )
 
-// Bedrock authentication modes mirroring the Python LiteLLMBase
-// dispatch at rag/llm/chat_model.py:1872. The API key is stored as a
-// JSON blob containing one of these modes plus its required fields.
+// Bedrock 鉴权模式（access_key_secret/iam_role/assume_role），API Key 为 JSON  blob，对齐 Python chat_model.py
 const (
 	bedrockAuthAccessKey  = "access_key_secret"
 	bedrockAuthIAMRole    = "iam_role"
 	bedrockAuthAssumeRole = "assume_role"
 )
 
-// bedrockAssumeRoleSession identifies temporary sessions in CloudTrail
-// when iam_role mode triggers STS AssumeRole. Matches the Python
-// implementation's RoleSessionName so audit logs stay consistent.
+// bedrockAssumeRoleSession STS AssumeRole 的 RoleSessionName，与 Python 一致便于 CloudTrail 审计
 const bedrockAssumeRoleSession = "BedrockSession"
 
-// BedrockModel implements ModelDriver for AWS Bedrock.
-//
-// Bedrock is AWS-signed (SigV4) rather than OpenAI-compatible, so this
-// driver differs from the SaaS cluster in three ways:
-//   - Authentication uses AWS SigV4 over an access key + secret (and
-//     optionally a session token), not a static Bearer token.
-//   - The "api key" is a JSON blob carrying auth_mode, region, and the
-//     mode-specific credential material (access_key_secret /
-//     iam_role / assume_role). This mirrors the Python implementation
-//     at rag/llm/chat_model.py:1872.
-//   - The streaming response uses the AWS event-stream binary framing
-//     (vnd.amazon.eventstream), not Server-Sent Events. Each frame is
-//     decoded with the aws-sdk-go-v2 eventstream package.
-//
-// The base URL is computed from the configured region rather than
-// supplied from conf/models/bedrock.json, because every Bedrock region
-// has its own endpoint and the URL is fully determined by the region
-// in the API key.
+// BedrockModel AWS Bedrock ModelDriver：SigV4 鉴权（非 Bearer）、API Key 为含 auth_mode/region 的 JSON、流式为 event-stream 二进制帧（非 SSE）；BaseURL 由 region 推导
 type BedrockModel struct {
 	baseModel BaseModel
 }
 
-// NewBedrockModel creates a new Bedrock model instance.
+// NewBedrockModel 创建 Bedrock 驱动
 func NewBedrockModel(baseURL map[string]string, urlSuffix URLSuffix) *BedrockModel {
 	return &BedrockModel{
 		baseModel: BaseModel{
@@ -108,16 +81,14 @@ func NewBedrockModel(baseURL map[string]string, urlSuffix URLSuffix) *BedrockMod
 	}
 }
 
-// NewInstance returns a fresh BedrockModel bound to the supplied
-// BaseURL map. Used by the factory layer when adding a tenant
-// instance with a custom endpoint override (e.g. a VPC endpoint
-// fronting Bedrock for compliance reasons).
+// NewInstance 绑定租户自定义 BaseURL（如 VPC endpoint 合规接入）
+// NewInstance 按租户/区域 BaseURL 创建新的 Bedrock 驱动实例
 func (b *BedrockModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewBedrockModel(baseURL, b.baseModel.URLSuffix)
 }
 
-// Name returns the canonical lower-case provider name used by the
-// factory dispatch and by conf/models/bedrock.json.
+// Name 返回工厂路由名 bedrock
+// Name 返回提供商标识 "bedrock"，供工厂层路由
 func (b *BedrockModel) Name() string {
 	return "bedrock"
 }
@@ -503,6 +474,8 @@ func signBedrockRequest(ctx context.Context, req *http.Request, body []byte, cre
 // the joined assistant answer. ReasonContent is always non-nil per the
 // driver contract; Bedrock surfaces no reasoning channel today, so it
 // is left empty rather than nil.
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
+// ChatWithMessages 调用 Bedrock Converse API 非流式对话
 func (b *BedrockModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -587,6 +560,8 @@ func (b *BedrockModel) ChatWithMessages(modelName string, messages []Message, ap
 // payload. For chat we only need messageStart, contentBlockDelta,
 // messageStop, and (for error propagation) exception frames; other
 // events are ignored.
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
+// ChatStreamlyWithSender 调用 ConverseStream，解码 event-stream 帧并推送 delta
 func (b *BedrockModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -765,6 +740,8 @@ type bedrockListModelsResponse struct {
 // configured credentials. The control plane lives at
 // bedrock.{region}.amazonaws.com (not bedrock-runtime), signs against
 // the "bedrock" service, and is GET-only.
+// ListModels 列出当前 API Key 可见的模型目录
+// ListModels 调用控制面 ListFoundationModels 获取可用模型 ID
 func (b *BedrockModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -834,6 +811,7 @@ func (b *BedrockModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, er
 // CheckConnection delegates to ListModels: a successful catalog query
 // proves credentials, region, and network reachability in one round
 // trip without burning a chat completion.
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (b *BedrockModel) CheckConnection(apiConfig *APIConfig) error {
 	_, err := b.ListModels(apiConfig)
 	return err
@@ -862,6 +840,8 @@ type bedrockCohereEmbeddingResponse struct {
 // InvokeModel. Titan's embedding API accepts one inputText per call,
 // while Cohere accepts a texts batch and returns vectors in input
 // order.
+// Embed 将文本列表编码为向量嵌入
+// Embed 调用 Bedrock InvokeModel 嵌入模型（Titan/Cohere 等）
 func (b *BedrockModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if len(texts) == 0 {
 		return []EmbeddingData{}, nil
@@ -1024,52 +1004,64 @@ func decodeCohereEmbeddingVectors(raw json.RawMessage) ([][]float64, error) {
 }
 
 // Rerank is not exposed by Bedrock.
+// Rerank 对候选文档按 query 相关性重排序
 func (b *BedrockModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
 // Balance is not exposed by Bedrock.
+// Balance 查询账户余额（若上游支持）
 func (b *BedrockModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
 // TranscribeAudio is not exposed by Bedrock. Speech-to-text on AWS
 // lives in Amazon Transcribe, a separate service.
+// TranscribeAudio 语音转文字（ASR）
 func (b *BedrockModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (b *BedrockModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", b.Name())
 }
 
 // AudioSpeech is not exposed by Bedrock. Text-to-speech on AWS lives
 // in Amazon Polly, a separate service.
+// AudioSpeech 文字转语音（TTS）
 func (b *BedrockModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (b *BedrockModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", b.Name())
 }
 
 // OCRFile is not exposed by Bedrock. OCR on AWS lives in Amazon
 // Textract, a separate service.
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (b *BedrockModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
 // ParseFile is not exposed by Bedrock.
+// ParseFile 解析文档为结构化文本
 func (b *BedrockModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
 // ListTasks is not exposed by Bedrock through the Converse API.
+// ListTasks 列出异步任务状态
 func (b *BedrockModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
 // ShowTask is not exposed by Bedrock through the Converse API.
+// ShowTask 按 taskID 查询单个异步任务详情
 func (b *BedrockModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
+
+// parseBedrockKey 解析 API Key JSON 并按 auth_mode 校验必填字段；resolveBedrockCredentials 支持静态密钥、默认链 AssumeRole 与 IRSA；流式路径使用 aws-sdk-go-v2 eventstream 解码 vnd.amazon.eventstream。

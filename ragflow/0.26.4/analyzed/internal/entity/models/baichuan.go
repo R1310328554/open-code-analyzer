@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// baichuan.go — 百川智能 ModelDriver：OpenAI 兼容 Chat/Embed API。
 //
 
 package models
@@ -27,10 +29,12 @@ import (
 	"strings"
 )
 
+// BaichuanModel 百川 ModelDriver
 type BaichuanModel struct {
 	baseModel BaseModel
 }
 
+// NewBaichuanModel 创建百川驱动
 func NewBaichuanModel(baseURL map[string]string, urlSuffix URLSuffix) *BaichuanModel {
 	return &BaichuanModel{
 		baseModel: BaseModel{
@@ -41,14 +45,17 @@ func NewBaichuanModel(baseURL map[string]string, urlSuffix URLSuffix) *BaichuanM
 	}
 }
 
+// NewInstance 按租户/区域 BaseURL 创建新的 Baichuan 驱动实例
 func (b *BaichuanModel) NewInstance(baseURL map[string]string) ModelDriver {
 	return NewBaichuanModel(baseURL, b.baseModel.URLSuffix)
 }
 
+// Name 返回提供商标识 "baichuan"，供工厂层路由
 func (b *BaichuanModel) Name() string {
 	return "baichuan"
 }
 
+// ChatWithMessages 非流式多轮对话，返回完整回复与 token 用量
 func (b *BaichuanModel) ChatWithMessages(modelName string, messages []Message, apiConfig *APIConfig, chatModelConfig *ChatConfig) (*ChatResponse, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -165,6 +172,7 @@ func (b *BaichuanModel) ChatWithMessages(modelName string, messages []Message, a
 	return chatResponse, nil
 }
 
+// ChatStreamlyWithSender 流式对话，通过 sender 回调推送增量内容与推理片段
 func (b *BaichuanModel) ChatStreamlyWithSender(modelName string, messages []Message, apiConfig *APIConfig, modelConfig *ChatConfig, sender func(*string, *string) error) error {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return err
@@ -290,6 +298,7 @@ func (b *BaichuanModel) ChatStreamlyWithSender(modelName string, messages []Mess
 	return sender(&endOfStream, nil)
 }
 
+// Embed 将文本列表编码为向量嵌入
 func (b *BaichuanModel) Embed(modelName *string, texts []string, apiConfig *APIConfig, embeddingConfig *EmbeddingConfig) ([]EmbeddingData, error) {
 	if err := b.baseModel.APIConfigCheck(apiConfig); err != nil {
 		return nil, err
@@ -367,54 +376,68 @@ func (b *BaichuanModel) Embed(modelName *string, texts []string, apiConfig *APIC
 	return embeddings, nil
 }
 
+// Rerank 对候选文档按 query 相关性重排序
 func (b *BaichuanModel) Rerank(modelName *string, query string, documents []string, apiConfig *APIConfig, rerankConfig *RerankConfig) (*RerankResponse, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
-// TranscribeAudio transcribe audio
+// TranscribeAudio 百川暂不支持 ASR
+// TranscribeAudio 语音转文字（ASR）
 func (b *BaichuanModel) TranscribeAudio(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig) (*ASRResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// TranscribeAudioWithSender 流式 ASR，增量推送识别文本
 func (b *BaichuanModel) TranscribeAudioWithSender(modelName *string, file *string, apiConfig *APIConfig, asrConfig *ASRConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", b.Name())
 }
 
-// AudioSpeech convert text to audio
+// AudioSpeech 百川暂不支持 TTS
+// AudioSpeech 文字转语音（TTS）
 func (b *BaichuanModel) AudioSpeech(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig) (*TTSResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// AudioSpeechWithSender 流式 TTS 输出
 func (b *BaichuanModel) AudioSpeechWithSender(modelName *string, audioContent *string, apiConfig *APIConfig, ttsConfig *TTSConfig, sender func(*string, *string) error) error {
 	return fmt.Errorf("%s, no such method", b.Name())
 }
 
-// OCRFile OCR file
+// OCRFile 百川暂不支持 OCR
+// OCRFile 对图片/PDF 执行 OCR 识别
 func (b *BaichuanModel) OCRFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, ocrConfig *OCRConfig) (*OCRFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
-// ParseFile parse file
+// ParseFile 百川暂不支持文档解析
+// ParseFile 解析文档为结构化文本
 func (b *BaichuanModel) ParseFile(modelName *string, content []byte, url *string, apiConfig *APIConfig, parseFileConfig *ParseFileConfig) (*ParseFileResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// ListModels 列出当前 API Key 可见的模型目录
 func (b *BaichuanModel) ListModels(apiConfig *APIConfig) ([]ListModelResponse, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
+// Balance 查询账户余额（若上游支持）
 func (b *BaichuanModel) Balance(apiConfig *APIConfig) (map[string]interface{}, error) {
 	return nil, fmt.Errorf("no such method")
 }
 
+// CheckConnection 轻量探活，验证密钥与端点可用
 func (b *BaichuanModel) CheckConnection(apiConfig *APIConfig) error {
 	return fmt.Errorf("no such method")
 }
 
+// ListTasks 列出异步任务状态
 func (b *BaichuanModel) ListTasks(apiConfig *APIConfig) ([]ListTaskStatus, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
 
+// ShowTask 按 taskID 查询单个异步任务详情
 func (b *BaichuanModel) ShowTask(taskID string, apiConfig *APIConfig) (*TaskResponse, error) {
 	return nil, fmt.Errorf("%s, no such method", b.Name())
 }
+
+// 百川驱动实现 Chat/Embed/ListModels/CheckConnection；请求体与 OpenAI chat/completions 兼容。Rerank 及多模态接口返回不支持。
