@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:42:17Z",
-  "files": [
-    "ssf/core/src/main/java/org/keycloak/ssf/SsfException.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/SsfProfile.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/DefaultSsfEventProvider.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/DefaultSsfEventProviderFactory.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/GenericSsfEvent.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/InitiatingEntity.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/SsfEvent.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/SsfEventProvider.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/SsfEventProviderFactory.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/SsfEventRegistry.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/SsfEventSpi.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/SsfEventValidationException.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/caep/CaepCredentialChange.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/caep/CaepCredentialChangeChangeTypeDeserializer.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/caep/CaepEvent.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 658,
-  "done": 5325
+  "done": 5340
 }
