@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:57:13Z",
   "files": [
-    "src/transformers/generation/logits_process.py",
-    "src/transformers/generation/stopping_criteria.py",
-    "src/transformers/generation/streamers.py",
-    "src/transformers/generation/utils.py",
-    "src/transformers/generation/watermarking.py",
-    "src/transformers/hf_argparser.py",
-    "src/transformers/hyperparameter_search.py",
-    "src/transformers/image_processing_backends.py",
-    "src/transformers/image_processing_base.py",
-    "src/transformers/image_processing_outputs.py",
-    "src/transformers/image_processing_utils.py",
-    "src/transformers/image_transforms.py",
-    "src/transformers/image_utils.py",
-    "src/transformers/initialization.py",
-    "src/transformers/integrations/__init__.py",
     "src/transformers/integrations/accelerate.py",
     "src/transformers/integrations/aqlm.py",
     "src/transformers/integrations/awq.py",
@@ -33,5 +18,5 @@
     "src/transformers/integrations/flash_paged.py"
   ],
   "remaining_pending": 2559,
-  "done": 90
+  "done": 105
 }
