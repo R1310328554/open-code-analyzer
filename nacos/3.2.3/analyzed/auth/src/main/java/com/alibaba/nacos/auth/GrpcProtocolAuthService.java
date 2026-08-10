@@ -37,22 +37,28 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Auth Service for Grpc protocol.
+ * gRPC 协议鉴权服务实现。
+ *
+ * <p>负责解析 gRPC 请求中的资源与身份上下文，并支持集群内部 API 的服务端身份校验。</p>
  *
  * @author xiweng.yy
  */
 public class GrpcProtocolAuthService extends AbstractProtocolAuthService<Request> {
     
+    /** 按 {@link SignType} 索引的 gRPC 资源解析器映射。 */
     private final Map<String, AbstractGrpcResourceParser> resourceParserMap;
     
+    /** gRPC 身份上下文构建器。 */
     private final GrpcIdentityContextBuilder identityContextBuilder;
     
+    /** 构造 gRPC 鉴权服务并初始化解析器与身份构建器。 */
     public GrpcProtocolAuthService(NacosAuthConfig authConfig) {
         super(authConfig);
         resourceParserMap = new HashMap<>(2);
         identityContextBuilder = new GrpcIdentityContextBuilder(authConfig);
     }
     
+    /** 注册命名、配置与 AI 模块的 gRPC 资源解析器。 */
     @Override
     public void initialize() {
         super.initialize();
@@ -61,6 +67,7 @@ public class GrpcProtocolAuthService extends AbstractProtocolAuthService<Request
         resourceParserMap.put(SignType.AI, new AiGrpcResourceParser());
     }
     
+    /** 从 gRPC 请求与 {@link Secured} 注解解析鉴权资源。 */
     @Override
     public Resource parseResource(Request request, Secured secured) {
         if (StringUtils.isNotBlank(secured.resource())) {
@@ -75,11 +82,13 @@ public class GrpcProtocolAuthService extends AbstractProtocolAuthService<Request
         return parser.parse(request, secured);
     }
     
+    /** 从 gRPC 请求头构建 {@link IdentityContext}。 */
     @Override
     public IdentityContext parseIdentity(Request request) {
         return identityContextBuilder.build(request);
     }
     
+    /** 仅对 {@link ApiType#INNER_API} 执行服务端身份校验。 */
     @Override
     public ServerIdentityResult checkServerIdentity(Request request, Secured secured) {
         if (ApiType.INNER_API != secured.apiType()) {
@@ -88,6 +97,7 @@ public class GrpcProtocolAuthService extends AbstractProtocolAuthService<Request
         return super.checkServerIdentity(request, secured);
     }
     
+    /** 从 gRPC 请求头读取服务端身份 key 与 value。 */
     @Override
     protected ServerIdentity parseServerIdentity(Request request) {
         String serverIdentityKey = authConfig.getServerIdentityKey();

@@ -38,28 +38,33 @@ import java.util.Optional;
 import java.util.Properties;
 
 /**
- * Abstract protocol auth service.
+ * 协议鉴权服务的抽象基类。
  *
- * <p>Implement #validateIdentity and #validateAuthority method template.
+ * <p>封装身份校验、权限校验与服务端身份检查等通用流程，子类仅需实现协议相关的资源/身份解析。</p>
  *
  * @author xiweng.yy
  */
 public abstract class AbstractProtocolAuthService<R> implements ProtocolAuthService<R> {
     
+    /** Nacos 鉴权配置。 */
     protected final NacosAuthConfig authConfig;
     
+    /** 服务端身份校验器。 */
     protected final ServerIdentityChecker checker;
     
+    /** 注入鉴权配置并初始化服务端身份校验器。 */
     protected AbstractProtocolAuthService(NacosAuthConfig authConfig) {
         this.authConfig = authConfig;
         this.checker = ServerIdentityCheckerHolder.getInstance().newChecker();
     }
     
+    /** 初始化服务端身份校验器。 */
     @Override
     public void initialize() {
         this.checker.init(authConfig);
     }
     
+    /** 根据 {@link Secured} 注解判断当前插件是否对该请求启用鉴权。 */
     @Override
     public boolean enableAuth(Secured secured) {
         Optional<AuthPluginService> authPluginService = AuthPluginManager.getInstance()
@@ -73,6 +78,7 @@ public abstract class AbstractProtocolAuthService<R> implements ProtocolAuthServ
         return false;
     }
     
+    /** 委托鉴权插件校验请求身份是否合法。 */
     @Override
     public AuthResult validateIdentity(IdentityContext identityContext, Resource resource)
         throws AccessException {
@@ -84,6 +90,7 @@ public abstract class AbstractProtocolAuthService<R> implements ProtocolAuthServ
         return AuthResult.successResult();
     }
     
+    /** 委托鉴权插件校验身份是否具备指定权限。 */
     @Override
     public AuthResult validateAuthority(IdentityContext identityContext, Permission permission)
         throws AccessException {
@@ -95,6 +102,7 @@ public abstract class AbstractProtocolAuthService<R> implements ProtocolAuthServ
         return AuthResult.successResult();
     }
     
+    /** 校验请求是否携带合法的服务端身份标识（集群间调用）。 */
     @Override
     public ServerIdentityResult checkServerIdentity(R request, Secured secured) {
         if (isInvalidServerIdentity()) {
@@ -106,24 +114,25 @@ public abstract class AbstractProtocolAuthService<R> implements ProtocolAuthServ
         return checker.check(serverIdentity, secured);
     }
     
+    /** 判断服务端身份 key/value 配置是否缺失。 */
     private boolean isInvalidServerIdentity() {
         return StringUtils.isBlank(authConfig.getServerIdentityKey()) || StringUtils.isBlank(
             authConfig.getServerIdentityValue());
     }
     
     /**
-     * Parse server identity from protocol request.
+     * 从协议请求中解析服务端身份标识。
      *
-     * @param request protocol request
-     * @return nacos server identity.
+     * @param request 协议请求对象
+     * @return Nacos 服务端身份
      */
     protected abstract ServerIdentity parseServerIdentity(R request);
     
     /**
-     * Get resource from secured annotation specified resource.
+     * 根据 {@link Secured#resource()} 直接构造资源对象。
      *
-     * @param secured secured annotation
-     * @return resource
+     * @param secured 鉴权注解
+     * @return 资源实例
      */
     protected Resource parseSpecifiedResource(Secured secured) {
         Properties properties = new Properties();
@@ -134,11 +143,11 @@ public abstract class AbstractProtocolAuthService<R> implements ProtocolAuthServ
     }
     
     /**
-     * Parse resource by specified resource parser.
+     * 使用注解指定的 {@link Secured#parser()} 解析资源。
      *
-     * @param secured secured annotation
-     * @param request request
-     * @return resource
+     * @param secured 鉴权注解
+     * @param request 协议请求
+     * @return 解析结果，失败时返回 {@link Resource#EMPTY_RESOURCE}
      */
     protected Resource useSpecifiedParserToParse(Secured secured, R request) {
         try {

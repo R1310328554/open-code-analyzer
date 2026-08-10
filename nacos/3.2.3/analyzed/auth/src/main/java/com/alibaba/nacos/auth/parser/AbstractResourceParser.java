@@ -23,13 +23,16 @@ import com.alibaba.nacos.plugin.auth.constant.Constants;
 import java.util.Properties;
 
 /**
- * Abstract Resource parser.
+ * 资源解析器抽象基类。
+ *
+ * <p>模板方法模式：子类提供命名空间、分组、资源名等字段，统一组装 {@link Resource}。</p>
  *
  * @author xiweng.yy
  * @since 2.1.0
  */
 public abstract class AbstractResourceParser<R> implements ResourceParser<R> {
     
+    /** 模板方法：聚合子类字段并构造 {@link Resource}。 */
     @Override
     public Resource parse(R request, Secured secured) {
         String namespaceId = getNamespaceId(request, secured);
@@ -43,54 +46,53 @@ public abstract class AbstractResourceParser<R> implements ResourceParser<R> {
     }
     
     /**
-     * Get namespaceId from request.
+     * 从请求中提取命名空间 ID。
      *
-     * @param request request
-     * @return namespaceId
+     * @param request 协议请求
+     * @return 命名空间 ID
      */
     protected abstract String getNamespaceId(R request);
     
     /**
-     * Get namespaceId from request and secured. No implementation is required by default,this method can be rewrited
-     * with special processing.
+     * 结合 {@link Secured} 从请求提取命名空间 ID；默认委托 {@link #getNamespaceId(Object)}，子类可覆盖。
      *
-     * @param request request
-     * @param secured secured
-     * @return namespaceId
+     * @param request 协议请求
+     * @param secured 鉴权注解
+     * @return 命名空间 ID
      */
     protected String getNamespaceId(R request, Secured secured) {
         return getNamespaceId(request);
     }
     
     /**
-     * Get group name from request.
+     * 从请求中提取分组名。
      *
-     * @param request request
-     * @return group name
+     * @param request 协议请求
+     * @return 分组名
      */
     protected abstract String getGroup(R request);
     
     /**
-     * Get resource name from request.
+     * 从请求中提取资源名。
      *
-     * @param request request
-     * @return resource name
+     * @param request 协议请求
+     * @return 资源名
      */
     protected abstract String getResourceName(R request);
     
     /**
-     * Get custom properties from request.
+     * 从请求中提取附加属性。
      *
-     * @param request request
-     * @return custom properties
+     * @param request 协议请求
+     * @return 自定义属性
      */
     protected abstract Properties getProperties(R request);
     
     /**
-     * Inject tags defined in {@link Secured#tags()} into Resource properties, both key and value.
+     * 将 {@link Secured#tags()} 以键值对形式注入资源 properties。
      *
-     * @param properties properties in resource
-     * @param secured    secured
+     * @param properties 资源属性容器
+     * @param secured    鉴权注解
      */
     protected void injectTagsToProperties(Properties properties, Secured secured) {
         for (String each : secured.tags()) {

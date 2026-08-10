@@ -17,33 +17,37 @@
 package com.alibaba.nacos.auth.config;
 
 /**
- * Auth relative error codes, start with 5000X.
+ * 鉴权相关错误码枚举（以 5000X 开头）。
  *
  * @author xiweng.yy
  */
 public enum AuthErrorCode {
     
-    /**
-     * invalid auth type.
-     */
+    /** 鉴权插件类型无效或未配置。 */
     INVALID_TYPE(50001,
         "Invalid auth type, Please set `nacos.core.auth.system.type`, detail: https://nacos.io/docs/latest/manual/admin/auth/"),
     
+    /** 服务端身份 key/value 未配置。 */
     EMPTY_IDENTITY(50002,
         "Empty identity, Please set `nacos.core.auth.server.identity.key` and `nacos.core.auth.server.identity.value`, detail: https://nacos.io/docs/latest/manual/admin/auth/");
     
+    /** 数值错误码。 */
     private final Integer code;
     
+    /** 错误描述信息。 */
     private final String msg;
     
+    /** 返回数值错误码。 */
     public Integer getCode() {
         return code;
     }
     
+    /** 返回错误描述文本。 */
     public String getMsg() {
         return msg;
     }
     
+    /** 构造错误码常量。 */
     AuthErrorCode(Integer code, String msg) {
         this.code = code;
         this.msg = msg;

@@ -17,21 +17,22 @@
 package com.alibaba.nacos.api.utils;
 
 /**
- * StringUtils. copy from apache common-lang3.
+ * 字符串工具类（源自 Apache Commons Lang3）。
+ *
+ * <p>提供空值判断、空白检测、裁剪与比较等常用操作，供 Nacos API 层复用。</p>
  *
  * @author <a href="mailto:lin-mt@outlook.com">lin-mt</a>
  */
 public class StringUtils {
     
-    /**
-     * The empty String {@code ""}.
+    /** 空字符串常量 {@code ""}。
      *
      * @since 2.0
      */
     public static final String EMPTY = "";
     
     /**
-     * <p>Checks if a CharSequence is empty ("") or null.</p>
+     * <p>判断字符序列是否为 {@code null} 或长度为 0。</p>
      *
      * <pre>
      * StringUtils.isEmpty(null)      = true
@@ -44,8 +45,8 @@ public class StringUtils {
      * <p>NOTE: This method changed in Lang version 2.0.
      * It no longer trims the CharSequence. That functionality is available in isBlank().</p>
      *
-     * @param cs the CharSequence to check, may be null
-     * @return {@code true} if the CharSequence is empty or null
+     * @param cs 待检查的字符序列，可为 {@code null}
+     * @return 为空或 {@code null} 时返回 {@code true}
      * @since 3.0 Changed signature from isEmpty(String) to isEmpty(CharSequence)
      */
     public static boolean isEmpty(final CharSequence cs) {
@@ -53,7 +54,7 @@ public class StringUtils {
     }
     
     /**
-     * <p>Checks if a CharSequence is whitespace, empty ("") or null.</p>
+     * <p>判断字符序列是否为 {@code null}、空串或仅含空白字符。</p>
      *
      * <pre>
      * StringUtils.isBlank(null)      = true
@@ -63,8 +64,8 @@ public class StringUtils {
      * StringUtils.isBlank("  bob  ") = false
      * </pre>
      *
-     * @param cs the CharSequence to check, may be null
-     * @return {@code true} if the CharSequence is null, empty or whitespace
+     * @param cs 待检查的字符序列，可为 {@code null}
+     * @return 为 {@code null}、空串或纯空白时返回 {@code true}
      * @since 2.0
      * @since 3.0 Changed signature from isBlank(String) to isBlank(CharSequence)
      */
@@ -81,12 +82,11 @@ public class StringUtils {
         return true;
     }
     
-    // Trim
+    // 裁剪
     //-----------------------------------------------------------------------
     
     /**
-     * <p>Removes control characters (char &lt;= 32) from both
-     * ends of this String, handling {@code null} by returning {@code null}.</p>
+     * <p>去除字符串首尾控制字符（{@code char <= 32}），{@code null} 输入返回 {@code null}。</p>
      *
      * <p>The String is trimmed using {@link String#trim()}.
      * Trim removes start and end characters &lt;= 32.</p>
@@ -99,19 +99,18 @@ public class StringUtils {
      * StringUtils.trim("    abc    ") = "abc"
      * </pre>
      *
-     * @param str the String to be trimmed, may be null
-     * @return the trimmed string, {@code null} if null String input
+     * @param str 待裁剪字符串，可为 {@code null}
+     * @return 裁剪结果，输入为 {@code null} 时返回 {@code null}
      */
     public static String trim(final String str) {
         return str == null ? null : str.trim();
     }
     
-    // Equals
+    // 相等比较
     //-----------------------------------------------------------------------
     
     /**
-     * <p>Compares two CharSequences, returning {@code true} if they represent
-     * equal sequences of characters.</p>
+     * <p>比较两个字符序列是否逐字符相等（区分大小写）。</p>
      *
      * <p>{@code null}s are handled without exceptions. Two {@code null}
      * references are considered to be equal. The comparison is case sensitive.</p>
@@ -124,9 +123,9 @@ public class StringUtils {
      * StringUtils.equals("abc", "ABC") = false
      * </pre>
      *
-     * @param cs1 the first CharSequence, may be {@code null}
-     * @param cs2 the second CharSequence, may be {@code null}
-     * @return {@code true} if the CharSequences are equal (case-sensitive), or both {@code null}
+     * @param cs1 第一个字符序列，可为 {@code null}
+     * @param cs2 第二个字符序列，可为 {@code null}
+     * @return 两者相等或均为 {@code null} 时返回 {@code true}
      * @see Object#equals(Object)
      * @since 3.0 Changed signature from equals(String, String) to equals(CharSequence, CharSequence)
      */
@@ -145,15 +144,15 @@ public class StringUtils {
     }
     
     /**
-     * Green implementation of regionMatches.
+     * {@link String#regionMatches} 的轻量实现，支持 {@link CharSequence}。
      *
-     * @param cs         the {@code CharSequence} to be processed
-     * @param ignoreCase whether or not to be case insensitive
-     * @param thisStart  the index to start on the {@code cs} CharSequence
-     * @param substring  the {@code CharSequence} to be looked for
-     * @param start      the index to start on the {@code substring} CharSequence
-     * @param length     character length of the region
-     * @return whether the region matched
+     * @param cs         源字符序列
+     * @param ignoreCase 是否忽略大小写
+     * @param thisStart  源序列起始偏移
+     * @param substring  待匹配子序列
+     * @param start      子序列起始偏移
+     * @param length     匹配区域长度
+     * @return 区域匹配成功返回 {@code true}
      */
     public static boolean regionMatches(final CharSequence cs, final boolean ignoreCase,
         final int thisStart,
@@ -178,7 +177,7 @@ public class StringUtils {
                 return false;
             }
             
-            // The same check as in String.regionMatches():
+            // 与 String.regionMatches() 相同的大小写折叠比较：
             if (Character.toUpperCase(c1) != Character.toUpperCase(c2)
                 && Character.toLowerCase(c1) != Character
                     .toLowerCase(c2)) {

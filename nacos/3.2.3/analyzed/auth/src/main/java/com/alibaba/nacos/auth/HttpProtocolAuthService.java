@@ -35,22 +35,28 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Auth Service for Http protocol.
+ * HTTP 协议鉴权服务实现。
+ *
+ * <p>负责解析 HTTP 请求中的资源与身份上下文，支持命名、配置与 AI 模块的内置解析器。</p>
  *
  * @author xiweng.yy
  */
 public class HttpProtocolAuthService extends AbstractProtocolAuthService<HttpServletRequest> {
     
+    /** 按 {@link SignType} 索引的 HTTP 资源解析器映射。 */
     private final Map<String, AbstractHttpResourceParser> resourceParserMap;
     
+    /** HTTP 身份上下文构建器。 */
     private final HttpIdentityContextBuilder identityContextBuilder;
     
+    /** 构造 HTTP 鉴权服务并初始化解析器与身份构建器。 */
     public HttpProtocolAuthService(NacosAuthConfig authConfig) {
         super(authConfig);
         resourceParserMap = new HashMap<>(2);
         identityContextBuilder = new HttpIdentityContextBuilder(authConfig);
     }
     
+    /** 注册命名、配置与 AI 模块的 HTTP 资源解析器。 */
     @Override
     public void initialize() {
         super.initialize();
@@ -59,6 +65,7 @@ public class HttpProtocolAuthService extends AbstractProtocolAuthService<HttpSer
         resourceParserMap.put(SignType.AI, new AiHttpResourceParser());
     }
     
+    /** 从 HTTP 请求与 {@link Secured} 注解解析鉴权资源。 */
     @Override
     public Resource parseResource(HttpServletRequest request, Secured secured) {
         if (StringUtils.isNotBlank(secured.resource())) {
@@ -74,11 +81,13 @@ public class HttpProtocolAuthService extends AbstractProtocolAuthService<HttpSer
         return resourceParserMap.get(type).parse(request, secured);
     }
     
+    /** 从 HTTP 请求头/参数构建 {@link IdentityContext}。 */
     @Override
     public IdentityContext parseIdentity(HttpServletRequest request) {
         return identityContextBuilder.build(request);
     }
     
+    /** 从 HTTP 请求头读取服务端身份 key 与 value。 */
     @Override
     protected ServerIdentity parseServerIdentity(HttpServletRequest request) {
         String serverIdentityKey = authConfig.getServerIdentityKey();

@@ -30,27 +30,33 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 /**
- * Identity context builder for HTTP.
+ * HTTP 请求的身份上下文构建器。
+ *
+ * <p>从请求头/参数提取远程 IP 及鉴权插件声明的身份字段，HTTP 头名大小写不敏感。</p>
  *
  * @author Nacos
  */
 public class HttpIdentityContextBuilder implements IdentityContextBuilder<HttpServletRequest> {
     
+    /** 代理链转发客户端 IP 的标准请求头。 */
     private static final String X_FORWARDED_FOR = "X-Forwarded-For";
     
+    /** {@link #X_FORWARDED_FOR} 多 IP 分隔符。 */
     private static final String X_FORWARDED_FOR_SPLIT_SYMBOL = ",";
     
+    /** 鉴权配置，用于定位鉴权插件。 */
     private final NacosAuthConfig authConfig;
     
+    /** 注入鉴权配置。 */
     public HttpIdentityContextBuilder(NacosAuthConfig authConfig) {
         this.authConfig = authConfig;
     }
     
     /**
-     * get identity context from http.
+     * 从 HTTP 请求构建 {@link IdentityContext}。
      *
-     * @param request user request
-     * @return IdentityContext from request context
+     * @param request HTTP 请求
+     * @return 含远程 IP 与插件身份参数的身份上下文
      */
     @Override
     public IdentityContext build(HttpServletRequest request) {
@@ -61,8 +67,7 @@ public class HttpIdentityContextBuilder implements IdentityContextBuilder<HttpSe
         if (!authPluginService.isPresent()) {
             return result;
         }
-        // According to RFC2616, HTTP header and URI is case-insensitive, so use tree map with CASE_INSENSITIVE_ORDER
-        // to match the identity key and save the real key in map value.
+        // RFC2616：HTTP 头与 URI 大小写不敏感，使用 CASE_INSENSITIVE_ORDER 的 TreeMap 匹配身份键并保留原始键名。
         Map<String, String> identityNames = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String each : authPluginService.get().identityNames()) {
             identityNames.put(each, each);
@@ -72,6 +77,7 @@ public class HttpIdentityContextBuilder implements IdentityContextBuilder<HttpSe
         return result;
     }
     
+    /** 从 HTTP 请求头提取插件声明的身份字段。 */
     private void getIdentityFromHeader(HttpServletRequest request, IdentityContext result,
         Map<String, String> identityNames) {
         Enumeration<String> headerEnu = request.getHeaderNames();
@@ -83,6 +89,7 @@ public class HttpIdentityContextBuilder implements IdentityContextBuilder<HttpSe
         }
     }
     
+    /** 从 HTTP 请求参数提取插件声明的身份字段。 */
     private void getIdentityFromParameter(HttpServletRequest request, IdentityContext result,
         Map<String, String> identityNames) {
         Enumeration<String> paramEnu = request.getParameterNames();
@@ -94,6 +101,7 @@ public class HttpIdentityContextBuilder implements IdentityContextBuilder<HttpSe
         }
     }
     
+    /** 解析客户端真实 IP（优先 X-Forwarded-For，其次 X-Real-IP 与 remoteAddr）。 */
     private void getRemoteIp(HttpServletRequest request, IdentityContext result) {
         String remoteIp = StringUtils.EMPTY;
         String xForwardedFor = request.getHeader(X_FORWARDED_FOR);

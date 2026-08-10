@@ -20,7 +20,9 @@ import com.alibaba.nacos.auth.annotation.Secured;
 import com.alibaba.nacos.plugin.auth.api.Resource;
 
 /**
- * Default resource parser.
+ * 默认资源解析器（空实现）。
+ *
+ * <p>当 {@link Secured#parser()} 未指定有效解析器时作为占位，始终返回 {@link Resource#EMPTY_RESOURCE}。</p>
  *
  * @author nkorange
  * @author mai.jh
@@ -28,6 +30,7 @@ import com.alibaba.nacos.plugin.auth.api.Resource;
  */
 public class DefaultResourceParser implements ResourceParser<Object> {
     
+    /** 不解析任何字段，返回空资源占位符。 */
     @Override
     public Resource parse(Object request, Secured secured) {
         return Resource.EMPTY_RESOURCE;

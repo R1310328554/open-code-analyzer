@@ -29,23 +29,27 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Identity context builder for Grpc.
+ * gRPC 请求的身份上下文构建器。
+ *
+ * <p>从 gRPC 请求头提取远程 IP 及鉴权插件声明的身份字段。</p>
  *
  * @author Nacos
  */
 public class GrpcIdentityContextBuilder implements IdentityContextBuilder<Request> {
     
+    /** 鉴权配置，用于定位鉴权插件。 */
     private final NacosAuthConfig authConfig;
     
+    /** 注入鉴权配置。 */
     public GrpcIdentityContextBuilder(NacosAuthConfig authConfig) {
         this.authConfig = authConfig;
     }
     
     /**
-     * get identity context from grpc.
+     * 从 gRPC 请求构建 {@link IdentityContext}。
      *
-     * @param request grpc request
-     * @return IdentityContext request context
+     * @param request gRPC 请求
+     * @return 含远程 IP 与插件身份参数的身份上下文
      */
     
     @Override
@@ -67,6 +71,7 @@ public class GrpcIdentityContextBuilder implements IdentityContextBuilder<Reques
         return result;
     }
     
+    /** 从请求头读取真实客户端 IP 并写入身份上下文。 */
     private void getRemoteIp(Request request, IdentityContext result) {
         result.setParameter(Constants.Identity.REMOTE_IP,
             request.getHeader(Constants.Identity.X_REAL_IP));

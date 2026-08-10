@@ -17,51 +17,53 @@
 package com.alibaba.nacos.auth.config;
 
 /**
- * Nacos Auth configurations.
+ * Nacos 鉴权配置接口。
+ *
+ * <p>抽象服务端/控制台等场景的鉴权开关、插件类型与服务端身份配置。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosAuthConfig {
     
     /**
-     * Get auth scope like 'server', 'server admin', 'console'.
+     * 获取鉴权作用域（如 server、console 等）。
      *
-     * @return auth scope
+     * @return 鉴权作用域标识
      */
     String getAuthScope();
     
     /**
-     * Whether nacos server or console auth enabled.
+     * 当前作用域是否启用鉴权。
      *
-     * @return {@code true} means enabled, otherwise {@code false}
+     * @return 启用返回 {@code true}，否则 {@code false}
      */
     boolean isAuthEnabled();
     
     /**
-     * Get current auth plugin type.
+     * 获取当前鉴权插件类型。
      *
-     * @return auth plugin type.
+     * @return 插件类型标识
      */
     String getNacosAuthSystemType();
     
     /**
-     * Whether support server identity to identify request from other nacos servers.
+     * 是否支持服务端身份标识（用于集群节点间互信）。
      *
-     * @return {@code true} means supported, otherwise {@code false}
+     * @return 支持返回 {@code true}，否则 {@code false}
      */
     boolean isSupportServerIdentity();
     
     /**
-     * Get server identity key.
+     * 获取服务端身份 HTTP 头键名。
      *
-     * @return server identity key If {@link #isSupportServerIdentity()} return {@code true}, otherwise empty string.
+     * @return 启用服务端身份时返回 key，否则空串
      */
     String getServerIdentityKey();
     
     /**
-     * Get server identity value.
+     * 获取服务端身份期望值。
      *
-     * @return server identity value If {@link #isSupportServerIdentity()} return {@code true}, otherwise empty string.
+     * @return 启用服务端身份时返回 value，否则空串
      */
     String getServerIdentityValue();
 }

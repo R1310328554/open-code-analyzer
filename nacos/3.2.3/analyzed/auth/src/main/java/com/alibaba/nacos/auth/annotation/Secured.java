@@ -27,7 +27,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Annotation indicating that the annotated request should be authorized.
+ * 标记 API 请求需经过鉴权的注解。
+ *
+ * <p>声明操作类型、资源标识、模块类型及可选的自定义解析器等元数据。</p>
  *
  * @author nkorange
  * @author mai.jh
@@ -37,45 +39,44 @@ import java.lang.annotation.RetentionPolicy;
 public @interface Secured {
     
     /**
-     * The action type of the request.
+     * 请求对应的操作类型。
      *
-     * @return action type, default READ
+     * @return 操作类型，默认 {@link ActionTypes#READ}
      */
     ActionTypes action() default ActionTypes.READ;
     
     /**
-     * The name of resource related to the request.
+     * 请求关联的资源名称。
      *
-     * @return resource name
+     * @return 资源名，空串表示由解析器推导
      */
     String resource() default StringUtils.EMPTY;
     
     /**
-     * The module of resource related to the request.
+     * 资源所属模块/签名类型。
      *
-     * @return module name
+     * @return 模块标识，默认 {@link SignType#NAMING}
      */
     String signType() default SignType.NAMING;
     
     /**
-     * Custom resource parser. Should have lower priority than resource() and typed parser.
+     * 自定义资源解析器，优先级低于 {@link #resource()} 与内置类型解析器。
      *
-     * @return class type of resource parser
+     * @return 资源解析器类型
      */
     Class<? extends ResourceParser> parser() default DefaultResourceParser.class;
     
     /**
-     * Specified tags for this secured, these tags will be injected into
-     * {@link com.alibaba.nacos.plugin.auth.api.Resource} as the keys and values of properties.
+     * 附加标签，将以键值对形式注入 {@link com.alibaba.nacos.plugin.auth.api.Resource} 的 properties。
      *
-     * @return tags
+     * @return 标签数组
      */
     String[] tags() default {};
     
     /**
-     * The type of API. Distinguishing between ADMIN_API and OPEN_API.
+     * API 类型，用于区分管理端与开放 API 等场景。
      *
-     * @return the type of the API
+     * @return API 类型，默认 {@link ApiType#OPEN_API}
      */
     ApiType apiType() default ApiType.OPEN_API;
     

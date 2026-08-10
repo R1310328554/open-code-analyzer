@@ -23,16 +23,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Nacos SPI Holder for {@link NacosAuthConfig}.
+ * {@link NacosAuthConfig} 的 SPI 持有者（单例）。
+ *
+ * <p>通过 {@link NacosServiceLoader} 加载各作用域的鉴权配置实现。</p>
  *
  * @author xiweng.yy
  */
 public class NacosAuthConfigHolder {
     
+    /** 单例实例。 */
     private static final NacosAuthConfigHolder INSTANCE = new NacosAuthConfigHolder();
     
+    /** 按鉴权作用域索引的配置映射。 */
     private final Map<String, NacosAuthConfig> nacosAuthConfigMap;
     
+    /** 通过 SPI 加载并注册所有 {@link NacosAuthConfig} 实现。 */
     NacosAuthConfigHolder() {
         this.nacosAuthConfigMap = new HashMap<>();
         for (NacosAuthConfig each : NacosServiceLoader.load(NacosAuthConfig.class)) {
@@ -40,27 +45,31 @@ public class NacosAuthConfigHolder {
         }
     }
     
+    /** 返回持有者单例。 */
     public static NacosAuthConfigHolder getInstance() {
         return INSTANCE;
     }
     
+    /** 按作用域获取鉴权配置。 */
     public NacosAuthConfig getNacosAuthConfigByScope(String scope) {
         return nacosAuthConfigMap.get(scope);
     }
     
+    /** 返回所有已注册的鉴权配置。 */
     public Collection<NacosAuthConfig> getAllNacosAuthConfig() {
         return nacosAuthConfigMap.values();
     }
     
+    /** 判断是否存在任一作用域已启用鉴权。 */
     public boolean isAnyAuthEnabled() {
         return nacosAuthConfigMap.values().stream().anyMatch(NacosAuthConfig::isAuthEnabled);
     }
     
     /**
-     * Is any auth config by input scope is enabled.
+     * 判断给定作用域列表中是否有任一启用鉴权。
      *
-     * @param scope the scopes to check whether enabled
-     * @return {@code true} if any input scope auth is enabled, {@code false} all input scope auth is disabled.
+     * @param scope 待检查的作用域
+     * @return 任一启用返回 {@code true}，全部禁用返回 {@code false}
      */
     public boolean isAnyAuthEnabled(String... scope) {
         for (String each : scope) {
@@ -73,12 +82,11 @@ public class NacosAuthConfigHolder {
     }
     
     /**
-     * Get nacos auth system type from the first {@link NacosAuthConfig}.
+     * 从首个 {@link NacosAuthConfig} 读取鉴权插件类型。
      *
-     * <p>
-     *     It should be same with for all {@link NacosAuthConfig}s in one nacos server.
-     * </p>
-     * @return nacos auth system type
+     * <p>同一 Nacos 节点内各作用域的插件类型应保持一致。</p>
+     *
+     * @return 鉴权插件类型
      */
     public String getNacosAuthSystemType() {
         return nacosAuthConfigMap.values().stream().findFirst()

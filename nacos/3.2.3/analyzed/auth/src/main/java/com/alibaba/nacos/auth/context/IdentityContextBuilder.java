@@ -19,16 +19,19 @@ package com.alibaba.nacos.auth.context;
 import com.alibaba.nacos.plugin.auth.api.IdentityContext;
 
 /**
- * Identify context.
+ * 身份上下文构建器接口。
+ *
+ * <p>将协议层请求对象转换为 {@link IdentityContext}，供鉴权插件使用。</p>
  *
  * @author wuyfee
  */
 public interface IdentityContextBuilder<T> {
     
     /**
-     * build identity context from request.
-     * @param request user request
-     * @return IdentityContext from request context
+     * 从请求对象构建身份上下文。
+     *
+     * @param request 协议请求
+     * @return 身份上下文
      */
     IdentityContext build(T request);
     
