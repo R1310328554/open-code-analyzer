@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:59:39Z",
   "files": [
-    "web/src/pages/dataset/components/metedata/hooks/use-manage-modal.ts",
-    "web/src/pages/dataset/components/metedata/hooks/use-manage-values-modal.ts",
-    "web/src/pages/dataset/components/metedata/interface.ts",
-    "web/src/pages/dataset/dataset-overview/dataset-common.ts",
-    "web/src/pages/dataset/dataset-overview/hook.ts",
-    "web/src/pages/dataset/dataset-overview/interface.ts",
-    "web/src/pages/dataset/dataset-setting/form-schema.ts",
-    "web/src/pages/dataset/dataset-setting/hooks.ts",
-    "web/src/pages/dataset/dataset-setting/utils.ts",
-    "web/src/pages/dataset/dataset/constant.ts",
-    "web/src/pages/dataset/dataset/generate-button/hook.ts",
-    "web/src/pages/dataset/dataset/hooks.ts",
-    "web/src/pages/dataset/dataset/use-change-document-parser.ts",
-    "web/src/pages/dataset/dataset/use-create-empty-document.ts",
-    "web/src/pages/dataset/dataset/use-rename-document.ts",
     "web/src/pages/dataset/dataset/use-run-document.ts",
     "web/src/pages/dataset/dataset/use-save-meta.ts",
     "web/src/pages/dataset/dataset/use-select-filters.ts",
@@ -33,5 +18,5 @@
     "web/src/pages/files/use-delete-file.ts"
   ],
   "remaining_pending": 114,
-  "done": 1620
+  "done": 1635
 }
