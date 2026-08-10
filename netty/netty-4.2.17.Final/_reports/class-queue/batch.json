@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:38:33Z",
-  "files": [
-    "common/src/main/java/io/netty/util/internal/AppendableCharSequence.java",
-    "common/src/main/java/io/netty/util/internal/AtomicReferenceCountUpdater.java",
-    "common/src/main/java/io/netty/util/internal/BoundedInputStream.java",
-    "common/src/main/java/io/netty/util/internal/ClassInitializerUtil.java",
-    "common/src/main/java/io/netty/util/internal/CleanableDirectBuffer.java",
-    "common/src/main/java/io/netty/util/internal/Cleaner.java",
-    "common/src/main/java/io/netty/util/internal/CleanerJava24Linker.java",
-    "common/src/main/java/io/netty/util/internal/CleanerJava25.java",
-    "common/src/main/java/io/netty/util/internal/CleanerJava6.java",
-    "common/src/main/java/io/netty/util/internal/CleanerJava9.java",
-    "common/src/main/java/io/netty/util/internal/ConcurrentSet.java",
-    "common/src/main/java/io/netty/util/internal/ConstantTimeUtils.java",
-    "common/src/main/java/io/netty/util/internal/DefaultPriorityQueue.java",
-    "common/src/main/java/io/netty/util/internal/DirectCleaner.java",
-    "common/src/main/java/io/netty/util/internal/EmptyArrays.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 728,
-  "done": 1185
+  "done": 1200
 }
