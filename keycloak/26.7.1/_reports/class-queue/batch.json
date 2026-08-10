@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/events/EventListenerTransaction.java",
     "server-spi-private/src/main/java/org/keycloak/events/EventQuery.java",
     "server-spi-private/src/main/java/org/keycloak/events/EventStoreProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventStoreProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventStoreSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/events/EventType.java",
-    "server-spi-private/src/main/java/org/keycloak/events/admin/AdminEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/events/admin/AdminEventQuery.java",
-    "server-spi-private/src/main/java/org/keycloak/events/admin/AuthDetails.java",
-    "server-spi-private/src/main/java/org/keycloak/events/admin/AuthQuery.java",
-    "server-spi-private/src/main/java/org/keycloak/events/admin/OperationType.java",
-    "server-spi-private/src/main/java/org/keycloak/events/admin/ResourceType.java",
-    "server-spi-private/src/main/java/org/keycloak/executors/ExecutorsProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/executors/ExecutorsProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/executors/ExecutorsSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/exportimport/ExportAdapter.java",
-    "server-spi-private/src/main/java/org/keycloak/exportimport/ExportOptions.java",
-    "server-spi-private/src/main/java/org/keycloak/exportimport/ExportProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/exportimport/ExportProviderFactory.java"
+    "server-spi-private/src/main/java/org/keycloak/events/EventStoreProviderFactory.java"
   ],
   "remaining_pending": 2848,
-  "done": 3120
+  "done": 3135
 }
