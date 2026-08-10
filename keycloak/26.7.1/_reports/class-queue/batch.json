@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:21:37Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/resources/admin/ext/AdminRealmResourceSpi.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/AdminPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/AdminPermissionManagement.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/AdminPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/ClientPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/ClientPermissionManagement.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/ClientPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/ClientPermissionsV2.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/FineGrainedAdminPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/GroupPermissionEvaluator.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/GroupPermissionManagement.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/GroupPermissions.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/GroupPermissionsV2.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/Helper.java",
-    "services/src/main/java/org/keycloak/services/resources/admin/fgap/IdentityProviderPermissionManagement.java",
     "services/src/main/java/org/keycloak/services/resources/admin/fgap/IdentityProviderPermissions.java",
     "services/src/main/java/org/keycloak/services/resources/admin/fgap/MgmtPermissions.java",
     "services/src/main/java/org/keycloak/services/resources/admin/fgap/MgmtPermissionsV2.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/services/resources/admin/fgap/RolePermissionsV2.java"
   ],
   "remaining_pending": 868,
-  "done": 5100
+  "done": 5115
 }
