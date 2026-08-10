@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// startManualCompaction 响应 /compact：在后台调用 Compactor 压缩历史上下文。
 func (m *chatModel) startManualCompaction() (tea.Model, tea.Cmd) {
 	if m.running || m.compacting {
 		m.entries = append(m.entries, newChatEntry(chatEntry{role: "system", content: "Wait for the current response to finish before compacting."}))
@@ -68,6 +70,7 @@ func (m *chatModel) startManualCompaction() (tea.Model, tea.Cmd) {
 	return *m, tea.Batch(waitForChatMsg(events), tickCmd)
 }
 
+// finishManualCompaction 处理压缩完成/跳过/取消并刷新 entries 与 token 估计。
 func (m chatModel) finishManualCompaction(msg chatCompactDoneMsg) (tea.Model, tea.Cmd) {
 	wasCanceling := m.status == "canceling"
 	m.compacting = false

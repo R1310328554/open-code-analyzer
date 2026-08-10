@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -14,6 +15,7 @@ import (
 	"github.com/ollama/ollama/internal/modelref"
 )
 
+// cloudAuthKind 区分登录、升级与计划校验中的 UI 状态。
 type cloudAuthKind string
 
 const (
@@ -22,8 +24,10 @@ const (
 	cloudAuthChecking cloudAuthKind = "checking"
 )
 
+// cloudPlanVerificationUnavailable 为计划校验失败时的状态栏提示。
 const cloudPlanVerificationUnavailable = "Could not verify Ollama plan. Try again in a moment or use a local model."
 
+// 登录/升级轮询边界：健康时快速轮询，失败指数退避并在硬超时后放弃。
 // Sign-in/upgrade verification polling bounds. While the check is healthy but
 // the user hasn't signed in yet, polling stays prompt so completion is detected
 // quickly. When the check itself fails, polling backs off so a down server
@@ -37,6 +41,7 @@ const (
 	pollHardCap     = 2 * time.Minute
 )
 
+// cloudAuthPrompt 为内联模态：处理从模型选择器触发的云端登录与套餐升级。
 // cloudAuthPrompt is an inline modal that handles sign-in and plan-upgrade
 // flows when a user selects a cloud model from the picker.
 type cloudAuthPrompt struct {
@@ -48,6 +53,7 @@ type cloudAuthPrompt struct {
 	spinner      int
 	openNow      bool
 	polling      bool
+	// pollStarted 记录轮询起始时间，用于 pollHardCap 硬超时
 	// pollStarted tracks when sign-in/upgrade verification polling began, for
 	// the hard-cap timeout. Lazily set on the first poll response.
 	pollStarted time.Time
@@ -76,6 +82,7 @@ type cloudAuthPollMsg struct {
 	err  error
 }
 
+// checkCloudModelCmd 异步校验云端模型授权并提取 SigninURL。
 func checkCloudModelCmd(ctx context.Context, check func(context.Context, string, string) error, model, requiredPlan string) tea.Cmd {
 	if check == nil {
 		return nil
@@ -96,6 +103,7 @@ func checkCloudModelCmd(ctx context.Context, check func(context.Context, string,
 	}
 }
 
+// cloudModelPreflightCmd 对显式 :cloud 模型在启动前做授权预检。
 func cloudModelPreflightCmd(ctx context.Context, opts Options, modelName, requiredPlan string) tea.Cmd {
 	modelName = strings.TrimSpace(modelName)
 	if opts.CheckCloudModel == nil || modelName == "" || !modelref.HasExplicitCloudSource(modelName) {
@@ -186,7 +194,9 @@ func pollCloudAuthCmd(ctx context.Context, poll func(context.Context) (string, b
 	}
 }
 
+// startCloudAuthSignIn 展示登录 URL、可选打开浏览器并轮询完成状态。
 func (m *chatModel) startCloudAuthSignIn(modelName, requiredPlan, signInURL string) (tea.Model, tea.Cmd) {
+	// 尚无登录 URL 时先展示 checking 状态而非空白链接
 	// When no sign-in URL is available yet, show the "checking" state while
 	// we verify the plan, rather than rendering a blank "Navigate to:" URL.
 	kind := cloudAuthSignIn
@@ -212,6 +222,7 @@ func (m *chatModel) startCloudAuthSignIn(modelName, requiredPlan, signInURL stri
 	return m, tea.Batch(cloudAuthTickCmd(), pollCloudAuthCmd(m.ctx, m.opts.PollCloudAuth, 0))
 }
 
+// startCloudAuthUpgrade 提示用户升级 Ollama 套餐以使用云端模型。
 func (m *chatModel) startCloudAuthUpgrade(modelName, requiredPlan string) (tea.Model, tea.Cmd) {
 	m.cloudAuthPrompt = &cloudAuthPrompt{
 		modelName:    modelName,
@@ -329,6 +340,7 @@ func (m chatModel) updateCloudAuthPrompt(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// failCloudAuthPoll 放弃轮询、写入错误条目并回到 ready 以便重选模型。
 // failCloudAuthPoll abandons the sign-in/upgrade verification modal, surfaces
 // an error entry to the user, and returns to the ready state so they can
 // re-pick a model and retry.
@@ -341,6 +353,7 @@ func (m chatModel) failCloudAuthPoll(err error) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// completeCloudAuth 认证通过后应用待定模型并触发预加载。
 func (m chatModel) completeCloudAuth() (tea.Model, tea.Cmd) {
 	pending := m.cloudAuthPrompt.modelName
 	m.cloudAuthPrompt = nil
@@ -357,6 +370,7 @@ func (m chatModel) completeCloudAuth() (tea.Model, tea.Cmd) {
 	return m, m.startModelPreload(pending)
 }
 
+// renderCloudAuthPrompt 渲染登录/升级/校验中的 spinner 与操作提示。
 func (m chatModel) renderCloudAuthPrompt(width int) string {
 	if m.cloudAuthPrompt == nil {
 		return ""

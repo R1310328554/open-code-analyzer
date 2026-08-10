@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -11,8 +12,10 @@ import (
 	apptui "github.com/ollama/ollama/cmd/tui"
 )
 
+// chatModelPicker 复用通用 SelectorModel 作为模型选择器。
 type chatModelPicker = apptui.SelectorModel
 
+// openModelPicker 拉取 ModelOptions 并打开搜索/导航式选择器。
 func (m *chatModel) openModelPicker(filter string) (tea.Model, tea.Cmd) {
 	if m.opts.ModelOptions == nil {
 		m.entries = append(m.entries, newChatEntry(chatEntry{role: "error", content: "Model picker is unavailable.", err: "Model picker is unavailable."}))
@@ -51,6 +54,7 @@ func (m *chatModel) openModelPicker(filter string) (tea.Model, tea.Cmd) {
 	return *m, nil
 }
 
+// normalizeModelOptions 去重、去空并将 Recommended 模型置顶。
 func normalizeModelOptions(models []ModelOption) []ModelOption {
 	seen := make(map[string]struct{}, len(models))
 	out := make([]ModelOption, 0, len(models))
@@ -108,6 +112,7 @@ func modelSelectorItemsWithCurrentPriority(models []ModelOption, current string,
 	return items
 }
 
+// modelPickerGroup 为选择器条目分组排序：当前/推荐/本地/云端。
 func modelPickerGroup(model ModelOption, current string, pinCurrent bool) int {
 	if pinCurrent && model.Name == current {
 		return 0
@@ -154,6 +159,7 @@ func (m chatModel) updateModelPicker(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// selectModel 处理 Enter：云端模型先走 auth/upgrade，否则切换并预加载。
 func (m chatModel) selectModel() (tea.Model, tea.Cmd) {
 	if m.modelPicker == nil {
 		return m, nil
@@ -167,6 +173,7 @@ func (m chatModel) selectModel() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// 云端模型切换前需登录与套餐校验
 	// Cloud models need auth + plan check before switching. If we already
 	// know the badge state from the model list, go directly to the right
 	// prompt — no "checking" spinner.
@@ -202,6 +209,7 @@ func (m chatModel) modelOptionForSelection(name string) (ModelOption, bool) {
 	return ModelOption{}, false
 }
 
+// applyModelSelection 更新 opts.Model、工具注册表、多模态与上下文窗口。
 func (m *chatModel) applyModelSelection(modelName string, persist bool) error {
 	modelName = strings.TrimSpace(modelName)
 	if modelName == "" {
@@ -235,6 +243,7 @@ func (m *chatModel) applyModelSelection(modelName string, persist bool) error {
 	return nil
 }
 
+// startModelPreload 触发 PreloadModel 并启动 spinner tick。
 func (m *chatModel) startModelPreload(modelName string) tea.Cmd {
 	modelName = strings.TrimSpace(modelName)
 	if m == nil || modelName == "" || m.opts.PreloadModel == nil {

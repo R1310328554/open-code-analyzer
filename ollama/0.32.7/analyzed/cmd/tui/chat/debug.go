@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -15,6 +16,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// chatPromptDebug 缓存 /prompt 全屏预览的请求 JSON 与滚动状态。
 type chatPromptDebug struct {
 	request    api.ChatRequest
 	tokens     int
@@ -23,8 +25,10 @@ type chatPromptDebug struct {
 	linesWidth int
 }
 
+// maxPromptDebugToolResultRunes 限制工具结果在调试视图中的展示长度。
 const maxPromptDebugToolResultRunes = 400
 
+// handleSaveCommand 将当前 ChatRequest JSON 写入工作目录（/save）。
 func (m *chatModel) handleSaveCommand(args string) (tea.Model, tea.Cmd) {
 	filename, err := saveRequestFilename(args)
 	if err != nil {
@@ -48,6 +52,7 @@ func (m *chatModel) handleSaveCommand(args string) (tea.Model, tea.Cmd) {
 	return *m, nil
 }
 
+// handlePromptCommand 打开全屏 prompt 调试视图（/prompt）。
 func (m *chatModel) handlePromptCommand(args string) (tea.Model, tea.Cmd) {
 	if strings.TrimSpace(args) != "" {
 		return m.addDebugError(fmt.Errorf("usage: /prompt"))
@@ -89,6 +94,7 @@ func (m chatModel) updatePromptDebug(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// closePromptDebug 退出调试视图并恢复主 transcript。
 func (m chatModel) closePromptDebug() (tea.Model, tea.Cmd) {
 	m.promptDebug = nil
 	m.status = "ready"
@@ -167,6 +173,7 @@ func (m chatModel) rawRequestJSON() (string, error) {
 	return string(data), nil
 }
 
+// requestPreview 构造与下一次运行一致的 ChatRequest 及 token 估计。
 func (m chatModel) requestPreview() (api.ChatRequest, int) {
 	opts := m.previewRunOptions()
 	messages := m.previewMessages()
@@ -193,6 +200,7 @@ func (m chatModel) previewMessages() []api.Message {
 	return slices.Clone(m.messages)
 }
 
+// previewChatRequest 组装含 system、tools 与 format 的完整请求体。
 func (m chatModel) previewChatRequest(opts coreagent.RunOptions, messages []api.Message) api.ChatRequest {
 	requestMessages := slices.Clone(messages)
 	if strings.TrimSpace(opts.SystemPrompt) != "" {
@@ -534,6 +542,7 @@ func promptMessageLabel(msg api.Message) string {
 	return msg.Role
 }
 
+// saveRequestFilename 校验 /save 文件名（禁止路径、自动补 .json）。
 func saveRequestFilename(args string) (string, error) {
 	args = strings.TrimSpace(args)
 	if args == "" {

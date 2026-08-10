@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -20,6 +21,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// chatEntry 为 transcript 中的一条可视化条目（用户/助手/工具/thinking 等）。
 type chatEntry struct {
 	role       string
 	content    string
@@ -41,6 +43,7 @@ type chatEntry struct {
 	renderLines []string
 }
 
+// transcript 布局常量：缩进、Ctrl+O 工具输出与 thinking 长度上限。
 const (
 	chatMessageIndent       = "  "
 	chatUserMessagePrefix   = ""
@@ -51,6 +54,7 @@ const (
 	defaultViewHeight = 24
 )
 
+// chatEntryRenderKey 用于条目换行渲染结果的 memo 缓存键。
 type chatEntryRenderKey struct {
 	width   int
 	version int
@@ -96,6 +100,7 @@ func entryHasToolOutputMode(entry chatEntry) bool {
 		(entry.role == "compaction_summary" && strings.TrimSpace(entry.content) != "")
 }
 
+// applyToolOutputMode 按 Ctrl+O 全局开关同步所有工具条目的 expanded。
 func (m *chatModel) applyToolOutputMode() {
 	if !m.toolOutputMode {
 		return
@@ -119,6 +124,7 @@ func (m *chatModel) applyToolOutputModeTo(index int) {
 	m.markEntryDirty(index)
 }
 
+// groupCompletedToolHistory 将已完成工具调用折叠为 tool_group 条目。
 func (m *chatModel) groupCompletedToolHistory() {
 	if m.hasPendingDetectedToolCalls() {
 		m.applyToolOutputMode()
@@ -158,6 +164,7 @@ func (m *chatModel) ensureAssistantEntry() int {
 	return len(m.entries) - 1
 }
 
+// renderTranscript 拼接全部 entries 的前缀与换行正文。
 func (m chatModel) renderTranscript(width int) string {
 	var b strings.Builder
 	first := true
@@ -190,6 +197,7 @@ func (m chatModel) renderTranscript(width int) string {
 	return b.String()
 }
 
+// renderEntryLinesCached 渲染并缓存条目换行；markEntryDirty 通过 version 失效。
 // renderEntryLinesCached renders (and memoizes) the wrapped lines for an entry.
 // Despite the value receiver, the cache write below mutates the caller's entries
 // in place: m.entries is a slice, so the value-receiver copy shares its backing
@@ -213,6 +221,7 @@ func (m chatModel) renderEntryLinesCached(index int, entry chatEntry, body strin
 	return lines
 }
 
+// transcriptLines 生成含状态栏、审批提示与输入区的完整可视行列表。
 func (m chatModel) transcriptLines(width int) []string {
 	transcript := m.renderTranscript(width)
 	transcript = strings.TrimRight(transcript, "\n")
@@ -287,6 +296,7 @@ func (m chatModel) maxScroll() int {
 	return max(0, len(m.transcriptLines(width))-m.transcriptHeight())
 }
 
+// bottomLines 组装输入框、补全列表、状态栏与权限通知行。
 func (m chatModel) bottomLines(width, maxHeight int) []string {
 	var lines []string
 	if m.modelPicker != nil {
@@ -1242,6 +1252,7 @@ func toolStatusStyle(status string) lipgloss.Style {
 	}
 }
 
+// toolInvocationLabel 生成工具调用在 UI 中的单行摘要标签。
 func toolInvocationLabel(name string, args map[string]any) string {
 	displayName := toolDisplayName(name)
 	for _, key := range []string{"query", "url", "command", "path", "name"} {
@@ -1644,6 +1655,7 @@ func (m *chatModel) applyResponseMetrics(response *api.ChatResponse) {
 	}
 }
 
+// estimatePromptTokens 估算当前 messages+system 的 prompt token 数。
 func (m chatModel) estimatePromptTokens(messages []api.Message, systemPrompt string) int {
 	if strings.TrimSpace(systemPrompt) == "" {
 		systemPrompt = m.systemPrompt("")
@@ -1878,6 +1890,7 @@ func clamp(value, minValue, maxValue int) int {
 	return value
 }
 
+// newChatEntry 创建带初始 render version 的条目副本。
 func newChatEntry(entry chatEntry) chatEntry {
 	if entry.version <= 0 {
 		entry.version = 1
@@ -1889,6 +1902,7 @@ func newSlashEntry(content string) chatEntry {
 	return newChatEntry(chatEntry{role: "slash", content: content})
 }
 
+// markEntryDirty 递增条目 version 以失效 render 缓存。
 func (m *chatModel) markEntryDirty(index int) {
 	if index < 0 || index >= len(m.entries) {
 		return
@@ -1906,6 +1920,7 @@ func entryRenderKey(entry chatEntry, width int) chatEntryRenderKey {
 	return chatEntryRenderKey{width: width, version: entry.version}
 }
 
+// entriesFromMessages 从历史 api.Message 重建初始 chatEntry 列表。
 func entriesFromMessages(messages []api.Message) []chatEntry {
 	entries := make([]chatEntry, 0, len(messages))
 	toolCalls := make(map[string]api.ToolCall)
@@ -2177,6 +2192,7 @@ func indentLines(lines []string, prefix string) []string {
 	return out
 }
 
+// wrapChatText 按显示宽度换行（支持 ANSI 与 CJK 宽度）。
 func wrapChatText(text string, width int) []string {
 	if width < 20 {
 		width = 20

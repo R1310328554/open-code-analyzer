@@ -1,7 +1,9 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import "github.com/charmbracelet/lipgloss"
 
+// chatAnsi* 为 lipgloss 使用的 ANSI 调色板索引。
 const (
 	chatAnsiRed         = "1"
 	chatAnsiGreen       = "2"
@@ -11,6 +13,7 @@ const (
 	chatAnsiBrightBlack = "8"
 )
 
+// 以下 lipgloss 样式定义聊天 UI 各区域的颜色与强调级别。
 var (
 	chatHeaderStyle = lipgloss.NewStyle().
 			Bold(true)
@@ -59,6 +62,7 @@ var (
 	chatToolDoneStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color(chatAnsiGreen))
 
+	// chatToolMixedStyle 表示工具组部分成功部分失败（琥珀色，区别于绿/红/黄）
 	// chatToolMixedStyle marks a tool group with both succeeded and failed
 	// calls (partial success). Amber/orange is distinct from green (success),
 	// red (failure), and yellow (running).

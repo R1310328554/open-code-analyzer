@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
+// renderMarkdownForView 将 Markdown 转为终端 lipgloss 样式行（标题/表格/代码块）。
 func renderMarkdownForView(markdown string, width int) string {
 	if width < 20 {
 		width = 20
@@ -85,6 +87,7 @@ type markdownInlineRune struct {
 	style markdownInlineStyle
 }
 
+// wrapMarkdownInline 先解析整行再换行，避免 emphasis 分隔符被拆断。
 // wrapMarkdownInline parses a complete source line before wrapping it. That
 // keeps emphasis intact when its opening and closing delimiters land on
 // different visual lines.
@@ -152,6 +155,7 @@ func parseMarkdownInline(line string) []markdownInlineRune {
 	return out
 }
 
+// canOpenMarkdownStrong 避免 URL 中的 **/__ 被误判为加粗。
 // canOpenMarkdownStrong keeps delimiter-like text in bare URLs and identifiers
 // literal, only treating ** / __ as strong emphasis at the common
 // whitespace- or punctuation-delimited form.
@@ -227,6 +231,7 @@ func renderMarkdownCodeLine(line string, width int) []string {
 	return lines
 }
 
+// renderMarkdownTable 解析并渲染 GitHub 风格 Markdown 表格。
 func renderMarkdownTable(lines []string, width int) ([]string, int) {
 	if len(lines) < 2 || !looksLikeMarkdownTableRow(lines[0]) || !isMarkdownTableSeparator(lines[1]) {
 		return nil, 0
@@ -366,6 +371,7 @@ func wrapMarkdownTableCell(cell string, width int) []string {
 	return lines
 }
 
+// markdownInlineWidth 按渲染后宽度计算列宽（忽略 Markdown 定界符）。
 // markdownInlineWidth reports the visible width of a cell once Markdown
 // delimiters are parsed away, so columns size to rendered content.
 func markdownInlineWidth(cell string) int {

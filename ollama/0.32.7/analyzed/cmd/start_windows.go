@@ -1,3 +1,4 @@
+// Windows 平台：通过 ollama app.exe 隐藏启动 GUI 并等待 API 就绪。
 package cmd
 
 import (
@@ -17,10 +18,12 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// Installer 为升级安装程序进程名，运行中则拒绝并发启动。
 const (
 	Installer = "OllamaSetup.exe"
 )
 
+// startApp 定位 ollama app.exe、无窗口启动并等待服务。
 func startApp(ctx context.Context, client *api.Client) error {
 	if len(isProcRunning(Installer)) > 0 {
 		return fmt.Errorf("upgrade in progress...")
@@ -33,11 +36,13 @@ func startApp(ctx context.Context, client *api.Client) error {
 	appExe := filepath.Join(filepath.Dir(exe), AppName)
 	_, err = os.Stat(appExe)
 	if errors.Is(err, os.ErrNotExist) {
+		// 可执行文件旁不存在时尝试 %LOCALAPPDATA%\Ollama
 		// Try the standard install location
 		localAppData := os.Getenv("LOCALAPPDATA")
 		appExe = filepath.Join(localAppData, "Ollama", AppName)
 		_, err := os.Stat(appExe)
 		if errors.Is(err, os.ErrNotExist) {
+			// 仍找不到则在 PATH 中搜索
 			// Finally look in the path
 			appExe, err = exec.LookPath(AppName)
 			if err != nil {
@@ -64,6 +69,7 @@ func startApp(ctx context.Context, client *api.Client) error {
 	return waitForServer(ctx, client)
 }
 
+// isProcRunning 枚举进程模块基名，返回匹配 procName 的 PID 列表。
 func isProcRunning(procName string) []uint32 {
 	pids := make([]uint32, 2048)
 	var ret uint32

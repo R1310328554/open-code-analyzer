@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -12,6 +13,7 @@ import (
 	coreagent "github.com/ollama/ollama/agent"
 )
 
+// chatApprovalChoice 描述工具审批菜单的一项：快捷键、是否允许及 scope 策略。
 type chatApprovalChoice struct {
 	label      string
 	key        string
@@ -27,12 +29,14 @@ var chatApprovalChoices = []chatApprovalChoice{
 	{label: "Deny", key: "3", reason: "Tool execution denied."},
 }
 
+// chatApprovalPrompt 为当前待处理的审批 UI 状态。
 type chatApprovalPrompt struct {
 	request coreagent.ApprovalRequest
 	reply   chan<- coreagent.Approval
 	cursor  int
 }
 
+// approvalPrompterForRun 返回本次 agent 运行使用的审批提示器（可注入自定义实现）。
 func (m chatModel) approvalPrompterForRun(controller *chatApprovalController) coreagent.ApprovalPrompter {
 	if m.opts.ApprovalPrompter != nil {
 		return m.opts.ApprovalPrompter
@@ -40,6 +44,7 @@ func (m chatModel) approvalPrompterForRun(controller *chatApprovalController) co
 	return controller
 }
 
+// ensureApprovalState 懒初始化审批状态并按 defaultAllowAll 设置。
 func (m *chatModel) ensureApprovalState() *coreagent.ApprovalState {
 	if m.approvalState == nil {
 		m.approvalState = &coreagent.ApprovalState{}
@@ -69,6 +74,7 @@ func (m *chatModel) setAllowAllTools(allowAll bool) {
 	m.opts.AllowAllTools = allowAll
 }
 
+// openApprovalPrompt 打开审批模态并同步工具条目为 approval 状态。
 func (m *chatModel) openApprovalPrompt(msg chatApprovalPromptMsg) {
 	m.approvalPrompt = &chatApprovalPrompt{request: msg.request, reply: msg.reply}
 	m.status = "approval required"
@@ -77,6 +83,7 @@ func (m *chatModel) openApprovalPrompt(msg chatApprovalPromptMsg) {
 	m.upsertApprovalToolEntries(msg.request)
 }
 
+// togglePermissionMode 切换「全量放行」与「逐项审批」模式（Shift+Tab）。
 func (m *chatModel) togglePermissionMode() (tea.Model, tea.Cmd) {
 	m.setAllowAllTools(!m.allowAllToolsEnabled())
 	if m.allowAllToolsEnabled() {
@@ -117,6 +124,7 @@ func (m *chatModel) upsertApprovalToolEntries(request coreagent.ApprovalRequest)
 	}
 }
 
+// updateApprovalPrompt 处理审批界面的方向键与 1/2/3 快捷键。
 func (m chatModel) updateApprovalPrompt(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type {
 	case tea.KeyLeft, tea.KeyUp:
@@ -160,6 +168,7 @@ func (m *chatModel) markApprovalPromptEntryDirty() {
 	}
 }
 
+// resolveApprovalPrompt 提交用户选择、更新条目状态并通过 channel 回复 agent。
 func (m chatModel) resolveApprovalPrompt(choice chatApprovalChoice) (tea.Model, tea.Cmd) {
 	if m.approvalPrompt == nil {
 		return m, nil
@@ -317,6 +326,7 @@ func approvalChoiceLabel(choice chatApprovalChoice, request coreagent.ApprovalRe
 	return "Always allow these requests"
 }
 
+// approvalScopes 从请求中提取去重后的审批 scope 列表。
 func approvalScopes(request coreagent.ApprovalRequest) []string {
 	seen := make(map[string]bool, len(request.Calls))
 	var scopes []string
@@ -347,6 +357,7 @@ func approvalScope(call coreagent.ApprovalToolCall) string {
 	return strings.TrimSpace(call.ToolName)
 }
 
+// chatApprovalPrompter 通过 Bubble Tea 消息循环向 UI 发起审批。
 type chatApprovalPrompter struct {
 	ch chan<- tea.Msg
 }
@@ -367,6 +378,7 @@ func (p chatApprovalPrompter) PromptApproval(ctx context.Context, request coreag
 	}
 }
 
+// chatApprovalController 在 UI 提示前先检查预授权 scope/全局放行。
 type chatApprovalController struct {
 	ch    chan<- tea.Msg
 	state *coreagent.ApprovalState
@@ -386,6 +398,7 @@ func (c *chatApprovalController) PromptApproval(ctx context.Context, request cor
 	return chatApprovalPrompter{ch: c.ch}.PromptApproval(ctx, request)
 }
 
+// preapproved 若已 GrantAll 或 scope 均已允许则跳过 UI 提示。
 func (c *chatApprovalController) preapproved(request coreagent.ApprovalRequest) (coreagent.Approval, bool) {
 	if c == nil {
 		return coreagent.Approval{}, false

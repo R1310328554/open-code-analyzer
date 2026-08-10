@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -20,6 +21,7 @@ var chatSpinnerFrames = []string{".", "..", "..."}
 
 var chatRuntimeGOOS = runtime.GOOS
 
+// 模型选择器、斜杠补全与提示历史等行为上限。
 const (
 	maxPickerItems            = 8
 	maxInlineModelPickerItems = 5
@@ -37,6 +39,7 @@ var chatEmptyPrompts = []string{
 	`summarize this file and suggest edits`,
 }
 
+// ModelOption 为模型选择器中的一条模型元数据。
 type ModelOption struct {
 	Name              string
 	Description       string
@@ -47,6 +50,7 @@ type ModelOption struct {
 	SignInURL         string
 }
 
+// Options 为 Run 的配置：客户端、工具、审批、压缩与云端回调等。
 type Options struct {
 	Model                       string
 	OpenModelPicker             bool
@@ -85,12 +89,15 @@ type Options struct {
 	SystemPrompt                string
 }
 
+// Result 为会话结束时的 chatID 与持久化消息。
 type Result struct {
 	ChatID   string
 	Messages []api.Message
 }
 
+// chatModel 是 Bubble Tea 会话模型，持有 ctx 作为运行期取消根。
 //nolint:containedctx // chatModel is a Bubble Tea session model; the context is the run-scoped cancellation root.
+// chatModel 聚合 TUI 全部可变状态：消息、输入、滚动、模态与运行标志。
 type chatModel struct {
 	ctx          context.Context
 	opts         Options
@@ -166,6 +173,7 @@ type chatSelectionPoint struct {
 	col  int
 }
 
+// chatSelection 表示 transcript 区域的鼠标文本选区。
 type chatSelection struct {
 	active   bool
 	dragging bool
@@ -207,6 +215,7 @@ type chatInputAttachment struct {
 	data        api.ImageData
 }
 
+// Run 构造 chatModel、可选打开模型选择器并阻塞运行 Bubble Tea 程序。
 func Run(ctx context.Context, opts Options) (*Result, error) {
 	if opts.RootDir == "" {
 		opts.RootDir = opts.WorkingDir
@@ -230,6 +239,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	m.nextImageID, m.nextAudioID = nextInputAttachmentIDsFromMessages(m.messages)
 	m.nextPastedTextID = nextInputPastedTextIDFromMessages(m.messages)
 	m.entries = entriesFromMessages(m.messages)
+	// 上下文窗口在模型预加载完成后解析（本地需 /api/ps 的 num_ctx）
 	// Context window is resolved post-load (chatModelPreloadDoneMsg) rather than
 	// here: for local models /api/ps only reports the running num_ctx after the
 	// model loads, and opts.ContextWindowTokens already holds Show's max as a
@@ -261,6 +271,7 @@ func Run(ctx context.Context, opts Options) (*Result, error) {
 	return &Result{ChatID: fm.chatID, Messages: fm.messages}, nil
 }
 
+// Init 启动模型预加载与云端模型预检命令。
 func (m chatModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	if m.preloadingModel != "" && m.opts.PreloadModel != nil {
@@ -272,6 +283,7 @@ func (m chatModel) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+// Update 分发窗口尺寸、agent 事件、审批、运行完成等消息。
 func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.canEditInput() && isShiftEnterCSI(msg) {
 		m.insertInputNewline()
@@ -345,6 +357,7 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case chatApprovalPromptMsg:
+		// 全量放行可能在审批消息排队期间被打开，此处短路避免陈旧提示
 		// Full access may have been enabled while this request was in flight
 		// (the user toggled it on after the agent sent the approval request
 		// but before this buffered message was handled). In that window
@@ -383,6 +396,7 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.result.WorkingDir != "" {
 				m.workingDir = msg.result.WorkingDir
 			}
+			// 运行结束后上下文窗口已由预加载或云端静态值确定，无需再刷新
 			// Context window is settled by preload (local num_ctx) or is
 			// static (cloud); no refresh needed post-run.
 			m.contextTokens = m.estimatePromptTokens(m.messages, "")
@@ -456,6 +470,7 @@ func (m chatModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// updateMouse 处理 transcript 滚动、选区与模态内滚轮。
 func (m chatModel) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if m.promptDebug != nil {
 		switch msg.Type {
@@ -554,6 +569,7 @@ func (m *chatModel) finishTranscriptSelection(msg tea.MouseMsg) tea.Cmd {
 	return copyTextCmd(m.ctx, selected)
 }
 
+// updateKey 路由按键至审批/云端/模型选择器或输入编辑。
 func (m chatModel) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.promptDebug != nil {
 		return m.updatePromptDebug(msg)
@@ -685,6 +701,7 @@ func (m chatModel) updateKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// toggleInlineTranscriptDetails 切换 Ctrl+O 工具输出与 thinking 详情展开。
 func (m *chatModel) toggleInlineTranscriptDetails() {
 	m.toolOutputMode = true
 	m.toolOutputOpen = !m.toolOutputOpen
@@ -819,6 +836,7 @@ func (m chatModel) updateDownKey() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// View 按当前模态渲染 prompt 调试、模型选择或主 transcript 流。
 func (m chatModel) View() string {
 	if m.quitting {
 		return ""
@@ -841,6 +859,7 @@ func (m chatModel) View() string {
 	return m.flowView(width)
 }
 
+// flowView 增量打印尚未 flush 的 transcript 行与底部输入区。
 func (m chatModel) flowView(width int) string {
 	allTranscriptLines := m.transcriptLines(width)
 	bottomLines := m.bottomLines(width, 0)
@@ -896,6 +915,7 @@ func (m chatModel) flowTranscriptRefreshAfterCmd(before []string, printed int) (
 	return m, tea.Printf("%s", flowTranscriptRewriteSequence(rewind, rewriteLines))
 }
 
+// flowTranscriptChangedPrefixStart 定位 transcript 前缀变化点以最小化重绘。
 func flowTranscriptChangedPrefixStart(before, after []string, printed int) int {
 	printed = clamp(printed, 0, len(before))
 	if printed == 0 {
@@ -954,6 +974,7 @@ func (m chatModel) flowTranscriptFlushCount(lines []string, width int) int {
 	return len(clone.transcriptLines(width))
 }
 
+// flowTranscriptHoldEntryIndex 运行中暂缓 flush 正在流式更新的条目。
 func (m chatModel) flowTranscriptHoldEntryIndex() int {
 	if !m.running && !m.compacting {
 		return -1
@@ -994,6 +1015,7 @@ func (m chatModel) headerLines() []string {
 	return nil
 }
 
+// resetChat 清空会话状态（/new）并重绘屏幕。
 func (m *chatModel) resetChat(status string) (tea.Model, tea.Cmd) {
 	m.messages = nil
 	m.liveMessages = nil
@@ -1029,6 +1051,7 @@ func (m *chatModel) resetWorkingDir() {
 	m.workingDir = m.opts.WorkingDir
 }
 
+// startRun 将用户输入转为消息并启动 agent 会话。
 func (m *chatModel) startRun(input string) (tea.Model, tea.Cmd) {
 	displayInput, message, err := m.userMessageFromInput(input, input)
 	if err != nil {
@@ -1098,6 +1121,7 @@ func pluralSuffix(count int) string {
 func (m *chatModel) startSkillRun(name, prompt string) (tea.Model, tea.Cmd) {
 	name = strings.TrimSpace(name)
 	prompt = strings.TrimSpace(prompt)
+	// 技能说明通过后续 synthetic tool result 注入，此用户消息仅作任务导向
 	// The skill instructions are delivered via the synthetic tool result that
 	// follows this user turn, so this message orients the model rather than
 	// re-requesting the skill. When a prompt is supplied it becomes the task.
@@ -1113,6 +1137,7 @@ func (m *chatModel) startSkillRun(name, prompt string) (tea.Model, tea.Cmd) {
 	return m.startRunWithMessages(displayInput, "", []api.Message{message}, "", name)
 }
 
+// startRunWithMessages 在后台 goroutine 运行 agent.Session 并订阅事件 channel。
 func (m *chatModel) startRunWithMessages(displayInput, historyInput string, newMessages []api.Message, extraSystemPrompt, skillName string) (tea.Model, tea.Cmd) {
 	m.addPromptHistory(historyInput)
 	m.entries = append(m.entries, newChatEntry(chatEntry{role: "user", content: displayInput}))
@@ -1201,6 +1226,7 @@ func (m *chatModel) finishLiveMessagesForStoppedRun(promote bool, persistedMessa
 	m.contextEstimate = true
 }
 
+// messagesHavePendingToolCalls 检查是否存在未配对的 tool call。
 func messagesHavePendingToolCalls(messages []api.Message) bool {
 	pending := map[string]struct{}{}
 	for _, msg := range messages {
@@ -1241,6 +1267,7 @@ func (m chatModel) canEditInput() bool {
 	return m.promptDebug == nil && m.approvalPrompt == nil && m.cloudAuthPrompt == nil && m.modelPicker == nil && m.thinkPicker == nil
 }
 
+// isChatContextCanceledError 统一识别 context 取消类错误。
 func isChatContextCanceledError(err error) bool {
 	return err != nil && (errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "context canceled"))
 }

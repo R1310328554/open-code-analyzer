@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// chatAgentMsg 将 coreagent.Event 桥接到 Bubble Tea Update 循环。
 type chatAgentMsg struct {
 	event coreagent.Event
 }
@@ -21,6 +23,7 @@ type chatApprovalPromptMsg struct {
 	reply   chan<- coreagent.Approval
 }
 
+// chatRunDoneMsg 表示一次 agent Run 结束（含结果或错误）。
 type chatRunDoneMsg struct {
 	result               *coreagent.RunResult
 	err                  error
@@ -37,6 +40,7 @@ type chatCompactProgressMsg struct {
 	tokens int
 }
 
+// resetStreamingState 清除流式 thinking/awaiting 等瞬时标志。
 // resetStreamingState clears the transient streaming flags that every
 // non-streaming event resets before applying its own state.
 func (m *chatModel) resetStreamingState() {
@@ -46,6 +50,7 @@ func (m *chatModel) resetStreamingState() {
 	m.thinkingTokens = 0
 }
 
+// resetRunState 在终端事件时重置运行与压缩进度相关状态。
 // resetRunState clears all run-progress flags (streaming plus compaction
 // progress) for terminal events that fully reset the run view.
 func (m *chatModel) resetRunState() {
@@ -68,6 +73,7 @@ type chatEventsClosedMsg struct{}
 
 type chatTickMsg struct{}
 
+// applyAgentEvent 根据 agent 事件类型更新 entries、liveMessages 与状态栏。
 func (m *chatModel) applyAgentEvent(event coreagent.Event) {
 	contextChanged := false
 
@@ -233,6 +239,7 @@ func (m *chatModel) addDetectedToolCalls(calls []api.ToolCall) {
 	}
 }
 
+// toolFinishedStatus 将 agent 工具状态映射为 UI 条目 status 字符串。
 func toolFinishedStatus(event coreagent.Event) string {
 	switch event.ToolStatus {
 	case coreagent.ToolStatusDenied:
@@ -242,6 +249,7 @@ func toolFinishedStatus(event coreagent.Event) string {
 	case coreagent.ToolStatusDone:
 		return "done"
 	}
+	// failed/skipped/unknown：根据内容与 error 字段推断最终状态
 	// failed/skipped/unknown: derive from content and error fields.
 	if isDeniedToolResult(event.Content) || isDeniedToolResult(event.Error) {
 		return "denied"
@@ -296,6 +304,7 @@ func (m *chatModel) refreshLiveContextEstimate() {
 }
 
 //nolint:containedctx // event sinks need the session context to unblock sends on cancellation.
+// chatEventSink 实现 EventSink，将 agent 事件写入 tea 消息 channel。
 type chatEventSink struct {
 	ctx                  context.Context
 	ch                   chan<- tea.Msg
@@ -314,6 +323,7 @@ func (s chatEventSink) Emit(event coreagent.Event) error {
 	}
 }
 
+// waitForChatMsg 返回从 channel 读取下一条消息的 Bubble Tea 命令。
 func waitForChatMsg(ch <-chan tea.Msg) tea.Cmd {
 	if ch == nil {
 		return nil
@@ -341,6 +351,7 @@ func chatTickCmd() tea.Cmd {
 	})
 }
 
+// preloadModelCmd 异步预加载模型并带回 contextWindowTokens。
 func preloadModelCmd(ctx context.Context, preload func(context.Context, string, *api.ThinkValue) (int, error), model string, think *api.ThinkValue) tea.Cmd {
 	if preload == nil || strings.TrimSpace(model) == "" {
 		return nil

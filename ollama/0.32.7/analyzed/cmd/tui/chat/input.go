@@ -1,3 +1,4 @@
+// Package chat 实现 Ollama Agent 终端聊天界面（Bubble Tea）：会话渲染、输入、工具审批、云端认证与上下文压缩。
 package chat
 
 import (
@@ -22,6 +23,7 @@ import (
 	"github.com/ollama/ollama/cmd/internal/filedata"
 )
 
+// chatSlashCommand 描述内置斜杠命令的名称、用法与别名。
 type chatSlashCommand struct {
 	name        string
 	usage       string
@@ -30,6 +32,7 @@ type chatSlashCommand struct {
 	hidden      bool
 }
 
+// chatCompletion 为斜杠或 @ 提及补全列表中的一项。
 type chatCompletion struct {
 	value       string
 	label       string
@@ -70,6 +73,7 @@ var skillsImportCompletions = []chatCompletion{
 	{value: "/skills import pi", label: "/skills import pi", description: "import from ~/.pi/agent/skills"},
 }
 
+// BuiltinSlashCommandNames 返回内置斜杠命令名（含别名），供技能命名冲突检测。
 // BuiltinSlashCommandNames returns the names reserved by built-in slash
 // commands, including aliases.
 func BuiltinSlashCommandNames() []string {
@@ -88,6 +92,7 @@ func BuiltinSlashCommandNames() []string {
 	return reserved
 }
 
+// handleSubmit 处理 Enter：运行中拦截普通输入，允许斜杠命令。
 func (m *chatModel) handleSubmit() (tea.Model, tea.Cmd) {
 	m.syncInputPlaceholders()
 	input := strings.TrimSpace(string(m.input))
@@ -129,6 +134,7 @@ func (m *chatModel) applySlashCompletion() bool {
 	if strings.EqualFold(selected.value, input) {
 		return false
 	}
+	// 接受补全时重置提示历史游标（与 ↑/↓ 共用导航）
 	// Reset prompt-history state: Up/Down is shared between history recall and
 	// slash completion, and a recalled prompt may start with "/" and trigger
 	// completion. Keep the two in sync when we accept a completion.
@@ -140,6 +146,7 @@ func (m *chatModel) applySlashCompletion() bool {
 	return true
 }
 
+// submitInput 解析斜杠命令、技能调用或普通用户消息并分发。
 func (m *chatModel) submitInput(input string) (tea.Model, tea.Cmd) {
 	command, args, _ := slashCommandInvocation(input)
 	if command != "" {
@@ -277,6 +284,7 @@ func skillsDirForDisplay(catalog *coreagent.SkillCatalog) string {
 	return dir
 }
 
+// skillSlashInvocation 解析 "/<skill> [prompt]"；内置命令优先于同名技能。
 // skillSlashInvocation parses "/<skill-name>" or "/<skill-name> <prompt>".
 // It returns the skill name, any trailing prompt, and ok when the first token is
 // a catalog skill. Built-in slash commands take precedence over same-named
@@ -300,6 +308,7 @@ func (m *chatModel) skillSlashInvocation(input string) (name, prompt string, ok 
 	return name, strings.TrimSpace(args), true
 }
 
+// handleToolsCommand 切换 /tools 工具注册表启用状态并刷新 system prompt。
 func (m *chatModel) handleToolsCommand(args string) (tea.Model, tea.Cmd) {
 	if strings.TrimSpace(args) != "" {
 		m.status = "error"
@@ -460,6 +469,7 @@ func (m *chatModel) insertInputNewline() {
 	m.insertInputRunes([]rune{'\n'})
 }
 
+// insertInputRunesFromKey 处理粘贴：多模态文件占位符或长文本折叠占位符。
 func (m *chatModel) insertInputRunesFromKey(runes []rune, pasted bool) {
 	if len(runes) == 0 {
 		return
@@ -527,6 +537,7 @@ func (m *chatModel) pastedTextPlaceholder(input string) (string, bool) {
 	return placeholder, true
 }
 
+// shouldCollapsePastedText 判断是否将大段粘贴文本替换为占位符。
 func shouldCollapsePastedText(input string) bool {
 	trimmed := strings.TrimSpace(input)
 	if trimmed == "" {
@@ -712,6 +723,7 @@ func previousInputWordStart(input []rune, cursor int) int {
 	return start
 }
 
+// syncInputPlaceholders 删除占位符后清理孤立的附件/粘贴文本映射。
 func (m *chatModel) syncInputPlaceholders() {
 	m.inputAttachments = m.activeInputAttachmentsFor(string(m.input))
 	m.inputPastedTexts = m.activeInputPastedTextsFor(string(m.input))
@@ -984,6 +996,7 @@ func inputWithCursor(input []rune, cursor int) string {
 	return string(next)
 }
 
+// isShiftEnterCSI 识别 Kitty/Windows 等终端的 Shift+Enter CSI 序列。
 func isShiftEnterCSI(msg tea.Msg) bool {
 	switch fmt.Sprint(msg) {
 	case "?CSI[49 51 59 50 117]?", // \x1b[13;2u
@@ -1005,6 +1018,7 @@ func (m chatModel) emptyInputPlaceholder() string {
 	return m.emptyChatHint()
 }
 
+// renderInputBoxLines 渲染带边框的多行输入框与光标/占位符样式。
 func renderInputBoxLines(input string, cursor int, width, maxBodyLines int, placeholder string) []string {
 	if width < 12 {
 		width = 12
@@ -1234,6 +1248,7 @@ func (m chatModel) completions() []chatCompletion {
 	return m.mentionCompletions()
 }
 
+// slashCompletions 为以 / 开头的输入生成命令与技能补全。
 func (m chatModel) slashCompletions() []chatCompletion {
 	rawInput := string(m.input)
 	input := strings.TrimLeftFunc(rawInput, unicode.IsSpace)
@@ -1266,6 +1281,7 @@ func (m chatModel) slashCompletions() []chatCompletion {
 			description: "import skills from Codex, Claude, or Pi",
 		})
 	}
+	// 目录中的技能也可作为 "/<name>" 补全项展示
 	// Each catalog skill is also invocable as "/<skill-name>"; surface them as
 	// completions so they are discoverable by typing.
 	if m.opts.Skills != nil {
@@ -1418,6 +1434,7 @@ func slashCommandInvocation(input string) (string, string, bool) {
 	return "", "", false
 }
 
+// mentionCompletions 为 @ 路径提及提供工作目录内文件/目录补全。
 func (m chatModel) mentionCompletions() []chatCompletion {
 	_, query, ok := activeMentionToken(m.input, m.normalizedInputCursor())
 	if !ok {
@@ -1505,6 +1522,7 @@ func splitMentionQuery(query string) (string, string) {
 	return query[:index+1], query[index+1:]
 }
 
+// resolveCompletionDir 解析相对路径并拒绝逃逸工作区根目录。
 func resolveCompletionDir(workingDir, dir string) (string, error) {
 	if filepath.IsAbs(dir) {
 		return "", fmt.Errorf("absolute paths are not allowed")
@@ -1618,6 +1636,7 @@ func (m chatModel) helpSummary() string {
 	return strings.Join(lines, "\n")
 }
 
+// systemPrompt 合并内置 system 与额外片段（可被 /system off 禁用）。
 func (m chatModel) systemPrompt(extra string) string {
 	var parts []string
 	if !m.systemPromptDisabled && strings.TrimSpace(m.opts.SystemPrompt) != "" {
