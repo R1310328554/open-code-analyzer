@@ -15,23 +15,8 @@
     "web/src/hooks/use-callback-ref.ts",
     "web/src/hooks/use-chat-request.ts",
     "web/src/hooks/use-chunk-request.ts",
-    "web/src/hooks/use-client-search.ts",
-    "web/src/hooks/use-controllable-state.ts",
-    "web/src/hooks/use-dataflow-request.ts",
-    "web/src/hooks/use-document-request.ts",
-    "web/src/hooks/use-file-request.ts",
-    "web/src/hooks/use-knowledge-request.ts",
-    "web/src/hooks/use-login-request.ts",
-    "web/src/hooks/use-mcp-request.ts",
-    "web/src/hooks/use-memory-request.ts",
-    "web/src/hooks/use-send-message.ts",
-    "web/src/hooks/use-system-request.ts",
-    "web/src/interfaces/antd-compat.ts",
-    "web/src/interfaces/common.ts",
-    "web/src/interfaces/database/agent.ts",
-    "web/src/interfaces/database/base.ts",
-    "web/src/interfaces/database/chat.ts"
+    "web/src/hooks/use-client-search.ts"
   ],
   "remaining_pending": 324,
-  "done": 1410
+  "done": 1425
 }
