@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:48:17Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/policy/HashAlgorithmPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/HashIterationsPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/HistoryPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/HistoryPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/LengthPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/LengthPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/LowerCasePasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/LowerCasePasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/MaxAuthAgePasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/MaximumLengthPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/MaximumLengthPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/NotContainsUsernamePasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/NotContainsUsernamePasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/NotEmailPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/NotEmailPasswordPolicyProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2638,
-  "done": 3345
+  "done": 3360
 }
