@@ -1,8 +1,11 @@
+// use-agent-tool-initial-values.ts — Agent 挂载工具时的 params 初值：按算子裁剪/覆盖敏感或冗余字段。
+
 import { omit, pick } from 'lodash';
 import { useCallback } from 'react';
 import { Operator } from '../constant';
 import { useInitializeOperatorParams } from './use-add-node';
 
+/** 复用 initialFormValuesMap，按 Operator  omit/pick 生成 Agent 子工具专用默认 params。 */
 export function useAgentToolInitialValues() {
   const { initialFormValuesMap } = useInitializeOperatorParams();
 
@@ -11,11 +14,13 @@ export function useAgentToolInitialValues() {
       const initialValues = initialFormValuesMap[operatorName];
 
       switch (operatorName) {
+        // Retrieval 工具不含 query（由 Agent 运行时注入）
         case Operator.Retrieval:
           return {
             ...omit(initialValues, 'query'),
             description: '',
           };
+        // Tavily 工具仅保留 api_key 空串
         case (Operator.TavilySearch, Operator.TavilyExtract):
           return {
             api_key: '',
@@ -64,6 +69,7 @@ export function useAgentToolInitialValues() {
         case Operator.KeenableSearch:
           return pick(initialValues, 'api_key', 'mode', 'site', 'top_n');
 
+        // 其余算子使用完整 initialFormValuesMap 条目
         default:
           return initialValues;
       }

@@ -1,3 +1,5 @@
+// hook.ts — TitleChunker 表单工具：API 响应转表单结构、层级选项动态计算。
+
 import { cloneDeep } from 'lodash';
 import { useMemo } from 'react';
 import { UseFormReturn, useWatch } from 'react-hook-form';
@@ -9,6 +11,7 @@ import {
   TitleChunkerMethod,
 } from '../../constant/pipeline';
 
+/** 将旧版 levels（字符串数组的数组）转为现代 rules 结构。 */
 function transformLevelsToRules(levels: any[]) {
   if (!Array.isArray(levels)) {
     return originalRules;
@@ -34,6 +37,7 @@ function transformLevelsToRules(levels: any[]) {
     .filter((rule) => rule !== null);
 }
 
+/** 过滤 rules 中 expression 为空的层级项。 */
 function filterEmptyRules(rules: any[]) {
   if (!Array.isArray(rules)) {
     return [];
@@ -55,6 +59,7 @@ function filterEmptyRules(rules: any[]) {
     .filter((rule) => rule !== null);
 }
 
+/** 将后端 TitleChunker 配置转为表单 schema，兼容 hierarchy/levels/rules 多版本字段。 */
 function transformApiResponseToForm(
   apiData: Record<string, any>,
 ): TitleChunkerFormSchemaType {
@@ -65,6 +70,7 @@ function transformApiResponseToForm(
     hierarchy = String(hierarchy);
   }
 
+  // 按 method 拆分 hierarchy 为 hierarchyHierarchy / hierarchyGroup，兼容旧单字段
   // Split hierarchy into two fields by method, and support backward compatibility
   // with the single `hierarchy` field.
   let hierarchyHierarchy = apiData.hierarchyHierarchy;
@@ -85,6 +91,7 @@ function transformApiResponseToForm(
     hierarchyHierarchy = hierarchy || Hierarchy.H3;
   }
 
+  // 优先读取 rules，否则从 levels 或 hierarchyRules/groupRules 迁移
   // Extract the new-format rules field, or fall back to legacy formats.
   let rules = apiData.rules;
   // Check whether the API returned the oldest `levels` format (array of string arrays).
@@ -98,6 +105,7 @@ function transformApiResponseToForm(
     rules = filterEmptyRules(rules);
   }
 
+  // 旧版仅 rules 时按 method 迁移到 hierarchyRules 或 groupRules
   // Backward compatibility: older versions only had a generic `rules` field,
   // while newer versions split it into `hierarchyRules` and `groupRules`.
   // When the backend returns legacy data, migrate the old `rules` to the
@@ -133,11 +141,13 @@ function transformApiResponseToForm(
   };
 }
 
+/** 层级下拉选项：label 为 H1/H2…，value 为字符串层级编号。 */
 type HierarchyOption = {
   label: string;
   value: string;
 };
 
+/** 根据最大层级数生成 H1…Hn 选项列表。 */
 function getDynamicHierarchyOptions(maxLevel: number): HierarchyOption[] {
   if (maxLevel < 1) {
     maxLevel = 1;
@@ -148,6 +158,7 @@ function getDynamicHierarchyOptions(maxLevel: number): HierarchyOption[] {
   }));
 }
 
+/** 从 rules 各组 levels 长度取最大值，至少为 1。 */
 function calculateMaxLevelCount(
   rules: Array<{ levels: Array<{ expression: string }> }>,
 ): number {
@@ -157,6 +168,7 @@ function calculateMaxLevelCount(
   return Math.max(...rules.map((rule) => rule.levels.length), 1);
 }
 
+/** 监听 rules 与 method，Group 模式在选项前追加 Automatic(0)。 */
 export function useDynamicHierarchyOptions(
   form: UseFormReturn<any>,
   name: string,
@@ -182,4 +194,5 @@ export function useDynamicHierarchyOptions(
   return hierarchyOptions;
 }
 
+/** 供外部复用：API 数据 → TitleChunker 表单初始值。 */
 export { transformApiResponseToForm };

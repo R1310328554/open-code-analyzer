@@ -1,3 +1,5 @@
+// use-add-node.ts — 画布节点添加：算子初始参数、分组/Tool/Agent 子节点布局与连边。
+
 import { useFetchDefaultModelDictionary } from '@/hooks/use-llm-request';
 import { Connection, Node, Position, ReactFlowInstance } from '@xyflow/react';
 import humanId from 'human-id';
@@ -61,6 +63,7 @@ import {
   getNodeDragHandle,
 } from '../utils';
 
+/** 判断是否为 Agent 底部子 Agent 或 Tool 节点（需额外 description/user_prompt）。 */
 function isBottomSubAgent(type: string, position: Position) {
   return (
     (type === Operator.Agent && position === Position.Bottom) ||
@@ -68,6 +71,7 @@ function isBottomSubAgent(type: string, position: Position) {
   );
 }
 
+/** Iteration/Loop 分组节点创建时附带的起始子节点模板。 */
 const GroupStartNodeMap = {
   [Operator.Iteration]: {
     id: `${Operator.IterationStart}:${humanId()}`,
@@ -93,6 +97,7 @@ const GroupStartNodeMap = {
   },
 };
 
+/** 添加 Iteration/Loop 分组：设置尺寸、挂载 Start 子节点并可选连边。 */
 function useAddGroupNode() {
   const { addEdge, addNode } = useGraphStore((state) => state);
 
@@ -124,6 +129,7 @@ function useAddGroupNode() {
 
   return { addGroupNode };
 }
+/** 各 Operator 初始 form 映射表，部分算子注入默认 llm_id 与 i18n 提示词。 */
 export const useInitializeOperatorParams = () => {
   const defaultModelDictionary = useFetchDefaultModelDictionary();
   const llmId = defaultModelDictionary.llm_id;
@@ -214,6 +220,7 @@ export const useInitializeOperatorParams = () => {
   return { initializeOperatorParams, initialFormValuesMap };
 };
 
+/** 返回按 flow.{camelCase(type)} 翻译的节点显示名生成函数。 */
 export const useGetNodeName = () => {
   const { t } = useTranslation();
 
@@ -223,6 +230,7 @@ export const useGetNodeName = () => {
   };
 };
 
+/** 计算右侧新子节点 Y 坐标，避免与已有子节点重叠。 */
 export function useCalculateNewlyChildPosition() {
   const getNode = useGraphStore((state) => state.getNode);
   const nodes = useGraphStore((state) => state.nodes);
@@ -256,6 +264,7 @@ export function useCalculateNewlyChildPosition() {
   return { calculateNewlyBackChildPosition };
 }
 
+/** 右侧拖出时在 source 与 target 间添加 End 句柄连边。 */
 function useAddChildEdge() {
   const addEdge = useGraphStore((state) => state.addEdge);
 
@@ -281,6 +290,7 @@ function useAddChildEdge() {
   return { addChildEdge };
 }
 
+/** Agent 下仅允许一个 Tool 子节点，定位在 Agent 左下方并连 Tool 句柄。 */
 function useAddToolNode() {
   const { nodes, edges, addEdge, getNode, addNode } = useGraphStore(
     (state) => state,
@@ -328,6 +338,7 @@ function useAddToolNode() {
   return { addToolNode };
 }
 
+/** 子节点超出 Iteration 容器宽度时向右扩展父节点。 */
 function useResizeIterationNode() {
   const { getNode, nodes, updateNode } = useGraphStore((state) => state);
 
@@ -360,6 +371,7 @@ type CanvasMouseEvent = Pick<
   'clientX' | 'clientY'
 >;
 
+/** 核心入口：screenToFlowPosition 定位、初始化 form、按类型处理分组/Agent/Tool/普通连边。 */
 export function useAddNode(reactFlowInstance?: ReactFlowInstance<any, any>) {
   const { edges, nodes, addEdge, addNode, getNode } = useGraphStore(
     (state) => state,

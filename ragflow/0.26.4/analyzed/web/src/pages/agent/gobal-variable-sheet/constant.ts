@@ -1,3 +1,5 @@
+// constant.ts — 全局变量侧栏表单：字段配置、默认值及类型→控件映射。
+
 import { FormFieldConfig, FormFieldType } from '@/components/dynamic-form';
 import { t } from 'i18next';
 import { TypesWithArray } from '../constant';
@@ -11,6 +13,7 @@ export { TypesWithArray } from '../constant';
 //   ...TypesWithoutArray.map((item) => `array<${item}>`),
 // ];
 
+/** 全局变量编辑表单字段：name/type/value/description，name 仅允许字母数字下划线。 */
 export const GlobalFormFields = [
   {
     label: t('flow.name'),
@@ -45,6 +48,7 @@ export const GlobalFormFields = [
   },
 ] as FormFieldConfig[];
 
+/** 新建全局变量时的默认空值，type 默认为 String。 */
 export const GlobalVariableFormDefaultValues = {
   name: '',
   type: TypesWithArray.String,
@@ -52,6 +56,7 @@ export const GlobalVariableFormDefaultValues = {
   description: '',
 };
 
+/** 变量 JSON Schema 类型到 DynamicForm 控件类型的映射表。 */
 export const TypeMaps = {
   [TypesWithArray.String]: FormFieldType.Textarea,
   [TypesWithArray.Number]: FormFieldType.Number,
