@@ -1,5 +1,7 @@
 package expressionpb
 
+// unmarshal 将 physical.Expression 内存树写回 expressionpb protobuf 结构，用于计划序列化、RPC 传输与调试输出。
+
 import (
 	fmt "fmt"
 
@@ -13,6 +15,7 @@ type unmarshaler interface {
 
 // UnmarshalPhysical reads from into e. Returns an error if the conversion fails
 // or is unsupported.
+// Expression 入口：按 from 具体类型分配 Kind oneof 再委托 UnmarshalPhysical。
 func (e *Expression) UnmarshalPhysical(from physical.Expression) error {
 	switch from.(type) {
 	case *physical.UnaryExpr:
@@ -73,6 +76,7 @@ func (e *Expression_Column) UnmarshalPhysical(from physical.Expression) error {
 
 // UnmarshalPhysical reads from into e. Returns an error if the conversion fails
 // or is unsupported.
+// UnaryExpression 校验 *physical.UnaryExpr 后递归反序列化 Left 子表达式。
 func (e *UnaryExpression) UnmarshalPhysical(from physical.Expression) error {
 	unary, ok := from.(*physical.UnaryExpr)
 	if !ok {
@@ -93,6 +97,7 @@ func (e *UnaryExpression) UnmarshalPhysical(from physical.Expression) error {
 
 // UnmarshalPhysical reads from into e. Returns an error if the conversion fails
 // or is unsupported.
+// BinaryExpression 分别反序列化 Left/Right 并映射 Op 为 protobuf BinaryOp。
 func (e *BinaryExpression) UnmarshalPhysical(from physical.Expression) error {
 	binary, ok := from.(*physical.BinaryExpr)
 	if !ok {
@@ -140,6 +145,7 @@ func (e *VariadicExpression) UnmarshalPhysical(from physical.Expression) error {
 
 // UnmarshalPhysical reads from into e. Returns an error if the conversion fails
 // or is unsupported.
+// LiteralExpression 按 types.Literal 动态类型选择 LiteralExpression oneof 分支。
 func (e *LiteralExpression) UnmarshalPhysical(from physical.Expression) error {
 	literal, ok := from.(*physical.LiteralExpr)
 	if !ok {
@@ -178,6 +184,7 @@ func (e *LiteralExpression) UnmarshalPhysical(from physical.Expression) error {
 
 // UnmarshalPhysical reads from into e. Returns an error if the conversion fails
 // or is unsupported.
+// ColumnExpression 从 ColumnExpr.Ref 提取列名与 ColumnType 写入 protobuf。
 func (e *ColumnExpression) UnmarshalPhysical(from physical.Expression) error {
 	column, ok := from.(*physical.ColumnExpr)
 	if !ok {
@@ -192,3 +199,4 @@ func (e *ColumnExpression) UnmarshalPhysical(from physical.Expression) error {
 	}
 	return nil
 }
+// 不支持的 physical 表达式类型在 switch default 分支返回 fmt.Errorf。

@@ -34,6 +34,10 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// physicalpb 由 protoc-gen-gogo 生成，描述 Loki 查询引擎物理执行计划的 protobuf 消息。
+// Plan 由 Nodes 与 Edges 构成 DAG；Node Kind oneof 涵盖扫描、过滤、聚合、Join 等算子。
+// 手写 marshal/unmarshal 文件负责与 physical.Plan 互转，本文件序列化逻辑勿手改。
+
 // AggregateRangeOp represents the operation to perform on the aggregated
 // data.
 type AggregateRangeOp int32
@@ -72,6 +76,7 @@ func (AggregateRangeOp) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d1fdbb44b95b211f, []int{0}
 }
 
+// AggregateVectorOp 枚举定义 instant 向量聚合 sum/max/min/avg/stddev/topk 等算子。
 // AggregateVectorOp represents the different aggregation operations that can
 // be performed on a range vector.
 type AggregateVectorOp int32
@@ -150,6 +155,7 @@ func (SortOrder) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_d1fdbb44b95b211f, []int{2}
 }
 
+// Plan 是物理计划根消息，Nodes 存全部算子节点，Edges 存 parent→child 有向边。
 // Plan represents the physical plan of a query.
 type Plan struct {
 	Nodes []*Node     `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
@@ -202,6 +208,7 @@ func (m *Plan) GetEdges() []*PlanEdge {
 	return nil
 }
 
+// PlanEdge 用 Parent/Child NodeID（ULID）描述 DAG 中一条数据流边。
 // PlanEdge represents a relationship between two nodes in the physical plan.
 type PlanEdge struct {
 	Parent NodeID `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent"`
@@ -291,6 +298,7 @@ func (m *NodeID) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_NodeID proto.InternalMessageInfo
 
+// Node 通过 Kind oneof 承载 AggregateRange/Scan/Filter/Projection 等具体算子消息。
 // Node represents a node in the physical plan.
 type Node struct {
 	// ID of the node.
@@ -543,6 +551,7 @@ func (*Node) XXX_OneofWrappers() []interface{} {
 }
 
 // AggregateRange aggregates samples into windowed ranges.
+// AggregateRange 含 grouping、operation 及 start/end/step/range 时间窗口参数。
 type AggregateRange struct {
 	// Grouping for the data.
 	Grouping  *Grouping        `protobuf:"bytes,7,opt,name=grouping,proto3" json:"grouping,omitempty"`
@@ -691,6 +700,7 @@ func (m *Grouping) GetWithout() bool {
 
 // AggregateVector represents an operation to aggregate a range vector into an
 // instant vector, with optional grouping on specified dimensions.
+// AggregateVector 含 grouping、operation 与 max_query_series 序列数上限。
 type AggregateVector struct {
 	// Grouping for the data.
 	Grouping *Grouping `protobuf:"bytes,3,opt,name=grouping,proto3" json:"grouping,omitempty"`
@@ -8845,3 +8855,4 @@ var (
 	ErrInvalidLengthPhysicalpb = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowPhysicalpb   = fmt.Errorf("proto: integer overflow")
 )
+// 变更物理计划 schema 请编辑 physicalpb.proto 后重新 protoc 生成。

@@ -1,5 +1,7 @@
 package physicalpb
 
+// unmarshal_node 将 physical.Node 各具体类型写回 protobuf Node 消息，与 marshal_node 互为逆操作。
+
 import (
 	fmt "fmt"
 
@@ -8,12 +10,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/proto/ulid"
 )
 
+// unmarshaler 由 Node Kind oneof 各变体实现 UnmarshalPhysical。
 type unmarshaler interface {
 	UnmarshalPhysical(node physical.Node) error
 }
 
 // UnmarshalPhysical reads from into n. Returns an error if the conversion fails
 // or is unsupported.
+// Node 入口：按 from 动态类型分配 Kind oneof 并设置 Id ULID。
 func (n *Node) UnmarshalPhysical(from physical.Node) error {
 	switch from.(type) {
 	case *physical.RangeAggregation:
@@ -158,6 +162,7 @@ func (n *Node_Batching) UnmarshalPhysical(from physical.Node) error {
 
 // UnmarshalPhysical reads from into n. Returns an error if the conversion fails
 // or is unsupported.
+// AggregateRange 从 *physical.RangeAggregation 提取 grouping 与时间窗口参数。
 func (n *AggregateRange) UnmarshalPhysical(from physical.Node) error {
 	rangeAgg, ok := from.(*physical.RangeAggregation)
 	if !ok {
@@ -216,6 +221,7 @@ func unmarshalColumnExpressions(from []physical.ColumnExpression) ([]*expression
 
 // UnmarshalPhysical reads from into n. Returns an error if the conversion fails
 // or is unsupported.
+// AggregateVector 从 *physical.VectorAggregation 提取 grouping 与向量聚合算子。
 func (n *AggregateVector) UnmarshalPhysical(from physical.Node) error {
 	vectorAgg, ok := from.(*physical.VectorAggregation)
 	if !ok {
@@ -242,6 +248,7 @@ func (n *AggregateVector) UnmarshalPhysical(from physical.Node) error {
 
 // UnmarshalPhysical reads from into n. Returns an error if the conversion fails
 // or is unsupported.
+// DataObjScan 反序列化扫描位置、投影列、谓词及最大时间范围约束。
 func (n *DataObjScan) UnmarshalPhysical(from physical.Node) error {
 	scan, ok := from.(*physical.DataObjScan)
 	if !ok {
@@ -547,3 +554,5 @@ func (n *Batching) UnmarshalPhysical(from physical.Node) error {
 	}
 	return nil
 }
+// unmarshalColumnExpressions/unmarshalExpressions 递归调用 expressionpb.UnmarshalPhysical。
+// unmarshalColumnExpressions/unmarshalExpressions 递归调用 expressionpb.UnmarshalPhysical。

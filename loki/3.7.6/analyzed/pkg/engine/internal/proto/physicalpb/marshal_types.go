@@ -1,5 +1,7 @@
 package physicalpb
 
+// marshal_types 将 protobuf AggregateRangeOp/AggregateVectorOp 枚举映射为 types 包聚合类型。
+
 import (
 	"fmt"
 
@@ -33,6 +35,7 @@ var (
 	}
 )
 
+// AggregateRangeOp.marshalType 查 nativeRangeAggregationLookup 完成区间聚合算子映射。
 func (op AggregateRangeOp) marshalType() (types.RangeAggregationType, error) {
 	if result, ok := nativeRangeAggregationLookup[op]; ok {
 		return result, nil
@@ -40,9 +43,11 @@ func (op AggregateRangeOp) marshalType() (types.RangeAggregationType, error) {
 	return types.RangeAggregationTypeInvalid, fmt.Errorf("unknown AggregateRangeOp: %v", op)
 }
 
+// AggregateVectorOp.marshalType 映射 sum/max/min/avg/stddev/topk/bottomk/sort 等向量算子。
 func (op AggregateVectorOp) marshalType() (types.VectorAggregationType, error) {
 	if result, ok := nativeVectorAggregationLookup[op]; ok {
 		return result, nil
 	}
 	return types.VectorAggregationTypeInvalid, fmt.Errorf("unknown AggregateVectorOp: %v", op)
 }
+// 未知枚举值返回 Invalid 类型并附带 unknown Aggregate*Op 错误。

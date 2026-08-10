@@ -1,5 +1,7 @@
 package expressionpb
 
+// marshal_types 维护 protobuf 枚举与 types 包内部枚举的双向查找表，MarshalType 方法完成 protobuf → native 方向映射。
+
 import (
 	fmt "fmt"
 
@@ -64,6 +66,7 @@ var (
 
 // MarshalType converts a protobuf UnaryOp to its internal types.UnaryOp representation.
 // Returns an error if the conversion fails or the operator is unsupported.
+// UnaryOp.MarshalType 查 nativeUnaryOpLookup，含 NOT/ABS/类型转换等一元算子。
 func (o UnaryOp) MarshalType() (types.UnaryOp, error) {
 	out, ok := nativeUnaryOpLookup[o]
 	if !ok {
@@ -74,6 +77,7 @@ func (o UnaryOp) MarshalType() (types.UnaryOp, error) {
 
 // MarshalType converts a protobuf BinaryOp to its internal types.BinaryOp representation.
 // Returns an error if the conversion fails or the operator is unsupported.
+// BinaryOp.MarshalType 映射比较、逻辑、算术及字符串匹配类二元算子。
 func (o BinaryOp) MarshalType() (types.BinaryOp, error) {
 	out, ok := nativeBinaryOpLookup[o]
 	if !ok {
@@ -84,6 +88,7 @@ func (o BinaryOp) MarshalType() (types.BinaryOp, error) {
 
 // MarshalType converts a protobuf VariadicOp to its internal types.VariadicOp representation.
 // Returns an error if the conversion fails or the operator is unsupported.
+// VariadicOp.MarshalType 映射 parse_logfmt、parse_json 等变参解析算子。
 func (o VariadicOp) MarshalType() (types.VariadicOp, error) {
 	out, ok := nativeVariadicOpLookup[o]
 	if !ok {
@@ -94,6 +99,7 @@ func (o VariadicOp) MarshalType() (types.VariadicOp, error) {
 
 // MarshalType converts a protobuf ColumnType to its internal types.ColumnType representation.
 // Returns an error if the conversion fails or the column type is unsupported.
+// ColumnType.MarshalType 区分 builtin/label/metadata/parsed 等列来源类型。
 func (t ColumnType) MarshalType() (types.ColumnType, error) {
 	out, ok := nativeColumnTypeLookup[t]
 	if !ok {
@@ -101,3 +107,4 @@ func (t ColumnType) MarshalType() (types.ColumnType, error) {
 	}
 	return out, nil
 }
+// lookup 表未覆盖的枚举值返回 Invalid 常量并附带 unsupported 错误信息。

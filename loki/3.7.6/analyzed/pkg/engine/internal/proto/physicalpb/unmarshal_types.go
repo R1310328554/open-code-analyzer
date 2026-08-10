@@ -1,5 +1,7 @@
 package physicalpb
 
+// unmarshal_types 将 types 包聚合枚举写回 protobuf AggregateRangeOp/AggregateVectorOp。
+
 import (
 	"fmt"
 
@@ -33,6 +35,7 @@ var (
 	}
 )
 
+// AggregateRangeOp.unmarshalType 查 protoAggregateRangeLookup 完成反向映射。
 func (op *AggregateRangeOp) unmarshalType(from types.RangeAggregationType) error {
 	if result, ok := protoAggregateRangeLookup[from]; ok {
 		*op = result
@@ -41,6 +44,7 @@ func (op *AggregateRangeOp) unmarshalType(from types.RangeAggregationType) error
 	return fmt.Errorf("unknown RangeAggregationType: %v", from)
 }
 
+// AggregateVectorOp.unmarshalType 覆盖 stddev/stdvar/topk/bottomk/sort 等向量算子。
 func (op *AggregateVectorOp) unmarshalType(from types.VectorAggregationType) error {
 	if result, ok := protoAggregateVectorLookup[from]; ok {
 		*op = result
@@ -48,3 +52,4 @@ func (op *AggregateVectorOp) unmarshalType(from types.VectorAggregationType) err
 	}
 	return fmt.Errorf("unknown VectorAggregationType: %v", from)
 }
+// proto*Lookup 与 marshal_types 中 native*Lookup 需成对更新以保持互逆。

@@ -1,5 +1,7 @@
 package physicalpb
 
+// marshal_node 实现各物理计划节点类型从 protobuf 到 physical.Node 的转换，涵盖扫描、过滤、投影、聚合、TopK、Join 等全部算子。
+
 import (
 	fmt "fmt"
 
@@ -10,12 +12,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// marshaler 由 Node Kind oneof 各变体实现，接收 ULID 并返回 physical.Node。
 type marshaler interface {
 	MarshalPhysical(nodeID ulid.ULID) (physical.Node, error)
 }
 
 // MarshalPhysical converts a protobuf node into a physical plan node. Returns
 // an error if the conversion fails or is unsupported.
+// Node 入口：按 Kind oneof 分派到具体节点类型的 MarshalPhysical。
 func (n *Node) MarshalPhysical() (physical.Node, error) {
 	m, ok := n.Kind.(marshaler)
 	if !ok {
@@ -110,6 +114,7 @@ func (n *Node_Batching) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error)
 
 // MarshalPhysical converts a protobuf AggregateRange into a physical plan node. Returns
 // an error if the conversion fails or is unsupported.
+// AggregateRange 映射区间聚合算子并携带 start/end/step/range 时间窗口参数。
 func (n *AggregateRange) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error) {
 	operation, err := n.Operation.marshalType()
 	if err != nil {
@@ -163,6 +168,7 @@ func marshalColumnExpressions(exprs []*expressionpb.ColumnExpression) []physical
 
 // MarshalPhysical converts a protobuf AggregateVector into a physical plan node. Returns
 // an error if the conversion fails or is unsupported.
+// AggregateVector 映射 instant 向量聚合，不含时间窗口仅保留 grouping 与 operation。
 func (n *AggregateVector) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error) {
 	operation, err := n.Operation.marshalType()
 	if err != nil {
@@ -185,6 +191,7 @@ func (n *AggregateVector) MarshalPhysical(nodeID ulid.ULID) (physical.Node, erro
 
 // MarshalPhysical converts a protobuf DataObjScan into a physical plan node. Returns
 // an error if the conversion fails or is unsupported.
+// DataObjScan 描述 data object 扫描：位置、分区、流 ID、投影列与谓词下推。
 func (n *DataObjScan) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error) {
 	return &physical.DataObjScan{
 		NodeID: nodeID,
@@ -320,6 +327,7 @@ func (n *ScanSet) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error) {
 
 // MarshalPhysical converts a protobuf ScanTarget into a physical plan scan target. Returns
 // an error if the conversion fails or is unsupported.
+// ScanTarget 按 oneof 区分 data_object 与 pointers 两类扫描目标。
 func (n *ScanTarget) MarshalPhysical() (*physical.ScanTarget, error) {
 	target := &physical.ScanTarget{}
 
@@ -389,6 +397,7 @@ func (n *Merge) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error) {
 
 // MarshalPhysical converts a protobuf PointersScan into a physical plan node. Returns
 // an error if the conversion fails or is unsupported.
+// PointersScan 通过 selector 表达式定位 data object 内的指针索引扫描。
 func (n *PointersScan) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error) {
 	selector, err := marshalExpression(n.Selector)
 	if err != nil {
@@ -414,3 +423,4 @@ func (n *Batching) MarshalPhysical(nodeID ulid.ULID) (physical.Node, error) {
 		BatchSize: n.BatchSize,
 	}, nil
 }
+// marshalGrouping/marshalExpressions 等辅助函数递归调用 expressionpb.MarshalPhysical。

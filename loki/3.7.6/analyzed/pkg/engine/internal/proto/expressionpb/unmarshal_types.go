@@ -1,5 +1,7 @@
 package expressionpb
 
+// unmarshal_types 提供 types 包枚举到 protobuf 枚举的反向映射，UnmarshalType 方法在反序列化表达式算子与列类型时使用。
+
 import (
 	fmt "fmt"
 
@@ -65,6 +67,7 @@ var (
 
 // UnmarshalType converts an internal types.UnaryOp to its protobuf UnaryOp representation.
 // Returns an error if the conversion fails or the operator is unsupported.
+// UnaryOp.UnmarshalType 查 protoUnaryOpLookup 并写入 receiver 指针。
 func (o *UnaryOp) UnmarshalType(from types.UnaryOp) error {
 	out, ok := protoUnaryOpLookup[from]
 	if !ok {
@@ -76,6 +79,7 @@ func (o *UnaryOp) UnmarshalType(from types.UnaryOp) error {
 
 // UnmarshalType converts an internal types.BinaryOp to its protobuf BinaryOp representation.
 // Returns an error if the conversion fails or the operator is unsupported.
+// BinaryOp.UnmarshalType 覆盖 EQ/NEQ/匹配/大小写不敏感比较等全部二元算子。
 func (o *BinaryOp) UnmarshalType(from types.BinaryOp) error {
 	out, ok := protoBinaryOpLookup[from]
 	if !ok {
@@ -87,6 +91,7 @@ func (o *BinaryOp) UnmarshalType(from types.BinaryOp) error {
 
 // UnmarshalType converts an internal types.VariadicOp to its protobuf VariadicOp representation.
 // Returns an error if the conversion fails or the operator is unsupported.
+// VariadicOp.UnmarshalType 含 parse_regexp 等新增变参算子的反向映射。
 func (o *VariadicOp) UnmarshalType(from types.VariadicOp) error {
 	out, ok := protoVariadicOpLookup[from]
 	if !ok {
@@ -98,6 +103,7 @@ func (o *VariadicOp) UnmarshalType(from types.VariadicOp) error {
 
 // UnmarshalType converts an internal types.ColumnType to its protobuf ColumnType representation.
 // Returns an error if the conversion fails or the column type is unsupported.
+// ColumnType.UnmarshalType 将 internal 列类型写回 protobuf ColumnType 枚举。
 func (t *ColumnType) UnmarshalType(from types.ColumnType) error {
 	out, ok := protoColumnTypeLookup[from]
 	if !ok {
@@ -106,3 +112,4 @@ func (t *ColumnType) UnmarshalType(from types.ColumnType) error {
 	*t = out
 	return nil
 }
+// proto*Lookup 表与 marshal_types 中的 native*Lookup 互为逆映射，需同步维护。

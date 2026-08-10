@@ -1,5 +1,7 @@
 package expressionpb
 
+// unmarshal_literal 将 types.Literal 接口值写回对应 protobuf 字面量消息。
+
 import (
 	fmt "fmt"
 
@@ -75,6 +77,7 @@ func (e *LiteralExpression_StringListLiteral) UnmarshalLiteral(literal types.Lit
 
 // UnmarshalLiteral reads from literal into l. Returns an error if the conversion fails
 // or is unsupported.
+// NullLiteral 仅接受 types.NullLiteral，其他类型返回 unsupported 错误。
 func (l *NullLiteral) UnmarshalLiteral(literal types.Literal) error {
 	_, ok := literal.(types.NullLiteral)
 	if !ok {
@@ -99,6 +102,7 @@ func (l *BoolLiteral) UnmarshalLiteral(literal types.Literal) error {
 
 // UnmarshalLiteral reads from literal into l. Returns an error if the conversion fails
 // or is unsupported.
+// StringLiteral 通过类型断言提取 string 值写入 protobuf Value 字段。
 func (l *StringLiteral) UnmarshalLiteral(literal types.Literal) error {
 	val, ok := literal.(types.StringLiteral)
 	if !ok {
@@ -135,6 +139,7 @@ func (l *FloatLiteral) UnmarshalLiteral(literal types.Literal) error {
 
 // UnmarshalLiteral reads from literal into l. Returns an error if the conversion fails
 // or is unsupported.
+// TimestampLiteral 将 types.Timestamp 转为 int64 纳秒时间戳存储。
 func (l *TimestampLiteral) UnmarshalLiteral(literal types.Literal) error {
 	val, ok := literal.(types.TimestampLiteral)
 	if !ok {
@@ -180,3 +185,4 @@ func (l *StringListLiteral) UnmarshalLiteral(literal types.Literal) error {
 	*l = StringListLiteral{Value: val.Value()}
 	return nil
 }
+// LiteralExpression_* 包装类型负责分配子消息并委托底层 *Literal 完成赋值。

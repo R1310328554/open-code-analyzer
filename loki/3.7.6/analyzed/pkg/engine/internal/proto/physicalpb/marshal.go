@@ -1,5 +1,7 @@
 package physicalpb
 
+// marshal 将 physicalpb.Plan protobuf 消息重建为 physical.Plan DAG 图结构。
+
 import (
 	fmt "fmt"
 
@@ -11,6 +13,7 @@ import (
 
 // MarshalPhysical converts a protobuf plan into standard representation.
 // Returns an error if the conversion fails or is unsupported.
+// MarshalPhysical 先转换全部 Node 加入 DAG，再按 Edges 连接 parent→child 边。
 func (p *Plan) MarshalPhysical() (*physical.Plan, error) {
 	var (
 		graph   = dag.Graph[physical.Node]{}
@@ -43,3 +46,4 @@ func (p *Plan) MarshalPhysical() (*physical.Plan, error) {
 
 	return physical.FromGraph(graph), nil
 }
+// 边引用的 parent/child ULID 必须在 nodeMap 中存在，否则返回 invalid edge 错误。

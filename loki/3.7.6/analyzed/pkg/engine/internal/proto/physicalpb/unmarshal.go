@@ -1,5 +1,7 @@
 package physicalpb
 
+// unmarshal 将 physical.Plan DAG 图序列化为 physicalpb.Plan protobuf 消息。
+
 import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/planner/physical"
 	"github.com/grafana/loki/v3/pkg/engine/internal/proto/ulid"
@@ -7,6 +9,7 @@ import (
 
 // UnmarshalPhysical reads from into p. Returns an error if the conversion fails
 // or is unsupported.
+// UnmarshalPhysical 遍历图节点写入 Nodes，再按 parent→child 关系生成 Edges。
 func (p *Plan) UnmarshalPhysical(from *physical.Plan) error {
 	graph := from.Graph()
 
@@ -35,3 +38,4 @@ func (p *Plan) UnmarshalPhysical(from *physical.Plan) error {
 
 	return nil
 }
+// 每条边 Parent/Child 使用 ulid.ULID 包装，与 Node.Id 字段保持一致。

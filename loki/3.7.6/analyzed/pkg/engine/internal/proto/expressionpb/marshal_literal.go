@@ -1,5 +1,7 @@
 package expressionpb
 
+// marshal_literal 负责 protobuf 字面量子树到 types.Literal 的逐类型转换。
+
 import "github.com/grafana/loki/v3/pkg/engine/internal/types"
 
 type literalMarshaler interface {
@@ -62,6 +64,7 @@ func (e *LiteralExpression_StringListLiteral) MarshalLiteral() (types.Literal, e
 
 // MarshalLiteral converts a protobuf literal into a types literal.
 // Returns an error if the conversion fails or is unsupported.
+// NullLiteral 直接返回空 types.NullLiteral，无需额外字段。
 func (l *NullLiteral) MarshalLiteral() (types.Literal, error) {
 	return types.NullLiteral{}, nil
 }
@@ -110,6 +113,8 @@ func (l *BytesLiteral) MarshalLiteral() (types.Literal, error) {
 
 // MarshalLiteral converts a protobuf literal into a types literal.
 // Returns an error if the conversion fails or is unsupported.
+// StringListLiteral 将 repeated string 包装为 types.StringListLiteral。
 func (l *StringListLiteral) MarshalLiteral() (types.Literal, error) {
 	return types.StringListLiteral(l.Value), nil
 }
+// 各 LiteralExpression_* 包装类型仅做委托，实际值转换在底层 *Literal 方法完成。

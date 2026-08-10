@@ -26,6 +26,10 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// expressionpb 由 protoc-gen-gogo 生成，定义查询引擎表达式树的 protobuf 消息。
+// 包含一元/二元/变参/字面量/列引用等 Expression oneof 变体及运算符枚举。
+// 手写 marshal/unmarshal 文件负责与 physical.Expression 互转，本文件勿手改序列化逻辑。
+
 // UnaryOp denotes the kind of unary operation to perform.
 type UnaryOp int32
 
@@ -60,6 +64,7 @@ func (UnaryOp) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_6f4cc9c3840d3467, []int{0}
 }
 
+// BinaryOp 枚举涵盖比较、逻辑、算术及 log 行字符串/正则匹配等二元运算。
 // BinaryOp denotes the kind of binary operation to perform.
 type BinaryOp int32
 
@@ -219,6 +224,7 @@ func (ColumnType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_6f4cc9c3840d3467, []int{3}
 }
 
+// Expression 是表达式树根消息，Kind oneof 承载 unary/binary/variadic/literal/column 五类子树。
 // Expression represents an expression used to compute values in output arrays.
 type Expression struct {
 	// Types that are valid to be assigned to Kind:
@@ -299,6 +305,7 @@ func (m *Expression) GetKind() isExpression_Kind {
 	return nil
 }
 
+// GetUnary 安全访问 Kind oneof 的 unary 分支，非该类型时返回 nil。
 func (m *Expression) GetUnary() *UnaryExpression {
 	if x, ok := m.GetKind().(*Expression_Unary); ok {
 		return x.Unary
@@ -346,6 +353,7 @@ func (*Expression) XXX_OneofWrappers() []interface{} {
 }
 
 // UnaryExpression represents a unary operation applied to an expression.
+// UnaryExpression 含一元算子 Op 与单个子表达式 Value。
 type UnaryExpression struct {
 	Op    UnaryOp     `protobuf:"varint,1,opt,name=op,proto3,enum=loki.expression.UnaryOp" json:"op,omitempty"`
 	Value *Expression `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -398,6 +406,7 @@ func (m *UnaryExpression) GetValue() *Expression {
 }
 
 // BinaryExpression represents a binary operation applied to two expressions.
+// BinaryExpression 含二元算子 Op 与 Left/Right 两个子表达式。
 type BinaryExpression struct {
 	Op    BinaryOp    `protobuf:"varint,1,opt,name=op,proto3,enum=loki.expression.BinaryOp" json:"op,omitempty"`
 	Left  *Expression `protobuf:"bytes,2,opt,name=left,proto3" json:"left,omitempty"`
@@ -511,6 +520,7 @@ func (m *VariadicExpression) GetArgs() []*Expression {
 }
 
 // LiteralExpression represents a constant literal value in an expression tree.
+// LiteralExpression 通过 Kind oneof 承载 null/bool/string/int/float/timestamp 等字面量。
 type LiteralExpression struct {
 	// Types that are valid to be assigned to Kind:
 	//
@@ -5560,3 +5570,4 @@ var (
 	ErrInvalidLengthExpressionpb = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowExpressionpb   = fmt.Errorf("proto: integer overflow")
 )
+// 变更表达式 schema 请编辑 expressionpb.proto 后重新 protoc 生成，勿直接修改本文件。
