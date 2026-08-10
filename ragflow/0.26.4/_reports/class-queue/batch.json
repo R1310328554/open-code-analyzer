@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T18:07:55Z",
   "files": [
-    "internal/engine/redis/redis.go",
-    "internal/engine/types/types.go",
-    "internal/entity/api_token.go",
-    "internal/entity/base.go",
-    "internal/entity/canvas.go",
-    "internal/entity/chat.go",
-    "internal/entity/chat_channel.go",
-    "internal/entity/connector.go",
-    "internal/entity/document.go",
-    "internal/entity/evaluation.go",
-    "internal/entity/file.go",
-    "internal/entity/file_commit.go",
-    "internal/entity/ingestion_task.go",
-    "internal/entity/kb.go",
-    "internal/entity/license.go",
     "internal/entity/llm.go",
     "internal/entity/mcp.go",
     "internal/entity/memory.go",
@@ -33,5 +18,5 @@
     "internal/entity/models/chat_tools.go"
   ],
   "remaining_pending": 1044,
-  "done": 690
+  "done": 705
 }
