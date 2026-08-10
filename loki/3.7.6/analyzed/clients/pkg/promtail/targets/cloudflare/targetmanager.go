@@ -1,5 +1,8 @@
 package cloudflare
 
+// Cloudflare TargetManager：为每个含 CloudflareConfig 的 job 构建 pipeline 与 Target，
+// 按 job 名索引，提供 Ready/Stop/ActiveTargets/AllTargets 聚合接口。
+
 import (
 	"github.com/go-kit/log"
 
@@ -10,12 +13,14 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/targets/target"
 )
 
+// 维护 jobName → Target 映射，生命周期与 Promtail target 接口对齐。
 // TargetManager manages a series of cloudflare targets.
 type TargetManager struct {
 	logger  log.Logger
 	targets map[string]*Target
 }
 
+// 遍历 scrapeConfigs，跳过无 Cloudflare 段的 job，pipeline.Wrap 包装 pushClient。
 // NewTargetManager creates a new cloudflare target managers.
 func NewTargetManager(
 	metrics *Metrics,
@@ -46,6 +51,7 @@ func NewTargetManager(
 	return tm, nil
 }
 
+// 任一 target.Ready() 为真即认为 manager 就绪。
 // Ready returns true if at least one cloudflare target is active.
 func (tm *TargetManager) Ready() bool {
 	for _, t := range tm.targets {
@@ -62,6 +68,7 @@ func (tm *TargetManager) Stop() {
 	}
 }
 
+// 仅返回 Ready 的 target，供 /targets API 展示活跃抓取源。
 func (tm *TargetManager) ActiveTargets() map[string][]target.Target {
 	result := make(map[string][]target.Target, len(tm.targets))
 	for k, v := range tm.targets {

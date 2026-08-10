@@ -1,5 +1,8 @@
 package docker
 
+// 单个 Docker daemon 的 targetGroup：SD 同步容器列表，懒创建 API client，
+// 按 container ID 维护 Target 映射，HTTP/HTTPS 主机可配置 TLS 与 User-Agent。
+
 import (
 	"fmt"
 	"net/http"
@@ -24,6 +27,7 @@ import (
 
 const DockerSource = "Docker"
 
+// 一把锁保护 targets 与 client，sync 仅处理 Source=Docker 的 targetgroup。
 // targetGroup manages all container targets of one Docker daemon.
 type targetGroup struct {
 	metrics          *Metrics
@@ -42,6 +46,7 @@ type targetGroup struct {
 	targets map[string]*Target
 }
 
+// 从 SD 推送的 Group 中提取 __meta_docker_container_id 并 addTarget。
 func (tg *targetGroup) sync(groups []*targetgroup.Group) {
 	tg.mtx.Lock()
 	defer tg.mtx.Unlock()
@@ -66,6 +71,7 @@ func (tg *targetGroup) sync(groups []*targetgroup.Group) {
 	}
 }
 
+// 首次连接按 host scheme 选择是否注入 HTTPClientConfig，已存在则 startIfNotRunning。
 // addTarget checks whether the container with given id is already known. If not it's added to the this group
 func (tg *targetGroup) addTarget(id string, discoveredLabels model.LabelSet) error {
 	if tg.client == nil {
@@ -131,6 +137,7 @@ func (tg *targetGroup) addTarget(id string, discoveredLabels model.LabelSet) err
 	return nil
 }
 
+// 遍历 targets 检查 Ready；无运行中 target 时仍返回 true（与 upstream 行为一致）。
 // Ready returns true if at least one target is running.
 func (tg *targetGroup) Ready() bool {
 	tg.mtx.Lock()

@@ -1,5 +1,8 @@
 package cloudflare
 
+// Cloudflare Logpull target：按 PullRange 窗口并发拉取 zone 日志，positions 持久化游标。
+// 遵守 Cloudflare 至少延迟 1 分钟的可查询窗口，worker 自带指数退避重试。
+
 import (
 	"context"
 	"errors"
@@ -26,6 +29,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// Cloudflare 日志 API 要求 end 不得晚于 now-1m，minDelay 即该安全边界。
 // The minimun window size is 1 minute.
 const minDelay = time.Minute
 
@@ -37,6 +41,7 @@ var defaultBackoff = backoff.Config{
 	MaxRetries: 5,
 }
 
+// 单 zone 抓取目标：client 拉日志、handler 推送、positions 记录 to 游标。
 type Target struct {
 	logger    log.Logger
 	handler   api.EntryHandler
@@ -142,6 +147,7 @@ func (t *Target) start() {
 	}()
 }
 
+// 对 [start,end) 调用 LogpullReceived 迭代 JSON 行，EdgeStartTimestamp 作条目时间戳。
 // pull pulls logs from cloudflare for a given time range.
 // It will retry on errors.
 func (t *Target) pull(ctx context.Context, start, end time.Time) error {
@@ -242,6 +248,7 @@ type pullRequest struct {
 	end   time.Time
 }
 
+// 将时间窗均分给 workers 个 pullRequest，末 worker 补齐余量避免丢尾段。
 func splitRequests(start, end time.Time, workers int) []pullRequest {
 	perWorker := end.Sub(start) / time.Duration(workers)
 	var requests []pullRequest
@@ -259,6 +266,7 @@ func splitRequests(start, end time.Time, workers int) []pullRequest {
 	return requests
 }
 
+// 校验 token/zone、默认 FieldsType 与 PullRange/Workers 缺省值。
 func validateConfig(cfg *scrapeconfig.CloudflareConfig) error {
 	if cfg.FieldsType == "" {
 		cfg.FieldsType = string(FieldsTypeDefault)

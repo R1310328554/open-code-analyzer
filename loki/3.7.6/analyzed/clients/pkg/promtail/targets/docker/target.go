@@ -1,5 +1,8 @@
 package docker
 
+// Docker 容器日志 target：Follow ContainerLogs，framedstdcopy 拆分 stdout/stderr，
+// 支持跨帧拼行、max_line_size 截断与 relabel，positions 按 Unix 秒持久化 since。
+
 import (
 	"context"
 	"fmt"
@@ -25,6 +28,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// 单容器抓取：Docker API client、since 游标、relabel 与 maxLineSize 行宽限制。
 type Target struct {
 	logger        log.Logger
 	handler       api.EntryHandler
@@ -145,6 +149,7 @@ func (t *Target) processLoop(ctx context.Context) {
 	level.Debug(t.logger).Log("msg", "done processing Docker logs", "container", t.containerName)
 }
 
+// 解析 Docker --timestamps 格式行首 RFC3339Nano 时间戳，失败则回退当前时间。
 // extractTs tries for read the timestamp from the beginning of the log line.
 // It's expected to follow the format 2006-01-02T15:04:05.999999999Z07:00.
 func extractTs(line string) (time.Time, string, error) {
@@ -159,6 +164,7 @@ func extractTs(line string) (time.Time, string, error) {
 	return ts, pair[1], nil
 }
 
+// 消费 framed 字节流：拼缓冲、按换行/行宽上限刷出，经 relabel 后推送 Loki。
 func (t *Target) process(frames chan []byte, logStream string) {
 	defer func() {
 		t.wg.Done()
@@ -269,6 +275,7 @@ func (t *Target) handleOutput(logStream string, ts time.Time, payload string) {
 	t.since = ts.Unix()
 }
 
+// CompareAndSwap 保证 processLoop 只启动一次，重复 sync 仅打 debug 日志。
 // startIfNotRunning starts processing container logs. The operation is idempotent , i.e. the processing cannot be started twice.
 func (t *Target) startIfNotRunning() {
 	if t.running.CompareAndSwap(false, true) {
@@ -303,6 +310,7 @@ func (t *Target) Labels() model.LabelSet {
 	return t.labels
 }
 
+// 返回容器 ID、positions 字符串、running 状态与最近错误供调试 UI。
 // Details returns target-specific details.
 func (t *Target) Details() interface{} {
 	var errMsg string

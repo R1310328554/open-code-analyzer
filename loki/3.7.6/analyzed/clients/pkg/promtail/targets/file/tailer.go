@@ -1,5 +1,8 @@
 package file
 
+// 文件 tailer：grafana/tail Follow+Poll+ReOpen，positions 字节偏移，
+// updatePosition 定时 MarkPositionAndSize，readLines 消费 Lines 通道避免 Stop 死锁。
+
 import (
 	"fmt"
 	"os"
@@ -24,6 +27,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// 单文件尾随：tail.SeekInfo 从 positions 恢复，可选 IANA 解码非 UTF-8 日志。
 type tailer struct {
 	metrics   *Metrics
 	logger    log.Logger
@@ -56,6 +60,7 @@ func newTailer(metrics *Metrics, logger log.Logger, handler api.EntryHandler, po
 		return nil, err
 	}
 
+// 文件被截断小于已存 offset 时清除 position，避免 Seek 越界永久读不到新内容。
 	if fi.Size() < pos {
 		positions.Remove(path)
 	}
@@ -106,6 +111,7 @@ func newTailer(metrics *Metrics, logger log.Logger, handler api.EntryHandler, po
 	return tailer, nil
 }
 
+// Ticker 按 SyncPeriod 持久化 offset/size；出错则 Stop tail 交由 filetarget sync 重建。
 // updatePosition is run in a goroutine and checks the current size of the file and saves it to the positions file
 // at a regular interval. If there is ever an error it stops the tailer and exits, the tailer will be re-opened
 // by the filetarget sync method if it still exists and will start reading from the last successful entry in the
@@ -139,6 +145,7 @@ func (t *tailer) updatePosition() {
 	}
 }
 
+// 必须读尽 Lines 再退出，否则底层 tail.Stop 可能因未消费行而阻塞。
 // readLines runs in a goroutine and consumes the t.tail.Lines channel from the underlying tailer.
 // it will only exit when that channel is closed. This is important to avoid a deadlock in the underlying
 // tailer which can happen if there are unread lines in this channel and the Stop method on the tailer

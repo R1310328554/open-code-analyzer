@@ -1,5 +1,8 @@
 package docker
 
+// Docker TargetManager：discovery.Manager 驱动 SD，按 job/host:port 分 targetGroup，
+// SyncCh 收到变更后 tg.sync，pipeline 包装 pushClient 后交给各容器 Target。
+
 import (
 	"context"
 	"fmt"
@@ -27,6 +30,7 @@ const (
 	dockerLabelLogStream       = dockerLabelContainerPrefix + "log_stream"
 )
 
+// 聚合 metrics、positions、discovery manager 与 syncerKey→targetGroup 表。
 type TargetManager struct {
 	metrics    *Metrics
 	logger     log.Logger
@@ -82,7 +86,8 @@ func NewTargetManager(
 			}
 
 			for _, sdConfig := range cfg.DockerSDConfigs {
-				syncerKey := fmt.Sprintf("%s/%s:%d", cfg.JobName, sdConfig.Host, sdConfig.Port)
+	// 同一 job 下多 Docker SD 实例按 host:port 隔离 targetGroup 与 discovery 配置。
+			syncerKey := fmt.Sprintf("%s/%s:%d", cfg.JobName, sdConfig.Host, sdConfig.Port)
 				_, ok := tm.groups[syncerKey]
 				if !ok {
 					tm.groups[syncerKey] = &targetGroup{
@@ -112,6 +117,7 @@ func NewTargetManager(
 	return tm, tm.manager.ApplyConfig(configs)
 }
 
+// 阻塞读取 manager.SyncCh()，按 jobName 路由到对应 targetGroup.sync。
 // run listens on the service discovery and adds new targets.
 func (tm *TargetManager) run(ctx context.Context) {
 	defer close(tm.done)
@@ -132,6 +138,7 @@ func (tm *TargetManager) run(ctx context.Context) {
 	}
 }
 
+// 任一组 Ready 即整体就绪，Stop 先 cancel run 再逐组 Stop。
 // Ready returns true if at least one Docker target is active.
 func (tm *TargetManager) Ready() bool {
 	for _, s := range tm.groups {

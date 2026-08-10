@@ -1,5 +1,8 @@
 package file
 
+// FileTargetManager：Prometheus SD + 静态配置发现 __path__/__path_exclude__，
+// K8s pod SD 按本机 nodeName 过滤，fsnotify 集中管理目录 watch 事件。
+
 import (
 	"context"
 	"fmt"
@@ -31,12 +34,14 @@ import (
 )
 
 const (
+// relabel 后 __path__/__path_exclude__ 决定 FileTarget 的 glob 与排除模式。
 	pathLabel              = "__path__"
 	pathExcludeLabel       = "__path_exclude__"
 	hostLabel              = "__host__"
 	kubernetesPodNodeField = "spec.nodeName"
 )
 
+// discovery.Manager + 每 job 一个 targetSyncer，watcher 处理 WATCH_START/STOP。
 // FileTargetManager manages a set of targets.
 // nolint:revive
 type FileTargetManager struct {
@@ -51,6 +56,7 @@ type FileTargetManager struct {
 	wg sync.WaitGroup
 }
 
+// 为有 SD 的 job 建 pipeline 与 targetSyncer，静态组补 Source 与 localhost 默认地址。
 // NewFileTargetManager creates a new TargetManager.
 func NewFileTargetManager(
 	metrics *Metrics,
@@ -124,6 +130,7 @@ func NewFileTargetManager(
 		// all the pods from the current node. Without this filtering we will have to
 		// download metadata for all pods running on a cluster, which may be a long operation.
 		for _, kube := range cfg.ServiceDiscoveryConfig.KubernetesSDConfigs {
+// Pod 角色 SD 追加 node 字段 selector，仅拉取本节点 Pod 元数据降低 API 负载。
 			if kube.Role == kubernetes.RolePod {
 				kube.Selectors = tm.fulfillKubePodSelector(kube.Selectors, hostname)
 			}

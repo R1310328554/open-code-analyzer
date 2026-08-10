@@ -1,7 +1,10 @@
 package file
 
+// 文件 target Prometheus 指标：按 path 的读字节/总行/行数/编码失败，以及 manager 级活跃文件与失败 target 计数。
+
 import "github.com/prometheus/client_golang/prometheus"
 
+// GaugeVec/CounterVec 带 path 标签，filesActive/targetsActive 为全局 Gauge。
 // Metrics hold the set of file-based metrics.
 type Metrics struct {
 	// Registerer used. May be nil.
@@ -19,6 +22,7 @@ type Metrics struct {
 	targetsActive prometheus.Gauge
 }
 
+// 注册 read_bytes_total、file_bytes_total、read_lines_total 等 promtail 指标。
 // NewMetrics creates a new set of file metrics. If reg is non-nil, the metrics
 // will be registered.
 func NewMetrics(reg prometheus.Registerer) *Metrics {
@@ -46,6 +50,7 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		Help:      "Number of active files.",
 	})
 
+// FileTarget 创建或 sync 失败时按 reason 标签计数。
 	m.failedTargets = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "promtail",
 		Name:      "targets_failed_total",

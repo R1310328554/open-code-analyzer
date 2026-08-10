@@ -1,5 +1,8 @@
 package cloudflare
 
+// Cloudflare Logpull 字段预设：default/minimal/extended/all/custom 五档，
+// Fields() 合并附加字段后排序去重，供 target 构造 API 客户端时指定拉取列。
+
 import (
 	"fmt"
 	"slices"
@@ -37,6 +40,7 @@ var (
 	}...)
 )
 
+// 按 FieldsType 展开预设字段列表，与 additionalFields 合并后排序并 Compact 去重。
 // Fields returns the union of a set of fields represented by the Fieldtype and the given additional fields. The returned slice will contain no duplicates.
 func Fields(t FieldsType, additionalFields []string) ([]string, error) {
 	var fields []string
@@ -49,6 +53,7 @@ func Fields(t FieldsType, additionalFields []string) ([]string, error) {
 		fields = append(extendedFields, additionalFields...)
 	case FieldsTypeAll:
 		fields = append(allFields, additionalFields...)
+// custom 模式不附加任何预设，仅保留 scrape 配置中的 additional_fields。
 	case FieldsTypeCustom:
 		fields = append(fields, additionalFields...)
 	default:

@@ -1,5 +1,8 @@
 package file
 
+// 压缩日志一次性解压读取：支持 gz/z/bz2，按行 positions 断点续读，
+// 可选 IANA 字符集转 UTF-8，InitialDelay 可延迟启动解压 goroutine。
+
 import (
 	"bufio"
 	"compress/bzip2"
@@ -40,6 +43,7 @@ func supportedCompressedFormats() map[string]struct{} {
 	}
 }
 
+// 只读解压器：position 为已读行号，非字节偏移；Stop 用 sync.Once 防重复关通道。
 type decompressor struct {
 	metrics   *Metrics
 	logger    log.Logger
@@ -103,6 +107,7 @@ func newDecompressor(metrics *Metrics, logger log.Logger, handler api.EntryHandl
 	return decompressor, nil
 }
 
+// 按 cfg.Format 选择 gzip/zlib/bzip2 Reader，不支持扩展名则返回明确错误。
 // mountReader instantiate a reader ready to be used by the decompressor.
 //
 // The selected reader implementation is based on the extension of the given file name.
@@ -160,6 +165,7 @@ func (t *decompressor) updatePosition() {
 	}
 }
 
+// Scanner 逐行解压推送，跳过 position 之前行；编码失败写入占位错误行仍计数。
 // readLines read all existing lines of the given compressed file.
 //
 // It first decompress the file as a whole using a reader and then it will iterate
@@ -248,6 +254,7 @@ func (t *decompressor) readLines() {
 	}
 }
 
+// posAndSizeMtx 串行化 positions.Put 与 readBytes/totalBytes Gauge 更新。
 func (t *decompressor) MarkPositionAndSize() error {
 	// Lock this update as there are 2 timers calling this routine, the sync in filetarget and the positions sync in this file.
 	t.posAndSizeMtx.Lock()
@@ -293,6 +300,7 @@ func (t *decompressor) convertToUTF8(text string) (string, error) {
 	return res, nil
 }
 
+// 停止时递减 filesActive 并 DeleteLabelValues 清理 per-path 向量指标。
 // cleanupMetrics removes all metrics exported by this tailer
 func (t *decompressor) cleanupMetrics() {
 	// When we stop tailing the file, also un-export metrics related to the file

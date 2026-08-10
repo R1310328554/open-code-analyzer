@@ -1,5 +1,8 @@
 package file
 
+// FileTarget：glob/__path__ 匹配文件，fsnotify 监听目录 Create，周期 sync 对齐 tailer 集合。
+// 支持解压模式、path_exclude、stdin 与 polling tail，positions 按文件路径持久化。
+
 import (
 	"flag"
 	"os"
@@ -27,6 +30,7 @@ const (
 
 var errFileTargetStopped = errors.New("File target is stopped")
 
+// SyncPeriod 控制 resync 频率，Stdin 为 true 时从标准输入读日志。
 // Config describes behavior for Target
 type Config struct {
 	SyncPeriod time.Duration `mapstructure:"sync_period" yaml:"sync_period"`
@@ -81,6 +85,7 @@ type fileTargetEvent struct {
 	eventType fileTargetEventType
 }
 
+// 管理 watches/readers 映射，fileEventWatcher 与 targetEventHandler 与 manager 协作。
 // FileTarget describes a particular set of logs.
 // nolint:revive
 type FileTarget struct {
@@ -112,6 +117,7 @@ type FileTarget struct {
 	encoding string
 }
 
+// 启动 run goroutine：首次 sync 后 ticker 与 Create 事件驱动 tail 生命周期。
 // NewFileTarget create a new FileTarget.
 func NewFileTarget(
 	metrics *Metrics,
@@ -239,6 +245,7 @@ func (t *FileTarget) run() {
 	}
 }
 
+// Glob 匹配→排除→建目录 watch→prune 已停 tailer→start/stop tailing 与 positions 清理。
 func (t *FileTarget) sync() error {
 	var matches, matchesExcluded []string
 	if fi, err := os.Stat(t.path); err == nil && !fi.IsDir() {
@@ -432,6 +439,7 @@ func (t *FileTarget) startTailing(ps []string) {
 	}
 }
 
+// 文件消失时 Stop reader 并 positions.Remove，避免重启后误跳过已删文件。
 // stopTailingAndRemovePosition will stop the tailer and remove the positions entry.
 // Call this when a file no longer exists and you want to remove all traces of it.
 func (t *FileTarget) stopTailingAndRemovePosition(ps []string) {
@@ -444,6 +452,7 @@ func (t *FileTarget) stopTailingAndRemovePosition(ps []string) {
 	}
 }
 
+// sync 前移除 IsRunning=false 的 reader，下次 startTailing 会重建。
 // pruneStoppedTailers removes any tailers which have stopped running from
 // the list of active tailers. This allows them to be restarted if there were errors.
 func (t *FileTarget) pruneStoppedTailers() {

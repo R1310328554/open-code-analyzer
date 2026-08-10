@@ -1,5 +1,8 @@
 package gcplog
 
+// GCP Cloud Logging JSON 解析：映射 LogEntry 字段为 __gcp_* 内部标签，
+// relabel 过滤后合并 scrape 标签，可选 incoming 时间戳或仅 textPayload 行正文。
+
 import (
 	"errors"
 	"fmt"
@@ -16,9 +19,11 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// relabel.ProcessBuilder 返回 false 时丢弃条目，不向 Loki 推送。
 // errEntryDropped is returned when a log entry is dropped by relabeling rules.
 var errEntryDropped = errors.New("entry dropped by relabeling")
 
+// 结构体对齐 Cloud Logging LogEntry REST 模型，当前仅解析推送所需字段。
 // GCPLogEntry that will be written to the pubsub topic.
 // According to the following spec.
 // https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
@@ -50,6 +55,7 @@ type GCPLogEntry struct {
 	// anyway we will be sending the entire entry to Loki.
 }
 
+// 反序列化 JSON→注入 __gcp 标签→relabel→合并 other→解析时间戳与 log line。
 func parseGCPLogsEntry(data []byte, other model.LabelSet, otherInternal labels.Labels, useIncomingTimestamp, useFullLine bool, relabelConfig []*relabel.Config) (api.Entry, error) {
 	var ge GCPLogEntry
 
@@ -66,6 +72,7 @@ func parseGCPLogsEntry(data []byte, other model.LabelSet, otherInternal labels.L
 
 	// resource labels from gcp log entry. Add it as internal labels
 	for k, v := range ge.Resource.Labels {
+// resource/entry labels 转 Loki 兼容名并加前缀，供 relabel 规则选用。
 		lbs.Set("__gcp_resource_labels_"+convertToLokiCompatibleLabel(k), v)
 	}
 
@@ -118,6 +125,7 @@ func parseGCPLogsEntry(data []byte, other model.LabelSet, otherInternal labels.L
 	}
 
 	// Send only `ge.textPayload` as log line if its present and user don't explicitly ask for the whole log.
+// 默认仅发送 textPayload 正文，useFullLine 时保留原始 JSON 便于结构化查询。
 	if !useFullLine && strings.TrimSpace(ge.TextPayload) != "" {
 		line = ge.TextPayload
 	}
