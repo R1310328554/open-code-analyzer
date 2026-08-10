@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T06:48:26Z",
-  "files": [
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/GlobalOptionsCmdHelper.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/HelpCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/KcAdmCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/NewObjectCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/RemoveRolesCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/SetPasswordCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/UpdateCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/ClientOperations.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/GroupOperations.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/LocalSearch.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/OperationUtils.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/RoleOperations.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/UserOperations.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/CliJsonOutputHighlighter.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2Cmd.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5128,
-  "done": 855
+  "done": 870
 }
