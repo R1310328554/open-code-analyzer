@@ -1,5 +1,7 @@
 package aggregation
 
+// aggregation.Config 配置 pattern ingester 的采样、降采样与向 Loki 推送聚合指标的 HTTP 客户端参数。
+
 import (
 	"flag"
 	"time"
@@ -19,6 +21,7 @@ type Config struct {
 	BackoffConfig    backoff.Config          `yaml:"backoff_config,omitempty" doc:"description=The backoff configuration for pushing metrics to Loki."`
 }
 
+// RegisterFlags 委托 RegisterFlagsWithPrefix 注册 downsample-period 等 CLI 参数。
 // RegisterFlags registers pattern ingester related flags.
 func (cfg *Config) RegisterFlags(fs *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix(fs, "")
@@ -60,6 +63,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(fs *flag.FlagSet, prefix string) {
 	cfg.BasicAuth.RegisterFlagsWithPrefix(prefix+".", fs)
 }
 
+// BasicAuth 存储推送聚合指标至 Loki 时使用的 HTTP 基本认证用户名与 Secret 密码。
 // BasicAuth contains basic HTTP authentication credentials.
 type BasicAuth struct {
 	Username string `yaml:"username"           json:"username"`
@@ -82,6 +86,7 @@ func (cfg *BasicAuth) RegisterFlagsWithPrefix(prefix string, fs *flag.FlagSet) {
 	)
 }
 
+// secretValue 包装 config.Secret 以满足 flag.Value 接口，避免密码明文打印。
 type secretValue string
 
 func newSecretValue(val config.Secret, p *config.Secret) *secretValue {
@@ -98,7 +103,9 @@ func (s *secretValue) Get() any { return string(*s) }
 
 func (s *secretValue) String() string { return string(*s) }
 
+// Limits 按租户开关 MetricAggregation 与 PatternPersistence 功能。
 type Limits interface {
 	MetricAggregationEnabled(userID string) bool
 	PatternPersistenceEnabled(userID string) bool
 }
+// PushPeriod/WriteTimeout 控制批量推送节奏与单次 HTTP 写入超时；BackoffConfig 处理推送失败重试。

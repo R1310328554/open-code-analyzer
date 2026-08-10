@@ -1,5 +1,7 @@
 package memory
 
+// Allocator 是 arena 风格内存分配器：管理多个 Region，支持 Trim/Reclaim 循环复用，非 goroutine 安全，子分配器内存随父级 Reclaim 一并失效。
+
 import (
 	"errors"
 	"unsafe"
@@ -11,6 +13,7 @@ import (
 
 var errConcurrentUse = errors.New("detected concurrent use of allocator")
 
+// Allocator 用 Bitmap 跟踪 avail/used/empty 区域槽位，CompareAndSwap 检测并发误用。
 // Allocator is an arena-style memory allocator that manages a set of memory
 // regions.
 //
@@ -43,6 +46,7 @@ type Allocator struct {
 // Child allocators will obtain memory from their parent and can manage its own
 // Trim and Reclaim lifecycle. All memory allocated from a child is invalidated
 // when any of its parents (up to the root) reclaims memory.
+// NewAllocator 创建根或子分配器；子分配器从 parent 借 Region 并独立 Trim/Reclaim。
 func NewAllocator(parent *Allocator) *Allocator {
 	return &Allocator{parent: parent}
 }
@@ -50,6 +54,7 @@ func NewAllocator(parent *Allocator) *Allocator {
 // Allocate retrieves the next free Memory region that can hold at least size
 // bytes. If there is no such free Memory region, a new memory region will be
 // created.
+// Allocate 优先复用 avail 位图中容量足够的 Region，否则向 parent 或 runtime 申请新块。
 func (alloc *Allocator) Allocate(size int) *Region {
 	alloc.lock()
 	defer alloc.unlock()
@@ -122,6 +127,7 @@ func (alloc *Allocator) addRegion(region *Region, free bool) {
 //
 // Advanced use cases may wish to selectively call Trim depending on the values
 // of [Allocator.AllocatedBytes] and [Allocator.FreeBytes].
+// Reset 依次 Trim 再 Reclaim，一次性释放未用区域并标记全部槽位可复用。
 func (alloc *Allocator) Reset() {
 	alloc.Trim()
 	alloc.Reclaim()
@@ -132,6 +138,7 @@ func (alloc *Allocator) Reset() {
 // memory regions may be returned to the Go runtime for garbage collection.
 //
 // If Trim is called after Reclaim, all memory regions will be released.
+// Trim 将 used=0 的 Region 归还 parent 或置 nil，empty 位图标记槽位可重用。
 func (alloc *Allocator) Trim() {
 	alloc.lock()
 	defer alloc.unlock()
@@ -174,6 +181,7 @@ func (alloc *Allocator) Free() {
 
 // Reclaim all memory regions back to the Allocator for reuse. After calling
 // Reclaim, any [Region] returned by the Allocator or any child allocators must no longer be used.
+// Reclaim 将所有 Region 标记为 avail，此后任何已发出 Region 指针均不可再使用。
 func (alloc *Allocator) Reclaim() {
 	alloc.lock()
 	defer alloc.unlock()
@@ -215,6 +223,7 @@ func (alloc *Allocator) FreeBytes() int {
 
 // allocBytes allocates a new slice which can hold up to at least size bytes. The
 // returned slice will be 64-byte aligned for cache line efficiency.
+// allocBytes 分配带 64 字节对齐 padding 的 []byte，匹配 CPU cache line 与 Arrow 建议。
 func allocBytes(size int) []byte {
 	const alignmentPadding = 64
 
@@ -229,3 +238,4 @@ func allocBytes(size int) []byte {
 	}
 	return buf[:size:size]
 }
+// AllocatedBytes/FreeBytes 分别统计已持有总容量与 avail 位图中可立即复用的字节数。

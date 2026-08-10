@@ -1,5 +1,7 @@
 package memory
 
+// Buffer[T] 是在 Allocator 上管理的连续 typed 元素缓冲：Grow 倍增容量并保留旧 Region 直至 Reclaim，支持 Slice 共享底层内存。
+
 import (
 	"unsafe"
 
@@ -7,6 +9,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory/internal/unsafecast"
 )
 
+// Buffer 必须通过 NewBuffer 创建，生命周期不得超过关联 Allocator 的 Reclaim 周期。
 // Buffer is a low-level memory buffer for storing a set of elements
 // contiguously in memory.
 //
@@ -21,6 +24,7 @@ type Buffer[T any] struct {
 // be 0).
 //
 // The lifetime of the returned Buffer must not exceed the lifetime of alloc.
+// NewBuffer 创建长度为 0、容量至少 n 的 typed 缓冲并绑定 arena 分配器。
 func NewBuffer[T any](alloc *Allocator, n int) Buffer[T] {
 	buf := Buffer[T]{alloc: alloc}
 	if n > 0 {
@@ -33,6 +37,7 @@ func NewBuffer[T any](alloc *Allocator, n int) Buffer[T] {
 // another n elements. After Grow(n), at least n elements can be pushed to the
 // slice without another allocation. If n is negative or too large to allocate
 // the memory, Grow panics.
+// Grow 在容量不足时从 alloc 分配对齐后的新 Region，copy 旧数据并保留旧块为 used。
 func (buf *Buffer[T]) Grow(n int) {
 	if len(buf.data)+n <= cap(buf.data) {
 		return
@@ -129,6 +134,7 @@ func (buf *Buffer[T]) Clear() {
 // representing buf, padded to 64-bytes. Padded bytes will be set to zero.
 //
 // The returned memory is shared with buf, not a copy.
+// Serialize 将底层元素 reinterpret 为 []byte 并填充至 64 字节边界，共享内存非拷贝。
 func (buf *Buffer[T]) Serialize() []byte {
 	if buf.data == nil {
 		return nil
@@ -145,6 +151,7 @@ func (buf *Buffer[T]) Serialize() []byte {
 }
 
 // castMemory converts a memory region to a slice of type To.
+// castMemory 将 Region 的 []byte 按元素大小 unsafe 转换为 []To 切片视图。
 func castMemory[To any](mem *Region) []To {
 	orig := mem.Data()
 
@@ -158,3 +165,4 @@ func castMemory[To any](mem *Region) []To {
 	outPointer := (*To)(unsafe.Pointer(unsafe.SliceData(orig)))
 	return unsafe.Slice(outPointer, toCap)[:toLen]
 }
+// Push/Append/AppendCount 通过扩展 len 写入元素；Clear 对 data 调用 clear 零化内存。

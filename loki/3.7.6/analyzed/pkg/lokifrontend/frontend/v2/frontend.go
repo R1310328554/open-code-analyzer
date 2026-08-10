@@ -1,5 +1,7 @@
 package v2
 
+// v2 Frontend 通过 scheduler 调度查询：worker 将请求入队至 query-scheduler，querier 完成后经 QueryResult RPC 将结果推回对应 frontend 实例。
+
 import (
 	"context"
 	"flag"
@@ -42,6 +44,7 @@ const (
 	EncodingProtobuf = "protobuf"
 )
 
+// Config 含 scheduler 地址、worker 并发、实例 advertise 地址及 json/protobuf 编码选择。
 // Config for a Frontend.
 type Config struct {
 	SchedulerAddress        string            `yaml:"scheduler_address"`
@@ -79,6 +82,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.StringVar(&cfg.Encoding, "frontend.encoding", "json", "Defines the encoding for requests to and responses from the scheduler and querier. Can be 'json' or 'protobuf' (defaults to 'json').")
 }
 
+// Frontend 维护 queryID 映射、requestsCh 与 schedulerWorkers，实现 Do 与 RoundTripGRPC。
 // Frontend implements GrpcRoundTripper. It queues HTTP requests,
 // dispatches them to backends via gRPC, and handles retries for requests which failed.
 type Frontend struct {
@@ -106,6 +110,7 @@ type ResponseTuple = struct {
 	error
 }
 
+// frontendRequest 绑定 queryID、租户、actor 路径、取消函数及 enqueue/response 通道。
 type frontendRequest struct {
 	queryID      uint64
 	request      *httpgrpc.HTTPRequest
@@ -137,6 +142,7 @@ type enqueueResult struct {
 }
 
 // NewFrontend creates a new frontend.
+// NewFrontend 启动 scheduler workers、随机化 lastQueryID 并注册 inflight/connected schedulers 指标。
 func NewFrontend(cfg Config, ring ring.ReadRing, log log.Logger, reg prometheus.Registerer, codec transport.Codec, metricsNamespace string) (*Frontend, error) {
 	requestsCh := make(chan *frontendRequest)
 
@@ -216,6 +222,7 @@ func (f *Frontend) stopping(_ error) error {
 }
 
 // RoundTripGRPC round trips a proto (instead of a HTTP request).
+// RoundTripGRPC 分配 queryID、入队至 scheduler 并等待 QueryResult 推送的 httpgrpc 响应。
 func (f *Frontend) RoundTripGRPC(ctx context.Context, req *httpgrpc.HTTPRequest) (*httpgrpc.HTTPResponse, error) {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -279,6 +286,7 @@ func (f *Frontend) RoundTripGRPC(ctx context.Context, req *httpgrpc.HTTPRequest)
 }
 
 // Do implements queryrangebase.Handler analogous to RoundTripGRPC.
+// Do 按 Encoding 选择 protobuf QueryRequest 或 JSON→httpgrpc 路径，解码 queryrange 响应。
 func (f *Frontend) Do(ctx context.Context, req queryrangebase.Request) (queryrangebase.Response, error) {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -395,6 +403,7 @@ enqueueAgain:
 	return cancelCh, nil
 }
 
+// QueryResult 由 querier 回调：校验 tenantID 匹配后将结果写入对应 frontendRequest.response 通道。
 func (f *Frontend) QueryResult(ctx context.Context, qrReq *frontendv2pb.QueryResultRequest) (*frontendv2pb.QueryResultResponse, error) {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -452,6 +461,7 @@ func (f *Frontend) IsJSONEncoded() bool {
 
 const stripeSize = 1 << 6
 
+// requestsInProgress 用分片锁 map 按 queryID 跟踪进行中的 frontendRequest，降低锁竞争。
 type requestsInProgress struct {
 	locks    []sync.Mutex
 	requests []map[uint64]*frontendRequest
@@ -501,3 +511,4 @@ func (r *requestsInProgress) get(queryID uint64) *frontendRequest {
 	r.locks[i].Unlock()
 	return req
 }
+// stopping 在 GracefulShutdownTimeout 内轮询 inflight 归零后再停止 schedulerWorkers。

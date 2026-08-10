@@ -1,5 +1,7 @@
 package v1
 
+// v1 Frontend 是经典 query-frontend：租户请求入队，querier worker 通过 Process 双向流拉取并回传结果。
+
 import (
 	"context"
 	"flag"
@@ -31,6 +33,7 @@ var tracer = otel.Tracer("pkg/lokifrontend/frontend/v1")
 
 var errTooManyRequest = httpgrpc.Errorf(http.StatusTooManyRequests, "too many outstanding requests")
 
+// Config 限制每租户最大未完成请求数及 querier 崩溃后的 forget 延迟。
 // Config for a Frontend.
 type Config struct {
 	MaxOutstandingPerTenant int           `yaml:"max_outstanding_per_tenant"`
@@ -43,6 +46,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.DurationVar(&cfg.QuerierForgetDelay, "query-frontend.querier-forget-delay", 0, "In the event a tenant is repeatedly sending queries that lead the querier to crash or be killed due to an out-of-memory error, the crashed querier will be disconnected from the query frontend and a new querier will be immediately assigned to the tenant’s shard. This invalidates the assumption that shuffle sharding can be used to reduce the impact on tenants. This option mitigates the impact by configuring a delay between when a querier disconnects because of a crash and when the crashed querier is actually removed from the tenant's shard.")
 }
 
+// Limits 提供 shuffle sharding 的 MaxQueriersPerUser 与 MaxQueryCapacity 配额。
 type Limits interface {
 	// Returns max queriers to use per tenant, or 0 if shuffle sharding is disabled.
 	MaxQueriersPerUser(user string) uint
@@ -51,6 +55,7 @@ type Limits interface {
 	MaxQueryCapacity(user string) float64
 }
 
+// Frontend 实现 services.Service 与 GrpcRoundTripper，内部依赖 RequestQueue 分发。
 // Frontend queues HTTP requests, dispatches them to backends, and handles retries
 // for requests which failed.
 type Frontend struct {
@@ -75,6 +80,7 @@ type Frontend struct {
 	queueDuration prometheus.Histogram
 }
 
+// request 包装 httpgrpc 请求、入队时间与 response/err 通道，供 Process 与 RoundTripGRPC 同步。
 type request struct {
 	enqueueTime time.Time
 	queueSpan   trace.Span
@@ -86,6 +92,7 @@ type request struct {
 }
 
 // New creates a new frontend. Frontend implements service, and must be started and stopped.
+// New 构造 RequestQueue、连接数 gauge 与 queue duration 直方图并注册 subservices。
 func New(cfg Config, frontendLimits Limits, log log.Logger, registerer prometheus.Registerer, metricsNamespace string) (*Frontend, error) {
 	queueMetrics := queue.NewMetrics(registerer, metricsNamespace, "query_frontend")
 	f := &Frontend{
@@ -152,6 +159,7 @@ func (f *Frontend) cleanupInactiveUserMetrics(user string) {
 }
 
 // RoundTripGRPC round trips a proto (instead of a HTTP request).
+// RoundTripGRPC 将请求入队并阻塞等待 querier 经 Process 流写回响应或错误。
 func (f *Frontend) RoundTripGRPC(ctx context.Context, req *httpgrpc.HTTPRequest) (*httpgrpc.HTTPResponse, error) {
 	// Propagate trace context in gRPC too - this will be ignored if using HTTP.
 	otel.GetTextMapPropagator().Inject(ctx, (*lokigrpc.HeadersCarrier)(req))
@@ -184,6 +192,7 @@ func (f *Frontend) RoundTripGRPC(ctx context.Context, req *httpgrpc.HTTPRequest)
 }
 
 // Process allows backends to pull requests from the frontend.
+// Process 是 querier 侧入口：注册 consumer、Dequeue 租户队列并通过双向 gRPC 流收发 HTTP 请求/响应。
 func (f *Frontend) Process(server frontendv1pb.Frontend_ProcessServer) error {
 	querierID, err := getQuerierID(server)
 	if err != nil {
@@ -272,6 +281,7 @@ func (f *Frontend) Process(server frontendv1pb.Frontend_ProcessServer) error {
 	}
 }
 
+// NotifyClientShutdown 在 querier 优雅退出时通知队列注销该 client，避免长时间等待。
 func (f *Frontend) NotifyClientShutdown(_ context.Context, req *frontendv1pb.NotifyClientShutdownRequest) (*frontendv1pb.NotifyClientShutdownResponse, error) {
 	level.Info(f.log).Log("msg", "received shutdown notification from querier", "querier", req.GetClientID())
 	f.requestQueue.NotifyConsumerShutdown(req.GetClientID())
@@ -279,6 +289,7 @@ func (f *Frontend) NotifyClientShutdown(_ context.Context, req *frontendv1pb.Not
 	return &frontendv1pb.NotifyClientShutdownResponse{}, nil
 }
 
+// getQuerierID 先发送 GET_ID 消息获取 querier 标识，兼容旧版返回空 ID 的行为。
 func getQuerierID(server frontendv1pb.Frontend_ProcessServer) (string, error) {
 	err := server.Send(&frontendv1pb.FrontendToClient{
 		Type: frontendv1pb.GET_ID,
@@ -323,6 +334,7 @@ func (f *Frontend) queueRequest(ctx context.Context, req *request) error {
 
 // CheckReady determines if the query frontend is ready.  Function parameters/return
 // chosen to match the same method in the ingester
+// CheckReady 要求至少一个 querier 已连接 RequestQueue，否则返回 not ready 错误。
 func (f *Frontend) CheckReady(_ context.Context) error {
 	// if we have more than one querier connected we will consider ourselves ready
 	connectedClients := f.requestQueue.GetConnectedConsumersMetric()
@@ -334,3 +346,4 @@ func (f *Frontend) CheckReady(_ context.Context) error {
 	level.Info(f.log).Log("msg", msg)
 	return errors.New(msg)
 }
+// Dequeue 跳过 originalCtx 已取消的请求并 ReuseLastIndex，防止过期请求阻塞活跃租户队列。

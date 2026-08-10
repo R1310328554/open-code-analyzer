@@ -3,6 +3,8 @@
 
 package frontendv2pb
 
+// frontendv2pb 由 frontend.proto 生成，定义 v2 frontend 与 querier 间的 QueryResult RPC：querier 将 HTTP 或 QueryResponse 结果按 queryID 推回发起请求的 frontend。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -32,9 +34,11 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QueryResultRequest 携带 queryID、oneof 响应体（HttpResponse 或 QueryResponse）及 stats。
 type QueryResultRequest struct {
 	QueryID uint64 `protobuf:"varint,1,opt,name=queryID,proto3" json:"queryID,omitempty"`
-	// Types that are valid to be assigned to Response:
+	// Response oneof 支持 JSON/httpgrpc 与 protobuf QueryResponse 两种编码路径。
+// Types that are valid to be assigned to Response:
 	//	*QueryResultRequest_HttpResponse
 	//	*QueryResultRequest_QueryResponse
 	Response isQueryResultRequest_Response `protobuf_oneof:"response"`
@@ -134,6 +138,7 @@ func (*QueryResultRequest) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// QueryResultResponse 为空 ACK，表示 frontend 已接收 QueryResult 回调。
 type QueryResultResponse struct {
 }
 
@@ -369,6 +374,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// FrontendForQuerierClient 供 querier 调用 QueryResult 将异步结果推回 frontend。
 // FrontendForQuerierClient is the client API for FrontendForQuerier service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -393,6 +399,7 @@ func (c *frontendForQuerierClient) QueryResult(ctx context.Context, in *QueryRes
 	return out, nil
 }
 
+// FrontendForQuerierServer 由 v2 Frontend 实现 QueryResult 方法完成 queryID 路由。
 // FrontendForQuerierServer is the server API for FrontendForQuerier service.
 type FrontendForQuerierServer interface {
 	QueryResult(context.Context, *QueryResultRequest) (*QueryResultResponse, error)
@@ -1012,3 +1019,5 @@ var (
 	ErrInvalidLengthFrontend = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowFrontend   = fmt.Errorf("proto: integer overflow")
 )
+// RegisterFrontendForQuerierServer 注册 /frontendv2pb.FrontendForQuerier/QueryResult 一元 RPC。
+// RegisterFrontendForQuerierServer 注册 /frontendv2pb.FrontendForQuerier/QueryResult 一元 RPC。

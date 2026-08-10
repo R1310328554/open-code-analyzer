@@ -6,6 +6,8 @@
 
 package frontendv1pb
 
+// frontendv1pb 由 frontend.proto 生成，定义 v1 query-frontend 与 querier 间的 gRPC 消息：Process 双向流、GET_ID 握手及客户端关闭通知。
+
 import (
 	context "context"
 	fmt "fmt"
@@ -35,6 +37,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Type 区分 FrontendToClient 消息是 HTTP 请求载荷还是 GET_ID 握手。
 type Type int32
 
 const (
@@ -56,10 +59,12 @@ func (Type) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_e58870c6eb9e26f7, []int{0}
 }
 
+// FrontendToClient 由 frontend 发往 querier：HTTP 请求、消息类型及是否启用 stats。
 type FrontendToClient struct {
 	HttpRequest *httpgrpc.HTTPRequest `protobuf:"bytes,1,opt,name=httpRequest,proto3" json:"httpRequest,omitempty"`
 	Type        Type                  `protobuf:"varint,2,opt,name=type,proto3,enum=frontend.Type" json:"type,omitempty"`
-	// Whether query statistics tracking should be enabled. The response will include
+	// StatsEnabled 为 true 时 querier 应在 ClientToFrontend 中附带 Stats 字段。
+// Whether query statistics tracking should be enabled. The response will include
 	// statistics only when this option is enabled.
 	StatsEnabled bool `protobuf:"varint,3,opt,name=statsEnabled,proto3" json:"statsEnabled,omitempty"`
 }
@@ -117,6 +122,7 @@ func (m *FrontendToClient) GetStatsEnabled() bool {
 	return false
 }
 
+// ClientToFrontend 由 querier 回传：HTTP 响应、ClientID 与可选查询统计。
 type ClientToFrontend struct {
 	HttpResponse *httpgrpc.HTTPResponse `protobuf:"bytes,1,opt,name=httpResponse,proto3" json:"httpResponse,omitempty"`
 	ClientID     string                 `protobuf:"bytes,2,opt,name=clientID,proto3" json:"clientID,omitempty"`
@@ -176,6 +182,7 @@ func (m *ClientToFrontend) GetStats() *stats.Stats {
 	return nil
 }
 
+// NotifyClientShutdownRequest 携带即将退出的 querier ClientID。
 type NotifyClientShutdownRequest struct {
 	ClientID string `protobuf:"bytes,1,opt,name=clientID,proto3" json:"clientID,omitempty"`
 }
@@ -479,6 +486,7 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
+// FrontendClient 提供 Process 双向流 RPC 与 NotifyClientShutdown 一元 RPC。
 // FrontendClient is the client API for Frontend service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
@@ -538,6 +546,7 @@ func (c *frontendClient) NotifyClientShutdown(ctx context.Context, in *NotifyCli
 	return out, nil
 }
 
+// FrontendServer 由 query-frontend v1 实现，querier worker 作为客户端连接。
 // FrontendServer is the server API for Frontend service.
 type FrontendServer interface {
 	// After calling this method, client enters a loop, in which it waits for
@@ -1446,3 +1455,4 @@ var (
 	ErrInvalidLengthFrontend = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowFrontend   = fmt.Errorf("proto: integer overflow")
 )
+// RegisterFrontendServer 将 Frontend 服务注册到 gRPC Server，路径含 Process 与 NotifyClientShutdown。

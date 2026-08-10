@@ -1,5 +1,7 @@
 package memory
 
+// Bitmap 是位压缩布尔序列，LSB 位序与 Apache Arrow 兼容；可绑定 Allocator 在 arena 内分配底层字节，支持 Grow/Slice/IterValues。
+
 import (
 	"iter"
 	"math/bits"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory/internal/memalign"
 )
 
+// 零值 Bitmap 可用内置 make 分配；NewBitmap 可选关联 Allocator 以复用 Region 内存。
 // Bitmap is a bit-packed representation of a sequence of boolean values. Bits
 // are ordered in LSB (Least Significant Bit) for compatibility with Apache
 // Arrow.
@@ -36,6 +39,7 @@ type Bitmap struct {
 // If alloc is nil, memory is created using Go's built-in memory allocation.
 // Otherwise, the lifetime of the returned Bitmap must not exceed the lifetime
 // of alloc.
+// NewBitmap 创建初始长度为 0、容量至少 n 的位图，alloc 非 nil 时从 arena 取内存。
 func NewBitmap(alloc *Allocator, n int) Bitmap {
 	bmap := Bitmap{alloc: alloc}
 	if n > 0 {
@@ -93,6 +97,7 @@ func (bmap *Bitmap) Set(i int, value bool) { bitutil.SetBitTo(bmap.data, bmap.of
 
 // SetRange sets all the bits in the range [from, to). SetRange panics if from >
 // to or if to > bmap.Len().
+// SetRange 批量设置 [from,to) 区间内的位，委托 bitutil.SetBitsTo。
 func (bmap *Bitmap) SetRange(from, to int, value bool) {
 	bitutil.SetBitsTo(bmap.data, int64(bmap.off+from), int64(to-from), value)
 }
@@ -117,6 +122,7 @@ func (bmap *Bitmap) AppendValues(values ...bool) {
 // n values. After Grow(n), at least n values can be appended to bmap without
 // another allocation. If n is negative or too large to allocate the memory,
 // Grow panics.
+// Grow 按需扩容并在 off!=0 时通过 CopyBitmap 归一化对齐，避免热路径重复切片。
 func (bmap *Bitmap) Grow(n int) {
 	if n < 0 {
 		panic("negative length")
@@ -204,6 +210,7 @@ func (bmap *Bitmap) ClearCount() int {
 //
 // If bmap is an unaligned slice, the cloned bitmap will be normalized to remove
 // offsets. See [Bitmap.Bytes] for more information on aligned slices.
+// Clone 复制位数据并归一化 offset，新位图使用指定 Allocator 供后续 Grow。
 func (bmap *Bitmap) Clone(alloc *Allocator) *Bitmap {
 	newData := allocBitmapData(alloc, words(bmap.len))
 
@@ -261,6 +268,7 @@ func (bmap *Bitmap) Slice(i, j int) *Bitmap {
 
 // IterValues returns an iterator over bits, returning the index
 // of each bit matching value.
+// IterValues 迭代值为 value 的位索引，用 TrailingZeros8 快速跳过零字。
 func (bmap *Bitmap) IterValues(value bool) iter.Seq[int] {
 	return func(yield func(int) bool) {
 		var start int
@@ -293,3 +301,4 @@ func (bmap *Bitmap) IterValues(value bool) iter.Seq[int] {
 		}
 	}
 }
+// Bytes 返回原始字节与首位偏移 off；Slice 共享底层存储并可能产生非零 off 的子视图。

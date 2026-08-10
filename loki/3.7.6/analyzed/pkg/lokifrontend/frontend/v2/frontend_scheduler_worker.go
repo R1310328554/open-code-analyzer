@@ -1,5 +1,7 @@
 package v2
 
+// frontendSchedulerWorker 管理 frontend 到 query-scheduler 的 gRPC 连接：DNS/Ring 发现 scheduler 地址，多 goroutine 经 FrontendLoop 转发入队与取消。
+
 import (
 	"context"
 	"net/http"
@@ -20,6 +22,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// frontendSchedulerWorkers 根据 ring 或 DNS 监听 scheduler 实例增减，维护 address→worker 映射。
 type frontendSchedulerWorkers struct {
 	services.Service
 
@@ -91,6 +94,7 @@ func (f *frontendSchedulerWorkers) stopping(_ error) error {
 	return err
 }
 
+// AddressAdded 为新 scheduler 建立 gRPC 连接并启动 frontendSchedulerWorker。
 func (f *frontendSchedulerWorkers) AddressAdded(address string) {
 	f.mu.Lock()
 	ws := f.workers
@@ -129,6 +133,7 @@ func (f *frontendSchedulerWorkers) AddressAdded(address string) {
 	w.start()
 }
 
+// AddressRemoved 停止并移除指定地址的 worker，关闭 FrontendLoop 流。
 func (f *frontendSchedulerWorkers) AddressRemoved(address string) {
 	level.Info(f.logger).Log("msg", "removing connection to scheduler", "addr", address)
 
@@ -166,6 +171,7 @@ func (f *frontendSchedulerWorkers) connectToScheduler(ctx context.Context, addre
 	return conn, nil
 }
 
+// frontendSchedulerWorker 在单连接上运行 concurrency 个 runOne 循环，共享 requestCh 与 cancelCh。
 // Worker managing single gRPC connection to Scheduler. Each worker starts multiple goroutines for forwarding
 // requests and cancellations to scheduler.
 type frontendSchedulerWorker struct {
@@ -254,6 +260,7 @@ func (w *frontendSchedulerWorker) runOne(ctx context.Context, client schedulerpb
 	}
 }
 
+// schedulerLoop 发送 INIT 后循环：从 requestCh 取请求 ENQUEUE 至 scheduler，或经 cancelCh 发送 CANCEL。
 func (w *frontendSchedulerWorker) schedulerLoop(loop schedulerpb.SchedulerForFrontend_FrontendLoopClient) error {
 	if err := loop.Send(&schedulerpb.FrontendToScheduler{
 		Type:            schedulerpb.INIT,
@@ -326,7 +333,8 @@ func (w *frontendSchedulerWorker) schedulerLoop(loop schedulerpb.SchedulerForFro
 			case schedulerpb.ERROR:
 				req.enqueue <- enqueueResult{status: waitForResponse}
 				req.response <- ResponseTuple{nil, httpgrpc.Errorf(http.StatusInternalServerError, "%s", resp.Error)}
-			case schedulerpb.TOO_MANY_REQUESTS_PER_TENANT:
+			// 租户超出 scheduler 配额时直接通过 response 通道返回 HTTP 429 给上游。
+case schedulerpb.TOO_MANY_REQUESTS_PER_TENANT:
 				req.enqueue <- enqueueResult{status: waitForResponse}
 				req.response <- ResponseTuple{nil, httpgrpc.Errorf(http.StatusTooManyRequests, "too many outstanding requests")}
 			default:
@@ -355,3 +363,4 @@ func (w *frontendSchedulerWorker) schedulerLoop(loop schedulerpb.SchedulerForFro
 		}
 	}
 }
+// runOne 在 FrontendLoop 断开时使用指数退避重连，保证 scheduler 故障时自动恢复。

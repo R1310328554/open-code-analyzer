@@ -1,5 +1,7 @@
 package transport
 
+// transport.Handler 是 query-frontend 的 HTTP 入口：接收查询请求、经 RoundTripper 转发，并可选记录慢查询日志与 Prometheus 查询统计。
+
 import (
 	"bytes"
 	"context"
@@ -31,7 +33,8 @@ import (
 )
 
 const (
-	// StatusClientClosedRequest is the status code for when a client request cancellation of an http request
+	// 499 表示客户端主动取消请求，对应 context.Canceled 的 HTTP 映射。
+// StatusClientClosedRequest is the status code for when a client request cancellation of an http request
 	StatusClientClosedRequest = 499
 	ServiceTimingHeaderName   = "Server-Timing"
 )
@@ -42,6 +45,7 @@ var (
 	errRequestEntityTooLarge = httpgrpc.Errorf(http.StatusRequestEntityTooLarge, "http: request body too large")
 )
 
+// HandlerConfig 控制慢查询阈值、日志头、最大 body 与是否启用 query stats。
 // Config for a Handler.
 type HandlerConfig struct {
 	LogQueriesLongerThan   time.Duration          `yaml:"log_queries_longer_than"`
@@ -57,6 +61,7 @@ func (cfg *HandlerConfig) RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&cfg.QueryStatsEnabled, "frontend.query-stats-enabled", false, "True to enable query statistics tracking. When enabled, a message with some statistics is logged for every query.")
 }
 
+// Handler 封装 RoundTripper，ServeHTTP 负责 body 限流、统计上下文与响应回写。
 // Handler accepts queries and forwards them to RoundTripper. It can log slow queries,
 // but all other logic is inside the RoundTripper.
 type Handler struct {
@@ -72,6 +77,7 @@ type Handler struct {
 }
 
 // NewHandler creates a new frontend handler.
+// NewHandler 在 QueryStatsEnabled 时注册 query_seconds/series/bytes 等指标并启动 inactive user 清理。
 func NewHandler(cfg HandlerConfig, roundTripper http.RoundTripper, log log.Logger, reg prometheus.Registerer, metricsNamespace string) http.Handler {
 	h := &Handler{
 		cfg:          cfg,
@@ -110,6 +116,7 @@ func NewHandler(cfg HandlerConfig, roundTripper http.RoundTripper, log log.Logge
 	return h
 }
 
+// ServeHTTP 缓冲 body、调用 RoundTripper、复制响应头并可选写入 Server-Timing 与慢查询日志。
 func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
 		stats       *querier_stats.Stats
@@ -172,6 +179,7 @@ func (f *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // reportSlowQuery reports slow queries.
+// reportSlowQuery 在耗时超过 LogQueriesLongerThan 时记录 method/path/参数等结构化日志。
 func (f *Handler) reportSlowQuery(r *http.Request, queryString url.Values, queryResponseTime time.Duration) {
 	logMessage := append([]interface{}{
 		"msg", "slow query detected",
@@ -184,6 +192,7 @@ func (f *Handler) reportSlowQuery(r *http.Request, queryString url.Values, query
 	level.Info(util_log.WithContext(r.Context(), f.log)).Log(logMessage...)
 }
 
+// reportQueryStats 累加租户级 wall time/series/bytes 并输出 query stats 日志行。
 func (f *Handler) reportQueryStats(r *http.Request, queryString url.Values, queryResponseTime time.Duration, stats *querier_stats.Stats) {
 	tenantIDs, err := tenant.TenantIDs(r.Context())
 	if err != nil {
@@ -263,10 +272,12 @@ func statsValue(name string, d time.Duration) string {
 	return name + ";dur=" + durationInMs
 }
 
+// AdaptGrpcRoundTripperToHandler 将 gRPC RoundTripper 适配为 queryrangebase.Handler 接口。
 func AdaptGrpcRoundTripperToHandler(r GrpcRoundTripper, codec Codec) queryrangebase.Handler {
 	return &grpcRoundTripperToHandlerAdapter{roundTripper: r, codec: codec}
 }
 
+// grpcRoundTripperToHandlerAdapter 经 httpgrpc 在 HTTP 与 gRPC 消息间转换请求/响应。
 // This adapter wraps GrpcRoundTripper and converts it into a queryrangebase.Handler
 type grpcRoundTripperToHandlerAdapter struct {
 	roundTripper GrpcRoundTripper
@@ -294,3 +305,4 @@ func (a *grpcRoundTripperToHandlerAdapter) Do(ctx context.Context, req queryrang
 
 	return a.codec.DecodeHTTPGrpcResponse(grpcResp, req)
 }
+// writeServiceTimingHeader 在 Server-Timing 头中暴露 querier_wall_time 与总 response_time。
