@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 测试辅助：将 client_model MetricFamily 序列化为 exposition protobuf 流（length-delimited），供 scrape 路径集成测试使用。
+
 package scrape
 
 import (
@@ -22,6 +24,7 @@ import (
 	dto "github.com/prometheus/client_model/go"
 )
 
+// MetricFamilyToProtobuf 返回完整 protobuf 字节切片。
 // MetricFamilyToProtobuf writes a MetricFamily into a protobuf.
 // This function is intended for testing scraping by providing protobuf serialized input.
 func MetricFamilyToProtobuf(metricFamily *dto.MetricFamily) ([]byte, error) {
@@ -33,6 +36,7 @@ func MetricFamilyToProtobuf(metricFamily *dto.MetricFamily) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+// AddMetricFamilyToProtobuf 写入 uvarint 长度前缀 + proto.Marshal 载荷。
 // AddMetricFamilyToProtobuf appends a MetricFamily protobuf representation to a buffer.
 // This function is intended for testing scraping by providing protobuf serialized input.
 func AddMetricFamilyToProtobuf(buffer *bytes.Buffer, metricFamily *dto.MetricFamily) error {

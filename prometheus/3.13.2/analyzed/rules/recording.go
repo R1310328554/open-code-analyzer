@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Recording 规则：求值 PromQL 向量表达式并重写 __name__/labels 后写入 TSDB。
+
 package rules
 
 import (
@@ -30,10 +32,12 @@ import (
 	"github.com/prometheus/prometheus/promql/parser"
 )
 
+// 应用 rule labels 后重复 labelset 时返回 ErrDuplicateRecordingLabelSet。
 // ErrDuplicateRecordingLabelSet is returned when a recording rule evaluation produces
 // metrics with identical labelsets after applying rule labels.
 var ErrDuplicateRecordingLabelSet = errors.New("vector contains metrics with the same labelset after applying rule labels")
 
+// RecordingRule 维护健康状态、求值耗时与规则依赖图边。
 // A RecordingRule records its vector expression into new timeseries.
 type RecordingRule struct {
 	name   string
@@ -53,6 +57,7 @@ type RecordingRule struct {
 	dependencyRules   []Rule
 }
 
+// NewRecordingRule 设置初始 HealthUnknown 与空依赖列表。
 // NewRecordingRule returns a new recording rule.
 func NewRecordingRule(name string, vector parser.Expr, lset labels.Labels) *RecordingRule {
 	return &RecordingRule{
@@ -81,6 +86,7 @@ func (rule *RecordingRule) Labels() labels.Labels {
 	return rule.labels
 }
 
+// Eval 执行查询、应用 labels 模板并设置输出 metric 名称。
 // Eval evaluates the rule and then overrides the metric names and labels accordingly.
 func (rule *RecordingRule) Eval(ctx context.Context, queryOffset time.Duration, ts time.Time, query QueryFunc, _ *url.URL, limit int) (promql.Vector, error) {
 	ctx = NewOriginContext(ctx, NewRuleDetail(rule))

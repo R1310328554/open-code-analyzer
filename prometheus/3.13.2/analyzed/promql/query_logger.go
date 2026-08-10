@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 活跃 PromQL 查询追踪器：mmap 固定大小 JSON 日志文件，记录并发查询并在进程重启后恢复未完成查询列表。
+
 package promql
 
 import (
@@ -39,6 +41,7 @@ type ActiveQueryTracker struct {
 
 var _ io.Closer = &ActiveQueryTracker{}
 
+// Entry 为单条活跃查询的 JSON 记录（表达式 + 时间戳）。
 type Entry struct {
 	Query     string `json:"query"`
 	Timestamp int64  `json:"timestamp_sec"`
@@ -67,6 +70,7 @@ type syncWriter interface {
 	Sync() error
 }
 
+// allocateQueryLogFile 预写零字节初始化固定大小查询日志文件。
 func allocateQueryLogFile(file syncWriter, filesize int) error {
 	zeroes := make([]byte, min(filesize, 32*1024))
 	remaining := filesize
@@ -87,6 +91,7 @@ func allocateQueryLogFile(file syncWriter, filesize int) error {
 	return file.Sync()
 }
 
+// logUnfinishedQueries 启动时扫描 mmap 文件并记录上次未完成的查询。
 func logUnfinishedQueries(filename string, filesize int, logger *slog.Logger) {
 	if _, err := os.Stat(filename); err == nil {
 		fd, err := os.Open(filename)
@@ -155,6 +160,7 @@ func getMMappedFile(filename string, filesize int, logger *slog.Logger) ([]byte,
 	return fileAsBytes, &mmappedFile{f: file, m: fileAsBytes}, err
 }
 
+// NewActiveQueryTracker 创建/映射 query.active 文件并启动索引分配 goroutine。
 func NewActiveQueryTracker(localStoragePath string, maxConcurrent int, logger *slog.Logger) (*ActiveQueryTracker, error) {
 	err := os.MkdirAll(localStoragePath, 0o777)
 	if err != nil {
@@ -234,6 +240,7 @@ func (tracker ActiveQueryTracker) Delete(insertIndex int) {
 	tracker.getNextIndex <- insertIndex
 }
 
+// Insert 在空槽写入 JSON 条目；槽满或 ctx 取消时返回错误。
 func (tracker ActiveQueryTracker) Insert(ctx context.Context, query string) (int, error) {
 	select {
 	case i := <-tracker.getNextIndex:
@@ -249,6 +256,7 @@ func (tracker ActiveQueryTracker) Insert(ctx context.Context, query string) (int
 	}
 }
 
+// Close 关闭 mmap 并释放底层文件句柄。
 // Close closes tracker.
 func (tracker *ActiveQueryTracker) Close() error {
 	if tracker == nil || tracker.closer == nil {

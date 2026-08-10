@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 指标 schema 元数据：__name__/__type__/__unit__ 标签的 Metadata 结构，支持 type-and-unit 特性下的标签读写与冲突规避。
+
 package schema
 
 import (
@@ -19,12 +21,14 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 )
 
+// IsMetadataLabel 判断是否为 schema 保留元数据标签名。
 // IsMetadataLabel returns true if the given label name is a special
 // schema Metadata label.
 func IsMetadataLabel(name string) bool {
 	return name == model.MetricNameLabel || name == model.MetricTypeLabel || name == model.MetricUnitLabel
 }
 
+// Metadata 封装指标名、类型与单位，参与序列身份识别。
 // Metadata represents the core metric schema/metadata elements that:
 // * are describing and identifying the metric schema/shape (e.g. name, type and unit).
 // * are contributing to the general metric/series identity.
@@ -66,6 +70,7 @@ type Metadata struct {
 	Unit string
 }
 
+// NewMetadataFromLabels 从 labels 提取 __name__/__type__/__unit__。
 // NewMetadataFromLabels returns the schema metadata from the labels.
 func NewMetadataFromLabels(ls labels.Labels) Metadata {
 	typ := model.MetricTypeUnknown
@@ -100,6 +105,7 @@ func (m Metadata) IsEmptyFor(labelName string) bool {
 	}
 }
 
+// AddToLabels 将非空 Metadata 字段追加到 ScratchBuilder。
 // AddToLabels adds metric schema metadata as labels into the labels.ScratchBuilder.
 // Empty Metadata fields will be ignored (not added).
 func (m Metadata) AddToLabels(b *labels.ScratchBuilder) {
@@ -114,6 +120,7 @@ func (m Metadata) AddToLabels(b *labels.ScratchBuilder) {
 	}
 }
 
+// SetToLabels 按 Builder.Set 语义写入元数据标签。
 // SetToLabels injects metric schema metadata as labels into the labels.Builder.
 // It follows the labels.Builder.Set semantics, so empty Metadata fields will
 // remove the corresponding existing labels if they were previously set.
@@ -134,6 +141,7 @@ func (m Metadata) NewIgnoreOverriddenMetadataLabelScratchBuilder(b *labels.Scrat
 	return &IgnoreOverriddenMetadataLabelScratchBuilder{ScratchBuilder: b, overwrite: m}
 }
 
+// IgnoreOverriddenMetadataLabelScratchBuilder 避免覆盖已显式设置的元数据标签。
 // IgnoreOverriddenMetadataLabelScratchBuilder is a wrapper over labels.ScratchBuilder
 // that ignores label additions that would collide with non-empty Overwrite Metadata fields.
 type IgnoreOverriddenMetadataLabelScratchBuilder struct {

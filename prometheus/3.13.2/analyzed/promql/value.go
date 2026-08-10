@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 求值结果类型：Vector/Matrix/Scalar/String 及 Sample/Series 点结构，含 JSON 序列化与 storage.Series 适配器。
+
 package promql
 
 import (
@@ -34,6 +36,7 @@ func (Vector) Type() parser.ValueType { return parser.ValueTypeVector }
 func (Scalar) Type() parser.ValueType { return parser.ValueTypeScalar }
 func (String) Type() parser.ValueType { return parser.ValueTypeString }
 
+// String 表示 PromQL 字符串类型求值结果。
 // String represents a string value.
 type String struct {
 	T int64
@@ -48,6 +51,7 @@ func (s String) MarshalJSON() ([]byte, error) {
 	return json.Marshal([...]any{float64(s.T) / 1000, s.V})
 }
 
+// Scalar 为无标签绑定的标量样本（单时间戳 + 浮点值）。
 // Scalar is a data point that's explicitly not associated with a metric.
 type Scalar struct {
 	T int64
@@ -64,6 +68,7 @@ func (s Scalar) MarshalJSON() ([]byte, error) {
 	return json.Marshal([...]any{float64(s.T) / 1000, v})
 }
 
+// Series 为单条指标的时间序列（浮点与/或直方图点列）。
 // Series is a stream of data points belonging to a metric.
 type Series struct {
 	Metric     labels.Labels `json:"metric"`
@@ -89,6 +94,7 @@ func (s Series) String() string {
 	return fmt.Sprintf("%s =>\n%s", s.Metric, strings.Join(vals, "\n"))
 }
 
+// FPoint 为单个 float 样本点（毫秒时间戳 + 值）。
 // FPoint represents a single float data point for a given timestamp.
 type FPoint struct {
 	T int64
@@ -114,6 +120,7 @@ func (p FPoint) MarshalJSON() ([]byte, error) {
 	return json.Marshal([...]any{float64(p.T) / 1000, v})
 }
 
+// HPoint 为单个 native histogram 样本点；H 不可为 nil。
 // HPoint represents a single histogram data point for a given timestamp.
 // H must never be nil.
 type HPoint struct {
@@ -209,6 +216,7 @@ func countSamplesAfter(floats []FPoint, histograms []HPoint, cutoff int64) int64
 	return n
 }
 
+// Sample 为 Vector 元素：浮点或直方图二选一，带完整标签集。
 // Sample is a single sample belonging to a metric. It represents either a float
 // sample or a histogram sample. If H is nil, it is a float sample. Otherwise,
 // it is a histogram sample.
@@ -258,6 +266,7 @@ func (s Sample) MarshalJSON() ([]byte, error) {
 	return json.Marshal(h)
 }
 
+// Vector 为 []Sample 别名，语义上标签集在向量内应唯一。
 // Vector is basically only an alias for []Sample, but the contract is that
 // in a Vector, all Samples have the same timestamp.
 type Vector []Sample
@@ -307,6 +316,7 @@ func (vec Vector) ContainsSameLabelset() bool {
 	}
 }
 
+// Matrix 为多条 Series 的切片，按 metric 标签排序，用于区间查询结果。
 // Matrix is a slice of Series that implements sort.Interface and
 // has a String method.
 type Matrix []Series
@@ -360,6 +370,7 @@ func (m Matrix) ContainsSameLabelset() bool {
 	}
 }
 
+// Result 封装 Query.Exec 的 Value、Warnings 与 Err。
 // Result holds the resulting value of an execution or an error
 // if any occurred.
 type Result struct {
@@ -417,6 +428,7 @@ func (r *Result) String() string {
 	return r.Value.String()
 }
 
+// StartTimestamps 与 Matrix 点对齐，记录 native histogram 样本起始时间。
 // StartTimestamps stores sample start timestamps aligned with points.
 type StartTimestamps struct {
 	// Floats stores start timestamps for float samples.
@@ -435,6 +447,7 @@ func (st *StartTimestamps) Reset() {
 	}
 }
 
+// StorageSeries 将 PromQL Series 包装为 storage 层可迭代的 Series。
 // StorageSeries simulates promql.Series as storage.Series.
 type StorageSeries struct {
 	series Series
@@ -582,6 +595,7 @@ func (*storageSeriesIterator) Err() error {
 	return nil
 }
 
+// fParams 缓存 PromQL 函数可选参数（如 quantile 的 phi）的求值状态。
 type fParams struct {
 	series     Series
 	constValue float64

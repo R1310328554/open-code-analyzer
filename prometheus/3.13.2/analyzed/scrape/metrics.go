@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scrape 子系统 Prometheus 自监控指标：pool 同步、单次 scrape 耗时、样本限制命中与元数据缓存大小等。
+
 package scrape
 
 import (
@@ -59,6 +61,7 @@ type scrapeMetrics struct {
 	targetScrapeDuration                   prometheus.Histogram
 }
 
+// newScrapeMetrics 注册 prometheus_target_* 系列指标并返回 collector。
 func newScrapeMetrics(reg prometheus.Registerer) (*scrapeMetrics, error) {
 	sm := &scrapeMetrics{reg: reg}
 
@@ -342,6 +345,7 @@ type TargetsGatherer interface {
 	TargetsActive() map[string][]*Target
 }
 
+// MetadataMetricsCollector 按 job 汇总各 target 元数据缓存条目与字节数。
 // MetadataMetricsCollector is a Custom Collector for the metadata cache metrics.
 type MetadataMetricsCollector struct {
 	CacheEntries    *prometheus.Desc

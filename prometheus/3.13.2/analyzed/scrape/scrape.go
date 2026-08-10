@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scrape 核心：scrapePool 管理多 target 的 scrapeLoop，HTTP 拉取 exposition、解析文本/OM/protobuf 并 append 到 TSDB。
+
 package scrape
 
 import (
@@ -64,6 +66,7 @@ var aOptionRejectEarlyOOO = storage.AppendOptions{DiscardOutOfOrder: true}
 // ScrapeTimestampTolerance is the tolerance for scrape appends timestamps
 // alignment, to enable better compression at the TSDB level.
 // See https://github.com/prometheus/prometheus/issues/7846
+// ScrapeTimestampTolerance 允许 scrape 时间戳与对齐时刻的微小偏差。
 var ScrapeTimestampTolerance = 2 * time.Millisecond
 
 // AlignScrapeTimestamps enables the tolerance for scrape appends timestamps described above.
@@ -73,6 +76,7 @@ var errNameLabelMandatory = fmt.Errorf("missing metric name (%s label)", model.M
 
 var _ FailureLogger = (*logging.JSONFileLogger)(nil)
 
+// FailureLogger 记录 scrape 失败详情（可选 JSON 文件后端）。
 // FailureLogger is an interface that can be used to log all failed
 // scrapes.
 type FailureLogger interface {
@@ -388,6 +392,7 @@ func (sp *scrapePool) checkSymbolTable() {
 	}
 }
 
+// Sync 将 discovery 目标转为 Target 并 diff 启停 scrapeLoop。
 // Sync converts target groups into actual scrape targets and synchronizes
 // the currently running scraper with the resulting set and returns all scraped and dropped targets.
 func (sp *scrapePool) Sync(tgs []*targetgroup.Group) {
@@ -677,6 +682,7 @@ func appenderWithLimits(app storage.Appender, sampleLimit, bucketLimit int, maxS
 	return app
 }
 
+// scraper 接口封装单次 HTTP GET 与响应体读取。
 // A scraper retrieves samples and accepts a status report at the end.
 type scraper interface {
 	scrape(ctx context.Context) (*http.Response, error)
@@ -686,6 +692,7 @@ type scraper interface {
 }
 
 // targetScraper implements the scraper interface for a target.
+// targetScraper 为单 Target 的 HTTP 客户端与 body 大小限制。
 type targetScraper struct {
 	*Target
 
@@ -805,6 +812,7 @@ func (s *targetScraper) readResponse(_ context.Context, resp *http.Response, w i
 	return resp.Header.Get("Content-Type"), nil
 }
 
+// loop 接口抽象 scrapeLoop 的生命周期（run/stop/cache）。
 // A loop can run and be stopped again. It must not be reused after it was stopped.
 type loop interface {
 	run(errc chan<- error)
@@ -825,6 +833,7 @@ type cacheEntry struct {
 	st *stCache
 }
 
+// scrapeLoop 单 target 抓取循环：interval ticker、append 与 report 样本。
 type scrapeLoop struct {
 	// ctx represents a local context that is cancellable via s.cancel.
 	// It's meant to synchronize run() with stop().
@@ -896,6 +905,7 @@ type scrapeLoop struct {
 	disabledEndOfRunStalenessMarkers atomic.Bool
 }
 
+// scrapeCache 缓存 metric 字符串→SeriesRef，并跟踪 stale 序列。
 // scrapeCache tracks mappings of exposed metric strings to label sets and
 // storage references. Additionally, it tracks staleness of series between
 // scrapes.
@@ -1260,6 +1270,7 @@ func (sl *scrapeLoop) getScrapeOffset() time.Duration {
 	return sl.initialScrapeOffset + offset
 }
 
+// run 主循环：scrapeAndReport → 处理 forced error → 等待下一 tick。
 func (sl *scrapeLoop) run(errc chan<- error) {
 	var (
 		last   time.Time
@@ -1340,6 +1351,7 @@ func (sl *scrapeLoop) appender() scrapeLoopAppendAdapter {
 
 // scrapeAndReport performs a scrape and then appends the result to the storage
 // together with reporting metrics, by using as few appenders as possible.
+// scrapeAndReport 执行一次 scrape、append 样本并上报内部 metrics。
 // In the happy scenario, a single appender is used.
 // This function uses sl.appenderCtx instead of sl.ctx on purpose. A scrape should
 // only be cancelled on shutdown, not on reloads.
@@ -1584,6 +1596,7 @@ func (sl *scrapeLoop) updateStaleMarkers(app storage.Appender, defTime int64) (e
 	return err
 }
 
+// scrapeLoopAppender 实现 AppenderV1 路径的 textparse 追加逻辑。
 type scrapeLoopAppender struct {
 	*scrapeLoop
 
@@ -1974,6 +1987,7 @@ func isSeriesPartOfFamily(mName string, mfName []byte, typ model.MetricType) boo
 // during normal operation (e.g., accidental cardinality explosion, sudden traffic spikes).
 // Current case ordering prevents exercising other cases when limits are exceeded.
 // Remaining error cases typically occur only a few times, often during initial setup.
+// checkAddError 分类处理样本/桶/exemplar 限制与 append 错误。
 func (sl *scrapeLoop) checkAddError(met []byte, exemplars []exemplar.Exemplar, err error, sampleLimitErr, bucketLimitErr *error, appErrs *appendErrors) (sampleAdded bool, _ error) {
 	switch {
 	case err == nil:
@@ -2249,6 +2263,7 @@ func reusableCache(r, l *config.ScrapeConfig) bool {
 
 // CtxKey is a dedicated type for keys of context-embedded values propagated
 // with the scrape context.
+// ctxKey 用于在 context 中传递 MetricMetadataStore 与 Target。
 type ctxKey int
 
 // Valid CtxKey values.

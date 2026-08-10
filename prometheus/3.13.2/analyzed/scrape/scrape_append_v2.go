@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scrape AppenderV2 路径：基于 textparse 的 append 实现，支持 ST 合成、type/unit 元数据标签与 limit 包装 appender。
+
 package scrape
 
 import (
@@ -33,6 +35,7 @@ import (
 )
 
 // appenderWithLimits returns an appender with additional validation.
+// appenderV2WithLimits 叠加时间上限、样本/桶/schema 限制装饰器。
 func appenderV2WithLimits(app storage.AppenderV2, sampleLimit, bucketLimit int, maxSchema int32) storage.AppenderV2 {
 	app = &timeLimitAppenderV2{
 		AppenderV2: app,
@@ -64,6 +67,7 @@ func appenderV2WithLimits(app storage.AppenderV2, sampleLimit, bucketLimit int, 
 	return app
 }
 
+// updateStaleMarkersV2 对本轮未见的序列写入 stale NaN（V2 appender）。
 func (sl *scrapeLoop) updateStaleMarkersV2(app storage.AppenderV2, defTime int64) (err error) {
 	sl.cache.forEachStale(func(ref storage.SeriesRef, lset labels.Labels) bool {
 		// Series no longer exposed, mark it stale.
@@ -79,6 +83,7 @@ func (sl *scrapeLoop) updateStaleMarkersV2(app storage.AppenderV2, defTime int64
 	return err
 }
 
+// scrapeLoopAppenderV2 实现 scrapeLoopAppendAdapter 的 V2 追加路径。
 type scrapeLoopAppenderV2 struct {
 	*scrapeLoop
 
@@ -449,6 +454,7 @@ func (sl *scrapeLoopAppenderV2) addReportSample(s reportSample, t int64, v float
 	}
 }
 
+// checkAndSynthesizeStartTime 在启用 ST 合成时为 histogram 推断起始时间。
 func (sl *scrapeLoop) checkAndSynthesizeStartTime(
 	st int64,
 	lset labels.Labels,

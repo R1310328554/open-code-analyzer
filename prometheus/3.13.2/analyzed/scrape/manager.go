@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scrape 管理器：按 job 维护 scrapePool、接收 SD 目标更新、ApplyConfig 热重载并协调各 pool 的抓取循环。
+
 package scrape
 
 import (
@@ -39,6 +41,7 @@ import (
 	"github.com/prometheus/prometheus/util/pool"
 )
 
+// NewManager 二选一注入 Appendable/AppendableV2 并注册 scrape metrics。
 // NewManager is the Manager constructor using storage.Appendable or storage.AppendableV2.
 //
 // If unsure which one to use/implement, implement AppendableV2 as it significantly simplifies implementation and allows more
@@ -102,6 +105,7 @@ func NewManager(
 }
 
 // Options are the configuration parameters to the scrape manager.
+// Options 配置 grace shutdown、元数据 WAL、ST 解析等 scrape 行为开关。
 type Options struct {
 	// Option used by downstream scraper users like OpenTelemetry Collector
 	// to help lookup metric metadata. Should be false for Prometheus.
@@ -181,6 +185,7 @@ type Options struct {
 	skipJitterOffsetting bool
 }
 
+// Manager 在 reloader goroutine 中异步响应 triggerReload。
 // Manager maintains a set of scrape pools and manages start/stop cycles
 // when receiving new target groups from the discovery manager.
 type Manager struct {
@@ -206,6 +211,7 @@ type Manager struct {
 	metrics *scrapeMetrics
 }
 
+// Run 消费 discovery 推送的 targetgroup 并更新 tsets。
 // Run receives and saves target set updates and triggers the scraping loops reloading.
 // Reloading happens in the background so that it doesn't block receiving targets updates.
 func (m *Manager) Run(tsets <-chan map[string][]*targetgroup.Group) error {
@@ -319,6 +325,7 @@ func (m *Manager) setOffsetSeed(labels labels.Labels) error {
 }
 
 // Stop cancels all running scrape pools and blocks until all have exited.
+// Stop 取消 context 并等待所有 scrapePool 退出。
 func (m *Manager) Stop() {
 	m.mtxScrape.Lock()
 	defer m.mtxScrape.Unlock()
@@ -335,6 +342,7 @@ func (m *Manager) updateTsets(tsets map[string][]*targetgroup.Group) {
 	m.mtxScrape.Unlock()
 }
 
+// ApplyConfig 重建 scrapeConfigs 与 scrapePools，触发后台 reload。
 // ApplyConfig resets the manager's target providers and job configurations as defined by the new cfg.
 func (m *Manager) ApplyConfig(cfg *config.Config) error {
 	m.mtxScrape.Lock()

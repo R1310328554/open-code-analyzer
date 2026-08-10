@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 规则组：同文件内多条 recording/alerting 规则的调度、求值、stale 清理、for-state 恢复与并发求值批次划分。
+
 package rules
 
 import (
@@ -41,6 +43,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
 )
 
+// Group 绑定 interval、query_offset、limit 及 Manager 级选项。
 // Group is a set of rules that have a logical relation.
 type Group struct {
 	name                  string
@@ -76,6 +79,7 @@ type Group struct {
 	appOpts *storage.AppendOptions
 }
 
+// GroupEvalIterationFunc 可替换默认 tick 回调以扩展组级求值逻辑。
 // GroupEvalIterationFunc is used to implement and extend rule group
 // evaluation iteration logic. It is configured in Group.evalIterationFunc,
 // and periodically invoked at each group evaluation interval to
@@ -95,6 +99,7 @@ type GroupOptions struct {
 	EvalIterationFunc GroupEvalIterationFunc
 }
 
+// NewGroup 注册 metrics 并启动 run goroutine 周期性求值。
 // NewGroup makes a new Group with the given name, options, and rules.
 func NewGroup(o GroupOptions) *Group {
 	opts := o.Opts
@@ -205,6 +210,7 @@ func (g *Group) Limit() int { return g.limit }
 
 func (g *Group) Logger() *slog.Logger { return g.logger }
 
+// run 按 interval 对齐时间槽调用 evalIterationFunc。
 func (g *Group) run(ctx context.Context) {
 	defer close(g.terminated)
 
@@ -448,6 +454,7 @@ func nameAndLabels(rule Rule) string {
 	return rule.Name() + rule.Labels().String()
 }
 
+// CopyState 在热重载时按 name+labels 匹配复制告警与 stale 状态。
 // CopyState copies the alerting rule and staleness related state from the given group.
 //
 // Rules are matched based on their name and labels. If there are duplicates, the
@@ -499,6 +506,7 @@ func (g *Group) CopyState(from *Group) {
 	}
 }
 
+// Eval 单轮求值：可串行或按 concurrent-rule-eval 分批并发执行规则。
 // Eval runs a single evaluation cycle in which all rules are evaluated sequentially.
 // Rules can be evaluated concurrently if the `concurrent-rule-eval` feature flag is enabled.
 func (g *Group) Eval(ctx context.Context, ts time.Time) {
@@ -702,6 +710,7 @@ func (g *Group) QueryOffset() time.Duration {
 	return time.Duration(0)
 }
 
+// cleanupStaleSeries 对上一轮存在、本轮消失的序列写入 stale NaN。
 func (g *Group) cleanupStaleSeries(ctx context.Context, ts time.Time) {
 	if len(g.staleSeries) == 0 {
 		return
@@ -734,6 +743,7 @@ func (g *Group) cleanupStaleSeries(ctx context.Context, ts time.Time) {
 	}
 }
 
+// RestoreForState 从 ALERTS_FOR_STATE 恢复告警 pending 计时。
 // RestoreForState restores the 'for' state of the alerts
 // by looking up last ActiveAt from storage.
 func (g *Group) RestoreForState(ts time.Time) {
@@ -910,6 +920,7 @@ func GroupKey(file, name string) string {
 const namespace = "prometheus"
 
 // Metrics for rule evaluation.
+// Metrics 注册 prometheus_rule_* 组级与规则级 instrumentation。
 type Metrics struct {
 	EvalDuration               prometheus.Summary
 	EvalDurationHistogram      prometheus.Histogram
@@ -1079,6 +1090,7 @@ func NewGroupMetrics(reg prometheus.Registerer) *Metrics {
 // dependencyMap is a data-structure which contains the relationships between rules within a group.
 // It is used to describe the dependency associations between rules in a group whereby one rule uses the
 // output metric produced by another rule in its expression (i.e. as its "input").
+// dependencyMap 记录规则间依赖/被依赖关系以支持并发安全批次。
 type dependencyMap map[Rule][]Rule
 
 // dependents returns the rules which use the output of the given rule as one of their inputs.

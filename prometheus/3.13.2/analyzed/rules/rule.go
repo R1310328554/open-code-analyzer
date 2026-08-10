@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Rule 接口：recording 与 alerting 规则的公共契约（求值、健康、依赖关系）。
+
 package rules
 
 import (
@@ -23,6 +25,7 @@ import (
 	"github.com/prometheus/prometheus/promql/parser"
 )
 
+// RuleHealth 表示最近一次求值的成功/失败/未知状态。
 // RuleHealth describes the health state of a rule.
 type RuleHealth string
 
@@ -33,6 +36,7 @@ const (
 	HealthBad     RuleHealth = "err"
 )
 
+// Rule 接口统一 Name/Eval/Health 及规则间依赖查询方法。
 // A Rule encapsulates a vector expression which is evaluated at a specified
 // interval and acted upon (currently either recorded or used for alerting).
 type Rule interface {

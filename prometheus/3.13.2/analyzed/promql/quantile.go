@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PromQL 分位数计算：经典 histogram 桶与 native histogram 的 quantile/fraction 插值，含单调性修正与 query sharding 浮点误差容忍。
+
 package promql
 
 import (
@@ -25,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/util/annotations"
 )
 
+// smallDeltaTolerance 忽略经典直方图桶间极小相对差，避免 Mimir 分片查询的浮点伪影。
 // smallDeltaTolerance is the threshold for relative deltas between classic
 // histogram buckets that will be ignored by the histogram_quantile function
 // because they are most likely artifacts of floating point precision issues.
@@ -52,6 +55,7 @@ var excludedLabels = []string{
 	labels.BucketLabel,
 }
 
+// Bucket 表示经典直方图单桶（上界 + 累积计数），对外导出供其他 PromQL 引擎复用。
 // Bucket represents a bucket of a classic histogram. It is used internally by the promql
 // package, but it is nevertheless exported for potential use in other PromQL engines.
 type Bucket struct {
@@ -67,6 +71,7 @@ type metricWithBuckets struct {
 	buckets Buckets
 }
 
+// BucketQuantile 对排序后的经典桶线性插值求分位数；含 +Inf 顶桶等边界特例。
 // BucketQuantile calculates the quantile 'q' based on the given buckets. The
 // buckets will be sorted by upperBound by this function (i.e. no sorting
 // needed before calling this function). The quantile value is interpolated
@@ -169,6 +174,7 @@ func BucketQuantile(q float64, buckets Buckets) (
 	return quantile, forcedMonotonic, fixedPrecision, minBucket, maxBucket, maxDiff
 }
 
+// HistogramQuantile 对 native FloatHistogram 按桶 schema 插值，支持指数/自定义桶。
 // HistogramQuantile calculates the quantile 'q' based on the given histogram.
 //
 // For custom buckets, the result is interpolated linearly, i.e. it is assumed
@@ -353,6 +359,7 @@ func HistogramQuantile(q float64, h *histogram.FloatHistogram, metricName string
 	return -math.Exp2(logUpper + (logLower-logUpper)*(1-fraction)), annos
 }
 
+// HistogramFraction 求观测落在 [lower,upper) 区间的比例，可视为 quantile 的逆运算。
 // HistogramFraction calculates the fraction of observations between the
 // provided lower and upper bounds, based on the provided histogram.
 //
@@ -523,6 +530,7 @@ func HistogramFraction(lower, upper float64, h *histogram.FloatHistogram, metric
 }
 
 // BucketFraction is a version of HistogramFraction for classic histograms.
+// BucketFraction 为经典直方图桶实现的区间占比计算。
 func BucketFraction(lower, upper float64, buckets Buckets) float64 {
 	slices.SortFunc(buckets, func(a, b Bucket) int {
 		// We don't expect the bucket boundary to be a NaN.
@@ -623,6 +631,7 @@ func BucketFraction(lower, upper float64, buckets Buckets) float64 {
 // coalesceBuckets merges buckets with the same upper bound.
 //
 // The input buckets must be sorted.
+// coalesceBuckets 合并上界相同的相邻桶计数。
 func coalesceBuckets(buckets Buckets) Buckets {
 	last := buckets[0]
 	i := 0
@@ -639,6 +648,7 @@ func coalesceBuckets(buckets Buckets) Buckets {
 	return buckets[:i+1]
 }
 
+// ensureMonotonicAndIgnoreSmallDeltas 修正非单调桶并忽略微小相对增量。
 // The assumption that bucket counts increase monotonically with increasing
 // upperBound may be violated during:
 //
@@ -720,6 +730,7 @@ func ensureMonotonicAndIgnoreSmallDeltas(buckets Buckets, tolerance float64) (
 // If q==NaN, NaN is returned.
 // If q<0, -Inf is returned.
 // If q>1, +Inf is returned.
+// quantile 对排序后的样本向量做线性插值分位数（无 histogram 场景）。
 func quantile(q float64, values vectorByValueHeap) float64 {
 	if len(values) == 0 || math.IsNaN(q) {
 		return math.NaN()

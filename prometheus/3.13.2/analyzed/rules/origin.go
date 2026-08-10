@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 规则求值上下文溯源：将 RuleDetail 注入 context，供 PromQL/存储层识别当前 recording/alerting 规则来源。
+
 package rules
 
 import (
@@ -22,6 +24,7 @@ import (
 
 type ruleOrigin struct{}
 
+// RuleDetail 携带规则名、查询、标签、类型及依赖关系摘要。
 // RuleDetail contains information about the rule that is being evaluated.
 type RuleDetail struct {
 	Name   string
@@ -43,6 +46,7 @@ const (
 	KindRecording = "recording"
 )
 
+// NewRuleDetail 从 Rule 接口提取元数据并区分 alerting/recording。
 // NewRuleDetail creates a RuleDetail from a given Rule.
 func NewRuleDetail(r Rule) RuleDetail {
 	var kind string
@@ -65,11 +69,13 @@ func NewRuleDetail(r Rule) RuleDetail {
 	}
 }
 
+// NewOriginContext 用私有 key 将 RuleDetail 附加到 context。
 // NewOriginContext returns a new context with data about the origin attached.
 func NewOriginContext(ctx context.Context, rule RuleDetail) context.Context {
 	return context.WithValue(ctx, ruleOrigin{}, rule)
 }
 
+// FromOriginContext 读取溯源信息；缺失时返回零值 RuleDetail。
 // FromOriginContext returns the RuleDetail origin data from the context.
 func FromOriginContext(ctx context.Context) RuleDetail {
 	if rule, ok := ctx.Value(ruleOrigin{}).(RuleDetail); ok {

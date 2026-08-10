@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 告警规则实现：PromQL 向量求值驱动 pending/firing 状态机，生成 ALERTS/ALERTS_FOR_STATE 合成序列并通知 Alertmanager。
+
 package rules
 
 import (
@@ -46,10 +48,12 @@ const (
 	alertStateLabel = "alertstate"
 )
 
+// 应用告警标签后若出现重复 labelset 则返回 ErrDuplicateAlertLabelSet。
 // ErrDuplicateAlertLabelSet is returned when an alerting rule evaluation produces
 // metrics with identical labelsets after applying alert labels.
 var ErrDuplicateAlertLabelSet = errors.New("vector contains metrics with the same labelset after applying alert labels")
 
+// AlertState 表示单条告警实例的生命周期状态。
 // AlertState denotes the state of an active alert.
 type AlertState int
 
@@ -80,6 +84,7 @@ func (s AlertState) String() string {
 	panic(fmt.Errorf("unknown alert state: %d", s))
 }
 
+// Alert 为用户可见的单条告警（标签、注解、ActiveAt/FiredAt 等）。
 // Alert is the user-level representation of a single instance of an alerting rule.
 type Alert struct {
 	State AlertState
@@ -112,6 +117,7 @@ func (a *Alert) needsSending(ts time.Time, resendDelay time.Duration) bool {
 	return a.LastSentAt.Add(resendDelay).Before(ts)
 }
 
+// AlertingRule 周期性求值向量表达式并维护活跃告警映射。
 // An AlertingRule generates alerts from its vector expression.
 type AlertingRule struct {
 	// The name of the alert.
@@ -157,6 +163,7 @@ type AlertingRule struct {
 }
 
 // NewAlertingRule constructs a new AlertingRule.
+// NewAlertingRule 构造告警规则，含 for/keep_firing_for 与外部标签。
 func NewAlertingRule(
 	name string, vec parser.Expr, hold, keepFiringFor time.Duration,
 	labels, annotations, externalLabels labels.Labels, externalURL string,
@@ -382,6 +389,7 @@ func (r *AlertingRule) DependencyRules() []Rule {
 // is kept in memory state and consequently repeatedly sent to the AlertManager.
 const resolvedRetention = 15 * time.Minute
 
+// Eval 执行查询、更新 pending/firing、写入 ALERTS 样本并触发通知。
 // Eval evaluates the rule expression and then creates pending alerts and fires
 // or removes previously pending alerts accordingly.
 func (r *AlertingRule) Eval(ctx context.Context, queryOffset time.Duration, ts time.Time, query QueryFunc, externalURL *url.URL, limit int) (promql.Vector, error) {
@@ -550,6 +558,7 @@ func (r *AlertingRule) Eval(ctx context.Context, queryOffset time.Duration, ts t
 	return vec, nil
 }
 
+// State 返回该规则所有实例中的最高优先级状态。
 // State returns the maximum state of alert instances for this rule.
 // StateFiring > StatePending > StateInactive > StateUnknown.
 func (r *AlertingRule) State() AlertState {
@@ -615,6 +624,7 @@ func (r *AlertingRule) ActiveAlertsCount() int {
 	return len(r.active)
 }
 
+// sendAlerts 按 resendDelay 向 NotifyFunc 推送需重发的告警。
 func (r *AlertingRule) sendAlerts(ctx context.Context, ts time.Time, resendDelay, interval time.Duration, notifyFunc NotifyFunc) {
 	alerts := []*Alert{}
 	r.ForEachActiveAlert(func(alert *Alert) {
