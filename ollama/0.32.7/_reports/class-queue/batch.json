@@ -15,23 +15,8 @@
     "x/mlxrunner/mlx/gpu_kernel.go",
     "x/mlxrunner/mlx/io.go",
     "x/mlxrunner/mlx/memory.go",
-    "x/mlxrunner/mlx/mlx.go",
-    "x/mlxrunner/mlx/nn.go",
-    "x/mlxrunner/mlx/ops.go",
-    "x/mlxrunner/mlx/ops_extra.go",
-    "x/mlxrunner/mlx/random.go",
-    "x/mlxrunner/mlx/slice.go",
-    "x/mlxrunner/mlx/stream.go",
-    "x/mlxrunner/model/base/base.go",
-    "x/mlxrunner/model/base/media.go",
-    "x/mlxrunner/model/embedding.go",
-    "x/mlxrunner/model/linear.go",
-    "x/mlxrunner/model/quant.go",
-    "x/mlxrunner/model/root.go",
-    "x/mlxrunner/mtp.go",
-    "x/mlxrunner/pipeline.go",
-    "x/mlxrunner/prefix_cache.go"
+    "x/mlxrunner/mlx/mlx.go"
   ],
   "remaining_pending": 43,
-  "done": 390
+  "done": 405
 }
