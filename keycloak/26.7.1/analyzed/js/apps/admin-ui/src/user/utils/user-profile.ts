@@ -1,22 +1,24 @@
+/** User Profile 元数据校验与错误消息解析工具。 */
 import { UserProfileAttributeMetadata } from "@keycloak/keycloak-admin-client/lib/defs/userProfileMetadata";
 import { isUserProfileError } from "@keycloak/keycloak-ui-shared";
 import { TFunction } from "i18next";
 
+/** 属性是否必填：显式 required 或校验器隐含最小长度大于零。 */
 export function isRequiredAttribute({
   required,
   validators,
 }: UserProfileAttributeMetadata): boolean {
-  // Check if required is true or if the validators include a validation that would make the attribute implicitly required.
+  // 检查 required 标志，或校验器是否隐含必填（如 length.min > 0）
   return required || hasRequiredValidators(validators);
 }
 
 /**
- * Extracts error messages from a UserProfileError and formats them as a single string.
- * Handles both single error and multiple errors in the responseData structure.
+ * 从 UserProfileError 提取并格式化全部错误消息为单条字符串。
+ * 兼容 responseData 中单条或多条 errors 结构。
  *
- * @param error - The error object (should be a UserProfileError)
- * @param t - Translation function
- * @returns Formatted error message string with all errors joined by semicolons
+ * @param error 错误对象（应为 UserProfileError）
+ * @param t i18n 翻译函数
+ * @returns 以分号连接的错误文案；非 UserProfile 错误时返回空串
  */
 export function extractUserProfileErrorMessages(
   error: unknown,
@@ -51,18 +53,17 @@ export function extractUserProfileErrorMessages(
 }
 
 /**
- * Checks whether the given validators include a validation that would make the attribute implicitly required.
+ * 校验器配置是否使属性在语义上成为必填项。
  */
 function hasRequiredValidators(
   validators?: UserProfileAttributeMetadata["validators"],
 ): boolean {
-  // If we don't have any validators, the attribute is not required.
+  // 无校验器则非隐含必填
   if (!validators) {
     return false;
   }
 
-  // If the 'length' validator is defined and has a minimal length greater than zero the attribute is implicitly required.
-  // We have to do a lot of defensive coding here, because we don't have type information for the validators.
+  // length 校验器若 min > 0，则等价于必填；此处需防御性访问因校验器无强类型
   if (
     "length" in validators &&
     "min" in validators.length &&

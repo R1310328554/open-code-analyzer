@@ -1,7 +1,8 @@
+/** 带 URI 编码的路由路径生成，供链接与导航安全使用。 */
 import { generatePath, type PathParam } from "react-router-dom";
 
 /**
- * Represents an object that contains the parameters to be included in a path.
+ * 路径模板中占位参数的对象类型。
  *
  * @example
  * const params: PathParams<"/user/:id"> = { id: "123" };
@@ -11,25 +12,25 @@ export type PathParams<Path extends string> = {
 };
 
 /**
- * Generates a path that represents the given path template with parameters interpolated and encoded in it, so that it can safely used in a URL.
+ * 在 react-router generatePath 基础上对每个参数做 encodeURIComponent。
  *
- * @param originalPath - The path template to use to generate the path.
- * @param params - An object that contains the parameters to be included in the path.
+ * @param originalPath 路由模板，如 `/user/:id`
+ * @param params 占位符取值
  *
  * @example
  * const path = "/user/:id";
  * const params = { id: "123" };
  * const encodedPath = generateEncodedPath(path, params);
- * // encodedPath will be "/user/123"
+ * // encodedPath 为 "/user/123"
  */
 export function generateEncodedPath<Path extends string>(
   originalPath: Path,
   params: PathParams<Path>,
 ): string {
-  // Clone the params object so we don't mutate the original.
+  // 克隆参数，避免修改调用方对象
   const encodedParams = structuredClone(params);
 
-  // Encode each param in the path so that it can be used in a URL.
+  // 逐个编码，防止特殊字符破坏 URL
   for (const key in encodedParams) {
     const pathKey = key as PathParam<Path>;
     encodedParams[pathKey] = encodeURIComponent(encodedParams[pathKey]);
