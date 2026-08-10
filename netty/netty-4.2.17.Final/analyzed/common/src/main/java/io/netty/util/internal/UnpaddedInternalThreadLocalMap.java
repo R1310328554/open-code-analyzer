@@ -17,7 +17,9 @@ package io.netty.util.internal;
 
 /**
  * @deprecated This class will be removed in the future.
+ *
+ * <p>占位类：4.1 中因兼容性暂保留，用于避免 InternalThreadLocalMap 布局变化；未来将移除。</p>
  */
 class UnpaddedInternalThreadLocalMap {
-    // We cannot remove this in 4.1 because it could break compatibility.
+    // 4.1 不能删除此类，否则会破坏与旧版 InternalThreadLocalMap 的二进制兼容。
 }

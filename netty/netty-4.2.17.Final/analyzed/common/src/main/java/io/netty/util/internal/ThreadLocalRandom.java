@@ -58,6 +58,8 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
  *
  * //since 1.7
  * //author Doug Lea
+ *
+ * <p>线程隔离的随机数生成器，并发场景比共享 Random 开销更低；已废弃，推荐 JDK ThreadLocalRandom。</p>
  */
 @Deprecated
 @SuppressWarnings("all")
@@ -65,13 +67,19 @@ public final class ThreadLocalRandom extends Random {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ThreadLocalRandom.class);
 
+    /** 全局种子 uniquifier，CAS 递增生成各线程初始种子。 */
     private static final AtomicLong seedUniquifier = new AtomicLong();
 
+    /** 初始种子 uniquifier，可由系统属性或 SecureRandom 设置。 */
     private static volatile long initialSeedUniquifier;
 
+    /** 后台线程：从 SecureRandom 读取真随机种子（可选）。 */
     private static final Thread seedGeneratorThread;
+    /** 存放后台生成的随机种子。 */
     private static final BlockingQueue<Long> seedQueue;
+    /** 种子生成线程启动时间（纳秒）。 */
     private static final long seedGeneratorStartTime;
+    /** 种子生成完成时间（纳秒）。 */
     private static volatile long seedGeneratorEndTime;
 
     static {
@@ -82,12 +90,12 @@ public final class ThreadLocalRandom extends Random {
                 seedQueue = new LinkedBlockingQueue<Long>();
                 seedGeneratorStartTime = System.nanoTime();
 
-                // Try to generate a real random number from /dev/random.
-                // Get from a different thread to avoid blocking indefinitely on a machine without much entropy.
+                // 尝试从 /dev/random 获取真随机种子。
+                // 独立线程生成，避免主线程在无熵源机器上无限阻塞。
                 seedGeneratorThread = new Thread("initialSeedUniquifierGenerator") {
                     @Override
                     public void run() {
-                        final SecureRandom random = new SecureRandom(); // Get the real random seed from /dev/random
+                        final SecureRandom random = new SecureRandom(); // 从 /dev/random 获取真随机种子
                         final byte[] seed = random.generateSeed(8);
                         seedGeneratorEndTime = System.nanoTime();
                         long s = ((long) seed[0] & 0xff) << 56 |
@@ -127,7 +135,7 @@ public final class ThreadLocalRandom extends Random {
     }
 
     public static long getInitialSeedUniquifier() {
-        // Use the value set via the setter.
+        // 优先使用 setter 显式设置的值。
         long initialSeedUniquifier = ThreadLocalRandom.initialSeedUniquifier;
         if (initialSeedUniquifier != 0) {
             return initialSeedUniquifier;
@@ -139,7 +147,7 @@ public final class ThreadLocalRandom extends Random {
                 return initialSeedUniquifier;
             }
 
-            // Get the random seed from the generator thread with timeout.
+            // 带超时从后台 SecureRandom 线程获取种子。
             final long timeoutSeconds = 3;
             final long deadLine = seedGeneratorStartTime + TimeUnit.SECONDS.toNanos(timeoutSeconds);
             boolean interrupted = false;
@@ -173,18 +181,18 @@ public final class ThreadLocalRandom extends Random {
                 }
             }
 
-            // Just in case the initialSeedUniquifier is zero or some other constant
-            initialSeedUniquifier ^= 0x3255ecdc33bae119L; // just a meaningless random number
+            // 防止 uniquifier 仍为 0 或常量：混入固定魔数与 nanoTime
+            initialSeedUniquifier ^= 0x3255ecdc33bae119L; // 无意义魔数，增加熵
             initialSeedUniquifier ^= Long.reverse(System.nanoTime());
 
             ThreadLocalRandom.initialSeedUniquifier = initialSeedUniquifier;
 
             if (interrupted) {
-                // Restore the interrupt status because we don't know how to/don't need to handle it here.
+                // 恢复中断标志，此处不处理中断语义。
                 Thread.currentThread().interrupt();
 
-                // Interrupt the generator thread if it's still running,
-                // in the hope that the SecureRandom provider raises an exception on interruption.
+                // 若生成线程仍在运行则中断，
+                // 期望 SecureRandom 实现因中断抛异常。
                 seedGeneratorThread.interrupt();
             }
 
@@ -201,7 +209,7 @@ public final class ThreadLocalRandom extends Random {
             final long current = seedUniquifier.get();
             final long actualCurrent = current != 0? current : getInitialSeedUniquifier();
 
-            // L'Ecuyer, "Tables of Linear Congruential Generators of Different Sizes and Good Lattice Structure", 1999
+            // L'Ecuyer 线性同余生成器常数（1999）
             final long next = actualCurrent * 181783497276652981L;
 
             if (seedUniquifier.compareAndSet(current, next)) {
@@ -220,22 +228,25 @@ public final class ThreadLocalRandom extends Random {
         }
     }
 
-    // Borrowed from
-    // http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/main/java/util/concurrent/ThreadLocalRandom.java
+    // 摘自 JSR166 ThreadLocalRandom：
+    // mix64 位混淆函数
     private static long mix64(long z) {
         z = (z ^ (z >>> 33)) * 0xff51afd7ed558ccdL;
         z = (z ^ (z >>> 33)) * 0xc4ceb9fe1a85ec53L;
         return z ^ (z >>> 33);
     }
 
-    // same constants as Random, but must be redeclared because private
+    // 与 java.util.Random 相同常数，因父类 private 需重新声明
     private static final long multiplier = 0x5DEECE66DL;
     private static final long addend = 0xBL;
     private static final long mask = (1L << 48) - 1;
 
     /**
      * The random seed. We can't use super.seed.
-     */
+     
+ *
+ * <p>实例随机种子，不能直接使用 super.seed。</p>
+ */
     private long rnd;
 
     /**
@@ -243,17 +254,23 @@ public final class ThreadLocalRandom extends Random {
      * while executing the Random constructor.  We can't allow others
      * since it would cause setting seed in one part of a program to
      * unintentionally impact other usages by the thread.
-     */
+     
+ *
+ * <p>构造完成后禁止 setSeed，避免线程间意外共享种子。</p>
+ */
     boolean initialized;
 
-    // Padding to help avoid memory contention among seed updates in
-    // different TLRs in the common case that they are located near
-    // each other.
+    // 填充字段，降低相邻 ThreadLocalRandom 实例更新种子时的伪共享
+    // （多个 TLR 实例在堆上相邻时尤其有效）
+    //  contention。
     private long pad0, pad1, pad2, pad3, pad4, pad5, pad6, pad7;
 
     /**
      * Constructor called only by localRandom.initialValue.
-     */
+     
+ *
+ * <p>包内构造，由 InternalThreadLocalMap 按需创建。</p>
+ */
     ThreadLocalRandom() {
         super(newSeed());
         initialized = true;
@@ -263,7 +280,10 @@ public final class ThreadLocalRandom extends Random {
      * Returns the current thread's {@code ThreadLocalRandom}.
      *
      * @return the current thread's {@code ThreadLocalRandom}
-     */
+     
+ *
+ * <p>从 InternalThreadLocalMap 获取当前线程实例。</p>
+ */
     public static ThreadLocalRandom current() {
         return InternalThreadLocalMap.get().random();
     }
@@ -273,7 +293,10 @@ public final class ThreadLocalRandom extends Random {
      * this generator is not supported.
      *
      * @throws UnsupportedOperationException always
-     */
+     
+ *
+ * <p>初始化完成后禁止修改种子。</p>
+ */
     @Override
     public void setSeed(long seed) {
         if (initialized) {
@@ -297,7 +320,10 @@ public final class ThreadLocalRandom extends Random {
      * @throws IllegalArgumentException if least greater than or equal
      * to bound
      * @return the next value
-     */
+     
+ *
+ * <p>返回 [least, bound) 区间内均匀分布的 int。</p>
+ */
     public int nextInt(int least, int bound) {
         if (least >= bound) {
             throw new IllegalArgumentException();
@@ -313,15 +339,18 @@ public final class ThreadLocalRandom extends Random {
      *        positive.
      * @return the next value
      * @throws IllegalArgumentException if n is not positive
-     */
+     
+ *
+ * <p>返回 [0, n) 区间内均匀分布的 long。</p>
+ */
     public long nextLong(long n) {
         checkPositive(n, "n");
 
-        // Divide n by two until small enough for nextInt. On each
-        // iteration (at most 31 of them but usually much less),
-        // randomly choose both whether to include high bit in result
-        // (offset) and whether to continue with the lower vs upper
-        // half (which makes a difference only if odd).
+        // 反复折半 n 直至可 fit int，每步随机选高位/低位并累加 offset，
+        // 保证 [0,n) 均匀分布（最多约 31 次迭代）。
+        // 随机决定是否将当前半区计入 offset
+        // 以及继续处理低半区还是高半区
+        // （n 为奇数时两半大小不同）。
         long offset = 0;
         while (n >= Integer.MAX_VALUE) {
             int bits = next(2);

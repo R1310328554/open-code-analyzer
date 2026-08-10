@@ -48,21 +48,27 @@ import org.apache.commons.logging.Log;
  *
  * @deprecated Please use {@link Log4J2Logger} or {@link Log4JLogger} or
  * {@link Slf4JLogger}.
+ *
+ * <p>Apache Commons Logging 适配器；已废弃，请改用 Log4J2/Log4J/Slf4J。</p>
  */
 @Deprecated
 class CommonsLogger extends AbstractInternalLogger {
 
     private static final long serialVersionUID = 8647838678388394885L;
 
+    /** 底层 Apache Commons Log 实例（transient 不参与序列化）。 */
     private final transient Log logger;
 
+    /** 包装 Commons Log 与名称。 */
     CommonsLogger(Log logger, String name) {
         super(name);
         this.logger = ObjectUtil.checkNotNull(logger, "logger");
     }
 
     /**
-     * Delegates to the {@link Log#isTraceEnabled} method of the underlying
+     * Delegates to the {@link Log#isTraceEnabled} method
+     *
+     * <p>委托底层 Log 的 isTRACEEnabled。</p> of the underlying
      * {@link Log} instance.
      */
     @Override
@@ -75,6 +81,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * {@link Log} instance.
      *
      * @param msg - the message object to be logged
+     *
+     * <p>委托底层 Log 记录 TRACE 消息。</p>
      */
     @Override
     public void trace(String msg) {
@@ -88,6 +96,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * <p>
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level TRACE.
+     *
+     * <p>日志级别未启用时不格式化，避免多余对象分配。</p>
      * </p>
      *
      * @param format
@@ -110,6 +120,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * <p>
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level TRACE.
+     *
+     * <p>日志级别未启用时不格式化，避免多余对象分配。</p>
      * </p>
      *
      * @param format
@@ -134,6 +146,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * <p>
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level TRACE.
+     *
+     * <p>日志级别未启用时不格式化，避免多余对象分配。</p>
      * </p>
      *
      * @param format the format string
@@ -162,7 +176,9 @@ class CommonsLogger extends AbstractInternalLogger {
     }
 
     /**
-     * Delegates to the {@link Log#isDebugEnabled} method of the underlying
+     * Delegates to the {@link Log#isDebugEnabled} method
+     *
+     * <p>委托底层 Log 的 isDEBUGEnabled。</p> of the underlying
      * {@link Log} instance.
      */
     @Override
@@ -170,13 +186,15 @@ class CommonsLogger extends AbstractInternalLogger {
         return logger.isDebugEnabled();
     }
 
-    //
+    // debug 级别方法
 
     /**
      * Delegates to the {@link Log#debug(Object)} method of the underlying
      * {@link Log} instance.
      *
      * @param msg - the message object to be logged
+     *
+     * <p>委托底层 Log 记录 TRACE 消息。</p>
      */
     @Override
     public void debug(String msg) {
@@ -191,6 +209,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level DEBUG.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -213,6 +233,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level DEBUG.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -237,6 +259,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level DEBUG.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format the format string
      * @param arguments a list of 3 or more arguments
@@ -264,7 +288,9 @@ class CommonsLogger extends AbstractInternalLogger {
     }
 
     /**
-     * Delegates to the {@link Log#isInfoEnabled} method of the underlying
+     * Delegates to the {@link Log#isInfoEnabled} method
+     *
+     * <p>委托底层 Log 的 isINFOEnabled。</p> of the underlying
      * {@link Log} instance.
      */
     @Override
@@ -277,6 +303,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * {@link Log} instance.
      *
      * @param msg - the message object to be logged
+     *
+     * <p>委托底层 Log 记录 TRACE 消息。</p>
      */
     @Override
     public void info(String msg) {
@@ -291,6 +319,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level INFO.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -313,6 +343,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level INFO.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -337,6 +369,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level INFO.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format the format string
      * @param arguments a list of 3 or more arguments
@@ -364,7 +398,9 @@ class CommonsLogger extends AbstractInternalLogger {
     }
 
     /**
-     * Delegates to the {@link Log#isWarnEnabled} method of the underlying
+     * Delegates to the {@link Log#isWarnEnabled} method
+     *
+     * <p>委托底层 Log 的 isWARNEnabled。</p> of the underlying
      * {@link Log} instance.
      */
     @Override
@@ -377,6 +413,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * {@link Log} instance.
      *
      * @param msg - the message object to be logged
+     *
+     * <p>委托底层 Log 记录 TRACE 消息。</p>
      */
     @Override
     public void warn(String msg) {
@@ -391,6 +429,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level WARN.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -413,6 +453,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level WARN.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -437,6 +479,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level WARN.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format the format string
      * @param arguments a list of 3 or more arguments
@@ -465,7 +509,9 @@ class CommonsLogger extends AbstractInternalLogger {
     }
 
     /**
-     * Delegates to the {@link Log#isErrorEnabled} method of the underlying
+     * Delegates to the {@link Log#isErrorEnabled} method
+     *
+     * <p>委托底层 Log 的 isERROREnabled。</p> of the underlying
      * {@link Log} instance.
      */
     @Override
@@ -478,6 +524,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * {@link Log} instance.
      *
      * @param msg - the message object to be logged
+     *
+     * <p>委托底层 Log 记录 TRACE 消息。</p>
      */
     @Override
     public void error(String msg) {
@@ -492,6 +540,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level ERROR.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -514,6 +564,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level ERROR.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format
      *          the format string
@@ -538,6 +590,8 @@ class CommonsLogger extends AbstractInternalLogger {
      * However, this form avoids superfluous object creation when the logger is disabled
      * for level ERROR.
      * </p>
+     *
+     * <p>级别未启用时跳过 MessageFormatter，减少分配。</p>
      *
      * @param format the format string
      * @param arguments a list of 3 or more arguments

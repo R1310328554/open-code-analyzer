@@ -23,10 +23,13 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation to suppress the Java 8 source code requirement checks for a method.
+ *
+ * <p>标记可豁免 Java 8 源码兼容性检查的方法/构造器/类型。</p>
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE })
 public @interface SuppressJava8Requirement {
 
+    /** 豁免原因说明。 */
     String reason();
 }

@@ -22,12 +22,17 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
 
+/**
+ * VarHandle 工厂：封装 MethodHandles 查找与字节序数组/ByteBuffer 视图。
+ */
 final class VarHandleFactory {
 
     private VarHandleFactory() {
     }
 
+    /** Lookup.findVarHandle 方法句柄。 */
     private static final MethodHandle FIND_VAR_HANDLE;
+    /** MethodHandles.privateLookupIn 方法句柄。 */
     private static final MethodHandle PRIVATE_LOOKUP_IN;
     private static final VarHandle LONG_LE_ARRAY_VIEW;
     private static final VarHandle LONG_BE_ARRAY_VIEW;
@@ -41,6 +46,7 @@ final class VarHandleFactory {
     private static final VarHandle INT_BE_BYTE_BUFFER_VIEW;
     private static final VarHandle SHORT_LE_BYTE_BUFFER_VIEW;
     private static final VarHandle SHORT_BE_BYTE_BUFFER_VIEW;
+    /** 初始化失败原因，null 表示 VarHandle 可用。 */
     private static final Throwable UNAVAILABILITY_CAUSE;
 
     static {
@@ -123,14 +129,17 @@ final class VarHandleFactory {
         }
     }
 
+    /** VarHandle 是否在当前 JVM 可用。 */
     public static boolean isSupported() {
         return UNAVAILABILITY_CAUSE == null;
     }
 
+    /** 不可用时的根因异常。 */
     public static Throwable unavailableCause() {
         return UNAVAILABILITY_CAUSE;
     }
 
+    /** 获取目标类的 private Lookup。 */
     private static MethodHandles.Lookup privateLookup(MethodHandles.Lookup lookup, Class<?> targetClass) {
         try {
             return (MethodHandles.Lookup) PRIVATE_LOOKUP_IN.invokeExact(targetClass, lookup);
@@ -139,6 +148,7 @@ final class VarHandleFactory {
         }
     }
 
+    /** 在 declaringClass 上查找指定名称与类型的 VarHandle。 */
     public static VarHandle privateFindVarHandle(MethodHandles.Lookup lookup, Class<?> declaringClass,
                                                  String name, Class<?> type) {
         try {
@@ -149,50 +159,62 @@ final class VarHandleFactory {
         }
     }
 
+    /** 小端 long[] 数组视图 VarHandle。 */
     public static VarHandle longLeArrayView() {
         return LONG_LE_ARRAY_VIEW;
     }
 
+    /** 大端 long[] 数组视图 VarHandle。 */
     public static VarHandle longBeArrayView() {
         return LONG_BE_ARRAY_VIEW;
     }
 
+    /** 小端 int[] 数组视图 VarHandle。 */
     public static VarHandle intLeArrayView() {
         return INT_LE_ARRAY_VIEW;
     }
 
+    /** 大端 int[] 数组视图 VarHandle。 */
     public static VarHandle intBeArrayView() {
         return INT_BE_ARRAY_VIEW;
     }
 
+    /** 小端 short[] 数组视图 VarHandle。 */
     public static VarHandle shortLeArrayView() {
         return SHORT_LE_ARRAY_VIEW;
     }
 
+    /** 大端 short[] 数组视图 VarHandle。 */
     public static VarHandle shortBeArrayView() {
         return SHORT_BE_ARRAY_VIEW;
     }
 
+    /** 小端 ByteBuffer long 视图 VarHandle。 */
     public static VarHandle longLeByteBufferView() {
         return LONG_LE_BYTE_BUFFER_VIEW;
     }
 
+    /** 大端 ByteBuffer long 视图 VarHandle。 */
     public static VarHandle longBeByteBufferView() {
         return LONG_BE_BYTE_BUFFER_VIEW;
     }
 
+    /** 小端 ByteBuffer int 视图 VarHandle。 */
     public static VarHandle intLeByteBufferView() {
         return INT_LE_BYTE_BUFFER_VIEW;
     }
 
+    /** 大端 ByteBuffer int 视图 VarHandle。 */
     public static VarHandle intBeByteBufferView() {
         return INT_BE_BYTE_BUFFER_VIEW;
     }
 
+    /** 小端 ByteBuffer short 视图 VarHandle。 */
     public static VarHandle shortLeByteBufferView() {
         return SHORT_LE_BYTE_BUFFER_VIEW;
     }
 
+    /** 大端 ByteBuffer short 视图 VarHandle。 */
     public static VarHandle shortBeByteBufferView() {
         return SHORT_BE_BYTE_BUFFER_VIEW;
     }

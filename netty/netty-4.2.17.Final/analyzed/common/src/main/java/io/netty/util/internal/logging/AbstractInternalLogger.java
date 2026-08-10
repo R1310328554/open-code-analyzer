@@ -25,17 +25,23 @@ import java.io.Serializable;
  * A skeletal implementation of {@link InternalLogger}.  This class implements
  * all methods that have a {@link InternalLogLevel} parameter by default to call
  * specific logger methods such as {@link #info(String)} or {@link #isInfoEnabled()}.
+ *
+ * <p>InternalLogger 骨架实现：按 InternalLogLevel 分派到 trace/debug/info/warn/error。</p>
  */
 public abstract class AbstractInternalLogger implements InternalLogger, Serializable {
 
     private static final long serialVersionUID = -6382972526573193470L;
 
+    /** 仅传 Throwable 时使用的默认消息。 */
     static final String EXCEPTION_MESSAGE = "Unexpected exception:";
 
+    /** 日志器名称。 */
     private final String name;
 
     /**
      * Creates a new instance.
+     *
+     * <p>构造并保存日志器名称。</p>
      */
     protected AbstractInternalLogger(String name) {
         this.name = ObjectUtil.checkNotNull(name, "name");
@@ -46,6 +52,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         return name;
     }
 
+    /** 判断指定 InternalLogLevel 是否启用。 */
     @Override
     public boolean isEnabled(InternalLogLevel level) {
         switch (level) {
@@ -64,31 +71,37 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         }
     }
 
+    /** 以默认消息记录 TRACE 级别异常。 */
     @Override
     public void trace(Throwable t) {
         trace(EXCEPTION_MESSAGE, t);
     }
 
+    /** 以默认消息记录 DEBUG 级别异常。 */
     @Override
     public void debug(Throwable t) {
         debug(EXCEPTION_MESSAGE, t);
     }
 
+    /** 以默认消息记录 INFO 级别异常。 */
     @Override
     public void info(Throwable t) {
         info(EXCEPTION_MESSAGE, t);
     }
 
+    /** 以默认消息记录 WARN 级别异常。 */
     @Override
     public void warn(Throwable t) {
         warn(EXCEPTION_MESSAGE, t);
     }
 
+    /** 以默认消息记录 ERROR 级别异常。 */
     @Override
     public void error(Throwable t) {
         error(EXCEPTION_MESSAGE, t);
     }
 
+    /** 按级别记录带异常的消息。 */
     @Override
     public void log(InternalLogLevel level, String msg, Throwable cause) {
         switch (level) {
@@ -112,6 +125,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         }
     }
 
+    /** 按级别仅记录异常。 */
     @Override
     public void log(InternalLogLevel level, Throwable cause) {
         switch (level) {
@@ -135,6 +149,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         }
     }
 
+    /** 按级别记录消息。 */
     @Override
     public void log(InternalLogLevel level, String msg) {
         switch (level) {
@@ -158,6 +173,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         }
     }
 
+    /** 按级别记录带一个占位参数的消息。 */
     @Override
     public void log(InternalLogLevel level, String format, Object arg) {
         switch (level) {
@@ -181,6 +197,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         }
     }
 
+    /** 按级别记录带两个占位参数的消息。 */
     @Override
     public void log(InternalLogLevel level, String format, Object argA, Object argB) {
         switch (level) {
@@ -204,6 +221,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         }
     }
 
+    /** 按级别记录带可变参数的消息。 */
     @Override
     public void log(InternalLogLevel level, String format, Object... arguments) {
         switch (level) {
@@ -227,6 +245,7 @@ public abstract class AbstractInternalLogger implements InternalLogger, Serializ
         }
     }
 
+    /** 反序列化时通过工厂恢复单例 logger。 */
     protected Object readResolve() throws ObjectStreamException {
         return InternalLoggerFactory.getInstance(name());
     }

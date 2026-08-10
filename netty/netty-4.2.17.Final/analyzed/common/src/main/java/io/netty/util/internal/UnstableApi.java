@@ -32,6 +32,8 @@ import java.lang.annotation.Target;
  *     <li>If this annotation is not present the API is considered stable and so no backward compatibility can be
  *         broken in a non-major release!</li>
  * </ol>
+ *
+ * <p>标记不稳定公共 API，小版本也可能变更；*.internal.* 无需标注，未标注则视为稳定 API。</p>
  */
 @Retention(RetentionPolicy.SOURCE) // TODO Retention policy needs to be CLASS in Netty 5.
 @Target({

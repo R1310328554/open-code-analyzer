@@ -23,11 +23,14 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation to suppress the Java 6 source code requirement checks for a method.
+ *
+ * <p>标记可豁免 Java 6 源码兼容性检查的方法/构造器/类型；已废弃。</p>
  */
 @Deprecated
 @Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE })
 public @interface SuppressJava6Requirement {
 
+    /** 豁免原因说明。 */
     String reason();
 }

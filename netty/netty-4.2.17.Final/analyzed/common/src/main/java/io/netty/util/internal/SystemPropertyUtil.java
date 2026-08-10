@@ -25,6 +25,8 @@ import java.security.PrivilegedAction;
 
 /**
  * A collection of utility methods to retrieve and parse the values of the Java system properties.
+ *
+ * <p>读取并解析 JVM 系统属性的工具类，支持 SecurityManager 与类型转换。</p>
  */
 public final class SystemPropertyUtil {
 
@@ -33,7 +35,10 @@ public final class SystemPropertyUtil {
     /**
      * Returns {@code true} if and only if the system property with the specified {@code key}
      * exists.
-     */
+     
+ *
+ * <p>判断指定 key 的系统属性是否存在。</p>
+ */
     public static boolean contains(String key) {
         return get(key) != null;
     }
@@ -43,7 +48,10 @@ public final class SystemPropertyUtil {
      * {@code key}, while falling back to {@code null} if the property access fails.
      *
      * @return the property value or {@code null}
-     */
+     
+ *
+ * <p>读取系统属性，失败或无值时返回 null。</p>
+ */
     public static String get(String key) {
         return get(key, null);
     }
@@ -56,7 +64,10 @@ public final class SystemPropertyUtil {
      * @return the property value.
      *         {@code def} if there's no such property or if an access to the
      *         specified property is not allowed.
-     */
+     
+ *
+ * <p>读取系统属性，失败或无值时返回默认值。</p>
+ */
     public static String get(final String key, String def) {
         checkNonEmpty(key, "key");
 
@@ -138,7 +149,7 @@ public final class SystemPropertyUtil {
         try {
             return Integer.parseInt(value);
         } catch (Exception e) {
-            // Ignore
+            // 解析失败时忽略异常，使用默认值
         }
 
         logger.warn(
@@ -168,7 +179,7 @@ public final class SystemPropertyUtil {
         try {
             return Long.parseLong(value);
         } catch (Exception e) {
-            // Ignore
+            // 解析失败时忽略异常，使用默认值
         }
 
         logger.warn(
@@ -180,6 +191,6 @@ public final class SystemPropertyUtil {
     }
 
     private SystemPropertyUtil() {
-        // Unused
+        // 工具类禁止实例化
     }
 }

@@ -19,8 +19,12 @@ package io.netty.util.internal;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 泛型类型参数运行时匹配器，用于 Pipeline 消息类型过滤。
+ */
 public abstract class TypeParameterMatcher {
 
+    /** Object.class 对应的恒 true 匹配器。 */
     private static final TypeParameterMatcher NOOP = new TypeParameterMatcher() {
         @Override
         public boolean match(Object msg) {
@@ -28,6 +32,7 @@ public abstract class TypeParameterMatcher {
         }
     };
 
+    /** 按 Class 获取匹配器，结果缓存在 InternalThreadLocalMap。 */
     public static TypeParameterMatcher get(final Class<?> parameterType) {
         final Map<Class<?>, TypeParameterMatcher> getCache =
                 InternalThreadLocalMap.get().typeParameterMatcherGetCache();
@@ -45,6 +50,7 @@ public abstract class TypeParameterMatcher {
         return matcher;
     }
 
+    /** 从对象泛型父类解析类型参数并返回对应匹配器。 */
     public static TypeParameterMatcher find(
             final Object object, final Class<?> parametrizedSuperclass, final String typeParamName) {
 
@@ -67,9 +73,12 @@ public abstract class TypeParameterMatcher {
         return matcher;
     }
 
+    /** 判断消息是否匹配目标类型。 */
     public abstract boolean match(Object msg);
 
+    /** 基于 Class.isInstance 的反射匹配实现。 */
     private static final class ReflectiveMatcher extends TypeParameterMatcher {
+        /** 目标匹配类型。 */
         private final Class<?> type;
 
         ReflectiveMatcher(Class<?> type) {
