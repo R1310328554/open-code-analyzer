@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:09:30Z",
-  "files": [
-    "core/src/main/java/com/alibaba/nacos/core/plugin/model/form/PluginConfigForm.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/model/form/PluginStatusForm.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/model/vo/PluginDetailVO.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/model/vo/PluginInfoVO.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/storage/FilePluginStatePersistenceImpl.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/storage/PluginPersistenceException.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/storage/PluginStatePersistenceService.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/sync/PluginStateApplier.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/sync/PluginStateSynchronizer.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/sync/RaftPluginStateSynchronizer.java",
-    "core/src/main/java/com/alibaba/nacos/core/plugin/sync/StandalonePluginStateSynchronizer.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/AbstractRequestFilter.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/BaseRpcServer.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/ClientConnectionEventListener.java",
-    "core/src/main/java/com/alibaba/nacos/core/remote/ClientConnectionEventListenerRegistry.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 857,
-  "done": 1665
+  "done": 1680
 }

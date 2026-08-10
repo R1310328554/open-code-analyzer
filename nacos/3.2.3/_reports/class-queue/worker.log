@@ -1693,3 +1693,18 @@
 2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginInfo.java wave56a [0:15] core paramcheck/persistence/plugin
 2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginStateOperation.java wave56a [0:15] core paramcheck/persistence/plugin
 2026-08-10T04:10:51Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/PluginStateSnapshot.java wave56a [0:15] core paramcheck/persistence/plugin
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/form/PluginConfigForm.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/form/PluginStatusForm.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/vo/PluginDetailVO.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/model/vo/PluginInfoVO.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/storage/FilePluginStatePersistenceImpl.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/storage/PluginPersistenceException.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/storage/PluginStatePersistenceService.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/sync/PluginStateApplier.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/sync/PluginStateSynchronizer.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/sync/RaftPluginStateSynchronizer.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/plugin/sync/StandalonePluginStateSynchronizer.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/remote/AbstractRequestFilter.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/remote/BaseRpcServer.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/remote/ClientConnectionEventListener.java wave56b [15:30] core plugin forms/storage/sync + remote
+2026-08-10T04:11:09Z DONE core/src/main/java/com/alibaba/nacos/core/remote/ClientConnectionEventListenerRegistry.java wave56b [15:30] core plugin forms/storage/sync + remote
