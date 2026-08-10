@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:13:42Z",
-  "files": [
-    "server-spi/src/main/java/org/keycloak/models/UserLoginFailureProvider.java",
-    "server-spi/src/main/java/org/keycloak/models/UserManager.java",
-    "server-spi/src/main/java/org/keycloak/models/UserModel.java",
-    "server-spi/src/main/java/org/keycloak/models/UserProvider.java",
-    "server-spi/src/main/java/org/keycloak/models/UserSessionModel.java",
-    "server-spi/src/main/java/org/keycloak/models/UserSessionProvider.java",
-    "server-spi/src/main/java/org/keycloak/models/UserVerifiableCredentialModel.java",
-    "server-spi/src/main/java/org/keycloak/models/WebAuthnPolicy.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/OTPCredentialModel.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/PasswordCredentialModel.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/PasswordUserCredentialModel.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/RecoveryAuthnCodesCredentialModel.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/WebAuthnCredentialModel.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/OTPCredentialData.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/OTPSecretData.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2338,
-  "done": 3645
+  "done": 3660
 }
