@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ConfigChangeHandler.
+ * 配置变更解析处理器（单例）。
+ *
+ * <p>通过 SPI 加载 {@link ConfigChangeParser} 实现，并按配置类型选择解析器，对比新旧内容生成 {@link ConfigChangeItem} 映射。</p>
  *
  * @author rushsky518
  */
@@ -54,13 +56,13 @@ public class ConfigChangeHandler {
     }
     
     /**
-     * Parse changed data.
+     * 解析配置变更项。
      *
-     * @param oldContent old data
-     * @param newContent new data
-     * @param type       data type
-     * @return change data map
-     * @throws IOException io exception
+     * @param oldContent 变更前内容
+     * @param newContent 变更后内容
+     * @param type       配置类型（如 properties、yaml）
+     * @return 变更项映射，无匹配解析器时返回空映射
+     * @throws IOException 解析 IO 异常
      */
     public Map<String, ConfigChangeItem> parseChangeData(String oldContent, String newContent,
         String type) throws IOException {
@@ -73,6 +75,7 @@ public class ConfigChangeHandler {
         return Collections.emptyMap();
     }
     
+    /** 已注册的变更解析器链，按优先级依次匹配。 */
     private final List<ConfigChangeParser> parserList;
     
 }

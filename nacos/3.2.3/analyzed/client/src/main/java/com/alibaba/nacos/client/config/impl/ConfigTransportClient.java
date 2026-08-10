@@ -39,7 +39,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * config transport client,include basic operations of config module.
+ * 配置传输客户端抽象基类。
+ *
+ * <p>封装编码、命名空间、安全代理与公共请求头，定义监听、查询、发布、删除等配置模块基础远程操作的模板方法。</p>
  *
  * @author liuzunfei
  * @version $Id: ConfigTransportClient.java, v 0.1 2020年08月24日 2:01 PM liuzunfei Exp $
@@ -50,8 +52,10 @@ public abstract class ConfigTransportClient {
     
     private static final String DEFAULT_CONFIG_INFO = "true";
     
+    /** 配置内容字符编码。 */
     String encode;
     
+    /** 默认命名空间（tenant）。 */
     String tenant;
     
     private ThreadPoolExecutor executor;
@@ -66,11 +70,12 @@ public abstract class ConfigTransportClient {
     
     private ScheduledExecutorService loginScheduledExecutor;
     
+    /** 安全代理，负责登录与请求签名。 */
     protected SecurityProxy securityProxy;
     
-    /**
-     * Shut down to ensure resource release.
-     */
+    /** 关闭客户端，释放安全代理与登录调度线程等资源。 */
+    /** Shut down to ensure resource release. */
+    /** 关闭以释放资源。 */
     public void shutdown() throws NacosException {
         securityProxy.shutdown();
         if (loginScheduledExecutor != null && !loginScheduledExecutor.isShutdown()) {
@@ -96,12 +101,12 @@ public abstract class ConfigTransportClient {
     }
     
     /**
-     * Build the resource for current request.
+     * 构建当前请求的鉴权资源描述。
      *
-     * @param tenant tenant of config
-     * @param group  group of config
-     * @param dataId dataId of config
-     * @return resource
+     * @param tenant 命名空间
+     * @param group  配置分组
+     * @param dataId 配置 Data ID
+     * @return 鉴权资源对象
      */
     protected RequestResource buildResource(String tenant, String group, String dataId) {
         return RequestResource.configBuilder().setNamespace(tenant).setGroup(group)
@@ -113,9 +118,9 @@ public abstract class ConfigTransportClient {
     }
     
     /**
-     * get common header.
+     * 组装配置请求的公共 HTTP 头（应用名、时间戳、Token、编码等）。
      *
-     * @return headers.
+     * @return 请求头映射
      */
     protected Map<String, String> getCommonHeader() {
         Map<String, String> headers = new HashMap<>(16);
@@ -144,9 +149,9 @@ public abstract class ConfigTransportClient {
         return this.executor;
     }
     
-    /**
-     * base start client.
-     */
+    /** 启动客户端：登录并周期性刷新安全凭证，再调用 {@link #startInternal()}。 */
+    /** base start client. */
+    /** 启动客户端基类逻辑。 */
     public void start() throws NacosException {
         securityProxy.login(this.properties);
         this.loginScheduledExecutor =
@@ -165,6 +170,7 @@ public abstract class ConfigTransportClient {
      * start client inner.
      *
      * @throws NacosException exception may throw.
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public abstract void startInternal() throws NacosException;
     
@@ -172,6 +178,7 @@ public abstract class ConfigTransportClient {
      * get client name.
      *
      * @return name.
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public abstract String getName();
     
@@ -179,6 +186,7 @@ public abstract class ConfigTransportClient {
      * get encode.
      *
      * @return encode.
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public String getEncode() {
         return this.encode;
@@ -188,6 +196,7 @@ public abstract class ConfigTransportClient {
      * get tenant.
      *
      * @return tenant.
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public String getTenant() {
         return this.tenant;
@@ -202,6 +211,7 @@ public abstract class ConfigTransportClient {
      * listen change .
      *
      * @throws NacosException nacos exception throws, should retry.
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public abstract void executeConfigListen() throws NacosException;
     
@@ -210,6 +220,7 @@ public abstract class ConfigTransportClient {
      *
      * @param dataId dataId.
      * @param group  group
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public abstract void removeCache(String dataId, String group);
     
@@ -223,6 +234,7 @@ public abstract class ConfigTransportClient {
      * @param notify      query for notify sync.
      * @return content.
      * @throws NacosException throw where query fail .
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public abstract ConfigResponse queryConfig(String dataId, String group, String tenat,
         long readTimeous,
@@ -243,6 +255,7 @@ public abstract class ConfigTransportClient {
      * @param type             type.
      * @return success or not.
      * @throws NacosException throw where publish fail.
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public abstract boolean publishConfig(String dataId, String group, String tenant,
         String appName, String tag,
@@ -258,6 +271,7 @@ public abstract class ConfigTransportClient {
      * @param tag    tag.
      * @return success or not.
      * @throws NacosException throw where publish fail.
+      * <p>配置传输抽象基类；定义远程 CRUD 与监听接口。</p>
      */
     public abstract boolean removeConfig(String dataid, String group, String tenat, String tag)
         throws NacosException;

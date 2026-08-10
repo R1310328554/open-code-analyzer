@@ -66,7 +66,9 @@ import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_MATCH
 import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_OVER_LIMIT;
 
 /**
- * config fuzzy watch context holder.
+ * 模糊监听 groupKey 上下文持有者。
+ *
+ * <p>维护 {@code groupKeyPattern -> ConfigFuzzyWatchContext} 映射，处理服务端模糊监听同步/变更推送，驱动长轮询任务并向监听器分发事件。</p>
  *
  * @author shiyiyue
  */
@@ -78,9 +80,9 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
     
     private final String clientUuid;
     
-    /**
-     * fuzzyListenExecuteBell.
-     */
+    /** 模糊监听执行唤醒队列，有新任务时入队以触发长轮询。 */
+    /** fuzzyListenExecuteBell. */
+    /** 模糊监听执行铃。 */
     private final BlockingQueue<Object> fuzzyListenExecuteBell = new ArrayBlockingQueue<>(1);
     
     private final Object bellItem = new Object();
@@ -94,9 +96,9 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
     
     private String taskId = "0";
     
-    /**
-     * fuzzyListenGroupKey -> fuzzyListenContext.
-     */
+    /** groupKey 模式到 {@link ConfigFuzzyWatchContext} 的映射。 */
+    /** fuzzyListenGroupKey -> fuzzyListenContext. */
+    /** 模糊监听上下文映射。 */
     private final AtomicReference<Map<String, ConfigFuzzyWatchContext>> fuzzyListenContextMap =
         new AtomicReference<>(
             new HashMap<>());
@@ -110,6 +112,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
     
     /**
      * start.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     public void start() {
         fuzzyWatcherExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -137,6 +140,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
     
     /**
      * Deregistering it from the NotifyCenter and shutting down the executor.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     @Override
     public void shutdown() {
@@ -151,6 +155,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      * Removes the fuzzy listen context for the specified data ID pattern and group.
      *
      * @param groupKeyPattern The pattern of the data ID.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     public void removeFuzzyListenContext(String groupKeyPattern) {
         synchronized (fuzzyListenContextMap) {
@@ -168,6 +173,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      * @param groupPattern           groupPattern.
      * @param fuzzyWatchEventWatcher fuzzyWatchEventWatcher.
      * @return ConfigFuzzyWatchContext
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     public ConfigFuzzyWatchContext registerFuzzyWatcher(String dataIdPattern, String groupPattern,
         FuzzyWatchEventWatcher fuzzyWatchEventWatcher) {
@@ -200,6 +206,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      * @param dataIdPattern The data ID pattern.
      * @param groupPattern  The group name pattern.
      * @return The corresponding FuzzyListenContext, or null if not found.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     public ConfigFuzzyWatchContext getFuzzyListenContext(String dataIdPattern,
         String groupPattern) {
@@ -216,6 +223,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      *
      * @param request The fuzzy listen init notify request to handle.
      * @return A {@link ConfigFuzzyWatchSyncResponse} indicating the result of handling the request.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     ConfigFuzzyWatchSyncResponse handleFuzzyWatchSyncNotifyRequest(
         ConfigFuzzyWatchSyncRequest request) {
@@ -281,6 +289,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      * @param groupPattern  The group of the configuration.
      * @param watcher       The listener to remove.
      * @throws NacosException If an error occurs while removing the listener.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     public void removeFuzzyWatcher(String dataIdPattern, String groupPattern,
         FuzzyWatchEventWatcher watcher) {
@@ -304,6 +313,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      * listen context based on the request's information, and publishes events if necessary.
      *
      * @param request The fuzzy listen notify change request to handle.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     ConfigFuzzyWatchChangeNotifyResponse handlerFuzzyWatchChangeNotifyRequest(
         ConfigFuzzyWatchChangeNotifyRequest request) {
@@ -357,6 +367,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      * execute the fuzzy listen operation.
      *
      * @throws NacosException If an error occurs during the execution of fuzzy listen configuration changes.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     public void executeConfigFuzzyListen() throws NacosException {
         
@@ -408,6 +419,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      *
      * @param contextLists The map of contexts to execute fuzzy listen operations for.
      * @throws NacosException If an error occurs during the execution of fuzzy listen configuration changes.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     private void doExecuteConfigFuzzyListen(List<ConfigFuzzyWatchContext> contextLists)
         throws NacosException {
@@ -497,6 +509,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      *
      * @param context The list of fuzzy listen contexts.
      * @return A {@code ConfigBatchFuzzyListenRequest} object representing the request.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     private ConfigFuzzyWatchRequest buildFuzzyListenConfigRequest(ConfigFuzzyWatchContext context) {
         ConfigFuzzyWatchRequest request = new ConfigFuzzyWatchRequest();
@@ -516,6 +529,7 @@ public class ConfigFuzzyWatchGroupKeyHolder extends SmartSubscriber implements C
      * @param dataIdPattern The pattern of the data ID.
      * @param groupPattern  The group of the configuration.
      * @return The fuzzy listen context for the specified data ID pattern and group.
+      * <p>模糊监听持有者；处理同步与变更推送。</p>
      */
     private ConfigFuzzyWatchContext initFuzzyWatchContextIfAbsent(String dataIdPattern,
         String groupPattern) {

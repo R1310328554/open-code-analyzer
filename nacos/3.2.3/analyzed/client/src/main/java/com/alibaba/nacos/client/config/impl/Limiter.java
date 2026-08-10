@@ -26,7 +26,9 @@ import org.slf4j.Logger;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Limiter.
+ * 配置客户端访问限流器。
+ *
+ * <p>按 accessKeyId（或请求指纹 MD5）维护 Guava {@link RateLimiter}，防止单客户端对配置服务端请求过于频繁。</p>
  *
  * @author Nacos
  */
@@ -44,9 +46,9 @@ public class Limiter {
     
     private static final String LIMIT_TIME_PROPERTY = "limitTime";
     
-    /**
-     * qps 5.
-     */
+    /** 默认 QPS 上限（可通过 {@code limitTime} 系统属性覆盖）。 */
+    /** qps 5. */
+    /** 默认 QPS 为 5。 */
     private static double limit = 5;
     
     static {
@@ -61,10 +63,10 @@ public class Limiter {
     }
     
     /**
-     * Judge whether access key is limited.
+     * 判断指定 accessKeyId 是否触发限流。
      *
-     * @param accessKeyId access key
-     * @return true if is limited, otherwise false
+     * @param accessKeyId 访问密钥或请求指纹
+     * @return 被限流返回 true，否则 false
      */
     public static boolean isLimit(String accessKeyId) {
         RateLimiter rateLimiter = null;

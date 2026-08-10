@@ -109,7 +109,9 @@ import static com.alibaba.nacos.api.common.Constants.APP_CONN_PREFIX;
 import static com.alibaba.nacos.api.common.Constants.ENCODE;
 
 /**
- * Long polling.
+ * Nacos 配置客户端核心工作线程。
+ *
+ * <p>维护 {@code groupKey -> CacheData} 缓存映射，负责长轮询监听、配置 CRUD、模糊订阅及与服务端的 gRPC/HTTP 通信。内部通过 {@link ConfigRpcTransportClient} 执行远程调用。</p>
  *
  * @author Nacos
  */
@@ -129,9 +131,9 @@ public class ClientWorker implements Closeable {
     
     private static final String ENCRYPTED_DATA_KEY_PARAM = "encryptedDataKey";
     
-    /**
-     * groupKey -> cacheData.
-     */
+    /** groupKey 到 {@link CacheData} 的缓存映射。 */
+    /** groupKey -> cacheData. */
+    /** groupKey 到 CacheData 的映射。 */
     private final AtomicReference<Map<String, CacheData>> cacheMap =
         new AtomicReference<>(new HashMap<>());
     
@@ -158,17 +160,17 @@ public class ClientWorker implements Closeable {
     
     private boolean enableClientMetrics = true;
     
-    /**
-     * index(taskId)-> total cache count for this taskId.
-     */
+    /** 按 taskId 索引的缓存条目计数，用于负载均衡分片。 */
+    /** index(taskId)-> total cache count for this taskId. */
+    /** taskId 对应的缓存总数。 */
     private final List<AtomicInteger> taskIdCacheCountList = new ArrayList<>();
     
     /**
-     * Add listeners for data.
+     * 为指定 dataId、group 批量添加配置监听器。
      *
-     * @param dataId    dataId of data
-     * @param group     group of data
-     * @param listeners listeners
+     * @param dataId    配置 Data ID
+     * @param group     配置分组
+     * @param listeners 监听器列表
      */
     public void addListeners(String dataId, String group, List<? extends Listener> listeners)
         throws NacosException {
@@ -180,7 +182,7 @@ public class ClientWorker implements Closeable {
             }
             cache.setDiscard(false);
             cache.setConsistentWithServer(false);
-            // make sure cache exists in cacheMap
+            // 确保 cacheMap 中存在该缓存条目
             if (getCache(dataId, group) != cache) {
                 putCache(GroupKey.getKey(dataId, group), cache);
             }
@@ -189,12 +191,12 @@ public class ClientWorker implements Closeable {
     }
     
     /**
-     * Add listeners for tenant.
+     * 在当前命名空间下为指定 dataId、group 批量添加监听器。
      *
-     * @param dataId    dataId of data
-     * @param group     group of data
-     * @param listeners listeners
-     * @throws NacosException nacos exception
+     * @param dataId    配置 Data ID
+     * @param group     配置分组
+     * @param listeners 监听器列表
+     * @throws NacosException 添加失败时抛出
      */
     public void addTenantListeners(String dataId, String group, List<? extends Listener> listeners)
         throws NacosException {
@@ -207,7 +209,7 @@ public class ClientWorker implements Closeable {
             }
             cache.setDiscard(false);
             cache.setConsistentWithServer(false);
-            // ensure cache present in cacheMap
+            // 确保 cacheMap 中存在该租户缓存
             if (getCache(dataId, group, tenant) != cache) {
                 putCache(GroupKey.getKeyTenant(dataId, group, tenant), cache);
             }
@@ -225,6 +227,7 @@ public class ClientWorker implements Closeable {
      * @param encryptedDataKey encryptedDataKey
      * @param listeners        listeners
      * @throws NacosException nacos exception
+      * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
      */
     public void addTenantListenersWithContent(String dataId, String group, String content,
         String encryptedDataKey,
@@ -250,11 +253,11 @@ public class ClientWorker implements Closeable {
     }
     
     /**
-     * Remove listener.
+     * 移除指定 dataId、group 下的单个监听器。
      *
-     * @param dataId   dataId of data
-     * @param group    group of data
-     * @param listener listener
+     * @param dataId   配置 Data ID
+     * @param group    配置分组
+     * @param listener 待移除的监听器
      */
     public void removeListener(String dataId, String group, Listener listener) {
         group = blank2defaultGroup(group);
@@ -278,6 +281,7 @@ public class ClientWorker implements Closeable {
      * @param dataId   dataId of data
      * @param group    group of data
      * @param listener listener
+      * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
      */
     public void removeTenantListener(String dataId, String group, Listener listener) {
         group = blank2defaultGroup(group);
@@ -296,12 +300,12 @@ public class ClientWorker implements Closeable {
     }
     
     /**
-     * Adds a list of fuzzy listen listeners for the specified data ID pattern and group.
+     * 注册模糊监听：按 dataId 与 group 模式订阅配置变更。
      *
-     * @param dataIdPattern          The pattern of the data ID to listen for.
-     * @param groupPattern           The group of the configuration.
-     * @param fuzzyWatchEventWatcher The configFuzzyWatcher to add.
-     * @throws NacosException If an error occurs while adding the listeners.
+     * @param dataIdPattern          Data ID 模糊匹配模式
+     * @param groupPattern           分组模糊匹配模式
+     * @param fuzzyWatchEventWatcher 模糊监听回调
+     * @throws NacosException 注册失败时抛出
      */
     public ConfigFuzzyWatchContext addTenantFuzzyWatcher(String dataIdPattern, String groupPattern,
         FuzzyWatchEventWatcher fuzzyWatchEventWatcher) {
@@ -316,6 +320,7 @@ public class ClientWorker implements Closeable {
      * @param group         The group of the configuration.
      * @param watcher       The listener to remove.
      * @throws NacosException If an error occurs while removing the listener.
+      * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
      */
     public void removeFuzzyListenListener(String dataIdPattern, String group,
         FuzzyWatchEventWatcher watcher) {
@@ -344,14 +349,14 @@ public class ClientWorker implements Closeable {
     }
     
     /**
-     * remove config.
+     * 删除远端配置。
      *
-     * @param dataId dataId.
-     * @param group  group.
-     * @param tenant tenant.
-     * @param tag    tag.
-     * @return success or not.
-     * @throws NacosException exception to throw.
+     * @param dataId 配置 Data ID
+     * @param group  配置分组
+     * @param tenant 命名空间
+     * @param tag    配置标签
+     * @return 是否删除成功
+     * @throws NacosException 删除失败时抛出
      */
     public boolean removeConfig(String dataId, String group, String tenant, String tag)
         throws NacosException {
@@ -359,19 +364,19 @@ public class ClientWorker implements Closeable {
     }
     
     /**
-     * publish config.
+     * 发布或更新远端配置。
      *
-     * @param dataId  dataId.
-     * @param group   group.
-     * @param tenant  tenant.
-     * @param appName appName.
-     * @param tag     tag.
-     * @param betaIps betaIps.
-     * @param content content.
-     * @param casMd5  casMd5.
-     * @param type    type.
-     * @return success or not.
-     * @throws NacosException exception throw.
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param tenant  命名空间
+     * @param appName 应用名
+     * @param tag     配置标签
+     * @param betaIps Beta 发布 IP 列表
+     * @param content 配置内容
+     * @param casMd5  CAS 校验 MD5
+     * @param type    配置类型
+     * @return 是否发布成功
+     * @throws NacosException 发布失败时抛出
      */
     public boolean publishConfig(String dataId, String group, String tenant, String appName,
         String tag, String betaIps,
@@ -388,6 +393,7 @@ public class ClientWorker implements Closeable {
      * @param dataId data id if data
      * @param group  group of data
      * @return cache data
+      * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
      */
     public CacheData addCacheDataIfAbsent(String dataId, String group) {
         CacheData cache = getCache(dataId, group);
@@ -437,6 +443,7 @@ public class ClientWorker implements Closeable {
      * @param group  group of data
      * @param tenant tenant of data
      * @return cache data
+      * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
      */
     public CacheData addCacheDataIfAbsent(String dataId, String group, String tenant)
         throws NacosException {
@@ -491,6 +498,7 @@ public class ClientWorker implements Closeable {
      *
      * @param key   groupKey
      * @param cache cache
+      * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
      */
     private void putCache(String key, CacheData cache) {
         synchronized (cacheMap) {
@@ -666,6 +674,7 @@ public class ClientWorker implements Closeable {
      *
      * @return true: that means has atleast one connected rpc client. flase: that means does not have any connected rpc
      * client.
+      * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
      */
     public boolean isHealthServer() {
         return agent.isHealthServer();
@@ -687,6 +696,7 @@ public class ClientWorker implements Closeable {
         
         /**
          * 3 minutes to check all listen cache keys.
+          * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
          */
         private static final long ALL_SYNC_INTERNAL = 3 * 60 * 1000L;
         
@@ -988,6 +998,7 @@ public class ClientWorker implements Closeable {
          * failover files for local configuration storage and updates the CacheData accordingly.
          *
          * @param cacheData The CacheData object to be processed.
+          * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
          */
         public void checkLocalConfig(CacheData cacheData) {
             final String dataId = cacheData.dataId;
@@ -1263,6 +1274,7 @@ public class ClientWorker implements Closeable {
          *
          * @param caches caches to build config string.
          * @return request.
+          * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
          */
         private ConfigBatchListenRequest buildConfigRequest(List<CacheData> caches) {
             
@@ -1285,6 +1297,7 @@ public class ClientWorker implements Closeable {
          * send cancel listen config change request .
          *
          * @param configChangeListenRequest request of remove listen config string.
+          * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
          */
         private boolean unListenConfigChange(RpcClient rpcClient,
             ConfigBatchListenRequest configChangeListenRequest)
@@ -1477,6 +1490,7 @@ public class ClientWorker implements Closeable {
          * check server is health.
          *
          * @return
+          * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
          */
         public boolean isHealthServer() {
             try {
@@ -1492,6 +1506,7 @@ public class ClientWorker implements Closeable {
          *
          * @param abilityKey ability key
          * @return true if supported, otherwise false
+          * <p>配置客户端长轮询与缓存管理；详见类级说明。</p>
          */
         public boolean isAbilitySupportedByServer(AbilityKey abilityKey) {
             try {

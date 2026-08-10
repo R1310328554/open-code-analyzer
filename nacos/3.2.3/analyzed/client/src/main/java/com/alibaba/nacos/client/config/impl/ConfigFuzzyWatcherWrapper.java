@@ -24,25 +24,30 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * ConfigFuzzyWatcherWrapper.
+ * 模糊监听器包装器。
+ *
+ * <p>为 {@link FuzzyWatchEventWatcher} 分配唯一 UUID，记录同步版本与已同步 groupKey 集合，供 {@link ConfigFuzzyWatchContext} 管理。</p>
  *
  * @author shiyiyue
  */
 public class ConfigFuzzyWatcherWrapper {
     
+    /** 与服务端对账的同步版本号。 */
     long syncVersion = 0;
     
+    /** 用户注册的模糊监听回调。 */
     FuzzyWatchEventWatcher fuzzyWatchEventWatcher;
     
     public ConfigFuzzyWatcherWrapper(FuzzyWatchEventWatcher fuzzyWatchEventWatcher) {
         this.fuzzyWatchEventWatcher = fuzzyWatchEventWatcher;
     }
     
-    /**
-     * Unique identifier for the listener.
-     */
+    /** 监听器唯一标识 UUID。 */
+    /** Unique identifier for the listener. */
+    /** 监听器唯一 ID。 */
     String uuid = UUID.randomUUID().toString();
     
+    /** 已通过初始化/对账同步到的 groupKey 集合。 */
     private Set<String> syncGroupKeys = new HashSet<>();
     
     @Override
@@ -71,6 +76,7 @@ public class ConfigFuzzyWatcherWrapper {
      * Get the UUID (Unique Identifier) of the listener.
      *
      * @return The UUID of the listener
+      * <p>Nacos 客户端配置实现模块；详见上方说明。</p>
      */
     String getUuid() {
         return uuid;

@@ -46,54 +46,52 @@ import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_MATCH
 import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_OVER_LIMIT;
 
 /**
- * fuzzy watcher context for a single group key pattern.
+ * 单个 groupKey 模式的模糊监听上下文。
  *
- * <p>This class manages the context information for fuzzy listening, including environment name, task ID, data ID
- * pattern, group, tenant, listener set, and other related information.
- * </p>
+ * <p>管理环境名、taskId、groupKey 模式、已接收的 groupKey 集合、监听器包装器及与服务端的一致性状态，支持初始化等待与超限抑制。</p>
  *
  * @author stone-98
  * @date 2024/3/4
  */
 public class ConfigFuzzyWatchContext {
     
-    /**
-     * Logger for FuzzyListenContext.
-     */
+    /** 模糊监听上下文日志记录器。 */
+    /** Logger for FuzzyListenContext. */
+    /** FuzzyListenContext 日志。 */
     private static final Logger LOGGER = LogUtils.logger(ConfigFuzzyWatchContext.class);
     
-    /**
-     * Environment name.
-     */
+    /** 环境/服务端名称。 */
+    /** Environment name. */
+    /** 环境名称。 */
     private String envName;
     
-    /**
-     * Task ID.
-     */
+    /** 长轮询任务分片 ID。 */
+    /** Task ID. */
+    /** 任务 ID。 */
     private int taskId;
     
     private String groupKeyPattern;
     
-    /**
-     * Set of data IDs associated with the context.
-     */
+    /** 该模式下已接收到的 groupKey 集合。 */
+    /** Set of data IDs associated with the context. */
+    /** 关联的 groupKey 集合。 */
     private Set<String> receivedGroupKeys = new ConcurrentHashSet<>();
     
     long syncVersion = 0;
     
-    /**
-     * Flag indicating whether the context is consistent with the server.
-     */
+    /** 模糊监听上下文是否已与服务端状态一致。 */
+    /** Flag indicating whether the context is consistent with the server. */
+    /** 是否与服务端一致。 */
     private final AtomicBoolean isConsistentWithServer = new AtomicBoolean();
     
-    /**
-     * Condition object for waiting initialization completion.
-     */
+    /** 初始化完成标志，供注册方等待首次同步。 */
+    /** Condition object for waiting initialization completion. */
+    /** 初始化完成条件。 */
     final AtomicBoolean initializationCompleted = new AtomicBoolean(false);
     
-    /**
-     * Flag indicating whether the context is discarded.
-     */
+    /** 上下文是否已废弃，待从持有者移除。 */
+    /** Flag indicating whether the context is discarded. */
+    /** 是否已废弃。 */
     private volatile boolean isDiscard = false;
     
     long patternLimitTs = 0;
@@ -113,9 +111,9 @@ public class ConfigFuzzyWatchContext {
         this.patternLimitTs = System.currentTimeMillis();
     }
     
-    /**
-     * Set of listeners associated with the context.
-     */
+    /** 绑定到该模式的模糊监听器包装器集合。 */
+    /** Set of listeners associated with the context. */
+    /** 关联的监听器集合。 */
     private Set<ConfigFuzzyWatcherWrapper> configFuzzyWatcherWrappers = new HashSet<>();
     
     /**
@@ -123,6 +121,7 @@ public class ConfigFuzzyWatchContext {
      *
      * @param envName         Environment name
      * @param groupKeyPattern groupKeyPattern
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public ConfigFuzzyWatchContext(String envName, String groupKeyPattern) {
         this.envName = envName;
@@ -134,6 +133,7 @@ public class ConfigFuzzyWatchContext {
      *
      * @param uuid UUID to filter listeners
      * @return Set of listeners to notify
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public Set<ConfigFuzzyWatcherWrapper> calculateListenersToNotify(String uuid) {
         Set<ConfigFuzzyWatcherWrapper> listenersToNotify = new HashSet<>();
@@ -154,6 +154,7 @@ public class ConfigFuzzyWatchContext {
      *
      * @param groupKey groupKey
      * @param uuid     UUID to filter listeners
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public void notifyWatcher(final String groupKey, final String changedType,
         final String syncType,
@@ -167,6 +168,7 @@ public class ConfigFuzzyWatchContext {
      *
      * @param groupKey          groupKey
      * @param listenersToNotify Set of listeners to notify
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     private void doNotifyWatchers(final String groupKey, final String changedType,
         final String syncType,
@@ -180,6 +182,7 @@ public class ConfigFuzzyWatchContext {
      * notify loader watcher.
      *
      * @param code over limit code,FUZZY_WATCH_PATTERN_MATCH_COUNT_OVER_LIMIT or FUZZY_WATCH_PATTERN_OVER_LIMIT.
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public void notifyLoaderWatcher(int code) {
         
@@ -279,6 +282,7 @@ public class ConfigFuzzyWatchContext {
     
     /**
      * Mark initialization as complete and notify waiting threads.
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public void markInitializationComplete() {
         initializationCompleted.set(true);
@@ -291,6 +295,7 @@ public class ConfigFuzzyWatchContext {
      * Remove a watcher from the context.
      *
      * @param watcher watcher to be removed
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public void removeWatcher(FuzzyWatchEventWatcher watcher) {
         
@@ -312,6 +317,7 @@ public class ConfigFuzzyWatchContext {
      * Add a watcher to the context.
      *
      * @param configFuzzyWatcherWrapper watcher to be added
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public boolean addWatcher(ConfigFuzzyWatcherWrapper configFuzzyWatcherWrapper) {
         boolean added = configFuzzyWatcherWrappers.add(configFuzzyWatcherWrapper);
@@ -328,6 +334,7 @@ public class ConfigFuzzyWatchContext {
      * Get the environment name.
      *
      * @return Environment name
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public String getEnvName() {
         return envName;
@@ -337,6 +344,7 @@ public class ConfigFuzzyWatchContext {
      * Set the environment name.
      *
      * @param envName Environment name to be set
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public void setEnvName(String envName) {
         this.envName = envName;
@@ -346,6 +354,7 @@ public class ConfigFuzzyWatchContext {
      * Get the task ID.
      *
      * @return Task ID
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public int getTaskId() {
         return taskId;
@@ -355,6 +364,7 @@ public class ConfigFuzzyWatchContext {
      * Set the task ID.
      *
      * @param taskId Task ID to be set
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public void setTaskId(int taskId) {
         this.taskId = taskId;
@@ -368,6 +378,7 @@ public class ConfigFuzzyWatchContext {
      * Get the flag indicating whether the context is consistent with the server.
      *
      * @return AtomicBoolean indicating whether the context is consistent with the server
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public boolean isConsistentWithServer() {
         return isConsistentWithServer.get();
@@ -381,6 +392,7 @@ public class ConfigFuzzyWatchContext {
      * Check if the context is discarded.
      *
      * @return True if the context is discarded, otherwise false
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public boolean isDiscard() {
         return isDiscard;
@@ -390,6 +402,7 @@ public class ConfigFuzzyWatchContext {
      * Set the flag indicating whether the context is discarded.
      *
      * @param discard True to mark the context as discarded, otherwise false
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public void setDiscard(boolean discard) {
         isDiscard = discard;
@@ -399,6 +412,7 @@ public class ConfigFuzzyWatchContext {
      * Check if the context is initializing.
      *
      * @return True if the context is initializing, otherwise false
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public boolean isInitializing() {
         return !initializationCompleted.get();
@@ -412,6 +426,7 @@ public class ConfigFuzzyWatchContext {
      * Get the set of data IDs associated with the context. zw
      *
      * @return Set of data IDs
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public Set<String> getReceivedGroupKeys() {
         return Collections.unmodifiableSet(receivedGroupKeys);
@@ -425,6 +440,7 @@ public class ConfigFuzzyWatchContext {
      * add receive group key.
      * @param groupKey group key.
      * @return
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public boolean addReceivedGroupKey(String groupKey) {
         boolean added = receivedGroupKeys.add(groupKey);
@@ -438,6 +454,7 @@ public class ConfigFuzzyWatchContext {
      * remove receive group key.
      * @param groupKey group key.
      * @return
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public boolean removeReceivedGroupKey(String groupKey) {
         boolean removed = receivedGroupKeys.remove(groupKey);
@@ -451,6 +468,7 @@ public class ConfigFuzzyWatchContext {
      * Get the set of listeners associated with the context.
      *
      * @return Set of listeners
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public Set<ConfigFuzzyWatcherWrapper> getConfigFuzzyWatcherWrappers() {
         return configFuzzyWatcherWrappers;
@@ -458,11 +476,13 @@ public class ConfigFuzzyWatchContext {
     
     /**
      * Abstract task for fuzzy notification.
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     abstract static class AbstractFuzzyNotifyTask implements Runnable {
         
         /**
          * Flag indicating whether the task is asynchronous.
+          * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
          */
         boolean async = false;
         
@@ -470,6 +490,7 @@ public class ConfigFuzzyWatchContext {
          * Check if the task is asynchronous.
          *
          * @return True if the task is asynchronous, otherwise false
+          * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
          */
         public boolean isAsync() {
             return async;
@@ -506,6 +527,7 @@ public class ConfigFuzzyWatchContext {
      * creat a new future of this context.
      *
      * @return
+      * <p>单模式模糊监听上下文；管理 groupKey 集合与监听器。</p>
      */
     public Future<Set<String>> createNewFuture() {
         Future<Set<String>> future = new Future<Set<String>>() {

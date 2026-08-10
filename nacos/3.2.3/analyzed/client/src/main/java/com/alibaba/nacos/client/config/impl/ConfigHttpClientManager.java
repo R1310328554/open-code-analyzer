@@ -45,7 +45,9 @@ import java.util.List;
 import static com.alibaba.nacos.client.utils.LogUtils.NAMING_LOGGER;
 
 /**
- * config http Manager.
+ * 配置模块 HTTP 客户端管理器（单例）。
+ *
+ * <p>提供带连接/读超时与限流拦截器的 {@link NacosRestTemplate}，供配置拉取、发布等 HTTP 通路使用。</p>
  *
  * @author mai.jh
  */
@@ -85,19 +87,19 @@ public class ConfigHttpClientManager implements Closeable {
     }
     
     /**
-     * get connectTimeout.
+     * 获取连接超时（毫秒），取默认值与入参的较大值。
      *
-     * @param connectTimeout connectTimeout
-     * @return int return max timeout
+     * @param connectTimeout 期望的连接超时
+     * @return 实际使用的连接超时
      */
     public int getConnectTimeoutOrDefault(int connectTimeout) {
         return Math.max(CON_TIME_OUT_MILLIS, connectTimeout);
     }
     
     /**
-     * get NacosRestTemplate Instance.
+     * 获取配置模块专用的 {@link NacosRestTemplate} 实例。
      *
-     * @return NacosRestTemplate
+     * @return 已挂载限流拦截器的 REST 模板
      */
     public NacosRestTemplate getNacosRestTemplate() {
         NacosRestTemplate nacosRestTemplate =
@@ -109,9 +111,9 @@ public class ConfigHttpClientManager implements Closeable {
         return nacosRestTemplate;
     }
     
-    /**
-     * ConfigHttpClientFactory.
-     */
+    /** 配置 HTTP 客户端工厂，设置超时与日志。 */
+    /** ConfigHttpClientFactory. */
+    /** 配置 HTTP 客户端工厂。 */
     private static class ConfigHttpClientFactory extends AbstractHttpClientFactory {
         
         @Override
@@ -126,9 +128,9 @@ public class ConfigHttpClientManager implements Closeable {
         }
     }
     
-    /**
-     * config Limiter implement.
-     */
+    /** 基于 {@link Limiter} 的请求拦截器，超阈值时短路返回限流响应。 */
+    /** config Limiter implement. */
+    /** 配置限流拦截器。 */
     private static class LimiterHttpClientRequestInterceptor
         implements HttpClientRequestInterceptor {
         
@@ -146,9 +148,9 @@ public class ConfigHttpClientManager implements Closeable {
         }
     }
     
-    /**
-     * Limit Interrupt response.
-     */
+    /** 客户端限流触发时的占位 HTTP 响应。 */
+    /** Limit Interrupt response. */
+    /** 限流中断响应。 */
     private static class LimitResponse implements HttpClientResponse {
         
         @Override

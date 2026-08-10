@@ -19,7 +19,9 @@ package com.alibaba.nacos.client.config.impl;
 import com.alibaba.nacos.common.notify.SlowEvent;
 
 /**
- * change notify block event.
+ * 配置变更通知阻塞事件。
+ *
+ * <p>当 {@link Listener#receiveConfigInfo} 执行超时仍未完成时，由 {@link CacheData} 的阻塞监控线程发布，携带监听器、配置定位信息与堆栈快照。</p>
  *
  * @author shiyiyue
  */
@@ -37,18 +39,25 @@ public class ChangeNotifyBlockEvent extends SlowEvent {
         this.blockStack = blockStack;
     }
     
+    /** 阻塞中的监听器类名。 */
     private String listener;
     
+    /** 配置 Data ID。 */
     private String dataId;
     
+    /** 配置分组。 */
     private String group;
     
+    /** 命名空间（tenant）。 */
     private String tenant;
     
+    /** 通知开始时间戳（毫秒）。 */
     private long startTime;
     
+    /** 检测到阻塞时的当前时间戳（毫秒）。 */
     private long currentTime;
     
+    /** 监听器线程的堆栈快照，用于排查阻塞原因。 */
     private String blockStack;
     
     public String getDataId() {

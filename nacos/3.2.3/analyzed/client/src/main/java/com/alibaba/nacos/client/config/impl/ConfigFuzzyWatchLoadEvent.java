@@ -19,23 +19,29 @@ package com.alibaba.nacos.client.config.impl;
 import com.alibaba.nacos.common.notify.Event;
 
 /**
- * event published when a fuzzy watch pattern being suppressed because of pattern count or pattern matched config count  is over limit.
+ * 模糊监听负载/限流事件。
+ *
+ * <p>当模糊模式数量或匹配配置数超过服务端限制而被抑制时发布，供 {@link FuzzyWatchLoadWatcher} 感知并降级处理。</p>
+ *
  * @author shiyiyue
  * @date 2025/01/13
  */
 public class ConfigFuzzyWatchLoadEvent extends Event {
     
+    /** 客户端实例 UUID。 */
     private String clientUuid;
     
-    /**
-     * The groupKeyPattern of configuration.
-     */
+    /** 触发限流的 groupKey 模糊匹配模式。 */
+    /** The groupKeyPattern of configuration. */
+    /** 配置的 groupKey 模式。 */
     private String groupKeyPattern;
     
+    /** 限流/抑制错误码。 */
     private int code;
     
     /**
      * Constructs a new ConfigFuzzyWatchLoadEvent.
+      * <p>Nacos 客户端配置实现模块；详见上方说明。</p>
      */
     public ConfigFuzzyWatchLoadEvent() {
     }
@@ -45,6 +51,7 @@ public class ConfigFuzzyWatchLoadEvent extends Event {
      *
      * @param code            The type of notification.
      * @param groupKeyPattern The groupKeyPattern of notification.
+      * <p>Nacos 客户端配置实现模块；详见上方说明。</p>
      */
     private ConfigFuzzyWatchLoadEvent(int code, String groupKeyPattern, String clientUuid) {
         this.code = code;
@@ -57,6 +64,7 @@ public class ConfigFuzzyWatchLoadEvent extends Event {
      *
      * @param groupKeyPattern The groupKey of the configuration.
      * @return A new FuzzyListenNotifyEvent instance.
+      * <p>Nacos 客户端配置实现模块；详见上方说明。</p>
      */
     public static ConfigFuzzyWatchLoadEvent buildEvent(int code, String groupKeyPattern,
         String clientUuid) {

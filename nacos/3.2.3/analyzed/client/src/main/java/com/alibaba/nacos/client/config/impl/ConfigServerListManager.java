@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Config server list Manager.
+ * 配置服务端地址列表管理器。
+ *
+ * <p>继承 {@link AbstractServerListManager}，维护配置集群地址、当前选中节点及带随机种子的轮询迭代器，支持同机房优先排序。</p>
  *
  * @author Nacos
  */
@@ -40,13 +42,15 @@ public class ConfigServerListManager extends AbstractServerListManager {
     
     private static final Logger LOGGER = LogUtils.logger(ConfigServerListManager.class);
     
-    /**
-     * The name of the different environment.
-     */
+    /** 环境/集群名称，用于日志与本地快照目录区分。 */
+    /** The name of the different environment. */
+    /** 环境名称。 */
     private String name;
     
+    /** 默认命名空间（tenant）。 */
     private String tenant = "";
     
+    /** 当前选中的配置服务端地址。 */
     private volatile String currentServerAddr;
     
     private Iterator<String> iterator;
@@ -79,7 +83,7 @@ public class ConfigServerListManager extends AbstractServerListManager {
     
     private String initServerName(NacosClientProperties properties) {
         String serverName;
-        //1.user define server name.
+        // 1. 优先使用用户配置的 serverName
         if (properties.containsKey(PropertyKeyConst.SERVER_NAME)) {
             serverName = properties.getProperty(PropertyKeyConst.SERVER_NAME);
         } else {
@@ -155,9 +159,9 @@ public class ConfigServerListManager extends AbstractServerListManager {
         return tenant;
     }
     
-    /**
-     * Sort the address list, with the same room priority.
-     */
+    /** 服务端地址迭代器：随机种子排序以实现负载均衡。 */
+    /** Sort the address list, with the same room priority. */
+    /** 地址列表排序迭代器。 */
     private static class ServerAddressIterator implements Iterator<String> {
         
         static class RandomizedServerAddress implements Comparable<RandomizedServerAddress> {
@@ -170,9 +174,7 @@ public class ConfigServerListManager extends AbstractServerListManager {
             
             public RandomizedServerAddress(String ip) {
                 this.serverIp = ip;
-                /*
-                 change random scope from 32 to Integer.MAX_VALUE to fix load balance issue
-                 */
+                /* 将随机范围从 32 扩大到 Integer.MAX_VALUE，修复负载均衡问题 */
                 this.seed = random.nextInt(Integer.MAX_VALUE);
             }
             

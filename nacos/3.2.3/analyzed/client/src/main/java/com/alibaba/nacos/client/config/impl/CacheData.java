@@ -48,7 +48,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Listener Management.
+ * 配置监听缓存数据管理。
+ *
+ * <p>每条 {@code dataId+group(+tenant)} 对应一个 {@code CacheData}，缓存配置内容、MD5、监听器列表，并在变更时异步回调 {@link Listener}。同时负责本地快照/容灾文件的加载与通知阻塞监控。</p>
  *
  * @author Nacos
  */
@@ -78,9 +80,9 @@ public class CacheData {
         return notifyWarnTimeout;
     }
     
-    /**
-     * double check lock initialization of scheduledExecutor.
-     */
+    /** 通知阻塞监控线程池，双重检查锁懒加载初始化。 */
+    /** double check lock initialization of scheduledExecutor. */
+    /** 双重检查锁初始化 scheduledExecutor。 */
     static volatile ScheduledThreadPoolExecutor scheduledExecutor;
     
     static ScheduledThreadPoolExecutor getNotifyBlockMonitor() {
@@ -91,7 +93,7 @@ public class CacheData {
                         new NameThreadFactory("com.alibaba.nacos.client.notify.block.monitor"),
                         new ThreadPoolExecutor.DiscardPolicy());
                     scheduledExecutor.setRemoveOnCancelPolicy(true);
-                    // it will shut down when jvm exit.
+                    // JVM 退出时随钩子关闭线程池
                     ThreadUtils.addShutdownHook(CacheData::shutdownScheduledExecutor);
                 }
             }
@@ -99,9 +101,9 @@ public class CacheData {
         return scheduledExecutor;
     }
     
-    /**
-     * shutdownScheduledExecutor.
-     */
+    /** 关闭通知阻塞监控线程池，释放资源。 */
+    /** shutdownScheduledExecutor. */
+    /** 关闭 scheduledExecutor。 */
     public static void shutdownScheduledExecutor() {
         if (scheduledExecutor != null && !scheduledExecutor.isShutdown()) {
             try {
@@ -136,28 +138,29 @@ public class CacheData {
     
     private volatile String md5;
     
-    /**
-     * whether use local config.
-     */
+    /** 是否使用本地容灾/快照配置而非服务端内容。 */
+    /** whether use local config. */
+    /** 是否使用本地配置。 */
     private volatile boolean isUseLocalConfig = false;
     
-    /**
-     * last modify time.
-     */
+    /** 本地配置最后修改时间戳。 */
+    /** last modify time. */
+    /** 最后修改时间。 */
     private volatile long localConfigLastModified;
     
     private volatile String content;
     
     private volatile String encryptedDataKey;
     
-    /**
-     * local cache change timestamp.
-     */
+    /** 本地缓存变更时间戳，用于与服务端版本比对。 */
+    /** local cache change timestamp. */
+    /** 本地缓存变更时间戳。 */
     private final AtomicLong lastModifiedTs = new AtomicLong(0);
     
-    /**
-     * notify change flag,for notify&sync concurrent control. 1.reset to false if starting to sync with server. 2.update
+    /** 变更通知标志，用于通知与同步的并发控制：开始与服务端同步时置 false；收到变更推送时置 true。 */
+    /** notify change flag,for notify&sync concurrent control. 1.reset to false if starting to sync with server. 2.update
      * to true if receive config change notification.
+      * <p>配置监听缓存条目；维护内容、MD5 与监听器回调。</p>
      */
     private final AtomicBoolean receiveNotifyChanged = new AtomicBoolean(false);
     
@@ -165,14 +168,14 @@ public class CacheData {
     
     private volatile boolean isInitializing = true;
     
-    /**
-     * if is cache data md5 sync with the server.
-     */
+    /** 缓存 MD5 是否已与服务端一致。 */
+    /** if is cache data md5 sync with the server. */
+    /** 缓存 MD5 是否与服务端同步。 */
     private final AtomicBoolean isConsistentWithServer = new AtomicBoolean();
     
-    /**
-     * if is cache data is discard,need to remove.
-     */
+    /** 缓存是否已标记废弃，待从 {@code cacheMap} 移除。 */
+    /** if is cache data is discard,need to remove. */
+    /** 缓存是否已废弃。 */
     private volatile boolean isDiscard = false;
     
     private String type;
@@ -210,6 +213,7 @@ public class CacheData {
      * Getter method for property <tt>lastModifiedTs</tt>.
      *
      * @return property value of lastModifiedTs
+      * <p>配置监听缓存条目；维护内容、MD5 与监听器回调。</p>
      */
     public AtomicLong getLastModifiedTs() {
         return lastModifiedTs;
@@ -219,6 +223,7 @@ public class CacheData {
      * Setter method for property <tt>lastModifiedTs</tt>.
      *
      * @param lastModifiedTs value to be assigned to property lastModifiedTs
+      * <p>配置监听缓存条目；维护内容、MD5 与监听器回调。</p>
      */
     public void setLastModifiedTs(long lastModifiedTs) {
         this.lastModifiedTs.set(lastModifiedTs);
@@ -233,9 +238,11 @@ public class CacheData {
     }
     
     /**
-     * Add listener if CacheData already set new content, Listener should init lastCallMd5 by CacheData.md5
+     * 添加配置监听器。
      *
-     * @param listener listener
+     * <p>若缓存已有新内容，监听器会以当前 MD5 初始化 {@code lastCallMd5}，避免重复通知。</p>
+     *
+     * @param listener 配置变更监听器
      */
     public void addListener(Listener listener) throws NacosException {
         if (null == listener) {
@@ -263,9 +270,9 @@ public class CacheData {
     }
     
     /**
-     * Remove listener.
+     * 移除配置监听器。
      *
-     * @param listener listener
+     * @param listener 待移除的监听器
      */
     public void removeListener(Listener listener) {
         if (null == listener) {
@@ -280,7 +287,9 @@ public class CacheData {
     }
     
     /**
-     * Returns the iterator on the listener list, read-only. It is guaranteed not to return NULL.
+     * 返回监听器列表的只读视图，保证非 null。
+     *
+     * @return 监听器列表
      */
     public List<Listener> getListeners() {
         List<Listener> result = new ArrayList<>();
@@ -352,7 +361,9 @@ public class CacheData {
     }
     
     /**
-     * check if all listeners md5 is equal with cache data.
+     * 检查所有监听器的 {@code lastCallMd5} 是否与缓存 MD5 一致。
+     *
+     * @return 全部一致返回 true
      */
     public boolean checkListenersMd5Consistent() {
         for (ManagerListenerWrap wrap : listeners) {
@@ -557,6 +568,7 @@ public class CacheData {
      * 3.last listener is remove,set to false;need to check
      *
      * @return
+      * <p>配置监听缓存条目；维护内容、MD5 与监听器回调。</p>
      */
     public boolean isConsistentWithServer() {
         return isConsistentWithServer.get();
@@ -632,9 +644,9 @@ public class CacheData {
         
         String lastCallMd5 = Constants.NULL;
         
-        /**
-         * here is a decryptContent.
-         */
+        /** 上次回调时解密后的配置内容，供 {@link AbstractConfigChangeListener} 比对变更项。 */
+        /** here is a decryptContent. */
+        /** 解密后的配置内容。 */
         String lastContent = null;
         
         ManagerListenerWrap(Listener listener) {

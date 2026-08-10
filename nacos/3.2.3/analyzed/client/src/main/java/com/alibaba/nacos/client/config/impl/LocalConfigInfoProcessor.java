@@ -34,7 +34,9 @@ import java.io.InputStream;
 import static com.alibaba.nacos.client.utils.ParamUtil.simplyEnvNameIfOverLimit;
 
 /**
- * Local Disaster Recovery Directory Tool.
+ * 本地配置容灾与快照目录工具。
+ *
+ * <p>管理 {@code ~/nacos/config} 下的 failover 与 snapshot 文件，在服务端不可达或启动时从磁盘恢复配置，并在变更后持久化快照。</p>
  *
  * @author Nacos
  */
@@ -42,6 +44,7 @@ public class LocalConfigInfoProcessor {
     
     private static final Logger LOGGER = LogUtils.logger(LocalConfigInfoProcessor.class);
     
+    /** 本地快照/容灾根目录路径。 */
     public static final String LOCAL_SNAPSHOT_PATH;
     
     private static final String SUFFIX = "_nacos";
@@ -84,7 +87,9 @@ public class LocalConfigInfoProcessor {
     }
     
     /**
-     * get snapshot file content. NULL means no local file or throw exception.
+     * 读取本地快照文件内容。
+     *
+     * @return 快照内容；无文件或异常时返回 null
      */
     public static String getSnapshot(String name, String dataId, String group, String tenant) {
         if (!SnapShotSwitch.getIsSnapShot()) {
@@ -118,13 +123,13 @@ public class LocalConfigInfoProcessor {
     }
     
     /**
-     * Save snapshot.
+     * 保存或删除本地快照文件。
      *
-     * @param envName env name
-     * @param dataId  data id
-     * @param group   group
-     * @param tenant  tenant
-     * @param config  config
+     * @param envName 环境名
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param tenant  命名空间
+     * @param config  配置内容，null 表示删除快照
      */
     public static void saveSnapshot(String envName, String dataId, String group, String tenant,
         String config) {
@@ -159,9 +164,9 @@ public class LocalConfigInfoProcessor {
         }
     }
     
-    /**
-     * clear the cache files under snapshot directory.
-     */
+    /** 清理快照根目录下所有环境的快照缓存文件。 */
+    /** clear the cache files under snapshot directory. */
+    /** 清理快照目录下缓存。 */
     public static void cleanAllSnapshot() {
         try {
             File rootFile = new File(LOCAL_SNAPSHOT_PATH);
@@ -180,9 +185,9 @@ public class LocalConfigInfoProcessor {
     }
     
     /**
-     * Clean snapshot.
+     * 清理指定环境的快照目录。
      *
-     * @param envName env name
+     * @param envName 环境名
      */
     public static void cleanEnvSnapshot(String envName) {
         File tmp = new File(LOCAL_SNAPSHOT_PATH, envName + SUFFIX);

@@ -24,11 +24,15 @@ import com.alibaba.nacos.common.remote.client.Connection;
 import com.alibaba.nacos.common.remote.client.ServerRequestHandler;
 
 /**
- * fuzzy watch request from server .
+ * 服务端模糊监听推送请求处理器。
+ *
+ * <p>处理 {@link ConfigFuzzyWatchSyncRequest}（差异对账同步）与 {@link ConfigFuzzyWatchChangeNotifyRequest}（单条配置变更/删除通知），委托 {@link ConfigFuzzyWatchGroupKeyHolder} 更新本地模糊监听上下文。</p>
+ *
  * @author shiyiyue
  */
 public class ClientFuzzyWatchNotifyRequestHandler implements ServerRequestHandler {
     
+    /** 模糊监听上下文持有者，负责实际处理逻辑。 */
     ConfigFuzzyWatchGroupKeyHolder configFuzzyWatchGroupKeyHolder;
     
     public ClientFuzzyWatchNotifyRequestHandler(
@@ -39,12 +43,12 @@ public class ClientFuzzyWatchNotifyRequestHandler implements ServerRequestHandle
     
     @Override
     public Response requestReply(Request request, Connection connection) {
-        //fuzzy watch diff reconciliation sync
+        // 模糊监听差异对账同步请求
         if (request instanceof ConfigFuzzyWatchSyncRequest) {
             return configFuzzyWatchGroupKeyHolder.handleFuzzyWatchSyncNotifyRequest(
                 (ConfigFuzzyWatchSyncRequest) request);
         }
-        //fuzzy watch changed notify for a single config. include config changed or config delete.
+        // 单条配置变更/删除的模糊监听推送
         if (request instanceof ConfigFuzzyWatchChangeNotifyRequest) {
             return configFuzzyWatchGroupKeyHolder.handlerFuzzyWatchChangeNotifyRequest(
                 (ConfigFuzzyWatchChangeNotifyRequest) request);
