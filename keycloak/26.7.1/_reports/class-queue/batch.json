@@ -15,23 +15,8 @@
     "test-framework/core/src/main/java/org/keycloak/testframework/injection/Supplier.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/injection/SupplierHelpers.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/injection/SupplierOrder.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/ValueTypeAlias.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/predicates/DependencyPredicates.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/predicates/InstanceContextPredicates.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/predicates/RequestedInstancePredicates.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/predicates/TestFrameworkExecutorPredicates.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ClientConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ClientSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/DefaultClientConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/DefaultRealmConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/DefaultUserConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ManagedClient.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ManagedClientCleanup.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ManagedRealm.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ManagedRealmCleanup.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ManagedUser.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/realm/ManagedUserCleanup.java"
+    "test-framework/core/src/main/java/org/keycloak/testframework/injection/ValueTypeAlias.java"
   ],
   "remaining_pending": 388,
-  "done": 5580
+  "done": 5595
 }
