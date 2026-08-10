@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/PartialEvaluator.java",
     "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/ResourceTypePolicyEvaluator.java",
     "server-spi-private/src/main/java/org/keycloak/authorization/fgap/evaluation/partial/UserResourceTypePolicyEvaluator.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/identity/Identity.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/identity/UserModelIdentity.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/AbstractAuthorizationModel.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/CachedModel.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/PermissionTicket.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/Policy.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/Resource.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/ResourceServer.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/ResourceWrapper.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/model/Scope.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/permission/Permissions.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/permission/ResourcePermission.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/permission/evaluator/Evaluators.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/permission/evaluator/IterablePermissionEvaluator.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/permission/evaluator/PermissionEvaluator.java",
-    "server-spi-private/src/main/java/org/keycloak/authorization/permission/evaluator/UnboundedPermissionEvaluator.java"
+    "server-spi-private/src/main/java/org/keycloak/authorization/identity/Identity.java"
   ],
   "remaining_pending": 3028,
-  "done": 2940
+  "done": 2955
 }
