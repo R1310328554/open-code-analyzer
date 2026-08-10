@@ -18,14 +18,21 @@
 package org.keycloak.provider;
 
 /**
+ * SPI（Service Provider Interface）描述：定义 Provider 类型、工厂类及可见性。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface Spi {
 
+    /** @return 是否为 Keycloak 内部 SPI（不对外暴露） */
     boolean isInternal();
+    /** @return SPI 名称 */
     String getName();
+    /** @return Provider 接口类型 */
     Class<? extends Provider> getProviderClass();
+    /** @return ProviderFactory 接口类型 */
     Class<? extends ProviderFactory> getProviderFactoryClass();
+    /** @return SPI 是否启用，默认 {@code true} */
     default boolean isEnabled() {
         return true;
     }

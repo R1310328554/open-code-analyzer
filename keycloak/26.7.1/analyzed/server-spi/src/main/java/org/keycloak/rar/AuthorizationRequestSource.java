@@ -17,9 +17,13 @@
 package org.keycloak.rar;
 
 /**
+ * 授权详情来源枚举：区分 OAuth scope 与 RAR {@code authorization_details}。
+ *
  * @author <a href="mailto:dgozalob@redhat.com">Daniel Gozalo</a>
  */
 public enum AuthorizationRequestSource {
+    /** 来自 OAuth scope 参数。 */
     SCOPE,
+    /** 来自 RAR authorization_details 参数。 */
     AUTHORIZATION_DETAILS
 }

@@ -24,6 +24,8 @@ import org.keycloak.representations.idm.ClientProfilesRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
+ * 客户端策略管理器：响应 {@link ClientPolicyEvent} 并管理 Realm 上的客户端 Profile/Policy 配置。
+ *
  * Provides a method for handling an event defined in {@link ClientPolicyEvent}.
  * Also provides methods for handling client profiles and policies.
  * 
@@ -32,6 +34,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 public interface ClientPolicyManager extends Provider {
 
     /**
+     * 触发并执行与事件对应的客户端策略。
      * execute a method for handling an event defined in {@link ClientPolicyEvent}.
      * 
      * @param context - the context of the event.
@@ -40,6 +43,7 @@ public interface ClientPolicyManager extends Provider {
     void triggerOnEvent(ClientPolicyContext context) throws ClientPolicyException;
 
     /**
+     * 创建 Realm 时写入默认可用客户端策略（失败则置 null）。
      * when creating a realm, adds the default client policies, which should be available on the realm and put them onto the realm as its attribute.
      * if these operation fails, put null.
      *
@@ -48,6 +52,7 @@ public interface ClientPolicyManager extends Provider {
     void setupClientPoliciesOnCreatedRealm(RealmModel realm);
 
     /**
+     * 导入或更新 Realm 时从表示对象同步客户端策略模型。
      * when importing a realm, or updating a realm, update model from the representation object
      *
      * @param realm - the newly created realm to be overridden by imported realm's representation
@@ -56,6 +61,7 @@ public interface ClientPolicyManager extends Provider {
     void updateRealmModelFromRepresentation(RealmModel realm, RealmRepresentation rep);
 
     /**
+     * 通过 Admin REST 更新客户端 Profile；全局 Profile 不会被 Realm 覆盖。
      * when updating client profiles via Admin REST API, reads the json representation of the client profiles
      * and overrides the existing client profiles set on the realm with them.
      * if these operation fails, rolls them back to the existing client profiles and throw an exception.
@@ -70,6 +76,7 @@ public interface ClientPolicyManager extends Provider {
     void updateClientProfiles(RealmModel realm, ClientProfilesRepresentation clientProfiles) throws ClientPolicyException;
 
     /**
+     * 通过 Admin REST 获取 Realm 上的客户端 Profile 表示。
      * when getting client profiles via Admin REST API, returns the existing client profiles set on the realm.
      * 
      * @param realm - the realm whose client profiles is to be returned
@@ -79,6 +86,7 @@ public interface ClientPolicyManager extends Provider {
     ClientProfilesRepresentation getClientProfiles(RealmModel realm, boolean includeGlobalProfiles) throws ClientPolicyException;
 
     /**
+     * 通过 Admin REST 更新客户端 Policy；失败时回滚。
      * when updating client policies via Admin REST API, reads the json representation of the client policies
      * and overrides the existing client policies set on the realm with them.
      * if these operation fails, rolls them back to the existing client policies and throw an exception.
@@ -90,6 +98,7 @@ public interface ClientPolicyManager extends Provider {
     void updateClientPolicies(RealmModel realm, ClientPoliciesRepresentation clientPolicies) throws ClientPolicyException;
 
     /**
+     * 通过 Admin REST 获取 Realm 上的客户端 Policy 表示。
      * when getting client policies via Admin REST API, returns the existing client policies set on the realm.
      * 
      * @param realm - the realm whose client policies is to be returned
@@ -99,6 +108,7 @@ public interface ClientPolicyManager extends Provider {
     ClientPoliciesRepresentation getClientPolicies(RealmModel realm, boolean includeGlobalPolicies) throws ClientPolicyException;
 
     /**
+     * 导出 Realm 时填充客户端 Profile/Policy 表示（过滤全局项）。
      * when exporting realm, or retrieve the realm for admin REST API, prepares the exported representation of the client profiles and policies.
      * Global client profiles and policies are filtered out and not exported.
      *

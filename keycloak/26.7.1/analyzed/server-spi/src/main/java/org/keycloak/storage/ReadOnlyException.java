@@ -17,15 +17,19 @@
 package org.keycloak.storage;
 
 /**
+ * 只读异常：当 UserStorageProvider 的 UserModel 适配器为只读且尝试修改时抛出。
+ *
  * Thrown when UserStorageProvider UserModel adapter is read-only
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ReadOnlyException extends RuntimeException {
+    /** 无消息构造。 */
     public ReadOnlyException() {
     }
 
+    /** @param message 异常消息 */
     public ReadOnlyException(String message) {
         super(message);
     }

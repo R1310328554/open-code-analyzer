@@ -18,6 +18,8 @@
 package org.keycloak.services.clientpolicy;
 
 /**
+ * 客户端策略上下文：为 {@link ClientPolicyEvent} 事件提供策略执行所需的数据。
+ *
  * Provides Client Policy Context.
  * The implementation of this interface for handling an event defined in {@link ClientPolicyEvent}
  * needs to provide methods depending on this event.
@@ -27,6 +29,7 @@ package org.keycloak.services.clientpolicy;
 public interface ClientPolicyContext {
 
     /**
+     * 返回本上下文对应的客户端策略事件类型。
      * returns {@link ClientPolicyEvent} of client policy related events.
      * 
      * @return {@link ClientPolicyEvent}

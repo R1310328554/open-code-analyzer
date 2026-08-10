@@ -25,11 +25,14 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.Provider;
 
 /**
+ * 认证会话 Provider：创建、查询与清理根认证会话及集群间 authNotes 更新。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface AuthenticationSessionProvider extends Provider {
 
     /**
+     * 创建并注册随机 ID 的根认证会话。
      * Creates and registers a new authentication session with random ID. Authentication session
      * entity will be prefilled with current timestamp, the given realm and client.
      * @param realm {@code RealmModel} Can't be {@code null}.
@@ -38,6 +41,7 @@ public interface AuthenticationSessionProvider extends Provider {
     RootAuthenticationSessionModel createRootAuthenticationSession(RealmModel realm);
 
     /**
+     * 按指定 Realm 与 ID 创建根认证会话（ID 可为 null 则随机生成）。
      * Creates a new root authentication session specified by the provided realm and id.
      * @param realm {@code RealmModel} Can't be {@code null}.
      * @param id {@code String} Id of newly created root authentication session. If {@code null} a random id will be generated.
@@ -46,6 +50,7 @@ public interface AuthenticationSessionProvider extends Provider {
     RootAuthenticationSessionModel createRootAuthenticationSession(RealmModel realm, String id);
 
     /**
+     * 按 Realm 与 ID 获取根认证会话。
      * Returns the root authentication session specified by the provided realm and id.
      * @param realm {@code RealmModel} Can't be {@code null}.
      * @param authenticationSessionId {@code RootAuthenticationSessionModel} If {@code null} then {@code null} will be returned.
@@ -54,6 +59,7 @@ public interface AuthenticationSessionProvider extends Provider {
     RootAuthenticationSessionModel getRootAuthenticationSession(RealmModel realm, String authenticationSessionId);
 
     /**
+     * 删除指定根认证会话。
      * Removes provided root authentication session.
      * @param realm {@code RealmModel} Associated realm to the given root authentication session.
      * @param authenticationSession {@code RootAuthenticationSessionModel} Can't be {@code null}.
@@ -63,6 +69,7 @@ public interface AuthenticationSessionProvider extends Provider {
     void removeRootAuthenticationSession(RealmModel realm, RootAuthenticationSessionModel authenticationSession);
 
     /**
+     * （已废弃）手动清理所有 Realm 过期认证会话。
      * Remove expired authentication sessions in all the realms
      *
      * @deprecated manual removal of expired entities should not be used anymore. It is responsibility of the store
@@ -72,6 +79,7 @@ public interface AuthenticationSessionProvider extends Provider {
     default void removeAllExpired() {}
 
     /**
+     * （已废弃）清理指定 Realm 过期根认证会话。
      * Removes all expired root authentication sessions for the given realm.
      * @param realm {@code RealmModel} Can't be {@code null}.
      *
@@ -83,12 +91,14 @@ public interface AuthenticationSessionProvider extends Provider {
     default void removeExpired(RealmModel realm) {}
 
     /**
+     * Realm 删除时清理其全部根认证会话。
      * Removes all associated root authentication sessions to the given realm which was removed.
      * @param realm {@code RealmModel} Can't be {@code null}.
      */
     void onRealmRemoved(RealmModel realm);
 
     /**
+     * （已废弃）客户端删除时的清理钩子。
      * Removes all associated root authentication sessions to the given realm and client which was removed.
      * @param realm {@code RealmModel} Can't be {@code null}.
      * @param client {@code ClientModel} Can't be {@code null}.
@@ -98,6 +108,7 @@ public interface AuthenticationSessionProvider extends Provider {
     default void onClientRemoved(RealmModel realm, ClientModel client) {}
 
     /**
+     * （已废弃）请求更新集群中非本地根会话的 authNotes 片段。
      * Requests update of authNotes of a root authentication session that is not owned
      * by this instance but might exist somewhere in the cluster.
      * 
@@ -109,6 +120,8 @@ public interface AuthenticationSessionProvider extends Provider {
     @Deprecated(since = "26.3", forRemoval = true)
     default void updateNonlocalSessionAuthNotes(AuthenticationSessionCompoundId compoundId, Map<String, String> authNotesFragment) {}
 
+    /** 模型版本迁移钩子。
+     * @param modelVersion 目标模型版本 */
     default void migrate(String modelVersion) {
     }
 }

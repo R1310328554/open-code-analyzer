@@ -23,6 +23,9 @@ import org.keycloak.models.ClientScopeModel;
 import org.keycloak.representations.AuthorizationDetailsJSONRepresentation;
 
 /**
+ * 富授权请求（RAR）{@code authorization_details} 的内部表示，附带元数据便于在代码库中使用。
+ * {@link AuthorizationRequestSource} 区分 OAuth scope 与 RAR 详情；scope 来源的对象在 TokenMapper 等处仍按普通 scope 处理。
+ *
  * The internal Keycloak representation of a Rich Authorization Request authorization_details object, together with
  * some extra metadata to make it easier to work with this data in other parts of the codebase.
  *
@@ -34,48 +37,60 @@ import org.keycloak.representations.AuthorizationDetailsJSONRepresentation;
  */
 public class AuthorizationDetails implements Serializable {
 
+    /** 关联的客户端 Scope 模型。 */
     private ClientScopeModel clientScope;
 
+    /** 授权详情来源（scope 或 authorization_details）。 */
     private AuthorizationRequestSource source;
 
+    /** RAR JSON 表示对象。 */
     private AuthorizationDetailsJSONRepresentation authorizationDetails;
 
+    /** 完整构造：指定 scope、来源与 JSON 表示。 */
     public AuthorizationDetails(ClientScopeModel clientScope, AuthorizationRequestSource source, AuthorizationDetailsJSONRepresentation authorizationDetails) {
         this.clientScope = clientScope;
         this.source = source;
         this.authorizationDetails = authorizationDetails;
     }
 
+    /** 从 scope 构造，来源默认为 {@link AuthorizationRequestSource#SCOPE}。 */
     public AuthorizationDetails(ClientScopeModel clientScope) {
         this.clientScope = clientScope;
         this.source = AuthorizationRequestSource.SCOPE;
     }
 
+    /** @return 客户端 Scope 模型 */
     public ClientScopeModel getClientScope() {
         return clientScope;
     }
 
+    /** @param clientScope 客户端 Scope 模型 */
     public void setClientScope(ClientScopeModel clientScope) {
         this.clientScope = clientScope;
     }
 
+    /** @return 授权详情来源 */
     public AuthorizationRequestSource getSource() {
         return source;
     }
 
+    /** @param source 授权详情来源 */
     public void setSource(AuthorizationRequestSource source) {
         this.source = source;
     }
 
+    /** @return RAR JSON 表示 */
     public AuthorizationDetailsJSONRepresentation getAuthorizationDetails() {
         return authorizationDetails;
     }
 
+    /** @param authorizationDetails RAR JSON 表示 */
     public void setAuthorizationDetails(AuthorizationDetailsJSONRepresentation authorizationDetails) {
         this.authorizationDetails = authorizationDetails;
     }
 
     /**
+     * 判断当前对象是否为参数化 scope。
      * Returns whether the current {@link AuthorizationDetails} object is a parameterized scope.
      * @return see description
      */
@@ -84,6 +99,7 @@ public class AuthorizationDetails implements Serializable {
     }
 
     /**
+     * 从底层 JSON 表示中提取参数化 scope 的参数值。
      * Returns the parameterized scope parameter from the underlying {@link AuthorizationDetailsJSONRepresentation} representation.
      * @return see description
      */

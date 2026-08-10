@@ -19,6 +19,9 @@ package org.keycloak.rar;
 import java.util.List;
 
 /**
+ * 富授权请求上下文：聚合已解析的 {@link AuthorizationDetails} 列表，含 scope 的内部表示。
+ * 不持久化也不缓存，按需生成以避免复制大对象。
+ *
  * This context object will contain all parsed Rich Authorization Request objects, together with the internal representation
  * that Keycloak is going to use for Scopes.
  *
@@ -33,16 +36,20 @@ import java.util.List;
  */
 public class AuthorizationRequestContext {
 
+    /** 授权详情条目列表。 */
     List<AuthorizationDetails> authorizationDetailEntries;
 
+    /** @param authorizationDetailEntries 授权详情条目 */
     public AuthorizationRequestContext(List<AuthorizationDetails> authorizationDetailEntries) {
         this.authorizationDetailEntries = authorizationDetailEntries;
     }
 
+    /** @return 授权详情条目列表 */
     public List<AuthorizationDetails> getAuthorizationDetailEntries() {
         return authorizationDetailEntries;
     }
 
+    /** @param authorizationDetailEntries 授权详情条目列表 */
     public void setAuthorizationDetailEntries(List<AuthorizationDetails> authorizationDetailEntries) {
         this.authorizationDetailEntries = authorizationDetailEntries;
     }
