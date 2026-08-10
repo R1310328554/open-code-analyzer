@@ -1,3 +1,4 @@
+// Package fair 实现分层公平队列（HFQ），在多层 scope 间均衡调度任务。
 // Package fair implements a Hierarchical Fair Queue (HFQ), providing balanced
 // service across a hierarchy of queues.
 package fair
@@ -19,6 +20,7 @@ var (
 	ErrNotFound = errors.New("not found")
 )
 
+// Position 保存 rank 与 id，供 Requeue 恢复 Pop 前的精确排队位置。
 // Position is an opaque token representing a value's original queue position.
 // It is returned by [Queue.Pop] and can be passed to [Queue.Requeue] to
 // restore the value at its original position.
@@ -27,6 +29,7 @@ type Position struct {
 	id   int64
 }
 
+// Queue 以 scope 树组织子队列，rank 越小优先级越高，同 rank 按 id 先到先得。
 // Queue is a hierarchical fair priority queue. It is composed of a tree of
 // [Scope]s, where each scope holds other scopes or enqueued items.
 //
@@ -59,6 +62,7 @@ func (q *Queue[T]) init() {
 	}
 }
 
+// RegisterScope 自动创建路径上的中间 scope，已存在则返回 ErrScopeExists。
 // RegisterScope registers a new scope, automatically registering intermediate
 // scopes if they do not yet exist.
 //
@@ -83,6 +87,7 @@ func (q *Queue[T]) RegisterScope(scope Scope) error {
 	return err
 }
 
+// UnregisterScope 先 tombstone 再递归移除空父 scope，并扣减 len 计数。
 // UnregisterScope unregisters the provided scope. If the scope was the only
 // child of its parent, the parent is also unregistered (recursively up to the
 // root scope).
@@ -165,6 +170,7 @@ func (q *Queue[T]) findScope(s Scope) (*node[T], error) {
 	return nil, ErrNotFound
 }
 
+// Push 将值入队到指定 scope，rank 设为不低于兄弟最小值以免插队。
 // Push enqueues the value at the specified scope.
 //
 // The value is assigned the minimum rank among its siblings to prevent it from
@@ -189,6 +195,7 @@ func (q *Queue[T]) Push(scope Scope, value T) error {
 	return nil
 }
 
+// Requeue 用于 Pop 后重试失败任务，按原 Position 恢复优先级。
 // Requeue re-inserts a value at its original position within the scope. The
 // pos argument must have been obtained from a previous call to [Queue.Pop].
 //
@@ -233,6 +240,7 @@ func (q *Queue[T]) markAlive(scopeNode *node[T]) {
 	}
 }
 
+// Peek 沿 scope 树向下选最小 rank 叶子，不移除元素。
 // Peek returns the next value with the highest priority along with its scope.
 // The value is not removed from the queue.
 //
@@ -262,6 +270,7 @@ func (q *Queue[T]) Peek() (T, Scope) {
 	}
 }
 
+// Pop 取出最高优先级项；空 scope 会被 tombstone，需 AdjustScope 维持公平。
 // Pop removes and returns the next value with the highest priority along with
 // its scope and position.
 //
@@ -334,6 +343,7 @@ func (q *Queue[T]) tombstoneScope(scopeNode *node[T]) {
 	}
 }
 
+// AdjustScope 将 cost 沿路径累加到根，并 FixChild 修复堆序。
 // AdjustScope traverses scope, modifying the rank of each layer by the given cost.
 //
 // cost can be positive (to decrease the priority of scopes) or negative (to
@@ -369,3 +379,4 @@ func (q *Queue[T]) getNextID() int64 {
 	q.nextID++
 	return id
 }
+// markAlive 在 Push/Requeue 后沿父链激活 scope 进入堆。

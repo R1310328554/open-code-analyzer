@@ -1,3 +1,4 @@
+// Package dag 提供有向无环图（DAG）工具，用于表达查询/执行计划的节点与边关系。
 // Package dag provides utilities for working with directed acyclic graphs
 // (DAGs).
 package dag
@@ -12,6 +13,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// Node 为图中顶点接口，零值表示空节点；需实现 comparable 与 ID()。
 // Node represents an individual node in a Graph. The zero value of Node is
 // reserved to indicate a nil node.
 type Node interface {
@@ -20,11 +22,13 @@ type Node interface {
 	ID() ulid.ULID
 }
 
+// Edge 描述父节点到子节点的有向边，AddEdge 时按添加顺序保留。
 // Edge is a directed connection (parent-child relation) between two nodes.
 type Edge[NodeType Node] struct {
 	Parent, Child NodeType
 }
 
+// Graph 维护节点集合及双向 parent/children 邻接表，支持增删与拓扑变换。
 // Graph is a directed acyclic graph (DAG).
 type Graph[NodeType Node] struct {
 	// nodes is a set containing all nodes in the plan.
@@ -48,6 +52,7 @@ func (g *Graph[NodeType]) init() {
 	}
 }
 
+// Add 幂等插入节点，零值节点被忽略。
 // Add adds a new node n to the graph if it doesn't already exist. For
 // convenience, Add returns the input node without modification.
 //
@@ -71,6 +76,7 @@ func zeroValue[NodeType Node]() NodeType {
 	return zero
 }
 
+// AddEdge 建立父子关系，两端节点须已存在且非零值。
 // AddEdge creates a directed edge between two nodes in the graph, establishing
 // a parent-child relationship between the nodes where e.Parent becomes a parent
 // of e.Child.
@@ -103,6 +109,7 @@ func (g *Graph[NodeType]) AddEdge(e Edge[NodeType]) error {
 	return nil
 }
 
+// Eliminate 删除中间节点并将父节点直接连到其子节点，保持图连通。
 // Eliminate removes the node n from the graph and reconnects n's parents to
 // n's children, maintaining connectivity across the graph.
 //
@@ -141,6 +148,7 @@ func (g *Graph[NodeType]) Eliminate(n NodeType) {
 	g.nodes.Remove(n)
 }
 
+// Inject 在 parent 与其子节点之间插入新节点，用于计划重写。
 // Inject injects a new node between a parent and its children:
 //
 // * The children of parent become children of node.
@@ -203,6 +211,7 @@ func (g *Graph[NodeType]) Children(n NodeType) []NodeType {
 	return g.children[n]
 }
 
+// Roots 返回所有入度为零的根节点，可能有多棵子树。
 // Roots returns all nodes that have no parents.
 func (g *Graph[NodeType]) Roots() []NodeType {
 	if len(g.nodes) == 0 {
@@ -218,6 +227,7 @@ func (g *Graph[NodeType]) Roots() []NodeType {
 	return roots
 }
 
+// Root 要求唯一根；无根或多根时返回错误。
 // Root returns the root node that have no parents. It returns an error if the
 // plan has no or multiple root nodes.
 func (g *Graph[NodeType]) Root() (NodeType, error) {
@@ -245,6 +255,7 @@ func (g *Graph[NodeType]) Leaves() []NodeType {
 	return leaves
 }
 
+// Clone 浅拷贝图结构，children 切片单独克隆以避免共享底层数组。
 // Clone returns a shallow clone of the graph: nodes in the graph are
 // transferred using ordinary assignment.
 func (g *Graph[NodeType]) Clone() *Graph[NodeType] {
@@ -261,3 +272,4 @@ func (g *Graph[NodeType]) Clone() *Graph[NodeType] {
 		children: newChildren,
 	}
 }
+// Leaves 返回无出边的叶节点，常用于计划末端算子。

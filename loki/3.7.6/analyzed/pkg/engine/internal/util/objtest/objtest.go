@@ -1,3 +1,4 @@
+// Package objtest 为测试构建本地 dataobj 日志与索引对象存储目录。
 // Package objtest provides support for creating a data object storage directory
 // for testing purposes.
 package objtest
@@ -26,9 +27,11 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// Tenant 为 Builder 写入日志时使用的固定租户标识 objtest。
 // Tenant is the tenant used for storing logs with a [Builder].
 const Tenant = "objtest"
 
+// Builder 在临时目录累积 logproto.Stream，flush 后上传并更新 metastore TOC。
 // Builder is a directory holding logs data objects and index data objects.
 // Logs can be appended to the builder using [Builder.Append]. After all logs
 // have been appended, the builder must be closed using the [Builder.Close].
@@ -45,6 +48,7 @@ type Builder struct {
 	logsMetastoreToc, indexMetastoreToc *metastore.TableOfContentsWriter
 }
 
+// NewBuilder 初始化 filesystem bucket、logs builder 与双 metastore TOC writer。
 // NewBuilder creates a builder that can be used for accumulating logs.
 func NewBuilder(t *testing.T) *Builder {
 	logger := log.NewNopLogger()
@@ -80,6 +84,7 @@ func NewBuilder(t *testing.T) *Builder {
 	}
 }
 
+// Append 在 builder 满时自动 flush 后重试追加，保证测试数据不丢失。
 // Append appends the given streams to the builder.
 func (b *Builder) Append(ctx context.Context, streams ...logproto.Stream) {
 	for _, stream := range streams {
@@ -98,6 +103,7 @@ func (b *Builder) Append(ctx context.Context, streams ...logproto.Stream) {
 
 // flush flushes any pending data in the logs builder and writes a logs
 // metastore entry.
+// flush 将 dirty 日志对象上传并写入 logs metastore，随后 Reset builder。
 func (b *Builder) flush(ctx context.Context) error {
 	if !b.dirty {
 		// Nothing to do.
@@ -127,12 +133,14 @@ func (b *Builder) flush(ctx context.Context) error {
 	return nil
 }
 
+// Close 先 flush 剩余日志再 buildIndex，完成后数据可通过 Location 读取。
 // Close flushes all remaining data and closes the builder.
 func (b *Builder) Close() {
 	require.NoError(b.t, b.flush(b.t.Context()), "must be able to flush logs builder")
 	require.NoError(b.t, b.buildIndex(b.t.Context()), "must be able to close logs builder")
 }
 
+// buildIndex 遍历 objects 路径，每 16 个对象批量生成并上传索引对象。
 func (b *Builder) buildIndex(ctx context.Context) error {
 	var builderConfig logsobj.BuilderConfig
 	builderConfig.RegisterFlagsWithPrefix("", flag.NewFlagSet("", flag.PanicOnError)) // Acquire defaults
@@ -214,6 +222,7 @@ func (b *Builder) flushAndUpload(ctx context.Context, calculator *index.Calculat
 	return nil
 }
 
+// Location 暴露 bucket 与 index 前缀，供测试客户端直接读取对象。
 // Location holds information about where objects for a [Builder] are stored.
 // Location can be used to read data from a builder.
 type Location struct {
@@ -229,3 +238,4 @@ func (b *Builder) Location() Location {
 		IndexPrefix: "index/v0",
 	}
 }
+// flushAndUpload 计算索引 key、上传至 index/v0 并更新索引 TOC。

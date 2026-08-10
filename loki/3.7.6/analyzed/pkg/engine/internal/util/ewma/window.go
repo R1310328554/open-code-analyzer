@@ -1,11 +1,14 @@
 package ewma
 
+// window 表示单个 EWMA 时间窗口的状态，按指数衰减公式平滑采样值。
+
 import (
 	"math"
 	"strings"
 	"time"
 )
 
+// window 持有 Size、当前平滑值 value 及上次更新时间 lastUpdate。
 // window represents a window size for EWMA calculations; such as a 15m window.
 type window struct {
 	Size time.Duration
@@ -15,6 +18,7 @@ type window struct {
 	lastUpdate  time.Time
 }
 
+// Name 将 Duration 格式化为 Prometheus 标签用的简短字符串（如 15m）。
 // Name returns a name for the window, based on its size. Unlike
 // [time.Duration.String], trailing zero units are removed, so 15m0s becomes
 // 15m.
@@ -30,6 +34,7 @@ func (w *window) Name() string {
 	return name
 }
 
+// Observe 在时钟回拨或未初始化时用新样本重置；否则按 e^(-Δt/window) 衰减更新。
 // Observe updates the window with a new value. Observe reinitializes the window
 // the now timestamp is earlier than now timestamp on the previous call.
 func (w *window) Observe(value float64, now time.Time) {
@@ -56,3 +61,4 @@ func (w *window) Observe(value float64, now time.Time) {
 
 // Value returns the current EWMA value.
 func (w *window) Value() float64 { return w.value }
+// Value 返回当前窗口内的 EWMA 平滑结果。

@@ -1,7 +1,10 @@
 package fair
 
+// node 是 HFQ 树中的顶点：内部节点持有 pqueue，叶节点持有类型 T 的实际任务值。
+
 import "container/heap"
 
+// node 通过 rank/id 决定堆内顺序，parent 与 queue 反向引用维护树结构。
 // node represents an individual element in the hierarchical queue tree.
 // Leaf nodes hold values of T, while internal nodes hold [pqueue].
 type node[T any] struct {
@@ -20,6 +23,7 @@ type node[T any] struct {
 	value any
 }
 
+// FixChild 在 AdjustScope 修改 rank 后调用 heap.Fix 恢复最小堆性质。
 // FixChild fixes the priority of a child after its rank has been modified.
 func (n *node[T]) FixChild(name string) {
 	pq := n.pqueue()
@@ -94,6 +98,7 @@ func (n *node[T]) NumChildren() int {
 // Children panics if n is not a scope node.
 func (n *node[T]) Len() int { return n.pqueue().Len() }
 
+// MarkAlive 复活空 scope 时分配新 id 且 rank 不低于当前堆顶，避免抢占。
 // MarkAlive flags a child scope as alive, indicating that it has children and
 // should be considered for selection in the heap. MarkAlive is a no-op if the
 // scope is already alive.
@@ -123,6 +128,7 @@ func (n *node[T]) MarkAlive(name string) {
 	heap.Fix(pq, pn.Index)
 }
 
+// MarkDead 从堆移除但保留 scopeLookup 条目，Index 置 -1 表示 inactive。
 // MarkDead flags the provided scope name as dead (without unregistering it),
 // indicating that it has no children and should not be considered for selection
 // in the heap. MarkDead is a no-op if the scope is already dead.
@@ -158,6 +164,7 @@ func (n *node[T]) UnregisterScope(name string) {
 	delete(pq.scopeLookup, name) // then delete the scope.
 }
 
+// RegisterScope 新建子 scope 节点，初始不入堆直至有值 Push。
 // RegisterScope creates a child scope. Returns an error if the scope already
 // exists.
 //
@@ -200,6 +207,7 @@ func (n *node[T]) RegisterScope(scope Scope) (*node[T], error) {
 	return newNode, nil
 }
 
+// CreateValueAt 供 Requeue 按原 rank/id 插入，保持相对顺序不变。
 // CreateValueAt pushes a value node to n with the specified rank and id.
 // This is used by [Queue.Requeue] to restore a value at its original position.
 //
@@ -219,6 +227,7 @@ func (n *node[T]) CreateValueAt(v T, rank int64, id int64) *node[T] {
 	return newNode
 }
 
+// CreateValue 为新值分配 nextID，rank 对齐当前堆顶兄弟。
 // CreateValue pushes a value node to n. If v already exists in n, a duplicate
 // value entry for v is added. Panics if n is not a scope node.
 func (n *node[T]) CreateValue(v T) *node[T] {
@@ -243,3 +252,4 @@ func (n *node[T]) CreateValue(v T) *node[T] {
 	heap.Push(pq, newNode)
 	return newNode
 }
+// Peek/Pop 在 scope 节点上操作 pqueue 堆顶子元素。

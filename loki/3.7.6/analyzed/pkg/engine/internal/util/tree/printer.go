@@ -1,5 +1,7 @@
 package tree
 
+// Printer 以 ASCII 树形字符（├── └── │）将 Node 层次结构打印到 StringWriter。
+
 import (
 	"fmt"
 	"io"
@@ -12,6 +14,7 @@ const (
 	symLastConn = "└── "
 )
 
+// Printer 适合在测试或 CLI 中展示物理计划等嵌套结构。
 // Printer is used for writing the hierarchical representation of a tree
 // of [Node]s.
 type Printer struct {
@@ -24,6 +27,7 @@ func NewPrinter(w io.StringWriter) *Printer {
 	return &Printer{w: w}
 }
 
+// Print 先输出根节点，再分别递归 Comments（更深缩进）与 Children。
 // Print writes the entire tree structure starting from the given root node to
 // the printer's [io.StringWriter].
 // Example output:
@@ -38,6 +42,7 @@ func (tp *Printer) Print(root *Node) {
 	tp.printChildren(root.Comments, root.Children, "")
 }
 
+// printNode 输出 Name、可选 ID 角括号及 key=value 属性列表。
 func (tp *Printer) printNode(node *Node) {
 	tp.w.WriteString(node.Name)
 
@@ -77,6 +82,7 @@ func (tp *Printer) printNode(node *Node) {
 	tp.w.WriteString("\n")
 }
 
+// printChildren 区分 comment 子树与正式子节点，使用不同连接符与缩进前缀。
 // printChildren recursively prints all children with appropriate indentation.
 func (tp *Printer) printChildren(comments, children []*Node, prefix string) {
 	hasChildren := len(children) > 0
@@ -139,3 +145,4 @@ func (tp *Printer) printChildren(comments, children []*Node, prefix string) {
 		tp.printChildren(node.Comments, node.Children, newPrefix)
 	}
 }
+// 多值属性以括号包裹并以逗号分隔各元素。

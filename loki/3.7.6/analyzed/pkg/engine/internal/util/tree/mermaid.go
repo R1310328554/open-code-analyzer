@@ -1,5 +1,7 @@
 package tree
 
+// MermaidDiagram 将 plan 树 Node 渲染为 Mermaid graph TB 语法，便于文档与调试可视化。
+
 import (
 	"fmt"
 	"io"
@@ -30,6 +32,7 @@ func (m *MermaidDiagram) Write(node *Node) error {
 	return m.traverse(node, "", "==>")
 }
 
+// traverse 为每个节点生成 UUID 标识，HTML 标签内展示 Name/ID/Properties。
 func (m *MermaidDiagram) traverse(n *Node, parentID string, connector string) error {
 	// Use a recursive function to traverse the tree
 	if n == nil {
@@ -72,6 +75,7 @@ func (m *MermaidDiagram) traverse(n *Node, parentID string, connector string) er
 	return nil
 }
 
+// formatProperties 将属性键值对格式化为 Mermaid 节点内换行分隔的 HTML 片段。
 func formatProperties(properties []Property) string {
 	var sb strings.Builder
 	for i, prop := range properties {
@@ -93,3 +97,4 @@ func formatProperties(properties []Property) string {
 func safeString(s string) string {
 	return strings.ReplaceAll(s, `"`, `&quot;`)
 }
+// safeString 转义双引号以免破坏 Mermaid 语法。

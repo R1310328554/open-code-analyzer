@@ -1,5 +1,8 @@
 package tree
 
+// tree 包定义可打印/可视化的通用树节点 Property 与 Node，供执行计划等结构复用。
+
+// Property 支持单值与多值两种展示形式，由 IsMultiValue 控制括号语法。
 // Property represents a property of a [Node]. It is a key-value-pair, where
 // the value is either a single value or a list of values.
 // When the value is a multi-value, the field IsMultiValue needs to be set to
@@ -15,6 +18,7 @@ type Property struct {
 	IsMultiValue bool
 }
 
+// NewProperty 便捷构造属性，values 为可变参数列表。
 // NewProperty creates a new Property with the specified key, multi-value flag, and values.
 // The multi parameter determines if the property should be treated as a multi-value property.
 func NewProperty(key string, multi bool, values ...any) Property {
@@ -25,6 +29,7 @@ func NewProperty(key string, multi bool, values ...any) Property {
 	}
 }
 
+// Node 含 Children 与 Comments 两类子节点，Comments 在 Printer 中多缩进一级。
 // Node represents a node in a tree structure that can be traversed and printed
 // by the [Printer].
 // It allows for building hierarchical representations of data where each node
@@ -47,6 +52,7 @@ type Node struct {
 	Context any
 }
 
+// NewNode 创建无子节点的计划节点，Properties 可选传入。
 // NewNode creates a new node with the given name, unique identifier and
 // properties.
 func NewNode(name, id string, properties ...Property) *Node {
@@ -57,6 +63,7 @@ func NewNode(name, id string, properties ...Property) *Node {
 	}
 }
 
+// AddChild 追加正式子节点并返回新节点指针以便继续链式构建。
 // AddChild creates a new node with the given name, unique identifier, and properties
 // and adds it to the parent node.
 func (n *Node) AddChild(name, id string, properties []Property) *Node {
@@ -65,8 +72,10 @@ func (n *Node) AddChild(name, id string, properties []Property) *Node {
 	return child
 }
 
+// AddComment 添加注释性子节点，常用于挂载表达式等附属树。
 func (n *Node) AddComment(name, id string, properties []Property) *Node {
 	node := NewNode(name, id, properties...)
 	n.Comments = append(n.Comments, node)
 	return node
 }
+// Context 可挂载任意上下文对象供遍历方使用。

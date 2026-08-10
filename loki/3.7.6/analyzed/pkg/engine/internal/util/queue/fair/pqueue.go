@@ -1,5 +1,8 @@
 package fair
 
+// pqueue 实现 container/heap 接口，为每个 scope 节点维护按 rank/id 排序的子项最小堆。
+
+// posNode 包装 node 并记录堆下标 Index，-1 表示已注册但未入堆的空 scope。
 // posNode is a node in a pqueue, stored with its position.
 type posNode[T any] struct {
 	*node[T]
@@ -9,6 +12,7 @@ type posNode[T any] struct {
 	Index int
 }
 
+// pqueue 同时维护 children 堆数组与 scopeLookup 名称索引。
 // pqueue is the priority queue for [nodeKindIntermediate] nodes.
 type pqueue[T any] struct {
 	scope Scope // Scope of this pqueue.
@@ -20,6 +24,7 @@ type pqueue[T any] struct {
 // Len returns the number of children in pq.
 func (pq *pqueue[T]) Len() int { return len(pq.children) }
 
+// Less 先比 rank 再比 id，保证稳定且确定的优先级全序。
 // Less returns true if the node at index i has a lower rank than the node at
 // index j.
 func (pq *pqueue[T]) Less(i, j int) bool {
@@ -41,6 +46,7 @@ func (pq *pqueue[T]) Push(x any) {
 	pq.children = append(pq.children, pn)
 }
 
+// Pop 由 heap 包内部调用，移除堆尾并将 Index 标为 -1。
 // Pop removes and returns the element at pq.Len()-1.
 //
 // If the element is a scope node, it is *not* unregistered.
@@ -50,3 +56,4 @@ func (pq *pqueue[T]) Pop() any {
 	rem.Index = -1
 	return rem
 }
+// Swap 同步更新 posNode.Index 以支持 Fix/Remove。

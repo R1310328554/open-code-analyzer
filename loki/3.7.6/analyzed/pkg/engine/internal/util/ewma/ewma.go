@@ -1,3 +1,4 @@
+// Package ewma 实现可导出为 Prometheus 指标的指数加权移动平均。
 // Package ewma provides an implementation of an exponentially weighted moving
 // average (EWMA) that can be reported as a Prometheus metric.
 package ewma
@@ -12,6 +13,7 @@ import (
 	"go.uber.org/atomic"
 )
 
+// Source 抽象采样值来源，可由函数或自定义类型实现。
 // Source is an interface that provides a value for an EWMA calculation.
 type Source interface {
 	// Get returns the current value for the EWMA calculation.
@@ -24,6 +26,7 @@ type SourceFunc func() float64
 // Get returns the value provided by the SourceFunc.
 func (sf SourceFunc) Get() float64 { return sf() }
 
+// Options 配置指标名、更新周期及多个时间窗口（如 1m/5m/15m）。
 // Options provides configuration options for an EWMA.
 type Options struct {
 	// Name of the EWMA metric.
@@ -41,6 +44,7 @@ type Options struct {
 	Windows []time.Duration
 }
 
+// EWMA 后台定时从 Source 拉取样本并更新各 window，实现 Collector 接口。
 // EWMA provides an exponentially weighted moving average (EWMA). EWMA
 // implements [prometheus.Collector].
 type EWMA struct {
@@ -56,6 +60,7 @@ type EWMA struct {
 
 var _ prometheus.Collector = (*EWMA)(nil)
 
+// New 校验 source 与 UpdateFrequency，为每个窗口分配独立 state。
 // New creates a new EWMA with the given options and source. The returned EWMA
 // must be started by calling [EWMA.Monitor].
 func New(opts Options, source Source) (*EWMA, error) {
@@ -91,6 +96,7 @@ func MustNew(opts Options, source Source) *EWMA {
 	return ewma
 }
 
+// Monitor 在 goroutine 中按 ticker 更新，ctx 取消后退出；重复启动会报错。
 // Monitor starts the EWMA, polling values from the source at the configured
 // update frequency.
 //
@@ -115,6 +121,7 @@ func (ewma *EWMA) Monitor(ctx context.Context) error {
 	}
 }
 
+// updateWindows 用同一时刻样本更新所有窗口，保证多窗口指标一致。
 func (ewma *EWMA) updateWindows() {
 	ewma.mut.Lock()
 	defer ewma.mut.Unlock()
@@ -131,6 +138,7 @@ func (ewma *EWMA) updateWindows() {
 	}
 }
 
+// Collect 仅在 Monitor 运行中上报，避免静止值误导监控。
 // Collect writes the EWMA metrics to the given channel. Metrics are only
 // written when the EWMA is running via [EWMA.Monitor].
 func (ewma *EWMA) Collect(ch chan<- prometheus.Metric) {
@@ -153,3 +161,4 @@ func (ewma *EWMA) Collect(ch chan<- prometheus.Metric) {
 func (ewma *EWMA) Describe(ch chan<- *prometheus.Desc) {
 	ch <- ewma.metric
 }
+// Describe 向 Prometheus 注册带 window 标签的 Gauge 描述符。
