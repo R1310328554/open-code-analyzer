@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:03:39Z",
-  "files": [
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/dialect/DerbyDatabaseDialect.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/enums/derby/TrustedDerbyFunctionEnum.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-derby/src/main/java/com/alibaba/nacos/plugin/datasource/impl/enums/derby/TrustedDerbylFunctionEnum.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/dialect/DefaultDatabaseDialect.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/dialect/MysqlDatabaseDialect.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/enums/mysql/TrustedMysqlFunctionEnum.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/AbstractMapperByMysql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/AiResourceMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/AiResourceVersionMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigInfoBetaMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigInfoGrayMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigInfoMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigInfoTagMapperByMySql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigMigrateMapperByMysql.java",
-    "plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/java/com/alibaba/nacos/plugin/datasource/impl/mysql/ConfigTagsRelationMapperByMySql.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 197,
-  "done": 2325
+  "done": 2340
 }
