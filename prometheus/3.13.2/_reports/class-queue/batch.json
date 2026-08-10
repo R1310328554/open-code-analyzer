@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:20:06Z",
   "files": [
-    "discovery/kubernetes/kubernetes.go",
-    "discovery/kubernetes/metrics.go",
-    "discovery/kubernetes/node.go",
-    "discovery/kubernetes/pod.go",
-    "discovery/kubernetes/service.go",
-    "discovery/linode/linode.go",
-    "discovery/linode/metrics.go",
-    "discovery/manager.go",
-    "discovery/marathon/marathon.go",
-    "discovery/marathon/metrics.go",
-    "discovery/metrics.go",
-    "discovery/metrics_k8s_client.go",
-    "discovery/metrics_refresh.go",
-    "discovery/moby/docker.go",
-    "discovery/moby/dockerswarm.go",
     "discovery/moby/metrics_docker.go",
     "discovery/moby/metrics_dockerswarm.go",
     "discovery/moby/network.go",
@@ -33,5 +18,5 @@
     "discovery/outscale/outscale.go"
   ],
   "remaining_pending": 444,
-  "done": 60
+  "done": 75
 }
