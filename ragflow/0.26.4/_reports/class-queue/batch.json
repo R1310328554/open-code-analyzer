@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:07:55Z",
-  "files": [
-    "internal/entity/llm.go",
-    "internal/entity/mcp.go",
-    "internal/entity/memory.go",
-    "internal/entity/models/302ai.go",
-    "internal/entity/models/aliyun.go",
-    "internal/entity/models/anthropic.go",
-    "internal/entity/models/astraflow.go",
-    "internal/entity/models/avian.go",
-    "internal/entity/models/azure_openai.go",
-    "internal/entity/models/baichuan.go",
-    "internal/entity/models/baidu.go",
-    "internal/entity/models/base_model.go",
-    "internal/entity/models/bedrock.go",
-    "internal/entity/models/builtin.go",
-    "internal/entity/models/chat_tools.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1044,
-  "done": 705
+  "done": 720
 }
