@@ -1,5 +1,8 @@
 package stages
 
+// pack 阶段：将指定标签嵌入 JSON 行并可选重写时间戳。
+// 用于 Loki 打包查询格式，减少高基数标签索引压力。
+
 import (
 	"bytes"
 	"errors"
@@ -23,11 +26,13 @@ var (
 	reallyFalse = false
 )
 
+// 打包结构：标签键值对映射与 _entry 日志正文。
 type Packed struct {
 	Labels map[string]string `json:",inline"`
 	Entry  string            `json:"_entry"`
 }
 
+// 反序列化 JSON：除 _entry 外所有键写入 Labels。
 // UnmarshalJSON populates a Packed struct where every key except the _entry key is added to the Labels field
 func (w *Packed) UnmarshalJSON(data []byte) error {
 	m := &map[string]interface{}{}
@@ -55,6 +60,7 @@ func (w *Packed) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// 序列化为确定性 JSON：标签键排序后扁平化到顶层对象。
 // MarshalJSON creates a Packed struct as JSON where the Labels are flattened into the top level of the object
 func (w Packed) MarshalJSON() ([]byte, error) {
 	// Marshal the entry to properly escape if it's json or contains quotes
@@ -105,6 +111,7 @@ func (w Packed) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// pack 配置：待打包标签列表与是否使用 ingest 时间戳。
 // PackConfig contains the configuration for a packStage
 type PackConfig struct {
 	Labels          []string `mapstrcuture:"labels"`
@@ -122,6 +129,7 @@ func validatePackConfig(cfg *PackConfig) error {
 	return nil
 }
 
+// 从配置创建 packStage（注释中 DropStage 为历史命名）。
 // newPackStage creates a DropStage from config
 func newPackStage(logger log.Logger, config interface{}, registerer prometheus.Registerer) (Stage, error) {
 	cfg := &PackConfig{}
@@ -141,6 +149,7 @@ func newPackStage(logger log.Logger, config interface{}, registerer prometheus.R
 	}, nil
 }
 
+// pack 阶段：提取配置标签、序列化 JSON 并可选更新 Timestamp。
 // packStage applies Label matchers to determine if the include stages should be run
 type packStage struct {
 	logger    log.Logger
@@ -159,6 +168,7 @@ func (m *packStage) Run(in chan Entry) chan Entry {
 	return out
 }
 
+// 从 extracted 收集标签、生成 Packed JSON 并从 Labels 删除已打包项。
 func (m *packStage) pack(e Entry) Entry {
 	lbls := e.Labels
 	packedLabels := make(map[string]string, len(m.cfg.Labels))

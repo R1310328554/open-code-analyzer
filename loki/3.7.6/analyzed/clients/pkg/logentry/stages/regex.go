@@ -1,5 +1,8 @@
 package stages
 
+// regex 阶段：用命名捕获组从日志行或 extracted 字段提取键值。
+// 未指定 source 时默认匹配整条 entry line。
+
 import (
 	"fmt"
 	"reflect"
@@ -21,6 +24,7 @@ const (
 	ErrEmptyRegexStageSource = "empty source"
 )
 
+// regex 配置：正则表达式与可选 source 字段名。
 // RegexConfig contains a regexStage configuration
 type RegexConfig struct {
 	Expression string  `mapstructure:"expression"`
@@ -28,6 +32,7 @@ type RegexConfig struct {
 }
 
 // validateRegexConfig validates the config and return a regex
+// 校验 expression 非空、source 合法并编译正则。
 func validateRegexConfig(c *RegexConfig) (*regexp.Regexp, error) {
 	if c == nil {
 		return nil, errors.New(ErrEmptyRegexStageConfig)
@@ -49,6 +54,7 @@ func validateRegexConfig(c *RegexConfig) (*regexp.Regexp, error) {
 	return expr, nil
 }
 
+// regex 阶段：FindStringSubmatch 后将命名组写入 extracted。
 // regexStage sets extracted data using regular expressions
 type regexStage struct {
 	cfg        *RegexConfig
@@ -56,6 +62,7 @@ type regexStage struct {
 	logger     log.Logger
 }
 
+// 解析配置、编译正则并包装为 stageProcessor。
 // newRegexStage creates a newRegexStage
 func newRegexStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg, err := parseRegexConfig(config)
@@ -73,6 +80,7 @@ func newRegexStage(logger log.Logger, config interface{}) (Stage, error) {
 	}), nil
 }
 
+// mapstructure 解码为 RegexConfig 结构体。
 // parseRegexConfig processes an incoming configuration into a RegexConfig
 func parseRegexConfig(config interface{}) (*RegexConfig, error) {
 	cfg := &RegexConfig{}
@@ -83,6 +91,7 @@ func parseRegexConfig(config interface{}) (*RegexConfig, error) {
 	return cfg, nil
 }
 
+// 对 entry 或 extracted[source] 执行正则，匹配成功则填充捕获组。
 // Process implements Stage
 func (r *regexStage) Process(_ model.LabelSet, extracted map[string]interface{}, _ *time.Time, entry *string) {
 	// If a source key is provided, the regex stage should process it

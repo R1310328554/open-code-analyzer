@@ -1,5 +1,8 @@
 package stages
 
+// match 阶段：基于 LogQL 选择器条件执行子 pipeline 或丢弃日志。
+// 支持 keep（匹配后运行嵌套 stages）与 drop（匹配后计数丢弃）两种动作。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/mitchellh/mapstructure"
@@ -23,6 +26,7 @@ const (
 	MatchActionDrop          = "drop"
 )
 
+// match 阶段配置：选择器、嵌套 stages、动作与丢弃计数原因。
 // MatcherConfig contains the configuration for a matcherStage
 type MatcherConfig struct {
 	PipelineName *string        `mapstructure:"pipeline_name"`
@@ -32,6 +36,7 @@ type MatcherConfig struct {
 	DropReason   *string        `mapstructure:"drop_counter_reason"`
 }
 
+// 校验 match 配置并解析 LogQL 选择器表达式。
 // validateMatcherConfig validates the MatcherConfig for the matcherStage
 func validateMatcherConfig(cfg *MatcherConfig) (logql.Expr, error) {
 	if cfg == nil {
@@ -65,6 +70,7 @@ func validateMatcherConfig(cfg *MatcherConfig) (logql.Expr, error) {
 	return selector, nil
 }
 
+// 从 YAML 配置构造 matcherStage，keep 动作时递归创建子 pipeline。
 // newMatcherStage creates a new matcherStage from config
 func newMatcherStage(logger log.Logger, jobName *string, config interface{}, registerer prometheus.Registerer) (Stage, error) {
 	cfg := &MatcherConfig{}
@@ -112,6 +118,7 @@ func newMatcherStage(logger log.Logger, jobName *string, config interface{}, reg
 	}, nil
 }
 
+// 注册或复用 dropped_lines_total 计数器，记录各阶段丢弃行数。
 func getDropCountMetric(registerer prometheus.Registerer) *prometheus.CounterVec {
 	dropCount := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "logentry",
@@ -130,6 +137,7 @@ func getDropCountMetric(registerer prometheus.Registerer) *prometheus.CounterVec
 	return dropCount
 }
 
+// match 阶段运行时：标签匹配 + 行过滤后决定 keep/drop 分支。
 // matcherStage applies Label matchers to determine if the include stages should be run
 type matcherStage struct {
 	dropReason string
@@ -140,6 +148,7 @@ type matcherStage struct {
 	action     string
 }
 
+// 按 action 分发到 runKeep 或 runDrop 处理通道。
 func (m *matcherStage) Run(in chan Entry) chan Entry {
 	switch m.action {
 	case MatchActionDrop:
@@ -150,6 +159,7 @@ func (m *matcherStage) Run(in chan Entry) chan Entry {
 	panic("unexpected action")
 }
 
+// 匹配条目送入子 pipeline，未匹配条目直通下游。
 func (m *matcherStage) runKeep(in chan Entry) chan Entry {
 	next := make(chan Entry)
 	out := make(chan Entry)
@@ -174,6 +184,7 @@ func (m *matcherStage) runKeep(in chan Entry) chan Entry {
 	return out
 }
 
+// 匹配条目丢弃并递增 drop 计数，未匹配条目直通。
 func (m *matcherStage) runDrop(in chan Entry) chan Entry {
 	out := make(chan Entry)
 	go func() {
@@ -189,6 +200,7 @@ func (m *matcherStage) runDrop(in chan Entry) chan Entry {
 	return out
 }
 
+// 依次校验标签 matcher 与行级 filter，全部通过返回 true。
 func (m *matcherStage) processLogQL(e Entry) (Entry, bool) {
 	for _, filter := range m.matchers {
 		if !filter.Matches(string(e.Labels[model.LabelName(filter.Name)])) {

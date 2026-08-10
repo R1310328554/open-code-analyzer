@@ -1,5 +1,8 @@
 package stages
 
+// template 阶段：用 Go text/template 变换 extracted 字段。
+// 集成 sprig 函数与 Hash、regexReplaceAll 等 Loki 扩展。
+
 import (
 	"bytes"
 	"crypto/sha256"
@@ -26,6 +29,7 @@ const (
 	ErrTemplateSourceRequired   = "template source value is required"
 )
 
+// Loki pipeline 模板额外函数：大小写、裁剪、哈希与正则替换。
 var extraFunctionMap = template.FuncMap{
 	"ToLower":    strings.ToLower,
 	"ToUpper":    strings.ToUpper,
@@ -54,6 +58,7 @@ var extraFunctionMap = template.FuncMap{
 	},
 }
 
+// 基础模板函数表：init 时合并 extraFunctionMap。
 var functionMap = sprig.TxtFuncMap()
 
 func init() {
@@ -62,6 +67,7 @@ func init() {
 	}
 }
 
+// template 配置：source 键名与 template 模板字符串。
 // TemplateConfig configures template value extraction
 type TemplateConfig struct {
 	Source   string `mapstructure:"source"`
@@ -69,6 +75,7 @@ type TemplateConfig struct {
 }
 
 // validateTemplateConfig validates the templateStage config
+// 校验 source/template 并预编译带 functionMap 的模板。
 func validateTemplateConfig(cfg *TemplateConfig) (*template.Template, error) {
 	if cfg == nil {
 		return nil, errors.New(ErrEmptyTemplateStageConfig)
@@ -80,6 +87,7 @@ func validateTemplateConfig(cfg *TemplateConfig) (*template.Template, error) {
 	return template.New("pipeline_template").Funcs(functionMap).Parse(cfg.Template)
 }
 
+// 解码配置并构造预编译 templateStage。
 // newTemplateStage creates a new templateStage
 func newTemplateStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg := &TemplateConfig{}
@@ -99,6 +107,7 @@ func newTemplateStage(logger log.Logger, config interface{}) (Stage, error) {
 	}), nil
 }
 
+// template 阶段：对 source 字段执行模板，空结果则删除键。
 // templateStage will mutate the incoming entry and set it from extracted data
 type templateStage struct {
 	cfgs     *TemplateConfig
@@ -106,6 +115,7 @@ type templateStage struct {
 	template *template.Template
 }
 
+// 构建含 Entry/Value 的模板数据，Execute 后写回 extracted[source]。
 // Process implements Stage
 func (o *templateStage) Process(_ model.LabelSet, extracted map[string]interface{}, _ *time.Time, entry *string) {
 	if o.cfgs == nil {

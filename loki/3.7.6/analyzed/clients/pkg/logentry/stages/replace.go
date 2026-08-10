@@ -1,5 +1,8 @@
 package stages
 
+// replace 阶段：正则匹配后用模板替换捕获片段。
+// 可同时更新 entry/source 字段并将命名组写入 extracted。
+
 import (
 	"bytes"
 	"fmt"
@@ -21,6 +24,7 @@ const (
 	ErrEmptyReplaceStageSource = "empty source in replace stage"
 )
 
+// replace 配置：expression、可选 source 与 replace 模板字符串。
 // ReplaceConfig contains a regexStage configuration
 type ReplaceConfig struct {
 	Expression string  `mapstructure:"expression"`
@@ -29,6 +33,7 @@ type ReplaceConfig struct {
 }
 
 // validateReplaceConfig validates the config and return a regex
+// 校验 replace 配置并编译正则表达式。
 func validateReplaceConfig(c *ReplaceConfig) (*regexp.Regexp, error) {
 	if c == nil {
 		return nil, errors.New(ErrEmptyReplaceStageConfig)
@@ -49,6 +54,7 @@ func validateReplaceConfig(c *ReplaceConfig) (*regexp.Regexp, error) {
 	return expr, nil
 }
 
+// replace 阶段：模板渲染匹配段并写回 entry 或 extracted。
 // replaceStage sets extracted data using regular expressions
 type replaceStage struct {
 	cfg        *ReplaceConfig
@@ -56,6 +62,7 @@ type replaceStage struct {
 	logger     log.Logger
 }
 
+// 解析配置并构造带 functionMap 的 replaceStage。
 // newReplaceStage creates a newReplaceStage
 func newReplaceStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg, err := parseReplaceConfig(config)
@@ -84,6 +91,7 @@ func parseReplaceConfig(config interface{}) (*ReplaceConfig, error) {
 	return cfg, nil
 }
 
+// 对所有匹配段执行模板替换，并提取命名捕获组到 extracted。
 // Process implements Stage
 func (r *replaceStage) Process(_ model.LabelSet, extracted map[string]interface{}, _ *time.Time, entry *string) {
 	// If a source key is provided, the replace stage should process it
@@ -166,6 +174,7 @@ func (r *replaceStage) Process(_ model.LabelSet, extracted map[string]interface{
 	}
 }
 
+// 逐段用模板替换捕获组，拼接未匹配部分得到完整结果字符串。
 func (r *replaceStage) getReplacedEntry(matchAllIndex [][]int, input string, td map[string]string, templ *template.Template) (string, map[string]string, error) {
 	var result string
 	previousInputEndIndex := 0
@@ -200,6 +209,7 @@ func (r *replaceStage) getReplacedEntry(matchAllIndex [][]int, input string, td 
 	return result + input[previousInputEndIndex:], capturedMap, nil
 }
 
+// 将 extracted 转为 string 映射供 text/template 使用。
 func (r *replaceStage) getTemplateData(extracted map[string]interface{}) map[string]string {
 	td := make(map[string]string)
 	for k, v := range extracted {

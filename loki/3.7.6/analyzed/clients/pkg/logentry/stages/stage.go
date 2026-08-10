@@ -1,5 +1,8 @@
 package stages
 
+// Promtail pipeline stage 核心定义与工厂。
+// 声明 Stage/Processor 接口、Entry 结构及按类型名懒加载 stageCreators。
+
 import (
 	"os"
 	"runtime"
@@ -46,6 +49,7 @@ const (
 	StageTypeStructuredMetadata = "structured_metadata"
 )
 
+// 同步 Processor：就地修改 labels、extracted、时间戳与日志行。
 // Processor takes an existing set of labels, timestamp and log entry and returns either a possibly mutated
 // timestamp and log entry
 type Processor interface {
@@ -53,11 +57,13 @@ type Processor interface {
 	Name() string
 }
 
+// pipeline 内部条目：extracted 映射嵌入 api.Entry。
 type Entry struct {
 	Extracted map[string]interface{}
 	api.Entry
 }
 
+// 异步 Stage：Run 接收/发送 Entry 通道，Cleanup 释放资源。
 // Stage can receive entries via an inbound channel and forward mutated entries to an outbound channel.
 type Stage interface {
 	Name() string
@@ -80,6 +86,7 @@ func (entry *Entry) copy() *Entry {
 	return n
 }
 
+// 将旧式 Processor 包装为 Stage，可选启用 inspector 调试输出。
 // stageProcessor Allow to transform a Processor (old synchronous pipeline stage) into an async Stage
 type stageProcessor struct {
 	Processor
@@ -105,6 +112,7 @@ func (s stageProcessor) Run(in chan Entry) chan Entry {
 	})
 }
 
+// 创建带 stderr inspector 的 stageProcessor 包装器。
 func toStage(p Processor) Stage {
 	return &stageProcessor{
 		Processor: p,
@@ -126,6 +134,7 @@ var stageCreators map[string]stageCreator
 var stageCreatorsInitLock sync.Mutex
 
 // initCreators uses lazyLoading to resolve circular dependencies issue.
+// 懒加载 stageCreators 映射，避免 pipeline 与 stage 循环依赖。
 func initCreators() {
 	if stageCreators != nil {
 		return
@@ -213,6 +222,7 @@ func initCreators() {
 	}
 }
 
+// 按 stageType 查找 creator 并构造对应 Stage 实例。
 // New creates a new stage for the given type and configuration.
 func New(logger log.Logger, jobName *string, stageType string,
 	cfg interface{}, registerer prometheus.Registerer) (Stage, error) {

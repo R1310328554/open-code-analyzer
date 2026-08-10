@@ -1,5 +1,8 @@
 package stages
 
+// metrics 阶段：从 extracted 字段驱动 Promtail 自定义 Prometheus 指标。
+// 支持 counter、gauge、histogram 三类，含空闲过期与 match_all 等特殊模式。
+
 import (
 	"fmt"
 	"math"
@@ -29,6 +32,7 @@ const (
 	ErrSubSecIdleDur           = "max_idle_duration less than 1s not allowed"
 )
 
+// 单条指标配置：类型、描述、数据源、前缀与空闲回收时长。
 // MetricConfig is a single metrics configuration.
 type MetricConfig struct {
 	MetricType   string  `mapstructure:"type"`
@@ -40,6 +44,7 @@ type MetricConfig struct {
 	Config       interface{} `mapstructure:"config"`
 }
 
+// metrics 阶段的多指标配置映射（键名为指标逻辑名）。
 // MetricsConfig is a set of configured metrics.
 type MetricsConfig map[string]MetricConfig
 
@@ -84,6 +89,7 @@ func validateMetricsConfig(cfg MetricsConfig) error {
 	return nil
 }
 
+// 解码配置并为每条指标创建 collector 注册到 Prometheus。
 // newMetricStage creates a new set of metrics to process for each log entry
 func newMetricStage(logger log.Logger, config interface{}, registry prometheus.Registerer) (Stage, error) {
 	cfgs := &MetricsConfig{}
@@ -135,6 +141,7 @@ func newMetricStage(logger log.Logger, config interface{}, registry prometheus.R
 	}, nil
 }
 
+// metrics 阶段：遍历 collector 按 extracted 值更新指标。
 // metricStage creates and updates prometheus metrics based on extracted pipeline data
 type metricStage struct {
 	logger  log.Logger
@@ -142,6 +149,7 @@ type metricStage struct {
 	metrics map[string]prometheus.Collector
 }
 
+// 异步处理每条 Entry 的 Process 后原样转发。
 func (m *metricStage) Run(in chan Entry) chan Entry {
 	out := make(chan Entry)
 	go func() {
@@ -155,6 +163,7 @@ func (m *metricStage) Run(in chan Entry) chan Entry {
 	return out
 }
 
+// 从 extracted 读取 source 字段，按类型调用 recordCounter/Gauge/Histogram。
 // Process implements Stage
 func (m *metricStage) Process(labels model.LabelSet, extracted map[string]interface{}, _ *time.Time, entry *string) {
 	for name, collector := range m.metrics {
@@ -205,6 +214,7 @@ func (m *metricStage) Cleanup() {
 	}
 }
 
+// 更新 counter：支持 inc/add、value 精确匹配与 count_bytes 模式。
 // recordCounter will update a counter metric
 // nolint:goconst
 func (m *metricStage) recordCounter(name string, counter *metric.Counters, labels model.LabelSet, v interface{}) {
@@ -239,6 +249,7 @@ func (m *metricStage) recordCounter(name string, counter *metric.Counters, label
 	}
 }
 
+// 更新 gauge：支持 set/inc/dec/add/sub 及可选 value 匹配。
 // recordGauge will update a gauge metric
 func (m *metricStage) recordGauge(name string, gauge *metric.Gauges, labels model.LabelSet, v interface{}) {
 	// If value matching is defined, make sure value matches.
@@ -292,6 +303,7 @@ func (m *metricStage) recordGauge(name string, gauge *metric.Gauges, labels mode
 	}
 }
 
+// 更新 histogram：可选 value 匹配后将观测值写入桶。
 // recordHistogram will update a Histogram metric
 func (m *metricStage) recordHistogram(name string, histogram *metric.Histograms, labels model.LabelSet, v interface{}) {
 	// If value matching is defined, make sure value matches.
@@ -319,6 +331,7 @@ func (m *metricStage) recordHistogram(name string, histogram *metric.Histograms,
 	histogram.With(labels).Observe(f)
 }
 
+// 将 extracted 值转为 float64，兼容数值、字符串与 duration 格式。
 // getFloat will take the provided value and return a float64 if possible
 func getFloat(unk interface{}) (float64, error) {
 	switch i := unk.(type) {
@@ -350,6 +363,7 @@ func getFloat(unk interface{}) (float64, error) {
 	}
 }
 
+// 字符串转浮点：先 ParseFloat，失败则按 time.ParseDuration 转秒数。
 // getFloatFromString converts string into float64
 // Two types of string formats are supported:
 //   - strings that represent floating point numbers, e.g., "0.804"

@@ -1,5 +1,8 @@
 package stages
 
+// static_labels 阶段：为每条日志附加固定键值标签。
+// 标签名须符合 Prometheus UTF8 规范，值为配置字面量。
+
 import (
 	"fmt"
 	"reflect"
@@ -17,6 +20,7 @@ const (
 	ErrEmptyStaticLabelStageConfig = "static_labels stage config cannot be empty"
 )
 
+// 静态标签配置：标签名到固定字符串值的映射。
 // StaticLabelConfig is a slice of static-labels to be included
 type StaticLabelConfig map[string]*string
 
@@ -32,6 +36,7 @@ func validateLabelStaticConfig(c StaticLabelConfig) error {
 	return nil
 }
 
+// 解码 static_labels 配置并返回 StaticLabelStage。
 func newStaticLabelsStage(logger log.Logger, configs interface{}) (Stage, error) {
 	cfgs := &StaticLabelConfig{}
 	err := mapstructure.Decode(configs, cfgs)
@@ -50,11 +55,13 @@ func newStaticLabelsStage(logger log.Logger, configs interface{}) (Stage, error)
 	}), nil
 }
 
+// static_labels 阶段：持有标签映射与 logger。
 type StaticLabelStage struct {
 	cfgs   StaticLabelConfig
 	logger log.Logger
 }
 
+// 遍历配置将非空静态值写入 labels（跳过非法值）。
 // Process implements Stage
 func (l *StaticLabelStage) Process(labels model.LabelSet, _ map[string]interface{}, _ *time.Time, _ *string) {
 

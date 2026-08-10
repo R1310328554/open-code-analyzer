@@ -1,5 +1,8 @@
 package stages
 
+// Pipeline 编排：串联多个 stage 并接入 Promtail EntryHandler。
+// 提供 RunWith 系列辅助函数与全局限速丢弃逻辑。
+
 import (
 	"context"
 	"sync"
@@ -12,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/clients/pkg/promtail/api"
 )
 
+// pipeline 配置：YAML 解析后的 stage 对象列表。
 // PipelineStages contains configuration for each stage within a pipeline
 type PipelineStages = []interface{}
 
@@ -22,6 +26,7 @@ var rateLimiter *rate.Limiter
 var rateLimiterDrop bool
 var rateLimiterDropReason = "global_rate_limiter_drop"
 
+// Pipeline 按序将 Entry 流经各 stage 进行变换或丢弃。
 // Pipeline pass down a log entry to each stage for mutation and/or label extraction.
 type Pipeline struct {
 	logger    log.Logger
@@ -37,6 +42,7 @@ func (p *Pipeline) Cleanup() {
 	}
 }
 
+// 解析 YAML stage 列表，逐个调用 New 构造 Stage 链。
 // NewPipeline creates a new log entry pipeline from a configuration
 func NewPipeline(logger log.Logger, stgs PipelineStages, jobName *string, registerer prometheus.Registerer) (*Pipeline, error) {
 	st := []Stage{}
@@ -69,6 +75,7 @@ func NewPipeline(logger log.Logger, stgs PipelineStages, jobName *string, regist
 	}, nil
 }
 
+// 通用通道包装：对每条 Entry 应用 process 后写入输出通道。
 // RunWith will reads from the input channel entries, mutate them with the process function and returns them via the output channel.
 func RunWith(input chan Entry, process func(e Entry) Entry) chan Entry {
 	out := make(chan Entry)
@@ -81,6 +88,7 @@ func RunWith(input chan Entry, process func(e Entry) Entry) chan Entry {
 	return out
 }
 
+// 与 RunWith 类似，process 返回 skip 时不向下游发送。
 // RunWithSkip same as RunWith, except it skip sending it to output channel, if `process` functions returns `skip` true.
 func RunWithSkip(input chan Entry, process func(e Entry) (Entry, bool)) chan Entry {
 	out := make(chan Entry)
@@ -98,6 +106,7 @@ func RunWithSkip(input chan Entry, process func(e Entry) (Entry, bool)) chan Ent
 	return out
 }
 
+// 支持 skip 或一对多展开：process 可返回多条 Entry。
 // RunWithSkiporSendMany same as RunWithSkip, except it can either skip sending it to output channel, if `process` functions returns `skip` true. Or send many entries.
 func RunWithSkipOrSendMany(input chan Entry, process func(e Entry) ([]Entry, bool)) chan Entry {
 	out := make(chan Entry)
@@ -117,6 +126,7 @@ func RunWithSkipOrSendMany(input chan Entry, process func(e Entry) ([]Entry, boo
 	return out
 }
 
+// 初始化 extracted 为当前 Labels，再依次链接各 stage.Run。
 // Run implements Stage
 func (p *Pipeline) Run(in chan Entry) chan Entry {
 	in = RunWith(in, func(e Entry) Entry {
@@ -139,6 +149,7 @@ func (p *Pipeline) Name() string {
 	return StageTypePipeline
 }
 
+// 包装 api.EntryHandler：双向 goroutine 桥接 pipeline 与下游推送。
 // Wrap implements EntryMiddleware
 func (p *Pipeline) Wrap(next api.EntryHandler) api.EntryHandler {
 	handlerIn := make(chan api.Entry)
@@ -185,6 +196,7 @@ func (p *Pipeline) Size() int {
 	return len(p.stages)
 }
 
+// 设置全局读行限速器：超限时可等待或丢弃并计数。
 func SetReadLineRateLimiter(rateVal float64, burstVal int, drop bool) {
 	rateLimiter = rate.NewLimiter(rate.Limit(rateVal), burstVal)
 	rateLimiterDrop = drop

@@ -1,5 +1,8 @@
 package stages
 
+// output 阶段：用 extracted 中指定字段覆盖日志行内容。
+// 常用于 regex/json 解析后将结构化字段写回最终 line。
+
 import (
 	"errors"
 	"reflect"
@@ -17,6 +20,7 @@ const (
 	ErrOutputSourceRequired   = "output source value is required if output is specified"
 )
 
+// output 配置：source 键名指向 extracted 中要写入行的字段。
 // OutputConfig configures output value extraction
 type OutputConfig struct {
 	Source string `mapstructure:"source"`
@@ -33,6 +37,7 @@ func validateOutputConfig(cfg *OutputConfig) error {
 	return nil
 }
 
+// 解码配置并包装为同步 Processor stage。
 // newOutputStage creates a new outputStage
 func newOutputStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg := &OutputConfig{}
@@ -50,12 +55,14 @@ func newOutputStage(logger log.Logger, config interface{}) (Stage, error) {
 	}), nil
 }
 
+// output 阶段：将 source 字段字符串化后赋值给 entry 行。
 // outputStage will mutate the incoming entry and set it from extracted data
 type outputStage struct {
 	cfgs   *OutputConfig
 	logger log.Logger
 }
 
+// 若 extracted 含 source 则替换 *entry，否则 Debug 记录缺失。
 // Process implements Stage
 func (o *outputStage) Process(_ model.LabelSet, extracted map[string]interface{}, _ *time.Time, entry *string) {
 	if o.cfgs == nil {

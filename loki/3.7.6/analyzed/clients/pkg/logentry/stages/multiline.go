@@ -1,5 +1,8 @@
 package stages
 
+// multiline 阶段：按首行正则合并跨行日志块。
+// 按标签指纹分 stream，超时或新首行时 flush 为单条 Entry。
+
 import (
 	"bytes"
 	"fmt"
@@ -29,6 +32,7 @@ const (
 	maxWaitDefault        = 3 * time.Second
 )
 
+// multiline 配置：首行正则、最大行数与 flush 等待时间。
 // MultilineConfig contains the configuration for a multilineStage
 type MultilineConfig struct {
 	Expression  *string `mapstructure:"firstline"`
@@ -38,6 +42,7 @@ type MultilineConfig struct {
 	maxWait     time.Duration
 }
 
+// 编译 firstline 正则并设置 max_wait_time、max_lines 默认值。
 func validateMultilineConfig(cfg *MultilineConfig) error {
 	if cfg == nil || cfg.Expression == nil {
 		return errors.New(ErrMultilineStageEmptyConfig)
@@ -67,12 +72,14 @@ func validateMultilineConfig(cfg *MultilineConfig) error {
 	return nil
 }
 
+// multiline 阶段：维护 per-stream 缓冲并按规则折叠多行。
 // multilineStage matches lines to determine whether the following lines belong to a block and should be collapsed
 type multilineStage struct {
 	logger log.Logger
 	cfg    *MultilineConfig
 }
 
+// 单 stream 的多行合并状态：缓冲、首行 Entry 与当前行数。
 // multilineState captures the internal state of a running multiline stage.
 type multilineState struct {
 	buffer         *bytes.Buffer // The lines of the current multiline block.
@@ -80,6 +87,7 @@ type multilineState struct {
 	currentLines   uint64        // The number of lines of the current multiline block.
 }
 
+// 从配置创建 multilineStage 并绑定组件日志字段。
 // newMultilineStage creates a MulitlineStage from config
 func newMultilineStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg := &MultilineConfig{}
@@ -143,6 +151,7 @@ func (m *multilineStage) Run(in chan Entry) chan Entry {
 	return out
 }
 
+// 单 stream 协程：超时 flush、新首行 flush 或达 max_lines 时输出。
 func (m *multilineStage) runMultiline(in chan Entry, out chan Entry, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -197,6 +206,7 @@ func (m *multilineStage) runMultiline(in chan Entry, out chan Entry, wg *sync.Wa
 	}
 }
 
+// 将缓冲行合并为一条 Entry，保留首行标签与时间戳。
 func (m *multilineStage) flush(out chan Entry, s *multilineState) {
 	if s.buffer.Len() == 0 {
 		if Debug {

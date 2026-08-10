@@ -1,5 +1,8 @@
 package stages
 
+// sampling 阶段：按配置比例随机保留日志行（Jaeger 概率采样算法）。
+// 未采样条目递增 dropped_lines_total 计数后丢弃。
+
 import (
 	"math"
 	"math/rand"
@@ -21,6 +24,7 @@ var (
 	defaultSamplingpReason = "sampling_stage"
 )
 
+// sampling 配置：采样率 rate（0.0–1.0）与丢弃计数 reason。
 // SamplingConfig contains the configuration for a samplingStage
 type SamplingConfig struct {
 	DropReason *string `mapstructure:"drop_counter_reason"`
@@ -29,6 +33,7 @@ type SamplingConfig struct {
 }
 
 // validateSamplingConfig validates the SamplingConfig for the sampleStage
+// 校验采样率范围并默认 drop_counter_reason。
 func validateSamplingConfig(cfg *SamplingConfig) error {
 	if cfg.DropReason == nil || *cfg.DropReason == "" {
 		cfg.DropReason = &defaultSamplingpReason
@@ -40,6 +45,7 @@ func validateSamplingConfig(cfg *SamplingConfig) error {
 	return nil
 }
 
+// 计算 samplingBoundary 与随机源，构造 samplingStage。
 // newSamplingStage creates a SamplingStage from config
 // code from jaeger project.
 // github.com/uber/jaeger-client-go@v2.30.0+incompatible/tracer.go:126
@@ -67,6 +73,7 @@ func newSamplingStage(logger log.Logger, config interface{}, registerer promethe
 	}, nil
 }
 
+// sampling 运行时：采样边界、随机源与 drop 计数器。
 type samplingStage struct {
 	logger           log.Logger
 	cfg              *SamplingConfig
@@ -93,6 +100,7 @@ func (m *samplingStage) Run(in chan Entry) chan Entry {
 // code from jaeger project.
 // github.com/uber/jaeger-client-go@v2.30.0+incompatible/sampler.go:144
 // func (s *ProbabilisticSampler) IsSampled(id TraceID, operation string) (bool, []Tag)
+// Jaeger 风格概率判定：randomID 与 samplingBoundary 比较。
 func (m *samplingStage) isSampled() bool {
 	return m.samplingBoundary >= m.randomID()&maxRandomNumber
 }

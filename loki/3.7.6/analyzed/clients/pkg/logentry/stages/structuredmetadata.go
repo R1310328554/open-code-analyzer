@@ -1,5 +1,8 @@
 package stages
 
+// structured_metadata 阶段：将 extracted/labels 字段写入结构化元数据。
+// 写入后若标签与元数据重复则从 Labels 中移除以降低索引基数。
+
 import (
 	"github.com/go-kit/log"
 	"github.com/mitchellh/mapstructure"
@@ -24,6 +27,7 @@ func newStructuredMetadataStage(params StageCreationParams) (Stage, error) {
 	}, nil
 }
 
+// structured_metadata 阶段：LabelsConfig 与 logger。
 type structuredMetadataStage struct {
 	cfgs   LabelsConfig
 	logger log.Logger
@@ -38,6 +42,7 @@ func (*structuredMetadataStage) Cleanup() {
 	// no-op
 }
 
+// 从 extracted 与 labels 填充 StructuredMetadata 并清理重复标签。
 func (s *structuredMetadataStage) Run(in chan Entry) chan Entry {
 	return RunWith(in, func(e Entry) Entry {
 		structuredMetadata := make(map[model.LabelName]model.LabelValue)

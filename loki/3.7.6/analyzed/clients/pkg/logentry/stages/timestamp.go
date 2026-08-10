@@ -1,5 +1,8 @@
 package stages
 
+// timestamp 阶段：从 extracted 解析时间并覆盖 Entry 时间戳。
+// 支持 fallback_formats、时区与失败时 skip/fudge（递增 1ns）策略。
+
 import (
 	"errors"
 	"fmt"
@@ -37,6 +40,7 @@ var (
 	TimestampActionOnFailureOptions = []string{TimestampActionOnFailureSkip, TimestampActionOnFailureFudge}
 )
 
+// timestamp 配置：source、format、fallback、location 与失败动作。
 // TimestampConfig configures timestamp extraction
 type TimestampConfig struct {
 	Source          string   `mapstructure:"source"`
@@ -47,6 +51,7 @@ type TimestampConfig struct {
 }
 
 // parser can convert the time string into a time.Time value
+// 时间解析函数类型：将字符串按 layout 转为 time.Time。
 type parser func(string) (time.Time, error)
 
 // validateTimestampConfig validates a timestampStage configuration
@@ -97,6 +102,7 @@ func validateTimestampConfig(cfg *TimestampConfig) (parser, error) {
 	return convertDateLayout(cfg.Format, loc), nil
 }
 
+// 创建 timestampStage，fudge 模式时初始化 LRU 末知时间戳缓存。
 // newTimestampStage creates a new timestamp extraction pipeline stage.
 func newTimestampStage(logger log.Logger, config interface{}) (Stage, error) {
 	cfg := &TimestampConfig{}
@@ -125,6 +131,7 @@ func newTimestampStage(logger log.Logger, config interface{}) (Stage, error) {
 	}), nil
 }
 
+// timestamp 阶段：parser 成功则写 *t，失败走 action_on_failure。
 // timestampStage will set the timestamp using extracted data
 type timestampStage struct {
 	cfg    *TimestampConfig
@@ -141,6 +148,7 @@ func (ts *timestampStage) Name() string {
 	return StageTypeTimestamp
 }
 
+// 解析 extracted[source] 时间；fudge 成功/失败后维护 per-stream LRU。
 // Process implements Stage
 func (ts *timestampStage) Process(labels model.LabelSet, extracted map[string]interface{}, t *time.Time, _ *string) {
 	if ts.cfg == nil {
@@ -163,6 +171,7 @@ func (ts *timestampStage) Process(labels model.LabelSet, extracted map[string]in
 	}
 }
 
+// 从 extracted 取 source 字段并按配置 format 解析为 time.Time。
 func (ts *timestampStage) parseTimestampFromSource(extracted map[string]interface{}) (*time.Time, error) {
 	// Ensure the extracted data contains the timestamp source
 	v, ok := extracted[ts.cfg.Source]
@@ -197,6 +206,7 @@ func (ts *timestampStage) parseTimestampFromSource(extracted map[string]interfac
 	return &parsedTs, nil
 }
 
+// 解析失败时分派到 fudge（递增缓存时间）或 skip（保持原值）。
 func (ts *timestampStage) processActionOnFailure(labels model.LabelSet, t *time.Time) {
 	switch *ts.cfg.ActionOnFailure {
 	case TimestampActionOnFailureFudge:
@@ -206,6 +216,7 @@ func (ts *timestampStage) processActionOnFailure(labels model.LabelSet, t *time.
 	}
 }
 
+// 用该 label 串上次成功时间 +1ns  fudge，并更新 LRU 缓存。
 func (ts *timestampStage) processActionOnFailureFudge(labels model.LabelSet, t *time.Time) {
 	labelsStr := labels.String()
 	lastTimestamp, ok := ts.lastKnownTimestamps.Get(labelsStr)
