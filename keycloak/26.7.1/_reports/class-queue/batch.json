@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T14:01:28Z",
   "files": [
-    "test-framework/clustering/src/main/java/org/keycloak/testframework/server/ClusteredKeycloakServer.java",
-    "test-framework/clustering/src/main/java/org/keycloak/testframework/server/ClusteredKeycloakServerSupplier.java",
-    "test-framework/clustering/src/main/java/org/keycloak/testframework/server/CountdownLatchLoggingConsumer.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/CoreTestFrameworkExtension.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/DebugHelper.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/FatalTestClassException.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/KeycloakIntegrationTestExtension.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/LogFilter.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/LogHandler.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/TestFrameworkExecutor.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/TestFrameworkExtension.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/admin/AdminClientBuilder.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/admin/AdminClientFactory.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/admin/AdminClientFactorySupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/admin/AdminClientSupplier.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/annotations/InjectAdminClient.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/annotations/InjectAdminClientFactory.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/annotations/InjectAdminEvents.java",
@@ -33,5 +18,5 @@
     "test-framework/core/src/main/java/org/keycloak/testframework/annotations/InjectTestDatabase.java"
   ],
   "remaining_pending": 478,
-  "done": 5490
+  "done": 5505
 }
