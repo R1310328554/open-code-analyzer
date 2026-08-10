@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote Storage 门面：实现 storage.Storage，聚合 remote read 客户端与 WriteStorage，ApplyConfig 按配置哈希增删读写端点。
+
 package remote
 
 import (
@@ -49,6 +51,7 @@ type ReadyScrapeManager interface {
 // startTimeCallback is a callback func that return the oldest timestamp stored in a storage.
 type startTimeCallback func() (int64, error)
 
+// Storage 组合 WriteStorage 与多个 remote read queryable，供 fanout 使用。
 // Storage represents all the remote read and write endpoints.  It implements
 // storage.Storage.
 type Storage struct {
@@ -65,6 +68,7 @@ type Storage struct {
 
 var _ storage.Storage = &Storage{}
 
+// NewStorage 创建 remote storage 并初始化 WriteStorage 与日志 deduper。
 // NewStorage returns a remote.Storage.
 func NewStorage(l *slog.Logger, reg prometheus.Registerer, stCallback startTimeCallback, walDir string, flushDeadline time.Duration, sm ReadyScrapeManager, enableTypeAndUnitLabels bool) *Storage {
 	if l == nil {
@@ -87,6 +91,7 @@ func (s *Storage) Notify() {
 }
 
 // ApplyConfig updates the state as the new config requires.
+// ApplyConfig 刷新 remote write 队列与 read 客户端列表，禁止重复 read 配置。
 func (s *Storage) ApplyConfig(conf *config.Config) error {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
@@ -151,6 +156,7 @@ func (*Storage) StartTime() (int64, error) {
 	return int64(model.Latest), nil
 }
 
+// Querier 合并各 remote read 端点的 Querier，secondary 路径 best-effort。
 // Querier returns a storage.MergeQuerier combining the remote client queriers
 // of each configured remote read endpoint.
 // Returned querier will never return error as all queryables are assumed best effort.
@@ -174,6 +180,7 @@ func (s *Storage) Querier(mint, maxt int64) (storage.Querier, error) {
 
 // ChunkQuerier returns a storage.MergeQuerier combining the remote client queriers
 // of each configured remote read endpoint.
+// ChunkQuerier 合并 remote chunk 查询，使用 CompactingChunkSeriesMerger。
 func (s *Storage) ChunkQuerier(mint, maxt int64) (storage.ChunkQuerier, error) {
 	s.mtx.Lock()
 	queryables := s.queryables
@@ -226,6 +233,7 @@ func labelsToEqualityMatchers(ls model.LabelSet) []*labels.Matcher {
 }
 
 // Used for hashing configs and diff'ing hashes in ApplyConfig.
+// toHash 对配置 YAML 做 MD5，用于 diff 与队列命名。
 func toHash(data any) (string, error) {
 	bytes, err := yaml.Marshal(data)
 	if err != nil {

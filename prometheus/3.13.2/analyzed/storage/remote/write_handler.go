@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote Write HTTP 接收端：解析 PRW 1.0/2.0 请求，校验标签与时间后写入 Appendable，支持部分写入与响应统计。
+
 package remote
 
 import (
@@ -38,6 +40,7 @@ import (
 	"github.com/prometheus/prometheus/storage"
 )
 
+// writeHandler 实现 remoteapi.writeStorage，将 remote write 请求写入本地 TSDB。
 type writeHandler struct {
 	logger     *slog.Logger
 	appendable storage.Appendable
@@ -52,6 +55,7 @@ type writeHandler struct {
 
 const maxAheadTime = 10 * time.Minute
 
+// NewWriteHandler 注册无效标签与缺失 metadata 计数器，并委托 client_golang 处理器。
 // NewWriteHandler creates a http.Handler that accepts remote write requests with
 // the given message in acceptedMsgs and writes them to the provided appendable.
 //
@@ -87,6 +91,7 @@ func isHistogramValidationError(err error) bool {
 	return errors.As(err, &e)
 }
 
+// Store 按 msgType 分派 PRW v1 proto 或 v2 Request，设置 HTTP 状态与 WriteResponse。
 // Store implements remoteapi.writeStorage interface.
 // TODO(bwplotka): Improve remoteapi.Store API. Right now it's confusing if PRWv1 flows should use WriteResponse or not.
 // If it's not filled, it will be "confirmed zero" which caused partial error reporting on client side in the past.
@@ -146,6 +151,7 @@ func (h *writeHandler) Store(r *http.Request, msgType remoteapi.WriteMessageType
 	return wr, nil
 }
 
+// write 处理 PRW 1.0 WriteRequest：逐 timeseries 追加样本、直方图与 metadata。
 func (h *writeHandler) write(ctx context.Context, req *prompb.WriteRequest) (err error) {
 	outOfOrderExemplarErrs := 0
 	samplesWithInvalidLabels := 0
@@ -265,6 +271,7 @@ func (h *writeHandler) appendV1Histograms(app storage.Appender, hh []prompb.Hist
 // In error cases, writeV2, also returns statistics, but also the error that
 // should be propagated to the remote write sender and httpCode to use for status.
 //
+// writeV2 处理 PRW 2.0：遇 5xx 类错误立即 rollback，TSDB 不支持幂等部分重试。
 // NOTE(bwplotka): TSDB storage is NOT idempotent, so we don't allow "partial retry-able" errors.
 // Once we have 5xx type of error, we immediately stop and rollback all appends.
 func (h *writeHandler) writeV2(ctx context.Context, req *writev2.Request) (_ remoteapi.WriteResponseStats, errHTTPCode int, _ error) {
@@ -304,6 +311,7 @@ func (h *writeHandler) writeV2(ctx context.Context, req *writev2.Request) (_ rem
 	return s, 0, nil
 }
 
+// appendV2 遍历 v2 timeseries，处理 ST 零样本、直方图与 exemplar 并累计写入统计。
 func (h *writeHandler) appendV2(app storage.Appender, req *writev2.Request, rs *remoteapi.WriteResponseStats) (samplesWithoutMetadata, errHTTPCode int, err error) {
 	var (
 		badRequestErrs                                   []error
@@ -492,6 +500,7 @@ func (*writeHandler) handleHistogramZeroSample(app storage.Appender, ref storage
 
 // TODO(bwplotka): Consider exposing timeLimitAppender and bucketLimitAppender appenders from scrape/target.go
 // to DRY, they do the same.
+// remoteWriteAppender 限制未来时间戳（maxAheadTime），防止写入过远未来样本。
 type remoteWriteAppender struct {
 	storage.Appender
 
@@ -545,6 +554,7 @@ func (app *remoteWriteAppender) AppendExemplar(ref storage.SeriesRef, l labels.L
 	return ref, nil
 }
 
+// remoteWriteAppenderV2 为 AppenderV2 提供同样的未来时间上限校验。
 type remoteWriteAppenderV2 struct {
 	storage.AppenderV2
 

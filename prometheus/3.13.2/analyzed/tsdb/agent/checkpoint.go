@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Agent WAL Checkpoint：将内存中活跃/已删 series 写入无索引 checkpoint，供 WAL 截断后快速恢复 series 元数据。
+
 package agent
 
 import (
@@ -29,6 +31,7 @@ import (
 
 const defaultBatchSize = 1000
 
+// ActiveSeries 导出接口，描述需写入 checkpoint 的活跃序列。
 // ActiveSeries describes a live series to be written by [Checkpoint].
 //
 // This interface is intentionally exported so downstream users of this package
@@ -39,6 +42,7 @@ type ActiveSeries interface {
 	LastSampleTimestamp() int64
 }
 
+// DeletedSeries 导出接口，描述已删除序列的 ref 与标签。
 // DeletedSeries describes a deleted series to be written by [Checkpoint].
 //
 // This interface is intentionally exported so downstream users of this package
@@ -48,6 +52,7 @@ type DeletedSeries interface {
 	Labels() labels.Labels
 }
 
+// Checkpoint 批量写入 RefSeries 与 lastTs，依赖内存数据而非重读 WAL。
 // Checkpoint creates an unindexed checkpoint containing record.RefSeries and
 // last timestamp for ActiveSeries and record.RefSeries for DeletedSeries.
 //

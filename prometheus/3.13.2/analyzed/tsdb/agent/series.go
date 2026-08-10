@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Agent 内存序列索引：memSeries 仅存 ref/labels/lastTs，seriesHashmap 用 64 位哈希加速标签集查找，支持冲突链。
+
 package agent
 
 import (
@@ -22,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunks"
 )
 
+// memSeries 无 chunk 缓冲，仅跟踪最后样本时间戳供 GC 与 checkpoint 使用。
 // memSeries is a chunkless version of tsdb.memSeries.
 type memSeries struct {
 	sync.Mutex
@@ -58,6 +61,7 @@ func (m *memSeries) LastSampleTimestamp() int64 {
 	return m.lastTs
 }
 
+// seriesHashmap 维护 unique/conflicts 双 map，处理标签哈希碰撞。
 // seriesHashmap lets agent find a memSeries by its label set, via a 64-bit hash.
 // There is one map for the common case where the hash value is unique, and a
 // second map for the case that two series have the same hash value.
@@ -100,6 +104,7 @@ func (m *seriesHashmap) Set(hash uint64, s *memSeries) {
 	m.conflicts[hash] = append(seriesSet, s)
 }
 
+// Delete 按 ref 从 unique 或 conflicts 中移除 series。
 func (m *seriesHashmap) Delete(hash uint64, ref chunks.HeadSeriesRef) {
 	var rem []*memSeries
 	unique, found := m.unique[hash]

@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenTelemetry 追踪管理：根据 tracing 配置安装/卸载 TracerProvider，支持 OTLP gRPC/HTTP 导出与采样率配置。
+
 package tracing
 
 import (
@@ -39,6 +41,7 @@ import (
 
 const serviceName = "prometheus"
 
+// Manager 负责全局 TracerProvider 生命周期与 TextMapPropagator 注册。
 // Manager is capable of building, (re)installing and shutting down
 // the tracer provider.
 type Manager struct {
@@ -48,6 +51,7 @@ type Manager struct {
 	shutdownFunc func() error
 }
 
+// NewManager 创建 tracing 管理器，Run 阻塞直到 Stop 关闭 done 通道。
 // NewManager creates a new tracing manager.
 func NewManager(logger *slog.Logger) *Manager {
 	return &Manager{
@@ -66,6 +70,7 @@ func (m *Manager) Run() {
 	<-m.done
 }
 
+// ApplyConfig 检测配置变更，关闭旧 provider 并按 endpoint 安装新 OTLP exporter。
 // ApplyConfig takes care of refreshing the tracing configuration by shutting down
 // the current tracer provider (if any is registered) and installing a new one.
 func (m *Manager) ApplyConfig(cfg *config.Config) error {
@@ -128,6 +133,7 @@ func (o otelErrHandler) Handle(err error) {
 
 // buildTracerProvider return a new tracer provider ready for installation, together
 // with a shutdown function.
+// buildTracerProvider 创建 BatchSpanProcessor、ParentBased 采样与 service 资源属性。
 func buildTracerProvider(ctx context.Context, tracingCfg config.TracingConfig) (trace.TracerProvider, func() error, error) {
 	client, err := getClient(tracingCfg)
 	if err != nil {
@@ -174,6 +180,7 @@ func buildTracerProvider(ctx context.Context, tracingCfg config.TracingConfig) (
 	}, nil
 }
 
+// getClient 按 TracingClientType 构造 otlptracegrpc 或 otlptracehttp 客户端。
 // getClient returns an appropriate OTLP client (either gRPC or HTTP), based
 // on the provided tracing configuration.
 func getClient(tracingCfg config.TracingConfig) (otlptrace.Client, error) {

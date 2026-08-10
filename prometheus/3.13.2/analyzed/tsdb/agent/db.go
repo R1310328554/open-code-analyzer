@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Agent 模式 WAL-only 存储：仅写 WAL 不建 TSDB head，样本经 memSeries 索引后异步刷盘，WAL replay 恢复状态并对接 remote write。
+
 package agent
 
 import (
@@ -58,6 +60,7 @@ var (
 	DefaultMaxWALTime        = int64(4 * time.Hour / time.Millisecond)
 )
 
+// Options 配置 WAL 段大小、截断间隔、ST 零样本、out-of-order 窗口等 agent 参数。
 // Options of the WAL storage.
 type Options struct {
 	// Segments (wal files) max size.
@@ -252,6 +255,7 @@ type deletedRefMeta struct {
 	labels      labels.Labels
 }
 
+// DB 实现 storage.Storage 子集：仅 Appender，Querier 返回 ErrUnsupported。
 // DB represents a WAL-only storage. It implements storage.DB.
 type DB struct {
 	mtx    sync.RWMutex
@@ -287,6 +291,7 @@ type DB struct {
 	metrics *dbMetrics
 }
 
+// Open 初始化 WAL、series hashmap、remote storage 通知与后台 truncate/gc 协程。
 // Open returns a new agent.DB in the given directory.
 func Open(l *slog.Logger, reg prometheus.Registerer, rs *remote.Storage, dir string, opts *Options) (*DB, error) {
 	opts = validateOptions(opts)
@@ -409,6 +414,7 @@ func validateOptions(opts *Options) *Options {
 	return opts
 }
 
+// replayWAL 重放 WAL 段与 checkpoint，重建 memSeries 与 deleted refs。
 func (db *DB) replayWAL() error {
 	db.logger.Info("replaying WAL, this may take a while", "dir", db.wal.Dir())
 	defer db.resetWALReplayResources()
@@ -739,6 +745,7 @@ func (db *DB) keepSeriesInWALCheckpointFn(last int) func(id chunks.HeadSeriesRef
 	}
 }
 
+// truncate 按 WAL 段号截断旧段并创建 checkpoint，保留活跃 series。
 func (db *DB) truncate(mint int64) error {
 	db.logger.Info("series GC started")
 	db.mtx.RLock()
@@ -897,6 +904,7 @@ type appenderBase struct {
 	floatHistogramSeries []*memSeries
 }
 
+// appender 批量收集样本/exemplar/直方图，Commit 时写入 WAL record。
 type appender struct {
 	appenderBase
 
@@ -933,6 +941,7 @@ func (a *appender) Append(ref storage.SeriesRef, l labels.Labels, t int64, v flo
 	return storage.SeriesRef(series.ref), nil
 }
 
+// getOrCreate 通过 seriesHashmap 查找或分配新 memSeries 与 HeadSeriesRef。
 func (a *appenderBase) getOrCreate(ref chunks.HeadSeriesRef, l labels.Labels) (series *memSeries, err error) {
 	// Fastest path: caller already has a valid ref from a prior append.
 	if ref != 0 {
@@ -1194,6 +1203,7 @@ func (a *appender) AppendSTZeroSample(ref storage.SeriesRef, l labels.Labels, t,
 	return storage.SeriesRef(series.ref), nil
 }
 
+// Commit 将 pending 样本序列化为 WAL record 并清空 appender 缓冲。
 // Commit submits the collected samples and purges the batch.
 func (a *appender) Commit() error {
 	defer a.appenderPool.Put(a)

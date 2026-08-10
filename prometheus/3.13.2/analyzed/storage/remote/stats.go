@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PRW 2.0 响应统计：解析/设置 X-Prometheus-Remote-Write-* 响应头，表示接收端实际写入的样本、直方图与 exemplar 数量。
+
 package remote
 
 import (
@@ -25,6 +27,7 @@ const (
 	rw20WrittenExemplarsHeader  = "X-Prometheus-Remote-Write-Exemplars-Written"
 )
 
+// WriteResponseStats 对应 PRW 2.0 规范中的写入确认统计。
 // WriteResponseStats represents the response write statistics specified in https://github.com/prometheus/docs/pull/2486
 type WriteResponseStats struct {
 	// Samples represents X-Prometheus-Remote-Write-Written-Samples
@@ -42,6 +45,7 @@ type WriteResponseStats struct {
 }
 
 // NoDataWritten returns true if statistics indicate no data was written.
+// NoDataWritten 判断三类计数之和是否为零。
 func (s WriteResponseStats) NoDataWritten() bool {
 	return (s.Samples + s.Histograms + s.Exemplars) == 0
 }
@@ -62,6 +66,7 @@ func (s WriteResponseStats) Add(rs WriteResponseStats) WriteResponseStats {
 
 // SetHeaders sets response headers in a given response writer.
 // Make sure to use it before http.ResponseWriter.WriteHeader and .Write.
+// SetHeaders 在 WriteHeader 之前写入 PRW 2.0 确认响应头。
 func (s WriteResponseStats) SetHeaders(w http.ResponseWriter) {
 	h := w.Header()
 	h.Set(rw20WrittenSamplesHeader, strconv.Itoa(s.Samples))
@@ -69,6 +74,7 @@ func (s WriteResponseStats) SetHeaders(w http.ResponseWriter) {
 	h.Set(rw20WrittenExemplarsHeader, strconv.Itoa(s.Exemplars))
 }
 
+// ParseWriteResponseStats 从 HTTP 响应头解析统计；至少见到一个头时 Confirmed=true。
 // ParseWriteResponseStats returns WriteResponseStats parsed from the response headers.
 //
 // As per 2.0 spec, missing header means 0. However, abrupt HTTP errors, 1.0 Receivers

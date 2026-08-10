@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Agent AppenderV2 实现：统一 Append 路径写入浮点/直方图/exemplar，复用 appenderBase 的 getOrCreate 与 WAL 提交逻辑。
+
 package agent
 
 import (
@@ -27,6 +29,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 )
 
+// AppenderV2 从对象池获取 appenderV2 实例供 remote write/OTLP 使用。
 // AppenderV2 implements storage.AppenderV2.
 func (db *DB) AppenderV2(context.Context) storage.AppenderV2 {
 	return db.appenderV2Pool.Get().(storage.AppenderV2)
@@ -36,6 +39,7 @@ type appenderV2 struct {
 	appenderBase
 }
 
+// Append 校验直方图、处理 ST 零样本、乱序检测后写入 pending 缓冲。
 // Append appends pending sample to agent's DB.
 // TODO: Wire metadata in the Agent's appender.
 func (a *appenderV2) Append(ref storage.SeriesRef, ls labels.Labels, st, t int64, v float64, h *histogram.Histogram, fh *histogram.FloatHistogram, opts storage.AOptions) (storage.SeriesRef, error) {

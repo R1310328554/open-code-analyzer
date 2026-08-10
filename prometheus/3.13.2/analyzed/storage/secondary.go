@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Secondary Querier 包装：将 remote/次存储查询错误降级为 warning，Select 采用全有或全无策略，首次 Next 失败则其余 set 返回空。
+
 package storage
 
 import (
@@ -24,6 +26,7 @@ import (
 // secondaryQuerier must implement the Searcher interface.
 var _ Searcher = (*secondaryQuerier)(nil)
 
+// secondaryQuerier 使 Label*/Select 错误变为 warnings，Prometheus 将 remote 视为 secondary。
 // secondaryQuerier is a wrapper that allows a querier to be treated in a best effort manner.
 // This means that an error on any method returned by Querier except Close will be returned as a warning,
 // and the result will be empty.
@@ -44,6 +47,7 @@ type secondaryQuerier struct {
 	asyncSets []genericSeriesSet
 }
 
+// newSecondaryQuerierFrom 从 Querier 构造 best-effort 包装。
 func newSecondaryQuerierFrom(q Querier) genericQuerier {
 	return &secondaryQuerier{genericQuerier: newGenericQuerierFrom(q)}
 }
@@ -86,6 +90,7 @@ func (s *secondaryQuerier) SearchLabelValues(ctx context.Context, name string, h
 	return warningsOnErrorSearchResultSet(searcher.SearchLabelValues(ctx, name, hints, matchers...))
 }
 
+// Select 延迟初始化各 async set，任一首次 Next 失败则当前 set 仅含 warning、其余为空。
 func (s *secondaryQuerier) Select(ctx context.Context, sortSeries bool, hints *SelectHints, matchers ...*labels.Matcher) genericSeriesSet {
 	if s.done {
 		panic("secondaryQuerier: Select invoked after first Next of any returned SeriesSet was done")
@@ -129,6 +134,7 @@ func (s *secondaryQuerier) Select(ctx context.Context, sortSeries bool, hints *S
 	}}
 }
 
+// warningsOnErrorSearchSet 将 SearchResultSet 迭代错误转为 warning 而非 Err。
 type warningsOnErrorSearchSet struct {
 	rs       SearchResultSet
 	warnings annotations.Annotations

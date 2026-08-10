@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote Read HTTP 处理器：解码 prompb.ReadRequest，经 gate 限并发，支持原始样本与 STREAMED_XOR_CHUNKS 流式 chunk 两种响应。
+
 package remote
 
 import (
@@ -32,6 +34,7 @@ import (
 	"github.com/prometheus/prometheus/util/gate"
 )
 
+// readHandler 封装 queryable、并发 gate 与 remote read 指标，处理 /api/v1/read 请求。
 type readHandler struct {
 	logger                    *slog.Logger
 	queryable                 storage.SampleAndChunkQueryable
@@ -43,6 +46,7 @@ type readHandler struct {
 	marshalPool               *sync.Pool
 }
 
+// NewReadHandler 构造 remote read HTTP 处理器并注册 queries 并发 gauge。
 // NewReadHandler creates a http.Handler that accepts remote read requests and
 // writes them to the provided queryable.
 func NewReadHandler(logger *slog.Logger, r prometheus.Registerer, queryable storage.SampleAndChunkQueryable, config func() config.Config, remoteReadSampleLimit, remoteReadConcurrencyLimit, remoteReadMaxBytesInFrame int) http.Handler {
@@ -68,6 +72,7 @@ func NewReadHandler(logger *slog.Logger, r prometheus.Registerer, queryable stor
 	return h
 }
 
+// ServeHTTP 解码请求、协商响应类型，分派到样本或流式 XOR chunk 路径。
 func (h *readHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if err := h.remoteReadGate.Start(ctx); err != nil {
@@ -113,6 +118,7 @@ func (h *readHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// remoteReadSamples 用 Querier.Select 拉取样本，合并 external labels 后 Snappy 编码返回。
 func (h *readHandler) remoteReadSamples(
 	ctx context.Context,
 	w http.ResponseWriter,
@@ -185,6 +191,7 @@ func (h *readHandler) remoteReadSamples(
 	}
 }
 
+// remoteReadStreamedXORChunks 通过 ChunkQuerier 流式输出 XOR chunk 帧。
 func (h *readHandler) remoteReadStreamedXORChunks(ctx context.Context, w http.ResponseWriter, req *prompb.ReadRequest, externalLabels map[string]string, sortedExternalLabels []prompb.Label) {
 	w.Header().Set("Content-Type", "application/x-streamed-protobuf; proto=prometheus.ChunkedReadResponse")
 
@@ -253,6 +260,7 @@ func (h *readHandler) remoteReadStreamedXORChunks(ctx context.Context, w http.Re
 	}
 }
 
+// filterExtLabelsFromMatchers 将匹配 external label 的等值 matcher 转为空值查询（存储中不含该标签）。
 // filterExtLabelsFromMatchers change equality matchers which match external labels
 // to a matcher that looks for an empty label,
 // as that label should not be present in the storage.

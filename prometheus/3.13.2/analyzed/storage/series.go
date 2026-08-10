@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 内存 Series/Chunk 辅助类型：ListSeries、chunk↔series 转换、ExpandSamples 等，主要用于测试与 remote read 适配。
+
 package storage
 
 import (
@@ -24,6 +26,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/chunks"
 )
 
+// SeriesEntry 用函数闭包提供 Series 接口，便于构造内存序列。
 type SeriesEntry struct {
 	Lset             labels.Labels
 	SampleIteratorFn func(chunkenc.Iterator) chunkenc.Iterator
@@ -40,6 +43,7 @@ type ChunkSeriesEntry struct {
 func (s *ChunkSeriesEntry) Labels() labels.Labels                       { return s.Lset }
 func (s *ChunkSeriesEntry) Iterator(it chunks.Iterator) chunks.Iterator { return s.ChunkIteratorFn(it) }
 
+// NewListSeries 从样本切片构造可复用 listSeriesIterator 的 SeriesEntry。
 // NewListSeries returns series entry with iterator that allows to iterate over provided samples.
 func NewListSeries(lset labels.Labels, s []chunks.Sample) *SeriesEntry {
 	samplesS := Samples(samples(s))
@@ -102,6 +106,7 @@ type samples []chunks.Sample
 func (s samples) Get(i int) chunks.Sample { return s[i] }
 func (s samples) Len() int                { return len(s) }
 
+// Samples 抽象样本数组，供 listSeriesIterator 二分 Seek 使用。
 // Samples interface allows to work on arrays of types that are compatible with chunks.Sample.
 type Samples interface {
 	Get(i int) chunks.Sample
@@ -238,6 +243,7 @@ type chunkSetToSeriesSet struct {
 	sameSeriesChunks []Series
 }
 
+// NewSeriesSetFromChunkSeriesSet 逐 chunk 解码为样本并用 ChainedSeriesMerge 链接。
 // NewSeriesSetFromChunkSeriesSet converts ChunkSeriesSet to SeriesSet by decoding chunks one by one.
 func NewSeriesSetFromChunkSeriesSet(chk ChunkSeriesSet) SeriesSet {
 	return &chunkSetToSeriesSet{ChunkSeriesSet: chk}
@@ -317,6 +323,7 @@ type seriesToChunkEncoder struct {
 
 const seriesToChunkEncoderSplit = 120
 
+// NewSeriesToChunkEncoder 将 Series 样本编码为 chunk，单 chunk 最多 120 个样本。
 // NewSeriesToChunkEncoder encodes samples to chunks with 120 samples limit.
 func NewSeriesToChunkEncoder(series Series) ChunkSeries {
 	return &seriesToChunkEncoder{series}
@@ -445,6 +452,7 @@ func (errChunksIterator) At() chunks.Meta { return chunks.Meta{} }
 func (errChunksIterator) Next() bool      { return false }
 func (e errChunksIterator) Err() error    { return e.err }
 
+// ExpandSamples 展开迭代器全部样本；浮点 NaN 可选替换为 -42 便于测试比较。
 // ExpandSamples iterates over all samples in the iterator, buffering all in slice.
 // Optionally it takes samples constructor, useful when you want to compare sample slices with different
 // sample implementations. if nil, sample type from this package will be used.

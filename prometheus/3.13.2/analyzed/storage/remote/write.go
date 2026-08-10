@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Remote Write 存储核心：WriteStorage 管理多个 QueueManager，从 WAL 读取样本经队列异步推送到 remote endpoint，并跟踪最高时间戳。
+
 package remote
 
 import (
@@ -56,6 +58,7 @@ var (
 	})
 )
 
+// WriteStorage 持有 per-endpoint QueueManager、WAL watcher 与 highest timestamp 指标。
 // WriteStorage represents all the remote write storage.
 type WriteStorage struct {
 	logger *slog.Logger
@@ -80,6 +83,7 @@ type WriteStorage struct {
 	enableTypeAndUnitLabels bool
 }
 
+// NewWriteStorage 启动后台 run 协程定期更新 shard 速率与队列状态。
 // NewWriteStorage creates and runs a WriteStorage.
 func NewWriteStorage(logger *slog.Logger, reg prometheus.Registerer, dir string, flushDeadline time.Duration, sm ReadyScrapeManager, enableTypeAndUnitLabels bool) *WriteStorage {
 	if logger == nil {
@@ -138,6 +142,7 @@ func (rws *WriteStorage) Notify() {
 	}
 }
 
+// ApplyConfig 对比配置哈希，仅停止/重建发生变化的 remote write 队列。
 // ApplyConfig updates the state as the new config requires.
 // Only stop & create queues which have changes.
 func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
@@ -241,6 +246,7 @@ func (rws *WriteStorage) ApplyConfig(conf *config.Config) error {
 }
 
 // Appender implements storage.Storage.
+// Appender 返回带 timestampTracker 的 fanout appender，写入各队列与 WAL。
 func (rws *WriteStorage) Appender(context.Context) storage.Appender {
 	return &timestampTracker{
 		baseTimestampTracker: baseTimestampTracker{
@@ -261,6 +267,7 @@ func (rws *WriteStorage) AppenderV2(context.Context) storage.AppenderV2 {
 }
 
 // LowestSentTimestamp returns the lowest sent timestamp across all queues.
+// LowestSentTimestamp 返回所有队列中最低已成功发送的时间戳。
 func (rws *WriteStorage) LowestSentTimestamp() int64 {
 	rws.mtx.Lock()
 	defer rws.mtx.Unlock()
@@ -309,6 +316,7 @@ type baseTimestampTracker struct {
 	highestRecvTimestamp *maxTimestamp
 }
 
+// timestampTracker 包装 Appender，在 Append 时更新 remote_storage_highest_timestamp 指标。
 type timestampTracker struct {
 	baseTimestampTracker
 
@@ -383,6 +391,7 @@ func (*baseTimestampTracker) Rollback() error {
 	return nil
 }
 
+// timestampTrackerV2 为 AppenderV2 提供同样的最高时间戳跟踪。
 type timestampTrackerV2 struct {
 	baseTimestampTracker
 }

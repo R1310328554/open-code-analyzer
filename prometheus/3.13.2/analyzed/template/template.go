@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// 告警/通知模板引擎：基于 text/html template 扩展 PromQL 查询、标签排序、humanize 等函数，供 alerting 与 UI 模板渲染。
+
 package template
 
 import (
@@ -58,6 +60,7 @@ func init() {
 	prometheus.MustRegister(templateTextExpansionTotal)
 }
 
+// sample/queryResult 将 promql.Vector 转为模板友好的 map 结构。
 // A version of vector that's easier to use from templates.
 type sample struct {
 	Labels map[string]string
@@ -82,6 +85,7 @@ func (q queryResultByLabelSorter) Swap(i, j int) {
 	q.results[i], q.results[j] = q.results[j], q.results[i]
 }
 
+// QueryFunc 在指定时刻执行 PromQL，供模板内 query 函数调用。
 // QueryFunc executes a PromQL query at the given time.
 type QueryFunc func(context.Context, string, time.Time) (promql.Vector, error)
 
@@ -108,6 +112,7 @@ func query(ctx context.Context, q string, ts time.Time, queryFn QueryFunc) (quer
 	return result, nil
 }
 
+// Expander 持有模板文本、上下文与 QueryFunc，提供 Expand/ExpandHTML。
 // Expander executes templates in text or HTML mode with a common set of Prometheus template functions.
 type Expander struct {
 	text    string
@@ -295,6 +300,7 @@ func NewTemplateExpander(
 	}
 }
 
+// AlertTemplateData 构造告警模板根对象（Labels、ExternalURL、Value 等）。
 // AlertTemplateData returns the interface to be used in expanding the template.
 func AlertTemplateData(labels, externalLabels map[string]string, externalURL string, smpl promql.Sample) any {
 	res := struct {
@@ -323,6 +329,7 @@ func (te Expander) Funcs(fm text_template.FuncMap) {
 }
 
 // Expand expands a template in text (non-HTML) mode.
+// Expand 以 text/template 模式渲染，失败时递增 expansion_failures 指标。
 func (te Expander) Expand() (result string, resultErr error) {
 	// It'd better to have no alert description than to kill the whole process
 	// if there's a bug in the template.
@@ -433,6 +440,7 @@ func templateFunctions() text_template.FuncMap {
 }
 
 // RegisterFeatures registers all template functions with the feature registry.
+// RegisterFeatures 向 feature registry 注册全部模板函数名。
 func RegisterFeatures(r features.Collector) {
 	// Get all function names from the template function map.
 	funcMap := templateFunctions()

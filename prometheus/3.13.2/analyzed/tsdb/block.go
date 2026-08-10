@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TSDB 持久化 Block：磁盘上连续时间范围的 index+chunks+tombstones，提供 IndexReader/ChunkReader 与 Delete/CleanTombstones/Snapshot 等操作。
+
 package tsdb
 
 import (
@@ -38,6 +40,7 @@ import (
 	"github.com/prometheus/prometheus/tsdb/tombstones"
 )
 
+// IndexWriter 按序写入 block 倒排索引（symbols/postings/series）。
 // IndexWriter serializes the index for a block of series data.
 // The methods must be called in the order they are specified in.
 type IndexWriter interface {
@@ -57,6 +60,7 @@ type IndexWriter interface {
 	Close() error
 }
 
+// IndexReader 提供 Postings、LabelValues/Names 与 Series 解码只读访问。
 // IndexReader provides reading access of serialized index data.
 type IndexReader interface {
 	// Symbols return an iterator over sorted string symbols that may occur in
@@ -160,6 +164,7 @@ type BlockReader interface {
 	Size() int64
 }
 
+// BlockMeta 记录 ULID、时间范围、compaction 来源与 stats。
 // BlockMeta provides meta information about a block.
 type BlockMeta struct {
 	// Unique identifier for the block and its contents. Changes on compaction.
@@ -309,6 +314,7 @@ func writeMetaFile(logger *slog.Logger, dir string, meta *BlockMeta) (int64, err
 	return int64(n), fileutil.Replace(tmp, path)
 }
 
+// Block 封装目录路径、index/chunk/tombstone 读取器与并发读计数。
 // Block represents a directory of time series data covering a continuous time range.
 type Block struct {
 	mtx            sync.RWMutex
@@ -334,6 +340,7 @@ type Block struct {
 	numBytesMeta      int64
 }
 
+// OpenBlock 读取 meta.json、打开 index 与 chunks 目录并校验完整性。
 // OpenBlock opens the block in the directory. It can be passed a chunk pool, which is used
 // to instantiate chunk structs.
 func OpenBlock(logger *slog.Logger, dir string, pool chunkenc.Pool, postingsDecoderFactory PostingsDecoderFactory) (pb *Block, err error) {
@@ -440,6 +447,7 @@ func (pb *Block) startRead() error {
 }
 
 // Index returns a new IndexReader against the block data.
+// Index 返回 blockIndexReader，委托底层 index.Reader。
 func (pb *Block) Index() (IndexReader, error) {
 	if err := pb.startRead(); err != nil {
 		return nil, err
@@ -587,6 +595,7 @@ func (r blockChunkReader) Close() error {
 	return nil
 }
 
+// Delete 在 [mint,maxt] 内匹配 series 并写入 tombstone 文件。
 // Delete matching series between mint and maxt in the block.
 func (pb *Block) Delete(ctx context.Context, mint, maxt int64, ms ...*labels.Matcher) error {
 	pb.mtx.Lock()
@@ -655,6 +664,7 @@ Outer:
 	return nil
 }
 
+// CleanTombstones 若有 tombstone 则 compact 重写 block，可能产生新 ULID 或空 block。
 // CleanTombstones will remove the tombstones and rewrite the block (only if there are any tombstones).
 // If there was a rewrite, then it returns the ULID of new blocks written, else nil.
 // If a resultant block is empty (tombstones covered the whole block), then it returns an empty slice.
@@ -682,6 +692,7 @@ func (pb *Block) CleanTombstones(dest string, c Compactor) ([]ulid.ULID, bool, e
 	return uids, true, nil
 }
 
+// Snapshot 硬链接复制 block 目录到目标路径，供备份或迁移。
 // Snapshot creates snapshot of the block into dir.
 func (pb *Block) Snapshot(dir string) error {
 	blockDir := filepath.Join(dir, pb.meta.ULID.String())

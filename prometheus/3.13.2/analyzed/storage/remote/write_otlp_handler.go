@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OTLP HTTP 写入处理器：将 OpenTelemetry pmetric 转为 Prometheus 样本，可选 delta→cumulative 转换或原生 delta 摄入。
+
 package remote
 
 import (
@@ -38,6 +40,7 @@ import (
 	otlptranslator "github.com/prometheus/prometheus/storage/remote/otlptranslator/prometheusremotewrite"
 )
 
+// OTLPOptions 控制 delta 转换、原生 delta、lookbackDelta 与 type/unit 标签。
 type OTLPOptions struct {
 	// Convert delta samples to their cumulative equivalent by aggregating in-memory
 	ConvertDelta bool
@@ -52,6 +55,7 @@ type OTLPOptions struct {
 	EnableTypeAndUnitLabels bool
 }
 
+// NewOTLPWriteHandler 可选挂载 deltatocumulative processor 处理 delta 时序。
 // NewOTLPWriteHandler creates a http.Handler that accepts OTLP write requests and
 // writes them to the provided appendable.
 func NewOTLPWriteHandler(logger *slog.Logger, reg prometheus.Registerer, appendable storage.AppendableV2, configFunc func() config.Config, opts OTLPOptions) http.Handler {
@@ -99,6 +103,7 @@ func NewOTLPWriteHandler(logger *slog.Logger, reg prometheus.Registerer, appenda
 	return wh
 }
 
+// rwExporter 实现 consumer.Metrics，调用 OTLP→Prometheus 转换器并 Commit/Rollback。
 type rwExporter struct {
 	logger                  *slog.Logger
 	appendable              storage.AppendableV2
@@ -154,6 +159,7 @@ type otlpWriteHandler struct {
 	d2cConsumer     consumer.Metrics // converts deltas to cumulative
 }
 
+// ServeHTTP 解码 OTLP 请求，有 delta 时走 d2c 路径否则 defaultConsumer。
 func (h *otlpWriteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req, err := DecodeOTLPWriteRequest(r)
 	if err != nil {
@@ -189,6 +195,7 @@ func (h *otlpWriteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// hasDelta 扫描 metrics 是否含 Delta 聚合 temporality，用于选择消费路径。
 func hasDelta(md pmetric.Metrics) bool {
 	for i := range md.ResourceMetrics().Len() {
 		sms := md.ResourceMetrics().At(i).ScopeMetrics()
@@ -214,6 +221,7 @@ func hasDelta(md pmetric.Metrics) bool {
 	return false
 }
 
+// otlpInstrumentedAppendable 包装 AppendableV2，统计缺失 metadata 与乱序 exemplar。
 type otlpInstrumentedAppendable struct {
 	storage.AppendableV2
 
