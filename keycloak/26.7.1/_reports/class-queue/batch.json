@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:43:43Z",
-  "files": [
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/StatusType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/SubjectQueryAbstractType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/TerminateType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/CanonicalizationMethodType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/DSAKeyValueType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/DigestMethodType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/KeyInfoType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/KeyValueType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/ManifestType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/ObjectType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/PGPDataType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/RSAKeyValueType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/ReferenceType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/RetrievalMethodType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/xmlsec/w3/xmldsig/SPKIDataType.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3358,
-  "done": 2625
+  "done": 2640
 }
