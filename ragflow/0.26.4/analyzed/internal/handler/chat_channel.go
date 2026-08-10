@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// chat_channel.go — 聊天渠道（ChatChannel）CRUD：对接第三方 IM/通知渠道配置并关联 chat_id。
+
+
 package handler
 
 import (
@@ -24,6 +27,7 @@ import (
 	"ragflow/internal/service"
 )
 
+// ChatChannelService 渠道服务接口
 type ChatChannelService interface {
 	CreateChatChannel(tenantID, name, channelType string, config entity.JSONMap, chatID *string) (*entity.ChatChannel, error)
 	List(tenantID string) ([]*entity.ChatChannelListResponse, error)
@@ -32,19 +36,22 @@ type ChatChannelService interface {
 	DeleteChatChannel(userID, channelID string) (bool, common.ErrorCode, error)
 }
 
+// ChatChannelHandler 聊天渠道 HTTP 处理器
 type ChatChannelHandler struct {
 	chatChannelService ChatChannelService
 }
 
+// NewChatChannelHandler 注入渠道服务
 func NewChatChannelHandler(chatChannelService ChatChannelService) *ChatChannelHandler {
 	return &ChatChannelHandler{chatChannelService: chatChannelService}
 }
 
-// NewChatChannel keeps the existing constructor shape used by boot code.
+// NewChatChannel 启动代码使用的无参构造，内部 NewChatChannelService shape used by boot code.
 func NewChatChannel() *ChatChannelHandler {
 	return NewChatChannelHandler(service.NewChatChannelService())
 }
 
+// CreateChatChannelRequest 创建渠道请求体
 type CreateChatChannelRequest struct {
 	Name    string         `json:"name" binding:"required"`
 	Channel string         `json:"channel" binding:"required"`
@@ -52,7 +59,7 @@ type CreateChatChannelRequest struct {
 	ChatID  *string        `json:"chat_id"`
 }
 
-// CreateChatChannel handles POST /chat-channels.
+// CreateChatChannel POST /chat-channels 创建渠道
 func (h *ChatChannelHandler) CreateChatChannel(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -80,7 +87,7 @@ func (h *ChatChannelHandler) CreateChatChannel(c *gin.Context) {
 	common.SuccessWithData(c, row, "success")
 }
 
-// ListChatChannel handles GET /chat-channels.
+// ListChatChannel GET /chat-channels 列出当前用户渠道
 func (h *ChatChannelHandler) ListChatChannel(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -96,7 +103,7 @@ func (h *ChatChannelHandler) ListChatChannel(c *gin.Context) {
 	common.SuccessWithData(c, rows, "success")
 }
 
-// GetChatChannel handles GET /chat-channels/:channel_id.
+// GetChatChannel 获取单个渠道详情
 func (h *ChatChannelHandler) GetChatChannel(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -125,7 +132,7 @@ func (h *ChatChannelHandler) GetChatChannel(c *gin.Context) {
 	common.SuccessWithData(c, channel, "success")
 }
 
-// UpdateChatChannel handles PATCH /chat-channels/:channel_id.
+// UpdateChatChannel PATCH 更新渠道配置
 func (h *ChatChannelHandler) UpdateChatChannel(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -160,7 +167,7 @@ func (h *ChatChannelHandler) UpdateChatChannel(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// DeleteChatChannel handles DELETE /chat-channels/:channel_id.
+// DeleteChatChannel DELETE 删除渠道
 func (h *ChatChannelHandler) DeleteChatChannel(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -189,6 +196,7 @@ func (h *ChatChannelHandler) DeleteChatChannel(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
+// unwrapChatChannelPayload 解包 {data:{...}} 嵌套
 func unwrapChatChannelPayload(payload map[string]interface{}) map[string]interface{} {
 	if data, ok := payload["data"].(map[string]interface{}); ok {
 		return data
@@ -196,6 +204,7 @@ func unwrapChatChannelPayload(payload map[string]interface{}) map[string]interfa
 	return payload
 }
 
+// writeChatChannelError 统一渠道错误响应形状
 func writeChatChannelError(c *gin.Context, code common.ErrorCode, message string) {
 	if code == common.CodeAuthenticationError && message == "No authorization." {
 		common.ResponseWithCodeData(c, code, false, message)
@@ -204,9 +213,12 @@ func writeChatChannelError(c *gin.Context, code common.ErrorCode, message string
 	common.ResponseWithCodeData(c, code, nil, message)
 }
 
+// chatChannelErrMsg 优先返回 err.Error，否则 code.Message
 func chatChannelErrMsg(code common.ErrorCode, err error) string {
 	if err != nil {
 		return err.Error()
 	}
 	return code.Message()
 }
+
+// 鉴权失败且文案为 No authorization. 时 data 返回 false；Update 支持 payload.data  unwrap。

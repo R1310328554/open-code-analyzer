@@ -12,9 +12,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent_attachment.go — 智能体附件下载与预览：对齐 Python download_attachment / preview_attachment；支持 inline 安全类型预览与 attachment 强制下载。
+
 //
 
-// Attachment download & preview handlers.
+// 附件下载与预览处理器（见下方 Python 对照说明）。
 //
 // Mirrors the Python handlers in api/apps/restful_apis/agent_api.py:
 //   - download_attachment (agent_api.py:2368)
@@ -39,13 +42,13 @@ import (
 	"ragflow/internal/utility"
 )
 
-// agentAttachmentFileService is the subset of FileService used by
+// agentAttachmentFileService 附件下载所需的 FileService 子集 of FileService used by
 // the attachment-download handler.
 type agentAttachmentFileService interface {
 	DownloadAgentFile(tenantID, location string) ([]byte, error)
 }
 
-// attachmentRequestMetadata holds the parsed query params used when
+// attachmentRequestMetadata 解析后的 ext/mime/filename 元数据 params used when
 // streaming an attachment. Mirrors Python _attachment_request_metadata().
 type attachmentRequestMetadata struct {
 	ContentType string
@@ -53,7 +56,7 @@ type attachmentRequestMetadata struct {
 	Filename    string
 }
 
-// attachmentRequestMeta parses ext, mime_type, and filename from the
+// attachmentRequestMeta 从 query 解析附件展示元数据, and filename from the
 // request query string and resolves the content type. Mirrors Python
 // _attachment_request_metadata().
 func attachmentRequestMeta(c *gin.Context) attachmentRequestMetadata {
@@ -69,7 +72,7 @@ func attachmentRequestMeta(c *gin.Context) attachmentRequestMetadata {
 	}
 }
 
-// streamAgentAttachment fetches the blob from storage and writes it to
+// streamAgentAttachment 拉取存储 blob 并按 inline/attachment 写响应头 from storage and writes it to
 // the response with the appropriate Content-Disposition header.
 // When inline=true, uses SetPreviewFileResponseHeaders (inline for
 // safe types, attachment for dangerous ones). When inline=false,
@@ -102,7 +105,7 @@ func (h *AgentHandler) streamAgentAttachment(c *gin.Context, tenantID, attachmen
 	c.Data(http.StatusOK, contentType, blob)
 }
 
-// DownloadAttachment GET /api/v1/agents/attachments/<attachment_id>/download
+// DownloadAttachment 下载附件，可选 ?disposition=inline/<attachment_id>/download
 //
 // Supports optional ?disposition=inline for browsers that prefer inline
 // rendering. Mirrors Python download_attachment() at agent_api.py:2507.
@@ -138,7 +141,7 @@ func (h *AgentHandler) DownloadAttachment(c *gin.Context) {
 	h.streamAgentAttachment(c, user.ID, attachmentID, inline)
 }
 
-// PreviewAttachment GET /api/v1/agents/attachments/<attachment_id>/preview
+// PreviewAttachment 预览附件，安全类型 inline、危险类型 attachment/<attachment_id>/preview
 //
 // Returns the attachment with Content-Disposition: inline for safe types
 // (PDF, images, Markdown, etc.) and forces attachment for dangerous types
@@ -164,3 +167,5 @@ func (h *AgentHandler) PreviewAttachment(c *gin.Context) {
 
 	h.streamAgentAttachment(c, user.ID, attachmentID, true)
 }
+
+// 附件 ID 仅做 filepath.Base 与 CR/LF 消毒，形状校验交由存储层；tenant 使用 user.ID（单租户会话模型）。

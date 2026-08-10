@@ -12,11 +12,14 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent_webhook_schema.go — Webhook Schema 辅助：extractBySchema、autoCastValue、validateType，对齐 Python agent_api.py:1896-2051。
+
 //
 
 package handler
 
-// Webhook schema helpers.
+// Webhook Schema 提取与类型校验辅助函数。
 //
 // These mirror api/apps/restful_apis/agent_api.py:1896-2051 (extract_by_schema,
 // default_for_type, auto_cast_value, validate_type) from the Python
@@ -51,6 +54,7 @@ import (
 //   - "array"/"array<...>" → []any{}
 //   - "null"        → nil
 //   - anything else → nil
+// defaultForType 返回类型的 Python 式默认值
 func defaultForType(t string) any {
 	switch t {
 	case "file":
@@ -77,6 +81,7 @@ func defaultForType(t string) any {
 // to the schema-expected type when possible.
 //
 // Returns an error when conversion is impossible (e.g. "abc" → number).
+// autoCastValue 将字符串等值自动转换为 schema 期望类型
 func autoCastValue(value any, expectedType string) (any, error) {
 	if _, isString := value.(string); !isString {
 		// Non-string values are passed through unchanged; the Python
@@ -133,6 +138,7 @@ func autoCastValue(value any, expectedType string) (any, error) {
 // validateType mirrors python's validate_type at agent_api.py:2019-2051.
 // It returns true when `value` is structurally compatible with type `t`.
 // Unknown types pass through (python parity: agent_api.py:2051).
+// validateType 判断值是否与 schema 类型兼容
 func validateType(value any, t string) bool {
 	if t == "" {
 		return true
@@ -194,6 +200,7 @@ func validateType(value any, t string) bool {
 //   - if missing (optional) → use defaultForType(prop.type)
 //   - if present → autoCastValue then validateType; mismatch raises
 //   - returns the cleaned map; nil `data` returns an empty map (NOT nil).
+// extractBySchema 按 schema 从 data 提取命名区块（query/headers/body）
 func extractBySchema(data map[string]any, schema map[string]any, name string) (map[string]any, error) {
 	if data == nil {
 		data = map[string]any{}
@@ -247,6 +254,7 @@ func extractBySchema(data map[string]any, schema map[string]any, name string) (m
 // stringSlice accepts either a []string or []any for the schema's
 // `required` field. Mirrors the python list-or-tuple-or-set union
 // handling at agent_api.py:1788-1798.
+// stringSlice 将 JSON 值转为 []string
 func stringSlice(v any) []string {
 	switch s := v.(type) {
 	case []string:
@@ -263,6 +271,7 @@ func stringSlice(v any) []string {
 	return nil
 }
 
+// contains 判断字符串切片是否包含 needle
 func contains(haystack []string, needle string) bool {
 	for _, s := range haystack {
 		if s == needle {
@@ -271,3 +280,5 @@ func contains(haystack []string, needle string) bool {
 	}
 	return false
 }
+
+// 未知 schema 类型按 Python parity 放行；转换失败返回 error 由上层映射为 102。

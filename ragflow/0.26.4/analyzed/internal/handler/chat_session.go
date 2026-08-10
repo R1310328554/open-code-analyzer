@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// chat_session.go — 对话会话与 Chat Completions：会话 CRUD、流式/非流式补全、消息反馈与删除。
+
 //
 
 package handler
@@ -29,13 +32,13 @@ import (
 	"ragflow/internal/service"
 )
 
-// ChatSessionHandler chat session (conversation) handler
+// ChatSessionHandler 对话会话与补全处理器
 type ChatSessionHandler struct {
 	chatSessionService *service.ChatSessionService
 	userService        *service.UserService
 }
 
-// NewChatSessionHandler create chat session handler
+// NewChatSessionHandler 构造 ChatSessionHandler
 func NewChatSessionHandler(chatSessionService *service.ChatSessionService, userService *service.UserService) *ChatSessionHandler {
 	return &ChatSessionHandler{
 		chatSessionService: chatSessionService,
@@ -43,7 +46,7 @@ func NewChatSessionHandler(chatSessionService *service.ChatSessionService, userS
 	}
 }
 
-// ListChatSessions list chat sessions for a dialog
+// ListChatSessions 列出指定 chat_id 下的会话
 // @Summary List Chat Sessions
 // @Description Get list of chat sessions for a specific dialog
 // @Tags chat_session
@@ -82,6 +85,7 @@ func (h *ChatSessionHandler) ListChatSessions(c *gin.Context) {
 	common.SuccessWithData(c, result.Sessions, "success")
 }
 
+// ChatCompletionsRequest /chat/completions 请求体
 type ChatCompletionsRequest struct {
 	ChatID                 string                   `json:"chat_id,omitempty"`
 	SessionID              string                   `json:"session_id,omitempty"`
@@ -101,7 +105,7 @@ type ChatCompletionsRequest struct {
 	MaxTokens              *int                     `json:"max_tokens,omitempty"`
 }
 
-// ChatCompletions chat completion
+// ChatCompletions 默认 SSE 流式；stream:false 返回 JSON
 // @Summary Chat Completion
 // @Description Send messages to the chat model and get a response.
 // @Description Default is streaming (text/event-stream); set stream:false for JSON.
@@ -237,6 +241,7 @@ func (h *ChatSessionHandler) ChatCompletions(c *gin.Context) {
 	}
 }
 
+// GetSession 获取单个会话
 func (h *ChatSessionHandler) GetSession(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -255,7 +260,7 @@ func (h *ChatSessionHandler) GetSession(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// CreateSession create a session in a dialog
+// CreateSession 在对话下创建新会话
 func (h *ChatSessionHandler) CreateSession(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -301,7 +306,7 @@ func (h *ChatSessionHandler) CreateSession(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// DeleteSessions delete a session in a dialog
+// DeleteSessions 按请求体批量或单个删除会话
 func (h *ChatSessionHandler) DeleteSessions(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -347,6 +352,7 @@ func (h *ChatSessionHandler) DeleteSessions(c *gin.Context) {
 	common.SuccessWithData(c, result, message)
 }
 
+// UpdateSession PATCH 更新会话元数据
 func (h *ChatSessionHandler) UpdateSession(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -380,6 +386,7 @@ func (h *ChatSessionHandler) UpdateSession(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
+// DeleteSessionMessage 删除会话中的单条消息
 func (h *ChatSessionHandler) DeleteSessionMessage(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -401,6 +408,7 @@ func (h *ChatSessionHandler) DeleteSessionMessage(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
+// UpdateMessageFeedback 更新消息点赞/点踩等反馈
 func (h *ChatSessionHandler) UpdateMessageFeedback(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -437,3 +445,5 @@ func (h *ChatSessionHandler) UpdateMessageFeedback(c *gin.Context) {
 	}
 	common.SuccessWithData(c, result, "success")
 }
+
+// ChatCompletions 归一化 session_id/conversation_id；未知 JSON 字段作为 kwargs 透传；流式模式 goroutine + c.Stream。

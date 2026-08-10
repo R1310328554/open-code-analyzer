@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// api_token.go — 租户 API Key 管理：ListAPIKeys / CreateKey / DeleteKey，仅 owner 角色可操作。
+
 //
 
 package handler
@@ -27,8 +30,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ListAPIKeys 列出当前租户的全部 API Key
 func (h *SystemHandler) ListAPIKeys(c *gin.Context) {
-	// Get current user from context
+	// 从 gin 上下文读取当前登录用户
 	user, exists := c.Get("user")
 	if !exists {
 		common.ResponseWithHttpCodeData(c, http.StatusUnauthorized, 401, nil, "Unauthorized")
@@ -41,7 +45,7 @@ func (h *SystemHandler) ListAPIKeys(c *gin.Context) {
 		return
 	}
 
-	// Get user's tenant with owner role
+	// 查询用户 owner 角色所属租户
 	userTenantDAO := dao.NewUserTenantDAO()
 	tenants, err := userTenantDAO.GetByUserIDAndRole(userModel.ID, "owner")
 	if err != nil || len(tenants) == 0 {
@@ -51,7 +55,7 @@ func (h *SystemHandler) ListAPIKeys(c *gin.Context) {
 
 	tenantID := tenants[0].TenantID
 
-	// Get keys for the tenant
+	// 拉取租户下全部 Key
 	keys, err := h.systemService.ListAPIKeys(tenantID)
 	if err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusInternalServerError, 500, nil, "Failed to list keys")
@@ -61,6 +65,7 @@ func (h *SystemHandler) ListAPIKeys(c *gin.Context) {
 	common.SuccessWithData(c, keys, "success")
 }
 
+// CreateKey 为租户创建新 API Key
 func (h *SystemHandler) CreateKey(c *gin.Context) {
 	// Get current user from context
 	user, exists := c.Get("user")
@@ -85,14 +90,14 @@ func (h *SystemHandler) CreateKey(c *gin.Context) {
 
 	tenantID := tenants[0].TenantID
 
-	// Parse request
+	// 解析创建请求体
 	var req service.CreateAPIKeyRequest
 	if err = c.ShouldBind(&req); err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, 400, nil, "Invalid request")
 		return
 	}
 
-	// Create key
+	// 调用服务层创建 Key
 	key, err := h.systemService.CreateAPIKey(tenantID, &req)
 	if err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusInternalServerError, 500, nil, "Failed to create key")
@@ -102,6 +107,7 @@ func (h *SystemHandler) CreateKey(c *gin.Context) {
 	common.SuccessWithData(c, key, "success")
 }
 
+// DeleteKey 按 path 参数删除指定 Key
 func (h *SystemHandler) DeleteKey(c *gin.Context) {
 	// Get current user from context
 	user, exists := c.Get("user")
@@ -126,14 +132,14 @@ func (h *SystemHandler) DeleteKey(c *gin.Context) {
 
 	tenantID := tenants[0].TenantID
 
-	// Get key from path parameter
+	// 从路径读取待删除的 key
 	key := c.Param("key")
 	if key == "" {
 		common.ResponseWithHttpCodeData(c, http.StatusBadRequest, 400, nil, "Key is required")
 		return
 	}
 
-	// Delete key
+	// 调用服务层删除 Key
 	if err = h.systemService.DeleteAPIKey(tenantID, key); err != nil {
 		common.ResponseWithHttpCodeData(c, http.StatusInternalServerError, 500, nil, "Failed to delete key")
 		return
@@ -141,3 +147,5 @@ func (h *SystemHandler) DeleteKey(c *gin.Context) {
 
 	common.SuccessWithData(c, true, "success")
 }
+
+// 三个端点均要求 context 中存在 *entity.User 且能解析 owner 租户；无租户时返回 400 Tenant not found。

@@ -12,9 +12,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent_upload.go — POST /api/v1/agents/:canvas_id/upload：multipart 上传或 ?url= 远程导入，64MB 上限，画布访问 103 校验。
+
 //
 
-// Gap B — `POST /api/v1/agents/<agent_id>/upload` (Python
+// Gap B — 智能体文件上传端点（Python agent_api.py:761） (Python
 // api/apps/restful_apis/agent_api.py:761-790).
 //
 // Mirrors the python upload_agent_file handler:
@@ -42,18 +45,18 @@ import (
 	"ragflow/internal/dao"
 )
 
-// uploadMaxBytes caps the multipart form body at 64 MB. The python
+// uploadMaxBytes multipart 表单硬上限 64 MiB at 64 MB. The python
 // reference relies on Quart/werkzeug defaults which are well above
 // this; we set it explicitly so the cap is auditable and stable across
 // test environments.
 const uploadMaxBytes int64 = 64 << 20 // 64 MiB
 
-// canvasNoAccessMessage mirrors the python permission error
+// canvasNoAccessMessage 与 Python 103 权限文案保持一致
 // (api/apps/restful_apis/agent_api.py:78,89). Kept identical to
 // python so existing clients can pattern-match the message text.
 const canvasNoAccessMessage = "Make sure you have permission to access the agent."
 
-// UploadAgentFile POST /api/v1/agents/:canvas_id/upload
+// UploadAgentFile 上传单/多文件或 URL 导入
 func (h *AgentHandler) UploadAgentFile(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -155,3 +158,5 @@ func (h *AgentHandler) UploadAgentFile(c *gin.Context) {
 		"message": "success",
 	})
 }
+
+// 单文件+url 走 UploadFromURL；多文件忽略 url；MaxBytesReader 在 ParseMultipartForm 前限制请求体。

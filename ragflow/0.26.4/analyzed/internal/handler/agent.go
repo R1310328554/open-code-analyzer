@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent.go — 智能体（Agent）画布 HTTP 处理器：CRUD、版本发布、SSE 运行/取消、会话管理、Chat Completions、Webhook 日志、重置与 Rerun 等 Gin 端点。
+
 //
 
 package handler
@@ -40,8 +43,8 @@ import (
 	dslpkg "ragflow/internal/agent/dsl"
 )
 
-// AgentHandler agent handler
-// fileUploader is the subset of FileService used by agent handlers.
+// AgentHandler 智能体画布 HTTP 处理器。
+// fileUploader FileService 在 Agent 处理器中使用的子集 used by agent handlers.
 //
 // The full FileService also has UploadFile, but it is consumed by
 // the FileHandler (handler/file.go), not by any agent handler, so
@@ -58,7 +61,7 @@ type agentFileService interface {
 	UploadFromURL(tenantID, rawURL string) (map[string]interface{}, error)
 }
 
-// chatAgentService is the subset of AgentService used by the chat-completion
+// chatAgentService Chat Completions/RunAgent 所需的 AgentService 子集 used by the chat-completion
 // endpoints (AgentChatCompletions, RunAgent). Kept as a separate interface so
 // handler tests can inject a fake RunAgent without standing up the full
 // AgentService (DB DAOs, eino runner, etc.). The production wiring in
@@ -68,7 +71,7 @@ type chatAgentService interface {
 	RunAgent(ctx context.Context, userID, canvasID, sessionID, version string, userInput any) (<-chan canvas.RunEvent, error)
 }
 
-// documentAccessChecker is the minimal surface RerunAgent needs
+// documentAccessChecker RerunAgent 校验文档归属时所需的 DocumentService 最小接口
 // from DocumentService. Defined as an interface (instead of taking
 // the concrete *service.DocumentService) so handler tests can
 // inject a deny-all stub without spinning up the full service
@@ -79,7 +82,7 @@ type documentAccessChecker interface {
 	Accessible(docID, userID string) bool
 }
 
-// AgentHandler agent handler
+// AgentHandler 聚合 AgentService、文件服务与画布加载器。
 type AgentHandler struct {
 	agentService *service.AgentService
 	chatRunner   chatAgentService
@@ -93,7 +96,7 @@ type AgentHandler struct {
 	documentService documentAccessChecker
 }
 
-// WithDocumentService injects the document service used by
+// WithDocumentService 注入文档服务，供 RerunAgent 校验 doc 归属 used by
 // RerunAgent to enforce DocumentService.accessible(docID, tenantID)
 // before re-running. Returns the receiver for chaining in
 // server_main wiring.
@@ -102,7 +105,7 @@ func (h *AgentHandler) WithDocumentService(s documentAccessChecker) *AgentHandle
 	return h
 }
 
-// NewAgentHandler create agent handler
+// NewAgentHandler 构造 AgentHandler 并绑定生产环境服务
 
 func NewAgentHandler(agentService *service.AgentService, fileService *service.FileService) *AgentHandler {
 	return &AgentHandler{
@@ -113,7 +116,7 @@ func NewAgentHandler(agentService *service.AgentService, fileService *service.Fi
 	}
 }
 
-// ListAgents lists agent canvases for the current user.
+// ListAgents 分页列出当前用户可访问的智能体画布。
 // @Summary List Agents
 // @Description List agent canvases accessible to the current user (Home dashboard tile)
 // @Tags agents
@@ -198,7 +201,7 @@ func (h *AgentHandler) ListAgents(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// mapAgentError normalises service-layer errors onto the existing
+// mapAgentError 将服务层错误映射为统一 {code,data,message} 响应信封 onto the existing
 // {code, data, message} response envelope used by every other handler.
 //
 // Three classes:
@@ -230,7 +233,7 @@ func mapAgentError(err error) (common.ErrorCode, string) {
 	return common.CodeDataError, err.Error()
 }
 
-// CreateAgent creates a new agent canvas.
+// CreateAgent 创建新的智能体画布。
 // @Summary Create Agent
 // @Tags agents
 // @Accept json
@@ -258,7 +261,7 @@ func (h *AgentHandler) CreateAgent(c *gin.Context) {
 	common.SuccessWithData(c, row, "success")
 }
 
-// GetAgent returns one canvas by ID.
+// GetAgent 按 canvas_id 返回单个画布详情。
 // @Summary Get Agent
 // @Tags agents
 // @Produce json
@@ -288,10 +291,10 @@ func (h *AgentHandler) GetAgent(c *gin.Context) {
 	common.SuccessWithData(c, row, "success")
 }
 
-// updateAgentRequest is the wire shape for PUT /api/v1/agents/:canvas_id.
+// updateAgentRequest PUT /agents/:id 的请求体形状 for PUT /api/v1/agents/:canvas_id.
 type updateAgentRequest map[string]interface{}
 
-// UpdateAgent applies a partial update to the canvas draft.
+// UpdateAgent 对画布草稿做部分字段更新。 to the canvas draft.
 // @Summary Update Agent
 // @Tags agents
 // @Accept json
@@ -323,7 +326,7 @@ func (h *AgentHandler) UpdateAgent(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// DeleteAgent removes the canvas and cascades to its versions.
+// DeleteAgent 删除画布并级联删除其版本。 and cascades to its versions.
 // @Summary Delete Agent
 // @Tags agents
 // @Produce json
@@ -345,7 +348,7 @@ func (h *AgentHandler) DeleteAgent(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// ListTemplates lists every canvas template available to authenticated users.
+// ListTemplates 列出全部可克隆的画布模板。 available to authenticated users.
 // @Summary List Agent Templates
 // @Description List the catalogue of canvas templates that authenticated users can clone.
 // @Tags agents
@@ -372,7 +375,7 @@ func (h *AgentHandler) ListTemplates(c *gin.Context) {
 	common.SuccessWithData(c, templates, "success")
 }
 
-// RunAgent returns an SSE stream of execution events. The Phase 5 stub emits
+// RunAgent 以 SSE 流推送画布执行事件。 of execution events. The Phase 5 stub emits
 // a single "Phase 5 wiring pending" event and closes; the real eino run
 // loop will replace the channel source in service.AgentService.RunAgent.
 // @Summary Run Agent (SSE)
@@ -414,7 +417,7 @@ func (h *AgentHandler) RunAgent(c *gin.Context) {
 	}
 }
 
-// readUserInput extracts the user_input field from the JSON body if
+// readUserInput 从 JSON 体或 query 提取 user_input from the JSON body if
 // present, otherwise from the ?user_input= query string. An empty body
 // (no body sent) is treated as "" so the resume cycle still works
 // when the client only passes ?session_id=...&user_input=... on the URL.
@@ -440,7 +443,7 @@ func readUserInput(c *gin.Context) string {
 	return c.Query("user_input")
 }
 
-// sanitiseRunEventError passes through the error event payload
+// sanitiseRunEventError 透传 runner 序列化的错误事件载荷 the error event payload
 // unchanged. The runner serialises canvas.ErrorEvent ({"message": ...})
 // before push, so when the payload round-trips through JSON the
 // message field is already preserved. Heuristic sanitisation is
@@ -457,7 +460,7 @@ func sanitiseRunEventError(data string) string {
 	return data
 }
 
-// CancelAgent signals the in-flight run to stop.
+// CancelAgent 向进行中的运行发送取消信号。 to stop.
 // @Summary Cancel Agent Run
 // @Tags agents
 // @Produce json
@@ -479,14 +482,14 @@ func (h *AgentHandler) CancelAgent(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// publishAgentRequest is the wire shape for POST /api/v1/agents/:canvas_id/publish.
+// publishAgentRequest 发布版本的请求体结构 /api/v1/agents/:canvas_id/publish.
 type publishAgentRequest struct {
 	Title       *string        `json:"title,omitempty"`
 	Description *string        `json:"description,omitempty"`
 	DSL         entity.JSONMap `json:"dsl,omitempty"`
 }
 
-// PublishAgent creates a new immutable version row and marks the parent canvas as released.
+// PublishAgent 创建不可变版本行并将父画布标记为已发布。 row and marks the parent canvas as released.
 // @Summary Publish Agent Version
 // @Tags agents
 // @Accept json
@@ -523,7 +526,7 @@ func (h *AgentHandler) PublishAgent(c *gin.Context) {
 	common.SuccessWithData(c, row, "success")
 }
 
-// ListVersions returns every version of a canvas, newest first.
+// ListVersions 返回画布全部版本，按时间倒序。 of a canvas, newest first.
 // @Summary List Agent Versions
 // @Tags agents
 // @Produce json
@@ -555,7 +558,7 @@ func (h *AgentHandler) ListVersions(c *gin.Context) {
 	common.SuccessWithData(c, rows, "success")
 }
 
-// GetVersion returns a single version.
+// GetVersion 返回指定 version_id 的单个版本。
 // @Summary Get Agent Version
 // @Tags agents
 // @Produce json
@@ -583,7 +586,7 @@ func (h *AgentHandler) GetVersion(c *gin.Context) {
 	common.SuccessWithData(c, row, "success")
 }
 
-// DeleteVersion removes a single version by id.
+// DeleteVersion 按 id 删除单个版本。 by id.
 // @Summary Delete Agent Version
 // @Tags agents
 // @Produce json
@@ -609,7 +612,7 @@ func (h *AgentHandler) DeleteVersion(c *gin.Context) {
 
 // --- PR2: missing routes wired up to the existing service layer ---
 
-// ListAgentTemplates GET /api/v1/agents/templates
+// ListAgentTemplates GET /api/v1/agents/templates 列出模板
 func (h *AgentHandler) ListAgentTemplates(c *gin.Context) {
 	if _, code, msg := GetUser(c); code != common.CodeSuccess {
 		common.ResponseWithCodeData(c, code, nil, msg)
@@ -623,7 +626,7 @@ func (h *AgentHandler) ListAgentTemplates(c *gin.Context) {
 	common.SuccessWithData(c, rows, "success")
 }
 
-// Prompts GET /api/v1/agents/prompts — returns the four hardcoded
+// Prompts GET /api/v1/agents/prompts 返回四条硬编码创作指南 — returns the four hardcoded
 // authoring guidelines the agent UI surfaces. The Python agent API
 // returns these from a module-level constant; we keep the same shape.
 func (h *AgentHandler) Prompts(c *gin.Context) {
@@ -639,7 +642,7 @@ func (h *AgentHandler) Prompts(c *gin.Context) {
 	}, "success")
 }
 
-// ListAgentTags list agent tags.
+// ListAgentTags 列出智能体标签。
 func (h *AgentHandler) ListAgentTags(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -656,7 +659,7 @@ func (h *AgentHandler) ListAgentTags(c *gin.Context) {
 	common.SuccessWithData(c, rows, "success")
 }
 
-// UpdateAgentTags PUT /api/v1/agents/:canvas_id/tags
+// UpdateAgentTags 更新指定画布的标签集合
 func (h *AgentHandler) UpdateAgentTags(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -679,7 +682,7 @@ func (h *AgentHandler) UpdateAgentTags(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// ListAgentSessions GET /api/v1/agents/:canvas_id/sessions
+// ListAgentSessions 分页列出画布下的运行会话
 func (h *AgentHandler) ListAgentSessions(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -718,7 +721,7 @@ func (h *AgentHandler) ListAgentSessions(c *gin.Context) {
 	common.SuccessWithData(c, resp.Data, "success")
 }
 
-// CreateAgentSession POST /api/v1/agents/:canvas_id/sessions
+// CreateAgentSession 在画布下创建新会话
 func (h *AgentHandler) CreateAgentSession(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -749,7 +752,7 @@ func (h *AgentHandler) CreateAgentSession(c *gin.Context) {
 	common.SuccessWithData(c, row, "success")
 }
 
-// GetAgentSession GET /api/v1/agents/:canvas_id/sessions/:session_id
+// GetAgentSession 获取单个会话详情
 func (h *AgentHandler) GetAgentSession(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -766,7 +769,7 @@ func (h *AgentHandler) GetAgentSession(c *gin.Context) {
 	common.SuccessWithData(c, row, "success")
 }
 
-// DeleteAgentSession DELETE /api/v1/agents/:canvas_id/sessions[/:session_id]
+// DeleteAgentSession 删除单个或批量会话[/:session_id]
 //
 // Path parameter disambiguation:
 //   - /sessions/:session_id   -> single item delete
@@ -806,7 +809,7 @@ func (h *AgentHandler) DeleteAgentSession(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// AgentChatCompletions POST /api/v1/agents/chat/completions
+// AgentChatCompletions 对 agent_id 运行画布并以 SSE 返回结果
 //
 // Runs the canvas against `agent_id` and streams the result as SSE.
 //
@@ -823,6 +826,7 @@ func (h *AgentHandler) DeleteAgentSession(c *gin.Context) {
 //     `completion_openai` at api/db/services/canvas_service.py:378-479) is
 //     still a Phase 5 TODO; until then the openai-compat branches return a
 //     hardcoded "hello" stub so the validation contracts keep passing.
+// agentChatCompletionsRequest Chat Completions 请求体
 type agentChatCompletionsRequest struct {
 	AgentID      string                   `json:"agent_id"`
 	Query        string                   `json:"query"`
@@ -835,7 +839,7 @@ type agentChatCompletionsRequest struct {
 	ReturnTrace  bool                     `json:"return_trace"`
 }
 
-// extractLastUserContent returns the content of the last message in
+// extractLastUserContent 取 messages 中最后一条 user 消息的 content of the last message in
 // `messages` whose role is "user", or "" if none is found. Mirrors the
 // Python derivation in api/apps/restful_apis/agent_api.py:1258 that drives
 // `completion_openai` when the request uses the openai-compatible wire
@@ -853,7 +857,7 @@ func extractLastUserContent(messages []map[string]interface{}) string {
 	return ""
 }
 
-// extractUserInputFromFormInputs mirrors the front-end's wait-for-user submit
+// extractUserInputFromFormInputs 从前端表单 inputs.{name}.value 提取用户输入 the front-end's wait-for-user submit
 // shape: `inputs` is an object keyed by form field name, and each entry carries
 // a nested `value`. The current chat-completion resume path consumes a single
 // string payload, so we lift the first field's value and stringify it.
@@ -885,6 +889,7 @@ func extractUserInputFromFormInputs(inputs map[string]interface{}) interface{} {
 	return out
 }
 
+// countInputValues 统计 inputs 中带 value 的字段数量
 func countInputValues(inputs map[string]interface{}) int {
 	count := 0
 	for _, raw := range inputs {
@@ -901,6 +906,7 @@ func countInputValues(inputs map[string]interface{}) int {
 	return count
 }
 
+// userInputMeta 为调试日志构造 user_input 相关 zap 字段
 func userInputMeta(userInput any) []zap.Field {
 	fields := []zap.Field{zap.String("user_input_type", fmt.Sprintf("%T", userInput))}
 	switch v := userInput.(type) {
@@ -1062,7 +1068,7 @@ func (h *AgentHandler) AgentChatCompletions(c *gin.Context) {
 	)
 }
 
-// RerunAgent POST /api/v1/agents/rerun — requires id, dsl, and
+// RerunAgent 校验 id/dsl/component_id 并校验文档归属后接受 Rerun — requires id, dsl, and
 // component_id. The Python agent API uses PipelineOperationLogService
 // and the dataflow queue, none of which the Go port has implemented
 // yet; we keep the validation envelope (101 with the "required
@@ -1124,7 +1130,7 @@ func (h *AgentHandler) RerunAgent(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// TestDBConnection POST /api/v1/agents/test_db_connection
+// TestDBConnection 测试外部数据库连接配置
 func (h *AgentHandler) TestDBConnection(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -1144,7 +1150,7 @@ func (h *AgentHandler) TestDBConnection(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// GetAgentLogs GET /api/v1/agents/:canvas_id/logs/:message_id
+// GetAgentLogs 从 Redis 读取 message 级运行日志
 //
 // Reads "{agent_id}-{message_id}-logs" from Redis (same key format
 // used by the Python agent API in api/apps/restful_apis/agent_api.py
@@ -1173,7 +1179,7 @@ func (h *AgentHandler) GetAgentLogs(c *gin.Context) {
 	common.SuccessWithData(c, data, "success")
 }
 
-// GetAgentWebhookLogs GET /api/v1/agents/:canvas_id/webhook/logs
+// GetAgentWebhookLogs 轮询 Webhook 测试 trace 事件
 //
 // The Python agent API returns 102 "Canvas not found." when the agent
 // id does not resolve to a canvas owned by the caller (see
@@ -1207,7 +1213,7 @@ func (h *AgentHandler) GetAgentWebhookLogs(c *gin.Context) {
 	}, "success")
 }
 
-// checkCanvasAccessForHandler is the shared 103 envelope helper for
+// checkCanvasAccessForHandler 共享的画布访问 103 信封辅助函数 for
 // PR2 routes that need to call service.CheckCanvasAccess and surface
 // the access-denied envelope with the same shape the existing
 // loadCanvasForUser-based handlers use.
@@ -1231,7 +1237,7 @@ func (h *AgentHandler) checkCanvasAccessForHandler(c *gin.Context, userID, canva
 	return true, common.CodeSuccess, ""
 }
 
-// ResetAgent clears the per-run state of a canvas (history, retrieval,
+// ResetAgent 清空画布运行态并重置 sys.*/env.* 全局变量 of a canvas (history, retrieval,
 // memory, path) and zeroes every "sys.*" / "env.*" global. Mirrors
 // POST /api/v1/agents/:canvas_id/reset from the Python backend at
 // api/apps/restful_apis/agent_api.py:992 — but unlike the Python
@@ -1270,3 +1276,5 @@ func (h *AgentHandler) ResetAgent(c *gin.Context) {
 	}
 	common.SuccessWithData(c, dsl, "success")
 }
+
+// Agent 处理器对齐 Python agent_api.py：mapAgentError 将未授权/不存在统一为 103；RunAgent/ChatCompletions 走 SSE；ResetAgent 不写 Redis CanvasReplica。

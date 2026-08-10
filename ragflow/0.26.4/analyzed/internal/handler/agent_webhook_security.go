@@ -12,11 +12,14 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent_webhook_security.go — Webhook 安全校验：max body、IP 白名单、Redis 限流、Token/Basic/JWT；空 security 默认 fail-closed（PR #14890）。
+
 //
 
 package handler
 
-// Webhook security helpers.
+// Webhook 安全校验辅助，对齐 Python validate_webhook_security。
 //
 // These mirror api/apps/restful_apis/agent_api.py:1602-1810
 // (validate_webhook_security + the six sub-validators) from the Python
@@ -88,7 +91,7 @@ var errWebhookFailClosed = errors.New(
 	"webhook security is required. Set allow_anonymous to true to permit unauthenticated webhooks.",
 )
 
-// validateWebhookSecurity is the orchestrator.
+// validateWebhookSecurity 按 Python 顺序编排六项子校验
 //
 // PR #14890 changed the python default: empty/nil security cfg
 // is no longer "allowed by default" — it must be a non-empty
@@ -128,6 +131,7 @@ func validateWebhookSecurity(
 // config bug. The configured limit is capped at webhookBodyMaxBytes
 // (10 MB) — exceeding that is also a config error, not silently raised.
 // The actual request size is then compared against the parsed limit.
+// validateMaxBodySize 校验 Content-Length 与配置 max_body_size
 func validateMaxBodySize(c *gin.Context, cfg map[string]any) error {
 	limit, err := parseMaxBodySize(cfg)
 	if err != nil {
@@ -162,6 +166,7 @@ func validateMaxBodySize(c *gin.Context, cfg map[string]any) error {
 // `n * bytesPerMB` and wrap to a small positive number, bypassing
 // the 10 MB cap. We check the parsed number against the cap before
 // multiplying.
+// parseMaxBodySize 解析 "Nkb"/"Nmb" 为字节数（SI 十进制）
 func parseMaxBodySize(cfg map[string]any) (int64, error) {
 	raw, ok := cfg["max_body_size"].(string)
 	if !ok || raw == "" {
@@ -201,6 +206,7 @@ func parseMaxBodySize(cfg map[string]any) (int64, error) {
 // list → allow. Supports CIDR ("10.0.0.0/8") and exact ("1.2.3.4").
 // The client IP comes from gin's c.ClientIP() which honours
 // X-Forwarded-For when trusted proxies are configured.
+// validateIPWhitelist CIDR/精确 IP 白名单校验
 func validateIPWhitelist(c *gin.Context, cfg map[string]any) error {
 	whitelist, _ := cfg["ip_whitelist"].([]any)
 	if len(whitelist) == 0 {
@@ -242,6 +248,7 @@ func validateIPWhitelist(c *gin.Context, cfg map[string]any) error {
 //
 // Strict fail-closed: any Redis error → error. The webhook handler
 // surfaces this as 102 so an operator notices a misconfiguration.
+// validateRateLimit Redis 令牌桶限流，Redis 错误 fail-closed
 func validateRateLimit(canvasID string, cfg map[string]any) error {
 	rawRL, ok := cfg["rate_limit"].(map[string]any)
 	if !ok || len(rawRL) == 0 {
@@ -300,6 +307,7 @@ func validateRateLimit(canvasID string, cfg map[string]any) error {
 // webhook access is now allowed only when the operator sets
 // `allow_anonymous: true` on the security block (mirrors
 // python agent_api.py:1659-1664).
+// validateAuth 按 auth_type 分发 Token/Basic/JWT/none
 func validateAuth(c *gin.Context, cfg map[string]any) error {
 	authType, _ := cfg["auth_type"].(string)
 	if authType == "" || authType == "none" {
@@ -327,6 +335,7 @@ func validateAuth(c *gin.Context, cfg map[string]any) error {
 // {"1","true","yes","on"} (case-insensitive, trimmed). Anything
 // else (including the key being absent) is falsy — closing the
 // implicit-anonymous gap.
+// isTruthyAllowAnonymous 判断 allow_anonymous 是否为真
 func isTruthyAllowAnonymous(cfg map[string]any) bool {
 	if cfg == nil {
 		return false
@@ -359,6 +368,7 @@ func isTruthyAllowAnonymous(cfg map[string]any) bool {
 // request without that header". We now require both header and
 // value to be non-empty configured secrets, otherwise the request
 // is rejected as misconfigured. CodeRabbit PR review #4.
+// validateTokenAuth 校验 Header 中的静态 token
 func validateTokenAuth(c *gin.Context, cfg map[string]any) error {
 	rawToken, _ := cfg["token"].(map[string]any)
 	if rawToken == nil {
@@ -379,6 +389,7 @@ func validateTokenAuth(c *gin.Context, cfg map[string]any) error {
 // gin's c.Request.BasicAuth() which parses the Authorization header
 // and returns the (user, pass, ok) triple. Empty configured
 // username/password are now rejected (CodeRabbit PR review #4).
+// validateBasicAuth HTTP Basic 认证
 func validateBasicAuth(c *gin.Context, cfg map[string]any) error {
 	rawBasic, _ := cfg["basic_auth"].(map[string]any)
 	if rawBasic == nil {
@@ -411,6 +422,7 @@ func validateBasicAuth(c *gin.Context, cfg map[string]any) error {
 // families (the python jwt library is happy to take either a string
 // or a PEM block); we mirror that with one `secret` config slot and
 // dispatch on the algorithm.
+// validateJWTAuth 校验 HS/RS/ES JWT 与 audience/issuer/claims
 func validateJWTAuth(c *gin.Context, cfg map[string]any) error {
 	rawJWT, _ := cfg["jwt"].(map[string]any)
 	if rawJWT == nil {
@@ -484,6 +496,7 @@ func validateJWTAuth(c *gin.Context, cfg map[string]any) error {
 // invokes. The dispatch mirrors the python jwt library: a string secret
 // is treated as an HMAC key for HS* algorithms, and as a PEM block for
 // RS*/ES* algorithms.
+// jwtKeyFunc 按算法构造 JWT 验签 keyfunc
 func jwtKeyFunc(alg, secret string) (jwt.Keyfunc, error) {
 	switch alg {
 	case "HS256", "HS384", "HS512":
@@ -506,6 +519,7 @@ func jwtKeyFunc(alg, secret string) (jwt.Keyfunc, error) {
 
 // collectStringSlice accepts the python-shaped `required_claims` value:
 // a single string OR a list/tuple/set. Mirrors agent_api.py:1788-1798.
+// collectStringSlice 从 JSON 数组或 CSV 收集字符串
 func collectStringSlice(v any) []string {
 	switch t := v.(type) {
 	case string:
@@ -538,6 +552,7 @@ func collectStringSlice(v any) []string {
 	return nil
 }
 
+// splitCSV 按逗号拆分并 trim
 func splitCSV(s string) []string {
 	parts := strings.Split(s, ",")
 	out := make([]string, 0, len(parts))
@@ -549,3 +564,5 @@ func splitCSV(s string) []string {
 	}
 	return out
 }
+
+// errWebhookFailClosed 统一缺失 security 与 auth_type=none 未 opt-in 的错误文案，防止探测区分；body 上限 SI 十进制 MB，略严于 Python 二进制 MB。

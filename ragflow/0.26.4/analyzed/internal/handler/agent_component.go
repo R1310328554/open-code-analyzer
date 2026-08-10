@@ -12,9 +12,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent_component.go — 组件调试与输入表单：GET input-form、POST debug；通过 DSL 解析与 runtime 工厂单组件 Invoke。
+
 //
 
-// Gap C — `GET /api/v1/agents/<canvas_id>/components/<component_id>/input-form`.
+// Gap C — 组件 input-form 查询端点（见 Python agent_api）。
 // Gap D — `POST /api/v1/agents/<canvas_id>/components/<component_id>/debug`.
 //
 // Both endpoints introspect the user_canvas DSL via
@@ -43,7 +46,7 @@ import (
 	"ragflow/internal/dao"
 )
 
-// GetComponentInputForm GET /api/v1/agents/:canvas_id/components/:component_id/input-form
+// GetComponentInputForm 返回组件输入表单 schema
 func (h *AgentHandler) GetComponentInputForm(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -79,7 +82,7 @@ func (h *AgentHandler) GetComponentInputForm(c *gin.Context) {
 	})
 }
 
-// componentInputForm returns the input-form schema for a single component.
+// componentInputForm 优先读 DSL 静态 input_form，否则运行时 GetInputForm for a single component.
 // It first tries the static input_form stored in the DSL; if the component
 // does not define one (e.g. Agent components that generate it dynamically),
 // it instantiates the runtime component and calls its GetInputForm method.
@@ -114,7 +117,7 @@ func (h *AgentHandler) componentInputForm(ctx context.Context, dslMap map[string
 	return form, nil
 }
 
-// DebugComponent POST /api/v1/agents/:canvas_id/components/:component_id/debug
+// DebugComponent 单组件调试 Invoke，params.*.value 必填
 //
 // Body shape (python parity): {"params": {"input_name": {"value": ...}, ...}}
 //
@@ -234,7 +237,7 @@ func (h *AgentHandler) DebugComponent(c *gin.Context) {
 	})
 }
 
-// mapDSLError translates a dsl extractor error into a 102 envelope.
+// mapDSLError 将 DSL 提取错误映射为 102/500 统一信封 into a 102 envelope.
 // Centralised so both handlers return consistent error shapes. The
 // default arm surfaces unknown errors as 500 (server error) so a
 // future unmapped dsl sentinel doesn't silently masquerade as a
@@ -251,3 +254,5 @@ func mapDSLError(c *gin.Context, componentID string, err error) {
 		common.ResponseWithCodeData(c, common.CodeServerError, nil, "internal: "+err.Error())
 	}
 }
+
+// 无画布权限时返回 CodeOperatingError(103) 与 Python 相同文案；debug 注入独立 CanvasState 并 seed sys.tenant_id。

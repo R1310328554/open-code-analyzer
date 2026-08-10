@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// auth.go — 认证中间件：BetaAuthMiddleware（JWT/API/beta token）与 AuthMiddleware（常规登录 + 许可证校验）。
+
 //
 
 package handler
@@ -27,12 +30,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthHandler auth handler
+// AuthHandler 认证相关 HTTP 中间件处理器
 type AuthHandler struct {
 	userService userTokenResolver
 }
 
-// userTokenResolver is the subset of UserService the auth
+// userTokenResolver UserService 令牌解析子集，便于测试注入 stub the auth
 // middleware actually depends on. We keep it as a small interface
 // so the test suite can swap in a stub without spinning up the
 // full UserService (which requires a live Redis + JWT secret).
@@ -43,14 +46,14 @@ type userTokenResolver interface {
 	GetAPITokenByBeta(authorization string) (*entity.APIToken, error)
 }
 
-// NewAuthHandler create auth handler
+// NewAuthHandler 构造 AuthHandler 并绑定生产 UserService
 func NewAuthHandler() *AuthHandler {
 	return &AuthHandler{
 		userService: service.NewUserService(),
 	}
 }
 
-// BetaAuthMiddleware resolves a user token, API token, or `beta` API token
+// BetaAuthMiddleware 解析 JWT/API/beta token 并写入 context, API token, or `beta` API token
 // from the Authorization header and sets the user on the gin.Context.
 //
 // A beta token can also be a regular user JWT or API token. Order of
@@ -122,8 +125,8 @@ func (h *AuthHandler) BetaAuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// AuthMiddleware JWT auth middleware
-// Validates that the user is authenticated and is a superuser (admin)
+// AuthMiddleware JWT/API 鉴权并校验非 superuser 与 Admin 许可证
+// 校验用户已认证且非 superuser（Admin 路由专用） and is a superuser (admin)
 func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
@@ -169,3 +172,5 @@ func (h *AuthHandler) AuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// Beta 路径不强制 Bearer 前缀；beta token 成功时写入 agent_id（*DialogID 解引用）供 GetAgentbotLogs 使用。

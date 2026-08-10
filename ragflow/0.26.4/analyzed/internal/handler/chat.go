@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// chat.go — 对话（Dialog/Chat）HTTP 处理器：列表/创建/详情/更新/删除、批量删除与 MindMap 生成。
+
 //
 
 package handler
@@ -29,7 +32,7 @@ import (
 	"ragflow/internal/service"
 )
 
-// ChatHandler chat handler
+// ChatHandler 对话配置 CRUD 与 MindMap 处理器
 type ChatHandler struct {
 	chatService *service.ChatService
 	userService *service.UserService
@@ -39,7 +42,7 @@ type ChatHandler struct {
 	chunkSvc    service.Retriever
 }
 
-// NewChatHandler create chat handler
+// NewChatHandler 构造 ChatHandler
 func NewChatHandler(chatService *service.ChatService, userService *service.UserService) *ChatHandler {
 	return &ChatHandler{
 		chatService: chatService,
@@ -47,7 +50,7 @@ func NewChatHandler(chatService *service.ChatService, userService *service.UserS
 	}
 }
 
-// SetMindMapDependencies sets dependencies used by POST /api/v1/chat/mindmap.
+// SetMindMapDependencies 注入 MindMap 所需的检索/LLM 依赖 used by POST /api/v1/chat/mindmap.
 func (h *ChatHandler) SetMindMapDependencies(searchSvc *service.SearchService, tenantSvc *service.TenantService, llm *service.ModelProviderService, chunkSvc service.Retriever) {
 	h.searchSvc = searchSvc
 	h.tenantSvc = tenantSvc
@@ -55,14 +58,14 @@ func (h *ChatHandler) SetMindMapDependencies(searchSvc *service.SearchService, t
 	h.chunkSvc = chunkSvc
 }
 
-// ChatMindMapRequest is the request body for POST /api/v1/chat/mindmap.
+// ChatMindMapRequest POST /chat/mindmap 请求体 for POST /api/v1/chat/mindmap.
 type ChatMindMapRequest struct {
 	Question string             `json:"question" binding:"required"`
 	KbIDs    common.StringSlice `json:"kb_ids" binding:"required"`
 	SearchID string             `json:"search_id,omitempty"`
 }
 
-// ListChats list chats
+// ListChats 分页列出当前用户的对话配置
 // @Summary List Chats
 // @Description Get list of chats (dialogs) for the current user
 // @Tags chat
@@ -112,7 +115,7 @@ func (h *ChatHandler) ListChats(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// Create creates a chat.
+// Create 创建新对话，对齐 Python POST /chats
 // @Summary Create Chat
 // @Description Create a chat, aligned with Python POST /api/v1/chats.
 // @Tags chat
@@ -148,7 +151,7 @@ func (h *ChatHandler) Create(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// MindMap generates a query mind map for chat search results.
+// MindMap 检索相关 chunk 并由 LLM 生成思维导图 for chat search results.
 // @Summary Generate Chat Mind Map
 // @Description Retrieves related chunks and asks the configured chat model to summarize them into a mind map.
 // @Tags chat
@@ -216,6 +219,7 @@ func (h *ChatHandler) MindMap(c *gin.Context) {
 	common.SuccessWithData(c, mindMap, "success")
 }
 
+// DeleteChat 删除单个对话
 func (h *ChatHandler) DeleteChat(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -242,7 +246,7 @@ func (h *ChatHandler) DeleteChat(c *gin.Context) {
 	common.SuccessWithData(c, true, "success")
 }
 
-// BulkDeleteChats soft deletes multiple chats owned by the current user.
+// BulkDeleteChats 批量软删除对话，支持 delete_all owned by the current user.
 func (h *ChatHandler) BulkDeleteChats(c *gin.Context) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -296,7 +300,7 @@ func (h *ChatHandler) BulkDeleteChats(c *gin.Context) {
 	common.SuccessWithData(c, result, message)
 }
 
-// GetChat get chat detail
+// GetChat 返回对话详情与 dataset/kb 关联信息
 // @Summary Get Chat Detail
 // @Description Get detail of a chat by ID
 // @Tags chat
@@ -373,16 +377,17 @@ func (h *ChatHandler) GetChat(c *gin.Context) {
 	common.SuccessWithData(c, result, "success")
 }
 
-// UpdateChat updates a chat by ID using REST PUT semantics.
+// UpdateChat PUT 全量更新对话配置 using REST PUT semantics.
 func (h *ChatHandler) UpdateChat(c *gin.Context) {
 	h.updateChatByMethod(c, false)
 }
 
-// PatchChat updates a chat by ID using REST PATCH semantics.
+// PatchChat PATCH 部分更新对话配置 semantics.
 func (h *ChatHandler) PatchChat(c *gin.Context) {
 	h.updateChatByMethod(c, true)
 }
 
+// updateChatByMethod Update/Patch 共享实现
 func (h *ChatHandler) updateChatByMethod(c *gin.Context, patch bool) {
 	user, errorCode, errorMessage := GetUser(c)
 	if errorCode != common.CodeSuccess {
@@ -422,3 +427,5 @@ func (h *ChatHandler) updateChatByMethod(c *gin.Context, patch bool) {
 
 	common.SuccessWithData(c, result, "success")
 }
+
+// ListChats 默认 status="1"（有效对话）；无授权时返回 CodeDataError "No authorization"。

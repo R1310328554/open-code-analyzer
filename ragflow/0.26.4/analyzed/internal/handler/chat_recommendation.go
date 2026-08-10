@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// chat_recommendation.go — POST /api/v1/chat/recommendation：基于 search_config 或租户默认模型生成相关问题推荐。
+
 //
 
 package handler
@@ -25,13 +28,13 @@ import (
 	"ragflow/internal/service"
 )
 
-// ChatRecommendationRequest is the request body for POST /api/v1/chat/recommendation.
+// ChatRecommendationRequest 推荐问题请求体 for POST /api/v1/chat/recommendation.
 type ChatRecommendationRequest struct {
 	Question string `json:"question" binding:"required"`
 	SearchID string `json:"search_id,omitempty"`
 }
 
-// Recommendation generates related search questions for a chat query.
+// Recommendation 调用 LLM 生成与当前问题相关的检索推荐 for a chat query.
 // @Summary Generate Chat Recommendations
 // @Description Generates related questions using the chat model configured by search_config.chat_id or the tenant default.
 // @Tags chat
@@ -64,3 +67,5 @@ func (h *ChatHandler) Recommendation(c *gin.Context) {
 
 	common.SuccessWithData(c, questions, "success")
 }
+
+// question 必填且非空白；可选 search_id 影响模型与 search 配置选择。

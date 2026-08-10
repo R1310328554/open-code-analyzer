@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// bot.go — 公开 Chatbot/Agentbot 端点：info/inputs/completions SSE 与 beta token 日志查询。
+
 //
 
 package handler
@@ -29,7 +32,7 @@ import (
 	"ragflow/internal/service"
 )
 
-// BotHandler is the handler for the public chatbot/agentbot
+// BotHandler 公开嵌入页 chatbot/agentbot 处理器
 // endpoints mounted on /api/v1/chatbots/* and /api/v1/agentbots/*.
 // The two route groups share BetaAuthMiddleware (set up at
 // registration time via g.Use(mw)) and share the same handler
@@ -38,7 +41,7 @@ type BotHandler struct {
 	botService botService
 }
 
-// botService is the subset of BotService used by these handlers. It
+// botService BotService 子集，测试可注入 stub used by these handlers. It
 // is interface-typed so the test suite can inject a stub.
 type botService interface {
 	ChatbotInfo(ctx context.Context, tenantID, dialogID string) (
@@ -52,12 +55,12 @@ type botService interface {
 		<-chan service.ChatbotSSEFrame, common.ErrorCode, error)
 }
 
-// NewBotHandler wires a BotHandler with the production BotService.
+// NewBotHandler 绑定生产 BotService with the production BotService.
 func NewBotHandler(svc *service.BotService) *BotHandler {
 	return &BotHandler{botService: svc}
 }
 
-// ChatbotInfo GET /api/v1/chatbots/<dialog_id>/info
+// ChatbotInfo 返回对话机器人公开元数据
 //
 // Mirrors python bot_api.py:126-154. Returns the public metadata of
 // a chatbot dialog (title, avatar, prologue, tavily key flag, llm_id).
@@ -91,7 +94,7 @@ func (h *BotHandler) ChatbotInfo(c *gin.Context) {
 	})
 }
 
-// AgentbotInputs GET /api/v1/agentbots/<agent_id>/inputs
+// AgentbotInputs 返回 Agent 嵌入页 inputs 与 mode
 //
 // Mirrors python bot_api.py:239-250. Returns the public metadata of
 // an agentbot canvas (title, avatar, inputs, prologue, mode).
@@ -125,7 +128,7 @@ func (h *BotHandler) AgentbotInputs(c *gin.Context) {
 	})
 }
 
-// AgentbotCompletion POST /api/v1/agentbots/<agent_id>/completions
+// AgentbotCompletion 运行 Agent 并以 Python 信封 SSE 推送
 //
 // Mirrors python bot_api.py:157 (canvas_service.completion wrapper).
 // Streams SSE frames in the Python envelope shape. The URL-bound
@@ -214,7 +217,7 @@ func (h *BotHandler) AgentbotCompletion(c *gin.Context) {
 	}
 }
 
-// ChatbotCompletion POST /api/v1/chatbots/<dialog_id>/completions
+// ChatbotCompletion 对话机器人 SSE 补全
 //
 // Mirrors python bot_api.py:55 (async_iframe_completion). Streams
 // SSE frames in the Python envelope shape. The streaming helper
@@ -264,7 +267,7 @@ func (h *BotHandler) ChatbotCompletion(c *gin.Context) {
 	}
 }
 
-// GetAgentbotLogs GET /api/v1/agentbots/<shared_id>/logs/<message_id>
+// GetAgentbotLogs beta token 场景下读取 Redis 运行日志
 //
 // Beta-token sibling of GetAgentLogs. The shared/embedded chat
 // page's "Thinking" button hits this endpoint because the share
@@ -321,3 +324,5 @@ func (h *BotHandler) GetAgentbotLogs(c *gin.Context) {
 		"message": "success",
 	})
 }
+
+// URL 中的 agent_id/dialog_id 为权威来源；ContentLength!=0 才 bind JSON 以支持 chunked 请求体。

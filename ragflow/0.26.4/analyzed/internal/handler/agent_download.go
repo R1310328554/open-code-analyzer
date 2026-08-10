@@ -12,9 +12,12 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent_download.go — GET /api/v1/agents/download：按 file_id 流式返回 application/octet-stream，Content-Disposition 防注入。
+
 //
 
-// Gap A — `GET /api/v1/agents/download` (Python
+// Gap A — 智能体文件下载端点（Python agent_api.py:523） (Python
 // api/apps/restful_apis/agent_api.py:523-530).
 //
 // Mirrors the python download_agent_file handler:
@@ -40,7 +43,7 @@ import (
 	"ragflow/internal/common"
 )
 
-// DownloadAgentFile GET /api/v1/agents/download?id=<file_id>
+// DownloadAgentFile 下载 Agent 运行时生成的文件
 func (h *AgentHandler) DownloadAgentFile(c *gin.Context) {
 	user, code, msg := GetUser(c)
 	if code != common.CodeSuccess {
@@ -86,3 +89,5 @@ func (h *AgentHandler) DownloadAgentFile(c *gin.Context) {
 	))
 	c.Data(http.StatusOK, "application/octet-stream", blob)
 }
+
+// IDOR：Go 会话模型将 user/tenant 合并，与 Python @add_tenant_id_to_kwargs 行为一致；filename 经 filepath.Base 与 url.PathEscape 消毒。

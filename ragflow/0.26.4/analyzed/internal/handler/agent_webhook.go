@@ -12,11 +12,14 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// agent_webhook.go — Webhook 触发处理器：九步流程（加载画布→DataFlow 拒绝→DSL→Begin Webhook→方法/安全/解析/Schema/同步或异步执行）。
+
 //
 
 package handler
 
-// Webhook trigger handler — Go port of
+// Webhook 触发处理器 — Go 移植自 Python agent_api.py:1563-2248
 // api/apps/restful_apis/agent_api.py:1563-2248
 // (`/api/v1/agents/<agent_id>/webhook` and `/.../webhook/test`).
 //
@@ -79,7 +82,7 @@ import (
 	"ragflow/internal/entity"
 )
 
-// canvasLoader is the subset of service.AgentService the webhook handler
+// canvasLoader Webhook 所需的画布加载与 RunAgentWithWebhook 子集 the webhook handler
 // needs. Defined as an interface so handler tests can inject a fake
 // without standing up the full AgentService (DB DAOs, eino runner, etc).
 //
@@ -93,7 +96,7 @@ type canvasLoader interface {
 	RunAgentWithWebhook(ctx context.Context, userID, canvasID string, payload map[string]any) (<-chan canvas.RunEvent, error)
 }
 
-// Webhook is the handler method mounted at:
+// Webhook 挂载于 /webhook 与 /webhook/test 的生产/测试触发
 //
 //	/api/v1/agents/:canvas_id/webhook       (production trigger)
 //	/api/v1/agents/:canvas_id/webhook/test  (test trigger, with trace)
@@ -236,6 +239,7 @@ func (h *AgentHandler) Webhook(c *gin.Context) {
 // findWebhookBegin scans the DSL components map for a Begin component
 // whose params.mode equals "Webhook". Returns the params map (the
 // webhook_cfg) on success; nil otherwise. Mirrors agent_api.py:1584-1592.
+// findWebhookBegin 在 DSL 中查找 mode==Webhook 的 Begin 组件
 func findWebhookBegin(dsl map[string]any) map[string]any {
 	if dsl == nil {
 		return nil
@@ -270,6 +274,7 @@ func findWebhookBegin(dsl map[string]any) map[string]any {
 
 // methodAllowed returns true when `requestMethod` is in the configured
 // list. Empty list → allow (matches python: agent_api.py:1596 short-circuit).
+// methodAllowed 校验 HTTP 方法是否在 webhook 配置白名单内
 func methodAllowed(raw any, requestMethod string) bool {
 	methods, _ := raw.([]any)
 	if len(methods) == 0 {
@@ -287,6 +292,7 @@ func methodAllowed(raw any, requestMethod string) bool {
 // stringMap is a tiny helper: extract a map[string]any, treating nil and
 // wrong-type cases as empty maps. Used heavily to keep the dispatch
 // logic readable.
+// stringMap 将 JSON 值安全转为 map[string]any
 func stringMap(v any) map[string]any {
 	if m, ok := v.(map[string]any); ok {
 		return m
@@ -321,6 +327,7 @@ func stringMap(v any) map[string]any {
 //     agent_api.py:1839-1842); we mirror that as a typed error and
 //     surface it through the same 102 envelope as the rest of the
 //     validation errors so operators see the same response shape.
+// parseWebhookRequest 解析 query/headers/body，enforce Content-Type
 func parseWebhookRequest(configuredContentType string, c *gin.Context) (map[string]any, error) {
 	// 1. Query
 	q := map[string]any{}
@@ -404,14 +411,14 @@ func parseWebhookRequest(configuredContentType string, c *gin.Context) (map[stri
 	}, nil
 }
 
-// ErrWebhookMultipartNotSupported is returned by parseWebhookRequest
+// ErrWebhookMultipartNotSupported multipart 上传尚未支持（501） by parseWebhookRequest
 // when the inbound Content-Type is multipart/form-data. The handler
 // translates this to HTTP 501 Not Implemented because the Python file
 // upload path (FileService.upload_info → canvas.get_files_async) is
 // not ported yet.
 var ErrWebhookMultipartNotSupported = errors.New("multipart/form-data uploads are not supported in this port")
 
-// ErrWebhookContentTypeMismatch is returned by parseWebhookRequest when
+// ErrWebhookContentTypeMismatch Content-Type 与配置不符（102） by parseWebhookRequest when
 // the configured content_types whitelist disagrees with the request's
 // Content-Type. Mirrors python agent_api.py:1839-1842 (`raise
 // ValueError("Invalid Content-Type...")`). Surfaced as 102 so the
@@ -422,6 +429,7 @@ var ErrWebhookContentTypeMismatch = errors.New("invalid content-type")
 // sections and assembles the clean_request map that the Python
 // webhook handler passes to canvas.run(webhook_payload=...). Mirrors
 // agent_api.py:2052-2068.
+// applyWebhookSchema 按 schema 提取 query/headers/body 字段
 func applyWebhookSchema(parsed map[string]any, schema map[string]any) (map[string]any, error) {
 	q := stringMap(parsed["query"])
 	hd := stringMap(parsed["headers"])
@@ -448,13 +456,14 @@ func applyWebhookSchema(parsed map[string]any, schema map[string]any) (map[strin
 }
 
 // renderImmediatelyResponse builds the synchronous response for the
-// Immediately execution mode. Mirrors agent_api.py:2093-2121.
+// Immediately 模式：同步返回模板响应，画布后台 detached 运行 Mirrors agent_api.py:2093-2121.
 //
 //   - status: int in [200, 399]; defaults to 200; any other value
 //     raises so the operator notices a config bug.
 //   - body_template: JSON or text. We try JSON first; fall back to
 //     plain text on failure. Empty body → no body, content-type
 //     application/json (matching python parse_body(None)).
+// renderImmediatelyResponse 渲染 Immediately 模式的 status/body
 func renderImmediatelyResponse(cfg map[string]any) (int, string, []byte, error) {
 	statusRaw, ok := cfg["status"]
 	status := 200
@@ -501,6 +510,7 @@ func renderImmediatelyResponse(cfg map[string]any) (int, string, []byte, error) 
 //
 // Mirrors python: agent_api.py:2123-2175 (the asyncio.create_task body
 // inside the Immediately branch).
+// runWebhookDetached 后台异步运行 Webhook 画布并可选写 trace
 func (h *AgentHandler) runWebhookDetached(
 	cv *entity.UserCanvas, payload map[string]any, isTest bool, startTs time.Time,
 ) {
@@ -528,11 +538,13 @@ func (h *AgentHandler) runWebhookDetached(
 // mode. Returns the HTTP status + body to send. Mirrors
 // agent_api.py:2178-2247 with the python sse() coroutine flattened into
 // a synchronous loop.
+// webhookSyncResult 同步 Webhook 运行的聚合结果
 type webhookSyncResult struct {
 	status int
 	body   any
 }
 
+// runWebhookSync 阻塞运行并聚合 message 内容为 JSON
 func (h *AgentHandler) runWebhookSync(
 	ctx context.Context, cv *entity.UserCanvas, payload map[string]any,
 	isTest bool, startTs time.Time,
@@ -597,6 +609,7 @@ func (h *AgentHandler) runWebhookSync(
 // mustJSON marshals v to a JSON object string. Used by trace appenders;
 // panics on marshal failure (acceptable because we only marshal
 // statically-typed map[string]any values).
+// mustJSON 将值序列化为 JSON 字符串，失败返回 {}
 func mustJSON(v any) string {
 	var buf bytes.Buffer
 	_ = json.NewEncoder(&buf).Encode(v)
@@ -610,6 +623,7 @@ func mustJSON(v any) string {
 // The trace key is `webhook-trace-<agent_id>-logs` with a 600 s TTL.
 // Each event is recorded as {"ts": <float>, "event": <type>, ...}.
 // Tests use miniredis to verify the key shape.
+// appendWebhookTrace 向 Redis webhook-trace-* 追加事件（TTL 600s）
 func appendWebhookTrace(agentID string, startTs time.Time, ev canvas.RunEvent) {
 	rdb := rediscli.Get()
 	if rdb == nil {
@@ -662,3 +676,5 @@ func appendWebhookTrace(agentID string, startTs time.Time, ev canvas.RunEvent) {
 	}
 	rdb.SetObj(key, string(encoded), 600*time.Second)
 }
+
+// Webhook 缺失/越权画布统一 102 Canvas not found；multipart 501；trace key 形状与 Python append_webhook_trace 一致。
