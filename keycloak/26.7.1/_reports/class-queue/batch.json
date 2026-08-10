@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T07:23:38Z",
   "files": [
-    "model/infinispan/src/main/java/org/keycloak/crl/infinispan/X509CRLEntry.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/compatibility/CachingEmbeddedMetadataProvider.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/compatibility/CachingRemoteMetadataProvider.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/health/ClusterHealth.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/health/impl/JdbcPingClusterHealthImpl.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/KeycloakModule.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/configuration/global/KeycloakConfiguration.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/configuration/global/KeycloakConfigurationBuilder.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/factory/CertificateReloadManagerFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/factory/ClusterHealthFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/factory/InfinispanTelemetryFactory.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/factory/OpenTelemetryService.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/module/factory/OpenTelemetrySpan.java",
-    "model/infinispan/src/main/java/org/keycloak/infinispan/util/InfinispanUtils.java",
-    "model/infinispan/src/main/java/org/keycloak/jgroups/certificates/CertificateReloadManager.java",
     "model/infinispan/src/main/java/org/keycloak/jgroups/certificates/DatabaseJGroupsCertificateProvider.java",
     "model/infinispan/src/main/java/org/keycloak/jgroups/certificates/DefaultJGroupsCertificateProviderFactory.java",
     "model/infinispan/src/main/java/org/keycloak/jgroups/certificates/FileJGroupsCertificateProvider.java",
@@ -33,5 +18,5 @@
     "model/infinispan/src/main/java/org/keycloak/keys/infinispan/InfinispanPublicKeyStorageProvider.java"
   ],
   "remaining_pending": 4768,
-  "done": 1200
+  "done": 1215
 }
