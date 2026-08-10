@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T17:53:28Z",
   "files": [
-    "internal/common/response.go",
-    "internal/common/smtp_config.go",
-    "internal/common/status_message.go",
-    "internal/common/system.go",
-    "internal/common/task.go",
-    "internal/common/time.go",
-    "internal/common/timer.go",
-    "internal/dao/api_token.go",
-    "internal/dao/canvas_template.go",
-    "internal/dao/canvas_template_seed.go",
-    "internal/dao/chat.go",
-    "internal/dao/chat_channel.go",
-    "internal/dao/chat_session.go",
-    "internal/dao/connector.go",
-    "internal/dao/database.go",
     "internal/dao/document.go",
     "internal/dao/enterprise_data.go",
     "internal/dao/enterprise_tasks.go",
@@ -33,5 +18,5 @@
     "internal/dao/migration.go"
   ],
   "remaining_pending": 1164,
-  "done": 570
+  "done": 585
 }
