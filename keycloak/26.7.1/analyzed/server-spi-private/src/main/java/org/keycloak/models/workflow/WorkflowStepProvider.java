@@ -20,7 +20,9 @@ package org.keycloak.models.workflow;
 import org.keycloak.provider.Provider;
 
 /**
- * Defines a provider interface for executing workflow steps.
+ * 执行工作流步骤的提供者接口。
+ * </p>
+ * 实现类表示工作流中可执行的单个步骤，可执行特定操作并在需要时提供自定义通知消息。
  * </p>
  * Implementations of this interface represent individual steps that can be executed
  * as part of a workflow. Each step can perform specific actions and optionally provide
@@ -28,6 +30,7 @@ import org.keycloak.provider.Provider;
  */
 public interface WorkflowStepProvider extends Provider {
 
+    /** 在给定执行上下文中运行此工作流步骤。 */
     /**
      * Runs this workflow step.
      *
@@ -36,7 +39,7 @@ public interface WorkflowStepProvider extends Provider {
     void run(WorkflowExecutionContext context);
 
     /**
-     * Returns the message or the text that should be used as the subject of the email when notifying the user about this step.
+     * 返回通知用户时邮件主题文本；null 表示使用默认主题。
      *
      * @return the notification subject, or {@code null} if the default subject should be used
      */
@@ -45,7 +48,7 @@ public interface WorkflowStepProvider extends Provider {
     }
 
     /**
-     * Returns the message or the text that should be used as the body of the email when notifying the user about this step.
+     * 返回通知用户时邮件正文文本；null 表示使用默认正文。
      *
      * @return the notification body, or {@code null} if the default subject should be used
      */

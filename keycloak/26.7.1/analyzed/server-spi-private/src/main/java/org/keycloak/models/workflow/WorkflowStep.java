@@ -26,6 +26,10 @@ import org.keycloak.models.KeycloakSession;
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_AFTER;
 import static org.keycloak.representations.workflows.WorkflowConstants.CONFIG_PRIORITY;
 
+/**
+ * 工作流中的单个步骤，封装提供者 ID、组件配置与执行优先级。
+ * <p>可从 {@link ComponentModel} 构造，支持按优先级排序。</p>
+ */
 public class WorkflowStep implements Comparable<WorkflowStep> {
 
     private KeycloakSession session;
@@ -33,11 +37,13 @@ public class WorkflowStep implements Comparable<WorkflowStep> {
     private final String providerId;
     private MultivaluedHashMap<String, String> config;
 
+    /** 以提供者 ID 与配置构造步骤（无持久化 ID）。 */
     public WorkflowStep(String providerId, MultivaluedHashMap<String, String> config) {
         this.providerId = providerId;
         this.config = config;
     }
 
+    /** 从领域组件模型加载步骤定义。 */
     public WorkflowStep(KeycloakSession session, ComponentModel model) {
         this.session = session;
         this.id = model.getId();
@@ -68,6 +74,7 @@ public class WorkflowStep implements Comparable<WorkflowStep> {
         return config;
     }
 
+    /** 设置步骤执行优先级（数值越小越优先）。 */
     public void setPriority(int priority) {
         setConfig(CONFIG_PRIORITY, String.valueOf(priority));
     }
@@ -84,6 +91,7 @@ public class WorkflowStep implements Comparable<WorkflowStep> {
         }
     }
 
+    /** 设置本步骤须在前置步骤 ID 之后执行。 */
     public void setAfter(String after) {
         setConfig(CONFIG_AFTER, after);
     }
@@ -92,6 +100,7 @@ public class WorkflowStep implements Comparable<WorkflowStep> {
         return getConfig().getFirst(CONFIG_AFTER);
     }
 
+    /** 从步骤提供者获取通知邮件主题，无则返回 null。 */
     public String getNotificationSubject() {
         if (session != null) {
             WorkflowStepProvider provider = Workflows.getStepProvider(session, this);
@@ -102,6 +111,7 @@ public class WorkflowStep implements Comparable<WorkflowStep> {
         return null;
     }
 
+    /** 从步骤提供者获取通知邮件正文，无则返回 null。 */
     public String getNotificationMessage() {
         if (session != null) {
             WorkflowStepProvider provider = Workflows.getStepProvider(session, this);

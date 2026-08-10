@@ -22,6 +22,10 @@ import org.keycloak.common.Profile.Feature;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link OrganizationProvider} 的工厂接口。
+ * <p>仅在启用 {@link Feature#ORGANIZATION} 特性时可用。</p>
+ */
 public interface OrganizationProviderFactory extends ProviderFactory<OrganizationProvider>, EnvironmentDependentProviderFactory {
 
     @Override

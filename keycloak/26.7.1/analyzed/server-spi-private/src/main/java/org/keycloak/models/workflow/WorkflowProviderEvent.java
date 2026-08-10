@@ -5,12 +5,14 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderEvent;
 
 /**
- * Base interface for workflow-related provider events.
+ * 工作流相关 {@link ProviderEvent} 的基础接口。
+ * <p>描述工作流激活、步骤执行、迁移等生命周期事件。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public interface WorkflowProviderEvent extends ProviderEvent {
 
+    /** 获取事件关联的 Keycloak 会话。 */
     /**
      * Gets the Keycloak session associated with this event.
      *
@@ -18,6 +20,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
      */
     KeycloakSession getKeycloakSession();
 
+    /** 获取事件发生所在领域。 */
     /**
      * Gets the realm where the workflow event occurred.
      *
@@ -25,6 +28,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
      */
     RealmModel getRealm();
 
+    /** 获取工作流 ID。 */
     /**
      * Gets the workflow ID.
      *
@@ -32,6 +36,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
      */
     String getWorkflowId();
 
+    /** 获取工作流名称。 */
     /**
      * Gets the workflow name.
      *
@@ -39,6 +44,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
      */
     String getWorkflowName();
 
+    /** 获取关联资源 ID。 */
     /**
      * Gets the resource ID associated with this workflow event.
      *
@@ -46,6 +52,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
      */
     String getResourceId();
 
+    /** 获取关联资源类型。 */
     /**
      * Gets the resource type associated with this workflow event.
      *
@@ -54,6 +61,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
     ResourceType getResourceType();
 
 
+    /** 获取工作流执行 ID。 */
     /**
      * Gets the execution ID for this workflow activation.
      *
@@ -61,9 +69,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
      */
     String getExecutionId();
 
-    /**
-     * Event fired when a workflow is activated for a resource.
-     */
+    /** 工作流为资源激活时触发的事件。 */
     interface WorkflowActivatedEvent extends WorkflowProviderEvent {
 
         /**
@@ -74,9 +80,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
         String getTriggerEventType();
     }
 
-    /**
-     * Event fired when a workflow is deactivated for a resource.
-     */
+    /** 工作流为资源停用时触发的事件。 */
     interface WorkflowDeactivatedEvent extends WorkflowProviderEvent {
 
         /**
@@ -87,15 +91,11 @@ public interface WorkflowProviderEvent extends ProviderEvent {
         String getReason();
     }
 
-    /**
-     * Event fired when a workflow is restarted for a resource.
-     */
+    /** 工作流为资源重启时触发的事件。 */
     interface WorkflowRestartedEvent extends WorkflowProviderEvent {
     }
 
-    /**
-     * Event fired when a workflow step is scheduled.
-     */
+    /** 工作流步骤被调度时触发的事件。 */
     interface WorkflowStepScheduledEvent extends WorkflowProviderEvent {
 
         /**
@@ -127,9 +127,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
         String getDelay();
     }
 
-    /**
-     * Event fired when a workflow step is executed successfully.
-     */
+    /** 工作流步骤成功执行时触发的事件。 */
     interface WorkflowStepExecutedEvent extends WorkflowProviderEvent {
 
         /**
@@ -147,9 +145,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
         String getStepProviderId();
     }
 
-    /**
-     * Event fired when a workflow step execution fails.
-     */
+    /** 工作流步骤执行失败时触发的事件。 */
     interface WorkflowStepFailedEvent extends WorkflowProviderEvent {
 
         /**
@@ -174,9 +170,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
         String getErrorMessage();
     }
 
-    /**
-     * Event fired when workflow resources are migrated from one step/workflow to another.
-     */
+    /** 工作流资源从一步骤/工作流迁移至另一处时触发的事件。 */
     interface WorkflowResourceMigratedEvent extends WorkflowProviderEvent {
 
         @Override
@@ -255,9 +249,7 @@ public interface WorkflowProviderEvent extends ProviderEvent {
         String getNewExecutionId();
     }
 
-    /**
-     * Event fired when a workflow completes successfully.
-     */
+    /** 工作流成功完成时触发的事件。 */
     interface WorkflowCompletedEvent extends WorkflowProviderEvent {
     }
 }

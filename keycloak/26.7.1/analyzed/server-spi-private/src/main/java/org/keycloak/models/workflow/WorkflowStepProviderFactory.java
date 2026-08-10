@@ -27,6 +27,10 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+/**
+ * {@link WorkflowStepProvider} 的组件工厂接口。
+ * <p>声明步骤支持的 {@link ResourceType}，仅在 WORKFLOWS 特性启用时可用。</p>
+ */
 public interface WorkflowStepProviderFactory<P extends WorkflowStepProvider> extends ComponentFactory<P, WorkflowStepProvider>, EnvironmentDependentProviderFactory {
 
     @Override
@@ -34,9 +38,7 @@ public interface WorkflowStepProviderFactory<P extends WorkflowStepProvider> ext
         return true;
     }
 
-    /**
-     * Supported types, usually one type but could be more (RestartStep for example)
-     */
+    /** 本步骤提供者支持的资源类型集合（通常一种，RestartStep 等可多种）。 */
     Set<ResourceType> getSupportedResourceTypes();
 
     @Override

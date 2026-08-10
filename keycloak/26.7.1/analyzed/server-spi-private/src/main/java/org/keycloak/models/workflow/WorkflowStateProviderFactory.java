@@ -22,6 +22,10 @@ import org.keycloak.common.Profile;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link WorkflowStateProvider} 的工厂接口。
+ * <p>仅在启用 {@link Profile.Feature#WORKFLOWS} 特性时可用。</p>
+ */
 public interface WorkflowStateProviderFactory extends ProviderFactory<WorkflowStateProvider>, EnvironmentDependentProviderFactory {
 
     @Override

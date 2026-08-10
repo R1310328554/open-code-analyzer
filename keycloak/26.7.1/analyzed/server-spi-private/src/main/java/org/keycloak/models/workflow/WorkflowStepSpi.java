@@ -21,8 +21,12 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 工作流步骤 SPI 定义，注册 {@link WorkflowStepProvider} 及其工厂。
+ */
 public class WorkflowStepSpi implements Spi {
 
+    /** SPI 名称常量。 */
     public static String NAME = "workflow-step";
 
     @Override

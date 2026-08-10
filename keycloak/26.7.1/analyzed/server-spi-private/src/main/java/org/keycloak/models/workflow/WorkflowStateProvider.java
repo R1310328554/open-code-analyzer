@@ -22,7 +22,9 @@ import java.util.stream.Stream;
 import org.keycloak.provider.Provider;
 
 /**
- * Defines a provider interface for managing workflow execution state and scheduled steps.
+ * 管理工作流执行状态与定时步骤的提供者接口。
+ * </p>
+ * 实现类负责持久化与检索工作流状态信息，包括需在特定时间执行的已调度步骤；作为领域内工作流执行的状态管理层。
  * </p>
  * Implementations of this interface are responsible for persisting and retrieving workflow
  * state information, including scheduled steps that need to be executed at specific times.
@@ -31,7 +33,7 @@ import org.keycloak.provider.Provider;
 public interface WorkflowStateProvider extends Provider {
 
     /**
-     * Deletes all state records associated with the given resource ID.
+     * 删除指定资源 ID 关联的所有状态记录（跨所有工作流）。
      * </p>
      * This method removes all workflow state information for the specified resource,
      * regardless of which workflows the resource is associated with.
@@ -85,7 +87,7 @@ public interface WorkflowStateProvider extends Provider {
     boolean hasScheduledSteps(String workflowId);
 
     /**
-     * Schedules a workflow step for future execution.
+     * 调度工作流步骤在将来执行并持久化调度信息。
      * </p>
      * This method persists the scheduling information for a step that should be executed
      * at a later time, typically based on the step's configuration (e.g., delay settings).
@@ -133,7 +135,7 @@ public interface WorkflowStateProvider extends Provider {
     Stream<ScheduledStep> getScheduledStepsByStep(String workflowId, String stepId);
 
     /**
-     * Retrieves all scheduled steps that are due for execution for the given workflow.
+     * 返回指定工作流中已到执行时间的所有定时步骤。
      * </p>
      * This method returns steps whose scheduled execution time has been reached or passed.
      *
@@ -143,7 +145,7 @@ public interface WorkflowStateProvider extends Provider {
     Stream<ScheduledStep> getDueScheduledSteps(Workflow workflow);
 
     /**
-     * Represents a scheduled workflow step with its associated metadata.
+     * 已调度工作流步骤及其元数据的记录类型。
      *
      * @param workflowId the ID of the workflow containing this step
      * @param stepId the ID of the workflow step
@@ -153,6 +155,7 @@ public interface WorkflowStateProvider extends Provider {
      */
     record ScheduledStep(String workflowId, String stepId, String resourceId, String executionId, long scheduledAt) {}
 
+    /** 调度操作结果：新建或更新执行状态。 */
     enum ScheduleResult {
         CREATED,
         UPDATED
