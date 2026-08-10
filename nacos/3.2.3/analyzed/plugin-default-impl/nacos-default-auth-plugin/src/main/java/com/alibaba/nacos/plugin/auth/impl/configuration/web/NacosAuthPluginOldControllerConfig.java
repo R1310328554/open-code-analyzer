@@ -24,8 +24,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.AuthenticationManager;
 
 /**
- * Nacos auth plugin v1 controller config. Registers only the v1 login API;
- * other v1 auth APIs (user CRUD, role, permission) are in nacos-api-legacy-adapter.
+ * 鉴权插件 V1 登录 Controller 配置（兼容遗留 API）。
+ *
+ * <p>仅注册 V1 登录接口；其余 V1 用户/角色/权限 API 由  {@code nacos-api-legacy-adapter} 模块提供。</p>
  *
  * @author xiweng.yy
  * @deprecated after v1 api not supported
@@ -33,6 +34,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 @Deprecated
 public class NacosAuthPluginOldControllerConfig {
     
+    /** 注册 V1 用户登录 Controller Bean。 */
     @Bean
     public UserController userController(AuthConfigs authConfigs,
         IAuthenticationManager iAuthenticationManager,

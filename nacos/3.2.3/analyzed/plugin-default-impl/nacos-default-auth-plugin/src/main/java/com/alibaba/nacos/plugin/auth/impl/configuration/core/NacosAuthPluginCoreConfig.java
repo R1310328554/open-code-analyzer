@@ -43,30 +43,34 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import javax.annotation.PostConstruct;
 
 /**
- * Spring security config.
+ * 默认鉴权插件 Spring Security 核心配置。
+ *
+ * <p>注册密码编码器、JWT Token 管理器、 {@link DefaultAuthenticationManager} 及内嵌数据源下的全局认证配置器； 启动时扫描鉴权 Controller 方法缓存。</p>
  *
  * @author Nacos
  */
 public class NacosAuthPluginCoreConfig {
     
+    /** Nacos 用户详情服务，供 Spring Security 认证使用。 */
     private final NacosUserService userDetailsService;
     
+    /** Controller 方法缓存，用于鉴权注解解析。 */
     private final ControllerMethodsCache methodsCache;
     
+    /** 注入用户服务与 Controller 方法缓存。 */
     public NacosAuthPluginCoreConfig(NacosUserService userDetailsService,
         ControllerMethodsCache methodsCache) {
         this.userDetailsService = userDetailsService;
         this.methodsCache = methodsCache;
     }
     
-    /**
-     * Init.
-     */
+    /** 初始化鉴权 Controller 包的方法缓存索引。 */
     @PostConstruct
     public void init() {
         methodsCache.initClassMethod("com.alibaba.nacos.plugin.auth.impl.controller");
     }
     
+    /** 内嵌 Nacos 鉴权体系下配置 UserDetailsService 与 BCrypt 密码编码器。 */
     @Bean
     @ConditionalOnMissingBean
     @Conditional(value = {ConditionOnInnerDatasource.class, ConditionOnNacosAuth.class})
@@ -85,11 +89,13 @@ public class NacosAuthPluginCoreConfig {
         };
     }
     
+    /** 注册 BCrypt 密码编码器 Bean。 */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
     
+    /** 创建默认鉴权管理器，协调用户、Token 与角色服务。 */
     @Bean
     @ConditionalOnMissingBean
     @Conditional(value = ConditionOnNacosAuth.class)
@@ -98,6 +104,7 @@ public class NacosAuthPluginCoreConfig {
         return new DefaultAuthenticationManager(userDetailsService, jwtTokenManager, roleService);
     }
     
+    /** Token 缓存关闭时使用标准 JWT Token 管理器。 */
     @Bean
     @ConditionalOnProperty(value = TokenManagerDelegate.NACOS_AUTH_TOKEN_CACHING_ENABLED,
         havingValue = "false", matchIfMissing = true)
@@ -105,6 +112,7 @@ public class NacosAuthPluginCoreConfig {
         return new JwtTokenManager(authConfigs);
     }
     
+    /** Token 缓存开启时使用带本地缓存的 JWT 管理器。 */
     @Bean
     @ConditionalOnProperty(value = TokenManagerDelegate.NACOS_AUTH_TOKEN_CACHING_ENABLED,
         havingValue = "true")
@@ -112,6 +120,7 @@ public class NacosAuthPluginCoreConfig {
         return new CachedJwtTokenManager(new JwtTokenManager(authConfigs));
     }
     
+    /** 将具体 TokenManager 包装为统一委托 Bean。 */
     @Bean
     public TokenManagerDelegate tokenManagerDelegate(TokenManager tokenManager) {
         return new TokenManagerDelegate(tokenManager);

@@ -26,7 +26,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /**
- * Nacos auth plugin configuration for inner deployment type with `merged` or `server`.
+ * 远程数据源部署模式下的鉴权插件自动配置入口。
+ *
+ * <p>在 Console 与 Server 分离、通过远程 API 访问用户/角色/权限数据时生效， 导入持久化、远程服务、核心安全与 Controller 配置。</p>
  *
  * @author xiweng.yy
  */
@@ -34,6 +36,7 @@ import org.springframework.context.annotation.Import;
 @Conditional(ConditionOnRemoteDatasource.class)
 @Import({NacosAuthPluginPersistenceConfig.class, NacosAuthPluginRemoteServiceConfig.class,
     NacosAuthPluginCoreConfig.class, NacosAuthPluginControllerConfig.class})
+/** 远程数据源鉴权插件 Spring 配置聚合类。 */
 public class NacosAuthPluginRemoteAutoConfig {
     
 }

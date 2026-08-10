@@ -27,7 +27,9 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Import;
 
 /**
- * Nacos auth plugin remote bean config, working on nacos deployment type is `console`.
+ * 远程数据源模式下的鉴权业务服务 Bean 配置。
+ *
+ * <p>注册通过 HTTP/RPC 访问 Server 侧用户与角色数据的远程实现， 适用于 Console 与 Server 分离部署场景。</p>
  *
  * @author xiweng.yy
  */
@@ -35,11 +37,13 @@ import org.springframework.context.annotation.Import;
 @Conditional(ConditionOnRemoteDatasource.class)
 public class NacosAuthPluginRemoteServiceConfig {
     
+    /** 创建远程角色服务实现。 */
     @Bean
     public NacosRoleService nacosRoleService(AuthConfigs authConfigs) {
         return new NacosRoleServiceRemoteImpl(authConfigs);
     }
     
+    /** 创建远程用户详情服务实现。 */
     @Bean
     public NacosUserService nacosUserService(AuthConfigs authConfigs) {
         return new NacosUserServiceRemoteImpl(authConfigs);

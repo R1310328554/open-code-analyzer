@@ -26,7 +26,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /**
- * Nacos auth plugin configuration for inner deployment type with `merged` or `server`.
+ * 内嵌数据源部署模式下的鉴权插件自动配置入口。
+ *
+ * <p>在 {@code merged} 或 {@code server} 部署且数据源为 Console 内嵌时生效， 聚合持久化、内嵌服务、核心安全与 Web 层配置。</p>
  *
  * @author xiweng.yy
  */
@@ -34,6 +36,7 @@ import org.springframework.context.annotation.Import;
 @Conditional(ConditionOnInnerDatasource.class)
 @Import({NacosAuthPluginPersistenceConfig.class, NacosAuthPluginInnerServiceConfig.class,
     NacosAuthPluginCoreConfig.class, NacosAuthPluginWebConfig.class})
+/** 内嵌数据源鉴权插件 Spring 配置聚合类。 */
 public class NacosAuthPluginInnerAutoConfig {
     
 }

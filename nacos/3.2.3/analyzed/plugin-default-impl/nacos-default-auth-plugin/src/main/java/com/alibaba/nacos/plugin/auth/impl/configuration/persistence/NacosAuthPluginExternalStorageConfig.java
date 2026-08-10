@@ -28,23 +28,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 
 /**
- * Nacos auth plugin embedded storage configuration.
+ * 外部 MySQL 等存储模式下的鉴权持久化 Bean 配置。
+ *
+ * <p>在 {@link ConditionOnExternalStorage} 与内嵌数据源同时满足时生效， 注册基于 JDBC 的外部持久化服务实现。</p>
  *
  * @author xiweng.yy
  */
 @Conditional(value = {ConditionOnExternalStorage.class, ConditionOnInnerDatasource.class})
 public class NacosAuthPluginExternalStorageConfig {
     
+    /** 注册外部数据库权限持久化服务。 */
     @Bean
     public PermissionPersistService permissionPersistService() {
         return new ExternalPermissionPersistServiceImpl();
     }
     
+    /** 注册外部数据库角色持久化服务。 */
     @Bean
     public RolePersistService rolePersistService() {
         return new ExternalRolePersistServiceImpl();
     }
     
+    /** 注册外部数据库用户持久化服务。 */
     @Bean
     public UserPersistService userPersistService() {
         return new ExternalUserPersistServiceImpl();

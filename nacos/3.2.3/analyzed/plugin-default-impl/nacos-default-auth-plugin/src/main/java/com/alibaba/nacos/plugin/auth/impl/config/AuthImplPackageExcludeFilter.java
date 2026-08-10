@@ -21,19 +21,21 @@ import com.alibaba.nacos.sys.filter.NacosPackageExcludeFilter;
 import java.util.Set;
 
 /**
- * Auth impl module package exclude filter. Only Basic and Web contexts use NacosTypeExcludeFilter with
- * basePackages = "com.alibaba.nacos"; auth-plugin beans are loaded via its own AutoConfiguration in Console context,
- * not by component scan. So when this filter runs (Basic/Web scan), auth.impl package should be excluded.
+ * 默认鉴权实现模块的包扫描排除过滤器。
+ *
+ * <p>Basic 与 Web 上下文通过 {@code basePackages = "com.alibaba.nacos"} 做组件扫描； 鉴权插件 Bean 由 Console 上下文下的独立 AutoConfiguration 加载，而非全局扫描。 因此在此过滤器生效时，应排除 {@code com.alibaba.nacos.plugin.auth.impl} 包，避免重复注册。</p>
  *
  * @author xiweng.yy
  */
 public class AuthImplPackageExcludeFilter implements NacosPackageExcludeFilter {
     
+    /** 返回本过滤器负责的包前缀。 */
     @Override
     public String getResponsiblePackagePrefix() {
         return "com.alibaba.nacos.plugin.auth.impl";
     }
     
+    /** 鉴权实现包内类一律排除，不参与 Basic/Web 扫描。 */
     @Override
     public boolean isExcluded(String className, Set<String> annotationNames) {
         return true;

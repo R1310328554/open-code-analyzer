@@ -19,11 +19,14 @@ package com.alibaba.nacos.plugin.auth.impl.configuration.persistence;
 import org.springframework.context.annotation.Import;
 
 /**
- * Nacos auth plugin persistence configuration.
+ * 鉴权插件持久化层配置聚合入口。
+ *
+ * <p>同时导入嵌入式与外部存储配置，由条件注解在运行时择一激活。</p>
  *
  * @author xiweng.yy
  */
 @Import({NacosAuthPluginEmbeddedStorageConfig.class, NacosAuthPluginExternalStorageConfig.class})
+/** 用户/角色/权限持久化 Bean 配置导入类。 */
 public class NacosAuthPluginPersistenceConfig {
     
 }

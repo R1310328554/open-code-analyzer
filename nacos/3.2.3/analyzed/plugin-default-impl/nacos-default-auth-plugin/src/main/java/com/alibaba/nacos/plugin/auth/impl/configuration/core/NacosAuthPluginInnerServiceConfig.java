@@ -31,7 +31,9 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Import;
 
 /**
- * Nacos auth plugin remote bean config, working on nacos deployment type is `console`.
+ * 内嵌数据源模式下的鉴权业务服务 Bean 配置。
+ *
+ * <p>注册直连数据库的用户、角色服务及 AI 匿名访问初始化器， 适用于 Console 内嵌部署且本地持久化用户/角色/权限数据。</p>
  *
  * @author xiweng.yy
  */
@@ -39,6 +41,7 @@ import org.springframework.context.annotation.Import;
 @Conditional(ConditionOnInnerDatasource.class)
 public class NacosAuthPluginInnerServiceConfig {
     
+    /** 创建直连持久化层的角色服务实现。 */
     @Bean
     public NacosRoleService nacosRoleService(AuthConfigs authConfigs,
         RolePersistService rolePersistService,
@@ -47,12 +50,14 @@ public class NacosAuthPluginInnerServiceConfig {
             permissionPersistService);
     }
     
+    /** 创建直连持久化层的用户详情服务。 */
     @Bean
     public NacosUserService nacosUserService(AuthConfigs authConfigs,
         UserPersistService userPersistService) {
         return new NacosUserServiceDirectImpl(authConfigs, userPersistService);
     }
     
+    /** 注册 AI 公共资源匿名用户/角色初始化器。 */
     @Bean
     public AnonymousAccessInitializer anonymousAccessInitializer(AuthConfigs authConfigs,
         UserPersistService userPersistService, RolePersistService rolePersistService,

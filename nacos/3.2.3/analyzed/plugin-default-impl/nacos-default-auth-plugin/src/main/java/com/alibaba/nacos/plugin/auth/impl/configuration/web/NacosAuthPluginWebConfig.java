@@ -35,10 +35,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Nacos Auth http config.
- * Only activated when auth system type is NOT 'oauth2'.
- * When system.type is 'nacos', 'ldap', or missing (defaults to nacos), this config is loaded.
- * When system.type is 'oauth2', this config is skipped to avoid filter chain conflicts.
+ * 默认鉴权插件 Spring Security HTTP 安全配置。
+ *
+ * <p>仅在鉴权体系非 {@code oidc} 时激活； {@code nacos}、{@code ldap} 或未配置（默认 nacos）时加载本配置并放行忽略 URL； {@code oidc} 模式跳过以避免过滤器链冲突。</p>
  *
  * @author xiweng.yy
  */
@@ -48,12 +47,16 @@ import org.springframework.security.web.SecurityFilterChain;
 @ConditionalOnExpression("!'oidc'.equalsIgnoreCase('${nacos.core.auth.system.type:nacos}')")
 public class NacosAuthPluginWebConfig {
     
+    /** 忽略 URL 列表的分隔符。 */
     private static final String SECURITY_IGNORE_URLS_SPILT_CHAR = ",";
     
+    /** 默认放行全部路径的 Ant 模式。 */
     private static final String DEFAULT_ALL_PATH_PATTERN = "/**";
     
+    /** 配置项：Spring Security 忽略鉴权的 URL 列表。 */
     private static final String PROPERTY_IGNORE_URLS = "nacos.security.ignore.urls";
     
+    /** 按鉴权类型构建 SecurityFilterChain，配置忽略 URL 并关闭 CSRF。 */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         String ignoreUrls = null;
@@ -79,7 +82,7 @@ public class NacosAuthPluginWebConfig {
     }
     
     /**
-     * Build required {@link AuthenticationManager} for v1 auth API.
+     * 为 V1 登录 API 暴露 Spring Security {@link AuthenticationManager} Bean。
      *
      * @return spring security default authentication manager
      * @throws Exception any exception during build authentication manager.

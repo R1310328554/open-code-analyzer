@@ -27,12 +27,15 @@ import com.alibaba.nacos.plugin.auth.impl.users.NacosUserService;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Nacos auth plugin controller config.
+ * 鉴权插件 V3 REST Controller Bean 配置。
+ *
+ * <p>注册用户、角色、权限三类 {@code /v3/auth/*} 控制器， 供远程数据源部署模式下 Console 对外提供鉴权管理 API。</p>
  *
  * @author xiweng.yy
  */
 public class NacosAuthPluginControllerConfig {
     
+    /** 注册 V3 用户管理 Controller（登录、CRUD 等）。 */
     @Bean
     public UserControllerV3 userControllerV3(NacosUserService userDetailsService,
         NacosRoleService roleService,
@@ -43,11 +46,13 @@ public class NacosAuthPluginControllerConfig {
             jwtTokenManager);
     }
     
+    /** 注册 V3 角色管理 Controller。 */
     @Bean
     public RoleControllerV3 roleControllerV3(NacosRoleService roleService) {
         return new RoleControllerV3(roleService);
     }
     
+    /** 注册 V3 权限管理 Controller。 */
     @Bean
     public PermissionControllerV3 permissionControllerV3(NacosRoleService roleService) {
         return new PermissionControllerV3(roleService);

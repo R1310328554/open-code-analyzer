@@ -41,7 +41,9 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Auth related configurations.
+ * Nacos 默认鉴权插件运行时配置中心。
+ *
+ * <p>绑定 {@code nacos.core.auth.*} 与插件前缀 {@code nacos.core.auth.plugin.*}， 订阅 {@link ServerConfigChangeEvent} 热更新；启动时 {@link #validate()} 校验鉴权类型与集群身份凭证。</p>
  *
  * @author nkorange
  * @author mai.jh
@@ -52,26 +54,21 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthConfigs.class);
     
+    /** 鉴权插件扩展属性配置前缀。 */
     private static final String PREFIX = "nacos.core.auth.plugin";
     
     @JustForTest
     private static Boolean cachingEnabled = null;
     
-    /**
-     * Whether server auth enabled.
-     */
+    /** 是否开启 Open API / 服务端鉴权。 */
     @Value("${" + Constants.Auth.NACOS_CORE_AUTH_ENABLED + ":false}")
     private boolean authEnabled;
     
-    /**
-     * Whether console auth enabled.
-     */
+    /** 是否开启控制台登录与权限校验。 */
     @Value("${" + Constants.Auth.NACOS_CORE_AUTH_CONSOLE_ENABLED + ":true}")
     private boolean consoleAuthEnabled;
     
-    /**
-     * Which auth system is in use.
-     */
+    /** 当前启用的鉴权体系类型（nacos、ldap、oidc 等）。 */
     @Value("${" + Constants.Auth.NACOS_CORE_AUTH_SYSTEM_TYPE + ":}")
     private String nacosAuthSystemType;
     
@@ -81,23 +78,23 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
     @Value("${" + Constants.Auth.NACOS_CORE_AUTH_SERVER_IDENTITY_VALUE + ":}")
     private String serverIdentityValue;
     
-    /**
-     * Whether AI resource anonymous access is enabled.
-     */
+    /** 是否允许 AI 公共资源匿名访问。 */
     @Value("${" + AuthConstants.NACOS_CORE_AUTH_NACOS_ANONYMOUS_AI_ENABLED + ":false}")
     private boolean aiAnonymousEnabled;
     
     private boolean hasGlobalAdminRole;
     
+    /** 按鉴权类型分组的插件扩展属性缓存。 */
     private volatile Map<String, Properties> authPluginProperties = new HashMap<>();
     
+    /** 注册配置变更订阅并加载插件属性。 */
     public AuthConfigs() {
         NotifyCenter.registerSubscriber(this);
         refreshPluginProperties();
     }
     
     /**
-     * Validate auth config.
+     * 启动时校验鉴权配置合法性。
      *
      * @throws NacosException If the config is not valid.
      */
@@ -119,6 +116,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
         }
     }
     
+    /** 从环境变量刷新各鉴权类型的插件属性映射。 */
     private void refreshPluginProperties() {
         try {
             Map<String, Properties> newProperties = new HashMap<>(1);
@@ -160,7 +158,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
     }
     
     /**
-     * console auth function is open.
+     * 控制台鉴权是否已开启。
      *
      * @return console auth function is open
      */
@@ -169,7 +167,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
     }
     
     /**
-     * server auth function is open.
+     * 服务端 Open API 鉴权是否已开启。
      *
      * @return server auth function is open
      */
@@ -178,7 +176,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
     }
     
     /**
-     * AI anonymous access is open.
+     * AI 资源匿名访问是否已开启。
      *
      * @return AI anonymous access is open
      */
@@ -187,7 +185,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
     }
     
     /**
-     * Whether permission information can be cached.
+     * 权限信息是否允许缓存。
      *
      * @return bool
      */
@@ -199,6 +197,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
             .toBoolean(EnvUtil.getProperty(Constants.Auth.NACOS_CORE_AUTH_CACHING_ENABLED, "true"));
     }
     
+    /** 按鉴权类型获取插件扩展属性，缺失时返回空 Properties。 */
     public Properties getAuthPluginProperties(String authType) {
         Properties properties = authPluginProperties.get(authType);
         if (properties == null) {
@@ -213,6 +212,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
         AuthConfigs.cachingEnabled = cachingEnabled;
     }
     
+    /** 响应服务端配置变更，热更新鉴权开关与插件属性。 */
     @Override
     public void onEvent(ServerConfigChangeEvent event) {
         try {
@@ -237,6 +237,7 @@ public class AuthConfigs extends Subscriber<ServerConfigChangeEvent> {
         }
     }
     
+    /** 订阅 {@link ServerConfigChangeEvent} 类型。 */
     @Override
     public Class<? extends Event> subscribeType() {
         return ServerConfigChangeEvent.class;

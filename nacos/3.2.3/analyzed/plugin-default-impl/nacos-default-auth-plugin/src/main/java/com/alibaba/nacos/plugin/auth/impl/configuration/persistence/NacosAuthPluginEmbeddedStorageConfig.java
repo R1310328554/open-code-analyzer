@@ -29,23 +29,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 
 /**
- * Nacos auth plugin embedded storage configuration.
+ * 内嵌 Derby 存储模式下的鉴权持久化 Bean 配置。
+ *
+ * <p>在 {@link ConditionOnEmbeddedStorage} 与内嵌数据源同时满足时生效， 注册用户、角色、权限的嵌入式持久化服务实现。</p>
  *
  * @author xiweng.yy
  */
 @Conditional(value = {ConditionOnEmbeddedStorage.class, ConditionOnInnerDatasource.class})
 public class NacosAuthPluginEmbeddedStorageConfig {
     
+    /** 注册嵌入式权限持久化服务。 */
     @Bean
     public PermissionPersistService permissionPersistService(DatabaseOperate databaseOperate) {
         return new EmbeddedPermissionPersistServiceImpl(databaseOperate);
     }
     
+    /** 注册嵌入式角色持久化服务。 */
     @Bean
     public RolePersistService rolePersistService(DatabaseOperate databaseOperate) {
         return new EmbeddedRolePersistServiceImpl(databaseOperate);
     }
     
+    /** 注册嵌入式用户持久化服务。 */
     @Bean
     public UserPersistService userPersistService(DatabaseOperate databaseOperate) {
         return new EmbeddedUserPersistServiceImpl(databaseOperate);

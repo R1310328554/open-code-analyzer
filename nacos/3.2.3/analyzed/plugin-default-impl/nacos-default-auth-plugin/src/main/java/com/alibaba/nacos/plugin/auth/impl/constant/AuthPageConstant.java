@@ -17,21 +17,28 @@
 package com.alibaba.nacos.plugin.auth.impl.constant;
 
 /**
- * Auth plugin page constant.
+ * 鉴权插件分页 SQL 片段常量。
+ *
+ * <p>兼容 SQL Server {@code OFFSET/FETCH} 与 MySQL {@code LIMIT} 两种分页语法。</p>
  *
  * @author huangKeming
  **/
 
 public class AuthPageConstant {
     
+    /** SQL Server 分页关键字：OFFSET。 */
     public static final String OFFSET = "OFFSET";
     
+    /** SQL Server 分页：跳过行数占位符片段。 */
     public static final String OFFSET_ROWS = "OFFSET ? ROWS";
     
+    /** SQL Server 分页：取下一批行数片段。 */
     public static final String FETCH_NEXT = "FETCH NEXT ? ROWS ONLY";
     
+    /** MySQL 分页关键字：LIMIT。 */
     public static final String LIMIT = "LIMIT";
     
+    /** MySQL 分页：偏移与条数占位符片段。 */
     public static final String LIMIT_SIZE = "LIMIT ?,?";
     
 }
