@@ -19,11 +19,18 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 
+/**
+ * <p>GraalVM Native Image 对 {@link io.netty.util.internal.PlatformDependent0} 的字段替换配置。</p>
+ * <p>构建 native-image 时，Substrate VM 会在镜像生成阶段解析 {@code java.nio.Buffer.address}
+ * 的字段偏移量；{@link RecomputeFieldValue} 确保 {@code ADDRESS_FIELD_OFFSET} 在运行时
+ * 按目标平台重新计算，而非固化构建机上的值。</p>
+ */
 @TargetClass(className = "io.netty.util.internal.PlatformDependent0")
 final class PlatformDependent0Substitution {
     private PlatformDependent0Substitution() {
     }
 
+    /** {@code java.nio.Buffer.address} 字段偏移量，native-image 构建时重新计算。 */
     @Alias
     @RecomputeFieldValue(
         kind = RecomputeFieldValue.Kind.FieldOffset,

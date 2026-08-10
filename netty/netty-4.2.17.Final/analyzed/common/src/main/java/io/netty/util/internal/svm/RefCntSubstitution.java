@@ -19,11 +19,18 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 
+/**
+ * <p>GraalVM Native Image 对 {@code RefCnt.UnsafeRefCnt} 的字段替换配置。</p>
+ * <p>引用计数实现依赖 {@code sun.misc.Unsafe} 获取 {@code RefCnt.value} 字段偏移量以执行
+ * CAS 操作。native-image 构建时须通过 {@link RecomputeFieldValue} 在目标平台重新计算该偏移，
+ * 否则 Unsafe 访问将指向错误内存位置。</p>
+ */
 @TargetClass(className = "io.netty.util.internal.RefCnt$UnsafeRefCnt")
 final class RefCntSubstitution {
     private RefCntSubstitution() {
     }
 
+    /** {@code RefCnt.value} 字段偏移量，native-image 构建时重新计算。 */
     @Alias
     @RecomputeFieldValue(
             kind = RecomputeFieldValue.Kind.FieldOffset,

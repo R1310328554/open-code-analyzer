@@ -16,5 +16,12 @@
 package io.netty.util.internal.shaded.org.jctools.util;
 
 // Placeholder for module-info maven plugin to add the package to the module-info descriptor
+
+/**
+ * <p>占位类，用于在 Java 模块描述符（module-info）中保留 {@code jctools.util} 包。</p>
+ * <p>该包存放 JCTools 内部工具类（如 Unsafe 访问辅助），shade 后供 Netty 内部使用。
+ * 若包内没有任何类型，module-info 插件可能无法导出该包，导致模块化构建失败。
+ * 本类无运行时用途，切勿删除。</p>
+ */
 class DoNotRemove {
 }

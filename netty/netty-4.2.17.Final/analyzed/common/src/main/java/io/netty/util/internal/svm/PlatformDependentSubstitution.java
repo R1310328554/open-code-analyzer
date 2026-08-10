@@ -19,6 +19,13 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 
+/**
+ * <p>GraalVM Native Image 对 {@link io.netty.util.internal.PlatformDependent} 的字段替换配置。</p>
+ * <p>{@link io.netty.util.internal.PlatformDependent} 在镜像构建期间会从
+ * {@link io.netty.util.internal.PlatformDependent0} 缓存 {@code byte[]} 数组基址偏移量。
+ * Substrate VM 能正确重算 {@code PlatformDependent0} 中的值，但 {@code PlatformDependent}
+ * 中的缓存字段不会自动更新，因此需要显式声明 {@link RecomputeFieldValue}。</p>
+ */
 @TargetClass(className = "io.netty.util.internal.PlatformDependent")
 final class PlatformDependentSubstitution {
     private PlatformDependentSubstitution() {
@@ -30,6 +37,8 @@ final class PlatformDependentSubstitution {
      * correctly recomputes the field in PlatformDependent0, but since the caching
      * in PlatformDependent happens during image building, the non-recomputed value
      * is cached.
+     *
+     * <p>{@code byte[]} 数组基址偏移量；native-image 构建时重新计算，避免缓存构建机上的旧值。</p>
      */
     @Alias
     @RecomputeFieldValue(

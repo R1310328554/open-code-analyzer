@@ -29,6 +29,9 @@ import java.net.SocketAddress;
  * <p>
  * This can be useful to for example bind to a specific {@link NetworkInterface} based on
  * the {@code remoteAddress}.
+ *
+ * <p>出站 {@link ChannelOutboundHandler}，在发起连接前动态替换远端和/或本地 {@link SocketAddress}。
+ * 典型场景：根据目标地址选择绑定的 {@link NetworkInterface}。连接成功后自动从 pipeline 移除。</p>
  */
 public abstract class DynamicAddressConnectHandler extends ChannelOutboundHandlerAdapter {
 
@@ -38,6 +41,7 @@ public abstract class DynamicAddressConnectHandler extends ChannelOutboundHandle
         final SocketAddress remote;
         final SocketAddress local;
         try {
+            // 子类可重写以动态决定实际使用的远端/本地地址
             remote = remoteAddress(remoteAddress, localAddress);
             local = localAddress(remoteAddress, localAddress);
         } catch (Exception e) {
@@ -48,6 +52,7 @@ public abstract class DynamicAddressConnectHandler extends ChannelOutboundHandle
             if (future.isSuccess()) {
                 // We only remove this handler from the pipeline once the connect was successful as otherwise
                 // the user may try to connect again.
+                // 仅在连接成功后才移除 handler，以便用户重试 connect 时仍能动态解析地址。
                 ctx.pipeline().remove(DynamicAddressConnectHandler.this);
             }
         });
@@ -58,6 +63,8 @@ public abstract class DynamicAddressConnectHandler extends ChannelOutboundHandle
      * {@link ChannelHandlerContext#connect(SocketAddress, SocketAddress)} based on the original {@code remoteAddress}
      * and {@code localAddress}.
      * By default, this method returns the given {@code localAddress}.
+     *
+     * <p>根据原始远端/本地地址返回实际用于连接的本地 {@link SocketAddress}；默认原样返回 {@code localAddress}。</p>
      */
     protected SocketAddress localAddress(
             @SuppressWarnings("unused") SocketAddress remoteAddress, SocketAddress localAddress) throws Exception {
@@ -69,6 +76,8 @@ public abstract class DynamicAddressConnectHandler extends ChannelOutboundHandle
      * {@link ChannelHandlerContext#connect(SocketAddress, SocketAddress)} based on the original {@code remoteAddress}
      * and {@code localAddress}.
      * By default, this method returns the given {@code remoteAddress}.
+     *
+     * <p>根据原始远端/本地地址返回实际用于连接的远端 {@link SocketAddress}；默认原样返回 {@code remoteAddress}。</p>
      */
     protected SocketAddress remoteAddress(
             SocketAddress remoteAddress, @SuppressWarnings("unused") SocketAddress localAddress) throws Exception {

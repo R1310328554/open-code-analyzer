@@ -19,11 +19,18 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 
+/**
+ * <p>GraalVM Native Image 对 shade 版 {@code UnsafeRefArrayAccess} 的字段替换配置。</p>
+ * <p>JCTools 队列通过 {@code Object[]} 的索引位移（index shift）计算元素地址。
+ * 该值取决于目标 JVM 的对象引用宽度，必须在 native-image 构建时按平台重算，
+ * 不能沿用构建机上的常量。</p>
+ */
 @TargetClass(className = "io.netty.util.internal.shaded.org.jctools.util.UnsafeRefArrayAccess")
 final class UnsafeRefArrayAccessSubstitution {
     private UnsafeRefArrayAccessSubstitution() {
     }
 
+    /** {@code Object[]} 元素索引位移量，native-image 构建时重新计算。 */
     @Alias
     @RecomputeFieldValue(
         kind = RecomputeFieldValue.Kind.ArrayIndexShift,
