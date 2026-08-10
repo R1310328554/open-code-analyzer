@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:38:55Z",
-  "files": [
-    "pkg/canary/comparator/comparator.go",
-    "pkg/canary/reader/reader.go",
-    "pkg/canary/writer/batched_push.go",
-    "pkg/canary/writer/push.go",
-    "pkg/canary/writer/stream.go",
-    "pkg/canary/writer/writer.go",
-    "pkg/chunkenc/dumb_chunk.go",
-    "pkg/chunkenc/encoding_helpers.go",
-    "pkg/chunkenc/facade.go",
-    "pkg/chunkenc/interface.go",
-    "pkg/chunkenc/memchunk.go",
-    "pkg/chunkenc/pool.go",
-    "pkg/chunkenc/symbols.go",
-    "pkg/chunkenc/unordered.go",
-    "pkg/chunkenc/variants.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1312,
-  "done": 225
+  "done": 240
 }
