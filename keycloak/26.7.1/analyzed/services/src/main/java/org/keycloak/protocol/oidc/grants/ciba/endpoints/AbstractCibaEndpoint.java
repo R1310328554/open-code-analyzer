@@ -30,20 +30,34 @@ import org.keycloak.protocol.oidc.utils.AuthorizeClientUtil;
 import org.keycloak.services.ErrorResponseException;
 
 /**
+ * CIBA 端点抽象基类。
+ * <p>提供客户端认证、SSL 与领域启用状态等通用校验逻辑。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public abstract class AbstractCibaEndpoint {
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 事件构建器 */
     protected final EventBuilder event;
+    /** 当前领域模型 */
     protected final RealmModel realm;
 
+    /**
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     */
     public AbstractCibaEndpoint(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.event = event;
         realm = session.getContext().getRealm();
     }
 
+    /**
+     * 认证客户端并校验 CIBA 授权是否对该客户端启用。
+     * @return 已认证的客户端模型
+     */
     protected ClientModel authenticateClient() {
         checkSsl();
         checkRealm();
@@ -66,6 +80,7 @@ public abstract class AbstractCibaEndpoint {
         return client;
     }
 
+    /** 校验当前连接是否满足领域的 SSL 要求 */
     protected void checkSsl() {
         ClientConnection clientConnection = session.getContext().getConnection();
         RealmModel realm = session.getContext().getRealm();
@@ -75,6 +90,7 @@ public abstract class AbstractCibaEndpoint {
         }
     }
 
+    /** 校验领域是否已启用 */
     protected void checkRealm() {
         RealmModel realm = session.getContext().getRealm();
 

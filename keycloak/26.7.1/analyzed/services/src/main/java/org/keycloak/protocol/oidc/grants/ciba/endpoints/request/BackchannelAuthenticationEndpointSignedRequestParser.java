@@ -35,15 +35,24 @@ import org.keycloak.models.KeycloakSession;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Parse the parameters from OIDC "request" object
- * 
+ * 从 OIDC 签名 {@code request} 对象解析后台认证参数。
+ * <p>校验 JWS 签名算法与客户端预注册算法一致，并将解析结果存入会话属性。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 class BackchannelAuthenticationEndpointSignedRequestParser extends BackchannelAuthenticationEndpointRequestParser {
 
+    /** 已验证签名的 request JWT 载荷（JSON 节点） */
     private final JsonNode requestParams;
 
-    public BackchannelAuthenticationEndpointSignedRequestParser(KeycloakSession session, String signedAuthReq, ClientModel client, CibaConfig config) throws Exception {
+    /**
+     * 解析并验证签名认证 request 对象。
+     * @param session Keycloak 会话
+     * @param signedAuthReq 签名 request 字符串（JWS）
+     * @param client 客户端模型
+     * @param config CIBA 策略配置
+     * @throws Exception 签名验证或算法不匹配时抛出
+     */
         JOSE jwt = JOSEParser.parse(signedAuthReq);
 
         if (jwt instanceof JWE) {
@@ -81,6 +90,7 @@ class BackchannelAuthenticationEndpointSignedRequestParser extends BackchannelAu
         session.setAttribute(BackchannelAuthenticationEndpointRequestParser.CIBA_SIGNED_AUTHENTICATION_REQUEST, requestParams);
     }
 
+    /** @param paramName JSON 字段名 @return 字段文本值 */
     @Override
     protected String getParameter(String paramName) {
         JsonNode val = this.requestParams.get(paramName);
@@ -93,12 +103,14 @@ class BackchannelAuthenticationEndpointSignedRequestParser extends BackchannelAu
         }
     }
 
+    /** @param paramName JSON 字段名 @return 整型字段值 */
     @Override
     protected Integer getIntParameter(String paramName) {
         Object val = this.requestParams.get(paramName);
         return val==null ? null : Integer.valueOf(getParameter(paramName));
     }
 
+    /** @return request JSON 对象的所有字段名 */
     @Override
     protected Set<String> keySet() {
         HashSet<String> keys = new HashSet<>();

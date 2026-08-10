@@ -64,14 +64,24 @@ import org.jboss.resteasy.reactive.NoCache;
 import static org.keycloak.protocol.oidc.OIDCLoginProtocol.ID_TOKEN_HINT;
 import static org.keycloak.protocol.oidc.OIDCLoginProtocol.LOGIN_HINT_PARAM;
 
+/**
+ * CIBA 后台认证端点（Backchannel Authentication Endpoint）。
+ * <p>消费设备通过此端点发起后台认证请求，获取 {@code auth_req_id} 供后续轮询或 ping 模式使用。</p>
+ */
 public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
 
     private static final Logger log = Logger.getLogger(BackchannelAuthenticationEndpoint.class);
 
+    /** 当前领域模型 */
     private final RealmModel realm;
 
+    /** binding_message 参数格式校验正则（最多 50 字符，不含空格） */
     private static final Pattern BINDING_MESSAGE_VALIDATION = Pattern.compile("^[a-zA-Z0-9-._+/!?#]{1,50}$");
 
+    /**
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     */
     public BackchannelAuthenticationEndpoint(KeycloakSession session, EventBuilder event) {
         super(session, event);
         this.realm = session.getContext().getRealm();
@@ -82,6 +92,10 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
     @NoCache
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
+    /**
+     * 处理 CIBA 后台认证请求：解析参数、解析用户、经认证通道发起认证并返回 auth_req_id。
+     * @return 含 auth_req_id、expires_in 及可选 interval 的 JSON 响应
+     */
     public Response processGrantRequest() {
         HttpRequest httpRequest = session.getContext().getHttpRequest();
         CIBAAuthenticationRequest request = authorizeClient(httpRequest.getDecodedFormParameters());
@@ -131,9 +145,11 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
     }
 
     /**
-     * TODO: Leverage the device code storage for tracking authentication requests. Not sure if we need a specific storage,
-     * or we can leverage the {@link SingleUseObjectProvider} for ciba, device, or any other use case
-     * that relies on cross-references for unsolicited user authentication requests from devices.
+     * 将认证请求持久化到单次使用对象存储（复用设备码存储机制）。
+     * <p>TODO: 评估是否需要专用存储，或继续复用 {@link SingleUseObjectProvider}。</p>
+     * @param request CIBA 认证请求
+     * @param cibaConfig CIBA 策略配置
+     * @param authReqId 认证请求标识（ping 模式使用）
      */
     private void storeAuthenticationRequest(CIBAAuthenticationRequest request, CibaConfig cibaConfig, String authReqId) {
         ClientModel client = request.getClient();
@@ -141,7 +157,7 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
         int poolingInterval = cibaConfig.getPoolingInterval();
         String cibaMode = cibaConfig.getBackchannelTokenDeliveryMode(client);
 
-        // Set authReqId just for the ping mode as it is relatively big and not necessarily needed in the infinispan cache for the "poll" mode
+        // 仅在 ping 模式设置 authReqId；poll 模式无需在缓存中存储较大标识
         if (!CibaConfig.CIBA_PING_MODE.equals(cibaMode)) {
             authReqId = null;
         }
@@ -153,7 +169,7 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
         OAuth2DeviceUserCodeModel userCode = new OAuth2DeviceUserCodeModel(realm, deviceCode.getDeviceCode(),
                 authResultId);
 
-        // To inform "expired_token" to the client, the lifespan of the cache provider is longer than device code
+        // 缓存寿命略长于设备码过期时间，以便客户端能收到 expired_token 错误
         int lifespanSeconds = expiresIn + poolingInterval + 10;
 
         SingleUseObjectProvider singleUseStore = session.singleUseObjects();
@@ -162,6 +178,11 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
         singleUseStore.put(userCode.serializeKey(), lifespanSeconds, userCode.serializeValue());
     }
 
+    /**
+     * 认证客户端、解析请求参数、解析目标用户并组装 {@link CIBAAuthenticationRequest}。
+     * @param params 表单参数
+     * @return 已组装的 CIBA 认证请求
+     */
     private CIBAAuthenticationRequest authorizeClient(MultivaluedMap<String, String> params) {
         ClientModel client = null;
         try {
@@ -188,7 +209,7 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
         }
         request.setScope(scope);
 
-        // optional parameters
+        // 可选参数
         if (endpointRequest.getBindingMessage() != null) {
             validateBindingMessage(endpointRequest.getBindingMessage());
             request.setBindingMessage(endpointRequest.getBindingMessage());
@@ -197,7 +218,7 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
 
         CibaConfig policy = realm.getCibaPolicy();
 
-        // create JWE encoded auth_req_id from Auth Req ID.
+        // 根据 Auth Req ID 创建 JWE 编码的 auth_req_id
         Integer expiresIn = Optional.ofNullable(endpointRequest.getRequestedExpiry()).orElse(policy.getExpiresIn());
 
         request.exp(request.getIat() + expiresIn.longValue());
@@ -246,12 +267,21 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
         return request;
     }
 
+    /**
+     * 将端点请求中的附加参数复制到 CIBA 认证请求的 other claims。
+     * @param endpointRequest 后台认证端点请求
+     * @param request CIBA 认证请求
+     */
     protected void extractAdditionalParams(BackchannelAuthenticationEndpointRequest endpointRequest, CIBAAuthenticationRequest request) {
         for (String paramName : endpointRequest.getAdditionalReqParams().keySet()) {
             request.setOtherClaims(paramName, endpointRequest.getAdditionalReqParams().get(paramName));
         }
     }
 
+    /**
+     * 校验 binding_message 格式（长度与字符集）。
+     * @param bindingMessage 绑定消息字符串
+     */
     protected void validateBindingMessage(String bindingMessage) {
         if (!BINDING_MESSAGE_VALIDATION.matcher(bindingMessage).matches()) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_BINDING_MESSAGE, "the binding_message value has to be max 50 characters in length and must contain only basic plain-text characters without spaces",
@@ -259,6 +289,12 @@ public class BackchannelAuthenticationEndpoint extends AbstractCibaEndpoint {
         }
     }
 
+    /**
+     * 根据领域配置的用户提示类型（login_hint / id_token_hint / login_hint_token）解析目标用户。
+     * @param endpointRequest 后台认证端点请求
+     * @param authRequestedUserHint 领域配置的用户提示参数名
+     * @return 已解析且启用的用户模型
+     */
     private UserModel resolveUser(BackchannelAuthenticationEndpointRequest endpointRequest, String authRequestedUserHint) {
         CIBALoginUserResolver resolver = session.getProvider(CIBALoginUserResolver.class);
 

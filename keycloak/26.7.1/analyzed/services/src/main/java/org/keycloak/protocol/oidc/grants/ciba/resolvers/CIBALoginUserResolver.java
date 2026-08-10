@@ -20,58 +20,54 @@ import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 
 /**
- * Provides the resolver that converts several types of receives login hint to its corresponding UserModel.
- * Also converts between UserModel and the user identifier that can be recognized by the external entity executing AuthN and AuthZ by AD.
+ * CIBA 登录用户解析器接口。
+ * <p>将 login_hint、login_hint_token、id_token_hint 等提示解析为 {@link UserModel}，
+ * 并在 Keycloak 用户与外部认证设备（AD）可识别的用户标识之间双向转换。</p>
  *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public interface CIBALoginUserResolver extends Provider {
 
     /**
-     * This method receives the login_hint parameter and returns its corresponding UserModel.
-     *
-     * @param loginHint
-     * @return UserModel
+     * 根据 login_hint 参数解析用户。
+     * @param loginHint 登录提示（用户名或邮箱）
+     * @return 对应的 {@link UserModel}，无法解析时返回 null
      */
     default UserModel getUserFromLoginHint(String loginHint) {
         return null;
     }
 
     /**
-     * This method receives the login_hint_token parameter and returns its corresponding UserModel.
-     *
-     * @param loginHintToken
-     * @return UserModel
+     * 根据 login_hint_token 参数解析用户。
+     * @param loginHintToken 登录提示令牌
+     * @return 对应的 {@link UserModel}，无法解析时返回 null
      */
     default UserModel getUserFromLoginHintToken(String loginHintToken) {
         return null;
     }
 
     /**
-     * This method receives the id_token_hint parameter and returns its corresponding UserModel.
-     *
-     * @param idToken
-     * @return UserModel
+     * 根据 id_token_hint 参数解析用户。
+     * @param idToken ID Token 提示
+     * @return 对应的 {@link UserModel}，无法解析时返回 null
      */
     default UserModel getUserFromIdTokenHint(String idToken) {
         return null;
     }
 
     /**
-     * This method converts the UserModel to its corresponding user identifier that can be recognized by the external entity executing AuthN and AuthZ by AD.
-     *
-     * @param user
-     * @return its corresponding user identifier
+     * 将 {@link UserModel} 转换为 AD 可识别的用户标识（默认用户名）。
+     * @param user 用户模型
+     * @return AD 用于识别用户的标识字符串
      */
     default String getInfoUsedByAuthentication(UserModel user) {
         return user.getUsername();
     }
 
     /**
-     * This method converts the user identifier that can be recognized by the external entity executing AuthN and AuthZ by AD to the corresponding UserModel.
-     *
-     * @param info
-     * @return UserModel
+     * 将 AD 返回的用户标识反向解析为 {@link UserModel}。
+     * @param info AD 可识别的用户标识
+     * @return 对应的用户模型
      */
     UserModel getUserFromInfoUsedByAuthentication(String info);
 

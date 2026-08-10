@@ -53,12 +53,21 @@ import org.jboss.resteasy.reactive.NoCache;
 
 import static org.keycloak.protocol.oidc.grants.ciba.channel.AuthenticationChannelResponse.Status.CANCELLED;
 
+/**
+ * CIBA 后台认证回调端点。
+ * <p>接收认证设备（AD）经认证通道返回的用户认证结果，并触发客户端通知（ping 模式）。</p>
+ */
 public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpoint {
 
     private static final Logger logger = Logger.getLogger(BackchannelAuthenticationCallbackEndpoint.class);
 
+    /** 当前 HTTP 请求 */
     private final HttpRequest httpRequest;
 
+    /**
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     */
     public BackchannelAuthenticationCallbackEndpoint(KeycloakSession session, EventBuilder event) {
         super(session, event);
         this.httpRequest = session.getContext().getHttpRequest();
@@ -69,6 +78,11 @@ public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpo
     @NoCache
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    /**
+     * 处理认证通道回调：校验 bearer 令牌、批准或拒绝认证请求，并在 ping 模式下通知客户端。
+     * @param response 认证通道响应（含状态与附加参数）
+     * @return 空 JSON 成功响应
+     */
     public Response processAuthenticationChannelResult(AuthenticationChannelResponse response) {
         event.event(EventType.LOGIN);
         BackchannelAuthCallbackContext ctx = verifyAuthenticationRequest(getRawBearerToken(httpRequest.getHttpHeaders(), response));
@@ -95,7 +109,7 @@ public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpo
                 break;
         }
 
-        // Call the notification endpoint
+        // ping 模式下调用客户端通知端点
         ClientModel client = session.getContext().getClient();
         CibaConfig cibaConfig = realm.getCibaPolicy();
         if (cibaConfig.getBackchannelTokenDeliveryMode(client).equals(CibaConfig.CIBA_PING_MODE)) {
@@ -105,6 +119,11 @@ public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpo
         return Response.ok(MediaType.APPLICATION_JSON_TYPE).build();
     }
 
+    /**
+     * 校验回调请求中的 bearer 令牌与设备码状态。
+     * @param rawBearerToken 原始 bearer 令牌字符串
+     * @return 包含令牌与设备码模型的上下文
+     */
     protected BackchannelAuthCallbackContext verifyAuthenticationRequest(String rawBearerToken) {
 
         if (rawBearerToken == null) {
@@ -156,9 +175,8 @@ public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpo
     }
 
     /**
-     * Handels the cancellation of an authentication request.
-     * 
-     * @param authResultId The id to identify the request.
+     * 取消认证请求并清理设备码缓存。
+     * @param authResultId 认证结果标识
      */
     protected void cancelRequest(String authResultId) {
         OAuth2DeviceCodeModel userCode = DeviceEndpoint.getDeviceByUserCode(session, realm, authResultId);
@@ -167,26 +185,28 @@ public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpo
     }
 
     /**
-     * Is called before the request approving, allows additional validation of other factors.
-     * 
-     * @param response The {@link AuthenticationChannelResponse} to work with.
-     *                 
-     * @return The {@link Status} of the response, after pre-approving.
+     * 批准前的预处理钩子，可用于额外校验（如 MFA）。
+     * @param response {@link AuthenticationChannelResponse} 认证通道响应
+     * @return 预处理后的 {@link Status} 状态
      */
     protected Status preApprove(AuthenticationChannelResponse response) {
         return response.getStatus();
     }
 
     /**
-     * Approves the request respectively the code.
-     * 
-     * @param authReqId The id to identify the request.
-     * @param additionalParams Additional parameters.
+     * 批准认证请求。
+     * @param authReqId 认证请求标识
+     * @param additionalParams 附加参数
      */
     protected void approveRequest(String authReqId, Map<String, String> additionalParams) {
         DeviceGrantType.approveUserCode(session, realm, authReqId, "fake", additionalParams);
     }
 
+    /**
+     * 拒绝认证请求。
+     * @param authReqId 认证请求标识
+     * @param status 拒绝状态（取消或未授权）
+     */
     protected void denyRequest(String authReqId, Status status) {
         if (CANCELLED.equals(status)) {
             event.error(Errors.NOT_ALLOWED);
@@ -198,18 +218,22 @@ public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpo
     }
 
     /**
-     * Extracts the raw bearer token from the request.
-     * 
-     * @param httpHeaders The request headers.
-     * @param response The {@link AuthenticationChannelResponse}
-     *                 
-     * @return The raw bearer token.
+     * 从请求头提取原始 bearer 令牌。
+     * @param httpHeaders HTTP 请求头
+     * @param response {@link AuthenticationChannelResponse} 认证通道响应
+     * @return 原始 bearer 令牌，缺失时返回 null
      */
     protected String getRawBearerToken(HttpHeaders httpHeaders, AuthenticationChannelResponse response) {
         AppAuthManager.AuthHeader authHeader = AppAuthManager.extractAuthorizationHeaderTokenOrReturnNull(httpHeaders);
         return authHeader == null ? null : authHeader.getToken();
     }
 
+    /**
+     * 向客户端通知端点发送 ping 模式通知（含 auth_req_id）。
+     * @param client 客户端模型
+     * @param cibaConfig CIBA 策略配置
+     * @param deviceModel 设备码模型
+     */
     protected void sendClientNotificationRequest(ClientModel client, CibaConfig cibaConfig, OAuth2DeviceCodeModel deviceModel) {
         String clientNotificationEndpoint = cibaConfig.getBackchannelClientNotificationEndpoint(client);
         if (clientNotificationEndpoint == null) {
@@ -246,6 +270,7 @@ public class BackchannelAuthenticationCallbackEndpoint extends AbstractCibaEndpo
         }
     }
 
+    /** 回调验证上下文：bearer 令牌与设备码模型 */
     protected static class BackchannelAuthCallbackContext {
 
         private final AccessToken bearerToken;

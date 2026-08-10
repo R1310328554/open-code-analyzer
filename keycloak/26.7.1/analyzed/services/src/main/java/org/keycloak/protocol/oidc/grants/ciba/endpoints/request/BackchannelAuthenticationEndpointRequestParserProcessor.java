@@ -39,11 +39,23 @@ import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.ServicesLogger;
 
 /**
+ * 后台认证端点请求解析处理器。
+ * <p>协调表单体解析与签名 request/request_uri 解析，返回完整的 {@link BackchannelAuthenticationEndpointRequest}。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public class BackchannelAuthenticationEndpointRequestParserProcessor {
 
-    public static BackchannelAuthenticationEndpointRequest parseRequest(EventBuilder event, KeycloakSession session, ClientModel client, MultivaluedMap<String, String> requestParams, CibaConfig config) {
+    /**
+     * 解析后台认证端点完整请求。
+     * <p>先解析表单体，再按需解析内联 {@code request} 或远程 {@code request_uri} 签名对象。</p>
+     * @param event 事件构建器
+     * @param session Keycloak 会话
+     * @param client 客户端模型
+     * @param requestParams 表单参数
+     * @param config CIBA 策略配置
+     * @return 解析后的请求对象
+     */
         try {
             BackchannelAuthenticationEndpointRequest request = new BackchannelAuthenticationEndpointRequest();
 
@@ -65,7 +77,7 @@ public class BackchannelAuthenticationEndpointRequestParserProcessor {
             if (requestParam != null) {
                 new BackchannelAuthenticationEndpointSignedRequestParser(session, requestParam, client, config).parseRequest(request);
             } else if (requestUriParam != null) {
-                // Validate "requestUriParam" with allowed requestUris
+                // 校验 request_uri 是否在客户端允许的 requestUris 列表中
                 List<String> requestUris = OIDCAdvancedConfigWrapper.fromClientModel(client).getRequestUris();
                 String requestUri = RedirectUtils.verifyRedirectUri(session, client.getRootUrl(), requestUriParam, new HashSet<>(requestUris), false);
                 if (requestUri == null) {

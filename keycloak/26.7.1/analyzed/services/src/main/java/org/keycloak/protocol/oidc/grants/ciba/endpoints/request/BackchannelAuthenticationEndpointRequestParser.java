@@ -29,27 +29,25 @@ import org.keycloak.protocol.oidc.grants.ciba.CibaGrantType;
 import org.jboss.logging.Logger;
 
 /**
+ * 后台认证端点请求解析器抽象基类。
+ * <p>定义已知参数集合，并将 scope、用户提示等标准参数映射到请求对象；额外参数受数量与长度限制以防 DoS。</p>
+ *
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
 public abstract class BackchannelAuthenticationEndpointRequestParser {
 
     private static final Logger logger = Logger.getLogger(BackchannelAuthenticationEndpointRequestParser.class);
 
-    /**
-     * Max number of additional req params copied into client session note to prevent DoS attacks
-     *
-     */
+    /** 附加请求参数最大数量（防 DoS） */
     public static final int ADDITIONAL_REQ_PARAMS_MAX_MUMBER = 5;
 
-    /**
-     * Max size of additional req param value copied into client session note to prevent DoS attacks - params with longer value are ignored
-     *
-     */
+    /** 附加请求参数值最大长度（超长忽略，防 DoS） */
     public static final int ADDITIONAL_REQ_PARAMS_MAX_SIZE = 200;
 
+    /** 会话属性键：已解析的签名认证 request 对象 */
     public static final String CIBA_SIGNED_AUTHENTICATION_REQUEST = "ParsedSignedAuthenticationRequest";
 
-    /** Set of known protocol POST params not to be stored into additionalReqParams} */
+    /** 已知协议 POST 参数集合（不写入 additionalReqParams） */
     public static final Set<String> KNOWN_REQ_PARAMS = new HashSet<>();
     static {
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.REQUEST_PARAM);
@@ -57,7 +55,7 @@ public abstract class BackchannelAuthenticationEndpointRequestParser {
 
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.SCOPE_PARAM);
 
-        // CIBA
+        // CIBA 专用参数
         KNOWN_REQ_PARAMS.add(CibaGrantType.CLIENT_NOTIFICATION_TOKEN);
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.ACR_PARAM);
         KNOWN_REQ_PARAMS.add(CibaGrantType.LOGIN_HINT_TOKEN);
@@ -67,20 +65,23 @@ public abstract class BackchannelAuthenticationEndpointRequestParser {
         KNOWN_REQ_PARAMS.add(CibaGrantType.USER_CODE);
         KNOWN_REQ_PARAMS.add(CibaGrantType.REQUESTED_EXPIRY);
 
-        // OIDC
+        // OIDC 标准参数
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.PROMPT_PARAM);
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.NONCE_PARAM);
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.MAX_AGE_PARAM);
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.UI_LOCALES_PARAM);
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.CLAIMS_PARAM);
 
-        // these parameters are not included in Authentication Channel Request
-        // if these are included in Backchannel Authentication Request's body part for "client_secret_post" client authentication
+        // 以下参数不出现在认证通道请求中
+        // 但在 client_secret_post 认证方式的请求体中可能出现
         KNOWN_REQ_PARAMS.add(OAuth2Constants.CLIENT_ID);
         KNOWN_REQ_PARAMS.add(OAuth2Constants.CLIENT_SECRET);
     }
 
-    public void parseRequest(BackchannelAuthenticationEndpointRequest request) {
+    /**
+     * 解析请求参数并填充 {@link BackchannelAuthenticationEndpointRequest}。
+     * @param request 待填充的请求对象
+     */
         request.scope = replaceIfNotNull(request.scope, getParameter(OIDCLoginProtocol.SCOPE_PARAM));
 
         request.clientNotificationToken = replaceIfNotNull(request.clientNotificationToken, getParameter(CibaGrantType.CLIENT_NOTIFICATION_TOKEN));
@@ -101,7 +102,10 @@ public abstract class BackchannelAuthenticationEndpointRequestParser {
         extractAdditionalReqParams(request.additionalReqParams);
     }
 
-    protected void extractAdditionalReqParams(Map<String, String> additionalReqParams) {
+    /**
+     * 提取未知参数到附加参数映射（受数量与长度限制）。
+     * @param additionalReqParams 附加参数目标映射
+     */
         for (String paramName : keySet()) {
             if (!KNOWN_REQ_PARAMS.contains(paramName)) {
                 String value = getParameter(paramName);
@@ -122,6 +126,7 @@ public abstract class BackchannelAuthenticationEndpointRequestParser {
         }
     }
 
+    /** 若新值非 null 则替换，否则保留原值 */
     protected <T> T replaceIfNotNull(T previousVal, T newVal) {
         return newVal==null ? previousVal : newVal;
     }
