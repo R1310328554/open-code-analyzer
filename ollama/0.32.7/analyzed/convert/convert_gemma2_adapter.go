@@ -10,18 +10,22 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert_gemma2_adapter 实现 Gemma2 LoRA 适配器的 GGUF 转换。
+// gemma2Adapter 表示 Gemma2 架构的 AdapterConverter。
 type gemma2Adapter struct {
 	AdapterParameters
 }
 
 var _ AdapterConverter = (*gemma2Adapter)(nil)
 
+// KV 合并 LoRA 元数据并标记 general.architecture 为 gemma2。
 func (p *gemma2Adapter) KV(baseKV fs.Config) KV {
 	kv := p.AdapterParameters.KV()
 	kv["general.architecture"] = "gemma2"
 	return kv
 }
 
+// Tensors 必要时转置 LoRA A/B 权重形状。
 func (p *gemma2Adapter) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
@@ -43,6 +47,7 @@ func (p *gemma2Adapter) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 剥离 base_model 前缀并映射 LoRA 张量名。
 func (p *gemma2Adapter) Replacements() []string {
 	return []string{
 		"base_model.model.", "",
@@ -61,6 +66,7 @@ func (p *gemma2Adapter) Replacements() []string {
 	}
 }
 
+// repack 转置 LoRA 权重以匹配 GGML 布局。
 func (p *gemma2Adapter) repack(name string, data []float32, shape []uint64) ([]float32, error) {
 	dims := []int{int(shape[1]), int(shape[0])}
 

@@ -12,21 +12,27 @@ import (
 	"github.com/ollama/ollama/cmd/launch"
 )
 
+// signin 提供登录与套餐升级的 bubbletea 等待对话框。
+// signInTickMsg 驱动登录界面 spinner 动画。
 type signInTickMsg struct{}
 
+// signInCheckMsg 携带 Whoami 轮询结果。
 type signInCheckMsg struct {
 	signedIn bool
 	userName string
 }
 
+// upgradeTickMsg 驱动升级界面 spinner 动画。
 type upgradeTickMsg struct{}
 
+// upgradeCheckMsg 携带套餐校验轮询结果。
 type upgradeCheckMsg struct {
 	upgraded bool
 	plan     string
 	err      error
 }
 
+// signInModel 是登录等待对话框的 bubbletea 模型。
 type signInModel struct {
 	modelName string
 	signInURL string
@@ -36,6 +42,7 @@ type signInModel struct {
 	cancelled bool
 }
 
+// upgradeModel 是套餐升级对话框的 bubbletea 模型。
 type upgradeModel struct {
 	modelName    string
 	requiredPlan string
@@ -181,6 +188,7 @@ func (m upgradeModel) View() string {
 	return renderUpgrade(m.modelName, m.spinner, m.width, m.polling, m.openNow)
 }
 
+// renderSignIn 渲染登录 URL 与等待 spinner。
 func renderSignIn(modelName, signInURL string, spinner, width int) string {
 	spinnerFrames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	frame := spinnerFrames[spinner%len(spinnerFrames)]
@@ -209,12 +217,14 @@ func renderSignIn(modelName, signInURL string, spinner, width int) string {
 	return lipgloss.NewStyle().PaddingLeft(2).Render(s.String())
 }
 
+// upgradeTickCmd 返回升级界面的定时 tick 命令。
 func upgradeTickCmd() tea.Cmd {
 	return tea.Tick(200*time.Millisecond, func(t time.Time) tea.Msg {
 		return upgradeTickMsg{}
 	})
 }
 
+// renderUpgrade 渲染升级 URL、是否立即打开浏览器及等待状态。
 func renderUpgrade(modelName string, spinner, width int, polling, openNow bool) string {
 	spinnerFrames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 	frame := spinnerFrames[spinner%len(spinnerFrames)]
@@ -258,6 +268,7 @@ func renderUpgrade(modelName string, spinner, width int, polling, openNow bool) 
 	return lipgloss.NewStyle().PaddingLeft(2).Render(s.String())
 }
 
+// checkSignIn 调用 Whoami 检测用户是否已完成登录。
 func checkSignIn() tea.Msg {
 	client, err := api.ClientFromEnvironment()
 	if err != nil {
@@ -272,6 +283,7 @@ func checkSignIn() tea.Msg {
 	return signInCheckMsg{signedIn: false}
 }
 
+// checkUpgrade 轮询用户套餐是否满足 requiredPlan。
 func checkUpgrade(requiredPlan string) tea.Cmd {
 	return func() tea.Msg {
 		client, err := api.ClientFromEnvironment()
@@ -291,7 +303,7 @@ func checkUpgrade(requiredPlan string) tea.Cmd {
 	}
 }
 
-// RunSignIn shows a bubbletea sign-in dialog and polls until the user signs in or cancels.
+// RunSignIn 打开浏览器并轮询登录，成功返回用户名，取消返回 ErrCancelled。
 func RunSignIn(modelName, signInURL string) (string, error) {
 	launch.OpenBrowser(signInURL)
 
@@ -314,7 +326,7 @@ func RunSignIn(modelName, signInURL string) (string, error) {
 	return fm.userName, nil
 }
 
-// RunUpgrade shows a bubbletea upgrade dialog and polls until the user's plan is updated or cancelled.
+// RunUpgrade 引导用户升级套餐并轮询 Plan，成功返回新套餐名。
 func RunUpgrade(modelName, requiredPlan string) (string, error) {
 	m := upgradeModel{
 		modelName:    modelName,

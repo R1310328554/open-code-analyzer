@@ -37,6 +37,8 @@ var (
 				Italic(true)
 )
 
+// tui 实现 ollama launch 根菜单的 bubbletea 界面。
+// menuItem 表示根菜单中的一项（运行模型、集成或 More）。
 type menuItem struct {
 	title       string
 	description string
@@ -57,7 +59,7 @@ var othersMenuItem = menuItem{
 	isOthers:    true,
 }
 
-// launcherMenuIntegrations defines the integrations pinned to the root menu.
+// launcherMenuIntegrations 定义根菜单固定展示的集成名称。
 // Additional visible integrations are available through More in registry order.
 var launcherMenuIntegrations = []string{"claude", "opencode", "hermes", "openclaw"}
 
@@ -72,6 +74,7 @@ type model struct {
 	action     TUIAction
 }
 
+// newModel 根据 LauncherState 构建菜单项与初始光标。
 func newModel(state *launch.LauncherState) model {
 	m := model{
 		state: state,
@@ -94,6 +97,7 @@ func shouldExpandOthers(state *launch.LauncherState) bool {
 	return false
 }
 
+// buildMenuItems 组装运行模型、固定集成与 More 项。
 func buildMenuItems(state *launch.LauncherState, showOthers bool) []menuItem {
 	items := []menuItem{runModelMenuItem}
 	items = append(items, launcherIntegrationItems(state)...)
@@ -241,6 +245,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// selectableItem 判断 Enter 能否启动该项。
 func (m model) selectableItem(item menuItem) bool {
 	if item.isRunModel {
 		return true
@@ -252,6 +257,7 @@ func (m model) selectableItem(item menuItem) bool {
 	return ok && state.Selectable
 }
 
+// changeableItem 判断 → 能否进入配置流程。
 func (m model) changeableItem(item menuItem) bool {
 	if item.integration == "" {
 		return false
@@ -298,6 +304,7 @@ func (m model) renderMenuItem(index int, item menuItem) string {
 			style = menuSelectedItemStyle
 		}
 	} else if item.isOthers {
+		// 光标到达 More 时立即展开，故始终使用默认样式
 		// More immediately expands when reached, so it always uses the default style.
 	} else {
 		integrationState := m.state.Integrations[item.integration]
@@ -336,6 +343,7 @@ func (m model) renderMenuItem(index int, item menuItem) string {
 	return style.Render(cursor+title) + modelSuffix + "\n" + menuDescStyle.Render(description) + "\n\n"
 }
 
+// TUIActionKind 表示用户在根菜单选择的动作类型。
 type TUIActionKind int
 
 const (
@@ -344,12 +352,14 @@ const (
 	TUIActionLaunchIntegration
 )
 
+// TUIAction 描述用户从根菜单确认后的后续动作。
 type TUIAction struct {
 	Kind           TUIActionKind
 	Integration    string
 	ForceConfigure bool
 }
 
+// LastSelection 返回应写入持久化的 lastSelection 键。
 func (a TUIAction) LastSelection() string {
 	switch a.Kind {
 	case TUIActionRunModel:
@@ -361,10 +371,12 @@ func (a TUIAction) LastSelection() string {
 	}
 }
 
+// RunModelRequest 构造运行模型请求。
 func (a TUIAction) RunModelRequest() launch.RunModelRequest {
 	return launch.RunModelRequest{ForcePicker: a.ForceConfigure}
 }
 
+// IntegrationLaunchRequest 构造集成启动请求。
 func (a TUIAction) IntegrationLaunchRequest() launch.IntegrationLaunchRequest {
 	return launch.IntegrationLaunchRequest{
 		Name:           a.Integration,
@@ -383,6 +395,7 @@ func actionForMenuItem(item menuItem, forceConfigure bool) TUIAction {
 	}
 }
 
+// RunMenu 运行根启动器菜单，返回用户选择的动作。
 func RunMenu(state *launch.LauncherState) (TUIAction, error) {
 	menu := newModel(state)
 	program := tea.NewProgram(menu)

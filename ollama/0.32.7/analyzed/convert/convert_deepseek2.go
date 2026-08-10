@@ -10,6 +10,8 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert_deepseek2 实现 DeepSeek V3 / MoE 架构的 GGUF 转换。
+// deepseek2Model 表示 DeepSeek2 MoE 架构的 ModelConverter。
 type deepseek2Model struct {
 	ModelParameters               // architectures, vocab_size
 	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
@@ -47,6 +49,7 @@ type deepseek2Model struct {
 	Architecture string
 }
 
+// KV 写入 deepseek2 专家路由、RoPE 缩放与注意力维度。
 func (p *deepseek2Model) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "deepseek2"
@@ -72,6 +75,7 @@ func (p *deepseek2Model) KV(t *Tokenizer) KV {
 	var scoringFunc uint32
 	switch p.ScoringFunc {
 	case "softmax":
+		// 模型运行时暂不支持，但 Deepseek-OCR 需要此 gating 映射
 		// not currently supported in the model, but needed for Deepseek-OCR
 		scoringFunc = 1
 	case "sigmoid":
@@ -96,6 +100,7 @@ func (p *deepseek2Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Replacements 映射 MLA 与 MoE 层张量命名。
 func (p *deepseek2Model) Replacements() []string {
 	return []string{
 		"lm_head", "output",
@@ -123,6 +128,7 @@ func (p *deepseek2Model) Replacements() []string {
 	}
 }
 
+// Tensors 合并专家权重并跳过 MTP 等额外层。
 func (p *deepseek2Model) Tensors(s []Tensor) (out []*ggml.Tensor) {
 	merges := make([]merge, p.HiddenLayers*3)
 	for i := range p.HiddenLayers {
@@ -157,6 +163,7 @@ func (p *deepseek2Model) Tensors(s []Tensor) (out []*ggml.Tensor) {
 
 	out, s = mergeTensors(s, merges...)
 	for _, t := range s {
+		// 跳过超出 block_count 的附加层（如 Multi-Token Prediction）
 		// skip any additional layers (such as the Multi-Token Prediction layer)
 		if skipLayer(t.Name(), p.HiddenLayers) {
 			slog.Debug("skipping layer", "name", t.Name())

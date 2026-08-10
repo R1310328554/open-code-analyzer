@@ -1,5 +1,7 @@
 package convert
 
+// convert_gemma2 实现 Google Gemma2 因果语言模型的 GGUF 转换。
+// gemma2Model 嵌入 gemmaModel 并增加滑动窗口与 logit softcap。
 type gemma2Model struct {
 	gemmaModel
 	SlidingWindow         uint32  `json:"sliding_window"`
@@ -7,6 +9,7 @@ type gemma2Model struct {
 	FinalLogitSoftcap     float32 `json:"final_logit_softcapping"`
 }
 
+// KV 写入 gemma2 架构超参、sliding window 与 softcap。
 func (p *gemma2Model) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "gemma2"
@@ -29,6 +32,7 @@ func (p *gemma2Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Replacements 映射 Gemma2 额外 layernorm 层命名。
 func (p *gemma2Model) Replacements() []string {
 	return []string{
 		"model.embed_tokens", "token_embd",

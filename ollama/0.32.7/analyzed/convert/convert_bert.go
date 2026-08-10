@@ -11,6 +11,8 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert_bert 实现 BERT / sentence-transformers 嵌入模型的 GGUF 转换。
+// bertModel 表示 BERT 架构的 ModelConverter 实现。
 type bertModel struct {
 	ModelParameters
 	NLayers               uint32  `json:"n_layers"`
@@ -38,6 +40,7 @@ var (
 	_ moreParser     = (*bertModel)(nil)
 )
 
+// parseMore 从 modules.json 读取 Pooling 与 Normalize 配置。
 func (p *bertModel) parseMore(fsys fs.FS) error {
 	bts, err := fs.ReadFile(fsys, "modules.json")
 	if err != nil {
@@ -88,6 +91,7 @@ func (p *bertModel) parseMore(fsys fs.FS) error {
 	return nil
 }
 
+// KV 写入 bert 架构元数据并将词表转为 phantom space 格式。
 func (p *bertModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "bert"
@@ -120,6 +124,7 @@ func (p *bertModel) KV(t *Tokenizer) KV {
 	kv["tokenizer.ggml.model"] = "bert"
 	kv["tokenizer.ggml.token_type_count"] = uint32(2)
 
+	// 将词表 token 转为 SentencePiece 风格的 phantom space（\u2581）
 	// convert to phantom space tokens
 	for i, e := range t.Tokens {
 		if strings.HasPrefix(e, "[") && strings.HasSuffix(e, "]") {
@@ -136,6 +141,7 @@ func (p *bertModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 跳过 position_ids 与 pooler 层，映射其余权重。
 func (p *bertModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
@@ -158,6 +164,7 @@ func (p *bertModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 返回 Hugging Face 到 GGML 的张量名替换对。
 func (bertModel) Replacements() []string {
 	return []string{
 		"encoder.layer", "blk",

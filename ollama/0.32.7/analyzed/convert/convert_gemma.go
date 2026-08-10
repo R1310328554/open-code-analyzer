@@ -9,6 +9,8 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert_gemma 实现 Google Gemma v1 因果语言模型的 GGUF 转换。
+// gemmaModel 表示 Gemma v1 架构的 ModelConverter。
 type gemmaModel struct {
 	ModelParameters
 	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
@@ -23,6 +25,7 @@ type gemmaModel struct {
 
 var _ ModelConverter = (*gemmaModel)(nil)
 
+// KV 写入 gemma 架构超参与特殊 token ID。
 func (p *gemmaModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "gemma"
@@ -42,6 +45,7 @@ func (p *gemmaModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 为非视觉 norm 权重注册 addOne repacker。
 func (p *gemmaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
@@ -60,6 +64,7 @@ func (p *gemmaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Gemma v1 层张量命名。
 func (p *gemmaModel) Replacements() []string {
 	return []string{
 		"model.embed_tokens", "token_embd",
@@ -77,6 +82,7 @@ func (p *gemmaModel) Replacements() []string {
 	}
 }
 
+// addOne 对 RMS norm 权重加 1，符合 Gemma 推理约定。
 func (*gemmaModel) addOne(_ string, data []float32, shape []uint64) ([]float32, error) {
 	n := tensor.New(tensor.WithShape(int(shape[0])), tensor.WithBacking(data))
 	ones := tensor.Ones(tensor.Float32, int(shape[0]))

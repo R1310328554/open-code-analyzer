@@ -52,11 +52,13 @@ var (
 				Foreground(lipgloss.AdaptiveColor{Light: "240", Dark: "249"})
 )
 
+// selector 提供单选与多选 bubbletea 列表，供 launch 与根 TUI 复用。
 const maxSelectorItems = 10
 
-// ErrCancelled is returned when the user cancels the selection.
+// ErrCancelled 表示用户取消选择操作。
 var ErrCancelled = launch.ErrCancelled
 
+// SelectItem 表示选择器中的一行（名称、描述、推荐标记等）。
 type SelectItem struct {
 	Name              string
 	Description       string
@@ -64,12 +66,14 @@ type SelectItem struct {
 	AvailabilityBadge string
 }
 
+// SelectorModel 为 selectorModel 的导出别名，供 TUI 模态嵌入。
 type SelectorModel = selectorModel
 
 type selectorItemsUpdatedMsg struct {
 	items []SelectItem
 }
 
+// waitForSelectorItems 将异步列表更新转为 bubbletea 消息。
 func waitForSelectorItems(updates <-chan []SelectItem) tea.Cmd {
 	if updates == nil {
 		return nil
@@ -83,7 +87,7 @@ func waitForSelectorItems(updates <-chan []SelectItem) tea.Cmd {
 	}
 }
 
-// ConvertItems converts launch.SelectionItem slice to SelectItem slice.
+// ConvertItems 将 launch.SelectionItem 转为 SelectItem。
 func ConvertItems(items []launch.SelectionItem) []SelectItem {
 	out := make([]SelectItem, len(items))
 	for i, item := range items {
@@ -97,7 +101,7 @@ func ConvertItems(items []launch.SelectionItem) []SelectItem {
 	return out
 }
 
-// ReorderItems returns a copy with recommended items first, then non-recommended,
+// ReorderItems 将推荐项排在前面，组内保持原序，与 Recommended/More 分区一致。
 // preserving relative order within each group. This ensures the data order matches
 // the visual section layout (Recommended / More).
 func ReorderItems(items []SelectItem) []SelectItem {
@@ -112,7 +116,7 @@ func ReorderItems(items []SelectItem) []SelectItem {
 	return append(rec, other...)
 }
 
-// selectorModel is the bubbletea model for single selection.
+// selectorModel 是单选列表的 bubbletea 模型。
 type selectorModel struct {
 	title        string
 	items        []SelectItem
@@ -137,10 +141,12 @@ func selectorModelWithCurrent(title string, items []SelectItem, current string) 
 	return m
 }
 
+// NewSelectorModel 创建带当前项高亮的单选器。
 func NewSelectorModel(title string, items []SelectItem, current string) SelectorModel {
 	return selectorModelWithCurrent(title, items, current)
 }
 
+// NewModelSelectorModel 创建带初始过滤与排序的单选器。
 func NewModelSelectorModel(title string, items []SelectItem, current, filter string) SelectorModel {
 	m := selectorModelWithCurrent(title, items, current)
 	m.filter = strings.TrimSpace(filter)
@@ -213,7 +219,7 @@ func (m selectorModel) Init() tea.Cmd {
 	return waitForSelectorItems(m.updates)
 }
 
-// otherStart returns the index of the first non-recommended item in the filtered list.
+// otherStart 返回过滤列表中首个非推荐项索引；过滤模式下为 0。
 // When filtering, all items scroll together so this returns 0.
 func (m selectorModel) otherStart() int {
 	if m.filter != "" {
@@ -228,7 +234,7 @@ func (m selectorModel) otherStart() int {
 	return len(filtered)
 }
 
-// updateNavigation handles navigation keys (up/down/pgup/pgdown/filter/backspace).
+// updateNavigation 处理上下翻页与过滤输入，不处理 Enter/Esc。
 // It does NOT handle Enter, Esc, or CtrlC. This is used by both the standalone
 // selector and the TUI modal (which intercepts Enter/Esc for its own logic).
 func (m *selectorModel) updateNavigation(msg tea.KeyMsg) {
@@ -276,10 +282,12 @@ func (m *selectorModel) updateNavigation(msg tea.KeyMsg) {
 	}
 }
 
+// UpdateNavigation 供 TUI 模态复用的导航入口。
 func (m *selectorModel) UpdateNavigation(msg tea.KeyMsg) {
 	m.updateNavigation(msg)
 }
 
+// Move 按 delta 移动光标并更新滚动。
 func (m *selectorModel) Move(delta int) {
 	if delta == 0 {
 		return
@@ -300,18 +308,22 @@ func (m *selectorModel) Move(delta int) {
 	m.updateScroll(m.otherStart())
 }
 
+// SetHelpText 覆盖底部帮助文案。
 func (m *selectorModel) SetHelpText(help string) {
 	m.helpText = help
 }
 
+// Filter 返回当前过滤字符串。
 func (m selectorModel) Filter() string {
 	return m.filter
 }
 
+// FilteredItems 返回过滤后的选项副本。
 func (m selectorModel) FilteredItems() []SelectItem {
 	return append([]SelectItem(nil), m.filteredItems()...)
 }
 
+// SelectedItem 返回光标处的选项。
 func (m selectorModel) SelectedItem() (SelectItem, bool) {
 	filtered := m.filteredItems()
 	if len(filtered) == 0 || m.cursor < 0 || m.cursor >= len(filtered) {
@@ -320,11 +332,12 @@ func (m selectorModel) SelectedItem() (SelectItem, bool) {
 	return filtered[m.cursor], true
 }
 
+// RenderContent 渲染列表内容，供嵌入模态使用。
 func (m selectorModel) RenderContent() string {
 	return m.renderContent()
 }
 
-// updateScroll adjusts scrollOffset based on cursor position.
+// updateScroll 按光标位置调整 scrollOffset；非过滤时 More 区独立滚动。
 // When not filtering, scrollOffset is relative to the "More" (non-recommended) section.
 // When filtering, it's relative to the full filtered list.
 func (m *selectorModel) updateScroll(otherStart int) {
@@ -431,7 +444,7 @@ func (m selectorModel) renderCompactItem(s *strings.Builder, item SelectItem, id
 	s.WriteString("\n")
 }
 
-// renderContent renders the selector content (title, items, help text) without
+// renderContent 渲染标题、列表与帮助，不检查 cancelled/selected 状态。
 // checking the cancelled/selected state. This is used by both View() (standalone mode)
 // and by the TUI modal which embeds a selectorModel.
 func (m selectorModel) renderContent() string {
@@ -469,6 +482,7 @@ func (m selectorModel) renderContent() string {
 			s.WriteString("\n")
 		}
 	} else {
+		// 分为固定的推荐区与可滚动的 More 区
 		// Split into pinned recommended and scrollable others
 		var recItems, otherItems []int
 		for i, item := range filtered {
@@ -524,6 +538,7 @@ func (m selectorModel) renderContent() string {
 	return s.String()
 }
 
+// RenderCompactContent 渲染紧凑列表，用于嵌套模态。
 func (m selectorModel) RenderCompactContent(maxItems int) string {
 	var s strings.Builder
 
@@ -680,7 +695,7 @@ func compareSelectorInt(a, b int) int {
 	}
 }
 
-// cursorForCurrent returns the item index matching current, or 0 if not found.
+// cursorForCurrent 匹配 current 名称或 tag 前缀，未找到则返回 0。
 func cursorForCurrent(items []SelectItem, current string) int {
 	if current == "" {
 		return 0
@@ -701,10 +716,12 @@ func cursorForCurrent(items []SelectItem, current string) int {
 	return 0
 }
 
+// SelectSingle 运行独立单选 TUI 并返回选中名称。
 func SelectSingle(title string, items []SelectItem, current string) (string, error) {
 	return SelectSingleWithUpdates(title, items, current, nil)
 }
 
+// SelectSingleWithUpdates 支持打开期间接收列表刷新的单选 TUI。
 func SelectSingleWithUpdates(title string, items []SelectItem, current string, updates <-chan []SelectItem) (string, error) {
 	if len(items) == 0 {
 		return "", fmt.Errorf("no items to select from")
@@ -727,7 +744,7 @@ func SelectSingleWithUpdates(title string, items []SelectItem, current string, u
 	return fm.selected, nil
 }
 
-// multiSelectorModel is the bubbletea model for multi selection.
+// multiSelectorModel 是多选列表的 bubbletea 模型。
 type multiSelectorModel struct {
 	title        string
 	items        []SelectItem
@@ -1009,6 +1026,7 @@ func (m multiSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case tea.KeyRunes:
+			// 部分终端（如 Windows PowerShell）将空格作为 KeyRunes 送达
 			// On some terminals (e.g. Windows PowerShell), space arrives as
 			// KeyRunes instead of KeySpace. Intercept it so toggle still works.
 			if len(msg.Runes) == 1 && msg.Runes[0] == ' ' {
@@ -1182,10 +1200,12 @@ func (m multiSelectorModel) View() string {
 	return result
 }
 
+// SelectMultiple 运行多选 TUI；最后一项勾选为默认模型。
 func SelectMultiple(title string, items []SelectItem, preChecked []string) ([]string, error) {
 	return SelectMultipleWithUpdates(title, items, preChecked, nil)
 }
 
+// SelectMultipleWithUpdates 支持 live updates 的多选 TUI。
 func SelectMultipleWithUpdates(title string, items []SelectItem, preChecked []string, updates <-chan []SelectItem) ([]string, error) {
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no items to select from")

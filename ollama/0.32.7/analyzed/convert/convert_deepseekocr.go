@@ -6,6 +6,8 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert_deepseekocr 实现 DeepSeek OCR 多模态（语言+视觉+SAM）GGUF 转换。
+// deepseekocr 表示 DeepSeek OCR 多模态 ModelConverter。
 type deepseekocr struct {
 	ModelParameters
 	LanguageConfig struct {
@@ -41,6 +43,7 @@ type deepseekocr struct {
 	} `json:"vision_config"`
 }
 
+// KV 写入语言、CLIP 视觉与 SAM 分支的元数据。
 func (m *deepseekocr) KV(t *Tokenizer) KV {
 	kv := m.ModelParameters.KV(t)
 	kv["general.architecture"] = "deepseekocr"
@@ -67,6 +70,7 @@ func (m *deepseekocr) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 合并 MoE 专家权重后映射其余张量。
 func (m *deepseekocr) Tensors(s []Tensor) (out []*ggml.Tensor) {
 	merges := make([]merge, m.LanguageConfig.HiddenLayers*3)
 	for i := range m.LanguageConfig.HiddenLayers {
@@ -96,6 +100,7 @@ func (m *deepseekocr) Tensors(s []Tensor) (out []*ggml.Tensor) {
 	return out
 }
 
+// Replacements 映射语言、视觉、投影器与 SAM 张量命名。
 func (m *deepseekocr) Replacements() []string {
 	return []string{
 		"model.embed_tokens", "token_embd",
@@ -124,6 +129,7 @@ func (m *deepseekocr) Replacements() []string {
 
 		"model.projector", "mm",
 		"model.image_newline", "mm.image_newline",
+		//nolint:misspell // 上游拼写 view_seperator，修正会导致模型不兼容
 		//nolint:misspell // this misspelling is upstream. fixing it breaks the model
 		"model.view_seperator", "mm.view_seperator",
 

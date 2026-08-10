@@ -13,6 +13,8 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert_embeddinggemma 实现 Gemma3 文本嵌入（sentence-transformers）GGUF 转换。
+// embeddingGemmaModel 表示 Gemma 嵌入模型的 ModelConverter。
 type embeddingGemmaModel struct {
 	gemmaModel
 	RopeLocalTheta float32 `json:"rope_local_base_freq"`
@@ -23,6 +25,7 @@ type embeddingGemmaModel struct {
 	denseModules []embeddingGemmaDenseModule
 }
 
+// embeddingGemmaDenseModule 描述 sentence-transformers Dense 模块路径与维度。
 type embeddingGemmaDenseModule struct {
 	path       string
 	tensorName string
@@ -36,6 +39,7 @@ var (
 	_ tokenizerAdjuster = (*embeddingGemmaModel)(nil)
 )
 
+// KV 写入 gemma-embedding 架构、滑动窗口与 Dense 层维度。
 func (m *embeddingGemmaModel) KV(t *Tokenizer) KV {
 	kv := m.ModelParameters.KV(t)
 	kv["general.architecture"] = "gemma-embedding"
@@ -61,6 +65,7 @@ func (m *embeddingGemmaModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// parseMore 从 modules.json 解析 Pooling 与 Dense 模块。
 func (m *embeddingGemmaModel) parseMore(fsys fs.FS) error {
 	bts, err := fs.ReadFile(fsys, "modules.json")
 	if err != nil {
@@ -115,6 +120,7 @@ func (m *embeddingGemmaModel) parseMore(fsys fs.FS) error {
 	return nil
 }
 
+// adjustTokenizer 将词表截断至 VocabSize。
 func (m *embeddingGemmaModel) adjustTokenizer(t *Tokenizer) {
 	n := int(m.VocabSize)
 	if n == 0 || len(t.Vocabulary.Tokens) <= n {
@@ -130,6 +136,7 @@ func (m *embeddingGemmaModel) adjustTokenizer(t *Tokenizer) {
 	}
 }
 
+// embeddingGemmaPoolingType 从 Pooling 配置解析 pooling_type。
 func embeddingGemmaPoolingType(fsys fs.FS, modulePath string) (uint32, error) {
 	if modulePath == "" {
 		return 0, nil
@@ -214,6 +221,7 @@ func embeddingGemmaDenseTensorName(modulePath string) (string, bool) {
 	}
 }
 
+// extraTensors 加载 2_Dense 与 3_Dense 的 safetensors 权重。
 func (m *embeddingGemmaModel) extraTensors(fsys fs.FS) ([]Tensor, error) {
 	var extra []Tensor
 	for _, dense := range m.denseModules {
@@ -237,6 +245,7 @@ func (m *embeddingGemmaModel) extraTensors(fsys fs.FS) ([]Tensor, error) {
 	return extra, nil
 }
 
+// Tensors 重命名 norm 并为 RMS norm 注册 addOne repacker。
 func (m *embeddingGemmaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	out := make([]*ggml.Tensor, 0, len(ts))
 	for _, t := range ts {
@@ -259,6 +268,7 @@ func (m *embeddingGemmaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Gemma3 嵌入层张量命名。
 func (m *embeddingGemmaModel) Replacements() []string {
 	return []string{
 		"embed_tokens.", "token_embd.",

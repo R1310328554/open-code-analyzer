@@ -17,10 +17,13 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert 将 Hugging Face / safetensors 检查点转换为 Ollama GGUF 格式。
+// ModelParameters 从 config.json 解析的通用模型参数。
 type ModelParameters struct {
 	Architectures []string `json:"architectures"`
 	VocabSize     uint32   `json:"vocab_size"`
 
+	// TODO：ModelType 字段是否仍需保留
 	// TODO is this needed?
 	ModelType string `json:"model_type"`
 
@@ -31,6 +34,7 @@ type ModelParameters struct {
 	} `json:"text_config"`
 }
 
+// AdapterParameters 从 adapter_config.json 解析的 LoRA 适配器参数。
 type AdapterParameters struct {
 	Alpha          uint32 `json:"lora_alpha"`
 	LoraLayers     uint32 `json:"lora_layers"`
@@ -41,8 +45,10 @@ type AdapterParameters struct {
 	} `json:"lora_parameters"`
 }
 
+// KV 表示写入 GGUF 的键值元数据映射。
 type KV map[string]any
 
+// Architecture 返回 general.architecture，缺省为 unknown。
 func (kv KV) Architecture() string {
 	return kv.String("general.architecture", "unknown")
 }
@@ -184,11 +190,13 @@ func (ModelParameters) specialTokenTypes() []string {
 	}
 }
 
+// ModelKV 将模型参数与分词器映射为 GGUF KV。
 type ModelKV interface {
 	// KV maps parameters to LLM key-values
 	KV(*Tokenizer) KV
 }
 
+// ModelConverter 定义架构相关的张量映射、命名替换与 KV 生成。
 type ModelConverter interface {
 	ModelKV
 
@@ -202,7 +210,7 @@ type ModelConverter interface {
 	specialTokenTypes() []string
 }
 
-// MultimodalConverter splits checkpoints with embedded vision/projector
+// MultimodalConverter 将含视觉/投影权重的检查点拆分为文本 GGUF 与投影 GGUF。
 // weights into a text model GGUF and a separate projector GGUF.
 type MultimodalConverter interface {
 	ModelConverter
@@ -228,6 +236,7 @@ type tokenizerAwareTensorConverter interface {
 	TensorsWithTokenizer([]Tensor, *Tokenizer) []*ggml.Tensor
 }
 
+// AdapterConverter 定义 LoRA 适配器的 KV 与张量转换。
 type AdapterConverter interface {
 	// KV maps parameters to LLM key-values
 	KV(ofs.Config) KV
@@ -238,6 +247,7 @@ type AdapterConverter interface {
 	Replacements() []string
 }
 
+// ConvertAdapter 将 LoRA 适配器权重写入 GGUF。
 func ConvertAdapter(fsys fs.FS, f *os.File, baseKV ofs.Config) error {
 	bts, err := fs.ReadFile(fsys, "adapter_config.json")
 	if err != nil {
@@ -276,6 +286,7 @@ func ConvertAdapter(fsys fs.FS, f *os.File, baseKV ofs.Config) error {
 	return writeFile(f, conv.KV(baseKV), conv.Tensors(ts))
 }
 
+// LoadModelMetadata 解析 config.json、分词器并返回对应 ModelConverter。
 func LoadModelMetadata(fsys fs.FS) (ModelKV, *Tokenizer, error) {
 	bts, err := fs.ReadFile(fsys, "config.json")
 	if err != nil {
@@ -400,7 +411,7 @@ func LoadModelMetadata(fsys fs.FS) (ModelKV, *Tokenizer, error) {
 	return conv, t, nil
 }
 
-// Convert writes an Ollama compatible model to the provided io.WriteSeeker based on configurations
+// ConvertModel 将 safetensors 检查点转换为 Ollama 兼容 GGUF 并写入文件。
 // and files it finds in the input path.
 // Supported input model formats include safetensors.
 // Supported input tokenizers files include tokenizer.json (preferred) and tokenizer.model.
@@ -448,6 +459,7 @@ func ConvertModel(fsys fs.FS, f *os.File, projectorFiles ...*os.File) error {
 	return writeFile(f, conv.KV(t), tensors)
 }
 
+// ensureUniqueTensorNames 校验张量名称无重复。
 func ensureUniqueTensorNames(ts []Tensor) error {
 	names := make(map[string]struct{}, len(ts))
 	for _, t := range ts {
@@ -459,6 +471,7 @@ func ensureUniqueTensorNames(ts []Tensor) error {
 	return nil
 }
 
+// writeFile 合并源张量 KV 并调用 ggml.WriteGGUF。
 func writeFile(f *os.File, kv KV, ts []*ggml.Tensor) error {
 	for k, v := range sourceTensorKV(ts) {
 		kv[k] = v

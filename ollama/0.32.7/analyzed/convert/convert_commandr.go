@@ -6,6 +6,8 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// convert_commandr 实现 Cohere Command-R 因果语言模型的 GGUF 转换。
+// commandrModel 表示 Command-R 架构的 ModelConverter。
 type commandrModel struct {
 	ModelParameters
 	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
@@ -24,6 +26,7 @@ type commandrModel struct {
 
 var _ ModelConverter = (*commandrModel)(nil)
 
+// KV 写入 command-r 架构的超参与上下文长度。
 func (p *commandrModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "command-r"
@@ -43,6 +46,7 @@ func (p *commandrModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 将输入张量原样映射为 ggml.Tensor。
 func (p *commandrModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
@@ -57,6 +61,7 @@ func (p *commandrModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 QK norm 与 MLP 层命名。
 func (p *commandrModel) Replacements() []string {
 	return []string{
 		"self_attn.q_norm", "attn_q_norm",
