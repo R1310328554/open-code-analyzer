@@ -39,12 +39,21 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelIllegalStateException;
 import org.keycloak.representations.idm.authorization.Permission;
 
+/**
+ * FGAP v2 细粒度管理权限评估器。
+ * <p>基于 {@link AdminPermissionsSchema} 资源类型与作用域，对模型实例或类型级资源执行策略决策。</p>
+ */
 class FineGrainedAdminPermissionEvaluator {
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 根权限上下文 */
     private final MgmtPermissions root;
+    /** 资源存储 */
     private final ResourceStore resourceStore;
+    /** 策略存储 */
     private final PolicyStore policyStore;
 
+    /** 构造 FGAP v2 评估器 */
     FineGrainedAdminPermissionEvaluator(KeycloakSession session, MgmtPermissions root, ResourceStore resourceStore, PolicyStore policyStore) {
         this.session = session;
         this.root = root;
@@ -57,15 +66,12 @@ class FineGrainedAdminPermissionEvaluator {
     }
 
     /**
-     * Checks if there are permissions granted for the given {@code model} and {@code scope}. If
-     * the given {@code scope} is not associated with any permission, the value returned by {@code defaultValue} will
-     * be returned.
-     *
-     * @param model the model
-     * @param context the context
-     * @param scope the scope
-     * @param defaultValue the default value
-     * @return
+     * 检查模型在指定 {@code scope} 下是否授权；未评估该作用域时返回 {@code defaultValue}。
+     * @param model 模型记录
+     * @param context 评估上下文
+     * @param scope 作用域名称
+     * @param defaultValue 未评估时的默认值
+     * @return 是否授权
      */
     boolean hasPermission(ModelRecord model, EvaluationContext context, String scope, Supplier<Boolean> defaultValue) {
         return hasPermission(model.getId(), model.getResourceType(), context, scope, defaultValue);
@@ -76,15 +82,13 @@ class FineGrainedAdminPermissionEvaluator {
     }
 
     /**
-     * Checks if there are permissions granted for the given {@code modelId} and {@code scope}. If
-     * the given {@code scope} is not associated with any permission, the value returned by {@code defaultValue} will
-     * be returned.
-     *
-     * @param modelId the model id
-     * @param context the context
-     * @param scopeName the scope
-     * @param defaultValue the default value
-     * @return
+     * 按模型 ID 与资源类型检查 {@code scopeName} 权限。
+     * @param modelId 模型 ID（null 表示类型级资源）
+     * @param resourceType 资源类型
+     * @param context 评估上下文
+     * @param scopeName 作用域名称
+     * @param defaultValue 未评估时的默认值
+     * @return 是否授权
      */
     boolean hasPermission(String modelId, String resourceType, EvaluationContext context, String scopeName, Supplier<Boolean> defaultValue) {
         if (!root.isAdminSameRealm()) {
@@ -134,6 +138,7 @@ class FineGrainedAdminPermissionEvaluator {
         return false;
     }
 
+    /** 返回对 {@code resourceType} 上 {@code scope} 有权限的资源 ID 集合 */
     Set<String> getIdsByScope(String resourceType, String scope) {
         if (!root.isAdminSameRealm()) {
             return Collections.emptySet();

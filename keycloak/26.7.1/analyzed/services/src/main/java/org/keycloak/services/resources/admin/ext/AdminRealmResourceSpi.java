@@ -23,10 +23,9 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * <p>A {@link Spi} to plug additional sub-resources to Realms' RESTful Admin API.
- *
- * <p>Implementors can use this {@link Spi} to provide additional services to the mentioned API and extend Keycloak capabilities by
- * creating JAX-RS sub-resources for paths not known by the server.
+ * 领域管理 REST API 扩展 SPI。
+ * <p>通过 {@link Spi} 为 Realm Admin API 挂载额外 JAX-RS 子资源，扩展服务器未内置的路径。</p>
+ * <p>实现者可注册自定义子路径，增强 Keycloak 管理能力。</p>
  */
 public class AdminRealmResourceSpi implements Spi {
 

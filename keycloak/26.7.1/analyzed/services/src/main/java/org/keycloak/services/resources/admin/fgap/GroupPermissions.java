@@ -42,21 +42,31 @@ import org.keycloak.models.GroupModel;
 import org.keycloak.representations.idm.authorization.Permission;
 
 /**
+ * 组细粒度管理权限 V1 实现。
+ * <p>在领域资源服务器上为每个组创建 Group 类型资源及 manage/view/members 相关空策略。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class GroupPermissions implements GroupPermissionEvaluator, GroupPermissionManagement {
 
+    /** 管理成员关系作用域 */
     private static final String MANAGE_MEMBERSHIP_SCOPE = "manage-membership";
+    /** 管理组成员作用域 */
     private static final String MANAGE_MEMBERS_SCOPE = "manage-members";
+    /** 查看组成员作用域 */
     private static final String VIEW_MEMBERS_SCOPE = "view-members";
+    /** 组资源名称前缀 */
     private static final String RESOURCE_NAME_PREFIX = "group.resource.";
 
+    /** 授权服务 */
     private final AuthorizationProvider authz;
+    /** 根权限上下文 */
     protected final MgmtPermissions root;
     protected final ResourceStore resourceStore;
     protected final PolicyStore policyStore;
 
+    /** 构造组权限 V1 实现 */
     GroupPermissions(AuthorizationProvider authz, MgmtPermissions root) {
         this.authz = authz;
         this.root = root;
@@ -93,6 +103,7 @@ class GroupPermissions implements GroupPermissionEvaluator, GroupPermissionManag
         return "view.members.permission.group." + group.getId();
     }
 
+    /** 为组懒创建资源与空策略 */
     private void initialize(GroupModel group) {
         ResourceServer server = root.initializeRealmResourceServer();
         if (server == null) return;
@@ -441,6 +452,7 @@ class GroupPermissions implements GroupPermissionEvaluator, GroupPermissionManag
         return resourceStore.findByName(server, groupResourceName);
     }
 
+    /** 删除组全部细粒度权限资源与策略 */
     private void deletePermissions(GroupModel group) {
         ResourceServer server = root.realmResourceServer();
         if (server == null) return;

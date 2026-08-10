@@ -21,23 +21,37 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.models.ClientModel;
 
 /**
+ * 管理端细粒度权限管理门面。
+ * <p>提供角色/用户/组/客户端/身份提供者等资源的授权策略与资源服务器访问。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface AdminPermissionManagement {
+    /** 管理作用域名称 */
     public static final String MANAGE_SCOPE = "manage";
+    /** 查看作用域名称 */
     public static final String VIEW_SCOPE = "view";
+    /** 令牌交换作用域名称 */
     public static final String TOKEN_EXCHANGE ="token-exchange";
 
+    /** 获取领域级 admin permissions 客户端 */
     ClientModel getRealmPermissionsClient();
 
+    /** 授权服务提供者 */
     AuthorizationProvider authz();
 
+    /** 角色权限管理 */
     RolePermissionManagement roles();
+    /** 用户权限管理 */
     UserPermissionManagement users();
+    /** 组权限管理 */
     GroupPermissionManagement groups();
+    /** 客户端权限管理 */
     ClientPermissionManagement clients();
+    /** 身份提供者权限管理 */
     IdentityProviderPermissionManagement idps();
 
+    /** 领域资源服务器 */
     ResourceServer realmResourceServer();
 }

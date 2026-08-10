@@ -32,10 +32,14 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.ScopePermissionRepresentation;
 
 /**
+ * 细粒度管理权限策略创建辅助类。
+ * <p>封装空作用域权限、角色策略及命名规则。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class Helper {
+    /** 创建绑定资源、作用域与关联策略的作用域权限 */
     public static Policy addScopePermission(AuthorizationProvider authz, ResourceServer resourceServer, String name, Resource resource, Scope scope, Policy policy) {
         ScopePermissionRepresentation representation = new ScopePermissionRepresentation();
 
@@ -49,6 +53,7 @@ class Helper {
         return authz.getStoreFactory().getPolicyStore().create(resourceServer, representation);
     }
 
+    /** 创建无关联策略的空作用域权限（待管理员配置） */
     public static Policy addEmptyScopePermission(AuthorizationProvider authz, ResourceServer resourceServer, String name, Resource resource, Scope scope) {
         ScopePermissionRepresentation representation = new ScopePermissionRepresentation();
 
@@ -61,6 +66,7 @@ class Helper {
         return authz.getStoreFactory().getPolicyStore().create(resourceServer, representation);
     }
 
+    /** 为角色创建默认命名的角色策略 */
     public static Policy createRolePolicy(AuthorizationProvider authz, ResourceServer resourceServer, RoleModel role) {
         String roleName = getRolePolicyName(role);
         return createRolePolicy(authz, resourceServer, role, roleName);
@@ -81,6 +87,7 @@ class Helper {
         return authz.getStoreFactory().getPolicyStore().create(resourceServer, representation);
     }
 
+    /** 生成角色策略存储名称（含客户端前缀） */
     public static String getRolePolicyName(RoleModel role) {
         String roleName = "";
         if (role.getContainer() instanceof ClientModel) {

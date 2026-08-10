@@ -28,18 +28,23 @@ import org.keycloak.provider.ProviderEventManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 
 /**
+ * 管理端细粒度权限工厂与事件监听注册。
+ * <p>按 {@link Profile.Feature#ADMIN_FINE_GRAINED_AUTHZ_V2} 特性选择 V1/V2 实现。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AdminPermissions {
 
 
+    /** 创建当前认证上下文下的权限评估器 */
     public static AdminPermissionEvaluator evaluator(KeycloakSession session, RealmModel realm, AdminAuth auth) {
         if (Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ_V2)) {
             return new MgmtPermissionsV2(session, realm, auth);
         }
         return new MgmtPermissions(session, realm, auth);
     }
+    /** 指定管理员用户创建权限评估器 */
     public static AdminPermissionEvaluator evaluator(KeycloakSession session, RealmModel realm, RealmModel adminsRealm, UserModel admin) {
         if (Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ_V2)) {
             return new MgmtPermissionsV2(session, realm, adminsRealm, admin);
@@ -47,6 +52,7 @@ public class AdminPermissions {
         return new MgmtPermissions(session, realm, adminsRealm, admin);
     }
 
+    /** 创建跨领域（Realms）权限评估器 */
     public static RealmsPermissionEvaluator realms(KeycloakSession session, AdminAuth auth) {
         if (Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ_V2)) {
             return new MgmtPermissionsV2(session, auth);
@@ -54,6 +60,7 @@ public class AdminPermissions {
         return new MgmtPermissions(session, auth);
     }
 
+    /** 创建领域权限管理实例 */
     public static AdminPermissionManagement management(KeycloakSession session, RealmModel realm) {
         if (Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ_V2)) {
              return new MgmtPermissionsV2(session, realm);
@@ -61,6 +68,7 @@ public class AdminPermissions {
         return new MgmtPermissions(session, realm);
     }
 
+    /** 注册角色/客户端/组删除事件监听，自动关闭对应细粒度权限 */
     public static void registerListener(ProviderEventManager manager) {
         if (Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ)) {
             manager.register(event -> {

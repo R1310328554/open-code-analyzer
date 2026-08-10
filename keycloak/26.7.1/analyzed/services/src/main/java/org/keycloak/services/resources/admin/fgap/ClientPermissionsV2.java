@@ -33,10 +33,16 @@ import org.keycloak.services.resources.admin.fgap.ModelRecord.ClientModelRecord;
 
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.CLIENTS_RESOURCE_TYPE;
 
+/**
+ * 客户端细粒度管理权限 V2 实现。
+ * <p>基于 {@link AdminPermissionsSchema} 与 {@link FineGrainedAdminPermissionEvaluator} 评估类型级与实例级权限；不支持 V1  per-client 策略 CRUD。</p>
+ */
 class ClientPermissionsV2 extends ClientPermissions {
 
+    /** FGAP v2 权限评估器 */
     private final FineGrainedAdminPermissionEvaluator eval;
 
+    /** 构造 V2 客户端权限实现 */
     ClientPermissionsV2(KeycloakSession session, RealmModel realm, AuthorizationProvider authz, MgmtPermissionsV2 root) {
         super(session, realm, authz, root);
         this.eval = new FineGrainedAdminPermissionEvaluator(session, root, resourceStore, policyStore);
@@ -49,7 +55,7 @@ class ClientPermissionsV2 extends ClientPermissions {
 
     @Override
     public void requireConfigure(ClientModel client) {
-        //redirecting call to manage for V2
+        // V2 将 configure 重定向为 manage
         super.requireManage(client);
     }
 
@@ -143,8 +149,7 @@ class ClientPermissionsV2 extends ClientPermissions {
 
     @Override
     public boolean canExchangeTo(ClientModel authorizedClient, ClientModel to, AccessToken token) {
-        // V2 does not support configuring token-exchange permissions.
-        // Deny gracefully instead of failing with an uncaught exception.
+        // V2 不支持配置 token-exchange 权限，静默拒绝而非抛未捕获异常
         return false;
     }
 

@@ -19,42 +19,50 @@ package org.keycloak.services.resources.admin.fgap;
 import org.keycloak.services.resources.admin.AdminAuth;
 
 /**
+ * 管理端细粒度权限评估器门面。
+ * <p>聚合领域、角色、用户、客户端、组与组织等子评估器，供 Admin REST 资源校验操作权限。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface AdminPermissionEvaluator {
+    /** 领域级权限评估 */
     RealmPermissionEvaluator realm();
 
+    /** 要求调用者至少持有一个管理角色，否则抛出异常 */
     void requireAnyAdminRole();
+    /** 是否持有给定管理角色之一 */
     boolean hasOneAdminRole(String... adminRoles);
+    /** 要求 realm 管理权限 */
     void requireRealmAdmin();
 
+    /** 当前管理认证上下文 */
     AdminAuth adminAuth();
 
+    /** 角色权限评估器 */
     RolePermissionEvaluator roles();
+    /** 用户权限评估器 */
     UserPermissionEvaluator users();
+    /** 客户端权限评估器 */
     ClientPermissionEvaluator clients();
+    /** 组权限评估器 */
     GroupPermissionEvaluator groups();
+    /** 组织权限评估器 */
     OrganizationPermissionEvaluator orgs();
 
+    /** 是否为领域管理员 */
     boolean isRealmAdmin();
 
     /**
-     * Useful as a function pointer, i.e. RoleMapperResource is reused bewteen GroupResource and UserResource to manage role mappings.
-     * We don't know what type of resource we're managing here (user or group), so we don't know how to query the policy engine to determine
-     * if an action is allowed.
-     *
+     * 权限检查函数式接口（如 RoleMapperResource 在用户/组间复用时无法预知资源类型）。
+     * <p>由调用方注入具体评估逻辑。</p>
      */
     interface PermissionCheck {
         boolean evaluate();
     }
     /**
-     * Useful as a function pointer, i.e. RoleMapperResource is reused bewteen GroupResource and UserResource to manage role mappings.
-     * We don't know what type of resource we're managing here (user or group), so we don't know how to query the policy engine to determine
-     * if an action is allowed.
-     *
-     * throws appropriate exception if permission is deny
-     *
+     * 强制权限检查函数式接口；拒绝时抛出相应异常。
+     * <p>用于 RoleMapperResource 等复用场景。</p>
      */
     interface RequirePermissionCheck {
         void require();

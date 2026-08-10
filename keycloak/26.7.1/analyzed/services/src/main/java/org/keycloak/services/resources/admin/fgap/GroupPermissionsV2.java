@@ -28,10 +28,16 @@ import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resources.admin.fgap.ModelRecord.GroupModelRecord;
 
+/**
+ * 组细粒度管理权限 V2 实现。
+ * <p>基于 {@link FineGrainedAdminPermissionEvaluator} 与 {@link AdminPermissionsSchema} 评估；不支持 V1 per-group 策略 CRUD。</p>
+ */
 class GroupPermissionsV2 extends GroupPermissions {
 
+    /** FGAP v2 评估器 */
     private final FineGrainedAdminPermissionEvaluator eval;
 
+    /** 构造 V2 组权限实现 */
     GroupPermissionsV2(KeycloakSession session, AuthorizationProvider authz, MgmtPermissions root) {
         super(authz, root);
         this.eval = new FineGrainedAdminPermissionEvaluator(session, root, resourceStore, policyStore);

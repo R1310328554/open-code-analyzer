@@ -23,14 +23,21 @@ import org.keycloak.authorization.model.Resource;
 import org.keycloak.models.GroupModel;
 
 /**
+ * 组细粒度管理权限策略管理接口。
+ * <p>管理组资源及 view/manage/view-members/manage-members/manage-membership 策略。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface GroupPermissionManagement {
+    /** 组是否已启用细粒度管理权限 */
     boolean isPermissionsEnabled(GroupModel group);
+    /** 启用或禁用组细粒度管理权限 */
     void setPermissionsEnabled(GroupModel group, boolean enable);
 
+    /** 查看组成员策略 */
     Policy viewMembersPermission(GroupModel group);
+    /** 管理组成员策略 */
     Policy manageMembersPermission(GroupModel group);
 
     Policy manageMembershipPermission(GroupModel group);
@@ -38,8 +45,10 @@ public interface GroupPermissionManagement {
     Policy viewPermission(GroupModel group);
     Policy managePermission(GroupModel group);
 
+    /** 组授权资源 */
     Resource resource(GroupModel group);
 
+    /** 各作用域策略 ID 映射 */
     Map<String, String> getPermissions(GroupModel group);
 
 }

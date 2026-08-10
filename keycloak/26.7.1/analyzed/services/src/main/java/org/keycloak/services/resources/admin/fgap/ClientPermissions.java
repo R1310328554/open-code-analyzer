@@ -56,23 +56,32 @@ import static org.keycloak.authorization.fgap.AdminPermissionsSchema.CLIENTS_RES
 import static org.keycloak.services.resources.admin.fgap.AdminPermissionManagement.TOKEN_EXCHANGE;
 
 /**
- * Manages default policies for all users.
- *
+ * 客户端细粒度管理权限 V1 实现。
+ * <p>为每个客户端创建授权资源与 manage/view/configure/map-roles/token-exchange 等空策略，并评估调用者权限。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionManagement {
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(ClientPermissions.class);
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
+    /** 当前领域 */
     protected final RealmModel realm;
+    /** 授权服务 */
     protected final AuthorizationProvider authz;
+    /** 根权限管理上下文 */
     protected final MgmtPermissions root;
+    /** 授权资源存储 */
     protected final ResourceStore resourceStore;
+    /** 授权策略存储 */
     protected final PolicyStore policyStore;
 
+    /** 客户端资源名称前缀 */
     private static final String RESOURCE_NAME_PREFIX = "client.resource.";
 
+    /** 构造客户端权限 V1 实现 */
     public ClientPermissions(KeycloakSession session, RealmModel realm, AuthorizationProvider authz, MgmtPermissions root) {
         this.session = session;
         this.realm = realm;
@@ -114,6 +123,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
         return TOKEN_EXCHANGE + ".permission.client." + client.getId();
     }
 
+    /** 为客户端懒创建资源、作用域与空策略 */
      private void initialize(ClientModel client) {
         ResourceServer server = root.findOrCreateResourceServer(client);
         if (server==null) return;
@@ -248,7 +258,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
 
     @Override
     public boolean canList() {
-        // when the user is assigned with query-users role, administrators can restrict which clients the user can see when using fine-grained admin permissions
+        // 持有 query-users 时，细粒度权限可进一步限制可见客户端列表
         return canView() || root.hasOneAdminRole(AdminRoles.QUERY_CLIENTS, AdminRoles.QUERY_USERS);
     }
 
@@ -355,7 +365,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
         }
 
         Set<Policy> associatedPolicies = policy.getAssociatedPolicies();
-        // if no policies attached to permission then just do default behavior
+        // 权限未关联任何策略时回退默认行为（拒绝细粒度授权）
         if (associatedPolicies == null || associatedPolicies.isEmpty()) {
             logger.debug("No policies set up for permission on target client");
             return false;
@@ -498,7 +508,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
         }
     }
 
-    // client scopes
+    // 客户端范围权限
 
     @Override
     public boolean canViewClientScopes() {
@@ -716,6 +726,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
         return false;
     }
 
+    /** 判断是否为内部管理客户端（realm-management 或 admin realm 应用后缀） */
     protected boolean isInternal(ClientModel client) {
         if (client == null) {
             return false;

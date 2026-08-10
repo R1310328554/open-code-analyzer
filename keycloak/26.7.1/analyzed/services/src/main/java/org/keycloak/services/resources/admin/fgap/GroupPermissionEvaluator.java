@@ -24,17 +24,16 @@ import org.keycloak.models.AdminRoles;
 import org.keycloak.models.GroupModel;
 
 /**
+ * 组细粒度管理权限评估接口。
+ * <p>定义组列表、查看、管理、成员与成员关系等权限判定。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface GroupPermissionEvaluator {
 
     /**
-     * Returns {@code true} if the caller has at least one of {@link AdminRoles#QUERY_GROUPS},
-     * {@link AdminRoles#MANAGE_USERS} or {@link AdminRoles#VIEW_USERS} roles.
-     * <p/>
-     * For V2 only: Also if it has a permission to {@link AdminPermissionsSchema#VIEW} or
-     * {@link AdminPermissionsSchema#MANAGE} groups.
+     * 是否可列出组（QUERY_GROUPS/MANAGE_USERS/VIEW_USERS 或 V2 组 VIEW/MANAGE）。
      */
     boolean canList();
 
@@ -131,14 +130,13 @@ public interface GroupPermissionEvaluator {
     void requireManageMembers(GroupModel group);
 
     /**
-     * Returns Map with information what access the caller for the provided group has.
+     * 返回调用者对指定组的 view/manage/manageMembership/viewMembers/manageMembers 访问能力。
      */
     Map<String, Boolean> getAccess(GroupModel group);
 
     /**
-     * If {@link UserPermissionEvaluator#canView()} evaluates to {@code true}, returns empty set.
-     * 
-     * @return Stream of IDs of groups with view permission.
+     * 若 {@link UserPermissionEvaluator#canView()} 为 true 则返回空集；否则返回有 view 权限的组 ID。
+     * @return 可查看成员的组 ID 集合
      */
     Set<String> getGroupIdsWithViewPermission();
 }
