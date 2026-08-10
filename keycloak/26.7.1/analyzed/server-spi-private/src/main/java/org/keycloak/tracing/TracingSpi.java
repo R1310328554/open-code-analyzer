@@ -21,22 +21,29 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 分布式追踪 SPI：注册 {@link TracingProvider} 与 {@link TracingProviderFactory}。
+ */
 public class TracingSpi implements Spi {
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code tracing} */
     @Override
     public String getName() {
         return "tracing";
     }
 
+    /** @return 提供者接口 {@link TracingProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return TracingProvider.class;
     }
 
+    /** @return 工厂接口 {@link TracingProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return TracingProviderFactory.class;

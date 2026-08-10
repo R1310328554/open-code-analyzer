@@ -29,15 +29,22 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 
+/**
+ * 分布式追踪提供者：基于 OpenTelemetry 管理 Span 生命周期与上下文传播。
+ * <p>推荐通过 {@code trace()} 方法自动管理 Span，而非手动 {@link #startSpan} / {@link #endSpan}。</p>
+ */
 public interface TracingProvider extends Provider {
 
     /**
+     * 返回当前 {@link Context} 中的 {@link Span}；若无则回退到默认 no-op Span。
      * Returns the {@link Span} from the current {@link Context}, falling back to a default, no-op
      * {@link Span} if there is no span in the current context.
      */
     Span getCurrentSpan();
 
     /**
+     * 获取或创建 Tracer 并启动新 {@link Span}。
+     * <p>须手动调用 {@link Span#end()}，或使用 {@link TracingProvider#trace(String, String, Consumer)} 自动管理。</p>
      * Gets or creates a tracer instance, and starts a new {@link Span}.
      *
      * <p>{@link Span#end()} <b>must</b> be manually called to end this {@code Span}, or use {@link TracingProvider#trace(String, String, Consumer)} that handles it all
@@ -71,6 +78,7 @@ public interface TracingProvider extends Provider {
     Span startSpan(String tracerName, String spanName);
 
     /**
+     * 与 {@link TracingProvider#startSpan(String, String)} 类似，Span 名称格式为 {@code 类名.后缀}。
      * Same as {@link TracingProvider#startSpan(String, String)}, but you can start a {@link Span} that defines specific format for span name.
      * The final {@link Span} name consists of {@link Class#getSimpleName()}, and {@code spanSuffix}.
      *
@@ -92,6 +100,7 @@ public interface TracingProvider extends Provider {
     }
 
     /**
+     * 使用自定义 {@link SpanBuilder} 创建 Span，等价于 {@link TracingProvider#startSpan(String, String)}。
      * Same as {@link TracingProvider#startSpan(String, String)}, but the {@link Span} is created from your own {@link SpanBuilder} instance.
      *
      * <p><strong>Note:</strong> The preferred trace approach is to use {@code trace()} methods, such as
@@ -108,6 +117,7 @@ public interface TracingProvider extends Provider {
     Span startSpan(SpanBuilder builder);
 
     /**
+     * 标记当前 {@link Span} 执行结束。
      * Marks the end of the current {@link Span} execution.
      *
      * <p><strong>Note:</strong> The preferred trace approach is to use {@code trace()} methods, such as
@@ -118,6 +128,7 @@ public interface TracingProvider extends Provider {
     void endSpan();
 
     /**
+     * 将 {@link Throwable} 信息记录到 {@link Span}，并将状态设为 {@link StatusCode#ERROR}。
      * Records information about the {@link Throwable} to the {@link Span}, and set {@link Span} status to {@link StatusCode#ERROR}
      *
      * @param exception the {@link Throwable} to record.
@@ -125,6 +136,7 @@ public interface TracingProvider extends Provider {
     void error(Throwable exception);
 
     /**
+     * 包装 {@code execution} 代码块并自动追踪，无需手动管理 Span 生命周期。
      * Wrapper for code block {@code execution} which is traced and no need to manage the span lifecycle on our own.
      *
      * <p>Example of usage:
@@ -152,6 +164,7 @@ public interface TracingProvider extends Provider {
     void trace(String tracerName, String spanName, Consumer<Span> execution);
 
     /**
+     * 与 {@link TracingProvider#trace(String, String, Consumer)} 类似，使用类名作为 Tracer 前缀，更易用。
      * Wrapper for code block {@code execution} which is traced and no need to manage the span lifecycle on our own.
      * Same as {@link TracingProvider#trace(String, String, Consumer)}, but should be more usable.
      *
@@ -188,6 +201,7 @@ public interface TracingProvider extends Provider {
     }
 
     /**
+     * 包装带返回值的 {@code execution} 代码块并自动追踪。
      * Wrapper for code block {@code execution} which is traced and no need to manage the span lifecycle on our own.
      *
      * <p>Example of usage:
@@ -215,6 +229,7 @@ public interface TracingProvider extends Provider {
     <T> T trace(String tracerName, String spanName, Function<Span, T> execution);
 
     /**
+     * 与 {@link TracingProvider#trace(String, String, Function)} 类似，使用类名前缀，更易用。
      * Wrapper for code block {@code execution} that returns a value, is traced and no need to manage the span lifecycle on our own.
      * Same as {@link TracingProvider#trace(String, String, Function)}, but should be more usable.
      *
@@ -239,6 +254,7 @@ public interface TracingProvider extends Provider {
     }
 
     /**
+     * 获取或创建具名 {@link Tracer} 实例。
      * Gets or creates a named {@link Tracer} instance.
      *
      * @param name         name of the tracer
@@ -247,6 +263,7 @@ public interface TracingProvider extends Provider {
     Tracer getTracer(String name, String scopeVersion);
 
     /**
+     * 获取或创建具名 {@link Tracer}，默认 scope 版本为 Keycloak 版本。
      * Gets or creates a named {@link Tracer} instance.
      * Default scope version is Keycloak version (f.e. 26.0.5)
      *
@@ -257,6 +274,7 @@ public interface TracingProvider extends Provider {
     }
 
     /**
+     * 校验所有已启动的 {@link Span} 是否均已结束；未结束时应有通知。
      * Validates whether all started {@link Span} instances were ended.
      * <p>As part of the validation, some notification about not ended {@link Span}s should be shown.</p>
      *

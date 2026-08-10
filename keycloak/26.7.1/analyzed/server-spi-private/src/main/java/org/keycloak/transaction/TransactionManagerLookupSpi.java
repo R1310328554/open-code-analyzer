@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * JTA 事务管理器查找 SPI：注册 {@link JtaTransactionManagerLookup}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class TransactionManagerLookupSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code jta-lookup} */
     @Override
     public String getName() {
         return "jta-lookup";
     }
 
+    /** @return 提供者接口 {@link JtaTransactionManagerLookup} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return JtaTransactionManagerLookup.class;
     }
 
+    /** @return 工厂接口 {@link JtaTransactionManagerLookup} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return JtaTransactionManagerLookup.class;

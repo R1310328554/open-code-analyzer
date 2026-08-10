@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 信任库 SPI：注册 {@link TruststoreProvider} 与 {@link TruststoreProviderFactory}。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class TruststoreSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code truststore} */
     @Override
     public String getName() {
         return "truststore";
     }
 
+    /** @return 提供者接口 {@link TruststoreProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return TruststoreProvider.class;
     }
 
+    /** @return 工厂接口 {@link TruststoreProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return TruststoreProviderFactory.class;

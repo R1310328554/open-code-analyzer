@@ -21,6 +21,7 @@ import java.util.List;
 import org.keycloak.models.UserModel;
 
 /**
+ * 用户配置属性变更监听器：在 {@link UserProfile#update} 时接收各属性变更通知。
  * Interface of the user profile attribute change listener.
  * 
  * @author Vlastimil Elias <velias@redhat.com>
@@ -32,6 +33,7 @@ import org.keycloak.models.UserModel;
 public interface AttributeChangeListener {
 
     /**
+     * 每个用户属性变更时调用。
      * Method called for each user attribute change.
      * 
      * @param name of the changed user attribute

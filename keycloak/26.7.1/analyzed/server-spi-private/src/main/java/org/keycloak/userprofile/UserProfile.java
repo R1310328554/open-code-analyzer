@@ -22,6 +22,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.AbstractUserRepresentation;
 
 /**
+ * <p>用户 Profile 入口：在特定 {@link UserProfileContext} 下创建、更新、校验与读取用户属性。
  * <p>An interface that serves an entry point for managing users and their attributes.
  *
  * <p>A {@code UserProfile} provides methods for creating, and updating users as well as for accessing their attributes.
@@ -54,6 +55,7 @@ import org.keycloak.representations.idm.AbstractUserRepresentation;
  */
 public interface UserProfile {
 
+    /** 校验本实例关联的属性；失败抛出 {@link ValidationException}。 */
     /**
      * Validates the attributes associated with this instance.
      *
@@ -61,6 +63,7 @@ public interface UserProfile {
      */
     void validate() throws ValidationException;
 
+    /** 根据本 Profile 属性创建新 {@link UserModel}（默认执行校验）。 */
     /**
      * Creates a new {@link UserModel} based on the attributes associated with this instance.
      *
@@ -70,6 +73,7 @@ public interface UserProfile {
      */
     UserModel create() throws ValidationException;
 
+    /** 创建用户，{@code validate} 控制是否自动校验。 */
     /**
      * Creates a new {@link UserModel} based on the attributes associated with this instance.
      *
@@ -82,6 +86,7 @@ public interface UserProfile {
         return create();
     }
 
+    /** 更新关联的 {@link UserModel}；无关联用户时无效果。未校验时会先 {@link #validate()}。 */
     /**
      * <p>Updates the {@link UserModel} associated with this instance. If no {@link UserModel} is associated with this instance, this operation has no effect.
      *
@@ -94,6 +99,7 @@ public interface UserProfile {
      */
     void update(boolean removeAttributes, AttributeChangeListener... changeListener) throws ValidationException;
 
+    /** 等同 {@link #update(boolean, AttributeChangeListener...)} 且 {@code removeAttributes=true}。 */
     /**
      * <p>The same as {@link #update(boolean, AttributeChangeListener...)}} but forcing the removal of attributes.
      *
@@ -104,6 +110,7 @@ public interface UserProfile {
         update(true, changeListener);
     }
 
+    /** 返回本 Profile 的属性视图（经 UP 配置与上下文过滤，可能与 {@link UserModel} 不完全一致）。 */
     /**
      * Returns the attributes associated with this instance. Note that the attributes returned by this method are not necessarily
      * the same from the {@link UserModel} as they are based on the configurations set in the {@link org.keycloak.representations.userprofile.config.UPConfig} and
@@ -113,6 +120,7 @@ public interface UserProfile {
      */
     Attributes getAttributes();
 
+    /** 返回完整用户表示（含 Profile 元数据）。 */
     /**
      * Returns the full user representation
      *
@@ -122,6 +130,7 @@ public interface UserProfile {
         return toRepresentation(true);
     }
 
+    /** 返回用户表示；{@code full} 控制是否包含完整 Profile 元数据。 */
     /**
      * Returns the user representation
      *

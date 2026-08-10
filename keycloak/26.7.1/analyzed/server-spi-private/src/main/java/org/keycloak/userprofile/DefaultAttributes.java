@@ -53,6 +53,7 @@ import org.jboss.logging.Logger;
 import static java.util.Collections.emptyList;
 
 /**
+ * <p>{@link Attributes} 默认实现：按用户配置与上下文规范化、校验属性集合。
  * <p>The default implementation for {@link Attributes}. Should be reused as much as possible by the different implementations
  * of {@link UserProfileProvider}.
  *
@@ -69,19 +70,28 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     private static final Logger logger = Logger.getLogger(DefaultAttributes.class);
 
     /**
+     * 动态只读属性配置键（遗留；未来应由 UP 配置取代）。
      * To reference dynamic attributes that can be configured as read-only when setting up the provider.
      * We should probably remove that once we remove the legacy provider, because this will come from the configuration.
      */
     public static final String READ_ONLY_ATTRIBUTE_KEY = "kc.read.only";
+    /** 未配置长度校验时的默认最大属性长度。 */
     public static final String DEFAULT_MAX_LENGTH_ATTRIBUTES = "2048";
 
+    /** 用户配置上下文。 */
     protected final UserProfileContext context;
+    /** Keycloak 会话。 */
     protected final KeycloakSession session;
+    /** 属性名到元数据的映射。 */
     private final Map<String, AttributeMetadata> metadataByAttribute;
+    /** 用户配置 UPConfig。 */
     private final UPConfig upConfig;
+    /** 关联用户（更新场景）；新建时为 null。 */
     protected final UserModel user;
+    /** 未托管属性值缓存。 */
     private final Map<String, List<String>> unmanagedAttributes = new HashMap<>();
 
+    /** 构造属性集合并执行规范化与元数据配置。 */
     public DefaultAttributes(UserProfileContext context, Map<String, ?> attributes, UserModel user,
             UserProfileMetadata profileMetadata,
             KeycloakSession session) {
@@ -111,6 +121,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
 
     private boolean isReadableOrWritableDuringRegistration(String name) {
         if (context.equals(UserProfileContext.REGISTRATION) && isRequired(name)) {
+            // 注册场景下用户名/邮箱不可只读，否则无法完成注册
             // in context of registration, username or email (email as username) cannot be readonly otherwise registration is not possible
             if (UserModel.EMAIL.equals(name)) {
                 RealmModel realm = session.getContext().getRealm();
@@ -139,6 +150,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     }
 
     /**
+     * 根据元数据判断属性是否只读。
      * Checks whether an attribute is marked as read only by looking at its metadata.
      *
      * @param attributeName the attribute name
@@ -192,6 +204,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
                     List<String> value = user.getAttributeStream(name).filter(StringUtil::isNotBlank).collect(Collectors.toList());
                     List<String> newValue = attribute.getValue().stream().filter(StringUtil::isNotBlank).collect(Collectors.toList());
                     if (CollectionUtil.collectionEquals(value, newValue)) {
+                        // 只读属性若用户侧原值已无效，允许保持原值不阻断更新
                         // allow update if the value was already wrong in the user and is read-only in this context
                         logger.debugf("User '%s' attribute '%s' has previous validation errors %s but is read-only in context %s.",
                                 user.getUsername(), name, vc.getErrors(), attributeContext.getContext());
@@ -221,6 +234,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     }
 
     /**
+     * 对无长度限制的属性添加默认长度校验，防止 DoS。
      * In case there are unmanaged attributes or attributes that don't have a length restrictions,
      * add a default length restriction to avoid a denial of service by a caller.
      */
@@ -356,6 +370,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
 
     private Map<String, AttributeMetadata> getUserStorageProviderMetadata(UserProfileMetadata profileMetadata) {
         if (user == null || (StorageId.isLocalStorage(user.getId()) && !user.isFederated())) {
+            // 新用户或本地非联邦用户，无需存储提供者元数据
             // new user or not a user from a storage provider other than local
             return Collections.emptyMap();
         }
@@ -364,6 +379,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
         UserProvider userProvider = session.users();
 
         if (userProvider instanceof UserProfileDecorator) {
+            // 从源用户存储提供者查询额外属性元数据
             // query the user provider from the source user storage provider for additional attribute metadata
             UserProfileDecorator decorator = (UserProfileDecorator) userProvider;
             return decorator.decorateUserProfile(providerId, profileMetadata).stream()
@@ -389,6 +405,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     }
 
     /**
+     * 按配置与上下文规范化创建 Profile 时传入的属性映射。
      * Normalizes the given {@code attributes} (as they were provided when creating a profile) accordingly to the
      * profile configuration and the current context.
      *
@@ -419,6 +436,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
             }
         }
 
+        // 配置中定义的属性应始终出现在 Profile 属性集中
         // the profile should always hold all attributes defined in the config
         for (var entry : metadataByAttribute.entrySet()) {
             String attributeName = entry.getKey();
@@ -470,6 +488,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     }
 
     /**
+     * 规范化单属性值；protected 以便扩展自定义逻辑。
      * Intentionally kept to protected visibility to allow for custom normalization logic while clients adopt User Profile
      */
     protected List<String> normalizeAttributeValues(String name, Object value) {
@@ -489,6 +508,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
 
         Stream<String> valuesStream = values.stream().filter(Objects::nonNull);
 
+        // 联邦用户用户名保持外部 IdP 格式，不做大小写规范化
         // do not normalize the username if a federated user because we need to respect the format from the external identity store
         if ((UserModel.USERNAME.equals(name) && !isFederated()) || UserModel.EMAIL.equals(name)) {
             valuesStream = valuesStream.map(KeycloakModelUtils::toLowerCaseSafe);
@@ -501,6 +521,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
         UnmanagedAttributePolicy unmanagedAttributePolicy = upConfig.getUnmanagedAttributePolicy();
 
         if (unmanagedAttributePolicy == null) {
+            // 未配置策略时禁用未托管属性
             // unmanaged attributes disabled
             return false;
         }
@@ -508,10 +529,12 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
         switch (unmanagedAttributePolicy) {
             case ADMIN_EDIT:
             case ADMIN_VIEW:
-                // unmanaged attributes only available through the admin context
+                // 未托管属性仅管理端上下文可用
+            // unmanaged attributes only available through the admin context
                 return context.isAdminContext();
         }
 
+        // ENABLED 策略下所有上下文允许未托管属性
         // allow unmanaged attributes if enabled to all contexts
         return UnmanagedAttributePolicy.ENABLED.equals(unmanagedAttributePolicy);
     }
@@ -531,6 +554,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     }
 
     /**
+     * <p>判断属性是否受当前 Profile 配置与上下文支持。
      * <p>Checks whether an attribute is support by the profile configuration and the current context.
      *
      * <p>This method can be used to avoid unexpected attributes from being added as an attribute because
@@ -556,6 +580,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     }
 
     /**
+     * <p>根据提供者配置判断内部属性是否只读（非 UP 配置项）。
      * <p>Returns whether an attribute is read only based on the provider configuration (using provider config),
      * usually related to internal attributes managed by the server.
      *
@@ -565,6 +590,7 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
      * @return {@code true} if the attribute is readonly. Otherwise, returns {@code false}
      */
     protected boolean isReadOnlyInternalAttribute(String attributeName) {
+        // 通过 READ_ONLY 元数据上的校验器判断全局只读
         // read-only can be configured through the provider so we try to validate global validations
         AttributeMetadata readonlyMetadata = metadataByAttribute.get(READ_ONLY_ATTRIBUTE_KEY);
 

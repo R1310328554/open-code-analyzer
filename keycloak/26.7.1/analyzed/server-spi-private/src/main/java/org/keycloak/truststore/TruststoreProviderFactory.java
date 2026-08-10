@@ -20,6 +20,8 @@ package org.keycloak.truststore;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link TruststoreProvider} 工厂：创建信任库提供者实例。
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public interface TruststoreProviderFactory extends ProviderFactory<TruststoreProvider> {

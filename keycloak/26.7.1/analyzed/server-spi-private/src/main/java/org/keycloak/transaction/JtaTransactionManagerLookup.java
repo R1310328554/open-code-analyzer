@@ -23,6 +23,7 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * JTA {@link TransactionManager} 查找提供者：同时作为 Provider 与 Factory。
  * JTA TransactionManager lookup
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -39,5 +40,6 @@ public interface JtaTransactionManagerLookup extends Provider, ProviderFactory<J
         return this;
     }
 
+    /** @return 当前环境的 JTA 事务管理器 */
     TransactionManager getTransactionManager();
 }

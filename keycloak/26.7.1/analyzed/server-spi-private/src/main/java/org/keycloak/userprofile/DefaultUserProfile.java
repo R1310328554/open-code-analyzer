@@ -51,6 +51,7 @@ import static org.keycloak.userprofile.UserProfileUtil.createUserProfileMetadata
 import static org.keycloak.userprofile.UserProfileUtil.isRootAttribute;
 
 /**
+ * <p>{@link UserProfile} 默认实现：校验、创建与更新用户及其属性。
  * <p>The default implementation for {@link UserProfile}. Should be reused as much as possible by the different implementations
  * of {@link UserProfileProvider}.
  *
@@ -60,13 +61,20 @@ import static org.keycloak.userprofile.UserProfileUtil.isRootAttribute;
  */
 public final class DefaultUserProfile implements UserProfile {
 
+    /** Profile 元数据与上下文。 */
     private final UserProfileMetadata metadata;
+    /** 创建用户时的 UserModel 工厂。 */
     private final Function<Attributes, UserModel> userSupplier;
+    /** 当前属性集合。 */
     private final Attributes attributes;
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 是否已通过 {@link #validate()}。 */
     private boolean validated;
+    /** 关联的用户模型。 */
     private UserModel user;
 
+    /** 构造用户 Profile 实例。 */
     public DefaultUserProfile(UserProfileMetadata metadata, Attributes attributes, Function<Attributes, UserModel> userCreator, UserModel user,
             KeycloakSession session) {
         this.metadata = metadata;
@@ -157,6 +165,7 @@ public final class DefaultUserProfile implements UserProfile {
                 }
             }
 
+            // 兼容不同上下文对“移除未提交属性”的策略差异（如 Account 不删、Admin API 按请求体）
             // this is a workaround for supporting contexts where the decision to whether attributes should be removed depends on
             // specific aspect. For instance, old account should never remove attributes, the admin rest api should only remove if
             // the attribute map was sent.
@@ -190,6 +199,7 @@ public final class DefaultUserProfile implements UserProfile {
                 }
             }
         } catch (ModelException | ReadOnlyException e) {
+            // 部分客户端依赖 ModelException/ReadOnlyException 处理存储层错误
             // some client code relies on these exceptions to react to exceptions from the storage
             throw e;
         } catch (Exception cause) {
@@ -208,6 +218,7 @@ public final class DefaultUserProfile implements UserProfile {
 
         if (UserModel.EMAIL.equals(name)) {
             AuthenticationSessionModel authSession = session.getContext().getAuthenticationSession();
+            // 认证流中若有待处理 UPDATE_EMAIL 动作，跳过邮箱写入
             // do not set email when during an authentication flow if there is a pending update email action
             Stream<String> actions = Optional.ofNullable(user.getRequiredActionsStream()).orElse(Stream.empty());
             return authSession != null && actions.anyMatch(RequiredAction.UPDATE_EMAIL.name()::equals);
@@ -241,6 +252,7 @@ public final class DefaultUserProfile implements UserProfile {
             attributesRep = new HashMap<>(attributes.getDefaultAttributes());
         }
 
+        // 以下属性具备读权限，可写入表示对象
         // all the attributes here have read access and might be available in the representation
         Iterator<Entry<String, List<String>>> iterator = attributesRep.entrySet().iterator();
 
@@ -256,6 +268,7 @@ public final class DefaultUserProfile implements UserProfile {
 
             if (isRootAttribute(name)) {
                 if (UserModel.LOCALE.equals(name)) {
+                    // locale 为特殊根属性，表示对象无对应字段，有值时作为普通属性输出
                     // local is a special root attribute as it does not have a field in the user representation
                     // it should be available as a regular attribute if set
                     continue;
@@ -314,10 +327,12 @@ public final class DefaultUserProfile implements UserProfile {
                 rep = (R) new org.keycloak.representations.idm.UserRepresentation();
             }
         } else {
+            // 非管理端默认使用 Account 表示，暴露较少用户信息
             // by default, we build the simplest representation without exposing much information about users
             rep = (R) new org.keycloak.representations.account.UserRepresentation();
         }
 
+        // 清空根字段，由 Profile 配置重新填充
         // reset the root attribute values so that they are calculated based on the user profile configuration
         rep.setUsername(null);
         rep.setEmail(null);

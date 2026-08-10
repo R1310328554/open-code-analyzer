@@ -20,5 +20,9 @@ package org.keycloak.tracing;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link TracingProvider} 工厂：创建分布式追踪提供者实例。
+ * <p>实现 {@link EnvironmentDependentProviderFactory}，可按运行环境启用或禁用。</p>
+ */
 public interface TracingProviderFactory extends ProviderFactory<TracingProvider>, EnvironmentDependentProviderFactory {
 }
