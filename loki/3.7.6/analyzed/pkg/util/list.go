@@ -1,5 +1,7 @@
 package util //nolint:revive
 
+// util 包 list 子模块提供有序字符串切片归并：采用分治与双指针合并，供标签索引与 chunk 键排序场景复用。
+
 func MergeStringLists(ss ...[]string) []string {
 	switch len(ss) {
 	case 0:
@@ -14,6 +16,7 @@ func MergeStringLists(ss ...[]string) []string {
 	}
 }
 
+// MergeStringPair 双指针线性合并两路有序字符串，相等元素只保留一份。
 func MergeStringPair(s1, s2 []string) []string {
 	i, j := 0, 0
 	result := make([]string, 0, len(s1)+len(s2))
@@ -38,3 +41,4 @@ func MergeStringPair(s1, s2 []string) []string {
 	}
 	return result
 }
+// 归并过程保持字典序稳定，适合与 TSDB 标签名排序约定对齐。

@@ -1,3 +1,4 @@
+// loser 包实现败者树（锦标赛树），用于 k 路有序序列高效归并，源自经典多路归并算法。
 // Loser tree, from https://en.wikipedia.org/wiki/K-way_merge_algorithm#Tournament_Tree
 
 package loser
@@ -6,6 +7,7 @@ type Sequence interface {
 	Next() bool // Advances and returns true if there is a value at this new position.
 }
 
+// New 构造败者树：maxVal 表示已结束序列的哨兵值，less 定义元素全序关系。
 func New[E any, S Sequence](sequences []S, maxVal E, at func(S) E, less func(E, E) bool, closeFunc func(S)) *Tree[E, S] {
 	nSequences := len(sequences)
 	t := Tree[E, S]{
@@ -25,6 +27,7 @@ func New[E any, S Sequence](sequences []S, maxVal E, at func(S) E, less func(E, 
 	return &t
 }
 
+// Close 对所有尚未标记 index=-1 的叶子序列调用 close 回调释放资源。
 // Call the close function on all sequences that are still open.
 func (t *Tree[E, S]) Close() {
 	for _, e := range t.nodes[len(t.nodes)/2 : len(t.nodes)] {
@@ -35,6 +38,7 @@ func (t *Tree[E, S]) Close() {
 	}
 }
 
+// Tree 将 M 个叶子置于 M..2M-1，内部节点 1..M-1 记录败者，根节点 0 存全局胜者。
 // A loser tree is a binary tree laid out such that nodes N and N+1 have parent N/2.
 // We store M leaf nodes in positions M...2M-1, and M-1 internal nodes in positions 1..M-1.
 // Node 0 is a special node, containing the winner of the contest.
@@ -155,6 +159,7 @@ func (t *Tree[E, S]) playGame(a, b int) (loser, winner int) {
 
 func parent(i int) int { return i / 2 }
 
+// Push 优先复用已结束叶子槽位，必要时按 2 的幂扩容并触发下次 Next 时重建树。
 // Add a new sequence to the merge set
 func (t *Tree[E, S]) Push(sequence S) {
 	// First, see if we can replace one that was previously finished.
@@ -190,3 +195,4 @@ func (t *Tree[E, S]) Push(sequence S) {
 	t.moveNext(newPos)
 	t.nodes[0].index = -1 // flag for re-initialize on next call to Next()
 }
+// replayGames 自变更叶子向上重赛，保证每次 Next 均摊 O(log k) 比较开销。

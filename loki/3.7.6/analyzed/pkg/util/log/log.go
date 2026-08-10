@@ -1,5 +1,7 @@
 package log
 
+// log 包提供 Loki 全局 go-kit logger 初始化、Prometheus 各级别计数、缓冲刷盘与运行时 HTTP 动态调整日志级别能力。
+
 import (
 	"encoding/json"
 	"fmt"
@@ -20,7 +22,8 @@ import (
 )
 
 var (
-	// Logger is a shared go-kit logger.
+	// Logger 为进程级共享实例，InitLogger 前默认为 NopLogger 丢弃全部输出。
+// Logger is a shared go-kit logger.
 	// TODO: Change all components to take a non-global logger via their constructors.
 	// Prefer accepting a non-global logger as an argument.
 	Logger = log.NewNopLogger()
@@ -36,6 +39,7 @@ var (
 	}()
 )
 
+// InitLogger 根据 server.Config 构建 prometheusLogger 并设置 caller 跳过帧数。
 // InitLogger initialises the global gokit logger (util_log.Logger) and returns that logger.
 func InitLogger(cfg *server.Config, reg prometheus.Registerer, sync bool) log.Logger {
 	logLevel = cfg.LogLevel
@@ -59,6 +63,7 @@ func Flush() error {
 }
 
 // prometheusLogger exposes Prometheus counters for each of go-kit's log levels.
+// prometheusLogger 包装 baseLogger，Log 时按级别递增内外部 log_messages 计数。
 type prometheusLogger struct {
 	baseLogger          log.Logger
 	logger              log.Logger
@@ -70,6 +75,7 @@ type prometheusLogger struct {
 	useSyncLogger     bool
 }
 
+// LevelHandler 暴露 GET 查询与 POST 修改 log_level 的 HTTP 端点，返回 JSON 状态。
 // LevelHandler returns an http handler function that returns the current log level.
 // The optional query parameter 'log_level' can be passed to change the log level at runtime.
 func LevelHandler(currentLogLevel *dslog.Level) http.HandlerFunc {
@@ -206,6 +212,7 @@ func (pl *prometheusLogger) Log(kv ...interface{}) error {
 	return nil
 }
 
+// CheckFatal 向 stderr 打印 %+v 堆栈、记录 error 日志、Flush 后以码 1 退出。
 // CheckFatal prints an error and exits with error code 1 if err is non-nil.
 func CheckFatal(location string, err error, logger log.Logger) {
 	if err == nil {
@@ -226,3 +233,4 @@ func CheckFatal(location string, err error, logger log.Logger) {
 	}
 	os.Exit(1)
 }
+// bufferedLogger 在 sync 模式下叠加 SyncWriter，保证崩溃前尽量刷盘未落盘日志。

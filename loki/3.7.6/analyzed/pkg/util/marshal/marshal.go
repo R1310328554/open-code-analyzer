@@ -1,3 +1,4 @@
+// marshal 包将 logproto/logqlmodel 等内部类型转为 v1 loghttp JSON，WriteResponseJSON 按请求 URI 版本路由 legacy 或 v1 编码器。
 // Package marshal converts internal objects to loghttp model objects.  This
 // package is designed to work with models in pkg/loghttp.
 package marshal
@@ -21,6 +22,7 @@ import (
 	marshal_legacy "github.com/grafana/loki/v3/pkg/util/marshal/legacy"
 )
 
+// WriteResponseJSON 根据 v 的动态类型与 API 版本分派到对应 Write*ResponseJSON。
 func WriteResponseJSON(r *http.Request, v any, w http.ResponseWriter) error {
 	switch result := v.(type) {
 	case logqlmodel.Result:
@@ -78,6 +80,7 @@ func WriteLabelResponseJSON(data []string, w io.Writer) error {
 	return s.Flush()
 }
 
+// WebsocketWriter 抽象 websocket 写消息能力，便于 tail JSON 流复用 io.Writer 路径。
 // WebsocketWriter knows how to write message to a websocket connection.
 type WebsocketWriter interface {
 	WriteMessage(int, []byte) error
@@ -117,6 +120,7 @@ func WriteTailResponseJSON(r legacy.TailResponse, w io.Writer, encodeFlags httpr
 	return s.Flush()
 }
 
+// WriteSeriesResponseJSON 将 SeriesIdentifier 转为 []map[string]string 适配 JSON 数组。
 // WriteSeriesResponseJSON marshals a logproto.SeriesResponse to v1 loghttp JSON and then
 // writes it to the provided io.Writer.
 func WriteSeriesResponseJSON(series []logproto.SeriesIdentifier, w io.Writer) error {
@@ -188,6 +192,7 @@ func WriteDetectedFieldsResponseJSON(r *logproto.DetectedFieldsResponse, w io.Wr
 	return s.Flush()
 }
 
+// WriteQueryPatternsResponseJSON 手写 jsoniter 流式编码 pattern/level/samples 三元组。
 // WriteQueryPatternsResponseJSON marshals a logproto.QueryPatternsResponse to JSON and then
 // writes it to the provided io.Writer.
 func WriteQueryPatternsResponseJSON(r *logproto.QueryPatternsResponse, w io.Writer) error {
@@ -243,3 +248,4 @@ func WriteDetectedLabelsResponseJSON(r *logproto.DetectedLabelsResponse, w io.Wr
 	s.WriteRaw("\n")
 	return s.Flush()
 }
+// seriesResponseAdapter 因 proto3 无法 repeated map 而存在，否则可用 gogoproto jsontag 省略。

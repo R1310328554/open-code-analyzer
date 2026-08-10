@@ -1,5 +1,7 @@
 package marshal
 
+// marshal 包 query 子模块在 promql 值与 loghttp 模型间双向转换，并提供 v1 API 所需的 jsoniter 流式 JSON 编码实现。
+
 import (
 	"bytes"
 	"fmt"
@@ -22,6 +24,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/httpreq"
 )
 
+// removeInvalidUtf 将 UTF-8 无效 rune 替换为空格，避免 Prometheus 拒绝含 RuneError 的标签。
 var (
 	// The rune error replacement is rejected by Prometheus hence replacing them with space.
 	removeInvalidUtf = func(r rune) rune {
@@ -32,6 +35,7 @@ var (
 	}
 )
 
+// NewResultValue 按 streams/scalar/vector/matrix 分支构造对应 loghttp.ResultValue。
 // NewResultValue constructs a ResultValue from a promql.Value
 func NewResultValue(v parser.Value) (loghttp.ResultValue, error) {
 	var err error
@@ -83,6 +87,7 @@ func NewResultValue(v parser.Value) (loghttp.ResultValue, error) {
 	return value, nil
 }
 
+// NewStreams 逐 stream 清理非法 UTF-8 标签并调用 NewStream 转换条目列表。
 // NewStreams constructs a Streams from a logql.Streams
 func NewStreams(s logqlmodel.Streams) (loghttp.Streams, error) {
 	var err error
@@ -198,6 +203,7 @@ func NewMetric(l labels.Labels) model.Metric {
 	return ret
 }
 
+// EncodeResult 写入 status、可选 warnings、data 与 stats，构成完整查询 JSON 响应体。
 func EncodeResult(data parser.Value, warnings []string, statistics stats.Result, s *jsoniter.Stream, encodeFlags httpreq.EncodingFlags) error {
 	s.WriteObjectStart()
 	s.WriteObjectField("status")
@@ -401,6 +407,7 @@ func encodeLabels(labels []logproto.LabelAdapter, s *jsoniter.Stream) {
 	}
 }
 
+// encodeStream 输出 stream 标签对象与 [timestamp,line] 数组；可选结构化元数据分组字段。
 // encodeStream encodes a logproto.Stream to JSON.
 // If the FlagCategorizeLabels is set, the stream labels are grouped by their group name.
 // Otherwise, the stream labels are written one after the other.
@@ -558,3 +565,4 @@ func encodeSampleStream(stream promql.Series, s *jsoniter.Stream) {
 	}
 	s.WriteArrayEnd()
 }
+// FlagCategorizeLabels 启用时将 structuredMetadata 与 parsed 拆为独立 JSON 对象字段。
