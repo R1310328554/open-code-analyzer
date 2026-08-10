@@ -15,23 +15,8 @@
     "cmd/launch/spinner.go",
     "cmd/launch/vscode.go",
     "cmd/runner/main.go",
-    "cmd/start.go",
-    "cmd/start_darwin.go",
-    "cmd/start_default.go",
-    "cmd/start_windows.go",
-    "cmd/tui/chat/approval.go",
-    "cmd/tui/chat/chat.go",
-    "cmd/tui/chat/clipboard.go",
-    "cmd/tui/chat/cloudauth.go",
-    "cmd/tui/chat/compaction.go",
-    "cmd/tui/chat/debug.go",
-    "cmd/tui/chat/events.go",
-    "cmd/tui/chat/input.go",
-    "cmd/tui/chat/markdown.go",
-    "cmd/tui/chat/modals.go",
-    "cmd/tui/chat/render.go",
-    "cmd/tui/chat/theme.go"
+    "cmd/start.go"
   ],
   "remaining_pending": 313,
-  "done": 120
+  "done": 135
 }
