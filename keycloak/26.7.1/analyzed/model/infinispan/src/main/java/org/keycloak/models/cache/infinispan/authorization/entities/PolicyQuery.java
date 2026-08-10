@@ -21,10 +21,18 @@ import java.util.Set;
 import org.keycloak.models.cache.infinispan.entities.Revisioned;
 
 /**
+ * 策略查询缓存键的通用契约。
+ *
+ * <p>扩展 {@link Revisioned} 与 {@link InResourceServer}，描述策略列表类缓存条目的
+ * 版本号、所属资源服务器及失效判定逻辑。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface PolicyQuery extends InResourceServer, Revisioned {
 
+    /** 返回缓存的策略 ID 集合。 */
     Set<String> getPolicies();
+
+    /** 根据集群广播的失效 ID 集合判断本查询键是否应失效。 */
     boolean isInvalid(Set<String> invalidations);
 }

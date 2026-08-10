@@ -21,10 +21,17 @@ import java.util.Set;
 import org.keycloak.models.cache.infinispan.entities.Revisioned;
 
 /**
+ * 资源查询缓存键的通用契约。
+ *
+ * <p>扩展 {@link Revisioned}，描述资源列表类缓存条目的版本号及失效判定逻辑。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ResourceQuery extends Revisioned {
 
+    /** 返回缓存的资源 ID 集合。 */
     Set<String> getResources();
+
+    /** 根据集群广播的失效 ID 集合判断本查询键是否应失效。 */
     boolean isInvalid(Set<String> invalidations);
 }

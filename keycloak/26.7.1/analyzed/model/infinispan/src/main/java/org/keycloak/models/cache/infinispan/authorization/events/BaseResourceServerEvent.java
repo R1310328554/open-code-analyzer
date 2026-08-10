@@ -19,12 +19,21 @@ package org.keycloak.models.cache.infinispan.authorization.events;
 
 import org.keycloak.models.cache.infinispan.events.InvalidationEvent;
 
+/**
+ * 资源服务器（Resource Server）集群失效事件的抽象基类。
+ *
+ * <p>以资源服务器 ID 作为失效事件标识，
+ * 供 {@code ResourceServerUpdatedEvent} 与 {@code ResourceServerRemovedEvent} 复用。
+ * 实现 {@link AuthorizationCacheInvalidationEvent} 以参与授权缓存失效广播。
+ */
 abstract class BaseResourceServerEvent extends InvalidationEvent implements AuthorizationCacheInvalidationEvent {
 
+    /** 构造资源服务器失效事件基类实例。 */
     BaseResourceServerEvent(String id) {
         super(id);
     }
 
+    /** 返回便于调试的事件字符串表示。 */
     @Override
     public String toString() {
         return String.format("%s [ id=%s ]", getClass().getSimpleName(), getId());

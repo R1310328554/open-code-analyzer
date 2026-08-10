@@ -25,21 +25,35 @@ import org.keycloak.models.cache.infinispan.events.InvalidationEvent;
 
 import org.infinispan.protostream.annotations.ProtoField;
 
+/**
+ * 授权资源（Resource）集群失效事件的抽象基类。
+ *
+ * <p>封装资源名称、所有者、类型、URI 及关联作用域等字段，
+ * 供 {@code ResourceUpdatedEvent} 与 {@code ResourceRemovedEvent} 复用。
+ * 实现 {@link AuthorizationCacheInvalidationEvent} 以参与授权缓存失效广播。
+ */
 abstract class BaseResourceEvent extends InvalidationEvent implements AuthorizationCacheInvalidationEvent {
 
+    /** 资源名称。 */
     @ProtoField(2)
     final String name;
+    /** 资源所有者 ID。 */
     @ProtoField(3)
     final String owner;
+    /** 所属资源服务器 ID。 */
     @ProtoField(4)
     final String serverId;
+    /** 资源类型标识。 */
     @ProtoField(5)
     final String type;
+    /** 资源 URI 集合。 */
     @ProtoField(value = 6, collectionImplementation = HashSet.class)
     final Set<String> uris;
+    /** 资源关联的作用域 ID 集合。 */
     @ProtoField(value = 7, collectionImplementation = HashSet.class)
     final Set<String> scopes;
 
+    /** 构造资源失效事件基类实例。 */
     BaseResourceEvent(String id, String name, String owner, String serverId, String type, Set<String> uris, Set<String> scopes) {
         super(id);
         this.name = Objects.requireNonNull(name);
@@ -50,6 +64,7 @@ abstract class BaseResourceEvent extends InvalidationEvent implements Authorizat
         this.scopes = scopes;
     }
 
+    /** 基于资源元数据判断事件是否相等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -65,6 +80,7 @@ abstract class BaseResourceEvent extends InvalidationEvent implements Authorizat
                 Objects.equals(scopes, that.scopes);
     }
 
+    /** 计算哈希码，用于集群事件去重。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();
@@ -77,6 +93,7 @@ abstract class BaseResourceEvent extends InvalidationEvent implements Authorizat
         return result;
     }
 
+    /** 返回便于调试的事件字符串表示。 */
     @Override
     public String toString() {
         return String.format("%s [ id=%s, name=%s]", getClass().getSimpleName(), getId(), name);

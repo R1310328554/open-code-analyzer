@@ -25,19 +25,32 @@ import org.keycloak.models.cache.infinispan.events.InvalidationEvent;
 
 import org.infinispan.protostream.annotations.ProtoField;
 
+/**
+ * 授权策略（Policy）集群失效事件的抽象基类。
+ *
+ * <p>封装策略名称、关联资源/资源类型/作用域及资源服务器 ID，
+ * 供 {@code PolicyUpdatedEvent} 与 {@code PolicyRemovedEvent} 复用。
+ * 实现 {@link AuthorizationCacheInvalidationEvent} 以参与授权缓存失效广播。
+ */
 abstract class BasePolicyEvent extends InvalidationEvent implements AuthorizationCacheInvalidationEvent {
 
+    /** 策略名称。 */
     @ProtoField(2)
     final String name;
+    /** 策略关联的资源 ID 集合。 */
     @ProtoField(value = 3, collectionImplementation = HashSet.class)
     final Set<String> resources;
+    /** 策略关联的资源类型集合。 */
     @ProtoField(value = 4, collectionImplementation = HashSet.class)
     final Set<String> resourceTypes;
+    /** 策略关联的作用域 ID 集合。 */
     @ProtoField(value = 5, collectionImplementation = HashSet.class)
     final Set<String> scopes;
+    /** 所属资源服务器 ID。 */
     @ProtoField(6)
     final String serverId;
 
+    /** 构造策略失效事件基类实例。 */
     BasePolicyEvent(String id, String name, Set<String> resources, Set<String> resourceTypes, Set<String> scopes, String serverId) {
         super(id);
         this.name = Objects.requireNonNull(name);
@@ -47,6 +60,7 @@ abstract class BasePolicyEvent extends InvalidationEvent implements Authorizatio
         this.serverId = Objects.requireNonNull(serverId);
     }
 
+    /** 基于策略元数据判断事件是否相等。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -61,6 +75,7 @@ abstract class BasePolicyEvent extends InvalidationEvent implements Authorizatio
                 serverId.equals(that.serverId);
     }
 
+    /** 计算哈希码，用于集群事件去重。 */
     @Override
     public int hashCode() {
         int result = super.hashCode();
@@ -72,6 +87,7 @@ abstract class BasePolicyEvent extends InvalidationEvent implements Authorizatio
         return result;
     }
 
+    /** 返回便于调试的事件字符串表示。 */
     @Override
     public String toString() {
         return String.format("%s [id=%s, name=%s]", getClass().getSimpleName(), getId(), name);
