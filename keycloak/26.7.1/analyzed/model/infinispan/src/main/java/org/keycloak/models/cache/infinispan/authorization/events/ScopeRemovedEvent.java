@@ -26,20 +26,28 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 授权作用域（Scope）删除时的集群缓存失效事件。
+ * <p>
+ * 通过 ProtoStream 序列化后在集群节点间广播，
+ * 触发 {@link StoreFactoryCacheManager#scopeRemoval} 失效关联授权缓存条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.SCOPE_REMOVED_EVENT)
 public class ScopeRemovedEvent extends BaseScopeEvent {
 
+    /** ProtoStream 工厂方法，从作用域字段反序列化事件实例。 */
     @ProtoFactory
     ScopeRemovedEvent(String id, String name, String serverId) {
         super(id, name, serverId);
     }
 
+    /** 创建作用域删除失效事件。 */
     public static ScopeRemovedEvent create(String id, String name, String serverId) {
         return new ScopeRemovedEvent(id, name, serverId);
     }
 
+    /** 向失效集合追加因作用域删除而需刷新的授权缓存键。 */
     @Override
     public void addInvalidations(StoreFactoryCacheManager cache, Set<String> invalidations) {
         cache.scopeRemoval(getId(), name, serverId, invalidations);
