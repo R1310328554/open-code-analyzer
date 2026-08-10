@@ -1273,3 +1273,18 @@
 2026-08-10T03:38:13Z DONE config/src/main/java/com/alibaba/nacos/config/server/utils/GroupKey2.java nacos 3.2.3 wave42b [15:30] config sql/utils
 2026-08-10T03:38:13Z DONE config/src/main/java/com/alibaba/nacos/config/server/utils/LogUtil.java nacos 3.2.3 wave42b [15:30] config sql/utils
 2026-08-10T03:38:13Z DONE config/src/main/java/com/alibaba/nacos/config/server/utils/MD5Util.java nacos 3.2.3 wave42b [15:30] config sql/utils
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/ConfigMigratePersistService.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/ConfigRowMapperInjector.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/HistoryConfigInfoPersistService.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/embedded/EmbeddedConfigDumpApplyHook.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/embedded/EmbeddedConfigInfoBetaPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/embedded/EmbeddedConfigInfoGrayPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/embedded/EmbeddedConfigInfoPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/embedded/EmbeddedConfigInfoTagPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/embedded/EmbeddedConfigMigratePersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/embedded/EmbeddedHistoryConfigInfoPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/extrnal/ExternalConfigInfoBetaPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/extrnal/ExternalConfigInfoGrayPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/extrnal/ExternalConfigInfoPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/extrnal/ExternalConfigInfoTagPersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
+2026-08-10T03:39:03Z DONE config/src/main/java/com/alibaba/nacos/config/server/service/repository/extrnal/ExternalConfigMigratePersistServiceImpl.java nacos 3.2.3 wave42a [0:15] config persist impls
