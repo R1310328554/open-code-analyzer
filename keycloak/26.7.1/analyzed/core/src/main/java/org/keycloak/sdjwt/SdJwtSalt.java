@@ -19,20 +19,22 @@ package org.keycloak.sdjwt;
 import java.util.Objects;
 
 /**
- * Strong typing salt to avoid parameter mismatch.
+ * 强类型盐值，避免参数混淆。
  *
- * Comparable to allow sorting in SD-JWT VC.
+ * <p>实现 {@link Comparable} 以支持 SD-JWT VC 中的排序。</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class SdJwtSalt implements Comparable<SdJwtSalt> {
+    /** 盐值字符串。 */
     private final String salt;
 
+    /** @param salt 盐值，不可为空 */
     public SdJwtSalt(String salt) {
         this.salt = SdJwtUtils.requireNonEmpty(salt, "salt must not be empty");
     }
 
-    // Handy factory method
+    /** 便捷工厂方法。 */
     public static SdJwtSalt of(String salt) {
         return new SdJwtSalt(salt);
     }

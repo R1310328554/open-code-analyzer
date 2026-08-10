@@ -44,10 +44,10 @@ import static org.keycloak.OID4VCConstants.CLAIM_NAME_ISSUER;
 import static org.keycloak.OID4VCConstants.JWT_VC_ISSUER_END_POINT;
 
 /**
- * A trusted Issuer for running SD-JWT VP verification.
+ * 用于 SD-JWT VP 验证的可信签发者实现。
  *
  * <p>
- * This implementation targets issuers exposing verifying keys on a normalized JWT VC Issuer metadata endpoint.
+ * 面向在规范化 JWT VC 签发者元数据端点上公开验证密钥的签发者。
  * </p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
@@ -57,11 +57,13 @@ import static org.keycloak.OID4VCConstants.JWT_VC_ISSUER_END_POINT;
  */
 public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
 
+    /** 匹配可信签发者 URI 的正则模式。 */
     private final Pattern issuerUriPattern;
+    /** HTTP 数据获取器。 */
     private final HttpDataFetcher httpDataFetcher;
 
     /**
-     * @param issuerUri a trusted issuer URI
+     * @param issuerUri 可信签发者 URI
      */
     public JwtVcMetadataTrustedSdJwtIssuer(String issuerUri, HttpDataFetcher httpDataFetcher) {
         try {
@@ -70,15 +72,15 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
             throw new IllegalArgumentException(e);
         }
 
-        // Build a Regex pattern to only match the argument URI
+        // 构建仅匹配指定 URI 的正则模式
         this.issuerUriPattern = Pattern.compile(Pattern.quote(issuerUri));
 
-        // Assign HttpDataFetcher implementation
+        // 注入 HttpDataFetcher 实现
         this.httpDataFetcher = httpDataFetcher;
     }
 
     /**
-     * @param issuerUriPattern a regex pattern for trusted issuer URIs
+     * @param issuerUriPattern 可信签发者 URI 的正则模式
      */
     public JwtVcMetadataTrustedSdJwtIssuer(Pattern issuerUriPattern, HttpDataFetcher httpDataFetcher) {
         this.issuerUriPattern = issuerUriPattern;
@@ -88,13 +90,13 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
     @Override
     public List<SignatureVerifierContext> resolveIssuerVerifyingKeys(IssuerSignedJWT issuerSignedJWT)
             throws VerificationException {
-        // Read iss (claim) and kid (header)
+        // 读取 iss（声明）与 kid（头）
         String iss = Optional.ofNullable(issuerSignedJWT.getPayload().get(CLAIM_NAME_ISSUER))
                 .map(JsonNode::asText)
                 .orElse("");
         String kid = issuerSignedJWT.getJwsHeader().getKeyId();
 
-        // Match the read iss claim against the trusted pattern
+        // 将 iss 声明与可信模式匹配
         Matcher matcher = issuerUriPattern.matcher(iss);
         if (!matcher.matches()) {
             throw new VerificationException(String.format(
@@ -103,10 +105,10 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
             ));
         }
 
-        // As per specs, only HTTPS URIs are supported
+        // 按规范，仅支持 HTTPS URI
         validateHttpsIssuerUri(iss);
 
-        // Fetch exposed JWKs
+        // 获取公开的 JWK
         List<JWK> jwks = fetchIssuerMetadataJwks(iss);
         if (jwks.isEmpty()) {
             throw new VerificationException(
@@ -114,7 +116,7 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
             );
         }
 
-        // If kid specified, only consider the (single) matching key
+        // 若指定 kid，仅考虑匹配的（单个）密钥
         if (kid != null) {
             List<JWK> matchingJwks = jwks.stream()
                     .filter(jwk -> {
@@ -138,7 +140,7 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
             jwks = Collections.singletonList(matchingJwks.get(0));
         }
 
-        // Build SignatureVerifierContext's
+        // 构建 SignatureVerifierContext 列表
         List<SignatureVerifierContext> verifiers = new ArrayList<>();
         for (JWK jwk : jwks) {
             try {
@@ -151,6 +153,7 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
         return verifiers;
     }
 
+    /** 校验签发者 URI 使用 HTTPS。 */
     private void validateHttpsIssuerUri(String issuerUri) throws VerificationException {
         if (!issuerUri.startsWith("https://")) {
             throw new VerificationException(
@@ -159,12 +162,13 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
         }
     }
 
+    /** 从 JWT VC 签发者元数据获取 JWK 列表。 */
     private List<JWK> fetchIssuerMetadataJwks(String issuerUri) throws VerificationException {
-        // Build full URL to JWT VC metadata endpoint according to draft-ietf-oauth-sd-jwt-vc-13
+        // 按 draft-ietf-oauth-sd-jwt-vc-13 构建 JWT VC 元数据端点完整 URL
         String normalizedIssuerUri = normalizeUri(issuerUri);
         String jwtVcIssuerUri = buildJwtVcIssuerMetadataUri(normalizedIssuerUri);
 
-        // Fetch and parse metadata
+        // 获取并解析元数据
 
         JwtVcMetadata issuerMetadata;
         JsonNode issuerMetadataNode = fetchData(jwtVcIssuerUri);
@@ -175,7 +179,7 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
             throw new VerificationException("Failed to parse exposed JWT VC Metadata", e);
         }
 
-        // Validate metadata
+        // 验证元数据
 
         String exposedIssuerUri = normalizeUri(issuerMetadata.getIssuer());
 
@@ -186,16 +190,16 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
             ));
         }
 
-        // Extract exposed JWKS (including dereferencing if necessary)
+        // 提取公开的 JWKS（必要时解引用）
 
         String jwksUri = issuerMetadata.getJwksUri();
         JSONWebKeySet jwks = issuerMetadata.getJwks();
 
         if (jwks == null && jwksUri != null) {
-            // Dereference JWKS URI
+            // 解引用 JWKS URI
             JsonNode jwksNode = fetchData(jwksUri);
 
-            // Parse fetched JWKS
+            // 解析获取的 JWKS
             try {
                 jwks = SdJwtUtils.mapper.treeToValue(jwksNode, JSONWebKeySet.class);
             } catch (JsonProcessingException e) {
@@ -211,6 +215,7 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
         return Arrays.asList(jwks.getKeys());
     }
 
+    /** 构建 JWT VC 签发者元数据 URI。 */
     static String buildJwtVcIssuerMetadataUri(String issuerUri) throws VerificationException {
         try {
             URI parsedIssuer = URI.create(issuerUri);
@@ -231,6 +236,7 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
         }
     }
 
+    /** 从 URI 获取 JSON 数据。 */
     private JsonNode fetchData(String uri) throws VerificationException {
         try {
             return Objects.requireNonNull(httpDataFetcher.fetchJsonData(uri));
@@ -242,8 +248,9 @@ public class JwtVcMetadataTrustedSdJwtIssuer implements TrustedSdJwtIssuer {
         }
     }
 
+    /** 规范化 URI，移除末尾斜杠。 */
     private static String normalizeUri(String uri) {
-        // Remove any trailing slash
+        // 移除末尾斜杠
         return uri.replaceAll("/$", "");
     }
 }

@@ -22,12 +22,12 @@ import org.keycloak.common.VerificationException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Presentation requirements to constrain the kind of credential expected.
+ * 演示要求接口，用于约束所期望凭证的类型与内容。
  *
  * <p>
- * This mirrors the idea of the expressive
- * <a href="https://identity.foundation/presentation-exchange/#presentation-definition">DIF Presentation Definition</a>,
- * while enabling simpler alternatives.
+ * 借鉴 DIF Presentation Exchange 中
+ * <a href="https://identity.foundation/presentation-exchange/#presentation-definition">Presentation Definition</a>
+ * 的表达力，同时支持更简单的替代方案。
  * </p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
@@ -35,10 +35,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 public interface PresentationRequirements {
 
     /**
-     * Ensures that the configured requirements are satisfied by the presentation.
+     * 确保已配置的演示要求被当前演示满足。
      *
-     * @param disclosedPayload The fully disclosed Issuer-signed JWT of the presented token.
-     * @throws VerificationException if the configured requirements are not satisfied.
+     * @param disclosedPayload 已完全披露的签发者签名 JWT 载荷
+     * @throws VerificationException 未满足配置要求时
      */
     void checkIfSatisfiedBy(JsonNode disclosedPayload) throws VerificationException;
 }

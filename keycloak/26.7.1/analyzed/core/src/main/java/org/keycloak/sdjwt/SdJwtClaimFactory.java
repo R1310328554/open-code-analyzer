@@ -30,11 +30,20 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
+ * {@link SdJwtClaim} 工厂，根据载荷 JSON 与 {@link DisclosureSpec} 解析并构建声明对象。
+ *
  * @author Pascal Knueppel
  * @since 13.11.2025
  */
 public class SdJwtClaimFactory {
 
+    /**
+     * 解析载荷对象节点，为每个属性创建对应的 {@link SdJwtClaim}。
+     *
+     * @param objectNode 载荷 JSON 对象
+     * @param disclosureSpec 披露规格
+     * @return 解析后的声明列表
+     */
     public static List<SdJwtClaim> parsePayload(ObjectNode objectNode, DisclosureSpec disclosureSpec) {
         List<SdJwtClaim> claims = new ArrayList<>();
         objectNode.properties().forEach(entry -> {
@@ -43,6 +52,7 @@ public class SdJwtClaimFactory {
         return claims;
     }
 
+    /** 根据披露规格创建单个声明。 */
     private static SdJwtClaim createClaim(String claimName, JsonNode claimValue, DisclosureSpec disclosureSpec) {
         DisclosureSpec.DisclosureData disclosureData = disclosureSpec.getUndisclosedClaim(SdJwtClaimName.of(claimName));
 
@@ -54,6 +64,7 @@ public class SdJwtClaimFactory {
         }
     }
 
+    /** 创建未披露的顶层声明。 */
     private static SdJwtClaim createUndisclosedClaim(String claimName, JsonNode claimValue, SdJwtSalt salt) {
         return UndisclosedClaim.builder()
                                .withClaimName(claimName)
@@ -62,6 +73,7 @@ public class SdJwtClaimFactory {
                                .build();
     }
 
+    /** 创建数组披露声明或明文可见声明。 */
     private static SdJwtClaim createArrayOrVisibleClaim(String claimName, JsonNode claimValue, DisclosureSpec disclosureSpec) {
         SdJwtClaimName sdJwtClaimName = SdJwtClaimName.of(claimName);
         Map<Integer, DisclosureSpec.DisclosureData> undisclosedArrayElts = //
@@ -79,6 +91,7 @@ public class SdJwtClaimFactory {
         }
     }
 
+    /** 创建数组选择性披露声明。 */
     private static SdJwtClaim createArrayDisclosure(String claimName, JsonNode claimValue,
                                                     Map<Integer, DisclosureSpec.DisclosureData> undisclosedArrayElts,
                                                     Map<Integer, DisclosureSpec.DisclosureData> decoyArrayElts) {
@@ -99,6 +112,7 @@ public class SdJwtClaimFactory {
         return arrayDisclosureBuilder.build();
     }
 
+    /** 校验声明值为数组类型。 */
     private static ArrayNode validateArrayNode(String claimName, JsonNode claimValue) {
         return Optional.of(claimValue)
                        .filter(v -> v.getNodeType() == JsonNodeType.ARRAY)
@@ -107,6 +121,7 @@ public class SdJwtClaimFactory {
                            () -> new IllegalArgumentException("Expected array for claim with name: " + claimName));
     }
 
+    /** 处理单个数组元素，决定明文或选择性披露。 */
     private static void processArrayElement(ArrayDisclosure.Builder builder, JsonNode elementValue,
                                             DisclosureSpec.DisclosureData disclosureData) {
         if (disclosureData != null) {

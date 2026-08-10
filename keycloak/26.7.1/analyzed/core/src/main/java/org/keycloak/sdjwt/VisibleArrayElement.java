@@ -21,12 +21,15 @@ import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * 数组中明文可见的元素，无需选择性披露。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class VisibleArrayElement implements SdJwtArrayElement {
+    /** 数组元素值。 */
     private final JsonNode arrayElement;
 
+    /** @param arrayElement 数组元素 JSON 值 */
     public VisibleArrayElement(JsonNode arrayElement) {
         this.arrayElement = arrayElement;
     }

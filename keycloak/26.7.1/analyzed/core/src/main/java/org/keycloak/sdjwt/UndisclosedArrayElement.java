@@ -23,10 +23,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import static org.keycloak.OID4VCConstants.CLAIM_NAME_SD_UNDISCLOSED_ARRAY;
 
 /**
+ * 数组中未披露的元素，在 JWT 中以摘要占位符形式呈现。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class UndisclosedArrayElement extends Disclosable implements SdJwtArrayElement {
+    /** 被隐藏的数组元素值。 */
     private final JsonNode arrayElement;
 
     private UndisclosedArrayElement(SdJwtSalt salt, JsonNode arrayElement) {
@@ -64,6 +66,7 @@ public class UndisclosedArrayElement extends Disclosable implements SdJwtArrayEl
         return result;
     }
 
+    /** 构建器，用于创建 {@link UndisclosedArrayElement} 实例。 */
     public static class Builder {
         private SdJwtSalt salt;
         private JsonNode arrayElement;

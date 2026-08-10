@@ -22,13 +22,17 @@ import java.io.IOException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * HTTP 数据获取接口，用于从远程 URI 拉取 JSON 元数据。
+ *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public interface HttpDataFetcher {
 
     /**
-     * Performs an HTTP GET at the URI and parses the response as JSON
-     * @throws IOException if I/O error or HTTP status not OK (200)
+     * 对指定 URI 执行 HTTP GET 并将响应解析为 JSON。
+     *
+     * @param uri 目标 URI
+     * @throws IOException 发生 I/O 错误或 HTTP 状态非 OK (200) 时
      */
     JsonNode fetchJsonData(String uri) throws IOException;
 }

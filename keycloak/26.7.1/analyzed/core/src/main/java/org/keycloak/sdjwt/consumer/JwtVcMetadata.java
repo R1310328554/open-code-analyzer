@@ -22,7 +22,7 @@ import org.keycloak.jose.jwk.JSONWebKeySet;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * POJO for JWT VC Metadata
+ * JWT VC 元数据的 POJO。
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  * @see <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-sd-jwt-vc-05#name-jwt-vc-issuer-metadata-resp">
@@ -31,12 +31,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class JwtVcMetadata {
 
+    /** 签发者标识 URI。 */
     @JsonProperty("issuer")
     private String issuer;
 
+    /** JWKS 端点 URI。 */
     @JsonProperty("jwks_uri")
     private String jwksUri;
 
+    /** 内嵌 JWKS。 */
     @JsonProperty("jwks")
     private JSONWebKeySet jwks;
 

@@ -21,18 +21,25 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Represents a top level claim in the payload of a JWT.
- * 
+ * 表示 JWT 载荷中的顶层声明。
+ *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public interface SdJwtClaim {
 
+    /** @return 声明名称 */
     public SdJwtClaimName getClaimName();
 
+    /** @return 声明名称字符串形式 */
     public String getClaimNameAsString();
 
+    /**
+     * @param hashAlgo 哈希算法
+     * @return 在 JWT 中可见的声明值
+     */
     public JsonNode getVisibleClaimValue(String hashAlgo);
 
+    /** @return 关联的披露字符串列表 */
     public List<String> getDisclosureStrings();
 
 }

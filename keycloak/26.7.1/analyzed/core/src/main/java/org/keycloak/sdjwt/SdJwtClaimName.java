@@ -17,23 +17,27 @@
 package org.keycloak.sdjwt;
 
 /**
- * Strong typing claim name to avoid parameter mismatch.
+ * 强类型声明名称，避免参数混淆。
  *
- * Used as map key. Beware of the hashcode and equals implementation.
+ * <p>用作 Map 键时需注意 {@link #hashCode()} 与 {@link #equals(Object)} 的实现。</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class SdJwtClaimName {
+    /** 声明名称字符串。 */
     private final String claimName;
 
+    /** @param claimName 声明名称，不可为空 */
     public SdJwtClaimName(String claimName) {
         this.claimName = SdJwtUtils.requireNonEmpty(claimName, "claimName must not be empty");
     }
 
+    /** @param claimName 声明名称 */
     public static SdJwtClaimName of(String claimName) {
         return new SdJwtClaimName(claimName);
     }
 
+    /** @return 声明名称 */
     public String getName() {
         return claimName;
     }

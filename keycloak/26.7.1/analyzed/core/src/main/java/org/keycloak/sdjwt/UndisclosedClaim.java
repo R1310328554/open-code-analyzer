@@ -23,11 +23,14 @@ import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * 未披露的顶层声明，其值仅通过披露字符串对外可见。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class UndisclosedClaim extends Disclosable implements SdJwtClaim {
+    /** 声明名称。 */
     private final SdJwtClaimName claimName;
+    /** 声明值。 */
     private final JsonNode claimValue;
 
     private UndisclosedClaim(SdJwtClaimName claimName, SdJwtSalt salt, JsonNode claimValue) {
@@ -52,7 +55,7 @@ public class UndisclosedClaim extends Disclosable implements SdJwtClaim {
     }
 
     /**
-     * Recall no info is visible on these claims in the JWT.
+     * 未披露声明在 JWT 中不可见，调用此方法不受支持。
      */
     @Override
     public JsonNode getVisibleClaimValue(String hashAlgo) {
@@ -81,6 +84,7 @@ public class UndisclosedClaim extends Disclosable implements SdJwtClaim {
         return result;
     }
 
+    /** 构建器，用于创建 {@link UndisclosedClaim} 实例。 */
     public static class Builder {
         private SdJwtClaimName claimName;
         private SdJwtSalt salt;

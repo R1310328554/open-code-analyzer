@@ -23,12 +23,15 @@ import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
+ * 明文可见的 SD-JWT 顶层声明，无需选择性披露。
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class VisibleSdJwtClaim extends AbstractSdJwtClaim {
+    /** 声明值。 */
     private final JsonNode claimValue;
 
+    /** @param claimName 声明名称 */
     public VisibleSdJwtClaim(SdJwtClaimName claimName, JsonNode claimValue) {
         super(claimName);
         this.claimValue = claimValue;
@@ -59,12 +62,12 @@ public class VisibleSdJwtClaim extends AbstractSdJwtClaim {
         return result;
     }
 
-    // Static method to create a builder instance
+    /** 创建构建器实例。 */
     public static Builder builder() {
         return new Builder();
     }
 
-    // Static inner Builder class
+    /** {@link VisibleSdJwtClaim} 构建器。 */
     public static class Builder {
         private SdJwtClaimName claimName;
         private JsonNode claimValue;

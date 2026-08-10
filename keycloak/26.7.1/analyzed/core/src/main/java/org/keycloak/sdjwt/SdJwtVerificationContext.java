@@ -49,7 +49,7 @@ import static org.keycloak.OID4VCConstants.SD_HASH;
 
 
 /**
- * Runs SD-JWT verification in isolation with only essential properties.
+ * 在隔离上下文中执行 SD-JWT 验证，仅保留验证所需的核心属性。
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
@@ -57,12 +57,16 @@ public class SdJwtVerificationContext {
 
     private static final Logger logger = Logger.getLogger(SdJwtVerificationContext.class.getName());
 
+    /** 完整 SD-JWT VP 字符串。 */
     private String sdJwtVpString;
 
+    /** 签发者签名的 JWT。 */
     private final IssuerSignedJWT issuerSignedJwt;
 
+    /** 摘要到披露字符串的映射。 */
     private final Map<String, String> disclosures;
 
+    /** 密钥绑定 JWT（可选）。 */
     private KeyBindingJWT keyBindingJwt;
 
     public SdJwtVerificationContext(String sdJwtVpString,
@@ -84,6 +88,7 @@ public class SdJwtVerificationContext {
         this.disclosures = computeDigestDisclosureMap(disclosureStrings);
     }
 
+    /** 将披露字符串列表转换为摘要到披露字符串的映射。 */
     private Map<String, String> computeDigestDisclosureMap(List<String> disclosureStrings) {
         return disclosureStrings.stream()
                 .map(disclosureString -> {
@@ -95,62 +100,52 @@ public class SdJwtVerificationContext {
     }
 
     /**
-     * Verifies SD-JWT whether the Issuer-signed JWT's signature and disclosures are valid.
+     * 验证 SD-JWT 签发：校验签发者签名 JWT 的签名及披露的有效性。
      *
-     * <p>Upon receiving an SD-JWT, a Holder or a Verifier needs to ensure that:</p>
-     * - the Issuer-signed JWT is valid, i.e., it is signed by the Issuer and the signature is valid, and
-     * - all Disclosures are valid and correspond to a respective digest value in the Issuer-signed JWT
-     * (directly in the payload or recursively included in the contents of other Disclosures).
+     * <p>收到 SD-JWT 后，持有者或验证者须确保：</p>
+     * - 签发者签名 JWT 有效，即由签发者签名且签名验证通过；
+     * - 所有披露均有效，且与签发者签名 JWT 载荷中（直接或递归嵌套于其他披露中）的摘要值对应。
      *
-     * @param issuerVerifyingKeys             Verifying keys for validating the Issuer-signed JWT. The caller
-     *                                        is responsible for establishing trust in that the keys belong
-     *                                        to the intended issuer.
-     * @param issuerSignedJwtVerificationOpts Options to parameterize the Issuer-Signed JWT verification.
-     * @param presentationRequirements        If set, the presentation requirements will be enforced upon fully
-     *                                        disclosing the Issuer-signed JWT during the verification.
-     * @throws VerificationException if verification failed
+     * @param issuerVerifyingKeys             用于验证签发者签名 JWT 的公钥。调用方须自行建立对这些密钥属于预期签发者的信任。
+     * @param issuerSignedJwtVerificationOpts 签发者签名 JWT 验证参数。
+     * @param presentationRequirements        若设置，在验证过程中完全披露签发者签名 JWT 后将强制满足演示要求。
+     * @throws VerificationException 验证失败时
      */
     public void verifyIssuance(List<SignatureVerifierContext> issuerVerifyingKeys,
                                IssuerSignedJwtVerificationOpts issuerSignedJwtVerificationOpts,
                                PresentationRequirements presentationRequirements)
             throws VerificationException
     {
-        // Validate the Issuer-signed JWT.
+        // 验证签发者签名 JWT
         validateIssuerSignedJwt(issuerVerifyingKeys);
 
-        // Validate disclosures.
+        // 验证披露
         JsonNode disclosedPayload = validateDisclosuresDigests();
 
-        // Validate time claims and algorithm header claim.
-        // Issuers will typically include claims controlling the validity of the SD-JWT in plaintext in the
-        // SD-JWT payload, but there is no guarantee they would do so. Therefore, Verifiers cannot reliably
-        // depend on that and need to operate as though security-critical claims might be selectively disclosable.
+        // 验证时间声明与算法头声明
+        // 签发者通常会在 SD-JWT 载荷中以明文包含控制有效期的声明，但无法保证一定如此。
+        // 因此验证者不能依赖这一点，须假定安全关键声明可能是选择性披露的。
         issuerSignedJwtVerificationOpts.verify(issuerSignedJwt);
 
-        // Enforce presentation requirements.
+        // 强制满足演示要求
         if (presentationRequirements != null) {
             presentationRequirements.checkIfSatisfiedBy(disclosedPayload);
         }
     }
 
     /**
-     * Verifies SD-JWT presentation.
+     * 验证 SD-JWT 演示。
      *
      * <p>
-     * Upon receiving a Presentation, in addition to the checks in {@link #verifyIssuance}, Verifiers need
-     * to ensure that if Key Binding is required, the Key Binding JWT is signed by the Holder and valid.
+     * 收到演示时，除 {@link #verifyIssuance} 中的检查外，验证者还须确保：
+     * 若要求密钥绑定，则密钥绑定 JWT 须由持有者签名且有效。
      * </p>
      *
-     * @param issuerVerifyingKeys             Verifying keys for validating the Issuer-signed JWT. The caller
-     *                                        is responsible for establishing trust in that the keys belong
-     *                                        to the intended issuer.
-     * @param issuerSignedJwtVerificationOpts Options to parameterize the Issuer-Signed JWT verification.
-     * @param keyBindingJwtVerificationOpts   Options to parameterize the Key Binding JWT verification.
-     *                                        Must, among others, specify the Verifier's policy whether
-     *                                        to check Key Binding.
-     * @param presentationRequirements        If set, the presentation requirements will be enforced upon fully
-     *                                        disclosing the Issuer-signed JWT during the verification.
-     * @throws VerificationException if verification failed
+     * @param issuerVerifyingKeys             用于验证签发者签名 JWT 的公钥。调用方须自行建立对这些密钥属于预期签发者的信任。
+     * @param issuerSignedJwtVerificationOpts 签发者签名 JWT 验证参数。
+     * @param keyBindingJwtVerificationOpts   密钥绑定 JWT 验证参数，其中须指定验证者是否检查密钥绑定的策略。
+     * @param presentationRequirements        若设置，在验证过程中完全披露签发者签名 JWT 后将强制满足演示要求。
+     * @throws VerificationException 验证失败时
      */
     public void verifyPresentation(List<SignatureVerifierContext> issuerVerifyingKeys,
                                    IssuerSignedJwtVerificationOpts issuerSignedJwtVerificationOpts,
@@ -158,39 +153,38 @@ public class SdJwtVerificationContext {
                                    PresentationRequirements presentationRequirements)
             throws VerificationException
     {
-        // If Key Binding is required and a Key Binding JWT is not provided,
-        // the Verifier MUST reject the Presentation.
+        // 若要求密钥绑定但未提供密钥绑定 JWT，验证者 MUST 拒绝该演示
         if (keyBindingJwtVerificationOpts.isKeyBindingRequired() && keyBindingJwt == null) {
             throw new VerificationException("Missing Key Binding JWT");
         }
 
-        // Upon receiving a Presentation, in addition to the checks in {@link #verifyIssuance}...
+        // 收到演示时，除 {@link #verifyIssuance} 中的检查外...
         verifyIssuance(issuerVerifyingKeys, issuerSignedJwtVerificationOpts, presentationRequirements);
 
-        // Validate Key Binding JWT if required
+        // 若需要则验证密钥绑定 JWT
         if (keyBindingJwtVerificationOpts.isKeyBindingRequired()) {
             validateKeyBindingJwt(keyBindingJwtVerificationOpts);
         }
     }
 
     /**
-     * Validate Issuer-signed JWT
+     * 验证签发者签名 JWT。
      *
      * <p>
-     * Upon receiving an SD-JWT, a Holder or a Verifier needs to ensure that:
-     * - the Issuer-signed JWT is valid, i.e., it is signed by the Issuer and the signature is valid
+     * 收到 SD-JWT 后，持有者或验证者须确保：
+     * 签发者签名 JWT 有效，即由签发者签名且签名验证通过。
      * </p>
      *
-     * @param verifiers Verifying keys for validating the Issuer-signed JWT.
-     * @throws VerificationException if verification failed
+     * @param verifiers 用于验证签发者签名 JWT 的公钥列表
+     * @throws VerificationException 验证失败时
      */
     private void validateIssuerSignedJwt(
             List<SignatureVerifierContext> verifiers
     ) throws VerificationException {
-        // Check that the _sd_alg claim value is understood and the hash algorithm is deemed secure
+        // 检查 _sd_alg 声明值是否可识别且哈希算法被认为安全
         issuerSignedJwt.verifySdHashAlgorithm();
 
-        // Validate the signature over the Issuer-signed JWT
+        // 验证签发者签名 JWT 的签名
         Iterator<SignatureVerifierContext> iterator = verifiers.iterator();
         while (iterator.hasNext()) {
             try {
@@ -205,53 +199,51 @@ public class SdJwtVerificationContext {
             }
         }
 
-        // No potential verifier could verify the JWT's signature
+        // 所有候选验证者均无法验证 JWT 签名
         throw new VerificationException("Invalid Issuer-Signed JWT: Signature could not be verified");
     }
 
     /**
-     * Validate Key Binding JWT
+     * 验证密钥绑定 JWT。
      *
-     * @throws VerificationException if verification failed
+     * @throws VerificationException 验证失败时
      */
     private void validateKeyBindingJwt(KeyBindingJwtVerificationOpts keyBindingJwtVerificationOpts)
             throws VerificationException
     {
-        // Check that the typ of the Key Binding JWT is kb+jwt
+        // 检查密钥绑定 JWT 的 typ 是否为 kb+jwt
         validateKeyBindingJwtTyp();
 
-        // Determine the public key for the Holder from the SD-JWT
+        // 从 SD-JWT 中获取持有者的公钥
         JsonNode cnf = issuerSignedJwt.getCnfClaim().orElseThrow(
                 () -> new VerificationException("No cnf claim in Issuer-signed JWT for key binding")
         );
 
-        // Ensure that a signing algorithm was used that was deemed secure for the application.
-        // The none algorithm MUST NOT be accepted.
+        // 确保使用了被认为安全的签名算法，MUST NOT 接受 none 算法
         SignatureVerifierContext holderVerifier = buildHolderVerifier(cnf);
 
-        // Validate the signature over the Key Binding JWT
+        // 验证密钥绑定 JWT 的签名
         try {
             keyBindingJwt.verifySignature(holderVerifier);
         } catch (VerificationException e) {
             throw new VerificationException("Key binding JWT invalid", e);
         }
 
-        // Check timestamps of the keybinding-jwt and the header algorithm
+        // 检查密钥绑定 JWT 的时间戳与头算法
         keyBindingJwtVerificationOpts.verify(keyBindingJwt);
 
-        // The same hash algorithm as for the Disclosures MUST be used (defined by the _sd_alg element
-        // in the Issuer-signed JWT or the default value, as defined in Section 5.1.1).
+        // 披露与密钥绑定 JWT 必须使用相同的哈希算法（由签发者签名 JWT 中的 _sd_alg 或第 5.1.1 节默认值定义）
         validateKeyBindingJwtSdHashIntegrity();
 
-        // Check that the Key Binding JWT is a valid JWT in all other respects
-        // -> Covered in part by `keyBindingJwt` being an instance of SdJws?
-        // -> Time claims are checked above
+        // 检查密钥绑定 JWT 在其他方面是否为有效 JWT
+        // -> 部分由 keyBindingJwt 为 SdJws 实例覆盖
+        // -> 时间声明已在上方检查
     }
 
     /**
-     * Validate Key Binding JWT's typ header attribute
+     * 验证密钥绑定 JWT 的 typ 头属性。
      *
-     * @throws VerificationException if verification failed
+     * @throws VerificationException 验证失败时
      */
     private void validateKeyBindingJwtTyp() throws VerificationException {
         String typ = keyBindingJwt.getJwsHeader().getType();
@@ -261,20 +253,20 @@ public class SdJwtVerificationContext {
     }
 
     /**
-     * Build holder verifier from JWK node.
+     * 从 JWK 节点构建持有者验证器。
      *
-     * @throws VerificationException if unable
+     * @throws VerificationException 无法构建时
      */
     private SignatureVerifierContext buildHolderVerifier(JsonNode cnf) throws VerificationException {
         Objects.requireNonNull(cnf);
 
-        // Read JWK
+        // 读取 JWK
         JsonNode cnfJwk = cnf.get(CLAIM_NAME_JWK);
         if (cnfJwk == null) {
             throw new UnsupportedOperationException("Only cnf/jwk claim supported");
         }
 
-        // Convert JWK
+        // 转换 JWK
         try {
             return JwkParsingUtils.convertJwkNodeToVerifierContext(cnfJwk);
         } catch (Exception e) {
@@ -283,24 +275,23 @@ public class SdJwtVerificationContext {
     }
 
     /**
-     * Validate disclosures' digests
+     * 验证披露的摘要。
      *
      * <p>
-     * Upon receiving an SD-JWT, a Holder or a Verifier needs to ensure that:
-     * - all Disclosures are valid and correspond to a respective digest value in the Issuer-signed JWT
-     * (directly in the payload or recursively included in the contents of other Disclosures)
+     * 收到 SD-JWT 后，持有者或验证者须确保：
+     * 所有披露均有效，且与签发者签名 JWT 载荷中（直接或递归嵌套于其他披露中）的摘要值对应。
      * </p>
      *
      * <p>
-     * We additionally check that salt values are not reused:
-     * The salt value MUST be unique for each claim that is to be selectively disclosed.
+     * 此外检查盐值未被重复使用：
+     * 每个待选择性披露的声明 MUST 使用唯一的盐值。
      * </p>
      *
-     * @return the fully disclosed SdJwt payload
-     * @throws VerificationException if verification failed
+     * @return 完全披露后的 SD-JWT 载荷
+     * @throws VerificationException 验证失败时
      */
     private JsonNode validateDisclosuresDigests() throws VerificationException {
-        // Validate SdJwt digests by attempting full recursive disclosing.
+        // 通过尝试完整递归披露来验证 SD-JWT 摘要
         Set<String> visitedSalts = new HashSet<>();
         Set<String> visitedDigests = new HashSet<>();
         Set<String> visitedDisclosureStrings = new HashSet<>();
@@ -308,22 +299,21 @@ public class SdJwtVerificationContext {
                 SdJwtUtils.deepClone(issuerSignedJwt.getPayload()),
                 visitedSalts, visitedDigests, visitedDisclosureStrings);
 
-        // Validate all disclosures where visited
+        // 验证所有披露均已被访问
         validateDisclosuresVisits(visitedDisclosureStrings);
 
         return disclosedPayload;
     }
 
     /**
-     * Validate SdJwt digests by attempting full recursive disclosing.
+     * 通过完整递归披露验证 SD-JWT 摘要。
      *
      * <p>
-     * By recursively disclosing all disclosable fields in the SdJwt payload, validation rules are
-     * enforced regarding the conformance of linked disclosures. Additional rules should be enforced
-     * after calling this method based on the visited data arguments.
+     * 递归披露载荷中所有可披露字段以强制执行关联披露的合规性规则。
+     * 调用此方法后，应基于已访问数据参数执行额外规则检查。
      * </p>
      *
-     * @return the fully disclosed SdJwt payload
+     * @return 完全披露后的 SD-JWT 载荷
      */
     private JsonNode validateViaRecursiveDisclosing(
             JsonNode currentNode,
@@ -335,7 +325,7 @@ public class SdJwtVerificationContext {
             return currentNode;
         }
 
-        // Find all objects having an _sd key that refers to an array of strings.
+        // 查找所有包含 _sd 键且其值为字符串数组的对象
         if (currentNode.isObject()) {
             ObjectNode currentObjectNode = ((ObjectNode) currentNode);
 
@@ -348,49 +338,45 @@ public class SdJwtVerificationContext {
                         );
                     }
 
-                    // Compare the value with the digests calculated previously and find the matching Disclosure.
-                    // If no such Disclosure can be found, the digest MUST be ignored.
+                    // 将值与先前计算的摘要比较，查找匹配的披露；若找不到则 MUST 忽略该摘要
 
                     String digest = el.asText();
                     markDigestAsVisited(digest, visitedDigests);
                     String disclosure = disclosures.get(digest);
 
                     if (disclosure != null) {
-                        // Mark disclosure as visited
+                        // 标记披露为已访问
                         visitedDisclosureStrings.add(disclosure);
 
-                        // Validate disclosure format
+                        // 验证披露格式
                         DisclosureFields decodedDisclosure = validateSdArrayDigestDisclosureFormat(disclosure);
 
-                        // Mark salt as visited
+                        // 标记盐值为已访问
                         markSaltAsVisited(decodedDisclosure.getSaltValue(), visitedSalts);
 
-                        // If the claim name already exists at the level of the _sd key,
-                        // the SD-JWT MUST be rejected (selective-disclosure-jwt, verification
-                        // of the Issuer-signed JWT). Otherwise a Disclosure could silently
-                        // shadow a claim that is present in plaintext or added by another Disclosure.
+                        // 若声明名在 _sd 键层级已存在，则 MUST 拒绝 SD-JWT（选择性披露 JWT 签发者签名 JWT 验证），
+                        // 否则披露可能静默覆盖明文存在或由其他披露添加的声明
                         String claimName = decodedDisclosure.getClaimName();
                         if (currentObjectNode.has(claimName)) {
                             throw new VerificationException(
                                     "Disclosure claim name already present in the payload: " + claimName);
                         }
 
-                        // Insert, at the level of the _sd key, a new claim using the claim name
-                        // and claim value from the Disclosure
+                        // 在 _sd 键层级插入新声明，使用披露中的声明名与声明值
                         currentObjectNode.set(claimName, decodedDisclosure.getClaimValue());
                     }
                 }
             }
 
-            // Remove all _sd keys and their contents from the Issuer-signed JWT payload.
-            // If this results in an object with no properties, it should be represented as an empty object {}
+            // 从签发者签名 JWT 载荷中移除所有 _sd 键及其内容；
+            // 若结果为空对象，应表示为 {}
             currentObjectNode.remove(CLAIM_NAME_SD);
 
-            // Remove the claim _sd_alg from the SD-JWT payload.
+            // 从 SD-JWT 载荷中移除 _sd_alg 声明
             currentObjectNode.remove(CLAIM_NAME_SD_HASH_ALGORITHM);
         }
 
-        // Find all array elements that are objects with one key, that key being ... and referring to a string
+        // 查找所有数组元素：单键对象且键为 ... 且值为字符串
         if (currentNode.isArray()) {
             ArrayNode currentArrayNode = ((ArrayNode) currentNode);
             ArrayList<Integer> indexesToRemove = new ArrayList<>();
@@ -398,39 +384,37 @@ public class SdJwtVerificationContext {
             for (int i = 0; i < currentArrayNode.size(); ++i) {
                 JsonNode itemNode = currentArrayNode.get(i);
                 if (itemNode.isObject() && itemNode.size() == 1) {
-                    // Check single "..." field
+                    // 检查单字段 "..."
                     Map.Entry<String, JsonNode> field = itemNode.fields().next();
                     if (field.getKey().equals(CLAIM_NAME_SD_UNDISCLOSED_ARRAY)
                             && field.getValue().isTextual()) {
-                        // Compare the value with the digests calculated previously and find the matching Disclosure.
-                        // If no such Disclosure can be found, the digest MUST be ignored.
+                        // 将值与先前计算的摘要比较，查找匹配的披露；若找不到则 MUST 忽略该摘要
 
                         String digest = field.getValue().asText();
                         markDigestAsVisited(digest, visitedDigests);
                         String disclosure = disclosures.get(digest);
 
                         if (disclosure != null) {
-                            // Mark disclosure as visited
+                            // 标记披露为已访问
                             visitedDisclosureStrings.add(disclosure);
 
-                            // Validate disclosure format
+                            // 验证披露格式
                             DisclosureFields decodedDisclosure = validateArrayElementDigestDisclosureFormat(disclosure);
 
-                            // Mark salt as visited
+                            // 标记盐值为已访问
                             markSaltAsVisited(decodedDisclosure.getSaltValue(), visitedSalts);
 
-                            // Replace the array element with the value from the Disclosure.
-                            // Removal is done below.
+                            // 用披露中的值替换数组元素，移除操作见下方
                             currentArrayNode.set(i, decodedDisclosure.getClaimValue());
                         } else {
-                            // Remove all array elements for which the digest was not found in the previous step.
+                            // 移除上一步未找到摘要的所有数组元素
                             indexesToRemove.add(i);
                         }
                     }
                 }
             }
 
-            // Remove in reverse order so that each removal does not shift indices of earlier elements.
+            // 逆序移除，避免每次移除影响更早元素的索引
             for (int i = indexesToRemove.size() - 1; i >= 0; i--) {
                 currentArrayNode.remove((int) indexesToRemove.get(i));
             }
@@ -444,64 +428,62 @@ public class SdJwtVerificationContext {
     }
 
     /**
-     * Mark digest as visited.
+     * 标记摘要为已访问。
      *
      * <p>
-     * If any digest value is encountered more than once in the Issuer-signed JWT payload
-     * (directly or recursively via other Disclosures), the SD-JWT MUST be rejected.
+     * 若在签发者签名 JWT 载荷中（直接或通过其他披露递归）多次遇到同一摘要值，则 MUST 拒绝 SD-JWT。
      * </p>
      *
-     * @throws VerificationException if not first visit
+     * @throws VerificationException 非首次访问时
      */
     private void markDigestAsVisited(String digest, Set<String> visitedDigests)
             throws VerificationException {
         if (!visitedDigests.add(digest)) {
-            // If add returns false, then it is a duplicate
+            // add 返回 false 表示重复
             throw new VerificationException("A digest was encountered more than once: " + digest);
         }
     }
 
     /**
-     * Mark salt as visited.
+     * 标记盐值为已访问。
      *
      * <p>
-     * The salt value MUST be unique for each claim that is to be selectively disclosed.
+     * 每个待选择性披露的声明 MUST 使用唯一的盐值。
      * </p>
      *
-     * @throws VerificationException if not first visit
+     * @throws VerificationException 非首次访问时
      */
     private void markSaltAsVisited(String salt, Set<String> visitedSalts)
             throws VerificationException {
         if (!visitedSalts.add(salt)) {
-            // If add returns false, then it is a duplicate
+            // add 返回 false 表示重复
             throw new VerificationException("A salt value was reused: " + salt);
         }
     }
 
     /**
-     * Validate disclosure assuming digest was found in an object's _sd key.
+     * 验证在对象 _sd 键中找到的摘要所对应的披露。
      *
      * <p>
-     * If the contents of the respective Disclosure is not a JSON-encoded array of three elements
-     * (salt, claim name, claim value), the SD-JWT MUST be rejected.
+     * 若相应披露内容不是包含三个元素（盐值、声明名、声明值）的 JSON 编码数组，则 MUST 拒绝 SD-JWT。
      * </p>
      *
      * <p>
-     * If the claim name is _sd or ..., the SD-JWT MUST be rejected.
+     * 若声明名为 _sd 或 ...，则 MUST 拒绝 SD-JWT。
      * </p>
      *
-     * @return decoded disclosure (salt, claim name, claim value)
+     * @return 解码后的披露（盐值、声明名、声明值）
      */
     private DisclosureFields validateSdArrayDigestDisclosureFormat(String disclosure)
             throws VerificationException {
         ArrayNode arrayNode = SdJwtUtils.decodeDisclosureString(disclosure);
 
-        // Check if the array has exactly three elements
+        // 检查数组是否恰好包含三个元素
         if (arrayNode.size() != 3) {
             throw new VerificationException("A field disclosure must contain exactly three elements");
         }
 
-        // If the claim name is _sd or ..., the SD-JWT MUST be rejected.
+        // 若声明名为 _sd 或 ...，则 MUST 拒绝 SD-JWT
 
         List<String> denylist = Arrays.asList(
                 CLAIM_NAME_SD,
@@ -513,7 +495,7 @@ public class SdJwtVerificationContext {
             throw new VerificationException("Disclosure claim name must not be '_sd' or '...'");
         }
 
-        // Return decoded disclosure
+        // 返回解码后的披露
         return new DisclosureFields(
                 arrayNode.get(0).asText(),
                 claimName,
@@ -522,25 +504,24 @@ public class SdJwtVerificationContext {
     }
 
     /**
-     * Validate disclosure assuming digest was found as an undisclosed array element.
+     * 验证作为未披露数组元素找到的摘要所对应的披露。
      *
      * <p>
-     * If the contents of the respective Disclosure is not a JSON-encoded array of
-     * two elements (salt, value), the SD-JWT MUST be rejected.
+     * 若相应披露内容不是包含两个元素（盐值、值）的 JSON 编码数组，则 MUST 拒绝 SD-JWT。
      * </p>
      *
-     * @return decoded disclosure (salt, value)
+     * @return 解码后的披露（盐值、值）
      */
     private DisclosureFields validateArrayElementDigestDisclosureFormat(String disclosure)
             throws VerificationException {
         ArrayNode arrayNode = SdJwtUtils.decodeDisclosureString(disclosure);
 
-        // Check if the array has exactly two elements
+        // 检查数组是否恰好包含两个元素
         if (arrayNode.size() != 2) {
             throw new VerificationException("An array element disclosure must contain exactly two elements");
         }
 
-        // Return decoded disclosure
+        // 返回解码后的披露
         return new DisclosureFields(
                 arrayNode.get(0).asText(),
                 null,
@@ -549,14 +530,13 @@ public class SdJwtVerificationContext {
     }
 
     /**
-     * Validate all disclosures where visited
+     * 验证所有披露均已被访问。
      *
      * <p>
-     * If any Disclosure was not referenced by digest value in the Issuer-signed JWT (directly or recursively via
-     * other Disclosures), the SD-JWT MUST be rejected.
+     * 若有任何披露未在签发者签名 JWT 中（直接或通过其他披露递归）被摘要值引用，则 MUST 拒绝 SD-JWT。
      * </p>
      *
-     * @throws VerificationException if not the case
+     * @throws VerificationException 不满足时
      */
     private void validateDisclosuresVisits(Set<String> visitedDisclosureStrings)
             throws VerificationException {
@@ -566,14 +546,13 @@ public class SdJwtVerificationContext {
     }
 
     /**
-     * Validate integrity of Key Binding JWT's sd_hash.
+     * 验证密钥绑定 JWT 的 sd_hash 完整性。
      *
      * <p>
-     * Calculate the digest over the Issuer-signed JWT and Disclosures and verify that it matches
-     * the value of the sd_hash claim in the Key Binding JWT.
+     * 计算签发者签名 JWT 与披露的摘要，并验证其与密钥绑定 JWT 中 sd_hash 声明的值一致。
      * </p>
      *
-     * @throws VerificationException if verification failed
+     * @throws VerificationException 验证失败时
      */
     private void validateKeyBindingJwtSdHashIntegrity() throws VerificationException {
         Objects.requireNonNull(sdJwtVpString);
@@ -594,9 +573,7 @@ public class SdJwtVerificationContext {
         }
     }
 
-    /**
-     * Plain record for disclosure fields.
-     */
+    /** 披露字段的简单记录类。 */
     private static class DisclosureFields {
         String saltValue;
         String claimName;

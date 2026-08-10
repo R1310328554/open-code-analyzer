@@ -28,11 +28,11 @@ import org.keycloak.sdjwt.vp.KeyBindingJwtVerificationOpts;
 import org.keycloak.sdjwt.vp.SdJwtVP;
 
 /**
- * A component for consuming (verifying) SD-JWT presentations.
+ * SD-JWT 演示消费（验证）组件。
  *
  * <p>
- * The purpose is to streamline SD-JWT VP verification beyond signature
- * and disclosure checks of {@link org.keycloak.sdjwt.SdJwtVerificationContext}
+ * 在 {@link org.keycloak.sdjwt.SdJwtVerificationContext} 的签名与披露检查之上，
+ * 简化 SD-JWT VP 验证流程。
  * </p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
@@ -40,14 +40,14 @@ import org.keycloak.sdjwt.vp.SdJwtVP;
 public class SdJwtPresentationConsumer {
 
     /**
-     * Verify SD-JWT presentation against specific requirements.
+     * 根据特定要求验证 SD-JWT 演示。
      *
-     * @param sdJwtVP                         the presentation to verify
-     * @param presentationRequirements        the requirements on presented claims
-     * @param trustedSdJwtIssuers             trusted issuers for the verification
-     * @param issuerSignedJwtVerificationOpts policy for Issuer-signed JWT verification
-     * @param keyBindingJwtVerificationOpts   policy for Key-binding JWT verification
-     * @throws VerificationException if the verification fails for some reason
+     * @param sdJwtVP                         待验证的演示
+     * @param presentationRequirements        对演示声明的要求
+     * @param trustedSdJwtIssuers             验证所信任的签发者
+     * @param issuerSignedJwtVerificationOpts 签发者签名 JWT 验证策略
+     * @param keyBindingJwtVerificationOpts   密钥绑定 JWT 验证策略
+     * @throws VerificationException 验证因某种原因失败时
      */
     public void verifySdJwtPresentation(
             SdJwtVP sdJwtVP,
@@ -56,7 +56,7 @@ public class SdJwtPresentationConsumer {
             IssuerSignedJwtVerificationOpts issuerSignedJwtVerificationOpts,
             KeyBindingJwtVerificationOpts keyBindingJwtVerificationOpts
     ) throws VerificationException {
-        // Retrieve verifying keys for Issuer-signed JWT
+        // 获取签发者签名 JWT 的验证公钥
         IssuerSignedJWT issuerSignedJWT = sdJwtVP.getIssuerSignedJWT();
         List<SignatureVerifierContext> issuerVerifyingKeys = new ArrayList<>();
         for (TrustedSdJwtIssuer trustedSdJwtIssuer : trustedSdJwtIssuers) {
@@ -65,8 +65,8 @@ public class SdJwtPresentationConsumer {
             issuerVerifyingKeys.addAll(keys);
         }
 
-        // Verify the SD-JWT token cryptographically
-        // Pass presentation requirements to enforce that the presented token meets them
+        // 对 SD-JWT 令牌进行密码学验证
+        // 传入演示要求以强制演示令牌满足这些要求
         sdJwtVP.getSdJwtVerificationContext()
                 .verifyPresentation(
                         issuerVerifyingKeys,
