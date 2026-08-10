@@ -2,6 +2,8 @@
 
 package testkafka
 
+// testkafka 用 kfake 搭建单 broker 假集群，并注入最小 consumer group offset commit/fetch 支持供单测使用。
+
 import (
 	"testing"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/kafka"
 )
 
+// CreateCluster 创建 kfake 集群并注入 consumer group offset 控制 handler。
 // CreateCluster returns a fake Kafka cluster for unit testing.
 func CreateCluster(t testing.TB, numPartitions int32, topicName string, opts ...kfake.Opt) (*kfake.Cluster, kafka.Config) {
 	cluster, addr := CreateClusterWithoutCustomConsumerGroupsSupport(t, numPartitions, topicName, opts...)
@@ -23,6 +26,7 @@ func CreateCluster(t testing.TB, numPartitions int32, topicName string, opts ...
 	return cluster, createTestKafkaConfig(addr, topicName)
 }
 
+// createTestKafkaConfig 实现该路径上的核心处理逻辑。
 func createTestKafkaConfig(clusterAddr, topicName string) kafka.Config {
 	cfg := kafka.Config{}
 	flagext.DefaultValues(&cfg)
@@ -37,6 +41,7 @@ func createTestKafkaConfig(clusterAddr, topicName string) kafka.Config {
 	return cfg
 }
 
+// CreateClusterWithoutCustomConsumerGroupsSupport 实现该路径上的核心处理逻辑。
 func CreateClusterWithoutCustomConsumerGroupsSupport(t testing.TB, numPartitions int32, topicName string, opts ...kfake.Opt) (*kfake.Cluster, string) {
 	cfg := []kfake.Opt{
 		kfake.NumBrokers(1),
@@ -56,6 +61,7 @@ func CreateClusterWithoutCustomConsumerGroupsSupport(t testing.TB, numPartitions
 	return cluster, addrs[0]
 }
 
+// addSupportForConsumerGroups 拦截 OffsetCommit/OffsetFetch 维护内存 offset 表。
 // addSupportForConsumerGroups adds very bare-bones support for one consumer group.
 // It expects that only one partition is consumed at a time.
 func addSupportForConsumerGroups(t testing.TB, cluster *kfake.Cluster, topicName string, numPartitions int32) {
@@ -105,6 +111,7 @@ func addSupportForConsumerGroups(t testing.TB, cluster *kfake.Cluster, topicName
 		consumerGroup := req.Groups[0].Group
 		ensureConsumerGroupExists(consumerGroup)
 
+		// 模块级常量定义。
 		const allPartitions = -1
 		var partitionID int32
 
@@ -161,3 +168,4 @@ func addSupportForConsumerGroups(t testing.TB, cluster *kfake.Cluster, topicName
 		return resp, nil, true
 	})
 }
+// 假集群 consumer group 仅支持单 topic、单分区 per request，满足单元测试即可。

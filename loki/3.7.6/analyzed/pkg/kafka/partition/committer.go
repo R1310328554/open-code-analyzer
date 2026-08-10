@@ -1,5 +1,7 @@
 package partition
 
+// committer 异步/定时将已消费 offset 提交到 consumer group，并暴露 commit 请求量、延迟与最后提交 offset 指标。
+
 import (
 	"context"
 	"strconv"
@@ -15,12 +17,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/kafka/client"
 )
 
+// Committer 抽象 offset 提交：Commit 立即写、EnqueueOffset 入队待定时提交。
 // Committer defines an interface for committing offsets
 type Committer interface {
 	Commit(ctx context.Context, offset int64) error
 	EnqueueOffset(offset int64)
 }
 
+// partitionCommitter offset 提交抽象接口。
 type partitionCommitter struct {
 	commitRequestsTotal   prometheus.Counter
 	commitRequestsLatency prometheus.Histogram
@@ -37,6 +41,7 @@ type partitionCommitter struct {
 	cancel   context.CancelFunc
 }
 
+// newCommitter 实现该路径上的核心处理逻辑。
 func newCommitter(offsetManager OffsetManager, partition int32, commitFreq time.Duration, logger log.Logger, reg prometheus.Registerer) *partitionCommitter {
 	c := &partitionCommitter{
 		logger:        logger,
@@ -87,6 +92,7 @@ func newCommitter(offsetManager OffsetManager, partition int32, commitFreq time.
 	return c
 }
 
+// autoCommitLoop 实现该路径上的核心处理逻辑。
 func (c *partitionCommitter) autoCommitLoop(ctx context.Context) {
 	defer c.wg.Done()
 	commitTicker := time.NewTicker(c.commitFreq)
@@ -114,12 +120,14 @@ func (c *partitionCommitter) autoCommitLoop(ctx context.Context) {
 	}
 }
 
+// 将待提交 offset 写入 committer 队列。
 func (c *partitionCommitter) EnqueueOffset(o int64) {
 	if c.commitFreq > 0 {
 		c.toCommit.Store(o)
 	}
 }
 
+// 将 offset 写入 consumer group。
 func (c *partitionCommitter) Commit(ctx context.Context, offset int64) error {
 	startTime := time.Now()
 	c.commitRequestsTotal.Inc()
@@ -137,6 +145,7 @@ func (c *partitionCommitter) Commit(ctx context.Context, offset int64) error {
 	return nil
 }
 
+// 停止自动提交循环并 flush 最终 offset。
 func (c *partitionCommitter) Stop() {
 	if c.commitFreq <= 0 {
 		return
@@ -157,3 +166,4 @@ func (c *partitionCommitter) Stop() {
 		level.Info(logger).Log()
 	}
 }
+// Stop 时 flush 最终 toCommit，确保关停前 offset 尽力持久化。

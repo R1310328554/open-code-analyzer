@@ -1,6 +1,8 @@
 // Package kafka provides encoding and decoding functionality for Loki's Kafka integration.
 package kafka
 
+// encoding 负责 logproto.Stream 与 Kafka Record 互转：按 maxSize 切分大 stream，Decoder 带标签 LRU 缓存。
+
 import (
 	"errors"
 	"fmt"
@@ -24,6 +26,7 @@ var (
 	}
 )
 
+// Encode 将 logproto.Stream 序列化为一条或多条 Kafka record，key 为 tenantID。
 // Encode converts a logproto.Stream into one or more Kafka records.
 // It handles splitting large streams into multiple records if necessary.
 //
@@ -42,10 +45,12 @@ var (
 // - tenantID: The tenant ID for the stream
 // - stream: The logproto.Stream to be encoded
 // - maxSize: The maximum size of each Kafka record
+// 将 stream 编码为 Kafka record 列表。
 func Encode(partitionID int32, tenantID string, stream logproto.Stream, maxSize int) ([]*kgo.Record, error) {
 	return EncodeWithTopic("", partitionID, tenantID, stream, maxSize)
 }
 
+// EncodeWithTopic 实现该路径上的核心处理逻辑。
 func EncodeWithTopic(topic string, partitionID int32, tenantID string, stream logproto.Stream, maxSize int) ([]*kgo.Record, error) {
 	reqSize := stream.Size()
 
@@ -116,6 +121,7 @@ func EncodeWithTopic(topic string, partitionID int32, tenantID string, stream lo
 }
 
 // topic can be empty in the case the client injects a default.
+// marshalWriteRequestToRecord 实现该路径上的核心处理逻辑。
 func marshalWriteRequestToRecord(topic string, partitionID int32, tenantID string, stream logproto.Stream) (*kgo.Record, error) {
 	data, err := stream.Marshal()
 	if err != nil {
@@ -130,6 +136,7 @@ func marshalWriteRequestToRecord(topic string, partitionID int32, tenantID strin
 	}, nil
 }
 
+// Decoder 反序列化 record value，并用 LRU 缓存已解析的标签字符串。
 // Decoder is responsible for decoding Kafka record data back into logproto.Stream format.
 // It caches parsed labels for efficiency.
 type Decoder struct {
@@ -137,6 +144,7 @@ type Decoder struct {
 	cache  *lru.Cache[string, labels.Labels]
 }
 
+// 分配 Decoder 与 5000 容量的标签 LRU 缓存。
 func NewDecoder() (*Decoder, error) {
 	cache, err := lru.New[string, labels.Labels](5000)
 	if err != nil {
@@ -154,6 +162,7 @@ func NewDecoder() (*Decoder, error) {
 // 2. Parse and cache the labels for efficiency in future decodes.
 //
 // Returns the decoded logproto.Stream, parsed labels, and any error encountered.
+// Decode 返回 stream 与解析后的 labels.Labels，命中缓存则跳过 ParseLabels。
 func (d *Decoder) Decode(data []byte) (logproto.Stream, labels.Labels, error) {
 	d.stream.Entries = d.stream.Entries[:0]
 	if err := d.stream.Unmarshal(data); err != nil {
@@ -176,6 +185,7 @@ func (d *Decoder) Decode(data []byte) (logproto.Stream, labels.Labels, error) {
 }
 
 // DecodeWithoutLabels converts a Kafka record's byte data back into a logproto.Stream without parsing labels.
+// DecodeWithoutLabels 实现该路径上的核心处理逻辑。
 func (d *Decoder) DecodeWithoutLabels(data []byte) (logproto.Stream, error) {
 	if len(data) == 0 {
 		return logproto.Stream{}, errors.New("empty data received")
@@ -192,6 +202,8 @@ func (d *Decoder) DecodeWithoutLabels(data []byte) (logproto.Stream, error) {
 // sovPush calculates the size of varint-encoded uint64.
 // It is used to determine the number of bytes needed to encode a uint64 value
 // in Protocol Buffers' variable-length integer format.
+// sovPush 实现该路径上的核心处理逻辑。
 func sovPush(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
+// encoderPool 复用 logproto.Stream 减少大批量切分时的分配压力。

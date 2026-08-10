@@ -1,5 +1,7 @@
 package client
 
+// writer_client 构造写入端 kgo.Client 与 Producer 封装：手动分区、批量 linger、缓冲字节限流与 Prometheus 指标。
+
 import (
 	"context"
 	"errors"
@@ -29,14 +31,17 @@ import (
 // start being processed by Kafka.
 var writerRequestTimeoutOverhead = 2 * time.Second
 
+// 模块级常量定义。
 const (
 	MetricsPrefix = "loki_kafka_client"
 )
 
+// NewWriterClient 创建 Writer 专用客户端：全 ISR ack、手动分区与 linger 调优。
 // NewWriterClient returns the kgo.Client that should be used by the Writer.
 //
 // The returned Client collects the standard set of *kprom.Metrics, prefixed with
 // `MetricsPrefix`
+// 创建 Writer 侧 franz-go 客户端。
 func NewWriterClient(component string, kafkaCfg kafka.Config, maxInflightProduceRequests int, logger log.Logger, reg prometheus.Registerer) (*kgo.Client, error) {
 	// Do not export the client ID, because we use it to specify options to the backend.
 	metrics := NewClientMetrics(component, reg, kafkaCfg.EnableKafkaHistograms)
@@ -103,6 +108,7 @@ func NewWriterClient(component string, kafkaCfg kafka.Config, maxInflightProduce
 
 // NewClientMetrics returns a new instance of `kprom.Metrics` (used to monitor Kafka interactions), provided
 // the `MetricsPrefix` as the `Namespace` for the default set of Prometheus metrics
+// 创建带 loki_kafka_client 命名空间的 kprom 指标集。
 func NewClientMetrics(component string, reg prometheus.Registerer, enableKafkaHistograms bool) *kprom.Metrics {
 	return kprom.NewMetrics(MetricsPrefix,
 		kprom.Registerer(WrapPrometheusRegisterer(component, reg)),
@@ -116,12 +122,14 @@ func NewClientMetrics(component string, reg prometheus.Registerer, enableKafkaHi
 //
 // This Registerer is used internally by the reader/writer Kafka clients to collect *kprom.Metrics (or any custom metrics
 // passed by a calling service)
+// WrapPrometheusRegisterer 实现该路径上的核心处理逻辑。
 func WrapPrometheusRegisterer(component string, reg prometheus.Registerer) prometheus.Registerer {
 	return prometheus.WrapRegistererWith(prometheus.Labels{
 		"component": component,
 	}, reg)
 }
 
+// enableKafkaHistogramMetrics 实现该路径上的核心处理逻辑。
 func enableKafkaHistogramMetrics(enable bool) kprom.Opt {
 	histogramOpts := []kprom.HistogramOpts{}
 	if enable {
@@ -143,10 +151,12 @@ func enableKafkaHistogramMetrics(enable bool) kprom.Opt {
 	return kprom.HistogramsFromOpts(histogramOpts...)
 }
 
+// onlySampledTraces 类型封装该模块的状态与行为。
 type onlySampledTraces struct {
 	propagation.TextMapPropagator
 }
 
+// Inject 实现该路径上的核心处理逻辑。
 func (o onlySampledTraces) Inject(ctx context.Context, carrier propagation.TextMapCarrier) {
 	sc := trace.SpanContextFromContext(ctx)
 	if !sc.IsSampled() {
@@ -155,6 +165,7 @@ func (o onlySampledTraces) Inject(ctx context.Context, carrier propagation.TextM
 	o.TextMapPropagator.Inject(ctx, carrier)
 }
 
+// commonKafkaClientOptions 实现该路径上的核心处理逻辑。
 func commonKafkaClientOptions(cfg kafka.Config, metrics *kprom.Metrics, logger log.Logger) []kgo.Opt {
 	opts := []kgo.Opt{
 		kgo.DialTimeout(cfg.DialTimeout),
@@ -221,6 +232,7 @@ func commonKafkaClientOptions(cfg kafka.Config, metrics *kprom.Metrics, logger l
 	return opts
 }
 
+// Producer 在 kgo.Client 之上跟踪 bufferedBytes 并实现 ProduceSync 同步写入。
 // Producer is a kgo.Client wrapper exposing some higher level features and metrics useful for producers.
 type Producer struct {
 	*kgo.Client
@@ -242,6 +254,7 @@ type Producer struct {
 }
 
 // ProducerOption is a functional option for configuring a Producer.
+// ProducerOption 带缓冲限流的 Kafka 生产者封装。
 type ProducerOption func(*Producer)
 
 // WithRecordsInterceptor configures an interceptor to be called before producing records.
@@ -255,6 +268,7 @@ func WithRecordsInterceptor(interceptor func(context.Context, []*kgo.Record) err
 //
 // The input prometheus.Registerer must be wrapped with a prefix (the names of metrics
 // registered don't have a prefix).
+// 包装 kgo.Client 并注册 producer 缓冲与失败指标。
 func NewProducer(component string, client *kgo.Client, maxBufferedBytes int64, reg prometheus.Registerer, opts ...ProducerOption) *Producer {
 	wrappedRegisterer := WrapPrometheusRegisterer(component, reg)
 
@@ -292,6 +306,7 @@ func NewProducer(component string, client *kgo.Client, maxBufferedBytes int64, r
 	return producer
 }
 
+// Close 实现该路径上的核心处理逻辑。
 func (c *Producer) Close() {
 	c.Client.Close()
 }
@@ -301,6 +316,7 @@ func (c *Producer) Close() {
 //
 // This function honors the configure max buffered bytes and refuse to produce a record, returnin kgo.ErrMaxBuffered,
 // if the configured limit is reached.
+// ProduceSync 等待全部 record 交付或出错，超缓冲上限时 fast-fail ErrMaxBuffered。
 func (c *Producer) ProduceSync(ctx context.Context, records []*kgo.Record) kgo.ProduceResults {
 	// Call interceptor with all records if configured
 	if c.recordsInterceptor != nil {
@@ -372,6 +388,7 @@ func (c *Producer) ProduceSync(ctx context.Context, records []*kgo.Record) kgo.P
 	}
 }
 
+// produceErrReason 实现该路径上的核心处理逻辑。
 func produceErrReason(err error) string {
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, kgo.ErrRecordTimeout) {
 		return "timeout"
@@ -389,3 +406,4 @@ func produceErrReason(err error) string {
 	}
 	return "other"
 }
+// Producer.ProduceSync 用 WithoutCancel 避免 ctx 取消误伤在途 produce。

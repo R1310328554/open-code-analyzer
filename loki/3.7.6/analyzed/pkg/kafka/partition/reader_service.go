@@ -1,5 +1,7 @@
 package partition
 
+// reader_service 编排分区读取生命周期：启动时追 lag、运行期 fetch 循环、partition ring 状态与 offset committer。
+
 import (
 	"context"
 	"fmt"
@@ -18,27 +20,32 @@ import (
 	"github.com/grafana/loki/v3/pkg/kafka/client"
 )
 
+// 模块级常量定义。
 const (
 	phaseStarting = "starting"
 	phaseRunning  = "running"
 )
 
 // StateProvider provides access to partition ring state.
+// StateProvider 类型封装该模块的状态与行为。
 type StateProvider interface {
 	GetPartitionState(ctx context.Context) (ring.PartitionState, time.Time, error)
 }
 
+// ConsumerFactory 消费 Record 批次的组件接口。
 type ConsumerFactory func(committer Committer, logger log.Logger) (Consumer, error)
 
 type Consumer interface {
 	Start(ctx context.Context, recordsChan <-chan []Record) func()
 }
 
+// serviceMetrics 类型封装该模块的状态与行为。
 type serviceMetrics struct {
 	phase     *prometheus.GaugeVec
 	partition *prometheus.GaugeVec
 }
 
+// newServiceMetrics 实现该路径上的核心处理逻辑。
 func newServiceMetrics(r prometheus.Registerer) *serviceMetrics {
 	return &serviceMetrics{
 		partition: promauto.With(r).NewGaugeVec(prometheus.GaugeOpts{
@@ -54,6 +61,7 @@ func newServiceMetrics(r prometheus.Registerer) *serviceMetrics {
 	}
 }
 
+// ReaderService 将 Reader、OffsetManager、Committer 与 Consumer 编排为 dskit Service。
 type ReaderService struct {
 	services.Service
 
@@ -70,6 +78,7 @@ type ReaderService struct {
 	lastProcessedOffset int64
 }
 
+// ReaderConfig 运行配置结构体，由 flag 注册与 Validate 校验。
 type ReaderConfig struct {
 	MaxConsumerLagAtStartup       time.Duration
 	ConsumerGroupOffsetCommitFreq time.Duration
@@ -77,6 +86,7 @@ type ReaderConfig struct {
 
 // mimics `NewReader` constructor but builds a reader service using
 // a reader.
+// 组装 ReaderService：reader、offset manager 与 committer。
 func NewReaderService(
 	kafkaCfg kafka.Config,
 	partitionID int32,
@@ -118,6 +128,7 @@ func NewReaderService(
 	), nil
 }
 
+// newReaderService 实现该路径上的核心处理逻辑。
 func newReaderService(
 	cfg ReaderConfig,
 	reader Reader,
@@ -147,6 +158,7 @@ func newReaderService(
 	return s
 }
 
+// starting 读取最后 commit offset、设定消费起点并可选执行 startup lag 追赶。
 func (s *ReaderService) starting(ctx context.Context) error {
 	level.Info(s.logger).Log("msg", "starting reader service")
 	s.metrics.reportOwnerOfPartition(s.partitionID)
@@ -181,6 +193,7 @@ func (s *ReaderService) starting(ctx context.Context) error {
 	return nil
 }
 
+// running 启动 fetch 循环与 consumer，监控 partition ring 状态变化。
 func (s *ReaderService) running(ctx context.Context) error {
 	level.Info(s.logger).Log("msg", "reader service running")
 	s.metrics.reportRunning()
@@ -208,6 +221,7 @@ func (s *ReaderService) running(ctx context.Context) error {
 	return nil
 }
 
+// processConsumerLagAtStartup 实现该路径上的核心处理逻辑。
 func (s *ReaderService) processConsumerLagAtStartup(ctx context.Context, logger log.Logger) error {
 	if s.cfg.MaxConsumerLagAtStartup <= 0 {
 		level.Debug(logger).Log("msg", "processing consumer lag at startup is disabled")
@@ -237,6 +251,7 @@ func (s *ReaderService) processConsumerLagAtStartup(ctx context.Context, logger 
 	return nil
 }
 
+// fetchUntilLagSatisfied 实现该路径上的核心处理逻辑。
 func (s *ReaderService) fetchUntilLagSatisfied(
 	ctx context.Context,
 	targetLag time.Duration,
@@ -346,6 +361,7 @@ func (s *ReaderService) fetchUntilLagSatisfied(
 	return 0, b.ErrCause()
 }
 
+// startFetchLoop 实现该路径上的核心处理逻辑。
 func (s *ReaderService) startFetchLoop(ctx context.Context) chan []Record {
 	records := make(chan []Record)
 	go func() {
@@ -370,20 +386,24 @@ func (s *ReaderService) startFetchLoop(ctx context.Context) chan []Record {
 	return records
 }
 
+// reportOwnerOfPartition 实现该路径上的核心处理逻辑。
 func (s *serviceMetrics) reportOwnerOfPartition(id int32) {
 	s.partition.WithLabelValues(strconv.Itoa(int(id))).Set(1)
 }
 
+// reportStarting 实现该路径上的核心处理逻辑。
 func (s *serviceMetrics) reportStarting() {
 	s.phase.WithLabelValues(phaseStarting).Set(1)
 	s.phase.WithLabelValues(phaseRunning).Set(0)
 }
 
+// reportRunning 实现该路径上的核心处理逻辑。
 func (s *serviceMetrics) reportRunning() {
 	s.phase.WithLabelValues(phaseStarting).Set(0)
 	s.phase.WithLabelValues(phaseRunning).Set(1)
 }
 
+// loggerWithCurrentLagIfSet 实现该路径上的核心处理逻辑。
 func loggerWithCurrentLagIfSet(logger log.Logger, currentLag time.Duration) log.Logger {
 	if currentLag <= 0 {
 		return logger
@@ -392,6 +412,7 @@ func loggerWithCurrentLagIfSet(logger log.Logger, currentLag time.Duration) log.
 	return log.With(logger, "current_lag", currentLag)
 }
 
+// monitorPartitionState 实现该路径上的核心处理逻辑。
 func (s *ReaderService) monitorPartitionState(ctx context.Context) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -406,6 +427,7 @@ func (s *ReaderService) monitorPartitionState(ctx context.Context) {
 	}
 }
 
+// updatePartitionState 实现该路径上的核心处理逻辑。
 func (s *ReaderService) updatePartitionState(ctx context.Context) {
 	state, _, err := s.stateProvider.GetPartitionState(ctx)
 	if err != nil {
@@ -440,3 +462,4 @@ func (s *ReaderService) updatePartitionState(ctx context.Context) {
 
 	s.reader.SetPartitionState(stateStr)
 }
+// fetchUntilLagSatisfied 在启动阶段重放至目标 lag 内才进入 running。

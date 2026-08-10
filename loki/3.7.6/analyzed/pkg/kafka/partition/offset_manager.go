@@ -1,5 +1,7 @@
 package partition
 
+// offset_manager 封装分区 offset 读写：查询已提交位点、ListOffsets 特殊位置、按时间戳定位及 Commit。
+
 import (
 	"context"
 	"errors"
@@ -18,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/kafka/client"
 )
 
+// OffsetManager 定义分区 offset 查询与提交的统一接口。
 type OffsetManager interface {
 	Topic() string
 	ConsumerGroup() string
@@ -30,6 +33,7 @@ type OffsetManager interface {
 
 var _ OffsetManager = &KafkaOffsetManager{}
 
+// KafkaOffsetManager 通过 kgo/kadm 实现 OffsetManager 全部方法。
 type KafkaOffsetManager struct {
 	client      *kgo.Client
 	adminClient *kadm.Client
@@ -38,6 +42,7 @@ type KafkaOffsetManager struct {
 	logger      log.Logger
 }
 
+// 为 offset 管理创建独立 ReaderClient。
 func NewKafkaOffsetManager(
 	cfg kafka.Config,
 	instanceID string,
@@ -59,6 +64,7 @@ func NewKafkaOffsetManager(
 }
 
 // newKafkaReader creates a new KafkaReader instance
+// newKafkaOffsetManager 实现该路径上的核心处理逻辑。
 func newKafkaOffsetManager(
 	client *kgo.Client,
 	cfg kafka.Config,
@@ -75,16 +81,19 @@ func newKafkaOffsetManager(
 }
 
 // Topic returns the topic being read
+// Topic 实现该路径上的核心处理逻辑。
 func (r *KafkaOffsetManager) Topic() string {
 	return r.cfg.Topic
 }
 
+// ConsumerGroup 实现该路径上的核心处理逻辑。
 func (r *KafkaOffsetManager) ConsumerGroup() string {
 	return r.cfg.GetConsumerGroup(r.instanceID)
 }
 
 // NextOffset returns the first offset after the timestamp t. If the partition
 // does not have an offset after t, it returns the current end offset.
+// NextOffset 实现该路径上的核心处理逻辑。
 func (r *KafkaOffsetManager) NextOffset(ctx context.Context, partition int32, t time.Time) (int64, error) {
 	resp, err := r.adminClient.ListOffsetsAfterMilli(ctx, t.UnixMilli(), r.cfg.Topic)
 	if err != nil {
@@ -108,6 +117,7 @@ func (r *KafkaOffsetManager) NextOffset(ctx context.Context, partition int32, t 
 	return listed.Offset, nil
 }
 
+// LastCommittedOffset 向 consumer group 查询该分区最后已提交 offset。
 // LastCommittedOffset retrieves the last committed offset for this partition
 func (r *KafkaOffsetManager) LastCommittedOffset(ctx context.Context, partitionID int32) (int64, error) {
 	req := kmsg.NewPtrOffsetFetchRequest()
@@ -154,6 +164,7 @@ func (r *KafkaOffsetManager) LastCommittedOffset(ctx context.Context, partitionI
 }
 
 // FetchPartitionOffset retrieves the offset for a specific position
+// PartitionOffset 实现该路径上的核心处理逻辑。
 func (r *KafkaOffsetManager) PartitionOffset(ctx context.Context, partitionID int32, position SpecialOffset) (int64, error) {
 	partitionReq := kmsg.NewListOffsetsRequestTopicPartition()
 	partitionReq.Partition = partitionID
@@ -200,6 +211,7 @@ func (r *KafkaOffsetManager) PartitionOffset(ctx context.Context, partitionID in
 }
 
 // Commit commits an offset to the consumer group
+// 将 offset 写入 consumer group。
 func (r *KafkaOffsetManager) Commit(ctx context.Context, partitionID int32, offset int64) error {
 	admin := kadm.NewClient(r.client)
 
@@ -218,3 +230,4 @@ func (r *KafkaOffsetManager) Commit(ctx context.Context, partitionID int32, offs
 	level.Debug(r.logger).Log("msg", "last commit offset successfully committed to Kafka", "offset", committedOffset.At)
 	return nil
 }
+// OffsetFetch 响应畸形时回退 KafkaStartOffset，避免 reader 无法启动。

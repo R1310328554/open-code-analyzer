@@ -2,6 +2,8 @@
 
 package partition
 
+// kafkautil 提供 GetGroupLag：在无活跃 consumer 时计算consumer group 相对 high watermark 的 lag。
+
 import (
 	"context"
 	"errors"
@@ -12,6 +14,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 )
 
+// GetGroupLag 在无 live member 时仍能计算 group lag，支持 fallback 时间戳 offset。
 // GetGroupLag is similar to `kadm.Client.Lag` but works when the group doesn't have live participants.
 // Similar to `kadm.CalculateGroupLagWithStartOffsets`, it takes into account that the group may not have any commits.
 //
@@ -20,6 +23,7 @@ import (
 // the lag is the difference between the last produced offset and the offset committed in the consumer group.
 // Otherwise, if the block builder didn't commit an offset for a given partition yet (e.g. block builder is
 // running for the first time), then the lag is the difference between the last produced offset and fallbackOffsetMillis.
+// 计算 consumer group 相对 high watermark 的 lag。
 func GetGroupLag(ctx context.Context, admClient *kadm.Client, topic, group string, fallbackOffsetMillis int64) (kadm.GroupLag, error) {
 	offsets, err := admClient.FetchOffsets(ctx, group)
 	if err != nil {
@@ -78,3 +82,4 @@ func GetGroupLag(ctx context.Context, admClient *kadm.Client, topic, group strin
 	}
 	return kadm.CalculateGroupLagWithStartOffsets(descrGroup, offsets, startOffsets, endOffsets), nil
 }
+// fallbackOffsetMillis 用于 group 尚无 commit 时分区首次启动的 lag 估算。

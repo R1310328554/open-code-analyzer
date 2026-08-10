@@ -1,5 +1,7 @@
 package partition
 
+// reader 提供单分区 Kafka 拉取：Poll 批量 fetch、消费 lag 指标、SetOffsetForConsumption 设定起始位点。
+
 import (
 	"context"
 	"fmt"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/kafka/client"
 )
 
+// SpecialOffset 类型封装该模块的状态与行为。
 type SpecialOffset int
 
 const (
@@ -26,6 +29,7 @@ const (
 	KafkaEndOffset   SpecialOffset = -1
 )
 
+// Record 是从 Kafka 拉取并解码后的单条日志：租户、payload、offset 与时间戳。
 type Record struct {
 	// Context holds the tracing (and potentially other) info, that the record was enriched with on fetch from Kafka.
 	Ctx       context.Context
@@ -35,6 +39,7 @@ type Record struct {
 	Timestamp time.Time
 }
 
+// Reader 抽象单分区读取：Poll、SetOffsetForConsumption 与 ring 状态标签。
 type Reader interface {
 	Topic() string
 	Partition() int32
@@ -50,6 +55,7 @@ type Reader interface {
 }
 
 // ReaderMetrics contains metrics specific to Kafka reading operations
+// ReaderMetrics 分区读取抽象接口。
 type ReaderMetrics struct {
 	consumptionLag    *prometheus.HistogramVec
 	recordsPerFetch   prometheus.Histogram
@@ -58,6 +64,7 @@ type ReaderMetrics struct {
 	fetchWaitDuration prometheus.Histogram
 }
 
+// 注册 partition reader fetch/lag 相关 Prometheus 指标。
 func NewReaderMetrics(r prometheus.Registerer) *ReaderMetrics {
 	return &ReaderMetrics{
 		consumptionLag: promauto.With(r).NewHistogramVec(prometheus.HistogramOpts{
@@ -96,6 +103,7 @@ func NewReaderMetrics(r prometheus.Registerer) *ReaderMetrics {
 }
 
 // KafkaReader provides low-level access to Kafka partition reading operations
+// KafkaReader 分区读取抽象接口。
 type KafkaReader struct {
 	client                   *kgo.Client
 	topic                    string
@@ -110,6 +118,7 @@ type KafkaReader struct {
 }
 
 // ReaderOption is a functional option for configuring a KafkaReader.
+// ReaderOption 分区读取抽象接口。
 type ReaderOption func(*KafkaReader)
 
 // WithHeaderToContextExtractor configures a function to extract context from record headers.
@@ -119,6 +128,7 @@ func WithHeaderToContextExtractor(extractor func(context.Context, []kgo.RecordHe
 	}
 }
 
+// 为指定 partitionID 创建专用 KafkaReader。
 func NewKafkaReader(
 	cfg kafka.Config,
 	partitionID int32,
@@ -151,28 +161,33 @@ func NewKafkaReader(
 }
 
 // Topic returns the topic being read
+// Topic 实现该路径上的核心处理逻辑。
 func (r *KafkaReader) Topic() string {
 	return r.topic
 }
 
 // Partition returns the partition being read
+// Partition 实现该路径上的核心处理逻辑。
 func (r *KafkaReader) Partition() int32 {
 	return r.partitionID
 }
 
 // SetPhase sets the phase for the reader. This is used to differentiate between different phases of the reader.
 // For example, we can use this to differentiate between the startup phase and the running phase.
+// 设置 reader 阶段标签（starting/running）供指标区分。
 func (r *KafkaReader) SetPhase(phase string) {
 	r.phase = phase
 }
 
 // SetPartitionState sets the partition ring state for the reader.
+// 设置 partition ring 状态供 lag 指标打标。
 func (r *KafkaReader) SetPartitionState(state string) {
 	r.partitionStateMu.Lock()
 	defer r.partitionStateMu.Unlock()
 	r.partitionState = state
 }
 
+// Poll 调用 PollRecords 拉取批次，填充 consumption lag 与 fetch 指标。
 // Poll retrieves the next batch of records from Kafka
 // Number of records fetched can be limited by configuring maxPollRecords to a non-zero value.
 func (r *KafkaReader) Poll(ctx context.Context, maxPollRecords int) ([]Record, error) {
@@ -244,8 +259,10 @@ func (r *KafkaReader) Poll(ctx context.Context, maxPollRecords int) ([]Record, e
 	return records, nil
 }
 
+// 设定下次 Poll 的起始 Kafka offset。
 func (r *KafkaReader) SetOffsetForConsumption(offset int64) {
 	r.client.AddConsumePartitions(map[string]map[int32]kgo.Offset{
 		r.topic: {r.partitionID: kgo.NewOffset().At(offset)},
 	})
 }
+// 无记录 fetch 时仍上报 lag=0，使 INACTIVE 分区指标持续可见。

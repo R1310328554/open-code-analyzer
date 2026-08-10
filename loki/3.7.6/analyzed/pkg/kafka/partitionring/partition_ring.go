@@ -1,5 +1,7 @@
 package partitionring
 
+// partition_ring 配置 Kafka 分区 hash ring：KV 存储、PENDING→ACTIVE 等待策略、INACTIVE 分区删除与 shuffle shard 缓存。
+
 import (
 	"flag"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/dskit/ring"
 )
 
+// Config 运行配置结构体，由 flag 注册与 Validate 校验。
 type Config struct {
 	KVStore kv.Config `yaml:"kvstore" doc:"description=The key-value store used to share the hash ring across multiple instances. This option needs be set on ingesters, distributors, queriers, and rulers when running in microservices mode."`
 
@@ -34,6 +37,7 @@ type Config struct {
 }
 
 // RegisterFlags adds the flags required to config this to the given FlagSet
+// RegisterFlagsWithPrefix 实现该路径上的核心处理逻辑。
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	// Ring flags
 	cfg.KVStore.Store = "memberlist" // Override default value.
@@ -45,6 +49,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.IntVar(&cfg.ShuffleShardCacheSize, prefix+"partition-ring.shuffle-shard-cache-size", 0, "Experimental: The size of the cache used for shuffle sharding. If zero or negative, an unbounded cache is used. If positive, an LRU cache with the specified size is used.")
 }
 
+// 将 ring Config 转为 dskit PartitionInstanceLifecyclerConfig。
 func (cfg *Config) ToLifecyclerConfig(partitionID int32, instanceID string) ring.PartitionInstanceLifecyclerConfig {
 	return ring.PartitionInstanceLifecyclerConfig{
 		PartitionID:                          partitionID,
@@ -56,6 +61,7 @@ func (cfg *Config) ToLifecyclerConfig(partitionID int32, instanceID string) ring
 	}
 }
 
+// ExtractPartitionID 从 hostname 样式字符串末尾 -数字 解析 int32 分区 ID。
 // ExtractPartitionID extracts the partition ID from the string.
 func ExtractPartitionID(s string) (int32, error) {
 	if strings.Contains(s, "local") || strings.HasSuffix(s, ".lan") {
@@ -71,3 +77,4 @@ func ExtractPartitionID(s string) (int32, error) {
 	}
 	return int32(partitionID), nil
 }
+// ExtractPartitionID 从实例名尾缀 -N 解析分区号，local/lan 返回 0。

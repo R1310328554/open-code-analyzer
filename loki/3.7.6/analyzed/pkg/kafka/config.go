@@ -1,5 +1,7 @@
 package kafka
 
+// config 定义 Loki Kafka 后端通用配置：读写地址、SASL、consumer group、producer 大小限制与启动 lag 等待等。
+
 import (
 	"errors"
 	"flag"
@@ -10,6 +12,7 @@ import (
 	"github.com/grafana/dskit/flagext"
 )
 
+// 模块级常量定义。
 const (
 	consumeFromLastOffset = "last-offset"
 	consumeFromStart      = "start"
@@ -34,6 +37,7 @@ var (
 	ErrInvalidProducerMaxRecordSizeBytes   = fmt.Errorf("the configured producer max record size bytes must be a value between %d and %d", minProducerRecordDataBytesLimit, MaxProducerRecordDataBytesLimit)
 )
 
+// Config 聚合 Kafka 读写、认证、consumer group 与 producer 限流等全部参数。
 // Config holds the generic config for the Kafka backend.
 type Config struct {
 	Address      string        `yaml:"address" doc:"hidden|deprecated"`
@@ -66,20 +70,24 @@ type Config struct {
 	TracingEnabled        bool `yaml:"tracing_enabled"`
 }
 
+// ClientConfig 运行配置结构体，由 flag 注册与 Validate 校验。
 type ClientConfig struct {
 	Address  string `yaml:"address"`
 	ClientID string `yaml:"client_id"`
 }
 
+// RegisterFlagsWithPrefix 实现该路径上的核心处理逻辑。
 func (cfg *ClientConfig) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	f.StringVar(&cfg.Address, prefix+".address", "localhost:9092", "The Kafka backend address.")
 	f.StringVar(&cfg.ClientID, prefix+".client-id", "", "The Kafka client ID.")
 }
 
+// RegisterFlags 实现该路径上的核心处理逻辑。
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("kafka", f)
 }
 
+// RegisterFlagsWithPrefix 实现该路径上的核心处理逻辑。
 func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	cfg.ReaderConfig.RegisterFlagsWithPrefix(prefix+".reader", f)
 	cfg.WriterConfig.RegisterFlagsWithPrefix(prefix+".writer", f)
@@ -115,6 +123,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, f *flag.FlagSet) {
 	}
 }
 
+// Validate 校验地址、topic、SASL 成对性及 producer 记录大小上下界。
 func (cfg *Config) Validate() error {
 	if cfg.ReaderConfig.Address == "" && cfg.WriterConfig.Address == "" {
 		return ErrMissingKafkaAddress
@@ -132,6 +141,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// GetConsumerGroup 返回 consumer group 名；空配置时使用 instanceID。
 // GetConsumerGroup returns the consumer group to use for the given instanceID and partitionID.
 func (cfg *Config) GetConsumerGroup(instanceID string) string {
 	if cfg.ConsumerGroup == "" {
@@ -139,3 +149,4 @@ func (cfg *Config) GetConsumerGroup(instanceID string) string {
 	}
 	return cfg.ConsumerGroup
 }
+// GetConsumerGroup 未配置时回退 instanceID，保证每 zone 独立 group。
