@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T07:09:24Z",
-  "files": [
-    "js/libs/keycloak-admin-client/src/resources/clientPolicies.ts",
-    "js/libs/keycloak-admin-client/src/resources/clientScopes.ts",
-    "js/libs/keycloak-admin-client/src/resources/clients.ts",
-    "js/libs/keycloak-admin-client/src/resources/clientsV2.ts",
-    "js/libs/keycloak-admin-client/src/resources/components.ts",
-    "js/libs/keycloak-admin-client/src/resources/groups.ts",
-    "js/libs/keycloak-admin-client/src/resources/identityProviders.ts",
-    "js/libs/keycloak-admin-client/src/resources/organizations.ts",
-    "js/libs/keycloak-admin-client/src/resources/realms.ts",
-    "js/libs/keycloak-admin-client/src/resources/resource.ts",
-    "js/libs/keycloak-admin-client/src/resources/roles.ts",
-    "js/libs/keycloak-admin-client/src/resources/serverInfo.ts",
-    "js/libs/keycloak-admin-client/src/resources/userStorageProvider.ts",
-    "js/libs/keycloak-admin-client/src/resources/users.ts",
-    "js/libs/keycloak-admin-client/src/resources/whoAmI.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4858,
-  "done": 1125
+  "done": 1140
 }
