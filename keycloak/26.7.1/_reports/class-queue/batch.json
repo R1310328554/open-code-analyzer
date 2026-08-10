@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:27:42Z",
-  "files": [
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlAuthenticator.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlConfigResolver.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlDeployment.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlDeploymentContext.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlSession.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlSessionStore.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/SamlUtil.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/IDP.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/Key.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/KeycloakSamlAdapter.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/PemUtils.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/SP.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/AbstractKeycloakSamlAdapterV1Parser.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/DeploymentBuilder.java",
-    "adapters/saml/core/src/main/java/org/keycloak/adapters/saml/config/parsers/HttpClientParser.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5968,
-  "done": 15
+  "done": 30
 }
