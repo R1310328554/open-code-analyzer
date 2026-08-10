@@ -17,17 +17,30 @@
 package org.keycloak.testsuite.arquillian;
 
 /**
+ * 负载均衡器控制接口，供 Arquillian 集成测试启停后端 Keycloak 节点。
  *
  * @author hmlnarik
  */
 public interface LoadBalancerController {
 
+    /** 启用全部后端节点。 */
     void enableAllBackendNodes();
 
+    /** 禁用全部后端节点。 */
     void disableAllBackendNodes();
 
+    /**
+     * 按名称启用指定后端节点。
+     *
+     * @param nodeName 节点名称
+     */
     void enableBackendNodeByName(String nodeName);
 
+    /**
+     * 按名称禁用指定后端节点。
+     *
+     * @param nodeName 节点名称
+     */
     void disableBackendNodeByName(String nodeName);
 
 }

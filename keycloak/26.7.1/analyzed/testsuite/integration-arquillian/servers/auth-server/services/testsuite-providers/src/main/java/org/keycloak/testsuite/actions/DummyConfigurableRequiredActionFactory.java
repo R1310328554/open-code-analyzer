@@ -30,19 +30,27 @@ import org.keycloak.models.RequiredActionConfigModel;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
+/**
+ * 可配置必需操作工厂，用于集成测试验证 {@link RequiredActionConfigModel} 配置读写。
+ */
 public class DummyConfigurableRequiredActionFactory implements RequiredActionFactory {
 
+    /** 提供者在 SPI 中的标识符。 */
     public static final String PROVIDER_ID = "configurable-test-action";
 
+    /** 字符串类型配置项 setting1 的键名。 */
     public static final String SETTING_1 = "setting1";
 
+    /** 布尔类型配置项 setting2 的键名。 */
     public static final String SETTING_2 = "setting2";
 
+    /** {@inheritDoc} 管理控制台展示名称。 */
     @Override
     public String getDisplayText() {
         return "Configurable Test Action";
     }
 
+    /** {@inheritDoc} 创建匿名 {@link RequiredActionProvider} 实例。 */
     @Override
     public RequiredActionProvider create(KeycloakSession session) {
         return new RequiredActionProvider() {
@@ -54,12 +62,13 @@ public class DummyConfigurableRequiredActionFactory implements RequiredActionFac
             @Override
             public void requiredActionChallenge(RequiredActionContext context) {
 
-                // users can access the given Required Action configuration via RequiredActionContext#getContext()
+                // 通过 RequiredActionContext#getConfig() 读取必需操作配置
                 RequiredActionConfigModel configModel = context.getConfig();
                 Map<String, String> config = configModel.getConfig();
 
                 String setting1Value = configModel.getConfigValue(SETTING_1);
 
+                // 读取配置后直接标记挑战成功
                 context.success();
             }
 
@@ -89,11 +98,13 @@ public class DummyConfigurableRequiredActionFactory implements RequiredActionFac
 
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 管理 UI 可编辑的配置项元数据列表。 */
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = ProviderConfigurationBuilder.create() //
             .property() //
             .name(SETTING_1) //
@@ -113,6 +124,7 @@ public class DummyConfigurableRequiredActionFactory implements RequiredActionFac
 
             .build();
 
+    /** {@inheritDoc} 返回 {@link #CONFIG_PROPERTIES}。 */
     @Override
     public List<ProviderConfigProperty> getConfigMetadata() {
         return CONFIG_PROPERTIES;

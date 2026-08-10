@@ -27,12 +27,18 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 
 /**
+ * 自定义认证流程回调，用于测试顶层流程成功时的异常传播行为。
+ *
  * @author <a href="mailto:mabartos@redhat.com">Martin Bartos</a>
  */
 public class CustomAuthenticationFlowCallback implements AuthenticationFlowCallback {
 
+    /** 顶层流程成功回调中抛出的预期错误消息。 */
     public static final String EXPECTED_ERROR_MESSAGE = "Custom Authentication Flow Callback message";
 
+    /**
+     * 顶层认证流程成功时故意抛出 {@link AuthenticationFlowException}，验证回调错误处理。
+     */
     @Override
     public void onTopFlowSuccess(AuthenticationFlowModel topFlow) {
         throw new AuthenticationFlowException(AuthenticationFlowError.GENERIC_AUTHENTICATION_ERROR, "detail", EXPECTED_ERROR_MESSAGE);
@@ -43,6 +49,7 @@ public class CustomAuthenticationFlowCallback implements AuthenticationFlowCallb
 
     }
 
+    /** {@inheritDoc} 认证步骤直接标记成功。 */
     @Override
     public void authenticate(AuthenticationFlowContext context) {
         context.success();

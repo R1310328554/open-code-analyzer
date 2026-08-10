@@ -25,18 +25,23 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * 占位必需操作工厂，用于集成测试验证必需操作 SPI 的最小实现。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class DummyRequiredActionFactory implements RequiredActionFactory {
 
+    /** 提供者在 SPI 中的标识符。 */
     public static final String PROVIDER_ID = "dummy-action";
 
+    /** {@inheritDoc} 管理控制台展示名称。 */
     @Override
     public String getDisplayText() {
         return "Dummy Action";
     }
 
+    /** {@inheritDoc} 创建始终立即成功的匿名 {@link RequiredActionProvider}。 */
     @Override
     public RequiredActionProvider create(KeycloakSession session) {
         return new RequiredActionProvider() {
@@ -47,6 +52,7 @@ public class DummyRequiredActionFactory implements RequiredActionFactory {
 
             @Override
             public void requiredActionChallenge(RequiredActionContext context) {
+                // 无额外挑战，直接成功
                 context.success();
             }
 
@@ -77,6 +83,7 @@ public class DummyRequiredActionFactory implements RequiredActionFactory {
 
     }
 
+    /** {@inheritDoc} 返回 {@link #PROVIDER_ID}。 */
     @Override
     public String getId() {
         return PROVIDER_ID;

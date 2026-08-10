@@ -28,13 +28,18 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * {@link CustomAuthenticationFlowCallback} 的 SPI 工厂，供认证流程集成测试注册回调。
+ *
  * @author <a href="mailto:mabartos@redhat.com">Martin Bartos</a>
  */
 public class CustomAuthenticationFlowCallbackFactory implements AuthenticationFlowCallbackFactory {
+    /** 提供者在 SPI 中的标识符。 */
     public static final String PROVIDER_ID = "custom-callback-authenticator";
 
+    /** 单例回调实例，避免重复创建。 */
     private static final CustomAuthenticationFlowCallback SINGLETON = new CustomAuthenticationFlowCallback();
 
+    /** {@inheritDoc} 返回共享的 {@link CustomAuthenticationFlowCallback} 实例。 */
     @Override
     public Authenticator create(KeycloakSession session) {
         return SINGLETON;
@@ -70,6 +75,7 @@ public class CustomAuthenticationFlowCallbackFactory implements AuthenticationFl
         return false;
     }
 
+    /** {@inheritDoc} 说明此工厂仅用于回调 SPI 测试。 */
     @Override
     public String getHelpText() {
         return "Used for testing purposes of Callback factory";
