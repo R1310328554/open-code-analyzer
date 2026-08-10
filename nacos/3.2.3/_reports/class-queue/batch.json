@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T04:50:59Z",
   "files": [
-    "sys/src/main/java/com/alibaba/nacos/sys/env/AbstractNacosDuplicateBeanPostProcessor.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/Constants.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/DeploymentType.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/EnvModuleStateBuilder.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/EnvUtil.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/NacosDuplicateConfigurationBeanPostProcessor.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/NacosDuplicateSpringBeanPostProcessor.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/OperatingSystemBeanManager.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/env/OriginTrackedPropertiesLoader.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/file/FileChangeEvent.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/file/FileWatcher.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/file/WatchFileCenter.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/filter/NacosPackageExcludeFilter.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/filter/NacosTypeExcludeFilter.java",
-    "sys/src/main/java/com/alibaba/nacos/sys/module/AbstractConsoleModuleStateBuilder.java",
     "sys/src/main/java/com/alibaba/nacos/sys/module/AbstractServerModuleStateBuilder.java",
     "sys/src/main/java/com/alibaba/nacos/sys/module/ModuleState.java",
     "sys/src/main/java/com/alibaba/nacos/sys/module/ModuleStateBuilder.java",
@@ -33,5 +18,5 @@
     "logger-adapter-impl/log4j2-adapter/src/main/java/com/alibaba/nacos/logger/adapter/log4j2/NacosLog4j2Configurator.java"
   ],
   "remaining_pending": 347,
-  "done": 2160
+  "done": 2175
 }
