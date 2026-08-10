@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:14:55Z",
-  "files": [
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttMessage.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttMessageBuilders.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttMessageFactory.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttMessageIdAndPropertiesVariableHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttMessageIdVariableHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttMessageType.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttProperties.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttPubAckMessage.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttPubReplyMessageVariableHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttPublishMessage.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttPublishVariableHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttQoS.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttReasonCodeAndPropertiesVariableHeader.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttReasonCodes.java",
-    "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttSubAckMessage.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 998,
-  "done": 915
+  "done": 930
 }
