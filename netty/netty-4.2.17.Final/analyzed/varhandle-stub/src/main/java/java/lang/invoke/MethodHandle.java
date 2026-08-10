@@ -15,9 +15,17 @@
  */
 package java.lang.invoke;
 
+/**
+ * {@link MethodHandle} 编译桩：供 Java 8 编译期识别签名多态注解。
+ * <p>仅用于 varhandle-stub 模块在 JDK 8 下通过编译； 运行时不会加载此桩类（{@code java.lang.invoke} 为特权包）。</p>
+ */
 public class MethodHandle {
     @java.lang.annotation.Target({java.lang.annotation.ElementType.METHOD})
     @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+    /**
+     * 标记签名多态方法/本机方法，配合 JLS 15.12.3 在编译期解析调用类型。
+     * <p>供 {@link VarHandle} 桩上的 native 方法使用。</p>
+     */
     @interface PolymorphicSignature {
     }
 }

@@ -22,12 +22,14 @@ import io.netty.channel.udt.UdtMessage;
  * Message Rendezvous for UDT Datagrams.
  * <p>
  * Note: send/receive must use {@link UdtMessage} in the pipeline
+ * <p>UDT DATAGRAM Rendezvous 通道：对称连接模式下收发 {@link UdtMessage}， 行为继承 {@link NioUdtMessageConnectorChannel}；Pipeline 须使用消息类型。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
 @Deprecated
 public class NioUdtMessageRendezvousChannel extends NioUdtMessageConnectorChannel {
 
+    /** 打开 DATAGRAM Rendezvous 通道 */
     public NioUdtMessageRendezvousChannel() {
         super(NioUdtProvider.newRendezvousChannelUDT(TypeUDT.DATAGRAM));
     }

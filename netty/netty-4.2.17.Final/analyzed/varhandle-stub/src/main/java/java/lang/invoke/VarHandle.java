@@ -17,6 +17,7 @@ package java.lang.invoke;
 
 /**
  * A stub for the VarHandle class.<br>
+ * <p>{@link VarHandle} 编译桩：使 Netty 在 Java 8 目标发布编译时能通过类型检查； 运行时不可由应用 ClassLoader 加载 {@code java.lang.invoke} 特权包中的此类。</p>
  * This stub is used to allow Java 8 release compilation to work as expected.
  * The sole limit of this stub is that since {@code java.lang.invoke} is a privileged package
  * it cannot be used at runtime (e.g. loaded by a classloader).<p>
@@ -25,7 +26,8 @@ package java.lang.invoke;
  *     class SomeClass {
  *          private static final VarHandle VH = // ... obtained somehow;
  *
- *          public static void storeStoreFence() {
+ *          /** 桩实现：运行时调用将抛出 {@link UnsupportedOperationException} */
+    public static void storeStoreFence() {
  *              if (VH == null) {
  *                  return;
  *              }
@@ -34,6 +36,7 @@ package java.lang.invoke;
  *     }
  * </pre>
  * this is not going to work on Java 8.<p>
+ * <p>在 Java 8 上直接静态引用 VarHandle 会在类初始化时加载桩类而失败； 可用 Holder 间接引用或 {@code Object} 强转规避。</p>
  * To fix it is possible to use an holder class (which won't be loaded at runtime):
  * <pre>
  *     class SomeClass {
@@ -64,6 +67,7 @@ package java.lang.invoke;
  *     }
  * </pre>
  *
+ * <p>桩方法声明为 native 是为满足 JLS 签名多态要求，使 Java 8 编译器按 调用点形式参数/返回值类型生成字节码（尽管运行时不会执行此桩）。</p>
  * The reason why the methods on the stub are declared as native is to allow
  * {@link java.lang.invoke.MethodHandle.PolymorphicSignature} to work as expected,
  * see <a href="https://docs.oracle.com/javase/specs/jls/se9/html/jls-15.html#jls-15.12.3">JLS 15.12.3</a>:<br>
@@ -76,25 +80,32 @@ package java.lang.invoke;
  * This seems counter-intuitive since this stub is not going to be used at runtime, but it is required to allow Java 8
  * compilation to produce {@code VarHandle}'s method invocations with parameters and result types with
  * the types of the formal ones of the compile-time declaration.
+ * <p>编译桩不参与运行时；生产环境应使用 JDK 9+ 自带 {@link VarHandle}。</p>
  *
  */
 public class VarHandle {
 
+    /** 签名多态读操作桩（编译期用） */
     @MethodHandle.PolymorphicSignature
     public native Object get(Object... args);
 
+    /** acquire 语义读 */
     @MethodHandle.PolymorphicSignature
     public native Object getAcquire(Object... args);
 
+    /** 签名多态写操作桩 */
     @MethodHandle.PolymorphicSignature
     public native void set(Object... args);
 
+    /** release 语义写 */
     @MethodHandle.PolymorphicSignature
     public native void setRelease(Object... args);
 
+    /** 原子 get-and-add 桩 */
     @MethodHandle.PolymorphicSignature
     public native Object getAndAdd(Object... args);
 
+    /** compare-and-set 桩 */
     @MethodHandle.PolymorphicSignature
     public native boolean compareAndSet(Object... args);
 

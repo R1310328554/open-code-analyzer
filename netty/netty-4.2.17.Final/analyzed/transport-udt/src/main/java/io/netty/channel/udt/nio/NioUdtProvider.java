@@ -38,6 +38,7 @@ import java.nio.channels.spi.SelectorProvider;
  * Provides {@link ChannelFactory} for UDT channels.
  * <p>
  * Provides {@link SelectorProvider} for UDT channels.
+ * <p>UDT 传输工厂与选择器提供者：按 {@link TypeUDT}（STREAM/DATAGRAM） 与 {@link KindUDT}（ACCEPTOR/CONNECTOR/RENDEZVOUS）组合暴露 六个 {@link ChannelFactory} 常量及 BYTE/MESSAGE {@link SelectorProvider}。 亦提供底层 {@link ChannelUDT}/{@link SocketUDT} 访问以便监控调试。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
@@ -47,6 +48,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
     /**
      * {@link ChannelFactory} for UDT Byte Acceptor. See {@link TypeUDT#STREAM}
      * and {@link KindUDT#ACCEPTOR}.
+     * <p>字节流 Acceptor 工厂（{@link NioUdtByteAcceptorChannel}）。</p>
      */
     public static final ChannelFactory<UdtServerChannel> BYTE_ACCEPTOR = new NioUdtProvider<UdtServerChannel>(
             TypeUDT.STREAM, KindUDT.ACCEPTOR);
@@ -54,6 +56,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
     /**
      * {@link ChannelFactory} for UDT Byte Connector. See {@link TypeUDT#STREAM}
      * and {@link KindUDT#CONNECTOR}.
+     * <p>字节流 Connector 工厂（{@link NioUdtByteConnectorChannel}）。</p>
      */
     public static final ChannelFactory<UdtChannel> BYTE_CONNECTOR = new NioUdtProvider<UdtChannel>(
             TypeUDT.STREAM, KindUDT.CONNECTOR);
@@ -61,12 +64,14 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
     /**
      * {@link SelectorProvider} for UDT Byte channels. See
      * {@link TypeUDT#STREAM}.
+     * <p>STREAM 类型 UDT 的 {@link SelectorProviderUDT}。</p>
      */
     public static final SelectorProvider BYTE_PROVIDER = SelectorProviderUDT.STREAM;
 
     /**
      * {@link ChannelFactory} for UDT Byte Rendezvous. See
      * {@link TypeUDT#STREAM} and {@link KindUDT#RENDEZVOUS}.
+     * <p>字节流 Rendezvous 工厂（{@link NioUdtByteRendezvousChannel}）。</p>
      */
     public static final ChannelFactory<UdtChannel> BYTE_RENDEZVOUS = new NioUdtProvider<UdtChannel>(
             TypeUDT.STREAM, KindUDT.RENDEZVOUS);
@@ -74,6 +79,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
     /**
      * {@link ChannelFactory} for UDT Message Acceptor. See
      * {@link TypeUDT#DATAGRAM} and {@link KindUDT#ACCEPTOR}.
+     * <p>DATAGRAM 消息 Acceptor 工厂（{@link NioUdtMessageAcceptorChannel}）。</p>
      */
     public static final ChannelFactory<UdtServerChannel> MESSAGE_ACCEPTOR = new NioUdtProvider<UdtServerChannel>(
             TypeUDT.DATAGRAM, KindUDT.ACCEPTOR);
@@ -81,6 +87,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
     /**
      * {@link ChannelFactory} for UDT Message Connector. See
      * {@link TypeUDT#DATAGRAM} and {@link KindUDT#CONNECTOR}.
+     * <p>DATAGRAM 消息 Connector 工厂（{@link NioUdtMessageConnectorChannel}）。</p>
      */
     public static final ChannelFactory<UdtChannel> MESSAGE_CONNECTOR = new NioUdtProvider<UdtChannel>(
             TypeUDT.DATAGRAM, KindUDT.CONNECTOR);
@@ -88,24 +95,27 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
     /**
      * {@link SelectorProvider} for UDT Message channels. See
      * {@link TypeUDT#DATAGRAM}.
+     * <p>DATAGRAM 类型 UDT 的 {@link SelectorProviderUDT}。</p>
      */
     public static final SelectorProvider MESSAGE_PROVIDER = SelectorProviderUDT.DATAGRAM;
 
     /**
      * {@link ChannelFactory} for UDT Message Rendezvous. See
      * {@link TypeUDT#DATAGRAM} and {@link KindUDT#RENDEZVOUS}.
+     * <p>DATAGRAM Rendezvous 工厂（{@link NioUdtMessageRendezvousChannel}）。</p>
      */
     public static final ChannelFactory<UdtChannel> MESSAGE_RENDEZVOUS = new NioUdtProvider<UdtChannel>(
             TypeUDT.DATAGRAM, KindUDT.RENDEZVOUS);
 
     /**
      * Expose underlying {@link ChannelUDT} for debugging and monitoring.
+     * <p>从 Netty {@link UdtChannel} 实现提取底层 barchart {@link ChannelUDT}； 非 UDT 通道返回 {@code null}。</p>
      * <p>
      * @return underlying {@link ChannelUDT} or null, if parameter is not
      *         {@link UdtChannel}
      */
     public static ChannelUDT channelUDT(final Channel channel) {
-        // bytes
+        // 字节流 Acceptor/Connector/Rendezvous
         if (channel instanceof NioUdtByteAcceptorChannel) {
             return ((NioUdtByteAcceptorChannel) channel).javaChannel();
         }
@@ -116,7 +126,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
             return ((NioUdtByteConnectorChannel) channel).javaChannel();
         }
 
-        // message
+        // 消息模式 Acceptor/Connector/Rendezvous
         if (channel instanceof NioUdtMessageAcceptorChannel) {
             return ((NioUdtMessageAcceptorChannel) channel).javaChannel();
         }
@@ -132,6 +142,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
 
     /**
      * Convenience factory for {@link KindUDT#ACCEPTOR} channels.
+     * <p>打开 {@link ServerSocketChannelUDT}，失败包装为 {@link ChannelException}。</p>
      */
     static ServerSocketChannelUDT newAcceptorChannelUDT(
             final TypeUDT type) {
@@ -144,6 +155,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
 
     /**
      * Convenience factory for {@link KindUDT#CONNECTOR} channels.
+     * <p>打开 {@link SocketChannelUDT}。</p>
      */
     static SocketChannelUDT newConnectorChannelUDT(final TypeUDT type) {
         try {
@@ -155,6 +167,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
 
     /**
      * Convenience factory for {@link KindUDT#RENDEZVOUS} channels.
+     * <p>打开 {@link RendezvousChannelUDT} 用于对称连接。</p>
      */
     static RendezvousChannelUDT newRendezvousChannelUDT(
             final TypeUDT type) {
@@ -167,6 +180,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
 
     /**
      * Expose underlying {@link SocketUDT} for debugging and monitoring.
+     * <p>经 {@link #channelUDT} 取得 {@link ChannelUDT} 再返回其 {@link SocketUDT}。</p>
      * <p>
      * @return underlying {@link SocketUDT} or null, if parameter is not
      *         {@link UdtChannel}
@@ -185,6 +199,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
 
     /**
      * {@link ChannelFactory} for given {@link TypeUDT} and {@link KindUDT}
+     * <p>私有构造：保存 type/kind，由静态常量实例化。</p>
      */
     private NioUdtProvider(final TypeUDT type, final KindUDT kind) {
         this.type = type;
@@ -193,6 +208,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
 
     /**
      * UDT Channel Kind. See {@link KindUDT}
+     * <p>返回本工厂对应的 ACCEPTOR/CONNECTOR/RENDEZVOUS。</p>
      */
     public KindUDT kind() {
         return kind;
@@ -201,6 +217,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
     /**
      * Produce new {@link UdtChannel} based on factory {@link #kind()} and
      * {@link #type()}
+     * <p>按 kind+type 组合实例化对应 Netty UDT 通道实现。</p>
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -240,6 +257,7 @@ public final class NioUdtProvider<T extends UdtChannel> implements ChannelFactor
 
     /**
      * UDT Socket Type. See {@link TypeUDT}
+     * <p>返回 STREAM 或 DATAGRAM。</p>
      */
     public TypeUDT type() {
         return type;

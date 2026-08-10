@@ -19,12 +19,14 @@ import com.barchart.udt.TypeUDT;
 
 /**
  * Byte Channel Rendezvous for UDT Streams.
+ * <p>UDT 字节流 Rendezvous 通道：双方同时 bind/connect 的 {@link KindUDT#RENDEZVOUS} 模式，继承 {@link NioUdtByteConnectorChannel} 的读写语义。用于 NAT 穿透等对称连接场景。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
 @Deprecated
 public class NioUdtByteRendezvousChannel extends NioUdtByteConnectorChannel {
 
+    /** 打开 STREAM 类型 Rendezvous 通道并初始化配置 */
     public NioUdtByteRendezvousChannel() {
         super(NioUdtProvider.newRendezvousChannelUDT(TypeUDT.STREAM));
     }

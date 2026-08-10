@@ -41,6 +41,7 @@ import java.security.PrivilegedExceptionAction;
 
 /**
  * Byte Channel Connector for UDT Streams.
+ * <p>UDT 字节流（{@link TypeUDT#STREAM}）Connector：基于 {@link AbstractNioByteChannel} 与 {@link SocketChannelUDT}， 支持非阻塞 connect/read/write；由 Acceptor accept 或主动 connect 创建。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
@@ -52,10 +53,15 @@ public class NioUdtByteConnectorChannel extends AbstractNioByteChannel implement
 
     private final UdtChannelConfig config;
 
+    /** 创建默认 STREAM 类型的 UDT 字节 Connector 通道 */
     public NioUdtByteConnectorChannel() {
         this(TypeUDT.STREAM);
     }
 
+    /**
+     * 包装已有 UDT 套接字通道（如 Acceptor accept 所得）。
+     * <p>设为非阻塞；INIT/OPENED 状态时立即 apply 配置。</p>
+     */
     public NioUdtByteConnectorChannel(final Channel parent, final SocketChannelUDT channelUDT) {
         super(parent, channelUDT);
         try {
@@ -81,10 +87,12 @@ public class NioUdtByteConnectorChannel extends AbstractNioByteChannel implement
         }
     }
 
+    /** 无 parent 包装已有 {@link SocketChannelUDT} */
     public NioUdtByteConnectorChannel(final SocketChannelUDT channelUDT) {
         this(null, channelUDT);
     }
 
+    /** 按 {@link TypeUDT} 打开新 UDT 套接字并构造 Connector */
     public NioUdtByteConnectorChannel(final TypeUDT type) {
         this(NioUdtProvider.newConnectorChannelUDT(type));
     }
@@ -95,16 +103,19 @@ public class NioUdtByteConnectorChannel extends AbstractNioByteChannel implement
     }
 
     @Override
+    /** 绑定本地地址（通过特权 {@link AccessController} 调用底层 bind） */
     protected void doBind(final SocketAddress localAddress) throws Exception {
         privilegedBind(javaChannel(), localAddress);
     }
 
     @Override
+    /** 关闭底层 {@link SocketChannelUDT} */
     protected void doClose() throws Exception {
         javaChannel().close();
     }
 
     @Override
+    /** 可选 bind 本地地址后发起 connect；未完成时注册 {@code OP_CONNECT} */
     protected boolean doConnect(final SocketAddress remoteAddress,
                                 final SocketAddress localAddress) throws Exception {
         doBind(localAddress != null? localAddress : new InetSocketAddress(0));
@@ -124,11 +135,13 @@ public class NioUdtByteConnectorChannel extends AbstractNioByteChannel implement
     }
 
     @Override
+    /** UDT Connector 断开即关闭通道 */
     protected void doDisconnect() throws Exception {
         doClose();
     }
 
     @Override
+    /** 完成非阻塞 connect 并清除 CONNECT 兴趣集 */
     protected void doFinishConnect() throws Exception {
         if (javaChannel().finishConnect()) {
             removeAndSubmit(NioIoOps.CONNECT);
@@ -139,6 +152,7 @@ public class NioUdtByteConnectorChannel extends AbstractNioByteChannel implement
     }
 
     @Override
+    /** 从 UDT 套接字读入字节到 {@link ByteBuf}，返回实际读取字节数 */
     protected int doReadBytes(final ByteBuf byteBuf) throws Exception {
         final RecvByteBufAllocator.Handle allocHandle = unsafe().recvBufAllocHandle();
         allocHandle.attemptedBytesRead(byteBuf.writableBytes());
@@ -146,52 +160,62 @@ public class NioUdtByteConnectorChannel extends AbstractNioByteChannel implement
     }
 
     @Override
+    /** 将 {@link ByteBuf} 可读字节写入 UDT 套接字 */
     protected int doWriteBytes(final ByteBuf byteBuf) throws Exception {
         final int expectedWrittenBytes = byteBuf.readableBytes();
         return byteBuf.readBytes(javaChannel(), expectedWrittenBytes);
     }
 
     @Override
+    /** UDT 字节流不支持半关闭输入 */
     protected ChannelFuture shutdownInput() {
         return newFailedFuture(new UnsupportedOperationException("shutdownInput"));
     }
 
     @Override
+    /** UDT 字节 Connector 不支持 {@link FileRegion} 零拷贝写 */
     protected long doWriteFileRegion(FileRegion region) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
+    /** 通道已打开且 connect 已完成时为 active */
     public boolean isActive() {
         final SocketChannelUDT channelUDT = javaChannel();
         return channelUDT.isOpen() && channelUDT.isConnectFinished();
     }
 
     @Override
+    /** 返回底层 barchart UDT NIO 套接字通道 */
     protected SocketChannelUDT javaChannel() {
         return (SocketChannelUDT) super.javaChannel();
     }
 
     @Override
+    /** 底层套接字本地地址（未缓存） */
     protected SocketAddress localAddress0() {
         return javaChannel().socket().getLocalSocketAddress();
     }
 
     @Override
+    /** 底层套接字远端地址（未缓存） */
     protected SocketAddress remoteAddress0() {
         return javaChannel().socket().getRemoteSocketAddress();
     }
 
     @Override
+    /** 本地 {@link InetSocketAddress} */
     public InetSocketAddress localAddress() {
         return (InetSocketAddress) super.localAddress();
     }
 
     @Override
+    /** 远端 {@link InetSocketAddress} */
     public InetSocketAddress remoteAddress() {
         return (InetSocketAddress) super.remoteAddress();
     }
 
+    /** 在特权块内执行 bind，将 {@link PrivilegedActionException} 转为 {@link IOException} */
     private static void privilegedBind(final SocketChannelUDT socketChannel, final SocketAddress localAddress)
             throws IOException {
         try {

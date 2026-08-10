@@ -21,17 +21,20 @@ import io.netty.channel.udt.UdtChannel;
 
 /**
  * Message Channel Acceptor for UDT Datagrams.
+ * <p>UDT 消息（{@link TypeUDT#DATAGRAM}）Acceptor：监听入站连接， accept 后创建 {@link NioUdtMessageConnectorChannel}。 Pipeline 中须使用 {@link UdtMessage} 收发。</p>
  *
  * @deprecated The UDT transport is no longer maintained and will be removed.
  */
 @Deprecated
 public class NioUdtMessageAcceptorChannel extends NioUdtAcceptorChannel {
 
+    /** 创建 DATAGRAM 类型的 UDT 消息 Acceptor */
     public NioUdtMessageAcceptorChannel() {
         super(TypeUDT.DATAGRAM);
     }
 
     @Override
+    /** accept 得到的套接字包装为 {@link NioUdtMessageConnectorChannel} */
     protected UdtChannel newConnectorChannel(SocketChannelUDT channelUDT) {
         return new NioUdtMessageConnectorChannel(this, channelUDT);
     }
