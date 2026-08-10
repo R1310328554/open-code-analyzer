@@ -39,15 +39,23 @@ import org.keycloak.services.util.DPoPUtil;
 import org.keycloak.services.util.MtlsHoKTokenUtil;
 
 /**
+ * 协议映射器（Protocol Mapper）通用工具类：提供配置键常量、执行优先级及映射器排序/查询辅助方法。
+ * <p>用于 OIDC/SAML/Docker 等登录协议在令牌或断言生成阶段按优先级调用已注册的 {@link ProtocolMapper}。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ProtocolMapperUtils {
 
+    /** 协议映射器配置：将用户角色写入声明/属性的键名。 */
     public static final String USER_ROLE = "user.role";
+    /** 协议映射器配置：用户自定义属性名键。 */
     public static final String USER_ATTRIBUTE = "user.attribute";
+    /** 协议映射器配置：用户会话备注键名。 */
     public static final String USER_SESSION_NOTE = "user.session.note";
+    /** 协议映射器配置：属性是否多值。 */
     public static final String MULTIVALUED = "multivalued";
+    /** 协议映射器配置：是否聚合多个属性值。 */
     public static final String AGGREGATE_ATTRS = "aggregate.attrs";
     public static final String USER_MODEL_PROPERTY_LABEL = "usermodel.prop.label";
     public static final String USER_MODEL_PROPERTY_HELP_TEXT = "usermodel.prop.tooltip";
@@ -73,27 +81,27 @@ public class ProtocolMapperUtils {
     public static final String MULTIVALUED_HELP_TEXT = "multivalued.tooltip";
     public static final String AGGREGATE_ATTRS_HELP_TEXT = "aggregate.attrs.tooltip";
 
-    // Priority of SubMapper. It should be first to allow other mappers override the `sub` claim
+    // SubMapper 优先级：应最先执行，以便后续映射器可覆盖 `sub` 声明
     public static final int SUB_MAPPER = -10;
 
-    // Role name mapper can move some roles to different positions
+    // 角色名映射器可在令牌中调整角色顺序
     public static final int PRIORITY_ROLE_NAMES_MAPPER = 10;
 
-    // Hardcoded role mapper can be used to add some roles
+    // 硬编码角色映射器用于追加固定角色
     public static final int PRIORITY_HARDCODED_ROLE_MAPPER = 20;
 
-    // Audiences can be resolved once all the roles are correctly set
+    // 受众（audience）应在所有角色设置完成后解析
     public static final int PRIORITY_AUDIENCE_RESOLVE_MAPPER = 30;
 
-    // Add roles to tokens finally
+    // 最后将角色写入令牌
     public static final int PRIORITY_ROLE_MAPPER = 40;
 
-    // Script mapper goes last, so it can access the roles in the token
+    // 脚本映射器最后执行，以便访问令牌中已写入的角色
     public static final int PRIORITY_SCRIPT_MAPPER = 50;
 
     private static final HashMap<String, Method> ACCESSORS = new HashMap<>();
 
-    // This caches known methods to avoid generating unnecessary failed lookups and exception at runtime which are expensive
+    // 缓存 UserModel 已知 getter/is 方法，避免运行时重复反射查找与异常开销
     static {
         for (Method method : UserModel.class.getMethods()) {
             String propertyName;
@@ -108,9 +116,15 @@ public class ProtocolMapperUtils {
         }
     }
 
+    /**
+     * 通过反射读取 {@link UserModel} 属性值（支持 get/is 前缀）。
+     * <p>为兼容旧配置，属性名首字母大小写均可。</p>
+     * @param user 用户模型
+     * @param propertyName 属性名
+     * @return 字符串形式的属性值，不存在或调用失败时返回 {@code null}
+     */
     public static String getUserModelValue(UserModel user, String propertyName) {
-        // To support existing configurations, we accept property names starting with both upper and lower case
-        // as earlier versions of Keycloak where applying this behavior.
+        // 兼容旧版配置：属性名首字母大小写均可接受
         Method m = ACCESSORS.get(getLowerCasedProperty(propertyName));
         if (m == null) {
             return null;
@@ -130,10 +144,9 @@ public class ProtocolMapperUtils {
     }
 
     /**
-     * Find the builtin locale mapper.
-     *
-     * @param session A KeycloakSession
-     * @return The builtin locale mapper.
+     * 查找内置 locale 协议映射器。
+     * @param session Keycloak 会话
+     * @return OIDC 协议的内置 locale 映射器，未找到时返回 {@code null}
      */
     public static ProtocolMapperModel findLocaleMapper(KeycloakSession session) {
         return session.getKeycloakSessionFactory().getProviderFactoriesStream(LoginProtocol.class)
@@ -146,10 +159,24 @@ public class ProtocolMapperUtils {
     }
 
 
+    /**
+     * 返回按优先级排序的协议映射器流（无额外过滤）。
+     * @param session Keycloak 会话
+     * @param ctx 客户端会话上下文
+     * @return 映射器模型与实现实例的有序流
+     */
     public static Stream<Entry<ProtocolMapperModel, ProtocolMapper>> getSortedProtocolMappers(KeycloakSession session, ClientSessionContext ctx) {
         return getSortedProtocolMappers(session, ctx, entry -> true);
     }
 
+    /**
+     * 返回按优先级排序且满足过滤条件的协议映射器流。
+     * <p>OIDC 客户端还会附加 DPoP 与 mTLS HoK 等临时映射器。</p>
+     * @param session Keycloak 会话
+     * @param ctx 客户端会话上下文
+     * @param filter 映射器条目过滤器
+     * @return 排序后的映射器流
+     */
     public static Stream<Entry<ProtocolMapperModel, ProtocolMapper>> getSortedProtocolMappers(KeycloakSession session, ClientSessionContext ctx, Predicate<Entry<ProtocolMapperModel, ProtocolMapper>> filter) {
         KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
 
@@ -177,11 +204,13 @@ public class ProtocolMapperUtils {
         return protocolMapperStream.sorted(Comparator.comparing(ProtocolMapperUtils::compare));
     }
 
+    /** 按 {@link ProtocolMapper#getPriority()} 比较映射器执行顺序。 */
     public static int compare(Entry<ProtocolMapperModel, ProtocolMapper> entry) {
         int priority = entry.getValue().getPriority();
         return priority;
     }
 
+    /** 判断映射器对应的 {@link ProtocolMapper} 提供方是否已注册可用。 */
     public static boolean isEnabled(KeycloakSession session, ProtocolMapperModel mapper) {
         return session.getKeycloakSessionFactory().getProviderFactory(ProtocolMapper.class, mapper.getProtocolMapper()) != null;
     }

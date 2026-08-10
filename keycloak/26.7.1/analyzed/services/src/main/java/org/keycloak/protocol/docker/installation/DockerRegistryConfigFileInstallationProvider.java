@@ -13,6 +13,10 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.protocol.ClientInstallationProvider;
 import org.keycloak.protocol.docker.DockerAuthV2Protocol;
 
+/**
+ * Docker Registry 配置文件片段安装提供方：输出 YAML 格式的 token 认证配置。
+ * <p>包含 realm、service、issuer 三项，可直接合并到 Registry 配置。</p>
+ */
 public class DockerRegistryConfigFileInstallationProvider implements ClientInstallationProvider {
 
     @Override
@@ -41,6 +45,7 @@ public class DockerRegistryConfigFileInstallationProvider implements ClientInsta
     }
 
     @Override
+    /** 生成 Registry {@code auth.token} 配置片段（realm/service/issuer）。 */
     public Response generateInstallation(final KeycloakSession session, final RealmModel realm, final ClientModel client, final URI serverBaseUri) {
         final StringBuilder responseString = new StringBuilder("auth:\n")
                 .append("  token:\n")
@@ -56,16 +61,19 @@ public class DockerRegistryConfigFileInstallationProvider implements ClientInsta
     }
 
     @Override
+    /** @return 展示名称“Registry Config File” */
     public String getDisplayType() {
         return "Registry Config File";
     }
 
     @Override
+    /** @return 提供 Registry 配置片段的帮助文本 */
     public String getHelpText() {
         return "Provides a registry configuration file snippet for use with this client";
     }
 
     @Override
+    /** @return 建议文件名 {@code config.yml} */
     public String getFilename() {
         return "config.yml";
     }

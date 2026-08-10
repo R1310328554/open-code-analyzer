@@ -41,31 +41,38 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jboss.logging.Logger;
 
 /**
- * This is an an encoded token that is stored as a cookie so that if there is a client timeout, then the authentication session
- * can be restarted.
+ * 登录重启 Cookie 令牌：在客户端超时时保存认证会话上下文，以便用户重新发起登录时恢复流程。
+ * <p>以 JWE 加密后写入 {@link CookieType#AUTH_RESTART}（{@code KC_RESTART}）Cookie。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RestartLoginCookie implements Token {
     private static final Logger logger = Logger.getLogger(RestartLoginCookie.class);
+    /** Cookie 名称：{@code KC_RESTART}。 */
     public static final String KC_RESTART = "KC_RESTART";
 
+    /** JSON 字段：客户端 ID（{@code cid}）。 */
     @JsonProperty("cid")
     protected String clientId;
 
+    /** JSON 字段：认证协议/方法（{@code pty}）。 */
     @JsonProperty("pty")
     protected String authMethod;
 
+    /** JSON 字段：重定向 URI（{@code ruri}）。 */
     @JsonProperty("ruri")
     protected String redirectUri;
 
+    /** JSON 字段：认证动作（{@code act}）。 */
     @JsonProperty("act")
     protected String action;
 
+    /** JSON 字段：客户端备注键值对（{@code notes}）。 */
     @JsonProperty("notes")
     protected Map<String, String> notes = new HashMap<>();
 
+    /** @deprecated 向后兼容字段，已弃用 */
     @Deprecated // Backwards compatibility
     @JsonProperty("cs")
     protected String cs;
@@ -113,6 +120,7 @@ public class RestartLoginCookie implements Token {
     public RestartLoginCookie() {
     }
 
+    /** 从认证会话快照构造重启 Cookie 内容。 */
     public RestartLoginCookie(AuthenticationSessionModel authSession) {
         this.action = authSession.getAction();
         this.clientId = authSession.getClient().getClientId();
@@ -123,16 +131,19 @@ public class RestartLoginCookie implements Token {
         }
     }
 
+    /** 编码加密当前认证会话并写入 KC_RESTART Cookie。 */
     public static void setRestartCookie(KeycloakSession session, AuthenticationSessionModel authSession) {
         RestartLoginCookie restart = new RestartLoginCookie(authSession);
         String encoded = encodeAndEncrypt(session, restart);
         session.getProvider(CookieProvider.class).set(CookieType.AUTH_RESTART, encoded);
     }
 
+    /** 使 KC_RESTART Cookie 过期。 */
     public static void expireRestartCookie(KeycloakSession session) {
         session.getProvider(CookieProvider.class).expire(CookieType.AUTH_RESTART);
     }
 
+    /** @return KC_RESTART Cookie 原始值，不存在时返回 {@code null} */
     public static String getRestartCookie(KeycloakSession session){
         String cook = session.getProvider(CookieProvider.class).get(CookieType.AUTH_RESTART);
         if (cook ==  null) {
@@ -142,6 +153,15 @@ public class RestartLoginCookie implements Token {
         return cook;
     }
 
+    /**
+     * 解密 Cookie 并重建认证会话；Cookie 中客户端须与 {@code expectedClientId} 一致。
+     * @param session Keycloak 会话
+     * @param realm Realm 模型
+     * @param rootSession 根认证会话，为 {@code null} 时新建
+     * @param expectedClientId URL 请求中的客户端 ID
+     * @param encodedCookie 加密的 Cookie 值
+     * @return 新建的 {@link AuthenticationSessionModel}，校验失败时返回 {@code null}
+     */
     public static AuthenticationSessionModel restartSession(KeycloakSession session, RealmModel realm,
                                                             RootAuthenticationSessionModel rootSession, String expectedClientId,
                                                             String encodedCookie) throws Exception {
@@ -154,13 +174,13 @@ public class RestartLoginCookie implements Token {
         ClientModel client = realm.getClientByClientId(cookie.getClientId());
         if (client == null) return null;
 
-        // Restart just if client from cookie matches client from the URL.
+        // 仅当 Cookie 中的客户端与 URL 请求客户端一致时才重启会话
         if (!client.getClientId().equals(expectedClientId)) {
             logger.debugf("Skip restarting from the KC_RESTART. Clients doesn't match: Cookie client: %s, Requested client: %s", client.getClientId(), expectedClientId);
             return null;
         }
 
-        // Need to create brand new session and setup cookie
+        // 无根会话时创建全新认证会话
         if (rootSession == null) {
             rootSession = new AuthenticationSessionManager(session).createAuthenticationSession(realm, true);
         }
@@ -176,11 +196,12 @@ public class RestartLoginCookie implements Token {
         return authSession;
     }
 
+    /** 解密并解码 KC_RESTART 令牌；兼容旧版未带 kid 的格式。 */
     public static RestartLoginCookie decryptAndDecode(KeycloakSession session, String encodedToken) {
         try {
             String kid = new JWE(encodedToken).getHeader().getKeyId();
             if (kid != null) {
-                // new way using kid
+                // 新方式：通过 JWE 头 kid 查找加密密钥
                 String algAlgorithm = session.tokens().cekManagementAlgorithm(TokenCategory.INTERNAL);
                 RealmModel realm = session.getContext().getRealm();
                 KeyWrapper encKey = session.keys().getKey(realm, kid, KeyUse.ENC, algAlgorithm);
@@ -191,7 +212,7 @@ public class RestartLoginCookie implements Token {
                 String jwt = new String(contentBytes, StandardCharsets.UTF_8);
                 return session.tokens().decode(jwt, RestartLoginCookie.class);
             } else {
-                // decoding as before
+                // 旧方式：使用当前活跃 ENC/SIG 密钥解密
                 String sigAlgorithm = session.tokens().signatureAlgorithm(TokenCategory.INTERNAL);
                 String algAlgorithm = session.tokens().cekManagementAlgorithm(TokenCategory.INTERNAL);
                 SecretKey encKey = session.keys().getActiveKey(session.getContext().getRealm(), KeyUse.ENC, algAlgorithm).getSecretKey();
@@ -201,11 +222,12 @@ public class RestartLoginCookie implements Token {
                 return session.tokens().decode(jwt, RestartLoginCookie.class);
             }
         } catch (Exception e) {
-            // Might be the cookie from the older version
+            // 可能是更旧版本的明文/不同格式 Cookie
             return session.tokens().decode(encodedToken, RestartLoginCookie.class);
         }
     }
 
+    /** 将重启 Cookie 编码为 JWT 并用 JWE 直接加密。 */
     public static String encodeAndEncrypt(KeycloakSession session, RestartLoginCookie cookie) {
         try {
             String algAlgorithm = session.tokens().cekManagementAlgorithm(cookie.getCategory());
@@ -218,6 +240,7 @@ public class RestartLoginCookie implements Token {
         }
     }
 
+    /** @return 内部令牌类别 {@link TokenCategory#INTERNAL} */
     @Override
     public TokenCategory getCategory() {
         return TokenCategory.INTERNAL;

@@ -22,23 +22,31 @@ import org.keycloak.representations.docker.DockerErrorResponseToken;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 
+/**
+ * Docker 协议 HTTP Basic 认证器：校验用户名密码，失败时返回 Docker 规范 JSON 错误令牌。
+ * <p>无效凭据与未知用户返回相同错误消息，符合 Docker Registry 认证行为。</p>
+ */
 public class DockerAuthenticator extends HttpBasicAuthenticator {
     private static final Logger logger = Logger.getLogger(DockerAuthenticator.class);
 
+    /** 认证器提供方 ID。 */
     public static final String ID = "docker-http-basic-authenticator";
 
     @Override
+    /** 凭据无效时委托 {@link #invalidUserAction} 返回 Docker 错误响应。 */
     protected void notValidCredentialsAction(final AuthenticationFlowContext context, final RealmModel realm, final UserModel user) {
         invalidUserAction(context, realm, user.getUsername(), context.getSession().getContext().resolveLocale(user));
     }
 
     @Override
+    /** 用户不存在时使用 Realm 默认语言返回与无效凭据相同的 Docker 错误。 */
     protected void nullUserAction(final AuthenticationFlowContext context, final RealmModel realm, final String userId) {
         final String localeString = Optional.ofNullable(realm.getDefaultLocale()).orElse(Locale.ENGLISH.toString());
         invalidUserAction(context, realm, userId, new Locale(localeString));
     }
 
     @Override
+    /** 用户被禁用时返回 401 及 {@link DockerErrorResponseToken}。 */
     protected void userDisabledAction(AuthenticationFlowContext context, RealmModel realm, UserModel user, String eventError) {
         context.getEvent().user(user);
         context.getEvent().error(eventError);
@@ -52,9 +60,9 @@ public class DockerAuthenticator extends HttpBasicAuthenticator {
     }
 
     /**
-     * For Docker protocol the same error message will be returned for invalid credentials and incorrect user name.  For SAML
-     * ECP, there is a different behavior for each.
+     * Docker 协议对无效凭据与错误用户名返回相同消息；SAML ECP 则区分二者。
      */
+    /** 构造 UNAUTHORIZED Docker 错误并以 {@link AuthenticationFlowError#INVALID_USER} 失败认证流。 */
     private void invalidUserAction(final AuthenticationFlowContext context, final RealmModel realm, final String userId, final Locale locale) {
         context.getEvent().user(userId);
         context.getEvent().error(Errors.INVALID_USER_CREDENTIALS);
@@ -70,6 +78,7 @@ public class DockerAuthenticator extends HttpBasicAuthenticator {
     }
 
     @Override
+    /** Docker Basic 认证对所有用户均视为已配置。 */
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         return true;
     }

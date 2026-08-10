@@ -27,7 +27,8 @@ import org.keycloak.utils.ProfileHelper;
 import org.jboss.logging.Logger;
 
 /**
- * Implements a docker-client understandable format.
+ * Docker Registry 认证授权端点：解析 account/service/scope 参数并启动浏览器认证流程。
+ * <p>继承 {@link AuthorizationEndpointBase}，使用 Realm 配置的 Docker 认证流。</p>
  */
 public class DockerEndpoint extends AuthorizationEndpointBase {
     protected static final Logger logger = Logger.getLogger(DockerEndpoint.class);
@@ -39,12 +40,14 @@ public class DockerEndpoint extends AuthorizationEndpointBase {
     private ClientModel client;
     private AuthenticationSessionModel authenticationSession;
 
+    /** @param session Keycloak 会话 @param event 事件构建器 @param login 登录事件类型 */
     public DockerEndpoint(KeycloakSession session, final EventBuilder event, final EventType login) {
         super(session, event);
         this.login = login;
         event.event(login);
     }
 
+    /** 处理 Docker 客户端 GET 授权请求并返回认证响应或重定向。 */
     @GET
     public Response build() {
         ProfileHelper.requireFeature(Profile.Feature.DOCKER);
@@ -53,8 +56,7 @@ public class DockerEndpoint extends AuthorizationEndpointBase {
 
         account = params.getFirst(DockerAuthV2Protocol.ACCOUNT_PARAM);
         if (account == null) {
-            logger.debug("Account parameter not provided by docker auth.  This is techincally required, but not actually used since " +
-                    "username is provided by Basic auth header.");
+            // account 参数技术上必填，实际用户名由 Basic 认证头提供
         }
         service = params.getFirst(DockerAuthV2Protocol.SERVICE_PARAM);
         scope = params.getFirst(DockerAuthV2Protocol.SCOPE_PARAM);
@@ -68,20 +70,21 @@ public class DockerEndpoint extends AuthorizationEndpointBase {
 
         updateAuthenticationSession();
 
-        // So back button doesn't work
+        // 禁用浏览器后退缓存，避免重复提交
         CacheControlUtil.noBackButtonCacheControlHeader(session);
 
         return handleBrowserAuthenticationRequest(authenticationSession, new DockerAuthV2Protocol(session, realm, session.getContext().getUri(), headers, event), false, false);
     }
 
+    /** 将会话设为 Docker 协议、Transient 用户会话并写入 Docker 专用 client notes。 */
     private void updateAuthenticationSession() {
         authenticationSession.setProtocol(DockerAuthV2Protocol.LOGIN_PROTOCOL);
         authenticationSession.setAction(CommonClientSessionModel.Action.AUTHENTICATE.name());
 
-        // Use transient userSession for the docker protocol. There is no need to persist session as there is no endpoint for "refresh token" or "introspection"
+        // Docker 协议使用瞬态用户会话：无刷新/内省端点，无需持久化
         authenticationSession.setClientNote(AuthenticationManager.USER_SESSION_PERSISTENT_STATE, UserSessionModel.SessionPersistenceState.TRANSIENT.toString());
 
-        // Docker specific stuff
+        // 写入 Docker 专用认证会话备注（account/service/scope/issuer）
         authenticationSession.setClientNote(DockerAuthV2Protocol.ACCOUNT_PARAM, account);
         authenticationSession.setClientNote(DockerAuthV2Protocol.SERVICE_PARAM, service);
         authenticationSession.setClientNote(DockerAuthV2Protocol.SCOPE_PARAM, scope);
@@ -89,6 +92,7 @@ public class DockerEndpoint extends AuthorizationEndpointBase {
 
     }
 
+    /** 校验 service 参数对应客户端存在且已启用。 */
     private void checkService() {
         if (service == null) {
             event.detail(Details.REASON, "Missing parameter: " + DockerAuthV2Protocol.SERVICE_PARAM);
@@ -111,6 +115,7 @@ public class DockerEndpoint extends AuthorizationEndpointBase {
     }
 
     @Override
+    /** @return Realm 配置的 Docker 认证流 */
     protected AuthenticationFlowModel getAuthenticationFlow(AuthenticationSessionModel authSession) {
         return realm.getDockerAuthenticationFlow();
     }

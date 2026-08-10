@@ -5,7 +5,8 @@ import java.io.PrintWriter;
 import java.net.URL;
 
 /**
- * Representation of the docker-compose.yaml file
+ * docker-compose.yaml 内容生成器：配置 Registry v2 镜像、TLS、Keycloak 令牌认证及卷挂载。
+ * <p>默认绑定 {@code 127.0.0.1:5000}，使用文件系统存储与令牌认证环境变量。</p>
  */
 public class DockerComposeYamlFile {
 
@@ -20,15 +21,15 @@ public class DockerComposeYamlFile {
     private final String serviceId;
 
     /**
-     * @param registryDataDirName Directory name to be used for both the container's storage directory, as well as the local data directory name
-     * @param localCertDirName Name of the (relative) local directory that holds the certs
-     * @param containerCertPath Path at which the local certs directory should be mounted on the container
-     * @param localhostCrtFileName SSL Cert file name for the registry
-     * @param localhostKeyFileName SSL Key file name for the registry
-     * @param authServerTrustChainFileName IDP trust chain, used for auth token validation
-     * @param authServerUrl Root URL for Keycloak, commonly something like http://localhost:8080/auth for dev environments
-     * @param realmName Name of the realm for which the docker client is configured
-     * @param serviceId Docker's Service ID, corresponds to Keycloak's client ID
+     * @param registryDataDirName 容器与本地共用的 Registry 数据目录名
+     * @param localCertDirName 本地证书相对目录名
+     * @param containerCertPath 证书目录在容器内的挂载路径
+     * @param localhostCrtFileName Registry TLS 证书文件名
+     * @param localhostKeyFileName Registry TLS 私钥文件名
+     * @param authServerTrustChainFileName IdP 信任链文件名，用于校验认证令牌
+     * @param authServerUrl Keycloak 根 URL（开发环境常见 {@code http://localhost:8080/auth}）
+     * @param realmName Docker 客户端所属 Realm 名称
+     * @param serviceId Docker service 参数，对应 Keycloak 客户端 ID
      */
     public DockerComposeYamlFile(final String registryDataDirName, final String localCertDirName, final String containerCertPath, final String localhostCrtFileName, final String localhostKeyFileName, final String authServerTrustChainFileName, final URL authServerUrl, final String realmName, final String serviceId) {
         this.registryDataDirName = registryDataDirName;
@@ -42,6 +43,7 @@ public class DockerComposeYamlFile {
         this.serviceId = serviceId;
     }
 
+    /** 生成 docker-compose.yaml 文件 UTF-8 字节内容。 */
     public byte[] generateDockerComposeFileBytes() {
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
         final PrintWriter writer = new PrintWriter(output);

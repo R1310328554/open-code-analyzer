@@ -12,9 +12,14 @@ import org.keycloak.provider.ProviderConfigProperty;
 
 import static org.keycloak.models.AuthenticationExecutionModel.Requirement;
 
+/**
+ * {@link DockerAuthenticator} 工厂：在 Docker 认证流中提供 HTTP Basic 认证步骤。
+ * <p>不可配置，执行要求为 {@link Requirement#REQUIRED}。</p>
+ */
 public class DockerAuthenticatorFactory implements AuthenticatorFactory {
 
     @Override
+    /** @return 管理控制台显示的帮助文本 */
     public String getHelpText() {
         return "Uses HTTP Basic authentication to validate docker users, returning a docker error token on auth failure";
     }
@@ -25,11 +30,13 @@ public class DockerAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 控制台展示名称 */
     public String getDisplayType() {
         return "Docker Authenticator";
     }
 
     @Override
+    /** @return 参考分类 {@code docker} */
     public String getReferenceCategory() {
         return "docker";
     }
@@ -55,6 +62,7 @@ public class DockerAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** 创建 {@link DockerAuthenticator} 实例。 */
     public Authenticator create(KeycloakSession session) {
         return new DockerAuthenticator();
     }
@@ -75,6 +83,7 @@ public class DockerAuthenticatorFactory implements AuthenticatorFactory {
     }
 
     @Override
+    /** @return 认证器 ID {@link DockerAuthenticator#ID} */
     public String getId() {
         return DockerAuthenticator.ID;
     }

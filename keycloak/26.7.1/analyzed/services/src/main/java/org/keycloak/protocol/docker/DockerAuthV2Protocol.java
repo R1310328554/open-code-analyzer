@@ -35,14 +35,24 @@ import org.keycloak.util.TokenUtil;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.jaxrs.ResponseBuilderImpl;
 
+/**
+ * Docker Registry V2 认证协议实现：在用户登录成功后签发 JWT 访问令牌供 Docker 客户端拉取/推送镜像。
+ * <p>协议 ID 为 {@link #LOGIN_PROTOCOL}（{@code docker-v2}）；不支持刷新令牌、内省及标准登出流程。</p>
+ */
 public class DockerAuthV2Protocol implements LoginProtocol {
     protected static final Logger logger = Logger.getLogger(DockerEndpoint.class);
 
+    /** 登录协议标识：{@code docker-v2}。 */
     public static final String LOGIN_PROTOCOL = "docker-v2";
+    /** Docker 授权请求参数：账户名（通常由 Basic 认证提供）。 */
     public static final String ACCOUNT_PARAM = "account";
+    /** Docker 授权请求参数：服务名，对应 Keycloak 客户端 ID。 */
     public static final String SERVICE_PARAM = "service";
+    /** Docker 授权请求参数：请求的仓库/操作范围。 */
     public static final String SCOPE_PARAM = "scope";
+    /** 认证会话备注键：JWT issuer，避免与 OIDC 备注冲突。 */
     public static final String ISSUER = "docker.iss"; // don't want to overlap with OIDC notes
+    /** JWT 响应中 {@code issued_at} 的 ISO-8601 格式。 */
     public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     private KeycloakSession session;
@@ -54,6 +64,7 @@ public class DockerAuthV2Protocol implements LoginProtocol {
     public DockerAuthV2Protocol() {
     }
 
+    /** 构造带完整上下文的 Docker 协议实例。 */
     public DockerAuthV2Protocol(final KeycloakSession session, final RealmModel realm, final UriInfo uriInfo, final HttpHeaders headers, final EventBuilder event) {
         this.session = session;
         this.realm = realm;
@@ -93,8 +104,15 @@ public class DockerAuthV2Protocol implements LoginProtocol {
     }
 
     @Override
+    /**
+     * 认证成功回调：构建 {@link DockerResponseToken}，经映射器装饰后 RSA 签名并返回 JSON 响应。
+     * @param authSession 认证会话
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 含 token/expires_in/issued_at 的 Docker 认证响应
+     */
     public Response authenticated(final AuthenticationSessionModel authSession, final UserSessionModel userSession, final ClientSessionContext clientSessionCtx) {
-        // First, create a base response token with realm + user values populated
+        // 第一步：填充 realm 与用户基本信息构建基础响应令牌
         final AuthenticatedClientSessionModel clientSession = clientSessionCtx.getClientSession();
         final ClientModel client = clientSession.getClient();
 
@@ -107,12 +125,12 @@ public class DockerAuthV2Protocol implements LoginProtocol {
                 .audience(client.getClientId())
                 .issuedFor(client.getClientId());
 
-        // since realm access token is given in seconds
+        // realm 访问令牌生命周期以秒为单位
         final int accessTokenLifespan = realm.getAccessTokenLifespan();
         responseToken.nbf(responseToken.getIat())
                 .exp(responseToken.getIat() + accessTokenLifespan);
 
-        // Next, allow mappers to decorate the token to add/remove scopes as appropriate
+        // 第二步：按优先级调用 Docker 协议映射器调整 scope
 
         AtomicReference<DockerResponseToken> finalResponseToken = new AtomicReference<>(responseToken);
         ProtocolMapperUtils.getSortedProtocolMappers(session, clientSessionCtx, mapper ->
@@ -122,7 +140,7 @@ public class DockerAuthV2Protocol implements LoginProtocol {
         responseToken = finalResponseToken.get();
 
         try {
-            // Finally, construct the response to the docker client with the token + metadata
+            // 第三步：RSA 签名 JWT 并组装 Docker 客户端可识别的 JSON 响应
             if (event.getEvent() != null && EventType.LOGIN.equals(event.getEvent().getType())) {
                 final KeyManager.ActiveRsaKey activeKey = session.keys().getActiveRsaKey(realm);
                 final String encodedToken = new JWSBuilder()
@@ -151,6 +169,7 @@ public class DockerAuthV2Protocol implements LoginProtocol {
     }
 
     @Override
+    /** 认证流程错误响应（Docker 协议返回 500）。 */
     public Response sendError(final AuthenticationSessionModel clientSession, final LoginProtocol.Error error, String errorMessage) {
         return new ResponseBuilderImpl().status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
@@ -166,25 +185,30 @@ public class DockerAuthV2Protocol implements LoginProtocol {
     }
 
     @Override
+    /** Docker 协议不支持 backchannel 登出。 */
     public Response backchannelLogout(final UserSessionModel userSession, final AuthenticatedClientSessionModel clientSession) {
         return errorResponse(userSession, "backchannelLogout");
     }
 
     @Override
+    /** Docker 协议不支持 frontchannel 登出。 */
     public Response frontchannelLogout(final UserSessionModel userSession, final AuthenticatedClientSessionModel clientSession) {
         return errorResponse(userSession, "frontchannelLogout");
     }
 
     @Override
+    /** Docker 协议不支持浏览器登出收尾。 */
     public Response finishBrowserLogout(final UserSessionModel userSession, AuthenticationSessionModel logoutSession) {
         return errorResponse(userSession, "finishLogout");
     }
 
     @Override
+    /** Docker 协议始终要求重新认证。 */
     public boolean requireReauthentication(final UserSessionModel userSession, final AuthenticationSessionModel clientSession) {
         return true;
     }
 
+    /** 记录不支持的方法调用并抛出 {@link ErrorResponseException}。 */
     private Response errorResponse(final UserSessionModel userSession, final String methodName) {
         logger.errorv("User {0} attempted to invoke unsupported method {1} on docker protocol.", userSession.getUser().getUsername(), methodName);
         throw new ErrorResponseException("invalid_request", String.format("Attempted to invoke unsupported docker method %s", methodName), Response.Status.BAD_REQUEST);
@@ -192,6 +216,6 @@ public class DockerAuthV2Protocol implements LoginProtocol {
 
     @Override
     public void close() {
-        // no-op
+        // 无资源需释放
     }
 }

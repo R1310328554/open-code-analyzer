@@ -13,6 +13,10 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.protocol.ClientInstallationProvider;
 import org.keycloak.protocol.docker.DockerAuthV2Protocol;
 
+/**
+ * Docker 环境变量覆盖安装提供方：生成 {@code REGISTRY_AUTH_TOKEN_*} 系列环境变量。
+ * <p>通常配合 docker-compose.yaml 在容器中配置 Registry 令牌认证。</p>
+ */
 public class DockerVariableOverrideInstallationProvider implements ClientInstallationProvider {
 
     @Override
@@ -40,8 +44,9 @@ public class DockerVariableOverrideInstallationProvider implements ClientInstall
         return "docker-v2-variable-override";
     }
 
-    // TODO "auth" is not guaranteed to be the endpoint, fix it
+    // TODO："auth" 未必为固定端点路径，待修复
     @Override
+    /** 输出三条 {@code -e REGISTRY_AUTH_TOKEN_*} docker run 环境变量行。 */
     public Response generateInstallation(final KeycloakSession session, final RealmModel realm, final ClientModel client, final URI serverBaseUri) {
         final StringBuilder builder = new StringBuilder()
                 .append("-e REGISTRY_AUTH_TOKEN_REALM=").append(serverBaseUri).append("/realms/").append(realm.getName()).append("/protocol/").append(DockerAuthV2Protocol.LOGIN_PROTOCOL).append("/auth \\\n")
@@ -56,16 +61,19 @@ public class DockerVariableOverrideInstallationProvider implements ClientInstall
     }
 
     @Override
+    /** @return 展示名称“Variable Override” */
     public String getDisplayType() {
         return "Variable Override";
     }
 
     @Override
+    /** @return 说明：用于 docker-compose Registry 环境变量配置 */
     public String getHelpText() {
         return "Configures environment variable overrides, typically used with a docker-compose.yaml configuration for a docker registry";
     }
 
     @Override
+    /** @return 建议文件名 {@code docker-env.txt} */
     public String getFilename() {
         return "docker-env.txt";
     }
