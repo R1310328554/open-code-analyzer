@@ -31,31 +31,58 @@ import org.wildfly.security.http.HttpServerAuthenticationMechanism;
 import org.wildfly.security.http.HttpServerAuthenticationMechanismFactory;
 
 /**
+ * Keycloak SAML 的 Elytron {@link HttpServerAuthenticationMechanismFactory} 实现。
+ *
+ * <p>向 Elytron 注册 {@link KeycloakHttpServerAuthenticationMechanism#NAME} 机制，
+ * 并创建带内存会话映射器的认证机制实例。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class KeycloakHttpServerAuthenticationMechanismFactory implements HttpServerAuthenticationMechanismFactory {
 
+    /** 默认内存会话 ID 映射器。 */
     private final SessionIdMapper idMapper = new InMemorySessionIdMapper();
+    /** 可选的 SAML 部署上下文。 */
     private final SamlDeploymentContext deploymentContext;
 
     /**
-     * <p>Creates a new instance.
+     * 创建工厂实例（无部署上下文）。
      *
-     * <p>A default constructor is necessary in order to allow this factory to be loaded via {@link java.util.ServiceLoader}.
+     * <p>默认构造函数供 {@link java.util.ServiceLoader} 加载使用。</p>
      */
     public KeycloakHttpServerAuthenticationMechanismFactory() {
         this(null);
     }
 
+    /**
+     * 使用指定 SAML 部署上下文创建工厂。
+     *
+     * @param deploymentContext SAML 部署上下文，可为 null
+     */
     public KeycloakHttpServerAuthenticationMechanismFactory(SamlDeploymentContext deploymentContext) {
         this.deploymentContext = deploymentContext;
     }
 
+    /**
+     * 返回本工厂支持的机制名称列表。
+     *
+     * @param properties 机制属性（未使用）
+     * @return 仅包含 {@link KeycloakHttpServerAuthenticationMechanism#NAME}
+     */
     @Override
     public String[] getMechanismNames(Map<String, ?> properties) {
         return new String[] {KeycloakHttpServerAuthenticationMechanism.NAME};
     }
 
+    /**
+     * 按机制名创建 {@link KeycloakHttpServerAuthenticationMechanism} 实例。
+     *
+     * @param mechanismName   机制名称
+     * @param properties      机制属性
+     * @param callbackHandler Elytron 回调处理器
+     * @return 认证机制实例，名称不匹配时返回 null
+     * @throws HttpAuthenticationException 创建失败时抛出
+     */
     @Override
     public HttpServerAuthenticationMechanism createAuthenticationMechanism(String mechanismName, Map<String, ?> properties, CallbackHandler callbackHandler) throws HttpAuthenticationException {
         Map<String, Object> mechanismProperties = new HashMap();

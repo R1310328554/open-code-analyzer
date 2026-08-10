@@ -22,14 +22,20 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
 
 /**
+ * 添加 IdP（身份提供方）资源的管理操作处理器。
+ *
+ * <p>将 CLI/XML 添加操作写入 {@link Configuration}，并校验 IdP 资源不重复。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 class IdentityProviderAddHandler extends AbstractAddStepHandler {
 
+    /** 使用 IdP 全部属性定义构造添加处理器。 */
     IdentityProviderAddHandler() {
         super(IdentityProviderDefinition.ALL_ATTRIBUTES);
     }
 
+    /** 运行时将 IdP 模型合并到全局配置树（启用单例校验）。 */
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
         Configuration.INSTANCE.updateModel(operation, model, true);

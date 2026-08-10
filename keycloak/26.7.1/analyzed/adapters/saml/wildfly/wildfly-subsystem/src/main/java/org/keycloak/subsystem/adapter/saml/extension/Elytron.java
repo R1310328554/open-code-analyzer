@@ -23,21 +23,30 @@ import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.msc.service.ServiceName;
 
 /**
- * Utility class for Elytron integration
+ * Elytron 集成工具类：检测部署是否启用 Elytron 应用安全域。
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class Elytron {
 
+    /** 未显式配置安全域时的默认值。 */
     private static final String DEFAULT_SECURITY_DOMAIN = "other";
+    /** Undertow 应用安全域 MSC 服务名前缀。 */
     private static final String UNDERTOW_APPLICATION_SECURITY_DOMAIN = "org.wildfly.undertow.application-security-domain.";
 
+    /**
+     * 判断当前部署阶段是否已注册 Elytron 应用安全域服务。
+     *
+     * @param phaseContext 部署阶段上下文
+     * @return 已启用 Elytron 时返回 true
+     */
     static boolean isElytronEnabled(DeploymentPhaseContext phaseContext) {
         String securityDomain = getSecurityDomain(phaseContext.getDeploymentUnit());
         ServiceName serviceName = ServiceName.parse(new StringBuilder(UNDERTOW_APPLICATION_SECURITY_DOMAIN).append(securityDomain).toString());
         return phaseContext.getServiceRegistry().getService(serviceName) != null;
     }
 
+    /** 从 jboss-web.xml 读取安全域名，缺省为 {@link #DEFAULT_SECURITY_DOMAIN}。 */
     private static String getSecurityDomain(DeploymentUnit deploymentUnit) {
         WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
 

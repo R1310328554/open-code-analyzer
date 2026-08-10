@@ -40,19 +40,41 @@ import org.wildfly.security.http.HttpServerRequest;
 import org.wildfly.security.http.Scope;
 
 /**
+ * WildFly Elytron 的 Keycloak SAML HTTP 服务端认证机制。
+ *
+ * <p>对每个入站请求评估 SAML 部署上下文，选择 {@link ElytronSamlEndpoint} 或
+ * {@link ElytronSamlAuthenticator} 执行认证，并根据 {@link AuthOutcome} 驱动
+ * Elytron 认证状态转换（完成、进行中、失败或匿名）。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticationMechanism {
 
+    /** 本类日志记录器。 */
     static Logger LOGGER = Logger.getLogger(KeycloakHttpServerAuthenticationMechanism.class);
+    /** Elytron 机制注册名。 */
     static final String NAME = "KEYCLOAK-SAML";
 
+    /** 机制配置属性。 */
     private final Map<String, ?> properties;
+    /** Elytron 认证回调处理器。 */
     private final CallbackHandler callbackHandler;
+    /** SAML 部署上下文（可为 null，此时从应用作用域附件读取）。 */
     private final SamlDeploymentContext deploymentContext;
+    /** HTTP 会话与 SSO 会话 ID 映射器。 */
     private final SessionIdMapper idMapper;
+    /** 会话 ID 映射更新器。 */
     private final SessionIdMapperUpdater idMapperUpdater;
 
+    /**
+     * 创建 Keycloak SAML HTTP 认证机制实例。
+     *
+     * @param properties        机制属性
+     * @param callbackHandler   Elytron 回调处理器
+     * @param deploymentContext SAML 部署上下文
+     * @param idMapper          会话 ID 映射器
+     * @param idMapperUpdater   映射更新器
+     */
     public KeycloakHttpServerAuthenticationMechanism(Map<String, ?> properties, CallbackHandler callbackHandler, SamlDeploymentContext deploymentContext, SessionIdMapper idMapper, SessionIdMapperUpdater idMapperUpdater) {
         this.properties = properties;
         this.callbackHandler = callbackHandler;
@@ -66,6 +88,12 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         return NAME;
     }
 
+    /**
+     * 评估 HTTP 请求并驱动 SAML 认证流程。
+     *
+     * @param request Elytron HTTP 服务端请求
+     * @throws HttpAuthenticationException 认证处理异常
+     */
     @Override
     public void evaluateRequest(HttpServerRequest request) throws HttpAuthenticationException {
         LOGGER.debugf("Evaluating request for path [%s]", request.getRequestURI());
@@ -135,6 +163,7 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         httpFacade.authenticationInProgress();
     }
 
+    /** 从构造注入或应用作用域附件获取 SAML 部署上下文。 */
     private SamlDeploymentContext getDeploymentContext(HttpServerRequest request) {
         if (this.deploymentContext == null) {
             return (SamlDeploymentContext) request.getScope(Scope.APPLICATION).getAttachment(KeycloakConfigurationServletListener.ADAPTER_DEPLOYMENT_CONTEXT_ATTRIBUTE_ELYTRON);
@@ -143,24 +172,34 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         return this.deploymentContext;
     }
 
+    /** 优先使用应用作用域附件中的映射器，否则回退到构造注入实例。 */
     private SessionIdMapper getSessionIdMapper(HttpServerRequest request) {
         HttpScope scope = request.getScope(Scope.APPLICATION);
         SessionIdMapper res = scope == null ? null : (SessionIdMapper) scope.getAttachment(KeycloakConfigurationServletListener.ADAPTER_SESSION_ID_MAPPER_ATTRIBUTE_ELYTRON);
         return res == null ? this.idMapper : res;
     }
 
+    /** 优先使用应用作用域附件中的更新器，否则回退到构造注入实例。 */
     private SessionIdMapperUpdater getSessionIdMapperUpdater(HttpServerRequest request) {
         HttpScope scope = request.getScope(Scope.APPLICATION);
         SessionIdMapperUpdater res = scope == null ? null : (SessionIdMapperUpdater) scope.getAttachment(KeycloakConfigurationServletListener.ADAPTER_SESSION_ID_MAPPER_UPDATER_ATTRIBUTE_ELYTRON);
         return res == null ? this.idMapperUpdater : res;
     }
 
+    /** 登出完成后重定向到部署配置的登出页。 */
     protected void redirectLogout(SamlDeployment deployment, ElytronHttpFacade exchange) {
         sendRedirect(exchange, deployment.getLogoutPage());
     }
 
+    /** 匹配绝对 URL 协议前缀（如 {@code https:}）的正则。 */
     private static final Pattern PROTOCOL_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]*:");
 
+    /**
+     * 发送 HTTP 302 重定向；相对路径会拼接当前请求的 scheme、host 与 context path。
+     *
+     * @param exchange Elytron HTTP 门面
+     * @param location 目标位置（绝对或相对 URL）
+     */
     static void sendRedirect(final ElytronHttpFacade exchange, final String location) {
         if (location == null) {
             LOGGER.warn("Logout page not set.");

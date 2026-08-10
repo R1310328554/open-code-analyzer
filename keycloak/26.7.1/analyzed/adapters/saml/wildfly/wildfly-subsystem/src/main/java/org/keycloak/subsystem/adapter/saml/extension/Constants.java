@@ -18,10 +18,15 @@ package org.keycloak.subsystem.adapter.saml.extension;
 
 
 /**
+ * Keycloak SAML WildFly 子系统的模型与 XML 元素名常量。
+ *
+ * <p>{@link Constants.Model} 为管理模型属性名，{@link Constants.XML} 为 standalone.xml 元素/属性名。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 public class Constants {
 
+    /** 管理模型（ModelNode）属性名常量。 */
     static class Model {
         static final String SECURE_DEPLOYMENT = "secure-deployment";
         static final String SERVICE_PROVIDER = "SP";
@@ -74,16 +79,16 @@ public class Constants {
         static final String FILE = "file";
         static final String SIGNATURES_REQUIRED = "signaturesRequired";
 
-        // role mappings provider constants
+        // 角色映射提供器模型常量
         static final String ROLE_MAPPINGS_PROVIDER_ID = "roleMappingsProviderId";
         static final String ROLE_MAPPINGS_PROVIDER_CONFIG = "roleMappingsProviderConfig";
 
-        // allowed clock skew model constants
+        // 允许时钟偏差模型常量
         static final String ALLOWED_CLOCK_SKEW = "AllowedClockSkew";
         static final String ALLOWED_CLOCK_SKEW_UNIT = "unit";
         static final String ALLOWED_CLOCK_SKEW_VALUE = "value";
 
-        // http client model constants
+        // HTTP 客户端模型常量
         static final String HTTP_CLIENT = "HttpClient";
         static final String ALLOW_ANY_HOSTNAME = "allowAnyHostname";
         static final String CLIENT_KEYSTORE = "clientKeystore";
@@ -98,6 +103,7 @@ public class Constants {
         static final String CONNECTION_TTL = "connectionTtl";
     }
 
+    /** standalone.xml / 子系统 XML 元素与属性名常量。 */
     static class XML {
         static final String SECURE_DEPLOYMENT = "secure-deployment";
         static final String SERVICE_PROVIDER = "SP";
@@ -155,17 +161,17 @@ public class Constants {
         static final String SIGNATURES_REQUIRED = "signaturesRequired";
         static final String ASSERTION_CONSUMER_SERVICE_URL = "assertionConsumerServiceUrl";
 
-        // role mappings provider XML constants
+        // 角色映射提供器 XML 常量
         static final String ID = "id";
         static final String VALUE = "value";
         static final String PROPERTY = "Property";
         static final String ROLE_MAPPINGS_PROVIDER = "RoleMappingsProvider";
 
-        // allowed clock skew XML constants
+        // 允许时钟偏差 XML 常量
         static final String ALLOWED_CLOCK_SKEW = "AllowedClockSkew";
         static final String ALLOWED_CLOCK_SKEW_UNIT = "unit";
 
-        // http client XML constants
+        // HTTP 客户端 XML 常量
         static final String HTTP_CLIENT = "HttpClient";
         static final String ALLOW_ANY_HOSTNAME = "allowAnyHostname";
         static final String CLIENT_KEYSTORE = "clientKeystore";

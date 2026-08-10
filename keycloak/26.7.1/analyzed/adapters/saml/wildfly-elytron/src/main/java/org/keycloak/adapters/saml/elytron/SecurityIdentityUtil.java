@@ -34,10 +34,19 @@ import org.wildfly.security.evidence.Evidence;
 import org.wildfly.security.http.HttpAuthenticationException;
 
 /**
+ * 通过 Elytron 回调链将 {@link SamlPrincipal} 授权为 {@link SecurityIdentity} 的工具类。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 final class SecurityIdentityUtil {
 
+    /**
+     * 执行证据校验、授权与认证完成回调，返回已建立的 {@link SecurityIdentity}。
+     *
+     * @param callbackHandler Elytron 回调处理器
+     * @param principal       SAML 主体
+     * @return 授权成功时的安全身份，否则为 null
+     */
     static final SecurityIdentity authorize(CallbackHandler callbackHandler, SamlPrincipal principal) {
         try {
             EvidenceVerifyCallback evidenceVerifyCallback = new EvidenceVerifyCallback(new Evidence() {

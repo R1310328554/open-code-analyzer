@@ -36,20 +36,36 @@ import org.infinispan.persistence.remote.RemoteStore;
 import org.jboss.logging.Logger;
 
 /**
+ * 基于 Infinispan SSO 缓存为 Elytron SAML 适配器注册分布式会话 ID 映射更新器。
+ *
+ * <p>从 Servlet 初始化参数解析缓存容器与缓存名，配置复制模式 SSO 缓存，
+ * 并挂载 {@link SsoSessionCacheListener} 以同步集群内会话映射。</p>
  *
  * @author hmlnarik
  */
 public class InfinispanSessionCacheIdMapperUpdater {
 
+    /** 本类日志记录器。 */
     private static final Logger LOG = Logger.getLogger(InfinispanSessionCacheIdMapperUpdater.class);
 
+    /** Infinispan 缓存容器默认 JNDI 前缀。 */
     public static final String DEFAULT_CACHE_CONTAINER_JNDI_NAME = "java:jboss/infinispan/container";
 
+    /**
+     * 为部署注册基于 Infinispan SSO 缓存的 {@link SessionIdMapperUpdater}。
+     *
+     * <p>若无法解析缓存参数或 JNDI 查找失败，则返回 {@code previousIdMapperUpdater}。</p>
+     *
+     * @param servletContext           Servlet 上下文
+     * @param mapper                   会话 ID 映射器
+     * @param previousIdMapperUpdater  回退用的先前更新器
+     * @return 分布式缓存更新器或回退更新器
+     */
     public static SessionIdMapperUpdater addTokenStoreUpdaters(ServletContext servletContext, SessionIdMapper mapper, SessionIdMapperUpdater previousIdMapperUpdater) {
         String containerName = servletContext.getInitParameter(AdapterConstants.REPLICATION_CONFIG_CONTAINER_PARAM_NAME);
         String cacheName = servletContext.getInitParameter(AdapterConstants.REPLICATION_CONFIG_SSO_CACHE_PARAM_NAME);
 
-        // the following is based on https://github.com/jbossas/jboss-as/blob/7.2.0.Final/clustering/web-infinispan/src/main/java/org/jboss/as/clustering/web/infinispan/DistributedCacheManagerFactory.java#L116-L122
+        // 以下逻辑参考 JBoss AS 7.2 DistributedCacheManagerFactory 的部署会话缓存命名方式
         String contextPath = servletContext.getContextPath();
         if (contextPath == null || contextPath.isEmpty() || "/".equals(contextPath)) {
             contextPath = "/ROOT";
@@ -69,11 +85,11 @@ public class InfinispanSessionCacheIdMapperUpdater {
 
             Configuration ssoCacheConfiguration = cacheManager.getCacheConfiguration(cacheName);
             if (ssoCacheConfiguration == null) {
-                // Fallback to use cache "/my-app-deployment-context" as template
+                // 回退：以部署 context path 对应缓存配置为模板
                 ssoCacheConfiguration = tryDefineCacheConfigurationFromTemplate(cacheManager, containerName, cacheName, deploymentSessionCacheName);
 
                 if (ssoCacheConfiguration == null) {
-                    // Fallback to use cache "my-app-deployment-context.war" as template
+                    // 回退：以去掉扩展名的缓存名（如 my-app.war → my-app）为模板
                     if (cacheName.lastIndexOf('.') != -1) {
                         String templateName = cacheName.substring(0, cacheName.lastIndexOf('.'));
                         ssoCacheConfiguration = tryDefineCacheConfigurationFromTemplate(cacheManager, containerName, cacheName, templateName);
@@ -81,7 +97,7 @@ public class InfinispanSessionCacheIdMapperUpdater {
                 }
 
                 if (ssoCacheConfiguration == null) {
-                    // Finally fallback to the cache container default configuration
+                    // 最终回退：使用缓存容器默认配置
                     LOG.debugv("Using default configuration for SSO cache {0}.{1}.", containerName, cacheName);
                     ssoCacheConfiguration = cacheManager.getDefaultCacheConfiguration();
                     cacheManager.defineConfiguration(cacheName, ssoCacheConfiguration);
@@ -116,9 +132,13 @@ public class InfinispanSessionCacheIdMapperUpdater {
     }
 
     /**
-     * Try to define new cache configuration "newCacheName" from the existing configuration "templateCacheName" .
+     * 尝试以已有缓存配置 {@code templateCacheName} 为模板定义 {@code newCacheName}。
      *
-     * @return Newly defined configuration or null in case that definition of new configuration was not successful
+     * @param cacheManager       Infinispan 嵌入式缓存管理器
+     * @param containerName      容器名称（仅用于日志）
+     * @param newCacheName       待定义的新缓存名
+     * @param templateCacheName  模板缓存名
+     * @return 新定义的配置；模板不存在时返回 null
      */
     private static Configuration tryDefineCacheConfigurationFromTemplate(EmbeddedCacheManager cacheManager, String containerName, String newCacheName, String templateCacheName) {
         Configuration cacheConfiguration = cacheManager.getCacheConfiguration(templateCacheName);
@@ -127,11 +147,12 @@ public class InfinispanSessionCacheIdMapperUpdater {
                     containerName, newCacheName, templateCacheName);
             return cacheManager.defineConfiguration(newCacheName, cacheConfiguration);
         } else {
-            // templateCacheName configuration did not exists, so returning null
+            // 模板缓存配置不存在
             return null;
         }
     }
 
+    /** 为跨数据中心 RemoteStore 注册 Hot Rod 客户端监听器。 */
     private static void addSsoCacheCrossDcListener(Cache<String, String[]> ssoCache, SsoSessionCacheListener listener) {
         if (ssoCache.getCacheConfiguration().persistence() == null) {
             return;
@@ -149,6 +170,7 @@ public class InfinispanSessionCacheIdMapperUpdater {
         }
     }
 
+    /** 从 Infinispan 缓存组件注册表获取所有 {@link RemoteStore} 持久化存储。 */
     public static Set<RemoteStore> getRemoteStores(Cache<?, ?> ispnCache) {
         return ComponentRegistry.componentOf(ispnCache, PersistenceManager.class).getStores(RemoteStore.class);
     }

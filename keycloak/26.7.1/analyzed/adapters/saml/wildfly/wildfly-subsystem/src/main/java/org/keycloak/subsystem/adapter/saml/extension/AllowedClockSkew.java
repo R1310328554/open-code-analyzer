@@ -26,11 +26,15 @@ import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
 /**
+ * SAML 适配器子系统中「允许时钟偏差」（AllowedClockSkew）属性的 WildFly 管理模型定义。
+ *
+ * <p>包含偏差数值与单位（分钟、秒、毫秒等）两个 {@link SimpleAttributeDefinition}。</p>
  *
  * @author rmartinc
  */
 abstract public class AllowedClockSkew {
 
+    /** 时钟偏差数值（正整数，必填）。 */
     static final SimpleAttributeDefinition ALLOWED_CLOCK_SKEW_VALUE =
             new SimpleAttributeDefinitionBuilder(Constants.Model.ALLOWED_CLOCK_SKEW_VALUE, ModelType.INT, false)
                     .setXmlName(Constants.XML.ALLOWED_CLOCK_SKEW)
@@ -38,8 +42,10 @@ abstract public class AllowedClockSkew {
                     .setValidator(new IntRangeValidator(1, Integer.MAX_VALUE, true, true))
                     .build();
 
+    /** 时钟偏差单位枚举（内部使用）。 */
     static private enum AllowedClockSkewUnits {MINUTES, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS};
 
+    /** 时钟偏差单位（可选，默认秒）。 */
     static final SimpleAttributeDefinition ALLOWED_CLOCK_SKEW_UNIT =
             new SimpleAttributeDefinitionBuilder(Constants.Model.ALLOWED_CLOCK_SKEW_UNIT, ModelType.STRING, true)
                     .setXmlName(Constants.XML.ALLOWED_CLOCK_SKEW_UNIT)
@@ -51,5 +57,6 @@ abstract public class AllowedClockSkew {
                     .setValidator(EnumValidator.create(AllowedClockSkewUnits.class, EnumSet.allOf(AllowedClockSkewUnits.class)))
                     .build();
 
+    /** AllowedClockSkew 的全部属性定义。 */
     static final SimpleAttributeDefinition[] ATTRIBUTES = {ALLOWED_CLOCK_SKEW_UNIT, ALLOWED_CLOCK_SKEW_VALUE};
 }

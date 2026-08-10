@@ -35,10 +35,21 @@ import org.wildfly.security.evidence.BearerTokenEvidence;
 import org.wildfly.security.evidence.Evidence;
 
 /**
+ * 将 {@link SamlPrincipal} 映射为 Elytron {@link SecurityRealm} 身份的安全域实现。
+ *
+ * <p>支持 Bearer 令牌证据校验，并从 SAML 主体属性构建 {@link AuthorizationIdentity}。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class KeycloakSecurityRealm implements SecurityRealm {
 
+    /**
+     * 根据主体类型返回域身份；非 {@link SamlPrincipal} 返回 {@link RealmIdentity#NON_EXISTENT}。
+     *
+     * @param principal 待解析主体
+     * @return 域身份
+     * @throws RealmUnavailableException 域不可用时抛出
+     */
     @Override
     public RealmIdentity getRealmIdentity(Principal principal) throws RealmUnavailableException {
         if (principal instanceof SamlPrincipal) {
@@ -47,6 +58,7 @@ public class KeycloakSecurityRealm implements SecurityRealm {
         return RealmIdentity.NON_EXISTENT;
     }
 
+    /** 为 SAML 主体创建 Elytron 域身份包装。 */
     private RealmIdentity createRealmIdentity(SamlPrincipal principal) {
         return new RealmIdentity() {
             @Override
@@ -91,11 +103,13 @@ public class KeycloakSecurityRealm implements SecurityRealm {
         };
     }
 
+    /** 本域不支持凭据获取。 */
     @Override
     public SupportLevel getCredentialAcquireSupport(Class<? extends Credential> credentialType, String algorithmName, AlgorithmParameterSpec parameterSpec) throws RealmUnavailableException {
         return SupportLevel.UNSUPPORTED;
     }
 
+    /** 域级别证据校验：仅 {@link BearerTokenEvidence} 可能受支持。 */
     @Override
     public SupportLevel getEvidenceVerifySupport(Class<? extends Evidence> evidenceType, String algorithmName) throws RealmUnavailableException {
         if (isBearerTokenEvidence(evidenceType)) {
@@ -105,6 +119,7 @@ public class KeycloakSecurityRealm implements SecurityRealm {
         return SupportLevel.UNSUPPORTED;
     }
 
+    /** 判断证据类型是否为 {@link BearerTokenEvidence}。 */
     private boolean isBearerTokenEvidence(Class<?> evidenceType) {
         return evidenceType != null && evidenceType.equals(BearerTokenEvidence.class);
     }

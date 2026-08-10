@@ -22,14 +22,20 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.dmr.ModelNode;
 
 /**
+ * 添加密钥（Key）资源的管理操作处理器。
+ *
+ * <p>将 CLI/XML 添加操作写入 {@link Configuration} 内存配置树。</p>
+ *
  * @author <a href="mailto:mstrukel@redhat.com">Marko Strukelj</a>
  */
 class KeyAddHandler extends AbstractAddStepHandler {
 
+    /** 使用 Key 全部属性定义构造添加处理器。 */
     KeyAddHandler() {
         super(KeyDefinition.ALL_ATTRIBUTES);
     }
 
+    /** 运行时将 Key 模型合并到全局配置树。 */
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
         Configuration.INSTANCE.updateModel(operation, model);
