@@ -32,22 +32,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Default AI resource trace subscriber that keeps the existing file log output.
+ * 默认 AI 资源追踪订阅者：将 {@link AiResourceTraceEvent} 以 JSON 写入专用 trace 日志。
+ *
+ * <p>订阅者名称为 {@value #NAME}，输出 logger 为 {@code com.alibaba.nacos.ai.resource.trace}，保持与既有文件日志格式兼容。</p>
  *
  * @author nacos
  */
 public class AiResourceTraceLogSubscriber implements NacosTraceSubscriber {
     
+    /** 追踪订阅者在 SPI 中的唯一名称。 */
     public static final String NAME = "ai-resource-trace-log";
     
     private static final Logger TRACE_LOG =
         LoggerFactory.getLogger("com.alibaba.nacos.ai.resource.trace");
     
+    /** 返回订阅者名称 {@link #NAME}。 */
     @Override
     public String getName() {
         return NAME;
     }
     
+    /** 收到 AI 资源追踪事件时序列化为 JSON 并写入 info 日志。 */
     @Override
     public void onEvent(TraceEvent event) {
         if (!(event instanceof AiResourceTraceEvent) || !TRACE_LOG.isInfoEnabled()) {
@@ -56,11 +61,13 @@ public class AiResourceTraceLogSubscriber implements NacosTraceSubscriber {
         TRACE_LOG.info(JacksonUtils.toJson(buildLogEntry((AiResourceTraceEvent) event)));
     }
     
+    /** 仅订阅 {@link AiResourceTraceEvent} 类型。 */
     @Override
     public List<Class<? extends TraceEvent>> subscribeTypes() {
         return Collections.singletonList(AiResourceTraceEvent.class);
     }
     
+    /** 将追踪事件字段组装为结构化日志 Map（便于 JSON 输出）。 */
     static Map<String, Object> buildLogEntry(AiResourceTraceEvent event) {
         Map<String, Object> logEntry = new LinkedHashMap<>(10);
         logEntry.put("timestamp",

@@ -40,17 +40,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Publish pipeline service that integrates Cisco AI Defense skill-scanner for security scanning
- * of AI Agent Skills before publishing.
+ * 集成 Cisco AI Defense skill-scanner 的 AI 资源发布流水线服务。
  *
- * <p>Uses <a href="https://github.com/cisco-ai-defense/skill-scanner">skill-scanner</a> to detect prompt
- * injection, data exfiltration, and malicious code patterns. Optional LLM semantic analysis via
- * node property {@code useLlm=true} and {@code llmApiKey}/{@code llmModel} (mapped to
- * {@code SKILL_SCANNER_LLM_*} in the subprocess environment). Rejects publishing if HIGH/CRITICAL
- * findings are detected.</p>
+ * <p>在发布前对 Agent Skill 等 AI 资源做安全扫描，调用 <a href="https://github.com/cisco-ai-defense/skill-scanner">skill-scanner</a> 检测提示词注入、数据外泄与恶意代码模式。可通过节点属性 {@code useLlm=true} 及 {@code llmApiKey}/{@code llmModel} 启用 LLM 语义分析（映射为子进程环境变量 {@code SKILL_SCANNER_LLM_*}）。若发现 HIGH/CRITICAL 级别风险则拒绝发布。</p>
  *
- * <p>CLI uses {@code --format markdown --detailed} so stdout matches Cisco skill-scanner report
- * formats documented in the upstream project.</p>
+ * <p>CLI 使用 {@code --format markdown --detailed}，stdout 格式与上游 skill-scanner 报告一致。</p>
  *
  * @author qiacheng.cxy
  */
@@ -58,13 +52,12 @@ public class SkillScannerPipelineService implements PublishPipelineService {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillScannerPipelineService.class);
     
-    /**
-     * skill-scanner CLI command name.
-     */
+    /** skill-scanner 可执行命令默认名称。 */
+
     static final String DEFAULT_SKILL_SCANNER_CMD = "skill-scanner";
     
     /**
-     * Report format for subprocess stdout ({@code skill-scanner --format ...}).
+     * 子进程 stdout 报告格式（{@code skill-scanner --format ...}）。
      *
      * @see <a href="https://github.com/cisco-ai-defense/skill-scanner">skill-scanner</a> CLI {@code --format}
      */
@@ -76,9 +69,8 @@ public class SkillScannerPipelineService implements PublishPipelineService {
     
     private static final String CHECKPOINT_CLI = "skill-scanner CLI 执行";
     
-    /**
-     * Installation hint when skill-scanner is not found.
-     */
+    /** skill-scanner 未安装时的安装指引文案。 */
+
     static final String INSTALLATION_HINT =
         "skill-scanner 未安装。请先安装 Cisco AI skill-scanner 后再使用此插件。\n"
             + "安装命令（任选其一）：\n"
@@ -91,10 +83,12 @@ public class SkillScannerPipelineService implements PublishPipelineService {
     
     private final SkillScannerScanOptions scanOptions;
     
+    /** 按是否已安装构造服务（未安装时 scannerCommand 为 null）。 */
     public SkillScannerPipelineService(boolean installed) {
         this(installed ? DEFAULT_SKILL_SCANNER_CMD : null, SkillScannerScanOptions.none());
     }
     
+    /** 指定 skill-scanner 可执行路径或命令名。 */
     public SkillScannerPipelineService(String scannerCommand) {
         this(scannerCommand, SkillScannerScanOptions.none());
     }
@@ -108,6 +102,7 @@ public class SkillScannerPipelineService implements PublishPipelineService {
         this.scanOptions = scanOptions != null ? scanOptions : SkillScannerScanOptions.none();
     }
     
+    /** 流水线标识：skill-scanner。 */
     @Override
     public String pipelineId() {
         return "skill-scanner";
@@ -194,6 +189,7 @@ public class SkillScannerPipelineService implements PublishPipelineService {
         }
     }
     
+    /** 组装 skill-scanner scan 子进程命令行参数。 */
     List<String> buildScanCommand(Path tempDir) {
         List<String> command = new ArrayList<>();
         command.add(scannerCommand);
@@ -218,10 +214,12 @@ public class SkillScannerPipelineService implements PublishPipelineService {
         return command;
     }
     
+    /** 等待扫描子进程结束并返回退出码（便于单测覆写）。 */
     int waitForProcess(Process process) throws InterruptedException {
         return process.waitFor();
     }
     
+    /** 将待扫描资源文件写入临时目录，并校验路径不越界。 */
     private void writeResourceFiles(Path baseDir, List<ResourceFileContent> files)
         throws IOException {
         for (ResourceFileContent file : files) {
@@ -240,6 +238,7 @@ public class SkillScannerPipelineService implements PublishPipelineService {
         }
     }
     
+    /** 为 AgentSpec/Prompt 等资源合成 SKILL.md，以兼容 skill-scanner 输入格式。 */
     private List<ResourceFileContent> normalizeFilesForScanner(PublishPipelineContext context,
         List<ResourceFileContent> files) {
         if (containsSkillMarkdown(files)) {
@@ -265,6 +264,7 @@ public class SkillScannerPipelineService implements PublishPipelineService {
         return files;
     }
     
+    /** 判断文件列表是否已包含 SKILL.md。 */
     private boolean containsSkillMarkdown(List<ResourceFileContent> files) {
         for (ResourceFileContent each : files) {
             if (each != null && "SKILL.md".equals(each.getFilePath())) {
@@ -313,6 +313,7 @@ public class SkillScannerPipelineService implements PublishPipelineService {
         return builder.toString();
     }
     
+    /** 递归删除扫描临时目录。 */
     private void deleteRecursively(File file) {
         if (file == null || !file.exists()) {
             return;
@@ -330,11 +331,13 @@ public class SkillScannerPipelineService implements PublishPipelineService {
         }
     }
     
+    /** 流水线执行优先级（数值越小越靠前）。 */
     @Override
     public int getPreferOrder() {
         return 100;
     }
     
+    /** 适用的 AI 资源类型：Skill、AgentSpec、Prompt。 */
     @Override
     public PublishPipelineResourceType[] pipelineResourceTypes() {
         return new PublishPipelineResourceType[] {

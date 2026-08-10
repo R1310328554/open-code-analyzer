@@ -22,27 +22,29 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Skill-scanner CLI options derived from pipeline node {@link Properties}.
+ * 从流水线节点 {@link Properties} 解析的 skill-scanner CLI 扫描选项。
  *
- * <p>Configure via {@code nacos.plugin.ai-pipeline.type=skill-scanner}
- * and matching {@code nacos.plugin.ai-pipeline.skill-scanner.&lt;key&gt;} entries
- * (see {@link com.alibaba.nacos.ai.pipeline.config.FilePipelineConfigProvider}).</p>
+ * <p>通过 {@code nacos.plugin.ai-pipeline.type=skill-scanner} 及 {@code nacos.plugin.ai-pipeline.skill-scanner.&lt;key&gt;} 配置（参见 {@link com.alibaba.nacos.ai.pipeline.config.FilePipelineConfigProvider}）。</p>
  *
- * <p>Environment variables for the LLM match
- * <a href="https://github.com/cisco-ai-defense/skill-scanner">skill-scanner</a> documentation.</p>
+ * <p>LLM 相关环境变量命名与 <a href="https://github.com/cisco-ai-defense/skill-scanner">skill-scanner</a> 官方文档一致。</p>
  *
  * @author qiacheng.cxy
  */
 final class SkillScannerScanOptions {
     
+    /** 是否启用 LLM 语义分析（--use-llm）。 */
     static final String PROP_USE_LLM = "useLlm";
     
+    /** LLM API Key 配置键。 */
     static final String PROP_LLM_API_KEY = "llmApiKey";
     
+    /** LLM 模型名配置键。 */
     static final String PROP_LLM_MODEL = "llmModel";
     
+    /** LLM 提供商配置键（anthropic/openai）。 */
     static final String PROP_LLM_PROVIDER = "llmProvider";
     
+    /** 是否启用元数据扫描（--enable-meta）。 */
     static final String PROP_ENABLE_META = "enableMeta";
     
     private static final String ENV_LLM_API_KEY = "SKILL_SCANNER_LLM_API_KEY";
@@ -68,10 +70,12 @@ final class SkillScannerScanOptions {
         this.enableMeta = enableMeta;
     }
     
+    /** 返回全部选项关闭的默认实例。 */
     static SkillScannerScanOptions none() {
         return new SkillScannerScanOptions(false, null, null, null, false);
     }
     
+    /** 从节点属性解析扫描选项，空属性时返回 {@link #none()}。 */
     static SkillScannerScanOptions fromProperties(Properties properties) {
         if (properties == null || properties.isEmpty()) {
             return none();
@@ -106,8 +110,8 @@ final class SkillScannerScanOptions {
     }
     
     /**
-     * Applies LLM-related variables to the subprocess environment when configured.
-     * Keys match skill-scanner CLI expectations ({@value #ENV_LLM_API_KEY}, {@value #ENV_LLM_MODEL}).
+     * 将已配置的 LLM 变量写入子进程环境。
+     * 键名符合 skill-scanner CLI 约定（{@value #ENV_LLM_API_KEY}、{@value #ENV_LLM_MODEL}）。
      */
     void applyLlmEnvironment(Map<String, String> env) {
         if (StringUtils.isNotBlank(llmApiKey)) {

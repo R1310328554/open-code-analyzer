@@ -22,12 +22,15 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * When nacos deployment type is `console`.
+ * Spring 条件：Nacos 部署类型为独立 Console（console）。
+ *
+ * <p>Console 使用远程数据源访问 Server 侧用户权限数据时加载对应 Bean。</p>
  *
  * @author xiweng.yy
  */
 public class ConditionOnRemoteDatasource implements Condition {
     
+    /** 部署类型为 console 时匹配。 */
     @Override
     public boolean matches(ConditionContext conditionContext,
         AnnotatedTypeMetadata annotatedTypeMetadata) {

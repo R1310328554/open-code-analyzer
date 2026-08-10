@@ -30,8 +30,9 @@ import javax.annotation.PostConstruct;
 import java.util.UUID;
 
 /**
- * Initializes the system-reserved anonymous user, role and default permission when AI anonymous access is enabled.
- * Follows the same pattern as admin user initialization in Nacos.
+ * AI 匿名访问启用时，初始化系统预留的匿名用户、角色与默认权限。
+ *
+ * <p>流程与 Nacos 管理员用户初始化一致：{@link PostConstruct} 阶段写入用户表、角色绑定及 {@code public:*:ai/*} 只读权限。</p>
  *
  * @author nacos
  */
@@ -39,8 +40,10 @@ public class AnonymousAccessInitializer {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(AnonymousAccessInitializer.class);
     
+    /** 匿名角色默认 AI 资源权限表达式。 */
     private static final String DEFAULT_ANONYMOUS_PERMISSION_RESOURCE = "public:*:ai/*";
     
+    /** 匿名默认权限动作：只读（r）。 */
     private static final String DEFAULT_ANONYMOUS_PERMISSION_ACTION = "r";
     
     private final AuthConfigs authConfigs;
@@ -60,9 +63,8 @@ public class AnonymousAccessInitializer {
         this.permissionPersistService = permissionPersistService;
     }
     
-    /**
-     * Initialize anonymous user, role and default permission if AI anonymous access is enabled.
-     */
+    /** 若开启 AI 匿名访问，则确保匿名用户、角色与默认权限存在。 */
+
     @PostConstruct
     public void init() {
         if (!authConfigs.isAiAnonymousEnabled()) {
@@ -80,6 +82,7 @@ public class AnonymousAccessInitializer {
         }
     }
     
+    /** 创建匿名用户（密码随机 BCrypt，不可用于登录）。 */
     private void ensureAnonymousUser() {
         User existing = userPersistService.findUserByUsername(AuthConstants.ANONYMOUS_USER);
         if (existing != null) {
@@ -91,6 +94,7 @@ public class AnonymousAccessInitializer {
         LOGGER.info("[ANONYMOUS-INIT] Created anonymous user: {}", AuthConstants.ANONYMOUS_USER);
     }
     
+    /** 为匿名用户绑定 {@link AuthConstants#ANONYMOUS_ROLE} 角色。 */
     private void ensureAnonymousRole() {
         try {
             rolePersistService.addRole(AuthConstants.ANONYMOUS_ROLE, AuthConstants.ANONYMOUS_USER);
@@ -102,6 +106,7 @@ public class AnonymousAccessInitializer {
         }
     }
     
+    /** 为匿名角色授予 public AI 资源只读权限。 */
     private void ensureDefaultPermission() {
         try {
             permissionPersistService.addPermission(AuthConstants.ANONYMOUS_ROLE,

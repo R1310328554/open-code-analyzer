@@ -24,12 +24,15 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * when nacos.core.auth.system.type=nacos
+ * Spring 条件：{@code nacos.core.auth.system.type} 为 nacos 内置鉴权。
+ *
+ * <p>仅在该配置下注册默认鉴权插件相关 Bean。</p>
  *
  * @author karsonto
  */
 public class ConditionOnNacosAuth implements Condition {
     
+    /** 读取环境属性并判断是否为 Nacos 内置鉴权类型。 */
     @Override
     public boolean matches(ConditionContext conditionContext,
         AnnotatedTypeMetadata annotatedTypeMetadata) {

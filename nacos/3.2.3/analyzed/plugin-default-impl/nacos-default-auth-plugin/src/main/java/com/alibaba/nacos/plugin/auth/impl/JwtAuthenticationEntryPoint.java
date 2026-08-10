@@ -27,7 +27,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * jwt auth fail point.
+ * JWT 认证失败时的 Spring Security 入口点（已废弃）。
+ *
+ * <p>认证异常时记录错误日志并向客户端返回 HTTP 401 Unauthorized。</p>
  *
  * @author wfnuser
  */
@@ -36,6 +38,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationEntryPoint.class);
     
+    /** 处理未认证请求：写日志并发送 401 响应。 */
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
         AuthenticationException e)

@@ -22,12 +22,15 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * When nacos deployment type is `merged` or `server`.
+ * Spring 条件：Nacos 部署类型为 merged 或 server（非独立 Console）。
+ *
+ * <p>用于仅在 Server 进程加载依赖内嵌数据源的用户/权限持久化 Bean。</p>
  *
  * @author xiweng.yy
  */
 public class ConditionOnInnerDatasource implements Condition {
     
+    /** 部署类型不是 console 时匹配（即 merged/server 模式）。 */
     @Override
     public boolean matches(ConditionContext conditionContext,
         AnnotatedTypeMetadata annotatedTypeMetadata) {

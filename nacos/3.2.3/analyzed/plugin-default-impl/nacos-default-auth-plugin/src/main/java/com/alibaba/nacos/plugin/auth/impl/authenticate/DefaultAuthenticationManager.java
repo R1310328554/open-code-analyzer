@@ -21,13 +21,14 @@ import com.alibaba.nacos.plugin.auth.impl.token.TokenManagerDelegate;
 import com.alibaba.nacos.plugin.auth.impl.users.NacosUserService;
 
 /**
- * DefaultAuthenticationManager.
+ * {@link IAuthenticationManager} 默认实现，直接继承 {@link AbstractAuthenticationManager} 逻辑。
  *
  * @author Weizhan▪Yun
  * @date 2023/1/17 13:27
  */
 public class DefaultAuthenticationManager extends AbstractAuthenticationManager {
     
+    /** 注入用户、JWT 与角色服务并委托父类完成认证授权。 */
     public DefaultAuthenticationManager(NacosUserService userDetailsService,
         TokenManagerDelegate jwtTokenManager,
         NacosRoleService roleService) {

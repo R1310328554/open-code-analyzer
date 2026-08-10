@@ -23,7 +23,7 @@ import com.alibaba.nacos.plugin.auth.impl.users.NacosUser;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Authentication interface.
+ * Nacos 鉴权认证管理器接口：统一用户名密码、JWT 与 HTTP 请求认证及 RBAC 授权。
  *
  * @author Weizhan▪Yun
  * @date 2023/1/12 23:31
@@ -31,17 +31,17 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface IAuthenticationManager {
     
     /**
-     * Authentication of user with password.
+     * 用户名密码认证。
      *
      * @param username    username
      * @param rawPassword raw password
-     * @return user related to this request, null if no user info is found.
+     * @return 认证成功后的 {@link NacosUser}
      * @throws AccessException if authentication is failed
      */
     NacosUser authenticate(String username, String rawPassword) throws AccessException;
     
     /**
-     * Authentication with jwt.
+     * JWT Token 认证。
      *
      * @param jwtToken json web token
      * @return nacos user
@@ -50,7 +50,7 @@ public interface IAuthenticationManager {
     NacosUser authenticate(String jwtToken) throws AccessException;
     
     /**
-     * Authentication of request, identify the user who request the resource.
+     * 从 HTTP 请求识别并认证访问用户。
      *
      * @param httpServletRequest http servlet request
      * @return nacos user
@@ -59,7 +59,7 @@ public interface IAuthenticationManager {
     NacosUser authenticate(HttpServletRequest httpServletRequest) throws AccessException;
     
     /**
-     * Authorize if the nacosUser has the specified permission.
+     * 校验 {@link NacosUser} 是否具备指定 {@link Permission}。
      *
      * @param permission permission to auth
      * @param nacosUser  nacosUser who wants to access the resource.
@@ -68,7 +68,7 @@ public interface IAuthenticationManager {
     void authorize(Permission permission, NacosUser nacosUser) throws AccessException;
     
     /**
-     * Whether the user has the administrator role.
+     * 指定用户是否拥有全局管理员角色。
      *
      * @param username nacos user name
      * @return if the user has the administrator role.
@@ -76,14 +76,14 @@ public interface IAuthenticationManager {
     boolean hasGlobalAdminRole(String username);
     
     /**
-     * Whether the user exist the administrator role.
+     * 系统中是否已存在全局管理员角色。
      *
      * @return if the user exist the administrator role.
      */
     boolean hasGlobalAdminRole();
     
     /**
-     * Whether the user has the administrator role.
+     * 给定 {@link NacosUser} 是否为全局管理员。
      *
      * @param nacosUser nacos user name
      * @return if the user has the administrator role.

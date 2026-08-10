@@ -45,7 +45,9 @@ import java.util.Properties;
 import static com.alibaba.nacos.plugin.auth.constant.Constants.Identity.IDENTITY_ID;
 
 /**
- * Nacos default auth plugin service implementation.
+ * Nacos 内置鉴权插件 {@link AuthPluginService} 实现。
+ *
+ * <p>负责身份识别（JWT/用户名密码）、权限校验，并在资源标记允许时降级为 AI 匿名访问。</p>
  *
  * @author xiweng.yy
  */
@@ -67,17 +69,20 @@ public class NacosAuthPluginService implements AuthPluginService {
     
     private volatile AuthConfigs authConfigs;
     
+    /** 返回请求中可携带的身份凭证字段名列表。 */
     @Override
     public Collection<String> identityNames() {
         return IDENTITY_NAMES;
     }
     
+    /** 对所有 action 与 type 均启用鉴权。 */
     @Override
     public boolean enableAuth(ActionTypes action, String type) {
-        // enable all of action and type
+        // 不区分 action/type，一律开启鉴权
         return true;
     }
     
+    /** 校验用户身份；失败且资源允许匿名时降级为匿名用户。 */
     @Override
     public AuthResult validateIdentity(IdentityContext identityContext, Resource resource) {
         try {
@@ -95,6 +100,7 @@ public class NacosAuthPluginService implements AuthPluginService {
         }
     }
     
+    /** 判断资源是否标记允许 AI 匿名访问且全局开关已开启。 */
     private boolean isAnonymousAllowed(Resource resource) {
         if (resource == null || resource.getProperties() == null) {
             return false;
@@ -117,6 +123,7 @@ public class NacosAuthPluginService implements AuthPluginService {
         }
     }
     
+    /** 优先 JWT，其次用户名密码，成功后将用户写入 IdentityContext。 */
     private NacosUser validateUser(IdentityContext identityContext) throws AccessException {
         checkNacosAuthManager();
         String token = resolveToken(identityContext);
@@ -133,6 +140,7 @@ public class NacosAuthPluginService implements AuthPluginService {
         return nacosUser;
     }
     
+    /** 从 Authorization Bearer 或 accessToken 参数解析 JWT。 */
     private String resolveToken(IdentityContext identityContext) {
         String bearerToken =
             identityContext.getParameter(AuthConstants.AUTHORIZATION_HEADER, StringUtils.EMPTY);
@@ -144,6 +152,7 @@ public class NacosAuthPluginService implements AuthPluginService {
         return identityContext.getParameter(Constants.ACCESS_TOKEN, StringUtils.EMPTY);
     }
     
+    /** 校验已认证用户对指定资源的操作权限。 */
     @Override
     public AuthResult validateAuthority(IdentityContext identityContext, Permission permission) {
         try {
@@ -155,11 +164,13 @@ public class NacosAuthPluginService implements AuthPluginService {
         }
     }
     
+    /** 返回鉴权插件类型名 nacos。 */
     @Override
     public String getAuthServiceName() {
         return AuthConstants.AUTH_PLUGIN_TYPE;
     }
     
+    /** 控制台 API 是否启用登录鉴权。 */
     @Override
     public boolean isLoginEnabled() {
         return NacosAuthConfigHolder.getInstance()
@@ -168,7 +179,7 @@ public class NacosAuthPluginService implements AuthPluginService {
     }
     
     /**
-     * Only auth enabled and not global admin role existed.
+     * 鉴权已开启且尚未配置全局管理员角色时为 true（需引导初始化管理员）。
      *
      * @return {@code true} when auth enabled and not global admin role existed, otherwise {@code false}
      */
@@ -183,6 +194,7 @@ public class NacosAuthPluginService implements AuthPluginService {
         return authEnabled && !hasGlobalAdminRole;
     }
     
+    /** 懒加载 {@link IAuthenticationManager} Bean。 */
     protected void checkNacosAuthManager() {
         if (null == authenticationManager) {
             authenticationManager = ApplicationUtils.getBean(IAuthenticationManager.class);

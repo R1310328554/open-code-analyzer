@@ -33,16 +33,15 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * Builder for {@link SkillScannerPipelineService}. Checks if skill-scanner is installed
- * during initialization and logs installation instructions if not found.
+ * {@link SkillScannerPipelineService} 的 SPI 构建器。
  *
- * <p>Optional node properties (via {@code nacos.plugin.ai-pipeline.skill-scanner.*}):</p>
+ * <p>初始化时检测 skill-scanner 是否可用，未安装则记录安装指引； 支持通过 {@code nacos.plugin.ai-pipeline.skill-scanner.*} 配置扫描选项：</p>
  * <ul>
- *   <li>{@code useLlm} — {@code true} to pass {@code --use-llm} (semantic analysis; requires API key in properties or parent env)</li>
- *   <li>{@code llmApiKey} — sets subprocess {@code SKILL_SCANNER_LLM_API_KEY}</li>
- *   <li>{@code llmModel} — sets subprocess {@code SKILL_SCANNER_LLM_MODEL}</li>
- *   <li>{@code llmProvider} — {@code anthropic} or {@code openai} for {@code --llm-provider}</li>
- *   <li>{@code enableMeta} — {@code true} to pass {@code --enable-meta}</li>
+ *   <li>{@code useLlm} — 为 {@code true} 时传递 {@code --use-llm}（语义分析，需 API Key）</li>
+ *   <li>{@code llmApiKey} — 写入子进程 {@code SKILL_SCANNER_LLM_API_KEY}</li>
+ *   <li>{@code llmModel} — 写入子进程 {@code SKILL_SCANNER_LLM_MODEL}</li>
+ *   <li>{@code llmProvider} — {@code anthropic} 或 {@code openai}，对应 {@code --llm-provider}</li>
+ *   <li>{@code enableMeta} — 为 {@code true} 时传递 {@code --enable-meta}</li>
  * </ul>
  *
  * @author qiacheng.cxy
@@ -52,26 +51,23 @@ public class SkillScannerPipelineServiceBuilder implements PublishPipelineServic
     private static final Logger LOGGER =
         LoggerFactory.getLogger(SkillScannerPipelineServiceBuilder.class);
     
-    /**
-     * Property key to override the scanner executable path or command.
-     */
+    /** 覆盖 scanner 可执行路径或命令名的配置键。 */
+
     private static final String PROPERTY_COMMAND = "command";
     
-    /**
-     * Legacy alias for scanner executable path.
-     */
+    /** 可执行路径的兼容配置键（executable）。 */
     private static final String PROPERTY_EXECUTABLE = "executable";
     
-    /**
-     * Legacy alias for scanner executable path.
-     */
+    /** 可执行路径的兼容配置键（path）。 */
     private static final String PROPERTY_PATH = "path";
     
+    /** 返回流水线标识 skill-scanner。 */
     @Override
     public String pipelineId() {
         return "skill-scanner";
     }
     
+    /** 解析配置并构建 {@link SkillScannerPipelineService} 实例。 */
     @Override
     public PublishPipelineService build(Properties properties) {
         SkillScannerScanOptions scanOptions = SkillScannerScanOptions.fromProperties(properties);
@@ -93,10 +89,10 @@ public class SkillScannerPipelineServiceBuilder implements PublishPipelineServic
     }
     
     /**
-     * Resolve skill-scanner executable path from properties or PATH.
+     * 从节点属性或系统 PATH 解析 skill-scanner 可执行路径。
      *
-     * @param properties pipeline node properties
-     * @return resolved command path, or {@code null} if not found
+     * @param properties 流水线节点属性
+     * @return 可执行路径，未找到时返回 {@code null}
      */
     private String resolveSkillScannerCommand(Properties properties) {
         for (String configured : getConfiguredCandidates(properties)) {
@@ -109,6 +105,7 @@ public class SkillScannerPipelineServiceBuilder implements PublishPipelineServic
         return resolveCandidate(SkillScannerPipelineService.DEFAULT_SKILL_SCANNER_CMD);
     }
     
+    /** 收集 command/executable/path 等配置项作为候选命令。 */
     private List<String> getConfiguredCandidates(Properties properties) {
         Set<String> result = new LinkedHashSet<>();
         addConfiguredCandidate(result, properties.getProperty(PROPERTY_COMMAND));
@@ -123,6 +120,7 @@ public class SkillScannerPipelineServiceBuilder implements PublishPipelineServic
         }
     }
     
+    /** 解析单个候选：绝对路径校验或 PATH 查找。 */
     private String resolveCandidate(String candidate) {
         if (StringUtils.isBlank(candidate)) {
             return null;
@@ -147,6 +145,7 @@ public class SkillScannerPipelineServiceBuilder implements PublishPipelineServic
         return null;
     }
     
+    /** 在 PATH 及 ~/.local/bin 中查找可执行文件。 */
     private String findExecutableInPath(String command) {
         String pathEnv = getPathEnv();
         if (StringUtils.isBlank(pathEnv)) {
@@ -188,6 +187,7 @@ public class SkillScannerPipelineServiceBuilder implements PublishPipelineServic
         return candidate;
     }
     
+    /** 读取 PATH 环境变量（便于单测覆写）。 */
     String getPathEnv() {
         return System.getenv("PATH");
     }

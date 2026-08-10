@@ -31,7 +31,7 @@ import com.alibaba.nacos.plugin.auth.impl.utils.PasswordEncoderUtil;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * AbstractAuthenticationManager.
+ * 认证管理器抽象实现：封装用户名密码、JWT 与 HTTP 请求三种认证入口及 RBAC 授权。
  *
  * @author Weizhan▪Yun
  * @date 2023/1/13 12:48
@@ -55,6 +55,7 @@ public class AbstractAuthenticationManager implements IAuthenticationManager {
         this.roleService = roleService;
     }
     
+    /** 用户名密码认证，成功后签发 JWT 并返回 {@link NacosUser}。 */
     @Override
     public NacosUser authenticate(String username, String rawPassword) throws AccessException {
         if (StringUtils.isBlank(username) || StringUtils.isBlank(rawPassword)) {
@@ -69,6 +70,7 @@ public class AbstractAuthenticationManager implements IAuthenticationManager {
         return new NacosUser(nacosUserDetails.getUsername(), jwtTokenManager.createToken(username));
     }
     
+    /** 解析并校验 JWT，返回对应 {@link NacosUser}。 */
     @Override
     public NacosUser authenticate(String token) throws AccessException {
         if (StringUtils.isBlank(token)) {
@@ -77,6 +79,7 @@ public class AbstractAuthenticationManager implements IAuthenticationManager {
         return jwtTokenManager.parseToken(token);
     }
     
+    /** 从 HTTP 请求提取 token 或表单凭证并完成认证。 */
     @Override
     public NacosUser authenticate(HttpServletRequest httpServletRequest) throws AccessException {
         String token = resolveToken(httpServletRequest);
@@ -93,6 +96,7 @@ public class AbstractAuthenticationManager implements IAuthenticationManager {
         return user;
     }
     
+    /** 全局管理员或具备 RBAC 权限时放行，否则抛出 {@link AccessException}。 */
     @Override
     public void authorize(Permission permission, NacosUser nacosUser) throws AccessException {
         if (Loggers.AUTH.isDebugEnabled()) {
@@ -110,6 +114,7 @@ public class AbstractAuthenticationManager implements IAuthenticationManager {
         }
     }
     
+    /** 从 Authorization 头或 accessToken 参数解析 Bearer JWT。 */
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(AuthConstants.AUTHORIZATION_HEADER);
         if (StringUtils.isNotBlank(bearerToken)
@@ -121,16 +126,19 @@ public class AbstractAuthenticationManager implements IAuthenticationManager {
         return bearerToken;
     }
     
+    /** 指定用户名是否拥有全局管理员角色。 */
     @Override
     public boolean hasGlobalAdminRole(String username) {
         return roleService.hasGlobalAdminRole(username);
     }
     
+    /** 系统中是否存在全局管理员角色。 */
     @Override
     public boolean hasGlobalAdminRole() {
         return roleService.hasGlobalAdminRole();
     }
     
+    /** 判断用户是否为全局管理员并回写 {@link NacosUser#setGlobalAdmin}。 */
     @Override
     public boolean hasGlobalAdminRole(NacosUser nacosUser) {
         if (nacosUser.isGlobalAdmin()) {

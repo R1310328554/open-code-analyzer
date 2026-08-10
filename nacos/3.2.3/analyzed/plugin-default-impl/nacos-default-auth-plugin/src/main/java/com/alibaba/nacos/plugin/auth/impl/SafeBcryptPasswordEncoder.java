@@ -20,19 +20,13 @@ import com.alibaba.nacos.plugin.auth.impl.constant.AuthConstants;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 /**
- * BCrypt encoder that fixes the password length vulnerability.
+ * 修复 BCrypt 密码长度漏洞的安全密码编码器。
  *
- * <p>Problem solved: When password length exceeds 72 characters, the original {@link BCryptPasswordEncoder}
- * only matches the first 72 characters, which could lead to different passwords being
- * validated as matching (e.g., passwords {@code "A".repeat(73)} and {@code "A".repeat(80)}
- * would be considered identical).
+ * <p>问题：原 {@link BCryptPasswordEncoder} 仅比较前 72 字符，超长密码可能被误判为相同。</p>
  *
- * <p>Fix logic: Adds length validation in {@link #matches(CharSequence, String)},
- * returning false directly if the password length exceeds 72.
+ * <p>修复：在 {@link #matches(CharSequence, String)} 中若明文长度超过 {@link AuthConstants#MAX_PASSWORD_LENGTH} 则直接返回 false。</p>
  *
- * <p><strong>Recommendation:</strong> It is advised to add password length validation
- * during user registration/password modification to prevent login failures caused
- * by historical data issues.
+ * <p><strong>建议：</strong>注册与改密流程也应限制密码长度，避免历史脏数据导致无法登录。</p>
  *
  * @see <a href="https://github.com/advisories/GHSA-mg83-c7gq-rv5c">Spring Security Password Length Vulnerability Advisory</a>
  * @author linwumignshi
@@ -41,7 +35,7 @@ public class SafeBcryptPasswordEncoder extends BCryptPasswordEncoder {
     
     @Override
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
-        // Reject excessively long passwords immediately
+        // 超长密码直接拒绝，避免 BCrypt 截断比较
         if (rawPassword != null && rawPassword.length() > AuthConstants.MAX_PASSWORD_LENGTH) {
             return false;
         }
