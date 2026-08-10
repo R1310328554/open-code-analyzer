@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# PagedAttentionCache：分页 KV 缓存核心实现
 from .cache import PagedAttentionCache
+# ContinuousBatchingManager / ContinuousMixin：对外 API 与模型混入
 from .continuous_api import ContinuousBatchingManager, ContinuousMixin
 from .requests import RequestState, RequestStatus
 from .scheduler import FIFOScheduler, PrefillFirstScheduler, Scheduler
 
 
+# __all__：连续批处理子模块对外公开符号
 __all__ = [
     "ContinuousBatchingManager",
     "ContinuousMixin",

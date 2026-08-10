@@ -36,6 +36,7 @@ FALLBACK_DEFAULTS = {
 }
 
 
+# resolve_continuous_batching_config：深拷贝并按序解析全部 CB 配置项
 def resolve_continuous_batching_config(
     config: PretrainedConfig,
     cb_config: ContinuousBatchingConfig,
@@ -198,6 +199,7 @@ def resolve_compile_configs(
     cb_config.decode_compile_config = decode_config
 
 
+# decide_use_cuda_graphs：根据硬件与 workload 决定是否启用 CUDA Graph
 def decide_use_cuda_graphs(
     cb_config: ContinuousBatchingConfig, is_attn_mask_needed: bool, cuda_graph_requested: bool
 ) -> None:
@@ -249,6 +251,7 @@ def decide_use_cuda_graphs(
     logger.info(f"Using cuda graphs for (varlen, decode) paths: {cb_config.use_cuda_graph}")
 
 
+# decide_use_async_batching：attention mask 需求影响是否走异步批路径
 def decide_use_async_batching(cb_config: ContinuousBatchingConfig, is_attn_mask_needed: bool) -> None:
     """Returns whether or not to use asynchronous batching for continuous batching. If the user specified this in
     the config, we follow their choice. Otherwise, we turn on asynchronous batching if and only if CUDA graphs are
@@ -267,6 +270,7 @@ def decide_use_async_batching(cb_config: ContinuousBatchingConfig, is_attn_mask_
         )
 
 
+# resolve_max_memory_percent：按 logits 处理器预留显存比例
 def resolve_max_memory_percent(cb_config: ContinuousBatchingConfig, has_logit_processors: bool) -> None:
     if cb_config.max_memory_percent is None:
         cb_config.max_memory_percent = 0.8 if has_logit_processors else 0.9

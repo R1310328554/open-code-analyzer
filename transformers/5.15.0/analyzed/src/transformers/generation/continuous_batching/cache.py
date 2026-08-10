@@ -26,6 +26,7 @@ from .initialization import resolve_max_memory_percent
 from .requests import RequestState, RequestStatus, get_device_and_memory_breakdown, logger
 
 
+# find_num_kv_heads：从 config 解析 KV 头数（支持 GQA）
 def find_num_kv_heads(config: PreTrainedConfig) -> int:
     """Finds the number of key-value heads for the given config."""
     # If the model supports GQA, we leverage it by using the num_key_value_heads attribute
@@ -53,6 +54,7 @@ def find_head_dim(config: PreTrainedConfig) -> int:
     raise ValueError(f"head_dim or (hidden_size and num_attention_heads) could not be found in the config:\n{config}")
 
 
+# group_layers_by_attn_type：按 full/sliding 注意力类型分组层索引
 def group_layers_by_attn_type(config: PreTrainedConfig) -> tuple[list[list[int]], list[str]]:
     """
     Group layers depending on the attention mix, according to VLLM's hybrid allocator rules:
@@ -86,6 +88,7 @@ def group_layers_by_attn_type(config: PreTrainedConfig) -> tuple[list[list[int]]
     return layer_groups, group_types
 
 
+# PagedAttentionCache：分页 KV 缓存，支持块表与多注意力组
 class PagedAttentionCache:
     """
     Manages the cache for a paged attention mechanism, inspired by VLLM's hybrid allocator. The cache relies on making
@@ -555,6 +558,7 @@ class PagedAttentionCache:
             self.free_blocks(request_id)
 
 
+# PagedAttentionMemoryHandler：按可用显存估算块数与缓存布局
 class PagedAttentionMemoryHandler:
     """Determines the optimal max batch tokens (M) and number of blocks (N) for the paged attention cache, given
     available GPU memory. The relation between N and number of blocks is: num_blocks = N // block_size.

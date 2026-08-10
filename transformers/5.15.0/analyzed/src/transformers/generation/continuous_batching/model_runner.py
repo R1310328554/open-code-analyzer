@@ -26,6 +26,7 @@ from .requests import RequestStatus, logger
 from .utils import create_warmup_future_states, get_cuda_pools, mem_pool_ctx, pad_to_interval, pad_to_pow2
 
 
+# ModelRunner：连续批处理中唯一应在 GPU 上执行模型计算的类
 class ModelRunner:
     """This class is the continuous batching entry point for running the model. As a rule of thumb, anything running on
     the device should happen from this class."""
@@ -46,6 +47,7 @@ class ModelRunner:
         # Helper attributes
         self.do_sample = do_sample
         self.return_logprobs = return_logprobs
+# use_cuda_graph_varlen/decode：分别控制变长 prefill 与 decode 图路径
         self.use_cuda_graph_varlen, self.use_cuda_graph_decode = self.cb_config.cuda_graph_booleans
         self.cache = cache
         self._model_supports_logits_to_keep: bool | None = None  # resolved on first forward

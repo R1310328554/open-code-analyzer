@@ -25,6 +25,7 @@ from .requests import FutureRequestState, logger
 
 
 # Abstract base class for all continuous batching logits processors
+# ContinuousBatchingLogitsProcessor：CB 场景下单 token logits 处理基类
 class ContinuousBatchingLogitsProcessor(ABC):
     # Kwargs that this processor uses, mapped to their expected type. Only the type is checked at runtime, value-range
     # validation (e.g. temperature > 0) is not performed to keep a light API. You can open a PR if this is needed.
@@ -56,6 +57,7 @@ class ContinuousBatchingLogitsProcessor(ABC):
 
 
 # Main class for managing a list of processors (CB version or not) for batched generation
+# ContinuousBatchingLogitsProcessorList：管理 CB 与标准 logits 处理器列表
 class ContinuousBatchingLogitsProcessorList:
     """A class to hold logits processors for continuous batching (CB).
 
@@ -214,6 +216,7 @@ class ContinuousBatchingLogitsProcessorList:
 
 
 # Here are all the continuous batching logits processors that are supported
+# ContinuousBatchingTemperatureLogitsWarper：批量 temperature 缩放
 class ContinuousBatchingTemperatureLogitsWarper(ContinuousBatchingLogitsProcessor):
     supported_kwargs: dict[str, type] = {"temperature": float}
     ignored_kwargs: tuple[str, ...] = ()
@@ -274,6 +277,7 @@ class ContinuousBatchingTopKLogitsWarper(ContinuousBatchingLogitsProcessor):
         return scores.masked_fill(scores < thresholds, self.filter_value)
 
 
+# ContinuousBatchingTopPLogitsWarper：批量 nucleus (top-p) 采样 warper
 class ContinuousBatchingTopPLogitsWarper(ContinuousBatchingLogitsProcessor):
     supported_kwargs: dict[str, type] = {"top_p": float}
     ignored_kwargs: tuple[str, ...] = ("filter_value", "min_tokens_to_keep")

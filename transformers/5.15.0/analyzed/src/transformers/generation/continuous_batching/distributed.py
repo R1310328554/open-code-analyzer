@@ -36,10 +36,12 @@ else:
 T = TypeVar("T")
 
 
+# DistributedHelper：封装 TP mesh、rank 与 all-reduce，未启用 dist 时安全降级
 class DistributedHelper:
     """A helper class to handle distributed-related operations. Notably, it does not crash when distributed is off."""
 
     def __init__(self, device_mesh: DeviceMesh | None, cpu_group_timeout: float | None) -> None:
+# dist_on：是否已初始化 torch.distributed
         self.dist_on = _is_torch_distributed_initialized()
         self.device_mesh = device_mesh
 
@@ -51,6 +53,7 @@ class DistributedHelper:
             raise ValueError(f"Distributed is off but received {device_mesh = }.")
 
         # These attributes depend on the global dist state
+# global_rank / world_size：全局进程标识
         self.global_rank = dist.get_rank() if self.dist_on else 0
         self.world_size = dist.get_world_size() if self.dist_on else 1
 

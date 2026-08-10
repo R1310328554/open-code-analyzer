@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from .configuration_utils import GenerationConfig
 
 
+# CandidateGenerator：辅助生成时提供候选 token 序列的抽象基类
 class CandidateGenerator:
     """Abstract base class for all candidate generators that can be applied during assisted generation."""
 
@@ -77,6 +78,7 @@ class CandidateGenerator:
         )
 
 
+# AssistedCandidateGenerator：用小模型/草稿模型为 assisted generation 生成候选
 class AssistedCandidateGenerator(CandidateGenerator):
     """
     `CandidateGenerator` class to be used for assisted generation and speculative decoding. This class generates
@@ -891,6 +893,7 @@ class AssistantVocabTranslatorCache:
                 del assistant_dict[key]
 
 
+# UniversalSpeculativeDecodingGenerator：跨词表投机解码，自动映射 assistant→target
 class UniversalSpeculativeDecodingGenerator(AssistedCandidateGeneratorDifferentTokenizers):
     """
     `CandidateGenerator` class to be used for Universal Speculative Decoding (USD): speculative decoding with different tokenizers
@@ -1010,6 +1013,7 @@ class UniversalSpeculativeDecodingGenerator(AssistedCandidateGeneratorDifferentT
         return assistant_input_ids, len(assistant_new_ids[0])
 
 
+# PromptLookupCandidateGenerator：从 prompt 上下文 n-gram 匹配查找候选
 class PromptLookupCandidateGenerator(CandidateGenerator):
     """
     `CandidateGenerator` class to be used for prompt lookup generation. This class generates candidates by looking up
@@ -1700,6 +1704,7 @@ class DFlashTokenCandidateGenerator(CandidateGenerator):
         return
 
 
+# _prepare_attention_mask：扩展 attention_mask 以匹配候选序列长度
 def _prepare_attention_mask(model_kwargs: dict[str, Any], new_length: int, is_encoder_decoder: bool) -> dict[str, Any]:
     """Expands or crops the model's mask for decoding purposes, to the defined length"""
 

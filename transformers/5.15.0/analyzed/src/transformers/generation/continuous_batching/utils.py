@@ -24,6 +24,7 @@ from transformers.configuration_utils import PretrainedConfig
 from .requests import FutureRequestState, RequestState, RequestStatus
 
 
+# CudaGraphBuffer：按签名缓存 CUDAGraph，析构时 reset 释放
 class CudaGraphBuffer:
     """A dict for CUDA graphs with a special __del__ method to make sure the graphs are properly reset."""
 
@@ -43,6 +44,7 @@ class CudaGraphBuffer:
 
 
 @dataclass
+# WorkloadHints：prompt/生成长度提示，用于默认 CB 参数推断
 class WorkloadHints:
     """A tiny dataclass containing hints to help choose good continuous batching defaults"""
 
@@ -64,6 +66,7 @@ def pad_to_interval(size: int, interval_size: int, max_value: int) -> int:
     return min(padded, max_value)
 
 
+# pad_to_pow2：将长度向上对齐到 2 的幂（CUDA Graph 友好）
 def pad_to_pow2(value: int, max_value: int, min_value: int = 0) -> int:
     """Return the smallest power of 2 >= (value), capped at (max_value). If a minimum value is provided, the value is at
     least padded to that value."""
@@ -79,6 +82,7 @@ def aligned_divide(x: int, divide_by: int, align_to: int) -> int:
     return x
 
 
+# build_attention_mask：为变长批构造 causal/sliding 注意力 mask
 def build_attention_mask(
     attention_mask: torch.Tensor,
     cumulative_seqlens_q: list[int],

@@ -28,6 +28,7 @@ from .requests import TMP_TOKEN_ID, FutureRequestState, logger
 from .utils import CudaGraphBuffer, aligned_divide, attn_mask_is_needed, build_attention_mask, pad_to_pow2
 
 
+# PagedAttentionArgs：分页注意力前向所需的 TypedDict 关键字参数
 class PagedAttentionArgs(TypedDict):
     """The keyword arguments for a forward pass using paged attention, passed directly as model forward kwargs.
 
@@ -67,6 +68,7 @@ class PagedAttentionArgs(TypedDict):
     use_cache: bool
 
 
+# ContinuousBatchingIOs：同步路径下组装 input_ids、索引与 logits 位置
 class ContinuousBatchingIOs:
     """A class to hold inputs and outputs for a continuous batching forward pass, using static tensors as storage. The
     class is meant to be self-contained, so once a set of inputs have been created, the class can be used to update the
@@ -560,6 +562,7 @@ class ContinuousBatchingIOs:
         logger.info(f"Setting graph for {key = }")
 
 
+# HostDeviceIOPair：host 侧 staging 与 device 侧张量对
 class HostDeviceIOPair:
     def __init__(
         self,
@@ -608,6 +611,7 @@ class HostDeviceIOPair:
             self.host_io.output_ids.copy_(self.device_io.output_ids, non_blocking=True)
 
 
+# ContinuousBatchingAsyncIOs：异步 H2D/D2H 与 CUDA stream 重叠
 class ContinuousBatchingAsyncIOs:
     """A class to handle the inputs and outputs for the asynchronous API. It uses two IO pairs to avoid race conditions
     between the two batches, which means twice as more VRAM is used for static input tensors and CUDA graph. If your GPU

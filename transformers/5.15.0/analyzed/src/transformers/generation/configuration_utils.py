@@ -79,6 +79,7 @@ def _should_warn(outer_attr: str, inner_attr: str, user_set_attributes: set | No
     )
 
 
+# GenerationMode：beam/sample/contrastive 等解码模式枚举
 class GenerationMode(ExplicitEnum):
     """
     Possible generation modes, downstream of the [`~generation.GenerationMixin.generate`] method.
@@ -97,6 +98,7 @@ class GenerationMode(ExplicitEnum):
     GROUP_BEAM_SEARCH = "group_beam_search"
 
 
+# GenerationConfig：控制 max_length、采样、缓存与水印等生成超参
 class GenerationConfig(PushToHubMixin):
     # no-format
     """
@@ -1430,6 +1432,7 @@ class BaseWatermarkingConfig(ABC):
 
 
 @dataclass
+# WatermarkingConfig：文本水印 logits 处理器相关配置
 class WatermarkingConfig(BaseWatermarkingConfig):
     """
     Class that holds arguments for watermark generation and should be passed into `GenerationConfig` during `generate`.
@@ -1598,6 +1601,7 @@ class SynthIDTextWatermarkingConfig(BaseWatermarkingConfig):
 
 
 @dataclass
+# CompileConfig：torch.compile 生成路径的编译选项
 class CompileConfig:
     """
     Class that holds arguments relative to `torch.compile` behavior, when using automatic compilation in `generate`.
@@ -1651,6 +1655,7 @@ class CompileConfig:
 
 # TODO: add the @strict decorator to prevent attributes passed as args rather than kwargs
 @dataclass
+# ContinuousBatchingConfig：PagedAttention 连续批推理的块大小与调度参数
 class ContinuousBatchingConfig:
     """
     Class that holds arguments relative to continuous batching, when using continuous batching through the

@@ -35,6 +35,7 @@ from .requests import FutureRequestState, RequestState, RequestStatus, logger
 from .scheduler import Scheduler
 
 
+# contiguous_runs：将离散块索引合并为连续切片以便批量拷贝
 def contiguous_runs(indices: list[int]) -> list[tuple[int, int, int]]:
     """Groups an index list into (start_index, offset, length) runs of consecutive values, so scattered block copies
     can be performed as a few slice copies."""
@@ -52,6 +53,7 @@ def contiguous_runs(indices: list[int]) -> list[tuple[int, int, int]]:
     return runs
 
 
+# OffloadingManager：管理 pinned CPU swap pool 与请求状态迁移
 class OffloadingManager:
     """Manages request offloading and restoration for continuous batching.
 

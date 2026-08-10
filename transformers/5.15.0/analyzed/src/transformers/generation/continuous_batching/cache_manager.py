@@ -34,6 +34,7 @@ def reverse_enumerate(xs: list[T]) -> Iterator[tuple[int, T]]:
         index -= 1
 
 
+# Block：可共享 KV 块，含 parent 链与内容哈希
 class Block:  # TODO: rename to ShareableBlock and update the docs
     """A class to represent a block managed by the block manager. We say that a block is complete when the physical KV
     cache it points to is fully computed. A block can have a parent, which is the block that came before in the
@@ -55,6 +56,7 @@ class Block:  # TODO: rename to ShareableBlock and update the docs
         return self.hash is not None
 
 
+# BlockManager：跟踪空闲/在用/可复用块，支持前缀缓存共享
 class BlockManager:
     """A class to manage the number of free blocks and block re-use. When a block becomes in use, a flag is passed to
     determine if the block is shareable or not. If it is, then a Block object is created and kept track of internally.
@@ -294,6 +296,7 @@ class BlockManager:
         return hash_
 
 
+# CacheAllocator：为请求分配块表的抽象接口
 class CacheAllocator(ABC):
     """Abstract base class for cache managers. Cache managers keep track of per-request cache allocations, determine
     when a new physical block needs to be allocated and compute physical indices for reading or writing to the cache."""
@@ -362,6 +365,7 @@ class CacheAllocator(ABC):
         return copy_src, copy_dst
 
 
+# FullAttentionCacheAllocator：全注意力层块分配（块可共享）
 class FullAttentionCacheAllocator(CacheAllocator):
     """Cache manager for a group of full attention layers."""
 
@@ -453,6 +457,7 @@ class FullAttentionCacheAllocator(CacheAllocator):
         # an IO pair in the future or a CPU-side block table. This also entails a small memory allocation.
 
 
+# SlidingAttentionCacheAllocator：滑动窗口层块分配（块不可共享）
 class SlidingAttentionCacheAllocator(CacheAllocator):
     """Cache manager for sliding window attention layers."""
 

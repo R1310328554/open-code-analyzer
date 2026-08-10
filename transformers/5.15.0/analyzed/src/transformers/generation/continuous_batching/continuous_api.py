@@ -46,6 +46,7 @@ from .utils import WorkloadHints, drain_queue
 
 
 """
+# CUDA Graph 需静态张量维度；通过 Q/KV 填充间隔对齐可变长度
 To enable cuda graphs, we need the dimensions of all tensors to be static, which is counter-intuitive for CB. In CB, as
 generation goes on, there are two dimensions that change:
 - the number of queries tokens (Q), which can vary from batch to batch
@@ -187,6 +188,7 @@ class BackgroundThreadStatus:
 
 
 # Continuous Batch Processor (Internal Logic)
+# ContinuousBatchProcessor：单步 prefill/decode 循环与批调度核心
 class ContinuousBatchProcessor:
     inputs_and_outputs: ContinuousBatchingIOs | ContinuousBatchingAsyncIOs
     scheduler: Scheduler
@@ -550,6 +552,7 @@ class ContinuousBatchProcessor:
 
 
 # Manager Class (User Interface)
+# ContinuousBatchingManager：对外管理请求生命周期与输出流
 class ContinuousBatchingManager:
     """Manager for handling continuous batching of generation requests. It provides a user interface for submitting
     generation requests, retrieving results, and managing the background generation thread. This class should not be
@@ -1080,6 +1083,7 @@ class ContinuousBatchingManager:
             batch_processor.fail_all_requests(error)
 
 
+# ContinuousMixin：PreTrainedModel 混入，启用 generate_continuous 入口
 class ContinuousMixin:
     """Mixin class for models to add continuous batching capabilities. Continuous batching has three entry points:
     - `init_continuous_batching`, which is the actual entry point for continuous batching

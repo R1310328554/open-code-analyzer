@@ -27,6 +27,7 @@ if is_psutil_available():
 
 # This is a temporary token ID used to represent a token that is not yet generated
 # TODO: update this to 0 and check it breaks nothing + simplify carry over and time new logic
+# TMP_TOKEN_ID：占位符，表示尚未生成的 token
 TMP_TOKEN_ID = -1
 
 
@@ -40,6 +41,7 @@ if logger.propagate:
     logger.propagate = False
 
 
+# get_device_and_memory_breakdown：探测设备与可用/已用显存
 def get_device_and_memory_breakdown() -> tuple[torch.device, int, int, int]:
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -80,6 +82,7 @@ def get_device_and_memory_breakdown() -> tuple[torch.device, int, int, int]:
     return device, total_memory, reserved_memory, allocated_memory
 
 
+# RequestStatus：WAITING/PREFILLING/DECODING/FINISHED 等生命周期
 class RequestStatus(IntEnum):
     """Status of a generation request through its lifecycle."""
 
@@ -120,6 +123,7 @@ class GenerationOutput:
 
 
 @dataclass
+# RequestState：单条生成请求的 token、块表与调度元数据
 class RequestState:
     """Tracks the state of a generation request through its lifecycle.
 
@@ -349,6 +353,7 @@ class RequestState:
         return new_state
 
 
+# FutureRequestState：单步 decode 用的轻量快照（含新 token logits 参数）
 class FutureRequestState:
     """Tracks the current state of a request and the relevant information to update it."""
 

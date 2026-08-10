@@ -19,6 +19,7 @@ from .cache import PagedAttentionCache
 from .requests import FutureRequestState, RequestState, RequestStatus, logger
 
 
+# Scheduler：从等待队列挑选 prefill/decode 请求的抽象策略
 class Scheduler(ABC):
     """
     Abstract base class for scheduling requests in the continuous batch processor. Schedulers manage the lifecycle of
@@ -328,6 +329,7 @@ class Scheduler(ABC):
 
 
 # TODO: further common-ize the two classes
+# FIFOScheduler：先进先出，prefill 与 decode 按到达顺序混合
 class FIFOScheduler(Scheduler):
     """This scheduler processes requests in the order they arrive, meaning decoding requests has priority over
     prefilling requests."""
@@ -377,6 +379,7 @@ class FIFOScheduler(Scheduler):
 
 # FIXME: prioritize adding from waiting reqs before scheduling `RequestStatus.DECODING` when cache space allows it
 # TODO: further consolidate the code by making more of it common. The reference Scheduler is FIFO, not this one.
+# PrefillFirstScheduler：优先调度 prefill 以降低 TTFT
 class PrefillFirstScheduler(Scheduler):
     """Scheduler that prioritizes split prefill requests over decoding requests. This scheduler ensures that split
     prefill requests (which are continuations of partially processed prompts) are completed before processing new
