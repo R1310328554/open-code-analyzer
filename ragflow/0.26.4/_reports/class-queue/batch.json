@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:34:34Z",
   "files": [
-    "tools/gen-component-parity/main.go",
-    "tools/hooks/check_files.py",
-    "tools/migrate-canvas/main.go",
-    "tools/scripts/db_schema_sync.py",
-    "tools/scripts/mysql_migration.py",
-    "web/.storybook/main.ts",
-    "web/.storybook/preview.ts",
-    "web/__mocks__/fileMock.js",
-    "web/__mocks__/human-id.js",
-    "web/__mocks__/styleMock.js",
-    "web/externals.d.ts",
-    "web/jest-setup.ts",
-    "web/jest.config.ts",
-    "web/public/iconfont.js",
-    "web/public/pdfjs-dist/pdf.worker.min.js",
     "web/src/components/api-service/hooks.ts",
     "web/src/components/avatar-name-description/use-editable-field.ts",
     "web/src/components/chunk-method-dialog/hooks.ts",
@@ -33,5 +18,5 @@
     "web/src/components/jsonjoy-builder/i18n/locales/fr.ts"
   ],
   "remaining_pending": 384,
-  "done": 1350
+  "done": 1365
 }
