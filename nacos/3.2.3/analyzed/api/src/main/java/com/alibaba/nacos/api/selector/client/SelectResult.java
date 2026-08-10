@@ -17,17 +17,17 @@
 package com.alibaba.nacos.api.selector.client;
 
 /**
- * Select result.
+ * 客户端侧选择结果的包装接口。
  *
- * @param <T> the type of result
+ * @param <T> 实际结果类型
  * @author lideyou
  */
 public interface SelectResult<T> {
     
     /**
-     * Get select result.
+     * 获取筛选后的结果对象。
      *
-     * @return select result
+     * @return 选择结果
      */
     T getResult();
 }

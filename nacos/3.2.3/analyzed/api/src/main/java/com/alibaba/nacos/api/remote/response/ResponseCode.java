@@ -17,46 +17,39 @@
 package com.alibaba.nacos.api.remote.response;
 
 /**
- * ResponseCode.
+ * 远程 RPC 响应状态码枚举。
+ *
+ * <p>定义 {@link Response} 中 {@code resultCode} 的常用取值，与 HTTP 语义类似：{@link #SUCCESS} 表示处理成功，{@link #FAIL} 表示失败。</p>
  *
  * @author liuzunfei
  * @version $Id: ResponseCode.java, v 0.1 2020年07月14日 2:04 PM liuzunfei Exp $
  */
 public enum ResponseCode {
     
-    /**
-     * Request success.
-     */
+    /** 请求处理成功（状态码 200）。 */
     SUCCESS(200, "Response ok"),
     
-    /**
-     * Request failed.
-     */
+    /** 请求处理失败（状态码 500）。 */
     FAIL(500, "Response fail");
     
+    /** 数值状态码。 */
     int code;
     
+    /** 状态描述文本。 */
     String desc;
     
+    /** 构造枚举常量并绑定状态码与描述。 */
     ResponseCode(int code, String desc) {
         this.code = code;
         this.desc = desc;
     }
     
-    /**
-     * Getter method for property <tt>code</tt>.
-     *
-     * @return property value of code
-     */
+    /** 返回数值状态码。 */
     public int getCode() {
         return code;
     }
     
-    /**
-     * Getter method for property <tt>desc</tt>.
-     *
-     * @return property value of desc
-     */
+    /** 返回状态描述文本。 */
     public String getDesc() {
         return desc;
     }

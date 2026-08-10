@@ -17,13 +17,16 @@
 package com.alibaba.nacos.api.selector;
 
 /**
- * None selector.
+ * 空选择器（不做任何实例过滤）。
+ *
+ * <p>类型为 {@link SelectorType#none}，为服务默认选择器；注册/订阅时未指定筛选规则时使用。</p>
  *
  * @author liaochuntao
  * @since 1.0.1
  */
 public class NoneSelector extends AbstractSelector {
     
+    /** 构造 none 类型选择器。 */
     public NoneSelector() {
         super(SelectorType.none.name());
     }

@@ -25,7 +25,9 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Abstract selector that only contains a type, used for api to set selector type without actual selector logic.
+ * 仅携带类型标识的选择器抽象基类。
+ *
+ * <p>用于 API 层声明选择器类型而不绑定具体筛选逻辑；Jackson 多态序列化以 {@code type} 字段区分实现，默认回退为 {@link NoneSelector}。</p>
  *
  * @author nkorange
  * @since 0.7.0
@@ -36,30 +38,33 @@ public abstract class AbstractSelector
     
     private static final long serialVersionUID = 4530233098102379229L;
     
-    /**
-     * The type of this selector, each child class should announce its own unique type.
-     */
+    /** 选择器类型名，各子类应使用唯一取值。 */
     private final String type;
     
+    /** 由子类传入 {@link SelectorType} 名称。 */
     protected AbstractSelector(String type) {
         this.type = type;
     }
     
+    /** 返回选择器类型名。 */
     public String getType() {
         return type;
     }
     
+    /** {@inheritDoc} 占位实现，返回 {@code null}。 */
     @Override
     public Selector<List<Instance>, List<Instance>, String> parse(String expression)
         throws NacosException {
         return null;
     }
     
+    /** {@inheritDoc} 默认原样返回输入列表（不做过滤）。 */
     @Override
     public List<Instance> select(List<Instance> context) {
         return context;
     }
     
+    /** {@inheritDoc} 返回 {@link SelectorType#none} 上下文类型。 */
     @Override
     public String getContextType() {
         return SelectorType.none.name();

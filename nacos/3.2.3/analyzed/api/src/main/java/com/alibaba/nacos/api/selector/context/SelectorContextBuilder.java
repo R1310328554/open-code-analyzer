@@ -20,8 +20,9 @@ package com.alibaba.nacos.api.selector.context;
 import com.alibaba.nacos.api.selector.Selector;
 
 /**
- * The {@link SelectorContextBuilder} mainly for provide the context for {@link Selector#select(Object)}.
- * It provides {@link #build(Object, Object)} method for build context. And also provide {@link #getContextType()} for get the contextType.
+ * 为 {@link Selector#select(Object)} 构建上下文的工厂接口。
+ *
+ * <p>{@link #build(Object, Object)} 根据消费者与提供者组装上下文；{@link #getContextType()} 声明所构建上下文的类型标识。</p>
  *
  * @author chenglu
  * @date 2021-07-09 21:34
@@ -29,19 +30,22 @@ import com.alibaba.nacos.api.selector.Selector;
 public interface SelectorContextBuilder<T, C, P> {
     
     /**
-     * build the context for {@link Selector#select(Object)}. The user must provide consumer and provider.
-     * we provide {@link CmdbContext} for user default who want to use the {@link com.alibaba.nacos.api.naming.pojo.Instance}'s CMDB info.
+     * 构建供 {@link Selector#select(Object)} 使用的上下文。
      *
-     * @param consumer consumer who launch the select.
-     * @param provider the provides who are selected by consumer.
-     * @return selectorContext use by {@link Selector#select(Object)}.
+     * <p>调用方需提供消费者与提供者；默认实现可返回 {@link CmdbContext}，以便基于 {@link com.alibaba.nacos.api.naming.pojo.Instance} 的 CMDB 元数据筛选。</p>
+     *
+     * @param consumer 发起选择的消费者
+     * @param provider 待筛选的提供者集合
+     * @return 选择器上下文
      */
     T build(C consumer, P provider);
     
     /**
-     * the contextType. we provide the CMDB context type default.
+     * 返回本构建器产出的上下文类型标识。
      *
-     * @return the context type.
+     * <p>默认实现对应 CMDB 上下文类型常量。</p>
+     *
+     * @return 上下文类型名
      */
     String getContextType();
 }

@@ -17,34 +17,24 @@
 package com.alibaba.nacos.api.selector;
 
 /**
- * The types of selector accepted by Nacos.
+ * Nacos 支持的服务实例选择器类型枚举。
+ *
+ * <p>与服务/订阅配置中的 {@code selector.type} 字段对应。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public enum SelectorType {
-    /**
-     * not match any type.
-     */
+    /** 未知或未匹配的类型。 */
     unknown,
-    /**
-     * not filter out any entity.
-     */
+    /** 不做过滤，返回全部实例。 */
     none,
-    /**
-     * select by label.
-     */
+    /** 按标签表达式筛选。 */
     label,
-    /**
-     * select by cluster.
-     */
+    /** 按集群名筛选。 */
     cluster,
-    /**
-     * select by health state.
-     */
+    /** 按健康状态筛选。 */
     health,
-    /**
-     * select by enable state.
-     */
+    /** 按启用/禁用状态筛选。 */
     enable
 }

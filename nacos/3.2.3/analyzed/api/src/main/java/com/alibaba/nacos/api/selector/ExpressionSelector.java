@@ -17,26 +17,29 @@
 package com.alibaba.nacos.api.selector;
 
 /**
- * The selector to filter resource with flexible expression.
+ * 基于标签表达式的服务实例选择器。
+ *
+ * <p>类型为 {@link SelectorType#label}，通过 {@link #expression} 描述筛选条件，由服务端解析并应用于实例列表。</p>
  *
  * @author nkorange
  * @since 0.7.0
  */
 public class ExpressionSelector extends AbstractSelector {
     
-    /**
-     * Label expression of this selector.
-     */
+    /** 标签筛选表达式。 */
     private String expression;
     
+    /** 构造 label 类型选择器。 */
     public ExpressionSelector() {
         super(SelectorType.label.name());
     }
     
+    /** 返回标签表达式。 */
     public String getExpression() {
         return expression;
     }
     
+    /** 设置标签表达式。 */
     public void setExpression(String expression) {
         this.expression = expression;
     }

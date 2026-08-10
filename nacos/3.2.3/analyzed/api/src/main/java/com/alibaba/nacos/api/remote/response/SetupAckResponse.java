@@ -16,7 +16,11 @@
 
 package com.alibaba.nacos.api.remote.response;
 
-/**.
+/**
+ * 连接建立确认响应。
+ *
+ * <p>服务端在客户端完成 {@link com.alibaba.nacos.api.remote.request.ConnectionSetupRequest} 握手后返回，表示连接已就绪；无额外字段，成功由 {@link Response#isSuccess()} 判定。</p>
+ *
  * @author Daydreamer
  * @description Server tells the client that the connection is established
  * @date 2022/7/12 19:21

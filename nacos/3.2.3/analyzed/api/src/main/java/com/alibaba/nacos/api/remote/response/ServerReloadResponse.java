@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote.response;
 
 /**
- * server reload response.
+ * 服务端配置/模块重载操作的远程响应。
+ *
+ * <p>继承 {@link Response} 通用字段（{@code resultCode}、{@code message} 等），本类无额外业务载荷，成功/失败由基类状态码判定。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerReloadResponse.java, v 0.1 2020年11月09日 4:37 PM liuzunfei Exp $

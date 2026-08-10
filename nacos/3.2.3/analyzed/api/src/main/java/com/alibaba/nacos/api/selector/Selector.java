@@ -23,15 +23,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 
 /**
- * The {@link Selector} mainly work on the logic of parse and select.
- * {@link #parse(Object)} allow user accept the condition which provided by Nacos to build the {@link #select(Object)} judge logic.
- * {@link #select(Object)} allow user to execute the logic to get the target result they want.
- * {@link #getType()} will return the type.
- * {@link #getContextType()} will return the context type which used by {@link #select(Object)}.
+ * 通用选择器接口：解析条件并执行筛选。
  *
- * <p>
- *     Now, Nacos only provide the {@link AbstractCmdbSelector} for user to implement their own select logic. Other type is waiting.
- * </p>
+ * <p>{@link #parse(Object)} 接收 Nacos 下发的表达式并构建内部状态；{@link #select(Object)} 在给定上下文中执行筛选并返回目标结果；{@link #getType()} 与 {@link #getContextType()} 分别标识选择器类型及 {@link #select} 所需上下文类型。</p>
+ *
+ * <p>当前 Nacos 主要提供 {@link AbstractCmdbSelector} 供用户扩展 CMDB 筛选逻辑，其他类型待完善。</p>
  *
  * @author chenglu
  * @date 2021-07-09 21:24
@@ -40,33 +36,33 @@ import java.io.Serializable;
 public interface Selector<R, C, E> extends Serializable {
     
     /**
-     * parse the selector, build the inner info which used by {@link #select(Object)}.
+     * 解析选择条件，构建供 {@link #select(Object)} 使用的内部状态。
      *
-     * @param expression expression.
-     * @return selector.
-     * @throws NacosException parse failed exception.
+     * @param expression 表达式或条件字符串
+     * @return 解析后的选择器自身（通常 {@code this}）
+     * @throws NacosException 解析失败
      */
     Selector<R, C, E> parse(E expression) throws NacosException;
     
     /**
-     * select the target result.
+     * 在给定上下文中执行筛选。
      *
-     * @param context selector context.
-     * @return select result.
+     * @param context 选择器上下文
+     * @return 筛选结果
      */
     R select(C context);
     
     /**
-     * Get the selector type.
+     * 返回选择器类型标识。
      *
-     * @return selector type.
+     * @return 类型名字符串
      */
     String getType();
     
     /**
-     * Get the select context which used by {@link #select(Object)}.
+     * 返回 {@link #select(Object)} 所需的上下文类型。
      *
-     * @return selector context type.
+     * @return 上下文类型名字符串
      */
     String getContextType();
 }

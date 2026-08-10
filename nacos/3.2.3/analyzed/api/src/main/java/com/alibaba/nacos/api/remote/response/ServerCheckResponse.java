@@ -17,38 +17,52 @@
 package com.alibaba.nacos.api.remote.response;
 
 /**
- * response of server check.
+ * 服务端连接校验响应。
+ *
+ * <p>客户端发起连接探测后，服务端返回分配的 {@link #connectionId} 及是否支持能力协商（{@link #supportAbilityNegotiation}）。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerCheckResponse.java, v 0.1 2020年07月22日 8:37 PM liuzunfei Exp $
  */
 public class ServerCheckResponse extends Response {
     
+    /** 服务端为该连接分配的唯一标识。 */
     private String connectionId;
     
+    /** 服务端是否支持客户端能力协商。 */
     private boolean supportAbilityNegotiation;
     
+    /** 无参构造，供序列化框架使用。 */
     public ServerCheckResponse() {
         
     }
     
-    public ServerCheckResponse(String connectionId, boolean supportAbilityNegotiation) {
+    /**
+     * 构造连接校验响应。
+     *
+     * @param connectionId               连接 ID
+     * @param supportAbilityNegotiation  是否支持能力协商
+     */
         this.connectionId = connectionId;
         this.supportAbilityNegotiation = supportAbilityNegotiation;
     }
     
+    /** 返回连接 ID。 */
     public String getConnectionId() {
         return connectionId;
     }
     
+    /** 设置连接 ID。 */
     public void setConnectionId(String connectionId) {
         this.connectionId = connectionId;
     }
     
+    /** 返回服务端是否支持能力协商。 */
     public boolean isSupportAbilityNegotiation() {
         return supportAbilityNegotiation;
     }
     
+    /** 设置是否支持能力协商。 */
     public void setSupportAbilityNegotiation(boolean supportAbilityNegotiation) {
         this.supportAbilityNegotiation = supportAbilityNegotiation;
     }

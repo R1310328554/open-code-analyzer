@@ -20,39 +20,45 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * server loader info response.
+ * 服务端负载/加载信息响应。
+ *
+ * <p>携带服务端地址及 {@link #loaderMetrics} 键值对形式的负载指标，供运维或客户端了解节点运行状态。</p>
  *
  * @author liuzunfei
  * @version $Id: ServerLoaderInfoResponse.java, v 0.1 2020年09月03日 2:46 PM liuzunfei Exp $
  */
 public class ServerLoaderInfoResponse extends Response {
     
+    /** 服务端节点地址。 */
     String address;
     
+    /** 负载指标键值对（如连接数、线程池使用率等）。 */
     Map<String, String> loaderMetrics = new HashMap<>();
     
-    public String getMetricsValue(String key) {
+    /**
+     * 按 key 读取单条负载指标。
+     *
+     * @param key 指标名称
+     * @return 指标值，不存在时返回 {@code null}
+     */
         return loaderMetrics.get(key);
     }
     
-    public void putMetricsValue(String key, String value) {
+    /**
+     * 写入或更新一条负载指标。
+     *
+     * @param key   指标名称
+     * @param value 指标值
+     */
         this.loaderMetrics.put(key, value);
     }
     
-    /**
-     * Getter method for property <tt>loaderMetrics</tt>.
-     *
-     * @return property value of loaderMetrics
-     */
+    /** 返回全部负载指标映射。 */
     public Map<String, String> getLoaderMetrics() {
         return loaderMetrics;
     }
     
-    /**
-     * Setter method for property <tt>loaderMetrics</tt>.
-     *
-     * @param loaderMetrics value to be assigned to property loaderMetrics
-     */
+    /** 替换全部负载指标映射。 */
     public void setLoaderMetrics(Map<String, String> loaderMetrics) {
         this.loaderMetrics = loaderMetrics;
     }

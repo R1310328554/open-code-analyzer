@@ -17,19 +17,21 @@
 package com.alibaba.nacos.api.selector.client;
 
 /**
- * Client selector.
+ * 客户端侧简化版选择器接口。
  *
- * @param <C> the type of selector context
- * @param <E> the type of select result
+ * <p>仅包含 {@link #select(Object)}，不含解析阶段；适用于客户端本地路由场景。</p>
+ *
+ * @param <C> 选择器上下文类型
+ * @param <E> 选择结果类型
  * @author lideyou
  */
 public interface Selector<C, E> {
     
     /**
-     * select the target result.
+     * 根据上下文执行选择并返回结果。
      *
-     * @param context selector context
-     * @return select result
+     * @param context 选择器上下文
+     * @return 选择结果
      */
     E select(C context);
 }
