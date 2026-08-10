@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:55:37Z",
-  "files": [
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslX509KeyManagerFactory.java",
-    "handler/src/main/java/io/netty/handler/ssl/OpenSslX509TrustManagerWrapper.java",
-    "handler/src/main/java/io/netty/handler/ssl/OptionalSslHandler.java",
-    "handler/src/main/java/io/netty/handler/ssl/PemEncoded.java",
-    "handler/src/main/java/io/netty/handler/ssl/PemPrivateKey.java",
-    "handler/src/main/java/io/netty/handler/ssl/PemReader.java",
-    "handler/src/main/java/io/netty/handler/ssl/PemValue.java",
-    "handler/src/main/java/io/netty/handler/ssl/PemX509Certificate.java",
-    "handler/src/main/java/io/netty/handler/ssl/PseudoRandomFunction.java",
-    "handler/src/main/java/io/netty/handler/ssl/ReferenceCountedOpenSslClientContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/ReferenceCountedOpenSslContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/ReferenceCountedOpenSslEngine.java",
-    "handler/src/main/java/io/netty/handler/ssl/ReferenceCountedOpenSslServerContext.java",
-    "handler/src/main/java/io/netty/handler/ssl/ResumableX509ExtendedTrustManager.java",
-    "handler/src/main/java/io/netty/handler/ssl/ResumptionController.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 548,
-  "done": 1365
+  "done": 1380
 }
