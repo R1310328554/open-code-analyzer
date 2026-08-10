@@ -23,43 +23,74 @@ import com.alibaba.nacos.plugin.visibility.model.VisibilityResource;
 import java.util.Properties;
 
 /**
- * SPI for resource visibility service.
+ * 资源可见性服务 SPI 接口。
+ *
+ * <p>各可见性策略插件需实现本接口，供 {@link VisibilityPluginManager}
+ * 按服务名加载并调用，用于控制资源的读写可见范围。</p>
  *
  * @author xiweng.yy
  */
 public interface VisibilityService {
     
     /**
-     * Initialize service with external properties.
+     * 使用外部配置初始化服务。
      *
-     * <p>Property source is managed by {@link VisibilityPluginManager}. Default no-op keeps backward compatibility
-     * for existing SPI implementations.</p>
+     * <p>配置来源由 {@link VisibilityPluginManager} 统一管理。默认空实现以保持
+     * 与已有 SPI 实现的向后兼容性。</p>
      *
-     * @param properties service-specific properties
+     * @param properties 服务专属配置项
      */
     default void init(Properties properties) {
     }
     
     /**
-     * Resolve default scope for a newly created resource.
+     * 解析新建资源的默认可见范围。
      *
-     * <p>Default implementation keeps backward compatibility for existing SPI implementations.</p>
+     * <p>默认实现返回 {@link VisibilityConstants#SCOPE_PRIVATE}，
+     * 以保持与已有 SPI 实现的向后兼容性。</p>
      *
-     * @param identity     current identity
-     * @param apiType      current api type
-     * @param resourceType resource type, such as skill / agentspec
-     * @return default scope for new resource
+     * @param identity     当前操作者身份
+     * @param apiType      当前 API 类型
+     * @param resourceType 资源类型，如 skill / agentspec
+     * @return 新建资源的默认可见范围
      */
     default String resolveDefaultScopeForCreate(String identity, String apiType,
         String resourceType) {
         return VisibilityConstants.SCOPE_PRIVATE;
     }
     
+    /**
+     * 校验单个资源的可见性权限。
+     *
+     * @param identity 当前操作者身份
+     * @param action   操作类型（读/写）
+     * @param apiType  当前 API 类型
+     * @param resource 待校验的资源
+     * @return 校验结果
+     */
     ValidationResult validateVisibility(String identity, String action, String apiType,
         VisibilityResource resource);
     
+    /**
+     * 为范围或列表查询提供可见性过滤建议。
+     *
+     * <p>返回 {@link QueryAdvisor}，指导查询层如何过滤不可见资源。</p>
+     *
+     * @param identity 当前操作者身份
+     * @param action   操作类型（读/写）
+     * @param apiType  当前 API 类型
+     * @param context  查询上下文
+     * @return 查询可见性建议
+     */
     QueryAdvisor adviseQuery(String identity, String action, String apiType,
         VisibilityQueryContext context);
     
+    /**
+     * 返回可见性服务名称。
+     *
+     * <p>同名服务后加载者会覆盖先加载者。</p>
+     *
+     * @return 服务名称
+     */
     String getVisibilityServiceName();
 }

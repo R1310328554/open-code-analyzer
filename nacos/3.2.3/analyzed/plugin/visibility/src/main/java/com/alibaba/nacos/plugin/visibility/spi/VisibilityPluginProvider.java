@@ -22,17 +22,30 @@ import com.alibaba.nacos.api.plugin.PluginType;
 import java.util.Map;
 
 /**
- * Visibility plugin provider implementation.
+ * 可见性插件提供者实现。
+ *
+ * <p>实现 {@link PluginProvider}，向 Nacos 插件框架暴露所有
+ * {@link VisibilityService} SPI 实现。</p>
  *
  * @author xiweng.yy
  */
 public class VisibilityPluginProvider implements PluginProvider<VisibilityService> {
     
+    /**
+     * 返回可见性插件类型标识。
+     *
+     * @return 插件类型
+     */
     @Override
     public PluginType getPluginType() {
         return PluginType.VISIBILITY;
     }
     
+    /**
+     * 返回所有已注册的可见性服务插件。
+     *
+     * @return 插件名 → 服务实例映射
+     */
     @Override
     public Map<String, VisibilityService> getAllPlugins() {
         return VisibilityPluginManager.getInstance().getAllPlugins();
