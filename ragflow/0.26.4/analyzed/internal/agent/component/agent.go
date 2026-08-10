@@ -9,6 +9,8 @@
 // plan-specified shape. The agent now wires AgentParam.Tools into
 // eino's native react.AgentConfig.ToolsConfig; when no tools are
 // configured the ReAct loop naturally degenerates to one model call.
+// agent.go — Agent（T1）多轮 ReAct 组件，基于 eino flow/agent/react。
+
 package component
 
 import (
@@ -63,11 +65,13 @@ func agentProviderLastSegmentSplit(s string) (modelName, providerName string, ha
 }
 
 // AgentComponent is a multi-turn ReAct agent.
+// AgentComponent 多轮 ReAct 智能体组件。
 type AgentComponent struct {
 	param AgentParam
 }
 
 // AgentParam captures the (resolved) DSL parameters for an Agent node.
+// AgentParam Agent 节点的 DSL 参数（模型、提示词、工具等）。
 type AgentParam struct {
 	ModelID               string
 	SystemPrompt          string
@@ -134,6 +138,7 @@ var agentRunner = runEinoReActAgent
 
 // runEinoReActAgent creates an eino react agent and runs it against the
 // model built from p.
+// runEinoReActAgent 创建 eino react agent 并执行推理循环。
 func runEinoReActAgent(ctx context.Context, p AgentParam) (*schema.Message, error) {
 	chatModel, err := buildAgentChatModel(p)
 	if err != nil {
@@ -222,6 +227,7 @@ func addToolCallMemory(ctx context.Context, p AgentParam, msg *schema.Message) (
 // Returns the grounded content on success, the original content
 // unchanged when no chunks are available or the call fails. Mirrors
 // Python's `cite_letter` / `generate_with_citation` flow.
+// applyCitationGrounding 启用引用时插入 [ID:N] 标注。
 func applyCitationGrounding(ctx context.Context, p AgentParam, content string, chunks []prompts.CitationSource) (string, error) {
 	if !p.Cite {
 		return content, nil
@@ -424,6 +430,7 @@ func buildAgentTools(p AgentParam) ([]einotool.BaseTool, error) {
 }
 
 // NewAgentComponent builds an AgentComponent from raw params.
+// NewAgentComponent 构造 Agent 组件实例。
 func NewAgentComponent(p AgentParam) *AgentComponent {
 	if p.MaxRounds <= 0 {
 		p.MaxRounds = 3
@@ -436,6 +443,7 @@ func (c *AgentComponent) Name() string { return "Agent" }
 
 // Invoke runs the ReAct loop via the configured agentRunner and returns
 // the output map.
+// Invoke 同步执行 Agent：合并输入、运行 ReAct、可选引用 grounding。
 func (c *AgentComponent) Invoke(ctx context.Context, inputs map[string]any) (map[string]any, error) {
 	p := mergeAgentParam(c.param, inputs)
 	hasRuntimeUserPrompt := false
@@ -632,6 +640,7 @@ func (c *AgentComponent) Outputs() map[string]string {
 
 // buildAgentChatModel constructs an EinoChatModel from AgentParam by
 // resolving the driver through the RAGFlow provider manager.
+// buildAgentChatModel 从 AgentParam 构建 EinoChatModel。
 func buildAgentChatModel(p AgentParam) (*models.EinoChatModel, error) {
 	driver := p.Driver
 	modelID := p.ModelID

@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// parallel_subgraph.go — Parallel 宏展开：将并行 DSL 折叠为
+// 外层 map-reduce 工作流 + 每项子工作流。
+
 //
 
 package canvas
@@ -27,11 +30,13 @@ import (
 	"github.com/cloudwego/eino/compose"
 )
 
+// 并行子图内部合成节点键
 const (
 	parallelItemInputNodeKey   = "__parallel_item_input__"
 	parallelItemCollectNodeKey = "__parallel_item_collect__"
 )
 
+// parallelExpansion 保存 Parallel 展开后的外层图与子图。
 type parallelExpansion struct {
 	Graph          *compose.Workflow[map[string]any, map[string]any]
 	Sub            *compose.Workflow[map[string]any, map[string]any]
@@ -41,6 +46,7 @@ type parallelExpansion struct {
 	OutputRefs     map[string]string
 }
 
+// buildParallelExpansion 构建 Parallel 组件的 map-reduce 工作流。
 func buildParallelExpansion(ctx context.Context, c *Canvas, parallelID string) (*parallelExpansion, error) {
 	if c == nil {
 		return nil, fmt.Errorf("canvas: nil canvas")
@@ -128,6 +134,7 @@ func readParallelParams(params map[string]any) (itemsRef string, maxConcurrency 
 	return itemsRef, maxConcurrency, outputRefs, nil
 }
 
+// buildParallelItemWorkflow 为单个并行项构建子工作流。
 func buildParallelItemWorkflow(
 	ctx context.Context,
 	c *Canvas,
@@ -184,6 +191,7 @@ func buildParallelItemWorkflow(
 	return wrapper, nil
 }
 
+// buildParallelOuterWorkflow 构建外层并发调度与结果聚合图。
 func buildParallelOuterWorkflow(
 	ctx context.Context,
 	key string,
@@ -301,6 +309,7 @@ func toParallelItems(raw any) ([]map[string]any, error) {
 	}
 }
 
+// cloneCanvasState 深拷贝 CanvasState 供并行项隔离。
 func cloneCanvasState(src *CanvasState) (*CanvasState, error) {
 	if src == nil {
 		return NewCanvasState("", ""), nil

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// run_tracker.go — Canvas 运行业务元数据 Redis Hash 持久化（agent:run:{run_id}）。
+
 //
 
 // run_tracker.go persists canvas-run business metadata to a Redis Hash.
@@ -34,6 +36,7 @@ import (
 
 // runKeyPrefix is the Redis Hash key namespace for run metadata.
 // The full key is "agent:run:{run_id}".
+// runKeyPrefix Redis 运行元数据键前缀
 const runKeyPrefix = "agent:run:"
 
 // runStatus values for the "status" hash field.
@@ -50,6 +53,7 @@ func runKey(runID string) string { return runKeyPrefix + runID }
 // link, resume chain, ...) on a Redis Hash. Operations are explicit — the
 // eino CheckPointStore does NOT write these fields, so callers (HTTP
 // handler, cancel watcher) must invoke Start/Mark* at the right points.
+// RunTracker 管理运行状态、checkpoint 关联与取消标记。
 type RunTracker struct {
 	client *redis.Client
 	ttl    time.Duration
@@ -59,6 +63,7 @@ type RunTracker struct {
 // the cache is uninitialized, client is nil; methods error in that case
 // rather than panicking, and tests can inject a client via struct-literal
 // construction.
+// NewRunTracker 使用全局 Redis 客户端创建追踪器。
 func NewRunTracker(ttl time.Duration) *RunTracker {
 	var client *redis.Client
 	if rc := redis2.Get(); rc != nil {
@@ -84,6 +89,7 @@ func NewRunTrackerWithClient(client *redis.Client, ttl time.Duration) *RunTracke
 // The HSet + Expire are sent through a pipeline so a TTL is set on the
 // first write — without that, the key would have no expiry and a crashed
 // run would leak the hash.
+// Start 记录新运行为进行中，并设置 TTL。
 func (t *RunTracker) Start(ctx context.Context, runID, canvasID, tenantID, parentRunID string) error {
 	if t == nil || t.client == nil {
 		return errors.New("run tracker: redis client not initialized")
@@ -107,6 +113,7 @@ func (t *RunTracker) Start(ctx context.Context, runID, canvasID, tenantID, paren
 // AttachCheckpoint writes the latest checkpoint id for this run. It is the
 // ONLY writer of the "checkpoint_id" field; every W1/W2/W3/W4 path (plan
 // §2.6) must call this once before the run goroutine returns.
+// AttachCheckpoint 写入最新 checkpoint_id。
 func (t *RunTracker) AttachCheckpoint(ctx context.Context, runID, checkpointID string) error {
 	if t == nil || t.client == nil {
 		return errors.New("run tracker: redis client not initialized")
@@ -115,6 +122,7 @@ func (t *RunTracker) AttachCheckpoint(ctx context.Context, runID, checkpointID s
 }
 
 // MarkSucceeded transitions the run to status=1 and stamps finished_at.
+// MarkSucceeded 标记运行成功完成。
 func (t *RunTracker) MarkSucceeded(ctx context.Context, runID string) error {
 	if t == nil || t.client == nil {
 		return errors.New("run tracker: redis client not initialized")
@@ -126,6 +134,7 @@ func (t *RunTracker) MarkSucceeded(ctx context.Context, runID string) error {
 }
 
 // MarkFailed transitions the run to status=2 and records the reason.
+// MarkFailed 标记运行失败并记录原因。
 func (t *RunTracker) MarkFailed(ctx context.Context, runID, reason string) error {
 	if t == nil || t.client == nil {
 		return errors.New("run tracker: redis client not initialized")
@@ -138,6 +147,7 @@ func (t *RunTracker) MarkFailed(ctx context.Context, runID, reason string) error
 }
 
 // MarkCancelled transitions the run to status=3 and sets the cancel flag.
+// MarkCancelled 标记运行已取消。
 func (t *RunTracker) MarkCancelled(ctx context.Context, runID string) error {
 	if t == nil || t.client == nil {
 		return errors.New("run tracker: redis client not initialized")

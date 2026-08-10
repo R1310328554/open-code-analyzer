@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// state_export.go — 跨包测试用的 WithState 公开重导出。
+
 //
 
 // Package canvas — public re-export of withState for cross-package tests.
@@ -40,6 +42,7 @@ import (
 // GetStateFromContext. Intended ONLY for cross-package test setup
 // (production code uses the unexported withState via compile.go).
 // Both entry points delegate to runtime.WithState.
+// WithState 供跨包单元测试注入 CanvasState，生产代码不使用。
 func WithState(ctx context.Context, s *CanvasState) context.Context {
 	return runtime.WithState(ctx, s)
 }

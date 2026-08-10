@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// loop_subgraph.go — Loop 宏展开：将 DSL 中的 Loop 组件及其下游子图
+// 折叠为单个 eino 节点，含循环变量初始化与终止条件翻译。
+
 //
 
 // loop_subgraph.go — Loop macro expansion for BuildWorkflow.
@@ -47,6 +50,7 @@ import (
 
 // loopExpansion holds the two artefacts produced by buildLoopExpansion
 // and consumed by BuildWorkflow to install the loop node.
+// loopExpansion 保存 buildLoopExpansion 产物，供 BuildWorkflow 安装循环节点。
 type loopExpansion struct {
 	Sub        *compose.Workflow[map[string]any, map[string]any]
 	ShouldQuit workflowx.LoopCondition[map[string]any]
@@ -69,6 +73,7 @@ type loopExpansion struct {
 // consumed as body nodes. BuildWorkflow must skip these when iterating
 // `c.Components` in the main pass (they will be wired inside the
 // sub-graph, not the outer graph).
+// buildLoopExpansion 构建 Loop 子工作流与终止条件，不修改外层图。
 func buildLoopExpansion(ctx context.Context, c *Canvas, loopID string) (*loopExpansion, error) {
 	if c == nil {
 		return nil, fmt.Errorf("canvas: nil canvas")
@@ -113,6 +118,7 @@ func buildLoopExpansion(ctx context.Context, c *Canvas, loopID string) (*loopExp
 // downstream edges, NOT including root itself. The BFS stops at the
 // back-edge to root (i.e. a node whose Downstream contains root). This
 // prevents infinite recursion on cyclic graphs.
+// collectLoopMembers 收集 Loop 下游成员 cpn_id 集合。
 func collectLoopMembers(c *Canvas, loopID string) map[string]bool {
 	members := collectGroupedMembers(c, loopID)
 	if len(members) > 0 {
@@ -161,6 +167,7 @@ func collectDescendants(c *Canvas, root string) map[string]bool {
 // legacy-no-op / factory / placeholder routing as the outer graph,
 // and receive the same statePre / statePost handlers so loop body
 // outputs land in CanvasState.Outputs alongside outer-node outputs.
+// buildSubWorkflow 为 Loop 体节点构建子 compose.Workflow。
 func buildSubWorkflow(
 	ctx context.Context,
 	c *Canvas,
@@ -483,6 +490,7 @@ func zeroValueForType(typ any) any {
 //
 // The closure's per-iteration cost is one state lookup per condition —
 // no allocations once the conditions slice is captured.
+// translateLoopCondition 将 DSL loop_termination_condition 转为 eino 循环条件。
 func translateLoopCondition(loopID string, params map[string]any) (workflowx.LoopCondition[map[string]any], error) {
 	rawList, _ := params["loop_termination_condition"].([]any)
 	conditions := make([]loopConditionSpec, 0, len(rawList))
@@ -597,6 +605,7 @@ func evalOneLoopCondition(state *CanvasState, loopID string, spec loopConditionS
 // loopitem.py:48-122. The operator set is the union of operators used
 // across all type branches — at runtime only the branches matching
 // the dynamic type of `var` are reachable.
+// evaluateCondition 按运算符比较循环变量与目标值。
 func evaluateCondition(varVal any, op string, value any) (bool, error) {
 	switch v := varVal.(type) {
 	case nil:

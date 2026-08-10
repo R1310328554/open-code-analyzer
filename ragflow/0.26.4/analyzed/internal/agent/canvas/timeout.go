@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// timeout.go — 按组件类解析 Invoke 超时：环境变量 > 类默认 > 全局 > 600s。
+
 //
 
 // timeout.go — per-component-class Invoke timeout resolution.
@@ -51,6 +53,7 @@ type timeoutContextKey struct{}
 // WithComponentTimeoutOverride forces all component invokes under ctx to use
 // the provided timeout. This lets callers with stricter execution contracts
 // reuse canvas execution without mutating the global timeout policy.
+// WithComponentTimeoutOverride 强制 ctx 下所有组件使用指定超时。
 func WithComponentTimeoutOverride(ctx context.Context, d time.Duration) context.Context {
 	if d <= 0 {
 		return ctx
@@ -76,6 +79,7 @@ func WithComponentTimeoutOverride(ctx context.Context, d time.Duration) context.
 // fixture_stubs constant) rather than Python's "Tavily". We list both
 // spellings so an operator can target the Go name OR a class name that
 // matches Python's.
+// componentDefaults 各类组件默认超时（秒），无 per-class 环境变量时使用。
 var componentDefaults = map[string]time.Duration{
 	"LLM":           600 * time.Second,
 	"Message":       600 * time.Second,
@@ -111,6 +115,7 @@ const defaultComponentTimeout = 600 * time.Second
 //
 // Passing an empty class name still honours steps 3 and 4 — useful for
 // callers that don't know the class (e.g. a generic dispatcher).
+// resolveTimeout 按四级优先级返回组件 Invoke 超时。
 func resolveTimeout(componentClass string) time.Duration {
 	upper := strings.ToUpper(strings.TrimSpace(componentClass))
 	if upper != "" {
@@ -144,6 +149,7 @@ func resolveTimeoutFromContext(ctx context.Context, componentClass string) time.
 // 42s). Returns (d, true) on success, (0, false) if the env var is
 // unset / empty / non-numeric / non-positive. Invalid input must
 // never widen the timeout silently.
+// parseSecondsEnv 解析环境变量为秒级 duration，非法值返回 false。
 func parseSecondsEnv(name string) (time.Duration, bool) {
 	v := os.Getenv(name)
 	if v == "" {

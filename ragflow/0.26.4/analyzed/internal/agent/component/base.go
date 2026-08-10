@@ -13,6 +13,8 @@
 // ParamError and ErrNotImplemented are aliased from runtime so the
 // canvas builder and the component implementations share the same
 // types without a cycle.
+// base.go — RAGFlow 画布组件运行时契约（T1–T5 五层移植策略）。
+
 package component
 
 import (
@@ -33,6 +35,7 @@ import (
 // runtime.Component interface (Invoke only), so the canvas builder
 // can consume a *Component via runtime.DefaultFactory() without any
 // extra adaptation.
+// Component 每个 RAGFlow 组件必须实现的运行时接口。
 type Component interface {
 	// Name returns the registered component name (e.g. "LLM", "Agent",
 	// "Switch"). Case-insensitive lookup — the registry normalizes input.
@@ -61,6 +64,7 @@ type Component interface {
 // this directly. Components that don't need it (e.g. ExitLoop) can omit.
 //
 // Mirrors agent/component/param_base.py:ComponentParamBase (Python).
+// ParamBase 可选的参数校验与序列化接口。
 type ParamBase interface {
 	// Update copies conf into the receiver, validating types. Used by
 	// editors / APIs that hand-craft a params map.
@@ -90,6 +94,7 @@ type ParamError = runtime.ParamError
 // but this helper keeps the wrapper construction in one place so
 // error/empty paths can produce a uniform output shape without
 // duplicating the literal everywhere.
+// BeOutput 将单值包装为 {"content": v} 标准输出帧。
 func BeOutput(v any) map[string]any {
 	return map[string]any{"content": v}
 }

@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// multibranch.go — Switch/Categorize 运行时多分支控制流接线。
+// 通过 eino MultiBranch 仅激活 _next 选中的下游子节点。
+
 //
 
 // multibranch.go — runtime branch wiring for Switch / Categorize.
@@ -60,6 +63,7 @@ import (
 // above for the current status). The set is small on purpose: adding
 // a new entry requires the component body to emit outputs["_next"]
 // in a shape wireMultiBranches can consume.
+// branchableControlNames 产出 _next 字段、需 MultiBranch 的控制组件名。
 var branchableControlNames = map[string]bool{
 	"switch":     true,
 	"categorize": true,
@@ -89,6 +93,7 @@ func isBranchableControl(name string) bool {
 //
 // Returns the list of registered (parent cpn_id → end-nodes set)
 // pairs so tests can assert which branches were installed.
+// wireMultiBranches 为每个可分支父节点注册 eino MultiBranch。
 func wireMultiBranches(
 	wf *compose.Workflow[map[string]any, map[string]any],
 	c *Canvas,
@@ -148,6 +153,7 @@ func wireMultiBranches(
 // branchRegistration is the public record of a MultiBranch that was
 // installed. Returned by wireMultiBranches for test introspection;
 // the scheduler does not consume it.
+// branchRegistration 记录已安装的多分支，供测试断言。
 type branchRegistration struct {
 	Parent   string
 	EndNodes []string
@@ -172,6 +178,7 @@ type branchRegistration struct {
 //     contains no whitelisted entries. eino treats an empty chosen
 //     set as "no successor" — the workflow simply doesn't continue
 //     past the parent on this path.
+// makeSwitchBranchCondition 从 outputs["_next"] 驱动分支选择。
 func makeSwitchBranchCondition(endNodes map[string]bool) compose.GraphMultiBranchCondition[map[string]any] {
 	return func(_ context.Context, in map[string]any) (map[string]bool, error) {
 		raw, ok := in["_next"]

@@ -16,6 +16,9 @@
 // layer, so production graphs arriving at BuildWorkflow are
 // guaranteed acyclic. No defensive cycle detection is needed
 // here — let eino's Compile error surface naturally.
+// scheduler.go — eino Workflow 拓扑构建器：将 Canvas DSL 转为 compose.Workflow。
+// BuildWorkflow 负责节点体路由、状态 pre/post 钩子与终端合并。
+
 package canvas
 
 import (
@@ -43,6 +46,7 @@ const ctxKeyRunMeta ctxKey = "canvas_run_meta"
 const terminalMergeNodeID = "__canvas_terminal_merge__"
 
 // RunMeta carries the per-run metadata that node lifecycle hooks need.
+// RunMeta 携带节点生命周期钩子所需的 per-run 元数据。
 type RunMeta struct {
 	Events    chan RunEvent
 	MessageID string
@@ -142,6 +146,7 @@ func isKnownPrimitive(name string) bool {
 // per-run state's outputs into it so downstream nodes see the
 // upstream outputs. The eino state is still useful as a fallback
 // when no context state is attached.
+// statePre 节点执行前：注入 state 快照并发出 node_started。
 func statePre(ctx context.Context, in map[string]any, state *CanvasState) (map[string]any, error) {
 	if in == nil {
 		in = map[string]any{}
@@ -193,6 +198,7 @@ func statePre(ctx context.Context, in map[string]any, state *CanvasState) (map[s
 // runtime.GetStateFromContext (Begin / Message / LLM) see the
 // upstream output. The eino per-run state stays the source of truth
 // for the snapshot exposed via statePre.
+// statePost 节点执行后：持久化输出并发出 node_finished。
 func statePost(ctx context.Context, out map[string]any, state *CanvasState) (map[string]any, error) {
 	cpnID, _ := out["__cpn_id__"].(string)
 	if cpnID == "" {
@@ -358,6 +364,7 @@ func nodeFinishedNow(ctx context.Context, state *CanvasState, cpnID, componentNa
 // State pre/post handlers are added to every node as NODE options
 // (GraphAddNodeOpt). The handlers carry the per-run *CanvasState which eino
 // extracts from context for us (via WithGenLocalState — wired in compile.go).
+// BuildWorkflow 将 Canvas DSL 编译为 eino Workflow 图。
 func BuildWorkflow(ctx context.Context, c *Canvas) (*compose.Workflow[map[string]any, map[string]any], error) {
 	if c == nil {
 		return nil, fmt.Errorf("canvas: nil canvas")
@@ -636,6 +643,7 @@ func BuildWorkflow(ctx context.Context, c *Canvas) (*compose.Workflow[map[string
 	return wf, nil
 }
 
+// wireWorkflowTerminals 将无下游终端节点汇聚到合并节点。
 func wireWorkflowTerminals(
 	wf *compose.Workflow[map[string]any, map[string]any],
 	terminals []string,

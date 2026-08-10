@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// runner.go — Canvas 执行运行时：驱动 Compile+Invoke，将四种结果转为 SSE RunEvent。
+
 //
 
 // runner.go — Canvas execution runtime. Drives a Canvas invocation
@@ -74,6 +76,7 @@ import (
 // into the "data" field of the outer envelope so the front-end's
 // use-send-message.ts parser sees a flat {event, message_id,
 // created_at, task_id, session_id, data} object on every frame.
+// RunEvent Runner 输出通道上的事件单元，由 HTTP 层转为 SSE 帧。
 type RunEvent struct {
 	Type      string
 	Data      string
@@ -147,6 +150,7 @@ type ErrorEvent struct {
 //     event. state may be nil in this branch (the engine does not
 //     surface a completed state when it halts on an interrupt).
 //   - any other non-nil error: run failed; surface as `error` event.
+// RunFunc 画布执行契约：编译 DSL 并调用 eino Workflow。
 type RunFunc func(ctx context.Context, root map[string]any) (*CanvasState, error)
 
 // Runner is the per-canvas execution runtime. It owns the
@@ -157,6 +161,7 @@ type RunFunc func(ctx context.Context, root map[string]any) (*CanvasState, error
 // output channel is owned by the goroutine that started a run;
 // the Cancel method signals the underlying run via the cancel
 // channel that the RunFunc is expected to observe.
+// Runner 管理中断 ID 映射与 goroutine 取消注册表。
 type Runner struct {
 	mu           sync.Mutex
 	interruptIDs map[string]string // key = canvasID + "|" + sessionID; value = eino interrupt id
@@ -166,6 +171,7 @@ type Runner struct {
 // NewRunner returns a fresh Runner with the in-memory interrupt-id
 // map initialised. The Runner has no background goroutines; it is
 // owned by the AgentService.
+// NewRunner 创建带内存中断 ID 映射的新 Runner。
 func NewRunner() *Runner {
 	return &Runner{
 		interruptIDs: make(map[string]string),
@@ -218,6 +224,7 @@ func (r *Runner) getInterruptID(canvasID, sessionID string) string {
 // rather than only after the invoke completes. The key names follow
 // the __<name>__ sentinel convention to avoid collisions with
 // runtime DSL keys.
+// Run 在独立 goroutine 中执行画布，将事件推送到 out 通道。
 func (r *Runner) Run(
 	ctx context.Context,
 	run RunFunc,
@@ -372,6 +379,7 @@ func (r *Runner) Run(
 
 // Cancel signals an in-flight run for the given canvas to stop.
 // Safe to call when no run is active.
+// Cancel 向指定 canvas 的运行发送取消信号。
 func (r *Runner) Cancel(canvasID string) {
 	r.mu.Lock()
 	cancel, ok := r.runCancels[canvasID]
@@ -405,6 +413,7 @@ var errCancelled = fmt.Errorf("canvas: run cancelled")
 // driver-cancel both wired in. The RunFunc is expected to honour
 // ctx.Done() — the cancel channel is a secondary signal for the
 // V1 in-process driver.
+// safeInvoke 包装 RunFunc，捕获 panic 并响应取消。
 func safeInvoke(ctx context.Context, cancel chan struct{}, run RunFunc, root map[string]any) (*CanvasState, error) {
 	done := make(chan struct{})
 	var (

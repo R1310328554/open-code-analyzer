@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// stream.go — SSE 事件通道与 Python agent_api.py 线性格式化辅助。
+
 //
 
 // stream.go defines the SSE event channel and the helper that
@@ -29,6 +31,7 @@ import (
 // StreamEvent is the unit emitted by canvas components to the SSE writer.
 // Field names match the Python "data" payload shape so a single
 // frontend SSE parser can consume both runtimes.
+// StreamEvent 画布组件向 SSE 写入器推送的事件单元。
 type StreamEvent struct {
 	// Event is the event name: "node_start" | "node_finish" | "message" | "error" | "cancelled" | ...
 	Event string `json:"event"`
@@ -45,6 +48,7 @@ type StreamEvent struct {
 // Phase-1 implementation drops events when the buffer is full and
 // logs a warning; a Phase-5 SSE handler can swap in a back-pressured
 // implementation if needed.
+// StreamEmitter 非阻塞推送事件，慢消费者不得阻塞画布执行。
 type StreamEmitter interface {
 	Emit(ev StreamEvent) error
 	Close() error
@@ -59,6 +63,7 @@ type channelEmitter struct {
 // NewChannelEmitter returns a StreamEmitter backed by a buffered channel
 // of the given size. Size 0 is valid (unbuffered) but will block Emit
 // until a reader is ready — typically not what canvas runs want.
+// NewChannelEmitter 创建带缓冲通道的默认 StreamEmitter。
 func NewChannelEmitter(buffer int) StreamEmitter {
 	return &channelEmitter{ch: make(chan StreamEvent, buffer)}
 }
@@ -99,6 +104,7 @@ func (e *channelEmitter) Channel() <-chan StreamEvent {
 // stays readable. Errors marshaling Data fall back to a minimal
 // `{"error": "..."}` payload so the SSE stream never gets a malformed
 // frame.
+// FormatSSE 渲染为 Python agent_api.py 线格式：data: <json>\n\n。
 func FormatSSE(ev StreamEvent) string {
 	body, err := json.Marshal(ev.Data)
 	if err != nil {

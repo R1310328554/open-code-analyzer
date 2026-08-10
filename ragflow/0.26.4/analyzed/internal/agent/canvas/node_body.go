@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// node_body.go — 单节点 lambda 体构建：统一 legacy/UserFillUp/工厂/占位路由。
+
 //
 
 // node_body.go — per-node lambda body construction.
@@ -45,6 +47,7 @@ import (
 // We avoid a named type alias because compose.InvokableLambda's generic
 // inference only accepts the underlying func literal type, not a named
 // alias on top of it.
+// nodeBodyFn 是 compose.InvokableLambda 接受的函数签名。
 type nodeBodyFn = func(ctx context.Context, in map[string]any) (map[string]any, error)
 
 // buildNodeBody returns the lambda body for a single canvas node.
@@ -74,6 +77,7 @@ type nodeBodyFn = func(ctx context.Context, in map[string]any) (map[string]any, 
 // Outputs bucket. UserFillUpNodeBody tags its output itself so the
 // interrupt-driven branch still attributes the resume payload to the
 // right cpn.
+// buildNodeBody 按组件名路由到对应 lambda 执行体。
 func buildNodeBody(cpnID, name string, params map[string]any) (nodeBodyFn, error) {
 	if isLegacyNoOp(name) {
 		return legacyNoOpBody(cpnID), nil
@@ -165,6 +169,7 @@ func componentTimeout() time.Duration {
 // can attribute the result; if the component already populated that
 // key it is overwritten with the canvas-controlled value to keep
 // attribution authoritative.
+// realComponentBody 包装真实组件 Invoke，含超时与 __cpn_id__ 标记。
 func realComponentBody(cpnID, componentClass string, comp runtime.Component) nodeBodyFn {
 	return func(ctx context.Context, in map[string]any) (map[string]any, error) {
 		timeout := resolveTimeoutFromContext(ctx, componentClass)
@@ -220,6 +225,7 @@ func placeholderBody(cpnID string) nodeBodyFn {
 // the body directly), the wrapper degrades to a plain invocation:
 // the body still runs, its output is still tagged with __cpn_id__,
 // but no state snapshot is injected and no result is persisted.
+// withStateBracket 为 Loop 子图节点注入/持久化 CanvasState。
 func withStateBracket(body nodeBodyFn) nodeBodyFn {
 	return func(ctx context.Context, in map[string]any) (map[string]any, error) {
 		state, _, _ := runtime.GetStateFromContext[*runtime.CanvasState](ctx)
