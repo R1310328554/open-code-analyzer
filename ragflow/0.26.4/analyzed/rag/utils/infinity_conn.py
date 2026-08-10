@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAG chunk Infinity 向量库连接器：字段映射、混合检索与 DataFrame CRUD。
+"""
+
+
 
 import re
 import json
@@ -28,18 +33,21 @@ from common.doc_store.infinity_conn_base import InfinityConnectionBase
 
 @singleton
 class InfinityConnection(InfinityConnectionBase):
+    # 单例 Infinity 连接，每 KB 一张表 indexName_kbId
     """
-    Dataframe and fields convert
+    DataFrame 与字段名转换
     """
 
     @staticmethod
     def field_keyword(field_name: str):
+        # 判断 *_kwd 等列是否按 keyword 列表存储
         # Treat "*_kwd" tag-like columns as keyword lists except knowledge_graph_kwd; source_id is also keyword-like.
         if field_name == "source_id" or (field_name.endswith("_kwd") and field_name not in ["knowledge_graph_kwd", "docnm_kwd", "important_kwd", "question_kwd"]):
             return True
         return False
 
     def convert_select_fields(self, output_fields: list[str]) -> list[str]:
+        # 逻辑字段名 → Infinity 表列名（docnm_kwd→docnm 等）
         need_empty_count = "important_kwd" in output_fields
         for i, field in enumerate(output_fields):
             if field in ["docnm_kwd", "title_tks", "title_sm_tks"]:
@@ -58,6 +66,7 @@ class InfinityConnection(InfinityConnectionBase):
 
     @staticmethod
     def convert_matching_field(field_weight_str: str) -> str:
+        # 全文检索字段映射为 @ft_* 索引列
         tokens = field_weight_str.split("^")
         field = tokens[0]
         if field == "docnm_kwd" or field == "title_tks":
@@ -86,7 +95,7 @@ class InfinityConnection(InfinityConnectionBase):
         return "^".join(tokens)
 
     """
-    CRUD operations
+    增删改查操作
     """
 
     def search(
@@ -104,7 +113,7 @@ class InfinityConnection(InfinityConnectionBase):
         rank_feature: dict | None = None,
     ) -> tuple[pd.DataFrame, int]:
         """
-        BUG: Infinity returns empty for a highlight field if the query string doesn't use that field.
+        注意：查询未命中某高亮字段时 Infinity 对该字段返回空。
         """
         if isinstance(index_names, str):
             index_names = index_names.split(",")
@@ -144,7 +153,7 @@ class InfinityConnection(InfinityConnectionBase):
                 # ElasticSearch default limit is 10000
                 limit = 10000
 
-            # Prepare expressions common to all tables
+            # 准备跨 KB 表共用的 filter 与 filter_fulltext 表达式
             filter_cond = None
             filter_fulltext = ""
             if condition:
@@ -285,6 +294,7 @@ class InfinityConnection(InfinityConnectionBase):
             self.connPool.release_conn(inf_conn)
 
     def get(self, chunk_id: str, index_name: str, knowledgebase_ids: list[str]) -> dict | None:
+        # 跨 KB 表按 id 查询单 chunk
         inf_conn = self.connPool.get_conn()
         try:
             db_instance = inf_conn.get_database(self.dbName)
@@ -334,6 +344,7 @@ class InfinityConnection(InfinityConnectionBase):
         return chunk
 
     def insert(self, documents: list[dict], index_name: str, knowledgebase_id: str = None) -> list[str]:
+        # 字段转换后 delete+insert 写入 Infinity 表
         """
         # Save input to file to test inserting from file in GO
         import datetime
@@ -511,6 +522,7 @@ class InfinityConnection(InfinityConnectionBase):
         return []
 
     def update(self, condition: dict, new_value: dict, index_name: str, knowledgebase_id: str) -> bool:
+        # 条件 filter + 字段映射后 table_instance.update
         # if 'position_int' in newValue:
         #     logger.info(f"update position_int: {newValue['position_int']}")
         inf_conn = self.connPool.get_conn()
@@ -651,6 +663,8 @@ class InfinityConnection(InfinityConnectionBase):
         return True
 
     def adjust_chunk_pagerank_fea(
+        # 原子更新单 chunk 的 pagerank_fea 字段
+
         self,
         chunk_id: str,
         index_name: str,
@@ -742,6 +756,7 @@ class InfinityConnection(InfinityConnectionBase):
     """
 
     def get_fields(self, res: tuple[pd.DataFrame, int] | pd.DataFrame, fields: list[str]) -> dict[str, dict]:
+        # Infinity DataFrame → id → 字段字典，并还原逻辑列名
         if isinstance(res, tuple):
             res = res[0]
         if not fields:

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAG chunk Elasticsearch 连接器：混合检索、search_after 分页与 CRUD。
+"""
+
+
 
 import re
 import json
@@ -31,7 +36,7 @@ ATTEMPT_TIME = 2
 MAX_RESULT_WINDOW = 10000
 SEARCH_AFTER_BATCH_SIZE = 1000
 
-# Single-document atomic pagerank_fea adjust (chunk feedback). Clamps using params.min_w / max_w;
+# 单文档原子调整 pagerank_fea（chunk 反馈）；params.min_w/max_w 钳位；
 # removes field at zero for rank_feature compatibility.
 _PAGERANK_FEA_ADJUST_SCRIPT = """
 double cur = 0.0;
@@ -60,14 +65,17 @@ if (nw <= 0.0) {
 
 @singleton
 class ESConnection(ESConnectionBase):
+    # 单例 ES 连接，实现 RAG chunk 索引的检索与写入
     """
-    CRUD operations
+    增删改查操作
     """
 
     def _es_search_once(self, index_names: list[str], query: dict, track_total_hits: bool):
+        # 单次 ES search 调用（600s 超时）
         return self.es.search(index=index_names, body=query, timeout="600s", track_total_hits=track_total_hits)
 
     def _search_with_search_after(self, index_names: list[str], query: dict, offset: int, limit: int):
+        # 大 offset 时用 search_after 分批跳过再取 limit 条
         q_base = copy.deepcopy(query)
         q_base.pop("from", None)
         q_base.pop("size", None)
@@ -148,7 +156,7 @@ class ESConnection(ESConnectionBase):
         rank_feature: dict | None = None,
     ):
         """
-        Refers to https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html
+        构建 bool 查询并融合全文、向量与 rank_feature（参见 ES Query DSL）。
         """
         if isinstance(index_names, str):
             index_names = index_names.split(",")
@@ -297,6 +305,7 @@ class ESConnection(ESConnectionBase):
         raise Exception("ESConnection.search timeout.")
 
     def insert(self, documents: list[dict], index_name: str, knowledgebase_id: str = None) -> list[str]:
+        # bulk 批量写入 chunk，id 作 _id
         # Refers to https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
         operations = []
         for d in documents:
@@ -334,6 +343,7 @@ class ESConnection(ESConnectionBase):
         return res
 
     def update(self, condition: dict, new_value: dict, index_name: str, knowledgebase_id: str) -> bool:
+        # 单 id 用 update API；多条件用 UpdateByQuery + painless
         doc = copy.deepcopy(new_value)
         doc.pop("id", None)
         condition["kb_id"] = knowledgebase_id
@@ -462,7 +472,7 @@ class ESConnection(ESConnectionBase):
         max_w: float = 100.0,
         row_id: int | None = None,
     ) -> bool:
-        """Atomically adjust pagerank_fea on one chunk (painless script)."""
+        """Painless 脚本原子调整单 chunk 的 pagerank_fea。"""
         _ = row_id
         for _ in range(ATTEMPT_TIME):
             try:
@@ -508,6 +518,7 @@ class ESConnection(ESConnectionBase):
         return False
 
     def delete(self, condition: dict, index_name: str, knowledgebase_id: str) -> int:
+        # delete_by_query 按条件删除并返回 deleted 计数
         assert "_id" not in condition
         condition["kb_id"] = knowledgebase_id
 
@@ -564,10 +575,11 @@ class ESConnection(ESConnectionBase):
         return 0
 
     """
-    Helper functions for search result
+    检索结果辅助函数
     """
 
     def get_fields(self, res, fields: list[str]) -> dict[str, dict]:
+        # 从 ES hits 提取 id → 字段子集（含 fields 响应）
         res_fields = {}
         if not fields:
             return {}

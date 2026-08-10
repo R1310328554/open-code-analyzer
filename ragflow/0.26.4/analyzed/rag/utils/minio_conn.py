@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+MinIO/S3 对象存储连接器：单 bucket 模式、prefix_path 与路径装饰器。
+"""
+
+
 
 import logging
 import ssl
@@ -27,6 +32,7 @@ from common import settings
 
 
 def _build_minio_http_client():
+    # MINIO.verify=False 时返回跳过证书校验的 PoolManager
     """
     Build an optional urllib3 HTTP client for MinIO when using SSL/TLS.
     Respects MINIO.verify (default True) to allow self-signed certificates
@@ -40,6 +46,7 @@ def _build_minio_http_client():
 
 @singleton
 class RAGFlowMinio:
+    # 单例 Minio 客户端，支持 default bucket + prefix 路径映射
     def __init__(self):
         self.conn = None
         # Use `or None` to convert empty strings to None, ensuring single-bucket
@@ -50,6 +57,7 @@ class RAGFlowMinio:
 
     @staticmethod
     def use_default_bucket(method):
+        # 装饰器：配置 default bucket 时用物理桶名，原 bucket 作路径前缀
         def wrapper(self, bucket, *args, **kwargs):
             # If there is a default bucket, use the default bucket
             # but preserve the original bucket identifier so it can be
@@ -65,6 +73,7 @@ class RAGFlowMinio:
 
     @staticmethod
     def use_prefix_path(method):
+        # 装饰器：在 object key 前插入 prefix_path 与 orig_bucket
         def wrapper(self, bucket, fnm, *args, **kwargs):
             # If a default MINIO bucket is configured, the use_default_bucket
             # decorator will have replaced the `bucket` arg with the physical
@@ -117,6 +126,7 @@ class RAGFlowMinio:
         self.conn = None
 
     def health(self):
+        # 单 bucket 模式检查 bucket_exists；多 bucket 模式 list_buckets
         """
         Check MinIO service availability.
         """
@@ -143,6 +153,7 @@ class RAGFlowMinio:
     @use_default_bucket
     @use_prefix_path
     def put(self, bucket, fnm, binary, tenant_id=None):
+        # put_object 上传，多 bucket 模式可自动 make_bucket
         for _ in range(3):
             try:
                 # Note: bucket must already exist - we don't have permission to create buckets
@@ -167,6 +178,7 @@ class RAGFlowMinio:
     @use_default_bucket
     @use_prefix_path
     def get(self, bucket, filename, tenant_id=None):
+        # get_object 读取字节
         for _ in range(1):
             try:
                 r = self.conn.get_object(bucket, filename)
@@ -211,6 +223,7 @@ class RAGFlowMinio:
     @use_default_bucket
     @use_prefix_path
     def get_presigned_url(self, bucket, fnm, expires, tenant_id=None):
+        # 生成 GET 预签名 URL
         for _ in range(10):
             try:
                 return self.conn.get_presigned_url("GET", bucket, fnm, expires)
@@ -247,6 +260,7 @@ class RAGFlowMinio:
             logging.exception(f"Fail to remove bucket {bucket}")
 
     def _resolve_bucket_and_path(self, bucket, fnm):
+        # copy/move 用：解析物理 bucket 与最终 object key
         if self.bucket:
             if self.prefix_path:
                 fnm = f"{self.prefix_path}/{bucket}/{fnm}"
@@ -258,6 +272,7 @@ class RAGFlowMinio:
         return bucket, fnm
 
     def copy(self, src_bucket, src_path, dest_bucket, dest_path):
+        # copy_object 跨路径复制
         try:
             src_bucket, src_path = self._resolve_bucket_and_path(src_bucket, src_path)
             dest_bucket, dest_path = self._resolve_bucket_and_path(dest_bucket, dest_path)

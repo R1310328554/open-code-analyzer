@@ -1,3 +1,7 @@
+"""
+延迟加载图像：多 blob 纵向拼接为单 PIL Image，支持上下文管理与 numpy 桥接。
+"""
+
 import logging
 from io import BytesIO
 
@@ -7,6 +11,7 @@ from rag.nlp import concat_img
 
 
 class LazyImage:
+    # 缓存 _blobs 列表，首次 to_pil() 时 decode 并 concat_img 拼接
     def __init__(self, blobs, source=None):
         self._blobs = [b for b in (blobs or []) if b]
         self.source = source
@@ -16,6 +21,7 @@ class LazyImage:
         return bool(self._blobs)
 
     def to_pil(self):
+        # 逐 blob 打开 RGB 图并纵向合并，结果缓存在 _pil
         if self._pil is not None:
             try:
                 self._pil.load()
@@ -54,6 +60,7 @@ class LazyImage:
         return self._pil
 
     def to_pil_detached(self):
+        # 返回 PIL 并清空内部缓存，调用方负责 close
         pil = self.to_pil()
         self._pil = None
         return pil
@@ -68,6 +75,7 @@ class LazyImage:
         return None
 
     def __getattr__(self, name):
+        # 代理 PIL 属性（width/size 等）
         pil = self.to_pil()
         if pil is None:
             raise AttributeError(name)
@@ -91,7 +99,7 @@ class LazyImage:
     @staticmethod
     def merge(a, b):
         """
-        Merge two LazyImage instances by combining their blob lists.
+        合并两个 LazyImage 的 blob 列表。
         """
         a_blobs = a._blobs if isinstance(a, LazyImage) else []
         b_blobs = b._blobs if isinstance(b, LazyImage) else []
@@ -102,10 +110,12 @@ class LazyImage:
         return merged
 
 
+# Word 解析器使用的 LazyImage 别名
 LazyDocxImage = LazyImage
 
 
 def ensure_pil_image(img):
+    # Image 或 LazyImage → PIL，否则 None
     if isinstance(img, Image.Image):
         return img
     if isinstance(img, LazyImage):
@@ -118,6 +128,7 @@ def is_image_like(img):
 
 
 def open_image_for_processing(img, *, allow_bytes=False):
+    # 统一入口：返回 (pil, close_after) 供 image2id 等使用
     if isinstance(img, Image.Image):
         return img, False
     if isinstance(img, LazyImage):

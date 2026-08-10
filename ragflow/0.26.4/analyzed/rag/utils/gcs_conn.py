@@ -12,6 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Google Cloud Storage 连接器：单物理 bucket 内以 folder/filename 模拟多 bucket 路径。
+"""
+
+
 
 import logging
 import time
@@ -25,6 +30,7 @@ from common import settings
 
 @singleton
 class RAGFlowGCS:
+    # 单例 storage.Client，settings.GCS["bucket"] 为物理桶名
     def __init__(self):
         self.client = None
         self.bucket_name = None
@@ -44,12 +50,13 @@ class RAGFlowGCS:
             logging.exception("Fail to connect to GCS")
 
     def _get_blob_path(self, folder, filename):
-        """Helper to construct the path: folder/filename"""
+        """拼接对象路径：folder/filename"""
         if not folder:
             return filename
         return f"{folder}/{filename}"
 
     def health(self):
+        # 验证主 bucket 存在并上传探针对象
         folder, fnm, binary = "ragflow-health", "health_check", b"_t@@@1"
         try:
             bucket_obj = self.client.bucket(self.bucket_name)
@@ -66,6 +73,7 @@ class RAGFlowGCS:
             return False
 
     def put(self, bucket, fnm, binary, tenant_id=None):
+        # bucket 参数作为路径前缀写入物理 GCS bucket
         # RENAMED PARAMETER: bucket_name -> bucket (to match interface)
         for _ in range(3):
             try:
@@ -97,6 +105,7 @@ class RAGFlowGCS:
             logging.exception(f"Fail to remove {bucket}/{fnm}:")
 
     def get(self, bucket, filename, tenant_id=None):
+        # download_as_bytes 读取 blob
         # RENAMED PARAMETER: bucket_name -> bucket
         for _ in range(1):
             try:
@@ -134,6 +143,7 @@ class RAGFlowGCS:
             return False
 
     def get_presigned_url(self, bucket, fnm, expires, tenant_id=None):
+        # generate_signed_url v4 GET 链接
         # RENAMED PARAMETER: bucket_name -> bucket
         for _ in range(10):
             try:
@@ -154,6 +164,7 @@ class RAGFlowGCS:
         return None
 
     def remove_bucket(self, bucket):
+        # 按 prefix 批量删除虚拟 bucket 下所有 blob
         # RENAMED PARAMETER: bucket_name -> bucket
         try:
             bucket_obj = self.client.bucket(self.bucket_name)
@@ -167,6 +178,7 @@ class RAGFlowGCS:
             logging.exception(f"Fail to remove virtual bucket (folder) {bucket}")
 
     def copy(self, src_bucket, src_path, dest_bucket, dest_path):
+        # copy_blob 同物理 bucket 内复制
         # RENAMED PARAMETERS to match original interface
         try:
             bucket_obj = self.client.bucket(self.bucket_name)
@@ -191,6 +203,7 @@ class RAGFlowGCS:
             return False
 
     def move(self, src_bucket, src_path, dest_bucket, dest_path):
+        # copy 成功后 rm 源对象
         try:
             if self.copy(src_bucket, src_path, dest_bucket, dest_path):
                 self.rm(src_bucket, src_path)

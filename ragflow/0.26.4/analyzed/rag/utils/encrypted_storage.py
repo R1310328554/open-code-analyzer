@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+加密存储装饰器：透明 AES 加解密包装 MinIO/Azure 等底层 storage_impl。
+"""
+
+
 
 import logging
 from common.crypto_utils import CryptoUtil
@@ -22,7 +27,8 @@ from common.crypto_utils import CryptoUtil
 
 
 class EncryptedStorageWrapper:
-    """Encrypted storage wrapper that wraps existing storage implementations to provide transparent encryption"""
+    # 代理 put/get/rm 等接口，put 前 encrypt、get 后 decrypt
+    """加密存储包装器：对现有 storage_impl 提供透明加解密"""
 
     def __init__(self, storage_impl, algorithm="aes-256-cbc", key=None, iv=None):
         """
@@ -48,6 +54,7 @@ class EncryptedStorageWrapper:
         logging.info(f"EncryptedStorageWrapper initialized with algorithm: {algorithm}")
 
     def put(self, bucket, fnm, binary, tenant_id=None):
+        # 加密 binary 后委托 storage_impl.put
         """
         Encrypt and store data
 
@@ -72,6 +79,7 @@ class EncryptedStorageWrapper:
             raise
 
     def get(self, bucket, fnm, tenant_id=None):
+        # 读取密文并 decrypt 返回明文
         """
         Retrieve and decrypt data
 
@@ -234,18 +242,21 @@ class EncryptedStorageWrapper:
         return False
 
     def enable_encryption(self):
+        # 开启加密开关
         """Enable encryption"""
         self.encryption_enabled = True
         logging.info("Encryption enabled")
 
     def disable_encryption(self):
+        # 关闭加密（透传明文）
         """Disable encryption"""
         self.encryption_enabled = False
         logging.info("Encryption disabled")
 
 
-# Create singleton wrapper function
+# 工厂函数：创建带 CryptoUtil 的 EncryptedStorageWrapper 实例
 def create_encrypted_storage(storage_impl, algorithm=None, key=None, encryption_enabled=True):
+    # 从环境变量读取算法/密钥并返回包装实例
     """
     Create singleton instance of encrypted storage wrapper
 

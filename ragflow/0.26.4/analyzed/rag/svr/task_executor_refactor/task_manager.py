@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+任务管理器入口：生产模式 run_refactored_task 与 dry-run 对比模式 dry_run_task。
 Task Manager Module.
 
 Provides [`TaskManager`](rag/svr/task_executor_refactor/task_manager.py:50) as the entry point
@@ -41,6 +42,7 @@ from rag.svr.task_executor_refactor.write_operation_interceptor import (
 
 
 class TaskManager:
+    # 静态方法封装 TaskContext + TaskHandler 的创建与执行
     """Entry point for executing document processing tasks.
 
     This class provides methods for:
@@ -56,6 +58,8 @@ class TaskManager:
 
     @classmethod
     async def run_refactored_task(
+        # 生产路径：NullRecordingContext + TaskHandler.handle_task
+
         cls,
         task: dict,
         chat_limiter: Any,
@@ -81,7 +85,7 @@ class TaskManager:
             billing_hook: Optional billing hook for pipeline success/error callbacks.
         """
         with recording_context_manager(_NULL_RECORDING_CONTEXT):
-            # Use NullRecordingContext in production to avoid memory allocation
+            # 生产环境使用 NullRecordingContext 避免录制开销
             set_recording_context(_NULL_RECORDING_CONTEXT)
 
             # Create TaskContext with all execution resources
@@ -107,6 +111,8 @@ class TaskManager:
 
     @classmethod
     async def dry_run_task(
+        # dry-run：WriteOperationInterceptor 回放写操作 + ContextComparator 对比
+
         cls,
         task: TaskDict,
         recording_ctx1: BaseRecordingContext,
@@ -162,7 +168,7 @@ class TaskManager:
             handler = TaskHandler(ctx=task_context)
             await handler.handle_task()
 
-            # Compare results
+            # 对比生产录制与 dry-run 录制结果
             comp: ContextComparator = ContextComparator()
             comp_result = comp.compare(task_context.id, recording_ctx1, recording_ctx2)
             logging.info(f"-------{task_context.name}, compare result:{comp_result.to_markdown()}")

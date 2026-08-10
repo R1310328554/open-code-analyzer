@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+任务处理器：文档分块流水线编排（memory/dataflow/raptor/graphrag/标准 chunking 等分支）。
 Task Handler Module.
 
 Provides [`TaskHandler`](rag/svr/task_executor_refactor/task_handler.py:56) as the main entry point
@@ -64,6 +65,7 @@ from common import settings
 
 
 def _parser_config_compilation_template_ids(parser_config, tenant_id: str) -> list[str]:
+    # 从 parser_config 解析编译模板组 → 模板 id 列表
     """Resolve a doc's parser_config to compile-template ids by
     looking up configured groups. Returns ``[]`` if the doc has no
     group set or no group can be resolved.
@@ -84,6 +86,7 @@ def _parser_config_compilation_template_ids(parser_config, tenant_id: str) -> li
 
 
 def _resolve_template_chat_llm_id(parser_cfg: dict, ctx) -> str:
+    # 解析知识编译模板使用的 chat 模型 id（模板→文档→任务默认）
     """Pick the chat model id for a knowledge-compilation template.
 
     Resolution order:
@@ -105,7 +108,7 @@ def _resolve_template_chat_llm_id(parser_cfg: dict, ctx) -> str:
     return ctx.llm_id
 
 
-# Document-structure compilation tunables
+# 文档结构编译相关常量已迁移至 chunk_post_processor
 # (DOC_STRUCTURE_COMPILE_BATCH_CHUNKS, DOC_STRUCTURE_MERGE_MAX_DOCS,
 # STRUCTURE_CHAIN_CORRECTION_TIMEOUT_S) moved to
 # ``chunk_post_processor``.
@@ -121,6 +124,7 @@ def _resolve_template_chat_llm_id(parser_cfg: dict, ctx) -> str:
 
 
 class TaskHandler:
+    # 主入口 handle_task → handle：按 task_type 路由到各子流水线
     """Main task handler for document processing.
 
     This class orchestrates the entire document processing pipeline:
@@ -150,6 +154,7 @@ class TaskHandler:
 
     @staticmethod
     def _is_standard_chunking_task(task_type: str) -> bool:
+        # 判断是否为标准分块任务（非 memory/raptor/dataflow 等）
         task_type = (task_type or "").lower()
         return task_type not in {
             "memory",
@@ -164,6 +169,7 @@ class TaskHandler:
         } and not task_type.startswith("dataflow")
 
     async def handle_task(self) -> None:
+        # 包装 handle：异常/取消时 abort 计数并清理 doc store
         try:
             await self.handle()
         except Exception:
@@ -197,12 +203,13 @@ class TaskHandler:
 
     @timeout(60 * 60 * 3, 1)
     async def handle(self) -> None:
+        # 3h 超时入口：memory→绑定 embedding→按 task_type 分发
         """Handle a document processing task."""
         ctx = self._task_context
         task_type = ctx.task_type
         task_id = ctx.id
 
-        # Handle memory tasks
+        # memory 任务：直接 handle_save_to_memory_task
         if task_type == "memory":
             # ignore when it's dry run - no change on handle_save_to_memory_task when refactor
             if isinstance(ctx.write_interceptor, RecordingContext):
@@ -273,6 +280,7 @@ class TaskHandler:
                 await self._run_standard_chunking(embedding_model, vector_size)
 
     def _init_kb(self, vector_size: int) -> None:
+        # docStoreConn.create_idx 确保 KB 索引存在
         """Initialize knowledge base index."""
         ctx = self._task_context
         idxnm = search.index_name(ctx.tenant_id)
@@ -281,6 +289,7 @@ class TaskHandler:
         settings.docStoreConn.create_idx(idxnm, ctx.kb_id, vector_size, parser_id)
 
     async def _run_dataflow(self) -> None:
+        # 委托 DataflowService 执行画布 DSL 流水线
         """Run dataflow pipeline."""
         dataflow_service = DataflowService(
             ctx=self._task_context,
@@ -304,6 +313,7 @@ class TaskHandler:
         ctx.progress_cb(1, "Clone task placeholder")
 
     async def _bind_embedding_model(self) -> Optional[tuple]:
+        # 绑定 embedding LLMBundle 并探测 vector_size
         """Bind embedding model to task.
 
         Returns:
@@ -329,6 +339,8 @@ class TaskHandler:
             raise
 
     async def _run_raptor(
+        # RAPTOR 摘要：RaptorService.run_raptor_for_kb → insert → 清理旧 chunk
+
         self,
         embedding_model: LLMBundle,
         vector_size: int,
@@ -439,6 +451,7 @@ class TaskHandler:
                 ctx.progress_cb(prog=1.0, msg="RAPTOR done")
 
     async def _run_graphrag(self, embedding_model: LLMBundle) -> None:
+        # GraphRAG：run_graphrag_for_kb 构建知识图谱
         """Run GraphRAG."""
         ctx = self._task_context
         task_tenant_id = ctx.tenant_id
@@ -523,6 +536,8 @@ class TaskHandler:
             raise
 
     async def _run_standard_chunking_impl(
+        # 标准分块：build_chunks → embed → insert → post_process → increment_chunk_num
+
         self,
         embedding_model: LLMBundle,
         vector_size: int,
@@ -537,7 +552,7 @@ class TaskHandler:
         doc_task_llm_id = ctx.parser_config.get("llm_id") or ctx.llm_id
         ctx.raw_task["llm_id"] = doc_task_llm_id
 
-        # Build chunks
+        # 从 MinIO 读取原文并 ChunkService.build_chunks
         start_ts = timer()
         chunk_service = ChunkService(ctx=ctx)
 
@@ -571,7 +586,7 @@ class TaskHandler:
 
         ctx.progress_cb(msg="Generate {} chunks".format(len(chunks)))
 
-        # Embed chunks
+        # EmbeddingService.embed_chunks 批量向量化
         start_ts = timer()
         embedding_service = EmbeddingService(ctx=ctx)
         try:
@@ -594,7 +609,7 @@ class TaskHandler:
         if ctx.parser_id.lower() == "naive" and ctx.parser_config.get("toc_extraction", False):
             toc_thread = asyncio.create_task(asyncio.to_thread(self._build_toc, ctx, chunks, ctx.progress_cb))
 
-        # Insert chunks
+        # ChunkService.insert_chunks 写入 doc store
         chunk_count = len(set([chunk["id"] for chunk in chunks]))
         start_ts = timer()
 
@@ -651,6 +666,8 @@ class TaskHandler:
         logging.info("Chunk doc({}), page({}-{}), chunks({}), token({}), elapsed:{:.2f}".format(ctx.name, ctx.from_page, ctx.to_page, len(chunks), token_count, task_time_cost))
 
     async def _run_document_post_chunking_if_last(
+        # 委托 chunk_post_processor：文档末 chunk 的后处理（结构编译等）
+
         self,
         embedding_model: LLMBundle,
         vector_size: int,
@@ -693,6 +710,8 @@ class TaskHandler:
 
     @staticmethod
     async def _load_chunks_for_doc(
+        # 异步生成器：按 batch_size 分页流式读取 doc store chunk
+
         tenant_id: str,
         kb_id: str,
         doc_id: str,
@@ -769,6 +788,7 @@ class TaskHandler:
 
     @classmethod
     def _build_toc(cls, ctx: TaskContext, docs: List[Dict], progress_cb: Callable) -> Optional[Dict]:
+        # LLM 生成目录 toc_kwd chunk（naive 解析器可选）
         """Build table of contents."""
         progress_cb(msg="Start to generate table of content ...")
         chat_model_config = get_model_config_from_provider_instance(ctx.tenant_id, LLMType.CHAT, ctx.llm_id)
@@ -824,6 +844,7 @@ class TaskHandler:
             return None
 
     async def _delete_raptor_chunks(self, doc_id: str, tenant_id: str, kb_id: str, keep_method: Optional[str]) -> int:
+        # 删除 RAPTOR 摘要 chunk；dry-run 走 interceptor
         """Delete RAPTOR chunks."""
         if self._task_context.write_interceptor:
             return self._task_context.write_interceptor.intercept("delete_raptor_chunks")

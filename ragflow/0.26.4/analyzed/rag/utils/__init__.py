@@ -13,4 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAG 工具包：对象存储连接器、文档引擎适配器与文件/图像辅助函数。
+"""
+
 

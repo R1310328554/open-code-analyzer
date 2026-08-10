@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Azure Data Lake（服务主体 SPN）连接器：ClientSecretCredential 认证的文件系统访问。
+"""
+
+
 
 import logging
 import os
@@ -22,6 +27,7 @@ from azure.identity import ClientSecretCredential, AzureAuthorityHosts
 from azure.storage.filedatalake import FileSystemClient
 from common import settings
 
+# Azure 云环境 → Authority Host 映射
 _CLOUD_AUTHORITY_MAP = {
     "public": AzureAuthorityHosts.AZURE_PUBLIC_CLOUD,
     "china": AzureAuthorityHosts.AZURE_CHINA,
@@ -32,6 +38,7 @@ _CLOUD_AUTHORITY_MAP = {
 
 @singleton
 class RAGFlowAzureSpnBlob:
+    # 单例 FileSystemClient，租户/客户端/密钥 SPN 认证
     def __init__(self):
         self.conn = None
         self.account_url = os.getenv("ACCOUNT_URL", settings.AZURE["account_url"])
@@ -43,6 +50,7 @@ class RAGFlowAzureSpnBlob:
         self.__open__()
 
     def __open__(self):
+        # 按 cloud 配置选择 authority 并创建 FileSystemClient
         try:
             if self.conn:
                 self.__close__()
@@ -61,12 +69,14 @@ class RAGFlowAzureSpnBlob:
         self.conn = None
 
     def health(self):
+        # 创建探针文件验证写入
         _bucket, fnm, binary = "txtxtxtxt1", "txtxtxtxt1", b"_t@@@1"
         f = self.conn.create_file(f"{_bucket}/{fnm}")
         f.append_data(binary, offset=0, length=len(binary))
         return f.flush_data(len(binary))
 
     def put(self, bucket, fnm, binary, tenant_id=None):
+        # create_file + append_data + flush_data 写入
         blob = f"{bucket}/{fnm}"
         for _ in range(3):
             try:
@@ -88,6 +98,7 @@ class RAGFlowAzureSpnBlob:
             logging.exception(f"Fail rm {blob}")
 
     def get(self, bucket, fnm):
+        # 通过 get_file_client 下载文件内容
         blob = f"{bucket}/{fnm}"
         for _ in range(1):
             try:
@@ -101,6 +112,7 @@ class RAGFlowAzureSpnBlob:
         return None
 
     def obj_exist(self, bucket, fnm):
+        # 检查 Data Lake 文件是否存在
         blob = f"{bucket}/{fnm}"
         try:
             client = self.conn.get_blob_client(f"{blob}")

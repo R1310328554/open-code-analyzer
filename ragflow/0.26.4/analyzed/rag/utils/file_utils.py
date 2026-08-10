@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+文件类型探测与嵌入提取：OOXML/OLE 内嵌附件、docx/pdf 超链接与 URL HTML 抓取。
+"""
+
+
 
 import io
 import hashlib
@@ -27,6 +32,7 @@ import olefile
 
 
 def _is_zip(h: bytes) -> bool:
+    # 魔数判断 ZIP/OOXML 容器
     return h.startswith(b"PK\x03\x04") or h.startswith(b"PK\x05\x06") or h.startswith(b"PK\x07\x08")
 
 
@@ -43,6 +49,7 @@ def _sha10(b: bytes) -> str:
 
 
 def _guess_ext(b: bytes) -> str:
+    # 根据魔数与 ZIP 内目录猜测 .docx/.pdf/.doc 等扩展名
     h = b[:8]
     if _is_zip(h):
         try:
@@ -64,7 +71,7 @@ def _guess_ext(b: bytes) -> str:
     return ".bin"
 
 
-# Try to extract the real embedded payload from OLE's Ole10Native
+# 从 OLE Ole10Native 结构提取真实内嵌二进制
 def _extract_ole10native_payload(data: bytes) -> bytes:
     try:
         pos = 0
@@ -90,8 +97,9 @@ def _extract_ole10native_payload(data: bytes) -> bytes:
 
 
 def extract_embed_file(target: Union[bytes, bytearray]) -> List[Tuple[str, bytes]]:
+    # 从 docx/xlsx/pptx 或 OLE doc 中提取 embeddings 目录下附件
     """
-    Only extract the 'first layer' of embedding, returning raw (filename, bytes).
+    仅提取第一层嵌入对象，返回 (文件名, 字节) 列表。
     """
     top = bytes(target)
     head = top[:8]
@@ -152,7 +160,7 @@ def extract_embed_file(target: Union[bytes, bytearray]) -> List[Tuple[str, bytes
 
 def extract_links_from_docx(docx_bytes: bytes):
     """
-    Extract all hyperlinks from a Word (.docx) document binary stream.
+    从 Word (.docx) 二进制流提取全部超链接 URL。
 
     Args:
         docx_bytes (bytes): Raw bytes of a .docx file.
@@ -174,7 +182,7 @@ def extract_links_from_docx(docx_bytes: bytes):
 
 def extract_links_from_pdf(pdf_bytes: bytes):
     """
-    Extract all clickable hyperlinks from a PDF binary stream.
+    从 PDF 二进制流提取可点击超链接。
 
     Args:
         pdf_bytes (bytes): Raw bytes of a PDF file.
@@ -199,6 +207,7 @@ def extract_links_from_pdf(pdf_bytes: bytes):
     return links
 
 
+# 全局复用 HTTP Session，减少连接开销
 _GLOBAL_SESSION: Optional[requests.Session] = None
 
 
@@ -214,13 +223,15 @@ def _get_session(headers: Optional[Dict[str, str]] = None) -> requests.Session:
 
 
 def extract_html(
+    # GET 网页并返回 (html_bytes, metadata)
+
     url: str,
     timeout: float = 60.0,
     headers: Optional[Dict[str, str]] = None,
     max_retries: int = 2,
 ) -> Tuple[Optional[bytes], Dict[str, str]]:
     """
-    Extract the full HTML page as raw bytes from a given URL.
+    从 URL 抓取完整 HTML 页面原始字节，带超时与重试。
     Automatically reuses a persistent HTTP session and applies robust timeout & retry logic.
 
     Args:

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAG chunk OceanBase/MySQL 连接器：表结构定义、全文/向量混合检索与 CRUD。
+"""
+
+
 import json
 import logging
 import re
@@ -53,6 +58,7 @@ column_raptor_kwd = Column("raptor_kwd", String(256), nullable=True, comment="RA
 column_raptor_layer_int = Column("raptor_layer_int", Integer, nullable=True, comment="RAPTOR summary layer")
 column_n_hop_with_weight = Column("n_hop_with_weight", LONGTEXT, nullable=True, comment="JSON-encoded n-hop neighbour paths and weights for a graph entity")
 
+# RAG chunk 表列定义（SQLAlchemy Column）
 column_definitions: list[Column] = [
     Column("id", String(256), primary_key=True, comment="chunk id"),
     Column("kb_id", String(256), nullable=False, index=True, comment="knowledge base id"),
@@ -104,7 +110,7 @@ column_names: list[str] = [col.name for col in column_definitions]
 column_types: dict[str, TypeEngine] = {col.name: col.type for col in column_definitions}
 array_columns: list[str] = [col.name for col in column_definitions if isinstance(col.type, ARRAY)]
 
-# Index columns for RAG chunk table
+# RAG chunk 表建索引使用的列
 INDEX_COLUMNS: list[str] = [
     "kb_id",
     "doc_id",
@@ -114,7 +120,7 @@ INDEX_COLUMNS: list[str] = [
     "removed_kwd",
 ]
 
-# Full-text search columns (with weight) - original content
+# 全文检索列（含权重）— 原始内容字段
 FTS_COLUMNS_ORIGIN: list[str] = [
     "docnm_kwd^10",
     "content_with_weight",
@@ -132,7 +138,7 @@ FTS_COLUMNS_TKS: list[str] = [
     "content_sm_ltks",
 ]
 
-# Extra columns to add after table creation (for migration)
+# 建表后追加的迁移列
 EXTRA_COLUMNS: list[Column] = [
     column_order_id,
     column_group_id,
@@ -145,11 +151,13 @@ EXTRA_COLUMNS: list[Column] = [
 
 
 class SearchResult(BaseModel):
+    # 检索结果：total 与 chunks 列表
     total: int
     chunks: list[dict]
 
 
 def get_column_value(column_name: str, value: Any) -> Any:
+    # 按列类型将 DB 返回值转为 Python 类型
     # Check chunk table columns first, then doc_meta table columns
     column_type = column_types.get(column_name) or doc_meta_column_types.get(column_name)
     if column_type:
@@ -195,6 +203,7 @@ def get_default_value(column_name: str) -> Any:
 
 
 def get_metadata_filter_expression(metadata_filtering_conditions: dict) -> str:
+    # 元数据过滤条件 → MySQL JSON 路径 SQL 表达式
     """
     Convert metadata filtering conditions to MySQL JSON path expression.
 
@@ -318,13 +327,14 @@ def get_filters(condition: dict) -> list[str]:
 
 @singleton
 class OBConnection(OBConnectionBase):
+    # 单例 OB 连接，实现 RAG chunk 的关系型存储与混合检索
     def __init__(self):
         super().__init__(logger_name="ragflow.ob_conn")
         # Determine which columns to use for full-text search dynamically
         self._fulltext_search_columns = FTS_COLUMNS_ORIGIN if self.search_original_content else FTS_COLUMNS_TKS
 
     """
-    Template method implementations
+    模板方法实现（列定义、锁前缀、全文列等）
     """
 
     def get_index_columns(self) -> list[str]:
@@ -343,7 +353,7 @@ class OBConnection(OBConnectionBase):
         return get_filters(condition)
 
     def get_fulltext_columns(self) -> list[str]:
-        """Return list of column names that need fulltext indexes (without weight suffix)."""
+        """返回需建全文索引的列名（不含 ^权重 后缀）。"""
         return [col.split("^")[0] for col in self._fulltext_search_columns]
 
     def delete_idx(self, index_name: str, dataset_id: str):
@@ -353,10 +363,11 @@ class OBConnection(OBConnectionBase):
         super().delete_idx(index_name, dataset_id)
 
     """
-    Performance monitoring
+    性能监控
     """
 
     def get_performance_metrics(self) -> dict:
+        # 延迟、存储、连接池、慢查询与 QPS 综合指标
         """
         Get comprehensive performance metrics for OceanBase.
 
@@ -497,10 +508,12 @@ class OBConnection(OBConnectionBase):
             return 0
 
     """
-    CRUD operations
+    增删改查操作
     """
 
     def search(
+        # 混合全文/向量检索；三路 fusion 时可走 ES 侧 hybrid_search
+
         self,
         select_fields: list[str],
         highlight_fields: list[str],
@@ -541,7 +554,7 @@ class OBConnection(OBConnectionBase):
             chunks=[],
         )
 
-        # copied from es_conn.py
+        # 三路 fusion 且启用 ES 时复用 es_conn 的 bool+knn 查询构建
         if len(match_expressions) == 3 and self.es:
             bqry = Q("bool", must=[])
             condition["kb_id"] = knowledgebase_ids
@@ -1015,6 +1028,7 @@ class OBConnection(OBConnectionBase):
             raise e
 
     def insert(self, documents: list[dict], index_name: str, knowledgebase_id: str = None) -> list[str]:
+        # 批量 INSERT chunk 行；doc_meta 表走 _insert_doc_meta
         if not documents:
             return []
 
@@ -1179,6 +1193,8 @@ class OBConnection(OBConnectionBase):
         return False
 
     def adjust_chunk_pagerank_fea(
+        # SQL 原子更新 pagerank_fea（加减 delta 并钳位）
+
         self,
         chunk_id: str,
         index_name: str,
@@ -1233,6 +1249,7 @@ class OBConnection(OBConnectionBase):
         return [row["id"] for row in res.chunks]
 
     def get_fields(self, res, fields: list[str]) -> dict[str, dict]:
+        # SearchResult 或 ES 行 → id → 字段字典
         result = {}
         for row in res.chunks:
             data = {}
@@ -1255,6 +1272,7 @@ class OBConnection(OBConnectionBase):
         return e * 1.0 / len(arr) >= 0.7
 
     def highlight(self, txt: str, tks: str, question: str, keywords: list[str]) -> Optional[str]:
+        # 按中英文分词规则生成 <em> 高亮片段
         if not txt or not keywords:
             return None
 
@@ -1346,6 +1364,7 @@ class OBConnection(OBConnectionBase):
     """
 
     def sql(self, sql: str, fetch_size: int = 1024, format: str = "json"):
+        # 执行原生 SQL 并格式化返回
         logger.debug("OBConnection.sql get sql: %s", sql)
 
         def normalize_sql(sql_text: str) -> str:

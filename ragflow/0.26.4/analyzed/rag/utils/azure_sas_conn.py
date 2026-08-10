@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+Azure Blob 存储（SAS 令牌）连接器：通过共享访问签名上传/下载 RAG 文件。
+"""
+
+
 
 import logging
 import os
@@ -25,6 +30,7 @@ from common import settings
 
 @singleton
 class RAGFlowAzureSasBlob:
+    # 单例 Azure ContainerClient，SAS URL + token 认证
     def __init__(self):
         self.conn = None
         self.container_url = os.getenv("CONTAINER_URL", settings.AZURE["container_url"])
@@ -32,6 +38,7 @@ class RAGFlowAzureSasBlob:
         self.__open__()
 
     def __open__(self):
+        # 重建 ContainerClient 连接（失败时记录异常）
         try:
             if self.conn:
                 self.__close__()
@@ -48,10 +55,12 @@ class RAGFlowAzureSasBlob:
         self.conn = None
 
     def health(self):
+        # 上传探针 blob 验证写入权限
         _bucket, fnm, binary = "txtxtxtxt1", "txtxtxtxt1", b"_t@@@1"
         return self.conn.upload_blob(name=f"{_bucket}/{fnm}", data=BytesIO(binary), length=len(binary))
 
     def put(self, bucket, fnm, binary, tenant_id=None):
+        # 上传二进制到 bucket/fnm，失败重试 3 次并重连
         blob_name = f"{bucket}/{fnm}"
         for _ in range(3):
             try:
@@ -62,12 +71,14 @@ class RAGFlowAzureSasBlob:
                 time.sleep(1)
 
     def rm(self, bucket, fnm):
+        # 删除指定 blob
         try:
             self.conn.delete_blob(f"{bucket}/{fnm}")
         except Exception:
             logging.exception(f"Fail rm {bucket}/{fnm}")
 
     def get(self, bucket, fnm):
+        # 下载 blob 字节内容
         blob_name = f"{bucket}/{fnm}"
         for _ in range(1):
             try:
@@ -80,6 +91,7 @@ class RAGFlowAzureSasBlob:
         return None
 
     def obj_exist(self, bucket, fnm):
+        # 检查 blob 是否存在
         blob_name = f"{bucket}/{fnm}"
         try:
             return self.conn.get_blob_client(f"{blob_name}").exists()
@@ -88,6 +100,7 @@ class RAGFlowAzureSasBlob:
         return False
 
     def get_presigned_url(self, bucket, fnm, expires):
+        # 生成带过期时间的 GET 预签名 URL
         blob_name = f"{bucket}/{fnm}"
         for _ in range(10):
             try:

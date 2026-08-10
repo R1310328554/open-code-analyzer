@@ -14,6 +14,7 @@
 #  limitations under the License.
 
 """
+写操作拦截器：dry-run 模式下按序弹出生产环境录制的返回值，避免重复写库。
 Write Operation Interceptor Module
 
 Provides a mechanism to intercept write operations during comparison mode.
@@ -24,8 +25,8 @@ and returns them one by one when the corresponding methods are called.
 import logging
 from typing import Any, Dict, List
 
-# Set of allowed method names that can be intercepted
-ALLOWED_METHOD_NAMES = {
+# 允许拦截的方法名白名单（DB 更新、doc store 写入等）
+ALLOWED_METHOD_NAMES = {  # 可被 intercept() 调用的写操作标识
     "KnowledgebaseService.update_by_id",
     "TaskService.update_chunk_ids",
     "DocumentService.increment_chunk_num",
@@ -42,6 +43,7 @@ _NO_DEFAULT = object()
 
 
 class WriteOperationInterceptor:
+    # 维护 method_name → 预录制返回值队列，intercept 时 pop(0)
     """Intercepts write operations and returns pre-recorded values.
 
     This interceptor is used in comparison mode to replay production execution
@@ -82,6 +84,7 @@ class WriteOperationInterceptor:
             self._recorded_values[key] = list(recorded_values.get(key, []))
 
     def intercept(self, method_name: str, default_value=_NO_DEFAULT) -> Any:
+        # 弹出下一个预录制返回值；空队列可返回 default_value
         """Intercept a method call and return the next pre-recorded value.
 
         Args:
@@ -112,6 +115,7 @@ class WriteOperationInterceptor:
         return values_list.pop(0)
 
     def remaining_count(self, method_name: str) -> int:
+        # 指定方法剩余未消费的录制值数量
         """Get the number of remaining recorded values for a method.
 
         Args:
@@ -128,6 +132,7 @@ class WriteOperationInterceptor:
         return {k: list(v) for k, v in self._recorded_values.items()}
 
     def remaining_values_count(self):
+        # 所有方法剩余录制值总数（对比失败诊断用）
         return sum(len(values) for values in self._recorded_values.values())
 
     def __repr__(self) -> str:

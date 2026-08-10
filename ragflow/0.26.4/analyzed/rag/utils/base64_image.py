@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+图像与对象存储互转：chunk 内嵌图片编码为 JPEG 并写入 MinIO，按 composite id 回读。
+"""
+
+
 
 import base64
 import logging
@@ -30,6 +35,7 @@ test_image = base64.b64decode(test_image_base64)
 
 
 async def image2id(d: dict, storage_put_func: partial, objname: str, bucket: str = "imagetemps"):
+    # 将 d["image"] 转 JPEG 上传，写入 d["img_id"] 为 bucket-objname
     import logging
     from io import BytesIO
     from rag.svr.task_executor_limiter import minio_limiter
@@ -83,7 +89,7 @@ async def image2id(d: dict, storage_put_func: partial, objname: str, bucket: str
 
 
 def parse_storage_composite_id(composite_id: str) -> tuple[str, str] | None:
-    """Split a ``{bucket}-{object_key}`` storage ID on the first hyphen only.
+    """按首个连字符拆分 ``{bucket}-{object_key}`` 复合存储 ID。
 
     ``image2id`` stores ``img_id`` as ``f"{bucket}-{objname}"``. The object key
     may contain additional hyphens (e.g. ``page-1.jpg``).
@@ -101,7 +107,8 @@ def parse_storage_composite_id(composite_id: str) -> tuple[str, str] | None:
 
 
 def id2image(image_id: str | None, storage_get_func: partial):
-    """Load a PIL image from storage using a composite ``img_id``.
+    # 解析 img_id → bucket+fnm，get 字节后 Image.open
+    """根据 composite ``img_id`` 从存储加载 PIL 图像。
 
     Args:
         image_id: Value produced by ``image2id`` (``{bucket}-{object_key}``).
