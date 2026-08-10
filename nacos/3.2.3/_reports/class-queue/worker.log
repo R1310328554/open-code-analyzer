@@ -2158,3 +2158,18 @@
 2026-08-10T04:47:28Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/monitor/DatasourceMetrics.java wave71b [15:30] persistence datasource/events/repo
 2026-08-10T04:47:28Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/PaginationHelper.java wave71b [15:30] persistence datasource/events/repo
 2026-08-10T04:47:28Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/repository/RowMapperManager.java wave71b [15:30] persistence datasource/events/repo
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/utils/NamingRequestUtil.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/utils/ServiceUtil.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/CanDistro.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/ClientAttributesFilter.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/DistroFilter.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/DistroIpPortTagGenerator.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/DistroTagGenerator.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/DistroTagGeneratorImpl.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/NamingConfig.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/ServiceNameFilter.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE naming/src/main/java/com/alibaba/nacos/naming/web/TrafficReviseFilter.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/configuration/DatasourceConfiguration.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/configuration/condition/ConditionDistributedEmbedStorage.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/configuration/condition/ConditionOnEmbeddedStorage.java wave71a [0:15] naming utils/web + persistence cfg
+2026-08-10T04:47:50Z DONE persistence/src/main/java/com/alibaba/nacos/persistence/configuration/condition/ConditionOnExternalStorage.java wave71a [0:15] naming utils/web + persistence cfg
