@@ -448,3 +448,18 @@
 2026-08-10T06:08:57Z DONE core/src/main/java/org/keycloak/representations/idm/RealmRepresentation.java wave15a idm membership/org/realm representations
 2026-08-10T06:08:57Z DONE core/src/main/java/org/keycloak/representations/idm/RequiredActionConfigInfoRepresentation.java wave15a idm membership/org/realm representations
 2026-08-10T06:08:57Z DONE core/src/main/java/org/keycloak/representations/idm/RequiredActionConfigRepresentation.java wave15a idm membership/org/realm representations
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/UserProfileAttributeGroupMetadata.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/UserProfileAttributeMetadata.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/UserProfileMetadata.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/UserRepresentation.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/UserSessionRepresentation.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/AbstractPolicyRepresentation.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/AggregatePolicyRepresentation.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/AuthorizationRequest.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/AuthorizationResponse.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/AuthorizationSchema.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ClientPolicyRepresentation.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/ClientScopePolicyRepresentation.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/DecisionEffect.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/DecisionStrategy.java wave16a idm user-profile + authz policy reps
+2026-08-10T06:10:58Z DONE core/src/main/java/org/keycloak/representations/idm/authorization/GroupPolicyRepresentation.java wave16a idm user-profile + authz policy reps
