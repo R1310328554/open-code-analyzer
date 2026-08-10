@@ -1,3 +1,9 @@
+/**
+ * constant.ts — 知识图谱演示/mock 数据：厦门象屿示例节点与边，供图谱组件本地预览。
+ * 节点 type 已在 map 中剥离，edges 保留 source/target 关系与权重描述。
+ */
+
+/** 演示用实体节点列表（组织、人物、事件、地理等）。 */
 const nodes = [
   {
     type: '"ORGANIZATION"',
@@ -123,6 +129,7 @@ const nodes = [
   },
 ].map(({ type, ...x }) => ({ ...x }));
 
+/** 演示用关系边列表，描述实体间的业务关联。 */
 const edges = [
   {
     weight: 2.0,
@@ -231,6 +238,7 @@ const edges = [
   },
 ];
 
+/** 符合图可视化库要求的 graph 数据结构导出。 */
 export const graphData = {
   directed: false,
   multigraph: false,
