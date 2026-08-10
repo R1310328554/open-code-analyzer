@@ -31,6 +31,9 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * OIDC 身份提供方公钥加载器：从 JWT 授权授予 IdP 配置加载签名验证公钥。
+ * <p>支持 JWKS URL 远程拉取与内联 JWKS JSON；实现 {@link PublicKeyLoader}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class OIDCIdentityProviderPublicKeyLoader implements PublicKeyLoader {
@@ -40,11 +43,13 @@ public class OIDCIdentityProviderPublicKeyLoader implements PublicKeyLoader {
     private final KeycloakSession session;
     private final JWTAuthorizationGrantConfig config;
 
+    /** @param session Keycloak 会话 @param config JWT 授权授予身份提供方配置 */
     public OIDCIdentityProviderPublicKeyLoader(KeycloakSession session, JWTAuthorizationGrantConfig config) {
         this.session = session;
         this.config = config;
     }
 
+    /** 按配置从 JWKS URL 或内联 JSON 加载 SIG 用途公钥；失败时返回 {@link PublicKeysWrapper#EMPTY}。 */
     @Override
     public PublicKeysWrapper loadKeys() throws Exception {
         if (config.isUseJwksUrl()) {
@@ -57,7 +62,7 @@ public class OIDCIdentityProviderPublicKeyLoader implements PublicKeyLoader {
                 return PublicKeysWrapper.EMPTY;
             }
             try {
-                // only load jwks, direct pem public key needs to load a hardcoded key locator
+                // 仅解析 JWKS JSON；直接 PEM 公钥需走 HardcodedPublicKeyLoader
                 JSONWebKeySet jwks = JsonSerialization.readValue(publicKeySignatureVerifier, JSONWebKeySet.class);
                 return JWKSUtils.getKeyWrappersForUse(jwks, JWK.Use.SIG);
             } catch (Exception e) {

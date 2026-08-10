@@ -22,10 +22,16 @@ import java.util.Set;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 删除用户工作流步骤工厂，ID 为 {@code delete-user}。
+ * <p>创建 {@link DeleteUserStepProvider}，支持向用户发送账户删除通知。</p>
+ */
 public class DeleteUserStepProviderFactory implements WorkflowStepProviderFactory<DeleteUserStepProvider> {
 
+    /** 步骤工厂标识 {@code delete-user}。 */
     public static final String ID = "delete-user";
 
+    /** 创建绑定会话与组件模型的 {@link DeleteUserStepProvider}。 */
     @Override
     public DeleteUserStepProvider create(KeycloakSession session, ComponentModel model) {
         return new DeleteUserStepProvider(session, model);
@@ -36,11 +42,13 @@ public class DeleteUserStepProviderFactory implements WorkflowStepProviderFactor
         return ID;
     }
 
+    /** @return 仅支持用户资源类型 */
     @Override
     public Set<ResourceType> getSupportedResourceTypes() {
         return Set.of(ResourceType.USERS);
     }
 
+    /** @return 管理控制台步骤说明文本 */
     @Override
     public String getHelpText() {
         return "Deletes the user";

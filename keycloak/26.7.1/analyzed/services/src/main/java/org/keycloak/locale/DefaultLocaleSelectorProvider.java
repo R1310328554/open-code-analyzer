@@ -32,21 +32,28 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 默认语言环境选择器：按优先级解析 Realm 国际化场景下的用户界面语言。
+ * <p>依次尝试用户显式选择、用户属性、客户端请求、Locale Cookie 与 Accept-Language 头。</p>
+ */
 public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
 
     private static final Logger logger = Logger.getLogger(LocaleSelectorProvider.class);
 
     private KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public DefaultLocaleSelectorProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 解析用户界面语言；未启用国际化时返回 {@link Locale#ENGLISH}。 */
     @Override
     public Locale resolveLocale(RealmModel realm, UserModel user) {
         return resolveLocale(realm, user, false);
     }
 
+    /** @param ignoreAcceptLanguageHeader 为 true 时跳过 Accept-Language 头解析 */
     @Override
     public Locale resolveLocale(RealmModel realm, UserModel user, boolean ignoreAcceptLanguageHeader) {
         HttpHeaders requestHeaders = null;
@@ -76,6 +83,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return Locale.ENGLISH;
     }
 
+    /** 按用户选择、属性、客户端、Cookie、Accept-Language 顺序解析语言。 */
     private Locale getUserLocale(RealmModel realm, AuthenticationSessionModel session, UserModel user, HttpHeaders requestHeaders, boolean ignoreAcceptLanguageHeader) {
         Locale locale;
 
@@ -107,6 +115,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return null;
     }
 
+    /** 从认证会话或会话属性读取用户显式选择的 locale。 */
     private Locale getUserSelectedLocale(RealmModel realm, AuthenticationSessionModel session) {
         String locale = session == null ? this.session.getAttribute(USER_REQUEST_LOCALE, String.class) : session.getAuthNote(USER_REQUEST_LOCALE);
         if (locale == null) {
@@ -116,6 +125,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return findLocale(realm, locale);
     }
 
+    /** 从用户 {@link UserModel#LOCALE} 属性读取语言偏好。 */
     private Locale getUserProfileSelection(RealmModel realm, UserModel user) {
         if (user == null) {
             return null;
@@ -129,6 +139,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return findLocale(realm, locale);
     }
 
+    /** 从客户端认证会话 note 读取请求语言。 */
     private Locale getClientSelectedLocale(RealmModel realm, AuthenticationSessionModel session) {
         if (session == null) {
             return null;
@@ -142,6 +153,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return findLocale(realm, locale.split(" "));
     }
 
+    /** 从 {@link CookieType#LOCALE} Cookie 读取语言选择。 */
     private Locale getLocaleCookieSelection(RealmModel realm, HttpHeaders httpHeaders) {
         if (httpHeaders == null) {
             return null;
@@ -155,6 +167,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return findLocale(realm, localeCookie);
     }
 
+    /** 按 Accept-Language 头在 Realm 支持语言中匹配最佳 locale。 */
     private Locale getAcceptLanguageHeaderLocale(RealmModel realm, HttpHeaders httpHeaders, boolean ignoreAcceptLanguageHeader) {
 
         if (ignoreAcceptLanguageHeader) {
@@ -180,6 +193,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return null;
     }
 
+    /** 在 Realm 支持语言列表中匹配给定语言标签。 */
     private Locale findLocale(RealmModel realm, String... localeStrings) {
         List<Locale> supportedLocales = realm.getSupportedLocalesStream()
                 .map(Locale::forLanguageTag).collect(Collectors.toList());
@@ -187,6 +201,7 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return findBestMatchingLocale(supportedLocales, localeStrings);
     }
 
+    /** 在支持列表中为候选语言标签找到最佳匹配（语言/国家/变体优先级）。 */
     static Locale findBestMatchingLocale(List<Locale> supportedLocales, String... localeStrings) {
         for (String localeString : localeStrings) {
             if (localeString != null) {
@@ -206,12 +221,14 @@ public class DefaultLocaleSelectorProvider implements LocaleSelectorProvider {
         return null;
     }
 
+    /** 判断候选 locale 是否与支持的 locale 在语言/国家维度匹配。 */
     private static boolean doesLocaleMatch(Locale candidate, Locale supportedLocale) {
         return candidate.getLanguage().equals(supportedLocale.getLanguage())
                 && ((candidate.getCountry().equals("") ^ supportedLocale.getCountry().equals(""))
                         || candidate.getCountry().equals(supportedLocale.getCountry()));
     }
 
+    /** 比较两个候选 locale 对目标语言的匹配精确度。 */
     private static boolean doesFirstLocaleBetterMatchThanSecondLocale(Locale firstLocale, Locale secondLocale,
             Locale supportedLocale) {
         if (firstLocale.getLanguage().equals(supportedLocale.getLanguage())

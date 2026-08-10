@@ -25,11 +25,16 @@ import org.keycloak.models.UserModel;
 import org.jboss.logging.Logger;
 
 
+/**
+ * 工作流步骤：禁用工作流上下文中的目标用户账户。
+ * <p>用户已禁用时跳过；完成后可触发账户禁用通知模板。</p>
+ */
 public class DisableUserStepProvider implements WorkflowStepProvider {
 
     private final KeycloakSession session;
     private final Logger log = Logger.getLogger(DisableUserStepProvider.class);
 
+    /** @param session Keycloak 会话 @param model 工作流步骤组件配置（本步骤未使用） */
     public DisableUserStepProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
     }
@@ -38,6 +43,7 @@ public class DisableUserStepProvider implements WorkflowStepProvider {
     public void close() {
     }
 
+    /** 将目标用户 {@link UserModel#setEnabled(boolean)} 设为 false。 */
     @Override
     public void run(WorkflowExecutionContext context) {
         RealmModel realm = session.getContext().getRealm();
@@ -49,11 +55,13 @@ public class DisableUserStepProvider implements WorkflowStepProvider {
         }
     }
 
+    /** @return 账户禁用通知消息模板键 */
     @Override
     public String getNotificationMessage() {
         return "accountDisableNotificationBody";
     }
 
+    /** @return 账户禁用通知主题模板键 */
     @Override
     public String getNotificationSubject() {
         return "accountDisableNotificationSubject";

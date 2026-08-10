@@ -22,10 +22,16 @@ import java.util.Set;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 禁用用户工作流步骤工厂，ID 为 {@code disable-user}。
+ * <p>创建 {@link DisableUserStepProvider}，用于在工作流中停用用户账户并发送通知。</p>
+ */
 public class DisableUserStepProviderFactory implements WorkflowStepProviderFactory<DisableUserStepProvider> {
 
+    /** 步骤工厂标识 {@code disable-user}。 */
     public static final String ID = "disable-user";
 
+    /** 创建绑定会话与组件模型的 {@link DisableUserStepProvider}。 */
     @Override
     public DisableUserStepProvider create(KeycloakSession session, ComponentModel model) {
         return new DisableUserStepProvider(session, model);
@@ -36,11 +42,13 @@ public class DisableUserStepProviderFactory implements WorkflowStepProviderFacto
         return ID;
     }
 
+    /** @return 仅支持用户资源类型 */
     @Override
     public Set<ResourceType> getSupportedResourceTypes() {
         return Set.of(ResourceType.USERS);
     }
 
+    /** @return 管理控制台步骤说明文本 */
     @Override
     public String getHelpText() {
         return "Disables the user";

@@ -27,16 +27,22 @@ import org.keycloak.storage.ReadOnlyException;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 默认语言环境更新器：同步更新用户 locale 属性、审计事件与 Locale Cookie。
+ * <p>只读用户存储上更新属性失败时记录调试日志并仍更新 Cookie。</p>
+ */
 public class DefaultLocaleUpdaterProvider implements LocaleUpdaterProvider {
 
     private static final Logger logger = Logger.getLogger(LocaleSelectorProvider.class);
 
     private final KeycloakSession session;
 
+    /** @param session Keycloak 会话 */
     public DefaultLocaleUpdaterProvider(KeycloakSession session) {
         this.session = session;
     }
 
+    /** 若 locale 变更则写入用户属性、记录 UPDATE_PROFILE 事件并更新 Cookie。 */
     @Override
     public void updateUsersLocale(UserModel user, String locale) {
         final String previousLocale = user.getFirstAttribute("locale");
@@ -58,12 +64,14 @@ public class DefaultLocaleUpdaterProvider implements LocaleUpdaterProvider {
         logger.debugv("Setting locale for user {0} to {1}", user.getUsername(), locale);
     }
 
+    /** 将 {@link CookieType#LOCALE} Cookie 设为指定语言标签。 */
     @Override
     public void updateLocaleCookie(String locale) {
         session.getProvider(CookieProvider.class).set(CookieType.LOCALE, locale);
         logger.debugv("Updating locale cookie to {0}", locale);
     }
 
+    /** 清除 {@link CookieType#LOCALE} Cookie。 */
     @Override
     public void expireLocaleCookie() {
         session.getProvider(CookieProvider.class).expire(CookieType.LOCALE);

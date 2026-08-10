@@ -20,7 +20,12 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
+/**
+ * 默认 {@link LocaleSelectorProviderFactory} 实现，工厂 ID 为 {@code default}。
+ * <p>为每个 {@link KeycloakSession} 创建 {@link DefaultLocaleSelectorProvider}，负责按 Realm 配置解析 UI 语言环境。</p>
+ */
 public class DefaultLocaleSelectorProviderFactory implements LocaleSelectorProviderFactory {
+    /** 创建绑定当前会话的 {@link DefaultLocaleSelectorProvider} 实例。 */
     @Override
     public LocaleSelectorProvider create(KeycloakSession session) {
         return new DefaultLocaleSelectorProvider(session);
@@ -38,6 +43,7 @@ public class DefaultLocaleSelectorProviderFactory implements LocaleSelectorProvi
     public void close() {
     }
 
+    /** @return 工厂标识 {@code default} */
     @Override
     public String getId() {
         return "default";

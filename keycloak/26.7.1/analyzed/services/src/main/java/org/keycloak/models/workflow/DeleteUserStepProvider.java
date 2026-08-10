@@ -28,14 +28,20 @@ import org.keycloak.storage.UserStorageUtil;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 工作流步骤：删除工作流上下文中的目标用户。
+ * <p>联合用户默认仅删本地副本；配置 {@link #PROPAGATE_TO_SP} 为 true 时传播至外部用户存储。</p>
+ */
 public class DeleteUserStepProvider implements WorkflowStepProvider {
 
+    /** 是否将删除操作传播至外部用户存储提供方的配置键。 */
     public static final String PROPAGATE_TO_SP = "propagate-to-provider";
 
     private final KeycloakSession session;
     private final ComponentModel stepModel;
     private final Logger log = Logger.getLogger(DeleteUserStepProvider.class);
 
+    /** @param session Keycloak 会话 @param model 工作流步骤组件配置 */
     public DeleteUserStepProvider(KeycloakSession session, ComponentModel model) {
         this.session = session;
         this.stepModel = model;
@@ -45,6 +51,7 @@ public class DeleteUserStepProvider implements WorkflowStepProvider {
     public void close() {
     }
 
+    /** 按联合/本地策略删除用户并在启用缓存时驱逐 {@link UserCache}。 */
     @Override
     public void run(WorkflowExecutionContext context) {
         RealmModel realm = session.getContext().getRealm();
@@ -61,21 +68,23 @@ public class DeleteUserStepProvider implements WorkflowStepProvider {
           return;
         }
 
-        // delete the local user only
+        // 联合用户仅删除本地存储副本，不传播至外部 IdP
         userManager.removeUser(realm, user, UserStoragePrivateUtil.userLocalStorage(session));
         log.debugv("Deleting federated user {0} ({1}) from local storage only", user.getUsername(), user.getId());
         UserCache userCache = UserStorageUtil.userCache(session);
-        // if cache is enabled, evict the user from cache
+        // 启用用户缓存时从缓存中驱逐已删用户
         if (userCache != null) {
             userCache.evict(realm, user);
         }
     }
 
+    /** @return 账户删除通知消息模板键 */
     @Override
     public String getNotificationMessage() {
         return "accountDeleteNotificationBody";
     }
 
+    /** @return 账户删除通知主题模板键 */
     @Override
     public String getNotificationSubject() {
         return "accountDeleteNotificationSubject";
