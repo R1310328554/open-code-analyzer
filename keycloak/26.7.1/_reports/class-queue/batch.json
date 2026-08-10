@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T06:56:06Z",
-  "files": [
-    "js/apps/account-ui/src/vite-env.d.ts",
-    "js/apps/account-ui/vite.config.ts",
-    "js/apps/admin-ui/playwright.config.ts",
-    "js/apps/admin-ui/src/authentication/__tests__/ExecutionList.test.ts",
-    "js/apps/admin-ui/src/authentication/components/diagram/auto-layout.ts",
-    "js/apps/admin-ui/src/authentication/constants.ts",
-    "js/apps/admin-ui/src/authentication/execution-model.ts",
-    "js/apps/admin-ui/src/authentication/policies/util.test.ts",
-    "js/apps/admin-ui/src/authentication/policies/util.ts",
-    "js/apps/admin-ui/src/authentication/routes.ts",
-    "js/apps/admin-ui/src/client-scopes/details/oid4vciAttributes.ts",
-    "js/apps/admin-ui/src/client-scopes/routes.ts",
-    "js/apps/admin-ui/src/clients/constants.ts",
-    "js/apps/admin-ui/src/clients/routes.ts",
-    "js/apps/admin-ui/src/clients/utils.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5038,
-  "done": 945
+  "done": 960
 }
