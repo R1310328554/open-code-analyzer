@@ -1,5 +1,7 @@
 package dataset
 
+// bitmap 编码结合 RLE 与动态位宽 bitpack，主要用于 presence 位图（0/1）。
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 
 const maxRunLength uint64 = 1<<63 - 1 // 2^63-1
 
+// bitmapEncoder 三态状态机：READY、RLE 与 BITPACK，支持流式写入。
 // bitmapEncoder encodes and decodes bitmaps of unsigned numbers up to 64 bits
 // wide. To use bitmap with signed integers, callers should first encode the
 // integers using zig-zag encoding to minimize the number of bits needed for
@@ -62,6 +65,7 @@ const maxRunLength uint64 = 1<<63 - 1 // 2^63-1
 //     written. Callers may choose to prepend the length. Without the length,
 //     readers must take caution to not read past the end of the RLE sequence
 //     by knowing exactly how many values were encoded.
+// bitmapEncoder 跟踪游程、待打包八元组与 bitpackBuffer 缓冲。
 type bitmapEncoder struct {
 	w streamio.Writer
 
@@ -113,6 +117,7 @@ func (enc *bitmapEncoder) EncodingType() datasetmd.EncodingType {
 //
 // Call [bitmapEncoder.Flush] to end the current run and flush any remaining
 // values.
+// Encode 追加 uint64 值（当前仅 0/1），状态机决定 RLE 或 bitpack。
 func (enc *bitmapEncoder) Encode(v Value) error {
 	if v.Type() != datasetmd.PHYSICAL_TYPE_UINT64 {
 		return fmt.Errorf("invalid value type %s", v.Type())
@@ -326,6 +331,7 @@ func (enc *bitmapEncoder) flushRLE() error {
 // flushBitpacked flushes the current bitpacked buffer for accumulating runs.
 // If the buffer is full, we flush the buffer immediately to the underlying
 // writer.
+// flushBitpacked 将满 8 个值的集合按 Parquet 规则位打包写入缓冲。
 func (enc *bitmapEncoder) flushBitpacked() error {
 	if enc.setSize != 8 {
 		panic("dataset.bitmapEncoder: flushBitpacked called with less than 8 values")
@@ -429,6 +435,7 @@ func (enc *bitmapEncoder) Reset(w streamio.Writer) {
 	enc.buf.Reset()
 }
 
+// bitpackBuffer 聚合同位宽 bitpack 段，满 4KiB 或位宽变化时刷出。
 type bitpackBuffer struct {
 	maxBufferSize int
 
@@ -520,6 +527,7 @@ func (b *bitpackBuffer) Reset() {
 // bitmapDecoder decodes boolean presence values from a bitmap-encoded byte
 // slice. It assumes values are encoded as 0/1 and that bitpacked runs use a
 // width of 1 (one byte holds 8 values, LSB-first).
+// bitmapDecoder 四态解码：READY、RLE、BITPACK-READY、BITPACK-SET。
 type bitmapDecoder struct {
 	data []byte
 
@@ -576,6 +584,7 @@ func (dec *bitmapDecoder) EncodingType() datasetmd.EncodingType {
 // Decode decodes up to count values and returns them as a bitmap. The number
 // of decoded values is bm.Len(). At the end of the stream, Decode returns
 // any decoded values along with [io.EOF].
+// Decode 解码至多 count 个布尔值并包装为 columnar.Bool 数组。
 func (dec *bitmapDecoder) Decode(alloc *memory.Allocator, count int) (columnar.Array, error) {
 	bm := memory.NewBitmap(alloc, count)
 	bm.Grow(count)
@@ -692,3 +701,4 @@ func (dec *bitmapDecoder) Reset(data []byte) {
 	dec.set = 0
 	dec.off = 0
 }
+// 格式源自 Parquet 位图并扩展更长游程以支持流式编码。

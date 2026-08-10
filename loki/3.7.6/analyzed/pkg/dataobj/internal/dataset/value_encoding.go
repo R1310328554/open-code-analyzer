@@ -1,5 +1,8 @@
 package dataset
 
+// value_encoding 定义值编解码接口与全局注册表，
+// 各 encoding 实现文件在 init 中调用 registerValueEncoding 注册。
+
 import (
 	"fmt"
 
@@ -9,6 +12,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// valueEncoder 按物理类型与编码类型将 Value 序列写入 streamio.Writer。
 // A valueEncoder encodes sequences of [Value], writing them to an underlying
 // [streamio.Writer]. Implementations of encoding types must call
 // registerValueEncoding to register themselves.
@@ -32,6 +36,7 @@ type valueEncoder interface {
 	Reset(w streamio.Writer)
 }
 
+// valueDecoder 从字节切片解码为 columnar.Array，流结束返回 io.EOF。
 // A valueDecoder reads values from an underlying byte slice. Implementations of
 // encoding types must call registerValueEncoding to register themselves.
 type valueDecoder interface {
@@ -73,6 +78,7 @@ type (
 //
 // registerValueEncoding should be called in an init method of files
 // implementing encodings.
+// registerValueEncoding 注册物理/编码类型元组对应的编解码工厂。
 func registerValueEncoding(
 	physicalType datasetmd.PhysicalType,
 	encodingType datasetmd.EncodingType,
@@ -92,6 +98,7 @@ func registerValueEncoding(
 // newValueEncoder creates a new valueEncoder for the specified physicalType and
 // encodingType. If no encoding is registered for the specified combination of
 // physicalType and encodingType, newValueEncoder returns nil and false.
+// newValueEncoder 按类型查找注册表并构造编码器实例。
 func newValueEncoder(physicalType datasetmd.PhysicalType, encodingType datasetmd.EncodingType, w streamio.Writer) (valueEncoder, bool) {
 	key := registryKey{
 		Physical: physicalType,
@@ -107,6 +114,7 @@ func newValueEncoder(physicalType datasetmd.PhysicalType, encodingType datasetmd
 // newValueDecoder creates a new decoder for the specified physicalType and
 // encodingType. If no encoding is registered for the specified combination of
 // physicalType and encodingType, newValueDecoder returns nil and false.
+// newValueDecoder 按类型查找注册表并构造解码器实例。
 func newValueDecoder(physicalType datasetmd.PhysicalType, encodingType datasetmd.EncodingType, data []byte) (valueDecoder, bool) {
 	key := registryKey{
 		Physical: physicalType,
@@ -124,3 +132,4 @@ func newValueDecoder(physicalType datasetmd.PhysicalType, encodingType datasetmd
 		return nil, false
 	}
 }
+// 重复注册同一类型组合会 panic，保证编码实现全局唯一。

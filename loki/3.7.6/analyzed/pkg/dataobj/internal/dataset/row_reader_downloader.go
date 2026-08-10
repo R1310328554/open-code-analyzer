@@ -1,5 +1,8 @@
 package dataset
 
+// rowReaderDownloader 为 RowReader 提供页级批量下载与缓存，
+// 按主/次列阶段与 P1/P2/P3 优先级减少存储往返次数。
+
 import (
 	"context"
 	"math"
@@ -10,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// rowReaderDownloader 缓存内层 Dataset 页数据，缺页时触发批量下载。
 // rowReaderDownloader is a utility for downloading pages in bulk from a
 // [Dataset]. It works by caching page data from an inner dataset, and
 // downloading pages in bulk any time an uncached page is requested.
@@ -85,6 +89,7 @@ import (
 //
 // Cached pages before the read range are cleared when a new uncached page is
 // requested.
+// rowReaderDownloader 跟踪数据集范围、当前读区间与掩码排除区间。
 type rowReaderDownloader struct {
 	inner Dataset
 
@@ -132,6 +137,7 @@ func newRowReaderDownloader(dset Dataset) *rowReaderDownloader {
 }
 
 // Prefetch will download an initial batch of pages.
+// Prefetch 将读区间临时设为全量并下载首批页，用于预热缓存。
 func (dl *rowReaderDownloader) Prefetch(ctx context.Context) error {
 	oldReadRange := dl.readRange
 	defer func() { dl.readRange = oldReadRange }()
@@ -172,6 +178,7 @@ func (dl *rowReaderDownloader) SetDatasetRanges(r rangeset.Set) {
 // range are never included in a batch.
 //
 // This method clears any previously set mask.
+// SetReadRange 设定当前读取行范围并清空先前掩码。
 func (dl *rowReaderDownloader) SetReadRange(r rangeset.Range) {
 	dl.readRange = r
 	dl.rangeMask.Reset()
@@ -180,6 +187,7 @@ func (dl *rowReaderDownloader) SetReadRange(r rangeset.Range) {
 // Mask marks a subset of the current read range as excluded. Mask may be
 // called multiple times to exclude multiple ranges. Any page that is entirely
 // within the combined mask will not be downloaded.
+// Mask 标记读区间内应跳过的行范围，整页落在掩码内则不下载。
 func (dl *rowReaderDownloader) Mask(r rangeset.Range) {
 	dl.rangeMask.Add(r)
 }
@@ -228,6 +236,7 @@ func (dl *rowReaderDownloader) initColumnPages(ctx context.Context) error {
 }
 
 // downloadBatch downloads a batch of pages from the inner dataset.
+// downloadBatch 组装批次后调用 inner.ReadPages 填充页缓存。
 func (dl *rowReaderDownloader) downloadBatch(ctx context.Context, requestor *readerPage) error {
 	for _, col := range dl.allColumns {
 		// Garbage collect any unused pages; this prevents them from being included
@@ -277,6 +286,7 @@ func (dl *rowReaderDownloader) downloadBatch(ctx context.Context, requestor *rea
 	return nil
 }
 
+// buildDownloadBatch 按 P1→P2→P3 规则选取未缓存页直至目标批量大小。
 func (dl *rowReaderDownloader) buildDownloadBatch(ctx context.Context, requestor *readerPage) ([]*readerPage, error) {
 	var pageBatch []*readerPage
 
@@ -496,6 +506,7 @@ func (dl *rowReaderDownloader) Reset(dset Dataset) {
 	dl.dsetRanges = rangeset.Set{}
 }
 
+// readerColumn 包装内层 Column，持有 readerPage 列表与主/次列标记。
 type readerColumn struct {
 	dl      *rowReaderDownloader
 	inner   Column
@@ -606,6 +617,7 @@ func (page *readerPage) PageDesc() *PageDesc {
 	return page.inner.PageDesc()
 }
 
+// ReadPage 命中缓存直接返回，否则触发 downloadBatch 批量拉取。
 func (page *readerPage) ReadPage(ctx context.Context) (PageData, error) {
 	region := xcap.RegionFromContext(ctx)
 	region.Record(xcap.StatDatasetPagesScanned.Observe(1))
@@ -636,3 +648,4 @@ func (page *readerPage) ReadPage(ctx context.Context) (PageData, error) {
 	page.data = data
 	return data, nil
 }
+// GC 释放读区间之前的页缓存，失败重试时无需重新下载。

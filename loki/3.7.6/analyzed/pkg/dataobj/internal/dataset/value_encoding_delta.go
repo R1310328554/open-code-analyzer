@@ -1,5 +1,7 @@
 package dataset
 
+// delta 编码将 int64 序列存为相邻差值的 varint，适合单调或缓变整数列。
+
 import (
 	"fmt"
 	"io"
@@ -22,6 +24,7 @@ func init() {
 	)
 }
 
+// deltaEncoder 维护 prev，每次 Encode 写入 iv-prev 的 zig-zag varint。
 // deltaEncoder encodes delta-encoded int64s. Values are encoded as varint,
 // with each subsequent value being the delta from the previous value.
 type deltaEncoder struct {
@@ -71,6 +74,7 @@ func (enc *deltaEncoder) Reset(w streamio.Writer) {
 	enc.w = w
 }
 
+// deltaDecoder 累加 delta 还原绝对值并输出 columnar.Number[int64]。
 // deltaDecoder decodes delta-encoded numbers. Values are decoded as varint,
 // with each subsequent value being the delta from the previous value.
 type deltaDecoder struct {
@@ -101,6 +105,7 @@ func (dec *deltaDecoder) EncodingType() datasetmd.EncodingType {
 // Decode decodes up to count values, storing the results into a new
 // [columnar.Int64] array obtained from the provided allocator. At the end of
 // the stream, Decode returns an [io.EOF].
+// Decode 预分配 count 长度缓冲，不足时截断并返回 io.EOF。
 func (dec *deltaDecoder) Decode(alloc *memory.Allocator, count int) (columnar.Array, error) {
 	// Obtain a buffer from the allocator with enough capacity for an optimistic `count` values.
 	// Resize the buffer explicitly in order to use the Set API which avoids a reslice compared to Push.
@@ -145,3 +150,4 @@ func (dec *deltaDecoder) Reset(data []byte) {
 	dec.off = 0
 	dec.buf = data
 }
+// init 注册 PHYSICAL_TYPE_INT64 与 ENCODING_TYPE_DELTA 编解码对。

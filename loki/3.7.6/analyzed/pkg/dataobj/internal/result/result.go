@@ -1,3 +1,4 @@
+// result 包封装可失败迭代器，避免 iter.Seq2 调用方静默忽略 error。
 // Package result provides utilities for dealing with iterators that can fail
 // during iteration.
 //
@@ -18,6 +19,7 @@ import (
 
 // Result is a type used for representing a result from an operation that can
 // fail.
+// Result 同时持有成功值与 error，仅 err 为 nil 时 value 有效。
 type Result[V any] struct {
 	value V // Valid only if err is nil.
 	err   error
@@ -56,6 +58,7 @@ func (r Result[V]) Err() error {
 // early if yield returns false.
 //
 // See the [iter] package for more information on iterators.
+// Seq 为 Result 元素的 push 风格迭代器序列。
 type Seq[V any] func(yield func(Result[V]) bool)
 
 // Iter produces a new Seq[V] from a given function that can fail. Values
@@ -64,6 +67,7 @@ type Seq[V any] func(yield func(Result[V]) bool)
 //
 // Iter makes it easier to write failable iterators and removes the need to
 // manually wrap values and errors into a [Result].
+// Iter 将可失败回调包装为 Seq，错误通过 Error 结果 yield 一次。
 func Iter[V any](seq func(yield func(V) bool) error) Seq[V] {
 	return func(yield func(Result[V]) bool) {
 		err := seq(func(v V) bool { return yield(Value(v)) })
@@ -84,6 +88,7 @@ func Pull[V any](seq Seq[V]) (next func() (Result[V], bool), stop func()) {
 
 // Collect collects values from seq into a new slice and returns it. Any errors
 // from seq are joined and returned as the second value.
+// Collect 收集全部成功值并用 errors.Join 合并迭代中的错误。
 func Collect[V any](seq Seq[V]) ([]V, error) {
 	var (
 		vals []V
@@ -102,6 +107,7 @@ func Collect[V any](seq Seq[V]) ([]V, error) {
 
 type valueCompareFunc[T any] func(T, T) int
 
+// Compare 先比较错误（错误排前），再对成功值调用 cmp。
 func Compare[T any](a, b Result[T], cmp valueCompareFunc[T]) int {
 	var (
 		aVal, aErr = a.Value()
@@ -117,3 +123,4 @@ func Compare[T any](a, b Result[T], cmp valueCompareFunc[T]) int {
 
 	return cmp(aVal, bVal)
 }
+// Pull 将 push 迭代转为 pull 风格 next/stop 接口便于手动驱动。

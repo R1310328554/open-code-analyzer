@@ -1,5 +1,7 @@
 package bufpool
 
+// bufpool 按指数分桶的 bytes.Buffer 对象池，减少频繁分配与 GC 压力。
+
 import (
 	"bytes"
 	"math"
@@ -20,6 +22,7 @@ const (
 	bucketMax uint64 = 1 << 36 /* 64 GiB */
 )
 
+// init 从 1KiB 倍增至 64GiB 创建分桶，末尾追加 MaxUint64 兜底桶。
 func init() {
 	nextBucket := bucketMin
 
@@ -59,6 +62,7 @@ func init() {
 }
 
 // findBucket returns the first bucket that is large enough to hold size.
+// findBucket 返回首个 size 不小于请求容量的 bucket。
 func findBucket(size uint64) *bucket {
 	for _, b := range buckets {
 		if b.size >= size {
@@ -70,3 +74,4 @@ func findBucket(size uint64) *bucket {
 	// anything, but if we do reach this we'll return the last bucket anyway.
 	return buckets[len(buckets)-1]
 }
+// Pool.New 不预分配缓冲，允许桶内缓冲尺寸多样化以避免越桶膨胀。

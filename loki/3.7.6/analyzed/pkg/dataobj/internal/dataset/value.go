@@ -1,5 +1,7 @@
 package dataset
 
+// Value 表示 dataset 中的单个标量值，采用固定大小结构避免堆分配。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -35,6 +37,7 @@ func (e *UnsupportedTypeError) Error() string {
 	return fmt.Sprintf("unsupported type: %s", e.Got)
 }
 
+// Value 用 kind/num/data 三元组表示 int64、uint64 与二进制类型。
 // A Value represents a single value within a dataset. Unlike [any], Values can
 // be constructed without allocations. The zero Value corresponds to nil.
 type Value struct {
@@ -95,6 +98,7 @@ func BinaryValue(v []byte) Value {
 }
 
 // IsNil returns whether v is nil.
+// IsNil 判断值是否为未指定物理类型的空值。
 func (v *Value) IsNil() bool {
 	return v.Type() == datasetmd.PHYSICAL_TYPE_UNSPECIFIED
 }
@@ -172,6 +176,7 @@ func (v *Value) byteArray() []byte {
 // [Value.IsNil] and [Value.IsZero] will both report true.
 //
 // However, [Value.Binary] will continue to return the underlying memory.
+// Zero 置为 nil 类型但保留 Binary 底层缓冲供复用。
 func (v *Value) Zero() {
 	v.kind = datasetmd.PHYSICAL_TYPE_UNSPECIFIED
 }
@@ -185,6 +190,7 @@ func (v *Value) Zero() {
 //   - [datasetmd.PHYSICAL_TYPE_BINARY] encodes the string as a sequence of bytes.
 //
 // NULL values encode as nil.
+// MarshalBinary 以 uvarint 类型前缀加载荷编码非空值。
 func (v Value) MarshalBinary() (data []byte, err error) {
 	if v.IsNil() {
 		return nil, nil
@@ -262,6 +268,7 @@ func (v Value) Size() int {
 //
 // As a special case, either a or b may be nil. Two nil values are equal, and a
 // nil value is always less than a non-nil value.
+// CompareValues 同类型值比较；nil 小于非 nil，类型不匹配则 panic。
 func CompareValues(a, b *Value) int {
 	var (
 		aType, bType = a.Type(), b.Type()
@@ -319,3 +326,4 @@ func varint(buf []byte) (int64, int) {
 	}
 	return x, n
 }
+// BinaryValue 构造二进制 Value，Int64Value/Uint64Value 构造数值标量。

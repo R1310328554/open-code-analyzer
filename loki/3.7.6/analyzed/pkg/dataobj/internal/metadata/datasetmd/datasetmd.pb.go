@@ -3,6 +3,9 @@
 
 package datasetmd
 
+// dataset 段 protobuf 元数据（protoc-gen-gogo 生成）。
+// 定义列物理/逻辑类型、编码、压缩、页描述与统计等 wire 类型。
+
 import (
 	bytes "bytes"
 	fmt "fmt"
@@ -26,6 +29,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// PhysicalType 枚举列值的物理存储类型（int64/uint64/binary 等）。
 // PhysicalType represents the type that the column is encoded as.
 type PhysicalType int32
 
@@ -91,6 +95,7 @@ func (CompressionType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_7ab9d5b21b743868, []int{1}
 }
 
+// EncodingType 枚举 plain、delta、bitmap 等值序列编码方式。
 // EncodingType represents the valid types that a sequence of values which a
 // column can be encoded with.
 type EncodingType int32
@@ -277,6 +282,7 @@ func (m *SectionMetadata) GetSortInfo() *SortInfo {
 	return nil
 }
 
+// ColumnDesc 描述数据集中单列的行数、类型与页列表等概要信息。
 // ColumnDesc describes an individual column within a data set.
 type ColumnDesc struct {
 	// Type holds the type of data in the column.
@@ -539,6 +545,7 @@ func (m *ColumnMetadata) GetPages() []*PageDesc {
 	return nil
 }
 
+// PageDesc 记录页内行数、压缩前后大小及在段内的字节偏移。
 // PageDesc describes an individual page within a column.
 type PageDesc struct {
 	// Uncompressed size of the page in bytes.
@@ -658,6 +665,7 @@ func (m *PageDesc) GetStatistics() *Statistics {
 	return nil
 }
 
+// Statistics 可选地携带 min/max/null_count 等列或页级统计。
 // Statistics about a column or a page. All statistics are optional and are
 // conditionally set depending on the column type.
 type Statistics struct {
@@ -733,6 +741,7 @@ func (m *Statistics) GetCardinalityCount() uint64 {
 	return 0
 }
 
+// SortInfo 描述段内行按哪些列、何种方向排序。
 // SortInfo holds sort order information for rows in the section.
 type SortInfo struct {
 	// The list of column sorts. The length of this depends on how many columns
@@ -3586,3 +3595,4 @@ var (
 	ErrInvalidLengthDatasetmd = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowDatasetmd   = fmt.Errorf("proto: integer overflow")
 )
+// 本文件由 datasetmd.proto 自动生成，请勿手工编辑。

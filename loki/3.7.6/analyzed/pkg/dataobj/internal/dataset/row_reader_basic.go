@@ -1,5 +1,8 @@
 package dataset
 
+// basicRowReader 是 dataset 包内的底层行读取器，
+// 按列懒加载页数据；上层 RowReader 在此基础上提供谓词过滤与批量下载。
+
 import (
 	"context"
 	"errors"
@@ -11,11 +14,13 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// basicRowReader 遍历列集合逐行读取，迭代时才拉取对应页。
 // basicRowReader is a low-level reader that reads rows from a set of columns.
 //
 // basicRowReader lazily reads pages from columns as they are iterated over; see
 // [RowReader] for a higher-level implementation that supports predicates and
 // batching page downloads.
+// basicRowReader 维护列列表、列读取器映射与下一行偏移 nextRow。
 type basicRowReader struct {
 	columns      []Column
 	readers      []*columnReader
@@ -50,6 +55,7 @@ func (pr *basicRowReader) Read(ctx context.Context, s []Row) (n int, err error) 
 //
 // After calling ReadColumns, additional columns in s can be filled using
 // [basicRowReader.Fill].
+// ReadColumns 从指定列子集读取至多 len(s) 行并写入 s，遇 EOF 返回 io.EOF。
 func (pr *basicRowReader) ReadColumns(ctx context.Context, columns []Column, s []Row) (n int, err error) {
 	if len(columns) == 0 {
 		return 0, fmt.Errorf("no columns to read")
@@ -90,6 +96,7 @@ func (pr *basicRowReader) ReadColumns(ctx context.Context, columns []Column, s [
 // calls.
 //
 // Fill does not advance the offset of the basicRowReader.
+// Fill 按 s[i].Index 为已有行填充指定列，不推进读取器全局偏移。
 func (pr *basicRowReader) Fill(ctx context.Context, columns []Column, s []Row) (n int, err error) {
 	if len(columns) == 0 {
 		return 0, fmt.Errorf("no columns to fill")
@@ -111,6 +118,7 @@ func (pr *basicRowReader) Fill(ctx context.Context, columns []Column, s []Row) (
 // partitionRows returns an iterator over a slice of rows that partitions the
 // slice into groups of consecutive, non-repeating row incidices. Gaps between
 // rows are treated as two different partitions.
+// partitionRows 将行切片按连续、无重复索引拆成若干分区。
 func partitionRows(s []Row) iter.Seq[[]Row] {
 	return func(yield func([]Row) bool) {
 		if len(s) == 0 {
@@ -133,6 +141,7 @@ func partitionRows(s []Row) iter.Seq[[]Row] {
 
 // fill implements fill for a single slice of rows that are consecutive and
 // have no gaps between them.
+// fill 对连续行区间并行读列，短列用 Zero 补齐以避免脏值。
 func (pr *basicRowReader) fill(ctx context.Context, columns []Column, s []Row) (n int, err error) {
 	if len(s) == 0 {
 		return 0, nil
@@ -252,6 +261,7 @@ func (pr *basicRowReader) fill(ctx context.Context, columns []Column, s []Row) (
 // Seeking to an offset before the start of the column set is an error. Seeking
 // to beyond the end of the column set will cause the next Read or ReadColumns
 // to return io.EOF.
+// Seek 设置下次 Read 的起始行偏移，支持 SeekStart/Current/End。
 func (pr *basicRowReader) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
@@ -292,6 +302,7 @@ func (pr *basicRowReader) maxRows() int {
 
 // Reset resets the basicRowReader to read from the start of the provided columns.
 // This permits reusing a basicRowReader rather than allocating a new one.
+// Reset 复用读取器并重绑列集合，回收多余 columnReader。
 func (pr *basicRowReader) Reset(columns []Column) {
 	if pr.columnLookup == nil {
 		pr.columnLookup = make(map[Column]int, len(columns))
@@ -341,3 +352,4 @@ func (pr *basicRowReader) Close() error {
 	}
 	return nil
 }
+// Close 关闭所有列读取器；已关闭实例可通过 Reset 再次使用。

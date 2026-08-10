@@ -1,5 +1,7 @@
 package dataset
 
+// plain 编码以 uvarint 长度前缀加原始字节存储 BINARY 列值。
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -23,6 +25,7 @@ func init() {
 	)
 }
 
+// plainBytesEncoder 对每个 Binary Value 写长度再写载荷字节。
 // A plainBytesEncoder encodes byte array values to an [streamio.Writer].
 type plainBytesEncoder struct {
 	w streamio.Writer
@@ -46,6 +49,7 @@ func (enc *plainBytesEncoder) EncodingType() datasetmd.EncodingType {
 }
 
 // Encode encodes an individual string value.
+// Encode 校验 PHYSICAL_TYPE_BINARY 后写入 uvarint 长度与内容。
 func (enc *plainBytesEncoder) Encode(v Value) error {
 	if v.Type() != datasetmd.PHYSICAL_TYPE_BINARY {
 		return fmt.Errorf("plain: invalid value type %v", v.Type())
@@ -73,6 +77,7 @@ func (enc *plainBytesEncoder) Reset(w streamio.Writer) {
 	enc.w = w
 }
 
+// plainBytesDecoder 解析长度前缀字符串并构建 columnar.UTF8 偏移数组。
 // plainBytesDecoder decodes byte arrays from a byte slice.
 type plainBytesDecoder struct {
 	data []byte
@@ -100,6 +105,7 @@ func (dec *plainBytesDecoder) EncodingType() datasetmd.EncodingType {
 // At the end of the stream, Decode returns nil, [io.EOF].
 //
 // The return value is a [columnar.UTF8].
+// Decode 预分配 offsets 与 values 缓冲，按页内剩余数据上限估算容量。
 func (dec *plainBytesDecoder) Decode(alloc *memory.Allocator, count int) (columnar.Array, error) {
 	var (
 		// Strings need a an offsets and a value buffer.
@@ -167,3 +173,4 @@ func (dec *plainBytesDecoder) Reset(data []byte) {
 	dec.data = data
 	dec.off = 0
 }
+// init 注册 PHYSICAL_TYPE_BINARY 与 ENCODING_TYPE_PLAIN 编解码对。

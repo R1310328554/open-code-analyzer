@@ -1,8 +1,10 @@
+// bitmask 包提供任意长度位图 Mask 的创建与按位读写 API。
 // Package bitmask provides an API for creating and manipulating
 // bitmasks of arbitrary length.
 package bitmask
 
 // Mask is a bitmask of arbitrary length. The zero value is a Mask of length 0.
+// Mask 用 []uint64 存储位，len 为逻辑位长度（零值为空掩码）。
 type Mask struct {
 	len int
 	b   []uint64
@@ -21,6 +23,7 @@ func (m *Mask) Len() int { return m.len }
 
 // Set sets the bit at the given index to 1. Set panics if index is out of
 // range.
+// Set 将 index 位置 1，越界 panic。
 func (m *Mask) Set(index int) {
 	if index < 0 || index >= m.len {
 		panic("bitmask.Set: index out of range")
@@ -40,6 +43,7 @@ func (m *Mask) Clear(index int) {
 
 // Test returns true if the bit at the given index is 1. Test panics if index
 // is out of range.
+// Test 返回 index 位是否为 1，越界 panic。
 func (m *Mask) Test(index int) bool {
 	if index < 0 || index >= m.len {
 		panic("bitmask.Has: index out of range")
@@ -50,6 +54,7 @@ func (m *Mask) Test(index int) bool {
 
 // Reset zeroes out the mask and resets it to the given length. Reset panics if
 // length is less than 1.
+// Reset 清零并按新长度扩展或截断底层 uint64 切片。
 func (m *Mask) Reset(length int) {
 	if length < 1 {
 		panic("bitmask.Reset: length must be at least 1")
@@ -67,3 +72,4 @@ func (m *Mask) Reset(length int) {
 	clear(m.b)
 	m.len = length
 }
+// Clear 将指定位清零，内部通过 index/64 与 index%64 定位字与位。

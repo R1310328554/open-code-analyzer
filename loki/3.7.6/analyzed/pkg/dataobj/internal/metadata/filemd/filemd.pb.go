@@ -3,6 +3,9 @@
 
 package filemd
 
+// data object 文件级 protobuf 元数据（protoc-gen-gogo 生成）。
+// 描述段列表、类型字典与各段物理布局区域。
+
 import (
 	bytes "bytes"
 	fmt "fmt"
@@ -25,6 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Metadata 汇总文件内全部 SectionInfo、字符串字典与 SectionType 表。
 // Metadata for the overall data object.
 type Metadata struct {
 	// Sections within the data object.
@@ -89,6 +93,7 @@ func (m *Metadata) GetTypes() []*SectionType {
 	return nil
 }
 
+// SectionType 通过字典引用给出段的命名空间类型名与可选版本号。
 // SectionType specifies a namespaced type of section within a data object.
 // Applications are responsible for interpreting SectionType for decoding.
 type SectionType struct {
@@ -206,6 +211,7 @@ func (m *SectionType_NameRef) GetKindRef() uint32 {
 	return 0
 }
 
+// SectionInfo 指向段元数据、类型索引及 SectionLayout 物理布局。
 // SectionInfo describes a section within the data object. Each section is an
 // independent unit of the data object.
 type SectionInfo struct {
@@ -311,6 +317,7 @@ func (m *SectionInfo) GetTenantRef() uint32 {
 	return 0
 }
 
+// SectionLayout 列出段内 metadata、data 等连续字节 Region。
 // SectionLayout describes the physical placement of the regions that form a
 // complete section: its data and its metadata.
 //
@@ -378,6 +385,7 @@ func (m *SectionLayout) GetMetadata() *Region {
 	return nil
 }
 
+// Region 以 offset 与 length 描述文件内一段连续字节范围。
 // Region describes a contiguous range of bytes within a data object.
 type Region struct {
 	// Byte offset of the region relative to the end of the header.
@@ -2077,3 +2085,4 @@ var (
 	ErrInvalidLengthFilemd = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowFilemd   = fmt.Errorf("proto: integer overflow")
 )
+// 本文件由 filemd.proto 自动生成，请勿手工编辑。

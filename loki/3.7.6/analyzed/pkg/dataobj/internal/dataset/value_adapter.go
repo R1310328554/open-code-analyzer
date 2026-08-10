@@ -1,5 +1,7 @@
 package dataset
 
+// value_adapter 将 columnar 列式数组批量拷贝到 dataset.Row 的 Values 槽位。
+
 import (
 	"fmt"
 
@@ -11,6 +13,7 @@ import (
 // Returns the amount of copied rows. Panics if len(dst) < src.Len().
 //
 // If src is nil, copyArray does nothing and returns 0.
+// copyArrayToRow 按列类型分派到 UTF8/Int64/Null 拷贝函数。
 func copyArrayToRow(dst []Row, columnIndex int, src columnar.Array) int {
 	if src == nil {
 		return 0
@@ -36,6 +39,7 @@ func copyArrayToRow(dst []Row, columnIndex int, src columnar.Array) int {
 // rows.
 //
 // Should only be called from [copyArray].
+// copyUTF8Array 逐行复制 UTF8 字节到 Row 的 BinaryValue 槽。
 func copyUTF8Array(dst []Row, columnIndex int, src *columnar.UTF8) int {
 	for i := range src.Len() {
 		if src.IsNull(i) {
@@ -58,6 +62,7 @@ func copyUTF8Array(dst []Row, columnIndex int, src *columnar.UTF8) int {
 // rows.
 //
 // Should only be called from [copyArray].
+// copyInt64Array 将非空 int64 写入 Int64Value，空值调用 Zero。
 func copyInt64Array(dst []Row, columnIndex int, src *columnar.Number[int64]) int {
 	for i := range src.Len() {
 		if src.IsNull(i) {
@@ -74,9 +79,11 @@ func copyInt64Array(dst []Row, columnIndex int, src *columnar.Number[int64]) int
 // rows.
 //
 // Should only be called from [copyArray].
+// copyNullArray 将全部行对应列置为零值表示 NULL。
 func copyNullArray(dst []Row, columnIndex int, src *columnar.Null) int {
 	for i := range src.Len() {
 		dst[i].Values[columnIndex].Zero()
 	}
 	return src.Len()
 }
+// 拷贝过程通过 slicegrow 扩展目标缓冲以复用已有内存。
