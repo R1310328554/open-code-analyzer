@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/provider/KeycloakDeploymentInfo.java",
     "server-spi-private/src/main/java/org/keycloak/provider/ProviderLoader.java",
     "server-spi-private/src/main/java/org/keycloak/provider/ProviderLoaderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/provider/ServerInfoAwareProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/EvaluatableScriptAdapter.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/InvocableScriptAdapter.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/Script.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/ScriptBindingsConfigurer.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/ScriptCompilationException.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/ScriptExecutionException.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/ScriptingProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/ScriptingProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/scripting/ScriptingSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/securityprofile/SecurityProfileProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/securityprofile/SecurityProfileProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/securityprofile/SecurityProfileSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/ClientPolicyManagerFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/ClientPolicyManagerSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/services/clientpolicy/ClientPolicyVote.java"
+    "server-spi-private/src/main/java/org/keycloak/provider/ServerInfoAwareProviderFactory.java"
   ],
   "remaining_pending": 2578,
-  "done": 3390
+  "done": 3405
 }
