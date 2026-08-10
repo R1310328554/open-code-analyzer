@@ -69,21 +69,27 @@ import org.keycloak.utils.SecureContextResolver;
 import org.jboss.logging.Logger;
 
 /**
+ * Keycloak 欢迎页 REST 资源（根路径 {@code /}）。
+ * <p>首次安装时引导创建 master 管理员用户；已配置时可选重定向至管理控制台。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @Provider
 @Path("/")
 public class WelcomeResource {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(WelcomeResource.class);
 
+    /** 缓存：是否仍需引导创建管理员（懒加载） */
     private volatile Boolean shouldBootstrap;
 
+    /** 注入的 Keycloak 会话 */
     @Context
     KeycloakSession session;
 
     /**
-     * Welcome page of Keycloak
+     * Keycloak 欢迎页（确保 URL 以斜杠结尾）
      *
      * @return
      * @throws URISyntaxException
@@ -102,6 +108,7 @@ public class WelcomeResource {
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_HTML_UTF_8)
+    /** 处理欢迎页管理员账户创建表单提交 */
     public Response createUser() {
         HttpRequest request = session.getContext().getHttpRequest();
         MultivaluedMap<String, String> formData = request.getDecodedFormParameters();
@@ -169,7 +176,7 @@ public class WelcomeResource {
     }
 
     /**
-     * Resources for welcome page
+     * 欢迎页静态资源（CSS/图片等）
      *
      * @param path
      * @return
@@ -192,6 +199,11 @@ public class WelcomeResource {
         }
     }
 
+    /**
+     * 渲染 FreeMarker 欢迎页模板。
+     * @param successMessage 成功提示（可为 null）
+     * @param errorMessage 错误提示（可为 null）
+     */
     private Response createWelcomePage(String successMessage, String errorMessage) {
         try {
             Theme theme = getTheme();
@@ -211,7 +223,7 @@ public class WelcomeResource {
             boolean redirectToAdmin = Boolean.parseBoolean(themeProperties.getProperty("redirectToAdmin", "false"));
             URI adminUrl = session.getContext().getUri(UrlType.ADMIN).getBaseUriBuilder().path("/admin/").build();
 
-            // Redirect to the Administration Console if the administrative user already exists.
+            // 管理员已存在且主题配置 redirectToAdmin 时重定向到控制台
             if (redirectToAdmin && !bootstrap && adminConsoleEnabled && successMessage == null) {
                 return Response.status(302).location(adminUrl).build();
             }
@@ -261,10 +273,12 @@ public class WelcomeResource {
         }
     }
 
+    /** @return 是否启用 Admin V2 控制台 */
     private static boolean isAdminConsoleEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.ADMIN_V2);
     }
 
+    /** 加载 WELCOME 类型主题 */
     private Theme getTheme() {
         try {
             return session.theme().getTheme(Theme.Type.WELCOME);
@@ -273,10 +287,12 @@ public class WelcomeResource {
         }
     }
 
+    /** @return 管理员创建提示文案（子类可覆盖） */
     protected String getAdminCreationMessage() {
         return "or use a bootstrap-admin command";
     }
 
+    /** 判断是否仍需引导创建 master 用户（双重检查锁） */
     private boolean shouldBootstrap() {
         if (shouldBootstrap == null) {
             synchronized (this) {
@@ -288,8 +304,13 @@ public class WelcomeResource {
         return shouldBootstrap;
     }
 
+    /**
+     * 判断请求是否来自本地（无代理头且地址为 localhost）。
+     * @param session Keycloak 会话
+     * @return 是否为本地访问
+     */
     public static boolean isLocal(KeycloakSession session) {
-        // if proxy-headers and proxy-protocol aren't set, then we can't properly tell if we're behind a local proxy, so don't consider this local
+        // 未配置代理头时，生产 HTTPS 访问不视为本地, then we can't properly tell if we're behind a local proxy, so don't consider this local
         Scope rootConfig = Config.scope().root();
         if (rootConfig.get(ProxyOptions.PROXY_HEADERS.getKey()) == null
                 && !rootConfig.getBoolean(ProxyOptions.PROXY_PROTOCOL_ENABLED.getKey())
@@ -308,20 +329,23 @@ public class WelcomeResource {
         String forwarded = headers.getHeaderString("Forwarded");
         logger.debugf("Checking isLocal. Remote address: %s, Local address: %s, X-Forwarded-For header: %s, Forwarded header: %s", remoteAddress, localAddress, xForwardedFor, forwarded);
 
-        // Consider that welcome page accessed locally just if it was accessed really through "localhost" URL and without loadbalancer (x-forwarded-for and forwarded header is empty).
+        // 仅当无 X-Forwarded-For/Forwarded 且远程/本地地址均为本地时视为本地访问 it was accessed really through "localhost" URL and without loadbalancer (x-forwarded-for and forwarded header is empty).
         return xForwardedFor == null && forwarded == null && SecureContextResolver.isLocalAddress(remoteAddress) && SecureContextResolver.isLocalAddress(localAddress);
     }
 
+    /** 设置欢迎页 CSRF Cookie 并返回 stateChecker 值 */
     private String setCsrfCookie() {
         String stateChecker = Base64Url.encode(SecretGenerator.getInstance().randomBytes());
         session.getProvider(CookieProvider.class).set(CookieType.WELCOME_CSRF, stateChecker);
         return stateChecker;
     }
 
+    /** 使欢迎页 CSRF Cookie 过期 */
     private void expireCsrfCookie() {
         session.getProvider(CookieProvider.class).expire(CookieType.WELCOME_CSRF);
     }
 
+    /** 校验表单 stateChecker 与 Cookie 是否一致 */
     private void csrfCheck(final MultivaluedMap<String, String> formData) {
         String formStateChecker = formData.getFirst("stateChecker");
         String cookieStateChecker = session.getProvider(CookieProvider.class).get(CookieType.WELCOME_CSRF);

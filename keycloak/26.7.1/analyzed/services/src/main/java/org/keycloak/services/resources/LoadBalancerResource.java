@@ -33,10 +33,8 @@ import io.smallrye.common.annotation.NonBlocking;
 import org.jboss.logging.Logger;
 
 /**
- * Prepare information for the load balancer (possibly in a multi-site setup) whether this Keycloak cluster should receive traffic.
- * <p>
- * This is non-blocking, so that the load balancer can still retrieve the status even if the Keycloak instance is
- * trying to withstand a high load. See {@link LoadBalancerCheckProvider#isDown()} for a longer explanation.
+ * 负载均衡健康检查资源（多站点部署）。
+ * <p>向负载均衡器报告本 Keycloak 集群是否应接收流量。本端点为非阻塞，即使实例高负载时仍可返回状态。详见 {@link LoadBalancerCheckProvider#isDown()}。</p>
  *
  * @author <a href="mailto:aschwart@redhat.com">Alexander Schwartz</a>
  */
@@ -45,13 +43,15 @@ import org.jboss.logging.Logger;
 @NonBlocking
 public class LoadBalancerResource {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(LoadBalancerResource.class);
 
+    /** 注入的 Keycloak 会话 */
     @Context
     KeycloakSession session;
 
     /**
-     * Return the status for a load balancer in a multi-site setup if this Keycloak site should receive traffic.
+     * 返回多站点负载均衡器所需的本站点 UP/DOWN 状态。
      * <p />
      * While a loadbalancer will usually check for the returned status code, the additional text <code>UP</code> or <code>DOWN</down>
      * is returned for humans to see the status in the browser.
@@ -59,7 +59,7 @@ public class LoadBalancerResource {
      * In contrast to other management endpoints of Quarkus, no information is returned to the caller about the internal state of Keycloak
      * as this endpoint might be publicly available from the internet and should return as little information as possible.
      *
-     * @return HTTP status 503 and DOWN when down, and HTTP status 200 and UP when up.
+     * @return 正常时 HTTP 200 与 UP，下线时 HTTP 503 与 DOWN
      */
     @GET
     @Produces(MediaType.TEXT_PLAIN_UTF_8)

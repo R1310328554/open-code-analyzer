@@ -61,51 +61,70 @@ import org.jboss.logging.Logger;
 import static org.keycloak.utils.MediaType.APPLICATION_JWT;
 
 /**
+ * 领域根 REST 资源（{@code /realms}）。
+ * <p>路由到协议端点、登录操作、账户服务、身份代理、Well-Known 及 SPI 扩展子资源。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Provider
 @Path("/realms")
 public class RealmsResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(RealmsResource.class);
 
+    /** 注入的 Keycloak 会话 */
     @Context
     protected KeycloakSession session;
 
+    /** 构建领域基础 URL（基于请求 UriInfo） */
     public static UriBuilder realmBaseUrl(UriInfo uriInfo) {
         UriBuilder baseUriBuilder = uriInfo.getBaseUriBuilder();
         return realmBaseUrl(baseUriBuilder);
     }
 
+    /** 构建领域基础 URL（基于已有 UriBuilder） */
     public static UriBuilder realmBaseUrl(UriBuilder baseUriBuilder) {
         return baseUriBuilder.path(RealmsResource.class).path(RealmsResource.class, "getRealmResource");
     }
 
+    /** 构建账户服务 URL */
     public static UriBuilder accountUrl(UriBuilder base) {
         return base.path(RealmsResource.class).path(RealmsResource.class, "getAccountService");
     }
 
+    /** 构建协议端点 URL（UriInfo 版本） */
     public static UriBuilder protocolUrl(UriInfo uriInfo) {
         return uriInfo.getBaseUriBuilder().path(RealmsResource.class).path(RealmsResource.class, "getProtocol");
     }
 
+    /** 构建协议端点 URL（UriBuilder 版本） */
     public static UriBuilder protocolUrl(UriBuilder builder) {
         return builder.path(RealmsResource.class).path(RealmsResource.class, "getProtocol");
     }
 
+    /** 构建客户端动态注册 URL */
     public static UriBuilder clientRegistrationUrl(UriInfo uriInfo) {
         return uriInfo.getBaseUriBuilder().path(RealmsResource.class).path(RealmsResource.class, "getClientsService");
     }
 
+    /** 构建身份代理服务 URL */
     public static UriBuilder brokerUrl(UriInfo uriInfo) {
         return uriInfo.getBaseUriBuilder().path(RealmsResource.class).path(RealmsResource.class, "getBrokerService");
     }
 
+    /** 构建领域级 Well-Known URL */
     public static UriBuilder wellKnownProviderUrl(UriBuilder builder) {
         return builder.path(RealmsResource.class).path(RealmsResource.class, "getWellKnown");
     }
 
     @Path("{realm}/protocol/{protocol}")
+    /**
+     * 获取指定协议端点（OIDC/SAML 等）。
+     * @param name 领域名称
+     * @param protocol 协议 ID
+     * @return 协议端点实例
+     */
     public Object getProtocol(final @PathParam("realm") String name,
                               final @PathParam("protocol") String protocol) {
         resolveRealmAndUpdateSession(name);
@@ -122,7 +141,7 @@ public class RealmsResource {
     }
 
     /**
-     * Returns a temporary redirect to the client url configured for the given {@code clientId} in the given {@code realmName}.
+     * 根据 clientId 解析客户端 URL 并返回 302 重定向。
      * <p>
      * This allows a client to refer to other clients just by their client id in URLs, will then redirect users to the actual client url.
      * The client url is derived according to the rules of the base url in the client configuration.
@@ -135,6 +154,7 @@ public class RealmsResource {
      */
     @GET
     @Path("{realm}/clients/{client_id}/redirect")
+    /** {@inheritDoc} */
     public Response getRedirect(final @PathParam("realm") String realmName, final @PathParam("client_id") String clientId) {
         resolveRealmAndUpdateSession(realmName);
 
@@ -161,6 +181,7 @@ public class RealmsResource {
     }
 
     @Path("{realm}/login-actions")
+    /** 获取领域登录操作子资源 */
     public LoginActionsService getLoginActionsService(final @PathParam("realm") String name) {
         resolveRealmAndUpdateSession(name);
         EventBuilder event = new EventBuilder(session.getContext().getRealm(), session, session.getContext().getConnection());
@@ -168,6 +189,7 @@ public class RealmsResource {
     }
 
     @Path("{realm}/clients-registrations")
+    /** 获取客户端动态注册子资源 */
     public ClientRegistrationService getClientsService(final @PathParam("realm") String name) {
         resolveRealmAndUpdateSession(name);
         EventBuilder event = new EventBuilder(session.getContext().getRealm(), session, session.getContext().getConnection());
@@ -175,16 +197,19 @@ public class RealmsResource {
     }
 
     @Path("{realm}/clients-managements")
+    /** 获取客户端管理子资源 */
     public ClientsManagementService getClientsManagementService(final @PathParam("realm") String name) {
         resolveRealmAndUpdateSession(name);
         EventBuilder event = new EventBuilder(session.getContext().getRealm(), session, session.getContext().getConnection());
         return new ClientsManagementService(session, event);
     }
 
+    /** 解析领域并写入会话上下文（实例方法） */
     private void resolveRealmAndUpdateSession(String realmName) {
         resolveRealmAndUpdateSession(session, realmName);
     }
 
+    /** 解析领域并写入会话上下文（静态方法） */
     private static void resolveRealmAndUpdateSession(KeycloakSession session, String realmName) {
         RealmManager realmManager = new RealmManager(session);
         RealmModel realm = realmManager.getRealmByName(realmName);
@@ -195,6 +220,7 @@ public class RealmsResource {
     }
 
     @Path("{realm}/account")
+    /** 获取账户控制台子资源 */
     public Object getAccountService(final @PathParam("realm") String name) {
         resolveRealmAndUpdateSession(name);
         EventBuilder event = new EventBuilder(session.getContext().getRealm(), session, session.getContext().getConnection());
@@ -202,12 +228,14 @@ public class RealmsResource {
     }
 
     @Path("{realm}")
+    /** 获取领域公开信息子资源 */
     public PublicRealmResource getRealmResource(final @PathParam("realm") String name) {
         resolveRealmAndUpdateSession(name);
         return new PublicRealmResource(session);
     }
 
     @Path("{realm}/broker")
+    /** 获取身份代理（IdP 联邦）子资源并初始化事件 */
     public IdentityBrokerService getBrokerService(final @PathParam("realm") String name) {
         resolveRealmAndUpdateSession(name);
 
@@ -221,6 +249,7 @@ public class RealmsResource {
     @OPTIONS
     @Path("{realm}/.well-known/{provider}")
     @Produces(MediaType.APPLICATION_JSON)
+    /** Well-Known 端点 CORS 预检 */
     public Response getVersionPreflight(final @PathParam("realm") String name,
                                         final @PathParam("provider") String providerName) {
         return Cors.builder().allowedMethods("GET").preflight().auth().add(Response.ok());
@@ -229,11 +258,20 @@ public class RealmsResource {
     @GET
     @Path("{realm}/.well-known/{alias}")
     @Produces({MediaType.APPLICATION_JSON, APPLICATION_JWT})
+    /** 获取领域 Well-Known 配置（JSON 或 JWT） */
     public Response getWellKnown(final @PathParam("realm") String realm,
                                  final @PathParam("alias") String alias) {
         return getWellKnownResponse(session, realm, alias, logger);
     }
 
+    /**
+     * 解析并返回 Well-Known 响应（静态入口，供 {@link ServerMetadataResource} 复用）。
+     * @param session Keycloak 会话
+     * @param realm 领域名称
+     * @param alias Well-Known 别名
+     * @param logger 日志记录器
+     * @return Well-Known 配置响应
+     */
     public static Response getWellKnownResponse(KeycloakSession session, String realm, String alias, Logger logger) throws NotFoundException {
         resolveRealmAndUpdateSession(session, realm);
         checkSsl(session, session.getContext().getRealm());
@@ -249,7 +287,7 @@ public class RealmsResource {
             Object config = wellKnown.getConfig();
             Response.ResponseBuilder responseBuilder;
 
-            // Check if the provider returned a JWT string or JSON object
+            // 根据返回类型选择 JWT 或 JSON 媒体类型
             responseBuilder = Response.ok(config).type(config instanceof String ? APPLICATION_JWT : MediaType.APPLICATION_JSON);
 
             return Cors.builder().allowAllOrigins().auth().add(responseBuilder.cacheControl(CacheControlUtil.noCache()));
@@ -259,6 +297,7 @@ public class RealmsResource {
     }
 
     @Path("{realm}/authz")
+    /** 获取授权服务子资源（需启用 AUTHORIZATION 特性） */
     public Object getAuthorizationService(@PathParam("realm") String name) {
         ProfileHelper.requireFeature(Profile.Feature.AUTHORIZATION);
 
@@ -268,12 +307,13 @@ public class RealmsResource {
     }
 
     /**
-     * A JAX-RS sub-resource locator that uses the {@link org.keycloak.services.resource.RealmResourceSPI} to resolve sub-resources instances given an <code>unknownPath</code>.
+     * 通过 {@link org.keycloak.services.resource.RealmResourceSPI} 解析 REST 扩展子资源。 to resolve sub-resources instances given an <code>unknownPath</code>.
      *
      * @param extension a path that could be to a REST extension
      * @return a JAX-RS sub-resource instance for the REST extension if found. Otherwise null is returned.
      */
     @Path("{realm}/{extension}")
+    /** {@inheritDoc} */
     public Object resolveRealmExtension(@PathParam("realm") String realmName, @PathParam("extension") String extension) {
         resolveRealmAndUpdateSession(realmName);
 
@@ -290,10 +330,12 @@ public class RealmsResource {
         throw new NotFoundException();
     }
 
+    /** 校验当前请求是否满足领域 SSL 要求（实例方法） */
     private void checkSsl(RealmModel realm) {
         checkSsl(session, realm);
     }
 
+    /** 校验 HTTPS 要求，不满足时抛出 CORS 错误 */
     private static void checkSsl(KeycloakSession session, RealmModel realm) {
         if (!"https".equals(session.getContext().getUri().getBaseUri().getScheme())
                 && realm.getSslRequired().isRequired(session.getContext().getConnection())) {

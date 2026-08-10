@@ -49,26 +49,33 @@ import org.keycloak.sessions.CommonClientSessionModel.Action;
 import org.jboss.logging.Logger;
 
 /**
+ * {@link LoginActionsService} 的令牌与登录操作校验工具。
+ * <p>提供 Action Token 验证谓词及用户/客户端/重定向 URI 有效性检查。</p>
  *
  * @author hmlnarik
  */
 public class LoginActionsServiceChecks {
 
+    /** 日志记录器 */
     private static final Logger LOG = Logger.getLogger(LoginActionsServiceChecks.class.getName());
 
     /**
-     * This check verifies that user ID (subject) from the token matches
+     * 校验令牌 subject 与认证会话中已认证用户 ID 一致。
      * the one from the authentication session.
      */
+    /** 令牌用户 ID 与认证会话用户匹配的校验谓词 */
     public static class AuthenticationSessionUserIdMatchesOneFromToken implements Predicate<JsonWebToken> {
 
+        /** Action Token 上下文 */
         private final ActionTokenContext<?> context;
 
+        /** @param context Action Token 上下文 */
         public AuthenticationSessionUserIdMatchesOneFromToken(ActionTokenContext<?> context) {
             this.context = context;
         }
 
         @Override
+        /** {@inheritDoc} 不匹配时抛出 {@link ExplainedTokenVerificationException} */
         public boolean test(JsonWebToken t) throws VerificationException {
             AuthenticationSessionModel authSession = context.getAuthenticationSession();
 
@@ -82,19 +89,25 @@ public class LoginActionsServiceChecks {
     }
 
     /**
-     * Verifies that if authentication session exists and any action is required according to it, then it is
+     * 校验认证会话当前 action 是否为预期值；若需跳转 required-actions 则抛出带重定向的异常。
      * the expected one.
      *
      * If there is an action required in the session, furthermore it is not the expected one, and the required
      * action is redirection to "required actions", it throws with response performing the redirect to required
      * actions.
      */
+    /** 认证会话 action 与预期 action 一致的校验谓词 */
     public static class IsActionRequired implements Predicate<JsonWebToken> {
 
         private final ActionTokenContext<?> context;
 
+        /** 预期的认证会话 action */
         private final AuthenticationSessionModel.Action expectedAction;
 
+        /**
+         * @param context Action Token 上下文
+         * @param expectedAction 预期 action
+         */
         public IsActionRequired(ActionTokenContext<?> context, Action expectedAction) {
             this.context = context;
             this.expectedAction = expectedAction;
@@ -118,9 +131,10 @@ public class LoginActionsServiceChecks {
     }
 
     /**
-     *  Verifies whether the user given by ID both exists in the current realm. If yes,
+     * 校验用户 ID 在领域内存在且已启用，并检测是否与 Cookie 中已登录用户冲突。
      *  it optionally also injects the user using the given function (e.g. into session context).
      */
+    /** {@inheritDoc} 静态用户有效性校验 */
     public static void checkIsUserValid(KeycloakSession session, RealmModel realm, String userId, Consumer<UserModel> userSetter, EventBuilder event) throws VerificationException {
         UserModel user = userId == null ? null : session.users().getUserById(realm, userId);
 
@@ -137,7 +151,7 @@ public class LoginActionsServiceChecks {
         if (authResult != null) {
             UserSessionModel userSession = authResult.session();
             if (!user.equals(userSession.getUser())) {
-                // do not allow authenticated users performing actions that are bound to other user and fire an event
+                // 禁止已登录用户执行绑定到其他用户的操作（防账户劫持） and fire an event
                 // it might be an attempt to hijack a user account or perform actions on behalf of others
                 // we don't support yet multiple accounts within a same browser session
                 event.detail(Details.EXISTING_USER, userSession.getUser().getId());
@@ -156,6 +170,7 @@ public class LoginActionsServiceChecks {
      *  Verifies whether the user given by ID both exists in the current realm. If yes,
      *  it optionally also injects the user using the given function (e.g. into session context).
      */
+    /** 基于 Action Token 的用户有效性校验（包装为令牌验证异常） */
     public static <T extends JsonWebToken & SingleUseObjectKeyModel> void checkIsUserValid(T token, ActionTokenContext<T> context, EventBuilder event) throws VerificationException {
         try {
             checkIsUserValid(context.getSession(), context.getRealm(), token.getUserId(), context.getAuthenticationSession()::setAuthenticatedUser, event);
@@ -165,9 +180,10 @@ public class LoginActionsServiceChecks {
     }
 
     /**
-     * Verifies whether the client denoted by client ID in token's {@code iss} ({@code issuedFor})
+     * 校验令牌 issuedFor 对应的客户端存在且已启用。
      * field both exists and is enabled.
      */
+    /** 客户端存在性与启用状态校验 */
     public static void checkIsClientValid(KeycloakSession session, ClientModel client) throws VerificationException {
         if (client == null) {
             throw new ExplainedVerificationException(Errors.CLIENT_NOT_FOUND, Messages.UNKNOWN_LOGIN_REQUESTER);
@@ -182,6 +198,7 @@ public class LoginActionsServiceChecks {
      * Verifies whether the client denoted by client ID in token's {@code iss} ({@code issuedFor})
      * field both exists and is enabled.
      */
+    /** 基于 Action Token 的客户端校验 */
     public static <T extends JsonWebToken> void checkIsClientValid(T token, ActionTokenContext<T> context) throws VerificationException {
         String clientId = token.getIssuedFor();
         AuthenticationSessionModel authSession = context.getAuthenticationSession();
@@ -199,14 +216,18 @@ public class LoginActionsServiceChecks {
     }
 
     /**
-     * Verifies whether the given redirect URL, when set, is valid for the given client.
+     * 校验重定向 URI（若提供）对客户端合法。
      */
+    /** 重定向 URI 合法性校验谓词 */
     public static class IsRedirectValid implements Predicate<JsonWebToken> {
 
         private final ActionTokenContext<?> context;
 
+        /** 待校验的重定向 URI */
         private final String redirectUri;
 
+        /** @param context Action Token 上下文
+         * @param redirectUri 重定向 URI */
         public IsRedirectValid(ActionTokenContext<?> context, String redirectUri) {
             this.context = context;
             this.redirectUri = redirectUri;
@@ -229,29 +250,33 @@ public class LoginActionsServiceChecks {
     }
 
     /**
-     *  This check verifies that current authentication session is consistent with the one specified in token.
+     * 校验 Cookie 中认证会话与令牌中 auth session ID 是否一致（含 fork 会话场景）。
      *  Examples:
      *  <ul>
-     *      <li>1. Email from administrator with reset e-mail - token does not contain auth session ID</li>
-     *      <li>2. Email from "verify e-mail" step within flow - token contains auth session ID.</li>
-     *      <li>3. User clicked the link in an e-mail and gets to a new browser - authentication session cookie is not set</li>
-     *      <li>4. User clicked the link in an e-mail while having authentication running - authentication session cookie
+     *      <li>1. 管理员重置邮件 — 令牌不含 auth session ID</li>
+     *      <li>2. 流程内验证邮件 — 令牌含 auth session ID</li>
+     *      <li>3. 新浏览器打开邮件链接 — 无认证会话 Cookie</li>
+     *      <li>4. 已有认证流程时打开邮件链接 — 已有认证会话 Cookie</li>
      *             is already set in the browser</li>
      *  </ul>
      *
      *  <ul>
-     *      <li>For combinations 1 and 3, 1 and 4, and 2 and 3: Requests next step</li>
-     *      <li>For combination 2 and 4:
+     *      <li>组合 1+3、1+4、2+3：请求下一步</li>
+     *      <li>组合 2+4：
      *          <ul>
-     *          <li>If the auth session IDs from token and cookie match, pass</li>
-     *          <li>Else if the auth session from cookie was forked and its parent auth session ID
+     *          <li>令牌与 Cookie 的 auth session ID 一致则通过</li>
+     *          <li>否则若 Cookie 会话为 fork 且父会话 ID 与令牌一致，则切换到父会话并通过</li>
      *              matches that of token, replaces current auth session with that of parent and passes</li>
-     *          <li>Else requests restart by throwing RestartFlow exception</li>
+     *          <li>否则抛出 RestartFlow 要求重启</li>
      *          </ul>
      *      </li>
      *  </ul>
      *
-     *  When the check passes, it also sets the authentication session in token context accordingly.
+     *  通过时在 token 上下文中设置对应认证会话。
+     */
+    /**
+     * Cookie 认证会话与令牌 auth session ID 匹配校验。
+     * @return 是否成功匹配并更新上下文
      */
     public static <T extends JsonWebToken> boolean doesAuthenticationSessionFromCookieMatchOneFromToken(
             ActionTokenContext<T> context, AuthenticationSessionModel authSessionFromCookie, String authSessionCompoundIdFromToken) throws VerificationException {
@@ -265,7 +290,7 @@ public class LoginActionsServiceChecks {
             return true;
         }
 
-        // Check if it's forked session. It would have same parent (rootSession) as our browser authenticationSession
+        // 检查是否为 fork 会话：与浏览器会话共享同一 rootSession
         String parentTabId = authSessionFromCookie.getAuthNote(AuthenticationProcessor.FORKED_FROM);
         if (parentTabId == null) {
             return false;
@@ -277,9 +302,9 @@ public class LoginActionsServiceChecks {
             return false;
         }
 
-        // It's the correct browser. We won't continue login
+        // 确认为同一浏览器，切换到 fork 源 tab 继续令牌流程
         // from the login form (browser flow) but from the token's flow
-        // Don't expire KC_RESTART cookie at this point
+        // 此阶段不使 KC_RESTART Cookie 过期
         LOG.debugf("Switched to forked tab: %s from: %s . Root session: %s", authSessionFromParent.getTabId(), authSessionFromCookie.getTabId(), authSessionFromCookie.getParentSession().getId());
 
         context.setAuthenticationSession(authSessionFromParent, false);
@@ -288,6 +313,7 @@ public class LoginActionsServiceChecks {
         return true;
     }
 
+    /** 校验 Action Token 尚未被撤销/重复使用 */
     public static <T extends JsonWebToken & SingleUseObjectKeyModel> void checkTokenWasNotUsedYet(T token, ActionTokenContext<T> context) throws VerificationException {
         if (context.getSession().revokedTokens().contains(token.serializeKey())) {
             throw new ExplainedTokenVerificationException(token, Errors.EXPIRED_CODE, Messages.EXPIRED_ACTION);

@@ -121,75 +121,106 @@ import static org.keycloak.authentication.actiontoken.DefaultActionToken.ACTION_
 import static org.keycloak.models.utils.DefaultRequiredActions.getDefaultRequiredActionCaseInsensitively;
 
 /**
+ * 登录操作 REST 服务（{@code /realms/{realm}/login-actions}）。
+ * <p>处理浏览器认证、注册、重置凭证、required-action、Action Token、Broker 登录及 OAuth 同意等流程。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LoginActionsService {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(LoginActionsService.class);
 
+    /** 浏览器认证流程路径 */
     public static final String AUTHENTICATE_PATH = "authenticate";
+    /** 用户注册流程路径 */
     public static final String REGISTRATION_PATH = "registration";
+    /** 重置凭证流程路径 */
     public static final String RESET_CREDENTIALS_PATH = "reset-credentials";
+    /** 必需操作（required-action）路径 */
     public static final String REQUIRED_ACTION = "required-action";
+    /** 首次 Broker 登录流程路径 */
     public static final String FIRST_BROKER_LOGIN_PATH = "first-broker-login";
+    /** Broker 登录后附加流程路径 */
     public static final String POST_BROKER_LOGIN_PATH = "post-broker-login";
 
+    /** 重启认证会话路径 */
     public static final String RESTART_PATH = "restart";
 
+    /**  detached 信息页路径（认证会话已删除后切换语言） */
     public static final String DETACHED_INFO_PATH = "detached-info";
 
+    /** 认证会话 note：跨请求转发的错误消息键 */
     public static final String FORWARDED_ERROR_MESSAGE_NOTE = "forwardedErrorMessage";
 
+    /** URL 参数：会话动作码 */
     public static final String SESSION_CODE = "session_code";
+    /** URL 参数：认证会话 ID */
     public static final String AUTH_SESSION_ID = "auth_session_id";
 
+    /** 表单字段：取消应用发起的 required-action */
     public static final String CANCEL_AIA = "cancel-aia";
 
+    /** 当前领域 */
     private final RealmModel realm;
 
+    /** HTTP 请求 */
     private final HttpRequest request;
 
+    /** HTTP 头 */
     protected final HttpHeaders headers;
 
+    /** 客户端连接 */
     private final ClientConnection clientConnection;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 登录相关事件构建器 */
     private EventBuilder event;
 
+    /** 构建 login-actions 基础 URL（UriInfo） */
     public static UriBuilder loginActionsBaseUrl(UriInfo uriInfo) {
         UriBuilder baseUriBuilder = uriInfo.getBaseUriBuilder();
         return loginActionsBaseUrl(baseUriBuilder);
     }
 
+    /** 构建 authenticate 表单 POST URL */
     public static UriBuilder authenticationFormProcessor(UriInfo uriInfo) {
         return loginActionsBaseUrl(uriInfo).path(LoginActionsService.class, "authenticateForm");
     }
 
+    /** 构建 required-action POST URL */
     public static UriBuilder requiredActionProcessor(UriInfo uriInfo) {
         return loginActionsBaseUrl(uriInfo).path(LoginActionsService.class, "requiredActionPOST");
     }
 
+    /** 构建 action-token GET URL */
     public static UriBuilder actionTokenProcessor(UriInfo uriInfo) {
         return loginActionsBaseUrl(uriInfo).path(LoginActionsService.class, "executeActionToken");
     }
 
+    /** 构建 registration POST URL */
     public static UriBuilder registrationFormProcessor(UriInfo uriInfo) {
         return loginActionsBaseUrl(uriInfo).path(LoginActionsService.class, "processRegister");
     }
 
+    /** 构建 first-broker-login GET URL */
     public static UriBuilder firstBrokerLoginProcessor(UriInfo uriInfo) {
         return loginActionsBaseUrl(uriInfo).path(LoginActionsService.class, "firstBrokerLoginGet");
     }
 
+    /** 构建 post-broker-login GET URL */
     public static UriBuilder postBrokerLoginProcessor(UriInfo uriInfo) {
         return loginActionsBaseUrl(uriInfo).path(LoginActionsService.class, "postBrokerLoginGet");
     }
 
+    /** 构建 login-actions 基础 URL（UriBuilder） */
     public static UriBuilder loginActionsBaseUrl(UriBuilder baseUriBuilder) {
         return baseUriBuilder.path(RealmsResource.class).path(RealmsResource.class, "getLoginActionsService");
     }
 
+    /** 构造登录操作服务并设置禁止后退缓存头 */
     public LoginActionsService(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
@@ -200,6 +231,7 @@ public class LoginActionsService {
         this.headers = session.getContext().getRequestHeaders();
     }
 
+    /** 校验 HTTPS 是否满足领域要求 */
     private boolean checkSsl() {
         if (session.getContext().getUri().getBaseUri().getScheme().equals("https")) {
             return true;
@@ -209,6 +241,7 @@ public class LoginActionsService {
     }
 
 
+    /** 创建 {@link SessionCodeChecks} 并执行 initialVerify */
     private SessionCodeChecks checksForCode(String authSessionId, String code, String execution, String clientId, String tabId, String clientData, String flowPath) {
         SessionCodeChecks res = new SessionCodeChecks(realm, session.getContext().getUri(), request, clientConnection, session, event, authSessionId, code, execution, clientId, tabId, clientData, flowPath);
         res.initialVerify();
@@ -216,6 +249,7 @@ public class LoginActionsService {
     }
 
 
+    /** 构建流程最后执行步骤 URL */
     protected URI getLastExecutionUrl(String flowPath, String executionId, String clientId, String tabId, String clientData) {
         return new AuthenticationFlowURLHelper(session, realm, session.getContext().getUri())
                 .getLastExecutionUrl(flowPath, executionId, clientId, tabId, clientData);
@@ -223,12 +257,13 @@ public class LoginActionsService {
 
 
     /**
-     * protocol independent page for restart of the flow
+     * 协议无关的认证流程重启入口
      *
      * @return
      */
     @Path(RESTART_PATH)
     @GET
+    /** {@inheritDoc} 重置流程并可选择登出重认证中的用户会话 */
     public Response restartSession(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                    @QueryParam(Constants.CLIENT_ID) String clientId,
                                    @QueryParam(Constants.TAB_ID) String tabId,
@@ -252,7 +287,7 @@ public class LoginActionsService {
         }
 
         if (!Boolean.parseBoolean(skipLogout)) {
-            // See if we already have userSession attached to authentication session. This means restart of authentication session during re-authentication
+            // 重认证场景下若已有 userSession 则先 backchannel 登出 This means restart of authentication session during re-authentication
             // We logout userSession in this case
             UserSessionModel userSession = new AuthenticationSessionManager(session).getUserSession(authSession);
             if (userSession != null) {
@@ -271,13 +306,14 @@ public class LoginActionsService {
     }
 
     /**
-     * protocol independent "detached info" page. Shown when locale is changed by user on info/error page
+     * 协议无关的 detached 信息页（认证会话已移除后切换 locale） Shown when locale is changed by user on info/error page
      * after authenticationSession was already removed.
      *
      * @return
      */
     @Path(DETACHED_INFO_PATH)
     @GET
+    /** {@inheritDoc} 基于 state cookie 渲染 info/error 页 */
     public Response detachedInfo(@QueryParam(DetachedInfoStateChecker.STATE_CHECKER_PARAM) String stateCheckerParam) {
         DetachedInfoStateCookie cookie;
         try {
@@ -316,13 +352,14 @@ public class LoginActionsService {
 
 
     /**
-     * protocol independent login page entry point
+     * 协议无关的浏览器登录入口（GET authenticate）
      *
      * @param code
      * @return
      */
     @Path(AUTHENTICATE_PATH)
     @GET
+    /** {@inheritDoc} 执行或展示浏览器认证流程 */
     public Response authenticate(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                  @QueryParam(SESSION_CODE) String code,
                                  @QueryParam(Constants.EXECUTION) String execution,
@@ -345,14 +382,26 @@ public class LoginActionsService {
         return processAuthentication(actionRequest, execution, authSession, null);
     }
 
+    /** 处理 locale 查询参数并写入认证会话 */
     protected void processLocaleParam(AuthenticationSessionModel authSession) {
         LocaleUtil.processLocaleParam(session, realm, authSession);
     }
 
+    /** 执行浏览器认证流程（authenticate 路径） */
     protected Response processAuthentication(boolean action, String execution, AuthenticationSessionModel authSession, String errorMessage) {
         return processFlow(action, execution, authSession, AUTHENTICATE_PATH, AuthenticationFlowResolver.resolveBrowserFlow(authSession), errorMessage, new AuthenticationProcessor());
     }
 
+    /**
+     * 通用认证流程处理器：配置 AuthenticationProcessor 并保存浏览器历史。
+     * @param action 是否为表单 POST 动作
+     * @param execution 执行步骤 ID
+     * @param authSession 认证会话
+     * @param flowPath 流程路径
+     * @param flow 认证流程模型
+     * @param errorMessage 转发错误消息
+     * @param processor 认证处理器
+     */
     protected Response processFlow(boolean action, String execution, AuthenticationSessionModel authSession, String flowPath, AuthenticationFlowModel flow, String errorMessage, AuthenticationProcessor processor) {
         processor.setAuthenticationSession(authSession)
                 .setFlowPath(flowPath)
@@ -368,7 +417,7 @@ public class LoginActionsService {
             processor.setForwardedErrorMessage(new FormMessage(null, errorMessage));
         }
 
-        // Check the forwarded error message, which was set by previous HTTP request
+        // 读取上一次请求转发的错误消息 note
         String forwardedErrorMessage = authSession.getAuthNote(FORWARDED_ERROR_MESSAGE_NOTE);
         if (forwardedErrorMessage != null) {
             authSession.removeAuthNote(FORWARDED_ERROR_MESSAGE_NOTE);
@@ -395,13 +444,14 @@ public class LoginActionsService {
     }
 
     /**
-     * URL called after login page.  YOU SHOULD NEVER INVOKE THIS DIRECTLY!
+     * 登录表单 POST 端点（勿直接调用）
      *
      * @param code
      * @return
      */
     @Path(AUTHENTICATE_PATH)
     @POST
+    /** {@inheritDoc} 委托给 {@link #authenticate} */
     public Response authenticateForm(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                      @QueryParam(SESSION_CODE) String code,
                                      @QueryParam(Constants.EXECUTION) String execution,
@@ -413,6 +463,7 @@ public class LoginActionsService {
 
     @Path(RESET_CREDENTIALS_PATH)
     @POST
+    /** 重置凭证 POST：支持 action token key 或表单流程 */
     public Response resetCredentialsPOST(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                          @QueryParam(SESSION_CODE) String code,
                                          @QueryParam(Constants.EXECUTION) String execution,
@@ -430,7 +481,7 @@ public class LoginActionsService {
     }
 
     /**
-     * Endpoint for executing reset credentials flow.  If token is null, a authentication session is created with the account
+     * 重置凭证流程 GET 入口；无会话时可 deep-link 创建认证会话  If token is null, a authentication session is created with the account
      * service as the client.  Successful reset sends you to the account page.  Note, account service must be enabled.
      *
      * @param code
@@ -439,6 +490,7 @@ public class LoginActionsService {
      */
     @Path(RESET_CREDENTIALS_PATH)
     @GET
+    /** {@inheritDoc} */
     public Response resetCredentialsGET(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                         @QueryParam(SESSION_CODE) String code,
                                         @QueryParam(Constants.EXECUTION) String execution,
@@ -451,7 +503,7 @@ public class LoginActionsService {
         processLocaleParam(authSession);
 
         event.event(EventType.RESET_PASSWORD);
-        // we allow applications to link to reset credentials without going through OAuth or SAML handshakes
+        // 允许应用不经 OAuth/SAML 握手直接 deep-link 到重置凭证
         if (authSession == null && code == null && clientData == null) {
             if (!realm.isResetPasswordAllowed()) {
                 event.error(Errors.NOT_ALLOWED);
@@ -466,6 +518,11 @@ public class LoginActionsService {
         return resetCredentials(authSessionId, code, execution, clientId, tabId, clientData);
     }
 
+    /**
+     * 为重置凭证等场景创建独立认证会话。
+     * @param clientID 客户端 ID（null 则用 system client）
+     * @param redirectUriParam 重定向 URI（可选）
+     */
     AuthenticationSessionModel createAuthenticationSessionForClient(String clientID, String redirectUriParam)
             throws UriBuilderException, IllegalArgumentException {
         AuthenticationSessionModel authSession;
@@ -518,6 +575,7 @@ public class LoginActionsService {
      * @param execution
      * @return
      */
+    /** 重置凭证流程共用逻辑 */
     protected Response resetCredentials(String authSessionId, String code, String execution, String clientId, String tabId, String clientData) {
         SessionCodeChecks checks = checksForCode(authSessionId, code, execution, clientId, tabId, clientData, RESET_CREDENTIALS_PATH);
         if (!checks.verifyActiveAndValidAction(AuthenticationSessionModel.Action.AUTHENTICATE.name(), ClientSessionCode.ActionType.USER)) {
@@ -535,7 +593,7 @@ public class LoginActionsService {
     }
 
     /**
-     * Handles a given token using the given token handler. If there is any {@link VerificationException} thrown
+     * 执行 Action Token（邮件链接等）并统一处理 VerificationException If there is any {@link VerificationException} thrown
      * in the handler, it is handled automatically here to reduce boilerplate code.
      *
      * @param key
@@ -544,6 +602,7 @@ public class LoginActionsService {
      */
     @Path("action-token")
     @GET
+    /** Action Token GET 入口 */
     public Response executeActionToken(@QueryParam(AUTH_SESSION_ID) String authSessionId,
                                        @QueryParam(Constants.KEY) String key,
                                        @QueryParam(Constants.EXECUTION) String execution,
@@ -554,7 +613,7 @@ public class LoginActionsService {
     }
 
     /**
-     * Skip processing {@link jakarta.ws.rs.HttpMethod#HEAD} requests for action tokens
+     * 忽略邮件服务器对 action-token 的 HEAD 探测请求
      * as they are usually used by mail servers to validate links. The actual request will eventually be
      * processed by the {@link #executeActionToken} method.
      *
@@ -562,10 +621,15 @@ public class LoginActionsService {
      */
     @Path("action-token")
     @HEAD
+    /** {@inheritDoc} 返回 200 空响应 */
     public Response executeActionTokenHead() {
         return Response.ok().build();
     }
 
+    /**
+     * Action Token 核心处理：验签、用户/客户端校验、处理器分发。
+     * @param preHandleToken 可选预处理器（组织邀请等）
+     */
     protected <T extends JsonWebToken & SingleUseObjectKeyModel> Response handleActionToken(String tokenString, String execution, String clientId, String tabId, String clientData, 
             TriFunction<ActionTokenHandler<T>, T, ActionTokenContext<T>, Response> preHandleToken) {
         T token;
@@ -576,7 +640,7 @@ public class LoginActionsService {
 
         AuthenticationSessionModel authSession = null;
 
-        // Setup client, so error page will contain "back to application" link
+        // 预设 client 以便错误页显示「返回应用」
         ClientModel client = null;
         if (clientId != null) {
             client = realm.getClientByClientId(clientId);
@@ -591,7 +655,7 @@ public class LoginActionsService {
 
         event.event(EventType.EXECUTE_ACTION_TOKEN);
 
-        // First resolve action token handler
+        // 解析 Action Token 处理器并验签
         try {
             if (tokenString == null) {
                 throw new ExplainedTokenVerificationException(null, Errors.NOT_ALLOWED, Messages.INVALID_REQUEST);
@@ -618,7 +682,7 @@ public class LoginActionsService {
 
             TokenVerifier<DefaultActionTokenKey> verifier = tokenVerifier
                     .withChecks(
-                            // Token introspection checks
+                            // 令牌自省检查（活跃、issuer 等）
                             TokenVerifier.IS_ACTIVE,
                             new TokenVerifier.RealmUrlCheck(Urls.realmIssuer(sessionContext.getUri().getBaseUri(), realm.getName())),
                             ACTION_TOKEN_BASIC_CHECKS
@@ -646,7 +710,7 @@ public class LoginActionsService {
                 }
                 AuthenticationProcessor.resetFlow(authSession, flowPath);
 
-                // Process correct flow
+                // 令牌过期但存在会话时重置流程并继续
                 return processFlowFromPath(flowPath, authSession, Messages.EXPIRED_ACTION_TOKEN_SESSION_EXISTS);
             }
 
@@ -659,7 +723,7 @@ public class LoginActionsService {
             return handleActionTokenVerificationException(null, ex, eventError, defaultErrorMessage);
         }
 
-        // Now proceed with the verification and handle the token
+        // 完成校验并调用 handler.handleToken
         tokenContext = new ActionTokenContext<>(session, realm, sessionContext.getUri(), clientConnection, request, event, handler, execution, clientData, this::processFlow, this::brokerLoginFlow);
 
         if (preHandleToken != null) {
@@ -727,6 +791,7 @@ public class LoginActionsService {
         }
     }
 
+    /** 根据 flowPath 分发到 authenticate/registration/reset-credentials */
     private Response processFlowFromPath(String flowPath, AuthenticationSessionModel authSession, String errorMessage) {
         if (AUTHENTICATE_PATH.equals(flowPath)) {
             return processAuthentication(false, null, authSession, errorMessage);
@@ -739,6 +804,7 @@ public class LoginActionsService {
         }
     }
 
+    /** 按 actionId 解析 ActionTokenHandler SPI */
     private <T extends JsonWebToken> ActionTokenHandler<T> resolveActionTokenHandler(String actionId) throws VerificationException {
         if (actionId == null) {
             throw new VerificationException("Action token operation not set");
@@ -751,6 +817,7 @@ public class LoginActionsService {
         return handler;
     }
 
+    /** 统一处理 Action Token 验证失败 */
     private Response handleActionTokenVerificationException(ActionTokenContext<?> tokenContext, VerificationException ex, String eventError, String errorMessage) {
         if (tokenContext != null && tokenContext.getAuthenticationSession() != null) {
             new AuthenticationSessionManager(session).removeAuthenticationSession(realm, tokenContext.getAuthenticationSession(), true);
@@ -762,6 +829,7 @@ public class LoginActionsService {
         return ErrorPage.error(session, null, Response.Status.BAD_REQUEST, errorMessage == null ? Messages.INVALID_CODE : errorMessage);
     }
 
+    /** 执行重置凭证认证流程 */
     protected Response processResetCredentials(boolean actionRequest, String execution, AuthenticationSessionModel authSession, String errorMessage) {
         AuthenticationProcessor authProcessor = new ResetCredentialsActionTokenHandler.ResetCredsAuthenticationProcessor();
 
@@ -769,19 +837,21 @@ public class LoginActionsService {
     }
 
 
+    /** 执行用户注册认证流程 */
     protected Response processRegistration(boolean action, String execution, AuthenticationSessionModel authSession, String errorMessage) {
         return processFlow(action, execution, authSession, REGISTRATION_PATH, realm.getRegistrationFlow(), errorMessage, new AuthenticationProcessor());
     }
 
 
     /**
-     * protocol independent registration page entry point
+     * 协议无关的注册页 GET 入口
      *
      * @param code
      * @return
      */
     @Path(REGISTRATION_PATH)
     @GET
+    /** {@inheritDoc} */
     public Response registerPage(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                  @QueryParam(SESSION_CODE) String code,
                                  @QueryParam(Constants.EXECUTION) String execution,
@@ -794,13 +864,14 @@ public class LoginActionsService {
 
 
     /**
-     * Registration
+     * 注册表单 POST 入口
      *
      * @param code
      * @return
      */
     @Path(REGISTRATION_PATH)
     @POST
+    /** {@inheritDoc} */
     public Response processRegister(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                     @QueryParam(SESSION_CODE) String code,
                                     @QueryParam(Constants.EXECUTION) String execution,
@@ -812,6 +883,7 @@ public class LoginActionsService {
     }
 
 
+    /** 注册请求共用逻辑（含组织邀请 token 预处理） */
     private Response registerRequest(String authSessionId, String code, String execution, String clientId, String tabId, String clientData, String tokenString) {
         event.event(EventType.REGISTER);
 
@@ -829,7 +901,7 @@ public class LoginActionsService {
         AuthenticationManager.expireIdentityCookie(session);
 
         if (Profile.isFeatureEnabled(Profile.Feature.ORGANIZATION) && tokenString != null) {
-            // this call should extract orgId from token and set the organization to the session context
+            // 组织特性：从邀请 token 提取 orgId 写入上下文
             Response response = preHandleActionToken(tokenString);
             // restore event type because handleActionToken() overwrites it to EXECUTE_ACTION_TOKEN
             event.event(EventType.REGISTER);
@@ -850,6 +922,7 @@ public class LoginActionsService {
 
     @Path(FIRST_BROKER_LOGIN_PATH)
     @GET
+    /** 首次 Broker 登录 GET */
     public Response firstBrokerLoginGet(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                         @QueryParam(SESSION_CODE) String code,
                                         @QueryParam(Constants.EXECUTION) String execution,
@@ -861,6 +934,7 @@ public class LoginActionsService {
 
     @Path(FIRST_BROKER_LOGIN_PATH)
     @POST
+    /** 首次 Broker 登录 POST */
     public Response firstBrokerLoginPost(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                          @QueryParam(SESSION_CODE) String code,
                                          @QueryParam(Constants.EXECUTION) String execution,
@@ -872,6 +946,7 @@ public class LoginActionsService {
 
     @Path(POST_BROKER_LOGIN_PATH)
     @GET
+    /** post-broker-login GET */
     public Response postBrokerLoginGet(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                        @QueryParam(SESSION_CODE) String code,
                                        @QueryParam(Constants.EXECUTION) String execution,
@@ -883,6 +958,7 @@ public class LoginActionsService {
 
     @Path(POST_BROKER_LOGIN_PATH)
     @POST
+    /** post-broker-login POST */
     public Response postBrokerLoginPost(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                         @QueryParam(SESSION_CODE) String code,
                                         @QueryParam(Constants.EXECUTION) String execution,
@@ -893,6 +969,7 @@ public class LoginActionsService {
     }
 
 
+    /** 首次/post Broker 登录流程共用实现 */
     protected Response brokerLoginFlow(String authSessionId, String code, String execution, String clientId, String tabId, String clientData, String flowPath) {
         boolean firstBrokerLogin = flowPath.equals(FIRST_BROKER_LOGIN_PATH);
 
@@ -954,7 +1031,7 @@ public class LoginActionsService {
                 Response challenge = super.authenticateOnly();
                 if (challenge != null) {
                     if ("true".equals(authenticationSession.getAuthNote(FORWARDED_PASSIVE_LOGIN))) {
-                        // forwarded passive login is incompatible with challenges created by the broker flows.
+                        // prompt=none 与 broker 流程 challenge 不兼容 created by the broker flows.
                         logger.errorf("Challenge encountered when executing %s flow. Auth requests with prompt=none are incompatible with challenges", flowPath);
                         LoginProtocol protocol = session.getProvider(LoginProtocol.class, authSession.getProtocol());
                         protocol.setRealm(realm)
@@ -989,6 +1066,7 @@ public class LoginActionsService {
         return response;
     }
 
+    /** 若 IdP 绑定组织则写入会话组织上下文 */
     private void configureOrganization(BrokeredIdentityContext brokerContext) {
         if (Organizations.isEnabled(session)) {
             String organizationId = brokerContext.getIdpConfig().getOrganizationId();
@@ -1001,10 +1079,12 @@ public class LoginActionsService {
         }
     }
 
+    /** 重定向到 IdentityBrokerService after-*-broker-login 端点 */
     private Response redirectToAfterBrokerLoginEndpoint(AuthenticationSessionModel authSession, boolean firstBrokerLogin) {
         return redirectToAfterBrokerLoginEndpoint(session, realm, session.getContext().getUri(), authSession, firstBrokerLogin);
     }
 
+    /** 静态方法：构建 after broker login 重定向 URL */
     public static Response redirectToAfterBrokerLoginEndpoint(KeycloakSession session, RealmModel realm, UriInfo uriInfo, AuthenticationSessionModel authSession, boolean firstBrokerLogin) {
         ClientSessionCode<AuthenticationSessionModel> accessCode = new ClientSessionCode<>(session, realm, authSession);
         authSession.getParentSession().setTimestamp(Time.currentTime());
@@ -1019,6 +1099,7 @@ public class LoginActionsService {
         return Response.status(302).location(redirect).build();
     }
 
+    /** OAuth 同意页：检查 scope 是否需写入 consent */
     private boolean checkGranted(AuthorizationDetails details, UserConsentModel grantedConsent, List<String> alwaysConsent) {
         ClientScopeModel clientScope = details.getClientScope();
         String parameter = details.getParameterizedScopeParam();
@@ -1036,13 +1117,14 @@ public class LoginActionsService {
     }
 
     /**
-     * OAuth grant page.  You should not invoked this directly!
+     * OAuth 同意页 POST（勿直接调用）
      *
      * @return
      */
     @Path("consent")
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    /** 处理用户 OAuth scope 同意或拒绝 */
     public Response processConsent() {
         MultivaluedMap<String, String> formData = request.getDecodedFormParameters();
         event.event(EventType.LOGIN);
@@ -1088,7 +1170,7 @@ public class LoginActionsService {
             grantedConsent = existingConsent;
         }
 
-        // Update may not be required if all clientScopes were already granted (May happen for example with prompt=consent)
+        // prompt=consent 时可能所有 scope 已授权，无需更新 (May happen for example with prompt=consent)
         List<String> alwaysConsent = new LinkedList<>();
         Boolean updateConsentRequired = AuthenticationManager.getClientScopeModelStream(session, client)
                 .map(d -> checkGranted(d, grantedConsent, alwaysConsent))
@@ -1109,6 +1191,7 @@ public class LoginActionsService {
         return AuthenticationManager.redirectAfterSuccessfulFlow(session, realm, clientSessionCtx.getClientSession().getUserSession(), clientSessionCtx, request, session.getContext().getUri(), clientConnection, event, authSession);
     }
 
+    /** 用认证会话信息填充 LOGIN 事件详情 */
     private void initLoginEvent(AuthenticationSessionModel authSession) {
         String responseType = authSession.getClientNote(OIDCLoginProtocol.RESPONSE_TYPE_PARAM);
         if (responseType == null) {
@@ -1151,6 +1234,7 @@ public class LoginActionsService {
 
     @Path(REQUIRED_ACTION)
     @POST
+    /** required-action 表单 POST */
     public Response requiredActionPOST(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                        @QueryParam(SESSION_CODE) final String code,
                                        @QueryParam(Constants.EXECUTION) String action,
@@ -1162,6 +1246,7 @@ public class LoginActionsService {
 
     @Path(REQUIRED_ACTION)
     @GET
+    /** required-action 页面 GET */
     public Response requiredActionGET(@QueryParam(AUTH_SESSION_ID) String authSessionId, // optional, can get from cookie instead
                                       @QueryParam(SESSION_CODE) final String code,
                                       @QueryParam(Constants.EXECUTION) String action,
@@ -1171,6 +1256,7 @@ public class LoginActionsService {
         return processRequireAction(authSessionId, code, action, clientId, tabId, clientData);
     }
 
+    /** required-action 流程：展示或处理用户/custom required action */
     private Response processRequireAction(final String authSessionId, final String code, String action, String clientId, String tabId, String clientData) {
         event.event(EventType.CUSTOM_REQUIRED_ACTION);
 
@@ -1258,6 +1344,7 @@ public class LoginActionsService {
         return BrowserHistoryHelper.getInstance().saveResponseAndRedirect(session, authSession, response, true, request);
     }
 
+    /** required-action 被用户拒绝时的协议错误响应 */
     private Response interruptionResponse(RequiredActionContextResult context, AuthenticationSessionModel authSession, String action, Error error) {
         LoginProtocol protocol = context.getSession().getProvider(LoginProtocol.class, authSession.getProtocol());
         protocol.setRealm(context.getRealm())
@@ -1271,6 +1358,7 @@ public class LoginActionsService {
         return protocol.sendError(authSession, error, context.getErrorMessage());
     }
 
+    /** 判断用户是否取消应用发起的 required-action（AIA） */
     private boolean isCancelAppInitiatedAction(String providerId, AuthenticationSessionModel authSession, RequiredActionContextResult context) {
         if (providerId.equals(authSession.getClientNote(Constants.KC_ACTION_EXECUTING))
                 && !Boolean.TRUE.toString().equals(authSession.getClientNote(Constants.KC_ACTION_ENFORCED))) {
@@ -1281,6 +1369,7 @@ public class LoginActionsService {
         return false;
     }
 
+    /** 注册等场景预处理的 Action Token 入口 */
     public Response preHandleActionToken(String tokenString) {
         return handleActionToken(tokenString, null, null, null, null, ActionTokenHandler::preHandleToken);
     }

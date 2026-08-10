@@ -22,9 +22,10 @@ import java.time.Instant;
 import org.keycloak.provider.ProviderEvent;
 
 /**
- * Published when the shutdown delay phase has started.
+ * 关闭延迟阶段开始时发布的事件。
+ * <p>在 Keycloak 进入优雅关闭延迟窗口时由 {@link KeycloakApplication#shutdownDelayInitiated()} 触发。</p>
  *
- * @param timestamp The instant at which the shutdown delay was initiated.
+ * @param timestamp 启动关闭延迟的时间点
  */
 public record ShutdownDelayInitiatedEvent(Instant timestamp) implements ProviderEvent {
 }

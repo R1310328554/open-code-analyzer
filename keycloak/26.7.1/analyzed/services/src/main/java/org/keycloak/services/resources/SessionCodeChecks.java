@@ -58,31 +58,69 @@ import org.jboss.logging.Logger;
 import static org.keycloak.services.managers.AuthenticationManager.authenticateIdentityCookie;
 
 
+/**
+ * 登录/登出流程的认证会话码校验器。
+ * <p>验证 SSL、领域/客户端状态、会话码有效性、动作类型及 required-action 一致性；失败时设置 {@link #response}。</p>
+ */
 public class SessionCodeChecks {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(SessionCodeChecks.class);
 
+    /** 当前认证会话 */
     private AuthenticationSessionModel authSession;
+    /** 客户端会话码包装 */
     private ClientSessionCode<AuthenticationSessionModel> clientCode;
+    /** 校验失败时的 HTTP 响应 */
     private Response response;
+    /** 是否为 POST 动作请求（非页面刷新） */
     private boolean actionRequest;
 
+    /** 领域模型 */
     private final RealmModel realm;
+    /** 请求 URI 信息 */
     private final UriInfo uriInfo;
+    /** HTTP 请求 */
     private final HttpRequest request;
+    /** 客户端连接信息 */
     private final ClientConnection clientConnection;
+    /** Keycloak 会话 */
     private final KeycloakSession session;
+    /** 事件构建器 */
     private final EventBuilder event;
 
+    /** URL 中的 session_code 参数 */
     private final String code;
+    /** 认证执行步骤 ID */
     private final String execution;
+    /** 客户端 ID */
     private final String clientId;
+    /** 编码的 client_data 参数 */
     private final String clientDataString;
+    /** 浏览器标签页 ID */
     private final String tabId;
+    /** 认证流程路径（authenticate 等） */
     private final String flowPath;
+    /** 编码的 auth_session_id（可选） */
     private final String authSessionId;
 
 
+    /**
+     * 构造会话码校验器并保存请求参数。
+     * @param realm 领域
+     * @param uriInfo URI 信息
+     * @param request HTTP 请求
+     * @param clientConnection 客户端连接
+     * @param session Keycloak 会话
+     * @param event 事件构建器
+     * @param authSessionId 认证会话 ID（可选）
+     * @param code 会话码
+     * @param execution 执行步骤
+     * @param clientId 客户端 ID
+     * @param tabId 标签页 ID
+     * @param clientData client_data
+     * @param flowPath 流程路径
+     */
     public SessionCodeChecks(RealmModel realm, UriInfo uriInfo, HttpRequest request, ClientConnection clientConnection, KeycloakSession session, EventBuilder event,
                              String authSessionId, String code, String execution, String clientId, String tabId, String clientData, String flowPath) {
         this.realm = realm;
@@ -102,30 +140,36 @@ public class SessionCodeChecks {
     }
 
 
+    /** @return 解析后的认证会话 */
     public AuthenticationSessionModel getAuthenticationSession() {
         return authSession;
     }
 
 
+    /** @return 是否已设置失败响应 */
     private boolean failed() {
         return response != null;
     }
 
 
+    /** @return 失败或缓存的 HTTP 响应 */
     public Response getResponse() {
         return response;
     }
 
 
+    /** @return 客户端会话码 */
     public ClientSessionCode<AuthenticationSessionModel> getClientCode() {
         return clientCode;
     }
 
+    /** @return 是否为动作 POST 请求 */
     public boolean isActionRequest() {
         return actionRequest;
     }
 
 
+    /** 校验 HTTPS 是否满足领域 SSL 要求 */
     private boolean checkSsl() {
         if (uriInfo.getBaseUri().getScheme().equals("https")) {
             return true;
@@ -135,8 +179,13 @@ public class SessionCodeChecks {
     }
 
 
+    /**
+     * 初始认证会话解析：SSL/领域检查、Cookie 与 query 参数一致性、
+     * 从 Cookie 重启或已登录用户处理。
+     * @return 认证会话，失败时返回 null 并设置 response
+     */
     public AuthenticationSessionModel initialVerifyAuthSession() {
-        // Basic realm checks
+        // 基础领域与 SSL 检查
         if (!checkSsl()) {
             event.error(Errors.SSL_REQUIRED);
             response = ErrorPage.error(session, null, Response.Status.BAD_REQUEST, Messages.HTTPS_REQUIRED);
@@ -148,7 +197,7 @@ public class SessionCodeChecks {
             return null;
         }
 
-        // Setup client to be shown on error/info page based on "client_id" parameter
+        // 根据 client_id 设置错误页「返回应用」链接所用客户端
         logger.debugf("Will use client '%s' in back-to-application link", clientId);
         ClientModel client = null;
         if (clientId != null) {
@@ -160,7 +209,7 @@ public class SessionCodeChecks {
         }
 
 
-        // object retrieve
+        // 从 query 参数或 Cookie 获取认证会话
         AuthenticationSessionManager authSessionManager = new AuthenticationSessionManager(session);
         AuthenticationSessionModel authSession = null;
         if (authSessionId != null)
@@ -197,11 +246,11 @@ public class SessionCodeChecks {
 
         }
 
-        // Otherwise just try to restart from the cookie
+        // 否则尝试从 KC_RESTART Cookie 重启流程
         RootAuthenticationSessionModel existingRootAuthSession = authSessionManager.getCurrentRootAuthenticationSession(realm);
         response = restartAuthenticationSessionFromCookie(existingRootAuthSession);
 
-        // if restart from cookie was not found check if the user is already authenticated
+        // Cookie 重启失败时检查用户是否已通过身份 Cookie 登录
         if (response.getStatus() != Response.Status.FOUND.getStatusCode()) {
             AuthenticationManager.AuthResult authResult = authenticateIdentityCookie(session, realm, false);
 
@@ -239,6 +288,7 @@ public class SessionCodeChecks {
     }
 
 
+    /** 完整初始校验：会话解析、浏览器历史缓存、客户端检查、动作码解析 */
     public boolean initialVerify() {
         // Basic realm checks and authenticationSession retrieve
         authSession = initialVerifyAuthSession();
@@ -247,13 +297,13 @@ public class SessionCodeChecks {
         }
         session.getContext().setAuthenticationSession(authSession);
 
-        // Check cached response from previous action request
+        // 检查浏览器历史中缓存的上一次动作响应
         response = BrowserHistoryHelper.getInstance().loadSavedResponse(session, authSession);
         if (response != null) {
             return false;
         }
 
-        // Client checks
+        // 客户端存在性与启用状态检查
         event.detail(Details.CODE_ID, authSession.getParentSession().getId());
         ClientModel client = authSession.getClient();
         if (client == null) {
@@ -276,16 +326,16 @@ public class SessionCodeChecks {
         }
 
 
-        // Check if it's action or not
+        // 区分页面刷新（无 code）与动作提交（有 code）
         if (code == null) {
             String lastExecFromSession = authSession.getAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION);
             String lastFlow = authSession.getAuthNote(AuthenticationProcessor.CURRENT_FLOW_PATH);
 
-            // Check if we transitted between flows (eg. clicking "register" on login screen)
+            // 检测流程切换（如登录页点击「注册」）
             if (execution == null && !flowPath.equals(lastFlow)) {
                 logger.debugf("Transition between flows! Current flow: %s, Previous flow: %s", flowPath, lastFlow);
 
-                // Don't allow moving to different flow if I am on requiredActions already
+                // 已在 required-actions 时不允许切换流程
                 if (AuthenticationSessionModel.Action.AUTHENTICATE.name().equals(authSession.getAction())) {
                     authSession.setAuthNote(AuthenticationProcessor.CURRENT_FLOW_PATH, flowPath);
                     authSession.removeAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION);
@@ -294,11 +344,11 @@ public class SessionCodeChecks {
             }
 
             if (execution == null || execution.equals(lastExecFromSession) || CommonClientSessionModel.ExecutionStatus.CHALLENGED.equals(authSession.getExecutionStatus().get(execution))) {
-                // Allow refresh of previous page
+                // 允许刷新当前步骤页面
                 clientCode = new ClientSessionCode<>(session, realm, authSession);
                 actionRequest = false;
 
-                // Allow refresh, but rewrite browser history
+                // 允许刷新但更新浏览器历史
                 if (execution == null && lastExecFromSession != null) {
                     logger.debugf("Parameter 'execution' is not in the request, but flow wasn't changed. Will update browser history");
                     session.setAttribute(BrowserHistoryHelper.SHOULD_UPDATE_BROWSER_HISTORY, true);
@@ -314,7 +364,7 @@ public class SessionCodeChecks {
             clientCode = result.getCode();
             if (clientCode == null) {
 
-                // In case that is replayed action, but sent to the same FORM like actual FORM, we just re-render the page
+                // 动作码过期但 execution 匹配时重定向并转发错误消息, we just re-render the page
                 if (ObjectUtil.isEqualOrBothNull(execution, authSession.getAuthNote(AuthenticationProcessor.CURRENT_AUTHENTICATION_EXECUTION))) {
                     String latestFlowPath = authSession.getAuthNote(AuthenticationProcessor.CURRENT_FLOW_PATH);
                     if (latestFlowPath != null) {
@@ -342,11 +392,17 @@ public class SessionCodeChecks {
     }
 
     // Client is not null
+    /** 将客户端写入审计事件 */
     protected void setClientToEvent(ClientModel client) {
         event.client(client);
     }
 
 
+    /**
+     * 校验动作码活跃且 action 字段匹配。
+     * @param expectedAction 预期 action 名称
+     * @param actionType 动作类型（LOGIN/USER 等）
+     */
     public boolean verifyActiveAndValidAction(String expectedAction, ClientSessionCode.ActionType actionType) {
         if (failed()) {
             return false;
@@ -373,6 +429,7 @@ public class SessionCodeChecks {
     }
 
 
+    /** 校验动作码未过期，过期时重置流程并重定向 */
     protected boolean isActionActive(ClientSessionCode.ActionType actionType) {
         if (!clientCode.isActionActive(actionType)) {
             event.clone().error(Errors.EXPIRED_CODE);
@@ -391,6 +448,7 @@ public class SessionCodeChecks {
     }
 
 
+    /** 校验 required-action 流程的动作码与当前执行步骤一致 */
     public boolean verifyRequiredAction(String executedAction) {
         if (failed()) {
             return false;
@@ -421,6 +479,7 @@ public class SessionCodeChecks {
     }
 
 
+    /** 从 KC_RESTART Cookie 重启认证会话并重定向到流程入口 */
     protected Response restartAuthenticationSessionFromCookie(RootAuthenticationSessionModel existingRootSession) {
         logger.debug("Authentication session not found. Trying to restart from cookie.");
         AuthenticationSessionModel authSession = null;
@@ -450,7 +509,7 @@ public class SessionCodeChecks {
                 flowPath = LoginActionsService.AUTHENTICATE_PATH;
             }
 
-            // set redirect uri from client_data parameter if valid.
+            // 若 client_data 中 redirect_uri 合法则写入认证会话
             try {
                 ClientData clientData = ClientData.decodeClientDataFromParameter(clientDataString);
                 if (RedirectUtils.verifyRedirectUri(session, clientData.getRedirectUri(), authSession.getClient()) != null) {
@@ -472,6 +531,7 @@ public class SessionCodeChecks {
     }
 
 
+    /** 重定向到 required-action 端点 */
     private Response redirectToRequiredActions(String action) {
         UriBuilder uriBuilder = LoginActionsService.loginActionsBaseUrl(uriInfo)
                 .path(LoginActionsService.REQUIRED_ACTION);
@@ -490,25 +550,30 @@ public class SessionCodeChecks {
     }
 
 
+    /** 构建流程最后执行步骤 URL */
     private URI getLastExecutionUrl(String flowPath, String executionId, String tabId, String clientData) {
         return new AuthenticationFlowURLHelper(session, realm, uriInfo)
                 .getLastExecutionUrl(flowPath, executionId, clientId, tabId, clientData);
     }
 
 
+    /** 显示「页面已过期」提示 */
     private Response showPageExpired(AuthenticationSessionModel authSession) {
         return new AuthenticationFlowURLHelper(session, realm, uriInfo)
                 .showPageExpired(authSession);
     }
 
+    /** @return Keycloak 会话 */
     protected KeycloakSession getSession() {
         return session;
     }
 
+    /** @return 事件构建器 */
     protected EventBuilder getEvent() {
         return event;
     }
 
+    /** 移除过期的认证会话 */
     private void removeAuthenticationSession(AuthenticationSessionModel authSession) {
         ClientSessionCode<AuthenticationSessionModel> codeToRemove = clientCode != null
                 ? clientCode
@@ -516,6 +581,7 @@ public class SessionCodeChecks {
         codeToRemove.removeExpiredClientSession();
     }
 
+    /** @return 客户端是否已禁用 */
     protected boolean checkClientDisabled(ClientModel client) {
         return !client.isEnabled();
     }

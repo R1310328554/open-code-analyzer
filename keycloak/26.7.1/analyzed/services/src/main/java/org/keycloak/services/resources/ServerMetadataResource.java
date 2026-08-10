@@ -35,18 +35,30 @@ import org.keycloak.wellknown.WellKnownProviderFactory;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 服务端 Well-Known 元数据资源。
+ * <p>暴露 {@code /.well-known/{provider}/realms/{realm}} 路径，供 OIDC/OAuth 等协议发现端点使用。</p>
+ */
 @Provider
 @Path("/.well-known")
 public class ServerMetadataResource {
 
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(ServerMetadataResource.class);
 
+    /** 注入的 Keycloak 会话 */
     @Context
     protected KeycloakSession session;
 
     @OPTIONS
     @Path("{provider}/realms/{realm}")
     @Produces(MediaType.APPLICATION_JSON)
+    /**
+     * Well-Known 端点 CORS 预检。
+     * @param alias Well-Known 提供方别名
+     * @param realm 领域名称
+     * @return 预检响应
+     */
     public Response getWellKnownPreflight(final @PathParam("provider") String alias,
                                           final @PathParam("realm") String realm) {
         if (!isValidProvider(alias)) {
@@ -58,6 +70,12 @@ public class ServerMetadataResource {
     @GET
     @Path("{provider}/realms/{realm}")
     @Produces({MediaType.APPLICATION_JSON, org.keycloak.utils.MediaType.APPLICATION_JWT})
+    /**
+     * 获取指定提供方与领域的 Well-Known 配置。
+     * @param alias Well-Known 提供方别名
+     * @param realm 领域名称
+     * @return JSON 或 JWT 格式的配置
+     */
     public Response getWellKnown(final @PathParam("provider") String alias,
                                  final @PathParam("realm") String realm) {
         if (!isValidProvider(alias)) {
@@ -67,7 +85,7 @@ public class ServerMetadataResource {
     }
 
     /**
-     * @Deprecated use {@link #wellKnownProviderUrl(UriBuilder)} instead.
+     * @Deprecated 请改用 {@link #wellKnownProviderUrl(UriBuilder)}。
      * @return the updated UriBuilder instance.
      */
     @Deprecated
@@ -76,16 +94,17 @@ public class ServerMetadataResource {
     }
 
     /**
-     * Constructs the URI path for the well-known provider URL based on the provided UriBuilder.
+     * 基于给定 UriBuilder 构造 Well-Known 提供方 URL 路径。
      *
-     * @param builder the base UriBuilder instance to which the well-known provider path will be appended.
+     * @param builder 基础 UriBuilder，将追加 Well-Known 路径
      *                It must not be null.
-     * @return the updated UriBuilder instance with the well-known provider path appended.
+     * @return 追加路径后的 UriBuilder
      */
     public static UriBuilder wellKnownProviderUrl(UriBuilder builder) {
         return builder.path(ServerMetadataResource.class).path("{provider}/realms/{realm}");
     }
 
+    /** 校验别名对应的 Well-Known 提供方是否可通过服务端元数据暴露 */
     private boolean isValidProvider(String alias) {
         return WellKnownProviderUtil.resolveFromAlias(session.getKeycloakSessionFactory(), alias)
                 .map(WellKnownProviderFactory::isAvailableViaServerMetadata)

@@ -142,26 +142,39 @@ import org.jboss.resteasy.reactive.NoCache;
 
 import static org.keycloak.broker.provider.AbstractIdentityProvider.BROKER_REGISTERED_NEW_USER;
 
+/**
+ * 身份代理（Identity Brokering）REST 服务。
+ * <p>处理外部 IdP 登录、账户关联、首次/后续 Broker 登录流程、令牌检索及 {@link UserAuthenticationIdentityProvider.AuthenticationCallback} 回调。</p>
+ */
 public class IdentityBrokerService implements UserAuthenticationIdentityProvider.AuthenticationCallback {
 
-    // Authentication session note, which references identity provider that is currently linked
+    // 认证会话 note：标识当前正在关联的身份提供方
+    /** 认证会话 note 键：账户关联中的 IdP 标识 */
     public static final String LINKING_IDENTITY_PROVIDER = "LINKING_IDENTITY_PROVIDER";
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(IdentityBrokerService.class);
 
+    /** 当前领域 */
     private final RealmModel realmModel;
 
+    /** Keycloak 会话 */
     private final KeycloakSession session;
 
+    /** 客户端连接 */
     private final ClientConnection clientConnection;
 
+    /** HTTP 请求 */
     private final HttpRequest request;
 
+    /** HTTP 头 */
     private final HttpHeaders headers;
 
+    /** 身份代理登录事件构建器 */
     private EventBuilder event;
 
 
+    /** 从会话上下文构造身份代理服务 */
     public IdentityBrokerService(KeycloakSession session) {
         this.session = session;
         this.clientConnection= session.getContext().getConnection();
@@ -173,10 +186,12 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         this.headers = session.getContext().getRequestHeaders();
     }
 
+    /** 初始化 IDENTITY_PROVIDER_LOGIN 类型事件 */
     public void init() {
         this.event = new EventBuilder(realmModel, session, clientConnection).event(EventType.IDENTITY_PROVIDER_LOGIN);
     }
 
+    /** 校验领域已启用 */
     private void checkRealm() {
         if (!realmModel.isEnabled()) {
             event.error(Errors.REALM_DISABLED);
@@ -184,6 +199,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
     }
 
+    /** 校验 client_id 参数并返回客户端模型 */
     private ClientModel checkClient(String clientId) {
         if (clientId == null) {
             event.error(Errors.INVALID_REQUEST);
@@ -207,13 +223,14 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
     /**
-     * Closes off CORS preflight requests for account linking
+     * 拒绝账户关联端点的 CORS 预检（返回 403）
      *
      * @param providerAlias
      * @return
      */
     @OPTIONS
     @Path("/{provider_alias}/link")
+    /** {@inheritDoc} */
     public Response clientIntiatedAccountLinkingPreflight(@PathParam("provider_alias") String providerAlias) {
         return Response.status(403).build(); // don't allow preflight
     }
@@ -223,6 +240,14 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     @NoCache
     @Path("/{provider_alias}/link")
     @Deprecated
+    /**
+     * 已弃用：客户端发起的账户关联（请改用 AIA idp_link）。
+     * @param providerAlias IdP 别名
+     * @param redirectUri 关联完成后的重定向 URI
+     * @param clientId 发起客户端 ID
+     * @param nonce 防重放随机数
+     * @param hash SHA-256(nonce+sessionId+clientId+provider) 校验值
+     */
     public Response clientInitiatedAccountLinking(@PathParam("provider_alias") String providerAlias,
                                                   @QueryParam("redirect_uri") String redirectUri,
                                                   @QueryParam("client_id") String clientId,
@@ -291,7 +316,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         if (!accountService.getId().equals(client.getId())) {
             RoleModel manageAccountRole = accountService.getRole(AccountRoles.MANAGE_ACCOUNT);
 
-            // Ensure user has role and client has "role scope" for this role
+            // 校验用户具备 manage-account 或 manage-account-links 角色
             ClientSessionContext ctx = DefaultClientSessionContext.fromClientSessionScopeParameter(clientSession, session);
             Set<RoleModel> userAccountRoles = ctx.getRolesStream().collect(Collectors.toSet());
 
@@ -319,10 +344,10 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
 
 
-        // Create AuthenticationSessionModel with same ID like userSession and refresh cookie
+        // 创建与用户会话同 ID 的认证会话并刷新 Cookie
         UserSessionModel userSession = cookieResult.session();
 
-        // Auth session with ID corresponding to our userSession may already exists in some rare cases (EG. if some client tried to login in another browser tab with "prompt=login")
+        // 罕见情况下用户会话 ID 对应的 root 认证会话已存在 in some rare cases (EG. if some client tried to login in another browser tab with "prompt=login")
         RootAuthenticationSessionModel rootAuthSession = session.authenticationSessions().getRootAuthenticationSession(realmModel, userSession.getId());
         if (rootAuthSession == null) {
             rootAuthSession = session.authenticationSessions().createRootAuthenticationSession(realmModel, userSession.getId());
@@ -331,7 +356,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         AuthenticationSessionModel authSession = rootAuthSession.createAuthenticationSession(client);
         authSession.setAuthenticatedUser(userSession.getUser());
 
-        // Refresh the cookie
+        // 刷新认证会话 Cookie
         new AuthenticationSessionManager(session).setAuthSessionCookie(userSession.getId());
 
         ClientSessionCode<AuthenticationSessionModel> clientSessionCode = new ClientSessionCode<>(session, realmModel, authSession);
@@ -348,6 +373,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return performClientInitiatedAccountLogin(providerAlias, clientSessionCode);
     }
 
+    /** 按别名获取已启用的 IdP 配置 */
     private static IdentityProviderModel getIdentityProviderModel(KeycloakSession session, String providerAlias) {
         IdentityProviderModel model = session.identityProviders().getByAlias(providerAlias);
 
@@ -358,6 +384,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return model;
     }
 
+    /** 向 IdP 发起客户端发起的账户关联登录请求 */
     public Response performClientInitiatedAccountLogin(String providerAlias, ClientSessionCode<AuthenticationSessionModel> clientSessionCode) {
         try {
             UserAuthenticationIdentityProvider<?> identityProvider = getIdentityProvider(session, providerAlias);
@@ -382,6 +409,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
 
     @POST
     @Path("/{provider_alias}/login")
+    /** POST 方式发起 IdP 登录（委托给 {@link #performLogin}） */
     public Response performPostLogin(@PathParam("provider_alias") String providerAlias,
                                      @QueryParam(LoginActionsService.SESSION_CODE) String code,
                                      @QueryParam(Constants.CLIENT_ID) String clientId,
@@ -394,6 +422,15 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     @GET
     @NoCache
     @Path("/{provider_alias}/login")
+    /**
+     * 向指定 IdP 发起登录/联邦认证。
+     * @param providerAlias IdP 别名
+     * @param code 会话码
+     * @param clientId 客户端 ID
+     * @param tabId 标签页 ID
+     * @param clientData 客户端数据
+     * @param loginHint 登录提示（可选）
+     */
     public Response performLogin(@PathParam("provider_alias") String providerAlias,
                                  @QueryParam(LoginActionsService.SESSION_CODE) String code,
                                  @QueryParam(Constants.CLIENT_ID) String clientId,
@@ -443,6 +480,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
     @Override
+    /** {@inheritDoc} IdP 登录重试回调 */
     public Response retryLogin(UserAuthenticationIdentityProvider<?> identityProvider, AuthenticationSessionModel authSession) {
         ClientSessionCode<AuthenticationSessionModel> clientSessionCode = new ClientSessionCode<>(session, realmModel, authSession);
         clientSessionCode.setAction(AuthenticationSessionModel.Action.AUTHENTICATE.name());
@@ -462,6 +500,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
     @Path("{provider_alias}/endpoint")
+    /** 返回 IdP 回调端点（OAuth/SAML 等） */
     public Object getEndpoint(@PathParam("provider_alias") String providerAlias) {
         UserAuthenticationIdentityProvider<?> identityProvider;
 
@@ -476,6 +515,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
 
     @Path("{provider_alias}/token")
     @OPTIONS
+    /** 令牌检索端点 CORS 预检 */
     public Response retrieveTokenPreflight() {
         return Cors.builder().auth().preflight().add(Response.ok());
     }
@@ -483,6 +523,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     @GET
     @NoCache
     @Path("{provider_alias}/token")
+    /** IdP 存储令牌检索 API v1（Bearer + broker 角色） */
     public Response retrieveTokenV1(@PathParam("provider_alias") String providerAlias) {
         return getTokenV1(providerAlias);
     }
@@ -490,24 +531,26 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     @POST
     @NoCache
     @Path("{provider_alias}/token")
+    /** IdP 令牌交换 API v2（客户端认证 + 用户令牌） */
     public Response retrieveTokenV2(@PathParam("provider_alias") String providerAlias) {
         return getTokenV2(providerAlias);
     }
 
+    /** v2 令牌检索实现：客户端策略、受众与联邦身份校验 */
     private Response getTokenV2(String providerAlias) {
         this.event.event(EventType.IDENTITY_PROVIDER_RETRIEVE_TOKEN)
                 .detail(Details.IDENTITY_PROVIDER, providerAlias);
 
         Cors cors = Cors.builder().auth().allowedMethods("POST").auth().exposedHeaders(Cors.ACCESS_CONTROL_ALLOW_METHODS);
 
-        // check profile is enabled
+        // 校验 IDENTITY_BROKERING_API_V2 特性已启用
         if (!Profile.isFeatureEnabled(Profile.Feature.IDENTITY_BROKERING_API_V2)) {
             event.detail(Details.REASON, "Identity Brokering API feature not enabled");
             event.error(Errors.IDENTITY_PROVIDER_ERROR);
             throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, "Identity Brokering API feature not enabled", Response.Status.BAD_REQUEST);
         }
 
-        // authenticate client
+        // 客户端认证（禁止 public client）
         AuthorizeClientUtil.ClientAuthResult clientAuth = AuthorizeClientUtil.authorizeClient(session, event, cors);
         ClientModel client = clientAuth.getClient();
         cors.checkAllowedOrigins(session, client);
@@ -519,7 +562,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_CLIENT, "public clients not allowed", Response.Status.FORBIDDEN);
         }
 
-        // check the client is allowed to retrieve tokens to this provider
+        // 校验客户端 external-token 配置允许该 IdP
         OIDCAdvancedConfigWrapper oidcClient = OIDCAdvancedConfigWrapper.fromClientModel(client);
         if (!oidcClient.getExternalTokenEnabled() || !oidcClient.getExternalAllowedIdentityProviders().contains(providerAlias)) {
             event.detail(Details.REASON, "Client not allowed to retrieve token for the provider");
@@ -527,7 +570,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_CLIENT, "Client not allowed to retrieve token for the provider", Response.Status.FORBIDDEN);
         }
 
-        // validate the token
+        // 校验用户访问令牌（含 DPoP）
         String tokenString = session.getContext().getHttpRequest().getDecodedFormParameters().getFirst(OAuth2Constants.TOKEN);
         AuthenticationManager.AuthResult authResult = AuthenticationManager.verifyIdentityToken(
                 session, realmModel, session.getContext().getUri(), clientConnection, true, true, null, false, tokenString, headers,
@@ -542,14 +585,14 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         AccessToken token = authResult.token();
         event.user(authResult.user());
 
-        // check the request client is in the audience
+        // 校验请求客户端在令牌受众中
         if (!client.getClientId().equals(token.getIssuedFor()) && !token.hasAudience(client.getClientId())) {
             event.detail(Details.REASON, "client is not within the token audience");
             event.error(Errors.NOT_ALLOWED);
             throw new CorsErrorResponseException(cors, OAuthErrorException.UNAUTHORIZED_CLIENT, "Client is not within the token audience", Response.Status.FORBIDDEN);
         }
 
-        // retrieve the provider model
+        // 获取 IdP 配置
         IdentityProviderModel model = session.identityProviders().getByAlias(providerAlias);
         if (model == null || !model.isEnabled()) {
             event.detail(Details.REASON, "Invalid identity provider");
@@ -565,7 +608,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, "Invalid identity provider", Response.Status.BAD_REQUEST);
         }
 
-        // retrieve the identity associated to the user
+        // 校验用户已与该 IdP 关联
         FederatedIdentityModel identity = this.session.users().getFederatedIdentity(realmModel, authResult.user(), providerAlias);
         if (identity == null) {
             event.detail(Details.REASON, "User not associated to identity provider");
@@ -573,12 +616,12 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, "User not associated to identity provider", Response.Status.BAD_REQUEST);
         }
 
-        // obtain the session from the token
+        // 从令牌解析有效用户会话
         UserSessionModel userSession = UserSessionUtil.findValidSessionForAccessToken(
                 session, realmModel, token, authResult.client(), (invalidUserSession -> {}))
                 .getUserSession();
 
-        //client policies
+        // 触发客户端策略 IdentityBrokeringAPI 事件
         try {
             session.clientPolicy().triggerOnEvent(new IdentityBrokeringAPIContext(session, authResult.token(), client, identityProvider.getConfig().getAlias()));
         } catch (ClientPolicyException cpe) {
@@ -589,7 +632,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             throw new CorsErrorResponseException(cors, cpe.getError(), cpe.getErrorDetail(), cpe.getErrorStatus());
         }
 
-        // now it is OK to retrieve the token from the session or the database
+        // 从 IdP 或存储中检索令牌
         try {
             Response response = identityProvider.retrieveToken(session, identity, userSession, authResult.user());
             event.success();
@@ -602,12 +645,14 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
     }
 
+    /** 检查令牌是否具备 broker read-token 角色 */
     private boolean canReadBrokerToken(AccessToken token) {
         Map<String, AccessToken.Access> resourceAccess = token.getResourceAccess();
         AccessToken.Access brokerRoles = resourceAccess == null ? null : resourceAccess.get(Constants.BROKER_SERVICE_CLIENT_ID);
         return brokerRoles != null && brokerRoles.isUserInRole(Constants.READ_TOKEN_ROLE);
     }
 
+    /** v1 令牌检索：AppAuthManager Bearer 认证 + 存储令牌读取 */
     private Response getTokenV1(String providerAlias) {
         this.event.event(EventType.IDENTITY_PROVIDER_RETRIEVE_TOKEN)
                 .detail(Details.IDENTITY_PROVIDER, providerAlias);
@@ -696,6 +741,11 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
     }
 
+    /**
+     * IdP 认证成功回调：关联/创建用户、首次 Broker 登录或账户关联。
+     * @param context Broker 身份上下文
+     * @return 重定向或错误响应
+     */
     public Response authenticated(BrokeredIdentityContext context) {
         IdentityProviderModel identityProviderConfig = context.getIdpConfig();
         AuthenticationSessionModel authenticationSession = context.getAuthenticationSession();
@@ -742,14 +792,14 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
 
         UserModel federatedUser = this.session.users().getUserByFederatedIdentity(this.realmModel, federatedIdentityModel);
         boolean shouldMigrateId = false;
-        // try to find the user using legacy ID
+        // 尝试用 legacy federated ID 查找用户
         if (federatedUser == null && context.getLegacyId() != null) {
             federatedIdentityModel = new FederatedIdentityModel(federatedIdentityModel, context.getLegacyId());
             federatedUser = this.session.users().getUserByFederatedIdentity(this.realmModel, federatedIdentityModel);
             shouldMigrateId = true;
         }
 
-        // Check if linking was requested (for example by kc_action) or if we're authenticating
+        // 判断是账户关联还是正常联邦登录
         if (isDoingAccountLinking(authenticationSession, true, providerAlias)) {
             return performAccountLinking(authenticationSession, context, federatedIdentityModel, federatedUser);
         }
@@ -832,6 +882,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 校验联邦用户已启用且未被暴力破解临时锁定 */
     public Response validateUser(AuthenticationSessionModel authSession, UserModel user, RealmModel realm) {
         if (!user.isEnabled()) {
             event.error(Errors.USER_DISABLED);
@@ -846,10 +897,11 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return null;
     }
 
-    // Callback from LoginActionsService after first login with broker was done and Keycloak account is successfully linked/created
+    // LoginActionsService 首次 Broker 登录完成后的回调 and Keycloak account is successfully linked/created
     @GET
     @NoCache
     @Path("/after-first-broker-login")
+    /** 首次 Broker 登录流程完成后的 HTTP 入口 */
     public Response afterFirstBrokerLogin(@QueryParam(LoginActionsService.SESSION_CODE) String code,
                                           @QueryParam(Constants.CLIENT_ID) String clientId,
                                           @QueryParam(Constants.CLIENT_DATA) String clientData,
@@ -858,6 +910,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return afterFirstBrokerLogin(authSession);
     }
 
+    /** 创建/关联联邦身份、导入新用户、授予 read-token 角色 */
     private Response afterFirstBrokerLogin(AuthenticationSessionModel authSession) {
         try {
             this.event.detail(Details.CODE_ID, authSession.getParentSession().getId())
@@ -873,13 +926,13 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             event.detail(Details.IDENTITY_PROVIDER, providerAlias);
             event.detail(Details.IDENTITY_PROVIDER_USERNAME, context.getUsername());
 
-            // Ensure the first-broker-login flow was successfully finished
+            // 确认 first-broker-login 流程已成功完成
             String authProvider = authSession.getAuthNote(AbstractIdpAuthenticator.FIRST_BROKER_LOGIN_SUCCESS);
             if (authProvider == null || !authProvider.equals(providerAlias)) {
                 throw new IdentityBrokerException("Invalid request. Not found the flag that first-broker-login flow was finished");
             }
 
-            // firstBrokerLogin workflow finished. Removing note now
+            // 清除 BROKERED_CONTEXT note
             authSession.removeAuthNote(AbstractIdpAuthenticator.BROKERED_CONTEXT_NOTE);
 
             UserModel federatedUser = authSession.getAuthenticatedUser();
@@ -904,7 +957,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
                 }
             }
 
-            // Add federated identity link here
+            // 为非轻量用户添加联邦身份链接
             if (!(federatedUser instanceof LightweightUserAdapter)) {
                 checkOverrideLink(authSession, federatedUser, providerAlias);
 
@@ -955,6 +1008,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
     }
 
+    /** 若用户确认覆盖现有关联则移除旧联邦身份 */
     private void checkOverrideLink(AuthenticationSessionModel authSession, UserModel federatedUser, String providerAlias) {
         String isOverride = authSession.getAuthNote(IdpConfirmOverrideLinkAuthenticator.OVERRIDE_LINK);
         if (!Boolean.parseBoolean(isOverride)) {
@@ -975,6 +1029,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
                 .success();
     }
 
+    /** 完成认证或重定向到 post-broker-login 流程 */
     private Response finishOrRedirectToPostBrokerLogin(AuthenticationSessionModel authSession, BrokeredIdentityContext context, boolean wasFirstBrokerLogin) {
         String postBrokerLoginFlowId = context.getIdpConfig().getPostBrokerLoginFlowId();
         if (postBrokerLoginFlowId == null) {
@@ -1002,10 +1057,11 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
-    // Callback from LoginActionsService after postBrokerLogin flow is finished
+    // post-broker-login 流程完成后的回调
     @GET
     @NoCache
     @Path("/after-post-broker-login")
+    /** post-broker-login 流程完成 HTTP 入口 */
     public Response afterPostBrokerLoginFlow(@QueryParam(LoginActionsService.SESSION_CODE) String code,
                                              @QueryParam(Constants.CLIENT_ID) String clientId,
                                              @QueryParam(Constants.CLIENT_DATA) String clientData,
@@ -1022,14 +1078,14 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             String wasFirstBrokerLoginNote = authenticationSession.getAuthNote(PostBrokerLoginConstants.PBL_AFTER_FIRST_BROKER_LOGIN);
             boolean wasFirstBrokerLogin = Boolean.parseBoolean(wasFirstBrokerLoginNote);
 
-            // Ensure the post-broker-login flow was successfully finished
+            // 确认 post-broker-login 流程已成功完成
             String authStateNoteKey = PostBrokerLoginConstants.PBL_AUTH_STATE_PREFIX + context.getIdpConfig().getAlias();
             String authState = authenticationSession.getAuthNote(authStateNoteKey);
             if (!Boolean.parseBoolean(authState)) {
                 throw new IdentityBrokerException("Invalid request. Not found the flag that post-broker-login flow was finished");
             }
 
-            // remove notes
+            // 清除 PBL 相关 note
             authenticationSession.removeAuthNote(PostBrokerLoginConstants.PBL_BROKERED_IDENTITY_CONTEXT);
             authenticationSession.removeAuthNote(PostBrokerLoginConstants.PBL_AFTER_FIRST_BROKER_LOGIN);
 
@@ -1039,6 +1095,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
     }
 
+    /** post-broker-login 成功后继续首次或常规 Broker 认证 */
     private Response afterPostBrokerLoginFlowSuccess(AuthenticationSessionModel authSession, BrokeredIdentityContext context, boolean wasFirstBrokerLogin) {
         String providerAlias = context.getIdpConfig().getAlias();
         UserModel federatedUser = authSession.getAuthenticatedUser();
@@ -1062,6 +1119,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 完成 Broker 认证：设置会话 note、检查 required-action 并重定向 */
     private Response finishBrokerAuthentication(BrokeredIdentityContext context, UserModel federatedUser, AuthenticationSessionModel authSession, String providerAlias) {
         authSession.setAuthNote(AuthenticationProcessor.BROKER_SESSION_ID, context.getBrokerSessionId());
         authSession.setAuthNote(AuthenticationProcessor.BROKER_USER_ID, context.getBrokerUserId());
@@ -1097,6 +1155,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
 
 
     @Override
+    /** {@inheritDoc} IdP 认证取消回调 */
     public Response cancelled(IdentityProviderModel idpConfig) {
         AuthenticationSessionModel authSession = session.getContext().getAuthenticationSession();
         event.detail(Details.IDENTITY_PROVIDER, idpConfig.getAlias());
@@ -1111,6 +1170,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
     @Override
+    /** {@inheritDoc} IdP 认证错误回调 */
     public Response error(IdentityProviderModel idpConfig, String message) {
         AuthenticationSessionModel authSession = session.getContext().getAuthenticationSession();
         event.detail(Details.IDENTITY_PROVIDER, idpConfig.getAlias());
@@ -1130,6 +1190,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 判断是否处于账户关联流程并校验 LINKING note */
     private boolean isDoingAccountLinking(AuthenticationSessionModel authSession, boolean checkProviderAlias, String providerAlias) {
         String noteFromSession = authSession.getAuthNote(LINKING_IDENTITY_PROVIDER);
         if (noteFromSession == null) {
@@ -1154,6 +1215,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 将 IdP 身份关联到已登录用户 */
     private Response performAccountLinking(AuthenticationSessionModel authSession, BrokeredIdentityContext context, FederatedIdentityModel newModel, UserModel federatedUser) {
         this.event.event(EventType.FEDERATED_IDENTITY_LINK);
 
@@ -1212,7 +1274,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             logger.debugf("Linking account [%s] from identity provider [%s] to user [%s].", newModel, context.getIdpConfig().getAlias(), authenticatedUser);
         }
 
-        // we do this to make sure that the parent IDP is logged out when this user session is complete.
+        // 写入用户会话 note 以便登出时一并注销 IdP 会话 when this user session is complete.
         // But for the case when userSession was previously authenticated with broker1 and now is linked to another broker2, we shouldn't override broker1 notes with the broker2 for sure.
         // Maybe broker logout should be rather always skiped in case of broker-linking
         UserSessionModel userSession = new AuthenticationSessionManager(session).getUserSession(authSession);
@@ -1224,7 +1286,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         authSession.setAuthNote(IdpLinkAction.IDP_LINK_STATUS, RequiredActionContext.KcActionStatus.SUCCESS.name());
 
         if (!Boolean.parseBoolean(authSession.getAuthNote(IdpLinkAction.KC_ACTION_LINKING_IDENTITY_PROVIDER))) {
-            // Legacy client-initiated account linking
+            // 传统客户端发起关联：重定向到 redirect_uri
 
             // In legacy client-initiated account linking, the userSession should exists before linking was started, however it might be expired during the time when user is authenticating to the IDP
             if (userSession == null) {
@@ -1243,10 +1305,11 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return redirectAfterIDPLinking(authSession);
     }
 
+    /** 账户关联完成后重定向（AIA 或 legacy redirect_uri） */
     private Response redirectAfterIDPLinking(AuthenticationSessionModel authSession) {
         URI redirect;
         if (Boolean.parseBoolean(authSession.getAuthNote(IdpLinkAction.KC_ACTION_LINKING_IDENTITY_PROVIDER))) {
-            // Redirect to idp_link action to finish the flow properly
+            // AIA idp_link：重定向到 required-action 完成流程
             ClientSessionCode<AuthenticationSessionModel> clientSessionCode = new ClientSessionCode<>(session, realmModel, authSession);
             clientSessionCode.setAction(AuthenticationSessionModel.Action.REQUIRED_ACTIONS.name());
             String sessionCode = clientSessionCode.getOrGenerateCode();
@@ -1267,6 +1330,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 关联失败时将错误序列化到 note 并重定向 */
     private Response redirectToErrorWhenLinkingFailed(AuthenticationSessionModel authSession, String error, Object... parameters) {
         FormMessage errorMessage = new FormMessage(error, parameters);
         String serializedError;
@@ -1282,6 +1346,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 同步联邦身份属性、令牌及 IdP Mapper */
     private void updateFederatedIdentity(BrokeredIdentityContext context, UserModel federatedUser) {
         FederatedIdentityModel federatedIdentityModel = this.session.users().getFederatedIdentity(this.realmModel, federatedUser, context.getIdpConfig().getAlias());
 
@@ -1297,7 +1362,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
             }
         }
 
-        // Skip DB write if tokens are null or equal
+        // 令牌未变化时跳过数据库写入
         updateToken(context, federatedUser, federatedIdentityModel);
         context.getIdp().updateBrokeredUser(session, realmModel, federatedUser, context);
         KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
@@ -1308,11 +1373,13 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         });
     }
 
+    /** FORCE 同步模式下更新姓名等基本属性 */
     private void setBasicUserAttributes(BrokeredIdentityContext context, UserModel federatedUser) {
         setDiffAttrToConsumer(federatedUser.getFirstName(), context.getFirstName(), federatedUser::setFirstName, false);
         setDiffAttrToConsumer(federatedUser.getLastName(), context.getLastName(), federatedUser::setLastName, false);
     }
 
+    /** 属性值变化时调用 setter */
     private void setDiffAttrToConsumer(String actualValue, String newValue, Consumer<String> consumer, boolean ignoreCase) {
         String actualValueNotNull = Optional.ofNullable(actualValue).orElse("");
         if (newValue != null && !(ignoreCase? newValue.equalsIgnoreCase(actualValueNotNull) : newValue.equals(actualValueNotNull))) {
@@ -1320,20 +1387,22 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
     }
 
+    /** 将 legacy federated ID 迁移为新 ID（删旧建新） */
     private void migrateFederatedIdentityId(BrokeredIdentityContext context, UserModel federatedUser) {
         FederatedIdentityModel identityModel = this.session.users().getFederatedIdentity(this.realmModel, federatedUser, context.getIdpConfig().getAlias());
         FederatedIdentityModel migratedIdentityModel = new FederatedIdentityModel(identityModel, context.getId());
 
-        // since ID is a partial key we need to recreate the identity
+        // 联邦 ID 为复合主键的一部分，需删除后重建
         session.users().removeFederatedIdentity(realmModel, federatedUser, identityModel.getIdentityProvider());
         session.users().addFederatedIdentity(realmModel, federatedUser, migratedIdentityModel);
         logger.debugf("Federated user ID was migrated from %s to %s", identityModel.getUserId(), migratedIdentityModel.getUserId());
     }
 
+    /** 更新存储的 IdP 令牌（保留 refresh token 等特殊逻辑） */
     private void updateToken(BrokeredIdentityContext context, UserModel federatedUser, FederatedIdentityModel federatedIdentityModel) {
         if (Booleans.isTrue(context.getIdpConfig().isStoreToken()) && !ObjectUtil.isEqualOrBothNull(context.getToken(), federatedIdentityModel.getToken())) {
             // like in OIDCIdentityProvider.exchangeStoredToken()
-            // we shouldn't override the refresh token if it is null in the context and not null in the DB
+            // Google 等 IdP：上下文无 refresh token 时不覆盖 DB 中已有值
             // as for google IDP it will be lost forever
             if (federatedIdentityModel.getToken() != null && ExchangeTokenToIdentityProviderToken.class.isInstance(context.getIdp())) {
                 try {
@@ -1360,6 +1429,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
     @Override
+    /** {@inheritDoc} 解码 broker state 并解析认证会话 */
     public AuthenticationSessionModel getAndVerifyAuthenticationSession(String encodedCode) {
         IdentityBrokerState state = IdentityBrokerState.encoded(encodedCode, realmModel);
         String code = state.getDecodedState();
@@ -1370,8 +1440,9 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
     /**
-     * This method will throw JAX-RS exception in case it is not able to retrieve AuthenticationSessionModel. It never returns null
+     * 解析会话码；失败时抛出 WebApplicationException，永不返回 null
      */
+    /** 解析并校验 broker 回调会话码 */
     private AuthenticationSessionModel parseSessionCode(String code, String clientId, String tabId, String clientData) {
         if (code == null || clientId == null || tabId == null) {
             logger.debugf("Invalid request. Authorization code, clientId or tabId was null. Code=%s, clientId=%s, tabID=%s", code, clientId, tabId);
@@ -1385,14 +1456,14 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
 
             AuthenticationSessionModel authSession = checks.getAuthenticationSession();
             if (authSession != null) {
-                // Check if error happened during login or during linking from some application like account console
+                // 区分登录失败与账户控制台关联失败
                 if (isDoingAccountLinking(authSession, false, null)) {
                     Response accountManagementFailedLinking = redirectToErrorWhenLinkingFailed(authSession, Messages.STALE_CODE_ACCOUNT);
                     throw new WebApplicationException(accountManagementFailedLinking);
                 } else {
                     Response errorResponse = checks.getResponse();
 
-                    // Remove "code" from browser history
+                    // 从浏览器历史中移除 code 参数
                     errorResponse = BrowserHistoryHelper.getInstance().saveResponseAndRedirect(session, authSession, errorResponse, true, request);
                     throw new WebApplicationException(errorResponse);
                 }
@@ -1409,7 +1480,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
     /**
-     * Checks if specified message matches one of the passive login error messages and if it does builds a response that
+     * 若错误消息为 passive login 相关 OAuth 错误，则通过协议重定向回客户端 and if it does builds a response that
      * redirects the error back to the client.
      *
      * @param authSession the authentication session.
@@ -1417,6 +1488,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
      * @return a {@code {@link Response}} that redirects the error message back to the client if the {@code message} is one
      * of the passive login error messages, or {@code null} if it is not.
      */
+    /** {@inheritDoc} */
     private Response checkPassiveLoginError(AuthenticationSessionModel authSession, String message) {
         LoginProtocol.Error error = OAuthErrorException.LOGIN_REQUIRED.equals(message) ? LoginProtocol.Error.PASSIVE_LOGIN_REQUIRED :
                 (OAuthErrorException.INTERACTION_REQUIRED.equals(message) ? LoginProtocol.Error.PASSIVE_INTERACTION_REQUIRED : null);
@@ -1431,6 +1503,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return null;
     }
 
+    /** 构建发往 IdP 的 AuthenticationRequest（含 relay state） */
     private AuthenticationRequest createAuthenticationRequest(UserAuthenticationIdentityProvider<?> identityProvider, String providerAlias, ClientSessionCode<AuthenticationSessionModel> clientSessionCode) {
         AuthenticationSessionModel authSession = null;
         IdentityBrokerState encodedState = null;
@@ -1445,22 +1518,27 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return new AuthenticationRequest(this.session, this.realmModel, authSession, this.request, this.session.getContext().getUri(), encodedState, getRedirectUri(providerAlias));
     }
 
+    /** 构建 IdP 认证响应回调 URI */
     private String getRedirectUri(String providerAlias) {
         return Urls.identityProviderAuthnResponse(this.session.getContext().getUri().getBaseUri(), providerAlias, this.realmModel.getName()).toString();
     }
 
+    /** 重定向到错误页（无 throwable） */
     private Response redirectToErrorPage(AuthenticationSessionModel authSession, Response.Status status, String message, Object ... parameters) {
         return redirectToErrorPage(authSession, status, message, null, parameters);
     }
 
+    /** 重定向到错误页（无 authSession） */
     private Response redirectToErrorPage(Response.Status status, String message, Object ... parameters) {
         return redirectToErrorPage(null, status, message, null, parameters);
     }
 
+    /** 重定向到错误页（带 throwable，无 authSession） */
     private Response redirectToErrorPage(Response.Status status, String message, Throwable throwable, Object ... parameters) {
         return redirectToErrorPage(null, status, message, throwable, parameters);
     }
 
+    /** 记录错误事件并抛出 {@link ErrorPageException} 或返回 WebApplicationException 响应 */
     private Response redirectToErrorPage(AuthenticationSessionModel authSession, Response.Status status, String message, Throwable throwable, Object ... parameters) {
         if (message == null) {
             message = Messages.IDENTITY_PROVIDER_UNEXPECTED_ERROR;
@@ -1477,6 +1555,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 在浏览器认证流程中展示 IdP 错误消息 */
     protected Response browserAuthentication(AuthenticationSessionModel authSession, String errorMessage, Object... parameters) {
         this.event.event(EventType.LOGIN);
         AuthenticationFlowModel flow = AuthenticationFlowResolver.resolveBrowserFlow(authSession);
@@ -1503,21 +1582,25 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
     }
 
 
+    /** 抛出 400 错误响应 */
     private Response badRequest(String message) {
         fireErrorEvent(message);
         throw ErrorResponse.error(message, Response.Status.BAD_REQUEST);
     }
 
+    /** 抛出 403 错误响应 */
     private Response forbidden(String message) {
         fireErrorEvent(message);
         throw ErrorResponse.error(message, Response.Status.FORBIDDEN);
     }
 
+    /** 抛出 404 错误响应 */
     private Response notFound(String message) {
         fireErrorEvent(message);
         throw ErrorResponse.error(message, Response.Status.NOT_FOUND);
     }
 
+    /** 按别名获取 UserAuthenticationIdentityProvider 实例 */
     public static UserAuthenticationIdentityProvider<?> getIdentityProvider(KeycloakSession session, String alias) {
         IdentityProviderModel identityProviderModel = getIdentityProviderModel(session, alias);
         UserAuthenticationIdentityProvider<?> identityProvider = getIdentityProvider(session, identityProviderModel, UserAuthenticationIdentityProvider.class);
@@ -1527,6 +1610,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return identityProvider;
     }
 
+    /** 按配置与类型获取 IdP 实例 */
     public static <T extends IdentityProvider<?>> T getIdentityProvider(KeycloakSession session, IdentityProviderModel identityProviderModel, Class<T> type) {
         if (identityProviderModel != null) {
             IdentityProviderFactory<?> providerFactory = getIdentityProviderFactory(session, identityProviderModel);
@@ -1538,6 +1622,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return null;
     }
 
+    /** 解析 IdP 工厂（含 SocialIdentityProvider） */
     private static IdentityProviderFactory<?> getIdentityProviderFactory(KeycloakSession session, IdentityProviderModel model) {
         if (model == null) {
             return null;
@@ -1551,6 +1636,7 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
                 .orElse(null);
     }
 
+    /** 获取 IdP 配置，不存在时抛异常 */
     private IdentityProviderModel getIdentityProviderConfig(String providerAlias) {
         IdentityProviderModel model = getIdentityProviderModel(session, providerAlias);
         if (model == null) {
@@ -1559,10 +1645,12 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         return model;
     }
 
+    /** 为响应附加 CORS 头 */
     private Response corsResponse(Response response, ClientModel clientModel) {
         return Cors.builder().auth().checkAllowedOrigins(session, clientModel).add(Response.fromResponse(response));
     }
 
+    /** 记录身份代理错误事件与日志 */
     private void fireErrorEvent(String message, Throwable throwable) {
         if (!this.event.getEvent().getType().toString().endsWith("_ERROR")) {
             boolean newTransaction = !this.session.getTransactionManager().isActive();
@@ -1590,14 +1678,17 @@ public class IdentityBrokerService implements UserAuthenticationIdentityProvider
         }
     }
 
+    /** 记录错误事件（无 throwable） */
     private void fireErrorEvent(String message) {
         fireErrorEvent(message, null);
     }
 
+    /** @return 是否启用 DEBUG 日志 */
     private boolean isDebugEnabled() {
         return logger.isDebugEnabled();
     }
 
+    /** 回滚活动事务 */
     private void rollback() {
         if (this.session.getTransactionManager().isActive()) {
             this.session.getTransactionManager().rollback();

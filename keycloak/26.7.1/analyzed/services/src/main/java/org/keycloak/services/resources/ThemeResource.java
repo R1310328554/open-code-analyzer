@@ -63,7 +63,8 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Theme resource
+ * 主题静态资源 REST 端点（{@code /resources}）。
+ * <p>提供登录/账户等主题的 CSS、JS、图片及本地化 JSON。</p>
  *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
@@ -71,14 +72,17 @@ import static java.util.stream.Collectors.toSet;
 @Path("/resources")
 public class ThemeResource {
 
+    /** 日志记录器 */
     private static final Logger log = Logger.getLogger(ThemeResource.class);
+    /** 资源版本标签格式（5 位十六进制） */
     private static final Pattern RESOURCE_TAG_PATTERN = Pattern.compile("[0-9a-z]{5}");
 
+    /** 注入的 Keycloak 会话 */
     @Context
     private KeycloakSession session;
 
     /**
-     * Get theme content
+     * 获取主题静态资源（支持版本重定向与 ETag 缓存）
      *
      * @param version
      * @param themeType
@@ -104,28 +108,28 @@ public class ThemeResource {
             String base = uriInfo.getBaseUri().getPath();
             base = base.substring(0, base.length() - 1);
             if (!RESOURCE_TAG_PATTERN.matcher(version).matches()) {
-                // This prevents open or half-open redirects to other URLs later, or is accepting any version
+                // 防止开放或半开放重定向到其他 URL
                 log.debugf("Illegal version passed, returning a 404: %s", uriInfo.getRequestUri().getPath());
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
 
-            // Only enter here if the requested version is different, doesn't have a content hash in the URL,
+            // 请求版本不匹配且无内容哈希时尝试重定向到当前资源版本
             // and we didn't default to the default theme as the theme is unknown.
             if (!version.equals(Version.RESOURCES_VERSION) && !hasContentHash && Objects.equals(theme.getName(), themeName)) {
                 // If it is not the right version, and it does not have a content hash, redirect.
                 // If it is not the right version, but it has a content hash, continue to see if it exists.
 
-                // A simpler way to check for encoded URL characters would be to retrieve the raw values.
+                // RESTEasy 不支持原始 URL，需通过路径前缀校验编码
                 // Unfortunately, RESTEasy doesn't support this, and UrlInfo will throw an IllegalArgumentException.
                 if (!uriInfo.getRequestUri().toURL().getPath().startsWith(base + UriBuilder.fromResource(ThemeResource.class)
                         .path("/{version}/{themeType}/{themeName}/{path}").build(version, theme.getType().toString().toLowerCase(), theme.getName(), path).getPath())) {
-                    // This prevents half-open redirects
+                    // 防止半开放重定向
                     log.debugf("No URL encoding should be necessary for the path, returning a 404: %s", uriInfo.getRequestUri().getPath());
                     return Response.status(Response.Status.NOT_FOUND).build();
                 }
 
                 if (!theme.hasResource(path)) {
-                    // Prevent a redirect to a file that doesn't exist anyway
+                    // 目标资源不存在则直接 404
                     log.debugf("Resource doesn't exist, returning a 404: %s", path);
                     return Response.status(Response.Status.NOT_FOUND).build();
                 }
@@ -141,9 +145,9 @@ public class ThemeResource {
                     return Response.status(Response.Status.NOT_FOUND).build();
                 }
 
-                // From here, it should be safe to redirect as we only redirect to files that we know are present in the theme.
+                // 确认资源存在后可安全重定向
 
-                // The redirect will lead the browser to a resource that it then (when retrieved successfully) can cache again.
+                // 重定向后浏览器可缓存正确版本资源（滚动重启场景）
                 // This assumes that it is better to try to some content even if it is outdated or too new, instead of returning a 404.
                 // This should usually work for images, CSS or (simple) JavaScript referenced in the login theme that needs to be
                 // loaded while the rolling restart is progressing.
@@ -152,7 +156,7 @@ public class ThemeResource {
             }
 
             if (hasContentHash && Objects.equals(etag, Version.RESOURCES_VERSION)) {
-                // We delivered this resource earlier, and its etag matches the resource version, so it has not changed
+                // ETag 匹配则返回 304 Not Modified
                 return Response.notModified()
                         .header(HttpHeaders.ETAG, Version.RESOURCES_VERSION)
                         .cacheControl(CacheControlUtil.getDefaultCacheControl()).build();
@@ -171,7 +175,7 @@ public class ThemeResource {
                 Response.ResponseBuilder rb = Response.ok(resource).type(contentType).cacheControl(CacheControlUtil.getDefaultCacheControl());
 
                 if (hasContentHash) {
-                    // All items with a content hash receive an etag, so we can then provide a not-modified response later
+                    // 带内容哈希的资源设置 ETag 以支持条件请求
                     rb.header(HttpHeaders.ETAG, Version.RESOURCES_VERSION);
                 }
                 if (encodingProvider != null) {
@@ -189,6 +193,7 @@ public class ThemeResource {
 
     @Path("/{realm}/{themeType}/{locale}")
     @OPTIONS
+    /** 本地化文本端点 CORS 预检 */
     public Response localizationTextPreflight() {
         return Cors.builder().auth().preflight().add(Response.ok());
     }
@@ -196,6 +201,14 @@ public class ThemeResource {
     @GET
     @Path("/{realm}/{themeType}/{locale}")
     @Produces(MediaType.APPLICATION_JSON)
+    /**
+     * 返回指定领域/主题/语言的本地化键值 JSON。
+     * @param realmName 领域名称
+     * @param theme 主题名称（可选）
+     * @param localeString 语言标签
+     * @param themeType 主题类型
+     * @param showSource 是否显示消息来源（主题/领域）
+     */
     public Response getLocalizationTexts(@PathParam("realm") String realmName, @QueryParam("theme") String theme,
                                          @PathParam("locale") String localeString, @PathParam("themeType") String themeType,
                                          @QueryParam("source") boolean showSource) throws IOException {
@@ -235,6 +248,7 @@ public class ThemeResource {
         return Cors.builder().allowAllOrigins().auth().add(Response.ok(result));
     }
 
+    /** 解析主题类型字符串，无效时返回 empty */
     private static Optional<Theme.Type> getThemeType(String themeType) {
         try {
             return Optional.of(Theme.Type.valueOf(themeType.toUpperCase()));
@@ -244,34 +258,41 @@ public class ThemeResource {
     }
 }
 
+/** 本地化消息来源：主题或领域覆盖 */
 enum Source {
     THEME,
     REALM
 }
 
+/** 本地化键值对（可选带来源） */
 class KeySource {
     private String key;
     private String value;
     private Source source;
 
+    /** 构造无来源的键值对 */
     public KeySource(String key, String value) {
         this.key = key;
         this.value = value;
     }
 
+    /** 构造带来源的键值对 */
     public KeySource(String key, String value, Source source) {
         this(key, value);
         this.source = source;
     }
 
+    /** @return 消息键 */
     public String getKey() {
         return key;
     }
 
+    /** @return 消息值 */
     public String getValue() {
         return value;
     }
 
+    /** @return 消息来源 */
     public Source getSource() {
         return source;
     }

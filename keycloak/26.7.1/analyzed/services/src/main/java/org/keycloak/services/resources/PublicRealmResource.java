@@ -38,22 +38,32 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
- * Resource class for public realm information
+ * 领域公开信息 REST 资源。
+ * <p>暴露无需认证的领域元数据（realm 名称、令牌服务 URL、RSA 公钥等）。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PublicRealmResource {
+    /** 日志记录器 */
     protected static final Logger logger = Logger.getLogger(PublicRealmResource.class);
 
+    /** 当前 HTTP 请求 */
     protected final HttpRequest request;
 
+    /** 当前 HTTP 响应 */
     protected final HttpResponse response;
 
+    /** Keycloak 会话 */
     protected final KeycloakSession session;
 
+    /** 当前领域模型 */
     protected final RealmModel realm;
 
+    /**
+     * 从会话上下文构造公开领域资源。
+     * @param session Keycloak 会话
+     */
     public PublicRealmResource(KeycloakSession session) {
         this.session = session;
         this.realm = session.getContext().getRealm();
@@ -62,7 +72,7 @@ public class PublicRealmResource {
     }
 
     /**
-     * CORS preflight
+     * CORS 预检请求
      *
      * @return
      */
@@ -73,7 +83,7 @@ public class PublicRealmResource {
     }
 
     /**
-     * Public information about the realm.
+     * 返回领域的公开 JSON 信息。
      *
      * @return
      */
@@ -85,6 +95,13 @@ public class PublicRealmResource {
         return realmRep(session, realm, session.getContext().getUri());
     }
 
+    /**
+     * 构建 {@link PublishedRealmRepresentation}。
+     * @param session Keycloak 会话
+     * @param realm 领域
+     * @param uriInfo URI 信息
+     * @return 公开领域表示
+     */
     public static PublishedRealmRepresentation realmRep(KeycloakSession session, RealmModel realm, UriInfo uriInfo) {
         PublishedRealmRepresentation rep = new PublishedRealmRepresentation();
         rep.setRealm(realm.getName());

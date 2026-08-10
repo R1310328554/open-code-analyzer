@@ -17,6 +17,10 @@
 
 package org.keycloak.services.resources;
 
+/**
+ * Keycloak OpenAPI 规范常量扩展类。
+ * <p>继承 {@link org.keycloak.common.constants.KeycloakOpenAPI}，为 services 模块提供 OpenAPI 相关常量访问入口。</p>
+ */
 public class KeycloakOpenAPI extends org.keycloak.common.constants.KeycloakOpenAPI {
 
     private KeycloakOpenAPI() { }

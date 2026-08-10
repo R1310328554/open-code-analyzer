@@ -41,27 +41,33 @@ import io.quarkus.runtime.Quarkus;
 import org.jboss.logging.Logger;
 
 /**
+ * Keycloak 应用抽象基类。
+ * <p>负责临时目录初始化、加密集成、会话工厂创建、领域引导（master realm、导入、临时管理员）及优雅关闭。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
- *
  */
 public abstract class KeycloakApplication extends Application {
 
+    /** 系统属性键：Keycloak 临时目录路径 */
     private static final String KC_TMPDIR = "kc.io.tmpdir";
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(KeycloakApplication.class);
 
+    /** 全局会话工厂（启动完成后可用） */
     private static volatile DefaultKeycloakSessionFactory sessionFactory;
 
     /**
-     * Get the temp directory as initialized by the current KeycloakApplication.
+     * 获取当前应用初始化的临时目录路径。
      * <br>
-     * The directory is not guaranteed to exist
+     * 目录不保证已存在
      */
     public static String getTmpDirectory() {
         return Optional.ofNullable(System.getProperty(KC_TMPDIR)).orElseThrow(() -> new RuntimeException("No temporary directory was configured."));
     }
 
+    /** 根据数据目录设置 {@link #KC_TMPDIR} 系统属性 */
     protected void initTmpDirectory() {
         String dataDir = getDataDir();
         if (dataDir != null) {
@@ -70,9 +76,10 @@ public abstract class KeycloakApplication extends Application {
         }
     }
 
+    /** @return 数据目录路径，子类实现 */
     protected abstract String getDataDir();
 
-    // synchronized to prevent shutdown while running bootstrapping
+    /** 启动应用：初始化临时目录、加密、会话工厂并执行引导 */
     protected synchronized void startup() {
         logger.debugv("Application: {0}", this.getClass().getName());
         initTmpDirectory();
@@ -82,6 +89,7 @@ public abstract class KeycloakApplication extends Application {
         runBootstrap(KeycloakApplication.sessionFactory);
     }
 
+    /** 在 DB 锁保护下执行引导并可选运行导出 */
     private void runBootstrap(DefaultKeycloakSessionFactory keycloakSessionFactory) {
         var startTime = System.nanoTime();
 
@@ -118,11 +126,12 @@ public abstract class KeycloakApplication extends Application {
         logger.infof("Bootstrap completed in %f seconds", (double) duration.toMillis() / 1000);
     }
 
+    /** @return 引导阶段事务超时（秒），默认 5 分钟 */
     protected int getTransactionTimeout(DefaultKeycloakSessionFactory sessionFactory) {
         return Math.toIntExact(TimeUnit.MINUTES.toSeconds(5));
     }
 
-    // synchronized to prevent shutdown while running bootstrapping
+    /** 关闭会话工厂并释放资源 */
     protected synchronized void shutdown() {
         if (sessionFactory != null) {
             sessionFactory.close();
@@ -130,6 +139,7 @@ public abstract class KeycloakApplication extends Application {
         }
     }
 
+    /** 发布 {@link ShutdownDelayInitiatedEvent}，标记进入关闭延迟阶段 */
     protected synchronized void shutdownDelayInitiated() {
         if (sessionFactory == null) {
             return;
@@ -137,7 +147,7 @@ public abstract class KeycloakApplication extends Application {
         sessionFactory.publish(new ShutdownDelayInitiatedEvent(Instant.ofEpochMilli(Time.currentTimeMillis())));
     }
 
-    // Bootstrap master realm, import realms and create admin user.
+    /** 引导 master 领域、导入配置并创建管理员用户 */
     protected ExportImportManager bootstrap(KeycloakSession session) {
         logger.debug("bootstrap");
         boolean existing = ExportImportConfig.isSingleTransaction();
@@ -150,7 +160,7 @@ public abstract class KeycloakApplication extends Application {
                 if (!exportImportManager.isImportMasterIncluded()) {
                     applianceBootstrap.createMasterRealm();
                 }
-                // these are also running in the initial bootstrap transaction - if there is a problem, the server won't be initialized at all
+                // 以下操作也在初始引导事务中执行，失败则服务器无法启动 - if there is a problem, the server won't be initialized at all
                 exportImportManager.runImport();
                 createTemporaryAdmin(session);
             } else {
@@ -162,18 +172,22 @@ public abstract class KeycloakApplication extends Application {
         }
     }
 
+    /** 创建临时管理员账户，由 Quarkus 等子类实现 */
     protected abstract void createTemporaryAdmin(KeycloakSession session);
 
+    /** 创建会话工厂，由运行时子类实现 */
     protected abstract DefaultKeycloakSessionFactory createSessionFactory();
 
     /**
-     * WARNING: This method is for use by test logic. Will return null if there is no current KeycloakApplication, or if the
+     * 警告：仅供测试逻辑使用。 Will return null if there is no current KeycloakApplication, or if the
      * startup has not yet reached the point of setting this value.
      */
+    /** @return 当前会话工厂，未启动完成时可能为 null */
     public static DefaultKeycloakSessionFactory getSessionFactory() {
         return sessionFactory;
     }
 
+    /** 引导前设置事务超时 */
     private void setTransactionTimeout(DefaultKeycloakSessionFactory keycloakSessionFactory) {
         try {
             var transactionTimeoutSeconds = getTransactionTimeout(keycloakSessionFactory);
@@ -183,6 +197,7 @@ public abstract class KeycloakApplication extends Application {
         }
     }
 
+    /** 引导后重置事务超时为默认值 */
     private void resetTransactionTimeout(DefaultKeycloakSessionFactory keycloakSessionFactory) {
         try {
             KeycloakModelUtils.setTransactionLimit(keycloakSessionFactory, 0);
