@@ -19,95 +19,104 @@ package com.alibaba.nacos.core.context.addition;
 import com.alibaba.nacos.api.common.Constants;
 
 /**
+ * 基础请求上下文：封装协议类型、请求目标、客户端 UA、应用名、编码及嵌套的 {@link AddressContext}。
  * Nacos request basic information context.
  *
  * @author xiweng.yy
  */
 public class BasicContext {
     
+    /** 未上报应用名时的默认值。 */
     private static final String DEFAULT_APP = "unknown";
     
+    /** HTTP 协议标识常量。 */
     public static final String HTTP_PROTOCOL = "HTTP";
     
+    /** gRPC 协议标识常量。 */
     public static final String GRPC_PROTOCOL = "GRPC";
     
+    /** 请求源/连接地址信息。 */
     private final AddressContext addressContext;
     
-    /**
-     * Request user agent, such as Nacos-Java-client:v2.4.0
-     */
+    /** 客户端 User-Agent，例如 Nacos-Java-client:v2.4.0。 */
     private String userAgent;
     
-    /**
-     * Request protocol type, HTTP or GRPC and so on.
-     */
+    /** 请求协议类型：HTTP、gRPC 等。 */
     private String requestProtocol;
     
     /**
-     * Request target.
+     * 请求目标描述。
      * <ul>
-     *     <li>For HTTP protocol it should be `${Method} ${URI}`, such as `POST /v2/ns/instance`</li>
-     *     <li>For GRPC protocol, it should be `${requestClass}`, such as `InstanceRequest`</li>
+     *     <li>HTTP：`${Method} ${URI}`，如 {@code POST /v2/ns/instance}</li>
+     *     <li>gRPC：请求类名，如 {@code InstanceRequest}</li>
      * </ul>
      */
     private String requestTarget;
     
-    /**
-     * Optional, mark the app name of the request from when client set app name, default `unknown`.
-     */
+    /** 可选，客户端上报的应用名，默认 {@code unknown}。 */
     private String app;
     
-    /**
-     * Optional, mark the encoding of the request from when client set encoding, default `UTF-8`.
-     */
+    /** 可选，请求体字符编码，默认 {@code UTF-8}。 */
     private String encoding;
     
+    /** 初始化地址上下文并设置默认 app 与 encoding。 */
     public BasicContext() {
         this.addressContext = new AddressContext();
         this.app = DEFAULT_APP;
         this.encoding = Constants.ENCODE;
     }
     
+    /** 返回地址子上下文。 */
     public AddressContext getAddressContext() {
         return addressContext;
     }
     
+    /** 返回 User-Agent。 */
     public String getUserAgent() {
         return userAgent;
     }
     
+    /** 设置 User-Agent。 */
     public void setUserAgent(String userAgent) {
         this.userAgent = userAgent;
     }
     
+    /** 返回协议类型。 */
     public String getRequestProtocol() {
         return requestProtocol;
     }
     
+    /** 设置协议类型。 */
     public void setRequestProtocol(String requestProtocol) {
         this.requestProtocol = requestProtocol;
     }
     
+    /** 返回请求目标字符串。 */
     public String getRequestTarget() {
         return requestTarget;
     }
     
+    /** 设置请求目标字符串。 */
     public void setRequestTarget(String requestTarget) {
         this.requestTarget = requestTarget;
     }
     
+    /** 返回应用名。 */
     public String getApp() {
         return app;
     }
     
+    /** 设置应用名。 */
     public void setApp(String app) {
         this.app = app;
     }
     
+    /** 返回字符编码。 */
     public String getEncoding() {
         return encoding;
     }
     
+    /** 设置字符编码。 */
     public void setEncoding(String encoding) {
         this.encoding = encoding;
     }

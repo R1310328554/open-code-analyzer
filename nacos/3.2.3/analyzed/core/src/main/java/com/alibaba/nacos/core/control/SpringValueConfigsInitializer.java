@@ -22,24 +22,32 @@ import com.alibaba.nacos.plugin.control.configs.ControlConfigsInitializer;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
+ * 管控插件 Spring 配置初始化器：从 {@link EnvUtil} 读取 {@code nacos.plugin.control.*} 相关属性并写入 {@link ControlConfigs}。
  * spring value for control configs.
  *
  * @author shiyiyue
  */
 public class SpringValueConfigsInitializer implements ControlConfigsInitializer {
     
+    /** 管控插件配置键前缀。 */
     private static final String PREFIX = "nacos.plugin.control.";
     
+    /** 连接运行时剔除器实现名配置键。 */
     private static final String CONNECTION_RUNTIME_EJECTOR = PREFIX + "connection.runtime.ejector";
     
+    /** 管控管理器类型配置键。 */
     private static final String CONTROL_MANAGER_TYPE = PREFIX + "manager.type";
     
+    /** 规则外部存储类型配置键。 */
     private static final String RULE_EXTERNAL_STORAGE = PREFIX + "rule.external.storage";
     
+    /** 本地规则存储根目录配置键。 */
     private static final String LOCAL_RULE_STORAGE_BASE_DIR = PREFIX + "rule.local.basedir";
     
+    /** 默认连接运行时剔除器标识。 */
     private static final String DEFAULT_CONNECTION_RUNTIME_EJECTOR = "nacos";
     
+    /** 将环境变量/配置文件中的管控项注入 {@link ControlConfigs}。 */
     @Override
     public void initialize(ControlConfigs controlConfigs) {
         controlConfigs.setConnectionRuntimeEjector(

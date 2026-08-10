@@ -23,39 +23,42 @@ import com.alibaba.nacos.plugin.control.tps.request.TpsCheckRequest;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
+ * HTTP TPS 校验请求解析器抽象基类：构造时自动注册到 {@link HttpTpsCheckRequestParserRegistry}，子类实现如何将 {@link HttpServletRequest} 转为 {@link TpsCheckRequest}。
  * http tps check request parser.
  *
  * @author shiyiyue
  */
 public abstract class HttpTpsCheckRequestParser {
     
+    /** 构造并完成解析器自注册。 */
     public HttpTpsCheckRequestParser() {
         registerParser();
     }
     
+    /** 将当前解析器注册到全局注册表。 */
     public void registerParser() {
         HttpTpsCheckRequestParserRegistry.register(this);
     }
     
     /**
-     * parse tps check request.
+     * 将 HTTP 请求解析为 TPS 校验请求对象。
      *
-     * @param httpServletRequest http request.
-     * @return
+     * @param httpServletRequest HTTP 请求
+     * @return {@link TpsCheckRequest} 实例
      */
     public abstract TpsCheckRequest parse(HttpServletRequest httpServletRequest);
     
     /**
-     * get point name.
+     * 返回关联的 TPS 控制点名称。
      *
-     * @return
+     * @return 控制点标识
      */
     public abstract String getPointName();
     
     /**
-     * get name.
+     * 返回解析器注册名（注册表 key）。
      *
-     * @return
+     * @return 解析器唯一名称
      */
     public abstract String getName();
     

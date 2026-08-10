@@ -22,6 +22,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
+ * TPS 管控注解：标注在 Controller 方法上，声明限流控制点名称与别名，由 {@link HttpTpsPointRegistry} 在容器刷新时注册到管控中心。
  * tps control manager.
  *
  * @author liuzunfei
@@ -31,16 +32,16 @@ import java.lang.annotation.RetentionPolicy;
 public @interface TpsControl {
     
     /**
-     * alias name for control point.
+     * 控制点别名，用于解析器注册与查找。
      *
-     * @return
+     * @return 别名，默认可为空字符串
      */
     String name() default "";
     
     /**
-     * The point name should applied for.
+     * 要应用的 TPS 控制点名称（必填）。
      *
-     * @return action type, default READ
+     * @return 控制点标识
      */
     String pointName();
     

@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * HTTP 请求上下文的 Spring 配置：注册 {@link HttpRequestContextFilter} 并设为最高优先级，确保后续过滤器可读取已填充的 {@link RequestContext}。
  * Spring Configuration for request context of HTTP.
  *
  * @author xiweng.yy
@@ -30,6 +31,7 @@ import org.springframework.context.annotation.Configuration;
 @NacosWebBean
 public class HttpRequestContextConfig {
     
+    /** 注册全局 HTTP 请求上下文过滤器，顺序为 {@link Integer#MIN_VALUE}。 */
     @Bean
     public FilterRegistrationBean<HttpRequestContextFilter> requestContextFilterRegistration(
         HttpRequestContextFilter requestContextFilter) {
@@ -42,6 +44,7 @@ public class HttpRequestContextConfig {
         return registration;
     }
     
+    /** 提供 {@link HttpRequestContextFilter} Bean 实例。 */
     @Bean
     public HttpRequestContextFilter nacosRequestContextFilter() {
         return new HttpRequestContextFilter();

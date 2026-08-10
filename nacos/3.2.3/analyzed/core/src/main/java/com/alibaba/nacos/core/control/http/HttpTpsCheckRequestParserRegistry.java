@@ -24,18 +24,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * HTTP TPS 校验请求解析器注册表：按解析器名称维护单例映射，支持同名覆盖并记录管控日志。
  * http tps check request parse registry.
  *
  * @author shiyiyue
  */
 public class HttpTpsCheckRequestParserRegistry {
     
+    /** 解析器名称 → 实例映射（包内可见）。 */
     static final Map<String, HttpTpsCheckRequestParser> PARSER_MAP = new ConcurrentHashMap<>();
     
     /**
-     * register httpTpsCheckParser.
+     * 注册 HTTP TPS 解析器；同名时记录替换日志。
      *
-     * @param httpTpsCheckParser httpTpsCheckParser.
+     * @param httpTpsCheckParser 待注册解析器
      */
     public static synchronized void register(HttpTpsCheckRequestParser httpTpsCheckParser) {
         HttpTpsCheckRequestParser prevTpsCheckParser =
@@ -53,6 +55,7 @@ public class HttpTpsCheckRequestParserRegistry {
         }
     }
     
+    /** 按解析器名称获取已注册实例。 */
     public static HttpTpsCheckRequestParser getParser(String pointName) {
         return PARSER_MAP.get(pointName);
     }

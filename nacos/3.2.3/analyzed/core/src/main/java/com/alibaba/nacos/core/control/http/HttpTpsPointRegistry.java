@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * HTTP TPS 控制点注册器：在 Spring 容器首次刷新完成后扫描所有 {@link RequestMappingHandlerMapping} 映射，将带 {@link TpsControl} 注解的方法对应的控制点注册到 {@link ControlManagerCenter}。
  * RequestHandlerRegistry.
  *
  * @author liuzunfei
@@ -43,8 +44,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @NacosWebBean
 public class HttpTpsPointRegistry implements ApplicationListener<ContextRefreshedEvent> {
     
+    /** 保证控制点扫描仅执行一次的标志。 */
     private volatile AtomicBoolean isInit = new AtomicBoolean(false);
     
+    /** 容器刷新后扫描 {@link TpsControl} 并注册 TPS 控制点。 */
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         if (!isInit.compareAndSet(false, true)) {

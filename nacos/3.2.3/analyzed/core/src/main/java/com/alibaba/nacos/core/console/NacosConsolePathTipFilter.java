@@ -30,24 +30,32 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
+ * Nacos 控制台路径提示过滤器：当用户误访问 Server 根路径或 index.html 时，返回控制台默认端口与 context-path 提示，引导前往独立 Console 服务。
  * nacos console path filter.
  * @author cxhello
  * @date 2025/7/17
  */
 public class NacosConsolePathTipFilter implements Filter {
     
+    /** Server 侧 context-path 配置键。 */
     private static final String NACOS_SERVER_CONTEXT_PATH = "nacos.server.contextPath";
     
+    /** 独立 Console 服务端口配置键。 */
     private static final String NACOS_CONSOLE_PORT = "nacos.console.port";
     
+    /** 独立 Console context-path 配置键。 */
     private static final String NACOS_CONSOLE_CONTEXT_PATH = "nacos.console.contextPath";
     
+    /** Server 默认 context-path。 */
     private static final String NACOS_SERVER_DEFAULT_CONTEXT_PATH = "/nacos";
     
+    /** Console 默认端口。 */
     private static final String NACOS_CONSOLE_DEFAULT_PORT = "8080";
     
+    /** 路径规范化时使用的根路径后缀。 */
     private static final String NACOS_CONSOLE_DEFAULT_PATH = "/";
     
+    /** 拦截根路径访问并输出 Console 引导信息，其余请求继续过滤链。 */
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
         FilterChain filterChain)
@@ -68,6 +76,7 @@ public class NacosConsolePathTipFilter implements Filter {
         filterChain.doFilter(servletRequest, servletResponse);
     }
     
+    /** 规范化 Server context-path，确保以 {@code /} 结尾（根路径除外）。 */
     private String normalizeContextPath(String contextPath) {
         if (StringUtils.isBlank(contextPath)) {
             return NACOS_CONSOLE_DEFAULT_PATH;
@@ -78,6 +87,7 @@ public class NacosConsolePathTipFilter implements Filter {
         return contextPath;
     }
     
+    /** 向响应写入 Console 默认端口与访问路径的纯文本提示。 */
     private void writeConsoleInfo(HttpServletResponse httpServletResponse) throws IOException {
         httpServletResponse.setContentType(MediaType.TEXT_PLAIN);
         String port = EnvUtil.getProperty(NACOS_CONSOLE_PORT, NACOS_CONSOLE_DEFAULT_PORT);

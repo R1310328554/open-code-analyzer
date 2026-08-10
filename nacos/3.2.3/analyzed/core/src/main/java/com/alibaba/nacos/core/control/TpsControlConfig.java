@@ -19,6 +19,7 @@
 package com.alibaba.nacos.core.control;
 
 /**
+ * TPS 管控全局开关：当前实现恒为启用，供 {@link HttpTpsPointRegistry} 等组件统一判断。
  * tps control manager.
  *
  * @author liuzunfei
@@ -27,8 +28,8 @@ package com.alibaba.nacos.core.control;
 public class TpsControlConfig {
     
     /**
-     * tps control is enabled.
-     * @return true/false.
+     * 是否启用 TPS 管控。
+     * @return 当前固定返回 {@code true}
      */
     public static boolean isTpsControlEnabled() {
         return true;
