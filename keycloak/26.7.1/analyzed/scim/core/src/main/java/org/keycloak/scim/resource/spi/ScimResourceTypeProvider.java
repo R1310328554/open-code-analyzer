@@ -13,142 +13,133 @@ import org.keycloak.scim.resource.ResourceTypeRepresentation;
 import org.keycloak.scim.resource.schema.ModelSchema;
 
 /**
- * <p>A provider of a SCIM resource type.
+ * SCIM 资源类型提供者接口。
  *
- * <p>This provider is responsible for the lifecycle of the resource type, including validation, creation, update,
- * retrieval, and deletion of resources of that type. Once registered, the provider will be automatically available from
- * the SCIM API.
+ * <p>负责资源类型的完整生命周期，包括校验、创建、更新、检索与删除。
+ * 注册后，该提供者将自动暴露于 SCIM API。</p>
  *
- * <p>A {@link ScimResourceTypeProvider}</p> is mainly responsible for mapping values from an SCIM resource representation
- * to the underlying model and vice versa, and for enforcing the rules of the resource type and its corresponding model
- * when managing resource type instances.
+ * <p>{@link ScimResourceTypeProvider} 主要负责在 SCIM 资源表示与底层模型之间映射值，
+ * 并在管理资源实例时强制执行资源类型及其对应模型的规则。</p>
  */
 public interface ScimResourceTypeProvider<R extends ResourceTypeRepresentation> extends Provider {
 
+    /** 默认最大返回结果数。 */
     public static final int DEFAULT_MAX_RESULTS = 100;
 
     /**
-     * Returns the name of the resource type managed by this provider.
+     * 返回此提供者管理的资源类型名称。
      *
-     * @return the name of the resource type
+     * @return 资源类型名称
      */
     default String getName() {
         return getResourceType().getSimpleName();
     }
 
     /**
-     * Returns a human-readable description of the resource type managed by this provider.
+     * 返回此提供者管理的资源类型的人类可读描述。
      *
-     * @return the description of the resource type
+     * @return 资源类型描述
      */
     default String getDescription() {
         return getName();
     }
 
     /**
-     * Returns the schema name of the resource type managed by this provider.
+     * 返回此提供者管理的资源类型的 Schema URI。
      *
-     * @return the schema URI of the resource type
+     * @return 资源类型的 Schema URI
      */
     String getSchema();
 
+    /** 返回所有 {@link ModelSchema} 定义（含扩展）。 */
     <M extends Model> List<ModelSchema<M, R>> getSchemas();
 
     /**
-     * Returns the schema extensions names of the resource type managed by this provider.
+     * 返回此提供者管理的资源类型的 Schema 扩展 URI 列表。
      *
-     * @return a list of schema extension URIs
+     * @return Schema 扩展 URI 列表
      */
     default List<String> getSchemaExtensions() {
         return List.of();
     }
 
     /**
-     * Returns the {@link ResourceTypeRepresentation} type managed by this provider.
+     * 返回此提供者管理的 {@link ResourceTypeRepresentation} 类型。
      *
-     * @return the class of the resource type managed by this provider
+     * @return 资源类型表示类
      */
     Class<R> getResourceType();
 
     /**
-     * Creates a new resource of this type. This method is invoked after successful validation of the resource,
-     * and should persist the resource and return the persisted instance, including any generated identifier or metadata.
-     * The returned resource will be used in the response to the client.
+     * 创建此类型的新资源。校验通过后调用，应持久化资源并返回包含生成标识符的实例。
      *
-     * @param resource the resource to create
-     * @return the created resource
+     * @param resource 待创建的资源
+     * @return 已创建的资源
      */
     R create(R resource);
 
     /**
-     * Updates an existing resource of this type. This method is invoked after successful validation of the resource,
-     * and should persist the updated resource and return the persisted instance.
-     * The returned resource will be used in the response to the client.
+     * 更新此类型的现有资源。校验通过后调用，应持久化更新并返回最新实例。
      *
-     * @param resource the resource to update
-     * @return the updated resource
+     * @param resource 待更新的资源
+     * @return 已更新的资源
      */
     R update(R resource);
 
     /**
-     * Retrieves a resource of this type by its identifier. This method is invoked when a client requests a specific resource,
-     * and should return the resource if it exists, or null if it does not exist.
-     * The returned resource will be used in the response to the client.
+     * 按标识符检索此类型的资源。资源不存在时返回 {@code null}。
      *
-     * @param id the identifier of the resource to retrieve
-     * @return the resource with the given identifier, or null if it does not exist
+     * @param id 资源标识符
+     * @return 对应资源，或 {@code null}
      */
     R get(String id);
 
     /**
-     * Retrieves a resource of this type by its identifier, filtering the returned attributes
-     * based on the {@code attributes} and {@code excludedAttributes} parameters.
+     * 按标识符检索资源，并根据 {@code attributes} 与 {@code excludedAttributes} 过滤返回属性。
      *
-     * @param id the identifier of the resource to retrieve
-     * @param attributes the list of attributes to include (may be null for no inclusion filter)
-     * @param excludedAttributes the list of attributes to exclude (may be null for no exclusion filter)
-     * @return the resource with the given identifier, or null if it does not exist
+     * @param id 资源标识符
+     * @param attributes 需包含的属性列表（{@code null} 表示不过滤）
+     * @param excludedAttributes 需排除的属性列表（{@code null} 表示不排除）
+     * @return 对应资源，或 {@code null}
      */
     default R get(String id, List<String> attributes, List<String> excludedAttributes) {
         return get(id);
     }
 
     /**
-     * Retrieves all resources of this type. This method is invoked when a client requests a list of resources,
-     * and should return a stream of all resources of this type.
+     * 检索匹配搜索条件的所有资源。
      *
-     * @param searchRequest the search request containing the filter and other parameters to retrieve the matching resources
-     * @return a stream of all resources of this type
+     * @param searchRequest 包含过滤条件等参数的搜索请求
+     * @return 匹配资源的流
      */
     Stream<R> getAll(SearchRequest searchRequest);
 
     /**
-     * Counts the total number of resources of this type that match the given search request. This method is invoked when
-     * a client requests a list of resources,
+     * 统计匹配搜索条件的资源总数。
      *
-     * @param searchRequest the search request containing the filter and other parameters to count the matching resources
-     * @return the total number of resources of this type that match the given search request
+     * @param searchRequest 包含过滤条件等参数的搜索请求
+     * @return 匹配资源总数
      */
     Long count(SearchRequest searchRequest);
 
     /**
-     * Deletes a resource of this type by its identifier. This method is invoked when a client requests the deletion of a specific resource,
+     * 按标识符删除此类型的资源。
      *
-     * @param id the identifier of the resource to delete
-     * @return true if the resource was successfully deleted, false if the resource was not found or could not be deleted
+     * @param id 资源标识符
+     * @return 删除成功返回 {@code true}，未找到或无法删除返回 {@code false}
      */
     boolean delete(String id);
 
+    /** 对资源执行 Patch 操作（默认不支持，子类可覆盖）。 */
     default void patch(R existing, List<PatchOperation> operations) {
         throw new UnsupportedOperationException("Add operation is not supported for resource type " + getName());
     }
 
     /**
-     * Returns the admin event {@link ResourceType} for this SCIM resource type.
-     * By default, derives it from {@link #getName()} by converting to uppercase and matching against known values.
-     * Providers can override this to map to a different {@link ResourceType} value.
+     * 返回此 SCIM 资源类型对应的管理事件 {@link ResourceType}。
+     * <p>默认将 {@link #getName()} 转为大写并匹配已知枚举值；子类可覆盖以映射不同值。</p>
      *
-     * @return the admin event resource type
+     * @return 管理事件资源类型
      */
     default ResourceType getAdminEventResourceType() {
         String name = getName().toUpperCase();

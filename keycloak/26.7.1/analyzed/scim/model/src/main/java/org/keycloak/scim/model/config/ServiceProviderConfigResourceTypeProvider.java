@@ -19,10 +19,20 @@ import org.keycloak.scim.resource.spi.SingletonResourceTypeProvider;
 
 import static org.keycloak.scim.resource.Scim.hasDiscoveryEndpointPermission;
 
+/**
+ * {@link ServiceProviderConfig} 单例资源类型的 SCIM 提供者。
+ * <p>返回 Keycloak SCIM 服务的能力声明，包括认证方案、过滤支持与 Patch 支持等。</p>
+ */
 public class ServiceProviderConfigResourceTypeProvider implements SingletonResourceTypeProvider<ServiceProviderConfig> {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /**
+     * 构造提供者。
+     *
+     * @param session Keycloak 会话
+     */
     public ServiceProviderConfigResourceTypeProvider(KeycloakSession session) {
         this.session = session;
     }
@@ -45,6 +55,7 @@ public class ServiceProviderConfigResourceTypeProvider implements SingletonResou
         return config;
     }
 
+    /** 构造过滤能力声明。 */
     private FilterSupport getFilterSupport() {
         FilterSupport filter = new FilterSupport();
 
@@ -54,6 +65,7 @@ public class ServiceProviderConfigResourceTypeProvider implements SingletonResou
         return filter;
     }
 
+    /** 构造支持的 OAuth Bearer Token 认证方案列表。 */
     private List<AuthenticationScheme> getAuthenticationSchemes() {
         AuthenticationScheme scheme = new AuthenticationScheme();
 

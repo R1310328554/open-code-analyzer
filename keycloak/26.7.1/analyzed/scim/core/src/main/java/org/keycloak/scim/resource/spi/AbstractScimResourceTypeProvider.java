@@ -21,13 +21,30 @@ import static java.util.function.Predicate.not;
 
 import static org.keycloak.utils.StringUtil.isBlank;
 
+/**
+ * {@link ScimResourceTypeProvider} 的抽象基类，封装 CRUD、Patch 与权限校验的通用逻辑。
+ *
+ * @param <M> 底层 Keycloak 领域模型类型
+ * @param <R> SCIM 资源类型表示类
+ */
 public abstract class AbstractScimResourceTypeProvider<M extends Model, R extends ResourceTypeRepresentation> implements ScimResourceTypeProvider<R> {
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
+    /** 主 Schema 定义。 */
     private final ModelSchema<M, R> schema;
+    /** Schema 扩展列表。 */
     private final List<ModelSchema<M, R>> schemaExtensions;
+    /** 主 Schema 与扩展的合并列表。 */
     private final List<ModelSchema<M, R>> schemas;
 
+    /**
+     * 构造提供者，包含主 Schema 与扩展。
+     *
+     * @param session Keycloak 会话
+     * @param schema 主 Schema
+     * @param schemaExtensions Schema 扩展列表
+     */
     public AbstractScimResourceTypeProvider(KeycloakSession session, ModelSchema<M, R> schema, List<ModelSchema<M, R>> schemaExtensions) {
         this.session = session;
         this.schema = schema;
@@ -37,6 +54,12 @@ public abstract class AbstractScimResourceTypeProvider<M extends Model, R extend
         this.schemas.addAll(schemaExtensions);
     }
 
+    /**
+     * 构造提供者，无 Schema 扩展。
+     *
+     * @param session Keycloak 会话
+     * @param schema 主 Schema
+     */
     public AbstractScimResourceTypeProvider(KeycloakSession session, ModelSchema<M, R> schema) {
         this(session, schema, List.of());
     }
@@ -68,6 +91,14 @@ public abstract class AbstractScimResourceTypeProvider<M extends Model, R extend
         return get(id, null, null);
     }
 
+    /**
+     * 按 ID 获取资源，支持属性包含/排除过滤。
+     *
+     * @param id 资源标识符
+     * @param attributes 需包含的属性列表（可为 {@code null}）
+     * @param excludedAttributes 需排除的属性列表（可为 {@code null}）
+     * @return 资源实例，不存在时返回 {@code null}
+     */
     public R get(String id, List<String> attributes, List<String> excludedAttributes) {
         M model = getModel(id);
 
@@ -154,18 +185,25 @@ public abstract class AbstractScimResourceTypeProvider<M extends Model, R extend
         return schemaExtensions.stream().filter(not(ModelSchema::isInternal)).map(ModelSchema::getId).toList();
     }
 
+    /** 创建资源的子类钩子方法。 */
     protected abstract R onCreate(R resource);
 
+    /** 更新资源的子类钩子方法。 */
     protected abstract R onUpdate(M model, R resource);
 
+    /** 删除资源的子类钩子方法。 */
     protected abstract boolean onDelete(String id);
 
+    /** 按搜索条件获取模型流。 */
     protected abstract Stream<M> getModels(SearchRequest searchRequest);
 
+    /** 按 ID 获取底层模型。 */
     protected abstract M getModel(String id);
 
+    /** 返回 Realm 资源类型标识，用于细粒度权限校验。 */
     protected abstract String getRealmResourceType();
 
+    /** 将 SCIM 资源表示的值写入底层模型。 */
     protected void populate(M model, R resource) {
         for (ModelSchema<M, R> schema : schemas) {
             if (schema.supports(resource.getSchemas())) {
@@ -174,6 +212,7 @@ public abstract class AbstractScimResourceTypeProvider<M extends Model, R extend
         }
     }
 
+    /** 从底层模型构造 SCIM 资源表示实例。 */
     protected R createResourceTypeInstance(M model, List<String> attributes, List<String> excludedAttributes) {
         try {
             R resource = getResourceType().getDeclaredConstructor().newInstance();
@@ -188,15 +227,25 @@ public abstract class AbstractScimResourceTypeProvider<M extends Model, R extend
         }
     }
 
+    /** 判断当前会话是否具备查询权限。 */
     private boolean canQuery() {
         return session.getContext().getPermissions().hasPermission(getRealmResourceType(), AdminPermissionsSchema.QUERY)
                 || session.getContext().getPermissions().hasPermission(getRealmResourceType(), AdminPermissionsSchema.VIEW);
     }
 
+    /** 判断对 Realm 资源类型是否拥有指定权限范围。 */
     private boolean hasPermission(String realmResourceType, String scope) {
         return session.getContext().getPermissions().hasPermission(realmResourceType, scope);
     }
 
+    /**
+     * 判断对特定模型实例是否拥有指定权限范围。
+     *
+     * @param model 领域模型实例
+     * @param realmResourceType Realm 资源类型
+     * @param scope 权限范围（如 VIEW、MANAGE）
+     * @return 是否具备权限
+     */
     protected boolean hasPermission(M model, String realmResourceType, String scope) {
         if (AdminPermissionsSchema.VIEW.equals(scope)) {
             return session.getContext().getPermissions().hasPermission(model, realmResourceType, scope);
@@ -205,6 +254,7 @@ public abstract class AbstractScimResourceTypeProvider<M extends Model, R extend
         return session.getContext().getPermissions().hasPermission(model, realmResourceType, scope) && isManageable(model);
     }
 
+    /** 判断模型实例是否可管理（子类可覆盖以限制不可变资源）。 */
     protected boolean isManageable(M model) {
         return true;
     }

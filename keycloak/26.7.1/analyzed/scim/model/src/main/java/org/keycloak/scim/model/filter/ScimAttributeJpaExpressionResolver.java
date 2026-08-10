@@ -11,21 +11,20 @@ import jakarta.persistence.criteria.Root;
 import org.keycloak.scim.resource.schema.attribute.Attribute;
 
 /**
- * <p>A functional interface that defines a method for resolving JPA expressions based on SCIM attributes.
+ * 将 SCIM 属性映射为 JPA {@link Expression} 的函数式接口。
  *
- * <p>This interface is used to map SCIM attributes to their corresponding JPA expressions, allowing for dynamic query
- * construction based on SCIM filters.
+ * <p>用于在 SCIM 过滤器转换为 JPA 查询时，动态解析各属性对应的 Criteria API 表达式。</p>
  */
 public interface ScimAttributeJpaExpressionResolver {
 
     /**
-     * Resolves a {@link Expression} for the given {@code attribute} using the provided {@code CriteriaBuilder}, {@code Root}, and a {@code joinResolver} function.
+     * 为给定 {@code attribute} 解析 JPA {@link Expression}。
      *
-     * @param attribute the SCIM attribute for which to resolve the JPA expression
-     * @param cb the criteria builder
-     * @param root the root of the query
-     * @param joinResolver a function that resolves a join for a given class. If the join does not exist, the function should create it using the provided supplier
-     * @return the expression corresponding to the given attribute
+     * @param attribute 待解析的 SCIM 属性
+     * @param cb Criteria 构建器
+     * @param root 查询根实体
+     * @param joinResolver 按类型解析或创建 {@link Join} 的函数；若 Join 不存在，应通过提供的 Supplier 创建
+     * @return 对应属性的 JPA 表达式
      */
     Expression<?> getAttributeExpression(Attribute<?, ?> attribute, CriteriaBuilder cb, Root<?> root, BiFunction<Class<?>, Supplier<Join<?, ?>>, Join<?, ?>> joinResolver);
 }

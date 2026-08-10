@@ -7,18 +7,17 @@ import org.keycloak.scim.protocol.request.SearchRequest;
 import org.keycloak.scim.resource.ResourceTypeRepresentation;
 
 /**
- * A specialization of {@link ScimResourceTypeProvider} for singleton SCIM resource types.
+ * 单例 SCIM 资源类型的 {@link ScimResourceTypeProvider} 特化接口。
  *
- * <p>Singleton resource types represent resources of which only a single instance exists within the SCIM service provider.
- * Examples of singleton resource types include the {@link org.keycloak.scim.resource.config.ServiceProviderConfig}.
+ * <p>单例资源类型表示 SCIM 服务提供者中仅存在唯一实例的资源，
+ * 例如 {@link org.keycloak.scim.resource.config.ServiceProviderConfig}。</p>
  *
- * <p>This interface does not add any new methods to {@link ScimResourceTypeProvider}, but serves as a marker interface
- * to indicate that the implementing provider manages a singleton resource type. Implementations of this interface should
- * ensure that their behavior aligns with the semantics of singleton resources, such as returning a single instance
- * in retrieval operations and handling creation and deletion appropriately.
+ * <p>本接口不新增方法，仅作为标记接口表明实现者管理单例资源。
+ * 实现类应确保检索操作返回唯一实例，并正确处理创建与删除语义。</p>
  */
 public interface SingletonResourceTypeProvider<R extends ResourceTypeRepresentation> extends ScimResourceTypeProvider<R> {
 
+    /** 返回唯一的单例资源实例。 */
     R getSingleton();
 
     @Override
@@ -51,6 +50,7 @@ public interface SingletonResourceTypeProvider<R extends ResourceTypeRepresentat
         throw unsupportedOperation();
     }
 
+    /** 构造不支持操作的校验异常。 */
     private ModelValidationException unsupportedOperation() {
         return new ModelValidationException("Unsupported operation for resource type " + getResourceType());
     }
