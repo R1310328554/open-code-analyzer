@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:04:25Z",
   "files": [
-    "web/src/pages/next-search/hooks.ts",
-    "web/src/pages/next-searches/hooks.ts",
-    "web/src/pages/skills/hooks.ts",
-    "web/src/pages/skills/types.ts",
-    "web/src/pages/skills/utils.ts",
-    "web/src/pages/skills/validation.ts",
-    "web/src/pages/user-setting/chat-channel/hooks.ts",
-    "web/src/pages/user-setting/chat-channel/interface.ts",
-    "web/src/pages/user-setting/data-source/hooks.ts",
-    "web/src/pages/user-setting/data-source/interface.ts",
-    "web/src/pages/user-setting/interface.ts",
-    "web/src/pages/user-setting/mcp/use-edit-mcp.ts",
-    "web/src/pages/user-setting/mcp/use-export-mcp.ts",
-    "web/src/pages/user-setting/mcp/use-import-mcp.ts",
-    "web/src/pages/user-setting/profile/constants.ts",
     "web/src/pages/user-setting/profile/hooks/use-profile.ts",
     "web/src/pages/user-setting/setting-model/constant.ts",
     "web/src/pages/user-setting/setting-model/modal/provider-modal/constants.ts",
@@ -33,5 +18,5 @@
     "web/src/pages/user-setting/setting-team/hooks.ts"
   ],
   "remaining_pending": 54,
-  "done": 1680
+  "done": 1695
 }
