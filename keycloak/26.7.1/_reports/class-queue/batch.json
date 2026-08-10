@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:26:13Z",
-  "files": [
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LoginUsernamePage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/LogoutConfirmPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/OAuthGrantPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/OID4VCCredentialOfferPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/PageSupplier.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/PasswordPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/ProceedPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/RegisterPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/SelectAuthenticatorPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/SelectOrganizationPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/TermsAndConditionsPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/VerifyEmailPage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/page/WelcomePage.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/AbstractWebDriverSupplier.java",
-    "test-framework/ui/src/main/java/org/keycloak/testframework/ui/webdriver/AssertionUtils.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 238,
-  "done": 5745
+  "done": 5760
 }
