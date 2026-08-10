@@ -15,23 +15,8 @@
     "pkg/memory/internal/memalign/memalign.go",
     "pkg/memory/internal/unsafecast/unsafecast.go",
     "pkg/memory/memory.go",
-    "pkg/pattern/aggregation/config.go",
-    "pkg/pattern/aggregation/metrics.go",
-    "pkg/pattern/aggregation/push.go",
-    "pkg/pattern/clientpool/client.go",
-    "pkg/pattern/clientpool/ingester_client_pool.go",
-    "pkg/pattern/drain/chunk.go",
-    "pkg/pattern/drain/drain.go",
-    "pkg/pattern/drain/limiter.go",
-    "pkg/pattern/drain/line_tokenizer.go",
-    "pkg/pattern/drain/log_cluster.go",
-    "pkg/pattern/drain/metrics.go",
-    "pkg/pattern/flush.go",
-    "pkg/pattern/ingester.go",
-    "pkg/pattern/ingester_querier.go",
-    "pkg/pattern/instance.go",
-    "pkg/pattern/iter/batch.go"
+    "pkg/pattern/aggregation/config.go"
   ],
   "remaining_pending": 592,
-  "done": 930
+  "done": 945
 }
