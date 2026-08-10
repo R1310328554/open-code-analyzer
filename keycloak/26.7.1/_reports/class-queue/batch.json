@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:29:07Z",
   "files": [
-    "services/src/main/java/org/keycloak/services/x509/DefaultClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/EnvoyProxySslClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/EnvoyProxySslClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/HaProxySslClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/HaProxySslClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/NginxProxySslClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/NginxProxySslClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/NginxProxyTrustedClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/Rfc9440ClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/Rfc9440ClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/TraefikProxySslClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/TraefikProxySslClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/X509ClientCertificateLookup.java",
-    "services/src/main/java/org/keycloak/services/x509/X509ClientCertificateLookupFactory.java",
-    "services/src/main/java/org/keycloak/services/x509/X509ClientCertificateLookupSpi.java",
     "services/src/main/java/org/keycloak/social/bitbucket/BitbucketIdentityProvider.java",
     "services/src/main/java/org/keycloak/social/bitbucket/BitbucketIdentityProviderFactory.java",
     "services/src/main/java/org/keycloak/social/facebook/FacebookIdentityProvider.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/social/google/GoogleUserAttributeMapper.java"
   ],
   "remaining_pending": 808,
-  "done": 5160
+  "done": 5175
 }
