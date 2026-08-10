@@ -30,7 +30,8 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
- * JPA entity representing an internet domain that can be associated with an organization.
+ * 组织关联网域 JPA 实体，映射 {@code ORG_DOMAIN} 表。
+ * <p>表示可与 {@link OrganizationEntity} 绑定的互联网域名，用于按邮箱域自动归属组织。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
@@ -41,17 +42,21 @@ import jakarta.persistence.Table;
 })
 public class OrganizationDomainEntity {
 
+    /** 域记录 UUID。 */
     @Id
     @Column(name = "ID", length = 36)
     @Access(AccessType.PROPERTY)
     private String id;
 
+    /** 域名（如 example.com）。 */
     @Column(name="NAME")
     protected String name;
 
+    /** 是否已通过 DNS/邮箱验证。 */
     @Column(name="VERIFIED")
     protected Boolean verified;
 
+    /** 所属组织。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORG_ID")
     private OrganizationEntity organization;

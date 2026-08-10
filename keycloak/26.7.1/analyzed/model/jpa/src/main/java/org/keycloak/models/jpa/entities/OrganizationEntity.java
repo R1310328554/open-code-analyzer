@@ -36,6 +36,10 @@ import jakarta.persistence.Table;
 import org.keycloak.models.GroupModel;
 import org.keycloak.utils.StringUtil;
 
+/**
+ * 组织 JPA 实体，映射 {@code ORG} 表。
+ * <p>Realm 内的 B2B 组织单元：含域名、成员组、邀请等；通过 {@link #groupId} 关联内部成员组。</p>
+ */
 @Table(name="ORG")
 @Entity
 @NamedQueries({
@@ -48,38 +52,47 @@ import org.keycloak.utils.StringUtil;
 })
 public class OrganizationEntity {
 
+    /** 组织 UUID。 */
     @Id
     @Column(name = "ID", length = 36)
     @Access(AccessType.PROPERTY)
     private String id;
 
+    /** 组织名称（realm 内唯一）。 */
     @Column(name = "NAME")
     private String name;
 
+    /** URL 友好别名。 */
     @Column(name = "ALIAS")
     private String alias;
 
+    /** 是否启用。 */
     @Column(name = "ENABLED")
     private boolean enabled;
 
+    /** 组织描述。 */
     @Column(name = "DESCRIPTION")
     private String description;
 
+    /** 组织门户重定向 URL。 */
     @Column(name = "REDIRECT_URL")
     private String redirectUrl;
 
+    /** 所属 Realm ID。 */
     @Column(name = "REALM_ID")
     private String realmId;
 
     /**
-     * References the internal Group used for organization membership.
+     * 指向用于组织成员管理的内部 {@link GroupEntity}。
      */
     @Column(name = "GROUP_ID")
     private String groupId;
 
+    /** 关联的验证域名集合；级联全量持久化。 */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy="organization")
     protected Set<OrganizationDomainEntity> domains = new HashSet<>();
 
+    /** 组织类型用户组；删除组织时级联移除。 */
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy = "organization", fetch = FetchType.LAZY)
     protected Set<GroupEntity> groups = new HashSet<>();
 
@@ -123,6 +136,7 @@ public class OrganizationEntity {
         return redirectUrl;
     }
 
+    /** 空字符串归一化为 null，避免存储无意义重定向。 */
     public void setRedirectUrl(String redirectUrl) {
         if (StringUtil.isNullOrEmpty(redirectUrl)) {
             redirectUrl = null;
@@ -174,6 +188,7 @@ public class OrganizationEntity {
         this.groups = groups;
     }
 
+    /** 添加组织类型组并建立双向关联。 */
     public void addGroup(GroupEntity group) {
         getGroups().add(group);
         group.setOrganization(this);

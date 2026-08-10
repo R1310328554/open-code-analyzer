@@ -31,23 +31,26 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
- * Manage compmosite role relations.
- * This used to be a @ManyToMany relation in RoleEntity, and before that there was a native query which lead to stale entities.
- * After those attempts, this is now a separate table that avoids iterating over a lot of parents their entries by applying a simple JPA deletion.
+ * 复合角色关联 JPA 实体，映射 {@code COMPOSITE_ROLE} 表。
+ * <p>表示父角色包含子角色的组合关系；曾用 {@code @ManyToMany} 或原生 SQL，现改为独立关联表，
+ * 删除角色时可直接 JPA DML，避免遍历大量父级条目。</p>
  */
 @Entity
 @Table(name="COMPOSITE_ROLE")
 @NamedQueries({
+        // 删除角色时一并移除其作为父或子角色的所有复合关系
         @NamedQuery(name="deleteRoleFromComposites", query="delete CompositeRoleEntity c where c.parentRole = :role or c.childRole = :role"),
         @NamedQuery(name="deleteSingleCompositeFromRole", query="delete CompositeRoleEntity c where c.parentRole = :parentRole and c.childRole = :childRole"),
 })
 @IdClass(CompositeRoleEntity.Key.class)
 public class CompositeRoleEntity {
+    /** 复合角色中的父角色（包含方）。 */
     @Id
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="COMPOSITE")
     private RoleEntity parentRole;
 
+    /** 被包含的子角色。 */
     @Id
     @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="CHILD_ROLE")
@@ -57,7 +60,7 @@ public class CompositeRoleEntity {
     }
 
     public CompositeRoleEntity(RoleEntity parentRole, RoleEntity childRole) {
-        // Fields must not be null otherwise the automatic dependency detection of Hibernate will not work
+        // 字段不可为 null，否则 Hibernate 自动依赖检测失效
         this.parentRole = parentRole;
         this.childRole = childRole;
     }
@@ -92,6 +95,7 @@ public class CompositeRoleEntity {
         return Objects.hash(childRole, parentRole);
     }
 
+    /** 复合主键：(parentRole, childRole)。 */
     public static class Key implements Serializable {
         private RoleEntity childRole;
         private RoleEntity parentRole;

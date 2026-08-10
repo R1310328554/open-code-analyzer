@@ -38,6 +38,9 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 用户组 JPA 实体，映射 {@code KEYCLOAK_GROUP} 表。
+ * <p>支持层级结构（{@code parentId}）及组织类型组（{@link org.keycloak.models.GroupModel.Type#ORGANIZATION}）。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -52,46 +55,55 @@ import org.hibernate.annotations.Nationalized;
 public class GroupEntity {
 
     /**
-     * ID set in the PARENT column to mark the group as top level.
+     * 写入 PARENT 列时表示顶级组的占位 ID。
      */
     public static String TOP_PARENT_ID = " ";
 
+    /** 组 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 组名称（同一 realm + 父组下唯一）。 */
     @Nationalized
     @Column(name = "NAME")
     protected String name;
 
+    /** 组描述。 */
     @Nationalized
     @Column(name = "DESCRIPTION")
     protected String description;
 
+    /** 父组 ID；顶级组为 {@link #TOP_PARENT_ID}。 */
     @Column(name = "PARENT_GROUP")
     private String parentId;
 
+    /** 所属 Realm ID。 */
     @Column(name = "REALM_ID")
     private String realm;
 
+    /** 组类型，对应 {@link org.keycloak.models.GroupModel.Type} 整型值。 */
     @Column(name = "TYPE")
     private int type;
 
+    /** 创建时间戳（毫秒）。 */
     @Column(name = "CREATED_TIMESTAMP")
     private Long createdTimestamp;
 
+    /** 最后修改时间戳（毫秒）。 */
     @Column(name = "LAST_MODIFIED_TIMESTAMP")
     private Long lastModifiedTimestamp;
 
     /**
-     * In case of {@link org.keycloak.models.GroupModel.Type#ORGANIZATION},
-     * this points to the Organization that owns this group
+     * 当类型为 {@link org.keycloak.models.GroupModel.Type#ORGANIZATION} 时，
+     * 指向拥有该组的 {@link OrganizationEntity}。
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ORG_ID")
     private OrganizationEntity organization;
 
+    /** 组自定义属性；级联删除。 */
     @OneToMany(
             cascade = CascadeType.REMOVE,
             orphanRemoval = true, mappedBy="group")

@@ -31,6 +31,9 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 用户组与角色的映射 JPA 实体，映射 {@code GROUP_ROLE_MAPPING} 表。
+ * <p>组内成员通过此映射继承角色权限；主键为 (group, roleId)。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -49,11 +52,13 @@ import jakarta.persistence.Table;
 @IdClass(GroupRoleMappingEntity.Key.class)
 public class GroupRoleMappingEntity {
 
+    /** 用户组；复合主键之一。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="GROUP_ID")
     protected GroupEntity group;
 
+    /** 角色 UUID；复合主键之一。 */
     @Id
     @Column(name = "ROLE_ID")
     protected String roleId;
@@ -74,6 +79,7 @@ public class GroupRoleMappingEntity {
         this.roleId = roleId;
     }
 
+    /** 复合主键：(group, roleId)。 */
     public static class Key implements Serializable {
 
         protected GroupEntity group;

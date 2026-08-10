@@ -31,7 +31,9 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
- * Binding between realm and default clientScope
+ * Realm 与默认 Client Scope 的绑定关系，映射 {@code DEFAULT_CLIENT_SCOPE} 表。
+ * <p>{@code defaultScope=true} 表示该 scope 自动附加到新创建的客户端；
+ * {@code false} 表示可选 scope，需显式启用。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -45,15 +47,18 @@ import jakarta.persistence.Table;
 @IdClass(DefaultClientScopeRealmMappingEntity.Key.class)
 public class DefaultClientScopeRealmMappingEntity {
 
+    /** Client Scope 的 UUID。 */
     @Id
     @Column(name = "SCOPE_ID")
     protected String clientScopeId;
 
+    /** 所属 Realm。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="REALM_ID")
     protected RealmEntity realm;
 
+    /** 是否为默认 scope（true=自动附加，false=可选）。 */
     @Column(name="DEFAULT_SCOPE")
     protected boolean defaultScope;
 
@@ -81,6 +86,7 @@ public class DefaultClientScopeRealmMappingEntity {
         this.defaultScope = defaultScope;
     }
 
+    /** 复合主键：(clientScopeId, realm)。 */
     public static class Key implements Serializable {
 
         protected String clientScopeId;

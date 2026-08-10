@@ -31,6 +31,9 @@ import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.Table;
 
 /**
+ * IdP 属性映射器 JPA 实体，映射 {@code IDENTITY_PROVIDER_MAPPER} 表。
+ * <p>将 IdP 断言/用户属性映射到 Keycloak 用户字段或角色；配置存于 {@code IDP_MAPPER_CONFIG}。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -38,25 +41,31 @@ import jakarta.persistence.Table;
 @Table(name="IDENTITY_PROVIDER_MAPPER")
 public class IdentityProviderMapperEntity {
 
+    /** 映射器 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** Admin Console 显示名称。 */
     @Column(name="NAME")
     protected String name;
 
+    /** 目标 IdP 别名。 */
     @Column(name = "IDP_ALIAS")
     protected String identityProviderAlias;
+    /** 映射器类型（如 oidc-user-attribute-idp-mapper）。 */
     @Column(name = "IDP_MAPPER_NAME")
     protected String identityProviderMapper;
 
+    /** 映射器特定配置键值对。 */
     @ElementCollection
     @MapKeyColumn(name="NAME")
     @Column(name="VALUE")
     @CollectionTable(name="IDP_MAPPER_CONFIG", joinColumns={ @JoinColumn(name="IDP_MAPPER_ID") })
     private Map<String, String> config;
 
+    /** 所属 Realm ID。 */
     @Column(name = "REALM_ID")
     private String realmId;
 

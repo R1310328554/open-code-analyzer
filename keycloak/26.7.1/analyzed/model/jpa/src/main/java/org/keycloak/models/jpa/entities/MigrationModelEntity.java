@@ -27,6 +27,9 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 数据库迁移版本 JPA 实体，映射 {@code MIGRATION_MODEL} 表。
+ * <p>单行记录当前 schema 版本与更新时间，供 Liquibase 变更日志协调。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -36,15 +39,19 @@ import jakarta.persistence.Table;
         @NamedQuery(name = "getLatest", query = "select m from MigrationModelEntity m ORDER BY m.updatedTime DESC")
 })
 public class MigrationModelEntity {
+    /** 单例主键常量，全库仅一条迁移记录。 */
     public static final String SINGLETON_ID = "SINGLETON";
+    /** 固定为 {@link #SINGLETON_ID}；PROPERTY 访问避免额外 SQL。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     private String id;
 
+    /** 当前 Liquibase/迁移版本号。 */
     @Column(name="VERSION", length = 36)
     protected String version;
 
+    /** 最后一次迁移更新时间（毫秒）。 */
     @Column(name="UPDATE_TIME")
     protected long updatedTime;
 

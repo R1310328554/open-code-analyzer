@@ -32,6 +32,8 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * 用户组自定义属性 JPA 实体，映射 {@code GROUP_ATTRIBUTE} 表。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -43,17 +45,21 @@ import org.hibernate.annotations.Nationalized;
 @Entity
 public class GroupAttributeEntity {
 
+    /** 属性 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 所属用户组。 */
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "GROUP_ID")
     protected GroupEntity group;
 
+    /** 属性名。 */
     @Column(name = "NAME")
     protected String name;
+    /** 属性值（支持 Unicode）。 */
     @Nationalized
     @Column(name = "VALUE")
     protected String value;

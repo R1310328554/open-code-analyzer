@@ -27,7 +27,8 @@ import org.keycloak.common.util.Time;
 import org.keycloak.models.OrganizationInvitationModel;
 
 /**
- * JPA entity for organization invitations.
+ * 组织邀请 JPA 实体，映射 {@code ORG_INVITATION} 表。
+ * <p>实现 {@link OrganizationInvitationModel}，记录待加入组织的邮箱邀请及过期状态。</p>
  */
 @Entity
 @Table(name = "ORG_INVITATION")
@@ -36,34 +37,43 @@ import org.keycloak.models.OrganizationInvitationModel;
 })
 public class OrganizationInvitationEntity implements OrganizationInvitationModel {
 
+    /** 邀请 UUID。 */
     @Id
     @Column(name = "ID", length = 36)
     private String id;
 
+    /** 目标组织 ID。 */
     @Column(name = "ORGANIZATION_ID", length = 255, nullable = false)
     private String organizationId;
 
+    /** 被邀请人邮箱。 */
     @Column(name = "EMAIL", nullable = false)
     private String email;
 
+    /** 被邀请人名。 */
     @Column(name = "FIRST_NAME")
     private String firstName;
 
+    /** 被邀请人姓。 */
     @Column(name = "LAST_NAME")
     private String lastName;
 
+    /** 创建时间（Unix 秒）。 */
     @Column(name = "CREATED_AT", nullable = false)
     private int createdAt;
 
+    /** 过期时间（Unix 秒）；0 或未设表示不过期。 */
     @Column(name = "EXPIRES_AT")
     private int expiresAt;
 
+    /** 一次性邀请链接 URL。 */
     @Column(name = "INVITE_LINK", length = 2048)
     private String inviteLink;
 
     public OrganizationInvitationEntity() {
     }
 
+    /** 便捷构造：自动设置 {@link #createdAt} 为当前时间。 */
     public OrganizationInvitationEntity(String id, String organizationId, String email,
                                         String firstName, String lastName) {
         this.id = id;
@@ -151,6 +161,7 @@ public class OrganizationInvitationEntity implements OrganizationInvitationModel
         this.inviteLink = inviteLink;
     }
 
+    /** 根据过期时间推导 PENDING 或 EXPIRED 状态。 */
     @Override
     public InvitationStatus getStatus() {
         return isExpired() ? InvitationStatus.EXPIRED : InvitationStatus.PENDING;

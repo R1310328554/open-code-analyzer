@@ -31,46 +31,34 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Nationalized;
 
 /**
- * Generic durable outbox row: a single message persisted for asynchronous,
- * at-least-once delivery by a feature-scoped drainer.
+ * 通用持久化 Outbox 行：单条消息落库后由特性域 drainer 异步、至少一次投递。
+ * <p>对应 {@code META-INF/jpa-changelog-26.7.0.xml} 创建的 {@code OUTBOX_ENTRY} 表；
+ * SSF、webhook 等子系统共享此表，{@code entryKind} 区分消费者，复合索引 {@code (ENTRY_KIND, ...)}
+ * 隔离读写 contention，无需分表。</p>
  *
- * <p>Backed by the {@code OUTBOX_ENTRY} table created in
- * {@code META-INF/jpa-changelog-26.7.0.xml}. Multiple subsystems
- * (SSF, webhooks, ...) share this table; the {@code entryKind}
- * discriminator scopes every read and write so cross-consumer
- * contention is eliminated by the {@code (ENTRY_KIND, ...)} compound
- * indexes rather than by separate tables.
- *
- * <p>Two-axis classification on every row:
+ * <p>双轴分类：</p>
  * <ul>
- *   <li>{@code entryKind} — the broad subsystem ("ssf", "webhook", ...).</li>
- *   <li>{@code entryType} — the concrete type within that subsystem (for
- *       SSF the SET event_type; for webhooks the hook event name; etc.).</li>
+ *   <li>{@code entryKind} — 子系统（如 "ssf"、"webhook"）。</li>
+ *   <li>{@code entryType} — 子系统内具体类型（SSF 的 SET event_type、webhook 事件名等）。</li>
  * </ul>
  *
- * <p>Scoping columns:
+ * <p>作用域列：</p>
  * <ul>
- *   <li>{@code ownerId} — primary scoping key (clientId for SSF
- *       receivers, hookId for webhooks). Drives per-owner stats /
- *       delete / cleanup endpoints.</li>
- *   <li>{@code containerId} — optional sub-grouping within
- *       {@code (entryKind, ownerId)} (the receiver's stream id for
- *       SSF). Lets stream-scoped lifecycle operations stay
- *       SQL-filterable rather than hidden in {@code metadata}.</li>
+ *   <li>{@code ownerId} — 主作用域键（SSF 为 clientId，webhook 为 hookId），驱动按 owner 统计/删除/清理。</li>
+ *   <li>{@code containerId} — {@code (entryKind, ownerId)} 内可选子分组（SSF 为 stream id），
+ *       使流级生命周期操作可 SQL 过滤而非藏在 {@code metadata} 中。</li>
  * </ul>
  *
- * <p>The wire shape of the {@code payload} (signed JWS, JSON, opaque blob)
- * and the contents of the optional {@code metadata} JSON are owned by the
- * subsystem's {@code OutboxDeliveryHandler} — the entity treats both as
- * opaque text.
+ * <p>{@code payload} 线格式（签名 JWS、JSON、opaque blob）及可选 {@code metadata} JSON
+ * 由子系统 {@code OutboxDeliveryHandler} 定义 — 实体层均视为 opaque 文本。</p>
+ *
+ * <p>Generic durable outbox row: a single message persisted for asynchronous,
+ * at-least-once delivery by a feature-scoped drainer.</p>
  */
 @Entity
 @Table(name = "OUTBOX_ENTRY")
 @NamedQueries({
-        // Drainer hot path. Uses the IDX_OUTBOX_DRAIN compound index.
-        // The store layers PESSIMISTIC_WRITE + SKIP_LOCKED on top of
-        // this select so cluster-aware drainers don't fight for the
-        // same rows.
+        // Drainer 热路径，使用 IDX_OUTBOX_DRAIN 复合索引；上层叠加 PESSIMISTIC_WRITE + SKIP_LOCKED
         @NamedQuery(
                 name = "OutboxEntryEntity.findDueForDrain",
                 query = "SELECT e FROM OutboxEntryEntity e"
@@ -269,60 +257,71 @@ import org.hibernate.annotations.Nationalized;
 })
 public class OutboxEntryEntity {
 
+    /** Outbox 行 UUID。 */
     @Id
     @Column(name = "ID", length = 36)
     protected String id;
 
+    /** 子系统/特性标识（如 ssf、webhook）。 */
     @Column(name = "ENTRY_KIND", nullable = false, length = 64)
     protected String entryKind;
 
+    /** 所属 Realm ID。 */
     @Column(name = "REALM_ID", nullable = false, length = 36)
     protected String realmId;
 
+    /** 主作用域键（clientId、hookId 等）。 */
     @Column(name = "OWNER_ID", nullable = false, length = 64)
     protected String ownerId;
 
     /**
-     * Optional sub-grouping within {@code (entryKind, ownerId)}.
-     * For SSF this is the receiver's stream id so operations such as
-     * "narrow events_requested for stream X" or "stream X disabled —
-     * purge its undelivered rows" stay SQL-filterable rather than
-     * hidden in {@code metadata}. Kinds that don't need a sub-group
-     * leave it null.
+     * {@code (entryKind, ownerId)} 内可选子分组。
+     * SSF 场景为 receiver 的 stream id，便于按流过滤/暂停/清理；
+     * 不需要子分组的 kind 留 null。
      */
     @Column(name = "CONTAINER_ID", length = 64)
     protected String containerId;
 
+    /** 业务关联 ID，用于幂等入队与 ack/nack 匹配。 */
     @Column(name = "CORRELATION_ID", nullable = false, length = 255)
     protected String correlationId;
 
+    /** 子系统内具体事件/消息类型。 */
     @Column(name = "ENTRY_TYPE", nullable = false, length = 256)
     protected String entryType;
 
+    /** 待投递载荷（opaque 文本，格式由 handler 定义）。 */
     @Nationalized
     @Column(name = "PAYLOAD", nullable = false)
     protected String payload;
 
+    /** 可选元数据 JSON。 */
     @Nationalized
     @Column(name = "METADATA")
     protected String metadata;
 
+    /** 投递状态（PENDING、DELIVERED、DEAD_LETTER 等）。 */
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 16)
     protected OutboxEntryStatus status;
 
+    /** 已尝试投递次数。 */
     @Column(name = "ATTEMPTS", nullable = false)
     protected int attempts;
 
+    /** 下次重试时间；drainer 按此排序拉取。 */
     @Column(name = "NEXT_ATTEMPT_AT", nullable = false)
     protected Instant nextAttemptAt;
 
+    /** 最近一次投递失败原因。 */
     @Column(name = "LAST_ERROR", length = 2048)
     protected String lastError;
 
+    /** 入队时间。 */
     @Column(name = "CREATED_AT", nullable = false)
     protected Instant createdAt;
 
+    /** 成功投递时间；终态 DELIVERED 时设置。 */
     @Column(name = "DELIVERED_AT")
     protected Instant deliveredAt;
 

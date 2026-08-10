@@ -31,6 +31,9 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 联邦身份（社交/IdP 登录）关联 JPA 实体，映射 {@code FEDERATED_IDENTITY} 表。
+ * <p>将本地 {@link UserEntity} 与外部 IdP 的用户标识绑定；主键为 (user, identityProvider)。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -48,22 +51,28 @@ import jakarta.persistence.Table;
 @IdClass(FederatedIdentityEntity.Key.class)
 public class FederatedIdentityEntity {
 
+    /** 本地用户；复合主键之一。 */
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "USER_ID")
     private UserEntity user;
 
+    /** 所属 Realm ID，便于按 realm 批量删除。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** IdP 别名（如 google、github）；复合主键之一。 */
     @Id
     @Column(name = "IDENTITY_PROVIDER")
     protected String identityProvider;
+    /** 外部 IdP 侧的用户唯一标识。 */
     @Column(name = "FEDERATED_USER_ID")
     protected String userId;
+    /** 外部 IdP 侧的用户名/显示名。 */
     @Column(name = "FEDERATED_USERNAME")
     protected String userName;
 
+    /** 可选的 IdP access token，仅在 storeToken 启用时持久化。 */
     @Column(name = "TOKEN")
     protected String token;
 
@@ -115,6 +124,7 @@ public class FederatedIdentityEntity {
         return token;
     }
 
+    /** 复合主键：(user, identityProvider)。 */
     public static class Key implements Serializable {
 
         protected UserEntity user;

@@ -12,6 +12,10 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
+/**
+ * 已签发可验证凭据（VC）JPA 实体，映射 {@code ISSUED_VER_CREDENTIAL} 表。
+ * <p>记录 OID4VCI 流程中向用户钱包签发的 VC 实例，含签发/过期时间及关联客户端。</p>
+ */
 @Entity
 @Table(name="ISSUED_VER_CREDENTIAL")
 @NamedQueries({
@@ -25,28 +29,34 @@ import jakarta.persistence.Table;
 })
 public class IssuedVerifiableCredentialEntity {
 
+    /** 签发记录 UUID。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY)
     protected String id;
 
+    /** 凭据所属用户。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="USER_ID")
     protected UserEntity user;
 
+    /** 关联的 {@link UserVerifiableCredentialEntity} 模板 ID。 */
     @Column(name="VER_CREDENTIAL_ID")
     protected String verifiableCredentialId;
 
+    /** 签发时间戳（毫秒）。 */
     @Column(name="ISSUED_AT")
     protected Long issuedAt;
 
+    /** 过期时间戳（毫秒）；null 表示不过期。 */
     @Column(name="EXPIRES_AT")
     protected Long expiresAt;
 
-    // This represents UUID of the client, which acts as OID4VCI wallet
+    // 客户端 UUID，作为 OID4VCI 钱包使用
     @Column(name="CLIENT_ID")
     protected String clientId;
 
+    /** VC 内容修订/版本标识。 */
     @Column(name="REVISION")
     protected String revision;
 
