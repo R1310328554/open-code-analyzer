@@ -15,23 +15,8 @@
     "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/configs/ControlConfigsInitializer.java",
     "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/ConnectionControlManager.java",
     "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/ConnectionMetricsCollector.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/DefaultConnectionControlManager.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/request/ConnectionCheckRequest.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/response/ConnectionCheckCode.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/response/ConnectionCheckResponse.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/rule/ConnectionControlRule.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/event/ConnectionLimitRuleChangeEvent.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/event/TpsControlRuleChangeEvent.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/ControlRuleChangeActivator.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/ConnectionControlRuleParser.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/NacosConnectionControlRuleParser.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/NacosTpsControlRuleParser.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/RuleParser.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/TpsControlRuleParser.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/ExternalRuleStorage.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/LocalDiskRuleStorage.java",
-    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/RuleStorage.java"
+    "plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/DefaultConnectionControlManager.java"
   ],
   "remaining_pending": 77,
-  "done": 2430
+  "done": 2445
 }

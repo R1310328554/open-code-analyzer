@@ -2473,3 +2473,18 @@
 2026-08-10T05:15:03Z DONE plugin/ai/src/main/java/com/alibaba/nacos/plugin/ai/storage/spi/AiResourceStorageBuilder.java wave81a [0:15] ai pipeline/storage + auth api start
 2026-08-10T05:15:03Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/AuthResult.java wave81a [0:15] ai pipeline/storage + auth api start
 2026-08-10T05:15:03Z DONE plugin/auth/src/main/java/com/alibaba/nacos/plugin/auth/api/IdentityContext.java wave81a [0:15] ai pipeline/storage + auth api start
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/request/ConnectionCheckRequest.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/response/ConnectionCheckCode.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/response/ConnectionCheckResponse.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/connection/rule/ConnectionControlRule.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/event/ConnectionLimitRuleChangeEvent.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/event/TpsControlRuleChangeEvent.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/ControlRuleChangeActivator.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/ConnectionControlRuleParser.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/NacosConnectionControlRuleParser.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/NacosTpsControlRuleParser.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/RuleParser.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/parser/TpsControlRuleParser.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/ExternalRuleStorage.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/LocalDiskRuleStorage.java wave82b [15:30] control connection/rules/storage
+2026-08-10T05:16:42Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/rule/storage/RuleStorage.java wave82b [15:30] control connection/rules/storage
