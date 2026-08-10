@@ -15,23 +15,8 @@
     "rag/graphrag/ner/ner_extractor.py",
     "rag/graphrag/ner/types.py",
     "rag/graphrag/phase_markers.py",
-    "rag/graphrag/query_analyze_prompt.py",
-    "rag/graphrag/search.py",
-    "rag/graphrag/utils.py",
-    "rag/llm/__init__.py",
-    "rag/llm/chat_model.py",
-    "rag/llm/cv_model.py",
-    "rag/llm/embedding_model.py",
-    "rag/llm/key_utils.py",
-    "rag/llm/model_meta.py",
-    "rag/llm/ocr_model.py",
-    "rag/llm/rerank_model.py",
-    "rag/llm/sequence2txt_model.py",
-    "rag/llm/tool_decorator.py",
-    "rag/llm/tts_model.py",
-    "rag/nlp/__init__.py",
-    "rag/nlp/query.py"
+    "rag/graphrag/query_analyze_prompt.py"
   ],
   "remaining_pending": 504,
-  "done": 1230
+  "done": 1245
 }
