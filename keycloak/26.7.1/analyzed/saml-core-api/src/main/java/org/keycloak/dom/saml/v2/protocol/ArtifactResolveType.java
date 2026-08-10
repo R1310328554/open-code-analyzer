@@ -21,6 +21,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 /**
  * <p>
  * Java class for ArtifactResolveType complex type.
+ * SAML 2.0 工件解析请求：通过工件令牌换取完整 SAML 协议消息。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,13 +40,17 @@ import javax.xml.datatype.XMLGregorianCalendar;
  */
 public class ArtifactResolveType extends RequestAbstractType {
 
+    /** 待解析的 SAML 工件字符串。 */
     protected String artifact;
 
+    /** 构造工件解析请求。 */
     public ArtifactResolveType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
+     * 获取 artifact 属性的值。
+     *
      * Gets the value of the artifact property.
      *
      * @return possible object is {@link String }
@@ -55,6 +60,8 @@ public class ArtifactResolveType extends RequestAbstractType {
     }
 
     /**
+     * 设置 artifact 属性的值。
+     *
      * Sets the value of the artifact property.
      *
      * @param value allowed object is {@link String }

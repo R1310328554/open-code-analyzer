@@ -21,6 +21,7 @@ import javax.xml.datatype.XMLGregorianCalendar;
 /**
  * <p>
  * Java class for ArtifactResponseType complex type.
+ * SAML 2.0 工件响应：返回与工件关联的 SAML 消息（任意元素或对象）。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,17 +40,22 @@ import javax.xml.datatype.XMLGregorianCalendar;
  */
 public class ArtifactResponseType extends StatusResponseType {
 
+    /** 解析得到的 SAML 消息内容。 */
     protected Object any;
 
+    /** 构造工件响应。 */
     public ArtifactResponseType(String id, XMLGregorianCalendar issueInstant) {
         super(id, issueInstant);
     }
 
+    /** 从已有状态响应复制构造工件响应。 */
     public ArtifactResponseType(StatusResponseType srt) {
         super(srt);
     }
 
     /**
+     * 获取 any 属性的值。
+     *
      * Gets the value of the any property.
      *
      * @return possible object is {@link org.w3c.dom.Element } {@link Object }
@@ -59,6 +65,8 @@ public class ArtifactResponseType extends StatusResponseType {
     }
 
     /**
+     * 设置 any 属性的值。
+     *
      * Sets the value of the any property.
      *
      * @param value allowed object is {@link org.w3c.dom.Element } {@link Object }

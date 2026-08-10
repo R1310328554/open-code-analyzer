@@ -26,6 +26,7 @@ import org.keycloak.dom.saml.v2.assertion.AttributeType;
 /**
  * <p>
  * Java class for AttributeQueryType complex type.
+ * SAML 2.0 属性查询：请求指定主体的属性值。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -44,13 +45,17 @@ import org.keycloak.dom.saml.v2.assertion.AttributeType;
  */
 public class AttributeQueryType extends SubjectQueryAbstractType {
 
+    /** 请求的属性列表（可选）。 */
     protected List<AttributeType> attribute = new ArrayList<>();
 
+    /** 构造属性查询。 */
     public AttributeQueryType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
     /**
+     * 添加属性。
+     *
      * Add an attribute
      *
      * @param att
@@ -60,6 +65,8 @@ public class AttributeQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 移除属性。
+     *
      * Remove an attribute
      *
      * @param att
@@ -69,6 +76,8 @@ public class AttributeQueryType extends SubjectQueryAbstractType {
     }
 
     /**
+     * 获取 attribute 属性的值。
+     *
      * Gets the value of the attribute property.
      */
     public List<AttributeType> getAttribute() {

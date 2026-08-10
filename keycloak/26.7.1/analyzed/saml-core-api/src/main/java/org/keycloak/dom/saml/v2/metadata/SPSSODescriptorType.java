@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * <p>
  * Java class for SPSSODescriptorType complex type.
+ * SAML 2.0 SP SSO 描述符：断言消费服务、属性消费服务及认证/断言签名要求。
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -53,11 +54,14 @@ public class SPSSODescriptorType extends SSODescriptorType {
 
     protected boolean wantAssertionsSigned = false;
 
+    /** 以协议支持列表构造 SP SSO 描述符。 */
     public SPSSODescriptorType(List<String> protocolSupport) {
         super(protocolSupport);
     }
 
     /**
+     * 添加断言消费服务端点。
+     *
      * Add an Assertion Consumer Service
      *
      * @param assertionConsumer an endpoint of type {@link IndexedEndpointType}
@@ -67,6 +71,8 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 添加属性消费服务。
+     *
      * Add an attribute consumer
      *
      * @param attributeConsumer an instance of type {@link AttributeConsumingServiceType}
@@ -76,6 +82,8 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 移除断言消费服务端点。
+     *
      * Remove an Assertion Consumer Service
      *
      * @param assertionConsumer an endpoint of type {@link IndexedEndpointType}
@@ -85,6 +93,8 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
+     * 移除属性消费服务。
+     *
      * Remove an attribute consumer
      *
      * @param attributeConsumer an instance of type {@link AttributeConsumingServiceType}
@@ -94,7 +104,7 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
-     * Gets the value of the assertionConsumerService property.
+     * 获取 assertionConsumerService 属性的值。
      * <p>
      * Objects of the following type(s) are allowed in the list {@link IndexedEndpointType }
      */
@@ -103,7 +113,7 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
-     * Gets the value of the attributeConsumingService property.
+     * 获取 attributeConsumingService 属性的值。
      * <p>
      * Objects of the following type(s) are allowed in the list {@link AttributeConsumingServiceType }
      */
@@ -112,7 +122,7 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
-     * Gets the value of the authnRequestsSigned property.
+     * 获取 authnRequestsSigned 属性的值。
      *
      * @return possible object is {@link Boolean }
      */
@@ -121,7 +131,7 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
-     * Sets the value of the authnRequestsSigned property.
+     * 设置 authnRequestsSigned 属性的值。
      *
      * @param value allowed object is {@link Boolean }
      */
@@ -130,7 +140,7 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
-     * Gets the value of the wantAssertionsSigned property.
+     * 获取 wantAssertionsSigned 属性的值。
      *
      * @return possible object is {@link Boolean }
      */
@@ -139,7 +149,7 @@ public class SPSSODescriptorType extends SSODescriptorType {
     }
 
     /**
-     * Sets the value of the wantAssertionsSigned property.
+     * 设置 wantAssertionsSigned 属性的值。
      *
      * @param value allowed object is {@link Boolean }
      */
