@@ -27,20 +27,33 @@ import static org.keycloak.operator.controllers.KeycloakDeploymentDependentResou
 import static org.keycloak.operator.crds.v2beta1.CRDUtils.METRICS_ENABLED;
 import static org.keycloak.operator.crds.v2beta1.CRDUtils.configuredOptions;
 
+/**
+ * OpenShift ServiceMonitor 的 Dependent Resource，在集群已安装 CRD 且启用指标时抓取 Keycloak 指标。
+ *
+ * <p>为 OLM 可选组件（{@link CSVMetadata.Optional}），未安装 ServiceMonitor CRD 时不会创建资源。
+ */
 @KubernetesDependent(
       informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
 @CSVMetadata.Optional
 public class KeycloakServiceMonitorDependentResource extends VersionTolerantCRUDKubernetesDependentResource<ServiceMonitor, Keycloak> {
 
+    /** OpenMetrics 抓取协议版本。 */
     public static final String OPEN_METRICS_PROTOCOL = "OpenMetricsText1.0.0";
+    /** 指标未启用时的警告信息。 */
     public static final String WARN_METRICS_NOT_ENABLED = "A ServiceMonitor will not be created because `metrics-enabled` is not true.";
+    /** ServiceMonitor CRD 未安装时的警告信息。 */
     public static final String WARN_CRD_NOT_INSTALLED = "A ServiceMonitor will not be created because the ServiceMonitor CRD is not installed.";
 
+    /** 工作流上下文中存放 ServiceMonitor 警告的键。 */
     static String SERVICE_MONITOR_WARNING = "ServiceMonitorWarning";
 
+    /** 缓存 ServiceMonitor CRD 是否已安装（null 表示尚未探测）。 */
     volatile Boolean crdInstalled;
 
+    /**
+     * 激活条件：需启用 ServiceMonitor、metrics-enabled 为 true，且集群已安装 ServiceMonitor CRD。
+     */
     public static class ActivationCondition implements Condition<ServiceMonitor, Keycloak> {
 
         @Override
@@ -64,6 +77,9 @@ public class KeycloakServiceMonitorDependentResource extends VersionTolerantCRUD
             return true;
         }
 
+        /**
+         * 通过尝试 watch ServiceMonitor 资源探测 CRD 是否可用；404 表示未安装。
+         */
         private boolean isCRDInstalled(DependentResource<ServiceMonitor, Keycloak> dependentResource,
                 Context<Keycloak> context, KeycloakServiceMonitorDependentResource serviceMonitorDependentResource,
                 String namespace) {
@@ -94,6 +110,7 @@ public class KeycloakServiceMonitorDependentResource extends VersionTolerantCRUD
         }
     }
 
+    /** 构建指向 Keycloak 管理端点 /metrics 的 ServiceMonitor。 */
     @Override
     protected ServiceMonitor desired(Keycloak primary, Context<Keycloak> context) {
         var endpoint = managementEndpoint(primary, context, false);

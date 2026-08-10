@@ -37,20 +37,33 @@ import io.javaoperatorsdk.operator.processing.dependent.kubernetes.KubernetesDep
 
 import static org.keycloak.operator.crds.v2beta1.CRDUtils.isTlsConfigured;
 
+/**
+ * Keycloak 主 Service 的 Dependent Resource，根据 {@link Keycloak} CR 暴露 HTTP/HTTPS 与管理端口。
+ *
+ * <p>继承 {@link VersionTolerantCRUDKubernetesDependentResource}，在 API 版本演进时仍能正确关联 owner reference。
+ */
 @KubernetesDependent(
         informer = @Informer(labelSelector = Constants.DEFAULT_LABELS_AS_STRING)
 )
 public class KeycloakServiceDependentResource extends VersionTolerantCRUDKubernetesDependentResource<Service, Keycloak> {
 
+    /** 注册 Service 资源类型。 */
     public KeycloakServiceDependentResource() {
         super(Service.class);
     }
 
+    /**
+     * 构建 Service 端口规格：按 TLS 与 HTTP 启用情况暴露对应端口，并始终包含管理端口。
+     *
+     * @param keycloak 主资源 Keycloak CR
+     * @return 期望的 ServiceSpec
+     */
     private ServiceSpec getServiceSpec(Keycloak keycloak) {
         var builder = new ServiceSpecBuilder().withSelector(Utils.allInstanceLabels(keycloak));
 
         boolean tlsConfigured = isTlsConfigured(keycloak);
         boolean httpEnabled = isHttpEnabled(keycloak);
+        // 未配置 TLS 或显式启用 HTTP 时暴露 HTTP 端口
         if (!tlsConfigured || httpEnabled) {
             int containerPort = HttpSpec.httpPort(keycloak);
             int servicePort = HttpSpec.serviceHttpPort(keycloak);
@@ -61,6 +74,7 @@ public class KeycloakServiceDependentResource extends VersionTolerantCRUDKuberne
                     .withProtocol(Constants.KEYCLOAK_SERVICE_PROTOCOL)
                     .endPort();
         }
+        // 配置 TLS 时暴露 HTTPS 端口
         if (tlsConfigured) {
             int containerPort = HttpSpec.httpsPort(keycloak);
             int servicePort = HttpSpec.serviceHttpsPort(keycloak);
@@ -72,6 +86,7 @@ public class KeycloakServiceDependentResource extends VersionTolerantCRUDKuberne
                     .endPort();
         }
 
+        // 管理端口（健康检查、指标等）
         builder.addNewPort()
                 .withPort(HttpManagementSpec.managementPort(keycloak))
                 .withName(Constants.KEYCLOAK_MANAGEMENT_PORT_NAME)
@@ -81,12 +96,19 @@ public class KeycloakServiceDependentResource extends VersionTolerantCRUDKuberne
         return builder.build();
     }
 
+    /**
+     * 判断 Keycloak 实例是否启用明文 HTTP。
+     *
+     * @param keycloak Keycloak CR
+     * @return 若 httpSpec.httpEnabled 为 true 则返回 true
+     */
     static boolean isHttpEnabled(Keycloak keycloak) {
         Optional<HttpSpec> httpSpec = Optional.ofNullable(keycloak.getSpec().getHttpSpec());
         boolean httpEnabled = httpSpec.map(HttpSpec::getHttpEnabled).orElse(false);
         return httpEnabled;
     }
 
+    /** 构建期望的 Kubernetes Service 资源。 */
     @Override
     protected Service desired(Keycloak primary, Context<Keycloak> context) {
 
@@ -108,6 +130,12 @@ public class KeycloakServiceDependentResource extends VersionTolerantCRUDKuberne
         return service;
     }
 
+    /**
+     * 解析 Service 名称：优先使用 httpSpec.serviceName，否则为 CR 名 + 默认后缀。
+     *
+     * @param keycloak Keycloak CR
+     * @return Service 资源名
+     */
     public static String getServiceName(Keycloak keycloak) {
         return Optional.ofNullable(keycloak.getSpec())
                 .map(spec -> spec.getHttpSpec())

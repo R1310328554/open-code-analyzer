@@ -23,15 +23,22 @@ import java.util.Objects;
 
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak 客户端 CR 的 status 子资源：同步状态、哈希与条件列表。
+ */
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder", lazyCollectionInitEnabled = false)
 public class KeycloakClientStatus {
 
+    /** Keycloak 服务端分配的客户端 UUID。 */
     private String uuid;
     
+    /** 控制器已观察到的 metadata.generation。 */
     private Long observedGeneration;
     
+    /** 当前 spec 内容的哈希，用于检测 drift。 */
     private String hash;
 
+    /** 状态条件列表（如 HasErrors、Ready 等）。 */
     private List<KeycloakClientStatusCondition> conditions = new ArrayList<KeycloakClientStatusCondition>();
 
     public String getUuid() {
@@ -42,7 +49,7 @@ public class KeycloakClientStatus {
         this.uuid = uuid;
     }
 
-    // TODO: will the id or anything else be generated such that it needs to be in the status
+    // TODO: id 等是否在 Keycloak 侧生成并需写入 status
     
     public Long getObservedGeneration() {
         return observedGeneration;

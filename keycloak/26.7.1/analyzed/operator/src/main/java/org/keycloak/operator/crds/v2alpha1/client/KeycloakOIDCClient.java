@@ -28,6 +28,11 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
+/**
+ * Keycloak OIDC 客户端 CustomResource（v2alpha1，命名空间作用域）。
+ *
+ * <p>由 Operator 在目标 Keycloak 实例的指定 realm 中创建或更新 OIDC 客户端。
+ */
 @CSVMetadata(
         description="Represents a Keycloak OIDC Client",
         displayName="KeycloakOIDCClient"
@@ -41,6 +46,7 @@ import io.sundr.builder.annotations.BuildableReference;
     })
 public class KeycloakOIDCClient extends CustomResource<KeycloakOIDCClientSpec, KeycloakClientStatus> implements Namespaced {
 
+    /** spec 为必填字段。 */
     @Required
     @Override
     public KeycloakOIDCClientSpec getSpec() {

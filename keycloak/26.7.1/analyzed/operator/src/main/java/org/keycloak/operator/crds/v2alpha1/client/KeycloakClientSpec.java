@@ -24,19 +24,27 @@ import io.fabric8.generator.annotation.Required;
 import io.fabric8.generator.annotation.ValidationRule;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak 客户端 CR 的通用 spec 基类（OIDC/SAML 共用）。
+ *
+ * @param <T> 客户端表示类型，继承 {@link BaseClientRepresentation}
+ */
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder", lazyCollectionInitEnabled = false)
 public class KeycloakClientSpec<T extends BaseClientRepresentation> {
 
+    /** 同命名空间内引用的 Keycloak CR 名称（创建后不可变）。 */
     @Required
     @JsonPropertyDescription("The name of the Keycloak CR to reference, in the same namespace.")
     @ValidationRule(value = "self == oldSelf", message = "keycloakCrName is immutable")
     private String keycloakCRName;
 
+    /** 客户端所属 realm（创建后不可变）。 */
     @Required
     @JsonPropertyDescription("The realm of the Client")
     @ValidationRule(value = "self == oldSelf", message = "realm is immutable")
     private String realm;
 
+    /** 客户端详细配置（OIDC 或 SAML 表示）。 */
     @Required
     private T client;
 

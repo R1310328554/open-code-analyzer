@@ -19,6 +19,13 @@ package org.keycloak.operator.controllers;
 import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.quarkiverse.operatorsdk.annotations.SharedCSVMetadata;
 
+/**
+ * Keycloak Operator 的 OLM ClusterServiceVersion（CSV）共享元数据定义。
+ *
+ * <p>通过 {@link CSVMetadata} 注解声明 Operator 在 OperatorHub/OLM 中的展示信息、
+ * 安装模式、示例 CR（Keycloak、RealmImport、OIDC/SAML Client）及能力描述。
+ * 实现 {@link SharedCSVMetadata} 供 Quarkus Operator SDK 生成 CSV 清单。
+ */
 @CSVMetadata(
     version = "KCOP_NEXT",
     name = "keycloak-operator",

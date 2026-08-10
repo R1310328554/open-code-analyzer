@@ -28,6 +28,11 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
+/**
+ * Keycloak SAML 客户端 CustomResource（v2alpha1，命名空间作用域）。
+ *
+ * <p>由 Operator 在目标 Keycloak 实例的指定 realm 中创建或更新 SAML 客户端。
+ */
 @CSVMetadata(
         description="Represents a Keycloak SAML Client",
         displayName="KeycloakSAMLClient"
@@ -41,6 +46,7 @@ import io.sundr.builder.annotations.BuildableReference;
     })
 public class KeycloakSAMLClient extends CustomResource<KeycloakSAMLClientSpec, KeycloakClientStatus> implements Namespaced {
 
+    /** spec 为必填字段。 */
     @Required
     @Override
     public KeycloakSAMLClientSpec getSpec() {
