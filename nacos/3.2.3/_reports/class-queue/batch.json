@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T02:10:49Z",
-  "files": [
-    "ai/src/main/java/com/alibaba/nacos/ai/service/agentspecs/AgentSpecOperationServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/agentspecs/AgentSpecQueryResult.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/pipeline/PipelineQueryService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/prompt/PromptClientOperationService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/prompt/PromptClientOperationServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/prompt/PromptDownloadCountManager.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/prompt/PromptOperationService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/prompt/PromptOperationServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/AiResourcePersistService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/AiResourcePersistServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/AiResourceRowMappers.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/AiResourceVersionPersistService.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/AiResourceVersionPersistServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/EmbeddedAiResourcePersistServiceImpl.java",
-    "ai/src/main/java/com/alibaba/nacos/ai/service/repository/EmbeddedAiResourceVersionPersistServiceImpl.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2357,
-  "done": 165
+  "done": 180
 }
