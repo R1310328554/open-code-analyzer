@@ -15,23 +15,8 @@
     "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/RoleOperations.java",
     "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/operations/UserOperations.java",
     "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/CliJsonOutputHighlighter.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2Cmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2CommandBuilder.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2CommandDescriptor.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2Completer.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2ConfigCredentialsCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2ConfigEditorCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2ConfigOpenApiCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2DescriptorBuilder.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2DescriptorCache.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2EditCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2RequestExecutor.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/AttributeKey.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/AttributeOperation.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/BaseAuthOptionsCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/BaseConfigCredentialsCmd.java",
-    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/BaseConfigTruststoreCmd.java"
+    "integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2Cmd.java"
   ],
   "remaining_pending": 5128,
-  "done": 840
+  "done": 855
 }

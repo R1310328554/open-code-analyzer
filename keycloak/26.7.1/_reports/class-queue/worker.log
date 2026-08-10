@@ -823,3 +823,18 @@
 2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/DeleteCmd.java wave28b admin-cli + TokenService
 2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/GetCmd.java wave28b admin-cli + TokenService
 2026-08-10T06:48:05Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/commands/GetRolesCmd.java wave28b admin-cli + TokenService
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2CommandBuilder.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2CommandDescriptor.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2Completer.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2ConfigCredentialsCmd.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2ConfigEditorCmd.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2ConfigOpenApiCmd.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2DescriptorBuilder.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2DescriptorCache.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2EditCmd.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/admin/cli/v2/KcAdmV2RequestExecutor.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/AttributeKey.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/AttributeOperation.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/BaseAuthOptionsCmd.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/BaseConfigCredentialsCmd.java wave29b admin-cli v2/common
+2026-08-10T06:50:23Z DONE integration/client-cli/admin-cli/src/main/java/org/keycloak/client/cli/common/BaseConfigTruststoreCmd.java wave29b admin-cli v2/common
