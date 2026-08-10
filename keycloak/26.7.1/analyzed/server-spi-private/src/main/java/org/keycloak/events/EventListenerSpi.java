@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 事件监听器 SPI，注册 {@link EventListenerProvider} 提供者类型。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EventListenerSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code eventsListener}。 */
     @Override
     public String getName() {
         return "eventsListener";
     }
 
+    /** 事件监听器提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return EventListenerProvider.class;
     }
 
+    /** 事件监听器工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return EventListenerProviderFactory.class;

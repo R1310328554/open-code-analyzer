@@ -44,6 +44,9 @@ import io.opentelemetry.api.trace.StatusCode;
 import org.jboss.logging.Logger;
 
 /**
+ * 用户事件构建器：组装 {@link Event} 并分发至事件存储与监听器。
+ * <p>成功事件默认在事务提交时持久化；失败事件（{@link #error(String)}）通常立即写入。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EventBuilder {
@@ -58,11 +61,13 @@ public class EventBuilder {
     private Boolean storeImmediately;
     private final boolean isEventsEnabled;
 
+    /** 从客户端连接自动填充 IP 地址。 */
     public EventBuilder(RealmModel realm, KeycloakSession session, ClientConnection clientConnection) {
         this(realm, session);
         ipAddress(clientConnection.getRemoteHost());
     }
 
+    /** 为指定领域创建事件构建器，并按领域配置解析存储与监听器。 */
     public EventBuilder(RealmModel realm, KeycloakSession session) {
         this.session = session;
         this.realm = realm;
@@ -109,52 +114,62 @@ public class EventBuilder {
         this.isEventsEnabled = realm.isEventsEnabled();
     }
 
+    /** 设置事件所属领域。 */
     public EventBuilder realm(RealmModel realm) {
         event.setRealmId(realm == null ? null : realm.getId());
         event.setRealmName(realm == null ? null : realm.getName());
         return this;
     }
 
+    /** 从客户端模型提取 clientId。 */
     public EventBuilder client(ClientModel client) {
         event.setClientId(client == null ? null : client.getClientId());
         return this;
     }
 
+    /** 直接设置 clientId。 */
     public EventBuilder client(String clientId) {
         event.setClientId(clientId);
         return this;
     }
 
+    /** 从用户模型提取 userId。 */
     public EventBuilder user(UserModel user) {
         event.setUserId(user == null ? null : user.getId());
         return this;
     }
 
+    /** 直接设置 userId。 */
     public EventBuilder user(String userId) {
         event.setUserId(userId);
         return this;
     }
 
+    /** 从用户会话提取 sessionId。 */
     public EventBuilder session(UserSessionModel session) {
         event.setSessionId(session == null ? null : session.getId());
         return this;
     }
 
+    /** 直接设置 sessionId。 */
     public EventBuilder session(String sessionId) {
         event.setSessionId(sessionId);
         return this;
     }
 
+    /** 设置客户端 IP 地址。 */
     public EventBuilder ipAddress(String ipAddress) {
         event.setIpAddress(ipAddress);
         return this;
     }
 
+    /** 设置事件类型。 */
     public EventBuilder event(EventType e) {
         event.setType(e);
         return this;
     }
 
+    /** 追加单条 detail；空值被忽略。 */
     public EventBuilder detail(String key, String value) {
         if (value == null || value.equals("")) {
             return this;
@@ -168,7 +183,7 @@ public class EventBuilder {
     }
 
     /**
-     * Add event detail where strings from the input Collection are filtered not to contain <code>null</code> and then joined using <code>::</code> character.
+     * 将集合中非 null 元素以 {@code ::} 连接后写入 detail。
      *
      * @param key of the detail
      * @param values, can be null
@@ -182,7 +197,7 @@ public class EventBuilder {
     }
 
     /**
-     * Add event detail where strings from the input Stream are filtered not to contain <code>null</code> and then joined using <code>::</code> character.
+     * 将 Stream 中非 null 元素以 {@code ::} 连接后写入 detail。
      *
      * @param key of the detail
      * @param values, can be null
@@ -196,19 +211,17 @@ public class EventBuilder {
     }
 
     /**
-     * Sets the time when to store the event.
-     * By default, events marked as success ({@link #success()}) are stored upon commit of the session's transaction
-     * while the failures ({@link #error(java.lang.String)} are stored and propagated to the event listeners
-     * immediately into the event store.
-     * @param forcedValue If {@code true}, the event is stored in the event store immediately. If {@code false},
-     *   the event is stored upon commit.
-     * @return
+     * 控制事件写入时机。
+     * <p>默认：{@link #success()} 在会话事务提交时写入；{@link #error(String)} 立即写入并通知监听器。</p>
+     * @param forcedValue {@code true} 立即写入事件存储；{@code false} 延迟至事务提交
+     * @return 当前构建器
      */
     public EventBuilder storeImmediately(boolean forcedValue) {
         this.storeImmediately = forcedValue;
         return this;
     }
 
+    /** 移除指定 detail 键。 */
     public EventBuilder removeDetail(String key) {
         if (event.getDetails() != null) {
             event.getDetails().remove(key);
@@ -216,14 +229,20 @@ public class EventBuilder {
         return this;
     }
 
+    /** @return 正在组装的 {@link Event} 实例 */
     public Event getEvent() {
         return event;
     }
 
+    /** 标记事件成功并按默认策略发送。 */
     public void success() {
         send(this.storeImmediately == null ? false : this.storeImmediately);
     }
 
+    /**
+     * 标记事件失败：自动追加 {@code _ERROR} 后缀至类型并记录错误码。
+     * @param error {@link Errors} 中的错误码
+     */
     public void error(String error) {
         if (Objects.isNull(event.getType())) {
             throw new IllegalStateException("Attempted to define event error without first setting the event type");
@@ -236,6 +255,7 @@ public class EventBuilder {
         send(this.storeImmediately == null ? true : this.storeImmediately);
     }
 
+    /** 克隆构建器及其内部事件快照。 */
     @Override
     public EventBuilder clone() {
         return new EventBuilder(session, store, listeners, realm, event.clone());

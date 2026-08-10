@@ -21,34 +21,30 @@ import org.keycloak.events.admin.AdminEventQuery;
 import org.keycloak.models.RealmModel;
 
 /**
+ * 事件存储提供者 SPI：持久化用户/管理事件并支持查询与清理。
+ * <p>同时继承 {@link EventListenerProvider}，在 {@link EventBuilder} 发送流程中接收 {@link #onEvent(Event)} 回调。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface EventStoreProvider extends EventListenerProvider {
 
     /**
-     * Returns an object representing auth event query of type {@link EventQuery}.
-     *
-     * The object is used for collecting requested properties of auth events (e.g. realm, operation, resourceType
-     * time boundaries, etc.) and contains the {@link EventQuery#getResultStream()} method that returns all
-     * objects from this store provider that have given properties.
+     * 创建用户事件查询构建器 {@link EventQuery}。
+     * <p>链式设置 realm、类型、时间边界等条件后调用 {@link EventQuery#getResultStream()} 获取结果。</p>
      *
      * @return a query object
      */
     EventQuery createQuery();
 
     /**
-     * Returns an object representing admin event query of type {@link AdminEventQuery}.
-     *
-     * The object is used for collecting requested properties of admin events (e.g. realm, operation, resourceType
-     * time boundaries, etc.) and contains the {@link AdminEventQuery#getResultStream()} method that returns all
-     * objects from this store provider that have given properties.
+     * 创建管理事件查询构建器 {@link AdminEventQuery}。
      *
      * @return a query object
      */
     AdminEventQuery createAdminQuery();
 
     /**
-     * Removes all auth events from this store provider.
+     * 清空全部用户事件（测试专用，已弃用）。
      *
      * @deprecated Unused method. Currently, used only in the testsuite
      */
@@ -56,14 +52,14 @@ public interface EventStoreProvider extends EventListenerProvider {
     void clear();
 
     /**
-     * Removes all auth events for the realm from this store provider.
+     * 清空指定领域的全部用户事件。
      * @param realm the realm
      *
      */
     void clear(RealmModel realm);
 
     /**
-     * Removes all auth events for the realm that are older than {@code olderThan} from this store provider.
+     * 删除指定领域中早于 {@code olderThan} 的用户事件。
      *
      * @param realm the realm
      * @param olderThan point in time in milliseconds
@@ -71,7 +67,8 @@ public interface EventStoreProvider extends EventListenerProvider {
     void clear(RealmModel realm, long olderThan);
 
     /**
-     * Clears all expired events in all realms
+     * 清理所有领域中已过期的用户事件（已弃用，性能较差）。
+     * <p>推荐各存储实现自行处理实体级过期（如 Infinispan entry lifespan）。</p>
      *
      * @deprecated This method is problem from the performance perspective. Some storages can provide better way
      * for doing this (e.g. entry lifespan in the Infinispan server, etc.). We need to leave solving event expiration
@@ -81,7 +78,7 @@ public interface EventStoreProvider extends EventListenerProvider {
     void clearExpiredEvents();
 
     /**
-     * Removes all admin events from this store provider.
+     * 清空全部管理事件（测试专用，已弃用）。
      *
      * @deprecated Unused method. Currently, used only in the testsuite
      */
@@ -89,13 +86,13 @@ public interface EventStoreProvider extends EventListenerProvider {
     void clearAdmin();
 
     /**
-     * Removes all auth events for the realm from this store provider.
+     * 清空指定领域的全部管理事件。
      * @param realm the realm
      */
     void clearAdmin(RealmModel realm);
 
     /**
-     * Removes all auth events for the realm that are older than {@code olderThan} from this store provider.
+     * 删除指定领域中早于 {@code olderThan} 的管理事件。
      *
      * @param realm the realm
      * @param olderThan point in time in milliseconds

@@ -21,14 +21,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 用户操作审计事件数据模型。
+ * <p>由 {@link EventBuilder} 组装并分发给 {@link EventStoreProvider} 与 {@link EventListenerProvider}。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class Event {
 
+    /** 事件唯一标识（UUID）。 */
     private String id;
 
+    /** 事件发生时间戳（毫秒）。 */
     private long time;
 
+    /** 事件类型枚举。 */
     private EventType type;
 
     private String realmId;
@@ -42,8 +48,10 @@ public class Event {
 
     private String ipAddress;
 
+    /** 失败时的错误码，见 {@link Errors}。 */
     private String error;
 
+    /** 附加键值详情，键名见 {@link Details}。 */
     private Map<String, String> details;
 
     public String getId() {
@@ -111,7 +119,8 @@ public class Event {
     }
 
     /**
-     * Note: will not be an address when a proxy does not provide a valid one
+     * 客户端 IP 地址。
+     * <p>反向代理未传递有效地址时可能为空或非真实 IP。</p>
      *
      * @return the ip address
      */
@@ -139,6 +148,7 @@ public class Event {
         this.details = details;
     }
 
+    /** 深拷贝事件对象（含 details 映射）。 */
     @Override
     public Event clone() {
         Event clone = new Event();
@@ -156,6 +166,7 @@ public class Event {
         return clone;
     }
 
+    /** 截断字符串至指定最大长度，防止持久化字段溢出。 */
     static String maxLength(String string, int length){
         if (string != null && string.length() > length) {
             return string.substring(0, length - 1);

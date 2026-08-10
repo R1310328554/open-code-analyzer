@@ -25,6 +25,10 @@ import java.util.function.Consumer;
 import org.keycloak.events.admin.AdminEvent;
 import org.keycloak.models.AbstractKeycloakTransaction;
 
+/**
+ * 延迟至事务提交后再批量投递事件的 {@link AbstractKeycloakTransaction} 实现。
+ * <p>在内存中累积 {@link Event} 与 {@link AdminEvent}，提交时调用注册的 consumer；回滚时清空队列。</p>
+ */
 public class EventListenerTransaction extends AbstractKeycloakTransaction {
 
     private static class AdminEventEntry {
@@ -42,19 +46,26 @@ public class EventListenerTransaction extends AbstractKeycloakTransaction {
     private final BiConsumer<AdminEvent, Boolean> adminEventConsumer;
     private final Consumer<Event> eventConsumer;
 
+    /**
+     * @param adminEventConsumer 管理事件 consumer（可为 null）
+     * @param eventConsumer 用户事件 consumer（可为 null）
+     */
     public EventListenerTransaction(BiConsumer<AdminEvent, Boolean> adminEventConsumer, Consumer<Event> eventConsumer) {
         this.adminEventConsumer = adminEventConsumer;
         this.eventConsumer = eventConsumer;
     }
 
+    /** 排队待提交后发送的管理事件。 */
     public void addAdminEvent(AdminEvent adminEvent, boolean includeRepresentation) {
         adminEventsToSend.add(new AdminEventEntry(adminEvent, includeRepresentation));
     }
 
+    /** 排队待提交后发送的用户事件。 */
     public void addEvent(Event event) {
         eventsToSend.add(event);
     }
 
+    /** 提交时依次调用 consumer 处理已排队事件。 */
     @Override
     protected void commitImpl() {
         adminEventsToSend.forEach(this::consumeAdminEventEntry);
@@ -69,6 +80,7 @@ public class EventListenerTransaction extends AbstractKeycloakTransaction {
         }
     }
 
+    /** 回滚时丢弃所有未发送事件。 */
     @Override
     protected void rollbackImpl() {
         adminEventsToSend.clear();

@@ -20,10 +20,16 @@ package org.keycloak.events;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link EventListenerProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface EventListenerProviderFactory extends ProviderFactory<EventListenerProvider> {
 
+    /**
+     * 是否为全局监听器：{@code true} 时无需在领域 {@code eventsListeners} 中显式配置即生效。
+     * @return 默认 {@code false}
+     */
     default boolean isGlobal() {
         return false;
     }

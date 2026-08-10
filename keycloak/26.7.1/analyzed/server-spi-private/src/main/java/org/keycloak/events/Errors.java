@@ -18,6 +18,9 @@
 package org.keycloak.events;
 
 /**
+ * 用户事件 {@link Event#setError(String)} 错误码常量。
+ * <p>与 OAuth 2.0、OIDC、SAML、PKCE 及 Keycloak 扩展错误语义对应，供 {@link EventBuilder#error(String)} 记录。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface Errors {
@@ -100,7 +103,7 @@ public interface Errors {
     String PASSWORD_MISSING = "password_missing";
     String PASSWORD_REJECTED = "password_rejected";
 
-    // https://tools.ietf.org/html/rfc7636
+    // PKCE（RFC 7636）相关错误
     String CODE_VERIFIER_MISSING = "code_verifier_missing";
     String INVALID_CODE_VERIFIER = "invalid_code_verifier";
     String PKCE_VERIFICATION_FAILED = "pkce_verification_failed";
@@ -108,7 +111,7 @@ public interface Errors {
 
     String INVALID_DPOP_PROOF = "invalid_dpop_proof";
 
-    // https://datatracker.ietf.org/doc/html/rfc9396#name-authorization-error-respons
+    // RFC 9396 授权细节（authorization_details）相关错误
     String INVALID_AUTHORIZATION_DETAILS = "invalid_authorization_details";
 
     String NOT_LOGGED_IN = "not_logged_in";

@@ -21,40 +21,43 @@ import java.util.Date;
 import java.util.stream.Stream;
 
 /**
+ * 用户事件查询构建器，由 {@link EventStoreProvider#createQuery()} 返回。
+ * <p>支持按类型、领域、客户端、用户、时间范围、IP 等条件过滤，并链式设置分页与排序。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface EventQuery {
 
     /**
-     * Search events with given types
+     * 按事件类型过滤。
      * @param types requested types
      * @return this object for method chaining
      */
     EventQuery type(EventType... types);
 
     /**
-     * Search events within realm
+     * 限定领域。
      * @param realmId id of realm
      * @return this object for method chaining
      */
     EventQuery realm(String realmId);
 
     /**
-     * Search events for only one client
+     * 限定客户端。
      * @param clientId id of client
      * @return this object for method chaining
      */
     EventQuery client(String clientId);
 
     /**
-     * Search events for only one user
+     * 限定用户。
      * @param userId id of user
      * @return this object for method chaining
      */
     EventQuery user(String userId);
 
     /**
-     * Search events that are on or after {@code fromDate}
+     * 起始时间（含），{@link Date} 版本（已弃用）。
      * @param fromDate date
      * @return this object for method chaining
      */
@@ -62,14 +65,14 @@ public interface EventQuery {
     EventQuery fromDate(Date fromDate);
 
     /**
-     * Search events that are on or after {@code fromDate}
+     * 起始时间戳（含，毫秒）。
      * @param fromDate from timestamp
      * @return this object for method chaining
      */
     EventQuery fromDate(long fromDate);
 
     /**
-     * Search events that are on or before {@code toDate}
+     * 截止时间（含），{@link Date} 版本（已弃用）。
      * @param toDate date
      * @return this object for method chaining
      */
@@ -77,49 +80,49 @@ public interface EventQuery {
     EventQuery toDate(Date toDate);
 
     /**
-     * Search events that are on or before {@code toDate}
+     * 截止时间戳（含，毫秒）。
      * @param toDate to timestamp
      * @return this object for method chaining
      */
     EventQuery toDate(long toDate);
 
     /**
-     * Search events from ipAddress
+     * 按客户端 IP 过滤。
      * @param ipAddress ip
      * @return this object for method chaining
      */
     EventQuery ipAddress(String ipAddress);
 
     /**
-     * Index of the first result to return.
+     * 分页起始索引（负值忽略）。
      * @param firstResult the index. Ignored if negative.
      * @return this object for method chaining
      */
     EventQuery firstResult(int firstResult);
 
     /**
-     * Maximum number of results to return.
+     * 最大返回条数（负值忽略）。
      * @param max a number. Ignored if negative.
      * @return this object for method chaining
      */
     EventQuery maxResults(int max);
 
     /**
-     * Order the result by descending time
+     * 按时间降序排列。
      *
      * @return <code>this</code> for method chaining
      */
     EventQuery orderByDescTime();
 
     /**
-     * Order the result by ascending time
+     * 按时间升序排列。
      *
      * @return <code>this</code> for method chaining
      */
     EventQuery orderByAscTime();
 
     /**
-     * Returns requested results that match given criteria as a stream.
+     * 执行查询并以 Stream 返回匹配事件。
      * @return Stream of events. Never returns {@code null}.
      */
     Stream<Event> getResultStream();

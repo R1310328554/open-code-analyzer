@@ -18,10 +18,16 @@
 package org.keycloak.events;
 
 /**
+ * 用户事件 {@link Event#getDetails()} 附加字段的键名常量。
+ * <p>涵盖 OAuth/OIDC 流程、身份代理、令牌、同意、凭证与 OID4VCI 等场景的上下文信息。</p>
+ * <p>{@link #PREF_PREVIOUS} 与 {@link #PREF_UPDATED} 前缀用于记录属性变更前后值。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface Details {
+    /** 变更前属性值键名前缀。 */
     String PREF_PREVIOUS = "previous_";
+    /** 变更后属性值键名前缀。 */
     String PREF_UPDATED = "updated_";
     String FIELDS_TO_UPDATE = "fields_to_update";
     
@@ -82,8 +88,11 @@ public interface Details {
     String LOGIN_RETRY = "login_retry";
 
     String CONSENT = "consent";
+    /** 客户端无需用户同意。 */
     String CONSENT_VALUE_NO_CONSENT_REQUIRED = "no_consent_required"; // No consent is required by client
+    /** 用户本次操作授予同意。 */
     String CONSENT_VALUE_CONSENT_GRANTED = "consent_granted";         // Consent granted by user
+    /** 复用已持久化的历史同意记录。 */
     String CONSENT_VALUE_PERSISTED_CONSENT = "persistent_consent";    // Persistent consent used (was already granted by user before)
     String IMPERSONATOR_REALM = "impersonator_realm";
     String IMPERSONATOR = "impersonator";
@@ -121,7 +130,7 @@ public interface Details {
     String USER_SESSION_EXPIRED_REASON = "user_session_expired";
     String INVALID_USER_SESSION_REMEMBER_ME_REASON = "invalid_user_session_remember_me";
 
-    // OID4VCI (OpenID for Verifiable Credential Issuance) related details
+    // OID4VCI（OpenID 可验证凭证发放）相关 detail 键
     String VERIFIABLE_CREDENTIAL_PRE_AUTHORIZED = "verifiable_credential_pre_authorized";
     String VERIFIABLE_CREDENTIAL_TARGET_CLIENT_ID = "verifiable_credential_target_client_id";
     String VERIFIABLE_CREDENTIAL_TARGET_USER_ID = "verifiable_credential_target_user_id";

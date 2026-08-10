@@ -22,25 +22,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 邮件发送 SPI，注册 {@link EmailSenderProvider} 提供者类型。
+ * <p>负责 SMTP 等底层邮件传输，与 {@link EmailTemplateSpi} 模板渲染层分离。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class EmailSenderSpi implements Spi {
 
+    /** 内部 SPI，不对扩展模块公开。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称：{@code emailSender}。 */
     @Override
     public String getName() {
         return "emailSender";
     }
 
+    /** 邮件发送提供者接口类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return EmailSenderProvider.class;
     }
 
+    /** 邮件发送工厂类型。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return EmailSenderProviderFactory.class;

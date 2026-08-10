@@ -20,6 +20,8 @@ package org.keycloak.events;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link EventStoreProvider} 的 {@link ProviderFactory} 工厂接口。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public interface EventStoreProviderFactory extends ProviderFactory<EventStoreProvider> {
