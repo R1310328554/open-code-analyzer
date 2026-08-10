@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T20:52:15Z",
   "files": [
-    "util/features/features.go",
-    "util/fmtutil/format.go",
-    "util/fuzzing/corpus.go",
-    "util/fuzzing/corpus_gen/main.go",
-    "util/fuzzing/corpus_protobuf.go",
-    "util/gate/gate.go",
-    "util/httputil/compression.go",
-    "util/httputil/context.go",
-    "util/httputil/cors.go",
-    "util/jsonutil/marshal.go",
-    "util/junitxml/junitxml.go",
-    "util/kahansum/kahansum.go",
-    "util/logging/dedupe.go",
-    "util/logging/file.go",
-    "util/namevalidationutil/namevalidationutil.go",
     "util/netconnlimit/netconnlimit.go",
     "util/notifications/notifications.go",
     "util/osutil/hostname.go",
@@ -33,5 +18,5 @@
     "util/runtime/vmlimits_openbsd.go"
   ],
   "remaining_pending": 144,
-  "done": 360
+  "done": 375
 }
