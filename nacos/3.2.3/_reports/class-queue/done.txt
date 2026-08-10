@@ -1,0 +1,15 @@
+ai/src/main/java/com/alibaba/nacos/ai/config/NacosPromptLegacyDataReader.java
+ai/src/main/java/com/alibaba/nacos/ai/config/PipelineConfiguration.java
+ai/src/main/java/com/alibaba/nacos/ai/config/PromptDataMigrationTask.java
+ai/src/main/java/com/alibaba/nacos/ai/config/PromptLegacyDataReader.java
+ai/src/main/java/com/alibaba/nacos/ai/config/SkillDataBootstrapInitializer.java
+ai/src/main/java/com/alibaba/nacos/ai/constant/AiResourceConstants.java
+ai/src/main/java/com/alibaba/nacos/ai/constant/Constants.java
+ai/src/main/java/com/alibaba/nacos/ai/constant/McpServerValidationConstants.java
+ai/src/main/java/com/alibaba/nacos/ai/controller/A2aAdminController.java
+ai/src/main/java/com/alibaba/nacos/ai/controller/AgentSpecAdminController.java
+ai/src/main/java/com/alibaba/nacos/ai/controller/AgentSpecClientController.java
+ai/src/main/java/com/alibaba/nacos/ai/controller/AiResourceImportAdminController.java
+ai/src/main/java/com/alibaba/nacos/ai/controller/McpAdminController.java
+ai/src/main/java/com/alibaba/nacos/ai/controller/PipelineAdminController.java
+ai/src/main/java/com/alibaba/nacos/ai/controller/PromptAdminController.java
