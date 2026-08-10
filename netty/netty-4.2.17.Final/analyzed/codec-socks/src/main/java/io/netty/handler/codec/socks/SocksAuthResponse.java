@@ -23,6 +23,8 @@ import io.netty.util.internal.ObjectUtil;
  *
  * @see SocksAuthRequest
  * @see SocksAuthResponseDecoder
+ * <p>SOCKS5 用户名/密码子协商的服务端应答：版本 0x01 + 1 字节 {@link SocksAuthStatus}。
+ * {@link SocksAuthStatus#SUCCESS} 后客户端可继续发送 {@link SocksCmdRequest}。</p>
  */
 public final class SocksAuthResponse extends SocksResponse {
     private static final SocksSubnegotiationVersion SUBNEGOTIATION_VERSION = SocksSubnegotiationVersion.AUTH_PASSWORD;

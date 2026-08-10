@@ -24,12 +24,16 @@ import io.netty.util.internal.UnstableApi;
  * Be aware that a {@link SmtpContent} / {@link LastSmtpContent} sequence must always use CRLF as line delimiter
  * and the lines that start with a DOT must be escaped with an extra DOT as
  * specified by <a href="https://www.ietf.org/rfc/rfc2821.txt">RFC2821</a>.
+ * <p>SMTP DATA 阶段邮件正文的<strong>最后一帧</strong> {@link SmtpContent}。发送完本帧后，
+ * {@link SmtpRequestEncoder} 会自动追加 {@code .\r\n} 以结束 DATA 传输（RFC 2821 点转义结束符）。
+ * 与中间 {@link SmtpContent} 帧一样，行分隔符须为 CRLF，行首 {@code .} 须双写转义。</p>
  */
 @UnstableApi
 public interface LastSmtpContent extends SmtpContent {
 
     /**
      * Empty {@link LastSmtpContent}.
+     * <p>零长度最后一帧的单例；{@link SmtpRequestEncoder} 收到后仍会追加 {@code .\r\n} 结束 DATA。</p>
      */
     LastSmtpContent EMPTY_LAST_CONTENT = new LastSmtpContent() {
         @Override

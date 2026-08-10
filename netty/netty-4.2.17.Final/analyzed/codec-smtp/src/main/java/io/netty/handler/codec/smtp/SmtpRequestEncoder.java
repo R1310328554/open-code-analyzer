@@ -29,15 +29,21 @@ import java.util.RandomAccess;
 
 /**
  * Encoder for SMTP requests.
+ * <p>将 {@link SmtpRequest} 编码为 {@code COMMAND [params]\r\n} 行，将 {@link SmtpContent} 序列
+ * 编码为 DATA 正文块；{@link LastSmtpContent} 之后自动追加 {@code .\r\n} 结束符。
+ * 内部 {@code contentExpected} 状态机保证 DATA 与正文帧的严格顺序，仅 {@code RSET} 可在正文阶段打断。</p>
  */
 @UnstableApi
 public final class SmtpRequestEncoder extends MessageToMessageEncoder<Object> {
+    /** 大端 short 形式的 {@code \r\n}，用于命令行结尾。 */
     private static final int CRLF_SHORT = ('\r' << 8) | '\n';
     private static final byte SP = ' ';
+    /** 共享只读 {@code .\r\n} 缓冲区，最后一帧正文后 retainedDuplicate 输出。 */
     private static final ByteBuf DOT_CRLF_BUFFER = LeakPresenceDetector.staticInitializer(() ->
             Unpooled.unreleasableBuffer(Unpooled.directBuffer(3)
                     .writeByte('.').writeByte('\r').writeByte('\n')).asReadOnly());
 
+    /** 为 true 表示已发送 DATA，下一出站消息必须是 {@link SmtpContent}（或 RSET 取消）。 */
     private boolean contentExpected;
 
     public SmtpRequestEncoder() {
@@ -54,6 +60,7 @@ public final class SmtpRequestEncoder extends MessageToMessageEncoder<Object> {
         if (msg instanceof SmtpRequest) {
             final SmtpRequest req = (SmtpRequest) msg;
             if (contentExpected) {
+                // DATA 正文传输中仅允许 RSET 打断，其它命令视为协议错误
                 if (req.command().equals(SmtpCommand.RSET)) {
                     contentExpected = false;
                 } else {
@@ -86,12 +93,16 @@ public final class SmtpRequestEncoder extends MessageToMessageEncoder<Object> {
             final ByteBuf content = ((SmtpContent) msg).content();
             out.add(content.retain());
             if (msg instanceof LastSmtpContent) {
+                // RFC 2821：单独一行的点加 CRLF 标记 DATA 结束
                 out.add(DOT_CRLF_BUFFER.retainedDuplicate());
                 contentExpected = false;
             }
         }
     }
 
+    /**
+     * 参数以空格分隔写入；{@code EMPTY} 命令无命令名时首个参数前不加空格。
+     */
     private static void writeParameters(List<CharSequence> parameters, ByteBuf out, boolean commandNotEmpty) {
         if (parameters.isEmpty()) {
             return;

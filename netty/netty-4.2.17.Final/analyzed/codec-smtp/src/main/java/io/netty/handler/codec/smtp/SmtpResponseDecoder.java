@@ -28,14 +28,19 @@ import java.util.List;
 
 /**
  * Decoder for SMTP responses.
+ * <p>基于 {@link LineBasedFrameDecoder} 按行解析服务端应答。格式 {@code NNN[ -| ]detail}：
+ * {@code -} 表示多行中间行，{@code 空格} 表示最后一行并产出完整 {@link SmtpResponse}；
+ * 中间行暂存于 {@link #details}，末行合并后重置。</p>
  */
 @UnstableApi
 public final class SmtpResponseDecoder extends LineBasedFrameDecoder {
 
+    /** 多行应答尚未结束时的累积 detail 行；末行 {@code NNN } 产出后置 {@code null}。 */
     private List<CharSequence> details;
 
     /**
      * Creates a new instance that enforces the given {@code maxLineLength}.
+     * @param maxLineLength 单行最大字节数，超限抛 {@link TooLongFrameException}。
      */
     public SmtpResponseDecoder(int maxLineLength) {
         super(maxLineLength);
@@ -45,7 +50,7 @@ public final class SmtpResponseDecoder extends LineBasedFrameDecoder {
     protected SmtpResponse decode(ChannelHandlerContext ctx, ByteBuf buffer) throws Exception {
         ByteBuf frame = (ByteBuf) super.decode(ctx, buffer);
         if (frame == null) {
-            // No full line received yet.
+            // 尚未收到完整 CRLF 行
             return null;
         }
         try {
@@ -62,7 +67,7 @@ public final class SmtpResponseDecoder extends LineBasedFrameDecoder {
 
             switch (separator) {
             case ' ':
-                // Marks the end of a response.
+                // 空格：多行应答的最后一行，或单行应答
                 this.details = null;
                 if (details != null) {
                     if (detail != null) {
@@ -77,11 +82,10 @@ public final class SmtpResponseDecoder extends LineBasedFrameDecoder {
                 }
                 return new DefaultSmtpResponse(code, details);
             case '-':
-                // Multi-line response.
+                // 连字符：多行应答的中间行（如 250-PIPELINING）
                 if (detail != null) {
                     if (details == null) {
-                        // Using initial capacity as it is very unlikely that we will receive a multi-line response
-                        // with more then 3 lines.
+                        // 初始容量 4：实际多行应答很少超过 3 行附加文本
                         this.details = details = new ArrayList<CharSequence>(4);
                     }
                     details.add(detail);
@@ -103,6 +107,7 @@ public final class SmtpResponseDecoder extends LineBasedFrameDecoder {
 
     /**
      * Parses the io.netty.handler.codec.smtp code without any allocation, which is three digits.
+     * <p>从缓冲区连续读取三个 ASCII 数字字节，无字符串分配。</p>
      */
     private static int parseCode(ByteBuf buffer) {
         final int first = parseNumber(buffer.readByte()) * 100;

@@ -27,9 +27,12 @@ import java.util.List;
 /**
  * Decodes {@link ByteBuf}s into {@link SocksAuthRequest}.
  * Before returning SocksRequest decoder removes itself from pipeline.
+ * <p>一次性 {@link ReplayingDecoder}：校验子协商版本 0x01，按长度前缀读取 US-ASCII
+ * 用户名与密码，产出 {@link SocksAuthRequest} 后从 pipeline 移除自身。</p>
  */
 public class SocksAuthRequestDecoder extends ReplayingDecoder<State> {
 
+    /** 用户名在 READ_PASSWORD 阶段前暂存。 */
     private String username;
 
     public SocksAuthRequestDecoder() {
@@ -61,13 +64,17 @@ public class SocksAuthRequestDecoder extends ReplayingDecoder<State> {
                 throw new Error("Unexpected request decoder state: " + state());
             }
         }
+        // 无论成功或 UNKNOWN，本解码器只服务一次 AUTH 子协商
         ctx.pipeline().remove(this);
     }
 
     @UnstableApi
     public enum State {
+        /** 读取并校验 RFC 1929 子协商版本字节（0x01）。 */
         CHECK_PROTOCOL_VERSION,
+        /** 读取 1 字节长度 + 用户名字符串。 */
         READ_USERNAME,
+        /** 读取 1 字节长度 + 密码字符串，组装完整请求。 */
         READ_PASSWORD
     }
 }

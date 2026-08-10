@@ -25,6 +25,8 @@ import java.util.List;
 
 /**
  * Provides utility methods to create {@link SmtpRequest}s.
+ * <p>常用 SMTP 客户端命令的工厂方法：无参命令（NOOP、DATA、RSET、QUIT）复用单例；
+ * MAIL/RCPT 自动拼装 {@code FROM:<...>} / {@code TO:<...>} 并支持 ESMTP 扩展参数。</p>
  */
 @UnstableApi
 public final class SmtpRequests {
@@ -34,10 +36,12 @@ public final class SmtpRequests {
     private static final SmtpRequest RSET = new DefaultSmtpRequest(SmtpCommand.RSET);
     private static final SmtpRequest HELP_NO_ARG = new DefaultSmtpRequest(SmtpCommand.HELP);
     private static final SmtpRequest QUIT = new DefaultSmtpRequest(SmtpCommand.QUIT);
+    /** null 发件人时 MAIL 命令使用的 {@code FROM:<>} 字面量。 */
     private static final AsciiString FROM_NULL_SENDER = AsciiString.cached("FROM:<>");
 
     /**
      * Creates a {@code HELO} request.
+     * @param hostname 客户端标识主机名。
      */
     public static SmtpRequest helo(CharSequence hostname) {
         return new DefaultSmtpRequest(SmtpCommand.HELO, hostname);
@@ -45,6 +49,7 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code EHLO} request.
+     * @param hostname 客户端标识主机名，服务端应答可含 ESMTP 扩展列表。
      */
     public static SmtpRequest ehlo(CharSequence hostname) {
         return new DefaultSmtpRequest(SmtpCommand.EHLO, hostname);
@@ -52,6 +57,7 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code EMPTY} request.
+     * @param parameter 无命令字时的纯参数字段。
      */
     public static SmtpRequest empty(CharSequence... parameter) {
         return new DefaultSmtpRequest(SmtpCommand.EMPTY, parameter);
@@ -59,6 +65,7 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code AUTH} request.
+     * @param parameter 认证机制及凭证（如 {@code PLAIN}、Base64 载荷等）。
      */
     public static SmtpRequest auth(CharSequence... parameter) {
         return new DefaultSmtpRequest(SmtpCommand.AUTH, parameter);
@@ -73,6 +80,7 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code DATA} request.
+     * <p>发送后须跟随 {@link SmtpContent}/{@link LastSmtpContent} 序列。</p>
      */
     public static SmtpRequest data() {
         return DATA;
@@ -87,6 +95,7 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code HELP} request.
+     * @param cmd 可选子命令；{@code null} 时请求通用帮助。
      */
     public static SmtpRequest help(String cmd) {
         return cmd == null ? HELP_NO_ARG : new DefaultSmtpRequest(SmtpCommand.HELP, cmd);
@@ -101,6 +110,8 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code MAIL} request.
+     * @param sender 发件人地址；{@code null} 时使用 {@code FROM:<>}（空反向路径）。
+     * @param mailParameters 可选 ESMTP MAIL 参数（SIZE、BODY 等）。
      */
     public static SmtpRequest mail(CharSequence sender, CharSequence... mailParameters) {
         if (mailParameters == null || mailParameters.length == 0) {
@@ -116,6 +127,8 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code RCPT} request.
+     * @param recipient 收件人地址（必填）。
+     * @param rcptParameters 可选 ESMTP RCPT 参数。
      */
     public static SmtpRequest rcpt(CharSequence recipient, CharSequence... rcptParameters) {
         ObjectUtil.checkNotNull(recipient, "recipient");
@@ -131,6 +144,7 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code EXPN} request.
+     * @param mailingList 邮件列表名。
      */
     public static SmtpRequest expn(CharSequence mailingList) {
         return new DefaultSmtpRequest(SmtpCommand.EXPN, ObjectUtil.checkNotNull(mailingList, "mailingList"));
@@ -138,6 +152,7 @@ public final class SmtpRequests {
 
     /**
      * Creates a {@code VRFY} request.
+     * @param user 待验证的用户名或地址。
      */
     public static SmtpRequest vrfy(CharSequence user) {
         return new DefaultSmtpRequest(SmtpCommand.VRFY, ObjectUtil.checkNotNull(user, "user"));

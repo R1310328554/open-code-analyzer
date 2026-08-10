@@ -26,12 +26,18 @@ import java.nio.charset.CharsetEncoder;
  *
  * @see SocksAuthResponse
  * @see SocksAuthRequestDecoder
+ * <p>SOCKS5 用户名/密码子协商（RFC 1929）的客户端请求：版本 0x01 + 用户名长度 + 用户名
+ * + 密码长度 + 密码，字段均为 US-ASCII，单字段最长 255 字节。</p>
  */
 public final class SocksAuthRequest extends SocksRequest {
     private static final SocksSubnegotiationVersion SUBNEGOTIATION_VERSION = SocksSubnegotiationVersion.AUTH_PASSWORD;
     private final String username;
     private final String password;
 
+    /**
+     * @param username 纯 ASCII 用户名，长度 ≤ 255。
+     * @param password 纯 ASCII 密码，长度 ≤ 255。
+     */
     public SocksAuthRequest(String username, String password) {
         super(SocksRequestType.AUTH);
         ObjectUtil.checkNotNull(username, "username");

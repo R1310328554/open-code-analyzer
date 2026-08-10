@@ -21,17 +21,22 @@ import java.util.List;
 
 /**
  * An SMTP request.
+ * <p>客户端发往服务端的 SMTP 命令抽象：一条 {@link SmtpCommand}（如 HELO、MAIL、DATA）
+ * 加零个或多个参数，由 {@link SmtpRequestEncoder} 编码为 {@code COMMAND arg1 arg2\r\n} 行。
+ * {@code DATA} 之后须改用 {@link SmtpContent}/{@link LastSmtpContent} 传输正文。</p>
  */
 @UnstableApi
 public interface SmtpRequest {
 
     /**
      * Returns the {@link SmtpCommand} that belongs to the request.
+     * @return 本请求对应的 SMTP 命令字（EHLO、MAIL、RCPT、DATA 等）。
      */
     SmtpCommand command();
 
     /**
      * Returns a {@link List} which holds all the parameters of a request, which may be an empty list.
+     * @return 命令参数字符序列列表，无参时为空列表（非 {@code null}）。
      */
     List<CharSequence> parameters();
 }

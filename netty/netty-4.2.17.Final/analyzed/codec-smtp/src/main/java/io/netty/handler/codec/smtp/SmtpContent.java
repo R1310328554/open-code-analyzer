@@ -24,6 +24,9 @@ import io.netty.util.internal.UnstableApi;
  * Be aware that a {@link SmtpContent} / {@link LastSmtpContent} sequence must always use CRLF as line delimiter
  * and the lines that start with a DOT must be escaped with an extra DOT as
  * specified by <a href="https://www.ietf.org/rfc/rfc2821.txt">RFC2821</a>.
+ * <p>SMTP {@code DATA} 命令之后传输的邮件正文分块载体，继承 {@link ByteBufHolder} 以支持
+ * retain/duplicate 等缓冲区生命周期管理。中间帧用本接口，最后一帧用 {@link LastSmtpContent}；
+ * 编码器不会校验点转义，调用方须自行按 RFC 2821 处理行首 {@code .} 与 CRLF 行界。</p>
  */
 @UnstableApi
 public interface SmtpContent extends ByteBufHolder {

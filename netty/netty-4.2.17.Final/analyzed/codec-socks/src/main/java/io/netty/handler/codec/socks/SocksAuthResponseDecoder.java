@@ -26,6 +26,8 @@ import java.util.List;
 /**
  * Decodes {@link ByteBuf}s into {@link SocksAuthResponse}.
  * Before returning SocksResponse decoder removes itself from pipeline.
+ * <p>解析服务端 AUTH 子协商应答（2 字节：版本 0x01 + {@link SocksAuthStatus}），
+ * 版本不符时产出 {@link SocksCommonUtils#UNKNOWN_SOCKS_RESPONSE}；完成后自 pipeline 移除。</p>
  */
 public class SocksAuthResponseDecoder extends ReplayingDecoder<State> {
 
@@ -58,7 +60,9 @@ public class SocksAuthResponseDecoder extends ReplayingDecoder<State> {
 
     @UnstableApi
     public enum State {
+        /** 校验子协商版本必须为 {@link SocksSubnegotiationVersion#AUTH_PASSWORD}（0x01）。 */
         CHECK_PROTOCOL_VERSION,
+        /** 读取 1 字节认证结果并构造 {@link SocksAuthResponse}。 */
         READ_AUTH_RESPONSE
     }
 }
