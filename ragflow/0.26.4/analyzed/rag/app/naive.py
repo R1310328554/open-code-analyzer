@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+通用 naive 解析器：支持 docx/pdf/excel/txt 等多格式，按 delimiter 与 token 上限合并分块。
+"""
+
+
 
 import logging
 import re
@@ -65,6 +70,9 @@ from rag.nlp import (
 
 def _is_short_header(text, max_tokens=50):
     """
+    判断是否为短 Markdown 标题（# 开头且 token 数低于阈值）。
+
+    """
     Check if text is a short markdown header.
 
     Args:
@@ -86,6 +94,7 @@ def _is_short_header(text, max_tokens=50):
 
 
 def _normalize_section_text_for_rtl_presentation_forms(sections):
+    # 规范化 RTL 阿拉伯语展示形字符，避免检索分词异常
     if not sections:
         return sections
 
@@ -113,6 +122,7 @@ def _normalize_section_text_for_rtl_presentation_forms(sections):
 
 
 def by_deepdoc(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, pdf_cls=None, **kwargs):
+    # 使用 DeepDOC 布局/OCR 管线解析 PDF，返回文本段与表格
     callback = callback
     binary = binary
     pdf_parser = pdf_cls() if pdf_cls else Pdf()
@@ -128,6 +138,7 @@ def by_deepdoc(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, 
 
 
 def by_mineru(
+    # MinerU 外部解析器：调用租户配置的 MinerU 模型解析 PDF
     filename,
     binary=None,
     from_page=0,
@@ -184,6 +195,7 @@ def by_mineru(
 
 
 def by_docling(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, pdf_cls=None, **kwargs):
+    # Docling 解析器入口：将 PDF 转为结构化文本段
     pdf_parser = DoclingParser()
     parse_method = kwargs.get("parse_method", "raw")
 
@@ -205,6 +217,7 @@ def by_docling(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, 
 
 
 def by_opendataloader(
+    # OpenDataLoader 解析器：通过 LLM 服务解析 PDF
     filename,
     binary=None,
     from_page=0,
@@ -247,6 +260,7 @@ def by_opendataloader(
 
 
 def by_tcadp(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, pdf_cls=None, **kwargs):
+    # 腾讯云 ADP 解析器入口
     tcadp_parser = TCADPParser()
 
     if not tcadp_parser.check_installation():
@@ -258,6 +272,7 @@ def by_tcadp(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, la
 
 
 def by_paddleocr(
+    # PaddleOCR 解析器：优先使用租户 OCR 模型，失败时回退
     filename,
     binary=None,
     from_page=0,
@@ -302,6 +317,7 @@ def by_paddleocr(
 
 
 def by_somark(
+    # SoMark 解析器：调用 SoMark LLM 服务解析 PDF
     filename,
     binary=None,
     from_page=0,
@@ -356,6 +372,7 @@ def by_somark(
 
 
 def by_plaintext(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, callback=None, **kwargs):
+    # 纯文本或视觉 LLM 布局识别解析 PDF（PlainParser / VisionParser）
     layout_recognizer = (kwargs.get("layout_recognizer") or "").strip()
     if (not layout_recognizer) or (layout_recognizer == "Plain Text"):
         pdf_parser = PlainParser()
@@ -375,6 +392,7 @@ def by_plaintext(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER
     return sections, tables, pdf_parser
 
 
+# 各 layout_recognize 名称到 PDF 解析函数的映射
 PARSERS = {
     "deepdoc": by_deepdoc,
     "mineru": by_mineru,
@@ -388,6 +406,7 @@ PARSERS = {
 
 
 class Docx(DocxParser):
+    # Word 文档解析：段落、表格、图片与标题层级
     def __init__(self):
         pass
 
@@ -660,6 +679,7 @@ class Docx(DocxParser):
 
 
 class Pdf(PdfParser):
+    # PDF 深度解析：OCR、布局、表格提取与文本合并
     def __init__(self):
         super().__init__()
 
@@ -698,12 +718,14 @@ class Pdf(PdfParser):
             return [(b["text"], self._line_tag(b, zoomin)) for b in self.boxes], tbls
 
 
+# Markdown 远程图片抓取时的最大 HTTP 重定向次数（每跳均做 SSRF 校验）
 # Maximum number of HTTP redirects followed when fetching a remote image
 # referenced by a markdown document (each hop is SSRF-validated).
 MAX_IMAGE_REDIRECTS = 5
 
 
 class Markdown(MarkdownParser):
+    # Markdown 解析：超链接、远程/本地图片与表格转 HTML
     def md_to_html(self, sections):
         if not sections:
             return []
@@ -876,6 +898,7 @@ class Markdown(MarkdownParser):
 
 
 def load_from_xml_v2(baseURI, rels_item_xml):
+    # 修复 docx 关系 XML 中 NULL 引用导致的解压异常
     """
     Return |_SerializedRelationships| instance loaded with the
     relationships contained in *rels_item_xml*. Returns an empty
@@ -893,6 +916,8 @@ def load_from_xml_v2(baseURI, rels_item_xml):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
+    通用分块入口：支持 docx/pdf/excel/txt 等；按 delimiter 切分再按 Max token 合并。
+
     Supported file formats are docx, pdf, excel, txt.
     This method apply the naive ways to chunk files.
     Successive text will be sliced into pieces using 'delimiter'.
@@ -926,14 +951,14 @@ def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang=
     is_root = kwargs.get("is_root", True)
     embed_res = []
     if is_root:
-        # Only extract embedded files at the root call
+        # 仅在根调用时提取 docx/pdf 内嵌附件并递归分块
         embeds = []
         if binary is not None:
             embeds = extract_embed_file(binary)
         else:
             raise Exception("Embedding extraction from file path is not supported.")
 
-        # Recursively chunk each embedded file and collect results
+        # 递归分块每个内嵌文件并汇总结果
         for embed_filename, embed_bytes in embeds:
             try:
                 sub_res = chunk(embed_filename, binary=embed_bytes, lang=lang, callback=callback, is_root=False, **kwargs) or []

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+学术论文解析器：提取标题、作者、摘要，并按章节结构分块。
+"""
+
+
 
 import logging
 import copy
@@ -28,6 +33,7 @@ from common.parser_config_utils import normalize_layout_recognizer
 
 
 class Pdf(PdfParser):
+    # 论文专用 PDF 解析：双栏检测、摘要/引言识别与章节切分
     def __init__(self):
         self.model_species = ParserType.PAPER.value
         super().__init__()
@@ -57,7 +63,7 @@ class Pdf(PdfParser):
         self._filter_forpages()
         callback(0.75, "Text merged ({:.2f}s)".format(timer() - start))
 
-        # clean mess
+        # 清理版式：双栏排序与多余空白
         if column_width < self.page_images[0].size[0] / zoomin / 2:
             logging.debug("two_column................... {} {}".format(column_width, self.page_images[0].size[0] / zoomin / 2))
             self.boxes = self.sort_X_by_page(self.boxes, column_width / 2)
@@ -75,7 +81,7 @@ class Pdf(PdfParser):
                 "sections": [(b["text"] + self._line_tag(b, zoomin), b.get("layoutno", "")) for b in self.boxes if re.match(r"(text|title)", b.get("layoutno", "text"))],
                 "tables": tbls,
             }
-        # get title and authors
+        # 从前若干 layout box 提取标题与作者
         title = ""
         authors = []
         i = 0
@@ -98,7 +104,7 @@ class Pdf(PdfParser):
                         break
                     authors.append(candidate)
                 break
-        # get abstract
+        # 识别 abstract/摘要 段落作为独立摘要块
         abstr = ""
         i = 0
         while i + 1 < min(32, len(self.boxes)):
@@ -133,6 +139,8 @@ class Pdf(PdfParser):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
+    仅支持 PDF；摘要整段不切分，正文按 delimiter 与 token 上限分块。
+
     Only pdf is supported.
     The abstract of the paper will be sliced as an entire chunk, and will not be sliced partly.
     """

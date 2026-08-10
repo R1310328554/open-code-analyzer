@@ -15,6 +15,19 @@
 #
 
 """
+简历解析模块（对齐 SmartResume Pipeline 架构优化）。
+
+主要优化：
+    1. PDF 文本融合：元数据 + OCR 双路提取与融合
+    2. 版面感知重建：YOLOv10 版面分割 + 层级排序 + 行索引
+    3. 并行任务分解：基本信息 / 工作经历 / 教育 — 三路并行 LLM 抽取
+    4. 索引指针机制：LLM 返回行号区间而非生成全文，降低幻觉
+    5. 四阶段后处理：原文重提取、领域归一化、上下文去重、原文校验
+
+兼容性：chunk() 签名不变，兼容 task_executor FACTORY[ParserType.RESUME]。
+"""
+
+"""
 Resume parsing module (aligned with SmartResume Pipeline architecture optimization)
 
 Key optimizations (ref: arXiv:2510.09722):
@@ -69,6 +82,8 @@ _layout_recognizer = None
 
 def _get_layout_recognizer():
     """
+    获取 YOLOv10 版面检测单例（懒加载）。
+
     Get YOLOv10 layout detector singleton (lazy loading)
 
     Uses the existing deepdoc LayoutRecognizer based on layout.onnx model.
@@ -174,6 +189,7 @@ def _is_english(lang: str | None) -> bool:
 
 
 def get_field_map(lang: str) -> dict:
+    # 返回简历字段到中文/英文检索关键词的映射
     """Get the corresponding field mapping based on language parameter"""
     return FIELD_MAP_EN if _is_english(lang) else FIELD_MAP_ZH
 
@@ -191,6 +207,7 @@ from rag.prompts.template import load_prompt
 
 
 def _load_resume_prompt(name: str, lang: str) -> str:
+    # 加载指定语言的简历 LLM 提示词模板
     """Load the corresponding version of resume prompt template based on language parameter
 
     Args:
@@ -346,6 +363,7 @@ def _is_noise_char(obj: dict) -> bool:
 
 
 def _extract_metadata_text(binary: bytes) -> list[dict]:
+    # 从 PDF 元数据/文本层提取文本块
     """
     Extract text blocks from PDF metadata (with coordinate info)
 
@@ -500,6 +518,7 @@ def _extract_metadata_text(binary: bytes) -> list[dict]:
 
 
 def _extract_ocr_text(binary: bytes, meta_blocks: list[dict] | None = None) -> list[dict]:
+    # OCR 路径提取文本块，可与元数据块去重
     """
     Extract OCR text blocks using blackout strategy (with coordinate info).
 
@@ -569,6 +588,7 @@ def _extract_ocr_text(binary: bytes, meta_blocks: list[dict] | None = None) -> l
 
 
 def _fuse_text_blocks(meta_blocks: list[dict], ocr_blocks: list[dict]) -> list[dict]:
+    # 融合元数据与 OCR 文本块，按 Jaccard 去重
     """
     Fuse PDF metadata text and OCR text (blackout strategy version).
 
@@ -606,6 +626,7 @@ def _fuse_text_blocks(meta_blocks: list[dict], ocr_blocks: list[dict]) -> list[d
 
 
 def _layout_aware_reorder(blocks: list[dict]) -> list[dict]:
+    # 版面感知排序：按页、列、行重排文本块
     """
     Layout-aware hierarchical sorting (ref: SmartResume Hierarchical Re-ordering)
 
@@ -663,6 +684,7 @@ def _layout_aware_reorder(blocks: list[dict]) -> list[dict]:
 
 
 def _build_indexed_text(blocks: list[dict]) -> tuple[str, list[str], list[dict]]:
+    # 为 LLM 构建带行号的索引文本与行列表
     """
 
     Build indexed text with line numbers (ref: SmartResume Indexed Linearization)
@@ -858,6 +880,7 @@ def _fix_split_labels(lines: list[str]) -> list[str]:
 
 
 def extract_text(filename: str, binary: bytes) -> tuple[str, list[str], list[dict]]:
+    # 简历文本提取总入口：融合、排序、索引化
     """
     Extract text content based on file type (Pipeline Phase 1).
 
@@ -1035,6 +1058,7 @@ def _parse_json_with_repair(text: str) -> dict:
 
 
 def _call_llm(prompt: str, tenant_id, lang: str) -> Optional[dict]:
+    # 调用租户 LLM 并解析 JSON 响应（含 json_repair 容错）
     """
     Call LLM and parse JSON response (ref SmartResume's retry + fault-tolerance strategy).
 
@@ -1283,6 +1307,7 @@ def _extract_project_experience(indexed_text: str, tenant_id, lang: str) -> Opti
 
 
 def parse_with_llm(indexed_text: str, lines: list[str], tenant_id, lang: str) -> Optional[dict]:
+    # 并行 LLM 抽取基本信息、工作、教育与项目经历
     """
     Extract resume info using parallel task decomposition strategy (ref SmartResume Section 3.2).
 
@@ -1465,6 +1490,7 @@ def parse_with_llm(indexed_text: str, lines: list[str], tenant_id, lang: str) ->
 
 
 def parse_with_regex(text: str, lang: str = "Chinese") -> dict:
+    # 正则回退解析：LLM 不可用时的结构化字段提取
     """
     Parse resume text using regex (fallback strategy)
 
@@ -1790,6 +1816,7 @@ def parse_with_regex(text: str, lang: str = "Chinese") -> dict:
 
 
 def _postprocess_resume(resume: dict, lines: list[str], lang: str = "Chinese") -> dict:
+    # 四阶段后处理：原文重提取、归一化、去重与校验
     """
     Four-phase post-processing pipeline (ref: SmartResume Section 3.2.3)
 
@@ -2060,6 +2087,7 @@ def _postprocess_resume(resume: dict, lines: list[str], lang: str = "Chinese") -
 
 
 def parse_resume(filename: str, binary: bytes, tenant_id, lang: str = "Chinese") -> tuple[dict, list[str], list[dict]]:
+    # 简历解析主流程：文本提取 → LLM/正则 → 后处理
     """
     Resume parsing pipeline orchestration function
 
@@ -2102,6 +2130,7 @@ def parse_resume(filename: str, binary: bytes, tenant_id, lang: str = "Chinese")
 
 
 def _build_chunk_document(filename: str, resume: dict, lang: str = "Chinese") -> list[dict]:
+    # 将结构化简历字段映射为 Elasticsearch 文档分块
     """
     Build a list of document chunks from structured resume information
 
@@ -2478,6 +2507,8 @@ def _blackout_text_regions(image: "np.ndarray", meta_blocks: list[dict], page_id
 
 def chunk(filename, binary, tenant_id, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
+    简历解析入口（与 task_executor FACTORY 注册签名一致）。
+
     Resume parsing entry function (compatible with task_executor.py)
 
     This function is the entry point registered as FACTORY[ParserType.RESUME.value],
@@ -2506,11 +2537,11 @@ def chunk(filename, binary, tenant_id, from_page=0, to_page=MAXIMUM_PAGE_NUMBER,
         callback(0.1, "Starting resume parsing...")
         rag_tokenizer.tokenizer.set_language(lang)
 
-        # Parse resume
+        # 解析简历结构化字段
         resume, lines, line_positions = parse_resume(filename, binary, tenant_id, lang)
         callback(0.6, "Resume structured extraction complete")
 
-        # Build document chunks (with coordinate info)
+        # 构建带坐标信息的检索文档分块
         chunks = _build_chunk_document(filename, resume, lang)
         callback(0.9, f"Document chunk construction complete, {len(chunks)} chunks total")
 
@@ -2650,6 +2681,7 @@ def _resort_page_with_layout(page_blocks: list[dict], layout_regions: list[dict]
 
 
 def _layout_detect_reorder(blocks: list[dict], binary: bytes) -> list[dict]:
+    # YOLOv10 版面检测后按区域重排文本块
     if not blocks:
         return blocks
 

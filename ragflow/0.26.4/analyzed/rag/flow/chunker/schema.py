@@ -1,3 +1,7 @@
+"""
+分块器上下游 Pydantic 模型：TokenChunkerFromUpstream 输入/输出字段定义。
+"""
+
 #
 #  Copyright 2025 The InfiniFlow Authors. All Rights Reserved.
 #
@@ -18,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class TokenChunkerFromUpstream(BaseModel):
+    # 上游传入的文件、chunks 与多格式输出字段
     created_time: float | None = Field(default=None, alias="_created_time")
     elapsed_time: float | None = Field(default=None, alias="_elapsed_time")
 

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+rag.flow 包：自动发现并导出流水线组件类（chunker、parser 等）。
+"""
+
+
 
 import importlib
 import inspect
@@ -28,11 +33,13 @@ _pkg_name = __name__
 
 
 def _should_skip_module(mod_name: str) -> bool:
+    # 跳过 __init__、私有模块与 base 基类模块
     leaf = mod_name.rsplit(".", 1)[-1]
     return leaf in {"__init__"} or leaf.startswith("__") or leaf.startswith("_") or leaf.startswith("base")
 
 
 def _import_submodules() -> None:
+    # 递归 walk_packages 导入子模块
     for modinfo in pkgutil.walk_packages([str(_pkg_dir)], prefix=_pkg_name + "."):  # noqa: F821
         mod_name = modinfo.name
         if _should_skip_module(mod_name):  # noqa: F821
@@ -45,6 +52,7 @@ def _import_submodules() -> None:
 
 
 def _extract_classes_from_module(module: ModuleType) -> None:
+    # 将模块内公开类注册到 __all_classes 与 globals
     for name, obj in inspect.getmembers(module):
         if inspect.isclass(obj) and obj.__module__ == module.__name__ and not name.startswith("_"):
             __all_classes[name] = obj

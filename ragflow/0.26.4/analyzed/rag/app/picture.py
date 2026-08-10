@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+图片/视频解析器：OCR 或 CV LLM 描述，生成可检索文本分块。
+"""
+
+
 
 import asyncio
 import io
@@ -34,11 +39,12 @@ from rag.nlp import attach_media_context, rag_tokenizer, tokenize
 
 ocr = OCR()
 
-# Gemini supported MIME types
+# Gemini 支持的视频 MIME 扩展名列表
 VIDEO_EXTS = [".mp4", ".mov", ".avi", ".flv", ".mpeg", ".mpg", ".webm", ".wmv", ".3gp", ".3gpp", ".mkv"]
 
 
 def chunk(filename, binary, tenant_id, lang, callback=None, **kwargs):
+    # 图片 OCR + CV 描述，或视频多模态 LLM 摘要
     doc = {
         "docnm_kwd": filename,
         "title_tks": rag_tokenizer.tokenize(re.sub(r"\.[a-zA-Z]+$", "", filename)),
@@ -74,11 +80,11 @@ def chunk(filename, binary, tenant_id, lang, callback=None, **kwargs):
             }
         )
 
-        # Try PaddleOCR if configured as layout_recognize
+        # 若配置 PaddleOCR 则优先调用租户 OCR 模型
         txt = _try_paddleocr_image(filename, binary, tenant_id, parser_config, callback)
 
         if not txt:
-            # Fallback to local deepdoc OCR
+            # 回退到本地 deepdoc OCR
             bxs = ocr(np.array(img))
             txt = "\n".join([t[0] for _, t in bxs if t[0]])
 
@@ -107,7 +113,7 @@ def chunk(filename, binary, tenant_id, lang, callback=None, **kwargs):
 
 
 def _try_paddleocr_image(filename, binary, tenant_id, parser_config, callback):
-    """Try to parse image using PaddleOCR if configured. Returns text or empty string."""
+    """若 layout_recognize 为 PaddleOCR 则解析图片，成功返回文本否则空串。"""
     layout_recognize = parser_config.get("layout_recognize", "")
     if not layout_recognize:
         return ""
@@ -149,6 +155,8 @@ def _try_paddleocr_image(filename, binary, tenant_id, parser_config, callback):
 
 def vision_llm_chunk(binary, vision_model, prompt=None, callback=None):
     """
+    通过视觉语言模型将图片转为 Markdown 描述文本。
+
     A simple wrapper to process image to markdown texts via VLM.
 
     Returns:
@@ -160,7 +168,7 @@ def vision_llm_chunk(binary, vision_model, prompt=None, callback=None):
     txt = ""
 
     try:
-        # Skip tiny crops that fail provider image-size limits.
+        # 跳过过小裁剪图，避免触发模型最小尺寸限制
         if hasattr(img, "size"):
             min_side = 11
             if img.size[0] < min_side or img.size[1] < min_side:

@@ -13,6 +13,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+分块器子包入口：导出 TokenChunker 与 TokenChunkerParam。
+"""
+
 from rag.flow.chunker.token_chunker import TokenChunker, TokenChunkerParam
 
 __all__ = ["TokenChunker", "TokenChunkerParam"]

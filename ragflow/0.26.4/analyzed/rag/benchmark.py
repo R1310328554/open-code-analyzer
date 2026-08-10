@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+RAG 检索基准测试：在 MS MARCO/TriviaQA/MIRACL 等数据集上评测召回指标。
+"""
+
+
 import asyncio
 import json
 import os
@@ -38,6 +43,7 @@ max_docs = sys.maxsize
 
 
 class Benchmark:
+    # 知识库检索基准：建索引、embedding 与 ranx 评测
     def __init__(self, kb_id):
         self.kb_id = kb_id
         e, self.kb = KnowledgebaseService.get_by_id(kb_id)
@@ -50,7 +56,8 @@ class Benchmark:
         self.initialized_index = False
 
     def _get_retrieval(self, qrels):
-        # Need to wait for the ES and Infinity index to be ready
+        # 等待索引就绪后对每个 query 检索并构建 Run
+        # 等待 ES/Infinity 索引就绪后再检索
         time.sleep(20)
         run = defaultdict(dict)
         query_list = list(qrels.keys())
@@ -66,6 +73,7 @@ class Benchmark:
         return run
 
     def embedding(self, docs):
+        # 批量 embedding 并写入 q_*_vec 向量字段
         texts = [d["content_with_weight"] for d in docs]
         embeddings, _ = self.embd_mdl.encode(texts)
         assert len(docs) == len(embeddings)
@@ -77,6 +85,7 @@ class Benchmark:
         return docs, vector_size
 
     def init_index(self, vector_size: int):
+        # 创建或重建向量索引
         if self.initialized_index:
             return
         if settings.docStoreConn.index_exist(self.index_name, self.kb_id):
@@ -85,6 +94,7 @@ class Benchmark:
         self.initialized_index = True
 
     def ms_marco_index(self, file_path, index_name):
+        # 索引 MS MARCO parquet 语料并构建 qrels
         qrels = defaultdict(dict)
         texts = defaultdict(dict)
         docs_count = 0
@@ -121,6 +131,7 @@ class Benchmark:
         return qrels, texts
 
     def trivia_qa_index(self, file_path, index_name):
+        # 索引 TriviaQA parquet 语料
         qrels = defaultdict(dict)
         texts = defaultdict(dict)
         docs_count = 0
@@ -155,6 +166,7 @@ class Benchmark:
         return qrels, texts
 
     def miracl_index(self, file_path, corpus_path, index_name):
+        # 索引 MIRACL 多语言检索语料
         corpus_total = {}
         for corpus_file in os.listdir(corpus_path):
             tmp_data = pd.read_json(os.path.join(corpus_path, corpus_file), lines=True)

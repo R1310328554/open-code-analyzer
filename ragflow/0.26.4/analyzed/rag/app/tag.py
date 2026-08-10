@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+标签解析器：Excel/CSV 内容-标签对，每对形成一个带 tag_kwd 的分块。
+"""
+
+
 import json
 import re
 import csv
@@ -25,6 +30,7 @@ from common import settings
 
 
 def beAdoc(d, q, a, eng, row_num=-1):
+    # 构造标签文档块：content 为文本，tag_kwd 为逗号分隔标签
     d["content_with_weight"] = q
     d["content_ltks"] = rag_tokenizer.tokenize(q)
     d["content_sm_ltks"] = rag_tokenizer.fine_grained_tokenize(d["content_ltks"])
@@ -36,6 +42,8 @@ def beAdoc(d, q, a, eng, row_num=-1):
 
 def chunk(filename, binary=None, lang="Chinese", callback=None, **kwargs):
     """
+    支持 Excel/CSV：两列 content+tags，每行一对为一个 chunk。
+
     Excel and csv(txt) format files are supported.
     If the file is in Excel format, there should be 2 column content and tags without header.
     And content column is ahead of tags column.
@@ -116,6 +124,7 @@ def chunk(filename, binary=None, lang="Chinese", callback=None, **kwargs):
 
 
 def label_question(question, kbs):
+    # 根据关联标签知识库为问题预测 tag_kwd（检索增强打标）
     from api.db.services.knowledgebase_service import KnowledgebaseService
     from rag.graphrag.utils import get_tags_from_cache, set_tags_to_cache
 

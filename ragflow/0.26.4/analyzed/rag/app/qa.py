@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+问答对解析器：从 PDF/Docx/Excel/Markdown 提取 Q&A 并逐对分块。
+"""
+
+
 
 import logging
 import re
@@ -34,6 +39,7 @@ from common.float_utils import get_float
 
 
 class Excel(ExcelParser):
+    # Excel 问答表：两列 Q/A 逐行解析
     def __call__(self, fnm, binary=None, callback=None):
         if not binary:
             wb = load_workbook(fnm)
@@ -71,6 +77,7 @@ class Excel(ExcelParser):
 
 
 class Pdf(PdfParser):
+    # PDF 问答：按项目符号/编号识别问答对
     def __call__(self, filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, zoomin=3, callback=None):
         start = timer()
         callback(msg="OCR started")
@@ -173,6 +180,7 @@ class Pdf(PdfParser):
 
 
 class Docx(DocxParser):
+    # Word 问答：按标题层级堆栈识别问题与答案
     def __init__(self):
         pass
 
@@ -238,10 +246,12 @@ class Docx(DocxParser):
 
 
 def rmPrefix(txt):
+    # 去除问题/答案行首前缀（问题：/Q:/Answer: 等）
     return re.sub(r"^(问题|答案|回答|user|assistant|Q|A|Question|Answer|问|答)[\t:： ]+", "", txt.strip(), flags=re.IGNORECASE)
 
 
 def beAdocPdf(d, q, a, eng, image, poss):
+    # 构造 PDF 来源的问答文档块（含位置与图片）
     qprefix = "Question: " if eng else "问题："
     aprefix = "Answer: " if eng else "回答："
     d["content_with_weight"] = "\t".join([qprefix + rmPrefix(q), aprefix + rmPrefix(a)])
@@ -255,6 +265,7 @@ def beAdocPdf(d, q, a, eng, image, poss):
 
 
 def beAdocDocx(d, q, a, eng, image, row_num=-1):
+    # 构造 Docx 来源的问答文档块
     qprefix = "Question: " if eng else "问题："
     aprefix = "Answer: " if eng else "回答："
     d["content_with_weight"] = "\t".join([qprefix + rmPrefix(q), aprefix + rmPrefix(a)])
@@ -269,6 +280,7 @@ def beAdocDocx(d, q, a, eng, image, row_num=-1):
 
 
 def beAdoc(d, q, a, eng, row_num=-1):
+    # 构造通用问答文档块（Excel/CSV 等）
     qprefix = "Question: " if eng else "问题："
     aprefix = "Answer: " if eng else "回答："
     d["content_with_weight"] = "\t".join([qprefix + rmPrefix(q), aprefix + rmPrefix(a)])
@@ -280,6 +292,7 @@ def beAdoc(d, q, a, eng, row_num=-1):
 
 
 def mdQuestionLevel(s):
+    # 解析 Markdown 标题层级作为问题级别
     match = re.match(r"#*", s)
     return (len(match.group(0)), s.lstrip("#").lstrip()) if match else (0, s)
 

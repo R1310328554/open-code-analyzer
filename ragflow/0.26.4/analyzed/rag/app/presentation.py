@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+演示文稿解析器：PPT/PPTX/PDF 按页分块，每页保留缩略图。
+"""
+
+
 
 import copy
 import logging
@@ -33,29 +38,30 @@ from rag.utils.lazy_image import ensure_pil_image, is_image_like
 
 
 class Pdf(PdfParser):
+    # 演示 PDF 解析：按页重组文本、表格与图片
     def __init__(self):
         super().__init__()
 
     def __call__(self, filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, zoomin=3, callback=None, **kwargs):
-        # 1. OCR
+        # 1. OCR 识别
         callback(msg="OCR started")
         self.__images__(filename if not binary else binary, zoomin, from_page, to_page, callback)
 
-        # 2. Layout Analysis
+        # 2. 版面分析
         callback(msg="Layout Analysis")
         self._layouts_rec(zoomin)
 
-        # 3. Table Analysis
+        # 3. 表格检测
         callback(msg="Table Analysis")
         self._table_transformer_job(zoomin)
 
-        # 4. Text Merge
+        # 4. 文本块合并
         self._text_merge()
 
-        # 5. Extract Tables (Force HTML)
+        # 5. 提取表格/图（强制 HTML）
         tbls = self._extract_table_figure(True, zoomin, True, True)
 
-        # 6. Re-assemble Page Content
+        # 6. 按页重排文本与表格
         page_items = defaultdict(list)
 
         # (A) Add text
@@ -97,7 +103,7 @@ class Pdf(PdfParser):
 
             page_items[current_page_num].append({"top": top, "x0": left, "text": final_text, "type": "table_or_figure"})
 
-        # 7. Generate result
+        # 7. 生成 (页文本, 页图) 列表
         res = []
         for i in range(len(self.page_images)):
             current_pn = from_page + i + 1
@@ -116,6 +122,7 @@ class Pdf(PdfParser):
 
 
 class PlainPdf(PlainParser):
+    # 纯文本 PDF：pypdf 逐页 extract_text
     def __call__(self, filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, callback=None, **kwargs):
         self.pdf = pdf2_read(filename if not binary else BytesIO(binary))
         page_txt = []
@@ -127,6 +134,8 @@ class PlainPdf(PlainParser):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, parser_config=None, **kwargs):
     """
+    支持 pdf/ppt/pptx；每页一个 chunk 并保存页缩略图。
+
     The supported file formats are pdf, ppt, pptx.
     Every page will be treated as a chunk. And the thumbnail of every page will be stored.
     PPT file will be parsed by using this method automatically, setting-up for every PPT file is not necessary.

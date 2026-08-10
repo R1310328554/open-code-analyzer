@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+One 解析器：整文件作为单一分块，保持原始文本顺序。
+"""
+
+
 
 import logging
 from io import BytesIO
@@ -29,6 +34,7 @@ from common.parser_config_utils import normalize_layout_recognizer
 
 
 class Pdf(PdfParser):
+    # PDF 解析：OCR、布局、表格分析与文本合并
     def __call__(self, filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, zoomin=3, callback=None):
         from timeit import default_timer as timer
 
@@ -58,6 +64,8 @@ class Pdf(PdfParser):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
+    整文件单块分块：docx/pdf/excel/txt 等格式，全文合并为一个 chunk。
+
     Supported file formats are docx, pdf, excel, txt.
     One file forms a chunk which maintains original text order.
     """

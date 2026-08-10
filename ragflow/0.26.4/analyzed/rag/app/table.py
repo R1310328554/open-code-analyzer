@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+表格解析器：Excel/CSV 按行或按表头语义映射为结构化文档分块。
+"""
+
+
 
 import copy
 import csv
@@ -40,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 class Excel(ExcelParser):
+    # Excel 解析：多 sheet、合并单元格、嵌入图片与表头推断
     def __call__(self, fnm, binary=None, from_page=0, to_page=MAXIMUM_TASK_PAGE_NUMBER, callback=None, **kwargs):
         if not binary:
             wb = Excel._load_excel_to_workbook(fnm)
@@ -303,6 +309,7 @@ class Excel(ExcelParser):
 
 
 def trans_datatime(s):
+    # 将单元格值规范为日期时间字符串
     try:
         return datetime_parse(s.strip()).strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
@@ -310,6 +317,7 @@ def trans_datatime(s):
 
 
 def trans_bool(s):
+    # 将是/否、true/false 等值转为布尔
     if re.match(r"(true|yes|是|\*|✓|✔|☑|✅|√)$", str(s).strip(), flags=re.IGNORECASE):
         return "yes"
     if re.match(r"(false|no|否|⍻|×)$", str(s).strip(), flags=re.IGNORECASE):
@@ -318,6 +326,7 @@ def trans_bool(s):
 
 
 def column_data_type(arr):
+    # 推断列数据类型：文本/整数/浮点/日期/布尔
     arr = list(arr)
     counts = {"int": 0, "float": 0, "text": 0, "datetime": 0, "bool": 0}
     trans = {t: f for f, t in [(int, "int"), (float, "float"), (trans_datatime, "datetime"), (trans_bool, "bool"), (str, "text")]}
@@ -359,6 +368,8 @@ def column_data_type(arr):
 
 def chunk(filename, binary=None, from_page=0, to_page=MAXIMUM_TASK_PAGE_NUMBER, lang="Chinese", callback=None, **kwargs):
     """
+    支持 Excel/CSV；按表头映射字段或使用预置简历字段模板分块。
+
     Excel and csv(txt) format files are supported.
     For csv or txt file, the delimiter between columns is TAB.
     The first line must be column headers.
