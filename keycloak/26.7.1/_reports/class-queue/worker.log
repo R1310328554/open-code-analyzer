@@ -1528,3 +1528,18 @@
 2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/JpaAuthenticationSessionProvider.java wave52b cache config impl + JPA auth session
 2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/JpaAuthenticationSessionProviderFactory.java wave52b cache config impl + JPA auth session
 2026-08-10T08:01:13Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/RootAuthenticationSessionAdapter.java wave52b cache config impl + JPA auth session
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authentication/jpa/RootAuthenticationSessionEntity.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/entities/PermissionTicketEntity.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/entities/PolicyEntity.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/entities/ResourceAttributeEntity.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/entities/ResourceEntity.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/entities/ResourceServerEntity.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/entities/ScopeEntity.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/JPAAuthorizationStoreFactory.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/JPAPermissionTicketStore.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/JPAPolicyStore.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/JPAResourceServerStore.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/JPAResourceStore.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/JPAScopeStore.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/JPAStoreFactory.java wave53a JPA authz entities + stores
+2026-08-10T08:03:26Z DONE model/jpa/src/main/java/org/keycloak/authorization/jpa/store/PermissionTicketAdapter.java wave53a JPA authz entities + stores
