@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:19:37Z",
-  "files": [
-    "test-framework/core/src/main/java/org/keycloak/testframework/util/ProcessUtils.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/util/TmpDir.java",
-    "test-framework/db-edb/src/main/java/org/keycloak/testframework/database/EnterpriseDbDatabaseSupplier.java",
-    "test-framework/db-edb/src/main/java/org/keycloak/testframework/database/EnterpriseDbTestDatabase.java",
-    "test-framework/db-edb/src/main/java/org/keycloak/testframework/database/EnterpriseDbTestFrameworkExtension.java",
-    "test-framework/db-edb/src/main/java/org/keycloak/testframework/database/KeycloakEnterpriseDbContainer.java",
-    "test-framework/db-mariadb/src/main/java/org/keycloak/testframework/database/MariaDBDatabaseSupplier.java",
-    "test-framework/db-mariadb/src/main/java/org/keycloak/testframework/database/MariaDBTestDatabase.java",
-    "test-framework/db-mariadb/src/main/java/org/keycloak/testframework/database/MariaDBTestFrameworkExtension.java",
-    "test-framework/db-mssql/src/main/java/org/keycloak/testframework/database/MSSQLServerDatabaseSupplier.java",
-    "test-framework/db-mssql/src/main/java/org/keycloak/testframework/database/MSSQLServerTestDatabase.java",
-    "test-framework/db-mssql/src/main/java/org/keycloak/testframework/database/MSSQLServerTestFrameworkExtension.java",
-    "test-framework/db-mysql/src/main/java/org/keycloak/testframework/database/MySQLDatabaseSupplier.java",
-    "test-framework/db-mysql/src/main/java/org/keycloak/testframework/database/MySQLTestDatabase.java",
-    "test-framework/db-mysql/src/main/java/org/keycloak/testframework/database/MySQLTestFrameworkExtension.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 328,
-  "done": 5655
+  "done": 5670
 }
