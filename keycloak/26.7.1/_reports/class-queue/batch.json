@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:40:45Z",
-  "files": [
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/ExtensionsType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/IDPEntryType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/IDPListType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/LogoutRequestType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/ManageNameIDRequestType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/NameIDMappingRequestType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/NameIDMappingResponseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/NameIDPolicyType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/RequestAbstractType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/RequestedAuthnContextType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/ResponseType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/ScopingType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/StatusCodeType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/StatusDetailType.java",
-    "saml-core-api/src/main/java/org/keycloak/dom/saml/v2/protocol/StatusResponseType.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3388,
-  "done": 2595
+  "done": 2610
 }
