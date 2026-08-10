@@ -1513,3 +1513,18 @@
 2026-08-10T03:57:03Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/MemberLookup.java nacos wave50a [0:15] core auth + cluster member
 2026-08-10T03:57:03Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/MemberMetaDataConstants.java nacos wave50a [0:15] core auth + cluster member
 2026-08-10T03:57:03Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/MemberUtil.java nacos wave50a [0:15] core auth + cluster member
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/MembersChangeEvent.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/NacosMemberManager.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/ServerMemberManager.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/Task.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/health/AbstractModuleHealthChecker.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/health/ModuleHealthCheckerHolder.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/health/ReadinessResult.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/lookup/AbstractMemberLookup.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/lookup/AddressServerMemberLookup.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/lookup/FileConfigMemberLookup.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/lookup/LookupFactory.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/lookup/StandaloneMemberLookup.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/remote/ClusterRpcClientProxy.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/remote/MemberReportHandler.java nacos wave50b [15:30] core cluster manager/lookup/remote
+2026-08-10T03:57:25Z DONE core/src/main/java/com/alibaba/nacos/core/cluster/remote/request/AbstractClusterRequest.java nacos wave50b [15:30] core cluster manager/lookup/remote
