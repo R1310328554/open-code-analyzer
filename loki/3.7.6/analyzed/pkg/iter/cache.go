@@ -1,5 +1,7 @@
 package iter
 
+// cache 提供可重放的缓存迭代器：首次遍历底层 EntryIterator/SampleIterator 时写入内存缓存，Close 后可通过 Reset 再次迭代而无需重用底层迭代器。
+
 import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
@@ -10,6 +12,7 @@ type CacheEntryIterator interface {
 	Reset()
 }
 
+// cachedIterator 边迭代边缓存 entryWithLabels，底层耗尽后仅读缓存。
 // cachedIterator is an iterator that caches iteration to be replayed later on.
 type cachedIterator struct {
 	cache   []entryWithLabels
@@ -21,6 +24,7 @@ type cachedIterator struct {
 	iterErr  error
 }
 
+// NewCachedIterator 预分配 capacity 大小的缓存切片。
 // NewCachedIterator creates an iterator that cache iteration result and can be iterated again
 // after closing it without re-using the underlaying iterator `it`.
 func NewCachedIterator(it EntryIterator, capacity int) CacheEntryIterator {
@@ -40,6 +44,7 @@ func (it *cachedIterator) Wrapped() EntryIterator {
 	return it.wrapped
 }
 
+// consumeWrapped 从底层迭代器拉取下一条并追加到 cache，耗尽时捕获 closeErr/iterErr。
 func (it *cachedIterator) consumeWrapped() bool {
 	if it.Wrapped() == nil {
 		return false
@@ -101,6 +106,7 @@ func (it *cachedIterator) Close() error {
 	return it.closeErr
 }
 
+// CacheSampleIterator 为 SampleIterator 提供同样的缓存与重放能力。
 type CacheSampleIterator interface {
 	SampleIterator
 	Wrapped() SampleIterator
@@ -196,3 +202,4 @@ func (it *cachedSampleIterator) Close() error {
 	it.Reset()
 	return it.closeErr
 }
+// 缓存迭代器常用于需要多次扫描同一查询结果的场景，如分页与统计二次遍历。

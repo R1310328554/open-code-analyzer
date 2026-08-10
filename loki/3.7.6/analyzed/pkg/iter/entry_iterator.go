@@ -1,5 +1,7 @@
 package iter
 
+// entry_iterator 实现日志条目迭代器族：单流、多路归并、排序、时间过滤、反向、peek 与 gRPC 批流等组合模式。
+
 import (
 	"context"
 	"io"
@@ -20,6 +22,7 @@ type streamIterator struct {
 	stream logproto.Stream
 }
 
+// NewStreamIterator 在单条 logproto.Stream 上顺序遍历 Entries 切片。
 // NewStreamIterator iterates over entries in a stream.
 func NewStreamIterator(stream logproto.Stream) EntryIterator {
 	return &streamIterator{
@@ -53,6 +56,7 @@ func (i *streamIterator) Close() error {
 	return nil
 }
 
+// MergeEntryIterator 扩展 EntryIterator，提供 Peek/IsEmpty/Push 供 Tailer 增量合并。
 // MergeEntryIterator exposes additional fields that are used by the Tailer only.
 // Not safe for concurrent use!
 type MergeEntryIterator interface {
@@ -75,6 +79,7 @@ type mergeEntryIterator struct {
 	errs      []error
 }
 
+// NewMergeEntryIterator 用 loser tree 按时间归并多路迭代器并去重相同 timestamp+line+metadata。
 // NewMergeEntryIterator returns a new iterator which uses a looser tree to merge together entries for multiple iterators and deduplicate entries if any.
 // The iterator only order and merge entries across given `is` iterators, it does not merge entries within individual iterator.
 // This means using this iterator with a single iterator will result in the same result as the input iterator.
@@ -221,6 +226,7 @@ type entrySortIterator struct {
 	errs      []error
 }
 
+// NewSortEntryIterator 用 loser tree 跨迭代器排序，同 timestamp 按 streamHash 或标签序。
 // NewSortEntryIterator returns a new EntryIterator that sorts entries by timestamp (depending on the direction) the input iterators.
 // The iterator only order entries across given `is` iterators, it does not sort entries within individual iterator.
 // This means using this iterator with a single iterator will result in the same result as the input iterator.
@@ -252,6 +258,7 @@ func treeLess(direction logproto.Direction) (maxVal sortFields, less func(a, b s
 	return
 }
 
+// sortFields 为 loser tree 比较键：纳秒时间戳、标签字符串与 streamHash。
 type sortFields struct {
 	labels     string
 	timeNanos  int64
@@ -410,6 +417,7 @@ type nonOverlappingIterator struct {
 	curr      EntryIterator
 }
 
+// NewNonOverlappingIterator 顺序串联多个无时间重叠的 EntryIterator。
 // NewNonOverlappingIterator gives a chained iterator over a list of iterators.
 func NewNonOverlappingIterator(iterators []EntryIterator) EntryIterator {
 	return &nonOverlappingIterator{
@@ -475,6 +483,7 @@ type timeRangedIterator struct {
 	mint, maxt time.Time
 }
 
+// NewTimeRangedIterator 过滤 [mint, maxt) 区间，仅支持正向迭代。
 // NewTimeRangedIterator returns an iterator which filters entries by time range.
 // Note: Only works with iterators that go forwards.
 func NewTimeRangedIterator(it EntryIterator, mint, maxt time.Time) EntryIterator {
@@ -528,6 +537,7 @@ type reverseIterator struct {
 	limit  uint32
 }
 
+// NewReversedIter 预加载全部或前 N 条后逆序输出，可选 preload 应对超时查询。
 // NewReversedIter returns an iterator which loads all or up to N entries
 // of an existing iterator, and then iterates over them backward.
 // Preload entries when they are being queried with a timeout.
@@ -678,6 +688,7 @@ func (i *reverseEntryIterator) Close() error {
 	return nil
 }
 
+// ReadBatch 按 size 字节预算从迭代器收集条目，按 hash+labels 分组为 Streams。
 // ReadBatch reads a set of entries off an iterator.
 func ReadBatch(i EntryIterator, size uint32) (*logproto.QueryResponse, uint32, error) {
 	var (
@@ -722,6 +733,7 @@ type peekingEntryIterator struct {
 	next  *entryWithLabels
 }
 
+// PeekingEntryIterator 支持 Peek 预读而不推进游标，用于 merge/dedupe 逻辑。
 // PeekingEntryIterator is an entry iterator that can look ahead an entry
 // using `Peek` without advancing its cursor.
 type PeekingEntryIterator interface {
@@ -837,6 +849,7 @@ func (w *withCloseEntryIterator) Close() error {
 	return util.MultiError(w.errs)
 }
 
+// EntryIteratorWithClose 包装额外 closeFn，Close 时合并底层与自定义清理错误。
 func EntryIteratorWithClose(it EntryIterator, closeFn func() error) EntryIterator {
 	return &withCloseEntryIterator{
 		closeOnce:     sync.Once{},
@@ -844,3 +857,4 @@ func EntryIteratorWithClose(it EntryIterator, closeFn func() error) EntryIterato
 		EntryIterator: it,
 	}
 }
+// lessAscending/lessDescending 在 streamHash 缺失时回退到标签字典序，兼容前端分片合并。

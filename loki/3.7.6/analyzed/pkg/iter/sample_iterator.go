@@ -1,5 +1,7 @@
 package iter
 
+// sample_iterator 实现 metric sample 迭代器：堆归并、去重、排序、时间过滤、gRPC 批流与多 series 组合，镜像 entry_iterator 设计。
+
 import (
 	"container/heap"
 	"context"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// PeekingSampleIterator 允许预读当前 sample 而不消费，用于归并去重。
 // PeekingSampleIterator is a sample iterator that can peek sample without moving the current sample.
 type PeekingSampleIterator interface {
 	SampleIterator
@@ -112,6 +115,7 @@ func (it *peekingSampleIterator) Err() error {
 	return it.iter.Err()
 }
 
+// SampleIteratorHeap 实现 heap.Interface，按 timestamp 与 streamHash/标签排序。
 type SampleIteratorHeap struct {
 	its []SampleIterator
 }
@@ -164,6 +168,7 @@ type mergeSampleIterator struct {
 	errs   []error
 }
 
+// NewMergeSampleIterator 堆归并多路 sample 并按 Hash 去重，统计重复样本数。
 // NewMergeSampleIterator returns a new iterator which uses a heap to merge together samples for multiple iterators and deduplicate if any.
 // The iterator only order and merge entries across given `is` iterators, it does not merge entries within individual iterator.
 // This means using this iterator with a single iterator will result in the same result as the input iterator.
@@ -361,6 +366,7 @@ type sortSampleIterator struct {
 	errs []error
 }
 
+// NewSortSampleIterator 跨迭代器按时间升序堆排序，单路直接返回原迭代器。
 // NewSortSampleIterator returns a new SampleIterator that sorts samples by ascending timestamp the input iterators.
 // The iterator only order sample across given `is` iterators, it does not sort samples within individual iterator.
 // This means using this iterator with a single iterator will result in the same result as the input iterator.
@@ -470,6 +476,7 @@ type sampleQueryClientIterator struct {
 	curr   SampleIterator
 }
 
+// QuerySampleClient 抽象 Sample 查询 gRPC 流 Recv/Context/CloseSend。
 // QuerySampleClient is GRPC stream client with only method used by the SampleQueryClientIterator
 type QuerySampleClient interface {
 	Recv() (*logproto.SampleQueryResponse, error)
@@ -556,6 +563,7 @@ func (w *withCloseSampleIterator) Close() error {
 	return util.MultiError(w.errs)
 }
 
+// SampleIteratorWithClose 与 Entry 版本相同，Close 时执行附加清理回调。
 func SampleIteratorWithClose(it SampleIterator, closeFn func() error) SampleIterator {
 	return &withCloseSampleIterator{
 		closeOnce:      sync.Once{},
@@ -612,6 +620,7 @@ type nonOverlappingSampleIterator struct {
 	curr      SampleIterator
 }
 
+// NewNonOverlappingSampleIterator 顺序串联无重叠 SampleIterator。
 // NewNonOverlappingSampleIterator gives a chained iterator over a list of iterators.
 func NewNonOverlappingSampleIterator(iterators []SampleIterator) SampleIterator {
 	return &nonOverlappingSampleIterator{
@@ -715,6 +724,7 @@ func (i *timeRangedSampleIterator) Next() bool {
 	return ok
 }
 
+// ReadSampleBatch 按字节预算收集 sample 并按 hash+labels 分组为 Series。
 // ReadSampleBatch reads a set of entries off an iterator.
 func ReadSampleBatch(i SampleIterator, size uint32) (*logproto.SampleQueryResponse, uint32, error) {
 	var (
@@ -751,3 +761,4 @@ func ReadSampleBatch(i SampleIterator, size uint32) (*logproto.SampleQueryRespon
 	}
 	return &result, respSize, i.Err()
 }
+// mergeSampleIterator 的 pushBuffer 复用 slice 避免堆操作过程中的临时分配。

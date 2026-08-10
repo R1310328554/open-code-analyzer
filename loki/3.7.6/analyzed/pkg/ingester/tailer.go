@@ -1,5 +1,7 @@
 package ingester
 
+// tailer 实现实时日志 tail：匹配 LogQL 选择器，经 pipeline 过滤后通过 gRPC 流式推送给 querier 客户端。
+
 import (
 	"encoding/binary"
 	"hash/fnv"
@@ -24,6 +26,7 @@ const (
 	bufferSizeForTailStream   = 100
 )
 
+// TailServer 抽象 tail gRPC 连接：Send 推送响应，Context 用于感知客户端断开。
 type TailServer interface {
 	Send(*logproto.TailResponse) error
 	Context() context.Context
@@ -82,6 +85,7 @@ func newTailer(orgID string, expr syntax.LogSelectorExpr, conn TailServer, maxDr
 	}, nil
 }
 
+// loop 主循环从 sendChan 取已处理流并发送 TailResponse，附带 dropped streams 元数据。
 func (t *tailer) loop() {
 	var stream *logproto.Stream
 	var err error
@@ -119,6 +123,7 @@ func (t *tailer) loop() {
 	}
 }
 
+// receiveStreamsLoop 从 queue 消费原始流，经 pipeline 过滤后写入 sendChan。
 func (t *tailer) receiveStreamsLoop() {
 	defer t.close()
 	for {
@@ -148,6 +153,7 @@ func (t *tailer) receiveStreamsLoop() {
 	}
 }
 
+// send 非阻塞入队；队列满或连接阻塞超过 15 秒则丢弃并可能关闭 tailer。
 // send sends a stream to the tailer for processing and sending to the client.
 // It will drop the stream if the tailer is blocked or the queue is full.
 func (t *tailer) send(stream logproto.Stream, lbs labels.Labels) {
@@ -178,6 +184,7 @@ func (t *tailer) send(stream logproto.Stream, lbs labels.Labels) {
 	}
 }
 
+// processStream 对每条日志执行 pipeline，按解析后标签 hash 分组为多子流。
 func (t *tailer) processStream(stream logproto.Stream, lbs labels.Labels) []*logproto.Stream {
 	// Optimization: skip filtering entirely, if no filter is set
 	if log.IsNoopPipeline(t.pipeline) {
@@ -220,6 +227,7 @@ func (t *tailer) processStream(stream logproto.Stream, lbs labels.Labels) []*log
 	return streamsResult
 }
 
+// isMatching 判断标签是否满足 tail 请求的全部 matcher。
 // isMatching returns true if lbs matches all matchers.
 func isMatching(lbs labels.Labels, matchers []*labels.Matcher) bool {
 	for _, matcher := range matchers {
@@ -254,6 +262,7 @@ func (t *tailer) blockedSince() *time.Time {
 	return t.blockedAt
 }
 
+// dropStream 记录被丢弃流的时间范围与标签，供客户端感知 tail 背压。
 func (t *tailer) dropStream(stream logproto.Stream) {
 	if len(stream.Entries) == 0 {
 		return
@@ -298,6 +307,7 @@ func (t *tailer) getID() uint32 {
 	return t.id
 }
 
+// generateUniqueID 用 orgID+查询+纳秒时间戳生成 FNV32 唯一 tailer ID。
 // An id is useful in managing tailer instances
 func generateUniqueID(orgID, query string) uint32 {
 	uniqueID := fnv.New32()
@@ -310,3 +320,4 @@ func generateUniqueID(orgID, query string) uint32 {
 
 	return uniqueID.Sum32()
 }
+// tailer 故意不关闭 sendChan，避免并发 send 触发 close 后 panic。

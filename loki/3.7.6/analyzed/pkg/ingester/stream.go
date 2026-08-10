@@ -1,5 +1,7 @@
 package ingester
 
+// stream 表示 ingester 内的一条日志流：维护内存 chunk 链、接收 push 写入、执行速率限制与乱序校验，并支持 tail 与 WAL 回放。
+
 import (
 	"bytes"
 	"context"
@@ -32,6 +34,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// ErrEntriesExist 表示 WAL 回放时条目计数器已处理过该批次，应跳过重复写入。
 var ErrEntriesExist = errors.New("duplicate push - entries already exist")
 
 type line struct {
@@ -40,6 +43,7 @@ type line struct {
 	structuredMetadata pushtypes.LabelsAdapter
 }
 
+// stream 是 ingester 核心数据结构：按标签指纹索引，持有 chunk 链、tailer 集合与速率统计。
 type stream struct {
 	limiter *StreamRateLimiter
 	cfg     *Config
@@ -90,6 +94,7 @@ type stream struct {
 	policy         string
 }
 
+// chunkDesc 描述单个内存 chunk 的状态：是否已关闭/同步/刷盘及最后更新时间。
 type chunkDesc struct {
 	chunk   *chunkenc.MemChunk
 	closed  bool
@@ -146,6 +151,7 @@ func newStream(
 	}
 }
 
+// consumeChunk 在 ingester 间 chunk 迁移时手动注入 chunk（已弃用，仅保留兼容）。
 // consumeChunk manually adds a chunk to the stream that was received during
 // ingester chunk transfer.
 // Must hold chunkMtx
@@ -163,6 +169,7 @@ func (s *stream) consumeChunk(_ context.Context, chunk *logproto.Chunk) error {
 	return nil
 }
 
+// setChunks 在 checkpoint 恢复阶段用 wire 格式 chunk 列表替换当前内存 chunk。
 // setChunks is used during checkpoint recovery
 func (s *stream) setChunks(chunks []Chunk) (bytesAdded, entriesAdded int, err error) {
 	s.chunkMtx.Lock()
@@ -183,6 +190,7 @@ func (s *stream) NewChunk() *chunkenc.MemChunk {
 	return chunkenc.NewMemChunk(s.chunkFormat, s.cfg.parsedEncoding, s.chunkHeadBlockFormat, s.cfg.BlockSize, s.cfg.TargetChunkSize)
 }
 
+// Push 是写入入口：校验条目、限速、追加到 chunk、写 WAL 并推送给 tailer。
 func (s *stream) Push(
 	ctx context.Context,
 	entries []logproto.Entry,
@@ -210,6 +218,7 @@ func (s *stream) Push(
 		defer s.chunkMtx.Unlock()
 	}
 
+// WAL 回放模式下 counter 非零；若 counter 不大于 entryCt 则判定为重复条目。
 	isReplay := counter > 0
 	if isReplay && counter <= s.entryCt {
 		var byteCt int
@@ -294,6 +303,7 @@ func hasRateLimitErr(errs []entryWithError) bool {
 	return ok
 }
 
+// recordAndSendToTailers 将成功写入的条目追加到 WAL 记录并异步推送给活跃 tailer。
 func (s *stream) recordAndSendToTailers(record *wal.Record, entries []logproto.Entry) {
 	if len(entries) == 0 {
 		return
@@ -336,6 +346,7 @@ func (s *stream) recordAndSendToTailers(record *wal.Record, entries []logproto.E
 	}
 }
 
+// storeEntries 逐条追加到当前 chunk，必要时切分 chunk 并更新 entryCt 与 highestTs。
 func (s *stream) storeEntries(ctx context.Context, entries []logproto.Entry, usageTracker push.UsageTracker, format string) (int, []logproto.Entry, []entryWithError) {
 	sp := trace.SpanFromContext(ctx)
 	sp.AddEvent("stream started to store entries", trace.WithAttributes(
@@ -398,6 +409,7 @@ func (s *stream) handleLoggingOfDuplicateEntry(entry logproto.Entry) {
 
 }
 
+// validateEntries 过滤重复行、执行 per-entry 或整流限速，并校验乱序写入的有效窗口。
 func (s *stream) validateEntries(ctx context.Context, entries []logproto.Entry, isReplay, rateLimitWholeStream bool, usageTracker push.UsageTracker, format string) ([]logproto.Entry, []entryWithError) {
 
 	var (
@@ -438,6 +450,7 @@ func (s *stream) validateEntries(ctx context.Context, entries []logproto.Entry, 
 			continue
 		}
 
+// 乱序写入有效窗口 = 最高时间戳 - MaxChunkAge/2，超出则拒绝为 TooFarBehind。
 		// The validity window for unordered writes is the highest timestamp present minus 1/2 * max-chunk-age.
 		cutoff := highestTs.Add(-s.cfg.MaxChunkAge / 2)
 		if !isReplay && s.unorderedWrites && !highestTs.IsZero() && cutoff.After(entries[i].Timestamp) {
@@ -510,6 +523,7 @@ func (s *stream) reportMetrics(ctx context.Context, outOfOrderSamples, outOfOrde
 	}
 }
 
+// cutChunk 关闭当前 chunk 并分配新 chunk，同时记录每 chunk 样本数与 block 数指标。
 func (s *stream) cutChunk(ctx context.Context) *chunkDesc {
 	sp := trace.SpanFromContext(ctx)
 	sp.AddEvent("stream started to cut chunk")
@@ -536,6 +550,7 @@ func (s *stream) cutChunk(ctx context.Context) *chunkDesc {
 	return &s.chunks[len(s.chunks)-1]
 }
 
+// cutChunkForSynchronization 按 SyncPeriod 与指纹抖动对齐多 ingester 的 chunk 切分时刻。
 // Returns true, if chunk should be cut before adding new entry. This is done to make ingesters
 // cut the chunk for this stream at the same moment, so that new chunk will contain exactly the same entries.
 func (s *stream) cutChunkForSynchronization(entryTimestamp, latestTs time.Time, c *chunkDesc, synchronizePeriod time.Duration, minUtilization float64) bool {
@@ -576,6 +591,7 @@ func (s *stream) Bounds() (from, to time.Time) {
 	return from, to
 }
 
+// Iterator 合并各 chunk 的 EntryIterator；chunk 时间重叠时用排序合并，否则串联无重叠迭代器。
 // Returns an iterator.
 func (s *stream) Iterator(ctx context.Context, statsCtx *stats.Context, from, through time.Time, direction logproto.Direction, pipeline log.StreamPipeline) (iter.EntryIterator, error) {
 	s.chunkMtx.RLock()
@@ -623,6 +639,7 @@ func (s *stream) Iterator(ctx context.Context, statsCtx *stats.Context, from, th
 	return iter.NewSortEntryIterator(iterators, direction), nil
 }
 
+// SampleIterator 与 Iterator 类似，但返回 metric sample 迭代器供 LogQL 采样查询。
 // Returns an SampleIterator.
 func (s *stream) SampleIterator(ctx context.Context, statsCtx *stats.Context, from, through time.Time, extractors ...log.StreamSampleExtractor) (iter.SampleIterator, error) {
 	s.chunkMtx.RLock()
@@ -667,6 +684,7 @@ func (s *stream) addTailer(t *tailer) {
 	s.tailers[t.getID()] = t
 }
 
+// headBlockType 根据 chunk 格式与是否允许乱序写入选择有序或无序 head block 格式。
 func headBlockType(chunkfmt byte, unorderedWrites bool) chunkenc.HeadBlockFmt {
 	if unorderedWrites {
 		if chunkfmt >= chunkenc.ChunkFormatV3 {
@@ -689,3 +707,4 @@ func labelsEqual(a, b pushtypes.LabelsAdapter) bool {
 
 	return true
 }
+// stream 通过 entryCt 计数器在 WAL 回放时精确去重，逐步取代纯乱序错误检测机制。

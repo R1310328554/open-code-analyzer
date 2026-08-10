@@ -1,5 +1,7 @@
 package iter
 
+// categorizeLabelsIterator 从流标签中剥离 structured metadata 与 parsed 标签，使 StreamHash/Labels 反映基础流身份而非解析后的衍生标签。
+
 import (
 	"fmt"
 
@@ -16,6 +18,7 @@ type categorizeLabelsIterator struct {
 	currErr          error
 }
 
+// NewCategorizeLabelsIterator 构造装饰器，无额外元数据时直接透传底层标签。
 func NewCategorizeLabelsIterator(wrap EntryIterator) EntryIterator {
 	return &categorizeLabelsIterator{
 		EntryIterator: wrap,
@@ -34,6 +37,7 @@ func (c *categorizeLabelsIterator) Next() bool {
 		return true
 	}
 
+// 从 builder 删除 structured metadata 与 parsed 标签名，再 StableHash 得到分类后流 hash。
 	// We need to remove the structured metadata labels and parsed labels from the stream labels.
 	streamLabels := c.EntryIterator.Labels()
 	lbls, err := syntax.ParseLabels(streamLabels)
@@ -68,3 +72,4 @@ func (c *categorizeLabelsIterator) Labels() string {
 func (c *categorizeLabelsIterator) StreamHash() uint64 {
 	return c.currHash
 }
+// 分类标签迭代器保证 dedupe 与 merge 按原始流维度而非解析标签维度聚合。

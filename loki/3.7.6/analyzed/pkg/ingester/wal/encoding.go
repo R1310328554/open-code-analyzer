@@ -1,5 +1,7 @@
 package wal
 
+// wal 包定义 WAL/checkpoint 记录的二进制编解码：支持多版本 entries 格式（V1/V2 计数器/V3 结构化元数据）。
+
 import (
 	"errors"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/encoding"
 )
 
+// RecordType 标识 WAL 记录类型：series、entries 各版本或 checkpoint。
 // RecordType represents the type of the WAL/Checkpoint record.
 type RecordType byte
 
@@ -30,12 +33,14 @@ const (
 	WALRecordEntriesV3
 )
 
+// CurrentEntriesRec 指定当前写入的 entries 版本（V3 含 structured metadata）。
 // The current type of Entries that this distribution writes.
 // Loki can read in a backwards compatible manner, but will write the newest variant.
 // TODO: Change to WALRecordEntriesV3?
 const CurrentEntriesRec = WALRecordEntriesV3
 
 // Record is a struct combining the series and samples record.
+// Record 聚合 tenant、series 引用与 RefEntries；entryIndexMap 加速 ingestion 期 fingerprint 查找。
 type Record struct {
 	UserID string
 	Series []record.RefSeries
@@ -61,6 +66,7 @@ func (r *Record) Reset() {
 	r.entryIndexMap = make(map[uint64]int)
 }
 
+// AddEntries 按 fingerprint 合并条目到同一 RefEntries，并更新 replay 计数器。
 func (r *Record) AddEntries(fp uint64, counter int64, entries ...logproto.Entry) {
 	if idx, ok := r.entryIndexMap[fp]; ok {
 		r.RefEntries[idx].Entries = append(r.RefEntries[idx].Entries, entries...)
@@ -76,6 +82,7 @@ func (r *Record) AddEntries(fp uint64, counter int64, entries ...logproto.Entry)
 	})
 }
 
+// RefEntries 绑定 series ref、WAL 回放计数器与一批 logproto.Entry。
 type RefEntries struct {
 	Counter int64
 	Ref     chunks.HeadSeriesRef
@@ -96,6 +103,7 @@ func (r *Record) EncodeSeries(b []byte) []byte {
 	return encoded
 }
 
+// EncodeEntries 以首条时间戳为基准编码相对偏移，V3 额外序列化 structured metadata。
 func (r *Record) EncodeEntries(version RecordType, b []byte) []byte {
 	buf := encoding.EncWith(b)
 	buf.PutByte(byte(version))
@@ -148,6 +156,7 @@ outer:
 	return buf.Get()
 }
 
+// DecodeEntries 按版本解析 entries 块，V3 逐条读取 structured metadata 键值对。
 func DecodeEntries(b []byte, version RecordType, rec *Record) error {
 	if len(b) == 0 {
 		return nil
@@ -215,6 +224,7 @@ func DecodeEntries(b []byte, version RecordType, rec *Record) error {
 	return nil
 }
 
+// DecodeRecord 读取记录类型头，分派到 series 或 entries 解码路径。
 func DecodeRecord(b []byte, walRec *Record) (err error) {
 	var (
 		userID  string
@@ -249,3 +259,4 @@ func DecodeRecord(b []byte, walRec *Record) (err error) {
 	walRec.Series = rSeries
 	return nil
 }
+// 时间戳差分编码显著压缩 WAL 条目体积，counter 字段支持无序写入场景下的精确回放去重。

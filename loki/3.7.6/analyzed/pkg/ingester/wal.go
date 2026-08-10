@@ -1,5 +1,7 @@
 package ingester
 
+// WAL 模块封装 ingester 预写日志：基于 Prometheus TSDB wlog，支持 checkpoint、磁盘满节流与 shutdown 刷盘配置。
+
 import (
 	"flag"
 	"fmt"
@@ -27,6 +29,7 @@ var (
 const walSegmentSize = wlog.DefaultSegmentSize * 4
 const defaultCeiling = 4 << 30 // 4GB
 
+// WALConfig 控制 WAL 目录、checkpoint 间隔、回放内存上限与磁盘满阈值。
 type WALConfig struct {
 	Enabled             bool             `yaml:"enabled"`
 	Dir                 string           `yaml:"dir"`
@@ -59,6 +62,7 @@ func (cfg *WALConfig) RegisterFlags(f *flag.FlagSet) {
 	f.Var(&cfg.ReplayMemoryCeiling, "ingester.wal-replay-memory-ceiling", "Maximum memory size the WAL may use during replay. After hitting this, it will flush data to storage before continuing. A unit suffix (KB, MB, GB) may be applied.")
 }
 
+// WAL 接口抽象真实 WAL 与 noopWAL，便于禁用 WAL 时零开销运行。
 // WAL interface allows us to have a no-op WAL when the WAL is disabled.
 type WAL interface {
 	Start()
@@ -77,6 +81,7 @@ func (noopWAL) Log(*wal.Record) error { return nil }
 func (noopWAL) Stop() error           { return nil }
 func (noopWAL) IsDiskThrottled() bool { return false }
 
+// walWrapper 持有 TSDB wlog 实例、checkpoint 协程与磁盘使用率监控状态。
 type walWrapper struct {
 	cfg        WALConfig
 	wal        *wlog.WL
@@ -88,6 +93,7 @@ type walWrapper struct {
 	diskThrottled atomic.Bool
 }
 
+// newWAL 在 Enabled=false 时返回 noopWAL，否则创建 4 倍默认段大小的 wlog。
 // newWAL creates a WAL object. If the WAL is disabled, then the returned WAL is a no-op WAL.
 func newWAL(cfg WALConfig, registerer prometheus.Registerer, metrics *ingesterMetrics, seriesIter SeriesIter) (WAL, error) {
 	if !cfg.Enabled {
@@ -115,6 +121,7 @@ func (w *walWrapper) Start() {
 	go w.run()
 }
 
+// Log 先编码 series 再编码 entries 写入 WAL，使用 recordPool 复用缓冲区。
 func (w *walWrapper) Log(record *wal.Record) error {
 	if record == nil || (len(record.Series) == 0 && len(record.RefEntries) == 0) {
 		return nil
@@ -169,6 +176,7 @@ func (w *walWrapper) checkpointWriter() *WALCheckpointWriter {
 	}
 }
 
+// run 启动磁盘监控（若启用）与 Checkpointer 定时 checkpoint 循环。
 func (w *walWrapper) run() {
 	level.Info(util_log.Logger).Log("msg", "started", "component", "wal")
 	defer w.wait.Done()
@@ -190,6 +198,7 @@ func (w *walWrapper) run() {
 
 }
 
+// monitorDisk 每 10 秒检查 WAL 目录磁盘占用，超阈值则设置 diskThrottled 并告警。
 // monitorDisk periodically checks disk usage and sets the throttle flag
 func (w *walWrapper) monitorDisk() {
 	defer w.wait.Done()
@@ -237,3 +246,4 @@ func (w *walWrapper) monitorDisk() {
 		}
 	}
 }
+// recordPool 全局复用 wal.Record 与编码字节切片，降低高频 push 路径分配压力。
