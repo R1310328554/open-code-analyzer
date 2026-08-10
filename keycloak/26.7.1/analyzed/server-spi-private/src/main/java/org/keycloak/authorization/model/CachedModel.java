@@ -17,6 +17,8 @@
 package org.keycloak.authorization.model;
 
 /**
+ * 缓存型授权模型需实现的接口，支持失效与获取可写委托。
+ *
  * Cached authorization model classes will implement this interface.
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -24,6 +26,8 @@ package org.keycloak.authorization.model;
  */
 public interface CachedModel<Model> {
     /**
+     * 使缓存失效并返回实际数据提供者的可写委托对象。
+     *
      * Invalidates the cache for this model and returns a delegate that represents the actual data provider
      *
      * @return
@@ -31,12 +35,16 @@ public interface CachedModel<Model> {
     Model getDelegateForUpdate();
 
     /**
+     * 使本模型的缓存失效。
+     *
      * Invalidate the cache for this model
      *
      */
     void invalidate();
 
     /**
+     * 返回模型从数据库加载时的时间戳。
+     *
      * When was the model was loaded from database.
      *
      * @return

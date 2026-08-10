@@ -35,6 +35,8 @@ import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 import org.keycloak.representations.idm.authorization.Permission;
 
 /**
+ * 迭代式权限评估器：按序对给定 {@link ResourcePermission} 集合执行策略评估。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 class IterablePermissionEvaluator implements PermissionEvaluator {
@@ -57,6 +59,7 @@ class IterablePermissionEvaluator implements PermissionEvaluator {
         this(permissions, null, executionContext, authorizationProvider);
     }
 
+    /** 只读模式下逐条评估权限并写入决策结果。 */
     @Override
     public Decision evaluate(Decision decision) {
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();
@@ -82,16 +85,19 @@ class IterablePermissionEvaluator implements PermissionEvaluator {
         return decision;
     }
 
+    /** 返回待评估权限迭代器。 */
     protected Iterator<ResourcePermission> getPermissions() {
         return this.permissions;
     }
 
+    /** 评估并返回 {@link Permission} 结果集合。 */
     @Override
     public Collection<Permission> evaluate(ResourceServer resourceServer, AuthorizationRequest request) {
         DecisionPermissionCollector decision = getDecision(resourceServer, request, DecisionPermissionCollector.class);
         return decision.results();
     }
 
+    /** 评估并返回指定类型的决策收集器。 */
     @Override
     public <D extends Decision<?>> D getDecision(ResourceServer resourceServer, AuthorizationRequest request, Class<D> decisionType) {
         DecisionPermissionCollector decision = new DecisionPermissionCollector(authorizationProvider, resourceServer, request);

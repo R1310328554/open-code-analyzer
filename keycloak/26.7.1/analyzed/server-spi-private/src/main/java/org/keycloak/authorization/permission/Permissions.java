@@ -42,14 +42,19 @@ import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 import org.keycloak.representations.idm.authorization.AuthorizationRequest.Metadata;
 
 /**
+ * 权限构建工具类：从资源、范围、UMA 权限票等来源生成 {@link ResourcePermission}。
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class Permissions {
+    /** 为单个资源与范围创建 {@link ResourcePermission}。 */
     public static ResourcePermission permission(ResourceServer server, Resource resource, Scope scope) {
        return new ResourcePermission(resource, new ArrayList<>(Arrays.asList(scope)), server);
     }
 
     /**
+     * 枚举指定资源服务器与身份下的全部资源权限，通过 evaluator 回调逐条产出。
+     *
      * Returns a list of permissions for all resources and scopes that belong to the given <code>resourceServer</code> and
      * <code>identity</code>.
      *
@@ -72,16 +77,16 @@ public final class Permissions {
             limit = new AtomicLong(Long.MAX_VALUE);
         }
 
-        // obtain all resources where owner is the resource server
+        // 获取属主为资源服务器的全部资源
         resourceStore.findByOwner(resourceServer, resourceServer.getClientId(), resource -> {
             if (limit.decrementAndGet() >= 0) {
                 evaluator.accept(createResourcePermissions(resource, resourceServer, resource.getScopes(), authorization, request));
             }
         });
 
-        // resource server isn't current user
+        // 资源服务器客户端不是当前用户时
         if (!Objects.equals(resourceServer.getClientId(), identity.getId())) {
-            // obtain all resources where owner is the current user
+            // 获取属主为当前用户的全部资源
             resourceStore.findByOwner(resourceServer, identity.getId(), resource -> {
                 if (limit.decrementAndGet() >= 0) {
                     evaluator.accept(createResourcePermissions(resource, resourceServer, resource.getScopes(), authorization, request));
@@ -89,7 +94,7 @@ public final class Permissions {
             });
         }
 
-        // obtain all resources granted to the user via permission tickets (uma)
+        // 获取通过 UMA 权限票授予用户的资源
         List<PermissionTicket> tickets = storeFactory.getPermissionTicketStore().findGranted(resourceServer, identity.getId());
 
         if (!tickets.isEmpty()) {
@@ -118,6 +123,9 @@ public final class Permissions {
         }
     }
 
+    /**
+     * 根据资源与请求范围创建 {@link ResourcePermission}。
+     */
     public static ResourcePermission createResourcePermissions(Resource resource,
             ResourceServer resourceServer, Collection<Scope> requestedScopes,
             AuthorizationProvider authorization, AuthorizationRequest request) {
@@ -125,6 +133,7 @@ public final class Permissions {
         return new ResourcePermission(resource, scopes, resourceServer, request.getClaims());
     }
 
+    /** 带资源类型创建 {@link ResourcePermission}。 */
     public static ResourcePermission createResourcePermissions(String resourceType, Resource resource,
                                                                ResourceServer resourceServer, Collection<Scope> requestedScopes,
                                                                AuthorizationProvider authorization, AuthorizationRequest request) {
@@ -132,6 +141,7 @@ public final class Permissions {
         return new ResourcePermission(resourceType, resource, scopes, resourceServer, request.getClaims());
     }
     
+    /** 解析资源的有效范围集合（含类型继承逻辑）。 */
     public static Set<Scope> resolveScopes(Resource resource, ResourceServer resourceServer,
             Collection<Scope> requestedScopes, AuthorizationProvider authorization) {
         if (requestedScopes.isEmpty()) {
@@ -154,7 +164,7 @@ public final class Permissions {
 
         Set<Scope> scopes = new LinkedHashSet<>(defaultScopes);
 
-        // check if there is a typed resource whose scopes are inherited by the resource being requested. In this case, we assume that parent resource
+        // 检查是否存在同类型父资源，其子资源可继承其范围
         // is owned by the resource server itself
         StoreFactory storeFactory = authorization.getStoreFactory();
         ResourceStore resourceStore = storeFactory.getResourceStore();

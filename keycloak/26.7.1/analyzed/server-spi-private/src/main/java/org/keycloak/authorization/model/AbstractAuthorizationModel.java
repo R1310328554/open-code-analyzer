@@ -20,15 +20,20 @@ import java.util.Objects;
 
 import org.keycloak.authorization.store.StoreFactory;
 
+/**
+ * 授权模型抽象基类，提供存储工厂引用与只读校验。
+ */
 public abstract class AbstractAuthorizationModel {
 
     protected final StoreFactory storeFactory;
 
+    /** 构造模型，要求非空 {@link StoreFactory}。 */
     public AbstractAuthorizationModel(StoreFactory storeFactory) {
         Objects.requireNonNull(storeFactory, "storeFactory");
         this.storeFactory = storeFactory;
     }
 
+    /** 若存储工厂处于只读模式则抛出 {@link IllegalStateException}。 */
     protected void throwExceptionIfReadonly() {
         if (storeFactory.isReadOnly()) {
             throw new IllegalStateException("Instance marked as read-only");

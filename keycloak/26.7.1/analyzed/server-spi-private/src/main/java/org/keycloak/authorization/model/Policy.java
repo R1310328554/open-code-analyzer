@@ -27,12 +27,15 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
 
 /**
+ * 授权策略模型，包含类型、决策策略、逻辑、配置及关联资源/范围。
+ *
  * Represents an authorization policy and all the configuration associated with it.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface Policy {
 
+    /** 策略查询过滤选项。 */
     enum FilterOption {
         ID("id"),
         PERMISSION("permission"),
@@ -56,9 +59,12 @@ public interface Policy {
         }
     }
     
+    /** 策略配置项分隔符。 */
     public static final String CONFIG_SEPARATOR = "##";
 
     /**
+     * 返回本实例的唯一标识。
+     *
      * Returns the unique identifier for this instance.
      *
      * @return the unique identifier for this instance
@@ -66,6 +72,8 @@ public interface Policy {
     String getId();
 
     /**
+     * 返回策略类型。
+     *
      * Returns the type of this policy.
      *
      * @return the type of this policy
@@ -73,6 +81,8 @@ public interface Policy {
     String getType();
 
     /**
+     * 返回本策略的 {@link DecisionStrategy}。
+     *
      * Returns the {@link DecisionStrategy} for this policy.
      *
      * @return the decision strategy defined for this policy
@@ -80,6 +90,8 @@ public interface Policy {
     DecisionStrategy getDecisionStrategy();
 
     /**
+     * 设置本策略的决策策略。
+     *
      * Sets the {DecisionStrategy} for this policy.
      *
      * @param decisionStrategy for this policy
@@ -87,6 +99,8 @@ public interface Policy {
     void setDecisionStrategy(DecisionStrategy decisionStrategy);
 
     /**
+     * 返回本策略的 {@link Logic}。
+     *
      * Returns the {@link Logic} for this policy.
      *
      * @return the decision strategy defined for this policy
@@ -94,6 +108,8 @@ public interface Policy {
     Logic getLogic();
 
     /**
+     * 设置本策略的逻辑运算方式。
+     *
      * Sets the {Logic} for this policy.
      *
      * @param logic for this policy
@@ -101,6 +117,8 @@ public interface Policy {
     void setLogic(Logic logic);
 
     /**
+     * 返回策略附加配置的键值映射。
+     *
      * Returns a {@link Map} holding string-based key/value pairs representing any additional configuration for this policy.
      *
      * @return a unmodifiable map with any additional configuration defined for this policy.
@@ -109,6 +127,8 @@ public interface Policy {
 
 
     /**
+     * 设置策略附加配置。
+     *
      * Sets a {@link Map} with string-based key/value pairs representing any additional configuration for this policy.
      *
      * @param config a map with any additional configuration for this policy.
@@ -119,6 +139,8 @@ public interface Policy {
     void putConfig(String name, String value);
 
     /**
+     * 返回策略名称。
+     *
      * Returns the name of this policy.
      *
      * @return the name of this policy
@@ -126,6 +148,8 @@ public interface Policy {
     String getName();
 
     /**
+     * 设置策略唯一名称。
+     *
      * Sets an unique name to this policy.
      *
      * @param name an unique name
@@ -133,6 +157,8 @@ public interface Policy {
     void setName(String name);
 
     /**
+     * 返回策略描述。
+     *
      * Returns the description of this policy.
      *
      * @return a description or null of there is no description
@@ -140,6 +166,8 @@ public interface Policy {
     String getDescription();
 
     /**
+     * 设置策略描述。
+     *
      * Sets the description for this policy.
      *
      * @param description a description
@@ -147,6 +175,8 @@ public interface Policy {
     void setDescription(String description);
 
     /**
+     * 返回所属 {@link ResourceServer}。
+     *
      * Returns the {@link ResourceServer} where this policy belongs to.
      *
      * @return a resource server
@@ -154,6 +184,8 @@ public interface Policy {
      ResourceServer getResourceServer();
 
     /**
+     * 返回关联子策略，用于本策略生效时的授权决策评估。
+     *
      * Returns the {@link Policy} instances associated with this policy and used to evaluate authorization decisions when
      * this policy applies.
      *
@@ -162,6 +194,8 @@ public interface Policy {
     Set<Policy> getAssociatedPolicies();
 
     /**
+     * 返回本策略适用的 {@link Resource} 集合。
+     *
      * Returns the {@link Resource} instances where this policy applies.
      *
      * @return a set with all resource instances where this policy applies. Or an empty set if there is no resource associated with this policy
@@ -169,6 +203,8 @@ public interface Policy {
     Set<Resource> getResources();
 
     /**
+     * 返回本策略适用的资源名称集合。
+     *
      * Returns the name of the {@link Resource} instances where this policy applies.
      *
      * @return a set with all names of resource instances where this policy applies. Or an empty set if there is no resource associated with this policy
@@ -178,6 +214,8 @@ public interface Policy {
     }
 
     /**
+     * 返回本策略适用的 {@link Scope} 集合。
+     *
      * Returns the {@link Scope} instances where this policy applies.
      *
      * @return a set with all scope instances where this policy applies. Or an empty set if there is no scope associated with this policy

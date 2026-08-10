@@ -19,6 +19,8 @@
 package org.keycloak.authorization.model;
 
 /**
+ * 授权范围模型，定义可对资源执行的操作或特定访问上下文。
+ *
  * Represents a scope, which is usually associated with one or more resources in order to define the actions that can be performed
  * or a specific access context.
  *
@@ -26,6 +28,7 @@ package org.keycloak.authorization.model;
  */
 public interface Scope {
 
+    /** 范围查询过滤选项。 */
     public static enum FilterOption {
         ID("id"),
         NAME("name");
@@ -42,6 +45,8 @@ public interface Scope {
     }
 
     /**
+     * 返回本实例的唯一标识。
+     *
      * Returns the unique identifier for this instance.
      *
      * @return the unique identifier for this instance
@@ -49,6 +54,8 @@ public interface Scope {
     String getId();
 
     /**
+     * 返回范围名称。
+     *
      * Returns the name of this scope.
      *
      * @return the name of this scope
@@ -56,6 +63,8 @@ public interface Scope {
     String getName();
 
     /**
+     * 设置范围唯一名称。
+     *
      * Sets a name for this scope. The name must be unique.
      *
      * @param name the name of this scope
@@ -63,6 +72,8 @@ public interface Scope {
     void setName(String name);
 
     /**
+     * 返回面向终端用户的友好名称；未定义时返回 {@link #getName()}。
+     *
      * Returns the end user friendly name for this scope. If not defined, value for {@link #getName()} is returned.
      *
      * @return the friendly name for this scope
@@ -70,6 +81,8 @@ public interface Scope {
     String getDisplayName();
 
     /**
+     * 设置面向终端用户的友好名称。
+     *
      * Sets an end user friendly name for this scope.
      *
      * @param name the name of this scope
@@ -77,6 +90,8 @@ public interface Scope {
     void setDisplayName(String name);
 
     /**
+     * 返回范围图标 URI。
+     *
      * Returns an icon {@link java.net.URI} for this scope.
      *
      * @return a uri for an icon
@@ -84,6 +99,8 @@ public interface Scope {
     String getIconUri();
 
     /**
+     * 设置范围图标 URI。
+     *
      * Sets an icon {@link java.net.URI} for this scope.
      *
      * @return a uri for an icon
@@ -91,6 +108,8 @@ public interface Scope {
     void setIconUri(String iconUri);
 
     /**
+     * 返回所属 {@link ResourceServer}。
+     *
      * Returns the {@link ResourceServer} instance to where this scope belongs to.
      *
      * @return

@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * {@link Resource} 包装器：可基于内存构造临时资源，或委托已有持久化资源。
+ * <p>写操作均为空实现，适用于授权评估中的临时资源表示。</p>
+ */
 public class ResourceWrapper implements Resource {
 
     private final Resource resource;
@@ -30,10 +34,12 @@ public class ResourceWrapper implements Resource {
     private final Set<Scope> scopes;
     private final String id;
 
+    /** 按名称与范围构造临时资源（无持久化 ID）。 */
     public ResourceWrapper(String name, Set<Scope> scopes, ResourceServer resourceServer) {
         this(null, name, scopes, resourceServer);
     }
 
+    /** 按 ID、名称与范围构造临时或委托资源。 */
     public ResourceWrapper(String id, String name, Set<Scope> scopes, ResourceServer resourceServer) {
         this.id = id;
         this.name = name;
@@ -42,11 +48,13 @@ public class ResourceWrapper implements Resource {
         this.resource = null;
     }
 
+    /** 优先返回委托资源 ID，否则返回构造时指定的 ID。 */
     @Override
     public String getId() {
         return Optional.ofNullable(resource).map(Resource::getId).orElse(id);
     }
 
+    /** 优先返回委托资源名称，否则返回构造时指定的名称。 */
     @Override
     public String getName() {
         return Optional.ofNullable(resource).map(Resource::getName).orElse(name);
@@ -97,11 +105,13 @@ public class ResourceWrapper implements Resource {
     public void setIconUri(String iconUri) {
     }
 
+    /** 返回关联的资源服务器。 */
     @Override
     public ResourceServer getResourceServer() {
         return resourceServer;
     }
 
+    /** 优先返回委托资源属主，否则返回资源服务器 ID。 */
     @Override
     public String getOwner() {
         return Optional.ofNullable(resource).map(Resource::getOwner).orElse(resourceServer.getId());

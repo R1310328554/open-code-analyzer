@@ -25,6 +25,9 @@ import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 import org.keycloak.representations.idm.authorization.Permission;
 
 /**
+ * 权限评估器 SPI：作为 {@link org.keycloak.authorization.permission.ResourcePermission} 来源，
+ * 在 {@link org.keycloak.authorization.policy.evaluation.EvaluationContext} 下驱动策略评估。
+ *
  * An {@link PermissionEvaluator} represents a source of {@link org.keycloak.authorization.permission.ResourcePermission}, responsible for emitting these permissions
  * to a consumer in order to evaluate the authorization policies based on a {@link org.keycloak.authorization.policy.evaluation.EvaluationContext}.
  *
@@ -32,7 +35,10 @@ import org.keycloak.representations.idm.authorization.Permission;
  */
 public interface PermissionEvaluator {
 
+    /** 对给定决策对象执行评估。 */
     <D extends Decision> D evaluate(D decision);
+    /** 评估并返回权限结果集合。 */
     Collection<Permission> evaluate(ResourceServer resourceServer, AuthorizationRequest request);
+    /** 评估并返回指定类型的决策对象。 */
     <D extends Decision<?>> D getDecision(ResourceServer resourceServer, AuthorizationRequest request, Class<D> decisionType);
 }

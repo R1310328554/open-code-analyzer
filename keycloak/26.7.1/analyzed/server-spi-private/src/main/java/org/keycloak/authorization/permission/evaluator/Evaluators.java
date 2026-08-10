@@ -27,6 +27,8 @@ import org.keycloak.authorization.policy.evaluation.EvaluationContext;
 import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 
 /**
+ * {@link PermissionEvaluator} 工厂，按权限集合或开放请求创建不同评估器。
+ *
  * A factory for the different {@link PermissionEvaluator} implementations.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -35,18 +37,22 @@ public final class Evaluators {
 
     private final AuthorizationProvider authorizationProvider;
 
+    /** 构造评估器工厂。 */
     public Evaluators(AuthorizationProvider authorizationProvider) {
         this.authorizationProvider = authorizationProvider;
     }
 
+    /** 基于给定权限集合创建迭代式评估器。 */
     public PermissionEvaluator from(Collection<ResourcePermission> permissions, EvaluationContext evaluationContext) {
         return new IterablePermissionEvaluator(permissions.iterator(), evaluationContext, authorizationProvider);
     }
 
+    /** 基于权限集合与资源服务器创建迭代式评估器。 */
     public PermissionEvaluator from(Collection<ResourcePermission> permissions, ResourceServer resourceServer, EvaluationContext evaluationContext) {
         return new IterablePermissionEvaluator(permissions.iterator(), resourceServer, evaluationContext, authorizationProvider);
     }
 
+    /** 创建无界评估器，枚举资源服务器下全部权限进行评估。 */
     public PermissionEvaluator from(EvaluationContext evaluationContext, ResourceServer resourceServer, AuthorizationRequest request) {
         return new UnboundedPermissionEvaluator(evaluationContext, authorizationProvider, resourceServer, request);
     }

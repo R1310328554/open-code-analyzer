@@ -32,6 +32,8 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
 
 /**
+ * 资源权限：表示对特定资源（及可选范围）的访问许可。
+ *
  * Represents a permission for a given resource.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -79,6 +81,8 @@ public class ResourcePermission {
     }
 
     /**
+     * 返回本权限适用的资源。
+     *
      * Returns the resource to which this permission applies.
      *
      * @return the resource to which this permission applies
@@ -88,6 +92,8 @@ public class ResourcePermission {
     }
 
     /**
+     * 返回资源上被许可的范围集合。
+     *
      * Returns a list of permitted scopes associated with the resource
      *
      * @return a lit of permitted scopes
@@ -97,6 +103,8 @@ public class ResourcePermission {
     }
 
     /**
+     * 返回关联的资源服务器。
+     *
      * Returns the resource server associated with this permission.
      *
      * @return the resource server
@@ -106,6 +114,8 @@ public class ResourcePermission {
     }
 
     /**
+     * 返回权限相关的全部声明（claims）。
+     *
      * Returns all permission claims.
      *
      * @return
@@ -118,6 +128,8 @@ public class ResourcePermission {
     }
 
     /**
+     * 添加单值权限声明；若同名声明已存在则追加到值列表。
+     *
      * <p>Adds a permission claim with the given name and a single value.
      *
      * <p>If a claim already exists, the value is added to list of values of the existing claim</p>
@@ -133,6 +145,8 @@ public class ResourcePermission {
     }
 
     /**
+     * 移除指定名称的权限声明。
+     *
      * <p>Removes a permission claim.
      *
      *
@@ -144,6 +158,7 @@ public class ResourcePermission {
         }
     }
 
+    /** 向权限添加范围（须属于资源已有范围）。 */
     public void addScope(Scope scope) {
         if (resource != null) {
             if (!resource.getScopes().contains(scope)) {
@@ -163,10 +178,12 @@ public class ResourcePermission {
         this.claims.putAll(claims);
     }
 
+    /** 标记权限是否已通过 UMA 等方式直接授予。 */
     public void setGranted(boolean granted) {
         this.granted = granted;
     }
 
+    /** 是否已直接授予（跳过策略评估）。 */
     public boolean isGranted() {
         return granted;
     }

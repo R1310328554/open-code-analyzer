@@ -16,6 +16,10 @@ import org.keycloak.authorization.store.StoreFactory;
 import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 import org.keycloak.representations.idm.authorization.Permission;
 
+/**
+ * 无界权限评估器：通过 {@link Permissions#all} 枚举资源服务器下全部权限并评估。
+ * <p>适用于开放授权请求（未指定具体资源/范围）。</p>
+ */
 public class UnboundedPermissionEvaluator implements PermissionEvaluator {
 
     private final EvaluationContext executionContext;
@@ -34,6 +38,7 @@ public class UnboundedPermissionEvaluator implements PermissionEvaluator {
         this.request = request;
     }
 
+    /** 只读模式下枚举全部权限并逐条执行策略评估。 */
     @Override
     public Decision evaluate(Decision decision) {
         StoreFactory storeFactory = authorizationProvider.getStoreFactory();
@@ -56,12 +61,14 @@ public class UnboundedPermissionEvaluator implements PermissionEvaluator {
         return decision;
     }
 
+    /** 评估并返回 {@link Permission} 结果集合。 */
     @Override
     public Collection<Permission> evaluate(ResourceServer resourceServer, AuthorizationRequest request) {
         DecisionPermissionCollector decision = getDecision(resourceServer, request, DecisionPermissionCollector.class);
         return decision.results();
     }
 
+    /** 评估并返回指定类型的决策收集器。 */
     @Override
     public <D extends Decision<?>> D getDecision(ResourceServer resourceServer, AuthorizationRequest request, Class<D> decisionType) {
         DecisionPermissionCollector decision = new DecisionPermissionCollector(authorizationProvider, resourceServer, request);
