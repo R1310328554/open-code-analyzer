@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T12:18:22Z",
   "files": [
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/signing/vcdm/LDSignatureType.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/issuance/signing/vcdm/LinkedDataCryptographicSuite.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/AttestationProof.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/AuthorizationCodeGrant.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/Claim.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/ClaimDisplay.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/Claims.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/ClaimsDescription.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialBuildConfig.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialConfigId.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialDefinition.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialIssuer.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialMetadata.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialOfferGrant.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialOfferGrantsDeserializer.java",
     "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialOfferURI.java",
     "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialRequest.java",
     "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialRequestEncryptionMetadata.java",
@@ -33,5 +18,5 @@
     "services/src/main/java/org/keycloak/protocol/oid4vc/model/JWTVCIssuerMetadata.java"
   ],
   "remaining_pending": 1528,
-  "done": 4440
+  "done": 4455
 }
