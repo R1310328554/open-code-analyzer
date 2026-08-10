@@ -15,23 +15,8 @@
     "core/src/main/java/com/alibaba/nacos/core/distributed/id/IdGeneratorManager.java",
     "core/src/main/java/com/alibaba/nacos/core/distributed/id/SnowFlowerIdGenerator.java",
     "core/src/main/java/com/alibaba/nacos/core/distributed/raft/JRaftMaintainService.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/JRaftProtocol.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/JRaftServer.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/JSnapshotOperation.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/NacosClosure.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/NacosStateMachine.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/RaftConfig.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/RaftErrorEvent.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/RaftEvent.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/RaftSysConstants.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/exception/DuplicateRaftGroupException.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/exception/JRaftException.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/exception/NoLeaderException.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/exception/NoSuchRaftGroupException.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/processor/AbstractProcessor.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/processor/NacosReadRequestProcessor.java",
-    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/processor/NacosWriteRequestProcessor.java"
+    "core/src/main/java/com/alibaba/nacos/core/distributed/raft/JRaftProtocol.java"
   ],
   "remaining_pending": 947,
-  "done": 1560
+  "done": 1575
 }
