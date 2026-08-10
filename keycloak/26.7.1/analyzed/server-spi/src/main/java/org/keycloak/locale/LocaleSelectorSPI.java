@@ -20,23 +20,30 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 区域选择 SPI：定义 {@link LocaleSelectorProvider} 的注册与发现机制。
+ */
 public class LocaleSelectorSPI implements Spi {
 
+    /** @return 始终为 {@code false}，表示可扩展 SPI */
     @Override
     public boolean isInternal() {
         return false;
     }
 
+    /** @return SPI 名称 {@code localeSelector} */
     @Override
     public String getName() {
         return "localeSelector";
     }
 
+    /** @return 提供者接口 {@link LocaleSelectorProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return LocaleSelectorProvider.class;
     }
 
+    /** @return 工厂接口 {@link LocaleSelectorProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return LocaleSelectorProviderFactory.class;

@@ -19,12 +19,18 @@ package org.keycloak.migration;
 
 
 /**
+ * 数据库迁移模型：记录 Keycloak 已存储的 schema/资源版本，供启动时迁移逻辑查询。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface MigrationModel {
+    /** @return 已持久化的 Keycloak 版本号 */
     String getStoredVersion();
+    /** @return 已弃用的资源标签
+     * @deprecated 无替代方案 */
     @Deprecated
     String getResourcesTag();
+    /** @param version 要持久化的版本号 */
     void setStoredVersion(String version);
 }

@@ -20,23 +20,30 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 区域更新 SPI：定义 {@link LocaleUpdaterProvider} 的注册与发现机制。
+ */
 public class LocaleUpdaterSPI implements Spi {
 
+    /** @return 始终为 {@code false}，表示可扩展 SPI */
     @Override
     public boolean isInternal() {
         return false;
     }
 
+    /** @return SPI 名称 {@code localeUpdater} */
     @Override
     public String getName() {
         return "localeUpdater";
     }
 
+    /** @return 提供者接口 {@link LocaleUpdaterProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return LocaleUpdaterProvider.class;
     }
 
+    /** @return 工厂接口 {@link LocaleUpdaterProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return LocaleUpdaterProviderFactory.class;

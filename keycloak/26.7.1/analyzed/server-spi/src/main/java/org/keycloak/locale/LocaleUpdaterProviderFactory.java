@@ -18,5 +18,9 @@ package org.keycloak.locale;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link LocaleUpdaterProvider} 的 SPI 工厂接口。
+ * <p>负责注册并创建区域更新提供者实例。</p>
+ */
 public interface LocaleUpdaterProviderFactory extends ProviderFactory<LocaleUpdaterProvider> {
 }

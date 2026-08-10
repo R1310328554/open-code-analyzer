@@ -18,6 +18,8 @@
 package org.keycloak.keys;
 
 /**
+ * 对称密钥（HMAC 等）元数据：继承 {@link KeyMetadata}，无额外字段。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class SecretKeyMetadata extends KeyMetadata {

@@ -18,5 +18,9 @@ package org.keycloak.locale;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link LocaleSelectorProvider} 的 SPI 工厂接口。
+ * <p>负责注册并创建区域选择提供者实例。</p>
+ */
 public interface LocaleSelectorProviderFactory extends ProviderFactory<LocaleSelectorProvider> {
 }
