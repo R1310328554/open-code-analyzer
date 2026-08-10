@@ -23,14 +23,21 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ScopeType;
 
+/**
+ * {@code bootstrap-admin} 父命令：引导创建临时管理员用户或服务账号。
+ */
 @Command(name = BootstrapAdmin.NAME, header = BootstrapAdmin.HEADER, description = "%n"
         + BootstrapAdmin.HEADER, subcommands = {BootstrapAdminUser.class, BootstrapAdminService.class})
 public class BootstrapAdmin {
 
+    /** 子命令组名称。 */
     public static final String NAME = "bootstrap-admin";
+    /** 帮助标题文案。 */
     public static final String HEADER = "Commands for bootstrapping admin access";
+    /** 临时管理员账号过期时间（分钟）对应的环境变量名。 */
     public static final String KEYCLOAK_BOOTSTRAP_ADMIN_EXPIRATION_ENV_VAR = "KEYCLOAK_BOOTSTRAP_ADMIN_EXPIRATION";
 
+    /** 非交互模式：不提示输入用户名/密码等。 */
     @Option(arity = "0", paramLabel = Picocli.NO_PARAM_LABEL, names = { "--no-prompt" }, description = "Run non-interactive without prompting", scope = ScopeType.INHERIT)
     boolean noPrompt;
 

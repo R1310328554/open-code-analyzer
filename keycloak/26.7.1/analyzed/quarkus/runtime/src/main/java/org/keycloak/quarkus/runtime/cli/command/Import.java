@@ -24,6 +24,9 @@ import picocli.CommandLine.Command;
 
 import static org.keycloak.exportimport.ExportImportConfig.ACTION_IMPORT;
 
+/**
+ * {@code import} 命令：从文件或目录导入 realm 数据。
+ */
 @Command(name = Import.NAME,
         header = "Import data from a directory or a file.",
         description = "%nImport data from a directory or a file.")

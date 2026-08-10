@@ -21,10 +21,16 @@ import picocli.CommandLine;
 
 import static org.keycloak.quarkus.runtime.cli.Picocli.NO_PARAM_LABEL;
 
+/**
+ * Picocli 混入：{@code --dry-run} 仅校验命令与配置，不执行实际 build/启动。
+ */
 public final class DryRunMixin {
     
+    /** 干跑选项长名称。 */
     public static final String DRYRUN_OPTION_LONG = "--dry-run";
+    /** 干跑模式环境变量名。 */
     public static final String KC_DRY_RUN_ENV = "KC_DRY_RUN";
+    /** build 干跑专用环境变量名。 */
     public static final String KC_DRY_RUN_BUILD_ENV = "KC_DRY_RUN_BUILD";
 
     @CommandLine.Option(names = {DRYRUN_OPTION_LONG},

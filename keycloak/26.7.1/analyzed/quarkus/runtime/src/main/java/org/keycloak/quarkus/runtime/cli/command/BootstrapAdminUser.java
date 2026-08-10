@@ -29,6 +29,9 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+/**
+ * {@code bootstrap-admin user}：在 master realm 创建带密码的临时管理员用户。
+ */
 @Command(name = BootstrapAdminUser.NAME, header = BootstrapAdminUser.HEADER, description = "%n"
         + BootstrapAdminUser.HEADER)
 public class BootstrapAdminUser extends AbstractNonServerCommand {
@@ -36,6 +39,7 @@ public class BootstrapAdminUser extends AbstractNonServerCommand {
     public static final String NAME = "user";
     public static final String HEADER = "Add an admin user with a password";
 
+    /** 用户名选项组：命令行参数或环境变量二选一。 */
     static class UsernameOptions {
         @Option(paramLabel = "username", names = { "--username" }, description = "Username of admin user, defaults to "
                 + BootstrapAdminOptions.DEFAULT_TEMP_ADMIN_USERNAME)
@@ -99,7 +103,7 @@ public class BootstrapAdminUser extends AbstractNonServerCommand {
 
     @Override
     public void onStart(QuarkusKeycloakApplication application, QuarkusKeycloakSessionFactory sessionFactory) {
-        //BootstrapAdmin bootstrap = spec.commandLine().getParent().getCommand();
+        // 临时管理员过期时间（bootstrap.expiration）当前未启用
         KeycloakModelUtils.runJobInTransaction(sessionFactory, session -> application
                 .createTemporaryMasterRealmAdminUser(username, password, /* bootstrap.expiration, */ session));
     }

@@ -26,8 +26,12 @@ import picocli.CommandLine;
 
 import static org.keycloak.quarkus.runtime.cli.Picocli.NO_PARAM_LABEL;
 
+/**
+ * Picocli 混入：{@code --import-realm} 启动时从 {@code data/import} 目录导入 realm 配置。
+ */
 public final class ImportRealmMixin {
 
+    /** 启动时导入 realm 的 CLI 选项名。 */
     public static final String IMPORT_REALM = "--import-realm";
 
     @CommandLine.Option(names = IMPORT_REALM,

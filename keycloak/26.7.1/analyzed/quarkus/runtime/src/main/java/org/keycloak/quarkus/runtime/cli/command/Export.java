@@ -24,6 +24,9 @@ import picocli.CommandLine.Command;
 
 import static org.keycloak.exportimport.ExportImportConfig.ACTION_EXPORT;
 
+/**
+ * {@code export} 命令：将 realm 数据导出到文件或目录。
+ */
 @Command(name = Export.NAME,
         header = "Export data from realms to a file or directory.",
         description = "%nExport data from realms to a file or directory.")

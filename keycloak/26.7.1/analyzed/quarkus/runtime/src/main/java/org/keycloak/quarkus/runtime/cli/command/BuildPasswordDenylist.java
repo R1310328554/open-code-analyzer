@@ -27,8 +27,10 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-// Builds a pre-computed Bloom filter (.bloom) alongside a plaintext password denylist.
-// The server loads the .bloom file instead of rebuilding from plaintext, reducing reload latency.
+/**
+ * {@code build-password-denylist}：为大型密码黑名单预生成 Bloom 过滤器文件，加速策略加载。
+ */
+// 为明文密码拒绝列表预计算 Bloom 过滤器（.bloom），服务器直接加载 .bloom 以避免每次从明文重建，缩短重载耗时。
 @Command(name = BuildPasswordDenylist.NAME,
         header = BuildPasswordDenylist.HEADER,
         sortOptions = false,
@@ -49,17 +51,20 @@ public class BuildPasswordDenylist extends AbstractCommand {
     public static final String NAME = "build-password-denylist";
     public static final String HEADER = "Pre-compute a Bloom filter for a password denylist.";
 
+    /** 输入的 UTF-8 明文密码黑名单文件路径（每行一个密码）。 */
     @Parameters(index = "0",
             paramLabel = "DENYLIST_FILE",
             description = "Path to the plaintext password denylist file (one password per line, UTF-8).")
     private Path inputFile;
 
+    /** Bloom 过滤器期望的误报率，默认 0.0001。 */
     @Option(names = "--fpp",
             paramLabel = "PROBABILITY",
             description = "Desired false-positive probability for the Bloom filter, defaults to 0.0001.",
             defaultValue = "0.0001")
     private double fpp;
 
+    /** 输出 .bloom 文件路径，须以 {@code .bloom} 结尾。 */
     @Option(names = {"-o", "--output"},
             paramLabel = "OUTPUT_FILE",
             description = "Path for the generated .bloom file. Must end with '.bloom'. Defaults to <DENYLIST_FILE>.bloom in the same directory.")

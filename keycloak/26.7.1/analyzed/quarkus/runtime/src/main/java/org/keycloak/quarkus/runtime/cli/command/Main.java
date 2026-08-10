@@ -31,6 +31,9 @@ import picocli.CommandLine.ScopeType;
 
 import static org.keycloak.quarkus.runtime.cli.Picocli.NO_PARAM_LABEL;
 
+/**
+ * Keycloak Quarkus CLI 根命令 {@code keycloak}，注册子命令与全局选项（Profile、配置文件、verbose 等）。
+ */
 @Command(name = "keycloak",
         header = {
                 "Keycloak - Open Source Identity and Access Management",
@@ -72,9 +75,13 @@ import static org.keycloak.quarkus.runtime.cli.Picocli.NO_PARAM_LABEL;
         })
 public final class Main {
 
+    /** Profile 短选项名。 */
     public static final String PROFILE_SHORT_NAME = "-pf";
+    /** Profile 长选项名。 */
     public static final String PROFILE_LONG_NAME = "--profile";
+    /** 配置文件短选项名。 */
     public static final String CONFIG_FILE_SHORT_NAME = "-cf";
+    /** 配置文件长选项名。 */
     public static final String CONFIG_FILE_LONG_NAME = "--config-file";
 
     @CommandLine.Spec

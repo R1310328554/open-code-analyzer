@@ -26,11 +26,16 @@ import org.keycloak.quarkus.runtime.integration.jaxrs.QuarkusKeycloakApplication
 
 import picocli.CommandLine;
 
+/**
+ * 非 HTTP 服务模式 CLI 命令基类（如 import/export/bootstrap-admin），默认使用 {@code non-server} Profile。
+ */
 public abstract class AbstractNonServerCommand extends AbstractAutoBuildCommand {
 
+    /** {@code --optimized} 选项混入，跳过自动 build。 */
     @CommandLine.Mixin
     OptimizedMixin optimizedMixin = new OptimizedMixin();
 
+    /** 在非服务器模式下应从 CLI 隐藏的配置类别集合。 */
     private static EnumSet<OptionCategory> hidden = EnumSet.of(OptionCategory.HTTP, OptionCategory.HTTP_ACCESS_LOG,
             OptionCategory.PROXY, OptionCategory.HOSTNAME_V1, OptionCategory.HOSTNAME_V2, OptionCategory.METRICS,
             OptionCategory.SECURITY, OptionCategory.CACHE, OptionCategory.HEALTH, OptionCategory.MANAGEMENT);

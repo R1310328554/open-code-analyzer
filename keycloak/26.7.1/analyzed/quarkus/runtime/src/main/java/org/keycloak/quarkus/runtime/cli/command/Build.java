@@ -32,6 +32,9 @@ import static org.keycloak.config.DatabaseOptions.DB;
 import static org.keycloak.quarkus.runtime.Environment.getHomePath;
 import static org.keycloak.quarkus.runtime.Environment.isDevProfile;
 
+/**
+ * {@code build} 命令：根据当前配置生成并持久化优化后的 Keycloak 服务器镜像。
+ */
 @Command(name = Build.NAME,
         header = "Creates a new and optimized server image.",
         description = {
@@ -56,6 +59,7 @@ public final class Build extends AbstractCommand {
 
     public static final String NAME = "build";
 
+    /** Quarkus 构建时需从类路径移除的 artifact 列表（系统属性键）。 */
     public static final String QUARKUS_REMOVED_ARTIFACTS_PROPERTY = "quarkus.class-loading.removed-artifacts";
 
     @CommandLine.Mixin
@@ -68,8 +72,7 @@ public final class Build extends AbstractCommand {
     protected void runCommand() {
         checkProfileAndDb();
 
-        // validate before setting that we're rebuilding so that runtime options are still seen
-        // the validation and setting the artifacts to remove need to be done without the current persisted properties
+        // 在标记重建前校验配置，使运行时选项仍可见；校验与 artifact 移除须在禁用持久化配置源时进行
         PersistedConfigSource.getInstance().runWithDisabled(() -> {
             validateConfig();
             System.setProperty(QUARKUS_REMOVED_ARTIFACTS_PROPERTY, String.join(",", IgnoredArtifacts.getDefaultIgnoredArtifacts()));
@@ -99,8 +102,7 @@ public final class Build extends AbstractCommand {
     private void checkProfileAndDb() {
         if (Environment.isDevProfile()) {
             String cmd = picocli.getParsedCommand().map(AbstractCommand::getName).orElse(getName());
-            // we allow start-dev, and import|export|bootstrap-admin --profile=dev
-            // but not start --profile=dev, nor build --profile=dev
+            // 允许 start-dev 及 import|export|bootstrap-admin --profile=dev，禁止 start/build 使用 dev Profile
             if (Start.NAME.equals(cmd) || Build.NAME.equals(cmd)) {
                 executionError(spec.commandLine(), Messages.devProfileNotAllowedError(cmd));
             }
@@ -110,10 +112,7 @@ public final class Build extends AbstractCommand {
     }
 
     private void beforeReaugmentationOnWindows() {
-        // On Windows, files generated during re-augmentation are locked and can't be re-created.
-        // To workaround this behavior, we reset the internal cache of the runner classloader and force files
-        // to be closed prior to re-augmenting the application
-        // See KEYCLOAK-16218
+        // Windows 上 re-augmentation 生成的文件会被锁定无法重建；重置 RunnerClassLoader 内部缓存以规避（KEYCLOAK-16218）
         if (Environment.isWindows()) {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
@@ -125,7 +124,7 @@ public final class Build extends AbstractCommand {
 
     private void cleanTempResources() {
         if (!LaunchMode.current().isDevOrTest()) {
-            // only needed for dev/testing purposes
+            // 仅开发/测试环境需清理临时 quarkus-artifact.properties
             getHomePath().ifPresent(path -> path.resolve("quarkus-artifact.properties").toFile().delete());
         }
     }

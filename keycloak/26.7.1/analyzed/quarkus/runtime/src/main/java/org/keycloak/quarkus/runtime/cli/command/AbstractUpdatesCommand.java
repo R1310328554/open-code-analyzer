@@ -30,8 +30,12 @@ import org.keycloak.quarkus.runtime.configuration.MicroProfileConfigProviderFact
 
 import picocli.CommandLine;
 
+/**
+ * 升级/兼容性相关 CLI 命令抽象基类，加载配置后执行 {@link #executeAction()} 并返回退出码。
+ */
 public abstract class AbstractUpdatesCommand extends AbstractAutoBuildCommand {
 
+    /** {@code --optimized} 选项混入。 */
     @CommandLine.Mixin
     OptimizedMixin optimizedMixin = new OptimizedMixin();
 
@@ -64,7 +68,7 @@ public abstract class AbstractUpdatesCommand extends AbstractAutoBuildCommand {
                 if (existing.priority() == current.priority()) {
                     throw new IllegalArgumentException("Unable to handle two providers with the same id (%s) and priority.".formatted(existing.getId()));
                 }
-                // If a user wants to replace default providers with their own.
+                // 允许用户以更高优先级 Provider 替换默认实现。
                 return existing.priority() < current.priority() ?
                         current :
                         existing;
@@ -74,8 +78,7 @@ public abstract class AbstractUpdatesCommand extends AbstractAutoBuildCommand {
     }
 
     private static void loadConfiguration() {
-        // Initialize config without directly referencing MicroProfileConfigProvider
-        // as that currently causing classloading issue during command creation - when a provider jar is deleted
+        // 间接初始化 Config，避免命令创建阶段直接引用 MicroProfileConfigProvider 引发类加载问题（如 provider JAR 被删除）
         Config.init(new MicroProfileConfigProviderFactory().create());
     }
 

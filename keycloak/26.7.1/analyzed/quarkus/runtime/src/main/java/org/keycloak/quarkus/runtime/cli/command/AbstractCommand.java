@@ -31,9 +31,13 @@ import picocli.CommandLine.Spec;
 
 import static org.keycloak.quarkus.runtime.Messages.cliExecutionError;
 
+/**
+ * Keycloak Quarkus CLI 命令抽象基类，封装 Picocli 执行流程、Profile 初始化与配置校验。
+ */
 public abstract class AbstractCommand implements Callable<Integer> {
 
     @Spec
+    /** Picocli 命令规格；对 {@code start --optimized} 等场景可能为 null。 */
     protected CommandSpec spec; // will be null for "start --optimized"
     protected Picocli picocli;
 
@@ -48,12 +52,14 @@ public abstract class AbstractCommand implements Callable<Integer> {
     /**
      * Get the effective profile used when the config is initialized
      */
+ * 获取配置初始化时生效的 Profile。
+
     public String getInitProfile() {
         if (Environment.isRebuildCheck()) {
-            // builds default to prod, if the profile is not overriden via the cli
+            // 构建检查阶段默认 prod，除非 CLI 显式覆盖 Profile
             return Environment.PROD_PROFILE_VALUE;
         }
-        // otherwise take the default profile, or what is persisted, or ultimately prod
+        // 否则依次取命令默认 Profile、持久化 Profile，最终回退 prod
         return Optional.ofNullable(this.getDefaultProfile())
                 .or(() -> Optional.ofNullable(
                         PersistedConfigSource.getInstance().getValue(org.keycloak.common.util.Environment.PROFILE)))
@@ -74,6 +80,8 @@ public abstract class AbstractCommand implements Callable<Integer> {
      * <br>
      * see {@link #call()}
      */
+ * 可返回退出码的命令执行入口；若返回空 {@link Optional} 则回退 {@link #runCommand()}。
+
     protected Optional<Integer> callCommand() {
         return Optional.empty();
     }
@@ -83,6 +91,8 @@ public abstract class AbstractCommand implements Callable<Integer> {
      * <br>
      * see {@link #call()}
      */
+ * 默认命令体；成功完成后 {@link #call()} 返回 OK 退出码。
+
     protected void runCommand() {
 
     }
@@ -91,6 +101,8 @@ public abstract class AbstractCommand implements Callable<Integer> {
      * @param category
      * @return true if runtime options for the given category should be hidden from the cli
      */
+ * 判断给定 {@link OptionCategory} 的运行时选项是否应从 CLI 帮助中隐藏。
+
     public boolean isHiddenCategory(OptionCategory category) {
         return category == OptionCategory.IMPORT || category == OptionCategory.EXPORT;
     }
@@ -113,6 +125,8 @@ public abstract class AbstractCommand implements Callable<Integer> {
      * The default profile for the command, or null if the persisted profile should be checked first
      * @return
      */
+ * 命令默认 Profile；返回 null 时优先读取持久化 Profile。
+
     protected String getDefaultProfile() {
         return Environment.PROD_PROFILE_VALUE;
     }
@@ -120,6 +134,8 @@ public abstract class AbstractCommand implements Callable<Integer> {
     /**
      * @return true if the command starts an http server
      */
+ * 该命令是否会启动 HTTP 服务器。
+
     public boolean isServing() {
         return false;
     }
@@ -127,11 +143,15 @@ public abstract class AbstractCommand implements Callable<Integer> {
     /**
      * @return true if a form of help all was used. Only valid if this is the parsed command.
      */
+ * 是否使用了 {@code --help-all}；仅当本命令为当前解析命令时有效。
+
     public abstract boolean isHelpAll();
 
     /**
      * @return true if --optimized was used. Only valid if this is the parsed command.
      */
+ * 是否使用了 {@code --optimized}；仅当本命令为当前解析命令时有效。
+
     public boolean isOptimized() {
         return false;
     }
@@ -139,6 +159,8 @@ public abstract class AbstractCommand implements Callable<Integer> {
     /**
      * Controls whether the command actually starts the server
      */
+ * 控制命令是否实际启动 Keycloak 服务器进程。
+
     public boolean shouldStart() {
         return false;
     }

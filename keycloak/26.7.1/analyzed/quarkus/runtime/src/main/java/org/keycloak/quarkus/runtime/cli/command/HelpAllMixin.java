@@ -19,8 +19,12 @@ package org.keycloak.quarkus.runtime.cli.command;
 
 import picocli.CommandLine;
 
+/**
+ * Picocli 混入：{@code --help-all} 显示包含隐藏选项在内的完整帮助信息。
+ */
 public final class HelpAllMixin {
 
+    /** 完整帮助选项名称。 */
     public static final String HELP_ALL_OPTION = "--help-all";
 
     @CommandLine.Option(names = {HELP_ALL_OPTION}, usageHelp = true, description = "This same help message but with additional options.")
