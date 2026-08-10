@@ -81,12 +81,23 @@ import static org.keycloak.organization.utils.Organizations.resolveByDomain;
 import static org.keycloak.organization.utils.Organizations.validateDomain;
 import static org.keycloak.utils.StreamsUtil.closing;
 
+/**
+ * 基于 JPA 的 {@link OrganizationProvider} 实现。
+ * <p>
+ * 管理组织 CRUD、成员与组、身份提供者关联、域名解析及邀请；底层持久化 {@link OrganizationEntity}，
+ * 并通过内部 {@link GroupModel} 维护成员关系与属性。
+ */
 public class JpaOrganizationProvider implements OrganizationProvider {
 
+    /** JPA 实体管理器。 */
     private final EntityManager em;
+    /** 组 Provider，用于组织内部组及子组。 */
     private final GroupProvider groupProvider;
+    /** 用户 Provider，用于成员查询与删除。 */
     private final UserProvider userProvider;
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 组织邀请管理器。 */
     private final JpaInvitationManager invitationManager;
 
     public JpaOrganizationProvider(KeycloakSession session) {
@@ -136,8 +147,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
 
             em.persist(adapter.getEntity());
 
-            // Set organization-group relationship for the internal group
-            // Must be done after persist so the organization entity is managed
+            // 建立组织与内部组的关联；须在 persist 之后执行，确保组织实体已托管
             GroupEntity groupEntity = em.find(GroupEntity.class, group.getId());
             groupEntity.setOrganization(entity);
         } finally {
@@ -155,13 +165,13 @@ public class JpaOrganizationProvider implements OrganizationProvider {
             session.getContext().setOrganization(organization);
             RealmModel realm = session.realms().getRealm(getRealm().getId());
 
-            // check if the realm is being removed so that we don't need to remove manually remove any other data but the org
+            // 若 realm 正在被删除，则无需手动清理关联数据，仅删除组织实体即可
             if (realm != null) {
                 GroupModel group = getOrganizationGroup(entity);
 
                 if (group != null) {
                     OrganizationProvider provider = session.getProvider(OrganizationProvider.class);
-                    //TODO: won't scale, requires a better mechanism for bulk deleting users
+                    // TODO: 无法扩展，批量删除用户需要更优机制
                     userProvider.getGroupMembersStream(realm, group).forEach(userModel -> provider.removeMember(organization, userModel));
                     groupProvider.removeGroup(realm, group);
                 }
@@ -181,7 +191,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
 
     @Override
     public void removeAll() {
-        //TODO: won't scale, requires a better mechanism for bulk deleting organizations within a realm
+        // TODO: 无法扩展，realm 内批量删除组织需要更优机制
         getAllStream().forEach(this::remove);
     }
 
@@ -202,7 +212,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
         OrganizationEntity entity = getEntity(organization.getId());
         OrganizationModel current = Organizations.resolveOrganization(session);
 
-        // check the user and the organization belongs to the same realm
+        // 校验用户与组织属于同一 realm
         if (session.users().getUserById(session.realms().getRealm(entity.getRealmId()), user.getId()) == null) {
             return false;
         }
@@ -252,7 +262,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
 
         List<String> domainPatterns = new ArrayList<>();
 
-        // Add exact match
+        // 精确匹配
         domainPatterns.add(emailDomain);
 
         query.setParameter("names", domainPatterns);
@@ -263,15 +273,15 @@ public class JpaOrganizationProvider implements OrganizationProvider {
         } catch (NoResultException ignore) {
         }
 
-        // Strip subdomains to check for parent wildcard domains
+        // 剥离子域以检查父级通配符域名
         String[] parts = emailDomain.split("\\.");
 
-        // Also check for wildcard at the current level
+        // 同时检查当前级别的通配符
         domainPatterns.add("*." + emailDomain);
 
         for (int i = 1; i < parts.length - 1; i++) {
             String parentDomain = String.join(".", java.util.Arrays.copyOfRange(parts, i, parts.length));
-            // Check for both exact parent and wildcard parent
+            // 检查精确父域与通配符父域
             domainPatterns.add(parentDomain);
             domainPatterns.add("*." + parentDomain);
         }
@@ -568,10 +578,10 @@ public class JpaOrganizationProvider implements OrganizationProvider {
         GroupModel parentGroup;
 
         if (toParent == null) {
-            // No parent specified, use organization's internal group as parent
+            // 未指定父组时，使用组织内部组作为父组
             parentGroup = getOrganizationGroup(organization);
         } else {
-            // Validate the parent group
+            // 校验父组归属
             if (!Organizations.isOrganizationGroup(toParent) ||
                     !Objects.equals(toParent.getOrganization().getId(), organization.getId())) {
                 throw new ModelValidationException("Parent group does not belong to the specified organization");
@@ -581,9 +591,9 @@ public class JpaOrganizationProvider implements OrganizationProvider {
 
         GroupModel createdGroup = groupProvider.createGroup(getRealm(), id, Type.ORGANIZATION, name, parentGroup);
 
-        // Set organization-groups relationship
+        // 建立组织与组的双向关联
         GroupEntity groupEntity = em.find(GroupEntity.class, createdGroup.getId());
-        orgEntity.addGroup(groupEntity);  // This sets both sides of the relationship
+        orgEntity.addGroup(groupEntity);  // 同时设置关系两侧
 
         return createdGroup;
     }
@@ -604,7 +614,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
 
         predicates.add(builder.equal(root.get("realm"), realm.getId()));
         predicates.add(builder.equal(root.get("type"), Type.ORGANIZATION.intValue()));
-        predicates.add(builder.equal(root.get("parentId"), getOrganizationGroup(organization).getId())); // top level groups only
+        predicates.add(builder.equal(root.get("parentId"), getOrganizationGroup(organization).getId())); // 仅顶层组
         predicates.add(builder.equal(root.get("organization").get("id"), organization.getId()));
 
         queryBuilder.where(predicates.toArray(new Predicate[0]));
@@ -632,7 +642,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
         predicates.add(builder.equal(root.get("realm"), realm.getId()));
         predicates.add(builder.equal(root.get("type"), Type.ORGANIZATION.intValue()));
         predicates.add(builder.equal(root.get("organization").get("id"), organization.getId()));
-        predicates.add(builder.notEqual(root.get("id"), getOrganizationGroup(organization).getId())); // Exclude internal group
+        predicates.add(builder.notEqual(root.get("id"), getOrganizationGroup(organization).getId())); // 排除内部组
 
         if (Boolean.TRUE.equals(exact)) {
             predicates.add(builder.equal(root.get("name"), search));
@@ -668,7 +678,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
         predicates.add(builder.equal(root.get("realm"), realm.getId()));
         predicates.add(builder.equal(root.get("type"), Type.ORGANIZATION.intValue()));
         predicates.add(builder.equal(root.get("organization").get("id"), organization.getId()));
-        predicates.add(builder.notEqual(root.get("id"), getOrganizationGroup(organization).getId())); // Exclude internal group
+        predicates.add(builder.notEqual(root.get("id"), getOrganizationGroup(organization).getId())); // 排除内部组
 
         Join<GroupEntity, GroupAttributeEntity> attributesJoin = root.join("attributes", JoinType.LEFT);
 
@@ -697,7 +707,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
 
         OrganizationEntity organizationEntity = getEntity(organization.getId());
 
-        // check the identity provider and the organization belongs to the same realm
+        // 校验身份提供者与组织属于同一 realm
         if (!checkOrgIdpAndRealm(organizationEntity, identityProvider)) {
             return false;
         }
@@ -736,7 +746,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
             return false;
         }
 
-        // clear the organization id and any domain assigned to the IDP.
+        // 清除组织 ID 及 IDP 上绑定的域名配置
         identityProvider.setOrganizationId(null);
         identityProvider.getConfig().remove(ORGANIZATION_DOMAIN_ATTRIBUTE);
         session.identityProviders().update(identityProvider);
@@ -848,9 +858,9 @@ public class JpaOrganizationProvider implements OrganizationProvider {
             }
 
             try {
-                // Remove from all organization-specific groups
+                // 从所有组织专属组中移除
                 getOrganizationGroupsByMember(organization, member).forEach(member::leaveGroup);
-                // Remove from internal organization group
+                // 从组织内部组中移除
                 member.leaveGroup(getOrganizationGroup(organization));
             } finally {
                 if (current == null) {
@@ -888,7 +898,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
     }
 
     /**
-     * @throws ModelException if there is no entity with given {@code id}
+     * @throws ModelException 若不存在给定 {@code id} 的实体
      */
     private OrganizationEntity getEntity(String id) {
         return getEntity(id, true);
@@ -952,7 +962,7 @@ public class JpaOrganizationProvider implements OrganizationProvider {
         }
     }
 
-    // return true only if the organization realm and the identity provider realm is the same
+    /** 仅当组织 realm 与身份提供者 realm 相同时返回 true。 */
     private boolean checkOrgIdpAndRealm(OrganizationEntity orgEntity, IdentityProviderModel idp) {
         IdentityProviderModel orgIdpByAlias = session.identityProviders().getByAlias(idp.getAlias());
         return orgIdpByAlias != null && orgIdpByAlias.getInternalId().equals(idp.getInternalId());

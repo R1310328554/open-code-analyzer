@@ -29,13 +29,14 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.SingleUseObjectProvider;
 
 /**
- * JPA-based {@link SingleUseObjectProvider} that stores single-use objects in a relational database.
+ * 基于 JPA 的 {@link SingleUseObjectProvider}：将一次性对象存入关系型数据库。
  * <p>
- * Expired entries are not removed on access; a periodic {@link org.keycloak.expiration.jpa.ExpirationTask} handles
- * cleanup. Read operations filter out expired rows via query predicates.
+ * 访问时不主动删除过期行；由周期性 {@link org.keycloak.expiration.jpa.ExpirationTask} 清理。
+ * 读操作通过查询谓词过滤已过期记录。
  */
 public class JpaSingleUseObjectProvider implements SingleUseObjectProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
     public JpaSingleUseObjectProvider(KeycloakSession session) {
@@ -124,10 +125,12 @@ public class JpaSingleUseObjectProvider implements SingleUseObjectProvider {
 
     }
 
+    /** 从会话获取 JPA {@link EntityManager}。 */
     private EntityManager getEntityManager() {
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
+    /** 判断给定过期时间戳是否已过期（相对当前秒级时间）。 */
     private static boolean isExpired(long expire) {
         return expire <= Time.currentTimeSeconds();
     }

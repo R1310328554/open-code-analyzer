@@ -29,7 +29,7 @@ import org.keycloak.provider.Provider;
 import org.keycloak.storage.configuration.ServerConfigStorageProviderFactory;
 
 /**
- * A {@link ServerConfigStorageProviderFactory} that instantiates {@link JpaServerConfigStorageProvider}.
+ * 实例化 {@link JpaServerConfigStorageProvider} 的 {@link ServerConfigStorageProviderFactory}（ID {@code jpa}）。
  */
 public class JpaServerConfigStorageProviderFactory implements ServerConfigStorageProviderFactory {
 
@@ -63,6 +63,7 @@ public class JpaServerConfigStorageProviderFactory implements ServerConfigStorag
         return Set.of(JpaConnectionProvider.class);
     }
 
+    /** 从会话获取 JPA {@link EntityManager}。 */
     private static EntityManager getEntityManager(KeycloakSession session) {
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }

@@ -24,9 +24,10 @@ import org.keycloak.expiration.jpa.ExpirationAction;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * {@link ExpirationAction} that deletes expired rows from the {@code SINGLE_USE_OBJECT} table.
+ * 一次性对象过期清理动作：从 {@code SINGLE_USE_OBJECT} 表批量删除过期行。
  */
 public enum SingleUseObjectExpirationAction implements ExpirationAction {
+    /** 单例实例。 */
     INSTANCE;
 
     @Override

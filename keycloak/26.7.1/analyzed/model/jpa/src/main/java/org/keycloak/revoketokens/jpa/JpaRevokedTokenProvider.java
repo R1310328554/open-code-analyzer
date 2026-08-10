@@ -27,9 +27,16 @@ import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RevokedTokenProvider;
 
+/**
+ * 基于 JPA 的 {@link RevokedTokenProvider}：在数据库中记录已吊销令牌 ID 及过期时间。
+ * <p>
+ * 查询路径使用本地 {@link LocalCache} 缓存热点 ID，减轻恶意客户端反复校验同一令牌时的数据库压力。
+ */
 public class JpaRevokedTokenProvider implements RevokedTokenProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 已吊销令牌 ID 的本地缓存（值为剩余寿命秒数）。 */
     private final LocalCache<String, Long> cache;
 
     public JpaRevokedTokenProvider(KeycloakSession session, LocalCache<String, Long> cache) {
@@ -64,7 +71,7 @@ public class JpaRevokedTokenProvider implements RevokedTokenProvider {
         }
         var lifespan = expireTime - Time.currentTime();
         if (lifespan > 0) {
-            // cache it in case of malicious clients trying to reuse the same token over and over.
+            // 写入缓存，应对恶意客户端反复复用同一令牌的场景
             cache.put(id, lifespan);
             return true;
         }
@@ -76,6 +83,7 @@ public class JpaRevokedTokenProvider implements RevokedTokenProvider {
 
     }
 
+    /** 从会话获取 JPA {@link EntityManager}。 */
     private EntityManager getEntityManager() {
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }

@@ -26,6 +26,9 @@ import org.keycloak.representations.idm.OrganizationInvitationRepresentation.Sta
 import static org.keycloak.models.jpa.PaginationUtils.paginateQuery;
 import static org.keycloak.utils.StreamsUtil.closing;
 
+/**
+ * 基于 JPA 的组织邀请管理器：创建、查询、过滤与删除 {@link OrganizationInvitationEntity}。
+ */
 record JpaInvitationManager(KeycloakSession session, EntityManager em) implements InvitationManager {
 
     @Override
@@ -113,6 +116,7 @@ record JpaInvitationManager(KeycloakSession session, EntityManager em) implement
         return true;
     }
 
+    /** 按 realm 管理员 action token 生命周期计算邀请过期时间戳。 */
     private int getExpiration() {
         return Time.currentTime() + session.getContext().getRealm().getActionTokenGeneratedByAdminLifespan();
     }

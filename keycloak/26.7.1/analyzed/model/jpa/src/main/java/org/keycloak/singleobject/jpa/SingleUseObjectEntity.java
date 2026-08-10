@@ -63,7 +63,9 @@ import org.keycloak.connections.jpa.AsynchronousCommitAllowed;
         ),
 })
 /**
- * JPA entity representing a single-use object stored in the {@code SINGLE_USE_OBJECT} table.
+ * 映射 {@code SINGLE_USE_OBJECT} 表的一次性对象 JPA 实体。
+ * <p>
+ * 包含命名查询：插入/覆盖、条件插入、过期更新、过期清理及按 ID 查询。
  */
 @Entity
 @Table(name = "SINGLE_USE_OBJECT")
@@ -71,17 +73,20 @@ public class SingleUseObjectEntity implements AsynchronousCommitAllowed {
 
     @Override
     public boolean isAsyncCommitAllowed(EntityOperationType operationType) {
-        // Removing a single-use token from the store must be committed to be durable to avoid security issues
+        // 删除一次性令牌必须同步提交，否则可能产生安全漏洞
         return operationType != EntityOperationType.DELETE;
     }
 
+    /** 对象主键（通常为令牌或 action token ID）。 */
     @Id
     @Column(name = "ID", length = 255)
     private String id;
 
+    /** 附加元数据 JSON 文本（由 {@link SingleUseObjectSerialization} 序列化）。 */
     @Column(name = "NOTES", columnDefinition = "TEXT")
     private String notes;
 
+    /** 过期时间戳（秒）。 */
     @Column(name = "EXPIRE")
     private long expire;
 

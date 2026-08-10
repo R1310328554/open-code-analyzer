@@ -33,10 +33,11 @@ import org.keycloak.utils.StreamsUtil;
 import org.hibernate.jpa.HibernateHints;
 
 /**
- * A {@link ServerConfigStorageProvider} that stores its data in the database, using the {@link EntityManager}.
+ * 基于 JPA 的 {@link ServerConfigStorageProvider}：通过 {@link EntityManager} 持久化服务器配置键值。
  */
 public class JpaServerConfigStorageProvider implements ServerConfigStorageProvider {
 
+    /** JPA 实体管理器。 */
     private final EntityManager entityManager;
 
     public JpaServerConfigStorageProvider(EntityManager entityManager) {
@@ -108,13 +109,15 @@ public class JpaServerConfigStorageProvider implements ServerConfigStorageProvid
 
     @Override
     public void close() {
-        //no-op
+        // 无操作
     }
 
+    /**
+     * 以乐观锁读取配置实体，避免并发更新丢失。
+     * <p>
+     * 乐观锁足以防止以下场景：事务 T1 读取一行，事务 T2 在 T1 提交前修改或删除该行，随后两事务均成功提交。
+     */
     private ServerConfigEntity getEntity(String key) {
-        // Optimistic is enough to prevent the following scenario (copied from Javadoc):
-        // Transaction T1 reads a row. Another transaction T2 then modifies or deletes that row, before T1 has committed.
-        // Both transactions eventually commit successfully.
         return entityManager.find(ServerConfigEntity.class, Objects.requireNonNull(key), LockModeType.OPTIMISTIC);
     }
 }

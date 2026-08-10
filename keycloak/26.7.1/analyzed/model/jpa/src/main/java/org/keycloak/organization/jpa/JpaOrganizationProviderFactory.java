@@ -28,8 +28,14 @@ import org.keycloak.organization.OrganizationProviderFactory;
 import org.keycloak.organization.utils.Organizations;
 import org.keycloak.provider.ProviderEvent;
 
+/**
+ * JPA 组织 Provider 工厂（ID {@value #ID}）。
+ * <p>
+ * 创建 {@link JpaOrganizationProvider}，并监听 {@link GroupEvent} 以防止非法修改组织内部组。
+ */
 public class JpaOrganizationProviderFactory implements OrganizationProviderFactory {
 
+    /** Provider 标识符。 */
     public static final String ID = "jpa";
 
     @Override
@@ -57,6 +63,7 @@ public class JpaOrganizationProviderFactory implements OrganizationProviderFacto
         return ID;
     }
 
+    /** 拦截组变更事件，禁止无权限修改组织组。 */
     private void handleEvents(ProviderEvent e) {
         if (e instanceof GroupEvent event) {
             KeycloakSession session = event.getKeycloakSession();

@@ -46,21 +46,37 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 
 import org.jboss.logging.Logger;
 
+/**
+ * {@link JpaRevokedTokenProvider} 工厂（ID {@code jpa}）。
+ * <p>
+ * 仅在 {@link Profile.Feature#STATELESS} 特性启用时可用；初始化本地缓存并注册
+ * {@link RevokedTokenExpirationAction} 定时清理任务。
+ */
 public class JpaRevokedTokenProviderFactory implements RevokedTokenProviderFactory<JpaRevokedTokenProvider>, EnvironmentDependentProviderFactory, ServerInfoAwareProviderFactory {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** Provider 标识符。 */
     private static final String PROVIDER_ID = "jpa";
 
-    // Config
+    // 配置项
+    /** 本地缓存最大条目数配置键。 */
     private static final String CACHE_MAX_SIZE_KEY = "cacheMaxSize";
+    /** 本地缓存默认最大条目数。 */
     private static final int DEFAULT_CACHE_MAX_SIZE = 1000;
+    /** 是否启用指标的配置键。 */
     private static final String METRICS_KEY = "metricsEnabled";
 
+    /** 过期清理任务执行间隔（秒）。 */
     private int expirationTaskIntervalSeconds;
+    /** 过期清理任务超时（秒）。 */
     private int expirationTaskTimeoutSeconds;
+    /** 单次清理最多移除的条目数。 */
     private int expirationTaskMaxRemoval;
+    /** 本地缓存最大条目数。 */
     private int cacheMaxSize;
+    /** 是否启用过期相关指标。 */
     private boolean metricsEnabled;
+    /** 已吊销令牌 ID 的共享本地缓存。 */
     private LocalCache<String, Long> loadingCache;
 
     @Override

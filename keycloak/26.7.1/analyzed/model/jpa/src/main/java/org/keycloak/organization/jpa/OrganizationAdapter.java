@@ -44,13 +44,24 @@ import org.keycloak.utils.StringUtil;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * {@link OrganizationEntity} 的 JPA 适配器，实现 {@link OrganizationModel}。
+ * <p>
+ * 将组织元数据、域名、属性（经内部组）及身份提供者关联暴露为领域模型。
+ */
 public final class OrganizationAdapter implements OrganizationModel, JpaModel<OrganizationEntity> {
 
+    /** Keycloak 会话。 */
     private final KeycloakSession session;
+    /** 所属 realm。 */
     private final RealmModel realm;
+    /** 底层 JPA 实体。 */
     private final OrganizationEntity entity;
+    /** 组织 Provider，用于委派成员与 IDP 查询。 */
     private final OrganizationProvider provider;
+    /** 懒加载的内部组模型。 */
     private GroupModel group;
+    /** 缓存的组属性映射。 */
     private Map<String, List<String>> attributes;
 
     public OrganizationAdapter(KeycloakSession session, RealmModel realm, OrganizationEntity entity, OrganizationProvider provider) {
@@ -142,7 +153,7 @@ public final class OrganizationAdapter implements OrganizationModel, JpaModel<Or
             return;
         }
 
-        // add organization to the session as the following code updates the underlying group
+        // 将组织写入会话上下文，后续代码会更新底层组
         OrganizationModel current = session.getContext().getOrganization();
         if (current == null) {
             session.getContext().setOrganization(this);
@@ -184,15 +195,15 @@ public final class OrganizationAdapter implements OrganizationModel, JpaModel<Or
                 .collect(Collectors.toMap(OrganizationDomainModel::getName, Function.identity()));
 
         for (OrganizationDomainEntity domainEntity : new HashSet<>(this.entity.getDomains())) {
-            // update the existing domain (verified flag can be changed).
+            // 更新已有域名（可变更 verified 标志）
             if (modelMap.containsKey(domainEntity.getName())) {
                 OrganizationDomainModel model = modelMap.get(domainEntity.getName());
                 domainEntity.setVerified(model.isVerified());
                 modelMap.remove(domainEntity.getName());
             } else {
-                // remove domain that is not found in the new set.
+                // 从新集合中移除的域名应删除
                 this.entity.removeDomain(domainEntity);
-                // check if any idp is assigned to the removed domain, and unset the domain if that's the case.
+                // 若 IDP 绑定了被移除的域名，则清除其域名配置
                 getIdentityProviders()
                         .filter(idp -> Objects.equals(domainEntity.getName(), idp.getConfig().get(ORGANIZATION_DOMAIN_ATTRIBUTE)))
                         .forEach(idp -> {
@@ -202,7 +213,7 @@ public final class OrganizationAdapter implements OrganizationModel, JpaModel<Or
             }
         }
 
-        // create the remaining domains.
+        // 创建剩余的新域名
         for (OrganizationDomainModel model : modelMap.values()) {
             OrganizationDomainEntity domainEntity = new OrganizationDomainEntity();
             domainEntity.setId(KeycloakModelUtils.generateId());
@@ -268,11 +279,10 @@ public final class OrganizationAdapter implements OrganizationModel, JpaModel<Or
     }
 
     /**
-     * Validates the domain. Specifically, the method first checks if the specified domain is valid,
-     * and then checks if the domain is not already linked to a different organization.
+     * 校验域名合法性，并确保未被其他组织占用。
      *
-     * @param domainModel the {@link OrganizationDomainModel} representing the domain being added.
-     * @throws {@link ModelValidationException} if the domain is invalid or is already linked to a different organization.
+     * @param domainModel 待添加的 {@link OrganizationDomainModel}
+     * @throws {@link ModelValidationException} 若域名无效或已关联至其他组织
      */
     private OrganizationDomainModel validateDomain(OrganizationDomainModel domainModel) {
         String domainName = domainModel.getName();
@@ -283,7 +293,7 @@ public final class OrganizationAdapter implements OrganizationModel, JpaModel<Or
 
         Organizations.validateDomain(domainName);
 
-        // Check for conflicts with other organizations
+        // 检查与其他组织的冲突
         OrganizationModel orgModel = provider.getByDomainName(domainName);
 
         if (orgModel != null && !Objects.equals(getId(), orgModel.getId())
@@ -294,6 +304,7 @@ public final class OrganizationAdapter implements OrganizationModel, JpaModel<Or
         return domainModel;
     }
 
+    /** 懒加载并返回组织内部组。 */
     private GroupModel getGroup() {
         if (group == null) {
             group = realm.getGroupById(getGroupId());

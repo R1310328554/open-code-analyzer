@@ -23,7 +23,11 @@ import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.expiration.jpa.ExpirationAction;
 import org.keycloak.models.KeycloakSession;
 
+/**
+ * 已吊销令牌过期清理动作：批量删除数据库中已过期的吊销记录。
+ */
 public enum RevokedTokenExpirationAction implements ExpirationAction {
+    /** 单例实例。 */
     INSTANCE;
 
     @Override

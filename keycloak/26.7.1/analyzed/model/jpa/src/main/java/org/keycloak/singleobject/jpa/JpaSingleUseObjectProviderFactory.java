@@ -43,22 +43,28 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 import org.jboss.logging.Logger;
 
 /**
- * Factory for {@link JpaSingleUseObjectProvider}.
+ * {@link JpaSingleUseObjectProvider} 工厂（ID {@code jpa}）。
  * <p>
- * Enabled only when the {@link Profile.Feature#STATELESS} feature is active. Registers a periodic
- * {@link ExpirationTask} to clean up expired single-use objects from the database.
+ * 仅在 {@link Profile.Feature#STATELESS} 特性启用时可用；注册周期性 {@link ExpirationTask}
+ * 以清理数据库中过期的一次性对象。
  */
 public class JpaSingleUseObjectProviderFactory implements SingleUseObjectProviderFactory<JpaSingleUseObjectProvider>, EnvironmentDependentProviderFactory, ServerInfoAwareProviderFactory {
 
     private final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** Provider 标识符。 */
     private static final String PROVIDER_ID = "jpa";
 
-    // Config
+    // 配置项
+    /** 是否启用指标的配置键。 */
     private static final String METRICS_KEY = "metricsEnabled";
 
+    /** 过期清理任务执行间隔（秒）。 */
     private int expirationTaskIntervalSeconds;
+    /** 过期清理任务超时（秒）。 */
     private int expirationTaskTimeoutSeconds;
+    /** 单次清理最多移除的条目数。 */
     private int expirationTaskMaxRemoval;
+    /** 是否启用过期相关指标。 */
     private boolean metricsEnabled;
 
     @Override

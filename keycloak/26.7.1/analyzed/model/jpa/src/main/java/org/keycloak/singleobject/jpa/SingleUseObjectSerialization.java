@@ -26,11 +26,11 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
- * Helper for serializing and deserializing {@link SingleUseObjectEntity} notes field
- * to and from its JSON text column representation.
+ * {@link SingleUseObjectEntity} notes 字段与 JSON 文本列之间的序列化/反序列化工具。
  */
 final class SingleUseObjectSerialization {
 
+    /** notes 字段对应的 {@code Map<String,String>} 类型引用。 */
     private static final TypeReference<Map<String, String>> STRING_MAP = new TypeReference<>() {
     };
 
