@@ -1,5 +1,7 @@
 package ingester
 
+// mapper（FpMapper）处理 fingerprint 碰撞：为冲突标签分配保留空间内的新 fingerprint。
+
 import (
 	"fmt"
 	"sort"
@@ -14,10 +16,12 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// 模块级常量定义。
 const maxMappedFP = 1 << 20 // About 1M fingerprints reserved for mapping.
 
 var separatorString = string([]byte{model.SeparatorByte})
 
+// FpMapper 在 FastFingerprint 碰撞时为不同标签集分配唯一 fingerprint。
 // FpMapper is used to map fingerprints in order to work around fingerprint
 // collisions.
 type FpMapper struct {
@@ -35,6 +39,7 @@ type FpMapper struct {
 }
 
 // NewFPMapper returns an fpMapper ready to use.
+// NewFPMapper 创建组件实例并完成必要初始化。
 func NewFPMapper(fpToLabels func(fingerprint model.Fingerprint) labels.Labels) *FpMapper {
 	if fpToLabels == nil {
 		panic("nil fpToLabels")
@@ -49,6 +54,7 @@ func NewFPMapper(fpToLabels func(fingerprint model.Fingerprint) labels.Labels) *
 // MapFP takes a raw fingerprint (as returned by Metrics.FastFingerprint) and
 // returns a truly unique fingerprint. The caller must have locked the raw
 // fingerprint.
+// 将原始 fingerprint 映射为唯一值，处理碰撞。
 func (m *FpMapper) MapFP(fp model.Fingerprint, metric labels.Labels) model.Fingerprint {
 	// First check if we are in the reserved FP space, in which case this is
 	// automatically a collision that has to be mapped.
@@ -90,6 +96,7 @@ func (m *FpMapper) MapFP(fp model.Fingerprint, metric labels.Labels) model.Finge
 // maybeAddMapping is only used internally. It takes a detected collision and
 // adds it to the collisions map if not yet there. In any case, it returns the
 // truly unique fingerprint for the colliding metric.
+// maybeAddMapping 实现该路径上的核心处理逻辑。
 func (m *FpMapper) maybeAddMapping(fp model.Fingerprint, collidingMetric labels.Labels) model.Fingerprint {
 	ms := metricToUniqueString(collidingMetric)
 	m.mtx.RLock()
@@ -127,6 +134,7 @@ func (m *FpMapper) maybeAddMapping(fp model.Fingerprint, collidingMetric labels.
 	return mappedFP
 }
 
+// nextMappedFP 实现该路径上的核心处理逻辑。
 func (m *FpMapper) nextMappedFP() model.Fingerprint {
 	mappedFP := model.Fingerprint(m.highestMappedFP.Inc())
 	if mappedFP > maxMappedFP {
@@ -142,6 +150,7 @@ func (m *FpMapper) nextMappedFP() model.Fingerprint {
 // FastFingerprint function, and its result is not suitable as a key for maps
 // and indexes as it might become really large, causing a lot of hashing effort
 // in maps and a lot of storage overhead in indexes.
+// metricToUniqueString 实现该路径上的核心处理逻辑。
 func metricToUniqueString(m labels.Labels) string {
 	parts := make([]string, 0, m.Len())
 	m.Range(func(l labels.Label) {
@@ -150,3 +159,4 @@ func metricToUniqueString(m labels.Labels) string {
 	sort.Strings(parts)
 	return strings.Join(parts, separatorString)
 }
+// metricToUniqueString 提供确定性的“理想 fingerprint”字符串表示。

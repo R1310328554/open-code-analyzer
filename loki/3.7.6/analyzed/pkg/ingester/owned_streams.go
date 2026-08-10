@@ -1,5 +1,7 @@
 package ingester
 
+// owned_streams 跟踪本 ingester 拥有的 stream 数量：区分 owned/not-owned，并按 retention policy 分桶计数。
+
 import (
 	"sync"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// 模块级常量定义。
 const (
 	// noPolicy represents the absence of a policy
 	noPolicy = ""
@@ -22,6 +25,7 @@ var notOwnedStreamsMetric = promauto.NewGauge(prometheus.GaugeOpts{
 	Help:      "The total number of not owned streams in memory.",
 })
 
+// ownedStreamService 维护 owned/not-owned stream 计数及按 policy 的分桶统计。
 type ownedStreamService struct {
 	tenantID         string
 	limiter          *Limiter
@@ -35,6 +39,7 @@ type ownedStreamService struct {
 	policyLock         sync.RWMutex
 }
 
+// newOwnedStreamService 实现该路径上的核心处理逻辑。
 func newOwnedStreamService(tenantID string, limiter *Limiter) *ownedStreamService {
 	svc := &ownedStreamService{
 		tenantID:           tenantID,
@@ -49,10 +54,12 @@ func newOwnedStreamService(tenantID string, limiter *Limiter) *ownedStreamServic
 	return svc
 }
 
+// getOwnedStreamCount 读取内部状态或构建查询结果。
 func (s *ownedStreamService) getOwnedStreamCount() int {
 	return int(s.ownedStreamCount.Load())
 }
 
+// getPolicyStreamCount 读取内部状态或构建查询结果。
 func (s *ownedStreamService) getPolicyStreamCount(policy string) int {
 	if policy == noPolicy {
 		return 0
@@ -68,21 +75,25 @@ func (s *ownedStreamService) getPolicyStreamCount(policy string) int {
 }
 
 // getActivePolicyCount returns the number of policies that currently have active streams
+// getActivePolicyCount 读取内部状态或构建查询结果。
 func (s *ownedStreamService) getActivePolicyCount() int {
 	s.policyLock.RLock()
 	defer s.policyLock.RUnlock()
 	return len(s.policyStreamCounts)
 }
 
+// updateFixedLimit 实现该路径上的核心处理逻辑。
 func (s *ownedStreamService) updateFixedLimit() (old, newVal int32) {
 	newLimit, _, _, _ := s.limiter.GetStreamCountLimit(s.tenantID, noPolicy)
 	return s.fixedLimit.Swap(int32(newLimit)), int32(newLimit)
 }
 
+// getFixedLimit 读取内部状态或构建查询结果。
 func (s *ownedStreamService) getFixedLimit() int {
 	return int(s.fixedLimit.Load())
 }
 
+// 记录 stream 归属变化并更新计数器。
 func (s *ownedStreamService) trackStreamOwnership(fp model.Fingerprint, owned bool, policy string) {
 	// only need to inc the owned count; can use sync atomics.
 	if owned {
@@ -107,6 +118,7 @@ func (s *ownedStreamService) trackStreamOwnership(fp model.Fingerprint, owned bo
 	s.notOwnedStreams[fp] = nil
 }
 
+// trackRemovedStream 实现该路径上的核心处理逻辑。
 func (s *ownedStreamService) trackRemovedStream(fp model.Fingerprint, policy string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -132,6 +144,7 @@ func (s *ownedStreamService) trackRemovedStream(fp model.Fingerprint, policy str
 	}
 }
 
+// resetStreamCounts 实现该路径上的核心处理逻辑。
 func (s *ownedStreamService) resetStreamCounts() {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -145,6 +158,7 @@ func (s *ownedStreamService) resetStreamCounts() {
 	s.policyLock.Unlock()
 }
 
+// isStreamNotOwned 执行条件判断并返回布尔结果。
 func (s *ownedStreamService) isStreamNotOwned(fp model.Fingerprint) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -152,3 +166,4 @@ func (s *ownedStreamService) isStreamNotOwned(fp model.Fingerprint) bool {
 	_, notOwned := s.notOwnedStreams[fp]
 	return notOwned
 }
+// notOwned stream 仍占内存但计入单独指标，便于缩容时 flush。

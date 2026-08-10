@@ -1,5 +1,7 @@
 package index
 
+// multi 按存储周期切换倒排索引实现：普通 modulo 分片与 TSDB bit-prefix 索引并存，查询时按时间选 backend。
+
 import (
 	"fmt"
 	"time"
@@ -13,16 +15,19 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/types"
 )
 
+// periodIndex 类型封装该模块的状态与行为。
 type periodIndex struct {
 	time.Time
 	idx int // address of the index to use
 }
 
+// Multi 按配置周期持有多个倒排索引 backend，Add/Delete 同步写入全部 backend。
 type Multi struct {
 	periods []periodIndex
 	indices []Interface
 }
 
+// NewMultiInvertedIndex 创建组件实例并完成必要初始化。
 func NewMultiInvertedIndex(periods []config.PeriodConfig, indexShards uint32) (*Multi, error) {
 	var (
 		err error
@@ -63,6 +68,7 @@ func NewMultiInvertedIndex(periods []config.PeriodConfig, indexShards uint32) (*
 	}, nil
 }
 
+// 将 fingerprint 注册到倒排索引。
 func (m *Multi) Add(labels []logproto.LabelAdapter, fp model.Fingerprint) (result labels.Labels) {
 	for _, i := range m.indices {
 		if i != nil {
@@ -72,6 +78,7 @@ func (m *Multi) Add(labels []logproto.LabelAdapter, fp model.Fingerprint) (resul
 	return
 }
 
+// 从倒排索引移除 fingerprint。
 func (m *Multi) Delete(labels labels.Labels, fp model.Fingerprint) {
 	for _, i := range m.indices {
 		if i != nil {
@@ -81,18 +88,22 @@ func (m *Multi) Delete(labels labels.Labels, fp model.Fingerprint) {
 
 }
 
+// 按 matcher 查找 fingerprint 集合。
 func (m *Multi) Lookup(t time.Time, matchers []*labels.Matcher, shard *logql.Shard) ([]model.Fingerprint, error) {
 	return m.indexFor(t).Lookup(matchers, shard)
 }
 
+// 返回索引中所有标签名。
 func (m *Multi) LabelNames(t time.Time, shard *logql.Shard) ([]string, error) {
 	return m.indexFor(t).LabelNames(shard)
 }
 
+// 返回指定标签名的全部取值。
 func (m *Multi) LabelValues(t time.Time, name string, shard *logql.Shard) ([]string, error) {
 	return m.indexFor(t).LabelValues(name, shard)
 }
 
+// indexFor 按查询时间点选择对应周期的索引实现，越界返回 noopInvertedIndex。
 // Query planning is responsible for ensuring no query spans more than one inverted index.
 // Therefore we don't need to account for both `from` and `through`.
 func (m *Multi) indexFor(t time.Time) Interface {
@@ -104,22 +115,27 @@ func (m *Multi) indexFor(t time.Time) Interface {
 	return noopInvertedIndex{}
 }
 
+// noopInvertedIndex 类型封装该模块的状态与行为。
 type noopInvertedIndex struct{}
 
 func (noopInvertedIndex) Add(_ []logproto.LabelAdapter, _ model.Fingerprint) labels.Labels {
 	return labels.EmptyLabels()
 }
 
+// 从倒排索引移除 fingerprint。
 func (noopInvertedIndex) Delete(_ labels.Labels, _ model.Fingerprint) {}
 
 func (noopInvertedIndex) Lookup(_ []*labels.Matcher, _ *logql.Shard) ([]model.Fingerprint, error) {
 	return nil, nil
 }
 
+// 返回索引中所有标签名。
 func (noopInvertedIndex) LabelNames(_ *logql.Shard) ([]string, error) {
 	return nil, nil
 }
 
+// 返回指定标签名的全部取值。
 func (noopInvertedIndex) LabelValues(_ string, _ *logql.Shard) ([]string, error) {
 	return nil, nil
 }
+// 查询规划需保证单次查询不跨多个倒排索引周期边界。

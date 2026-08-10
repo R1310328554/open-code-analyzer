@@ -1,5 +1,7 @@
 package ingester
 
+// downscale 提供 Kafka 分区缩容 HTTP 接口：将 ingester 持有的分区切换为 INACTIVE（只读）或恢复为 ACTIVE。
+
 import (
 	"errors"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util"
 )
 
+// PreparePartitionDownscaleHandler 为 Kafka 分区缩容做准备，将分区置为 INACTIVE 只读态。
 // PreparePartitionDownscaleHandler prepares the ingester's partition downscaling. The partition owned by the
 // ingester will switch to INACTIVE state (read-only).
 //
@@ -26,6 +29,7 @@ import (
 //
 //   - DELETE
 //     Sets partition back from INACTIVE to ACTIVE state, and returns 0 signalling the partition is not in INACTIVE state
+// PreparePartitionDownscaleHandler 实现该路径上的核心处理逻辑。
 func (i *Ingester) PreparePartitionDownscaleHandler(w http.ResponseWriter, r *http.Request) {
 	logger := log.With(i.logger, "partition", i.ingestPartitionID)
 
@@ -109,3 +113,4 @@ func (i *Ingester) PreparePartitionDownscaleHandler(w http.ResponseWriter, r *ht
 		util.WriteJSONResponse(w, map[string]any{"timestamp": 0})
 	}
 }
+// 分区缩容完成后查询路径可依赖 INACTIVE 时间戳做 lookback 一致性。

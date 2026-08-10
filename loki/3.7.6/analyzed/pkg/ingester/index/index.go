@@ -2,6 +2,8 @@
 // but modified to support sharding queries.
 package index
 
+// index 提供 ingester 内存倒排索引：标签到 fingerprint 映射，支持分片以降低写锁竞争，并兼容 LogQL shard 查询。
+
 import (
 	"bytes"
 	"crypto/sha256"
@@ -23,10 +25,12 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// 模块级常量定义。
 const DefaultIndexShards = 32
 
 var ErrInvalidShardQuery = errors.New("incompatible index shard query")
 
+// Interface 定义倒排索引增删查及 LabelNames/LabelValues 的统一接口。
 type Interface interface {
 	Add(labels []logproto.LabelAdapter, fp model.Fingerprint) labels.Labels
 	Lookup(matchers []*labels.Matcher, shard *logql.Shard) ([]model.Fingerprint, error)
@@ -35,6 +39,7 @@ type Interface interface {
 	Delete(labels labels.Labels, fp model.Fingerprint)
 }
 
+// InvertedIndex 内存倒排索引：标签对映射到 fingerprint，分片降低写锁争用。
 // InvertedIndex implements a in-memory inverted index from label pairs to fingerprints.
 // It is sharded to reduce lock contention on writes.
 type InvertedIndex struct {
@@ -42,6 +47,7 @@ type InvertedIndex struct {
 	shards      []*indexShard
 }
 
+// NewWithShards 创建组件实例并完成必要初始化。
 func NewWithShards(totalShards uint32) *InvertedIndex {
 	shards := make([]*indexShard, totalShards)
 	for i := uint32(0); i < totalShards; i++ {
@@ -56,6 +62,7 @@ func NewWithShards(totalShards uint32) *InvertedIndex {
 	}
 }
 
+// 根据查询 shard 选取需扫描的索引分片。
 func (ii *InvertedIndex) getShards(shard *index.ShardAnnotation) []*indexShard {
 	if shard == nil {
 		return ii.shards
@@ -72,6 +79,7 @@ func (ii *InvertedIndex) getShards(shard *index.ShardAnnotation) []*indexShard {
 	return result
 }
 
+// validateShard 实现该路径上的核心处理逻辑。
 func (ii *InvertedIndex) validateShard(shard *logql.Shard) (*index.ShardAnnotation, error) {
 	if shard == nil {
 		return nil, nil
@@ -91,6 +99,7 @@ func (ii *InvertedIndex) validateShard(shard *logql.Shard) (*index.ShardAnnotati
 // Add a fingerprint under the specified labels.
 // NOTE: memory for `labels` is unsafe; anything retained beyond the
 // life of this function must be copied
+// 将 fingerprint 注册到倒排索引。
 func (ii *InvertedIndex) Add(labels []logproto.LabelAdapter, fp model.Fingerprint) labels.Labels {
 	shardIndex := labelsSeriesIDHash(logproto.FromLabelAdaptersToLabels(labels))
 	shard := ii.shards[shardIndex%ii.totalShards]
@@ -110,6 +119,7 @@ var (
 	}
 )
 
+// labelsSeriesIDHash 实现该路径上的核心处理逻辑。
 func labelsSeriesIDHash(ls labels.Labels) uint32 {
 	b64 := base64Pool.Get().(*bytes.Buffer)
 	defer func() {
@@ -120,6 +130,7 @@ func labelsSeriesIDHash(ls labels.Labels) uint32 {
 	return binary.BigEndian.Uint32(buf)
 }
 
+// labelsSeriesID 实现该路径上的核心处理逻辑。
 func labelsSeriesID(ls labels.Labels, dest []byte) {
 	buf := bufferPool.Get().(*bytes.Buffer)
 	defer func() {
@@ -133,6 +144,7 @@ func labelsSeriesID(ls labels.Labels, dest []byte) {
 }
 
 // Backwards-compatible with model.Metric.String()
+// labelsString 实现该路径上的核心处理逻辑。
 func labelsString(b *bytes.Buffer, ls labels.Labels) {
 	// metrics name is used in the store for computing shards.
 	// see chunk/schema_util.go for more details. `labelsString()`
@@ -157,6 +169,7 @@ func labelsString(b *bytes.Buffer, ls labels.Labels) {
 }
 
 // Lookup all fingerprints for the provided matchers.
+// 按 matcher 查找 fingerprint 集合。
 func (ii *InvertedIndex) Lookup(matchers []*labels.Matcher, s *logql.Shard) ([]model.Fingerprint, error) {
 	shard, err := ii.validateShard(s)
 	if err != nil {
@@ -183,6 +196,7 @@ func (ii *InvertedIndex) Lookup(matchers []*labels.Matcher, s *logql.Shard) ([]m
 }
 
 // LabelNames returns all label names.
+// 返回索引中所有标签名。
 func (ii *InvertedIndex) LabelNames(s *logql.Shard) ([]string, error) {
 	shard, err := ii.validateShard(s)
 	if err != nil {
@@ -199,6 +213,7 @@ func (ii *InvertedIndex) LabelNames(s *logql.Shard) ([]string, error) {
 }
 
 // LabelValues returns the values for the given label.
+// 返回指定标签名的全部取值。
 func (ii *InvertedIndex) LabelValues(name string, s *logql.Shard) ([]string, error) {
 	shard, err := ii.validateShard(s)
 	if err != nil {
@@ -216,22 +231,26 @@ func (ii *InvertedIndex) LabelValues(name string, s *logql.Shard) ([]string, err
 }
 
 // Delete a fingerprint with the given label pairs.
+// 从倒排索引移除 fingerprint。
 func (ii *InvertedIndex) Delete(labels labels.Labels, fp model.Fingerprint) {
 	shard := ii.shards[labelsSeriesIDHash(labels)%ii.totalShards]
 	shard.delete(labels, fp)
 }
 
 // NB slice entries are sorted in fp order.
+// indexEntry 类型封装该模块的状态与行为。
 type indexEntry struct {
 	name string
 	fps  map[string]indexValueEntry
 }
 
+// indexValueEntry 类型封装该模块的状态与行为。
 type indexValueEntry struct {
 	value string
 	fps   []model.Fingerprint
 }
 
+// unlockIndex 类型封装该模块的状态与行为。
 type unlockIndex map[string]indexEntry
 
 // This is the prevalent value for Intel and AMD CPUs as-at 2018.
@@ -239,6 +258,7 @@ const cacheLineSize = 64
 
 // Roughly
 // map[labelName] => map[labelValue] => []fingerprint
+// indexShard 类型封装该模块的状态与行为。
 type indexShard struct {
 	shard uint32
 	mtx   sync.RWMutex
@@ -247,6 +267,7 @@ type indexShard struct {
 	pad [cacheLineSize - unsafe.Sizeof(sync.Mutex{}) - unsafe.Sizeof(unlockIndex{})]byte
 }
 
+// copyString 实现该路径上的核心处理逻辑。
 func copyString(s string) string {
 	return string([]byte(s))
 }
@@ -254,6 +275,7 @@ func copyString(s string) string {
 // add metric to the index; return all the name/value pairs as a fresh
 // sorted slice, referencing 'interned' strings from the index so that
 // no references are retained to the memory of `metric`.
+// add 实现该路径上的核心处理逻辑。
 func (shard *indexShard) add(metric []logproto.LabelAdapter, fp model.Fingerprint) labels.Labels {
 	shard.mtx.Lock()
 	defer shard.mtx.Unlock()
@@ -288,6 +310,7 @@ func (shard *indexShard) add(metric []logproto.LabelAdapter, fp model.Fingerprin
 	return builder.Labels()
 }
 
+// lookup 实现该路径上的核心处理逻辑。
 func (shard *indexShard) lookup(matchers []*labels.Matcher) []model.Fingerprint {
 	// index slice values must only be accessed under lock, so all
 	// code paths must take a copy before returning
@@ -333,6 +356,7 @@ func (shard *indexShard) lookup(matchers []*labels.Matcher) []model.Fingerprint 
 	return result
 }
 
+// allFPs 实现该路径上的核心处理逻辑。
 func (shard *indexShard) allFPs() model.Fingerprints {
 	shard.mtx.RLock()
 	defer shard.mtx.RUnlock()
@@ -358,6 +382,7 @@ func (shard *indexShard) allFPs() model.Fingerprints {
 	return result
 }
 
+// labelNames 实现该路径上的核心处理逻辑。
 func (shard *indexShard) labelNames(extractor func(unlockIndex) []string) []string {
 	shard.mtx.RLock()
 	defer shard.mtx.RUnlock()
@@ -375,6 +400,7 @@ func (shard *indexShard) labelNames(extractor func(unlockIndex) []string) []stri
 	return results
 }
 
+// labelValues 实现该路径上的核心处理逻辑。
 func (shard *indexShard) labelValues(
 	name string,
 	extractor func(indexEntry) []string,
@@ -399,6 +425,7 @@ func (shard *indexShard) labelValues(
 	return extractor(values)
 }
 
+// delete 实现该路径上的核心处理逻辑。
 func (shard *indexShard) delete(lbls labels.Labels, fp model.Fingerprint) {
 	shard.mtx.Lock()
 	defer shard.mtx.Unlock()
@@ -440,6 +467,7 @@ func (shard *indexShard) delete(lbls labels.Labels, fp model.Fingerprint) {
 
 // intersect two sorted lists of fingerprints.  Assumes there are no duplicate
 // fingerprints within the input lists.
+// intersect 实现该路径上的核心处理逻辑。
 func intersect(a, b []model.Fingerprint) []model.Fingerprint {
 	if a == nil {
 		return b
@@ -458,6 +486,7 @@ func intersect(a, b []model.Fingerprint) []model.Fingerprint {
 	return result
 }
 
+// mergeStringSlices 实现该路径上的核心处理逻辑。
 func mergeStringSlices(ss [][]string) []string {
 	switch len(ss) {
 	case 0:
@@ -475,6 +504,7 @@ func mergeStringSlices(ss [][]string) []string {
 	}
 }
 
+// mergeTwoStringSlices 实现该路径上的核心处理逻辑。
 func mergeTwoStringSlices(a, b []string) []string {
 	result := make([]string, 0, len(a)+len(b))
 	i, j := 0, 0
@@ -495,3 +525,4 @@ func mergeTwoStringSlices(a, b []string) []string {
 	result = append(result, b[j:]...)
 	return result
 }
+// labelsSeriesIDHash 基于标签序列化后的 SHA256 前缀选择 modulo 分片。

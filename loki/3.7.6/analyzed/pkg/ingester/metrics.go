@@ -1,5 +1,7 @@
 package ingester
 
+// metrics 注册 ingester Prometheus 指标：WAL、checkpoint、chunk 刷盘、恢复与 stream 所有权检查等可观测性数据。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// ingesterMetrics 持有 WAL、checkpoint、chunk 与恢复相关的全部 Prometheus 句柄。
 type ingesterMetrics struct {
 	checkpointDeleteFail       prometheus.Counter
 	checkpointDeleteTotal      prometheus.Counter
@@ -74,6 +77,7 @@ type ingesterMetrics struct {
 	streamsOwnershipCheck  prometheus.Histogram
 }
 
+// setRecoveryBytesInUse 将恢复占用字节下限钳制为 0 后写入 Gauge。
 // setRecoveryBytesInUse bounds the bytes reports to >= 0.
 // TODO(owen-d): we can gain some efficiency by having the flusher never update this after recovery ends.
 func (m *ingesterMetrics) setRecoveryBytesInUse(v int64) {
@@ -83,6 +87,7 @@ func (m *ingesterMetrics) setRecoveryBytesInUse(v int64) {
 	m.recoveryBytesInUse.Set(float64(v))
 }
 
+// 模块级常量定义。
 const (
 	walTypeCheckpoint = "checkpoint"
 	walTypeSegment    = "segment"
@@ -90,6 +95,7 @@ const (
 	duplicateReason = "duplicate"
 )
 
+// newIngesterMetrics 实现该路径上的核心处理逻辑。
 func newIngesterMetrics(r prometheus.Registerer, metricsNamespace string) *ingesterMetrics {
 	return &ingesterMetrics{
 		walDiskFullFailures: promauto.With(r).NewCounter(prometheus.CounterOpts{
@@ -341,3 +347,4 @@ func newIngesterMetrics(r prometheus.Registerer, metricsNamespace string) *inges
 		}, []string{"tenant"}),
 	}
 }
+// setRecoveryBytesInUse 将恢复占用字节钳制为非负值上报。

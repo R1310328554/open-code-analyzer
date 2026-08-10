@@ -1,5 +1,7 @@
 package ingester
 
+// flush 负责 chunk 刷盘调度：优先级队列、并发 flush worker、按 idle/max_age/forced 等原因将内存 chunk 编码并写入对象存储。
+
 import (
 	"bytes"
 	"errors"
@@ -28,6 +30,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// 模块级常量定义。
 const (
 	// Backoff for retrying 'immediate' flushes. Only counts for queue
 	// position, not wallclock time.
@@ -48,6 +51,7 @@ const (
 )
 
 // I don't know if this needs to be private but I only needed it in this package.
+// flushReasonCounter 类型封装该模块的状态与行为。
 type flushReasonCounter struct {
 	flushReasonIdle     int
 	flushReasonMaxAge   int
@@ -57,6 +61,7 @@ type flushReasonCounter struct {
 	flushReasonSynced   int
 }
 
+// Log 实现该路径上的核心处理逻辑。
 func (f *flushReasonCounter) Log() []interface{} {
 	// return counters only if they are non zero
 	var log []interface{}
@@ -81,6 +86,7 @@ func (f *flushReasonCounter) Log() []interface{} {
 	return log
 }
 
+// IncrementForReason 实现该路径上的核心处理逻辑。
 func (f *flushReasonCounter) IncrementForReason(reason string) error {
 	switch reason {
 	case flushReasonIdle:
@@ -101,6 +107,7 @@ func (f *flushReasonCounter) IncrementForReason(reason string) error {
 	return nil
 }
 
+// InitFlushQueues 在 WAL 重放期间及正常运行时均可初始化并发 flush 队列。
 // Note: this is called both during the WAL replay (zero or more times)
 // and then after replay as well.
 func (i *Ingester) InitFlushQueues() {
@@ -111,6 +118,7 @@ func (i *Ingester) InitFlushQueues() {
 	}
 }
 
+// Flush 由 Lifecycler 在关停时调用，触发全量刷盘并关闭队列。
 // Flush implements ring.FlushTransferer
 // Flush triggers a flush of all the chunks and closes the flush queues.
 // Called from the Lifecycler as part of the ingester shutdown.
@@ -121,10 +129,12 @@ func (i *Ingester) Flush() {
 // TransferOut implements ring.FlushTransferer
 // Noop implementation because ingesters have a WAL now that does not require transferring chunks any more.
 // We return ErrTransferDisabled to indicate that we don't support transfers, and therefore we may flush on shutdown if configured to do so.
+// TransferOut 实现该路径上的核心处理逻辑。
 func (i *Ingester) TransferOut(_ context.Context) error {
 	return ring.ErrTransferDisabled
 }
 
+// flush 实现该路径上的核心处理逻辑。
 func (i *Ingester) flush(mayRemoveStreams bool) {
 	i.sweepUsers(true, mayRemoveStreams)
 
@@ -139,11 +149,13 @@ func (i *Ingester) flush(mayRemoveStreams bool) {
 
 // FlushHandler triggers a flush of all in memory chunks.  Mainly used for
 // local testing.
+// FlushHandler 实现该路径上的核心处理逻辑。
 func (i *Ingester) FlushHandler(w http.ResponseWriter, _ *http.Request) {
 	i.sweepUsers(true, true)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// flushOp 类型封装该模块的状态与行为。
 type flushOp struct {
 	from      model.Time
 	userID    string
@@ -151,14 +163,17 @@ type flushOp struct {
 	immediate bool
 }
 
+// Key 实现该路径上的核心处理逻辑。
 func (o *flushOp) Key() string {
 	return fmt.Sprintf("%s-%s-%v", o.userID, o.fp, o.immediate)
 }
 
+// Priority 实现该路径上的核心处理逻辑。
 func (o *flushOp) Priority() int64 {
 	return -int64(o.from)
 }
 
+// sweepUsers 遍历所有租户 instance，调度待刷 series 并清理空租户。
 // sweepUsers periodically schedules series for flushing and garbage collects users with no streams
 func (i *Ingester) sweepUsers(immediate, mayRemoveStreams bool) {
 	instances := i.getInstances()
@@ -169,6 +184,7 @@ func (i *Ingester) sweepUsers(immediate, mayRemoveStreams bool) {
 	i.setFlushRate()
 }
 
+// sweepInstance 实现该路径上的核心处理逻辑。
 func (i *Ingester) sweepInstance(instance *instance, immediate, mayRemoveStreams bool) {
 	_ = instance.streams.ForEach(func(s *stream) (bool, error) {
 		i.sweepStream(instance, s, immediate)
@@ -177,6 +193,7 @@ func (i *Ingester) sweepInstance(instance *instance, immediate, mayRemoveStreams
 	})
 }
 
+// 评估 stream 是否需要入队 flush。
 func (i *Ingester) sweepStream(instance *instance, stream *stream, immediate bool) {
 	stream.chunkMtx.RLock()
 	defer stream.chunkMtx.RUnlock()
@@ -201,11 +218,13 @@ func (i *Ingester) sweepStream(instance *instance, stream *stream, immediate boo
 // Compute a rate such to spread calls to the store over nearly all of the flush period,
 // for example if we have 600 items in the queue and period 1 min we will send 10.5 per second.
 // Note if the store can't keep up with this rate then it doesn't make any difference.
+// setFlushRate 更新运行时配置或内部字段。
 func (i *Ingester) setFlushRate() {
 	totalQueueLength := 0
 	for _, q := range i.flushQueues {
 		totalQueueLength += q.Length()
 	}
+	// 模块级常量定义。
 	const jitter = 1.05 // aim to finish a little bit before the end of the period
 	flushesPerSecond := float64(totalQueueLength) / i.cfg.FlushCheckPeriod.Seconds() * jitter
 	// Avoid going very slowly with tiny queues
@@ -216,6 +235,7 @@ func (i *Ingester) setFlushRate() {
 	i.flushRateLimiter.SetLimit(rate.Limit(flushesPerSecond))
 }
 
+// flush worker 主循环，从优先级队列取 op 执行刷盘。
 func (i *Ingester) flushLoop(j int) {
 	l := log.With(i.logger, "loop", j)
 	defer func() {
@@ -249,6 +269,7 @@ func (i *Ingester) flushLoop(j int) {
 	}
 }
 
+// flushOp 实现该路径上的核心处理逻辑。
 func (i *Ingester) flushOp(l log.Logger, op *flushOp) error {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
@@ -265,6 +286,7 @@ func (i *Ingester) flushOp(l log.Logger, op *flushOp) error {
 	return b.Err()
 }
 
+// flushUserSeries 实现该路径上的核心处理逻辑。
 func (i *Ingester) flushUserSeries(ctx context.Context, userID string, fp model.Fingerprint, immediate bool) error {
 	instance, ok := i.getInstanceByID(userID)
 	if !ok {
@@ -315,6 +337,7 @@ func (i *Ingester) flushUserSeries(ctx context.Context, userID string, fp model.
 	return nil
 }
 
+// collectChunksToFlush 实现该路径上的核心处理逻辑。
 func (i *Ingester) collectChunksToFlush(instance *instance, fp model.Fingerprint, immediate bool) ([]*chunkDesc, labels.Labels, *sync.RWMutex) {
 	var stream *stream
 	var ok bool
@@ -353,6 +376,7 @@ func (i *Ingester) collectChunksToFlush(instance *instance, fp model.Fingerprint
 	return result, stream.labels, &stream.chunkMtx
 }
 
+// shouldFlushChunk 实现该路径上的核心处理逻辑。
 func (i *Ingester) shouldFlushChunk(chunk *chunkDesc) (bool, string) {
 	// Append should close the chunk when the a new one is added.
 	if chunk.closed {
@@ -373,6 +397,7 @@ func (i *Ingester) shouldFlushChunk(chunk *chunkDesc) (bool, string) {
 	return false, ""
 }
 
+// removeFlushedChunks 实现该路径上的核心处理逻辑。
 func (i *Ingester) removeFlushedChunks(instance *instance, stream *stream, mayRemoveStream bool) {
 	now := time.Now()
 
@@ -413,6 +438,7 @@ func (i *Ingester) removeFlushedChunks(instance *instance, stream *stream, mayRe
 // If a chunk fails to be flushed, this operation is reinserted in the queue. Since previously flushed chunks
 // are marked as flushed, they shouldn't be flushed again.
 // It has to close given chunks to have have the head block included.
+// flushChunks 实现该路径上的核心处理逻辑。
 func (i *Ingester) flushChunks(ctx context.Context, fp model.Fingerprint, labelPairs labels.Labels, cs []*chunkDesc, chunkMtx sync.Locker) error {
 	userID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -465,6 +491,7 @@ func (i *Ingester) flushChunks(ctx context.Context, fp model.Fingerprint, labelP
 }
 
 // markChunkAsFlushed mark a chunk to make sure it won't be flushed if this operation fails.
+// markChunkAsFlushed 实现该路径上的核心处理逻辑。
 func (i *Ingester) markChunkAsFlushed(desc *chunkDesc, chunkMtx sync.Locker) {
 	chunkMtx.Lock()
 	defer chunkMtx.Unlock()
@@ -474,6 +501,7 @@ func (i *Ingester) markChunkAsFlushed(desc *chunkDesc, chunkMtx sync.Locker) {
 // closeChunk closes the given chunk while locking it to ensure that new blocks are cut before flushing.
 //
 // If the chunk isn't closed, data in the head block isn't included.
+// closeChunk 实现该路径上的核心处理逻辑。
 func (i *Ingester) closeChunk(desc *chunkDesc, chunkMtx sync.Locker) error {
 	chunkMtx.Lock()
 	defer chunkMtx.Unlock()
@@ -485,6 +513,7 @@ func (i *Ingester) closeChunk(desc *chunkDesc, chunkMtx sync.Locker) error {
 //
 // If the encoding is unsuccessful the flush operation is reinserted in the queue which will cause
 // the encoding for a given chunk to be evaluated again.
+// 压缩编码 chunk 准备持久化。
 func (i *Ingester) encodeChunk(ctx context.Context, ch *chunk.Chunk, desc *chunkDesc) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -508,6 +537,7 @@ func (i *Ingester) encodeChunk(ctx context.Context, ch *chunk.Chunk, desc *chunk
 // If the flush is successful, metrics for this flush are to be reported.
 // If the flush isn't successful, the operation for this userID is requeued allowing this and all other unflushed
 // chunk to have another opportunity to be flushed.
+// flushChunk 实现该路径上的核心处理逻辑。
 func (i *Ingester) flushChunk(ctx context.Context, ch *chunk.Chunk) error {
 	i.metrics.chunksFlushRequestsTotal.Inc()
 	if err := i.store.Put(ctx, []chunk.Chunk{*ch}); err != nil {
@@ -519,6 +549,7 @@ func (i *Ingester) flushChunk(ctx context.Context, ch *chunk.Chunk) error {
 }
 
 // reportFlushedChunkStatistics calculate overall statistics of flushed chunks without compromising the flush process.
+// reportFlushedChunkStatistics 实现该路径上的核心处理逻辑。
 func (i *Ingester) reportFlushedChunkStatistics(ch *chunk.Chunk, desc *chunkDesc, sizePerTenant prometheus.Counter, countPerTenant prometheus.Counter, reason string) {
 	byt, err := ch.Encoded()
 	if err != nil {
@@ -553,3 +584,4 @@ func (i *Ingester) reportFlushedChunkStatistics(ch *chunk.Chunk, desc *chunkDesc
 	i.metrics.flushedChunksAgeStats.Record(time.Since(boundsFrom).Seconds())
 	i.metrics.flushedChunksLifespanStats.Record(boundsTo.Sub(boundsFrom).Seconds())
 }
+// flush 队列 drain 完成后 ingester 方可安全退出并释放内存 chunk。

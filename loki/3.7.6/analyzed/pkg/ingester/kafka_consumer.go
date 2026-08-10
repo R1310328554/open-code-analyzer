@@ -1,5 +1,7 @@
 package ingester
 
+// kafka_consumer 从 Kafka 分区拉取记录，解码后调用 Pusher，并行 worker 处理批次并提交连续 offset。
+
 import (
 	"context"
 	"errors"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// consumerMetrics 类型封装该模块的状态与行为。
 type consumerMetrics struct {
 	consumeLatency      prometheus.Histogram
 	currentOffset       prometheus.Gauge
@@ -27,6 +30,7 @@ type consumerMetrics struct {
 }
 
 // newConsumerMetrics initializes and returns a new consumerMetrics instance
+// newConsumerMetrics 实现该路径上的核心处理逻辑。
 func newConsumerMetrics(reg prometheus.Registerer) *consumerMetrics {
 	return &consumerMetrics{
 		consumeLatency: promauto.With(reg).NewHistogram(prometheus.HistogramOpts{
@@ -50,6 +54,7 @@ func newConsumerMetrics(reg prometheus.Registerer) *consumerMetrics {
 	}
 }
 
+// NewKafkaConsumerFactory 构造分区 Consumer 工厂，注入指标与最大 worker 数。
 func NewKafkaConsumerFactory(pusher logproto.PusherServer, reg prometheus.Registerer, maxConsumerWorkers int) partition.ConsumerFactory {
 	metrics := newConsumerMetrics(reg)
 	metrics.consumeWorkersCount.Set(float64(maxConsumerWorkers))
@@ -70,6 +75,7 @@ func NewKafkaConsumerFactory(pusher logproto.PusherServer, reg prometheus.Regist
 	}
 }
 
+// kafkaConsumer 类型封装该模块的状态与行为。
 type kafkaConsumer struct {
 	pusher             logproto.PusherServer
 	logger             log.Logger
@@ -79,6 +85,7 @@ type kafkaConsumer struct {
 	metrics            *consumerMetrics
 }
 
+// Start 实现该路径上的核心处理逻辑。
 func (kc *kafkaConsumer) Start(ctx context.Context, recordsCh <-chan []partition.Record) func() {
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -104,6 +111,7 @@ func (kc *kafkaConsumer) Start(ctx context.Context, recordsCh <-chan []partition
 	return wg.Wait
 }
 
+// 并行解码 Kafka 记录批次并 push 到 ingester。
 func (kc *kafkaConsumer) consume(ctx context.Context, records []partition.Record) {
 	if len(records) == 0 {
 		return
@@ -124,6 +132,7 @@ func (kc *kafkaConsumer) consume(ctx context.Context, records []partition.Record
 
 	level.Debug(kc.logger).Log("msg", "consuming records", "min_offset", minOffset, "max_offset", maxOffset)
 
+	// recordWithIndex 类型封装该模块的状态与行为。
 	type recordWithIndex struct {
 		record partition.Record
 		index  int
@@ -200,10 +209,12 @@ func (kc *kafkaConsumer) consume(ctx context.Context, records []partition.Record
 	kc.metrics.currentOffset.Set(float64(maxOffset))
 }
 
+// canRetry 实现该路径上的核心处理逻辑。
 func canRetry(err error) bool {
 	return errors.Is(err, ErrReadOnly)
 }
 
+// retryWithBackoff 实现该路径上的核心处理逻辑。
 func retryWithBackoff(ctx context.Context, fn func(attempts int) error) error {
 	err := fn(0)
 	if err == nil {
@@ -230,3 +241,4 @@ func retryWithBackoff(ctx context.Context, fn func(attempts int) error) error {
 	}
 	return backoff.Err()
 }
+// 仅当连续 offset 全部成功 push 后才 commit，避免数据空洞。

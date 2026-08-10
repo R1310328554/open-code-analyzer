@@ -1,5 +1,7 @@
 package index
 
+// bitprefix 实现 TSDB 兼容的位前缀倒排索引：按 fingerprint 高位分片，与 store 侧 shard 解析保持一致。
+
 import (
 	"fmt"
 	"sort"
@@ -12,17 +14,20 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/stores/shipper/indexshipper/tsdb/index"
 )
 
+// BitPrefixInvertedIndex 使用 TSDB bit-prefix 分片替代 modulo，保证跨组件 shard 一致。
 // BitPrefixInvertedIndex is another inverted index implementation
 // that uses the bit prefix sharding algorithm in tsdb/index/shard.go
 // instead of a modulo approach.
 // This is the standard for TSDB compatibility because
 // the same series must resolve to the same shard (for each period config),
 // whether it's resolved on the ingester or via the store.
+// BitPrefixInvertedIndex 类型封装该模块的状态与行为。
 type BitPrefixInvertedIndex struct {
 	totalShards uint32
 	shards      []*indexShard
 }
 
+// ValidateBitPrefixShardFactor 实现该路径上的核心处理逻辑。
 func ValidateBitPrefixShardFactor(factor uint32) error {
 	if requiredBits := index.NewShard(0, factor).RequiredBits(); 1<<requiredBits != factor {
 		return fmt.Errorf("incompatible inverted index shard factor on ingester: It must be a power of two, got %d", factor)
@@ -30,6 +35,7 @@ func ValidateBitPrefixShardFactor(factor uint32) error {
 	return nil
 }
 
+// NewBitPrefixWithShards 创建组件实例并完成必要初始化。
 func NewBitPrefixWithShards(totalShards uint32) (*BitPrefixInvertedIndex, error) {
 	if err := ValidateBitPrefixShardFactor(totalShards); err != nil {
 		return nil, err
@@ -48,6 +54,7 @@ func NewBitPrefixWithShards(totalShards uint32) (*BitPrefixInvertedIndex, error)
 	}, nil
 }
 
+// 根据查询 shard 选取需扫描的索引分片。
 func (ii *BitPrefixInvertedIndex) getShards(shard *logql.Shard) ([]*indexShard, bool) {
 	if shard == nil {
 		return ii.shards, false
@@ -102,11 +109,13 @@ func (ii *BitPrefixInvertedIndex) getShards(shard *logql.Shard) ([]*indexShard, 
 	return ii.shards[lowerIdx:upperIdx], filter
 }
 
+// 由 fingerprint 高位计算 bit-prefix 分片索引。
 func (ii *BitPrefixInvertedIndex) shardForFP(fp model.Fingerprint) int {
 	localShard := index.NewShard(0, uint32(len(ii.shards)))
 	return int(fp >> (64 - localShard.RequiredBits()))
 }
 
+// validateShard 实现该路径上的核心处理逻辑。
 func (ii *BitPrefixInvertedIndex) validateShard(shard *logql.Shard) error {
 	if shard == nil {
 		return nil
@@ -123,12 +132,14 @@ func (ii *BitPrefixInvertedIndex) validateShard(shard *logql.Shard) error {
 // Add a fingerprint under the specified labels.
 // NOTE: memory for `labels` is unsafe; anything retained beyond the
 // life of this function must be copied
+// 将 fingerprint 注册到倒排索引。
 func (ii *BitPrefixInvertedIndex) Add(labels []logproto.LabelAdapter, fp model.Fingerprint) labels.Labels {
 	// add() returns 'interned' values so the original labels are not retained
 	return ii.shards[ii.shardForFP(fp)].add(labels, fp)
 }
 
 // Lookup all fingerprints for the provided matchers.
+// 按 matcher 查找 fingerprint 集合。
 func (ii *BitPrefixInvertedIndex) Lookup(matchers []*labels.Matcher, shard *logql.Shard) ([]model.Fingerprint, error) {
 	if err := ii.validateShard(shard); err != nil {
 		return nil, err
@@ -169,6 +180,7 @@ func (ii *BitPrefixInvertedIndex) Lookup(matchers []*labels.Matcher, shard *logq
 }
 
 // LabelNames returns all label names.
+// 返回索引中所有标签名。
 func (ii *BitPrefixInvertedIndex) LabelNames(shard *logql.Shard) ([]string, error) {
 	if err := ii.validateShard(shard); err != nil {
 		return nil, err
@@ -210,6 +222,7 @@ func (ii *BitPrefixInvertedIndex) LabelNames(shard *logql.Shard) ([]string, erro
 }
 
 // LabelValues returns the values for the given label.
+// 返回指定标签名的全部取值。
 func (ii *BitPrefixInvertedIndex) LabelValues(name string, shard *logql.Shard) ([]string, error) {
 	if err := ii.validateShard(shard); err != nil {
 		return nil, err
@@ -245,8 +258,10 @@ func (ii *BitPrefixInvertedIndex) LabelValues(name string, shard *logql.Shard) (
 }
 
 // Delete a fingerprint with the given label pairs.
+// 从倒排索引移除 fingerprint。
 func (ii *BitPrefixInvertedIndex) Delete(labels labels.Labels, fp model.Fingerprint) {
 	localShard := index.NewShard(0, uint32(len(ii.shards)))
 	idx := int(fp >> (64 - localShard.RequiredBits()))
 	ii.shards[idx].delete(labels, fp)
 }
+// bit-prefix 分片保证 ingester 与 TSDB store 对同一 series 解析到相同 shard。

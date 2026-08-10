@@ -1,5 +1,7 @@
 package ingester
 
+// ingester 是 Loki 写入路径核心：接收 Push、维护租户 instance、WAL/flush/ring 生命周期，并对外提供 Query/Label/Series 等 gRPC 接口。
+
 import (
 	"context"
 	"errors"
@@ -66,6 +68,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// 模块级常量定义。
 const (
 	// RingKey is the key under which we store the ingesters ring in the KVStore.
 	RingKey = "ring"
@@ -88,6 +91,7 @@ var (
 	activeTenantsStats = analytics.NewInt("ingester_active_tenants")
 )
 
+// Config 聚合 ingester 全部运行参数：chunk、WAL、限流、Kafka 与 ring 等。
 // Config for an ingester.
 type Config struct {
 	LifecyclerConfig ring.LifecyclerConfig `yaml:"lifecycler,omitempty" doc:"description=Configures how the lifecycle of the ingester will operate and where it will register for discovery."`
@@ -140,6 +144,7 @@ type Config struct {
 }
 
 // RegisterFlags registers the flags.
+// RegisterFlags 实现该路径上的核心处理逻辑。
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.LifecyclerConfig.RegisterFlags(f, util_log.Logger)
 	cfg.WAL.RegisterFlags(f)
@@ -169,6 +174,7 @@ func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&cfg.DelegateStreamLimits, "ingester.delegate-stream-limits-enabled", false, "When enabled, the ingester skips stream count limit checks, delegating them entirely to the ingest-limits service (Thor). Requires ingest-limits service to be enabled.")
 }
 
+// Validate 实现该路径上的核心处理逻辑。
 func (cfg *Config) Validate() error {
 	enc, err := compression.ParseCodec(cfg.ChunkEncoding)
 	if err != nil {
@@ -196,22 +202,26 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// KafkaIngestionConfig 运行配置结构体，由 flag 注册与 Validate 校验。
 type KafkaIngestionConfig struct {
 	Enabled             bool                 `yaml:"enabled" doc:"description=Whether the kafka ingester is enabled."`
 	PartitionRingConfig partitionring.Config `yaml:"partition_ring" category:"experimental"`
 	KafkaConfig         kafka.Config         `yaml:"-"`
 }
 
+// RegisterFlags 实现该路径上的核心处理逻辑。
 func (cfg *KafkaIngestionConfig) RegisterFlags(f *flag.FlagSet) {
 	cfg.PartitionRingConfig.RegisterFlagsWithPrefix("ingester.", f)
 	f.BoolVar(&cfg.Enabled, "ingester.kafka-ingestion-enabled", false, "Whether the ingester will consume data from kafka.")
 }
 
+// Wrapper 类型封装该模块的状态与行为。
 type Wrapper interface {
 	Wrap(wrapped Interface) Interface
 }
 
 // Store is the store interface we need on the ingester.
+// Store 类型封装该模块的状态与行为。
 type Store interface {
 	stores.ChunkWriter
 	stores.ChunkFetcher
@@ -221,6 +231,7 @@ type Store interface {
 }
 
 // Interface is an interface for the Ingester
+// Interface 对外暴露的能力接口定义。
 type Interface interface {
 	services.Service
 
@@ -236,6 +247,7 @@ type Interface interface {
 	PreparePartitionDownscaleHandler(w http.ResponseWriter, r *http.Request)
 }
 
+// Ingester 为入站 log stream 构建 chunk，并协调存储、查询与生命周期服务。
 // Ingester builds chunks for incoming log streams.
 type Ingester struct {
 	services.Service
@@ -308,6 +320,7 @@ type Ingester struct {
 }
 
 // New makes a new Ingester.
+// 构造并返回新实例。
 func New(cfg Config, clientConfig client.Config, store Store, limits Limits, configs *runtime.TenantConfigs, registerer prometheus.Registerer, writeFailuresCfg writefailures.Cfg, metricsNamespace string, logger log.Logger, customStreamsTracker push.UsageTracker, readRing ring.ReadRing, partitionRingWatcher ring.PartitionRingReader) (*Ingester, error) {
 	if cfg.ingesterClientFactory == nil {
 		cfg.ingesterClientFactory = client.New
@@ -443,20 +456,24 @@ func New(cfg Config, clientConfig client.Config, store Store, limits Limits, con
 	return i, nil
 }
 
+// SetChunkFilterer 更新运行时配置或内部字段。
 func (i *Ingester) SetChunkFilterer(chunkFilter chunk.RequestChunkFilterer) {
 	i.chunkFilter = chunkFilter
 }
 
+// SetExtractorWrapper 更新运行时配置或内部字段。
 func (i *Ingester) SetExtractorWrapper(wrapper lokilog.SampleExtractorWrapper) {
 	i.extractorWrapper = wrapper
 }
 
+// SetPipelineWrapper 更新运行时配置或内部字段。
 func (i *Ingester) SetPipelineWrapper(wrapper lokilog.PipelineWrapper) {
 	i.pipelineWrapper = wrapper
 }
 
 // setupAutoForget looks for ring status if `AutoForgetUnhealthy` is enabled
 // when enabled, unhealthy ingesters that reach `ring.kvstore.heartbeat_timeout` are removed from the ring every `HeartbeatPeriod`
+// setupAutoForget 更新运行时配置或内部字段。
 func (i *Ingester) setupAutoForget() {
 	if !i.cfg.AutoForgetUnhealthy {
 		return
@@ -526,6 +543,7 @@ func (i *Ingester) setupAutoForget() {
 	}()
 }
 
+// starting 实现该路径上的核心处理逻辑。
 func (i *Ingester) starting(ctx context.Context) (err error) {
 	defer func() {
 		if err != nil {
@@ -673,6 +691,7 @@ func (i *Ingester) starting(ctx context.Context) (err error) {
 	return nil
 }
 
+// running 实现该路径上的核心处理逻辑。
 func (i *Ingester) running(ctx context.Context) error {
 	var serviceError error
 	select {
@@ -697,6 +716,7 @@ func (i *Ingester) running(ctx context.Context) error {
 // stopping is called when Ingester transitions to Stopping state.
 //
 // At this point, loop no longer runs, but flushers are still running.
+// stopping 实现该路径上的核心处理逻辑。
 func (i *Ingester) stopping(_ error) error {
 	i.stopIncomingRequests()
 
@@ -738,6 +758,7 @@ func (i *Ingester) stopping(_ error) error {
 }
 
 // stopIncomingRequests is called when ingester is stopping
+// stopIncomingRequests 实现该路径上的核心处理逻辑。
 func (i *Ingester) stopIncomingRequests() {
 	i.shutdownMtx.Lock()
 	defer i.shutdownMtx.Unlock()
@@ -749,6 +770,7 @@ func (i *Ingester) stopIncomingRequests() {
 }
 
 // removeShutdownMarkerFile removes the shutdown marker if it exists. Any errors are logged.
+// removeShutdownMarkerFile 实现该路径上的核心处理逻辑。
 func (i *Ingester) removeShutdownMarkerFile() {
 	shutdownMarkerPath := path.Join(i.cfg.ShutdownMarkerPath, shutdownMarkerFilename)
 	exists, err := shutdownMarkerExists(shutdownMarkerPath)
@@ -763,6 +785,7 @@ func (i *Ingester) removeShutdownMarkerFile() {
 	}
 }
 
+// loop 实现该路径上的核心处理逻辑。
 func (i *Ingester) loop() {
 	defer i.loopDone.Done()
 
@@ -813,6 +836,7 @@ func (i *Ingester) loop() {
 // * `GET` shows the status of this configuration
 // * `POST` enables this configuration
 // * `DELETE` disables this configuration
+// PrepareShutdown 实现该路径上的核心处理逻辑。
 func (i *Ingester) PrepareShutdown(w http.ResponseWriter, r *http.Request) {
 	if i.cfg.ShutdownMarkerPath == "" {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -862,6 +886,7 @@ func (i *Ingester) PrepareShutdown(w http.ResponseWriter, r *http.Request) {
 }
 
 // setPrepareShutdown toggles ingester lifecycler config to prepare for shutdown
+// setPrepareShutdown 更新运行时配置或内部字段。
 func (i *Ingester) setPrepareShutdown() {
 	level.Info(i.logger).Log("msg", "preparing full ingester shutdown, resources will be released on SIGTERM")
 	i.lifecycler.SetFlushOnShutdown(true)
@@ -882,6 +907,7 @@ func (i *Ingester) setPrepareShutdown() {
 	}
 }
 
+// unsetPrepareShutdown 实现该路径上的核心处理逻辑。
 func (i *Ingester) unsetPrepareShutdown() {
 	level.Info(i.logger).Log("msg", "undoing preparation for full ingester shutdown")
 	i.lifecycler.SetFlushOnShutdown(!i.cfg.WAL.Enabled || i.cfg.WAL.FlushOnShutdown)
@@ -893,6 +919,7 @@ func (i *Ingester) unsetPrepareShutdown() {
 // createShutdownMarker writes a marker file to disk to indicate that an ingester is
 // going to be scaled down in the future. The presence of this file means that an ingester
 // should flush and upload all data when stopping.
+// createShutdownMarker 实现该路径上的核心处理逻辑。
 func createShutdownMarker(p string) error {
 	// Write the file, fsync it, then fsync the containing directory in order to guarantee
 	// it is persisted to disk. From https://man7.org/linux/man-pages/man2/fsync.2.html
@@ -927,6 +954,7 @@ func createShutdownMarker(p string) error {
 }
 
 // removeShutdownMarker removes the shutdown marker file if it exists.
+// removeShutdownMarker 实现该路径上的核心处理逻辑。
 func removeShutdownMarker(p string) error {
 	err := os.Remove(p)
 	if err != nil && !os.IsNotExist(err) {
@@ -945,6 +973,7 @@ func removeShutdownMarker(p string) error {
 }
 
 // shutdownMarkerExists returns true if the shutdown marker file exists, false otherwise
+// shutdownMarkerExists 实现该路径上的核心处理逻辑。
 func shutdownMarkerExists(p string) (bool, error) {
 	s, err := os.Stat(p)
 	if err != nil && os.IsNotExist(err) {
@@ -960,6 +989,7 @@ func shutdownMarkerExists(p string) (bool, error) {
 
 // ShutdownHandler handles a graceful shutdown of the ingester service and
 // termination of the Loki process.
+// ShutdownHandler 实现该路径上的核心处理逻辑。
 func (i *Ingester) ShutdownHandler(w http.ResponseWriter, r *http.Request) {
 	// Don't allow calling the shutdown handler multiple times
 	if i.State() != services.Running {
@@ -989,6 +1019,7 @@ func (i *Ingester) ShutdownHandler(w http.ResponseWriter, r *http.Request) {
 //   - optional: Delete ring tokens file
 //   - Unregister from KV store
 //   - optional: Terminate process (handled by service manager in loki.go)
+// handleShutdown 实现该路径上的核心处理逻辑。
 func (i *Ingester) handleShutdown(terminate, flush, del bool) error {
 	i.lifecycler.SetFlushOnShutdown(flush)
 	i.lifecycler.SetClearTokensOnShutdown(del)
@@ -997,6 +1028,7 @@ func (i *Ingester) handleShutdown(terminate, flush, del bool) error {
 	return services.StopAndAwaitTerminated(context.Background(), i)
 }
 
+// Push 是 distributor 写入入口：按租户路由到 instance 并追加日志行。
 // Push implements logproto.Pusher.
 func (i *Ingester) Push(ctx context.Context, req *logproto.PushRequest) (*logproto.PushResponse, error) {
 	instanceID, err := tenant.TenantID(ctx)
@@ -1025,6 +1057,7 @@ func (i *Ingester) Push(ctx context.Context, req *logproto.PushRequest) (*logpro
 
 // GetStreamRates returns a response containing all streams and their current rate
 // TODO: It might be nice for this to be human readable, eventually: Sort output and return labels, too?
+// GetStreamRates 读取内部状态或构建查询结果。
 func (i *Ingester) GetStreamRates(ctx context.Context, _ *logproto.StreamRatesRequest) (*logproto.StreamRatesResponse, error) {
 	sp := trace.SpanFromContext(ctx)
 	sp.AddEvent("ingester started to handle GetStreamRates")
@@ -1043,6 +1076,7 @@ func (i *Ingester) GetStreamRates(ctx context.Context, _ *logproto.StreamRatesRe
 	return &logproto.StreamRatesResponse{StreamRates: rates}, nil
 }
 
+// GetOrCreateInstance 读取内部状态或构建查询结果。
 func (i *Ingester) GetOrCreateInstance(instanceID string) (*instance, error) { //nolint:revive
 	inst, ok := i.getInstanceByID(instanceID)
 	if ok {
@@ -1064,6 +1098,7 @@ func (i *Ingester) GetOrCreateInstance(instanceID string) (*instance, error) { /
 	return inst, nil
 }
 
+// Query 在 ingester 内存 chunk 上执行 LogQL 日志选择并流式返回条目。
 // Query the ingests for log streams matching a set of matchers.
 func (i *Ingester) Query(req *logproto.QueryRequest, queryServer logproto.Querier_QueryServer) error {
 	// initialize stats collection for ingester queries.
@@ -1130,6 +1165,7 @@ func (i *Ingester) Query(req *logproto.QueryRequest, queryServer logproto.Querie
 }
 
 // QuerySample the ingesters for series from logs matching a set of matchers.
+// QuerySample 实现该路径上的核心处理逻辑。
 func (i *Ingester) QuerySample(req *logproto.SampleQueryRequest, queryServer logproto.Querier_QuerySampleServer) error {
 	// initialize stats collection for ingester queries.
 	_, ctx := stats.NewContext(queryServer.Context())
@@ -1199,6 +1235,7 @@ func (i *Ingester) QuerySample(req *logproto.SampleQueryRequest, queryServer log
 // max look back is limited to from time of async store config.
 // It considers previous periodic config's from time if that also has async index type.
 // This is to limit the lookback to only async stores where relevant.
+// asyncStoreMaxLookBack 实现该路径上的核心处理逻辑。
 func (i *Ingester) asyncStoreMaxLookBack() time.Duration {
 	activePeriodicConfigIndex := config.ActivePeriodConfig(i.periodicConfigs)
 	activePeriodicConfig := i.periodicConfigs[activePeriodicConfigIndex]
@@ -1217,6 +1254,7 @@ func (i *Ingester) asyncStoreMaxLookBack() time.Duration {
 }
 
 // GetChunkIDs is meant to be used only when using an async store like boltdb-shipper or tsdb.
+// GetChunkIDs 读取内部状态或构建查询结果。
 func (i *Ingester) GetChunkIDs(ctx context.Context, req *logproto.GetChunkIDsRequest) (*logproto.GetChunkIDsResponse, error) {
 	gcr, err := i.getChunkIDs(ctx, req)
 	err = server_util.ClientGrpcStatusAndError(err)
@@ -1224,6 +1262,7 @@ func (i *Ingester) GetChunkIDs(ctx context.Context, req *logproto.GetChunkIDsReq
 }
 
 // GetChunkIDs is meant to be used only when using an async store like boltdb-shipper or tsdb.
+// getChunkIDs 读取内部状态或构建查询结果。
 func (i *Ingester) getChunkIDs(ctx context.Context, req *logproto.GetChunkIDsRequest) (*logproto.GetChunkIDsResponse, error) {
 	orgID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -1273,6 +1312,7 @@ func (i *Ingester) getChunkIDs(ctx context.Context, req *logproto.GetChunkIDsReq
 }
 
 // Label returns the set of labels for the stream this ingester knows about.
+// Label 实现该路径上的核心处理逻辑。
 func (i *Ingester) Label(ctx context.Context, req *logproto.LabelRequest) (*logproto.LabelResponse, error) {
 	userID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -1348,12 +1388,14 @@ func (i *Ingester) Label(ctx context.Context, req *logproto.LabelRequest) (*logp
 }
 
 // Series queries the ingester for log stream identifiers (label sets) matching a set of matchers
+// Series 实现该路径上的核心处理逻辑。
 func (i *Ingester) Series(ctx context.Context, req *logproto.SeriesRequest) (*logproto.SeriesResponse, error) {
 	sr, err := i.series(ctx, req)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return sr, err
 }
 
+// series 实现该路径上的核心处理逻辑。
 func (i *Ingester) series(ctx context.Context, req *logproto.SeriesRequest) (*logproto.SeriesResponse, error) {
 	instanceID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -1413,6 +1455,7 @@ func (i *Ingester) series(ctx context.Context, req *logproto.SeriesRequest) (*lo
 	return resp, nil
 }
 
+// GetStats 读取内部状态或构建查询结果。
 func (i *Ingester) GetStats(ctx context.Context, req *logproto.IndexStatsRequest) (*logproto.IndexStatsResponse, error) {
 	sp := trace.SpanFromContext(ctx)
 
@@ -1436,6 +1479,7 @@ func (i *Ingester) GetStats(ctx context.Context, req *logproto.IndexStatsRequest
 		return nil, err
 	}
 
+	// f 类型封装该模块的状态与行为。
 	type f func() (*logproto.IndexStatsResponse, error)
 	jobs := []f{
 		f(func() (*logproto.IndexStatsResponse, error) {
@@ -1477,6 +1521,7 @@ func (i *Ingester) GetStats(ctx context.Context, req *logproto.IndexStatsRequest
 	return &merged, nil
 }
 
+// GetVolume 读取内部状态或构建查询结果。
 func (i *Ingester) GetVolume(ctx context.Context, req *logproto.VolumeRequest) (*logproto.VolumeResponse, error) {
 	user, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -1498,6 +1543,7 @@ func (i *Ingester) GetVolume(ctx context.Context, req *logproto.VolumeRequest) (
 		return nil, err
 	}
 
+	// f 类型封装该模块的状态与行为。
 	type f func() (*logproto.VolumeResponse, error)
 	jobs := []f{
 		f(func() (*logproto.VolumeResponse, error) {
@@ -1527,6 +1573,7 @@ func (i *Ingester) GetVolume(ctx context.Context, req *logproto.VolumeRequest) (
 }
 
 // Watch implements grpc_health_v1.HealthCheck.
+// Watch 实现该路径上的核心处理逻辑。
 func (*Ingester) Watch(*grpc_health_v1.HealthCheckRequest, grpc_health_v1.Health_WatchServer) error {
 	return nil
 }
@@ -1534,6 +1581,7 @@ func (*Ingester) Watch(*grpc_health_v1.HealthCheckRequest, grpc_health_v1.Health
 // ReadinessHandler is used to indicate to k8s when the ingesters are ready for
 // the addition removal of another ingester. Returns 204 when the ingester is
 // ready, 500 otherwise.
+// CheckReady 实现该路径上的核心处理逻辑。
 func (i *Ingester) CheckReady(ctx context.Context) error {
 	if s := i.State(); s != services.Running && s != services.Stopping {
 		return fmt.Errorf("ingester not ready: %v", s)
@@ -1541,6 +1589,7 @@ func (i *Ingester) CheckReady(ctx context.Context) error {
 	return i.lifecycler.CheckReady(ctx)
 }
 
+// getInstanceByID 读取内部状态或构建查询结果。
 func (i *Ingester) getInstanceByID(id string) (*instance, bool) {
 	i.instancesMtx.RLock()
 	defer i.instancesMtx.RUnlock()
@@ -1549,6 +1598,7 @@ func (i *Ingester) getInstanceByID(id string) (*instance, bool) {
 	return inst, ok
 }
 
+// getInstances 读取内部状态或构建查询结果。
 func (i *Ingester) getInstances() []*instance {
 	i.instancesMtx.RLock()
 	defer i.instancesMtx.RUnlock()
@@ -1561,12 +1611,14 @@ func (i *Ingester) getInstances() []*instance {
 }
 
 // Tail logs matching given query
+// Tail 实现该路径上的核心处理逻辑。
 func (i *Ingester) Tail(req *logproto.TailRequest, queryServer logproto.Querier_TailServer) error {
 	err := i.tail(req, queryServer)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return err
 }
 
+// tail 实现该路径上的核心处理逻辑。
 func (i *Ingester) tail(req *logproto.TailRequest, queryServer logproto.Querier_TailServer) error {
 	select {
 	case <-i.tailersQuit:
@@ -1612,12 +1664,14 @@ func (i *Ingester) tail(req *logproto.TailRequest, queryServer logproto.Querier_
 }
 
 // TailersCount returns count of active tail requests from a user
+// TailersCount 实现该路径上的核心处理逻辑。
 func (i *Ingester) TailersCount(ctx context.Context, _ *logproto.TailersCountRequest) (*logproto.TailersCountResponse, error) {
 	tcr, err := i.tailersCount(ctx)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return tcr, err
 }
 
+// tailersCount 实现该路径上的核心处理逻辑。
 func (i *Ingester) tailersCount(ctx context.Context) (*logproto.TailersCountResponse, error) {
 	instanceID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -1637,6 +1691,7 @@ func (i *Ingester) tailersCount(ctx context.Context) (*logproto.TailersCountResp
 // buildStoreRequest returns a store request from an ingester request, returns nil if QueryStore is set to false in configuration.
 // The request may be truncated due to QueryStoreMaxLookBackPeriod which limits the range of request to make sure
 // we only query enough to not miss any data and not add too many duplicates by covering the whole time range in query.
+// buildStoreRequest 实现该路径上的核心处理逻辑。
 func buildStoreRequest(cfg Config, start, end, now time.Time) (time.Time, time.Time, bool) {
 	if !cfg.QueryStore {
 		return time.Time{}, time.Time{}, false
@@ -1649,6 +1704,7 @@ func buildStoreRequest(cfg Config, start, end, now time.Time) (time.Time, time.T
 	return start, end, true
 }
 
+// adjustQueryStartTime 实现该路径上的核心处理逻辑。
 func adjustQueryStartTime(maxLookBackPeriod time.Duration, start, now time.Time) time.Time {
 	if maxLookBackPeriod > 0 {
 		oldestStartTime := now.Add(-maxLookBackPeriod)
@@ -1659,6 +1715,7 @@ func adjustQueryStartTime(maxLookBackPeriod time.Duration, start, now time.Time)
 	return start
 }
 
+// GetDetectedFields 读取内部状态或构建查询结果。
 func (i *Ingester) GetDetectedFields(_ context.Context, r *logproto.DetectedFieldsRequest) (*logproto.DetectedFieldsResponse, error) {
 	return &logproto.DetectedFieldsResponse{
 		Fields: []*logproto.DetectedField{
@@ -1673,12 +1730,14 @@ func (i *Ingester) GetDetectedFields(_ context.Context, r *logproto.DetectedFiel
 }
 
 // GetDetectedLabels returns map of detected labels and unique values from this ingester
+// GetDetectedLabels 读取内部状态或构建查询结果。
 func (i *Ingester) GetDetectedLabels(ctx context.Context, req *logproto.DetectedLabelsRequest) (*logproto.LabelToValuesResponse, error) {
 	lvr, err := i.getDetectedLabels(ctx, req)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return lvr, err
 }
 
+// getDetectedLabels 读取内部状态或构建查询结果。
 func (i *Ingester) getDetectedLabels(ctx context.Context, req *logproto.DetectedLabelsRequest) (*logproto.LabelToValuesResponse, error) {
 	userID, err := tenant.TenantID(ctx)
 	if err != nil {
@@ -1717,3 +1776,4 @@ func (i *Ingester) getDetectedLabels(ctx context.Context, req *logproto.Detected
 	}
 	return &logproto.LabelToValuesResponse{Labels: result}, nil
 }
+// Ingester 通过 dskit Service 管理启动、运行、停止与 ring 生命周期。

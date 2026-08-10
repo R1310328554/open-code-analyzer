@@ -1,5 +1,7 @@
 package ingester
 
+// recovery 从 WAL/checkpoint 重放日志：并行 worker 恢复 series 与 entries，并与 replay 背压协同。
+
 import (
 	"errors"
 	"fmt"
@@ -19,6 +21,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logproto"
 )
 
+// WALReader 类型封装该模块的状态与行为。
 type WALReader interface {
 	Next() bool
 	Err() error
@@ -26,10 +29,12 @@ type WALReader interface {
 	Record() []byte
 }
 
+// NoopWALReader 类型封装该模块的状态与行为。
 type NoopWALReader struct{}
 
 func (NoopWALReader) Next() bool     { return false }
 func (NoopWALReader) Err() error     { return nil }
+// Record 实现该路径上的核心处理逻辑。
 func (NoopWALReader) Record() []byte { return nil }
 func (NoopWALReader) Close() error   { return nil }
 
@@ -58,6 +63,7 @@ func newCheckpointReader(dir string, logger log.Logger) (WALReader, io.Closer, e
 // This includes removing incomplete .tmp checkpoint directories from failed attempts, and
 // removing old completed checkpoints that have been superseded. The most recent valid
 // checkpoint is always protected to ensure a recovery point exists.
+// cleanupCheckpointsAtStartup 实现该路径上的核心处理逻辑。
 func cleanupCheckpointsAtStartup(dir string, logger log.Logger) {
 	// First, clean up any stale .tmp checkpoint directories from failed checkpoint attempts.
 	// These are always safe to delete at startup since they represent incomplete operations.
@@ -80,6 +86,7 @@ func cleanupCheckpointsAtStartup(dir string, logger log.Logger) {
 	cleanupOldCheckpoints(dir, latestCheckpointIdx, logger)
 }
 
+// Recoverer 定义 WAL 重放回调：Series、SetStream、Push 与 Close/Done。
 type Recoverer interface {
 	NumWorkers() int
 	Series(series *Series) error
@@ -88,6 +95,7 @@ type Recoverer interface {
 	Done() <-chan struct{}
 }
 
+// ingesterRecoverer 类型封装该模块的状态与行为。
 type ingesterRecoverer struct {
 	// basically map[userID]map[fingerprint]*stream
 	users  sync.Map
@@ -96,6 +104,7 @@ type ingesterRecoverer struct {
 	done   chan struct{}
 }
 
+// newIngesterRecoverer 实现该路径上的核心处理逻辑。
 func newIngesterRecoverer(i *Ingester) *ingesterRecoverer {
 
 	return &ingesterRecoverer{
@@ -106,6 +115,7 @@ func newIngesterRecoverer(i *Ingester) *ingesterRecoverer {
 }
 
 // Use all available cores
+// NumWorkers 实现该路径上的核心处理逻辑。
 func (r *ingesterRecoverer) NumWorkers() int { return runtime.GOMAXPROCS(0) }
 
 func (r *ingesterRecoverer) Series(series *Series) error {
@@ -161,6 +171,7 @@ func (r *ingesterRecoverer) Series(series *Series) error {
 // fingerprint from the mapper. This is paramount because subsequent WAL records will use
 // the fingerprint reported in the WAL record, not the potentially differing one assigned during
 // stream creation.
+// SetStream 更新运行时配置或内部字段。
 func (r *ingesterRecoverer) SetStream(ctx context.Context, userID string, series record.RefSeries) error {
 	inst, err := r.ing.GetOrCreateInstance(userID)
 	if err != nil {
@@ -187,6 +198,7 @@ func (r *ingesterRecoverer) SetStream(ctx context.Context, userID string, series
 	return nil
 }
 
+// 处理 Push 请求，写入或创建 stream。
 func (r *ingesterRecoverer) Push(userID string, entries wal.RefEntries) error {
 	return r.ing.replayController.WithBackPressure(func() error {
 		out, ok := r.users.Load(userID)
@@ -209,6 +221,7 @@ func (r *ingesterRecoverer) Push(userID string, entries wal.RefEntries) error {
 	})
 }
 
+// Close 实现该路径上的核心处理逻辑。
 func (r *ingesterRecoverer) Close() {
 	// Ensure this is only run once.
 	select {
@@ -257,10 +270,12 @@ func (r *ingesterRecoverer) Close() {
 	}
 }
 
+// Done 实现该路径上的核心处理逻辑。
 func (r *ingesterRecoverer) Done() <-chan struct{} {
 	return r.done
 }
 
+// RecoverWAL 并行解码 segment 记录并驱动 Recoverer 重建内存状态。
 func RecoverWAL(ctx context.Context, reader WALReader, recoverer Recoverer) error {
 	dispatch := func(recoverer Recoverer, b []byte, inputs []chan recoveryInput) error {
 		rec := recordPool.GetRecord()
@@ -325,6 +340,7 @@ func RecoverWAL(ctx context.Context, reader WALReader, recoverer Recoverer) erro
 
 }
 
+// RecoverCheckpoint 实现该路径上的核心处理逻辑。
 func RecoverCheckpoint(reader WALReader, recoverer Recoverer) error {
 	dispatch := func(_ Recoverer, b []byte, inputs []chan recoveryInput) error {
 		s := &Series{}
@@ -373,6 +389,7 @@ func RecoverCheckpoint(reader WALReader, recoverer Recoverer) error {
 	)
 }
 
+// recoveryInput 类型封装该模块的状态与行为。
 type recoveryInput struct {
 	userID string
 	data   interface{}
@@ -383,6 +400,7 @@ type recoveryInput struct {
 // Note: it explicitly does not call the Recoverer.Close function as it's possible to layer
 // multiple recoveries on top of each other, as in the case of recovering from Checkpoints
 // then the WAL.
+// recoverGeneric 实现该路径上的核心处理逻辑。
 func recoverGeneric(
 	reader WALReader,
 	recoverer Recoverer,
@@ -446,3 +464,4 @@ func recoverGeneric(
 		}
 	}
 }
+// RecoverWAL 与 RecoverCheckpoint 共用 recoverGeneric 并行解码框架。

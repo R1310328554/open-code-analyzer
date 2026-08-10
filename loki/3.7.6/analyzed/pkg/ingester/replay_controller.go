@@ -1,5 +1,7 @@
 package ingester
 
+// replay_controller 协调 WAL 重放与 chunk flush 的背压：内存超阈值时触发 flush，singleflight 合并并发刷盘。
+
 import (
 	"fmt"
 
@@ -11,10 +13,12 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// replayFlusher 类型封装该模块的状态与行为。
 type replayFlusher struct {
 	i *Ingester
 }
 
+// 触发全量 chunk 刷盘并等待队列排空。
 func (f *replayFlusher) Flush() {
 	f.i.InitFlushQueues()
 	f.i.flush(false) // flush data but don't remove streams from the ingesters
@@ -35,10 +39,12 @@ func (f *replayFlusher) Flush() {
 
 }
 
+// Flusher 类型封装该模块的状态与行为。
 type Flusher interface {
 	Flush()
 }
 
+// replayController 在 WAL 重放占用内存与 chunk flush 之间施加背压控制。
 // replayController handles coordinating backpressure between WAL replays and chunk flushing.
 type replayController struct {
 	// Note, this has to be defined first to make sure it is aligned properly for 32bit ARM OS
@@ -57,6 +63,7 @@ type replayController struct {
 }
 
 // flusher is expected to reduce pressure via calling Sub
+// newReplayController 实现该路径上的核心处理逻辑。
 func newReplayController(metrics *ingesterMetrics, cfg WALConfig, flusher Flusher) *replayController {
 	return &replayController{
 		cfg:     cfg,
@@ -65,16 +72,19 @@ func newReplayController(metrics *ingesterMetrics, cfg WALConfig, flusher Flushe
 	}
 }
 
+// 将 fingerprint 注册到倒排索引。
 func (c *replayController) Add(x int64) {
 	c.metrics.recoveredBytesTotal.Add(float64(x))
 	c.metrics.setRecoveryBytesInUse(c.currentBytes.Add(x))
 }
 
+// Sub 实现该路径上的核心处理逻辑。
 func (c *replayController) Sub(x int64) {
 	c.totalSubtracted.Add(x)
 	c.metrics.setRecoveryBytesInUse(c.currentBytes.Sub(x))
 }
 
+// Cur 实现该路径上的核心处理逻辑。
 func (c *replayController) Cur() int {
 	return int(c.currentBytes.Load())
 }
@@ -85,6 +95,7 @@ func (c *replayController) Cur() int {
 // the flush it actually participated in rather than comparing against a
 // snapshot taken outside the flush (which can miss progress made by an already
 // in-flight flush before the snapshot was taken).
+// 触发全量 chunk 刷盘并等待队列排空。
 func (c *replayController) Flush() int64 {
 	// Use singleflight to ensure only one flush happens at a time
 	subtracted, _, _ := c.flushSF.Do("flush", func() (interface{}, error) {
@@ -97,6 +108,7 @@ func (c *replayController) Flush() int64 {
 // Because singleflight guarantees only one flush runs at a time and Sub is only
 // called from within a flush, the delta of totalSubtracted across this call is
 // exactly the progress attributable to this flush.
+// flush 实现该路径上的核心处理逻辑。
 func (c *replayController) flush() int64 {
 	c.metrics.recoveryIsFlushing.Set(1)
 	subtractedBefore := c.totalSubtracted.Load()
@@ -118,6 +130,7 @@ func (c *replayController) flush() int64 {
 	return c.totalSubtracted.Load() - subtractedBefore
 }
 
+// WithBackPressure 在内存接近上限时循环 flush，确保重放不耗尽内存。
 // WithBackPressure is expected to call replayController.Add in the passed function to increase the managed byte count.
 // It will call the function as long as there is expected room before the memory cap and will then flush data intermittently
 // when needed.
@@ -147,3 +160,4 @@ func (c *replayController) WithBackPressure(fn func() error) error {
 
 	return fn()
 }
+// WithBackPressure 在 90% 内存上限处触发 flush 防止 OOM。

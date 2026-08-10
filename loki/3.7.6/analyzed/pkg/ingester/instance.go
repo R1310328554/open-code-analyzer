@@ -1,5 +1,7 @@
 package ingester
 
+// instance 表示单租户 ingester 状态：stream 表、倒排索引、限流与 tailer，处理 Push 与本地查询迭代器构建。
+
 import (
 	"context"
 	"errors"
@@ -52,6 +54,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/validation"
 )
 
+// 模块级常量定义。
 const (
 	// ShardLbName is the internal label to be used by Loki when dividing a stream into smaller pieces.
 	// Possible values are only increasing integers starting from 0.
@@ -87,6 +90,7 @@ var (
 	streamsCountStats = analytics.NewInt("ingester_streams_count")
 )
 
+// instance 封装单租户 streams、索引、限流器、WAL 与 tailer 集合。
 type instance struct {
 	cfg *Config
 
@@ -132,6 +136,7 @@ type instance struct {
 	tenantsRetention *retention.TenantsRetention
 }
 
+// newInstance 实现该路径上的核心处理逻辑。
 func newInstance(
 	cfg *Config,
 	periodConfigs []config.PeriodConfig,
@@ -196,6 +201,7 @@ func newInstance(
 
 // consumeChunk manually adds a chunk that was received during ingester chunk
 // transfer.
+// consumeChunk 实现该路径上的核心处理逻辑。
 func (i *instance) consumeChunk(ctx context.Context, ls labels.Labels, chunk *logproto.Chunk) error {
 	fp := i.getHashForLabels(ls)
 
@@ -228,6 +234,7 @@ func (i *instance) consumeChunk(ctx context.Context, ls labels.Labels, chunk *lo
 // Although multiple streams are part of the PushRequest, the returned error only reflects what
 // happened to *the last stream in the request*. Ex: if three streams are part of the PushRequest
 // and all three failed, the returned error only describes what happened to the last processed stream.
+// Push 解析请求 stream、创建或复用 stream，并将日志写入 head chunk。
 func (i *instance) Push(ctx context.Context, req *logproto.PushRequest) error {
 	record := recordPool.GetRecord()
 	record.UserID = i.instanceID
@@ -280,6 +287,7 @@ func (i *instance) Push(ctx context.Context, req *logproto.PushRequest) error {
 	return appendErr
 }
 
+// createStream 实现该路径上的核心处理逻辑。
 func (i *instance) createStream(ctx context.Context, pushReqStream logproto.Stream, record *wal.Record, format string) (*stream, error) {
 	// record is only nil when replaying WAL. We don't want to drop data when replaying a WAL after
 	// reducing the stream limits, for instance.
@@ -336,6 +344,7 @@ func (i *instance) createStream(ctx context.Context, pushReqStream logproto.Stre
 	return s, nil
 }
 
+// resolvePolicyForStream 实现该路径上的核心处理逻辑。
 func (i *instance) resolvePolicyForStream(ctx context.Context, labels labels.Labels) string {
 	mapping := i.limiter.limits.PoliciesStreamMapping(i.instanceID)
 	policies := mapping.PolicyFor(ctx, labels)
@@ -357,6 +366,7 @@ func (i *instance) resolvePolicyForStream(ctx context.Context, labels labels.Lab
 	return policy
 }
 
+// onStreamCreationError 实现该路径上的核心处理逻辑。
 func (i *instance) onStreamCreationError(ctx context.Context, pushReqStream logproto.Stream, err error, labels labels.Labels, retentionHours, policy, format string) (*stream, error) {
 	if i.configs.LogStreamCreation(i.instanceID) || i.cfg.KafkaIngestion.Enabled {
 		l := level.Debug(util_log.Logger)
@@ -383,6 +393,7 @@ func (i *instance) onStreamCreationError(ctx context.Context, pushReqStream logp
 	return nil, httpgrpc.Errorf(http.StatusTooManyRequests, validation.StreamLimitErrorMsg, labels, i.instanceID)
 }
 
+// onStreamCreated 实现该路径上的核心处理逻辑。
 func (i *instance) onStreamCreated(s *stream) {
 	memoryStreams.WithLabelValues(i.instanceID).Inc()
 	memoryStreamsLabelsBytes.Add(float64(len(s.labels.String())))
@@ -401,6 +412,7 @@ func (i *instance) onStreamCreated(s *stream) {
 	}
 }
 
+// createStreamByFP 实现该路径上的核心处理逻辑。
 func (i *instance) createStreamByFP(ctx context.Context, ls labels.Labels, fp model.Fingerprint) (*stream, error) {
 	sortedLabels := i.index.Add(logproto.FromLabelsToLabelAdapters(ls), fp)
 
@@ -420,6 +432,7 @@ func (i *instance) createStreamByFP(ctx context.Context, ls labels.Labels, fp mo
 }
 
 // chunkFormatAt returns chunk formats to use at given period of time.
+// chunkFormatAt 实现该路径上的核心处理逻辑。
 func (i *instance) chunkFormatAt(at model.Time) (byte, chunkenc.HeadBlockFmt, error) {
 	// NOTE: We choose chunk formats for stream based on it's entries timestamp.
 	// Rationale being, a single (ingester) instance can be running across multiple schema period
@@ -442,6 +455,7 @@ func (i *instance) chunkFormatAt(at model.Time) (byte, chunkenc.HeadBlockFmt, er
 // getOrCreateStream returns the stream or creates it.
 // It's safe to use this function if returned stream is not consistency sensitive to streamsMap(e.g. ingesterRecoverer),
 // otherwise use streamsMap.LoadOrStoreNew with locking stream's chunkMtx inside.
+// getOrCreateStream 读取内部状态或构建查询结果。
 func (i *instance) getOrCreateStream(ctx context.Context, pushReqStream logproto.Stream, record *wal.Record, format string) (*stream, error) {
 	s, _, err := i.streams.LoadOrStoreNew(pushReqStream.Labels, func() (*stream, error) {
 		return i.createStream(ctx, pushReqStream, record, format)
@@ -451,6 +465,7 @@ func (i *instance) getOrCreateStream(ctx context.Context, pushReqStream logproto
 }
 
 // removeStream removes a stream from the instance.
+// removeStream 实现该路径上的核心处理逻辑。
 func (i *instance) removeStream(s *stream) {
 	if i.streams.Delete(s) {
 		i.index.Delete(s.labels, s.fp)
@@ -462,6 +477,7 @@ func (i *instance) removeStream(s *stream) {
 	}
 }
 
+// getHashForLabels 读取内部状态或构建查询结果。
 func (i *instance) getHashForLabels(ls labels.Labels) model.Fingerprint {
 	var fp uint64
 	fp, i.buf = ls.HashWithoutLabels(i.buf, []string(nil)...)
@@ -469,6 +485,7 @@ func (i *instance) getHashForLabels(ls labels.Labels) model.Fingerprint {
 }
 
 // Return labels associated with given fingerprint. Used by fingerprint mapper.
+// getLabelsFromFingerprint 读取内部状态或构建查询结果。
 func (i *instance) getLabelsFromFingerprint(fp model.Fingerprint) labels.Labels {
 	s, ok := i.streams.LoadByFP(fp)
 	if !ok {
@@ -477,12 +494,14 @@ func (i *instance) getLabelsFromFingerprint(fp model.Fingerprint) labels.Labels 
 	return s.labels
 }
 
+// 执行 LogQL 查询并返回匹配日志迭代器。
 func (i *instance) Query(ctx context.Context, req logql.SelectLogParams) (iter.EntryIterator, error) {
 	it, err := i.query(ctx, req)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return it, err
 }
 
+// query 实现该路径上的核心处理逻辑。
 func (i *instance) query(ctx context.Context, req logql.SelectLogParams) (iter.EntryIterator, error) {
 	expr, err := req.LogSelector()
 	if err != nil {
@@ -537,12 +556,14 @@ func (i *instance) query(ctx context.Context, req logql.SelectLogParams) (iter.E
 	return iter.NewSortEntryIterator(iters, req.Direction), nil
 }
 
+// QuerySample 实现该路径上的核心处理逻辑。
 func (i *instance) QuerySample(ctx context.Context, req logql.SelectSampleParams) (iter.SampleIterator, error) {
 	it, err := i.querySample(ctx, req)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return it, err
 }
 
+// querySample 实现该路径上的核心处理逻辑。
 func (i *instance) querySample(ctx context.Context, req logql.SelectSampleParams) (iter.SampleIterator, error) {
 	expr, err := req.Expr()
 	if err != nil {
@@ -620,12 +641,14 @@ func (i *instance) querySample(ctx context.Context, req logql.SelectSampleParams
 // Without label matchers the label names and values are retrieved from the index directly.
 // If label matchers are given only the matching streams are fetched from the index.
 // The label names or values are then retrieved from those matching streams.
+// Label 实现该路径上的核心处理逻辑。
 func (i *instance) Label(ctx context.Context, req *logproto.LabelRequest, matchers ...*labels.Matcher) (*logproto.LabelResponse, error) {
 	lr, err := i.label(ctx, req, matchers...)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return lr, err
 }
 
+// label 实现该路径上的核心处理逻辑。
 func (i *instance) label(ctx context.Context, req *logproto.LabelRequest, matchers ...*labels.Matcher) (*logproto.LabelResponse, error) {
 	if len(matchers) == 0 {
 		var labels []string
@@ -673,6 +696,7 @@ func (i *instance) label(ctx context.Context, req *logproto.LabelRequest, matche
 	}, nil
 }
 
+// UniqueValues 类型封装该模块的状态与行为。
 type UniqueValues map[string]struct{}
 
 // LabelsWithValues returns the label names with all the unique values depending on the request
@@ -721,6 +745,7 @@ func (i *instance) LabelsWithValues(ctx context.Context, startTime time.Time, ma
 	return labelMap, nil
 }
 
+// Series 实现该路径上的核心处理逻辑。
 func (i *instance) Series(ctx context.Context, req *logproto.SeriesRequest) (*logproto.SeriesResponse, error) {
 	groups, err := logql.MatchForSeriesRequest(req.GetGroups())
 	if err != nil {
@@ -779,12 +804,14 @@ func (i *instance) Series(ctx context.Context, req *logproto.SeriesRequest) (*lo
 	return &logproto.SeriesResponse{Series: series}, nil
 }
 
+// GetStats 读取内部状态或构建查询结果。
 func (i *instance) GetStats(ctx context.Context, req *logproto.IndexStatsRequest) (*logproto.IndexStatsResponse, error) {
 	isr, err := i.getStats(ctx, req)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return isr, err
 }
 
+// getStats 读取内部状态或构建查询结果。
 func (i *instance) getStats(ctx context.Context, req *logproto.IndexStatsRequest) (*logproto.IndexStatsResponse, error) {
 	matchers, err := syntax.ParseMatchers(req.Matchers, true)
 	if err != nil {
@@ -840,12 +867,14 @@ func (i *instance) getStats(ctx context.Context, req *logproto.IndexStatsRequest
 	return res, nil
 }
 
+// GetVolume 读取内部状态或构建查询结果。
 func (i *instance) GetVolume(ctx context.Context, req *logproto.VolumeRequest) (*logproto.VolumeResponse, error) {
 	vr, err := i.getVolume(ctx, req)
 	err = server_util.ClientGrpcStatusAndError(err)
 	return vr, err
 }
 
+// getVolume 读取内部状态或构建查询结果。
 func (i *instance) getVolume(ctx context.Context, req *logproto.VolumeRequest) (*logproto.VolumeResponse, error) {
 	matchers, err := syntax.ParseMatchers(req.Matchers, true)
 	if err != nil && req.Matchers != seriesvolume.MatchAny {
@@ -929,12 +958,14 @@ func (i *instance) getVolume(ctx context.Context, req *logproto.VolumeRequest) (
 	return res, nil
 }
 
+// numStreams 实现该路径上的核心处理逻辑。
 func (i *instance) numStreams() int {
 	return i.streams.Len()
 }
 
 // forAllStreams will execute a function for all streams in the instance.
 // It uses a function in order to enable generic stream access without accidentally leaking streams under the mutex.
+// forAllStreams 实现该路径上的核心处理逻辑。
 func (i *instance) forAllStreams(ctx context.Context, fn func(*stream) error) error {
 	var chunkFilter chunk.Filterer
 	if i.chunkFilter != nil {
@@ -959,6 +990,7 @@ func (i *instance) forAllStreams(ctx context.Context, fn func(*stream) error) er
 
 // forMatchingStreams will execute a function for each stream that satisfies a set of requirements (time range, matchers, etc).
 // It uses a function in order to enable generic stream access without accidentally leaking streams under the mutex.
+// forMatchingStreams 实现该路径上的核心处理逻辑。
 func (i *instance) forMatchingStreams(
 	ctx context.Context,
 	// ts denotes the beginning of the request
@@ -1001,6 +1033,7 @@ outer:
 	return nil
 }
 
+// addNewTailer 实现该路径上的核心处理逻辑。
 func (i *instance) addNewTailer(ctx context.Context, t *tailer) error {
 	if err := i.forMatchingStreams(ctx, time.Now(), t.matchers, nil, func(s *stream) error {
 		s.addTailer(t)
@@ -1014,6 +1047,7 @@ func (i *instance) addNewTailer(ctx context.Context, t *tailer) error {
 	return nil
 }
 
+// addTailersToNewStream 实现该路径上的核心处理逻辑。
 func (i *instance) addTailersToNewStream(stream *stream) {
 	i.tailerMtx.RLock()
 	defer i.tailerMtx.RUnlock()
@@ -1038,6 +1072,7 @@ func (i *instance) addTailersToNewStream(stream *stream) {
 	}
 }
 
+// checkClosedTailers 执行条件判断并返回布尔结果。
 func (i *instance) checkClosedTailers() {
 	closedTailers := []uint32{}
 
@@ -1059,6 +1094,7 @@ func (i *instance) checkClosedTailers() {
 	}
 }
 
+// closeTailers 实现该路径上的核心处理逻辑。
 func (i *instance) closeTailers() {
 	i.tailerMtx.Lock()
 	defer i.tailerMtx.Unlock()
@@ -1067,6 +1103,7 @@ func (i *instance) closeTailers() {
 	}
 }
 
+// openTailersCount 实现该路径上的核心处理逻辑。
 func (i *instance) openTailersCount() uint32 {
 	i.checkClosedTailers()
 
@@ -1076,6 +1113,7 @@ func (i *instance) openTailersCount() uint32 {
 	return uint32(len(i.tailers))
 }
 
+// parseShardFromRequest 实现该路径上的核心处理逻辑。
 func parseShardFromRequest(reqShards []string) (*logql.Shard, error) {
 	var shard *logql.Shard
 	shards, _, err := logql.ParseShards(reqShards)
@@ -1091,16 +1129,19 @@ func parseShardFromRequest(reqShards []string) (*logql.Shard, error) {
 	return shard, nil
 }
 
+// isDone 执行条件判断并返回布尔结果。
 func isDone(ctx context.Context) bool {
 	return ctx.Err() != nil
 }
 
 // QuerierQueryServer is the GRPC server stream we use to send batch of entries.
+// QuerierQueryServer 类型封装该模块的状态与行为。
 type QuerierQueryServer interface {
 	Context() context.Context
 	Send(res *logproto.QueryResponse) error
 }
 
+// sendBatches 实现该路径上的核心处理逻辑。
 func sendBatches(ctx context.Context, i iter.EntryIterator, queryServer QuerierQueryServer, limit int32) error {
 	stats := stats.FromContext(ctx)
 	metadata := metadata.FromContext(ctx)
@@ -1142,6 +1183,7 @@ func sendBatches(ctx context.Context, i iter.EntryIterator, queryServer QuerierQ
 	return nil
 }
 
+// sendSampleBatches 实现该路径上的核心处理逻辑。
 func sendSampleBatches(ctx context.Context, it iter.SampleIterator, queryServer logproto.Querier_QuerySampleServer) error {
 	sp := trace.SpanFromContext(ctx)
 
@@ -1178,6 +1220,7 @@ func sendSampleBatches(ctx context.Context, it iter.SampleIterator, queryServer 
 	return nil
 }
 
+// shouldConsiderStream 实现该路径上的核心处理逻辑。
 func shouldConsiderStream(stream *stream, reqFrom, reqThrough time.Time) bool {
 	from, to := stream.Bounds()
 
@@ -1188,20 +1231,24 @@ func shouldConsiderStream(stream *stream, reqFrom, reqThrough time.Time) bool {
 }
 
 // OnceSwitch is an optimized switch that can only ever be switched "on" in a concurrent environment.
+// OnceSwitch 类型封装该模块的状态与行为。
 type OnceSwitch struct {
 	triggered atomic.Bool
 }
 
+// Get 读取内部状态或构建查询结果。
 func (o *OnceSwitch) Get() bool {
 	return o.triggered.Load()
 }
 
+// Trigger 实现该路径上的核心处理逻辑。
 func (o *OnceSwitch) Trigger() {
 	o.TriggerAnd(nil)
 }
 
 // TriggerAnd will ensure the switch is on and run the provided function if
 // the switch was not already toggled on.
+// TriggerAnd 实现该路径上的核心处理逻辑。
 func (o *OnceSwitch) TriggerAnd(fn func()) {
 	triggeredPrior := o.triggered.Swap(true)
 	if !triggeredPrior && fn != nil {
@@ -1211,6 +1258,7 @@ func (o *OnceSwitch) TriggerAnd(fn func()) {
 
 // minTs is a helper to return minimum Unix timestamp (as `model.Time`)
 // across all the entries in a given `stream`.
+// minTs 实现该路径上的核心处理逻辑。
 func minTs(stream *logproto.Stream) model.Time {
 	// NOTE: We choose `min` timestamp because, the chunk is written once then
 	// added to the index buckets for may be different days. It would better rather to have
@@ -1227,6 +1275,7 @@ func minTs(stream *logproto.Stream) model.Time {
 }
 
 // For each stream, we check if the stream is owned by the ingester or not and increment/decrement the owned stream count.
+// updateOwnedStreams 实现该路径上的核心处理逻辑。
 func (i *instance) updateOwnedStreams(isOwnedStream func(*stream) (bool, error)) error {
 	start := time.Now()
 	defer func() {
@@ -1248,3 +1297,4 @@ func (i *instance) updateOwnedStreams(isOwnedStream func(*stream) (bool, error))
 	})
 	return err
 }
+// instance 的 stream 表与倒排索引是租户级 Push/Query 的共享状态中心。

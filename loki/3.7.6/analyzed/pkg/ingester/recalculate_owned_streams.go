@@ -1,5 +1,7 @@
 package ingester
 
+// recalculate_owned_streams 定时检测 ring 变化并重新评估 stream 所有权，支持经典 ingester ring 与 partition ring 两种策略。
+
 import (
 	"context"
 	"fmt"
@@ -15,11 +17,13 @@ import (
 	lokiring "github.com/grafana/loki/v3/pkg/util/ring"
 )
 
+// ownershipStrategy 抽象 ring 变更检测与单 stream 所有权判定。
 type ownershipStrategy interface {
 	checkRingForChanges() (bool, error)
 	isOwnedStream(*stream) (bool, error)
 }
 
+// recalculateOwnedStreamsSvc 类型封装该模块的状态与行为。
 type recalculateOwnedStreamsSvc struct {
 	services.Service
 
@@ -30,6 +34,7 @@ type recalculateOwnedStreamsSvc struct {
 	ticker            *time.Ticker
 }
 
+// newRecalculateOwnedStreamsSvc 实现该路径上的核心处理逻辑。
 func newRecalculateOwnedStreamsSvc(instancesSupplier func() []*instance, ownershipStrategy ownershipStrategy, ringPollInterval time.Duration, logger log.Logger) *recalculateOwnedStreamsSvc {
 	svc := &recalculateOwnedStreamsSvc{
 		instancesSupplier: instancesSupplier,
@@ -40,11 +45,13 @@ func newRecalculateOwnedStreamsSvc(instancesSupplier func() []*instance, ownersh
 	return svc
 }
 
+// iteration 实现该路径上的核心处理逻辑。
 func (s *recalculateOwnedStreamsSvc) iteration(_ context.Context) error {
 	s.recalculate()
 	return nil
 }
 
+// recalculate 实现该路径上的核心处理逻辑。
 func (s *recalculateOwnedStreamsSvc) recalculate() {
 	level.Info(s.logger).Log("msg", "starting recalculate owned streams job")
 	defer func() {
@@ -75,6 +82,7 @@ func (s *recalculateOwnedStreamsSvc) recalculate() {
 	}
 }
 
+// updateFixedLimitForAll 实现该路径上的核心处理逻辑。
 func (s *recalculateOwnedStreamsSvc) updateFixedLimitForAll() {
 	for _, instance := range s.instancesSupplier() {
 		oldLimit, newLimit := instance.ownedStreamsSvc.updateFixedLimit()
@@ -84,6 +92,7 @@ func (s *recalculateOwnedStreamsSvc) updateFixedLimitForAll() {
 	}
 }
 
+// ownedStreamsIngesterStrategy 类型封装该模块的状态与行为。
 type ownedStreamsIngesterStrategy struct {
 	logger log.Logger
 
@@ -96,6 +105,7 @@ type ownedStreamsIngesterStrategy struct {
 	zoneBufPool  sync.Pool
 }
 
+// newOwnedStreamsIngesterStrategy 实现该路径上的核心处理逻辑。
 func newOwnedStreamsIngesterStrategy(ingesterID string, ingestersRing ring.ReadRing, logger log.Logger) *ownedStreamsIngesterStrategy {
 	return &ownedStreamsIngesterStrategy{
 		ingesterID:    ingesterID,
@@ -113,6 +123,7 @@ func newOwnedStreamsIngesterStrategy(ingesterID string, ingestersRing ring.ReadR
 	}
 }
 
+// 检测 ring 拓扑是否相对上次快照发生变化。
 func (s *ownedStreamsIngesterStrategy) checkRingForChanges() (bool, error) {
 	rs, err := s.ingestersRing.GetAllHealthy(ring.WriteNoExtend)
 	if err != nil {
@@ -125,6 +136,7 @@ func (s *ownedStreamsIngesterStrategy) checkRingForChanges() (bool, error) {
 }
 
 //nolint:staticcheck
+// 判断 stream 是否由本 ingester/partition 负责。
 func (s *ownedStreamsIngesterStrategy) isOwnedStream(str *stream) (bool, error) {
 	descsBuf := s.descsBufPool.Get().([]ring.InstanceDesc)
 	hostsBuf := s.hostsBufPool.Get().([]string)
@@ -142,6 +154,7 @@ func (s *ownedStreamsIngesterStrategy) isOwnedStream(str *stream) (bool, error) 
 	return s.isOwnedStreamInner(replicationSet, s.ingesterID), nil
 }
 
+// isOwnedStreamInner 执行条件判断并返回布尔结果。
 func (s *ownedStreamsIngesterStrategy) isOwnedStreamInner(replicationSet ring.ReplicationSet, ingesterID string) bool {
 	for _, instanceDesc := range replicationSet.Instances {
 		if instanceDesc.Id == ingesterID {
@@ -151,6 +164,7 @@ func (s *ownedStreamsIngesterStrategy) isOwnedStreamInner(replicationSet ring.Re
 	return false
 }
 
+// ownedStreamsPartitionStrategy 类型封装该模块的状态与行为。
 type ownedStreamsPartitionStrategy struct {
 	logger log.Logger
 
@@ -160,6 +174,7 @@ type ownedStreamsPartitionStrategy struct {
 	getPartitionShardSize    func(user string) int
 }
 
+// newOwnedStreamsPartitionStrategy 实现该路径上的核心处理逻辑。
 func newOwnedStreamsPartitionStrategy(partitionID int32, ring ring.PartitionRingReader, getPartitionShardSize func(user string) int, logger log.Logger) *ownedStreamsPartitionStrategy {
 	return &ownedStreamsPartitionStrategy{
 		partitionID:           partitionID,
@@ -169,6 +184,7 @@ func newOwnedStreamsPartitionStrategy(partitionID int32, ring ring.PartitionRing
 	}
 }
 
+// 检测 ring 拓扑是否相对上次快照发生变化。
 func (s *ownedStreamsPartitionStrategy) checkRingForChanges() (bool, error) {
 	// When using partitions ring, we consider ring to be changed if active partitions have changed.
 	r := s.partitionRingWatcher.PartitionRing()
@@ -182,6 +198,7 @@ func (s *ownedStreamsPartitionStrategy) checkRingForChanges() (bool, error) {
 	return ringChanged, nil
 }
 
+// 判断 stream 是否由本 ingester/partition 负责。
 func (s *ownedStreamsPartitionStrategy) isOwnedStream(str *stream) (bool, error) {
 	subring, err := s.partitionRingWatcher.PartitionRing().ShuffleShard(str.tenant, s.getPartitionShardSize(str.tenant))
 	if err != nil {
@@ -194,3 +211,4 @@ func (s *ownedStreamsPartitionStrategy) isOwnedStream(str *stream) (bool, error)
 
 	return partitionForStream == s.partitionID, nil
 }
+// ring 未变化时跳过全量重算，降低周期性开销。
