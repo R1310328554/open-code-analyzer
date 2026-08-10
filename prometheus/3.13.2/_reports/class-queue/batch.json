@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:41:53Z",
-  "files": [
-    "tsdb/chunks/queue.go",
-    "tsdb/chunks/samples.go",
-    "tsdb/compact.go",
-    "tsdb/compression/compression.go",
-    "tsdb/db.go",
-    "tsdb/encoding/encoding.go",
-    "tsdb/exemplar.go",
-    "tsdb/fileutil/dir.go",
-    "tsdb/fileutil/dir_unix.go",
-    "tsdb/fileutil/dir_windows.go",
-    "tsdb/fileutil/direct_io.go",
-    "tsdb/fileutil/direct_io_force.go",
-    "tsdb/fileutil/direct_io_linux.go",
-    "tsdb/fileutil/direct_io_unsupported.go",
-    "tsdb/fileutil/direct_io_writer.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 234,
-  "done": 285
+  "done": 300
 }
