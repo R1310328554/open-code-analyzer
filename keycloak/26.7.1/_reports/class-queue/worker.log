@@ -1183,3 +1183,18 @@
 2026-08-10T07:25:42Z DONE model/infinispan/src/main/java/org/keycloak/infinispan/module/factory/OpenTelemetrySpan.java wave41a infinispan module/health/crl
 2026-08-10T07:25:42Z DONE model/infinispan/src/main/java/org/keycloak/infinispan/util/InfinispanUtils.java wave41a infinispan module/health/crl
 2026-08-10T07:25:42Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/CertificateReloadManager.java wave41a infinispan module/health/crl
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/DatabaseJGroupsCertificateProvider.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/DefaultJGroupsCertificateProviderFactory.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/FileJGroupsCertificateProvider.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/JGroupsCertificate.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/JGroupsCertificatesMetadataProvider.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/ReloadCertificateFunction.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/ReloadingX509ExtendedKeyManager.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/ReloadingX509ExtendedTrustManager.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/certificates/Utils.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/header/TracerHeader.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/protocol/KEYCLOAK_JDBC_PING2.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/jgroups/protocol/OPEN_TELEMETRY.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/keys/infinispan/InfinispanCachePublicKeyProvider.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/keys/infinispan/InfinispanCachePublicKeyProviderFactory.java wave41b jgroups certs + public-key cache
+2026-08-10T07:26:44Z DONE model/infinispan/src/main/java/org/keycloak/keys/infinispan/InfinispanPublicKeyStorageProvider.java wave41b jgroups certs + public-key cache
