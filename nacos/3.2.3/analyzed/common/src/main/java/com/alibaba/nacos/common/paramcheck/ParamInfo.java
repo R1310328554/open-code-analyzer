@@ -19,18 +19,22 @@ package com.alibaba.nacos.common.paramcheck;
 import java.util.Map;
 
 /**
+ * 待校验参数聚合 DTO：封装命名、配置、服务注册及 MCP/Agent/Skill 相关字段，供 {@link AbstractParamChecker#checkParamInfoList} 逐项校验。
  * Param info.
  *
  * @author zhuoguang
  */
 public class ParamInfo {
     
+    /** 命名空间展示名称 */
     private String namespaceShowName;
     
     private String namespaceId;
     
+    /** 配置 dataId */
     private String dataId;
     
+    /** 服务名 */
     private String serviceName;
     
     private String group;
@@ -43,6 +47,7 @@ public class ParamInfo {
     
     private String port;
     
+    /** 服务或实例元数据键值对 */
     private Map<String, String> metadata;
     
     private String mcpName;
@@ -51,6 +56,7 @@ public class ParamInfo {
     
     private String agentName;
     
+    /** Skill 名称（小写 DNS 子域风格） */
     private String skillName;
     
     public String getNamespaceShowName() {

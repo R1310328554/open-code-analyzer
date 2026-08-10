@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
+ * 默认参数校验器：按 {@link ParamCheckRule} 对命名空间、dataId、服务名、集群、IP、端口、元数据及 MCP/Agent/Skill 名称做长度与正则校验。
  * The type Default param checker.
  *
  * @author zhuoguang
@@ -51,6 +52,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
     
     private Pattern skillNamePattern;
     
+    /** SPI 注册类型名：default */
     private static final String CHECKER_TYPE = "default";
     
     private static final String MAX_METADATA_LENGTH_PROP_NAME =
@@ -65,6 +67,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
     }
     
     @Override
+    /** 顺序校验列表中每个 {@link ParamInfo}，遇错即返 */
     public ParamCheckResponse checkParamInfoList(List<ParamInfo> paramInfos) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
         if (paramInfos == null) {
@@ -88,6 +91,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
         replaceParamCheckRuleByEnv();
     }
     
+    /** 根据规则字符串编译各字段正则 Pattern */
     private void initFormatPattern() {
         this.namespaceShowNamePattern =
             Pattern.compile(this.paramCheckRule.namespaceShowNamePatternString);
@@ -104,7 +108,9 @@ public class DefaultParamChecker extends AbstractParamChecker {
     
     /**
      * if environment variables exists, it will be replaced.
+      * <p>默认参数校验；详见类级说明。</p>
      */
+    /** 从环境变量/系统属性覆盖 maxMetadataLength 等配置 */
     private void replaceParamCheckRuleByEnv() {
         String maxMetadataLength =
             PropertyUtils.getProperty(MAX_METADATA_LENGTH_PROP_NAME, MAX_METADATA_LENGTH_ENV_NAME);
@@ -118,7 +124,9 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param paramInfo the param info
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
+    /** 对单个 ParamInfo 逐字段执行格式校验 */
     public ParamCheckResponse checkParamInfoFormat(ParamInfo paramInfo) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
         if (paramInfo == null) {
@@ -186,6 +194,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param namespaceShowName the namespace show name
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkNamespaceShowNameFormat(String namespaceShowName) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -215,6 +224,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param namespaceId the namespace id
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkNamespaceIdFormat(String namespaceId) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -244,6 +254,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param dataId the data id
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkDataIdFormat(String dataId) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -273,6 +284,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param serviceName the service name
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkServiceNameFormat(String serviceName) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -303,6 +315,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param group the group
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkGroupFormat(String group) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -332,6 +345,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param clusterString the cluster string
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkClusterFormat(String clusterString) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -355,6 +369,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param cluster the cluster
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkSingleClusterFormat(String cluster) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -385,6 +400,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param ip the ip
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkIpFormat(String ip) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -414,6 +430,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param port the port
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkPortFormat(String port) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -447,6 +464,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param metadata the metadata
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkMetadataFormat(Map<String, String> metadata) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -479,6 +497,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param mcpName the mcp name
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkMcpNameFormat(String mcpName) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -508,6 +527,7 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param agentName agent name
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
     public ParamCheckResponse checkAgentNameFormat(String agentName) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
@@ -538,7 +558,9 @@ public class DefaultParamChecker extends AbstractParamChecker {
      *
      * @param skillName skill name
      * @return the param check response
+      * <p>默认参数校验；详见类级说明。</p>
      */
+    /** 校验 skill 名称：小写字母数字连字符，禁止首尾或连续连字符 */
     public ParamCheckResponse checkSkillNameFormat(String skillName) {
         ParamCheckResponse paramCheckResponse = new ParamCheckResponse();
         if (StringUtils.isBlank(skillName)) {

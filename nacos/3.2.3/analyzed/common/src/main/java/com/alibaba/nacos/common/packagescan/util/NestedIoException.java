@@ -21,6 +21,7 @@ import java.io.IOException;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 支持嵌套根因的 {@link IOException} 子类：在 Java 6 之前标准 IO 异常无根因暴露，本类通过 {@link NestedExceptionUtils} 增强 {@link #getMessage()}。
  * Subclass of {@link IOException} that properly handles a root cause,
  * exposing the root cause just like NestedChecked/RuntimeException does.
  *
@@ -38,6 +39,7 @@ import java.io.IOException;
 public class NestedIoException extends IOException {
 
     static {
+        // 静态块预加载 NestedExceptionUtils，避免 OSGi 下 getMessage 类加载死锁
         // Eagerly load the NestedExceptionUtils class to avoid classloader deadlock
         // issues on OSGi when calling getMessage(). Reported by Don Brown; SPR-5607.
         NestedExceptionUtils.class.getName();
@@ -47,6 +49,7 @@ public class NestedIoException extends IOException {
      * Construct a {@code NestedIOException} with the specified detail message.
      *
      * @param msg the detail message
+      * <p>嵌套 IO 异常；详见类级说明。</p>
      */
     public NestedIoException(String msg) {
         super(msg);
@@ -58,6 +61,7 @@ public class NestedIoException extends IOException {
      *
      * @param msg   the detail message
      * @param cause the nested exception
+      * <p>嵌套 IO 异常；详见类级说明。</p>
      */
     public NestedIoException(String msg, Throwable cause) {
         super(msg, cause);
@@ -66,7 +70,9 @@ public class NestedIoException extends IOException {
     /**
      * Return the detail message, including the message from the nested exception
      * if there is one.
+      * <p>嵌套 IO 异常；详见类级说明。</p>
      */
+    /** 返回含 nested exception 详情的完整消息 */
     @Override
     public String getMessage() {
         return NestedExceptionUtils.buildMessage(super.getMessage(), getCause());

@@ -17,6 +17,7 @@
 package com.alibaba.nacos.common.pathencoder;
 
 /**
+ * 路径编解码 SPI：各操作系统可实现本接口，对文件系统非法字符进行编码/解码，由 {@link PathEncoderManager} 按 os.name 匹配加载。
  * To encode path if illegal,an os may have a PathEncoder.
  *
  * @author daydreamer-ia
@@ -29,7 +30,9 @@ public interface PathEncoder {
      * @param str origin
      * @param charset charset
      * @return new path
+      * <p>路径编码 SPI；详见类级说明。</p>
      */
+    /** 按指定字符集将原始路径编码为文件系统安全形式 */
     String encode(String str, String charset);
     
     /**
@@ -38,13 +41,16 @@ public interface PathEncoder {
      * @param str new path
      * @param charset charset
      * @return origin path
+      * <p>路径编码 SPI；详见类级说明。</p>
      */
+    /** 将编码路径解码回原始字符串 */
     String decode(String str, String charset);
     
     /**
      * return simple lowercase os name.
      *
      * @return simple lowercase os name
+      * <p>路径编码 SPI；详见类级说明。</p>
      */
     String name();
     
@@ -53,6 +59,8 @@ public interface PathEncoder {
      *
      * @param key key
      * @return whether to encode.
+      * <p>路径编码 SPI；详见类级说明。</p>
      */
+    /** 判断给定路径片段是否需要进行编码 */
     boolean needEncode(String key);
 }

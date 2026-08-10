@@ -17,12 +17,14 @@
 package com.alibaba.nacos.common.paramcheck;
 
 /**
+ * 参数校验规则配置：各 Nacos 参数字段的最大长度与正则表达式字符串，可由 {@link DefaultParamChecker} 通过环境变量部分覆盖。
  * Param check rules.
  *
  * @author zhuoguang
  */
 public class ParamCheckRule {
     
+    /** 命名空间展示名最大长度，默认 256 */
     public int maxNamespaceShowNameLength = 256;
     
     public String namespaceShowNamePatternString = "^[^@#$%^&*]+$";
@@ -37,6 +39,7 @@ public class ParamCheckRule {
     
     public int maxServiceNameLength = 512;
     
+    /** 服务名正则：禁止 @ 开头、@@ 及中文空白 */
     public String serviceNamePatternString = "^(?!@).((?!@@)[^\\u4E00-\\u9FA5\\s])*$";
     
     public int maxGroupLength = 128;
@@ -51,10 +54,12 @@ public class ParamCheckRule {
     
     public String ipPatternString = "^[^\\u4E00-\\u9FA5\\s]*$";
     
+    /** 端口上限，默认 65535 */
     public int maxPort = 65535;
     
     public int minPort = 0;
     
+    /** 元数据键值总长度上限，默认 1024，可通过环境变量覆盖 */
     public int maxMetadataLength = 1024;
     
     public String agentNamePatternString = "^[\\x20-\\x7E]+$";

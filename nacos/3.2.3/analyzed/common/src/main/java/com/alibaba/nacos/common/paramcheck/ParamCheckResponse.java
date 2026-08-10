@@ -17,14 +17,17 @@
 package com.alibaba.nacos.common.paramcheck;
 
 /**
+ * 参数校验结果：{@code success} 表示通过，失败时 {@code message} 携带英文错误描述。
  * The type Param check response.
  *
  * @author zhuoguang
  */
 public class ParamCheckResponse {
     
+    /** 校验是否成功 */
     private boolean success;
     
+    /** 失败时的错误消息 */
     private String message;
     
     public boolean isSuccess() {

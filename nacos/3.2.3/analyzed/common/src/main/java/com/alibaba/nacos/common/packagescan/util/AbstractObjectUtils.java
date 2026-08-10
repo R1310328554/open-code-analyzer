@@ -25,6 +25,7 @@ import java.util.StringJoiner;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 对象工具类：提供空值判断、数组/枚举操作、null 安全 equals/hashCode 及 toString 等通用方法，供包扫描与框架内部使用。
  * Miscellaneous object utility methods.
  *
  * <p>Mainly for internal use within the framework.
@@ -44,6 +45,7 @@ public abstract class AbstractObjectUtils {
     private AbstractObjectUtils() {
     }
 
+    /** nullSafeHashCode 计算初始哈希种子 */
     private static final int INITIAL_HASH = 7;
 
     private static final int MULTIPLIER = 31;
@@ -71,6 +73,7 @@ public abstract class AbstractObjectUtils {
      * @see Exception
      * @see RuntimeException
      * @see Error
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static boolean isCheckedException(Throwable ex) {
         return !(ex instanceof RuntimeException || ex instanceof Error);
@@ -83,6 +86,7 @@ public abstract class AbstractObjectUtils {
      * @param ex                 the exception to check
      * @param declaredExceptions the exception types declared in the throws clause
      * @return whether the given exception is compatible
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static boolean isCompatibleWithThrowsClause(Throwable ex, Class<?>... declaredExceptions) {
         if (!isCheckedException(ex)) {
@@ -103,6 +107,7 @@ public abstract class AbstractObjectUtils {
      * either an Object array or a primitive array.
      *
      * @param obj the object to check
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static boolean isArray(Object obj) {
         return (obj != null && obj.getClass().isArray());
@@ -114,6 +119,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to check
      * @see #isEmpty(Object)
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static boolean isEmpty(Object[] array) {
         return (array == null || array.length == 0);
@@ -137,7 +143,9 @@ public abstract class AbstractObjectUtils {
      * @see Optional#isPresent()
      * @see AbstractObjectUtils#isEmpty(Object[])
      * @since 4.2
+      * <p>对象工具方法；详见类级说明。</p>
      */
+    /** 判断 Optional/数组/CharSequence/Collection/Map 等是否为空 */
     public static boolean isEmpty(Object obj) {
         if (obj == null) {
             return true;
@@ -170,6 +178,7 @@ public abstract class AbstractObjectUtils {
      * @return either the value held within the {@code Optional}, {@code null}
      * if the {@code Optional} is empty, or simply the given object as-is
      * @since 5.0
+      * <p>对象工具方法；详见类级说明。</p>
      */
 
     public static Object unwrapOptional(Object obj) {
@@ -192,6 +201,7 @@ public abstract class AbstractObjectUtils {
      *                in which case the return value will always be {@code false})
      * @param element the element to check for
      * @return whether the element has been found in the given array
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static boolean containsElement(Object[] array, Object element) {
         if (array == null) {
@@ -212,6 +222,7 @@ public abstract class AbstractObjectUtils {
      * @param enumValues the enum values to check, typically obtained via {@code MyEnum.values()}
      * @param constant   the constant name to find (must not be null or empty string)
      * @return whether the constant has been found in the given array
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static boolean containsConstant(Enum<?>[] enumValues, String constant) {
         return containsConstant(enumValues, constant, false);
@@ -224,6 +235,7 @@ public abstract class AbstractObjectUtils {
      * @param constant      the constant name to find (must not be null or empty string)
      * @param caseSensitive whether case is significant in determining a match
      * @return whether the constant has been found in the given array
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static boolean containsConstant(Enum<?>[] enumValues, String constant, boolean caseSensitive) {
         for (Enum<?> candidate : enumValues) {
@@ -243,6 +255,7 @@ public abstract class AbstractObjectUtils {
      * @param constant   the constant to get the enum value of
      * @throws IllegalArgumentException if the given constant is not found in the given array
      *                                  of enum values. Use {@link #containsConstant(Enum[], String)} as a guard to avoid this exception.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static <E extends Enum<?>> E caseInsensitiveValueOf(E[] enumValues, String constant) {
         for (E candidate : enumValues) {
@@ -262,6 +275,7 @@ public abstract class AbstractObjectUtils {
      * @param array the array to append to (can be {@code null})
      * @param obj   the object to append
      * @return the new array (of the same component type; never {@code null})
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static <A, O extends A> A[] addObjectToArray(A[] array, O obj) {
         Class<?> compType = Object.class;
@@ -290,6 +304,7 @@ public abstract class AbstractObjectUtils {
      * @param source the (potentially primitive) array
      * @return the corresponding object array (never {@code null})
      * @throws IllegalArgumentException if the parameter is not an array
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static Object[] toObjectArray(Object source) {
         if (source instanceof Object[]) {
@@ -329,7 +344,9 @@ public abstract class AbstractObjectUtils {
      * @return whether the given objects are equal
      * @see Object#equals(Object)
      * @see Arrays#equals
+      * <p>对象工具方法；详见类级说明。</p>
      */
+    /** null 安全相等比较，数组使用元素级 {@link Arrays#equals} */
     public static boolean nullSafeEquals(Object o1, Object o2) {
         if (o1 == o2) {
             return true;
@@ -355,6 +372,7 @@ public abstract class AbstractObjectUtils {
      * @return whether the given objects are equal
      * @see #nullSafeEquals(Object, Object)
      * @see Arrays#equals
+      * <p>对象工具方法；详见类级说明。</p>
      */
     private static boolean arrayEquals(Object o1, Object o2) {
         if (o1 instanceof Object[] && o2 instanceof Object[]) {
@@ -404,7 +422,9 @@ public abstract class AbstractObjectUtils {
      * @see #nullSafeHashCode(int[])
      * @see #nullSafeHashCode(long[])
      * @see #nullSafeHashCode(short[])
+      * <p>对象工具方法；详见类级说明。</p>
      */
+    /** null 安全哈希；数组委托各类型 nullSafeHashCode 重载 */
     public static int nullSafeHashCode(Object obj) {
         if (obj == null) {
             return 0;
@@ -444,6 +464,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(Object[] array) {
         if (array == null) {
@@ -459,6 +480,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(boolean[] array) {
         if (array == null) {
@@ -474,6 +496,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(byte[] array) {
         if (array == null) {
@@ -489,6 +512,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(char[] array) {
         if (array == null) {
@@ -504,6 +528,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(double[] array) {
         if (array == null) {
@@ -519,6 +544,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(float[] array) {
         if (array == null) {
@@ -534,6 +560,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(int[] array) {
         if (array == null) {
@@ -549,6 +576,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(long[] array) {
         if (array == null) {
@@ -564,6 +592,7 @@ public abstract class AbstractObjectUtils {
     /**
      * Return a hash code based on the contents of the specified array.
      * If {@code array} is {@code null}, this method returns 0.
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static int nullSafeHashCode(short[] array) {
         if (array == null) {
@@ -580,6 +609,7 @@ public abstract class AbstractObjectUtils {
      * Return the same value as {@link Boolean#hashCode(boolean)}}.
      *
      * @deprecated as of Spring Framework 5.0, in favor of the native JDK 8 variant
+      * <p>对象工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static int hashCode(boolean bool) {
@@ -590,6 +620,7 @@ public abstract class AbstractObjectUtils {
      * Return the same value as {@link Double#hashCode(double)}}.
      *
      * @deprecated as of Spring Framework 5.0, in favor of the native JDK 8 variant
+      * <p>对象工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static int hashCode(double dbl) {
@@ -600,6 +631,7 @@ public abstract class AbstractObjectUtils {
      * Return the same value as {@link Float#hashCode(float)}}.
      *
      * @deprecated as of Spring Framework 5.0, in favor of the native JDK 8 variant
+      * <p>对象工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static int hashCode(float flt) {
@@ -610,6 +642,7 @@ public abstract class AbstractObjectUtils {
      * Return the same value as {@link Long#hashCode(long)}}.
      *
      * @deprecated as of Spring Framework 5.0, in favor of the native JDK 8 variant
+      * <p>对象工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static int hashCode(long lng) {
@@ -626,6 +659,7 @@ public abstract class AbstractObjectUtils {
      * @param obj the object (may be {@code null})
      * @return the object's identity as String representation,
      * or an empty String if the object was {@code null}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String identityToString(Object obj) {
         if (obj == null) {
@@ -639,6 +673,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param obj the object
      * @return the object's identity code in hex notation
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String getIdentityHexString(Object obj) {
         return Integer.toHexString(System.identityHashCode(obj));
@@ -654,6 +689,7 @@ public abstract class AbstractObjectUtils {
      * @param obj the object to build a display String for
      * @return a display String representation of {@code obj}
      * @see #nullSafeToString(Object)
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String getDisplayString(Object obj) {
         if (obj == null) {
@@ -669,6 +705,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param obj the object to introspect (may be {@code null})
      * @return the corresponding class name
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeClassName(Object obj) {
         return (obj != null ? obj.getClass().getName() : NULL_STRING);
@@ -682,7 +719,9 @@ public abstract class AbstractObjectUtils {
      *
      * @param obj the object to build a String representation for
      * @return a String representation of {@code obj}
+      * <p>对象工具方法；详见类级说明。</p>
      */
+    /** 将对象转为字符串，数组格式化为 {@code {a, b}} 形式 */
     public static String nullSafeToString(Object obj) {
         if (obj == null) {
             return NULL_STRING;
@@ -731,6 +770,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(Object[] array) {
         if (array == null) {
@@ -757,6 +797,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(boolean[] array) {
         if (array == null) {
@@ -783,6 +824,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(byte[] array) {
         if (array == null) {
@@ -809,6 +851,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(char[] array) {
         if (array == null) {
@@ -835,6 +878,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(double[] array) {
         if (array == null) {
@@ -861,6 +905,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(float[] array) {
         if (array == null) {
@@ -887,6 +932,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(int[] array) {
         if (array == null) {
@@ -913,6 +959,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(long[] array) {
         if (array == null) {
@@ -939,6 +986,7 @@ public abstract class AbstractObjectUtils {
      *
      * @param array the array to build a String representation for
      * @return a String representation of {@code array}
+      * <p>对象工具方法；详见类级说明。</p>
      */
     public static String nullSafeToString(short[] array) {
         if (array == null) {

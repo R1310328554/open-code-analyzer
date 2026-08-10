@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 断言工具类：在运行时尽早、明确地校验方法参数与状态，违反契约时抛出 {@link IllegalArgumentException} 或 {@link IllegalStateException}。
  * Assertion utility class that assists in validating arguments.
  *
  * <p>Useful for identifying programmer errors early and clearly at runtime.
@@ -74,7 +75,9 @@ public abstract class AbstractAssert {
      * @param expression a boolean expression
      * @param message    the exception message to use if the assertion fails
      * @throws IllegalStateException if {@code expression} is {@code false}
+      * <p>断言工具方法；详见类级说明。</p>
      */
+    /** 断言状态为真，否则抛出 {@link IllegalStateException} */
     public static void state(boolean expression, String message) {
         if (!expression) {
             throw new IllegalStateException(message);
@@ -96,6 +99,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalStateException if {@code expression} is {@code false}
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void state(boolean expression, Supplier<String> messageSupplier) {
         if (!expression) {
@@ -108,6 +112,7 @@ public abstract class AbstractAssert {
      * if the expression evaluates to {@code false}.
      *
      * @deprecated as of 4.3.7, in favor of {@link #state(boolean, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void state(boolean expression) {
@@ -122,7 +127,9 @@ public abstract class AbstractAssert {
      * @param expression a boolean expression
      * @param message    the exception message to use if the assertion fails
      * @throws IllegalArgumentException if {@code expression} is {@code false}
+      * <p>断言工具方法；详见类级说明。</p>
      */
+    /** 断言表达式为真，否则抛出 {@link IllegalArgumentException} */
     public static void isTrue(boolean expression, String message) {
         if (!expression) {
             throw new IllegalArgumentException(message);
@@ -141,6 +148,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if {@code expression} is {@code false}
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isTrue(boolean expression, Supplier<String> messageSupplier) {
         if (!expression) {
@@ -153,6 +161,7 @@ public abstract class AbstractAssert {
      * if the expression evaluates to {@code false}.
      *
      * @deprecated as of 4.3.7, in favor of {@link #isTrue(boolean, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void isTrue(boolean expression) {
@@ -166,6 +175,7 @@ public abstract class AbstractAssert {
      * @param object  the object to check
      * @param message the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the object is not {@code null}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isNull(Object object, String message) {
         if (object != null) {
@@ -184,6 +194,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the object is not {@code null}
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isNull(Object object, Supplier<String> messageSupplier) {
         if (object != null) {
@@ -195,6 +206,7 @@ public abstract class AbstractAssert {
      * Assert that an object is {@code null}.
      *
      * @deprecated as of 4.3.7, in favor of {@link #isNull(Object, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void isNull(Object object) {
@@ -208,7 +220,9 @@ public abstract class AbstractAssert {
      * @param object  the object to check
      * @param message the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the object is {@code null}
+      * <p>断言工具方法；详见类级说明。</p>
      */
+    /** 断言对象非 null，否则抛出 {@link IllegalArgumentException} */
     public static void notNull(Object object, String message) {
         if (object == null) {
             throw new IllegalArgumentException(message);
@@ -227,6 +241,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the object is {@code null}
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void notNull(Object object, Supplier<String> messageSupplier) {
         if (object == null) {
@@ -238,6 +253,7 @@ public abstract class AbstractAssert {
      * Assert that an object is not {@code null}.
      *
      * @deprecated as of 4.3.7, in favor of {@link #notNull(Object, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void notNull(Object object) {
@@ -252,7 +268,9 @@ public abstract class AbstractAssert {
      * @param text    the String to check
      * @param message the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the text is empty
+      * <p>断言工具方法；详见类级说明。</p>
      */
+    /** 断言字符串非 null 且长度大于 0 */
     public static void hasLength(String text, String message) {
         if (!StringUtils.hasLength(text)) {
             throw new IllegalArgumentException(message);
@@ -272,6 +290,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the text is empty
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void hasLength(String text, Supplier<String> messageSupplier) {
         if (!StringUtils.hasLength(text)) {
@@ -284,6 +303,7 @@ public abstract class AbstractAssert {
      * it must not be {@code null} and not the empty String.
      *
      * @deprecated as of 4.3.7, in favor of {@link #hasLength(String, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void hasLength(String text) {
@@ -299,7 +319,9 @@ public abstract class AbstractAssert {
      * @param text    the String to check
      * @param message the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the text does not contain valid text content
+      * <p>断言工具方法；详见类级说明。</p>
      */
+    /** 断言字符串含至少一个非空白字符 */
     public static void hasText(String text, String message) {
         if (!StringUtils.hasText(text)) {
             throw new IllegalArgumentException(message);
@@ -319,6 +341,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the text does not contain valid text content
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void hasText(String text, Supplier<String> messageSupplier) {
         if (!StringUtils.hasText(text)) {
@@ -331,6 +354,7 @@ public abstract class AbstractAssert {
      * be {@code null} and must contain at least one non-whitespace character.
      *
      * @deprecated as of 4.3.7, in favor of {@link #hasText(String, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void hasText(String text) {
@@ -350,6 +374,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the text contains the substring
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void doesNotContain(String textToSearch, String substring, Supplier<String> messageSupplier) {
         if (StringUtils.hasLength(textToSearch) && StringUtils.hasLength(substring)
@@ -362,6 +387,7 @@ public abstract class AbstractAssert {
      * Assert that the given text does not contain the given substring.
      *
      * @deprecated as of 4.3.7, in favor of {@link #doesNotContain(String, String, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void doesNotContain(String textToSearch, String substring) {
@@ -377,7 +403,9 @@ public abstract class AbstractAssert {
      * @param array   the array to check
      * @param message the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the object array is {@code null} or contains no elements
+      * <p>断言工具方法；详见类级说明。</p>
      */
+    /** 断言数组非 null 且至少含一个元素 */
     public static void notEmpty(Object[] array, String message) {
         if (AbstractObjectUtils.isEmpty(array)) {
             throw new IllegalArgumentException(message);
@@ -396,6 +424,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the object array is {@code null} or contains no elements
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void notEmpty(Object[] array, Supplier<String> messageSupplier) {
         if (AbstractObjectUtils.isEmpty(array)) {
@@ -408,6 +437,7 @@ public abstract class AbstractAssert {
      * {@code null} and must contain at least one element.
      *
      * @deprecated as of 4.3.7, in favor of {@link #notEmpty(Object[], String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void notEmpty(Object[] array) {
@@ -427,6 +457,7 @@ public abstract class AbstractAssert {
      * @throws IllegalArgumentException if the collection is {@code null} or
      *                                  contains no elements
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void notEmpty(Collection<?> collection, Supplier<String> messageSupplier) {
         if (CollectionUtils.isEmpty(collection)) {
@@ -443,6 +474,7 @@ public abstract class AbstractAssert {
      * @param message    the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the collection is {@code null} or
      *                                  contains no elements
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void notEmpty(Collection<?> collection, String message) {
         if (CollectionUtils.isEmpty(collection)) {
@@ -455,6 +487,7 @@ public abstract class AbstractAssert {
      * {@code null} and must contain at least one element.
      *
      * @deprecated as of 4.3.7, in favor of {@link #notEmpty(Collection, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void notEmpty(Collection<?> collection) {
@@ -470,6 +503,7 @@ public abstract class AbstractAssert {
      * @param map     the map to check
      * @param message the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the map is {@code null} or contains no entries
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void notEmpty(Map<?, ?> map, String message) {
         if (CollectionUtils.isMapEmpty(map)) {
@@ -489,6 +523,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the map is {@code null} or contains no entries
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void notEmpty(Map<?, ?> map, Supplier<String> messageSupplier) {
         if (CollectionUtils.isMapEmpty(map)) {
@@ -501,6 +536,7 @@ public abstract class AbstractAssert {
      * and must contain at least one entry.
      *
      * @deprecated as of 4.3.7, in favor of {@link #notEmpty(Map, String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void notEmpty(Map<?, ?> map) {
@@ -515,6 +551,7 @@ public abstract class AbstractAssert {
      * @param array   the array to check
      * @param message the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the object array contains a {@code null} element
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void noNullElements(Object[] array, String message) {
         if (array != null) {
@@ -538,6 +575,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the object array contains a {@code null} element
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void noNullElements(Object[] array, Supplier<String> messageSupplier) {
         if (array != null) {
@@ -553,6 +591,7 @@ public abstract class AbstractAssert {
      * Assert that an array contains no {@code null} elements.
      *
      * @deprecated as of 4.3.7, in favor of {@link #noNullElements(Object[], String)}
+      * <p>断言工具方法；详见类级说明。</p>
      */
     @Deprecated
     public static void noNullElements(Object[] array) {
@@ -568,6 +607,7 @@ public abstract class AbstractAssert {
      * @param message    the exception message to use if the assertion fails
      * @throws IllegalArgumentException if the collection contains a {@code null} element
      * @since 5.2
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void noNullElements(Collection<?> collection, String message) {
         if (collection != null) {
@@ -591,6 +631,7 @@ public abstract class AbstractAssert {
      *                        assertion fails
      * @throws IllegalArgumentException if the collection contains a {@code null} element
      * @since 5.2
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void noNullElements(Collection<?> collection, Supplier<String> messageSupplier) {
         if (collection != null) {
@@ -614,7 +655,9 @@ public abstract class AbstractAssert {
      *                type will be appended. In any other case, a ":" with a space and the name
      *                of the offending object's type will be appended.
      * @throws IllegalArgumentException if the object is not an instance of type
+      * <p>断言工具方法；详见类级说明。</p>
      */
+    /** 断言对象为指定类型的实例 */
     public static void isInstanceOf(Class<?> type, Object obj, String message) {
         notNull(type, "Type to check against must not be null");
         if (!type.isInstance(obj)) {
@@ -634,6 +677,7 @@ public abstract class AbstractAssert {
      *                        assertion fails. See {@link #isInstanceOf(Class, Object, String)} for details.
      * @throws IllegalArgumentException if the object is not an instance of type
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isInstanceOf(Class<?> type, Object obj, Supplier<String> messageSupplier) {
         notNull(type, "Type to check against must not be null");
@@ -649,6 +693,7 @@ public abstract class AbstractAssert {
      * @param type the type to check against
      * @param obj  the object to check
      * @throws IllegalArgumentException if the object is not an instance of type
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isInstanceOf(Class<?> type, Object obj) {
         isInstanceOf(type, obj, "");
@@ -666,6 +711,7 @@ public abstract class AbstractAssert {
      *                  will be appended. In any other case, a ":" with a space and the name of the
      *                  offending sub type will be appended.
      * @throws IllegalArgumentException if the classes are not assignable
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isAssignable(Class<?> superType, Class<?> subType, String message) {
         notNull(superType, "Super type to check against must not be null");
@@ -686,6 +732,7 @@ public abstract class AbstractAssert {
      *                        assertion fails. See {@link #isAssignable(Class, Class, String)} for details.
      * @throws IllegalArgumentException if the classes are not assignable
      * @since 5.0
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isAssignable(Class<?> superType, Class<?> subType, Supplier<String> messageSupplier) {
         notNull(superType, "Super type to check against must not be null");
@@ -701,6 +748,7 @@ public abstract class AbstractAssert {
      * @param superType the super type to check
      * @param subType   the sub type to check
      * @throws IllegalArgumentException if the classes are not assignable
+      * <p>断言工具方法；详见类级说明。</p>
      */
     public static void isAssignable(Class<?> superType, Class<?> subType) {
         isAssignable(superType, subType, "");
@@ -749,6 +797,7 @@ public abstract class AbstractAssert {
         return msg + (msg.endsWith(" ") ? "" : ": ") + typeName;
     }
 
+    /** 安全获取 Supplier 提供的异常消息，Supplier 为 null 时返回 null */
     private static String nullSafeGet(Supplier<String> messageSupplier) {
         return (messageSupplier != null ? messageSupplier.get() : null);
     }

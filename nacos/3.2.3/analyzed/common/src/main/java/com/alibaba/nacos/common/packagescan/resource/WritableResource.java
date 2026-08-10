@@ -23,6 +23,7 @@ import java.nio.channels.WritableByteChannel;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 可写资源扩展接口：在 {@link Resource} 基础上提供 {@link #getOutputStream()} 写入能力，供需要覆盖或创建底层资源的场景使用。
  * Extended interface for a resource that supports writing to it.
  * Provides an {@link #getOutputStream() OutputStream accessor}.
  *
@@ -43,7 +44,9 @@ public interface WritableResource extends Resource {
      *
      * @see #getOutputStream()
      * @see #isReadable()
+      * <p>可写资源接口；详见类级说明。</p>
      */
+    /** 默认可写；子类可覆盖以声明资源不可修改 */
     default boolean isWritable() {
         return true;
     }
@@ -54,6 +57,7 @@ public interface WritableResource extends Resource {
      *
      * @throws IOException if the stream could not be opened
      * @see #getInputStream()
+      * <p>可写资源接口；详见类级说明。</p>
      */
     OutputStream getOutputStream() throws IOException;
 
@@ -70,7 +74,9 @@ public interface WritableResource extends Resource {
      * @throws IOException                   if the content channel could not be opened
      * @see #getOutputStream()
      * @since 5.0
+      * <p>可写资源接口；详见类级说明。</p>
      */
+    /** 每次调用返回新的可写 NIO 通道，基于 {@link #getOutputStream()} 包装 */
     default WritableByteChannel writableChannel() throws IOException {
         return Channels.newChannel(getOutputStream());
     }

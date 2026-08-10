@@ -24,6 +24,7 @@ import java.util.Map;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 字符串路径匹配策略接口：供 {@link PathMatchingResourcePatternResolver} 使用，默认实现为 Ant 风格 {@link AntPathMatcher}。
  * Strategy interface for {@code String}-based path matching.
  *
  * <p>Used by {@link PathMatchingResourcePatternResolver},
@@ -47,7 +48,9 @@ public interface PathMatcher {
      *
      * @param path the path to check
      * @return {@code true} if the given {@code path} represents a pattern
+      * <p>路径匹配策略；详见类级说明。</p>
      */
+    /** 判断路径是否含通配符等模式语法 */
     boolean isPattern(String path);
 
     /**
@@ -58,7 +61,9 @@ public interface PathMatcher {
      * @param path    the path to test
      * @return {@code true} if the supplied {@code path} matched,
      * {@code false} if it didn't
+      * <p>路径匹配策略；详见类级说明。</p>
      */
+    /** 判断 path 是否完全匹配 pattern */
     boolean match(String pattern, String path);
 
     /**
@@ -72,6 +77,7 @@ public interface PathMatcher {
      * @param path    the path to test
      * @return {@code true} if the supplied {@code path} matched,
      * {@code false} if it didn't
+      * <p>路径匹配策略；详见类级说明。</p>
      */
     boolean matchStart(String pattern, String path);
 
@@ -98,6 +104,7 @@ public interface PathMatcher {
      * @param path    the full path to introspect
      * @return the pattern-mapped part of the given {@code path}
      * (never {@code null})
+      * <p>路径匹配策略；详见类级说明。</p>
      */
     String extractPathWithinPattern(String pattern, String path);
 
@@ -111,7 +118,9 @@ public interface PathMatcher {
      * @param pattern the path pattern, possibly containing URI templates
      * @param path    the full path to extract template variables from
      * @return a map, containing variable names as keys; variables values as values
+      * <p>路径匹配策略；详见类级说明。</p>
      */
+    /** 从路径中提取 {@code {var}} 模板变量映射 */
     Map<String, String> extractUriTemplateVariables(String pattern, String path);
 
     /**
@@ -125,6 +134,7 @@ public interface PathMatcher {
      *
      * @param path the full path to use for comparison
      * @return a comparator capable of sorting patterns in order of explicitness
+      * <p>路径匹配策略；详见类级说明。</p>
      */
     Comparator<String> getPatternComparator(String path);
 
@@ -137,7 +147,9 @@ public interface PathMatcher {
      * @param pattern2 the second pattern
      * @return the combination of the two patterns
      * @throws IllegalArgumentException when the two patterns cannot be combined
+      * <p>路径匹配策略；详见类级说明。</p>
      */
+    /** 合并两个路径模式为新模式 */
     String combine(String pattern1, String pattern2);
 
 }

@@ -18,6 +18,7 @@ package com.alibaba.nacos.common.packagescan.util;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * 嵌套异常工具类：为无法共享基类的异常类型提供根因解析与消息拼接，供 {@link NestedIoException} 等使用。
  * Helper class for implementing exception classes which are capable of
  * holding nested exceptions. Necessary because we can't share a base
  * class among different exception types.
@@ -36,8 +37,10 @@ public abstract class NestedExceptionUtils {
      * @param message the base message
      * @param cause   the root cause
      * @return the full exception message
+      * <p>嵌套异常工具；详见类级说明。</p>
      */
 
+    /** 拼接基础消息与 nested exception 根因描述 */
     public static String buildMessage(String message, Throwable cause) {
         if (cause == null) {
             return message;
@@ -56,8 +59,10 @@ public abstract class NestedExceptionUtils {
      * @param original the original exception to introspect
      * @return the innermost exception, or {@code null} if none
      * @since 4.3.9
+      * <p>嵌套异常工具；详见类级说明。</p>
      */
 
+    /** 沿 cause 链追溯最内层根因，无嵌套时返回 null */
     public static Throwable getRootCause(Throwable original) {
         if (original == null) {
             return null;
@@ -81,7 +86,9 @@ public abstract class NestedExceptionUtils {
      * @param original the original exception to introspect
      * @return the most specific cause (never {@code null})
      * @since 4.3.9
+      * <p>嵌套异常工具；详见类级说明。</p>
      */
+    /** 返回根因；若无嵌套则返回原始异常本身 */
     public static Throwable getMostSpecificCause(Throwable original) {
         Throwable rootCause = getRootCause(original);
         return (rootCause != null ? rootCause : original);
