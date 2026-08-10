@@ -15,23 +15,8 @@
     "pkg/push/timestamp.go",
     "pkg/push/types.go",
     "pkg/querier/astmapper/astmapper.go",
-    "pkg/querier/astmapper/embedded.go",
-    "pkg/querier/astmapper/parallel.go",
-    "pkg/querier/astmapper/shard_summer.go",
-    "pkg/querier/astmapper/subtree_folder.go",
-    "pkg/querier/deletion/delete.go",
-    "pkg/querier/handler.go",
-    "pkg/querier/http.go",
-    "pkg/querier/ingester_querier.go",
-    "pkg/querier/intervals.go",
-    "pkg/querier/limits/definitions.go",
-    "pkg/querier/limits/validation.go",
-    "pkg/querier/multi_tenant_querier.go",
-    "pkg/querier/pattern/querier.go",
-    "pkg/querier/plan/plan.go",
-    "pkg/querier/querier.go",
-    "pkg/querier/queryrange/codec.go"
+    "pkg/querier/astmapper/embedded.go"
   ],
   "remaining_pending": 562,
-  "done": 960
+  "done": 975
 }
