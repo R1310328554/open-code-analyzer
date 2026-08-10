@@ -23,10 +23,20 @@ import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.Archive;
 import org.keycloak.testsuite.utils.arquillian.DeploymentArchiveProcessorUtils;
 
+/**
+ * EAP 8 部署归档处理器，在测试部署前调整 web.xml 与 SAML 适配器配置。
+ */
 public class EAP8DeploymentArchiveProcessor implements ApplicationArchiveProcessor {
 
+    /** 日志记录器 */
     private final Logger log = Logger.getLogger(EAP8DeploymentArchiveProcessor.class);
 
+    /**
+     * 处理测试部署归档：跳过服务端运行部署，否则修改 web.xml 与 SAML 配置。
+     *
+     * @param archive 待部署的 ShrinkWrap 归档
+     * @param testClass 当前测试类
+     */
     @Override
     public void process(Archive<?> archive, TestClass testClass) {
         if (DeploymentArchiveProcessorUtils.checkRunOnServerDeployment(archive)) return;
@@ -38,6 +48,7 @@ public class EAP8DeploymentArchiveProcessor implements ApplicationArchiveProcess
         modifySAMLAdapterConfig(archive, DeploymentArchiveProcessorUtils.SAML_ADAPTER_CONFIG_PATH_TENANT2);
     }
 
+    /** 将 web.xml 中的 Servlet 类替换为 Jakarta EE 版本。 */
     private void modifyWebXML(Archive<?> archive, TestClass testClass) {
         if (!archive.contains(DeploymentArchiveProcessorUtils.WEBXML_PATH)) return;
 
@@ -46,6 +57,12 @@ public class EAP8DeploymentArchiveProcessor implements ApplicationArchiveProcess
         if (!archive.contains(DeploymentArchiveProcessorUtils.JBOSS_DEPLOYMENT_XML_PATH)) return;
     }
 
+    /**
+     * 修改归档内指定路径的 SAML 适配器配置文件。
+     *
+     * @param archive 部署归档
+     * @param adapterConfigPath SAML 适配器配置路径
+     */
     private void modifySAMLAdapterConfig(Archive<?> archive, String adapterConfigPath) {
         if (!archive.contains(adapterConfigPath)) return;
 

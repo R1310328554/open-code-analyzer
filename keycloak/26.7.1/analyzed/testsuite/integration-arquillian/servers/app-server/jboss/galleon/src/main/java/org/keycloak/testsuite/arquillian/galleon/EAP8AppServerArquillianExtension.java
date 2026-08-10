@@ -21,8 +21,12 @@ import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArch
 import org.jboss.arquillian.core.spi.LoadableExtension;
 import org.keycloak.testsuite.arquillian.galleon.container.EAP8DeploymentArchiveProcessor;
 
+/**
+ * EAP 8 应用服务器 Arquillian 扩展，注册部署归档处理器。
+ */
 public class EAP8AppServerArquillianExtension implements LoadableExtension {
 
+    /** 向 Arquillian 注册 {@link EAP8DeploymentArchiveProcessor} 服务。 */
     @Override
     public void register(ExtensionBuilder builder) {
         builder.service(ApplicationArchiveProcessor.class, EAP8DeploymentArchiveProcessor.class);

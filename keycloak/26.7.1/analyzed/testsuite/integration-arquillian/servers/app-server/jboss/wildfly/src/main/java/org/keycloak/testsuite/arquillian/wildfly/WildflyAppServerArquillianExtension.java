@@ -21,11 +21,13 @@ import org.jboss.arquillian.core.spi.LoadableExtension;
 import org.keycloak.testsuite.arquillian.wildfly.container.WildflyDeploymentArchiveProcessor;
 
 /**
+ * WildFly 应用服务器 Arquillian 扩展，注册部署归档处理器。
  *
  * @author <a href="mailto:vramik@redhat.com">Vlasta Ramik</a>
  */
 public class WildflyAppServerArquillianExtension implements LoadableExtension {
 
+    /** 向 Arquillian 注册 {@link WildflyDeploymentArchiveProcessor} 服务。 */
     @Override
     public void register(ExtensionBuilder builder) {
         builder.service(ApplicationArchiveProcessor.class, WildflyDeploymentArchiveProcessor.class);
