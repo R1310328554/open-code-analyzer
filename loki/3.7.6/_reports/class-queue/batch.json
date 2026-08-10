@@ -15,23 +15,8 @@
     "pkg/logqlmodel/metadata/context.go",
     "pkg/logqlmodel/stats/context.go",
     "pkg/logqlmodel/stats/stats.pb.go",
-    "pkg/loki/common/common.go",
-    "pkg/loki/config_compat.go",
-    "pkg/loki/config_handler.go",
-    "pkg/loki/config_wrapper.go",
-    "pkg/loki/delete_store_listener.go",
-    "pkg/loki/drilldown_config.go",
-    "pkg/loki/format_query_handler.go",
-    "pkg/loki/loki.go",
-    "pkg/loki/modules.go",
-    "pkg/loki/profiling_config.go",
-    "pkg/loki/runtime_config.go",
-    "pkg/loki/status.go",
-    "pkg/loki/validation.go",
-    "pkg/loki/version_handler.go",
-    "pkg/lokifrontend/config.go",
-    "pkg/lokifrontend/frontend/config.go"
+    "pkg/loki/common/common.go"
   ],
   "remaining_pending": 622,
-  "done": 900
+  "done": 915
 }
