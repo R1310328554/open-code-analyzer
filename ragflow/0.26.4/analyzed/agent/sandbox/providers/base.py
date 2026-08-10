@@ -15,7 +15,7 @@
 #
 
 """
-Base interface for sandbox providers.
+沙箱 Provider 抽象层：实例生命周期、代码执行与健康检查的统一接口。
 
 Each sandbox provider (self-managed, SaaS) implements this interface
 to provide code execution capabilities.
@@ -27,12 +27,12 @@ from typing import Dict, Any, Optional, List
 
 
 class SandboxProviderConfigError(Exception):
-    """Raised when the selected provider is explicitly configured but unusable."""
+    """所选 Provider 已配置但无法使用时抛出。"""
 
 
 @dataclass
 class SandboxInstance:
-    """Represents a sandbox execution instance"""
+    """沙箱执行实例：标识符、后端名、状态与扩展元数据。"""
 
     instance_id: str
     provider: str
@@ -46,7 +46,7 @@ class SandboxInstance:
 
 @dataclass
 class ExecutionResult:
-    """Result of code execution in a sandbox"""
+    """代码执行结果：标准输出/错误、退出码、耗时与元数据。"""
 
     stdout: str
     stderr: str
@@ -61,7 +61,7 @@ class ExecutionResult:
 
 class SandboxProvider(ABC):
     """
-    Base interface for all sandbox providers.
+    所有沙箱后端的抽象基类：初始化、建实例、执行、销毁与健康检查。
 
     Each provider implementation (self-managed, Aliyun OpenSandbox, E2B, etc.)
     must implement these methods to provide code execution capabilities.

@@ -15,12 +15,12 @@
 #
 
 """
-Sandbox providers package.
+沙箱 Provider 包：统一导出各后端实现与 ProviderManager。
 
-This package contains:
-- base.py: Base interface for all sandbox providers
-- manager.py: Provider manager for managing active provider
-- self_managed.py: Self-managed provider implementation (wraps existing executor_manager)
+本包包含：
+- base.py：所有沙箱后端的抽象接口
+- manager.py：全局单例 Provider 管理器
+- self_managed.py：自托管实现（封装 executor_manager HTTP API）
 - aliyun_codeinterpreter.py: Aliyun Code Interpreter provider implementation
   Official Documentation: https://help.aliyun.com/zh/functioncompute/fc/sandbox-sandbox-code-interepreter
 - e2b.py: E2B provider implementation

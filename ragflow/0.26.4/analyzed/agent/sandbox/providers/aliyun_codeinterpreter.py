@@ -15,7 +15,7 @@
 #
 
 """
-Aliyun Code Interpreter provider implementation.
+阿里云 Code Interpreter Provider：通过 agentrun-sdk 在函数计算微 VM 中执行代码。
 
 This provider integrates with Aliyun Function Compute Code Interpreter service
 for secure code execution in serverless microVMs using the official agentrun-sdk.
@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 class AliyunCodeInterpreterProvider(SandboxProvider):
     """
-    Aliyun Code Interpreter provider implementation.
+    阿里云代码解释器后端：创建/连接 Sandbox、包装 main() 调用并解析结构化结果。
 
     This provider uses the official agentrun-sdk to interact with
     Aliyun Function Compute's Code Interpreter service.
@@ -78,6 +78,8 @@ class AliyunCodeInterpreterProvider(SandboxProvider):
         Returns:
             True if initialization successful, False otherwise
         """
+        # 配置项优先，否则回退 AGENTRUN_* 环境变量
+        # 配置项优先，否则回退 AGENTRUN_* 环境变量
         # Get values from config or environment variables
         access_key_id = config.get("access_key_id") or os.getenv("AGENTRUN_ACCESS_KEY_ID")
         access_key_secret = config.get("access_key_secret") or os.getenv("AGENTRUN_ACCESS_KEY_SECRET")
@@ -229,6 +231,8 @@ class AliyunCodeInterpreterProvider(SandboxProvider):
             # CodeLanguage enum only exposes PYTHON across agentrun-sdk 0.0.26+; keep JS as string fallback.
             code_language = CodeLanguage.PYTHON if normalized_lang == "python" else "javascript"
 
+            # 包装用户代码以调用 main(**arguments)，与 self_managed 行为一致
+            # 包装用户代码以调用 main(**arguments)，与 self_managed 行为一致
             # Wrap code to call main() function
             # Matches self_managed provider behavior: call main(**arguments)
             args_json = json.dumps(arguments or {})
@@ -250,6 +254,8 @@ class AliyunCodeInterpreterProvider(SandboxProvider):
             logger.info(f"Aliyun Code Interpreter: Execution completed in {execution_time:.2f}s")
             logger.debug(f"Aliyun Code Interpreter: Raw SDK result: {result}")
 
+            # 从 SDK 返回的 results 数组中提取 stdout/stderr 与执行状态
+            # 从 SDK 返回的 results 数组中提取 stdout/stderr 与执行状态
             # Parse execution result
             results = result.get("results", []) if isinstance(result, dict) else []
             logger.info(f"Aliyun Code Interpreter: Parsed {len(results)} result items")
@@ -461,7 +467,7 @@ class AliyunCodeInterpreterProvider(SandboxProvider):
 
     def _normalize_language(self, language: str) -> str:
         """
-        Normalize language identifier to Aliyun format.
+        将 python3/javascript/nodejs 等别名规范为 Aliyun 支持的 python/javascript。
 
         Args:
             language: Language identifier (python, python3, javascript, nodejs)

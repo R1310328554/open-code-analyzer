@@ -15,7 +15,7 @@
 #
 
 """
-Self-managed sandbox provider implementation.
+自托管沙箱 Provider：通过 HTTP 调用 executor_manager（Docker/gVisor 容器池）。
 
 This provider wraps the existing executor_manager HTTP API which manages
 a pool of Docker containers with gVisor for secure code execution.
@@ -34,7 +34,7 @@ from .base import SandboxProvider, SandboxInstance, ExecutionResult
 
 class SelfManagedProvider(SandboxProvider):
     """
-    Self-managed sandbox provider using Daytona/Docker.
+    封装 sandbox-executor-manager 的 /run 与 /healthz 接口，Base64 传输用户代码。
 
     This provider communicates with the executor_manager HTTP API
     which manages a pool of containers for code execution.
@@ -135,6 +135,8 @@ class SelfManagedProvider(SandboxProvider):
         # Normalize language
         normalized_lang = self._normalize_language(language)
 
+        # 将源码 Base64 编码后 POST 到 executor_manager /run
+        # 将源码 Base64 编码后 POST 到 executor_manager /run
         # Prepare request
         code_b64 = base64.b64encode(code.encode("utf-8")).decode("utf-8")
         payload = {"code_b64": code_b64, "language": normalized_lang, "arguments": arguments or {}}
@@ -194,6 +196,8 @@ class SelfManagedProvider(SandboxProvider):
         Returns:
             True (always succeeds for self-managed)
         """
+        # 容器由 executor_manager 池化管理，此处 destroy 仅为逻辑 no-op
+        # 容器由 executor_manager 池化管理，此处 destroy 仅为逻辑 no-op
         # The executor_manager manages container lifecycle internally
         # Container is returned to pool after execution
         return True

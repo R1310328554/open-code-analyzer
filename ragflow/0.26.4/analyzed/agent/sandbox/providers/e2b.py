@@ -15,7 +15,7 @@
 #
 
 """
-E2B provider implementation.
+E2B 云沙箱 Provider（占位实现）：基于 Firecracker microVM 的远程代码执行。
 
 This provider integrates with E2B Cloud for cloud-based code execution
 using Firecracker microVMs.
@@ -29,7 +29,7 @@ from .base import SandboxProvider, SandboxInstance, ExecutionResult
 
 class E2BProvider(SandboxProvider):
     """
-    E2B provider implementation.
+    E2B 后端骨架：API 集成尚未完成，执行时会抛出 RuntimeError 提示。
 
     This provider uses E2B Cloud service for secure code execution
     in Firecracker microVMs.
@@ -62,6 +62,8 @@ class E2BProvider(SandboxProvider):
         if not self.api_key:
             return False
 
+        # TODO: 接入 E2B SDK；当前仅校验 api_key 并标记已初始化
+        # TODO: 接入 E2B SDK；当前仅校验 api_key 并标记已初始化
         # TODO: Implement actual E2B API client initialization
         # For now, we'll mark as initialized but actual API calls will fail
         self._initialized = True

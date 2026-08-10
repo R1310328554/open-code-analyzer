@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+沙箱代码安全分析：基于 AST/正则检测 Python 与 Node.js 中的危险导入与调用。
+"""
+
 #
 import ast
 import re
@@ -23,11 +27,13 @@ from models.enums import SupportLanguage
 
 class SecurePythonAnalyzer(ast.NodeVisitor):
     """
-    An AST-based analyzer for detecting unsafe Python code patterns.
+    基于 AST 的 Python 静态分析器，扫描危险导入、调用与属性访问。
     """
 
+    # 禁止导入的系统/进程相关模块前缀
     DANGEROUS_IMPORTS = {"os", "subprocess", "sys", "shutil", "socket", "ctypes", "pickle", "threading", "multiprocessing", "asyncio", "http.client", "ftplib", "telnetlib", "builtins"}
 
+    # 禁止直接调用的敏感函数名（含 eval/exec/subprocess 等）
     DANGEROUS_CALLS = {
         "eval",
         "exec",
@@ -163,6 +169,10 @@ class SecurePythonAnalyzer(ast.NodeVisitor):
 
 
 class SecureJavaScriptAnalyzer:
+    """
+    Node.js 代码的正则模式扫描器，检测 child_process/fs/eval 等危险用法。
+    """
+
     DANGEROUS_PATTERNS = [
         (re.compile(r"""require\s*\(\s*['"`]child_process['"`]\s*\)"""), "Require: child_process"),
         (re.compile(r"""require\s*\(\s*['"`]fs['"`]\s*\)"""), "Require: fs"),
@@ -184,12 +194,14 @@ class SecureJavaScriptAnalyzer:
 
 def analyze_code_security(code: str, language: SupportLanguage) -> Tuple[bool, List[Tuple[str, int]]]:
     """
-    Analyze the provided code string and return whether it's safe and why.
+    按语言分派静态分析，返回 (是否安全, 问题列表(描述, 行号))。
 
     :param code: The source code to analyze.
     :param language: The programming language of the code.
     :return: (is_safe: bool, issues: List of (description, line number))
     """
+    # Python 走 AST 访问器；Node.js 走正则；其他语言视为不支持
+    # Python 走 AST 访问器；Node.js 走正则；其他语言视为不支持
     if language == SupportLanguage.PYTHON:
         try:
             tree = ast.parse(code)

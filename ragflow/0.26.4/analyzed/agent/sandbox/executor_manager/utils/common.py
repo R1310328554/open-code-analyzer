@@ -12,16 +12,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+异步子进程工具：带超时与 kill 的安全命令执行封装。
+"""
+
 #
 import asyncio
 from typing import Tuple
 
 
 async def async_run_command(*args, timeout: float = 5) -> Tuple[int, str, str]:
-    """Safe asynchronous command execution tool"""
+    """
+    异步执行外部命令，返回 (退出码, stdout, stderr)；超时或异常时 kill 子进程。
+    """
     proc = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
 
     try:
+        # wait_for 包裹 communicate，确保超时后进程被终止
+        # wait_for 包裹 communicate，确保超时后进程被终止
         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         if proc.returncode is None:
             raise RuntimeError("Process finished but returncode is None")

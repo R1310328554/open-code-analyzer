@@ -12,23 +12,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+executor_manager 通用工具：环境变量布尔解析、Docker 内存格式校验与超时字符串互转。
+"""
+
 #
 import os
 import re
 
 
 def is_enabled(value: str) -> bool:
+    """判断字符串是否为真值（1/true/yes/on，大小写不敏感）。"""
+    """判断字符串是否为真值（1/true/yes/on，大小写不敏感）。"""
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def env_setting_enabled(env_key: str, default: str = "false") -> bool:
+    """读取环境变量并按 is_enabled 解析为布尔值。"""
+    """读取环境变量并按 is_enabled 解析为布尔值。"""
     value = os.getenv(env_key, default)
     return is_enabled(value)
 
 
 def is_valid_memory_limit(mem: str | None) -> bool:
     """
-    Return True if the input string is a valid Docker memory limit (e.g. '256m', '1g').
+    校验 Docker 内存限制格式（如 256m、1g），拒绝零或负值。
     Units allowed: b, k, m, g (case-insensitive).
     Disallows zero or negative values.
     """
@@ -42,7 +50,7 @@ def is_valid_memory_limit(mem: str | None) -> bool:
 
 def parse_timeout_duration(timeout: str | None, default_seconds: int = 10) -> int:
     """
-    Parses a string like '90s', '2m', '1m30s' into total seconds (int).
+    将 90s、2m、1m30s 等字符串解析为总秒数；无效时返回 default_seconds。
     Supports 's', 'm' (lower or upper case). Returns default if invalid.
     '1m30s' -> 90
     """
@@ -65,7 +73,7 @@ def parse_timeout_duration(timeout: str | None, default_seconds: int = 10) -> in
 
 def format_timeout_duration(seconds: int) -> str:
     """
-    Formats an integer number of seconds into a string like '1m30s'.
+    将秒数格式化为 1m30s 风格的可读超时字符串。
     90 -> '1m30s'
     """
     if seconds < 60:

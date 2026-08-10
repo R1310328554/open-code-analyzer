@@ -15,7 +15,7 @@
 #
 
 """
-Provider manager for sandbox providers.
+沙箱 Provider 管理器：全局配置下仅维护一个当前活跃的后端引用。
 
 Since sandbox configuration is global (system-level), we only use one
 active provider at a time. This manager is a thin wrapper that holds a reference
@@ -28,7 +28,7 @@ from .base import SandboxProvider
 
 class ProviderManager:
     """
-    Manages the currently active sandbox provider.
+    持有当前 Provider 实例与名称；set/get/is_configured 为薄封装。
 
     With global configuration, there's only one active provider at a time.
     This manager simply holds a reference to that provider.

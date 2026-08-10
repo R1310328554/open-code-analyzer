@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Agent 工具包动态加载：扫描同目录 .py 模块并导出公开 Tool 类到 __all__。
+"""
+
 #
 import os
 import importlib
@@ -23,7 +27,10 @@ _package_path = os.path.dirname(__file__)
 __all_classes: Dict[str, Type] = {}
 
 
-def _import_submodules() -> None:
+def # 模块导入时自动扫描并注册所有 Tool 子类
+# 模块导入时自动扫描并注册所有 Tool 子类
+_import_submodules() -> None:
+    """遍历包目录，import 非 base 的 .py 并提取公开类。"""
     for filename in os.listdir(_package_path):  # noqa: F821
         if filename.startswith("__") or not filename.endswith(".py") or filename.startswith("base"):
             continue
@@ -37,6 +44,8 @@ def _import_submodules() -> None:
 
 
 def _extract_classes_from_module(module: ModuleType) -> None:
+    """将模块内公开类注册到 __all_classes 与 globals。"""
+    """将模块内公开类注册到 __all_classes 与 globals。"""
     for name, obj in inspect.getmembers(module):
         if inspect.isclass(obj) and obj.__module__ == module.__name__ and not name.startswith("_"):
             __all_classes[name] = obj

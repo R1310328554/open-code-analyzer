@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+沙箱结构化结果协议：包装 main() 返回值并通过 stdout 标记行回传 JSON。
+"""
+
 #
 
 import base64
@@ -19,10 +23,14 @@ import json
 from typing import Any
 
 
+# stdout 中标识结构化结果 payload 的前缀行
+# stdout 中标识结构化结果 payload 的前缀行
 RESULT_MARKER_PREFIX = "__RAGFLOW_RESULT__:"
 
 
 def build_python_wrapper(code: str, args_json: str) -> str:
+    """在用户代码后追加 __main__ 块：调用 main(**args) 并打印 base64 JSON 标记行。"""
+    """在用户代码后追加 __main__ 块：调用 main(**args) 并打印 base64 JSON 标记行。"""
     return f'''{code}
 
 if __name__ == "__main__":
@@ -36,6 +44,8 @@ if __name__ == "__main__":
 
 
 def build_javascript_wrapper(code: str, args_json: str) -> str:
+    """在 JS 代码后追加 async IIFE：解析 main 并输出同协议标记行。"""
+    """在 JS 代码后追加 async IIFE：解析 main 并输出同协议标记行。"""
     return f"""{code}
 
 const __ragflowArgs = {args_json};
@@ -59,6 +69,8 @@ const __ragflowArgs = {args_json};
 
 
 def extract_structured_result(stdout: str) -> tuple[str, dict[str, Any]]:
+    """从 stdout 剥离标记行，返回净化后的输出与解析出的结构化结果字典。"""
+    """从 stdout 剥离标记行，返回净化后的输出与解析出的结构化结果字典。"""
     if not stdout:
         return "", {}
 

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+SSH 远程沙箱 Provider：经 Paramiko 在远端主机上传脚本、执行并回收产物。
+"""
+
 #
 
 from __future__ import annotations
@@ -58,7 +62,9 @@ ALLOWED_ARTIFACT_EXTENSIONS = {
 
 
 class SSHProvider(SandboxProvider):
-    """Execute code on a remote host through SSH."""
+    """
+    通过 SSH/SFTP 在远程机器执行包装后的 Python/Node 脚本，支持 known_hosts 校验。
+    """
 
     def __init__(self):
         self.host = ""
@@ -441,6 +447,8 @@ class SSHProvider(SandboxProvider):
     def _create_ssh_client(self) -> paramiko.SSHClient:
         paramiko = _get_paramiko_module()
         client = paramiko.SSHClient()
+        # 先加载系统与配置的 known_hosts，再设 RejectPolicy 防止 MITM
+        # 先加载系统与配置的 known_hosts，再设 RejectPolicy 防止 MITM
         # Load trusted host keys BEFORE setting the policy. Without
         # load_system_host_keys() the in-memory store is empty and
         # RejectPolicy would reject every host on first connect,
@@ -679,6 +687,8 @@ class SSHProvider(SandboxProvider):
 
 
 def _get_paramiko_module():
+    """延迟导入 paramiko，未安装时抛出 SandboxProviderConfigError。"""
+    """延迟导入 paramiko，未安装时抛出 SandboxProviderConfigError。"""
     try:
         import paramiko
     except ImportError as exc:

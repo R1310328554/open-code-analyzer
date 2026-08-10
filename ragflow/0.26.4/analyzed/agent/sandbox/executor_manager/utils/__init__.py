@@ -12,4 +12,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+executor_manager.utils 包：异步子进程执行等通用辅助模块。
+"""
+
 #

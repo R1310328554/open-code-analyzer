@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+本地进程 Provider：在当前主机子进程中执行代码（需显式启用，非真正沙箱隔离）。
+"""
+
 #
 
 import base64
@@ -30,6 +34,8 @@ from agent.sandbox.result_protocol import build_javascript_wrapper, build_python
 from .base import ExecutionResult, SandboxInstance, SandboxProvider, SandboxProviderConfigError
 
 
+# 允许从 artifacts 目录回传的文件扩展名白名单
+# 允许从 artifacts 目录回传的文件扩展名白名单
 ALLOWED_ARTIFACT_EXTENSIONS = {
     ".csv",
     ".html",
@@ -53,7 +59,7 @@ LOCAL_PYTHON_THREAD_ENV_VARS = (
 
 class LocalProvider(SandboxProvider):
     """
-    Execute code as a local child process.
+    本地子进程执行：资源限制、产物收集与 main() 包装；须 SANDBOX_LOCAL_ENABLED 门控。
 
     This provider is intentionally gated by SANDBOX_LOCAL_ENABLED because it is
     not a sandbox boundary. Use a low-privilege runtime account.
@@ -105,6 +111,10 @@ class LocalProvider(SandboxProvider):
         )
 
     def execute_code(
+        # 写入包装脚本、启动子进程、解析结构化结果并收集产物
+
+        # 写入包装脚本、启动子进程、解析结构化结果并收集产物
+
         self,
         instance_id: str,
         code: str,
@@ -293,6 +303,8 @@ class LocalProvider(SandboxProvider):
         return env
 
     def _limit_child_process(self) -> None:
+        # POSIX preexec：限制 CPU/内存/文件大小与 fd 数量
+        # POSIX preexec：限制 CPU/内存/文件大小与 fd 数量
         import resource
 
         self._set_resource_limit(resource.RLIMIT_CPU, self.timeout + 1)
