@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T00:12:51Z",
   "files": [
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheClientCodec.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheMessage.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheObjectAggregator.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheOpcodes.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheRequest.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheRequestDecoder.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheRequestEncoder.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheResponse.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheResponseDecoder.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheResponseEncoder.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheResponseStatus.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/BinaryMemcacheServerCodec.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/DefaultBinaryMemcacheRequest.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/DefaultBinaryMemcacheResponse.java",
-    "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/DefaultFullBinaryMemcacheRequest.java",
     "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/DefaultFullBinaryMemcacheResponse.java",
     "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/FullBinaryMemcacheRequest.java",
     "codec-memcache/src/main/java/io/netty/handler/codec/memcache/binary/FullBinaryMemcacheResponse.java",
@@ -33,5 +18,5 @@
     "codec-mqtt/src/main/java/io/netty/handler/codec/mqtt/MqttIdentifierRejectedException.java"
   ],
   "remaining_pending": 1028,
-  "done": 870
+  "done": 885
 }
