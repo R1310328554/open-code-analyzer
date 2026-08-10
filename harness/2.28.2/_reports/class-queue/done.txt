@@ -358,3 +358,17 @@ store/shared/db/conn_oss.go
 store/shared/db/db.go
 store/shared/db/dbtest/dbtest.go
 store/shared/db/error.go
+store/shared/db/nop.go
+store/shared/encrypt/aesgcm.go
+store/shared/encrypt/encrypt.go
+store/shared/encrypt/none.go
+store/shared/migrate/mysql/ddl.go
+store/shared/migrate/mysql/ddl_gen.go
+store/shared/migrate/postgres/ddl.go
+store/shared/migrate/postgres/ddl_gen.go
+store/shared/migrate/sqlite/ddl.go
+store/shared/migrate/sqlite/ddl_gen.go
+store/stage/scan.go
+store/stage/stage.go
+store/stage/type.go
+store/step/scan.go
