@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T22:53:59Z",
   "files": [
-    "pkg/querier/queryrange/detected_fields.go",
-    "pkg/querier/queryrange/downstreamer.go",
-    "pkg/querier/queryrange/engine_router.go",
-    "pkg/querier/queryrange/extensions.go",
-    "pkg/querier/queryrange/index_stats_cache.go",
-    "pkg/querier/queryrange/ingester_query_window.go",
-    "pkg/querier/queryrange/instant_metric_cache.go",
-    "pkg/querier/queryrange/instrument.go",
-    "pkg/querier/queryrange/labels_cache.go",
-    "pkg/querier/queryrange/limits.go",
-    "pkg/querier/queryrange/limits/definitions.go",
-    "pkg/querier/queryrange/log_result_cache.go",
-    "pkg/querier/queryrange/marshal.go",
-    "pkg/querier/queryrange/metrics.go",
-    "pkg/querier/queryrange/ordering.go",
     "pkg/querier/queryrange/parquet.go",
     "pkg/querier/queryrange/prometheus.go",
     "pkg/querier/queryrange/queryrange.pb.go",
@@ -33,5 +18,5 @@
     "pkg/querier/queryrange/queryrangebase/step_align.go"
   ],
   "remaining_pending": 532,
-  "done": 990
+  "done": 1005
 }
