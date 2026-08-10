@@ -20,6 +20,9 @@ package org.keycloak.sessions;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * {@link AuthenticationSessionProvider} 的 SPI 工厂接口。
+ * <p>注册并创建认证会话提供者实例。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface AuthenticationSessionProviderFactory<T extends AuthenticationSessionProvider> extends ProviderFactory<T> {

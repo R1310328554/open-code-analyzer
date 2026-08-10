@@ -22,27 +22,35 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 认证会话 SPI：注册 {@link AuthenticationSessionProvider} 及工厂。
+ * <p>内部 SPI，名称 {@code authenticationSessions}。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class AuthenticationSessionSpi implements Spi {
 
+    /** SPI 提供者标识符 {@code authenticationSessions} */
     public static final String PROVIDER_ID = "authenticationSessions";
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称，等于 {@link #PROVIDER_ID} */
     @Override
     public String getName() {
         return PROVIDER_ID;
     }
 
+    /** @return 提供者接口 {@link AuthenticationSessionProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return AuthenticationSessionProvider.class;
     }
 
+    /** @return 工厂接口 {@link AuthenticationSessionProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return AuthenticationSessionProviderFactory.class;

@@ -21,15 +21,15 @@ package org.keycloak.services.resource;
 import org.keycloak.provider.Provider;
 
 /**
- * <p>A {@link RealmResourceProvider} creates JAX-RS <emphasis>sub-resource</emphasis> instances for paths relative
- * to Realm's RESTful API that could not be resolved by the server.
+ * 领域 REST API 扩展提供者：为服务器无法解析的领域 REST 路径创建 JAX-RS 子资源实例。
+ * <p>实现 {@link #getResource()} 返回对应路径的 JAX-RS 资源对象。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface RealmResourceProvider extends Provider {
 
     /**
-     * <p>Returns a JAX-RS resource instance.
+     * 返回 JAX-RS 子资源实例。
      *
      * @return a JAX-RS sub-resource instance
      */

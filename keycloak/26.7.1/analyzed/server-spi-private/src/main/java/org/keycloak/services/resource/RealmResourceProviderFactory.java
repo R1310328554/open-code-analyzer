@@ -21,7 +21,8 @@ package org.keycloak.services.resource;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * <p>A factory that creates {@link RealmResourceProvider} instances.
+ * {@link RealmResourceProvider} 的 SPI 工厂接口。
+ * <p>注册并创建领域 REST API 扩展子资源提供者实例。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */

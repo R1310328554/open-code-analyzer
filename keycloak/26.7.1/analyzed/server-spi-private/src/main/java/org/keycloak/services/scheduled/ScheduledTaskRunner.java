@@ -28,31 +28,45 @@ import org.keycloak.tracing.TracingProvider;
 import org.jboss.logging.Logger;
 
 /**
+ * 定时任务运行器：在 Keycloak 事务上下文中执行 {@link ScheduledTask}。
+ * <p>由 {@link TaskRunner} 调度，支持可选的事务元素上限与链路追踪。</p>
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ScheduledTaskRunner implements TaskRunner {
 
     private static final Logger logger = Logger.getLogger(ScheduledTaskRunner.class);
 
+    /** Keycloak 会话工厂，用于创建事务性会话 */
     protected final KeycloakSessionFactory sessionFactory;
 
+    /** 待执行的定时任务 */
     protected final ScheduledTask task;
 
+    /** 单次运行允许的最大事务元素数，{@code 0} 表示不限制 */
     protected final int transactionLimit;
 
+    /** 构造运行器，不限制事务元素数量。 */
     public ScheduledTaskRunner(KeycloakSessionFactory sessionFactory, ScheduledTask task) {
         this(sessionFactory, task, 0);
     }
 
+    /**
+     * 构造运行器。
+     * @param sessionFactory 会话工厂
+     * @param task 定时任务
+     * @param transactionLimit 事务元素上限，{@code 0} 表示不限制
+     */
     public ScheduledTaskRunner(KeycloakSessionFactory sessionFactory, ScheduledTask task, int transactionLimit) {
         this.sessionFactory = sessionFactory;
         this.task = task;
         this.transactionLimit = transactionLimit;
     }
 
+    /** 在追踪与事务上下文中执行定时任务，异常时记录错误日志。 */
     @Override
     public void run() {
-        // trace a tracing provider directly to avoid creating a transaction that is unnecessary and would a surplus JTA transaction element to it
+        // 直接追踪以避免创建不必要的事务及多余的 JTA 事务元素
         TracingProvider tracing = sessionFactory.getProviderFactory(TracingProvider.class).create(null);
         try {
             tracing.trace("ScheduledTaskRunner", task.getTaskName() + ".run", span -> {
@@ -82,12 +96,14 @@ public class ScheduledTaskRunner implements TaskRunner {
         }
     }
 
+    /** 执行具体任务逻辑并输出调试日志。 */
     protected void runTask(KeycloakSession session) {
         task.run(session);
 
         logger.debugf("Executed scheduled task %s", task.getTaskName());
     }
 
+    /** @return 被包装的 {@link ScheduledTask} */
     @Override
     public ScheduledTask getTask() {
         return task;

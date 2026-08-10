@@ -23,30 +23,32 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * <p>A {@link Spi} to plug additional sub-resources to Realms' RESTful API.
- *
- * <p>Implementors can use this {@link Spi} to provide additional services to the mentioned API and extend Keycloak capabilities by
- * creating JAX-RS sub-resources for paths not known by the server.
+ * 领域 REST API 扩展 SPI：向领域 RESTful API 挂载额外子资源。
+ * <p>实现方可为服务器未知路径创建 JAX-RS 子资源，扩展 Keycloak 能力。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class RealmResourceSPI implements Spi {
 
+    /** @return 始终为 {@code true}，表示内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code realm-restapi-extension} */
     @Override
     public String getName() {
         return "realm-restapi-extension";
     }
 
+    /** @return 提供者接口 {@link RealmResourceProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return RealmResourceProvider.class;
     }
 
+    /** @return 工厂接口 {@link RealmResourceProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return RealmResourceProviderFactory.class;
