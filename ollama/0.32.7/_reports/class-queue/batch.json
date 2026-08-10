@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T16:23:18Z",
-  "files": [
-    "x/models/glm4_moe_lite/glm4_moe_lite.go",
-    "x/models/glm4_moe_lite/parser.go",
-    "x/models/glm4_moe_lite/render.go",
-    "x/models/laguna/laguna.go",
-    "x/models/llama/llama.go",
-    "x/models/nn/nn.go",
-    "x/models/nn/recurrent.go",
-    "x/models/nn/rope.go",
-    "x/models/nn/sdpa.go",
-    "x/models/qwen3/qwen3.go",
-    "x/models/qwen3_5/gdn_projections.go",
-    "x/models/qwen3_5/process_image.go",
-    "x/models/qwen3_5/qwen3_5.go",
-    "x/models/qwen3_5/vision.go",
-    "x/models/qwen3_5_moe/qwen3_5_moe.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 13,
-  "done": 435
+  "done": 450
 }
