@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/cache/LocalCacheSPI.java",
     "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientType.java",
     "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeException.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeManager.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeManagerFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeManagerSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/cluster/ClusterEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/cluster/ClusterListener.java",
-    "server-spi-private/src/main/java/org/keycloak/cluster/ClusterProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/cluster/ExecutionResult.java",
-    "server-spi-private/src/main/java/org/keycloak/cluster/StoredClusterEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/compatibility/AggregatedCompatibilityResult.java",
-    "server-spi-private/src/main/java/org/keycloak/compatibility/CompatibilityMetadataProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/compatibility/CompatibilityResult.java",
-    "server-spi-private/src/main/java/org/keycloak/compatibility/ProviderCompatibleResult.java",
-    "server-spi-private/src/main/java/org/keycloak/compatibility/ProviderIncompatibleResult.java"
+    "server-spi-private/src/main/java/org/keycloak/client/clienttype/ClientTypeManager.java"
   ],
   "remaining_pending": 2938,
-  "done": 3030
+  "done": 3045
 }
