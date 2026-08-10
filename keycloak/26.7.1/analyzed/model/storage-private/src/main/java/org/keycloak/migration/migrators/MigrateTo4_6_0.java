@@ -28,10 +28,13 @@ import org.jboss.logging.Logger;
 
 
 /**
+ * 4.6.0 版本迁移：创建 {@code roles} 与 {@code web-origins} 默认客户端作用域并关联到所有 OIDC 客户端。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo4_6_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("4.6.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo4_6_0.class);
@@ -51,16 +54,17 @@ public class MigrateTo4_6_0 implements Migration {
         migrateRealm(session, realm, true);
     }
 
+    /** 为单个 realm 创建默认 OIDC 客户端作用域并绑定到非 Bearer-only 的 OIDC 客户端。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm, boolean json) {
         MigrationProvider migrationProvider = session.getProvider(MigrationProvider.class);
 
-        // Create "roles" and "web-origins" clientScopes
+        // 创建 roles 与 web-origins 默认客户端作用域
         ClientScopeModel rolesScope = migrationProvider.addOIDCRolesClientScope(realm);
         ClientScopeModel webOriginsScope = migrationProvider.addOIDCWebOriginsClientScope(realm);
 
         LOG.debugf("Added '%s' and '%s' default client scopes", rolesScope.getName(), webOriginsScope.getName());
 
-        // Assign "roles" and "web-origins" clientScopes to all the OIDC clients
+        // 将 roles 与 web-origins 作为默认作用域关联到所有 OIDC 客户端
         realm.getClientsStream()
                 .filter(MigrationUtils::isOIDCNonBearerOnlyClient)
                 .forEach(c -> {

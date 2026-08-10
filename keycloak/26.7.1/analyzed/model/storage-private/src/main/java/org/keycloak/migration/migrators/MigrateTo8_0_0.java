@@ -32,10 +32,13 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.jboss.logging.Logger;
 
 /**
+ * 8.0.0 版本迁移：更新管理控制台与账户客户端 URL，并将 MFA 条件执行项重构为子流。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo8_0_0  implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("8.0.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo8_0_0.class);
@@ -47,19 +50,19 @@ public class MigrateTo8_0_0  implements Migration {
 
     @Override
     public void migrate(KeycloakSession session) {
-        // Perform basic realm migration first (non multi-factor authentication)
+        // 先执行通用 realm 迁移（不含多因素认证流重构）
         session.realms().getRealmsStream().forEach(this::migrateRealmCommon);
-        // Moreover, for multi-factor authentication migrate optional execution of realm flows to subflows
+        // 再将各 realm 认证流中的 CONDITIONAL 可选执行项迁移为独立子流
         session.realms().getRealmsStream().forEach(realm -> migrateRealmMFA(realm));
     }
 
     @Override
     public void migrateImport(KeycloakSession session, RealmModel realm, RealmRepresentation rep, boolean skipUserDependent) {
         migrateRealmCommon(realm);
-        // No-additional-op for multi-factor authentication besides the basic migrateRealmCommon() in previous statement
-        // Migration of optional authentication executions was already handled in RepresentationToModel.importRealm
+        // JSON 导入时 MFA 子流迁移已在 RepresentationToModel.importRealm 中处理
     }
 
+    /** 更新管理控制台与账户管理客户端的根 URL、基础 URL 及重定向 URI。 */
     protected void migrateRealmCommon(RealmModel realm) {
         ClientModel adminConsoleClient = realm.getClientByClientId(Constants.ADMIN_CONSOLE_CLIENT_ID);
         if (adminConsoleClient != null) {
@@ -79,6 +82,7 @@ public class MigrateTo8_0_0  implements Migration {
         }
     }
 
+    /** 遍历 realm 中所有认证流，将 CONDITIONAL 执行项包装为带条件判断的子流。 */
     protected void migrateRealmMFA(RealmModel realm) {
         realm.getAuthenticationFlowsStream().collect(Collectors.toList())
                 .forEach(authFlow ->
@@ -88,6 +92,14 @@ public class MigrateTo8_0_0  implements Migration {
                             .forEach(exe -> migrateOptionalAuthenticationExecution(realm, authFlow, exe, true)));
     }
 
+    /**
+     * 将父流中的 CONDITIONAL 可选执行项迁移为独立子流，并插入 conditional-user-configured 前置步骤。
+     *
+     * @param realm 目标 realm
+     * @param parentFlow 包含可选执行项的父认证流
+     * @param optionalExecution 待迁移的 CONDITIONAL 执行项
+     * @param updateOptionalExecution 是否立即更新已有执行项（DB 迁移为 true，JSON 导入为 false）
+     */
     public static void migrateOptionalAuthenticationExecution(RealmModel realm, AuthenticationFlowModel parentFlow, AuthenticationExecutionModel optionalExecution, boolean updateOptionalExecution) {
         LOG.debugf("Migrating optional execution '%s' of flow '%s' of realm '%s' to subflow", optionalExecution.getAuthenticator(), parentFlow.getAlias(), realm.getName());
 
@@ -115,13 +127,12 @@ public class MigrateTo8_0_0  implements Migration {
         execution.setAuthenticatorFlow(false);
         realm.addAuthenticatorExecution(execution);
 
-        // Move optionalExecution as child of newly created parent flow
+        // 将原可选执行项移入新建子流并改为 REQUIRED
         optionalExecution.setParentFlow(conditionalOTP.getId());
         optionalExecution.setRequirement(AuthenticationExecutionModel.Requirement.REQUIRED);
         optionalExecution.setPriority(20);
 
-        // In case of DB migration, we're updating existing execution, which is already in DB.
-        // In case of JSON migration, the execution is not yet in DB and will be added later
+        // DB 迁移时更新已有记录；JSON 导入时执行项尚未持久化，稍后统一写入
         if (updateOptionalExecution) {
             realm.updateAuthenticatorExecution(optionalExecution);
         }

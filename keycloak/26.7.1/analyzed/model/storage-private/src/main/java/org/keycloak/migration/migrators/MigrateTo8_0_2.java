@@ -38,10 +38,13 @@ import static org.keycloak.models.AuthenticationExecutionModel.Requirement.CONDI
 import static org.keycloak.models.AuthenticationExecutionModel.Requirement.REQUIRED;
 
 /**
+ * 8.0.2 版本迁移：将同级混用的 ALTERNATIVE 执行项拆分到独立子流，以保持与旧版行为一致。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo8_0_2 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("8.0.2");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo8_0_2.class);
@@ -62,6 +65,7 @@ public class MigrateTo8_0_2 implements Migration {
     }
 
 
+    /** 扫描 realm 中所有认证流，处理 REQUIRED/CONDITIONAL 与 ALTERNATIVE 同级混用的情况。 */
     protected void migrateAuthenticationFlowsWithAlternativeRequirements(RealmModel realm) {
         for (AuthenticationFlowModel flow : realm.getAuthenticationFlowsStream().collect(Collectors.toList())) {
             List<AuthenticationExecutionModel> executions = realm.getAuthenticationExecutionsStream(flow.getId())
@@ -71,11 +75,11 @@ public class MigrateTo8_0_2 implements Migration {
                     .map(AuthenticationExecutionModel::getRequirement)
                     .collect(Collectors.toSet());
 
-            // This flow contains some REQUIRED and ALTERNATIVE at the same level. We will migrate ALTERNATIVES to separate subflows
-            // to try to preserve same behaviour as in previous versions
+            // 同级同时存在 REQUIRED/CONDITIONAL 与 ALTERNATIVE 时，将 ALTERNATIVE 拆分到独立子流
+            // 以尽量保留旧版认证流语义
             if (requirements.contains(REQUIRED) || requirements.contains(CONDITIONAL) && requirements.contains(ALTERNATIVE)) {
 
-                // Suffix used just to avoid name conflicts
+                // 后缀序号仅用于避免子流别名冲突
                 AtomicInteger suffix = new AtomicInteger(0);
                 LinkedList<AuthenticationExecutionModel> alternativesToMigrate = new LinkedList<>();
                 for (AuthenticationExecutionModel execution: executions) {
@@ -83,7 +87,7 @@ public class MigrateTo8_0_2 implements Migration {
                         alternativesToMigrate.add(execution);
                     }
 
-                    // If we have some REQUIRED then ALTERNATIVE and then REQUIRED/CONDITIONAL, we migrate the alternatives to the new subflow.
+                    // 遇到 REQUIRED/CONDITIONAL 时，将此前累积的 ALTERNATIVE 执行项迁移到新子流
                     if (REQUIRED.equals(execution.getRequirement()) ||
                             CONDITIONAL.equals(execution.getRequirement())) {
                         if (!alternativesToMigrate.isEmpty()) {
@@ -102,6 +106,7 @@ public class MigrateTo8_0_2 implements Migration {
     }
 
 
+    /** 将一组 ALTERNATIVE 执行项移入新建子流，并在父流中以 REQUIRED 子流引用替代。 */
     private void migrateAlternatives(RealmModel realm, AuthenticationFlowModel parentFlow,
                                      LinkedList<AuthenticationExecutionModel> alternativesToMigrate, int suffix) {
         LOG.debugf("Migrating %d ALTERNATIVE executions in the flow '%s' of realm '%s' to separate subflow", alternativesToMigrate.size(),
@@ -119,7 +124,7 @@ public class MigrateTo8_0_2 implements Migration {
         execution.setParentFlow(parentFlow.getId());
         execution.setRequirement(REQUIRED);
         execution.setFlowId(newFlow.getId());
-        // Use same priority as the first ALTERNATIVE as new execution will defacto replace it in the parent flow
+        // 使用首个 ALTERNATIVE 的优先级，因新子流执行项在父流中实质替代它
         execution.setPriority(alternativesToMigrate.getFirst().getPriority());
         execution.setAuthenticatorFlow(true);
         realm.addAuthenticatorExecution(execution);

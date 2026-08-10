@@ -19,5 +19,8 @@ package org.keycloak.models.cache;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link CacheCrlProvider} 工厂 SPI 接口，用于创建 CRL 缓存 Provider 实例。
+ */
 public interface CacheCrlProviderFactory extends ProviderFactory<CacheCrlProvider> {
 }

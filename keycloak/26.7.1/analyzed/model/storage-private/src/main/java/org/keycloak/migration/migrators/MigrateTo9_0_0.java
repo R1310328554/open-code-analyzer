@@ -33,10 +33,13 @@ import org.jboss.logging.Logger;
 
 
 /**
+ * 9.0.0 版本迁移：创建账户控制台客户端、补充账户 API 角色、启用 PKCE 并注册更新语言必需操作。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class MigrateTo9_0_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("9.0.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo9_0_0.class);
@@ -56,6 +59,7 @@ public class MigrateTo9_0_0 implements Migration {
         migrateRealmCommon(realm);
     }
 
+    /** 对单个 realm 执行账户客户端、角色、PKCE 与必需操作的通用迁移。 */
     protected void migrateRealmCommon(RealmModel realm) {
         addAccountConsoleClient(realm);
         addAccountApiRoles(realm);
@@ -63,6 +67,7 @@ public class MigrateTo9_0_0 implements Migration {
         DefaultRequiredActions.addUpdateLocaleAction(realm);
     }
 
+    /** 为 account 客户端添加查看应用、查看同意与管理同意等 API 角色。 */
     private void addAccountApiRoles(RealmModel realm) {
         ClientModel accountClient = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
         RoleModel viewAppRole = accountClient.addRole(AccountRoles.VIEW_APPLICATIONS);
@@ -78,6 +83,7 @@ public class MigrateTo9_0_0 implements Migration {
         LOG.debugf("Added the %s role as a composite role to %s", AccountRoles.VIEW_CONSENT, AccountRoles.MANAGE_CONSENT);
     }
 
+    /** 若不存在则创建 account-console 公开客户端并配置 OIDC 协议映射。 */
     protected void addAccountConsoleClient(RealmModel realm) {
         if (realm.getClientByClientId(Constants.ACCOUNT_CONSOLE_CLIENT_ID) == null) {
             ClientModel client = KeycloakModelUtils.createPublicClient(realm, Constants.ACCOUNT_CONSOLE_CLIENT_ID);
@@ -105,6 +111,7 @@ public class MigrateTo9_0_0 implements Migration {
         }
     }
 
+    /** 为管理控制台与账户控制台客户端启用 S256 PKCE 代码挑战方法。 */
     private void enablePkceAdminAccountClients(RealmModel realm) {
         ClientModel adminConsole = realm.getClientByClientId(Constants.ADMIN_CONSOLE_CLIENT_ID);
         if (adminConsole != null) {

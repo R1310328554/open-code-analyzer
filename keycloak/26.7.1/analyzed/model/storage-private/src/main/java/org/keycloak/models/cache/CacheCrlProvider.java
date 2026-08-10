@@ -19,10 +19,13 @@ package org.keycloak.models.cache;
 
 import org.keycloak.provider.Provider;
 
+/**
+ * CRL（证书吊销列表）缓存 Provider 接口，支持清空已缓存的 CRL 以触发重新加载。
+ */
 public interface CacheCrlProvider extends Provider {
 
     /**
-     * Clears all the cached CRLs, so they need to be loaded again
+     * 清空所有已缓存的 CRL，后续访问将重新从源加载。
      */
     void clearCache();
 

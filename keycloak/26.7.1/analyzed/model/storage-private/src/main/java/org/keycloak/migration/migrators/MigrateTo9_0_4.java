@@ -27,8 +27,12 @@ import org.keycloak.representations.idm.RealmRepresentation;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 9.0.4 版本迁移：为缺少别名的认证器配置生成随机 UUID 别名，避免持久化冲突。
+ */
 public class MigrateTo9_0_4 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("9.0.4");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo9_0_4.class);
@@ -47,16 +51,19 @@ public class MigrateTo9_0_4 implements Migration {
     public void migrateImport(KeycloakSession session, RealmModel realm, RealmRepresentation rep, boolean skipUserDependent) {
     }
 
+    /** 扫描 realm 中所有认证器配置，修复别名为 null 的条目。 */
     protected void checkAuthConfigNullAlias(RealmModel realm) {
         realm.getAuthenticatorConfigsStream()
                 .filter(this::hasNullAlias)
                 .forEach((config) -> this.setRandomAlias(realm, config));
     }
 
+    /** 判断认证器配置是否缺少别名。 */
     private boolean hasNullAlias(AuthenticatorConfigModel config) {
         return config.getAlias() == null;
     }
 
+    /** 为指定配置生成随机 UUID 别名并写回 realm。 */
     private void setRandomAlias(RealmModel realm, AuthenticatorConfigModel config) {
         config.setAlias(UUID.randomUUID().toString());
         realm.updateAuthenticatorConfig(config);

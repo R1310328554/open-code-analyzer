@@ -19,10 +19,13 @@ package org.keycloak.models.cache;
 
 import org.keycloak.provider.Provider;
 
+/**
+ * 公钥缓存 Provider 接口，支持清空已缓存的公钥以触发重新加载。
+ */
 public interface CachePublicKeyProvider extends Provider {
 
     /**
-     * Clears all the cached public keys, so they need to be loaded again
+     * 清空所有已缓存的公钥，后续访问将重新从源加载。
      */
     void clearCache();
 

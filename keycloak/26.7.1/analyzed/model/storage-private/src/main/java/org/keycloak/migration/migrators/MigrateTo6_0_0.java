@@ -27,12 +27,13 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.jboss.logging.Logger;
 
 /**
- * Implements the migration necessary for version 6.0.0.
+ * 6.0.0 版本迁移：创建 {@code microprofile-jwt} 可选客户端作用域并关联到所有 OIDC 客户端。
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class MigrateTo6_0_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("6.0.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo6_0_0.class);
@@ -52,15 +53,16 @@ public class MigrateTo6_0_0 implements Migration {
         migrateRealm(session, realm, true);
     }
 
+    /** 为单个 realm 添加 microprofile-jwt 可选作用域并绑定到非 Bearer-only 的 OIDC 客户端。 */
     protected void migrateRealm(KeycloakSession session, RealmModel realm, boolean jsn) {
         MigrationProvider migrationProvider = session.getProvider(MigrationProvider.class);
 
-        // create 'microprofile-jwt' optional client scope in the realm.
+        // 在 realm 中创建 microprofile-jwt 可选客户端作用域
         ClientScopeModel mpJWTScope = migrationProvider.addOIDCMicroprofileJWTClientScope(realm);
 
         LOG.debugf("Added '%s' optional client scope", mpJWTScope.getName());
 
-        // assign 'microprofile-jwt' optional client scope to all the OIDC clients.
+        // 将 microprofile-jwt 作为可选作用域关联到所有 OIDC 客户端
         realm.getClientsStream()
                 .filter(MigrationUtils::isOIDCNonBearerOnlyClient)
                 .forEach(c -> c.addClientScope(mpJWTScope, false));

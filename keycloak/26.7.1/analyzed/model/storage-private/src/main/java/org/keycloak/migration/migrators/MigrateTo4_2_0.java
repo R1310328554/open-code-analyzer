@@ -30,10 +30,13 @@ import org.jboss.logging.Logger;
 import static java.util.Comparator.comparing;
 
 /**
+ * 4.2.0 版本迁移：按名称字母序为各 realm 的必需操作（Required Action）设置默认优先级。
+ *
  * @author <a href="mailto:wadahiro@gmail.com">Hiroyuki Wada</a>
  */
 public class MigrateTo4_2_0 implements Migration {
 
+    /** 本迁移器对应的模型版本号。 */
     public static final ModelVersion VERSION = new ModelVersion("4.2.0");
 
     private static final Logger LOG = Logger.getLogger(MigrateTo4_2_0.class);
@@ -53,8 +56,9 @@ public class MigrateTo4_2_0 implements Migration {
         migrateRealm(realm);
     }
 
+    /** 按别名排序后为 realm 内各必需操作分配递增优先级（步长 10）。 */
     protected void migrateRealm(RealmModel realm) {
-        // Set default priority of required actions in alphabetical order
+        // 按名称字母序设置必需操作的默认优先级
         AtomicInteger priority = new AtomicInteger(10);
         realm.getRequiredActionProvidersStream()
                 .sorted(comparing(RequiredActionProviderModel::getName))
@@ -64,7 +68,7 @@ public class MigrateTo4_2_0 implements Migration {
                     model.setPriority(priority.get());
                     priority.addAndGet(10);
 
-                    // Save
+                    // 持久化更新后的优先级
                     realm.updateRequiredActionProvider(model);
                 });
     }

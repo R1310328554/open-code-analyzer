@@ -19,23 +19,30 @@ package org.keycloak.models.cache;
 
 import org.keycloak.provider.Spi;
 
+/**
+ * CRL 缓存 SPI：向 Keycloak 注册 {@link CacheCrlProvider} 及其工厂实现。
+ */
 public class CacheCrlProviderSpi implements Spi {
 
+    /** 内部 SPI，不对外暴露给扩展模块配置。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** SPI 名称，对应配置键 {@code crlCache}。 */
     @Override
     public String getName() {
         return "crlCache";
     }
 
+    /** 本 SPI 提供的 Provider 接口类型。 */
     @Override
     public Class<CacheCrlProvider> getProviderClass() {
         return CacheCrlProvider.class;
     }
 
+    /** 本 SPI 对应的 ProviderFactory 实现类型。 */
     @Override
     public Class<CacheCrlProviderFactory> getProviderFactoryClass() {
         return CacheCrlProviderFactory.class;

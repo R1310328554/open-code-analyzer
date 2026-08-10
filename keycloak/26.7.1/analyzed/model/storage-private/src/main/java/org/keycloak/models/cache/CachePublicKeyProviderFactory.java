@@ -19,5 +19,8 @@ package org.keycloak.models.cache;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link CachePublicKeyProvider} 工厂 SPI 接口，用于创建公钥缓存 Provider 实例。
+ */
 public interface CachePublicKeyProviderFactory extends ProviderFactory<CachePublicKeyProvider> {
 }

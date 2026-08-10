@@ -27,17 +27,20 @@ import org.keycloak.representations.idm.RealmRepresentation;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 按 realm 逐域执行迁移的抽象基类：切换会话上下文、刷新持久化层后调用 {@link #migrateRealm}。
+ */
 public abstract class RealmMigration implements Migration {
 
+    /** 迁移过程日志记录器。 */
     protected static final Logger LOG = Logger.getLogger(RealmMigration.class);
 
     @Override
     public void migrate(KeycloakSession session) {
         session.realms().getRealmsStream().forEach(realm -> {
-            // empty out the persistence context for each realm
+            // 每个 realm 迁移前清空持久化上下文，避免实体状态污染
             EntityManagers.flush(session, true);
-            // alternatively could be EntityManagers.runInBatch - but that also changes the
-            // query modes, which I'm not sure is applicable here
+            // 亦可使用 EntityManagers.runInBatch，但会改变查询模式，此处不适用
             KeycloakContext context = session.getContext();
             RealmModel oldRealm = session.getContext().getRealm();
             RealmModel mutableRealm = session.realms().getRealmByName(realm.getName());
@@ -57,5 +60,6 @@ public abstract class RealmMigration implements Migration {
         migrateRealm(session, realm);
     }
 
+    /** 子类实现：对单个 realm 执行版本特定的迁移逻辑。 */
     public abstract void migrateRealm(KeycloakSession session, RealmModel realm);
 }
