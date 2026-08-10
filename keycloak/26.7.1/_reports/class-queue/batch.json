@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/policy/NotContainsUsernamePasswordPolicyProvider.java",
     "server-spi-private/src/main/java/org/keycloak/policy/NotContainsUsernamePasswordPolicyProviderFactory.java",
     "server-spi-private/src/main/java/org/keycloak/policy/NotEmailPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/NotEmailPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/NotUsernamePasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/NotUsernamePasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/PasswordPolicyManagerProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/PasswordPolicyManagerProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/PasswordPolicyManagerSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/PasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/PasswordPolicySpi.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/RecoveryCodesWarningThresholdPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/RegexPatternsPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/RegexPatternsPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/SpecialCharsPasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/SpecialCharsPasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/UpperCasePasswordPolicyProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/policy/UpperCasePasswordPolicyProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/protocol/AbstractLoginProtocolFactory.java"
+    "server-spi-private/src/main/java/org/keycloak/policy/NotEmailPasswordPolicyProviderFactory.java"
   ],
   "remaining_pending": 2638,
-  "done": 3330
+  "done": 3345
 }
