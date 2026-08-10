@@ -15,23 +15,8 @@
     "js/libs/keycloak-admin-client/src/resources/serverInfo.ts",
     "js/libs/keycloak-admin-client/src/resources/userStorageProvider.ts",
     "js/libs/keycloak-admin-client/src/resources/users.ts",
-    "js/libs/keycloak-admin-client/src/resources/whoAmI.ts",
-    "js/libs/keycloak-admin-client/src/resources/workflows.ts",
-    "js/libs/keycloak-admin-client/src/utils/auth.ts",
-    "js/libs/keycloak-admin-client/src/utils/constants.ts",
-    "js/libs/keycloak-admin-client/src/utils/decode.ts",
-    "js/libs/keycloak-admin-client/src/utils/fetchWithError.ts",
-    "js/libs/keycloak-admin-client/src/utils/joinPath.ts",
-    "js/libs/keycloak-admin-client/src/utils/stringifyQueryParams.ts",
-    "js/libs/ui-shared/src/context/environment.ts",
-    "js/libs/ui-shared/src/main.ts",
-    "js/libs/ui-shared/src/user-profile/utils.ts",
-    "js/libs/ui-shared/src/utils/createNamedContext.ts",
-    "js/libs/ui-shared/src/utils/errors.ts",
-    "js/libs/ui-shared/src/utils/generateId.ts",
-    "js/libs/ui-shared/src/utils/getRuleValue.ts",
-    "js/libs/ui-shared/src/utils/isDefined.test.ts"
+    "js/libs/keycloak-admin-client/src/resources/whoAmI.ts"
   ],
   "remaining_pending": 4858,
-  "done": 1110
+  "done": 1125
 }
