@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:29:30Z",
   "files": [
-    "rag/svr/task_executor_refactor/task_handler.py",
-    "rag/svr/task_executor_refactor/task_manager.py",
-    "rag/svr/task_executor_refactor/write_operation_interceptor.py",
-    "rag/utils/__init__.py",
-    "rag/utils/azure_sas_conn.py",
-    "rag/utils/azure_spn_conn.py",
-    "rag/utils/base64_image.py",
-    "rag/utils/encrypted_storage.py",
-    "rag/utils/es_conn.py",
-    "rag/utils/file_utils.py",
-    "rag/utils/gcs_conn.py",
-    "rag/utils/infinity_conn.py",
-    "rag/utils/lazy_image.py",
-    "rag/utils/minio_conn.py",
-    "rag/utils/ob_conn.py",
     "rag/utils/opendal_conn.py",
     "rag/utils/opensearch_conn.py",
     "rag/utils/oss_conn.py",
@@ -33,5 +18,5 @@
     "sdk/python/ragflow_sdk/__init__.py"
   ],
   "remaining_pending": 444,
-  "done": 1290
+  "done": 1305
 }
