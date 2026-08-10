@@ -53,6 +53,8 @@ projects:
   url: https://github.com/huggingface/transformers
   languages:
   - python
+  status: in_progress
+  version: "5.15.0"
 - id: django
   url: https://github.com/django/django
   languages:
@@ -151,5 +153,5 @@ projects:
   url: https://github.com/grafana/loki
   languages:
   - go
-  status: in_progress
+  status: complete
   version: "3.7.6"

@@ -1,0 +1,7 @@
+{
+  "project": "transformers",
+  "version": "5.15.0",
+  "git_ref": "v5.15.0",
+  "repo_url": "https://github.com/huggingface/transformers",
+  "source": "release"
+}
