@@ -1,3 +1,4 @@
+// llama-server 子进程封装：HTTP 调用上游 llama-server 完成推理与嵌入。
 // llama_server.go wraps the llama-server binary as a subprocess
 //
 // Ollama uses two chat paths with llama-server. Models with explicit Ollama
@@ -70,6 +71,7 @@ number ::= ("-"? ([0-9] | [1-9] [0-9]*)) ("." [0-9]+)? ([eE] [-+]? [0-9]+)?
 ws ::= ([ \t\n] ws)?
 `
 
+// DefaultEmbeddingNumBatch 为嵌入模型默认 batch 大小。
 // DefaultEmbeddingNumBatch is the default NumBatch used for embedding models
 // when neither the model nor the request specifies num_batch.
 const (
@@ -81,10 +83,12 @@ const (
 	llamaArgFitTargetEnv = "LLAMA_ARG_FIT_TARGET"
 	bytesPerMiB          = 1 << 20
 
+	// mmprojOffloadHeadroom 为 mmproj GPU 卸载预留 1 GiB 后端缓冲。
 	// mmprojOffloadHeadroom leaves 1 GiB for backend buffers beyond projector weights.
 	mmprojOffloadHeadroom = 1 << 30
 )
 
+// DefaultEmbeddingNumBatchForContext 将嵌入 batch 上限设为当前上下文长度。
 // DefaultEmbeddingNumBatchForContext caps the embedding batch default to the
 // active context length before it is passed to llama-server.
 func DefaultEmbeddingNumBatchForContext(numCtx int) int {
@@ -94,6 +98,7 @@ func DefaultEmbeddingNumBatchForContext(numCtx int) int {
 	return DefaultEmbeddingNumBatch
 }
 
+// WithDefaultEmbeddingNumBatch 为 opts 副本设置默认嵌入 batch。
 // WithDefaultEmbeddingNumBatch applies the llama-server embedding batch
 // default to a copy of opts.
 func WithDefaultEmbeddingNumBatch(opts api.Options) api.Options {
@@ -101,10 +106,12 @@ func WithDefaultEmbeddingNumBatch(opts api.Options) api.Options {
 	return opts
 }
 
+// boundedNumPredict 为开放式生成（num_predict=-1）设定有限 token 预算。
 func boundedNumPredict(numPredict, numCtx int) int {
 	if numCtx <= 0 {
 		return numPredict
 	}
+	// num_predict=-1 表示生成至停止条件，但 llama-server 仍需有限上限。
 	// Ollama's default num_predict=-1 means "generate until a stop condition".
 	// llama-server still needs a finite request budget, so keep open-ended
 	// generations bounded while allowing several full context windows.
@@ -115,6 +122,7 @@ func boundedNumPredict(numPredict, numCtx int) int {
 	return numPredict
 }
 
+// llamaServerRunner 管理 llama-server 子进程并通过 HTTP 实现 LlamaServer。
 // llamaServerRunner wraps an upstream llama-server process and implements the LlamaServer interface.
 // It communicates with llama-server over HTTP.
 type llamaServerRunner struct {
@@ -133,11 +141,13 @@ type llamaServerRunner struct {
 	status             *StatusWriter
 	options            api.Options
 	modelPath          string
+	// mediaMarker 须与传给 llama-server 的 LLAMA_MEDIA_MARKER 一致。
 	// mediaMarker must match the LLAMA_MEDIA_MARKER value passed to llama-server.
 	// llama.cpp randomizes this by default; Ollama renders stable [img-N] markers
 	// and rewrites them before forwarding the request.
 	mediaMarker string
 
+	// vramByDevice 从 llama-server 日志解析各设备 VRAM 占用。
 	// Per-device VRAM tracking, populated from llama-server log parsing.
 	// Keys are device names from llama-server output (e.g., "CUDA0", "ROCm0", "MTL0").
 	vramByDevice map[string]uint64
@@ -166,6 +176,7 @@ type llamaServerRunner struct {
 	mmprojOffloadOOMRetried bool
 }
 
+// llamaServerLaunchConfig 汇总启动 llama-server 所需的 CLI 与环境参数。
 type llamaServerLaunchConfig struct {
 	modelPath            string
 	modelArch            string
@@ -185,6 +196,7 @@ type llamaServerLaunchConfig struct {
 	forceNoMMProjOffload bool
 }
 
+// newLlamaServerHTTPClient 创建禁用 keep-alive 的本地 HTTP 客户端。
 func newLlamaServerHTTPClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
@@ -203,10 +215,12 @@ func (s *llamaServerRunner) httpClient() *http.Client {
 	return defaultLlamaServerHTTPClient
 }
 
+// ModelPath 返回加载的模型文件路径。
 func (s *llamaServerRunner) ModelPath() string {
 	return s.modelPath
 }
 
+// Pid 返回子进程 PID，未启动时返回 0。
 func (s *llamaServerRunner) Pid() int {
 	if s.cmd != nil && s.cmd.Process != nil {
 		return s.cmd.Process.Pid
@@ -214,10 +228,12 @@ func (s *llamaServerRunner) Pid() int {
 	return 0
 }
 
+// GetPort 返回 llama-server 监听端口。
 func (s *llamaServerRunner) GetPort() int {
 	return s.port
 }
 
+// HasExited 判断子进程是否已退出。
 func (s *llamaServerRunner) HasExited() bool {
 	return s.cmd != nil && s.cmd.ProcessState != nil && s.cmd.ProcessState.ExitCode() >= 0
 }
@@ -229,6 +245,7 @@ func (s *llamaServerRunner) llamaServerMediaMarker() string {
 	return "<__media__>"
 }
 
+// newLlamaServerMediaMarker 生成每进程唯一的媒体占位 marker。
 func newLlamaServerMediaMarker() string {
 	var b [16]byte
 	if _, err := crand.Read(b[:]); err == nil {
@@ -238,6 +255,7 @@ func newLlamaServerMediaMarker() string {
 	return fmt.Sprintf("<__ollama_media_%d_%d__>", time.Now().UnixNano(), rand.Int63())
 }
 
+// completionPrompt 在 tokenizer 自动加 BOS 时剥离重复前缀。
 func (s *llamaServerRunner) completionPrompt(prompt, leadingBOS string) string {
 	if s.tokenizerAddsBOS() {
 		if leadingBOS != "" && strings.HasPrefix(prompt, leadingBOS) {
@@ -252,6 +270,7 @@ func (s *llamaServerRunner) completionPrompt(prompt, leadingBOS string) string {
 	return prompt
 }
 
+// tokenizerAddsBOS 根据 GGUF 元数据判断是否需要剥离 BOS。
 func (s *llamaServerRunner) tokenizerAddsBOS() bool {
 	if s.ggml == nil {
 		return false
@@ -263,6 +282,7 @@ func (s *llamaServerRunner) tokenizerAddsBOS() bool {
 		return true
 	}
 
+	// llama.cpp 对 Gemma4 强制 add_bos，即使 GGUF 元数据为 false。
 	// llama.cpp forces add_bos on for Gemma4 at load time, even for GGUFs
 	// whose tokenizer.ggml.add_bos_token metadata is explicitly false. Some
 	// GGUFs omit tokenizer.ggml.pre and are still treated as Gemma4 from
@@ -274,6 +294,7 @@ func (s *llamaServerRunner) tokenizerAddsBOS() bool {
 	return kv.Bool("tokenizer.ggml.add_bos_token")
 }
 
+// completionPromptForRequest 必要时 tokenize 并按 context shift 截断 prompt。
 func (s *llamaServerRunner) completionPromptForRequest(ctx context.Context, req CompletionRequest) (any, error) {
 	prompt := s.completionPrompt(req.Prompt, req.LeadingBOS)
 	if !req.Truncate || len(req.Media) > 0 || s.options.NumCtx <= 1 || len(prompt) < s.options.NumCtx {
@@ -316,6 +337,7 @@ func (s *llamaServerRunner) completionPromptForRequest(ctx context.Context, req 
 	return truncated, nil
 }
 
+// contextShiftPromptLimit 计算首次 context shift 后保留的 prompt token 上限。
 func contextShiftPromptLimit(numCtx, numKeep int) int {
 	if numCtx <= 1 {
 		return 0
@@ -332,6 +354,7 @@ func (s *llamaServerRunner) ContextLength() int {
 	return s.options.NumCtx
 }
 
+// FindLlamaServer 在 lib/ollama 布局中定位 llama-server 二进制。
 // FindLlamaServer locates the llama-server binary in lib/ollama/.
 // There is a single binary that dynamically loads GPU backends at runtime.
 func FindLlamaServer() (string, error) {
@@ -342,6 +365,7 @@ func FindLlamaServer() (string, error) {
 	return path, nil
 }
 
+// startLlamaServer 分配端口并组装 CLI 参数启动 llama-server。
 // startLlamaServer spawns the upstream llama-server process with appropriate CLI flags.
 func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.Cmd, port int, err error) {
 	exe, err := FindLlamaServer()
@@ -349,6 +373,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 		return nil, 0, err
 	}
 
+	// 绑定 localhost:0 获取空闲端口。
 	// Allocate a port
 	port = 0
 	if a, err := net.ResolveTCPAddr("tcp", "localhost:0"); err == nil {
@@ -363,6 +388,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 		port = rand.Intn(65535-49152) + 49152
 	}
 
+	// 组装最小 CLI 集，其余由 llama-server 自动探测。
 	// Build CLI flags — minimal set, let llama-server auto-detect the rest
 	params := []string{
 		"--model", launch.modelPath,
@@ -381,6 +407,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 
 	params = append(params, qwenVLServerArgs(launch.modelArch)...)
 
+	// 追加 LoRA adapter 路径。
 	// LoRA adapters
 	for _, adapter := range launch.adapters {
 		params = append(params, "--lora", adapter)
@@ -388,6 +415,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 
 	params = appendLoadModeArgs(params, launch.opts, launch.gpus)
 
+	// 可选 KV cache 量化类型。
 	// KV cache type
 	if launch.kvCacheType != "" {
 		params = append(params, "--cache-type-k", launch.kvCacheType, "--cache-type-v", launch.kvCacheType)
@@ -397,6 +425,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 
 	params = appendBatchArgs(params, launch.opts, launch.embedding, launch.numParallel)
 
+	// GPU 层卸载：仅用户显式设置 NumGPU 时传递 -ngl。
 	// GPU layer offloading — only pass if user explicitly set it (non-default).
 	// Default behavior: let llama-server auto-detect via -ngl auto.
 	if launch.opts.NumGPU > 0 {
@@ -407,6 +436,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 	}
 	// NumGPU == -1 (default): don't pass -ngl, let llama-server auto-detect
 
+	// 线程数：仅用户显式设置 NumThread 时传递 -t。
 	// Thread count — only pass if user explicitly set it.
 	// Default behavior: let llama-server auto-detect.
 	if launch.opts.NumThread > 0 {
@@ -417,6 +447,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 
 	params = appendContextShiftArgs(params, launch.opts, launch.config.ContextShift)
 
+	// 配置 GPU 后端库搜索路径与环境变量。
 	// Set up library paths for GPU backend discovery
 	cmd = exec.Command(exe, params...)
 
@@ -437,6 +468,7 @@ func startLlamaServer(launch llamaServerLaunchConfig, out io.Writer) (cmd *exec.
 	return cmd, port, nil
 }
 
+// SetupLlamaServerCommandEnv 为子进程设置库路径与 GPU 后端环境。
 // SetupLlamaServerCommandEnv configures the environment for a llama-server
 // subprocess so discovery and real model runners use the same library search
 // paths and GPU backend selection.
@@ -472,6 +504,7 @@ func SetupLlamaServerCommandEnv(cmd *exec.Cmd, exe string, gpuLibs []string, ext
 	}
 }
 
+// llamaServerLibraryPathEnv 返回平台动态库路径环境变量名。
 func llamaServerLibraryPathEnv() string {
 	switch runtime.GOOS {
 	case "windows":
@@ -483,6 +516,7 @@ func llamaServerLibraryPathEnv() string {
 	}
 }
 
+// llamaServerLibraryPaths 组装 llama-server 与 GPU 后端的库搜索路径。
 func llamaServerLibraryPaths(exe string, gpuLibs []string, envUpdates map[string]string) []string {
 	llamaDir := filepath.Dir(exe)
 	seen := map[string]bool{}
@@ -495,6 +529,7 @@ func llamaServerLibraryPaths(exe string, gpuLibs []string, envUpdates map[string
 		libraryPaths = append(libraryPaths, path)
 	}
 
+	// 库路径顺序：llama 目录、GPU 变体、用户系统路径。
 	// Library path ordering:
 	// 1. llama-server's own directory — ggml-base, ggml-cpu, libllama
 	// 2. GPU variant directories — cublas, cudart, backend DLL/.so
@@ -519,6 +554,7 @@ func llamaServerLibraryPaths(exe string, gpuLibs []string, envUpdates map[string
 	return adjustPlatformLibraryPaths(libraryPaths, gpuLibs)
 }
 
+// findLlamaServerGPUBackend 在目录中查找首个 GPU ggml 后端 so/dll。
 func findLlamaServerGPUBackend(dir string) string {
 	patterns := []string{
 		"libggml-*.so*",
@@ -541,6 +577,7 @@ func findLlamaServerGPUBackend(dir string) string {
 	return ""
 }
 
+// isLlamaServerGPUBackend 排除 base/cpu 库，识别 GPU 后端文件。
 func isLlamaServerGPUBackend(path string) bool {
 	name := strings.ToLower(filepath.Base(path))
 	for _, prefix := range []string{
@@ -556,6 +593,7 @@ func isLlamaServerGPUBackend(path string) bool {
 	return true
 }
 
+// embeddingBatchSize 计算嵌入请求的 batch 上限。
 func embeddingBatchSize(opts api.Options, numParallel int) int {
 	batchSize := opts.NumBatch
 	if batchSize <= 0 {
@@ -567,6 +605,7 @@ func embeddingBatchSize(opts api.Options, numParallel int) int {
 	return batchSize
 }
 
+// appendLlamaServerLogArgs 启用内存/offload 相关日志级别。
 func appendLlamaServerLogArgs(params []string) []string {
 	// Keep startup memory/offload lines visible for scheduler accounting.
 	return append(params,
@@ -576,6 +615,7 @@ func appendLlamaServerLogArgs(params []string) []string {
 	)
 }
 
+// appendBatchArgs 为推理或嵌入模式追加 -b/-ub batch 参数。
 func appendBatchArgs(params []string, opts api.Options, embedding bool, numParallel int) []string {
 	if embedding {
 		params = append(params, "--embedding")
@@ -591,6 +631,7 @@ func appendBatchArgs(params []string, opts api.Options, embedding bool, numParal
 	return params
 }
 
+// LlamaServerFlashAttention 解析传给 llama-server 的 flash-attn 模式。
 // LlamaServerFlashAttention resolves the flash-attention mode passed to llama-server.
 func LlamaServerFlashAttention(gpus []ml.DeviceInfo) ml.FlashAttentionType {
 	enabled := envconfig.FlashAttention(false)
@@ -608,6 +649,7 @@ func LlamaServerFlashAttention(gpus []ml.DeviceInfo) ml.FlashAttentionType {
 	return ml.FlashAttentionAuto
 }
 
+// appendFlashAttentionArgs 追加 --flash-attn on/off/auto。
 func appendFlashAttentionArgs(params []string, gpus []ml.DeviceInfo) []string {
 	switch LlamaServerFlashAttention(gpus) {
 	case ml.FlashAttentionEnabled:
@@ -619,6 +661,7 @@ func appendFlashAttentionArgs(params []string, gpus []ml.DeviceInfo) []string {
 	}
 }
 
+// appendLoadModeArgs 选择 mmap/direct-io/none 等权重加载模式。
 // appendLoadModeArgs selects llama-server's single model loading mode. Direct I/O
 // skips the page cache on load for integrated CUDA/ROCm GPUs, which share system
 // memory with the CPU and would otherwise double-buffer weights.
@@ -636,6 +679,7 @@ func appendLoadModeArgs(params []string, opts api.Options, gpus []ml.DeviceInfo)
 	return params
 }
 
+// appendMainGPUArgs 设置单 GPU split-mode 与 main-gpu。
 func appendMainGPUArgs(params []string, opts api.Options) []string {
 	if opts.MainGPU == nil {
 		return params
@@ -644,6 +688,7 @@ func appendMainGPUArgs(params []string, opts api.Options) []string {
 	return append(params, "--split-mode", "none", "--main-gpu", strconv.Itoa(*opts.MainGPU))
 }
 
+// appendMMProjArgs 追加 --mmproj 及必要时 --no-mmproj-offload。
 func appendMMProjArgs(params []string, launch llamaServerLaunchConfig) []string {
 	if len(launch.projectors) == 0 {
 		return params
@@ -665,6 +710,7 @@ func (launch llamaServerLaunchConfig) mmprojOffloadDisabled() (bool, string) {
 	return shouldDisableMMProjOffload(launch.opts, launch.gpus, launch.modelLayers, launch.mmprojMemory)
 }
 
+// shouldDisableMMProjOffload 根据 VRAM 与 offload 策略决定是否 CPU 卸载 mmproj。
 func shouldDisableMMProjOffload(opts api.Options, gpus []ml.DeviceInfo, modelLayers, mmprojMemory uint64) (bool, string) {
 	if opts.NumGPU == 0 {
 		return true, "cpu-only"
@@ -729,6 +775,7 @@ func (launch llamaServerLaunchConfig) mmprojFitTargetMiB() (uint64, bool) {
 	return (requiredMemory + bytesPerMiB - 1) / bytesPerMiB, true
 }
 
+// mmprojMemoryRequirement 估算多模态投影器权重字节数（fit 未直接计入前的权宜）。
 // mmprojMemoryRequirement is a stopgap until fit accounts for mmproj memory directly.
 func mmprojMemoryRequirement(modelPath string, f *ggml.GGML, projectors []string) (uint64, error) {
 	if len(projectors) == 0 {
@@ -771,6 +818,7 @@ func mmprojMemoryRequirement(modelPath string, f *ggml.GGML, projectors []string
 	return size, nil
 }
 
+// appendJinjaArgs Go 渲染路径下禁用 GGUF chat template 解析。
 func appendJinjaArgs(params []string, config LlamaServerConfig) []string {
 	if config.DisableJinja {
 		// Go-rendered chat paths send already-rendered prompts through completion
@@ -784,6 +832,7 @@ func appendJinjaArgs(params []string, config LlamaServerConfig) []string {
 	return params
 }
 
+// appendContextShiftArgs 启用 context shift 与 num_keep。
 func appendContextShiftArgs(params []string, opts api.Options, enabled bool) []string {
 	if !enabled {
 		return params
@@ -802,6 +851,7 @@ const (
 	draftTypeDFlash = "draft-dflash"
 )
 
+// appendDraftArgs 配置 MTP/DFlash 投机解码参数。
 func appendDraftArgs(params []string, draftType, draftModelPath string, opts api.Options) []string {
 	if draftType == "" {
 		return params
@@ -848,6 +898,7 @@ func hasLegacyQwenMTPDraft(arch string, tensors []*ggml.Tensor) bool {
 	}
 }
 
+// NewLlamaServerRunner 启动 llama-server 子进程并等待模型加载。
 // NewLlamaServerRunner creates a new llama-server runner that wraps the upstream llama-server binary.
 func NewLlamaServerRunner(
 	gpus []ml.DeviceInfo,
@@ -859,10 +910,12 @@ func NewLlamaServerRunner(
 	kvCacheType string,
 	config LlamaServerConfig,
 ) (LlamaServer, error) {
+	// 根据 pooling_type 判断是否为嵌入模型。
 	// Check if this is an embedding model
 	arch := f.KV().Architecture()
 	_, isEmbedding := f.KV()[fmt.Sprintf("%s.pooling_type", arch)]
 
+	// 旧版 Ollama GGUF 内联视觉张量时，对兼容 arch 自动启用 --mmproj。
 	// Older Ollama-format GGUFs store vision tensors (v.*, mm.*) inline in
 	// the main model file rather than in a separate projector layer. When
 	// the arch has a llama/compat clip handler, we can point --mmproj at
@@ -978,6 +1031,7 @@ func cloneStringMap(src map[string]string) map[string]string {
 	return dst
 }
 
+// legacyEmbeddingsWereRaw 判断是否需保留旧版未归一化嵌入输出。
 func legacyEmbeddingsWereRaw(kv ggml.KV) bool {
 	arch := kv.Architecture()
 	if _, ok := kv[fmt.Sprintf("%s.pooling_type", arch)]; !ok {
@@ -1013,6 +1067,7 @@ func (s *llamaServerRunner) startProcess() error {
 	s.loadStart = time.Now()
 	s.startLoadTracking(s.loadStart)
 
+	// 后台 goroutine 等待子进程退出并记录错误。
 	// Reap subprocess when it exits.
 	go func(cmd *exec.Cmd, done chan struct{}) {
 		err := cmd.Wait()
@@ -1038,6 +1093,7 @@ func qwenVLServerArgs(modelArch string) []string {
 	}
 }
 
+// Load 等待 llama-server /health 就绪，必要时重试 CPU mmproj offload。
 // Load waits for llama-server to finish loading the model. llama-server loads
 // the model at startup and auto-detects GPU layers, so this just waits for
 // health to report ready. The scheduler handles full-fit preflight for
@@ -1081,6 +1137,7 @@ func (s *llamaServerRunner) Load(ctx context.Context, systemInfo ml.SystemInfo, 
 	return deviceIDs, nil
 }
 
+// retryWithMMProjCPUOffload OOM 时以 CPU mmproj 卸载重启一次。
 func (s *llamaServerRunner) retryWithMMProjCPUOffload(loadErr error) (bool, error) {
 	if !s.shouldRetryMMProjCPUOffload(loadErr) {
 		return false, nil
@@ -1185,6 +1242,7 @@ func (s *llamaServerRunner) lastLoadActivity() time.Time {
 	return time.Time{}
 }
 
+// getServerStatus 查询 /health 获取 ready/loading/error 状态。
 // getServerStatus checks llama-server's /health endpoint.
 // llama-server returns {"status":"ok"}, {"status":"loading model"}, or {"status":"error"}.
 func (s *llamaServerRunner) getServerStatus(ctx context.Context) (ServerStatus, error) {
@@ -1276,6 +1334,7 @@ func (s *llamaServerRunner) Ping(ctx context.Context) error {
 	return err
 }
 
+// WaitUntilRunning 轮询 health 直至就绪或子进程异常退出。
 func (s *llamaServerRunner) WaitUntilRunning(ctx context.Context) error {
 	s.startLoadTracking(time.Now())
 	defer s.stopLoadTracking()
@@ -1388,6 +1447,7 @@ func (s *llamaServerRunner) lastErrMsg() string {
 	return s.status.LastError()
 }
 
+// llamaServerCompletionRequest 对应 llama-server POST /completion 请求体。
 // llamaServerCompletionRequest is the request format for llama-server's POST /completion endpoint.
 type llamaServerCompletionRequest struct {
 	Prompt          any             `json:"prompt"`
@@ -1418,6 +1478,7 @@ func llamaServerPreservedTokens(parserTokens []string, toolCallTag string) []str
 	return tokens
 }
 
+// llamaServerPreservedTokensForToolTag 提取工具标签中需保留的特殊 token 前缀。
 // llama-server only preserves strings that tokenize to one special token. Some
 // Go templates use a parser tag like "[TOOL_CALLS][", where the first segment
 // is the special token and the trailing "[" is regular JSON punctuation.
@@ -1523,6 +1584,7 @@ type llamaServerTokenProb struct {
 	TopProbs    []llamaServerTokenProb `json:"top_probs"`
 }
 
+// Completion 流式调用 /completion 并将 SSE 块转发为 CompletionResponse。
 func (s *llamaServerRunner) Completion(ctx context.Context, req CompletionRequest, fn func(CompletionResponse)) error {
 	slog.Debug("llama-server completion request", "media", len(req.Media), "prompt_len", len(req.Prompt))
 
@@ -1578,6 +1640,7 @@ func (s *llamaServerRunner) Completion(ctx context.Context, req CompletionReques
 		lsReq.NProbs = max(req.TopLogprobs, 1)
 	}
 
+	// format：JSON Schema 直传或 BNF grammar 约束输出。
 	// Handle format: pass JSON schema directly to llama-server, or use grammar
 	if len(req.Format) > 0 {
 		switch string(req.Format) {
@@ -1596,6 +1659,7 @@ func (s *llamaServerRunner) Completion(ctx context.Context, req CompletionReques
 		lsReq.Grammar = req.Grammar
 	}
 
+	// 多模态：将 [img-N] 替换为进程 marker 并 base64 打包 media。
 	// Convert media: replace Ollama's stable [img-N] markers with the per-process
 	// llama-server media marker and package the matching payloads as base64.
 	if len(req.Media) > 0 {
@@ -1787,6 +1851,7 @@ func (s *llamaServerRunner) statusErrorMessage(body []byte) string {
 	return errMsg
 }
 
+// convertLogprobs 将 llama-server token 概率转为 Ollama Logprob 格式。
 // convertLogprobs converts llama-server's completion_probabilities to Ollama's Logprob format.
 // includeTop controls whether top alternatives are included in the output.
 func convertLogprobs(probs []llamaServerTokenProb, includeTop bool) []Logprob {
@@ -1876,6 +1941,7 @@ func (s *llamaServerRunner) ApplyChatTemplate(ctx context.Context, req ChatReque
 	return lsResp.Prompt, nil
 }
 
+// Chat 流式调用 /v1/chat/completions 并聚合 tool_calls。
 func (s *llamaServerRunner) Chat(ctx context.Context, req ChatRequest, fn func(ChatResponse)) error {
 	slog.Debug("llama-server chat request", "messages", len(req.Messages), "tools", len(req.Tools))
 
@@ -2305,6 +2371,7 @@ func llamaServerChatResponseFormat(format json.RawMessage) (map[string]any, erro
 	}
 }
 
+// Embedding 调用 /v1/embeddings 返回向量与 prompt token 数。
 func (s *llamaServerRunner) Embedding(ctx context.Context, input string) ([]float32, int, error) {
 	if err := s.sem.Acquire(ctx, 1); err != nil {
 		return nil, 0, err
@@ -2495,11 +2562,13 @@ func (s *llamaServerRunner) tokenize(ctx context.Context, content any, addSpecia
 	return result.Tokens, nil
 }
 
+// Tokenize 调用 /tokenize 将文本转为 token ID。
 // Tokenize calls llama-server's /tokenize endpoint.
 func (s *llamaServerRunner) Tokenize(ctx context.Context, content string) ([]int, error) {
 	return s.tokenize(ctx, content, false, nil)
 }
 
+// Detokenize 调用 /detokenize 将 token ID 还原为文本。
 // Detokenize calls llama-server's /detokenize endpoint.
 func (s *llamaServerRunner) Detokenize(ctx context.Context, tokens []int) (string, error) {
 	data, err := json.Marshal(map[string][]int{"tokens": tokens})
@@ -2560,6 +2629,7 @@ func (s *llamaServerRunner) stopProcess() error {
 	return nil
 }
 
+// GetDeviceInfos 返回各 GPU 更新后的空闲显存（取会计与系统报告较小值）。
 // GetDeviceInfos returns device info for GPUs used by this runner, with FreeMemory
 // updated to reflect actual usage. Uses the minimum of:
 //   - Our accounting: TotalMemory minus tracked VRAM allocations
@@ -2603,6 +2673,7 @@ func (s *llamaServerRunner) GetDeviceInfos(ctx context.Context) []ml.DeviceInfo 
 	return infos
 }
 
+// MemorySize 从日志解析的总内存与 GPU 内存（含 mmap 重叠修正）。
 // MemorySize returns total and GPU memory usage parsed from llama-server's
 // post-load log output. Full model-layer offload is reported as 100% GPU.
 func (s *llamaServerRunner) MemorySize() (total, vram uint64) {
@@ -2645,6 +2716,7 @@ func (s *llamaServerRunner) MemorySize() (total, vram uint64) {
 	return total, vram
 }
 
+// PredictServerVRAM 不启动进程时保守估算权重加 KV cache VRAM。
 // PredictServerVRAM estimates VRAM usage for a model without spawning llama-server.
 // Uses model file size as a proxy for weights plus a rough KV cache estimate.
 // This is intentionally conservative — it overestimates to avoid VRAM contention.
@@ -2669,6 +2741,7 @@ func PredictServerVRAM(modelPath string, f *ggml.GGML, numCtx int) uint64 {
 	return weights + kvCache
 }
 
+// memoryParsingWriter 解析 llama-server 日志中的 buffer size 行更新 VRAM 统计。
 // memoryParsingWriter wraps an io.Writer and parses llama-server log output
 // for buffer size lines. It updates the runner's per-device VRAM tracking.
 //
@@ -2713,6 +2786,7 @@ var (
 	fitOverflowingLayersRegex = regexp.MustCompile(`common_params_fit_impl:\s+-\s+.+:\s+\d+\s+layers\s+\(\s*(\d+)\s+overflowing\)`)
 )
 
+// isGPUBuffer 判断 backend 缓冲名是否计入 GPU 显存。
 // isGPUBuffer returns true if the backend buffer name represents GPU memory.
 // CPU, BLAS, and host-pinned buffers (*_Host) are not GPU memory.
 // Device-mapped buffers (e.g., MTL0_Mapped) ARE GPU memory — they're model
@@ -2727,6 +2801,7 @@ func isGPUBuffer(name string) bool {
 	return true
 }
 
+// deviceName 剥离 _Mapped/_REPACK 后缀得到设备跟踪键名。
 // deviceName returns the base device name for per-device VRAM tracking.
 // Strips suffixes like _Mapped, _REPACK so that e.g. "MTL0_Mapped" is
 // tracked under "MTL0" alongside "MTL0 KV buffer" and "MTL0 compute buffer".
@@ -2821,6 +2896,7 @@ func (w *memoryParsingWriter) updateRunnerMemoryLocked() {
 	w.runner.vramByDevice = byDevice
 }
 
+// VRAMByGPU 返回指定 DeviceID 在本 runner 上的 VRAM 占用。
 // VRAMByGPU returns the VRAM used by this runner on the specified device.
 // The values are parsed from llama-server's buffer size log output during model load
 // (model tensors + KV cache + compute buffers).

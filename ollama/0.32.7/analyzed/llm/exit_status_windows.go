@@ -1,3 +1,4 @@
+// Windows 退出状态：识别 NTSTATUS 严重错误并格式化十六进制。
 //go:build windows
 
 package llm
@@ -9,11 +10,13 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// NTSTATUS 严重级别掩码常量。
 const (
 	ntstatusSeverityMask  = 0xc0000000
 	ntstatusSeverityError = 0xc0000000
 )
 
+// formatExitStatus Windows 上对 NTSTATUS 错误输出十六进制与系统消息。
 func formatExitStatus(s ExitStatus) string {
 	if s == exitStatusOK || s == exitStatusUnknown {
 		return decimalExitStatus(s)
@@ -27,6 +30,7 @@ func formatExitStatus(s ExitStatus) string {
 	return fmt.Sprintf("exit status 0x%08x: %s", raw, windows.NTStatus(raw).Error())
 }
 
+// logExitStatus Windows 上对 NTSTATUS 输出 code/hex/ntstatus 分组。
 func logExitStatus(s ExitStatus) slog.Value {
 	if s == exitStatusOK || s == exitStatusUnknown {
 		return slog.StringValue(s.String())

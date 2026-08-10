@@ -1,3 +1,4 @@
+// llama.cpp 辅助二进制定位：安装包与本地开发目录搜索。
 package llm
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/ollama/ollama/ml"
 )
 
+// llamaCppBinarySearch 描述二进制搜索的上下文路径。
 type llamaCppBinarySearch struct {
 	libOllamaPath string
 	executable    string
@@ -19,6 +21,7 @@ type llamaCppBinarySearch struct {
 	goarch        string
 }
 
+// defaultLlamaCppBinarySearch 从当前进程与工作目录构造搜索上下文。
 func defaultLlamaCppBinarySearch() llamaCppBinarySearch {
 	executable, _ := os.Executable()
 	if executable != "" {
@@ -37,6 +40,7 @@ func defaultLlamaCppBinarySearch() llamaCppBinarySearch {
 	}
 }
 
+// FindLlamaCppBinary 在已安装与本地开发布局中定位 llama.cpp 工具。
 // FindLlamaCppBinary locates a llama.cpp helper binary in installed and local
 // development layouts.
 func FindLlamaCppBinary(name string) (string, error) {
@@ -47,6 +51,7 @@ func FindLlamaCppBinary(name string) (string, error) {
 	return path, nil
 }
 
+// findLlamaCppBinary 按候选路径顺序 stat 查找二进制。
 func findLlamaCppBinary(name string, search llamaCppBinarySearch) (string, []string, error) {
 	candidates := llamaCppBinaryCandidates(name, search)
 	for _, path := range candidates {
@@ -58,6 +63,7 @@ func findLlamaCppBinary(name string, search llamaCppBinarySearch) (string, []str
 	return "", candidates, os.ErrNotExist
 }
 
+// llamaCppBinaryCandidates 生成平台相关的候选绝对路径列表。
 func llamaCppBinaryCandidates(name string, search llamaCppBinarySearch) []string {
 	goos := search.goos
 	if goos == "" {
@@ -90,16 +96,21 @@ func llamaCppBinaryCandidates(name string, search llamaCppBinarySearch) []string
 		}
 		switch goos {
 		case "darwin":
+			// macOS 安装包将 llama.cpp 与 ollama 同目录或 lib/ollama 下。
 			// macOS tarballs and apps colocate llama.cpp helpers with ollama.
 			add(base)
+			// 本地 dist 按架构输出到 lib/ollama。
 			// Per-architecture local dist output keeps helpers under lib/ollama.
 			add(filepath.Join(base, "lib", "ollama"))
+			// CMake 标准安装：bin/ollama 与 ../lib/ollama 辅助程序。
 			// Standard CMake installs put ollama in bin/ and helpers in ../lib/ollama/.
 			add(filepath.Join(base, "..", "lib", "ollama"))
 		case "linux":
+			// Linux 包布局同 CMake bin/../lib/ollama。
 			// Linux packages install ollama in bin/ and helpers in ../lib/ollama/.
 			add(filepath.Join(base, "..", "lib", "ollama"))
 		case "windows":
+			// Windows 包将 ollama.exe 与 lib/ollama 并列。
 			// Windows packages keep ollama.exe at top level with lib/ as a peer.
 			add(filepath.Join(base, "lib", "ollama"))
 			// Standard CMake installs put ollama.exe in bin/ and helpers in ../lib/ollama/.
@@ -156,6 +167,7 @@ func llamaCppBinaryCandidates(name string, search llamaCppBinarySearch) []string
 	return candidates
 }
 
+// llamaCppBinaryName Windows 上自动追加 .exe 后缀。
 func llamaCppBinaryName(name, goos string) string {
 	if goos == "windows" && filepath.Ext(name) == "" {
 		return name + ".exe"
@@ -163,6 +175,7 @@ func llamaCppBinaryName(name, goos string) string {
 	return name
 }
 
+// llamaCppBuildOutputRank 优先选择 darwin/cuda/rocm 构建输出目录。
 func llamaCppBuildOutputRank(path string) int {
 	if strings.Contains(path, "llama-server-darwin") ||
 		strings.Contains(path, "llama-server-cuda") ||

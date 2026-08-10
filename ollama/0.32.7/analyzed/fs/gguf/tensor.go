@@ -1,3 +1,4 @@
+// GGUF 张量元数据：TensorInfo 形状/类型与量化 block 尺寸计算。
 package gguf
 
 import (
@@ -5,6 +6,7 @@ import (
 	"strings"
 )
 
+// TensorInfo 描述 GGUF 中单个张量的名称、偏移、形状与量化类型。
 type TensorInfo struct {
 	Name   string
 	Offset uint64
@@ -12,10 +14,12 @@ type TensorInfo struct {
 	Type   TensorType
 }
 
+// Valid 判断名称非空且字节数大于 0。
 func (ti TensorInfo) Valid() bool {
 	return ti.Name != "" && ti.NumBytes() > 0
 }
 
+// NumValues 返回 shape 各维乘积（元素个数）。
 func (ti TensorInfo) NumValues() int64 {
 	var numItems int64 = 1
 	for _, dim := range ti.Shape {
@@ -24,6 +28,7 @@ func (ti TensorInfo) NumValues() int64 {
 	return numItems
 }
 
+// numValues 带溢出检查的 NumValues。
 func (ti TensorInfo) numValues() (int64, bool) {
 	var numItems int64 = 1
 	for _, dim := range ti.Shape {
@@ -39,11 +44,13 @@ func (ti TensorInfo) numValues() (int64, bool) {
 	return numItems, true
 }
 
+// NumBytes 返回张量占用的字节数（含量化 block 对齐）。
 // NumBytes returns the number of bytes in the tensor.
 func (ti TensorInfo) NumBytes() int64 {
 	return int64(float64(ti.NumValues()) * ti.Type.NumBytes())
 }
 
+// numBytes 带溢出与 block 对齐校验的字节数计算。
 func (ti TensorInfo) numBytes() (int64, bool) {
 	numValues, ok := ti.numValues()
 	if !ok {
@@ -75,6 +82,7 @@ func (ti TensorInfo) numBytes() (int64, bool) {
 	return blocks * typeSize, true
 }
 
+// LogValue 为结构化日志输出张量摘要。
 func (ti TensorInfo) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("name", ti.Name),
@@ -86,6 +94,7 @@ func (ti TensorInfo) LogValue() slog.Value {
 	)
 }
 
+// TensorType 枚举 GGUF 支持的量化与浮点 dtype。
 type TensorType uint32
 
 const (
@@ -94,6 +103,7 @@ const (
 	TensorTypeQ4_0
 	TensorTypeQ4_1
 
+	// 未导出：GGUF 规范中未使用。
 	// unexported // unused in gguf
 	tensorTypeQ4_2
 	tensorTypeQ4_3
@@ -109,6 +119,7 @@ const (
 	TensorTypeQ6_K
 	TensorTypeQ8_K
 
+	// 未导出：Ollama 暂不支持量化。
 	// unexported // unquantizable by ollama
 	tensorTypeIQ2_XXS
 	tensorTypeIQ2_XS
@@ -145,10 +156,12 @@ const (
 	tensorTypeIQ4_NL_8_8
 )
 
+// NumBytes 返回每个量化 block 的平均字节数。
 func (tt TensorType) NumBytes() float64 {
 	return float64(tt.typeSize()) / float64(tt.blockSize())
 }
 
+// typeSize 返回该 dtype 单个 block 的字节大小。
 func (tt TensorType) typeSize() int64 {
 	switch tt {
 	case TensorTypeF32:
@@ -214,6 +227,7 @@ func (tt TensorType) typeSize() int64 {
 	}
 }
 
+// blockSize 返回量化 block 的元素个数（未量化 dtype 为 1）。
 func (tt TensorType) blockSize() int64 {
 	switch tt {
 	case TensorTypeF32,
@@ -238,6 +252,7 @@ func (tt TensorType) blockSize() int64 {
 	}
 }
 
+// String 返回小写 dtype 名称。
 func (tt TensorType) String() string {
 	switch tt {
 	case TensorTypeF32:
@@ -323,6 +338,7 @@ func (tt TensorType) String() string {
 	}
 }
 
+// LogValue 为结构化日志输出 dtype 详情。
 func (tt TensorType) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.Uint64("value", uint64(tt)),
