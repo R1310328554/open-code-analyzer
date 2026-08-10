@@ -27,6 +27,7 @@ import java.util.Map;
 
 /**
  * AgentSpec operation service.
+ * <p>AgentSpec 资源操作接口：管理端 CRUD、客户端查询、草稿/发布流水线及可见性 scope。</p>
  *
  * @author nacos
  */
@@ -34,6 +35,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Get agentspec detail for admin usage. Returns full agentspec content plus version governance info.
+     * <p>管理端获取 AgentSpec 详情（含完整内容与版本治理信息）。</p>
      *
      * @param namespaceId namespace ID
      * @param agentSpecName agentspec name
@@ -46,6 +48,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Get agentspec detail for admin usage. Returns version governance metadata and all version summaries, without
+     * <p>管理端获取治理元数据与各版本摘要，不含具体版本正文。</p>
      * specific version content. Mirrors {@code SkillOperationService#getSkillDetail(String, String)}.
      *
      * @param namespaceId namespace ID
@@ -58,6 +61,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Get agentspec version detail for admin usage. Returns full agentspec content for a specific version, used for
+     * <p>管理端获取指定版本的完整 AgentSpec 内容，用于查看或编辑。</p>
      * viewing or editing. Mirrors {@code SkillOperationService#getSkillVersionDetail(String, String, String)}.
      *
      * @param namespaceId namespace ID
@@ -71,6 +75,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Get agentspec version metadata without resource content. Returns the agentspec main content and resource list
+     * <p>获取版本元数据与资源名/类型列表，跳过资源文件 IO。</p>
      * (name + type only), skipping resource file IO entirely.
      *
      * @param namespaceId namespace ID
@@ -84,6 +89,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Delete agentspec.
+     * <p>删除整个 AgentSpec 资源。</p>
      *
      * @param namespaceId namespace ID
      * @param agentSpecName agentspec name
@@ -93,6 +99,7 @@ public interface AgentSpecOperationService {
     
     /**
      * List agentspecs with pagination for admin usage. Returns full governance metadata.
+     * <p>管理端分页列出 AgentSpec，含完整治理元数据。</p>
      *
      * @param namespaceId namespace ID
      * @param agentSpecName agentspec name (for search)
@@ -108,6 +115,7 @@ public interface AgentSpecOperationService {
     
     /**
      * List agentspecs with pagination, optional ordering, and additional filter criteria for admin usage.
+     * <p>扩展分页列表：支持 orderBy、owner、scope 过滤，参数全空时与基础 list 行为一致。</p>
      *
      * <p>Backward-compatible: when {@code orderBy}, {@code owner} and {@code scope} are all {@code null}/empty,
      * the behaviour is identical to
@@ -133,6 +141,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Upload agentspec from zip file.
+     * <p>从 ZIP 上传 AgentSpec（默认不覆盖已有草稿）。</p>
      *
      * @param namespaceId namespace ID
      * @param zipBytes zip file bytes
@@ -150,6 +159,7 @@ public interface AgentSpecOperationService {
      * @param namespaceId namespace ID
      * @param zipBytes zip file bytes
      * @param overwrite whether to overwrite the current editable draft when the agentspec already exists
+     * <p>已存在时是否覆盖当前可编辑草稿。</p>
      * @return agentspec name
      * @throws NacosException if upload failed
      */
@@ -158,6 +168,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Bootstrap agentspec from zip file as an online agentspec.
+     * <p>从 ZIP 引导内置 AgentSpec 为在线状态，跳过草稿/流水线。</p>
      *
      * <p>This is intended for server-side built-in data initialization and bypasses draft/pipeline flow.</p>
      *
@@ -174,6 +185,7 @@ public interface AgentSpecOperationService {
      * @param zipBytes zip file bytes
      * @param from source identifier, e.g. github.com/nacos
      * @throws NacosException if bootstrap failed
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     default void bootstrapAgentSpecFromZip(String namespaceId, byte[] zipBytes, String from)
         throws NacosException {
@@ -182,6 +194,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Search agentspecs for runtime client usage. Only returns enabled agentspecs that have at least one online
+     * <p>客户端运行时搜索：仅返回已启用且至少有一个在线版本的 AgentSpec 摘要。</p>
      * version. Returns only name and description for client consumption.
      *
      * @param namespaceId namespace ID
@@ -197,6 +210,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Query agentspec for runtime client usage. Priority: label > version > latest(label).
+     * <p>客户端查询 AgentSpec，解析优先级：label &gt; version &gt; latest(label)。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -210,6 +224,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Query agentspec for client listener path with MD5-based not-modified semantics.
+     * <p>客户端长轮询查询：clientMd5 匹配时返回 notModified，控制器可回 304。</p>
      *
      * <p>When {@code clientMd5} is non-blank and equals the published content MD5 of the
      * resolved version, the returned result has {@link AgentSpecQueryResult#isNotModified()}
@@ -229,6 +244,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Create a new draft version based on latest or specified version.
+     * <p>基于 latest 或指定版本创建新草稿。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -242,6 +258,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Update existing draft content.
+     * <p>更新当前草稿版本的完整 AgentSpec 内容。</p>
      *
      * @param namespaceId namespace ID
      * @param draftAgentSpec full agentspec content to write into draft
@@ -251,6 +268,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Delete current draft and release working pointer.
+     * <p>删除当前草稿并释放 working 指针。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -260,6 +278,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Submit a draft version for publish. If no pipeline plugins configured, will directly publish.
+     * <p>提交草稿进入发布流程；无流水线插件时直接发布。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -271,6 +290,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Publish a reviewing version. Must have pipeline all passed when pipeline exists.
+     * <p>发布审核中版本；存在流水线时需全部节点通过。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -283,6 +303,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Force-publish an agentspec version, bypassing pipeline validation.
+     * <p>强制发布指定版本，跳过流水线校验；仅管理员可用。</p>
      * Accepts draft, reviewing, and reviewed versions.
      * Should only be invoked by admin users.
      *
@@ -296,6 +317,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Re-edit a reviewed version, transitioning it back to draft.
+     * <p>将已审核版本退回草稿状态以便重新编辑。</p>
      *
      * @param namespaceId namespace ID
      * @param name        agentspec name
@@ -306,6 +328,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Update labels mapping (label -> version) without changing any version status.
+     * <p>更新 label→version 映射，不改变各版本状态。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -317,6 +340,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Update agentspec biz tags JSON.
+     * <p>更新 AgentSpec 业务标签 JSON。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -327,6 +351,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Online/offline operation.
+     * <p>上线/下线：scope 为 agentspec 时全局启停，否则针对指定版本。</p>
      *
      * @param namespaceId namespace ID
      * @param name agentspec name
@@ -341,6 +366,7 @@ public interface AgentSpecOperationService {
     
     /**
      * Update agentspec visibility scope (PUBLIC or PRIVATE). Only the owner or users with explicit write permission
+     * <p>更新可见性 scope（PUBLIC/PRIVATE）；仅 owner 或有写权限用户可操作。</p>
      * can change the scope.
      *
      * @param namespaceId namespace ID

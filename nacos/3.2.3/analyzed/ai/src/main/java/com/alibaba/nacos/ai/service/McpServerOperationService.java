@@ -79,6 +79,7 @@ import static com.alibaba.nacos.ai.utils.McpConfigUtils.buildMcpServerVersionCon
  * {@link McpServerVersionInfo} 2. mcp server description for specified version {@link McpServerDetailInfo} 3. mcp tools
  * info {@link McpToolSpecification} when create the mcp server, we will tag the {@link McpServerVersionInfo} with mcp
  * servername for name fuzzy search.
+ * <p>MCP 服务核心操作服务：通过多份 Config（版本信息、服务描述、工具/资源规格）管理 MCP 服务全生命周期。</p>
  *
  * @author xiweng.yy
  */
@@ -87,18 +88,25 @@ public class McpServerOperationService {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(McpServerOperationService.class);
     
+    /** 配置查询链。 */
     private final ConfigQueryChainService configQueryChainService;
     
+    /** 配置发布与删除。 */
     private final ConfigOperationService configOperationService;
     
+    /** MCP 工具规格读写。 */
     private final McpToolOperationService toolOperationService;
     
+    /** MCP 资源规格读写。 */
     private final McpResourceOperationService resourceOperationService;
     
+    /** MCP Endpoint Naming 服务管理。 */
     private final McpEndpointOperationService endpointOperationService;
     
+    /** MCP 服务名称/ID 索引，支持模糊分页查询。 */
     private final McpServerIndex mcpServerIndex;
     
+    /** 配置异步落盘后的同步等待服务。 */
     private final SyncEffectService syncEffectService;
     
     public McpServerOperationService(ConfigQueryChainService configQueryChainService,
@@ -117,6 +125,7 @@ public class McpServerOperationService {
     
     /**
      * List mcp server.
+     * <p>分页列出 MCP 服务基本信息，支持按名称模糊或精确搜索。</p>
      *
      * @param namespaceId namespace id of mcp servers
      * @param mcpName     mcp name pattern, if null or empty, filter all mcp servers.
@@ -165,6 +174,7 @@ public class McpServerOperationService {
     
     /**
      * Get specified mcp server detail info. mcpServerId or namespaceId + mcpServerName is needed.
+     * <p>获取 MCP 服务完整详情：版本信息、工具/资源规格及前后端 Endpoint。</p>
      *
      * @param namespaceId namespace id of mcp server
      * @param mcpServerId id of mcp server
@@ -246,6 +256,7 @@ public class McpServerOperationService {
         return JacksonUtils.toObj(response.getContent(), McpServerVersionInfo.class);
     }
     
+    /** 向详情注入后端与前端 Endpoint 实例列表。 */
     private void injectEndpoint(McpServerDetailInfo detailInfo) throws NacosException {
         injectBackendEndpointRef(detailInfo);
         injectFrontendEndpointRef(detailInfo);
@@ -344,6 +355,7 @@ public class McpServerOperationService {
     
     /**
      * Create new mcp server.
+     * <p>创建新 MCP 服务（不含资源规格重载）。</p>
      *
      * @param namespaceId           namespace id of mcp server
      * @param serverSpecification   mcp server specification, see {@link McpServerBasicInfo}
@@ -360,6 +372,7 @@ public class McpServerOperationService {
     
     /**
      * Create new mcp server with resource specification.
+     * <p>创建 MCP 服务并写入版本信息、服务描述、工具/资源与 Endpoint 配置。</p>
      *
      * @param namespaceId namespace id of mcp server
      * @param serverSpecification mcp server specification
@@ -438,7 +451,7 @@ public class McpServerOperationService {
         configOperationService.publishConfig(configForm, configRequestInfo, null);
         syncEffectService.toSync(configForm, startOperationTime);
         
-        // Delete the relevant cache after a successful database operation
+        // 数据库操作成功后失效相关索引缓存
         invalidateCacheAfterDbOperation(namespaceId, serverSpecification.getName(), id);
         AiResourceTraceService.logSuccess("mcp", serverSpecification.getName(),
             versionDetail.getVersion(), AiResourceTraceService.OP_CREATE_DRAFT,
@@ -465,6 +478,7 @@ public class McpServerOperationService {
     
     /**
      * Update existed mcp server.
+     * <p>更新已有 MCP 服务；namespaceId 与 mcpServerId 不可变更。</p>
      *
      * <p>
      * `namespaceId` and `mcpServerId` can't be changed.
@@ -489,6 +503,7 @@ public class McpServerOperationService {
     
     /**
      * Update current mcp server specification, tools, resources and endpoint information.
+     * <p>更新服务描述、工具/资源规格与 Endpoint；可选发布为最新版本。</p>
      *
      * @param namespaceId           namespace id of mcp server, used to mark which mcp server to update
      * @param isPublish             whether publish latest version after update
@@ -590,6 +605,7 @@ public class McpServerOperationService {
     
     /**
      * Delete existed mcp server.
+     * <p>删除 MCP 服务：可指定单版本或全部版本，并清理工具/资源/Endpoint 配置。</p>
      *
      * @param namespaceId namespace id of mcp server
      * @param mcpServerId name of mcp server
@@ -648,6 +664,7 @@ public class McpServerOperationService {
             VisibilityHelper.resolveCurrentIdentity(), VisibilityHelper.resolveClientIp());
     }
     
+    /** 删除版本后重选 latest 标记与最新发布版本。 */
     private void electLatestMcpServerVersion(McpServerVersionInfo mcpServerVersionInfo) {
         List<ServerVersionDetail> versionDetails = mcpServerVersionInfo.getVersionDetails();
         if (CollectionUtils.isEmpty(versionDetails)) {
@@ -679,6 +696,7 @@ public class McpServerOperationService {
         mcpServerVersionInfo.setVersions(versionDetails);
     }
     
+    /** 注入工具/资源规格引用与 Endpoint 服务引用到存储模型。 */
     private void injectMcpDescriptionsAndEndpoint(String namespaceId, String mcpServerId,
         McpServerStorageInfo serverSpecification, McpToolSpecification toolSpecification,
         McpResourceSpecification resourceSpecification, McpEndpointSpec endpointSpecification,
@@ -815,6 +833,7 @@ public class McpServerOperationService {
         return versionInfo;
     }
     
+    /** 解析 MCP 服务 ID：优先使用传入 ID，否则按名称查索引。 */
     private String resolveMcpServerId(String namespaceId, String serverName, String serverId) {
         if (StringUtils.isNotEmpty(serverId)) {
             return serverId;
@@ -830,6 +849,7 @@ public class McpServerOperationService {
     
     /**
      * Invalidate cache after update mcp server operation.
+     * <p>更新后失效缓存：名称变更时同时清除旧名与新名索引。</p>
      *
      * @param namespaceId namespace id of mcp server
      * @param oldMcpName  old mcp server name
@@ -861,6 +881,7 @@ public class McpServerOperationService {
     
     /**
      * Unified cache invalidation method.
+     * <p>统一缓存失效：按服务名与 ID 移除索引条目。</p>
      *
      * @param namespaceId namespace ID
      * @param mcpName     MCP server name

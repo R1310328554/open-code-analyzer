@@ -21,16 +21,18 @@ import org.springframework.stereotype.Component;
 
 /**
  * The Holder of {@link AgentIdCodec}.
+ * <p>{@link AgentIdCodec} 的 Spring 持有者，无自定义 Bean 时默认 {@link AsciiAgentIdCodec}。</p>
  *
  * @author xiweng.yy
  */
 @Component
 public class AgentIdCodecHolder {
     
+    /** 实际使用的 Agent ID 编解码器。 */
     private final AgentIdCodec agentIdCodec;
     
     public AgentIdCodecHolder(ObjectProvider<AgentIdCodec> agentIdCodecsProvider) {
-        this.agentIdCodec = agentIdCodecsProvider.getIfAvailable(AsciiAgentIdCodec::new);
+        this.agentIdCodec = agentIdCodecsProvider.getIfAvailable(AsciiAgentIdCodec::new); // 缺省 ASCII 实现
     }
     
     /**
@@ -38,6 +40,7 @@ public class AgentIdCodecHolder {
      *
      * @param agentName agent name
      * @return identity encoded from agent name
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     public String encode(String agentName) {
         return agentIdCodec.encode(agentName);
@@ -48,6 +51,7 @@ public class AgentIdCodecHolder {
      *
      * @param agentName agent name
      * @return identity encoded from agent name
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     public String encodeForSearch(String agentName) {
         return agentIdCodec.encodeForSearch(agentName);
@@ -58,6 +62,7 @@ public class AgentIdCodecHolder {
      *
      * @param agentId agent identity
      * @return agent name
+      * <p>Nacos AI 模块 API；详见上方英文说明。</p>
      */
     public String decode(String agentId) {
         return agentIdCodec.decode(agentId);

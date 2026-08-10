@@ -34,14 +34,17 @@ import org.springframework.stereotype.Service;
 
 /**
  * Nacos AI MCP resource operation service.
+ * <p>MCP 服务资源规格的配置读写服务：将 {@link McpResourceSpecification} 持久化为 Config 并支持查询与删除。</p>
  *
  * @author xiweng.yy
  */
 @Service
 public class McpResourceOperationService {
     
+    /** 配置查询链，用于按 dataId 读取资源规格。 */
     private final ConfigQueryChainService configQueryChainService;
     
+    /** 配置发布/删除操作入口。 */
     private final ConfigOperationService configOperationService;
     
     public McpResourceOperationService(ConfigQueryChainService configQueryChainService,
@@ -52,6 +55,7 @@ public class McpResourceOperationService {
     
     /**
      * Create or update mcp server resources. If mcp server resources already exist, will fully replace it.
+     * <p>创建或全量更新 MCP 资源规格配置；已存在时整份替换。</p>
      *
      * @param namespaceId namespace id of mcp server
      * @param serverBasicInfo mcp server basic info
@@ -66,6 +70,7 @@ public class McpResourceOperationService {
         configOperationService.publishConfig(resourceConfigForm, configRequestInfo, null);
     }
     
+    /** 按资源描述引用 dataId 查询 MCP 资源规格；不存在返回 null。 */
     public McpResourceSpecification getMcpResource(String namespaceId,
         String resourceDescriptionRef) {
         ConfigQueryChainRequest request =
@@ -77,7 +82,8 @@ public class McpResourceOperationService {
         return transferToMcpServerResource(response);
     }
     
-    /** Delete MCP resource specification. */
+    /** Delete MCP resource specification.
+     * <p>删除指定 MCP 服务版本的资源规格 Config。</p> */
     public void deleteMcpResource(String namespaceId, String mcpServerId, String version)
         throws NacosException {
         configOperationService.deleteConfig(
@@ -85,6 +91,7 @@ public class McpResourceOperationService {
             Constants.MCP_SERVER_RESOURCE_GROUP, namespaceId, null, null, "nacos", null);
     }
     
+    /** 组装 MCP 资源规格的 ConfigFormV3（JSON 内容、分组与 dataId）。 */
     private ConfigFormV3 buildMcpResourceConfigForm(String namespaceId,
         McpServerBasicInfo mcpServerBasicInfo,
         McpResourceSpecification resourceSpecification) {
@@ -104,6 +111,7 @@ public class McpResourceOperationService {
         return configFormV3;
     }
     
+    /** 构造按 resourceDescriptionRef 查询资源规格的配置链请求。 */
     private ConfigQueryChainRequest buildQueryMcpResourceRequest(String namespaceId,
         String resourceDescriptionRef) {
         ConfigQueryChainRequest request = new ConfigQueryChainRequest();
@@ -113,6 +121,7 @@ public class McpResourceOperationService {
         return request;
     }
     
+    /** 将配置查询响应 JSON 反序列化为 {@link McpResourceSpecification}。 */
     private McpResourceSpecification transferToMcpServerResource(
         ConfigQueryChainResponse response) {
         return JacksonUtils.toObj(response.getContent(), new TypeReference<>() {

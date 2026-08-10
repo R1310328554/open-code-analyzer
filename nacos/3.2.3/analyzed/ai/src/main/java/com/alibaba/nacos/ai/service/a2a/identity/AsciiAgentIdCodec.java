@@ -27,17 +27,21 @@ import java.util.Set;
  * <p>
  *     Only consider show-able ASCII code from 32(x20) to 126(x7E).
  * </p>
+ * <p>基于 ASCII 的 Agent ID 编解码：非法字符转为 _NNN 三位数字转义，前缀 ____:</p>
  *
  * @author xiweng.yy
  */
 public class AsciiAgentIdCodec implements AgentIdCodec {
     
+    /** 已编码 identity 的前缀标记。 */
     private static final String ENCODE_PREFIX = "____:";
     
+    /** 转义标记字符。 */
     private static final char ENCODE_MARK_CHAR = '_';
     
     /**
      * Come From {@link ParamUtils#validChars} and remove {@link #ENCODE_MARK_CHAR}.
+     * <p>无需转义的合法字符集合（源自 ParamUtils，排除下划线）。</p>
      */
     private static final Set<Character> VALID_CHAR = Set.of('-', '.', ':');
     
@@ -50,8 +54,8 @@ public class AsciiAgentIdCodec implements AgentIdCodec {
         StringBuilder sb = new StringBuilder(ENCODE_PREFIX);
         for (char ch : agentName.toCharArray()) {
             if (Character.isLetter(ch) || VALID_CHAR.contains(ch)) {
-                // Keep letters, valid characters and non-underscores
-                // number should be encoded, because the encoded result will contain numbers
+                // 字母与合法字符原样保留；数字需编码以免干扰搜索
+                // 数字也编码，避免编码结果含数字导致模糊搜索误匹配
                 // which will cause search agentName contains unexpected results.
                 sb.append(ch);
             } else {
@@ -93,6 +97,7 @@ public class AsciiAgentIdCodec implements AgentIdCodec {
         return sb.toString();
     }
     
+    /** 判断是否为三位数字转义段。 */
     private boolean isDigit(String s) {
         for (char c : s.toCharArray()) {
             if (!Character.isDigit(c)) {
@@ -102,10 +107,12 @@ public class AsciiAgentIdCodec implements AgentIdCodec {
         return s.length() == 3;
     }
     
+    /** 判断是否已带 ENCODE_PREFIX 前缀。 */
     private boolean isEncoded(String name) {
         return name != null && name.startsWith(ENCODE_PREFIX);
     }
     
+    /** 判断名称是否含需转义的非字母合法字符。 */
     private boolean isNeedEncoded(String name) {
         if (StringUtils.isEmpty(name)) {
             return false;

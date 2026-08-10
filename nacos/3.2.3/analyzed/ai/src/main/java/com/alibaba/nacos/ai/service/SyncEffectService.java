@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
  *     Nacos Mcp server or Agent will be written to Nacos configuration, and the configuration dump to local is async and need time.
  *     This service is used to adapt and transfer async dump to sync dump.
  * </p>
+ * <p>MCP/Agent 配置写入后异步落盘，本接口将异步 dump 适配为可等待的同步语义。</p>
  *
  * @author xiweng.yy
  */
@@ -34,6 +35,7 @@ public interface SyncEffectService {
     
     /**
      * Transfer Async mcp server operation to sync with 200 milliseconds timeout.
+     * <p>默认等待 200 毫秒，使配置变更近似同步生效。</p>
      *
      * @param configForm        mcp server configuration changed form
      * @param startTimeStamp    start time of operation mcp server.
@@ -44,6 +46,7 @@ public interface SyncEffectService {
     
     /**
      * Transfer Async mcp server operation to sync.
+     * <p>在指定超时内等待配置异步落盘完成。</p>
      *
      * @param configForm        mcp server configuration changed form
      * @param startTimeStamp    start time of operation mcp server.

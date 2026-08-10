@@ -24,6 +24,7 @@ package com.alibaba.nacos.ai.service.a2a.identity;
  *     So when storage in Nacos, it should be match some word limits.
  *     We need to encode and decode agent name as the identity to do storage.
  * </p>
+ * <p>Agent 名称编解码 SPI：存储前将用户自定义名称编码为符合 Config 规则的 identity。</p>
  *
  * @author xiweng.yy
  */
@@ -31,6 +32,7 @@ public interface AgentIdCodec {
     
     /**
      * Encode agent name to identity.
+     * <p>将 Agent 名称编码为存储用 identity（含必要前缀）。</p>
      *
      * @param agentName agent name
      * @return identity encoded from agent name
@@ -39,6 +41,7 @@ public interface AgentIdCodec {
     
     /**
      * Encode agent name to identity for search, which means only do encode value without any prefix and suffix, used to do blur search.
+     * <p>为模糊搜索编码名称：仅编码主体、不含前缀后缀。</p>
      *
      * @param agentName agent name
      * @return identity encoded from agent name
@@ -47,6 +50,7 @@ public interface AgentIdCodec {
     
     /**
      * Decode agent id to agent name.
+     * <p>将 storage identity 解码还原为 Agent 名称。</p>
      *
      * @param agentId agent identity
      * @return agent name

@@ -35,14 +35,17 @@ import org.springframework.stereotype.Service;
 
 /**
  * Nacos AI MCP tool operation service.
+ * <p>MCP 服务工具规格的配置读写服务：持久化 {@link McpToolSpecification} 并支持查询与删除。</p>
  *
  * @author xiweng.yy
  */
 @Service
 public class McpToolOperationService {
     
+    /** 配置查询链。 */
     private final ConfigQueryChainService configQueryChainService;
     
+    /** 配置发布与删除。 */
     private final ConfigOperationService configOperationService;
     
     public McpToolOperationService(ConfigQueryChainService configQueryChainService,
@@ -53,6 +56,7 @@ public class McpToolOperationService {
     
     /**
      * Create or Update mcp server tool. If mcp server tool already exist, will full replace it.
+     * <p>创建或全量更新 MCP 工具规格 Config；已存在时整份替换。</p>
      *
      * @param namespaceId       namespace id of mcp server
      * @param toolSpecification mcp server included tools, see {@link McpTool}, optional
@@ -67,6 +71,7 @@ public class McpToolOperationService {
         configOperationService.publishConfig(toolConfigForm, configRequestInfo, null);
     }
     
+    /** 按 toolsDescriptionRef dataId 查询工具规格；不存在返回 null。 */
     public McpToolSpecification getMcpTool(String namespaceId, String toolsDescriptionRef) {
         ConfigQueryChainRequest request =
             buildQueryMcpToolRequest(namespaceId, toolsDescriptionRef);
@@ -77,7 +82,8 @@ public class McpToolOperationService {
         return transferToMcpServerTool(response);
     }
     
-    /** Delete MCP tool specification. */
+    /** Delete MCP tool specification.
+     * <p>删除指定 MCP 服务版本的工具规格 Config。</p> */
     public void deleteMcpTool(String namespaceId, String mcpServerId, String version)
         throws NacosException {
         configOperationService.deleteConfig(
@@ -85,6 +91,7 @@ public class McpToolOperationService {
             Constants.MCP_SERVER_TOOL_GROUP, namespaceId, null, null, "nacos", null);
     }
     
+    /** 组装 MCP 工具规格的 ConfigFormV3。 */
     private ConfigFormV3 buildMcpToolConfigForm(String namespaceId,
         McpServerBasicInfo mcpServerBasicInfo,
         McpToolSpecification toolSpecification) {
@@ -106,6 +113,7 @@ public class McpToolOperationService {
         return configFormV3;
     }
     
+    /** 构造按 toolsDescriptionRef 查询工具规格的配置链请求。 */
     private ConfigQueryChainRequest buildQueryMcpToolRequest(String namespaceId,
         String toolsDescriptionRef) {
         ConfigQueryChainRequest request = new ConfigQueryChainRequest();
@@ -115,6 +123,7 @@ public class McpToolOperationService {
         return request;
     }
     
+    /** 将配置查询响应 JSON 反序列化为 {@link McpToolSpecification}。 */
     private McpToolSpecification transferToMcpServerTool(ConfigQueryChainResponse response) {
         return JacksonUtils.toObj(response.getContent(), new TypeReference<>() {
         });

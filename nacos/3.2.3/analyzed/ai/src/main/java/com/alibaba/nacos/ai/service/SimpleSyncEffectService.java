@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
  *     {@link com.alibaba.nacos.config.server.model.event.LocalDataChangeEvent} and then do async to sync by
  *     {@link java.util.concurrent.CountDownLatch} or {@link java.util.concurrent.Future}
  * </p>
+ * <p>{@link SyncEffectService} 的简单实现：通过 Thread.sleep 等待配置异步落盘完成。</p>
  *
  * @author xiweng.yy
  */
@@ -39,7 +40,7 @@ public class SimpleSyncEffectService implements SyncEffectService {
     public void toSync(ConfigForm configForm, long startTimeStamp, long timeout,
         TimeUnit timeUnit) {
         try {
-            Thread.sleep(timeout);
+            Thread.sleep(timeout); // 阻塞等待指定时长以近似同步效果
         } catch (InterruptedException ignored) {
         }
     }

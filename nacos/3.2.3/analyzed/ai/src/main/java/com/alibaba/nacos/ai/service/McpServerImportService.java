@@ -51,20 +51,25 @@ import java.util.Set;
 /**
  * MCP Server Import Service.
  * Handles the import logic for MCP servers from various sources.
+ * <p>从外部数据源导入 MCP 服务：校验、筛选选中项并按策略创建或覆盖已有服务。</p>
  *
  * @author WangzJi
  */
 @Service
 public class McpServerImportService {
     
+    /** MCP 缓存索引，用于判断同名服务是否已存在。 */
     private final McpCacheIndex mcpCacheIndex;
     
     private static final Logger LOG = LoggerFactory.getLogger(McpServerImportService.class);
     
+    /** 外部数据适配器，将导入请求转为 Nacos MCP 格式。 */
     private final McpExternalDataAdaptor transformService;
     
+    /** 导入前校验服务。 */
     private final McpServerValidationService validationService;
     
+    /** MCP 服务 CRUD 操作服务。 */
     private final McpServerOperationService operationService;
     
     public McpServerImportService(McpExternalDataAdaptor transformService,
@@ -79,6 +84,7 @@ public class McpServerImportService {
     
     /**
      * Validate servers for import.
+     * <p>校验导入请求：解析 importType、适配外部数据并调用批量校验。</p>
      *
      * @param namespaceId namespace ID
      * @param request     import request
@@ -112,6 +118,7 @@ public class McpServerImportService {
     
     /**
      * Execute import of MCP servers.
+     * <p>执行导入：校验通过后按 skipInvalid/overrideExisting 策略逐条导入。</p>
      *
      * @param namespaceId namespace ID
      * @param request     import request
@@ -141,6 +148,7 @@ public class McpServerImportService {
     
     /**
      * Validate transformed MCP server details.
+     * <p>对已转换的 MCP 服务详情列表执行批量校验。</p>
      *
      * @param namespaceId namespace ID
      * @param servers transformed MCP servers
@@ -155,6 +163,7 @@ public class McpServerImportService {
     
     /**
      * Import one validated MCP server item.
+     * <p>导入单条已通过校验的 MCP 服务项。</p>
      *
      * @param namespaceId namespace ID
      * @param item validated MCP server item
@@ -204,6 +213,7 @@ public class McpServerImportService {
     
     /**
      * Filter valid selected servers for import.
+     * <p>从校验结果中筛选状态为 VALID 且位于 selectedServers 列表中的项。</p>
      *
      * @param validationItems validation items
      * @param selectedServers selected server IDs
@@ -229,6 +239,7 @@ public class McpServerImportService {
     
     /**
      * Import single MCP server.
+     * <p>导入单个 MCP 服务：已存在且未开启覆盖则跳过，否则创建或更新。</p>
      *
      * @param namespaceId      namespace ID
      * @param item             validation item
@@ -242,7 +253,7 @@ public class McpServerImportService {
         result.setServerName(item.getServerName());
         result.setServerId(item.getServerId());
         try {
-            if (item.isExists() && !overrideExisting) {
+            if (item.isExists() && !overrideExisting) { // 已存在且不允许覆盖则跳过
                 result.setStatus(McpImportResultStatusEnum.SKIPPED.getName());
                 result.setConflictType("existing");
                 return result;
@@ -288,6 +299,7 @@ public class McpServerImportService {
     
     /**
      * Convert {@link McpServerDetailInfo} info to {@link McpEndpointSpec}.
+     * <p>将服务详情转为 Endpoint 规格；stdio 协议或无前端 endpoint 时返回 null。</p>
      * <p>Only keep first item in frontEndpointConfigList for endpoint spec generation.</p>
      *
      * @param server server detail info

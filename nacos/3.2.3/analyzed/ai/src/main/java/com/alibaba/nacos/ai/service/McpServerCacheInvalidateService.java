@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
  * <p>This service listens to ConfigDataChangeEvent and invalidates MCP server cache
  * when MCP-related configurations are deleted or modified. The implementation follows
  * the same pattern as AsyncNotifyService for configuration synchronization.</p>
+ * <p>监听本地配置变更事件，在 MCP 版本配置被修改或删除时使 {@link McpServerIndex} 缓存失效。</p>
  *
  * @author xinluo
  */
@@ -44,6 +45,7 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
     private static final Logger LOGGER =
         LoggerFactory.getLogger(McpServerCacheInvalidateService.class);
     
+    /** MCP 服务内存索引，失效时按 serverId 移除条目。 */
     private final McpServerIndex mcpServerIndex;
     
     @Autowired
@@ -54,11 +56,12 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
     
     /**
      * Handle ConfigDataChangeEvent to invalidate MCP server cache.
+     * <p>处理配置变更：解析 groupKey，若为 MCP 版本组则提取 serverId 并失效缓存。</p>
      *
      * @param event configuration change event
      */
     void handleConfigDataChangeEvent(LocalDataChangeEvent event) {
-        // Check if the configuration is MCP server related
+        // 判断变更是否属于 MCP 服务版本配置组
         String groupKey = event.groupKey;
         
         String[] strings = GroupKey.parseKey(groupKey);
@@ -69,14 +72,14 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
             return;
         }
         
-        // Extract server ID from dataId
+        // 从 dataId 解析 MCP 服务 ID
         String serverId = extractServerIdFromDataId(group, dataId);
         if (StringUtils.isEmpty(serverId)) {
             LOGGER.warn("Failed to extract server ID from dataId: {}, group: {}", dataId, group);
             return;
         }
         
-        // Invalidate cache
+        // 按命名空间与服务 ID 失效索引缓存
         invalidateCache(tenant, serverId);
         
         LOGGER.info(
@@ -86,6 +89,7 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
     
     /**
      * Check if the configuration group is MCP server related.
+     * <p>判断配置 group 是否为 MCP 服务版本组（mcp-server-versions）。</p>
      *
      * @param group configuration group
      * @return true if the group is MCP server related
@@ -96,6 +100,7 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
     
     /**
      * Extract server ID from dataId based on the configuration group.
+     * <p>按命名规则从 dataId 提取 serverId（版本信息后缀 -mcp-versions.json）。</p>
      *
      * <p>MCP server configurations follow these naming patterns:</p>
      * <ul>
@@ -110,7 +115,7 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
      */
     private String extractServerIdFromDataId(String group, String dataId) {
         if (Constants.MCP_SERVER_VERSIONS_GROUP.equals(group)) {
-            // Version info: remove "-mcp-versions.json" suffix
+            // 版本信息 dataId：去掉 -mcp-versions.json 后缀得 serverId
             if (StringUtils.isNotEmpty(dataId)
                 && dataId.endsWith(Constants.MCP_SERVER_VERSION_DATA_ID_SUFFIX)) {
                 return dataId.substring(0,
@@ -122,6 +127,7 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
     
     /**
      * Invalidate MCP server cache by server ID.
+     * <p>按 serverId 移除索引缓存；幂等调用，失败仅记日志不影响配置删除。</p>
      *
      * <p>This method is idempotent - calling it multiple times with the same
      * serverId will not cause any side effects.</p>
@@ -131,14 +137,14 @@ public class McpServerCacheInvalidateService extends Subscriber<LocalDataChangeE
      */
     private void invalidateCache(String namespaceId, String serverId) {
         try {
-            // Clear cache by server ID
+            // 按 ID 清除 MCP 服务索引缓存
             mcpServerIndex.removeMcpServerById(serverId);
             
             LOGGER.info("MCP Server cache invalidated successfully: namespaceId={}, serverId={}",
                 namespaceId,
                 serverId);
         } catch (Exception e) {
-            // Cache invalidation failure should not affect configuration deletion
+            // 缓存失效失败不应影响配置删除主流程
             LOGGER.error(
                 "Failed to invalidate MCP Server cache: namespaceId={}, serverId={}, error={}",
                 namespaceId,

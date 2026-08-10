@@ -38,15 +38,19 @@ import java.util.Optional;
 
 /**
  * Helper for visibility checking in AI service layer.
+ * <p>AI 服务层可见性辅助类：解析当前用户身份、过滤可读资源及校验写权限与默认 scope。</p>
  *
  * @author nacos
  */
 public class VisibilityHelper {
     
+    /** 可见性插件类型配置键。 */
     private static final String VISIBILITY_PLUGIN_TYPE_CONFIG_KEY = "nacos.plugin.visibility.type";
     
+    /** 默认可见性服务插件名。 */
     private static final String DEFAULT_VISIBILITY_SERVICE_NAME = "nacos";
     
+    /** 缓存的可见性服务名，避免重复读配置。 */
     private static volatile String cachedVisibilityServiceName;
     
     private VisibilityHelper() {
@@ -54,6 +58,7 @@ public class VisibilityHelper {
     
     /**
      * Resolve the current identity from request context using the plugin-level identity abstraction.
+     * <p>从请求上下文解析当前用户身份 ID。</p>
      */
     public static String resolveCurrentIdentity() {
         try {
@@ -68,6 +73,7 @@ public class VisibilityHelper {
     
     /**
      * Resolve current API type from auth context.
+     * <p>从鉴权上下文解析当前 API 类型。</p>
      *
      * @return api type name, empty string when absent
      */
@@ -82,6 +88,7 @@ public class VisibilityHelper {
     
     /**
      * Resolve the client IP from request context.
+     * <p>从请求上下文解析客户端源 IP。</p>
      *
      * @return client IP address, empty string when absent
      */
@@ -97,6 +104,7 @@ public class VisibilityHelper {
     
     /**
      * Filter candidate resources by read permission for current user.
+     * <p>按当前用户读权限过滤候选资源列表。</p>
      *
      * @param candidates candidate resources
      * @param <T>        filterable resource type
@@ -123,6 +131,7 @@ public class VisibilityHelper {
     
     /**
      * Check read permission for current user on the given resource.
+     * <p>判断当前用户是否对指定资源具有读权限。</p>
      *
      * @param resource the resource to check
      * @return true when readable, false otherwise
@@ -141,6 +150,7 @@ public class VisibilityHelper {
     
     /**
      * Check write permission for current user on the given resource. Throws 403 if denied.
+     * <p>校验写权限，拒绝时抛出 403 ACCESS_DENIED。</p>
      *
      * @param resource the resource to check
      * @throws NacosException if no write permission
@@ -162,6 +172,7 @@ public class VisibilityHelper {
     
     /**
      * Resolve default scope for creating a new resource, delegated to visibility plugin.
+     * <p>解析新建资源的默认可见性 scope，委托可见性插件，缺省 PRIVATE。</p>
      *
      * @param resourceType resource type, such as skill / agentspec
      * @return resolved default scope, fallback to PRIVATE
@@ -193,6 +204,7 @@ public class VisibilityHelper {
     
     /**
      * Find configured visibility service from plugin manager.
+     * <p>从插件管理器查找已配置的可见性服务实例。</p>
      *
      * @return optional visibility service
      */

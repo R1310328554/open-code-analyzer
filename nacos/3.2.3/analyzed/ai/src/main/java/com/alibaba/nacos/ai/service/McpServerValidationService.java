@@ -36,17 +36,20 @@ import java.util.Set;
 
 /**
  * MCP Server Validation Service.
+ * <p>MCP 服务导入校验服务：校验必填字段、协议合法性、批次内重复及与已有服务冲突。</p>
  *
  * @author nacos
  */
 @Service
 public class McpServerValidationService {
     
+    /** MCP 服务操作服务，用于检查同名同版本是否已存在。 */
     @Autowired
     private McpServerOperationService mcpServerOperationService;
     
     /**
      * Validate MCP servers for import.
+     * <p>批量校验待导入 MCP 服务，汇总有效/无效/重复计数与明细项。</p>
      *
      * @param namespaceId namespace ID
      * @param servers servers to validate
@@ -106,6 +109,7 @@ public class McpServerValidationService {
     
     /**
      * Validate single MCP server.
+     * <p>校验单个 MCP 服务：必填项、协议、批次重复及与线上版本冲突。</p>
      *
      * @param namespaceId namespace ID
      * @param server server to validate
@@ -123,7 +127,7 @@ public class McpServerValidationService {
         item.setServerId(server.getId());
         item.setServer(server);
         
-        // Check required fields
+        // 校验名称、协议、描述等必填字段
         if (StringUtils.isBlank(serverName)) {
             errors.add("Server name is required");
         }
@@ -138,7 +142,7 @@ public class McpServerValidationService {
             errors.add("Description is required");
         }
         
-        // Check for duplicates in current batch
+        // 检查当前导入批次内名称+版本是否重复
         if (existingNames.contains(serverName + server.getVersionDetail().getVersion())) {
             errors.add("Duplicate server name in import batch: " + serverName);
             item.setStatus(McpServerValidationConstants.STATUS_DUPLICATE);
@@ -159,10 +163,10 @@ public class McpServerValidationService {
             errors.add("Error checking existing server: " + e.getMessage());
         }
         
-        // Validate protocol-specific configurations
+        // 按协议类型校验本地/远程配置与工具规格
         validateProtocolSpecificConfig(server, errors);
         
-        // Set validation status
+        // 根据错误列表设置 VALID/INVALID/DUPLICATE 状态
         if (errors.isEmpty()) {
             item.setStatus(McpServerValidationConstants.STATUS_VALID);
         } else if (!McpServerValidationConstants.STATUS_DUPLICATE.equals(item.getStatus())) {
@@ -189,6 +193,7 @@ public class McpServerValidationService {
     
     /**
      * Check if protocol is valid.
+     * <p>判断协议是否为支持的 MCP 协议（stdio/sse/streamable/http/dubbo）。</p>
      *
      * @param protocol protocol to check
      * @return true if valid
@@ -203,6 +208,7 @@ public class McpServerValidationService {
     
     /**
      * Validate protocol-specific configurations.
+     * <p>按协议校验：stdio 需本地配置或 packages；其他协议需 remoteServerConfig。</p>
      *
      * @param server server to validate
      * @param errors error list to append to
@@ -211,20 +217,20 @@ public class McpServerValidationService {
         String protocol = server.getProtocol();
         
         if (AiConstants.Mcp.MCP_PROTOCOL_STDIO.equals(protocol)) {
-            // For stdio protocol, check if command is provided
+            // stdio 协议需 localServerConfig 或 packages
             if (server.getLocalServerConfig() == null
                 && CollectionUtils.isEmpty(server.getPackages())) {
                 errors
                     .add("Local server configuration or packages are required for stdio protocol");
             }
         } else {
-            // For non-stdio protocols, basic validation
+            // 非 stdio 协议需 remoteServerConfig
             if (server.getRemoteServerConfig() == null) {
                 errors.add("Remote server configuration is required for " + protocol + " protocol");
             }
         }
         
-        // Validate tools if present
+        // 若含工具规格，至少需定义一个 tool
         if (server.getToolSpec() != null) {
             if (server.getToolSpec().getTools() == null
                 || server.getToolSpec().getTools().isEmpty()) {

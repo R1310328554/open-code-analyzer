@@ -58,22 +58,29 @@ import static com.alibaba.nacos.ai.constant.Constants.A2A.AGENT_VERSION_GROUP;
 
 /**
  * A2a server operation service.
+ * <p>A2A Agent 卡片操作服务：注册/更新/删除/查询 Agent，配置持久化与 Endpoint 注入。</p>
  *
  * @author KiteSoar
  */
 @org.springframework.stereotype.Service
 public class A2aServerOperationService {
     
+    /** 配置查询链。 */
     private final ConfigQueryChainService configQueryChainService;
     
+    /** 配置发布与删除。 */
     private final ConfigOperationService configOperationService;
     
+    /** 配置详情分页查询。 */
     private final ConfigDetailService configDetailService;
     
+    /** 配置落盘同步等待。 */
     private final SyncEffectService syncEffectService;
     
+    /** Naming 服务存储，用于注入 Endpoint 实例。 */
     private final ServiceStorage serviceStorage;
     
+    /** Agent 名称编解码，用于 Config dataId。 */
     private final AgentIdCodecHolder agentIdCodecHolder;
     
     public A2aServerOperationService(ConfigQueryChainService configQueryChainService,
@@ -90,6 +97,7 @@ public class A2aServerOperationService {
     
     /**
      * Register agent.
+     * <p>注册 Agent：写入版本信息与 Agent 卡片详情 Config，并等待同步生效。</p>
      *
      * @param agentCard agent card
      * @throws NacosException nacos exception
@@ -97,7 +105,7 @@ public class A2aServerOperationService {
     public void registerAgent(AgentCard agentCard, String namespaceId, String registrationType)
         throws NacosException {
         try {
-            // 1. register agent's info
+            // 1. 发布 Agent 版本汇总信息
             AgentCardVersionInfo agentCardVersionInfo =
                 AgentCardUtil.buildAgentCardVersionInfo(agentCard,
                     registrationType, true);
@@ -107,7 +115,7 @@ public class A2aServerOperationService {
             versionConfigRequest.setUpdateForExist(Boolean.FALSE);
             configOperationService.publishConfig(configForm, versionConfigRequest, null);
             
-            // 2. register agent's version info
+            // 2. 发布指定版本的 Agent 卡片详情
             AgentCardDetailInfo agentCardDetailInfo =
                 AgentCardUtil.buildAgentCardDetailInfo(agentCard,
                     registrationType);
@@ -130,6 +138,7 @@ public class A2aServerOperationService {
     
     /**
      * Delete agent.
+     * <p>删除 Agent：可指定单版本或全部版本及版本汇总信息。</p>
      *
      * @param namespaceId   namespaceId of  agent
      * @param agentName     agent name
@@ -155,7 +164,7 @@ public class A2aServerOperationService {
             agentCardVersionInfo.getVersionDetails().stream().map(AgentVersionDetail::getVersion)
                 .toList();
         
-        // 1. If version is specified, only delete the corresponding version of the agent
+        // 1. 指定版本时仅删除该版本 Config 并更新版本列表
         if (StringUtils.isNotEmpty(version)) {
             String versionDataId = encodedName + "-" + version;
             configOperationService.deleteConfig(versionDataId, AGENT_VERSION_GROUP, namespaceId,
@@ -185,7 +194,7 @@ public class A2aServerOperationService {
                 configOperationService.publishConfig(updateForm, configRequestInfo, null);
             }
         } else {
-            // 2. If no version specified, delete all versions and agent information
+            // 2. 未指定版本时删除全部版本 Config 与 Agent 汇总信息
             for (String each : allVersions) {
                 String versionDataId = encodedName + "-" + each;
                 configOperationService.deleteConfig(versionDataId, AGENT_VERSION_GROUP, namespaceId,
@@ -202,6 +211,7 @@ public class A2aServerOperationService {
             VisibilityHelper.resolveCurrentIdentity(), VisibilityHelper.resolveClientIp());
     }
     
+    /** 删除 latest 版本后重选最新发布版本。 */
     private void electLatestAgentVersion(AgentCardVersionInfo agentCardVersionInfo) {
         List<AgentVersionDetail> versionDetails = agentCardVersionInfo.getVersionDetails();
         if (versionDetails == null || versionDetails.isEmpty()) {
@@ -219,6 +229,7 @@ public class A2aServerOperationService {
     
     /**
      * Update agent card.
+     * <p>更新 Agent 卡片：可新增版本、切换 registrationType 及设为 latest。</p>
      *
      * @param agentCard         the new agent card information
      * @param namespaceId       namespace id
@@ -232,7 +243,7 @@ public class A2aServerOperationService {
         final AgentCardVersionInfo existingAgentInfo =
             queryAgentCardVersionInfo(namespaceId, agentCard.getName());
         
-        // Check if the version exists, if not exist, add new version into version info
+        // 版本不存在则追加到版本列表
         boolean versionExisted = existingAgentInfo.getVersionDetails().stream().anyMatch(
             agentVersionDetail -> StringUtils.equals(agentVersionDetail.getVersion(),
                 agentCard.getVersion()));
@@ -241,7 +252,7 @@ public class A2aServerOperationService {
                 .add(AgentCardUtil.buildAgentVersionDetail(agentCard, setAsLatest));
         }
         
-        // If input new registrationType is empty, use existed registrationType.
+        // registrationType 为空时沿用已有值
         if (StringUtils.isEmpty(registrationType)) {
             registrationType = existingAgentInfo.getRegistrationType();
         }
@@ -267,13 +278,13 @@ public class A2aServerOperationService {
             existingAgentInfo.setVersionDetails(updatedVersionDetails);
         }
         
-        // Update agent version info
+        // 更新 Agent 版本汇总 Config
         ConfigForm configForm = transferVersionInfoToConfigForm(existingAgentInfo, namespaceId);
         ConfigRequestInfo configRequestInfo = new ConfigRequestInfo();
         configRequestInfo.setUpdateForExist(Boolean.TRUE);
         configOperationService.publishConfig(configForm, configRequestInfo, null);
         
-        // Update agent info
+        // 更新 Agent 卡片详情 Config
         ConfigForm versionConfigForm =
             transferAgentInfoToConfigForm(agentCardDetailInfo, namespaceId);
         ConfigRequestInfo versionConfigRequestInfo = new ConfigRequestInfo();
@@ -290,6 +301,7 @@ public class A2aServerOperationService {
     
     /**
      * List agents.
+     * <p>分页列出 Agent 版本汇总信息，支持模糊或精确名称搜索。</p>
      *
      * @param namespaceId   namespace id
      * @param agentName     agent name
@@ -336,6 +348,7 @@ public class A2aServerOperationService {
     
     /**
      * List agent versions.
+     * <p>列出指定 Agent 的全部版本明细。</p>
      * @param namespaceId namespace id of target agent
      * @param name        name of target agent
      * @return agent version detail list
@@ -348,6 +361,7 @@ public class A2aServerOperationService {
     
     /**
      * Query Agent Card. If not specified version, query the latest version.
+     * <p>查询 Agent 卡片详情；未指定 version 时返回 latest 版本。</p>
      *
      * @param namespaceId   namespaceId of agent
      * @param agentName     agent name
@@ -412,6 +426,7 @@ public class A2aServerOperationService {
         return result;
     }
     
+    /** 为 SERVICE 型注册注入 Naming 中的 Endpoint 并设置 preferredTransport。 */
     private void injectEndpoint(AgentCardDetailInfo agentCard, String namespaceId)
         throws NacosApiException {
         String serviceName =
@@ -463,6 +478,7 @@ public class A2aServerOperationService {
     
     /**
      * TODO abstract a choose policy.
+     * <p>从 Endpoint 列表中随机选取一个（待抽象选择策略）。</p>
      */
     private AgentInterface randomOne(List<AgentInterface> agentInterfaces) {
         return agentInterfaces.get(ThreadLocalRandom.current().nextInt(agentInterfaces.size()));
@@ -519,7 +535,7 @@ public class A2aServerOperationService {
     
     private AgentCardVersionInfo queryAgentCardVersionInfo(String namespaceId, String name)
         throws NacosApiException {
-        // Check if the agent exists
+        // 校验 Agent 是否存在
         String actualDataId = agentIdCodecHolder.encode(name);
         ConfigQueryChainRequest request =
             ConfigQueryChainRequest.buildConfigQueryChainRequest(actualDataId,
