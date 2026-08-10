@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:17:04Z",
-  "files": [
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisArrayAggregator.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisBulkStringAggregator.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisCodecException.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisCodecUtil.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisConstants.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisDecoder.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisEncoder.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisMessage.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisMessagePool.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/RedisMessageType.java",
-    "codec-redis/src/main/java/io/netty/handler/codec/redis/SimpleStringRedisMessage.java",
-    "codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultLastSmtpContent.java",
-    "codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultSmtpContent.java",
-    "codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultSmtpRequest.java",
-    "codec-smtp/src/main/java/io/netty/handler/codec/smtp/DefaultSmtpResponse.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 968,
-  "done": 945
+  "done": 960
 }
