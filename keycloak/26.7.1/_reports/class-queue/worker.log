@@ -1333,3 +1333,18 @@
 2026-08-10T07:41:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserCacheInvalidationEvent.java wave46a realm/user/group cache events
 2026-08-10T07:41:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserCacheRealmInvalidationEvent.java wave46a realm/user/group cache events
 2026-08-10T07:41:35Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserConsentsUpdatedEvent.java wave46a realm/user/group cache events
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserFederationLinkRemovedEvent.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserFederationLinkUpdatedEvent.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserFullInvalidationEvent.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserUpdatedEvent.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/events/UserVerifiableCredentialsUpdatedEvent.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/CachedIdentityProvider.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/CachedIdentityProviderMapper.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/IdentityProviderListQuery.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/InfinispanIdentityProviderStorageProvider.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/idp/InfinispanIdentityProviderStorageProviderFactory.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/CachedMembership.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/CachedOrgGroupIds.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/CachedOrganization.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/CachedOrganizationIds.java wave46b user events + idp/org cache
+2026-08-10T07:42:03Z DONE model/infinispan/src/main/java/org/keycloak/models/cache/infinispan/organization/InfinispanInvitationManager.java wave46b user events + idp/org cache
