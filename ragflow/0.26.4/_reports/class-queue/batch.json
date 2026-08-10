@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T18:28:51Z",
-  "files": [
-    "internal/harness/core/middlewares/reduction/consts.go",
-    "internal/harness/core/middlewares/reduction/reduction.go",
-    "internal/harness/core/middlewares/reduction/tool_result.go",
-    "internal/harness/core/middlewares/skill/doc.go",
-    "internal/harness/core/middlewares/skill/filesystem_backend.go",
-    "internal/harness/core/middlewares/skill/skill.go",
-    "internal/harness/core/middlewares/subagent/subagent.go",
-    "internal/harness/core/middlewares/summarization/compactor.go",
-    "internal/harness/core/middlewares/summarization/consts.go",
-    "internal/harness/core/middlewares/summarization/prompt.go",
-    "internal/harness/core/middlewares/summarization/summarization.go",
-    "internal/harness/core/middlewares/telemetry/telemetry.go",
-    "internal/harness/core/model_chain.go",
-    "internal/harness/core/options.go",
-    "internal/harness/core/prebuilt/coding/coding.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 864,
-  "done": 885
+  "done": 900
 }
