@@ -26,8 +26,19 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * Jackson 反序列化器：将 JSON 字符串或字符串数组统一反序列化为 {@code String[]}。
+ */
 public class StringOrArrayDeserializer extends JsonDeserializer<Object> {
 
+    /**
+     * 单值包装为单元素数组，数组则逐元素提取 textValue。
+     *
+     * @param jsonParser JSON 解析器
+     * @param deserializationContext 反序列化上下文
+     * @return 字符串数组
+     * @throws IOException 解析失败时抛出
+     */
     @Override
     public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         JsonNode jsonNode = jsonParser.readValueAsTree();

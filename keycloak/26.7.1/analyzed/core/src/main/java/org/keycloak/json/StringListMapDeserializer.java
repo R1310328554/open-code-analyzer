@@ -30,8 +30,20 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+/**
+ * Jackson 反序列化器：将 JSON 对象解析为 {@code Map<String, List<String>>}。
+ * 每个属性值可为单个字符串或字符串数组（兼容 OIDC 声明中字符串/数组混用场景）。
+ */
 public class StringListMapDeserializer extends JsonDeserializer<Object> {
 
+    /**
+     * 遍历 JSON 对象字段，将标量或数组统一转为字符串列表。
+     *
+     * @param jsonParser JSON 解析器
+     * @param deserializationContext 反序列化上下文
+     * @return {@code Map<String, List<String>>}
+     * @throws IOException 解析失败时抛出
+     */
     @Override
     public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         JsonNode jsonNode = jsonParser.readValueAsTree();

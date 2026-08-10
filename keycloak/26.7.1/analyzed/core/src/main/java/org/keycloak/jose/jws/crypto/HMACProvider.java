@@ -30,10 +30,13 @@ import org.keycloak.jose.jws.Algorithm;
 import org.keycloak.jose.jws.JWSInput;
 
 /**
+ * HMAC 算法 JWS 签名与验签提供者：支持 HS256/HS384/HS512。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class HMACProvider implements SignatureProvider {
+    /** 将 JWS HMAC 算法映射为 JCA Mac 算法名。 */
     private static String getJavaAlgorithm(Algorithm alg) {
         switch (alg) {
             case HS256:
@@ -47,6 +50,7 @@ public class HMACProvider implements SignatureProvider {
         }
     }
 
+    /** 获取指定算法的 {@link Mac} 实例。 */
     private static Mac getMAC(final Algorithm alg) {
 
         try {
@@ -58,6 +62,14 @@ public class HMACProvider implements SignatureProvider {
         }
     }
 
+    /**
+     * 使用共享密钥字节对数据做 HMAC 签名。
+     *
+     * @param data 待签名数据
+     * @param algorithm HMAC 算法
+     * @param sharedSecret 共享密钥
+     * @return MAC 输出
+     */
     public static byte[] sign(byte[] data, Algorithm algorithm, byte[] sharedSecret) {
         try {
             Mac mac = getMAC(algorithm);
@@ -69,6 +81,14 @@ public class HMACProvider implements SignatureProvider {
         }
     }
 
+    /**
+     * 使用 {@link SecretKey} 对数据做 HMAC 签名。
+     *
+     * @param data 待签名数据
+     * @param algorithm HMAC 算法
+     * @param key 对称密钥
+     * @return MAC 输出
+     */
     public static byte[] sign(byte[] data, Algorithm algorithm, SecretKey key) {
         try {
             Mac mac = getMAC(algorithm);
@@ -80,6 +100,13 @@ public class HMACProvider implements SignatureProvider {
         }
     }
 
+    /**
+     * 使用 {@link SecretKey} 验证 JWS HMAC 签名（常量时间比较）。
+     *
+     * @param input JWS 输入
+     * @param key 对称密钥
+     * @return 验签是否通过
+     */
     public static boolean verify(JWSInput input, SecretKey key) {
         try {
             byte[] signature = sign(input.getEncodedSignatureInput().getBytes(StandardCharsets.UTF_8), input.getHeader().getAlgorithm(), key);
@@ -89,7 +116,13 @@ public class HMACProvider implements SignatureProvider {
         }
     }
 
-
+    /**
+     * 使用共享密钥字节验证 JWS HMAC 签名。
+     *
+     * @param input JWS 输入
+     * @param sharedSecret 共享密钥
+     * @return 验签是否通过
+     */
     public static boolean verify(JWSInput input, byte[] sharedSecret) {
         try {
             byte[] signature = sign(input.getEncodedSignatureInput().getBytes(StandardCharsets.UTF_8), input.getHeader().getAlgorithm(), sharedSecret);
@@ -99,6 +132,13 @@ public class HMACProvider implements SignatureProvider {
         }
     }
 
+    /**
+     * {@link SignatureProvider} 接口实现：HMAC 不支持字符串密钥验签，始终返回 false。
+     *
+     * @param input JWS 输入
+     * @param key 密钥字符串（未使用）
+     * @return false
+     */
     @Override
     public boolean verify(JWSInput input, String key) {
         return false;

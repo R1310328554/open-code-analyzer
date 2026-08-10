@@ -23,7 +23,18 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
+/**
+ * Jackson 序列化器：将 {@code String[]} 序列化为 JSON 字符串（单元素）或字符串数组（多元素）。
+ */
 public class StringOrArraySerializer extends JsonSerializer<Object> {
+    /**
+     * 单元素输出字符串，多元素输出 JSON 数组；null 输出 JSON null。
+     *
+     * @param o 待序列化的字符串数组
+     * @param jsonGenerator JSON 生成器
+     * @param serializerProvider 序列化上下文
+     * @throws IOException 写入失败时抛出
+     */
     @Override
     public void serialize(Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
         String[] array = (String[]) o;

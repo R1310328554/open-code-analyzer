@@ -27,20 +27,37 @@ import org.keycloak.util.JsonSerialization;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 /**
+ * JWS Compact 序列化输入的解析器：将 {@code header.payload[.signature]} 拆分为结构化字段。
+ * 实现 {@link JOSE}，供验签与载荷反序列化使用。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class JWSInput implements JOSE {
+    /** 原始 Compact JWS 字符串。 */
     String wireString;
+    /** Base64URL 编码的头部段。 */
     String encodedHeader;
+    /** Base64URL 编码的载荷段。 */
     String encodedContent;
+    /** Base64URL 编码的签名段（未签名 JWS 可能为空）。 */
     String encodedSignature;
+    /** 参与签名的输入：{@code encodedHeader + '.' + encodedContent}。 */
     String encodedSignatureInput;
+    /** 解析后的 JWS 头部。 */
     JWSHeader header;
+    /** 解码后的载荷字节。 */
     byte[] content;
+    /** 解码后的签名字节。 */
     byte[] signature;
 
 
+    /**
+     * 从 Compact JWS 字符串构造解析结果。
+     *
+     * @param wire Compact 序列化的 JWS
+     * @throws JWSInputException 段数非法、Base64 解码或头部 JSON 解析失败时抛出
+     */
     public JWSInput(String wire) throws JWSInputException {
         try {
             this.wireString = wire;
@@ -62,37 +79,54 @@ public class JWSInput implements JOSE {
         }
     }
 
+    /** @return 原始 Compact JWS 字符串 */
     public String getWireString() {
         return wireString;
     }
 
+    /** @return Base64URL 编码的头部段 */
     public String getEncodedHeader() {
         return encodedHeader;
     }
 
+    /** @return Base64URL 编码的载荷段 */
     public String getEncodedContent() {
         return encodedContent;
     }
 
+    /** @return Base64URL 编码的签名段 */
     public String getEncodedSignature() {
         return encodedSignature;
     }
+
+    /** @return 签名输入字符串（header.payload） */
     public String getEncodedSignatureInput() {
         return encodedSignatureInput;
     }
 
+    /** @return 解析后的 {@link JWSHeader} */
     public JWSHeader getHeader() {
         return header;
     }
 
+    /** @return 解码后的载荷字节 */
     public byte[] getContent() {
         return content;
     }
 
+    /** @return 解码后的签名字节 */
     public byte[] getSignature() {
         return signature;
     }
 
+    /**
+     * 将载荷反序列化为指定 Java 类型。
+     *
+     * @param type 目标类型
+     * @param <T> 反序列化结果类型
+     * @return 载荷对象
+     * @throws JWSInputException JSON 解析失败时抛出
+     */
     public <T> T readJsonContent(Class<T> type) throws JWSInputException {
         try {
             return JsonSerialization.readValue(content, type);
@@ -101,6 +135,14 @@ public class JWSInput implements JOSE {
         }
     }
 
+    /**
+     * 将载荷反序列化为指定泛型类型（如 {@link TypeReference}）。
+     *
+     * @param type 目标类型引用
+     * @param <T> 反序列化结果类型
+     * @return 载荷对象
+     * @throws JWSInputException JSON 解析失败时抛出
+     */
     public <T> T readJsonContent(TypeReference<T> type) throws JWSInputException {
         try {
             return JsonSerialization.readValue(content, type);
@@ -109,6 +151,7 @@ public class JWSInput implements JOSE {
         }
     }
 
+    /** @return 载荷的 UTF-8 字符串形式 */
     public String readContentAsString() {
         return new String(content, StandardCharsets.UTF_8);
     }

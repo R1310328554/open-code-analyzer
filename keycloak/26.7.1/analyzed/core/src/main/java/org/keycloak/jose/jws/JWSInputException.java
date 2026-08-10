@@ -18,17 +18,26 @@
 package org.keycloak.jose.jws;
 
 /**
+ * {@link JWSInput} 解析 Compact JWS 时抛出的异常。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class JWSInputException extends Exception {
 
+    /**
+     * @param s 异常消息
+     */
     public JWSInputException(String s) {
         super(s);
     }
 
+    /** 无参构造。 */
     public JWSInputException() {
     }
 
+    /**
+     * @param throwable 根本原因
+     */
     public JWSInputException(Throwable throwable) {
         super(throwable);
     }

@@ -20,9 +20,18 @@ package org.keycloak.jose.jws.crypto;
 import org.keycloak.jose.jws.JWSInput;
 
 /**
+ * JWS 验签 SPI：按算法族（RSA、ECDSA、HMAC 等）验证 Compact JWS 签名。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface SignatureProvider {
+    /**
+     * 验证 JWS 签名。
+     *
+     * @param input 解析后的 JWS 输入
+     * @param key 验签材料（如 PEM 证书或密钥字符串，具体语义由实现决定）
+     * @return 验签是否通过
+     */
     boolean verify(JWSInput input, String key);
 }

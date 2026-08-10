@@ -28,12 +28,20 @@ import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.jboss.logging.Logger;
 
 /**
+ * {@link ClientCredentialsProvider} 引导与 SPI 加载工具类。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ClientCredentialsProviderUtils {
 
     private static Logger logger = Logger.getLogger(ClientCredentialsProviderUtils.class);
 
+    /**
+     * 根据适配器配置选择并初始化客户端凭据提供者。
+     *
+     * @param deployment 适配器部署配置
+     * @return 已初始化的 {@link ClientCredentialsProvider}
+     */
     public static ClientCredentialsProvider bootstrapClientAuthenticator(AdapterConfig deployment) {
         String clientId = deployment.getResource();
         Map<String, Object> clientCredentials = deployment.getCredentials();
@@ -44,7 +52,7 @@ public class ClientCredentialsProviderUtils {
         } else {
             authenticatorId = (String) clientCredentials.get("provider");
             if (authenticatorId == null) {
-                // If there is just one credential type, use provider from it
+                // 若仅配置一种凭据类型，则以其键名作为 provider ID
                 if (clientCredentials.size() == 1) {
                     authenticatorId = clientCredentials.keySet().iterator().next();
                 } else {
@@ -70,6 +78,12 @@ public class ClientCredentialsProviderUtils {
         return authenticator;
     }
 
+    /**
+     * 通过 {@link ServiceLoader} 从指定类加载器加载所有 {@link ClientCredentialsProvider} 实现。
+     *
+     * @param authenticators 输出 Map（按 {@link ClientCredentialsProvider#getId()} 索引）
+     * @param classLoader 类加载器
+     */
     public static void loadAuthenticators(Map<String, ClientCredentialsProvider> authenticators, ClassLoader classLoader) {
         Iterator<ClientCredentialsProvider> iterator = ServiceLoader.load(ClientCredentialsProvider.class, classLoader).iterator();
         while (iterator.hasNext()) {
@@ -86,7 +100,12 @@ public class ClientCredentialsProviderUtils {
     }
 
     /**
-     * Use this method when calling backchannel request directly from your application. See service-account example from demo for more details
+     * 在应用内直接发起反向通道请求时使用（参见 demo 中的 service-account 示例）。
+     *
+     * @param deployment 适配器配置
+     * @param authenticator 已初始化的凭据提供者
+     * @param requestHeaders HTTP 请求头 Map
+     * @param formparams 表单参数 Map
      */
     public static void setClientCredentials(AdapterConfig deployment, ClientCredentialsProvider authenticator, Map<String, String> requestHeaders, Map<String, String> formparams) {
         authenticator.setClientCredentials(deployment, requestHeaders, formparams);

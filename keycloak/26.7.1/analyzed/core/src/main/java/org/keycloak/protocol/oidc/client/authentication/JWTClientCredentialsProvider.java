@@ -39,31 +39,43 @@ import org.keycloak.representations.JsonWebToken;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 
 /**
- * Client authentication based on JWT signed by client private key .
- * See <a href="https://tools.ietf.org/html/rfc7519">specs</a> for more details.
+ * 基于客户端私钥签名的 JWT 客户端认证（{@code private_key_jwt}）。
+ * 详见 <a href="https://tools.ietf.org/html/rfc7519">RFC 7519</a>。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
 
+    /** 提供者 ID：{@code jwt}。 */
     public static final String PROVIDER_ID = "jwt";
 
+    /** 客户端密钥对。 */
     private KeyPair keyPair;
+    /** 签名上下文。 */
     private SignatureSignerContext sigCtx;
 
+    /** 断言 JWT 有效期（秒）。 */
     private int tokenTimeout;
 
+    /** @return {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 使用默认 RS256 算法配置密钥对。 */
     public void setupKeyPair(KeyPair keyPair) {
         setupKeyPair(keyPair, Algorithm.RS256);
     }
 
+    /**
+     * 配置密钥对并创建对应算法的签名上下文。
+     *
+     * @param keyPair 客户端密钥对
+     * @param algorithm JWS 签名算法
+     */
     public void setupKeyPair(KeyPair keyPair, String algorithm) {
-        // create a key wrapper for the key pair
+        // 为密钥对创建 KeyWrapper
         KeyWrapper keyWrapper = new KeyWrapper();
         keyWrapper.setKid(KeyUtils.createKeyId(keyPair.getPublic()));
         keyWrapper.setAlgorithm(algorithm);
@@ -72,7 +84,7 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
         keyWrapper.setType(keyPair.getPublic().getAlgorithm());
         keyWrapper.setUse(KeyUse.SIG);
 
-        // check the algorithm is valid
+        // 校验算法与密钥类型匹配
         switch (JavaAlgorithm.getKeyType(keyPair.getPublic().getAlgorithm())) {
             case KeyType.RSA:
                 if (!JavaAlgorithm.isRSAJavaAlgorithm(algorithm)) {
@@ -95,22 +107,30 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
             default:
                 throw new RuntimeException("Invalid KeyPair algorithm: " + keyPair.getPublic().getAlgorithm());
         }
-        // create the key and signature context
         this.keyPair = keyPair;
     }
 
+    /** 设置断言 JWT 过期时间（秒）。 */
     public void setTokenTimeout(int tokenTimeout) {
         this.tokenTimeout = tokenTimeout;
     }
 
+    /** @return 断言 JWT 有效期（秒） */
     protected int getTokenTimeout() {
         return tokenTimeout;
     }
 
+    /** @return 客户端公钥 */
     public PublicKey getPublicKey() {
         return keyPair.getPublic();
     }
 
+    /**
+     * 从 keycloak.json 的 jwt 凭据配置加载密钥库并初始化签名上下文。
+     *
+     * @param deployment 适配器配置
+     * @param config jwt 凭据 Map（含 keystore 路径、密码、alias 等）
+     */
     @Override
     public void init(AdapterConfig deployment, Object config) {
         if (!(config instanceof Map)) {
@@ -150,7 +170,7 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
         this.tokenTimeout = asInt(cfg, "token-timeout", 10);
     }
 
-    // TODO: Generic method for this?
+    /** 从配置 Map 读取整型值，支持 String 与 Number。 */
     private Integer asInt(Map<String, Object> cfg, String cfgKey, int defaultValue) {
         Object cfgObj = cfg.get(cfgKey);
         if (cfgObj == null) {
@@ -166,6 +186,13 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
         }
     }
 
+    /**
+     * 生成 signed JWT 并写入 client_assertion 表单参数。
+     *
+     * @param deployment 适配器配置
+     * @param requestHeaders HTTP 请求头（本实现未使用）
+     * @param formParams 表单参数
+     */
     @Override
     public void setClientCredentials(AdapterConfig deployment, Map<String, String> requestHeaders, Map<String, String> formParams) {
         String signedToken = createSignedRequestToken(deployment.getResource(), deployment.getRealmInfoUrl());
@@ -174,6 +201,13 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
         formParams.put(OAuth2Constants.CLIENT_ASSERTION, signedToken);
     }
 
+    /**
+     * 构造并签名客户端断言 JWT。
+     *
+     * @param clientId 客户端 ID
+     * @param realmInfoUrl 领域信息 URL（作为 aud）
+     * @return Compact 序列化的 signed JWT
+     */
     public String createSignedRequestToken(String clientId, String realmInfoUrl) {
         JsonWebToken jwt = createRequestToken(clientId, realmInfoUrl);
         return new JWSBuilder()
@@ -181,6 +215,13 @@ public class JWTClientCredentialsProvider implements ClientCredentialsProvider {
                 .sign(sigCtx);
     }
 
+    /**
+     * 构造 client_assertion 载荷（iss/sub/aud/iat/exp/nbf/jti）。
+     *
+     * @param clientId 客户端 ID
+     * @param realmInfoUrl 受众 URL
+     * @return 未签名的 {@link JsonWebToken}
+     */
     protected JsonWebToken createRequestToken(String clientId, String realmInfoUrl) {
         JsonWebToken reqToken = new JsonWebToken();
         reqToken.id(SecretGenerator.getInstance().generateSecureID());

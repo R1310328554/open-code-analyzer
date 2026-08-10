@@ -30,10 +30,18 @@ import org.keycloak.jose.jws.Algorithm;
 import org.keycloak.jose.jws.JWSInput;
 
 /**
+ * ECDSA 算法 JWS 验签提供者：支持 ES256/ES384/ES512。
+ *
  * @author <a href="mailto:tdiesler@proton.me">Thomas Diesler</a>
  */
 public class ECDSAProvider implements SignatureProvider {
 
+    /**
+     * 将 JWS 算法枚举映射为 JCA 签名算法名。
+     *
+     * @param alg JWS 算法
+     * @return JCA 算法名（如 {@code SHA256withECDSA}）
+     */
     public static String getJavaAlgorithm(Algorithm alg) {
         switch (alg) {
             case ES256:
@@ -47,6 +55,13 @@ public class ECDSAProvider implements SignatureProvider {
         }
     }
 
+    /**
+     * 使用 EC 公钥验证 JWS 签名。
+     *
+     * @param jws 待验签的 JWS 输入
+     * @param publicKey EC 公钥
+     * @return 验签是否通过
+     */
     public static boolean verify(JWSInput jws, PublicKey publicKey) {
         String alg = jws.getHeader().getAlgorithm().name();
         try {
@@ -64,6 +79,13 @@ public class ECDSAProvider implements SignatureProvider {
 
     }
 
+    /**
+     * 通过 PEM 编码的 X.509 证书验签。
+     *
+     * @param input JWS 输入
+     * @param cert PEM 证书字符串
+     * @return 验签是否通过
+     */
     @Override
     public boolean verify(JWSInput input, String cert) {
         return verifyViaCertificate(input, cert);
@@ -71,6 +93,7 @@ public class ECDSAProvider implements SignatureProvider {
 
     // Private ---------------------------------------------------------------------------------------------------------
 
+    /** 解码证书并提取公钥后验签。 */
     private static boolean verifyViaCertificate(JWSInput input, String cert) {
         X509Certificate certificate;
         try {

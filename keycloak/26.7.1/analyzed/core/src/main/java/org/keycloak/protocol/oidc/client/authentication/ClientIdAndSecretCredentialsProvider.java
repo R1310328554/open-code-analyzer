@@ -27,7 +27,7 @@ import org.keycloak.util.BasicAuthHelper;
 import org.jboss.logging.Logger;
 
 /**
- * Traditional OAuth2 authentication of clients based on client_id and client_secret
+ * 传统 OAuth2 客户端认证：基于 client_id 与 client_secret（机密客户端用 Basic Auth，公开客户端仅传 client_id）。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -35,20 +35,36 @@ public class ClientIdAndSecretCredentialsProvider implements ClientCredentialsPr
 
     private static Logger logger = Logger.getLogger(ClientIdAndSecretCredentialsProvider.class);
 
+    /** 提供者 ID，与 {@link CredentialRepresentation#SECRET} 一致。 */
     public static final String PROVIDER_ID = CredentialRepresentation.SECRET;
 
+    /** 客户端密钥。 */
     private String clientSecret;
 
+    /** @return {@link #PROVIDER_ID} */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /**
+     * 从配置读取 client_secret。
+     *
+     * @param deployment 适配器配置
+     * @param config 密钥字符串（可为 null）
+     */
     @Override
     public void init(AdapterConfig deployment, Object config) {
         clientSecret = (config == null ? null : config.toString());
     }
 
+    /**
+     * 机密客户端写入 RFC 6749 Basic Authorization 头；公开客户端将 client_id 放入表单参数。
+     *
+     * @param deployment 适配器配置
+     * @param requestHeaders HTTP 请求头
+     * @param formParams 表单参数
+     */
     @Override
     public void setClientCredentials(AdapterConfig deployment, Map<String, String> requestHeaders, Map<String, String> formParams) {
         String clientId = deployment.getResource();

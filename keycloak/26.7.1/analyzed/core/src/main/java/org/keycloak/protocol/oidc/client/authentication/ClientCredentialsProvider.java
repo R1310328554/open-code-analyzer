@@ -22,54 +22,51 @@ import java.util.Map;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 
 /**
- * The simple SPI for authenticating clients/applications . It's used by adapter during all OIDC backchannel requests to Keycloak server
- * (codeToToken exchange, refresh token or backchannel logout) . You can also use it in your application during direct access grants or service account request
- * (See the service-account example from Keycloak demo for more info)
+ * 客户端/应用认证 SPI：适配器在向 Keycloak 发起 OIDC 反向通道请求时使用
+ * （授权码换 token、刷新 token、反向通道登出等）。也可在应用中用于直接访问授权或服务账户请求。
  *
- * When you implement this SPI on the adapter (application) side, you also need to implement org.keycloak.authentication.ClientAuthenticator on the server side,
- * so your server is able to authenticate client
+ * <p>在适配器侧实现本 SPI 时，需在服务端实现对应的 {@code org.keycloak.authentication.ClientAuthenticator}，
+ * 以便服务器能验证客户端身份。</p>
  *
- * You must specify a file
- * META-INF/services/org.keycloak.protocol.oidc.client.authentication.ClientCredentialsProvider in the WAR that this class is contained in (or in the JAR that is attached to the WEB-INF/lib or as jboss module
- * if you want to share the implementation among more WARs).
+ * <p>实现类须在本 WAR 的 {@code META-INF/services/org.keycloak.protocol.oidc.client.authentication.ClientCredentialsProvider}
+ * 中注册（或放在 WEB-INF/lib 的 JAR 中，或以 JBoss 模块形式在多个 WAR 间共享）。</p>
  *
- * NOTE: The SPI is not finished and method signatures are still subject to change in future versions (for example to support
- * authentication with client certificate)
+ * <p>注意：SPI 尚未定稿，方法签名在未来版本可能变更（例如支持客户端证书认证）。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface ClientCredentialsProvider {
 
     /**
-     * Return the ID of the provider. Use this ID in the keycloak.json configuration as the subelement of the "credentials" element
+     * 返回提供者 ID，在 keycloak.json 的 {@code credentials} 子元素中引用。
      *
-     * For example if your provider has ID "kerberos-keytab" , use the configuration like this in keycloak.json
-     *
+     * <p>例如提供者 ID 为 {@code kerberos-keytab} 时，配置示例：</p>
+     * <pre>
      * "credentials": {
-     *
      *     "kerberos-keytab": {
      *         "keytab": "/tmp/foo"
      *     }
      * }
+     * </pre>
      *
-     * @return
+     * @return 提供者唯一标识
      */
     String getId();
 
     /**
-     * Called by adapter during deployment of your application. You can for example read configuration and init your authenticator here
+     * 应用部署时由适配器调用，可在此读取配置并初始化认证器。
      *
-     * @param adapterConfig the adapter configuration
-     * @param config the configuration of your provider read from keycloak.json . For the kerberos-keytab example above, it will return map with the single key "keytab" with value "/tmp/foo"
+     * @param adapterConfig 适配器配置
+     * @param config 从 keycloak.json 读取的本提供者配置；以上述 kerberos-keytab 为例，返回含键 {@code keytab}、值 {@code /tmp/foo} 的 Map
      */
     void init(AdapterConfig adapterConfig, Object config);
 
     /**
-     * Called every time adapter needs to perform backchannel request
+     * 每次适配器发起反向通道请求时调用：向 HTTP 头或表单参数写入客户端认证凭据。
      *
-     * @param adapterConfig Fully resolved deployment
-     * @param requestHeaders You should put any HTTP request headers you want to use for authentication of client. These headers will be attached to the HTTP request sent to Keycloak server
-     * @param formParams You should put any request parameters you want to use for authentication of client. These parameters will be attached to the HTTP request sent to Keycloak server
+     * @param adapterConfig 已解析的部署配置
+     * @param requestHeaders 应写入的 HTTP 请求头，将随请求发送至 Keycloak
+     * @param formParams 应写入的表单参数，将随请求发送至 Keycloak
      */
     void setClientCredentials(AdapterConfig adapterConfig, Map<String, String> requestHeaders, Map<String, String> formParams);
 }
