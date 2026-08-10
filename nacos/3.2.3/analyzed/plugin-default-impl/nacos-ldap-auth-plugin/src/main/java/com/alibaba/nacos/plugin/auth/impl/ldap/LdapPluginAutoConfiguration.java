@@ -22,7 +22,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /**
- * LDAP plugin auto configuration.
+ * LDAP 认证插件自动配置入口。
+ *
+ * <p>在认证类型为 LDAP 时，通过 {@link LdapPluginImportSelector} 按依赖是否存在选择完整配置或降级配置。</p>
  *
  * @author xiweng.yy
  */

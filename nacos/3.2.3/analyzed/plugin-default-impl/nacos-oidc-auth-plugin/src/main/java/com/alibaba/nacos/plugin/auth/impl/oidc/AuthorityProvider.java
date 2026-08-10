@@ -21,18 +21,20 @@ import com.alibaba.nacos.plugin.auth.api.IdentityContext;
 import com.alibaba.nacos.plugin.auth.api.Permission;
 
 /**
- * Interface for authority verification.
+ * OIDC 权限校验提供者接口。
+ *
+ * <p>根据请求身份上下文与目标权限判定是否允许访问，由具体 OIDC 实现（如 {@code OidcAuthorityProvider}）完成策略逻辑。</p>
  *
  * @author WangzJi
  */
 public interface AuthorityProvider {
     
     /**
-     * Validate the authority.
+     * 校验调用方是否具备指定权限。
      *
-     * @param identityContext identity context of request
-     * @param permission      permission of request
-     * @return {@link AuthResult}
+     * @param identityContext 请求身份上下文
+     * @param permission      待校验的权限对象
+     * @return {@link AuthResult} 鉴权结果（允许或拒绝及原因）
      */
     AuthResult validateAuthority(IdentityContext identityContext, Permission permission);
 }

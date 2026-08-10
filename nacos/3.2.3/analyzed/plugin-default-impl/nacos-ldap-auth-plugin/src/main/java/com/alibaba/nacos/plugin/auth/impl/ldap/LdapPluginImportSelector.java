@@ -20,18 +20,23 @@ import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
- * LDAP plugin import selector.
+ * LDAP 插件条件导入选择器。
+ *
+ * <p>依赖齐全时导入 {@link LdapAuthPluginConfig}；缺失 spring-ldap-core 时导入 {@link LdapDependencyMissingConfiguration}。</p>
  *
  * @author xiweng.yy
  */
 public class LdapPluginImportSelector implements ImportSelector {
     
+    /** 完整 LDAP 认证配置类全名。 */
     private static final String LDAP_PLUGIN_CONFIG =
         "com.alibaba.nacos.plugin.auth.impl.ldap.LdapAuthPluginConfig";
     
+    /** 依赖缺失降级配置类全名。 */
     private static final String LDAP_MISSING_CONFIG =
         "com.alibaba.nacos.plugin.auth.impl.ldap.LdapDependencyMissingConfiguration";
     
+    /** 按运行时依赖探测结果返回待导入的配置类名数组。 */
     @Override
     public String[] selectImports(AnnotationMetadata importingClassMetadata) {
         if (LdapPluginDependencyChecker.hasRequiredDependency()) {

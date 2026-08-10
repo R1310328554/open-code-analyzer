@@ -26,13 +26,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The postgresql implementation of HistoryConfigInfoMapper.
+ * {@link HistoryConfigInfoMapper} 的 PostgreSQL 实现。
+ *
+ * <p>配置历史表 his_config_info 的过期清理与按 dataId/group/tenant 分页查询；删除语句使用 CTE 分批执行以适配 PostgreSQL 语法。</p>
  *
  * @author Long Yu
  **/
 public class HistoryConfigInfoMapperByPostgresql extends AbstractMapper
     implements HistoryConfigInfoMapper {
     
+    /** 通过 CTE 子查询分批删除早于指定时间的过期历史记录。 */
     @Override
     public MapperResult removeConfigHistory(MapperContext context) {
         String sql =
@@ -43,6 +46,7 @@ public class HistoryConfigInfoMapperByPostgresql extends AbstractMapper
                 context.getWhereParameter(FieldConstant.LIMIT_SIZE)));
     }
     
+    /** 按 dataId/group/tenant 倒序分页查询配置变更历史（OFFSET/LIMIT 分页）。 */
     @Override
     public MapperResult pageFindConfigHistoryFetchRows(MapperContext context) {
         String sql =
@@ -55,11 +59,13 @@ public class HistoryConfigInfoMapperByPostgresql extends AbstractMapper
                 context.getWhereParameter(FieldConstant.TENANT_ID)));
     }
     
+    /** 返回 PostgreSQL 数据源标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /** 按名称解析 PostgreSQL 可信 SQL 函数表达式。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedPostgresqlFunctionEnum.getFunctionByName(functionName);

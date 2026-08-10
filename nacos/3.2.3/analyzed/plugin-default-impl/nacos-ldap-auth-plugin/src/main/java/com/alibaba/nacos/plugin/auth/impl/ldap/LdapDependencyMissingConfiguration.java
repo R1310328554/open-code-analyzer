@@ -24,7 +24,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * LDAP missing dependency configuration.
+ * LDAP 运行时依赖缺失时的降级配置。
+ *
+ * <p>当 classpath 中不存在 spring-ldap-core 时，注册 {@link MissingLdapAuthenticationManager} 占位 Bean 并输出安装指引日志。</p>
  *
  * @author xiweng.yy
  */
@@ -34,6 +36,7 @@ public class LdapDependencyMissingConfiguration {
     private static final Logger LOGGER =
         LoggerFactory.getLogger(LdapDependencyMissingConfiguration.class);
     
+    /** 注册占位 LDAP 认证管理器，所有请求均返回依赖缺失错误。 */
     @Bean(name = LdapPluginDependencyChecker.LDAP_AUTHENTICATION_MANAGER_BEAN_NAME)
     public IAuthenticationManager ldapAuthenticatoinManager() {
         String message = LdapPluginDependencyChecker.buildMissingDependencyMessage();

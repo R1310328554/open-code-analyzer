@@ -20,31 +20,37 @@ import com.alibaba.nacos.sys.utils.ApplicationUtils;
 import org.springframework.util.ClassUtils;
 
 /**
- * LDAP plugin dependency checker.
+ * LDAP 插件运行时依赖检测工具。
+ *
+ * <p>通过 ClassLoader 探测 spring-ldap-core 是否存在于 plugins classpath，供 ImportSelector 决定加载完整或降级配置。</p>
  *
  * @author xiweng.yy
  */
 public final class LdapPluginDependencyChecker {
     
+    /** LDAP 认证管理器 Spring Bean 名称（保留历史拼写 authenticatoin）。 */
     public static final String LDAP_AUTHENTICATION_MANAGER_BEAN_NAME = "ldapAuthenticatoinManager";
     
+    /** spring-ldap-core 核心类全名，用于依赖探测。 */
     static final String LDAP_TEMPLATE_CLASS_NAME = "org.springframework.ldap.core.LdapTemplate";
     
     private LdapPluginDependencyChecker() {
     }
     
+    /** 检测 LdapTemplate 类是否存在于当前 ClassLoader。 */
     public static boolean hasRequiredDependency() {
         return hasRequiredDependency(LDAP_TEMPLATE_CLASS_NAME);
     }
     
+    /** 检测指定类名是否可通过 ClassLoader 加载。 */
     static boolean hasRequiredDependency(String className) {
         return ClassUtils.isPresent(className, resolveClassLoader());
     }
     
     /**
-     * Build missing LDAP runtime dependency message.
+     * 构建 LDAP 运行时依赖缺失时的提示文案。
      *
-     * @return missing dependency message
+     * @return 引导用户将 spring-ldap-core 放入 plugins 目录的英文说明
      */
     public static String buildMissingDependencyMessage() {
         return "LDAP auth plugin requires org.springframework.ldap:spring-ldap-core in "
@@ -54,6 +60,7 @@ public final class LdapPluginDependencyChecker {
             + "directory.";
     }
     
+    /** 解析用于类探测的 ClassLoader：优先线程上下文，其次 ApplicationUtils，最后本类加载器。 */
     private static ClassLoader resolveClassLoader() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (null != classLoader) {

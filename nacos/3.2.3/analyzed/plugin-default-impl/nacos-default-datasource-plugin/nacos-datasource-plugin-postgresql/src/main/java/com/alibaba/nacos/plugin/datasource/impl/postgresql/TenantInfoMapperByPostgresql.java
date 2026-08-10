@@ -25,21 +25,24 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
- * The postgresql implementation of TenantInfoMapper.
- * Override insert/update to convert epoch-millis (bigint) to PostgreSQL timestamp
- * via {@code TO_TIMESTAMP(? / 1000.0)}.
+ * {@link com.alibaba.nacos.plugin.datasource.mapper.TenantInfoMapper} 的 PostgreSQL 实现。
+ *
+ * <p>重写 insert/update 方法，将 epoch 毫秒（bigint）通过 {@code TO_TIMESTAMP(? / 1000.0)} 转为 PostgreSQL 时间戳。</p>
  *
  * @author Long Yu
  **/
 public class TenantInfoMapperByPostgresql extends BaseTenantInfoMapper {
     
+    /** 列名与函数名之间的分隔符（格式：column@function）。 */
     private static final String COLUMN_SEPARATOR = "@";
     
+    /** 返回 PostgreSQL 数据源标识。 */
     @Override
     public String getDataSource() {
         return DatabaseTypeConstant.POSTGRESQL;
     }
     
+    /** 动态拼装 INSERT 语句，时间列自动使用 TO_TIMESTAMP 转换。 */
     @Override
     public String insert(List<String> columns) {
         StringJoiner columnJoiner = new StringJoiner(", ", "(", ")");
@@ -61,6 +64,7 @@ public class TenantInfoMapperByPostgresql extends BaseTenantInfoMapper {
         return "INSERT INTO " + getTableName() + columnJoiner + " VALUES" + valueJoiner;
     }
     
+    /** 动态拼装 UPDATE 语句，时间列自动使用 TO_TIMESTAMP 转换。 */
     @Override
     public String update(List<String> columns, List<String> where) {
         StringJoiner setJoiner = new StringJoiner(",");
@@ -90,6 +94,7 @@ public class TenantInfoMapperByPostgresql extends BaseTenantInfoMapper {
         return sql.toString();
     }
     
+    /** 判断列名是否为需要毫秒转时间戳的 gmt_create/gmt_modified。 */
     private boolean isTimestampColumn(String columnName) {
         return "gmt_create".equals(columnName) || "gmt_modified".equals(columnName);
     }

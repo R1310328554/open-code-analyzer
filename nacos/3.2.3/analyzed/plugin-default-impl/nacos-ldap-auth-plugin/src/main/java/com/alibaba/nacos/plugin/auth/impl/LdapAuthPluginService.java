@@ -22,17 +22,21 @@ import com.alibaba.nacos.plugin.auth.impl.ldap.LdapPluginDependencyChecker;
 import com.alibaba.nacos.sys.utils.ApplicationUtils;
 
 /**
- * LDAP auth plugin service.
+ * LDAP 认证插件服务入口。
+ *
+ * <p>注册 LDAP 认证类型，并从 Spring 容器懒加载 {@link IAuthenticationManager} Bean（依赖缺失时由占位实现接管）。</p>
  *
  * @author onewe
  */
 public class LdapAuthPluginService extends NacosAuthPluginService {
     
+    /** 返回 LDAP 认证插件类型标识。 */
     @Override
     public String getAuthServiceName() {
         return AuthConstants.LDAP_AUTH_PLUGIN_TYPE;
     }
     
+    /** 从容器获取 LDAP 认证管理器 Bean，若尚未注入则按名称查找。 */
     @Override
     protected void checkNacosAuthManager() {
         if (null == authenticationManager) {

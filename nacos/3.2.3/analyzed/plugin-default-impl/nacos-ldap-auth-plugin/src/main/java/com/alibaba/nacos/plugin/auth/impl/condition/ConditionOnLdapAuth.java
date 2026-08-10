@@ -24,12 +24,15 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * when nacos.core.auth.system.type=ldap
+ * 当 {@code nacos.core.auth.system.type=ldap} 时生效的 Spring 条件。
+ *
+ * <p>用于 LDAP 认证相关配置类与 Bean 的条件装配，避免在非 LDAP 模式下加载 LDAP 组件。</p>
  *
  * @author karsonto
  */
 public class ConditionOnLdapAuth implements Condition {
     
+    /** 判断当前认证系统类型是否为 LDAP。 */
     @Override
     public boolean matches(ConditionContext conditionContext,
         AnnotatedTypeMetadata annotatedTypeMetadata) {

@@ -32,19 +32,34 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 /**
- * LdapAuthenticatoinManager.
+ * LDAP 认证管理器。
+ *
+ * <p>优先尝试本地 Nacos 用户认证；失败后回退至 LDAP 目录校验，并在首次登录时自动创建带 {@code LDAP_} 前缀的本地用户记录。</p>
  *
  * @author Weizhan▪Yun
  * @date 2023/1/17 13:25
  */
 public class LdapAuthenticationManager extends AbstractAuthenticationManager {
     
+    /** LDAP 用户搜索过滤器属性前缀（如 uid）。 */
     private final String filterPrefix;
     
+    /** 用户名是否区分大小写。 */
     private final boolean caseSensitive;
     
+    /** Spring LDAP 操作模板。 */
     private final LdapTemplate ldapTemplate;
     
+    /**
+     * 构造 LDAP 认证管理器。
+     *
+     * @param ldapTemplate       LDAP 模板
+     * @param userDetailsService 本地用户服务
+     * @param jwtTokenManager    JWT 令牌管理器
+     * @param roleService        角色服务
+     * @param filterPrefix       LDAP 搜索属性前缀
+     * @param caseSensitive      是否区分大小写
+     */
     public LdapAuthenticationManager(LdapTemplate ldapTemplate, NacosUserService userDetailsService,
         TokenManagerDelegate jwtTokenManager, NacosRoleService roleService, String filterPrefix,
         boolean caseSensitive) {
@@ -54,6 +69,14 @@ public class LdapAuthenticationManager extends AbstractAuthenticationManager {
         this.caseSensitive = caseSensitive;
     }
     
+    /**
+     * 用户名密码认证：本地优先，失败则走 LDAP 并签发 JWT。
+     *
+     * @param username    用户名
+     * @param rawPassword 明文密码
+     * @return 认证成功的 {@link NacosUser}
+     * @throws AccessException 用户不存在或 LDAP 校验失败
+     */
     @Override
     public NacosUser authenticate(String username, String rawPassword) throws AccessException {
         if (StringUtils.isBlank(username)) {
@@ -64,6 +87,7 @@ public class LdapAuthenticationManager extends AbstractAuthenticationManager {
             username = username.toLowerCase();
         }
         
+        // 已是 LDAP 前缀用户则拒绝，避免重复 LDAP 认证路径
         if (username.toUpperCase().startsWith(AuthConstants.LDAP_PREFIX)) {
             throw new AccessException("user not found!");
         }
@@ -84,6 +108,7 @@ public class LdapAuthenticationManager extends AbstractAuthenticationManager {
             userDetails =
                 userDetailsService.loadUserByUsername(AuthConstants.LDAP_PREFIX + username);
         } catch (UsernameNotFoundException exception) {
+            // 首次 LDAP 登录：自动创建本地占位用户
             String ldapUsername = AuthConstants.LDAP_PREFIX + username;
             userDetailsService.createUser(ldapUsername, AuthConstants.LDAP_DEFAULT_ENCODED_PASSWORD,
                 false);
@@ -100,6 +125,7 @@ public class LdapAuthenticationManager extends AbstractAuthenticationManager {
             jwtTokenManager.createToken(userDetails.getUsername()));
     }
     
+    /** 使用 EqualsFilter 向 LDAP 目录校验用户名与密码。 */
     private boolean ldapLogin(String username, String password) {
         return ldapTemplate.authenticate("", new EqualsFilter(filterPrefix, username).toString(),
             password);
