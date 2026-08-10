@@ -1,5 +1,7 @@
 package wire
 
+// Metrics 收集 wire.Peer 收发帧、排队消息数与同步 SendMessage 往返耗时 histogram。
+
 import (
 	"time"
 
@@ -7,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// Metrics 使用独立 Registry，由 Scheduler 与 Peer 共享以观测线协议健康度。
 // Metrics is a set of metrics for a Peer.
 type Metrics struct {
 	reg *prometheus.Registry
@@ -17,6 +20,7 @@ type Metrics struct {
 	messageRTTSeconds   prometheus.Histogram
 }
 
+// NewMetrics 注册 frames_received_total 按帧类型标签、messages_queued 与 message_rtt_seconds。
 func NewMetrics() *Metrics {
 	reg := prometheus.NewRegistry()
 	return &Metrics{
@@ -63,6 +67,8 @@ func (m *Metrics) incMessageSent() {
 	m.messagesSentTotal.Inc()
 }
 
+// newMessageRTTTimer 在同步 SendMessage 路径测量端到端 ACK 等待时间。
 func (m *Metrics) newMessageRTTTimer() *prometheus.Timer {
 	return prometheus.NewTimer(m.messageRTTSeconds)
 }
+// incFrameReceived 在 Peer 读循环中按 FrameKind 递增。

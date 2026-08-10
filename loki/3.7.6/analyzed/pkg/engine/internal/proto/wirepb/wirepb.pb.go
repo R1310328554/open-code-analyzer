@@ -3,6 +3,8 @@
 
 package wirepb
 
+// wirepb 定义调度器与 worker 之间的 protobuf 线协议：帧类型、任务/流状态枚举，以及 TaskAssign、StreamData 等控制与数据面消息。由 protoc-gen-gogo 生成，wire 包 codec 负责与 Go 领域类型双向转换。
+
 import (
 	bytes "bytes"
 	fmt "fmt"
@@ -36,6 +38,7 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// TaskState 描述任务生命周期：从 CREATED/PENDING 到 RUNNING，终态为 COMPLETED/CANCELLED/FAILED。
 // TaskState represents the execution state of a task.
 type TaskState int32
 
@@ -73,6 +76,7 @@ func (TaskState) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_9956cb67d4b0d2a4, []int{0}
 }
 
+// StreamState 跟踪数据流读写端：IDLE→OPEN/BLOCKED→CLOSED，用于背压与绑定协调。
 // StreamState represents the state of a stream.
 type StreamState int32
 
@@ -104,6 +108,7 @@ func (StreamState) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_9956cb67d4b0d2a4, []int{1}
 }
 
+// Frame 为 oneof 帧信封，可承载 Ack/Nack/Discard 或嵌套 MessageFrame。
 type Frame struct {
 	// Types that are valid to be assigned to Kind:
 	//	*Frame_Ack
@@ -405,6 +410,7 @@ func (m *DiscardFrame) GetId() uint64 {
 	return 0
 }
 
+// MessageFrame 封装具体业务消息，Kind oneof 区分 worker 握手、任务分配与流数据等。
 type MessageFrame struct {
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Types that are valid to be assigned to Kind:
@@ -739,6 +745,7 @@ var xxx_messageInfo_WorkerReadyMessage proto.InternalMessageInfo
 // Workers that have no threads available should reject task assignment with a
 // HTTP 429 Too Many Requests. When this happens, the scheduler will remove the
 // ready state from the worker until it receives a WorkerReadyMessage.
+// TaskAssignMessage 由调度器下发可执行任务，附带输入流当前状态与 HTTP 元数据头。
 type TaskAssignMessage struct {
 	Task *Task `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	// StreamStates holds the most recent state of each stream that the task
@@ -985,6 +992,7 @@ func (m *StreamBindMessage) GetReceiver() string {
 //
 // Sending StreamDataMessage establishes the connection as part of the data
 // plane. No other messages may be sent along data plane connections.
+// StreamDataMessage 通过 data 字段传输 Arrow IPC 编码的 RecordBatch 批数据。
 type StreamDataMessage struct {
 	StreamId github_com_grafana_loki_v3_pkg_engine_internal_proto_ulid.ULID `protobuf:"bytes,1,opt,name=stream_id,json=streamId,proto3,customtype=github.com/grafana/loki/v3/pkg/engine/internal/proto/ulid.ULID" json:"stream_id"`
 	// Data is the serialized Arrow record payload.
@@ -1076,6 +1084,7 @@ func (m *StreamStatusMessage) GetState() StreamState {
 }
 
 // Task is a single unit of work within a workflow.
+// Task 携带物理计划 Fragment、Sources/Sinks 映射及 MaxTimeRange 查询窗口。
 type Task struct {
 	Ulid     github_com_grafana_loki_v3_pkg_engine_internal_proto_ulid.ULID `protobuf:"bytes,1,opt,name=ulid,proto3,customtype=github.com/grafana/loki/v3/pkg/engine/internal/proto/ulid.ULID" json:"ulid"`
 	TenantId string                                                         `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
@@ -1252,6 +1261,7 @@ func (m *Stream) GetTenantId() string {
 }
 
 // TaskStatus represents the current status of a task.
+// TaskStatus 汇报任务状态、错误描述、ContributingTimeRange 与 xcap Capture 诊断数据。
 type TaskStatus struct {
 	State TaskState `protobuf:"varint,1,opt,name=state,proto3,enum=loki.wire.TaskState" json:"state,omitempty"`
 	// Error is set only when state is TASK_STATE_FAILED.
@@ -8244,3 +8254,4 @@ var (
 	ErrInvalidLengthWirepb = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowWirepb   = fmt.Errorf("proto: integer overflow")
 )
+// StreamBindMessage 告知发送方接收端 TCP 地址；WorkerHello 声明 worker 可用线程数。

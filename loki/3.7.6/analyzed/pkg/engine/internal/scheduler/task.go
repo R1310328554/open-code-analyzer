@@ -1,5 +1,7 @@
 package scheduler
 
+// task 包装 workflow.Task，跟踪排队/分配/执行时间戳、公平队列 scope 与 worker 归属。
+
 import (
 	"context"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// task 的 metadata 承载 trace 与 HTTP 头，owner 指向当前执行该任务的 workerConn。
 // task wraps a [workflow.Task] with its handler.
 type task struct {
 	createTime time.Time // Time when task was created.
@@ -35,6 +38,7 @@ type task struct {
 	runtimeTraceCtx context.Context
 }
 
+// validTaskTransitions 定义任务状态机：CREATED 可直达 RUNNING，终态不可再迁移。
 var validTaskTransitions = map[workflow.TaskState][]workflow.TaskState{
 	workflow.TaskStateCreated: {workflow.TaskStatePending, workflow.TaskStateRunning, workflow.TaskStateCancelled},
 	workflow.TaskStatePending: {workflow.TaskStateRunning, workflow.TaskStateCancelled, workflow.TaskStateFailed},
@@ -45,6 +49,7 @@ var validTaskTransitions = map[workflow.TaskState][]workflow.TaskState{
 	workflow.TaskStateFailed:    {}, // Terminal state, can't transition
 }
 
+// setState 允许同状态但 payload 变化（如 Capture 更新），并更新 tasksTotal 计数。
 // setState updates the state of the task. setState returns an error if the
 // transition is invalid.
 //
@@ -76,3 +81,4 @@ func (t *task) setState(m *metrics, newStatus workflow.TaskStatus) (bool, error)
 	}
 
 }
+// wfRegion 用于记录 xcap 队列与分配尾延迟统计。

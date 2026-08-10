@@ -3,15 +3,19 @@
 // a gogoproto generated struct.
 package ulid
 
+// 本包封装 oklog/ulid，使 ULID 可作为 gogoproto 自定义类型参与序列化与 JSON 互转。
+
 import (
 	"encoding/json"
 
 	"github.com/oklog/ulid/v2"
 )
 
+// ULID 为 16 字节可字典序排序的全局唯一标识，适合作为任务与流的稳定主键。
 // A ULID is a 16-byte Universally Unique Lexicographically Sortable Identifier.
 type ULID ulid.ULID
 
+// Marshal 将 ULID 编码为 ProtoULID  protobuf 字节流，供引擎内部 RPC 传输。
 // Marshal marshals id as a [ProtoULID].
 func (id ULID) Marshal() ([]byte, error) {
 	pb := ProtoULID{Value: id[:]}
@@ -25,6 +29,7 @@ func (id *ULID) MarshalTo(data []byte) (int, error) {
 	return pb.MarshalTo(data)
 }
 
+// Unmarshal 从 protobuf 载荷还原 ULID，失败时返回底层解析错误。
 // Unmarshal unmarshals a [ProtoULID] from the given data slice.
 func (id *ULID) Unmarshal(data []byte) error {
 	pb := ProtoULID{}
@@ -69,6 +74,7 @@ func (id *ULID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Compare 按 ULID 规范做字典序比较，可用于队列排序与去重判定。
 // Compare compares the id to another ULID.
 func (id ULID) Compare(other ULID) int {
 	return ulid.ULID(id).Compare(ulid.ULID(other))
@@ -83,3 +89,4 @@ func (id ULID) Equal(other ULID) bool {
 func (id ULID) String() string {
 	return ulid.ULID(id).String()
 }
+// String 与 Equal 便于日志输出及 map 键比较。

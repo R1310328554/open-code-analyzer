@@ -2,6 +2,8 @@
 // by scheduling tasks to be executed by a set of workers.
 package scheduler
 
+// scheduler 实现 workflow.Runner：接受 worker 连接、注册 manifest、公平队列分配任务并跟踪流绑定。
+
 import (
 	"context"
 	"errors"
@@ -29,6 +31,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// Config 需提供 Listener 用于 worker 通信，Logger 可选默认为 nop。
 // Config holds configuration options for [Scheduler].
 type Config struct {
 	// Logger for optional log messages.
@@ -38,6 +41,7 @@ type Config struct {
 	Listener wire.Listener
 }
 
+// Scheduler 维护 tasks/streams 映射、readyWorkers 与 fair.Queue，通过 wire.Peer 收发消息。
 // Scheduler is a service that can schedule tasks to connected worker instances.
 type Scheduler struct {
 	logger    log.Logger
@@ -438,6 +442,7 @@ func (s *Scheduler) assignTasks(ctx context.Context) {
 // all assignments go through a single workerLoop. Because SendMessage blocks
 // until the worker ACKs, the per-task round-trip overhead adds up
 // when there are a large number of tasks, resulting in tail latencies.
+// workerLoop 从 tasksCh 取分配并通过 SendMessage 同步下发，429 时退避并重新订阅 ready。
 func (s *Scheduler) workerLoop(ctx context.Context, worker *workerConn) {
 	for {
 		var assignment taskAssignment
@@ -720,6 +725,7 @@ func (s *Scheduler) DialFrom(ctx context.Context, from net.Addr) (wire.Conn, err
 	return local.DialFrom(ctx, from)
 }
 
+// RegisterManifest 原子注册 manifest 内全部流与任务，并创建 fair.Scope 用于多租户公平调度。
 // RegisterManifest registers a manifest to use with the scheduler, recording
 // all streams and task inside of it for use.
 func (s *Scheduler) RegisterManifest(_ context.Context, manifest *workflow.Manifest) error {
@@ -996,6 +1002,7 @@ func (s *Scheduler) Listen(ctx context.Context, writer workflow.RecordWriter, st
 	return nil
 }
 
+// Start 将任务入队并标记 PENDING，同时注入 trace 上下文到 task metadata 供 worker 延续链路。
 // Start begins executing the provided tasks in the background. Start returns an
 // error if any of the Tasks are unrecognized.
 //
@@ -1114,6 +1121,7 @@ func (s *Scheduler) markPending(ctx context.Context, tasks []*task) {
 	}
 }
 
+// Cancel 将任务置为 CANCELLED 并通知 worker，同时关闭关联 sink 流。
 // Cancel requests cancellation of the specified tasks. Cancel returns an error
 // if any of the tasks were not found.
 func (s *Scheduler) Cancel(ctx context.Context, tasks ...*workflow.Task) error {
@@ -1186,3 +1194,4 @@ func (s *Scheduler) UnregisterMetrics(reg prometheus.Registerer) {
 	s.metrics.Unregister(reg)
 	s.wireMetrics.Unregister(reg)
 }
+// Listen 允许调度器本地接收根任务结果并触发 StreamBind。

@@ -1,9 +1,12 @@
 package wire
 
+// frame 定义 peer 间最低层通信信封：Message 需 Ack/Nack 确认，Discard 表示无需应答。
+
 import (
 	"fmt"
 )
 
+// FrameKind 区分 Message/Ack/Nack/Discard 四类线协议帧。
 // FrameKind represents the type of a Frame.
 type FrameKind int
 
@@ -33,6 +36,7 @@ func (k FrameKind) String() string {
 	return frameKindNames[k]
 }
 
+// Frame 为 sealed 接口，具体类型通过 isFrame 标记实现多态编解码。
 // A Frame is the lowest level of communication between two peers. Frames are an
 // envelope for messages between peers.
 type Frame interface {
@@ -40,6 +44,7 @@ type Frame interface {
 	FrameKind() FrameKind
 }
 
+// MessageFrame 携带 uint64 消息 ID 与业务 Message，发送方等待 Ack 或 Nack。
 // MessageFrame is a Frame that sends a [Message] to the peer. MessageFrames are
 // paired with an [AckFrame] to acknowledge that the message has been
 // successfully processed, or [NackFrame] in case of failure.
@@ -65,6 +70,7 @@ type AckFrame struct {
 // FrameKind returns [FrameKindAck].
 func (a AckFrame) FrameKind() FrameKind { return FrameKindAck }
 
+// NackFrame 附带 wire.Error，接收方处理失败时回传具体 HTTP 码与描述。
 // NackFrame is a Frame that notifies that a [MessageFrame] could not be
 // processed.
 type NackFrame struct {
@@ -78,6 +84,7 @@ type NackFrame struct {
 // FrameKind returns [FrameKindNack].
 func (n NackFrame) FrameKind() FrameKind { return FrameKindNack }
 
+// DiscardFrame 告知对端消息已丢弃，不应再发送 Ack，用于超时或取消路径。
 // DiscardFrame is a Frame that informs the peer that a [MessageFrame] has
 // been discarded and an acknowledgement is no longer needed.
 //
@@ -96,3 +103,4 @@ func (m MessageFrame) isFrame() {}
 func (a AckFrame) isFrame()     {}
 func (n NackFrame) isFrame()    {}
 func (d DiscardFrame) isFrame() {}
+// AckFrame 仅含被确认 MessageFrame 的 ID。

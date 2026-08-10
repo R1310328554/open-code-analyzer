@@ -1,5 +1,7 @@
 package scheduler
 
+// collector 实现 prometheus.Collector，聚合调度器负载、在途任务/流、连接数与公平队列深度。
+
 import (
 	"context"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/workflow"
 )
 
+// collector 持有 Scheduler 指针，通过 EWMA 平滑 load 并周期性 Process 更新滑动窗口。
 // collector implements [prometheus.Collector], collecting metrics for a
 // [Scheduler].
 type collector struct {
@@ -87,6 +90,7 @@ func newCollector(sched *Scheduler) *collector {
 	}
 }
 
+// computeLoad 统计 RUNNING 与 PENDING 任务数，作为当前调度压力 gauge 源。
 // computeLoad returns the active load on the scheduler: the sum of running and
 // pending tasks.
 func computeLoad(sched *Scheduler) float64 {
@@ -104,6 +108,7 @@ func computeLoad(sched *Scheduler) float64 {
 	return float64(load)
 }
 
+// Process 在独立 goroutine 中运行 EWMA Monitor，直到 context 取消。
 // Process performs stat computations for EWMA metrics of the collector. Process
 // runs until the provided context is canceled.
 func (mc *collector) Process(ctx context.Context) error {
@@ -147,6 +152,7 @@ func (mc *collector) collectResourceStats(ch chan<- prometheus.Metric) {
 	}
 }
 
+// collectConnStats 仅统计 control plane 连接，数据面连接不计入 active connections。
 func (mc *collector) collectConnStats(ch chan<- prometheus.Metric) {
 	var (
 		totalConnections int
@@ -184,3 +190,4 @@ func (mc *collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- mc.readyWorkers
 	ch <- mc.taskQueue
 }
+// collectAssignStats 暴露 readyWorkers 与 taskQueue 长度。

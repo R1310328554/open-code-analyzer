@@ -3,6 +3,8 @@
 
 package ulid
 
+// 由 ulid.proto 生成的 gogo protobuf 绑定；ProtoULID 以 bytes 保存 16 字节二进制 ULID。调度器 wire 协议与任务/流标识均依赖此消息类型完成跨进程序列化。
+
 import (
 	bytes "bytes"
 	fmt "fmt"
@@ -25,6 +27,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// ProtoULID 是 ULID 的 protobuf 载体，Value 字段存放规范定义的二进制布局。
 // ProtoULID represents a Universally Unique Lexicographically Sortable
 // Identifier (ULID) over protobuf.
 type ProtoULID struct {
@@ -66,6 +69,7 @@ func (m *ProtoULID) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ProtoULID proto.InternalMessageInfo
 
+// GetValue 返回底层 16 字节切片；nil 接收者时安全返回 nil。
 func (m *ProtoULID) GetValue() []byte {
 	if m != nil {
 		return m.Value
@@ -139,6 +143,7 @@ func valueToGoStringUlid(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
+// Marshal 将消息序列化为 protobuf 字节，供 length-prefix 帧编码使用。
 func (m *ProtoULID) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -217,6 +222,7 @@ func valueToStringUlid(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
+// Unmarshal 从字节流解析 ProtoULID，与 ulid.go 中的自定义类型互操作。
 func (m *ProtoULID) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -414,3 +420,4 @@ var (
 	ErrInvalidLengthUlid = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowUlid   = fmt.Errorf("proto: integer overflow")
 )
+// Equal 比较 Value 字节内容；init 注册 ulid.loki.v1.ProtoULID 到全局类型表。

@@ -1,5 +1,7 @@
 package wire
 
+// codec 实现 protobuf 帧编解码：uvarint 长度前缀 + wirepb.Frame，并在 Task/Stream 与 workflow 类型间转换。
+
 import (
 	"bytes"
 	"encoding/binary"
@@ -27,6 +29,7 @@ var defaultFrameCodec = &protobufCodec{
 	allocator: memory.DefaultAllocator,
 }
 
+// protobufCodec 默认使用 Arrow IPC 序列化 StreamData 中的 RecordBatch 批数据。
 // protobufCodec implements a protobuf-based codec for frames.
 // Messages are length-prefixed: [uvarint length][protobuf payload]
 type protobufCodec struct {
@@ -46,6 +49,7 @@ func (br *byteReaderAdapter) ReadByte() (byte, error) {
 	return b[0], err
 }
 
+// EncodeTo 先 frameToPbFrame 再 Marshal，写入 [uvarint len][payload] 帧格式。
 // EncodeTo encodes a frame as protobuf and writes it to the writer.
 // Format: [uvarint length][protobuf payload]
 func (c *protobufCodec) EncodeTo(w io.Writer, frame Frame) error {
@@ -81,6 +85,7 @@ func (c *protobufCodec) EncodeTo(w io.Writer, frame Frame) error {
 	return nil
 }
 
+// DecodeFrom 读取长度前缀与载荷，反序列化为 wirepb.Frame 并映射为 wire.Frame 接口。
 // DecodeFrom reads and decodes a frame from the bound reader.
 // Format: [uvarint length][protobuf payload]
 func (c *protobufCodec) DecodeFrom(r io.Reader) (Frame, error) {
@@ -165,6 +170,7 @@ func (c *protobufCodec) errorFromPb(errPb *wirepb.Error) *Error {
 	}
 }
 
+// messageFromPbMessage 按 oneof 分支还原 WorkerHello、TaskAssign、StreamData 等具体消息。
 func (c *protobufCodec) messageFromPbMessage(mf *wirepb.MessageFrame) (Message, error) {
 	if mf == nil {
 		return nil, errors.New("nil message frame")
@@ -681,6 +687,7 @@ func (c *protobufCodec) nodeStreamMapToPbNodeStreamList(nodeMap map[physical.Nod
 }
 
 // serializeArrowRecord serializes an Arrow record to bytes using IPC format.
+// serializeArrowRecord 通过 Arrow IPC Writer 将 RecordBatch 编码为字节流。
 func (c *protobufCodec) serializeArrowRecord(record arrow.RecordBatch) ([]byte, error) {
 	if record == nil {
 		return nil, errors.New("nil arrow record")
@@ -728,3 +735,4 @@ func (c *protobufCodec) deserializeArrowRecord(data []byte) (arrow.RecordBatch, 
 	rec := reader.RecordBatch()
 	return rec, nil
 }
+// taskStateFromPbTaskState 与 streamStateFromPbStreamState 做枚举双向映射。

@@ -1,5 +1,7 @@
 package wire
 
+// message 定义调度器与 worker 交换的控制面与数据面消息类型及 MessageKind 枚举。
+
 import (
 	"fmt"
 	"net"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/workflow"
 )
 
+// MessageKind 覆盖 worker 生命周期、任务分配/取消/状态及流绑定/数据传输消息。
 // MessageKind represents the type of a message.
 type MessageKind int
 
@@ -57,6 +60,7 @@ func (k MessageKind) String() string {
 	return name
 }
 
+// Message 为 sealed 接口，各具体结构体通过 Kind() 返回对应 MessageKind。
 // A Message is a message exchanged between peers.
 type Message interface {
 	isMessage()
@@ -102,7 +106,8 @@ type (
 
 // Messages about tasks.
 type (
-	// TaskAssignMessage is sent by the scheduler to a worker when there is a
+	// TaskAssignMessage 含完整 Task、输入流 StreamStates 与 trace/metadata HTTP 头。
+// TaskAssignMessage is sent by the scheduler to a worker when there is a
 	// task to run.
 	//
 	// Workers that have no threads available should reject task assignment with
@@ -156,14 +161,16 @@ type (
 		Receiver net.Addr  // Address of the stream receiver.
 	}
 
-	// StreamDataMessage is sent by a worker to a stream receiver to provide
+	// StreamDataMessage 以 Arrow RecordBatch 承载流批数据，由数据面连接发送。
+// StreamDataMessage is sent by a worker to a stream receiver to provide
 	// payload data for a stream.
 	StreamDataMessage struct {
 		StreamID ulid.ULID         // ID of the stream.
 		Data     arrow.RecordBatch // Payload data for the stream.
 	}
 
-	// StreamStatusMessage communicates the status of the sending side of a
+	// StreamStatusMessage 可由 sender 或 scheduler 发出，协调读写端背压与关闭。
+// StreamStatusMessage communicates the status of the sending side of a
 	// stream. It is sent in two cases:
 	//
 	// - By the sender of the stream, to inform the scheduler about the status
@@ -224,3 +231,4 @@ func (StreamDataMessage) Kind() MessageKind { return MessageKindStreamData }
 
 // Kind returns [MessageKindStreamStatus].
 func (StreamStatusMessage) Kind() MessageKind { return MessageKindStreamStatus }
+// WorkerSubscribe 请求 worker 在线程空闲时回复 WorkerReady。

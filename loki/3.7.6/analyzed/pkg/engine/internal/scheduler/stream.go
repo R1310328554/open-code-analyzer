@@ -1,5 +1,7 @@
 package scheduler
 
+// stream 包装 workflow.Stream，记录状态机、本地/任务级读写绑定及事件回调。
+
 import (
 	"fmt"
 	"slices"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/workflow"
 )
 
+// stream 关联 taskSender/taskReceiver ULID，支持调度器或下游任务作为数据接收方。
 // stream wraps a [workflow.Stream] with its handler and state.
 type stream struct {
 	inner   *workflow.Stream
@@ -21,6 +24,7 @@ type stream struct {
 	taskSender    ulid.ULID             // ID of the sending task.
 }
 
+// validStreamTransitions 约束合法状态迁移，CLOSED 为终态不可再变。
 var validStreamTransitions = map[workflow.StreamState][]workflow.StreamState{
 	workflow.StreamStateIdle:    {workflow.StreamStateOpen, workflow.StreamStateBlocked, workflow.StreamStateClosed},
 	workflow.StreamStateOpen:    {workflow.StreamStateBlocked, workflow.StreamStateClosed},
@@ -28,6 +32,7 @@ var validStreamTransitions = map[workflow.StreamState][]workflow.StreamState{
 	workflow.StreamStateClosed:  {}, // Closed streams cannot transition to any other state.
 }
 
+// setState 校验迁移表并递增 streamsTotal 对应状态标签计数。
 // setState updates the state of the stream. setState returns an error if the
 // transition is invalid.
 //
@@ -50,6 +55,7 @@ func (s *stream) setState(m *metrics, newState workflow.StreamState) (bool, erro
 	return true, nil
 }
 
+// setLocalListener 绑定调度器本地 RecordWriter，与 taskReceiver 互斥。
 // setLocalListener sets the local listener for the stream. Fails if there is
 // already a bound listener (local or task).
 func (s *stream) setLocalListener(writer workflow.RecordWriter) error {
@@ -86,3 +92,4 @@ func (s *stream) setTaskSender(id ulid.ULID) error {
 	s.taskSender = id
 	return nil
 }
+// setTaskSender 确保每个流至多一个写入任务。

@@ -1,5 +1,7 @@
 package scheduler
 
+// metrics 封装调度器私有 Prometheus 注册表：任务/流状态转移计数、排队与执行耗时直方图。
+
 import (
 	"time"
 
@@ -7,6 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// metrics 使用独立 Registry，可通过 Register/Unregister 挂载到全局或组件级采集器。
 // metrics is a container of metrics for a scheduler.
 type metrics struct {
 	// registry to collect metrics as a unit.
@@ -22,6 +25,7 @@ type metrics struct {
 	taskExecSeconds  prometheus.Histogram
 }
 
+// newMetrics 初始化 tasksTotal/streamsTotal 标签计数器及 native histogram 耗时指标。
 func newMetrics() *metrics {
 	reg := prometheus.NewRegistry()
 
@@ -41,7 +45,8 @@ func newMetrics() *metrics {
 			Help: "Total number of connections to the scheduler for any purpose (control or data plane)",
 		}),
 		backoffsTotal: promauto.With(reg).NewCounter(prometheus.CounterOpts{
-			Name: "loki_engine_scheduler_assignment_backoffs_total",
+			// backoffsTotal 在 worker 返回 HTTP 429 时递增，反映过载退避频率。
+Name: "loki_engine_scheduler_assignment_backoffs_total",
 			Help: "Total number of times the scheduler has backed off of assigning tasks to a worker because of HTTP 429 errors",
 		}),
 		requeueTotal: promauto.With(reg).NewCounter(prometheus.CounterOpts{
@@ -74,3 +79,4 @@ func (m *metrics) Register(reg prometheus.Registerer) error { return reg.Registe
 
 // Unregister unregisters metrics from the provided Registerer.
 func (m *metrics) Unregister(reg prometheus.Registerer) { reg.Unregister(m.reg) }
+// requeueTotal 记录分配失败后重新入队的任务次数。
