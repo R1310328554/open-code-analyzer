@@ -1,3 +1,7 @@
+"""
+Google Drive 文件检索：共享盘/我的盘/OAuth 列表、文件夹 BFS 爬取与时间范围 CQL 过滤。
+"""
+
 import logging
 from collections.abc import Callable, Iterator
 from datetime import datetime, timezone
@@ -22,6 +26,7 @@ FOLDER_FIELDS = "nextPageToken, files(id, name, permissions, modifiedTime, webVi
 
 
 class DriveFileFieldType(Enum):
+    # 控制 files().list 返回字段粒度（slim/standard/permissions）
     """Enum to specify which fields to retrieve from Google Drive files"""
 
     SLIM = "slim"  # Minimal fields for basic file info
@@ -30,6 +35,8 @@ class DriveFileFieldType(Enum):
 
 
 def generate_time_range_filter(
+    # 增量同步：modifiedTime 与 createdTime 双字段过滤
+
     start: SecondsSinceUnixEpoch | None = None,
     end: SecondsSinceUnixEpoch | None = None,
 ) -> str:
@@ -110,6 +117,8 @@ def _get_files_in_parent(
 
 
 def crawl_folders_for_files(
+    # 从指定父文件夹 BFS 拉取非文件夹 blob，标记已遍历目录
+
     service: Resource,
     parent_id: str,
     field_type: DriveFileFieldType,
@@ -185,6 +194,8 @@ def crawl_folders_for_files(
 
 
 def get_files_in_shared_drive(
+    # 列举单个共享盘内文件，支持 page_token 与 max_num_pages
+
     service: Resource,
     drive_id: str,
     field_type: DriveFileFieldType,
@@ -301,6 +312,8 @@ def get_all_files_in_my_drive_and_shared(
 
 
 def get_all_files_for_oauth(
+    # OAuth 用户：corpora=user 下列举可访问文件
+
     service: GoogleDriveService,
     include_files_shared_with_me: bool,
     include_my_drives: bool,

@@ -1,3 +1,7 @@
+"""
+GitLab 连接器：拉取合并请求、Issue 与可选代码文件，支持增量轮询与瘦文档权限同步。
+"""
+
 import fnmatch
 import itertools
 from collections import deque
@@ -30,6 +34,7 @@ from common.data_source.utils import get_file_ext
 T = TypeVar("T")
 
 
+# 遍历时跳过的目录/路径模式
 # List of directories/Files to exclude
 exclude_patterns = [
     "logs",
@@ -39,6 +44,7 @@ exclude_patterns = [
 
 
 def _batch_gitlab_objects(git_objs: Iterable[T], batch_size: int) -> Iterator[list[T]]:
+    # 将 GitLab 分页迭代器按 batch_size 切块
     it = iter(git_objs)
     while True:
         batch = list(itertools.islice(it, batch_size))
@@ -54,6 +60,7 @@ def get_author(author: Any) -> BasicExpertInfo:
 
 
 def _convert_merge_request_to_document(mr: Any) -> Document:
+    # MR 描述转 Document，updated_at 显式设为 UTC
     mr_text = mr.description or ""
     doc = Document(
         id=mr.web_url,
@@ -73,6 +80,7 @@ def _convert_merge_request_to_document(mr: Any) -> Document:
 
 
 def _convert_issue_to_document(issue: Any) -> Document:
+    # Issue 描述转 Document
     issue_text = issue.description or ""
     doc = Document(
         id=issue.web_url,
@@ -96,6 +104,7 @@ def _convert_issue_to_document(issue: Any) -> Document:
 
 
 def _convert_code_to_document(project: Project, file: Any, url: str, projectName: str, projectOwner: str) -> Document:
+    # 按默认分支读取 blob 内容，用最近 commit 时间作 doc_updated_at
 
     # Dynamically get the default branch from the project object
     default_branch = project.default_branch
@@ -157,6 +166,7 @@ def _should_exclude(path: str) -> bool:
 
 
 class GitlabConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # project_owner/project_name 定位仓库；可选 MR/Issue/代码文件
     def __init__(
         self,
         project_owner: str,
@@ -177,6 +187,7 @@ class GitlabConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         self.gitlab_client: gitlab.Gitlab | None = None
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # 用 private_token 初始化 python-gitlab 客户端
         self.gitlab_client = gitlab.Gitlab(credentials["gitlab_url"], private_token=credentials["gitlab_access_token"])
         return None
 
@@ -204,6 +215,7 @@ class GitlabConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
             raise UnexpectedValidationError(f"Unexpected error while validating GitLab settings: {e}") from e
 
     def _fetch_from_gitlab(self, start: datetime | None = None, end: datetime | None = None) -> GenerateDocumentsOutput:
+        # BFS 遍历代码树 + MR/Issue 列表，按时间窗口过滤并批量 yield
         if self.gitlab_client is None:
             raise ConnectorMissingCredentialError("Gitlab")
         project: Project = self.gitlab_client.projects.get(f"{self.project_owner}/{self.project_name}")
@@ -291,6 +303,7 @@ class GitlabConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         return self._fetch_from_gitlab(start_datetime, end_datetime)
 
     def retrieve_all_slim_docs_perm_sync(self, callback: Any = None) -> GenerateSlimDocumentOutput:
+        # 仅收集 id 用于权限同步，不含正文
         if self.gitlab_client is None:
             raise ConnectorMissingCredentialError("Gitlab")
 

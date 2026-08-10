@@ -1,3 +1,7 @@
+"""
+GitHub 连接器辅助：仓库反序列化与外部访问权限占位（RAGFlow 未实现 EE 权限同步）。
+"""
+
 import logging
 
 from github import Github
@@ -9,6 +13,7 @@ from .models import SerializedRepository
 
 
 def get_external_access_permission(repo: Repository, github_client: Github) -> ExternalAccess:
+    # 企业版外部权限 API 未接入，统一返回 empty
     """
     Get the external access permission for a repository.
     This functionality requires Enterprise Edition.
@@ -19,6 +24,7 @@ def get_external_access_permission(repo: Repository, github_client: Github) -> E
 
 
 def deserialize_repository(cached_repo: SerializedRepository, github_client: Github) -> Repository:
+    # 从检查点缓存还原 Repository；失败则按 id 重新拉取
     """
     Deserialize a SerializedRepository back into a Repository object.
     """

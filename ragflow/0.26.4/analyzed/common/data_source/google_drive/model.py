@@ -1,3 +1,7 @@
+"""
+Google Drive 连接器数据模型：MIME 枚举、检索阶段、检查点与 RetrievedDriveFile 包装。
+"""
+
 from enum import Enum
 from typing import Any
 
@@ -10,6 +14,7 @@ GoogleDriveFileType = dict[str, Any]
 
 
 class GDriveMimeType(str, Enum):
+    # Google 原生与常见 Office/PDF 等 MIME
     DOC = "application/vnd.google-apps.document"
     SPREADSHEET = "application/vnd.google-apps.spreadsheet"
     SPREADSHEET_OPEN_FORMAT = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -38,6 +43,7 @@ class GDriveMimeType(str, Enum):
 #   get_files_in_shared_drive()
 #   crawl_folders_for_files()
 class DriveRetrievalStage(str, Enum):
+    # OAuth 与服务账号流程的分阶段检索状态机
     START = "start"
     DONE = "done"
     # OAuth specific stages
@@ -54,6 +60,7 @@ class DriveRetrievalStage(str, Enum):
 
 
 class StageCompletion(BaseModel):
+    # 单用户在某阶段的完成进度（时间戳 + 可选 folder/drive/page_token）
     """
     Describes the point in the retrieval+indexing process that the
     connector is at. completed_until is the timestamp of the latest
@@ -82,6 +89,7 @@ class StageCompletion(BaseModel):
 
 
 class GoogleDriveCheckpoint(ConnectorCheckpoint):
+    # 检查点：completion_map、已检索 id 集合与缓存 drive/folder 列表
     # Checkpoint version of _retrieved_ids
     retrieved_folder_and_drive_ids: set[str]
 
@@ -116,6 +124,7 @@ class GoogleDriveCheckpoint(ConnectorCheckpoint):
 
 
 class RetrievedDriveFile(BaseModel):
+    # 检索到的 Drive 文件 +  impersonation 用户 + 可选 error
     """
     Describes a file that has been retrieved from Google Drive.
     user_email is the email of the user that the file was retrieved

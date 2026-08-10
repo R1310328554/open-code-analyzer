@@ -1,3 +1,7 @@
+"""
+Google 连接器常量：各 DocumentSource 的 OAuth scope、DB 凭证键名与 Web OAuth 弹窗 HTML 模板。
+"""
+
 from enum import Enum
 
 from common.data_source.config import DocumentSource
@@ -5,6 +9,7 @@ from common.data_source.config import DocumentSource
 SLIM_BATCH_SIZE = 500
 # NOTE: do not need https://www.googleapis.com/auth/documents.readonly
 # this is counted under `/auth/drive.readonly`
+# Drive/Gmail 索引与 Admin Directory 只读 scope 映射
 GOOGLE_SCOPES = {
     DocumentSource.GOOGLE_DRIVE: [
         "https://www.googleapis.com/auth/drive.readonly",
@@ -37,6 +42,7 @@ DB_CREDENTIALS_AUTHENTICATION_METHOD = "authentication_method"
 
 
 class GoogleOAuthAuthenticationMethod(str, Enum):
+    # oauth_interactive（环境变量客户端）或 uploaded（用户上传完整 JSON）
     OAUTH_INTERACTIVE = "oauth_interactive"
     UPLOADED = "uploaded"
 
@@ -49,6 +55,7 @@ MISSING_SCOPES_ERROR_STR = "client not authorized for any of the scopes requeste
 SCOPE_INSTRUCTIONS = ""
 
 
+# OAuth 回调页 HTML：postMessage 回传 token 并可选自动关窗
 WEB_OAUTH_POPUP_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>

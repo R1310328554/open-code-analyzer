@@ -1,3 +1,7 @@
+"""
+Gmail 连接器：Workspace 域内多用户线程拉取、正文解析与 ExternalAccess 权限标记。
+"""
+
 import logging
 from typing import Any
 from google.oauth2.credentials import Credentials as OAuthCredentials
@@ -13,6 +17,7 @@ from common.data_source.interfaces import LoadConnector, PollConnector, SecondsS
 from common.data_source.models import BasicExpertInfo, Document, ExternalAccess, GenerateDocumentsOutput, GenerateSlimDocumentOutput, SlimDocument, TextSection
 from common.data_source.utils import build_time_range_query, clean_email_and_extract_name, get_message_body, is_mail_service_disabled_error, gmail_time_str_to_utc, sanitize_filename
 
+# Gmail API partial response 字段组合
 # Constants for Gmail API fields
 THREAD_LIST_FIELDS = "nextPageToken, threads(id)"
 PARTS_FIELDS = "parts(body(data), mimeType)"
@@ -40,6 +45,7 @@ def _get_owners_from_emails(emails: dict[str, str | None]) -> list[BasicExpertIn
 
 
 def message_to_section(message: dict[str, Any]) -> tuple[TextSection, dict[str, str]]:
+    # 单条 message 转 TextSection 并提取 headers 元数据
     """Convert Gmail message to text section and metadata."""
     link = f"https://mail.google.com/mail/u/0/#inbox/{message['id']}"
 
@@ -70,6 +76,7 @@ def message_to_section(message: dict[str, Any]) -> tuple[TextSection, dict[str, 
 
 
 def thread_to_document(full_thread: dict[str, Any], email_used_to_fetch_thread: str) -> Document | None:
+    # 整线程合并为单个 Document，主/次 owner 来自 from/cc/bcc
     """Convert Gmail thread to Document object."""
     all_messages = full_thread.get("messages", [])
     if not all_messages:
@@ -140,7 +147,7 @@ def thread_to_document(full_thread: dict[str, Any], email_used_to_fetch_thread: 
 
 
 class GmailConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
-    """Gmail connector for synchronizing emails from Gmail accounts."""
+    """Gmail 邮件索引：OAuth/服务账号凭证，按线程批量 yield Document。"""
 
     def __init__(self, batch_size: int = INDEX_BATCH_SIZE) -> None:
         self.batch_size = batch_size
@@ -180,6 +187,7 @@ class GmailConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         return new_creds_dict
 
     def _get_all_user_emails(self) -> list[str]:
+        # Admin SDK 枚举域用户；404 时回退为单邮箱（个人 Gmail）
         """Get all user emails for Google Workspace domain."""
         try:
             admin_service = get_admin_service(self.creds, self.primary_admin_email)
@@ -201,6 +209,7 @@ class GmailConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         except Exception:
             raise
 
+    # 对每个用户分页 list threads → get 完整线程 → thread_to_document
     def _fetch_threads(
         self,
         time_range_start: SecondsSinceUnixEpoch | None = None,
@@ -266,6 +275,7 @@ class GmailConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
                 raise PermissionError(SCOPE_INSTRUCTIONS) from e
             raise e
 
+    # 瘦文档：仅 thread id + 该邮箱的 ExternalAccess
     def retrieve_all_slim_docs_perm_sync(
         self,
         callback=None,

@@ -1,3 +1,7 @@
+"""
+GitHub API 限流工具：命中 rate limit 后按 reset 时间休眠并重试。
+"""
+
 import time
 import logging
 from datetime import datetime
@@ -8,6 +12,7 @@ from github import Github
 
 
 def sleep_after_rate_limit_exception(github_client: Github) -> None:
+    # 读取 core 配额 reset 时间，额外等待 1 分钟后 sleep
     """
     Sleep until the GitHub rate limit resets.
 

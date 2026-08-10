@@ -1,3 +1,7 @@
+"""
+Google 凭证加载：OAuth 用户令牌与服务账号 JSON，支持刷新后回写 DB。
+"""
+
 import json
 import logging
 from typing import Any
@@ -19,6 +23,7 @@ from common.data_source.google_util.oauth_flow import ensure_oauth_token_dict
 
 
 def sanitize_oauth_credentials(oauth_creds: OAuthCredentials) -> str:
+    # 序列化 OAuth 凭证时剔除 client_id/secret，避免持久化到 DB
     """we really don't want to be persisting the client id and secret anywhere but the
     environment.
 
@@ -35,6 +40,8 @@ def sanitize_oauth_credentials(oauth_creds: OAuthCredentials) -> str:
 
 
 def get_google_creds(
+    # 按 token 或 service_account_key 分支解析；返回 (creds, 需回写的新 dict|None)
+
     credentials: dict[str, str],
     source: DocumentSource,
 ) -> tuple[ServiceAccountCredentials | OAuthCredentials, dict[str, str] | None]:
@@ -126,6 +133,7 @@ def get_google_creds(
 
 
 def get_google_oauth_creds(token_json_str: str, source: DocumentSource) -> OAuthCredentials | None:
+    # 从 authorized_user_info 构建凭证并在过期时用 refresh_token 刷新
     """creds_json only needs to contain client_id, client_secret and refresh_token to
     refresh the creds.
 

@@ -1,3 +1,7 @@
+"""
+Google OAuth 本地授权流：InstalledAppFlow 本地服务器/控制台回退与超时控制。
+"""
+
 import json
 import os
 import threading
@@ -8,6 +12,7 @@ from common.data_source.google_util.constant import GOOGLE_SCOPES
 
 
 def _get_requested_scopes(source: DocumentSource) -> list[str]:
+    # 优先 GOOGLE_OAUTH_SCOPE_OVERRIDE 环境变量
     """Return the scopes to request, honoring an optional override env var."""
     override = os.environ.get("GOOGLE_OAUTH_SCOPE_OVERRIDE", "")
     if override.strip():
@@ -50,6 +55,7 @@ def _run_with_timeout(func: Callable[[], Any], timeout_secs: int, timeout_messag
 
 
 def _run_local_server_flow(client_config: dict[str, Any], source: DocumentSource) -> dict[str, Any]:
+    # 浏览器 consent → 打印可复用的 token JSON
     """Launch the standard Google OAuth local-server flow to mint user tokens."""
     from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 
@@ -105,6 +111,7 @@ def _run_local_server_flow(client_config: dict[str, Any], source: DocumentSource
 
 
 def ensure_oauth_token_dict(credentials: dict[str, Any], source: DocumentSource) -> dict[str, Any]:
+    # 仅有 client config 无 refresh_token 时触发完整 OAuth 流
     """Return a dict that contains OAuth tokens, running the flow if only a client config is provided."""
     if "refresh_token" in credentials and "token" in credentials:
         return credentials

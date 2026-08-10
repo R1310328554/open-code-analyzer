@@ -1,3 +1,7 @@
+"""
+Google Docs 分段提取：按标题/表格切分 TextSection 并生成跳转链接（含 tabs API）。
+"""
+
 from typing import Any
 
 from pydantic import BaseModel
@@ -9,11 +13,14 @@ HEADING_DELIMITER = "\n"
 
 
 class CurrentHeading(BaseModel):
+    # 当前正在累积内容的标题 id 与文本
     id: str | None
     text: str
 
 
 def get_document_sections(
+    # documents.get + includeTabsContent，逐 tab 调用 get_tab_sections
+
     docs_service: GoogleDocsService,
     doc_id: str,
 ) -> list[TextSection]:
@@ -40,6 +47,7 @@ def get_document_sections(
 
 
 def _is_heading(paragraph: dict[str, Any]) -> bool:
+    # namedStyleType 以 HEADING_ 或 TITLE 开头视为标题
     """Checks if a paragraph (a block of text in a drive document) is a heading"""
     if not ("paragraphStyle" in paragraph and "namedStyleType" in paragraph["paragraphStyle"]):
         return False
@@ -143,6 +151,7 @@ def _extract_text_from_table(table: dict[str, Any]) -> str:
 
 
 def get_tab_sections(tab: dict[str, Any], doc_id: str) -> list[TextSection]:
+    # 遍历 tab body 元素，遇标题则 flush 上一段
     tab_id = tab["tabProperties"]["tabId"]
     content = tab.get("documentTab", {}).get("body", {}).get("content", [])
 

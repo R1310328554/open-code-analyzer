@@ -42,6 +42,7 @@ from common.data_source.interfaces import (
 from common.data_source.models import CheckpointOutput, ConnectorFailure, Document, EntityFailure, GenerateSlimDocumentOutput, SecondsSinceUnixEpoch
 from common.data_source.utils import datetime_from_string, parallel_yield, run_functions_tuples_in_parallel
 
+# 并行转换 Drive 文件时的线程池大小
 MAX_DRIVE_WORKERS = int(os.environ.get("MAX_DRIVE_WORKERS", 4))
 SHARED_DRIVE_PAGES_PER_CHECKPOINT = 2
 MY_DRIVE_PAGES_PER_CHECKPOINT = 2
@@ -94,6 +95,7 @@ def add_retrieval_info(
 
 
 class CredentialedRetrievalMethod(Protocol):
+    # 带凭证的检索 callable 协议（field_type + checkpoint + 时间窗）
     def __call__(
         self,
         field_type: DriveFileFieldType,
@@ -104,12 +106,14 @@ class CredentialedRetrievalMethod(Protocol):
 
 
 class DriveIdStatus(str, Enum):
+    # 共享盘 ID 在检查点中的遍历状态
     AVAILABLE = "available"
     IN_PROGRESS = "in_progress"
     FINISHED = "finished"
 
 
 class GoogleDriveConnector(SlimConnectorWithPermSync, CheckpointedConnectorWithPermSync):
+    # 支持共享盘/我的盘/与我共享/指定 URL；检查点分阶段恢复
     def __init__(
         self,
         include_shared_drives: bool = False,
@@ -194,6 +198,7 @@ class GoogleDriveConnector(SlimConnectorWithPermSync, CheckpointedConnectorWithP
 
     # TODO: ensure returned new_creds_dict is actually persisted when this is called?
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # get_google_creds 解析 OAuth 或服务账号；服务账号默认开启 shared-with-me
         try:
             self._primary_admin_email = credentials[DB_CREDENTIALS_PRIMARY_ADMIN_KEY]
         except KeyError:
@@ -220,6 +225,7 @@ class GoogleDriveConnector(SlimConnectorWithPermSync, CheckpointedConnectorWithP
         self._retrieved_folder_and_drive_ids.add(folder_id)
 
     def _get_all_user_emails(self) -> list[str]:
+        # 服务账号模式下 Admin SDK 枚举域用户，可限 specific_user_emails
         if self._specific_user_emails:
             return self._specific_user_emails
 
@@ -1158,6 +1164,7 @@ class GoogleDriveConnector(SlimConnectorWithPermSync, CheckpointedConnectorWithP
 
 
 class CheckpointOutputWrapper:
+    # 将 CheckpointOutput 展开为 (Document|Failure, checkpoint) 三元组流
     """
     Wraps a CheckpointOutput generator to give things back in a more digestible format.
     The connector format is easier for the connector implementor (e.g. it enforces exactly
@@ -1197,6 +1204,7 @@ class CheckpointOutputWrapper:
         yield None, None, self.next_checkpoint
 
 
+# 循环 load_from_checkpoint 直至 has_more=False
 def yield_all_docs_from_checkpoint_connector(
     connector: GoogleDriveConnector,
     start: SecondsSinceUnixEpoch,

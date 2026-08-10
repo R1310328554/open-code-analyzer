@@ -1,3 +1,7 @@
+"""
+Google Drive 文档转换：下载/导出、MIME 过滤、基础与高级分段对齐及 SlimDocument 构建。
+"""
+
 import io
 import logging
 import mimetypes
@@ -18,6 +22,7 @@ from common.data_source.google_util.resource import GoogleDriveService, get_driv
 from common.data_source.models import ConnectorFailure, Document, DocumentFailure, ImageSection, SlimDocument, TextSection
 from common.data_source.utils import get_file_ext
 
+# 索引时跳过的图片 MIME 类型
 # Image types that should be excluded from processing
 EXCLUDED_IMAGE_TYPES = [
     "image/bmp",
@@ -89,6 +94,7 @@ _FALLBACK_WEB_VIEW_LINK_TEMPLATES = {
 
 
 class PermissionSyncContext(BaseModel):
+    # 权限同步所需主管理员邮箱与 Google 域
     """
     This is the information that is needed to sync permissions for a document.
     """
@@ -98,6 +104,7 @@ class PermissionSyncContext(BaseModel):
 
 
 def onyx_document_id_from_drive_file(file: GoogleDriveFileType) -> str:
+    # 用 webViewLink 规范化 URL 作为稳定 Document id
     link = file.get(WEB_VIEW_LINK_KEY)
     if not link:
         file_id = file.get("id")
@@ -133,6 +140,7 @@ def _find_nth(haystack: str, needle: str, n: int, start: int = 0) -> int:
 
 
 def align_basic_advanced(basic_sections: list[TextSection | ImageSection], adv_sections: list[TextSection]) -> list[TextSection | ImageSection]:
+    # 将 Docs 高级 API 分段链接对齐到基础导出文本
     """Align the basic sections with the advanced sections.
     In particular, the basic sections contain all content of the file,
     including smart chips like dates and doc links. The advanced sections
@@ -509,6 +517,8 @@ def _convert_drive_item_to_document(
 
 
 def convert_drive_item_to_document(
+    # 公开入口：下载/转换单个 Drive 文件为 Document
+
     creds: Any,
     allow_images: bool,
     size_threshold: int,
@@ -567,6 +577,8 @@ def convert_drive_item_to_document(
 
 
 def build_slim_document(
+    # 从 Drive 文件元数据构建 SlimDocument（含权限字段）
+
     creds: Any,
     file: GoogleDriveFileType,
     # if not specified, we will not sync permissions
