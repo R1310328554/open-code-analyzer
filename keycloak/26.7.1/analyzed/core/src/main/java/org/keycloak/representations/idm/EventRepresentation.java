@@ -19,103 +19,133 @@ package org.keycloak.representations.idm;
 import java.util.Map;
 
 /**
+ * 用户事件（User Event）的 REST 表示，用于 Events API 查询与审计导出。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 public class EventRepresentation {
 
+    /** 事件唯一标识。 */
     private String id;
+    /** 事件发生时间（Unix 毫秒时间戳）。 */
     private long time;
+    /** 事件类型（如 LOGIN、LOGOUT 等）。 */
     private String type;
+    /** 所属 realm 的内部 ID。 */
     private String realmId;
+    /** 触发事件的客户端 ID。 */
     private String clientId;
+    /** 关联用户的内部 ID。 */
     private String userId;
+    /** 关联用户会话 ID。 */
     private String sessionId;
+    /** 客户端 IP 地址。 */
     private String ipAddress;
+    /** 事件失败时的错误信息。 */
     private String error;
+    /** 附加键值对详情。 */
     private Map<String, String> details;
 
+    /** @return 事件 ID */
     public String getId() {
         return id;
     }
 
+    /** @param id 事件 ID */
     public void setId(String id) {
         this.id = id;
     }
 
+    /** @return 事件发生时间（毫秒） */
     public long getTime() {
         return time;
     }
 
+    /** @param time 事件发生时间（毫秒） */
     public void setTime(long time) {
         this.time = time;
     }
 
+    /** @return 事件类型 */
     public String getType() {
         return type;
     }
 
+    /** @param type 事件类型 */
     public void setType(String type) {
         this.type = type;
     }
 
+    /** @return realm 内部 ID */
     public String getRealmId() {
         return realmId;
     }
 
+    /** @param realmId realm 内部 ID */
     public void setRealmId(String realmId) {
         this.realmId = realmId;
     }
 
+    /** @return 客户端 ID */
     public String getClientId() {
         return clientId;
     }
 
+    /** @param clientId 客户端 ID */
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
 
+    /** @return 用户内部 ID */
     public String getUserId() {
         return userId;
     }
 
+    /** @param userId 用户内部 ID */
     public void setUserId(String userId) {
         this.userId = userId;
     }
 
+    /** @return 用户会话 ID */
     public String getSessionId() {
         return sessionId;
     }
 
+    /** @param sessionId 用户会话 ID */
     public void setSessionId(String sessionId) {
         this.sessionId = sessionId;
     }
 
     /**
-     * Note: will not be an address when a proxy does not provide a valid one
+     * 注意：当代理未提供有效地址时，返回值可能不是真实 IP。
      *
-     * @return the ip address
+     * @return 客户端 IP 地址
      */
     public String getIpAddress() {
         return ipAddress;
     }
 
+    /** @param ipAddress 客户端 IP 地址 */
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }
 
+    /** @return 错误信息 */
     public String getError() {
         return error;
     }
 
+    /** @param error 错误信息 */
     public void setError(String error) {
         this.error = error;
     }
 
+    /** @return 附加详情 */
     public Map<String, String> getDetails() {
         return details;
     }
 
+    /** @param details 附加详情 */
     public void setDetails(Map<String, String> details) {
         this.details = details;
     }

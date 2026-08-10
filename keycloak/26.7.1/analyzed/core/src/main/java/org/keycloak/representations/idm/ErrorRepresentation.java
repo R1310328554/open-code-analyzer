@@ -20,17 +20,31 @@ package org.keycloak.representations.idm;
 import java.util.List;
 
 /**
+ * Admin REST API 校验或业务错误的结构化表示，支持嵌套子错误列表。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ErrorRepresentation {
+    /** 出错字段名（可为 null 表示全局错误）。 */
     private String field;
+    /** 错误消息键或文本。 */
     private String errorMessage;
+    /** 消息模板参数。 */
     private Object[] params;
+    /** 嵌套子错误列表。 */
     private List<ErrorRepresentation> errors;
 
+    /** 无参构造。 */
     public ErrorRepresentation() {
     }
 
+    /**
+     * 构造单条字段错误。
+     *
+     * @param field 出错字段名
+     * @param errorMessage 错误消息
+     * @param params 消息参数
+     */
     public ErrorRepresentation(String field, String errorMessage, Object[] params) {
         super();
         this.field = field;
@@ -38,34 +52,42 @@ public class ErrorRepresentation {
         this.params = params;
     }
 
+    /** @return 出错字段名 */
     public String getField() {
         return field;
     }
 
+    /** @param field 出错字段名 */
     public void setField(String field) {
         this.field = field;
     }
 
+    /** @return 错误消息 */
     public String getErrorMessage() {
         return errorMessage;
     }
 
+    /** @param errorMessage 错误消息 */
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
     }
-    
+
+    /** @return 消息参数数组 */
     public Object[] getParams() {
         return this.params;
     }
-    
+
+    /** @param params 消息参数数组 */
     public void setParams(Object[] params) {
         this.params = params;
     }
 
+    /** @param errors 嵌套子错误列表 */
     public void setErrors(List<ErrorRepresentation> errors) {
         this.errors = errors;
     }
 
+    /** @return 嵌套子错误列表 */
     public List<ErrorRepresentation> getErrors() {
         return errors;
     }

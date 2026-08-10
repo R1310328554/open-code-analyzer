@@ -18,16 +18,23 @@
 package org.keycloak.representations.idm;
 
 /**
+ * 细粒度管理权限启用状态的简单表示。
+ *
  * @author <a href="mailto:leon.graser@bosch-si.com">Leon Graser</a>
  */
 public class ManagementPermissionRepresentation {
 
+    /** 是否已启用细粒度管理权限。 */
     private final boolean enabled;
 
+    /**
+     * @param enabled 是否启用细粒度管理权限
+     */
     public ManagementPermissionRepresentation(boolean enabled) {
         this.enabled = enabled;
     }
 
+    /** @return 是否启用细粒度管理权限 */
     public boolean isEnabled() {
         return enabled;
     }

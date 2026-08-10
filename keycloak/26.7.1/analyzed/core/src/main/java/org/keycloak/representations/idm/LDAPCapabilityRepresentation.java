@@ -23,20 +23,31 @@ import java.util.Objects;
 import org.keycloak.common.util.ObjectUtil;
 
 /**
- * Value object to represent an OID (object identifier) as used to describe LDAP schema, extension and features.
- * See <a href="https://ldap.com/ldap-oid-reference-guide/">LDAP OID Reference Guide</a>.
+ * 用于描述 LDAP 模式、扩展与特性的 OID（对象标识符）值对象。
+ * 参见 <a href="https://ldap.com/ldap-oid-reference-guide/">LDAP OID Reference Guide</a>。
  *
  * @author Lars Uffmann, 2020-05-13
  * @since 11.0
  */
 public class LDAPCapabilityRepresentation {
 
+    /** LDAP 能力类型枚举。 */
     public enum CapabilityType {
+        /** LDAP 控制扩展。 */
         CONTROL,
+        /** LDAP 标准扩展。 */
         EXTENSION,
+        /** LDAP 特性。 */
         FEATURE,
+        /** 未知类型。 */
         UNKNOWN;
 
+        /**
+         * 根据 Root DSE 属性名解析能力类型。
+         *
+         * @param attributeName Root DSE 属性名
+         * @return 对应的能力类型
+         */
         public static CapabilityType fromRootDseAttributeName(String attributeName) {
             switch (attributeName) {
                 case "supportedExtension": return CapabilityType.EXTENSION;
@@ -47,22 +58,31 @@ public class LDAPCapabilityRepresentation {
         }
     };
 
+    /** OID 值（可为 String 或其他类型）。 */
     private Object oid;
 
+    /** 能力类型。 */
     private CapabilityType type;
 
+    /** 无参构造。 */
     public LDAPCapabilityRepresentation() {
     }
 
+    /**
+     * @param oidValue OID 值
+     * @param type 能力类型
+     */
     public LDAPCapabilityRepresentation(Object oidValue, CapabilityType type) {
         this.oid = Objects.requireNonNull(oidValue);
         this.type = type;
     }
 
+    /** @return OID 字符串 */
     public String getOid() {
         return oid instanceof String ? (String) oid : String.valueOf(oid);
     }
 
+    /** @return 能力类型 */
     public CapabilityType getType() {
         return type;
     }
