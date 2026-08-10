@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:33:31Z",
   "files": [
-    "pkg/util/constants/levels.go",
-    "pkg/util/constants/metrics_namespace.go",
-    "pkg/util/constants/variants.go",
-    "pkg/util/conv.go",
-    "pkg/util/deletion/deletion.go",
-    "pkg/util/discovery/dns.go",
-    "pkg/util/dns_watcher.go",
-    "pkg/util/encoding/encoding.go",
-    "pkg/util/entry_size.go",
-    "pkg/util/errors.go",
-    "pkg/util/events.go",
-    "pkg/util/evicting_queue.go",
-    "pkg/util/extract/extract.go",
-    "pkg/util/fakeauth/fake_auth.go",
-    "pkg/util/filter/filter_function.go",
     "pkg/util/flagext/bytesize.go",
     "pkg/util/flagext/csv.go",
     "pkg/util/flagext/flagsetskip.go",
@@ -33,5 +18,5 @@
     "pkg/util/limiter/query_limiter.go"
   ],
   "remaining_pending": 112,
-  "done": 1410
+  "done": 1425
 }
