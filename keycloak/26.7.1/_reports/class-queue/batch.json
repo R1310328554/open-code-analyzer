@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T05:51:31Z",
   "files": [
-    "common/src/main/java/org/keycloak/common/util/reflections/Types.java",
-    "common/src/main/java/org/keycloak/common/util/reflections/UnSetAccessiblePrivilegedAction.java",
-    "core/src/main/java/org/keycloak/AbstractOAuthClient.java",
-    "core/src/main/java/org/keycloak/AuthorizationContext.java",
-    "core/src/main/java/org/keycloak/Config.java",
-    "core/src/main/java/org/keycloak/KeyPairVerifier.java",
-    "core/src/main/java/org/keycloak/KeycloakPrincipal.java",
-    "core/src/main/java/org/keycloak/KeycloakSecurityContext.java",
-    "core/src/main/java/org/keycloak/OAuth2Constants.java",
-    "core/src/main/java/org/keycloak/OAuthErrorException.java",
-    "core/src/main/java/org/keycloak/OID4VCConstants.java",
-    "core/src/main/java/org/keycloak/RSATokenVerifier.java",
-    "core/src/main/java/org/keycloak/Token.java",
-    "core/src/main/java/org/keycloak/TokenCategory.java",
-    "core/src/main/java/org/keycloak/TokenIdGenerator.java",
     "core/src/main/java/org/keycloak/TokenVerifier.java",
     "core/src/main/java/org/keycloak/VCFormat.java",
     "core/src/main/java/org/keycloak/constants/AdapterConstants.java",
@@ -33,5 +18,5 @@
     "core/src/main/java/org/keycloak/crypto/KeyUse.java"
   ],
   "remaining_pending": 5728,
-  "done": 240
+  "done": 255
 }

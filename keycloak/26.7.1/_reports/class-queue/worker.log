@@ -238,3 +238,18 @@
 2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PathMatcher.java wave8a common util continued
 2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PemException.java wave8a common util continued
 2026-08-10T05:50:53Z DONE common/src/main/java/org/keycloak/common/util/PemUtils.java wave8a common util continued
+2026-08-10T05:53:24Z DONE common/src/main/java/org/keycloak/common/util/reflections/Types.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE common/src/main/java/org/keycloak/common/util/reflections/UnSetAccessiblePrivilegedAction.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/AbstractOAuthClient.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/AuthorizationContext.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/Config.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/KeyPairVerifier.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/KeycloakPrincipal.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/KeycloakSecurityContext.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/OAuth2Constants.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/OAuthErrorException.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/OID4VCConstants.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/RSATokenVerifier.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/Token.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/TokenCategory.java wave9a common reflections + core oauth
+2026-08-10T05:53:24Z DONE core/src/main/java/org/keycloak/TokenIdGenerator.java wave9a common reflections + core oauth
