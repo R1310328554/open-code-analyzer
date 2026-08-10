@@ -20,7 +20,9 @@ import com.alibaba.nacos.api.exception.runtime.NacosRuntimeException;
 import com.alibaba.nacos.api.naming.NamingResponseCode;
 
 /**
- * Exception that does not require retry.
+ * 无需重试的推送异常。
+ *
+ * <p>推送任务捕获此异常后应停止重试，错误码为 {@link NamingResponseCode#NO_NEED_RETRY}。</p>
  *
  * @author xiweng.yy
  */
@@ -28,6 +30,7 @@ public class NoRequiredRetryException extends NacosRuntimeException {
     
     private static final long serialVersionUID = -7941235764759109405L;
     
+    /** 构造无需重试异常，携带 NO_NEED_RETRY 响应码。 */
     public NoRequiredRetryException() {
         super(NamingResponseCode.NO_NEED_RETRY);
     }

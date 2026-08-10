@@ -24,7 +24,9 @@ import java.util.Collection;
 import java.util.HashSet;
 
 /**
- * Naming subscriber service for local.
+ * 本地节点订阅者查询服务实现。
+ *
+ * <p>委托 {@link NamingSubscriberServiceV2Impl} 从 v2 客户端索引获取本机负责的订阅者。</p>
  *
  * @author xiweng.yy
  */
@@ -38,6 +40,7 @@ public class NamingSubscriberServiceLocalImpl implements NamingSubscriberService
         this.namingSubscriberServiceV2 = namingSubscriberServiceV2;
     }
     
+    /** 查询本节点指定服务的订阅者（去重 HashSet）。 */
     @Override
     public Collection<Subscriber> getSubscribers(String namespaceId, String serviceName) {
         return new HashSet<>(namingSubscriberServiceV2.getSubscribers(namespaceId, serviceName));
@@ -48,6 +51,7 @@ public class NamingSubscriberServiceLocalImpl implements NamingSubscriberService
         return new HashSet<>(namingSubscriberServiceV2.getSubscribers(service));
     }
     
+    /** 本节点模糊查询订阅者。 */
     @Override
     public Collection<Subscriber> getFuzzySubscribers(String namespaceId, String serviceName) {
         return new HashSet<>(

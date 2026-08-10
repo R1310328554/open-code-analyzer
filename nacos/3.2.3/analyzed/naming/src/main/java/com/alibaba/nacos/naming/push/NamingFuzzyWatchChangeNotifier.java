@@ -33,7 +33,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * service change notify for fuzzy watch.
+ * 模糊订阅（Fuzzy Watch）服务变更通知器。
+ *
+ * <p>监听 {@link ServiceEvent.ServiceChangedEvent}，当服务实例变化且命中模糊订阅上下文时，为各订阅客户端生成 {@link FuzzyWatchChangeNotifyTask} 并投递到延迟推送引擎。</p>
  *
  * @author shiyiyue
  */
@@ -44,6 +46,7 @@ public class NamingFuzzyWatchChangeNotifier extends SmartSubscriber {
     
     private FuzzyWatchPushDelayTaskEngine fuzzyWatchPushDelayTaskEngine;
     
+    /** 注册为 NotifyCenter 订阅者，注入模糊订阅上下文与延迟任务引擎。 */
     public NamingFuzzyWatchChangeNotifier(
         NamingFuzzyWatchContextService namingFuzzyWatchContextService,
         FuzzyWatchPushDelayTaskEngine fuzzyWatchPushDelayTaskEngine) {
@@ -52,6 +55,7 @@ public class NamingFuzzyWatchChangeNotifier extends SmartSubscriber {
         NotifyCenter.registerSubscriber(this);
     }
     
+    /** 订阅服务变更事件类型。 */
     @Override
     public List<Class<? extends Event>> subscribeTypes() {
         List<Class<? extends Event>> result = new LinkedList<>();
@@ -59,6 +63,7 @@ public class NamingFuzzyWatchChangeNotifier extends SmartSubscriber {
         return result;
     }
     
+    /** 处理服务变更：同步上下文后为模糊订阅客户端生成推送任务。 */
     @Override
     public void onEvent(Event event) {
         if (event instanceof ServiceEvent.ServiceChangedEvent) {
@@ -84,7 +89,7 @@ public class NamingFuzzyWatchChangeNotifier extends SmartSubscriber {
         Loggers.SRV_LOG.info("FUZZY_WATCH:serviceKey {}   has {} clients  fuzzy watched",
             serviceKey,
             fuzzyWatchedClients == null ? 0 : fuzzyWatchedClients.size());
-        // watch notify push task specify by service
+        // 按服务维度为每个模糊订阅客户端生成变更通知任务
         for (String clientId : fuzzyWatchedClients) {
             FuzzyWatchChangeNotifyTask fuzzyWatchChangeNotifyTask =
                 new FuzzyWatchChangeNotifyTask(serviceKey,

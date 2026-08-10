@@ -19,18 +19,20 @@ package com.alibaba.nacos.naming.push.v2.executor;
 import com.alibaba.nacos.naming.pojo.Subscriber;
 
 /**
- * Nacos naming push executor for SPI.
+ * SPI 扩展推送执行器接口。
+ *
+ * <p>第三方可通过 Java SPI 注册自定义推送通道，由 {@link SpiImplPushExecutorHolder} 加载并按 {@link #isInterest} 路由。</p>
  *
  * @author xiweng.yy
  */
 public interface SpiPushExecutor extends PushExecutor {
     
     /**
-     * Whether SPI push executor is interest this push.
+     * 判断本 SPI 实现是否应处理该次推送。
      *
-     * @param clientId   client id of push
-     * @param subscriber subscribe info
-     * @return {@code true} if this SPI push executor should execute, otherwise false.
+     * @param clientId   待推送的客户端 ID
+     * @param subscriber 订阅者信息
+     * @return 若应由本实现执行则 {@code true}，否则 {@code false}
      */
     boolean isInterest(String clientId, Subscriber subscriber);
 }

@@ -22,16 +22,21 @@ import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.util.VersionUtil;
 
 /**
- * Client info.
+ * 客户端信息解析器，从 User-Agent 识别客户端类型与版本号。
+ *
+ * <p>推送链路根据 {@link ClientType} 与 Jackson {@link Version} 做协议适配与兼容性判断。</p>
  *
  * @author nacos
  */
 public class ClientInfo {
     
+    /** 客户端版本号（解析自 User-Agent）。 */
     public Version version;
     
+    /** 客户端类型枚举。 */
     public ClientType type;
     
+    /** 根据 HTTP User-Agent 字符串解析客户端类型与版本。 */
     public ClientInfo(String userAgent) {
         String versionStr = StringUtils.isEmpty(userAgent) ? StringUtils.EMPTY : userAgent;
         this.type = ClientType.getType(versionStr);
@@ -54,45 +59,25 @@ public class ClientInfo {
     
     public enum ClientType {
         
-        /**
-         * Go client type.
-         */
+        /** Go 语言客户端。 */
         GO(ClientTypeDescription.GO_CLIENT),
-        /**
-         * Java client type.
-         */
+        /** Java 语言客户端。 */
         JAVA(ClientTypeDescription.JAVA_CLIENT),
-        /**
-         * C client type.
-         */
+        /** C 语言客户端。 */
         C(ClientTypeDescription.C_CLIENT),
-        /**
-         * CSharp client type.
-         */
+        /** C# 语言客户端。 */
         CSHARP(ClientTypeDescription.CSHARP_CLIENT),
-        /**
-         * php client type.
-         */
+        /** PHP 语言客户端。 */
         PHP(ClientTypeDescription.PHP_CLIENT),
-        /**
-         * dns-f client type.
-         */
+        /** DNS-F 客户端。 */
         DNS(ClientTypeDescription.DNSF_CLIENT),
-        /**
-         * nginx client type.
-         */
+        /** Nginx/Tengine 客户端。 */
         TENGINE(ClientTypeDescription.NGINX_CLIENT),
-        /**
-         * sdk client type.
-         */
+        /** Java SDK 客户端。 */
         JAVA_SDK(ClientTypeDescription.SDK_CLIENT),
-        /**
-         * Server notify each other.
-         */
+        /** Nacos 集群节点间互推。 */
         NACOS_SERVER(UtilsAndCommons.NACOS_SERVER_HEADER),
-        /**
-         * Unknown client type.
-         */
+        /** 未知客户端类型。 */
         UNKNOWN(UtilsAndCommons.UNKNOWN_SITE);
         
         private final String clientTypeDescription;
@@ -105,6 +90,7 @@ public class ClientInfo {
             return clientTypeDescription;
         }
         
+        /** 按 User-Agent 前缀匹配客户端类型，未匹配则返回 {@link #UNKNOWN}。 */
         public static ClientType getType(String userAgent) {
             for (ClientType each : ClientType.values()) {
                 if (userAgent.startsWith(each.getClientTypeDescription())) {
@@ -115,6 +101,7 @@ public class ClientInfo {
         }
     }
     
+    /** 各客户端 User-Agent 前缀常量定义。 */
     public static class ClientTypeDescription {
         
         public static final String JAVA_CLIENT = "Nacos-Java-Client";

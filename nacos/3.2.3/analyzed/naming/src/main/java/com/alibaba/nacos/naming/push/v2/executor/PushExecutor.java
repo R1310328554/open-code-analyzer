@@ -23,38 +23,40 @@ import com.alibaba.nacos.naming.push.v2.PushDataWrapper;
 import com.alibaba.nacos.naming.push.v2.task.NamingPushCallback;
 
 /**
- * Nacos naming push executor for v2.
+ * v2 推送执行器接口。
+ *
+ * <p>定义向客户端推送服务实例、带回调推送及模糊 Watch 通知三类能力。</p>
  *
  * @author xiweng.yy
  */
 public interface PushExecutor {
     
     /**
-     * Do push.
+     * 向指定客户端推送服务实例数据（无 ACK）。
      *
-     * @param clientId   client id
-     * @param subscriber subscriber
-     * @param data       push data
+     * @param clientId   客户端 ID
+     * @param subscriber 订阅者信息
+     * @param data       推送数据包装
      */
     void doPush(String clientId, Subscriber subscriber, PushDataWrapper data);
     
     /**
-     * Do push with callback.
+     * 带回调的推送，用于延迟任务引擎统计成功/失败与重试。
      *
-     * @param clientId   client id
-     * @param subscriber subscriber
-     * @param data       push data
-     * @param callBack   callback
+     * @param clientId   客户端 ID
+     * @param subscriber 订阅者信息
+     * @param data       推送数据包装
+     * @param callBack   推送完成回调
      */
     void doPushWithCallback(String clientId, Subscriber subscriber, PushDataWrapper data,
         NamingPushCallback callBack);
     
     /**
-     * Do push to notify fuzzy watcher with call back.
+     * 向模糊 Watch 客户端推送变更/同步通知（带回调）。
      *
-     * @param clientId client id
-     * @param fuzzyWatchNotifyRequest request for fuzzy watch notification
-     * @param callBack   callback
+     * @param clientId 客户端 ID
+     * @param fuzzyWatchNotifyRequest 模糊 Watch 通知请求
+     * @param callBack 推送完成回调
      */
     void doFuzzyWatchNotifyPushWithCallBack(String clientId,
         AbstractFuzzyWatchNotifyRequest fuzzyWatchNotifyRequest, PushCallBack callBack);

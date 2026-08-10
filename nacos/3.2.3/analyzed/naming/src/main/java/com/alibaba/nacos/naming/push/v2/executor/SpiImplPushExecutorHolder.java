@@ -24,7 +24,9 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * SPI push executor holder.
+ * SPI 推送执行器持有者（单例）。
+ *
+ * <p>启动时通过 {@link NacosServiceLoader} 加载全部 {@link SpiPushExecutor} 扩展，按 {@link #findPushExecutorSpiImpl} 匹配感兴趣的实现。</p>
  *
  * @author xiweng.yy
  */
@@ -38,16 +40,17 @@ public class SpiImplPushExecutorHolder {
         pushExecutors = new HashSet<>(NacosServiceLoader.load(SpiPushExecutor.class));
     }
     
+    /** 返回 SPI 持有者单例。 */
     public static SpiImplPushExecutorHolder getInstance() {
         return INSTANCE;
     }
     
     /**
-     * Try to find an {@link PushExecutor} implement by SPI which interest to execute this push.
+     * 查找对该次推送感兴趣的 SPI 推送执行器。
      *
-     * @param clientId   client id
-     * @param subscriber subscriber infor
-     * @return {@link PushExecutor} which interest to execute this push, otherwise {@code Optional.empty()}
+     * @param clientId   客户端 ID
+     * @param subscriber 订阅者信息
+     * @return 匹配的 {@link PushExecutor}，否则 {@code Optional.empty()}
      */
     public Optional<SpiPushExecutor> findPushExecutorSpiImpl(String clientId,
         Subscriber subscriber) {

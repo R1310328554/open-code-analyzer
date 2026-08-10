@@ -24,16 +24,21 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Nacos push data wrapper.
+ * 推送数据包装器，携带原始实例列表与处理后缓存。
+ *
+ * <p>推送执行器可经 {@link #addProcessedPushData} 缓存 SPI 或过滤后的数据，避免重复计算。</p>
  *
  * @author xiweng.yy
  */
 public class PushDataWrapper {
     
+    /** 服务元数据（保护阈值、推送开关等）。 */
     private final ServiceMetadata serviceMetadata;
     
+    /** 原始 {@link ServiceInfo} 实例列表。 */
     private final ServiceInfo originalData;
     
+    /** 按 key 缓存的已处理推送数据。 */
     private final Map<String, Object> processedDatum;
     
     public PushDataWrapper(ServiceMetadata serviceMetadata, ServiceInfo originalData) {
@@ -42,18 +47,22 @@ public class PushDataWrapper {
         processedDatum = new HashMap<>(1);
     }
     
+    /** 返回原始服务实例信息。 */
     public ServiceInfo getOriginalData() {
         return originalData;
     }
     
+    /** 返回服务元数据。 */
     public ServiceMetadata getServiceMetadata() {
         return serviceMetadata;
     }
     
+    /** 按 key 获取已处理的推送数据（泛型 Optional）。 */
     public <T> Optional<T> getProcessedPushData(String key) {
         return Optional.ofNullable((T) processedDatum.get(key));
     }
     
+    /** 缓存一条已处理的推送数据。 */
     public void addProcessedPushData(String key, Object processedData) {
         processedDatum.put(key, processedData);
     }

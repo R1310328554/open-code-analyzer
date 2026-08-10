@@ -41,14 +41,16 @@ import java.util.Map;
 import static com.alibaba.nacos.common.constant.RequestUrlConstants.HTTP_PREFIX;
 
 /**
- * Aggregation naming subscriber service. Aggregate all implementation of {@link NamingSubscriberService} and
- * subscribers from other nodes.
+ * 集群聚合版订阅者查询服务。
+ *
+ * <p>合并本地 {@link NamingSubscriberServiceLocalImpl} 结果与各远程节点 HTTP 拉取的订阅者，供集群运维接口展示全量推送目标。</p>
  *
  * @author xiweng.yy
  */
 @org.springframework.stereotype.Service
 public class NamingSubscriberServiceAggregationImpl implements NamingSubscriberService {
     
+    /** 远程节点订阅者同步 HTTP 路径后缀。 */
     private static final String SUBSCRIBER_ON_SYNC_URL = "/subscribers";
     
     private final NamingSubscriberServiceLocalImpl subscriberServiceLocal;
@@ -62,6 +64,7 @@ public class NamingSubscriberServiceAggregationImpl implements NamingSubscriberS
         this.memberManager = serverMemberManager;
     }
     
+    /** 本地 + 远程聚合查询指定服务的订阅者。 */
     @Override
     public Collection<Subscriber> getSubscribers(String namespaceId, String serviceName) {
         Collection<Subscriber> result = new LinkedList<>(
@@ -104,6 +107,7 @@ public class NamingSubscriberServiceAggregationImpl implements NamingSubscriberS
         return result;
     }
     
+    /** 向除本节点外的集群成员发起 HTTP GET，合并远程订阅者到 result。 */
     private void getSubscribersFromRemotes(String namespaceId, String serviceName,
         Collection<Subscriber> result) {
         for (Member server : memberManager.allMembersWithoutSelf()) {

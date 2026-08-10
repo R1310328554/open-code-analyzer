@@ -21,7 +21,9 @@ import com.alibaba.nacos.naming.constants.PushConstants;
 import com.alibaba.nacos.sys.env.EnvUtil;
 
 /**
- * Push configuration.
+ * 推送模块动态配置（单例）。
+ *
+ * <p>从环境变量读取推送任务延迟、超时与重试间隔，支持运行时热更新。</p>
  *
  * @author xiweng.yy
  */
@@ -31,10 +33,13 @@ public class PushConfig extends AbstractDynamicConfig {
     
     private static final PushConfig INSTANCE = new PushConfig();
     
+    /** 推送任务首次执行延迟（毫秒）。 */
     private long pushTaskDelay = PushConstants.DEFAULT_PUSH_TASK_DELAY;
     
+    /** 单次推送超时时间（毫秒）。 */
     private long pushTaskTimeout = PushConstants.DEFAULT_PUSH_TASK_TIMEOUT;
     
+    /** 推送失败后重试间隔（毫秒）。 */
     private long pushTaskRetryDelay = PushConstants.DEFAULT_PUSH_TASK_RETRY_DELAY;
     
     private PushConfig() {
@@ -61,18 +66,22 @@ public class PushConfig extends AbstractDynamicConfig {
             + ", pushTaskRetryDelay=" + pushTaskRetryDelay + '}';
     }
     
+    /** 返回推送配置单例。 */
     public static PushConfig getInstance() {
         return INSTANCE;
     }
     
+    /** 获取推送任务延迟毫秒数。 */
     public long getPushTaskDelay() {
         return pushTaskDelay;
     }
     
+    /** 获取推送任务超时毫秒数。 */
     public long getPushTaskTimeout() {
         return pushTaskTimeout;
     }
     
+    /** 获取推送重试间隔毫秒数。 */
     public long getPushTaskRetryDelay() {
         return pushTaskRetryDelay;
     }

@@ -43,7 +43,9 @@ import static com.alibaba.nacos.api.common.Constants.ServiceChangedType.ADD_SERV
 import static com.alibaba.nacos.api.common.Constants.ServiceChangedType.DELETE_SERVICE;
 
 /**
- * fuzzy watch event  for fuzzy watch.
+ * 模糊订阅同步通知器，处理客户端模糊 Watch 注册与增量同步。
+ *
+ * <p>监听 {@link ClientOperationEvent.ClientFuzzyWatchEvent}，对比模式匹配的服务键与客户端已收键集，分批生成 {@link FuzzyWatchSyncNotifyTask} 推送初始或差异同步。</p>
  *
  * @author shiyiyue
  */
@@ -54,6 +56,7 @@ public class NamingFuzzyWatchSyncNotifier extends SmartSubscriber {
     
     private FuzzyWatchPushDelayTaskEngine fuzzyWatchPushDelayTaskEngine;
     
+    /** 单次同步推送的最大服务键数量。 */
     static final int BATCH_SIZE = 10;
     
     public NamingFuzzyWatchSyncNotifier(
@@ -75,7 +78,7 @@ public class NamingFuzzyWatchSyncNotifier extends SmartSubscriber {
     public void onEvent(Event event) {
         
         if (event instanceof ClientOperationEvent.ClientFuzzyWatchEvent) {
-            //fuzzy watch event
+            // 客户端模糊 Watch 事件
             ClientOperationEvent.ClientFuzzyWatchEvent clientFuzzyWatchEvent =
                 (ClientOperationEvent.ClientFuzzyWatchEvent) event;
             handleClientFuzzyWatchEvent(clientFuzzyWatchEvent);
@@ -86,7 +89,7 @@ public class NamingFuzzyWatchSyncNotifier extends SmartSubscriber {
         ClientOperationEvent.ClientFuzzyWatchEvent clientFuzzyWatchEvent) {
         String completedPattern = clientFuzzyWatchEvent.getGroupKeyPattern();
         
-        //sync fuzzy watch context
+        // 同步模糊 Watch 上下文：匹配模式下的服务键
         Set<String> patternMatchedServiceKeys =
             namingFuzzyWatchContextService.matchServiceKeys(completedPattern);
         
@@ -96,7 +99,7 @@ public class NamingFuzzyWatchSyncNotifier extends SmartSubscriber {
             FuzzyGroupKeyPattern.diffGroupKeys(
                 patternMatchedServiceKeys, clientReceivedGroupKeys);
         
-        // delete notify protection when pattern match count over limit because patternMatchedServiceKeys may not full set.
+        // 模式匹配数超限时跳过删除通知，因 matched 集合可能不完整
         if (namingFuzzyWatchContextService.reachToUpLimit(completedPattern)) {
             groupKeyStates.removeIf(item -> !item.isExist());
         }
@@ -136,6 +139,7 @@ public class NamingFuzzyWatchSyncNotifier extends SmartSubscriber {
         }
     }
     
+    /** 将同步上下文按 {@link #BATCH_SIZE} 分批，避免单次推送过大。 */
     private Set<Set<NamingFuzzyWatchSyncRequest.Context>> divideServiceByBatch(
         Collection<NamingFuzzyWatchSyncRequest.Context> matchedService) {
         Set<Set<NamingFuzzyWatchSyncRequest.Context>> result = new HashSet<>();
@@ -156,6 +160,7 @@ public class NamingFuzzyWatchSyncNotifier extends SmartSubscriber {
         return result;
     }
     
+    /** 将 GroupKey 差异状态转换为模糊 Watch 同步请求上下文。 */
     private Set<NamingFuzzyWatchSyncRequest.Context> convert(
         List<FuzzyGroupKeyPattern.GroupKeyState> diffGroupKeys) {
         Set<NamingFuzzyWatchSyncRequest.Context> syncContext = new HashSet<>();

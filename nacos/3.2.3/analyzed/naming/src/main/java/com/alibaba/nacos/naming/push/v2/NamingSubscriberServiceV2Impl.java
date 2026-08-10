@@ -43,7 +43,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Naming subscriber service for v2.x.
+ * v2 协议订阅者服务与推送调度核心。
+ *
+ * <p>监听服务变更/新订阅事件，通过 {@link PushDelayTaskExecuteEngine} 延迟推送；同时实现 {@link NamingSubscriberService} 供运维查询订阅者。</p>
  *
  * @author xiweng.yy
  */
@@ -51,6 +53,7 @@ import java.util.stream.Stream;
 public class NamingSubscriberServiceV2Impl extends SmartSubscriber
     implements NamingSubscriberService {
     
+    /** 模糊查询时启用并行流的服务数量阈值。 */
     private static final int PARALLEL_SIZE = 100;
     
     private final ClientManager clientManager;
@@ -118,7 +121,7 @@ public class NamingSubscriberServiceV2Impl extends SmartSubscriber
     @Override
     public void onEvent(Event event) {
         if (event instanceof ServiceEvent.ServiceChangedEvent) {
-            // If service changed, push to all subscribers.
+            // 服务实例变更：向全部订阅者推送
             ServiceEvent.ServiceChangedEvent serviceChangedEvent =
                 (ServiceEvent.ServiceChangedEvent) event;
             Service service = serviceChangedEvent.getService();
@@ -126,7 +129,7 @@ public class NamingSubscriberServiceV2Impl extends SmartSubscriber
                 new PushDelayTask(service, PushConfig.getInstance().getPushTaskDelay()));
             MetricsMonitor.incrementServiceChangeCount(service);
         } else if (event instanceof ServiceEvent.ServiceSubscribedEvent) {
-            // If service is subscribed by one client, only push this client.
+            // 新订阅事件：仅向该客户端推送
             ServiceEvent.ServiceSubscribedEvent subscribedEvent =
                 (ServiceEvent.ServiceSubscribedEvent) event;
             Service service = subscribedEvent.getService();
@@ -136,11 +139,13 @@ public class NamingSubscriberServiceV2Impl extends SmartSubscriber
         }
     }
     
+    /** 获取已订阅服务流，数量超阈值时使用并行流加速模糊匹配。 */
     private Stream<Service> getServiceStream() {
         Collection<Service> services = indexesManager.getSubscribedService();
         return services.size() > PARALLEL_SIZE ? services.parallelStream() : services.stream();
     }
     
+    /** 返回延迟推送引擎中待执行任务数量（监控用）。 */
     public int getPushPendingTaskCount() {
         return delayTaskEngine.size();
     }

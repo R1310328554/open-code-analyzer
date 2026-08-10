@@ -29,7 +29,9 @@ import com.alibaba.nacos.naming.utils.ServiceUtil;
 import org.springframework.stereotype.Component;
 
 /**
- * Push execute service for rpc.
+ * 基于 RPC 的默认推送执行器实现。
+ *
+ * <p>通过 {@link RpcPushService} 发送 {@link NotifySubscriberRequest} 或模糊 Watch 通知，推送前按健康保护与订阅者信息过滤实例。</p>
  *
  * @author xiweng.yy
  */
@@ -42,6 +44,7 @@ public class PushExecutorRpcImpl implements PushExecutor {
         this.pushService = pushService;
     }
     
+    /** 无 ACK 推送：构建 NotifySubscriberRequest 经 RPC 下发。 */
     @Override
     public void doPush(String clientId, Subscriber subscriber, PushDataWrapper data) {
         pushService.pushWithoutAck(clientId,
@@ -58,6 +61,7 @@ public class PushExecutorRpcImpl implements PushExecutor {
             callBack, GlobalExecutor.getCallbackExecutor());
     }
     
+    /** 按服务元数据健康保护与订阅者信息筛选待推送实例列表。 */
     private ServiceInfo getServiceInfo(PushDataWrapper data, Subscriber subscriber) {
         return ServiceUtil
             .selectInstancesWithHealthyProtection(data.getOriginalData(), data.getServiceMetadata(),

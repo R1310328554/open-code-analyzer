@@ -26,7 +26,9 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 
 /**
- * Delegate for push execute service.
+ * 推送执行器委托，按 SPI 或默认 RPC 路由推送。
+ *
+ * <p>优先查找 {@link SpiPushExecutor} 扩展实现，未命中则使用 {@link PushExecutorRpcImpl}。</p>
  *
  * @author xiweng.yy
  */
@@ -55,18 +57,19 @@ public class PushExecutorDelegate implements PushExecutor {
     public void doFuzzyWatchNotifyPushWithCallBack(String clientId,
         AbstractFuzzyWatchNotifyRequest watchNotifyRequest,
         PushCallBack callBack) {
-        // only support fuzzy watch by rpc
+        // 模糊 Watch 通知目前仅通过 RPC 推送
         rpcPushExecuteService.doFuzzyWatchNotifyPushWithCallBack(clientId, watchNotifyRequest,
             callBack);
     }
     
+    /** 根据 clientId 与 subscriber 选择 SPI 或默认 RPC 执行器。 */
     private PushExecutor getPushExecuteService(String clientId, Subscriber subscriber) {
         Optional<SpiPushExecutor> result = SpiImplPushExecutorHolder.getInstance()
             .findPushExecutorSpiImpl(clientId, subscriber);
         if (result.isPresent()) {
             return result.get();
         }
-        // use nacos default push executor
+        // 无 SPI 匹配时使用默认 RPC 推送执行器
         return rpcPushExecuteService;
     }
 }
