@@ -42,64 +42,65 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * {@link OcspServerCertificateValidator} validates incoming server's certificate
- * using OCSP. Once TLS handshake is completed, {@link SslHandshakeCompletionEvent#SUCCESS} is fired, validator
- * will perform certificate validation using OCSP over HTTP/1.1 with the server's certificate issuer OCSP responder.
+ * {@link OcspServerCertificateValidator} 在 TLS 握手完成后通过 OCSP over HTTP/1.1
+ * 校验服务端证书吊销状态。
+ * <p>握手成功并触发 {@link SslHandshakeCompletionEvent#SUCCESS} 后，向证书 AIA 中的
+ * OCSP 响应器发起查询并处理结果。</p>
  */
 public class OcspServerCertificateValidator extends ByteToMessageDecoder implements ChannelOutboundHandler {
     /**
-     * An attribute used to mark all channels created by the {@link OcspServerCertificateValidator}.
+     * 标记由 {@link OcspServerCertificateValidator} 创建的全部 channel 的 pipeline 属性。
      */
     public static final AttributeKey<Boolean> OCSP_PIPELINE_ATTRIBUTE =
             AttributeKey.newInstance("io.netty.handler.ssl.ocsp.pipeline");
 
+    /** 证书非 VALID 时是否关闭连接并抛异常 */
     private final boolean closeAndThrowIfNotValid;
+    /** 是否强制校验 OCSP 响应 nonce */
     private final boolean validateNonce;
+    /** I/O 传输配置 */
     private final IoTransport ioTransport;
+    /** DNS 解析器 */
     private final DnsNameResolver dnsNameResolver;
+    /** OCSP 查询是否进行中 */
     private boolean ocspQueryInProgress;
+    /** OCSP 处理完成前是否有待处理的 read 请求 */
     private boolean readPending;
 
     /**
-     * Create a new {@link OcspServerCertificateValidator} instance without nonce validation
-     * on OCSP response, using default {@link IoTransport#DEFAULT} instance,
-     * default {@link DnsNameResolver} implementation and with {@link #closeAndThrowIfNotValid}
-     * set to {@code true}
+     * 创建新实例：不校验 nonce，使用默认 {@link IoTransport#DEFAULT} 与默认
+     * {@link DnsNameResolver}，{@link #closeAndThrowIfNotValid} 为 {@code true}。
      */
     public OcspServerCertificateValidator() {
         this(false);
     }
 
     /**
-     * Create a new {@link OcspServerCertificateValidator} instance with
-     * default {@link IoTransport#DEFAULT} instance and default {@link DnsNameResolver} implementation
-     * and {@link #closeAndThrowIfNotValid} set to {@code true}.
+     * 创建新实例：使用默认 {@link IoTransport#DEFAULT} 与默认 {@link DnsNameResolver}，
+     * {@link #closeAndThrowIfNotValid} 为 {@code true}。
      *
-     * @param validateNonce Set to {@code true} if we should force nonce validation on
-     *                      OCSP response else set to {@code false}
+     * @param validateNonce 为 {@code true} 时强制校验 OCSP 响应 nonce
      */
     public OcspServerCertificateValidator(boolean validateNonce) {
         this(validateNonce, IoTransport.DEFAULT);
     }
 
     /**
-     * Create a new {@link OcspServerCertificateValidator} instance
+     * 创建新实例。
      *
-     * @param validateNonce Set to {@code true} if we should force nonce validation on
-     *                      OCSP response else set to {@code false}
-     * @param ioTransport   {@link IoTransport} to use
+     * @param validateNonce 为 {@code true} 时强制校验 OCSP 响应 nonce
+     * @param ioTransport   使用的 {@link IoTransport}
      */
     public OcspServerCertificateValidator(boolean validateNonce, IoTransport ioTransport) {
         this(validateNonce, ioTransport, createDefaultResolver(ioTransport));
     }
 
     /**
-     * Create a new {@link IoTransport} instance with {@link #closeAndThrowIfNotValid} set to {@code true}
+     * 创建新实例，{@link #closeAndThrowIfNotValid} 为 {@code true}。
      *
-     * @param validateNonce   Set to {@code true} if we should force nonce validation on
-     *                        OCSP response else set to {@code false}
-     * @param ioTransport     {@link IoTransport} to use
-     * @param dnsNameResolver {@link DnsNameResolver} implementation to use
+     * @param validateNonce   为 {@code true} 时强制校验 OCSP 响应 nonce
+     * @param ioTransport     使用的 {@link IoTransport}
+     * @param dnsNameResolver 使用的 {@link DnsNameResolver}
      */
     public OcspServerCertificateValidator(boolean validateNonce, IoTransport ioTransport,
                                           DnsNameResolver dnsNameResolver) {
@@ -107,16 +108,14 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
     }
 
     /**
-     * Create a new {@link IoTransport} instance
+     * 创建新实例。
      *
-     * @param closeAndThrowIfNotValid If set to {@code true} then we will close the channel and throw an exception
-     *                                when certificate is not {@link OcspResponse.Status#VALID}.
-     *                                If set to {@code false} then we will simply pass the {@link OcspValidationEvent}
-     *                                to the next handler in pipeline and let it decide what to do.
-     * @param validateNonce           Set to {@code true} if we should force nonce validation on
-     *                                OCSP response else set to {@code false}
-     * @param ioTransport             {@link IoTransport} to use
-     * @param dnsNameResolver         {@link DnsNameResolver} implementation to use
+     * @param closeAndThrowIfNotValid 为 {@code true} 时，证书非 {@link OcspResponse.Status#VALID}
+     *                                则关闭 channel 并抛异常；为 {@code false} 时仅传播
+     *                                {@link OcspValidationEvent} 由下游决定
+     * @param validateNonce           为 {@code true} 时强制校验 OCSP 响应 nonce
+     * @param ioTransport             使用的 {@link IoTransport}
+     * @param dnsNameResolver         使用的 {@link DnsNameResolver}
      */
     public OcspServerCertificateValidator(boolean closeAndThrowIfNotValid, boolean validateNonce,
                                           IoTransport ioTransport, DnsNameResolver dnsNameResolver) {
@@ -126,6 +125,7 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
         this.dnsNameResolver = checkNotNull(dnsNameResolver, "DnsNameResolver");
     }
 
+    /** 基于 {@link IoTransport} 创建默认 DNS 解析器 */
     protected static DnsNameResolver createDefaultResolver(final IoTransport ioTransport) {
         return new DnsNameResolverBuilder()
                 .eventLoop(ioTransport.eventLoop())
@@ -136,7 +136,7 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        // Just buffer until the handler is removed which will happen once we did finish the OCSP processing.
+        // OCSP 处理完成前仅缓冲入站数据，handler 移除后再正常解码
     }
 
     @Override
@@ -144,8 +144,7 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
         if (evt instanceof SslHandshakeCompletionEvent) {
             SslHandshakeCompletionEvent sslHandshakeCompletionEvent = (SslHandshakeCompletionEvent) evt;
 
-            // If TLS handshake was successful then only we will perform OCSP certificate validation.
-            // If not, then just forward the event to next handler in pipeline and remove ourselves from pipeline.
+            // TLS 握手成功后才执行 OCSP 校验；失败则转发事件并移除自身
             if (sslHandshakeCompletionEvent.isSuccess()) {
                 Certificate[] certificates = ctx.pipeline().get(SslHandler.class)
                         .engine()
@@ -161,8 +160,6 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
                 ocspRespPromise.addListener((GenericFutureListener<Future<BasicOCSPResp>>) future -> {
                     ocspQueryInProgress = false;
                     try {
-                        // If Future is success then we have successfully received OCSP response
-                        // from OCSP responder. We will validate it now and process.
                         if (future.isSuccess()) {
                             SingleResp response = future.getNow().getResponses()[0];
 
@@ -177,7 +174,7 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
 
                             OcspResponse.Status status;
                             if (response.getCertStatus() == null) {
-                                // 'null' means certificate is valid
+                                // null 表示证书有效
                                 status = OcspResponse.Status.VALID;
                             } else if (response.getCertStatus() instanceof RevokedStatus) {
                                 status = OcspResponse.Status.REVOKED;
@@ -188,10 +185,8 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
                             ctx.fireUserEventTriggered(new OcspValidationEvent(
                                     new OcspResponse(status, response.getThisUpdate(), response.getNextUpdate())));
 
-                            // If Certificate is not VALID and 'closeAndThrowIfNotValid' is set
-                            // to 'true' then close the channel and throw an exception.
+                            // 证书非 VALID 且配置了 closeAndThrowIfNotValid 时关闭并抛错
                             if (status != OcspResponse.Status.VALID && closeAndThrowIfNotValid) {
-                                // Certificate is not valid. Throw
                                 ctx.fireExceptionCaught(new OCSPException(
                                         "Certificate not valid. Status: " + status));
                                 ctx.close();
@@ -204,7 +199,6 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
                         }
                     } finally {
                         ctx.fireUserEventTriggered(evt);
-                        // Lets remove ourselves from the pipeline because we are done processing validation.
                         ctx.pipeline().remove(this);
                         if (readPending) {
                             readPending = false;
@@ -253,7 +247,7 @@ public class OcspServerCertificateValidator extends ByteToMessageDecoder impleme
 
     @Override
     public void read(ChannelHandlerContext ctx) throws Exception {
-        // Let's stop reading until we are done with the processing of the OCSP query.
+        // OCSP 查询完成前暂停 read
         if (ocspQueryInProgress) {
             readPending = true;
         } else {

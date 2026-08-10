@@ -29,16 +29,17 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A skeletal {@link AddressResolver} implementation.
+ * {@link AddressResolver} 的骨架实现，封装类型匹配与已解析地址的快速路径。
  */
 public abstract class AbstractAddressResolver<T extends SocketAddress> implements AddressResolver<T> {
 
+    /** 通知 Future 监听器的事件执行器 */
     private final EventExecutor executor;
+    /** 地址类型匹配器 */
     private final TypeParameterMatcher matcher;
 
     /**
-     * @param executor the {@link EventExecutor} which is used to notify the listeners of the {@link Future} returned
-     *                 by {@link #resolve(SocketAddress)}
+     * @param executor 用于通知 {@link #resolve(SocketAddress)} 返回的 {@link Future} 监听器的 {@link EventExecutor}
      */
     protected AbstractAddressResolver(EventExecutor executor) {
         this.executor = checkNotNull(executor, "executor");
@@ -46,9 +47,8 @@ public abstract class AbstractAddressResolver<T extends SocketAddress> implement
     }
 
     /**
-     * @param executor the {@link EventExecutor} which is used to notify the listeners of the {@link Future} returned
-     *                 by {@link #resolve(SocketAddress)}
-     * @param addressType the type of the {@link SocketAddress} supported by this resolver
+     * @param executor 用于通知 {@link #resolve(SocketAddress)} 返回的 {@link Future} 监听器的 {@link EventExecutor}
+     * @param addressType 本解析器支持的 {@link SocketAddress} 类型
      */
     protected AbstractAddressResolver(EventExecutor executor, Class<? extends T> addressType) {
         this.executor = checkNotNull(executor, "executor");
@@ -56,8 +56,7 @@ public abstract class AbstractAddressResolver<T extends SocketAddress> implement
     }
 
     /**
-     * Returns the {@link EventExecutor} which is used to notify the listeners of the {@link Future} returned
-     * by {@link #resolve(SocketAddress)}.
+     * 返回用于通知 {@link #resolve(SocketAddress)} 返回的 {@link Future} 监听器的 {@link EventExecutor}。
      */
     protected EventExecutor executor() {
         return executor;
@@ -80,20 +79,19 @@ public abstract class AbstractAddressResolver<T extends SocketAddress> implement
     }
 
     /**
-     * Invoked by {@link #isResolved(SocketAddress)} to check if the specified {@code address} has been resolved
-     * already.
+     * 由 {@link #isResolved(SocketAddress)} 调用，检查指定 {@code address} 是否已解析。
      */
     protected abstract boolean doIsResolved(T address);
 
     @Override
     public final Future<T> resolve(SocketAddress address) {
         if (!isSupported(checkNotNull(address, "address"))) {
-            // Address type not supported by the resolver
+            // 地址类型不受支持
             return executor().newFailedFuture(new UnsupportedAddressTypeException());
         }
 
         if (isResolved(address)) {
-            // Resolved already; no need to perform a lookup
+            // 已解析，无需查询
             @SuppressWarnings("unchecked")
             final T cast = (T) address;
             return executor.newSucceededFuture(cast);
@@ -116,12 +114,12 @@ public abstract class AbstractAddressResolver<T extends SocketAddress> implement
         checkNotNull(promise, "promise");
 
         if (!isSupported(address)) {
-            // Address type not supported by the resolver
+            // 地址类型不受支持
             return promise.setFailure(new UnsupportedAddressTypeException());
         }
 
         if (isResolved(address)) {
-            // Resolved already; no need to perform a lookup
+            // 已解析，无需查询
             @SuppressWarnings("unchecked")
             final T cast = (T) address;
             return promise.setSuccess(cast);
@@ -140,12 +138,12 @@ public abstract class AbstractAddressResolver<T extends SocketAddress> implement
     @Override
     public final Future<List<T>> resolveAll(SocketAddress address) {
         if (!isSupported(checkNotNull(address, "address"))) {
-            // Address type not supported by the resolver
+            // 地址类型不受支持
             return executor().newFailedFuture(new UnsupportedAddressTypeException());
         }
 
         if (isResolved(address)) {
-            // Resolved already; no need to perform a lookup
+            // 已解析，无需查询
             @SuppressWarnings("unchecked")
             final T cast = (T) address;
             return executor.newSucceededFuture(Collections.singletonList(cast));
@@ -168,12 +166,12 @@ public abstract class AbstractAddressResolver<T extends SocketAddress> implement
         checkNotNull(promise, "promise");
 
         if (!isSupported(address)) {
-            // Address type not supported by the resolver
+            // 地址类型不受支持
             return promise.setFailure(new UnsupportedAddressTypeException());
         }
 
         if (isResolved(address)) {
-            // Resolved already; no need to perform a lookup
+            // 已解析，无需查询
             @SuppressWarnings("unchecked")
             final T cast = (T) address;
             return promise.setSuccess(Collections.singletonList(cast));
@@ -190,14 +188,12 @@ public abstract class AbstractAddressResolver<T extends SocketAddress> implement
     }
 
     /**
-     * Invoked by {@link #resolve(SocketAddress)} to perform the actual name
-     * resolution.
+     * 由 {@link #resolve(SocketAddress)} 调用，执行实际的名称解析。
      */
     protected abstract void doResolve(T unresolvedAddress, Promise<T> promise) throws Exception;
 
     /**
-     * Invoked by {@link #resolveAll(SocketAddress)} to perform the actual name
-     * resolution.
+     * 由 {@link #resolveAll(SocketAddress)} 调用，执行实际的名称解析并返回全部结果。
      */
     protected abstract void doResolveAll(T unresolvedAddress, Promise<List<T>> promise) throws Exception;
 

@@ -26,7 +26,7 @@ import io.netty.util.internal.UnstableApi;
 import javax.net.ssl.SSLHandshakeException;
 
 /**
- * A handler for SSL clients to handle and act upon stapled OCSP responses.
+ * SSL 客户端 handler：处理并校验 TLS 握手中装订（stapled）的 OCSP 响应。
  *
  * @see ReferenceCountedOpenSslContext#enableOcsp()
  * @see ReferenceCountedOpenSslEngine#getOcspResponse()
@@ -34,6 +34,7 @@ import javax.net.ssl.SSLHandshakeException;
 @UnstableApi
 public abstract class OcspClientHandler extends ChannelInboundHandlerAdapter {
 
+    /** 关联的 OpenSSL 引擎 */
     private final ReferenceCountedOpenSslEngine engine;
 
     protected OcspClientHandler(ReferenceCountedOpenSslEngine engine) {
@@ -41,6 +42,8 @@ public abstract class OcspClientHandler extends ChannelInboundHandlerAdapter {
     }
 
     /**
+     * 校验 OCSP 响应是否有效。
+     *
      * @see ReferenceCountedOpenSslEngine#getOcspResponse()
      */
     protected abstract boolean verify(ChannelHandlerContext ctx, ReferenceCountedOpenSslEngine engine) throws Exception;

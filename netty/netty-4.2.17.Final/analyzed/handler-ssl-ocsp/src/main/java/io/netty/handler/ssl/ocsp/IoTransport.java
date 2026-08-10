@@ -27,17 +27,20 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * {@link IoTransport} holds {@link EventLoop}, {@link SocketChannel}
- * and {@link DatagramChannel} for DNS I/O.
+ * {@link IoTransport} 封装用于 DNS 与 OCSP 查询的 {@link EventLoop}、
+ * {@link SocketChannel} 与 {@link DatagramChannel}。
  */
 public final class IoTransport {
+    /** 执行 I/O 的事件循环 */
     private final EventLoop eventLoop;
+    /** TCP 通道工厂（DNS TCP 查询与 OCSP HTTP） */
     private final ChannelFactory<SocketChannel> socketChannel;
+    /** UDP 通道工厂（DNS UDP 查询） */
     private final ChannelFactory<DatagramChannel> datagramChannel;
 
     /**
-     * Default {@link IoTransport} which uses {@link NioIoHandler}, {@link NioSocketChannel}
-     * and {@link NioDatagramChannel}.
+     * 默认 {@link IoTransport}：使用 {@link NioIoHandler}、{@link NioSocketChannel}
+     * 与 {@link NioDatagramChannel}。
      */
     public static final IoTransport DEFAULT = new IoTransport(
             new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory()).next(),
@@ -55,12 +58,12 @@ public final class IoTransport {
             });
 
     /**
-     * Create a new {@link IoTransport} instance
+     * 创建新的 {@link IoTransport} 实例。
      *
-     * @param eventLoop       {@link EventLoop} to use for I/O
-     * @param socketChannel   {@link SocketChannel} for TCP DNS lookup and OCSP query
-     * @param datagramChannel {@link DatagramChannel} for UDP DNS lookup
-     * @return {@link NullPointerException} if any parameter is {@code null}
+     * @param eventLoop       用于 I/O 的 {@link EventLoop}
+     * @param socketChannel   用于 TCP DNS 查询与 OCSP 请求的 {@link SocketChannel} 工厂
+     * @param datagramChannel 用于 UDP DNS 查询的 {@link DatagramChannel} 工厂
+     * @return 任一参数为 {@code null} 时抛出 {@link NullPointerException}
      */
     public static IoTransport create(EventLoop eventLoop, ChannelFactory<SocketChannel> socketChannel,
                                      ChannelFactory<DatagramChannel> datagramChannel) {
@@ -74,14 +77,17 @@ public final class IoTransport {
         this.datagramChannel = checkNotNull(datagramChannel, "DatagramChannel");
     }
 
+    /** 返回关联的事件循环 */
     public EventLoop eventLoop() {
         return eventLoop;
     }
 
+    /** 返回 TCP 套接字通道工厂 */
     public ChannelFactory<SocketChannel> socketChannel() {
         return socketChannel;
     }
 
+    /** 返回 UDP 数据报通道工厂 */
     public ChannelFactory<DatagramChannel> datagramChannel() {
         return datagramChannel;
     }

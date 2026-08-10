@@ -35,33 +35,40 @@ import java.nio.channels.ConnectionPendingException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A common abstraction for protocols that establish blind forwarding proxy tunnels.
+ * 建立盲转发代理隧道的协议抽象基类。
+ * <p>子类实现具体代理协议（HTTP CONNECT、SOCKS4/5 等），在握手完成后移除编解码器并透传后续流量。</p>
  */
 public abstract class ProxyHandler extends ChannelDuplexHandler {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ProxyHandler.class);
 
-    /**
-     * The default connect timeout: 10 seconds.
-     */
+    /** 默认连接超时：10 秒 */
     private static final long DEFAULT_CONNECT_TIMEOUT_MILLIS = 10000;
 
-    /**
-     * A string that signifies 'no authentication' or 'anonymous'.
-     */
+    /** 表示「无认证」或「匿名」的字符串常量 */
     static final String AUTH_NONE = "none";
 
+    /** 代理服务器地址 */
     private final SocketAddress proxyAddress;
+    /** 经代理连接的目标地址 */
     private volatile SocketAddress destinationAddress;
+    /** 连接超时（毫秒） */
     private volatile long connectTimeoutMillis = DEFAULT_CONNECT_TIMEOUT_MILLIS;
 
     private volatile ChannelHandlerContext ctx;
+    /** 代理握手完成前暂存的出站写请求 */
     private PendingWriteQueue pendingWrites;
+    /** 代理隧道是否已建立完成 */
     private boolean finished;
+    /** 是否抑制 channelReadComplete 向下传播（握手阶段） */
     private boolean suppressChannelReadComplete;
+    /** 是否在握手完成前已调用 flush */
     private boolean flushedPrematurely;
+    /** 连接目标地址的异步结果 */
     private final LazyChannelPromise connectPromise = new LazyChannelPromise();
+    /** 连接超时定时任务 */
     private Future<?> connectTimeoutFuture;
+    /** 写代理服务器时的失败监听 */
     private final ChannelFutureListener writeListener = future -> {
         if (!future.isSuccess()) {
             setConnectFailure(future.cause());
@@ -73,17 +80,17 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Returns the name of the proxy protocol in use.
+     * 返回当前使用的代理协议名称。
      */
     public abstract String protocol();
 
     /**
-     * Returns the name of the authentication scheme in use.
+     * 返回当前使用的认证方案名称。
      */
     public abstract String authScheme();
 
     /**
-     * Returns the address of the proxy server.
+     * 返回代理服务器地址。
      */
     @SuppressWarnings("unchecked")
     public final <T extends SocketAddress> T proxyAddress() {
@@ -91,7 +98,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Returns the address of the destination to connect to via the proxy server.
+     * 返回经代理服务器连接的目标地址。
      */
     @SuppressWarnings("unchecked")
     public final <T extends SocketAddress> T destinationAddress() {
@@ -99,31 +106,28 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Returns {@code true} if and only if the connection to the destination has been established successfully.
+     * 当且仅当已成功建立到目标的连接时返回 {@code true}。
      */
     public final boolean isConnected() {
         return connectPromise.isSuccess();
     }
 
     /**
-     * Returns a {@link Future} that is notified when the connection to the destination has been established
-     * or the connection attempt has failed.
+     * 返回在目标连接建立成功或失败时会被通知的 {@link Future}。
      */
     public final Future<Channel> connectFuture() {
         return connectPromise;
     }
 
     /**
-     * Returns the connect timeout in millis.  If the connection attempt to the destination does not finish within
-     * the timeout, the connection attempt will be failed.
+     * 返回连接超时（毫秒）。若在此时间内未完成到目标的连接尝试，则标记失败。
      */
     public final long connectTimeoutMillis() {
         return connectTimeoutMillis;
     }
 
     /**
-     * Sets the connect timeout in millis.  If the connection attempt to the destination does not finish within
-     * the timeout, the connection attempt will be failed.
+     * 设置连接超时（毫秒）。若在此时间内未完成到目标的连接尝试，则标记失败。
      */
     public final void setConnectTimeoutMillis(long connectTimeoutMillis) {
         if (connectTimeoutMillis <= 0) {
@@ -139,27 +143,25 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
         addCodec(ctx);
 
         if (ctx.channel().isActive()) {
-            // channelActive() event has been fired already, which means this.channelActive() will
-            // not be invoked. We have to initialize here instead.
+            // channelActive 已触发，channelActive() 不会再被调用，需在此初始化
             sendInitialMessage(ctx);
         } else {
-            // channelActive() event has not been fired yet.  this.channelOpen() will be invoked
-            // and initialization will occur there.
+            // channelActive 尚未触发，将在 channelActive() 中初始化
         }
     }
 
     /**
-     * Adds the codec handlers required to communicate with the proxy server.
+     * 添加与代理服务器通信所需的编解码 handler。
      */
     protected abstract void addCodec(ChannelHandlerContext ctx) throws Exception;
 
     /**
-     * Removes the encoders added in {@link #addCodec(ChannelHandlerContext)}.
+     * 移除 {@link #addCodec(ChannelHandlerContext)} 中添加的编码器。
      */
     protected abstract void removeEncoder(ChannelHandlerContext ctx) throws Exception;
 
     /**
-     * Removes the decoders added in {@link #addCodec(ChannelHandlerContext)}.
+     * 移除 {@link #addCodec(ChannelHandlerContext)} 中添加的解码器。
      */
     protected abstract void removeDecoder(ChannelHandlerContext ctx) throws Exception;
 
@@ -184,8 +186,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Sends the initial message to be sent to the proxy server. This method also starts a timeout task which marks
-     * the {@link #connectPromise} as failure if the connection attempt does not success within the timeout.
+     * 向代理服务器发送初始消息，并启动超时任务：超时内未成功则标记 {@link #connectPromise} 失败。
      */
     private void sendInitialMessage(final ChannelHandlerContext ctx) throws Exception {
         final long connectTimeoutMillis = this.connectTimeoutMillis;
@@ -209,15 +210,15 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Returns a new message that is sent at first time when the connection to the proxy server has been established.
+     * 返回与代理服务器建立连接后首次发送的消息。
      *
-     * @return the initial message, or {@code null} if the proxy server is expected to send the first message instead
+     * @return 初始消息；若期望由代理服务器先发消息则返回 {@code null}
      */
     protected abstract Object newInitialMessage(ChannelHandlerContext ctx) throws Exception;
 
     /**
-     * Sends the specified message to the proxy server.  Use this method to send a response to the proxy server in
-     * {@link #handleResponse(ChannelHandlerContext, Object)}.
+     * 向代理服务器发送指定消息。在 {@link #handleResponse(ChannelHandlerContext, Object)} 中
+     * 可用此方法回复代理服务器。
      */
     protected final void sendToProxyServer(Object msg) {
         ctx.writeAndFlush(msg).addListener(writeListener);
@@ -228,7 +229,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
         if (finished) {
             ctx.fireChannelInactive();
         } else {
-            // Disconnected before connected to the destination.
+            // 尚未连上目标即断开
             setConnectFailure(new ProxyConnectException(exceptionMessage("disconnected")));
         }
     }
@@ -238,7 +239,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
         if (finished) {
             ctx.fireExceptionCaught(cause);
         } else {
-            // Exception was raised before the connection attempt is finished.
+            // 连接尝试完成前发生异常
             setConnectFailure(cause);
         }
     }
@@ -246,7 +247,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     @Override
     public final void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (finished) {
-            // Received a message after the connection has been established; pass through.
+            // 隧道已建立，透传入站消息
             suppressChannelReadComplete = false;
             ctx.fireChannelRead(msg);
         } else {
@@ -269,14 +270,13 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Handles the message received from the proxy server.
+     * 处理来自代理服务器的消息。
      *
-     * @return {@code true} if the connection to the destination has been established,
-     *         {@code false} if the connection to the destination has not been established and more messages are
-     *         expected from the proxy server
+     * @return 若到目标的连接已建立则 {@code true}；若仍需等待更多代理响应则 {@code false}
      */
     protected abstract boolean handleResponse(ChannelHandlerContext ctx, Object response) throws Exception;
 
+    /** 标记代理隧道建立成功，移除编解码器并刷新暂存写请求 */
     private void setConnectSuccess() {
         finished = true;
         cancelConnectTimeoutFuture();
@@ -299,7 +299,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
                 }
                 connectPromise.trySuccess(ctx.channel());
             } else {
-                // We are at inconsistent state because we failed to remove all codec handlers.
+                // 未能移除全部编解码 handler，状态不一致
                 Exception cause = new ProxyConnectException(
                         "failed to remove all codec handlers added by the proxy handler; bug?");
                 failPendingWritesAndClose(cause);
@@ -329,6 +329,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
         return false;
     }
 
+    /** 标记连接失败，清理资源并关闭通道 */
     private void setConnectFailure(Throwable cause) {
         finished = true;
         cancelConnectTimeoutFuture();
@@ -361,8 +362,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Decorates the specified exception message with the common information such as the current protocol,
-     * authentication scheme, proxy address, and destination address.
+     * 用协议、认证方案、代理地址、目标地址等公共信息装饰异常消息。
      */
     protected final String exceptionMessage(String msg) {
         if (msg == null) {
@@ -415,12 +415,14 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
         }
     }
 
+    /** 非自动读模式下主动触发 read */
     private static void readIfNeeded(ChannelHandlerContext ctx) {
         if (!ctx.channel().config().isAutoRead()) {
             ctx.read();
         }
     }
 
+    /** 写出握手期间暂存的所有写请求 */
     private void writePendingWrites() {
         if (pendingWrites != null) {
             pendingWrites.removeAndWriteAll();
@@ -443,6 +445,7 @@ public abstract class ProxyHandler extends ChannelDuplexHandler {
         pendingWrites.add(msg, promise);
     }
 
+    /** 延迟绑定 executor 的 Channel Promise，避免 handler 尚未加入 pipeline 时访问 ctx */
     private final class LazyChannelPromise extends DefaultPromise<Channel> {
         @Override
         protected EventExecutor executor() {

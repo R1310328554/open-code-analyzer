@@ -31,28 +31,27 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Creates and manages {@link NameResolver}s so that each {@link EventExecutor} has its own resolver instance.
+ * 创建并管理 {@link AddressResolver}，使每个 {@link EventExecutor} 拥有独立的解析器实例。
  */
 public abstract class AddressResolverGroup<T extends SocketAddress> implements Closeable {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AddressResolverGroup.class);
 
     /**
-     * Note that we do not use a {@link ConcurrentMap} here because it is usually expensive to instantiate a resolver.
+     * 此处不使用 {@link ConcurrentMap}，因为实例化解析器通常开销较大。
      */
     private final Map<EventExecutor, AddressResolver<T>> resolvers =
             new IdentityHashMap<EventExecutor, AddressResolver<T>>();
 
+    /** EventExecutor 终止时清理对应解析器的监听器 */
     private final Map<EventExecutor, GenericFutureListener<Future<Object>>> executorTerminationListeners =
             new IdentityHashMap<EventExecutor, GenericFutureListener<Future<Object>>>();
 
     protected AddressResolverGroup() { }
 
     /**
-     * Returns the {@link AddressResolver} associated with the specified {@link EventExecutor}. If there's no associated
-     * resolver found, this method creates and returns a new resolver instance created by
-     * {@link #newResolver(EventExecutor)} so that the new resolver is reused on another
-     * {@code #getResolver(EventExecutor)} call with the same {@link EventExecutor}.
+     * 返回与指定 {@link EventExecutor} 关联的 {@link AddressResolver}。
+     * 若尚未创建，则通过 {@link #newResolver(EventExecutor)} 新建并在后续调用中复用。
      */
     public AddressResolver<T> getResolver(final EventExecutor executor) {
         ObjectUtil.checkNotNull(executor, "executor");
@@ -93,12 +92,12 @@ public abstract class AddressResolverGroup<T extends SocketAddress> implements C
     }
 
     /**
-     * Invoked by {@link #getResolver(EventExecutor)} to create a new {@link AddressResolver}.
+     * 由 {@link #getResolver(EventExecutor)} 调用，创建新的 {@link AddressResolver}。
      */
     protected abstract AddressResolver<T> newResolver(EventExecutor executor) throws Exception;
 
     /**
-     * Closes all {@link NameResolver}s created by this group.
+     * 关闭本组创建的全部 {@link AddressResolver}。
      */
     @Override
     @SuppressWarnings({ "unchecked", "SuspiciousToArrayCall" })

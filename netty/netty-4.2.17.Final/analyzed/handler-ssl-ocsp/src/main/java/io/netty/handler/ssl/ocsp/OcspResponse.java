@@ -19,9 +19,15 @@ import java.util.Date;
 
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * OCSP 查询得到的证书状态摘要，包含状态枚举与更新时间窗口。
+ */
 public class OcspResponse {
+    /** 证书状态 */
     private final Status status;
+    /** 本次 OCSP 响应生效时间 */
     private final Date thisUpdate;
+    /** 下次 OCSP 更新预期时间 */
     private final Date nextUpdate;
 
     public OcspResponse(Status status, Date thisUpdate, Date nextUpdate) {
@@ -30,14 +36,17 @@ public class OcspResponse {
         this.nextUpdate = checkNotNull(nextUpdate, "NextUpdate");
     }
 
+    /** 返回证书状态 */
     public Status status() {
         return status;
     }
 
+    /** 返回本次更新时间 */
     public Date thisUpdate() {
         return thisUpdate;
     }
 
+    /** 返回下次更新时间 */
     public Date nextUpdate() {
         return nextUpdate;
     }
@@ -51,19 +60,20 @@ public class OcspResponse {
                 '}';
     }
 
+    /** OCSP 证书状态枚举 */
     public enum Status {
         /**
-         * Certificate is valid
+         * 证书有效
          */
         VALID,
 
         /**
-         * Certificate is revoked
+         * 证书已吊销
          */
         REVOKED,
 
         /**
-         * Certificate status is unknown
+         * 证书状态未知
          */
         UNKNOWN
     }

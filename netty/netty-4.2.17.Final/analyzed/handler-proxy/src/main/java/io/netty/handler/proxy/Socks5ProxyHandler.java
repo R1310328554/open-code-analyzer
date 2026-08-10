@@ -47,8 +47,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * Handler that establishes a blind forwarding proxy tunnel using
- * <a href="https://www.rfc-editor.org/rfc/rfc1928">SOCKS Protocol Version 5</a>.
+ * 使用
+ * <a href="https://www.rfc-editor.org/rfc/rfc1928">SOCKS 协议第 5 版</a>
+ * 建立盲转发代理隧道的 handler。
  */
 public final class Socks5ProxyHandler extends ProxyHandler {
 
@@ -59,16 +60,23 @@ public final class Socks5ProxyHandler extends ProxyHandler {
     private static final byte NO_PRIVATE_AUTH_METHOD =
         Socks5AuthMethod.NO_AUTH.byteValue();
 
+    /** 仅请求无认证的初始握手消息 */
     private static final Socks5InitialRequest INIT_REQUEST_NO_AUTH =
             new DefaultSocks5InitialRequest(Collections.singletonList(Socks5AuthMethod.NO_AUTH));
 
+    /** 请求无认证或密码认证的初始握手消息 */
     private static final Socks5InitialRequest INIT_REQUEST_PASSWORD =
             new DefaultSocks5InitialRequest(Arrays.asList(Socks5AuthMethod.NO_AUTH, Socks5AuthMethod.PASSWORD));
 
+    /** 用户名；无密码认证时为 null */
     private final String username;
+    /** 密码 */
     private final String password;
+    /** 私有认证方法字节码 */
     private final byte privateAuthMethod;
+    /** 私有认证令牌 */
     private final byte[] privateToken;
+    /** SOCKS5 客户端编码器 */
     private final Socks5ClientEncoder clientEncoder;
 
     private String decoderName;
@@ -89,19 +97,19 @@ public final class Socks5ProxyHandler extends ProxyHandler {
         this.username = username;
         this.password = password;
         this.privateToken = null;
-        this.privateAuthMethod = NO_PRIVATE_AUTH_METHOD; // No private authentication method specified
+        this.privateAuthMethod = NO_PRIVATE_AUTH_METHOD; // 未指定私有认证方法
         this.clientEncoder = Socks5ClientEncoder.DEFAULT;
     }
 
     /**
-     * Creates a new SOCKS5 proxy handler with a custom private authentication method.
+     * 使用自定义私有认证方法创建 SOCKS5 代理 handler。
      *
-     * @param proxyAddress     The address of the SOCKS5 proxy server
-     * @param privateAuthMethod The private authentication method code (must be in range 0x80-0xFE)
-     * @param privateToken     The token to use for private authentication
-     * @param customEncoder    The custom encoder to use for encoding SOCKS5 messages, if {@code null} the
-     *                         {@link Socks5ClientEncoder#DEFAULT} will be used
-     * @throws IllegalArgumentException If privateAuthMethod is not in the valid range
+     * @param proxyAddress     SOCKS5 代理服务器地址
+     * @param privateAuthMethod 私有认证方法码（须在 0x80–0xFE 范围内）
+     * @param privateToken     私有认证使用的令牌
+     * @param customEncoder    自定义 SOCKS5 消息编码器；为 {@code null} 时使用
+     *                         {@link Socks5ClientEncoder#DEFAULT}
+     * @throws IllegalArgumentException 若 privateAuthMethod 不在有效范围内
      */
     public Socks5ProxyHandler(SocketAddress proxyAddress, byte privateAuthMethod, byte[] privateToken,
                               Socks5ClientEncoder customEncoder) {
@@ -189,14 +197,14 @@ public final class Socks5ProxyHandler extends ProxyHandler {
             Socks5AuthMethod resAuthMethod = res.authMethod();
             if (resAuthMethod != Socks5AuthMethod.NO_AUTH && resAuthMethod != authMethod
                 && !Socks5AuthMethod.isPrivateMethod(resAuthMethod.byteValue())) {
-                // Server did not allow unauthenticated access nor accept the requested authentication scheme.
+                // 服务器既不允许匿名，也未接受请求的认证方式
                 throw new ProxyConnectException(exceptionMessage("unexpected authMethod: " + res.authMethod()));
             }
 
             if (resAuthMethod == Socks5AuthMethod.NO_AUTH) {
                 sendConnectCommand(ctx);
             } else if (resAuthMethod == Socks5AuthMethod.PASSWORD) {
-                // In case of password authentication, send an authentication request.
+                // 密码认证：发送认证请求
                 ctx.pipeline().replace(decoderName, decoderName, new Socks5PasswordAuthResponseDecoder());
                 sendToProxyServer(new DefaultSocks5PasswordAuthRequest(
                         username != null? username : "", password != null? password : ""));
@@ -204,7 +212,7 @@ public final class Socks5ProxyHandler extends ProxyHandler {
                 ctx.pipeline().replace(decoderName, decoderName, new Socks5PrivateAuthResponseDecoder());
                 sendToProxyServer(new DefaultSocks5PrivateAuthRequest(privateToken));
             } else {
-                // Should never reach here.
+                // 不应到达此处
                 throw new Error("Unexpected authMethod: " + resAuthMethod);
             }
 
@@ -212,7 +220,7 @@ public final class Socks5ProxyHandler extends ProxyHandler {
         }
 
         if (response instanceof Socks5PasswordAuthResponse) {
-            // Received an authentication response from the server.
+            // 收到服务器认证响应
             Socks5PasswordAuthResponse res = (Socks5PasswordAuthResponse) response;
             if (res.status() != Socks5PasswordAuthStatus.SUCCESS) {
                 throw new ProxyConnectException(exceptionMessage("authStatus: " + res.status()));
@@ -232,7 +240,7 @@ public final class Socks5ProxyHandler extends ProxyHandler {
             return false;
         }
 
-        // This should be the last message from the server.
+        // 应为来自服务器的最后一条消息
         Socks5CommandResponse res = (Socks5CommandResponse) response;
         if (res.status() != Socks5CommandStatus.SUCCESS) {
             throw new ProxyConnectException(exceptionMessage("status: " + res.status()));
@@ -241,6 +249,7 @@ public final class Socks5ProxyHandler extends ProxyHandler {
         return true;
     }
 
+    /** 根据配置确定 SOCKS 认证方式 */
     private Socks5AuthMethod socksAuthMethod() {
         Socks5AuthMethod authMethod;
         if (privateToken != null && privateToken.length > 0) {
@@ -253,6 +262,7 @@ public final class Socks5ProxyHandler extends ProxyHandler {
         return authMethod;
     }
 
+    /** 发送 CONNECT 命令并切换为命令响应解码器 */
     private void sendConnectCommand(ChannelHandlerContext ctx) throws Exception {
         InetSocketAddress raddr = destinationAddress();
         Socks5AddressType addrType;

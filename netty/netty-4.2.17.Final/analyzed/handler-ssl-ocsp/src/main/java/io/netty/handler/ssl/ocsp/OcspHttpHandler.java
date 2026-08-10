@@ -36,20 +36,29 @@ import java.util.concurrent.TimeUnit;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
+/**
+ * 处理 OCSP HTTP/1.1 响应的 pipeline handler：校验 Content-Type 与状态码，
+ * 解析 OCSP 响应体并完成 {@link Promise}。
+ */
 final class OcspHttpHandler extends ChannelDuplexHandler {
 
     private static final InternalLogger LOGGER = InternalLoggerFactory.getInstance(OcspHttpHandler.class);
+    /** OCSP 响应完成的 Promise */
     private final Promise<OCSPResp> responseFuture;
+    /** 等待响应的超时（毫秒） */
     private final long timeoutMillis;
+    /** 超时定时任务 */
     private Future<?> timeoutFuture;
+    /** OCSP 请求的 HTTP Content-Type */
     static final String OCSP_REQUEST_TYPE = "application/ocsp-request";
+    /** OCSP 响应的 HTTP Content-Type */
     static final String OCSP_RESPONSE_TYPE = "application/ocsp-response";
 
     /**
-     * Create new {@link OcspHttpHandler} instance
+     * 创建新的 {@link OcspHttpHandler} 实例。
      *
-     * @param responsePromise   {@link Promise} of {@link OCSPResp}
-     * @param timeoutMillis     the timeout in milliseconds how long a response can take to before we fail the promise.
+     * @param responsePromise   {@link OCSPResp} 的 {@link Promise}
+     * @param timeoutMillis     响应超时（毫秒），超时则失败 Promise
      */
     OcspHttpHandler(Promise<OCSPResp> responsePromise, long timeoutMillis) {
         this.responseFuture = checkNotNull(responsePromise, "ResponsePromise");
@@ -65,24 +74,24 @@ final class OcspHttpHandler extends ChannelDuplexHandler {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         FullHttpResponse response = (FullHttpResponse) msg;
         try {
-            // If DEBUG is enabled then log the response
+            // DEBUG 级别下记录 HTTP 响应
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Received OCSP HTTP Response: {}", response);
             }
 
-            // Response headers must contain 'Content-Type'
+            // 响应头必须包含 Content-Type
             String contentType = response.headers().get(HttpHeaderNames.CONTENT_TYPE);
             if (contentType == null) {
                 throw new OCSPException("HTTP Response does not contain 'CONTENT-TYPE' header");
             }
 
-            // Response headers must contain 'application/ocsp-response'
+            // Content-Type 必须为 application/ocsp-response
             if (!contentType.equalsIgnoreCase(OCSP_RESPONSE_TYPE)) {
                 throw new OCSPException("Response Content-Type was: " + contentType +
                         "; Expected: " + OCSP_RESPONSE_TYPE);
             }
 
-            // Status must be OK for successful lookup
+            // 成功查询时 HTTP 状态码须为 200
             if (response.status() != OK) {
                 throw new IllegalArgumentException("HTTP Response Code was: " + response.status().code() +
                         "; Expected: 200");
@@ -104,6 +113,7 @@ final class OcspHttpHandler extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         super.write(ctx, msg, promise);
+        // 发出请求后启动响应超时计时
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!responseFuture.isDone()) {
                 responseFuture.tryFailure(new OCSPException("OCSP response was not received within "

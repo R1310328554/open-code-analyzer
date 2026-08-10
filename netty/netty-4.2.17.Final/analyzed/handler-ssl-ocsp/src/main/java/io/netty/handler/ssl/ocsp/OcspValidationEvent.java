@@ -15,14 +15,19 @@
  */
 package io.netty.handler.ssl.ocsp;
 
+/**
+ * OCSP 证书校验完成后向 pipeline 传播的用户事件，携带校验结果。
+ */
 public final class OcspValidationEvent {
 
+    /** OCSP 校验结果 */
     private final OcspResponse response;
 
     public OcspValidationEvent(OcspResponse response) {
         this.response = response;
     }
 
+    /** 返回 OCSP 校验响应 */
     public OcspResponse response() {
         return response;
     }

@@ -29,17 +29,21 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
- * Handler that establishes a blind forwarding proxy tunnel using
- * <a href="https://www.openssh.com/txt/socks4.protocol">SOCKS4</a> protocol.
+ * 使用
+ * <a href="https://www.openssh.com/txt/socks4.protocol">SOCKS4</a>
+ * 协议建立盲转发代理隧道的 handler。
  */
 public final class Socks4ProxyHandler extends ProxyHandler {
 
     private static final String PROTOCOL = "socks4";
     private static final String AUTH_USERNAME = "username";
 
+    /** SOCKS4 用户名；无认证时为 null */
     private final String username;
 
+    /** pipeline 中 SOCKS4 解码器名称 */
     private String decoderName;
+    /** pipeline 中 SOCKS4 编码器名称 */
     private String encoderName;
 
     public Socks4ProxyHandler(SocketAddress proxyAddress) {

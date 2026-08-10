@@ -27,18 +27,17 @@ import java.util.List;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * A composite {@link SimpleNameResolver} that resolves a host name against a sequence of {@link NameResolver}s.
- *
- * In case of a failure, only the last one will be reported.
+ * 组合 {@link SimpleNameResolver}：按顺序尝试多个 {@link NameResolver} 解析主机名。
+ * <p>全部失败时仅报告最后一个解析器的错误。</p>
  */
 public final class CompositeNameResolver<T> extends SimpleNameResolver<T> {
 
+    /** 按顺序尝试的解析器数组 */
     private final NameResolver<T>[] resolvers;
 
     /**
-     * @param executor the {@link EventExecutor} which is used to notify the listeners of the {@link Future} returned
-     *                 by {@link #resolve(String)}
-     * @param resolvers the {@link NameResolver}s to be tried sequentially
+     * @param executor 用于通知 {@link #resolve(String)} 返回的 {@link Future} 监听器的 {@link EventExecutor}
+     * @param resolvers 按顺序尝试的 {@link NameResolver} 列表
      */
     public CompositeNameResolver(EventExecutor executor, NameResolver<T>... resolvers) {
         super(executor);
@@ -58,6 +57,7 @@ public final class CompositeNameResolver<T> extends SimpleNameResolver<T> {
         doResolveRec(inetHost, promise, 0, null);
     }
 
+    /** 递归尝试下一个解析器，直至成功或耗尽列表 */
     private void doResolveRec(final String inetHost,
                               final Promise<T> promise,
                               final int resolverIndex,
@@ -81,6 +81,7 @@ public final class CompositeNameResolver<T> extends SimpleNameResolver<T> {
         doResolveAllRec(inetHost, promise, 0, null);
     }
 
+    /** 递归尝试下一个解析器解析全部地址 */
     private void doResolveAllRec(final String inetHost,
                               final Promise<List<T>> promise,
                               final int resolverIndex,

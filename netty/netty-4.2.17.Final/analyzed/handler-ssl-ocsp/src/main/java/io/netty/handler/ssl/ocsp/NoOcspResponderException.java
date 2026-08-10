@@ -16,14 +16,14 @@
 package io.netty.handler.ssl.ocsp;
 
 /**
- * Thrown internally by {@link OcspClient} if the certificate being checked does not specify any OCSP Responder.
+ * 当待校验证书未指定任何 OCSP 响应器时，由 {@link OcspClient} 内部抛出。
  * <p>
- * This exception extends {@link NullPointerException} for backwards compatibility reasons.
+ * 为向后兼容，本异常继承 {@link NullPointerException}。
  */
 public final class NoOcspResponderException extends NullPointerException {
     /**
-     * Create a new instance with the given message.
-     * @param message The error message.
+     * 使用给定消息创建新实例。
+     * @param message 错误消息
      */
     public NoOcspResponderException(String message) {
         super(message);

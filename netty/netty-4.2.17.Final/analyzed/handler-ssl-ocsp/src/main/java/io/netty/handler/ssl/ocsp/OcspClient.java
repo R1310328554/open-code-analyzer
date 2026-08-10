@@ -85,11 +85,15 @@ import static org.bouncycastle.asn1.ocsp.OCSPObjectIdentifiers.id_pkix_ocsp_nonc
 import static org.bouncycastle.asn1.x509.X509ObjectIdentifiers.id_ad_ocsp;
 import static org.bouncycastle.cert.ocsp.CertificateID.HASH_SHA1;
 
+/**
+ * OCSP 客户端工具类：构建 OCSP 请求、经 HTTP/1.1 查询响应器并校验签名与 nonce。
+ */
 final class OcspClient {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(OcspClient.class);
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    /** OCSP HTTP 响应体最大聚合大小（可通过系统属性配置） */
     private static final int OCSP_RESPONSE_MAX_SIZE = SystemPropertyUtil.getInt(
             "io.netty.ocsp.responseSize", 1024 * 10);
 
@@ -98,13 +102,13 @@ final class OcspClient {
     }
 
     /**
-     * Query the certificate status using OCSP
+     * 通过 OCSP 查询证书状态。
      *
-     * @param x509Certificate       Client {@link X509Certificate} to validate
-     * @param issuer                {@link X509Certificate} issuer of client certificate
-     * @param validateResponseNonce Set to {@code true} to enable OCSP response validation
-     * @param ioTransport           {@link IoTransport} to use
-     * @param responsePromise      {@link Promise} of {@link BasicOCSPResp}
+     * @param x509Certificate       待校验的客户端 {@link X509Certificate}
+     * @param issuer                客户端证书的颁发者 {@link X509Certificate}
+     * @param validateResponseNonce 为 {@code true} 时启用 OCSP 响应 nonce 校验
+     * @param ioTransport           使用的 {@link IoTransport}
+     * @param responsePromise      {@link BasicOCSPResp} 的 {@link Promise}
      */
     static void query(final X509Certificate x509Certificate,
                                         final X509Certificate issuer, final boolean validateResponseNonce,
@@ -122,31 +126,26 @@ final class OcspClient {
                             new JcaX509CertificateHolder(issuer),
                             x509Certificate.getSerialNumber());
 
-                    // Initialize OCSP Request Builder and add CertificateID into it.
+                    // 构建 OCSP 请求并加入 CertificateID
                     OCSPReqBuilder builder = new OCSPReqBuilder();
                     builder.addRequest(certificateID);
 
-                    // Generate 16-bytes (octets) of nonce and add it into OCSP Request builder.
-                    // Because as per RFC-8954#2.1:
-                    //
-                    //   OCSP responders MUST accept lengths of at least
-                    //   16 octets and MAY choose to ignore the Nonce extension for requests
-                    //   where the length of the nonce is less than 16 octets.
+                    // 生成 16 字节 nonce 并加入请求（RFC 8954 §2.1 要求响应器至少接受 16 字节）
                     byte[] nonce = new byte[16];
                     SECURE_RANDOM.nextBytes(nonce);
                     final DEROctetString derNonce = new DEROctetString(nonce);
                     builder.setRequestExtensions(new Extensions(new Extension(id_pkix_ocsp_nonce, false, derNonce)));
 
-                    // Get OCSP URL from Certificate and query it.
+                    // 从证书解析 OCSP URL 并发起查询
                     URL uri = new URL(parseOcspUrlFromCertificate(x509Certificate));
 
-                    // Find port
+                    // 确定端口
                     int port = uri.getPort();
                     if (port == -1) {
                         port = uri.getDefaultPort();
                     }
 
-                    // Configure path
+                    // 构造 HTTP 路径
                     String path = uri.getPath();
                     if (path.isEmpty()) {
                         path = "/";
@@ -160,10 +159,8 @@ final class OcspClient {
                             Unpooled.wrappedBuffer(builder.build().getEncoded()),
                             uri.getHost(), port, path, ioTransport, dnsNameResolver);
 
-                    // Validate OCSP response
+                    // 收到响应后校验
                     ocspResponsePromise.addListener((GenericFutureListener<Future<OCSPResp>>) future -> {
-                        // If Future was successful then we have received OCSP response
-                        // We will now validate it.
                         if (future.isSuccess()) {
                             final Object responseObject;
                             try {
@@ -191,15 +188,15 @@ final class OcspClient {
     }
 
     /**
-     * Query the OCSP responder for certificate status using HTTP/1.1
+     * 经 HTTP/1.1 向 OCSP 响应器查询证书状态。
      *
-     * @param eventLoop   {@link EventLoop} for HTTP request execution
-     * @param ocspRequest {@link ByteBuf} containing OCSP request data
-     * @param host        OCSP responder hostname
-     * @param port        OCSP responder port
-     * @param path        OCSP responder path
-     * @param ioTransport {@link IoTransport} to use
-     * @return Returns {@link Promise} containing {@link OCSPResp}
+     * @param eventLoop   执行 HTTP 请求的 {@link EventLoop}
+     * @param ocspRequest 含 OCSP 请求数据的 {@link ByteBuf}
+     * @param host        OCSP 响应器主机名
+     * @param port        OCSP 响应器端口
+     * @param path        OCSP 响应器路径
+     * @param ioTransport 使用的 {@link IoTransport}
+     * @return 包含 {@link OCSPResp} 的 {@link Promise}
      */
     private static Promise<OCSPResp> query(final EventLoop eventLoop, final ByteBuf ocspRequest,
                                            final String host, final int port, final String path,
@@ -215,15 +212,11 @@ final class OcspClient {
                     .handler(new Initializer(responsePromise, 10 * 1000));
             dnsNameResolver.resolve(host).addListener((FutureListener<InetAddress>) future -> {
 
-                // If Future was successful then we have successfully resolved OCSP server address.
-                // If not, mark 'responsePromise' as failure.
+                // DNS 解析成功则连接 OCSP 服务器，否则标记失败
                 if (future.isSuccess()) {
-                    // Get the resolved InetAddress
                     InetAddress hostAddress = future.getNow();
                     final ChannelFuture channelFuture = bootstrap.connect(hostAddress, port);
                     channelFuture.addListener(f -> {
-                        // If Future was successful then connection to OCSP responder was successful.
-                        // We will send a OCSP request now
                         if (f.isSuccess()) {
                             FullHttpRequest request = new DefaultFullHttpRequest(HTTP_1_1, POST, path,
                                     ocspRequest);
@@ -233,7 +226,7 @@ final class OcspClient {
                             request.headers().add(HttpHeaderNames.ACCEPT_ENCODING, OCSP_RESPONSE_TYPE);
                             request.headers().add(HttpHeaderNames.CONTENT_LENGTH, ocspRequest.readableBytes());
 
-                            // Send the OCSP HTTP Request
+                            // 发送 OCSP HTTP 请求
                             channelFuture.channel().writeAndFlush(request);
                         } else {
                             responsePromise.tryFailure(new IllegalStateException(
@@ -251,13 +244,13 @@ final class OcspClient {
         return responsePromise;
     }
 
+    /** 校验 OCSP 响应：条目数、CertID、可选 nonce 与签名 */
     private static void validateResponse(
             X509Certificate x509Certificate, DigestCalculatorProvider digestCalculatorProvider,
             Promise<BasicOCSPResp> responsePromise, BasicOCSPResp basicResponse,
             DEROctetString derNonce, X509Certificate issuer, boolean validateNonce) {
         try {
-            // Validate number of responses. We only requested for 1 certificate
-            // so number of responses must be 1. If not, we will throw an error.
+            // 仅请求一张证书，响应条目数须为 1
             int responses = basicResponse.getResponses().length;
             if (responses != 1) {
                 responsePromise.tryFailure(
@@ -284,7 +277,7 @@ final class OcspClient {
     }
 
     /**
-     * Validate OCSP response nonce
+     * 校验 OCSP 响应中的 nonce 是否与请求一致。
      */
     private static void validateNonce(BasicOCSPResp basicResponse, DEROctetString encodedNonce) throws OCSPException {
         Extension nonceExt = basicResponse.getExtension(id_pkix_ocsp_nonce);
@@ -299,30 +292,29 @@ final class OcspClient {
     }
 
     /**
-     * Validate OCSP response signature
+     * 校验 OCSP 响应签名（使用响应器证书或颁发者证书）。
      */
     static void validateSignature(BasicOCSPResp resp, X509Certificate issuerCertificate) throws OCSPException {
         try {
             X509CertificateHolder[] certs = resp.getCerts();
             JcaContentVerifierProviderBuilder providerBuilder = new JcaContentVerifierProviderBuilder();
 
-            // If responder certificate is included, validate the chain
+            // 响应中包含证书时，验证证书链
             if (certs != null && certs.length > 0) {
 
-                // Use the first included certificate to verify the OCSP response signature.
+                // 使用响应中第一张证书验证 OCSP 签名
                 X509CertificateHolder responderCert = certs[0];
 
-                // Verify OCSP response signature using responder cert
                 ContentVerifierProvider responderVerifier = providerBuilder.build(responderCert);
 
                 if (!resp.isSignatureValid(responderVerifier)) {
                     throw new OCSPException("OCSP response signature is not valid");
                 }
 
-                // Build chain from responder certificate to issuer using CertPathBuilder
+                // 用 CertPathBuilder 构建从响应器到颁发者的证书链
                 validateCertificateChain(responderCert, certs, issuerCertificate);
             } else {
-                // Validate signature using issuer certificate
+                // 无嵌入证书时使用颁发者证书验证签名
                 ContentVerifierProvider issuerVerifier = providerBuilder.build(issuerCertificate);
 
                 if (!resp.isSignatureValid(issuerVerifier)) {
@@ -337,41 +329,36 @@ final class OcspClient {
     }
 
     /**
-     * Validates that a certificate chain can be built from the responder certificate to the issuer.
-     * Uses Java's CertPathBuilder to construct and validate the chain.
+     * 验证从 OCSP 响应器证书到颁发者的证书链是否可构建。
+     * 使用 Java {@link CertPathBuilder} 构造并校验路径。
      */
     private static void validateCertificateChain(X509CertificateHolder responderCert,
                                                    X509CertificateHolder[] allCerts,
                                                    X509Certificate issuerCertificate) throws OCSPException {
         try {
-            // Convert BouncyCastle certificate holders to Java X509Certificates
+            // BouncyCastle 证书持有者转为 Java X509Certificate
             List<X509Certificate> certList = new ArrayList<>(allCerts.length);
             for (X509CertificateHolder certHolder : allCerts) {
                 certList.add(new JcaX509CertificateConverter().getCertificate(certHolder));
             }
 
-            // Create a CertStore with all the certificates from the OCSP response
             CertStore certStore = CertStore.getInstance("Collection",
                     new CollectionCertStoreParameters(certList));
 
-            // Set up the target certificate selector for the responder certificate
             X509CertSelector targetConstraints = new X509CertSelector();
             targetConstraints.setCertificate(new JcaX509CertificateConverter().getCertificate(responderCert));
 
-            // Set up trust anchor with the issuer certificate
             TrustAnchor trustAnchor = new TrustAnchor(issuerCertificate, null);
 
-            // Build PKIX parameters
             PKIXBuilderParameters pkixParams = new PKIXBuilderParameters(
                     Collections.singleton(trustAnchor), targetConstraints);
             pkixParams.addCertStore(certStore);
-            pkixParams.setRevocationEnabled(false); // Don't check revocation when validating OCSP response
+            pkixParams.setRevocationEnabled(false); // 校验 OCSP 响应本身时不查吊销
 
-            // Build and validate the certificate path
             CertPathBuilder builder = CertPathBuilder.getInstance("PKIX");
             builder.build(pkixParams);
 
-            // If we reach here, the chain is valid
+            // 执行到此表示链有效
         } catch (CertPathBuilderException e) {
             throw new OCSPException("OCSP responder certificate is not trusted by issuer: " + e.getMessage(), e);
         } catch (InvalidAlgorithmParameterException | NoSuchAlgorithmException e) {
@@ -382,25 +369,24 @@ final class OcspClient {
     }
 
     /**
-     * Parse OCSP endpoint URL from Certificate
+     * 从证书的 AIA 扩展解析 OCSP 端点 URL。
      *
-     * @param cert Certificate to be parsed
-     * @return OCSP endpoint URL
-     * @throws NullPointerException     If we couldn't locate OCSP responder URL
-     * @throws IllegalArgumentException If we couldn't parse X509Certificate into JcaX509CertificateHolder
+     * @param cert 待解析证书
+     * @return OCSP 端点 URL
+     * @throws NullPointerException     无法定位 OCSP 响应器 URL 时
+     * @throws IllegalArgumentException 无法将 X509Certificate 转为 JcaX509CertificateHolder 时
      */
     private static String parseOcspUrlFromCertificate(X509Certificate cert) {
         X509CertificateHolder holder;
         try {
             holder = new JcaX509CertificateHolder(cert);
         } catch (CertificateEncodingException e) {
-            // Though this should never happen
             throw new IllegalArgumentException("Error while parsing X509Certificate into JcaX509CertificateHolder", e);
         }
 
         AuthorityInformationAccess aiaExtension = AuthorityInformationAccess.fromExtensions(holder.getExtensions());
 
-        // Lookup for OCSP responder url
+        // 查找 OCSP 响应器 URL
         if (aiaExtension != null) {
             for (AccessDescription accessDescription : aiaExtension.getAccessDescriptions()) {
                 if (accessDescription.getAccessMethod().equals(id_ad_ocsp)) {
@@ -412,6 +398,7 @@ final class OcspClient {
         throw new NoOcspResponderException("Unable to find OCSP responder URL in Certificate");
     }
 
+    /** 初始化 OCSP HTTP 客户端 pipeline */
     static final class Initializer extends ChannelInitializer<SocketChannel> {
 
         private final Promise<OCSPResp> responsePromise;
@@ -432,6 +419,6 @@ final class OcspClient {
     }
 
     private OcspClient() {
-        // Prevent outside initialization
+        // 禁止外部实例化
     }
 }
