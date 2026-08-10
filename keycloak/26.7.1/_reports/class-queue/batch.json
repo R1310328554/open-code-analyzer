@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T05:56:49Z",
-  "files": [
-    "core/src/main/java/org/keycloak/jose/jwk/ECPublicJWK.java",
-    "core/src/main/java/org/keycloak/jose/jwk/EdECUtils.java",
-    "core/src/main/java/org/keycloak/jose/jwk/EdECUtilsImpl.java",
-    "core/src/main/java/org/keycloak/jose/jwk/EdECUtilsUnsupportedImpl.java",
-    "core/src/main/java/org/keycloak/jose/jwk/JSONWebKeySet.java",
-    "core/src/main/java/org/keycloak/jose/jwk/JWK.java",
-    "core/src/main/java/org/keycloak/jose/jwk/JWKBuilder.java",
-    "core/src/main/java/org/keycloak/jose/jwk/JWKParser.java",
-    "core/src/main/java/org/keycloak/jose/jwk/JWKUtil.java",
-    "core/src/main/java/org/keycloak/jose/jwk/OKPPublicJWK.java",
-    "core/src/main/java/org/keycloak/jose/jwk/RSAPublicJWK.java",
-    "core/src/main/java/org/keycloak/jose/jws/Algorithm.java",
-    "core/src/main/java/org/keycloak/jose/jws/AlgorithmType.java",
-    "core/src/main/java/org/keycloak/jose/jws/JWSBuilder.java",
-    "core/src/main/java/org/keycloak/jose/jws/JWSHeader.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 5668,
-  "done": 315
+  "done": 330
 }
