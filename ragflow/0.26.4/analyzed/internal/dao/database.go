@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// database.go — GORM 数据库初始化：MySQL 连接池、AutoMigrate、手动迁移、模板种子与模型 Provider 加载。
+
 //
 
 package dao
@@ -36,11 +38,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// DB 全局 GORM 数据库句柄，供各 DAO 包直接使用。
 var DB *gorm.DB
+// modelProviderManager 缓存的 LLM Provider 管理器单例。
 var modelProviderManager *models.ProviderManager
 var modelProviderManagerMu sync.Mutex
 
-// LLMFactoryConfig represents a single LLM factory configuration
+// LLMFactoryConfig 单个 LLM 厂商（Factory）的配置结构。
 type LLMFactoryConfig struct {
 	Name   string      `json:"name"`
 	Logo   string      `json:"logo"`
@@ -50,7 +54,7 @@ type LLMFactoryConfig struct {
 	LLM    []LLMConfig `json:"llm"`
 }
 
-// LLMConfig represents a single LLM model configuration
+// LLMConfig 单个 LLM 模型的名称、类型与能力标签。
 type LLMConfig struct {
 	LLMName   string `json:"llm_name"`
 	Tags      string `json:"tags"`
@@ -59,12 +63,12 @@ type LLMConfig struct {
 	IsTools   bool   `json:"is_tools"`
 }
 
-// LLMFactoriesFile represents the structure of llm_factories.json
+// LLMFactoriesFile llm_factories.json 文件的顶层结构。
 type LLMFactoriesFile struct {
 	FactoryLLMInfos []LLMFactoryConfig `json:"factory_llm_infos"`
 }
 
-// InitDB initialize database connection
+// InitDB 建立 MySQL 连接、可选 AutoMigrate、种子模板并加载模型 Provider。
 func InitDB(migrateDB bool) error {
 	cfg := server.GetConfig()
 	dbCfg := cfg.Database
@@ -78,7 +82,7 @@ func InitDB(migrateDB bool) error {
 		dbCfg.Charset,
 	)
 
-	// Set log level
+	// 按 server.mode 设置 GORM 日志级别（debug 为 Info，否则 Silent）。
 	var gormLogLevel gormLogger.LogLevel
 	if cfg.Server.Mode == "debug" {
 		gormLogLevel = gormLogger.Info
@@ -86,7 +90,7 @@ func InitDB(migrateDB bool) error {
 		gormLogLevel = gormLogger.Silent
 	}
 
-	// Connect to database
+	// 打开 MySQL 连接，启用 parseTime 与本地时区。
 	var err error
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: gormLogger.Default.LogMode(gormLogLevel),
@@ -99,18 +103,18 @@ func InitDB(migrateDB bool) error {
 		return fmt.Errorf("failed to connect database: %w", err)
 	}
 
-	// Get general database object sql.DB
+	// 获取底层 *sql.DB 以配置连接池。
 	sqlDB, err := DB.DB()
 	if err != nil {
 		return fmt.Errorf("failed to get database instance: %w", err)
 	}
 
-	// Set connection pool
+	// 连接池：最大空闲 10、最大打开 100、生命周期 1 小时。
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	// Auto migrate all dataModels
+	// 全部 entity 模型列表，migrateDB 为 true 时逐一 AutoMigrate。
 	dataModels := []interface{}{
 		&entity.User{},
 		&entity.Tenant{},
@@ -168,15 +172,13 @@ func InitDB(migrateDB bool) error {
 			}
 		}
 
-		// Run manual migrations for complex schema changes
+		// 复杂 schema 变更走 RunMigrations 手动迁移。
 		if err = RunMigrations(DB); err != nil {
 			return fmt.Errorf("failed to run manual migrations: %w", err)
 		}
 		common.Info("Database schema migrated successfully")
 	}
-	// Seed built-in agent templates so the Go backend can serve the
-	// "create agent from template" catalogue without relying on Python-side
-	// initialization.
+	// 种子化内置 Agent 模板，使 Go 后端独立提供「从模板创建」目录。
 	if err = SeedCanvasTemplates(); err != nil {
 		common.Warn("Failed to seed canvas templates", zap.Error(err))
 	}
@@ -194,12 +196,12 @@ func InitDB(migrateDB bool) error {
 	return nil
 }
 
-// GetDB get database instance
+// GetDB 返回全局 DB 句柄。
 func GetDB() *gorm.DB {
 	return DB
 }
 
-// GetModelProviderManager get database instance
+// GetModelProviderManager 懒加载并返回模型 Provider 管理器（双重检查锁）。
 func GetModelProviderManager() *models.ProviderManager {
 	if modelProviderManager != nil {
 		return modelProviderManager
@@ -225,6 +227,7 @@ func GetModelProviderManager() *models.ProviderManager {
 	return modelProviderManager
 }
 
+// findModelConfigDir 在多个相对路径中查找 conf/models 目录。
 func findModelConfigDir() (string, error) {
 	candidates := []string{
 		"conf/models",
@@ -239,8 +242,7 @@ func findModelConfigDir() (string, error) {
 	return "", fmt.Errorf("conf/models not found")
 }
 
-// autoMigrateSafely runs AutoMigrate and ignores duplicate index errors
-// This handles cases where indexes already exist (e.g., created by Python backend)
+// autoMigrateSafely 执行 AutoMigrate，忽略 MySQL 重复索引/列/表等已知错误。
 func autoMigrateSafely(db *gorm.DB, model interface{}) error {
 	//err := db.Debug().AutoMigrate(model) // to print debug info
 	err := db.AutoMigrate(model)
@@ -248,7 +250,7 @@ func autoMigrateSafely(db *gorm.DB, model interface{}) error {
 		return nil
 	}
 
-	// Check if error is MySQL duplicate index error (Error 1061)
+	// MySQL 1061 重复索引：Python 后端可能已创建，跳过即可。
 	errStr := err.Error()
 	if strings.Contains(errStr, "Error 1061") && strings.Contains(errStr, "Duplicate key name") {
 		common.Warn("Index already exists, skipping", zap.String("error", errStr))

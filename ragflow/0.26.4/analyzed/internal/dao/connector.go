@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// connector.go — 数据源连接器 DAO：管理 connector/connector2kb 关联、同步任务调度与重建索引。
+
 //
 
 package dao
@@ -25,15 +27,15 @@ import (
 	"gorm.io/gorm"
 )
 
-// ConnectorDAO connector data access object
+// ConnectorDAO 外部数据源连接器数据访问对象。
 type ConnectorDAO struct{}
 
-// NewConnectorDAO create connector DAO
+// NewConnectorDAO 构造 ConnectorDAO 实例。
 func NewConnectorDAO() *ConnectorDAO {
 	return &ConnectorDAO{}
 }
 
-// ConnectorListItem connector list item (subset of fields)
+// ConnectorListItem 连接器列表项（仅 id/name/source/status）。
 type ConnectorListItem struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
@@ -41,7 +43,7 @@ type ConnectorListItem struct {
 	Status string `json:"status"`
 }
 
-// ConnectorDatasetListItem represents a connector linked to a dataset.
+// ConnectorDatasetListItem 数据集关联的连接器摘要（含 auto_parse）。
 type ConnectorDatasetListItem struct {
 	ID        string `json:"id" gorm:"column:id"`
 	Source    string `json:"source" gorm:"column:source"`
@@ -50,8 +52,7 @@ type ConnectorDatasetListItem struct {
 	Status    string `json:"status" gorm:"column:status"`
 }
 
-// ListByTenantID list connectors by tenant ID
-// Only selects id, name, source, status fields (matching Python implementation)
+// ListByTenantID 按租户列出连接器摘要，对齐 Python 字段子集。
 func (dao *ConnectorDAO) ListByTenantID(tenantID string) ([]*ConnectorListItem, error) {
 	var connectors []*ConnectorListItem
 
@@ -67,7 +68,7 @@ func (dao *ConnectorDAO) ListByTenantID(tenantID string) ([]*ConnectorListItem, 
 	return connectors, nil
 }
 
-// ListByDatasetID lists connectors linked to a dataset.
+// ListByDatasetID 列出与知识库关联的全部连接器。
 func (dao *ConnectorDAO) ListByDatasetID(datasetID string) ([]*ConnectorDatasetListItem, error) {
 	var connectors []*ConnectorDatasetListItem
 
@@ -84,13 +85,13 @@ func (dao *ConnectorDAO) ListByDatasetID(datasetID string) ([]*ConnectorDatasetL
 	return connectors, nil
 }
 
-// DatasetConnectorLink is the connector relation payload accepted by dataset update.
+// DatasetConnectorLink 数据集更新时接受的连接器关联载荷。
 type DatasetConnectorLink struct {
 	ID        string
 	AutoParse string
 }
 
-// LinkDatasetConnectors syncs connector2kb rows for a dataset.
+// LinkDatasetConnectors 同步知识库与连接器的 connector2kb 映射，增删关联并调度 sync/prune 任务。
 func (dao *ConnectorDAO) LinkDatasetConnectors(kbID string, connectors []DatasetConnectorLink) error {
 	return DB.Transaction(func(tx *gorm.DB) error {
 		var existing []entity.Connector2Kb
@@ -163,7 +164,7 @@ func (dao *ConnectorDAO) LinkDatasetConnectors(kbID string, connectors []Dataset
 	})
 }
 
-// GetByID get connector by ID
+// GetByID 按 ID 查询完整连接器记录。
 func (dao *ConnectorDAO) GetByID(id string) (*entity.Connector, error) {
 	var connector entity.Connector
 	err := DB.Where("id = ?", id).First(&connector).Error
@@ -173,29 +174,29 @@ func (dao *ConnectorDAO) GetByID(id string) (*entity.Connector, error) {
 	return &connector, nil
 }
 
-// Create create a new connector
+// Create 插入新连接器。
 func (dao *ConnectorDAO) Create(connector *entity.Connector) error {
 	return DB.Create(connector).Error
 }
 
-// UpdateByID update connector by ID
+// UpdateByID 按 ID 部分更新连接器。
 func (dao *ConnectorDAO) UpdateByID(id string, updates map[string]interface{}) error {
 	return DB.Model(&entity.Connector{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// DeleteByID delete connector by ID
+// DeleteByID 按 ID 删除连接器。
 func (dao *ConnectorDAO) DeleteByID(id string) error {
 	return DB.Where("id = ?", id).Delete(&entity.Connector{}).Error
 }
 
-// CancelRunningOrScheduledLogs marks active sync logs as canceled for a connector.
+// CancelRunningOrScheduledLogs 将连接器进行中的 sync 日志标记为已取消。
 func (dao *ConnectorDAO) CancelRunningOrScheduledLogs(connectorID string) error {
 	return DB.Model(&entity.SyncLogs{}).
 		Where("connector_id = ? AND status IN ?", connectorID, []string{string(entity.TaskStatusSchedule), string(entity.TaskStatusRunning)}).
 		Update("status", string(entity.TaskStatusCancel)).Error
 }
 
-// ScheduleConnectorTasks schedules sync and optional prune tasks for a connector.
+// ScheduleConnectorTasks 为连接器全部 KB 映射调度 sync/prune 任务。
 func (dao *ConnectorDAO) ScheduleConnectorTasks(connectorID string) error {
 	return DB.Transaction(func(tx *gorm.DB) error {
 		var connector entity.Connector
@@ -225,14 +226,14 @@ func (dao *ConnectorDAO) ScheduleConnectorTasks(connectorID string) error {
 	})
 }
 
-// ListDocumentsByKBAndSourceType lists connector documents in a dataset.
+// ListDocumentsByKBAndSourceType 列出知识库中指定 source_type 的文档。
 func (dao *ConnectorDAO) ListDocumentsByKBAndSourceType(kbID, sourceType string) ([]*entity.Document, error) {
 	var documents []*entity.Document
 	err := DB.Where("kb_id = ? AND source_type = ?", kbID, sourceType).Find(&documents).Error
 	return documents, err
 }
 
-// RebuildConnector replaces old connector documents with scheduled sync tasks.
+// RebuildConnector 清理旧文档/文件/任务后重建索引，调度 sync/prune。
 func (dao *ConnectorDAO) RebuildConnector(connector *entity.Connector, kbID string, documents []*entity.Document) error {
 	return DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("connector_id = ? AND kb_id = ?", connector.ID, kbID).Delete(&entity.SyncLogs{}).Error; err != nil {
@@ -311,11 +312,13 @@ func (dao *ConnectorDAO) RebuildConnector(connector *entity.Connector, kbID stri
 	})
 }
 
+// 连接器后台任务类型：sync 增量同步，prune 清理已删文件。
 const (
 	connectorTaskTypeSync  = "sync"
 	connectorTaskTypePrune = "prune"
 )
 
+// createRebuildSyncLog 在重建流程中创建 sync_logs 记录。
 func createRebuildSyncLog(tx *gorm.DB, connectorID, kbID, taskType string, reindex bool) error {
 	fromBeginning := "0"
 	if reindex {
@@ -335,6 +338,7 @@ func createRebuildSyncLog(tx *gorm.DB, connectorID, kbID, taskType string, reind
 	}).Error
 }
 
+// scheduleConnectorTask 若不存在同类型 SCHEDULE 日志则创建新任务。
 func scheduleConnectorTask(tx *gorm.DB, connectorID, kbID, taskType string, reindex bool) error {
 	var existing int64
 	if err := tx.Model(&entity.SyncLogs{}).
@@ -381,6 +385,7 @@ func scheduleConnectorTask(tx *gorm.DB, connectorID, kbID, taskType string, rein
 	}).Error
 }
 
+// connectorConfigBool 从连接器 config map 读取布尔配置项。
 func connectorConfigBool(config map[string]interface{}, key string) bool {
 	value, ok := config[key]
 	if !ok {
@@ -397,7 +402,7 @@ func connectorConfigBool(config map[string]interface{}, key string) bool {
 	}
 }
 
-// ListLogsByConnectorID lists sync logs for one connector with pagination.
+// ListLogsByConnectorID 分页查询连接器同步日志，JOIN KB 取名称。
 func (dao *ConnectorDAO) ListLogsByConnectorID(connectorID string, offset, limit int) ([]*entity.ConnectorSyncLog, int64, error) {
 	baseQuery := DB.Model(&entity.SyncLogs{}).
 		Joins("JOIN connector ON sync_logs.connector_id = connector.id").

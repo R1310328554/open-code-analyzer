@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// api_token.go — API 令牌与 Bot 会话 DAO：管理租户 API Token 及 api_4_conversation 表的 CRUD 与统计。
+
 //
 
 package dao
@@ -22,33 +24,33 @@ import (
 	"ragflow/internal/entity"
 )
 
-// APITokenDAO API token data access object
+// APITokenDAO 租户 API 访问令牌数据访问对象。
 type APITokenDAO struct{}
 
-// NewAPITokenDAO create API token DAO
+// NewAPITokenDAO 构造 APITokenDAO 实例。
 func NewAPITokenDAO() *APITokenDAO {
 	return &APITokenDAO{}
 }
 
-// Create creates a new API token
+// Create 插入新的 API 令牌记录。
 func (dao *APITokenDAO) Create(apiToken *entity.APIToken) error {
 	return DB.Create(apiToken).Error
 }
 
-// GetByTenantID gets API tokens by tenant ID
+// GetByTenantID 按租户 ID 列出全部 API 令牌。
 func (dao *APITokenDAO) GetByTenantID(tenantID string) ([]*entity.APIToken, error) {
 	var tokens []*entity.APIToken
 	err := DB.Where("tenant_id = ?", tenantID).Find(&tokens).Error
 	return tokens, err
 }
 
-// DeleteByTenantID deletes all API tokens by tenant ID (hard delete)
+// DeleteByTenantID 硬删除租户下所有 API 令牌。
 func (dao *APITokenDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.APIToken{})
 	return result.RowsAffected, result.Error
 }
 
-// GetByToken gets API token by access key
+// GetUserByAPIToken 按 access token 查找 API 令牌（鉴权入口）。
 func (dao *APITokenDAO) GetUserByAPIToken(token string) (*entity.APIToken, error) {
 	var apiToken entity.APIToken
 	err := DB.Where("token = ?", token).First(&apiToken).Error
@@ -58,15 +60,14 @@ func (dao *APITokenDAO) GetUserByAPIToken(token string) (*entity.APIToken, error
 	return &apiToken, nil
 }
 
-// GetByBeta gets API tokens by beta key (SDK/bot authorization token).
-// Mirrors Python's APIToken.query(beta=token), which returns a list.
+// GetByBeta 按 beta 密钥查询（SDK/Bot 授权），对齐 Python APIToken.query(beta=)。
 func (dao *APITokenDAO) GetByBeta(beta string) ([]*entity.APIToken, error) {
 	var tokens []*entity.APIToken
 	err := DB.Where("beta = ?", beta).Find(&tokens).Error
 	return tokens, err
 }
 
-// DeleteByDialogIDs deletes API tokens by dialog IDs (hard delete)
+// DeleteByDialogIDs 按对话 ID 批量硬删除关联 API 令牌。
 func (dao *APITokenDAO) DeleteByDialogIDs(dialogIDs []string) (int64, error) {
 	if len(dialogIDs) == 0 {
 		return 0, nil
@@ -75,21 +76,21 @@ func (dao *APITokenDAO) DeleteByDialogIDs(dialogIDs []string) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
-// DeleteByTenantIDAndToken deletes a specific API token by tenant ID and token value
+// DeleteByTenantIDAndToken 按租户与 token 值精确删除单条令牌。
 func (dao *APITokenDAO) DeleteByTenantIDAndToken(tenantID, token string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ? AND token = ?", tenantID, token).Delete(&entity.APIToken{})
 	return result.RowsAffected, result.Error
 }
 
-// API4ConversationDAO API for conversation data access object
+// API4ConversationDAO Bot/API 多轮会话（api_4_conversation 表）数据访问。
 type API4ConversationDAO struct{}
 
-// NewAPI4ConversationDAO create API4Conversation DAO
+// NewAPI4ConversationDAO 构造 API4ConversationDAO 实例。
 func NewAPI4ConversationDAO() *API4ConversationDAO {
 	return &API4ConversationDAO{}
 }
 
-// ConversationStatsRow is one daily aggregate row for api_4_conversation.
+// ConversationStatsRow 按日聚合的会话统计行（PV/UV/Token 等）。
 type ConversationStatsRow struct {
 	Dt       string  `gorm:"column:dt"`
 	PV       int64   `gorm:"column:pv"`
@@ -100,11 +101,7 @@ type ConversationStatsRow struct {
 	ThumbUp  int64   `gorm:"column:thumb_up"`
 }
 
-// Create inserts a new api_4_conversation row. The caller is responsible
-// for setting ID, DialogID, UserID and the BaseModel time fields; the
-// DAO does not assign defaults because session creation paths in the
-// Python agent API generate a uuid + tenant timestamp and rely on the
-// round-trip shape being byte-identical.
+// Create 插入新会话行；ID/时间戳由调用方设置以对齐 Python Agent API。
 func (dao *API4ConversationDAO) Create(conv *entity.API4Conversation) error {
 	if conv == nil {
 		return errors.New("api4 conversation: nil row")
@@ -112,11 +109,7 @@ func (dao *API4ConversationDAO) Create(conv *entity.API4Conversation) error {
 	return DB.Create(conv).Error
 }
 
-// Update writes back an existing api_4_conversation row. The bot
-// completion path calls this with the updated Message JSON after each
-// turn so multi-turn chatbot sessions carry prior history into the next
-// LLM call. Matches the Python conversation_service.update pattern at
-// api/db/services/conversation_service.py:236 (async_iframe_completion).
+// Update 回写会话 Message JSON，每轮 Bot 完成后更新以携带历史上下文。
 func (dao *API4ConversationDAO) Update(conv *entity.API4Conversation) error {
 	if conv == nil {
 		return errors.New("api4 conversation: nil row")
@@ -127,7 +120,7 @@ func (dao *API4ConversationDAO) Update(conv *entity.API4Conversation) error {
 	return DB.Save(conv).Error
 }
 
-// Stats returns daily conversation aggregates for a tenant.
+// Stats 按租户与日期范围返回每日会话聚合统计，可按 source 过滤。
 func (dao *API4ConversationDAO) Stats(tenantID, fromDate, toDate string, source *string) ([]ConversationStatsRow, error) {
 	var rows []ConversationStatsRow
 	dateExpr := "DATE_FORMAT(a.create_date, '%Y-%m-%d 00:00:00')"
@@ -156,6 +149,7 @@ func (dao *API4ConversationDAO) Stats(tenantID, fromDate, toDate string, source 
 	return rows, err
 }
 
+// GetBySessionID 按会话 ID 与 Agent（dialog）ID 查询单条记录。
 func (dao *API4ConversationDAO) GetBySessionID(sessionID, agentID string) (*entity.API4Conversation, error) {
 	var result entity.API4Conversation
 	tx := DB.Where("id = ? AND dialog_id = ?", sessionID, agentID).Find(&result)
@@ -168,20 +162,20 @@ func (dao *API4ConversationDAO) GetBySessionID(sessionID, agentID string) (*enti
 	return &result, nil
 }
 
-// ListIDsByAgentID lists conversation IDs for one agent.
+// ListIDsByAgentID 列出某 Agent 下全部会话 ID。
 func (dao *API4ConversationDAO) ListIDsByAgentID(agentID string) ([]string, error) {
 	var ids []string
 	err := DB.Model(&entity.API4Conversation{}).Where("dialog_id = ?", agentID).Pluck("id", &ids).Error
 	return ids, err
 }
 
-// DeleteBySessionIDAndAgentID deletes API4Conversations by sessionID and agentID
+// DeleteBySessionIDAndAgentID 按会话与 Agent ID 删除单条会话。
 func (dao *API4ConversationDAO) DeleteBySessionIDAndAgentID(sessionID, agentID string) (int64, error) {
 	result := DB.Where("id = ? AND dialog_id = ?", sessionID, agentID).Delete(&entity.API4Conversation{})
 	return result.RowsAffected, result.Error
 }
 
-// DeleteByDialogIDs deletes API4Conversations by dialog IDs (hard delete)
+// DeleteByDialogIDs 按 dialog ID 批量硬删除会话。
 func (dao *API4ConversationDAO) DeleteByDialogIDs(dialogIDs []string) (int64, error) {
 	if len(dialogIDs) == 0 {
 		return 0, nil

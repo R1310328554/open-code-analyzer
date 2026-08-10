@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// canvas_template.go — Agent 画布模板 DAO：读取 canvas_template 表，供「从模板创建 Agent」功能展示内置模板列表。
+
 //
 
 package dao
@@ -20,17 +22,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// CanvasTemplateDAO data-access object for the canvas_template table.
+// CanvasTemplateDAO canvas_template 表的数据访问对象。
 type CanvasTemplateDAO struct{}
 
-// NewCanvasTemplateDAO creates a CanvasTemplate DAO.
+// NewCanvasTemplateDAO 构造 CanvasTemplateDAO 实例。
 func NewCanvasTemplateDAO() *CanvasTemplateDAO {
 	return &CanvasTemplateDAO{}
 }
 
-// GetAll returns every row in canvas_template ordered by create_time desc, so
-// templates appear newest first in the UI. Mirrors the Python
-// CanvasTemplateService.get_all() behaviour.
+// GetAll 按 create_time 降序返回全部模板，UI 最新优先；对齐 Python get_all()。
 func (dao *CanvasTemplateDAO) GetAll() ([]*entity.CanvasTemplate, error) {
 	var templates []*entity.CanvasTemplate
 	if err := DB.Order("create_time desc").Find(&templates).Error; err != nil {

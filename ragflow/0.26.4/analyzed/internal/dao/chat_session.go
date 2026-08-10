@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// chat_session.go — 聊天会话 DAO：管理 conversation 表 CRUD 及 Agent 会话分页、关键词搜索与日期过滤。
+
 //
 
 package dao
@@ -27,9 +29,10 @@ import (
 	"ragflow/internal/entity"
 )
 
-// ChatSessionDAO chat session data access object
+// ChatSessionDAO 聊天会话（conversation 表）数据访问对象。
 type ChatSessionDAO struct{}
 
+// ListAgentSessionsParams Agent 会话列表查询参数（分页、排序、过滤）。
 type ListAgentSessionsParams struct {
 	AgentID    string
 	Page       int
@@ -45,12 +48,12 @@ type ListAgentSessionsParams struct {
 	ExpUserID  string
 }
 
-// NewChatSessionDAO create chat session DAO
+// NewChatSessionDAO 构造 ChatSessionDAO 实例。
 func NewChatSessionDAO() *ChatSessionDAO {
 	return &ChatSessionDAO{}
 }
 
-// GetByID gets chat session by ID
+// GetByID 按主键 ID 查询会话。
 func (dao *ChatSessionDAO) GetByID(id string) (*entity.ChatSession, error) {
 	var conv entity.ChatSession
 	err := DB.Where("id = ?", id).First(&conv).Error
@@ -60,7 +63,7 @@ func (dao *ChatSessionDAO) GetByID(id string) (*entity.ChatSession, error) {
 	return &conv, nil
 }
 
-// GetBySessionIDAndChatID gets a chat session by session ID and chat ID.
+// GetBySessionIDAndChatID 按会话 ID 与 dialog_id 联合查询。
 func (dao *ChatSessionDAO) GetBySessionIDAndChatID(sessionID, chatID string) (*entity.ChatSession, error) {
 	var conv entity.ChatSession
 	err := DB.Where("id = ? AND dialog_id = ?", sessionID, chatID).First(&conv).Error
@@ -70,12 +73,12 @@ func (dao *ChatSessionDAO) GetBySessionIDAndChatID(sessionID, chatID string) (*e
 	return &conv, nil
 }
 
-// Create creates a new chat session
+// Create 插入新聊天会话。
 func (dao *ChatSessionDAO) Create(conv *entity.ChatSession) error {
 	return DB.Create(conv).Error
 }
 
-// UpdateByID updates a chat session by ID
+// UpdateByID 按 ID 部分更新，自动刷新 update_time/update_date。
 func (dao *ChatSessionDAO) UpdateByID(id string, updates map[string]interface{}) error {
 	if updates == nil {
 		updates = make(map[string]interface{})
@@ -101,12 +104,12 @@ func (dao *ChatSessionDAO) UpdateByID(id string, updates map[string]interface{})
 	return nil
 }
 
-// DeleteByID deletes a chat session by ID (hard delete)
+// DeleteByID 硬删除单条会话。
 func (dao *ChatSessionDAO) DeleteByID(id string) error {
 	return DB.Where("id = ?", id).Delete(&entity.ChatSession{}).Error
 }
 
-// ListByChatID lists chat sessions by chat ID
+// ListByChatID 按 dialog_id 列出全部会话，create_time 降序。
 func (dao *ChatSessionDAO) ListByChatID(chatID string) ([]*entity.ChatSession, error) {
 	var convs []*entity.ChatSession
 	err := DB.Where("dialog_id = ?", chatID).
@@ -115,7 +118,7 @@ func (dao *ChatSessionDAO) ListByChatID(chatID string) ([]*entity.ChatSession, e
 	return convs, err
 }
 
-// CheckDialogExists checks if a dialog exists with given tenant_id and dialog_id
+// CheckDialogExists 校验租户下有效 dialog 是否存在。
 func (dao *ChatSessionDAO) CheckDialogExists(tenantID, chatID string) (bool, error) {
 	var count int64
 	err := DB.Model(&entity.Chat{}).
@@ -127,7 +130,7 @@ func (dao *ChatSessionDAO) CheckDialogExists(tenantID, chatID string) (bool, err
 	return count > 0, nil
 }
 
-// GetDialogByID gets dialog by ID
+// GetDialogByID 按 ID 获取有效状态的 dialog。
 func (dao *ChatSessionDAO) GetDialogByID(chatID string) (*entity.Chat, error) {
 	var dialog entity.Chat
 	err := DB.Where("id = ? AND status = ?", chatID, common.StatusDialogValid).First(&dialog).Error
@@ -137,7 +140,7 @@ func (dao *ChatSessionDAO) GetDialogByID(chatID string) (*entity.Chat, error) {
 	return &dialog, nil
 }
 
-// DeleteByDialogIDs deletes chat sessions by dialog IDs (hard delete)
+// DeleteByDialogIDs 按 dialog ID 批量硬删除会话。
 func (dao *ChatSessionDAO) DeleteByDialogIDs(dialogIDs []string) (int64, error) {
 	if len(dialogIDs) == 0 {
 		return 0, nil
@@ -146,6 +149,7 @@ func (dao *ChatSessionDAO) DeleteByDialogIDs(dialogIDs []string) (int64, error) 
 	return result.RowsAffected, result.Error
 }
 
+// ListAgentSessionNames 列出 Agent 下某体验用户的会话 ID 与名称。
 func (dao *ChatSessionDAO) ListAgentSessionNames(agentID, expUserID string) ([]map[string]interface{}, error) {
 	var rows []map[string]interface{}
 	err := DB.Model(&entity.API4Conversation{}).
@@ -156,6 +160,7 @@ func (dao *ChatSessionDAO) ListAgentSessionNames(agentID, expUserID string) ([]m
 	return rows, err
 }
 
+// normalizeAgentSessionOrderBy 将前端排序字段映射为合法列名。
 func normalizeAgentSessionOrderBy(orderBy string) string {
 	switch orderBy {
 	case "id":
@@ -183,6 +188,7 @@ func normalizeAgentSessionOrderBy(orderBy string) string {
 	}
 }
 
+// ListAgentSessions 分页查询 Agent 会话，支持关键词、日期范围与 DSL 省略。
 func (dao *ChatSessionDAO) ListAgentSessions(params ListAgentSessionsParams) (int64, []*entity.API4Conversation, error) {
 	query := DB.Model(&entity.API4Conversation{}).Where("dialog_id = ?", params.AgentID)
 	if !params.IncludeDSL {

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// canvas_template_seed.go — 内置 Agent 模板种子数据：从 agent/templates/*.json 导入 canvas_template 表，对齐 Python init_data。
+
 //
 
 package dao
@@ -31,10 +33,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// SeedCanvasTemplates seeds the canvas_template table from the built-in
-// agent/templates/*.json files. This mirrors Python's
-// init_data.add_graph_templates() so that the Go backend serves the same
-// template catalogue without relying on Python-side initialization.
+// SeedCanvasTemplates 从 agent/templates/*.json 种子化 canvas_template 表；对齐 Python init_data.add_graph_templates()。
 func SeedCanvasTemplates() error {
 	dir := findAgentTemplatesDir()
 	if dir == "" {
@@ -47,8 +46,7 @@ func SeedCanvasTemplates() error {
 		return fmt.Errorf("failed to read agent templates directory %s: %w", dir, err)
 	}
 
-	// Match Python's filter_delete([1 == 1]): start from a clean slate so
-	// removed built-ins disappear and updated files take effect.
+	// 先清空表（对齐 Python filter_delete），使移除/更新的内置模板生效。
 	if err := DB.Exec("DELETE FROM canvas_template").Error; err != nil {
 		return fmt.Errorf("failed to clear canvas_template: %w", err)
 	}
@@ -82,6 +80,7 @@ func SeedCanvasTemplates() error {
 	return nil
 }
 
+// parseCanvasTemplateFile 解析单个 JSON 模板文件为 CanvasTemplate 实体。
 func parseCanvasTemplateFile(raw []byte) (*entity.CanvasTemplate, error) {
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.UseNumber()
@@ -125,6 +124,7 @@ func parseCanvasTemplateFile(raw []byte) (*entity.CanvasTemplate, error) {
 	return tmpl, nil
 }
 
+// collectCanvasTypes 去重合并 canvas_type/canvas_types 为 JSONSlice。
 func collectCanvasTypes(rawType, rawTypes any) entity.JSONSlice {
 	seen := make(map[string]struct{})
 	var result entity.JSONSlice
@@ -163,6 +163,7 @@ func collectCanvasTypes(rawType, rawTypes any) entity.JSONSlice {
 	return result
 }
 
+// findAgentTemplatesDir 在多个相对路径中查找 agent/templates 目录。
 func findAgentTemplatesDir() string {
 	candidates := []string{
 		"agent/templates",

@@ -12,6 +12,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+// chat.go — 对话（dialog）数据访问：租户对话 CRUD、分页列表、名称去重及权限校验查询。
+
 //
 
 package dao
@@ -26,15 +28,15 @@ import (
 	"ragflow/internal/entity"
 )
 
-// ChatDAO chat data access object
+// ChatDAO 对话/助手（dialog 表）数据访问对象。
 type ChatDAO struct{}
 
-// NewChatDAO create chat DAO
+// NewChatDAO 构造 ChatDAO 实例。
 func NewChatDAO() *ChatDAO {
 	return &ChatDAO{}
 }
 
-// ListByTenantID list chats by tenant ID
+// ListByTenantID 按租户与可选 status 过滤，create_time 降序。
 func (dao *ChatDAO) ListByTenantID(tenantID string, status string) ([]*entity.Chat, error) {
 	var chats []*entity.Chat
 
@@ -53,7 +55,7 @@ func (dao *ChatDAO) ListByTenantID(tenantID string, status string) ([]*entity.Ch
 	return chats, nil
 }
 
-// ListByTenantIDs list chats by tenant IDs with pagination and filtering
+// ListByTenantIDs 多租户分页列表，JOIN user 取 nickname/avatar，支持关键词搜索。
 func (dao *ChatDAO) ListByTenantIDs(tenantIDs []string, userID string, page, pageSize int, orderby string, desc bool, keywords string) ([]*entity.Chat, int64, error) {
 	var chats []*entity.Chat
 	var total int64
@@ -105,7 +107,7 @@ func (dao *ChatDAO) ListByTenantIDs(tenantIDs []string, userID string, page, pag
 	return chats, total, nil
 }
 
-// ListByOwnerIDs list chats by owner IDs with filtering (manual pagination)
+// ListByOwnerIDs 按 owner 租户 ID 过滤，内存计数分页（无 OFFSET/LIMIT）。
 func (dao *ChatDAO) ListByOwnerIDs(ownerIDs []string, userID string, orderby string, desc bool, keywords string) ([]*entity.Chat, int64, error) {
 	var chats []*entity.Chat
 
@@ -144,7 +146,7 @@ func (dao *ChatDAO) ListByOwnerIDs(ownerIDs []string, userID string, orderby str
 	return chats, total, nil
 }
 
-// GetByID gets chat by ID
+// GetByID 按主键 ID 查询单条对话。
 func (dao *ChatDAO) GetByID(id string) (*entity.Chat, error) {
 	var chat entity.Chat
 	err := DB.Where("id = ?", id).First(&chat).Error
@@ -154,7 +156,7 @@ func (dao *ChatDAO) GetByID(id string) (*entity.Chat, error) {
 	return &chat, nil
 }
 
-// GetByIDAndStatus gets chat by ID and status
+// GetByIDAndStatus 按 ID 与 status 联合查询。
 func (dao *ChatDAO) GetByIDAndStatus(id string, status string) (*entity.Chat, error) {
 	var chat entity.Chat
 	err := DB.Where("id = ? AND status = ?", id, status).First(&chat).Error
@@ -164,7 +166,7 @@ func (dao *ChatDAO) GetByIDAndStatus(id string, status string) (*entity.Chat, er
 	return &chat, nil
 }
 
-// GetExistingNames gets existing dialog names for a tenant
+// GetExistingNames 获取租户下已有对话名称列表（用于重名检测）。
 func (dao *ChatDAO) GetExistingNames(tenantID string, status string) ([]string, error) {
 	var names []string
 	err := DB.Model(&entity.Chat{}).
@@ -173,7 +175,7 @@ func (dao *ChatDAO) GetExistingNames(tenantID string, status string) ([]string, 
 	return names, err
 }
 
-// ExistsByNameTenantStatus checks whether a chat with the given name exists.
+// ExistsByNameTenantStatus 检查同名对话是否已存在于租户下。
 func (dao *ChatDAO) ExistsByNameTenantStatus(name, tenantID, status string) (bool, error) {
 	var count int64
 	err := DB.Model(&entity.Chat{}).
@@ -182,12 +184,12 @@ func (dao *ChatDAO) ExistsByNameTenantStatus(name, tenantID, status string) (boo
 	return count > 0, err
 }
 
-// Create creates a new chat/dialog
+// Create 插入新对话记录。
 func (dao *ChatDAO) Create(chat *entity.Chat) error {
 	return DB.Create(chat).Error
 }
 
-// UpdateByID updates a chat by ID
+// UpdateByID 按 ID 部分更新，自动刷新 update_time/update_date。
 func (dao *ChatDAO) UpdateByID(id string, updates map[string]interface{}) error {
 	if updates == nil {
 		updates = make(map[string]interface{})
@@ -213,7 +215,7 @@ func (dao *ChatDAO) UpdateByID(id string, updates map[string]interface{}) error 
 	return nil
 }
 
-// UpdateManyByID updates multiple chats by ID (batch update)
+// UpdateManyByID 事务内批量按 ID 更新多条对话。
 func (dao *ChatDAO) UpdateManyByID(updates []map[string]interface{}) error {
 	if len(updates) == 0 {
 		return nil
@@ -249,13 +251,13 @@ func (dao *ChatDAO) UpdateManyByID(updates []map[string]interface{}) error {
 	return tx.Commit().Error
 }
 
-// DeleteByTenantID deletes all chats by tenant ID (hard delete)
+// DeleteByTenantID 硬删除租户下全部对话。
 func (dao *ChatDAO) DeleteByTenantID(tenantID string) (int64, error) {
 	result := DB.Unscoped().Where("tenant_id = ?", tenantID).Delete(&entity.Chat{})
 	return result.RowsAffected, result.Error
 }
 
-// GetAllDialogIDsByTenantID gets all dialog IDs by tenant ID
+// GetAllDialogIDsByTenantID 列出租户下全部 dialog ID。
 func (dao *ChatDAO) GetAllDialogIDsByTenantID(tenantID string) ([]string, error) {
 	var dialogIDs []string
 	err := DB.Model(&entity.Chat{}).
@@ -264,9 +266,7 @@ func (dao *ChatDAO) GetAllDialogIDsByTenantID(tenantID string) ([]string, error)
 	return dialogIDs, err
 }
 
-// QueryByTenantIDAndID checks if a chat exists with given tenant_id and id
-// Reference: Python DialogService.query(tenant_id=tenant.tenant_id, id=chat_id, status=StatusEnum.VALID.value)
-// Used for permission verification in get_chat API
+// QueryByTenantIDAndID 校验租户+对话+状态三元组，供 get_chat 权限验证。
 func (dao *ChatDAO) QueryByTenantIDAndID(tenantID string, chatID string, status string) ([]*entity.Chat, error) {
 	var chats []*entity.Chat
 	err := DB.Where("tenant_id = ? AND id = ? AND status = ?", tenantID, chatID, status).Find(&chats).Error
