@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T23:22:24Z",
   "files": [
-    "pkg/storage/stores/series/index/filter.go",
-    "pkg/storage/stores/series/index/index.go",
-    "pkg/storage/stores/series/index/index_reader.go",
-    "pkg/storage/stores/series/index/schema.go",
-    "pkg/storage/stores/series/index/schema_caching.go",
-    "pkg/storage/stores/series/index/schema_config.go",
-    "pkg/storage/stores/series/index/schema_util.go",
-    "pkg/storage/stores/series/index/table_client.go",
-    "pkg/storage/stores/series/index/table_manager.go",
-    "pkg/storage/stores/series/series_index_gateway_store.go",
-    "pkg/storage/stores/series/series_index_store.go",
-    "pkg/storage/stores/series/series_store_utils.go",
-    "pkg/storage/stores/series_store_write.go",
-    "pkg/storage/stores/shipper/bloomshipper/blockscache.go",
-    "pkg/storage/stores/shipper/bloomshipper/cache.go",
     "pkg/storage/stores/shipper/bloomshipper/client.go",
     "pkg/storage/stores/shipper/bloomshipper/config/config.go",
     "pkg/storage/stores/shipper/bloomshipper/fetcher.go",
@@ -33,5 +18,5 @@
     "pkg/storage/stores/shipper/indexshipper/boltdb/compactor/table_compactor.go"
   ],
   "remaining_pending": 232,
-  "done": 1290
+  "done": 1305
 }
