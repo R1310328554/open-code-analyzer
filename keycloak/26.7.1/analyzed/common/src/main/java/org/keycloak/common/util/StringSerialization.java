@@ -8,12 +8,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Utilities to serialize objects to string. Type safety is not guaranteed here and is responsibility of the caller.
+ * 将对象序列化为分号分隔字符串及反序列化工具；类型安全由调用方保证。
+ *
  * @author hmlnarik
  */
 public class StringSerialization {
 
-    // Since there is still need to support JDK 7, we have to work without functional interfaces
+    // 仍需兼容 JDK 7，无法使用函数式接口
+    /** 已知类型的序列化/反序列化策略。 */
     private static enum DeSerializerFunction {
         OBJECT {
             @Override public String serialize(Object o)   { return o.toString(); }
@@ -25,12 +27,13 @@ public class StringSerialization {
         },
         ;
 
-        /** Serialize value which is guaranteed to be non-null */
+        /** 序列化非 null 值 */
         public abstract String serialize(Object o);
         public abstract Object deserialize(String s);
     }
 
     private static final Map<Class<?>, DeSerializerFunction> WELL_KNOWN_DESERIALIZERS = new LinkedHashMap<>();
+    /** 字段分隔符。 */
     private static final String SEPARATOR = ";";
     private static final Pattern ESCAPE_PATTERN = Pattern.compile(SEPARATOR);
     private static final Pattern UNESCAPE_PATTERN = Pattern.compile(SEPARATOR + SEPARATOR);
@@ -47,9 +50,10 @@ public class StringSerialization {
     }
 
     /**
-     * Serialize given objects as strings separated by {@link #SEPARATOR} according to the {@link #WELL_KNOWN_SERIALIZERS}.
-     * @param toSerialize
-     * @return
+     * 按 {@link #WELL_KNOWN_DESERIALIZERS} 将对象序列化为 {@link #SEPARATOR} 分隔的字符串。
+     *
+     * @param toSerialize 待序列化对象（可变参数）
+     * @return 序列化结果
      */
     public static String serialize(Object... toSerialize) {
         StringBuilder sb = new StringBuilder();
@@ -68,10 +72,12 @@ public class StringSerialization {
         return sb.toString();
     }
 
+    /** 创建用于顺序读取序列化字符串的 {@link Deserializer}。 */
     public static Deserializer deserialize(String what) {
         return new Deserializer(what);
     }
 
+    /** 将对象编码为 {@code N}（null）或 {@code V} + 值字符串。 */
     private static String getStringFrom(Object o) {
         if (o == null) {
             return "N";
@@ -88,6 +94,7 @@ public class StringSerialization {
         return clazz.cast(res);
     }
 
+    /** 顺序解析 {@link #serialize(Object...)} 产物的迭代器。 */
     public static class Deserializer {
 
         private final Matcher valueMatcher;
@@ -96,6 +103,11 @@ public class StringSerialization {
             this.valueMatcher = VALUE_PATTERN.matcher(what);
         }
 
+        /**
+         * 读取下一个值并转为 {@code clazz}；无更多值时返回 null。
+         *
+         * @param clazz 目标类型
+         */
         public <T> T next(Class<T> clazz) {
             if (! this.valueMatcher.find()) {
                 return null;

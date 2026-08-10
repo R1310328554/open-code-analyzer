@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * <p>Provides a way for obtaining the KeycloakSession
+ * <p>提供获取 {@code KeycloakSession} 的线程上下文机制（已弃用）。</p>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  *
@@ -30,6 +30,7 @@ import java.util.Map;
 @Deprecated
 public final class Resteasy {
 
+    /** 当前线程的上下文数据映射。 */
     private static final ThreadLocal<Map<Class<?>, Object>> contextualData = new ThreadLocal<Map<Class<?>, Object>>() {
         @Override
         protected Map<Class<?>, Object> initialValue() {
@@ -38,8 +39,8 @@ public final class Resteasy {
     };
 
     /**
-     * Push the given {@code instance} with type/key {@code type} to the context associated with the current thread.
-     * <br>Should not be called directly
+     * 将 {@code instance} 以类型/键 {@code type} 压入当前线程上下文。
+     * <br>不应直接调用
      *
      * @param type the type/key to associate the {@code instance} with
      * @param instance the instance
@@ -49,16 +50,16 @@ public final class Resteasy {
     }
 
     /**
-     * Clear the context associated with the current thread.
-     * <br>Should not be called directly
+     * 清除当前线程关联的上下文。
+     * <br>不应直接调用
      */
     public static void clearContextData() {
         contextualData.remove();
     }
 
     /**
-     * Lookup the instance associated with the given type/key {@code type} from the context associated with the current thread.
-     * <br> Should only be used to obtain the KeycloakSession
+     * 从当前线程上下文查找与类型/键 {@code type} 关联的实例。
+     * <br> 仅应用于获取 KeycloakSession
      *
      * @param type the type/key to lookup
      * @return the instance associated with the given {@code type} or null if non-existent.
@@ -68,7 +69,7 @@ public final class Resteasy {
     }
 
     /**
-     * Push the given {@code instance} with type/key {@code type} to the Resteasy global context.
+     * 将 {@code instance} 以类型/键 {@code type} 压入 Resteasy 全局上下文（已弃用，等同 {@link #pushContext}）。
      *
      * @param type the type/key to associate the {@code instance} with
      * @param instance the instance

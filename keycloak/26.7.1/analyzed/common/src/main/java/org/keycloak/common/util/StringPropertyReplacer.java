@@ -28,7 +28,7 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 
 /**
- * A utility class for replacing properties in strings.
+ * 字符串中 {@code ${...}} 属性占位符的解析与替换工具。
  *
  * @author <a href="mailto:jason@planet57.com">Jason Dillon</a>
  * @author <a href="Scott.Stark@jboss.org">Scott Stark</a>
@@ -42,16 +42,16 @@ public final class StringPropertyReplacer
 
     private static final Logger logger = Logger.getLogger(StringPropertyReplacer.class);
 
-    /** File separator value */
+    /** 文件分隔符 */
     private static final String FILE_SEPARATOR = File.separator;
 
-    /** Path separator value */
+    /** 路径分隔符 */
     private static final String PATH_SEPARATOR = File.pathSeparator;
 
-    /** File separator alias */
+    /** 文件分隔符别名 {@code ${/}} */
     private static final String FILE_SEPARATOR_ALIAS = "/";
 
-    /** Path separator alias */
+    /** 路径分隔符别名 {@code ${:}} */
     private static final String PATH_SEPARATOR_ALIAS = ":";
 
     private static final PropertyResolver NULL_RESOLVER = property -> null;
@@ -64,19 +64,12 @@ public final class StringPropertyReplacer
     }
 
     /**
-     * Go through the input string and replace any occurrence of ${p} with
-     * the System.getProperty(p) value. If there is no such property p defined,
-     * then the ${p} reference will remain unchanged.
+     * 遍历输入串，将 {@code ${p}} 替换为默认解析器解析的值；无对应属性则保留原占位符。
      *
-     * If the property reference is of the form ${p:v} and there is no such property p,
-     * then the default value v will be returned.
+     * <p>{@code ${p:v}} 在无属性 {@code p} 时使用默认值 {@code v}；
+     * {@code ${p1,p2}} / {@code ${p1,p2:v}} 依次尝试主、备属性。</p>
      *
-     * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then
-     * the primary and the secondary properties will be tried in turn, before
-     * returning either the unchanged input, or the default value.
-     *
-     * The property ${/} is replaced with System.getProperty("file.separator")
-     * value and the property ${:} is replaced with System.getProperty("path.separator").
+     * <p>{@code ${/}}、{@code ${:}} 分别替换为文件/路径分隔符。</p>
      *
      * @param string - the string with possible ${} references
      * @return the input string with all property references replaced if any.
@@ -87,19 +80,7 @@ public final class StringPropertyReplacer
     }
 
     /**
-     * Go through the input string and replace any occurrence of ${p} with
-     * the value resolves from {@code resolver}. If there is no such property p defined,
-     * then the ${p} reference will remain unchanged.
-     *
-     * If the property reference is of the form ${p:v} and there is no such property p,
-     * then the default value v will be returned.
-     *
-     * If the property reference is of the form ${p1,p2} or ${p1,p2:v} then
-     * the primary and the secondary properties will be tried in turn, before
-     * returning either the unchanged input, or the default value.
-     *
-     * The property ${/} is replaced with System.getProperty("file.separator")
-     * value and the property ${:} is replaced with System.getProperty("path.separator").
+     * 使用 {@code resolver} 解析并替换 {@code ${...}} 占位符；规则同 {@link #replaceProperties(String)}。
      *
      * @param string - the string with possible ${} references
      * @param resolver - the property resolver
@@ -280,6 +261,7 @@ public final class StringPropertyReplacer
         return value;
     }
 
+    /** 按属性名解析占位符值的策略接口。 */
     public interface PropertyResolver {
         String resolve(String property);
     }

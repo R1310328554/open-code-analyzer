@@ -39,16 +39,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Utility class for working with JDK Reflection and also CDI's {link Annotated} metadata.
+ * JDK 反射与 CDI {@link Annotated} 元数据操作工具类。
+ * <p>提供类/成员查找、方法调用、泛型类型判定等常用反射封装。</p>
  */
 public class Reflections {
     /**
-     * An empty array of type {@link java.lang.annotation.Annotation}, useful converting lists to arrays.
+     * 空的 {@link java.lang.annotation.Annotation} 数组，便于将列表转为数组。
      */
     public static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[0];
 
     /**
-     * An empty array of type {@link Object}, useful for converting lists to arrays.
+     * 空的 {@link Object} 数组，便于将列表转为数组。
      */
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
 
@@ -60,14 +61,12 @@ public class Reflections {
     }
 
     /**
-     * <p> Perform a runtime cast. Similar to {@link Class#cast(Object)}, but useful when you do not have a {@link
-     * Class} object for type you wish to cast to. </p> <p/> <p> {@link Class#cast(Object)} should be used if possible
-     * </p>
+     * <p>运行时强制转换，类似 {@link Class#cast(Object)}，在无法取得目标 {@link Class} 时可用。</p><p>优先使用 {@link Class#cast(Object)}。</p>
      *
      * @param <T> the type to cast to
      * @param obj the object to perform the cast on
      *
-     * @return the casted object
+     * @return 转换后的对象
      *
      * @throws ClassCastException if the type T is not a subtype of the object
      * @see Class#cast(Object)
@@ -78,11 +77,11 @@ public class Reflections {
     }
 
     /**
-     * Get all the declared fields on the class hierarchy. This <b>will</b> return overridden fields.
+     * 获取类层次上所有 declared 字段（<b>包含</b>被子类覆盖的字段）。
      *
      * @param clazz The class to search
      *
-     * @return the set of all declared fields or an empty set if there are none
+     * @return 所有 declared 字段集合，无则空集
      */
     public static Set<Field> getAllDeclaredFields(Class<?> clazz) {
         HashSet<Field> fields = new HashSet<Field>();
@@ -95,27 +94,26 @@ public class Reflections {
     }
 
     /**
-     * Search the class hierarchy for a field with the given name. Will return the nearest match, starting with the
-     * class specified and searching up the hierarchy.
+     * 在类层次中按名称查找字段，从指定类向上搜索，返回最近匹配。
      *
      * @param clazz The class to search
      * @param name The name of the field to search for
      *
-     * @return The field found, or null if no field is found
+     * @return 找到的字段，否则 null
      */
     public static Field findDeclaredField(Class<?> clazz, String name) {
         for (Class<?> c = clazz; c != null && c != Object.class; c = c.getSuperclass()) {
             try {
                 return c.getDeclaredField(name);
             } catch (NoSuchFieldException e) {
-                // No-op, we continue looking up the class hierarchy
+                // 未找到，继续向上搜索类层次
             }
         }
         return null;
     }
 
     /**
-     * Search for annotations with the specified meta annotation type
+     * 查找带有指定元注解类型的注解
      *
      * @param annotations The annotation set to search
      * @param metaAnnotationType The type of the meta annotation to search for
@@ -134,7 +132,7 @@ public class Reflections {
     }
 
     /**
-     * Determine if a method exists in a specified class hierarchy
+     * 判断类层次中是否存在指定名称的方法
      *
      * @param clazz The class to search
      * @param name The name of the method
@@ -153,7 +151,7 @@ public class Reflections {
     }
 
     /**
-     * Get all the declared methods on the class hierarchy. This <b>will</b> return overridden methods.
+     * 获取类层次上所有 declared 方法（<b>包含</b>覆盖的方法）。
      *
      * @param clazz The class to search
      *
@@ -170,8 +168,7 @@ public class Reflections {
     }
 
     /**
-     * Search the class hierarchy for a method with the given name and arguments. Will return the nearest match,
-     * starting with the class specified and searching up the hierarchy.
+     * 在类层次中按名称与参数查找方法，从指定类向上搜索。
      *
      * @param clazz The class to search
      * @param name The name of the method to search for
@@ -184,15 +181,14 @@ public class Reflections {
             try {
                 return c.getDeclaredMethod(name, args);
             } catch (NoSuchMethodException e) {
-                // No-op, continue the search
+                // 未找到，继续搜索
             }
         }
         return null;
     }
 
     /**
-     * Search the class hierarchy for a constructor with the given arguments. Will return the nearest match, starting
-     * with the class specified and searching up the hierarchy.
+     * 在类层次中按参数查找构造器，从指定类向上搜索。
      *
      * @param clazz The class to search
      * @param args The arguments of the constructor to search for
@@ -204,14 +200,14 @@ public class Reflections {
             try {
                 return c.getDeclaredConstructor(args);
             } catch (NoSuchMethodException e) {
-                // No-op, continue the search
+                // 未找到，继续搜索
             }
         }
         return null;
     }
 
     /**
-     * Get all the declared constructors on the class hierarchy. This <b>will</b> return overridden constructors.
+     * 获取类层次上所有 declared 构造器。
      *
      * @param clazz The class to search
      *
@@ -228,7 +224,7 @@ public class Reflections {
     }
 
     /**
-     * Get the type of the member
+     * 获取成员（字段/方法/构造器）的类型
      *
      * @param member The member
      *
@@ -249,10 +245,7 @@ public class Reflections {
     }
 
     /**
-     * <p> Loads and initializes a class for the given name. </p> <p/> <p> If the Thread Context Class Loader is
-     * available, it will be used, otherwise the classloader used to load {@link Reflections} will be used </p> <p/> <p>
-     * It is also possible to specify additional classloaders to attempt to load the class with. If the first attempt
-     * fails, then these additional loaders are tried in order. </p>
+     * <p>按类名加载并初始化类。</p><p>优先使用线程上下文 ClassLoader，否则使用加载 {@link Reflections} 的 ClassLoader；可指定备用 ClassLoader 依次尝试。</p>
      *
      * @param name the name of the class to load
      * @param loaders additional classloaders to use to attempt to load the class
@@ -396,8 +389,7 @@ public class Reflections {
     }
 
     /**
-     * Set the accessibility flag on the {@link AccessibleObject} as described in {@link
-     * AccessibleObject#setAccessible(boolean)}.
+     * 按 {@link AccessibleObject#setAccessible(boolean)} 将 {@link AccessibleObject} 设为可访问。
      *
      * @param <A> member the accessible object type
      * @param member the accessible object
@@ -410,8 +402,7 @@ public class Reflections {
     }
 
     /**
-     * Set the accessibility flag on the {@link AccessibleObject} to false as described in {@link
-     * AccessibleObject#setAccessible(boolean)}.
+     * 按 {@link AccessibleObject#setAccessible(boolean)} 将 {@link AccessibleObject} 设为不可访问。
      *
      * @param <A> member the accessible object type
      * @param member the accessible object
@@ -471,7 +462,7 @@ public class Reflections {
     }
 
     /**
-     * Extract the raw type, given a type.
+     * 从 {@link Type} 提取原始（raw）类型。
      *
      * @param <T> the type
      * @param type the type to extract the raw type from
@@ -491,7 +482,7 @@ public class Reflections {
     }
 
     /**
-     * Check if a class is serializable.
+     * 判断类是否可序列化（基本类型或实现 {@link Serializable}）。
      *
      * @param clazz The class to check
      *
@@ -539,7 +530,7 @@ public class Reflections {
     }
 
     /**
-     * Gets the property name from a getter method.
+     * 从 getter 方法推导 JavaBean 属性名（扩展支持带参数的 getter）。
      * <p/>
      * We extend JavaBean conventions, allowing the getter method to have parameters
      *
@@ -560,7 +551,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if class is final
+     * 判断类是否为 final
      *
      * @param clazz The class to check
      *
@@ -579,7 +570,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if member is final
+     * 判断成员是否为 final
      *
      * @param member The member to check
      *
@@ -590,7 +581,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if member is private
+     * 判断成员是否为 private
      *
      * @param member The member to check
      *
@@ -601,7 +592,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if type or member is final
+     * 判断类型或其任一非 private final 方法是否为 final
      *
      * @param type Type or member
      *
@@ -628,7 +619,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if type is static
+     * 判断类型是否为 static
      *
      * @param type Type to check
      *
@@ -639,7 +630,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if member is static
+     * 判断成员是否为 static
      *
      * @param member Member to check
      *
@@ -654,7 +645,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if a method is abstract
+     * 判断方法是否为 abstract
      *
      * @param method
      *
@@ -665,7 +656,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if raw type is array type
+     * 判断原始类型是否为数组
      *
      * @param rawType The raw type to check
      *
@@ -676,7 +667,7 @@ public class Reflections {
     }
 
     /**
-     * Checks if type is parameterized type
+     * 判断类型是否声明了类型参数
      *
      * @param type The type to check
      *
@@ -704,7 +695,7 @@ public class Reflections {
     }
 
     /**
-     * Check the assignability of one type to another, taking into account the actual type arguments
+     * 考虑实际类型参数，判断一种类型是否可赋值给另一种
      *
      * @param rawType1 the raw type of the class to check
      * @param actualTypeArguments1 the actual type arguments to check, or an empty array if not a parameterized type
@@ -975,7 +966,7 @@ public class Reflections {
     }
 
     /**
-     * <p>Creates a new instance of a class.</p>
+     * <p>创建类的新实例。</p>
      *
      * <p>This method will use the same class loader of the given class to create the new instance.</p>
      *
@@ -1014,7 +1005,7 @@ public class Reflections {
     }
 
     /**
-     * <p>Resolves the type of items for a {@link Field} declared as a {@link List}.
+     * <p>解析声明为 {@link List} 的 {@link Field} 的元素类型。
      *
      * <p>This method will first try to check the parametrized type of the field type. If none is defined, it will try to infer
      * the type of items by looking at the value of the field for the given {@code instance}.

@@ -20,14 +20,18 @@ package org.keycloak.common.util;
 import java.util.Date;
 
 /**
+ * 可注入偏移量的“当前时间”工具，便于测试与模拟时钟。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class Time {
 
+    /** 全局时间偏移（秒），volatile 保证多线程可见性。 */
     private static volatile int offset;
 
     /**
-     * Returns current time in seconds adjusted by adding {@link #offset} seconds.
+     * 返回加上 {@link #offset} 秒偏移后的当前时间（秒，int）。
+     *
      * @return see description
      * @deprecated Use {@link #currentTimeSeconds()} to avoid integer overflow beyond year 2038.
      */
@@ -37,8 +41,9 @@ public class Time {
     }
 
     /**
-     * Returns current time in seconds adjusted by adding {@link #offset} seconds.
-     * Unlike {@link #currentTime()}, this method returns a {@code long} to avoid integer overflow beyond year 2038.
+     * 返回加上 {@link #offset} 秒偏移后的当前时间（秒，long）。
+     * 与 {@link #currentTime()} 不同，使用 long 避免 2038 年后 int 溢出。
+     *
      * @return see description
      */
     public static long currentTimeSeconds() {
@@ -46,7 +51,8 @@ public class Time {
     }
 
     /**
-     * Returns current time in milliseconds adjusted by adding {@link #offset} seconds.
+     * 返回加上 {@link #offset} 秒偏移后的当前时间（毫秒）。
+     *
      * @return see description
      */
     public static long currentTimeMillis() {
@@ -54,7 +60,8 @@ public class Time {
     }
 
     /**
-     * Returns {@link Date} object, its value set to time
+     * 由秒级 epoch 时间构造 {@link Date}。
+     *
      * @param time Time in milliseconds since the epoch
      * @return see description
      */
@@ -63,7 +70,8 @@ public class Time {
     }
 
     /**
-     * Returns {@link Date} object, its value set to time
+     * 由毫秒级 epoch 时间构造 {@link Date}。
+     *
      * @param time Time in milliseconds since the epoch
      * @return see description
      */
@@ -72,7 +80,8 @@ public class Time {
     }
 
     /**
-     * Returns time in milliseconds for a time in seconds. No adjustment is made to the parameter.
+     * 将秒级 epoch 时间转换为毫秒（不做偏移调整）。
+     *
      * @param time Time in seconds since the epoch
      * @return Time in milliseconds
      */
@@ -88,7 +97,8 @@ public class Time {
     }
 
     /**
-     * Sets time offset in seconds that will be added to {@link #currentTime()} and {@link #currentTimeMillis()}.
+     * 设置将叠加到 {@link #currentTime()} 与 {@link #currentTimeMillis()} 的时间偏移（秒）。
+     *
      * @param offset Offset (in seconds)
      */
     public static void setOffset(int offset) {

@@ -21,18 +21,21 @@ import java.lang.reflect.AccessibleObject;
 import java.security.PrivilegedAction;
 
 /**
- * A {@link java.security.PrivilegedAction} that calls {@link java.lang.reflect.AccessibleObject#setAccessible(boolean)}
+ * 在特权上下文中调用 {@link java.lang.reflect.AccessibleObject#setAccessible(boolean)} 的 {@link java.security.PrivilegedAction}。
+ *
  * @deprecated for removal in Keycloak 27
  */
 @Deprecated
 public class SetAccessiblePrivilegedAction implements PrivilegedAction<Void> {
 
+    /** 待设为可访问的成员对象。 */
     private final AccessibleObject member;
 
     public SetAccessiblePrivilegedAction(AccessibleObject member) {
         this.member = member;
     }
 
+    /** 将成员设为可访问并返回 null。 */
     public Void run() {
         member.setAccessible(true);
         return null;

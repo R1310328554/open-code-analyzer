@@ -28,26 +28,35 @@ import java.util.regex.Pattern;
 import org.keycloak.common.enums.SslRequired;
 
 /**
+ * URI/URL 解析、Origin 提取与 SSL 校验工具。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class UriUtils {
 
+    /** 匹配 http(s) Origin 的正则。 */
     private static final Pattern originPattern = Pattern.compile("(http://|https://)[\\w-]+(\\.[\\w-]+)*(:[\\d]{2,5})?");
 
+    /** 从 {@link URI} 提取 Origin（scheme + host + port）。 */
     public static String getOrigin(URI uri) {
         return getOrigin(uri.toString());
     }
 
+    /**
+     * 从 URI 字符串提取 Origin（至首个路径斜杠之前）。
+     */
     public static String getOrigin(String uri) {
         String u = uri.toString();
         int e = u.indexOf('/', 8);
         return e != -1 ? u.substring(0, u.indexOf('/', 8)) : u;
     }
 
+    /** 判断字符串是否为合法 Origin 格式。 */
     public static boolean isOrigin(String url) {
         return originPattern.matcher(url).matches();
     }
 
+    /** 解析 URI 并返回主机名；非法 URI 抛出 {@link IllegalArgumentException}。 */
     public static String getHost(String uri) {
         try {
             if (uri == null) return null;
@@ -58,6 +67,12 @@ public class UriUtils {
         }
     }
 
+    /**
+     * 解析查询字符串为 {@link MultivaluedHashMap}。
+     *
+     * @param queryString 查询部分（不含 {@code ?}）
+     * @param decode 是否 URL 解码键值
+     */
     public static MultivaluedHashMap<String, String> parseQueryParameters(String queryString, boolean decode) {
         MultivaluedHashMap<String, String> map = new MultivaluedHashMap<String, String>();
         if (queryString == null || queryString.equals("")) return map;
@@ -96,14 +111,23 @@ public class UriUtils {
         return map;
     }
 
+    /** 解析并 URL 解码查询字符串。 */
     public static MultivaluedHashMap<String, String> decodeQueryString(String queryString) {
         return parseQueryParameters(queryString, true);
     }
 
+    /** 从 URL 中移除指定查询参数。 */
     public static String stripQueryParam(String url, String name){
         return url.replaceFirst("[\\?&]"+name+"=[^&]*$|"+name+"=[^&]*&", "");
     }
 
+    /**
+     * 校验 URL 协议与 SSL 要求。
+     *
+     * @param sslRequired SSL 策略
+     * @param url 待校验 URL
+     * @param name 配置项名称（用于错误信息）
+     */
     public static void checkUrl(SslRequired sslRequired, String url, String name) throws IllegalArgumentException{
         if (url == null) {
             return;

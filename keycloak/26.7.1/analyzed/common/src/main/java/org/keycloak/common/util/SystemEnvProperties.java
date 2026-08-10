@@ -23,21 +23,19 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * <p>An utility class to resolve the value of a key based on the environment variables
- * and system properties available at runtime. In most cases, you do not want to resolve whatever system variable is available at runtime but specify which ones
- * can be used when resolving placeholders.
+ * <p>基于运行时环境变量与系统属性解析占位符键值的 {@link Properties} 实现。
+ * 通常不应解析任意系统变量，而应显式限定允许解析的键集合。</p>
  *
- * <p>To resolve to an environment variable, the key must have a format like {@code env.<key>} where {@code key} is the name of an environment variable.
- * For system properties, there is no specific format and the value is resolved from a system property that matches the key.
+ * <p>环境变量键格式为 {@code env.<key>}，其中 {@code key} 为环境变量名；
+ * 系统属性则直接使用键名匹配 {@link System#getProperty(String)}。</p>
  *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class SystemEnvProperties extends Properties {
 
     /**
-     * <p>An variation of {@link SystemEnvProperties} that gives unrestricted access to any system variable available at runtime.
-     * Most of the time you don't want to use this class but favor creating a {@link SystemEnvProperties} instance that
-     * filters which system variables should be available at runtime.
+     * <p>{@link SystemEnvProperties} 的无过滤变体，允许解析任意运行时系统/环境变量。
+     * 多数场景应使用带白名单的 {@link SystemEnvProperties} 构造器而非本常量。</p>
      */
     public static final SystemEnvProperties UNFILTERED = new SystemEnvProperties(Collections.emptySet()) {
         @Override
@@ -46,10 +44,11 @@ public class SystemEnvProperties extends Properties {
         }
     };
 
+    /** 允许解析的系统/环境变量键白名单。 */
     private final Set<String> allowedSystemVariables;
 
     /**
-     * Creates a new instance where system variables where only specific keys can be resolved from system variables.
+     * 创建仅允许解析指定键的系统/环境变量实例。
      *
      * @param allowedSystemVariables the keys of system variables that should be available at runtime
      */
@@ -73,6 +72,7 @@ public class SystemEnvProperties extends Properties {
         return value != null ? value : defaultValue;
     }
 
+    /** 判断给定键是否在白名单内。 */
     protected boolean isAllowed(String key) {
         return allowedSystemVariables.contains(key);
     }

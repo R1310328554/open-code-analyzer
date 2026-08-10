@@ -5,16 +5,16 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A utility class for working with {@link Throwable} instances.
+ * 处理 {@link Throwable} 实例的工具类。
  */
 public final class Throwables {
 
     /**
-     * Checks if the given {@code throwable} or any of its causes (up to a depth of 3) is an instance of any of the specified exception types.
+     * 检查 {@code throwable} 或其 cause 链（深度最多 3）是否属于指定异常类型之一。
      *
-     * @param throwable
-     * @param type
-     * @return
+     * @param throwable 待检查的异常
+     * @param type 候选异常类型
+     * @return 若 cause 链中存在匹配类型则返回 true
      */
     @SafeVarargs
     public static boolean isCausedBy(Throwable throwable, Class<? extends Exception>... type) {

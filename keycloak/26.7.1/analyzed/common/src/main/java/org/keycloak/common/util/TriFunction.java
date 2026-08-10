@@ -17,11 +17,19 @@
 
 package org.keycloak.common.util;
 
+/**
+ * 接受三个参数并产生结果的函数式接口（三元 {@link java.util.function.Function}）。
+ *
+ * @param <T> 第一个参数类型
+ * @param <U> 第二个参数类型
+ * @param <V> 第三个参数类型
+ * @param <R> 返回值类型
+ */
 @FunctionalInterface
 public interface TriFunction<T, U, V, R> {
 
     /**
-     * Applies this function to the given arguments.
+     * 将此函数应用于给定参数。
      *
      * @param t the first function argument
      * @param u the second function argument

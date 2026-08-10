@@ -24,21 +24,25 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 
 /**
+ * 输入流与字符串互转工具。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public final class StreamUtil {
 
+    /** 读取缓冲区大小（字节）。 */
     private static final int BUFFER_LENGTH = 4096;
 
     private StreamUtil() {
     }
 
     /**
-     * Reads string from byte input stream.
+     * 从字节输入流读取字符串（使用 JVM 默认字符集）。
+     *
      * @param in InputStream to build the String from
      * @return String representation of the input stream contents decoded using default charset
-     * @throws IOException
+     * @throws IOException 读取失败时抛出
      * @deprecated Use {@link #readString(java.io.InputStream, java.nio.charset.Charset)} variant.
      */
     @Deprecated
@@ -48,11 +52,12 @@ public final class StreamUtil {
     }
 
     /**
-     * Reads string from byte input stream.
+     * 从字节输入流读取字符串。
+     *
      * @param in InputStream to build the String from
      * @param charset Charset used to decode the input stream
      * @return String representation of the input stream contents decoded using given charset
-     * @throws IOException
+     * @throws IOException 读取失败时抛出
      */
     public static String readString(InputStream in, Charset charset) throws IOException
     {
