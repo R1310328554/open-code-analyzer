@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T01:25:13Z",
   "files": [
-    "transport/src/main/java/io/netty/channel/MaxMessagesRecvByteBufAllocator.java",
-    "transport/src/main/java/io/netty/channel/MessageSizeEstimator.java",
-    "transport/src/main/java/io/netty/channel/MultiThreadIoEventLoopGroup.java",
-    "transport/src/main/java/io/netty/channel/MultithreadEventLoopGroup.java",
-    "transport/src/main/java/io/netty/channel/PendingBytesTracker.java",
-    "transport/src/main/java/io/netty/channel/PendingWriteQueue.java",
-    "transport/src/main/java/io/netty/channel/PreferHeapByteBufAllocator.java",
-    "transport/src/main/java/io/netty/channel/RecvByteBufAllocator.java",
-    "transport/src/main/java/io/netty/channel/ReflectiveChannelFactory.java",
-    "transport/src/main/java/io/netty/channel/SelectStrategy.java",
-    "transport/src/main/java/io/netty/channel/SelectStrategyFactory.java",
-    "transport/src/main/java/io/netty/channel/ServerChannel.java",
-    "transport/src/main/java/io/netty/channel/ServerChannelRecvByteBufAllocator.java",
-    "transport/src/main/java/io/netty/channel/SimpleChannelInboundHandler.java",
-    "transport/src/main/java/io/netty/channel/SimpleUserEventChannelHandler.java",
     "transport/src/main/java/io/netty/channel/SingleThreadEventLoop.java",
     "transport/src/main/java/io/netty/channel/SingleThreadIoEventLoop.java",
     "transport/src/main/java/io/netty/channel/StacklessClosedChannelException.java",
@@ -33,5 +18,5 @@
     "transport/src/main/java/io/netty/channel/group/ChannelGroupFuture.java"
   ],
   "remaining_pending": 278,
-  "done": 1620
+  "done": 1635
 }
