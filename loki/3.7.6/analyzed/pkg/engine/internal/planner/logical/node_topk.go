@@ -1,9 +1,12 @@
 package logical
 
+// TopK 逻辑节点选取前 K 行，不保证输出顺序；需要确定顺序时应再插入 Sort。
+
 import (
 	"fmt"
 )
 
+// TopK 在表关系上按 SortBy 列比较后保留前 K 条记录。
 // TopK represents a plan node that performs topK operation.
 // Topk only identifies which rows belong in the top K, but does not
 // guarantee any specific ordering of those rows in the compacted output. Callers
@@ -11,6 +14,7 @@ import (
 
 // The TopK instruction find the top K rows from a table relation. TopK implements both
 // [Instruction] and [Value].
+// TopK 结构体封装输入表、排序列指针、K 值及排序方向等配置。
 type TopK struct {
 	b baseNode
 
@@ -30,6 +34,7 @@ var (
 // Name returns an identifier for the TopK operation.
 func (s *TopK) Name() string { return s.b.Name() }
 
+// String 以 TOPK 前缀输出 sort_by、k、asc 与 nulls_first 等属性。
 // String returns the disassembled SSA form of the TopK instruction.
 func (s *TopK) String() string {
 	return fmt.Sprintf(
@@ -57,3 +62,4 @@ func (s *TopK) Referrers() *[]Instruction { return &s.b.referrers }
 func (s *TopK) base() *baseNode { return &s.b }
 func (s *TopK) isInstruction()  {}
 func (s *TopK) isValue()        {}
+// TopK 常用于日志查询 limit：按时间戳降序取最新 N 条，metric 查询则不应用 limit。

@@ -1,14 +1,18 @@
 package logical
 
+// VectorAggregation 在每个时间戳上对时序样本做 sum/count/max/min/avg 等向量聚合。
+
 import (
 	"fmt"
 
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// VectorAggregation 由输入表、Grouping 维度与 Operation 类型三部分组成。
 // VectorAggregation represents a logical plan node that performs vector aggregations.
 // It computes aggregations over time series data at each timestamp instant
 // grouping results by specified dimensions.
+// Grouping 支持 group_by 或 group_without 两种 PromQL 风格分组模式。
 type VectorAggregation struct {
 	b baseNode
 
@@ -28,6 +32,7 @@ var (
 // Name returns an identifier for the VectorAggregation operation.
 func (v *VectorAggregation) Name() string { return v.b.Name() }
 
+// String 输出 operation 与 group_by/group_without 列列表，供调试与 Mermaid 渲染。
 // String returns the disassembled SSA form of the VectorAggregation instruction.
 func (v *VectorAggregation) String() string {
 	props := fmt.Sprintf("operation=%s", v.Operation)
@@ -69,3 +74,4 @@ func (v *VectorAggregation) Referrers() *[]Instruction { return &v.b.referrers }
 func (v *VectorAggregation) base() *baseNode { return &v.b }
 func (v *VectorAggregation) isInstruction()  {}
 func (v *VectorAggregation) isValue()        {}
+// walkVectorAggregation 从 SampleExpr AST 构造该节点并挂到 BinOp 左子树。

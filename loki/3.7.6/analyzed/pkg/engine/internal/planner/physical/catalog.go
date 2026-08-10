@@ -1,5 +1,7 @@
 package physical
 
+// catalog 抽象存储元数据访问：通过 Metastore 将 selector 与谓词解析为 DataObjSections 列表。
+
 import (
 	"fmt"
 	"time"
@@ -30,6 +32,7 @@ func (s ShardInfo) String() string {
 	return fmt.Sprintf("%d_of_%d", s.Shard, s.Of)
 }
 
+// TimeRange 表示闭区间时间范围，提供 Overlaps、Merge 与 IsZero 等辅助方法。
 // TimeRange describes a time range where Start and End are inclusive.
 type TimeRange struct {
 	Start time.Time
@@ -75,6 +78,7 @@ type DataObjSections struct {
 	PredicatesInStreams map[int64][]string
 }
 
+// Catalog.ResolveDataObjSections 返回各 data object 的路径、stream ID、section 与时间范围。
 // Catalog is an interface that provides methods for interacting with
 // storage metadata. In traditional database systems there are system tables
 // providing this information (e.g. pg_catalog, ...) whereas in Loki there
@@ -118,6 +122,7 @@ func (c *MetastoreCatalog) ResolveDataObjSections(selector Expression, predicate
 // filterForShard filters the section descriptors for a given shard.
 // It returns the locations, streams, and sections for the shard.
 // TODO: Improve filtering: this method could be improved because it doesn't resolve the stream IDs to sections, even though this information is available. Instead, it resolves streamIDs to the whole object.
+// filterForShard 按 sectionIdx % Of == Shard 保留属于当前分片的 section 描述符。
 func filterForShard(shard ShardInfo, sections []*metastore.DataobjSectionDescriptor) ([]DataObjSections, error) {
 	result := make([]DataObjSections, 0, len(sections))
 
@@ -165,6 +170,7 @@ func CatalogRequestToMetastoreSectionsRequest(selector Expression, predicates []
 	}, nil
 }
 
+// expressionToMatchers 将 BinaryExpr 树递归转为 Prometheus labels.Matcher，支持 AND 组合。
 // expressionToMatchers converts a selector expression to a list of matchers.
 // The selector expression is required to be a (tree of) [BinaryExpression]
 // with a [ColumnExpression] on the left and a [LiteralExpression] on the right.
@@ -244,3 +250,4 @@ func convertBinaryOp(t types.BinaryOp) (labels.MatchType, error) {
 }
 
 var _ Catalog = (*MetastoreCatalog)(nil)
+// CatalogRequestToMetastoreSectionsRequest 桥接物理表达式与 metastore.SectionsRequest 请求体。

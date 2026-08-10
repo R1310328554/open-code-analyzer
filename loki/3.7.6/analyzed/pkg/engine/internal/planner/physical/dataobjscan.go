@@ -1,5 +1,7 @@
 package physical
 
+// dataobjscan 表示从对象存储读取 data object 的物理扫描算子，携带投影与谓词下推信息。
+
 import (
 	"slices"
 
@@ -10,9 +12,11 @@ import (
 // object storage.
 type DataObjLocation string
 
+// DataObjScan 绑定 Location、Section、StreamIDs、Projections、Predicates 与 MaxTimeRange 元数据。
 // DataObjScan represents a physical plan operation for reading data objects.
 // It contains information about the object location, stream IDs, projections,
 // predicates for reading data from a data object.
+// StreamIDs 仅在单个 data object 内唯一；Predicates 通常含时间范围以裁剪读取行数。
 type DataObjScan struct {
 	NodeID ulid.ULID
 
@@ -35,7 +39,8 @@ type DataObjScan struct {
 	// The maximum boundary of timestamps that scanning the
 	// data object can possibly emit. Does not account for
 	// predicates.
-	// MaxTimeRange is not read when executing a scan.
+	// MaxTimeRange 仅作计划元数据，描述未应用谓词时扫描可能发出的最大时间边界。
+// MaxTimeRange is not read when executing a scan.
 	// It can be used as metadata to control physical plan execution.
 	MaxTimeRange TimeRange
 }
@@ -63,3 +68,4 @@ func (s *DataObjScan) Clone() Node {
 func (*DataObjScan) Type() NodeType {
 	return NodeTypeDataObjScan
 }
+// Clone 深拷贝 stream、投影与谓词表达式列表，供物理计划重写时独立修改子图。

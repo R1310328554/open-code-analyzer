@@ -1,5 +1,7 @@
 package physical
 
+// expressions 定义物理计划中的表达式 AST：Unary/Binary/Literal/Column/Variadic 及克隆接口。
+
 import (
 	"fmt"
 	"strings"
@@ -38,6 +40,7 @@ func (t ExpressionType) String() string {
 	}
 }
 
+// Expression 要求 Stringer、Clone 与 Type，cloneExpressions 泛型辅助批量复制表达式切片。
 // Expression is the common interface for all expressions in a physical plan.
 type Expression interface {
 	fmt.Stringer
@@ -119,6 +122,7 @@ func (*UnaryExpr) Type() ExpressionType {
 }
 
 // BinaryExpr is an expression that implements the [BinaryExpression] interface.
+// BinaryExpr 左右子树加 BinaryOp，常用于 selector 谓词与 Filter 条件链。
 type BinaryExpr struct {
 	Left, Right Expression
 	Op          types.BinaryOp
@@ -145,6 +149,7 @@ func (*BinaryExpr) Type() ExpressionType {
 	return ExprTypeBinary
 }
 
+// LiteralExpr 包装 types.Literal，NewLiteral 是构造字符串或数值常量的便捷入口。
 // LiteralExpr is an expression that implements the [LiteralExpression] interface.
 type LiteralExpr struct {
 	inner types.Literal
@@ -221,6 +226,7 @@ func (e *ColumnExpr) Type() ExpressionType {
 	return ExprTypeColumn
 }
 
+// VariadicExpr 表示可变参数函数调用，Expressions 字段为各参数表达式列表。
 // VariadicExpr is an expression that implements the [FunctionExpression] interface.
 type VariadicExpr struct {
 	// Op is the function operation to apply to the parameters
@@ -253,3 +259,4 @@ func (e *VariadicExpr) String() string {
 func (*VariadicExpr) Type() ExpressionType {
 	return ExprTypeVariadic
 }
+// ColumnExpr.Ref 含列名与 ColumnType，String 输出 name.type 便于计划打印与 metastore 转换。

@@ -1,5 +1,7 @@
 package physical
 
+// compat 定义 ColumnCompat 物理节点：解决 metadata 列与 label 列同名冲突，生成 _extracted 列。
+
 import (
 	"slices"
 
@@ -8,8 +10,10 @@ import (
 	"github.com/grafana/loki/v3/pkg/engine/internal/types"
 )
 
+// ColumnCompat 指定 Source 列类型、Destination 生成列类型及可能冲突的 Collisions 类型列表。
 // ColumnCompat represents a compactibilty operation in the physical plan that
 // moves a values from a conflicting metadata column with a label column into a new column suffixed with `_extracted`.
+// Source/Destination/Collisions 字段命名待改进，逻辑计划 Compat 模式会插入此类节点。
 type ColumnCompat struct {
 	NodeID ulid.ULID
 
@@ -39,3 +43,4 @@ func (m *ColumnCompat) Clone() Node {
 func (m *ColumnCompat) Type() NodeType {
 	return NodeTypeCompat
 }
+// Clone 复制碰撞类型切片并分配新 ULID，Type 返回 NodeTypeCompat。

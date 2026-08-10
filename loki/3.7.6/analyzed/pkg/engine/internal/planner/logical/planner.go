@@ -1,5 +1,7 @@
 package logical
 
+// planner 将 LogQL AST 遍历转换为 logical Plan：日志选择、解析、过滤、聚合与删除谓词。
+
 import (
 	"context"
 	"errors"
@@ -25,12 +27,14 @@ var (
 	tracer = otel.Tracer("pkg/engine/internal/planner/logical")
 )
 
+// BuildPlan 是入口：根据表达式类型分派到日志或样本查询构建路径。
 // BuildPlan converts a LogQL query represented as [logql.Params] into a logical [Plan].
 // It may return an error as second argument in case the traversal of the AST of the query fails.
 func BuildPlan(ctx context.Context, params logql.Params) (*Plan, error) {
 	return BuildPlanWithDeletes(ctx, params, nil)
 }
 
+// BuildPlanWithDeletes 支持附加 deletion.Request，在 Select 阶段过滤已删除日志行。
 func BuildPlanWithDeletes(ctx context.Context, params logql.Params, deletes []*deletion.Request) (*Plan, error) {
 	var (
 		value Value
@@ -58,6 +62,7 @@ func BuildPlanWithDeletes(ctx context.Context, params logql.Params, deletes []*d
 	return builder.ToPlan()
 }
 
+// buildPlanForLogQuery 两遍 Walk：首遍收集 selector 与 maketable 谓词，次遍插入 Parse/Select。
 // buildPlanForLogQuery builds logical plan operations by traversing [syntax.LogSelectorExpr]
 // isMetricQuery should be set to true if this expr is encountered when processing a [syntax.SampleExpr].
 // rangeInterval should be set to a non-zero value if the query contains [$range].
@@ -275,6 +280,7 @@ func buildPlanForLogQuery(
 	return builder.Value(), nil
 }
 
+// walkRangeAggregation 处理 count/sum/rate 等区间聚合，unwrap 时先 Cast 再 RangeAggregation。
 func walkRangeAggregation(e *syntax.RangeAggregationExpr, wc *walkContext) (Value, error) {
 	// offsets are not yet supported.
 	if e.Left.Offset != 0 {
@@ -452,6 +458,7 @@ type walkContext struct {
 	deletes []*deletion.Request
 }
 
+// walk 递归分派 Range/Vector/BinOp/Literal 表达式，未实现类型返回 errUnimplemented。
 func walk(e syntax.Expr, wc *walkContext) (Value, error) {
 	switch e := e.(type) {
 	case *syntax.RangeAggregationExpr:
@@ -681,6 +688,7 @@ func convertQueryRangeToPredicates(start, end time.Time) []*BinOp {
 	}
 }
 
+// convertGrouping 将 PromQL by/without 语法转为 Grouping 列引用与 Without 标志。
 // convertGrouping converts [syntax.Grouping] structure into a list of columns and a grouping mode.
 func convertGrouping(g *syntax.Grouping) Grouping {
 	var columns []ColumnRef
@@ -722,6 +730,7 @@ func parseShards(shards []string) (*ShardInfo, error) {
 	return NewShard(parsed[0].PowerOfTwo.Shard, parsed[0].PowerOfTwo.Of), nil
 }
 
+// buildDeletePredicates 为每条删除请求生成保留谓词：时间 OR 非匹配 selector OR 非匹配 filters。
 // buildDeletePredicates builds predicates to drop log lines matching delete requests.
 // Each delete request maps to a single predicate.
 //
@@ -888,3 +897,4 @@ func buildDeletePredicates(ctx context.Context, deletes []*deletion.Request, par
 
 	return predicates, nil
 }
+// Builder.Compat(true) 启用兼容模式；日志查询非 metric 时以 TopK 按时间戳降序截断 limit。
