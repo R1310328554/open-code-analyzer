@@ -26,14 +26,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// cache key pattern used in the cache, comprised of the
-// repository slug and commit sha.
+// keyf 为 LRU 缓存键格式：仓库 ID、事件、动作、ref、commit 与配置文件路径。
 const keyf = "%d|%s|%s|%s|%s|%s"
 
-// Memoize caches the conversion results for subsequent calls.
-// This micro-optimization is intended for multi-pipeline
-// projects that would otherwise covert the file for each
-// pipeline execution.
+// Memoize 用 LRU 缓存包装底层 ConvertService，避免多流水线重复转换同一配置。
 func Memoize(base core.ConvertService, size int) core.ConvertService {
 	// simple cache prevents the same yaml file from being
 	// requested multiple times in a short period.
@@ -41,12 +37,14 @@ func Memoize(base core.ConvertService, size int) core.ConvertService {
 	return &memoize{base: base, cache: cache, size: size}
 }
 
+// memoize 在命中缓存时直接返回已转换的 Config，否则委托 base 并写入缓存。
 type memoize struct {
 	base  core.ConvertService
 	cache *lru.Cache
 	size  int
 }
 
+// Convert 按仓库/commit/配置路径查缓存；远程转换器未启用或 size 为 0 时跳过缓存。
 func (c *memoize) Convert(ctx context.Context, req *core.ConvertArgs) (*core.Config, error) {
 	// this is a minor optimization that prevents caching if the
 	// base converter is a remote converter and is disabled.

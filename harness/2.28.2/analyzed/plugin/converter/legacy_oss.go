@@ -20,8 +20,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Legacy returns a conversion service that converts the
-// legacy 0.8 file to a yaml file.
+// Legacy 在 OSS 构建中返回空操作转换器（Legacy 为商业版能力）。
 func Legacy(enabled bool) core.ConvertService {
 	return new(noop)
 }

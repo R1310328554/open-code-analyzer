@@ -22,8 +22,10 @@ import (
 	"github.com/drone/drone/core"
 )
 
+// noop 是不执行任何转换的空 ConvertService 实现。
 type noop struct{}
 
+// Convert 始终返回 nil，表示本插件未产生配置。
 func (noop) Convert(context.Context, *core.ConvertArgs) (*core.Config, error) {
 	return nil, nil
 }

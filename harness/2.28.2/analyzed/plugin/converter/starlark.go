@@ -24,8 +24,7 @@ import (
 	"github.com/drone/drone/plugin/converter/starlark"
 )
 
-// Starlark returns a conversion service that converts the
-// starlark file to a yaml file.
+// Starlark 创建 Starlark 脚本转换服务：对 .star/.starlark/.script 配置求值为 YAML。
 func Starlark(enabled bool, stepLimit uint64, sizeLimit uint64) core.ConvertService {
 	return &starlarkPlugin{
 		enabled: enabled,
@@ -34,12 +33,14 @@ func Starlark(enabled bool, stepLimit uint64, sizeLimit uint64) core.ConvertServ
 	}
 }
 
+// starlarkPlugin 委托 starlark 子包解析并执行 Starlark main 函数。
 type starlarkPlugin struct {
 	enabled bool
 	stepLimit uint64
 	sizeLimit uint64
 }
 
+// Convert 若启用且配置文件扩展名匹配 Starlark，则调用 starlark.Parse。
 func (p *starlarkPlugin) Convert(ctx context.Context, req *core.ConvertArgs) (*core.Config, error) {
 	if p.enabled == false {
 		return nil, nil

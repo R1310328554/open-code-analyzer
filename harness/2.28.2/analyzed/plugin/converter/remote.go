@@ -17,8 +17,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Remote returns a conversion service that converts the
-// configuration file using a remote http service.
+// Remote 创建通过 HTTP 调用外部转换插件的服务；endpoint 为空时等价于 noop。
 func Remote(endpoint, signer, extension string, skipVerify bool, timeout time.Duration) core.ConvertService {
 	if endpoint == "" {
 		return new(remote)
@@ -34,12 +33,14 @@ func Remote(endpoint, signer, extension string, skipVerify bool, timeout time.Du
 	}
 }
 
+// remote 将 ConvertArgs 转为 drone-go 插件请求，在超时内调用远程 Convert API。
 type remote struct {
 	client    converter.Plugin
 	extension string
 	timeout   time.Duration
 }
 
+// Convert 校验扩展名、带超时调用远程插件，将返回的 YAML 封装为 core.Config。
 func (g *remote) Convert(ctx context.Context, in *core.ConvertArgs) (*core.Config, error) {
 	if g.client == nil {
 		return nil, nil
@@ -89,6 +90,7 @@ func (g *remote) Convert(ctx context.Context, in *core.ConvertArgs) (*core.Confi
 	}, nil
 }
 
+// toRepo 将 core.Repository 映射为 drone-go 插件 API 的 Repo 结构。
 func toRepo(from *core.Repository) drone.Repo {
 	return drone.Repo{
 		ID:         from.ID,
@@ -112,6 +114,7 @@ func toRepo(from *core.Repository) drone.Repo {
 	}
 }
 
+// toBuild 将 core.Build 映射为 drone-go 插件 API 的 Build 结构。
 func toBuild(from *core.Build) drone.Build {
 	return drone.Build{
 		ID:           from.ID,

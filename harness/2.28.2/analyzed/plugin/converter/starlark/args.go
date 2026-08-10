@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// starlark 子包将 Drone 仓库/构建上下文与模板输入组装为 Starlark 调用参数。
 package starlark
 
 import (
@@ -41,6 +42,7 @@ import (
 // TODO(bradrydzewski) add build parent
 // TODO(bradrydzewski) add build timestamp
 
+// createArgs 构造 context 结构体（repo、build、input）作为 main 的唯一参数。
 func createArgs(repo *core.Repository, build *core.Build, input map[string]interface{}) ([]starlark.Value, error) {
 	inputArgs, err := fromInput(input)
 	if err != nil {
@@ -59,6 +61,7 @@ func createArgs(repo *core.Repository, build *core.Build, input map[string]inter
 	return args, nil
 }
 
+// fromInput 将 Go map 递归转换为 Starlark StringDict。
 func fromInput(input map[string]interface{}) (starlark.StringDict, error) {
 	out := map[string]starlark.Value{}
 	for key, value := range input {
@@ -72,6 +75,7 @@ func fromInput(input map[string]interface{}) (starlark.StringDict, error) {
 	return out, nil
 }
 
+// toValue 按 reflect.Kind 将 Go 值转为对应的 starlark.Value（支持基本类型、map 与 slice）。
 func toValue(val reflect.Value) (starlark.Value, error) {
 	kind := val.Kind()
 	if kind == reflect.Ptr {
@@ -119,6 +123,7 @@ func toValue(val reflect.Value) (starlark.Value, error) {
 	return nil, fmt.Errorf("type %T is not a supported starlark type", val.Interface())
 }
 
+// fromBuild 将构建元数据与 params 映射为 Starlark 字典。
 func fromBuild(v *core.Build) starlark.StringDict {
 	return starlark.StringDict{
 		"event":         starlark.String(v.Event),
@@ -146,6 +151,7 @@ func fromBuild(v *core.Build) starlark.StringDict {
 	}
 }
 
+// fromRepo 将仓库元数据映射为 Starlark 字典。
 func fromRepo(v *core.Repository) starlark.StringDict {
 	return starlark.StringDict{
 		"uid":                  starlark.String(v.UID),
@@ -167,6 +173,7 @@ func fromRepo(v *core.Repository) starlark.StringDict {
 	}
 }
 
+// fromMap 将 string 键值对转为 Starlark Dict。
 func fromMap(m map[string]string) *starlark.Dict {
 	dict := new(starlark.Dict)
 	for k, v := range m {

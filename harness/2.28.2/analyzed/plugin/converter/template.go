@@ -34,13 +34,14 @@ import (
 )
 
 var (
-	// templateFileRE regex to verifying kind is template.
+	// templateFileRE 匹配 YAML 根字段 kind: template。
 	templateFileRE              = regexp.MustCompilePOSIX("^kind:[[:space:]]+template[[:space:]]?+$")
 	errTemplateNotFound         = errors.New("template converter: template name given not found")
 	errTemplateSyntaxErrors     = errors.New("template converter: there is a problem with the yaml file provided")
 	errTemplateExtensionInvalid = errors.New("template extension invalid. must be yaml, starlark or jsonnet")
 )
 
+// Template 创建模板转换服务：解析 kind:template 的 YAML，从库加载模板并按扩展名渲染。
 func Template(templateStore core.TemplateStore, stepLimit uint64, sizeLimit uint64) core.ConvertService {
 	return &templatePlugin{
 		templateStore: templateStore,
@@ -49,12 +50,14 @@ func Template(templateStore core.TemplateStore, stepLimit uint64, sizeLimit uint
 	}
 }
 
+// templatePlugin 根据模板类型调用 YAML text/template、Starlark 或 Jsonnet 渲染。
 type templatePlugin struct {
 	templateStore core.TemplateStore
 	stepLimit uint64
 	sizeLimit uint64
 }
 
+// Convert 对 .yml/.yaml 且 kind 为 template 的配置加载命名空间下模板并生成最终流水线 YAML。
 func (p *templatePlugin) Convert(ctx context.Context, req *core.ConvertArgs) (*core.Config, error) {
 	// check type is yaml
 	configExt := filepath.Ext(req.Repo.Config)
@@ -94,6 +97,7 @@ func (p *templatePlugin) Convert(ctx context.Context, req *core.ConvertArgs) (*c
 	}
 }
 
+// parseYaml 使用 text/template 与 funcmap 安全函数集渲染 YAML 模板。
 func parseYaml(req *core.ConvertArgs, template *core.Template, templateArgs core.TemplateArgs) (*core.Config, error) {
 	data := map[string]interface{}{
 		"build": toBuild(req.Build),
@@ -114,6 +118,7 @@ func parseYaml(req *core.ConvertArgs, template *core.Template, templateArgs core
 	}, nil
 }
 
+// parseJsonnet 将模板体与 input 交给 jsonnet.Parse 求值。
 func parseJsonnet(req *core.ConvertArgs, template *core.Template, templateArgs core.TemplateArgs) (*core.Config, error) {
 	file, err := jsonnet.Parse(req, nil, 0, template, templateArgs.Data)
 	if err != nil {
@@ -124,6 +129,7 @@ func parseJsonnet(req *core.ConvertArgs, template *core.Template, templateArgs c
 	}, nil
 }
 
+// parseStarlark 将模板体与 input 交给 starlark.Parse 执行。
 func parseStarlark(req *core.ConvertArgs, template *core.Template, templateArgs core.TemplateArgs, stepLimit uint64, sizeLimit uint64) (*core.Config, error) {
 	file, err := starlark.Parse(req, template, templateArgs.Data, stepLimit, sizeLimit)
 	if err != nil {

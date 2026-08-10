@@ -1,3 +1,4 @@
+// jsonnet 子包实现 Jsonnet 配置求值：注入仓库/构建上下文、远程 import 与 YAML 输出。
 package jsonnet
 
 import (
@@ -14,35 +15,35 @@ import (
 	"github.com/google/go-jsonnet"
 )
 
+// repo 为注入 Jsonnet 外部变量的仓库字段前缀。
 const repo = "repo."
+// build 为注入 Jsonnet 外部变量的构建字段前缀。
 const build = "build."
+// param 为构建自定义参数在 ExtVar 中的前缀。
 const param = "param."
 
+// noContext 供 FileService 调用使用的背景上下文。
 var noContext = context.Background()
 
+// importer 实现 jsonnet.Importer，从仓库按 commit/ref 拉取被 import 的文件并缓存。
 type importer struct {
 	repo  *core.Repository
 	build *core.Build
 
-	// jsonnet does not cache file imports and may request
-	// the same file multiple times. We cache the files to
-	// duplicate API calls.
+	// cache 缓存已拉取的 import 内容，避免 jsonnet 重复请求同一文件。
 	cache map[string]jsonnet.Contents
 
-	// limit the number of outbound requests. github limits
-	// the number of api requests per hour, so we should
-	// make sure that a single build does not abuse the api
-	// by importing dozens of files.
+	// limit 单次构建允许的最大 outbound import 次数，防止滥用 Git API 配额。
 	limit int
 
-	// counts the number of outbound requests. if the count
-	// exceeds the limit, the importer will return errors.
+	// count 已执行的 import 请求计数，超过 limit 时返回错误。
 	count int
 
 	fileService core.FileService
 	user        *core.User
 }
 
+// Import 解析相对路径、校验仓库内范围，经 FileService 获取文件内容并写入缓存。
 func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.Contents, foundAt string, err error) {
 	if i.cache == nil {
 		i.cache = map[string]jsonnet.Contents{}
@@ -87,6 +88,7 @@ func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.C
 	return i.cache[importedPath], importedPath, err
 }
 
+// Parse 配置 Jsonnet VM、映射仓库/构建/模板输入，求值后合并多文档 YAML 流。
 func Parse(req *core.ConvertArgs, fileService core.FileService, limit int, template *core.Template, templateData map[string]interface{}) (string, error) {
 	vm := jsonnet.MakeVM()
 	vm.MaxStack = 500
@@ -104,7 +106,7 @@ func Parse(req *core.ConvertArgs, fileService core.FileService, limit int, templ
 		)
 	}
 
-	//map build/repo parameters
+	// 将 build/repo 元数据映射为 Jsonnet 外部变量。
 	if req.Build != nil {
 		mapBuild(req.Build, vm)
 	}
@@ -121,7 +123,7 @@ func Parse(req *core.ConvertArgs, fileService core.FileService, limit int, templ
 		jsonnetFile = req.Config.Data
 		jsonnetFileName = req.Repo.Config
 	}
-	// map external inputs
+	// 将模板或调用方传入的 input.* 键值对设为 ExtVar。
 	if len(templateData) != 0 {
 		for k, v := range templateData {
 			key := fmt.Sprintf("input.%s", k)
@@ -130,7 +132,7 @@ func Parse(req *core.ConvertArgs, fileService core.FileService, limit int, templ
 		}
 	}
 
-	// convert the jsonnet file to yaml
+	// 求值 Jsonnet：优先按文档流解析，失败时退化为单文档。
 	buf := new(bytes.Buffer)
 	docs, err := vm.EvaluateAnonymousSnippetStream(jsonnetFileName, jsonnetFile)
 	if err != nil {
@@ -141,8 +143,7 @@ func Parse(req *core.ConvertArgs, fileService core.FileService, limit int, templ
 		docs = append(docs, doc)
 	}
 
-	// the jsonnet vm returns a stream of yaml documents
-	// that need to be combined into a single yaml file.
+	// 将多段 YAML 文档用 --- 分隔符合并为单一字符串。
 	for _, doc := range docs {
 		buf.WriteString("---")
 		buf.WriteString("\n")
@@ -152,6 +153,7 @@ func Parse(req *core.ConvertArgs, fileService core.FileService, limit int, templ
 	return buf.String(), nil
 }
 
+// mapBuild 将 core.Build 字段写入 build.* 外部变量，并展开 Params。
 func mapBuild(v *core.Build, vm *jsonnet.VM) {
 	vm.ExtVar(build+"event", v.Event)
 	vm.ExtVar(build+"action", v.Action)
@@ -176,6 +178,7 @@ func mapBuild(v *core.Build, vm *jsonnet.VM) {
 	fromMap(v.Params, vm)
 }
 
+// mapRepo 将 core.Repository 元数据写入 repo.* 外部变量。
 func mapRepo(v *core.Repository, vm *jsonnet.VM) {
 	vm.ExtVar(repo+"uid", v.UID)
 	vm.ExtVar(repo+"name", v.Name)
@@ -195,6 +198,7 @@ func mapRepo(v *core.Repository, vm *jsonnet.VM) {
 	vm.ExtVar(repo+"ignore_pull_requests", strconv.FormatBool(v.IgnorePulls))
 }
 
+// fromMap 将构建参数字典映射为 build.param* ExtVar。
 func fromMap(m map[string]string, vm *jsonnet.VM) {
 	for k, v := range m {
 		vm.ExtVar(build+param+k, v)

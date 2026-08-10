@@ -24,36 +24,33 @@ import (
 	"go.starlark.net/starlark"
 )
 
+// separator 与 newline 用于拼接多文档 YAML 输出。
 const (
 	separator = "---"
 	newline   = "\n"
 )
 
-// default limit for generated configuration file size.
+// defaultSizeLimit 为生成配置文件的默认最大字节数（1MB）。
 const defaultSizeLimit = 1000000
 
 var (
-	// ErrMainMissing indicates the starlark script is missing
-	// the main method.
+	// ErrMainMissing 表示 Starlark 脚本未定义 main 函数。
 	ErrMainMissing = errors.New("starlark: missing main function")
 
-	// ErrMainInvalid indicates the starlark script defines a
-	// global variable named main, however, it is not callable.
+	// ErrMainInvalid 表示 main 存在但不可调用。
 	ErrMainInvalid = errors.New("starlark: main must be a function")
 
-	// ErrMainReturn indicates the starlark script's main method
-	// returns an invalid or unexpected type.
+	// ErrMainReturn 表示 main 返回值类型不是 List 或 Dict。
 	ErrMainReturn = errors.New("starlark: main returns an invalid type")
 
-	// ErrMaximumSize indicates the starlark script generated a
-	// file that exceeds the maximum allowed file size.
+	// ErrMaximumSize 表示生成的配置超过 sizeLimit。
 	ErrMaximumSize = errors.New("starlark: maximum file size exceeded")
 
-	// ErrCannotLoad indicates the starlark script is attempting to
-	// load an external file which is currently restricted.
+	// ErrCannotLoad 表示脚本尝试 load 外部文件（当前禁止）。
 	ErrCannotLoad = errors.New("starlark: cannot load external scripts")
 )
 
+// Parse 执行 Starlark 文件、调用 main(context)，将返回值序列化为 YAML/JSON 风格文本。
 func Parse(req *core.ConvertArgs, template *core.Template, templateData map[string]interface{}, stepLimit uint64, sizeLimit uint64) (string, error) {
 	thread := &starlark.Thread{
 		Name: "drone",
@@ -144,6 +141,7 @@ func Parse(req *core.ConvertArgs, template *core.Template, templateData map[stri
 	return buf.String(), nil
 }
 
+// noLoad 拒绝所有外部 load 请求，返回 ErrCannotLoad。
 func noLoad(_ *starlark.Thread, _ string) (starlark.StringDict, error) {
 	return nil, ErrCannotLoad
 }

@@ -22,12 +22,14 @@ import (
 	"go.starlark.net/starlark"
 )
 
+// writer 聚合 Write/WriteByte/WriteString，供 write 递归输出使用。
 type writer interface {
 	io.Writer
 	io.ByteWriter
 	io.StringWriter
 }
 
+// write 将 Starlark 值递归写入 out；优先 json.Marshaler，否则按类型格式化。
 func write(out writer, v starlark.Value) error {
 	if marshaler, ok := v.(json.Marshaler); ok {
 		jsonData, err := marshaler.MarshalJSON()
@@ -89,6 +91,7 @@ func write(out writer, v starlark.Value) error {
 	return nil
 }
 
+// isQuoteSafe 判断字符串是否可直接用 %q 输出（无控制字符与高位 Unicode）。
 func isQuoteSafe(s string) bool {
 	for _, r := range s {
 		if r < 0x20 || r >= 0x10000 {

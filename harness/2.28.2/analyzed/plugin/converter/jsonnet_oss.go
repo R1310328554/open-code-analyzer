@@ -20,8 +20,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Jsonnet returns a conversion service that converts the
-// jsonnet file to a yaml file.
+// Jsonnet 在 OSS 构建中返回空操作转换器（Jsonnet 为商业版能力）。
 func Jsonnet(enabled bool, limit int, fileService core.FileService) core.ConvertService {
 	return new(noop)
 }

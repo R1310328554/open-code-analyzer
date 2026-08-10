@@ -22,8 +22,7 @@ import (
 	"github.com/drone/drone/core"
 )
 
-// Remote returns a conversion service that converts the
-// configuration file using a remote http service.
+// Remote 在 OSS 构建中返回空操作转换器（远程转换为商业版能力）。
 func Remote(endpoint, signer, extension string, skipVerify bool, timeout time.Duration) core.ConvertService {
 	return new(noop)
 }

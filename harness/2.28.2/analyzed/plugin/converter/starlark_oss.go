@@ -18,6 +18,7 @@ package converter
 
 import "github.com/drone/drone/core"
 
+// Starlark 在 OSS 构建中返回空操作转换器（Starlark 为商业版能力）。
 func Starlark(enabled bool, stepLimit uint64, sizeLimit uint64) core.ConvertService {
 	return new(noop)
 }
