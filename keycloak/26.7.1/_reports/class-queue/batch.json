@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T12:18:22Z",
-  "files": [
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialOfferURI.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialRequest.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialRequestEncryptionMetadata.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialResponse.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialResponseEncryption.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialResponseEncryptionMetadata.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialScopeRepresentation.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialSubject.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/CredentialsOffer.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/DiVpProof.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/DisplayObject.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/ErrorResponse.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/ErrorType.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/IssuerState.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/model/JWTVCIssuerMetadata.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1528,
-  "done": 4455
+  "done": 4470
 }
