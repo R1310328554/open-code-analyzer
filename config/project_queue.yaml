@@ -87,7 +87,7 @@ projects:
   version: netty-4.2.17.Final
 - id: nacos
   url: https://github.com/alibaba/nacos
-  status: in_progress
+  status: complete
   version: "3.2.3"
 - id: keycloak
   url: https://github.com/keycloak/keycloak
