@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for PrivateKeyProtectionType complex type.
+ * SAML 2.0 私钥保护类型：描述密钥激活、存储、共享及扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -68,6 +70,8 @@ public class PrivateKeyProtectionType {
     protected List<ExtensionType> extension;
 
     /**
+     * 获取 密钥激活 属性的值。
+     *
      * Gets the value of the keyActivation property.
      *
      * @return possible object is {@link KeyActivationType }
@@ -77,6 +81,8 @@ public class PrivateKeyProtectionType {
     }
 
     /**
+     * 设置 密钥激活 属性的值。
+     *
      * Sets the value of the keyActivation property.
      *
      * @param value allowed object is {@link KeyActivationType }
@@ -86,6 +92,8 @@ public class PrivateKeyProtectionType {
     }
 
     /**
+     * 获取 密钥存储 属性的值。
+     *
      * Gets the value of the keyStorage property.
      *
      * @return possible object is {@link KeyStorageType }
@@ -95,6 +103,8 @@ public class PrivateKeyProtectionType {
     }
 
     /**
+     * 设置 密钥存储 属性的值。
+     *
      * Sets the value of the keyStorage property.
      *
      * @param value allowed object is {@link KeyStorageType }
@@ -104,6 +114,8 @@ public class PrivateKeyProtectionType {
     }
 
     /**
+     * 获取 密钥共享 属性的值。
+     *
      * Gets the value of the keySharing property.
      *
      * @return possible object is {@link KeySharingType }
@@ -113,6 +125,8 @@ public class PrivateKeyProtectionType {
     }
 
     /**
+     * 设置 密钥共享 属性的值。
+     *
      * Sets the value of the keySharing property.
      *
      * @param value allowed object is {@link KeySharingType }
@@ -122,6 +136,8 @@ public class PrivateKeyProtectionType {
     }
 
     /**
+     * 获取 扩展（Extension） 元素列表。
+     *
      * Gets the value of the extension property.
      *
      * <p>

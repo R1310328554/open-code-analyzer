@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for LengthType complex type.
+ * SAML 2.0 长度类型：以 min/max 整数属性约束 PIN/口令长度范围。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -61,6 +63,8 @@ public class LengthType {
     protected BigInteger max;
 
     /**
+     * 获取 最小长度 属性的值。
+     *
      * Gets the value of the min property.
      *
      * @return possible object is {@link BigInteger }
@@ -70,6 +74,8 @@ public class LengthType {
     }
 
     /**
+     * 设置 最小长度 属性的值。
+     *
      * Sets the value of the min property.
      *
      * @param value allowed object is {@link BigInteger }
@@ -79,6 +85,8 @@ public class LengthType {
     }
 
     /**
+     * 获取 最大长度 属性的值。
+     *
      * Gets the value of the max property.
      *
      * @return possible object is {@link BigInteger }
@@ -88,6 +96,8 @@ public class LengthType {
     }
 
     /**
+     * 设置 最大长度 属性的值。
+     *
      * Sets the value of the max property.
      *
      * @param value allowed object is {@link BigInteger }

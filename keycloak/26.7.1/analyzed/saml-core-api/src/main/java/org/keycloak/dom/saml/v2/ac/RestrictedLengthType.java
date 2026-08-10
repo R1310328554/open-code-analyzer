@@ -31,6 +31,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for RestrictedLengthType complex type.
+ * SAML 2.0 受限长度类型：继承 LengthType，min 最小值为 3。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

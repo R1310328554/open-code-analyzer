@@ -31,6 +31,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for nymType.
+ * SAML 2.0 匿名属性枚举（nymType）：anonymity（匿名）、verinymity（实名）或 pseudonymity（假名）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -50,9 +52,11 @@ import jakarta.xml.bind.annotation.XmlType;
 @XmlEnum
 public enum NymType {
 
-    @XmlEnumValue("anonymity")
-    ANONYMITY("anonymity"), @XmlEnumValue("verinymity")
-    VERINYMITY("verinymity"), @XmlEnumValue("pseudonymity")
+    /** 匿名。 */ @XmlEnumValue("anonymity")
+    ANONYMITY("anonymity"),
+    /** 实名。 */ @XmlEnumValue("verinymity")
+    VERINYMITY("verinymity"),
+    /** 假名。 */ @XmlEnumValue("pseudonymity")
     PSEUDONYMITY("pseudonymity");
     private final String value;
 
@@ -60,10 +64,12 @@ public enum NymType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link NymType} 枚举常量。 */
     public static NymType fromValue(String v) {
         for (NymType c : NymType.values()) {
             if (c.value.equals(v)) {

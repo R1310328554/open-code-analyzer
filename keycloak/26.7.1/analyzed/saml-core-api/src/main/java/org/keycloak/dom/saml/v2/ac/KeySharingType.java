@@ -32,6 +32,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for KeySharingType complex type.
+ * SAML 2.0 密钥共享类型：以布尔属性 sharing 标识私钥是否可被共享。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -54,6 +56,8 @@ public class KeySharingType {
     protected boolean sharing;
 
     /**
+     * 获取 密钥共享标志 属性的值。
+     *
      * Gets the value of the sharing property.
      */
     public boolean isSharing() {
@@ -61,6 +65,8 @@ public class KeySharingType {
     }
 
     /**
+     * 设置 密钥共享标志 属性的值。
+     *
      * Sets the value of the sharing property.
      */
     public void setSharing(boolean value) {

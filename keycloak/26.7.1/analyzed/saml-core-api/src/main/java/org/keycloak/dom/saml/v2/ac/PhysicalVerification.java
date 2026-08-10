@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 /**
  * <p>
  * Java class for anonymous complex type.
+ * SAML 2.0 物理核验（PhysicalVerification）根元素：credentialLevel 取 primary 或 secondary。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -66,6 +68,8 @@ public class PhysicalVerification {
     protected String credentialLevel;
 
     /**
+     * 获取 凭证级别 属性的值。
+     *
      * Gets the value of the credentialLevel property.
      *
      * @return possible object is {@link String }
@@ -75,6 +79,8 @@ public class PhysicalVerification {
     }
 
     /**
+     * 设置 凭证级别 属性的值。
+     *
      * Sets the value of the credentialLevel property.
      *
      * @param value allowed object is {@link String }

@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for KeyActivationType complex type.
+ * SAML 2.0 密钥激活类型：描述激活 PIN 及可选扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -62,6 +64,8 @@ public class KeyActivationType {
     protected List<ExtensionType> extension;
 
     /**
+     * 获取 激活 PIN 属性的值。
+     *
      * Gets the value of the activationPin property.
      *
      * @return possible object is {@link ActivationPinType }
@@ -71,6 +75,8 @@ public class KeyActivationType {
     }
 
     /**
+     * 设置 激活 PIN 属性的值。
+     *
      * Sets the value of the activationPin property.
      *
      * @param value allowed object is {@link ActivationPinType }
@@ -80,6 +86,8 @@ public class KeyActivationType {
     }
 
     /**
+     * 获取 扩展（Extension） 元素列表。
+     *
      * Gets the value of the extension property.
      *
      * <p>

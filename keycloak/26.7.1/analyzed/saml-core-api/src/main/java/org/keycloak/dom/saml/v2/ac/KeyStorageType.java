@@ -32,6 +32,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for KeyStorageType complex type.
+ * SAML 2.0 密钥存储类型：以 medium 属性指定密钥存储介质（内存、智能卡等）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -54,6 +56,8 @@ public class KeyStorageType {
     protected MediumType medium;
 
     /**
+     * 获取 存储介质 属性的值。
+     *
      * Gets the value of the medium property.
      *
      * @return possible object is {@link MediumType }
@@ -63,6 +67,8 @@ public class KeyStorageType {
     }
 
     /**
+     * 设置 存储介质 属性的值。
+     *
      * Sets the value of the medium property.
      *
      * @param value allowed object is {@link MediumType }

@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for GoverningAgreementsType complex type.
+ * SAML 2.0 治理协议集合类型：包含一个或多个 GoverningAgreementRef 引用。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -59,6 +61,8 @@ public class GoverningAgreementsType {
     protected List<GoverningAgreementRefType> governingAgreementRef;
 
     /**
+     * 获取 治理协议引用（GoverningAgreementRef） 元素列表。
+     *
      * Gets the value of the governingAgreementRef property.
      *
      * <p>

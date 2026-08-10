@@ -31,6 +31,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for mediumType.
+ * SAML 2.0 存储介质枚举（mediumType）：memory、smartcard、token、移动设备等。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -52,11 +54,15 @@ import jakarta.xml.bind.annotation.XmlType;
 @XmlEnum
 public enum MediumType {
 
-    @XmlEnumValue("memory")
-    MEMORY("memory"), @XmlEnumValue("smartcard")
-    SMARTCARD("smartcard"), @XmlEnumValue("token")
-    TOKEN("token"), @XmlEnumValue("MobileDevice")
-    MOBILE_DEVICE("MobileDevice"), @XmlEnumValue("MobileAuthCard")
+    /** 内存存储。 */ @XmlEnumValue("memory")
+    MEMORY("memory"),
+    /** 智能卡。 */ @XmlEnumValue("smartcard")
+    SMARTCARD("smartcard"),
+    /** 令牌设备。 */ @XmlEnumValue("token")
+    TOKEN("token"),
+    /** 移动设备。 */ @XmlEnumValue("MobileDevice")
+    MOBILE_DEVICE("MobileDevice"),
+    /** 移动认证卡。 */ @XmlEnumValue("MobileAuthCard")
     MOBILE_AUTH_CARD("MobileAuthCard");
     private final String value;
 
@@ -64,10 +70,12 @@ public enum MediumType {
         value = v;
     }
 
+    /** 返回枚举对应的 XML 字符串值。 */
     public String value() {
         return value;
     }
 
+    /** 从 XML 字符串解析为 {@link MediumType} 枚举常量。 */
     public static MediumType fromValue(String v) {
         for (MediumType c : MediumType.values()) {
             if (c.value.equals(v)) {

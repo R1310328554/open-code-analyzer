@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for OperationalProtectionType complex type.
+ * SAML 2.0 运营保护类型：描述安全审计、停用呼叫中心及扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -65,6 +67,8 @@ public class OperationalProtectionType {
     protected List<ExtensionType> extension;
 
     /**
+     * 获取 安全审计 属性的值。
+     *
      * Gets the value of the securityAudit property.
      *
      * @return possible object is {@link SecurityAuditType }
@@ -74,6 +78,8 @@ public class OperationalProtectionType {
     }
 
     /**
+     * 设置 安全审计 属性的值。
+     *
      * Sets the value of the securityAudit property.
      *
      * @param value allowed object is {@link SecurityAuditType }
@@ -83,6 +89,8 @@ public class OperationalProtectionType {
     }
 
     /**
+     * 获取 停用呼叫中心 属性的值。
+     *
      * Gets the value of the deactivationCallCenter property.
      *
      * @return possible object is {@link ExtensionOnlyType }
@@ -92,6 +100,8 @@ public class OperationalProtectionType {
     }
 
     /**
+     * 设置 停用呼叫中心 属性的值。
+     *
      * Sets the value of the deactivationCallCenter property.
      *
      * @param value allowed object is {@link ExtensionOnlyType }
@@ -101,6 +111,8 @@ public class OperationalProtectionType {
     }
 
     /**
+     * 获取 扩展（Extension） 元素列表。
+     *
      * Gets the value of the extension property.
      *
      * <p>
