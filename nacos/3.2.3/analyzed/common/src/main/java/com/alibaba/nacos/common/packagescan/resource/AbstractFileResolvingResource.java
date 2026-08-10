@@ -32,6 +32,7 @@ import java.nio.file.StandardOpenOption;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * <p>可解析为文件的资源抽象基类：识别 file/vfs/jar URL，提供 exists、readable、contentLength、lastModified 等基于文件系统或 HTTP HEAD 的实现。</p>
  * Abstract base class for resources which resolve URLs into File references,
  * such as {@link UrlResource} or {@link ClassPathResource}.
  *
@@ -47,10 +48,12 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
     public boolean exists() {
         try {
             URL url = getUrl();
+            // file: 协议直接检查本地文件是否存在
             if (ResourceUtils.isFileUrl(url)) {
                 // Proceed with file system resolution
                 return getFile().exists();
             } else {
+                // 非 file URL 尝试 HTTP HEAD 或 content-length 判断存在性
                 // Try a URL connection content-length header
                 URLConnection con = url.openConnection();
                 customizeConnection(con);
@@ -72,6 +75,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
                     httpCon.disconnect();
                     return false;
                 } else {
+                    // 最后尝试打开输入流验证可读
                     // Fall back to stream existence: can we open the stream?
                     getInputStream().close();
                     return true;
@@ -145,6 +149,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
      *
      * @see #getFile(URI)
      * @since 5.0
+      * <p>可解析文件的资源基类；详见类级说明。</p>
      */
     protected boolean isFile(URI uri) {
         try {
@@ -162,6 +167,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
      * resource, provided that it refers to a file in the file system.
      *
      * @see ResourceUtils#getFile(URL, String)
+      * <p>可解析文件的资源基类；详见类级说明。</p>
      */
     @Override
     public File getFile() throws IOException {
@@ -177,6 +183,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
      * resource, provided that it refers to a file in the file system.
      *
      * @see ResourceUtils#getFile(URI, String)
+      * <p>可解析文件的资源基类；详见类级说明。</p>
      */
     protected File getFile(URI uri) throws IOException {
         if (uri.getScheme().startsWith(ResourceUtils.URL_PROTOCOL_VFS)) {
@@ -188,10 +195,12 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
     /**
      * This implementation determines the underlying File
      * (or jar file, in case of a resource in a jar/zip).
+      * <p>可解析文件的资源基类；详见类级说明。</p>
      */
     @Override
     protected File getFileForLastModifiedCheck() throws IOException {
         URL url = getUrl();
+        // jar: URL 需提取嵌套归档内实际 URL 再取文件
         if (ResourceUtils.isJarUrl(url)) {
             URL actualUrl = ResourceUtils.extractArchiveUrl(url);
             if (actualUrl.getProtocol().startsWith(ResourceUtils.URL_PROTOCOL_VFS)) {
@@ -210,6 +219,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
      *
      * @see #getFile()
      * @since 5.0
+      * <p>可解析文件的资源基类；详见类级说明。</p>
      */
     @Override
     public ReadableByteChannel readableChannel() throws IOException {
@@ -279,6 +289,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
      *
      * @param con the URLConnection to customize
      * @throws IOException if thrown from URLConnection methods
+      * <p>可解析文件的资源基类；详见类级说明。</p>
      */
     protected void customizeConnection(URLConnection con) throws IOException {
         ResourceUtils.useCachesIfNecessary(con);
@@ -294,13 +305,16 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
      *
      * @param con the HttpURLConnection to customize
      * @throws IOException if thrown from HttpURLConnection methods
+      * <p>可解析文件的资源基类；详见类级说明。</p>
      */
+    /** 默认使用 HEAD 请求探测远程资源元数据 */
     protected void customizeConnection(HttpURLConnection con) throws IOException {
         con.setRequestMethod("HEAD");
     }
 
     /**
      * Inner delegate class, avoiding a hard JBoss VFS API dependency at runtime.
+     * <p>内部委托类，延迟绑定 JBoss VFS，避免硬依赖。</p>
      */
     private static class VfsResourceDelegate {
 

@@ -21,6 +21,7 @@ import java.util.Set;
 
 /**
  * Scan all appropriate Class object through the package name.
+ * <p>包扫描 SPI 接口：在指定包路径下发现符合条件的 {@link Class}，供 Nacos 插件与扩展点自动发现使用。</p>
  *
  * @author hujun
  */
@@ -28,6 +29,7 @@ public interface PackageScan {
     
     /**
      * Scan all appropriate Class object through the package name and Class object.
+     * <p>扫描包内所有 {@code requestClass} 的子类型。</p>
      *
      * @param pkg          package name,for example, com.alibaba.nacos.common
      * @param requestClass super class
@@ -38,6 +40,7 @@ public interface PackageScan {
     
     /**
      * Scan all appropriate Class object through the package name and annotation.
+     * <p>扫描包内所有标注了指定注解的类。</p>
      *
      * @param pkg        package name,for example, com.alibaba.nacos.common
      * @param annotation annotation

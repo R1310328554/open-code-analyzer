@@ -18,12 +18,14 @@ package com.alibaba.nacos.common.notify;
 
 /**
  * This event share one event-queue.
+ * <p>慢事件基类：所有子类共用 {@link DefaultSharePublisher} 的单一队列，不参与全局序号递增（{@link #sequence()} 恒为 0）。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author zongtanghu
  */
 public abstract class SlowEvent extends Event {
     
+    /** 慢事件不使用序号过滤，始终返回 0 */
     @Override
     public long sequence() {
         return 0;

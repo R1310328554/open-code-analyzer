@@ -30,6 +30,7 @@ package com.alibaba.nacos.common.packagescan.classreading;
 
 /**
  * Copy from ASM, with less modifications
+ * <p>常量池/引导方法/ASM 类型表条目的符号抽象基类，配合 {@link ClassReader} 解析 cp_info 标签常量。</p>
  * An entry of the constant pool, of the BootstrapMethods attribute, or of the (ASM specific) type
  * table of a class.
  *
@@ -43,86 +44,107 @@ abstract class Symbol {
 
     /**
      * The tag value of CONSTANT_Class_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** JVMS CONSTANT_Class_info 标签值 */
     static final int CONSTANT_CLASS_TAG = 7;
 
     /**
      * The tag value of CONSTANT_Fieldref_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** JVMS CONSTANT_Fieldref_info 标签值 */
     static final int CONSTANT_FIELDREF_TAG = 9;
 
     /**
      * The tag value of CONSTANT_Methodref_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** JVMS CONSTANT_Methodref_info 标签值 */
     static final int CONSTANT_METHODREF_TAG = 10;
 
     /**
      * The tag value of CONSTANT_InterfaceMethodref_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_INTERFACE_METHODREF_TAG = 11;
 
     /**
      * The tag value of CONSTANT_String_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_STRING_TAG = 8;
 
     /**
      * The tag value of CONSTANT_Integer_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_INTEGER_TAG = 3;
 
     /**
      * The tag value of CONSTANT_Float_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_FLOAT_TAG = 4;
 
     /**
      * The tag value of CONSTANT_Long_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_LONG_TAG = 5;
 
     /**
      * The tag value of CONSTANT_Double_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_DOUBLE_TAG = 6;
 
     /**
      * The tag value of CONSTANT_NameAndType_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_NAME_AND_TYPE_TAG = 12;
 
     /**
      * The tag value of CONSTANT_Utf8_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** JVMS CONSTANT_Utf8_info 标签值 */
     static final int CONSTANT_UTF8_TAG = 1;
 
     /**
      * The tag value of CONSTANT_MethodHandle_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_METHOD_HANDLE_TAG = 15;
 
     /**
      * The tag value of CONSTANT_MethodType_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_METHOD_TYPE_TAG = 16;
 
     /**
      * The tag value of CONSTANT_Dynamic_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_DYNAMIC_TAG = 17;
 
     /**
      * The tag value of CONSTANT_InvokeDynamic_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_INVOKE_DYNAMIC_TAG = 18;
 
     /**
      * The tag value of CONSTANT_Module_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_MODULE_TAG = 19;
 
     /**
      * The tag value of CONSTANT_Package_info JVMS structures.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int CONSTANT_PACKAGE_TAG = 20;
 
@@ -130,20 +152,25 @@ abstract class Symbol {
 
     /**
      * The tag value of the BootstrapMethods attribute entries.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** BootstrapMethods 属性条目标签（ASM 扩展） */
     static final int BOOTSTRAP_METHOD_TAG = 64;
 
     // Tag values for the type table entries (ASM specific tags).
 
     /**
      * The tag value of a normal type entry in the (ASM specific) type table of a class.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** ASM 类型表普通类型条目标签 */
     static final int TYPE_TAG = 128;
 
     static final int UNINITIALIZED_TYPE_TAG = 129;
 
     /**
      * The tag value of a merged type entry in the (ASM specific) type table of a class.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     static final int MERGED_TYPE_TAG = 130;
 
@@ -152,20 +179,26 @@ abstract class Symbol {
     /**
      * The index of this symbol in the constant pool, in the BootstrapMethods attribute, or in the
      * (ASM specific) type table of a class (depending on the {@link #tag} value).
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** 符号在常量池/引导方法表/类型表中的索引 */
     final int index;
 
     /**
      * A tag indicating the type of this symbol. Must be one of the static tag values defined in this
      * class.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** 符号类型标签，见本类 static 常量 */
     final int tag;
 
     /**
      * The internal name of the owner class of this symbol. Only used for {@link
      * #CONSTANT_FIELDREF_TAG}, {@link #CONSTANT_METHODREF_TAG}, {@link
      * #CONSTANT_INTERFACE_METHODREF_TAG}, and {@link #CONSTANT_METHOD_HANDLE_TAG} symbols.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** 所属类内部名（字段/方法引用等类型使用） */
     final String owner;
 
     /**
@@ -174,7 +207,9 @@ abstract class Symbol {
      * #CONSTANT_INTERFACE_METHODREF_TAG}, {@link #CONSTANT_NAME_AND_TYPE_TAG}, {@link
      * #CONSTANT_METHOD_HANDLE_TAG}, {@link #CONSTANT_DYNAMIC_TAG} and {@link
      * #CONSTANT_INVOKE_DYNAMIC_TAG} symbols.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** 字段或方法名 */
     final String name;
 
     /**
@@ -192,7 +227,9 @@ abstract class Symbol {
      *       #UNINITIALIZED_TYPE_TAG} symbols,
      *   <li>{@literal null} for the other types of symbol.
      * </ul>
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** 描述符、UTF8 字符串或类名等字符串值 */
     final String value;
 
     /**
@@ -212,7 +249,9 @@ abstract class Symbol {
      *       #MERGED_TYPE_TAG} symbols,
      *   <li>0 for the other types of symbol.
      * </ul>
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** 数值型附加数据（整数/句柄种类/偏移等） */
     final long data;
 
     /**
@@ -231,7 +270,9 @@ abstract class Symbol {
      *       {@link #MERGED_TYPE_TAG} symbols,
      *   <li>0 for the other types of symbol, or if this field has not been computed yet.
      * </ul>
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
+    /** 懒计算的附加信息，比较 Symbol 时忽略 */
     int info;
 
     /**
@@ -246,6 +287,7 @@ abstract class Symbol {
      *              null}.
      * @param value The string value of this symbol. Maybe {@literal null}.
      * @param data  The numeric value of this symbol.
+      * <p>常量池符号抽象类；详见类级说明。</p>
      */
     Symbol(
             final int index,

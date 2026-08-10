@@ -38,35 +38,45 @@ import static com.alibaba.nacos.api.exception.NacosException.SERVER_ERROR;
 
 /**
  * Unified Event Notify Center.
+ * <p>Nacos 统一事件通知中心：按事件类型维护 {@link EventPublisher}，支持订阅者注册、发布与优雅关闭；{@link SlowEvent} 共用 {@link DefaultSharePublisher}。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author zongtanghu
  */
 public class NotifyCenter {
     
+    /** NotifyCenter 专用日志记录器 */
     private static final Logger LOGGER = LoggerFactory.getLogger(NotifyCenter.class);
     
+    /** 普通事件发布队列容量，可通过 JVM 属性 nacos.core.notify.ring-buffer-size 配置 */
     public static int ringBufferSize;
     
+    /** 慢事件共享发布队列容量，可通过 nacos.core.notify.share-buffer-size 配置 */
     public static int shareBufferSize;
     
+    /** 全局关闭标志，保证 shutdown 只执行一次 */
     private static final AtomicBoolean CLOSED = new AtomicBoolean(false);
     
+    /** 默认发布器工厂，基于 SPI 选定的 {@link EventPublisher} 实现类实例化 */
     private static final EventPublisherFactory DEFAULT_PUBLISHER_FACTORY;
     
     @SuppressWarnings("checkstyle:StaticVariableName")
+    /** 单例实例，持有所有发布器映射 */
     private static NotifyCenter INSTANCE = new NotifyCenter();
     
+    /** 慢事件共享发布器，所有 SlowEvent 子类共用 */
     private DefaultSharePublisher sharePublisher;
     
     private static Class<? extends EventPublisher> clazz;
     
     /**
      * Publisher management container.
+     * <p>事件类型 canonical name → 发布器实例的并发映射。</p>
      */
     private final Map<String, EventPublisher> publisherMap = new ConcurrentHashMap<>(16);
     
     static {
+        // 普通事件环形队列默认 16384，高吞吐场景可通过 JVM 属性调大
         // Internal ArrayBlockingQueue buffer size. For applications with high write throughput,
         // this value needs to be increased appropriately. default value is 16384
         String ringBufferSizeProperty = "nacos.core.notify.ring-buffer-size";
@@ -98,6 +108,7 @@ public class NotifyCenter {
         
         try {
             
+            // 静态块中初始化慢事件共享发布器
             // Create and init DefaultSharePublisher instance.
             INSTANCE.sharePublisher = new DefaultSharePublisher();
             INSTANCE.sharePublisher.init(SlowEvent.class, shareBufferSize);
@@ -114,6 +125,7 @@ public class NotifyCenter {
         return INSTANCE.publisherMap;
     }
     
+    /** 按事件类型获取对应发布器，SlowEvent 返回共享发布器 */
     public static EventPublisher getPublisher(Class<? extends Event> topic) {
         if (ClassUtils.isAssignableFrom(SlowEvent.class, topic)) {
             return INSTANCE.sharePublisher;
@@ -127,6 +139,7 @@ public class NotifyCenter {
     
     /**
      * Shutdown the several publisher instance which notify center has.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static void shutdown() {
         if (!CLOSED.compareAndSet(false, true)) {
@@ -157,6 +170,7 @@ public class NotifyCenter {
      * preempt a placeholder Publisher with default EventPublisherFactory first.
      *
      * @param consumer subscriber
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static void registerSubscriber(final Subscriber consumer) {
         registerSubscriber(consumer, DEFAULT_PUBLISHER_FACTORY);
@@ -168,9 +182,11 @@ public class NotifyCenter {
      *
      * @param consumer subscriber
      * @param factory  publisher factory.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static void registerSubscriber(final Subscriber consumer,
         final EventPublisherFactory factory) {
+        // SmartSubscriber 可一次订阅多种事件类型
         // If you want to listen to multiple events, you do it separately,
         // based on subclass's subscribeTypes method return list, it can register to publisher.
         if (consumer instanceof SmartSubscriber) {
@@ -202,6 +218,7 @@ public class NotifyCenter {
      * @param consumer      subscriber instance.
      * @param subscribeType subscribeType.
      * @param factory       publisher factory.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     private static void addSubscriber(final Subscriber consumer,
         Class<? extends Event> subscribeType,
@@ -209,11 +226,13 @@ public class NotifyCenter {
         
         final String topic = ClassUtils.getCanonicalName(subscribeType);
         synchronized (NotifyCenter.class) {
+            // 懒创建发布器并放入 publisherMap，按 ringBufferSize 初始化队列
             // MapUtils.computeIfAbsent is a unsafe method.
             MapUtil.computeIfAbsent(INSTANCE.publisherMap, topic, factory, subscribeType,
                 ringBufferSize);
         }
         EventPublisher publisher = INSTANCE.publisherMap.get(topic);
+        // 分片发布器需同时传入 subscribeType 以区分事件
         if (publisher instanceof ShardedEventPublisher) {
             ((ShardedEventPublisher) publisher).addSubscriber(consumer, subscribeType);
         } else {
@@ -225,6 +244,7 @@ public class NotifyCenter {
      * Deregister subscriber.
      *
      * @param consumer subscriber instance.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static void deregisterSubscriber(final Subscriber consumer) {
         if (consumer instanceof SmartSubscriber) {
@@ -257,6 +277,7 @@ public class NotifyCenter {
      * @param consumer      subscriber instance.
      * @param subscribeType subscribeType.
      * @return whether remove subscriber successfully or not.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     private static boolean removeSubscriber(final Subscriber consumer,
         Class<? extends Event> subscribeType) {
@@ -279,6 +300,7 @@ public class NotifyCenter {
      * actually published.
      *
      * @param event class Instances of the event.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static boolean publishEvent(final Event event) {
         try {
@@ -294,6 +316,7 @@ public class NotifyCenter {
      *
      * @param eventType class Instances type of the event type.
      * @param event     event instance.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     private static boolean publishEvent(final Class<? extends Event> eventType, final Event event) {
         if (ClassUtils.isAssignableFrom(SlowEvent.class, eventType)) {
@@ -306,6 +329,7 @@ public class NotifyCenter {
         if (publisher != null) {
             return publisher.publish(event);
         }
+        // 插件事件无发布器时静默成功，避免告警
         if (event.isPluginEvent()) {
             return true;
         }
@@ -318,6 +342,7 @@ public class NotifyCenter {
      *
      * @param eventType class Instances type of the event type.
      * @return share publisher instance.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static EventPublisher registerToSharePublisher(
         final Class<? extends SlowEvent> eventType) {
@@ -329,6 +354,7 @@ public class NotifyCenter {
      *
      * @param eventType    class Instances type of the event type.
      * @param queueMaxSize the publisher's queue max size.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static EventPublisher registerToPublisher(final Class<? extends Event> eventType,
         final int queueMaxSize) {
@@ -341,6 +367,7 @@ public class NotifyCenter {
      * @param eventType    class Instances type of the event type.
      * @param factory      publisher factory.
      * @param queueMaxSize the publisher's queue max size.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static EventPublisher registerToPublisher(final Class<? extends Event> eventType,
         final EventPublisherFactory factory, final int queueMaxSize) {
@@ -361,6 +388,7 @@ public class NotifyCenter {
      *
      * @param eventType class Instances type of the event type.
      * @param publisher the specified event publisher
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static void registerToPublisher(final Class<? extends Event> eventType,
         final EventPublisher publisher) {
@@ -377,6 +405,7 @@ public class NotifyCenter {
      * Deregister publisher.
      *
      * @param eventType class Instances type of the event type.
+      * <p>统一事件通知中心；详见类级说明。</p>
      */
     public static void deregisterPublisher(final Class<? extends Event> eventType) {
         final String topic = ClassUtils.getCanonicalName(eventType);

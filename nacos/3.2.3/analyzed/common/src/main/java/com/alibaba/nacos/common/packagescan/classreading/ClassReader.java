@@ -34,6 +34,7 @@ import java.io.InputStream;
 
 /**
  * Copy from ASM, with less modifications
+ * <p>精简版 ASM ClassReader：解析 JVMS ClassFile 结构，Nacos 包扫描仅用于读取类名/父类/接口等元数据，无需完整字节码访问。</p>
  * A parser to make a  visit a ClassFile structure, as defined in the Java
  * Virtual Machine Specification (JVMS). This class parses the ClassFile content and calls the
  * appropriate visit methods of a given ClassVisitor for each field, method and bytecode
@@ -48,14 +49,19 @@ public class ClassReader {
     /**
      * A flag to skip the Code attributes. If this flag is set the Code attributes are neither parsed
      * nor visited.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
+    /** 解析标志：跳过 Code 属性（方法字节码） */
     public static final int SKIP_CODE = 1;
 
+    /** 支持的最高 class 文件主版本号（Java 19） */
     public static final int V19 = 0 << 16 | 63;
 
     /**
      * A flag to skip the SourceFile.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
+    /** 解析标志：跳过调试信息（SourceFile 等） */
     public static final int SKIP_DEBUG = 2;
 
     /**
@@ -63,7 +69,9 @@ public class ClassReader {
      * are neither parsed nor visited  is not called). This flag
      * is useful when the option is used: it avoids visiting frames
      * that will be ignored and recomputed from scratch.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
+    /** 解析标志：跳过 StackMap/StackMapTable 栈帧属性 */
     public static final int SKIP_FRAMES = 4;
 
     /**
@@ -72,7 +80,9 @@ public class ClassReader {
      * for the other classes). If this flag is set, stack map frames are always visited in expanded
      * format (this option adds a decompression/compression step in ClassReader and ClassWriter which
      * degrades performance quite a lot).
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
+    /** 解析标志：以展开格式访问栈帧（性能开销较大） */
     public static final int EXPAND_FRAMES = 8;
 
     /**
@@ -84,16 +94,19 @@ public class ClassReader {
      * flag is used, goto_w and jsr_w are <i>not</i> converted into goto and jsr, to make sure that
      * infinite loops where a goto_w is replaced with a goto in ClassReader and converted back to a
      * goto_w in ClassWriter cannot occur.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     static final int EXPAND_ASM_INSNS = 256;
 
     /**
      * The maximum size of array to allocate.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private static final int MAX_BUFFER_SIZE = 1024 * 1024;
 
     /**
      * The size of the temporary byte array used to read class input streams chunk by chunk.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private static final int INPUT_STREAM_DATA_CHUNK_SIZE = 4096;
 
@@ -102,14 +115,18 @@ public class ClassReader {
      *
      * @deprecated Use {@link #readByte(int)} and the other read methods instead. This field will
      * eventually be deleted.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     @Deprecated
     // DontCheck(MemberName): can't be renamed (for backward binary compatibility).
+    /** 待解析的 ClassFile 字节数组（已废弃，请用 readByte 系列方法） */
     public final byte[] b;
 
     /**
      * The offset in bytes of the ClassFile's access_flags field.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
+    /** ClassFile access_flags 字段在字节数组中的偏移 */
     public final int header;
 
     /**
@@ -120,6 +137,7 @@ public class ClassReader {
      * <p>NOTE: the ClassFile structure can start at any offset within this array, i.e. it does not
      * necessarily start at offset 0. Use {@link #getItem} and {@link #header} to get correct
      * ClassFile element offsets within this byte array.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     final byte[] classFileBuffer;
 
@@ -128,18 +146,21 @@ public class ClassReader {
      * constant_pool array, <i>plus one</i>. In other words, the offset of constant pool entry i is
      * given by cpInfoOffsets[i] - 1, i.e. its cp_info's tag field is given by b[cpInfoOffsets[i] -
      * 1].
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private final int[] cpInfoOffsets;
 
     /**
      * The String objects corresponding to the CONSTANT_Utf8 constant pool items. This cache avoids
      * multiple parsing of a given CONSTANT_Utf8 constant pool item.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private final String[] constantUtf8Values;
 
     /**
      * A conservative estimate of the maximum length of the strings contained in the constant pool of
      * the class.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private final int maxStringLength;
 
@@ -151,6 +172,7 @@ public class ClassReader {
      * Constructs a new {@link ClassReader} object.
      *
      * @param classFile the JVMS ClassFile structure to be read.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public ClassReader(final byte[] classFile) {
         this(classFile, 0, classFile.length);
@@ -162,6 +184,7 @@ public class ClassReader {
      * @param classFileBuffer a byte array containing the JVMS ClassFile structure to be read.
      * @param classFileOffset the offset in byteBuffer of the first byte of the ClassFile to be read.
      * @param classFileLength the length in bytes of the ClassFile to be read.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public ClassReader(
             final byte[] classFileBuffer,
@@ -177,6 +200,7 @@ public class ClassReader {
      * @param classFileBuffer   a byte array containing the JVMS ClassFile structure to be read.
      * @param classFileOffset   the offset in byteBuffer of the first byte of the ClassFile to be read.
      * @param checkClassVersion whether to check the class version or not.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     ClassReader(
             final byte[] classFileBuffer, final int classFileOffset, final boolean checkClassVersion) {
@@ -184,6 +208,7 @@ public class ClassReader {
         this.b = classFileBuffer;
         // Check the class' major_version. This field is after the magic and minor_version fields, which
         // use 4 and 2 bytes respectively.
+        // 主版本号超过 V19 时拒绝解析
         if (checkClassVersion && readShort(classFileOffset + 6) > V19) {
             throw new IllegalArgumentException(
                     "Unsupported class file major version " + readShort(classFileOffset + 6));
@@ -265,6 +290,7 @@ public class ClassReader {
      *                    stream must contain nothing more than the ClassFile structure itself. It is read from its
      *                    current position to its end.
      * @throws IOException if a problem occurs during reading.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public ClassReader(final InputStream inputStream) throws IOException {
         this(readStream(inputStream, false));
@@ -276,6 +302,7 @@ public class ClassReader {
      * @param className the fully qualified name of the class to be read. The ClassFile structure is
      *                  retrieved with the current class loader's {@link ClassLoader#getSystemResourceAsStream}.
      * @throws IOException if an exception occurs during reading.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public ClassReader(final String className) throws IOException {
         this(
@@ -290,6 +317,7 @@ public class ClassReader {
      * @param close       true to close the input stream after reading.
      * @return the content of the given input stream.
      * @throws IOException if a problem occurs during reading.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private static byte[] readStream(final InputStream inputStream, final boolean close)
             throws IOException {
@@ -342,6 +370,7 @@ public class ClassReader {
      * and Synthetic flags when bytecode is before 1.5 and those flags are represented by attributes.
      *
      * @return the class access flags.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public int getAccess() {
         return readUnsignedShort(header);
@@ -349,12 +378,14 @@ public class ClassReader {
 
     /**
      * the internal class name.
+     * <p>返回内部类名（斜杠分隔，如 com/alibaba/nacos/Foo）。</p>
      */
     public String getClassName() {
         // this_class is just after the access_flags field (using 2 bytes).
         return readClass(header + 2, new char[maxStringLength]);
     }
 
+    /** 返回父类内部名，Object 的子类可能为 null */
     public String getSuperName() {
         // super_class is after the access_flags and this_class fields (2 bytes each).
         return readClass(header + 4, new char[maxStringLength]);
@@ -363,6 +394,7 @@ public class ClassReader {
     /**
      * the internal names of the directly implemented interfaces. Inherited implemented
      * interfaces are not returned.
+     * <p>返回直接实现的接口内部名数组（不含继承的接口）。</p>
      */
     public String[] getInterfaces() {
         // interfaces_count is after the access_flags, this_class and super_class fields (2 bytes each).
@@ -389,6 +421,7 @@ public class ClassReader {
      *
      * @return the offset in {@link #classFileBuffer} of the first ClassFile's 'attributes' array
      * field entry.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     final int getFirstAttributeOffset() {
         // Skip the access_flags, this_class, super_class, and interfaces_count fields (using 2 bytes
@@ -438,6 +471,7 @@ public class ClassReader {
      * Returns the number of entries in the class's constant pool table.
      *
      * @return the number of entries in the class's constant pool table.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public int getItemCount() {
         return cpInfoOffsets.length;
@@ -452,6 +486,7 @@ public class ClassReader {
      *                               table.
      * @return the start offset in this {@link ClassReader} of the corresponding JVMS 'cp_info'
      * structure, plus one.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public int getItem(final int constantPoolEntryIndex) {
         return cpInfoOffsets[constantPoolEntryIndex];
@@ -463,6 +498,7 @@ public class ClassReader {
      *
      * @return a conservative estimate of the maximum length of the strings contained in the class's
      * constant pool table.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public int getMaxStringLength() {
         return maxStringLength;
@@ -474,6 +510,7 @@ public class ClassReader {
      *
      * @param offset the start offset of the value to be read in this {@link ClassReader}.
      * @return the read value.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public int readByte(final int offset) {
         return classFileBuffer[offset] & 0xFF;
@@ -485,6 +522,7 @@ public class ClassReader {
      *
      * @param offset the start index of the value to be read in this {@link ClassReader}.
      * @return the read value.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public int readUnsignedShort(final int offset) {
         byte[] classBuffer = classFileBuffer;
@@ -497,6 +535,7 @@ public class ClassReader {
      *
      * @param offset the start offset of the value to be read in this {@link ClassReader}.
      * @return the read value.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public short readShort(final int offset) {
         byte[] classBuffer = classFileBuffer;
@@ -509,6 +548,7 @@ public class ClassReader {
      *
      * @param offset the start offset of the value to be read in this {@link ClassReader}.
      * @return the read value.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public int readInt(final int offset) {
         byte[] classBuffer = classFileBuffer;
@@ -524,6 +564,7 @@ public class ClassReader {
      *
      * @param offset the start offset of the value to be read in this {@link ClassReader}.
      * @return the read value.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public long readLong(final int offset) {
         long l1 = readInt(offset);
@@ -541,6 +582,7 @@ public class ClassReader {
      * @param charBuffer the buffer to be used to read the string. This buffer must be sufficiently
      *                   large. It is not automatically resized.
      * @return the String corresponding to the specified CONSTANT_Utf8 entry.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     // DontCheck(AbbreviationAsWordInName): can't be renamed (for backward binary compatibility).
     public String readUtf8(final int offset, final char[] charBuffer) {
@@ -559,6 +601,7 @@ public class ClassReader {
      * @param charBuffer             the buffer to be used to read the string. This buffer must be sufficiently
      *                               large. It is not automatically resized.
      * @return the String corresponding to the specified CONSTANT_Utf8 entry.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     final String readUtf(final int constantPoolEntryIndex, final char[] charBuffer) {
         String value = constantUtf8Values[constantPoolEntryIndex];
@@ -578,6 +621,7 @@ public class ClassReader {
      * @param charBuffer the buffer to be used to read the string. This buffer must be sufficiently
      *                   large. It is not automatically resized.
      * @return the String corresponding to the specified UTF8 string.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private String readUtf(final int utfOffset, final int utfLength, final char[] charBuffer) {
         int currentOffset = utfOffset;
@@ -614,6 +658,7 @@ public class ClassReader {
      * @param charBuffer the buffer to be used to read the item. This buffer must be sufficiently
      *                   large. It is not automatically resized.
      * @return the String corresponding to the specified constant pool entry.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     private String readStringish(final int offset, final char[] charBuffer) {
         // Get the start offset of the cp_info structure (plus one), and read the CONSTANT_Utf8 entry
@@ -631,6 +676,7 @@ public class ClassReader {
      * @param charBuffer the buffer to be used to read the item. This buffer must be sufficiently
      *                   large. It is not automatically resized.
      * @return the String corresponding to the specified CONSTANT_Class entry.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public String readClass(final int offset, final char[] charBuffer) {
         return readStringish(offset, charBuffer);
@@ -646,6 +692,7 @@ public class ClassReader {
      * @param charBuffer the buffer to be used to read the item. This buffer must be sufficiently
      *                   large. It is not automatically resized.
      * @return the String corresponding to the specified CONSTANT_Module entry.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public String readModule(final int offset, final char[] charBuffer) {
         return readStringish(offset, charBuffer);
@@ -661,6 +708,7 @@ public class ClassReader {
      * @param charBuffer the buffer to be used to read the item. This buffer must be sufficiently
      *                   large. It is not automatically resized.
      * @return the String corresponding to the specified CONSTANT_Package entry.
+      * <p>ASM ClassReader 精简版；详见类级说明。</p>
      */
     public String readPackage(final int offset, final char[] charBuffer) {
         return readStringish(offset, charBuffer);

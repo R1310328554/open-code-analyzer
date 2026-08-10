@@ -22,6 +22,7 @@ import java.util.List;
 
 /**
  * Subscribers to multiple events can be listened to.
+ * <p>智能订阅者：通过 {@link #subscribeTypes()} 一次声明多种关注事件，由 {@link NotifyCenter} 分别注册到对应发布器。</p>
  *
  * @author <a href="mailto:liaochuntao@live.com">liaochuntao</a>
  * @author zongtanghu
@@ -30,11 +31,13 @@ public abstract class SmartSubscriber extends Subscriber<Event> {
     
     /**
      * Returns which event type are smart subscriber interested in.
+     * <p>返回本订阅者关注的所有事件类型列表。</p>
      *
      * @return The interested event types.
      */
     public abstract List<Class<? extends Event>> subscribeTypes();
     
+    /** 多事件订阅模式下不使用单一 subscribeType，固定返回 null */
     @Override
     public final Class<? extends Event> subscribeType() {
         return null;

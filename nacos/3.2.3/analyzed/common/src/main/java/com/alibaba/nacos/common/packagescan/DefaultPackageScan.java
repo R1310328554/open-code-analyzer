@@ -33,13 +33,16 @@ import java.util.Set;
 
 /**
  * Scan all appropriate Class object through the package name.
+ * <p>默认包扫描实现：通过 {@link PathMatchingResourcePatternResolver} 解析 classpath 下 {@code **/*.class}，用轻量 {@link ClassReader} 读取类名后 按父类或注解过滤，避免完整类加载。</p>
  *
  * @author hujun
  */
 public class DefaultPackageScan implements PackageScan {
     
+    /** 包扫描过程日志记录器 */
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultPackageScan.class);
     
+    /** Ant 风格路径匹配的资源解析器 */
     private final PathMatchingResourcePatternResolver resourcePatternResolver = new PathMatchingResourcePatternResolver();
     
     public DefaultPackageScan() {
@@ -52,10 +55,12 @@ public class DefaultPackageScan implements PackageScan {
      * @param requestClass super class
      * @param <T>          Class type
      * @return a set contains Class
+      * <p>默认包扫描实现；详见类级说明。</p>
      */
     @Override
     public <T> Set<Class<T>> getSubTypesOf(String pkg, Class<T> requestClass) {
         Set<Class<T>> set = new HashSet<>(16);
+        // 构造 classpath*:包路径/**/*.class 搜索模式
         String packageSearchPath =
                 ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX + ClassUtils.convertClassNameToResourcePath(pkg) + '/'
                         + "**/*.class";
@@ -63,6 +68,7 @@ public class DefaultPackageScan implements PackageScan {
             Resource[] resources = resourcePatternResolver.getResources(packageSearchPath);
             for (Resource resource : resources) {
                 Class<?> scanClass = getClassByResource(resource);
+                // 仅保留 requestClass 可赋值的子类型
                 if (requestClass.isAssignableFrom(scanClass)) {
                     set.add((Class<T>) scanClass);
                 }
@@ -80,6 +86,7 @@ public class DefaultPackageScan implements PackageScan {
      * @param annotation annotation
      * @param <T>        Class type
      * @return a set contains Class object
+      * <p>默认包扫描实现；详见类级说明。</p>
      */
     @Override
     public <T> Set<Class<T>> getTypesAnnotatedWith(String pkg, Class<? extends Annotation> annotation) {
@@ -91,6 +98,7 @@ public class DefaultPackageScan implements PackageScan {
             Resource[] resources = resourcePatternResolver.getResources(packageSearchPath);
             for (Resource resource : resources) {
                 Class<?> scanClass = getClassByResource(resource);
+                // 仅保留携带指定注解的类
                 if (scanClass.isAnnotationPresent(annotation)) {
                     set.add((Class<T>) scanClass);
                 }
@@ -106,6 +114,7 @@ public class DefaultPackageScan implements PackageScan {
         return Class.forName(ClassUtils.resourcePathToConvertClassName(className));
     }
     
+    /** 从资源流构造 ASM ClassReader，解析失败时包装为 NestedIoException */
     private static ClassReader getClassReader(Resource resource) throws IOException {
         try (InputStream is = resource.getInputStream()) {
             try {

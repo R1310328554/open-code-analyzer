@@ -33,6 +33,7 @@ import java.nio.channels.ReadableByteChannel;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * <p>{@link Resource} 便捷抽象基类：预实现 exists/readable/isOpen 等默认行为，子类只需实现 {@link #getInputStream()} 与 {@link #getDescription()}。</p>
  * Convenience base class for {@link Resource} implementations,
  * pre-implementing typical behavior.
  *
@@ -50,9 +51,11 @@ public abstract class AbstractResource implements Resource {
      * This implementation checks whether a File can be opened,
      * falling back to whether an InputStream can be opened.
      * This will cover both directories and content resources.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public boolean exists() {
+        // 优先通过本地文件判断存在性
         // Try file existence: can we find the file in the file system?
         if (isFile()) {
             try {
@@ -64,6 +67,7 @@ public abstract class AbstractResource implements Resource {
                 }
             }
         }
+        // 非文件资源则尝试打开并立即关闭输入流
         // Fall back to stream existence: can we open the stream?
         try {
             getInputStream().close();
@@ -80,6 +84,7 @@ public abstract class AbstractResource implements Resource {
     /**
      * This implementation always returns {@code true} for a resource
      * that {@link #exists() exists} (revised as of 5.1).
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public boolean isReadable() {
@@ -88,6 +93,7 @@ public abstract class AbstractResource implements Resource {
 
     /**
      * This implementation always returns {@code false}.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public boolean isOpen() {
@@ -96,6 +102,7 @@ public abstract class AbstractResource implements Resource {
 
     /**
      * This implementation always returns {@code false}.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public boolean isFile() {
@@ -105,6 +112,7 @@ public abstract class AbstractResource implements Resource {
     /**
      * This implementation throws a FileNotFoundException, assuming
      * that the resource cannot be resolved to a URL.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public URL getUrl() throws IOException {
@@ -114,6 +122,7 @@ public abstract class AbstractResource implements Resource {
     /**
      * This implementation builds a URI based on the URL returned
      * by {@link #getUrl()}.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public URI getUri() throws IOException {
@@ -128,6 +137,7 @@ public abstract class AbstractResource implements Resource {
     /**
      * This implementation throws a FileNotFoundException, assuming
      * that the resource cannot be resolved to an absolute file path.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public File getFile() throws IOException {
@@ -139,6 +149,7 @@ public abstract class AbstractResource implements Resource {
      * with the result of {@link #getInputStream()}.
      * This is the same as in {@link Resource}'s corresponding default method
      * but mirrored here for efficient JVM-level dispatching in a class hierarchy.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public ReadableByteChannel readableChannel() throws IOException {
@@ -147,6 +158,7 @@ public abstract class AbstractResource implements Resource {
 
     /**
      * This method reads the entire InputStream to determine the content length.
+     * <p>默认通过读完整个流计算长度；子类应覆盖以提供更高效实现。</p>
      * For a custom sub-class of {@code InputStreamResource}, we strongly
      * recommend overriding this method with a more optimal implementation, e.g.
      * checking File length, or possibly simply returning -1 if the stream can
@@ -182,6 +194,7 @@ public abstract class AbstractResource implements Resource {
      * if available.
      *
      * @see #getFileForLastModifiedCheck()
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public long lastModified() throws IOException {
@@ -196,7 +209,7 @@ public abstract class AbstractResource implements Resource {
 
     /**
      * Determine the File to use for timestamp checking.
-     * The default implementation delegates to {@link #getFile()}.
+     * <p>获取用于 lastModified 检查的文件，默认委托 {@link #getFile()}。</p>
      *
      * @return the File to use for timestamp checking (never {@code null})
      * @throws FileNotFoundException if the resource cannot be resolved as
@@ -210,6 +223,7 @@ public abstract class AbstractResource implements Resource {
     /**
      * This implementation throws a FileNotFoundException, assuming
      * that relative resources cannot be created for this resource.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public Resource createRelative(String relativePath) throws IOException {
@@ -219,6 +233,7 @@ public abstract class AbstractResource implements Resource {
     /**
      * This implementation always returns {@code null},
      * assuming that this resource type does not have a filename.
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
 
@@ -231,6 +246,7 @@ public abstract class AbstractResource implements Resource {
      * This implementation compares description strings.
      *
      * @see #getDescription()
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public boolean equals(Object other) {
@@ -242,6 +258,7 @@ public abstract class AbstractResource implements Resource {
      * This implementation returns the description's hash code.
      *
      * @see #getDescription()
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public int hashCode() {
@@ -252,6 +269,7 @@ public abstract class AbstractResource implements Resource {
      * This implementation returns the description of this resource.
      *
      * @see #getDescription()
+      * <p>Resource 便捷抽象基类；详见类级说明。</p>
      */
     @Override
     public String toString() {

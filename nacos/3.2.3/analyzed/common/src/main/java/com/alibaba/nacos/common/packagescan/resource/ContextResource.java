@@ -18,6 +18,7 @@ package com.alibaba.nacos.common.packagescan.resource;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * <p>上下文资源扩展接口：表示相对于 enclosing context（如 ServletContext、ResourceLoader 根路径）加载的资源，提供 context 内相对路径视图。</p>
  * Extended interface for a resource that is loaded from an enclosing
  * 'context', e.g. from a {@link jakarta.servlet.ServletContext} but also
  * from plain classpath paths or relative file system paths (specified
@@ -31,10 +32,8 @@ public interface ContextResource extends Resource {
 
     /**
      * Return the path within the enclosing 'context'.
+     * <p>返回相对于 enclosing context 根目录的路径（如 Web 应用根下的路径）。</p>
      *
-     * <p>This is typically path relative to a context-specific root directory,
-     * e.g. a ServletContext root or a PortletContext root.
-     */
     String getPathWithinContext();
 
 }

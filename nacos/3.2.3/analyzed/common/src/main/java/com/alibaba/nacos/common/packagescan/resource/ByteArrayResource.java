@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 /**
  * Copy from https://github.com/spring-projects/spring-framework.git, with less modifications
+ * <p>字节数组 {@link Resource} 实现：每次 {@link #getInputStream()} 返回新的 {@link ByteArrayInputStream}，支持多次读取。</p>
  * {@link Resource} implementation for a given byte array.
  *
  * <p>Creates a {@link ByteArrayInputStream} for the given byte array.
@@ -42,14 +43,17 @@ import java.util.Arrays;
  */
 public class ByteArrayResource extends AbstractResource {
 
+    /** 底层字节数组，构造后不可变 */
     private final byte[] byteArray;
 
+    /** 资源来源描述，用于 toString/getDescription */
     private final String description;
 
     /**
      * Create a new {@code ByteArrayResource}.
      *
      * @param byteArray the byte array to wrap
+      * <p>字节数组资源实现；详见类级说明。</p>
      */
     public ByteArrayResource(byte[] byteArray) {
         this(byteArray, "resource loaded from byte array");
@@ -60,6 +64,7 @@ public class ByteArrayResource extends AbstractResource {
      *
      * @param byteArray   the byte array to wrap
      * @param description where the byte array comes from
+      * <p>字节数组资源实现；详见类级说明。</p>
      */
     public ByteArrayResource(byte[] byteArray, String description) {
         AbstractAssert.notNull(byteArray, "Byte array must not be null");
@@ -69,6 +74,7 @@ public class ByteArrayResource extends AbstractResource {
 
     /**
      * Return the underlying byte array.
+     * <p>返回包装的字节数组引用。</p>
      */
     public final byte[] getByteArray() {
         return this.byteArray;
@@ -76,6 +82,7 @@ public class ByteArrayResource extends AbstractResource {
 
     /**
      * This implementation always returns {@code true}.
+     * <p>内存中的字节数组始终视为存在。</p>
      */
     @Override
     public boolean exists() {
@@ -84,6 +91,7 @@ public class ByteArrayResource extends AbstractResource {
 
     /**
      * This implementation returns the length of the underlying byte array.
+      * <p>字节数组资源实现；详见类级说明。</p>
      */
     @Override
     public long contentLength() {
@@ -95,6 +103,7 @@ public class ByteArrayResource extends AbstractResource {
      * underlying byte array.
      *
      * @see ByteArrayInputStream
+      * <p>字节数组资源实现；详见类级说明。</p>
      */
     @Override
     public InputStream getInputStream() throws IOException {
@@ -104,6 +113,7 @@ public class ByteArrayResource extends AbstractResource {
     /**
      * This implementation returns a description that includes the passed-in
      * {@code description}, if any.
+      * <p>字节数组资源实现；详见类级说明。</p>
      */
     @Override
     public String getDescription() {
@@ -115,6 +125,7 @@ public class ByteArrayResource extends AbstractResource {
      * This implementation compares the underlying byte array.
      *
      * @see Arrays#equals(byte[], byte[])
+      * <p>字节数组资源实现；详见类级说明。</p>
      */
     @Override
     public boolean equals(Object other) {
@@ -125,6 +136,7 @@ public class ByteArrayResource extends AbstractResource {
     /**
      * This implementation returns the hash code based on the
      * underlying byte array.
+      * <p>字节数组资源实现；详见类级说明。</p>
      */
     @Override
     public int hashCode() {

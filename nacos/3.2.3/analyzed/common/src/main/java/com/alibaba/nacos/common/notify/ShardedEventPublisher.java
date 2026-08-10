@@ -20,7 +20,7 @@ import com.alibaba.nacos.common.notify.listener.Subscriber;
 
 /**
  * Sharded event publisher.
- *
+ * <p>分片事件发布器：单个发布器实例可承载多种事件类型，订阅/取消订阅时需显式指定 {@code subscribeType} 以区分分片。</p>
  * <p>To support one publisher for different events.
  *
  * @author xiweng.yy
@@ -29,6 +29,7 @@ public interface ShardedEventPublisher extends EventPublisher {
     
     /**
      * Add listener for default share publisher.
+     * <p>为指定事件类型注册订阅者。</p>
      *
      * @param subscriber    {@link Subscriber}
      * @param subscribeType subscribe event type, such as slow event or general event.
@@ -37,6 +38,7 @@ public interface ShardedEventPublisher extends EventPublisher {
     
     /**
      * Remove listener for default share publisher.
+     * <p>从指定事件类型分片移除订阅者。</p>
      *
      * @param subscriber    {@link Subscriber}
      * @param subscribeType subscribe event type, such as slow event or general event.
