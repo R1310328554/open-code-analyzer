@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Skill labels update form.
+ * <p>Skill 标签更新表单，labels 为 JSON 字符串，例如 {@code {"latest":"v3","stable":"v2"}}，用于将语义标签指向具体版本。</p>
  *
  * @author nacos
  */
@@ -35,12 +36,13 @@ public class SkillLabelsUpdateForm extends SkillForm {
     
     /**
      * JSON string: {"latest":"v3","stable":"v2"}.
+     * <p>标签到版本的 JSON 映射，键为标签名，值为版本号。</p>
      */
     private String labels;
     
     @Override
     public void validate() throws NacosApiException {
-        fillDefaultNamespaceId();
+        fillDefaultNamespaceId(); // 补全默认命名空间
         if (StringUtils.isBlank(getSkillName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Request parameter `skillName` should not be blank.");

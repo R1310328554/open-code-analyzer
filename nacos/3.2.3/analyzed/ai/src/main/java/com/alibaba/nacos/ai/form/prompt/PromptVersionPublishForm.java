@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Prompt lifecycle publish form (different from legacy {@link PromptPublishForm}).
+ * <p>Prompt 生命周期发布表单（区别于旧版 {@link PromptPublishForm}），将已审核通过的版本正式发布，可通过 updateLatestLabel 同步更新 latest 标签。</p>
  *
  * @author nacos
  */
@@ -33,13 +34,15 @@ public class PromptVersionPublishForm extends PromptForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 待发布的版本号，必填。 */
     private String version;
     
+    /** 发布成功后是否将 latest 标签更新为当前版本。 */
     private Boolean updateLatestLabel;
     
     @Override
     public void validate() throws NacosApiException {
-        super.validate();
+        super.validate(); // 先执行基类 promptKey 校验
         if (StringUtils.isBlank(version)) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Required parameter 'version' type String is not present");

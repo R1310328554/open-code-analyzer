@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Skill biz tags update form.
+ * <p>Skill 业务标签更新表单，bizTags 为 JSON 数组字符串，例如 {@code ["tag1","tag2"]}。</p>
  *
  * @author nacos
  */
@@ -35,12 +36,13 @@ public class SkillBizTagsUpdateForm extends SkillForm {
     
     /**
      * JSON string: ["tag1","tag2"].
+     * <p>业务标签 JSON 数组，元素为标签字符串。</p>
      */
     private String bizTags;
     
     @Override
     public void validate() throws NacosApiException {
-        fillDefaultNamespaceId();
+        fillDefaultNamespaceId(); // 补全默认命名空间
         if (StringUtils.isBlank(getSkillName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Request parameter `skillName` should not be blank.");

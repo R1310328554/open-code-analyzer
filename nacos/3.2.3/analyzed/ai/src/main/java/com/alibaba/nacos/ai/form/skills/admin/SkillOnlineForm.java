@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Skill online/offline form.
+ * <p>Skill 上线/下线操作表单。scope 为 {@code skill} 时表示整资源启用/禁用，否则按 version 字段进行版本级上下线。</p>
  *
  * @author nacos
  */
@@ -35,17 +36,19 @@ public class SkillOnlineForm extends SkillForm {
     
     /**
      * "skill" means enable/disable the whole skill. Otherwise version-level.
+     * <p>作用范围：{@code skill} 表示整资源级，其他值表示版本级上下线。</p>
      */
     private String scope;
     
     /**
      * Version for version-level online/offline.
+     * <p>版本级上下线时指定的目标版本号。</p>
      */
     private String version;
     
     @Override
     public void validate() throws NacosApiException {
-        fillDefaultNamespaceId();
+        fillDefaultNamespaceId(); // 补全默认命名空间
         if (StringUtils.isBlank(getSkillName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Request parameter `skillName` should not be blank.");

@@ -18,15 +18,19 @@ package com.alibaba.nacos.ai.form.prompt;
 
 /**
  * Prompt query form for client read API.
+ * <p>客户端运行时 Prompt 只读查询表单，支持按 version、label 或 md5 条件拉取内容。</p>
  *
  * @author nacos
  */
 public class PromptQueryForm extends PromptForm {
     
+    /** 指定版本号，与 label 二选一或组合使用。 */
     private String version;
     
+    /** 语义标签（如 latest、stable），解析为对应版本。 */
     private String label;
     
+    /** 客户端本地缓存 md5，用于判断内容是否变更。 */
     private String md5;
     
     public String getVersion() {

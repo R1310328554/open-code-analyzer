@@ -22,6 +22,7 @@ import java.io.Serial;
  * Prompt metadata update form.
  *
  * <p>Used for updating prompt description without changing version.</p>
+ * <p>Prompt 元数据更新表单，在不变更版本的前提下更新描述与业务标签。</p>
  *
  * @author nacos
  */
@@ -32,11 +33,13 @@ public class PromptMetadataForm extends PromptForm {
     
     /**
      * New description for the prompt.
+     * <p>Prompt 的新描述文本，写入配置元数据。</p>
      */
     private String description;
     
     /**
      * Prompt biz tags (comma-separated).
+     * <p>Prompt 业务标签，逗号分隔多个标签值。</p>
      */
     private String bizTags;
     

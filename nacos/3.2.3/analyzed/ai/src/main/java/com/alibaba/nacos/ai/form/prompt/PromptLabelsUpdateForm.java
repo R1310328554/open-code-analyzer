@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Prompt labels update form.
+ * <p>Prompt 标签更新表单，labels 为 JSON 字符串，例如 {@code {"latest":"0.0.1","stable":"0.0.1"}}，用于将语义标签指向具体版本。</p>
  *
  * @author nacos
  */
@@ -35,12 +36,13 @@ public class PromptLabelsUpdateForm extends PromptForm {
     
     /**
      * JSON string: {"latest":"0.0.1","stable":"0.0.1"}.
+     * <p>标签到版本的 JSON 映射，键为标签名，值为版本号。</p>
      */
     private String labels;
     
     @Override
     public void validate() throws NacosApiException {
-        super.validate();
+        super.validate(); // 先执行基类 promptKey 校验
         if (StringUtils.isBlank(labels)) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Required parameter 'labels' type String is not present");

@@ -27,6 +27,7 @@ import java.io.Serial;
 
 /**
  * Skill form base class.
+ * <p>Skill 管理端请求表单基类，封装命名空间、名称与版本等公共字段，并实现 {@link NacosForm#validate()} 校验逻辑；命名空间为空时自动填充 {@link Constants.Skills#SKILL_DEFAULT_NAMESPACE}。</p>
  *
  * @author nacos
  */
@@ -35,10 +36,13 @@ public class SkillForm implements NacosForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 命名空间 ID，为空时使用 Skill 默认命名空间。 */
     private String namespaceId;
     
+    /** Skill 资源名称，多数管理端操作必填。 */
     private String skillName;
     
+    /** 版本号，部分操作（发布、上下线等）使用。 */
     private String version;
     
     @Override
@@ -50,6 +54,7 @@ public class SkillForm implements NacosForm {
         }
     }
     
+    /** 命名空间为空时填充 Skill 默认命名空间。 */
     protected void fillDefaultNamespaceId() {
         if (StringUtils.isEmpty(namespaceId)) {
             namespaceId = Constants.Skills.SKILL_DEFAULT_NAMESPACE;

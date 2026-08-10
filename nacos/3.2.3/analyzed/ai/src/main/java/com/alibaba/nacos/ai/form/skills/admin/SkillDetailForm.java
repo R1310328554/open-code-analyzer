@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Skill detail form (for create and detail).
+ * <p>Skill 详情/创建表单，skillCard 为完整 Skill 信息的 JSON 字符串，创建时 skillName 可省略（从 skillCard 解析）。</p>
  *
  * @author nacos
  */
@@ -35,14 +36,15 @@ public class SkillDetailForm extends SkillForm {
     
     /**
      * Skill card JSON string, contains complete Skill information.
+     * <p>Skill 卡片 JSON，包含 Skill 完整定义信息，创建/详情场景必填。</p>
      */
     private String skillCard;
     
     @Override
     public void validate() throws NacosApiException {
         fillDefaultNamespaceId();
-        // For create/detail, skillName is optional (can be in skillCard)
-        // Only skillCard is required
+        // 创建/详情场景下 skillName 可选（可从 skillCard 解析）
+        // 仅 skillCard 为必填项
         if (StringUtils.isEmpty(skillCard)) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Request parameter `skillCard` should not be `null` or empty.");

@@ -28,6 +28,7 @@ import java.io.Serial;
 /**
  * Create skill draft: inherits {@code skillCard} from {@link SkillDetailForm} (required unless forking). When
  * {@code basedOnVersion} is set, forks from that version and must not send {@code skillCard}.
+ * <p>创建 Skill 草稿表单：继承 {@link SkillDetailForm} 的 skillCard（分叉时除外）。设置 basedOnVersion 时从该版本分叉，此时不得发送 skillCard。</p>
  *
  * @author nacos
  */
@@ -36,14 +37,18 @@ public class SkillDraftCreateForm extends SkillDetailForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 分叉来源版本号；设置时 skillCard 将被忽略。 */
     private String basedOnVersion;
     
+    /** 目标草稿版本号。 */
     private String targetVersion;
     
+    /** 草稿创建提交说明。 */
     private String commitMsg;
     
     /**
      * Parsed skill for create-draft after {@link #prepareCreateDraftRequest()}; not part of the serialized form.
+     * <p>调用 {@link #prepareCreateDraftRequest()} 后解析的 Skill 对象，不参与序列化。</p>
      */
     private transient Skill resolvedInitialSkill;
     
@@ -51,10 +56,11 @@ public class SkillDraftCreateForm extends SkillDetailForm {
      * The request form allow user create a new craft from current version. So if {@code basedOnVersion} is set,
      * {@code skillCard} will be ignored, and {@code skillName} is required. Otherwise, means users create a new skill,
      * so {@code skillCard} is required and {@code skillName} is ignored.
+     * <p>分叉模式（basedOnVersion 已设置）：忽略 skillCard，skillName 必填；新建模式：skillCard 必填，skillName 可忽略。</p>
      */
     @Override
     public void validate() throws NacosApiException {
-        fillDefaultNamespaceId();
+        fillDefaultNamespaceId(); // 补全默认命名空间
         if (StringUtils.isNotBlank(basedOnVersion)) {
             if (StringUtils.isEmpty(getSkillName())) {
                 throw new NacosApiException(NacosException.INVALID_PARAM,
@@ -73,6 +79,7 @@ public class SkillDraftCreateForm extends SkillDetailForm {
      * Console and admin controllers must invoke this before {@code SkillProxy} / {@code SkillHandler}; handlers then
      * only forward to service or remote client without repeating validation.
      * </p>
+     * <p>校验请求、规范化 skillName（当名称仅出现在 skillCard 内时），并缓存解析后的 Skill 供 {@link #getResolvedInitialSkillOrNull()} 使用。控制台与管理端控制器须在调用 SkillProxy/SkillHandler 前执行此方法。</p>
      */
     public void prepareCreateDraftRequest() throws NacosApiException {
         validate();
@@ -87,6 +94,7 @@ public class SkillDraftCreateForm extends SkillDetailForm {
     
     /**
      * Non-null only after {@link #prepareCreateDraftRequest()} when {@code skillCard} was present (not forking).
+     * <p>仅在非分叉模式且 skillCard 存在时，调用 {@link #prepareCreateDraftRequest()} 后返回非 null。</p>
      */
     public Skill getResolvedInitialSkillOrNull() {
         return resolvedInitialSkill;

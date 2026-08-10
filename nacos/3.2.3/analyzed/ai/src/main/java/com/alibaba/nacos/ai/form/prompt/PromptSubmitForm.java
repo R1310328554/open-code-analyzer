@@ -20,6 +20,7 @@ import java.io.Serial;
 
 /**
  * Prompt submit form.
+ * <p>Prompt 版本提交审核表单，将草稿版本提交至发布流水线等待审核。</p>
  *
  * @author nacos
  */
@@ -30,6 +31,7 @@ public class PromptSubmitForm extends PromptForm {
     
     /**
      * Optional; defaults to current editing version.
+     * <p>待提交版本号，可选，默认使用当前编辑中的版本。</p>
      */
     private String version;
     

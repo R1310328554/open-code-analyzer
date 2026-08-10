@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * Prompt online/offline form.
+ * <p>Prompt 上线/下线操作表单，指定 version 将对应版本启用或禁用。</p>
  *
  * @author nacos
  */
@@ -33,11 +34,12 @@ public class PromptOnlineForm extends PromptForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 目标版本号，上下线操作必填。 */
     private String version;
     
     @Override
     public void validate() throws NacosApiException {
-        super.validate();
+        super.validate(); // 先执行基类 promptKey 校验
         if (StringUtils.isBlank(version)) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Required parameter 'version' type String is not present");
