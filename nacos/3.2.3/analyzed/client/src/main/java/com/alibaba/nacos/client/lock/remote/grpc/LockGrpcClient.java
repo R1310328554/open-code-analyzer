@@ -45,7 +45,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * lock grpc client.
+ * 基于 gRPC 的 Nacos 分布式锁远程客户端。
+ *
+ * <p>通过 {@link RpcClient} 发送 {@link LockOperationRequest}，在服务端能力支持
+ * {@link AbilityKey#SERVER_DISTRIBUTED_LOCK} 时完成加锁与解锁。</p>
  *
  * @author 985492783@qq.com
  * @description LockGrpcClient
@@ -53,12 +56,23 @@ import java.util.UUID;
  */
 public class LockGrpcClient extends AbstractLockClient {
     
+    /** 本客户端实例唯一标识，用作 RpcClient 名称。 */
     private final String uuid;
     
+    /** RPC 请求超时（毫秒）；{@code -1} 表示使用默认超时。 */
     private final Long requestTimeout;
     
+    /** 底层 gRPC RPC 客户端。 */
     private final RpcClient rpcClient;
     
+    /**
+     * 创建 gRPC 锁客户端并启动连接。
+     *
+     * @param properties         客户端属性
+     * @param serverListFactory  服务端地址列表工厂
+     * @param securityProxy      鉴权代理
+     * @throws NacosException 启动 RPC 客户端失败时抛出
+     */
     public LockGrpcClient(NacosClientProperties properties, ServerListFactory serverListFactory,
         SecurityProxy securityProxy) throws NacosException {
         super(securityProxy);
@@ -74,11 +88,24 @@ public class LockGrpcClient extends AbstractLockClient {
         start(serverListFactory);
     }
     
+    /**
+     * 绑定服务端列表并启动 RPC 连接。
+     *
+     * @param serverListFactory 服务端地址列表工厂
+     * @throws NacosException 启动失败时抛出
+     */
     private void start(ServerListFactory serverListFactory) throws NacosException {
         rpcClient.serverListFactory(serverListFactory);
         rpcClient.start();
     }
     
+    /**
+     * 远程加锁（ACQUIRE 操作）。
+     *
+     * @param instance 锁实例
+     * @return 服务端返回的加锁结果
+     * @throws NacosException 服务端不支持锁或 RPC 失败时抛出
+     */
     @Override
     public Boolean lock(LockInstance instance) throws NacosException {
         if (!isAbilitySupportedByServer()) {
@@ -93,6 +120,13 @@ public class LockGrpcClient extends AbstractLockClient {
         return (Boolean) acquireLockResponse.getResult();
     }
     
+    /**
+     * 远程解锁（RELEASE 操作）。
+     *
+     * @param instance 锁实例
+     * @return 服务端返回的解锁结果
+     * @throws NacosException 服务端不支持锁或 RPC 失败时抛出
+     */
     @Override
     public Boolean unLock(LockInstance instance) throws NacosException {
         if (!isAbilitySupportedByServer()) {
@@ -107,11 +141,25 @@ public class LockGrpcClient extends AbstractLockClient {
         return (Boolean) acquireLockResponse.getResult();
     }
     
+    /**
+     * 关闭底层 RPC 客户端。
+     *
+     * @throws NacosException 关闭失败时抛出
+     */
     @Override
     public void shutdown() throws NacosException {
         rpcClient.shutdown();
     }
     
+    /**
+     * 发送锁操作请求并解析响应。
+     *
+     * @param request       锁操作请求
+     * @param responseClass 期望的响应类型
+     * @param <T>           响应泛型
+     * @return 成功响应体
+     * @throws NacosException 响应码非成功或类型不匹配时抛出
+     */
     private <T extends Response> T requestToServer(AbstractLockRequest request,
         Class<T> responseClass)
         throws NacosException {
@@ -135,6 +183,11 @@ public class LockGrpcClient extends AbstractLockClient {
         throw new NacosException(NacosException.SERVER_ERROR, "Server return invalid response");
     }
     
+    /**
+     * 检查当前连接的服务端是否支持分布式锁能力。
+     *
+     * @return 支持返回 true
+     */
     private boolean isAbilitySupportedByServer() {
         return rpcClient.getConnectionAbility(
             AbilityKey.SERVER_DISTRIBUTED_LOCK) == AbilityStatus.SUPPORTED;

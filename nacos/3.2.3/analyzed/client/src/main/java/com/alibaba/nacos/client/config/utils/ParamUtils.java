@@ -23,31 +23,41 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import java.util.List;
 
 /**
- * Param check util.
+ * 配置客户端请求参数校验工具。
+ *
+ * <p>对 dataId、group、tenant、content、betaIps 等字段做白名单字符校验，
+ * 不合法时抛出 {@link NacosException#CLIENT_INVALID_PARAM}。</p>
  *
  * @author Nacos
  */
 public class ParamUtils {
     
+    /** 参数白名单允许的额外字符：下划线、连字符、点、冒号。 */
     private static final char[] VALID_CHARS = new char[] {'_', '-', '.', ':'};
     
+    /** content 参数非法时的错误消息。 */
     private static final String CONTENT_INVALID_MSG = "content invalid";
     
+    /** dataId 参数非法时的错误消息。 */
     private static final String DATAID_INVALID_MSG = "dataId invalid";
     
+    /** tenant 参数非法时的错误消息。 */
     private static final String TENANT_INVALID_MSG = "tenant invalid";
     
+    /** betaIps 参数非法时的错误消息。 */
     private static final String BETAIPS_INVALID_MSG = "betaIps invalid";
     
+    /** group 参数非法时的错误消息。 */
     private static final String GROUP_INVALID_MSG = "group invalid";
     
+    /** datumId 参数非法时的错误消息。 */
     private static final String DATUMID_INVALID_MSG = "datumId invalid";
     
     /**
-     * Check the whitelist method, the legal parameters can only contain letters, numbers, and characters in validChars, and cannot be empty.
+     * 白名单校验：参数仅可包含字母、数字及 {@link #VALID_CHARS} 中的字符，且非空。
      *
-     * @param param parameter
-     * @return true if valid
+     * @param param 待校验字符串
+     * @return 合法返回 true
      */
     public static boolean isValid(String param) {
         if (param == null) {
@@ -63,6 +73,12 @@ public class ParamUtils {
         return true;
     }
     
+    /**
+     * 判断字符是否在白名单额外字符集中。
+     *
+     * @param ch 待测字符
+     * @return 在白名单中返回 true
+     */
     private static boolean isValidChar(char ch) {
         for (char c : VALID_CHARS) {
             if (c == ch) {
@@ -73,12 +89,12 @@ public class ParamUtils {
     }
     
     /**
-     * Check Tenant, dataId and group.
+     * 校验 tenant、dataId 与 group。
      *
-     * @param tenant tenant
-     * @param dataId dataId
-     * @param group  group
-     * @throws NacosException nacos exception
+     * @param tenant 命名空间
+     * @param dataId 配置 Data ID
+     * @param group  配置分组
+     * @throws NacosException 任一参数不合法时抛出
      */
     public static void checkTdg(String tenant, String dataId, String group) throws NacosException {
         checkTenant(tenant);
@@ -91,11 +107,11 @@ public class ParamUtils {
     }
     
     /**
-     * Check key param.
+     * 校验 dataId 与 group。
      *
-     * @param dataId dataId
-     * @param group  group
-     * @throws NacosException nacos exception
+     * @param dataId 配置 Data ID
+     * @param group  配置分组
+     * @throws NacosException 参数不合法时抛出
      */
     public static void checkKeyParam(String dataId, String group) throws NacosException {
         if (StringUtils.isBlank(dataId) || !ParamUtils.isValid(dataId)) {
@@ -107,12 +123,12 @@ public class ParamUtils {
     }
     
     /**
-     * Check key param.
+     * 校验 dataId、group 与 datumId。
      *
-     * @param dataId  dataId
-     * @param group   group
-     * @param datumId datumId
-     * @throws NacosException nacos exception
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param datumId 聚合配置 datum 标识
+     * @throws NacosException 参数不合法时抛出
      */
     public static void checkKeyParam(String dataId, String group, String datumId)
         throws NacosException {
@@ -128,11 +144,11 @@ public class ParamUtils {
     }
     
     /**
-     * Check key param.
+     * 批量校验 dataId 列表与 group。
      *
-     * @param dataIds dataIds
-     * @param group   group
-     * @throws NacosException nacos exception
+     * @param dataIds 配置 Data ID 列表
+     * @param group   配置分组
+     * @throws NacosException 列表为空或任一 dataId/group 不合法时抛出
      */
     public static void checkKeyParam(List<String> dataIds, String group) throws NacosException {
         if (dataIds == null || dataIds.size() == 0) {
@@ -149,12 +165,12 @@ public class ParamUtils {
     }
     
     /**
-     * Check parameter.
+     * 校验 dataId、group 与 content。
      *
-     * @param dataId  dataId
-     * @param group   group
-     * @param content content
-     * @throws NacosException nacos exception
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param content 配置内容
+     * @throws NacosException 参数不合法时抛出
      */
     public static void checkParam(String dataId, String group, String content)
         throws NacosException {
@@ -165,13 +181,13 @@ public class ParamUtils {
     }
     
     /**
-     * Check parameter.
+     * 校验 dataId、group、datumId 与 content。
      *
-     * @param dataId  dataId
-     * @param group   group
-     * @param datumId datumId
-     * @param content content
-     * @throws NacosException nacos exception
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param datumId 聚合配置 datum 标识
+     * @param content 配置内容
+     * @throws NacosException 参数不合法时抛出
      */
     public static void checkParam(String dataId, String group, String datumId, String content)
         throws NacosException {
@@ -182,10 +198,10 @@ public class ParamUtils {
     }
     
     /**
-     * Check Tenant.
+     * 校验 tenant（命名空间）。
      *
-     * @param tenant tenant
-     * @throws NacosException nacos exception
+     * @param tenant 命名空间标识
+     * @throws NacosException tenant 为空或字符不合法时抛出
      */
     public static void checkTenant(String tenant) throws NacosException {
         if (StringUtils.isBlank(tenant) || !ParamUtils.isValid(tenant)) {
@@ -194,10 +210,10 @@ public class ParamUtils {
     }
     
     /**
-     * Check beta ips.
+     * 校验 Beta 发布 IP 列表（逗号分隔）。
      *
-     * @param betaIps beta ips
-     * @throws NacosException nacos exception
+     * @param betaIps Beta IP 列表字符串
+     * @throws NacosException 为空或含非法 IP 时抛出
      */
     public static void checkBetaIps(String betaIps) throws NacosException {
         if (StringUtils.isBlank(betaIps)) {
@@ -212,10 +228,10 @@ public class ParamUtils {
     }
     
     /**
-     * Check content.
+     * 校验配置内容非空。
      *
-     * @param content content
-     * @throws NacosException nacos exception
+     * @param content 配置内容
+     * @throws NacosException content 为空时抛出
      */
     public static void checkContent(String content) throws NacosException {
         if (StringUtils.isBlank(content)) {

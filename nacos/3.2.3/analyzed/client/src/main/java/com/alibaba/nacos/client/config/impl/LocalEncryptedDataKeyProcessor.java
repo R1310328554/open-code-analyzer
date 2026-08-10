@@ -31,7 +31,10 @@ import java.io.IOException;
 import static com.alibaba.nacos.client.utils.ParamUtil.simplyEnvNameIfOverLimit;
 
 /**
- * Encrypted data key (EncryptedDataKey) local snapshot, disaster recovery directory related.
+ * 加密数据密钥（EncryptedDataKey）本地快照与容灾目录管理。
+ *
+ * <p>在 {@link LocalConfigInfoProcessor} 的本地目录结构下，为加密配置的密钥提供 failover 与 snapshot 读写，
+ * 以便服务端不可达时仍能解密本地缓存配置。</p>
  *
  * @author luyanbo(RobberPhex)
  */
@@ -39,23 +42,37 @@ public class LocalEncryptedDataKeyProcessor extends LocalConfigInfoProcessor {
     
     private static final Logger LOGGER = LogUtils.logger(LocalEncryptedDataKeyProcessor.class);
     
+    /** 容灾目录一级子路径：encrypted-data-key。 */
     private static final String FAILOVER_CHILD_1 = "encrypted-data-key";
     
+    /** 容灾目录二级子路径（无 tenant 时）：failover。 */
     private static final String FAILOVER_CHILD_2 = "failover";
     
+    /** 容灾目录二级子路径（有 tenant 时）：failover-tenant。 */
     private static final String FAILOVER_CHILD_3 = "failover-tenant";
     
+    /** 快照目录一级子路径：encrypted-data-key。 */
     private static final String SNAPSHOT_CHILD_1 = "encrypted-data-key";
     
+    /** 快照目录二级子路径（无 tenant 时）：snapshot。 */
     private static final String SNAPSHOT_CHILD_2 = "snapshot";
     
+    /** 快照目录三级子路径（有 tenant 时）：snapshot-tenant。 */
     private static final String SNAPSHOT_CHILD_3 = "snapshot-tenant";
     
+    /** 环境名后缀，拼接到本地根目录下。 */
     private static final String SUFFIX = "_nacos";
     
     /**
-     * Obtain the EncryptedDataKey of the disaster recovery configuration. NULL means there is no local file or an
-     * exception is thrown.
+     * 读取容灾目录中的 EncryptedDataKey。
+     *
+     * <p>本地文件不存在或读取异常时返回 {@code null}。</p>
+     *
+     * @param envName 环境/服务端标识
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param tenant  命名空间（可为空）
+     * @return 密钥字符串；无本地文件或异常时为 null
      */
     public static String getEncryptDataKeyFailover(String envName, String dataId, String group,
         String tenant) {
@@ -74,8 +91,15 @@ public class LocalEncryptedDataKeyProcessor extends LocalConfigInfoProcessor {
     }
     
     /**
-     * Get the EncryptedDataKey of the locally cached file. NULL means there is no local file or an exception is
-     * thrown.
+     * 读取本地快照中的 EncryptedDataKey。
+     *
+     * <p>快照功能关闭、文件不存在或读取异常时返回 {@code null}。</p>
+     *
+     * @param envName 环境/服务端标识
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param tenant  命名空间（可为空）
+     * @return 密钥字符串；无快照或异常时为 null
      */
     public static String getEncryptDataKeySnapshot(String envName, String dataId, String group,
         String tenant) {
@@ -97,7 +121,15 @@ public class LocalEncryptedDataKeyProcessor extends LocalConfigInfoProcessor {
     }
     
     /**
-     * Save the snapshot of encryptDataKey. If the content is NULL, delete the snapshot.
+     * 保存 EncryptedDataKey 快照。
+     *
+     * <p>{@code encryptDataKey} 为 {@code null} 时删除对应快照文件。</p>
+     *
+     * @param envName        环境/服务端标识
+     * @param dataId         配置 Data ID
+     * @param group          配置分组
+     * @param tenant         命名空间（可为空）
+     * @param encryptDataKey 待持久化的密钥；null 表示删除快照
      */
     public static void saveEncryptDataKeySnapshot(String envName, String dataId, String group,
         String tenant,
@@ -108,6 +140,7 @@ public class LocalEncryptedDataKeyProcessor extends LocalConfigInfoProcessor {
         File file = getEncryptDataKeySnapshotFile(envName, dataId, group, tenant);
         try {
             if (null == encryptDataKey) {
+                // 密钥为空时删除快照文件
                 try {
                     IoUtils.delete(file);
                 } catch (IOException ioe) {
@@ -121,6 +154,7 @@ public class LocalEncryptedDataKeyProcessor extends LocalConfigInfoProcessor {
                         LOGGER.error("[{}] save snapshot error", envName);
                     }
                 }
+                // 多实例部署时使用并发安全写盘
                 if (JvmUtil.isMultiInstance()) {
                     ConcurrentDiskUtil.writeFileContent(file, encryptDataKey, Constants.ENCODE);
                 } else {
@@ -132,6 +166,15 @@ public class LocalEncryptedDataKeyProcessor extends LocalConfigInfoProcessor {
         }
     }
     
+    /**
+     * 解析容灾 EncryptedDataKey 本地文件路径。
+     *
+     * @param envName 环境/服务端标识
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param tenant  命名空间（可为空）
+     * @return 容灾密钥文件
+     */
     private static File getEncryptDataKeyFailoverFile(String envName, String dataId, String group,
         String tenant) {
         envName = simplyEnvNameIfOverLimit(envName);
@@ -149,6 +192,15 @@ public class LocalEncryptedDataKeyProcessor extends LocalConfigInfoProcessor {
         return new File(new File(tmp, group), dataId);
     }
     
+    /**
+     * 解析快照 EncryptedDataKey 本地文件路径。
+     *
+     * @param envName 环境/服务端标识
+     * @param dataId  配置 Data ID
+     * @param group   配置分组
+     * @param tenant  命名空间（可为空）
+     * @return 快照密钥文件
+     */
     private static File getEncryptDataKeySnapshotFile(String envName, String dataId, String group,
         String tenant) {
         envName = simplyEnvNameIfOverLimit(envName);

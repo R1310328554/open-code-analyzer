@@ -33,21 +33,35 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * YmlChangeParser.
+ * YAML 格式配置变更解析器。
+ *
+ * <p>使用 SnakeYAML 将嵌套 YAML 展平为点分键路径，再比对新旧映射生成 {@link ConfigChangeItem}。
+ * 仅支持基础 Java 数据类型；自定义类型需使用 {@link com.alibaba.nacos.api.config.listener.Listener} 监听整段配置自行解析。</p>
  *
  * @author rushsky518
  */
 public class YmlChangeParser extends AbstractConfigChangeParser {
     
+    /** SnakeYAML 无法确定构造器时的错误信息前缀。 */
     private static final String INVALID_CONSTRUCTOR_ERROR_INFO =
         "could not determine a constructor for the tag";
     
+    /** 本解析器对应的配置类型标识。 */
     private static final String CONFIG_TYPE = "yaml";
     
+    /** 注册 yaml 类型解析器。 */
     public YmlChangeParser() {
         super(CONFIG_TYPE);
     }
     
+    /**
+     * 解析 YAML 新旧内容并提取变更项。
+     *
+     * @param oldContent 变更前配置文本
+     * @param newContent 变更后配置文本
+     * @param type       配置类型（yaml）
+     * @return 展平键到 {@link ConfigChangeItem} 的映射
+     */
     @Override
     public Map<String, ConfigChangeItem> doParse(String oldContent, String newContent,
         String type) {
@@ -70,6 +84,11 @@ public class YmlChangeParser extends AbstractConfigChangeParser {
         return filterChangeData(oldMap, newMap);
     }
     
+    /**
+     * 将 YAML 解析异常转换为客户端可理解的运行时异常。
+     *
+     * @param e SnakeYAML 标记异常
+     */
     private void handleYamlException(MarkedYAMLException e) {
         if (e.getMessage().startsWith(INVALID_CONSTRUCTOR_ERROR_INFO)
             || e instanceof ComposerException) {
@@ -81,12 +100,25 @@ public class YmlChangeParser extends AbstractConfigChangeParser {
         throw e;
     }
     
+    /**
+     * 将嵌套 Map 展平为点分键路径映射。
+     *
+     * @param source 原始 YAML 根对象
+     * @return 展平后的键值映射
+     */
     private Map<String, Object> getFlattenedMap(Map<String, Object> source) {
         Map<String, Object> result = new LinkedHashMap<>(128);
         buildFlattenedMap(result, source, null);
         return result;
     }
     
+    /**
+     * 递归构建展平映射，支持 Map、Collection 与标量值。
+     *
+     * @param result 输出映射
+     * @param source 当前层级源 Map
+     * @param path   父级键路径前缀；根节点为 null
+     */
     private void buildFlattenedMap(Map<String, Object> result, Map<String, Object> source,
         String path) {
         for (Iterator<Map.Entry<String, Object>> itr = source.entrySet().iterator(); itr
@@ -94,6 +126,7 @@ public class YmlChangeParser extends AbstractConfigChangeParser {
             Map.Entry<String, Object> e = itr.next();
             String key = e.getKey();
             if (StringUtils.isNotBlank(path)) {
+                // 数组下标键以 [ 开头，直接拼接路径
                 if (e.getKey().startsWith("[")) {
                     key = path + key;
                 } else {

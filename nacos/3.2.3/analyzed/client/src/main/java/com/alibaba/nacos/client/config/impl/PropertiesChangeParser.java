@@ -25,18 +25,32 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * PropertiesChangeParser.
+ * Properties 格式配置变更解析器。
+ *
+ * <p>将新旧 properties 文本加载为 {@link Properties}，再委托父类 {@link AbstractConfigChangeParser}
+ * 比对键值差异并生成 {@link ConfigChangeItem} 映射。</p>
  *
  * @author rushsky518
  */
 public class PropertiesChangeParser extends AbstractConfigChangeParser {
     
+    /** 本解析器对应的配置类型标识。 */
     private static final String CONFIG_TYPE = "properties";
     
+    /** 注册 properties 类型解析器。 */
     public PropertiesChangeParser() {
         super(CONFIG_TYPE);
     }
     
+    /**
+     * 解析 properties 新旧内容并提取变更项。
+     *
+     * @param oldContent 变更前配置文本
+     * @param newContent 变更后配置文本
+     * @param type       配置类型（properties）
+     * @return 键到 {@link ConfigChangeItem} 的映射
+     * @throws IOException 加载 properties 失败时抛出
+     */
     @Override
     public Map<String, ConfigChangeItem> doParse(String oldContent, String newContent, String type)
         throws IOException {

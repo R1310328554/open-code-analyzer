@@ -26,7 +26,9 @@ import java.io.StringReader;
 import java.util.Properties;
 
 /**
- * Properties Listener.
+ * Properties 格式配置监听器抽象基类。
+ *
+ * <p>收到配置推送后自动将文本解析为 {@link Properties}，再回调子类 {@link #innerReceive(Properties)}。</p>
  *
  * @author Nacos
  */
@@ -34,6 +36,11 @@ public abstract class PropertiesListener extends AbstractListener {
     
     private static final Logger LOGGER = LogUtils.logger(PropertiesListener.class);
     
+    /**
+     * 接收配置文本并解析为 Properties 后交给子类处理。
+     *
+     * @param configInfo properties 格式配置内容
+     */
     @Override
     public void receiveConfigInfo(String configInfo) {
         if (StringUtils.isEmpty(configInfo)) {
@@ -51,9 +58,9 @@ public abstract class PropertiesListener extends AbstractListener {
     }
     
     /**
-     * properties type for receiver.
+     * 子类实现：接收解析后的 Properties 对象。
      *
-     * @param properties properties
+     * @param properties 最新配置对应的 Properties
      */
     public abstract void innerReceive(Properties properties);
     

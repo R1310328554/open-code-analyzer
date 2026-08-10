@@ -21,19 +21,24 @@ import com.alibaba.nacos.api.common.Constants;
 import static com.alibaba.nacos.api.common.Constants.WORD_SEPARATOR;
 
 /**
- * Content Util.
+ * 配置内容校验与截取工具。
+ *
+ * <p>用于增量发布/删除场景的内容格式校验，以及日志输出时的内容截断。</p>
  *
  * @author Nacos
  */
 public class ContentUtils {
     
+    /** 日志展示时配置内容的最大长度。 */
     private static final int SHOW_CONTENT_SIZE = 100;
     
     /**
-     * Verify increment pub content.
+     * 校验增量发布/删除内容格式。
      *
-     * @param content content
-     * @throws IllegalArgumentException if content is not valid
+     * <p>内容不得为空，且不能包含回车、换行及 {@link Constants#WORD_SEPARATOR} 分隔符。</p>
+     *
+     * @param content 待校验的配置内容
+     * @throws IllegalArgumentException 内容不合法时抛出
      */
     public static void verifyIncrementPubContent(String content) {
         
@@ -52,6 +57,13 @@ public class ContentUtils {
         }
     }
     
+    /**
+     * 从带分隔符的增量内容中提取 identity 段（分隔符之前）。
+     *
+     * @param content 含 {@link Constants#WORD_SEPARATOR} 的完整内容
+     * @return identity 字符串
+     * @throws IllegalArgumentException 未包含分隔符时抛出
+     */
     public static String getContentIdentity(String content) {
         int index = content.indexOf(WORD_SEPARATOR);
         if (index == -1) {
@@ -60,6 +72,13 @@ public class ContentUtils {
         return content.substring(0, index);
     }
     
+    /**
+     * 从带分隔符的增量内容中提取 payload 段（分隔符之后）。
+     *
+     * @param content 含 {@link Constants#WORD_SEPARATOR} 的完整内容
+     * @return 实际配置内容
+     * @throws IllegalArgumentException 未包含分隔符时抛出
+     */
     public static String getContent(String content) {
         int index = content.indexOf(WORD_SEPARATOR);
         if (index == -1) {
@@ -69,10 +88,10 @@ public class ContentUtils {
     }
     
     /**
-     * Truncate content.
+     * 截断过长配置内容，便于日志输出。
      *
-     * @param content content
-     * @return truncated content
+     * @param content 原始配置内容
+     * @return 不超过 {@link #SHOW_CONTENT_SIZE} 字符的内容，超出部分以 {@code ...} 结尾
      */
     public static String truncateContent(String content) {
         if (content == null) {

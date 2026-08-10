@@ -17,7 +17,7 @@
 package com.alibaba.nacos.client.lock.core;
 
 /**
- * NLock factory.
+ * {@link NLock} 工厂，简化锁实例创建。
  *
  * @author 985492783@qq.com
  * @date 2023/8/27 15:23
@@ -25,20 +25,21 @@ package com.alibaba.nacos.client.lock.core;
 public class NLockFactory {
     
     /**
-     * create NLock without expireTime.
+     * 创建无过期时间的锁实例。
      *
-     * @param key key
-     * @return NLock
+     * @param key 锁键
+     * @return {@link NLock} 实例
      */
     public static NLock getLock(String key) {
         return new NLock(key, -1L);
     }
     
     /**
-     * create NLock with expireTime.
+     * 创建带过期时间的锁实例。
      *
-     * @param key key
-     * @return NLock
+     * @param key             锁键
+     * @param expireTimestamp 过期时间戳（毫秒）
+     * @return {@link NLock} 实例
      */
     public static NLock getLock(String key, Long expireTimestamp) {
         return new NLock(key, expireTimestamp);

@@ -21,7 +21,9 @@ import com.alibaba.nacos.api.lock.model.LockInstance;
 import com.alibaba.nacos.common.lifecycle.Closeable;
 
 /**
- * lock client interface.
+ * 锁远程客户端接口。
+ *
+ * <p>定义与服务端交互的加锁/解锁操作，实现类负责传输层细节（如 gRPC）。</p>
  *
  * @author 985492783@qq.com
  * @description LockClient
@@ -30,20 +32,20 @@ import com.alibaba.nacos.common.lifecycle.Closeable;
 public interface LockClient extends Closeable {
     
     /**
-     * lock client get lock.
+     * 向服务端请求加锁。
      *
-     * @param instance instance.
-     * @return Boolean.
-     * @throws NacosException nacos Exception.
+     * @param instance 锁实例
+     * @return 加锁是否成功
+     * @throws NacosException RPC 或业务失败时抛出
      */
     Boolean lock(LockInstance instance) throws NacosException;
     
     /**
-     * lock client unLock.
+     * 向服务端请求解锁。
      *
-     * @param instance instance.
-     * @return Boolean.
-     * @throws NacosException nacos Exception.
+     * @param instance 锁实例
+     * @return 解锁是否成功
+     * @throws NacosException RPC 或业务失败时抛出
      */
     Boolean unLock(LockInstance instance) throws NacosException;
     
