@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T23:06:45Z",
-  "files": [
-    "pkg/storage/bucket/xcap_bucket.go",
-    "pkg/storage/chunk/cache/background.go",
-    "pkg/storage/chunk/cache/cache.go",
-    "pkg/storage/chunk/cache/cache_gen.go",
-    "pkg/storage/chunk/cache/embeddedcache.go",
-    "pkg/storage/chunk/cache/instrumented.go",
-    "pkg/storage/chunk/cache/memcached.go",
-    "pkg/storage/chunk/cache/memcached_client.go",
-    "pkg/storage/chunk/cache/mock.go",
-    "pkg/storage/chunk/cache/redis_cache.go",
-    "pkg/storage/chunk/cache/redis_client.go",
-    "pkg/storage/chunk/cache/resultscache/cache.go",
-    "pkg/storage/chunk/cache/resultscache/config.go",
-    "pkg/storage/chunk/cache/resultscache/interface.go",
-    "pkg/storage/chunk/cache/resultscache/pipelinewrapper_keygen.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 352,
-  "done": 1185
+  "done": 1200
 }
