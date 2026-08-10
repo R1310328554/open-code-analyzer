@@ -32,14 +32,18 @@ import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
- * Allows to add types to the credential subject
+ * 为可验证凭证添加 {@code type} 的协议映射器。
+ * <p>将配置的 VC 类型合并进 {@link VerifiableCredential#getType()}，默认追加 {@link #DEFAULT_VC_TYPE}。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class OID4VCTypeMapper extends OID4VCMapper {
 
+    /** 协议映射器 Provider ID。 */
     public static final String MAPPER_ID = "oid4vc-vc-type-mapper";
+    /** 配置键：VC 类型字符串。 */
     public static final String TYPE_KEY = "vcTypeProperty";
+    /** 未配置时的默认类型。 */
     public static final String DEFAULT_VC_TYPE = "VerifiableCredential";
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
@@ -58,9 +62,8 @@ public class OID4VCTypeMapper extends OID4VCMapper {
         return CONFIG_PROPERTIES;
     }
 
-    /**
-     * this claim is not added by default to the metadata
-     */
+    /** 默认不将 type 纳入凭证元数据。 */
+
     @Override
     public boolean includeInMetadata() {
         return Optional.ofNullable(mapperModel.getConfig().get(CredentialScopeModel.VC_INCLUDE_IN_METADATA))
@@ -75,7 +78,7 @@ public class OID4VCTypeMapper extends OID4VCMapper {
 
     public void setClaim(VerifiableCredential verifiableCredential,
                          UserSessionModel userSessionModel) {
-        // remove duplicates
+        // 去重后合并 type 列表
         Set<String> types = new HashSet<>();
         if (verifiableCredential.getType() != null) {
             types = new HashSet<>(verifiableCredential.getType());
@@ -86,7 +89,7 @@ public class OID4VCTypeMapper extends OID4VCMapper {
 
     @Override
     public void setClaim(Map<String, Object> claims, UserSessionModel userSessionModel) {
-        // nothing to do for the mapper.
+        // type 写入 VC 顶层，不操作 subject claims
     }
 
     @Override

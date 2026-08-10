@@ -33,13 +33,16 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.apache.commons.collections4.ListUtils;
 
 /**
- * Adds a generated ID to the credential (as a configurable property).
+ * 为凭证主体生成并写入 UUID 标识的协议映射器。
+ * <p>可配置目标属性名，默认写入 {@code id}，值为 {@code urn:uuid:<随机UUID>}。</p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class OID4VCGeneratedIdMapper extends OID4VCMapper {
 
+    /** 协议映射器 Provider ID。 */
     public static final String MAPPER_ID = "oid4vc-generated-id-mapper";
+    /** 默认 ID 属性名。 */
     private static final String SUBJECT_PROPERTY_CONFIG_KEY_DEFAULT = "id";
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
@@ -59,9 +62,8 @@ public class OID4VCGeneratedIdMapper extends OID4VCMapper {
         return CONFIG_PROPERTIES;
     }
 
-    /**
-     * this claim is not added by default to the metadata
-     */
+    /** 默认不将此声明纳入凭证元数据。 */
+
     @Override
     public boolean includeInMetadata() {
         return Optional.ofNullable(mapperModel.getConfig().get(CredentialScopeModel.VC_INCLUDE_IN_METADATA))
@@ -79,12 +81,12 @@ public class OID4VCGeneratedIdMapper extends OID4VCMapper {
 
     public void setClaim(VerifiableCredential verifiableCredential,
                          UserSessionModel userSessionModel) {
-        // nothing to do for the mapper.
+        // 生成 ID 仅写入 subject claims，不修改 VC 顶层字段
     }
 
     @Override
     public void setClaim(Map<String, Object> claims, UserSessionModel userSessionModel) {
-        // Assign a generated ID
+        // 生成 urn:uuid 格式 ID 并写入 claims
         List<String> attributePath = getMetadataAttributePath();
         if (attributePath.isEmpty()) {
             return;

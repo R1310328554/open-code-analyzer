@@ -32,17 +32,21 @@ import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
- * Allows to add the context to the credential subject
+ * 为可验证凭证添加 JSON-LD {@code @context} 的协议映射器。
+ * <p>将配置的 context URI 合并进 {@link VerifiableCredential#getContext()}，默认值为 W3C VC 上下文。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class OID4VCContextMapper extends OID4VCMapper {
 
+    /** 协议映射器 Provider ID。 */
     public static final String MAPPER_ID = "oid4vc-context-mapper";
+    /** 配置项键：context URI。 */
     public static final String TYPE_KEY = "context";
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
 
+    /** 静态初始化映射器专属配置项。 */
     static {
         ProviderConfigProperty contextPropertyNameConfig = new ProviderConfigProperty();
         contextPropertyNameConfig.setName(TYPE_KEY);
@@ -59,9 +63,8 @@ public class OID4VCContextMapper extends OID4VCMapper {
         return CONFIG_PROPERTIES;
     }
 
-    /**
-     * this claim is not added by default to the metadata
-     */
+    /** 默认不将此声明纳入凭证元数据（需显式开启 {@code vc.includeInMetadata}）。 */
+
     @Override
     public boolean includeInMetadata() {
         return Optional.ofNullable(mapperModel.getConfig().get(CredentialScopeModel.VC_INCLUDE_IN_METADATA))
@@ -76,7 +79,7 @@ public class OID4VCContextMapper extends OID4VCMapper {
 
     public void setClaim(VerifiableCredential verifiableCredential,
                          UserSessionModel userSessionModel) {
-        // remove duplicates
+        // 去重后合并 context
         Set<String> contexts = new HashSet<>();
         if (verifiableCredential.getContext() != null) {
             contexts = new HashSet<>(verifiableCredential.getContext());
@@ -87,7 +90,7 @@ public class OID4VCContextMapper extends OID4VCMapper {
 
     @Override
     public void setClaim(Map<String, Object> claims, UserSessionModel userSessionModel) {
-        // nothing to do for the mapper.
+        // 本映射器仅操作 VC 顶层 context，不写入 subject claims
     }
 
     @Override

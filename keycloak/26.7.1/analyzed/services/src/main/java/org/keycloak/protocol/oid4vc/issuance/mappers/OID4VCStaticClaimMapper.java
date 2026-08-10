@@ -28,14 +28,17 @@ import org.keycloak.protocol.oid4vc.model.VerifiableCredential;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
- * Allows to add statically configured claims to the credential subject
+ * 向凭证主体写入静态配置值的协议映射器。
+ * <p>管理员配置属性名与固定字符串值，签发时原样写入 subject claims。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class OID4VCStaticClaimMapper extends OID4VCMapper {
 
+    /** 协议映射器 Provider ID。 */
     public static final String MAPPER_ID = "oid4vc-static-claim-mapper";
 
+    /** 配置键：静态声明值。 */
     public static final String STATIC_CLAIM_KEY = "staticValue";
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
@@ -63,7 +66,7 @@ public class OID4VCStaticClaimMapper extends OID4VCMapper {
 
     public void setClaim(VerifiableCredential verifiableCredential,
                          UserSessionModel userSessionModel) {
-        // nothing to do for the mapper.
+        // 静态值仅写入 subject claims
     }
 
     @Override

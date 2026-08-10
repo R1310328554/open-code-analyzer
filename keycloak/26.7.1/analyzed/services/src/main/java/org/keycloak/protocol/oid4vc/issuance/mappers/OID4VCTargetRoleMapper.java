@@ -46,7 +46,8 @@ import org.apache.commons.collections4.ListUtils;
 import org.jboss.logging.Logger;
 
 /**
- * Adds the users roles to the credential subject
+ * 将用户在指定客户端下的角色映射到凭证主体的协议映射器。
+ * <p>按配置的 {@link #CLIENT_CONFIG_KEY} 查找客户端，收集该客户端角色并序列化为 {@link Role} 声明。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
@@ -54,8 +55,11 @@ public class OID4VCTargetRoleMapper extends OID4VCMapper {
 
 	private static final Logger LOGGER = Logger.getLogger(OID4VCTargetRoleMapper.class);
 
+	/** 默认角色声明属性名。 */
 	public static final String DEFAULT_CLAIM_NAME = "roles";
+	/** 配置键：目标客户端 ID。 */
 	public static final String CLIENT_CONFIG_KEY = "clientId";
+	/** 协议映射器 Provider ID。 */
 	public static final String MAPPER_ID = "oid4vc-target-role-mapper";
 
 	private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
@@ -79,10 +83,12 @@ public class OID4VCTargetRoleMapper extends OID4VCMapper {
 
 	private final KeycloakSession keycloakSession;
 
+	/** SPI 无参构造（无会话上下文）。 */
 	public OID4VCTargetRoleMapper() {
 		this.keycloakSession = null;
 	}
 
+	/** @param keycloakSession 当前 Keycloak 会话 */
 	public OID4VCTargetRoleMapper(KeycloakSession keycloakSession) {
 		this.keycloakSession = keycloakSession;
 	}
@@ -109,6 +115,7 @@ public class OID4VCTargetRoleMapper extends OID4VCMapper {
 		return "Map the assigned role to the credential subject, providing the client id as the target.";
 	}
 
+	/** 工厂方法：创建默认 roles 声明的映射器模型。 */
 	public static ProtocolMapperModel create(String name) {
 		var mapperModel = new ProtocolMapperModel();
 		mapperModel.setName(name);
@@ -145,7 +152,7 @@ public class OID4VCTargetRoleMapper extends OID4VCMapper {
 	@Override
 	public void setClaim(VerifiableCredential verifiableCredential,
 						 UserSessionModel userSessionModel) {
-		// nothing to do for the mapper.
+		// 角色写入 Map claims
 	}
 
 	@Override
@@ -163,7 +170,7 @@ public class OID4VCTargetRoleMapper extends OID4VCMapper {
 			return;
 		}
 
-		// Retrieve only the roles assigned to the user for this specific client
+		// 仅收集用户在该客户端下的角色映射
 		List<RoleModel> userRoles = userSessionModel.getUser().getClientRoleMappingsStream(clientModel).toList();
 		if (userRoles.isEmpty()) {
 			LOGGER.debugf("No roles assigned to client '%s'. Skipping claim assignment.",
@@ -171,7 +178,7 @@ public class OID4VCTargetRoleMapper extends OID4VCMapper {
 			return;
 		}
 
-		// Create ClientRoleModel and convert to roles claim
+		// 组装 ClientRoleModel 并转换为 Role 声明结构
 		ClientRoleModel clientRoleModel = new ClientRoleModel(clientModel.getClientId(), userRoles);
 		Role rolesClaim = toRolesClaim(clientRoleModel);
 		if (rolesClaim.getNames().isEmpty()) {

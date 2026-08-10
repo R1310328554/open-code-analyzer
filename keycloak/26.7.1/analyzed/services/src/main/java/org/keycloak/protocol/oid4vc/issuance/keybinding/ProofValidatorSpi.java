@@ -20,28 +20,34 @@ package org.keycloak.protocol.oid4vc.issuance.keybinding;
 import org.keycloak.provider.Spi;
 
 /**
- * Spi implementation of the creation of {@link ProofValidator}
+ * 注册 {@link ProofValidator} 及其工厂的 SPI 实现。
+ * <p>Provider 名称为 {@code proofValidator}，标记为内部 SPI。</p>
  *
  * @author <a href="mailto:Ingrid.Kamga@adorsys.com">Ingrid Kamga</a>
  */
 public class ProofValidatorSpi implements Spi {
+    /** SPI 注册名称。 */
     private static final String NAME = "proofValidator";
 
+    /** {@inheritDoc} 返回 {@code true}，表示内部 SPI。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** {@inheritDoc} 返回 {@link #NAME}。 */
     @Override
     public String getName() {
         return NAME;
     }
 
+    /** {@inheritDoc} 返回 {@link ProofValidator} 类型。 */
     @Override
     public Class<ProofValidator> getProviderClass() {
         return ProofValidator.class;
     }
 
+    /** {@inheritDoc} 返回 {@link ProofValidatorFactory} 类型。 */
     @Override
     public Class<ProofValidatorFactory> getProviderFactoryClass() {
         return ProofValidatorFactory.class;

@@ -22,19 +22,25 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.protocol.oid4vc.OID4VCEnvironmentProviderFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link ProofValidator} 的 Provider 工厂接口。
+ * <p>继承 {@link OID4VCEnvironmentProviderFactory}，便于按 OID4VC 环境配置实例化 proof 校验器。</p>
+ */
 public interface ProofValidatorFactory extends ProviderFactory<ProofValidator>, OID4VCEnvironmentProviderFactory {
 
-    // Most concrete factories wouldn't have to implement the methods below,
-    // hence we provide empty default implementations for convenience.
+    // 多数具体工厂无需实现下列生命周期方法，故提供空默认实现以简化子类。
 
+    /** {@inheritDoc} 默认无初始化逻辑。 */
     @Override
     default void init(Config.Scope config) {
     }
 
+    /** {@inheritDoc} 默认无 postInit 逻辑。 */
     @Override
     default void postInit(KeycloakSessionFactory factory) {
     }
 
+    /** {@inheritDoc} 默认无资源需释放。 */
     @Override
     default void close() {
     }

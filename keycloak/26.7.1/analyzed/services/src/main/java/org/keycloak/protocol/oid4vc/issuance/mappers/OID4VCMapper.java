@@ -43,20 +43,23 @@ import static org.keycloak.OID4VCConstants.CREDENTIAL_SUBJECT;
 import static org.keycloak.VCFormat.SD_JWT_VC;
 
 /**
- * Base class for OID4VC Mappers, to provide common configuration and functionality for all of them
+ * OID4VC 协议映射器抽象基类，统一公共配置与元数据路径逻辑。
+ * <p>提供 mandatory/display 等通用配置项，并根据 VC 格式（如 SD-JWT）决定 claims 路径前缀。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public abstract class OID4VCMapper implements ProtocolMapper, OID4VCEnvironmentProviderFactory {
 
+    /** 配置键：目标声明/属性名。 */
     public static final String CLAIM_NAME = "claim.name";
+    /** 配置键：源用户属性名。 */
     public static final String USER_ATTRIBUTE_KEY = "userAttribute";
     private static final List<ProviderConfigProperty> OID4VC_CONFIG_PROPERTIES = new ArrayList<>();
 
     static {
         ProviderConfigProperty property;
 
-        // Add vc.mandatory property - indicates whether this claim is mandatory in the credential
+        // vc.mandatory：标识该声明在凭证中是否必填（写入元数据供钱包展示）
         property = new ProviderConfigProperty();
         property.setName(Oid4vcProtocolMapperModel.MANDATORY);
         property.setLabel("Mandatory Claim");
@@ -66,7 +69,7 @@ public abstract class OID4VCMapper implements ProtocolMapper, OID4VCEnvironmentP
         property.setDefaultValue(false);
         OID4VC_CONFIG_PROPERTIES.add(property);
 
-        // Add vc.display property - display information for wallet UIs
+        // vc.display：钱包 UI 展示用国际化标签
         property = new ProviderConfigProperty();
         property.setName(Oid4vcProtocolMapperModel.DISPLAY);
         property.setLabel("Claim Display Information");
@@ -77,7 +80,9 @@ public abstract class OID4VCMapper implements ProtocolMapper, OID4VCEnvironmentP
         OID4VC_CONFIG_PROPERTIES.add(property);
     }
 
+    /** 当前协议映射器模型（含配置）。 */
     protected ProtocolMapperModel mapperModel;
+    /** 当前凭证格式（如 SD-JWT），影响 claims 路径前缀。 */
     protected String format;
 
     protected abstract List<ProviderConfigProperty> getIndividualConfigProperties();
@@ -94,9 +99,8 @@ public abstract class OID4VCMapper implements ProtocolMapper, OID4VCEnvironmentP
     }
 
     /**
-     * some specific claims should not be added into the metadata. Examples are jti, sub, iss etc. Since we have the
-     * possibility to add these credentials with specific claims we should also be able to exclude these specific
-     * attributes from the metadata
+     * 是否将该映射器产生的声明纳入凭证元数据。
+     * <p>部分声明（如 jti、sub、iss）通常不应出现在元数据中，子类可覆盖为 {@code false}。</p>
      */
     public boolean includeInMetadata() {
         return Optional.ofNullable(mapperModel.getConfig().get(CredentialScopeModel.VC_INCLUDE_IN_METADATA))
@@ -105,10 +109,9 @@ public abstract class OID4VCMapper implements ProtocolMapper, OID4VCEnvironmentP
     }
 
     /**
-     * must return ordered list of attribute-names as they are added into the credential. This is required for the
-     * metadata endpoint to add the appropriate path-attributes into the claim's description.
+     * 返回写入凭证的有序属性路径，供元数据端点描述声明位置。
      *
-     * @return the attribute path that is being mapped into the credential
+     * @return 映射到凭证中的属性路径片段列表
      */
     public List<String> getMetadataAttributePath() {
         final String claimName = mapperModel.getConfig().get(CLAIM_NAME);
@@ -147,30 +150,28 @@ public abstract class OID4VCMapper implements ProtocolMapper, OID4VCEnvironmentP
 
     @Override
     public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
-        // try to get the credentials
+        // 预留：postInit 阶段可预加载凭证相关资源
     }
 
     @Override
     public void close() {
     }
 
-    /**
-     * Set the claims to credential, like f.e. the context
-     */
+    /** 向 {@link VerifiableCredential} 顶层结构写入声明（如 context、type）。 */
+
     public abstract void setClaim(VerifiableCredential verifiableCredential,
                                   UserSessionModel userSessionModel);
 
-    /**
-     * Set the claims to the credential subject.
-     */
+    /** 向凭证主体 claims 映射写入声明。 */
+
     public abstract void setClaim(Map<String, Object> claims,
                                   UserSessionModel userSessionModel);
 
     /**
-     * Creates new map "claimsWithPrefix" with the resolved claims including path prefix
+     * 将 {@link #setClaim(Map, UserSessionModel)} 产生的扁平 claims 按元数据路径前缀写入嵌套结构。
      *
-     * @param claimsOrig Map with the original claims, which were returned by {@link #setClaim(Map, UserSessionModel)} . This method usually just reads from this map
-     * @param claimsWithPrefix Map with the claims including path prefix. This method might write to this map
+     * @param claimsOrig {@link #setClaim(Map, UserSessionModel)} 返回的原始 claims（通常只读）
+     * @param claimsWithPrefix 带路径前缀的目标嵌套 Map（本方法可能写入）
      */
     public void setClaimWithMetadataPrefix(Map<String, Object> claimsOrig, Map<String, Object> claimsWithPrefix) {
         List<String> attributePath = getMetadataAttributePath();
@@ -192,7 +193,7 @@ public abstract class OID4VCMapper implements ProtocolMapper, OID4VCEnvironmentP
                     }
                     current = obj;
                 } else {
-                    // Last element
+                    // 路径末段：写入实际声明值
                     current.put(currentSnippetName, claimValue);
                 }
             }

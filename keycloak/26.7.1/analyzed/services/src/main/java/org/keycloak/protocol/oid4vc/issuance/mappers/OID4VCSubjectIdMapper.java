@@ -38,48 +38,16 @@ import org.keycloak.provider.ProviderConfigProperty;
 import static org.keycloak.OID4VCConstants.CLAIM_NAME_SUBJECT_ID;
 
 /**
- * Sets an ID for the credential subject, either from User ID or by attribute mapping
- * <p/>
- * A Verifiable Credential (VC) is often bound to a Holder's Digital Identity (DID).
- * The Holder's DID is in turn bound to Key Material that the Issuer + Verifier can discover from the DID Document.
- * In case of "did:key:..." the Public Key is already encoded in the DID.
- * <p/>
- * Here, we make sure that the default UserProfile has a 'did' attribute when --feature=oid4vc-vci is enabled.
- * Conceptually, it is however debatable whether the Issuer should know even one of the Holder's DIDs
- * <p/>
- * In future, it may be possible that ...
- * <p/>
- *  * The Holder communicates the DID at the time of Authorization
- *  * The Issuer then verifies Holder possession of the associated Key Material
- *  * The Issuer then somehow associates the AuthorizationRequest with a registered User
- *  * The VC is then issued to the Holder without the Issuer needing to remember that Holder DID
- * <p/>
- * This kind of Authorization protocol is for example required by EBSI, which we aim to become compatible with.
- * https:*hub.ebsi.eu/conformance/build-solutions/issue-to-holder-functional-flows
- * <p/>
- * Note, that current EBSI Compatibility Tests use the Holder's DID as OIDC client_id in the AuthorizationRequest.
- * That is something we need to work with, but I don't think we should model it like that in our realm config.
- * <p/>
- * Here the attribute definition that we add by default (when not defined already)
- * <p/>
- *   {
- *     "name": "did",
- *     "displayName": "DID",
- *     "permissions": {
- *       "view": ["admin", "user"],
- *       "edit": ["admin", "user"]
- *     },
- *     "validations": {
- *       "pattern": {
- *         "pattern": "^did:.+:.+$",
- *         "error-message": "Value must start with 'did:scheme:'"
- *       }
- *     }
- *   }
+ * 设置凭证主体标识（subject id）的协议映射器，可从用户 ID 或用户属性映射。
+ * <p>VC 常与 Holder 的 DID 绑定；启用 {@code oid4vc-vci} 特性时默认 UserProfile 含 {@code did} 属性。未来可能由 Holder 在授权阶段提供 DID，Issuer 校验密钥持有后签发，无需持久化 Holder DID。</p>
+ * <p>EBSI 等互操作场景要求类似授权流程；当前 EBSI 兼容性测试以 Holder DID 作为 OIDC {@code client_id}。</p>
+ * <p>默认注入的用户属性定义示例：{@code did}，带 {@code ^did:.+:.+$} 格式校验。</p>
+ *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class OID4VCSubjectIdMapper extends OID4VCMapper {
 
+    /** 协议映射器 Provider ID。 */
     public static final String MAPPER_ID = "oid4vc-subject-id-mapper";
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
@@ -103,6 +71,12 @@ public class OID4VCSubjectIdMapper extends OID4VCMapper {
         CONFIG_PROPERTIES.add(userAttributeConfig);
     }
 
+    /**
+     * 工厂方法：创建预配置的 Subject ID 映射器模型。
+     * @param name 映射器显示名
+     * @param claimName 目标声明名
+     * @param userAttribute 源用户属性
+     */
     public static ProtocolMapperModel create(String name, String claimName, String userAttribute) {
         var mapperModel = new ProtocolMapperModel();
         mapperModel.setName(name);
@@ -121,7 +95,7 @@ public class OID4VCSubjectIdMapper extends OID4VCMapper {
     }
 
     public void setClaim(VerifiableCredential verifiableCredential, UserSessionModel userSessionModel) {
-        // nothing to do for the mapper.
+        // subject id 写入 Map claims，不修改 VC 顶层
     }
 
     @Override

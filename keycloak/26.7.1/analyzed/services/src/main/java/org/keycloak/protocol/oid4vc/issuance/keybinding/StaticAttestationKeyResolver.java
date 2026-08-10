@@ -24,18 +24,27 @@ import org.keycloak.jose.jwk.JWK;
 import org.jboss.logging.Logger;
 
 /**
- * Simple static implementation of AttestationKeyResolver using an in-memory trusted map.
+ * 基于内存可信密钥映射表的 {@link AttestationKeyResolver} 静态实现。
+ * <p>适用于测试或预配置场景：按 {@code kid} 从构造时注入的映射中查找 JWK。</p>
  *
  * @author <a href="mailto:Rodrick.Awambeng@adorsys.com">Rodrick Awambeng</a>
  */
 public class StaticAttestationKeyResolver implements AttestationKeyResolver {
     private static final Logger logger = Logger.getLogger(StaticAttestationKeyResolver.class);
+    /** kid → JWK 的可信密钥注册表。 */
     private final Map<String, JWK> trustedKeys;
 
+    /**
+     * @param trustedKeys 预置的可信 attestation 密钥映射
+     */
     public StaticAttestationKeyResolver(Map<String, JWK> trustedKeys) {
         this.trustedKeys = trustedKeys;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>在静态映射中按 {@code kid} 查找；未命中时记录警告并返回 {@code null}。</p>
+     */
     @Override
     public JWK resolveKey(String kid, Map<String, Object> header, Map<String, Object> payload) {
         JWK key = trustedKeys.get(kid);

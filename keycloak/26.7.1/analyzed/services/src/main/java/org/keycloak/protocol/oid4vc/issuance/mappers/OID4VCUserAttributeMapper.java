@@ -40,13 +40,16 @@ import org.keycloak.utils.JsonUtils;
 import org.apache.commons.collections4.ListUtils;
 
 /**
- * Allows adding user properties to the credential subject
+ * 将用户属性或配置项映射到凭证主体 claims 的协议映射器。
+ * <p>支持点分路径声明名、多值聚合（{@link #AGGREGATE_ATTRIBUTES_KEY}）及 User Profile 属性选择。</p>
  *
  * @author <a href="https://github.com/wistefan">Stefan Wiedemann</a>
  */
 public class OID4VCUserAttributeMapper extends OID4VCMapper {
 
+    /** 协议映射器 Provider ID。 */
     public static final String MAPPER_ID = "oid4vc-user-attribute-mapper";
+    /** 配置键：是否聚合用户属性的多值。 */
     public static final String AGGREGATE_ATTRIBUTES_KEY = "aggregateAttributes";
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
@@ -81,7 +84,7 @@ public class OID4VCUserAttributeMapper extends OID4VCMapper {
 
     public void setClaim(VerifiableCredential verifiableCredential,
                          UserSessionModel userSessionModel) {
-        // nothing to do for the mapper.
+        // 用户属性写入 Map claims
     }
 
     @Override
@@ -107,6 +110,13 @@ public class OID4VCUserAttributeMapper extends OID4VCMapper {
         }
     }
 
+    /**
+     * 工厂方法：创建用户属性映射器模型。
+     * @param mapperName 映射器名称
+     * @param claimName 目标声明路径
+     * @param userAttribute 源用户属性
+     * @param aggregateAttributes 是否聚合多值
+     */
     public static ProtocolMapperModel create(String mapperName, String claimName, String userAttribute,
                                              boolean aggregateAttributes) {
         ProtocolMapperModel mapperModel = new ProtocolMapperModel();
@@ -145,7 +155,7 @@ public class OID4VCUserAttributeMapper extends OID4VCMapper {
     public List<String> getMetadataAttributePath() {
         String claimName = mapperModel.getConfig().get(CLAIM_NAME);
         final String userAttributeName = mapperModel.getConfig().get(USER_ATTRIBUTE_KEY);
-        // Split claim name into path segments for metadata endpoint.
+        // 将声明名拆分为路径段，供元数据端点描述嵌套位置
         final List<String> claimPath = Optional.ofNullable(claimName)
                 .map(JsonUtils::splitClaimPath)
                 .orElse(Optional.ofNullable(userAttributeName)

@@ -37,27 +37,22 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
- * Map issuance date to the credential, under the default claim name "iat"
- * <p>
- * subjectProperty can be used to change the claim name.
- * <p>
- * Source of the information can either be computed, or read from the VerifiableCredential object
- * bearing other claims. Default is the value in the verifiable credential.
- * <p>
- * We will use the java.time.temporal.ChronoUnit enum values to help flatten down the time.
+ * 将签发时间映射到凭证主体的协议映射器，默认声明名为 {@code iat}。
+ * <p>可通过 {@link #CLAIM_NAME} 配置声明名；{@link #VALUE_SOURCE} 选择计算当前时间或读取 VC 已有签发日期； {@link #TRUNCATE_TO_TIME_UNIT_KEY} 支持按 {@link ChronoUnit} 截断以降低凭证关联风险。</p>
  *
  * @author <a href="mailto:francis.pouatcha@adorsys.com">Francis Pouatcha</a>
  */
 public class OID4VCIssuedAtTimeClaimMapper extends OID4VCMapper {
 
+    /** 协议映射器 Provider ID。 */
     public static final String MAPPER_ID = "oid4vc-issued-at-time-claim-mapper";
 
-    // We will use the java.time.temporal.ChronoUnit enum values to help flatten down the time.
-    // Omit property if no truncation.
+    // 使用 ChronoUnit 枚举截断时间粒度；未配置则不截断。
+    /** 配置键：时间截断粒度（ChronoUnit 名称）。 */
     public static final String TRUNCATE_TO_TIME_UNIT_KEY = "truncateToTimeUnit";
 
-    // Time computed (COMPUTE) or taken from the verifiable credential (VC).
-    // Defaults to VC. Falls back to COMPUTE.
+    // 值来源：COMPUTE 计算当前时间，VC 读取凭证签发日期；默认 COMPUTE。
+    /** 配置键：时间值来源（{@code COMPUTE} 或 {@code VC}）。 */
     public static final String VALUE_SOURCE = "valueSource";
 
     private static final List<ProviderConfigProperty> CONFIG_PROPERTIES = new ArrayList<>();
@@ -95,9 +90,8 @@ public class OID4VCIssuedAtTimeClaimMapper extends OID4VCMapper {
         return CONFIG_PROPERTIES;
     }
 
-    /**
-     * this claim is not added by default to the metadata
-     */
+    /** 默认不将此声明纳入凭证元数据。 */
+
     @Override
     public boolean includeInMetadata() {
         return Optional.ofNullable(mapperModel.getConfig().get(CredentialScopeModel.VC_INCLUDE_IN_METADATA))
@@ -107,7 +101,7 @@ public class OID4VCIssuedAtTimeClaimMapper extends OID4VCMapper {
 
     public void setClaim(VerifiableCredential verifiableCredential,
                          UserSessionModel userSessionModel) {
-        // Set the value
+        // 解析时间来源、归一化并按需截断后写入 subject
         List<String> attributePath = getMetadataAttributePath();
         String propertyName = attributePath.get(attributePath.size() - 1);
         if (propertyName == null) {
@@ -128,7 +122,7 @@ public class OID4VCIssuedAtTimeClaimMapper extends OID4VCMapper {
         Instant normalizedIat = new TimeClaimNormalizer(userSessionModel.getRealm())
                 .normalize(iat);
 
-        // truncate is possible. Return iat if not.
+        // 可选按 ChronoUnit 截断；未配置则使用归一化后的 iat
         Instant iatTrunc = Optional.ofNullable(mapperModel.getConfig())
                 .map(config -> config.get(TRUNCATE_TO_TIME_UNIT_KEY))
                 .filter(val -> !val.isEmpty())
@@ -142,7 +136,7 @@ public class OID4VCIssuedAtTimeClaimMapper extends OID4VCMapper {
 
     @Override
     public void setClaim(Map<String, Object> claims, UserSessionModel userSessionModel) {
-        // NoOp
+        // 时间写入 VC credentialSubject，Map 重载为空操作
     }
 
     @Override
