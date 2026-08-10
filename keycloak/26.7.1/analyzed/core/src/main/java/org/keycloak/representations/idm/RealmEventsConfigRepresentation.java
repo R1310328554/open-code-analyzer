@@ -20,16 +20,24 @@ package org.keycloak.representations.idm;
 import java.util.List;
 
 /**
+ * 域用户事件与管理事件监听配置的 REST 表示。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RealmEventsConfigRepresentation {
+    /** 是否启用用户事件记录。 */
     protected boolean eventsEnabled;
+    /** 用户事件保留时长（秒）。 */
     protected Long eventsExpiration;
+    /** 已注册的事件监听器 SPI ID 列表。 */
     protected List<String> eventsListeners;
+    /** 启用的用户事件类型列表。 */
     protected List<String> enabledEventTypes;
     
+    /** 是否启用管理事件记录。 */
     protected Boolean adminEventsEnabled;
+    /** 管理事件是否包含详细变更内容。 */
     protected Boolean adminEventsDetailsEnabled;
 
     public boolean isEventsEnabled() {

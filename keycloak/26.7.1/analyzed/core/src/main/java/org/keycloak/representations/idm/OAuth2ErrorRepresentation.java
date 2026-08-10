@@ -22,16 +22,27 @@ import org.keycloak.OAuth2Constants;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * OAuth 2.0 错误响应的 JSON 表示，对应 {@code error} 与 {@code error_description} 字段。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class OAuth2ErrorRepresentation {
 
+    /** OAuth 2.0 错误码（如 {@code invalid_grant}）。 */
     private String error;
+    /** 面向开发者的错误描述文本。 */
     private String errorDescription;
 
+    /** 无参构造。 */
     public OAuth2ErrorRepresentation() {
     }
 
+    /**
+     * 构造带错误码与描述的 OAuth2 错误。
+     *
+     * @param error OAuth 2.0 错误码
+     * @param errorDescription 错误描述
+     */
     public OAuth2ErrorRepresentation(String error, String errorDescription) {
         this.error = error;
         this.errorDescription = errorDescription;

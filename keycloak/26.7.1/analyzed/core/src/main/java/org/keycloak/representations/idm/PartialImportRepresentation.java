@@ -22,43 +22,65 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Used for partial import of users, groups, clients, roles, and identity providers.
+ * 域部分导入请求的 REST 表示，支持用户、组、客户端、角色与 IdP 的增量导入。
  *
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class PartialImportRepresentation {
-    public enum Policy { SKIP, OVERWRITE, FAIL };
+    /** 资源已存在时的冲突处理策略。 */
+    public enum Policy {
+        /** 跳过已存在资源。 */
+        SKIP,
+        /** 覆盖已存在资源。 */
+        OVERWRITE,
+        /** 冲突时报错终止。 */
+        FAIL
+    };
 
+    /** 默认冲突策略：失败。 */
     protected Policy policy = Policy.FAIL;
+    /** 资源已存在时的策略字符串（与 {@link Policy} 对应）。 */
     protected String ifResourceExists;
+    /** 待导入用户列表。 */
     protected List<UserRepresentation> users;
+    /** 待导入组列表。 */
     protected List<GroupRepresentation> groups;
+    /** 待导入客户端列表。 */
     protected List<ClientRepresentation> clients;
+    /** 待导入身份提供者列表。 */
     protected List<IdentityProviderRepresentation> identityProviders;
+    /** 待导入 IdP 映射器列表。 */
     protected List<IdentityProviderMapperRepresentation> identityProviderMappers;
+    /** 待导入角色（域级与客户端级）。 */
     protected RolesRepresentation roles;
 
+    /** @return 是否包含待导入用户 */
     public boolean hasUsers() {
         return (users != null) && !users.isEmpty();
     }
 
+    /** @return 是否包含待导入组 */
     public boolean hasGroups() {
         return (groups != null) && !groups.isEmpty();
     }
 
+    /** @return 是否包含待导入客户端 */
     public boolean hasClients() {
         return (clients != null) && !clients.isEmpty();
     }
 
+    /** @return 是否包含待导入身份提供者 */
     public boolean hasIdps() {
         return (identityProviders != null) && !identityProviders.isEmpty();
     }
 
+    /** @return 是否包含待导入域角色 */
     public boolean hasRealmRoles() {
         return (roles != null) && (roles.getRealm() != null) && (!roles.getRealm().isEmpty());
     }
 
+    /** @return 是否包含待导入客户端角色 */
     public boolean hasClientRoles() {
         return (roles != null) && (roles.getClient() != null) && (!roles.getClient().isEmpty());
     }

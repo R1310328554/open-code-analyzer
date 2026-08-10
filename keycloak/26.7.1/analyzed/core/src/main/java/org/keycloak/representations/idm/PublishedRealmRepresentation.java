@@ -20,21 +20,28 @@ package org.keycloak.representations.idm;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 域公开端点（well-known）返回的精简域信息，供客户端发现令牌与账户服务 URL。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class PublishedRealmRepresentation {
+    /** 域名称。 */
     protected String realm;
 
+    /** 域签名验证公钥（PEM 格式）。 */
     @JsonProperty("public_key")
     protected String publicKeyPem;
 
+    /** 令牌服务端点基础 URL。 */
     @JsonProperty("token-service")
     protected String tokenServiceUrl;
 
+    /** 账户管理服务端点 URL。 */
     @JsonProperty("account-service")
     protected String accountServiceUrl;
 
+    /** 令牌生效起始时间（not-before，Unix 秒）。 */
     @JsonProperty("tokens-not-before")
     protected int notBefore;
 

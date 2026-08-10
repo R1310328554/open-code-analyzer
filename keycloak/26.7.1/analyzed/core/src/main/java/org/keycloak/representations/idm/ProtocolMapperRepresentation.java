@@ -21,20 +21,29 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 协议映射器（Protocol Mapper）的 REST 表示，将用户/客户端属性映射到令牌或断言声明。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ProtocolMapperRepresentation {
+    /** 映射器内部 UUID。 */
     protected String id;
+    /** 映射器显示名称。 */
     protected String name;
+    /** 所属协议（如 openid-connect、saml）。 */
     protected String protocol;
+    /** 映射器 SPI 提供方 ID。 */
     protected String protocolMapper;
 
+    /** 已弃用：是否需要用户同意（仅向后兼容）。 */
     @Deprecated // backwards compatibility only
     protected boolean consentRequired;
 
+    /** 已弃用：同意页面展示文本（仅向后兼容）。 */
     @Deprecated // backwards compatibility only
     protected String consentText;
+    /** 映射器提供方特定的键值配置。 */
     protected Map<String, String> config = new HashMap<>();
 
 

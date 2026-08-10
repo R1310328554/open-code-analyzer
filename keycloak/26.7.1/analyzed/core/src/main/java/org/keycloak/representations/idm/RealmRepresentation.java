@@ -35,214 +35,393 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jboss.logging.Logger;
 
 /**
+ * Keycloak 域（Realm）的完整 Admin REST API 表示，涵盖令牌生命周期、认证流、
+ * 安全策略、主题、事件、联邦、WebAuthn 与组织等全部域级配置。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RealmRepresentation {
 
-    private static final Logger logger = Logger.getLogger(RealmRepresentation.class);
+    /** 日志记录器。 */
+
+    private static final Logger logger= Logger.getLogger(RealmRepresentation.class);
+
+    /** 域内部 UUID。 */
 
     protected String id;
+    /** 域名称（realm name）。 */
     protected String realm;
+    /** 域显示名称。 */
     protected String displayName;
+    /** 域 HTML 格式显示名称。 */
     protected String displayNameHtml;
+    /** 令牌全局生效起始时间（not-before）。 */
     protected Integer notBefore;
+    /** 默认 JWT 签名算法。 */
     protected String defaultSignatureAlgorithm;
+    /** 是否在刷新时撤销旧 refresh token。 */
     protected Boolean revokeRefreshToken;
+    /** refresh token 最大复用次数。 */
     protected Integer refreshTokenMaxReuse;
+    /** access token 有效期（秒）。 */
     protected Integer accessTokenLifespan;
+    /** 隐式流 access token 有效期（秒）。 */
     protected Integer accessTokenLifespanForImplicitFlow;
+    /** SSO 会话空闲超时（秒）。 */
     protected Integer ssoSessionIdleTimeout;
+    /** SSO 会话最大存活时间（秒）。 */
     protected Integer ssoSessionMaxLifespan;
+    /** Remember Me 下 SSO 空闲超时（秒）。 */
     protected Integer ssoSessionIdleTimeoutRememberMe;
+    /** Remember Me 下 SSO 最大存活（秒）。 */
     protected Integer ssoSessionMaxLifespanRememberMe;
+    /** 离线会话空闲超时（秒）。 */
     protected Integer offlineSessionIdleTimeout;
-    // KEYCLOAK-7688 Offline Session Max for Offline Token
+    // KEYCLOAK-7688：离线 Token 的离线会话最大存活配置
+    /** 是否启用离线会话最大存活限制。 */
     protected Boolean offlineSessionMaxLifespanEnabled;
+    /** 离线会话最大存活时间（秒）。 */
     protected Integer offlineSessionMaxLifespan;
+    /** 客户端会话空闲超时（秒）。 */
     protected Integer clientSessionIdleTimeout;
+    /** 客户端会话最大存活（秒）。 */
     protected Integer clientSessionMaxLifespan;
+    /** 客户端离线会话空闲超时（秒）。 */
     protected Integer clientOfflineSessionIdleTimeout;
+    /** 客户端离线会话最大存活（秒）。 */
     protected Integer clientOfflineSessionMaxLifespan;
+    /** 授权码有效期（秒）。 */
     protected Integer accessCodeLifespan;
+    /** 用户操作相关授权码有效期（秒）。 */
     protected Integer accessCodeLifespanUserAction;
+    /** 登录流程授权码有效期（秒）。 */
     protected Integer accessCodeLifespanLogin;
+    /** 管理员生成的操作令牌有效期（秒）。 */
     protected Integer actionTokenGeneratedByAdminLifespan;
+    /** 用户生成的操作令牌有效期（秒）。 */
     protected Integer actionTokenGeneratedByUserLifespan;
+    /** OAuth2 设备码有效期（秒）。 */
     protected Integer oauth2DeviceCodeLifespan;
+    /** OAuth2 设备授权轮询间隔（秒）。 */
     protected Integer oauth2DevicePollingInterval;
+    /** 域是否启用。 */
     protected Boolean enabled;
+    /** SSL 要求级别（external/all/none）。 */
     protected String sslRequired;
+    /** 已弃用：是否允许密码凭据授权。 */
     @Deprecated
     protected Boolean passwordCredentialGrantAllowed;
+    /** 是否允许自助注册。 */
     protected Boolean registrationAllowed;
+    /** 注册时是否以邮箱作为用户名。 */
     protected Boolean registrationEmailAsUsername;
+    /** 是否显示 Remember Me 选项。 */
     protected Boolean rememberMe;
+    /** 是否要求验证邮箱。 */
     protected Boolean verifyEmail;
+    /** 是否允许以邮箱登录。 */
     protected Boolean loginWithEmailAllowed;
+    /** 是否允许重复邮箱。 */
     protected Boolean duplicateEmailsAllowed;
+    /** 是否允许重置密码。 */
     protected Boolean resetPasswordAllowed;
+    /** 是否允许用户修改用户名。 */
     protected Boolean editUsernameAllowed;
+
+    /** 已弃用：是否启用用户缓存。 */
 
     @Deprecated
     protected Boolean userCacheEnabled;
+    /** 已弃用：是否启用域缓存。 */
     @Deprecated
     protected Boolean realmCacheEnabled;
 
-    //--- brute force settings
+    // --- 暴力破解防护设置
+    /** 是否启用暴力破解防护。 */
     protected Boolean bruteForceProtected;
+    /** 是否永久锁定账户。 */
     protected Boolean permanentLockout;
+    /** 最大临时锁定次数。 */
     protected Integer maxTemporaryLockouts;
+    /** 暴力破解等待时间递增策略。 */
     protected BruteForceStrategy bruteForceStrategy;
+    /** 最大失败等待时间（秒）。 */
     protected Integer maxFailureWaitSeconds;
+    /** 快速连续登录最小等待（秒）。 */
     protected Integer minimumQuickLoginWaitSeconds;
+    /** 等待时间递增量（秒）。 */
     protected Integer waitIncrementSeconds;
+    /** 快速登录检测窗口（毫秒）。 */
     protected Long quickLoginCheckMilliSeconds;
+    /** 失败计数重置窗口（秒）。 */
     protected Integer maxDeltaTimeSeconds;
+    /** 触发锁定的连续失败次数因子。 */
     protected Integer failureFactor;
+    /** 二次认证最大失败次数。 */
     protected Integer maxSecondaryAuthFailures;
-    //--- end brute force settings
+    // --- 暴力破解防护设置结束
+
+    /** 已弃用：域私钥 PEM。 */
 
     @Deprecated
     protected String privateKey;
+    /** 已弃用：域公钥 PEM。 */
     @Deprecated
     protected String publicKey;
+    /** 已弃用：域证书 PEM。 */
     @Deprecated
     protected String certificate;
+    /** 已弃用：授权码 HMAC 密钥。 */
     @Deprecated
     protected String codeSecret;
+    /** 域与客户端角色集合。 */
     protected RolesRepresentation roles;
+    /** 域内组列表。 */
     protected List<GroupRepresentation> groups;
+    /** 已弃用：默认角色名称列表。 */
     @Deprecated
     protected List<String> defaultRoles;
+    /** 新用户的默认复合角色。 */
     protected RoleRepresentation defaultRole;
+    /** 管理权限客户端表示。 */
     protected ClientRepresentation adminPermissionsClient;
+    /** 新用户自动加入的默认组。 */
     protected List<String> defaultGroups;
+    /** 已弃用：必需凭据类型集合。 */
     @Deprecated
     protected Set<String> requiredCredentials;
+    /** 密码策略配置字符串。 */
     protected String passwordPolicy;
+    /** OTP 策略类型（totp/hotp）。 */
     protected String otpPolicyType;
+    /** OTP 哈希算法。 */
     protected String otpPolicyAlgorithm;
+    /** HOTP 初始计数器值。 */
     protected Integer otpPolicyInitialCounter;
+    /** OTP 位数。 */
     protected Integer otpPolicyDigits;
+    /** OTP 前瞻窗口大小。 */
     protected Integer otpPolicyLookAheadWindow;
+    /** TOTP 时间步长（秒）。 */
     protected Integer otpPolicyPeriod;
+    /** OTP 码是否可复用。 */
     protected Boolean otpPolicyCodeReusable;
+    /** 支持的 OTP 应用名称列表。 */
     protected List<String> otpSupportedApplications;
+    /** 国际化文本（语言 → 键值对）。 */
     protected Map<String, Map<String, String>> localizationTexts;
 
-    // WebAuthn 2-factor properties below
+    // --- WebAuthn 双因素认证策略 ---
+
+    /** WebAuthn 双因素：RP 显示名称。 */
 
     protected String webAuthnPolicyRpEntityName;
+    /** WebAuthn 双因素：允许的签名算法。 */
     protected List<String> webAuthnPolicySignatureAlgorithms;
+    /** WebAuthn 双因素：RP ID。 */
     protected String webAuthnPolicyRpId;
+    /** WebAuthn 双因素：认证传递偏好。 */
     protected String webAuthnPolicyAttestationConveyancePreference;
+    /** WebAuthn 双因素：认证器附加类型。 */
     protected String webAuthnPolicyAuthenticatorAttachment;
+    /** WebAuthn 双因素：已弃用，是否要求 resident key。 */
     protected String webAuthnPolicyRequireResidentKey;
+    /** WebAuthn 双因素：resident key 要求级别。 */
     protected String webAuthnPolicyResidentKey;
+    /** WebAuthn 双因素：用户验证要求。 */
     protected String webAuthnPolicyUserVerificationRequirement;
+    /** WebAuthn 双因素：注册超时（毫秒）。 */
     protected Integer webAuthnPolicyCreateTimeout;
+    /** WebAuthn 双因素：是否禁止重复注册同一认证器。 */
     protected Boolean webAuthnPolicyAvoidSameAuthenticatorRegister;
+    /** WebAuthn 双因素：允许的 AAGUID 白名单。 */
     protected List<String> webAuthnPolicyAcceptableAaguids;
+    /** WebAuthn 双因素：额外允许的 Origin。 */
     protected List<String> webAuthnPolicyExtraOrigins;
 
-    // WebAuthn passwordless properties below
+    // --- WebAuthn 无密码认证策略 ---
+
+    /** WebAuthn 无密码：RP 显示名称。 */
 
     protected String webAuthnPolicyPasswordlessRpEntityName;
+    /** WebAuthn 无密码：签名算法列表。 */
     protected List<String> webAuthnPolicyPasswordlessSignatureAlgorithms;
+    /** WebAuthn 无密码：RP ID。 */
     protected String webAuthnPolicyPasswordlessRpId;
+    /** WebAuthn 无密码：认证传递偏好。 */
     protected String webAuthnPolicyPasswordlessAttestationConveyancePreference;
+    /** WebAuthn 无密码：认证器附加类型。 */
     protected String webAuthnPolicyPasswordlessAuthenticatorAttachment;
+    /** WebAuthn 无密码：已弃用，resident key 要求。 */
     protected String webAuthnPolicyPasswordlessRequireResidentKey;
+    /** WebAuthn 无密码：resident key 要求级别。 */
     protected String webAuthnPolicyPasswordlessResidentKey;
+    /** WebAuthn 无密码：用户验证要求。 */
     protected String webAuthnPolicyPasswordlessUserVerificationRequirement;
+    /** WebAuthn 无密码：注册超时（毫秒）。 */
     protected Integer webAuthnPolicyPasswordlessCreateTimeout;
+    /** WebAuthn 无密码：是否禁止重复注册。 */
     protected Boolean webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister;
+    /** WebAuthn 无密码：AAGUID 白名单。 */
     protected List<String> webAuthnPolicyPasswordlessAcceptableAaguids;
+    /** WebAuthn 无密码：额外 Origin。 */
     protected List<String> webAuthnPolicyPasswordlessExtraOrigins;
+    /** WebAuthn 无密码：是否启用 Passkeys。 */
     protected Boolean webAuthnPolicyPasswordlessPasskeysEnabled;
+    /** WebAuthn 无密码：条件 UI 调解模式。 */
     protected String webAuthnPolicyPasswordlessMediation;
 
-    // Client Policies/Profiles
+    // --- Client Policy / Profile 配置 ---
+
+    /** Client Profile 配置（JSON 节点）。 */
 
     @JsonProperty("clientProfiles")
     @Schema(implementation = ClientProfilesRepresentation.class)
     protected JsonNode clientProfiles;
 
+    /** Client Policy 配置（JSON 节点）。 */
+
     @JsonProperty("clientPolicies")
     @Schema(implementation = ClientPoliciesRepresentation.class)
     protected JsonNode clientPolicies;
 
+    /** 域内用户列表（导入/导出用）。 */
+
     protected List<UserRepresentation> users;
+    /** 联邦用户列表。 */
     protected List<UserRepresentation> federatedUsers;
+    /** Scope 到角色的映射列表。 */
     protected List<ScopeMappingRepresentation> scopeMappings;
+    /** 按客户端分组的 Scope 映射。 */
     protected Map<String, List<ScopeMappingRepresentation>> clientScopeMappings;
+    /** 域内 OAuth/OIDC 客户端列表。 */
     protected List<ClientRepresentation> clients;
+    /** 客户端 Scope 定义列表。 */
     protected List<ClientScopeRepresentation> clientScopes;
+    /** 新客户端默认绑定的 Scope 名称。 */
     protected List<String> defaultDefaultClientScopes;
+    /** 新客户端默认可选 Scope 名称。 */
     protected List<String> defaultOptionalClientScopes;
+    /** 浏览器安全响应头配置。 */
     protected Map<String, String> browserSecurityHeaders;
+    /** SMTP 邮件服务器配置。 */
     protected Map<String, String> smtpServer;
+    /** 用户联邦提供者列表。 */
     protected List<UserFederationProviderRepresentation> userFederationProviders;
+    /** 用户联邦映射器列表。 */
     protected List<UserFederationMapperRepresentation> userFederationMappers;
+    /** 登录页主题名称。 */
     protected String loginTheme;
+    /** 账户管理页主题名称。 */
     protected String accountTheme;
+    /** 管理控制台主题名称。 */
     protected String adminTheme;
+    /** 邮件模板主题名称。 */
     protected String emailTheme;
 
+    /** 是否启用用户事件。 */
+
     protected Boolean eventsEnabled;
+    /** 用户事件保留时长（秒）。 */
     protected Long eventsExpiration;
+    /** 事件监听器 SPI ID 列表。 */
     protected List<String> eventsListeners;
+    /** 启用的用户事件类型。 */
     protected List<String> enabledEventTypes;
 
+    /** 是否启用管理事件。 */
+
     protected Boolean adminEventsEnabled;
+    /** 管理事件是否记录详情。 */
     protected Boolean adminEventsDetailsEnabled;
 
+    /** 身份提供者（IdP）列表。 */
+
     private List<IdentityProviderRepresentation> identityProviders;
+    /** IdP 属性映射器列表。 */
     private List<IdentityProviderMapperRepresentation> identityProviderMappers;
+    /** 域级协议映射器列表。 */
     private List<ProtocolMapperRepresentation> protocolMappers;
+    /** 可导出组件（按类型分组）。 */
     private MultivaluedHashMap<String, ComponentExportRepresentation> components;
+    /** 是否启用国际化。 */
     protected Boolean internationalizationEnabled;
+    /** 支持的语言区域集合。 */
     protected Set<String> supportedLocales;
+    /** 默认语言区域。 */
     protected String defaultLocale;
+    /** 认证流定义列表。 */
     protected List<AuthenticationFlowRepresentation> authenticationFlows;
+    /** 认证器配置列表。 */
     protected List<AuthenticatorConfigRepresentation> authenticatorConfig;
+    /** Required Action 提供者列表。 */
     protected List<RequiredActionProviderRepresentation> requiredActions;
+    /** 浏览器登录绑定的认证流别名。 */
     protected String browserFlow;
+    /** 注册绑定的认证流别名。 */
     protected String registrationFlow;
+    /** Direct Grant 绑定的认证流别名。 */
     protected String directGrantFlow;
+    /** 重置凭据绑定的认证流别名。 */
     protected String resetCredentialsFlow;
+    /** 客户端认证绑定的认证流别名。 */
     protected String clientAuthenticationFlow;
+    /** Docker 认证绑定的认证流别名。 */
     protected String dockerAuthenticationFlow;
+    /** 首次 Broker 登录绑定的认证流别名。 */
     protected String firstBrokerLoginFlow;
+
+    /** 域自定义属性键值对。 */
 
     protected Map<String, String> attributes;
 
+    /** 导出时 Keycloak 版本号。 */
+
     protected String keycloakVersion;
+
+    /** 是否允许用户托管访问（UMA）。 */
 
     protected Boolean userManagedAccessAllowed;
 
+    /** 是否启用组织功能。 */
+
     protected Boolean organizationsEnabled;
+    /** 域内组织列表。 */
     private List<OrganizationRepresentation> organizations;
+
+    /** 是否启用可验证凭据功能。 */
 
     protected Boolean verifiableCredentialsEnabled;
 
+    /** 是否启用细粒度管理权限。 */
+
     protected Boolean adminPermissionsEnabled;
+
+    /** 已弃用：是否启用社交登录。 */
 
     @Deprecated
     protected Boolean social;
+    /** 已弃用：首次社交登录是否更新资料。 */
     @Deprecated
     protected Boolean updateProfileOnInitialSocialLogin;
+    /** 已弃用：社交 IdP 配置映射。 */
     @Deprecated
     protected Map<String, String> socialProviders;
+    /** 已弃用：应用 Scope 映射。 */
     @Deprecated
     protected Map<String, List<ScopeMappingRepresentation>> applicationScopeMappings;
+    /** 已弃用：应用列表。 */
     @Deprecated
     protected List<ApplicationRepresentation> applications;
+    /** 已弃用：OAuth 客户端列表。 */
     @Deprecated
     protected List<OAuthClientRepresentation> oauthClients;
+    /** 已弃用：客户端模板列表。 */
     @Deprecated
     protected List<ClientTemplateRepresentation> clientTemplates;
+
+    /** 是否启用 SCIM API。 */
 
     private Boolean scimApiEnabled;
 
@@ -290,6 +469,7 @@ public class RealmRepresentation {
         this.users = users;
     }
 
+    /** 便捷方法：创建并添加指定用户名的用户表示。 */
     public UserRepresentation user(String username) {
         UserRepresentation user = new UserRepresentation();
         user.setUsername(username);
@@ -402,7 +582,7 @@ public class RealmRepresentation {
         this.offlineSessionIdleTimeout = offlineSessionIdleTimeout;
     }
 
-    // KEYCLOAK-7688 Offline Session Max for Offline Token
+    // KEYCLOAK-7688：离线 Token 的离线会话最大存活配置
     public Boolean getOfflineSessionMaxLifespanEnabled() {
         return offlineSessionMaxLifespanEnabled;
     }
@@ -455,6 +635,7 @@ public class RealmRepresentation {
         return scopeMappings;
     }
 
+    /** 便捷方法：为客户端创建 Scope 映射条目。 */
     public ScopeMappingRepresentation clientScopeMapping(String clientName) {
         ScopeMappingRepresentation mapping = new ScopeMappingRepresentation();
         mapping.setClient(clientName);
@@ -463,6 +644,7 @@ public class RealmRepresentation {
         return mapping;
     }
 
+    /** 便捷方法：为 Client Scope 创建 Scope 映射条目。 */
     public ScopeMappingRepresentation clientScopeScopeMapping(String clientScopeName) {
         ScopeMappingRepresentation mapping = new ScopeMappingRepresentation();
         mapping.setClientScope(clientScopeName);
@@ -1100,7 +1282,7 @@ public class RealmRepresentation {
         this.otpPolicyCodeReusable = isCodeReusable;
     }
 
-    // WebAuthn 2-factor properties below
+    // --- WebAuthn 双因素认证策略 ---
 
     public String getWebAuthnPolicyRpEntityName() {
         return webAuthnPolicyRpEntityName;
@@ -1206,7 +1388,7 @@ public class RealmRepresentation {
         this.webAuthnPolicyExtraOrigins = extraOrigins;
     }
 
-    // WebAuthn passwordless properties below
+    // --- WebAuthn 无密码认证策略 ---
 
 
     public String getWebAuthnPolicyPasswordlessRpEntityName() {
@@ -1329,7 +1511,7 @@ public class RealmRepresentation {
         this.webAuthnPolicyPasswordlessMediation = webAuthnPolicyPasswordlessMediation;
     }
 
-    // Client Policies/Profiles
+    // --- Client Policy / Profile 配置 ---
 
     @JsonIgnore
     public ClientProfilesRepresentation getParsedClientProfiles() {
@@ -1482,6 +1664,7 @@ public class RealmRepresentation {
         this.components = components;
     }
 
+    /** 是否已配置至少一个身份提供者（联邦已启用）。 */
     @JsonIgnore
     public boolean isIdentityFederationEnabled() {
         return identityProviders != null && !identityProviders.isEmpty();
@@ -1535,6 +1718,7 @@ public class RealmRepresentation {
         this.verifiableCredentialsEnabled = verifiableCredentialsEnabled;
     }
 
+    /** 返回域属性映射，未配置时返回空映射而非 null。 */
     @JsonIgnore
     public Map<String, String> getAttributesOrEmpty() {
         return (Map<String, String>) (attributes == null ? Collections.emptyMap() : attributes);
@@ -1548,6 +1732,7 @@ public class RealmRepresentation {
         this.organizations = organizations;
     }
 
+    /** 向域添加组织表示。 */
     public void addOrganization(OrganizationRepresentation org) {
         if (organizations == null) {
             organizations = new ArrayList<>();
@@ -1563,7 +1748,11 @@ public class RealmRepresentation {
         return scimApiEnabled;
     }
 
+    /** 暴力破解锁定后等待时间递增策略。 */
     public enum BruteForceStrategy {
-        LINEAR, MULTIPLE;
+        /** 线性递增等待时间。 */
+        LINEAR,
+        /** 按失败次数倍数递增。 */
+        MULTIPLE;
     }
 }

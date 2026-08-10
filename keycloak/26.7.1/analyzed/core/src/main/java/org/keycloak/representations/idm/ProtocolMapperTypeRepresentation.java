@@ -20,16 +20,24 @@ package org.keycloak.representations.idm;
 import java.util.List;
 
 /**
+ * 协议映射器 SPI 类型的元数据表示，描述可配置属性与 UI 分组。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class ProtocolMapperTypeRepresentation {
+    /** 映射器类型 ID。 */
     protected String id;
+    /** 映射器类型显示名称。 */
     protected String name;
+    /** Admin Console 中的分类标签。 */
     protected String category;
+    /** 面向管理员的帮助说明文本。 */
     protected String helpText;
+    /** 在 UI 列表中的排序优先级。 */
     protected int priority;
 
+    /** 该映射器类型可配置的属性定义列表。 */
     protected List<ConfigPropertyRepresentation> properties;
 
     public String getId() {

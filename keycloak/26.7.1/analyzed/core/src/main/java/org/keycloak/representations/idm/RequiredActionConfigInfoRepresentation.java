@@ -20,10 +20,11 @@ package org.keycloak.representations.idm;
 import java.util.List;
 
 /**
- * Represents the configurable properties of a RequiredAction.
+ * Required Action 可配置属性的元数据表示，供 Admin Console 动态渲染配置表单。
  */
 public class RequiredActionConfigInfoRepresentation {
 
+    /** Required Action 提供方可配置的属性定义列表。 */
     private List<ConfigPropertyRepresentation> properties;
 
     public List<ConfigPropertyRepresentation> getProperties() {

@@ -18,14 +18,21 @@
 package org.keycloak.representations.idm;
 
 /**
+ * 密码策略 SPI 提供方类型的元数据表示，用于 Admin Console 展示可用策略项。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class PasswordPolicyTypeRepresentation {
 
+    /** 策略类型 ID（如 {@code length}、{@code digits}）。 */
     private String id;
+    /** 管理控制台显示名称。 */
     private String displayName;
+    /** 配置值类型（如 int、boolean）。 */
     private String configType;
+    /** 策略默认值。 */
     private String defaultValue;
+    /** 是否允许在同一域中配置多个同类型策略实例。 */
     private boolean multipleSupported;
 
     public String getId() {

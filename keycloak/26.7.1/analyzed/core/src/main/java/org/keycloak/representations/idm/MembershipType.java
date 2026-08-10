@@ -16,17 +16,17 @@
  */
 package org.keycloak.representations.idm;
 
+/**
+ * 成员与组/组织之间关系的管理模式枚举。
+ */
 public enum MembershipType {
 
-    /**
-     * Indicates that member can exist without group/organization.
-     */
+    /** 非托管：成员可独立于组/组织存在。 */
     UNMANAGED,
 
-    /**
-     * Indicates that member cannot exist without group/organization.
-     */
+    /** 托管：成员必须依附于组/组织存在。 */
     MANAGED;
 
+    /** JSON/配置属性名：{@value}。 */
     public static final String NAME = "membershipType";
 }

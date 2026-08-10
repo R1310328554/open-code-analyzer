@@ -18,9 +18,12 @@
 package org.keycloak.representations.idm;
 
 /**
+ * 已弃用：旧版 OAuth 客户端表示，现由 {@link ClientRepresentation} 取代。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Deprecated
 public class OAuthClientRepresentation extends ApplicationRepresentation {
+    // 空子类，保留向后兼容的 JSON 反序列化
 }

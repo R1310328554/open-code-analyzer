@@ -18,25 +18,29 @@
 package org.keycloak.representations.idm;
 
 /**
- * Representation implementation of an organization internet domain.
- * 
- * <p>Supports pattern-based domain matching:
+ * 组织互联网域名的 REST 表示，支持模式匹配验证。
+ *
+ * <p>支持的域名匹配模式：
  * <ul>
- *   <li><code>example.com</code> - exact match only</li>
- *   <li><code>*.example.com</code> - matches example.com and all subdomains</li>
+ *   <li><code>example.com</code> — 仅精确匹配</li>
+ *   <li><code>*.example.com</code> — 匹配 example.com 及所有子域</li>
  * </ul>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class OrganizationDomainRepresentation {
 
+    /** 域名或通配符模式（如 {@code *.example.com}）。 */
     private String name;
+    /** 域名是否已通过所有权验证。 */
     private boolean verified;
 
+    /** 无参构造，供反射与 JSON 反序列化使用。 */
     public OrganizationDomainRepresentation() {
         // for reflection
     }
 
+    /** @param name 域名或通配符模式 */
     public OrganizationDomainRepresentation(String name) {
         this.name = name;
     }
@@ -57,6 +61,7 @@ public class OrganizationDomainRepresentation {
         this.verified = verified;
     }
 
+    /** 基于域名名称比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -67,6 +72,7 @@ public class OrganizationDomainRepresentation {
         return name != null && name.equals(that.getName());
     }
 
+    /** 基于域名名称计算哈希。 */
     @Override
     public int hashCode() {
         if (name == null) {

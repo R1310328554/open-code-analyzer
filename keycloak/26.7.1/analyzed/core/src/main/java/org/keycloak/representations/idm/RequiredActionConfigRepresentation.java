@@ -22,10 +22,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Represents the configuration of a RequiredAction.
+ * Required Action 运行时配置的 REST 表示，以键值对存储提供方特定参数。
  */
 public class RequiredActionConfigRepresentation implements Serializable {
 
+    /** Required Action 提供方的配置项（键 → 值）。 */
     private Map<String, String> config = new HashMap<>();
 
     public Map<String, String> getConfig() {

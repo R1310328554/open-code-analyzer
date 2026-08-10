@@ -25,18 +25,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Keycloak 组织（Organization）的 Admin REST API 表示，涵盖域名、成员、IdP 与组关联。
+ */
 public class OrganizationRepresentation {
 
+    /** 组织内部 UUID。 */
     private String id;
+    /** 组织显示名称。 */
     private String name;
+    /** 组织别名（URL 友好标识）。 */
     private String alias;
+    /** 组织是否启用。 */
     private boolean enabled = true;
+    /** 组织描述。 */
     private String description;
+    /** 组织 SSO 重定向 URL。 */
     private String redirectUrl;
+    /** 自定义属性（键 → 多值列表）。 */
     private Map<String, List<String>> attributes;
+    /** 组织关联的互联网域名集合。 */
     private Set<OrganizationDomainRepresentation> domains;
+    /** 组织成员列表。 */
     private List<MemberRepresentation> members;
+    /** 组织绑定的身份提供者列表。 */
     private List<IdentityProviderRepresentation> identityProviders;
+    /** 组织关联的组列表。 */
     private List<GroupRepresentation> groups;
 
     public String getId() {
@@ -95,6 +109,7 @@ public class OrganizationRepresentation {
         this.attributes = attributes;
     }
 
+    /** 便捷方法：设置单个属性值并返回自身以支持链式调用。 */
     public OrganizationRepresentation singleAttribute(String name, String value) {
         if (this.attributes == null) attributes = new HashMap<>();
         attributes.put(name, Collections.singletonList(value));
@@ -105,6 +120,7 @@ public class OrganizationRepresentation {
         return domains;
     }
 
+    /** 按域名查找已配置的域表示。 */
     public OrganizationDomainRepresentation getDomain(String name) {
         if (domains == null) {
             return null;
@@ -115,6 +131,7 @@ public class OrganizationRepresentation {
                 .orElse(null);
     }
 
+    /** 添加组织域名。 */
     public void addDomain(OrganizationDomainRepresentation domain) {
         if (domains == null) {
             domains = new HashSet<>();
@@ -122,6 +139,7 @@ public class OrganizationRepresentation {
         domains.add(domain);
     }
 
+    /** 移除组织域名。 */
     public void removeDomain(OrganizationDomainRepresentation domain) {
         if (domains == null) {
             return;
@@ -137,6 +155,7 @@ public class OrganizationRepresentation {
         this.members = members;
     }
 
+    /** 添加组织成员。 */
     public void addMember(MemberRepresentation member) {
         if (members == null) {
             members = new ArrayList<>();
@@ -152,6 +171,7 @@ public class OrganizationRepresentation {
         this.identityProviders = identityProviders;
     }
 
+    /** 添加身份提供者绑定。 */
     public void addIdentityProvider(IdentityProviderRepresentation idp) {
         if (identityProviders == null) {
             identityProviders = new ArrayList<>();
@@ -167,6 +187,7 @@ public class OrganizationRepresentation {
         this.groups = groups;
     }
 
+    /** 添加关联组。 */
     public void addGroup(GroupRepresentation group) {
         if (groups == null) {
             groups = new ArrayList<>();
@@ -174,6 +195,7 @@ public class OrganizationRepresentation {
         groups.add(group);
     }
 
+    /** 基于组织 ID 比较相等性。 */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -185,6 +207,7 @@ public class OrganizationRepresentation {
         return id != null && id.equals(that.getId());
     }
 
+    /** 基于组织 ID 计算哈希。 */
     @Override
     public int hashCode() {
         if (id == null) {
