@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for AlphabetType complex type.
+ * SAML 2.0 认证电话类字符集类型：定义 PIN/口令的必选字符、排除字符及大小写规则。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,6 +45,8 @@ public class AlphabetType {
     protected String _case;
 
     /**
+     * 获取 必选字符 属性的值。
+     *
      * Gets the value of the requiredChars property.
      *
      * @return possible object is {@link String }
@@ -52,6 +56,8 @@ public class AlphabetType {
     }
 
     /**
+     * 设置 必选字符 属性的值。
+     *
      * Sets the value of the requiredChars property.
      *
      * @param value allowed object is {@link String }
@@ -61,6 +67,8 @@ public class AlphabetType {
     }
 
     /**
+     * 获取 排除字符 属性的值。
+     *
      * Gets the value of the excludedChars property.
      *
      * @return possible object is {@link String }
@@ -70,6 +78,8 @@ public class AlphabetType {
     }
 
     /**
+     * 设置 排除字符 属性的值。
+     *
      * Sets the value of the excludedChars property.
      *
      * @param value allowed object is {@link String }
@@ -79,6 +89,8 @@ public class AlphabetType {
     }
 
     /**
+     * 获取 大小写规则 属性的值。
+     *
      * Gets the value of the case property.
      *
      * @return possible object is {@link String }
@@ -88,6 +100,8 @@ public class AlphabetType {
     }
 
     /**
+     * 设置 大小写规则 属性的值。
+     *
      * Sets the value of the case property.
      *
      * @param value allowed object is {@link String }

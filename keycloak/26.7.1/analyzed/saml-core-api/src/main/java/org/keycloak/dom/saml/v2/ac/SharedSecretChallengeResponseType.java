@@ -35,6 +35,8 @@ import jakarta.xml.bind.annotation.XmlSchemaType;
 import jakarta.xml.bind.annotation.XmlType;
 
 /**
+ * SAML 2.0 共享密钥挑战-应答类型：表示主体已通过共享密钥与对称密码的挑战-应答协议完成认证。
+ *
  * This element indicates that the Principal has been authenticated by a challenge-response protocol utilizing shared
  * secret
  * keys and symmetric cryptography.
@@ -70,6 +72,8 @@ public class SharedSecretChallengeResponseType {
     protected String method;
 
     /**
+     * 获取扩展（Extension）元素列表。
+     *
      * Gets the value of the extension property.
      *
      * <p>
@@ -97,6 +101,8 @@ public class SharedSecretChallengeResponseType {
     }
 
     /**
+     * 获取 挑战-应答方法 URI 属性的值。
+     *
      * Gets the value of the method property.
      *
      * @return possible object is {@link String }
@@ -106,6 +112,8 @@ public class SharedSecretChallengeResponseType {
     }
 
     /**
+     * 设置 挑战-应答方法 URI 属性的值。
+     *
      * Sets the value of the method property.
      *
      * @param value allowed object is {@link String }

@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for ActivationLimitSessionType complex type.
+ * SAML 2.0 认证电话类激活会话限制类型：空占位元素，表示按会话维度限制激活。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

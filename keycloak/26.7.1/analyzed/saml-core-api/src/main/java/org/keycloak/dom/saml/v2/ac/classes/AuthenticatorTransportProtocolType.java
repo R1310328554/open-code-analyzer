@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for AuthenticatorTransportProtocolType complex type.
+ * SAML 2.0 认证电话类传输协议类型：继承 OriginalAuthenticatorTransportProtocolType，在 PSTN/ISDN/ADSL 中选一。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.

@@ -20,6 +20,8 @@ package org.keycloak.dom.saml.v2.ac.classes;
 /**
  * <p>
  * Java class for ActivationPinType complex type.
+ * SAML 2.0 认证电话类激活 PIN 类型：描述 PIN 长度、字符集、生成方式及激活限制。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -50,6 +52,8 @@ public class ActivationPinType extends ExtensionListType {
     protected ActivationLimitType activationLimit;
 
     /**
+     * 获取 PIN 长度 属性的值。
+     *
      * Gets the value of the length property.
      *
      * @return possible object is {@link LengthType }
@@ -59,6 +63,8 @@ public class ActivationPinType extends ExtensionListType {
     }
 
     /**
+     * 设置 PIN 长度 属性的值。
+     *
      * Sets the value of the length property.
      *
      * @param value allowed object is {@link LengthType }
@@ -68,6 +74,8 @@ public class ActivationPinType extends ExtensionListType {
     }
 
     /**
+     * 获取 PIN 字符集 属性的值。
+     *
      * Gets the value of the alphabet property.
      *
      * @return possible object is {@link AlphabetType }
@@ -77,6 +85,8 @@ public class ActivationPinType extends ExtensionListType {
     }
 
     /**
+     * 设置 PIN 字符集 属性的值。
+     *
      * Sets the value of the alphabet property.
      *
      * @param value allowed object is {@link AlphabetType }
@@ -86,6 +96,8 @@ public class ActivationPinType extends ExtensionListType {
     }
 
     /**
+     * 获取 PIN 生成方式 属性的值。
+     *
      * Gets the value of the generation property.
      *
      * @return possible object is {@link Generation }
@@ -95,6 +107,8 @@ public class ActivationPinType extends ExtensionListType {
     }
 
     /**
+     * 设置 PIN 生成方式 属性的值。
+     *
      * Sets the value of the generation property.
      *
      * @param value allowed object is {@link Generation }
@@ -104,6 +118,8 @@ public class ActivationPinType extends ExtensionListType {
     }
 
     /**
+     * 获取 激活限制 属性的值。
+     *
      * Gets the value of the activationLimit property.
      *
      * @return possible object is {@link ActivationLimitType }
@@ -113,6 +129,8 @@ public class ActivationPinType extends ExtensionListType {
     }
 
     /**
+     * 设置 激活限制 属性的值。
+     *
      * Sets the value of the activationLimit property.
      *
      * @param value allowed object is {@link ActivationLimitType }

@@ -34,6 +34,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for TimeSyncTokenType complex type.
+ * SAML 2.0 时间同步令牌类型：描述 OTP 设备类型、种子长度及是否手持设备。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -62,6 +64,8 @@ public class TimeSyncTokenType {
     protected BooleanType deviceInHand;
 
     /**
+     * 获取 设备类型 属性的值。
+     *
      * Gets the value of the deviceType property.
      *
      * @return possible object is {@link DeviceTypeType }
@@ -71,6 +75,8 @@ public class TimeSyncTokenType {
     }
 
     /**
+     * 设置 设备类型 属性的值。
+     *
      * Sets the value of the deviceType property.
      *
      * @param value allowed object is {@link DeviceTypeType }
@@ -80,6 +86,8 @@ public class TimeSyncTokenType {
     }
 
     /**
+     * 获取 种子长度 属性的值。
+     *
      * Gets the value of the seedLength property.
      *
      * @return possible object is {@link BigInteger }
@@ -89,6 +97,8 @@ public class TimeSyncTokenType {
     }
 
     /**
+     * 设置 种子长度 属性的值。
+     *
      * Sets the value of the seedLength property.
      *
      * @param value allowed object is {@link BigInteger }
@@ -98,6 +108,8 @@ public class TimeSyncTokenType {
     }
 
     /**
+     * 获取 是否手持设备 属性的值。
+     *
      * Gets the value of the deviceInHand property.
      *
      * @return possible object is {@link BooleanType }
@@ -107,6 +119,8 @@ public class TimeSyncTokenType {
     }
 
     /**
+     * 设置 是否手持设备 属性的值。
+     *
      * Sets the value of the deviceInHand property.
      *
      * @param value allowed object is {@link BooleanType }

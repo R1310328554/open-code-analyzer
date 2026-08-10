@@ -22,6 +22,8 @@ import java.math.BigInteger;
 /**
  * <p>
  * Java class for ActivationLimitUsagesType complex type.
+ * SAML 2.0 认证电话类激活使用次数限制类型：以整数属性 number 指定允许的最大使用次数。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,13 +41,21 @@ import java.math.BigInteger;
 
 public class ActivationLimitUsagesType {
 
+    /** 允许使用次数。 */
     protected BigInteger number;
 
+    /**
+     * 构造激活使用次数限制。
+     *
+     * @param theNumber 允许的最大使用次数
+     */
     public ActivationLimitUsagesType(BigInteger theNumber) {
         this.number = theNumber;
     }
 
     /**
+     * 获取 number 属性值。
+     *
      * Gets the value of the number property.
      *
      * @return possible object is {@link BigInteger }

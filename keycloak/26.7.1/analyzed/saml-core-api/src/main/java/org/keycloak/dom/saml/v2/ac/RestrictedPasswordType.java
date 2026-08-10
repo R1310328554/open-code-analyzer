@@ -31,6 +31,8 @@ import jakarta.xml.bind.annotation.XmlType;
 /**
  * <p>
  * Java class for RestrictedPasswordType complex type.
+ * SAML 2.0 受限口令（RestrictedPassword）类型：在 PasswordType 基础上增加长度限制与外部校验 URI。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
