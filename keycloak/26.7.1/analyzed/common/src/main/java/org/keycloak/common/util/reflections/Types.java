@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Utility class for Types
+ * Java 泛型 {@link Type} 与 {@link Class} 解析、装箱及层次结构遍历工具类。
  */
 public class Types {
     private Types() {
@@ -35,11 +35,11 @@ public class Types {
     }
 
     /**
-     * Gets the boxed type of a class
+     * 将 {@link Type} 对应的原始类型转换为其装箱类型。
      *
-     * @param type The type
+     * @param type 待转换的类型
      *
-     * @return The boxed type
+     * @return 装箱后的类型；非原始类型时原样返回
      */
     public static Type boxedType(Type type) {
         if (type instanceof Class<?>) {
@@ -49,6 +49,7 @@ public class Types {
         }
     }
 
+    /** 将原始 {@link Class} 映射为对应包装类。 */
     public static Class<?> boxedClass(Class<?> type) {
         if (!type.isPrimitive()) {
             return type;
@@ -71,13 +72,13 @@ public class Types {
         } else if (type.equals(Void.TYPE)) {
             return Void.class;
         } else {
-            // Vagaries of if/else statement, can't be reached ;-)
+            // if/else 分支穷尽性保证，理论上不可达
             return type;
         }
     }
 
     /**
-     * Is the genericType of a certain class?
+     * 判断 {@code clazz} 是否为参数化类型 {@code pType} 原始类型的子类型或实现类。
      */
     public static boolean isA(Class clazz, ParameterizedType pType)
     {
@@ -85,13 +86,14 @@ public class Types {
     }
 
     /**
-     * Gets the index-th type argument.
+     * 获取参数化类型第 {@code index} 个类型实参。
      */
     public static Class getArgumentType(ParameterizedType pType, int index)
     {
         return (Class) pType.getActualTypeArguments()[index];
     }
 
+    /** 在类层次中查找实现指定接口时的泛型实参类型。 */
     public static Class getTemplateParameterOfInterface(Class base, Class desiredInterface)
     {
         Object rtn = searchForInterfaceTemplateParameter(base, desiredInterface);
@@ -152,11 +154,11 @@ public class Types {
 
 
     /**
-     * See if the two methods are compatible, that is they have the same relative signature
+     * 判断两个方法是否具有兼容的相对签名（同名且各参数类型可赋值）。
      *
-     * @param method
-     * @param intfMethod
-     * @return
+     * @param method 实现类方法
+     * @param intfMethod 接口声明方法
+     * @return 兼容时返回 true
      */
     public static boolean isCompatible(Method method, Method intfMethod)
     {
@@ -175,11 +177,11 @@ public class Types {
     }
 
     /**
-     * Given a method and a root class, find the actual method declared in the root that implements the method.
+     * 在 {@code clazz} 中查找实际实现 {@code intfMethod} 的声明方法（解析泛型形参）。
      *
-     * @param clazz
-     * @param intfMethod
-     * @return
+     * @param clazz 起始类
+     * @param intfMethod 接口方法
+     * @return 实现类上的对应 {@link Method}
      */
     public static Method getImplementingMethod(Class clazz, Method intfMethod)
     {
@@ -201,7 +203,7 @@ public class Types {
                 }
                 else
                 {
-                    // Interface type parameters may not have been filled out
+                    // 接口类型参数可能尚未具体化
                     typeVarMap.put(vars[i].getName(), vars[i].getGenericDeclaration());
                 }
             }
@@ -249,11 +251,12 @@ public class Types {
     }
 
 
+    /** 从 {@link Type} 提取擦除后的 {@link Class}；无法解析时抛出异常。 */
     public static Class<?> getRawType(Type type)
     {
         if (type instanceof Class<?>)
         {
-            // type is a normal class.
+            // 普通 Class 类型
             return (Class<?>) type;
 
         }
@@ -281,11 +284,12 @@ public class Types {
     }
 
 
+    /** 与 {@link #getRawType(Type)} 类似，无法解析时返回 null 而非抛异常。 */
     public static Class<?> getRawTypeNoException(Type type)
     {
         if (type instanceof Class<?>)
         {
-            // type is a normal class.
+            // 普通 Class 类型
             return (Class<?>) type;
 
         }
@@ -305,10 +309,10 @@ public class Types {
     }
 
     /**
-     * Returns the type argument from a parameterized type
+     * 返回参数化类型的第一个类型实参。
      *
-     * @param genericType
-     * @return null if there is no type parameter
+     * @param genericType 泛型类型
+     * @return 类型实参；非参数化类型时返回 null
      */
     public static Class<?> getTypeArgument(Type genericType)
     {
@@ -319,6 +323,7 @@ public class Types {
     }
 
 
+    /** 解析集合、数组或泛型数组的元素/组件类型。 */
     public static Class getCollectionBaseType(Class type, Type genericType)
     {
         if (genericType instanceof ParameterizedType)
@@ -341,6 +346,7 @@ public class Types {
     }
 
 
+    /** 返回 {@code Map<K,V>} 的键类型 K。 */
     public static Class getMapKeyType(Type genericType)
     {
         if (genericType instanceof ParameterizedType)
@@ -352,6 +358,7 @@ public class Types {
         return null;
     }
 
+    /** 返回 {@code Map<K,V>} 的值类型 V。 */
     public static Class getMapValueType(Type genericType)
     {
         if (genericType instanceof ParameterizedType)
@@ -363,6 +370,7 @@ public class Types {
         return null;
     }
 
+    /** 在 {@code root} 类上下文中递归解析类型中的 {@link TypeVariable}。 */
     public static Type resolveTypeVariables(Class<?> root, Type type)
     {
         if (type instanceof TypeVariable)
@@ -421,12 +429,11 @@ public class Types {
 
 
     /**
-     * Finds an actual value of a type variable. The method looks in a class hierarchy for a class defining the variable
-     * and returns the value if present.
+     * 在类层次中查找类型变量的实际绑定类型。
      *
-     * @param root
-     * @param typeVariable
-     * @return actual type of the type variable
+     * @param root 起始类
+     * @param typeVariable 待解析的类型变量
+     * @return 实际类型；未找到时返回 null
      */
     public static Type resolveTypeVariable(Class<?> root, TypeVariable<?> typeVariable)
     {
@@ -449,11 +456,11 @@ public class Types {
 
 
     /**
-     * Given a class and an interfaces, go through the class hierarchy to find the interface and return its type arguments.
+     * 沿类层次查找指定接口的参数化实参数组。
      *
-     * @param classToSearch
-     * @param interfaceToFind
-     * @return type arguments of the interface
+     * @param classToSearch 待搜索的类
+     * @param interfaceToFind 目标接口
+     * @return 接口的类型实参
      */
     public static Type[] getActualTypeArgumentsOfAnInterface(Class<?> classToSearch, Class<?> interfaceToFind)
     {
@@ -465,12 +472,11 @@ public class Types {
     private static final Type[] EMPTY_TYPE_ARRAY = {};
 
     /**
-     * Search for the given interface or class within the root's class/interface hierarchy.
-     * If the searched for class/interface is a generic return an array of real types that fill it out.
+     * 在 {@code root} 的类/接口层次中搜索目标类型，若其为泛型则返回填充后的实参数组。
      *
-     * @param root
-     * @param searchedFor
-     * @return
+     * @param root 起始类
+     * @param searchedFor 待查找的类或接口
+     * @return 类型实参数组；未找到时返回 null
      */
     public static Type[] findParameterizedTypes(Class<?> root, Class<?> searchedFor)
     {
@@ -481,6 +487,7 @@ public class Types {
         return findClassParameterizedTypes(root, null, searchedFor);
     }
 
+    /** 沿超类链搜索指定类的参数化类型实参。 */
     public static Type[] findClassParameterizedTypes(Class<?> root, ParameterizedType rootType, Class<?> searchedForClass)
     {
         if (Object.class.equals(root)) return null;
@@ -531,6 +538,7 @@ public class Types {
     }
 
 
+    /** 沿接口与超类链搜索指定接口的参数化类型实参。 */
     public static Type[] findInterfaceParameterizedTypes(Class<?> root, ParameterizedType rootType, Class<?> searchedForInterface)
     {
         Map<String, Type> typeVarMap = populateParameterizedMap(root, rootType);
@@ -619,14 +627,13 @@ public class Types {
     }
 
     /**
-     * Grabs the parameterized type of fromInterface
-     * that object implements and sees if it is assignable from type.
+     * 判断 {@code object} 通过 {@code fromInterface} 声明的泛型提供者类型是否可赋值给 {@code type}。
      *
-     * @param type
-     * @param object
-     * @param fromInterface
-     * @param <T>
-     * @return
+     * @param type 期望的上界类型
+     * @param object 待检测对象
+     * @param fromInterface 携带泛型信息的接口
+     * @param <T> 类型参数
+     * @return 支持时返回 true
      */
     public static <T> boolean supports(Class<T> type, Object object, Class<?> fromInterface) {
         Type providerType = getActualTypeArgumentsOfAnInterface(object.getClass(), fromInterface)[0];

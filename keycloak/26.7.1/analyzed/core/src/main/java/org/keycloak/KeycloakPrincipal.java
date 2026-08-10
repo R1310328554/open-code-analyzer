@@ -25,18 +25,27 @@ import java.security.Principal;
 import org.keycloak.common.util.DelegatingSerializationFilter;
 
 /**
+ * 表示已认证 Keycloak 用户的 {@link Principal}，关联 {@link KeycloakSecurityContext} 安全上下文。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakPrincipal<T extends KeycloakSecurityContext> implements Principal, Serializable {
+    /** 主体名称（通常为用户名）。 */
     protected final String name;
+    /** 关联的 Keycloak 安全上下文。 */
     protected final T context;
 
+    /**
+     * @param name 主体名称
+     * @param context 安全上下文
+     */
     public KeycloakPrincipal(String name, T context) {
         this.name = name;
         this.context = context;
     }
 
+    /** 返回关联的安全上下文。 */
     public T getKeycloakSecurityContext() {
         return context;
     }
@@ -68,6 +77,7 @@ public class KeycloakPrincipal<T extends KeycloakSecurityContext> implements Pri
         return name;
     }
 
+    /** 反序列化时使用白名单过滤，仅允许 Keycloak 相关类。 */
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         DelegatingSerializationFilter.builder()
                 .addAllowedClass(KeycloakPrincipal.class)

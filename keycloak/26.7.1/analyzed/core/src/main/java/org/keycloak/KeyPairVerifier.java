@@ -27,10 +27,19 @@ import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.crypto.RSAProvider;
 
 /**
+ * 通过 RSA 签名与验签验证 PEM 格式公私钥是否匹配的实用工具。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class KeyPairVerifier {
 
+    /**
+     * 解码 PEM 公私钥，用私钥签发 JWS 并用公钥验签，以确认密钥对一致。
+     *
+     * @param privateKeyPem PEM 编码的 RSA 私钥
+     * @param publicKeyPem PEM 编码的 RSA 公钥
+     * @throws VerificationException 解码失败或密钥不匹配时抛出
+     */
     public static void verify(String privateKeyPem, String publicKeyPem) throws VerificationException {
         PrivateKey privateKey;
         try {

@@ -21,18 +21,21 @@ import java.lang.reflect.AccessibleObject;
 import java.security.PrivilegedAction;
 
 /**
- * A {@link PrivilegedAction} that calls {@link AccessibleObject#setAccessible(boolean)}
+ * 在特权上下文中调用 {@link AccessibleObject#setAccessible(boolean)} 以撤销可访问性的 {@link PrivilegedAction}。
+ *
  * @deprecated for removal in Keycloak 27
  */
 @Deprecated
 public class UnSetAccessiblePrivilegedAction implements PrivilegedAction<Void> {
 
+    /** 待撤销可访问性的成员对象。 */
     private final AccessibleObject member;
 
     public UnSetAccessiblePrivilegedAction(AccessibleObject member) {
         this.member = member;
     }
 
+    /** 若成员当前可访问则将其设为不可访问，并返回 null。 */
     public Void run() {
         if (member.isAccessible()) {
             member.setAccessible(false);

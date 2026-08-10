@@ -18,8 +18,16 @@ package org.keycloak;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+/**
+ * 标记 Keycloak 令牌类型的通用接口，用于区分访问令牌、ID 令牌等类别。
+ */
 public interface Token {
 
+    /**
+     * 返回令牌的语义类别，序列化时忽略此字段。
+     *
+     * @return 令牌类别
+     */
     @JsonIgnore
     TokenCategory getCategory();
 

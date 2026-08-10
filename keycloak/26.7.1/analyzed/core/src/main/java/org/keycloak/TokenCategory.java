@@ -16,12 +16,22 @@
  */
 package org.keycloak;
 
+/**
+ * Keycloak 令牌的语义分类枚举，用于标识令牌在协议流程中的角色。
+ */
 public enum TokenCategory {
+    /** 内部用途令牌。 */
     INTERNAL,
+    /** OAuth/OIDC 访问令牌。 */
     ACCESS,
+    /** OpenID Connect ID 令牌。 */
     ID,
+    /** 管理 API 访问令牌。 */
     ADMIN,
+    /** UserInfo 端点返回的令牌。 */
     USERINFO,
+    /** 登出流程使用的令牌。 */
     LOGOUT,
+    /** 授权响应中携带的令牌。 */
     AUTHORIZATION_RESPONSE
 }

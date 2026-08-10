@@ -29,17 +29,20 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.util.JsonSerialization;
 
 /**
- * Available in secured requests under HttpServletRequest.getAttribute()
- * Also available in HttpSession.getAttribute under the classname of this class
+ * Keycloak 安全上下文，持有访问令牌与 ID 令牌的原始字符串及解析结果。
+ * <p>在受保护请求中可通过 {@code HttpServletRequest.getAttribute()} 获取；
+ * 也可在 {@code HttpSession} 中以本类全限定名作为属性键存储。</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class KeycloakSecurityContext implements Serializable {
+    /** 访问令牌的 JWT 字符串。 */
     protected String tokenString;
+    /** ID 令牌的 JWT 字符串。 */
     protected String idTokenString;
 
-    // Don't store parsed tokens into HTTP session
+    // 解析后的令牌对象不写入 HTTP Session，避免序列化体积过大
     protected transient AccessToken token;
     protected transient IDToken idToken;
     protected transient AuthorizationContext authorizationContext;
@@ -47,6 +50,12 @@ public class KeycloakSecurityContext implements Serializable {
     public KeycloakSecurityContext() {
     }
 
+    /**
+     * @param tokenString 访问令牌 JWT
+     * @param token 已解析的访问令牌
+     * @param idTokenString ID 令牌 JWT
+     * @param idToken 已解析的 ID 令牌
+     */
     public KeycloakSecurityContext(String tokenString, AccessToken token, String idTokenString, IDToken idToken) {
         this.tokenString = tokenString;
         this.token = token;
@@ -74,8 +83,13 @@ public class KeycloakSecurityContext implements Serializable {
         return idTokenString;
     }
 
+    /**
+     * 从访问令牌 issuer 中提取 realm 名称（取 issuer URL 最后一段路径）。
+     *
+     * @return realm 名称
+     */
     public String getRealm() {
-        // Assumption that issuer contains realm name
+        // 假设 issuer 末尾包含 realm 名
         return token.getIssuer().substring(token.getIssuer().lastIndexOf('/') + 1);
     }
 
@@ -85,6 +99,7 @@ public class KeycloakSecurityContext implements Serializable {
         out.defaultWriteObject();
     }
 
+    /** 反序列化后从 JWT 字符串重新解析令牌对象（不做签名验证）。 */
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         DelegatingSerializationFilter.builder()
                 .addAllowedClass(KeycloakSecurityContext.class)
@@ -95,7 +110,13 @@ public class KeycloakSecurityContext implements Serializable {
         idToken = parseToken(idTokenString, IDToken.class);
     }
 
-    // Just decode token without any verifications
+    /**
+     * 仅解码 JWT payload，不进行任何密码学验证。
+     *
+     * @param encoded JWT 字符串
+     * @param clazz 目标令牌类型
+     * @return 解析后的对象；encoded 为 null 时返回 null
+     */
     private <T> T parseToken(String encoded, Class<T> clazz) throws IOException {
         if (encoded == null)
             return null;

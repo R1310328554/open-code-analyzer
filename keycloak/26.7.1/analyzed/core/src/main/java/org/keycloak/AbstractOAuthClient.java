@@ -25,23 +25,39 @@ import org.keycloak.common.util.KeycloakUriBuilder;
 import org.keycloak.common.util.SecretGenerator;
 
 /**
+ * OAuth/OIDC 客户端实现的抽象基类，封装授权端点、令牌端点及 state 管理等通用配置。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class AbstractOAuthClient {
+    /** OAuth 令牌请求 state 在 Cookie 中的默认键名。 */
     private static final String OAUTH_TOKEN_REQUEST_STATE = "OAuth_Token_Request_State";
+    /** 用于生成唯一 state 值的递增计数器。 */
     private final AtomicLong counter = new AtomicLong();
 
+    /** OAuth 客户端标识符。 */
     protected String clientId;
+    /** 客户端凭证（如密钥、JWT 等）。 */
     protected Map<String, Object> credentials;
+    /** 授权端点 URL。 */
     protected String authUrl;
+    /** 令牌端点 URL。 */
     protected String tokenUrl;
+    /** 相对 URL 使用策略。 */
     protected RelativeUrlsUsed relativeUrlsUsed;
+    /** 请求的 OAuth scope。 */
     protected String scope;
+    /** 存储 OAuth state 的 Cookie 名称。 */
     protected String stateCookieName = OAUTH_TOKEN_REQUEST_STATE;
+    /** state Cookie 的路径。 */
     protected String stateCookiePath;
+    /** 是否通过 HTTPS 通信。 */
     protected boolean isSecure;
+    /** 是否为公开客户端（无 client_secret）。 */
     protected boolean publicClient;
+
+    /** 生成「计数器/安全随机 ID」格式的 state 码。 */
     protected String getStateCode() {
         return counter.getAndIncrement() + "/" + SecretGenerator.getInstance().generateSecureID();
     }
@@ -126,6 +142,12 @@ public class AbstractOAuthClient {
         this.relativeUrlsUsed = relativeUrlsUsed;
     }
 
+    /**
+     * 从重定向 URI 中移除 {@code code} 与 {@code state} 查询参数。
+     *
+     * @param uri 原始重定向 URI
+     * @return 去除 OAuth 参数后的 URI 字符串
+     */
     protected String stripOauthParametersFromRedirect(String uri) {
         KeycloakUriBuilder builder = KeycloakUriBuilder.fromUri(uri)
                 .replaceQueryParam(OAuth2Constants.CODE, null)

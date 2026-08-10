@@ -22,12 +22,20 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.keycloak.common.util.SecretGenerator;
 
 /**
+ * 生成唯一令牌标识符的工具类。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class TokenIdGenerator {
+    /** 单调递增计数器，用于增强 ID 唯一性。 */
     private static final AtomicLong counter = new AtomicLong();
 
+    /**
+     * 生成全局唯一的令牌 ID，格式为「安全随机串-毫秒时间戳」。
+     *
+     * @return 新生成的令牌标识符
+     */
     public static String generateId() {
         return SecretGenerator.getInstance().generateSecureID() + "-" + System.currentTimeMillis();
     }
