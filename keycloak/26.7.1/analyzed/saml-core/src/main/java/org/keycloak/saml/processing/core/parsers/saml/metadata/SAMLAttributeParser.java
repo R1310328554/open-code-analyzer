@@ -25,22 +25,27 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.keycloak.saml.processing.core.parsers.saml.assertion.SAMLAttributeValueParser;
 
 /**
- * Parse the <conditions> in the saml assertion
+ * 解析 SAML 元数据中的 {@code Attribute} 元素。
+ * <p>读取属性名称、友好名称、名称格式及 X500 编码等属性，并解析 AttributeValue 子元素。</p>
  *
  * @since Oct 14, 2010
  */
 public class SAMLAttributeParser extends AbstractStaxSamlMetadataParser<AttributeType> {
 
+    /** 单例实例。 */
     private static final SAMLAttributeParser INSTANCE = new SAMLAttributeParser();
 
+    /** 构造并绑定 ATTRIBUTE 根元素。 */
     private SAMLAttributeParser() {
         super(SAMLMetadataQNames.ATTRIBUTE);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLAttributeParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建属性对象并读取 name、friendlyName、nameFormat 及 x500Encoding 属性。 */
     @Override
     protected AttributeType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         String name = StaxParserUtil.getRequiredAttributeValue(element, SAMLMetadataQNames.ATTR_NAME);
@@ -57,6 +62,7 @@ public class SAMLAttributeParser extends AbstractStaxSamlMetadataParser<Attribut
         return attribute;
     }
 
+    /** 解析 AttributeValue 子元素并追加到属性值列表。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, AttributeType target, SAMLMetadataQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

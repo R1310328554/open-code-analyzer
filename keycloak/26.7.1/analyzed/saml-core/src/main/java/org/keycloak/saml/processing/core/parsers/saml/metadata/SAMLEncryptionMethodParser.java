@@ -12,25 +12,33 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import static org.keycloak.saml.processing.core.parsers.saml.metadata.SAMLMetadataQNames.ENCRYPTION_METHOD;
 
 /**
+ * 解析 SAML 元数据中的 {@code EncryptionMethod} 元素。
+ * <p>读取加密算法 URI，并解析 KeySize、OAEPParams 及其他 XML 加密扩展子元素。</p>
+ *
  * @author mhajas
  */
 public class SAMLEncryptionMethodParser extends AbstractStaxSamlMetadataParser<EncryptionMethodType> {
 
+    /** 单例实例。 */
     private static final SAMLEncryptionMethodParser INSTANCE = new SAMLEncryptionMethodParser();
 
+    /** 构造并绑定 ENCRYPTION_METHOD 根元素。 */
     public SAMLEncryptionMethodParser() {
         super(ENCRYPTION_METHOD);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLEncryptionMethodParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建加密方法对象并读取 algorithm 属性。 */
     @Override
     protected EncryptionMethodType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new EncryptionMethodType(StaxParserUtil.getRequiredAttributeValue(element, SAMLMetadataQNames.ATTR_ALGORITHM));
     }
 
+    /** 解析 KeySize、OAEPParams 及未识别的扩展子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, EncryptionMethodType target, SAMLMetadataQNames element, StartElement elementDetail) throws ParsingException {
         switch(element) {

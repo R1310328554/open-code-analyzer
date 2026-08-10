@@ -26,28 +26,33 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import org.w3c.dom.Element;
 
 /**
- * Parse the SAML Entities Descriptor
+ * 解析 SAML 元数据中的 {@code EntitiesDescriptor} 元素。
+ * <p>可包含多个实体描述符或嵌套的实体集合，并读取 ID、有效期、缓存时长及名称等属性。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Jan 31, 2011
  */
 public class SAMLEntitiesDescriptorParser extends AbstractStaxSamlMetadataParser<EntitiesDescriptorType> {
 
+    /** 单例实例。 */
     private static final SAMLEntitiesDescriptorParser INSTANCE = new SAMLEntitiesDescriptorParser();
 
+    /** 构造并绑定 ENTITIES_DESCRIPTOR 根元素。 */
     public SAMLEntitiesDescriptorParser() {
         super(SAMLMetadataQNames.ENTITIES_DESCRIPTOR);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLEntitiesDescriptorParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建实体集合描述符并读取 ID、validUntil、cacheDuration 及 name 属性。 */
     @Override
     protected EntitiesDescriptorType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         EntitiesDescriptorType descriptor = new EntitiesDescriptorType();
 
-        // Parse the attributes
+        // 解析属性
         descriptor.setID(StaxParserUtil.getAttributeValue(element, SAMLMetadataQNames.ATTR_ID));
         descriptor.setValidUntil(StaxParserUtil.getXmlTimeAttributeValue(element, SAMLMetadataQNames.ATTR_VALID_UNTIL));
         descriptor.setCacheDuration(StaxParserUtil.getXmlDurationAttributeValue(element, SAMLMetadataQNames.ATTR_CACHE_DURATION));
@@ -56,6 +61,7 @@ public class SAMLEntitiesDescriptorParser extends AbstractStaxSamlMetadataParser
         return descriptor;
     }
 
+    /** 解析签名、扩展、实体描述符及嵌套实体集合等子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, EntitiesDescriptorType target, SAMLMetadataQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {

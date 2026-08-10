@@ -31,23 +31,28 @@ import org.keycloak.saml.common.util.StaxParserUtil;
 import static org.keycloak.saml.processing.core.parsers.saml.metadata.SAMLMetadataQNames.ENTITY_DESCRIPTOR;
 
 /**
- * Parse the SAML Metadata element "EntityDescriptor"
+ * 解析 SAML 元数据中的 {@code EntityDescriptor} 元素。
+ * <p>描述单个 SAML 实体的标识、角色描述符（IdP/SP/属性权威/认证权威/PDP）、组织及联系人信息。</p>
  *
  * @author Anil.Saldhana@redhat.com
  * @since Dec 14, 2010
  */
 public class SAMLEntityDescriptorParser extends AbstractStaxSamlMetadataParser<EntityDescriptorType> {
 
+    /** 单例实例。 */
     private static final SAMLEntityDescriptorParser INSTANCE = new SAMLEntityDescriptorParser();
 
+    /** 构造并绑定 ENTITY_DESCRIPTOR 根元素。 */
     private SAMLEntityDescriptorParser() {
         super(ENTITY_DESCRIPTOR);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLEntityDescriptorParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建实体描述符并读取 entityID、validUntil、cacheDuration 及 ID 属性。 */
     @Override
     protected EntityDescriptorType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         String entityID = StaxParserUtil.getRequiredAttributeValue(element, SAMLMetadataQNames.ATTR_ENTITY_ID);
@@ -60,6 +65,7 @@ public class SAMLEntityDescriptorParser extends AbstractStaxSamlMetadataParser<E
         return descriptor;
     }
 
+    /** 解析签名、扩展、各类角色描述符、组织及联系人等子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, EntityDescriptorType target, SAMLMetadataQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {
@@ -123,6 +129,7 @@ public class SAMLEntityDescriptorParser extends AbstractStaxSamlMetadataParser<E
             case ROLE_DESCRIPTOR:
             case AFFILIATION_DESCRIPTOR:
             case ADDITIONAL_METADATA_LOCATION:
+                // 暂不支持的描述符类型，跳过整个元素块
                 StaxParserUtil.bypassElementBlock(xmlEventReader);
                 break;
 

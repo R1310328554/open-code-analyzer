@@ -12,25 +12,33 @@ import static org.keycloak.saml.processing.core.parsers.saml.metadata.SAMLMetada
 import static org.keycloak.saml.processing.core.parsers.saml.metadata.SAMLMetadataQNames.CONTACT_PERSON;
 
 /**
+ * 解析 SAML 元数据中的 {@code ContactPerson} 元素。
+ * <p>读取联系人类型及公司、姓名、邮箱、电话等联系信息，并可包含扩展子元素。</p>
+ *
  * @author mhajas
  */
 public class SAMLContactPersonParser extends AbstractStaxSamlMetadataParser<ContactType> {
 
+    /** 单例实例。 */
     private static final SAMLContactPersonParser INSTANCE = new SAMLContactPersonParser();
 
+    /** 构造并绑定 CONTACT_PERSON 根元素。 */
     public SAMLContactPersonParser() {
         super(CONTACT_PERSON);
     }
 
+    /** 返回解析器单例。 */
     public static SAMLContactPersonParser getInstance() {
         return INSTANCE;
     }
 
+    /** 创建联系人对象并读取 contactType 属性。 */
     @Override
     protected ContactType instantiateElement(XMLEventReader xmlEventReader, StartElement element) throws ParsingException {
         return new ContactType(ContactTypeType.fromValue(StaxParserUtil.getRequiredAttributeValue(element, ATTR_CONTACT_TYPE)));
     }
 
+    /** 解析公司、姓名、邮箱、电话及扩展等子元素。 */
     @Override
     protected void processSubElement(XMLEventReader xmlEventReader, ContactType target, SAMLMetadataQNames element, StartElement elementDetail) throws ParsingException {
         switch (element) {
