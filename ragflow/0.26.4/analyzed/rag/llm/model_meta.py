@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+模型元数据驱动：拉取各厂商 /v1/models 列表并格式化为 RAGFlow 可选模型。
+"""
+
+
 import json
 import aiohttp
 from abc import ABC
@@ -23,6 +28,7 @@ from common.constants import LLMType
 
 
 class Base(ABC):
+    # 模型列表抽象基类：GET models 端点并格式化
     def __init__(self, api_key: str, base_url: str = None):
         self.api_key = api_key
         self.base_url = base_url
@@ -51,6 +57,7 @@ class Base(ABC):
         return raw_model_list
 
     async def get_model_list(self):
+        # 异步获取可用模型列表（chat/embedding 等类型标签）
         raw_model_list = await self._get_raw_model_list()
         if not raw_model_list:
             return []
@@ -58,6 +65,7 @@ class Base(ABC):
 
 
 class VolcEngine(Base):
+    # 火山方舟模型列表（ark_api_key JSON 鉴权）
     _FACTORY_NAME = "VolcEngine"
 
     def _get_api_key(self):
@@ -115,6 +123,7 @@ class VolcEngine(Base):
 
 
 class Ollama(Base):
+    # Ollama 本地模型枚举
     _FACTORY_NAME = "Ollama"
 
     def _get_model_tags_url(self):
@@ -392,6 +401,7 @@ class OpenRouter(Base):
 
 
 class OpenAIAPICompatible(Base):
+    # 通用 OpenAI 兼容 /v1/models 解析
     _FACTORY_NAME = "OpenAI-API-Compatible"
 
     _EMBEDDING_HINTS = ("embed", "embedding", "bge")

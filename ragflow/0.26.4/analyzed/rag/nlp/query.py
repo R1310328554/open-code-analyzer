@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+全文检索查询构建：中英文分词、同义词扩展、字段加权与 Infinity/ES 兼容转义。
+"""
+
+
 
 import logging
 import json
@@ -26,6 +31,7 @@ from rag.utils.redis_conn import REDIS_CONN
 
 
 class FulltextQueryer(QueryBase):
+    # 继承 QueryBase，构建 MatchTextExpr 与 hybrid 检索表达式
     def __init__(self):
         self.tw = term_weight.Dealer()
         self.syn = synonym.Dealer(redis=REDIS_CONN.REDIS if REDIS_CONN.is_alive() else None)
@@ -40,10 +46,11 @@ class FulltextQueryer(QueryBase):
         ]
 
     def question(self, txt, tbl="qa", min_match: float = 0.6):
+        # 将自然语言问题转为带权 BM25/全文 query 字符串
         original_query = txt
         txt = self.add_space_between_eng_zh(txt)
 
-        # Strip Infinity ESCAPABLE characters from the query.
+        # 剥离 Infinity 特殊字符，避免 search_lexer 解析错误
         #
         # Infinity's search_lexer.l defines ESCAPABLE characters [\x20()^"'~*?:\\]
         # If these characters appear unescaped in a query, Infinity's lexer will
@@ -166,6 +173,7 @@ class FulltextQueryer(QueryBase):
         return None, keywords
 
     def hybrid_similarity(self, avec, bvecs, atks, btkss, tkweight=0.3, vtweight=0.7):
+        # 融合向量余弦与 token 重叠度计算 hybrid 分数
         from sklearn.metrics.pairwise import cosine_similarity
         import numpy as np
 

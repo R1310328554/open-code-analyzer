@@ -13,10 +13,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+LLM 密钥工具：规范化 Replicate 等嵌套 JSON api_key 配置。
+"""
+
+
 import json
 
 
 def _normalize_replicate_key(key):
+    # 从 dict/JSON 字符串中提取 api_key 供 Replicate SDK 使用
     if isinstance(key, dict):
         if "api_key" in key:
             return key.get("api_key")

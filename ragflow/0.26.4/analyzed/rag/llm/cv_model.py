@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+视觉 LLM 驱动：图像描述、多模态 chat 与各云厂商 CV API 适配。
+"""
+
+
 
 import base64
 import json
@@ -40,6 +45,7 @@ from common.misc_utils import thread_pool_exec
 
 
 def _qwen3_no_think_extra_body(model_name: str) -> dict[str, bool] | None:
+    # Qwen3 视觉模型禁用 thinking 模式
     """Build DashScope-compatible options that disable Qwen3.x thinking."""
     if "qwen3." in model_name.lower():
         return {"enable_thinking": False}
@@ -56,6 +62,7 @@ def _remove_sampling_params(model_name: str, gen_conf: dict | None) -> dict:
 
 
 class Base(ABC):
+    # CV 抽象基类：describe/describe_with_prompt 与多轮视觉 history 组装
     def __init__(self, **kwargs):
         # Configure retry parameters
         self.max_retries = kwargs.get("max_retries", int(os.environ.get("LLM_MAX_RETRIES", 5)))
@@ -73,6 +80,7 @@ class Base(ABC):
         raise NotImplementedError("Please implement encode method!")
 
     def _form_history(self, system, history, images=None):
+        # 将图片 base64 嵌入 OpenAI 多模态 message 格式
         hist = []
         if system:
             hist.append({"role": "system", "content": system})
@@ -262,6 +270,7 @@ class Base(ABC):
 
 
 class GptV4(Base):
+    # OpenAI GPT-4V 及兼容 API 的默认 CV 实现
     _FACTORY_NAME = "OpenAI"
 
     def __init__(self, key, model_name="gpt-4-vision-preview", lang="Chinese", base_url="https://api.openai.com/v1", **kwargs):
@@ -823,6 +832,7 @@ class OllamaCV(Base):
 
 
 class GeminiCV(Base):
+    # Google Gemini 多模态 API 驱动
     _FACTORY_NAME = "Gemini"
 
     def __init__(self, key, model_name="gemini-1.0-pro-vision-latest", lang="Chinese", **kwargs):
@@ -1128,6 +1138,7 @@ class NvidiaCV(Base):
 
 
 class AnthropicCV(Base):
+    # Anthropic Claude 视觉 API 驱动
     _FACTORY_NAME = "Anthropic"
 
     def __init__(self, key, model_name, base_url=None, **kwargs):
@@ -1368,6 +1379,7 @@ class RAGconCV(GptV4):
 
 
 class BedrockCV(Base):
+    # AWS Bedrock 多模态模型驱动
     _FACTORY_NAME = "Bedrock"
 
     def __init__(self, key, model_name, lang="Chinese", **kwargs):

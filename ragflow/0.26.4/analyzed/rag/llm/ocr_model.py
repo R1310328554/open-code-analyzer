@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+OCR/PDF 解析模型驱动：封装 MinerU、PaddleOCR、OpenDataLoader、SoMark 等后端。
+"""
+
+
 import json
 import logging
 import os
@@ -25,6 +30,7 @@ from deepdoc.parser.somark_parser import SoMarkParser
 
 
 class Base:
+    # OCR 抽象基类：parse_pdf 返回结构化文本与布局
     def __init__(self, key: str | dict, model_name: str, **kwargs):
         self.model_name = model_name
 
@@ -33,6 +39,7 @@ class Base:
 
 
 class MinerUOcrModel(Base, MinerUParser):
+    # MinerU API/本地服务 PDF 解析
     _FACTORY_NAME = "MinerU"
 
     def __init__(self, key: str | dict, model_name: str, **kwargs):
@@ -97,6 +104,7 @@ class MinerUOcrModel(Base, MinerUParser):
 
 
 class PaddleOCROcrModel(Base, PaddleOCRParser):
+    # PaddleOCR 版面分析与 OCR
     _FACTORY_NAME = "PaddleOCR"
 
     def __init__(self, key: str | dict, model_name: str, **kwargs):
@@ -161,6 +169,7 @@ class PaddleOCROcrModel(Base, PaddleOCRParser):
 
 
 class OpenDataLoaderOcrModel(Base, OpenDataLoaderParser):
+    # OpenDataLoader 文档解析后端
     _FACTORY_NAME = "OpenDataLoader"
 
     def __init__(self, key: str | dict, model_name: str, **kwargs):
@@ -217,6 +226,7 @@ class OpenDataLoaderOcrModel(Base, OpenDataLoaderParser):
 
 
 class SoMarkOcrModel(Base, SoMarkParser):
+    # SoMark 文档解析后端
     _FACTORY_NAME = "SoMark"
 
     def __init__(self, key: str | dict, model_name: str, **kwargs):

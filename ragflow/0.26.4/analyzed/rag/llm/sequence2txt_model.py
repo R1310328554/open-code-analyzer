@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+语音转文字（ASR）驱动：Whisper 及国内云厂商语音识别 API 封装。
+"""
+
+
 import base64
 import io
 import json
@@ -30,6 +35,7 @@ from common.token_utils import num_tokens_from_string
 
 
 class Base(ABC):
+    # ASR 抽象基类：transcription 与 audio2base64
     def __init__(self, key, model_name, **kwargs):
         """
         Abstract base class constructor.
@@ -51,6 +57,7 @@ class Base(ABC):
 
 
 class GPTSeq2txt(Base):
+    # OpenAI Whisper API 默认实现
     _FACTORY_NAME = "OpenAI"
 
     def __init__(self, key, model_name="whisper-1", base_url="https://api.openai.com/v1", **kwargs):
@@ -80,6 +87,7 @@ class FuturMixSeq2txt(GPTSeq2txt):
 
 
 class QWenSeq2txt(Base):
+    # 通义千问语音识别
     _FACTORY_NAME = "Tongyi-Qianwen"
 
     def __init__(self, key, model_name="qwen-audio-asr", **kwargs):
@@ -176,6 +184,7 @@ class XinferenceSeq2txt(Base):
 
 
 class TencentCloudSeq2txt(Base):
+    # 腾讯云 ASR
     _FACTORY_NAME = "Tencent Cloud"
 
     def __init__(self, key, model_name="16k_zh", base_url="https://asr.tencentcloudapi.com"):

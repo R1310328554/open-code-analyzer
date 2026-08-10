@@ -13,7 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-"""Lightweight ``@tool`` decorator and matching ``ToolCallSession`` adapter.
+"""轻量 @tool 装饰器：从函数签名/docstring 自动生成 OpenAI function schema。
+Lightweight ``@tool`` decorator and matching ``ToolCallSession`` adapter.
 
 Lets callers register plain Python functions as LLM tools without having to
 hand-write the OpenAI function schema or build an MCP-style session::
@@ -60,6 +61,7 @@ _PY_TO_JSON: dict[type, str] = {
 
 
 def _py_type_to_json(py_type: Any) -> dict[str, Any]:
+    # Python 类型注解 → JSON Schema 片段（支持 Optional/Union）
     """Best-effort mapping from a Python annotation to a JSON-schema fragment.
 
     Handles ``Optional[T]`` / ``T | None`` by unwrapping the non-None branch
@@ -116,6 +118,7 @@ def _parse_param_docs(docstring: str | None) -> tuple[str, dict[str, str]]:
 
 
 def _build_openai_schema(fn: Callable[..., Any]) -> dict[str, Any]:
+    # 组装 OpenAI tools/function 完整 schema
     sig = inspect.signature(fn)
     try:
         hints = get_type_hints(fn)
@@ -154,6 +157,7 @@ def _build_openai_schema(fn: Callable[..., Any]) -> dict[str, Any]:
 
 
 def tool(fn: Callable[..., Any]) -> Callable[..., Any]:
+    # 装饰器：挂载 openai_schema 与 _is_tool 标记
     """Mark ``fn`` as an LLM tool and attach an OpenAI-format schema to it.
 
     The wrapped callable is the same callable — we only set two attributes:
@@ -173,6 +177,7 @@ def is_tool(obj: Any) -> bool:
 
 
 class FunctionToolSession:
+    # 本地函数工具会话，供 chat_with_tools 同步/异步 dispatch
     """Adapter that lets a list of ``@tool``-decorated callables satisfy the
     :class:`common.mcp_tool_call_conn.ToolCallSession` protocol used by the
     chat model tool loop (duck-typed, no explicit inheritance to avoid

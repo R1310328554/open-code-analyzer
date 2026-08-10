@@ -13,6 +13,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+rag.llm 包入口：LiteLLM 厂商枚举、默认 base URL 与各模型驱动类的动态注册表。
+
+更新本文件后请同步 docs/references/supported_models.mdx。
+"""
+
+
 #  AFTER UPDATING THIS FILE, PLEASE ENSURE THAT docs/references/supported_models.mdx IS ALSO UPDATED for consistency!
 #
 
@@ -23,6 +30,7 @@ from enum import StrEnum
 
 
 class SupportedLiteLLMProvider(StrEnum):
+    # LiteLLM 支持的厂商标识，与 UI 工厂名一致
     Tongyi_Qianwen = "Tongyi-Qianwen"
     Dashscope = "Dashscope"
     Bedrock = "Bedrock"
@@ -64,6 +72,7 @@ class SupportedLiteLLMProvider(StrEnum):
     FuturMix = "FuturMix"
 
 
+# 各厂商 OpenAI 兼容 API 默认 base URL
 FACTORY_DEFAULT_BASE_URL = {
     SupportedLiteLLMProvider.Tongyi_Qianwen: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     SupportedLiteLLMProvider.Dashscope: "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -97,6 +106,7 @@ FACTORY_DEFAULT_BASE_URL = {
 }
 
 
+# LiteLLM 路由前缀（如 dashscope/、bedrock/）
 LITELLM_PROVIDER_PREFIX = {
     SupportedLiteLLMProvider.Tongyi_Qianwen: "dashscope/",
     SupportedLiteLLMProvider.Dashscope: "dashscope/",
@@ -149,6 +159,7 @@ OcrModel = globals().get("OcrModel", {})
 ModelMeta = globals().get("ModelMeta", {})
 
 
+# 子模块名 → 工厂名→驱动类 映射表，启动时反射填充
 MODULE_MAPPING = {
     "chat_model": ChatModel,
     "cv_model": CvModel,
@@ -163,6 +174,7 @@ MODULE_MAPPING = {
 package_name = __name__
 
 for module_name, mapping_dict in MODULE_MAPPING.items():
+    # 扫描各 *\_model 模块，注册 Base/LiteLLMBase 子类到对应 dict
     full_module_name = f"{package_name}.{module_name}"
     module = importlib.import_module(full_module_name)
 

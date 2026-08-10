@@ -4,6 +4,7 @@
 from common.misc_utils import thread_pool_exec
 
 """
+GraphRAG 工具集：图合并/缓存、chunk 批量写入、实体关系抽取辅助与 Redis 嵌入缓存。
 Reference:
  - [graphrag](https://github.com/microsoft/graphrag)
  - [LightRag](https://github.com/HKUDS/LightRAG)
@@ -35,13 +36,13 @@ from rag.utils.redis_conn import REDIS_CONN
 from common import settings
 from common.doc_store.doc_store_base import OrderByExpr
 
-GRAPH_FIELD_SEP = "<SEP>"
+GRAPH_FIELD_SEP = "<SEP>"  # 多值图字段拼接分隔符
 
 ErrorHandlerFn = Callable[[BaseException | None, str | None, dict | None], None]
 
 chat_limiter = LoopLocalSemaphore(int(os.environ.get("MAX_CONCURRENT_CHATS", 10)))
 
-# Doc-store insert batching for GraphRAG subgraph/node/edge/community_report
+# GraphRAG 子图/节点/边/社区报告 chunk 的 doc store 批量写入配置
 # chunks.  Defaults (64 docs per batch, up to 4 batches in flight) mirror the
 # regular ingest pipeline in document_service.py while still keeping the total
 # number of simultaneous requests to ES/Infinity bounded.  Override with
@@ -51,6 +52,7 @@ _INSERT_CONCURRENCY = max(1, int(os.environ.get("GRAPHRAG_INSERT_CONCURRENCY", 4
 
 
 async def insert_chunks_bounded(chunks, tenant_id, kb_id, *, callback=None, label="Insert chunks"):
+    # 有界并发批量写入 chunk，失败重试并上报进度
     """Insert ``chunks`` into the doc store in batches with bounded concurrency and retries.
 
     Batch size is controlled by ``GRAPHRAG_INSERT_BULK_SIZE`` (default 64) and
@@ -116,6 +118,7 @@ async def insert_chunks_bounded(chunks, tenant_id, kb_id, *, callback=None, labe
 
 @dataclasses.dataclass
 class GraphChange:
+    # 图变更计数：新增/删除节点与边，供 set_graph 增量更新
     removed_nodes: Set[str] = dataclasses.field(default_factory=set)
     added_updated_nodes: Set[str] = dataclasses.field(default_factory=set)
     removed_edges: Set[Tuple[str, str]] = dataclasses.field(default_factory=set)
@@ -168,6 +171,7 @@ def dict_has_keys_with_types(data: dict, expected_fields: list[tuple[str, type]]
 
 
 def get_llm_cache(llmnm, txt, history, genconf):
+    # 从 Redis 读取 LLM 调用缓存
     """Return a cached LLM completion for the given model/text/history/config, or None on miss."""
     hasher = xxhash.xxh64()
     hasher.update((str(llmnm) + str(txt) + str(history) + str(genconf)).encode("utf-8"))
@@ -180,6 +184,7 @@ def get_llm_cache(llmnm, txt, history, genconf):
 
 
 def set_llm_cache(llmnm, txt, v, history, genconf):
+    # 写入 LLM 响应到 Redis 缓存
     """Store an LLM completion *v* in Redis keyed by a hash of model/text/history/config."""
     hasher = xxhash.xxh64()
     hasher.update((str(llmnm) + str(txt) + str(history) + str(genconf)).encode("utf-8"))
@@ -260,6 +265,7 @@ def set_tags_to_cache(kb_ids, tags):
 
 
 def tidy_graph(graph: nx.Graph, callback, check_attribute: bool = True):
+    # 清理孤立节点、自环与无效属性，保持图结构一致
     """
     Ensure all nodes and edges in the graph have some essential attribute.
     """
@@ -304,6 +310,7 @@ def get_from_to(node1, node2):
 
 
 def graph_merge(g1: nx.Graph, g2: nx.Graph, change: GraphChange):
+    # 将 g2 合并进 g1 并累计 GraphChange
     """Merge graph g2 into g1 in place."""
     for node_name, attr in g2.nodes(data=True):
         change.added_updated_nodes.add(node_name)
@@ -342,6 +349,7 @@ def compute_args_hash(*args):
 
 
 def handle_single_entity_extraction(
+    # 解析 LLM 抽取的单条 entity record 为元组
     record_attributes: list[str],
     chunk_key: str,
 ):
@@ -364,6 +372,7 @@ def handle_single_entity_extraction(
 
 
 def handle_single_relationship_extraction(record_attributes: list[str], chunk_key: str):
+    # 解析 LLM 抽取的单条 relationship record
     """Parse one relationship record from LLM output and return an edge-attribute dict, or None."""
     if len(record_attributes) < 5 or record_attributes[0] != '"relationship"':
         return None
@@ -412,6 +421,7 @@ def chunk_id(chunk):
 
 
 async def graph_node_to_chunk(kb_id, embd_mdl, ent_name, meta, chunks, nhop_neighbors=None):
+    # 将实体节点转为可索引 chunk（含 embedding 与 n-hop 邻居）
     """Convert a graph node (entity) to an embeddable chunk and append it to *chunks*."""
     global chat_limiter
     enable_timeout_assertion = os.environ.get("ENABLE_TIMEOUT_ASSERTION")
@@ -548,6 +558,7 @@ async def get_graph(tenant_id, kb_id, exclude_rebuild=None):
 
 
 async def set_graph(tenant_id: str, kb_id: str, embd_mdl, graph: nx.Graph, change: GraphChange, callback):
+    # 持久化整图：删旧节点/边 chunk 并批量写入新子图
     """Persist a knowledge-graph snapshot to the document store.
 
     Converts *graph* nodes and edges to embedding chunks, pre-warms the Redis
@@ -867,6 +878,7 @@ def flat_uniq_list(arr, key):
 
 
 async def rebuild_graph(tenant_id, kb_id, exclude_rebuild=None):
+    # 从 doc store 重建 NetworkX 图（用于消歧/社区报告等）
     """Reconstruct the full knowledge-graph for *kb_id* from its stored subgraph chunks."""
     graph = nx.Graph()
     flds = ["knowledge_graph_kwd", "content_with_weight", "source_id"]

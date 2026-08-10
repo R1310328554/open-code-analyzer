@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+rag.nlp 核心工具：分词、分块合并、标题层级、编码检测与中英混合文本处理。
+"""
+
+
 
 import logging
 import random
@@ -141,6 +146,7 @@ all_codecs = [
 
 
 def find_codec(blob):
+    # 检测二进制 blob 字符编码（chardet + 常见 codec 回退）
     detected = chardet.detect(blob[:1024])
     if detected["confidence"] > 0.5:
         if detected["encoding"] == "ascii":
@@ -321,6 +327,7 @@ def bullets_category(sections):
 
 
 def is_english(texts):
+    # 启发式判断文本是否主要为英文
     if not texts:
         return False
 
@@ -341,6 +348,7 @@ def is_english(texts):
 
 
 def is_chinese(text):
+    # 判断是否含足够比例的中文字符
     if not text:
         return False
     chinese = 0
@@ -353,6 +361,7 @@ def is_chinese(text):
 
 
 def tokenize(d, txt, eng, language="English"):
+    # 对单段文本分词并写入 doc 字段（粗/细粒度 token）
     from . import rag_tokenizer
     rag_tokenizer.tokenizer.set_language(language)
     d["content_with_weight"] = txt
@@ -388,6 +397,7 @@ def split_with_pattern(d, pattern: str, content: str, eng, language="English") -
 
 
 def tokenize_chunks(chunks, doc, eng, pdf_parser=None, child_delimiters_pattern=None, language="English"):
+    # 批量对 chunk 列表分词，可选 PDF 子分隔符二次切分
     res = []
     # wrap up as es documents
     for ii, ck in enumerate(chunks):
@@ -496,6 +506,7 @@ def tokenize_table(tbls, doc, eng, batch_size=10, language="English"):
 
 
 def attach_media_context(chunks, table_context_size=0, image_context_size=0):
+    # 为表格/图片 chunk 附加前后文段落
     """
     Attach surrounding text chunk content to media chunks (table/image).
     Best-effort ordering: if positional info exists on any chunk, use it to
@@ -1065,6 +1076,7 @@ def tree_merge(bull, sections, depth):
 
 
 def hierarchical_merge(bull, sections, depth):
+    # 按标题层级与项目符号递归合并 sections 为 chunk
     if not sections or bull < 0:
         return []
     if isinstance(sections[0], type("")):
@@ -1153,7 +1165,8 @@ def hierarchical_merge(bull, sections, depth):
     return res
 
 
-def naive_merge(sections: str | list, chunk_token_num=128, delimiter="\n。；！？", overlapped_percent=0):
+def naive_merge(sections: str | list, chunk_token_num=128, delimiter=
+    # 按 delimiter 与 token 上限朴素合并文本块"\n。；！？", overlapped_percent=0):
     from deepdoc.parser.pdf_parser import RAGFlowPdfParser
 
     if not sections:
@@ -1225,7 +1238,8 @@ def naive_merge(sections: str | list, chunk_token_num=128, delimiter="\n。；�
     return cks
 
 
-def naive_merge_with_images(texts, images, chunk_token_num=128, delimiter="\n。；！？", overlapped_percent=0):
+def naive_merge_with_images(texts, images, chunk_token_num=128, delimiter=
+    # 带图片的朴素合并，保持文本-图像对齐"\n。；！？", overlapped_percent=0):
     from deepdoc.parser.pdf_parser import RAGFlowPdfParser
 
     if not texts or len(texts) != len(images):
@@ -1644,6 +1658,7 @@ def get_delimiters(delimiters: str):
 
 
 class Node:
+    # 层级合并树节点：标题深度与 section 列表
     def __init__(self, level, depth=-1, texts=None):
         self.level = level
         self.depth = depth

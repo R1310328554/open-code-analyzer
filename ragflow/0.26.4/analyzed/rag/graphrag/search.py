@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+GraphRAG 知识图谱检索：基于 KGSearch 做实体/关系/社区召回与 LLM 查询改写。
+"""
+
+
 import asyncio
 import json
 import logging
@@ -33,6 +38,7 @@ from common.doc_store.doc_store_base import OrderByExpr
 
 
 class KGSearch(Dealer):
+    # 继承全文检索 Dealer，在 doc store 上检索 knowledge_graph 实体与关系
     async def _chat(self, llm_bdl, system, history, gen_conf):
         response = get_llm_cache(llm_bdl.llm_name, system, history, gen_conf)
         if response:
@@ -44,6 +50,7 @@ class KGSearch(Dealer):
         return response
 
     async def query_rewrite(self, llm, question, idxnms, kb_ids):
+        # LLM 将用户问题改写为实体类型关键词与候选实体列表
         ty2ents = await get_entity_type2samples(idxnms, kb_ids)
         hint_prompt = PROMPTS["minirag_query2kwd"].format(query=question, TYPE_POOL=json.dumps(ty2ents, ensure_ascii=False, indent=2))
         result = await self._chat(llm, hint_prompt, [{"role": "user", "content": "Output:"}], {})
@@ -108,6 +115,7 @@ class KGSearch(Dealer):
         return res
 
     def get_relevant_ents_by_keywords(self, keywords, filters, idxnms, kb_ids, emb_mdl, sim_thr=0.3, N=56):
+        # 向量检索与关键词相关的实体 chunk
         if not keywords:
             return {}
         filters = deepcopy(filters)
@@ -117,6 +125,7 @@ class KGSearch(Dealer):
         return self._ent_info_from_(es_res, sim_thr)
 
     def get_relevant_relations_by_txt(self, txt, filters, idxnms, kb_ids, emb_mdl, sim_thr=0.3, N=56):
+        # 按问题文本向量检索相关关系边
         if not txt:
             return {}
         filters = deepcopy(filters)
@@ -137,6 +146,8 @@ class KGSearch(Dealer):
         return self._ent_info_from_(es_res, 0)
 
     async def retrieval(
+        # 主入口：改写→实体/关系/N-hop 召回→排序截断→组装 CSV 上下文
+
         self,
         question: str,
         tenant_ids: str | list[str],
@@ -190,7 +201,7 @@ class KGSearch(Dealer):
         logging.info("Retrieved entities from types({}): {}".format(ty_kwds, list(ents_from_types.keys())))
         logging.info("Retrieved N-hops: {}".format(list(nhop_pathes.keys())))
 
-        # P(E|Q) => P(E) * P(Q|E) => pagerank * sim
+        # 融合 PageRank 与向量相似度对实体/关系重打分
         for ent in ents_from_types.keys():
             if ent not in ents_from_query:
                 continue
@@ -275,6 +286,7 @@ class KGSearch(Dealer):
         }
 
     def _community_retrieval_(self, entities, condition, kb_ids, idxnms, topn, max_token):
+        # 按命中实体检索社区报告摘要
         ## Community retrieval
         fields = ["docnm_kwd", "content_with_weight"]
         odr = OrderByExpr()

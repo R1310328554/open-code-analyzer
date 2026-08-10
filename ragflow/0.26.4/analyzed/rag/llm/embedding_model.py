@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+文本嵌入驱动：各厂商 embedding API 适配、批量 encode 与 token 截断策略。
+"""
+
+
 import json
 import os
 import threading
@@ -37,13 +42,14 @@ import base64
 
 logger = logging.getLogger(__name__)
 
-# Standard token ceiling for the common 8K-context embedding models (OpenAI
+# 常见 8K 上下文嵌入模型的 token 上限，超长输入会被截断 (OpenAI
 # text-embedding-*, Mistral, Bedrock Titan, ...). Inputs are truncated to this
 # many tokens so boundary-sized chunks are not rejected by the provider.
 DEFAULT_MAX_TOKENS = 8192
 
 
 class EmbeddingError(ModelException):
+    # 嵌入失败统一异常类型，继承 ModelException 重试语义
     """Raised when an embedding provider fails to return usable embeddings.
 
     A single, deterministic exception type for every provider failure path so
@@ -142,6 +148,7 @@ def _dashscope_native_api_url_scope(url: str | None):
 
 
 class Base(ABC):
+    # 嵌入抽象基类：encode/encode_queries 与 batch 对齐
     def __init__(self, key, model_name, **kwargs):
         """
         Constructor for abstract base class.
@@ -218,6 +225,7 @@ class Base(ABC):
 
 
 class BuiltinEmbed(Base):
+    # 本地内置 embedding 模型（无需外部 API）
     _FACTORY_NAME = "Builtin"
     MAX_TOKENS = {"Qwen/Qwen3-Embedding-0.6B": 30000, "BAAI/bge-m3": 8000, "BAAI/bge-small-en-v1.5": 500}
     _model = None
@@ -254,6 +262,7 @@ class BuiltinEmbed(Base):
 
 
 class OpenAIEmbed(Base):
+    # OpenAI text-embedding 系列及兼容 API
     _FACTORY_NAME = "OpenAI"
 
     def __init__(self, key, model_name="text-embedding-ada-002", base_url="https://api.openai.com/v1"):
@@ -362,6 +371,7 @@ class BaiChuanEmbed(OpenAIEmbed):
 
 
 class QWenEmbed(Base):
+    # 通义千问 DashScope 嵌入（兼容/OpenAI 与原生 HTTP）
     """
     Embeddings for Alibaba Tongyi-Qianwen via the DashScope ``TextEmbedding`` API.
 
@@ -640,6 +650,7 @@ class MistralEmbed(Base):
 
 
 class BedrockEmbed(Base):
+    # AWS Bedrock Titan/Cohere 等嵌入模型
     _FACTORY_NAME = "Bedrock"
 
     def __init__(self, key, model_name, **kwargs):

@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+文字转语音（TTS）驱动：FishAudio、Qwen、OpenAI 及各云厂商语音合成 API。
+"""
+
+
 
 import _thread as thread
 import base64
@@ -48,6 +53,7 @@ class ServeReferenceAudio(BaseModel):
 
 
 class ServeTTSRequest(BaseModel):
+    # FishAudio 服务 TTS 请求体（格式、参考音频、延迟模式）
     text: str
     chunk_length: Annotated[int, conint(ge=100, le=300, strict=True)] = 200
     # Audio format
@@ -66,6 +72,7 @@ class ServeTTSRequest(BaseModel):
 
 
 class Base(ABC):
+    # TTS 抽象基类：tts 合成与文本规范化
     def __init__(self, key, model_name, base_url, **kwargs):
         """
         Abstract base class constructor.
@@ -81,6 +88,7 @@ class Base(ABC):
 
 
 class HTTPBasedTTS(Base):
+    # 基于 HTTP POST 的通用 TTS 实现
     """
     Base class for HTTP-based TTS services.
     Provides common HTTP request handling and response processing.
@@ -138,6 +146,7 @@ class HTTPBasedTTS(Base):
 
 
 class FishAudioTTS(Base):
+    # FishAudio 语音克隆与合成
     _FACTORY_NAME = "Fish Audio"
 
     def __init__(self, key, model_name, base_url="https://api.fish.audio/v1/tts"):
@@ -179,6 +188,7 @@ class FishAudioTTS(Base):
 
 
 class QwenTTS(Base):
+    # 通义千问 CosyVoice TTS
     _FACTORY_NAME = "Tongyi-Qianwen"
 
     def __init__(self, key, model_name, base_url=""):
@@ -237,6 +247,7 @@ class QwenTTS(Base):
 
 
 class OpenAITTS(HTTPBasedTTS):
+    # OpenAI TTS API（tts-1/tts-1-hd）
     _FACTORY_NAME = "OpenAI"
 
     def __init__(self, key, model_name="tts-1", base_url="https://api.openai.com/v1"):

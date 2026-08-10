@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+重排序模型驱动：query-passage 相关性打分，输出归一化到 [0,1] 供混合检索融合。
+"""
+
+
 import json
 import logging
 from abc import ABC
@@ -29,10 +34,12 @@ from common.token_utils import num_tokens_from_string, truncate, total_token_cou
 
 
 class Base(ABC):
+    # 重排基类：similarity 入口 + 子类实现 _compute_rank
     def __init__(self, key, model_name, **kwargs):
         pass
 
     def similarity(self, query: str, texts: List) -> Tuple[np.ndarray, int]:
+        # 对 texts 相对 query 打分，min-max 归一化后返回 (scores, token_count)
         """Score ``texts`` against ``query`` and return ``(rank, token_count)``.
 
         This is the single public entry point shared by every reranker. It
@@ -66,6 +73,7 @@ class Base(ABC):
 
     @staticmethod
     def _normalize_rank(rank: np.ndarray) -> np.ndarray:
+        # 将各厂商原始分数统一映射到 [0,1]，避免破坏混合检索权重
         """Guarantee scores land in ``[0, 1]`` for the hybrid blend.
 
         Providers that already emit calibrated relevance scores in ``[0, 1]``
@@ -93,6 +101,7 @@ class Base(ABC):
 
 
 class JinaRerank(Base):
+    # Jina Reranker API
     _FACTORY_NAME = "Jina"
 
     def __init__(self, key, model_name="jina-reranker-v2-base-multilingual", base_url="https://api.jina.ai/v1/rerank"):
@@ -269,6 +278,7 @@ class OpenAI_APIRerank(Base):
 
 
 class CoHereRerank(Base):
+    # Cohere Rerank API
     _FACTORY_NAME = ["Cohere", "VLLM"]
 
     def __init__(self, key, model_name, base_url=None):
@@ -397,6 +407,7 @@ class VoyageRerank(Base):
 
 
 class QWenRerank(Base):
+    # 通义千问 DashScope 重排 API
     _FACTORY_NAME = "Tongyi-Qianwen"
 
     def __init__(self, key, model_name="gte-rerank", **kwargs):

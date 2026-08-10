@@ -13,6 +13,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+"""
+对话 LLM 驱动层：OpenAI 兼容 Base、LiteLLM 多厂商聚合、工具调用与 ReAct 循环。
+"""
+
+
 import asyncio
 import json
 import logging
@@ -41,6 +46,7 @@ from rag.nlp import is_chinese, is_english
 
 
 class LLMErrorCode(StrEnum):
+    # 统一 LLM 错误码，供重试与 UI 展示
     ERROR_RATE_LIMIT = "RATE_LIMIT_EXCEEDED"
     ERROR_AUTHENTICATION = "AUTH_ERROR"
     ERROR_INVALID_REQUEST = "INVALID_REQUEST"
@@ -56,6 +62,7 @@ class LLMErrorCode(StrEnum):
 
 
 class ReActMode(StrEnum):
+    # 工具调用模式：原生 function_call 或文本 ReAct
     FUNCTION_CALL = "function_call"
     REACT = "react"
 
@@ -64,7 +71,7 @@ ERROR_PREFIX = "**ERROR**"
 LENGTH_NOTIFICATION_CN = "······\n由于大模型的上下文窗口大小限制，回答已经被大模型截断。"
 LENGTH_NOTIFICATION_EN = "...\nThe answer is truncated by your chosen LLM due to its limitation on context length."
 
-# Generation parameters that are safe to forward to the underlying completion
+# 可安全转发到底层 completion 的 gen_conf 白名单（过滤 model_type 等内部字段）
 # call. `gen_conf` originates from a chat assistant's `llm_setting`, which can
 # also carry RAGFlow-internal metadata (e.g. `model_type`). Anything outside
 # this set is dropped so providers don't reject the request with errors like
@@ -109,6 +116,7 @@ LITELLM_ALLOWED_GEN_CONF_KEYS = ALLOWED_GEN_CONF_KEYS | frozenset(
 
 
 def _apply_model_family_policies(
+    # 按模型族注入 thinking/reasoning 等厂商特定参数
     model_name: str,
     *,
     backend: str,
@@ -195,6 +203,7 @@ def _apply_model_family_policies(
 
 
 def _move_litellm_provider_body_fields(provider: SupportedLiteLLMProvider | str | None, completion_args: dict) -> dict:
+    # 将厂商 body 字段移入 LiteLLM extra_body
     provider_body_fields = {
         SupportedLiteLLMProvider.Tongyi_Qianwen: {"enable_thinking"},
         SupportedLiteLLMProvider.Dashscope: {"enable_thinking"},
@@ -216,6 +225,7 @@ def _move_litellm_provider_body_fields(provider: SupportedLiteLLMProvider | str 
 
 
 class Base(ABC):
+    # OpenAI SDK 直连基类：流式/同步 chat、工具绑定与指数退避重试
     def __init__(self, key, model_name, base_url, **kwargs):
         timeout = int(os.environ.get("LLM_TIMEOUT_SECONDS", 600))
         self.client = OpenAI(api_key=key, base_url=base_url, timeout=timeout)
@@ -236,6 +246,7 @@ class Base(ABC):
         return self.base_delay * random.uniform(10, 150)
 
     def _classify_error(self, error):
+        # 将异常消息映射为 LLMErrorCode
         error_str = str(error).lower()
 
         keywords_mapping = [
@@ -308,6 +319,7 @@ class Base(ABC):
             yield ans, tol
 
     async def async_chat_streamly(self, system, history, gen_conf: dict | None = None, **kwargs):
+        # 流式 chat 入口，带重试与 token 累计
         gen_conf = dict(gen_conf or {})
         if system and history and history[0].get("role") != "system":
             history.insert(0, {"role": "system", "content": system})
@@ -1544,6 +1556,7 @@ class FuturMixChat(Base):
 
 
 class LiteLLMBase(ABC):
+    # LiteLLM 聚合驱动：覆盖 DashScope/Bedrock/Anthropic 等数十厂商
     _FACTORY_NAME = [
         "Tongyi-Qianwen",
         "Bedrock",
