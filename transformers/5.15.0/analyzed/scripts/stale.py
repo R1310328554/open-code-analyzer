@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# GitHub Issue 过期自动处理脚本（改编自 AllenNLP）。
+# 对长期无活动且非豁免标签的 issue 添加 stale 评论或直接关闭。
 """
 Script to close stale issue. Taken in part from the AllenNLP repository.
 https://github.com/allenai/allennlp.
@@ -23,6 +25,7 @@ import github.GithubException
 from github import Github
 
 
+# 带这些标签的 issue 不会被标记 stale 或自动关闭。
 LABELS_TO_EXEMPT = [
     "good first issue",
     "good second issue",

@@ -1,4 +1,7 @@
 """
+连续批处理（Continuous Batching）整体基准套件。
+在多种输入（GSM8K、随机 token）与 CB/生成配置下测吞吐，并可与历史结果对比。
+
 Continuous batching overall benchmark suite.
 
 Runs CB in-process across many configurations (GSM8K prompts and synthetic
@@ -46,6 +49,7 @@ def _config_summary(cfg: Any) -> dict[str, Any]:
 
 
 # Data-related functions
+# 内联定义 gsm8k_platinum lighteval 任务，供 Registry 通过 custom_tasks 加载。
 def _build_gsm8k_platinum_module() -> types.ModuleType:
     """Define the gsm8k_platinum custom task inline so lighteval's Registry can pick it up via `custom_tasks=`."""
 
@@ -137,6 +141,7 @@ def get_tokenized_ifeval(tokenizer: AutoTokenizer) -> tuple[list[list[int]], Cal
     )
 
 
+# 生成固定长度的随机 token 序列，用于纯吞吐压测。
 def get_random_data(batch_size: int, num_tokens: int, vocab_size: int = 16000) -> list[list[int]]:
     """Random token sequences of fixed length, for raw throughput tests."""
     rng = torch.Generator().manual_seed(0)
@@ -145,6 +150,7 @@ def get_random_data(batch_size: int, num_tokens: int, vocab_size: int = 16000) -
 
 # Benchmark entries and collection
 @dataclass
+# 单次 CB 运行记录：输入规模、配置摘要、耗时、吞吐、显存与可选准确率。
 class BenchmarkEntry:
     """Single CB run: what was fed in, which configs were used, and the resulting metrics."""
 
@@ -162,6 +168,7 @@ class BenchmarkEntry:
     error: str | None = None
 
 
+# 聚合多轮 CB benchmark，管理模型加载、DP/TP 分片与结果条目列表。
 class BenchmarkResults:
     """Holds all CB benchmark runs and the shared model they execute against."""
 

@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Transformers 包的 setuptools 安装脚本。
+# 声明核心/可选依赖、extras、控制台入口与 dependency_versions_table 生成命令。
+
 """
 Simple check list from AllenNLP repo: https://github.com/allenai/allennlp/blob/main/setup.py
 
@@ -48,6 +51,7 @@ from setuptools import Command, find_packages, setup
 
 
 # Supported Python version range (min, max)
+# 声明支持的 Python 小版本范围（3.10–3.14），用于 classifiers 与 python_requires。
 SUPPORTED_PYTHON_VERSIONS = (10, 14)  # 3.10 to 3.14
 
 PYTHON_MINOR_VERSION = sys.version_info.minor
@@ -272,6 +276,7 @@ install_requires = [
 ]
 
 
+# 自定义 distutils 命令：从 _deps 重新生成 dependency_versions_table.py。
 class DepsTableUpdateCommand(Command):
     """
     A custom distutils command that updates the dependency table.
@@ -312,6 +317,7 @@ class DepsTableUpdateCommand(Command):
             f.write("\n".join(content))
 
 
+# 以 setuptools.setup 注册包元数据与 entry_points。
 if __name__ == "__main__":
     # Generate python_requires from supported version range
     min_version, max_version = SUPPORTED_PYTHON_VERSIONS

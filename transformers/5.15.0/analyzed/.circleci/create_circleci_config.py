@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# CircleCI 流水线配置生成器。
+# 根据测试准备目录中的 test_list 文件动态组装 jobs、workflows 与 pytest 参数，供 Transformers CI 在 CircleCI 上并行运行各类测试矩阵。
+
 import argparse
 import copy
 import os
@@ -43,6 +46,7 @@ DEFAULT_DOCKER_IMAGE = [{"image": "cimg/python:3.8.12"}]
 
 # Strings that commonly appear in the output of flaky tests when they fail. These are used with `pytest-rerunfailures`
 # to rerun the tests that match these patterns.
+# 不稳定测试失败时的典型报错片段，配合 pytest-rerunfailures 自动重跑。
 FLAKY_TEST_FAILURE_PATTERNS = [
     "OSError",  # Machine/connection transient error
     "Timeout",  # Machine/connection transient error
@@ -61,6 +65,7 @@ FLAKY_TEST_FAILURE_PATTERNS = [
 ]
 
 
+# 占位或收尾用的空 CircleCI job（如 collection_job 汇总报告）。
 class EmptyJob:
     job_name = "empty"
 
@@ -90,6 +95,7 @@ class EmptyJob:
 
 
 @dataclass
+# 描述单个 CircleCI 测试 job：镜像、并行度、marker、pytest 选项与安装步骤。
 class CircleCIJob:
     name: str
     additional_env: dict[str, Any] = None
@@ -448,6 +454,7 @@ FSDP_CI_TESTS = [fsdp_ci_job]
 ALL_TESTS = REGULAR_TESTS + EXAMPLES_TESTS + PIPELINE_TESTS + REPO_UTIL_TESTS + DOC_TESTS + [custom_tokenizers_job] + [exotic_models_job] + TRAINING_CI_TESTS + TENSOR_PARALLEL_CI_TESTS + FSDP_CI_TESTS  # fmt: skip
 
 
+# 扫描 test_preparation 目录并写出 generated_config.yml 供 CircleCI 使用。
 def create_circleci_config(folder=None):
     if folder is None:
         folder = os.getcwd()

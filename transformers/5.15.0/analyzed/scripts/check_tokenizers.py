@@ -1,3 +1,8 @@
+"""
+慢/快 tokenizer 一致性回归检查。
+在 XNLI 多语言文本上对比 SentencePiece 与 Rust 快分词器的 encode 结果，并容忍已知的边界分词差异。
+"""
+
 from collections import Counter
 
 import datasets
@@ -22,6 +27,7 @@ imperfect = 0
 wrong = 0
 
 
+# 判断 slow/fast 在局部 diff 区间是否属于可接受的等价分词（如 AA+A 与 A+AA）。
 def check_diff(
     spm_diff: list[int], tok_diff: list[int], slow: PreTrainedTokenizerBase, fast: PreTrainedTokenizerBase
 ) -> bool:
@@ -119,6 +125,7 @@ def check_details(
     return False
 
 
+# 对单条文本 encode 并更新 perfect/imperfect/wrong 计数，必要时 assert 完全一致。
 def test_string(slow: PreTrainedTokenizerBase, fast: PreTrainedTokenizerBase, text: str) -> None:
     global perfect
     global imperfect
@@ -151,6 +158,7 @@ def test_string(slow: PreTrainedTokenizerBase, fast: PreTrainedTokenizerBase, te
     )
 
 
+# 遍历 XNLI premise/hypothesis 全部语言字段并调用 test_string。
 def test_tokenizer(slow: PreTrainedTokenizerBase, fast: PreTrainedTokenizerBase) -> None:
     global batch_total
     for i in range(len(dataset)):

@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# GitHub Actions 脚本：为 Pull Request 自动请求 CODEOWNERS 审查。
+# 按变更行数匹配 codeowners 规则，跳过 PR 作者与已有 reviewer，选取改动最多的两位负责人。
+
 import json
 import os
 import re
@@ -36,6 +39,7 @@ def pattern_to_regex(pattern):
         pattern = r"^\/?" + pattern  # Allow an optional leading slash after the start of the string
     return pattern
 
+# 自后向前匹配 CODEOWNERS 规则，返回文件对应的 owner 列表。
 def get_file_owners(file_path, codeowners_lines):
     # Process lines in reverse (last matching pattern takes precedence)
     for line in reversed(codeowners_lines):
@@ -56,6 +60,7 @@ def get_file_owners(file_path, codeowners_lines):
             return owners  # Remember, can still be empty!
     return []  # Should never happen, but just in case
 
+# 判断 PR 作者是否已在 codeowners 中（内部成员可跳过自动请求审查）。
 def pr_author_is_in_hf(pr_author, codeowners_lines):
     # Check if the PR author is in the codeowners file
     for line in codeowners_lines:
@@ -71,6 +76,7 @@ def pr_author_is_in_hf(pr_author, codeowners_lines):
             return True
     return False
 
+# 读取 GITHUB_EVENT_PATH，按 diff 行数分配最多 2 名 reviewer。
 def main():
     script_dir = Path(__file__).parent.absolute()
     with open(script_dir / "codeowners_for_review_action") as f:

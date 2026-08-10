@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Transformers 公共 API 懒加载入口。
+# _import_structure 映射子模块与符号名；实际 import 推迟到首次访问，避免 `import transformers` 时加载全部后端（Torch/TF/Flax）。
+
 # When adding a new object to this init, remember to add it twice: once inside the `_import_structure` dictionary and
 # once inside the `if TYPE_CHECKING` branch. The `TYPE_CHECKING` should have import statements as usual, but they are
 # only there for type checking. The `_import_structure` is a dictionary submodule to list of object names, and is used
 # to defer the actual importing for when the objects are requested. This way `import transformers` provides the names
 # in the namespace without actually importing anything (and especially none of the backends).
 
+# 当前库版本号，与发布标签及 setup.py 保持一致。
 __version__ = "5.15.0"
 
 import importlib
@@ -60,6 +64,7 @@ from .utils.import_utils import define_import_structure
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
 # Base objects, independent of any specific backend
+# 子模块 → 导出符号列表；配合 _LazyModule 实现按需导入。
 _import_structure = {
     "audio_utils": [],
     "cli": [],

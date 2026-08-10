@@ -50,6 +50,7 @@ import torch
 import torch.distributed as dist
 
 
+# 多进程安全打印：通过文件锁避免 stdout 行交错。
 def printflock(*msgs):
     """solves multi-process interleaved print problem"""
     with open(__file__, "r") as fh:

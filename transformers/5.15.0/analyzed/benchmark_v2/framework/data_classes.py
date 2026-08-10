@@ -1,3 +1,8 @@
+"""
+benchmark_v2 结果数据结构。
+提供统计量计算、人类可读时长格式化、元数据与 BenchmarkResult 序列化。
+"""
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -55,6 +60,7 @@ def pretty_print_dict(data: dict[str, str], tabs: int = 0) -> None:
 
 
 @dataclass
+# 单次 benchmark 运行的元信息：模型、git 提交、硬件环境与成功标志。
 class BenchmarkMetadata:
     """Metadata collected for each benchmark run."""
 
@@ -89,6 +95,7 @@ class BenchmarkMetadata:
         }
 
 
+# 多轮测量的聚合结果：E2E 延迟、TTFT、ITL、GPU 指标与解码输出。
 class BenchmarkResult:
     """Result from a series of benchmark runs."""
 

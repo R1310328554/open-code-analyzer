@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Transformers 测试套件根级 pytest 配置。
+# 注册 marker、Hub 只读缓存回退、网络调试插件，以及 doctest 与设备相关全局 fixture。
+
 # tests directory-specific settings - this file is run automatically
 # by pytest before any tests are run
 
@@ -52,6 +55,7 @@ _ci_fallback_cache_dir = None
 _ci_fallback_events_dir = None
 
 
+# 记录 Hub 下载回退到临时可写目录的事件（兼容 pytest-xdist 多进程）。
 def _record_fallback_event(repo_id):
     """Append `repo_id` to this process's fallback-event file (xdist-safe, best-effort)."""
     if not _ci_fallback_events_dir:
@@ -106,6 +110,7 @@ def _is_readonly_fs_error(e):
     return False
 
 
+# 包装 Hub 下载函数：只读文件系统失败时自动改用临时 cache_dir 重试。
 def _with_tmpdir_cache_fallback(fn):
     """Decorator that retries `fn` with a writable tmp cache dir if it raises EROFS.
 
@@ -218,6 +223,7 @@ sys.path.insert(1, git_repo_path)
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
+# pytest 启动钩子：安装 Hub 回退包装、注册自定义 marker 与环境变量。
 def pytest_configure(config):
     # Shared directory for the read-only cache fallback events. The controller creates it and
     # exports the path; xdist workers (spawned later) inherit the env var and write into the
@@ -321,6 +327,7 @@ def pytest_runtest_logreport(report):
         print(f"{report.nodeid} [{outcome}] {report.duration:.2f}s")
 
 
+# 测试结束汇总：打印 Hub 回退次数等 CI 诊断信息。
 def pytest_terminal_summary(terminalreporter):
     # Always report whether the read-only cache fallback fired, so CI logs give an
     # unambiguous signal that the fallback path was (or was not) exercised this run.

@@ -56,6 +56,7 @@ DEFAULT_PROMPT = "\n".join([
 PUSH_TO_HUB_TOKEN = os.getenv("PUSH_TO_HUB_TOKEN", None)
 
 
+# 将 JSON 中纯数字数组压缩为单行，减小结果文件体积。
 def compact_json_numeric_arrays(data: dict):
     # Match arrays that contain only numbers (ints/floats), whitespace, commas, and newlines
     pattern = r"\[\s*\n\s*((?:\d+(?:\.\d+)?\s*,\s*)*\d+(?:\.\d+)?)\s*\n\s*\]"
@@ -79,6 +80,7 @@ def get_git_revision() -> str:
         return git_hash.readline().strip()
 
 
+# 清理 GPU 缓存与 torch.compile/dynamo 编译缓存，避免 benchmark 间相互干扰。
 def flush_memory(flush_compile: bool = True) -> None:
     """Flush GPU memory and run garbage collection. If the flush_compile flag is set, we also clear the everything
     related to compile cache."""
@@ -109,6 +111,7 @@ def flush_memory(flush_compile: bool = True) -> None:
     gc.collect()
 
 
+# 生成流回调：记录每个 token 的时间戳，用于 TTFT/ITL 分析。
 class BenchmarkStreamer(BaseStreamer):
     def __init__(self, **kwargs) -> None:
         self.timeout = kwargs.pop("timeout", 10)
@@ -136,6 +139,7 @@ class BenchmarkStreamer(BaseStreamer):
             return value
 
 
+# benchmark 主协调器：加载模型、预热、计时 generate/CB、保存与推送 Hub 结果。
 class BenchmarkRunner:
     """Main benchmark runner that coordinates benchmark execution."""
 
@@ -227,6 +231,7 @@ class BenchmarkRunner:
         self.model = self.model.eval()
         self.inputs = self.inputs.to(self.model.device)
 
+# 执行单个配置：先探测可行性，再 warmup + 多次测量并可选 profiler trace。
     def run_benchmark(self, config: BenchmarkConfig, num_tokens_to_profile: int = 0) -> BenchmarkResult | None:
         """Run a single benchmark with the given model ID and config."""
         with torch.no_grad():
@@ -442,6 +447,7 @@ class BenchmarkRunner:
         self.logger.info(f"Results saved to {filepath}")
         return filepath
 
+# 将完整/摘要结果以 jsonl 上传到 Hugging Face Dataset 仓库。
     def push_results_to_hub(self, dataset_id: str, results: dict[Any, Any], timestamp: str) -> None:
         if PUSH_TO_HUB_TOKEN is None:
             raise ValueError(

@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# benchmark_v2 顶层 CLI 入口。
+# 解析命令行参数、按 level 或 JSON 配置生成 BenchmarkConfig 列表，并委托 BenchmarkRunner 执行与可选 Hub 推送。
+
 """
 Top-level benchmarking script that automatically discovers and runs all benchmarks
 in the ./benches directory, organizing outputs into model-specific subfolders.
@@ -28,6 +31,7 @@ from framework.benchmark_config import BenchmarkConfig, adapt_configs, get_confi
 from framework.benchmark_runner import BenchmarkRunner
 
 
+# 脚本入口：组装 configs 并调用 runner.run_benchmarks。
 if __name__ == "__main__":
     # Parse arguments
     parser = argparse.ArgumentParser()

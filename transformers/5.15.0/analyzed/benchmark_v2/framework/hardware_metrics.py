@@ -27,6 +27,7 @@ _logger = logging.getLogger(__name__)
 
 
 # Data class to hold the hardware information
+# 读取当前加速设备 0 的名称与总显存（GB）。
 def get_device_name_and_memory_total() -> tuple[str, float]:
     """Returns the name and memory total of GPU 0."""
     device_type = torch.accelerator.current_accelerator().type if is_torch_accelerator_available() else "cuda"
@@ -36,6 +37,7 @@ def get_device_name_and_memory_total() -> tuple[str, float]:
     return device_name, device_memory_total
 
 
+# 采集 Python/Torch/CUDA 版本、CPU 核数与系统内存等硬件快照。
 class HardwareInfo:
     """A class to hold information about the hardware."""
 
@@ -153,6 +155,7 @@ class GPURawMetrics:
 
 
 # Main class, used to monitor the GPU utilization during benchmark execution
+# 在独立进程中周期性采样 GPU 利用率与显存占用，避免干扰主 benchmark 进程。
 class GPUMonitor:
     """Monitor GPU utilization during benchmark execution using a separate process."""
 
@@ -244,6 +247,7 @@ class GPUMonitor:
 
         connection.close()
 
+# 启动后台监控子进程并等待其初始化完成。
     def start(self):
         """Start monitoring GPU metrics in a separate process."""
         if self.gpu_type is None:
@@ -263,6 +267,7 @@ class GPUMonitor:
             self.parent_connection.recv()
         self.logger.debug("GPU monitoring started (multiprocessing)")
 
+# 停止采样并返回原始时间序列及监控状态枚举。
     def stop_and_collect(self) -> GPURawMetrics:
         """Stop monitoring and return collected metrics."""
         # No GPU available or unsupported GPU

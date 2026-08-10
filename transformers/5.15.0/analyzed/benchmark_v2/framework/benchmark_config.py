@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache
+# 检测 flash_attention_2 或 kernels 社区内核是否可用于当前环境。
 def is_fa2_or_kernel_available() -> bool:
     """Returns True if the flash_attn_2 or a fallback kernel is available"""
     # Early return if flash_attn_2 is available
@@ -52,6 +53,7 @@ def is_fa2_or_kernel_available() -> bool:
     return True
 
 
+# 单个 benchmark 场景的配置：batch/序列长度、attention 实现、compile、TP 与 GPU 监控等。
 class BenchmarkConfig:
     """Configuration for a single benchmark scenario."""
 
@@ -230,6 +232,7 @@ class BenchmarkConfig:
         )
 
 
+# 将基准配置与命令行传入的 warmup/iterations/尺寸参数做笛卡尔积扩展。
 def adapt_configs(
     configs: list[BenchmarkConfig],
     warmup_iterations: int | list[int] = 5,
@@ -268,6 +271,7 @@ def adapt_configs(
     return adapted_configs
 
 
+# 按 coverage level 0–4 生成预定义的 attention/compile/CB 配置组合。
 def get_config_by_level(level: int) -> list[BenchmarkConfig]:
     configs = []
     # Early return if level is greater than 3: we generate all combinations of configs, maybe even w/ all compile modes
