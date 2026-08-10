@@ -17,9 +17,14 @@
 
 package org.keycloak.protocol.oidc.endpoints.request;
 
+/**
+ * 授权请求 URI 类型：区分 JWT 请求对象与 PAR（推送授权请求）。
+ */
 public enum RequestUriType {
 
+    /** 通过 request 或 request_uri 传递的 JWT 请求对象 */
     REQUEST_OBJECT,
+    /** 推送授权请求（Pushed Authorization Request） */
     PAR
 
 }

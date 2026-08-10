@@ -4,6 +4,9 @@ import org.keycloak.Config;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link OIDCExtProvider} 的工厂接口。
+ */
 public interface OIDCExtProviderFactory extends ProviderFactory<OIDCExtProvider> {
 
     @Override

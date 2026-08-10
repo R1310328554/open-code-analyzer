@@ -58,8 +58,8 @@ import static org.keycloak.OAuth2Constants.AUTHORIZATION_DETAILS;
 import static org.keycloak.models.Constants.AUTHORIZATION_DETAILS_RESPONSE;
 
 /**
- * OAuth 2.0 Authorization Code Grant
- * https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
+ * OAuth 2.0 授权码模式（Authorization Code Grant）实现。
+ * <p>参见 RFC 6749 第 4.1 节：https://datatracker.ietf.org/doc/html/rfc6749#section-4.1</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a> (et al.)
  */
@@ -67,11 +67,17 @@ public class AuthorizationCodeGrantType extends OAuth2GrantTypeBase {
 
     private static final Logger logger = Logger.getLogger(AuthorizationCodeGrantType.class);
 
+    /** 令牌请求前触发客户端策略 {@link PreTokenRequestContext} */
     @Override
     public void preProcess(KeycloakSession session, MultivaluedMap<String, String> formParams) throws ClientPolicyException {
         session.clientPolicy().triggerOnEvent(new PreTokenRequestContext(session, formParams));
     }
 
+    /**
+     * 用授权码换取访问令牌：校验 code、会话、PKCE、DPoP 及 authorization_details。
+     * @param context 授权类型上下文
+     * @return 令牌响应
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -287,11 +293,13 @@ public class AuthorizationCodeGrantType extends OAuth2GrantTypeBase {
         });
     }
 
+    /** @return 事件类型 {@link EventType#CODE_TO_TOKEN} */
     @Override
     public EventType getEventType() {
         return EventType.CODE_TO_TOKEN;
     }
 
+    /** 比较两段 authorization_details JSON 是否语义相等 */
     private boolean authorizationDetailsJsonEquals(String first, String second) {
         try {
             JsonNode firstNode = JsonSerialization.mapper.readTree(first);
@@ -303,6 +311,7 @@ public class AuthorizationCodeGrantType extends OAuth2GrantTypeBase {
         }
     }
 
+    /** @return 本授权类型涉及的令牌请求参数名（授权码模式无额外参数） */
     @Override
     public Set<String> getTokenParameterNames() {
         return Collections.emptySet();

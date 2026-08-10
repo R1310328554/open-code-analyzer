@@ -25,18 +25,24 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.EnvironmentDependentProviderFactory;
 
+/**
+ * JWT 授权断言模式工厂；仅在启用 {@link Profile.Feature#JWT_AUTHORIZATION_GRANT} 时可用。
+ */
 public class JWTAuthorizationGrantTypeFactory implements OAuth2GrantTypeFactory, EnvironmentDependentProviderFactory {
 
+    /** @return grant_type 值 {@link OAuth2Constants#JWT_AUTHORIZATION_GRANT} */
     @Override
     public String getId() {
         return OAuth2Constants.JWT_AUTHORIZATION_GRANT;
     }
 
+    /** @return 快捷标识 {@code ag} */
     @Override
     public String getShortcut() {
         return "ag";
     }
 
+    /** @param session Keycloak 会话 @return 新的 {@link JWTAuthorizationGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new JWTAuthorizationGrantType();
@@ -54,6 +60,7 @@ public class JWTAuthorizationGrantTypeFactory implements OAuth2GrantTypeFactory,
     public void close() {
     }
 
+    /** @return 当前环境是否启用 JWT 授权断言特性 */
     @Override
     public boolean isSupported(Config.Scope config) {
         return Profile.isFeatureEnabled(Profile.Feature.JWT_AUTHORIZATION_GRANT);

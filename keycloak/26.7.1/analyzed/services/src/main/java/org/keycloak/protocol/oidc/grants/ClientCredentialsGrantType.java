@@ -50,8 +50,8 @@ import org.jboss.logging.Logger;
 import static org.keycloak.OAuth2Constants.AUTHORIZATION_DETAILS;
 
 /**
- * OAuth 2.0 Client Credentials Grant
- * https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+ * OAuth 2.0 客户端凭证模式（Client Credentials Grant）实现。
+ * <p>参见 RFC 6749 第 4.4 节：https://datatracker.ietf.org/doc/html/rfc6749#section-4.4</p>
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a> (et al.)
  */
@@ -59,6 +59,11 @@ public class ClientCredentialsGrantType extends OAuth2GrantTypeBase {
 
     private static final Logger logger = Logger.getLogger(ClientCredentialsGrantType.class);
 
+    /**
+     * 以服务账号身份签发访问令牌。
+     * @param context 授权类型上下文
+     * @return 令牌响应
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -148,24 +153,26 @@ public class ClientCredentialsGrantType extends OAuth2GrantTypeBase {
                 responseBuilder -> new ServiceAccountTokenResponseContext(formParams, clientSessionCtx.getClientSession(), responseBuilder));
     }
 
+    /** @return 事件类型 {@link EventType#CLIENT_LOGIN} */
     @Override
     public EventType getEventType() {
         return EventType.CLIENT_LOGIN;
     }
 
+    /** @return 本授权类型涉及的令牌请求参数名 */
     @Override
     public Set<String> getTokenParameterNames() {
         return Collections.emptySet();
     }
 
+    /** @return 是否按客户端配置为客户端凭证模式签发刷新令牌 */
     @Override
     protected boolean useRefreshToken() {
         return clientConfig.isUseRefreshTokenForClientCredentialsGrant();
     }
 
     /**
-     * Setting a client note with authorization_details to support custom protocol mappers using RAR (Rich Authorization Request)
-     * until RAR is fully implemented.
+     * 若请求含 authorization_details，写入客户端 note，供 RAR 相关协议映射器使用。
      */
     private void setAuthorizationDetailsNoteIfIncluded(AuthenticationSessionModel authSession) {
         String authorizationDetails = formParams.getFirst(AUTHORIZATION_DETAILS);

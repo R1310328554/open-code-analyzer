@@ -23,24 +23,28 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * Factory for OAuth 2.0 Authorization Code Grant
+ * OAuth 2.0 授权码模式工厂。
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class AuthorizationCodeGrantTypeFactory implements OAuth2GrantTypeFactory {
 
+    /** 授权类型快捷标识 {@code ac} */
     public static final String GRANT_SHORTCUT = "ac";
 
+    /** @return grant_type 值 {@link OAuth2Constants#AUTHORIZATION_CODE} */
     @Override
     public String getId() {
         return OAuth2Constants.AUTHORIZATION_CODE;
     }
 
+    /** @return 快捷标识 {@link #GRANT_SHORTCUT} */
     @Override
     public String getShortcut() {
         return GRANT_SHORTCUT;
     }
 
+    /** @param session Keycloak 会话 @return 新的 {@link AuthorizationCodeGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new AuthorizationCodeGrantType();

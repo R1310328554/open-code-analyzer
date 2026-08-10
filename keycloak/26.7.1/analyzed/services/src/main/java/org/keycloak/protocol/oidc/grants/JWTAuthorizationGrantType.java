@@ -55,8 +55,17 @@ import org.keycloak.services.resources.IdentityBrokerService;
 import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 
+/**
+ * JWT 授权断言模式（RFC 7523）：用 signed JWT 作为 grant 换取访问令牌。
+ * <p>支持标准 JWT 断言与 Identity Assertion JWT（ID-JAG）。</p>
+ */
 public class JWTAuthorizationGrantType extends OAuth2GrantTypeBase {
 
+    /**
+     * 解析并校验 JWT 断言，经 IdP 验证后为用户签发令牌。
+     * @param context 授权类型上下文
+     * @return 令牌响应
+     */
     @Override
     public Response process(Context context) {
         setContext(context);
@@ -193,10 +202,12 @@ public class JWTAuthorizationGrantType extends OAuth2GrantTypeBase {
         }
     }
 
+    /** 按联合身份查找 Keycloak 用户 */
     protected UserModel lookupUserByFederatedIdentity(FederatedIdentityModel federatedIdentityModel, ClientAssertionState clientAssertionState) {
         return this.session.users().getUserByFederatedIdentity(realm, federatedIdentityModel);
     }
 
+    /** 创建认证会话并绑定用户、客户端与 scope */
     protected AuthenticationSessionModel createSessionModel(RootAuthenticationSessionModel rootAuthSession, UserModel targetUser, ClientModel client, String scope) {
         AuthenticationSessionModel authSession = rootAuthSession.createAuthenticationSession(client);
         authSession.setAuthenticatedUser(targetUser);
@@ -206,16 +217,19 @@ public class JWTAuthorizationGrantType extends OAuth2GrantTypeBase {
         return authSession;
     }
 
+    /** JWT 授权模式不签发刷新令牌 */
     @Override
     protected boolean useRefreshToken() {
         return false; // jwt auth grant never generates the refresh token
     }
 
+    /** @return 事件类型 {@link EventType#JWT_AUTHORIZATION_GRANT} */
     @Override
     public EventType getEventType() {
         return EventType.JWT_AUTHORIZATION_GRANT;
     }
 
+    /** @return 包含 {@link OAuth2Constants#ASSERTION} 的参数名集合 */
     @Override
     public Set<String> getTokenParameterNames() {
         return Set.of(OAuth2Constants.ASSERTION);

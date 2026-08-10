@@ -23,22 +23,25 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
- * Factory for OAuth 2.0 Client Credentials Grant
+ * OAuth 2.0 客户端凭证模式工厂。
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a>
  */
 public class ClientCredentialsGrantTypeFactory implements OAuth2GrantTypeFactory {
 
+    /** @return grant_type 值 {@link OAuth2Constants#CLIENT_CREDENTIALS} */
     @Override
     public String getId() {
         return OAuth2Constants.CLIENT_CREDENTIALS;
     }
 
+    /** @return 快捷标识 {@code cc} */
     @Override
     public String getShortcut() {
         return "cc";
     }
 
+    /** @param session Keycloak 会话 @return 新的 {@link ClientCredentialsGrantType} 实例 */
     @Override
     public OAuth2GrantType create(KeycloakSession session) {
         return new ClientCredentialsGrantType();

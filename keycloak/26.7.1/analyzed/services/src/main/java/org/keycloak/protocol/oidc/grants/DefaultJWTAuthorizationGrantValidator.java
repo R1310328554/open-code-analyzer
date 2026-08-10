@@ -30,8 +30,7 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.representations.JsonWebToken;
 
 /**
- * the default assertion validator for JWT Authorization grant that extends AbstractBaseJWTValidator and
- * implements the JWTAuthorizationGrantValidator interface, which extends the JWTAuthorizationGrantValidationContext interface.
+ * JWT 授权断言默认校验器：继承 {@link AbstractBaseJWTValidator}，实现 {@link JWTAuthorizationGrantValidator}（扩展 {@link JWTAuthorizationGrantValidationContext}）。
  *
  * @author rmartinc
  */
@@ -40,6 +39,7 @@ public class DefaultJWTAuthorizationGrantValidator extends AbstractBaseJWTValida
     private final String scope;
     private Set<String> restrictedScopes;
 
+    /** 创建默认 JWT 授权断言校验器 */
     public static DefaultJWTAuthorizationGrantValidator createValidator(KeycloakSession session, String scope, ClientAssertionState clientAssertionState) {
         return new DefaultJWTAuthorizationGrantValidator(session, scope, clientAssertionState);
     }
@@ -49,6 +49,7 @@ public class DefaultJWTAuthorizationGrantValidator extends AbstractBaseJWTValida
         this.scope = scope;
     }
 
+    /** 校验客户端必须为机密客户端且已启用 JWT 授权模式 */
     public void validateClient() {
         if (clientAssertionState.getClient().isPublicClient()) {
             failureCallback("Public client not allowed to use authorization grant");
@@ -60,43 +61,51 @@ public class DefaultJWTAuthorizationGrantValidator extends AbstractBaseJWTValida
         }
     }
 
+    /** 校验 JWT 必须包含 iss 声明 */
     public void validateIssuer() {
         if (getJWT().getIssuer() == null) {
             failureCallback("Missing claim: " + OAuth2Constants.ISSUER);
         }
     }
 
+    /** 校验 JWT 必须包含 sub 声明 */
     public void validateSubject() {
         if (getJWT().getSubject() == null) {
             failureCallback("Missing claim: " + IDToken.SUBJECT);
         }
     }
 
+    /** @return 当前断言 JWT */
     @Override
     public JsonWebToken getJWT() {
         return clientAssertionState.getToken();
     }
 
+    /** @return 原始断言字符串 */
     @Override
     public String getAssertion() {
         return clientAssertionState.getClientAssertion();
     }
 
+    /** @return 请求中的 scope 参数 */
     @Override
     public String getScopeParam() {
         return scope;
     }
 
+    /** @return 受限 scope 集合 */
     @Override
     public Set<String> getRestrictedScopes() {
         return restrictedScopes;
     }
 
+    /** 设置受限 scope 集合 @param restrictedScopes scope 集合 */
     @Override
     public void setRestrictedScopes(Set<String> restrictedScopes) {
         this.restrictedScopes = restrictedScopes;
     }
 
+    /** 校验失败时抛出运行时异常 @param errorDescription 错误描述 */
     @Override
     protected void failureCallback(String errorDescription) {
         throw new RuntimeException(errorDescription);

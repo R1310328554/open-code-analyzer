@@ -70,7 +70,7 @@ import org.jboss.logging.Logger;
 import static org.keycloak.OAuth2Constants.AUTHORIZATION_DETAILS;
 
 /**
- * Base class for OAuth 2.0 grant types
+ * OAuth 2.0 授权类型抽象基类：封装令牌响应构建、客户端校验、authorization_details 处理等公共逻辑。
  *
  * @author <a href="mailto:demetrio@carretti.pro">Dmitry Telegin</a> (et al.)
  */
@@ -78,6 +78,7 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
 
     private static final Logger logger = Logger.getLogger(OAuth2GrantTypeBase.class);
 
+    /** 当前授权类型执行上下文 */
     protected OAuth2GrantType.Context context;
 
     protected KeycloakSession session;
@@ -94,6 +95,7 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
     protected HttpResponse response;
     protected HttpHeaders headers;
 
+    /** 从上下文注入会话、客户端、表单参数等字段 @param context 授权类型上下文 */
     protected void setContext(Context context) {
         this.context = context;
         this.session = context.session;
@@ -111,6 +113,15 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         this.tokenManager = (TokenManager) context.tokenManager;
     }
 
+    /**
+     * 构建访问令牌响应（含可选刷新令牌、ID Token、MTLS HoK 绑定等）。
+     * @param user 用户
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @param scopeParam scope 参数
+     * @param clientPolicyContextGenerator 客户端策略上下文生成器
+     * @return 令牌响应构建器
+     */
     protected TokenManager.AccessTokenResponseBuilder createTokenResponseBuilder(UserModel user, UserSessionModel userSession, ClientSessionContext clientSessionCtx,  String scopeParam, Function<TokenManager.AccessTokenResponseBuilder, ClientPolicyContext> clientPolicyContextGenerator) {
         clientSessionCtx.setAttribute(Constants.GRANT_TYPE, context.getGrantType());
         clientSessionCtx.setAttribute(OAuth2Constants.RESOURCE, formParams.getFirst(OAuth2Constants.RESOURCE));
@@ -163,6 +174,7 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         return responseBuilder;
     }
 
+    /** 从已构建的 builder 生成 HTTP 令牌响应 @param code 是否为授权码模式（影响加密 KEK 错误处理） */
     protected Response createTokenResponse(TokenManager.AccessTokenResponseBuilder responseBuilder, ClientSessionContext clientSessionCtx, boolean code) {
         AccessTokenResponse res;
         if (code) {
@@ -192,6 +204,7 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         return cors.add(Response.ok(res).type(MediaType.APPLICATION_JSON_TYPE));
     }
 
+    /** 一站式创建令牌 HTTP 响应 */
     protected Response createTokenResponse(UserModel user, UserSessionModel userSession, ClientSessionContext clientSessionCtx,
                                            String scopeParam, boolean code, Function<TokenManager.AccessTokenResponseBuilder, ClientPolicyContext> clientPolicyContextGenerator) {
         TokenManager.AccessTokenResponseBuilder responseBuilder = createTokenResponseBuilder(user, userSession,
@@ -199,6 +212,7 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         return createTokenResponse(responseBuilder, clientSessionCtx, code);
     }
 
+    /** 若客户端启用 MTLS HoK，将客户端证书绑定写入 access/refresh token */
     protected void checkAndBindMtlsHoKToken(TokenManager.AccessTokenResponseBuilder responseBuilder, boolean useRefreshToken) {
         // KEYCLOAK-6771 Certificate Bound Token
         // https://tools.ietf.org/html/draft-ietf-oauth-mtls-08#section-3
@@ -219,6 +233,7 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         }
     }
 
+    /** 将适配器 session_state/host 写入客户端会话 note（host 需通过白名单校验） */
     public void updateClientSession(AuthenticatedClientSessionModel clientSession) {
 
         if(clientSession == null) {
@@ -256,12 +271,14 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         }
     }
 
+    /** 将客户端认证属性写入用户会话 note */
     public void updateUserSessionFromClientAuth(UserSessionModel userSession) {
         for (Map.Entry<String, String> attr : clientAuthAttributes.entrySet()) {
             userSession.setNote(attr.getKey(), attr.getValue());
         }
     }
 
+    /** 解析并校验请求 scope 参数 @return 合法 scope 字符串 */
     protected String getRequestedScopes() {
         String scope = formParams.getFirst(OAuth2Constants.SCOPE);
 
@@ -275,6 +292,7 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         return scope;
     }
 
+    /** 执行客户端认证并校验 CORS 与 bearer-only 限制 */
     protected void checkClient() {
         AuthorizeClientUtil.ClientAuthResult clientAuth = AuthorizeClientUtil.authorizeClient(session, event, cors);
         client = clientAuth.getClient();
@@ -289,21 +307,20 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
     }
 
     /**
-     * Extension point for subclasses to add custom claims to the AccessTokenResponse before it is returned.
-     * Default implementation does nothing.
+     * 子类扩展点：在返回前向 {@link AccessTokenResponse} 添加自定义 claim。
+     * 默认空实现。
      */
     protected void addCustomTokenResponseClaims(AccessTokenResponse res, ClientSessionContext clientSessionCtx) {
         // Default: do nothing
     }
 
     /**
-     * Hook method called after authorization_details are processed and before the token response is created.
-     * This allows authorization details processors to perform post-processing actions (e.g., creating state objects).
-     * Processors can store information in session notes during processing, and this hook allows them to act on it.
+     * authorization_details 处理完成、令牌响应创建前的钩子。
+     * 供处理器执行后续动作（如创建状态对象）。
      *
-     * @param userSession                  the user session
-     * @param clientSessionCtx             the client session context
-     * @param authorizationDetailsResponse the processed authorization details response
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @param authorizationDetailsResponse 已处理的 authorization_details 响应
      */
     protected void afterAuthorizationDetailsProcessed(UserSessionModel userSession, ClientSessionContext clientSessionCtx,
                                                       List<AuthorizationDetailsJSONRepresentation> authorizationDetailsResponse) {
@@ -314,12 +331,11 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
     }
 
     /**
-     * Processes the authorization_details parameter using provider discovery.
-     * This method can be overridden by subclasses to customize the behavior.
+     * 通过 Provider 发现机制处理 authorization_details 参数；子类可覆盖。
      *
-     * @param userSession      the user session
-     * @param clientSessionCtx the client session context
-     * @return the authorization details response if processing was successful, null otherwise
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 处理成功时返回 authorization_details 响应，否则 null
      */
     protected List<AuthorizationDetailsJSONRepresentation> processAuthorizationDetails(UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         String authorizationDetailsParam = formParams.getFirst(AUTHORIZATION_DETAILS);
@@ -338,12 +354,11 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
     }
 
     /**
-     * Allows processors to generate an authorization details response when the authorization_details parameter is missing in the request.
-     * This applies to flows where pre-authorization or credential offers are present, and is general to all AuthorizationDetailsProcessor implementations.
+     * 请求中缺少 authorization_details 时，由处理器生成响应（如预授权或凭证 offer 流程）。
      *
-     * @param userSession the user session
-     * @param clientSessionCtx the client session context
-     * @return the authorization details response if generation was successful, null otherwise
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 生成成功时返回响应，否则 null
      */
     protected List<AuthorizationDetailsJSONRepresentation> handleMissingAuthorizationDetails(UserSessionModel userSession, ClientSessionContext clientSessionCtx) {
         try {
@@ -358,13 +373,12 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
     }
 
     /**
-     * Process stored authorization_details from the authorization request (e.g., from PAR).
-     * This method is specifically for Authorization Code Flow where authorization_details was used
-     * in the authorization request but is missing from the token request.
+     * 处理授权阶段存储的 authorization_details（如 PAR 流程）。
+     * 适用于授权请求含该参数但令牌请求缺失的场景。
      *
-     * @param userSession the user session
-     * @param clientSessionCtx the client session context
-     * @return the authorization details response if processing was successful, null otherwise
+     * @param userSession 用户会话
+     * @param clientSessionCtx 客户端会话上下文
+     * @return 处理成功时返回响应，否则 null
      */
     protected List<AuthorizationDetailsJSONRepresentation> processStoredAuthorizationDetails(UserSessionModel userSession, ClientSessionContext clientSessionCtx) throws CorsErrorResponseException {
         // Check if authorization_details was stored during authorization request (e.g., from PAR)
@@ -384,14 +398,15 @@ public abstract class OAuth2GrantTypeBase implements OAuth2GrantType {
         return null;
     }
 
-    /*
-     * If the grant type generates a refresh token or just the access token.
-     * @return true if refresh token is generated by the grant, false if not
+    /**
+     * 本授权类型是否生成刷新令牌。
+     * @return 生成刷新令牌时为 true
      */
     protected boolean useRefreshToken() {
         return clientConfig.isUseRefreshToken();
     }
 
+    /** Provider 关闭钩子（默认空实现） */
     @Override
     public void close() {
     }

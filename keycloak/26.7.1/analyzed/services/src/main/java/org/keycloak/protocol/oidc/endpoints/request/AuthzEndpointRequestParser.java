@@ -37,23 +37,10 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
- * This endpoint parser supports, per default, up to
- * {@value org.keycloak.protocol.oidc.OIDCProviderConfig#DEFAULT_ADDITIONAL_REQ_PARAMS_MAX_NUMBER} parameters with each
- * having a total size of {@value org.keycloak.protocol.oidc.OIDCProviderConfig#DEFAULT_ADDITIONAL_REQ_PARAMS_MAX_SIZE}.
- * If there are more authentication request parameters, or a parameter has a size
- * than allowed, those parameters are silently ignored.
- * <p>
- * You can toggle the behavior by setting ({@code additionalReqParamsFailFast}) that enables the fail-fast principle.
- * Any request parameter in violation of the configuration results in an
- * error response, e.g.,
- * <ul>
- * <li>for a Pushed Authorization Request (PAR) this results in a JSON response.</li>
- * <li>For openid/auth in an error page with an "Back to Application" button using the client's base URL. (if valid) as redirect target.</li>
- * </ul>
- *
- * <p>
- * Additionally, ({@code additionalReqParamMaxOverallSize}) can be configured
- * that sets the maximum of size of all parameters combined. If not provided, {@link Integer#MAX_VALUE} will be used.
+ * 授权端点请求解析器抽象基类：解析 OIDC/OAuth2 授权请求参数并提取附加参数。
+ * <p>默认最多接受 {@value org.keycloak.protocol.oidc.OIDCProviderConfig#DEFAULT_ADDITIONAL_REQ_PARAMS_MAX_NUMBER} 个附加参数，每个参数大小不超过 {@value org.keycloak.protocol.oidc.OIDCProviderConfig#DEFAULT_ADDITIONAL_REQ_PARAMS_MAX_SIZE}；超出限制时默认静默忽略。</p>
+ * <p>可通过 {@code additionalReqParamsFailFast} 启用快速失败：违规参数将返回错误响应，例如 PAR 返回 JSON，openid/auth 返回带「返回应用」按钮的错误页（重定向至客户端 base URL）。</p>
+ * <p>还可配置 {@code additionalReqParamMaxOverallSize} 限制所有附加参数的总大小；未配置时使用 {@link Integer#MAX_VALUE}。</p>
  *
  * @author <a href="mailto:manuel.schallar@prime-sign.com">Manuel Schallar</a>
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -62,16 +49,23 @@ public abstract class AuthzEndpointRequestParser {
 
     private static final Logger logger = Logger.getLogger(AuthzEndpointRequestParser.class);
 
+    /** OIDC 提供者配置 */
     protected final OIDCProviderConfig config;
+    /** 允许的附加请求参数最大数量 */
     protected final int additionalReqParamsMaxNumber;
+    /** 单个附加参数允许的最大长度 */
     protected final int additionalReqParamsMaxSize;
+    /** 附加参数违规时是否快速失败 */
     protected final boolean additionalReqParamsFailFast;
+    /** 所有附加参数合计允许的最大总长度 */
     protected final int additionalReqParamsMaxOverallSize;
 
+    /** 会话属性键：已解析的请求对象 */
     public static final String AUTHZ_REQUEST_OBJECT = "ParsedRequestObject";
+    /** 会话属性键：加密的请求对象 */
     public static final String AUTHZ_REQUEST_OBJECT_ENCRYPTED = "EncryptedRequestObject";
 
-    /** Set of known protocol GET params not to be stored into additionalReqParams} */
+    /** 已知协议 GET 参数集合，不会写入 additionalReqParams */
     public static final Set<String> KNOWN_REQ_PARAMS = new HashSet<>();
     static {
         KNOWN_REQ_PARAMS.add(OIDCLoginProtocol.CLIENT_ID_PARAM);
@@ -106,6 +100,10 @@ public abstract class AuthzEndpointRequestParser {
         KNOWN_REQ_PARAMS.add(OAuth2Constants.CLIENT_SECRET);
     }
 
+    /**
+     * 从 {@link OIDCLoginProtocol} 配置初始化解析器限制。
+     * @param keycloakSession Keycloak 会话
+     */
     protected AuthzEndpointRequestParser(KeycloakSession keycloakSession) {
         OIDCLoginProtocol loginProtocol = (OIDCLoginProtocol) keycloakSession.getProvider(LoginProtocol.class, OIDCLoginProtocol.LOGIN_PROTOCOL);
         this.config = loginProtocol.getConfig();
@@ -115,6 +113,10 @@ public abstract class AuthzEndpointRequestParser {
         this.additionalReqParamsMaxOverallSize = config.getAdditionalReqParamsMaxOverallSize();
     }
 
+    /**
+     * 解析授权请求并填充 {@link AuthorizationEndpointRequest}。
+     * @param request 待填充的授权端点请求对象
+     */
     public void parseRequest(AuthorizationEndpointRequest request) {
         String clientId = getAndValidateParameter(OIDCLoginProtocol.CLIENT_ID_PARAM);
         if (clientId != null && request.clientId != null && !request.clientId.equals(clientId)) {
@@ -155,6 +157,11 @@ public abstract class AuthzEndpointRequestParser {
         extractAdditionalReqParams(request.additionalReqParams);
     }
 
+    /**
+     * 校验 response_type 是否与 request/request_uri 中一致。
+     * @param responseTypeParameter 当前解析到的 response_type
+     * @param request 授权端点请求
+     */
     protected void validateResponseTypeParameter(String responseTypeParameter, AuthorizationEndpointRequest request) {
         if (responseTypeParameter != null && request.responseType != null && !request.responseType.equals(responseTypeParameter)) {
             logger.warnf("The response_type parameter doesn't match the one from OIDC 'request' or 'request_uri'");
@@ -162,6 +169,10 @@ public abstract class AuthzEndpointRequestParser {
         }
     }
 
+    /**
+     * 从未知参数中提取附加 OIDC 请求参数，并应用数量/长度限制。
+     * @param additionalReqParams 存放附加参数的映射
+     */
     protected void extractAdditionalReqParams(Map<String, String> additionalReqParams) {
         int currentAdditionalReqParamMaxOverallSize = 0;
         for (String paramName : keySet()) {
@@ -223,10 +234,16 @@ public abstract class AuthzEndpointRequestParser {
         }
     }
 
+    /** 若新值非 null 则替换，否则保留原值 */
     protected <T> T replaceIfNotNull(T previousVal, T newVal) {
         return newVal==null ? previousVal : newVal;
     }
 
+    /**
+     * 获取并校验参数长度（去除控制字符）。
+     * @param paramName 参数名
+     * @return 参数值，超长时按 failFast 策略处理
+     */
     protected String getAndValidateParameter(String paramName) {
         String paramValue = getParameter(paramName);
 
@@ -246,10 +263,13 @@ public abstract class AuthzEndpointRequestParser {
         return paramValue;
     }
 
+    /** @param paramName 参数名 @return 原始参数值 */
     protected abstract String getParameter(String paramName);
 
+    /** @param paramName 参数名 @return 整型参数值 */
     protected abstract Integer getIntParameter(String paramName);
 
+    /** @return 当前请求中所有参数名集合 */
     protected abstract Set<String> keySet();
 
 }
