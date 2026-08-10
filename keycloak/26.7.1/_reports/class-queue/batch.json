@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:08:10Z",
-  "files": [
-    "scim/core/src/main/java/org/keycloak/scim/resource/ResourceTypeRepresentation.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/Scim.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/common/Meta.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/common/MultiValuedAttribute.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/config/ServiceProviderConfig.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/group/Group.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/group/Member.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/resourcetype/ResourceType.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/AbstractModelSchema.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/ModelSchema.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/Schema.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/attribute/Attribute.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/attribute/AttributeMapper.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/attribute/ComplexAttributeSetter.java",
-    "scim/core/src/main/java/org/keycloak/scim/resource/schema/path/Path.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3118,
-  "done": 2865
+  "done": 2880
 }
