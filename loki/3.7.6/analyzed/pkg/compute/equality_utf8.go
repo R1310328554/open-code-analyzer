@@ -1,5 +1,8 @@
 package compute
 
+// equality_utf8 实现 UTF-8 字符串 Datum 的比较分派：
+// 按 Scalar/Array 组合路由到 utf8EqualityKernel 并应用 selection。
+
 import (
 	"fmt"
 
@@ -31,6 +34,7 @@ func dispatchUTF8Equality(alloc *memory.Allocator, kernel utf8EqualityKernel, le
 	panic("unreachable")
 }
 
+// utf8EqualitySS 字符串标量对标量比较，使用 bytes.Equal。
 func utf8EqualitySS(kernel utf8EqualityKernel, left, right *columnar.UTF8Scalar) *columnar.BoolScalar {
 	return &columnar.BoolScalar{
 		Value: kernel.DoSS(left.Value, right.Value),
@@ -74,6 +78,7 @@ func utf8EqualityAS(alloc *memory.Allocator, kernel utf8EqualityKernel, left *co
 	return columnar.NewBool(values, validity)
 }
 
+// utf8EqualityAA 字符串数组对数组逐元素比较。
 func utf8EqualityAA(alloc *memory.Allocator, kernel utf8EqualityKernel, left, right *columnar.UTF8) (*columnar.Bool, error) {
 	if left.Len() != right.Len() {
 		return nil, fmt.Errorf("array length mismatch: %d != %d", left.Len(), right.Len())

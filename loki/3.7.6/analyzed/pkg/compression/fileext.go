@@ -1,5 +1,8 @@
 package compression
 
+// fileext 模块维护 Codec 与文件扩展名的双向映射：
+// 用于对象存储 chunk 文件名后缀识别与生成。
+
 import "fmt"
 
 const (
@@ -30,6 +33,7 @@ func ToFileExtension(e Codec) string {
 	}
 }
 
+// FromFileExtension 从扩展名反推 Codec，.lz4 统一映射为 LZ4_4M。
 func FromFileExtension(ext string) Codec {
 	switch ext {
 	case ExtNone:

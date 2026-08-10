@@ -1,5 +1,8 @@
 package compute
 
+// equality_numeric 实现 int64/uint64 数值 Datum 的比较分派：
+// 泛型 dispatchNumericEquality 按 Scalar/Array 组合调用对应内核。
+
 import (
 	"fmt"
 
@@ -31,6 +34,7 @@ func dispatchNumericEquality[T columnar.Numeric](alloc *memory.Allocator, kernel
 	panic("unreachable")
 }
 
+// numericEqualitySS 数值标量对标量比较。
 func numericEqualitySS[T columnar.Numeric](kernel numericEqualityKernel[T], left, right *columnar.NumberScalar[T]) *columnar.BoolScalar {
 	return &columnar.BoolScalar{
 		Value: kernel.DoSS(left.Value, right.Value),
@@ -74,6 +78,7 @@ func numericEqualityAS[T columnar.Numeric](alloc *memory.Allocator, kernel numer
 	return columnar.NewBool(values, validity)
 }
 
+// numericEqualityAA 数值数组对数组逐元素比较。
 func numericEqualityAA[T columnar.Numeric](alloc *memory.Allocator, kernel numericEqualityKernel[T], left, right *columnar.Number[T]) (*columnar.Bool, error) {
 	if left.Len() != right.Len() {
 		return nil, fmt.Errorf("array length mismatch: %d != %d", left.Len(), right.Len())

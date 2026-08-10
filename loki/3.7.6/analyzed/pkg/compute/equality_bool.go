@@ -1,5 +1,8 @@
 package compute
 
+// equality_bool 实现布尔 Datum 的比较分派：
+// 按 Scalar/Array 组合（SS/SA/AS/AA）路由到对应内核并应用 selection 位图。
+
 import (
 	"fmt"
 
@@ -31,6 +34,7 @@ func dispatchBoolEquality(alloc *memory.Allocator, kernel boolEqualityKernel, le
 	panic("unreachable")
 }
 
+// boolEqualitySS 标量对标量比较，Null 由 computeValiditySS 合并。
 func boolEqualitySS(kernel boolEqualityKernel, left, right *columnar.BoolScalar) *columnar.BoolScalar {
 	return &columnar.BoolScalar{
 		Value: kernel.DoSS(left.Value, right.Value),
@@ -38,6 +42,7 @@ func boolEqualitySS(kernel boolEqualityKernel, left, right *columnar.BoolScalar)
 	}
 }
 
+// boolEqualitySA 标量对数组：左为 null 时结果全为 null 占位 false 值。
 func boolEqualitySA(alloc *memory.Allocator, kernel boolEqualityKernel, left *columnar.BoolScalar, right *columnar.Bool) *columnar.Bool {
 	validity := computeValiditySA(alloc, left.Null, right.Validity())
 
@@ -74,6 +79,7 @@ func boolEqualityAS(alloc *memory.Allocator, kernel boolEqualityKernel, left *co
 	return columnar.NewBool(values, validity)
 }
 
+// boolEqualityAA 数组对数组比较，要求长度一致并合并有效性位图。
 func boolEqualityAA(alloc *memory.Allocator, kernel boolEqualityKernel, left, right *columnar.Bool) (*columnar.Bool, error) {
 	if left.Len() != right.Len() {
 		return nil, fmt.Errorf("array length mismatch: %d != %d", left.Len(), right.Len())

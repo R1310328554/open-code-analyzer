@@ -1,11 +1,15 @@
 package compression
 
+// compression 包定义 chunk 可用的压缩编解码器枚举：
+// 常量顺序不可变更，因数值会序列化写入存储。
+
 import (
 	"fmt"
 	"slices"
 	"strings"
 )
 
+// Codec 用 byte 枚举标识 chunk 压缩算法，支持 gzip、lz4、snappy、flate、zstd 等。
 // Codec identifies an available compression codec.
 type Codec byte
 
@@ -63,11 +67,13 @@ func (e Codec) String() string {
 	}
 }
 
+// IsSupported 判断该 Codec 是否在 supportedCodecs 列表中。
 // IsSupported reports whether the codec is one this package can read and write.
 func (e Codec) IsSupported() bool {
 	return slices.Contains(supportedCodecs, e)
 }
 
+// ParseCodec 按名称（大小写不敏感）解析 Codec，失败时返回支持列表。
 // ParseCodec parses a chunk encoding (compression codec) by its name.
 func ParseCodec(enc string) (Codec, error) {
 	for _, e := range supportedCodecs {
@@ -78,6 +84,7 @@ func ParseCodec(enc string) (Codec, error) {
 	return 0, fmt.Errorf("invalid encoding: %s, supported: %s", enc, SupportedCodecs())
 }
 
+// SupportedCodecs 返回逗号分隔的可用编解码器名称字符串。
 // SupportedCodecs returns the list of supported Encoding.
 func SupportedCodecs() string {
 	var sb strings.Builder

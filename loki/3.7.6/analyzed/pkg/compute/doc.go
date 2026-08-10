@@ -1,3 +1,4 @@
+// compute 包对 columnar.Datum 执行无状态列式计算，结果通过传入的 memory.Allocator 分配；当前为实验性 API，仅供 dataobj 使用。
 // Package compute implements stateless computational operations over columnar
 // data.
 //

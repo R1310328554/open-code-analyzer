@@ -1,5 +1,8 @@
 package compression
 
+// pool 模块提供各压缩算法的 Reader/Writer 对象池：
+// 通过 sync.Pool 复用编解码器实例，减少 chunk 读写时的分配开销。
+
 import (
 	"bufio"
 	"io"
@@ -13,6 +16,7 @@ import (
 	lz4lib "github.com/pierrec/lz4/v4"
 )
 
+// WriterPool 抽象可 Reset 的压缩写入器池，Get/Put 配对使用。
 // WriterPool is a pool of io.Writer
 // This is used by every chunk to avoid unnecessary allocations.
 type WriterPool interface {
@@ -20,6 +24,7 @@ type WriterPool interface {
 	PutWriter(io.WriteCloser)
 }
 
+// ReaderPool 抽象可 Reset 的解压读取器池。
 // ReaderPool is a pool of io.Reader
 // ReaderPool similar to WriterPool but for reading chunks.
 type ReaderPool interface {
@@ -59,6 +64,7 @@ func GetReaderPool(enc Codec) ReaderPool {
 	return GetPool(enc).(ReaderPool)
 }
 
+// GetPool 按 Codec 返回全局单例池，未知编码 panic。
 func GetPool(enc Codec) ReaderWriterPool {
 	switch enc {
 	case GZIP:
@@ -84,6 +90,7 @@ func GetPool(enc Codec) ReaderWriterPool {
 	}
 }
 
+// GzipPool 使用 bufio 缓冲 gzip.Reader，支持 Reset 复用。
 // GzipPool is a gnu zip compression pool
 type GzipPool struct {
 	readers sync.Pool
@@ -246,6 +253,7 @@ func (pool *ZstdPool) PutWriter(writer io.WriteCloser) {
 	pool.writers.Put(writer)
 }
 
+// LZ4Pool 按 bufferSize 区分 64k/256k/1M/4M 四种 LZ4 块大小配置。
 type LZ4Pool struct {
 	readers    sync.Pool
 	writers    sync.Pool
@@ -343,6 +351,7 @@ func (pool *SnappyPool) PutWriter(writer io.WriteCloser) {
 	pool.writers.Put(writer)
 }
 
+// NoopPool 是无压缩直通池，Reader/Writer 直接包装底层 io。
 type NoopPool struct{}
 
 // GetReader gets or creates a new CompressionReader and reset it to read from src

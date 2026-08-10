@@ -1,5 +1,8 @@
 package compute
 
+// equality 模块提供列式 Datum 的比较运算公共 API：
+// 支持等于、不等于及大小比较，任一侧为 null 时结果为 null。
+
 import (
 	"fmt"
 
@@ -7,6 +10,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/memory"
 )
 
+// Equals 逐元素比较两 Datum 是否相等，Kind 不一致或不可比较类型时返回错误。
 // Equals compares the two input datum. Equals returns an error if the input
 // kinds are not identical, or if the datum types are not considered comparable.
 //
@@ -34,6 +38,7 @@ func Equals(alloc *memory.Allocator, left, right columnar.Datum, selection memor
 	}
 }
 
+// NotEquals 逐元素比较两 Datum 是否不相等。
 // NotEquals compares the two input datum for inequality. NotEquals returns an error if the input
 // kinds are not identical, or if the datum types are not considered comparable.
 //
@@ -61,6 +66,7 @@ func NotEquals(alloc *memory.Allocator, left, right columnar.Datum, selection me
 	}
 }
 
+// LessThan 比较左操作数是否小于右操作数，bool 类型不支持排序。
 // LessThan compares the two input datum for less-than ordering. LessThan returns an error if the input
 // kinds are not identical, or if the datum types are not ordered.
 //
@@ -86,6 +92,7 @@ func LessThan(alloc *memory.Allocator, left, right columnar.Datum, selection mem
 	}
 }
 
+// LessOrEqual 比较左操作数是否小于等于右操作数。
 // LessOrEqual compares the two input datum for less-than-or-equal ordering. LessOrEqual returns an error if the input
 // kinds are not identical, or if the datum types are not ordered.
 //
@@ -111,6 +118,7 @@ func LessOrEqual(alloc *memory.Allocator, left, right columnar.Datum, selection 
 	}
 }
 
+// GreaterThan 比较左操作数是否大于右操作数。
 // GreaterThan compares the two input datum for greater-than ordering. GreaterThan returns an error if the input
 // kinds are not identical, or if the datum types are not ordered.
 //
@@ -136,6 +144,7 @@ func GreaterThan(alloc *memory.Allocator, left, right columnar.Datum, selection 
 	}
 }
 
+// GreaterOrEqual 比较左操作数是否大于等于右操作数。
 // GreaterOrEqual compares the two input datum for greater-than-or-equal ordering. GreaterOrEqual returns an error if the input
 // kinds are not identical, or if the datum types are not ordered.
 //

@@ -1,5 +1,8 @@
 package compactor
 
+// compactor worker 模块构造 JobQueue WorkerManager：
+// 启用 retention 时注册删除 job 执行器，按表 schema 路由 chunk 对象存储客户端。
+
 import (
 	"github.com/grafana/dskit/services"
 	"github.com/prometheus/client_golang/prometheus"
@@ -11,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/storage/config"
 )
 
+// NewWorkerManager 创建 WorkerManager 服务，retention 开启时挂载 deletion JobRunner。
 func NewWorkerManager(
 	cfg Config,
 	grpcClient jobqueue.CompactorClient,
@@ -31,6 +35,7 @@ func NewWorkerManager(
 	return services.NewBasicService(nil, wm.Start, nil), nil
 }
 
+// initDeletionJobRunner 构造删除 job 执行器，通过 SchemaPeriodForTable 解析表对应 chunk 客户端。
 func initDeletionJobRunner(
 	chunkProcessingConcurrency int,
 	schemaConfig config.SchemaConfig,

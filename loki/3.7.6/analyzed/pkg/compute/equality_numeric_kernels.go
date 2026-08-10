@@ -1,5 +1,8 @@
 package compute
 
+// equality_numeric_kernels 定义数值比较内核实现：
+// 覆盖 ==、!=、<、<=、>、>= 六种运算，int64 与 uint64 各有一套全局实例。
+
 import (
 	"github.com/grafana/loki/v3/pkg/columnar"
 	"github.com/grafana/loki/v3/pkg/memory"
@@ -28,6 +31,7 @@ var (
 	uint64LTKernel       numericEqualityKernel[uint64] = numericLTKernelImpl[uint64]{}
 )
 
+// numericEqualKernelImpl 实现相等（==）比较的四种操作数形态。
 type numericEqualKernelImpl[T columnar.Numeric] struct{}
 
 func (numericEqualKernelImpl[T]) DoSS(left, right T) bool {
@@ -62,6 +66,7 @@ func (numericEqualKernelImpl[T]) DoAA(out *memory.Bitmap, left, right []T) {
 	}
 }
 
+// numericNotEqualKernelImpl 实现不等（!=）比较。
 type numericNotEqualKernelImpl[T columnar.Numeric] struct{}
 
 func (numericNotEqualKernelImpl[T]) DoSS(left, right T) bool {
@@ -96,6 +101,7 @@ func (numericNotEqualKernelImpl[T]) DoAA(out *memory.Bitmap, left, right []T) {
 	}
 }
 
+// numericGTKernelImpl 实现大于（>）比较。
 type numericGTKernelImpl[T columnar.Numeric] struct{}
 
 func (numericGTKernelImpl[T]) DoSS(left, right T) bool {
@@ -164,6 +170,7 @@ func (numericGTEKernelImpl[T]) DoAA(out *memory.Bitmap, left, right []T) {
 	}
 }
 
+// numericLTKernelImpl 实现小于（<）比较。
 type numericLTKernelImpl[T columnar.Numeric] struct{}
 
 func (numericLTKernelImpl[T]) DoSS(left, right T) bool {

@@ -1,5 +1,8 @@
 package compactor
 
+// compactor UI 模块为 Compactor 提供 HTTP 路由：
+// 注册 ring 状态与删除请求管理 API，供 Web 控制台查询与提交删除任务。
+
 import (
 	"encoding/json"
 	"net/http"
@@ -11,6 +14,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/compactor/deletion/deletionproto"
 )
 
+// Handler 返回挂载路径 /compactor 与 ServeMux，集成认证、租户与表单解析中间件。
 func (c *Compactor) Handler() (string, http.Handler) {
 	mux := http.NewServeMux()
 
@@ -46,6 +50,7 @@ func (c *Compactor) Handler() (string, http.Handler) {
 	return "/compactor", mux
 }
 
+// DeleteRequestResponse 是删除请求列表 API 的 JSON 响应结构体。
 type DeleteRequestResponse struct {
 	RequestID string `json:"request_id"`
 	StartTime int64  `json:"start_time"`
@@ -56,6 +61,7 @@ type DeleteRequestResponse struct {
 	UserID    string `json:"user_id"`
 }
 
+// handleListDeleteRequests 按 status 过滤删除请求，按创建时间降序返回最近 100 条。
 func (c *Compactor) handleListDeleteRequests(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 	if status == "" {

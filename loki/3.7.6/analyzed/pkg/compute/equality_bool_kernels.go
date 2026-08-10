@@ -1,5 +1,8 @@
 package compute
 
+// equality_bool_kernels 定义布尔比较内核：
+// DoSS/SA/AS/AA 四方法覆盖标量与位图数组组合，AA 路径使用 Arrow bitutil 位运算加速。
+
 import (
 	"github.com/apache/arrow-go/v18/arrow/bitutil"
 
@@ -18,6 +21,7 @@ var (
 	boolNotEqualKernel boolEqualityKernel = boolNotEqualKernelImpl{}
 )
 
+// boolEqualKernelImpl 实现相等比较，AA 路径对位图做 Xnor 批量运算。
 type boolEqualKernelImpl struct{}
 
 func (boolEqualKernelImpl) DoSS(left, right bool) bool { return left == right }
@@ -66,6 +70,7 @@ func (boolEqualKernelImpl) DoAA(out *memory.Bitmap, left, right memory.Bitmap) {
 	)
 }
 
+// boolNotEqualKernelImpl 实现不等比较，AA 路径对位图做 Xor 批量运算。
 type boolNotEqualKernelImpl struct{}
 
 func (boolNotEqualKernelImpl) DoSS(left, right bool) bool { return left != right }

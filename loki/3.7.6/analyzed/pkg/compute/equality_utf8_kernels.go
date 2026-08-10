@@ -1,5 +1,8 @@
 package compute
 
+// equality_utf8_kernels 定义 UTF-8 字符串比较内核：
+// 使用 bytes.Equal 与 bytes.Compare 实现相等及字典序大小比较六种运算。
+
 import (
 	"bytes"
 
@@ -23,6 +26,7 @@ var (
 	utf8LTEKernel      utf8EqualityKernel = utf8LTEKernelImpl{}
 )
 
+// utf8EqualKernelImpl 用 bytes.Equal 实现字符串相等比较。
 type utf8EqualKernelImpl struct{}
 
 func (utf8EqualKernelImpl) DoSS(left, right []byte) bool { return bytes.Equal(left, right) }
@@ -51,6 +55,7 @@ func (utf8EqualKernelImpl) DoAA(out *memory.Bitmap, left, right *columnar.UTF8) 
 	}
 }
 
+// utf8NotEqualKernelImpl 实现字符串不等比较。
 type utf8NotEqualKernelImpl struct{}
 
 func (utf8NotEqualKernelImpl) DoSS(left, right []byte) bool { return !bytes.Equal(left, right) }
@@ -79,6 +84,7 @@ func (utf8NotEqualKernelImpl) DoAA(out *memory.Bitmap, left, right *columnar.UTF
 	}
 }
 
+// utf8GTKernelImpl 用 bytes.Compare > 0 实现字典序大于比较。
 type utf8GTKernelImpl struct{}
 
 func (utf8GTKernelImpl) DoSS(left, right []byte) bool { return bytes.Compare(left, right) > 0 }
@@ -135,6 +141,7 @@ func (utf8GTEKernelImpl) DoAA(out *memory.Bitmap, left, right *columnar.UTF8) {
 	}
 }
 
+// utf8LTKernelImpl 用 bytes.Compare < 0 实现字典序小于比较。
 type utf8LTKernelImpl struct{}
 
 func (utf8LTKernelImpl) DoSS(left, right []byte) bool { return bytes.Compare(left, right) < 0 }
