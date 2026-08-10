@@ -38,7 +38,9 @@ import com.alibaba.nacos.plugin.auth.constant.ActionTypes;
 import org.springframework.stereotype.Component;
 
 /**
- * Nacos query instances request handler.
+ * 服务实例查询 RPC 请求处理器。
+ *
+ * <p>从 {@link ServiceStorage} 读取实例列表，结合元数据与健康保护策略过滤后返回。</p>
  *
  * @author xiweng.yy
  */
@@ -47,10 +49,13 @@ import org.springframework.stereotype.Component;
 public class ServiceQueryRequestHandler
     extends RequestHandler<ServiceQueryRequest, QueryServiceResponse> {
     
+    /** 服务实例存储索引。 */
     private final ServiceStorage serviceStorage;
     
+    /** 服务元数据管理器，供健康保护使用。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 注入存储与元数据组件。 */
     public ServiceQueryRequestHandler(ServiceStorage serviceStorage,
         NamingMetadataManager metadataManager) {
         this.serviceStorage = serviceStorage;
@@ -62,6 +67,7 @@ public class ServiceQueryRequestHandler
     @TpsControl(pointName = "RemoteNamingServiceQuery", name = "RemoteNamingServiceQuery")
     @Secured(action = ActionTypes.READ)
     @ExtractorManager.Extractor(rpcExtractor = ServiceQueryRequestParamExtractor.class)
+    /** 查询实例并按集群、healthyOnly 与健康保护规则过滤。 */
     public QueryServiceResponse handle(ServiceQueryRequest request, RequestMeta meta)
         throws NacosException {
         String namespaceId = request.getNamespace();

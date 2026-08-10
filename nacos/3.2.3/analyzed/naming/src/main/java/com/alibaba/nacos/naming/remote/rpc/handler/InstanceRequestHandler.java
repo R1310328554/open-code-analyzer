@@ -41,7 +41,9 @@ import com.alibaba.nacos.plugin.auth.constant.ActionTypes;
 import org.springframework.stereotype.Component;
 
 /**
- * Instance request handler.
+ * 临时实例注册/注销 RPC 请求处理器。
+ *
+ * <p>处理 gRPC {@link InstanceRequest}，委托 {@link EphemeralClientOperationServiceImpl} 完成实例生命周期管理并发布链路追踪事件。</p>
  *
  * @author xiweng.yy
  */
@@ -49,8 +51,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class InstanceRequestHandler extends RequestHandler<InstanceRequest, InstanceResponse> {
     
+    /** 临时客户端操作服务，负责注册、注销与订阅。 */
     private final EphemeralClientOperationServiceImpl clientOperationService;
     
+    /** 注入临时客户端操作服务。 */
     public InstanceRequestHandler(EphemeralClientOperationServiceImpl clientOperationService) {
         this.clientOperationService = clientOperationService;
     }
@@ -61,6 +65,7 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
         name = "RemoteNamingInstanceRegisterDeregister")
     @Secured(action = ActionTypes.WRITE)
     @ExtractorManager.Extractor(rpcExtractor = InstanceRequestParamExtractor.class)
+    /** 解析服务并分发注册或注销请求。 */
     public InstanceResponse handle(InstanceRequest request, RequestMeta meta)
         throws NacosException {
         Service service = Service.newService(request.getNamespace(), request.getGroupName(),
@@ -78,6 +83,7 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
         }
     }
     
+    /** 校验实例参数后注册，并发布 {@link RegisterInstanceTraceEvent}。 */
     private InstanceResponse registerInstance(Service service, InstanceRequest request,
         RequestMeta meta)
         throws NacosException {
@@ -95,6 +101,7 @@ public class InstanceRequestHandler extends RequestHandler<InstanceRequest, Inst
         return new InstanceResponse(NamingRemoteConstants.REGISTER_INSTANCE);
     }
     
+    /** 注销实例并发布 {@link DeregisterInstanceTraceEvent}。 */
     private InstanceResponse deregisterInstance(Service service, InstanceRequest request,
         RequestMeta meta) {
         clientOperationService.deregisterInstance(service, request.getInstance(),

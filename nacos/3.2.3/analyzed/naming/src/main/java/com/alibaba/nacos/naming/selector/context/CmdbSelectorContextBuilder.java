@@ -31,7 +31,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * The {@link CmdbSelectorContextBuilder} will build default {@link CmdbContext}, it query the consumer and providers' CMDB {@link Entity}.
+ * CMDB 选择器上下文构建器。
+ *
+ * <p>通过 {@link CmdbReader} 查询消费者与各提供者 IP 对应的 CMDB {@link Entity}，组装 {@link CmdbContext} 供标签类选择器使用。</p>
  *
  * @author chenglu
  * @date 2021-07-16 11:58
@@ -39,20 +41,23 @@ import java.util.stream.Collectors;
 public class CmdbSelectorContextBuilder<T extends Instance>
     implements SelectorContextBuilder<CmdbContext<Instance>, String, List<T>> {
     
+    /** 上下文类型：CMDB。 */
     private static final String CONTEXT_TYPE = "CMDB";
     
     /**
-     * Get the {@link CmdbReader} from Spring container.
+     * 从 Spring 容器获取 {@link CmdbReader}。
      *
-     * @return {@link CmdbReader}.
+     * @return CMDB 读取器
      */
+    /** 延迟从 Spring 获取 CmdbReader Bean。 */
     public CmdbReader getCmdbReader() {
         return ApplicationUtils.getBean(CmdbReader.class);
     }
     
     @Override
+    /** 查询消费者与提供者 CMDB 实体并构建 CmdbContext。 */
     public CmdbContext<Instance> build(String consumer, List<T> provider) {
-        // build consumer context
+        // 构建消费者 CMDB 上下文
         Entity consumerEntity =
             getCmdbReader().queryEntity(consumer, PreservedEntityTypes.ip.name());
         Instance consumerInstance = new Instance();
@@ -63,7 +68,7 @@ public class CmdbSelectorContextBuilder<T extends Instance>
         CmdbContext<Instance> cmdbContext = new CmdbContext<>();
         cmdbContext.setConsumer(consumerCmdbInstance);
         
-        // build providers context
+        // 逐实例查询提供者 CMDB 实体
         List<CmdbContext.CmdbInstance<Instance>> providerCmdbInstances =
             Optional.ofNullable(provider)
                 .orElse(Collections.emptyList())
@@ -84,6 +89,7 @@ public class CmdbSelectorContextBuilder<T extends Instance>
     }
     
     @Override
+    /** 返回上下文类型 CMDB。 */
     public String getContextType() {
         return CONTEXT_TYPE;
     }

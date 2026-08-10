@@ -35,30 +35,33 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The {@link LabelSelector} will return the instances labels in {@link #labels} and providers' label value is same with consumer.
- * If none matched, then will return all providers instead of.
+ * 基于 CMDB 标签匹配的实例选择器。
+ *
+ * <p>按 {@link #labels} 中声明的标签键，比较消费者与提供者 CMDB 标签值；无匹配时回退返回全部提供者。</p>
  *
  * @author chenglu
  * @date 2021-07-16 16:26
  */
 public class LabelSelector<T extends Instance> extends AbstractCmdbSelector<T> {
     
+    /** 选择器类型标识：label。 */
     private static final String TYPE = "label";
     
-    /**
-     * {@link Entity} labels key.
-     */
+    /** 参与匹配的标签键集合。 */
     private Set<String> labels;
     
+    /** 返回参与匹配的标签键。 */
     public Set<String> getLabels() {
         return labels;
     }
     
+    /** 设置参与匹配的标签键。 */
     public void setLabels(Set<String> labels) {
         this.labels = labels;
     }
     
     @Override
+    /** 按标签键值对等规则筛选实例列表。 */
     protected List<T> doSelect(CmdbContext<T> context) {
         if (CollectionUtils.isEmpty(labels)) {
             return context.getProviders()
@@ -71,7 +74,7 @@ public class LabelSelector<T extends Instance> extends AbstractCmdbSelector<T> {
             .map(Entity::getLabels)
             .orElse(Collections.emptyMap());
         
-        // filter the instance if consumer and providers' label values equals.
+        // 过滤消费者与提供者标签值完全一致的实例
         List<T> result = context.getProviders()
             .stream()
             .filter(ci -> {
@@ -93,7 +96,7 @@ public class LabelSelector<T extends Instance> extends AbstractCmdbSelector<T> {
             .map(CmdbContext.CmdbInstance::getInstance)
             .collect(Collectors.toList());
         
-        // if none match, then return all providers.
+        // 无匹配时回退返回全部提供者
         if (CollectionUtils.isEmpty(result)) {
             return context.getProviders()
                 .stream()
@@ -104,11 +107,13 @@ public class LabelSelector<T extends Instance> extends AbstractCmdbSelector<T> {
     }
     
     @Override
+    /** 解析标签表达式为标签键集合。 */
     protected void doParse(String expression) throws NacosException {
         this.labels = ExpressionInterpreter.parseExpression(expression);
     }
     
     @Override
+    /** 返回选择器类型 {@link #TYPE}。 */
     public String getType() {
         return TYPE;
     }

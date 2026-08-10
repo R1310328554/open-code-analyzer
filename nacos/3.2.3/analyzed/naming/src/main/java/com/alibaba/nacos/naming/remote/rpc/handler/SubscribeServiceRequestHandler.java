@@ -46,7 +46,9 @@ import com.alibaba.nacos.plugin.auth.constant.ActionTypes;
 import org.springframework.stereotype.Component;
 
 /**
- * Handler to handle subscribe service.
+ * 服务订阅/取消订阅 RPC 请求处理器。
+ *
+ * <p>维护订阅者关系并返回带健康保护的 {@link ServiceInfo} 快照。</p>
  *
  * @author liuzunfei
  * @author xiweng.yy
@@ -56,12 +58,16 @@ import org.springframework.stereotype.Component;
 public class SubscribeServiceRequestHandler
     extends RequestHandler<SubscribeServiceRequest, SubscribeServiceResponse> {
     
+    /** 服务实例存储。 */
     private final ServiceStorage serviceStorage;
     
+    /** 服务元数据管理器。 */
     private final NamingMetadataManager metadataManager;
     
+    /** 临时客户端操作，处理 subscribe/unsubscribe。 */
     private final EphemeralClientOperationServiceImpl clientOperationService;
     
+    /** 注入存储、元数据与客户端操作服务。 */
     public SubscribeServiceRequestHandler(ServiceStorage serviceStorage,
         NamingMetadataManager metadataManager,
         EphemeralClientOperationServiceImpl clientOperationService) {
@@ -76,6 +82,7 @@ public class SubscribeServiceRequestHandler
         name = "RemoteNamingServiceSubscribeUnsubscribe")
     @Secured(action = ActionTypes.READ)
     @ExtractorManager.Extractor(rpcExtractor = SubscribeServiceRequestParamExtractor.class)
+    /** 校验参数后订阅或取消订阅，并返回当前实例快照。 */
     public SubscribeServiceResponse handle(SubscribeServiceRequest request, RequestMeta meta)
         throws NacosException {
         String namespaceId = request.getNamespace();

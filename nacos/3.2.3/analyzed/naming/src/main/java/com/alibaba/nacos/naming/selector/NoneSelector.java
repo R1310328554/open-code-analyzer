@@ -24,33 +24,39 @@ import com.alibaba.nacos.api.selector.Selector;
 import java.util.List;
 
 /**
- * Selector with no filtering.
+ * 空选择器，不做任何实例过滤，原样返回提供者列表。
  *
  * @author chenglu
  * @date 2021-08-04 13:28
  */
 public class NoneSelector<T extends Instance> implements Selector<List<T>, List<T>, String> {
     
+    /** 上下文类型：NONE。 */
     private static final String CONTEXT_TYPE = "NONE";
     
+    /** 选择器类型标识：none。 */
     private static final String TYPE = "none";
     
     @Override
+    /** 无条件解析，直接返回自身。 */
     public Selector<List<T>, List<T>, String> parse(String condition) throws NacosException {
         return this;
     }
     
     @Override
+    /** 不做过滤，返回完整提供者列表。 */
     public List<T> select(List<T> context) {
         return context;
     }
     
     @Override
+    /** 返回选择器类型。 */
     public String getType() {
         return TYPE;
     }
     
     @Override
+    /** 返回上下文类型 NONE。 */
     public String getContextType() {
         return CONTEXT_TYPE;
     }

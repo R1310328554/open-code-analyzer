@@ -40,7 +40,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Service list request handler.
+ * 服务列表查询 RPC 请求处理器。
+ *
+ * <p>按命名空间与分组分页返回已注册服务名列表。</p>
  *
  * @author xiweng.yy
  */
@@ -54,6 +56,7 @@ public class ServiceListRequestHandler
     @TpsControl(pointName = "RemoteNamingServiceListQuery", name = "RemoteNamingServiceListQuery")
     @Secured(action = ActionTypes.READ)
     @ExtractorManager.Extractor(rpcExtractor = ServiceListRequestParamExtractor.class)
+    /** 查询单例服务集合并按分页参数返回服务名。 */
     public ServiceListResponse handle(ServiceListRequest request, RequestMeta meta)
         throws NacosException {
         Collection<Service> serviceSet =
@@ -63,7 +66,7 @@ public class ServiceListRequestHandler
         if (!serviceSet.isEmpty()) {
             Collection<String> serviceNameSet =
                 selectServiceWithGroupName(serviceSet, request.getGroupName());
-            // TODO select service by selector
+            // TODO 后续支持按 Selector 过滤服务列表
             List<String> serviceNameList = ServiceUtil
                 .pageServiceName(request.getPageNo(), request.getPageSize(), serviceNameSet);
             result.setCount(serviceNameSet.size());
@@ -72,6 +75,7 @@ public class ServiceListRequestHandler
         return result;
     }
     
+    /** 按分组名过滤并收集 groupedServiceName。 */
     private Collection<String> selectServiceWithGroupName(Collection<Service> serviceSet,
         String groupName) {
         Collection<String> result = new HashSet<>(serviceSet.size());

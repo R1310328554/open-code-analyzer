@@ -26,20 +26,24 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Expression interpreter for label selector.
+ * 标签选择器表达式解析器。
  *
- * <p>For now it supports very limited set of syntax rules.
+ * <p>当前仅支持有限语法：{@code CONSUMER.label.X = PROVIDER.label.X & ...}，后续可扩展为标准 LL 解析器。</p>
  *
  * @author nokrange
  */
 public class ExpressionInterpreter {
     
+    /** 内层连接符集合（当前仅 {@code =}）。 */
     private static final Set<String> SUPPORTED_INNER_CONNCETORS = new HashSet<>();
     
+    /** 外层连接符集合（当前仅 {@code &}）。 */
     private static final Set<String> SUPPORTED_OUTER_CONNCETORS = new HashSet<>();
     
+    /** 消费者标签前缀。 */
     private static final String CONSUMER_PREFIX = "CONSUMER.label.";
     
+    /** 提供者标签前缀。 */
     private static final String PROVIDER_PREFIX = "PROVIDER.label.";
     
     private static final char CEQUAL = '=';
@@ -52,17 +56,14 @@ public class ExpressionInterpreter {
     }
     
     /**
-     * Parse the label expression.
+     * 解析标签匹配表达式，提取参与匹配的标签键集合。
      *
-     * <p>Currently we support the very single type of expression:
-     * <pre>
-     *     consumer.labelA = provider.labelA & consumer.labelB = provider.labelB
-     * </pre>
-     * Later we will implement a interpreter to parse this expression in a standard LL parser way.
+     * <p>支持形如 {@code CONSUMER.label.A = PROVIDER.label.A & ...} 的表达式。
      *
-     * @param expression the label expression to parse
-     * @return collection of labels
+     * @param expression 标签表达式字符串
+     * @return 标签键集合
      */
+    /** 词法切分并校验语法，返回标签键集合。 */
     public static Set<String> parseExpression(String expression) throws NacosException {
         
         if (StringUtils.isBlank(expression)) {
@@ -101,6 +102,7 @@ public class ExpressionInterpreter {
         return gotLabels;
     }
     
+    /** 按 {@code =} 与 {@code &} 切分表达式为词项列表。 */
     public static List<String> getTerms(String expression) {
         
         List<String> terms = new ArrayList<>();
@@ -127,6 +129,7 @@ public class ExpressionInterpreter {
         return terms;
     }
     
+    /** 跳过空白词项。 */
     private static int skipEmpty(List<String> elements, int start) {
         while (start < elements.size() && StringUtils.isBlank(elements.get(start))) {
             start++;
@@ -134,6 +137,7 @@ public class ExpressionInterpreter {
         return start;
     }
     
+    /** 校验外层 {@code &} 连接符语法。 */
     private static int checkOuterSyntax(List<String> elements, int start) {
         
         int index = start;
@@ -150,6 +154,7 @@ public class ExpressionInterpreter {
         return checkInnerSyntax(elements, index);
     }
     
+    /** 校验单条 CONSUMER/PROVIDER 标签等式语法。 */
     private static int checkInnerSyntax(List<String> elements, int start) {
         
         int index = start;

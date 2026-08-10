@@ -35,7 +35,9 @@ import com.alibaba.nacos.naming.misc.Loggers;
 import org.springframework.stereotype.Component;
 
 /**
- * Distro data request handler.
+ * 集群 Distro 数据同步 RPC 请求处理器。
+ *
+ * <p>处理 VERIFY、SNAPSHOT、ADD/CHANGE/DELETE、QUERY 等 {@link DistroDataRequest} 操作，委托 {@link DistroProtocol} 完成临时客户端数据校验、快照与增量同步。</p>
  *
  * @author xiweng.yy
  */
@@ -45,14 +47,17 @@ import org.springframework.stereotype.Component;
 public class DistroDataRequestHandler
     extends RequestHandler<DistroDataRequest, DistroDataResponse> {
     
+    /** Distro 协议核心，负责数据校验、接收与查询。 */
     private final DistroProtocol distroProtocol;
     
+    /** 注入 Distro 协议实现。 */
     public DistroDataRequestHandler(DistroProtocol distroProtocol) {
         this.distroProtocol = distroProtocol;
     }
     
     @Override
     @Secured(apiType = ApiType.INNER_API)
+    /** 按 {@link DistroDataRequest#getDataOperation()} 分发到对应处理分支。 */
     public DistroDataResponse handle(DistroDataRequest request, RequestMeta meta)
         throws NacosException {
         try {
@@ -80,6 +85,7 @@ public class DistroDataRequestHandler
         }
     }
     
+    /** 校验对端 Distro 数据摘要是否与本地一致。 */
     private DistroDataResponse handleVerify(DistroData distroData, RequestMeta meta) {
         DistroDataResponse result = new DistroDataResponse();
         if (!distroProtocol.onVerify(distroData, meta.getClientIp())) {
@@ -89,6 +95,7 @@ public class DistroDataRequestHandler
         return result;
     }
     
+    /** 导出 {@link DistroClientDataProcessor#TYPE} 类型客户端的全量快照。 */
     private DistroDataResponse handleSnapshot() {
         DistroDataResponse result = new DistroDataResponse();
         DistroData distroData = distroProtocol.onSnapshot(DistroClientDataProcessor.TYPE);
@@ -96,6 +103,7 @@ public class DistroDataRequestHandler
         return result;
     }
     
+    /** 接收并应用 ADD/CHANGE/DELETE 增量 Distro 数据。 */
     private DistroDataResponse handleSyncData(DistroData distroData) {
         DistroDataResponse result = new DistroDataResponse();
         if (!distroProtocol.onReceive(distroData)) {
@@ -105,6 +113,7 @@ public class DistroDataRequestHandler
         return result;
     }
     
+    /** 按 {@link DistroKey} 查询本地 Distro 数据。 */
     private DistroDataResponse handleQueryData(DistroData distroData) {
         DistroDataResponse result = new DistroDataResponse();
         DistroKey distroKey = distroData.getDistroKey();

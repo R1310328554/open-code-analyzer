@@ -34,7 +34,9 @@ import static com.alibaba.nacos.api.common.Constants.WATCH_TYPE_WATCH;
 import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_MATCH_COUNT_OVER_LIMIT;
 
 /**
- * Fuzzy watch service request handler.
+ * 模糊订阅（Fuzzy Watch）RPC 请求处理器。
+ *
+ * <p>处理 {@link NamingFuzzyWatchRequest} 的 WATCH 与 CANCEL_WATCH，维护 {@link NamingFuzzyWatchContextService} 上下文并触发同步事件。</p>
  *
  * @author tanyongquan
  */
@@ -43,8 +45,10 @@ import static com.alibaba.nacos.api.model.v2.ErrorCode.FUZZY_WATCH_PATTERN_MATCH
 public class NamingFuzzyWatchRequestHandler
     extends RequestHandler<NamingFuzzyWatchRequest, NamingFuzzyWatchResponse> {
     
+    /** 模糊 Watch 上下文服务，管理模式匹配与连接绑定。 */
     private NamingFuzzyWatchContextService namingFuzzyWatchContextService;
     
+    /** 注入上下文服务并注册 {@link ClientOperationEvent.ClientFuzzyWatchEvent} 发布器。 */
     public NamingFuzzyWatchRequestHandler(
         NamingFuzzyWatchContextService namingFuzzyWatchContextService) {
         this.namingFuzzyWatchContextService = namingFuzzyWatchContextService;
@@ -54,6 +58,7 @@ public class NamingFuzzyWatchRequestHandler
     
     @Override
     @Secured(action = ActionTypes.READ)
+    /** 按 watchType 建立或取消模糊订阅，超限返回错误码。 */
     public NamingFuzzyWatchResponse handle(NamingFuzzyWatchRequest request, RequestMeta meta)
         throws NacosException {
         

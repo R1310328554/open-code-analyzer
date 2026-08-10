@@ -34,19 +34,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Instance util.
+ * 实例对象转换与辅助工具类。
+ *
+ * <p>负责 {@link InstancePublishInfo} 与 API {@link Instance} 互转、元数据合并、深拷贝及实例 ID 生成等常用操作。</p>
  *
  * @author xiweng.yy
  */
 public final class InstanceUtil {
     
     /**
-     * Parse {@code InstancePublishInfo} to {@code Instance}.
+     * 将内部 {@link InstancePublishInfo} 转为 API {@link Instance}。
      *
-     * @param service      service of instance
-     * @param instanceInfo instance info
-     * @return api instance
+     * @param service 所属服务
+     * @param instanceInfo 内部发布信息
+     * @return API 实例对象
      */
+    /** 映射 IP、端口、集群、健康状态及 extendDatum 元数据。 */
     public static Instance parseToApiInstance(Service service, InstancePublishInfo instanceInfo) {
         Instance result = new Instance();
         result.setIp(instanceInfo.getIp());
@@ -77,11 +80,12 @@ public final class InstanceUtil {
     }
     
     /**
-     * Update metadata in {@code Instance} according to {@code InstanceMetadata}.
+     * 用 {@link InstanceMetadata} 更新实例 enabled、weight 与扩展元数据。
      *
-     * @param instance instance need to be update
-     * @param metadata instance metadata
+     * @param instance 待更新实例
+     * @param metadata 实例元数据
      */
+    /** 合并元数据到 API 实例对象。 */
     public static void updateInstanceMetadata(Instance instance, InstanceMetadata metadata) {
         instance.setEnabled(metadata.isEnabled());
         instance.setWeight(metadata.getWeight());
@@ -91,10 +95,11 @@ public final class InstanceUtil {
     }
     
     /**
-     * Deepcopy one instance.
+     * 深拷贝实例，metadata 使用新 Map。
      *
-     * @param source instance to be deepcopy
+     * @param source 源实例
      */
+    /** 复制实例全部字段与 metadata。 */
     public static Instance deepCopy(Instance source) {
         Instance target = new Instance();
         target.setInstanceId(source.getInstanceId());
@@ -111,11 +116,12 @@ public final class InstanceUtil {
     }
     
     /**
-     * If the instance id is empty, use the default-instance-id-generator method to set the instance id.
+     * 实例 ID 为空时用默认生成器补全，并回填 serviceName。
      *
-     * @param instance    instance from request
-     * @param groupedServiceName groupedServiceName from service
+     * @param instance 请求中的实例
+     * @param groupedServiceName 服务的 grouped 名称
      */
+    /** 调用 InstanceIdGeneratorManager 生成缺失的 instanceId。 */
     public static void setInstanceIdIfEmpty(Instance instance, String groupedServiceName) {
         if (null != instance && StringUtils.isEmpty(instance.getInstanceId())) {
             if (StringUtils.isBlank(instance.getServiceName())) {
@@ -126,11 +132,12 @@ public final class InstanceUtil {
     }
     
     /**
-     * Batch set instance id if empty.
+     * 批量为实例列表补全缺失的 instanceId。
      *
-     * @param instances   instances from request
-     * @param groupedServiceName groupedServiceName from service
+     * @param instances 实例列表
+     * @param groupedServiceName 服务的 grouped 名称
      */
+    /** 遍历列表调用 setInstanceIdIfEmpty。 */
     public static void batchSetInstanceIdIfEmpty(List<Instance> instances,
         String groupedServiceName) {
         if (null != instances) {
@@ -141,13 +148,14 @@ public final class InstanceUtil {
     }
     
     /**
-     * Build instance from instanceForm.
+     * 从 HTTP {@link InstanceForm} 构建 {@link Instance}。
      *
-     * @param instanceForm     request instance From
-     * @param defaultEphemeral default ephemeral
-     * @return new instance
-     * @throws NacosException if parse failed.
+     * @param instanceForm 请求表单
+     * @param defaultEphemeral ephemeral 缺省值
+     * @return 新实例
+     * @throws NacosException 解析 metadata 失败时抛出
      */
+    /** 解析表单字段并设置 ephemeral 默认值。 */
     public static Instance buildInstance(InstanceForm instanceForm, boolean defaultEphemeral)
         throws NacosException {
         String groupedServiceName =

@@ -39,9 +39,9 @@ import java.util.Objects;
 import static com.alibaba.nacos.api.exception.NacosException.SERVER_ERROR;
 
 /**
- * {@link SelectorManager} work on init {@link Selector#parse(Object)}, execute {@link Selector#select(Object)} and maintain
- * the type of {@link Selector} and {@link SelectorContextBuilder}.
- * It will provide the {@link Selector} types for web and openapi user to select.
+ * 实例选择器管理器。
+ *
+ * <p>通过 SPI 加载 {@link Selector} 与 {@link SelectorContextBuilder}，负责解析选择条件、构建上下文并执行 {@link Selector#select(Object)}，同时为控制台与 OpenAPI 暴露可用选择器类型。</p>
  *
  * @author chenglu
  * @date 2021-07-12 18:42
@@ -49,28 +49,23 @@ import static com.alibaba.nacos.api.exception.NacosException.SERVER_ERROR;
 @Component
 public class SelectorManager {
     
-    /**
-     * The relationship of context type and {@link SelectorContextBuilder}.
-     */
+    /** 上下文类型到 {@link SelectorContextBuilder} 的映射。 */
+    /** 已注册的上下文构建器表。 */
     private Map<String, SelectorContextBuilder> contextBuilders = new HashMap<>(8);
     
-    /**
-     * The relationship of selector type and {@link Selector} class.
-     */
+    /** 选择器类型到 {@link Selector} 实现类的映射。 */
+    /** 已注册的选择器类型表。 */
     private Map<String, Class<? extends Selector>> selectorTypes = new HashMap<>(8);
     
-    /**
-     * init the {@link Selector} class and {@link SelectorContextBuilder}.
-     */
+    /** 初始化选择器与上下文构建器 SPI 加载。 */
     @PostConstruct
+    /** Spring 启动后加载 SPI 并注册选择器类型。 */
     public void init() {
         initSelectorContextBuilders();
         initSelectorTypes();
     }
     
-    /**
-     * init SelectorContextBuilders.
-     */
+    /** 通过 SPI 加载并注册 {@link SelectorContextBuilder}。 */
     private void initSelectorContextBuilders() {
         Collection<SelectorContextBuilder> selectorContextBuilders =
             NacosServiceLoader.load(SelectorContextBuilder.class);
@@ -89,9 +84,7 @@ public class SelectorManager {
         }
     }
     
-    /**
-     * init SelectorTypes. The subclass of {@link Selector} must have public access default constructor.
-     */
+    /** 加载 {@link Selector} 实现并注册 JSON 子类型；需有无参 public 构造器。 */
     private void initSelectorTypes() {
         Collection<Selector> selectors = NacosServiceLoader.load(Selector.class);
         for (Selector selector : selectors) {
@@ -107,7 +100,7 @@ public class SelectorManager {
                 if (Objects.isNull(constructor)) {
                     throw new NoSuchMethodException();
                 }
-                // register json serial.
+                // 注册 Jackson 子类型序列化
                 JacksonUtils.registerSubtype(selectorClass, selector.getType());
                 selectorTypes.put(selector.getType(), selectorClass);
                 Loggers.SRV_LOG.info(
@@ -123,21 +116,23 @@ public class SelectorManager {
     }
     
     /**
-     * return all selector type provided by {@link #selectorTypes}.
+     * 返回所有已注册的选择器类型名。
      *
-     * @return select types.
+     * @return 选择器类型列表
      */
+    /** 列出 {@link #selectorTypes} 中的全部类型键。 */
     public List<String> getAllSelectorTypes() {
         return new ArrayList<>(selectorTypes.keySet());
     }
     
     /**
-     * parse {@link Selector} by selector type and condition. if not find the Selector type or parse failed, then will return null.
+     * 按类型与条件解析 {@link Selector}；类型不存在或解析失败时抛异常或返回 null。
      *
-     * @param type selector type. {@link Selector#getType()}.
-     * @param condition the condition provide for {@link Selector#parse(Object)}.
-     * @return {@link Selector}.
+     * @param type 选择器类型，见 {@link Selector#getType()}
+     * @param condition 传给 {@link Selector#parse(Object)} 的条件字符串
+     * @return 已解析的选择器实例
      */
+    /** 实例化并解析指定类型的选择器。 */
     public Selector parseSelector(String type, String condition) throws NacosException {
         if (StringUtils.isBlank(type)) {
             return null;
@@ -159,13 +154,14 @@ public class SelectorManager {
     }
     
     /**
-     * invoke the {@link Selector#select(Object)}. it will help {@link Selector} to build the context it need.
+     * 构建上下文并执行 {@link Selector#select(Object)}。
      *
-     * @param selector {@link Selector}.
-     * @param consumerIp the consumer Ip address.
-     * @param providers the provider list for select.
-     * @return the select instance list.
+     * @param selector 选择器实例
+     * @param consumerIp 消费者 IP
+     * @param providers 待筛选的提供者列表
+     * @return 筛选后的实例列表
      */
+    /** 查找上下文构建器并执行选择；失败时回退全部提供者。 */
     public <T extends Instance> List<T> select(Selector selector, String consumerIp,
         List<T> providers) {
         if (Objects.isNull(selector)) {

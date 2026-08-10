@@ -23,8 +23,9 @@ import com.alibaba.nacos.api.selector.context.SelectorContextBuilder;
 import java.util.List;
 
 /**
- * The {@link NoneSelectorContextBuilder} will return the provider as context for the {@link com.alibaba.nacos.api.selector.Selector}
- * which doesn't need any other resource.
+ * 空选择器上下文构建器。
+ *
+ * <p>无需额外资源的选择器直接以提供者列表作为上下文。</p>
  *
  * @author chenglu
  * @date 2021-08-04 13:31
@@ -32,14 +33,17 @@ import java.util.List;
 public class NoneSelectorContextBuilder<T extends Instance>
     implements SelectorContextBuilder<List<T>, String, List<T>> {
     
+    /** 上下文类型：NONE。 */
     private static final String CONTEXT_TYPE = "NONE";
     
     @Override
+    /** 忽略 consumer，直接返回 provider 列表。 */
     public List<T> build(String consumer, List<T> provider) {
         return provider;
     }
     
     @Override
+    /** 返回上下文类型 NONE。 */
     public String getContextType() {
         return CONTEXT_TYPE;
     }

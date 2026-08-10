@@ -38,16 +38,17 @@ import static com.alibaba.nacos.naming.constants.Constants.PUBLISH_INSTANCE_WEIG
 import static com.alibaba.nacos.naming.misc.UtilsAndCommons.DEFAULT_CLUSTER_NAME;
 
 /**
- * Utils to generate revision/checksum of distro clients.
+ * Distro 客户端校验与摘要工具类。
+ *
+ * <p>为 {@link IpPortBasedClient} 构建唯一字符串、hashCode 与 MD5 校验和，用于集群 Distro 数据一致性比对。</p>
  *
  * @author Pixy Yuan
  * on 2021/10/9
  */
 public class DistroUtils {
     
-    /**
-     * Build service key.
-     */
+    /** 构建服务唯一键：namespace##groupedName##ephemeral。 */
+    /** 生成 Distro 服务键字符串。 */
     public static String serviceKey(Service service) {
         return service.getNamespace()
             + "##"
@@ -56,9 +57,8 @@ public class DistroUtils {
             + service.isEphemeral();
     }
     
-    /**
-     * Calculate hash of unique string built by client's metadata.
-     */
+    /** 基于客户端唯一字符串计算 hashCode。 */
+    /** 对 buildUniqueString 结果取 hashCode。 */
     public static int stringHash(Client client) {
         String s = buildUniqueString(client);
         if (s == null) {
@@ -67,9 +67,8 @@ public class DistroUtils {
         return s.hashCode();
     }
     
-    /**
-     * Calculate hash for client. Reduce strings in memory and cpu costs.
-     */
+    /** 直接对客户端发布信息计算 hash，避免构建长字符串。 */
+    /** 聚合 clientId 与各服务发布信息 hash 值。 */
     public static int hash(Client client) {
         if (!(client instanceof IpPortBasedClient)) {
             return 0;
@@ -98,9 +97,8 @@ public class DistroUtils {
                 .collect(Collectors.toSet()));
     }
     
-    /**
-     * Calculate checksum for client.
-     */
+    /** 计算客户端 MD5 校验和。 */
+    /** 对唯一字符串做 MD5 十六进制摘要。 */
     public static String checksum(Client client) {
         String s = buildUniqueString(client);
         if (s == null) {
@@ -109,9 +107,8 @@ public class DistroUtils {
         return MD5Utils.md5Hex(s, Constants.ENCODE);
     }
     
-    /**
-     * Calculate unique string for client.
-     */
+    /** 按排序后的服务键拼接实例发布详情，生成唯一字符串。 */
+    /** 构建用于校验的客户端唯一描述串。 */
     public static String buildUniqueString(Client client) {
         if (!(client instanceof IpPortBasedClient)) {
             return null;
@@ -137,6 +134,7 @@ public class DistroUtils {
         return sb.toString();
     }
     
+    /** 从 extendDatum 读取实例 enabled，缺省 true。 */
     private static boolean getEnabled(InstancePublishInfo ip) {
         Object enabled0 = ip.getExtendDatum().get(PUBLISH_INSTANCE_ENABLE);
         if (!(enabled0 instanceof Boolean)) {
@@ -146,6 +144,7 @@ public class DistroUtils {
         }
     }
     
+    /** 从 extendDatum 读取实例 weight，缺省默认权重。 */
     private static double getWeight(InstancePublishInfo ip) {
         Object weight0 = ip.getExtendDatum().get(PUBLISH_INSTANCE_WEIGHT);
         if (!(weight0 instanceof Number)) {
@@ -156,10 +155,10 @@ public class DistroUtils {
     }
     
     /**
-     * Convert Map to KV string with ':'.
+     * 将 Map 按 key 排序后转为 key:value 逗号分隔串。
      *
-     * @param map map need to be converted
-     * @return KV string with ':'
+     * @param map 待转换的扩展元数据
+     * @return KV 字符串
      */
     private static String convertMap2String(Map<String, Object> map) {
         if (map == null || map.isEmpty()) {

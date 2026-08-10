@@ -42,7 +42,9 @@ import com.alibaba.nacos.plugin.auth.constant.ActionTypes;
 import org.springframework.stereotype.Component;
 
 /**
- * Persistent instance request handler.
+ * 持久实例注册/注销 RPC 请求处理器。
+ *
+ * <p>处理 {@link PersistentInstanceRequest}，以 IP:Port 生成客户端 ID，委托 {@link PersistentClientOperationServiceImpl} 写入持久化存储。</p>
  *
  * @author blake.qiu
  */
@@ -51,8 +53,10 @@ import org.springframework.stereotype.Component;
 public class PersistentInstanceRequestHandler
     extends RequestHandler<PersistentInstanceRequest, InstanceResponse> {
     
+    /** 持久客户端操作服务。 */
     private final PersistentClientOperationServiceImpl clientOperationService;
     
+    /** 注入持久客户端操作服务。 */
     public PersistentInstanceRequestHandler(
         PersistentClientOperationServiceImpl clientOperationService) {
         this.clientOperationService = clientOperationService;
@@ -64,6 +68,7 @@ public class PersistentInstanceRequestHandler
         name = "RemoteNamingInstanceRegisterDeregister")
     @Secured(action = ActionTypes.WRITE)
     @ExtractorManager.Extractor(rpcExtractor = PersistentInstanceRequestParamExtractor.class)
+    /** 构建持久 Service 并分发注册或注销。 */
     public InstanceResponse handle(PersistentInstanceRequest request, RequestMeta meta)
         throws NacosException {
         Service service = Service.newService(request.getNamespace(), request.getGroupName(),
@@ -81,6 +86,7 @@ public class PersistentInstanceRequestHandler
         }
     }
     
+    /** 以 IP:Port 客户端 ID 注册持久实例。 */
     private InstanceResponse registerInstance(Service service, PersistentInstanceRequest request,
         RequestMeta meta) {
         Instance instance = request.getInstance();
@@ -93,6 +99,7 @@ public class PersistentInstanceRequestHandler
         return new InstanceResponse(NamingRemoteConstants.REGISTER_INSTANCE);
     }
     
+    /** 注销持久实例并发布追踪事件。 */
     private InstanceResponse deregisterInstance(Service service, PersistentInstanceRequest request,
         RequestMeta meta) {
         Instance instance = request.getInstance();
