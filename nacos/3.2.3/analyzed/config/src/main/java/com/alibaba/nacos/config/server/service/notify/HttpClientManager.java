@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 配置服务端 HTTP 客户端管理器：维护同步与异步 {@link NacosRestTemplate} 单例，
+ * 供集群内通知、监听状态查询等模块复用，并在 JVM 关闭时优雅释放连接池。
  * http client manager.
  *
  * @author mai.jh
@@ -37,7 +39,7 @@ public final class HttpClientManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpClientManager.class);
     
     /**
-     * Connection timeout and socket timeout with other servers.
+     * 与其他 Nacos 节点通信的默认连接与读超时（毫秒）。
      */
     private static final int TIMEOUT = 500;
     
@@ -46,7 +48,7 @@ public final class HttpClientManager {
     private static final NacosAsyncRestTemplate NACOS_ASYNC_REST_TEMPLATE;
     
     static {
-        // build nacos rest template
+        // 初始化同步/异步 RestTemplate，通知模块使用可配置更长超时
         NACOS_REST_TEMPLATE = HttpClientBeanHolder
             .getNacosRestTemplate(new ConfigHttpClientFactory(TIMEOUT, TIMEOUT));
         NACOS_ASYNC_REST_TEMPLATE = HttpClientBeanHolder.getNacosAsyncRestTemplate(
@@ -56,10 +58,12 @@ public final class HttpClientManager {
         ThreadUtils.addShutdownHook(HttpClientManager::shutdown);
     }
     
+    /** 返回配置模块共享的同步 HTTP 客户端（500ms 超时）。 */
     public static NacosRestTemplate getNacosRestTemplate() {
         return NACOS_REST_TEMPLATE;
     }
     
+    /** 返回异步 HTTP 客户端，超时取自 {@link PropertyUtil} 通知配置。 */
     public static NacosAsyncRestTemplate getNacosAsyncRestTemplate() {
         return NACOS_ASYNC_REST_TEMPLATE;
     }
@@ -79,7 +83,7 @@ public final class HttpClientManager {
     }
     
     /**
-     * http client factory.
+     * 内部 HTTP 客户端工厂，按构造参数定制连接与读超时。
      */
     private static class ConfigHttpClientFactory extends AbstractHttpClientFactory {
         
@@ -92,6 +96,7 @@ public final class HttpClientManager {
             this.readTimeOutMillis = readTimeOutMillis;
         }
         
+        /** 构建带连接/读超时的 {@link HttpClientConfig}。 */
         @Override
         protected HttpClientConfig buildHttpClientConfig() {
             return HttpClientConfig.builder().setConTimeOutMillis(conTimeOutMillis)

@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 /**
+ * 配置查询链请求提取器门面：通过 SPI 加载 {@link ConfigQueryChainRequestExtractor}，
+ * 由 {@code nacos.config.query.chain.request.extractor} 指定实现名（默认 nacos）。
  * Service class for initializing and retrieving the configuration query request extractor.
  *
  * @author Nacos
@@ -36,8 +38,7 @@ public class ConfigChainRequestExtractorService {
     private static ConfigQueryChainRequestExtractor extractor;
     
     static {
-        String curExtractor =
-            EnvUtil.getProperty("nacos.config.query.chain.request.extractor", "nacos");
+        // 从环境读取提取器名称，默认使用 nacos 内置实现
         Optional<ConfigQueryChainRequestExtractor> optionalBuilder =
             NacosServiceLoader.load(ConfigQueryChainRequestExtractor.class)
                 .stream()
@@ -56,6 +57,7 @@ public class ConfigChainRequestExtractorService {
         }
     }
     
+    /** 返回已初始化的请求提取器单例，供 HTTP/gRPC 入口统一调用。 */
     public static ConfigQueryChainRequestExtractor getExtractor() {
         return extractor;
     }

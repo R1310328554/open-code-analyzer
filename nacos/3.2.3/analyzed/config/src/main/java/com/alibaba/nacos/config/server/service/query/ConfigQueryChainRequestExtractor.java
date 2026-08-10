@@ -22,6 +22,8 @@ import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainReque
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
+ * 配置查询链请求提取接口：将 HTTP Servlet 或 gRPC {@link ConfigQueryRequest}
+ * 统一转换为 {@link ConfigQueryChainRequest}，供责任链处理。
  * Interface for extracting configuration query chain requests from different sources.
  *
  * @author Nacos
@@ -29,14 +31,14 @@ import jakarta.servlet.http.HttpServletRequest;
 public interface ConfigQueryChainRequestExtractor {
     
     /**
-     * Gets the name of the current implementation.
+     * 返回当前 SPI 实现名称，与配置项 nacos.config.query.chain.request.extractor 对应。
      *
      * @return the name of the current implementation
      */
     String getName();
     
     /**
-     * Extracts a configuration query chain request from an HTTP request.
+     * 从 HTTP 请求解析 dataId、group、tenant、标签与客户端 IP 等查询参数。
      *
      * @param request the HTTP request object
      * @return the extracted configuration query chain request
@@ -44,7 +46,7 @@ public interface ConfigQueryChainRequestExtractor {
     ConfigQueryChainRequest extract(HttpServletRequest request);
     
     /**
-     * Extracts a configuration query chain request from a configuration query request object.
+     * 从 gRPC ConfigQueryRequest 与 RequestMeta 构建链式查询请求。
      *
      * @param request      the configuration query request object
      * @param requestMeta  the request metadata

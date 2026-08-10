@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * 本节点配置监听状态实现：合并 1.x 长轮询采样与 2.x+ gRPC 连接监听上下文，
+ * 返回客户端 IP 与 MD5 映射。
  * Local implementation for Config listener state service.
  *
  * @author xiweng.yy
@@ -55,11 +57,11 @@ public class LocalConfigListenerStateServiceImpl implements ConfigListenerStateS
     @Override
     public ConfigListenerInfo getListenerState(String dataId, String groupName,
         String namespaceId) {
-        // long polling listeners for 1.x client TODO removed after 3.x not support 1.x client.
+        // 1.x 客户端走长轮询采样（3.x 移除 1.x 支持后待删除）
         SampleResult result =
             longPollingService.getCollectSubscribleInfo(dataId, groupName, namespaceId);
-        // rpc listeners for upper 2.x client.
-        String groupKey = GroupKey2.getKey(dataId, groupName, namespaceId);
+        // 2.x 及以上客户端通过 gRPC 连接与 ConfigChangeListenContext 维护监听
+        // 组装 groupKey 以便从监听上下文查找订阅连接
         Set<String> listenersClients = configChangeListenContext.getListeners(groupKey);
         if (CollectionUtils.isEmpty(listenersClients)) {
             return buildActualResult(result, ConfigListenerInfo.QUERY_TYPE_CONFIG);
@@ -94,6 +96,13 @@ public class LocalConfigListenerStateServiceImpl implements ConfigListenerStateS
         return buildActualResult(result, ConfigListenerInfo.QUERY_TYPE_IP);
     }
     
+    /**
+     * 将内部 {@link SampleResult} 转为 API 层 {@link ConfigListenerInfo}。
+     *
+     * @param sampleResult 长轮询与 RPC 合并后的采样结果
+     * @param type         查询类型（按配置或按 IP）
+     * @return 对外暴露的监听状态对象
+     */
     private ConfigListenerInfo buildActualResult(SampleResult sampleResult, String type) {
         ConfigListenerInfo result = new ConfigListenerInfo();
         result.setQueryType(type);

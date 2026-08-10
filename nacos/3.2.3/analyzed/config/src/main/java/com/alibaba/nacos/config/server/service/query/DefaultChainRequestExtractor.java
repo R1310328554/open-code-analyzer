@@ -31,12 +31,15 @@ import java.util.Map;
 import static com.alibaba.nacos.api.common.Constants.VIPSERVER_TAG;
 
 /**
+ * 默认配置查询请求提取器（SPI 名 nacos）：从 HTTP 或 gRPC 请求解析
+ * dataId、group、tenant、灰度标签与客户端 IP 标签，供责任链灰度路由使用。
  * DefaultChainRequestExtractor.
  *
  * @author Nacos
  */
 public class DefaultChainRequestExtractor implements ConfigQueryChainRequestExtractor {
     
+    /** SPI 实现名，固定返回 {@code nacos}。 */
     @Override
     public String getName() {
         return "nacos";
@@ -46,17 +49,17 @@ public class DefaultChainRequestExtractor implements ConfigQueryChainRequestExtr
     public ConfigQueryChainRequest extract(HttpServletRequest request) {
         final String dataId = request.getParameter("dataId");
         final String group = request.getParameter("group");
-        String tenant = request.getParameter("namespaceId") != null
+        // namespaceId 与 tenant 参数二选一，空则归一化为空串
             ? request.getParameter("namespaceId") : request.getParameter("tenant");
         if (StringUtils.isBlank(tenant)) {
             tenant = StringUtils.EMPTY;
         }
         String tag = request.getParameter("tag");
-        String autoTag = request.getHeader(VIPSERVER_TAG);
+        // 读取 VIPServer 自动标签头，用于无显式 tag 时的灰度匹配
         String clientIp = RequestUtil.getRemoteIp(request);
         
         Map<String, String> appLabels = new HashMap<>(4);
-        appLabels.put(BetaGrayRule.CLIENT_IP_LABEL, clientIp);
+        // 写入客户端 IP 标签，供 Beta 灰度规则匹配
         if (StringUtils.isNotBlank(tag)) {
             appLabels.put(TagGrayRule.VIP_SERVER_TAG_LABEL, tag);
         } else if (StringUtils.isNotBlank(autoTag)) {
@@ -73,6 +76,13 @@ public class DefaultChainRequestExtractor implements ConfigQueryChainRequestExtr
         return chainRequest;
     }
     
+    /**
+     * 从 gRPC 请求与元数据构建链式查询对象，合并 appLabels 供灰度链使用。
+     *
+     * @param request     RPC 配置查询请求
+     * @param requestMeta 含 clientIp 与 appLabels 的元数据
+     * @return 责任链统一请求模型
+     */
     @Override
     public ConfigQueryChainRequest extract(ConfigQueryRequest request, RequestMeta requestMeta) {
         ConfigQueryChainRequest chainRequest = new ConfigQueryChainRequest();

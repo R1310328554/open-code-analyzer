@@ -19,6 +19,8 @@ package com.alibaba.nacos.config.server.service.listener;
 import com.alibaba.nacos.api.config.model.ConfigListenerInfo;
 
 /**
+ * 配置监听状态查询接口：按配置三元组或客户端 IP 返回当前订阅客户端
+ * 及其本地 MD5，供运维排查与一致性校验。
  * Nacos config listener statues service.
  *
  * @author xiweng.yy
@@ -26,7 +28,7 @@ import com.alibaba.nacos.api.config.model.ConfigListenerInfo;
 public interface ConfigListenerStateService {
     
     /**
-     * Get config listener state by dataId, groupName, namespaceId.
+     * 按 dataId、groupName、namespaceId 查询该配置的监听客户端列表。
      *
      * @param dataId        data id of config
      * @param groupName     group name of config
@@ -36,7 +38,7 @@ public interface ConfigListenerStateService {
     ConfigListenerInfo getListenerState(String dataId, String groupName, String namespaceId);
     
     /**
-     * Get config listener state by listener ip.
+     * 按客户端 IP 反查其当前监听的配置及 MD5。
      *
      * @param ip    listener ip
      * @return      listener config information, include dataId, groupName, namespaceId and config md5

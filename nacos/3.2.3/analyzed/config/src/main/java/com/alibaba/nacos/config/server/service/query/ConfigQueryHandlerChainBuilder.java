@@ -17,6 +17,8 @@
 package com.alibaba.nacos.config.server.service.query;
 
 /**
+ * 配置查询责任链构建器 SPI：按业务场景组装 Handler 顺序，
+ * 由 {@code nacos.config.query.chain.builder} 选择具体实现。
  * ConfigQueryHandlerChainBuilder.
  *
  * @author Nacos
@@ -24,14 +26,14 @@ package com.alibaba.nacos.config.server.service.query;
 public interface ConfigQueryHandlerChainBuilder {
     
     /**
-     * Builds the configuration query handler chain.
+     * 构建并返回完整的配置查询 Handler 责任链。
      *
      * @return the configuration query handler chain
      */
     ConfigQueryHandlerChain build();
     
     /**
-     * Gets the name of the builder.
+     * 返回构建器 SPI 名称，供 {@link ConfigQueryChainService} 过滤加载。
      *
      * @return the name of the builder
      */

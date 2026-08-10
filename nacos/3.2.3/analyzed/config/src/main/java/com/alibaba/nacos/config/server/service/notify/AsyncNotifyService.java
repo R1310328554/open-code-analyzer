@@ -53,6 +53,8 @@ import java.util.concurrent.TimeUnit;
 import static com.alibaba.nacos.core.cluster.MemberMetaDataConstants.SUPPORT_GRAY_MODEL;
 
 /**
+ * 配置变更异步集群通知：订阅 {@link ConfigDataChangeEvent}，通过 gRPC
+ * 向各健康成员推送 {@link ConfigChangeClusterSyncRequest}，失败时指数退避重试。
  * Async notify service.
  *
  * @author Nacos
@@ -84,15 +86,15 @@ public class AsyncNotifyService {
     public AsyncNotifyService(ServerMemberManager memberManager) {
         this.memberManager = memberManager;
         
-        // Register ConfigDataChangeEvent to NotifyCenter.
+        // 向 NotifyCenter 注册配置变更事件发布器
         NotifyCenter.registerToPublisher(ConfigDataChangeEvent.class, NotifyCenter.ringBufferSize);
         
-        // Register A Subscriber to subscribe ConfigDataChangeEvent.
+        // 订阅 ConfigDataChangeEvent，在 onEvent 中触发集群同步
         NotifyCenter.registerSubscriber(new Subscriber() {
             
             @Override
             public void onEvent(Event event) {
-                // Generate ConfigDataChangeEvent concurrently
+                // 并发场景下由 NotifyCenter 回调处理变更事件
                 handleConfigDataChangeEvent(event);
             }
             
@@ -111,11 +113,11 @@ public class AsyncNotifyService {
             
             Collection<Member> ipList = memberManager.allMembersWithoutSelf();
             
-            // In fact, any type of queue here can be
+            // 此处使用 LinkedList 作为待通知 RPC 任务队列
             Queue<NotifySingleRpcTask> rpcQueue = new LinkedList<>();
             
             for (Member member : ipList) {
-                // grpc report data change only
+                // 仅通过 gRPC 上报配置变更（HTTP 通知已废弃）
                 NotifySingleRpcTask notifySingleRpcTask = generateTask(evt, member);
                 if (notifySingleRpcTask != null) {
                     rpcQueue.add(notifySingleRpcTask);
@@ -140,7 +142,7 @@ public class AsyncNotifyService {
         if (PropertyUtil.isGrayCompatibleModel()
             && StringUtils.isNotBlank(configDataChangeEvent.grayName)) {
             
-            // old server should set beta or tag flag
+            // 兼容不支持灰度模型的旧节点：映射 beta/tag 标志
             if (!(Boolean) member.getExtendInfo().getOrDefault(SUPPORT_GRAY_MODEL, Boolean.FALSE)) {
                 String underLine = "_";
                 task.setBeta(BetaGrayRule.TYPE_BETA.equals(configDataChangeEvent.grayName));
@@ -153,7 +155,7 @@ public class AsyncNotifyService {
             }
         }
         
-        // compatible with gray model
+        // 灰度兼容模式下构造 NotifySingleRpcTask
         return task;
     }
     
@@ -177,7 +179,7 @@ public class AsyncNotifyService {
             
             String event = getNotifyEvent(task);
             if (memberManager.hasMember(member.getAddress())) {
-                // start the health check and there are ips that are not monitored, put them directly in the notification queue, otherwise notify
+                // 目标不健康则延迟重试，健康则立即发起 gRPC 同步
                 boolean unHealthNeedDelay = isUnHealthy(member.getAddress());
                 if (unHealthNeedDelay) {
                     // target ip is unhealthy, then put it in the notification list
@@ -200,7 +202,7 @@ public class AsyncNotifyService {
                     
                 }
             } else {
-                //No nothing if  member has offline.
+                // 成员已离线则跳过，不做无效通知
             }
             
         }
@@ -301,7 +303,7 @@ public class AsyncNotifyService {
         
         @Override
         public void merge(AbstractDelayTask task) {
-            // Perform merge, but do nothing, tasks with the same dataId and group, later will replace the previous
+            // 同 dataId/group 任务后者覆盖前者，merge 保持空实现
             
         }
         
@@ -376,7 +378,7 @@ public class AsyncNotifyService {
                     ConfigTraceService.NOTIFY_TYPE_ERROR,
                     delayed, task.member.getAddress());
                 
-                //get delay time and set fail count to the task
+                // 失败或异常时按退避策略调度重试
                 asyncNotifyService.asyncTaskExecute(task);
                 
                 LogUtil.NOTIFY_LOG.error("[notify-retry] target:{} dataId:{} group:{} ts:{}",
@@ -412,11 +414,10 @@ public class AsyncNotifyService {
     }
     
     /**
-     * get delayTime and also set failCount to task; The failure time index increases, so as not to retry invalid tasks
-     * in the offline scene, which affects the normal synchronization.
+     * 按失败次数计算退避延迟并递增 failCount，避免离线节点拖慢正常同步。
      *
      * @param task notify task
-     * @return delay
+     * @return delay 毫秒级重试间隔
      */
     private static int getDelayTime(NotifySingleRpcTask task) {
         int failCount = task.getFailCount();

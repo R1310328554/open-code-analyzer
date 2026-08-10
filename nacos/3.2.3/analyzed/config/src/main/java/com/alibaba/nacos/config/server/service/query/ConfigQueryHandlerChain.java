@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
+ * 配置查询责任链：按添加顺序串联多个 {@link ConfigQueryHandler}，
+ * 由头节点依次处理 {@link ConfigQueryChainRequest} 并返回响应。
  * ConfigQueryHandlerChain.
  * @author Nacos
  */
@@ -41,7 +43,7 @@ public class ConfigQueryHandlerChain {
     }
     
     /**
-     * Adds a new configuration query handler to the chain.
+     * 向链尾追加处理器，支持链式调用；null 处理器将被忽略并打 warn 日志。
      *
      * @param handler the configuration query handler to be added
      * @return the current configuration query handler chain object, supporting method chaining
@@ -63,6 +65,13 @@ public class ConfigQueryHandlerChain {
         return this;
     }
     
+    /**
+     * 从头节点开始执行责任链处理逻辑。
+     *
+     * @param request 统一查询请求
+     * @return 链处理结果
+     * @throws IOException IO 异常向上抛出
+     */
     public ConfigQueryChainResponse handle(ConfigQueryChainRequest request) throws IOException {
         return head.handle(request);
     }

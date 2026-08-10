@@ -29,6 +29,8 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 /**
+ * 配置查询责任链入口服务：SPI 加载 {@link ConfigQueryHandlerChainBuilder} 并构建
+ * 处理链，对外提供 {@link #handle} 统一查询入口。
  * Service class for initializing and retrieving the configuration query chain builder.
  *
  * @author Nacos
@@ -41,7 +43,7 @@ public class ConfigQueryChainService {
     private final ConfigQueryHandlerChain chain;
     
     public ConfigQueryChainService() {
-        String curChain = EnvUtil.getProperty("nacos.config.query.chain.builder", "nacos");
+        // 读取责任链构建器名称，默认 nacos 内置链
         Optional<ConfigQueryHandlerChainBuilder> optionalBuilder =
             NacosServiceLoader.load(ConfigQueryHandlerChainBuilder.class)
                 .stream()
@@ -60,7 +62,7 @@ public class ConfigQueryChainService {
     }
     
     /**
-     * Handles the configuration query request.
+     * 执行配置查询责任链；异常时记录日志并返回 FAIL 响应。
      *
      * @param request the configuration query request object
      * @return the configuration query response object

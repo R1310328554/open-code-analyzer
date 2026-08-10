@@ -19,6 +19,8 @@ package com.alibaba.nacos.config.server.service.dump.task;
 import com.alibaba.nacos.common.task.AbstractDelayTask;
 
 /**
+ * 全量标签配置 Dump 延迟任务：触发将持久层中全部带标签（Tag）的配置
+ * 同步到本地内存缓存，供配置服务快速读取。
  * Dump all tag task.
  *
  * @author Nacos
@@ -26,9 +28,11 @@ import com.alibaba.nacos.common.task.AbstractDelayTask;
  */
 public class DumpAllTagTask extends AbstractDelayTask {
     
+    /** 合并同类型延迟任务；本任务无需合并逻辑，空实现。 */
     @Override
     public void merge(AbstractDelayTask task) {
     }
     
+    /** 任务队列唯一标识，用于 {@link com.alibaba.nacos.common.task.NacosTaskProcessor} 路由。 */
     public static final String TASK_ID = "dumpAllTagConfigTask";
 }
