@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T21:28:45Z",
   "files": [
-    "cmd/dataobj-inspect/dump.go",
-    "cmd/dataobj-inspect/list_streams.go",
-    "cmd/dataobj-inspect/main.go",
-    "cmd/dataobj-inspect/print_streams.go",
-    "cmd/dataobj-inspect/stats.go",
-    "cmd/logcli/main.go",
-    "cmd/logql-analyzer/main.go",
-    "cmd/loki-canary/main.go",
-    "cmd/loki/health.go",
-    "cmd/loki/main.go",
-    "cmd/lokitool/main.go",
-    "cmd/migrate/main.go",
-    "cmd/querytee/main.go",
-    "integration/client/client.go",
-    "integration/cluster/cluster.go",
     "integration/cluster/ruler.go",
     "integration/cluster/schema.go",
     "integration/parse_metrics.go",
@@ -33,5 +18,5 @@
     "pkg/bloombuild/common/tsdb.go"
   ],
   "remaining_pending": 1372,
-  "done": 150
+  "done": 165
 }
