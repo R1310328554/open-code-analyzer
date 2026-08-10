@@ -15,23 +15,8 @@
     "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundClientHandler.java",
     "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundHandler.java",
     "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnidirectionalStreamInboundServerHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnknownFrame.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/HttpConversionUtil.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/NotNullByDefault.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackAttributes.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackDecoder.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackDecoderDynamicTable.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackDecoderHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackDecoderStateSyncStrategy.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackEncoder.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackEncoderDynamicTable.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackEncoderHandler.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackException.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackHeaderField.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackHuffmanDecoder.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackHuffmanEncoder.java",
-    "codec-http3/src/main/java/io/netty/handler/codec/http3/QpackSensitivityDetector.java"
+    "codec-http3/src/main/java/io/netty/handler/codec/http3/Http3UnknownFrame.java"
   ],
   "remaining_pending": 1088,
-  "done": 810
+  "done": 825
 }
