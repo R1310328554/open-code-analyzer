@@ -31,18 +31,25 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 用户会话缓存流过滤谓词，可按 realm、用户、客户端及 broker 会话信息组合筛选。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @ProtoTypeId(Marshalling.USER_SESSION_PREDICATE)
 public class UserSessionPredicate implements Predicate<Map.Entry<String, SessionEntityWrapper<UserSessionEntity>>> {
 
+    /** 目标 realm ID。 */
     private final String realm;
 
+    /** 可选的用户 ID 过滤条件。 */
     private String user;
 
+    /** 可选的客户端 UUID 过滤条件。 */
     private String client;
 
+    /** 可选的 broker 会话 ID 过滤条件。 */
     private String brokerSessionId;
+    /** 可选的 broker 用户 ID 过滤条件。 */
     private String brokerUserId;
 
     private UserSessionPredicate(String realm) {
@@ -50,46 +57,48 @@ public class UserSessionPredicate implements Predicate<Map.Entry<String, Session
     }
 
     /**
-     * Creates a user session predicate. If using the {@link #client(java.lang.String)} method, see its warning.
-     * @param realm
-     * @return
+     * 创建用户会话谓词。若使用 {@link #client(java.lang.String)}，请注意其 stale 会话警告。
+     * @param realm realm 标识
+     * @return 可链式配置的谓词实例
      */
     public static UserSessionPredicate create(String realm) {
         return new UserSessionPredicate(realm);
     }
 
+    /** 限定匹配的用户 ID。 */
     public UserSessionPredicate user(String user) {
         this.user = user;
         return this;
     }
 
     /**
-     * Adds a test for client. Note that this test can return stale sessions because on detaching client session
-     * from user session, only client session is deleted and user session is not updated for performance reason.
+     * 增加客户端匹配条件。因性能原因，客户端会话从用户会话分离时仅删除客户端会话、
+     * 不更新用户会话，此条件可能匹配到过时的会话。
      *
      * @see AuthenticatedClientSessionAdapter#detachFromUserSession()
-     * @param clientUUID
-     * @return
+     * @param clientUUID 客户端 UUID
+     * @return 当前谓词实例，便于链式调用
      */
     public UserSessionPredicate client(String clientUUID) {
         this.client = clientUUID;
         return this;
     }
 
-
+    /** 限定 broker 会话 ID。 */
     public UserSessionPredicate brokerSessionId(String id) {
         this.brokerSessionId = id;
         return this;
     }
 
+    /** 限定 broker 用户 ID。 */
     public UserSessionPredicate brokerUserId(String id) {
         this.brokerUserId = id;
         return this;
     }
 
     /**
-     * Returns the user id.
-     * @return
+     * 返回用户 ID 过滤条件。
+     * @return 用户 ID，未设置时为 null
      */
     @ProtoField(1)
     public String getUserId() {
@@ -116,6 +125,7 @@ public class UserSessionPredicate implements Predicate<Map.Entry<String, Session
         return client;
     }
 
+    /** ProtoStream 反序列化工厂，从各字段重建谓词。 */
     @ProtoFactory
     static UserSessionPredicate create(String userId, String brokerSessionId, String brokerUserId, String realm, String client) {
         return create(realm)
@@ -125,6 +135,7 @@ public class UserSessionPredicate implements Predicate<Map.Entry<String, Session
                 .brokerUserId(brokerUserId);
     }
 
+    /** 对缓存条目中的 {@link UserSessionEntity} 应用组合过滤条件。 */
     @Override
     public boolean test(Map.Entry<String, SessionEntityWrapper<UserSessionEntity>> entry) {
         UserSessionEntity entity = entry.getValue().getEntity();
@@ -137,6 +148,7 @@ public class UserSessionPredicate implements Predicate<Map.Entry<String, Session
 
     }
 
+    /** 转换为作用于 {@link UserSessionModel} 的等价谓词，供领域模型层查询使用。 */
     public Predicate<? super UserSessionModel> toModelPredicate() {
 
         return (Predicate<UserSessionModel>) entity ->

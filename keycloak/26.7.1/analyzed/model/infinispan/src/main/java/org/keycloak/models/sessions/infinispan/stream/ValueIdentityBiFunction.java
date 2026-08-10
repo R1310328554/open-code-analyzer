@@ -25,35 +25,32 @@ import org.infinispan.protostream.annotations.ProtoTypeId;
 import static org.keycloak.marshalling.Marshalling.VALUE_IDENTITY_BI_FUNCTION;
 
 /**
- * A {@link BiFunction} implementation that returns the second argument unchanged, effectively acting as an identity
- * function for the value parameter.
+ * 恒等 {@link BiFunction}：忽略第一个参数，原样返回第二个参数（值）。
  * <p>
- * This class is used in Infinispan cache operations where a {@link BiFunction} is required but only the value needs to
- * be preserved without any transformation. The key parameter is ignored.
+ * 用于 Infinispan 需要 {@link BiFunction} 签名但仅需保留现有值的场景（如仅更新 TTL）。
  * <p>
- * The class is implemented as a stateless singleton and is serializable via Infinispan ProtoStream to support
- * distributed cache operations in remote caches.
+ * 无状态单例，通过 ProtoStream 序列化以支持远程缓存分布式操作。
  *
- * @param <K> The type of the first argument (key). This parameter is ignored by the function.
- * @param <V> The type of the second argument (value). This parameter is returned unchanged.
+ * @param <K> 第一个参数（键）类型，被忽略
+ * @param <V> 第二个参数（值）类型，原样返回
  */
 @ProtoTypeId(VALUE_IDENTITY_BI_FUNCTION)
 public final class ValueIdentityBiFunction<K, V> implements BiFunction<K, V, V> {
 
+    /** 单例实例。 */
     private static final ValueIdentityBiFunction<?, ?> INSTANCE = new ValueIdentityBiFunction<>();
 
     private ValueIdentityBiFunction() {
     }
 
     /**
-     * Returns the singleton instance of this function.
+     * 返回此函数的单例实例。
      * <p>
-     * This method is annotated with {@link ProtoFactory} to enable Infinispan ProtoStream serialization for remote
-     * cache operations.
+     * 标注 {@link ProtoFactory} 以支持 Infinispan ProtoStream 远程缓存序列化。
      *
-     * @param <T> The type of the key parameter
-     * @param <E> The type of the value parameter
-     * @return The singleton instance of {@link ValueIdentityBiFunction}
+     * @param <T> 键参数类型
+     * @param <E> 值参数类型
+     * @return {@link ValueIdentityBiFunction} 单例
      */
     @ProtoFactory
     @SuppressWarnings("unchecked")
@@ -62,11 +59,11 @@ public final class ValueIdentityBiFunction<K, V> implements BiFunction<K, V, V> 
     }
 
     /**
-     * Returns the value parameter unchanged, ignoring the key parameter.
+     * 忽略键参数，原样返回值参数。
      *
-     * @param k The key parameter (ignored)
-     * @param v The value parameter to return
-     * @return The value parameter unchanged
+     * @param k 键参数（被忽略）
+     * @param v 待返回的值参数
+     * @return 未修改的值参数
      */
     @Override
     public V apply(K k, V v) {

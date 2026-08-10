@@ -35,33 +35,34 @@ import org.infinispan.protostream.annotations.ProtoTypeId;
 import static org.keycloak.marshalling.Marshalling.LOGIN_FAILURES_LIFESPAN_UPDATE;
 
 /**
- * A {@link BiConsumer} that updates the lifespan of login failure cache entries based on realm lockout policies.
+ * 根据 realm 暴力破解防护策略更新登录失败缓存条目的存活时间（TTL）的 {@link BiConsumer}。
  * <p>
- * This class is used to recalculate and update the time-to-live (TTL) for login failure records stored in the
- * Infinispan cache. The lifespan is determined by the realm's brute force protection settings, including whether
- * permanent lockout is enabled and the maximum number of temporary lockouts allowed.
+ * 用于在 Infinispan 缓存中重新计算登录失败记录的过期时间，依据 realm 是否启用永久锁定、
+ * 允许的最大临时锁定次数以及失败计数时间窗口等配置。
  * <p>
- * The class is serializable via Infinispan ProtoStream to support distributed cache operations in remote caches.
+ * 通过 Infinispan ProtoStream 序列化，以支持远程缓存上的分布式流操作。
  */
 @ProtoTypeId(LOGIN_FAILURES_LIFESPAN_UPDATE)
 public class LoginFailuresLifespanUpdate implements BiConsumer<Cache<LoginFailureKey, SessionEntityWrapper<LoginFailureEntity>>, Map.Entry<LoginFailureKey, SessionEntityWrapper<LoginFailureEntity>>> {
 
+    /** 跟踪失败次数的最大时间窗口（毫秒）。 */
     @ProtoField(1)
     final long maxDeltaTimeMillis;
+    /** 允许的最大临时锁定次数。 */
     @ProtoField(2)
     final int maxTemporaryLockouts;
+    /** 是否启用永久锁定。 */
     @ProtoField(3)
     final boolean permanentLockout;
 
     /**
-     * Creates a new login failures lifespan update operation with the specified lockout policy parameters.
+     * 使用指定的锁定策略参数创建登录失败存活时间更新操作。
      * <p>
-     * This constructor is annotated with {@link ProtoFactory} to enable Infinispan ProtoStream serialization for remote
-     * cache operations.
+     * 标注 {@link ProtoFactory} 以支持 Infinispan ProtoStream 远程缓存序列化。
      *
-     * @param maxDeltaTimeMillis   The maximum time window in milliseconds for tracking failures
-     * @param maxTemporaryLockouts The maximum number of temporary lockouts allowed
-     * @param permanentLockout     Whether permanent lockout is enabled
+     * @param maxDeltaTimeMillis   跟踪失败的最大时间窗口（毫秒）
+     * @param maxTemporaryLockouts 允许的最大临时锁定次数
+     * @param permanentLockout     是否启用永久锁定
      */
     @ProtoFactory
     public LoginFailuresLifespanUpdate(long maxDeltaTimeMillis, int maxTemporaryLockouts, boolean permanentLockout) {
@@ -71,14 +72,13 @@ public class LoginFailuresLifespanUpdate implements BiConsumer<Cache<LoginFailur
     }
 
     /**
-     * Updates the lifespan of a login failure cache entry based on the configured lockout policy.
+     * 根据配置的锁定策略更新登录失败缓存条目的存活时间。
      * <p>
-     * The new lifespan is calculated using {@link SessionTimeouts#getLoginFailuresLifespanMs} which considers the
-     * current failure count, permanent lockout settings, and maximum delta time. The cache entry is updated using flags
-     * that optimize performance by avoiding locks and ignoring return values.
+     * 新 TTL 由 {@link SessionTimeouts#getLoginFailuresLifespanMs} 计算，综合考虑当前失败次数、
+     * 永久锁定设置与最大时间窗口。使用无锁、静默失败、忽略返回值等 Flag 优化缓存更新性能。
      *
-     * @param cache The Infinispan cache containing login failure entries
-     * @param entry The cache entry to update with its key and wrapped login failure entity
+     * @param cache 存放登录失败条目的 Infinispan 缓存
+     * @param entry 待更新的缓存键值对（含包装后的登录失败实体）
      */
     @Override
     public void accept(Cache<LoginFailureKey, SessionEntityWrapper<LoginFailureEntity>> cache, Map.Entry<LoginFailureKey, SessionEntityWrapper<LoginFailureEntity>> entry) {

@@ -20,15 +20,15 @@ package org.keycloak.models.sessions.infinispan.transaction;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * A pending (blocking) database update.
+ * 待执行的（阻塞式）数据库更新操作。
  */
 @FunctionalInterface
 public interface DatabaseUpdate {
 
     /**
-     * Write the database changes using the {@code session} provided.
+     * 使用提供的 {@code session} 将变更写入数据库。
      *
-     * @param session The {@link KeycloakSession}.
+     * @param session {@link KeycloakSession} 实例
      */
     void write(KeycloakSession session);
 

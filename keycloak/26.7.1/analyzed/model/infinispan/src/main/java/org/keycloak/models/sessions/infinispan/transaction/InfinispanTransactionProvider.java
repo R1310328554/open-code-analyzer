@@ -21,17 +21,16 @@ import org.keycloak.models.KeycloakTransaction;
 import org.keycloak.provider.Provider;
 
 /**
- * A provider for Infinispan cache operations to be committed/rolled-back in a {@link KeycloakTransaction}.
+ * Infinispan 缓存操作的 Provider，其提交/回滚纳入 {@link KeycloakTransaction} 生命周期。
  * <p>
- * It takes advantage of the non-blocking/async Infinispan API to requests the operations into the Infinispan caches
- * concurrently and waits, at the end, for all of them to complete.
+ * 利用 Infinispan 非阻塞/异步 API 并发发起缓存操作，在事务末尾统一等待全部完成。
  */
 public interface InfinispanTransactionProvider extends Provider {
 
     /**
-     * Registers a new {@link NonBlockingTransaction}.
+     * 注册一条 {@link NonBlockingTransaction}。
      *
-     * @param transaction The {@link NonBlockingTransaction} transaction instance.
+     * @param transaction {@link NonBlockingTransaction} 实例
      */
     void registerTransaction(NonBlockingTransaction transaction);
 

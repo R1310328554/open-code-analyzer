@@ -30,27 +30,29 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * A {@link Supplier} that returns a {@link Collector} to group and count elements.
+ * 提供用于分组并计数的 {@link Collector} 的 {@link Supplier}。
  * <p>
- * Infinispan can marshall lambdas, by using {@link SerializedLambda} but it is not as efficient and ProtoStream
- * marshaller.
+ * Infinispan 可通过 {@link SerializedLambda} 序列化 lambda，但效率不如 ProtoStream marshaller。
  *
- * @param <T> The type of the elements.
+ * @param <T> 元素类型。
  */
 @ProtoTypeId(Marshalling.GROUP_AND_COUNT_COLLECTOR_SUPPLIER)
 public class GroupAndCountCollectorSupplier<T> implements Supplier<Collector<T, ?, Map<T, Long>>> {
 
+    /** 单例实例，避免在分布式流操作中重复创建。 */
     private static final GroupAndCountCollectorSupplier<?> INSTANCE = new GroupAndCountCollectorSupplier<>();
 
     private GroupAndCountCollectorSupplier() {
     }
 
+    /** 返回可 ProtoStream 序列化的单例供应商。 */
     @ProtoFactory
     @SuppressWarnings("unchecked")
     public static <T1> GroupAndCountCollectorSupplier<T1> getInstance() {
         return (GroupAndCountCollectorSupplier<T1>) INSTANCE;
     }
 
+    /** 按元素自身分组并统计各组出现次数。 */
     @Override
     public Collector<T, ?, Map<T, Long>> get() {
         return Collectors.groupingBy(CompletableFutures.identity(), Collectors.counting());

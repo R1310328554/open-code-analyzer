@@ -27,24 +27,27 @@ import org.infinispan.protostream.annotations.ProtoTypeId;
 import static org.keycloak.marshalling.Marshalling.REMOVE_KEY_BI_CONSUMER;
 
 /**
- * Removes keys from a {@link Cache}.
+ * 从 {@link Cache} 中移除指定键的 {@link BiConsumer}。
  * <p>
- * This implementation is best-effortly, meaning if the removal fails, it won't throw any exception.
+ * 尽力而为（best-effort）实现：删除失败时不抛出异常。
  *
- * @param <K> The type of key stored in the cache.
- * @param <V> The type of the value store in the cache.
+ * @param <K> 缓存键类型
+ * @param <V> 缓存值类型
  */
 @ProtoTypeId(REMOVE_KEY_BI_CONSUMER)
 public class RemoveKeyConsumer<K, V> implements BiConsumer<Cache<K, V>, K> {
 
+    /** 单例实例，供分布式流终端操作复用。 */
     private static final RemoveKeyConsumer<Object, Object> INSTANCE = new RemoveKeyConsumer<>();
 
+    /** 返回可 ProtoStream 序列化的单例消费者。 */
     @ProtoFactory
     @SuppressWarnings("unchecked")
     public static <K, V> RemoveKeyConsumer<K, V> getInstance() {
         return (RemoveKeyConsumer<K, V>) INSTANCE;
     }
 
+    /** 以无锁、静默方式从缓存移除键，忽略返回值。 */
     @Override
     public void accept(Cache<K, V> cache, K key) {
         cache.getAdvancedCache()

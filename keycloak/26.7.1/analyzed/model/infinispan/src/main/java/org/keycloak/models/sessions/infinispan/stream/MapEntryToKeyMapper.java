@@ -27,31 +27,32 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * A {@link Function} to extract the key from a {@link Map.Entry}.
+ * 从 {@link Map.Entry} 提取键的 {@link Function}。
  * <p>
- * Same as {@code Map.Entry::getKey}.
+ * 等价于 {@code Map.Entry::getKey}。
  * <p>
- * Infinispan can marshall lambdas, by using {@link SerializedLambda} but it is not as efficient and ProtoStream
- * marshaller.
+ * Infinispan 可通过 {@link SerializedLambda} 序列化 lambda，但效率不如 ProtoStream marshaller。
  *
- * @param <K>
- * @param <V>
+ * @param <K> 键类型
+ * @param <V> 值类型
  */
 @ProtoTypeId(Marshalling.MAP_ENTRY_TO_KEY_FUNCTION)
 public class MapEntryToKeyMapper<K, V> implements Function<Map.Entry<K, V>, K> {
 
+    /** 单例实例，供分布式流映射复用。 */
     private static final MapEntryToKeyMapper<?, ?> INSTANCE = new MapEntryToKeyMapper<>();
 
     private MapEntryToKeyMapper() {
     }
 
+    /** 返回可 ProtoStream 序列化的单例映射器。 */
     @ProtoFactory
     @SuppressWarnings("unchecked")
     public static <K1, V1> MapEntryToKeyMapper<K1, V1> getInstance() {
         return (MapEntryToKeyMapper<K1, V1>) INSTANCE;
     }
 
-
+    /** 返回 Map 条目的键部分。 */
     @Override
     public K apply(Map.Entry<K, V> entry) {
         return entry.getKey();

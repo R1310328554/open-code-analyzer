@@ -28,27 +28,30 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * A {@link Function} to unwrap the {@link SessionEntity} from the {@link SessionEntityWrapper}.
+ * 从 {@link SessionEntityWrapper} 解包出 {@link SessionEntity} 的 {@link Function}。
  * <p>
- * The {@link SessionEntityWrapper} is part of the value of {@link Map.Entry}.
+ * {@link SessionEntityWrapper} 作为 {@link Map.Entry} 值的一部分存在于缓存条目中。
  *
- * @param <K> The key type.
- * @param <V> The value type.
+ * @param <K> 键类型
+ * @param <V> 会话实体类型
  */
 @ProtoTypeId(Marshalling.SESSION_UNWRAP_MAPPER)
 public class SessionUnwrapMapper<K, V extends SessionEntity> implements Function<Map.Entry<K, SessionEntityWrapper<V>>, V> {
 
+    /** 单例实例，供分布式流映射复用。 */
     private static final SessionUnwrapMapper<?, ?> INSTANCE = new SessionUnwrapMapper<>();
 
     private SessionUnwrapMapper() {
     }
 
+    /** 返回可 ProtoStream 序列化的单例解包映射器。 */
     @ProtoFactory
     @SuppressWarnings("unchecked")
     public static <K1, V1 extends SessionEntity> SessionUnwrapMapper<K1, V1> getInstance() {
         return (SessionUnwrapMapper<K1, V1>) INSTANCE;
     }
 
+    /** 提取包装器内的会话实体。 */
     @Override
     public V apply(Map.Entry<K, SessionEntityWrapper<V>> entry) {
         return entry.getValue().getEntity();

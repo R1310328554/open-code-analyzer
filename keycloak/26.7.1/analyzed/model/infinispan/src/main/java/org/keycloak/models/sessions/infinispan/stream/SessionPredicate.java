@@ -24,20 +24,25 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 缓存流过滤谓词：匹配指定 realm 下已解包的 {@link SessionEntity} 条目。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.SESSION_PREDICATE)
 public class SessionPredicate<K, V extends SessionEntity> extends BaseRealmPredicate<K, V> {
 
+    /** ProtoStream 工厂构造，绑定目标 realm。 */
     @ProtoFactory
     SessionPredicate(String realmId) {
         super(realmId);
     }
 
+    /** 创建限定 realm 的会话实体谓词。 */
     public static <K1, V1 extends SessionEntity> SessionPredicate<K1, V1> create(String realm) {
         return new SessionPredicate<>(realm);
     }
 
+    /** 从会话实体直接读取 realm ID 进行匹配。 */
     @Override
     String realmIdFrom(V value) {
         return value.getRealmId();

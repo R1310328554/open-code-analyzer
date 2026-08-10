@@ -39,14 +39,23 @@ import org.keycloak.provider.ServerInfoAwareProviderFactory;
 import org.hibernate.Session;
 import org.jboss.logging.Logger;
 
+/**
+ * 默认 Infinispan 事务 Provider 工厂。
+ * <p>
+ * 创建 {@link DefaultInfinispanTransactionProvider} 并注册 prepare/after-completion 钩子；
+ * 可选在 READ COMMITTED 隔离级别下将会话 DB 写入提前至主 JTA 事务的 prepare 阶段。
+ */
 public class DefaultInfinispanTransactionProviderFactory implements InfinispanTransactionProviderFactory, ServerInfoAwareProviderFactory {
 
     public static final String ID = "default";
     protected static Logger log = Logger.getLogger(DefaultInfinispanTransactionProviderFactory.class);
+    /** 是否启用 prepare 阶段提前写入数据库。 */
     private boolean prepareEnabled;
 
+    /** 是否在主事务中写入会话更新的配置项名称。 */
     public static final String CONFIG_WRITE_SESSION_UPDATES_IN_MAIN_TRANSACTION = "writeSessionUpdatesInMainTransaction";
     private static final boolean DEFAULT_WRITE_SESSION_UPDATES_IN_MAIN_TRANSACTION = true;
+    /** 配置项原始值（postInit 前读取）。 */
     private boolean writeSessionUpdatesInMainTransaction;
 
     @Override
@@ -54,7 +63,7 @@ public class DefaultInfinispanTransactionProviderFactory implements InfinispanTr
         var provider = new DefaultInfinispanTransactionProvider(session);
 
         if (prepareEnabled) {
-            // In the prepare step, check if database entities can be locked. If this is true, no new transactions need to be started in the after-completion phase.
+            // prepare 阶段尝试锁定 DB 实体；成功则 after-completion 无需再开新事务
             session.getTransactionManager().enlistPrepare(new AbstractKeycloakTransaction() {
                 @Override
                 protected void commitImpl() {
@@ -93,9 +102,8 @@ public class DefaultInfinispanTransactionProviderFactory implements InfinispanTr
     @Override
     public void postInit(KeycloakSessionFactory factory) {
         if (writeSessionUpdatesInMainTransaction) {
-            // Only when read-committed is enabled, it is safe to opportunistically upgrade a read lock to a write lock.
-            // Should work for PostgreSQL, Oracle and MSSQL that use read committed by default.
-            // In all other isolation levels this can lead to a deadlock as seen for example with MariaDB (SnapshotIsolationException / "Record has changed since last read")
+            // 仅 READ COMMITTED 下可安全地将读锁升级为写锁（PostgreSQL、Oracle、MSSQL 默认）
+            // 其他隔离级别可能导致死锁，例如 MariaDB（SnapshotIsolationException / "Record has changed since last read"）
             prepareEnabled = KeycloakModelUtils.runJobInTransactionWithResult(factory, session -> {
                 EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
                 return em.unwrap(Session.class).doReturningWork(connection -> {

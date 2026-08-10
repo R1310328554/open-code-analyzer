@@ -19,5 +19,8 @@ package org.keycloak.models.sessions.infinispan.transaction;
 
 import org.keycloak.provider.ProviderFactory;
 
+/**
+ * {@link InfinispanTransactionProvider} 的 SPI 工厂接口。
+ */
 public interface InfinispanTransactionProviderFactory extends ProviderFactory<InfinispanTransactionProvider> {
 }
