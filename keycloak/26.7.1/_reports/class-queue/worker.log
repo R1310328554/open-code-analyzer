@@ -1663,3 +1663,18 @@
 2026-08-10T08:15:54Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/MigrationModelAdapter.java wave57b models/jpa realm/user providers + adapters
 2026-08-10T08:15:54Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/PaginationUtils.java wave57b models/jpa realm/user providers + adapters
 2026-08-10T08:15:54Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/RealmAdapter.java wave57b models/jpa realm/user providers + adapters
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/impl/BaseExpirationTask.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/impl/DefaultExpirationTask.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/expiration/jpa/impl/RealmAwareExpirationTask.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/loginfailures/jpa/JpaUserLoginFailureProvider.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/loginfailures/jpa/JpaUserLoginFailureProviderFactory.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/loginfailures/jpa/LoginFailureEntity.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/loginfailures/jpa/LoginFailureExpirationAction.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/loginfailures/jpa/LoginFailureKey.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/loginfailures/jpa/UserLoginFailureAdapter.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/ClientAdapter.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/ClientScopeAdapter.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/GroupAdapter.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientProviderFactory.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientScopeProviderFactory.java wave57a expiration impl + login failure JPA + early models/jpa
+2026-08-10T08:16:17Z DONE model/jpa/src/main/java/org/keycloak/models/jpa/JpaDeploymentStateProviderFactory.java wave57a expiration impl + login failure JPA + early models/jpa

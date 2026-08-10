@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T08:12:48Z",
-  "files": [
-    "model/jpa/src/main/java/org/keycloak/expiration/jpa/impl/BaseExpirationTask.java",
-    "model/jpa/src/main/java/org/keycloak/expiration/jpa/impl/DefaultExpirationTask.java",
-    "model/jpa/src/main/java/org/keycloak/expiration/jpa/impl/RealmAwareExpirationTask.java",
-    "model/jpa/src/main/java/org/keycloak/loginfailures/jpa/JpaUserLoginFailureProvider.java",
-    "model/jpa/src/main/java/org/keycloak/loginfailures/jpa/JpaUserLoginFailureProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/loginfailures/jpa/LoginFailureEntity.java",
-    "model/jpa/src/main/java/org/keycloak/loginfailures/jpa/LoginFailureExpirationAction.java",
-    "model/jpa/src/main/java/org/keycloak/loginfailures/jpa/LoginFailureKey.java",
-    "model/jpa/src/main/java/org/keycloak/loginfailures/jpa/UserLoginFailureAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/ClientAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/ClientScopeAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/GroupAdapter.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaClientScopeProviderFactory.java",
-    "model/jpa/src/main/java/org/keycloak/models/jpa/JpaDeploymentStateProviderFactory.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 4288,
-  "done": 1695
+  "done": 1710
 }
