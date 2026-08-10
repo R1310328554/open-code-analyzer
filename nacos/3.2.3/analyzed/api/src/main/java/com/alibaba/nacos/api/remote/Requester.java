@@ -21,7 +21,9 @@ import com.alibaba.nacos.api.remote.request.Request;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * connection interface,define basic operation.
+ * 远程连接请求发送接口，定义同步/异步/Future 三种调用方式。
+ *
+ * <p>gRPC 连接实现此接口，客户端通过它向 Nacos 服务端发送 {@link Request} 并接收 {@link Response}。</p>
  *
  * @author liuzunfei
  * @version $Id: Requester.java, v 0.1 2020年09月11日 4:05 PM liuzunfei Exp $
@@ -29,36 +31,34 @@ import com.alibaba.nacos.api.remote.response.Response;
 public interface Requester {
     
     /**
-     * send request.
+     * 同步发送请求并阻塞等待响应。
      *
-     * @param request      request.
-     * @param timeoutMills mills of timeouts.
-     * @return response  response returned.
-     * @throws NacosException exception throw.
+     * @param request      请求对象
+     * @param timeoutMills 超时毫秒数
+     * @return 服务端响应
+     * @throws NacosException 发送或等待失败
      */
     Response request(Request request, long timeoutMills) throws NacosException;
     
     /**
-     * send request.
+     * 发送请求并返回 Future，由调用方自行阻塞等待。
      *
-     * @param request request.
-     * @return request future.
-     * @throws NacosException exception throw.
+     * @param request 请求对象
+     * @return 请求 Future
+     * @throws NacosException 发送失败
      */
     RequestFuture requestFuture(Request request) throws NacosException;
     
     /**
-     * send async request.
+     * 异步发送请求，结果通过回调通知。
      *
-     * @param request         request.
-     * @param requestCallBack callback of request.
-     * @throws NacosException exception throw.
+     * @param request         请求对象
+     * @param requestCallBack 结果回调
+     * @throws NacosException 发送失败
      */
     void asyncRequest(Request request, RequestCallBack requestCallBack) throws NacosException;
     
-    /**
-     * close connection.
-     */
+    /** 关闭底层连接并释放资源。 */
     void close();
     
 }

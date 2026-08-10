@@ -19,13 +19,16 @@ package com.alibaba.nacos.api.remote.request;
 import static com.alibaba.nacos.api.common.Constants.Remote.INTERNAL_MODULE;
 
 /**
- * client active detection request from server.
+ * 服务端发起的客户端存活探测请求。
+ *
+ * <p>服务端定期发送此内部模块请求以检测连接是否仍活跃；客户端应回复 {@link com.alibaba.nacos.api.remote.response.ClientDetectionResponse}。</p>
  *
  * @author liuzunfei
  * @version $Id: ClientDetectionRequest.java, v 0.1 2021年01月20日 2:42 PM liuzunfei Exp $
  */
 public class ClientDetectionRequest extends ServerRequest {
     
+    /** {@inheritDoc} 返回内部模块标识 {@link com.alibaba.nacos.api.common.Constants.Remote#INTERNAL_MODULE}。 */
     @Override
     public String getModule() {
         return INTERNAL_MODULE;

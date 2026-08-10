@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote;
 
 /**
- * payload class sign.
+ * RPC 消息体（Payload）类型标记接口。
+ *
+ * <p>所有可序列化的远程请求/响应体实现此接口，供 gRPC 编解码层识别消息类型。</p>
  *
  * @author hujun
  */

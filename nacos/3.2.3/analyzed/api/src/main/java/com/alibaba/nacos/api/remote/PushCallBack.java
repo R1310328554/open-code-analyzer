@@ -17,7 +17,9 @@
 package com.alibaba.nacos.api.remote;
 
 /**
- * callback of push service.
+ * 服务端向客户端推送消息时的结果回调。
+ *
+ * <p>推送方在超时或收到 ACK 后分别调用 {@link #onFail(Throwable)} 与 {@link #onSuccess()}。</p>
  *
  * @author liuzunfei
  * @version $Id: PushCallBack.java, v 0.1 2020年07月20日 1:13 PM liuzunfei Exp $
@@ -25,21 +27,19 @@ package com.alibaba.nacos.api.remote;
 public interface PushCallBack {
     
     /**
-     * Push timeout mills.
+     * 推送等待超时时间（毫秒）。
      *
-     * @return timeout milliseconds
+     * @return 超时毫秒数
      */
     long getTimeout();
     
-    /**
-     * invoked on success.
-     */
+    /** 推送成功（收到客户端 ACK）时调用。 */
     void onSuccess();
     
     /**
-     * invoked on fail.
+     * 推送失败或超时时调用。
      *
-     * @param e exception throwed.
+     * @param e 抛出的异常
      */
     void onFail(Throwable e);
     

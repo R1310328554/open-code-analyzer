@@ -19,73 +19,67 @@ package com.alibaba.nacos.api.remote.request;
 import static com.alibaba.nacos.api.common.Constants.Remote.INTERNAL_MODULE;
 
 /**
- * ConnectResetRequest.
+ * 服务端通知客户端重置连接的请求。
+ *
+ * <p>当服务端需要客户端断开并重连时（如负载均衡切换），携带目标 {@link #serverIp}、{@link #serverPort} 与 {@link #connectionId}。</p>
  *
  * @author liuzunfei
  * @version $Id: ConnectResetRequest.java, v 0.1 2020年07月15日 11:11 AM liuzunfei Exp $
  */
 public class ConnectResetRequest extends ServerRequest {
     
+    /** 建议重连的服务端 IP。 */
     String serverIp;
     
+    /** 建议重连的服务端端口。 */
     String serverPort;
     
+    /** 待重置的连接 ID。 */
     String connectionId;
     
+    /** {@inheritDoc} 返回内部模块标识。 */
     @Override
     public String getModule() {
         return INTERNAL_MODULE;
     }
     
-    /**
-     * Getter method for property <tt>connectionId</tt>.
-     *
-     * @return property value of connectionId
-     */
+    /** 返回待重置的连接 ID。 */
     public String getConnectionId() {
         return connectionId;
     }
     
     /**
-     * Setter method for property <tt>connectionId</tt>.
+     * 设置待重置的连接 ID。
      *
-     * @param connectionId value to be assigned to property connectionId
+     * @param connectionId 连接标识
      */
     public void setConnectionId(String connectionId) {
         this.connectionId = connectionId;
     }
     
-    /**
-     * Getter method for property <tt>serverIp</tt>.
-     *
-     * @return property value of serverIp
-     */
+    /** 返回建议重连的服务端 IP。 */
     public String getServerIp() {
         return serverIp;
     }
     
     /**
-     * Setter method for property <tt>serverIp</tt>.
+     * 设置建议重连的服务端 IP。
      *
-     * @param serverIp value to be assigned to property serverIp
+     * @param serverIp 服务端 IP
      */
     public void setServerIp(String serverIp) {
         this.serverIp = serverIp;
     }
     
-    /**
-     * Getter method for property <tt>serverPort</tt>.
-     *
-     * @return property value of serverPort
-     */
+    /** 返回建议重连的服务端端口。 */
     public String getServerPort() {
         return serverPort;
     }
     
     /**
-     * Setter method for property <tt>serverPort</tt>.
+     * 设置建议重连的服务端端口。
      *
-     * @param serverPort value to be assigned to property serverPort
+     * @param serverPort 服务端端口
      */
     public void setServerPort(String serverPort) {
         this.serverPort = serverPort;

@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.remote;
 import com.alibaba.nacos.api.remote.response.Response;
 
 /**
- * future for request.
+ * 异步 RPC 请求的 Future 抽象，支持阻塞等待响应。
+ *
+ * <p>由 {@link Requester#requestFuture} 返回；典型实现为 {@link DefaultRequestFuture}。</p>
  *
  * @author liuzunfei
  * @version $Id: RequestFuture.java, v 0.1 2020年09月01日 6:31 PM liuzunfei Exp $
@@ -27,26 +29,26 @@ import com.alibaba.nacos.api.remote.response.Response;
 public interface RequestFuture {
     
     /**
-     * check that it is done or not..
+     * 请求是否已完成（成功或失败）。
      *
-     * @return is done .
+     * @return 已完成返回 {@code true}
      */
     boolean isDone();
     
     /**
-     * get response without timeouts.
+     * 无限期阻塞直到响应到达。
      *
-     * @return return response if done.
-     * @throws Exception exception throws .
+     * @return 响应对象
+     * @throws Exception 等待被中断或请求失败
      */
     Response get() throws Exception;
     
     /**
-     * get response with a given timeouts.
+     * 在指定毫秒内等待响应。
      *
-     * @param timeout timeout milliseconds.
-     * @return return response if done.
-     * @throws Exception exception throws .
+     * @param timeout 超时毫秒数
+     * @return 响应对象
+     * @throws Exception 超时、中断或请求失败
      */
     Response get(long timeout) throws Exception;
     

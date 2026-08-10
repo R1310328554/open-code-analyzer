@@ -19,7 +19,9 @@ package com.alibaba.nacos.api.remote.ability;
 import java.io.Serializable;
 
 /**
- * remote abilities of nacos client.
+ * Nacos 客户端远程能力描述，用于连接协商。
+ *
+ * <p>在 {@link com.alibaba.nacos.api.remote.request.ConnectionSetupRequest} 中与服务端交换，声明客户端是否支持 gRPC 远程连接。</p>
  *
  * @author liuzunfei
  * @version $Id: ClientRemoteAbility.java, v 0.1 2021年01月24日 00:09 AM liuzunfei Exp $
@@ -28,15 +30,15 @@ public class ClientRemoteAbility implements Serializable {
     
     private static final long serialVersionUID = -5794603724540260652L;
     
-    /**
-     * if support remote connection.
-     */
+    /** 客户端是否支持 gRPC 远程连接。 */
     private boolean supportRemoteConnection;
     
+    /** 返回是否支持远程连接。 */
     public boolean isSupportRemoteConnection() {
         return this.supportRemoteConnection;
     }
     
+    /** 设置是否支持远程连接。 */
     public void setSupportRemoteConnection(boolean supportRemoteConnection) {
         this.supportRemoteConnection = supportRemoteConnection;
     }

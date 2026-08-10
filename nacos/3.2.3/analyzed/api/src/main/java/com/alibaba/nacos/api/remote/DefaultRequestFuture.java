@@ -23,58 +23,72 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * default request future.
+ * {@link RequestFuture} 的默认实现，管理异步 RPC 请求的生命周期。
+ *
+ * <p>支持阻塞 {@link #get()}、限时 {@link #get(long)} 等待，并在响应到达或超时时触发 {@link RequestCallBack}；超时任务由 {@link RpcScheduledExecutor#TIMEOUT_SCHEDULER} 调度。</p>
  *
  * @author liuzunfei
  * @version $Id: DefaultRequestFuture.java, v 0.1 2020年09月01日 6:42 PM liuzunfei Exp $
  */
 public class DefaultRequestFuture implements RequestFuture {
     
+    /** 请求创建时间戳（毫秒）。 */
     private long timeStamp;
     
+    /** 请求是否已完成（成功或失败）。 */
     private volatile boolean isDone = false;
     
+    /** 响应是否成功。 */
     private boolean isSuccess;
     
+    /** 异步回调，可为 {@code null}（同步等待模式）。 */
     private RequestCallBack requestCallBack;
     
+    /** 失败时的异常信息。 */
     private Exception exception;
     
+    /** 请求唯一标识。 */
     private String requestId;
     
+    /** 所属 gRPC 连接标识。 */
     private String connectionId;
     
+    /** 服务端返回的响应体。 */
     private Response response;
     
+    /** 超时定时任务句柄。 */
     private ScheduledFuture timeoutFuture;
     
+    /** 超时/取消时的清理触发器。 */
     FutureTrigger futureTrigger;
     
-    /**
-     * Getter method for property <tt>requestCallBack</tt>.
-     *
-     * @return property value of requestCallBack
-     */
+    /** 返回关联的异步回调。 */
     public RequestCallBack getRequestCallBack() {
         return requestCallBack;
     }
     
-    /**
-     * Getter method for property <tt>timeStamp</tt>.
-     *
-     * @return property value of timeStamp
-     */
+    /** 返回请求创建时间戳。 */
     public long getTimeStamp() {
         return timeStamp;
     }
     
-    public DefaultRequestFuture(String connectionId, String requestId) {
+    /**
+     * 构造无回调的同步等待 Future。
+     *
+     * @param connectionId 连接 ID
+     * @param requestId    请求 ID
+     */
         this(connectionId, requestId, null, null);
     }
     
-    public DefaultRequestFuture(String connectionId, String requestId,
-        RequestCallBack requestCallBack,
-        FutureTrigger futureTrigger) {
+    /**
+     * 构造完整 Future，可选注册回调与清理触发器。
+     *
+     * @param connectionId    连接 ID
+     * @param requestId       请求 ID
+     * @param requestCallBack 异步回调（可为 null）
+     * @param futureTrigger   超时/取消清理触发器
+     */
         this.timeStamp = System.currentTimeMillis();
         this.requestCallBack = requestCallBack;
         this.requestId = requestId;
@@ -87,6 +101,7 @@ public class DefaultRequestFuture implements RequestFuture {
         this.futureTrigger = futureTrigger;
     }
     
+    /** 设置成功响应并唤醒等待线程、触发回调。 */
     public void setResponse(final Response response) {
         isDone = true;
         this.response = response;
@@ -101,6 +116,7 @@ public class DefaultRequestFuture implements RequestFuture {
         callBacInvoke();
     }
     
+    /** 标记请求失败并唤醒等待线程、触发异常回调。 */
     public void setFailResult(Exception e) {
         isDone = true;
         isSuccess = false;
@@ -112,6 +128,7 @@ public class DefaultRequestFuture implements RequestFuture {
         callBacInvoke();
     }
     
+    /** 在回调线程或当前线程执行 {@link RequestCallBack}。 */
     private void callBacInvoke() {
         if (requestCallBack != null) {
             if (requestCallBack.getExecutor() != null) {
@@ -122,15 +139,18 @@ public class DefaultRequestFuture implements RequestFuture {
         }
     }
     
+    /** 返回请求 ID。 */
     public String getRequestId() {
         return this.requestId;
     }
     
+    /** {@inheritDoc} 请求是否已完成。 */
     @Override
     public boolean isDone() {
         return isDone;
     }
     
+    /** {@inheritDoc} 无限期阻塞直到响应到达。 */
     @Override
     public Response get() throws InterruptedException {
         synchronized (this) {
@@ -141,6 +161,7 @@ public class DefaultRequestFuture implements RequestFuture {
         return response;
     }
     
+    /** {@inheritDoc} 在指定毫秒内等待响应，超时抛出 {@link TimeoutException}。 */
     @Override
     public Response get(long timeout) throws TimeoutException, InterruptedException {
         if (timeout < 0) {
@@ -173,8 +194,11 @@ public class DefaultRequestFuture implements RequestFuture {
         }
     }
     
+    /** 在独立线程或回调执行器中分发响应/异常。 */
     class CallBackHandler implements Runnable {
         
+        /** 根据结果调用 {@link RequestCallBack#onException} 或 {@link RequestCallBack#onResponse}。 */
+        /** 超时到达时构造 {@link TimeoutException} 并通知 Future。 */
         @Override
         public void run() {
             if (exception != null) {
@@ -185,8 +209,10 @@ public class DefaultRequestFuture implements RequestFuture {
         }
     }
     
+    /** 超时定时任务：标记失败并触发 {@link FutureTrigger#triggerOnTimeout()}。 */
     class TimeoutHandler implements Runnable {
         
+        /** 无参构造。 */
         public TimeoutHandler() {
         }
         
@@ -203,52 +229,42 @@ public class DefaultRequestFuture implements RequestFuture {
     }
     
     /**
-     * Cleaning something while request has been failed, canceled, timeout.
+     * 请求失败、取消或超时时的资源清理钩子。
      */
     public interface FutureTrigger {
         
-        /**
-         * default trigger for {@link #triggerOnTimeout()} and {@link #triggerOnCancel()}.
-         */
+        /** 超时与取消共用的默认清理逻辑。 */
         void defaultTrigger();
         
-        /**
-         * triggered on timeout .
-         */
+        /** 请求超时时触发，默认委托 {@link #defaultTrigger()}。 */
         default void triggerOnTimeout() {
             defaultTrigger();
         }
         
-        /**
-         * triggered on cancel.
-         */
+        /** 请求取消时触发，默认委托 {@link #defaultTrigger()}。 */
         default void triggerOnCancel() {
             defaultTrigger();
         }
         
     }
     
-    /**
-     * Getter method for property <tt>connectionId</tt>.
-     *
-     * @return property value of connectionId
-     */
+    /** 返回所属连接 ID。 */
     public String getConnectionId() {
         return connectionId;
     }
     
     /**
-     * Cancel the request. It should be called in
-     * {@link com.alibaba.nacos.core.remote.grpc.GrpcConnection#sendRequestInner}
-     * NOTE: For sync requests(which without requestCallBack), the cancel operation is always invalid.
+     * 取消进行中的请求。
      *
-     * @param mayInterruptIfRunning whether to interrupt the thread
+     * <p>应在 {@link com.alibaba.nacos.core.remote.grpc.GrpcConnection#sendRequestInner} 中调用；无 {@link RequestCallBack} 的同步请求取消无效。</p>
+     *
+     * @param mayInterruptIfRunning 是否中断正在运行的超时任务
      */
     public void cancel(boolean mayInterruptIfRunning) {
         synchronized (this) {
             notifyAll();
         }
-        // cancel timeout task.
+        // 取消超时定时任务。
         if (timeoutFuture != null && !timeoutFuture.isDone()) {
             boolean cancel = timeoutFuture.cancel(mayInterruptIfRunning);
             if (cancel && futureTrigger != null) {
