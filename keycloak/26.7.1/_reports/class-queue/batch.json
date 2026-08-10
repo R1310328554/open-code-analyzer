@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:55:36Z",
-  "files": [
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/EmailBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/FrontChannelLogoutBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/IdentityProviderBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/IdpReviewProfileBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/LoginBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/LogoutConfirmBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/OAuthGrantBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/OrganizationBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/PasswordPoliciesBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/ProfileBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/RealmBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/RecoveryAuthnCodeInputLoginBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/RecoveryAuthnCodesBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/RegisterBean.java",
-    "services/src/main/java/org/keycloak/forms/login/freemarker/model/RequiredActionUrlFormatterMethod.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1798,
-  "done": 4185
+  "done": 4200
 }
