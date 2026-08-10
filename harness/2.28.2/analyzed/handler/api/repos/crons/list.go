@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// crons 包提供仓库定时任务（Cron Job）相关的 REST API 处理器。
 package crons
 
 import (
@@ -15,8 +16,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleList returns an http.HandlerFunc that writes a json-encoded
-// list of cron jobs to the response body.
+// HandleList 返回 HTTP 处理器，列出指定仓库下的全部定时任务并以 JSON 数组写入响应。
 func HandleList(
 	repos core.RepositoryStore,
 	crons core.CronStore,

@@ -5,6 +5,7 @@
 //go:build !oss
 // +build !oss
 
+// crons 包提供仓库定时任务（Cron Job）相关的 REST API 处理器。
 package crons
 
 import (
@@ -16,8 +17,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes json-encoded
-// cronjob details to the response body.
+// HandleFind 返回 HTTP 处理器，按名称查询单个定时任务详情并以 JSON 写入响应。
 func HandleFind(
 	repos core.RepositoryStore,
 	crons core.CronStore,

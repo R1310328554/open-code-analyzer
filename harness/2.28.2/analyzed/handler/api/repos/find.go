@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repos 包提供仓库生命周期与配置相关的 REST API 处理器。
 package repos
 
 import (
@@ -21,8 +22,7 @@ import (
 	"github.com/drone/drone/handler/api/request"
 )
 
-// HandleFind returns an http.HandlerFunc that writes the
-// json-encoded repository details to the response body.
+// HandleFind 返回 HTTP 处理器，从请求上下文中读取已鉴权的仓库及其权限并以 JSON 返回。
 func HandleFind() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

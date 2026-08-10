@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// collabs 包提供仓库协作者（成员权限）相关的 REST API 处理器。
 package collabs
 
 import (
@@ -16,14 +17,14 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleFind returns an http.HandlerFunc that writes a json-encoded
-// repository collaborator details to the response body.
+// HandleFind 返回 HTTP 处理器，按登录名查询指定仓库中某协作者的权限详情并以 JSON 写入响应。
 func HandleFind(
 	users core.UserStore,
 	repos core.RepositoryStore,
 	members core.PermStore,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// 从 URL 路径解析成员登录名、仓库命名空间与仓库名。
 		var (
 			login     = chi.URLParam(r, "member")
 			namespace = chi.URLParam(r, "owner")
@@ -51,6 +52,7 @@ func HandleFind(
 				Debugln("api: user not found")
 			return
 		}
+		// 根据仓库 UID 与用户 ID 查找成员关系记录。
 		member, err := members.Find(r.Context(), repo.UID, user.ID)
 		if err != nil {
 			render.NotFound(w, err)

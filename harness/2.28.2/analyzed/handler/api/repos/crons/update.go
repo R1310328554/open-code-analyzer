@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// crons 包提供仓库定时任务（Cron Job）相关的 REST API 处理器。
 package crons
 
 import (
@@ -16,14 +17,14 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// cronUpdate 表示 PATCH 请求体中可部分更新的定时任务字段。
 type cronUpdate struct {
 	Branch   *string `json:"branch"`
 	Target   *string `json:"target"`
 	Disabled *bool   `json:"disabled"`
 }
 
-// HandleUpdate returns an http.HandlerFunc that processes http
-// requests to enable or disable a cron job.
+// HandleUpdate 返回 HTTP 处理器，部分更新定时任务的分支、目标或启用状态。
 func HandleUpdate(
 	repos core.RepositoryStore,
 	crons core.CronStore,
@@ -47,6 +48,7 @@ func HandleUpdate(
 
 		in := new(cronUpdate)
 		json.NewDecoder(r.Body).Decode(in)
+		// 仅合并请求体中显式提供的非 nil 字段。
 		if in.Branch != nil {
 			cronjob.Branch = *in.Branch
 		}

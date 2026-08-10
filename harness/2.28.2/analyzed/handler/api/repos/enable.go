@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repos 包提供仓库生命周期与配置相关的 REST API 处理器。
 package repos
 
 import (
@@ -27,14 +28,10 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// FEATURE FLAG enables a static secret value used to sign
-// incoming requests routed through a proxy. This was implemented
-// based on feedback from @chiraggadasc and should not be
-// removed until we have a permanent solution in place.
+// staticSigner 为特性开关：代理场景下使用固定密钥签名入站请求（临时方案，见 @chiraggadasc 反馈）。
 var staticSigner = os.Getenv("DRONE_FEATURE_SERVER_PROXY_SECRET")
 
-// HandleEnable returns an http.HandlerFunc that processes http
-// requests to enable a repository in the system.
+// HandleEnable 返回 HTTP 处理器，激活仓库并注册 Webhook、初始化默认配置与密钥。
 func HandleEnable(
 	hooks core.HookService,
 	repos core.RepositoryStore,
@@ -59,6 +56,7 @@ func HandleEnable(
 		repo.Active = true
 		repo.UserID = user.ID
 
+		// 为未配置的仓库填充默认流水线文件、签名密钥、Secret 与超时。
 		if repo.Config == "" {
 			repo.Config = ".drone.yml"
 		}

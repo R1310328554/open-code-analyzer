@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// collabs 包提供仓库协作者（成员权限）相关的 REST API 处理器。
 package collabs
 
 import (
@@ -16,8 +17,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleList returns an http.HandlerFunc that write a json-encoded
-// list of repository collaborators to the response body.
+// HandleList 返回 HTTP 处理器，列出指定仓库的全部协作者并以 JSON 数组写入响应。
 func HandleList(
 	repos core.RepositoryStore,
 	members core.PermStore,

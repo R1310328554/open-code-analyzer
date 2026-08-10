@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// crons 包提供仓库定时任务（Cron Job）相关的 REST API 处理器。
 package crons
 
 import (
@@ -18,8 +19,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleExec returns an http.HandlerFunc that processes http
-// requests to execute a cronjob on-demand.
+// HandleExec 返回 HTTP 处理器，按需立即触发一次定时任务对应的构建。
 func HandleExec(
 	users core.UserStore,
 	repos core.RepositoryStore,
@@ -57,6 +57,7 @@ func HandleExec(
 			return
 		}
 
+		// 解析 Cron 配置的目标分支，获取最新提交 SHA。
 		commit, err := commits.FindRef(ctx, user, repo.Slug, cronjob.Branch)
 		if err != nil {
 			logger := logrus.WithError(err).
@@ -68,6 +69,7 @@ func HandleExec(
 			return
 		}
 
+		// 构造 Cron 触发的 Hook 载荷，模拟定时事件推送。
 		hook := &core.Hook{
 			Trigger:      core.TriggerCron,
 			Event:        core.EventCron,

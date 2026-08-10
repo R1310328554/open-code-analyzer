@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// encrypt 包提供将明文 Secret 加密为 YAML 可用密文的 API 端点。
 package encrypt
 
 import (
@@ -29,12 +30,12 @@ import (
 	"github.com/go-chi/chi"
 )
 
+// respEncrypted 为加密接口的 JSON 响应体，data 字段为 Base64 编码的密文。
 type respEncrypted struct {
 	Data string `json:"data"`
 }
 
-// Handler returns an http.HandlerFunc that processes http
-// requests to create an encrypted secret.
+// Handler 返回 HTTP 处理器，使用仓库级 256 位密钥加密请求中的 Secret 明文。
 func Handler(repos core.RepositoryStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		namespace := chi.URLParam(r, "owner")
@@ -52,24 +53,21 @@ func Handler(repos core.RepositoryStore) http.HandlerFunc {
 			return
 		}
 
-		// the secret is encrypted with a per-repository 256-bit
-		// key. If the key is missing or malformed we should
-		// return an error to the client.
+		// 使用仓库专属 Secret 作为 AES 密钥；缺失或格式错误时向客户端返回错误。
 		encrypted, err := encrypt([]byte(in.Data), []byte(repo.Secret))
 		if err != nil {
 			render.InternalError(w, err)
 			return
 		}
 
-		// the encrypted secret is embedded in the yaml
-		// configuration file and is json-encoded for
-		// inclusion as a !binary attribute.
+		// 密文经 Base64 编码后嵌入 .drone.yml 的 !binary 属性。
 		encoded := base64.StdEncoding.EncodeToString(encrypted)
 
 		render.JSON(w, &respEncrypted{Data: encoded}, 200)
 	}
 }
 
+// encrypt 使用 AES-GCM 以给定密钥加密明文，返回 nonce 前缀的密文字节。
 func encrypt(plaintext, key []byte) (ciphertext []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

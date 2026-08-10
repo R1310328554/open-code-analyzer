@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// crons 包提供仓库定时任务（Cron Job）相关的 REST API 处理器。
 package crons
 
 import (
@@ -16,8 +17,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleCreate returns an http.HandlerFunc that processes http
-// requests to create a new cronjob.
+// HandleCreate 返回 HTTP 处理器，为指定仓库创建新的定时任务。
 func HandleCreate(
 	repos core.RepositoryStore,
 	crons core.CronStore,
@@ -38,6 +38,7 @@ func HandleCreate(
 			render.BadRequest(w, err)
 			return
 		}
+		// 组装 Cron 实体：默认触发 push 事件，绑定仓库并校验表达式。
 		cronjob := new(core.Cron)
 		cronjob.Event = core.EventPush
 		cronjob.Branch = in.Branch

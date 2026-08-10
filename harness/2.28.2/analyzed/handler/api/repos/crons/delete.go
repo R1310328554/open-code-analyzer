@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// crons 包提供仓库定时任务（Cron Job）相关的 REST API 处理器。
 package crons
 
 import (
@@ -15,8 +16,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes http
-// requests to delete the cron job.
+// HandleDelete 返回 HTTP 处理器，按名称删除指定仓库下的定时任务。
 func HandleDelete(
 	repos core.RepositoryStore,
 	crons core.CronStore,

@@ -14,6 +14,7 @@
 
 // +build oss
 
+// collabs 包在 OSS 构建中提供协作者 API 的占位实现，所有端点均返回未实现。
 package collabs
 
 import (
@@ -23,18 +24,22 @@ import (
 	"github.com/drone/drone/handler/api/render"
 )
 
+// notImplemented 为 OSS 版统一返回 501 Not Implemented 的占位处理器。
 var notImplemented = func(w http.ResponseWriter, r *http.Request) {
 	render.NotImplemented(w, render.ErrNotImplemented)
 }
 
+// HandleDelete 删除协作者成员关系（OSS 版未实现）。
 func HandleDelete(core.UserStore, core.RepositoryStore, core.PermStore) http.HandlerFunc {
 	return notImplemented
 }
 
+// HandleFind 查询单个协作者详情（OSS 版未实现）。
 func HandleFind(core.UserStore, core.RepositoryStore, core.PermStore) http.HandlerFunc {
 	return notImplemented
 }
 
+// HandleList 列出仓库协作者（OSS 版未实现）。
 func HandleList(core.RepositoryStore, core.PermStore) http.HandlerFunc {
 	return notImplemented
 }

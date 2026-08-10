@@ -4,6 +4,7 @@
 
 // +build !oss
 
+// collabs 包提供仓库协作者（成员权限）相关的 REST API 处理器。
 package collabs
 
 import (
@@ -16,9 +17,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDelete returns an http.HandlerFunc that processes
-// a request to delete account membership to a repository. This should
-// only be used if the datastore is out-of-sync with github.
+// HandleDelete 返回 HTTP 处理器，删除指定用户在仓库中的成员关系。
+// 此接口仅应在本地数据与 GitHub 不同步时用于手动修复。
 func HandleDelete(
 	users core.UserStore,
 	repos core.RepositoryStore,

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// repos 包提供仓库生命周期与配置相关的 REST API 处理器。
 package repos
 
 import (
@@ -24,8 +25,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// HandleDisable returns an http.HandlerFunc that processes http
-// requests to disable a repository in the system.
+// HandleDisable 返回 HTTP 处理器，停用指定仓库；可选参数 remove=true 时同时删除仓库记录。
 func HandleDisable(
 	repos core.RepositoryStore,
 	sender core.WebhookSender,
