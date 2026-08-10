@@ -45,10 +45,16 @@ import static org.keycloak.common.util.CollectionUtil.collectionEquals;
 import static org.keycloak.utils.StringUtil.isBlank;
 
 /**
+ * {@link RoleEntity} 的 JPA 适配器，实现 realm/客户端角色、复合角色与自定义属性。
+ * <p>
+ * 复合角色通过 {@link CompositeRoleEntity} 关联表维护；属性支持多值存储。
+ * {@link #getCompositesStream()} 经 session 解析子角色以利用缓存层。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class RoleAdapter implements RoleModel, JpaModel<RoleEntity> {
+    /** 底层 KEYCLOAK_ROLE 表实体。 */
     protected RoleEntity role;
     protected EntityManager em;
     protected RealmModel realm;
@@ -98,6 +104,7 @@ public class RoleAdapter implements RoleModel, JpaModel<RoleEntity> {
         role.setName(name);
     }
 
+    /** 是否存在至少一个子角色（复合角色判定）。 */
     @Override
     public boolean isComposite() {
         return StreamsUtil.closing(em.createNamedQuery("getChildRoles", RoleEntity.class)
@@ -124,7 +131,7 @@ public class RoleAdapter implements RoleModel, JpaModel<RoleEntity> {
 
     @Override
     public Stream<RoleModel> getCompositesStream() {
-        // look up the roles via the session to allow returning cached entries
+        // 经 session 查子角色，以便返回缓存中的 RoleModel
         Stream<RoleModel> composites = getChildRoles().map(c -> session.roles().getRoleById(realm, c.getId()));
         return composites.filter(Objects::nonNull);
     }
@@ -142,6 +149,7 @@ public class RoleAdapter implements RoleModel, JpaModel<RoleEntity> {
                 search, first, max);
     }
 
+    /** 自身相等或递归遍历复合角色树判定包含关系。 */
     @Override
     public boolean hasRole(RoleModel role) {
         return this.equals(role) || KeycloakModelUtils.searchFor(role, this, new HashSet<>());
@@ -157,6 +165,7 @@ public class RoleAdapter implements RoleModel, JpaModel<RoleEntity> {
         role.getAttributes().add(attr);
     }
 
+    /** 单值属性：同名多行时保留首行、删除重复行。 */
     @Override
     public void setSingleAttribute(String name, String value) {
         boolean found = false;
@@ -182,6 +191,7 @@ public class RoleAdapter implements RoleModel, JpaModel<RoleEntity> {
         }
     }
 
+    /** 多值属性：内容未变则 no-op；否则先删后批量 persist。 */
     @Override
     public void setAttribute(String name, List<String> values) {
         List<String> current = getAttributes().getOrDefault(name, List.of());
@@ -255,6 +265,7 @@ public class RoleAdapter implements RoleModel, JpaModel<RoleEntity> {
         return getId().hashCode();
     }
 
+    /** 将 RoleModel 转为 JPA 实体；适配器直接取 entity，否则 lazy reference。 */
     private RoleEntity toRoleEntity(RoleModel model) {
         if (model instanceof RoleAdapter) {
             return ((RoleAdapter) model).getEntity();

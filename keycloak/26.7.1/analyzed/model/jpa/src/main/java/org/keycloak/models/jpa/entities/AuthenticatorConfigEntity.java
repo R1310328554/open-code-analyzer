@@ -34,24 +34,32 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 /**
+ * Authenticator 配置 JPA 实体，映射 AUTHENTICATOR_CONFIG 表。
+ * <p>
+ * 键值对配置存 AUTHENTICATOR_CONFIG_ENTRY 集合表；同一 authenticator 下 name 唯一。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 @Table(name="AUTHENTICATOR_CONFIG")
 @Entity
 public class AuthenticatorConfigEntity {
+    /** 配置 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** Admin Console 中展示的配置别名。 */
     @Column(name="ALIAS")
     protected String alias;
 
+    /** 所属 realm。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     protected RealmEntity realm;
 
+    /** authenticator 运行时参数（name → value）。 */
     @ElementCollection
     @MapKeyColumn(name="NAME")
     @Column(name="VALUE")

@@ -30,6 +30,10 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * SPI 组件配置项 JPA 实体，映射 COMPONENT_CONFIG 表。
+ * <p>
+ * 每个 {@link ComponentEntity} 可有多个 name/value 配置行（如 LDAP connection URL）。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -37,17 +41,21 @@ import org.hibernate.annotations.Nationalized;
 @Entity
 public class ComponentConfigEntity {
 
+    /** 配置行 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 所属组件。 */
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "COMPONENT_ID")
     protected ComponentEntity component;
 
+    /** 配置项名称。 */
     @Column(name = "NAME")
     protected String name;
+    /** 配置项值（支持 Unicode）。 */
     @Nationalized
     @Column(name = "VALUE")
     protected String value;

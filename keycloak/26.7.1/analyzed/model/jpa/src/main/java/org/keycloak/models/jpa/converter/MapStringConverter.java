@@ -26,9 +26,15 @@ import org.keycloak.util.JsonSerialization;
 
 import org.jboss.logging.Logger;
 
+/**
+ * JPA {@link AttributeConverter}：{@code Map<String,String>} 与 JSON 字符串互转。
+ * <p>
+ * 用于将键值对序列化到单列 VARCHAR/CLOB；读写失败时记录错误并返回 null。
+ */
 public class MapStringConverter implements AttributeConverter<Map<String, String>, String> {
     private static final Logger logger = Logger.getLogger(MapStringConverter.class);
 
+    /** 实体属性 → 数据库列：Map 序列化为 JSON 字符串。 */
     @Override
     public String convertToDatabaseColumn(Map<String, String> attribute) {
         try {
@@ -39,6 +45,7 @@ public class MapStringConverter implements AttributeConverter<Map<String, String
         }
     }
 
+    /** 数据库列 → 实体属性：JSON 字符串反序列化为 Map。 */
     @Override
     public Map<String, String> convertToEntityAttribute(String dbData) {
         try {

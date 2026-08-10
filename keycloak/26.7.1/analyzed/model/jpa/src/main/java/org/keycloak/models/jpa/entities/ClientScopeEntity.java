@@ -40,6 +40,11 @@ import jakarta.persistence.UniqueConstraint;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * Client Scope JPA 实体，映射 CLIENT_SCOPE 表。
+ * <p>
+ * realm 内 name 唯一；定义 OIDC claim / SAML 属性等协议层 scope。
+ * 关联协议映射器、扩展属性及默认角色 scope 映射。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -53,27 +58,34 @@ import org.hibernate.annotations.Nationalized;
 })
 public class ClientScopeEntity {
 
+    /** Client Scope UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     private String id;
+    /** scope 名称（如 profile、email、自定义 scope）。 */
     @Column(name = "NAME")
     private String name;
     @Nationalized
     @Column(name = "DESCRIPTION")
     private String description;
+    /** 协议映射器（claim/attribute 映射规则）。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "clientScope")
     Collection<ProtocolMapperEntity> protocolMappers = new LinkedList<>();
 
+    /** 所属 realm ID。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
+    /** 协议：openid-connect、saml 等。 */
     @Column(name="PROTOCOL")
     private String protocol;
 
+    /** 扩展键值属性。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "clientScope")
     protected Collection<ClientScopeAttributeEntity> attributes = new LinkedList<>();
 
+    /** 该 scope 默认包含的 realm 角色 ID 集合。 */
     @ElementCollection
     @Column(name="ROLE_ID")
     @CollectionTable(name="CLIENT_SCOPE_ROLE_MAPPING", joinColumns = { @JoinColumn(name="SCOPE_ID")})

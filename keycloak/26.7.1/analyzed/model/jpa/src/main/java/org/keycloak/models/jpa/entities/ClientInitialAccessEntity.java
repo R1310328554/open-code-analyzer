@@ -30,6 +30,11 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * 客户端初始访问令牌 JPA 实体，映射 CLIENT_INITIAL_ACCESS 表。
+ * <p>
+ * 用于动态客户端注册：管理员签发带过期时间与剩余使用次数的注册链接。
+ * {@link #removeExpiredClientInitialAccess} 清理过期或次数耗尽的记录。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Entity
@@ -42,23 +47,29 @@ import jakarta.persistence.Table;
 })
 public class ClientInitialAccessEntity {
 
+    /** 记录 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 创建时间（epoch 秒）。 */
     @Column(name="TIMESTAMP")
     private int timestamp;
 
+    /** 有效期（秒）；0 表示永不过期。 */
     @Column(name="EXPIRATION")
     private int expiration;
 
+    /** 初始允许注册次数。 */
     @Column(name="COUNT")
     private int count;
 
+    /** 剩余可用次数；每次成功注册减 1。 */
     @Column(name="REMAINING_COUNT")
     private int remainingCount;
 
+    /** 所属 realm。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     protected RealmEntity realm;

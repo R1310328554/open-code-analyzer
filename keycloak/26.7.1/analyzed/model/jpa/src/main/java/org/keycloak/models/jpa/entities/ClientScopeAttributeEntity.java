@@ -29,6 +29,10 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 /**
+ * Client Scope 自定义属性 JPA 实体，映射 CLIENT_SCOPE_ATTRIBUTES 表。
+ * <p>
+ * 复合主键 (clientScope, name)；结构与 {@link ClientAttributeEntity} 对称。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Table(name="CLIENT_SCOPE_ATTRIBUTES")
@@ -36,15 +40,18 @@ import jakarta.persistence.Table;
 @IdClass(ClientScopeAttributeEntity.Key.class)
 public class ClientScopeAttributeEntity {
 
+    /** 所属 client scope（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "SCOPE_ID")
     protected ClientScopeEntity clientScope;
 
+    /** 属性名（复合主键之一）。 */
     @Id
     @Column(name="NAME")
     protected String name;
 
+    /** 属性值。 */
     @Column(name = "VALUE", length = 2048)
     protected String value;
 
@@ -73,6 +80,7 @@ public class ClientScopeAttributeEntity {
     }
 
 
+    /** 复合主键类：clientScope + name。 */
     public static class Key implements Serializable {
 
         protected ClientScopeEntity clientScope;

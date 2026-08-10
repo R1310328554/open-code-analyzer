@@ -32,6 +32,10 @@ import org.hibernate.annotations.Nationalized;
 
 
 /**
+ * 客户端自定义属性 JPA 实体，映射 CLIENT_ATTRIBUTES 表。
+ * <p>
+ * 复合主键 (client, name)；支持同名多行实现多值属性（由适配器层去重/合并）。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @Table(name="CLIENT_ATTRIBUTES")
@@ -39,15 +43,18 @@ import org.hibernate.annotations.Nationalized;
 @IdClass(ClientAttributeEntity.Key.class)
 public class ClientAttributeEntity {
 
+    /** 所属客户端（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "CLIENT_ID")
     protected ClientEntity client;
 
+    /** 属性名（复合主键之一）。 */
     @Id
     @Column(name="NAME")
     protected String name;
 
+    /** 属性值（支持 Unicode）。 */
     @Nationalized
     @Column(name = "VALUE")
     protected String value;
@@ -77,6 +84,7 @@ public class ClientAttributeEntity {
     }
 
 
+    /** 复合主键类：client + name。 */
     public static class Key implements Serializable {
 
         protected ClientEntity client;

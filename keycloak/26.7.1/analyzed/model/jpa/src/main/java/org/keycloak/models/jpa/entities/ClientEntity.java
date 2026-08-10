@@ -47,6 +47,12 @@ import org.keycloak.common.util.Time;
 import org.hibernate.annotations.Nationalized;
 
 /**
+ * OAuth/OIDC 客户端 JPA 实体，映射 CLIENT 表。
+ * <p>
+ * realm 内 clientId 唯一；关联重定向 URI、Web Origin、协议映射器、
+ * 认证流绑定、scope 角色映射及扩展属性。{@link #updateTimestampsOnCreate} /
+ * {@link #updateLastModifiedTimestamp} 维护审计时间戳。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -63,39 +69,53 @@ public class ClientEntity {
 
     public static final int ID_MAX_LENGTH = 36;
 
+    /** 内部 UUID 主键；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = ID_MAX_LENGTH)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     private String id;
+    /** 展示名称。 */
     @Nationalized
     @Column(name = "NAME")
     private String name;
     @Nationalized
     @Column(name = "DESCRIPTION")
     private String description;
+    /** 对外 client_id（OAuth client identifier）。 */
     @Column(name = "CLIENT_ID")
     private String clientId;
+    /** 是否启用该客户端。 */
     @Column(name="ENABLED")
     private boolean enabled;
+    /** 是否在 Account Console 客户端列表中始终展示。 */
     @Column(name = "ALWAYS_DISPLAY_IN_CONSOLE")
     private boolean alwaysDisplayInConsole;
+    /** 客户端密钥（confidential client）。 */
     @Column(name="SECRET")
     private String secret;
+    /** 动态客户端注册令牌。 */
     @Column(name="REGISTRATION_TOKEN")
     private String registrationToken;
+    /** 客户端认证方式（client-secret、JWT 等）。 */
     @Column(name="CLIENT_AUTHENTICATOR_TYPE")
     private String clientAuthenticatorType;
+    /** 令牌在此时间戳之前视为无效（realm 级 notBefore 同步）。 */
     @Column(name="NOT_BEFORE")
     private int notBefore;
+    /** 公开客户端（无 secret，如 SPA）。 */
     @Column(name="PUBLIC_CLIENT")
     private boolean publicClient;
+    /** 协议：openid-connect、saml 等。 */
     @Column(name="PROTOCOL")
     private String protocol;
+    /** 是否使用前通道 logout。 */
     @Column(name="FRONTCHANNEL_LOGOUT")
     private boolean frontchannelLogout;
+    /** 是否允许请求 full scope（否则受 client scope 限制）。 */
     @Column(name="FULL_SCOPE_ALLOWED")
     private boolean fullScopeAllowed;
 
+    /** 所属 realm ID（非 JPA 关联，便于按 realm 查询）。 */
     @Column(name = "REALM_ID")
     protected String realmId;
 
@@ -105,31 +125,37 @@ public class ClientEntity {
     @Column(name = "LAST_MODIFIED_TIMESTAMP")
     private Long lastModifiedTimestamp;
 
+    /** CORS 允许的 Web Origin 集合。 */
     @ElementCollection
     @Column(name="VALUE")
     @CollectionTable(name = "WEB_ORIGINS", joinColumns={ @JoinColumn(name="CLIENT_ID") })
     protected Set<String> webOrigins;
 
+    /** OAuth 重定向 URI 白名单。 */
     @ElementCollection
     @Column(name="VALUE")
     @CollectionTable(name = "REDIRECT_URIS", joinColumns={ @JoinColumn(name="CLIENT_ID") })
     protected Set<String> redirectUris;
 
+    /** 扩展键值属性（CLIENT_ATTRIBUTES 表）。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "client")
     protected Collection<ClientAttributeEntity> attributes = new LinkedList<>();
 
+    /** 认证流绑定：binding name → flow ID。 */
     @ElementCollection
     @MapKeyColumn(name="BINDING_NAME")
     @Column(name="FLOW_ID", length = 4000)
     @CollectionTable(name="CLIENT_AUTH_FLOW_BINDINGS", joinColumns={ @JoinColumn(name="CLIENT_ID") })
     protected Map<String, String> authFlowBindings;
 
+    /** OIDC/SAML 协议映射器。 */
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "client")
     Collection<ProtocolMapperEntity> protocolMappers = new LinkedList<>();
 
     @Column(name="SURROGATE_AUTH_REQUIRED")
     private boolean surrogateAuthRequired;
 
+    /** 应用根 URL（用于相对路径解析）。 */
     @Column(name="ROOT_URL")
     private String rootUrl;
 
@@ -139,32 +165,41 @@ public class ClientEntity {
     @Column(name="MANAGEMENT_URL")
     private String managementUrl;
 
+    /** Bearer-only 客户端（资源服务器，不参与 browser flow）。 */
     @Column(name="BEARER_ONLY")
     private boolean bearerOnly;
 
+    /** 是否需要用户 consent。 */
     @Column(name="CONSENT_REQUIRED")
     private boolean consentRequired;
 
+    /** 标准 Authorization Code flow。 */
     @Column(name="STANDARD_FLOW_ENABLED")
     private boolean standardFlowEnabled;
 
+    /** Implicit flow（已弃用但仍可配置）。 */
     @Column(name="IMPLICIT_FLOW_ENABLED")
     private boolean implicitFlowEnabled;
 
+    /** Resource Owner Password Credentials grant。 */
     @Column(name="DIRECT_ACCESS_GRANTS_ENABLED")
     private boolean directAccessGrantsEnabled;
 
+    /** 是否启用 service account（客户端凭证 grant）。 */
     @Column(name="SERVICE_ACCOUNTS_ENABLED")
     private boolean serviceAccountsEnabled;
 
+    /** 集群节点重新注册超时（秒）。 */
     @Column(name="NODE_REREG_TIMEOUT")
     private int nodeReRegistrationTimeout;
 
+    /** 客户端默认 scope 角色映射（SCOPE_MAPPING 表）。 */
     @ElementCollection
     @Column(name="ROLE_ID")
     @CollectionTable(name="SCOPE_MAPPING", joinColumns = { @JoinColumn(name="CLIENT_ID")})
     private Set<String> scopeMappingIds;
 
+    /** 已注册集群节点：host → 最后注册时间戳。 */
     @ElementCollection
     @MapKeyColumn(name="NAME")
     @Column(name="VALUE")
@@ -187,6 +222,7 @@ public class ClientEntity {
         return lastModifiedTimestamp;
     }
 
+    /** 首次 persist 时设置 created/lastModified 时间戳。 */
     @PrePersist
     public void updateTimestampsOnCreate() {
         long now = Time.currentTimeMillis();
@@ -198,6 +234,7 @@ public class ClientEntity {
         }
     }
 
+    /** 每次 update 刷新 lastModified。 */
     @PreUpdate
     public void updateLastModifiedTimestamp() {
         lastModifiedTimestamp = Time.currentTimeMillis();

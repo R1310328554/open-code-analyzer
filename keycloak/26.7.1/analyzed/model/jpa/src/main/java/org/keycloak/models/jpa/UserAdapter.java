@@ -65,19 +65,26 @@ import org.keycloak.representations.idm.MembershipType;
 import static org.keycloak.utils.StreamsUtil.closing;
 
 /**
+ * {@link UserEntity} 的 JPA 适配器，实现用户属性、组/角色成员关系与必需操作。
+ * <p>
+ * 内置属性（username/email/name）映射到实体列；自定义属性存 USER_ATTRIBUTE 表。
+ * 组 ID 列表在会话内缓存以减少登录期间重复查询；成员变更时失效。
+ * 角色/组映射查询仅取 ID，避免触发 @ManyToOne 加载缓存角色。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class UserAdapter implements UserModel, JpaModel<UserEntity> {
 
+    /** 底层 USER_ENTITY 表实体。 */
     protected UserEntity user;
     protected EntityManager em;
     protected RealmModel realm;
     private final KeycloakSession session;
 
     /**
-     * Listing the groups of a user is called frequently within a login session if users are not cached.
-     * Cache when it is first retrieved during a session and discard it when a group membership changes.
+     * 用户所属组 ID 列表的会话级缓存。
+     * 未缓存用户时登录流程会频繁调用；首次查询后缓存，组成员变更时清空。
      */
     private List<String> groupIdsCache = null;
 
@@ -139,6 +146,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         user.setEnabled(enabled);
     }
 
+    /** 单值属性：内置字段直接写列；自定义属性保留首行、HQL 删重复行。 */
     @Override
     public void setSingleAttribute(String name, String value) {
         if (UserModel.FIRST_NAME.equals(name)) {
@@ -154,7 +162,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
             setUsername(value);
             return;
         }
-        // Remove all existing
+        // 删除该 name 下全部旧值
         if (value == null) {
             removeAttribute(name);
         } else {
@@ -177,14 +185,14 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
             }
 
             if (firstExistingAttrId != null) {
-                // Remove attributes through HQL to avoid StaleUpdateException
+                // 通过 HQL 删除重复行，避免 StaleUpdateException
                 Query query = em.createNamedQuery("deleteUserAttributesByNameAndUserOtherThan");
                 query.setParameter("name", name);
                 query.setParameter("userId", user.getId());
                 query.setParameter("attrId", firstExistingAttrId);
                 int numUpdated = query.executeUpdate();
 
-                // Remove attribute from local entity
+                // 同步移除本地实体集合中的重复行
                 user.getAttributes().removeAll(toRemove);
             } else {
                 persistAttributeValue(name, value);
@@ -192,6 +200,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         }
     }
 
+    /** 多值属性：内置字段取首元素；自定义属性先删后批量 persist。 */
     @Override
     public void setAttribute(String name, List<String> values) {
         String valueToSet = (values != null && !values.isEmpty()) ? values.get(0) : null;
@@ -215,7 +224,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
             return;
         }
 
-        // Remove all existing
+        // 删除该 name 下全部旧值
         removeAttribute(name);
         if (values != null) {
             for (Iterator<String> it = values.stream().filter(Objects::nonNull).iterator(); it.hasNext();) {
@@ -244,7 +253,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         }
 
         if (customAttributesToRemove.isEmpty()) {
-            // make sure root user attributes are set to null
+            // 确保根级用户属性列被置 null
             if (UserModel.FIRST_NAME.equals(name)) {
                 setFirstName(null);
             } else if (UserModel.LAST_NAME.equals(name)) {
@@ -255,12 +264,12 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
             return;
         }
 
-        // KEYCLOAK-3296 : Remove attribute through HQL to avoid StaleUpdateException
+        // KEYCLOAK-3296：通过 HQL 删除，避免 StaleUpdateException
         Query query = em.createNamedQuery("deleteUserAttributesByNameAndUser");
         query.setParameter("name", name);
         query.setParameter("userId", user.getId());
         query.executeUpdate();
-        // KEYCLOAK-3494 : Also remove attributes from local user entity
+        // KEYCLOAK-3494：同步移除本地 user 实体上的属性集合
         user.getAttributes().removeAll(customAttributesToRemove);
     }
 
@@ -387,8 +396,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
     }
 
     private TypedQuery<String> createGetGroupsQuery() {
-        // we query ids only as the group  might be cached and following the @ManyToOne will result in a load
-        // even if we're getting just the id.
+        // 仅查 groupId：组可能被缓存，跟随 @ManyToOne 会触发额外加载
         CriteriaBuilder builder = em.getCriteriaBuilder();
         CriteriaQuery<String> queryBuilder = builder.createQuery(String.class);
         Root<UserGroupMembershipEntity> root = queryBuilder.from(UserGroupMembershipEntity.class);
@@ -403,8 +411,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
     }
 
     private TypedQuery<Long> createCountGroupsQuery() {
-        // we query ids only as the group  might be cached and following the @ManyToOne will result in a load
-        // even if we're getting just the id.
+        // 计数查询同样只关联 user，不加载 GroupEntity
         CriteriaBuilder builder = em.getCriteriaBuilder();
         CriteriaQuery<Long> queryBuilder = builder.createQuery(Long.class);
         Root<UserGroupMembershipEntity> root = queryBuilder.from(UserGroupMembershipEntity.class);
@@ -435,7 +442,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
         Long result = createCountGroupsQuery().getSingleResult();
         if (Profile.isFeatureEnabled(Feature.ORGANIZATION)) {
             if (result > 0) {
-                // remove from the count the organization group membership
+                // 从计数中排除组织成员关系（组织组不计入普通组数）
                 OrganizationProvider provider = session.getProvider(OrganizationProvider.class);
                 result -= provider.getByMember(this).count();
             }
@@ -459,7 +466,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
                 .setParameter("user", user)
                 .setParameter("groupId", group.getId())
                 .getSingleResultOrNull();
-        // Avoid keeping it in the persistence context, as the user might be detached for example in a bulk delete
+        // 查完即 detach，避免 bulk delete 时 persistence context 持有陈旧映射行
         if (membership != null) {
             em.detach(membership);
         }
@@ -521,6 +528,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
     }
 
 
+    /** 直接角色映射 + 经组继承的角色。 */
     @Override
     public boolean hasRole(RoleModel role) {
         return RoleUtils.hasRole(getRoleMappingsStream(), role)
@@ -547,7 +555,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
                 .setParameter("user", user)
                 .setParameter("roleId", role.getId())
                 .getSingleResultOrNull();
-        // Avoid keeping it in the persistence context, as the user might be detached for example in a bulk delete
+        // 查完即 detach，避免 bulk delete 时 persistence context 持有陈旧映射行
         if (membership != null) {
             em.detach(membership);
         }
@@ -573,8 +581,7 @@ public class UserAdapter implements UserModel, JpaModel<UserEntity> {
 
     @Override
     public Stream<RoleModel> getRoleMappingsStream() {
-        // we query ids only as the role might be cached and following the @ManyToOne will result in a load
-        // even if we're getting just the id.
+        // 仅查 roleId 再经 realm 解析，避免 @ManyToOne 加载 RoleEntity
         TypedQuery<String> query = em.createNamedQuery("userRoleMappingIds", String.class);
         query.setParameter("user", getEntity());
         return closing(query.getResultStream().map(realm::getRoleById).filter(Objects::nonNull));

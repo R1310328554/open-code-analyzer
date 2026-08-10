@@ -30,6 +30,10 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
+ * Client Scope 与 Realm 角色的映射 JPA 实体，映射 CLIENT_SCOPE_ROLE_MAPPING 表。
+ * <p>
+ * 复合主键 (clientScope, role)；授予该 scope 的用户/客户端自动获得对应角色。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -42,11 +46,13 @@ import jakarta.persistence.Table;
 @IdClass(ClientScopeRoleMappingEntity.Key.class)
 public class ClientScopeRoleMappingEntity {
 
+    /** 所属 client scope（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name = "SCOPE_ID")
     protected ClientScopeEntity clientScope;
 
+    /** 映射的 realm 角色（复合主键之一）。 */
     @Id
     @ManyToOne(fetch= FetchType.LAZY)
     @JoinColumn(name="ROLE_ID")
@@ -68,6 +74,7 @@ public class ClientScopeRoleMappingEntity {
         this.role = role;
     }
 
+    /** 复合主键类：clientScope + role。 */
     public static class Key implements Serializable {
 
         protected ClientScopeEntity clientScope;

@@ -28,7 +28,9 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 /**
- * Binding between client and clientScope
+ * 客户端与 Client Scope 的关联 JPA 实体，映射 CLIENT_SCOPE_CLIENT 表。
+ * <p>
+ * 复合主键 (clientScopeId, clientId)；{@link #defaultScope} 区分默认 scope 与可选 scope。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -44,14 +46,17 @@ import jakarta.persistence.Table;
 @IdClass(ClientScopeClientMappingEntity.Key.class)
 public class ClientScopeClientMappingEntity {
 
+    /** Client Scope 内部 ID（复合主键之一）。 */
     @Id
     @Column(name = "SCOPE_ID")
     protected String clientScopeId;
 
+    /** 客户端内部 ID（复合主键之一）。 */
     @Id
     @Column(name="CLIENT_ID")
     protected String clientId;
 
+    /** true 为默认 scope（令牌自动包含）；false 为可选 scope。 */
     @Column(name="DEFAULT_SCOPE")
     protected boolean defaultScope;
 
@@ -79,6 +84,7 @@ public class ClientScopeClientMappingEntity {
         this.defaultScope = defaultScope;
     }
 
+    /** 复合主键类：clientScopeId + clientId。 */
     public static class Key implements Serializable {
 
         protected String clientScopeId;

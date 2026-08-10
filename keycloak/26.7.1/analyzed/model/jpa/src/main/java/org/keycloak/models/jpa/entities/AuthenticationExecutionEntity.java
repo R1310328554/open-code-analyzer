@@ -32,6 +32,11 @@ import jakarta.persistence.Table;
 import org.keycloak.models.AuthenticationExecutionModel;
 
 /**
+ * 认证执行步骤 JPA 实体，映射 AUTHENTICATION_EXECUTION 表。
+ * <p>
+ * 表示认证流中的一个执行节点：可为独立 authenticator 或嵌套子流引用。
+ * {@link #priority} 决定同层执行顺序；{@link #requirement} 控制 REQUIRED/ALTERNATIVE 等语义。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -41,34 +46,43 @@ import org.keycloak.models.AuthenticationExecutionModel;
 @Table(name="AUTHENTICATION_EXECUTION")
 @Entity
 public class AuthenticationExecutionEntity {
+    /** 执行步骤 UUID；PROPERTY 访问避免关联仅取 id 时额外查实体。 */
     @Id
     @Column(name="ID", length = 36)
     @Access(AccessType.PROPERTY) // we do this because relationships often fetch id, but not entity.  This avoids an extra SQL
     protected String id;
 
+    /** 所属 realm。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REALM_ID")
     protected RealmEntity realm;
 
+    /** 父认证流（executions 集合的 owning side）。 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FLOW_ID")
     protected AuthenticationFlowEntity parentFlow;
 
+    /** Authenticator SPI 实现 ID（非子流时有效）。 */
     @Column(name="AUTHENTICATOR")
     protected String authenticator;
 
+    /** 关联的 AuthenticatorConfig 实体 ID。 */
     @Column(name="AUTH_CONFIG")
     protected String authenticatorConfig;
 
+    /** 嵌套子流 ID（autheticatorFlow=true 时引用 AUTHENTICATION_FLOW）。 */
     @Column(name="AUTH_FLOW_ID")
     protected String flowId;
 
+    /** 执行要求：REQUIRED / ALTERNATIVE / DISABLED / CONDITIONAL。 */
     @Column(name="REQUIREMENT")
     protected AuthenticationExecutionModel.Requirement requirement;
 
+    /** 同层执行优先级，数值越小越先执行。 */
     @Column(name="PRIORITY")
     protected int priority;
 
+    /** true 表示本节点引用子认证流而非单个 authenticator。 */
     @Column(name="AUTHENTICATOR_FLOW")
     private boolean autheticatorFlow;
 
