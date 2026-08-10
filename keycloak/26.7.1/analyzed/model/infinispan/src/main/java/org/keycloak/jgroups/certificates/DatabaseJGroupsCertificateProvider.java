@@ -44,25 +44,33 @@ import static org.keycloak.jgroups.certificates.JGroupsCertificate.fromJson;
 import static org.keycloak.jgroups.certificates.JGroupsCertificate.toJson;
 
 /**
- * A {@link JGroupsCertificateProvider} implementation that stores the certificates in the database.
+ * 基于数据库存储的 {@link JGroupsCertificateProvider} 实现，用于 JGroups mTLS 证书管理。
  * <p>
- * The generated certificate is self-signed, and the database is used to share the certificate amongst the Keycloak
- * instances in the cluster. This implementation supports rotation and reloading of the certificate. The rotation can
- * happen at any time, or by a periodic task, or by sysadmin request.
+ * 自动生成自签名证书并写入数据库，供集群内各 Keycloak 实例共享。支持证书轮换与热重载：
+ * 可按周期任务、管理员请求或信任校验失败时触发。
  */
 public class DatabaseJGroupsCertificateProvider implements JGroupsCertificateProvider {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** 数据库中 JGroups 证书的配置项 ID。 */
     public static final String CERTIFICATE_ID = "crt_jgroups";
+    /** 启动阶段加载/创建证书的最大重试次数。 */
     private static final int STARTUP_RETRIES = 5;
+    /** 启动重试间隔（毫秒）。 */
     private static final int STARTUP_RETRY_SLEEP_MILLIS = 500;
 
+    /** Keycloak 会话工厂，用于在事务中访问数据库。 */
     private final KeycloakSessionFactory sessionFactory;
+    /** 支持运行时热更新的密钥管理器。 */
     private final ReloadingX509ExtendedKeyManager keyManager;
+    /** 支持运行时热更新的信任管理器。 */
     private final ReloadingX509ExtendedTrustManager trustManager;
+    /** 保护证书切换过程的互斥锁。 */
     private final Lock lock = new ReentrantLock();
     // not final to be updated for testing
+    /** 证书轮换周期，测试时可修改。 */
     private volatile Duration rotationPeriod;
+    /** 当前生效的 JGroups 证书实体。 */
     private volatile JGroupsCertificate currentCertificate;
 
     private DatabaseJGroupsCertificateProvider(KeycloakSessionFactory sessionFactory, Duration rotationPeriod) {
@@ -73,12 +81,14 @@ public class DatabaseJGroupsCertificateProvider implements JGroupsCertificatePro
         currentCertificate = new JGroupsCertificate();
     }
 
+    /** 创建并初始化数据库证书提供者。 */
     public static DatabaseJGroupsCertificateProvider create(KeycloakSessionFactory factory, Duration rotationPeriod) {
         var provider = new DatabaseJGroupsCertificateProvider(factory, rotationPeriod);
         provider.init();
         return provider;
     }
 
+    /** 从数据库加载或创建证书，并注册信任管理器异常回调。 */
     private void init() {
         logger.debug("Initializing JGroups mTLS certificate.");
         var cert = Retry.call(ignored -> KeycloakModelUtils.runJobInTransactionWithResult(sessionFactory, this::loadOrCreateCertificate), STARTUP_RETRIES, STARTUP_RETRY_SLEEP_MILLIS);
@@ -134,16 +144,23 @@ public class DatabaseJGroupsCertificateProvider implements JGroupsCertificatePro
         return currentCertificate;
     }
 
+    /** 信任校验失败时触发证书重载。 */
     private void onTrustManagerException() {
         doReload();
     }
 
+    /** 从数据库重新读取证书并应用到密钥/信任管理器。 */
     private void doReload() {
         KeycloakModelUtils.runJobInTransactionWithResult(sessionFactory, DatabaseJGroupsCertificateProvider::loadCertificateFromDatabase)
                 .map(JGroupsCertificate::fromJson)
                 .ifPresent(this::useCertificate);
     }
 
+    /**
+     * 计算距离下次轮换的剩余时间。
+     * <p>
+     * 取「证书有效期中点」与「配置轮换周期」中较早者，避免缩短轮换周期时证书过期。
+     */
     private Duration delayUntilNextRotation(Instant certificateStartInstant, Instant certificateEndInstant) {
         // Avoid the current certificate to expire if the old duration was shorter than the new duration.
         // Compute the rotation instant based on the certificate start and end instants.
@@ -169,6 +186,7 @@ public class DatabaseJGroupsCertificateProvider implements JGroupsCertificatePro
         storage.replace(CERTIFICATE_ID, currentCertificate::isSameAlias, this::generateSelfSignedCertificate);
     }
 
+    /** 将新证书加载到密钥/信任管理器，别名相同时跳过。 */
     private void useCertificate(JGroupsCertificate certificate) {
         lock.lock();
         try {

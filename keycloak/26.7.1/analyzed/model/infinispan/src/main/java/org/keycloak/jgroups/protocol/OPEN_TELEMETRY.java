@@ -41,21 +41,24 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 
 /**
- * Provides Open Telemetry (https://opentelemetry.io/) tracing for JGroups. It should be placed just above the
- * transport.<br/>
- * When a message is sent, a {@link TracerHeader} is added with the (optional) parent span.
- * When received a new span is started (as a child span, if the parent span in the header is non-null), and ended when
- * the the thread returns.
+ * 为 JGroups 消息提供 OpenTelemetry（https://opentelemetry.io/）分布式追踪。
+ * <p>
+ * 应放置在传输层协议之上。发送消息时在 {@link TracerHeader} 中注入父 Span 上下文；
+ * 接收消息时从 Header 提取上下文并创建子 Span，处理完成后结束。
  *
  * @author Bela Ban
  * @since 1.0.0
  */
 @MBean(description = "Records OpenTelemetry traces of sent and received messages")
 public class OPEN_TELEMETRY extends Protocol {
+    /** 本协议在 JGroups 协议栈中的 Header ID。 */
     public static final short OPEN_TELEMETRY_ID = 1026;
+    /** OpenTelemetry 全局实例。 */
     protected OpenTelemetry otel;
+    /** JGroups 追踪专用 Tracer。 */
     protected Tracer tracer;
 
+    /** 是否启用追踪记录。 */
     @Property(description = "When active, traces are recorded, otherwise not")
     protected boolean active = true;
 
@@ -73,6 +76,7 @@ public class OPEN_TELEMETRY extends Protocol {
         activate(active);
     }
 
+    /** 下行发送：创建 Span 并将 W3C Trace Context 注入 {@link TracerHeader}。 */
     public Object down(Message msg) {
         if (!active || !Span.current().getSpanContext().isValid())
             return down_prot.down(msg);
@@ -89,7 +93,7 @@ public class OPEN_TELEMETRY extends Protocol {
         Span span = spanBuilder.startSpan();
         try (var ignored = span.makeCurrent()) {
             TracerHeader hdr = new TracerHeader();
-            populateHeader(hdr); // will populate if a span exists (created by the caller)
+            populateHeader(hdr); // 若调用方已创建 Span，则注入当前 Context
             msg.putHeader(OPEN_TELEMETRY_ID, hdr);
             return down_prot.down(msg);
         } catch (Throwable t) {
@@ -102,6 +106,7 @@ public class OPEN_TELEMETRY extends Protocol {
     }
 
 
+    /** 上行接收单条消息：从 Header 提取上下文并创建 SERVER 类型子 Span。 */
     public Object up(Message msg) {
         if (!active)
             return up_prot.up(msg);
@@ -130,6 +135,7 @@ public class OPEN_TELEMETRY extends Protocol {
         }
     }
 
+    /** 上行接收批量消息：为每条带 Header 的消息创建独立 Span。 */
     public void up(MessageBatch batch) {
         if (!active) {
             if (!batch.isEmpty())
@@ -166,11 +172,13 @@ public class OPEN_TELEMETRY extends Protocol {
         }
     }
 
+    /** 将当前 Context（含活跃 Span）通过 W3C 传播器注入 Header。 */
     protected static void populateHeader(TracerHeader hdr) {
         // Inject the request with the *current* Context, which contains our current Span.
         W3CTraceContextPropagator.getInstance().inject(Context.current(), hdr, (carrier, key, val) -> hdr.put(key, val));
     }
 
+    /** 从 {@link TracerHeader} 读取 W3C Trace Context 的 TextMapGetter 实现。 */
     protected static final TextMapGetter<TracerHeader> TEXT_MAP_GETTER =
             new TextMapGetter<>() {
                 @Override
@@ -184,6 +192,7 @@ public class OPEN_TELEMETRY extends Protocol {
                 }
             };
 
+    /** 懒初始化 OpenTelemetry 与 Tracer 实例。 */
     protected boolean activate(boolean flag) {
         if (flag && otel == null)
             otel = GlobalOpenTelemetry.get();

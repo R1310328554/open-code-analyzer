@@ -50,26 +50,36 @@ import org.jgroups.util.Util;
 import static java.sql.ResultSet.CONCUR_UPDATABLE;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
+/**
+ * Keycloak 定制的 JGroups JDBC_PING2 发现协议。
+ * <p>
+ * 通过 {@link JpaConnectionProviderFactory} 复用 Keycloak 数据库连接池进行集群成员发现，
+ * 支持过期条目清理、脑裂检测及健康状态评估。
+ */
 public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
 
+    /** Keycloak JPA 连接工厂，提供数据库连接。 */
     private JpaConnectionProviderFactory factory;
 
     @Property(description="Staleness timeout in milliseconds. The coordinator will update the entries once 50%-75% of the time has passed.", type= AttributeType.TIME)
+    /** 条目过期超时（毫秒）；协调者会在 50%–75% 超时时间内刷新条目。 */
     protected long staleness_timeout = 60000L;
 
     @Override
+    /** 跳过 JDBC 驱动加载，改用 Keycloak JPA 连接池。 */
     protected void loadDriver() {
         //no-op, using JpaConnectionProviderFactory
     }
 
     @Override
+    /** 从 Keycloak JPA 工厂获取数据库连接。 */
     protected Connection getConnection() throws SQLException {
         try {
             return factory.getConnection();
         } catch (Exception e) {
             var cause = e.getCause();
             if (cause instanceof SQLException sql) {
-                // it should hit this branch 100% of the time
+                // 正常情况下应走此分支，直接抛出 SQL 异常
                 throw sql;
             }
             //... but to be future proof ...
@@ -113,6 +123,7 @@ public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
     }
 
     @Override
+    /** 视图变更且协调者切换时，清理数据库中的过期发现条目。 */
     protected void handleView(View new_view, View old_view, boolean coord_changed) {
         super.handleView(new_view, old_view, coord_changed);
         if (coord_changed) {
@@ -124,6 +135,7 @@ public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
         }
     }
 
+    /** 删除已不在当前视图中、且由本节点协调的成员条目。 */
     protected void removeAllNotInCurrentView() {
         View local_view = view;
         if (local_view == null) {
@@ -152,7 +164,9 @@ public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
     }
 
     /**
-     * The infowriter will run on the coordinator only. It will continue to run while this is the coordinator, not only after the view change
+     * 协调者周期性刷新发现信息；间隔为 staleness_timeout 的一半加随机抖动。
+     * <p>
+     * 只要当前节点仍是协调者就会持续运行，不仅限于视图变更后。
      */
     protected synchronized void startInfoWriter() {
         if(info_writer == null || info_writer.isDone())
@@ -164,6 +178,7 @@ public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
             });
     }
 
+    /** 从数据库读取 Ping 数据，过滤过期条目并重建成员关系。 */
     protected List<PingData> readFromDB(String cluster) throws Exception {
         try(Connection conn=getConnection();
             PreparedStatement ps=prepare(conn, select_all_pingdata_sql, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE)) {
@@ -200,6 +215,7 @@ public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
         }
     }
 
+    /** 协调者清理数据库中超过 staleness_timeout 的过期条目。 */
     protected void removeStaleEntries() throws Exception {
         try(Connection conn=getConnection();
             PreparedStatement ps=prepare(conn, select_all_pingdata_sql, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE)) {
@@ -220,34 +236,36 @@ public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
         }
     }
 
+    /** 计算过期截止时间戳（秒）。 */
     private long getStalenessCutoff() {
         return TimeUnit.MILLISECONDS.toSeconds(Time.currentTimeMillis() - staleness_timeout);
     }
 
+    /** 注入 Keycloak JPA 连接工厂。 */
     public void setJpaConnectionProviderFactory(JpaConnectionProviderFactory factory) {
         this.factory = Objects.requireNonNull(factory);
     }
 
-    // Pick the largest partition first, then order by address to allow for a stable result
+    // 脑裂裁决：优先选最大分区，同分区大小则按地址排序保证稳定
     private final static Comparator<PingData> SPLIT_BRAIN_DECIDER = Comparator
             .<PingData, Integer>comparing(p -> p.mbrs() != null ? p.mbrs().size() : 0).reversed()
             .thenComparing(PingData::getAddress);
 
     /**
-     * Detects a network partition and decides if the node belongs to the winning partition.
+     * 检测网络分区并判断本节点是否属于「获胜」分区。
      * <p>
      * The algorithm performs the following steps
      *
      * <ul>
-     *     <li>Reads the data from the database</li>
-     *     <li>If an error occurs fetching the data, it returns {@link HealthStatus#ERROR}</li>
-     *     <li>Filters out non coordinator members</li>
-     *     <li>If no coordinator is found, it return {@link HealthStatus#NO_COORDINATOR}</li>
-     *     <li>If multiple coordinators are found, it compares them and uses the coordinator with the lowest {@link UUID}</li>
-     *     <li>Finally, it compares if the coordinator is the same as the current view coordinator. If so, it returns {@link HealthStatus#HEALTHY}, otherwise {@link HealthStatus#UNHEALTHY}</li>
+     *     <li>从数据库读取 Ping 数据</li>
+     *     <li>读取失败则返回 {@link HealthStatus#ERROR}</li>
+     *     <li>过滤非协调者成员</li>
+     *     <li>未找到协调者则返回 {@link HealthStatus#NO_COORDINATOR}</li>
+     *     <li>多个协调者时使用 {@link SPLIT_BRAIN_DECIDER} 选出唯一协调者</li>
+     *     <li>与当前视图协调者比对，一致则 {@link HealthStatus#HEALTHY}，否则 {@link HealthStatus#UNHEALTHY}</li>
      * </ul>
      *
-     * @return The {@link HealthStatus}.
+     * @return 集群健康状态
      * @see HealthStatus
      */
     public HealthStatus healthStatus() {
@@ -262,27 +280,28 @@ public class KEYCLOAK_JDBC_PING2 extends JDBC_PING2 {
                     .map(isCoordinatorInView -> isCoordinatorInView ? HealthStatus.HEALTHY : HealthStatus.UNHEALTHY)
                     .orElse(HealthStatus.NO_COORDINATOR);
         } catch (Exception e) {
-            // database failed?
+            // 数据库不可达
             log.warn("Failed to fetch the cluster members from the database.", e);
             return HealthStatus.ERROR;
         }
     }
 
+    /** JDBC_PING2 集群健康状态枚举。 */
     public enum HealthStatus {
         /**
-         * No partition detected or this instance is in the right partition.
+         * 未检测到分区，或本实例位于正确分区。
          */
         HEALTHY,
         /**
-         * Partition detected and this instance is not in the right partition. It should stop handling requests.
+         * 检测到分区且本实例不在正确分区，应停止处理请求。
          */
         UNHEALTHY,
         /**
-         * No coordinator present in the database table.
+         * 数据库表中无协调者记录。
          */
         NO_COORDINATOR,
         /**
-         * If an error occurs when reading from the database.
+         * 读取数据库时发生错误。
          */
         ERROR
     }

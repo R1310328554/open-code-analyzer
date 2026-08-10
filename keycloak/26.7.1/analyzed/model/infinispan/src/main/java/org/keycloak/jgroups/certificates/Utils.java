@@ -44,15 +44,21 @@ import org.keycloak.common.util.KeystoreUtil;
 
 import org.jboss.logging.Logger;
 
+/**
+ * JGroups mTLS 证书生成与密钥/信任管理器构建工具类。
+ */
 public final class Utils {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** 自签名证书的主题 DN。 */
     private static final String JGROUPS_SUBJECT = "jgroups";
+    /** 密钥库条目的固定密码。 */
     private static final char[] KEY_PASSWORD = "jgroups-password".toCharArray();
 
     private Utils() {
     }
 
+    /** 生成 RSA 2048 自签名证书及对应密钥对，封装为 {@link JGroupsCertificate}。 */
     public static JGroupsCertificate generateSelfSignedCertificate(Duration validity) {
         var endDate = Date.from(Instant.now().plus(validity));
         var keyPair = KeyUtils.generateRsaKeyPair(2048);
@@ -68,6 +74,7 @@ public final class Utils {
         return entity;
     }
 
+    /** 从证书实体构建 {@link X509ExtendedKeyManager}。 */
     public static X509ExtendedKeyManager createKeyManager(JGroupsCertificate certificate) throws GeneralSecurityException, IOException {
         var ks = getKeyStore();
         ks.setKeyEntry(certificate.getAlias(), certificate.getPrivateKey(), KEY_PASSWORD, new java.security.cert.Certificate[]{certificate.getCertificate()});
@@ -81,6 +88,7 @@ public final class Utils {
         throw new GeneralSecurityException("Could not obtain an X509ExtendedKeyManager");
     }
 
+    /** 从证书实体构建 {@link X509ExtendedTrustManager}。 */
     public static X509ExtendedTrustManager createTrustManager(JGroupsCertificate certificate) throws GeneralSecurityException, IOException {
         var ks = getKeyStore();
         ks.setCertificateEntry(certificate.getAlias(), certificate.getCertificate());
@@ -94,6 +102,7 @@ public final class Utils {
         throw new GeneralSecurityException("Could not obtain an X509TrustManager");
     }
 
+    /** 创建空的平台密钥库实例（格式由 CryptoIntegration 决定）。 */
     private static KeyStore getKeyStore() throws KeyStoreException, NoSuchProviderException, CertificateException, IOException, NoSuchAlgorithmException {
         KeystoreUtil.KeystoreFormat keystoreFormat = CryptoIntegration.getProvider().getSupportedKeyStoreTypes().findFirst().orElseThrow(() -> new RuntimeException("No supported keystore types found"));
         var ks = CryptoIntegration.getProvider().getKeyStore(keystoreFormat);

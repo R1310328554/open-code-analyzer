@@ -27,11 +27,15 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * Reloads the JGroups certificate
+ * 集群广播函数：通知各节点重新加载 JGroups mTLS 证书。
+ * <p>
+ * 通过 Infinispan Protobuf 序列化，在 {@link EmbeddedCacheManager} 上查找
+ * {@link CertificateReloadManager} 并触发 {@link CertificateReloadManager#reloadCertificate()}。
  */
 @ProtoTypeId(Marshalling.RELOAD_CERTIFICATE_FUNCTION)
 public final class ReloadCertificateFunction implements Function<EmbeddedCacheManager, Void> {
 
+    /** 单例实例，供 Protobuf 反序列化使用。 */
     private static final ReloadCertificateFunction INSTANCE = new ReloadCertificateFunction();
 
     private ReloadCertificateFunction() {}
@@ -42,6 +46,7 @@ public final class ReloadCertificateFunction implements Function<EmbeddedCacheMa
     }
 
     @Override
+    /** 在目标节点上触发证书重载；管理器不存在时静默跳过。 */
     public Void apply(EmbeddedCacheManager embeddedCacheManager) {
         var crm = GlobalComponentRegistry.componentOf(embeddedCacheManager, CertificateReloadManager.class);
         if (crm != null) {

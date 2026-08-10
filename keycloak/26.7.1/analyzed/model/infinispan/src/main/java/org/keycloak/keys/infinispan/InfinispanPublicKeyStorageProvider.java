@@ -43,23 +43,35 @@ import org.jboss.logging.Logger;
 
 
 /**
+ * 基于 Infinispan 缓存的外部公钥存储提供者。
+ * <p>
+ * 缓存 IdP/JWKS 等外部公钥，支持按 kid/algorithm 查询、过期刷新、
+ * 请求节流（minTimeBetweenRequests）及事务提交后集群级失效广播。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvider {
 
     private static final Logger log = Logger.getLogger(InfinispanPublicKeyStorageProvider.class);
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** 公钥条目 Infinispan 缓存（modelKey → PublicKeysEntry）。 */
     private final Cache<String, PublicKeysEntry> keys;
 
+    /** 正在进行的公钥加载任务（防止并发重复请求）。 */
     private final Map<String, FutureTask<PublicKeysEntry>> tasksInProgress;
 
+    /** 两次远程加载之间的最小间隔（秒）。 */
     private final int minTimeBetweenRequests ;
+    /** 无过期时间密钥的最大缓存时长（秒）。 */
     private final int maxCacheTime;
 
+    /** 事务提交/回滚后待广播失效的缓存键集合。 */
     private final Set<String> invalidations = new HashSet<>();
 
+    /** 是否已注册事务完成回调。 */
     private boolean transactionEnlisted = false;
 
     public InfinispanPublicKeyStorageProvider(KeycloakSession session, Cache<String, PublicKeysEntry> keys, Map<String, FutureTask<PublicKeysEntry>> tasksInProgress,
@@ -71,6 +83,7 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
         this.maxCacheTime = maxCacheTime;
     }
 
+    /** 登记缓存键失效，在事务完成时批量广播。 */
     void addInvalidation(String cacheKey) {
         if (!transactionEnlisted) {
             session.getTransactionManager().enlistAfterCompletion(getAfterTransaction());
@@ -81,6 +94,7 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
     }
 
 
+    /** 返回事务完成时执行的失效回调（commit/rollback 均触发）。 */
     protected KeycloakTransaction getAfterTransaction() {
         return new KeycloakTransaction() {
 
@@ -115,6 +129,7 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
     }
 
 
+    /** 移除本地缓存条目并广播集群级失效事件。 */
     protected void runInvalidations() {
         ClusterProvider cluster = session.getProvider(ClusterProvider.class);
 
@@ -137,12 +152,11 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
         int currentTime = Time.currentTime();
         boolean isSendingRequestAllowed = currentTime > lastRequestTime + minTimeBetweenRequests;
 
-        // Check if key is in cache, but only if KID is provided or if the key cache has been loaded recently,
-        // in order to get a key based on partial match with alg param.
+        // 缓存命中且未过期：有 kid 时直接查，无 kid 时仅在节流期内使用缓存
         if (!isExpired(entry, currentTime) && (kid != null || !isSendingRequestAllowed)) {
             KeyWrapper publicKey = entry.getCurrentKeys().getKeyByKidAndAlg(kid, algorithm);
             if (publicKey != null) {
-                // return a copy of the key to not modify the cached one
+                // 返回副本，避免调用方修改缓存中的密钥对象
                 return publicKey.cloneKey();
             }
         }
@@ -151,7 +165,7 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
         entry = updatedEntry == null? entry : updatedEntry;
         KeyWrapper publicKey = entry == null? null : entry.getCurrentKeys().getKeyByKidAndAlg(kid, algorithm);
         if (publicKey != null) {
-            // return a copy of the key to not modify the cached one
+            // 返回副本，避免调用方修改缓存中的密钥对象
             return publicKey.cloneKey();
         }
 
@@ -162,27 +176,27 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
     }
 
     /**
-     * If the key is found in the cache that is returned straight away. If not in cache,
-     * the keys are reloaded if allowed by the minTimeBetweenRequests and key
-     * is searched again.
+     * 按谓词查找首个匹配的公钥。
+     * <p>
+     * 缓存未过期时先查缓存；未命中且允许重新加载时再次尝试。
      *
-     * @param modelKey The model key
-     * @param predicate The predicate to search the key
-     * @param loader The loader to reload keys
-     * @return The key or null
+     * @param modelKey  模型键
+     * @param predicate 密钥匹配谓词
+     * @param loader    远程公钥加载器
+     * @return 匹配的公钥，或 null
      */
     @Override
     public KeyWrapper getFirstPublicKey(String modelKey, Predicate<KeyWrapper> predicate, PublicKeyLoader loader) {
         PublicKeysEntry entry = keys.get(modelKey);
         int currentTime = Time.currentTime();
         if (!isExpired(entry, currentTime)) {
-            // if in cache just try to return if found
+            // 缓存有效时直接尝试匹配
             KeyWrapper key = entry.getCurrentKeys().getKeyByPredicate(predicate);
             if (key != null) {
                 return key.cloneKey();
             }
         }
-        // if not found try a second time if reload allowed by minTimeBetweenRequests
+        // 缓存未命中时，若节流允许则重新加载后再查
         entry = reloadKeys(modelKey, entry, currentTime, loader);
         if (entry != null) {
             KeyWrapper key = entry.getCurrentKeys().getKeyByPredicate(predicate);
@@ -194,11 +208,13 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
     }
 
     /**
-     * return all keys under the model key. The maxCacheTime is used to reload the
-     * keys from time to time.
-     * @param modelKey The model key
-     * @param loader The loader to reload keys id maxCacheTime reached
-     * @return The keys in the model
+     * 返回 modelKey 下的全部公钥列表。
+     * <p>
+     * 使用 maxCacheTime 在无过期时间的密钥上触发预刷新。
+     *
+     * @param modelKey 模型键
+     * @param loader   远程公钥加载器
+     * @return 公钥列表（副本）
      */
     @Override
     public List<KeyWrapper> getKeys(String modelKey, PublicKeyLoader loader) {
@@ -206,7 +222,7 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
         int currentTime = Time.currentTime();
 
         if (isExpired(entry, currentTime) || (hasNoExpiration(entry) && currentTime > entry.getLastRequestTime() + maxCacheTime)) {
-            // reload preemptively
+            // 过期或无 TTL 且超过 maxCacheTime 时主动刷新
             PublicKeysEntry updatedEntry = reloadKeys(modelKey, entry, currentTime, loader);
             if (updatedEntry != null) {
                 entry = updatedEntry;
@@ -225,10 +241,12 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
         return reloadKeys(modelKey, entry, currentTime, loader) != null;
     }
 
+    /** 判断缓存条目是否无过期时间。 */
     private boolean hasNoExpiration(PublicKeysEntry entry) {
         return entry == null || entry.getCurrentKeys().getExpirationTime() == null;
     }
 
+    /** 判断缓存条目是否已过期（基于 JWKS expirationTime）。 */
     private boolean isExpired(PublicKeysEntry entry, int currentTime) {
         if (entry == null) {
             return true;
@@ -241,8 +259,13 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
         return false;
     }
 
+    /**
+     * 从远程加载公钥并写入缓存（含并发去重）。
+     * <p>
+     * 同一 modelKey 的并发请求共享单个 FutureTask，避免重复远程调用。
+     */
     private PublicKeysEntry reloadKeys(String modelKey, PublicKeysEntry entry, int currentTime, PublicKeyLoader loader) {
-        // Check if we are allowed to send request
+        // 检查是否允许发起远程请求（节流）
         if (entry == null || currentTime > entry.getLastRequestTime() + minTimeBetweenRequests) {
             WrapperCallable wrapperCallable = new WrapperCallable(modelKey, loader);
             FutureTask<PublicKeysEntry> task = new FutureTask<>(wrapperCallable);
@@ -262,7 +285,7 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
             } catch (InterruptedException ie) {
                 throw new RuntimeException("Error. Interrupted when loading public keys", ie);
             } finally {
-                // Our thread inserted the task. Let's clean
+                // 本线程插入的任务负责清理 tasksInProgress
                 if (existing == null) {
                     tasksInProgress.remove(modelKey);
                 }
@@ -278,9 +301,12 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
 
     }
 
+    /** 包装 {@link PublicKeyLoader} 的 Callable，负责实际远程加载与缓存写入。 */
     private class WrapperCallable implements Callable<PublicKeysEntry> {
 
+        /** 公钥模型键。 */
         private final String modelKey;
+        /** 实际公钥加载委托。 */
         private final PublicKeyLoader delegate;
 
         public WrapperCallable(String modelKey, PublicKeyLoader delegate) {
@@ -295,7 +321,7 @@ public class InfinispanPublicKeyStorageProvider implements PublicKeyStorageProvi
             int lastRequestTime = entry==null ? 0 : entry.getLastRequestTime();
             int currentTime = Time.currentTime();
 
-            // Check again if we are allowed to send request. There is a chance other task was already finished and removed from tasksInProgress in the meantime.
+            // 再次检查节流（并发场景下其他任务可能已完成加载）
             if (currentTime > lastRequestTime + minTimeBetweenRequests) {
 
                 PublicKeysWrapper publicKeys = delegate.loadKeys();

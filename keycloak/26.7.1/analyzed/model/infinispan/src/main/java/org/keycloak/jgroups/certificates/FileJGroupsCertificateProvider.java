@@ -27,19 +27,28 @@ import org.jgroups.util.FileWatcher;
 import org.jgroups.util.SslContextFactory;
 
 /**
- * A {@link JGroupsCertificateProvider} implementation that reads the key and trust stores from a file.
+ * 基于文件系统的 {@link JGroupsCertificateProvider} 实现。
  * <p>
- * This implementation periodically inspects the file for changes. If the files are modified, the new key and trust
- * stores are reloaded and used.
+ * 从 PKCS12 格式的密钥库与信任库文件读取证书，并通过 {@link FileWatcher} 监听文件变更，
+ * 变更时自动重新加载密钥/信任管理器。
  */
 public class FileJGroupsCertificateProvider implements JGroupsCertificateProvider {
 
+    /** JGroups SslContextFactory 构建的 SSL 上下文（含文件监听）。 */
     private final SslContextFactory.Context context;
 
     private FileJGroupsCertificateProvider(SslContextFactory.Context context) {
         this.context = Objects.requireNonNull(context);
     }
 
+    /**
+     * 创建文件证书提供者，配置 PKCS12 密钥库/信任库及文件变更监听。
+     *
+     * @param keyStoreFile       密钥库路径
+     * @param keyStorePassword   密钥库密码
+     * @param trustStoreFile     信任库路径
+     * @param trustStorePassword 信任库密码
+     */
     public static FileJGroupsCertificateProvider create(String keyStoreFile, String keyStorePassword, String trustStoreFile, String trustStorePassword) {
         var context = new SslContextFactory()
                 .sslProtocol("TLS")

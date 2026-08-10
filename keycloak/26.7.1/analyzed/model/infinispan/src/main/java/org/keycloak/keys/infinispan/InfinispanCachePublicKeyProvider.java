@@ -24,10 +24,18 @@ import org.keycloak.models.cache.infinispan.ClearCacheEvent;
 
 import org.infinispan.Cache;
 
+/**
+ * 基于 Infinispan 缓存的公钥缓存清理提供者。
+ * <p>
+ * 清空本地 keys 缓存并通过 {@link ClusterProvider} 广播 {@link ClearCacheEvent}，
+ * 通知集群其他节点同步清除公钥缓存。
+ */
 public class InfinispanCachePublicKeyProvider implements CachePublicKeyProvider {
 
+    /** 当前 Keycloak 会话。 */
     private final KeycloakSession session;
 
+    /** 公钥条目 Infinispan 缓存。 */
     private final Cache<String, PublicKeysEntry> keys;
 
     public InfinispanCachePublicKeyProvider(KeycloakSession session, Cache<String, PublicKeysEntry> keys) {
@@ -36,6 +44,7 @@ public class InfinispanCachePublicKeyProvider implements CachePublicKeyProvider 
     }
 
     @Override
+    /** 清空本地缓存并广播集群级缓存清除事件。 */
     public void clearCache() {
         keys.clear();
         ClusterProvider cluster = session.getProvider(ClusterProvider.class);

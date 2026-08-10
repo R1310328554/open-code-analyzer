@@ -30,23 +30,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
- * JPA entity to store the {@link X509Certificate} and {@link KeyPair}.
+ * JGroups mTLS 证书的持久化实体，封装 {@link X509Certificate} 与 {@link KeyPair} 的 PEM 表示。
+ * <p>
+ * 通过 JSON 序列化存储于数据库，供集群成员共享与轮换。
  */
 @SuppressWarnings("unused")
 public class JGroupsCertificate {
 
+    /** 私钥 PEM 字符串（JSON 字段 prvKey）。 */
     @JsonProperty("prvKey")
     private String privateKeyPem;
 
+    /** 公钥 PEM 字符串（JSON 字段 pubKey）。 */
     @JsonProperty("pubKey")
     private String publicKeyPem;
 
+    /** X509 证书 PEM 字符串（JSON 字段 crt）。 */
     @JsonProperty("crt")
     private String certificatePem;
 
+    /** 密钥库条目别名，用于区分轮换中的新旧证书。 */
     @JsonProperty("alias")
     private String alias;
 
+    /** 证书生成时间戳（毫秒）。 */
     @JsonProperty("generatedMillis")
     private long generatedMillis;
 
@@ -141,10 +148,12 @@ public class JGroupsCertificate {
         return result;
     }
 
+    /** 判断 JSON 证书是否与当前实例别名相同（用于乐观并发控制）。 */
     public boolean isSameAlias(String jsonCertificate) {
         return Objects.equals(alias, fromJson(jsonCertificate).getAlias());
     }
 
+    /** 将实体序列化为 JSON 字符串。 */
     public static String toJson(JGroupsCertificate entity) {
         try {
             return JsonSerialization.mapper.writeValueAsString(entity);
@@ -153,6 +162,7 @@ public class JGroupsCertificate {
         }
     }
 
+    /** 从 JSON 字符串反序列化为实体。 */
     public static JGroupsCertificate fromJson(String json) {
         try {
             return JsonSerialization.mapper.readValue(json, JGroupsCertificate.class);

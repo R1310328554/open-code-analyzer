@@ -30,11 +30,15 @@ import javax.net.ssl.X509ExtendedKeyManager;
 import org.jboss.logging.Logger;
 
 /**
- * A {@link X509ExtendedKeyManager} implementation that allows to update the keys and certificates at runtime.
+ * 支持运行时热更新的 {@link X509ExtendedKeyManager} 包装器。
+ * <p>
+ * 通过 {@link #reload(X509ExtendedKeyManager)} 原子替换底层委托，使 JGroups mTLS
+ * 证书轮换无需重启传输层。
  */
 class ReloadingX509ExtendedKeyManager extends X509ExtendedKeyManager {
 
     private static final Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
+    /** 当前生效的底层密钥管理器委托。 */
     private volatile X509ExtendedKeyManager delegate;
 
     @Override
@@ -83,6 +87,7 @@ class ReloadingX509ExtendedKeyManager extends X509ExtendedKeyManager {
         return delegate.getPrivateKey(alias);
     }
 
+    /** 替换底层密钥管理器，后续 TLS 握手将使用新证书。 */
     public void reload(X509ExtendedKeyManager keyManager) {
         delegate = Objects.requireNonNull(keyManager);
     }

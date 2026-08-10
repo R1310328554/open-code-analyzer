@@ -28,14 +28,24 @@ import org.keycloak.models.cache.CachePublicKeyProviderFactory;
 
 import org.infinispan.Cache;
 
+/**
+ * Infinispan 公钥缓存清理 SPI 工厂。
+ * <p>
+ * 延迟初始化 keys 缓存并注册集群级失效/全量清除监听器，
+ * 与 {@link InfinispanPublicKeyStorageProvider} 协同维护分布式公钥缓存一致性。
+ */
 public class InfinispanCachePublicKeyProviderFactory implements CachePublicKeyProviderFactory {
 
+    /** SPI 提供者 ID。 */
     public static final String PROVIDER_ID = "infinispan";
 
+    /** 单键公钥失效事件的集群广播主题。 */
     public static final String PUBLIC_KEY_STORAGE_INVALIDATION_EVENT = "PUBLIC_KEY_STORAGE_INVALIDATION_EVENT";
 
+    /** 全量公钥缓存清除事件的集群广播主题。 */
     public static final String KEYS_CLEAR_CACHE_EVENTS = "KEYS_CLEAR_CACHE_EVENTS";
 
+    /** 公钥条目缓存（延迟初始化）。 */
     private volatile Cache<String, PublicKeysEntry> keysCache;
 
     @Override
@@ -44,6 +54,7 @@ public class InfinispanCachePublicKeyProviderFactory implements CachePublicKeyPr
         return new InfinispanCachePublicKeyProvider(session, keysCache);
     }
 
+    /** 双重检查锁定初始化缓存并注册集群失效/清除监听器。 */
     private void lazyInit(KeycloakSession session) {
         if (keysCache == null) {
             synchronized (this) {

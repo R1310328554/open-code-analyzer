@@ -25,11 +25,16 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 
 /**
- * A {@link X509ExtendedTrustManager} that allows to update the trusted certificate at runtime.
+ * 支持运行时热更新的 {@link X509ExtendedTrustManager} 包装器。
+ * <p>
+ * 证书校验失败时可触发 {@link Runnable} 回调（通常用于重载证书），
+ * 以应对集群成员证书轮换期间的短暂不一致。
  */
 class ReloadingX509ExtendedTrustManager extends X509ExtendedTrustManager {
 
+    /** 当前生效的底层信任管理器委托。 */
     private volatile X509ExtendedTrustManager delegate;
+    /** 证书校验异常时的回调（如触发证书重载）。 */
     private volatile Runnable onException;
 
     public ReloadingX509ExtendedTrustManager() {
@@ -105,11 +110,13 @@ class ReloadingX509ExtendedTrustManager extends X509ExtendedTrustManager {
         return delegate.getAcceptedIssuers();
     }
 
+    /** 注册证书校验失败时的回调处理。 */
     public void setExceptionHandler(Runnable runnable) {
         this.onException = Objects.requireNonNullElse(runnable, () -> {
         });
     }
 
+    /** 替换底层信任管理器，后续校验将使用新受信证书。 */
     public void reload(X509ExtendedTrustManager trustManager) {
         delegate = Objects.requireNonNull(trustManager);
     }

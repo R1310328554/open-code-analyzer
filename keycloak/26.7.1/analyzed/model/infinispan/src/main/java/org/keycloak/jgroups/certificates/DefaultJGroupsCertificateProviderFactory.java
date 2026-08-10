@@ -32,30 +32,41 @@ import org.keycloak.spi.infinispan.JGroupsCertificateProviderFactory;
 import org.keycloak.storage.configuration.ServerConfigStorageProvider;
 
 /**
- * The default implementation for {@link JGroupsCertificateProvider}.
+ * {@link JGroupsCertificateProvider} 的默认工厂实现。
  * <p>
- * This implementation will return different implementation based on the current configuration.
+ * 根据配置选择具体实现：未激活时返回 DISABLED；配置了 keystore/truststore 时使用
+ * {@link FileJGroupsCertificateProvider}，否则使用 {@link DatabaseJGroupsCertificateProvider}。
  *
  * @see DatabaseJGroupsCertificateProvider
  * @see FileJGroupsCertificateProvider
  */
 public class DefaultJGroupsCertificateProviderFactory implements JGroupsCertificateProviderFactory {
 
+    /** SPI 提供者 ID。 */
     public static final String PROVIDER_ID = "default";
 
     // for metadata compatibility
+    /** 元数据兼容用的启用标志键名。 */
     public static final String ENABLED = "enabled";
 
     // config
+    /** 是否激活 JGroups mTLS 证书管理。 */
     public static final String ACTIVATED = "activated";
+    /** 证书轮换周期（天）配置键。 */
     private static final String ROTATION = "rotation";
+    /** 密钥库文件路径配置键。 */
     private static final String KEYSTORE_PATH = "keystoreFile";
+    /** 密钥库密码配置键。 */
     private static final String KEYSTORE_PASSWORD = "keystorePassword";
+    /** 信任库文件路径配置键。 */
     private static final String TRUSTSTORE_PATH = "truststoreFile";
+    /** 信任库密码配置键。 */
     private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
 
     // shared state
+    /** 单例证书提供者实例（延迟初始化）。 */
     private volatile JGroupsCertificateProvider provider;
+    /** 工厂初始化时保存的配置作用域。 */
     private volatile Config.Scope configuration;
 
     @Override
@@ -94,6 +105,7 @@ public class DefaultJGroupsCertificateProviderFactory implements JGroupsCertific
         return Set.of(ServerConfigStorageProvider.class);
     }
 
+    /** 根据配置创建文件或数据库证书提供者。 */
     private JGroupsCertificateProvider createProvider(KeycloakSessionFactory factory) {
         if (!configuration.getBoolean(ACTIVATED, Boolean.FALSE)) {
             return JGroupsCertificateProvider.DISABLED;
@@ -109,6 +121,7 @@ public class DefaultJGroupsCertificateProviderFactory implements JGroupsCertific
         return DatabaseJGroupsCertificateProvider.create(factory, Duration.ofDays(requireRotationInDays()));
     }
 
+    /** 判断是否配置了密钥库或信任库文件路径。 */
     private boolean isKeystoreOrTruststoreConfigured() {
         return configuration.get(KEYSTORE_PATH) != null || configuration.get(TRUSTSTORE_PATH) != null;
     }
