@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T22:19:20Z",
-  "files": [
-    "pkg/engine/internal/workflow/workflow_planner.go",
-    "pkg/engine/internal/workflow/workflow_print.go",
-    "pkg/engine/metrics.go",
-    "pkg/engine/results_cache.go",
-    "pkg/engine/retention.go",
-    "pkg/engine/scheduler.go",
-    "pkg/engine/worker.go",
-    "pkg/expr/evaluate.go",
-    "pkg/expr/expr.go",
-    "pkg/expr/expr_binary_op.go",
-    "pkg/expr/expr_unary_op.go",
-    "pkg/framedstdcopy/framedstdcopy.go",
-    "pkg/goldfish/config.go",
-    "pkg/goldfish/goldfish.go",
-    "pkg/goldfish/storage.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 892,
-  "done": 645
+  "done": 660
 }
