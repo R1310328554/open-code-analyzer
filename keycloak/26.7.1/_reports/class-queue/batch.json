@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T11:25:27Z",
-  "files": [
-    "services/src/main/java/org/keycloak/authentication/actiontoken/execactions/ExecuteActionsActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/idpverifyemail/IdpVerifyAccountLinkActionToken.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/idpverifyemail/IdpVerifyAccountLinkActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/inviteorg/InviteOrgActionToken.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/inviteorg/InviteOrgActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/resetcred/ResetCredentialsActionToken.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/resetcred/ResetCredentialsActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/updateemail/UpdateEmailActionToken.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/updateemail/UpdateEmailActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/verifyemail/VerifyEmailActionToken.java",
-    "services/src/main/java/org/keycloak/authentication/actiontoken/verifyemail/VerifyEmailActionTokenHandler.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/AttemptedAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/access/AllowAccessAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/access/AllowAccessAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/access/DenyAccessAuthenticator.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2188,
-  "done": 3795
+  "done": 3810
 }
