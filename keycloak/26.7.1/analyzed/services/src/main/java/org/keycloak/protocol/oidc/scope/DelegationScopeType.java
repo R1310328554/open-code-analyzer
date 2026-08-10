@@ -26,35 +26,50 @@ import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.fgap.AdminPermissions;
 
 /**
+ * 委托（impersonation）参数化 scope 类型。
+ * <p>基于 {@link UsernameScopeType}，校验目标用户存在且当前用户具备对其的模拟权限；不允许用户指定自身为委托目标。</p>
  *
  * @author rmartinc
  */
 public class DelegationScopeType extends UsernameScopeType {
 
+    /** 类型标识：delegation */
     public static final String TYPE = "delegation";
 
+    /** 无参构造，供 SPI 反射实例化 */
     public DelegationScopeType() {
     }
 
+    /** @param session Keycloak 会话 */
     public DelegationScopeType(KeycloakSession session) {
         super(session);
     }
 
+    /** @return 类型名称 {@link #TYPE} */
     @Override
     public String getTypeName() {
         return TYPE;
     }
 
+    /** @return 是否允许重复（委托 scope 不可重复） */
     @Override
     public boolean isRepeatable() {
         return false;
     }
 
+    /** @param session Keycloak 会话 @return 带会话的实例 */
     @Override
     public ParameterizedScopeTypeProvider create(KeycloakSession session) {
         return new DelegationScopeType(session);
     }
 
+    /**
+     * 校验委托目标用户：禁止指向自身，且当前用户须具备模拟权限。
+     * @param currentUser 当前登录用户
+     * @param scope 客户端范围
+     * @param parameter 目标用户名参数
+     * @throws InvalidScopeParameterException 校验失败时
+     */
     @Override
     public void validateParameterWithUser(@Nonnull UserModel currentUser, @Nonnull ClientScopeModel scope, @Nonnull String parameter) throws InvalidScopeParameterException {
         UserModel targetUser = resolveUser(scope, parameter);

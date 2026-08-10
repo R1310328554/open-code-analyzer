@@ -72,20 +72,24 @@ import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_ID;
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_USERNAME;
 
 /**
- * V1 token exchange provider. Supports all token exchange types (standard, federated, subject impersonation)
+ * V1 令牌交换提供者。
+ * <p>支持全部交换类型：域内标准交换、联邦（外部-内部/内部-外部）交换及 subject impersonation；默认 requested_token_type 为 refresh_token。</p>
  *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */
 public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(V1TokenExchangeProvider.class);
 
 
+    /** V1 作为兜底提供者，接受所有交换请求 @return 始终 true */
     @Override
     public boolean supports(TokenExchangeContext context) {
         return true;
     }
 
+    /** V1 交换主流程：subject 校验、impersonation、IdP 交换或客户端间交换 @return HTTP 响应 */
     protected Response tokenExchange() {
         KeycloakSession session = context.getSession();
         RealmModel realm = context.getRealm();
@@ -137,7 +141,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
             }
 
             if (requestedUser == null || !requestedUser.isEnabled()) {
-                // We always returned access denied to avoid username fishing
+                // 统一返回 access_denied，避免用户名枚举
                 event.detail(Details.REASON, "requested_subject not found");
                 event.error(Errors.NOT_ALLOWED);
                 throw new CorsErrorResponseException(cors, OAuthErrorException.ACCESS_DENIED, "Client not allowed to exchange", Response.Status.FORBIDDEN);
@@ -146,7 +150,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
 
             if (token != null) {
                 event.detail(Details.IMPERSONATOR, tokenUser.getUsername());
-                // for this case, the user represented by the token, must have permission to impersonate.
+                // subject 令牌代表的用户须具备模拟 requested_subject 的权限
                 AdminAuth auth = new AdminAuth(realm, token, tokenUser, client);
                 if (!AdminPermissions.evaluator(session, realm, auth).users().canImpersonate(requestedUser, client)) {
                     event.detail(Details.REASON, "subject not allowed to impersonate");
@@ -154,8 +158,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
                     throw new CorsErrorResponseException(cors, OAuthErrorException.ACCESS_DENIED, "Client not allowed to exchange", Response.Status.FORBIDDEN);
                 }
             } else {
-                // no token is being exchanged, this is a direct exchange.  Client must be authenticated, not public, and must be allowed
-                // to impersonate
+                // 无 subject 令牌时为直接交换：客户端须已认证、非公开且具备模拟权限
                 if (client.isPublicClient()) {
                     event.detail(Details.REASON, "public clients not allowed");
                     event.error(Errors.NOT_ALLOWED);
@@ -168,7 +171,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
                     throw new CorsErrorResponseException(cors, OAuthErrorException.ACCESS_DENIED, "Client not allowed to exchange", Response.Status.FORBIDDEN);
                 }
 
-                // see https://issues.redhat.com/browse/KEYCLOAK-5492
+                // 见 KEYCLOAK-5492：直接交换时不强制持有者匹配
                 disallowOnHolderOfTokenMismatch = false;
             }
 
@@ -188,7 +191,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
             try {
                 return exchangeToIdentityProvider(tokenUser, tokenSession, requestedIssuer);
             } finally {
-                if (subjectToken == null) { // we are naked! So need to clean up user session
+                if (subjectToken == null) { // 无 subject 令牌时需清理临时用户会话
                     try {
                         session.sessions().removeUserSession(realm, tokenSession);
                     } catch (Exception ignore) {
@@ -199,6 +202,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
         }
     }
 
+    /** V1 默认 refresh_token；支持 access_token、refresh_token、saml2 @return 令牌类型 */
     @Override
     protected String getRequestedTokenType() {
         String requestedTokenType = context.getParams().getRequestedTokenType();
@@ -217,6 +221,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
         throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, "requested_token_type unsupported", Response.Status.BAD_REQUEST);
     }
 
+    /** V1 受众校验：公开/机密客户端规则、同意要求及 exchange 权限 @param disallowOnHolderOfTokenMismatch 是否禁止非持有者交换 */
     @Override
     protected void validateAudience(AccessToken token, boolean disallowOnHolderOfTokenMismatch, List<ClientModel> targetAudienceClients) {
         ClientModel tokenHolder = token == null ? null : realm.getClientByClientId(token.getIssuedFor());
@@ -236,15 +241,15 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
             boolean isClientTheAudience = targetClient.equals(client);
             if (isClientTheAudience) {
                 if (client.isPublicClient()) {
-                    // public clients can only exchange on to themselves if they are the token holder
+                    // 公开客户端仅在为令牌持有者时可交换给自身
                     forbiddenIfClientIsNotTokenHolder(disallowOnHolderOfTokenMismatch, tokenHolder);
                 } else if (!client.equals(tokenHolder)) {
-                    // confidential clients can only exchange to themselves if they are within the token audience
+                    // 机密客户端交换给自身时须在令牌受众内
                     forbiddenIfClientIsNotWithinTokenAudience(token);
                 }
             } else {
                 if (client.isPublicClient()) {
-                    // public clients can not exchange tokens from other client
+                    // 公开客户端不能交换其他客户端的令牌
                     forbiddenIfClientIsNotTokenHolder(disallowOnHolderOfTokenMismatch, tokenHolder);
                 }
                 if (!AdminPermissions.management(session, realm).clients().canExchangeTo(client, targetClient, token)) {
@@ -257,15 +262,17 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
         }
     }
 
+    /** @return 支持 access_token 与 refresh_token */
     @Override
     protected List<String> getSupportedOAuthResponseTokenTypes() {
         return Arrays.asList(OAuth2Constants.ACCESS_TOKEN_TYPE, OAuth2Constants.REFRESH_TOKEN_TYPE);
     }
 
+    /** V1 scope 解析：继承 subject 范围并与目标客户端范围求交 @return scope 字符串 */
     @Override
     protected String getRequestedScope(AccessToken token, List<ClientModel> targetAudienceClients) {
         ClientModel targetClient = targetAudienceClients.get(0);
-        // TODO Remove once more audiences are properly supported
+        // TODO：多 audience 完整支持后移除此限制
         if (targetAudienceClients.size() > 1) {
             logger.warnf("Only one value of audience parameter currently supported for token exchange. Using audience '%s' and ignoring the other audiences provided", targetClient.getClientId());
         }
@@ -277,7 +284,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
             Set<String> targetClientScopes = new HashSet<String>();
             targetClientScopes.addAll(targetClient.getClientScopes(true).keySet());
             targetClientScopes.addAll(targetClient.getClientScopes(false).keySet());
-            //from return scope remove scopes that are not default or optional scopes for targetClient
+            // 从返回 scope 中移除非目标客户端默认/可选范围的项
             scope = Arrays.stream(scope.split(" ")).filter(s -> "openid".equals(s) || (targetClientScopes.contains(Profile.isFeatureEnabled(Profile.Feature.PARAMETERIZED_SCOPES) ? s.split(":")[0] : s))).collect(Collectors.joining(" "));
         } else if (token != null && token.getScope() != null) {
             String subjectTokenScopes = token.getScope();
@@ -298,17 +305,20 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
         return scope;
     }
 
+    /** V1 将首个目标受众客户端写入上下文 */
     @Override
     protected void setClientToContext(List<ClientModel> targetAudienceClients) {
         ClientModel targetClient = getTargetClient(targetAudienceClients);
         session.getContext().setClient(targetClient);
     }
 
+    /** V1 仅考虑首个 audience 客户端 @return 目标客户端 */
     protected ClientModel getTargetClient(List<ClientModel> targetAudienceClients) {
-        // Make just first client into consideration in V1
+        // V1 仅使用 audience 列表中的第一个客户端
         return targetAudienceClients.get(0);
     }
 
+    /** V1 OIDC 交换：为 target 与 requester 创建客户端会话并签发令牌 @return JSON 响应 */
     @Override
     protected Response exchangeClientToOIDCClient(UserModel targetUser, UserSessionModel targetUserSession, String requestedTokenType,
                                                   List<ClientModel> targetAudienceClients, String scope, AccessToken subjectToken) {
@@ -320,7 +330,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
         ClientSessionContext clientSessionCtx = TokenManager.attachAuthenticationSession(this.session, targetUserSession, authSession);
 
         if (!AuthenticationManager.isClientSessionValid(realm, client, targetUserSession, targetUserSession.getAuthenticatedClientSessionByClient(client.getId()))) {
-            // create the requester client session if needed
+            // 必要时为请求客户端创建客户端会话
             AuthenticationSessionModel clientAuthSession = createSessionModel(targetUserSession, rootAuthSession, targetUser, client, scope);
             TokenManager.attachAuthenticationSession(this.session, targetUserSession, clientAuthSession);
         }
@@ -336,7 +346,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
         }
 
         if (formParams.containsKey(OAuth2Constants.REQUESTED_SUBJECT)) {
-            // if "impersonation", store the client that originated the impersonated user session
+            // impersonation 时记录发起模拟的客户端 ID
             targetUserSession.setNote(IMPERSONATOR_CLIENT.toString(), client.getId());
         }
 
@@ -371,11 +381,12 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
         return cors.add(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
     }
 
+    /** V1 SAML2 交换：创建 SAML 认证会话并返回 Base64 断言 @return JSON 响应（token 为 SAML 断言） */
     @Override
     protected Response exchangeClientToSAML2Client(UserModel targetUser, UserSessionModel targetUserSession, String requestedTokenType, List<ClientModel> targetAudienceClients) {
         ClientModel targetClient = getTargetClient(targetAudienceClients);
 
-        // Create authSession with target SAML 2.0 client and authenticated user
+        // 为目标 SAML 2.0 客户端创建已认证用户的认证会话
         LoginProtocolFactory factory = (LoginProtocolFactory) session.getKeycloakSessionFactory()
                 .getProviderFactory(LoginProtocol.class, SamlProtocol.LOGIN_PROTOCOL);
         SamlService samlService = (SamlService) factory.createProtocolEndpoint(session, event);
@@ -396,7 +407,7 @@ public class V1TokenExchangeProvider extends AbstractTokenExchangeProvider {
 
         updateUserSessionFromClientAuth(targetUserSession);
 
-        // Create SAML 2.0 Assertion Response
+        // 生成 SAML 2.0 断言响应
         SamlClient samlClient = new SamlClient(targetClient);
         SamlProtocol samlProtocol = new TokenEndpoint.TokenExchangeSamlProtocol(samlClient).setEventBuilder(event).setHttpHeaders(headers).setRealm(realm)
                 .setSession(session).setUriInfo(session.getContext().getUri());

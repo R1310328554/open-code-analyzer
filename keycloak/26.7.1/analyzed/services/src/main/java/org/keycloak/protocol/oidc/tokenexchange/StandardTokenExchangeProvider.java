@@ -59,30 +59,32 @@ import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.keycloak.util.TokenUtil;
 
 /**
- * Provider for internal-internal token exchange, which is compliant with the token exchange specification https://datatracker.ietf.org/doc/html/rfc8693
+ * 标准（RFC 8693）域内-域内令牌交换提供者。
+ * <p>支持以访问令牌为 subject_token，在客户端间交换访问/刷新/ID 令牌；不支持 subject impersonation、外部 IdP 交换及 subject_issuer。</p>
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider {
 
 
+    /** 是否支持标准交换：需启用客户端标准交换且 subject 为访问令牌 @return 支持时 true */
     @Override
     public boolean supports(TokenExchangeContext context) {
-        // Subject impersonation request
+        // 不支持 subject impersonation（requested_subject）
         String requestedSubject = context.getFormParams().getFirst(OAuth2Constants.REQUESTED_SUBJECT);
         if (requestedSubject != null) {
             context.setUnsupportedReason("Parameter 'requested_subject' is not supported for standard token exchange");
             return false;
         }
 
-        // Internal-external token exchange
+        // 不支持内部-外部交换（requested_issuer）
         String requestedIssuer = context.getFormParams().getFirst(OAuth2Constants.REQUESTED_ISSUER);
         if (requestedIssuer != null) {
             context.setUnsupportedReason("Parameter 'requested_issuer' is not supported for standard token exchange");
             return false;
         }
 
-        // External-internal token exchange
+        // 不支持外部-内部交换（subject_issuer）
         String subjectIssuer = context.getFormParams().getFirst(OAuth2Constants.SUBJECT_ISSUER);
         if (subjectIssuer != null) {
             context.setUnsupportedReason("Parameter 'subject_issuer' is not supported for standard token exchange");
@@ -114,6 +116,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         return true;
     }
 
+    /** 校验 subject 访问令牌（含 DPoP/mTLS 绑定）并执行客户端间交换 @return 令牌响应 */
     @Override
     protected Response tokenExchange() {
 
@@ -134,7 +137,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         AccessToken token = authResult.token();
 
         if (isSenderConstrainedToken(token)) {
-            // Reject sender-constrained tokens (RFC 7800) as subject_token if client does not match the authorized parties claim
+            // RFC 7800：发送方约束令牌须由 azp 匹配的客户端发起交换
             if (!token.getIssuedFor().equals(client.getClientId())) {
                 event.detail(Details.REASON, "Sender-constrained token exchange rejected as the token was not issued for the requesting client");
                 event.error(Errors.INVALID_REQUEST);
@@ -144,13 +147,13 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
             }
 
             AccessToken.Confirmation cnf = token.getConfirmation();
-            // Validate mTLS
+            // 校验 mTLS 证书指纹绑定
             if (cnf.getCertThumbprint() != null) {
                 if (!MtlsHoKTokenUtil.verifyTokenBindingWithClientCertificate(token, session.getContext().getHttpRequest(), session)) {
                     throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, MtlsHoKTokenUtil.CERT_VERIFY_ERROR_DESC, Response.Status.BAD_REQUEST);
                 }
             }
-            // Validate DPoP
+            // 校验 DPoP 公钥指纹绑定
             if (Profile.isFeatureEnabled(Profile.Feature.DPOP) && cnf.getKeyThumbprint() != null) {
                 DPoP dPoP = session.getAttribute(DPoPUtil.DPOP_SESSION_ATTRIBUTE, DPoP.class);
                 if (dPoP == null) {
@@ -180,6 +183,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         return exchangeClientToClient(tokenUser, tokenSession, token, true);
     }
 
+    /** 标准交换：禁止公开客户端；非持有者须在 subject 令牌受众内 */
     @Override
     protected void validateAudience(AccessToken token, boolean disallowOnHolderOfTokenMismatch, List<ClientModel> targetAudienceClients) {
         ClientModel tokenHolder = token == null ? null : realm.getClientByClientId(token.getIssuedFor());
@@ -200,12 +204,13 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
             }
         }
 
-        //reject if the requester-client is not in the audience of the subject token
+        // 非令牌持有者时，请求客户端须在 subject 令牌受众内
         if (!client.equals(tokenHolder)) {
             forbiddenIfClientIsNotWithinTokenAudience(token);
         }
     }
 
+    /** 校验用户对目标 scope 的同意是否仍有效 @param targetUser 目标用户 @param scope 请求的 scope */
     protected void validateConsents(UserModel targetUser, String scope) {
         if (!TokenManager.verifyConsentStillAvailable(session, targetUser, client, null, scope)) {
             event.detail(Details.REASON, "Missing consents for Token Exchange in client " + client.getClientId());
@@ -215,7 +220,8 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         }
     }
 
-    // For now, include "scope" parameter as is
+    // 当前直接使用请求中的 scope 参数
+    /** 解析并校验 scope 参数 @return 合法 scope 字符串 */
     @Override
     protected String getRequestedScope(AccessToken token, List<ClientModel> targetAudienceClients) {
         String scope = formParams.getFirst(OAuth2Constants.SCOPE);
@@ -230,6 +236,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         return scope;
     }
 
+    /** 生成 OIDC 令牌响应（支持 transient/offline 会话处理及 subject 客户端备注传递） @return JSON 响应 */
     @Override
     protected Response exchangeClientToOIDCClient(UserModel targetUser, UserSessionModel targetUserSession, String requestedTokenType,
                                                   List<ClientModel> targetAudienceClients, String scope, AccessToken subjectToken) {
@@ -238,7 +245,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         boolean isOfflineSession = targetUserSession.isOffline();
 
         if (targetUserSession.getPersistenceState() == UserSessionModel.SessionPersistenceState.TRANSIENT || isOfflineSession) {
-            // if no session is associated with the subject_token or it is offline, check no online session is needed
+            // subject 无在线会话或为 offline 时，校验是否允许以 transient 方式签发
             if (OAuth2Constants.REFRESH_TOKEN_TYPE.equals(requestedTokenType)) {
                 event.detail(Details.REASON, "Refresh token not valid as requested_token_type because creating a new session is needed");
                 event.error(Errors.INVALID_REQUEST);
@@ -246,7 +253,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
                         "Refresh token not valid as requested_token_type because creating a new session is needed", Response.Status.BAD_REQUEST);
             }
 
-            // create a transient session now for the token exchange
+            // offline 会话时创建 transient 会话用于交换
             if (isOfflineSession) {
                 targetUserSession = UserSessionUtil.createTransientUserSession(session, targetUserSession);
             }
@@ -281,7 +288,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
             if (subjectToken != null) {
                 AccessTokenContext subjectTokenContext = encoder.getTokenContextFromTokenId(subjectToken.getId());
 
-                //copy subject client from the client session notes if the subject token used has already been exchanged
+                // 若 subject 令牌来自先前交换，复制 subject 客户端会话备注
                 if (OAuth2Constants.TOKEN_EXCHANGE_GRANT_TYPE.equals(subjectTokenContext.getGrantType())) {
                     ClientModel subjectClient = session.clients().getClientByClientId(realm, subjectToken.getIssuedFor());
                     if (subjectClient != null) {
@@ -294,7 +301,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
                     }
                 }
 
-                //store client id of the subject token
+                // 记录 subject 令牌对应客户端 ID
                 clientSessionCtx.getClientSession().setNote(Constants.TOKEN_EXCHANGE_SUBJECT_CLIENT + subjectToken.getIssuedFor(), subjectToken.getId());
             }
 
@@ -314,7 +321,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
 
             AccessTokenResponse res;
             if (OAuth2Constants.ID_TOKEN_TYPE.equals(requestedTokenType)) {
-                // Using the id-token inside "access_token" parameter as per description of "access_token" parameter under https://datatracker.ietf.org/doc/html/rfc8693#name-successful-response
+                // RFC 8693：requested_token_type 为 id_token 时将其放入 access_token 字段
                 res = responseBuilder.generateIDToken().build();
                 res.setToken(res.getIdToken());
                 res.setIdToken(null);
@@ -336,7 +343,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
 
             return cors.add(Response.ok(res, MediaType.APPLICATION_JSON_TYPE));
         } catch (RuntimeException e) {
-            // Cleanup client-session if created in this request
+            // 异常时清理本请求新建的客户端会话
             if (newClientSessionCreated) {
                 targetUserSession.removeAuthenticatedClientSessions(Set.of(client.getId()));
             }
@@ -345,6 +352,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         }
     }
 
+    /** 标准交换不支持 SAML2 响应类型 */
     @Override
     protected Response exchangeClientToSAML2Client(UserModel targetUser, UserSessionModel targetUserSession, String requestedTokenType, List<ClientModel> targetAudienceClients) {
         event.detail(Details.REASON, "requested_token_type unsupported");
@@ -352,6 +360,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, "requested_token_type unsupported", Response.Status.BAD_REQUEST);
     }
 
+    /** 校验生成的访问令牌是否包含请求的全部 audience @param responseBuilder 令牌响应构建器 */
     protected void checkRequestedAudiences(TokenManager.AccessTokenResponseBuilder responseBuilder) {
         Set<String> missingAudience = TokenUtils.checkRequestedAudiences(responseBuilder.getAccessToken(), params.getAudience());
         if (!missingAudience.isEmpty()) {
@@ -363,11 +372,13 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         }
     }
 
+    /** @return 支持 access_token、id_token、refresh_token */
     @Override
     protected List<String> getSupportedOAuthResponseTokenTypes() {
         return Arrays.asList(OAuth2Constants.ACCESS_TOKEN_TYPE, OAuth2Constants.ID_TOKEN_TYPE, OAuth2Constants.REFRESH_TOKEN_TYPE);
     }
 
+    /** 解析 requested_token_type，默认 access_token；refresh 需客户端配置允许 @return 令牌类型 */
     @Override
     protected String getRequestedTokenType() {
         String requestedTokenType = params.getRequestedTokenType();
@@ -392,6 +403,7 @@ public class StandardTokenExchangeProvider extends AbstractTokenExchangeProvider
         throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, "requested_token_type unsupported", Response.Status.BAD_REQUEST);
     }
 
+    /** 判断是否为发送方约束令牌（含 cnf 声明） @param token 访问令牌 */
     private static boolean isSenderConstrainedToken(AccessToken token) {
         return token.getConfirmation() != null;
     }

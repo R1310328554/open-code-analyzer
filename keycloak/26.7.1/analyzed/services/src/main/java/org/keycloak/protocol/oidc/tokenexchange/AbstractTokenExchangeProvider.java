@@ -81,27 +81,42 @@ import static org.keycloak.authentication.authenticators.util.AuthenticatorUtils
 import static org.keycloak.models.IdentityProviderType.EXCHANGE_EXTERNAL_TOKEN;
 
 /**
- * Base token exchange implementation. For now for both V1 and V2 token exchange (may change in the follow-up commits)
+ * 令牌交换抽象基类。
+ * <p>为 V1 与 V2（标准 RFC 8693）令牌交换提供公共逻辑：外部-内部交换、客户端间交换、受众校验及外部身份导入等。</p>
  *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */
 public abstract class AbstractTokenExchangeProvider implements TokenExchangeProvider {
 
+    /** 日志记录器 */
     private static final Logger logger = Logger.getLogger(AbstractTokenExchangeProvider.class);
 
+    /** 令牌交换请求参数 */
     protected TokenExchangeContext.Params params;
+    /** 表单参数 */
     protected MultivaluedMap<String, String> formParams;
+    /** Keycloak 会话 */
     protected KeycloakSession session;
+    /** CORS 处理器 */
     protected Cors cors;
+    /** 当前领域 */
     protected RealmModel realm;
+    /** 请求客户端 */
     protected ClientModel client;
+    /** 事件构建器 */
     protected EventBuilder event;
+    /** 客户端连接信息 */
     protected ClientConnection clientConnection;
+    /** HTTP 请求头 */
     protected HttpHeaders headers;
+    /** 令牌管理器 */
     protected TokenManager tokenManager;
+    /** 客户端认证属性（写入用户会话备注） */
     protected Map<String, String> clientAuthAttributes;
+    /** 令牌交换上下文 */
     protected TokenExchangeContext context;
 
+    /** 入口：从上下文填充字段并执行 {@link #tokenExchange()} @param context 令牌交换上下文 @return HTTP 响应 */
     @Override
     public Response exchange(TokenExchangeContext context) {
         this.params = context.getParams();
@@ -119,14 +134,18 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         return tokenExchange();
     }
 
+    /** 关闭资源（无操作） */
     @Override
     public void close() {
     }
 
+    /** 子类实现的令牌交换核心逻辑 @return HTTP 响应 */
     protected abstract Response tokenExchange();
 
     /**
-     * Is it the request for external-internal token exchange?
+     * 是否为外部-内部令牌交换请求（subject_token 发行者与当前领域不同）。
+     * @param context 令牌交换上下文
+     * @return 是外部-内部交换时返回 true
      */
     protected boolean isExternalInternalTokenExchangeRequest(TokenExchangeContext context) {
         String subjectToken = context.getParams().getSubjectToken();
@@ -147,6 +166,7 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         return false;
     }
 
+    /** 解析 subject_token 发行者（表单参数或 JWT iss） @return 发行者 URL，无法解析时 null */
     protected String getSubjectIssuer(TokenExchangeContext context, String subjectToken, String subjectTokenType) {
         String subjectIssuer = context.getFormParams().getFirst(OAuth2Constants.SUBJECT_ISSUER);
         if (subjectIssuer != null) return subjectIssuer;
@@ -166,6 +186,7 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         }
     }
 
+    /** 向身份提供方交换令牌 @param requestedIssuer 目标 IdP 别名 @return IdP 返回的令牌响应 */
     protected Response exchangeToIdentityProvider(UserModel targetUser, UserSessionModel targetUserSession, String requestedIssuer) {
         event.detail(Details.REQUESTED_ISSUER, requestedIssuer);
         IdentityProviderModel providerModel = session.identityProviders().getByAlias(requestedIssuer);
@@ -191,8 +212,10 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
 
     }
 
+    /** @return 请求的响应令牌类型 */
     protected abstract String getRequestedTokenType();
 
+    /** 解析 audience 参数；未指定时默认为请求客户端自身 @return 目标受众客户端列表 */
     protected List<ClientModel> getTargetAudienceClients() {
         List<String> audienceParams = params.getAudience();
         List<ClientModel> targetAudienceClients = new ArrayList<>();
@@ -209,15 +232,24 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
                 }
             }
         }
-        // Assume client itself is audience in case audience parameter not provided
+        // 未提供 audience 时默认请求客户端自身为受众
         if (targetAudienceClients.isEmpty()) {
             targetAudienceClients.add(client);
         }
         return targetAudienceClients;
     }
 
+    /** 校验受众与客户端权限 @param disallowOnHolderOfTokenMismatch 是否禁止非令牌持有者交换 */
     protected abstract void validateAudience(AccessToken token, boolean disallowOnHolderOfTokenMismatch, List<ClientModel> targetAudienceClients);
 
+    /**
+     * 客户端间令牌交换主流程。
+     * @param targetUser 目标用户
+     * @param targetUserSession 目标用户会话
+     * @param token subject 访问令牌（可为 null）
+     * @param disallowOnHolderOfTokenMismatch 是否禁止非持有者交换
+     * @return OIDC 或 SAML2 令牌响应
+     */
     protected Response exchangeClientToClient(UserModel targetUser, UserSessionModel targetUserSession,
             AccessToken token, boolean disallowOnHolderOfTokenMismatch) {
 
@@ -241,6 +273,7 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         throw new CorsErrorResponseException(cors, OAuthErrorException.INVALID_REQUEST, "requested_token_type unsupported", Response.Status.BAD_REQUEST);
     }
 
+    /** 若请求客户端不在令牌受众内则抛出 403 @param token subject 令牌 */
     protected void forbiddenIfClientIsNotWithinTokenAudience(AccessToken token) {
         if (token != null && !token.hasAudience(client.getClientId())) {
             event.detail(Details.REASON, "client is not within the token audience");
@@ -249,6 +282,7 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         }
     }
 
+    /** 若请求客户端非令牌持有者且策略禁止则抛出 403 */
     protected void forbiddenIfClientIsNotTokenHolder(boolean disallowOnHolderOfTokenMismatch, ClientModel tokenHolder) {
         if (disallowOnHolderOfTokenMismatch && !client.equals(tokenHolder)) {
             event.detail(Details.REASON, "client is not the token holder");
@@ -257,8 +291,10 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         }
     }
 
+    /** @return 支持的 OAuth 响应令牌类型列表 */
     protected abstract List<String> getSupportedOAuthResponseTokenTypes();
 
+    /** 创建认证会话并绑定用户、协议与 scope @return 认证会话模型 */
     protected AuthenticationSessionModel createSessionModel(UserSessionModel targetUserSession, RootAuthenticationSessionModel rootAuthSession, UserModel targetUser, ClientModel client, String scope) {
         AuthenticationSessionModel authSession = rootAuthSession.createAuthenticationSession(client);
         authSession.setAuthenticatedUser(targetUser);
@@ -268,20 +304,25 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         return authSession;
     }
 
+    /** @return 交换后请求的 scope 字符串 */
     protected abstract String getRequestedScope(AccessToken token, List<ClientModel> targetAudienceClients);
 
+    /** 将请求客户端设置到会话上下文 @param targetAudienceClients 目标受众（V1 可能取首个） */
     protected void setClientToContext(List<ClientModel> targetAudienceClients) {
-        // The client requesting exchange is set in the context
+        // 将发起交换的请求客户端写入上下文
         session.getContext().setClient(client);
     }
 
+    /** 交换为 OIDC 访问/刷新/ID 令牌 @return JSON 令牌响应 */
     protected abstract Response exchangeClientToOIDCClient(UserModel targetUser, UserSessionModel targetUserSession, String requestedTokenType,
                                                   List<ClientModel> targetAudienceClients, String scope, AccessToken subjectToken);
 
+    /** 交换为 SAML 2.0 断言 @return Base64 编码的 SAML 响应 */
     protected abstract Response exchangeClientToSAML2Client(UserModel targetUser, UserSessionModel targetUserSession, String requestedTokenType, List<ClientModel> targetAudienceClients);
 
+    /** 外部-内部令牌交换：通过 IdP 验证外部令牌并导入用户 @return 交换后的 OIDC 令牌 */
     protected Response exchangeExternalToken(String subjectIssuer, String subjectToken) {
-        // try to find the IDP whose alias matches the issuer or the subject issuer in the form params.
+        // 按别名或 subject_issuer 查找支持外部交换的 IdP
         ExternalExchangeContext externalExchangeContext = this.locateExchangeExternalTokenByAlias(subjectIssuer);
 
         if (externalExchangeContext == null) {
@@ -304,7 +345,7 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         UserSessionModel userSession = new UserSessionManager(session).createUserSession(realm, user, user.getUsername(), clientConnection.getRemoteHost(), "external-exchange", false, null, null);
         externalExchangeContext.provider().exchangeExternalComplete(userSession, context, formParams);
 
-        // this must exist so that we can obtain access token from user session if idp's store tokens is off
+        // 写入外部 IdP 备注，以便 IdP 未存储令牌时仍可从会话获取访问令牌
         userSession.setNote(UserAuthenticationIdentityProvider.EXTERNAL_IDENTITY_PROVIDER, externalExchangeContext.idpModel().getAlias());
         userSession.setNote(UserAuthenticationIdentityProvider.FEDERATED_ACCESS_TOKEN, subjectToken);
 
@@ -313,6 +354,7 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         return exchangeClientToClient(user, userSession, null, false);
     }
 
+    /** 从外部身份上下文导入或更新联邦用户 @return 领域用户模型 */
     protected UserModel importUserFromExternalIdentity(BrokeredIdentityContext context) {
         IdentityProviderModel identityProviderConfig = context.getIdpConfig();
 
@@ -423,7 +465,7 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
             }
         }
 
-        // make sure user attributes are updated based on attributes set to the context
+        // 按上下文属性更新用户模型属性
         for (Map.Entry<String, List<String>> attr : context.getAttributes().entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
             if (!UserModel.USERNAME.equalsIgnoreCase(attr.getKey())) {
                 user.setAttribute(attr.getKey(), attr.getValue());
@@ -433,15 +475,18 @@ public abstract class AbstractTokenExchangeProvider implements TokenExchangeProv
         return user;
     }
 
-    // TODO: move to utility class
+    // TODO：可移至工具类
+    /** 将客户端认证属性写入用户会话备注 @param userSession 用户会话 */
     protected void updateUserSessionFromClientAuth(UserSessionModel userSession) {
         for (Map.Entry<String, String> attr : clientAuthAttributes.entrySet()) {
             userSession.setNote(attr.getKey(), attr.getValue());
         }
     }
 
+    /** 外部交换上下文：IdP 提供方与模型 */
     protected record ExternalExchangeContext (ExchangeExternalToken provider, IdentityProviderModel idpModel) {};
 
+    /** 按别名或发行者匹配查找支持 {@link ExchangeExternalToken} 的 IdP @return 匹配上下文或 null */
     protected ExternalExchangeContext locateExchangeExternalTokenByAlias(String alias) {
         try {
             IdentityProvider<?> idp = IdentityBrokerService.getIdentityProvider(session, alias);
