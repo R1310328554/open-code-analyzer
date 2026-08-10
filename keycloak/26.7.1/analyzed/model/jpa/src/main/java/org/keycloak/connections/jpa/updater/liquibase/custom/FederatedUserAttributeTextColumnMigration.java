@@ -26,9 +26,9 @@ import liquibase.exception.CustomChangeException;
 import liquibase.statement.core.RawParameterizedSqlStatement;
 
 /**
- * The MySQL database is the only database where columns longer than 255 characters are changed to a TEXT column, allowing
- * for up to 64k characters. See {@link org.keycloak.connections.jpa.updater.liquibase.MySQL8VarcharType} for the implementation.
- * As the new code expects all information longer than 2024 characters in the new column, this migration copies over the values.
+ * MySQL 联邦用户属性长文本列迁移。
+ * <p>仅 MySQL 会将超过 255 字符的列改为 TEXT（最多约 64k），见 {@link org.keycloak.connections.jpa.updater.liquibase.MySQL8VarcharType}。
+ * 新代码要求超过 2024 字符的值存入 LONG_VALUE 列并清空 VALUE，本迁移负责复制并写入哈希。</p>
  *
  * @author Alexander Schwartz
  */
@@ -37,6 +37,7 @@ public class FederatedUserAttributeTextColumnMigration extends CustomKeycloakTas
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
 
+        // 仅 MySQL 需要此列类型迁移
         if (database instanceof MySQLDatabase) {
 
             try (PreparedStatement ps = connection.prepareStatement("SELECT t.ID, t.VALUE" +
@@ -47,9 +48,7 @@ public class FederatedUserAttributeTextColumnMigration extends CustomKeycloakTas
                 while (resultSet.next()) {
                     String id = resultSet.getString(1);
                     String value = resultSet.getString(2);
-                    // The SQL LENGTH() will count bytes, where Java's length() will count Unicode characters.
-                    // There's also SQL CHAR_LENGTH() which is probably equivalent to Java's Character.codePointCount(),
-                    // but it is not a fit here as we're not using code points in the JPA entities
+                    // SQL LENGTH() 按字节计，Java length() 按 Unicode 字符计；再用 Java 侧校验避免误迁
                     if (value.length() > 2024) {
                         statements.add(new RawParameterizedSqlStatement("UPDATE " + getTableName("FED_USER_ATTRIBUTE") + " SET VALUE = null, LONG_VALUE_HASH = ?, LONG_VALUE_HASH_LOWER_CASE = ?, LONG_VALUE = ? WHERE ID = ?",
                                 JpaHashUtils.hashForAttributeValue(value),

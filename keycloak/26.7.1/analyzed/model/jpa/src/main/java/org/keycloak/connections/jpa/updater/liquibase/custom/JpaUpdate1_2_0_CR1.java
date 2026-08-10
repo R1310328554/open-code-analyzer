@@ -26,6 +26,8 @@ import liquibase.statement.core.InsertStatement;
 import liquibase.structure.core.Table;
 
 /**
+ * Keycloak 1.2.0.CR1 数据库升级：将需用户同意的 OAuth 客户端写入 REALM_CLIENT 关联表。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUpdate1_2_0_CR1 extends CustomKeycloakTask {
@@ -36,6 +38,7 @@ public class JpaUpdate1_2_0_CR1 extends CustomKeycloakTask {
 
         try {
             String trueValue = DataTypeFactory.getInstance().getTrueBooleanValue(database);
+            // 查找 CONSENT_REQUIRED 为 true 的客户端
             PreparedStatement statement = jdbcConnection.prepareStatement("select CLIENT.REALM_ID, CLIENT.ID CLIENT_ID from " + getTableName("CLIENT") + " CLIENT where CLIENT.CONSENT_REQUIRED = " + trueValue);
 
             try {

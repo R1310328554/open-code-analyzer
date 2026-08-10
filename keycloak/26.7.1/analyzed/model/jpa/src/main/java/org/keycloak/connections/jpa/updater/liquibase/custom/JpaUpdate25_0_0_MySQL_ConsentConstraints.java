@@ -21,12 +21,17 @@ import liquibase.statement.core.DeleteStatement;
 import liquibase.statement.core.RawSqlStatement;
 import liquibase.structure.core.Table;
 
+/**
+ * Keycloak 25.0.0 用户同意唯一约束清理（MySQL 专用）。
+ * <p>MySQL 不支持在 DELETE 子查询中直接引用同表，故用临时表暂存待删 ID。</p>
+ */
 public class JpaUpdate25_0_0_MySQL_ConsentConstraints extends CustomKeycloakTask {
 
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         final String userConsentClientScopeTable = getTableName("USER_CONSENT_CLIENT_SCOPE");
         final String userConsentTable = getTableName("USER_CONSENT");
+        // 第一轮：CLIENT_ID+USER_ID 重复 consent — 先删 scope 再经临时表删 consent
         statements.add(new RawSqlStatement(
                 "DELETE FROM "+ userConsentClientScopeTable + " WHERE USER_CONSENT_ID IN (" +
                         " SELECT uc.ID FROM "+userConsentTable+" uc INNER JOIN (" +
@@ -48,6 +53,7 @@ public class JpaUpdate25_0_0_MySQL_ConsentConstraints extends CustomKeycloakTask
                 .setWhere("ID IN (SELECT ID FROM TEMP_USER_CONSENT_IDS)"));
         statements.add(new RawSqlStatement("DROP TABLE IF EXISTS TEMP_USER_CONSENT_IDS"));
 
+        // 第二轮：外部客户端 consent 重复 — 同样借助临时表
         statements.add(new RawSqlStatement(
                 " DELETE FROM "+ userConsentClientScopeTable + " WHERE USER_CONSENT_ID IN (" +
                         " SELECT uc.ID FROM "+userConsentTable+" uc INNER JOIN (" +

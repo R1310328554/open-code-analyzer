@@ -25,6 +25,8 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
+ * Keycloak 1.9.0.Final 升级：从 FED_PROVIDERS 关联表回填 USER_FEDERATION_PROVIDER.REALM_ID。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUpdate1_9_0_Final extends CustomKeycloakTask {
@@ -34,6 +36,7 @@ public class JpaUpdate1_9_0_Final extends CustomKeycloakTask {
         String userFederationProviderTableName = database.correctObjectName("USER_FEDERATION_PROVIDER", Table.class);
 
         try {
+            // 从领域与联邦提供者的多对多关联表读取 realmId
             PreparedStatement statement = jdbcConnection.prepareStatement("select REALM_ID, USERFEDERATIONPROVIDERS_ID from " + getTableName("FED_PROVIDERS"));
 
             try {

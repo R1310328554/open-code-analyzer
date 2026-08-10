@@ -37,10 +37,14 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
+ * Keycloak 1.2.0.Beta1 综合数据迁移。
+ * <p>将 Social 登录迁移为 Identity Provider、补全登录超时与管理员角色、将 claimsMask 转为 Protocol Mapper 等。</p>
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
 
+    /** 经 Liquibase 校正后的 REALM 表名。 */
     private String realmTableName;
 
     @Override
@@ -64,6 +68,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
     }
 
 
+    /** 将 REALM_SOCIAL_CONFIG 中的 Social 提供者配置迁移为 IDENTITY_PROVIDER 及 CONFIG 行。 */
     protected void convertSocialToIdFedRealms() throws SQLException, DatabaseException {
         String identityProviderTableName = database.correctObjectName("IDENTITY_PROVIDER", Table.class);
         String idpConfigTableName = database.correctObjectName("IDENTITY_PROVIDER_CONFIG", Table.class);
@@ -90,6 +95,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
                     }
 
                     if (!providerInProgress) {
+                        // 首行：provider.key 行，解析 providerId 与 clientId
                         String key = resultSet.getString("NAME");
                         int keyIndex = key.indexOf(".key");
                         if (keyIndex == -1) {
@@ -102,6 +108,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
                         updateProfileOnSocialLogin = resultSet.getBoolean("UPDATE_PROFILE_ON_SOC_LOGIN");
                         providerInProgress = true;
                     } else {
+                        // 次行：clientSecret，凑齐一对后插入 IDP 及配置
                         clientSecret = resultSet.getString("VALUE");
 
                         String internalId = KeycloakModelUtils.generateId();
@@ -132,7 +139,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
                     }
                 }
 
-                // It means that some provider where processed
+                // 至少迁移过一个 provider 时在确认消息末尾加句号
                 if (!first) {
                     confirmationMessage.append(". ");
                 }
@@ -144,6 +151,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
         }
     }
 
+    /** 将 USER_SOCIAL_LINK 行迁移为 FEDERATED_IDENTITY。 */
     protected void convertSocialToIdFedUsers() throws SQLException, DatabaseException {
         String federatedIdentityTableName = database.correctObjectName("FEDERATED_IDENTITY", Table.class);
         PreparedStatement statement = jdbcConnection.prepareStatement("select REALM_ID, USER_ID, SOCIAL_PROVIDER, SOCIAL_USER_ID, SOCIAL_USERNAME from " + getTableName("USER_SOCIAL_LINK"));
@@ -171,6 +179,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
         }
     }
 
+    /** 为 LOGIN_LIFESPAN 为空的领域设置默认 1800 秒（30 分钟）。 */
     protected void addAccessCodeLoginTimeout() {
         UpdateStatement statement = new UpdateStatement(null, null, realmTableName)
                 .addNewColumnValue("LOGIN_LIFESPAN", 1800)
@@ -180,6 +189,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
         confirmationMessage.append("Updated LOGIN_LIFESPAN of all realms to 1800 seconds. ");
     }
 
+    /** 为 master 与各领域 realm-management 应用添加 IdP 相关管理员角色。 */
     private void addNewAdminRoles() throws SQLException, DatabaseException{
         addNewMasterAdminRoles();
         addNewRealmAdminRoles();
@@ -187,8 +197,9 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
         confirmationMessage.append("Adding new admin roles. ");
     }
 
+    /** 在 master 领域为每个子领域的 {realm}-realm 管理客户端添加 IdP 管理/查看角色。 */
     protected void addNewMasterAdminRoles() throws SQLException, DatabaseException {
-        // Retrieve ID of admin role of master realm
+        // 获取 master 领域 admin 复合角色的 ID
         String adminRoleId = getAdminRoleId();
         String masterRealmId = Config.getAdminRealm();
 
@@ -230,6 +241,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
         }
     }
 
+    /** 查询 master 领域 admin 角色 ID。 */
     private String getAdminRoleId() throws SQLException, DatabaseException {
         PreparedStatement statement = jdbcConnection.prepareStatement("select ID from " + getTableName("KEYCLOAK_ROLE") + " where NAME = ? AND REALM = ?");
         statement.setString(1, AdminRoles.ADMIN);
@@ -252,6 +264,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
     }
 
 
+    /** 在各领域的 realm-management 客户端下添加 IdP 管理/查看角色。 */
     protected void addNewRealmAdminRoles() throws SQLException, DatabaseException {
         PreparedStatement statement = jdbcConnection.prepareStatement("select CLIENT.ID REALM_ADMIN_APP_ID, CLIENT.REALM_ID REALM_ID, KEYCLOAK_ROLE.ID ADMIN_ROLE_ID from " +
                 getTableName("CLIENT") + " CLIENT," + getTableName("KEYCLOAK_ROLE") + " KEYCLOAK_ROLE where KEYCLOAK_ROLE.APPLICATION = CLIENT.ID AND CLIENT.NAME = 'realm-management' AND KEYCLOAK_ROLE.NAME = ?");
@@ -277,6 +290,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
         }
     }
 
+    /** 创建应用角色并将其挂入 realm-admin 复合角色。 */
     private void addAdminRole(String roleName, String realmId, String applicationId, String realmAdminAppRoleId) {
         String roleTableName = database.correctObjectName("KEYCLOAK_ROLE", Table.class);
         String compositeRoleTableName = database.correctObjectName("COMPOSITE_ROLE", Table.class);
@@ -290,7 +304,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
                 .addColumnValue("REALM_ID", realmId)
                 .addColumnValue("APPLICATION", applicationId);
 
-        // Add newly created role to the composite roles of 'realm-admin' role
+        // 将新角色加入 realm-admin 的 composite 子角色列表
         InsertStatement insertCompRole = new InsertStatement(null, null, compositeRoleTableName)
                 .addColumnValue("COMPOSITE", realmAdminAppRoleId)
                 .addColumnValue("CHILD_ROLE", newRoleId);
@@ -299,6 +313,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
         statements.add(insertCompRole);
     }
 
+    /** 按客户端 ALLOWED_CLAIMS_MASK 生成对应 Protocol Mapper 及配置。 */
     protected void addDefaultProtocolMappers() throws SQLException, DatabaseException {
         String protocolMapperTableName = database.correctObjectName("PROTOCOL_MAPPER", Table.class);
         String protocolMapperCfgTableName = database.correctObjectName("PROTOCOL_MAPPER_CONFIG", Table.class);
@@ -346,7 +361,7 @@ public class JpaUpdate1_2_0_Beta1 extends CustomKeycloakTask {
                     confirmationMessage.append(resultSet.getString("NAME") + ", ");
                 }
 
-                // It means that some provider where processed
+                // 至少处理过一个客户端时在确认消息末尾加句号
                 if (!first) {
                     confirmationMessage.append(". ");
                 }

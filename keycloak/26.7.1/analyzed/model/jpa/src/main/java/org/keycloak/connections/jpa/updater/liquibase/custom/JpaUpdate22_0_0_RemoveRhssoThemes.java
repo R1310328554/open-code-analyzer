@@ -24,7 +24,8 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
- * <p>Migration class to remove old <em>rh-sso</em> themes.</p>
+ * <p>Keycloak 22.0.0 迁移：移除已废弃的 <em>rh-sso</em> 主题引用。</p>
+ * <p>将领域与客户端上指向 RH-SSO 主题的设置清空或替换为 Keycloak 默认主题。</p>
  *
  * @author rmartinc
  */
@@ -32,24 +33,24 @@ public class JpaUpdate22_0_0_RemoveRhssoThemes extends CustomKeycloakTask {
 
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
-        // remove login theme for realms
+        // 清除领域的 rh-sso 登录主题
         statements.add(new UpdateStatement(null, null, database.correctObjectName("REALM", Table.class))
                 .addNewColumnValue("LOGIN_THEME", null)
                 .setWhereClause("LOGIN_THEME=?")
                 .addWhereParameter("rh-sso"));
-        // remove email theme for realms
+        // 清除领域的 rh-sso 邮件主题
         statements.add(new UpdateStatement(null, null, database.correctObjectName("REALM", Table.class))
                 .addNewColumnValue("EMAIL_THEME", null)
                 .setWhereClause("EMAIL_THEME=?")
                 .addWhereParameter("rh-sso"));
-        // remove account theme for realms
+        // 将旧 account 主题统一为 keycloak.v2
         statements.add(new UpdateStatement(null, null, database.correctObjectName("REALM", Table.class))
                 .addNewColumnValue("ACCOUNT_THEME", "keycloak.v2")
                 .setWhereClause("ACCOUNT_THEME=? OR ACCOUNT_THEME=? OR ACCOUNT_THEME=?")
                 .addWhereParameter("rh-sso")
                 .addWhereParameter("rh-sso.v2")
                 .addWhereParameter("keycloak"));
-        // remove login_theme for clients
+        // 删除客户端上指向 rh-sso 的 login_theme 属性（Oracle 需用 DBMS_LOB 比较 CLOB）
         if ("oracle".equals(database.getShortName())) {
             statements.add(new DeleteStatement(null, null, database.correctObjectName("CLIENT_ATTRIBUTES", Table.class))
                     .setWhere("NAME=? AND DBMS_LOB.substr(VALUE,10)=?")

@@ -19,12 +19,17 @@ package org.keycloak.connections.jpa.updater.liquibase.custom;
 import liquibase.exception.CustomChangeException;
 import liquibase.statement.core.RawSqlStatement;
 
+/**
+ * Keycloak 25.0.0 用户同意（User Consent）唯一约束清理（PostgreSQL / MariaDB）。
+ * <p>删除同一用户+客户端（或外部客户端）下重复 consent 记录，保留 LAST_UPDATED_DATE 最新的一条。</p>
+ */
 public class JpaUpdate25_0_0_ConsentConstraints  extends CustomKeycloakTask {
 
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
         final String userConsentClientScopeTable = getTableName("USER_CONSENT_CLIENT_SCOPE");
         final String userConsentTable = getTableName("USER_CONSENT");
+        // 先删重复 consent 关联的 client scope，再删 consent 本体（按 CLIENT_ID+USER_ID 分组）
         statements.add(new RawSqlStatement(
                 "DELETE FROM "+ userConsentClientScopeTable + " WHERE USER_CONSENT_ID IN (" +
                         " SELECT uc.ID FROM "+userConsentTable+" uc INNER JOIN (" +
@@ -40,6 +45,7 @@ public class JpaUpdate25_0_0_ConsentConstraints  extends CustomKeycloakTask {
                         " max_dates ON uc.CLIENT_ID = max_dates.CLIENT_ID" +
                         " AND uc.USER_ID = max_dates.USER_ID AND uc.LAST_UPDATED_DATE = max_dates.MAX_UPDATED_DATE )"
         ));
+        // 按 CLIENT_STORAGE_PROVIDER+EXTERNAL_CLIENT_ID+USER_ID 分组清理外部客户端 consent
         statements.add(new RawSqlStatement(
                 " DELETE FROM "+ userConsentClientScopeTable + " WHERE USER_CONSENT_ID IN (" +
                         " SELECT uc.ID FROM "+userConsentTable+" uc INNER JOIN (" +

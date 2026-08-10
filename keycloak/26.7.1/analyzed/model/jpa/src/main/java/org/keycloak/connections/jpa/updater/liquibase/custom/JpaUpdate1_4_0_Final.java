@@ -27,6 +27,8 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
+ * Keycloak 1.4.0.Final 升级：为 USER_ATTRIBUTE 表各行补全主键 ID。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class JpaUpdate1_4_0_Final extends CustomKeycloakTask {
@@ -36,6 +38,7 @@ public class JpaUpdate1_4_0_Final extends CustomKeycloakTask {
         String userAttributeTableName = database.correctObjectName("USER_ATTRIBUTE", Table.class);
 
         try {
+            // 遍历所有用户属性，按 NAME+USER_ID 定位并生成新 ID
             PreparedStatement statement = jdbcConnection.prepareStatement("select NAME, USER_ID from " + getTableName("USER_ATTRIBUTE"));
 
             try {

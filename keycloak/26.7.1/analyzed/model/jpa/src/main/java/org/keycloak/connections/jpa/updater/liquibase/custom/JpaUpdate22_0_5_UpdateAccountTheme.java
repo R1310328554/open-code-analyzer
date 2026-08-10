@@ -21,12 +21,13 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
- * <p>Migration class to update themes for those who had upgraded to 22.0.0 already.</p>
+ * <p>Keycloak 22.0.5 补丁迁移：将已升级到 22.0.0 但 account 主题仍为 keycloak 的领域改为 keycloak.v2。</p>
  */
 public class JpaUpdate22_0_5_UpdateAccountTheme extends CustomKeycloakTask {
 
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
+        // 22.0.0 迁移后仍使用旧 keycloak account 主题的领域需补跑此更新
         statements.add(new UpdateStatement(null, null, database.correctObjectName("REALM", Table.class))
                 .addNewColumnValue("ACCOUNT_THEME", "keycloak.v2")
                 .setWhereClause("ACCOUNT_THEME=?")

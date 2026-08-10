@@ -19,8 +19,13 @@ package org.keycloak.connections.jpa.updater.liquibase.custom;
 import liquibase.exception.CustomChangeException;
 import liquibase.statement.core.RawSqlStatement;
 
+/**
+ * Keycloak 19.0.0 登出后重定向 URI 默认值迁移。
+ * <p>为已有 redirect URI 但未配置 {@code post.logout.redirect.uris} 的客户端插入默认值 {@code +}（允许全部）。</p>
+ */
 public class JpaUpdate19_0_0_DefaultPostLogoutRedirectUri extends CustomKeycloakTask {
 
+    /** 登出后重定向 URI 客户端属性键。 */
     private static final String POST_LOGOUT_REDIRECT_URIS = "post.logout.redirect.uris";
 
     @Override

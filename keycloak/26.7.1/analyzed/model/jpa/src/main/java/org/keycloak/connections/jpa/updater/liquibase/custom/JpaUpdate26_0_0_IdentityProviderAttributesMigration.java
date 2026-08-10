@@ -28,15 +28,15 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
- * Custom SQL change to migrate the organization ID and the hide on login page config from the IDP config table to the
- * IDP table.
+ * Keycloak 26.0.0 身份提供者属性列迁移。
+ * <p>将组织 ID、登录页隐藏等配置从 IDENTITY_PROVIDER_CONFIG 表提升到 IDENTITY_PROVIDER 表对应列，并删除旧配置行。</p>
  */
 public class JpaUpdate26_0_0_IdentityProviderAttributesMigration extends CustomKeycloakTask {
 
     @Override
     protected void generateStatementsImpl() throws CustomChangeException {
 
-        // move the organization id from the config to the IDP.
+        // 将组织 ID 从 config 表写入 IDP.ORGANIZATION_ID
         try (PreparedStatement ps = connection.prepareStatement("SELECT c.IDENTITY_PROVIDER_ID, c.VALUE" +
                 "  FROM " + getTableName("IDENTITY_PROVIDER_CONFIG") + " c WHERE c.NAME = '" + OrganizationModel.ORGANIZATION_ATTRIBUTE + "'");
              ResultSet resultSet = ps.executeQuery()
@@ -57,7 +57,7 @@ public class JpaUpdate26_0_0_IdentityProviderAttributesMigration extends CustomK
             throw new CustomChangeException(getTaskId() + ": Exception when updating data from previous version", e);
         }
 
-        // move hide on login page from the config to the IDP.
+        // 将 hideOnLoginPage 旧配置迁移到 IDP.HIDE_ON_LOGIN
         try (PreparedStatement ps = connection.prepareStatement("SELECT c.IDENTITY_PROVIDER_ID, c.VALUE" +
                 "  FROM " + getTableName("IDENTITY_PROVIDER_CONFIG") + " c WHERE c.NAME = '" + IdentityProviderModel.LEGACY_HIDE_ON_LOGIN_ATTR + "'");
              ResultSet resultSet = ps.executeQuery()
@@ -78,7 +78,7 @@ public class JpaUpdate26_0_0_IdentityProviderAttributesMigration extends CustomK
             throw new CustomChangeException(getTaskId() + ": Exception when updating data from previous version", e);
         }
 
-        // move kc.org.broker.public from the config to the new HIDE_ON_LOGIN in the IDP.
+        // kc.org.broker.public 与 HIDE_ON_LOGIN 语义相反：public=true 表示登录页可见
         try (PreparedStatement ps = connection.prepareStatement("SELECT c.IDENTITY_PROVIDER_ID, c.VALUE" +
                 "  FROM " + getTableName("IDENTITY_PROVIDER_CONFIG") + " c WHERE c.NAME = 'kc.org.broker.public'");
              ResultSet resultSet = ps.executeQuery()

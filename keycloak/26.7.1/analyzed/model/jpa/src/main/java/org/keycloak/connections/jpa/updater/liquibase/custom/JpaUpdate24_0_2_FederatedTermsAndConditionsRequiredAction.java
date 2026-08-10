@@ -23,18 +23,16 @@ import liquibase.statement.core.UpdateStatement;
 import liquibase.structure.core.Table;
 
 /**
- * Custom liquibase change to migrate legacy {@code terms and conditions} required action for federated users (table
- * {@code FED_USER_REQUIRED_ACTION}, in line with what {@link JpaUpdate21_0_2_TermsAndConditionsRequiredAction}
- * did to migrate the same action for regular users.
- * </p>
- * The legacy value was in lowercase, and it was changed to upper case to match the other required actions in Keycloak.
- * This class ensures that the legacy action set for federated users is properly migrated to upper case when upgrading
- * the server.
+ * 联邦用户条款与条件 Required Action 别名迁移（24.0.2）。
+ * <p>将 {@code FED_USER_REQUIRED_ACTION} 中旧小写别名 {@code terms_and_conditions} 改为
+ * {@link UserModel.RequiredAction#TERMS_AND_CONDITIONS}，与 {@link JpaUpdate21_0_2_TermsAndConditionsRequiredAction}
+ * 对本地用户表的迁移保持一致。</p>
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
  */
 public class JpaUpdate24_0_2_FederatedTermsAndConditionsRequiredAction extends CustomKeycloakTask {
 
+    /** 升级前联邦用户 required action 使用的旧别名。 */
     private static final String TERMS_AND_CONDITION_LEGACY_ALIAS = "terms_and_conditions";
 
     @Override

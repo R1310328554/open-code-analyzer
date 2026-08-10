@@ -27,10 +27,16 @@ import liquibase.structure.core.Table;
 
 import static org.keycloak.protocol.saml.util.ArtifactBindingUtils.computeArtifactBindingIdentifierString;
 
+/**
+ * Keycloak 14.0.0 SAML Artifact Binding 属性迁移。
+ * <p>为缺少 {@code saml.artifact.binding.identifier} 的 SAML 客户端补全该属性，值由 clientId 计算得出。</p>
+ */
 public class JpaUpdate14_0_0_MigrateSamlArtifactAttribute extends CustomKeycloakTask {
 
+    /** SAML Artifact Binding 标识符属性名。 */
     private static final String SAML_ARTIFACT_BINDING_IDENTIFIER = "saml.artifact.binding.identifier";
 
+    /** 待迁移的客户端内部 ID 与 clientId 映射。 */
     private final Map<String, String> clientIds = new HashMap<>();
 
     @Override
@@ -55,6 +61,7 @@ public class JpaUpdate14_0_0_MigrateSamlArtifactAttribute extends CustomKeycloak
         }
     }
 
+    /** 查询尚未配置 artifact binding 标识符的 SAML 客户端。 */
     private void extractClientsData(String sql) throws CustomChangeException {
         try (PreparedStatement statement = jdbcConnection.prepareStatement(sql);
                 ResultSet rs = statement.executeQuery()) {
