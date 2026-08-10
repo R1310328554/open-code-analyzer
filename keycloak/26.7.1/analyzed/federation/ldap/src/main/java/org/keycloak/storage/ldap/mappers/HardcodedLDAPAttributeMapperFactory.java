@@ -29,10 +29,13 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
+ * 硬编码 LDAP 属性映射器工厂，在启用 syncRegistrations 时为新注册用户写入固定 LDAP 属性。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class HardcodedLDAPAttributeMapperFactory extends AbstractLDAPStorageMapperFactory {
 
+    /** 提供商标识符：hardcoded-ldap-attribute-mapper。 */
     public static final String PROVIDER_ID = "hardcoded-ldap-attribute-mapper";
 
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();

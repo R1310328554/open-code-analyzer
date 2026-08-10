@@ -33,10 +33,13 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
+ * 硬编码 LDAP 角色映射器工厂，为从 LDAP 导入的用户自动授予配置的 Keycloak 角色。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class HardcodedLDAPRoleStorageMapperFactory extends AbstractLDAPStorageMapperFactory {
 
+    /** 提供商标识符：hardcoded-ldap-role-mapper。 */
     public static final String PROVIDER_ID = "hardcoded-ldap-role-mapper";
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
@@ -67,9 +70,10 @@ public class HardcodedLDAPRoleStorageMapperFactory extends AbstractLDAPStorageMa
 
     @Override
     public Set<Class<? extends Provider>> dependsOn() {
-        return Set.of(AlternativeLookupProvider.class); // for caching
+        return Set.of(AlternativeLookupProvider.class); // 用于角色查找缓存
     }
 
+    /** 校验配置的角色在领域中存在。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
         String roleName = config.getConfig().getFirst(HardcodedLDAPRoleStorageMapper.ROLE);

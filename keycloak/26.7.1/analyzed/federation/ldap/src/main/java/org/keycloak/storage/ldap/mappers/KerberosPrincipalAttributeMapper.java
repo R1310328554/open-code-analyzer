@@ -26,12 +26,16 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 
 import static org.keycloak.federation.kerberos.KerberosFederationProvider.KERBEROS_PRINCIPAL;
 
+/**
+ * Kerberos 主体属性映射器：从 LDAP 导入用户时，若 LDAP 中的 Kerberos 主体与本地不一致则同步更新。
+ */
 public class KerberosPrincipalAttributeMapper extends AbstractLDAPStorageMapper {
 
     public KerberosPrincipalAttributeMapper(ComponentModel mapperModel, LDAPStorageProvider ldapProvider) {
         super(mapperModel, ldapProvider);
     }
 
+    /** 比较 LDAP 与本地 Kerberos 主体，不一致时写入用户属性。 */
     @Override
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
         String kerberosPrincipalAttribute = ldapProvider.getKerberosConfig().getKerberosPrincipalAttribute();
@@ -40,7 +44,7 @@ public class KerberosPrincipalAttributeMapper extends AbstractLDAPStorageMapper 
             String localKerberosPrincipal = user.getFirstAttribute(KERBEROS_PRINCIPAL);
             String ldapKerberosPrincipal = ldapUser.getAttributeAsString(kerberosPrincipalAttribute);
             if (ldapKerberosPrincipal != null) {
-                // update the Kerberos principal stored in DB as user's attribute if it doesn't match LDAP
+                // LDAP 与 DB 中 Kerberos 主体不一致时更新本地属性
                 if (!ldapKerberosPrincipal.equals(localKerberosPrincipal)) {
                     user.setSingleAttribute(KERBEROS_PRINCIPAL, ldapKerberosPrincipal);
                 }

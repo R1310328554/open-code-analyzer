@@ -28,8 +28,12 @@ import org.keycloak.provider.ConfigurationValidationHelper;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
+/**
+ * 硬编码用户属性映射器工厂，注册 {@link HardcodedAttributeMapper} 提供者。
+ */
 public class HardcodedAttributeMapperFactory extends AbstractLDAPStorageMapperFactory {
 
+   /** 提供商标识符：hardcoded-attribute-mapper。 */
    public static final String PROVIDER_ID = "hardcoded-attribute-mapper";
 
 
@@ -69,6 +73,7 @@ public class HardcodedAttributeMapperFactory extends AbstractLDAPStorageMapperFa
         return PROVIDER_ID;
     }
 
+    /** 校验属性名与值必填，且禁止将 username 或 email 设为硬编码目标。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
         ConfigurationValidationHelper.check(config)

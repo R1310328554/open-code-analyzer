@@ -35,12 +35,15 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 import org.jboss.logging.Logger;
 
 /**
+ * 硬编码 LDAP 组映射器：从 LDAP 导入的用户通过代理自动视为指定 Keycloak 组的成员。
+ *
  * @author <a href="mailto:jean-loup.maillet@yesitis.fr">Jean-Loup Maillet</a>
  */
 public class HardcodedLDAPGroupStorageMapper extends AbstractLDAPStorageMapper {
 
     private static final Logger logger = Logger.getLogger(HardcodedLDAPGroupStorageMapper.class);
 
+    /** 配置键：要加入的组完整路径。 */
     public static final String GROUP = "group";
 
     public HardcodedLDAPGroupStorageMapper(ComponentModel mapperModel, LDAPStorageProvider ldapProvider) {
@@ -51,6 +54,7 @@ public class HardcodedLDAPGroupStorageMapper extends AbstractLDAPStorageMapper {
     public void beforeLDAPQuery(LDAPQuery query) {
     }
 
+    /** 扩展用户代理，使其始终包含配置的硬编码组。 */
     @Override
     public UserModel proxy(LDAPObject ldapUser, UserModel delegate, RealmModel realm) {
         return new UserModelDelegate(delegate) {
@@ -100,6 +104,7 @@ public class HardcodedLDAPGroupStorageMapper extends AbstractLDAPStorageMapper {
 
     }
 
+    /** 按配置路径解析硬编码组；组不存在时记录警告。 */
     private GroupModel getGroup(RealmModel realm) {
         String groupName = mapperModel.getConfig().getFirst(HardcodedLDAPGroupStorageMapper.GROUP);
         GroupModel group = KeycloakModelUtils.findGroupByPath(getSession(), realm, groupName);

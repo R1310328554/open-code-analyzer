@@ -30,10 +30,13 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
+ * 硬编码 LDAP 组映射器工厂，为从 LDAP 导入的用户自动加入配置的 Keycloak 组。
+ *
  * @author <a href="mailto:jean-loup.maillet@yesitis.fr">Jean-Loup Maillet</a>
  */
 public class HardcodedLDAPGroupStorageMapperFactory extends AbstractLDAPStorageMapperFactory {
 
+    /** 提供商标识符：hardcoded-ldap-group-mapper。 */
     public static final String PROVIDER_ID = "hardcoded-ldap-group-mapper";
     protected static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
@@ -63,6 +66,7 @@ public class HardcodedLDAPGroupStorageMapperFactory extends AbstractLDAPStorageM
         return PROVIDER_ID;
     }
 
+    /** 校验配置的组路径在领域中存在。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
         String groupName = config.getConfig().getFirst(HardcodedLDAPGroupStorageMapper.GROUP);

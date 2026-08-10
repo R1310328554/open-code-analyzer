@@ -20,8 +20,12 @@ package org.keycloak.storage.ldap.mappers;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
+/**
+ * Kerberos 主体属性映射器工厂，注册 {@link KerberosPrincipalAttributeMapper} 提供者。
+ */
 public class KerberosPrincipalAttributeMapperFactory extends AbstractLDAPStorageMapperFactory {
 
+    /** 提供商标识符：kerberos-principal-attribute-mapper。 */
     public static final String PROVIDER_ID = "kerberos-principal-attribute-mapper";
 
     @Override

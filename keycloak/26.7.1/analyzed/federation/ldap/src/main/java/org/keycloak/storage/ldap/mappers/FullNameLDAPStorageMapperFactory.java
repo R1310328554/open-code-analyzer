@@ -31,10 +31,13 @@ import org.keycloak.storage.ldap.LDAPConfig;
 import org.keycloak.storage.ldap.LDAPStorageProvider;
 
 /**
+ * 全名 LDAP 存储映射器工厂，将 LDAP 单一全名属性（通常为 cn）映射到 Keycloak 用户的 firstName 与 lastName。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class FullNameLDAPStorageMapperFactory extends AbstractLDAPStorageMapperFactory {
 
+    /** 提供商标识符：full-name-ldap-mapper。 */
     public static final String PROVIDER_ID =  "full-name-ldap-mapper";
 
     protected static final List<ProviderConfigProperty> configProperties;
@@ -43,6 +46,7 @@ public class FullNameLDAPStorageMapperFactory extends AbstractLDAPStorageMapperF
         configProperties = getConfigProps(null);
     }
 
+    /** 根据父组件编辑模式构建只读/只写等配置项的默认值。 */
     private static List<ProviderConfigProperty> getConfigProps(ComponentModel parent) {
         boolean readOnly = false;
         if (parent != null) {
@@ -94,6 +98,7 @@ public class FullNameLDAPStorageMapperFactory extends AbstractLDAPStorageMapperF
         return PROVIDER_ID;
     }
 
+    /** 校验全名属性必填，并检查只读/只写与 LDAP 编辑模式的兼容性。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
         checkMandatoryConfigAttribute(FullNameLDAPStorageMapper.LDAP_FULL_NAME_ATTRIBUTE, "LDAP Full Name Attribute", config);

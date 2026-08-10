@@ -21,11 +21,18 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.storage.ldap.LDAPConfig;
 
 /**
+ * LDAP 配置装饰器：映射器可在 LDAP 联邦提供者初始化时修改 {@link LDAPConfig}。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface LDAPConfigDecorator {
 
+    /**
+     * 根据映射器组件配置更新 LDAP 连接/同步相关设置。
+     *
+     * @param ldapConfig 待修改的 LDAP 配置
+     * @param mapperModel 映射器组件模型
+     */
     void updateLDAPConfig(LDAPConfig ldapConfig, ComponentModel mapperModel);
 
 }

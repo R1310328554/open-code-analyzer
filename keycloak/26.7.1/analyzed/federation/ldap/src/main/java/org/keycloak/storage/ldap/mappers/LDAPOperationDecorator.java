@@ -23,10 +23,18 @@ import javax.naming.ldap.LdapContext;
 import org.keycloak.storage.ldap.idm.store.ldap.LDAPOperationManager;
 
 /**
+ * LDAP 操作装饰器：在 {@link LDAPOperationManager} 执行 LDAP 操作前注入自定义逻辑。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface LDAPOperationDecorator {
 
+    /**
+     * LDAP 操作执行前的回调，可用于修改上下文或附加控制。
+     *
+     * @param ldapContext 当前 LDAP 上下文
+     * @param ldapOperation 即将执行的操作类型
+     */
     void beforeLDAPOperation(LdapContext ldapContext, LDAPOperationManager.LdapOperation ldapOperation) throws NamingException;
 
 }

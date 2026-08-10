@@ -24,7 +24,9 @@ import org.keycloak.models.UserModel;
 import org.keycloak.storage.ldap.LDAPConfig;
 
 /**
- * TODO: Possibly add "priority" instead of hardcoding behaviour
+ * LDAP 映射器排序比较器，确保用户属性映射器（尤其是 username）按稳定、可预期的顺序执行。
+ *
+ * TODO: 可考虑改为可配置的 priority 而非硬编码规则
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -36,15 +38,18 @@ public class LDAPMappersComparator {
         this.ldapConfig = ldapConfig;
     }
 
+    /** 返回升序比较器：重要映射器优先。 */
     public Comparator<ComponentModel> sortAsc() {
         return new ImportantFirstComparator(ldapConfig);
     }
 
+    /** 返回降序比较器。 */
     public Comparator<ComponentModel> sortDesc() {
         return new ImportantFirstComparator(ldapConfig).reversed();
     }
 
 
+    /** 按映射器类型与 username 相关配置决定执行优先级的内部比较器。 */
     private static class ImportantFirstComparator implements Comparator<ComponentModel> {
 
         private final LDAPConfig ldapConfig;
@@ -55,7 +60,7 @@ public class LDAPMappersComparator {
 
         @Override
         public int compare(ComponentModel o1, ComponentModel o2) {
-            // UserAttributeLDAPFederationMapper first
+            // UserAttributeLDAPFederationMapper 优先
             boolean isO1AttrMapper = o1.getProviderId().equals(UserAttributeLDAPStorageMapperFactory.PROVIDER_ID);
             boolean isO2AttrMapper = o2.getProviderId().equals(UserAttributeLDAPStorageMapperFactory.PROVIDER_ID);
             if (!isO1AttrMapper) {
@@ -68,7 +73,7 @@ public class LDAPMappersComparator {
                 return -1;
             }
 
-            // Mapper for "username" attribute first
+            // 映射 username 属性的映射器优先
             String model1 = o1.getConfig().getFirst(UserAttributeLDAPStorageMapper.USER_MODEL_ATTRIBUTE);
             String model2 = o2.getConfig().getFirst(UserAttributeLDAPStorageMapper.USER_MODEL_ATTRIBUTE);
             boolean isO1UsernameMapper = model1 != null && model1.equalsIgnoreCase(UserModel.USERNAME);
@@ -83,7 +88,7 @@ public class LDAPMappersComparator {
                 return -1;
             }
 
-            // The username mapper corresponding to the same like configured username for federationProvider is first
+            // 与联邦提供者 username LDAP 属性一致的 username 映射器最优先
             String o1LdapAttr = o1.getConfig().getFirst(UserAttributeLDAPStorageMapper.LDAP_ATTRIBUTE);
             String o2LdapAttr = o2.getConfig().getFirst(UserAttributeLDAPStorageMapper.LDAP_ATTRIBUTE);
             boolean isO1LdapAttr = o1LdapAttr != null && ldapConfig.getUsernameLdapAttribute().equalsIgnoreCase(o1LdapAttr);
@@ -103,8 +108,8 @@ public class LDAPMappersComparator {
         }
 
         /**
-         * Ensure a stable ordering, so the mappers are always executed in the same order.
-         * This can avoid database deadlocks as the mappers will modify attributes always in the same order.
+         * 保证稳定排序，使映射器始终以相同顺序执行，
+         * 避免因并发修改属性顺序不同而触发数据库死锁。
          */
         private static int compareWithStableOrdering(ComponentModel o1, ComponentModel o2) {
             return o1.getId().compareTo(o2.getId());

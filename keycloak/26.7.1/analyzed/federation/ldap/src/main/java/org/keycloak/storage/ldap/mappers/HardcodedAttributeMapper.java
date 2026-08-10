@@ -33,7 +33,9 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 
 import org.jboss.logging.Logger;
 
-
+/**
+ * 硬编码用户属性映射器：从 LDAP 导入用户时，为 Keycloak 用户模型写入配置的固定属性值。
+ */
 public class HardcodedAttributeMapper extends AbstractLDAPStorageMapper {
 
     private static final Logger logger = Logger.getLogger(HardcodedAttributeMapper.class);
@@ -44,9 +46,12 @@ public class HardcodedAttributeMapper extends AbstractLDAPStorageMapper {
 
     private static final Map<String, Property<Object>> userModelProperties = LDAPUtils.getUserModelProperties();
 
+    /** 配置键：目标用户模型属性名。 */
     public static final String USER_MODEL_ATTRIBUTE = "user.model.attribute";
+    /** 配置键：要写入的固定属性值。 */
     public static final String ATTRIBUTE_VALUE = "attribute.value";
 
+    /** 导入时将硬编码值写入用户模型属性或标准字段。 */
     @Override
     public void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate) {
         String userModelAttrName = getUserModelAttribute();
@@ -66,6 +71,7 @@ public class HardcodedAttributeMapper extends AbstractLDAPStorageMapper {
 
     }
 
+    /** 通过代理在用户读取属性时返回硬编码值。 */
     @Override
     public UserModel proxy(final LDAPObject ldapUser, UserModel delegate, RealmModel realm) {
         String userModelAttrName = getUserModelAttribute();
@@ -109,6 +115,7 @@ public class HardcodedAttributeMapper extends AbstractLDAPStorageMapper {
       return mapperModel.getConfig().getFirst(ATTRIBUTE_VALUE);
    }
 
+   /** 按属性 Java 类型将字符串值转换后写入用户模型。 */
    protected void setPropertyOnUserModel(Property<Object> userModelProperty, UserModel user, String ldapAttrValue) {
        if (ldapAttrValue == null) {
            userModelProperty.setValue(user, null);

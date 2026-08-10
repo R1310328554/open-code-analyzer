@@ -32,32 +32,32 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 import org.keycloak.storage.user.SynchronizationResult;
 
 /**
+ * LDAP 存储映射器 SPI：定义 LDAP 联邦与 Keycloak 用户模型之间的同步、导入与代理扩展点。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface LDAPStorageMapper extends Provider {
 
     /**
-     * Sync data from federated storage to Keycloak. It's useful just if mapper needs some data preloaded from federated storage (For example
-     * load roles from federated provider and sync them to Keycloak database)
-     *
-     * Applicable just if sync is supported
+     * 从联邦存储同步数据到 Keycloak（例如预加载角色并写入 Keycloak 数据库）。
+     * 仅当映射器支持同步时适用。
      *
      */
     SynchronizationResult syncDataFromFederationProviderToKeycloak(RealmModel realm);
 
     /**
-     * Sync data from Keycloak back to federated storage
+     * 从 Keycloak 同步数据回联邦存储。
      *
      **/
     SynchronizationResult syncDataFromKeycloakToFederationProvider(RealmModel realm);
 
     /**
-     * Return empty list if doesn't support storing of groups
+     * 返回属于指定组的用户；不支持组存储时返回空列表。
      */
     List<UserModel> getGroupMembers(RealmModel realm, GroupModel group, int firstResult, int maxResults);
 
     /**
-     * Return empty list if doesn't support storing of roles
+     * 返回拥有指定角色的用户；不支持角色存储时返回空列表。
      * @param realm
      * @param role
      * @param firstResult
@@ -67,18 +67,18 @@ public interface LDAPStorageMapper extends Provider {
     List<UserModel> getRoleMembers(RealmModel realm, RoleModel role, int firstResult, int maxResults);
 
     /**
-     * Called when importing user from LDAP to local keycloak DB.
+     * 从 LDAP 导入用户到本地 Keycloak 数据库时调用。
      *
      * @param ldapUser
      * @param user
      * @param realm
-     * @param isCreate true if we importing new user from LDAP. False if user already exists in Keycloak, but we are upgrading (syncing) it from LDAP
+     * @param isCreate true 表示首次从 LDAP 导入；false 表示用户已存在，正在从 LDAP 升级/同步
      */
     void onImportUserFromLDAP(LDAPObject ldapUser, UserModel user, RealmModel realm, boolean isCreate);
 
 
     /**
-     * Called when register new user to LDAP - just after user was created in Keycloak DB
+     * 用户已在 Keycloak DB 创建、即将写入 LDAP 时调用。
      *
      * @param ldapUser
      * @param localUser
@@ -87,22 +87,21 @@ public interface LDAPStorageMapper extends Provider {
     void onRegisterUserToLDAP(LDAPObject ldapUser, UserModel localUser, RealmModel realm);
 
     /**
-     * Method that returns the mandatory attributes that this mapper imposes
-     * on the entry.
+     * 返回此映射器要求 LDAP 条目必须包含的属性名集合。
      *
-     * @return The list of mandatory attributes or null
+     * @return 必填属性列表，或 null
      */
     Set<String> mandatoryAttributeNames();
 
     /**
-     * Method that returns user model attributes, which this mapper maps to Keycloak users
+     * 返回此映射器映射到 Keycloak 用户的用户模型属性名集合。
      *
-     * @return user model attributes. Returns empty set if not user attributes provided by this mapper. Never returns null.
+     * @return 用户属性集合；无属性时返回空集，永不为 null
      */
     Set<String> getUserAttributes();
 
     /**
-     * Called when invoke proxy on LDAP federation provider
+     * 为 LDAP 联邦用户提供用户代理，可在读取/写入时注入映射逻辑。
      *
      * @param ldapUser
      * @param delegate
@@ -113,24 +112,24 @@ public interface LDAPStorageMapper extends Provider {
 
 
     /**
-     * Called before LDAP Identity query for retrieve LDAP users was executed. It allows to change query somehow (add returning attributes from LDAP, change conditions etc)
+     * 执行 LDAP 用户查询前调用，可修改返回属性、查询条件等。
      *
      * @param query
      */
     void beforeLDAPQuery(LDAPQuery query);
 
     /**
-     * Called when LDAP authentication of specified user fails. If any mapper returns true from this method, AuthenticationException won't be rethrown!
+     * 指定用户 LDAP 认证失败时调用。若任一映射器返回 true，则不再重新抛出 {@link AuthenticationException}。
      *
      * @param user
      * @param ldapUser
      * @param ldapException
-     * @return true if mapper processed the AuthenticationException and did some actions based on that. In that case, AuthenticationException won't be rethrown!
+     * @return true 表示映射器已处理异常；此时不会重新抛出 AuthenticationException
      */
     boolean onAuthenticationFailure(LDAPObject ldapUser, UserModel user, AuthenticationException ldapException, RealmModel realm);
 
     /**
-     * Gets the ldap provider associated to the mapper.
+     * 获取与此映射器关联的 LDAP 联邦提供者。
      *
      * @return
      */

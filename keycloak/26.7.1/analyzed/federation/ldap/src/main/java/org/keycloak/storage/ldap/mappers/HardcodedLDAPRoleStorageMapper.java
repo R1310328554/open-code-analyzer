@@ -34,12 +34,15 @@ import org.keycloak.storage.ldap.idm.query.internal.LDAPQuery;
 import org.jboss.logging.Logger;
 
 /**
+ * 硬编码 LDAP 角色映射器：从 LDAP 导入的用户通过代理自动拥有配置的 Keycloak 角色。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class HardcodedLDAPRoleStorageMapper extends AbstractLDAPStorageMapper {
 
     private static final Logger logger = Logger.getLogger(HardcodedLDAPRoleStorageMapper.class);
 
+    /** 配置键：要授予的角色（领域或 client.role 格式）。 */
     public static final String ROLE = "role";
 
     public HardcodedLDAPRoleStorageMapper(ComponentModel mapperModel, LDAPStorageProvider ldapProvider) {
@@ -50,6 +53,7 @@ public class HardcodedLDAPRoleStorageMapper extends AbstractLDAPStorageMapper {
     public void beforeLDAPQuery(LDAPQuery query) {
     }
 
+    /** 扩展用户代理，使其角色映射始终包含配置的硬编码角色。 */
     @Override
     public UserModel proxy(LDAPObject ldapUser, UserModel delegate, RealmModel realm) {
         return new UserModelDelegate(delegate) {
@@ -122,6 +126,7 @@ public class HardcodedLDAPRoleStorageMapper extends AbstractLDAPStorageMapper {
 
     }
 
+    /** 按配置解析硬编码角色；角色不存在时记录警告。 */
     private RoleModel getRole(RealmModel realm) {
         String roleName = mapperModel.getConfig().getFirst(HardcodedLDAPRoleStorageMapper.ROLE);
         RoleModel role = KeycloakModelUtils.getRoleFromString(ldapProvider.getSession(), realm, roleName);
