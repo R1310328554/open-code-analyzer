@@ -15,23 +15,8 @@
     "test-framework/core/src/main/java/org/keycloak/testframework/github/GitHubActionReport.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/http/HttpClientSupplier.java",
     "test-framework/core/src/main/java/org/keycloak/testframework/http/HttpServerSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/http/SimpleHttpSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/https/CertificatesConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/https/CertificatesConfigBuilder.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/https/CertificatesSupplier.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/https/DefaultCertificatesConfig.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/https/InjectCertificates.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/https/ManagedCertificates.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/https/ManagedCertificatesException.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/infinispan/CacheType.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/infinispan/InfinispanServer.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/AbstractInterceptorHelper.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/AnnotationFields.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/DefaultAnnotationProxy.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/DependenciesBuilder.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/Dependency.java",
-    "test-framework/core/src/main/java/org/keycloak/testframework/injection/DependencyGraphResolver.java"
+    "test-framework/core/src/main/java/org/keycloak/testframework/http/SimpleHttpSupplier.java"
   ],
   "remaining_pending": 418,
-  "done": 5550
+  "done": 5565
 }
