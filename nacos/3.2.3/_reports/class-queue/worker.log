@@ -1438,3 +1438,18 @@
 2026-08-10T03:51:17Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/RemoteServerConnector.java nacos wave47a [0:15] console noop/remote handlers
 2026-08-10T03:51:17Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/ServerStateRemoteHandler.java nacos wave47a [0:15] console noop/remote handlers
 2026-08-10T03:51:17Z DONE console/src/main/java/com/alibaba/nacos/console/handler/impl/remote/ai/A2aRemoteHandler.java nacos wave47a [0:15] console noop/remote handlers
+2026-08-10T03:52:52Z DONE console/src/main/java/com/alibaba/nacos/console/proxy/core/PluginProxy.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE console/src/main/java/com/alibaba/nacos/console/proxy/naming/InstanceProxy.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE console/src/main/java/com/alibaba/nacos/console/proxy/naming/ServiceProxy.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/adapter/StreamResponseCallback.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/capability/prompt/PromptOptimizationPrompt.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/capability/prompt/SkillGenerationPrompt.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/capability/prompt/SkillOptimizationPrompt.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotAgentManager.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotConfigStorage.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotConfiguration.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotModuleStateBuilder.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotProperties.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/constant/CopilotConstants.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/form/PromptDebugForm.java nacos wave48b [15:30] console proxies + copilot
+2026-08-10T03:52:52Z DONE copilot/src/main/java/com/alibaba/nacos/copilot/form/PromptOptimizationForm.java nacos wave48b [15:30] console proxies + copilot

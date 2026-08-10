@@ -15,23 +15,8 @@
     "console/src/main/java/com/alibaba/nacos/console/proxy/config/ConfigProxy.java",
     "console/src/main/java/com/alibaba/nacos/console/proxy/config/HistoryProxy.java",
     "console/src/main/java/com/alibaba/nacos/console/proxy/core/ClusterProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/core/NamespaceProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/core/PluginProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/naming/InstanceProxy.java",
-    "console/src/main/java/com/alibaba/nacos/console/proxy/naming/ServiceProxy.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/adapter/StreamResponseCallback.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/capability/prompt/PromptOptimizationPrompt.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/capability/prompt/SkillGenerationPrompt.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/capability/prompt/SkillOptimizationPrompt.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotAgentManager.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotConfigStorage.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotConfiguration.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotModuleStateBuilder.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/config/CopilotProperties.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/constant/CopilotConstants.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/form/PromptDebugForm.java",
-    "copilot/src/main/java/com/alibaba/nacos/copilot/form/PromptOptimizationForm.java"
+    "console/src/main/java/com/alibaba/nacos/console/proxy/core/NamespaceProxy.java"
   ],
   "remaining_pending": 1097,
-  "done": 1410
+  "done": 1425
 }
