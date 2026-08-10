@@ -1,5 +1,7 @@
 package limits
 
+// limits 包 validation 在查询入口校验 matcher 数量、时间范围与内部聚合/模式 stream 访问权限。
+
 import (
 	"context"
 	"fmt"
@@ -20,6 +22,7 @@ import (
 )
 
 var nowFunc = func() time.Time { return time.Now() }
+// ErrInternalStreamsDrilldownOnly 表示 __aggregated_metric__/__pattern__ 仅 Logs Drilldown 可访问。
 var ErrInternalStreamsDrilldownOnly = fmt.Errorf("internal streams can only be queried from Logs Drilldown")
 
 func ValidateQueryRequest(ctx context.Context, req logql.QueryParams, limits Limits) (time.Time, time.Time, error) {
@@ -43,6 +46,7 @@ func ValidateQueryRequest(ctx context.Context, req logql.QueryParams, limits Lim
 	return ValidateQueryTimeRangeLimits(ctx, userID, limits, req.GetStart(), req.GetEnd())
 }
 
+// ValidateAggregatedMetricQuery 非 Drilldown 请求访问内部 stream 时返回 ErrInternalStreamsDrilldownOnly。
 // ValidateAggregatedMetricQuery checks if the query is accessing __aggregated_metric__ or __pattern__ streams
 // and ensures that only queries from Grafana Explore Logs can access them.
 func ValidateAggregatedMetricQuery(ctx context.Context, req logql.QueryParams) error {
@@ -72,6 +76,7 @@ func ValidateAggregatedMetricQuery(ctx context.Context, req logql.QueryParams) e
 	return ErrInternalStreamsDrilldownOnly
 }
 
+// ValidateQueryTimeRangeLimits 按 max lookback 钳制 from，拒绝超长或 end<start 的区间。
 func ValidateQueryTimeRangeLimits(ctx context.Context, userID string, limits TimeRangeLimits, from, through time.Time) (time.Time, time.Time, error) {
 	now := nowFunc()
 	// Clamp the time range based on the max query lookback.
@@ -95,3 +100,4 @@ func ValidateQueryTimeRangeLimits(ctx context.Context, userID string, limits Tim
 	}
 	return from, through, nil
 }
+// nowFunc 可测试替换，用于 max query lookback 对起始时间的钳制逻辑。

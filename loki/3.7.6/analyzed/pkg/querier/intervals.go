@@ -1,5 +1,7 @@
 package querier
 
+// querier 包 intervals 根据 IngesterQueryStoreMaxLookback 与 QueryIngestersWithin 将查询时间轴拆分为 ingester 与 store 两段区间。
+
 import "time"
 
 type QueryInterval struct {
@@ -78,6 +80,7 @@ func BuildQueryIntervalsWithLookback(cfg Config, queryStart, queryEnd time.Time,
 	return ingesterQueryInterval, storeQueryInterval
 }
 
+// calculateIngesterMaxLookbackPeriod 优先 IngesterQueryStoreMaxLookback，否则 queryIngestersWithin；-1 表示全量查 ingester。
 func calculateIngesterMaxLookbackPeriod(cfg Config, queryIngestersWithin time.Duration) time.Duration {
 	mlb := time.Duration(-1)
 	if cfg.IngesterQueryStoreMaxLookback != 0 {
@@ -90,6 +93,7 @@ func calculateIngesterMaxLookbackPeriod(cfg Config, queryIngestersWithin time.Du
 	return mlb
 }
 
+// isWithinIngesterMaxLookbackPeriod 判断 queryEnd 是否落在 ingester 可查回溯窗口内。
 func isWithinIngesterMaxLookbackPeriod(maxLookback time.Duration, queryEnd time.Time) bool {
 	// if no lookback limits are configured, always consider this within the range of the lookback period
 	if maxLookback <= 0 {
@@ -102,3 +106,4 @@ func isWithinIngesterMaxLookbackPeriod(maxLookback time.Duration, queryEnd time.
 	// ...and if the query range ends before that, don't query the ingester
 	return queryEnd.After(ingesterOldestStartTime)
 }
+// limitQueryInterval 为 true 时 store 查询止于 ingester 最老可查时间点，避免重复扫描。

@@ -1,5 +1,7 @@
 package querier
 
+// querier 包核心实现 SingleTenantQuerier：协调 store 与 ingester 查询区间、删除过滤、Label/Series/Stats/Volume/Patterns 等元数据 API。
+
 import (
 	"context"
 	"flag"
@@ -49,6 +51,7 @@ import (
 
 var tracer = otel.Tracer("pkg/querier")
 
+// Config 含 tail 时长、ingester/store 互斥开关、引擎选项与 partition ingester 实验标志。
 // Config for a querier.
 type Config struct {
 	TailMaxDuration           time.Duration    `yaml:"tail_max_duration"`
@@ -66,6 +69,7 @@ type Config struct {
 	QueryPatternIngestersWithin   time.Duration `yaml:"-"`
 }
 
+// RegisterFlagsWithPrefix 注册 querier.* CLI 标志并 Validate 互斥 query_store/query_ingester_only。
 // RegisterFlags register flags.
 func (cfg *Config) RegisterFlags(f *flag.FlagSet) {
 	cfg.RegisterFlagsWithPrefix("querier.", f)
@@ -93,6 +97,7 @@ func (cfg *Config) Validate() error {
 }
 
 // Querier can select logs and samples and handle query requests.
+// Querier 扩展 logql.Querier，增加 Label/Series/IndexStats/Shards/Volume/DetectedFields/Patterns 等。
 type Querier interface {
 	logql.Querier
 	Label(ctx context.Context, req *logproto.LabelRequest) (*logproto.LabelResponse, error)
@@ -107,6 +112,7 @@ type Querier interface {
 }
 
 // Store is the store interface we need on the querier.
+// Store 抽象持久化层：SelectLogs/Samples/Series、标签查询、Stats/Volume/GetShards。
 type Store interface {
 	SelectSamples(ctx context.Context, req logql.SelectSampleParams) (iter.SampleIterator, error)
 	SelectLogs(ctx context.Context, req logql.SelectLogParams) (iter.EntryIterator, error)
@@ -125,6 +131,7 @@ type Store interface {
 }
 
 // SingleTenantQuerier handles single tenant queries.
+// SingleTenantQuerier 组合 cfg、store、ingesterQuerier、patternQuerier、deleteGetter 与 limits。
 type SingleTenantQuerier struct {
 	cfg             Config
 	store           Store
@@ -149,6 +156,7 @@ func New(cfg Config, store Store, ingesterQuerier *IngesterQuerier, limits queri
 	return q, nil
 }
 
+// SelectLogs 校验 limits 与 deletes，buildQueryIntervals 后并行查 ingester 与 store 再 Merge。
 // Select Implements logql.Querier which select logs via matchers and regex filters.
 func (q *SingleTenantQuerier) SelectLogs(ctx context.Context, params logql.SelectLogParams) (iter.EntryIterator, error) {
 	// Create a new partition context for the query
@@ -216,6 +224,7 @@ func (q *SingleTenantQuerier) SelectLogs(ctx context.Context, params logql.Selec
 	return iter.NewMergeEntryIterator(ctx, iters, params.Direction), nil
 }
 
+// SelectSamples 与 SelectLogs 类似拆分区间，合并 SampleIterator。
 func (q *SingleTenantQuerier) SelectSamples(ctx context.Context, params logql.SelectSampleParams) (iter.SampleIterator, error) {
 	// Create a new partition context for the query
 	// This is used to track which ingesters were used in the query and reuse the same ingesters for consecutive queries
@@ -1226,3 +1235,4 @@ func streamsForFieldDetection(i iter.EntryIterator, size uint32) (logqlmodel.Str
 	sort.Sort(result)
 	return result, i.Err()
 }
+// NewPartitionContext 在 SelectLogs/Samples 入口创建，供 partition ingester 查询复用连接。

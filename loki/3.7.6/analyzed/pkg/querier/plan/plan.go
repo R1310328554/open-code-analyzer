@@ -1,5 +1,7 @@
 package plan
 
+// plan 包 QueryPlan 封装 LogQL AST，提供 JSON/protobuf 序列化、Equal/Hash 供 query-frontend 缓存与分片。
+
 import (
 	"bytes"
 
@@ -51,6 +53,7 @@ func (t QueryPlan) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnmarshalJSON 空 data 兼容旧版；否则 syntax.DecodeJSON 还原 AST。
 func (t *QueryPlan) UnmarshalJSON(data []byte) error {
 	// An empty query plan is ingored to be backwards compatible.
 	if len(data) == 0 {
@@ -66,6 +69,7 @@ func (t *QueryPlan) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Equal 比较双方 Marshal 字节是否相等。
 func (t QueryPlan) Equal(other QueryPlan) bool {
 	left, err := t.Marshal()
 	if err != nil {
@@ -86,6 +90,7 @@ func (t QueryPlan) String() string {
 	return t.AST.String()
 }
 
+// Hash 对 AST 字符串做 HashedQuery，nil AST 返回 0。
 func (t *QueryPlan) Hash() uint32 {
 	if t.AST == nil {
 		return 0
@@ -93,6 +98,7 @@ func (t *QueryPlan) Hash() uint32 {
 	return util.HashedQuery(t.AST.String())
 }
 
+// countWriter/appendWriter 辅助 Size/MarshalTo 预分配与追加写入。
 // countWriter is not writing any bytes. It just counts the bytes that would be
 // written.
 type countWriter struct {
@@ -114,3 +120,4 @@ func (w *appendWriter) Write(p []byte) (int, error) {
 	w.slice = append(w.slice, p...)
 	return len(p), nil
 }
+// QueryPlan.String 委托 AST.String，供日志与 span 属性展示人类可读 LogQL。

@@ -1,5 +1,7 @@
 package querier
 
+// querier 包 multi_tenant_querier 在启用 multi-tenant 时对多个 org 并行查询，注入 __tenant_id__ 标签并合并迭代器/响应。
+
 import (
 	"context"
 	"fmt"
@@ -31,6 +33,7 @@ const (
 	retainExistingPrefix = "original_"
 )
 
+// MultiTenantQuerier 包装 Querier，单租户时直接委托，多租户时 fan-out 再合并。
 // MultiTenantQuerier is able to query across different tenants.
 type MultiTenantQuerier struct {
 	Querier
@@ -45,6 +48,7 @@ func NewMultiTenantQuerier(querier Querier, logger log.Logger) *MultiTenantQueri
 	}
 }
 
+// SelectLogs 过滤 __tenant_id__ matcher，按租户 SelectLogs 后 NewSortEntryIterator 合并。
 func (q *MultiTenantQuerier) SelectLogs(ctx context.Context, params logql.SelectLogParams) (iter.EntryIterator, error) {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -98,6 +102,7 @@ func (q *MultiTenantQuerier) SelectLogs(ctx context.Context, params logql.Select
 	return iter.NewSortEntryIterator(iters, params.Direction), nil
 }
 
+// SelectSamples 多租户路径移除 tenant selector，partitionChunkRefsByTenant 拆分 store override。
 func (q *MultiTenantQuerier) SelectSamples(ctx context.Context, params logql.SelectSampleParams) (iter.SampleIterator, error) {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -141,6 +146,7 @@ func (q *MultiTenantQuerier) SelectSamples(ctx context.Context, params logql.Sel
 	return iter.NewSortSampleIterator(iters), nil
 }
 
+// Label 多租户合并 LabelResponse；查询 __tenant_id__ 标签值时直接返回 tenantIDs 列表。
 func (q *MultiTenantQuerier) Label(ctx context.Context, req *logproto.LabelRequest) (*logproto.LabelResponse, error) {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -174,6 +180,7 @@ func (q *MultiTenantQuerier) Label(ctx context.Context, req *logproto.LabelReque
 	return logproto.MergeLabelResponses(responses)
 }
 
+// Series 为每条 series 追加 __tenant_id__ 标签后 logproto.MergeSeriesResponses。
 func (q *MultiTenantQuerier) Series(ctx context.Context, req *logproto.SeriesRequest) (*logproto.SeriesResponse, error) {
 	tenantIDs, err := tenant.TenantIDs(ctx)
 	if err != nil {
@@ -532,3 +539,4 @@ func partitionChunkRefsByTenant(refs []*logproto.ChunkRef) map[string][]*logprot
 	}
 	return filtered
 }
+// defaultTenantLabel=__tenant_id__，retainExistingPrefix 用于保留原始标签前缀的 matcher 变换。

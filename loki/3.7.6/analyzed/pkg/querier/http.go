@@ -1,5 +1,7 @@
 package querier
 
+// querier 包 http 实现 QuerierAPI：范围/即时 LogQL、标签/Series/Stats/分片/Volume/模式等 HTTP 入口，支持 v1/v2 引擎回退与聚合指标过滤。
+
 import (
 	"context"
 	"fmt"
@@ -52,6 +54,7 @@ type QueryResponse struct {
 }
 
 // nolint // QuerierAPI defines HTTP handler functions for the querier.
+// QuerierAPI 聚合 Querier、双引擎配置、limits 与 logger。
 type QuerierAPI struct {
 	querier  Querier
 	cfgV1    Config        // current/legacy engine config
@@ -62,6 +65,7 @@ type QuerierAPI struct {
 	logger   log.Logger
 }
 
+// NewQuerierAPI 初始化 engineV1，cfgV2.Enable 时构造 dataobj 引擎 engineV2。
 // NewQuerierAPI returns an instance of the QuerierAPI.
 func NewQuerierAPI(v1Cfg Config, v2Cfg engine.Config, ms metastore.Metastore, querier Querier, limits querier_limits.Limits, store objstore.Bucket, reg prometheus.Registerer, logger log.Logger) *QuerierAPI {
 	q := &QuerierAPI{
@@ -80,6 +84,7 @@ func NewQuerierAPI(v1Cfg Config, v2Cfg engine.Config, ms metastore.Metastore, qu
 	return q
 }
 
+// RangeQueryHandler 校验 max entries，优先 v2 引擎，ErrNotSupported 时回退 v1。
 // RangeQueryHandler is a http.HandlerFunc for range queries and legacy log queries
 func (q *QuerierAPI) RangeQueryHandler(ctx context.Context, req *queryrange.LokiRequest) (logqlmodel.Result, error) {
 	var result logqlmodel.Result
@@ -111,6 +116,7 @@ func (q *QuerierAPI) RangeQueryHandler(ctx context.Context, req *queryrange.Loki
 	return query.Exec(ctx)
 }
 
+// hasDataObjectsAvailable 判断查询区间是否在 data object 可用滞后窗口内。
 func hasDataObjectsAvailable(config engine.Config, start, end time.Time) bool {
 	// Data objects in object storage lag behind 20-30 minutes.
 	// We are generous and only enable v2 engine queries that end earlier than 1DataObjStorageLag ago (default 1h),
@@ -119,6 +125,7 @@ func hasDataObjectsAvailable(config engine.Config, start, end time.Time) bool {
 	return end.Before(v2End) && start.After(v2Start)
 }
 
+// InstantQueryHandler 拒绝纯日志选择器，同样 v2 优先、失败回退 v1。
 // InstantQueryHandler is a http.HandlerFunc for instant queries.
 func (q *QuerierAPI) InstantQueryHandler(ctx context.Context, req *queryrange.LokiInstantRequest) (logqlmodel.Result, error) {
 	// do not allow log selector expression (aka log query) as instant query
@@ -154,6 +161,7 @@ func (q *QuerierAPI) InstantQueryHandler(ctx context.Context, req *queryrange.Lo
 	return query.Exec(ctx)
 }
 
+// LabelHandler 调用 querier.Label，可选过滤 __aggregated_metric__/__pattern__ 标签名。
 // LabelHandler is a http.HandlerFunc for handling label queries.
 func (q *QuerierAPI) LabelHandler(ctx context.Context, req *logproto.LabelRequest) (*logproto.LabelResponse, error) {
 	timer := prometheus.NewTimer(logql.QueryTime.WithLabelValues(logql.QueryTypeLabels))
@@ -191,6 +199,7 @@ func (q *QuerierAPI) metricAggregationEnabled(ctx context.Context) bool {
 	return q.limits.MetricAggregationEnabled(orgID)
 }
 
+// SeriesHandler 在 matcher 组注入聚合/模式排除规则，响应侧再过滤空 matcher 场景。
 // SeriesHandler returns the list of time series that match a certain label set.
 // See https://prometheus.io/docs/prometheus/latest/querying/api/#finding-series-by-label-matchers
 func (q *QuerierAPI) SeriesHandler(ctx context.Context, req *logproto.SeriesRequest) (*logproto.SeriesResponse, stats.Result, error) {
@@ -236,6 +245,7 @@ func (q *QuerierAPI) SeriesHandler(ctx context.Context, req *logproto.SeriesRequ
 	return resp, statResult, err
 }
 
+// IndexStatsHandler 查询索引统计，记录 stats 与 queue time 指标。
 // IndexStatsHandler queries the index for the data statistics related to a query
 func (q *QuerierAPI) IndexStatsHandler(ctx context.Context, req *loghttp.RangeQuery) (*logproto.IndexStatsResponse, error) {
 	timer := prometheus.NewTimer(logql.QueryTime.WithLabelValues(logql.QueryTypeStats))
@@ -262,6 +272,7 @@ func (q *QuerierAPI) IndexStatsHandler(ctx context.Context, req *loghttp.RangeQu
 	return resp, err
 }
 
+// IndexShardsHandler 按 targetBytesPerShard 计算 TSDB 查询分片建议。
 func (q *QuerierAPI) IndexShardsHandler(ctx context.Context, req *loghttp.RangeQuery, targetBytesPerShard uint64) (*logproto.ShardsResponse, error) {
 	timer := prometheus.NewTimer(logql.QueryTime.WithLabelValues(logql.QueryTypeShards))
 	defer timer.ObserveDuration()
@@ -293,6 +304,7 @@ func (q *QuerierAPI) IndexShardsHandler(ctx context.Context, req *loghttp.RangeQ
 
 // TODO(trevorwhitney): add test for the handler split
 
+// VolumeHandler 返回标签体积时序或单值汇总，部分 store 未实现时返回空 volumes。
 // VolumeHandler queries the index label volumes related to the passed matchers and given time range.
 // Returns either N values where N is the time range / step and a single value for a time range depending on the request.
 func (q *QuerierAPI) VolumeHandler(ctx context.Context, req *logproto.VolumeRequest) (*logproto.VolumeResponse, error) {
@@ -321,6 +333,7 @@ func (q *QuerierAPI) VolumeHandler(ctx context.Context, req *logproto.VolumeRequ
 	return resp, nil
 }
 
+// filterAggregatedMetrics 为每组 matcher 追加空值 __aggregated_metric__/__pattern__ 排除规则。
 // filterAggregatedMetrics adds a matcher to exclude aggregated metrics and patterns unless explicitly requested
 func (q *QuerierAPI) filterAggregatedMetrics(groups []string) ([]string, bool, error) {
 	// cannot add filter to an empty matcher set
@@ -425,6 +438,7 @@ func (q *QuerierAPI) DetectedFieldsHandler(ctx context.Context, req *logproto.De
 	return resp, nil
 }
 
+// asyncPatternResponses 并发收集 ingester 与 store 模式查询结果，mutex 保护 append。
 type asyncPatternResponses struct {
 	responses []*logproto.QueryPatternsResponse
 	lock      sync.Mutex
@@ -449,6 +463,7 @@ func (r *asyncPatternResponses) len() int {
 	return len(r.responses)
 }
 
+// PatternsHandler 按 BuildQueryIntervalsWithLookback 拆分 ingester/store，errgroup 并行后 Merge。
 func (q *QuerierAPI) PatternsHandler(ctx context.Context, req *logproto.QueryPatternsRequest) (*logproto.QueryPatternsResponse, error) {
 	// Calculate query intervals for ingester vs store
 	ingesterQueryInterval, storeQueryInterval := BuildQueryIntervalsWithLookback(q.cfgV1, req.Start, req.End, q.cfgV1.QueryPatternIngestersWithin)
@@ -518,6 +533,7 @@ func (q *QuerierAPI) PatternsHandler(ctx context.Context, req *logproto.QueryPat
 	return pattern.MergePatternResponses(responses.get()), nil
 }
 
+// queryStoreForPatterns 用 LogQL 引擎读持久化 logfmt 模式行，解析为 PatternSeries。
 func (q *QuerierAPI) queryStoreForPatterns(ctx context.Context, req *logproto.QueryPatternsRequest) (*logproto.QueryPatternsResponse, error) {
 	params, err := queryrange.ParamsFromRequest(req)
 	if err != nil {
@@ -649,6 +665,7 @@ func (q *QuerierAPI) DetectedLabelsHandler(ctx context.Context, req *logproto.De
 	return resp, nil
 }
 
+// WrapQuerySpanAndTimeout 中间件：多租户取最小 query timeout，WithTimeoutCause 包裹 handler。
 // WrapQuerySpanAndTimeout applies a context deadline and a span logger to a query call.
 //
 // The timeout is based on the per-tenant query timeout configuration.
@@ -678,3 +695,4 @@ func WrapQuerySpanAndTimeout(call string, limits querier_limits.Limits) middlewa
 		})
 	})
 }
+// validateMaxEntriesLimits 对非 SampleExpr 日志查询强制执行 MaxEntriesLimitPerQuery。

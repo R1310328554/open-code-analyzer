@@ -1,5 +1,7 @@
 package pattern
 
+// pattern 包 querier 定义 PatterQuerier 接口及 MergePatternResponses，合并多源模式查询 Series。
+
 import (
 	"context"
 	"sort"
@@ -11,6 +13,7 @@ type PatterQuerier interface {
 	Patterns(ctx context.Context, req *logproto.QueryPatternsRequest) (*logproto.QueryPatternsResponse, error)
 }
 
+// MergePatternResponses 按 pattern 字符串合并样本，各 series 内按 Timestamp 排序。
 func MergePatternResponses(responses []*logproto.QueryPatternsResponse) *logproto.QueryPatternsResponse {
 	if len(responses) == 0 {
 		return &logproto.QueryPatternsResponse{
@@ -57,3 +60,4 @@ func MergePatternResponses(responses []*logproto.QueryPatternsResponse) *logprot
 
 	return result
 }
+// 空或单响应快速返回，map 键为 pattern 文本以去重跨 ingester 的重复模式。

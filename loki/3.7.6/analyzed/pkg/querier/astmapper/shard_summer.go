@@ -1,5 +1,7 @@
 package astmapper
 
+// astmapper 包 shard_summer 将可并行的 sum 查询按 TSDB 分片展开，注入 __cortex_shard__ 标签后由 squasher 合并子查询。
+
 import (
 	"fmt"
 	"regexp"
@@ -16,6 +18,7 @@ import (
 )
 
 const (
+// ShardLabel 为 Cortex/Loki 分片保留标签，值为 N_of_M 格式。
 	// ShardLabel is a reserved label referencing a cortex shard
 	ShardLabel = "__cortex_shard__"
 	// ShardLabelFmt is the fmt of the ShardLabel key.
@@ -29,6 +32,7 @@ var (
 
 type squasher = func(...parser.Node) (parser.Expr, error)
 
+// shardSummer 持有分片数、当前分片指针、squash 回调与 shardedQueries 指标。
 type shardSummer struct {
 	shards       int
 	currentShard *int
@@ -38,6 +42,7 @@ type shardSummer struct {
 	shardedQueries prometheus.Counter
 }
 
+// NewShardSummer 构造 ASTMapper，对 SUM 聚合与 Vector/MatrixSelector 注入分片 matcher。
 // NewShardSummer instantiates an ASTMapper which will fan out sum queries by shard
 func NewShardSummer(shards int, squasher squasher, shardedQueries prometheus.Counter) (ASTMapper, error) {
 	if squasher == nil {
@@ -59,6 +64,7 @@ func (summer *shardSummer) CopyWithCurShard(curshard int) *shardSummer {
 	return &s
 }
 
+// MapNode 在 SUM 聚合且 CanParallelize 时调用 shardSum，否则透传节点。
 // shardSummer expands a query AST by sharding and re-summing when possible
 func (summer *shardSummer) MapNode(node parser.Node) (parser.Node, bool, error) {
 
@@ -90,6 +96,7 @@ func (summer *shardSummer) MapNode(node parser.Node) (parser.Node, bool, error) 
 	}
 }
 
+// shardSum 经 splitSum 生成子 sum  legs，squash 合并后挂回父 AggregateExpr。
 // shardSum contains the logic for how we split/stitch legs of a parallelized sum query
 func (summer *shardSummer) shardSum(expr *parser.AggregateExpr) (parser.Node, error) {
 
@@ -108,6 +115,7 @@ func (summer *shardSummer) shardSum(expr *parser.AggregateExpr) (parser.Node, er
 	return parent, nil
 }
 
+// splitSum 按 without/by 分组策略构造父聚合与子分片 sum，并 recordShards。
 // splitSum forms the parent and child legs of a parallel query
 func (summer *shardSummer) splitSum(
 	expr *parser.AggregateExpr,
@@ -217,6 +225,7 @@ func (summer *shardSummer) recordShards(_ float64) {
 	}
 }
 
+// shardVectorSelector 为 VectorSelector 追加 __cortex_shard__=curshard_of_shards 等值 matcher。
 func shardVectorSelector(curshard, shards int, selector *parser.VectorSelector) (parser.Node, error) {
 	shardMatcher, err := labels.NewMatcher(labels.MatchEqual, ShardLabel, fmt.Sprintf(ShardLabelFmt, curshard, shards))
 	if err != nil {
@@ -258,6 +267,7 @@ func shardMatrixSelector(curshard, shards int, selector *parser.MatrixSelector) 
 	return nil, fmt.Errorf("invalid selector type: %T", selector.VectorSelector)
 }
 
+// ParseShard 解析分片标签值，校验下标小于总数。
 // ParseShard will extract the shard information encoded in ShardLabelFmt
 func ParseShard(input string) (parsed ShardAnnotation, err error) {
 	if !ShardLabelRE.MatchString(input) {
@@ -284,6 +294,7 @@ func ParseShard(input string) (parsed ShardAnnotation, err error) {
 }
 
 // ShardAnnotation is a convenience struct which holds data from a parsed shard label
+// ShardAnnotation 封装 Shard/Of，提供 Match(fp)、Label() 与 TSDB() 转换。
 type ShardAnnotation struct {
 	Shard int
 	Of    int
@@ -310,6 +321,7 @@ func (shard ShardAnnotation) TSDB() index.ShardAnnotation {
 	return index.NewShard(uint32(shard.Shard), uint32(shard.Of))
 }
 
+// ShardFromMatchers 从 matcher 列表提取分片注解及其索引。
 // ShardFromMatchers extracts a ShardAnnotation and the index it was pulled from in the matcher list
 func ShardFromMatchers(matchers []*labels.Matcher) (shard *ShardAnnotation, idx int, err error) {
 	for i, matcher := range matchers {
@@ -323,3 +335,4 @@ func ShardFromMatchers(matchers []*labels.Matcher) (shard *ShardAnnotation, idx 
 	}
 	return nil, 0, nil
 }
+// ShardAnnotation.Match 用 fingerprint 取模判断是否属于当前分片。

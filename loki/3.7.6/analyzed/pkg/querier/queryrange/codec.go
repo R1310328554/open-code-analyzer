@@ -1,5 +1,7 @@
 package queryrange
 
+// queryrange 包 codec 实现 Loki 与 query-frontend 间的 HTTP/gRPC 编解码、请求克隆、缓存键与多子响应 MergeResponse。
+
 import (
 	"bytes"
 	"container/heap"
@@ -51,6 +53,7 @@ const (
 	noCacheVal         = "no-cache"
 )
 
+// DefaultCodec 为全局 Codec 单例，Handler 与 middleware 共用。
 var DefaultCodec = &Codec{}
 
 type Codec struct{}
@@ -74,6 +77,7 @@ func (r *LokiRequest) WithStartEnd(s time.Time, e time.Time) queryrangebase.Requ
 	return &clone
 }
 
+// LokiRequest/LokiInstantRequest WithStartEndForCache 供 results cache 调整时间边界。
 // WithStartEndForCache implements resultscache.Request.
 func (r *LokiRequest) WithStartEndForCache(s time.Time, e time.Time) resultscache.Request {
 	return r.WithStartEnd(s, e).(resultscache.Request)
@@ -329,6 +333,7 @@ func (*DetectedLabelsRequest) GetCachingOptions() (res queryrangebase.CachingOpt
 	return
 }
 
+// DecodeRequest 解析 HTTP 查询参数为 LokiRequest/LokiInstantRequest 等具体类型。
 func (Codec) DecodeRequest(_ context.Context, r *http.Request, _ []string) (queryrangebase.Request, error) {
 	if err := r.ParseForm(); err != nil {
 		return nil, httpgrpc.Errorf(http.StatusBadRequest, "%s", err.Error())
@@ -479,6 +484,7 @@ func (Codec) DecodeRequest(_ context.Context, r *http.Request, _ []string) (quer
 var labelNamesRoutes = regexp.MustCompile(`/loki/api/v1/label/(?P<name>[^/]+)/values`)
 
 // DecodeHTTPGrpcRequest decodes an httpgrp.HTTPRequest to queryrangebase.Request.
+// DecodeHTTPGrpcRequest 从 httpgrpc 请求体/头还原 queryrange Request 并传播 trace context。
 func (Codec) DecodeHTTPGrpcRequest(ctx context.Context, r *httpgrpc.HTTPRequest) (queryrangebase.Request, context.Context, error) {
 	httpReq, err := http.NewRequest(r.Method, r.Url, io.NopCloser(bytes.NewBuffer(r.Body)))
 	if err != nil {
@@ -1286,6 +1292,7 @@ func decodeResponseProtobuf(r *http.Response, req queryrangebase.Request) (query
 	}
 }
 
+// EncodeResponse 将 queryrange Response 序列化为 Loki JSON/Protobuf HTTP 响应。
 func (Codec) EncodeResponse(ctx context.Context, req *http.Request, res queryrangebase.Response) (*http.Response, error) {
 	if req.Header.Get("Accept") == ProtobufType {
 		return encodeResponseProtobuf(ctx, res)
@@ -1422,6 +1429,7 @@ func encodeResponseProtobuf(ctx context.Context, res queryrangebase.Response) (*
 }
 
 // NOTE: When we would start caching response from non-metric queries we would have to consider cache gen headers as well in
+// MergeResponse 按响应类型合并多个 frontend 子查询结果（矩阵/向量/streams 等）。
 // MergeResponse implementation for Loki codecs same as it is done in Cortex at https://github.com/cortexproject/cortex/blob/21bad57b346c730d684d6d0205efef133422ab28/pkg/querier/queryrange/query_range.go#L170
 func (Codec) MergeResponse(responses ...queryrangebase.Response) (queryrangebase.Response, error) {
 	if len(responses) == 0 {
@@ -2422,3 +2430,4 @@ func (r *DetectedFieldsRequest) LogToSpan(sp trace.Span) {
 }
 
 func (*DetectedFieldsRequest) GetCachingOptions() (res queryrangebase.CachingOptions) { return }
+// cacheControlHeader/noCacheVal 控制下游缓存行为，LabelRequest 等类型适配 queryrange 接口。

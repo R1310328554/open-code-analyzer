@@ -1,5 +1,7 @@
 package querier
 
+// querier 包 ingester_querier 通过 ring 客户端池并行 fan-out 到 ingester/partition-ingester，执行 Query/Label/Series/Tail 等 gRPC 并合并迭代器。
+
 import (
 	"context"
 	"net/http"
@@ -45,7 +47,9 @@ type responseFromIngesters struct {
 	response interface{}
 }
 
+// NewIngesterQuerier 用 clientpool.NewPool 创建连接池并 StartAndAwaitRunning。
 // IngesterQuerier helps with querying the ingesters.
+// IngesterQuerier 持有 ring、partitionRing、ingester 连接池与租户分片计数回调。
 type IngesterQuerier struct {
 	querierConfig          Config
 	ring                   ring.ReadRing
@@ -89,6 +93,7 @@ const (
 	partitionCtxKey ctxKeyType = "partitionCtx"
 )
 
+// PartitionContext 跟踪 partition 查询用过的 ingester 客户端，供后续查询复用。
 type PartitionContext struct {
 	isPartitioned bool
 	ingestersUsed map[string]PartitionIngesterUsed
@@ -146,6 +151,7 @@ func (p *PartitionContext) forQueriedIngesters(ctx context.Context, f func(conte
 	})
 }
 
+// NewPartitionContext 将 PartitionContext 存入 context，记录 isPartitioned 与 ingestersUsed。
 // NewPartitionContext creates a new partition context
 // This is used to track which ingesters were used in the query and reuse the same ingesters for consecutive queries
 func NewPartitionContext(ctx context.Context) context.Context {
@@ -164,6 +170,7 @@ func ExtractPartitionContext(ctx context.Context) *PartitionContext {
 	return v
 }
 
+// forAllIngesters 按 QueryPartitionIngesters 选 partition subring 或普通 Read 复制集。
 // forAllIngesters runs f, in parallel, for all ingesters
 func (q *IngesterQuerier) forAllIngesters(ctx context.Context, f func(context.Context, logproto.QuerierClient) (interface{}, error)) ([]responseFromIngesters, error) {
 	if q.querierConfig.QueryPartitionIngesters {
@@ -192,6 +199,7 @@ func (q *IngesterQuerier) forAllIngesters(ctx context.Context, f func(context.Co
 	return q.forGivenIngesters(ctx, replicationSet, defaultQuorumConfig, f)
 }
 
+// forGivenIngesterSets 对每个 replication set 调用 forGivenIngesters，MinimizeRequests 优先单 zone。
 // forGivenIngesterSets runs f, in parallel, for given ingester sets
 func (q *IngesterQuerier) forGivenIngesterSets(ctx context.Context, replicationSet []ring.ReplicationSet, f func(context.Context, logproto.QuerierClient) (interface{}, error)) ([]responseFromIngesters, error) {
 	// Enable minimize requests if we can, so we initially query a single ingester per replication set, as each replication-set is one partition.
@@ -204,6 +212,7 @@ func (q *IngesterQuerier) forGivenIngesterSets(ctx context.Context, replicationS
 	})
 }
 
+// forGivenIngesters 用 ring.DoUntilQuorum 拨号 pool 客户端，partition 模式下 AddClient 跟踪。
 // forGivenIngesters runs f, in parallel, for given ingesters until a quorum of responses are received
 func (q *IngesterQuerier) forGivenIngesters(ctx context.Context, replicationSet ring.ReplicationSet, quorumConfig ring.DoUntilQuorumConfig, f func(context.Context, logproto.QuerierClient) (interface{}, error)) ([]responseFromIngesters, error) {
 	results, err := ring.DoUntilQuorum(ctx, replicationSet, quorumConfig, func(ctx context.Context, ingester *ring.InstanceDesc) (responseFromIngesters, error) {
@@ -231,6 +240,7 @@ func (q *IngesterQuerier) forGivenIngesters(ctx context.Context, replicationSet 
 	return responses, err
 }
 
+// SelectLogs 对所有 ingester 并发 Query gRPC，返回 QueryClientIterator 切片。
 func (q *IngesterQuerier) SelectLogs(ctx context.Context, params logql.SelectLogParams) ([]iter.EntryIterator, error) {
 	resps, err := q.forAllIngesters(ctx, func(_ context.Context, client logproto.QuerierClient) (interface{}, error) {
 		stats.FromContext(ctx).AddIngesterReached(1)
@@ -561,3 +571,4 @@ func isUnimplementedCallError(err error) bool {
 	}
 	return (s.Code() == codes.Unimplemented)
 }
+// defaultQuorumConfig 为空配置，partition 路径启用 MinimizeRequests 减少冗余请求。

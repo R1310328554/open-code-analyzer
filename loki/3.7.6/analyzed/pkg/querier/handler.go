@@ -1,5 +1,7 @@
 package querier
 
+// querier 包 Handler 实现 queryrangebase.Handler，将各类 LokiRequest 分派到 QuerierAPI 并封装响应。
+
 import (
 	"context"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/querier/queryrange/queryrangebase"
 )
 
+// Handler 持有 QuerierAPI 指针，供 query-frontend 下游 RPC/HTTP 调用。
 type Handler struct {
 	api *QuerierAPI
 }
@@ -136,6 +139,8 @@ func (h *Handler) Do(ctx context.Context, req queryrangebase.Request) (queryrang
 	}
 }
 
+// NewQuerierHTTPHandler 用 DefaultCodec 序列化 Handler 为 HTTP 处理器。
 func NewQuerierHTTPHandler(h *Handler) http.Handler {
 	return queryrange.NewSerializeHTTPHandler(h, queryrange.DefaultCodec)
 }
+// LokiRequest 与 LokiInstantRequest 经 ResultToResponse 转为 queryrange 响应格式。

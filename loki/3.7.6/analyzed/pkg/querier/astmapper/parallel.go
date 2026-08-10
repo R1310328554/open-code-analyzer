@@ -1,5 +1,7 @@
 package astmapper
 
+// astmapper 包 parallel 判定 PromQL AST 子树是否可并行化，供 query-frontend 分片与 shard summer 使用。
+
 import (
 	"fmt"
 
@@ -18,12 +20,14 @@ var summableAggregates = map[parser.ItemType]struct{}{
 	parser.COUNT:   {},
 }
 
+// nonParallelFuncs 为不可并行的 PromQL 函数名（分位数/直方图/absent）。
 var nonParallelFuncs = []string{
 	"histogram_quantile",
 	"quantile_over_time",
 	"absent",
 }
 
+// CanParallelize 递归检查 AST 节点：可并行的 sum 聚合、Call 与非 BinaryExpr 子树。
 // CanParallelize tests if a subtree is parallelizable.
 // A subtree is parallelizable if all of its components are parallelizable.
 func CanParallelize(node parser.Node) bool {
@@ -96,6 +100,7 @@ func CanParallelize(node parser.Node) bool {
 
 }
 
+// ParallelizableFunc 排除 histogram_quantile 等需全局合并的函数。
 // ParallelizableFunc ensures that a promql function can be part of a parallel query.
 func ParallelizableFunc(f parser.Function) bool {
 
@@ -106,3 +111,4 @@ func ParallelizableFunc(f parser.Function) bool {
 	}
 	return true
 }
+// BinaryExpr 因两侧需合并结果而不可并行，AggregateExpr 需无嵌套聚合。
