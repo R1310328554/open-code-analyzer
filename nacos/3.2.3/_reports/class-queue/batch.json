@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T03:42:37Z",
   "files": [
-    "consistency/src/main/java/com/alibaba/nacos/consistency/Serializer.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/ap/APProtocol.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/ap/RequestProcessor4AP.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/cp/CPProtocol.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/cp/MetadataKey.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/cp/RequestProcessor4CP.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/exception/ConsistencyException.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/serialize/HessianSerializer.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/serialize/JacksonSerializer.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/serialize/NacosHessianSerializerFactory.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/snapshot/LocalFileMeta.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/snapshot/Reader.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/snapshot/SnapshotOperation.java",
-    "consistency/src/main/java/com/alibaba/nacos/consistency/snapshot/Writer.java",
-    "console/src/main/java/com/alibaba/nacos/Nacos.java",
     "console/src/main/java/com/alibaba/nacos/console/NacosConsole.java",
     "console/src/main/java/com/alibaba/nacos/console/NacosConsoleStartUp.java",
     "console/src/main/java/com/alibaba/nacos/console/aot/AotConfiguration.java",
@@ -33,5 +18,5 @@
     "console/src/main/java/com/alibaba/nacos/console/controller/ConsoleRedirectController.java"
   ],
   "remaining_pending": 1217,
-  "done": 1290
+  "done": 1305
 }
