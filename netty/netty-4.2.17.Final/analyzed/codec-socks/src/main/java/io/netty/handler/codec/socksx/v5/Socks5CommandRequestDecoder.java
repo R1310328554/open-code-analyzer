@@ -34,13 +34,19 @@ import java.util.List;
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove or replace this decoder later.  On failed decode, this decoder will
  * discard the received data, so that other handler closes the connection later.
+ *
+ * <p>从入站缓冲解码单条 SOCKS5 命令请求。成功后进入 SUCCESS 状态并将后续字节透传；
+ * 失败时产出带 {@link DecoderResult#failure(Throwable)} 的占位消息并丢弃剩余数据。</p>
  */
 public class Socks5CommandRequestDecoder extends ReplayingDecoder<State> {
 
     @UnstableApi
     public enum State {
+        /** 等待完整命令请求帧。 */
         INIT,
+        /** 首帧已解码，透传隧道数据。 */
         SUCCESS,
+        /** 解码失败，丢弃入站字节。 */
         FAILURE
     }
 
@@ -76,6 +82,7 @@ public class Socks5CommandRequestDecoder extends ReplayingDecoder<State> {
                 checkpoint(State.SUCCESS);
             }
             case SUCCESS: {
+                // 代理隧道建立后，后续应用数据原样上送
                 int readableBytes = actualReadableBytes();
                 if (readableBytes > 0) {
                     out.add(in.readRetainedSlice(readableBytes));
@@ -92,6 +99,7 @@ public class Socks5CommandRequestDecoder extends ReplayingDecoder<State> {
         }
     }
 
+    /** 构造失败占位请求并转入 FAILURE，避免反复抛异常。 */
     private void fail(List<Object> out, Exception cause) {
         if (!(cause instanceof DecoderException)) {
             cause = new DecoderException(cause);

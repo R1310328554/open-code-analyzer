@@ -25,11 +25,15 @@ import io.netty.util.NetUtil;
 /**
  * Decodes a SOCKS5 address field into its string representation.
  *
+ * <p>将 SOCKS5 报文中的地址字段（ATYP + 地址体）解码为字符串。
+ * IPv4 为 4 字节大端；域名为 1 字节长度 + ASCII；IPv6 为 16 字节。</p>
+ *
  * @see Socks5CommandRequestDecoder
  * @see Socks5CommandResponseDecoder
  */
 public interface Socks5AddressDecoder {
 
+    /** 按 RFC 1928 默认规则解码地址字段。 */
     Socks5AddressDecoder DEFAULT = new Socks5AddressDecoder() {
 
         private static final int IPv6_LEN = 16;
@@ -47,6 +51,7 @@ public interface Socks5AddressDecoder {
             }
             if (addrType == Socks5AddressType.IPv6) {
                 if (in.hasArray()) {
+                    // 零拷贝：直接读取底层数组片段
                     final int readerIdx = in.readerIndex();
                     in.readerIndex(readerIdx + IPv6_LEN);
                     return NetUtil.bytesToIpAddress(in.array(), in.arrayOffset() + readerIdx, IPv6_LEN);

@@ -34,13 +34,19 @@ import java.util.List;
  * On successful decode, this decoder will forward the received data to the next handler, so that
  * other handler can remove or replace this decoder later.  On failed decode, this decoder will
  * discard the received data, so that other handler closes the connection later.
+ *
+ * <p>客户端侧解码 SOCKS5 命令应答。SUCCESS 后透传后续字节供隧道使用；
+ * 失败时返回带 {@link DecoderResult} 的占位应答并丢弃数据。</p>
  */
 public class Socks5CommandResponseDecoder extends ReplayingDecoder<State> {
 
     @UnstableApi
     public enum State {
+        /** 等待完整应答帧。 */
         INIT,
+        /** 应答已解码，透传后续数据。 */
         SUCCESS,
+        /** 解码失败。 */
         FAILURE
     }
 

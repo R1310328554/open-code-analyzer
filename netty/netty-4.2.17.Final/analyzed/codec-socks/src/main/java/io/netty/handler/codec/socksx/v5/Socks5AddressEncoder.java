@@ -24,11 +24,15 @@ import io.netty.util.NetUtil;
 /**
  * Encodes a SOCKS5 address into binary representation.
  *
+ * <p>将字符串形式的 DST.ADDR / BND.ADDR 按 ATYP 写入 {@link ByteBuf}。
+ * {@code addrValue} 为 {@code null} 时写入对应类型的零填充占位。</p>
+ *
  * @see Socks5ClientEncoder
  * @see Socks5ServerEncoder
  */
 public interface Socks5AddressEncoder {
 
+    /** 按 RFC 1928 默认规则编码地址字段。 */
     Socks5AddressEncoder DEFAULT = new Socks5AddressEncoder() {
         @Override
         public void encodeAddress(Socks5AddressType addrType, String addrValue, ByteBuf out) throws Exception {
@@ -37,21 +41,21 @@ public interface Socks5AddressEncoder {
                 if (addrValue != null) {
                     out.writeBytes(NetUtil.createByteArrayFromIpAddressString(addrValue));
                 } else {
-                    out.writeInt(0);
+                    out.writeInt(0); // 4 字节 0.0.0.0 占位
                 }
             } else if (typeVal == Socks5AddressType.DOMAIN.byteValue()) {
                 if (addrValue != null) {
                     out.writeByte(addrValue.length());
                     out.writeCharSequence(addrValue, CharsetUtil.US_ASCII);
                 } else {
-                    out.writeByte(0);
+                    out.writeByte(0); // 空域名
                 }
             } else if (typeVal == Socks5AddressType.IPv6.byteValue()) {
                 if (addrValue != null) {
                     out.writeBytes(NetUtil.createByteArrayFromIpAddressString(addrValue));
                 } else {
                     out.writeLong(0);
-                    out.writeLong(0);
+                    out.writeLong(0); // 16 字节 :: 占位
                 }
             } else {
                 throw new EncoderException("unsupported addrType: " + (addrType.byteValue() & 0xFF));

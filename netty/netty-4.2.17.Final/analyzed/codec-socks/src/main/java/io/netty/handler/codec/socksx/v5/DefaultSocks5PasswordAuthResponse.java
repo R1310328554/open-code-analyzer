@@ -21,9 +21,13 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * The default {@link Socks5PasswordAuthResponse}.
+ *
+ * <p>RFC 1929 用户名/密码子协商应答：VER(1) + STATUS(1)。
+ * {@link Socks5PasswordAuthStatus#SUCCESS} 表示认证通过，可继续 SOCKS5 命令阶段。</p>
  */
 public class DefaultSocks5PasswordAuthResponse extends AbstractSocks5Message implements Socks5PasswordAuthResponse {
 
+    /** 认证结果状态码。 */
     private final Socks5PasswordAuthStatus status;
 
     public DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus status) {

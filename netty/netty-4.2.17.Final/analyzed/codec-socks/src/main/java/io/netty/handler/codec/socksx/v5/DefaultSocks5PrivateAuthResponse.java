@@ -21,12 +21,16 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * The default {@link Socks5PrivateAuthResponse} implementation.
+ *
+ * <p>私有认证子协商应答的默认实现，携带 {@link Socks5PrivateAuthStatus} 表示认证成败。</p>
  */
 public final class DefaultSocks5PrivateAuthResponse extends AbstractSocks5Message
     implements Socks5PrivateAuthResponse {
 
     /**
      * The authentication status.
+     *
+     * <p>私有认证结果；成功后可进入 SOCKS5 命令请求阶段。</p>
      */
     private final Socks5PrivateAuthStatus status;
 

@@ -20,13 +20,20 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * The type of address in {@link Socks5CommandRequest} and {@link Socks5CommandResponse}.
+ *
+ * <p>SOCKS5 地址类型 ATYP（RFC 1928）：IPv4(0x01)、域名(0x03)、IPv6(0x04)。
+ * 未知字节可通过 {@link #valueOf(byte)} 构造带 UNKNOWN 名称的实例。</p>
  */
 public class Socks5AddressType implements Comparable<Socks5AddressType> {
 
+    /** IPv4 地址，4 字节。 */
     public static final Socks5AddressType IPv4 = new Socks5AddressType(0x01, "IPv4");
+    /** 域名，1 字节长度前缀 + ASCII。 */
     public static final Socks5AddressType DOMAIN = new Socks5AddressType(0x03, "DOMAIN");
+    /** IPv6 地址，16 字节。 */
     public static final Socks5AddressType IPv6 = new Socks5AddressType(0x04, "IPv6");
 
+    /** 将 wire 字节解析为地址类型；非标准值返回 UNKNOWN 实例。 */
     public static Socks5AddressType valueOf(byte b) {
         switch (b) {
         case 0x01:

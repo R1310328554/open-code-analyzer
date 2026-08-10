@@ -20,19 +20,32 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * The status of {@link Socks5CommandResponse}.
+ *
+ * <p>SOCKS5 命令应答 REP 字段（RFC 1928 §6）。0 为成功；1–8 为各类失败原因；
+ * 未知字节映射为 UNKNOWN 实例。</p>
  */
 public class Socks5CommandStatus implements Comparable<Socks5CommandStatus> {
 
+    /** 成功（0x00）。 */
     public static final Socks5CommandStatus SUCCESS = new Socks5CommandStatus(0x00, "SUCCESS");
+    /** 一般 SOCKS 服务器故障（0x01）。 */
     public static final Socks5CommandStatus FAILURE = new Socks5CommandStatus(0x01, "FAILURE");
+    /** 规则禁止连接（0x02）。 */
     public static final Socks5CommandStatus FORBIDDEN = new Socks5CommandStatus(0x02, "FORBIDDEN");
+    /** 网络不可达（0x03）。 */
     public static final Socks5CommandStatus NETWORK_UNREACHABLE = new Socks5CommandStatus(0x03, "NETWORK_UNREACHABLE");
+    /** 主机不可达（0x04）。 */
     public static final Socks5CommandStatus HOST_UNREACHABLE = new Socks5CommandStatus(0x04, "HOST_UNREACHABLE");
+    /** 连接被拒绝（0x05）。 */
     public static final Socks5CommandStatus CONNECTION_REFUSED = new Socks5CommandStatus(0x05, "CONNECTION_REFUSED");
+    /** TTL 过期（0x06）。 */
     public static final Socks5CommandStatus TTL_EXPIRED = new Socks5CommandStatus(0x06, "TTL_EXPIRED");
+    /** 不支持的命令（0x07）。 */
     public static final Socks5CommandStatus COMMAND_UNSUPPORTED = new Socks5CommandStatus(0x07, "COMMAND_UNSUPPORTED");
+    /** 不支持的地址类型（0x08）。 */
     public static final Socks5CommandStatus ADDRESS_UNSUPPORTED = new Socks5CommandStatus(0x08, "ADDRESS_UNSUPPORTED");
 
+    /** 将 wire 字节解析为应答状态。 */
     public static Socks5CommandStatus valueOf(byte b) {
         switch (b) {
         case 0x00:
@@ -75,6 +88,7 @@ public class Socks5CommandStatus implements Comparable<Socks5CommandStatus> {
         return byteValue;
     }
 
+    /** REP 为 0 时视为成功。 */
     public boolean isSuccess() {
         return byteValue == 0;
     }

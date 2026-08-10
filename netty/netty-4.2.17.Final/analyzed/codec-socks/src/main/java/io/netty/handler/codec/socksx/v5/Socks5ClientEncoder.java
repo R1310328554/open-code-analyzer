@@ -30,6 +30,9 @@ import java.util.RandomAccess;
 
 /**
  * Encodes a client-side {@link Socks5Message} into a {@link ByteBuf}.
+ *
+ * <p>客户端 SOCKS5 出站编码器：方法协商、用户名/密码、私有认证及命令请求。
+ * 单字节长度字段上限 255（RFC 1928/1929）。{@link Sharable} 可在多 Channel 复用。</p>
  */
 @Sharable
 public class Socks5ClientEncoder extends MessageToByteEncoder<Socks5Message> {
@@ -75,6 +78,7 @@ public class Socks5ClientEncoder extends MessageToByteEncoder<Socks5Message> {
         }
     }
 
+    /** VER + NMETHOD + METHODS 列表。 */
     private static void encodeAuthMethodRequest(Socks5InitialRequest msg, ByteBuf out) {
         out.writeByte(msg.version().byteValue());
 
@@ -93,6 +97,7 @@ public class Socks5ClientEncoder extends MessageToByteEncoder<Socks5Message> {
         }
     }
 
+    /** RFC 1929：VER(1) + ULEN + UNAME + PLEN + PASSWD。 */
     private static void encodePasswordAuthRequest(Socks5PasswordAuthRequest msg, ByteBuf out) {
         out.writeByte(0x01);
 
@@ -105,6 +110,7 @@ public class Socks5ClientEncoder extends MessageToByteEncoder<Socks5Message> {
         ByteBufUtil.writeAscii(out, password);
     }
 
+    /** 私有认证：VER(1) + LEN + TOKEN。 */
     private static void encodePrivateAuthRequest(Socks5PrivateAuthRequest msg, ByteBuf out) {
         byte[] bytes = msg.privateToken();
         out.writeByte(0x01);
@@ -112,6 +118,7 @@ public class Socks5ClientEncoder extends MessageToByteEncoder<Socks5Message> {
         out.writeBytes(bytes);
     }
 
+    /** VER + CMD + RSV(0) + ATYP + DST.ADDR + DST.PORT。 */
     private void encodeCommandRequest(Socks5CommandRequest msg, ByteBuf out) throws Exception {
         out.writeByte(msg.version().byteValue());
         out.writeByte(msg.type().byteValue());
@@ -132,6 +139,7 @@ public class Socks5ClientEncoder extends MessageToByteEncoder<Socks5Message> {
         out.writeByte(length);
     }
 
+    /** SOCKS5 单字节长度字段有效范围 0–255。 */
     private static void checkFieldLength(int length) {
         if (length > 255 || length < 0) {
             throw new EncoderException("Invalid field length value: " + length);

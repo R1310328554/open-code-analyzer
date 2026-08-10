@@ -18,26 +18,37 @@ package io.netty.handler.codec.socksx.v5;
 /**
  * A SOCKS5 request detail message, as defined in
  * <a href="https://tools.ietf.org/html/rfc1928#section-4">the section 4, RFC1928</a>.
+ *
+ * <p>SOCKS5 命令请求（CONNECT / BIND / UDP ASSOCIATE）的语义接口。
+ * 字段对应 VER、CMD、RSV、ATYP、DST.ADDR、DST.PORT。</p>
  */
 public interface Socks5CommandRequest extends Socks5Message {
 
     /**
      * Returns the type of this request.
+     *
+     * <p>命令类型：{@link Socks5CommandType#CONNECT} 等。</p>
      */
     Socks5CommandType type();
 
     /**
      * Returns the type of the {@code DST.ADDR} field of this request.
+     *
+     * <p>目标地址类型 ATYP。</p>
      */
     Socks5AddressType dstAddrType();
 
     /**
      * Returns the {@code DST.ADDR} field of this request.
+     *
+     * <p>目标主机名或 IP 字符串。</p>
      */
     String dstAddr();
 
     /**
      * Returns the {@code DST.PORT} field of this request.
+     *
+     * <p>目标端口，0–65535。</p>
      */
     int dstPort();
 }

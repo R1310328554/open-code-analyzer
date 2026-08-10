@@ -25,12 +25,18 @@ import io.netty.util.internal.StringUtil;
  * For custom private authentication protocols, you should implement the {@link Socks5PrivateAuthRequest}
  * interface directly. Custom protocols should also implement their own encoder/decoder to handle the wire format.
  * </p>
+ *
+ * <p>私有认证方法（RFC 1928 中 0x80–0xFE 范围）的默认请求实现。
+ * 令牌以字节数组持有，构造与访问时均 {@code clone()} 以防外部篡改；
+ * 自定义私有协议应直接实现接口并配套编解码器。</p>
  */
 public final class DefaultSocks5PrivateAuthRequest extends AbstractSocks5Message
     implements Socks5PrivateAuthRequest {
 
     /**
      * The private authentication token.
+     *
+     * <p>私有认证令牌原始字节；wire 格式为 VER(1) + LEN(1) + TOKEN。</p>
      */
     private final byte[] privateToken;
 
@@ -40,6 +46,7 @@ public final class DefaultSocks5PrivateAuthRequest extends AbstractSocks5Message
      * @param privateAuthToken the private authentication token
      */
     public DefaultSocks5PrivateAuthRequest(final byte[] privateAuthToken) {
+        // 防御性拷贝，避免调用方后续修改传入数组
         this.privateToken = ObjectUtil.checkNotNull(privateAuthToken, "privateToken").clone();
     }
 
@@ -58,6 +65,7 @@ public final class DefaultSocks5PrivateAuthRequest extends AbstractSocks5Message
             buf.append(decoderResult);
             buf.append(", privateToken: ****)");
         } else {
+            // 日志中隐藏令牌明文
             buf.append("(privateToken: ****)");
         }
 

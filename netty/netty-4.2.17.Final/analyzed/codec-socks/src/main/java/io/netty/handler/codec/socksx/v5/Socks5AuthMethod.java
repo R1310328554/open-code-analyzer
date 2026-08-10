@@ -20,15 +20,23 @@ import io.netty.util.internal.ObjectUtil;
 
 /**
  * The authentication method of SOCKS5.
+ *
+ * <p>SOCKS5 方法协商阶段客户端列举、服务端择一的认证方式（RFC 1928 §3）。
+ * 0x80–0xFE 为私有方法区间，由 {@link #isPrivateMethod(byte)} 识别。</p>
  */
 public class Socks5AuthMethod implements Comparable<Socks5AuthMethod> {
 
+    /** 无需认证（0x00）。 */
     public static final Socks5AuthMethod NO_AUTH = new Socks5AuthMethod(0x00, "NO_AUTH");
+    /** GSSAPI 认证（0x01）。 */
     public static final Socks5AuthMethod GSSAPI = new Socks5AuthMethod(0x01, "GSSAPI");
+    /** 用户名/密码认证，RFC 1929（0x02）。 */
     public static final Socks5AuthMethod PASSWORD = new Socks5AuthMethod(0x02, "PASSWORD");
 
     /**
      * Indicates that the server does not accept any authentication methods the client proposed.
+     *
+     * <p>服务端不接受客户端提出的任何方法（0xFF），连接应终止或重试。</p>
      */
     public static final Socks5AuthMethod UNACCEPTED = new Socks5AuthMethod(0xff, "UNACCEPTED");
 
@@ -44,6 +52,7 @@ public class Socks5AuthMethod implements Comparable<Socks5AuthMethod> {
         return ubyte >= 0x80 && ubyte <= 0xFE;
     }
 
+    /** 将 wire 字节解析为认证方法；私有区间命名为 PRIVATE_&lt;n&gt;。 */
     public static Socks5AuthMethod valueOf(byte b) {
         switch (b) {
         case 0x00:
