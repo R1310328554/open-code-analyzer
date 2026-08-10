@@ -1033,3 +1033,18 @@
 2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/authenticationExecutionExportRepresentation.ts wave35a admin-client defs + scripts
 2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/authenticationExecutionInfoRepresentation.ts wave35a admin-client defs + scripts
 2026-08-10T07:04:37Z DONE js/libs/keycloak-admin-client/src/defs/authenticationFlowRepresentation.ts wave35a admin-client defs + scripts
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/keyMetadataRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/keystoreConfig.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/managementPermissionReference.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/mappingsRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/memberRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/organizationDomainRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/organizationInvitationRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/organizationMemberRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/organizationRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/passwordPolicyTypeRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/policyEvaluationResponse.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/policyProviderRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/policyRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/policyResultRepresentation.ts wave36b admin-client org/policy defs
+2026-08-10T07:06:28Z DONE js/libs/keycloak-admin-client/src/defs/profileInfoRepresentation.ts wave36b admin-client org/policy defs
