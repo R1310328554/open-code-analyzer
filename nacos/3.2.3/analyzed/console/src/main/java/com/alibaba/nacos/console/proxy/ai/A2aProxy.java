@@ -34,6 +34,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
+ * A2A（Agent-to-Agent）代理：将 Agent Card 注册、查询、更新与版本管理委托给 {@link A2aHandler}。
  * A2a proxy.
  *
  * @author KiteSoar
@@ -41,42 +42,50 @@ import java.util.List;
 @Component
 public class A2aProxy {
     
+    /** A2A Handler 实现 */
     private final A2aHandler a2aHandler;
     
+    /** 注入 A2A Handler。 */
     public A2aProxy(A2aHandler a2aHandler) {
         this.a2aHandler = a2aHandler;
     }
     
     /**
+     * 注册 Agent Card。
      * Register agent card.
      *
-     * @param agentCard     agent card to register
-     * @param agentCardForm agent card form
-     * @throws NacosException exception when register agent card
+     * @param agentCard     待注册的 Agent Card
+     * @param agentCardForm 注册表单
+     * @throws NacosException 注册失败时抛出
      */
     public void registerAgent(AgentCard agentCard, AgentCardForm agentCardForm)
         throws NacosException {
         a2aHandler.registerAgent(agentCard, agentCardForm);
     }
     
+    /** 查询 Agent Card 详情（含版本列表）。 */
     public AgentCardDetailInfo getAgentCard(AgentForm form) throws NacosException {
         return a2aHandler.getAgentCardWithVersions(form);
     }
     
+    /** 删除 Agent 及其全部版本。 */
     public void deleteAgent(AgentForm form) throws NacosException {
         a2aHandler.deleteAgent(form);
     }
     
+    /** 更新 Agent Card 元信息与内容。 */
     public void updateAgentCard(AgentCard agentCard, AgentCardUpdateForm form)
         throws NacosException {
         a2aHandler.updateAgentCard(agentCard, form);
     }
     
+    /** 分页列出 Agent Card。 */
     public Page<AgentCardVersionInfo> listAgents(AgentListForm agentListForm, PageForm pageForm)
         throws NacosException {
         return a2aHandler.listAgents(agentListForm, pageForm);
     }
     
+    /** 列出指定 Agent 的全部版本详情。 */
     public List<AgentVersionDetail> listAgentVersions(String namespaceId, String name)
         throws NacosException {
         return a2aHandler.listAgentVersions(namespaceId, name);

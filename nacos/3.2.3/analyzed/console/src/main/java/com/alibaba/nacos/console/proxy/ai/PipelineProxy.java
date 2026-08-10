@@ -23,6 +23,7 @@ import com.alibaba.nacos.console.handler.ai.PipelineHandler;
 import org.springframework.stereotype.Component;
 
 /**
+ * AI 流水线代理：将流水线查询与列表委托给 {@link PipelineHandler} 实现。
  * Pipeline proxy — delegates to PipelineHandler implementation.
  *
  * @author kiro
@@ -31,16 +32,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class PipelineProxy {
     
+    /** 流水线 Handler 实现 */
     private final PipelineHandler pipelineHandler;
     
+    /** 注入流水线 Handler。 */
     public PipelineProxy(PipelineHandler pipelineHandler) {
         this.pipelineHandler = pipelineHandler;
     }
     
+    /** 按 ID 查询流水线执行记录。 */
     public PipelineExecution getPipeline(String pipelineId) throws NacosException {
         return pipelineHandler.getPipeline(pipelineId);
     }
     
+    /** 按资源类型、名称与命名空间分页列出流水线。 */
     public Page<PipelineExecution> listPipelines(String resourceType, String resourceName,
         String namespaceId, String version, int pageNo, int pageSize) throws NacosException {
         return pipelineHandler.listPipelines(resourceType, resourceName,

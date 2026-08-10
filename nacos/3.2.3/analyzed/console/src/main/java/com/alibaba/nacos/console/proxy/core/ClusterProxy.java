@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
+ * 集群管理代理：委托 {@link ClusterHandler} 获取节点列表，并按 IP 关键字本地过滤与排序。
  * Proxy class for handling cluster-related operations.
  *
  * @author zhangyukun
@@ -36,23 +37,26 @@ import java.util.List;
 @Service
 public class ClusterProxy {
     
+    /** 集群 Handler 实现 */
     private final ClusterHandler clusterHandler;
     
     /**
+     * 注入集群 Handler。
      * Constructs a new ClusterProxy with the given ClusterInnerHandler and ConsoleConfig.
      *
-     * @param clusterHandler the default implementation of ClusterHandler
+     * @param clusterHandler ClusterHandler 默认实现
      */
     public ClusterProxy(ClusterHandler clusterHandler) {
         this.clusterHandler = clusterHandler;
     }
     
     /**
+     * 获取集群成员列表，可按 IP 关键字前缀过滤并按地址排序。
      * Retrieve a list of cluster members with an optional search keyword.
      *
-     * @param ipKeyWord the search keyword for filtering members
-     * @return a collection of matching members
-     * @throws IllegalArgumentException if the deployment type is invalid
+     * @param ipKeyWord 成员 IP 搜索关键字
+     * @return 匹配的成员集合
+     * @throws IllegalArgumentException 部署类型无效时抛出
      */
     public Collection<NacosMember> getNodeList(String ipKeyWord) throws NacosException {
         Collection<? extends NacosMember> members = clusterHandler.getNodeList(ipKeyWord);

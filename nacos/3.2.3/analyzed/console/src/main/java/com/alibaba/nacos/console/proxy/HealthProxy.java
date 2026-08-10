@@ -23,6 +23,7 @@ import com.alibaba.nacos.console.handler.HealthHandler;
 import org.springframework.stereotype.Service;
 
 /**
+ * 健康检查代理：将控制台就绪探针请求委托给 {@link HealthHandler} 实现。
  * Proxy class for handling health check operations.
  *
  * @author zhangyukun
@@ -30,16 +31,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class HealthProxy {
     
+    /** 健康检查 Handler 实现 */
     private final HealthHandler healthHandler;
     
+    /** 注入健康检查 Handler。 */
     public HealthProxy(HealthHandler healthHandler) {
         this.healthHandler = healthHandler;
     }
     
     /**
+     * 执行就绪探针，判断 Nacos 是否可接收请求。
      * Perform readiness check to determine if Nacos is ready to handle requests.
      *
-     * @return readiness result
+     * @return 就绪检查结果
      */
     public Result<String> checkReadiness() throws NacosException {
         return healthHandler.checkReadiness();

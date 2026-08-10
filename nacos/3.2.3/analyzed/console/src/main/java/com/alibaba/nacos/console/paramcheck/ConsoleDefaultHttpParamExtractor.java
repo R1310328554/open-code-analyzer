@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 控制台默认 HTTP 参数提取器：从请求参数中解析命名空间 ID 与展示名，供参数校验链路使用。
  * Console default http param extractor.
  *
  * @author zhuoguang
  */
 public class ConsoleDefaultHttpParamExtractor extends AbstractHttpParamExtractor {
     
+    /** 从 HTTP 请求提取命名空间相关参数并封装为 {@link ParamInfo} 列表。 */
     @Override
     public List<ParamInfo> extractParam(HttpServletRequest request) {
         ParamInfo paramInfo = new ParamInfo();
@@ -41,6 +43,7 @@ public class ConsoleDefaultHttpParamExtractor extends AbstractHttpParamExtractor
         return paramInfos;
     }
     
+    /** 解析命名空间 ID，优先 {@code namespaceId}，否则回退 {@code customNamespaceId}。 */
     private String getAliasNamespaceId(HttpServletRequest request) {
         String namespaceId = request.getParameter("namespaceId");
         if (StringUtils.isBlank(namespaceId)) {
@@ -49,6 +52,7 @@ public class ConsoleDefaultHttpParamExtractor extends AbstractHttpParamExtractor
         return namespaceId;
     }
     
+    /** 从 {@code namespaceName} 请求参数读取命名空间展示名。 */
     private String getAliasNamespaceShowName(HttpServletRequest request) {
         return request.getParameter("namespaceName");
     }

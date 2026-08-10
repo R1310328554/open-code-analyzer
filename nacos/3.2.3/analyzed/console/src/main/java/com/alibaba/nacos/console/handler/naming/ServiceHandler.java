@@ -29,6 +29,7 @@ import com.alibaba.nacos.naming.model.form.ServiceForm;
 import java.util.List;
 
 /**
+ * 服务治理操作接口：定义创建、删除、更新、查询服务及订阅者、集群元数据等能力，由 inner/remote 实现按部署模式委托底层 naming 服务。
  * Interface for handling service-related operations.
  *
  * @author zhangyukun
@@ -36,95 +37,103 @@ import java.util.List;
 public interface ServiceHandler {
     
     /**
+     * 创建新服务。
      * Create a new service.
      *
-     * @param serviceForm     the service form containing the service details
-     * @param serviceMetadata the service metadata created from serviceForm
-     * @throws Exception if an error occurs during service creation
+     * @param serviceForm     包含服务详情的表单
+     * @param serviceMetadata 由 serviceForm 构建的服务元数据
+     * @throws Exception 创建失败时抛出
      */
     void createService(ServiceForm serviceForm, ServiceMetadata serviceMetadata) throws Exception;
     
     /**
+     * 删除已有服务。
      * Delete an existing service.
      *
-     * @param namespaceId the namespace ID
-     * @param serviceName the service name
-     * @param groupName   the group name
-     * @throws Exception if an error occurs during service deletion
+     * @param namespaceId 命名空间 ID
+     * @param serviceName 服务名
+     * @param groupName   分组名
+     * @throws Exception 删除失败时抛出
      */
     void deleteService(String namespaceId, String serviceName, String groupName) throws Exception;
     
     /**
+     * 更新已有服务。
      * Update an existing service.
      *
-     * @param serviceForm     the service form containing the service details
-     * @param serviceMetadata the service metadata created from serviceForm
-     * @throws Exception if an error occurs during service update
+     * @param serviceForm     包含服务详情的表单
+     * @param serviceMetadata 由 serviceForm 构建的服务元数据
+     * @throws Exception 更新失败时抛出
      */
     void updateService(ServiceForm serviceForm, ServiceMetadata serviceMetadata) throws Exception;
     
     /**
+     * 获取全部负载均衡选择器类型列表。
      * Get all selector types.
      *
-     * @return a list of selector types
-     * @throws NacosException if an error occurs during get selector types
+     * @return 选择器类型列表
+     * @throws NacosException 查询失败时抛出
      */
     List<String> getSelectorTypeList() throws NacosException;
     
     /**
+     * 分页查询指定服务的订阅者列表。
      * Get the list of subscribers for a service.
      *
-     * @param pageNo      the page number
-     * @param pageSize    the size of the page
-     * @param namespaceId the namespace ID
-     * @param serviceName the service name
-     * @param groupName   the group name
-     * @param aggregation whether to aggregate the results
-     * @return a JSON node containing the list of subscribers
-     * @throws Exception if an error occurs during fetching subscribers
+     * @param pageNo      页码
+     * @param pageSize    每页条数
+     * @param namespaceId 命名空间 ID
+     * @param serviceName 服务名
+     * @param groupName   分组名
+     * @param aggregation 是否聚合结果
+     * @return 订阅者分页结果
+     * @throws Exception 查询失败时抛出
      */
     Page<SubscriberInfo> getSubscribers(int pageNo, int pageSize, String namespaceId,
         String serviceName,
         String groupName, boolean aggregation) throws Exception;
     
     /**
+     * 分页列出服务详情。
      * List service detail information.
      *
-     * @param withInstances         whether to include instances
-     * @param namespaceId           the namespace ID
-     * @param pageNo                the page number
-     * @param pageSize              the size of the page
-     * @param serviceName           the service name
-     * @param groupName             the group name
-     * @param ignoreEmptyService    whether to filter services with empty instances
-     * @return if withInstances is {@code true}, return Page of {@link ServiceDetailInfo}, otherwise return Page of {@link ServiceView}
-     * @throws NacosException if an error occurs during fetching service details
+     * @param withInstances         是否包含实例信息
+     * @param namespaceId           命名空间 ID
+     * @param pageNo                页码
+     * @param pageSize              每页条数
+     * @param serviceName           服务名
+     * @param groupName             分组名
+     * @param ignoreEmptyService    是否过滤无实例的空服务
+     * @return 若 withInstances 为 {@code true} 返回 {@link ServiceDetailInfo} 分页，否则返回 {@link ServiceView} 分页
+     * @throws NacosException 查询失败时抛出
      */
     Object getServiceList(boolean withInstances, String namespaceId, int pageNo, int pageSize,
         String serviceName,
         String groupName, boolean ignoreEmptyService) throws NacosException;
     
     /**
+     * 获取指定服务的详细信息。
      * Get the detail of a specific service.
      *
-     * @param namespaceId the namespace ID
-     * @param serviceName the service name without group
-     * @param groupName   the group name
-     * @return service detail information
-     * @throws NacosException if an error occurs during fetching service details
+     * @param namespaceId 命名空间 ID
+     * @param serviceName 不含分组前缀的服务名
+     * @param groupName   分组名
+     * @return 服务详情
+     * @throws NacosException 查询失败时抛出
      */
     ServiceDetailInfo getServiceDetail(String namespaceId, String serviceName, String groupName)
         throws NacosException;
     
     /**
+     * 更新集群元数据。
      * Update the metadata of a cluster.
      *
-     * @param namespaceId     the namespace ID
-     * @param groupName       the group name
-     * @param serviceName     the service name
-     * @param clusterName     the cluster name
-     * @param clusterMetadata the metadata for the cluster
-     * @throws Exception if the update operation fails
+     * @param namespaceId     命名空间 ID
+     * @param groupName       分组名
+     * @param serviceName     服务名
+     * @param clusterName     集群名
+     * @param clusterMetadata 集群元数据
+     * @throws Exception 更新失败时抛出
      */
     void updateClusterMetadata(String namespaceId, String groupName, String serviceName,
         String clusterName,

@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
+ * AI 资源导入代理：委托 {@link AiResourceImportHandler} 完成外部源列举、搜索、校验与批量导入。
  * Proxy for Console AI resource import operations.
  *
  * @author xiweng.yy
@@ -38,18 +39,21 @@ import java.util.List;
 @Service
 public class AiResourceImportProxy {
     
+    /** AI 资源导入 Handler 实现 */
     private final AiResourceImportHandler importHandler;
     
+    /** 注入 AI 资源导入 Handler。 */
     public AiResourceImportProxy(AiResourceImportHandler importHandler) {
         this.importHandler = importHandler;
     }
     
     /**
+     * 列出可用的 AI 资源导入外部源。
      * List import sources.
      *
-     * @param resourceType optional resource type filter
-     * @return source list
-     * @throws NacosException if source configuration is invalid
+     * @param resourceType 可选的资源类型过滤
+     * @return 导入源列表
+     * @throws NacosException 源配置无效时抛出
      */
     public List<AiResourceImportSourceInfo> listSources(String resourceType)
         throws NacosException {
@@ -57,11 +61,12 @@ public class AiResourceImportProxy {
     }
     
     /**
+     * 在外部源中搜索待导入候选资源。
      * Search external candidates.
      *
-     * @param request search request
-     * @return search response
-     * @throws NacosException if the source cannot be searched
+     * @param request 搜索请求
+     * @return 搜索响应
+     * @throws NacosException 源不可搜索时抛出
      */
     public AiResourceImportSearchResponse search(AiResourceImportSearchRequest request)
         throws NacosException {
@@ -69,11 +74,12 @@ public class AiResourceImportProxy {
     }
     
     /**
+     * 校验已选候选资源是否可导入。
      * Validate selected candidates.
      *
-     * @param request validate request
-     * @return validation response
-     * @throws NacosException if validation cannot start
+     * @param request 校验请求
+     * @return 校验响应
+     * @throws NacosException 无法启动校验时抛出
      */
     public AiResourceImportValidateResponse validate(AiResourceImportValidateRequest request)
         throws NacosException {
@@ -81,11 +87,12 @@ public class AiResourceImportProxy {
     }
     
     /**
+     * 执行选中候选资源的导入。
      * Execute import for selected candidates.
      *
-     * @param request execute request
-     * @return execute response
-     * @throws NacosException if import cannot start
+     * @param request 执行请求
+     * @return 导入执行响应
+     * @throws NacosException 无法启动导入时抛出
      */
     public AiResourceImportExecuteResponse execute(AiResourceImportExecuteRequest request)
         throws NacosException {
