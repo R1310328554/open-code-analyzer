@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T15:25:39Z",
-  "files": [
-    "store/perm/scan.go",
-    "store/repos/repos.go",
-    "store/repos/scan.go",
-    "store/repos/type.go",
-    "store/secret/global/scan.go",
-    "store/secret/global/secret.go",
-    "store/secret/global/secret_oss.go",
-    "store/secret/scan.go",
-    "store/secret/secret.go",
-    "store/secret/secret_oss.go",
-    "store/shared/db/conn.go",
-    "store/shared/db/conn_oss.go",
-    "store/shared/db/db.go",
-    "store/shared/db/dbtest/dbtest.go",
-    "store/shared/db/error.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 28,
-  "done": 345
+  "done": 360
 }
