@@ -28,21 +28,23 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * This validator disallowing bunch of characters we really not to expect in names of persons (fist, middle, last names).
- * <p>
- * Validates against hardcoded RegEx pattern - accepts plain string and collection of strings, for basic behavior
- * like null/blank values handling and collections support see {@link AbstractStringValidator}.
+ * 人名（名/中间名/姓）禁止字符校验器。
+ * <p>使用内置正则；空值与集合行为参见 {@link AbstractStringValidator}。</p>
  */
 public class PersonNameProhibitedCharactersValidator extends AbstractStringValidator implements ConfiguredProvider {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "person-name-prohibited-characters";
 
+    /** 单例实例。 */
     public static final PersonNameProhibitedCharactersValidator INSTANCE = new PersonNameProhibitedCharactersValidator();
 
     protected static final Pattern PATTERN = Pattern.compile("^[^<>&\"\\v$%!#?§;*~/\\\\|^=\\[\\]{}()\\p{Cntrl}]+$");
     
+    /** 默认错误消息键。 */
     public static final String MESSAGE_NO_MATCH = "error-person-name-invalid-character";
     
+    /** 自定义错误消息键配置项。 */
     public static final String CFG_ERROR_MESSAGE = "error-message";
     
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
@@ -62,6 +64,7 @@ public class PersonNameProhibitedCharactersValidator extends AbstractStringValid
         return ID;
     }
 
+    /** 值不匹配 {@link #PATTERN} 时添加校验错误。 */
     @Override
     protected void doValidate(String value, String inputHint, ValidationContext context, ValidatorConfig config) {
         if (!PATTERN.matcher(value).matches()) {

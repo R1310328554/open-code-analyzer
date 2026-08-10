@@ -32,14 +32,14 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check that User Profile username already exists in database for another user in case of it's change, and
- * fail in this case. Expects List of Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 校验用户名变更时是否与其他用户冲突。
+ * <p>允许邮箱登录时，亦检查用户名是否与现有邮箱重复。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class DuplicateUsernameValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-duplicate-username";
 
     @Override
@@ -71,7 +71,7 @@ public class DuplicateUsernameValidator implements SimpleValidator {
             context.addError(new ValidationError(ID, inputHint, Messages.USERNAME_EXISTS)
                 .setStatusCode(Response.Status.CONFLICT));
         } else if (realm.isLoginWithEmailAllowed() && valueLowercased.indexOf('@') > 0) {
-            // check the username does not collide with an email
+            // 检查用户名是否与现有用户的邮箱冲突
             existing = session.users().getUserByEmail(realm, valueLowercased);
             if (existing != null && (user == null || !existing.getId().equals(user.getId()))) {
                 context.addError(new ValidationError(ID, inputHint, Messages.USERNAME_EXISTS)

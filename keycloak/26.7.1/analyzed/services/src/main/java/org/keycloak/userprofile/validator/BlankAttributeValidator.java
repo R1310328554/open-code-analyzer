@@ -28,18 +28,20 @@ import org.keycloak.validate.ValidatorConfig;
 import org.keycloak.validate.ValidatorConfig.ValidatorConfigBuilder;
 
 /**
- * Validator to check that User Profile attribute value is not blank (null value is OK!). Expects List of Strings as
- * input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 校验用户 Profile 属性值非空白（null 可接受，取决于配置）。
+ * <p>输入为 {@code List<String>}；非必填属性跳过。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class BlankAttributeValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-blank-attribute-value";
 
+    /** 自定义错误消息键配置项。 */
     public static final String CFG_ERROR_MESSAGE = "error-message";
 
+    /** 为 true 时 null 也视为校验失败。 */
     public static final String CFG_FAIL_ON_NULL = "fail-on-null";
     
     @Override
@@ -74,11 +76,11 @@ public class BlankAttributeValidator implements SimpleValidator {
     }
 
     /**
-     * Create config for this validator to get customized error message
-     * 
-     * @param errorMessage to be used if validation fails
-     * @param failOnNull makes validator fail on null values also (not on empty string only as is the default behavior)
-     * @return config
+     * 构建校验器配置。
+     *
+     * @param errorMessage 失败时的 i18n 消息键
+     * @param failOnNull 是否在 null 时也失败（默认仅空字符串）
+     * @return ValidatorConfig
      */
     public static ValidatorConfig createConfig(String errorMessage, boolean failOnNull) {
         ValidatorConfigBuilder builder = ValidatorConfig.builder();

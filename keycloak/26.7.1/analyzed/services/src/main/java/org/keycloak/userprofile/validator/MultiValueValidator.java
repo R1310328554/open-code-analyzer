@@ -40,11 +40,19 @@ import org.keycloak.validate.validators.ValidatorConfigValidator;
 import static org.keycloak.validate.validators.ValidatorConfigValidator.MESSAGE_CONFIG_INVALID_NUMBER_VALUE;
 import static org.keycloak.validate.validators.ValidatorConfigValidator.MESSAGE_CONFIG_MISSING_VALUE;
 
+/**
+ * 多值用户 Profile 属性个数校验器。
+ * <p>按 min/max 限制非空白值数量；必填属性为空时交由必填校验器处理。</p>
+ */
 public class MultiValueValidator implements SimpleValidator, ConfiguredProvider {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "multivalued";
+    /** 个数不在 min/max 范围内时的错误键。 */
     public static final String MESSAGE_INVALID_SIZE = "error-invalid-multivalued-size";
+    /** 最小非空白值个数配置键。 */
     public static final String KEY_MIN = "min";
+    /** 最大非空白值个数配置键。 */
     public static final String KEY_MAX = "max";
 
     @Override
@@ -67,7 +75,7 @@ public class MultiValueValidator implements SimpleValidator, ConfiguredProvider 
         long length = ((Collection<String>) value).stream().filter(StringUtil::isNotBlank).count();
 
         if (length == 0 && attributeContext.getMetadata().isRequired(attributeContext)) {
-            // if no value is set and attribute is required, do not validate in favor of the required validator
+            // 必填且无有效值时跳过，由必填校验器负责
             return context;
         }
 
@@ -104,6 +112,7 @@ public class MultiValueValidator implements SimpleValidator, ConfiguredProvider 
     }
 
     @Override
+    /** @return 校验器帮助文本 */
     public String getHelpText() {
         return "Multivalued validator";
     }

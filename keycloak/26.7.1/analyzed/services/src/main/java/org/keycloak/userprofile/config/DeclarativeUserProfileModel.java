@@ -23,10 +23,14 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.userprofile.UserProfileProvider;
 
 /**
+ * 声明式用户 Profile 的 {@link ComponentModel} 包装。
+ * <p>固定 provider 类型为 {@link UserProfileProvider}。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DeclarativeUserProfileModel extends ComponentModel {
 
+    /** @param providerId 用户 Profile 提供者 ID */
     public DeclarativeUserProfileModel(String providerId) {
         setProviderId(providerId);
         setProviderType(UserProfileProvider.class.getName());

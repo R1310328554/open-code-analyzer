@@ -28,16 +28,17 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check that User Profile attribute value is not blank (nor null) if the attribute is required based on
- * AttributeMetadata predicate. Expects List of Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 按 {@link AttributeMetadata} 判定必填时，校验用户 Profile 属性值非空。
+ * <p>输入为 {@code List<String>}；只读属性跳过校验。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class AttributeRequiredByMetadataValidator implements SimpleValidator {
 
+    /** 必填属性为空时的错误消息键。 */
     public static final String ERROR_USER_ATTRIBUTE_REQUIRED = "error-user-attribute-required";
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-attribute-required-by-metadata-value";
 
     @Override
@@ -45,6 +46,7 @@ public class AttributeRequiredByMetadataValidator implements SimpleValidator {
         return ID;
     }
 
+    /** 元数据标记必填且非只读时，拒绝 null/空列表或空白字符串。 */
     @Override
     public ValidationContext validate(Object input, String inputHint, ValidationContext context, ValidatorConfig config) {
         AttributeContext attContext = UserProfileAttributeValidationContext.from(context).getAttributeContext();

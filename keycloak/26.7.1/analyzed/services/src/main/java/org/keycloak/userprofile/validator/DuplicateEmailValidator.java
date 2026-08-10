@@ -33,14 +33,14 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check User Profile email duplication conditions based on realm settings like isDuplicateEmailsAllowed.
- * Expects List of Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 按领域设置（如 {@code isDuplicateEmailsAllowed}）校验邮箱是否重复。
+ * <p>新建用户或邮箱变更时检查；允许登录用邮箱时亦检查用户名冲突。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class DuplicateEmailValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-duplicate-email";
 
     @Override
@@ -66,15 +66,15 @@ public class DuplicateEmailValidator implements SimpleValidator {
         RealmModel realm = session.getContext().getRealm();
         UserModel user = UserProfileAttributeValidationContext.from(context).getAttributeContext().getUser();
 
-        // Only check if duplicate email addresses are not allowed, and the user is either new or changed their email address
+        // 仅当禁止重复邮箱且为新用户或邮箱已变更时检查
         if (!realm.isDuplicateEmailsAllowed() && (user == null || !Objects.equals(user.getFirstAttribute(inputHint), value))) {
             UserModel userByEmail = session.users().getUserByEmail(realm, value);
-            // check for duplicated email
+            // 检查邮箱是否已被其他用户占用
             if (userByEmail != null && (user == null || !userByEmail.getId().equals(user.getId()))) {
                 context.addError(new ValidationError(ID, inputHint, Messages.EMAIL_EXISTS)
                     .setStatusCode(Response.Status.CONFLICT));
             } else if (realm.isLoginWithEmailAllowed()) {
-                // check for duplicated username
+                // 允许邮箱登录时，检查该邮箱是否已被用作用户名
                 userByEmail = session.users().getUserByUsername(realm, value);
                 if (userByEmail != null && (user == null || !userByEmail.getId().equals(user.getId()))) {
                     context.addError(new ValidationError(ID, inputHint, Messages.EMAIL_EXISTS)

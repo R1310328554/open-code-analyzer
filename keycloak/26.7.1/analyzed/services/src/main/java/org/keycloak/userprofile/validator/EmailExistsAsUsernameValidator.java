@@ -32,14 +32,13 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check User Profile email duplication conditions if isDuplicateEmailsAllowed is false but
- * isRegistrationEmailAsUsername is true. Expects List of Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 在「注册邮箱即用户名」且禁止重复邮箱时，校验邮箱是否已被其他用户占用。
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class EmailExistsAsUsernameValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-email-exists-as-username";
 
     @Override

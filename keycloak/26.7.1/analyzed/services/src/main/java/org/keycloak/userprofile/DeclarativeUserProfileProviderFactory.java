@@ -88,18 +88,27 @@ import static org.keycloak.userprofile.UserProfileContext.UPDATE_EMAIL;
 import static org.keycloak.userprofile.UserProfileContext.UPDATE_PROFILE;
 import static org.keycloak.userprofile.UserProfileContext.USER_API;
 
+/**
+ * 声明式用户 Profile 提供者工厂。
+ * <p>在初始化时为各 {@link UserProfileContext} 注册元数据、内置校验器与只读属性规则，并解析领域级 {@link UPConfig} 配置。</p>
+ */
 public class DeclarativeUserProfileProviderFactory implements UserProfileProviderFactory, AmphibianProviderFactory<UserProfileProvider> {
 
+    /** 管理员不可编辑属性的正则表达式配置键。 */
     public static final String CONFIG_ADMIN_READ_ONLY_ATTRIBUTES = "admin-read-only-attributes";
+    /** 终端用户不可编辑属性的正则表达式配置键。 */
     public static final String CONFIG_READ_ONLY_ATTRIBUTES = "read-only-attributes";
+    /** 邮箱本地部分最大长度配置键。 */
     public static final String MAX_EMAIL_LOCAL_PART_LENGTH = "max-email-local-part-length";
 
+    /** 提供者 SPI 标识符。 */
     public static final String ID = "declarative-user-profile";
+    /** 提供者优先级（数值越小越优先）。 */
     public static final int PROVIDER_PRIORITY = 1;
 
     /**
-     * There are the declarations for creating the built-in validations for read-only attributes. Regardless of the context where
-     * user profiles are used. They are related to internal attributes with hard conditions on them in terms of management.
+     * 内置只读属性名列表，用于创建只读校验规则。
+     * <p>与用户 Profile 的使用场景无关，覆盖 LDAP/Kerberos 等内部属性。</p>
      */
     private static final String[] DEFAULT_READ_ONLY_ATTRIBUTES = { "KERBEROS_PRINCIPAL", "LDAP_ID", "LDAP_ENTRY_DN", "CREATED_TIMESTAMP", "createTimestamp", "modifyTimestamp", "userCertificate", "saml.persistent.name.id.for.*", "ENABLED", "EMAIL_VERIFIED", "disabledReason", UserModel.EMAIL_PENDING };
     private static final String[] DEFAULT_ADMIN_READ_ONLY_ATTRIBUTES = { "KERBEROS_PRINCIPAL", "LDAP_ID", "LDAP_ENTRY_DN", "CREATED_TIMESTAMP", "createTimestamp", "modifyTimestamp" };
@@ -107,16 +116,21 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
     private static final Pattern adminReadOnlyAttributesPattern = getRegexPatternString(DEFAULT_ADMIN_READ_ONLY_ATTRIBUTES);
     private static final String ANNOTATION_SCIM_SCHEMA_ATTRIBUTE = "kc.scim.schema.attribute";
 
+    /** 系统默认 UPConfig（Quarkus 构建时可预解析）。 */
     private static volatile UPConfig PARSED_DEFAULT_RAW_CONFIG;
+    /** 各上下文对应的 Profile 元数据注册表。 */
     private final Map<UserProfileContext, UserProfileMetadata> contextualMetadataRegistry = new HashMap<>();
+    /** 当前工厂解析后的用户 Profile 配置。 */
     private UPConfig parsedConfig;
 
+    /** 设置系统默认配置（仅首次生效）。 */
     public static void setDefaultConfig(UPConfig defaultConfig) {
         if (PARSED_DEFAULT_RAW_CONFIG == null) {
             PARSED_DEFAULT_RAW_CONFIG = defaultConfig;
         }
     }
 
+    /** 判断当前上下文下用户名是否可编辑。 */
     private static boolean editUsernameCondition(AttributeContext c) {
         KeycloakSession session = c.getSession();
         KeycloakContext context = session.getContext();
@@ -135,6 +149,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return realm.isEditUsernameAllowed();
     }
 
+    /** 判断当前上下文下用户名是否可见。 */
     private static boolean readUsernameCondition(AttributeContext c) {
         KeycloakSession session = c.getSession();
         KeycloakContext context = session.getContext();
@@ -154,6 +169,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
 
     }
 
+    /** 判断当前上下文下邮箱是否可编辑。 */
     private static boolean editEmailCondition(AttributeContext c) {
         RealmModel realm = c.getSession().getContext().getRealm();
 
@@ -167,14 +183,14 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
 
                 if (!isNewUser(c)) {
                     if (StringUtil.isBlank(user.getEmail())) {
-                        // allow to set email via UPDATE_PROFILE if the email is not set for the user
+                        // 用户尚无邮箱时，允许通过 UPDATE_PROFILE 设置
                         return true;
                     }
 
                     List<String> values = c.getAttribute().getValue();
 
                     if (values == null || values.isEmpty()) {
-                        // ignore empty values if the user has an email set, email should be set via update email flow
+                        // 用户已有邮箱时忽略空值，应通过更新邮箱流程修改
                         return false;
                     }
                 }
@@ -186,6 +202,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return isNewUser(c) || !realm.isRegistrationEmailAsUsername() || realm.isEditUsernameAllowed();
     }
 
+    /** 判断当前上下文下邮箱是否可见。 */
     private static boolean readEmailCondition(AttributeContext c) {
         UserProfileContext context = c.getContext();
 
@@ -200,7 +217,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
                 List<String> value = c.getAttribute().getValue();
 
                 if (value.isEmpty() && !c.getMetadata().isReadOnly(c)) {
-                    // show email field in UPDATE_PROFILE page if the email is not set for the user and is not read-only
+                    // 邮箱未设置且非只读时，在 UPDATE_PROFILE 页面展示邮箱字段
                     return true;
                 }
             }
@@ -219,11 +236,13 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return true;
     }
 
+    /** 领域是否启用国际化（locale 字段可见性）。 */
     private static boolean isInternationalizationEnabled(AttributeContext context) {
         RealmModel realm = context.getSession().getContext().getRealm();
         return realm.isInternationalizationEnabled();
     }
 
+    /** 领域是否启用条款与条件必需操作。 */
     private static boolean isTermAndConditionsEnabled(AttributeContext context) {
         RealmModel realm = context.getSession().getContext().getRealm();
         RequiredActionProviderModel tacModel = realm.getRequiredActionProviderByAlias(
@@ -231,10 +250,12 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return tacModel != null && tacModel.isEnabled();
     }
 
+    /** 是否为新建用户（尚无 UserModel）。 */
     private static boolean isNewUser(AttributeContext c) {
         return c.getUser() == null;
     }
 
+    /** 将只读属性名数组编译为不区分大小写的正则 Pattern。 */
     public static Pattern getRegexPatternString(String[] builtinReadOnlyAttributes) {
         if (builtinReadOnlyAttributes != null) {
             List<String> readOnlyAttributes = new ArrayList<>(Arrays.asList(builtinReadOnlyAttributes));
@@ -256,7 +277,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
     public void init(Config.Scope config) {
         initDefaultConfiguration(config);
 
-        // make sure registry is clear in case of re-deploy
+        // 重新部署时清空上下文元数据注册表
         contextualMetadataRegistry.clear();
         Pattern pattern = getRegexPatternString(config.getArray(CONFIG_READ_ONLY_ATTRIBUTES));
         AttributeValidatorMetadata readOnlyValidator = null;
@@ -276,6 +297,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         addContextualProfileMetadata(configureUserProfile(createScimProfile(readOnlyValidator)));
     }
 
+    /** 构建 SCIM 上下文 Profile，附加 SCIM schema 注解。 */
     private @NonNull UserProfileMetadata createScimProfile(AttributeValidatorMetadata readOnlyValidator) {
         UserProfileMetadata metadata = createDefaultProfile(SCIM, readOnlyValidator);
         String coreSchema = "urn:ietf:params:scim:schemas:core:2.0:User";
@@ -354,8 +376,8 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
             }
         }
 
-        // delete cache so new config is parsed and applied next time it is required
-        // through #configureUserProfile(metadata, session)
+        // 清除组件缓存，下次使用时重新解析并应用配置
+        // 见 configureUserProfile(metadata, session)
         if (model != null) {
             model.removeNote(DeclarativeUserProfileProvider.PARSED_CONFIG_COMPONENT_KEY);
         }
@@ -391,22 +413,24 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
     }
 
     /**
-     * Specifies how contextual profile metadata is configured at init time.
+     * 在 init 阶段用默认领域配置装饰上下文 Profile 元数据。
      *
-     * @param metadata the profile metadata
-     * @return the metadata
+     * @param metadata 待装饰的 Profile 元数据
+     * @return 装饰后的元数据
      */
     protected UserProfileMetadata configureUserProfile(UserProfileMetadata metadata) {
-        // default metadata for each context is based on the default realm configuration
+        // 各上下文的默认元数据基于当前解析的领域配置
         return new DeclarativeUserProfileProvider(null, this).decorateUserProfileForCache(metadata, parsedConfig);
     }
 
+    /** 创建只读属性不可变校验器元数据。 */
     private AttributeValidatorMetadata createReadOnlyAttributeUnchangedValidator(Pattern pattern) {
         return new AttributeValidatorMetadata(ReadOnlyAttributeUnchangedValidator.ID,
                 ValidatorConfig.builder().config(ReadOnlyAttributeUnchangedValidator.CFG_PATTERN, pattern)
                         .build());
     }
 
+    /** 注册上下文元数据；组织特性下为 email 附加成员校验器。 */
     private void addContextualProfileMetadata(UserProfileMetadata metadata) {
         if (contextualMetadataRegistry.putIfAbsent(metadata.getContext(), metadata) != null) {
             throw new IllegalStateException("Multiple profile metadata found for context " + metadata.getContext());
@@ -423,6 +447,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         }
     }
 
+    /** 构建 IdP 联邦审核（IDP_REVIEW）上下文 Profile。 */
     private UserProfileMetadata createBrokeringProfile(AttributeValidatorMetadata readOnlyValidator) {
         UserProfileMetadata metadata = new UserProfileMetadata(IDP_REVIEW);
 
@@ -446,6 +471,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return metadata;
     }
 
+    /** 构建用户注册创建上下文 Profile。 */
     private UserProfileMetadata createRegistrationUserCreationProfile(AttributeValidatorMetadata readOnlyValidator) {
         UserProfileMetadata metadata = createDefaultProfile(REGISTRATION, readOnlyValidator);
 
@@ -463,6 +489,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return metadata;
     }
 
+    /** 构建指定上下文的默认 Profile（用户名/邮箱/只读键）。 */
     private UserProfileMetadata createDefaultProfile(UserProfileContext context, AttributeValidatorMetadata readOnlyValidator) {
         UserProfileMetadata metadata = new UserProfileMetadata(context);
 
@@ -496,6 +523,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return metadata;
     }
 
+    /** 构建 Admin User API（USER_API）校验用 Profile。 */
     private UserProfileMetadata createUserResourceValidation(Config.Scope config) {
         Pattern p = getRegexPatternString(config.getArray(CONFIG_ADMIN_READ_ONLY_ATTRIBUTES));
         UserProfileMetadata metadata = new UserProfileMetadata(USER_API);
@@ -536,6 +564,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return metadata;
     }
 
+    /** 构建账户管理（ACCOUNT）上下文 Profile。 */
     private UserProfileMetadata createAccountProfile(AttributeValidatorMetadata readOnlyValidator) {
         UserProfileMetadata defaultProfile = createDefaultProfile(UserProfileContext.ACCOUNT, readOnlyValidator);
 
@@ -547,32 +576,35 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return defaultProfile;
     }
 
-    // GETTER METHODS FOR INTERNAL FIELDS
+    // 内部字段访问器
 
+    /** @return 当前解析后的 UPConfig */
     protected UPConfig getParsedDefaultRawConfig() {
         return parsedConfig;
     }
 
+    /** @return 上下文元数据注册表 */
     protected Map<UserProfileContext, UserProfileMetadata> getContextualMetadataRegistry() {
         return contextualMetadataRegistry;
     }
 
     private void initDefaultConfiguration(Scope config) {
 
-        // The user-defined configuration is always parsed during init and should be avoided as much as possible
-        // If no user-defined configuration is set, the system default configuration must have been set
-        // In Quarkus, the system default configuration is set at build time for optimization purposes
+        // 用户自定义配置在 init 时解析，应尽量避免运行时重复解析
+        // 未设置用户配置时使用系统默认配置
+        // Quarkus 可在构建时注入系统默认配置以优化启动
         parsedConfig = ofNullable(config.get("configFile"))
                 .map(Paths::get)
                 .map(UPConfigUtils::parseConfig)
                 .orElse(PARSED_DEFAULT_RAW_CONFIG);
 
-        // As fallback parse the system default config
+        // 兜底：解析 classpath 中的系统默认配置
         if (parsedConfig == null) {
             parsedConfig = UPConfigUtils.parseSystemDefaultConfig();
         }
     }
 
+    /** 为邮箱字段附加 kc.required.action.supported 等 UI 注解。 */
     private static Map<String, Object> getEmailAnnotationDecorator(AttributeContext c) {
         AttributeMetadata m = c.getMetadata();
         Map<String, Object> rawAnnotations = Optional.ofNullable(m.getAnnotations()).orElse(Map.of());
@@ -608,6 +640,7 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return rawAnnotations;
     }
 
+    /** 领域启用 UPDATE_EMAIL 且属性有值时展示 emailPending。 */
     private boolean isUpdateEmailFeatureEnabled(AttributeContext context) {
         Entry<String, List<String>> attribute = context.getAttribute();
 
@@ -622,11 +655,13 @@ public class DeclarativeUserProfileProviderFactory implements UserProfileProvide
         return UpdateEmail.isEnabled(realm);
     }
 
+    /** 领域是否启用可验证凭证（DID 属性）。 */
     private static boolean isVerifiableCredentialsEnabled(AttributeContext context) {
         RealmModel realm = context.getSession().getContext().getRealm();
         return realm.isVerifiableCredentialsEnabled();
     }
 
+    /** 在 Profile 中注册用户 DID 属性及格式/重复校验。 */
     private void addAttributeUserDid(UserProfileMetadata metadata) {
         Predicate<AttributeContext> required = AttributeMetadata.ALWAYS_FALSE;
         Predicate<AttributeContext> selector = DeclarativeUserProfileProviderFactory::isVerifiableCredentialsEnabled;

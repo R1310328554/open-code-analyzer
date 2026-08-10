@@ -27,14 +27,14 @@ import org.keycloak.validate.ValidationError;
 import org.keycloak.validate.ValidatorConfig;
 
 /**
- * Validator to check that User Profile username is provided during Brokerin/Federation. Expects List of Strings as
- * input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 联邦/代理登录审核时校验用户名已提供。
+ * <p>领域未启用「注册邮箱即用户名」时，用户名为必填。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class BrokeringFederatedUsernameHasValueValidator implements SimpleValidator {
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-brokering-federated-username-has-value";
 
     @Override

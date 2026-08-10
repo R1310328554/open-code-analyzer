@@ -34,20 +34,22 @@ import org.jboss.logging.Logger;
 import static org.keycloak.common.util.ObjectUtil.isBlank;
 
 /**
- * Validator to check that User Profile attribute value is not changed if attribute is read-only. Expects List of
- * Strings as input.
- * 
- * @author Vlastimil Elias <velias@redhat.com>
+ * 校验匹配只读模式的属性值未被修改。
+ * <p>通过 {@link #CFG_PATTERN} 指定属性名正则；输入为 {@code List<String>}。</p>
  *
+ * @author Vlastimil Elias <velias@redhat.com>
  */
 public class ReadOnlyAttributeUnchangedValidator implements SimpleValidator {
 
     private static final Logger logger = Logger.getLogger(ReadOnlyAttributeUnchangedValidator.class);
 
+    /** 校验器 SPI ID。 */
     public static final String ID = "up-readonly-attribute-unchanged";
 
+    /** 只读属性名 Pattern 配置键。 */
     public static final String CFG_PATTERN = "pattern";
 
+    /** 拒绝修改只读属性时的错误消息键。 */
     public static String UPDATE_READ_ONLY_ATTRIBUTES_REJECTED_MSG = "updateReadOnlyAttributesRejectedMessage";
 
     @Override
@@ -92,7 +94,7 @@ public class ReadOnlyAttributeUnchangedValidator implements SimpleValidator {
 
     private boolean isUnchanged(String existingValue, String value) {
         if (existingValue == null && isBlank(value)) {
-            // if attribute not set to the user and value is blank/null, then pass validation
+            // 用户尚无该属性且新值为空时通过校验
             return true;
         }
 

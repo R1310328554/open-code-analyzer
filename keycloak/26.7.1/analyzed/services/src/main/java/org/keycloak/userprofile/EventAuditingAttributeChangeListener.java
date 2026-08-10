@@ -24,22 +24,22 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.models.UserModel;
 
 /**
- * {@link AttributeChangeListener} to audit user profile attribute changes into {@link Event}.
+ * 将用户 Profile 属性变更审计写入 {@link Event} 的 {@link AttributeChangeListener} 实现。
+ * <p>在事件 detail 中记录变更前后的属性值。</p>
  *
- * Adds info about user profile attribute change into {@link Event}'s detail field.
- * 
  * @author Vlastimil Elias <velias@redhat.com>
- *
  * @see UserProfile#update(AttributeChangeListener...)
  */
 public class EventAuditingAttributeChangeListener implements AttributeChangeListener {
 
+    /** 事件构建器，用于写入 detail */
     private EventBuilder event;
+    /** 关联的用户 Profile */
     private UserProfile profile;
 
     /**
-     * @param profile used to read attribute configuration from
-     * @param event to add detail info into
+     * @param profile 用于读取属性配置
+     * @param event 写入审计 detail 的事件构建器
      */
     public EventAuditingAttributeChangeListener(UserProfile profile, EventBuilder event) {
         super();
@@ -47,6 +47,7 @@ public class EventAuditingAttributeChangeListener implements AttributeChangeList
         this.event = event;
     }
 
+    /** 属性变更回调：名/姓/邮箱使用专用 detail 键，其余属性使用 PREF 前缀。 */
     @Override
     public void onChange(String attributeName, UserModel userModel, List<String> oldValue) {
         if (attributeName.equals(UserModel.FIRST_NAME)) {
