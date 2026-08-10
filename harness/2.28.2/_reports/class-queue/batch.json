@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T15:22:26Z",
   "files": [
-    "service/content/cache/contents.go",
-    "service/content/cache/contents_oss.go",
-    "service/content/content.go",
-    "service/hook/hook.go",
-    "service/hook/parser/parse.go",
-    "service/hook/util.go",
-    "service/license/load.go",
-    "service/license/nolimit.go",
-    "service/license/nolimit_oss.go",
-    "service/license/service.go",
-    "service/linker/linker.go",
-    "service/netrc/netrc.go",
-    "service/org/cache.go",
-    "service/org/org.go",
-    "service/redisdb/lockerr.go",
     "service/redisdb/redisdb.go",
     "service/repo/repo.go",
     "service/repo/util.go",
@@ -33,5 +18,5 @@
     "store/batch/batch.go"
   ],
   "remaining_pending": 58,
-  "done": 300
+  "done": 315
 }
