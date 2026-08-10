@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T00:46:47Z",
-  "files": [
-    "handler/src/main/java/io/netty/handler/ipfilter/AbstractRemoteAddressFilter.java",
-    "handler/src/main/java/io/netty/handler/ipfilter/IpFilterRule.java",
-    "handler/src/main/java/io/netty/handler/ipfilter/IpFilterRuleType.java",
-    "handler/src/main/java/io/netty/handler/ipfilter/IpSubnetFilter.java",
-    "handler/src/main/java/io/netty/handler/ipfilter/IpSubnetFilterRule.java",
-    "handler/src/main/java/io/netty/handler/ipfilter/IpSubnetFilterRuleComparator.java",
-    "handler/src/main/java/io/netty/handler/ipfilter/RuleBasedIpFilter.java",
-    "handler/src/main/java/io/netty/handler/ipfilter/UniqueIpFilter.java",
-    "handler/src/main/java/io/netty/handler/logging/ByteBufFormat.java",
-    "handler/src/main/java/io/netty/handler/logging/LogLevel.java",
-    "handler/src/main/java/io/netty/handler/logging/LoggingHandler.java",
-    "handler/src/main/java/io/netty/handler/pcap/EthernetPacket.java",
-    "handler/src/main/java/io/netty/handler/pcap/IPPacket.java",
-    "handler/src/main/java/io/netty/handler/pcap/PcapHeaders.java",
-    "handler/src/main/java/io/netty/handler/pcap/PcapWriteHandler.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 638,
-  "done": 1275
+  "done": 1290
 }
