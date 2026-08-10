@@ -32,8 +32,9 @@ import org.keycloak.models.utils.SessionTimeoutHelper;
 import org.jboss.logging.Logger;
 
 /**
- * The store is supposed to do periodic bulk update of lastSessionRefresh times of all userSessions, which were refreshed during some period
- * of time. The updates are sent to UserSessionPersisterProvider (DB)
+ * 将用户会话 {@code lastSessionRefresh} 批量持久化到数据库的实现。
+ * <p>
+ * 周期性汇总刷新过的在线/离线用户会话，通过 {@link UserSessionPersisterProvider} 写入 DB。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -41,6 +42,7 @@ public class PersisterLastSessionRefreshStore extends AbstractLastSessionRefresh
 
     protected static final Logger logger = Logger.getLogger(PersisterLastSessionRefreshStore.class);
 
+    /** 是否处理离线用户会话。 */
     private final boolean offline;
 
     protected PersisterLastSessionRefreshStore(int maxIntervalBetweenMessagesSeconds, int maxCount, boolean offline) {
@@ -55,20 +57,20 @@ public class PersisterLastSessionRefreshStore extends AbstractLastSessionRefresh
                         Collectors.groupingBy(entry -> entry.getValue().realmId(),
                                 Collectors.mapping(Map.Entry::getKey, Collectors.toSet())));
 
-        // Update DB with a bit lower value than current time to ensure 'revokeRefreshToken' will work correctly taking server
+        // 使用略低于当前时间的值，确保 revokeRefreshToken 在服务器时钟偏差下仍正确
         int lastSessionRefresh = Time.currentTime() - SessionTimeoutHelper.PERIODIC_TASK_INTERVAL_SECONDS;
 
         if (logger.isDebugEnabled()) {
             logger.debugf("Updating %d userSessions with lastSessionRefresh: %d", refreshesToSend.size(), lastSessionRefresh);
         }
 
-        // Separate transaction for each bulk update request to avoid deadlocks
+        // 每个 realm 独立事务批量更新，避免死锁
         for (Map.Entry<String, Set<String>> entry : sessionIdsByRealm.entrySet()) {
             KeycloakModelUtils.runJobInTransaction(kcSession.getKeycloakSessionFactory(), (kcSession2) -> {
                 UserSessionPersisterProvider persister = kcSession2.getProvider(UserSessionPersisterProvider.class);
                 RealmModel realm = kcSession2.realms().getRealm(entry.getKey());
 
-                // If realm is null, it means that realm was deleted in the meantime. UserSessions were already deleted as well (callback for realm deletion)
+                // realm 为 null 表示已被删除，关联用户会话亦已清理
                 if (realm != null) {
                     Set<String> userSessionIds = new TreeSet<>(entry.getValue());
 

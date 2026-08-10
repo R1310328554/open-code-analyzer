@@ -24,7 +24,10 @@ import org.infinispan.protostream.annotations.Proto;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
- * The key stored in the {@link RemoteCache} for {@link RemoteAuthenticatedClientSessionEntity}.
+ * {@link RemoteAuthenticatedClientSessionEntity} 在 {@link RemoteCache} 中的复合键。
+ *
+ * @param userSessionId 用户会话 ID
+ * @param clientId 客户端 ID
  */
 @ProtoTypeId(Marshalling.CLIENT_SESSION_KEY)
 @Proto

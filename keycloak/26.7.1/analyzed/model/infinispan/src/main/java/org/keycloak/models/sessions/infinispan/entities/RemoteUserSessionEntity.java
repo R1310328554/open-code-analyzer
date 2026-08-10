@@ -34,14 +34,19 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
+/**
+ * 远程 Hot Rod 缓存中的用户会话实体。
+ * <p>
+ * 存储跨 DC 复制的用户登录上下文，含 broker 信息、状态与 notes。
+ */
 @ProtoTypeId(Marshalling.REMOTE_USER_SESSION_ENTITY)
 @Indexed
 public class RemoteUserSessionEntity {
 
-    // immutable state
+    // 不可变会话 ID
     private final String userSessionId;
 
-    // mutable state
+    // 可变会话属性
     private String realmId;
     private String userId;
     private String brokerSessionId;
@@ -69,11 +74,9 @@ public class RemoteUserSessionEntity {
         String userId;
         String loginUsername = null;
         if (model instanceof OfflineUserSessionModel offline) {
-            // this is a hack so that UserModel doesn't have to be available when offline token is imported.
-            // see related JIRA - KEYCLOAK-5350 and corresponding test
+            // 离线令牌导入时 UserModel 可能不可用，直接使用持久化的 userId（KEYCLOAK-5350）
             userId = offline.getUserId();
-            // NOTE: Hack
-            // We skip calling entity.setLoginUsername(userSession.getLoginUsername())
+            // 注意：离线场景跳过设置 loginUsername
         } else {
             userId = model.getUser().getId();
             loginUsername = model.getLoginUsername();
@@ -88,12 +91,12 @@ public class RemoteUserSessionEntity {
         return e;
     }
 
-    // for testing purposes only!
+    // 仅供测试使用
     public static RemoteUserSessionEntity mockEntity(String id, String realmId, String userId) {
         return mockEntity(id, realmId, userId, null, null);
     }
 
-    // for testing purposes only!
+    // 仅供测试使用
     public static RemoteUserSessionEntity mockEntity(String id, String realmId, String userId, String brokerSessionId, String brokerUserId) {
         var e = new RemoteUserSessionEntity(id);
         e.realmId = realmId;

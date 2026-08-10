@@ -29,27 +29,43 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 单次登录流程中的认证会话实体，嵌入 {@link RootAuthenticationSessionEntity}。
+ * <p>
+ * 保存认证流执行状态、notes 及所需操作等中间状态。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.AUTHENTICATION_SESSION_ENTITY)
 public class AuthenticationSessionEntity {
 
+    /** 发起登录的客户端 UUID。 */
     private String clientUUID;
 
+    /** 已部分认证的用户 ID（可能为空）。 */
     private String authUserId;
 
+    /** 实体最后更新时间戳。 */
     private int timestamp;
 
+    /** OAuth 重定向 URI。 */
     private String redirectUri;
+    /** 当前认证动作标识。 */
     private String action;
+    /** 请求的客户端 scope 集合。 */
     private Set<String> clientScopes;
 
+    /** 认证流各执行步骤的状态。 */
     private Map<String, AuthenticationSessionModel.ExecutionStatus> executionStatus = new ConcurrentHashMap<>();
+    /** 使用的协议（如 openid-connect）。 */
     private String protocol;
 
+    /** 客户端侧 notes。 */
     private Map<String, String> clientNotes;
+    /** 认证过程 notes。 */
     private Map<String, String> authNotes;
+    /** 待完成的 required actions。 */
     private Set<String> requiredActions  = ConcurrentHashMap.newKeySet();
+    /** 与用户会话相关的 notes。 */
     private Map<String, String> userSessionNotes;
 
     public AuthenticationSessionEntity() {

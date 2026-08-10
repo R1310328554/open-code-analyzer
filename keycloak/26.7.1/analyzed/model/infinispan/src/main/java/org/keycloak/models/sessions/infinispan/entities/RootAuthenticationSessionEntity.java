@@ -29,14 +29,21 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 根认证会话实体，作为同一浏览器/Tab 下多个 {@link AuthenticationSessionEntity} 的容器。
+ * <p>
+ * 按 tab ID 索引子认证会话，支持并行登录流与过期清理。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.ROOT_AUTHENTICATION_SESSION_ENTITY)
 @Indexed
 public class RootAuthenticationSessionEntity extends SessionEntity {
 
+    /** 根认证会话唯一 ID（通常对应浏览器 tab）。 */
     private final String id;
+    /** 最后活动时间戳。 */
     private int timestamp;
+    /** tab ID 到子认证会话的映射。 */
     private Map<String, AuthenticationSessionEntity> authenticationSessions = new ConcurrentHashMap<>();
 
     public RootAuthenticationSessionEntity(String id) {

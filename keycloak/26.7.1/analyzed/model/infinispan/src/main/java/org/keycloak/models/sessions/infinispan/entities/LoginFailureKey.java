@@ -23,6 +23,10 @@ import org.infinispan.protostream.annotations.Proto;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * {@link LoginFailureEntity} 在缓存中的复合键。
+ *
+ * @param realmId realm ID
+ * @param userId 用户 ID
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @ProtoTypeId(Marshalling.LOGIN_FAILURE_KEY)

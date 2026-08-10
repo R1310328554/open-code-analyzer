@@ -34,6 +34,9 @@ import org.infinispan.protostream.annotations.ProtoReserved;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 已认证客户端会话的 Infinispan 嵌入式缓存实体。
+ * <p>
+ * 与用户会话关联，存储 OAuth/OIDC 客户端登录上下文及 notes。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -44,7 +47,7 @@ import org.infinispan.protostream.annotations.ProtoTypeId;
 )
 public class AuthenticatedClientSessionEntity extends SessionEntity {
 
-    // Metadata attribute, which contains the last timestamp available on remoteCache. Used in decide whether we need to write to remoteCache (DC) or not
+    // 远程缓存最后时间戳元数据，用于判断是否需要写入远程 DC（已弃用）
     @Deprecated(since = "26.4", forRemoval = true)
     public static final String LAST_TIMESTAMP_REMOTE = "lstr";
     @Deprecated(since = "26.4", forRemoval = true)
@@ -57,7 +60,7 @@ public class AuthenticatedClientSessionEntity extends SessionEntity {
 
     private Map<String, String> notes = new ConcurrentHashMap<>();
 
-    // TODO [pruivo] [KC27] make these fields final. They are the client session identity.
+    // TODO [pruivo] [KC27] 这些字段构成客户端会话身份，计划改为 final
     private volatile String userSessionId;
     private volatile String clientId;
     private volatile String userId;
@@ -158,7 +161,7 @@ public class AuthenticatedClientSessionEntity extends SessionEntity {
         return result;
     }
 
-    // factory method required because of final fields
+    // ProtoFactory：因部分字段为 final 而需要工厂构造
     @ProtoFactory
     AuthenticatedClientSessionEntity(String realmId, String authMethod, String redirectUri, int timestamp, String action, Map<String, String> notes, String userSessionId, String clientId, String userId) {
         super(realmId);

@@ -34,17 +34,22 @@ import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
+/**
+ * 远程 Hot Rod 缓存中的已认证客户端会话实体。
+ * <p>
+ * 不可变身份字段与可变协议/notes 状态分离，支持跨数据中心复制。
+ */
 @ProtoTypeId(Marshalling.REMOTE_CLIENT_SESSION_ENTITY)
 @Indexed
 public class RemoteAuthenticatedClientSessionEntity {
 
-    // immutable state
+    // 不可变身份字段
     private final String userSessionId;
     private final String clientId;
     private final String userId;
     private final String realmId;
 
-    // mutable state
+    // 可变会话状态
     private int started;
     private String protocol;
     private String redirectUri;
@@ -89,12 +94,12 @@ public class RemoteAuthenticatedClientSessionEntity {
         return e;
     }
 
-    // for testing purposes only!
+    // 仅供测试使用
     public static RemoteAuthenticatedClientSessionEntity mockEntity(String userSessionId, String userId, String realmId) {
         return mockEntity(userSessionId, "client", userId, realmId);
     }
 
-    // for testing purposes only!
+    // 仅供测试使用
     public static RemoteAuthenticatedClientSessionEntity mockEntity(String userSessionId, String clientId, String userId, String realmId) {
         return new RemoteAuthenticatedClientSessionEntity(userSessionId, clientId, userId, realmId);
     }

@@ -23,6 +23,10 @@ import org.infinispan.protostream.annotations.Proto;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 批量 lastSessionRefresh 传播中的单条会话数据。
+ *
+ * @param realmId 所属 realm ID
+ * @param lastSessionRefresh 用户会话最后刷新 Unix 时间戳
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.SESSION_DATA)

@@ -27,20 +27,31 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 用户登录失败计数实体，用于暴力破解防护与临时锁定。
+ * <p>
+ * 按 realm + userId 索引，记录失败次数、锁定截止时间等。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 @ProtoTypeId(Marshalling.LOGIN_FAILURE_ENTITY)
 @Indexed
 public class LoginFailureEntity extends SessionEntity {
 
+    /** 被跟踪的用户 ID。 */
     private final String userId;
+    /** 在此时间戳之前不允许再次尝试登录。 */
     private int failedLoginNotBefore;
+    /** 累计主认证失败次数。 */
     private int numFailures;
 
+    /** 临时锁定触发次数。 */
     private int numTemporaryLockouts;
+    /** 最后一次失败的时间戳。 */
     private long lastFailure;
+    /** 最后一次失败来源 IP。 */
     private String lastIPFailure;
 
+    /** 二次认证（如 OTP）失败次数。 */
     private int numSecondaryAuthFailures;
 
     public LoginFailureEntity(String realmId, String userId) {

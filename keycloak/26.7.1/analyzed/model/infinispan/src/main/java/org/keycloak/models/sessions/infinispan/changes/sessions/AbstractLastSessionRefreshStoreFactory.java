@@ -24,17 +24,19 @@ import org.keycloak.timer.ScheduledTask;
 import org.keycloak.timer.TimerProvider;
 
 /**
+ * {@link AbstractLastSessionRefreshStore} 工厂基类，负责注册周期性检查任务。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class AbstractLastSessionRefreshStoreFactory {
 
-    // Timer interval. The store will be checked every 5 seconds whether the message with stored lastSessionRefreshes should be sent
+    /** 定时器间隔：每 5 秒检查是否应发送累积的 lastSessionRefresh。 */
     public static final long DEFAULT_TIMER_INTERVAL_MS = 5000;
 
-    // Max interval between messages. It means that when message is sent to second DC, then another message will be sent at least after 60 seconds.
+    /** 两次批量消息之间的最大间隔（秒），发往第二数据中心后至少间隔该时长再发。 */
     public static final int DEFAULT_MAX_INTERVAL_BETWEEN_MESSAGES_SECONDS = SessionTimeoutHelper.PERIODIC_TASK_INTERVAL_SECONDS;
 
-    // Max count of lastSessionRefreshes. If count of lastSessionRefreshes reach this value, the message is sent to second DC
+    /** 待发送条目数上限，达到后立即触发批量发送。 */
     public static final int DEFAULT_MAX_COUNT = 100;
 
     protected void setupPeriodicTimer(KeycloakSession kcSession, AbstractLastSessionRefreshStore store, long timerIntervalMs, String eventKey) {
@@ -42,6 +44,7 @@ public abstract class AbstractLastSessionRefreshStoreFactory {
         timer.scheduleTask(new PropagateLastSessionRefreshTask(store), timerIntervalMs, eventKey);
     }
 
+    /** 周期性调用 {@link AbstractLastSessionRefreshStore#checkSendingMessage} 的定时任务。 */
     public static class PropagateLastSessionRefreshTask implements ScheduledTask {
 
         private final AbstractLastSessionRefreshStore store;

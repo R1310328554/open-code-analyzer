@@ -29,15 +29,16 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 用户会话下已认证客户端会话 ID 的索引容器。
+ * <p>
+ * 维护 client UUID 到客户端会话 UUID 的映射，供 {@link UserSessionEntity} 引用。
  *
  * @author hmlnarik
  */
 @ProtoTypeId(Marshalling.AUTHENTICATED_CLIENT_SESSION_STORE)
 public class AuthenticatedClientSessionStore {
 
-    /**
-     * Maps client UUID to client session ID.
-     */
+    /** 客户端 UUID 到客户端会话 ID 的并发映射。 */
     private final ConcurrentMap<String, UUID> authenticatedClientSessionIds;
 
     public AuthenticatedClientSessionStore() {
