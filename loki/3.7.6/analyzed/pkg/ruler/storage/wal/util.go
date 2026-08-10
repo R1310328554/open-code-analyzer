@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package wal
 
+// util 提供 WAL replay 辅助、内存 record 收集器及 SubDirectory 路径约定（base/wal）。
+
 import (
 	"path/filepath"
 	"sync"
@@ -97,6 +99,7 @@ func (r walReplayer) replayWAL(reader *wlog.Reader) error {
 	return nil
 }
 
+// walDataCollector 线程安全累积 RefSample/RefSeries/RefExemplar 供测试或诊断。
 type walDataCollector struct {
 	mut       sync.Mutex
 	samples   []record.RefSample
@@ -143,8 +146,10 @@ func (c *walDataCollector) SeriesReset(_ int) {}
 
 func (c *walDataCollector) StoreMetadata(_ []record.RefMetadata) {}
 
+// SubDirectory 返回实例存储根下的 wal 子目录，cleaner 用其判断 segment mtime。
 // SubDirectory returns the subdirectory within a Storage directory used for
 // the Prometheus WAL.
 func SubDirectory(base string) string {
 	return filepath.Join(base, "wal")
 }
+// walDataCollector 对 native histogram 记录类型暂为空实现，与 appender 行为一致。

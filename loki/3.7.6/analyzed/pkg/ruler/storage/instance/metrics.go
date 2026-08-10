@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package instance
 
+// Metrics 跟踪 WAL 实例异常退出次数与当前 running_instances 数量。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -14,6 +16,7 @@ type Metrics struct {
 	RunningInstances prometheus.Gauge
 }
 
+// NewMetrics 注册 instance_abnormal_exits_total 与 running_instances 两项指标。
 func NewMetrics(r prometheus.Registerer) *Metrics {
 	m := &Metrics{r: r}
 
@@ -35,3 +38,4 @@ func NewMetrics(r prometheus.Registerer) *Metrics {
 
 	return m
 }
+// BasicManager.runProcess 在异常退出时 Inc AbnormalExits 并记录 backoff 日志。

@@ -4,6 +4,8 @@
 
 package cleaner
 
+// cleaner 包周期性扫描 ruler WAL 根目录，删除已无活跃实例关联且超过 minAge 未写入的废弃存储目录。
+
 import (
 	"fmt"
 	"os"
@@ -18,12 +20,14 @@ import (
 	"github.com/grafana/loki/v3/pkg/ruler/storage/wal"
 )
 
+// DefaultCleanupAge 默认 12 小时；DefaultCleanupPeriod 为 0 表示默认禁用定时清理。
 // Default settings for the WAL cleaner.
 const (
 	DefaultCleanupAge    = 12 * time.Hour
 	DefaultCleanupPeriod = 0 * time.Second // disabled by default
 )
 
+// lastModifiedFunc 抽象获取 WAL 最新 segment 的 mtime，便于测试注入。
 // lastModifiedFunc gets the last modified time of the most recent segment of a WAL
 type lastModifiedFunc func(path string) (time.Time, error)
 
@@ -55,6 +59,7 @@ func lastModified(path string) (time.Time, error) {
 	return segmentFile.ModTime(), nil
 }
 
+// WALCleaner 在后台 goroutine 中按 period 调用 cleanup，Stop 通过 done 通道退出。
 // WALCleaner periodically checks for Write Ahead Logs (WALs) that are not associated
 // with any active instance.ManagedInstance and have not been written to in some configured
 // amount of time and deletes them.
@@ -73,6 +78,7 @@ type WALCleaner struct {
 // NewWALCleaner creates a new cleaner that looks for abandoned WALs in the given
 // directory and removes them if they haven't been modified in over minAge. Starts
 // a goroutine to periodically run the cleanup method in a loop
+// NewWALCleaner 合并 cfg 覆盖默认 minAge/period，period>=0 时启动 run 循环。
 func NewWALCleaner(logger log.Logger, manager instance.Manager, metrics *Metrics, walDirectory string, cfg Config) *WALCleaner {
 	c := &WALCleaner{
 		logger:          log.With(logger, "component", "cleaner"),
@@ -100,6 +106,7 @@ func NewWALCleaner(logger log.Logger, manager instance.Manager, metrics *Metrics
 	return c
 }
 
+// getManagedStorage 收集当前 Manager 下各实例 StorageDirectory 路径集合。
 // getManagedStorage gets storage directories used for each ManagedInstance
 func (c *WALCleaner) getManagedStorage(instances map[string]instance.ManagedInstance) map[string]bool {
 	out := make(map[string]bool)
@@ -111,6 +118,7 @@ func (c *WALCleaner) getManagedStorage(instances map[string]instance.ManagedInst
 	return out
 }
 
+// getAllStorage 仅遍历 walDirectory 下一层子目录，对应各租户/实例存储根。
 // getAllStorage gets all storage directories under walDirectory
 func (c *WALCleaner) getAllStorage() []string {
 	var out []string
@@ -138,6 +146,7 @@ func (c *WALCleaner) getAllStorage() []string {
 	return out
 }
 
+// getAbandonedStorage 对比 managed 集合并检查 WAL 子目录 mtime 是否超过 minAge。
 // getAbandonedStorage gets the full path of storage directories that aren't associated with
 // an active instance  and haven't been written to within a configured duration (usually several
 // hours or more).
@@ -193,6 +202,7 @@ func (c *WALCleaner) run() {
 	}
 }
 
+// cleanup 在 instanceManager.Ready 后才执行，避免误删尚未就绪的 WAL。
 // cleanup removes any abandoned and unused WAL directories. Note that it shouldn't be
 // necessary to call this method explicitly in most cases since it will be run periodically
 // in a goroutine (started when WALCleaner is created).
@@ -233,3 +243,4 @@ func (c *WALCleaner) cleanup() {
 func (c *WALCleaner) Stop() {
 	close(c.done)
 }
+// 实例被 QueueManager 移除时 cleaner 需 ruler 重启才能感知，见 TODO 回调机制。

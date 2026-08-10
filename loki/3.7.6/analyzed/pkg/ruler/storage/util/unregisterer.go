@@ -6,8 +6,11 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package util //nolint:revive
 
+// Unregisterer 包装 prometheus.Registerer，记录已注册 collector 以便 Instance.Run 结束时批量注销。
+
 import "github.com/prometheus/client_golang/prometheus"
 
+// Unregisterer 用 map 追踪 Register 成功的 collector，避免重复 Unregister 遗漏。
 // Unregisterer is a Prometheus Registerer that can unregister all collectors
 // passed to it.
 type Unregisterer struct {
@@ -17,6 +20,7 @@ type Unregisterer struct {
 
 // WrapWithUnregisterer wraps a prometheus Registerer with capabilities to
 // unregister all collectors.
+// WrapWithUnregisterer 在 Instance.Run 中创建 trackingReg，defer UnregisterAll。
 func WrapWithUnregisterer(reg prometheus.Registerer) *Unregisterer {
 	return &Unregisterer{
 		wrap: reg,
@@ -56,6 +60,7 @@ func (u *Unregisterer) Unregister(c prometheus.Collector) bool {
 	return false
 }
 
+// UnregisterAll 遍历 cs 映射逐个 Unregister，任一失败则最终返回 false。
 // UnregisterAll unregisters all collectors that were registered through the
 // Reigsterer.
 func (u *Unregisterer) UnregisterAll() bool {
@@ -67,3 +72,4 @@ func (u *Unregisterer) UnregisterAll() bool {
 	}
 	return success
 }
+// wrap 为 nil 时 Register/MustRegister 成为空操作，便于测试禁用指标注册。

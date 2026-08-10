@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package wal
 
+// wal 包实现仅写 WAL 的 storage.Storage：内存 series 索引、截断 checkpoint、replay 与 staleness marker 写入。
+
 import (
 	"context"
 	"fmt"
@@ -34,10 +36,12 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// ErrWALClosed 在 walClosed 置位后所有 mutating 操作应快速失败。
 // ErrWALClosed is an error returned when a WAL operation can't run because the
 // storage has already been closed.
 var ErrWALClosed = fmt.Errorf("WAL storage closed")
 
+// Storage 用 walMtx 保护关闭与写入；series 为 stripeSeries 内存索引。
 // Storage implements storage.Storage, and just writes to the WAL.
 type Storage struct {
 	// Embed Queryable/ChunkQueryable for compatibility, but don't actually implement it.
@@ -70,6 +74,7 @@ type Storage struct {
 }
 
 // NewStorage makes a new Storage.
+// NewStorage 创建 Snappy 压缩 segment WAL，可选 replay 并在损坏时 Repair。
 func NewStorage(logger log.Logger, metrics *Metrics, registerer prometheus.Registerer, path string, enableReplay bool) (*Storage, error) {
 	w, err := wlog.NewSize(util_log.SlogFromGoKit(logger), registerer, SubDirectory(path), wlog.DefaultSegmentSize, compression.Snappy)
 	if err != nil {
@@ -373,6 +378,7 @@ func (*Storage) StartTime() (int64, error) {
 	return 0, nil
 }
 
+// Truncate 先 gc 序列再 Checkpoint 并 Truncate 旧 segment，保留 deleted 映射至 checkpoint 完成。
 // Truncate removes all data from the WAL prior to the timestamp specified by
 // mint.
 func (w *Storage) Truncate(mint int64) error {
@@ -481,6 +487,7 @@ func (w *Storage) gc(mint int64) {
 	w.metrics.NumDeletedSeries.Set(float64(len(w.deleted)))
 }
 
+// WriteStalenessMarkers 写入 StaleNaN 后轮询 remoteTsFunc 最多等待一分钟确认 flush。
 // WriteStalenessMarkers appends a staleness sample for all active series.
 func (w *Storage) WriteStalenessMarkers(remoteTsFunc func() int64) error {
 	var lastErr error
@@ -588,6 +595,7 @@ func dirSize(path string) (int64, error) {
 	return size, err
 }
 
+// appender 批量缓存 series/samples/exemplars，Commit 时编码写入 WAL 并 notify remote。
 type appender struct {
 	w *Storage
 	// Notify the underlying storage that some sample is written
@@ -727,6 +735,7 @@ func (a *appender) AppendCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _ in
 
 func (a *appender) SetOptions(_ *storage.AppendOptions) {}
 
+// Commit 成功后 Rollback 清空批次并将 appender 归还 appenderPool 复用。
 // Commit submits the collected samples and purges the batch.
 func (a *appender) Commit() error {
 	a.w.walMtx.RLock()
@@ -792,3 +801,4 @@ func (a *appender) Rollback() error {
 	a.w.appenderPool.Put(a)
 	return nil
 }
+// loadWAL replay 时 orphan sample 仅打 warn 跳过，series 先于 sample 建立 ref 映射。

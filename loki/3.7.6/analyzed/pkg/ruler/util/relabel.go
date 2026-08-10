@@ -1,7 +1,11 @@
 package util //nolint:revive
 
+// RelabelConfig 为 ruler 定制的 relabel 配置结构，字段与 Prometheus relabel 语义对齐但便于 YAML 反序列化。
+
+// 独立定义避免 upstream custom type 在 ruler 配置解析中难以 unmarshal 的问题。
 // copy and modification of github.com/prometheus/prometheus/model/relabel/relabel.go
 // reason: the custom types in github.com/prometheus/prometheus/model/relabel/relabel.go are difficult to unmarshal
+// SourceLabels/Separator/Regex 定义匹配输入；Action 与 Replacement 控制替换行为。
 type RelabelConfig struct {
 	// A list of labels from which values are taken and concatenated
 	// with the configured separator in order.
@@ -20,3 +24,4 @@ type RelabelConfig struct {
 	// Action is the action to be performed for the relabeling.
 	Action string `yaml:"action,omitempty" json:"action,omitempty"`
 }
+// Modulus 用于 hashmod action；TargetLabel 在 replace 等动作中指定输出标签名。

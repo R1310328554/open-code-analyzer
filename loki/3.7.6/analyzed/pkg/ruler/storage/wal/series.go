@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package wal
 
+// series 实现 memSeries 与 stripeSeries，借鉴 Prometheus TSDB 分条带锁降低并发争用。
+
 import (
 	"sync"
 
@@ -43,6 +45,7 @@ func (s *memSeries) updateTs(ts int64) {
 	s.pendingCommit = true
 }
 
+// seriesHashmap 以 StableHash 为键，桶内 slice 解决标签集哈希冲突。
 // seriesHashmap is a simple hashmap for memSeries by their label set. It is
 // built on top of a regular hashmap and holds a slice of series to resolve
 // hash collisions. Its methods require the hash to be submitted with it to
@@ -93,6 +96,7 @@ const (
 	defaultStripeSize = 1 << 14
 )
 
+// stripeSeries 将 series ID 与 label hash 映射到 defaultStripeSize 个条带独立加锁。
 // stripeSeries locks modulo ranges of IDs and hashes to reduce lock contention.
 // The locks are padded to not be on the same cache line. Filling the padded space
 // with the maps was profiled to be slower – likely due to the additional pointer
@@ -130,6 +134,7 @@ func newStripeSeries() *stripeSeries {
 	return s
 }
 
+// gc 对 lastTs<mint 且无 pendingCommit 的序列先标记 willDelete，下一周期才真正删除。
 // gc garbage collects old chunks that are strictly before mint and removes
 // series entirely that have no chunks left.
 func (s *stripeSeries) gc(mint int64) map[chunks.HeadSeriesRef]struct{} {
@@ -223,6 +228,7 @@ func (s *stripeSeries) iterator() *stripeSeriesIterator {
 	return &stripeSeriesIterator{s}
 }
 
+// Channel 迭代器必须在 goroutine 中消费至 close，否则泄漏后台 goroutine。
 // stripeSeriesIterator allows to iterate over series through a channel.
 // The channel should always be completely consumed to not leak.
 type stripeSeriesIterator struct {
@@ -260,3 +266,4 @@ func (it *stripeSeriesIterator) Channel() <-chan *memSeries {
 
 	return ret
 }
+// 跨条带删除时需同时锁定 series 条带与 hash 条带，避免标签索引与 ID 映射不一致。

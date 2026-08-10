@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package wal
 
+// Metrics 暴露租户 WAL 的活跃/删除序列数、追加样本、损坏修复与 replay 耗时等指标。
+
 import "github.com/prometheus/client_golang/prometheus"
 
 type Metrics struct {
@@ -21,6 +23,7 @@ type Metrics struct {
 	DiskSize               prometheus.Gauge
 }
 
+// NewMetrics 使用 ExponentialBuckets 配置 replay_duration 直方图分桶。
 func NewMetrics(r prometheus.Registerer) *Metrics {
 	m := Metrics{r: r}
 	m.NumActiveSeries = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -101,6 +104,7 @@ func NewMetrics(r prometheus.Registerer) *Metrics {
 	return &m
 }
 
+// Unregister 在 Storage.Close 中调用，防止重复注册同名指标冲突。
 func (m *Metrics) Unregister() {
 	if m.r == nil {
 		return
@@ -122,3 +126,4 @@ func (m *Metrics) Unregister() {
 		m.r.Unregister(c)
 	}
 }
+// DiskSize 由 recordSize 每五秒 walk 目录更新，反映租户 WAL 占用磁盘空间。

@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package instance
 
+// manager 包通过 BasicManager 管理多租户 ManagedInstance 生命周期：ApplyConfig、动态更新失败重启、异常退出退避重试。
+
 import (
 	"context"
 	"errors"
@@ -24,6 +26,7 @@ var (
 	}
 )
 
+// Manager 接口提供实例查询、配置应用/删除及 Ready 状态聚合。
 // Manager represents a set of methods for manipulating running instances at
 // runtime.
 type Manager interface {
@@ -55,6 +58,7 @@ type Manager interface {
 	Stop()
 }
 
+// ManagedInstance 抽象 Ready/Run/Update/StorageDirectory/Appender 供 cleaner 与测试使用。
 // ManagedInstance is implemented by Instance. It is defined as an interface
 // for the sake of testing from Manager implementations.
 type ManagedInstance interface {
@@ -72,6 +76,7 @@ type BasicManagerConfig struct {
 	InstanceRestartBackoff time.Duration
 }
 
+// BasicManager 直接 spawn goroutine 运行实例，其他 Manager 实现通常包装它。
 // BasicManager creates a new BasicManager, implementing the Manager interface.
 // BasicManager will directly launch instances and perform no extra processing.
 //
@@ -174,6 +179,7 @@ func (m *BasicManager) ListConfigs() map[string]Config {
 	return res
 }
 
+// ApplyConfig 遇 ErrInvalidUpdate 时 Stop 旧进程并 spawnProcess 重建实例。
 // ApplyConfig takes a Config and either starts a new managed instance or
 // updates an existing managed instance. The value for Name in c is used to
 // uniquely identify the Config and determine whether the Config has an
@@ -260,6 +266,7 @@ func (m *BasicManager) spawnProcess(c Config) error {
 	return nil
 }
 
+// runProcess 在非 context.Canceled 错误时按 InstanceRestartBackoff 睡眠后重启。
 // runProcess runs and instance and keeps it alive until it is explicitly stopped
 // by cancelling the context.
 func (m *BasicManager) runProcess(ctx context.Context, name string, inst ManagedInstance) {
@@ -350,6 +357,7 @@ func (m *BasicManager) Stop() {
 
 // MockManager exposes methods of the Manager interface as struct fields.
 // Useful for tests.
+// MockManager 将 Manager 方法暴露为函数字段，便于单元测试注入行为。
 type MockManager struct {
 	GetInstanceFunc   func(name string) (ManagedInstance, error)
 	ListInstancesFunc func() map[string]ManagedInstance
@@ -415,3 +423,4 @@ func (m MockManager) Stop() {
 	}
 	panic("StopFunc not implemented")
 }
+// spawnProcess 退出时仅当 map 中仍为同一 inst 指针才 delete，避免覆盖竞态误删。

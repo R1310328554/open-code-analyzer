@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package cleaner
 
+// Metrics 注册 cleaner_* Prometheus 指标：发现错误、段错误、托管/废弃目录数及清理耗时。
+
 import (
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -19,6 +21,7 @@ type Metrics struct {
 	CleanupTimes       prometheus.Histogram
 }
 
+// NewMetrics 创建 cleaner_storage_error_total 等七项指标并可选注册。
 func NewMetrics(r prometheus.Registerer) *Metrics {
 	m := Metrics{r: r}
 
@@ -88,6 +91,7 @@ func NewMetrics(r prometheus.Registerer) *Metrics {
 	return &m
 }
 
+// Unregister 在组件关闭时从原始 registerer 注销全部 collector。
 func (m *Metrics) Unregister() {
 	if m.r == nil {
 		return
@@ -105,3 +109,4 @@ func (m *Metrics) Unregister() {
 		m.r.Unregister(c)
 	}
 }
+// DiscoveryError 与 SegmentError 按 storage 路径打标签便于定位遍历或段读取失败。

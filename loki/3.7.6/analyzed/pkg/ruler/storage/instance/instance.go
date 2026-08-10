@@ -3,6 +3,8 @@
 // NOTE: many changes have been made to the original code for our use-case.
 package instance
 
+// instance 包为每个 ruler 租户维护独立 WAL 与 remote_write 管道，负责截断循环、remote flush 与 Prometheus storage 组合。
+
 import (
 	"bytes"
 	"context"
@@ -52,6 +54,7 @@ var (
 	}
 )
 
+// Config 含租户名、WAL 目录、截断频率、min/max age 及 RemoteWrite 配置列表。
 // Config is a specific agent that runs within the overall Prometheus
 // agent. It has its own set of scrape_configs and remote_write rules.
 type Config struct {
@@ -98,6 +101,7 @@ func (c Config) MarshalYAML() (interface{}, error) {
 	return m, nil
 }
 
+// ApplyDefaults 校验 Name、TruncateFrequency、RemoteFlushDeadline 及 MinAge<=MaxAge。
 // ApplyDefaults applies default configurations to the configuration to all
 // values that have not been changed to their non-zero value. ApplyDefaults
 // also validates the config.
@@ -153,6 +157,7 @@ func (c *Config) RegisterFlags(f *flag.FlagSet) {
 
 type walStorageFactory func(reg prometheus.Registerer) (walStorage, error)
 
+// Instance 通过 mut 保护 cfg/wal/remoteStore，Run 每次调用会重新 initialize 组件。
 // Instance is an individual metrics collector and remote_writer.
 type Instance struct {
 	initialized bool
@@ -179,6 +184,7 @@ type Instance struct {
 
 // New creates a new Instance with a directory for storing the WAL. The instance
 // will not start until Run is called on the instance.
+// New 在 cfg.Dir/cfg.Tenant 下创建 wal.Storage，Run 前不启动后台任务。
 func New(reg prometheus.Registerer, cfg Config, metrics *wal.Metrics, logger log.Logger, enableReplay bool) (*Instance, error) {
 	logger = log.With(logger, "instance", cfg.Name)
 
@@ -215,6 +221,7 @@ func (i *Instance) Storage() storage.Storage {
 	return i.storage
 }
 
+// Run 用 trackingReg 包装 registerer，退出时 UnregisterAll 以便重复 Run。
 // Run starts the instance, initializing Prometheus components, and will
 // continue to run until an error happens during execution or the provided
 // context is cancelled.
@@ -323,6 +330,7 @@ func (i *Instance) initialize(_ context.Context, reg prometheus.Registerer, cfg 
 	return nil
 }
 
+// Update 仅允许变更 remote_write；不可变字段返回 ErrInvalidUpdate。
 // Update accepts a new Config for the Instance and will dynamically update any
 // running Prometheus components with the new values from Config. Update will
 // return an ErrInvalidUpdate if the Update could not be applied.
@@ -470,6 +478,7 @@ func (i *Instance) truncateLoop(ctx context.Context, wal walStorage, cfg *Config
 	}
 }
 
+// getRemoteWriteTimestamp 取各 remote 名对应 queue_highest_sent_timestamp 的最小值。
 // getRemoteWriteTimestamp looks up the last successful remote write timestamp.
 // This is passed to wal.Storage for its truncation. If no remote write sections
 // are configured, getRemoteWriteTimestamp returns the current time.
@@ -528,6 +537,7 @@ type walStorage interface {
 	Close() error
 }
 
+// MetricValueCollector 从 DefaultGatherer 按标签过滤抓取 Gauge/Counter 值供截断决策。
 // MetricValueCollector wraps around a Gatherer and provides utilities for
 // pulling metric values from a given metric name and label matchers.
 //
@@ -630,3 +640,4 @@ func (rg *runGroupContext) Add(execute func() error, interrupt func(error)) {
 
 func (rg *runGroupContext) Run() error   { return rg.g.Run() }
 func (rg *runGroupContext) Stop(_ error) { rg.cancel() }
+// truncateLoop 在 remote 时间戳不变时跳过截断，MaxAge 上限防止 WAL 无限增长。
