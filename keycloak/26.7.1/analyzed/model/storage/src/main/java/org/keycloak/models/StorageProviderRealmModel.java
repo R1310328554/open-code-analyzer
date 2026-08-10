@@ -29,11 +29,13 @@ import org.keycloak.storage.role.RoleStorageProvider;
 import org.keycloak.storage.role.RoleStorageProviderModel;
 
 /**
+ * 扩展 {@link RealmModel}，提供 realm 内各类存储 Provider 的便捷访问。
+ *
  * @author Alexander Schwartz
  */
 public interface StorageProviderRealmModel extends RealmModel {
     /**
-     * @deprecated Use {@link #getClientStorageProvidersStream() getClientStorageProvidersStream} instead.
+     * @deprecated 请改用 {@link #getClientStorageProvidersStream() getClientStorageProvidersStream}。
      */
     @Deprecated
     default List<ClientStorageProviderModel> getClientStorageProviders() {
@@ -41,9 +43,11 @@ public interface StorageProviderRealmModel extends RealmModel {
     }
 
     /**
-     * Returns sorted {@link ClientStorageProviderModel ClientStorageProviderModel} as a stream.
-     * It should be used with forEachOrdered if the ordering is required.
-     * @return Sorted stream of {@link ClientStorageProviderModel}. Never returns {@code null}.
+     * 返回已排序的 {@link ClientStorageProviderModel} 流。
+     * <p>
+     * 若需保持顺序，应配合 {@code forEachOrdered} 使用。
+     *
+     * @return 排序后的客户端存储 Provider 流，永不为 {@code null}。
      */
     default Stream<ClientStorageProviderModel> getClientStorageProvidersStream() {
         return getComponentsStream(getId(), ClientStorageProvider.class.getName())
@@ -52,7 +56,7 @@ public interface StorageProviderRealmModel extends RealmModel {
     }
 
     /**
-     * @deprecated Use {@link #getRoleStorageProvidersStream() getRoleStorageProvidersStream} instead.
+     * @deprecated 请改用 {@link #getRoleStorageProvidersStream() getRoleStorageProvidersStream}。
      */
     @Deprecated
     default List<RoleStorageProviderModel> getRoleStorageProviders() {
@@ -60,9 +64,11 @@ public interface StorageProviderRealmModel extends RealmModel {
     }
 
     /**
-     * Returns sorted {@link RoleStorageProviderModel RoleStorageProviderModel} as a stream.
-     * It should be used with forEachOrdered if the ordering is required.
-     * @return Sorted stream of {@link RoleStorageProviderModel}. Never returns {@code null}.
+     * 返回已排序的 {@link RoleStorageProviderModel} 流。
+     * <p>
+     * 若需保持顺序，应配合 {@code forEachOrdered} 使用。
+     *
+     * @return 排序后的角色存储 Provider 流，永不为 {@code null}。
      */
     default Stream<RoleStorageProviderModel> getRoleStorageProvidersStream() {
         return getComponentsStream(getId(), RoleStorageProvider.class.getName())
@@ -71,7 +77,7 @@ public interface StorageProviderRealmModel extends RealmModel {
     }
 
     /**
-     * @deprecated Use {@link #getUserStorageProvidersStream() getUserStorageProvidersStream} instead.
+     * @deprecated 请改用 {@link #getUserStorageProvidersStream() getUserStorageProvidersStream}。
      */
     @Deprecated
     default List<UserStorageProviderModel> getUserStorageProviders() {
@@ -79,9 +85,11 @@ public interface StorageProviderRealmModel extends RealmModel {
     }
 
     /**
-     * Returns sorted {@link UserStorageProviderModel UserStorageProviderModel} as a stream.
-     * It should be used with forEachOrdered if the ordering is required.
-     * @return Sorted stream of {@link UserStorageProviderModel}. Never returns {@code null}.
+     * 返回已排序的 {@link UserStorageProviderModel} 流。
+     * <p>
+     * 若需保持顺序，应配合 {@code forEachOrdered} 使用。
+     *
+     * @return 排序后的用户存储 Provider 流，永不为 {@code null}。
      */
     default Stream<UserStorageProviderModel> getUserStorageProvidersStream() {
         return getComponentsStream(getId(), UserStorageProvider.class.getName())

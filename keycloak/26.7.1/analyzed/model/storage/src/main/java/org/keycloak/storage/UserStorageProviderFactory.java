@@ -33,6 +33,8 @@ import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.user.ImportSynchronization;
 
 /**
+ * 用户存储 Provider 工厂接口：创建 Provider 实例并暴露通用配置项。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -40,18 +42,18 @@ public interface UserStorageProviderFactory<T extends UserStorageProvider> exten
 
 
     /**
-     * called per Keycloak transaction.
+     * 每个 Keycloak 事务调用一次，创建 Provider 实例。
      *
-     * @param session
-     * @param model
-     * @return
+     * @param session 当前会话
+     * @param model 组件配置模型
+     * @return Provider 实例
      */
     T create(KeycloakSession session, ComponentModel model);
 
     /**
-     * This is the name of the provider and will be showed in the admin console as an option.
+     * Provider 在管理控制台中的显示名称（亦作工厂 ID）。
      *
-     * @return
+     * @return 工厂标识
      */
     @Override
     String getId();
@@ -87,12 +89,11 @@ public interface UserStorageProviderFactory<T extends UserStorageProvider> exten
     }
 
     /**
-     * Called when UserStorageProviderModel is created.  This allows you to do initialization of any additional configuration
-     * you need to add.  For example, you may be introspecting a database or ldap schema to automatically create mappings.
+     * {@link UserStorageProviderModel} 创建时调用；可用于自动探测数据库/LDAP 模式并生成映射配置。
      *
-     * @param session
-     * @param realm
-     * @param model
+     * @param session 当前会话
+     * @param realm 所属 realm
+     * @param model 新创建的组件模型
      */
     @Override
     default void onCreate(KeycloakSession session, RealmModel realm, ComponentModel model) {
@@ -100,9 +101,9 @@ public interface UserStorageProviderFactory<T extends UserStorageProvider> exten
     }
 
     /**
-     * configuration properties that are common across all UserStorageProvider implementations
+     * 所有 UserStorageProvider 实现共用的配置属性列表。
      *
-     * @return
+     * @return 通用配置项
      */
     @Override
     default
@@ -115,6 +116,7 @@ public interface UserStorageProviderFactory<T extends UserStorageProvider> exten
     Map<String, Object> getTypeMetadata() {
         Map<String, Object> metadata = new HashMap<>();
         if (this instanceof ImportSynchronization) {
+            // 标记该工厂支持用户导入同步
             metadata.put("synchronizable", true);
         }
         return metadata;

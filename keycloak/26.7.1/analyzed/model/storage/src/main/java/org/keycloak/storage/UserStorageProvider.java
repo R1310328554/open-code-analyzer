@@ -22,18 +22,17 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.provider.Provider;
 
 /**
- * A class implementing this interface represents a user storage provider to Keycloak.
- * <p/>
- * This interface contains only very basic methods for manipulating users. However, the storage provider capabilities
- * are extended by implementing one or more of the following capability interfaces:
+ * Keycloak 用户存储 Provider 标记接口。
+ * <p>
+ * 本接口仅含基础生命周期回调；完整能力通过实现以下能力接口扩展：
  * <ul>
- *     <li>{@link org.keycloak.storage.user.UserLookupProvider UserLookupProvider} - Provide basic lookup methods. After implementing it is possible to login using users from the storage.</li>
- *     <li>{@link org.keycloak.storage.user.UserQueryMethodsProvider UserQueryMethodsProvider} - Provide complex lookup methods. After implementing it is possible to manage users from admin console.</li>
- *     <li>{@link org.keycloak.storage.user.UserCountMethodsProvider UserCountMethodsProvider} - Provide complex count methods. After implementing it is possible to leverage optimizations during querying for users.</li>
- *     <li>{@link org.keycloak.storage.user.UserQueryProvider UserQueryProvider} - This interface is combined capability of {@code UserQueryMethodsProvider} and {@code UserCountMethodsProvider}.</li>
- *     <li>{@link org.keycloak.storage.user.UserRegistrationProvider UserRegistrationProvider} - Provide methods for adding users. After implementing it is possible to store registered users in the storage.</li>
- *     <li>{@link org.keycloak.storage.user.UserBulkUpdateProvider UserBulkUpdateProvider} - After implementing it is possible to perform bulk operations on all users from storage (for example, addition of a role to all users).</li>
- *     <li>{@link org.keycloak.storage.user.ImportedUserValidation ImportedUserValidation} - Provider method for validating users within Keycloak local storage that are imported from the storage.</li>
+ *     <li>{@link org.keycloak.storage.user.UserLookupProvider UserLookupProvider} — 基础查找，实现后可从该存储登录。</li>
+ *     <li>{@link org.keycloak.storage.user.UserQueryMethodsProvider UserQueryMethodsProvider} — 复杂查询，实现后可在管理控制台管理用户。</li>
+ *     <li>{@link org.keycloak.storage.user.UserCountMethodsProvider UserCountMethodsProvider} — 计数优化，实现后可加速用户查询。</li>
+ *     <li>{@link org.keycloak.storage.user.UserQueryProvider UserQueryProvider} — {@code UserQueryMethodsProvider} 与 {@code UserCountMethodsProvider} 的组合能力。</li>
+ *     <li>{@link org.keycloak.storage.user.UserRegistrationProvider UserRegistrationProvider} — 用户注册写入外部存储。</li>
+ *     <li>{@link org.keycloak.storage.user.UserBulkUpdateProvider UserBulkUpdateProvider} — 对存储内全部用户执行批量操作（如批量赋角色）。</li>
+ *     <li>{@link org.keycloak.storage.user.ImportedUserValidation ImportedUserValidation} — 校验自存储导入到 Keycloak 本地库的用户。</li>
  * </ul>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -43,52 +42,48 @@ public interface UserStorageProvider extends Provider {
 
 
     /**
-     * Callback when a realm is removed.  Implement this if, for example, you want to do some
-     * cleanup in your user storage when a realm is removed
+     * realm 删除前的回调；可在此清理外部存储中的关联数据。
      *
-     * @param realm
+     * @param realm 待删除 realm
      */
     default void preRemove(RealmModel realm) {
 
     }
 
     /**
-     * Callback when a group is removed.  Allows you to do things like remove a user
-     * group mapping in your external store if appropriate
+     * 组删除前的回调；可同步移除外部存储中的用户-组映射。
      *
-     * @param realm
-     * @param group
+     * @param realm 所属 realm
+     * @param group 待删除组
      */
     default void preRemove(RealmModel realm, GroupModel group) {
 
     }
 
     /**
-     * Callback when a role is removed.  Allows you to do things like remove a user
-     * role mapping in your external store if appropriate
+     * 角色删除前的回调；可同步移除外部存储中的用户-角色映射。
      *
-     * @param realm
-     * @param role
+     * @param realm 所属 realm
+     * @param role 待删除角色
      */
     default void preRemove(RealmModel realm, RoleModel role) {
 
     }
 
     /**
-     * Optional type that can be used by implementations to
-     * describe edit mode of user storage
+     * 用户存储编辑模式枚举，供实现类描述用户数据的可写性。
      */
     enum EditMode {
         /**
-         * user storage is read-only
+         * 只读：用户存储不可修改。
          */
         READ_ONLY,
         /**
-         * user storage is writable
+         * 可写：用户存储支持更新。
          */
         WRITABLE,
         /**
-         * updates to user are stored locally and not synced with user storage.
+         * 不同步：更新仅保存在 Keycloak 本地，不回写用户存储。
          */
         UNSYNCED
     }

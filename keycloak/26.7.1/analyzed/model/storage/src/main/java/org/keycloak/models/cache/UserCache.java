@@ -22,29 +22,31 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.UserProvider;
 
 /**
- * All these methods effect an entire cluster of Keycloak instances.
+ * 用户缓存 Provider 接口：扩展 {@link UserProvider}，支持集群范围的缓存驱逐。
+ * <p>
+ * 本接口所有方法均影响整个 Keycloak 集群实例。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface UserCache extends UserProvider {
     /**
-     * Evict user from cache.
+     * 从缓存中驱逐指定用户。
      *
-     * @param user
+     * @param realm 用户所属 realm
+     * @param user 待驱逐用户
      */
     void evict(RealmModel realm, UserModel user);
 
     /**
-     * Evict users of a specific realm
+     * 驱逐指定 realm 的全部缓存用户。
      *
-     * @param realm
+     * @param realm 目标 realm
      */
     void evict(RealmModel realm);
 
     /**
-     * Clear cache entirely.
-     *
+     * 清空全部用户缓存。
      */
     void clear();
 }

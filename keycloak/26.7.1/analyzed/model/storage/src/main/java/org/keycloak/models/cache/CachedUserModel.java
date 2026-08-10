@@ -21,7 +21,9 @@ import java.util.concurrent.ConcurrentMap;
 import org.keycloak.models.UserModel;
 
 /**
- * Cached users will implement this interface
+ * 缓存用户模型接口：封装用户数据并支持失效与委托更新。
+ * <p>
+ * 实现此接口的对象表示已缓存的用户，底层数据由 delegate 提供。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -29,31 +31,31 @@ import org.keycloak.models.UserModel;
 public interface CachedUserModel extends UserModel {
 
     /**
-     * Invalidates the cache for this user and returns a delegate that represents the actual data provider
+     * 使该用户缓存失效，并返回代表真实数据源的委托 {@link UserModel}。
      *
-     * @return
+     * @return 可写委托用户模型
      */
     UserModel getDelegateForUpdate();
 
+    /** 是否已标记待驱逐出缓存。 */
     boolean isMarkedForEviction();
 
     /**
-     * Invalidate the cache for this model
-     *
+     * 使该用户模型的缓存条目失效。
      */
     void invalidate();
 
     /**
-     * When was the model was loaded from database.
+     * 返回模型从数据库加载时的时间戳。
      *
-     * @return
+     * @return 缓存时间戳（毫秒）
      */
     long getCacheTimestamp();
 
     /**
-     * Returns a map that contains custom things that are cached along with this model.  You can write to this map.
+     * 返回与该用户一并缓存的自定义附加数据映射（可写入）。
      *
-     * @return
+     * @return 并发映射，键值由缓存实现定义
      */
     ConcurrentMap getCachedWith();
 }

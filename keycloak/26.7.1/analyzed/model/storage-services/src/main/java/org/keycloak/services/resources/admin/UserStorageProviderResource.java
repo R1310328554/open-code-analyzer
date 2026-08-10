@@ -51,6 +51,8 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 
 /**
+ * 用户存储 Provider 管理 REST 资源：同步、解除关联与 LDAP 映射器数据同步。
+ *
  * @resource User Storage Provider
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -58,18 +60,25 @@ import org.jboss.resteasy.reactive.NoCache;
 public class UserStorageProviderResource {
     private static final Logger logger = Logger.getLogger(UserStorageProviderResource.class);
 
+    /** 当前操作的 realm。 */
     protected final RealmModel realm;
 
+    /** 管理端权限评估器。 */
     protected final AdminPermissionEvaluator auth;
 
+    /** 管理事件构建器。 */
     protected final AdminEventBuilder adminEvent;
 
+    /** 客户端连接信息。 */
     protected final ClientConnection clientConnection;
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 请求 HTTP 头。 */
     protected final HttpHeaders headers;
 
+    /** 构造用户存储 Provider 管理资源。 */
     public UserStorageProviderResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -79,6 +88,7 @@ public class UserStorageProviderResource {
         this.headers = session.getContext().getRequestHeaders();
     }
 
+    /** 从异常链中提取 LDAP/模型错误码，供客户端展示。 */
     public static String getErrorCode(Throwable throwable) {
         if (throwable instanceof org.keycloak.models.ModelException) {
            if (throwable.getCause() != null) {
@@ -89,12 +99,12 @@ public class UserStorageProviderResource {
     }
 
     /**
-     * Need this for admin console to display simple name of provider when displaying user detail
-     *
+     * 获取用户存储 Provider 的显示名称（供管理控制台用户详情页展示）。
+     * <p>
      * KEYCLOAK-4328
      *
-     * @param id
-     * @return
+     * @param id 组件 ID
+     * @return 含 {@code id} 与 {@code name} 的 JSON 映射
      */
     @GET
     @Path("{id}/name")
@@ -119,13 +129,13 @@ public class UserStorageProviderResource {
 
 
     /**
-     * Trigger sync of users
+     * 触发用户同步。
+     * <p>
+     * {@code action} 可为 {@code triggerFullSync}（全量）或 {@code triggerChangedUsersSync}（增量）。
      *
-     * Action can be "triggerFullSync" or "triggerChangedUsersSync"
-     *
-     * @param id
-     * @param action
-     * @return
+     * @param id 用户存储 Provider 组件 ID
+     * @param action 同步动作名称
+     * @return 同步结果统计
      */
     @POST
     @Path("{id}/sync")
@@ -183,11 +193,9 @@ public class UserStorageProviderResource {
     }
 
     /**
-     * Remove imported users
+     * 删除由该存储 Provider 导入的用户。
      *
-     *
-     * @param id
-     * @return
+     * @param id 用户存储 Provider 组件 ID
      */
     @POST
     @Path("{id}/remove-imported-users")
@@ -206,11 +214,9 @@ public class UserStorageProviderResource {
         session.users().removeImportedUsers(realm, id);
     }
     /**
-     * Unlink imported users from a storage provider
+     * 解除导入用户与存储 Provider 的关联（保留本地用户副本）。
      *
-     *
-     * @param id
-     * @return
+     * @param id 用户存储 Provider 组件 ID
      */
     @POST
     @Path("{id}/unlink-users")
@@ -230,11 +236,14 @@ public class UserStorageProviderResource {
     }
 
     /**
-     * Trigger sync of mapper data related to ldap mapper (roles, groups, ...)
+     * 触发 LDAP 映射器相关数据同步（角色、组等）。
+     * <p>
+     * {@code direction} 为 {@code fedToKeycloak} 或 {@code keycloakToFed}。
      *
-     * direction is "fedToKeycloak" or "keycloakToFed"
-     *
-     * @return
+     * @param parentId 父级用户存储 Provider 组件 ID
+     * @param mapperId LDAP 映射器组件 ID
+     * @param direction 同步方向
+     * @return 同步结果统计
      */
     @POST
     @Path("{parentId}/mappers/{id}/sync")

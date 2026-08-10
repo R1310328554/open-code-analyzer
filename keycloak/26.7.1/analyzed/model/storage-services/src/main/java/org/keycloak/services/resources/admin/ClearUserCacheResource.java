@@ -25,17 +25,24 @@ import org.keycloak.models.cache.UserCache;
 import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
 /**
- * Clear user cache.
+ * 清除用户缓存的管理 REST 资源。
+ * <p>
+ * 通过 {@link UserCache#clear()} 清空集群内全部 Keycloak 实例的用户缓存。
  */
 public class ClearUserCacheResource {
+    /** 当前操作的 realm。 */
     protected final RealmModel realm;
 
+    /** 管理端权限评估器。 */
     protected final AdminPermissionEvaluator auth;
 
+    /** 管理事件构建器，用于记录操作审计。 */
     protected final AdminEventBuilder adminEvent;
 
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
 
+    /** 构造清除用户缓存资源。 */
     public ClearUserCacheResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
         this.auth = auth;
@@ -44,7 +51,9 @@ public class ClearUserCacheResource {
     }
 
     /**
-     * Clear user cache
+     * 清除用户缓存。
+     * <p>
+     * 需要 {@code manage-realm} 权限；若 {@link UserCache} 已注册则调用 {@link UserCache#clear()}。
      */
     @POST
     public void clearUserCache() {

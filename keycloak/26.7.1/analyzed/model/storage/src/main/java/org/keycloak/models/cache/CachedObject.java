@@ -17,9 +17,12 @@
 package org.keycloak.models.cache;
 
 /**
+ * 缓存对象的通用标记接口，提供缓存时间戳。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface CachedObject {
+    /** 返回对象写入缓存时的时间戳（毫秒）。 */
     long getCacheTimestamp();
 }

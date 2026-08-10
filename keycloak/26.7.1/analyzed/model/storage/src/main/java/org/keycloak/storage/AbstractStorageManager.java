@@ -34,12 +34,14 @@ import org.keycloak.utils.ServicesUtils;
 import org.jboss.logging.Logger;
 
 /**
+ * 存储 Provider 管理抽象基类：按 realm 查找、实例化并调用外部存储 Provider。
+ * <p>
+ * 提供超时保护的多 Provider 聚合查询，以及按能力接口（capability interface）筛选实例。
  *
- * @param <ProviderType> This type will be used for looking for factories that produce instances of desired providers
- * @param <StorageProviderModelType> Type of model used for creating provider, it needs to extend 
- *                                  CacheableStorageProviderModel as it has {@code isEnabled()} method and also extend
- *                                  PrioritizedComponentModel which is required for sorting providers based on its
- *                                  priorities
+ * @param <ProviderType> 用于查找工厂并创建 Provider 实例的类型
+ * @param <StorageProviderModelType> 存储 Provider 配置模型类型，须继承
+ *                                  {@link CacheableStorageProviderModel}（含 {@code isEnabled()}）及
+ *                                  {@link org.keycloak.component.PrioritizedComponentModel}（支持优先级排序）
  */
 public abstract class AbstractStorageManager<ProviderType extends Provider,
         StorageProviderModelType extends CacheableStorageProviderModel> {
@@ -47,17 +49,23 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     private static final Logger LOG = Logger.getLogger(AbstractStorageManager.class);
 
     /**
-     * Timeouts are used as time boundary for obtaining models from an external storage. Default value is set
-     * to 3000 milliseconds and it's configurable.
+     * 从外部存储获取模型的超时时间（毫秒）；默认 3000，可通过配置覆盖。
      */
     private static final Long STORAGE_PROVIDER_DEFAULT_TIMEOUT = 3000L;
+    /** 当前 Keycloak 会话。 */
     protected final KeycloakSession session;
+    /** Provider 接口类型。 */
     private final Class<ProviderType> providerTypeClass;
+    /** Provider 工厂类型。 */
     private final Class<? extends ProviderFactory> factoryTypeClass;
+    /** 将 ComponentModel 转换为存储 Provider 模型的函数。 */
     private final Function<ComponentModel, StorageProviderModelType> toStorageProviderModelTypeFunction;
+    /** 配置作用域名称（如 {@code user}）。 */
     private final String configScope;
+    /** 缓存解析后的存储 Provider 超时值。 */
     private Long storageProviderTimeout;
 
+    /** 构造存储管理器。 */
     public AbstractStorageManager(KeycloakSession session, Class<? extends ProviderFactory> factoryTypeClass, Class<ProviderType> providerTypeClass, Function<ComponentModel, StorageProviderModelType> toStorageProviderModelTypeFunction, String configScope) {
         this.session = session;
         this.providerTypeClass = providerTypeClass;
@@ -66,6 +74,7 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
         this.configScope = configScope;
     }
 
+    /** 获取存储 Provider 调用超时（毫秒），懒加载自配置。 */
     protected Long getStorageProviderTimeout() {
         if (storageProviderTimeout == null) {
             storageProviderTimeout = Config.scope(configScope).getLong("storageProviderTimeout", STORAGE_PROVIDER_DEFAULT_TIMEOUT);
@@ -74,9 +83,10 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Returns a factory with the providerId, which produce instances of type CreatedProviderType
-     * @param providerId id of factory that produce desired instances
-     * @return A factory that implements {@code ComponentFactory<CreatedProviderType, ProviderType>}
+     * 按 providerId 返回可创建 {@code CreatedProviderType} 实例的工厂。
+     *
+     * @param providerId 工厂标识
+     * @return 实现 {@code ComponentFactory<CreatedProviderType, ProviderType>} 的工厂
      */
     protected <T extends ProviderType> ComponentFactory<T, ProviderType> getStorageProviderFactory(String providerId) {
         return (ComponentFactory<T, ProviderType>) session.getKeycloakSessionFactory()
@@ -84,12 +94,11 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Returns stream of all storageProviders within the realm that implements the capabilityInterface.
+     * 返回 realm 内实现指定能力接口的全部已启用存储 Provider 流。
      *
      * @param realm realm
-     * @param capabilityInterface class of desired capabilityInterface.
-     *                            For example, {@code GroupLookupProvider} or {@code UserQueryProvider}
-     * @return enabled storage providers for realm and @{code getProviderTypeClass()}
+     * @param capabilityInterface 能力接口类，如 {@code GroupLookupProvider} 或 {@code UserQueryProvider}
+     * @return 已启用且匹配 {@code getProviderTypeClass()} 的 Provider 流
      */
     protected <T> Stream<T> getEnabledStorageProviders(RealmModel realm, Class<T> capabilityInterface) {
         return getStorageProviderModels(realm, providerTypeClass)
@@ -101,17 +110,15 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Gets all enabled StorageProviders that implements the capabilityInterface, applies applyFunction on each of
-     * them and then join the results together.
-     *
-     * !! Each StorageProvider has a limited time to respond, if it fails to do it, empty stream is returned !!
+     * 对所有已启用且实现能力接口的 StorageProvider 应用 {@code applyFunction} 并 flatMap 合并结果。
+     * <p>
+     * 每个 StorageProvider 须在限定时间内响应，超时则返回空流。
      *
      * @param realm realm
-     * @param capabilityInterface class of desired capabilityInterface.
-     *                            For example, {@code GroupLookupProvider} or {@code UserQueryProvider}
-     * @param applyFunction function that is applied on StorageProviders
-     * @param <R> result of applyFunction
-     * @return a stream with all results from all StorageProviders
+     * @param capabilityInterface 能力接口类
+     * @param applyFunction 应用于各 Provider 的函数
+     * @param <R> applyFunction 返回元素类型
+     * @return 所有 Provider 结果的合并流
      */
     protected <R, T> Stream<R> flatMapEnabledStorageProvidersWithTimeout(RealmModel realm, Class<T> capabilityInterface, Function<T, ? extends Stream<R>> applyFunction) {
         return getEnabledStorageProviders(realm, capabilityInterface)
@@ -119,17 +126,15 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Gets all enabled StorageProviders that implements the capabilityInterface, applies applyFunction on each of
-     * them and returns the stream.
-     *
-     * !! Each StorageProvider has a limited time to respond, if it fails to do it, null is returned !!
+     * 对所有已启用 StorageProvider 应用 {@code applyFunction} 并 map 为结果流。
+     * <p>
+     * 每个 StorageProvider 须在限定时间内响应，超时则跳过（返回 null 并过滤）。
      *
      * @param realm realm
-     * @param capabilityInterface class of desired capabilityInterface.
-     *                            For example, {@code GroupLookupProvider} or {@code UserQueryProvider}
-     * @param applyFunction function that is applied on StorageProviders
-     * @param <R> Result of applyFunction
-     * @return First result from StorageProviders
+     * @param capabilityInterface 能力接口类
+     * @param applyFunction 应用于各 Provider 的函数
+     * @param <R> applyFunction 返回类型
+     * @return 各 Provider 结果的流
      */
     protected <R, T> Stream<R> mapEnabledStorageProvidersWithTimeout(RealmModel realm, Class<T> capabilityInterface, Function<T, R> applyFunction) {
         return getEnabledStorageProviders(realm, capabilityInterface)
@@ -138,14 +143,13 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Gets all enabled StorageProviders that implements the capabilityInterface and call applyFunction on each
-     *
-     * !! Each StorageProvider has a limited time for consuming !!
+     * 对所有已启用 StorageProvider 依次调用 {@code consumer}。
+     * <p>
+     * 每个 Provider 调用受超时限制。
      *
      * @param realm realm
-     * @param capabilityInterface class of desired capabilityInterface.
-     *                            For example, {@code GroupLookupProvider} or {@code UserQueryProvider}
-     * @param consumer function that is applied on StorageProviders
+     * @param capabilityInterface 能力接口类
+     * @param consumer 应用于各 Provider 的消费者
      */
     protected <T> void consumeEnabledStorageProvidersWithTimeout(RealmModel realm, Class<T> capabilityInterface, Consumer<T> consumer) {
         getEnabledStorageProviders(realm, capabilityInterface)
@@ -153,19 +157,18 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
 
+    /** 按 providerId 获取实现能力接口的 Provider 实例（不含已禁用）。 */
     protected <T> T getStorageProviderInstance(RealmModel realm, String providerId, Class<T> capabilityInterface) {
         return getStorageProviderInstance(realm, providerId, capabilityInterface, false);
     }
 
     /**
-     * Returns an instance of provider with the providerId within the realm or null if storage provider with providerId
-     * doesn't implement capabilityInterface.
+     * 返回 realm 内指定 providerId 的 Provider 实例；若未实现能力接口则返回 null。
      *
      * @param realm realm
-     * @param providerId id of ComponentModel within database/storage
-     * @param capabilityInterface class of desired capabilityInterface.
-     *                            For example, {@code GroupLookupProvider} or {@code UserQueryProvider}
-     * @return an instance of type CreatedProviderType or null if storage provider with providerId doesn't implement capabilityInterface
+     * @param providerId 数据库/存储中的 ComponentModel ID
+     * @param capabilityInterface 能力接口类
+     * @return Provider 实例，或 null
      */
     protected <T> T getStorageProviderInstance(RealmModel realm, String providerId, Class<T> capabilityInterface, boolean includeDisabled) {
         if (providerId == null || capabilityInterface == null) return null;
@@ -173,10 +176,11 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Returns an instance of StorageProvider model corresponding realm and providerId
-     * @param realm Realm.
-     * @param providerId Id of desired provider.
-     * @return An instance of type StorageProviderModelType
+     * 返回 realm 与 providerId 对应的 StorageProvider 配置模型。
+     *
+     * @param realm Realm
+     * @param providerId Provider ID
+     * @return StorageProviderModelType 实例，或组件不存在时 null
      */
     protected StorageProviderModelType getStorageProviderModel(RealmModel realm, String providerId) {
         ComponentModel componentModel = realm.getComponent(providerId);
@@ -187,26 +191,24 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Returns an instance of provider for the model or null if storage provider based on the model doesn't implement capabilityInterface.
+     * 按配置模型返回 Provider 实例（默认不含已禁用）；未实现能力接口时返回 null。
      *
-     * @param model StorageProviderModel obtained from database/storage
-     * @param capabilityInterface class of desired capabilityInterface.
-     *                            For example, {@code GroupLookupProvider} or {@code UserQueryProvider}
-     * @param <T> Required capability interface type
-     * @return an instance of type T or null if storage provider based on the model doesn't exist or doesn't implement the capabilityInterface.
+     * @param model 自存储获取的 StorageProviderModel
+     * @param capabilityInterface 能力接口类
+     * @param <T> 所需能力接口类型
+     * @return 类型 T 的实例，或 null
      */
     protected <T> T getStorageProviderInstance(StorageProviderModelType model, Class<T> capabilityInterface) {
         return getStorageProviderInstance(model, capabilityInterface, false);
     }
 
     /**
-     * Returns an instance of provider for the model or null if storage provider based on the model doesn't implement capabilityInterface.
+     * 按配置模型返回 Provider 实例；{@code includeDisabled} 为 true 时包含已禁用 Provider。
      *
-     * @param model StorageProviderModel obtained from database/storage
-     * @param capabilityInterface class of desired capabilityInterface.
-     *                            For example, {@code GroupLookupProvider} or {@code UserQueryProvider}
-     * @param includeDisabled If set to true, the method will return also disabled providers.
-     * @return an instance of type T or null if storage provider based on the model doesn't exist or doesn't implement the capabilityInterface.
+     * @param model 自存储获取的 StorageProviderModel
+     * @param capabilityInterface 能力接口类
+     * @param includeDisabled 为 true 时亦返回已禁用的 Provider
+     * @return 类型 T 的实例，或 null
      */
     protected <T> T getStorageProviderInstance(StorageProviderModelType model, Class<T> capabilityInterface, boolean includeDisabled) {
         if (model == null || (!model.isEnabled() && !includeDisabled) || capabilityInterface == null) {
@@ -236,10 +238,11 @@ public abstract class AbstractStorageManager<ProviderType extends Provider,
     }
 
     /**
-     * Stream of ComponentModels of storageType.
-     * @param realm Realm.
-     * @param storageType Type.
-     * @return Stream of ComponentModels
+     * 返回 realm 内指定 storageType 的全部 ComponentModel 流。
+     *
+     * @param realm Realm
+     * @param storageType Provider 类型
+     * @return ComponentModel 流
      */
     public static Stream<ComponentModel> getStorageProviderModels(RealmModel realm, Class<? extends Provider> storageType) {
         return realm.getStorageProviders(storageType);
