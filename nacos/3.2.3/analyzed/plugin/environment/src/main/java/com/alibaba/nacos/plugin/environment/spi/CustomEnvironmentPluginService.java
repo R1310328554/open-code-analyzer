@@ -20,14 +20,16 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * CustomEnvironment Plugin Service.
+ * 自定义环境变量插件 SPI 接口。
+ *
+ * <p>实现类可声明关注的配置键，并在启动时对相应值进行转换或覆盖。</p>
  *
  * @author : huangtianhui
  */
 public interface CustomEnvironmentPluginService {
     
     /**
-     * customValue interface.
+     * 根据输入配置计算自定义值。
      *
      * @param property property key value
      * @return custom key value
@@ -35,23 +37,23 @@ public interface CustomEnvironmentPluginService {
     Map<String, Object> customValue(Map<String, Object> property);
     
     /**
-     * propertyKey interface.
+     * 返回本插件关注的配置键集合。
      *
      * @return propertyKey property Key
      */
     Set<String> propertyKey();
     
     /**
-     * order  The larger the priority, the higher the priority.
+     * 返回插件执行优先级，数值越大优先级越高。
      *
      * @return order
      */
     Integer order();
     
     /**
-     * pluginName.
+     * 返回插件唯一名称，用于 SPI 注册与日志标识。
      *
-     * @return
+     * @return 插件名称
      */
     String pluginName();
 }

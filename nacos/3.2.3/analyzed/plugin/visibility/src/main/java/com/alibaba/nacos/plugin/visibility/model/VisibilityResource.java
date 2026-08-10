@@ -19,49 +19,74 @@ package com.alibaba.nacos.plugin.visibility.model;
 import com.alibaba.nacos.plugin.visibility.constant.VisibilityConstants;
 
 /**
- * Base class for resources that support visibility validation.
+ * 支持可见性校验的资源基类。
+ *
+ * <p>子类需实现命名空间、资源名与资源类型等标识方法，
+ * 并携带可见范围（scope）与所有者（owner）属性。</p>
  *
  * @author xiweng.yy
  */
 public abstract class VisibilityResource {
     
+    /** 可见范围，默认为私有。 */
     private String scope = VisibilityConstants.SCOPE_PRIVATE;
     
+    /** 资源所有者标识。 */
     private String owner = "";
     
     /**
-     * Get the namespace id of this resource.
+     * 获取资源所属命名空间 ID。
      *
      * @return namespace id
      */
     public abstract String getNamespaceId();
     
     /**
-     * Get the unique name of this resource within its namespace and type.
+     * 获取资源在其命名空间与类型下的唯一名称。
      *
      * @return resource name
      */
     public abstract String getResourceName();
     
     /**
-     * Get the subtype of this resource, e.g. "skill", "mcp", "prompt", "a2a".
+     * 获取资源子类型，例如 "skill"、"mcp"、"prompt"、"a2a"。
      *
      * @return resource type
      */
     public abstract String getResourceType();
     
+    /**
+     * 获取可见范围。
+     *
+     * @return 可见范围
+     */
     public String getScope() {
         return scope;
     }
     
+    /**
+     * 设置可见范围。
+     *
+     * @param scope 可见范围
+     */
     public void setScope(String scope) {
         this.scope = scope;
     }
     
+    /**
+     * 获取资源所有者。
+     *
+     * @return 所有者标识
+     */
     public String getOwner() {
         return owner;
     }
     
+    /**
+     * 设置资源所有者。
+     *
+     * @param owner 所有者标识
+     */
     public void setOwner(String owner) {
         this.owner = owner;
     }

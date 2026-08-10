@@ -22,35 +22,37 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 /**
- * Nacos trace event subscriber.
+ * Nacos 链路追踪事件订阅者 SPI 接口。
+ *
+ * <p>实现类声明感兴趣的事件类型，并在事件发生时接收回调通知。</p>
  *
  * @author xiweng.yy
  */
 public interface NacosTraceSubscriber {
     
     /**
-     * Get the plugin name, if the same name has loaded by nacos, the older one will be replaced by new one.
+     * 返回插件名称；同名插件后加载者会覆盖先加载者。
      *
      * @return plugin name
      */
     String getName();
     
     /**
-     * Event callback.
+     * 追踪事件回调入口。
      *
      * @param event {@link TraceEvent}
      */
     void onEvent(TraceEvent event);
     
     /**
-     * Returns which trace events are this subscriber interested in.
+     * 返回本订阅者感兴趣的事件类型列表。
      *
      * @return The interested event types.
      */
     List<Class<? extends TraceEvent>> subscribeTypes();
     
     /**
-     * It is up to the listener to determine whether the callback is asynchronous or synchronous.
+     * 返回事件回调使用的线程池；返回 {@code null} 表示由框架决定同步或异步执行。
      *
      * @return {@link Executor}
      */

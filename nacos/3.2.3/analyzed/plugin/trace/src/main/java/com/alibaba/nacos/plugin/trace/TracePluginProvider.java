@@ -23,18 +23,31 @@ import com.alibaba.nacos.plugin.trace.spi.NacosTraceSubscriber;
 import java.util.Map;
 
 /**
- * Trace plugin provider implementation.
+ * 链路追踪插件提供者实现。
+ *
+ * <p>实现 {@link PluginProvider}，向 Nacos 插件框架暴露
+ * {@link NacosTracePluginManager} 中已加载的全部追踪订阅者。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public class TracePluginProvider implements PluginProvider<NacosTraceSubscriber> {
     
+    /**
+     * 返回追踪插件类型标识。
+     *
+     * @return 插件类型
+     */
     @Override
     public PluginType getPluginType() {
         return PluginType.TRACE;
     }
     
+    /**
+     * 返回所有已注册的追踪订阅者。
+     *
+     * @return 插件名 → 订阅者实例映射
+     */
     @Override
     public Map<String, NacosTraceSubscriber> getAllPlugins() {
         return NacosTracePluginManager.getInstance().getAllPlugins();

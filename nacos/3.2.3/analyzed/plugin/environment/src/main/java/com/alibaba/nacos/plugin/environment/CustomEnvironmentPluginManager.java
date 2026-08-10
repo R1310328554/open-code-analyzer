@@ -34,7 +34,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * CustomEnvironment Plugin Management.
+ * 自定义环境变量插件管理器。
+ *
+ * <p>通过 SPI 加载 {@link CustomEnvironmentPluginService} 实现，按 {@code order} 排序后
+ * 依次合并各插件对配置项的自定义值。</p>
  *
  * @author : huangtianhui
  */
@@ -43,8 +46,10 @@ public class CustomEnvironmentPluginManager {
     private static final Logger LOGGER =
         LoggerFactory.getLogger(CustomEnvironmentPluginManager.class);
     
+    /** 已加载的环境插件服务列表（按优先级排序）。 */
     private static final List<CustomEnvironmentPluginService> SERVICE_LIST = new LinkedList<>();
     
+    /** 单例实例。 */
     private static final CustomEnvironmentPluginManager INSTANCE =
         new CustomEnvironmentPluginManager();
     
@@ -52,6 +57,9 @@ public class CustomEnvironmentPluginManager {
         loadInitial();
     }
     
+    /**
+     * 初始化加载所有 SPI 注册的环境插件。
+     */
     private void loadInitial() {
         Collection<CustomEnvironmentPluginService> customEnvironmentPluginServices =
             NacosServiceLoader.load(
@@ -74,10 +82,20 @@ public class CustomEnvironmentPluginManager {
             .collect(Collectors.toList()));
     }
     
+    /**
+     * 获取管理器单例。
+     *
+     * @return 单例实例
+     */
     public static CustomEnvironmentPluginManager getInstance() {
         return INSTANCE;
     }
     
+    /**
+     * 汇总所有插件声明的配置键名。
+     *
+     * @return 配置键名集合
+     */
     public Set<String> getPropertyKeys() {
         Set<String> keys = new HashSet<>();
         for (CustomEnvironmentPluginService customEnvironmentPluginService : SERVICE_LIST) {
@@ -86,6 +104,14 @@ public class CustomEnvironmentPluginManager {
         return keys;
     }
     
+    /**
+     * 按插件顺序计算自定义配置值。
+     *
+     * <p>每个插件仅允许修改自身声明的配置键，值为 {@code null} 的项会被过滤。</p>
+     *
+     * @param sourceProperty 原始配置键值
+     * @return 合并后的自定义配置
+     */
     public Map<String, Object> getCustomValues(Map<String, Object> sourceProperty) {
         Map<String, Object> customValuesMap = new HashMap<>(1);
         for (CustomEnvironmentPluginService customEnvironmentPluginService : SERVICE_LIST) {
@@ -96,7 +122,7 @@ public class CustomEnvironmentPluginManager {
             }
             Map<String, Object> targetPropertyMap =
                 customEnvironmentPluginService.customValue(propertyMap);
-            //Only the current plugin key is allowed
+            // 仅允许修改当前插件声明的配置键
             Set<String> targetKeys = new HashSet<>(targetPropertyMap.keySet());
             targetKeys.removeAll(keys);
             for (String key : targetKeys) {
@@ -104,13 +130,13 @@ public class CustomEnvironmentPluginManager {
             }
             customValuesMap.putAll(targetPropertyMap);
         }
-        // [issue 13367] fix ConcurrentModificationException
+        // [issue 13367] 修复 ConcurrentModificationException
         customValuesMap.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
         return customValuesMap;
     }
     
     /**
-     * Injection realization.
+     * 运行时注入环境插件实现。
      *
      * @param customEnvironmentPluginService customEnvironmentPluginService implementation
      */

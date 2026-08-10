@@ -17,17 +17,23 @@
 package com.alibaba.nacos.plugin.visibility.model;
 
 /**
- * Base predicate shape for visibility planning.
+ * 可见性查询规划的基础谓词枚举。
+ *
+ * <p>定义列表/范围查询时可用的过滤策略，如全部、公开、所有者等组合。</p>
  *
  * @author xiweng.yy
  */
 public enum BaseVisibilityPredicate {
     
+    /** 不过滤，返回全部资源。 */
     ALL,
     
+    /** 仅返回公开可见的资源。 */
     PUBLIC,
     
+    /** 仅返回当前用户拥有的资源。 */
     OWNER,
     
+    /** 返回公开资源与当前用户拥有的资源的并集。 */
     PUBLIC_AND_OWNER
 }

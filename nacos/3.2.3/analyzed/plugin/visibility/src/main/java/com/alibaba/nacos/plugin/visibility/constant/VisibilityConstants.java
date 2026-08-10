@@ -17,18 +17,24 @@
 package com.alibaba.nacos.plugin.visibility.constant;
 
 /**
- * Constants for visibility plugin.
+ * 可见性插件常量定义。
+ *
+ * <p>包含资源可见范围（公开/私有）与读写操作标识。</p>
  *
  * @author xiweng.yy
  */
 public class VisibilityConstants {
     
+    /** 公开可见范围标识。 */
     public static final String SCOPE_PUBLIC = "PUBLIC";
     
+    /** 私有可见范围标识。 */
     public static final String SCOPE_PRIVATE = "PRIVATE";
     
+    /** 读操作标识。 */
     public static final String ACTION_READ = "r";
     
+    /** 写操作标识。 */
     public static final String ACTION_WRITE = "w";
     
     private VisibilityConstants() {

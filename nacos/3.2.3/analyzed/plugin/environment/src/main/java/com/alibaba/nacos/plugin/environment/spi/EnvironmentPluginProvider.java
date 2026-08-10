@@ -26,18 +26,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Environment plugin provider implementation.
+ * 环境插件提供者实现。
+ *
+ * <p>实现 {@link PluginProvider}，向 Nacos 插件框架暴露所有
+ * {@link CustomEnvironmentPluginService} SPI 实现。</p>
  *
  * @author WangzJi
  * @since 3.2.0
  */
 public class EnvironmentPluginProvider implements PluginProvider<CustomEnvironmentPluginService> {
     
+    /**
+     * 返回环境插件类型标识。
+     *
+     * @return 插件类型
+     */
     @Override
     public PluginType getPluginType() {
         return PluginType.ENVIRONMENT;
     }
     
+    /**
+     * 加载并返回所有已注册的环境插件，以插件名索引。
+     *
+     * @return 插件名 → 服务实例映射
+     */
     @Override
     public Map<String, CustomEnvironmentPluginService> getAllPlugins() {
         Collection<CustomEnvironmentPluginService> services = NacosServiceLoader.load(

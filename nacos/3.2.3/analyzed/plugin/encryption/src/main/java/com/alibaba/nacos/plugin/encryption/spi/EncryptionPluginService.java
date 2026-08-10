@@ -17,14 +17,17 @@
 package com.alibaba.nacos.plugin.encryption.spi;
 
 /**
- * Encryption and decryption spi.
+ * 加解密 SPI 接口。
+ *
+ * <p>各加密算法插件需实现本接口，供 {@link com.alibaba.nacos.plugin.encryption.EncryptionPluginManager}
+ * 按算法名加载并调用。</p>
  *
  * @author lixiaoshuang
  */
 public interface EncryptionPluginService {
     
     /**
-     * Encrypted interface.
+     * 使用指定密钥加密明文内容。
      *
      * @param secretKey secret key
      * @param content   content unencrypted
@@ -33,7 +36,7 @@ public interface EncryptionPluginService {
     String encrypt(String secretKey, String content);
     
     /**
-     * Decryption interface.
+     * 使用指定密钥解密密文内容。
      *
      * @param secretKey secret key
      * @param content   encrypted
@@ -42,28 +45,30 @@ public interface EncryptionPluginService {
     String decrypt(String secretKey, String content);
     
     /**
-     * Generate Secret key.
+     * 生成新的密钥。
      *
      * @return Secret key
      */
     String generateSecretKey();
     
     /**
-     * Algorithm naming.
+     * 返回本插件所实现的加密算法名称。
      *
      * @return name
      */
     String algorithmName();
     
     /**
-     * encrypt secretKey.
+     * 加密密钥本身（用于密钥存储保护）。
+     *
      * @param secretKey secretKey
      * @return encrypted secretKey
      */
     String encryptSecretKey(String secretKey);
     
     /**
-     * decrypt secretKey.
+     * 解密密钥本身（用于密钥存储保护）。
+     *
      * @param secretKey secretKey
      * @return decrypted secretKey
      */

@@ -20,28 +20,52 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Storage-neutral authorized resources set.
+ * 与存储无关的已授权资源集合。
+ *
+ * <p>用于可见性查询规划，描述某资源类型下当前用户可访问的资源名称列表。</p>
  *
  * @author xiweng.yy
  */
 public class AuthorizedResources {
     
+    /** 资源类型标识。 */
     private String resourceType;
     
+    /** 已授权的资源名称列表。 */
     private List<String> resources = new ArrayList<>();
     
+    /**
+     * 获取资源类型。
+     *
+     * @return 资源类型
+     */
     public String getResourceType() {
         return resourceType;
     }
     
+    /**
+     * 设置资源类型。
+     *
+     * @param resourceType 资源类型
+     */
     public void setResourceType(String resourceType) {
         this.resourceType = resourceType;
     }
     
+    /**
+     * 获取已授权资源名称列表。
+     *
+     * @return 资源名称列表
+     */
     public List<String> getResources() {
         return resources;
     }
     
+    /**
+     * 设置已授权资源名称列表。
+     *
+     * @param resources 资源名称列表
+     */
     public void setResources(List<String> resources) {
         this.resources = resources;
     }

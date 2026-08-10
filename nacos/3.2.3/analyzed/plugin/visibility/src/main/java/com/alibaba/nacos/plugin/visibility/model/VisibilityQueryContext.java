@@ -17,28 +17,52 @@
 package com.alibaba.nacos.plugin.visibility.model;
 
 /**
- * Minimal query context for visibility planning.
+ * 可见性查询规划的最小上下文。
+ *
+ * <p>携带命名空间与资源类型信息，供可见性插件生成查询建议。</p>
  *
  * @author xiweng.yy
  */
 public class VisibilityQueryContext {
     
+    /** 命名空间 ID。 */
     private String namespaceId;
     
+    /** 资源类型。 */
     private String resourceType;
     
+    /**
+     * 获取命名空间 ID。
+     *
+     * @return 命名空间 ID
+     */
     public String getNamespaceId() {
         return namespaceId;
     }
     
+    /**
+     * 设置命名空间 ID。
+     *
+     * @param namespaceId 命名空间 ID
+     */
     public void setNamespaceId(String namespaceId) {
         this.namespaceId = namespaceId;
     }
     
+    /**
+     * 获取资源类型。
+     *
+     * @return 资源类型
+     */
     public String getResourceType() {
         return resourceType;
     }
     
+    /**
+     * 设置资源类型。
+     *
+     * @param resourceType 资源类型
+     */
     public void setResourceType(String resourceType) {
         this.resourceType = resourceType;
     }
