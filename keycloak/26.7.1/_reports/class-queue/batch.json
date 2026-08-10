@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:58:00Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/sessions/StickySessionEncoderProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/sessions/StickySessionEncoderProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/sessions/StickySessionEncoderSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/DatastoreProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/DatastoreProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/DatastoreSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/ExportImportManager.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/ImportRealmFromRepresentationEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/OnCreateComponent.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/OnUpdateComponent.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/PartialImportRealmFromRepresentationEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/SetDefaultsForNewRealm.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/StoreMigrateRepresentationEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/StoreSyncEvent.java",
-    "server-spi-private/src/main/java/org/keycloak/storage/adapter/AbstractInMemoryUserAdapter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2518,
-  "done": 3465
+  "done": 3480
 }
