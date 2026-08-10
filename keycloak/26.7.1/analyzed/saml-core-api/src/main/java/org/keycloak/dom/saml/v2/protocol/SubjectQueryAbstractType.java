@@ -23,6 +23,8 @@ import org.keycloak.dom.saml.v2.assertion.SubjectType;
 /**
  * <p>
  * Java class for SubjectQueryAbstractType complex type.
+ * SAML 2.0 主体查询抽象基类，扩展 {@link RequestAbstractType} 并携带 {@link SubjectType}。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -41,17 +43,27 @@ import org.keycloak.dom.saml.v2.assertion.SubjectType;
  */
 public abstract class SubjectQueryAbstractType extends RequestAbstractType {
 
+    /** 查询目标主体（Subject）。 */
     protected SubjectType subject;
 
+    /**
+     * 构造主体查询请求。
+     *
+     * @param id 请求标识符
+     * @param instant 请求时间
+     */
     public SubjectQueryAbstractType(String id, XMLGregorianCalendar instant) {
         super(id, instant);
     }
 
+    /** 设置查询目标主体。 */
     public void setSubject(SubjectType subject) {
         this.subject = subject;
     }
 
     /**
+     * 获取主体（Subject）属性的值。
+     *
      * Gets the value of the subject property.
      *
      * @return possible object is {@link SubjectType }

@@ -20,6 +20,8 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
 /**
  * <p>
  * Java class for KeyValueType complex type.
+ * XML 数字签名密钥值标记接口，由 {@link DSAKeyValueType} 或 {@link RSAKeyValueType} 等实现。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -38,6 +40,7 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
  * &lt;/complexType>
  * </pre>
  */
+/** XML 数字签名密钥值类型标记接口。 */
 public interface KeyValueType {
 
 }

@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for PGPDataType complex type.
+ * XML 数字签名 PGP 密钥数据，可携带 PGPKeyID 与 PGPKeyPacket 等 OpenPGP 密钥材料。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -49,17 +51,22 @@ import java.util.List;
  */
 public class PGPDataType {
 
+    /** PGP 密钥数据子元素列表。 */
     protected List<Object> content = new ArrayList<>();
 
+    /** 添加一条 PGP 数据子元素。 */
     public void add(Object obj) {
         this.content.add(obj);
     }
 
+    /** 移除一条 PGP 数据子元素。 */
     public void remove(Object obj) {
         this.content.remove(obj);
     }
 
     /**
+     * 获取 PGP 数据子元素列表（只读）。
+     *
      * Gets the value of the content property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link org.w3c.dom.Element } {@link Object } {@link String }

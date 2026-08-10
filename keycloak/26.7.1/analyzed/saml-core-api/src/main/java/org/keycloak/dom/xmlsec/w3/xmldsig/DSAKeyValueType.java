@@ -31,6 +31,8 @@ import org.keycloak.saml.common.exceptions.ProcessingException;
 /**
  * <p>
  * Java class for DSAKeyValueType complex type.
+ * XML 数字签名 DSA 公钥/私钥参数（P、Q、G、Y 等），实现 {@link KeyValueType} 并可转换为 JDK 密钥。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -59,15 +61,24 @@ import org.keycloak.saml.common.exceptions.ProcessingException;
  */
 public class DSAKeyValueType implements KeyValueType {
 
+    /** DSA 素数模 P。 */
     protected byte[] p;
+    /** DSA 子群阶 Q。 */
     protected byte[] q;
+    /** DSA 生成元 G。 */
     protected byte[] g;
+    /** DSA 公钥 Y。 */
     protected byte[] y;
+    /** DSA 验证参数 J。 */
     protected byte[] j;
+    /** DSA 种子（Seed）。 */
     protected byte[] seed;
+    /** DSA 生成计数器（PgenCounter）。 */
     protected byte[] pgenCounter;
 
     /**
+     * 获取 素数模 P 属性的值。
+     *
      * Gets the value of the p property.
      *
      * @return possible object is byte[]
@@ -77,6 +88,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 素数模 P 属性的值。
+     *
      * Sets the value of the p property.
      *
      * @param value allowed object is byte[]
@@ -86,6 +99,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 获取 子群阶 Q 属性的值。
+     *
      * Gets the value of the q property.
      *
      * @return possible object is byte[]
@@ -95,6 +110,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 子群阶 Q 属性的值。
+     *
      * Sets the value of the q property.
      *
      * @param value allowed object is byte[]
@@ -104,6 +121,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 获取 生成元 G 属性的值。
+     *
      * Gets the value of the g property.
      *
      * @return possible object is byte[]
@@ -113,6 +132,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 生成元 G 属性的值。
+     *
      * Sets the value of the g property.
      *
      * @param value allowed object is byte[]
@@ -122,6 +143,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 获取 公钥 Y 属性的值。
+     *
      * Gets the value of the y property.
      *
      * @return possible object is byte[]
@@ -131,6 +154,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 公钥 Y 属性的值。
+     *
      * Sets the value of the y property.
      *
      * @param value allowed object is byte[]
@@ -140,6 +165,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 获取 验证参数 J 属性的值。
+     *
      * Gets the value of the j property.
      *
      * @return possible object is byte[]
@@ -149,6 +176,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 验证参数 J 属性的值。
+     *
      * Sets the value of the j property.
      *
      * @param value allowed object is byte[]
@@ -158,6 +187,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 获取 种子（Seed） 属性的值。
+     *
      * Gets the value of the seed property.
      *
      * @return possible object is byte[]
@@ -167,6 +198,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 种子（Seed） 属性的值。
+     *
      * Sets the value of the seed property.
      *
      * @param value allowed object is byte[]
@@ -176,6 +209,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 获取 生成计数器（PgenCounter） 属性的值。
+     *
      * Gets the value of the pgenCounter property.
      *
      * @return possible object is byte[]
@@ -185,6 +220,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 生成计数器（PgenCounter） 属性的值。
+     *
      * Sets the value of the pgenCounter property.
      *
      * @param value allowed object is byte[]
@@ -194,6 +231,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 转换为 JDK {@link DSAPublicKey} 表示。
+     *
      * Convert to the JDK representation of a DSA Public Key
      *
      * @return
@@ -217,6 +256,8 @@ public class DSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 转换为 JDK {@link DSAPrivateKey} 表示。
+     *
      * Convert to the JDK representation of a DSA Private Key
      *
      * @return
@@ -239,6 +280,7 @@ public class DSAKeyValueType implements KeyValueType {
         }
     }
 
+    /** 序列化为 XML DSAKeyValue 元素字符串。 */
     public String toString() {
         String prefix = WSTrustConstants.XMLDSig.DSIG_PREFIX;
         String colon = ":";

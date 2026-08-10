@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for ManifestType complex type.
+ * XML 数字签名清单，包含一组 {@link ReferenceType} 引用，用于批量描述待签名/验证的数据对象。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,18 +44,24 @@ import java.util.List;
  */
 public class ManifestType {
 
+    /** 引用列表（Reference）。 */
     protected List<ReferenceType> reference = new ArrayList<>();
+    /** 清单标识符（Id）。 */
     protected String id;
 
+    /** 添加一条引用。 */
     public void addReference(ReferenceType ref) {
         this.reference.add(ref);
     }
 
+    /** 移除一条引用。 */
     public void removeReference(ReferenceType ref) {
         this.reference.remove(ref);
     }
 
     /**
+     * 获取引用列表（只读）。
+     *
      * Gets the value of the reference property.
      *
      * <p>
@@ -64,6 +72,8 @@ public class ManifestType {
     }
 
     /**
+     * 获取 清单标识符（Id） 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -73,6 +83,8 @@ public class ManifestType {
     }
 
     /**
+     * 设置 清单标识符（Id） 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

@@ -21,6 +21,8 @@ import java.net.URI;
 /**
  * <p>
  * Java class for CanonicalizationMethodType complex type.
+ * XML 数字签名规范化方法，指定 {@link Signature} 计算前 XML 节点的规范化算法 URI。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -40,22 +42,33 @@ import java.net.URI;
  */
 public class CanonicalizationMethodType {
 
+    /** 规范化算法 URI（Algorithm）。 */
     protected URI algorithm;
+    /** 可选的扩展内容元素。 */
     private Object content;
 
+    /**
+     * 构造规范化方法。
+     *
+     * @param algorithm 规范化算法 URI
+     */
     public CanonicalizationMethodType(URI algorithm) {
         this.algorithm = algorithm;
     }
 
+    /** 设置扩展内容元素。 */
     public void setContent(Object content) {
         this.content = content;
     }
 
+    /** 获取扩展内容元素。 */
     public Object getContent() {
         return this.content;
     }
 
     /**
+     * 获取规范化算法 URI（Algorithm）属性的值。
+     *
      * Gets the value of the algorithm property.
      *
      * @return possible object is {@link String }

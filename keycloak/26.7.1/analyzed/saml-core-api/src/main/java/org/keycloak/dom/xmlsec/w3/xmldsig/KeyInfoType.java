@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for KeyInfoType complex type.
+ * XML 数字签名密钥信息容器，可包含 KeyName、KeyValue、X509Data、PGPData 等多种密钥描述元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -49,23 +51,30 @@ import java.util.List;
  */
 public class KeyInfoType {
 
+    /** 元素标识符（Id）。 */
     protected String id;
 
+    /** 密钥信息子元素列表（KeyName、KeyValue 等）。 */
     protected List<Object> contentList = new ArrayList<>();
 
+    /** 添加一条密钥信息子元素。 */
     public void addContent(Object content) {
         this.contentList.add(content);
     }
 
+    /** 移除一条密钥信息子元素。 */
     public void removeContent(Object content) {
         this.contentList.remove(content);
     }
 
+    /** 获取密钥信息子元素列表（只读）。 */
     public List<Object> getContent() {
         return Collections.unmodifiableList(contentList);
     }
 
     /**
+     * 获取 元素标识符（Id） 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -75,6 +84,8 @@ public class KeyInfoType {
     }
 
     /**
+     * 设置 元素标识符（Id） 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }

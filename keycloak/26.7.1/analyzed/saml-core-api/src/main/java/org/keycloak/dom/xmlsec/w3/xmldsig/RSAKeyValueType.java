@@ -31,6 +31,8 @@ import org.keycloak.saml.common.exceptions.ProcessingException;
 /**
  * <p>
  * Java class for RSAKeyValueType complex type.
+ * XML 数字签名 RSA 公钥参数（Modulus、Exponent），实现 {@link KeyValueType} 并可转换为 JDK 密钥。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -50,10 +52,14 @@ import org.keycloak.saml.common.exceptions.ProcessingException;
  */
 public class RSAKeyValueType implements KeyValueType {
 
+    /** RSA 模数（Modulus）。 */
     protected byte[] modulus;
+    /** RSA 公钥指数（Exponent）。 */
     protected byte[] exponent;
 
     /**
+     * 获取 模数（Modulus） 属性的值。
+     *
      * Gets the value of the modulus property.
      *
      * @return possible object is byte[]
@@ -63,6 +69,8 @@ public class RSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 模数（Modulus） 属性的值。
+     *
      * Sets the value of the modulus property.
      *
      * @param value allowed object is byte[]
@@ -72,6 +80,8 @@ public class RSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 获取 公钥指数（Exponent） 属性的值。
+     *
      * Gets the value of the exponent property.
      *
      * @return possible object is byte[]
@@ -81,6 +91,8 @@ public class RSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 设置 公钥指数（Exponent） 属性的值。
+     *
      * Sets the value of the exponent property.
      *
      * @param value allowed object is byte[]
@@ -90,6 +102,8 @@ public class RSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 转换为 JDK {@link RSAPublicKey} 表示。
+     *
      * Convert to the JDK representation of a RSA Public Key
      *
      * @return
@@ -109,6 +123,8 @@ public class RSAKeyValueType implements KeyValueType {
     }
 
     /**
+     * 转换为 JDK {@link RSAPrivateKey} 表示。
+     *
      * Convert to the JDK representation of a RSA Private Key
      *
      * @return
@@ -127,6 +143,7 @@ public class RSAKeyValueType implements KeyValueType {
         }
     }
 
+    /** 序列化为 XML RSAKeyValue 元素字符串。 */
     public String toString() {
         String prefix = WSTrustConstants.XMLDSig.DSIG_PREFIX;
         String colon = ":";

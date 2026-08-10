@@ -19,6 +19,8 @@ package org.keycloak.dom.saml.v2.protocol;
 /**
  * <p>
  * Java class for TerminateType complex type.
+ * SAML 2.0 终止标识类型（空复杂类型），用于 NameIDMappingResponse 表示映射关系终止。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -32,6 +34,7 @@ package org.keycloak.dom.saml.v2.protocol;
  * &lt;/complexType>
  * </pre>
  */
+/** SAML 2.0 终止标识占位类型，无额外字段。 */
 public class TerminateType {
 
 }

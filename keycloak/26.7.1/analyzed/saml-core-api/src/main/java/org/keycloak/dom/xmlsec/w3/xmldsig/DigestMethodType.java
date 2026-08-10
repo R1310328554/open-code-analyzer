@@ -21,6 +21,8 @@ import java.net.URI;
 /**
  * <p>
  * Java class for DigestMethodType complex type.
+ * XML 数字签名摘要算法，指定对引用数据计算摘要时使用的算法 URI（如 SHA-256）。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -40,22 +42,33 @@ import java.net.URI;
  */
 public class DigestMethodType {
 
+    /** 摘要算法 URI（Algorithm）。 */
     protected URI algorithm;
+    /** 可选的扩展内容元素。 */
     private Object content;
 
+    /**
+     * 构造摘要方法。
+     *
+     * @param algorithm 摘要算法 URI
+     */
     public DigestMethodType(URI algorithm) {
         this.algorithm = algorithm;
     }
 
+    /** 设置扩展内容元素。 */
     public void setContent(Object content) {
         this.content = content;
     }
 
+    /** 获取扩展内容元素。 */
     public Object getContent() {
         return this.content;
     }
 
     /**
+     * 获取摘要算法 URI（Algorithm）属性的值。
+     *
      * Gets the value of the algorithm property.
      *
      * @return possible object is {@link URI }

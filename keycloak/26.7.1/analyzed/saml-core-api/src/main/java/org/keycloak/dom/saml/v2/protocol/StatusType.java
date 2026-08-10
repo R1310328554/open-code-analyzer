@@ -21,6 +21,8 @@ import java.io.Serializable;
 /**
  * <p>
  * Java class for StatusType complex type.
+ * SAML 2.0 响应状态，包含状态码、可选状态消息及详细扩展信息。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -41,11 +43,16 @@ import java.io.Serializable;
  */
 public class StatusType implements Serializable {
 
+    /** 人类可读的状态消息（StatusMessage）。 */
     protected String statusMessage;
+    /** 状态码（StatusCode）。 */
     protected StatusCodeType statusCode;
+    /** 状态详情扩展（StatusDetail）。 */
     protected StatusDetailType statusDetail;
 
     /**
+     * 获取 状态码（StatusCode） 属性的值。
+     *
      * Gets the value of the statusCode property.
      *
      * @return possible object is {@link StatusCodeType }
@@ -55,6 +62,8 @@ public class StatusType implements Serializable {
     }
 
     /**
+     * 设置 状态码（StatusCode） 属性的值。
+     *
      * Sets the value of the statusCode property.
      *
      * @param value allowed object is {@link StatusCodeType }
@@ -64,6 +73,8 @@ public class StatusType implements Serializable {
     }
 
     /**
+     * 获取 状态消息（StatusMessage） 属性的值。
+     *
      * Gets the value of the statusMessage property.
      *
      * @return possible object is {@link String }
@@ -73,6 +84,8 @@ public class StatusType implements Serializable {
     }
 
     /**
+     * 设置 状态消息（StatusMessage） 属性的值。
+     *
      * Sets the value of the statusMessage property.
      *
      * @param value allowed object is {@link String }
@@ -82,6 +95,8 @@ public class StatusType implements Serializable {
     }
 
     /**
+     * 获取 状态详情（StatusDetail） 属性的值。
+     *
      * Gets the value of the statusDetail property.
      *
      * @return possible object is {@link StatusDetailType }
@@ -91,6 +106,8 @@ public class StatusType implements Serializable {
     }
 
     /**
+     * 设置 状态详情（StatusDetail） 属性的值。
+     *
      * Sets the value of the statusDetail property.
      *
      * @param value allowed object is {@link StatusDetailType }
@@ -99,6 +116,7 @@ public class StatusType implements Serializable {
         this.statusDetail = value;
     }
 
+    /** 返回包含状态码、消息与详情的字符串表示。 */
     @Override
     public String toString() {
         return "StatusType [statusCode=" + statusCode + ", statusMessage=" + statusMessage + ", statusDetail=" + statusDetail + "]";

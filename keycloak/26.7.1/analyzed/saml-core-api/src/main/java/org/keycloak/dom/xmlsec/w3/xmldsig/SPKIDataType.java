@@ -24,6 +24,8 @@ import java.util.List;
 /**
  * <p>
  * Java class for SPKIDataType complex type.
+ * XML 数字签名 SPKI 密钥数据，包含一个或多个 SPKISexp（S-表达式）及扩展元素。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -43,17 +45,22 @@ import java.util.List;
  */
 public class SPKIDataType {
 
+    /** SPKI S-表达式及扩展元素列表。 */
     protected List<Object> spkiSexpAndAny = new ArrayList<>();
 
+    /** 添加一条 SPKI 数据元素。 */
     public void addSPKI(Object obj) {
         this.spkiSexpAndAny.add(obj);
     }
 
+    /** 移除一条 SPKI 数据元素。 */
     public void removeSPKI(Object obj) {
         this.spkiSexpAndAny.remove(obj);
     }
 
     /**
+     * 获取 SPKI S-表达式及扩展元素列表（只读）。
+     *
      * Gets the value of the spkiSexpAndAny property.
      * <p>
      * Objects of the following type(s) are allowed in the list {@link org.w3c.dom.Element } {@link Object }

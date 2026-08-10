@@ -19,6 +19,8 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
 /**
  * <p>
  * Java class for RetrievalMethodType complex type.
+ * XML 数字签名密钥检索方法，通过 URI 指向外部密钥资源，可选携带变换链。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -39,11 +41,16 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
  */
 public class RetrievalMethodType {
 
+    /** 检索前变换链（Transforms）。 */
     protected TransformsType transforms;
+    /** 密钥资源 URI。 */
     protected String uri;
+    /** 检索资源类型 URI（Type）。 */
     protected String type;
 
     /**
+     * 获取 变换链（Transforms） 属性的值。
+     *
      * Gets the value of the transforms property.
      *
      * @return possible object is {@link TransformsType }
@@ -53,6 +60,8 @@ public class RetrievalMethodType {
     }
 
     /**
+     * 设置 变换链（Transforms） 属性的值。
+     *
      * Sets the value of the transforms property.
      *
      * @param value allowed object is {@link TransformsType }
@@ -62,6 +71,8 @@ public class RetrievalMethodType {
     }
 
     /**
+     * 获取 密钥资源 URI 属性的值。
+     *
      * Gets the value of the uri property.
      *
      * @return possible object is {@link String }
@@ -71,6 +82,8 @@ public class RetrievalMethodType {
     }
 
     /**
+     * 设置 密钥资源 URI 属性的值。
+     *
      * Sets the value of the uri property.
      *
      * @param value allowed object is {@link String }
@@ -80,6 +93,8 @@ public class RetrievalMethodType {
     }
 
     /**
+     * 获取 资源类型 URI（Type） 属性的值。
+     *
      * Gets the value of the type property.
      *
      * @return possible object is {@link String }
@@ -89,6 +104,8 @@ public class RetrievalMethodType {
     }
 
     /**
+     * 设置 资源类型 URI（Type） 属性的值。
+     *
      * Sets the value of the type property.
      *
      * @param value allowed object is {@link String }

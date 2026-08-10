@@ -19,6 +19,8 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
 /**
  * <p>
  * Java class for ReferenceType complex type.
+ * XML 数字签名引用，描述待摘要/验证的数据 URI、变换链、摘要算法及摘要值。
+
  *
  * <p>
  * The following schema fragment specifies the expected content contained within this class.
@@ -42,14 +44,22 @@ package org.keycloak.dom.xmlsec.w3.xmldsig;
  */
 public class ReferenceType {
 
+    /** 变换链（Transforms）。 */
     protected TransformsType transforms;
+    /** 摘要算法（DigestMethod）。 */
     protected DigestMethodType digestMethod;
+    /** 摘要值（DigestValue）。 */
     protected byte[] digestValue;
+    /** 引用标识符（Id）。 */
     protected String id;
+    /** 被引用数据 URI。 */
     protected String uri;
+    /** 引用类型 URI（Type）。 */
     protected String type;
 
     /**
+     * 获取 变换链（Transforms） 属性的值。
+     *
      * Gets the value of the transforms property.
      *
      * @return possible object is {@link TransformsType }
@@ -59,6 +69,8 @@ public class ReferenceType {
     }
 
     /**
+     * 设置 变换链（Transforms） 属性的值。
+     *
      * Sets the value of the transforms property.
      *
      * @param value allowed object is {@link TransformsType }
@@ -68,6 +80,8 @@ public class ReferenceType {
     }
 
     /**
+     * 获取 摘要算法（DigestMethod） 属性的值。
+     *
      * Gets the value of the digestMethod property.
      *
      * @return possible object is {@link DigestMethodType }
@@ -77,6 +91,8 @@ public class ReferenceType {
     }
 
     /**
+     * 设置 摘要算法（DigestMethod） 属性的值。
+     *
      * Sets the value of the digestMethod property.
      *
      * @param value allowed object is {@link DigestMethodType }
@@ -86,6 +102,8 @@ public class ReferenceType {
     }
 
     /**
+     * 获取 摘要值（DigestValue） 属性的值。
+     *
      * Gets the value of the digestValue property.
      *
      * @return possible object is byte[]
@@ -95,6 +113,8 @@ public class ReferenceType {
     }
 
     /**
+     * 设置 摘要值（DigestValue） 属性的值。
+     *
      * Sets the value of the digestValue property.
      *
      * @param value allowed object is byte[]
@@ -104,6 +124,8 @@ public class ReferenceType {
     }
 
     /**
+     * 获取 引用标识符（Id） 属性的值。
+     *
      * Gets the value of the id property.
      *
      * @return possible object is {@link String }
@@ -113,6 +135,8 @@ public class ReferenceType {
     }
 
     /**
+     * 设置 引用标识符（Id） 属性的值。
+     *
      * Sets the value of the id property.
      *
      * @param value allowed object is {@link String }
@@ -122,6 +146,8 @@ public class ReferenceType {
     }
 
     /**
+     * 获取 被引用数据 URI 属性的值。
+     *
      * Gets the value of the uri property.
      *
      * @return possible object is {@link String }
@@ -131,6 +157,8 @@ public class ReferenceType {
     }
 
     /**
+     * 设置 被引用数据 URI 属性的值。
+     *
      * Sets the value of the uri property.
      *
      * @param value allowed object is {@link String }
@@ -140,6 +168,8 @@ public class ReferenceType {
     }
 
     /**
+     * 获取 引用类型 URI（Type） 属性的值。
+     *
      * Gets the value of the type property.
      *
      * @return possible object is {@link String }
@@ -149,6 +179,8 @@ public class ReferenceType {
     }
 
     /**
+     * 设置 引用类型 URI（Type） 属性的值。
+     *
      * Sets the value of the type property.
      *
      * @param value allowed object is {@link String }
