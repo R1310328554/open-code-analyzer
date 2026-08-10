@@ -20,7 +20,8 @@
 | gin | 1.12.0 | 56 | 0 ✅ |
 | arthas | arthas-all-4.3.2 | 795 | 0 ✅ |
 | netty | netty-4.2.17.Final | 1928 | 0 ✅ |
-| nacos | 3.2.3 | 0 | 2507 |
+| nacos | 3.2.3 | 2537 | 0 ✅ |
+| keycloak | 26.7.1 | 5998 | 0 ✅ |
 
-已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty。  
-进行中：nacos（核心 `src/main/java` 队列已初始化，已排除 example）。
+已完成：springframework / springboot / fastapi / rxjava / sentinel / rocketmq / redisson / flask / gson / hikaricp / disruptor / gin / arthas / netty / nacos / keycloak。  
+进行中：harness（Go，准备脚手架）。
