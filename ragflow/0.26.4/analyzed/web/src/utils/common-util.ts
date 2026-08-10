@@ -1,8 +1,13 @@
+/**
+ * common-util.ts — 前端通用工具：FormData 检测、snake_case 转换、URL 参数、数字/颜色/文件大小格式化等。
+ */
+
 import { LLMFactory } from '@/constants/llm';
 import { IFactory } from '@/interfaces/database/llm';
 import isObject from 'lodash/isObject';
 import snakeCase from 'lodash/snakeCase';
 
+/** 类型守卫：判断值是否为 FormData 实例。 */
 export const isFormData = (data: unknown): data is FormData => {
   return data instanceof FormData;
 };
@@ -13,12 +18,14 @@ const excludedFields: Array<string | RegExp> = [
   'image_base64',
 ];
 
+/** 判断字段名是否在 snake_case 转换排除列表中。 */
 const isExcludedField = (key: string) => {
   return excludedFields.some((excl) =>
     excl instanceof RegExp ? excl.test(key) : excl === key,
   );
 };
 
+/** 递归将普通对象键名转为 snake_case（FormData 与排除字段保持原键名）。 */
 export const convertTheKeysOfTheObjectToSnake = (data: unknown) => {
   if (isObject(data) && !isFormData(data)) {
     return Object.keys(data).reduce<Record<string, any>>((pre, cur) => {
@@ -31,12 +38,13 @@ export const convertTheKeysOfTheObjectToSnake = (data: unknown) => {
   return data;
 };
 
+/** 从当前页面 URL 查询参数读取指定键的值。 */
 export const getSearchValue = (key: string) => {
   const params = new URL(document.location as any).searchParams;
   return params.get(key);
 };
 
-// Formatize numbers, add thousands of separators
+/** 为数字字符串添加千位分隔符（逗号）。 */
 export const formatNumberWithThousandsSeparator = (numberStr: string) => {
   const formattedNumber = numberStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return formattedNumber;
@@ -55,6 +63,7 @@ const orderFactoryList = [
   LLMFactory.JiekouAI,
 ];
 
+/** 按预设厂商顺序排列 LLM 工厂列表，未列出的项追加在末尾。 */
 export const sortLLmFactoryListBySpecifiedOrder = (list: IFactory[]) => {
   const finalList: IFactory[] = [];
   orderFactoryList.forEach((orderItem) => {
@@ -73,11 +82,13 @@ export const sortLLmFactoryListBySpecifiedOrder = (list: IFactory[]) => {
   return finalList;
 };
 
+/** Select 组件 filterOption：按 label 子串不区分大小写匹配。 */
 export const filterOptionsByInput = (
   input: string,
   option: { label: string; value: string } | undefined,
 ) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
 
+/** 数值保留 fixed 位小数，非数字原样返回。 */
 export const toFixed = (value: unknown, fixed = 2) => {
   if (typeof value === 'number') {
     return value.toFixed(fixed);
@@ -85,6 +96,7 @@ export const toFixed = (value: unknown, fixed = 2) => {
   return value;
 };
 
+/** 将 Python 风格 b'...' 字符串转为 Uint8Array（去掉首尾 b' 与 '）。 */
 export const stringToUint8Array = (str: string) => {
   // const byteString = str.replace(/b'|'/g, '');
   const byteString = str.slice(2, -1);
@@ -97,6 +109,7 @@ export const stringToUint8Array = (str: string) => {
   return uint8Array;
 };
 
+/** 十六进制字符串转 Uint8Array，格式非法时返回 undefined。 */
 export const hexStringToUint8Array = (hex: string) => {
   const arr = hex.match(/[\da-f]{2}/gi);
   if (Array.isArray(arr)) {
@@ -108,6 +121,7 @@ export const hexStringToUint8Array = (hex: string) => {
   }
 };
 
+/** 偶数长度十六进制字符串转 ArrayBuffer。 */
 export function hexToArrayBuffer(input: string) {
   if (typeof input !== 'string') {
     throw new TypeError('Expected input to be a string');
@@ -126,6 +140,7 @@ export function hexToArrayBuffer(input: string) {
   return view.buffer;
 }
 
+/** 字节数格式化为人类可读单位（SI 1000 或二进制 1024）。 */
 export function formatFileSize(bytes: number, si = true, dp = 1) {
   let nextBytes = bytes;
   const thresh = si ? 1000 : 1024;
@@ -151,7 +166,7 @@ export function formatFileSize(bytes: number, si = true, dp = 1) {
   return nextBytes.toFixed(dp) + ' ' + units[u];
 }
 
-// Get the actual color value of a CSS variable
+/** 读取 documentElement 上 CSS 自定义属性的计算值。 */
 function getCSSVariableValue(variableName: string): string {
   const computedStyle = getComputedStyle(document.documentElement);
   const value = computedStyle.getPropertyValue(variableName).trim();
@@ -161,10 +176,15 @@ function getCSSVariableValue(variableName: string): string {
   return value;
 }
 
-/**Parse the color and convert to RGB,
+/**
+ * 解析颜色字符串为 RGB 三元组，支持 #hex、rgb()、var() 及 rgb(var()) 嵌套。
+ * #fff -> [255, 255, 255]
+ * var(--text-primary) -> 解析变量后同样返回 RGB
+ */
  * #fff -> [255, 255, 255]
  * var(--text-primary) -> [var(--text-primary-r), var(--text-primary-g), var(--text-primary-b)]
  * */
+/** 将多种 CSS 颜色表示统一解析为 [r, g, b] 整数元组。 */
 export function parseColorToRGB(color: string): [number, number, number] {
   // Handling CSS variables (e.g. var(--accent-primary))
   let colorStr = color;
@@ -248,11 +268,13 @@ export function parseColorToRGB(color: string): [number, number, number] {
  * @param opcity 0~1
  * @return rgba(r,g,b,opcity)
  */
+/** 解析颜色并输出 rgba(r,g,b,opacity) 字符串。 */
 export function parseColorToRGBA(color: string, opcity = 1): string {
   const [r, g, b] = parseColorToRGB(color);
   return `rgba(${r},${g},${b},${opcity})`;
 }
 
+/** 长字符串中间省略：保留首尾各 front/back 字符，中间用 … 连接。 */
 export function middleEllipsis(str: string, front = 12, back = 8) {
   if (str.length <= front + back) return str;
   return `${str.slice(0, front)}…${str.slice(-back)}`;

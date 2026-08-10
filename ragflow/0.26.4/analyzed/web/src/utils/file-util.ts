@@ -1,7 +1,12 @@
+/**
+ * file-util.ts — 文件读写与下载：Base64 互转、压缩上传、预览 Blob、JSON 稳定导出。
+ */
+
 import { FileMimeType } from '@/constants/common';
 import { UploadFile } from '@/interfaces/antd-compat';
 import fileManagerService from '@/services/file-manager-service';
 
+/** File/Blob 经 canvas 缩放压缩后转为 PNG Base64 Data URL。 */
 export const transformFile2Base64 = (
   val: any,
   imgSize?: number,
@@ -50,6 +55,7 @@ export const transformFile2Base64 = (
   });
 };
 
+/** Data URL Base64 解码为带 MIME 的 File 对象。 */
 export const transformBase64ToFile = (
   dataUrl: string,
   filename: string = 'file',
@@ -68,6 +74,7 @@ export const transformBase64ToFile = (
   return new File([u8arr], filename, { type: mimeType });
 };
 
+/** Ant Design Upload onChange 归一化：数组或 e.fileList。 */
 export const normFile = (e: any) => {
   if (Array.isArray(e)) {
     return e;
@@ -75,6 +82,7 @@ export const normFile = (e: any) => {
   return e?.fileList;
 };
 
+/** 单张 Base64 头像转为已完成状态的 UploadFile 列表。 */
 export const getUploadFileListFromBase64 = (avatar: string) => {
   let fileList: UploadFile[] = [];
 
@@ -85,6 +93,7 @@ export const getUploadFileListFromBase64 = (avatar: string) => {
   return fileList;
 };
 
+/** 从 UploadFile 列表首项读取 Base64（优先 originFileObj 转码，否则 thumbUrl）。 */
 export const getBase64FromUploadFileList = async (fileList?: UploadFile[]) => {
   if (Array.isArray(fileList) && fileList.length > 0) {
     const file = fileList[0];
@@ -101,6 +110,7 @@ export const getBase64FromUploadFileList = async (fileList?: UploadFile[]) => {
   return '';
 };
 
+/** 通过 file-manager 服务拉取文档或文件二进制为 Blob。 */
 async function fetchPreviewBlob(
   id: string,
   resource: 'document' | 'files',
@@ -117,6 +127,7 @@ async function fetchPreviewBlob(
   return blob;
 }
 
+/** 获取 HTML Blob 并触发浏览器打开预览。 */
 export async function previewHtmlFile(
   id: string,
   resource: 'document' | 'files' = 'document',
@@ -129,6 +140,7 @@ export async function previewHtmlFile(
   URL.revokeObjectURL(url);
 }
 
+/** 创建临时 object URL 并触发下载，随后 revoke。 */
 export const downloadFileFromBlob = (blob: Blob, name?: string) => {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -140,6 +152,7 @@ export const downloadFileFromBlob = (blob: Blob, name?: string) => {
   window.URL.revokeObjectURL(url);
 };
 
+/** 按文档 id 下载知识库文件，可选指定文件名。 */
 export const downloadDocument = async ({
   id,
   filename,
@@ -153,6 +166,7 @@ export const downloadDocument = async ({
 
 const Units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
+/** 字节数格式化为带单位的字符串（1024 进制）。 */
 export const formatBytes = (x: string | number) => {
   let l = 0,
     n = (typeof x === 'string' ? parseInt(x, 10) : x) || 0;
@@ -164,6 +178,7 @@ export const formatBytes = (x: string | number) => {
   return n.toFixed(n < 10 && l > 0 ? 1 : 0) + ' ' + Units[l];
 };
 
+/** 深度排序键后导出稳定、可 diff 的 JSON 文件。 */
 export const downloadJsonFile = async (
   data: Record<string, any>,
   fileName: string,
@@ -195,6 +210,7 @@ export const downloadJsonFile = async (
 // property iteration order is implementation-defined in JS, and
 // React Flow nodes carry fields in a stable order today but we
 // don't want to depend on that.
+/** 递归对纯对象键名排序，保证 JSON 导出字节稳定。 */
 const sortKeysDeep = (value: any): any => {
   if (Array.isArray(value)) {
     return value.map(sortKeysDeep);
@@ -214,6 +230,7 @@ const sortKeysDeep = (value: any): any => {
   return value;
 };
 
+/** Base64 转 File 并附加 preview 字段供 Upload 预览。 */
 export function transformBase64ToFileWithPreview(
   dataUrl: string,
   filename: string = 'file',
@@ -225,6 +242,7 @@ export function transformBase64ToFileWithPreview(
   return file;
 }
 
+/** 从原生 File 数组首项压缩转 Base64。 */
 export const getBase64FromFileList = async (fileList?: File[]) => {
   if (Array.isArray(fileList) && fileList.length > 0) {
     const file = fileList[0];

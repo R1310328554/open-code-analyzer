@@ -1,9 +1,15 @@
+/**
+ * list-filter-util.ts — 列表筛选聚合：按字段分组计数、数组字段展开与 Owner 过滤器构建。
+ */
+
+/** 筛选项：id、展示 label 与出现次数 count。 */
 export type FilterType = {
   id: string;
   label: string;
   count: number;
 };
 
+/** 按 idField 分组统计，label 取自 labelField。 */
 export function groupListByType<T extends Record<string, any>>(
   list: T[],
   idField: string,
@@ -24,6 +30,7 @@ export function groupListByType<T extends Record<string, any>>(
   return fileTypeList;
 }
 
+/** 对列表中数组型 idField 逐项展开并计数（如多标签）。 */
 export function groupListByArray<T extends Record<string, any>>(
   list: T[],
   idField: string,
@@ -45,6 +52,7 @@ export function groupListByArray<T extends Record<string, any>>(
   return fileTypeList;
 }
 
+/** 按 tenant_id 聚合 Owner 筛选项，返回 field/list/label 结构。 */
 export function buildOwnersFilter<T extends Record<string, any>>(
   list: T[],
   nickName?: string,

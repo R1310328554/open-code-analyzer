@@ -1,5 +1,10 @@
+/**
+ * date.ts — 基于 dayjs 的日期时间格式化：标准日期、相对时段与秒数可读化。
+ */
+
 import dayjs from 'dayjs';
 
+/** 按 format 格式化日期，默认 DD/MM/YYYY HH:mm:ss；空值返回空串。 */
 export function formatDate(date: any, format?: string) {
   const thisFormat = format || 'DD/MM/YYYY HH:mm:ss';
   if (!date) {
@@ -8,6 +13,7 @@ export function formatDate(date: any, format?: string) {
   return dayjs(date).format(thisFormat);
 }
 
+/** 格式化为 HH:mm:ss 时间部分。 */
 export function formatTime(date: any) {
   if (!date) {
     return '';
@@ -15,18 +21,22 @@ export function formatTime(date: any) {
   return dayjs(date).format('HH:mm:ss');
 }
 
+/** 返回当前日期的默认格式字符串。 */
 export function today() {
   return formatDate(dayjs());
 }
 
+/** 返回昨天日期的默认格式字符串。 */
 export function lastDay() {
   return formatDate(dayjs().subtract(1, 'days'));
 }
 
+/** 返回一周前日期的默认格式字符串。 */
 export function lastWeek() {
   return formatDate(dayjs().subtract(1, 'weeks'));
 }
 
+/** 仅日期部分，格式 DD/MM/YYYY。 */
 export function formatPureDate(date: any) {
   if (!date) {
     return '';
@@ -34,6 +44,7 @@ export function formatPureDate(date: any) {
   return dayjs(date).format('DD/MM/YYYY');
 }
 
+/** ISO 风格日期 YYYY-MM-DD，无效输入返回空串。 */
 export function formatStandardDate(date: any) {
   if (!date) {
     return '';
@@ -45,6 +56,7 @@ export function formatStandardDate(date: any) {
   return parsedDate.format('YYYY-MM-DD');
 }
 
+/** 秒数转为 xh xm xs 可读字符串（如 3661 -> 1h 1m 1s）。 */
 export function formatSecondsToHumanReadable(seconds: number): string {
   if (isNaN(seconds) || seconds < 0) {
     return '0s';
