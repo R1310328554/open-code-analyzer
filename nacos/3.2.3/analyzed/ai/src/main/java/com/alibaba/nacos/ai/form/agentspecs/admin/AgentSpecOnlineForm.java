@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * AgentSpec online/offline form.
+ * <p>AgentSpec 上线/下线操作表单。scope 为 {@code agentspec} 时表示整资源启用/禁用，否则按 version 字段进行版本级上下线。</p>
  *
  * @author nacos
  */
@@ -35,11 +36,13 @@ public class AgentSpecOnlineForm extends AgentSpecForm {
     
     /**
      * "agentspec" means enable/disable the whole agentspec. Otherwise version-level.
+     * <p>作用范围：{@code agentspec} 表示整资源级，其他值表示版本级上下线。</p>
      */
     private String scope;
     
     /**
      * Version for version-level online/offline.
+     * <p>版本级上下线时指定的目标版本号。</p>
      */
     private String version;
     

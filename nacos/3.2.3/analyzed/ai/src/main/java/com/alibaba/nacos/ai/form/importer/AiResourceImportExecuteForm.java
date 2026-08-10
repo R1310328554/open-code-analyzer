@@ -22,6 +22,7 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * Form for executing AI resource import.
+ * <p>执行 AI 资源导入的表单，在验证通过后批量写入所选资源；支持覆盖已有资源、跳过无效项及携带 validationToken 防重放。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -30,12 +31,16 @@ public class AiResourceImportExecuteForm extends AbstractAiResourceImportForm {
     
     private static final long serialVersionUID = 1L;
     
+    /** 待导入项 JSON 列表，每项为 {@link AiResourceImportItem}。 */
     private String selectedItems;
     
+    /** 目标命名空间已存在同名资源时是否覆盖。 */
     private boolean overwriteExisting;
     
+    /** 遇到无效项时是否跳过继续导入其余项。 */
     private boolean skipInvalid;
     
+    /** 预校验接口返回的令牌，用于关联校验与执行步骤。 */
     private String validationToken;
     
     @Override
@@ -48,6 +53,7 @@ public class AiResourceImportExecuteForm extends AbstractAiResourceImportForm {
     
     /**
      * Convert form data to import execute request.
+     * <p>将表单字段转换为 {@link AiResourceImportExecuteRequest} 供服务层执行导入。</p>
      *
      * @return import execute request
      * @throws NacosApiException if form JSON fields can't be parsed

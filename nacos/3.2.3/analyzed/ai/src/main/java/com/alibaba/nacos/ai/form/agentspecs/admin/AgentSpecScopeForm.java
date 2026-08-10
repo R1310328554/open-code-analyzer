@@ -26,6 +26,7 @@ import java.io.Serial;
 
 /**
  * Form for updating agentspec visibility scope.
+ * <p>更新 AgentSpec 可见性范围的表单，scope 仅允许 {@link VisibilityConstants#SCOPE_PUBLIC} 或 {@link VisibilityConstants#SCOPE_PRIVATE}。</p>
  *
  * @author nacos
  */
@@ -34,11 +35,12 @@ public class AgentSpecScopeForm extends AgentSpecForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 可见性范围：PUBLIC（公开）或 PRIVATE（私有）。 */
     private String scope;
     
     @Override
     public void validate() throws NacosApiException {
-        super.validate();
+        super.validate(); // 先执行基类 agentSpecName 校验
         if (StringUtils.isBlank(scope)) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
                 "Required parameter 'scope' type String is not present");

@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * AgentSpec list form.
+ * <p>AgentSpec 分页列表查询表单，支持精确/模糊搜索模式与按下载量等字段排序；列表场景下 agentSpecName 为可选参数。</p>
  *
  * @author nacos
  */
@@ -33,17 +34,19 @@ public class AgentSpecListForm extends AgentSpecForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 搜索模式：{@code accurate} 精确匹配或 {@code blur} 模糊匹配。 */
     private String search;
     
     /**
      * Sort field. Supported values: "download_count". Defaults to gmt_modified when null or empty.
+     * <p>排序字段，当前支持 {@code download_count}；为空时默认按 gmt_modified 排序。</p>
      */
     private String orderBy;
     
     @Override
     public void validate() throws NacosApiException {
         fillDefaultNamespaceId();
-        // For list query, agentSpecName is optional
+        // 列表查询时 agentSpecName 为可选参数
         if (StringUtils.isNotBlank(search)
             && !Constants.AgentSpecs.SEARCH_ACCURATE.equalsIgnoreCase(search)
             && !Constants.AgentSpecs.SEARCH_BLUR.equalsIgnoreCase(search)) {

@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * AgentSpec publish form.
+ * <p>AgentSpec 版本发布表单，将已审核通过的版本正式发布；可通过 updateLatestLabel 同步更新 latest 标签指向。</p>
  *
  * @author nacos
  */
@@ -35,6 +36,7 @@ public class AgentSpecPublishForm extends AgentSpecForm {
     
     private String version;
     
+    /** 发布成功后是否将 latest 标签更新为当前版本。 */
     private Boolean updateLatestLabel;
     
     @Override

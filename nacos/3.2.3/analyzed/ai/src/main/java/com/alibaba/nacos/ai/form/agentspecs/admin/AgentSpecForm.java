@@ -27,6 +27,7 @@ import java.io.Serial;
 
 /**
  * AgentSpec form base class.
+ * <p>AgentSpec 管理端请求表单基类，封装命名空间、名称与版本等公共字段，并实现 {@link NacosForm#validate()} 校验逻辑；命名空间为空时自动填充 {@link Constants.AgentSpecs#AGENTSPEC_DEFAULT_NAMESPACE}。</p>
  *
  * @author nacos
  */
@@ -35,10 +36,13 @@ public class AgentSpecForm implements NacosForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 命名空间 ID，为空时使用 AgentSpec 默认命名空间。 */
     private String namespaceId;
     
+    /** AgentSpec 资源名称，多数管理端操作必填。 */
     private String agentSpecName;
     
+    /** 版本号，部分操作（发布、上下线等）使用。 */
     private String version;
     
     @Override
@@ -50,6 +54,7 @@ public class AgentSpecForm implements NacosForm {
         }
     }
     
+    /** 命名空间为空时填充 AgentSpec 默认命名空间。 */
     protected void fillDefaultNamespaceId() {
         if (StringUtils.isEmpty(namespaceId)) {
             namespaceId = Constants.AgentSpecs.AGENTSPEC_DEFAULT_NAMESPACE;

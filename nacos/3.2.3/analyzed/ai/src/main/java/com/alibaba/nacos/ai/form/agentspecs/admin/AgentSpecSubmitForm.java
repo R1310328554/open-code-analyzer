@@ -25,6 +25,7 @@ import java.io.Serial;
 
 /**
  * AgentSpec submit form.
+ * <p>AgentSpec 版本提交审核表单，将草稿版本提交至发布流水线等待审核。</p>
  *
  * @author nacos
  */
@@ -33,6 +34,7 @@ public class AgentSpecSubmitForm extends AgentSpecForm {
     @Serial
     private static final long serialVersionUID = 1L;
     
+    /** 待提交审核的目标版本号。 */
     private String version;
     
     @Override

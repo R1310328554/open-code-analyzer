@@ -20,6 +20,7 @@ import java.io.Serial;
 
 /**
  * AgentSpec update form.
+ * <p>AgentSpec 更新表单，继承 {@link AgentSpecDetailForm} 的卡片内容校验，并可选择是否将当前版本设为 latest。</p>
  *
  * @author nacos
  */
@@ -30,6 +31,7 @@ public class AgentSpecUpdateForm extends AgentSpecDetailForm {
     
     /**
      * Whether to set as latest version.
+     * <p>更新完成后是否将当前版本标记为 latest 最新版本。</p>
      */
     private Boolean setAsLatest;
     

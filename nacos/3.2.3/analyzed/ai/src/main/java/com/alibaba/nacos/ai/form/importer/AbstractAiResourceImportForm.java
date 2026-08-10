@@ -31,6 +31,7 @@ import java.util.Map;
 
 /**
  * Base form for AI resource import APIs.
+ * <p>AI 资源导入 API 的表单基类，封装命名空间、资源类型、来源 ID 与 options 等公共字段，并提供 JSON 解析与参数缺失异常构造等共享校验逻辑。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -39,14 +40,19 @@ public abstract class AbstractAiResourceImportForm implements NacosForm, Seriali
     
     private static final long serialVersionUID = 1L;
     
+    /** 目标命名空间 ID。 */
     private String namespaceId;
     
+    /** 资源类型（如 Skill、AgentSpec 等）。 */
     private String resourceType;
     
+    /** 外部导入来源标识。 */
     private String sourceId;
     
+    /** 扩展选项 JSON 字符串，键值对形式。 */
     private String options;
     
+    /** 校验 resourceType 与 sourceId 必填。 */
     protected void validateSource() throws NacosApiException {
         if (StringUtils.isBlank(resourceType)) {
             throw missingParameter("resourceType");
@@ -56,6 +62,7 @@ public abstract class AbstractAiResourceImportForm implements NacosForm, Seriali
         }
     }
     
+    /** 将 options JSON 字符串解析为键值 Map，空值返回 null。 */
     protected Map<String, String> parseOptions() throws NacosApiException {
         if (StringUtils.isBlank(options)) {
             return null;
@@ -68,6 +75,7 @@ public abstract class AbstractAiResourceImportForm implements NacosForm, Seriali
         }
     }
     
+    /** 将 selectedItems JSON 解析为 {@link AiResourceImportItem} 列表。 */
     protected List<AiResourceImportItem> parseSelectedItems(String selectedItems)
         throws NacosApiException {
         if (StringUtils.isBlank(selectedItems)) {
@@ -82,6 +90,7 @@ public abstract class AbstractAiResourceImportForm implements NacosForm, Seriali
         }
     }
     
+    /** 构造参数缺失的 {@link NacosApiException}。 */
     protected NacosApiException missingParameter(String name) {
         return new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING,
             "Required parameter `" + name + "` is not present.");

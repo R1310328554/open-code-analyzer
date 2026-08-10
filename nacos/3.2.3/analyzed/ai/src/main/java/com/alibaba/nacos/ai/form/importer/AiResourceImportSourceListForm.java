@@ -23,6 +23,7 @@ import java.io.Serializable;
 
 /**
  * Form for listing AI resource import sources.
+ * <p>列出可用 AI 资源导入来源的表单，可按 resourceType 过滤返回匹配的 SPI 导入源列表。</p>
  *
  * @author xiweng.yy
  * @since 3.2.1
@@ -31,9 +32,11 @@ public class AiResourceImportSourceListForm implements NacosForm, Serializable {
     
     private static final long serialVersionUID = 1L;
     
+    /** 资源类型过滤条件，为空时返回全部类型的导入源。 */
     private String resourceType;
     
     @Override
+    /** 来源列表查询无必填参数，校验为空实现。 */
     public void validate() throws NacosApiException {
     }
     

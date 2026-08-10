@@ -23,23 +23,30 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * AgentSpec query form for client runtime get.
+ * <p>客户端运行时按名称/版本/标签获取 AgentSpec 的查询表单，支持 md5 条件校验以实现增量拉取。</p>
  *
  * @author nacos
  */
 public class AgentSpecQueryForm {
     
+    /** 命名空间 ID，为空时使用默认命名空间。 */
     private String namespaceId;
     
+    /** AgentSpec 名称，必填。 */
     private String name;
     
+    /** 指定版本号，与 label 二选一或组合使用。 */
     private String version;
     
+    /** 语义标签（如 latest、stable），解析为对应版本。 */
     private String label;
     
+    /** 客户端本地缓存 md5，用于判断内容是否变更。 */
     private String md5;
     
     /**
      * Validate and normalize query parameters.
+     * <p>校验并规范化查询参数：补全默认命名空间，name 不能为空。</p>
      *
      * @throws NacosApiException if required parameters are missing
      */

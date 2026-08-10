@@ -21,6 +21,7 @@ import com.alibaba.nacos.common.utils.StringUtils;
 
 /**
  * AgentSpec search form for client runtime.
+ * <p>客户端运行时 AgentSpec 关键字搜索表单，keyword 为可选过滤条件，命名空间为空时使用默认值。</p>
  *
  * @author nacos
  */
@@ -28,13 +29,15 @@ public class AgentSpecSearchForm {
     
     private String namespaceId;
     
+    /** 搜索关键字，可选，用于模糊匹配 AgentSpec 名称或描述。 */
     private String keyword;
     
     /**
      * Validate and normalize query parameters.
+     * <p>校验并规范化查询参数，补全默认命名空间。</p>
      */
     public void validate() {
-        // keyword is optional
+        // keyword 为可选参数，允许空值表示列出全部
         if (StringUtils.isBlank(namespaceId)) {
             namespaceId = Constants.AgentSpecs.AGENTSPEC_DEFAULT_NAMESPACE;
         }
