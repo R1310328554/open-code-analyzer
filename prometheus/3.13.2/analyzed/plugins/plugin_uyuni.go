@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// SUSE Uyuni 服务发现插件注册桩：blank import 在 init 中注册 discovery/uyuni。
+
 //go:build !remove_all_sd || enable_uyuni_sd
 
 package plugins
 
 import (
+// 注册 Uyuni SD，从 Uyuni/SUSE Manager 系统清单 API 生成主机 scrape 目标。
 	_ "github.com/prometheus/prometheus/discovery/uyuni" // Register uyuni plugin.
 )

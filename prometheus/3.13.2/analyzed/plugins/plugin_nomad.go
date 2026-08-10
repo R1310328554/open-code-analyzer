@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// HashiCorp Nomad 服务发现插件注册桩：blank import 在 init 中注册 discovery/nomad。
+
 //go:build !remove_all_sd || enable_nomad_sd
 
 package plugins
 
 import (
+// 注册 Nomad SD，从 Nomad 集群作业与分配信息生成动态 scrape 目标。
 	_ "github.com/prometheus/prometheus/discovery/nomad" // Register nomad plugin.
 )

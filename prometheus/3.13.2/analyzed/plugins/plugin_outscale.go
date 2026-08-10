@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Outscale 云厂商服务发现插件注册桩：blank import 注册 discovery/outscale。
+
 //go:build !remove_all_sd || enable_outscale_sd
 
 package plugins
 
 import (
+// 注册 Outscale SD，调用 Outscale API 列举虚拟机实例作为 scrape 目标。
 	_ "github.com/prometheus/prometheus/discovery/outscale" // Register outscale plugin.
 )

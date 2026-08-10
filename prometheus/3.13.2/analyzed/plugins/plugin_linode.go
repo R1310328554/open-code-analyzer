@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Linode（Akamai Connected Cloud）服务发现插件注册桩：blank import 注册 discovery/linode。
+
 //go:build !remove_all_sd || enable_linode_sd
 
 package plugins
 
 import (
+// 注册 Linode SD，通过 Linode API 枚举虚拟机实例作为监控目标。
 	_ "github.com/prometheus/prometheus/discovery/linode" // Register linode plugin.
 )

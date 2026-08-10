@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// PuppetDB 服务发现插件注册桩：blank import 在 init 中注册 discovery/puppetdb。
+
 //go:build !remove_all_sd || enable_puppetdb_sd
 
 package plugins
 
 import (
+// 注册 PuppetDB SD，查询 Puppet 节点清单与事实字段生成 relabel 可用的目标列表。
 	_ "github.com/prometheus/prometheus/discovery/puppetdb" // Register puppetdb plugin.
 )

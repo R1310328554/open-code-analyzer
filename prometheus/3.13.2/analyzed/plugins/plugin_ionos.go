@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// IONOS Cloud 服务发现插件注册桩：blank import 在 init 中注册 discovery/ionos。
+
 //go:build !remove_all_sd || enable_ionos_sd
 
 package plugins
 
 import (
+// 注册 IONOS Cloud SD，从 IONOS Data Center Designer API 拉取实例目标。
 	_ "github.com/prometheus/prometheus/discovery/ionos" // Register ionos plugin.
 )

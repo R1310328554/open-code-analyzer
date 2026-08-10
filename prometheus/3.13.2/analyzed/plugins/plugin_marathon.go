@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Mesos Marathon 服务发现插件注册桩：blank import 在 init 中注册 discovery/marathon。
+
 //go:build !remove_all_sd || enable_marathon_sd
 
 package plugins
 
 import (
+// 注册 Marathon SD，从 Marathon/Mesos 应用与任务列表发现容器服务端点。
 	_ "github.com/prometheus/prometheus/discovery/marathon" // Register marathon plugin.
 )

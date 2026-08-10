@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Scaleway 服务发现插件注册桩：blank import 在 init 中注册 discovery/scaleway。
+
 //go:build !remove_all_sd || enable_scaleway_sd
 
 package plugins
 
 import (
+// 注册 Scaleway SD，通过 Scaleway Instance API 发现云服务器与 Bare Metal 目标。
 	_ "github.com/prometheus/prometheus/discovery/scaleway" // Register scaleway plugin.
 )

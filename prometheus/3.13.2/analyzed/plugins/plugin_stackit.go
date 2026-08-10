@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// STACKIT 云平台服务发现插件注册桩：blank import 注册 discovery/stackit。
+
 //go:build !remove_all_sd || enable_stackit_sd
 
 package plugins
 
 import (
+// 注册 STACKIT SD，从 STACKIT Cloud API 拉取计算实例作为监控目标。
 	_ "github.com/prometheus/prometheus/discovery/stackit" // Register stackit plugin.
 )

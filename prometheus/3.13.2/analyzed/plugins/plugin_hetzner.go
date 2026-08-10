@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Hetzner Cloud 服务发现插件注册桩：blank import 在 init 中注册 discovery/hetzner。
+
 //go:build !remove_all_sd || enable_hetzner_sd
 
 package plugins
 
 import (
+// 注册 Hetzner Cloud SD，支持通过 API 发现云服务器与负载均衡目标。
 	_ "github.com/prometheus/prometheus/discovery/hetzner" // Register hetzner plugin.
 )

@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Kubernetes 服务发现插件注册桩：blank import 在 init 中注册 discovery/kubernetes。
+
 //go:build !remove_all_sd || enable_kubernetes_sd
 
 package plugins
 
 import (
+// 注册 Kubernetes SD，监听 Pod/Service/Endpoint/Ingress 等资源变更并生成 scrape 目标。
 	_ "github.com/prometheus/prometheus/discovery/kubernetes" // Register kubernetes plugin.
 )

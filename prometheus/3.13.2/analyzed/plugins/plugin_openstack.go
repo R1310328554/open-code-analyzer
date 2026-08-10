@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// OpenStack 服务发现插件注册桩：blank import 在 init 中注册 discovery/openstack。
+
 //go:build !remove_all_sd || enable_openstack_sd
 
 package plugins
 
 import (
+// 注册 OpenStack SD，通过 Nova/Cinder 等 API 发现虚拟机与 Hypervisor 目标。
 	_ "github.com/prometheus/prometheus/discovery/openstack" // Register openstack plugin.
 )

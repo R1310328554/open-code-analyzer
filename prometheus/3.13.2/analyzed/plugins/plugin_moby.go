@@ -11,10 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Docker Swarm（Moby）服务发现插件注册桩：blank import 注册 discovery/moby。
+
 //go:build !remove_all_sd || enable_moby_sd
 
 package plugins
 
 import (
+// 注册 Moby SD，通过 Docker Engine API 发现 Swarm 服务与容器任务目标。
 	_ "github.com/prometheus/prometheus/discovery/moby" // Register moby plugin.
 )
