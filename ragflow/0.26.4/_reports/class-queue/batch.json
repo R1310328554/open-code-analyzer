@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T17:50:32Z",
-  "files": [
-    "internal/common/error_code.go",
-    "internal/common/format.go",
-    "internal/common/idenfication.go",
-    "internal/common/json_types.go",
-    "internal/common/kg_query_rewrite.go",
-    "internal/common/libm_cgo.go",
-    "internal/common/libm_purego.go",
-    "internal/common/logger.go",
-    "internal/common/metadata_utils.go",
-    "internal/common/multimodal.go",
-    "internal/common/number.go",
-    "internal/common/numeric.go",
-    "internal/common/parser_config.go",
-    "internal/common/password.go",
-    "internal/common/reference_metadata.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1194,
-  "done": 555
+  "done": 570
 }
