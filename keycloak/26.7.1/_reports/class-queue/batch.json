@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T13:45:00Z",
   "files": [
-    "ssf/core/src/main/java/org/keycloak/ssf/event/caep/CaepSessionRevoked.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/stream/SsfStreamEvent.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/stream/SsfStreamUpdatedEvent.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/stream/SsfStreamVerificationEvent.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/token/AbstractSecurityEventToken.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/token/SecurityEventToken.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/token/SseCaepSecurityEventToken.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/token/SsfEventMapJsonDeserializer.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/event/token/SsfSecurityEventToken.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/metadata/DefaultSubjects.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/metadata/TransmitterMetadata.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/AbstractDeliveryMethodRepresentation.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/AddSubjectRequest.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/CreateStreamRequest.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/DeliveryMethod.java",
     "ssf/core/src/main/java/org/keycloak/ssf/stream/DeliveryMethodFamily.java",
     "ssf/core/src/main/java/org/keycloak/ssf/stream/PollDeliveryMethodRepresentation.java",
     "ssf/core/src/main/java/org/keycloak/ssf/stream/PushDeliveryMethodRepresentation.java",
@@ -33,5 +18,5 @@
     "ssf/core/src/main/java/org/keycloak/ssf/subject/EmailSubjectId.java"
   ],
   "remaining_pending": 628,
-  "done": 5340
+  "done": 5355
 }
