@@ -21,12 +21,14 @@ import io.netty.channel.DefaultAddressedEnvelope;
 
 /**
  * The message container that is used for {@link DomainDatagramChannel} to communicate with the remote peer.
+ * <p>Unix 域数据报消息容器：承载 {@link ByteBuf} 负载、目标 {@link DomainSocketAddress}  及可选的发送方地址；实现 {@link ByteBufHolder} 以支持引用计数。</p>
  */
 public final class DomainDatagramPacket
         extends DefaultAddressedEnvelope<ByteBuf, DomainSocketAddress> implements ByteBufHolder {
 
     /**
      * Create a new instance with the specified packet {@code data} and {@code recipient} address.
+     * <p>构造仅含目标地址的数据报（发送路径常用）。</p>
      */
     public DomainDatagramPacket(ByteBuf data, DomainSocketAddress recipient) {
         super(data, recipient);
@@ -35,21 +37,25 @@ public final class DomainDatagramPacket
     /**
      * Create a new instance with the specified packet {@code data}, {@code recipient} address, and {@code sender}
      * address.
+     * <p>构造含发送方与接收方地址的数据报（接收路径由 JNI 填充 sender）。</p>
      */
     public DomainDatagramPacket(ByteBuf data, DomainSocketAddress recipient, DomainSocketAddress sender) {
         super(data, recipient, sender);
     }
 
+    /** 深拷贝 {@link ByteBuf} 内容并保留地址信息 */
     @Override
     public DomainDatagramPacket copy() {
         return replace(content().copy());
     }
 
+    /** 共享底层存储的浅拷贝视图 */
     @Override
     public DomainDatagramPacket duplicate() {
         return replace(content().duplicate());
     }
 
+    /** 替换负载 {@link ByteBuf}，地址字段不变 */
     @Override
     public DomainDatagramPacket replace(ByteBuf content) {
         return new DomainDatagramPacket(content, recipient(), sender());
@@ -67,6 +73,7 @@ public final class DomainDatagramPacket
         return this;
     }
 
+    /** 返回引用计数 +1 的 duplicate 视图 */
     @Override
     public DomainDatagramPacket retainedDuplicate() {
         return replace(content().retainedDuplicate());

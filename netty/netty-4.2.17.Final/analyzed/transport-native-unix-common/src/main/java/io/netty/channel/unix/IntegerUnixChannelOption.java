@@ -17,6 +17,7 @@ package io.netty.channel.unix;
 
 /**
  * A {@link GenericUnixChannelOption} which uses an {@link Integer} as {@code optval}.
+ * <p>整型 Unix 套接字选项：optval 为 32 位整数，适用于常见 {@code int} 型 sockopt。</p>
  */
 public final class IntegerUnixChannelOption extends GenericUnixChannelOption<Integer> {
     /**
@@ -25,6 +26,7 @@ public final class IntegerUnixChannelOption extends GenericUnixChannelOption<Int
      * @param name      the name that is used.
      * @param level     the level.
      * @param optname   the optname.
+     * <p>注册具名整型选项供 {@link ChannelOption} 映射使用。</p>
      */
     public IntegerUnixChannelOption(String name, int level, int optname) {
         super(name, level, optname);

@@ -20,6 +20,7 @@ import io.netty.channel.socket.DuplexChannel;
 /**
  * A {@link UnixChannel} that supports communication via
  * <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Socket</a>.
+ * <p>Unix 域流式通道：基于 AF_UNIX SOCK_STREAM，实现 {@link DuplexChannel} 全双工语义； 可配置 {@link DomainSocketReadMode} 读取字节或传递文件描述符。</p>
  */
 public interface DomainSocketChannel extends UnixChannel, DuplexChannel {
     @Override

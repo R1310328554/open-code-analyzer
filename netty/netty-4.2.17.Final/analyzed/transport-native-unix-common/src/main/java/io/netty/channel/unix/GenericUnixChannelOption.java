@@ -17,6 +17,7 @@ package io.netty.channel.unix;
 
 /**
  * A generic socket option. See <a href="https://linux.die.net/man/2/setsockopt">man setsockopt</a>.
+ * <p>通用 Unix 套接字选项：封装 {@code setsockopt(2)} 的 level 与 optname， 供 epoll/kqueue 等原生传输通过 JNI 读写。</p>
  *
  * @param <T> the value type
  */
@@ -25,6 +26,7 @@ public abstract class GenericUnixChannelOption<T> extends UnixChannelOption<T> {
     private final int level;
     private final int optname;
 
+    /** 包内构造：绑定选项名与原生 level/optname */
     GenericUnixChannelOption(String name, int level, int optname) {
         super(name);
         this.level = level;
@@ -35,6 +37,7 @@ public abstract class GenericUnixChannelOption<T> extends UnixChannelOption<T> {
      * Returns the level. See <a href="https://linux.die.net/man/2/setsockopt">man setsockopt</a>
      *
      * @return the level.
+     * <p>返回 {@code setsockopt} 的 level（如 {@code SOL_SOCKET}）。</p>
      */
     public int level() {
         return level;
@@ -44,6 +47,7 @@ public abstract class GenericUnixChannelOption<T> extends UnixChannelOption<T> {
      * Returns the optname. See <a href="https://linux.die.net/man/2/setsockopt">man setsockopt</a>
      *
      * @return the level.
+     * <p>返回选项名 optname（如 {@code SO_REUSEADDR}）。</p>
      */
     public int optname() {
         return optname;

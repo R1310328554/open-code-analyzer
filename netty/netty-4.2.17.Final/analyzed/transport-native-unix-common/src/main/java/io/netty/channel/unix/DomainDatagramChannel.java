@@ -20,6 +20,7 @@ import io.netty.channel.Channel;
 /**
  * A {@link UnixChannel} that supports communication via
  * <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">UNIX domain datagram sockets</a>.
+ * <p>Unix 域数据报通道：基于 AF_UNIX SOCK_DGRAM，支持无连接/已连接两种模式； 本地与远程地址均为 {@link DomainSocketAddress}。</p>
  */
 public interface DomainDatagramChannel extends UnixChannel, Channel {
 
@@ -28,6 +29,7 @@ public interface DomainDatagramChannel extends UnixChannel, Channel {
 
     /**
      * Return {@code true} if the {@link DomainDatagramChannel} is connected to the remote peer.
+     * <p>是否已通过 {@code connect(2)} 绑定默认对端（已连接数据报套接字）。</p>
      */
     boolean isConnected();
 

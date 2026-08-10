@@ -23,6 +23,7 @@ import io.netty.channel.WriteBufferWaterMark;
 
 /**
  * Special {@link ChannelConfig} for {@link DomainSocketChannel}s.
+ * <p>Unix 域流式通道专用配置：除通用 Channel 选项外，支持运行时切换  {@link DomainSocketReadMode}（字节模式 vs 传递 FD）。</p>
  */
 public interface DomainSocketChannelConfig extends ChannelConfig {
 
@@ -68,6 +69,7 @@ public interface DomainSocketChannelConfig extends ChannelConfig {
      * {@link io.netty.channel.Channel} and passed through the pipeline. If
      * {@link DomainSocketReadMode#FILE_DESCRIPTORS} is used
      * {@link FileDescriptor}s will be passed through the {@link io.netty.channel.ChannelPipeline}.
+     * <p>切换读取模式：{@link DomainSocketReadMode#BYTES} 走常规字节流； {@link DomainSocketReadMode#FILE_DESCRIPTORS} 经 SCM_RIGHTS 向 pipeline 投递  {@link FileDescriptor}。可在运行中动态修改。</p>
      *
      * This setting can be modified on the fly if needed.
      */
@@ -75,6 +77,7 @@ public interface DomainSocketChannelConfig extends ChannelConfig {
 
     /**
      * Return the {@link DomainSocketReadMode} for the channel.
+     * <p>返回当前读取模式。</p>
      */
     DomainSocketReadMode getReadMode();
 }

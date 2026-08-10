@@ -24,6 +24,7 @@ import io.netty.channel.WriteBufferWaterMark;
 
 /**
  * A {@link ChannelConfig} for a {@link DomainDatagramChannel}.
+ * <p>Unix 域数据报通道配置：在通用 {@link ChannelConfig} 之上额外暴露  {@link java.net.StandardSocketOptions#SO_SNDBUF} 等套接字选项。</p>
  *
  * <h3>Available options</h3>
  *
@@ -64,11 +65,13 @@ public interface DomainDatagramChannelConfig extends ChannelConfig {
 
     /**
      * Sets the {@link java.net.StandardSocketOptions#SO_SNDBUF} option.
+     * <p>设置发送缓冲区大小（字节）。</p>
      */
     DomainDatagramChannelConfig setSendBufferSize(int sendBufferSize);
 
     /**
      * Gets the {@link java.net.StandardSocketOptions#SO_SNDBUF} option.
+     * <p>读取当前发送缓冲区大小。</p>
      */
     int getSendBufferSize();
 

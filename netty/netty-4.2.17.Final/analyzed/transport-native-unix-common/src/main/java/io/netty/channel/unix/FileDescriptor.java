@@ -31,6 +31,7 @@ import static java.lang.Math.min;
 /**
  * Native {@link FileDescriptor} implementation which allows to wrap an {@code int} and provide a
  * {@link FileDescriptor} for it.
+ * <p>Unix 文件描述符 Java 封装：包装原生 {@code int fd}，提供 read/write/writev 及  Unix 域 FD 传递场景下的生命周期管理（原子 state 位图）。</p>
  */
 public class FileDescriptor {
 
@@ -46,6 +47,7 @@ public class FileDescriptor {
 
     /**
      * Bit map = [Output Shutdown | Input Shutdown | Closed]
+     * <p>状态位图：低位 Closed，次位 Input Shutdown，再次 Output Shutdown。</p>
      */
     volatile int state;
     final int fd;
@@ -57,6 +59,7 @@ public class FileDescriptor {
 
     /**
      * Return the int value of the filedescriptor.
+     * <p>返回底层 POSIX 文件描述符整数。</p>
      */
     public final int intValue() {
         return fd;
@@ -68,7 +71,7 @@ public class FileDescriptor {
             if (isClosed(state)) {
                 return false;
             }
-            // Once a close operation happens, the channel is considered shutdown.
+            // close 成功后同时标记输入/输出 shutdown
             if (casState(state, state | STATE_ALL_MASK)) {
                 return true;
             }
@@ -77,6 +80,7 @@ public class FileDescriptor {
 
     /**
      * Close the file descriptor.
+     * <p>关闭 fd；重复调用为 no-op。</p>
      */
     public void close() throws IOException {
         if (markClosed()) {
@@ -89,11 +93,13 @@ public class FileDescriptor {
 
     /**
      * Returns {@code true} if the file descriptor is open.
+     * <p>未设置 Closed 位时为 {@code true}。</p>
      */
     public boolean isOpen() {
         return !isClosed(state);
     }
 
+    /** 向 fd 写入 NIO 缓冲区指定区间 */
     public final int write(ByteBuffer buf, int pos, int limit) throws IOException {
         int res = write(fd, buf, pos, limit);
         if (res >= 0) {
@@ -110,6 +116,7 @@ public class FileDescriptor {
         return ioResult("writeAddress", res);
     }
 
+    /** 聚合写（{@code writev}），单次 iov 数受 {@link Limits#IOV_MAX} 限制 */
     public final long writev(ByteBuffer[] buffers, int offset, int length, long maxBytesToWrite) throws IOException {
         long res = writev(fd, buffers, offset, min(IOV_MAX, length), maxBytesToWrite);
         if (res >= 0) {
@@ -126,6 +133,7 @@ public class FileDescriptor {
         return ioResult("writevAddresses", (int) res);
     }
 
+    /** 从 fd 读取到 NIO 缓冲区；0 字节表示 EOF 返回 -1 */
     public final int read(ByteBuffer buf, int pos, int limit) throws IOException {
         int res = read(fd, buf, pos, limit);
         if (res > 0) {
@@ -174,6 +182,7 @@ public class FileDescriptor {
 
     /**
      * Open a new {@link FileDescriptor} for the given path.
+     * <p>以只读方式打开路径对应文件。</p>
      */
     public static FileDescriptor from(String path) throws IOException {
         int res = open(checkNotNull(path, "path"));
@@ -185,6 +194,7 @@ public class FileDescriptor {
 
     /**
      * Open a new {@link FileDescriptor} for the given {@link File}.
+     * <p>打开 {@link File} 路径。</p>
      */
     public static FileDescriptor from(File file) throws IOException {
         return from(checkNotNull(file, "file").getPath());
@@ -192,6 +202,7 @@ public class FileDescriptor {
 
     /**
      * @return [0] = read end, [1] = write end
+     * <p>创建匿名管道：索引 0 为读端，1 为写端。</p>
      */
     public static FileDescriptor[] pipe() throws IOException {
         long res = newPipe();

@@ -24,24 +24,34 @@ package io.netty.channel.unix;
  * yet been registered.</li>
  * <li>java.lang.UnsatisfiedLinkError is thrown because native method has not yet been registered.</li>
  * </ol>
+ * <p>打破 JNI 注册与类静态初始化循环依赖：errno 常量由独立类在 {@link Errors} 静态块中调用； 本类仅声明 native 方法，不含会触发 JNI 的静态字段。</p>
  * Static members which call JNI methods must not be declared in this class!
  */
 final class ErrorsStaticallyReferencedJniMethods {
 
     private ErrorsStaticallyReferencedJniMethods() { }
 
+    /** ENOENT：无此文件或目录 */
     static native int errnoENOENT();
+    /** EBADF：坏文件描述符 */
     static native int errnoEBADF();
+    /** EPIPE：断开的管道 */
     static native int errnoEPIPE();
+    /** ECONNRESET：连接被重置 */
     static native int errnoECONNRESET();
+    /** ENOTCONN：套接字未连接 */
     static native int errnoENOTCONN();
+    /** EAGAIN：资源暂不可用 */
     static native int errnoEAGAIN();
+    /** EWOULDBLOCK：操作会阻塞 */
     static native int errnoEWOULDBLOCK();
+    /** EINPROGRESS：操作正在进行中 */
     static native int errnoEINPROGRESS();
     static native int errorECONNREFUSED();
     static native int errorEISCONN();
     static native int errorEALREADY();
     static native int errorENETUNREACH();
     static native int errorEHOSTUNREACH();
+    /** 对应 {@code strerror(3)}，返回 errno 描述字符串 */
     static native String strError(int err);
 }

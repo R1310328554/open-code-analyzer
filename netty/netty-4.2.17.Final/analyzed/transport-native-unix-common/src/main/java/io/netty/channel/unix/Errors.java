@@ -44,16 +44,25 @@ import static io.netty.channel.unix.ErrorsStaticallyReferencedJniMethods.strErro
 /**
  * <strong>Internal usage only!</strong>
  * <p>Static members which call JNI methods must be defined in {@link ErrorsStaticallyReferencedJniMethods}.
+ * <p>原生 I/O errno 映射与异常工厂：JNI 返回负 errno，此处预缓存 {@code strerror} 并转换为  {@link IOException} / {@link ConnectException} 等 Java 异常。</p>
  */
 public final class Errors {
-    // As all our JNI methods return -errno on error we need to compare with the negative errno codes.
+    // JNI 失败时返回负 errno，常量预取正值再取负以便比较
+    /** 路径不存在（负 errno） */
     public static final int ERRNO_ENOENT_NEGATIVE = -errnoENOENT();
+    /** 套接字未连接 */
     public static final int ERRNO_ENOTCONN_NEGATIVE = -errnoENOTCONN();
+    /** 无效文件描述符（通常表示已关闭） */
     public static final int ERRNO_EBADF_NEGATIVE = -errnoEBADF();
+    /** 向已关闭管道/套接字写入 */
     public static final int ERRNO_EPIPE_NEGATIVE = -errnoEPIPE();
+    /** 连接被对端重置 */
     public static final int ERRNO_ECONNRESET_NEGATIVE = -errnoECONNRESET();
+    /** 资源暂不可用，非阻塞下应稍后重试 */
     public static final int ERRNO_EAGAIN_NEGATIVE = -errnoEAGAIN();
+    /** 非阻塞操作会阻塞（常与 EAGAIN 等价） */
     public static final int ERRNO_EWOULDBLOCK_NEGATIVE = -errnoEWOULDBLOCK();
+    /** 非阻塞 connect 进行中 */
     public static final int ERRNO_EINPROGRESS_NEGATIVE = -errnoEINPROGRESS();
     public static final int ERROR_ECONNREFUSED_NEGATIVE = -errorECONNREFUSED();
     public static final int ERROR_EISCONN_NEGATIVE = -errorEISCONN();
@@ -65,6 +74,7 @@ public final class Errors {
      * Holds the mappings for errno codes to String messages.
      * This eliminates the need to call back into JNI to get the right String message on an exception
      * and thus is faster.
+     * <p>启动时批量 {@code strError} 填充，异常路径避免重复 JNI 调用。</p>
      *
      * Choose an array length which should give us enough space in the future even when more errno codes
      * will be added.
@@ -73,12 +83,14 @@ public final class Errors {
 
     /**
      * <strong>Internal usage only!</strong>
+     * <p>原生 I/O 失败时携带负 errno 与可选的精简堆栈。</p>
      */
     public static final class NativeIoException extends IOException {
         private static final long serialVersionUID = 8222160204268655526L;
         private final int expectedErr;
         private final boolean fillInStackTrace;
 
+        /** 构造并默认填充堆栈 */
         public NativeIoException(String method, int expectedErr) {
             this(method, expectedErr, true);
         }
@@ -89,6 +101,7 @@ public final class Errors {
             this.fillInStackTrace = fillInStackTrace;
         }
 
+        /** 返回预期的负 errno 值 */
         public int expectedErr() {
             return expectedErr;
         }
@@ -124,8 +137,7 @@ public final class Errors {
 
     public static boolean handleConnectErrno(String method, int err) throws IOException {
         if (err == ERRNO_EINPROGRESS_NEGATIVE || err == ERROR_EALREADY_NEGATIVE) {
-            // connect not complete yet need to wait for EPOLLOUT event.
-            // EALREADY has been observed when using tcp fast open on centos8.
+            // connect 未完成，需等待可写事件；CentOS8 TCP FastOpen 上可能见 EALREADY
             return false;
         }
         throw newConnectException0(method, err);
@@ -136,6 +148,7 @@ public final class Errors {
      * @param method The native method name which caused the errno.
      * @param err the negative value of the errno.
      * @throws IOException The errno translated into an exception.
+     * <p>将 connect errno 转为 Java 连接异常（已废弃，请用 {@link #handleConnectErrno}）。</p>
      */
     @Deprecated
     public static void throwConnectException(String method, int err) throws IOException {
@@ -146,7 +159,7 @@ public final class Errors {
     }
 
     private static String errnoString(int err) {
-        // Check first if we had it cached, if not we need to do a JNI call.
+        // 优先查预缓存表，超出范围再 JNI strError
         if (err < ERRORS.length - 1) {
             return ERRORS[err];
         }
@@ -179,7 +192,7 @@ public final class Errors {
     @Deprecated
     public static int ioResult(String method, int err, NativeIoException resetCause,
                                ClosedChannelException closedCause) throws IOException {
-        // network stack saturated... try again later
+        // 内核暂不可服务（EAGAIN/EWOULDBLOCK），返回 0 表示稍后重试
         if (err == ERRNO_EAGAIN_NEGATIVE || err == ERRNO_EWOULDBLOCK_NEGATIVE) {
             return 0;
         }
@@ -196,8 +209,7 @@ public final class Errors {
             throw new FileNotFoundException();
         }
 
-        // TODO: We could even go further and use a pre-instantiated IOException for the other error codes, but for
-        //       all other errors it may be better to just include a stack trace.
+        // TODO: 其余 errno 可进一步预实例化 IOException；复杂错误仍保留堆栈
         throw newIOException(method, err);
     }
 

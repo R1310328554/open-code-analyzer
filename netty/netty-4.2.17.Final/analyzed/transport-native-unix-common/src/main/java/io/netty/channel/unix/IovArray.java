@@ -32,6 +32,7 @@ import static java.lang.Math.min;
 /**
  * Represent an array of struct array and so can be passed directly over via JNI without the need to do any more
  * array copies.
+ * <p>堆外 {@code struct iovec} 数组：将多个 {@link ByteBuf} 片段写入连续 direct 内存， 供 {@code writev(2)} JNI 零拷贝调用；实现 {@link MessageProcessor} 供  {@link io.netty.channel.ChannelOutboundBuffer} 遍历。</p>
  *
  * The buffers are written out directly into direct memory to match the struct iov. See also {@code man writev}.
  *
@@ -48,18 +49,20 @@ import static java.lang.Math.min;
  */
 public final class IovArray implements MessageProcessor {
 
-    /** The size of an address which should be 8 for 64 bits and 4 for 32 bits. */
+    /** 指针宽度：64 位为 8，32 位为 4（决定 iovec 布局） */
     private static final int ADDRESS_SIZE = Buffer.addressSize();
 
     /**
      * The size of an {@code iovec} struct in bytes. This is calculated as we have 2 entries each of the size of the
      * address.
+     * <p>单个 iovec 字节数 = 2 × 地址宽度（base + len）。</p>
      */
     public static final int IOV_SIZE = 2 * ADDRESS_SIZE;
 
     /**
      * The needed memory to hold up to {@code IOV_MAX} iov entries, where {@code IOV_MAX} signified
      * the maximum number of {@code iovec} structs that can be passed to {@code writev(...)}.
+     * <p>按 {@link Limits#IOV_MAX} 预分配的最大堆外容量。</p>
      */
     private static final int MAX_CAPACITY = IOV_MAX * IOV_SIZE;
 
@@ -73,6 +76,7 @@ public final class IovArray implements MessageProcessor {
 
     /**
      * @deprecated Use {@link #IovArray(int)} instead.
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public IovArray() {
@@ -82,6 +86,7 @@ public final class IovArray implements MessageProcessor {
     /**
      * Allocate an IovArray with enough room for the given number of <strong>entries</strong> (not bytes).
      * @param numEntries The desired number of entries in the IovArray.
+     * <p>分配可容纳 {@code numEntries} 个 iovec 的 direct 缓冲。</p>
      */
     @SuppressWarnings("deprecation")
     public IovArray(int numEntries) {
@@ -93,11 +98,8 @@ public final class IovArray implements MessageProcessor {
         if (memory.hasMemoryAddress()) {
             memoryAddress = memory.memoryAddress();
         } else {
-            // Fallback to using JNI as we were not be able to access the address otherwise.
-
-            // Use internalNioBuffer to reduce object creation.
-            // It is important to add the position as the returned ByteBuffer might be shared by multiple ByteBuf
-            // instances and so has an address that starts before the start of the ByteBuf itself.
+            // 无法直接取 memoryAddress 时经 JNI 解析 NIO 缓冲地址
+            // 使用 internalNioBuffer 减少分配；须加上 position 以应对共享 ByteBuffer
             ByteBuffer byteBuffer = memory.internalNioBuffer(0, memory.capacity());
             memoryAddress = Buffer.memoryAddress(byteBuffer) + byteBuffer.position();
         }
@@ -107,6 +109,7 @@ public final class IovArray implements MessageProcessor {
     /**
      * @param memory The underlying memory.
      * @deprecated Use {@link #IovArray(int)} instead.
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public IovArray(ByteBuf memory) {
@@ -137,6 +140,7 @@ public final class IovArray implements MessageProcessor {
 
     /**
      * @deprecated Use {@link #add(ByteBuf, int, int)}
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     @Deprecated
     public boolean add(ByteBuf buf) {
@@ -145,7 +149,7 @@ public final class IovArray implements MessageProcessor {
 
     public boolean add(ByteBuf buf, int offset, int len) {
         if (count == maxCount) {
-            // No more room!
+            // 已达 maxCount 上限
             return false;
         }
         if (buf.nioBufferCount() == 1) {
@@ -176,6 +180,7 @@ public final class IovArray implements MessageProcessor {
      * Return {@code true} if there is no more space left in the {@link IovArray}.
      *
      * @return full or not.
+     * <p>容量或 maxBytes 已满时返回 {@code true}。</p>
      */
     public boolean isFull() {
         return memory.capacity() < (count + 1) * IOV_SIZE || size >= maxBytes;
@@ -184,14 +189,11 @@ public final class IovArray implements MessageProcessor {
     private boolean add(long memoryAddress, long addr, int len) {
         assert addr != 0;
 
-        // If there is at least 1 entry then we enforce the maximum bytes. We want to accept at least one entry so we
-        // will attempt to write some data and make progress.
+        // 已有条目时 enforce maxBytes；至少保留一条以保证 writev 能推进
         if ((maxBytes - len < size && count > 0) ||
                 // Check if we have enough space left
                 memory.capacity() < (count + 1) * IOV_SIZE) {
-            // If the size + len will overflow SSIZE_MAX we stop populate the IovArray. This is done as linux
-            //  not allow to write more bytes then SSIZE_MAX with one writev(...) call and so will
-            // return 'EINVAL', which will raise an IOException.
+            // 累计字节超过 SSIZE_MAX 时停止添加，否则 writev 返回 EINVAL
             //
             // See also:
             // - https://linux.die.net//man/2/writev
@@ -227,6 +229,7 @@ public final class IovArray implements MessageProcessor {
 
     /**
      * Returns the number if iov entries.
+     * <p>当前已填充的 iovec 条数。</p>
      */
     public int count() {
         return count;
@@ -234,6 +237,7 @@ public final class IovArray implements MessageProcessor {
 
     /**
      * Returns the size in bytes
+     * <p>返回累计字节数。</p>
      */
     public long size() {
         return size;
@@ -248,6 +252,7 @@ public final class IovArray implements MessageProcessor {
      * In order to ensure some progress is made at least one {@link ByteBuf} will be accepted even if it's size exceeds
      * this value.
      * @param maxBytes the maximum amount of bytes that can be added to this {@link IovArray}.
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     public void maxBytes(long maxBytes) {
         this.maxBytes = min(SSIZE_MAX, checkPositive(maxBytes, "maxBytes"));
@@ -260,6 +265,7 @@ public final class IovArray implements MessageProcessor {
      * {@link #add(ByteBuf)}.
      * <p>
      * @param maxCount the maximum amount of bytes that can be added to this {@link IovArray}.
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     public void maxCount(int maxCount) {
         this.maxCount = min(IOV_MAX, checkPositive(maxCount, "maxCount"));
@@ -268,6 +274,7 @@ public final class IovArray implements MessageProcessor {
     /**
      * Get the maximum amount of bytes that can be added to this {@link IovArray}.
      * @return the maximum amount of bytes that can be added to this {@link IovArray}.
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     public long maxBytes() {
         return maxBytes;
@@ -276,6 +283,7 @@ public final class IovArray implements MessageProcessor {
     /**
      * Get the maximum amount of buffers that can be added to this {@link IovArray}.
      * @return the maximum amount of buffers that can be added to this {@link IovArray}.
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     public int maxCount() {
         return maxCount;
@@ -283,6 +291,7 @@ public final class IovArray implements MessageProcessor {
 
     /**
      * Returns the {@code memoryAddress} for the given {@code offset}.
+      * <p>Netty Unix 原生传输 API；详见上方英文说明。</p>
      */
     public long memoryAddress(int offset) {
         return memoryAddress + idx(offset);
@@ -290,11 +299,12 @@ public final class IovArray implements MessageProcessor {
 
     /**
      * Release the {@link IovArray}. Once release further using of it may crash the JVM!
+     * <p>释放堆外内存；释放后不可再使用。</p>
      */
     public void release() {
         memory.release();
         if (cleanable != null) {
-            // The 'cleanable' will be 'null' if the 'IovArray(ByteBuf)' constructor was used.
+            // 外部传入 ByteBuf 时 cleanable 为 null，仅 release memory
             cleanable.clean();
         }
     }

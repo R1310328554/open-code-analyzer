@@ -19,16 +19,19 @@ import io.netty.buffer.ByteBuf;
 
 /**
  * Different modes of reading from a {@link DomainSocketChannel}.
+ * <p>Unix 域流式通道的读取模式：普通字节 I/O 或通过 ancillary data 接收对端传递的文件描述符。</p>
  */
 public enum DomainSocketReadMode {
 
     /**
      * Read {@link ByteBuf}s from the {@link DomainSocketChannel}.
+     * <p>默认模式：从通道读取字节并封装为 {@link ByteBuf} 向下游传递。</p>
      */
     BYTES,
 
     /**
      * Read {@link FileDescriptor}s from the {@link DomainSocketChannel}.
+     * <p>FD 传递模式：经 {@code SCM_RIGHTS} 接收对端发来的文件描述符。</p>
      */
     FILE_DESCRIPTORS
 }

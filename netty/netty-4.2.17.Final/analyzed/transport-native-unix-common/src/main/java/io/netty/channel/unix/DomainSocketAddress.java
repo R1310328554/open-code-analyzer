@@ -23,21 +23,26 @@ import java.net.SocketAddress;
 /**
  * A address for a
  * <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Socket</a>.
+ * <p>Unix 域套接字地址：以文件系统路径（{@code sun_path}）标识端点， 用于 {@link DomainSocketChannel} 与 {@link DomainDatagramChannel}。</p>
  */
 public class DomainSocketAddress extends SocketAddress {
     private static final long serialVersionUID = -6934618000832236893L;
+    /** 套接字绑定的文件系统路径 */
     private final String socketPath;
 
+    /** 以路径字符串构造地址 */
     public DomainSocketAddress(String socketPath) {
         this.socketPath = ObjectUtil.checkNotNull(socketPath, "socketPath");
     }
 
+    /** 以 {@link File} 路径构造地址 */
     public DomainSocketAddress(File file) {
         this(file.getPath());
     }
 
     /**
      * The path to the domain socket.
+     * <p>返回 Unix 域套接字路径。</p>
      */
     public String path() {
         return socketPath;
