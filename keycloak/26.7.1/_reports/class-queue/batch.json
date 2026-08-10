@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/AbstractClientIdMetadataDocumentExecutor.java",
     "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/AbstractClientIdMetadataDocumentExecutorFactory.java",
     "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/ClientIdMetadataDocumentExecutor.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/ClientIdMetadataDocumentExecutorFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/ClientIdMetadataDocumentExecutorFactoryProviderConfig.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/provider/AbstractPersistentClientIdMetadataDocumentProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/provider/AbstractPersistentClientIdMetadataDocumentProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/provider/ClientIdMetadataDocumentProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/provider/ClientIdMetadataDocumentProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/provider/ClientIdMetadataDocumentProviderSpi.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/provider/PersistentClientIdMetadataDocumentProvider.java",
-    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/provider/PersistentClientIdMetadataDocumentProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/OID4VCEnvironmentProviderFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/OID4VCLoginProtocolFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/clientpolicy/CredentialClientPolicies.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/clientpolicy/CredentialClientPolicy.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/clientpolicy/CredentialClientPolicyExecutor.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/clientpolicy/CredentialClientPolicyExecutorFactory.java",
-    "services/src/main/java/org/keycloak/protocol/oid4vc/clientpolicy/PredicateCredentialClientPolicy.java"
+    "services/src/main/java/org/keycloak/protocol/oauth2/cimd/clientpolicy/executor/ClientIdMetadataDocumentExecutorFactory.java"
   ],
   "remaining_pending": 1648,
-  "done": 4320
+  "done": 4335
 }
