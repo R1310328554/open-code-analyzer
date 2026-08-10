@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 登录协议 SPI：注册 {@link LoginProtocol} 与 {@link LoginProtocolFactory}。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class LoginProtocolSpi implements Spi {
 
+    /** @return 内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code login-protocol} */
     @Override
     public String getName() {
         return "login-protocol";
     }
 
+    /** @return 提供者接口 {@link LoginProtocol} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return LoginProtocol.class;
     }
 
+    /** @return 工厂接口 {@link LoginProtocolFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return LoginProtocolFactory.class;

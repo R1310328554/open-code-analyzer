@@ -16,8 +16,13 @@
  */
 package org.keycloak.protocol.oidc;
 
+/**
+ * OIDC 客户端/作用域配置属性键常量集合。
+ * <p>对应 Advanced Settings 与 Fine-grained OpenID Connect configuration 中的选项名。</p>
+ */
 public final class OIDCConfigAttributes {
 
+    /** UserInfo 响应签名算法。 */
     public static final String USER_INFO_RESPONSE_SIGNATURE_ALG = "user.info.response.signature.alg";
     public static final String USER_INFO_ENCRYPTED_RESPONSE_ALG = "user.info.encrypted.response.alg";
     public static final String USER_INFO_ENCRYPTED_RESPONSE_ENC = "user.info.encrypted.response.enc";
@@ -48,24 +53,29 @@ public final class OIDCConfigAttributes {
 
     public static final String DPOP_BOUND_ACCESS_TOKENS = "dpop.bound.access.tokens";
 
+    /** ID Token 签名算法。 */
     public static final String ID_TOKEN_SIGNED_RESPONSE_ALG = "id.token.signed.response.alg";
 
     public static final String ID_TOKEN_ENCRYPTED_RESPONSE_ALG = "id.token.encrypted.response.alg";
 
     public static final String ID_TOKEN_ENCRYPTED_RESPONSE_ENC = "id.token.encrypted.response.enc";
 
+    /** Access Token 签名算法。 */
     public static final String ACCESS_TOKEN_SIGNED_RESPONSE_ALG = "access.token.signed.response.alg";
 
+    /** Access Token 生命周期（秒）。 */
     public static final String ACCESS_TOKEN_LIFESPAN = "access.token.lifespan";
     public static final String CLIENT_SESSION_IDLE_TIMEOUT = "client.session.idle.timeout";
     public static final String CLIENT_SESSION_MAX_LIFESPAN = "client.session.max.lifespan";
     public static final String CLIENT_OFFLINE_SESSION_IDLE_TIMEOUT = "client.offline.session.idle.timeout";
     public static final String CLIENT_OFFLINE_SESSION_MAX_LIFESPAN = "client.offline.session.max.lifespan";
+    /** PKCE code challenge 方法（如 S256）。 */
     public static final String PKCE_CODE_CHALLENGE_METHOD = "pkce.code.challenge.method";
 
     public static final String TOKEN_ENDPOINT_AUTH_SIGNING_ALG = "token.endpoint.auth.signing.alg";
     public static final String TOKEN_ENDPOINT_AUTH_SIGNING_MAX_EXP = "token.endpoint.auth.signing.max.exp";
 
+    /** 后端通道登出 URL。 */
     public static final String BACKCHANNEL_LOGOUT_URL = "backchannel.logout.url";
 
     public static final String BACKCHANNEL_LOGOUT_SESSION_REQUIRED = "backchannel.logout.session.required";
@@ -87,18 +97,22 @@ public final class OIDCConfigAttributes {
     public static final String AUTHORIZATION_SIGNED_RESPONSE_ALG = "authorization.signed.response.alg";
     public static final String AUTHORIZATION_ENCRYPTED_RESPONSE_ALG = "authorization.encrypted.response.alg";
     public static final String AUTHORIZATION_ENCRYPTED_RESPONSE_ENC = "authorization.encrypted.response.enc";
+    /** 前端通道登出 URI。 */
     public static final String FRONT_CHANNEL_LOGOUT_URI = "frontchannel.logout.url";
     public static final String FRONT_CHANNEL_LOGOUT_SESSION_REQUIRED = "frontchannel.logout.session.required";
 
     public static final String POST_LOGOUT_REDIRECT_URIS = "post.logout.redirect.uris";
     
+    /** 是否启用标准令牌交换（RFC 8693）。 */
     public static final String STANDARD_TOKEN_EXCHANGE_ENABLED = "standard.token.exchange.enabled";
     public static final String STANDARD_TOKEN_EXCHANGE_REFRESH_ENABLED = "standard.token.exchange.enableRefreshRequestedTokenType";
 
+    /** 是否启用 JWT 授权授予。 */
     public static final String JWT_AUTHORIZATION_GRANT_ENABLED = "oauth2.jwt.authorization.grant.enabled";
     public static final String JWT_AUTHORIZATION_GRANT_IDP = "oauth2.jwt.authorization.grant.idp";
     public static final String JWT_AUTHORIZATION_GRANT_AUDIENCE = "oauth2.jwt.authorization.grant.audience";
 
+    /** 是否启用外部令牌验证。 */
     public static final String EXTERNAL_TOKEN_ENABLED = "external.token.enabled";
     public static final String EXTERNAL_TOKEN_IDP = "external.token.idp";
 
@@ -111,6 +125,7 @@ public final class OIDCConfigAttributes {
 
     public static final String ALLOW_USERINFO_WITH_LIGHTWEIGHT_ACCESS_TOKEN = "allow.userinfo.with.lightweight.access.token";
 
+    /** 工具类，禁止实例化。 */
     private OIDCConfigAttributes() {
     }
 

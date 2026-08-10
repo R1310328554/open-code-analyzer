@@ -28,18 +28,26 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * Provides a template/sample client config adapter file.  For example keycloak.json for our OIDC adapter.  keycloak-saml.xml for our SAML client adapter
- *
+ * 客户端安装配置提供者：生成适配器示例/模板文件。
+ * <p>例如 OIDC 适配器的 {@code keycloak.json}、SAML 适配器的 {@code keycloak-saml.xml}。</p>
+ * <p>Provides a template/sample client config adapter file.  For example keycloak.json for our OIDC adapter.  keycloak-saml.xml for our SAML client adapter</p>
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ClientInstallationProvider extends Provider, ProviderFactory<ClientInstallationProvider> {
+    /** 生成客户端安装配置 HTTP 响应。 */
     Response generateInstallation(KeycloakSession session, RealmModel realm, ClientModel client, URI serverBaseUri);
+    /** @return 关联的登录协议 ID */
     String getProtocol();
+    /** @return 管理控制台显示类型名称 */
     String getDisplayType();
+    /** @return 安装说明帮助文本 */
     String getHelpText();
+    /** @return 下载文件名 */
     String getFilename();
+    /** @return 响应 Content-Type */
     String getMediaType();
+    /** @return 是否仅提供下载（不可在线预览） */
     boolean isDownloadOnly();
 }

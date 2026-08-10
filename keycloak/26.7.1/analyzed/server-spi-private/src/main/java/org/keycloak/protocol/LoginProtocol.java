@@ -32,6 +32,9 @@ import org.keycloak.provider.Provider;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 /**
+ * 登录协议 SPI：定义认证成功/失败、登出及客户端错误回传等行为。
+ * <p>OIDC、SAML 等协议各自实现本接口。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -40,60 +43,75 @@ public interface LoginProtocol extends Provider {
     enum Error {
 
         /**
+         * 用户取消登录。
          * Login cancelled by the user
          */
         CANCELLED_BY_USER,
         /**
+         * 用户取消应用发起的操作（AIA）。
          * Applications-initiated action was canceled by the user
          */
         CANCELLED_AIA,
         /**
+         * 用户取消 AIA，且不向客户端发送错误。
          * Applications-initiated action was canceled by the user. Do not send error.
          */
         CANCELLED_AIA_SILENT,
         /**
+         * 用户已登录但 authenticationSession 无效，需重定向回客户端重试（通常 SSO 可自动完成）。
          * User is already logged-in and he has userSession in this browser. But authenticationSession is not valid anymore and hence could not continue authentication
          * in proper way. Will need to redirect back to client, so client can retry authentication. Once client retries authentication, it will usually success automatically
          * due SSO reauthentication.
          */
         ALREADY_LOGGED_IN,
         /**
+         * 用户拒绝授权同意。
          * Consent denied by the user
          */
         CONSENT_DENIED,
         /**
+         * 被动认证模式下无已登录用户。
          * Passive authentication mode requested but nobody is logged in
          */
         PASSIVE_LOGIN_REQUIRED,
         /**
+         * 被动认证模式下用户已登录但仍需交互（如需完成登录动作或同意授权）。
          * Passive authentication mode requested, user is logged in, but some other user interaction is necessary (eg. some required login actions exist or Consent approval is necessary for logged in
          * user)
          */
         PASSIVE_INTERACTION_REQUIRED,
         /**
+         * 认证级别无效或未达最低要求（LoA）。
          * Level of Authentication invalid or minimum not reached.
          */
         LOA_INVALID;
     }
 
+    /** 绑定 Keycloak 会话。 */
     LoginProtocol setSession(KeycloakSession session);
 
+    /** 绑定当前 realm。 */
     LoginProtocol setRealm(RealmModel realm);
 
+    /** 绑定请求 URI 信息。 */
     LoginProtocol setUriInfo(UriInfo uriInfo);
 
+    /** 绑定 HTTP 请求头。 */
     LoginProtocol setHttpHeaders(HttpHeaders headers);
 
+    /** 绑定事件构建器。 */
     LoginProtocol setEventBuilder(EventBuilder event);
 
+    /** 认证成功后向客户端返回协议响应。 */
     Response authenticated(AuthenticationSessionModel authSession, UserSessionModel userSession, ClientSessionContext clientSessionCtx);
 
+    /** 在认证会话仍有效时发送协议错误响应。 */
     Response sendError(AuthenticationSessionModel authSession, Error error, String errorMessage);
 
     /**
-     * Returns client data, which will be wrapped in the "clientData" parameter sent within "authentication flow" requests. The purpose of clientData is to be able to send HTTP error
-     * response back to the client if authentication fails due some error and authenticationSession is not available anymore (was either expired or removed). So clientData need to contain
-     * all the data to be able to send such response. For instance redirect-uri, state in case of OIDC or RelayState in case of SAML etc.
+     * 从认证会话提取 {@link ClientData}，用于在认证流请求中携带 {@code clientData} 参数。
+     * <p>当 authenticationSession 过期或移除后，仍可通过 clientData 向客户端回传错误（如 redirect-uri、state、RelayState 等）。</p>
+     * <p>Returns client data, which will be wrapped in the "clientData" parameter sent within "authentication flow" requests.</p>
      *
      * @param authSession session from which particular clientData can be retrieved
      * @return client data, which will be wrapped in the "clientData" parameter sent within "authentication flow" requests
@@ -101,13 +119,9 @@ public interface LoginProtocol extends Provider {
     ClientData getClientData(AuthenticationSessionModel authSession);
 
     /**
-     * Send the specified error to the specified client with the use of this protocol. ClientData can contain additional metadata about how to send error response to the
-     * client in a correct way for particular protocol. For instance redirect-uri where to send error, state to be used in OIDC authorization endpoint response etc.
-     *
-     * This method is usually used when we don't have authenticationSession anymore (it was removed or expired) as otherwise it is recommended to use {@link #sendError(AuthenticationSessionModel, Error)}
-     *
-     * NOTE: This method should also validate if provided clientData are valid according to given client (for instance if redirect-uri is valid) as clientData is request parameter, which
-     * can be injected to HTTP URLs by anyone.
+     * 在无 authenticationSession 时，利用 {@link ClientData} 向客户端发送协议错误。
+     * <p>应校验 clientData 与客户端配置一致（如 redirect-uri），因 clientData 来自请求参数可被篡改。</p>
+     * <p>Send the specified error to the specified client with the use of this protocol.</p>
      *
      * @param client client where to send error
      * @param clientData clientData with additional protocol specific metadata needed for being able to properly send error with the use of this protocol
@@ -116,11 +130,14 @@ public interface LoginProtocol extends Provider {
      */
     Response sendError(ClientModel client, ClientData clientData, Error error);
 
+    /** 执行后端通道登出。 */
     Response backchannelLogout(UserSessionModel userSession, AuthenticatedClientSessionModel clientSession);
+    /** 执行前端通道登出。 */
     Response frontchannelLogout(UserSessionModel userSession, AuthenticatedClientSessionModel clientSession);
 
     /**
-     * This method is called when browser logout is going to be finished. It is not triggered during backchannel logout
+     * 浏览器登出流程结束时调用（后端通道登出不触发）。
+     * <p>This method is called when browser logout is going to be finished. It is not triggered during backchannel logout</p>
      *
      * @param userSession user session, which was logged out
      * @param logoutSession authentication session, which was used during logout to track the logout state
@@ -129,6 +146,7 @@ public interface LoginProtocol extends Provider {
     Response finishBrowserLogout(UserSessionModel userSession, AuthenticationSessionModel logoutSession);
 
     /**
+     * 判断是否必须主动重新认证（不可依赖 SSO Cookie）。
      * @param userSession
      * @param authSession
      * @return true if SSO cookie authentication can't be used. User will need to "actively" reauthenticate
@@ -136,7 +154,7 @@ public interface LoginProtocol extends Provider {
     boolean requireReauthentication(UserSessionModel userSession, AuthenticationSessionModel authSession);
 
     /**
-     * Send not-before revocation policy to the given client.
+     * 向客户端推送 not-before 撤销策略。
      * @param realm
      * @param resource
      * @param notBefore
@@ -148,9 +166,10 @@ public interface LoginProtocol extends Provider {
     }
 
     /**
+     * 协议特定的认证完成处理钩子。
      * Protocol specific handling of authentication completeness
      */
     default void authenticationComplete(AuthenticationSessionModel authSession) {
-        // do nothing
+        // 默认无额外处理
     }
 }

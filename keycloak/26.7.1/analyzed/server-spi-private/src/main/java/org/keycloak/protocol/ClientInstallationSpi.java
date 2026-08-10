@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端安装配置 SPI：注册 {@link ClientInstallationProvider} 提供者。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClientInstallationSpi implements Spi {
 
+    /** @return 内部 SPI，不对外暴露 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code client-installation} */
     @Override
     public String getName() {
         return "client-installation";
     }
 
+    /** @return 提供者接口 {@link ClientInstallationProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ClientInstallationProvider.class;
     }
 
+    /** @return 工厂接口（与提供者合并） */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ClientInstallationProvider.class;

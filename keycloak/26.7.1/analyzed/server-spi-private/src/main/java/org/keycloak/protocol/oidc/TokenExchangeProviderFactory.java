@@ -20,7 +20,8 @@ package org.keycloak.protocol.oidc;
 import org.keycloak.provider.ProviderFactory;
 
 /**
- * A factory that creates {@link TokenExchangeProvider} instances.
+ * {@link TokenExchangeProvider} 工厂：创建令牌交换提供者实例。
+ * <p>A factory that creates {@link TokenExchangeProvider} instances.</p>
  *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */

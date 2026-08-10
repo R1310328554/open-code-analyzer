@@ -22,23 +22,22 @@ import jakarta.ws.rs.core.Response;
 import org.keycloak.provider.Provider;
 
 /**
- * Provides token exchange mechanism for supported tokens
+ * 令牌交换提供者：对支持的令牌类型执行 RFC 8693 令牌交换。
+ * <p>Provides token exchange mechanism for supported tokens</p>
  *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */
 public interface TokenExchangeProvider extends Provider {
 
     /**
-     * Check if exchange request is supported by this provider
-     *
+     * 判断本提供者是否支持该交换请求。
      * @param context token exchange context
      * @return true if the request is supported
      */
     boolean supports(TokenExchangeContext context);
 
     /**
-     * Exchange the <code>token</code>.
-     *
+     * 执行令牌交换并返回新令牌响应。
      * @param context
      * @return response with a new token
      */

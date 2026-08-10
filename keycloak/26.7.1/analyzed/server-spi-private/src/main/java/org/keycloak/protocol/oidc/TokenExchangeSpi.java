@@ -22,29 +22,35 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
- * <p>A {@link Spi} to support pluggable token exchange handlers in the OAuth2 Token Endpoint.
+ * OAuth2 令牌端点可插拔令牌交换处理器的 SPI。
+ * <p>A {@link Spi} to support pluggable token exchange handlers in the OAuth2 Token Endpoint.</p>
  *
  * @author <a href="mailto:dmitryt@backbase.com">Dmitry Telegin</a>
  */
 public class TokenExchangeSpi implements Spi {
 
+    /** SPI 名称：{@code oauth2-token-exchange}。 */
     public static final String SPI_NAME = "oauth2-token-exchange";
 
+    /** @return 内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@link #SPI_NAME} */
     @Override
     public String getName() {
         return SPI_NAME;
     }
 
+    /** @return 提供者接口 {@link TokenExchangeProvider} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return TokenExchangeProvider.class;
     }
 
+    /** @return 工厂接口 {@link TokenExchangeProviderFactory} */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return TokenExchangeProviderFactory.class;

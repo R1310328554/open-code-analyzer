@@ -26,15 +26,22 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 
 /**
+ * 协议映射器 SPI：在令牌/断言签发时将用户/客户端属性映射到声明或属性。
+ * <p>同时实现 {@link Provider}、{@link ProviderFactory} 与 {@link ConfiguredProvider}。</p>
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public interface ProtocolMapper extends Provider, ProviderFactory<ProtocolMapper>,ConfiguredProvider {
+    /** @return 关联协议 ID（如 {@code openid-connect}） */
     String getProtocol();
+    /** @return 管理控制台分组类别 */
     String getDisplayCategory();
+    /** @return 管理控制台显示类型名称 */
     String getDisplayType();
 
     /**
+     * 映射器执行优先级，数值越小越先执行。
      * Priority of this protocolMapper implementation. Lower goes first.
      * @return
      */
@@ -43,8 +50,7 @@ public interface ProtocolMapper extends Provider, ProviderFactory<ProtocolMapper
     }
 
     /**
-     * Called when instance of mapperModel is created/updated for this protocolMapper through admin endpoint
-     *
+     * 通过管理端点创建/更新映射器配置时校验参数。
      * @param session
      * @param realm
      * @param client client or clientTemplate
@@ -55,13 +61,9 @@ public interface ProtocolMapper extends Provider, ProviderFactory<ProtocolMapper
     };
 
     /**
-     * Get effective configuration of protocol mapper. Effective configuration takes "default values" of the options into consideration
-     * and hence it is the configuration, which would be actually used when processing this protocolMapper during issuing tokens/assertions.
-     *
-     * So for instance, when configuration option "introspection.token.claim" is unset in the protocolMapperModel, but default value of this option is supposed to be "true", then
-     * effective config returned by this method will contain "introspection.token.claim" config option with value "true" . If the "introspection.token.claim" is set, then the
-     * default value is typically ignored in the effective configuration, but this can depend on the implementation of particular protocol mapper.
-     *
+     * 返回映射器的有效配置（合并选项默认值）。
+     * <p>签发令牌/断言时实际使用的配置；未显式设置的项将填充默认值。</p>
+     * <p>Get effective configuration of protocol mapper.</p>
      * @param session
      * @param realm
      * @param protocolMapperModel

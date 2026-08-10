@@ -22,25 +22,31 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 协议映射器 SPI：注册 {@link ProtocolMapper} 提供者。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ProtocolMapperSpi implements Spi {
 
+    /** @return 内部 SPI */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** @return SPI 名称 {@code protocol-mapper} */
     @Override
     public String getName() {
         return "protocol-mapper";
     }
 
+    /** @return 提供者接口 {@link ProtocolMapper} */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ProtocolMapper.class;
     }
 
+    /** @return 工厂接口（与 {@link ProtocolMapper} 合并） */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return ProtocolMapper.class;

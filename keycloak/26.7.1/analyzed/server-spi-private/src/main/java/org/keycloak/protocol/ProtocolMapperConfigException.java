@@ -18,17 +18,24 @@
 package org.keycloak.protocol;
 
 /**
+ * 协议映射器配置无效时抛出的受检异常，可携带 i18n 消息键与参数。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class ProtocolMapperConfigException extends Exception {
 
+    /** 国际化消息键。 */
     private String messageKey;
+    /** 消息模板占位参数。 */
     private Object[] parameters;
 
+    /** @param message 错误描述 */
     public ProtocolMapperConfigException(String message) {
         super(message);
     }
 
+    /** @param message 错误描述
+     * @param messageKey 国际化消息键 */
     public ProtocolMapperConfigException(String message, String messageKey) {
         super(message);
         this.messageKey = messageKey;
@@ -54,14 +61,17 @@ public class ProtocolMapperConfigException extends Exception {
         this.parameters = parameters;
     }
 
+    /** @return 国际化消息键 */
     public String getMessageKey() {
         return messageKey;
     }
 
+    /** @return 消息模板参数数组 */
     public Object[] getParameters() {
         return parameters;
     }
 
+    /** @param parameters 消息模板参数 */
     public void setParameters(Object[] parameters) {
         this.parameters = parameters;
     }
