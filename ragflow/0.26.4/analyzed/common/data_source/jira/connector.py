@@ -69,6 +69,7 @@ _DEFAULT_ATTACHMENT_SIZE_LIMIT = 10 * 1024 * 1024  # 10MB
 
 
 class JiraCheckpoint(ConnectorCheckpoint):
+    # 记录 JQL 分页 start_at/cursor 与待处理 issue id 批次
     """Checkpoint that tracks which slice of the current JQL result set was emitted."""
 
     start_at: int = 0
@@ -81,6 +82,7 @@ _TZ_OFFSET_PATTERN = re.compile(r"([+-])(\d{2})(:?)(\d{2})$")
 
 
 class JiraConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync):
+    # project_key 或自定义 JQL；Cloud/Server API 版本自适应
     """Retrieve Jira issues and emit them as Markdown documents."""
 
     def __init__(
@@ -136,6 +138,7 @@ class JiraConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync
     # -------------------------------------------------------------------------
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # API token 或用户名密码实例化 JIRA 客户端并同步服务器时区
         """Instantiate the Jira client using either an API token or username/password."""
         jira_url_for_client = self.jira_base_url
         if self.scoped_token:

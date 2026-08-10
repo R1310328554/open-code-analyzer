@@ -10,6 +10,7 @@ from enum import Enum
 
 @dataclass(frozen=True)
 class ExternalAccess:
+    # 文档外部 ACL：用户邮箱、组 ID 与是否公开（权限同步用）
     # arbitrary limit to prevent excessively large permissions sets
     # not internally enforced ... the caller can check this before using the instance
     MAX_NUM_ENTRIES = 5000
@@ -84,6 +85,7 @@ class ImageSection(BaseModel):
 
 
 class Document(BaseModel):
+    # 索引单元：二进制 blob、来源、元数据与可选 content_hash 指纹
     """Document model"""
 
     id: str
@@ -106,6 +108,7 @@ class Document(BaseModel):
 
 
 class KeyRecord(BaseModel):
+    # FingerprintConnector.list_keys 返回的廉价键值记录
     """One entry returned by a FingerprintConnector.list_keys() call.
 
     A KeyRecord is the cheap-listing primitive: connector enumerates all keys
@@ -149,6 +152,7 @@ class SlimDocument(BaseModel):
 
 
 class ConnectorCheckpoint(BaseModel):
+    # 通用检查点基类：has_more 标记是否还有待拉数据
     """Connector checkpoint model"""
 
     has_more: bool = True

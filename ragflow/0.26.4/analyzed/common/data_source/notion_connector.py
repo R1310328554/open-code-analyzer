@@ -46,7 +46,8 @@ from common.data_source.utils import (
 
 
 class NotionConnector(LoadConnector, PollConnector):
-    """Notion Page connector that reads all Notion pages this integration has access to.
+    # Notion 页面/数据库索引，可选递归子页面与 root_page_id 限定范围
+    """Notion 页面连接器：读取集成可访问的全部页面/数据库，支持递归子页面索引。
 
     Arguments:
         batch_size (int): Number of objects to index in a batch
@@ -72,6 +73,7 @@ class NotionConnector(LoadConnector, PollConnector):
 
     @retry(tries=3, delay=1, backoff=2)
     def _fetch_child_blocks(self, block_id: str, cursor: Optional[str] = None) -> dict[str, Any] | None:
+        # 分页拉取 block 子节点（404 表示未共享给集成）
         """Fetch all child blocks via the Notion API."""
         logging.debug(f"[Notion]: Fetching children of block with ID {block_id}")
         block_url = f"https://api.notion.com/v1/blocks/{block_id}/children"

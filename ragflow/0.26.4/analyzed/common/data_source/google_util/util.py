@@ -1,3 +1,6 @@
+"""
+Google Drive 通用工具：分页拉取、HTTP 错误重试、环境变量凭证解析与 MySQL 安全字符串清洗。
+"""
 import json
 import logging
 import os
@@ -16,6 +19,7 @@ from common.data_source.google_util.oauth_flow import ensure_oauth_token_dict
 
 # See https://developers.google.com/drive/api/reference/rest/v3/files/list for more
 class GoogleFields(str, Enum):
+    # Drive files.list 常用字段名常量
     ID = "id"
     CREATED_TIME = "createdTime"
     MODIFIED_TIME = "modifiedTime"
@@ -40,6 +44,7 @@ def get_file_owners(file: GoogleDriveFileType, primary_admin_email: str) -> list
 # Nones unless max_num_pages is specified. Use
 # execute_paginated_retrieval_with_max_pages instead if you want
 # the early stop + yield None after max_num_pages behavior.
+# 自动翻页拉取 Drive 列表，过滤掉 pageToken 字符串项
 def execute_paginated_retrieval(
     retrieval_function: Callable,
     list_key: str | None = None,
@@ -114,6 +119,7 @@ def _execute_paginated_retrieval(
             yield results
 
 
+# 单次 API 调用：处理 4xx/5xx、无效 pageToken 与超时重试
 def _execute_single_retrieval(
     retrieval_function: Callable,
     continue_on_404_or_403: bool = False,
@@ -158,6 +164,7 @@ def _execute_single_retrieval(
 
 
 def get_credentials_from_env(email: str, oauth: bool = False, source="drive") -> dict:
+    # 从环境变量解析 Google 凭证并包装为连接器 DB 格式
     try:
         if oauth:
             raw_credential_string = os.environ["GOOGLE_OAUTH_CREDENTIALS_JSON_STR"]
@@ -193,6 +200,7 @@ def get_credentials_from_env(email: str, oauth: bool = False, source="drive") ->
 
 
 def clean_string(text: str | None) -> str | None:
+    # 清洗字符串以便安全写入 MySQL utf8mb4（去控制字符与高平面 emoji）
     """
     Clean a string to make it safe for insertion into MySQL (utf8mb4).
     - Normalize Unicode

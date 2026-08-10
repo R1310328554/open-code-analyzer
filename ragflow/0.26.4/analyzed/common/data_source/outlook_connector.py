@@ -57,12 +57,14 @@ def _redact(value: str | None) -> str:
 
 
 class OutlookCheckpoint(ConnectorCheckpoint):
+    # 每个用户邮箱持久化 messages delta link
     """Outlook-specific checkpoint tracking delta links per user mailbox."""
 
     delta_links: dict[str, str] | None = None
 
 
 def _strip_html(html: str) -> str:
+    # 轻量 HTML 去标签（避免为邮件正文引入 BeautifulSoup 依赖）
     """Tiny HTML-to-text fallback. Avoids pulling in BeautifulSoup just for this."""
     if not html:
         return ""
@@ -94,6 +96,7 @@ def _strip_html(html: str) -> str:
 
 
 class OutlookConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync):
+    # Mail.Read + 可选 User.Read.All 枚举租户邮箱
     """
     Outlook / Microsoft 365 mail connector.
 

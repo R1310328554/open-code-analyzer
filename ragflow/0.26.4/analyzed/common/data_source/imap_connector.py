@@ -1,3 +1,6 @@
+"""
+IMAP 邮件连接器：按邮箱文件夹检查点拉取 RFC822 邮件与附件，支持权限同步与 MIME 头解码。
+"""
 import copy
 import email
 import hashlib
@@ -52,6 +55,7 @@ class Header(str, Enum):
 
 
 class EmailHeaders(BaseModel):
+    # 从 Message 解析的主题/发件人/收件人/日期等结构化头
     """
     Model for email headers extracted from IMAP messages.
     """
@@ -149,6 +153,7 @@ class CurrentMailbox(BaseModel):
 #
 # For initial checkpointing, set both fields to `None`.
 class ImapCheckpoint(ConnectorCheckpoint):
+    # 待处理邮箱队列 + 当前邮箱内待拉取 message-id 列表
     todo_mailboxes: list[str] | None = None
     current_mailbox: CurrentMailbox | None = None
 
@@ -162,6 +167,7 @@ class ImapConnector(
     CredentialsConnector,
     CheckpointedConnectorWithPermSync,
 ):
+    # 检查点驱动：逐 mailbox 分页 fetch 邮件并 yield Document（含附件）
     def __init__(
         self,
         host: str,
@@ -427,6 +433,7 @@ def _select_mailbox(mail_client: imaplib.IMAP4_SSL, mailbox: str) -> bool:
         return False
 
 
+# IMAP SEARCH 按 SINCE/BEFORE 日期窗口获取 message sequence numbers
 def _fetch_email_ids_in_mailbox(
     mail_client: imaplib.IMAP4_SSL,
     mailbox: str,
@@ -541,6 +548,7 @@ def _convert_email_headers_and_body_into_document(
 
 
 def extract_attachments(email_msg: Message, max_bytes: int = IMAP_CONNECTOR_SIZE_THRESHOLD):
+    # 遍历 multipart 提取未超限的 attachment/inline 附件
     attachments = []
 
     if not email_msg.is_multipart():

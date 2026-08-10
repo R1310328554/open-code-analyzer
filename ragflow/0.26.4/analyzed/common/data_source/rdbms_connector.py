@@ -24,6 +24,7 @@ from common.data_source.models import Document, SlimDocument
 
 
 class DatabaseType(str, Enum):
+    # 支持的关系型数据库类型
     """Supported database types."""
 
     MYSQL = "mysql"
@@ -32,6 +33,7 @@ class DatabaseType(str, Enum):
 
 
 class RDBMSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
+    # 自定义 SQL + content/metadata/id/timestamp 列映射；增量按时间戳游标
     """
     Import rows from MySQL, PostgreSQL or Microsoft SQL Server into documents.
 
@@ -98,6 +100,7 @@ class RDBMSConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
 
     @classmethod
     def _sanitize_query(cls, raw: Optional[str]) -> str:
+        # 清理用户粘贴的 markdown ```sql 围栏与语言标签
         """Clean a user-supplied SQL query.
 
         Tolerates queries pasted straight from a markdown code block, e.g.

@@ -1,3 +1,6 @@
+"""
+Google API 服务资源封装：构建 Drive/Docs/Admin/Gmail 客户端，并在 token 过期时自动刷新重试。
+"""
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -12,6 +15,7 @@ from googleapiclient.discovery import (
 
 
 class GoogleDriveService(Resource):
+    # Google Drive v3 API 服务类型别名
     pass
 
 
@@ -28,6 +32,7 @@ class GmailService(Resource):
 
 
 class RefreshableDriveObject:
+    # 链式调用包装器：仅在 execute() 时捕获 RefreshError 并刷新凭证后重试
     """
     Running Google Drive service retrieval functions
     involves accessing methods of the service object (i.e. files().list())
@@ -75,6 +80,7 @@ class RefreshableDriveObject:
         return execute
 
 
+# 按服务账号或 OAuth 凭证构建 Google API Resource
 def _get_google_service(
     service_name: str,
     service_version: str,
@@ -109,6 +115,7 @@ def get_google_docs_service(
     return _get_google_service("docs", "v1", creds, user_email)
 
 
+# 获取 Google Drive v3 服务实例
 def get_drive_service(
     creds: ServiceAccountCredentials | OAuthCredentials,
     user_email: str | None = None,

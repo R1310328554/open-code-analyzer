@@ -1,3 +1,6 @@
+"""
+HTML 解析与清洗：BeautifulSoup/trafilatura 转纯文本，支持链接 Markdown 化与 Mintlify 噪声剔除。
+"""
 import logging
 import re
 from copy import copy
@@ -20,6 +23,7 @@ MINTLIFY_UNWANTED = ["sticky", "hidden"]
 
 @dataclass
 class ParsedHTML:
+    # 网页解析结果：标题与清洗后的正文
     title: str | None
     cleaned_text: str
 
@@ -64,6 +68,7 @@ def parse_html_with_trafilatura(html_content: str) -> str:
 
 
 def format_document_soup(document: bs4.BeautifulSoup, table_cell_separator: str = "\t") -> str:
+    # 将 HTML DOM 扁平化为类浏览器渲染的纯文本（表格/列表/标题换行规则）
     """Format html to a flat text document.
 
     The following goals:
@@ -154,6 +159,7 @@ def parse_html_page_basic(text: str | BytesIO | IO[bytes]) -> str:
     return format_document_soup(soup)
 
 
+# 入口：剥离导航/脚本等噪声元素，再 trafilatura 或 bs4 提取正文
 def web_html_cleanup(
     page_content: str | bs4.BeautifulSoup,
     mintlify_cleanup_enabled: bool = True,

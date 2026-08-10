@@ -56,12 +56,14 @@ def _normalize_folder_path(folder_path: str | None) -> str | None:
 
 
 class OneDriveCheckpoint(ConnectorCheckpoint):
+    # 每个 drive 持久化 delta link 以支持增量
     """OneDrive-specific checkpoint tracking delta links per drive."""
 
     delta_links: dict[str, str] | None = None
 
 
 class OneDriveConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPermSync):
+    # 应用权限 Files.Read.All；可选 folder_path 限定子目录
     """
     OneDrive / OneDrive for Business connector.
 
@@ -85,6 +87,7 @@ class OneDriveConnector(CheckpointedConnectorWithPermSync, SlimConnectorWithPerm
     # ------------------------------------------------------------------
 
     def load_credentials(self, credentials: dict[str, Any]) -> dict[str, Any] | None:
+        # MSAL client_credentials 获取 Graph access token
         tenant_id = credentials.get("tenant_id")
         client_id = credentials.get("client_id")
         client_secret = credentials.get("client_secret")

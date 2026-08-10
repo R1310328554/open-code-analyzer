@@ -34,7 +34,8 @@ logger = logging.getLogger(__name__)
 
 
 class MoodleConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
-    """Moodle LMS connector for accessing course content"""
+    # Moodle LMS：拉取课程资源/论坛/页面/书籍等模块内容
+    """Moodle LMS 连接器：通过 Web Service API 索引课程模块与增量轮询更新"""
 
     def __init__(self, moodle_url: str, batch_size: int = INDEX_BATCH_SIZE) -> None:
         self.moodle_url = moodle_url.rstrip("/")
@@ -103,6 +104,7 @@ class MoodleConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
     # -------------------------------------------------------------------------
 
     def load_from_state(self) -> Generator[list[Document], None, None]:
+        # 全量：遍历已注册课程并批量 yield Document
         if not self.moodle_client:
             raise ConnectorMissingCredentialError("Moodle client not initialized")
 
@@ -115,6 +117,7 @@ class MoodleConnector(LoadConnector, PollConnector, SlimConnectorWithPermSync):
         yield from self._yield_in_batches(self._process_courses(courses))
 
     def poll_source(self, start: SecondsSinceUnixEpoch, end: SecondsSinceUnixEpoch) -> Generator[list[Document], None, None]:
+        # 增量：按时间戳过滤课程内变更模块
         if not self.moodle_client:
             raise ConnectorMissingCredentialError("Moodle client not initialized")
 

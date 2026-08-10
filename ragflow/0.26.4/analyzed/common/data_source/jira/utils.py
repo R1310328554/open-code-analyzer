@@ -55,6 +55,7 @@ def extract_user(value: Any) -> tuple[str | None, str | None]:
 
 
 def extract_text_from_adf(adf: Any) -> str:
+    # 递归遍历 Atlassian Document Format 节点提取纯文本
     """Flatten Atlassian Document Format (ADF) structures to text."""
     texts: list[str] = []
 
@@ -137,6 +138,7 @@ def format_attachments(attachments: Any) -> str:
 
 
 def should_skip_issue(issue: Issue, labels_to_skip: set[str]) -> bool:
+    # 若 Issue 含配置的标签则跳过索引
     """Return True if the issue contains any label from the skip list."""
     if not labels_to_skip:
         return False

@@ -13,6 +13,7 @@ from common.data_source.models import Document, KeyRecord, SlimDocument, Connect
 
 
 class IncrementalCapability(IntEnum):
+    # 连接器增量同步能力分级：全量重拉 / 游标 / 指纹
     """How a connector handles incremental sync.
 
     FULL_RESYNC  -- every sync re-pulls; no per-key state.
@@ -29,6 +30,7 @@ GenerateDocumentsOutput = Iterator[list[Document]]
 
 
 class LoadConnector(ABC):
+    # 全量加载接口：load_from_state 一次性索引
     """Load connector interface"""
 
     @abstractmethod
@@ -263,6 +265,7 @@ LoadFunction = Callable[[CT], CheckpointOutput[CT]]
 
 
 class CheckpointedConnector(BaseConnector[CT]):
+    # 检查点续传：generator 末尾返回新 checkpoint
     @abc.abstractmethod
     def load_from_checkpoint(
         self,
@@ -419,6 +422,7 @@ class IndexingHeartbeatInterface(ABC):
 
 
 class FingerprintConnector(ABC):
+    # Tier-1 指纹连接器：list_keys 廉价枚举，get_value 按需拉正文
     """Tier 1 connector: cheap full listing with per-key fingerprint.
 
     Sources that can enumerate their entire keyspace via a metadata-only call

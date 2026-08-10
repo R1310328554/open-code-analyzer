@@ -1,3 +1,6 @@
+"""
+线程安全字典：为并发连接器状态提供带锁的 MutableMapping 实现，支持 Pydantic 校验。
+"""
 import collections.abc
 import copy
 import threading
@@ -14,6 +17,7 @@ _T = TypeVar("_T")  # Default type
 
 
 class ThreadSafeDict(MutableMapping[KT, VT]):
+    # 基于 threading.Lock 的原子 dict 操作，含 atomic_get_set 读改写
     """
     A thread-safe dictionary implementation that uses a lock to ensure thread safety.
     Implements the MutableMapping interface to provide a complete dictionary-like interface.
