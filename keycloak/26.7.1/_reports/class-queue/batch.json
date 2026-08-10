@@ -15,23 +15,8 @@
     "server-spi-private/src/main/java/org/keycloak/models/AccountRoles.java",
     "server-spi-private/src/main/java/org/keycloak/models/AdminRoles.java",
     "server-spi-private/src/main/java/org/keycloak/models/BrowserSecurityHeaders.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClaimMask.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClientConfigResolver.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClientProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClientRegistrationAccessTokenConstants.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClientScopeProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClientScopeSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClientSecretConstants.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ClientSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/Constants.java",
-    "server-spi-private/src/main/java/org/keycloak/models/ContentSecurityPolicyBuilder.java",
-    "server-spi-private/src/main/java/org/keycloak/models/DefaultOAuth2DeviceUserCodeProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/models/DefaultOAuth2DeviceUserCodeProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/DeploymentStateProvider.java",
-    "server-spi-private/src/main/java/org/keycloak/models/DeploymentStateProviderFactory.java",
-    "server-spi-private/src/main/java/org/keycloak/models/DeploymentStateSpi.java",
-    "server-spi-private/src/main/java/org/keycloak/models/GroupProviderFactory.java"
+    "server-spi-private/src/main/java/org/keycloak/models/ClaimMask.java"
   ],
   "remaining_pending": 2788,
-  "done": 3180
+  "done": 3195
 }
