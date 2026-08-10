@@ -23,28 +23,36 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.testsuite.domainextension.spi.ExampleService;
 import org.keycloak.testsuite.domainextension.spi.ExampleServiceProviderFactory;
 
+/**
+ * {@link ExampleServiceProviderFactory} 的测试套件实现，负责创建 {@link ExampleServiceImpl} 实例。
+ */
 public class ExampleServiceProviderFactoryImpl implements ExampleServiceProviderFactory {
 
+    /** {@inheritDoc} 为给定会话创建示例服务实例。 */
     @Override
     public ExampleService create(KeycloakSession session) {
         return new ExampleServiceImpl(session);
     }
 
+    /** {@inheritDoc} 初始化工厂配置。 */
     @Override
     public void init(Scope config) {
 
     }
 
+    /** {@inheritDoc} 会话工厂就绪后的回调。 */
     @Override
     public void postInit(KeycloakSessionFactory factory) {
 
     }
 
+    /** {@inheritDoc} 关闭工厂并释放资源。 */
     @Override
     public void close() {
 
     }
 
+    /** {@inheritDoc} 返回工厂标识 {@code exampleServiceImpl}。 */
     @Override
     public String getId() {
         return "exampleServiceImpl";

@@ -26,30 +26,38 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.storage.UserStorageProviderFactory;
 
 /**
+ * {@link BackwardsCompatibilityUserStorage} 的工厂，维护跨会话共享的内存用户存储。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class BackwardsCompatibilityUserStorageFactory implements UserStorageProviderFactory<BackwardsCompatibilityUserStorage> {
 
+    /** 提供者唯一标识符。 */
     public static final String PROVIDER_ID = "backwards-compatibility-storage";
 
+    /** 用户名到内存用户记录的映射，供各会话实例共享。 */
     private final Map<String, BackwardsCompatibilityUserStorage.MyUser> userPasswords = new ConcurrentHashMap<>();
 
+    /** {@inheritDoc} 创建向后兼容用户存储提供者实例。 */
     @Override
     public BackwardsCompatibilityUserStorage create(KeycloakSession session, ComponentModel model) {
         return new BackwardsCompatibilityUserStorage(session, model, userPasswords);
     }
 
+    /** {@inheritDoc} 返回工厂标识。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
 
+    /** 检查指定用户是否已配置 OTP 凭据。 */
     public boolean hasUserOTP(String username) {
         BackwardsCompatibilityUserStorage.MyUser user = userPasswords.get(username);
         if (user == null) return false;
         return user.getOtp() != null;
     }
 
+    /** 检查指定用户是否已配置恢复码凭据。 */
     public boolean hasRecoveryCodes(String username) {
         BackwardsCompatibilityUserStorage.MyUser user = userPasswords.get(username);
         if (user == null) return false;

@@ -30,10 +30,17 @@ import org.keycloak.testsuite.domainextension.CompanyRepresentation;
 import org.keycloak.testsuite.domainextension.jpa.Company;
 import org.keycloak.testsuite.domainextension.spi.ExampleService;
 
+/**
+ * {@link ExampleService} 的默认实现，通过 JPA 对 {@link Company} 实体执行 CRUD 操作。
+ */
 public class ExampleServiceImpl implements ExampleService {
 
+    /** 当前 Keycloak 会话，用于获取 Realm 与 JPA 连接。 */
     private final KeycloakSession session;
 
+    /**
+     * @param session 必须包含 Realm 上下文的 Keycloak 会话
+     */
     public ExampleServiceImpl(KeycloakSession session) {
         this.session = session;
         if (getRealm() == null) {
@@ -41,14 +48,17 @@ public class ExampleServiceImpl implements ExampleService {
         }
     }
 
+    /** 获取当前会话绑定的 JPA {@link EntityManager}。 */
     private EntityManager getEntityManager() {
         return session.getProvider(JpaConnectionProvider.class).getEntityManager();
     }
 
+    /** 从会话上下文中读取当前 Realm。 */
     protected RealmModel getRealm() {
         return session.getContext().getRealm();
     }
     
+    /** {@inheritDoc} 列出当前 Realm 下的全部公司。 */
     @Override
     public List<CompanyRepresentation> listCompanies() {
     	List<Company> companyEntities = getEntityManager().createNamedQuery("findByRealm", Company.class)
@@ -62,12 +72,14 @@ public class ExampleServiceImpl implements ExampleService {
         return result;
     }
     
+    /** {@inheritDoc} 按主键查找单个公司。 */
     @Override
     public CompanyRepresentation findCompany(String id) {
     	Company entity = getEntityManager().find(Company.class, id);
         return entity==null ? null : new CompanyRepresentation(entity);
     }
     
+    /** {@inheritDoc} 持久化新公司并返回带生成 ID 的表示对象。 */
     @Override
     public CompanyRepresentation addCompany(CompanyRepresentation company) {
         Company entity = new Company();
@@ -81,6 +93,7 @@ public class ExampleServiceImpl implements ExampleService {
         return company;
     }
 
+    /** {@inheritDoc} 删除当前 Realm 下的全部公司记录。 */
     @Override
     public void deleteAllCompanies() {
         EntityManager em = getEntityManager();
@@ -93,8 +106,9 @@ public class ExampleServiceImpl implements ExampleService {
         }
     }
 
+    /** 释放资源；当前实现无需额外清理。 */
     public void close() {
-        // Nothing to do.
+        // 无需执行任何操作。
     }
 
 }

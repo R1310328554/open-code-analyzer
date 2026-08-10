@@ -23,20 +23,25 @@ import org.keycloak.events.Event;
 import org.keycloak.models.KeycloakSession;
 
 /**
- * <p>Just an extension of TestEventsListenerProvider that includes the realm and
- * client passed in the session context as details in the event.</p>
+ * <p>{@link TestEventsListenerProvider} 的扩展实现，将会话上下文中的 Realm 与
+ * Client 信息写入事件详情字段。</p>
  *
  * @author rmartinc
  */
 public class TestEventsListenerContextDetailsProvider extends TestEventsListenerProvider {
 
+    /** 当前 Keycloak 会话，用于读取上下文详情。 */
     private final KeycloakSession session;
 
+    /**
+     * @param session Keycloak 会话
+     */
     public TestEventsListenerContextDetailsProvider(KeycloakSession session) {
         super(session);
         this.session = session;
     }
 
+    /** {@inheritDoc} 在转发事件前补充 Realm 与 Client 上下文详情。 */
     @Override
     public void onEvent(Event event) {
         event = event.clone();

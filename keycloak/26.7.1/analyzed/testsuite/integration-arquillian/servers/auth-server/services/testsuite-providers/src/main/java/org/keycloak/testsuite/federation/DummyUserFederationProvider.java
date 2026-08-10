@@ -38,6 +38,8 @@ import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserRegistrationProvider;
 
 /**
+ * 虚拟用户联邦提供者，用于集成测试中的用户查找、注册与凭据校验。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -46,18 +48,26 @@ public class DummyUserFederationProvider implements UserStorageProvider,
         UserRegistrationProvider,
         CredentialInputValidator {
 
+    /** 内存用户映射，键为用户名。 */
     private final Map<String, UserModel> users;
+    /** 当前 Keycloak 会话。 */
     private KeycloakSession session;
+    /** 关联的组件模型。 */
     private ComponentModel component;
 
-    // Hardcoded password of test-user
+    /** 测试用户 {@code test-user} 的硬编码密码。 */
     public static final String HARDCODED_PASSWORD = "secret";
 
-    // Hardcoded otp code, which will be always considered valid for the test-user
+    /** 测试用户 {@code test-user} 的硬编码 OTP，始终视为有效。 */
     public static final String HARDCODED_OTP = "123456";
 
 
 
+    /**
+     * @param session Keycloak 会话
+     * @param component 用户存储组件模型
+     * @param users 共享内存用户映射
+     */
     public DummyUserFederationProvider(KeycloakSession session, ComponentModel component, Map<String, UserModel> users) {
         this.users = users;
         this.session = session;
@@ -66,6 +76,7 @@ public class DummyUserFederationProvider implements UserStorageProvider,
 
 
 
+    /** {@inheritDoc} 在本地存储中创建用户并设置联邦链接。 */
     @Override
     public UserModel addUser(RealmModel realm, String username) {
         UserModel local = UserStoragePrivateUtil.userLocalStorage(session).addUser(realm, username);
@@ -75,50 +86,60 @@ public class DummyUserFederationProvider implements UserStorageProvider,
         return local;
     }
 
+    /** {@inheritDoc} 从内存映射中移除用户。 */
     @Override
     public boolean removeUser(RealmModel realm, UserModel user) {
         return users.remove(user.getUsername()) != null;
     }
 
+    /** {@inheritDoc} 本提供者不支持按 ID 查找。 */
     @Override
     public UserModel getUserById(RealmModel realm, String id) {
         return null;
     }
 
+    /** {@inheritDoc} 按用户名从内存映射查找用户。 */
     @Override
     public UserModel getUserByUsername(RealmModel realm, String username) {
         return users.get(username);
     }
 
+    /** {@inheritDoc} 本提供者不支持按邮箱查找。 */
     @Override
     public UserModel getUserByEmail(RealmModel realm, String email) {
         return null;
     }
 
+    /** {@inheritDoc} Realm 删除前的预清理钩子。 */
     @Override
     public void preRemove(RealmModel realm) {
 
     }
 
+    /** {@inheritDoc} 角色删除前的预清理钩子。 */
     @Override
     public void preRemove(RealmModel realm, RoleModel role) {
 
     }
 
+    /** {@inheritDoc} 组删除前的预清理钩子。 */
     @Override
     public void preRemove(RealmModel realm, GroupModel group) {
 
     }
 
+    /** 返回本提供者支持的凭据类型集合。 */
     public Set<String> getSupportedCredentialTypes() {
         return new HashSet<>(Arrays.asList(PasswordCredentialModel.TYPE, OTPCredentialModel.TYPE));
     }
 
+    /** {@inheritDoc} 判断凭据类型是否在支持列表中。 */
     @Override
     public boolean supportsCredentialType(String credentialType) {
         return getSupportedCredentialTypes().contains(credentialType);
     }
 
+    /** {@inheritDoc} 仅 {@code test-user} 视为已配置对应凭据类型。 */
     @Override
     public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
         if (!supportsCredentialType(credentialType)) return false;
@@ -130,6 +151,7 @@ public class DummyUserFederationProvider implements UserStorageProvider,
         }
     }
 
+    /** {@inheritDoc} 对 {@code test-user} 校验硬编码密码或 OTP。 */
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput credentialInput) {
         if (user.getUsername().equals("test-user")) {
@@ -142,6 +164,7 @@ public class DummyUserFederationProvider implements UserStorageProvider,
         return false;
     }
 
+     /** {@inheritDoc} 关闭提供者；当前实现无需额外清理。 */
      @Override
     public void close() {
 

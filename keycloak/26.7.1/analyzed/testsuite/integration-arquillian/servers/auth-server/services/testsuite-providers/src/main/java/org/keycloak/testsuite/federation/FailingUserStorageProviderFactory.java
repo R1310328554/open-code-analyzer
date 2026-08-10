@@ -27,28 +27,32 @@ import org.keycloak.provider.ProviderConfigurationBuilder;
 import org.keycloak.storage.UserStorageProviderFactory;
 
 /**
- * Factory for FailingUserStorageProvider - used in tests to simulate 
- * user storage provider failures for graceful degradation testing.
+ * {@link FailingUserStorageProvider} 的工厂，用于在测试中模拟用户存储失败以验证优雅降级。
  */
 public class FailingUserStorageProviderFactory implements UserStorageProviderFactory<FailingUserStorageProvider> {
     
+    /** 提供者唯一标识符。 */
     public static final String PROVIDER_ID = "failing-user-storage";
     
+    /** {@inheritDoc} 创建可配置失败行为的用户存储提供者。 */
     @Override
     public FailingUserStorageProvider create(KeycloakSession session, ComponentModel model) {
         return new FailingUserStorageProvider(session, model);
     }
     
+    /** {@inheritDoc} 返回工厂标识。 */
     @Override
     public String getId() {
         return PROVIDER_ID;
     }
     
+    /** {@inheritDoc} 返回提供者说明文本。 */
     @Override
     public String getHelpText() {
         return "Test user storage provider that can be configured to fail for testing graceful degradation";
     }
     
+    /** {@inheritDoc} 返回搜索与计数失败开关的配置属性。 */
     @Override
     public List<ProviderConfigProperty> getConfigProperties() {
         return ProviderConfigurationBuilder.create()
@@ -69,8 +73,9 @@ public class FailingUserStorageProviderFactory implements UserStorageProviderFac
             .build();
     }
     
+    /** {@inheritDoc} 测试提供者无需额外配置校验。 */
     @Override
     public void validateConfiguration(KeycloakSession session, RealmModel realm, ComponentModel config) throws ComponentValidationException {
-        // No validation needed for test provider
+        // 测试提供者无需校验
     }
 }

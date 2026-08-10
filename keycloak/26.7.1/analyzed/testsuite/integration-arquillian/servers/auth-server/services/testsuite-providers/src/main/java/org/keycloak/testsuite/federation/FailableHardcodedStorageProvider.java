@@ -39,26 +39,44 @@ import org.keycloak.storage.user.UserLookupProvider;
 import org.keycloak.storage.user.UserQueryProvider;
 
 /**
+ * 可配置失败模式的硬编码用户存储提供者，用于测试导入、凭据与查询路径的异常处理。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class FailableHardcodedStorageProvider implements UserStorageProvider, UserLookupProvider, UserQueryProvider,
         ImportedUserValidation, CredentialInputUpdater, CredentialInputValidator {
 
+    /** 硬编码测试用户名。 */
     public static String username = "billb";
+    /** 硬编码测试密码。 */
     public static String password = "password";
+    /** 硬编码测试邮箱。 */
     public static String email = "billb@nowhere.com";
+    /** 硬编码名字。 */
     public static String first = "Bill";
+    /** 硬编码姓氏。 */
     public static String last = "Burke";
+    /** 硬编码用户属性映射。 */
     public static MultivaluedHashMap<String, String> attributes = new MultivaluedHashMap<>();
 
+    /** 全局静态失败开关。 */
     public static boolean fail;
 
+    /** 关联的组件模型。 */
     protected ComponentModel model;
+    /** 当前 Keycloak 会话。 */
     protected KeycloakSession session;
+    /** 组件级失败模式是否启用。 */
     protected boolean componentFail;
+    /** 是否在用户验证阶段强制失败。 */
     private boolean failOnValidation;
 
+    /**
+     * @param model 用户存储组件模型
+     * @param session Keycloak 会话
+     * @param failOnValidation 验证阶段是否强制失败
+     */
     public FailableHardcodedStorageProvider(ComponentModel model, KeycloakSession session, boolean failOnValidation) {
         this.model = model;
         this.session = session;
@@ -66,16 +84,19 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         this.failOnValidation = failOnValidation;
     }
 
+    /** 判断组件配置是否启用了失败模式。 */
     public static boolean isInFailMode(ComponentModel model) {
         return model.getConfig().getFirst("fail") != null && model.getConfig().getFirst("fail").equalsIgnoreCase("true");
     }
 
+    /** {@inheritDoc} 仅支持密码凭据类型。 */
     @Override
     public boolean supportsCredentialType(String credentialType) {
         checkForceFail();
         return PasswordCredentialModel.TYPE.equals(credentialType);
     }
 
+    /** {@inheritDoc} 更新硬编码用户的密码。 */
     @Override
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
         checkForceFail();
@@ -91,24 +112,28 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         }
     }
 
+    /** {@inheritDoc} 禁用凭据类型；当前实现为空操作。 */
     @Override
     public void disableCredentialType(RealmModel realm, UserModel user, String credentialType) {
         checkForceFail();
 
     }
 
+    /** {@inheritDoc} 返回可禁用的凭据类型流（当前为空）。 */
     @Override
     public Stream<String> getDisableableCredentialTypesStream(RealmModel realm, UserModel user) {
         checkForceFail();
         return Stream.empty();
     }
 
+    /** {@inheritDoc} 密码凭据始终视为已配置。 */
     @Override
     public boolean isConfiguredFor(RealmModel realm, UserModel user, String credentialType) {
         checkForceFail();
         return PasswordCredentialModel.TYPE.equals(credentialType);
     }
 
+    /** {@inheritDoc} 校验硬编码用户密码。 */
     @Override
     public boolean isValid(RealmModel realm, UserModel user, CredentialInput credentialInput) {
         checkForceFail();
@@ -120,47 +145,55 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         }
     }
 
+    /** 用户模型委托，同步更新静态硬编码字段。 */
     private static class Delegate extends UserModelDelegate {
         public Delegate(UserModel delegate) {
             super(delegate);
         }
 
+        /** {@inheritDoc} 同步更新静态用户名。 */
         @Override
         public void setUsername(String name) {
             super.setUsername(name);
             username = name;
         }
 
+        /** {@inheritDoc} 同步更新静态单值属性。 */
         @Override
         public void setSingleAttribute(String name, String value) {
             super.setSingleAttribute(name, value);
             attributes.putSingle(name, value);
         }
 
+        /** {@inheritDoc} 同步更新静态多值属性。 */
         @Override
         public void setAttribute(String name, List<String> values) {
             super.setAttribute(name, values);
             attributes.put(name, values);
         }
 
+        /** {@inheritDoc} 同步移除静态属性。 */
         @Override
         public void removeAttribute(String name) {
             super.removeAttribute(name);
             attributes.remove(name);
         }
 
+        /** {@inheritDoc} 同步更新静态名字。 */
         @Override
         public void setFirstName(String firstName) {
             super.setFirstName(firstName);
             first = firstName;
         }
 
+        /** {@inheritDoc} 同步更新静态姓氏。 */
         @Override
         public void setLastName(String lastName) {
             super.setLastName(lastName);
             last = lastName;
         }
 
+        /** {@inheritDoc} 同步更新静态邮箱。 */
         @Override
         public void setEmail(String em) {
             super.setEmail(em);
@@ -168,6 +201,7 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         }
     }
 
+    /** {@inheritDoc} 验证导入用户，可选强制抛出验证失败。 */
     @Override
     public UserModel validate(RealmModel realm, UserModel user) {
         checkForceFail();
@@ -177,12 +211,14 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         return new Delegate(user);
     }
 
+    /** {@inheritDoc} 按 ID 查找不应被调用。 */
     @Override
     public UserModel getUserById(RealmModel realm, String id) {
         checkForceFail();
         throw new RuntimeException("THIS IMPORTS  SHOULD NEVER BE CALLED");
     }
 
+    /** {@inheritDoc} 按用户名导入或返回硬编码用户。 */
     @Override
     public UserModel getUserByUsername(RealmModel realm, String uname) {
         checkForceFail();
@@ -206,26 +242,31 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         return new Delegate(local);
     }
 
+    /** {@inheritDoc} 本提供者不支持按邮箱查找。 */
     @Override
     public UserModel getUserByEmail(RealmModel realm, String email) {
         checkForceFail();
         return null;
     }
 
+    /** 若全局或组件级失败开关启用，则抛出强制失败异常。 */
     protected void checkForceFail() {
         if (fail || componentFail) throwFailure();
     }
 
+    /** 抛出统一的强制失败运行时异常。 */
     public static  void throwFailure() {
         throw new RuntimeException("FORCED FAILURE");
     }
 
+    /** {@inheritDoc} 硬编码用户数量恒为 1。 */
     @Override
     public int getUsersCount(RealmModel realm) {
         checkForceFail();
         return 1;
     }
 
+    /** {@inheritDoc} 按搜索词查找硬编码用户。 */
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realm, String search) {
         checkForceFail();
@@ -234,6 +275,7 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         return model != null ? Stream.of(model) : Stream.empty();
     }
 
+    /** {@inheritDoc} 带分页的搜索实现。 */
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realm, String search, Integer firstResult, Integer maxResults) {
         checkForceFail();
@@ -242,6 +284,7 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         return model != null ? Stream.of(model) : Stream.empty();
     }
 
+    /** {@inheritDoc} 按参数映射搜索用户。 */
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params) {
         checkForceFail();
@@ -250,6 +293,7 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         return model != null ? Stream.of(model) : Stream.empty();
     }
 
+    /** {@inheritDoc} 带分页的参数映射搜索。 */
     @Override
     public Stream<UserModel> searchForUserStream(RealmModel realm, Map<String, String> params, Integer firstResult, Integer maxResults) {
         checkForceFail();
@@ -258,24 +302,28 @@ public class FailableHardcodedStorageProvider implements UserStorageProvider, Us
         return model != null ? Stream.of(model) : Stream.empty();
     }
 
+    /** {@inheritDoc} 组成员查询（当前不支持）。 */
     @Override
     public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group, Integer firstResult, Integer maxResults) {
         checkForceFail();
         return Stream.empty();
     }
 
+    /** {@inheritDoc} 组成员查询（当前不支持）。 */
     @Override
     public Stream<UserModel> getGroupMembersStream(RealmModel realm, GroupModel group) {
         checkForceFail();
         return Stream.empty();
     }
 
+    /** {@inheritDoc} 按用户属性搜索（当前不支持）。 */
     @Override
     public Stream<UserModel> searchForUserByUserAttributeStream(RealmModel realm, String attrName, String attrValue) {
         checkForceFail();
         return Stream.empty();
     }
 
+    /** {@inheritDoc} 关闭提供者；当前实现无需额外清理。 */
     @Override
     public void close() {
 

@@ -21,23 +21,30 @@ import org.keycloak.provider.Provider;
 import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
+/**
+ * 域扩展示例 SPI 定义，将 {@link ExampleService} 注册为 Keycloak 可扩展服务。
+ */
 public class ExampleSpi implements Spi {
 
+    /** {@inheritDoc} 示例 SPI 对外公开，非内部专用。 */
     @Override
     public boolean isInternal() {
         return false;
     }
 
+    /** {@inheritDoc} 返回 SPI 名称 {@code example}。 */
     @Override
     public String getName() {
         return "example";
     }
 
+    /** {@inheritDoc} 返回关联的 {@link ExampleService} 提供者类型。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return ExampleService.class;
     }
 
+    /** {@inheritDoc} 返回 {@link ExampleServiceProviderFactory} 工厂类型。 */
     @Override
     @SuppressWarnings("rawtypes")
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
