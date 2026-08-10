@@ -1,5 +1,7 @@
 package cache
 
+// cache 包定义 chunk 字节缓存抽象与工厂：支持 embedded、memcached、redis 及 tiered 组合，并可套 Background 与 Instrument 装饰器。
+
 import (
 	"context"
 	"flag"
@@ -14,6 +16,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/logqlmodel/stats"
 )
 
+// Cache 接口统一 Store/Fetch/Stop 语义，GetCacheType 用于查询统计分组。
 // Cache byte arrays by key.
 type Cache interface {
 	Store(ctx context.Context, key []string, buf [][]byte) error
@@ -23,6 +26,7 @@ type Cache interface {
 	GetCacheType() stats.CacheType
 }
 
+// Config 聚合各后端子配置与 DefaultValidity；测试可注入 cfg.Cache 跳过工厂。
 // Config for building Caches.
 type Config struct {
 	DefaultValidity time.Duration `yaml:"default_validity"`
@@ -52,6 +56,7 @@ func (cfg *Config) RegisterFlagsWithPrefix(prefix string, description string, f 
 	cfg.Prefix = prefix
 }
 
+// IsMemcacheSet/IsRedisSet/IsEmbeddedCacheSet 判断对应后端是否启用，IsCacheConfigured 任一为真即认为已配置缓存。
 // IsMemcacheSet returns whether a non empty Memcache config is set or not, based on the configured
 // host or addresses.
 //
@@ -84,6 +89,7 @@ func IsCacheConfigured(cfg Config) bool {
 	return IsMemcacheSet(cfg) || IsRedisSet(cfg) || IsEmbeddedCacheSet(cfg) || IsSpecificImplementationSet(cfg)
 }
 
+// New 按配置组装 embedded、memcached 或 redis 层，禁止同时启用 memcache 与 redis；多层时外包 Instrument 与 CollectStats。
 // New creates a new Cache using Config.
 func New(cfg Config, reg prometheus.Registerer, logger log.Logger, cacheType stats.CacheType, metricsNamespace string) (Cache, error) {
 
@@ -139,3 +145,4 @@ func New(cfg Config, reg prometheus.Registerer, logger log.Logger, cacheType sta
 	}
 	return cache, nil
 }
+// 分布式模式下 embedded 可能已在 modules 初始化，仍会用 stats collector 包装注入实例。

@@ -1,5 +1,7 @@
 package cache
 
+// memcached 实现基于 MemcachedClient 的 Cache：Fetch 支持批量并行分片，Store 逐键 Set 并附带 expiration。
+
 import (
 	"context"
 	"encoding/hex"
@@ -18,6 +20,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// MemcachedConfig 配置过期时间、Fetch 批大小与并行 worker 数量。
 // MemcachedConfig is config to make a Memcached
 type MemcachedConfig struct {
 	Expiration time.Duration `yaml:"expiration"`
@@ -33,6 +36,7 @@ func (cfg *MemcachedConfig) RegisterFlagsWithPrefix(prefix, description string, 
 	f.IntVar(&cfg.Parallelism, prefix+"memcached.parallelism", 5, description+"Maximum active requests to memcache.")
 }
 
+// Memcached 用 inputCh 分发 batch 任务，worker 按 batchID 保序合并结果。
 // Memcached type caches chunks in memcached
 type Memcached struct {
 	cfg       MemcachedConfig
@@ -52,6 +56,7 @@ type Memcached struct {
 	logger log.Logger
 }
 
+// NewMemcached 在 BatchSize/Parallelism 为零时跳过 worker 池，Fetch 退化为单次 GetMulti。
 // NewMemcached makes a new Memcached.
 func NewMemcached(cfg MemcachedConfig, client MemcachedClient, name string, reg prometheus.Registerer, logger log.Logger, cacheType stats.CacheType) *Memcached {
 	c := &Memcached{
@@ -131,6 +136,7 @@ func memcacheStatusCode(err error) string {
 	}
 }
 
+// Fetch 批量模式经 fetchKeysBatched 分发；fetch 按请求键序组装 found/missed 以保持顺序。
 // Fetch gets keys from the cache. The keys that are found must be in the order of the keys requested.
 func (c *Memcached) Fetch(ctx context.Context, keys []string) (found []string, bufs [][]byte, missed []string, err error) {
 	if c.cfg.BatchSize == 0 {
@@ -257,6 +263,7 @@ func (c *Memcached) GetCacheType() stats.CacheType {
 	return c.cacheType
 }
 
+// HashKey 用 FNV-64a 后 hex 编码，避免 memcache 对原始 hash 字节的键格式限制。
 // HashKey hashes key into something you can store in memcached.
 func HashKey(key string) string {
 	hasher := fnv.New64a()
@@ -265,3 +272,4 @@ func HashKey(key string) string {
 	// Hex because memcache errors for the bytes produced by the hash.
 	return hex.EncodeToString(hasher.Sum(nil))
 }
+// Stop 关闭 inputCh 与 closed 信号，防止 fetchKeysBatched 在停机时永久阻塞读 resultsCh。

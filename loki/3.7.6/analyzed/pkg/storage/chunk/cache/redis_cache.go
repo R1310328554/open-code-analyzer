@@ -1,5 +1,7 @@
 package cache
 
+// redis_cache 将 Cache 接口适配到 RedisClient：Fetch 用 MGet 按序拆分 hit/miss，Store 用 MSet 批量写入。
+
 import (
 	"context"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// RedisCache 构造时 Ping 探测连通性并打实验特性警告日志。
 // RedisCache type caches chunks in redis
 type RedisCache struct {
 	name      string
@@ -19,6 +22,7 @@ type RedisCache struct {
 	logger    log.Logger
 }
 
+// NewRedisCache 包装已建好的 RedisClient，name 用于日志与指标标签。
 // NewRedisCache creates a new RedisCache
 func NewRedisCache(name string, redisClient *RedisClient, logger log.Logger, cacheType stats.CacheType) *RedisCache {
 	util_log.WarnExperimentalUse(fmt.Sprintf("Redis cache - %s", name), logger)
@@ -34,6 +38,7 @@ func NewRedisCache(name string, redisClient *RedisClient, logger log.Logger, cac
 	return cache
 }
 
+// Fetch 出错时全部键记入 missed；成功时按 keys 顺序对齐 MGet 结果槽位。
 // Fetch gets keys from the cache. The keys that are found must be in the order of the keys requested.
 func (c *RedisCache) Fetch(ctx context.Context, keys []string) (found []string, bufs [][]byte, missed []string, err error) {
 	data, err := c.redis.MGet(ctx, keys)
@@ -71,3 +76,4 @@ func (c *RedisCache) Stop() {
 func (c *RedisCache) GetCacheType() stats.CacheType {
 	return c.cacheType
 }
+// Stop 关闭底层 redis 连接池；GetCacheType 透传构造时指定的 stats 类型。

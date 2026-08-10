@@ -1,5 +1,7 @@
 package cache
 
+// redis_client 基于 go-redis UniversalClient：支持单节点、Sentinel 与 Cluster，Cluster 模式避免 CROSSSLOT 用逐键 Set/Get。
+
 import (
 	"context"
 	"crypto/tls"
@@ -15,6 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// RedisConfig 含 endpoint、master_name、TLS、连接池与 RouteRandomly 读副本分流。
 // RedisConfig defines how a RedisCache should be constructed.
 type RedisConfig struct {
 	Endpoint           string         `yaml:"endpoint"`
@@ -55,6 +58,7 @@ type RedisClient struct {
 	rdb        redis.UniversalClient
 }
 
+// NewRedisClient 经 deriveEndpoints 解析单 endpoint 多 A 记录为 Cluster 地址列表。
 // NewRedisClient creates Redis client
 func NewRedisClient(cfg *RedisConfig) (*RedisClient, error) {
 	endpoints, err := deriveEndpoints(cfg.Endpoint, net.LookupHost)
@@ -83,6 +87,7 @@ func NewRedisClient(cfg *RedisConfig) (*RedisClient, error) {
 	}, nil
 }
 
+// deriveEndpoints 单 host 多 IP 且非全 loopback 时展开为 Cluster 节点列表。
 func deriveEndpoints(endpoint string, lookup func(host string) ([]string, error)) ([]string, error) {
 	if lookup == nil {
 		return nil, fmt.Errorf("lookup function is nil")
@@ -223,6 +228,7 @@ func (c *RedisClient) Close() error {
 	return c.rdb.Close()
 }
 
+// StringToBytes 零拷贝转换 redis 字符串值；MSet/MGet 均受 timeout 上下文约束。
 // StringToBytes converts string to byte slice. (copied from vendor/github.com/go-redis/redis/v8/internal/util/unsafe.go)
 func StringToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer( // #nosec G103 -- we know the string is not mutated -- nosemgrep: use-of-unsafe-block
@@ -232,3 +238,4 @@ func StringToBytes(s string) []byte {
 		}{s, len(s)},
 	))
 }
+// Cluster MGet 逐键 Get 处理 redis.Nil；非 Cluster 使用 TxPipeline 批量 Set。

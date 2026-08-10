@@ -1,5 +1,7 @@
 package cache
 
+// instrumented 为 Cache 添加 Prometheus 延迟直方图、命中计数与值大小分布，并在 OpenTelemetry span 上记录 keys 数量与错误状态。
+
 import (
 	"context"
 
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/constants"
 )
 
+// Instrument 注册 cache_request_duration、cache_hits、cache_fetched_keys 等指标，值大小桶从 1KB 指数增长到约 4MB 以覆盖 chunk 与 index。
 // Instrument returns an instrumented cache.
 func Instrument(name string, cache Cache, reg prometheus.Registerer) Cache {
 	valueSize := promauto.With(reg).NewHistogramVec(prometheus.HistogramOpts{
@@ -58,6 +61,7 @@ func Instrument(name string, cache Cache, reg prometheus.Registerer) Cache {
 	}
 }
 
+// instrumentedCache 嵌入 Cache，在 Store/Fetch 前后观测耗时与 payload 大小。
 type instrumentedCache struct {
 	name string
 	Cache
@@ -123,3 +127,4 @@ func (i *instrumentedCache) Fetch(ctx context.Context, keys []string) ([]string,
 func (i *instrumentedCache) Stop() {
 	i.Cache.Stop()
 }
+// Fetch 经 CollectedRequest 包装后累加请求键数与命中数；Stop 仅委托下游。

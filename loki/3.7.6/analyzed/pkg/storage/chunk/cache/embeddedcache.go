@@ -1,5 +1,7 @@
 package cache
 
+// embeddedcache 实现进程内 FIFO/LRU 混合驱逐的泛型缓存：可按条目数或内存字节上限驱逐，支持 TTL 定时清理与 Prometheus 指标。
+
 import (
 	"container/list"
 	"context"
@@ -29,6 +31,7 @@ const (
 	replacedReason = "replaced"
 )
 
+// TypedCache 为泛型缓存接口，与 Cache 语义一致但键值类型可参数化。
 // Interface for EmbeddedCache
 // Matches the interface from cache.Cache but has generics
 type TypedCache[K comparable, V any] interface {
@@ -39,6 +42,7 @@ type TypedCache[K comparable, V any] interface {
 	GetCacheType() stats.CacheType
 }
 
+// EmbeddedCache 用 map+双向链表实现 O(1) 读写；MaxSizeMB 与 MaxSizeItems 同时设置时先触发的限制生效。
 // EmbeddedCache is a simple (comparable -> any) cache which uses a fifo slide to
 // manage evictions.  O(1) inserts and updates, O(1) gets.
 //
@@ -68,12 +72,14 @@ type EmbeddedCache[K comparable, V any] struct {
 	memoryBytes     prometheus.Gauge
 }
 
+// Entry 记录键值与 updated 时间戳，供 TTL 驱逐与 LRU 排序使用。
 type Entry[K comparable, V any] struct {
 	updated time.Time
 	Key     K
 	Value   V
 }
 
+// EmbeddedCacheConfig 控制启用、容量、TTL 与 PurgeInterval（默认一分钟）。
 // EmbeddedCacheConfig represents in-process embedded cache config.
 type EmbeddedCacheConfig struct {
 	Enabled      bool          `yaml:"enabled,omitempty"`
@@ -103,6 +109,7 @@ func (cfg *EmbeddedCacheConfig) IsEnabled() bool {
 
 type cacheEntrySizeCalculator[K comparable, V any] func(entry *Entry[K, V]) uint64
 
+// NewEmbeddedCache 为 string/[]byte 专用入口；NewTypedEmbeddedCache 支持自定义 entry 大小计算与 onEntryRemoved 回调。
 // NewEmbeddedCache returns a new initialised EmbeddedCache where the key is a string and the value is a slice of bytes.
 func NewEmbeddedCache(name string, cfg EmbeddedCacheConfig, reg prometheus.Registerer, logger log.Logger, cacheType stats.CacheType) *EmbeddedCache[string, []byte] {
 	return NewTypedEmbeddedCache[string, []byte](name, cfg, reg, logger, cacheType, sizeOf, nil)
@@ -212,6 +219,7 @@ func (c *EmbeddedCache[K, V]) pruneExpiredItems(ttl time.Duration) {
 	}
 }
 
+// Fetch 逐键 Get，区分 found/missing；Store 在锁内批量 put 并可能触发驱逐。
 // Fetch implements Cache.
 func (c *EmbeddedCache[K, V]) Fetch(ctx context.Context, keys []K) (foundKeys []K, foundValues []V, missingKeys []K, err error) {
 	foundKeys, missingKeys, foundValues = make([]K, 0, len(keys)), make([]K, 0, len(keys)), make([]V, 0, len(keys))
@@ -314,6 +322,7 @@ func (c *EmbeddedCache[K, V]) put(key K, value V) {
 	c.memoryBytes.Set(float64(c.currSizeBytes))
 }
 
+// Get 持读锁查找；put 遇重复键先 remove(replaced)，单条超 maxSizeBytes 则拒绝写入并计 tooBig 指标。
 // Get returns the stored value against the key and when the key was last updated.
 func (c *EmbeddedCache[K, V]) Get(_ context.Context, key K) (V, bool) {
 	c.lock.RLock()
@@ -356,3 +365,4 @@ func (noopEmbeddedCache[K, V]) Stop() {
 func (noopEmbeddedCache[K, V]) GetCacheType() stats.CacheType {
 	return "noop"
 }
+// noopEmbeddedCache 供测试禁用缓存；sizeOf 用 unsafe 估算 Entry 与链表节点内存占用。

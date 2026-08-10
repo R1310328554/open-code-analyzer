@@ -1,5 +1,7 @@
 package cache
 
+// mock 提供内存 MockCache 与 NewNoopCache：用于单测统计 Store/Fetch 调用并可注入 storeErr/fetchErr。
+
 import (
 	"context"
 	"sync"
@@ -16,6 +18,7 @@ type MockCache interface {
 	SetErr(error, error)
 }
 
+// mockCache 用 Mutex 保护 map，Fetch 按请求顺序返回 found/missing。
 type mockCache struct {
 	numKeyUpdates int
 	keysRequested int
@@ -93,6 +96,7 @@ func (m *mockCache) KeysRequested() int {
 	return m.keysRequested
 }
 
+// NewMockCache 初始化空 map；SetErr 可分别控制 Store 与 Fetch 错误路径。
 // NewMockCache makes a new MockCache.
 func NewMockCache() MockCache {
 	return &mockCache{
@@ -100,7 +104,9 @@ func NewMockCache() MockCache {
 	}
 }
 
+// NewNoopCache 返回空 tiered 缓存，Fetch 全部 missing、Store 无操作。
 // NewNoopCache returns a no-op cache.
 func NewNoopCache() Cache {
 	return NewTiered(nil)
 }
+// KeysRequested 累计 Fetch 遍历的键次数；GetKeys 返回当前缓存键快照副本。

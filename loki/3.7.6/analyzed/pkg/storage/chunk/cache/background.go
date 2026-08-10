@@ -1,5 +1,7 @@
 package cache
 
+// background 提供异步写回缓存装饰器：Store 将键值批次入队，后台 goroutine 批量写入下游 Cache，读路径仍同步委托。
+
 import (
 	"context"
 	"flag"
@@ -17,6 +19,7 @@ import (
 	util_log "github.com/grafana/loki/v3/pkg/util/log"
 )
 
+// BackgroundConfig 控制写回并发、队列深度与字节上限，队列满或超限时丢弃写回并记录指标与 trace 属性。
 // BackgroundConfig is config for a Background Cache.
 type BackgroundConfig struct {
 	WriteBackGoroutines int              `yaml:"writeback_goroutines"`
@@ -32,6 +35,7 @@ func (cfg *BackgroundConfig) RegisterFlagsWithPrefix(prefix string, description 
 	f.Var(&cfg.WriteBackSizeLimit, prefix+"background.write-back-size-limit", description+"Size limit in bytes for background write-back.")
 }
 
+// backgroundCache 包装 Cache，用 channel 缓冲写回任务并维护队列字节计数。
 type backgroundCache struct {
 	Cache
 
@@ -50,6 +54,7 @@ type backgroundCache struct {
 	dequeuedBytes         prometheus.Counter
 }
 
+// backgroundWrite 表示一批待写回的键与对应字节切片。
 type backgroundWrite struct {
 	keys []string
 	bufs [][]byte
@@ -65,6 +70,7 @@ func (b *backgroundWrite) size() int {
 	return sz
 }
 
+// NewBackground 启动 cfg.WriteBackGoroutines 个 writeBackLoop，并注册 dropped/queue 相关 Prometheus 指标。
 // NewBackground returns a new Cache that does stores on background goroutines.
 func NewBackground(name string, cfg BackgroundConfig, cache Cache, reg prometheus.Registerer) Cache {
 	c := &backgroundCache{
@@ -124,6 +130,7 @@ func NewBackground(name string, cfg BackgroundConfig, cache Cache, reg prometheu
 	return c
 }
 
+// Stop 关闭 quit 并等待所有写回协程退出，再调用下游 Cache.Stop。
 // Stop the background flushing goroutines.
 func (c *backgroundCache) Stop() {
 	close(c.quit)
@@ -134,6 +141,7 @@ func (c *backgroundCache) Stop() {
 
 const keysPerBatch = 100
 
+// Store 按 keysPerBatch 分批入队；超 sizeLimit 或 channel 满时 failStore 并返回 nil。
 // Store writes keys for the cache in the background.
 func (c *backgroundCache) Store(ctx context.Context, keys []string, bufs [][]byte) error {
 	for len(keys) > 0 {
@@ -208,3 +216,4 @@ func (c *backgroundCache) writeBackLoop() {
 		}
 	}
 }
+// writeBackLoop 在出队后扣减 size 并调用 Cache.Store；失败仅打 Warn 日志不阻塞队列。

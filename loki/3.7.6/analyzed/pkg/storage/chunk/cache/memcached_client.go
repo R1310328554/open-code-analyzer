@@ -1,5 +1,7 @@
 package cache
 
+// memcached_client 封装 gomemcache 客户端：支持 DNS SRV/地址列表发现、一致性哈希、TLS、熔断器与 max_item_size 跳过过大写入。
+
 import (
 	"context"
 	"crypto/tls"
@@ -25,6 +27,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/util/jumphash"
 )
 
+// MemcachedClient 抽象 GetMulti/Set，便于单测注入 mock。
 // MemcachedClient interface exists for mocking memcacheClient.
 type MemcachedClient interface {
 	GetMulti(ctx context.Context, keys []string, opts ...memcache.Option) (map[string]*memcache.Item, error)
@@ -38,6 +41,7 @@ type serverSelector interface {
 
 // memcachedClient is a memcache client that gets its server list from SRV
 // records, and periodically updates that ServerList.
+// memcachedClient 定期 updateLoop 刷新服务器列表，并对每个地址维护独立 circuit breaker。
 type memcachedClient struct {
 	sync.Mutex
 	name string
@@ -71,6 +75,7 @@ type memcachedClient struct {
 	DialTimeout func(network, address string, timeout time.Duration) (net.Conn, error)
 }
 
+// MemcachedClientConfig 支持 host+SRV、addresses DNS 发现、ConsistentHash 与 TLS 客户端配置。
 // MemcachedClientConfig defines how a MemcachedClient should be constructed.
 type MemcachedClientConfig struct {
 	Host           string        `yaml:"host"`
@@ -109,6 +114,7 @@ func (cfg *MemcachedClientConfig) RegisterFlagsWithPrefix(prefix, description st
 	cfg.TLS.RegisterFlagsWithPrefix(prefix+"memcached.", f)
 }
 
+// NewMemcachedClient 初始化 selector、可选 TLS dial 与 DNS provider，并立即执行一次 updateMemcacheServers。
 // NewMemcachedClient creates a new MemcacheClient that gets its server list
 // from SRV and updates the server list on a regular basis.
 func NewMemcachedClient(cfg MemcachedClientConfig, name string, r prometheus.Registerer, logger log.Logger, metricsNamespace string) MemcachedClient {
@@ -268,6 +274,7 @@ func (c *memcachedClient) updateLoop(updateInterval time.Duration) {
 	}
 }
 
+// updateMemcacheServers 解析地址后 sort.Strings 保证与 ServerList 索引映射稳定。
 // updateMemcacheServers sets a memcache server list from SRV records. SRV
 // priority & weight are ignored.
 func (c *memcachedClient) updateMemcacheServers() error {
@@ -312,3 +319,4 @@ func (c *memcachedClient) updateMemcacheServers() error {
 	c.numServers.Set(float64(len(servers)))
 	return c.serverList.SetServers(servers...)
 }
+// Set 超 maxItemSize 时直接 skipped 计数返回 nil；失败时 Wrap 选中 server 地址便于排查。

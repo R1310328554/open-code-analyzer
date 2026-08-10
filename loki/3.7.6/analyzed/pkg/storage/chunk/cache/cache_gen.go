@@ -1,5 +1,7 @@
 package cache
 
+// cache_gen 通过 context 注入缓存代数，在键前缀附加 gen 号实现保留策略变更时的缓存隔离，对外 Fetch 仍返回原始键名。
+
 import (
 	"context"
 
@@ -8,9 +10,11 @@ import (
 
 type contextKey int
 
+// cacheGenContextKey 为私有 context 键，避免与其他值类型冲突。
 // cacheGenContextKey is used for setting a Cache Generation number in context.
 const cacheGenContextKey contextKey = 0
 
+// GenNumMiddleware 装饰下游 Cache：Store/Fetch 前加前缀，Fetch 返回前从 found/missing 剥离 gen 前缀。
 // GenNumMiddleware adds gen number to keys from context. Expected size of gen numbers is upto 2 digits.
 // If we start seeing problems with keys exceeding length limit, we need to look into resetting gen numbers.
 type GenNumMiddleware struct {
@@ -50,6 +54,7 @@ func (c GenNumMiddleware) GetCacheType() stats.CacheType {
 	return c.downstreamCache.GetCacheType()
 }
 
+// InjectCacheGenNumber/ExtractCacheGenNumber 供上游在 retention 等场景写入与读取 gen。
 // InjectCacheGenNumber returns a derived context containing the cache gen.
 func InjectCacheGenNumber(ctx context.Context, cacheGen string) context.Context {
 	return context.WithValue(ctx, interface{}(cacheGenContextKey), cacheGen)
@@ -64,6 +69,7 @@ func ExtractCacheGenNumber(ctx context.Context) string {
 	return cacheGenNumber
 }
 
+// addCacheGenNumToCacheKeys 无 gen 时原样返回；removeCacheGenNumFromKeys 按前缀长度截断。
 // addCacheGenNumToCacheKeys adds gen number to keys as prefix.
 func addCacheGenNumToCacheKeys(ctx context.Context, keys []string) []string {
 	cacheGen := ExtractCacheGenNumber(ctx)
@@ -96,3 +102,4 @@ func removeCacheGenNumFromKeys(ctx context.Context, keys []string) []string {
 
 	return unprefixedKeys
 }
+// gen 号预期不超过两位；键过长时需考虑重置 gen 以免 memcache 键长度超限。

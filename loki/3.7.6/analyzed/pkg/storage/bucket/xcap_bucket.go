@@ -1,5 +1,7 @@
 package bucket
 
+// xcap_bucket 包装 objstore.Bucket，在 context 含 xcap Region 时统计各对象存储操作次数；无 Region 时透明委托底层 bucket，不改变读写语义。
+
 import (
 	"context"
 	"io"
@@ -9,6 +11,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/xcap"
 )
 
+// XCapBucket 在 Iter/Get/GetRange/Attributes 等路径调用 recordOp，将请求计数写入 xcap 统计以便容量规划与限流观测。
 // XCapBucket wraps an objstore.Bucket and records request counts to the xcap
 // Region found in the context. If no Region is present in the context, the
 // wrapper simply delegates to the underlying bucket without recording.
@@ -16,12 +19,14 @@ type XCapBucket struct {
 	bkt objstore.Bucket
 }
 
+// NewXCapBucket 构造装饰器，不持有额外状态，仅包装传入的 bucket 实例。
 // NewXCapBucket creates a new XcapBucket that wraps the given bucket and records
 // request counts to xcap regions found in the context.
 func NewXCapBucket(bkt objstore.Bucket) *XCapBucket {
 	return &XCapBucket{bkt: bkt}
 }
 
+// recordOp 从 context 提取 Region，存在则对指定 StatisticInt64 递增一次观测。
 // recordOp records a single operation to the xcap region if present in the context.
 func recordOp(ctx context.Context, stat *xcap.StatisticInt64) {
 	region := xcap.RegionFromContext(ctx)
@@ -113,3 +118,4 @@ func (b *XCapBucket) Name() string {
 
 // Ensure XcapBucket implements objstore.Bucket interface.
 var _ objstore.Bucket = (*XCapBucket)(nil)
+// Upload/Delete/Exists 等未计数的操作仍直接委托；接口断言保证实现 objstore.Bucket。

@@ -1,5 +1,7 @@
 package resultscache
 
+// resultscache 实现查询结果分片缓存中间件：按 interval 生成键，命中时 partition 补全缺失区间并 merge 响应写回。
+
 import (
 	"context"
 	"fmt"
@@ -27,6 +29,7 @@ import (
 
 var tracer = otel.Tracer("pkg/storage/chunk/cache/resultscache")
 
+// ConstSplitter 将请求 start 对齐到固定 interval 毫秒段，同段内相同 query/step/user 共享缓存键。
 // ConstSplitter is a utility for using a constant split interval when determining cache keys
 type ConstSplitter time.Duration
 
@@ -36,6 +39,7 @@ func (t ConstSplitter) GenerateCacheKey(_ context.Context, userID string, r Requ
 	return fmt.Sprintf("%s:%s:%d:%d", userID, r.GetQuery(), r.GetStep(), currentInterval)
 }
 
+// ShouldCacheReqFn/ShouldCacheResFn 允许按请求或响应动态跳过缓存读写。
 // ShouldCacheReqFn checks whether the current request should go to cache or not.
 // If not, just send the request to next handler.
 type ShouldCacheReqFn func(ctx context.Context, r Request) bool
@@ -46,6 +50,7 @@ type ShouldCacheResFn func(ctx context.Context, r Request, res Response, maxCach
 // ParallelismForReqFn returns the parallelism for a given request.
 type ParallelismForReqFn func(ctx context.Context, tenantIDs []string, r Request) int
 
+// ResultsCache 链式调用 next Handler，keyGen 外包 PipelineWrapper 感知 header。
 type ResultsCache struct {
 	logger               log.Logger
 	next                 Handler
@@ -63,6 +68,7 @@ type ResultsCache struct {
 	parallelismForReq    func(ctx context.Context, tenantIDs []string, r Request) int
 }
 
+// NewResultsCache 设置 minCacheExtent 为 5 分钟，支持 retention 注入 cache gen 与 onlyUseEntireExtent 整段命中策略。
 // NewResultsCache creates results cache from config.
 // The middleware cache result using a unique cache key for a given request (step,query,user) and interval.
 // The cache assumes that each request length (end-start) is below or equal the interval.
@@ -330,6 +336,7 @@ func toExtent(ctx context.Context, req Request, res Response) (Extent, error) {
 
 // partition calculates the required requests to satisfy req given the cached data.
 // extents must be in order by start time.
+// partition 按已缓存 extent 切分缺失子请求，过小 extent 或 onlyUseEntireExtent 时不部分复用。
 func (s ResultsCache) partition(req Request, extents []Extent) ([]Request, []Response, error) {
 	var requests []Request
 	var cachedResponses []Response
@@ -423,6 +430,7 @@ func (s ResultsCache) filterRecentExtents(req Request, maxCacheFreshness time.Du
 	return extents, nil
 }
 
+// get 用 HashKey 读缓存并 proto 反序列化 CachedResponse，校验 Key 与 schema。
 func (s ResultsCache) get(ctx context.Context, key string) ([]Extent, bool) {
 	found, bufs, _, _ := s.cache.Fetch(ctx, []string{cache.HashKey(key)})
 	if len(found) != 1 {
@@ -483,3 +491,4 @@ func (e *Extent) toResponse() (Response, error) {
 	}
 	return resp, nil
 }
+// handleHit 合并重叠 extent 后写回；filterRecentExtents 截断 maxCacheFreshness 内最新数据不缓存。
