@@ -19,7 +19,7 @@ from agent.component.base import ComponentBase, ComponentParamBase
 
 class LoopItemParam(ComponentParamBase):
     """
-    Define the LoopItem component parameters.
+    LoopItem 无额外业务参数，索引与条件由父 Loop 与画布运行时维护。
     """
 
     def check(self):
@@ -27,6 +27,10 @@ class LoopItemParam(ComponentParamBase):
 
 
 class LoopItem(ComponentBase, ABC):
+    """
+    单次循环迭代：递增 _idx，并在 end() 中按父级条件决定是否终止。
+    """
+
     component_name = "LoopItem"
 
     def __init__(self, canvas, id, param: ComponentParamBase):
@@ -47,6 +51,8 @@ class LoopItem(ComponentBase, ABC):
         self._idx += 1
 
     def evaluate_condition(self, var, operator, value):
+        # 按变量类型（字符串/数值/集合等）解释比较运算符
+        # 按变量类型（字符串/数值/集合等）解释比较运算符
         if isinstance(var, str):
             if operator == "contains":
                 return value in var
@@ -122,6 +128,8 @@ class LoopItem(ComponentBase, ABC):
         raise Exception(f"Invalid operator: {operator}")
 
     def end(self):
+        # 汇总 loop_termination_condition，满足 and/or 逻辑时将 _idx 置 -1 结束循环
+        # 汇总 loop_termination_condition，满足 and/or 逻辑时将 _idx 置 -1 结束循环
         if self._idx == -1:
             return True
         parent = self.get_parent()

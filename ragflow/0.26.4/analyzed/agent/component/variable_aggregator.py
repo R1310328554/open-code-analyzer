@@ -22,9 +22,7 @@ from agent.component.base import ComponentBase, ComponentParamBase
 
 class VariableAggregatorParam(ComponentParamBase):
     """
-    Parameters for VariableAggregator
-
-    - groups: list of dicts {"group_name": str, "variables": [variable selectors]}
+    变量聚合器参数：groups 为 {"group_name", "variables"} 列表。
     """
 
     def __init__(self):
@@ -52,6 +50,10 @@ class VariableAggregatorParam(ComponentParamBase):
 
 
 class VariableAggregator(ComponentBase):
+    """
+    每组遍历 variables 选择器，命中首个 truthy 值后写入对应 group_name 输出。
+    """
+
     component_name = "VariableAggregator"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 3)))

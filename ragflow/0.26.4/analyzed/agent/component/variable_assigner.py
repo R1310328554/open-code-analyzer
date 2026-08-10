@@ -22,7 +22,7 @@ from api.utils.api_utils import timeout
 
 class VariableAssignerParam(ComponentParamBase):
     """
-    Define the Variable Assigner component parameters.
+    变量赋值器参数：variables 为 {variable, operator, parameter} 规则列表。
     """
 
     def __init__(self):
@@ -37,6 +37,10 @@ class VariableAssignerParam(ComponentParamBase):
 
 
 class VariableAssigner(ComponentBase, ABC):
+    """
+    逐条应用赋值规则，通过 _operate 分派到覆盖/追加/算术等算子。
+    """
+
     component_name = "VariableAssigner"
     _NO_PARAMETER_OPERATORS = {"clear", "remove_first", "remove_last"}
 
@@ -59,6 +63,8 @@ class VariableAssigner(ComponentBase, ABC):
                 self._canvas.set_variable_value(variable, new_variable)
 
     def _operate(self, variable, operator, parameter):
+        # 将 operator 映射到具体变更逻辑；未知算子返回 None
+        # 将 operator 映射到具体变更逻辑；未知算子返回 None
         if operator == "overwrite":
             return self._overwrite(parameter)
         elif operator == "clear":

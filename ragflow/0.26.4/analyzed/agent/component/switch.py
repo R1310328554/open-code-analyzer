@@ -24,7 +24,7 @@ from common.connection_utils import timeout
 
 class SwitchParam(ComponentParamBase):
     """
-    Define the Switch component parameters.
+    Switch 参数：条件组列表、各组目标组件 ID 以及默认 end_cpn_ids。
     """
 
     def __init__(self):
@@ -54,10 +54,16 @@ class SwitchParam(ComponentParamBase):
 
 
 class Switch(ComponentBase, ABC):
+    """
+    依次评估 conditions；匹配时写入 next/_next 供画布调度下一批节点。
+    """
+
     component_name = "Switch"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 3)))
     def _invoke(self, **kwargs):
+        # 对每组条件逐项 process_operator；or 短路、and 需全部成立
+        # 对每组条件逐项 process_operator；or 短路、and 需全部成立
         if self.check_if_canceled("Switch processing"):
             return
 
@@ -92,6 +98,8 @@ class Switch(ComponentBase, ABC):
         self.set_output("_next", self._param.end_cpn_ids)
 
     def process_operator(self, input: Any, operator: str, value: Any) -> bool:
+        # 字符串比较忽略大小写；数值比较优先尝试 float 转换
+        # 字符串比较忽略大小写；数值比较优先尝试 float 转换
         if operator in ("contains", "not contains", "start with", "end with"):
             input = "" if input is None else str(input)
             value = "" if value is None else str(value)

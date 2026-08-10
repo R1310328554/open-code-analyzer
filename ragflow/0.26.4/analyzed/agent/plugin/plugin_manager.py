@@ -1,3 +1,7 @@
+"""
+插件管理器：扫描 embedded_plugins 目录，加载并索引 LLM 工具插件。
+"""
+
 import logging
 import os
 from pathlib import Path
@@ -9,12 +13,18 @@ from .llm_tool_plugin import LLMToolPlugin
 
 
 class PluginManager:
+    """
+    维护 name -> LLMToolPlugin 实例映射，供 Agent 按工具名批量解析。
+    """
+
     _llm_tool_plugins: dict[str, LLMToolPlugin]
 
     def __init__(self) -> None:
         self._llm_tool_plugins = {}
 
     def load_plugins(self) -> None:
+        # 通过 pluginlib 扫描 embedded_plugins 并注册 llm_tools 类型
+        # 通过 pluginlib 扫描 embedded_plugins 并注册 llm_tools 类型
         loader = pluginlib.PluginLoader(paths=[str(Path(os.path.dirname(__file__), "embedded_plugins"))])
 
         for type, plugins in loader.plugins.items():

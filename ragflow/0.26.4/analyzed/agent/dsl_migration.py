@@ -18,7 +18,7 @@ import copy
 import re
 
 
-# Keep all legacy chunker renames in one place so the migration rule stays readable.
+# 集中维护旧版分块组件重命名表，便于阅读迁移规则
 COMPONENT_RENAMES = {
     "Splitter": "TokenChunker",
     "HierarchicalMerger": "TitleChunker",
@@ -34,13 +34,9 @@ VARIABLE_REF_PATTERN = re.compile(r"(\{+\s*)([A-Za-z0-9:_-]+)(@[A-Za-z0-9_.-]+)(
 
 def normalize_chunker_dsl(dsl: dict) -> dict:
     """
-    Rewrite legacy chunker component names and ids into the current DSL schema.
+    将 DSL 中旧分块组件 ID、变量引用与 graph 节点类型迁移到新命名。
 
-    This is intentionally a pure migration step:
-    - it does not change business params
-    - it only rewrites structural identifiers used by the canvas/runtime
-    - custom human-authored names are preserved unless they are still the exact
-      built-in legacy operator name
+    仅重写画布/运行时使用的结构标识，不改动业务参数字段。
     """
     if not isinstance(dsl, dict):
         return dsl
@@ -61,6 +57,8 @@ def normalize_chunker_dsl(dsl: dict) -> dict:
         component_id_map[component_id] = new_component_id
 
     def rewrite_variable_refs(text: str) -> str:
+        # 替换 {组件ID@变量} 模板中的组件 ID
+        # 替换 {组件ID@变量} 模板中的组件 ID
         if text in component_id_map:
             return component_id_map[text]
 

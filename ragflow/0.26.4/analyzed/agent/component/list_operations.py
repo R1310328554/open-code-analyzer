@@ -1,3 +1,7 @@
+"""
+列表操作组件：对画布变量中的数组执行 nth/head/tail/filter/sort/去重等变换。
+"""
+
 from abc import ABC
 import os
 from agent.component.base import ComponentBase, ComponentParamBase
@@ -6,7 +10,7 @@ from api.utils.api_utils import timeout
 
 class ListOperationsParam(ComponentParamBase):
     """
-    Define the List Operations component parameters.
+    列表操作组件参数：查询源、操作类型、排序/过滤选项与输出槽位。
     """
 
     def __init__(self):
@@ -46,10 +50,16 @@ class ListOperationsParam(ComponentParamBase):
 
 
 class ListOperations(ComponentBase, ABC):
+    """
+    对输入数组按配置执行单项列表变换，并写入 result/first/last 输出。
+    """
+
     component_name = "ListOperations"
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 10 * 60)))
     def _invoke(self, **kwargs):
+        # 解析 query 变量为列表，按 operations 分派到具体算子
+        # 解析 query 变量为列表，按 operations 分派到具体算子
         self.input_objects = []
         inputs = getattr(self._param, "query", None)
         self.inputs = self._canvas.get_variable_value(inputs)
@@ -90,6 +100,8 @@ class ListOperations(ComponentBase, ABC):
         raise ValueError(f"{operation} requires n to be within the valid range in strict mode, got {n}.")
 
     def _nth(self):
+        # 取第 n 个元素（1 基正索引或负索引）；strict 模式下越界报错
+        # 取第 n 个元素（1 基正索引或负索引）；strict 模式下越界报错
         n = self._coerce_n()
         strict = self._is_strict()
         if n == 0:
@@ -164,6 +176,8 @@ class ListOperations(ComponentBase, ABC):
             return False
 
     def _sort(self):
+        # 标量直接排序；字典按 sort_by 字段或全键哈希排序
+        # 标量直接排序；字典按 sort_by 字段或全键哈希排序
         items = self.inputs or []
         method = getattr(self._param, "sort_method", "asc") or "asc"
         reverse = method == "desc"
@@ -206,6 +220,8 @@ class ListOperations(ComponentBase, ABC):
         self._set_outputs(outs)
 
     def _hashable(self, x):
+        # 将嵌套结构递归转为可哈希元组，供排序与去重使用
+        # 将嵌套结构递归转为可哈希元组，供排序与去重使用
         if isinstance(x, dict):
             return tuple(sorted((k, self._hashable(v)) for k, v in x.items()))
         if isinstance(x, (list, tuple)):

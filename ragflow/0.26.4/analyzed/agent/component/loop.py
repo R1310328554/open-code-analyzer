@@ -19,7 +19,7 @@ from agent.component.base import ComponentBase, ComponentParamBase
 
 class LoopParam(ComponentParamBase):
     """
-    Define the Loop component parameters.
+    循环组件参数：循环变量定义、终止条件与最大迭代次数。
     """
 
     def __init__(self):
@@ -36,6 +36,10 @@ class LoopParam(ComponentParamBase):
 
 
 class Loop(ComponentBase, ABC):
+    """
+    循环入口：按 input_mode 为各 loop_variable 赋初值，并定位首个 LoopItem 子节点。
+    """
+
     component_name = "Loop"
 
     @staticmethod
@@ -65,6 +69,8 @@ class Loop(ComponentBase, ABC):
         return True
 
     def get_start(self):
+        # 返回挂在本 Loop 下的 LoopItem 子组件 ID
+        # 返回挂在本 Loop 下的 LoopItem 子组件 ID
         for cid in self._canvas.components.keys():
             if self._canvas.get_component(cid)["obj"].component_name.lower() != "loopitem":
                 continue
@@ -72,6 +78,8 @@ class Loop(ComponentBase, ABC):
                 return cid
 
     def _invoke(self, **kwargs):
+        # 校验并初始化各循环变量（变量引用、常量或类型默认值）
+        # 校验并初始化各循环变量（变量引用、常量或类型默认值）
         if self.check_if_canceled("Loop processing"):
             return
 

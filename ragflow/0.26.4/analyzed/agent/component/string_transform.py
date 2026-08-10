@@ -28,7 +28,7 @@ from .message import Message
 
 class StringTransformParam(ComponentParamBase):
     """
-    Define the code sandbox component parameters.
+    字符串变换参数：split（按分隔符切分）或 merge（模板拼接）。
     """
 
     def __init__(self):
@@ -45,6 +45,10 @@ class StringTransformParam(ComponentParamBase):
 
 
 class StringTransform(Message, ABC):
+    """
+    split 将输入按 delimiters 正则切分；merge 用 Jinja/占位符合并多变量。
+    """
+
     component_name = "StringTransform"
 
     def get_input_elements(self) -> dict[str, Any]:
@@ -66,6 +70,8 @@ class StringTransform(Message, ABC):
             self._merge(kwargs)
 
     def _split(self, line: str | None = None):
+        # 保留分隔符之间的文本段，奇数索引为分隔符本身故跳过
+        # 保留分隔符之间的文本段，奇数索引为分隔符本身故跳过
         if self.check_if_canceled("StringTransform split processing"):
             return
 
@@ -83,6 +89,8 @@ class StringTransform(Message, ABC):
         self.set_output("result", res)
 
     def _merge(self, kwargs: dict[str, str] = {}):
+        # 复用 Message.get_kwargs 填充 script，再经 Jinja 或正则替换变量
+        # 复用 Message.get_kwargs 填充 script，再经 Jinja 或正则替换变量
         if self.check_if_canceled("StringTransform merge processing"):
             return
 

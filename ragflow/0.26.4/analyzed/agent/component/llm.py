@@ -33,7 +33,7 @@ from rag.prompts.generator import tool_call_summary, message_fit_in, citation_pr
 
 class LLMParam(ComponentParamBase):
     """
-    Define the LLM component parameters.
+    LLM 组件参数：模型 ID、提示模板、采样参数与结构化输出 schema。
     """
 
     def __init__(self):
@@ -60,6 +60,8 @@ class LLMParam(ComponentParamBase):
         self.check_empty(self.prompts, "[Agent] User prompt")
 
     def gen_conf(self):
+        # 仅将已启用的采样项写入 chat API 配置
+        # 仅将已启用的采样项写入 chat API 配置
         conf = {}
 
         def get_attr(nm):
@@ -84,6 +86,10 @@ class LLMParam(ComponentParamBase):
 
 
 class LLM(ComponentBase):
+    """
+    调用租户 LLM 完成对话生成；可切换 image2text 并处理流式/结构化分支。
+    """
+
     component_name = "LLM"
 
     def __init__(self, canvas, component_id, param: ComponentParamBase):
@@ -288,6 +294,8 @@ class LLM(ComponentBase):
         return text_parts, image_data_uris
 
     def _prepare_prompt_variables(self):
+        # 收集输入变量、data:image 附件与 sys.files，并组装最终消息列表
+        # 收集输入变量、data:image 附件与 sys.files，并组装最终消息列表
         self.imgs = []
         if self._param.visual_files_var:
             visual_val = self._canvas.get_variable_value(self._param.visual_files_var)
@@ -379,6 +387,8 @@ class LLM(ComponentBase):
             yield value
 
     async def _stream_output_async(self, prompt, msg):
+        # message_fit_in 裁剪后逐 token 产出，并累积写入 content 输出
+        # message_fit_in 裁剪后逐 token 产出，并累积写入 content 输出
         msg_fit, fit_error = self.fit_messages(prompt, msg, self.chat_mdl.max_length)
         if fit_error:
             logging.error("LLM streaming prompt fit error: %s", fit_error)
@@ -414,6 +424,8 @@ class LLM(ComponentBase):
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 10 * 60)))
     async def _invoke_async(self, **kwargs):
+        # 结构化输出走 schema 重试；否则检测 Message 下游决定是否流式 partial
+        # 结构化输出走 schema 重试；否则检测 Message 下游决定是否流式 partial
         if self.check_if_canceled("LLM processing"):
             return
 

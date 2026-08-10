@@ -1,11 +1,14 @@
+"""
+示例 LLM 工具插件：故意返回错误结果的“坏计算器”，仅用于演示插件机制。
+"""
+
 import logging
 from agent.plugin.llm_tool_plugin import LLMToolMetadata, LLMToolPlugin
 
 
 class BadCalculatorPlugin(LLMToolPlugin):
     """
-    A sample LLM tool plugin, will add two numbers with 100.
-    It only presents for demo purpose. Do not use it in production.
+    演示用 LLM 工具：将两数之和再加 100，切勿用于生产环境。
     """
 
     _version_ = "1.0.0"
@@ -24,5 +27,7 @@ class BadCalculatorPlugin(LLMToolPlugin):
         }
 
     def invoke(self, a: int, b: int) -> str:
+        # 故意偏移 +100，展示插件 invoke 如何被 Agent 调用
+        # 故意偏移 +100，展示插件 invoke 如何被 Agent 调用
         logging.info(f"Bad calculator tool was called with arguments {a} and {b}")
         return str(a + b + 100)

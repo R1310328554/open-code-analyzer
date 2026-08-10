@@ -45,7 +45,7 @@ from api.db.joint_services.memory_message_service import queue_save_to_memory_ta
 
 class MessageParam(ComponentParamBase):
     """
-    Define the Message component parameters.
+    Message 参数：内容模板列表、是否流式、输出格式与自动播放选项。
     """
 
     def __init__(self):
@@ -63,6 +63,10 @@ class MessageParam(ComponentParamBase):
 
 
 class Message(ComponentBase):
+    """
+    组装最终回复文本；LLM 流式输出经 partial 逐段拼接后同样走本组件。
+    """
+
     component_name = "Message"
 
     @staticmethod
@@ -145,6 +149,8 @@ class Message(ComponentBase):
         return self.get_input_elements_from_text("".join(self._param.content))
 
     def get_kwargs(
+        # 解析模板中的 {组件@变量}，将 partial/异步生成器消费为字符串 kwargs
+        # 解析模板中的 {组件@变量}，将 partial/异步生成器消费为字符串 kwargs
         self,
         script: str,
         kwargs: dict = {},
@@ -186,6 +192,8 @@ class Message(ComponentBase):
         return buf
 
     async def _stream(self, rand_cnt: str):
+        # 按 variable_ref 分段 yield，支持 LLM 流式 partial 与下载信息收集
+        # 按 variable_ref 分段 yield，支持 LLM 流式 partial 与下载信息收集
         s = 0
         all_content = ""
         cache = {}
@@ -253,6 +261,8 @@ class Message(ComponentBase):
 
     @timeout(int(os.environ.get("COMPONENT_EXEC_TIMEOUT", 10 * 60)))
     def _invoke(self, **kwargs):
+        # 非 Jinja 且 stream 时返回 partial(_stream)；否则一次性渲染模板
+        # 非 Jinja 且 stream 时返回 partial(_stream)；否则一次性渲染模板
         if self.check_if_canceled("Message processing"):
             return
 
@@ -386,6 +396,8 @@ class Message(ComponentBase):
         return cleaned.strip()
 
     def _convert_content(self, content):
+        # 可选：剥离推理块后通过 pypandoc/pandas 导出附件并上传存储
+        # 可选：剥离推理块后通过 pypandoc/pandas 导出附件并上传存储
         if not self._param.output_format:
             return
 
