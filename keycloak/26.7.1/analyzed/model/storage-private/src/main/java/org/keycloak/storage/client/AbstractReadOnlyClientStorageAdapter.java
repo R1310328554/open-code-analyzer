@@ -26,10 +26,15 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.storage.ReadOnlyException;
 
 /**
+ * 只读客户端存储适配器：所有 {@link ClientModel} 写操作均抛出 {@link ReadOnlyException}。
+ * <p>
+ * 适用于从外部存储只读导入的联邦客户端。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public abstract class AbstractReadOnlyClientStorageAdapter extends AbstractClientStorageAdapter {
+    /** 构造只读客户端存储适配器。 */
     public AbstractReadOnlyClientStorageAdapter(KeycloakSession session, RealmModel realm, ClientStorageProviderModel component) {
         super(session, realm, component);
     }

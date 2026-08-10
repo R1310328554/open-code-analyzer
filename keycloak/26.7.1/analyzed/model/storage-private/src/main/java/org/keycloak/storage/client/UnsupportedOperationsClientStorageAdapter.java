@@ -23,7 +23,9 @@ import org.keycloak.models.ModelException;
 import org.keycloak.models.RoleModel;
 
 /**
- * Base helper class.  Unsupported operations are implemented here that throw exception on invocation.
+ * 客户端存储适配器辅助基类：不支持的操作在此抛出 {@link ModelException} 或返回空结果。
+ * <p>
+ * 角色相关操作默认不支持，子类可按需覆盖。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $

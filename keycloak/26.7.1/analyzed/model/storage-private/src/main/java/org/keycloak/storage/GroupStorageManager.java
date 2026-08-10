@@ -30,16 +30,22 @@ import org.keycloak.storage.group.GroupStorageProvider;
 import org.keycloak.storage.group.GroupStorageProviderFactory;
 import org.keycloak.storage.group.GroupStorageProviderModel;
 
-
+/**
+ * 组存储管理器：在本地 {@link GroupProvider} 与外部 {@link GroupStorageProvider} 之间路由组查询与管理操作。
+ * <p>
+ * 查找类方法可由联邦组存储 Provider 实现；创建、删除、移动等管理操作仅由本地存储提供。
+ */
 public class GroupStorageManager extends AbstractStorageManager<GroupStorageProvider, GroupStorageProviderModel> implements GroupProvider {
 
+    /** 构造组存储管理器并绑定当前 {@link KeycloakSession}。 */
     public GroupStorageManager(KeycloakSession session) {
         super(session, GroupStorageProviderFactory.class, GroupStorageProvider.class,
                 GroupStorageProviderModel::new, "group");
     }
 
-    /* GROUP PROVIDER LOOKUP METHODS - implemented by group storage providers */
+    /* 组 Provider 查找方法 — 可由组存储 Provider 实现 */
 
+    /** 获取本地组 Provider（非联邦存储）。 */
     private GroupProvider localStorage() {
         return session.getProvider(GroupProvider.class);
     }
@@ -72,12 +78,9 @@ public class GroupStorageManager extends AbstractStorageManager<GroupStorageProv
     }
 
     /**
-     * Obtaining groups from an external client storage is time-bounded. In case the external group storage
-     * isn't available at least groups from a local storage are returned. For this purpose
-     * the {@link org.keycloak.services.DefaultKeycloakSessionFactory#getClientStorageProviderTimeout()} property is used.
-     * Default value is 3000 milliseconds and it's configurable.
-     * See {@link org.keycloak.services.DefaultKeycloakSessionFactory} for details.
-     *
+     * 从外部组存储获取组时受超时限制；外部存储不可用时至少返回本地存储中的组。
+     * 使用 {@link org.keycloak.services.DefaultKeycloakSessionFactory#getClientStorageProviderTimeout()} 配置超时，
+     * 默认 3000 毫秒，可配置。详见 {@link org.keycloak.services.DefaultKeycloakSessionFactory}。
      */
     @Override
     public Stream<GroupModel> searchForGroupByNameStream(RealmModel realm, String search, Boolean exact, Integer firstResult, Integer maxResults) {
@@ -88,7 +91,7 @@ public class GroupStorageManager extends AbstractStorageManager<GroupStorageProv
         return Stream.concat(local, ext);
     }
 
-    /* GROUP PROVIDER METHODS - provided only by local storage (e.g. not supported by storage providers) */
+    /* 组 Provider 管理方法 — 仅由本地存储提供（存储 Provider 不支持） */
 
     @Override
     public Stream<GroupModel> getGroupsStream(RealmModel realm) {

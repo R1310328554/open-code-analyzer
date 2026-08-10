@@ -19,17 +19,26 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.models.utils.KeycloakModelUtils.runJobInTransaction;
 
+/**
+ * 用户存储事件监听器：响应集群事件与 Provider 事件，维护用户联邦存储的周期性同步定时任务。
+ * <p>
+ * 监听 {@link PostMigrationEvent} 完成迁移后重新调度同步任务，并注册集群监听器；
+ * 监听 {@link StoreSyncEvent} 在存储配置变更时刷新或取消定时任务并通知集群各节点。
+ */
 public final class UserStorageEventListener implements ClusterListener, ProviderEventListener {
 
     private static final Logger logger = Logger.getLogger(UserStorageEventListener.class);
+    /** 集群通知通道键，用于用户存储同步任务协调。 */
     private static final String USER_STORAGE_TASK_KEY = "user-storage";
 
     private final KeycloakSessionFactory sessionFactory;
 
+    /** 构造监听器并绑定 {@link KeycloakSessionFactory}。 */
     public UserStorageEventListener(KeycloakSessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
 
+    /** 处理来自集群的用户存储 Provider 变更事件。 */
     @Override
     public void eventReceived(ClusterEvent event) {
         UserStorageProviderClusterEvent fedEvent = (UserStorageProviderClusterEvent) event;
@@ -51,6 +60,7 @@ public final class UserStorageEventListener implements ClusterListener, Provider
         });
     }
 
+    /** 处理迁移完成与存储同步配置变更等 Provider 事件。 */
     @Override
     public void onEvent(ProviderEvent event) {
         if (event instanceof PostMigrationEvent) {
@@ -96,6 +106,7 @@ public final class UserStorageEventListener implements ClusterListener, Provider
         }
     }
 
+    /** 为支持 {@link ImportSynchronization} 的 Provider 重新调度全量与增量同步任务。 */
     private void reScheduleTasks(KeycloakSession session, UserStorageProviderModel provider) {
         KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
         UserStorageProviderFactory<?> factory = (UserStorageProviderFactory<?>) sessionFactory.getProviderFactory(UserStorageProvider.class, provider.getProviderId());
@@ -112,16 +123,17 @@ public final class UserStorageEventListener implements ClusterListener, Provider
         scheduleTask(session, provider, SyncMode.CHANGED);
     }
 
+    /** 调度指定同步模式的定时任务；若调度失败则取消可能残留的旧任务。 */
     private void scheduleTask(KeycloakSession session, UserStorageProviderModel provider, SyncMode mode) {
         UserStorageSyncTask task = new UserStorageSyncTask(provider, mode);
 
         if (!task.schedule(session)) {
-            // cancel potentially dangling task
+            // 取消可能残留的悬空任务
             task.cancel(session);
         }
     }
 
-    // Ensure all cluster nodes are notified
+    // 确保集群各节点均收到通知
     private void notifyStoreSyncClusterUpdate(KeycloakSession session, RealmModel realm, UserStorageProviderModel provider, boolean removed) {
         KeycloakSessionFactory sessionFactory = session.getKeycloakSessionFactory();
         UserStorageProviderFactory<?> factory = (UserStorageProviderFactory<?>) sessionFactory.getProviderFactory(UserStorageProvider.class, provider.getProviderId());
@@ -138,6 +150,7 @@ public final class UserStorageEventListener implements ClusterListener, Provider
         }
     }
 
+    /** 根据是否移除 Provider 刷新或取消已调度的同步任务。 */
     private void refreshScheduledTasks(KeycloakSession session, UserStorageProviderModel model, boolean removed) {
         if (removed) {
             new UserStorageSyncTask(model, SyncMode.FULL).cancel(session);
@@ -147,6 +160,7 @@ public final class UserStorageEventListener implements ClusterListener, Provider
         }
     }
 
+    /** 返回领域下配置的用户存储 Provider 模型流。 */
     private Stream<UserStorageProviderModel> getUserStorageProvidersStream(RealmModel realm) {
         if (realm instanceof StorageProviderRealmModel s) {
             return s.getUserStorageProvidersStream();

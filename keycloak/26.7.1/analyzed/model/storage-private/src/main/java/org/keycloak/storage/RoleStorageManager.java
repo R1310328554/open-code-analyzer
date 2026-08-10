@@ -38,33 +38,44 @@ import org.keycloak.utils.ServicesUtils;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 角色存储管理器：在本地 {@link RoleProvider} 与外部 {@link RoleStorageProvider} 之间路由角色查询与管理操作。
+ * <p>
+ * 联邦角色的删除不受支持；跨存储搜索时合并本地与外部结果，并对联邦查询施加超时限制。
+ */
 public class RoleStorageManager implements RoleProvider {
     private static final Logger logger = Logger.getLogger(RoleStorageManager.class);
 
     protected KeycloakSession session;
 
+    /** 外部角色存储查询超时（毫秒）。 */
     private final long roleStorageProviderTimeout;
 
+    /** 构造角色存储管理器并设置联邦存储查询超时。 */
     public RoleStorageManager(KeycloakSession session, long roleStorageProviderTimeout) {
         this.session = session;
         this.roleStorageProviderTimeout = roleStorageProviderTimeout;
     }
 
+    /** 获取本地角色 Provider（非联邦存储）。 */
     private RoleProvider localStorage() {
         return session.getProvider(RoleProvider.class);
     }
 
+    /** 判断指定领域的角色存储 Provider 是否已启用。 */
     public static boolean isStorageProviderEnabled(RealmModel realm, String providerId) {
         RoleStorageProviderModel model = getStorageProviderModel(realm, providerId);
         return model.isEnabled();
     }
 
+    /** 按组件 ID 获取角色存储 Provider 配置模型。 */
     public static RoleStorageProviderModel getStorageProviderModel(RealmModel realm, String componentId) {
         ComponentModel model = realm.getComponent(componentId);
         if (model == null) return null;
         return new RoleStorageProviderModel(model);
     }
 
+    /** 获取指定组件 ID 对应的 {@link RoleStorageProvider} 实例。 */
     public static RoleStorageProvider getStorageProvider(KeycloakSession session, RealmModel realm, String componentId) {
         ComponentModel model = realm.getComponent(componentId);
         if (model == null) return null;
@@ -76,6 +87,7 @@ public class RoleStorageManager implements RoleProvider {
         return getStorageProviderInstance(session, storageModel, factory);
     }
 
+    /** 返回支持指定类型的已配置角色存储 Provider 模型流。 */
     public static <T> Stream<RoleStorageProviderModel> getStorageProviders(RealmModel realm, KeycloakSession session, Class<T> type) {
         return ((StorageProviderRealmModel) realm).getRoleStorageProvidersStream()
                 .filter(model -> {
@@ -95,6 +107,7 @@ public class RoleStorageManager implements RoleProvider {
                 .getProviderFactory(RoleStorageProvider.class, model.getProviderId());
     }
 
+    /** 获取或创建角色存储 Provider 实例（会话级缓存）。 */
     public static RoleStorageProvider getStorageProviderInstance(KeycloakSession session, RoleStorageProviderModel model, RoleStorageProviderFactory factory) {
         RoleStorageProvider instance = (RoleStorageProvider)session.getAttribute(model.getId());
         if (instance != null) return instance;
@@ -114,6 +127,7 @@ public class RoleStorageManager implements RoleProvider {
     }
 
 
+    /** 返回已启用的指定类型角色存储 Provider 实例流。 */
     public static <T> Stream<T> getEnabledStorageProviders(KeycloakSession session, RealmModel realm, Class<T> type) {
         return getStorageProviders(realm, session, type)
                 .filter(RoleStorageProviderModel::isEnabled)
@@ -168,8 +182,7 @@ public class RoleStorageManager implements RoleProvider {
         if (parentRoleIds == null || parentRoleIds.isEmpty()) {
             return Stream.empty();
         }
-        // Split local and external IDs. Local IDs are handled by a single batched query; external
-        // (federated) IDs are resolved individually via getRoleById and then expanded per-role.
+        // 拆分本地与外部 ID：本地 ID 走单次批量查询；联邦 ID 逐个 getRoleById 后展开组合关系。
         Set<String> localIds = parentRoleIds.stream()
                 .filter(StorageId::isLocalStorage)
                 .collect(Collectors.toSet());
@@ -190,11 +203,9 @@ public class RoleStorageManager implements RoleProvider {
     }
 
     /**
-     * Obtaining roles from an external role storage is time-bounded. In case the external role storage
-     * isn't available at least roles from a local storage are returned. For this purpose
-     * the <code>org.keycloak.services.DefaultKeycloakSessionFactory#getRoleStorageProviderTimeout()</code> property is used.
-     * Default value is 3000 milliseconds and it's configurable.
-     * See <code>org.keycloak.services.DefaultKeycloakSessionFactory</code> for details.
+     * 从外部角色存储获取角色时受超时限制；外部存储不可用时至少返回本地存储中的角色。
+     * 使用 <code>org.keycloak.services.DefaultKeycloakSessionFactory#getRoleStorageProviderTimeout()</code> 配置超时，
+     * 默认 3000 毫秒，可配置。详见 <code>org.keycloak.services.DefaultKeycloakSessionFactory</code>。
      */
     @Override
     public Stream<RoleModel> searchForRolesStream(RealmModel realm, String search, Integer first, Integer max) {
@@ -257,11 +268,9 @@ public class RoleStorageManager implements RoleProvider {
     }
 
     /**
-     * Obtaining roles from an external role storage is time-bounded. In case the external role storage
-     * isn't available at least roles from a local storage are returned. For this purpose
-     * the <code>org.keycloak.services.DefaultKeycloakSessionFactory#getRoleStorageProviderTimeout()} property is used.
-     * Default value is 3000 milliseconds and it's configurable.
-     * See <code>org.keycloak.services.DefaultKeycloakSessionFactory</code> for details.
+     * 从外部角色存储搜索客户端角色时受超时限制；外部存储不可用时至少返回本地结果。
+     * 使用 <code>org.keycloak.services.DefaultKeycloakSessionFactory#getRoleStorageProviderTimeout()</code> 配置超时，
+     * 默认 3000 毫秒，可配置。详见 <code>org.keycloak.services.DefaultKeycloakSessionFactory</code>。
      */
     @Override
     public Stream<RoleModel> searchForClientRolesStream(ClientModel client, String search, Integer first, Integer max) {

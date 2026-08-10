@@ -20,8 +20,14 @@ import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.ProtocolMapperModel;
 import org.keycloak.models.RoleModel;
 
+/**
+ * 只读客户端作用域适配器抽象基类：{@link ClientScopeModel} 的写操作均为空实现。
+ * <p>
+ * 适用于外部客户端作用域存储中不可变的作用域表示；{@link #equals(Object)} 与 {@link #hashCode()} 基于 ID。
+ */
 public abstract class AbstractReadOnlyClientScopeAdapter implements ClientScopeModel {
 
+    /** 只读：忽略名称变更。 */
     @Override
     public void setName(String name) {
 

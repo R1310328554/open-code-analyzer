@@ -27,6 +27,10 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 客户端存储 Provider SPI：注册 {@link ClientStorageProvider} 及其工厂，并定义通用配置项。
+ * <p>
+ * 通用配置包括 enabled、priority、cachePolicy 及缓存失效相关属性。
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class ClientStorageProviderSpi implements Spi {
@@ -36,6 +40,7 @@ public class ClientStorageProviderSpi implements Spi {
         return true;
     }
 
+    /** SPI 名称：{@code client-storage}。 */
     @Override
     public String getName() {
         return "client-storage";
@@ -75,6 +80,7 @@ public class ClientStorageProviderSpi implements Spi {
         commonConfig = Collections.unmodifiableList(config);
     }
 
+    /** 返回所有 ClientStorageProvider 实现共用的配置属性列表。 */
     public static List<ProviderConfigProperty> commonConfig() {
         return commonConfig;
 

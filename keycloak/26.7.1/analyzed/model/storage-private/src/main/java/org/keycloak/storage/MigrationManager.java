@@ -21,14 +21,22 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 /**
- * Handle the migration of the datastore and an imported realm representation.
- * Will eventually be handled by the store directly.
+ * 处理数据存储迁移以及导入的领域表示（{@link RealmRepresentation}）。
+ * 后续将由存储层直接承担迁移职责。
  *
  * @author Alexander Schwartz
  */
 public interface MigrationManager {
 
+    /** 执行全局数据存储迁移。 */
     void migrate();
 
+    /**
+     * 迁移指定领域及其导入表示。
+     *
+     * @param realm 目标领域
+     * @param rep 导入的领域表示
+     * @param skipUserDependent 是否跳过依赖用户的迁移步骤
+     */
     void migrate(RealmModel realm, RealmRepresentation rep, boolean skipUserDependent);
 }

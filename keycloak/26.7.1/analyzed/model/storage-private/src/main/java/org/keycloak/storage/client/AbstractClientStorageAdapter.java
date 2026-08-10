@@ -25,9 +25,9 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.storage.StorageId;
 
 /**
- * Helper base class for ClientModel implementations for ClientStorageProvider implementations.
- *
- * Contains default implementations of some methods
+ * 客户端存储适配器抽象基类：为 {@link ClientStorageProvider} 的 {@link ClientModel} 实现提供通用方法。
+ * <p>
+ * 包含部分方法的默认实现，如联邦 ID 生成、登出节点注册占位等。
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -39,6 +39,7 @@ public abstract class AbstractClientStorageAdapter extends UnsupportedOperations
     private StorageId storageId;
 
 
+    /** 构造客户端存储适配器并绑定会话、领域与组件配置。 */
     public AbstractClientStorageAdapter(KeycloakSession session, RealmModel realm, ClientStorageProviderModel component) {
         this.session = session;
         this.realm = realm;
@@ -46,9 +47,9 @@ public abstract class AbstractClientStorageAdapter extends UnsupportedOperations
     }
 
     /**
-     * Creates federated id based on getClientId() method
+     * 基于 {@link #getClientId()} 生成联邦存储 ID。
      *
-     * @return
+     * @return 联邦客户端 ID
      */
     @Override
     public String getId() {
@@ -65,9 +66,9 @@ public abstract class AbstractClientStorageAdapter extends UnsupportedOperations
 
 
     /**
-     * This method really isn't used by anybody anywhere.  Legacy feature never supported.
+     * 遗留特性，当前无调用方，始终返回 false。
      *
-     * @return
+     * @return 是否需要代理认证
      */
     @Override
     public boolean isSurrogateAuthRequired() {
@@ -75,19 +76,17 @@ public abstract class AbstractClientStorageAdapter extends UnsupportedOperations
     }
 
     /**
-     * This method really isn't used by anybody anywhere.  Legacy feature never supported.
-     *
-     * @return
+     * 遗留特性，当前无调用方，空实现。
      */
     @Override
     public void setSurrogateAuthRequired(boolean surrogateAuthRequired) {
-        // do nothing, we don't do anything with this.
+        // 无操作，不支持此特性
     }
 
     /**
-     * This is for logout.  Empty implementation for now.  Can override if you can store this information somewhere.
+     * 用于登出流程；当前为空实现，子类可在可持久化处覆盖。
      *
-     * @return
+     * @return 已注册节点映射
      */
     @Override
     public Map<String, Integer> getRegisteredNodes() {
@@ -95,28 +94,23 @@ public abstract class AbstractClientStorageAdapter extends UnsupportedOperations
     }
 
     /**
-     * This is for logout.  Empty implementation for now.  Can override if you can store this information somewhere.
-     *
-     * @return
+     * 用于登出流程；当前为空实现，子类可在可持久化处覆盖。
      */
     @Override
     public void registerNode(String nodeHost, int registrationTime) {
-        // do nothing
+        // 无操作
     }
 
     /**
-     * This is for logout.  Empty implementation for now.  Can override if you can store this information somewhere.
-     *
-     * @return
+     * 用于登出流程；当前为空实现，子类可在可持久化处覆盖。
      */
     @Override
     public void unregisterNode(String nodeHost) {
-        // do nothing
+        // 无操作
     }
 
     /**
-     * Overriding implementations should call super.updateClient() as this fires off an update event.
-     *
+     * 子类覆盖时应调用 super.updateClient()，以触发客户端更新事件。
      */
     @Override
     public void updateClient() {

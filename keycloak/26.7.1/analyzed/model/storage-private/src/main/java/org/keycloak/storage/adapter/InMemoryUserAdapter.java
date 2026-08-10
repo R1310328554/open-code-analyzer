@@ -21,11 +21,15 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.SubjectCredentialManager;
 
 /**
+ * 内存用户适配器：基于 {@link AbstractInMemoryUserAdapter} 的 {@link org.keycloak.models.UserModel} 实现，
+ * 凭据管理委托给 {@link org.keycloak.models.UserCredentialManager}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
 public class InMemoryUserAdapter extends AbstractInMemoryUserAdapter {
 
+    /** 构造指定 ID 的内存用户适配器。 */
     public InMemoryUserAdapter(KeycloakSession session, RealmModel realm, String id) {
         super(session, realm, id);
     }

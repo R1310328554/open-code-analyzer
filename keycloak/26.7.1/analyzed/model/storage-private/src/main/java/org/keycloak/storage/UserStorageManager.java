@@ -89,6 +89,10 @@ import static org.keycloak.utils.StreamsUtil.distinctByKey;
 import static org.keycloak.utils.StreamsUtil.paginatedStream;
 
 /**
+ * 用户存储管理器：在本地 {@link UserProvider} 与外部 {@link UserStorageProvider} 之间路由用户查询、注册与联邦存储操作。
+ * <p>
+ * 负责联邦用户校验与导入、跨存储分页查询、凭据认证路由，以及组件生命周期与用户画像装饰。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -98,21 +102,25 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
     private static final Logger logger = Logger.getLogger(UserStorageManager.class);
 
 
+    /** 构造用户存储管理器并绑定当前 {@link KeycloakSession}。 */
     public UserStorageManager(KeycloakSession session) {
         super(session, UserStorageProviderFactory.class, UserStorageProvider.class,
                 UserStorageProviderModel::new, "user");
     }
 
+    /** 获取本地用户 Provider（非联邦存储）。 */
     protected UserProvider localStorage() {
         return ((DefaultDatastoreProvider) session.getProvider(DatastoreProvider.class)).userLocalStorage();
     }
 
+    /** 获取联邦用户属性存储 Provider。 */
     private UserFederatedStorageProvider getFederatedStorage() {
         return UserStorageUtil.userFederatedStorage(session);
     }
 
     /**
-     * Allows a UserStorageProvider to proxy and/or synchronize an imported user.
+     * 允许 {@link UserStorageProvider} 代理和/或同步已导入的联邦用户。
+     * 对只读组织成员返回只读委托；禁用 Provider 时返回不可用委托。
      */
     protected UserModel validateUser(RealmModel realm, UserModel user) {
         if (user == null) {
@@ -431,16 +439,14 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
     }
 
     /**
-     * Executes a query against a user storage provider with graceful degradation.
-     * If the provider throws an exception, logs the error and returns an empty stream
-     * to allow other providers to continue functioning.
+     * 对外部用户存储 Provider 执行查询，失败时记录警告并返回空流，以便其他 Provider 继续工作（优雅降级）。
      */
     private static Stream<UserModel> queryWithGracefulDegradation(Object provider, PaginatedQuery pagedQuery,
                                                           Integer firstResult, Integer maxResults) {
         try {
             return pagedQuery.query(provider, firstResult, maxResults);
         } catch (Exception e) {
-            // Log the failure but continue with other providers for graceful degradation
+            // 记录失败但继续其他 Provider，实现优雅降级
             logger.warnf(e, "User storage provider %s failed during query operation. " +
                          "Continuing with other providers for graceful degradation. " +
                          "This may indicate an issue with external user store connectivity (e.g., LDAP server down).",
@@ -450,16 +456,14 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
     }
 
     /**
-     * Executes a count query against a user storage provider with graceful degradation.
-     * If the provider throws an exception, logs the error and returns 0
-     * to allow other providers to continue functioning.
+     * 对外部用户存储 Provider 执行计数查询，失败时记录警告并返回 0，以便其他 Provider 继续工作。
      */
     private int countQueryWithGracefulDegradation(Object provider, CountQuery countQuery, 
                                                  Integer firstResult, Integer maxResults) {
         try {
             return countQuery.query(provider, firstResult, maxResults);
         } catch (Exception e) {
-            // Log the failure but continue with other providers for graceful degradation
+            // 记录失败但继续其他 Provider，实现优雅降级
             logger.warnf(e, "User storage provider %s failed during count operation. " +
                          "Continuing with other providers for graceful degradation. " +
                          "This may indicate an issue with external user store connectivity (e.g., LDAP server down).",
@@ -469,15 +473,14 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
     }
 
     /**
-     * Helper method to get total user count from local storage plus all federated storage providers
-     * with graceful degradation.
+     * 汇总本地存储与所有已启用联邦存储 Provider 的用户总数，对外部 Provider 采用优雅降级。
      */
     private int getTotalUserCountWithGracefulDegradation(RealmModel realm, 
                                                         java.util.function.Function<Object, Integer> countFunction) {
-        // Count users from local storage
+        // 统计本地存储用户数
         int localCount = countFunction.apply(localStorage());
-        
-        // Count users from all enabled storage providers with graceful degradation
+
+        // 统计所有已启用存储 Provider 的用户数（优雅降级）
         Stream<Object> providers = getEnabledStorageProviders(realm, Object.class);
         
         int federatedCount = providers
@@ -488,12 +491,12 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
         return localCount + federatedCount;
     }
 
-    // removeDuplicates method may cause concurrent issues, it should not be used on parallel streams
+    // removeDuplicates 在并行流上可能引发并发问题，不应在 parallel stream 上使用
     private static Stream<UserModel> removeDuplicates(Stream<UserModel> withDuplicates) {
         return withDuplicates.filter(distinctByKey(UserModel::getId));
     }
 
-    /** {@link UserRegistrationProvider} methods implementations start here */
+    /** {@link UserRegistrationProvider} 方法实现起始 */
 
     @Override
     public UserModel addUser(RealmModel realm, String username) {
@@ -536,8 +539,8 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
         return registry.removeUser(realm, user);
     }
 
-    /** {@link UserRegistrationProvider} methods implementations end here
-        {@link UserLookupProvider} methods implementations start here */
+    /** {@link UserRegistrationProvider} 方法实现结束；
+        {@link UserLookupProvider} 方法实现起始 */
 
     @Override
     public UserModel getUserById(RealmModel realm, String id) {
@@ -567,8 +570,8 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
                 u -> email.equalsIgnoreCase(u.getEmail()));
     }
 
-    /** {@link UserLookupProvider} methods implementations end here
-        {@link UserQueryProvider} methods implementation start here */
+    /** {@link UserLookupProvider} 方法实现结束；
+        {@link UserQueryProvider} 方法实现起始 */
 
     @Override
     public Stream<UserModel> getGroupMembersStream(final RealmModel realm, final GroupModel group, Integer firstResult, Integer maxResults) {
@@ -741,8 +744,8 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
         return importValidation(realm, results);
     }
 
-    /** {@link UserQueryProvider} methods implementation end here
-        {@link UserBulkUpdateProvider} methods implementation start here */
+    /** {@link UserQueryProvider} 方法实现结束；
+        {@link UserBulkUpdateProvider} 方法实现起始 */
 
     @Override
     public void grantToAllUsers(RealmModel realm, RoleModel role) {
@@ -751,8 +754,8 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
                 provider -> provider.grantToAllUsers(realm, role));
     }
 
-    /** {@link UserBulkUpdateProvider} methods implementation end here
-        {@link UserStorageProvider} methods implementations start here -> no StorageProviders involved */
+    /** {@link UserBulkUpdateProvider} 方法实现结束；
+        {@link UserStorageProvider} 方法实现起始（不涉及 StorageProvider 路由） */
 
     @Override
     public void preRemove(RealmModel realm) {
@@ -789,8 +792,8 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
         consumeEnabledStorageProvidersWithTimeout(realm, UserStorageProvider.class, provider -> provider.preRemove(realm, role));
     }
 
-    /** {@link UserStorageProvider} methods implementation end here
-     {@link UserProvider} methods implementations start here -> no StorageProviders involved */
+    /** {@link UserStorageProvider} 方法实现结束；
+     {@link UserProvider} 方法实现起始（不涉及 StorageProvider 路由） */
 
     @Override
     public UserModel addUser(RealmModel realm, String id, String username, boolean addDefaultRoles, boolean addDefaultRequiredActions) {
@@ -1131,7 +1134,7 @@ public class UserStorageManager extends AbstractStorageManager<UserStorageProvid
         localStorage().unlinkUsers(realm, storageProviderId);
     }
 
-    /** {@link UserProvider} methods implementations end here */
+    /** {@link UserProvider} 方法实现结束 */
 
     @Override
     public void close() {

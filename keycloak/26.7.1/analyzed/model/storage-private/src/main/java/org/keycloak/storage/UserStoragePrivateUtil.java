@@ -27,14 +27,18 @@ import org.keycloak.storage.datastore.DefaultDatastoreProvider;
 import org.keycloak.storage.user.SynchronizationResult;
 
 /**
+ * 用户存储私有工具类：提供本地用户存储访问及全量/增量同步的便捷入口。
+ *
  * @author Alexander Schwartz
  */
 public class UserStoragePrivateUtil {
 
+    /** 获取当前会话的本地用户 Provider。 */
     public static UserProvider userLocalStorage(KeycloakSession session) {
         return ((DefaultDatastoreProvider) session.getProvider(DatastoreProvider.class)).userLocalStorage();
     }
 
+    /** 在独立事务中执行指定 Provider 的全量用户同步。 */
     public static SynchronizationResult runFullSync(KeycloakSessionFactory sessionFactory, UserStorageProviderModel provider) {
         return KeycloakModelUtils.runJobInTransactionWithResult(sessionFactory, session -> {
             RealmModel realm = session.realms().getRealm(provider.getParentId());
@@ -43,6 +47,7 @@ public class UserStoragePrivateUtil {
         });
     }
 
+    /** 在独立事务中执行指定 Provider 的增量（变更）用户同步。 */
     public static SynchronizationResult runPeriodicSync(KeycloakSessionFactory sessionFactory, UserStorageProviderModel provider) {
         return KeycloakModelUtils.runJobInTransactionWithResult(sessionFactory, session -> {
             RealmModel realm = session.realms().getRealm(provider.getParentId());

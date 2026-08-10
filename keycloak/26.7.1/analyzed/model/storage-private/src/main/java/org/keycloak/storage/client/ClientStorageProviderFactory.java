@@ -32,6 +32,10 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderConfigProperty;
 
 /**
+ * 客户端存储 Provider 工厂接口：每个 Keycloak 事务内创建 {@link ClientStorageProvider} 实例。
+ * <p>
+ * 同时作为 {@link ComponentFactory} 管理组件生命周期与配置校验。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -39,18 +43,18 @@ public interface ClientStorageProviderFactory<T extends ClientStorageProvider> e
 
 
     /**
-     * called per Keycloak transaction.
+     * 每个 Keycloak 事务调用一次，创建 Provider 实例。
      *
-     * @param session
-     * @param model
-     * @return
+     * @param session 当前会话
+     * @param model 组件配置模型
+     * @return Provider 实例
      */
     T create(KeycloakSession session, ComponentModel model);
 
     /**
-     * This is the name of the provider and will be showed in the admin console as an option.
+     * Provider 名称，在管理控制台中作为选项展示。
      *
-     * @return
+     * @return Provider ID
      */
     @Override
     String getId();
@@ -86,12 +90,11 @@ public interface ClientStorageProviderFactory<T extends ClientStorageProvider> e
     }
 
     /**
-     * Called when ClientStorageProviderModel is created.  This allows you to do initialization of any additional configuration
-     * you need to add.
+     * 创建 {@link ClientStorageProviderModel} 时调用，可用于初始化额外配置。
      *
-     * @param session
-     * @param realm
-     * @param model
+     * @param session 当前会话
+     * @param realm 目标领域
+     * @param model 新创建的组件模型
      */
     @Override
     default void onCreate(KeycloakSession session, RealmModel realm, ComponentModel model) {
@@ -99,9 +102,9 @@ public interface ClientStorageProviderFactory<T extends ClientStorageProvider> e
     }
 
     /**
-     * configuration properties that are common across all UserStorageProvider implementations
+     * 所有 {@link UserStorageProvider} 实现共用的配置属性（缓存策略、优先级等）。
      *
-     * @return
+     * @return 通用配置属性列表
      */
     @Override
     default

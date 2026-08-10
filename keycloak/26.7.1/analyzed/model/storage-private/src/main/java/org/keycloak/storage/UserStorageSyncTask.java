@@ -19,9 +19,15 @@ import org.keycloak.timer.TimerProvider.TimerTaskContext;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 用户存储同步定时任务：按配置周期执行全量或增量 LDAP/联邦用户导入同步。
+ * <p>
+ * 在支持主集群的部署中仅由主集群节点执行，避免并发锁冲突；通过集群锁防止重复同步。
+ */
 final class UserStorageSyncTask implements ScheduledTask {
 
     private static final Logger logger = Logger.getLogger(UserStorageSyncTask.class);
+    /** 同步任务最小执行超时（秒）。 */
     private static final int TASK_EXECUTION_TIMEOUT = 30;
 
     private final String providerId;
@@ -29,6 +35,7 @@ final class UserStorageSyncTask implements ScheduledTask {
     private final SyncMode syncMode;
     private final int period;
 
+    /** 根据 Provider 配置与同步模式构造定时任务。 */
     UserStorageSyncTask(UserStorageProviderModel provider, SyncMode syncMode) {
         this.providerId = provider.getId();
         this.realmId = provider.getParentId();
@@ -40,7 +47,7 @@ final class UserStorageSyncTask implements ScheduledTask {
     public void run(KeycloakSession session) {
         ClusterProvider clusterProvider = session.getProvider(ClusterProvider.class);
         if (clusterProvider.isPrimaryClusterSupported() && !clusterProvider.isPrimaryCluster()) {
-            // Ensure that LDAP sync runs only on one of the clusters to avoid conflicts and locking
+            // 确保 LDAP 同步仅在其中一个集群节点运行，避免冲突与锁争用
             return;
         }
 
@@ -64,6 +71,7 @@ final class UserStorageSyncTask implements ScheduledTask {
         return UserStorageSyncTask.class.getSimpleName() + "-" + providerId + "-" + syncMode;
     }
 
+    /** 执行同步并返回结果；异常时记录错误并返回空结果。 */
     SynchronizationResult runWithResult(KeycloakSession session) {
         try {
             return switch (syncMode) {
@@ -77,6 +85,7 @@ final class UserStorageSyncTask implements ScheduledTask {
         return SynchronizationResult.empty();
     }
 
+    /** 若 Provider 可调度则注册定时任务，否则返回 false。 */
     boolean schedule(KeycloakSession session) {
         UserStorageProviderModel provider = getStorageModel(session);
 
@@ -99,6 +108,7 @@ final class UserStorageSyncTask implements ScheduledTask {
         return false;
     }
 
+    /** 取消已注册的同名定时同步任务。 */
     void cancel(KeycloakSession session) {
         TimerProvider timer = session.getProvider(TimerProvider.class);
 
@@ -141,7 +151,7 @@ final class UserStorageSyncTask implements ScheduledTask {
 
     private SynchronizationResult runIncrementalSync(KeycloakSession session) {
         return runSync(session, (sf, storage, model) -> {
-            // See when we did last sync.
+            // 查看上次同步时间
             int oldLastSync = model.getLastSync();
             return storage.syncSince(Time.toDate(oldLastSync), sf, realmId, model);
         });
@@ -157,13 +167,13 @@ final class UserStorageSyncTask implements ScheduledTask {
         }
 
         ClusterProvider clusterProvider = session.getProvider(ClusterProvider.class);
-        // shared key for "full" and "changed" . Improve if needed
+        // 全量与增量同步共用锁键；如有需要可进一步拆分
         String taskKey = provider.getId() + "::sync";
-        // 30 seconds minimal timeout for now
+        // 当前最小超时 30 秒
         int timeout = Math.max(TASK_EXECUTION_TIMEOUT, period);
 
         ExecutionResult<SynchronizationResult> task = clusterProvider.executeIfNotExecuted(taskKey, timeout, () -> {
-            // Need to load component again in this transaction for updated data
+            // 需在本事务中重新加载组件以获取最新数据
             SynchronizationResult result = syncFunction.apply(sessionFactory, factory, provider);
 
             if (!result.isIgnored()) {
@@ -198,11 +208,11 @@ final class UserStorageSyncTask implements ScheduledTask {
         return null;
     }
 
-    // Update interval of last sync for given UserFederationProviderModel. Do it in separate transaction
+    // 更新给定 UserFederationProviderModel 的上次同步时间戳，在独立事务中执行
     private void updateLastSyncInterval(KeycloakSession session) {
         UserStorageProviderModel provider = getStorageModel(session);
 
-        // Update persistent provider in DB
+        // 更新数据库中的持久化 Provider 配置
         provider.setLastSync(Time.currentTime(), syncMode);
 
         RealmModel realm = session.getContext().getRealm();
@@ -210,7 +220,7 @@ final class UserStorageSyncTask implements ScheduledTask {
         realm.updateComponent(provider);
     }
 
-    // Skip syncing if there is short time since last sync time.
+    // 若距上次同步时间过短则跳过本次同步
     private boolean isSyncPeriod(UserStorageProviderModel provider) {
         int lastSyncTime = provider.getLastSync(syncMode);
 
