@@ -4,22 +4,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This visitor traverses the entire parse tree and collects the names of all conditionCalls.
+ * 遍历布尔条件解析树，收集所有 {@code conditionCall} 的条件名称。
  */
 public class ConditionNameCollector extends BooleanConditionParserBaseVisitor<Void> {
 
-    // 1. A list to store the names we find.
+    /** 遍历过程中发现的条件调用名称列表。 */
     private final List<String> conditionNames = new ArrayList<>();
 
     /**
-     * Returns the list of all collected condition call names.
+     * 返回已收集的全部条件调用名称。
      */
     public List<String> getConditionNames() {
         return conditionNames;
     }
 
-    // --- Traversal Methods ---
-    // These methods are necessary to ensure we visit every node in the tree.
+    // --- 遍历方法：确保访问树中每个相关节点 ---
 
     @Override
     public Void visitEvaluator(BooleanConditionParser.EvaluatorContext ctx) {
@@ -28,7 +27,7 @@ public class ConditionNameCollector extends BooleanConditionParserBaseVisitor<Vo
 
     @Override
     public Void visitExpression(BooleanConditionParser.ExpressionContext ctx) {
-        // Visit both sides of the 'OR'
+        // 访问 OR 两侧
         if (ctx.expression() != null) {
             visit(ctx.expression());
         }
@@ -37,7 +36,7 @@ public class ConditionNameCollector extends BooleanConditionParserBaseVisitor<Vo
 
     @Override
     public Void visitAndExpression(BooleanConditionParser.AndExpressionContext ctx) {
-        // Visit both sides of the 'AND'
+        // 访问 AND 两侧
         if (ctx.andExpression() != null) {
             visit(ctx.andExpression());
         }
@@ -46,7 +45,7 @@ public class ConditionNameCollector extends BooleanConditionParserBaseVisitor<Vo
 
     @Override
     public Void visitNotExpression(BooleanConditionParser.NotExpressionContext ctx) {
-        // Visit the inner expression of the 'NOT'
+        // 访问 NOT 内部表达式
         if (ctx.notExpression() != null) {
             return visit(ctx.notExpression());
         }
@@ -55,22 +54,21 @@ public class ConditionNameCollector extends BooleanConditionParserBaseVisitor<Vo
 
     @Override
     public Void visitAtom(BooleanConditionParser.AtomContext ctx) {
-        // This is the key: decide whether to visit a conditionCall
-        // or a nested expression.
+        // 区分条件调用与括号嵌套表达式
         if (ctx.conditionCall() != null) {
             return visit(ctx.conditionCall());
         }
         return visit(ctx.expression());
     }
 
-    // --- The Collector Method ---
+    // --- 收集逻辑 ---
 
     @Override
     public Void visitConditionCall(BooleanConditionParser.ConditionCallContext ctx) {
         String conditionName = ctx.Identifier().getText();
         conditionNames.add(conditionName);
 
-        // We don't need to visit children (like 'parameter')
+        // 无需继续访问 parameter 等子节点
         return null;
     }
 }
