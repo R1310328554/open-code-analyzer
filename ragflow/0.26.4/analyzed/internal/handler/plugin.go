@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// plugin.go — GET /v1/plugin/tools：返回内嵌 LLM 工具插件元数据列表。
+
 //
 
 package handler
@@ -53,3 +56,5 @@ func (h *PluginHandler) ListLLMTools(c *gin.Context) {
 
 	common.SuccessWithData(c, h.pluginService.ListLLMTools(), "SUCCESS")
 }
+
+// 响应形状与 Python GET /v1/plugin/tools 一致。

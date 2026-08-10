@@ -1,3 +1,6 @@
+// agent_handoff.go — 智能体确定性转交（Deterministic Transfer）：
+// 子 Agent 正常结束后自动向指定 Agent 发送转交事件与 tool 消息。
+
 package core
 
 import (
@@ -11,7 +14,7 @@ import (
 	"ragflow/internal/harness/core/schema"
 )
 
-// GenTransferInstruction generates an instruction string for agent transfer.
+// GenTransferInstruction 生成可转交 Agent 列表说明文本
 func GenTransferInstruction(names []string) string {
 	if len(names) == 0 {
 		return ""
@@ -23,13 +26,13 @@ func GenTransferInstruction(names []string) string {
 	return s
 }
 
-// GenToolInstruction generates tool instruction for an agent.
+// GenToolInstruction 生成单个 Agent 的工具说明行
 func GenToolInstruction(name, desc string) string {
 	return fmt.Sprintf("Agent '%s': %s", name, desc)
 }
 
-// exactRunPathMatch checks if two run paths are exactly equal.
-// This prevents sub-agents from forging paths to access restricted agents.
+// exactRunPathMatch 严格比较 RunPath，防止子 Agent 伪造路径
+// 防止子 Agent 伪造路径访问受限 Agent
 func exactRunPathMatch(a, b []RunStep) bool {
 	if len(a) != len(b) {
 		return false
@@ -46,18 +49,18 @@ func init() {
 	schema.RegisterName[*deterministicTransferState]("_harness_deterministic_transfer_state")
 }
 
-// deterministicTransferState holds event history for deterministic transfer resume.
+// deterministicTransferState 确定性转交恢复用的事件历史 for deterministic transfer resume.
 type deterministicTransferState struct {
 	EventList []any
 }
 
-// DeterministicTransferConfig configures deterministic transfer.
+// DeterministicTransferConfig 包装 Agent 与目标 Agent 名列表
 type DeterministicTransferConfig struct {
 	Agent        Agent
 	ToAgentNames []string
 }
 
-// AgentWithDeterministicTransfer wraps an agent to transfer to given agents deterministically.
+// AgentWithDeterministicTransfer 包装 Agent，结束后确定性转交 to transfer to given agents deterministically.
 func AgentWithDeterministicTransfer(_ context.Context, config *DeterministicTransferConfig) Agent {
 	if ra, ok := config.Agent.(ResumableAgent); ok {
 		return &resumableAgentWithDeterministicTransfer{
@@ -71,11 +74,13 @@ func AgentWithDeterministicTransfer(_ context.Context, config *DeterministicTran
 	}
 }
 
+// agentWithDeterministicTransfer 非可恢复 Agent 包装器
 type agentWithDeterministicTransfer struct {
 	agent        Agent
 	toAgentNames []string
 }
 
+// Description 委托内层 Agent
 func (a *agentWithDeterministicTransfer) Description(ctx context.Context) string {
 	return a.agent.Description(ctx)
 }
@@ -92,6 +97,7 @@ func (a *agentWithDeterministicTransfer) Run(ctx context.Context, input *AgentIn
 	return iterator
 }
 
+// resumableAgentWithDeterministicTransfer 可恢复 Agent 包装器
 type resumableAgentWithDeterministicTransfer struct {
 	agent        ResumableAgent
 	toAgentNames []string
@@ -125,6 +131,7 @@ func (a *resumableAgentWithDeterministicTransfer) Resume(ctx context.Context, in
 	return iterator
 }
 
+// forwardEventsAndAppendTransfer 转发事件并在末尾追加转交
 func forwardEventsAndAppendTransfer(iter *AsyncIterator[*AgentEvent], generator *AsyncGenerator[*AgentEvent], toAgentNames []string) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
@@ -149,6 +156,7 @@ func forwardEventsAndAppendTransfer(iter *AsyncIterator[*AgentEvent], generator 
 	sendTransferEvents(generator, toAgentNames)
 }
 
+// runFlowAgentWithIsolatedSession 为 flowAgent 使用隔离 session 运行
 func runFlowAgentWithIsolatedSession(ctx context.Context, fa *flowAgent, input *AgentInput, toAgentNames []string, opts ...RunOption) *AsyncIterator[*AgentEvent] {
 	parentSession := getSession(ctx)
 	parentRunCtx := getRunCtx(ctx)
@@ -186,6 +194,7 @@ func runFlowAgentWithIsolatedSession(ctx context.Context, fa *flowAgent, input *
 	return iterator
 }
 
+// resumeFlowAgentWithIsolatedSession 恢复 flowAgent 并还原转交状态
 func resumeFlowAgentWithIsolatedSession(ctx context.Context, fa *flowAgent, info *ResumeInfo, toAgentNames []string, opts ...RunOption) *AsyncIterator[*AgentEvent] {
 	state, ok := info.InterruptState.(*deterministicTransferState)
 	if !ok || state == nil {
@@ -206,7 +215,7 @@ func resumeFlowAgentWithIsolatedSession(ctx context.Context, fa *flowAgent, info
 		isolatedSession.Values = parentSession.Values
 		isolatedSession.valuesMx = parentSession.valuesMx
 	}
-	// Restore events from deterministic transfer state
+	// 从 deterministicTransferState 恢复事件到隔离 session
 	for _, ev := range state.EventList {
 		isolatedSession.addEvent(ev)
 	}
@@ -233,6 +242,7 @@ func resumeFlowAgentWithIsolatedSession(ctx context.Context, fa *flowAgent, info
 	return iterator
 }
 
+// handleFlowAgentEvents 处理 flowAgent 事件并同步父 session
 func handleFlowAgentEvents(ctx context.Context, iter *AsyncIterator[*AgentEvent], generator *AsyncGenerator[*AgentEvent], isolatedSession, parentSession *runSession, toAgentNames []string) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
@@ -280,6 +290,7 @@ func handleFlowAgentEvents(ctx context.Context, iter *AsyncIterator[*AgentEvent]
 	sendTransferEvents(generator, toAgentNames)
 }
 
+// sendTransferEvents 向 generator 发送转交 assistant/tool 事件对
 func sendTransferEvents(generator *AsyncGenerator[*AgentEvent], toAgentNames []string) {
 	for _, toAgentName := range toAgentNames {
 		aMsg, tMsg := GenTransferMessages(context.Background(), toAgentName)
@@ -295,7 +306,7 @@ func sendTransferEvents(generator *AsyncGenerator[*AgentEvent], toAgentNames []s
 	}
 }
 
-// GenTransferMessages creates a pair of messages for agent transfer.
+// GenTransferMessages 生成转交 assistant 与 tool 消息对
 func GenTransferMessages(ctx context.Context, agentName string) (*schema.Message, *schema.Message) {
 	transferring := "Transferring to " + agentName + "..."
 	msg := &schema.Message{
@@ -312,10 +323,11 @@ func GenTransferMessages(ctx context.Context, agentName string) (*schema.Message
 	return msg, toolMsg
 }
 
-// ---- Message ID utilities (ported from ADK internal/message_id.go) ----
+// ---- 消息 ID 工具（移植自 ADK message_id.go） ----
 
 const EinoMsgIDKey = "_eino_msg_id"
 
+// GetMessageID 从 extra 读取 Eino 消息 ID
 func GetMessageID(extra map[string]any) string {
 	if extra == nil {
 		return ""
@@ -324,6 +336,7 @@ func GetMessageID(extra map[string]any) string {
 	return id
 }
 
+// SetMessageID 写入消息 ID 到 extra
 func SetMessageID(extra map[string]any, id string) map[string]any {
 	if extra == nil {
 		extra = make(map[string]any)
@@ -332,6 +345,7 @@ func SetMessageID(extra map[string]any, id string) map[string]any {
 	return extra
 }
 
+// EnsureMessageID 若无 ID 则生成 UUID v4
 func EnsureMessageID(extra map[string]any) map[string]any {
 	if GetMessageID(extra) != "" {
 		return extra
@@ -339,6 +353,7 @@ func EnsureMessageID(extra map[string]any) map[string]any {
 	return SetMessageID(extra, uuidV4())
 }
 
+// uuidV4 生成 RFC4122 v4 UUID
 func uuidV4() string {
 	var buf [16]byte
 	if _, err := rand.Read(buf[:]); err != nil {
@@ -349,3 +364,5 @@ func uuidV4() string {
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
 		buf[0:4], buf[4:6], buf[6:8], buf[8:10], buf[10:16])
 }
+
+// 中断或 Exit 时不追加转交；flowAgent 使用 CompositeInterrupt 保存 EventList 供 Resume。

@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// providers.go — 模型厂商/实例/模型 CRUD 与推理端点：chat、embed、rerank、ASR、TTS、OCR、parse 及租户已添加模型列表。
+
 //
 
 package handler
@@ -29,14 +32,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ProviderHandler provider handler
+// ProviderHandler 模型厂商与实例 HTTP 处理器
 type ProviderHandler struct {
 	userService          *service.UserService
 	modelProviderService *service.ModelProviderService
 	userTenantDAO        *dao.UserTenantDAO
 }
 
-// NewProviderHandler create provider handler
+// NewProviderHandler 注入 UserService 与 ModelProviderService
 func NewProviderHandler(userService *service.UserService, modelProviderService *service.ModelProviderService) *ProviderHandler {
 	return &ProviderHandler{
 		userService:          userService,
@@ -45,6 +48,7 @@ func NewProviderHandler(userService *service.UserService, modelProviderService *
 	}
 }
 
+// ListProviders 列出厂商；?available=true 返回全局池
 func (h *ProviderHandler) ListProviders(c *gin.Context) {
 
 	keywords := ""
@@ -52,10 +56,10 @@ func (h *ProviderHandler) ListProviders(c *gin.Context) {
 		keywords = queryKeywords
 	}
 
-	// convert keywords to small case
+	// 将 available 查询参数转小写
 	keywords = strings.ToLower(keywords)
 	if keywords == "true" {
-		// list pool providers
+		// 列出全局可用厂商池
 		providers, err := dao.GetModelProviderManager().ListProviders()
 		if err != nil {
 			common.ErrorWithCode(c, int(common.CodeNotFound), err.Error())
@@ -73,7 +77,7 @@ func (h *ProviderHandler) ListProviders(c *gin.Context) {
 
 	userID := c.GetString("user_id")
 
-	// list tenant providers
+	// 列出当前租户已添加的厂商
 	providers, errorCode, err := h.modelProviderService.ListProvidersOfTenant(userID)
 	if err != nil {
 		common.ResponseWithCodeData(c, errorCode, nil, err.Error())
@@ -84,10 +88,12 @@ func (h *ProviderHandler) ListProviders(c *gin.Context) {
 	return
 }
 
+// AddProviderRequest 添加厂商请求体
 type AddProviderRequest struct {
 	ProviderName string `json:"provider_name" binding:"required"`
 }
 
+// AddProvider 为租户添加模型厂商
 func (h *ProviderHandler) AddProvider(c *gin.Context) {
 
 	var req AddProviderRequest
@@ -107,6 +113,7 @@ func (h *ProviderHandler) AddProvider(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// DeleteProvider 删除租户下的厂商
 func (h *ProviderHandler) DeleteProvider(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -125,6 +132,7 @@ func (h *ProviderHandler) DeleteProvider(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// ShowProvider 查询单个厂商元数据
 func (h *ProviderHandler) ShowProvider(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -140,6 +148,7 @@ func (h *ProviderHandler) ShowProvider(c *gin.Context) {
 	common.SuccessWithData(c, provider, "success")
 }
 
+// ListModels 列出厂商下全部模型
 func (h *ProviderHandler) ListModels(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -154,6 +163,7 @@ func (h *ProviderHandler) ListModels(c *gin.Context) {
 	common.SuccessWithData(c, providerModels, "success")
 }
 
+// ShowModel 查询厂商下单个模型
 func (h *ProviderHandler) ShowModel(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -174,6 +184,7 @@ func (h *ProviderHandler) ShowModel(c *gin.Context) {
 	common.SuccessWithData(c, model, "success")
 }
 
+// CreateProviderInstanceRequest 创建实例请求体
 type CreateProviderInstanceRequest struct {
 	InstanceName string `json:"instance_name" binding:"required"`
 	APIKey       string `json:"api_key"`
@@ -181,6 +192,7 @@ type CreateProviderInstanceRequest struct {
 	Region       string `json:"region"`
 }
 
+// CreateProviderInstance 创建厂商 API 实例
 func (h *ProviderHandler) CreateProviderInstance(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -205,6 +217,7 @@ func (h *ProviderHandler) CreateProviderInstance(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// ListProviderInstances 列出租户某厂商的全部实例
 func (h *ProviderHandler) ListProviderInstances(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -223,6 +236,7 @@ func (h *ProviderHandler) ListProviderInstances(c *gin.Context) {
 	common.SuccessWithData(c, instances, "success")
 }
 
+// ShowProviderInstance 查询单个实例详情
 func (h *ProviderHandler) ShowProviderInstance(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -248,6 +262,7 @@ func (h *ProviderHandler) ShowProviderInstance(c *gin.Context) {
 	common.SuccessWithData(c, instance, "success")
 }
 
+// ShowInstanceBalance 查询实例余额/配额
 func (h *ProviderHandler) ShowInstanceBalance(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -273,6 +288,7 @@ func (h *ProviderHandler) ShowInstanceBalance(c *gin.Context) {
 	common.SuccessWithData(c, balance, "success")
 }
 
+// CheckConnection 测试厂商级连接
 func (h *ProviderHandler) CheckConnection(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -296,6 +312,7 @@ func (h *ProviderHandler) CheckConnection(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// CheckInstanceConnection 测试实例级连接
 func (h *ProviderHandler) CheckInstanceConnection(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -331,6 +348,7 @@ func (h *ProviderHandler) CheckInstanceConnection(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// ListTasks 列出异步任务
 func (h *ProviderHandler) ListTasks(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -356,6 +374,7 @@ func (h *ProviderHandler) ListTasks(c *gin.Context) {
 	common.SuccessWithData(c, listTaskResponse, "success")
 }
 
+// ShowTask 查询单个异步任务
 func (h *ProviderHandler) ShowTask(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -387,11 +406,13 @@ func (h *ProviderHandler) ShowTask(c *gin.Context) {
 	common.SuccessWithData(c, taskResponse, "success")
 }
 
+// AlterProviderInstanceRequest 修改实例请求体
 type AlterProviderInstanceRequest struct {
 	InstanceName string `json:"instance_name"`
 	APIKey       string `json:"api_key"`
 }
 
+// AlterProviderInstance 更新实例 API Key/BaseURL 等
 func (h *ProviderHandler) AlterProviderInstance(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -426,10 +447,12 @@ func (h *ProviderHandler) AlterProviderInstance(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// DropProviderInstanceRequest 删除实例请求体
 type DropProviderInstanceRequest struct {
 	Instances []string `json:"instances" binding:"required"`
 }
 
+// DropProviderInstance 删除厂商实例
 func (h *ProviderHandler) DropProviderInstance(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -453,6 +476,7 @@ func (h *ProviderHandler) DropProviderInstance(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// ListInstanceModels 列出实例下已添加的模型
 func (h *ProviderHandler) ListInstanceModels(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -493,11 +517,13 @@ func (h *ProviderHandler) ListInstanceModels(c *gin.Context) {
 	common.SuccessWithData(c, modelInstances, "success")
 }
 
+// EnableOrDisableModelRequest 启用/禁用模型请求体
 type EnableOrDisableModelRequest struct {
 	ModelID string `json:"model_id"`
 	Status  string `json:"status"`
 }
 
+// EnableOrDisableModel 启用或禁用实例内模型
 func (h *ProviderHandler) EnableOrDisableModel(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -542,6 +568,7 @@ func (h *ProviderHandler) EnableOrDisableModel(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// prepareProviderInstance 校验路径与请求体中的 provider/instance 一致
 func prepareProviderInstance(providerName, instanceName, reqProviderName, reqInstanceName string) error {
 	if providerName == "" {
 		return errors.New("Provider name is required")
@@ -562,6 +589,7 @@ func prepareProviderInstance(providerName, instanceName, reqProviderName, reqIns
 	return nil
 }
 
+// prepareAddModelRequest 填充 AddModel 请求的 provider/instance 字段
 func prepareAddModelRequest(req *service.AddModelRequest, providerName, instanceName string) error {
 	if err := prepareProviderInstance(providerName, instanceName, req.ProviderName, req.InstanceName); err != nil {
 		return err
@@ -586,6 +614,7 @@ func prepareAddModelRequest(req *service.AddModelRequest, providerName, instance
 	return nil
 }
 
+// AddModel 向实例添加模型
 func (h *ProviderHandler) AddModel(c *gin.Context) {
 	var req service.AddModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -610,11 +639,13 @@ func (h *ProviderHandler) AddModel(c *gin.Context) {
 	common.ErrorWithCode(c, int(code), "success")
 }
 
+// DropInstanceModelRequest 删除实例模型请求体
 type DropInstanceModelRequest struct {
 	ModelIDs []string `json:"model_ids"`
 	Models   []string `json:"models"`
 }
 
+// DropInstanceModels 从实例删除模型
 func (h *ProviderHandler) DropInstanceModels(c *gin.Context) {
 	providerName := c.Param("provider_name")
 	if providerName == "" {
@@ -648,6 +679,7 @@ func (h *ProviderHandler) DropInstanceModels(c *gin.Context) {
 	common.SuccessWithMessage(c, "success")
 }
 
+// ChatToModelRequest 直连模型对话请求体
 type ChatToModelRequest struct {
 	ProviderName *string                  `json:"provider_name"`
 	InstanceName *string                  `json:"instance_name"`
@@ -660,6 +692,7 @@ type ChatToModelRequest struct {
 	Verbosity    *string                  `json:"verbosity"`
 }
 
+// ChatToModel 调用指定实例模型进行对话
 func (h *ProviderHandler) ChatToModel(c *gin.Context) {
 	var req ChatToModelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -791,6 +824,7 @@ func (h *ProviderHandler) ChatToModel(c *gin.Context) {
 	})
 }
 
+// EmbedTextRequest 文本向量化请求体
 type EmbedTextRequest struct {
 	ProviderName *string  `json:"provider_name"`
 	InstanceName *string  `json:"instance_name"`
@@ -800,6 +834,7 @@ type EmbedTextRequest struct {
 	Dimension    int      `json:"dimension"`
 }
 
+// EmbedText 调用 embedding 模型
 func (h *ProviderHandler) EmbedText(c *gin.Context) {
 	var req EmbedTextRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -855,6 +890,7 @@ func (h *ProviderHandler) EmbedText(c *gin.Context) {
 	common.SuccessWithData(c, response, "success")
 }
 
+// RerankDocumentRequest 文档重排请求体
 type RerankDocumentRequest struct {
 	ProviderName *string  `json:"provider_name"`
 	InstanceName *string  `json:"instance_name"`
@@ -865,6 +901,7 @@ type RerankDocumentRequest struct {
 	TopN         int      `json:"top_n"`
 }
 
+// RerankDocument 调用 rerank 模型
 func (h *ProviderHandler) RerankDocument(c *gin.Context) {
 	var req RerankDocumentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -919,6 +956,7 @@ func (h *ProviderHandler) RerankDocument(c *gin.Context) {
 	common.SuccessWithData(c, response.Data, "success")
 }
 
+// TranscribeAudioRequest 语音转写请求体
 type TranscribeAudioRequest struct {
 	ProviderName *string           `json:"provider_name"`
 	InstanceName *string           `json:"instance_name"`
@@ -931,6 +969,7 @@ type TranscribeAudioRequest struct {
 	ASRConfig    *models.ASRConfig `json:"asr_config"`
 }
 
+// TranscribeAudio 调用 ASR 模型转写音频
 func (h *ProviderHandler) TranscribeAudio(c *gin.Context) {
 	var req TranscribeAudioRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1028,6 +1067,7 @@ func (h *ProviderHandler) TranscribeAudio(c *gin.Context) {
 	common.SuccessWithData(c, response, "success")
 }
 
+// AudioSpeechRequest 文字转语音请求体
 type AudioSpeechRequest struct {
 	ProviderName *string           `json:"provider_name"`
 	InstanceName *string           `json:"instance_name"`
@@ -1038,6 +1078,7 @@ type AudioSpeechRequest struct {
 	TTSConfig    *models.TTSConfig `json:"tts_config"`
 }
 
+// AudioSpeech 调用 TTS 模型合成语音
 func (h *ProviderHandler) AudioSpeech(c *gin.Context) {
 	var req AudioSpeechRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1135,6 +1176,7 @@ func (h *ProviderHandler) AudioSpeech(c *gin.Context) {
 	common.SuccessWithData(c, response, "success")
 }
 
+// OCRFileRequest OCR 请求体
 type OCRFileRequest struct {
 	ProviderName *string `json:"provider_name"`
 	InstanceName *string `json:"instance_name"`
@@ -1144,6 +1186,7 @@ type OCRFileRequest struct {
 	URL          *string `json:"url"`
 }
 
+// OCRFile 调用 OCR 模型识别文件
 func (h *ProviderHandler) OCRFile(c *gin.Context) {
 	var req OCRFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1197,6 +1240,7 @@ func (h *ProviderHandler) OCRFile(c *gin.Context) {
 	common.SuccessWithData(c, response, "success")
 }
 
+// ParseFileRequest 文档解析请求体
 type ParseFileRequest struct {
 	ProviderName *string `json:"provider_name"`
 	InstanceName *string `json:"instance_name"`
@@ -1206,6 +1250,7 @@ type ParseFileRequest struct {
 	URL          *string `json:"url"`
 }
 
+// ParseFile 调用解析模型处理文件
 func (h *ProviderHandler) ParseFile(c *gin.Context) {
 	var req ParseFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -1259,7 +1304,7 @@ func (h *ProviderHandler) ParseFile(c *gin.Context) {
 	common.SuccessWithData(c, response, "success")
 }
 
-// ListTenantAddedModels is the response handler for GET /api/v1/models.
+// ListTenantAddedModels GET /api/v1/models，返回租户已添加模型（前端 View Models 列表）
 // It is the Go port of Python's
 // api/apps/restful_apis/models_api.py:get_added_models and feeds
 // web/src/hooks/use-llm-request.tsx → useFetchAllAddedModels. The data
@@ -1291,3 +1336,5 @@ func (h *ProviderHandler) ListTenantAddedModels(c *gin.Context) {
 
 	common.SuccessWithData(c, addedModels, "success")
 }
+
+// 数据形状为 (provider×instance×llm) 行且 model_type 为 string[]，与 web useFetchAllAddedModels 的 IAddedModel 接口一致。

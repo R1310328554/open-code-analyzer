@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// models.go — 租户已添加模型列表与单模型详情 HTTP 端点（GET /models、GET /models/:name）。
+
 //
 
 package handler
@@ -24,18 +27,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ProviderHandler provider handler
+// ModelHandler 模型目录 HTTP 处理器（ListAllModels / ShowModel）
 type ModelHandler struct {
 	modelProviderService *service.ModelProviderService
 }
 
-// NewProviderHandler create provider handler
+// NewModelHandler 注入 ModelProviderService
 func NewModelHandler(modelProviderService *service.ModelProviderService) *ModelHandler {
 	return &ModelHandler{
 		modelProviderService: modelProviderService,
 	}
 }
 
+// ListAllModels 分页列出全部租户模型
 func (h *ModelHandler) ListAllModels(c *gin.Context) {
 
 	page := 0
@@ -52,7 +56,7 @@ func (h *ModelHandler) ListAllModels(c *gin.Context) {
 		}
 	}
 
-	// list tenant models
+	// 调用服务层列出租户模型
 	models, err := h.modelProviderService.ListAllModels(page, pageSize)
 	if err != nil {
 		common.ResponseWithCodeData(c, common.CodeDataError, nil, err.Error())
@@ -63,6 +67,7 @@ func (h *ModelHandler) ListAllModels(c *gin.Context) {
 	return
 }
 
+// ShowModel 路径参数 model_name 为 Base64 编码
 func (h *ModelHandler) ShowModel(c *gin.Context) {
 	encodedModelName := c.Param("model_name")
 	if encodedModelName == "" {
@@ -80,7 +85,7 @@ func (h *ModelHandler) ShowModel(c *gin.Context) {
 		return
 	}
 
-	// Get model
+	// 按解码后的模型名查询详情
 	model, err := h.modelProviderService.ShowModel(decodedModelName)
 	if err != nil {
 		common.ResponseWithCodeData(c, common.CodeDataError, nil, err.Error())
@@ -89,3 +94,5 @@ func (h *ModelHandler) ShowModel(c *gin.Context) {
 
 	common.SuccessWithData(c, model, "success")
 }
+
+// page/page_size 为 0 表示不分页；模型名需经 common.DecodeFromBase64 解码。

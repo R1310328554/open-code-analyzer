@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// streaming.go — SSE 辅助：清除 HTTP 写超时以免长连接被断开。
+
 //
 
 package handler

@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// mindmap.go — 检索增强思维导图生成：从 search_config 检索片段，调用 LLM 输出 Markdown 并解析为树形节点。
+
 //
 
 package handler
@@ -28,6 +31,7 @@ import (
 	"ragflow/internal/service"
 )
 
+// mindMapRunConfig 思维导图流水线所需依赖与检索参数
 type mindMapRunConfig struct {
 	Question      string
 	KbIDs         common.StringSlice
@@ -40,6 +44,7 @@ type mindMapRunConfig struct {
 	TenantSvc     *service.TenantService
 }
 
+// runMindMap 执行检索→LLM 生成→Markdown 解析的完整流程
 func runMindMap(config mindMapRunConfig) (mindMapNode, error) {
 	if config.ChunkSvc == nil {
 		return mindMapNode{}, fmt.Errorf("chunk service not configured")
@@ -77,6 +82,7 @@ func runMindMap(config mindMapRunConfig) (mindMapNode, error) {
 	return parseMindMapMarkdown(*response.Answer), nil
 }
 
+// searchConfigFromDetail 从 search 详情中提取 search_config 映射
 func searchConfigFromDetail(detail map[string]interface{}) map[string]interface{} {
 	if sc, ok := detail["search_config"].(map[string]interface{}); ok && sc != nil {
 		return sc
@@ -87,6 +93,7 @@ func searchConfigFromDetail(detail map[string]interface{}) map[string]interface{
 	return map[string]interface{}{}
 }
 
+// mindMapRetrievalRequest 构造 RetrievalTest 请求（含 top_k、阈值等默认值）
 func mindMapRetrievalRequest(question string, kbIDs common.StringSlice, searchID string, searchConfig map[string]interface{}) *service.RetrievalTestRequest {
 	page := 1
 	size := 12
@@ -113,6 +120,7 @@ func mindMapRetrievalRequest(question string, kbIDs common.StringSlice, searchID
 	return req
 }
 
+// mindMapSections 从检索结果抽取 content_with_weight 文本片段
 func mindMapSections(ranks *service.RetrievalTestResponse) []string {
 	if ranks == nil {
 		return nil
@@ -126,6 +134,7 @@ func mindMapSections(ranks *service.RetrievalTestResponse) []string {
 	return sections
 }
 
+// mergeMindMapKbIDs 合并已保存与请求中的知识库 ID 并去重
 func mergeMindMapKbIDs(saved []string, requested common.StringSlice) common.StringSlice {
 	seen := map[string]bool{}
 	merged := make(common.StringSlice, 0, len(saved)+len(requested))
@@ -146,6 +155,7 @@ func mergeMindMapKbIDs(saved []string, requested common.StringSlice) common.Stri
 	return merged
 }
 
+// intFromConfig 从 search_config 读取整型，支持 json.Number
 func intFromConfig(config map[string]interface{}, key string, fallback int) int {
 	switch v := config[key].(type) {
 	case int:
@@ -162,6 +172,7 @@ func intFromConfig(config map[string]interface{}, key string, fallback int) int 
 	return fallback
 }
 
+// floatFromConfig 从 search_config 读取浮点型
 func floatFromConfig(config map[string]interface{}, key string, fallback float64) float64 {
 	switch v := config[key].(type) {
 	case float64:
@@ -180,6 +191,7 @@ func floatFromConfig(config map[string]interface{}, key string, fallback float64
 	return fallback
 }
 
+// stringSliceFromConfig 从 search_config 读取字符串切片
 func stringSliceFromConfig(config map[string]interface{}, key string) []string {
 	switch v := config[key].(type) {
 	case []string:
@@ -196,6 +208,7 @@ func stringSliceFromConfig(config map[string]interface{}, key string) []string {
 	return nil
 }
 
+// mapFromConfig 从 search_config 读取 map/JSONMap
 func mapFromConfig(config map[string]interface{}, key string) map[string]interface{} {
 	if m, ok := config[key].(map[string]interface{}); ok {
 		return m
@@ -206,6 +219,7 @@ func mapFromConfig(config map[string]interface{}, key string) map[string]interfa
 	return nil
 }
 
+// mindMapPrompt 构造要求 LLM 输出多级 Markdown 思维导图的提示词
 func mindMapPrompt(inputText string) string {
 	return `- Role: You're a talent text processor to summarize a piece of text into a mind map.
 
@@ -225,14 +239,18 @@ func mindMapPrompt(inputText string) string {
 ` + inputText + "\n"
 }
 
+// mindMapNode 思维导图 JSON 树节点（id + children）
 type mindMapNode struct {
 	ID       string        `json:"id"`
 	Children []mindMapNode `json:"children"`
 }
 
+// mindMapHeadingRe 匹配 Markdown 标题行
 var mindMapHeadingRe = regexp.MustCompile(`^(#{1,6})\s+(.+)$`)
+// mindMapListRe 匹配 Markdown 列表项并推断层级
 var mindMapListRe = regexp.MustCompile(`^(\s*)(?:[-*+]|\d+\.)\s+(.+)$`)
 
+// parseMindMapMarkdown 将 LLM 输出的 Markdown 解析为 mindMapNode 树
 func parseMindMapMarkdown(text string) mindMapNode {
 	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
 	root := mindMapNode{ID: "root", Children: []mindMapNode{}}
@@ -283,9 +301,12 @@ func parseMindMapMarkdown(text string) mindMapNode {
 	return root
 }
 
+// cleanMindMapText 清理节点标题中的 Markdown 装饰符
 func cleanMindMapText(text string) string {
 	text = strings.TrimSpace(text)
 	text = strings.Trim(text, "`")
 	text = strings.Trim(text, "*_ ")
 	return strings.TrimSpace(text)
 }
+
+// 无检索片段时返回空 root；单根节点时提升为唯一子节点以简化前端渲染。

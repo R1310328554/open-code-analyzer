@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// oauth_login.go — OAuth/OIDC 登录发起与回调：Redis 存 state、HttpOnly cookie 防 CSRF，成功后写 ragflow_auth 供 SPA 读取。
+
 //
 
 package handler
@@ -216,3 +219,5 @@ func setOAuthAuthCookie(c *gin.Context, token string) {
 func frontendRedirectBase() string {
 	return "/"
 }
+
+// 无效 channel 在 Login 返回 HTTP 200 + code 100；空 channel 回调走 HandleNoRoute 404。

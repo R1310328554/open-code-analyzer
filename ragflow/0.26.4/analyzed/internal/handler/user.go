@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// user.go — 用户注册/登录/资料、OAuth 渠道、租户配置与忘记密码 OTP 流程。
+
 //
 
 package handler
@@ -655,3 +658,5 @@ func (h *UserHandler) ForgotResetPassword(c *gin.Context) {
 	delete(profile, "access_token")
 	common.SuccessWithData(c, profile, "Password reset successful. Logged in.")
 }
+
+// Register/Login 成功写 Authorization 头与 ragflow_auth cookie；ForgotCaptcha 输出 PNG 栅格验证码。

@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// searchbot.go — 公开搜索机器人端点：相关问题、检索测试、Ask SSE、思维导图与分享页 bootstrap。
+
 //
 
 package handler
@@ -556,3 +559,5 @@ func applyRetrievalDefaults(req *SearchBotRetrievalTestRequest) {
 		req.VectorSimilarityWeight = &v
 	}
 }
+
+// Ask 使用 disableWriteDeadlineForSSE；MindMap 复用 runMindMap 流水线。

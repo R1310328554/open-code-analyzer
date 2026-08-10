@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// skill_search.go — 技能搜索索引与 Space 管理：配置、检索、索引/重建/删除及 skill space CRUD。
+
 //
 
 package handler
@@ -567,3 +570,5 @@ func (h *SkillSearchHandler) GetSpaceByFolder(c *gin.Context) {
 
 	common.SuccessWithData(c, result, "success")
 }
+
+// 索引与检索均经 DocEngine；Space 与 folder 关联供 Agent 技能组织。

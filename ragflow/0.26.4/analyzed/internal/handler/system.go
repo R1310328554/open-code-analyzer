@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// system.go — 系统级 HTTP：健康检查、配置、版本、日志级别、变量与环境列表。
+
 //
 
 package handler
@@ -260,3 +263,5 @@ func (h *SystemHandler) ListEnvironments(c *gin.Context) {
 
 	common.SuccessWithData(c, environments, "SUCCESS")
 }
+
+// GetStats 在 stats.go；SetLogLevel 保留 pkg_name and level are required 错误文案以兼容旧客户端。

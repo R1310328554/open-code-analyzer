@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// stats.go — GET 对话统计：按日期范围与可选 canvas_id 汇总 API 会话指标。
+
 //
 
 package handler
@@ -59,3 +62,5 @@ func (h *SystemHandler) GetStats(c *gin.Context) {
 
 	common.SuccessWithData(c, stats, "success")
 }
+
+// from_date 默认近 7 天；to_date 仅日期时补 23:59:59；canvas_id 存在时 source 过滤为 agent。

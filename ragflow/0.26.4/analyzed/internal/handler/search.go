@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// search.go — 搜索应用 CRUD 与 Completion SSE：List/Create/Get/Update/Delete searches 及流式问答。
+
 //
 
 package handler
@@ -444,3 +447,5 @@ func (h *SearchHandler) Completion(c *gin.Context) {
 		writer.Write(c, "data: {\"code\": 0, \"message\": \"\", \"data\": true}\n\n")
 	}
 }
+
+// Completion 经 PrepareCompletion 规划后由 AskService 流式输出；searchService 为空时临时 NewSearchService。

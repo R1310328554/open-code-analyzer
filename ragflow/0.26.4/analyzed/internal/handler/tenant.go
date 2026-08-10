@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// tenant.go — 租户模型默认值、元数据/chunk 存储、成员邀请与文件导入等 HTTP 端点。
+
 //
 
 package handler
@@ -593,3 +596,5 @@ func (h *TenantHandler) AcceptTenantInvite(c *gin.Context) {
 	}
 	common.SuccessWithData(c, true, "success")
 }
+
+// 用户模式下 user.ID 即 tenant_id；chunk/metadata 文件导入为内部运维端点。

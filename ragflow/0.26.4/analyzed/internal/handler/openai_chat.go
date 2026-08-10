@@ -12,6 +12,9 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
+
+// openai_chat.go — OpenAI 兼容 Chat Completions 路由：校验 messages/extra_body 后委托 OpenAIChatService。
+
 //
 
 package handler
@@ -126,3 +129,5 @@ func (h *OpenAIChatHandler) OpenAIChatCompletions(c *gin.Context) {
 	// actual LLM call.
 	h.svc.OpenAIChatCompletions(c, user.ID, chatID, bodyBytes)
 }
+
+// chat_id 为空时返回所有权错误；GetUser 失败直接透传错误码。
