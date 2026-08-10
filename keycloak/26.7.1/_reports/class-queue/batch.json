@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T10:02:00Z",
   "files": [
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/common/IDGenerator.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/common/SAMLDocumentHolder.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/constants/X500SAMLProfileConstants.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/factories/JBossSAMLAuthnResponseFactory.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/factories/SAMLAssertionFactory.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/factories/SecurityActions.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/holders/DestinationInfoHolder.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/holders/IDPInfoHolder.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/holders/IssuerInfoHolder.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/holders/SPInfoHolder.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/holders/SignatureInfoHolder.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/util/ArtifactResponseUtil.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/util/AssertionUtil.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/util/DocumentUtil.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/util/SAMLMetadataUtil.java",
     "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/util/SignatureUtil.java",
     "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/util/StatementUtil.java",
     "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v2/util/StaxWriterUtil.java",
@@ -33,5 +18,5 @@
     "saml-core/src/main/java/org/keycloak/saml/processing/core/util/NamespaceContext.java"
   ],
   "remaining_pending": 3178,
-  "done": 2790
+  "done": 2805
 }
