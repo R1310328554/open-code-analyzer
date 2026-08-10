@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T21:19:08Z",
-  "files": [
-    "clients/pkg/promtail/targets/cloudflare/fields.go",
-    "clients/pkg/promtail/targets/cloudflare/metrics.go",
-    "clients/pkg/promtail/targets/cloudflare/target.go",
-    "clients/pkg/promtail/targets/cloudflare/targetmanager.go",
-    "clients/pkg/promtail/targets/docker/metrics.go",
-    "clients/pkg/promtail/targets/docker/target.go",
-    "clients/pkg/promtail/targets/docker/target_group.go",
-    "clients/pkg/promtail/targets/docker/targetmanager.go",
-    "clients/pkg/promtail/targets/file/decompresser.go",
-    "clients/pkg/promtail/targets/file/filetarget.go",
-    "clients/pkg/promtail/targets/file/filetargetmanager.go",
-    "clients/pkg/promtail/targets/file/metrics.go",
-    "clients/pkg/promtail/targets/file/reader.go",
-    "clients/pkg/promtail/targets/file/tailer.go",
-    "clients/pkg/promtail/targets/gcplog/formatter.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 1462,
-  "done": 75
+  "done": 90
 }
