@@ -18,17 +18,24 @@ package io.netty.util;
 /**
  * Holds {@link Attribute}s which can be accessed via {@link AttributeKey}.
  *
+ * <p>按 {@link AttributeKey} 存取 {@link Attribute} 的容器；{@link io.netty.channel.Channel}、
+ * {@link io.netty.util.concurrent.EventExecutor} 等均实现此接口。实现须线程安全。</p>
+ *
  * Implementations must be Thread-safe.
  */
 public interface AttributeMap {
     /**
      * Get the {@link Attribute} for the given {@link AttributeKey}. This method will never return null, but may return
      * an {@link Attribute} which does not have a value set yet.
+     *
+     * <p>永不为 null；值未设置时 {@link Attribute#get()} 为 null。</p>
      */
     <T> Attribute<T> attr(AttributeKey<T> key);
 
     /**
      * Returns {@code true} if and only if the given {@link Attribute} exists in this {@link AttributeMap}.
+     *
+     * <p>键是否已在 map 中（通常表示曾写入非 null 或显式创建过条目）。</p>
      */
     <T> boolean hasAttr(AttributeKey<T> key);
 }

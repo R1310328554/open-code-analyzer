@@ -17,10 +17,15 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML processing instruction
+ *
+ * <p>XML 处理指令（PI）事件，对应 {@code <?target data?>} 语法。
+ * {@code target} 为指令目标（如 {@code xml-stylesheet}），{@code data} 为剩余指令体。</p>
  */
 public class XmlProcessingInstruction {
 
+    /** 处理指令体（target 之后的文本）。 */
     private final String data;
+    /** 处理指令目标名。 */
     private final String target;
 
     public XmlProcessingInstruction(String data, String target) {
@@ -28,10 +33,12 @@ public class XmlProcessingInstruction {
         this.target = target;
     }
 
+    /** 返回指令体内容。 */
     public String data() {
         return data;
     }
 
+    /** 返回指令目标。 */
     public String target() {
         return target;
     }

@@ -18,33 +18,46 @@ package io.netty.util;
 /**
  * An attribute which allows to store a value reference. It may be updated atomically and so is thread-safe.
  *
+ * <p>可原子读写的键值槽，由 {@link AttributeMap#attr(AttributeKey)} 取得。
+ * 同一 {@link AttributeKey} 在 map 内通常对应唯一 {@link Attribute} 实例。</p>
+ *
  * @param <T>   the type of the value it holds.
  */
 public interface Attribute<T> {
 
     /**
      * Returns the key of this attribute.
+     *
+     * <p>返回绑定的 {@link AttributeKey}。</p>
      */
     AttributeKey<T> key();
 
     /**
      * Returns the current value, which may be {@code null}
+     *
+     * <p>当前值，未设置时为 {@code null}。</p>
      */
     T get();
 
     /**
      * Sets the value
+     *
+     * <p>设置新值（非 CAS）。</p>
      */
     void set(T value);
 
     /**
      *  Atomically sets to the given value and returns the old value which may be {@code null} if non was set before.
+     *
+     * <p>原子替换并返回旧值。</p>
      */
     T getAndSet(T value);
 
     /**
      *  Atomically sets to the given value if this {@link Attribute}'s value is {@code null}.
      *  If it was not possible to set the value as it contains a value it will just return the current value.
+     *
+     * <p>仅当当前为 {@code null} 时写入；否则返回已有值。</p>
      */
     T setIfAbsent(T value);
 
@@ -62,6 +75,9 @@ public interface Attribute<T> {
      * {@link Attribute} instance is created and so is not the same as the previous one that was removed. Because of
      * this special caution should be taken when you call {@link #remove()} or {@link #getAndRemove()}.
      *
+     * <p>从 map 移除条目并返回旧值；已持有该 {@link Attribute} 引用的线程仍操作同一实例。
+     * 后续 {@link AttributeMap#attr(AttributeKey)} 会创建新实例。建议改用 {@link #getAndSet(Object)}(null)。</p>
+     *
      * @deprecated please consider using {@link #getAndSet(Object)} (with value of {@code null}).
      */
     @Deprecated
@@ -70,6 +86,8 @@ public interface Attribute<T> {
     /**
      * Atomically sets the value to the given updated value if the current value == the expected value.
      * If it the set was successful it returns {@code true} otherwise {@code false}.
+     *
+     * <p>当前值等于 {@code oldValue} 时替换为 {@code newValue}。</p>
      */
     boolean compareAndSet(T oldValue, T newValue);
 
@@ -85,6 +103,8 @@ public interface Attribute<T> {
      * thread or even the same thread later will call {@link AttributeMap#attr(AttributeKey)} again, a new
      * {@link Attribute} instance is created and so is not the same as the previous one that was removed. Because of
      * this special caution should be taken when you call {@link #remove()} or {@link #getAndRemove()}.
+     *
+     * <p>从 map 删除键；仅清空值请用 {@link #set(Object)}(null)。并发语义同 {@link #getAndRemove()}。</p>
      *
      * @deprecated please consider using {@link #set(Object)} (with value of {@code null}).
      */

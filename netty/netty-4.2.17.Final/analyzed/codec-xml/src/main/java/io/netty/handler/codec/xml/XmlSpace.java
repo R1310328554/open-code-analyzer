@@ -17,6 +17,9 @@ package io.netty.handler.codec.xml;
 
 /**
  * White space characters
+ *
+ * <p>仅由空白字符组成的 XML 文本节点，继承 {@link XmlContent}。
+ * 解码器在 {@code IGNORABLE_WHITESPACE} 等事件中将其与 {@link XmlCharacters} 区分。</p>
  */
 public class XmlSpace extends XmlContent {
 

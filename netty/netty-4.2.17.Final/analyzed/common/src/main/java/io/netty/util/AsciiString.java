@@ -43,37 +43,56 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  * of this array. However underlying access to this byte array is provided via not copying the array on construction or
  * {@link #array()}. If any changes are made to the underlying byte array it is the user's responsibility to call
  * {@link #arrayChanged()} so the state of this class can be reset.
+ *
+ * <p>单字节字符集上的字符串实现，内部用 {@code byte[]} 而非 {@code char[]}，与 {@link ByteBuffer}、
+ * HTTP 头等字节协议交互更高效。设计上假定内容不可变并缓存 hash/{@link #toString()}；
+ * 若通过 {@link #array()} 共享底层数组并修改，须调用 {@link #arrayChanged()} 失效缓存。</p>
  */
 public final class AsciiString implements CharSequence, Comparable<CharSequence> {
+    /** 空串单例。 */
     public static final AsciiString EMPTY_STRING = cached("");
+    /** Latin-1 上界；超出字符在 {@link #c2b(char)} 中变为 {@code '?'}。 */
     private static final char MAX_CHAR_VALUE = 255;
 
+    /** {@link #indexOf} 等未找到时的返回值。 */
     public static final int INDEX_NOT_FOUND = -1;
 
     /**
      * If this value is modified outside the constructor then call {@link #arrayChanged()}.
+     *
+     * <p>底层字节存储；可能与外部数组共享。</p>
      */
     private final byte[] value;
     /**
      * Offset into {@link #value} that all operations should use when acting upon {@link #value}.
+     *
+     * <p>逻辑子串在 {@link #value} 中的起始下标。</p>
      */
     private final int offset;
     /**
      * Length in bytes for {@link #value} that we care about. This is independent from {@code value.length}
      * because we may be looking at a subsection of the array.
+     *
+     * <p>有效字节长度，可小于 {@code value.length}（共享数组时的视图）。</p>
      */
     private final int length;
     /**
      * The hash code is cached after it is first computed. It can be reset with {@link #arrayChanged()}.
+     *
+     * <p>懒计算的 hashCode 缓存。</p>
      */
     private int hash;
     /**
      * Used to cache the {@link #toString()} value.
+     *
+     * <p>{@link #toString()} 结果缓存；{@link #cached(String)} 可预填。</p>
      */
     private String string;
 
     /**
      * Initialize this byte string based upon a byte array. A copy will be made.
+     *
+     * <p>复制整个字节数组构造。</p>
      */
     public AsciiString(byte[] value) {
         this(value, true);
@@ -82,6 +101,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Initialize this byte string based upon a byte array.
      * {@code copy} determines if a copy is made or the array is shared.
+     *
+     * <p>{@code copy=false} 时与入参数组共享存储。</p>
      */
     public AsciiString(byte[] value, boolean copy) {
         this(value, 0, value.length, copy);
@@ -91,6 +112,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * Construct a new instance from a {@code byte[]} array.
      * @param copy {@code true} then a copy of the memory will be made. {@code false} the underlying memory
      * will be shared.
+     *
+     * <p>指定 {@code [start, start+length)} 子区间；越界抛 {@link IndexOutOfBoundsException}。</p>
      */
     public AsciiString(byte[] value, int start, int length, boolean copy) {
         if (copy) {
@@ -112,6 +135,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Create a copy of the underlying storage from {@code value}.
      * The copy will start at {@link ByteBuffer#position()} and copy {@link ByteBuffer#remaining()} bytes.
+     *
+     * <p>从 buffer 当前 position 起复制 remaining 字节。</p>
      */
     public AsciiString(ByteBuffer value) {
         this(value, true);
@@ -122,6 +147,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * There is a potential to share the underlying array storage if {@link ByteBuffer#hasArray()} is {@code true}.
      * if {@code copy} is {@code true} a copy will be made of the memory.
      * if {@code copy} is {@code false} the underlying storage will be shared, if possible.
+     *
+     * <p>heap buffer 且 {@code copy=false} 时可共享 {@code array()}。</p>
      */
     public AsciiString(ByteBuffer value, boolean copy) {
         this(value, value.position(), value.remaining(), copy);
@@ -132,6 +159,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * There is a potential to share the underlying array storage if {@link ByteBuffer#hasArray()} is {@code true}.
      * if {@code copy} is {@code true} a copy will be made of the memory.
      * if {@code copy} is {@code false} the underlying storage will be shared, if possible.
+     *
+     * <p>无 {@code hasArray()} 时从 buffer 拷贝到新数组。</p>
      */
     public AsciiString(ByteBuffer value, int start, int length, boolean copy) {
         if (isOutOfBounds(start, length, value.capacity())) {
@@ -160,6 +189,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Create a copy of {@code value} into this instance assuming ASCII encoding.
+     *
+     * <p>逐 char 经 {@link #c2b(char)} 截断为单字节。</p>
      */
     public AsciiString(char[] value) {
         this(value, 0, value.length);
@@ -185,6 +216,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Create a copy of {@code value} into this instance using the encoding type of {@code charset}.
+     *
+     * <p>通过 {@link CharsetUtil#encoder(Charset)} 编码整段 char 数组。</p>
      */
     public AsciiString(char[] value, Charset charset) {
         this(value, charset, 0, value.length);
@@ -207,6 +240,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Create a copy of {@code value} into this instance assuming ASCII encoding.
+     *
+     * <p>从 {@link CharSequence} 按 ASCII/Latin-1 规则拷贝。</p>
      */
     public AsciiString(CharSequence value) {
         this(value, 0, value.length());
@@ -232,6 +267,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Create a copy of {@code value} into this instance using the encoding type of {@code charset}.
+     *
+     * <p>指定 charset 编码 {@link CharSequence}。</p>
      */
     public AsciiString(CharSequence value, Charset charset) {
         this(value, charset, 0, value.length());
@@ -257,6 +294,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      *
      * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
      *         The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
+     *
+     * <p>从索引 0 起升序遍历全部字节。</p>
      */
     public int forEachByte(ByteProcessor visitor) throws Exception {
         return forEachByte0(0, length(), visitor);
@@ -277,6 +316,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return forEachByte0(index, length, visitor);
     }
 
+    /** 升序遍历核心实现。 */
     private int forEachByte0(int index, int length, ByteProcessor visitor) throws Exception {
         final int len = offset + index + length;
         for (int i = offset + index; i < len; ++i) {
@@ -292,6 +332,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      *
      * @return {@code -1} if the processor iterated to or beyond the beginning of the readable bytes.
      *         The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
+     *
+     * <p>从末尾向索引 0 降序遍历。</p>
      */
     public int forEachByteDesc(ByteProcessor visitor) throws Exception {
         return forEachByteDesc0(0, length(), visitor);
@@ -312,6 +354,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return forEachByteDesc0(index, length, visitor);
     }
 
+    /** 降序遍历核心实现。 */
     private int forEachByteDesc0(int index, int length, ByteProcessor visitor) throws Exception {
         final int end = offset + index;
         for (int i = offset + index + length - 1; i >= end; --i) {
@@ -322,6 +365,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return -1;
     }
 
+    /** 返回逻辑索引处的字节；有 Unsafe 时用单次边界检查优化。 */
     public byte byteAt(int index) {
         // We must do a range check here to enforce the access does not go outside our sub region of the array.
         // We rely on the array access itself to pick up the array out of bounds conditions
@@ -337,6 +381,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Determine if this instance has 0 length.
+     *
+     * <p>长度是否为 0。</p>
      */
     public boolean isEmpty() {
         return length == 0;
@@ -344,6 +390,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * The length in bytes of this instance.
+     *
+     * <p>有效字节数（非底层数组全长）。</p>
      */
     @Override
     public int length() {
@@ -353,6 +401,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * During normal use cases the {@link AsciiString} should be immutable, but if the underlying array is shared,
      * and changes then this needs to be called.
+     *
+     * <p>底层数组被外部修改后调用，清零 hash 与 string 缓存。</p>
      */
     public void arrayChanged() {
         string = null;
@@ -365,6 +415,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * If the return value is changed then {@link #arrayChanged()} must be called.
      * @see #arrayOffset()
      * @see #isEntireArrayUsed()
+     *
+     * <p>返回底层数组引用（可能与外部共享）。</p>
      */
     public byte[] array() {
         return value;
@@ -374,6 +426,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * The offset into {@link #array()} for which data for this ByteString begins.
      * @see #array()
      * @see #isEntireArrayUsed()
+     *
+     * <p>逻辑内容在 {@link #array()} 中的起始偏移。</p>
      */
     public int arrayOffset() {
         return offset;
@@ -382,6 +436,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Determine if the storage represented by {@link #array()} is entirely used.
      * @see #array()
+     *
+     * <p>{@code offset==0} 且 {@code length==value.length}。</p>
      */
     public boolean isEntireArrayUsed() {
         return offset == 0 && length == value.length;
@@ -389,6 +445,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Converts this string to a byte array.
+     *
+     * <p>复制有效区间到新数组。</p>
      */
     public byte[] toByteArray() {
         return toByteArray(0, length());
@@ -397,6 +455,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Converts a subset of this string to a byte array.
      * The subset is defined by the range [{@code start}, {@code end}).
+     *
+     * <p>复制 {@code [start, end)} 子区间。</p>
      */
     public byte[] toByteArray(int start, int end) {
         return Arrays.copyOfRange(value, start + offset, end + offset);
@@ -409,6 +469,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param dst the destination byte array.
      * @param dstIdx the starting offset in the destination byte array.
      * @param length the number of characters to copy.
+     *
+     * <p>从本串 {@code srcIdx} 起拷贝到 {@code dst}。</p>
      */
     public void copy(int srcIdx, byte[] dst, int dstIdx, int length) {
         if (isOutOfBounds(srcIdx, length, length())) {
@@ -419,6 +481,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         System.arraycopy(value, srcIdx + offset, checkNotNull(dst, "dst"), dstIdx, length);
     }
 
+    /** 将字节零扩展为 char（Latin-1 语义）。 */
     @Override
     public char charAt(int index) {
         return b2c(byteAt(index));
@@ -429,6 +492,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      *
      * @param cs the character sequence to search for.
      * @return {@code true} if the sequence of characters are contained in this string, otherwise {@code false}.
+     *
+     * <p>区分大小写的子串包含，等价于 {@code indexOf(cs) >= 0}。</p>
      */
     public boolean contains(CharSequence cs) {
         return indexOf(cs) >= 0;
@@ -446,6 +511,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @return 0 if the strings are equal, a negative integer if this string is before the specified string, or a
      *         positive integer if this string is after the specified string.
      * @throws NullPointerException if {@code string} is {@code null}.
+     *
+     * <p>按 Latin-1 字节逐位比较；较短前缀更小。</p>
      */
     @Override
     public int compareTo(CharSequence string) {
@@ -472,6 +539,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      *
      * @param string the string to concatenate
      * @return a new string which is the concatenation of this string and the specified string.
+     *
+     * <p>分配新数组拼接；空操作数或空本串有快速路径。</p>
      */
     public AsciiString concat(CharSequence string) {
         int thisLen = length();
@@ -511,6 +580,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param suffix the suffix to look for.
      * @return {@code true} if the specified string is a suffix of this string, {@code false} otherwise.
      * @throws NullPointerException if {@code suffix} is {@code null}.
+     *
+     * <p>后缀匹配，区分大小写。</p>
      */
     public boolean endsWith(CharSequence suffix) {
         int suffixLen = suffix.length();
@@ -523,6 +594,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      *
      * @param string the string to compare.
      * @return {@code true} if the specified string is equal to this string, {@code false} otherwise.
+     *
+     * <p>8 位 ASCII 忽略大小写相等；两 {@link AsciiString} 且对齐时可逐字节比较。</p>
      */
     public boolean contentEqualsIgnoreCase(CharSequence string) {
         if (this == string) {
@@ -557,6 +630,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return true;
     }
 
+    /** offset 不对齐时的逐字节忽略大小写比较。 */
     private boolean misalignedEqualsIgnoreCase(AsciiString other) {
         byte[] value = this.value;
         byte[] otherValue = other.value;
@@ -572,6 +646,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * Copies the characters in this string to a character array.
      *
      * @return a character array containing the characters of this string.
+     *
+     * <p>每字节零扩展为 char。</p>
      */
     public char[] toCharArray() {
         return toCharArray(0, length());
@@ -607,6 +683,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param dst the destination character array.
      * @param dstIdx the starting offset in the destination byte array.
      * @param length the number of characters to copy.
+     *
+     * <p>拷贝到 char 数组，每字节转为 char。</p>
      */
     public void copy(int srcIdx, char[] dst, int dstIdx, int length) {
         ObjectUtil.checkNotNull(dst, "dst");
@@ -627,6 +705,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param start the offset of the first character (inclusive).
      * @return a new string containing the characters from start to the end of the string.
      * @throws IndexOutOfBoundsException if {@code start < 0} or {@code start > length()}.
+     *
+     * <p>从 {@code start} 到末尾的子串，默认复制。</p>
      */
     public AsciiString subSequence(int start) {
         return subSequence(start, length());
@@ -652,6 +732,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * If {@code false} then the underlying storage will be shared.
      * @return a new string containing the characters from start to the end of the string.
      * @throws IndexOutOfBoundsException if {@code start < 0} or {@code start > length()}.
+     *
+     * <p>{@code copy=false} 共享底层数组视图；全区间或空区间有优化。</p>
      */
     public AsciiString subSequence(int start, int end, boolean copy) {
         if (isOutOfBounds(start, end - start, length())) {
@@ -678,6 +760,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @return the index of the first character of the specified string in this string, -1 if the specified string is
      *         not a substring.
      * @throws NullPointerException if {@code string} is {@code null}.
+     *
+     * <p>从 0 起搜索子串。</p>
      */
     public int indexOf(CharSequence string) {
         return indexOf(string, 0);
@@ -692,6 +776,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @return the index of the first character of the specified string in this string, -1 if the specified string is
      *         not a substring.
      * @throws NullPointerException if {@code subString} is {@code null}.
+     *
+     * <p>从指定偏移向尾部搜索子串。</p>
      */
     public int indexOf(CharSequence subString, int start) {
         final int subCount = subString.length();
@@ -733,6 +819,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param start the starting offset.
      * @return the index of the first occurrence of the specified char {@code ch} in this string,
      * -1 if found no occurrence.
+     *
+     * <p>单字符 indexOf；超 Latin-1 的 char 直接返回 -1。</p>
      */
     public int indexOf(char ch, int start) {
         if (ch > MAX_CHAR_VALUE) {
@@ -761,6 +849,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @return the index of the first character of the specified string in this string, -1 if the specified string is
      *         not a substring.
      * @throws NullPointerException if {@code string} is {@code null}.
+     *
+     * <p>从末尾向前搜索子串。</p>
      */
     public int lastIndexOf(CharSequence string) {
         // Use count instead of count - 1 so lastIndexOf("") answers count
@@ -776,6 +866,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @return the index of the first character of the specified string in this string , -1 if the specified string is
      *         not a substring.
      * @throws NullPointerException if {@code subString} is {@code null}.
+     *
+     * <p>从指定偏移向头部搜索子串。</p>
      */
     public int lastIndexOf(CharSequence subString, int start) {
         final int subCount = subString.length();
@@ -816,6 +908,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param length the number of characters to compare.
      * @return {@code true} if the ranges of characters are equal, {@code false} otherwise
      * @throws NullPointerException if {@code string} is {@code null}.
+     *
+     * <p>区分大小写的区间相等；双方 {@link AsciiString} 时用 {@code PlatformDependent.equals}。</p>
      */
     public boolean regionMatches(int thisStart, CharSequence string, int start, int length) {
         ObjectUtil.checkNotNull(string, "string");
@@ -858,6 +952,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param length the number of characters to compare.
      * @return {@code true} if the ranges of characters are equal, {@code false} otherwise.
      * @throws NullPointerException if {@code string} is {@code null}.
+     *
+     * <p>可选忽略大小写；{@code ignoreCase=false} 委托无 ignore 重载。</p>
      */
     public boolean regionMatches(boolean ignoreCase, int thisStart, CharSequence string, int start, int length) {
         if (!ignoreCase) {
@@ -902,6 +998,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param oldChar the character to replace.
      * @param newChar the replacement character.
      * @return a new string with occurrences of oldChar replaced by newChar.
+     *
+     * <p>无匹配则返回 {@code this}；否则新分配并替换。</p>
      */
     public AsciiString replace(char oldChar, char newChar) {
         if (oldChar > MAX_CHAR_VALUE) {
@@ -933,6 +1031,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param prefix the string to look for.
      * @return {@code true} if the specified string is a prefix of this string, {@code false} otherwise
      * @throws NullPointerException if {@code prefix} is {@code null}.
+     *
+     * <p>从索引 0 起的前缀匹配。</p>
      */
     public boolean startsWith(CharSequence prefix) {
         return startsWith(prefix, 0);
@@ -947,6 +1047,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @return {@code true} if the specified string occurs in this string at the specified offset, {@code false}
      *         otherwise.
      * @throws NullPointerException if {@code prefix} is {@code null}.
+     *
+     * <p>从 {@code start} 起检测前缀。</p>
      */
     public boolean startsWith(CharSequence prefix, int start) {
         return regionMatches(start, prefix, 0, prefix.length());
@@ -956,6 +1058,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * Converts the characters in this string to lowercase, using the default Locale.
      *
      * @return a new string containing the lowercase characters equivalent to the characters in this string.
+     *
+     * <p>委托 {@link AsciiStringUtil#toLowerCase(AsciiString)}。</p>
      */
     public AsciiString toLowerCase() {
         return AsciiStringUtil.toLowerCase(this);
@@ -965,6 +1069,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * Converts the characters in this string to uppercase, using the default Locale.
      *
      * @return a new string containing the uppercase characters equivalent to the characters in this string.
+     *
+     * <p>委托 {@link AsciiStringUtil#toUpperCase(AsciiString)}。</p>
      */
     public AsciiString toUpperCase() {
         return AsciiStringUtil.toUpperCase(this);
@@ -976,6 +1082,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      *
      * @param c The {@link CharSequence} to trim.
      * @return a new string with characters {@code <= \\u0020} removed from the beginning and the end.
+     *
+     * <p>去除 ASCII 空白；已是 {@link AsciiString} 则调用实例 {@link #trim()}。</p>
      */
     public static CharSequence trim(CharSequence c) {
         if (c instanceof AsciiString) {
@@ -1003,6 +1111,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * string, without copying.
      *
      * @return a new string with characters {@code <= \\u0020} removed from the beginning and the end.
+     *
+     * <p>首尾空白截断；无空白则返回 {@code this}。</p>
      */
     public AsciiString trim() {
         int start = arrayOffset(), last = arrayOffset() + length() - 1;
@@ -1024,6 +1134,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      *
      * @param a the character sequence to compare to.
      * @return {@code true} if equal, otherwise {@code false}
+     *
+     * <p>区分大小写内容相等；对方为 {@link AsciiString} 时走 {@link #equals(Object)}。</p>
      */
     public boolean contentEquals(CharSequence a) {
         if (this == a) {
@@ -1052,6 +1164,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @return {@code true} if the expression matches, otherwise {@code false}.
      * @throws PatternSyntaxException if the syntax of the supplied regular expression is not valid.
      * @throws NullPointerException if {@code expr} is {@code null}.
+     *
+     * <p>委托 {@link Pattern#matches(String, CharSequence)}。</p>
      */
     public boolean matches(String expr) {
         return Pattern.matches(expr, this);
@@ -1067,6 +1181,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @throws NullPointerException if {@code expr} is {@code null}.
      * @throws PatternSyntaxException if the syntax of the supplied regular expression is not valid.
      * @see Pattern#split(CharSequence, int)
+     *
+     * <p>正则拆分，元素包装为 {@link AsciiString}。</p>
      */
     public AsciiString[] split(String expr, int max) {
         return toAsciiStringArray(Pattern.compile(expr).split(this, max));
@@ -1074,6 +1190,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Splits the specified {@link String} with the specified delimiter..
+     *
+     * <p>单字符分隔；连续分隔符产生空段；无分隔符则返回仅含自身的数组。</p>
      */
     public AsciiString[] split(char delim) {
         final List<AsciiString> res = InternalThreadLocalMap.get().arrayList();
@@ -1116,6 +1234,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * {@inheritDoc}
      * <p>
      * Provides a case-insensitive hash code for Ascii like byte strings.
+     *
+     * <p>使用 {@code hashCodeAscii} 计算并缓存；与 header map 大小写不敏感语义一致。</p>
      */
     @Override
     public int hashCode() {
@@ -1127,6 +1247,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return h;
     }
 
+    /** 类型相同且 {@link #contentEquals} 为 true 时相等。 */
     @Override
     public boolean equals(Object obj) {
         if (obj == null || obj.getClass() != AsciiString.class) {
@@ -1145,6 +1266,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Translates the entire byte string to a {@link String}.
      * @see #toString(int)
+     *
+     * <p>Latin-1 字节转为 {@link String} 并缓存于 {@link #string}。</p>
      */
     @Override
     public String toString() {
@@ -1159,6 +1282,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Translates the entire byte string to a {@link String} using the {@code charset} encoding.
      * @see #toString(int, int)
+     *
+     * <p>从 {@code start} 到末尾转为 {@link String}。</p>
      */
     public String toString(int start) {
         return toString(start, length());
@@ -1166,6 +1291,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Translates the [{@code start}, {@code end}) range of this byte string to a {@link String}.
+     *
+     * <p>指定区间 Latin-1 转 {@link String}（deprecated 构造器路径）。</p>
      */
     public String toString(int start, int end) {
         int length = end - start;
@@ -1183,10 +1310,12 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return str;
     }
 
+    /** 首字节非 0 即为 true（非标准 Boolean.parseBoolean 语义）。 */
     public boolean parseBoolean() {
         return length >= 1 && value[offset] != 0;
     }
 
+    /** 解析首字符为 char。 */
     public char parseChar() {
         return parseChar(0);
     }
@@ -1200,6 +1329,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return (char) ((b2c(value[startWithOffset]) << 8) | b2c(value[startWithOffset + 1]));
     }
 
+    /** 十进制解析为 short。 */
     public short parseShort() {
         return parseShort(0, length(), 10);
     }
@@ -1221,6 +1351,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return result;
     }
 
+    /** 十进制解析为 int。 */
     public int parseInt() {
         return parseInt(0, length(), 10);
     }
@@ -1251,6 +1382,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return parseInt(i, end, radix, negative);
     }
 
+    /** 指定区间与进制的 int 解析核心。 */
     private int parseInt(int start, int end, int radix, boolean negative) {
         int max = Integer.MIN_VALUE / radix;
         int result = 0;
@@ -1278,6 +1410,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return result;
     }
 
+    /** 十进制解析为 long。 */
     public long parseLong() {
         return parseLong(0, length(), 10);
     }
@@ -1308,6 +1441,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return parseLong(i, end, radix, negative);
     }
 
+    /** 指定区间与进制的 long 解析核心。 */
     private long parseLong(int start, int end, int radix, boolean negative) {
         long max = Long.MIN_VALUE / radix;
         long result = 0;
@@ -1335,6 +1469,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return result;
     }
 
+    /** 通过 {@link #toString()} 委托 {@link Float#parseFloat}。 */
     public float parseFloat() {
         return parseFloat(0, length());
     }
@@ -1343,6 +1478,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return Float.parseFloat(toString(start, end));
     }
 
+    /** 通过 {@link #toString()} 委托 {@link Double#parseDouble}。 */
     public double parseDouble() {
         return parseDouble(0, length());
     }
@@ -1351,6 +1487,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return Double.parseDouble(toString(start, end));
     }
 
+    /** 忽略大小写的 {@link HashingStrategy}，用于 header map 等。 */
     public static final HashingStrategy<CharSequence> CASE_INSENSITIVE_HASHER =
             new HashingStrategy<CharSequence>() {
         @Override
@@ -1364,6 +1501,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         }
     };
 
+    /** 区分大小写的 {@link HashingStrategy}。 */
     public static final HashingStrategy<CharSequence> CASE_SENSITIVE_HASHER =
             new HashingStrategy<CharSequence>() {
         @Override
@@ -1380,6 +1518,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Returns an {@link AsciiString} containing the given character sequence. If the given string is already a
      * {@link AsciiString}, just returns the same instance.
+     *
+     * <p>已是 {@link AsciiString} 则零拷贝返回。</p>
      */
     public static AsciiString of(CharSequence string) {
         return string instanceof AsciiString ? (AsciiString) string : new AsciiString(string);
@@ -1394,6 +1534,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * converts non-Latin-1 characters to {@code '?'}).
      * Used for the constants (which already stored in the JVM's string table) and in cases
      * where the guaranteed use of the {@link #toString()} method.
+     *
+     * <p>常量池友好工厂：预缓存 {@link #string}，全 Latin-1 时保留原 {@link String} 引用。</p>
      */
     public static AsciiString cached(String string) {
         byte[] value = PlatformDependent.allocateUninitializedArray(string.length());
@@ -1415,6 +1557,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * Returns the case-insensitive hash code of the specified string. Note that this method uses the same hashing
      * algorithm with {@link #hashCode()} so that you can put both {@link AsciiString}s and arbitrary
      * {@link CharSequence}s into the same headers.
+     *
+     * <p>与实例 hash 算法一致；非 {@link AsciiString} 走 {@code hashCodeAscii}。</p>
      */
     public static int hashCode(CharSequence value) {
         if (value == null) {
@@ -1429,6 +1573,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Determine if {@code a} contains {@code b} in a case sensitive manner.
+     *
+     * <p>静态区分大小写包含检测。</p>
      */
     public static boolean contains(CharSequence a, CharSequence b) {
         return contains(a, b, DefaultCharEqualityComparator.INSTANCE);
@@ -1436,6 +1582,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Determine if {@code a} contains {@code b} in a case insensitive manner.
+     *
+     * <p>静态 ASCII 忽略大小写包含检测。</p>
      */
     public static boolean containsIgnoreCase(CharSequence a, CharSequence b) {
         return contains(a, b, AsciiCaseInsensitiveCharEqualityComparator.INSTANCE);
@@ -1444,6 +1592,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
     /**
      * Returns {@code true} if both {@link CharSequence}'s are equals when ignore the case. This only supports 8-bit
      * ASCII.
+     *
+     * <p>静态忽略大小写相等；任一侧为 {@link AsciiString} 则委托实例方法。</p>
      */
     public static boolean contentEqualsIgnoreCase(CharSequence a, CharSequence b) {
         if (a == null || b == null) {
@@ -1506,6 +1656,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
 
     /**
      * Returns {@code true} if the content of both {@link CharSequence}'s are equals. This only supports 8-bit ASCII.
+     *
+     * <p>静态区分大小写内容相等。</p>
      */
     public static boolean contentEquals(CharSequence a, CharSequence b) {
         if (a == null || b == null) {
@@ -1531,6 +1683,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return true;
     }
 
+    /** 将 JDK split 结果转为 {@link AsciiString} 数组。 */
     private static AsciiString[] toAsciiStringArray(String[] jdkResult) {
         AsciiString[] res = new AsciiString[jdkResult.length];
         for (int i = 0; i < jdkResult.length; i++) {
@@ -1539,10 +1692,12 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return res;
     }
 
+    /** 字符相等比较策略（大小写敏感/不敏感）。 */
     private interface CharEqualityComparator {
         boolean equals(char a, char b);
     }
 
+    /** 严格 char 相等。 */
     private static final class DefaultCharEqualityComparator implements CharEqualityComparator {
         static final DefaultCharEqualityComparator INSTANCE = new DefaultCharEqualityComparator();
         private DefaultCharEqualityComparator() { }
@@ -1553,6 +1708,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         }
     }
 
+    /** ASCII 忽略大小写 char 相等。 */
     private static final class AsciiCaseInsensitiveCharEqualityComparator implements CharEqualityComparator {
         static final AsciiCaseInsensitiveCharEqualityComparator
                 INSTANCE = new AsciiCaseInsensitiveCharEqualityComparator();
@@ -1564,6 +1720,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         }
     }
 
+    /** 通用 Unicode 忽略大小写（{@link Character} 上下行）。 */
     private static final class GeneralCaseInsensitiveCharEqualityComparator implements CharEqualityComparator {
         static final GeneralCaseInsensitiveCharEqualityComparator
                 INSTANCE = new GeneralCaseInsensitiveCharEqualityComparator();
@@ -1577,6 +1734,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         }
     }
 
+    /** 按给定比较器在 a 中搜索 b。 */
     private static boolean contains(CharSequence a, CharSequence b, CharEqualityComparator cmp) {
         if (a == null || b == null || a.length() < b.length()) {
             return false;
@@ -1601,6 +1759,7 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return false;
     }
 
+    /** 通用 {@link CharSequence} 区间匹配。 */
     private static boolean regionMatchesCharSequences(final CharSequence cs, final int csStart,
                                          final CharSequence string, final int start, final int length,
                                          CharEqualityComparator charEqualityComparator) {
@@ -1636,6 +1795,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param start the starting offset in the specified {@code string}.
      * @param length the number of characters to compare.
      * @return {@code true} if the ranges of characters are equal, {@code false} otherwise.
+     *
+     * <p>任意 {@link CharSequence} 的 regionMatches；两 {@link String} 时委托 JDK。</p>
      */
     public static boolean regionMatches(final CharSequence cs, final boolean ignoreCase, final int csStart,
                                         final CharSequence string, final int start, final int length) {
@@ -1665,6 +1826,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param start the starting offset in the specified {@code string}.
      * @param length the number of characters to compare.
      * @return {@code true} if the ranges of characters are equal, {@code false} otherwise.
+     *
+     * <p>仅 ASCII 的优化 regionMatches；ignoreCase 时用 ASCII 比较器。</p>
      */
     public static boolean regionMatchesAscii(final CharSequence cs, final boolean ignoreCase, final int csStart,
                                         final CharSequence string, final int start, final int length) {
@@ -1717,6 +1880,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param startPos  the start position, negative treated as zero
      * @return the first index of the search CharSequence (always &ge; startPos),
      *  -1 if no match or {@code null} string input
+     *
+     * <p>通用 {@link CharSequence} 忽略大小写 indexOf，内部用 {@link #regionMatches}。</p>
      */
     public static int indexOfIgnoreCase(final CharSequence str, final CharSequence searchStr, int startPos) {
         if (str == null || searchStr == null) {
@@ -1770,6 +1935,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param startPos  the start position, negative treated as zero
      * @return the first index of the search CharSequence (always &ge; startPos),
      *  -1 if no match or {@code null} string input
+     *
+     * <p>仅 ASCII 的忽略大小写 indexOf，用 {@link #regionMatchesAscii}。</p>
      */
     public static int indexOfIgnoreCaseAscii(final CharSequence str, final CharSequence searchStr, int startPos) {
         if (str == null || searchStr == null) {
@@ -1803,6 +1970,8 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * @param start  the start index, negative starts at the string start
      * @return the index where the search char was found,
      * -1 if char {@code searchChar} is not found or {@code cs == null}
+     *
+     * <p>静态单字符 indexOf；{@link String}/{@link AsciiString} 走特化路径。</p>
      */
     //-----------------------------------------------------------------------
     public static int indexOf(final CharSequence cs, final char searchChar, int start) {
@@ -1823,10 +1992,12 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
         return INDEX_NOT_FOUND;
     }
 
+    /** 字节级 ASCII 忽略大小写相等。 */
     private static boolean equalsIgnoreCase(byte a, byte b) {
         return a == b || AsciiStringUtil.toLowerCase(a) == AsciiStringUtil.toLowerCase(b);
     }
 
+    /** char 级 ASCII 忽略大小写相等。 */
     private static boolean equalsIgnoreCase(char a, char b) {
         return a == b || toLowerCase(a) == toLowerCase(b);
     }
@@ -1836,31 +2007,39 @@ public final class AsciiString implements CharSequence, Comparable<CharSequence>
      * otherwise returns the character as it is. Only for ASCII characters.
      *
      * @return lowercase ASCII character equivalent
+     *
+     * <p>ASCII 大写加 32 转小写。</p>
      */
     public static char toLowerCase(char c) {
         return isUpperCase(c) ? (char) (c + 32) : c;
     }
 
+    /** 单字节转大写，委托 {@link AsciiStringUtil}。 */
     private static byte toUpperCase(byte b) {
         return AsciiStringUtil.toUpperCase(b);
     }
 
+    /** 字节是否为 ASCII 大写字母。 */
     public static boolean isUpperCase(byte value) {
         return AsciiStringUtil.isUpperCase(value);
     }
 
+    /** char 是否为 ASCII 大写字母。 */
     public static boolean isUpperCase(char value) {
         return value >= 'A' && value <= 'Z';
     }
 
+    /** char 转单字节；超 Latin-1 变为 {@code '?'}。 */
     public static byte c2b(char c) {
         return (byte) ((c > MAX_CHAR_VALUE) ? '?' : c);
     }
 
+    /** 无截断的 char→byte（调用方保证范围）。 */
     private static byte c2b0(char c) {
         return (byte) c;
     }
 
+    /** 字节零扩展为 char（无符号 0–255）。 */
     public static char b2c(byte b) {
         return (char) (b & 0xFF);
     }

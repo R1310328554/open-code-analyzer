@@ -17,10 +17,15 @@ package io.netty.handler.codec.xml;
 
 /**
  * XML namespace is part of XML element.
+ *
+ * <p>XML 命名空间声明，通常来自元素上的 {@code xmlns:prefix="uri"} 属性。
+ * 由 {@link XmlElement#namespaces()} 收集，供解码器解析前缀与 URI 的绑定关系。</p>
  */
 public class XmlNamespace {
 
+    /** 命名空间前缀；默认命名空间时可能为 null 或空串。 */
     private final String prefix;
+    /** 命名空间 URI。 */
     private final String uri;
 
     public XmlNamespace(String prefix, String uri) {
@@ -28,10 +33,12 @@ public class XmlNamespace {
         this.uri = uri;
     }
 
+    /** 返回前缀。 */
     public String prefix() {
         return prefix;
     }
 
+    /** 返回 URI。 */
     public String uri() {
         return uri;
     }

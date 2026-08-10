@@ -28,12 +28,17 @@ import java.util.Map;
 /**
  * A utility class that provides various common operations and constants
  * related with {@link Charset} and its relevant classes.
+ *
+ * <p>常用 {@link Charset} 常量及 {@link CharsetEncoder}/{@link CharsetDecoder} 工厂。
+ * 无参 {@link #encoder(Charset)}/{@link #decoder(Charset)} 使用线程本地缓存，避免重复创建。</p>
  */
 public final class CharsetUtil {
 
     /**
      * 16-bit UTF (UCS Transformation Format) whose byte order is identified by
      * an optional byte-order mark
+     *
+     * <p>UTF-16，字节序由可选 BOM 标识。</p>
      */
     public static final Charset UTF_16 = StandardCharsets.UTF_16;
 
@@ -63,9 +68,11 @@ public final class CharsetUtil {
      */
     public static final Charset US_ASCII = StandardCharsets.US_ASCII;
 
+    /** {@link #values()} 返回的预置 charset 数组。 */
     private static final Charset[] CHARSETS = new Charset[]
             { UTF_16, UTF_16BE, UTF_16LE, UTF_8, ISO_8859_1, US_ASCII };
 
+    /** 返回 Netty 常用的六种 charset。 */
     public static Charset[] values() {
         return CHARSETS;
     }
@@ -85,6 +92,8 @@ public final class CharsetUtil {
      * @param malformedInputAction The encoder's action for malformed-input errors
      * @param unmappableCharacterAction The encoder's action for unmappable-character errors
      * @return The encoder for the specified {@code charset}
+     *
+     * <p>新建编码器并分别设置畸形输入与不可映射字符的处理策略。</p>
      */
     public static CharsetEncoder encoder(Charset charset, CodingErrorAction malformedInputAction,
                                          CodingErrorAction unmappableCharacterAction) {
@@ -110,6 +119,8 @@ public final class CharsetUtil {
      *
      * @param charset The specified charset
      * @return The encoder for the specified {@code charset}
+     *
+     * <p>从 {@link InternalThreadLocalMap} 缓存取编码器，reset 后统一设为 REPLACE。</p>
      */
     public static CharsetEncoder encoder(Charset charset) {
         checkNotNull(charset, "charset");
@@ -166,6 +177,8 @@ public final class CharsetUtil {
      *
      * @param charset The specified charset
      * @return The decoder for the specified {@code charset}
+     *
+     * <p>线程本地解码器缓存，语义同 {@link #encoder(Charset)}。</p>
      */
     public static CharsetDecoder decoder(Charset charset) {
         checkNotNull(charset, "charset");

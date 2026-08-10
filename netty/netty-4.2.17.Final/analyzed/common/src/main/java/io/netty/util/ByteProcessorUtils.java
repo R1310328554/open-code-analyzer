@@ -14,10 +14,17 @@
  */
 package io.netty.util;
 
+/**
+ * {@link ByteProcessor} 预置字节常量，供 FIND_* 处理器引用。
+ */
 final class ByteProcessorUtils {
+    /** ASCII 空格。 */
     static final byte SPACE = (byte) ' ';
+    /** 水平制表符。 */
     static final byte HTAB = (byte) '\t';
+    /** 回车 CR。 */
     static final byte CARRIAGE_RETURN = (byte) '\r';
+    /** 换行 LF。 */
     static final byte LINE_FEED = (byte) '\n';
 
     private ByteProcessorUtils() {

@@ -18,11 +18,18 @@ package io.netty.util;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 异步映射：将输入 {@code IN} 转为 {@code OUT}，结果通过 {@link Future} 返回。
+ *
+ * <p>与同步 {@code Function} 不同，实现可在 I/O 或线程池完成后再完成传入的 {@link Promise}。</p>
+ */
 public interface AsyncMapping<IN, OUT> {
 
     /**
      * Returns the {@link Future} that will provide the result of the mapping. The given {@link Promise} will
      * be fulfilled when the result is available.
+     *
+     * <p>调用方通常传入外部 {@link Promise}；返回的 {@link Future} 与其共享同一结果。</p>
      */
     Future<OUT> map(IN input, Promise<OUT> promise);
 }

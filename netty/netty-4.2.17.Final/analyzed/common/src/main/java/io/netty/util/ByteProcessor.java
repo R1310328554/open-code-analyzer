@@ -21,10 +21,15 @@ import static io.netty.util.ByteProcessorUtils.SPACE;
 
 /**
  * Provides a mechanism to iterate over a collection of bytes.
+ *
+ * <p>字节序列遍历回调：{@link #process(byte)} 返回 {@code true} 继续，
+ * {@code false} 中止。{@link AsciiString#forEachByte}、{@link io.netty.buffer.ByteBuf} 扫描均使用此模式。</p>
  */
 public interface ByteProcessor {
     /**
      * A {@link ByteProcessor} which finds the first appearance of a specific byte.
+     *
+     * <p>遇到指定字节即停止（{@code process} 返回 false）。</p>
      */
     class IndexOfProcessor implements ByteProcessor {
         private final byte byteToFind;
@@ -41,6 +46,8 @@ public interface ByteProcessor {
 
     /**
      * A {@link ByteProcessor} which finds the first appearance which is not of a specific byte.
+     *
+     * <p>遇到非指定字节即停止。</p>
      */
     class IndexNotOfProcessor implements ByteProcessor {
         private final byte byteToNotFind;
@@ -57,11 +64,15 @@ public interface ByteProcessor {
 
     /**
      * Aborts on a {@code NUL (0x00)}.
+     *
+     * <p>在 NUL 处中止，用于 C 风格字符串扫描。</p>
      */
     ByteProcessor FIND_NUL = new IndexOfProcessor((byte) 0);
 
     /**
      * Aborts on a non-{@code NUL (0x00)}.
+     *
+     * <p>在首个非 NUL 处中止。</p>
      */
     ByteProcessor FIND_NON_NUL = new IndexNotOfProcessor((byte) 0);
 
@@ -102,6 +113,8 @@ public interface ByteProcessor {
 
     /**
      * Aborts on a {@code CR ('\r')} or a {@code LF ('\n')}.
+     *
+     * <p>在 CR 或 LF 处中止，常用于行尾检测。</p>
      */
     ByteProcessor FIND_CRLF = new ByteProcessor() {
         @Override
@@ -122,6 +135,8 @@ public interface ByteProcessor {
 
     /**
      * Aborts on a linear whitespace (a ({@code ' '} or a {@code '\t'}).
+     *
+     * <p>HTTP 线性空白（空格或 HTAB）处中止。</p>
      */
     ByteProcessor FIND_LINEAR_WHITESPACE = new ByteProcessor() {
         @Override
@@ -143,6 +158,8 @@ public interface ByteProcessor {
     /**
      * @return {@code true} if the processor wants to continue the loop and handle the next byte in the buffer.
      *         {@code false} if the processor wants to stop handling bytes and abort the loop.
+     *
+     * <p>{@code true} 继续下一字节；{@code false} 停止并返回当前索引。</p>
      */
     boolean process(byte value) throws Exception;
 }

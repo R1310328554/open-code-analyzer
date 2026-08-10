@@ -20,6 +20,9 @@ import io.netty.util.internal.SWARUtil;
 
 /**
  * A collection of utility methods that is related with handling {@link AsciiString}.
+ *
+ * <p>{@link AsciiString} 的大小写转换与扫描工具类。在支持非对齐访问的平台上用 SWAR
+ * 一次处理 8 字节，否则退化为逐字节线性扫描。</p>
  */
 final class AsciiStringUtil {
 
@@ -28,6 +31,8 @@ final class AsciiStringUtil {
      *
      * @param string the {@link AsciiString} to convert
      * @return the new {@link AsciiString} in lower case
+     *
+     * <p>若无大写字母则返回原实例；否则分配新字节数组并转为小写。</p>
      */
     static AsciiString toLowerCase(final AsciiString string) {
         final byte[] byteArray = string.array();
@@ -41,6 +46,7 @@ final class AsciiStringUtil {
         return new AsciiString(newByteArray, false);
     }
 
+    /** 扫描区间是否含大写 ASCII 字母。 */
     private static boolean containsUpperCase(final byte[] byteArray, int offset, final int length) {
         if (!PlatformDependent.isUnaligned()) {
             return linearContainsUpperCase(byteArray, offset, length);
@@ -57,6 +63,7 @@ final class AsciiStringUtil {
         return unrolledContainsUpperCase(byteArray, offset, length & 7);
     }
 
+    /** 对齐不安全时的逐字节大写检测。 */
     private static boolean linearContainsUpperCase(final byte[] byteArray, final int offset, final int length) {
         final int end = offset + length;
         for (int idx = offset; idx < end; ++idx) {
@@ -67,6 +74,7 @@ final class AsciiStringUtil {
         return false;
     }
 
+    /** 处理长度余数（0–7 字节）的大写检测。 */
     private static boolean unrolledContainsUpperCase(final byte[] byteArray, int offset, final int byteCount) {
         assert byteCount >= 0 && byteCount < 8;
         if ((byteCount & Integer.BYTES) != 0) {
@@ -91,6 +99,7 @@ final class AsciiStringUtil {
         return false;
     }
 
+    /** 将 src 指定区间转小写写入 dst（长度等于 dst.length）。 */
     private static void toLowerCase(final byte[] src, final int srcOffset, final byte[] dst) {
         if (!PlatformDependent.isUnaligned()) {
             linearToLowerCase(src, srcOffset, dst);
@@ -114,6 +123,7 @@ final class AsciiStringUtil {
         }
     }
 
+    /** 余数字节的小写转换（按 int/short/byte 展开）。 */
     private static void unrolledToLowerCase(final byte[] src, int srcPos,
                                             final byte[] dst, int dstOffset, final int byteCount) {
         assert byteCount >= 0 && byteCount < 8;
@@ -143,6 +153,8 @@ final class AsciiStringUtil {
      *
      * @param string the {@link AsciiString} to convert
      * @return the {@link AsciiString} in upper case
+     *
+     * <p>若无小写字母则返回原实例；否则分配新数组并转为大写。</p>
      */
     static AsciiString toUpperCase(final AsciiString string) {
         final byte[] byteArray = string.array();
@@ -156,6 +168,7 @@ final class AsciiStringUtil {
         return new AsciiString(newByteArray, false);
     }
 
+    /** 扫描区间是否含小写 ASCII 字母。 */
     private static boolean containsLowerCase(final byte[] byteArray, int offset, final int length) {
         if (!PlatformDependent.isUnaligned()) {
             return linearContainsLowerCase(byteArray, offset, length);
@@ -270,6 +283,8 @@ final class AsciiStringUtil {
      *
      * @param value the byte to convert
      * @return the lower case byte
+     *
+     * <p>ASCII 大写字母加 32 转小写，其余字节不变。</p>
      */
     static byte toLowerCase(final byte value) {
         return isUpperCase(value)? (byte) (value + 32) : value;
