@@ -25,10 +25,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak HTTP 管理接口（指标、健康检查等）的端口配置。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class HttpManagementSpec {
 
+    /** 管理接口监听端口，默认为 {@link Constants#KEYCLOAK_MANAGEMENT_PORT}。 */
     @JsonPropertyDescription("Port of the management interface.")
     private Integer port = Constants.KEYCLOAK_MANAGEMENT_PORT;
 
@@ -40,6 +44,7 @@ public class HttpManagementSpec {
         this.port = port;
     }
 
+    /** 从 Keycloak CR 解析管理端口，未配置时使用默认值。 */
     public static int managementPort(Keycloak keycloak) {
         return CRDUtils.keycloakSpecOf(keycloak)
                 .map(KeycloakSpec::getHttpManagementSpec)

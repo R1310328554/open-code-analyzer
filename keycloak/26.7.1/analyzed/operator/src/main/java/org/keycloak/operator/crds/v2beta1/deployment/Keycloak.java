@@ -28,6 +28,12 @@ import io.quarkiverse.operatorsdk.annotations.CSVMetadata;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.BuildableReference;
 
+/**
+ * Keycloak 部署 CustomResource（v2beta1，命名空间作用域）。
+ *
+ * <p>Operator 根据 {@link KeycloakSpec} 创建 StatefulSet、Service、Ingress 等资源，
+ * 并将协调结果写入 {@link KeycloakStatus}。
+ */
 @CSVMetadata(description = "Represents a Keycloak Instance", displayName = "Keycloak")
 @Group(Constants.CRDS_GROUP)
 @Version(value = Constants.CRDS_VERSION, storage = true)

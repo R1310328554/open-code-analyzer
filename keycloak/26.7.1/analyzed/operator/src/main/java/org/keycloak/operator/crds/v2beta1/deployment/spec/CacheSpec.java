@@ -21,10 +21,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.fabric8.kubernetes.api.model.ConfigMapKeySelector;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak 分布式缓存（Infinispan）配置规范。
+ *
+ * <p>可通过 ConfigMap 挂载自定义缓存配置文件。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 public class CacheSpec {
 
+    /** 引用 ConfigMap 中的缓存配置文件。 */
     private ConfigMapKeySelector configMapFile;
 
     public ConfigMapKeySelector getConfigMapFile() {

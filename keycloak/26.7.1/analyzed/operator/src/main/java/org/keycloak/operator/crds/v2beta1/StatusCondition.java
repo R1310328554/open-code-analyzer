@@ -24,25 +24,46 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * Kubernetes 风格的状态条件基类，供各 CR status 复用。
+ *
+ * <p>序列化时使用字符串形式的 {@code status}（True/False/Unknown），
+ * Java 侧通过 {@link Boolean} 便捷访问。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StatusCondition {
+    /** 条件布尔值的 Kubernetes 枚举表示。 */
     public enum Status {
         True,
         False,
         Unknown
     }
 
+    /** 条件类型标识，如 Ready、HasErrors。 */
     private String type;
+    /** 条件状态字符串，默认为 Unknown。 */
     private String status = Status.Unknown.name();
+    /** 人类可读的状态说明。 */
     private String message;
+    /** 上次状态发生变更的 ISO8601 时间戳。 */
     private String lastTransitionTime;
+    /** 观察到该条件时 CR 的 generation。 */
     private Long observedGeneration;
 
+    /** 无参构造，供 Jackson/Builder 使用。 */
     public StatusCondition() {
     }
 
+    /**
+     * 全字段构造。
+     *
+     * @param type 条件类型
+     * @param status 条件是否为 True；null 表示 Unknown
+     * @param message 说明信息
+     * @param lastTransitionTime 上次变更时间
+     * @param observedGeneration 观察到的 generation
+     */
     public StatusCondition(String type, Boolean status, String message, String lastTransitionTime,
             Long observedGeneration) {
         this.type = type;
@@ -60,6 +81,7 @@ public class StatusCondition {
         this.type = type;
     }
 
+    /** 以 {@link Boolean} 形式读取条件状态；Unknown 时返回 null。 */
     @JsonIgnore
     public Boolean getStatus() {
         if (status == null || Status.Unknown.name().equals(status)) {
@@ -68,6 +90,7 @@ public class StatusCondition {
         return Status.True.name().equals(status);
     }
 
+    /** 序列化/反序列化用的 status 字符串字段。 */
     @JsonProperty("status")
     public String getStatusString() {
         return status;
@@ -78,6 +101,7 @@ public class StatusCondition {
         this.status = status;
     }
 
+    /** 以 {@link Boolean} 设置条件状态，内部转换为 True/False/Unknown 字符串。 */
     @JsonIgnore
     public void setStatus(Boolean status) {
         if (status == null) {

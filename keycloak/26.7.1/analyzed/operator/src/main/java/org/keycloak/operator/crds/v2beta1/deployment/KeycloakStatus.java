@@ -26,17 +26,25 @@ import io.fabric8.kubernetes.model.annotation.StatusReplicas;
 import io.sundr.builder.annotations.Buildable;
 
 /**
+ * Keycloak 部署 CR 的 status 子资源模型。
+ *
+ * <p>包含副本数、Pod 标签选择器、协调 generation 以及 {@link KeycloakStatusCondition} 列表。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder", lazyCollectionInitEnabled = false)
 public class KeycloakStatus {
 
+    /** 关联 Pod 的标签选择器表达式。 */
     @LabelSelector
     private String selector;
+    /** 当前就绪/运行的实例数。 */
     @StatusReplicas
     private Integer instances;
+    /** Operator 已观察到的 spec generation。 */
     private Long observedGeneration;
 
+    /** 状态条件列表（Ready、HasErrors 等）。 */
     private List<KeycloakStatusCondition> conditions;
 
     public String getSelector() {
@@ -63,6 +71,7 @@ public class KeycloakStatus {
         this.conditions = conditions;
     }
 
+    /** 按 type 查找第一个匹配的状态条件。 */
     public Optional<KeycloakStatusCondition> findCondition(String type) {
         if (conditions == null || conditions.isEmpty()) {
             return Optional.empty();
@@ -70,6 +79,7 @@ public class KeycloakStatus {
         return conditions.stream().filter(c -> type.equals(c.getType())).findFirst();
     }
 
+    /** 判断 Ready 条件是否为 True。 */
     @JsonIgnore
     public boolean isReady() {
         return findCondition(KeycloakStatusCondition.READY).map(KeycloakStatusCondition::getStatus).orElse(false);

@@ -26,15 +26,20 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.sundr.builder.annotations.Buildable;
 
+/**
+ * Keycloak 特性（Feature）启用/禁用列表配置。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Buildable(editableEnabled = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonPropertyOrder({"enabled", "disabled"})
 public class FeatureSpec implements Serializable {
 
+    /** 显式启用的 Keycloak 特性名称列表。 */
     @JsonProperty("enabled")
     @JsonPropertyDescription("Enabled Keycloak features")
     private List<String> enabledFeatures;
 
+    /** 显式禁用的 Keycloak 特性名称列表。 */
     @JsonProperty("disabled")
     @JsonPropertyDescription("Disabled Keycloak features")
     private List<String> disabledFeatures;

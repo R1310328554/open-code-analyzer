@@ -30,32 +30,47 @@ import org.keycloak.operator.Utils;
 import org.keycloak.operator.crds.v2beta1.StatusCondition;
 
 /**
+ * 增量构建 {@link KeycloakStatus} 的聚合器，负责合并条件消息与 lastTransitionTime。
+ *
+ * <p>协调过程中通过 {@link #addNotReadyMessage}、{@link #addErrorMessage} 等方法收集信息，
+ * 最终由 {@link #build()} 生成完整 status。
+ *
  * @author Vaclav Muzikar <vmuzikar@redhat.com>
  */
 public class KeycloakStatusAggregator {
+    /** Ready 条件实例。 */
     private final KeycloakStatusCondition readyCondition = new KeycloakStatusCondition();
+    /** HasErrors 条件实例。 */
     private final KeycloakStatusCondition hasErrorsCondition = new KeycloakStatusCondition();
+    /** RollingUpdate 条件实例。 */
     private final KeycloakStatusCondition rollingUpdate = new KeycloakStatusCondition();
+    /** Recreate 更新类型条件实例。 */
     private final KeycloakStatusCondition updateType = new KeycloakStatusCondition();
 
+    /** 未就绪原因消息列表，写入 Ready 条件 message。 */
     private final List<String> notReadyMessages = new ArrayList<>();
+    /** 错误或警告消息列表，写入 HasErrors 条件 message。 */
     private final List<String> errorMessages = new ArrayList<>();
+    /** 滚动更新进度消息列表。 */
     private final List<String> rollingUpdateMessages = new ArrayList<>();
 
+    /** 底层 status Builder，承载非 condition 字段。 */
     private final KeycloakStatusBuilder statusBuilder;
+    /** 上一版 status 中的条件映射，用于保留 lastTransitionTime。 */
     private final Map<String, KeycloakStatusCondition> existingConditions;
+    /** 本次协调观察到的 CR generation。 */
     private final Long observedGeneration;
 
     /**
-     * @param generation the observedGeneration for conditions
+     * @param generation 写入各条件的 observedGeneration
      */
     public KeycloakStatusAggregator(Long generation) {
         this(null, generation);
     }
 
     /**
-     * @param current status, which is used as a base for the next conditions
-     * @param generation the observedGeneration for conditions
+     * @param current 作为基础的当前 status，用于继承未变更的条件时间戳
+     * @param generation 写入各条件的 observedGeneration
      */
     public KeycloakStatusAggregator(KeycloakStatus current, Long generation) {
         if (current != null) {
@@ -77,10 +92,12 @@ public class KeycloakStatusAggregator {
         updateType.setType(KeycloakStatusCondition.UPDATE_TYPE);
     }
 
+    /** 将条件列表按 type 索引为 Map。 */
     public static <T extends StatusCondition> Map<String, T> getConditionMap(List<T> conditions) {
         return Optional.ofNullable(conditions).orElse(List.of()).stream().collect(Collectors.toMap(StatusCondition::getType, Function.identity()));
     }
 
+    /** 记录未就绪原因并将 Ready 设为 False。 */
     public KeycloakStatusAggregator addNotReadyMessage(String message) {
         readyCondition.setStatus(false);
         readyCondition.setObservedGeneration(observedGeneration);
@@ -88,6 +105,7 @@ public class KeycloakStatusAggregator {
         return this;
     }
 
+    /** 记录错误并将 HasErrors 设为 True。 */
     public KeycloakStatusAggregator addErrorMessage(String message) {
         hasErrorsCondition.setStatus(true);
         hasErrorsCondition.setObservedGeneration(observedGeneration);
@@ -95,12 +113,14 @@ public class KeycloakStatusAggregator {
         return this;
     }
 
+    /** 记录警告（前缀 warning:），不强制 HasErrors 为 True。 */
     public KeycloakStatusAggregator addWarningMessage(String message) {
         errorMessages.add("warning: " + message);
         hasErrorsCondition.setObservedGeneration(observedGeneration);
         return this;
     }
 
+    /** 记录滚动更新进行中消息。 */
     public KeycloakStatusAggregator addRollingUpdateMessage(String message) {
         rollingUpdate.setStatus(true);
         rollingUpdate.setObservedGeneration(observedGeneration);
@@ -108,12 +128,14 @@ public class KeycloakStatusAggregator {
         return this;
     }
 
+    /** 设置本次更新是否使用了 Recreate 策略。 */
     public void addUpdateType(boolean recreate, String message) {
         updateType.setStatus(recreate);
         updateType.setObservedGeneration(observedGeneration);
         updateType.setMessage(message);
     }
 
+    /** 清除 Recreate 更新类型条件（设为 Unknown）。 */
     public void resetUpdateType() {
         updateType.setStatus(null);
         updateType.setObservedGeneration(observedGeneration);
@@ -121,7 +143,7 @@ public class KeycloakStatusAggregator {
     }
 
     /**
-     * Apply non-condition changes to the status
+     * 对 status 的非 condition 字段应用变更。
      */
     public KeycloakStatusAggregator apply(Consumer<KeycloakStatusBuilder> toApply) {
         statusBuilder.withConditions(List.of());
@@ -132,8 +154,9 @@ public class KeycloakStatusAggregator {
         return this;
     }
 
+    /** 汇总各条件默认值与消息，生成最终 {@link KeycloakStatus}。 */
     public KeycloakStatus build() {
-        // conditions are only updated in one direction - the following determines if it's appropriate to observe the default / other direction
+        // 条件仅单向更新——以下逻辑决定何时采用默认/反向状态
         if (readyCondition.getStatus() == null && !Boolean.TRUE.equals(hasErrorsCondition.getStatus())) {
             readyCondition.setStatus(true);
             readyCondition.setObservedGeneration(observedGeneration);
@@ -170,6 +193,13 @@ public class KeycloakStatusAggregator {
                 .build();
     }
 
+    /**
+     * 根据已有条件更新 lastTransitionTime：状态与消息均未变则保留原时间戳。
+     *
+     * @param condition 待写入的新条件
+     * @param existingConditions 上一版条件映射
+     * @param now 当前 ISO8601 时间
+     */
     public static void updateConditionFromExisting(StatusCondition condition, Map<String, ? extends StatusCondition> existingConditions, String now) {
         var existing = existingConditions.get(condition.getType());
         if (existing == null) {
@@ -177,7 +207,7 @@ public class KeycloakStatusAggregator {
                 condition.setLastTransitionTime(now);
             }
         } else if (condition.getObservedGeneration() == null) {
-            // carry the existing forward
+            // 未观察到新 generation 时沿用旧条件
             condition.setLastTransitionTime(existing.getLastTransitionTime());
             condition.setObservedGeneration(existing.getObservedGeneration());
             condition.setStatus(existing.getStatus());

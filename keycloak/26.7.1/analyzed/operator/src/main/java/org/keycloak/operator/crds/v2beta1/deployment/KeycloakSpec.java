@@ -50,127 +50,164 @@ import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.model.annotation.SpecReplicas;
 
+/**
+ * Keycloak 部署 CR 的期望状态（spec）定义。
+ *
+ * <p>聚合实例数、镜像、各子系统（HTTP、数据库、缓存、Ingress 等）配置块，
+ * 以及附加 Keycloak 启动选项与环境变量。
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class KeycloakSpec {
 
+    /** Keycloak 实例副本数，默认为 1。 */
     @SpecReplicas
     @JsonPropertyDescription("Number of Keycloak instances. Default is 1.")
     private Integer instances;
 
+    /** 自定义 Keycloak 容器镜像。 */
     @JsonPropertyDescription("Custom Keycloak image to be used.")
     private String image;
 
+    /** 是否强制 start 命令使用 --optimized；自定义镜像未声明时 Operator 会自行推断。 */
     @JsonPropertyDescription("Set to force the behavior of the --optimized flag for the start command. If left unspecified the operator will assume custom images have already been augmented.")
     private Boolean startOptimized;
 
+    /** 拉取私有镜像所需的 imagePullSecrets。 */
     @JsonPropertyDescription("Secret(s) that might be used when pulling an image from a private container image registry or repository.")
     private List<LocalObjectReference> imagePullSecrets = new ArrayList<LocalObjectReference>();
 
+    /** 附加 Keycloak 配置项（键值或 Secret 引用），见 https://www.keycloak.org/server/all-config 。 */
     @JsonPropertyDescription("Configuration of the Keycloak server.\n" +
             "expressed as a keys (reference: https://www.keycloak.org/server/all-config) and values that can be either direct values or references to secrets.")
-    private List<ValueOrSecret> additionalOptions = new ArrayList<ValueOrSecret>(); // can't use Set due to a bug in Sundrio https://github.com/sundrio/sundrio/issues/316
+    private List<ValueOrSecret> additionalOptions = new ArrayList<ValueOrSecret>(); // 因 Sundrio bug 不能使用 Set：https://github.com/sundrio/sundrio/issues/316
 
+    /** 注入 Keycloak 容器的环境变量；首选 additionalOptions 配置一等选项而非 KC_ 前缀变量。 */
     @JsonPropertyDescription("Environment variables for the Keycloak server.\n" +
             "Values can be either direct values or references to secrets. Use additionalOptions for first-class options rather than KC_ values here.")
     private List<ValueOrSecret> env = new ArrayList<ValueOrSecret>();
 
+    /** HTTP/HTTPS 监听与 Service 暴露配置。 */
     @JsonProperty("http")
     @JsonPropertyDescription("In this section you can configure Keycloak features related to HTTP and HTTPS")
     private HttpSpec httpSpec;
 
+    /** 非生产级 podTemplate 高级选项（使用风险自负）。 */
     @JsonPropertyDescription(
             "In this section you can configure podTemplate advanced features, not production-ready, and not supported settings.\n" +
                     "Use at your own risk and open an issue with your use-case if you don't find an alternative way.")
     private UnsupportedSpec unsupported;
 
+    /** Ingress 暴露配置；默认创建基础 Ingress，可将 enabled 设为 false 关闭。 */
     @JsonProperty("ingress")
     @JsonPropertyDescription("The deployment is, by default, exposed through a basic ingress.\n" +
             "You can change this behaviour by setting the enabled property to false.")
     private IngressSpec ingressSpec;
 
+    /** Keycloak 特性启用/禁用列表。 */
     @JsonProperty("features")
     @JsonPropertyDescription("In this section you can configure Keycloak features, which should be enabled/disabled.")
     private FeatureSpec featureSpec;
 
+    /** 事务行为相关配置。 */
     @JsonProperty("transaction")
     @JsonPropertyDescription("In this section you can find all properties related to the settings of transaction behavior.")
     private TransactionsSpec transactionsSpec;
 
+    /** 外部数据库连接配置。 */
     @JsonProperty("db")
     @JsonPropertyDescription("In this section you can find all properties related to connect to a database.")
     private DatabaseSpec databaseSpec;
 
+    /** 主机名与 URL 解析配置。 */
     @JsonProperty("hostname")
     @JsonPropertyDescription("In this section you can configure Keycloak hostname and related properties.")
     private HostnameSpec hostnameSpec;
 
+    /** 信任库（Truststore）配置映射。 */
     @JsonPropertyDescription("In this section you can configure Keycloak truststores.")
     private Map<String, Truststore> truststores = new LinkedHashMap<>();
 
+    /** 分布式缓存配置。 */
     @JsonProperty("cache")
     @JsonPropertyDescription("In this section you can configure Keycloak's cache")
     private CacheSpec cacheSpec;
 
+    /** Keycloak 容器资源请求与限制。 */
     @JsonProperty("resources")
     @JsonPropertyDescription("Compute Resources required by Keycloak container")
     private ResourceRequirements resourceRequirements;
 
+    /** 反向代理相关配置。 */
     @JsonProperty("proxy")
     @JsonPropertyDescription("In this section you can configure Keycloak's reverse proxy setting")
     private ProxySpec proxySpec;
 
+    /** HTTP 管理接口（指标/健康）配置。 */
     @JsonProperty("httpManagement")
     @JsonPropertyDescription("In this section you can configure Keycloak's management interface setting.")
     private HttpManagementSpec httpManagementSpec;
 
+    /** Pod 调度（亲和性、容忍度等）配置。 */
     @JsonProperty("scheduling")
     @JsonPropertyDescription("In this section you can configure Keycloak's scheduling")
     private SchedulingSpec schedulingSpec;
 
+    /** Realm 导入 Job 配置。 */
     @JsonProperty("import")
     @JsonPropertyDescription("In this section you can configure import Jobs")
     private ImportSpec importSpec;
 
+    /** 初始集群创建时的引导管理员配置。 */
     @JsonProperty("bootstrapAdmin")
     @JsonPropertyDescription("In this section you can configure Keycloak's bootstrap admin - will be used only for initial cluster creation.")
     private BootstrapAdminSpec bootstrapAdminSpec;
 
+    /** NetworkPolicy 入站流量控制。 */
     @JsonProperty("networkPolicy")
     @JsonPropertyDescription("Controls the ingress traffic flow into Keycloak pods.")
     private NetworkPolicySpec networkPolicySpec;
 
+    /** OpenTelemetry 通用遥测配置。 */
     @JsonProperty("telemetry")
     @JsonPropertyDescription("In this section you can configure general shared OpenTelemetry settings for Keycloak.")
     private TelemetrySpec telemetrySpec;
 
+    /** OpenTelemetry 分布式追踪配置。 */
     @JsonProperty("tracing")
     @JsonPropertyDescription("In this section you can configure OpenTelemetry Tracing for Keycloak.")
     private TracingSpec tracingSpec;
 
+    /** 部署更新策略相关配置。 */
     @JsonProperty("update")
     @JsonPropertyDescription("Configuration related to Keycloak deployment updates.")
     private UpdateSpec updateSpec;
 
+    /** Readiness 探针参数，默认 periodSeconds=10、failureThreshold=3。 */
     @JsonProperty("readinessProbe")
     @JsonPropertyDescription("Configuration for readiness probe, by default it is 10 for periodSeconds and 3 for failureThreshold")
     private ProbeSpec readinessProbeSpec;
 
+    /** Liveness 探针参数，默认 periodSeconds=10、failureThreshold=3。 */
     @JsonProperty("livenessProbe")
     @JsonPropertyDescription("Configuration for liveness probe, by default it is 10 for periodSeconds and 3 for failureThreshold")
     private ProbeSpec livenessProbeSpec;
 
+    /** Startup 探针参数，默认 periodSeconds=1、failureThreshold=600。 */
     @JsonProperty("startupProbe")
     @JsonPropertyDescription("Configuration for startup probe, by default it is 1 for periodSeconds and 600 for failureThreshold")
     private ProbeSpec startupProbeSpec;
 
+    /** 生成的 Prometheus ServiceMonitor 配置。 */
     @JsonProperty("serviceMonitor")
     @JsonPropertyDescription("Configuration related to the generated ServiceMonitor")
     private ServiceMonitorSpec serviceMonitorSpec;
 
+    /** 是否自动挂载默认 ServiceAccount Token 与 Service CA，默认为 true。 */
     @JsonProperty("automountServiceAccountToken")
     @JsonPropertyDescription("Set this to to false to disable automounting the default ServiceAccount Token and Service CA. This is enabled by default.")
     private Boolean automountServiceAccountToken;
 
+    /** Operator 连接 Keycloak 管理 API 的客户端配置（不影响服务器进程）。 */
     @JsonProperty("admin")
     @JsonPropertyDescription("In this section you can find all properties related to making admin connections from the operator to the server. These settings are not used by the server.")
     private AdminSpec adminSpec;
