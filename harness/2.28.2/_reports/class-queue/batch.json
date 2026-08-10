@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T15:19:59Z",
   "files": [
-    "plugin/secret/external_oss.go",
-    "plugin/secret/static.go",
-    "plugin/validator/combine.go",
-    "plugin/validator/filter.go",
-    "plugin/validator/noop.go",
-    "plugin/validator/remote.go",
-    "plugin/validator/remote_oss.go",
-    "plugin/webhook/config.go",
-    "plugin/webhook/webhook.go",
-    "plugin/webhook/webhook_oss.go",
-    "pubsub/doc.go",
-    "pubsub/hub.go",
-    "pubsub/hub_redis.go",
-    "pubsub/pubsub.go",
-    "pubsub/pubsub_oss.go",
     "pubsub/sub.go",
     "scheduler/queue/canceller.go",
     "scheduler/queue/canceller_redis.go",
@@ -33,5 +18,5 @@
     "service/commit/commit.go"
   ],
   "remaining_pending": 88,
-  "done": 270
+  "done": 285
 }
