@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T11:16:15Z",
   "files": [
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/PasswordCredentialData.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/PasswordSecretData.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/RecoveryAuthnCodeRepresentation.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/RecoveryAuthnCodesCredentialData.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/RecoveryAuthnCodesSecretData.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/WebAuthnCredentialData.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/WebAuthnCredentialPresentationData.java",
-    "server-spi/src/main/java/org/keycloak/models/credential/dto/WebAuthnSecretData.java",
-    "server-spi/src/main/java/org/keycloak/models/utils/Base32.java",
-    "server-spi/src/main/java/org/keycloak/models/utils/HmacOTP.java",
-    "server-spi/src/main/java/org/keycloak/models/utils/MapperTypeSerializer.java",
-    "server-spi/src/main/java/org/keycloak/models/utils/RecoveryAuthnCodesUtils.java",
-    "server-spi/src/main/java/org/keycloak/models/utils/RoleUtils.java",
-    "server-spi/src/main/java/org/keycloak/models/utils/UserModelDelegate.java",
-    "server-spi/src/main/java/org/keycloak/organization/InvitationManager.java",
     "server-spi/src/main/java/org/keycloak/organization/OrganizationProvider.java",
     "server-spi/src/main/java/org/keycloak/policy/PasswordPolicyConfigException.java",
     "server-spi/src/main/java/org/keycloak/policy/PasswordPolicyNotMetException.java",
@@ -33,5 +18,5 @@
     "server-spi/src/main/java/org/keycloak/provider/ProviderEventManager.java"
   ],
   "remaining_pending": 2308,
-  "done": 3660
+  "done": 3675
 }
