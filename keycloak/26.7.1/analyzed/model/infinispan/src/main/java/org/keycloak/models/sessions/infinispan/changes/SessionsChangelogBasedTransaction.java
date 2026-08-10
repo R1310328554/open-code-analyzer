@@ -19,10 +19,20 @@ package org.keycloak.models.sessions.infinispan.changes;
 
 import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 
+/**
+ * 基于变更日志的会话事务接口。
+ * <p>
+ * 在单个 Keycloak 事务内累积 {@link SessionUpdateTask}，提交时再合并写入 Infinispan 与持久化层。
+ *
+ * @param <K> 缓存键类型
+ * @param <V> 会话实体类型
+ */
 public interface SessionsChangelogBasedTransaction<K, V extends SessionEntity> {
 
+    /** 为指定键追加一条会话更新任务。 */
     void addTask(K key, SessionUpdateTask<V> task);
 
+    /** 清空该键已有任务并以 restartTask 重新开始跟踪实体变更。 */
     void restartEntity(K key, SessionUpdateTask<V> restartTask);
 
 }

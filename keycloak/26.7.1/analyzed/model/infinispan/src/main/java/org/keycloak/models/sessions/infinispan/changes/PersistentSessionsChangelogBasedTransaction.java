@@ -38,11 +38,21 @@ import org.infinispan.commons.util.concurrent.AggregateCompletionStage;
 import org.infinispan.commons.util.concurrent.CompletionStages;
 import org.jboss.logging.Logger;
 
+/**
+ * 持久化会话的变更日志事务抽象基类。
+ * <p>
+ * 同时维护在线与离线两套缓存的待提交变更，提交时异步刷新 Infinispan 并通过 {@link JpaChangesPerformer} 写入数据库。
+ *
+ * @param <K> 缓存键类型
+ * @param <V> 会话实体类型
+ */
 abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends SessionEntity> implements SessionsChangelogBasedTransaction<K, V>, NonBlockingTransaction {
 
     private static final Logger LOG = Logger.getLogger(PersistentSessionsChangelogBasedTransaction.class);
     protected final KeycloakSession kcSession;
+    /** 在线会话在本事务内的变更列表。 */
     protected final Map<K, SessionUpdatesList<V>> updates = new HashMap<>();
+    /** 离线会话在本事务内的变更列表。 */
     protected final Map<K, SessionUpdatesList<V>> offlineUpdates = new HashMap<>();
     private final String cacheName;
     private final CacheHolder<K, V> cacheHolder;
@@ -95,7 +105,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
 
             return wrappedEntity;
         } else {
-            // If entity is scheduled for remove, we don't return it.
+            // 若已调度删除，则对事务内读者不可见
             boolean scheduledForRemove = myUpdates.getUpdateTasks().stream()
                     .map(SessionUpdateTask::getOperation)
                     .anyMatch(SessionUpdateTask.CacheOperation.REMOVE::equals);
@@ -120,7 +130,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
             V entity = sessionWrapper.getEntity();
             boolean isOffline = entity.isOffline();
 
-            // Don't save transient entities to infinispan. They are valid just for current transaction
+            // 瞬态会话仅存在于当前事务，不写入 Infinispan 或数据库
             if (sessionUpdates.getPersistenceState() == UserSessionModel.SessionPersistenceState.TRANSIENT) continue;
 
             RealmModel realm = sessionUpdates.getRealm();
@@ -142,7 +152,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
     }
 
     /**
-     * Lock the entity in the database.
+     * 在数据库中锁定实体，防止并发提交冲突。
      */
     protected abstract boolean lockDatabaseEntity(RealmModel realm, K key, boolean offline, SessionUpdateTask.CacheOperation operation);
 
@@ -158,7 +168,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
             V entity = sessionWrapper.getEntity();
             boolean isOffline = entity.isOffline();
 
-            // Don't save transient entities to infinispan. They are valid just for current transaction
+            // 瞬态会话仅存在于当前事务，不写入 Infinispan 或数据库
             if (sessionUpdates.getPersistenceState() == UserSessionModel.SessionPersistenceState.TRANSIENT) continue;
 
             RealmModel realm = sessionUpdates.getRealm();
@@ -171,7 +181,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
             if (merged != null) {
                 var c = isOffline ? offlineCacheHolder : cacheHolder;
                 if (c.cache() != null) {
-                    // Update cache. It is non-blocking.
+                    // 非阻塞方式更新集群缓存
                     InfinispanChangesUtils.runOperationInCluster(c, entry.getKey(), merged, entry.getValue().getEntityWrapper(), stage, LOG);
                 }
 
@@ -219,13 +229,13 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
     }
 
     private void lookupAndAndExecuteTask(K key, PersistentSessionUpdateTask<V> task) {
-        // Lookup entity from cache
+        // 从缓存加载实体以开始跟踪变更
         SessionEntityWrapper<V> wrappedEntity = getCache(task.isOffline()).get(key);
         if (wrappedEntity == null) {
             LOG.tracef("Not present cache item for key %s", key);
             return;
         }
-        // Cache does not contain the offline flag value so adding it
+        // 缓存条目不含 offline 标志，需手动补全
         wrappedEntity.getEntity().setOffline(task.isOffline());
 
         RealmModel realm = kcSession.realms().getRealm(wrappedEntity.getEntity().getRealmId());
@@ -233,7 +243,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
         SessionUpdatesList<V> myUpdates = new SessionUpdatesList<>(realm, wrappedEntity);
         getUpdates(task.isOffline()).put(key, myUpdates);
 
-        // Run the update now, so reader in same transaction can see it (TODO: Rollback may not work correctly. See if it's an issue..)
+        // 立即执行以便同事务内后续读操作可见（回滚行为待验证）
         myUpdates.addAndExecute(task);
     }
 
@@ -248,12 +258,12 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
         getUpdates(entity.isOffline()).put(key, myUpdates);
 
         if (task != null) {
-            // Run the update now, so reader in same transaction can see it
+            // 立即执行以便同事务内后续读操作可见
             myUpdates.addAndExecute(task);
         }
     }
 
-    // method not currently in use, remove in the next major.
+    // 当前未使用，计划在下一主版本移除
     @Deprecated(forRemoval = true, since = "26.4")
     public void reloadEntityInCurrentTransaction(RealmModel realm, K key, SessionEntityWrapper<V> entity) {
         if (entity == null) {
@@ -298,7 +308,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
         var updates = getUpdates(offline);
         var updatesList = updates.get(key);
         if (updatesList != null) {
-            // exists in transaction, avoid import operation
+            // 事务内已跟踪，跳过导入
             return updatesList.getEntityWrapper();
         }
         SessionEntityWrapper<V> existing = null;
@@ -307,11 +317,11 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
                 existing = getCache(offline).putIfAbsent(key, session, SessionTimeouts.calculateEffectiveSessionLifespan(maxIdle, lifespan), TimeUnit.MILLISECONDS);
             }
         } catch (RuntimeException exception) {
-            // If the import fails, the transaction can continue with the data from the database.
+            // 导入失败时仍可从数据库继续，不中断事务
             LOG.debugf(exception, "Failed to import session %s", session);
         }
         if (existing == null) {
-            // keep track of the imported session for updates
+            // 记录已导入会话以便后续变更跟踪
             updates.put(key, new SessionUpdatesList<>(realmModel, session));
             return null;
         }
@@ -333,7 +343,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
     public void importSessionsConcurrently(RealmModel realmModel, Map<K, SessionEntityWrapper<V>> sessions, boolean offline) {
         var cache = getCache(offline);
         if (sessions.isEmpty() || cache == null) {
-            //nothing to import
+            // 无需导入
             return;
         }
         var stage = CompletionStages.aggregateCompletionStage();
@@ -343,7 +353,7 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
         var maxIdleFunction = getMaxIdleMsLoader(offline);
         sessions.forEach((key, session) -> {
             if (updates.containsKey(key)) {
-                //nothing to import, already exists in transaction
+                // 无需导入, already exists in transaction
                 return;
             }
             var clientModel = session.getClientIfNeeded(realmModel);
@@ -351,16 +361,16 @@ abstract public class PersistentSessionsChangelogBasedTransaction<K, V extends S
             var lifespan = lifespanFunction.apply(realmModel, clientModel, sessionEntity);
             var maxIdle = maxIdleFunction.apply(realmModel, clientModel, sessionEntity);
             if (lifespan == SessionTimeouts.ENTRY_EXPIRED_FLAG || maxIdle == SessionTimeouts.ENTRY_EXPIRED_FLAG) {
-                //nothing to import, already expired
+                // 已过期，跳过导入
                 return;
             }
             var future = cache.putIfAbsentAsync(key, session, SessionTimeouts.calculateEffectiveSessionLifespan(maxIdle, lifespan), TimeUnit.MILLISECONDS)
                     .exceptionally(throwable -> {
-                        // If the import fails, the transaction can continue with the data from the database.
+                        // 导入失败时仍可从数据库继续，不中断事务
                         LOG.debugf(throwable, "Failed to import session %s", session);
                         return null;
                     });
-            // write result into concurrent hash map because the consumer is invoked in a different thread each time.
+            // 回调可能在不同线程执行，用并发 Map 汇总结果
             stage.dependsOn(future.thenAccept(existing -> allSessions.put(key, existing == null ? session : existing)));
         });
 

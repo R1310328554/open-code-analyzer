@@ -26,7 +26,9 @@ import org.keycloak.models.UserSessionModel;
 import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 
 /**
- * tracks all changes to the underlying session in this transaction
+ * 跟踪本事务内对单个会话实体的全部变更任务。
+ * <p>
+ * 持有 realm、可选 client、实体包装器及持久化状态，提交前由 {@link MergedUpdate} 合并任务列表。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -82,6 +84,7 @@ public class SessionUpdatesList<S extends SessionEntity> {
         return persistenceState;
     }
 
+    /** 追加任务并立即在实体副本上执行，供同事务内读操作可见。 */
     public void addAndExecute(SessionUpdateTask<S> task) {
         add(task);
         task.runUpdate(getEntityWrapper().getEntity());

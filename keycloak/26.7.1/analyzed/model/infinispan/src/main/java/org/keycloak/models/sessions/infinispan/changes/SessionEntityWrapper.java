@@ -34,13 +34,20 @@ import org.infinispan.protostream.annotations.ProtoField;
 import org.infinispan.protostream.annotations.ProtoTypeId;
 
 /**
+ * 带版本号与本地元数据的会话实体包装器。
+ * <p>
+ * 版本 UUID 用于 Infinispan 乐观锁与 {@link ReplaceFunction}；{@code localMetadata} 仅存于 JVM 内，不参与序列化传输。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 @ProtoTypeId(Marshalling.SESSION_ENTITY_WRAPPER)
 public class SessionEntityWrapper<S extends SessionEntity> {
 
+    /** 实体版本，用于并发替换校验。 */
     private final UUID version;
+    /** 被包装的会话实体。 */
     private final S entity;
+    /** 仅本地有效的元数据附注，不跨节点同步。 */
     private final Map<String, String> localMetadata;
 
     protected SessionEntityWrapper(UUID version, Map<String, String> localMetadata, S entity) {
@@ -71,6 +78,7 @@ public class SessionEntityWrapper<S extends SessionEntity> {
         this.entity = entity;
     }
 
+    /** 构造仅用于网络传输、不含版本与元数据的包装。 */
     public static <S extends SessionEntity> SessionEntityWrapper<S> forTransport(S entity) {
         return new SessionEntityWrapper<>(entity, true);
     }

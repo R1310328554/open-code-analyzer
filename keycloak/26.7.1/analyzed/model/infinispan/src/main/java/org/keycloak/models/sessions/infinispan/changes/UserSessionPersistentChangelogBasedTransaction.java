@@ -32,6 +32,12 @@ import org.jboss.logging.Logger;
 
 import static org.keycloak.connections.infinispan.InfinispanConnectionProvider.USER_SESSION_CACHE_NAME;
 
+/**
+ * 用户会话的持久化变更日志事务。
+ * <p>
+ * 缓存未命中时从 {@link UserSessionPersisterProvider} 加载并导入 Infinispan，
+ * 提交时对数据库实体加锁以防并发冲突。
+ */
 public class UserSessionPersistentChangelogBasedTransaction extends PersistentSessionsChangelogBasedTransaction<String, UserSessionEntity> {
 
     private static final Logger LOG = Logger.getLogger(UserSessionPersistentChangelogBasedTransaction.class);
@@ -67,7 +73,7 @@ public class UserSessionPersistentChangelogBasedTransaction extends PersistentSe
                 return null;
             }
 
-            // Cache does not contain the offline flag value so adding it
+            // 缓存条目不含 offline 标志，需手动补全
             wrappedEntity.getEntity().setOffline(offline);
 
             RealmModel realmFromSession = kcSession.realms().getRealm(wrappedEntity.getEntity().getRealmId());
@@ -78,7 +84,7 @@ public class UserSessionPersistentChangelogBasedTransaction extends PersistentSe
 
             return wrappedEntity;
         } else {
-            // If entity is scheduled for remove, we don't return it.
+            // 若已调度删除，则对事务内读者不可见
             boolean scheduledForRemove = myUpdates.getUpdateTasks().stream()
                     .map(SessionUpdateTask::getOperation)
                     .anyMatch(SessionUpdateTask.CacheOperation.REMOVE::equals);
@@ -151,7 +157,7 @@ public class UserSessionPersistentChangelogBasedTransaction extends PersistentSe
         if (myUpdates == null) {
             return false;
         }
-        // If entity is scheduled for remove, we don't return it.
+        // 若已调度删除，视为不存在
 
         return myUpdates.getUpdateTasks()
                 .stream()
@@ -161,7 +167,7 @@ public class UserSessionPersistentChangelogBasedTransaction extends PersistentSe
     @Override
     protected boolean lockDatabaseEntity(RealmModel realm, String userSessionId, boolean offline, SessionUpdateTask.CacheOperation operation) {
         if (operation == SessionUpdateTask.CacheOperation.ADD_IF_ABSENT) {
-            // There might be concurrent inserts for the same key, which can lead to conflicts. One could lock the user instead, but that could lead to other problems.
+            // 同键并发插入可能冲突；若认证会话已悲观锁定则可安全插入
             // If the authentication session was locked pessimistically, we can still perform the insert safely.
             return pessimisticLockingAuthenticationSession;
         }

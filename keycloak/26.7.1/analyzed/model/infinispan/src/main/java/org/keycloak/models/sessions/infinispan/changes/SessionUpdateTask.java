@@ -20,22 +20,30 @@ package org.keycloak.models.sessions.infinispan.changes;
 import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 
 /**
+ * 单条会话实体变更任务。
+ * <p>
+ * 在事务内就地修改实体并声明对应的 Infinispan 缓存操作类型，提交时由 {@link MergedUpdate} 合并。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public interface SessionUpdateTask<S extends SessionEntity> {
 
+    /** 在当前实体副本上执行变更逻辑。 */
     void runUpdate(S entity);
 
+    /** 变更后是否应删除实体（默认否）。 */
     default boolean shouldRemove(S entity) {
         return false;
     }
 
+    /** 返回本任务对应的缓存操作类型。 */
     CacheOperation getOperation();
 
+    /** Infinispan 缓存操作枚举，支持提交前合并。 */
     enum CacheOperation {
 
         ADD,
-        ADD_IF_ABSENT, // ADD_IF_ABSENT throws an exception if there is existing value
+        ADD_IF_ABSENT, // 键已存在时抛出异常
         REMOVE,
         REPLACE;
 
@@ -52,7 +60,7 @@ public interface SessionUpdateTask<S extends SessionEntity> {
                 return this;
             }
 
-            // Lowest priority
+            // REPLACE 优先级最低，ADD/REMOVE 优先
             return REPLACE;
         }
     }

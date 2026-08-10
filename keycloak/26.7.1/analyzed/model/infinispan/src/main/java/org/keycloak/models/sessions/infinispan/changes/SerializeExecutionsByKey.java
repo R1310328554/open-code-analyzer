@@ -23,23 +23,24 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.logging.Logger;
 
 /**
- * Adding an in-JVM lock to prevent a best-effort concurrent executions for the same ID.
- * This should prevent a burst of requests by letting only the first request pass, and then the others will follow one-by-one.
- * Use this when the code wrapped by runSerialized is known to produce conflicts when run concurrently with the same ID.
+ * 按键在 JVM 内串行化执行，避免同一 ID 的并发冲突。
+ * <p>
+ * 突发请求仅放行首个线程，其余线程排队等待，适用于已知并发会产生写冲突的缓存操作。
  *
  * @author Alexander Schwartz
  */
 public class SerializeExecutionsByKey<K> {
     private static final Logger LOG = Logger.getLogger(SerializeExecutionsByKey.class);
+    /** 每个键对应一把可重入锁，保证同键操作互斥。 */
     private final ConcurrentHashMap<K, ReentrantLock> cacheInteractions = new ConcurrentHashMap<>();
 
     public void runSerialized(K key, Runnable task) {
-        // this locking is only to ensure that if there is a computation for the same id in the "synchronized" block below,
+        // 确保下方 synchronized 块内针对同一 id 的计算持有同一锁实例
         // it will have the same object instance to lock the current execution until the other is finished.
         ReentrantLock lock = cacheInteractions.computeIfAbsent(key, s -> new ReentrantLock());
         try {
             lock.lock();
-            // in case the previous thread has removed the entry in the finally block
+            // 若前一线程已在 finally 中移除条目，则重新注册锁
             ReentrantLock existingLock = cacheInteractions.putIfAbsent(key, lock);
             if (existingLock != lock) {
                 LOG.debugf("Concurrent execution detected for key '%s'.", key);

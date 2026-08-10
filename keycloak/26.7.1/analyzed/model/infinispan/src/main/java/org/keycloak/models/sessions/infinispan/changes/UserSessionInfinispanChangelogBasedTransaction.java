@@ -22,11 +22,10 @@ import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 import org.keycloak.models.sessions.infinispan.util.SessionTimeouts;
 
 /**
- * User session transaction implementation that optimizes Infinispan cache expiration settings.
+ * 用户会话的 Infinispan 变更日志事务，优化缓存过期策略。
  * <p>
- * This class overrides the parent's timeout computation to disable max-idle tracking, which is expensive for Infinispan
- * to maintain. Instead, the lifespan is adjusted to be the minimum of the original lifespan and max-idle values,
- * ensuring sessions still expire at the correct time without the overhead of idle time tracking.
+ * 关闭 Infinispan 昂贵的 max-idle 跟踪，将 lifespan 设为原 lifespan 与 max-idle 的较小值，
+ * 在保证会话按时失效的同时降低集群维护开销。
  */
 public class UserSessionInfinispanChangelogBasedTransaction<K, V extends SessionEntity> extends InfinispanChangelogBasedTransaction<K, V> {
     public UserSessionInfinispanChangelogBasedTransaction(KeycloakSession kcSession, CacheHolder<K, V> cacheHolder) {
@@ -34,11 +33,13 @@ public class UserSessionInfinispanChangelogBasedTransaction<K, V extends Session
     }
 
     @Override
+    /** 将会话存活时间折为有效 lifespan（含 max-idle 约束）。 */
     protected long computeLifespan(long maxIdle, long lifespan) {
         return SessionTimeouts.calculateEffectiveSessionLifespan(maxIdle, lifespan);
     }
 
     @Override
+    /** 禁用 max-idle，交由 lifespan 统一控制过期。 */
     protected long computeMaxIdle(long maxIdle, long lifespan) {
         return SessionTimeouts.IMMORTAL_FLAG;
     }

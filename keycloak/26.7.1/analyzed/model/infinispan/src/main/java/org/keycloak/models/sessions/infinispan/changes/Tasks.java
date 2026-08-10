@@ -20,6 +20,9 @@ import org.keycloak.models.sessions.infinispan.changes.SessionUpdateTask.CacheOp
 import org.keycloak.models.sessions.infinispan.entities.SessionEntity;
 
 /**
+ * 预定义的同步会话更新任务工厂。
+ * <p>
+ * 提供无实体字段变更、仅声明缓存操作类型的可复用 {@link SessionUpdateTask} 实例。
  *
  * @author hmlnarik
  */
@@ -70,7 +73,7 @@ public class Tasks {
     };
 
     /**
-     * Returns a typed task of type {@link CacheOperation#ADD_IF_ABSENT} that does no other update.
+     * 返回 {@link CacheOperation#ADD_IF_ABSENT} 类型的同步任务，不修改实体字段。
      * @param <S>
      * @return
      */
@@ -79,7 +82,7 @@ public class Tasks {
     }
 
     /**
-     * Returns a typed task of type {@link CacheOperation#REMOVE} that does no other update.
+     * 返回在线会话 {@link CacheOperation#REMOVE} 类型的同步删除任务。
      * @param <S>
      * @return
      */
@@ -88,9 +91,9 @@ public class Tasks {
     }
 
     /**
-     * Returns a typed task of type {@link CacheOperation#REMOVE} that does no other update.
+     * 返回 {@link CacheOperation#REMOVE} 类型的同步删除任务。
      *
-     * @param offline whether the operation should be performed on offline or non-offline session
+     * @param offline 是否在离线会话缓存上执行
      * @param <S>
      * @return
      */

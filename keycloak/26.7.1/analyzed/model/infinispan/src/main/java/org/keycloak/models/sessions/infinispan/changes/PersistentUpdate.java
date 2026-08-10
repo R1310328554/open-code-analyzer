@@ -25,14 +25,19 @@ import org.keycloak.models.KeycloakSession;
 import io.opentelemetry.api.trace.Span;
 
 /**
- * Capture information for a deferred update of the session stores.
+ * 封装会话存储的延迟更新任务。
+ * <p>
+ * 在 Keycloak 事务提交后异步执行，并通过 {@link CompletableFuture} 与 OpenTelemetry Span 跟踪完成状态。
  *
  * @author Alexander Schwartz
  */
 public class PersistentUpdate {
 
+    /** 延迟执行的更新逻辑。 */
     private final Consumer<KeycloakSession> task;
+    /** 异步完成信号。 */
     private final CompletableFuture<Void> future = new CompletableFuture<>();
+    /** 创建任务时的追踪 Span。 */
     private final Span span;
 
     public PersistentUpdate(Consumer<KeycloakSession> task) {
@@ -40,14 +45,17 @@ public class PersistentUpdate {
         this.span = Span.current();
     }
 
+    /** 在当前 Keycloak 会话上下文中执行延迟更新。 */
     public void perform(KeycloakSession session) {
         task.accept(session);
     }
 
+    /** 标记更新成功完成。 */
     public void complete() {
         future.complete(null);
     }
 
+    /** 标记更新失败并传播异常。 */
     public void fail(Throwable throwable) {
         future.completeExceptionally(throwable);
     }

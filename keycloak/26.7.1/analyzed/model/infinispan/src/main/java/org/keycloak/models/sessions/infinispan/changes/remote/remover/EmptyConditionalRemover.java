@@ -21,10 +21,12 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.commons.util.concurrent.AggregateCompletionStage;
 
 /**
- * A {@link ConditionalRemover} that does not remove anything.
+ * 空实现的条件删除器，不删除任何条目。
+ * <p>
+ * 作为默认占位符，{@link #willRemove} 恒为 false，{@link #executeRemovals} 为空操作。
  *
- * @param <K> The key's type stored in the {@link RemoteCache}.
- * @param <V> The value's type stored in the {@link RemoteCache}.
+ * @param <K> {@link RemoteCache} 键类型
+ * @param <V> {@link RemoteCache} 值类型
  */
 public class EmptyConditionalRemover<K, V> implements ConditionalRemover<K, V> {
 
@@ -43,6 +45,6 @@ public class EmptyConditionalRemover<K, V> implements ConditionalRemover<K, V> {
 
     @Override
     public void executeRemovals(RemoteCache<K, V> cache, AggregateCompletionStage<Void> stage) {
-        //no-op
+        // 无待执行的批量删除
     }
 }

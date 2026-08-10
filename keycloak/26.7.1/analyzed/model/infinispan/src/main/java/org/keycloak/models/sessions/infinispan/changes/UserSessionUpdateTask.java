@@ -20,6 +20,10 @@ package org.keycloak.models.sessions.infinispan.changes;
 import org.keycloak.models.sessions.infinispan.entities.UserSessionEntity;
 
 /**
+ * 用户会话更新任务的抽象基类。
+ * <p>
+ * 实现 {@link PersistentSessionUpdateTask}，默认缓存操作为 {@link CacheOperation#REPLACE}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public abstract class UserSessionUpdateTask implements PersistentSessionUpdateTask<UserSessionEntity> {

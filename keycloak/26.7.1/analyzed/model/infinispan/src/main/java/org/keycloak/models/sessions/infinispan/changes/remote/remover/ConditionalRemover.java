@@ -24,17 +24,15 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.commons.util.concurrent.AggregateCompletionStage;
 
 /**
- * It handles conditional remove operations.
+ * 远程缓存条件删除器。
  * <p>
- * This class is preferred to remove an unknown amount of entries by its key and/or value state. The implement may use
- * queries (delete statements) or perform a full cache scan to find the entries to remove.
+ * 适用于按键或值状态批量删除未知数量条目；实现可通过 Ickle 查询或全表扫描定位目标。
  * <p>
- * The method {@link #willRemove(Updater)} is invoked by {@link RemoteChangeLogTransaction} before perform any change
- * tracked by the {@link Updater}. This is an optimization to prevent sending changes that would be removed by this
- * {@link ConditionalRemover}.
+ * {@link RemoteChangeLogTransaction} 在应用 {@link Updater} 变更前调用 {@link #willRemove(Updater)}，
+ * 跳过即将被本删除器移除的条目，避免无效网络写入。
  *
- * @param <K> The key's type stored in the {@link RemoteCache}.
- * @param <V> The value's type stored in the {@link RemoteCache}.
+ * @param <K> {@link RemoteCache} 键类型
+ * @param <V> {@link RemoteCache} 值类型
  */
 public interface ConditionalRemover<K, V> {
 
@@ -50,8 +48,8 @@ public interface ConditionalRemover<K, V> {
      * @return {@code true} if the entry tracked by the {@link Updater} will be removed from the {@link RemoteCache}.
      */
     default boolean willRemove(Updater<K, V> updater) {
-        // The value can be null if the entry updated is marked as deleted.
-        // In that case, we don't have the value to check for the condition and will let the transaction perform the removal.
+        // 条目已标记删除时 value 可能为 null，此时无法预判条件，交由事务执行删除
+        // 无值可校验时返回 false，由事务正常处理移除
         return updater.getValue() != null && willRemove(updater.getKey(), updater.getValue());
     }
 

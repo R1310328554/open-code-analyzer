@@ -20,6 +20,10 @@ package org.keycloak.models.sessions.infinispan.changes;
 import org.keycloak.models.sessions.infinispan.entities.RootAuthenticationSessionEntity;
 
 /**
+ * 根认证会话更新任务的抽象基类。
+ * <p>
+ * 默认缓存操作为 {@link CacheOperation#REPLACE}，子类实现具体字段变更逻辑。
+ *
  * @author <a href="mailto:ggrazian@redhat.com">Giuseppe Graziano</a>
  */
 public abstract class RootAuthenticationSessionUpdateTask implements SessionUpdateTask<RootAuthenticationSessionEntity> {
