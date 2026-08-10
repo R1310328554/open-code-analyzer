@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T20:01:51Z",
-  "files": [
-    "web/src/pages/next-chats/constants.ts",
-    "web/src/pages/next-chats/hooks/use-build-form-refs.ts",
-    "web/src/pages/next-chats/hooks/use-chat-url.ts",
-    "web/src/pages/next-chats/hooks/use-click-card.ts",
-    "web/src/pages/next-chats/hooks/use-create-chat.ts",
-    "web/src/pages/next-chats/hooks/use-create-conversation.ts",
-    "web/src/pages/next-chats/hooks/use-rename-chat.ts",
-    "web/src/pages/next-chats/hooks/use-select-conversation-list.ts",
-    "web/src/pages/next-chats/hooks/use-send-chat-message.ts",
-    "web/src/pages/next-chats/hooks/use-send-shared-message.ts",
-    "web/src/pages/next-chats/hooks/use-send-single-message.ts",
-    "web/src/pages/next-chats/hooks/use-set-conversation.ts",
-    "web/src/pages/next-chats/hooks/use-upload-file.ts",
-    "web/src/pages/next-chats/utils.ts",
-    "web/src/pages/next-search/document-preview-modal/hooks.ts"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 84,
-  "done": 1665
+  "done": 1680
 }
