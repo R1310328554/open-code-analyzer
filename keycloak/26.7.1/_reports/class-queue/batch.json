@@ -15,23 +15,8 @@
     "services/src/main/java/org/keycloak/authentication/authenticators/AttemptedAuthenticator.java",
     "services/src/main/java/org/keycloak/authentication/authenticators/access/AllowAccessAuthenticator.java",
     "services/src/main/java/org/keycloak/authentication/authenticators/access/AllowAccessAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/access/DenyAccessAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/access/DenyAccessAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/AbstractIdpAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpAutoLinkAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpAutoLinkAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpConfirmLinkAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpConfirmLinkAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpConfirmOverrideLinkAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpConfirmOverrideLinkAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpCreateUserIfUniqueAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpCreateUserIfUniqueAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpDetectExistingBrokerUserAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpDetectExistingBrokerUserAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpEmailVerificationAuthenticator.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpEmailVerificationAuthenticatorFactory.java",
-    "services/src/main/java/org/keycloak/authentication/authenticators/broker/IdpReviewProfileAuthenticator.java"
+    "services/src/main/java/org/keycloak/authentication/authenticators/access/DenyAccessAuthenticator.java"
   ],
   "remaining_pending": 2188,
-  "done": 3780
+  "done": 3795
 }
