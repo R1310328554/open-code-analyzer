@@ -24,11 +24,16 @@ import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.permission.ResourcePermission;
 
 /**
+ * 按资源类型的策略评估扩展：在标准评估流程之外补充特定类型（如 Users）的关联策略。
+ * <p>由 {@link FGAPPolicyEvaluator} 按 {@link ResourcePermission#getResourceType()} 分发。</p>
+ *
  * An interface that should be implemented to provide additional logic when evaluating permissions for a specific resource type.
  */
 public interface ResourceTypePolicyEvaluator {
 
     /**
+     * 根据权限的资源类型执行扩展评估，并将匹配策略交给 {@code policyConsumer}。
+     *
      * Evaluates the given {@code permission} based on its {@link ResourcePermission#getResourceType()}.
      *
      * @param permission the permission

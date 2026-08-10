@@ -20,6 +20,9 @@ package org.keycloak.authorization.identity;
 import org.keycloak.authorization.attribute.Attributes;
 
 /**
+ * 安全身份抽象：表示已认证的主体（用户或非人类实体），在策略评估中作为许可/拒绝的目标。
+ * <p>通过 {@link #getAttributes()} 暴露角色、声明等属性，供策略条件引用。</p>
+ *
  * <p>Represents a security identity, which can be a person or non-person entity that was previously authenticated.
  *
  * <p>An {@link Identity} plays an important role during the evaluation of policies as they represent the entity to which one or more permissions
@@ -31,6 +34,8 @@ import org.keycloak.authorization.attribute.Attributes;
 public interface Identity {
 
     /**
+     * 返回身份唯一标识。
+     *
      * Returns the unique identifier of this identity.
      *
      * @return the unique identifier of this identity
@@ -38,6 +43,8 @@ public interface Identity {
     String getId();
 
     /**
+     * 返回与身份关联的属性或声明。
+     *
      * Returns the attributes or claims associated with this identity.
      *
      * @return the attributes or claims associated with this identity
@@ -45,6 +52,8 @@ public interface Identity {
     Attributes getAttributes();
 
     /**
+     * 是否拥有指定领域角色。
+     *
      * Indicates if this identity is granted with a realm role with the given <code>roleName</code>.
      *
      * @param roleName the name of the role
@@ -56,6 +65,8 @@ public interface Identity {
     }
 
     /**
+     * 是否拥有指定客户端下的角色。
+     *
      * Indicates if this identity is granted with a client role with the given <code>roleName</code>.
      *
      * @param clientId the client id
@@ -68,6 +79,8 @@ public interface Identity {
     }
 
     /**
+     * 是否拥有给定客户端角色列表中的任一角色。
+     *
      * Indicates if this identity is granted with a client role of one of the given <code>roleNames</code>.
      *
      * @param clientId the client id

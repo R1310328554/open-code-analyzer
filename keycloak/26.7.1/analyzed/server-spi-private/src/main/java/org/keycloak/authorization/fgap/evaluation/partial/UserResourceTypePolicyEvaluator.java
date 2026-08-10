@@ -39,8 +39,12 @@ import org.keycloak.models.UserModel;
 
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.GROUPS_RESOURCE_TYPE;
 
+/**
+ * Users 资源类型策略评估器：评估用户所属组层级及组类型级权限对当前用户资源访问的影响。
+ */
 public final class UserResourceTypePolicyEvaluator implements ResourceTypePolicyEvaluator {
 
+    /** 解析目标用户并评估其组成员关系相关策略。 */
     @Override
     public void evaluate(ResourcePermission permission, AuthorizationProvider authorization, Consumer<Policy> policyConsumer) {
         UserModel user = resolveUser(permission, authorization);

@@ -46,12 +46,17 @@ import org.keycloak.representations.idm.authorization.ResourceType;
 
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.isSkipEvaluation;
 
+/**
+ * 部分评估器：根据当前管理员用户的 FGAP 权限，计算 JPA 查询应附加的允许/拒绝谓词。
+ * <p>聚合 {@link PartialEvaluationPolicyProvider} 与 {@link PartialEvaluationStorageProvider} 的结果，并在会话内缓存评估上下文。</p>
+ */
 public final class PartialEvaluator {
 
     private static final String NO_ID = "none";
     private static final String ID_FIELD = "id";
     private static final String PARTIAL_EVALUATION_CONTEXT_CACHE = "kc.authz.fgap.partial.evaluation.cache";
 
+    /** 为指定资源类型生成授权过滤谓词；无权限或应跳过时返回空列表或恒假条件。 */
     public List<Predicate> getPredicates(KeycloakSession session, ResourceType resourceType, PartialEvaluationStorageProvider storage, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Path<?> path) {
         if (Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ)) {
             // feature not enabled, if a storage evaluator is provided try to resolve any filter from there

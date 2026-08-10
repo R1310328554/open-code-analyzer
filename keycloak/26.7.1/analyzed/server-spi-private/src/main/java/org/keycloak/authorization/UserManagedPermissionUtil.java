@@ -32,10 +32,14 @@ import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.keycloak.representations.idm.authorization.UserPolicyRepresentation;
 
 /**
+ * UMA 用户托管权限工具类：根据权限票据（Permission Ticket）创建、更新或删除用户托管策略。
+ * <p>在资源所有者批准/撤销访问请求时，同步维护关联的 UMA 策略与作用域。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class UserManagedPermissionUtil {
 
+    /** 根据票据授权状态更新或创建用户托管权限策略。 */
     public static void updatePolicy(PermissionTicket ticket, StoreFactory storeFactory) {
         Scope scope = ticket.getScope();
         Policy policy = ticket.getPolicy();
@@ -72,6 +76,7 @@ public class UserManagedPermissionUtil {
         }
     }
 
+    /** 撤销访问时移除作用域；若无剩余授权则删除整条 UMA 策略链。 */
     public static void removePolicy(PermissionTicket ticket, StoreFactory storeFactory) {
         Policy policy = ticket.getPolicy();
 
@@ -100,6 +105,7 @@ public class UserManagedPermissionUtil {
         }
     }
 
+    /** 为已批准的票据创建用户策略与 UMA 权限策略。 */
     private static Policy createUserManagedPermission(PermissionTicket ticket, StoreFactory storeFactory) {
         PolicyStore policyStore = storeFactory.getPolicyStore();
         UserPolicyRepresentation userPolicyRep = new UserPolicyRepresentation();

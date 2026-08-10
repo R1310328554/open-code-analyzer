@@ -29,6 +29,9 @@ import org.keycloak.representations.idm.authorization.ResourceType;
 import static java.util.function.Predicate.not;
 
 /**
+ * 部分评估上下文：在构建领域资源 JPA 查询时提供允许/拒绝的资源 ID、组 ID 及 Criteria API 句柄。
+ * <p>由 {@link PartialEvaluator} 填充并传递给 {@link PartialEvaluationStorageProvider}。</p>
+ *
  * An {@link PartialEvaluationContext} instance provides access to contextual information when building a query for realm
  * resources of a given {@link ResourceType}.
  */
@@ -44,10 +47,12 @@ public final class PartialEvaluationContext {
     private Set<String> allowedGroups = Set.of();
     private Set<String> deniedGroups = Set.of();
 
+    /** 无资源类型限制的简化构造（仅传递存储与 Criteria 组件）。 */
     public PartialEvaluationContext(PartialEvaluationStorageProvider storage, CriteriaBuilder criteriaBuilder, CriteriaQuery<?> criteriaQuery, Path<?> path) {
         this(null, Set.of(), Set.of(), storage, criteriaBuilder, criteriaQuery, path);
     }
 
+    /** 携带资源类型及允许/拒绝资源 ID 集合的完整构造。 */
     public PartialEvaluationContext(ResourceType resourceType, Set<String> allowedResources, Set<String> deniedResources, PartialEvaluationStorageProvider storage, CriteriaBuilder criteriaBuilder, CriteriaQuery<?> criteriaQuery, Path<?> path) {
         this.allowedResources = allowedResources;
         this.deniedResources = deniedResources;
@@ -58,14 +63,17 @@ public final class PartialEvaluationContext {
         this.resourceType = resourceType;
     }
 
+    /** 是否对整个资源类型授予访问。 */
     public boolean isResourceTypeAllowed() {
         return allowedResources.contains(resourceType.getType());
     }
 
+    /** 返回允许访问的具体资源实例 ID（不含类型名本身）。 */
     public Set<String> getAllowedResourceIds() {
         return allowedResources.stream().filter(not(resourceType.getType()::equals)).collect(Collectors.toSet());
     }
 
+    /** 返回被拒绝的组资源 ID（不含组类型名）。 */
     public Set<String> getDeniedGroupIds() {
         return deniedGroups.stream().filter(not(resourceType.getGroupType()::equals)).collect(Collectors.toSet());
     }

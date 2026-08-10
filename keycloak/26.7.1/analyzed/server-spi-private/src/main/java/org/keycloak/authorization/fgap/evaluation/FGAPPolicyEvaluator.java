@@ -40,17 +40,22 @@ import org.keycloak.authorization.store.StoreFactory;
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.USERS_RESOURCE_TYPE;
 
 /**
+ * FGAP v2 专用 {@link PolicyEvaluator}：评估管理端细粒度权限，支持按资源类型扩展评估逻辑。
+ * <p>通过 {@link FGAPDecision} 包装决策回调，并委托 {@link ResourceTypePolicyEvaluator} 处理 Users 等类型。</p>
+ *
  * A {@link PolicyEvaluator} specific for evaluating permisions in the context of the {@link org.keycloak.common.Profile.Feature#ADMIN_FINE_GRAINED_AUTHZ_V2} feature.
  */
 public final class FGAPPolicyEvaluator extends DefaultPolicyEvaluator {
 
     private final Map<String, ? extends ResourceTypePolicyEvaluator> resourceTypePolicyEvaluators = Map.of(USERS_RESOURCE_TYPE, new UserResourceTypePolicyEvaluator());
 
+    /** 使用 {@link FGAPDecision} 包装后委托父类评估。 */
     @Override
     public void evaluate(ResourcePermission permission, AuthorizationProvider authorizationProvider, EvaluationContext executionContext, Decision decision, Map<Policy, Map<Object, Effect>> decisionCache) {
         super.evaluate(permission, authorizationProvider, executionContext, new FGAPDecision(decision), decisionCache);
     }
 
+    /** 评估实例资源策略，并按资源类型调用扩展评估器。 */
     @Override
     protected void evaluateResourcePolicies(ResourcePermission permission, AuthorizationProvider authorization, Consumer<Policy> policyConsumer) {
         super.evaluateResourcePolicies(permission, authorization, policyConsumer);
@@ -70,6 +75,7 @@ public final class FGAPPolicyEvaluator extends DefaultPolicyEvaluator {
         resourceTypePolicyEvaluator.evaluate(permission, authorization, policyConsumer);
     }
 
+    /** 对具体实例资源额外评估绑定到资源类型的策略。 */
     @Override
     protected void evaluateResourceTypePolicies(ResourcePermission permission, AuthorizationProvider authorization, Consumer<Policy> policyConsumer) {
         String resourceType = permission.getResourceType();
@@ -88,6 +94,7 @@ public final class FGAPPolicyEvaluator extends DefaultPolicyEvaluator {
         policyStore.findByResource(resourceServer, resourceTypeResource, policyConsumer);
     }
 
+    /** FGAP 场景下不按单个作用域单独评估权限。 */
     @Override
     protected void evaluateScopePolicies(ResourcePermission permission, AuthorizationProvider authorization, Consumer<Policy> policyConsumer) {
         // do not evaluate permissions for individual scopes

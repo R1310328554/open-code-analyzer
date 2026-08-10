@@ -27,6 +27,9 @@ import java.util.Date;
 import java.util.Map;
 
 /**
+ * 属性容器：持有属性名与多值集合，并提供查询与类型转换工具。
+ * <p>未来可对接不同策略信息点（PIP）实现。</p>
+ *
  * <p>Holds attributes, their values and provides utility methods to manage them.
  *
  * <p>In the future, it may be useful to provide different implementations for this interface in order to plug or integrate with different
@@ -36,11 +39,14 @@ import java.util.Map;
  */
 public interface Attributes {
 
+    /** 由 Map 构造 {@link Attributes} 实例。 */
     static Attributes from(Map<String, Collection<String>> attributes) {
         return () -> attributes;
     }
 
     /**
+     * 转换为 {@link Map} 表示。
+     *
      * Converts to a {@link Map}.
      *
      * @return
@@ -48,6 +54,8 @@ public interface Attributes {
     Map<String, Collection<String>> toMap();
 
     /**
+     * 是否存在指定名称的属性。
+     *
      * Checks if there is an attribute with the given <code>name</code>.
      *
      * @param name the attribute name
@@ -58,6 +66,8 @@ public interface Attributes {
     }
 
     /**
+     * 是否存在指定名称且包含给定值的属性。
+     *
      * Checks if there is an attribute with the given <code>name</code> and <code>value</code>.
      *
      * @param name the attribute name
@@ -70,6 +80,8 @@ public interface Attributes {
     }
 
     /**
+     * 返回可解析多值的 {@link Entry}。
+     *
      * Returns a {@link Entry} from where values can be obtained and parsed accordingly.
      *
      * @param name the attribute name
@@ -86,6 +98,8 @@ public interface Attributes {
     }
 
     /**
+     * 单个属性及其多值条目，提供字符串/数值/日期等解析方法，便于编写规则型策略。
+     *
      * Holds an attribute and its values, providing useful methods for obtaining and formatting values. Specially useful
      * for writing rule-based policies.
      */
@@ -103,14 +117,17 @@ public interface Attributes {
             return this.name;
         }
 
+        /** 属性值个数。 */
         public int size() {
             return values.length;
         }
 
+        /** 是否无属性值。 */
         public boolean isEmpty() {
             return values.length == 0;
         }
 
+        /** 按索引读取字符串值。 */
         public String asString(int idx) {
             if (idx >= values.length) {
                 throw new IllegalArgumentException("Invalid index [" + idx + "]. Values are [" + values + "].");
@@ -119,10 +136,12 @@ public interface Attributes {
             return values[idx];
         }
 
+        /** 按索引解析整型值。 */
         public int asInt(int idx) {
             return Integer.parseInt(asString(idx));
         }
 
+        /** 按指定格式解析日期值。 */
         public Date asDate(int idx, String pattern) {
             try {
                 return new SimpleDateFormat(pattern).parse(asString(idx));
@@ -131,6 +150,7 @@ public interface Attributes {
             }
         }
 
+        /** 按索引解析 IP 地址。 */
         public InetAddress asInetAddress(int idx) {
             try {
                 return InetAddress.getByName(asString(idx));
@@ -139,10 +159,12 @@ public interface Attributes {
             }
         }
 
+        /** 按索引解析长整型值。 */
         public long asLong(int idx) {
             return Long.parseLong(asString(idx));
         }
 
+        /** 按索引解析双精度浮点值。 */
         public double asDouble(int idx) {
             return Double.parseDouble(asString(idx));
         }

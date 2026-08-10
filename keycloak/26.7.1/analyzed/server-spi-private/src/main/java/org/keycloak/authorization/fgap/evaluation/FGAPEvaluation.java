@@ -33,16 +33,21 @@ import org.keycloak.authorization.policy.evaluation.Realm;
 
 import static org.keycloak.authorization.fgap.AdminPermissionsSchema.SCHEMA;
 
+/**
+ * FGAP 评估上下文：扩展标准 {@link Evaluation}，按资源类型/作用域别名解析授予与拒绝逻辑，并维护作用域到资源实例的映射。
+ */
 class FGAPEvaluation implements Evaluation {
 
     private final Evaluation evaluation;
     private final Map<Scope, Set<Resource>> scopesGrantedByResource;
 
+    /** 包装底层评估并共享已授权资源映射。 */
     FGAPEvaluation(Evaluation evaluation, Map<Scope, Set<Resource>> scopesGrantedByResource) {
         this.evaluation = evaluation;
         this.scopesGrantedByResource = scopesGrantedByResource;
     }
 
+    /** 判断策略是否对给定作用域授予访问（含作用域别名与类型级资源）。 */
     @Override
     public boolean isGranted(Policy grantedPolicy, Scope grantedScope) {
         ResourcePermission permission = getPermission();
@@ -74,6 +79,7 @@ class FGAPEvaluation implements Evaluation {
         return grantedByResourceGroup;
     }
 
+    /** 判断策略是否拒绝给定作用域（特定资源拒绝优先于类型级授予）。 */
     @Override
     public boolean isDenied(Policy deniedPolicy, Scope deniedScope) {
         ResourcePermission permission = getPermission();

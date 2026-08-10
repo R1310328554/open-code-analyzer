@@ -27,15 +27,20 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.authorization.permission.ResourcePermission;
 import org.keycloak.authorization.policy.evaluation.Evaluation;
 
+/**
+ * FGAP 决策装饰器：将底层 {@link Decision} 包装为使用 {@link FGAPEvaluation} 的回调链，跟踪各作用域下已授权的资源集合。
+ */
 class FGAPDecision implements Decision<Evaluation> {
 
     private final Decision<Evaluation> decision;
     private final Map<Scope, Set<Resource>> scopesGrantedByResource = new HashMap<>();
 
+    /** 委托给底层决策回调。 */
     FGAPDecision(Decision<Evaluation> decision) {
         this.decision = decision;
     }
 
+    /** 用 {@link FGAPEvaluation} 包装评估结果后转发。 */
     @Override
     public void onDecision(Evaluation evaluation) {
         decision.onDecision(new FGAPEvaluation(evaluation, scopesGrantedByResource));

@@ -24,29 +24,37 @@ import org.keycloak.provider.ProviderFactory;
 import org.keycloak.provider.Spi;
 
 /**
+ * 授权服务 SPI 描述符，注册 {@link AuthorizationProvider} 与 {@link AuthorizationProviderFactory}。
+ * <p>内部 SPI，名称 {@code authorization}；仅在启用 {@link Profile.Feature#AUTHORIZATION} 时可用。</p>
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AuthorizationSpi implements Spi {
+    /** 内部 SPI，不对外暴露。 */
     @Override
     public boolean isInternal() {
         return true;
     }
 
+    /** 返回 SPI 名称 {@code authorization}。 */
     @Override
     public String getName() {
         return "authorization";
     }
 
+    /** 提供者接口类型 {@link AuthorizationProvider}。 */
     @Override
     public Class<? extends Provider> getProviderClass() {
         return AuthorizationProvider.class;
     }
 
+    /** 工厂接口类型 {@link AuthorizationProviderFactory}。 */
     @Override
     public Class<? extends ProviderFactory> getProviderFactoryClass() {
         return AuthorizationProviderFactory.class;
     }
 
+    /** 是否启用授权特性。 */
     @Override
     public boolean isEnabled() {
         return Profile.isFeatureEnabled(Profile.Feature.AUTHORIZATION);

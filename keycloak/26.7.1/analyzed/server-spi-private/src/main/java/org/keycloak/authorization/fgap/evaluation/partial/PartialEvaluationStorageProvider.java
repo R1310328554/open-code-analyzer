@@ -23,6 +23,9 @@ import java.util.List;
 import jakarta.persistence.criteria.Predicate;
 
 /**
+ * 部分评估存储扩展：领域资源存储 Provider 可据此向 JPA 查询注入自定义授权过滤谓词。
+ * <p>在启用 {@link org.keycloak.common.Profile.Feature#ADMIN_FINE_GRAINED_AUTHZ} 时由 {@link PartialEvaluator} 回调。</p>
+ *
  * If a realm has the {@link org.keycloak.common.Profile.Feature#ADMIN_FINE_GRAINED_AUTHZ} feature enabled,
  * realm resources storage providers can implement this interface if they want to apply custom predicates to queries
  * to filter their results based on the permissions available from the realm.
@@ -30,6 +33,8 @@ import jakarta.persistence.criteria.Predicate;
 public interface PartialEvaluationStorageProvider {
 
     /**
+     * 构建允许访问资源的查询过滤谓词列表。
+     *
      * A callback method that will be called when building queries for realm resources to grant access to resources. It returns a list of
      * {@link Predicate} instances representing the filters that should be applied to queries
      * when querying realm resources.
@@ -40,6 +45,8 @@ public interface PartialEvaluationStorageProvider {
     List<Predicate> getFilters(PartialEvaluationContext evaluationContext);
 
     /**
+     * 构建拒绝访问资源的否定过滤谓词列表。
+     *
      * A callback method that will be called when building queries for realm resources to deny access to resources. It returns a list of
      * {@link Predicate} instances representing the filters that should be applied to queries
      * when querying realm resources.

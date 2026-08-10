@@ -75,8 +75,13 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 
 import org.jboss.logging.Logger;
 
+/**
+ * 管理端细粒度授权（FGAP v2）权限模式：定义 Realms/Clients/Groups/Roles/Users/Organizations 等资源类型、作用域及评估/查询过滤逻辑。
+ * <p>单例 {@link #SCHEMA} 在领域启用 admin permissions 时驱动资源创建、策略评估与 JPA 查询谓词生成。</p>
+ */
 public class AdminPermissionsSchema extends AuthorizationSchema {
     private static final Logger LOGGER = Logger.getLogger(AdminPermissionsSchema.class);
+    /** 领域资源类型标识。 */
     public static final String REALMS_RESOURCE_TYPE = "Realms";
 
     public static final String CLIENTS_RESOURCE_TYPE = "Clients";
@@ -119,6 +124,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
     public static final ResourceType USERS = new ResourceType(USERS_RESOURCE_TYPE, Set.of(MANAGE, VIEW, IMPERSONATE, MAP_ROLES, MANAGE_GROUP_MEMBERSHIP, RESET_PASSWORD), Map.of(VIEW, Set.of(VIEW_MEMBERS), MANAGE, Set.of(MANAGE_MEMBERS), IMPERSONATE, Set.of(IMPERSONATE_MEMBERS), MANAGE_GROUP_MEMBERSHIP, Set.of(MANAGE_MEMBERSHIP_OF_MEMBERS)), GROUPS.getType());
     public static final ResourceType ORGANIZATIONS = new ResourceType(ORGANIZATIONS_RESOURCE_TYPE, Set.of(MANAGE, VIEW));
     private static final String SKIP_EVALUATION = "kc.authz.fgap.skip";
+    /** 全局单例模式实例。 */
     public static final AdminPermissionsSchema SCHEMA = new AdminPermissionsSchema();
 
     private final PartialEvaluator partialEvaluator = new PartialEvaluator();
@@ -134,6 +140,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         ));
     }
 
+    /** 按资源类型与实体 ID 查找或懒创建授权资源。 */
     public Resource getOrCreateResource(KeycloakSession session, ResourceServer resourceServer, String resourceType, String id) {
         if (!supportsAuthorizationSchema(session, resourceServer)) {
             return null;
@@ -187,6 +194,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         };
     }
 
+    /** 获取表示整类资源（如 Users）的类型级资源。 */
     public Resource getResourceTypeResource(KeycloakSession session, ResourceServer resourceServer, String resourceType) {
         if (!supportsAuthorizationSchema(session, resourceServer)) {
             return null;
@@ -321,6 +329,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         return scope;
     }
 
+    /** 初始化 admin permissions 客户端、作用域与类型级资源。 */
     public void init(KeycloakSession session, RealmModel realm) {
         ClientProvider clients = session.clients();
         ClientModel client = realm.getAdminPermissionsClient();
@@ -391,6 +400,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         }
     }
 
+    /** 领域是否启用 FGAP v2 管理权限。 */
     public boolean isAdminPermissionsEnabled(RealmModel realm) {
         return Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ_V2) && realm != null && realm.isAdminPermissionsEnabled();
     }
@@ -529,6 +539,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         }
     }
 
+    /** 为 JPA 查询附加基于部分评估的授权过滤谓词。 */
     public List<Predicate> applyAuthorizationFilters(KeycloakSession session, ResourceType resourceType, RealmModel realm, CriteriaBuilder builder, CriteriaQuery<?> queryBuilder, Path<?> path) {
         return applyAuthorizationFilters(session, resourceType, null, realm, builder, queryBuilder, path);
     }
@@ -537,6 +548,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         return partialEvaluator.getPredicates(session, resourceType, evaluator, realm, builder, queryBuilder, path);
     }
 
+    /** 对 admin permissions 客户端返回 {@link FGAPPolicyEvaluator}。 */
     public PolicyEvaluator getPolicyEvaluator(KeycloakSession session, ResourceServer resourceServer) {
         if (resourceServer == null) {
             return null;
@@ -551,6 +563,7 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
         return null;
     }
 
+    /** 解析作用域别名（如 Users 的 view 对应 view-members）。 */
     public Set<String> getScopeAliases(String resourceType, Scope scope) {
         ResourceType type = getResourceTypes().get(resourceType);
         Set<String> aliases = type.getScopeAliases().get(scope.getName());
@@ -568,6 +581,9 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
     }
 
     /**
+     * 在指定会话上下文中临时跳过领域资源类型的授权评估后执行 {@code runnable}。
+     * <p>适用于缓存等无需权限过滤的内部路径。</p>
+     *
      * <p>Disables authorization and evaluation of permissions for realm resource types when executing the given {@code runnable}
      * in the context of the given {@code session}.
      *
@@ -592,6 +608,8 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
     }
 
     /**
+     * 跳过授权评估后执行 {@code supplier} 并返回其结果。
+     *
      * <p>Disables authorization and evaluation of permissions for realm resource types when executing the given {@code supplier}
      * in the context of the given {@code session}, returning the supplier's result.
      *
@@ -615,6 +633,8 @@ public class AdminPermissionsSchema extends AuthorizationSchema {
     }
 
     /**
+     * 当前会话是否处于跳过授权评估状态。
+     *
      * Returns if authorization is disabled in the context of the given {@code session} at the moment that this method is called.
      *
      * @param session the session
