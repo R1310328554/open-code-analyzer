@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T13:45:00Z",
-  "files": [
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/DeliveryMethodFamily.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/PollDeliveryMethodRepresentation.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/PushDeliveryMethodRepresentation.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/RemoveSubjectRequest.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/ReplaceSsfStreamRequest.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/SsfStreamRepresentation.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/SsfStreamStatusRepresentation.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/StreamStatus.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/StreamStatusValue.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/stream/UpdateSsfStreamRequest.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/AccountSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/AliasesSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/ComplexSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/DidSubjectId.java",
-    "ssf/core/src/main/java/org/keycloak/ssf/subject/EmailSubjectId.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 628,
-  "done": 5355
+  "done": 5370
 }
