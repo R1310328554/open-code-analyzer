@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T19:15:55Z",
   "files": [
-    "rag/advanced_rag/__init__.py",
-    "rag/advanced_rag/knowlege_compile/__init__.py",
-    "rag/advanced_rag/knowlege_compile/_common.py",
-    "rag/advanced_rag/knowlege_compile/dataset_nav.py",
-    "rag/advanced_rag/knowlege_compile/mind_map_extractor.py",
-    "rag/advanced_rag/knowlege_compile/raptor.py",
-    "rag/advanced_rag/knowlege_compile/structure.py",
-    "rag/advanced_rag/knowlege_compile/wiki.py",
-    "rag/advanced_rag/tree_structured_query_decomposition_retrieval.py",
-    "rag/app/__init__.py",
-    "rag/app/audio.py",
-    "rag/app/book.py",
-    "rag/app/email.py",
-    "rag/app/laws.py",
-    "rag/app/manual.py",
     "rag/app/naive.py",
     "rag/app/one.py",
     "rag/app/paper.py",
@@ -33,5 +18,5 @@
     "rag/flow/chunker/title_chunker/__init__.py"
   ],
   "remaining_pending": 564,
-  "done": 1170
+  "done": 1185
 }
