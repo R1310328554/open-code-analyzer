@@ -19,7 +19,7 @@ package org.keycloak.storage.ldap.idm.query.internal;
 import org.keycloak.storage.ldap.idm.query.Condition;
 
 /**
- * <p>And condition for filters.</p>
+ * LDAP 逻辑与（{@code &}）复合条件，依次拼接各子条件的 filter 片段。
  *
  * @author rmartinc
  */
@@ -27,6 +27,7 @@ public class AndCondition implements Condition {
 
     private final Condition[] innerConditions;
 
+    /** 由多个子条件构成 AND 过滤器。 */
     public AndCondition(Condition... innerConditions) {
         this.innerConditions = innerConditions;
     }

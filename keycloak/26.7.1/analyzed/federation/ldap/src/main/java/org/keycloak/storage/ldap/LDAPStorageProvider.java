@@ -108,6 +108,8 @@ import org.keycloak.utils.StringUtil;
 import org.jboss.logging.Logger;
 
 /**
+ * LDAP 用户存储提供器：用户查找/注册、凭据校验、Kerberos/SPNEGO、同步导入及 mapper 代理链的核心实现。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -136,7 +138,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
     protected LDAPStorageUserManager userManager;
     private LDAPMappersComparator ldapMappersComparator;
 
-    // these exist to make sure that we only hit ldap once per transaction
+    // 事务内尽量只访问 LDAP 一次（由 LDAPStorageUserManager 缓存已加载对象）
     //protected Map<String, UserModel> noImportSessionCache = new HashMap<>();
 
 
@@ -209,7 +211,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
             return existing;
         }
 
-        // We need to avoid having CachedUserModel as cache is upper-layer then LDAP. Hence having CachedUserModel here may cause StackOverflowError
+        // 避免在此层使用 CachedUserModel，否则上层缓存与 LDAP 代理链可能 StackOverflow
         if (local instanceof CachedUserModel) {
             StoreManagers datastoreProvider = (StoreManagers) session.getProvider(DatastoreProvider.class);
             local = datastoreProvider.userStorageManager().getUserById(realm, local.getId());
@@ -234,8 +236,8 @@ public class LDAPStorageProvider implements UserStorageProvider,
                 break;
             case WRITABLE:
             case UNSYNCED:
-                // Any attempt to write data, which are not supported by the LDAP schema, should fail
-                // This check is skipped when register new user as there are many "generic" attributes always written (EG. enabled, emailVerified) and those are usually unsupported by LDAP schema
+                // 非 LDAP schema 支持的字段写入应失败（只写 LDAP 委托）
+                // 注册新用户时跳过：enabled、emailVerified 等通用属性通常不在 LDAP schema 中
                 if (!model.isImportEnabled() && !newUser) {
                     UserModel readOnlyDelegate = new ReadOnlyUserModelDelegate(local, ReadOnlyException::new);
                     proxied = new LDAPWritesOnlyUserModelDelegate(readOnlyDelegate, this);
@@ -383,6 +385,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
     }
 
     /**
+     * LDAP 用户搜索：支持 {@link UserModel#SEARCH}、{@link UserModel#EXACT} 及 mapper 映射的属性。
      * LDAP search supports {@link UserModel#SEARCH}, {@link UserModel#EXACT} and
      * all the other user attributes that are managed by a mapper (method
      * <em>getUserAttributes</em>).
@@ -524,6 +527,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
     }
 
     /**
+     * 按属性 Map 逻辑与（AND）搜索 LDAP；未映射属性则返回空流。
      * Searches LDAP using logical conjunction of params. It uses the LDAP mappers
      * (method <em>getUserAttributes</em>) to control what attributes are
      * managed by the ldap server. If one attribute is not defined by the
@@ -591,6 +595,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
     }
 
     /**
+     * 按 {@code search} 参数对用户名/邮箱/姓名等字段做逻辑或（OR）搜索。
      * Searches LDAP using logical disjunction of params. It supports
      * <ul>
      *     <li>{@link UserModel#FIRST_NAME}</li>
@@ -633,8 +638,9 @@ public class LDAPStorageProvider implements UserStorageProvider,
     }
 
     /**
-     * @param local
-     * @return ldapUser corresponding to local user or null if user is no longer in LDAP
+     * 加载并校验本地用户对应的 LDAP 条目。
+     * @param local 本地 {@link UserModel}
+     * @return 对应的 {@link LDAPObject}，LDAP 中已不存在则返回 null
      */
     protected LDAPObject loadAndValidateUser(RealmModel realm, UserModel local) {
         // getFirstAttribute triggers validation and another call to this method, so we run it before checking the cache
@@ -699,10 +705,11 @@ public class LDAPStorageProvider implements UserStorageProvider,
                 user.getUsername(), user.getEmail(), ldapUser.getUuid(), userDN);
     }
 
+    /** LDAP 用户导入策略。 */
     protected enum ImportType {
-        FORCED, // the import is forced
-        NOT_FORCED_RETURN_NULL, // the import is not forced and null is returned when a previous user exists
-        NOT_FORCED_RETURN_EXISTING  // the import is not forced and existing user is returned
+        FORCED, // 强制导入
+        NOT_FORCED_RETURN_NULL, // 不强制：已存在本地用户时返回 null
+        NOT_FORCED_RETURN_EXISTING  // 不强制：返回已有本地用户
     };
 
     protected UserModel importUserFromLDAP(KeycloakSession session, RealmModel realm, LDAPObject ldapUser, ImportType importType) {
@@ -815,7 +822,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
             // Use Kerberos JAAS (Krb5LoginModule)
             KerberosUsernamePasswordAuthenticator authenticator = factory.createKerberosUsernamePasswordAuthenticator(kerberosConfig);
             String kerberosUsername = user.getFirstAttribute(KerberosConstants.KERBEROS_PRINCIPAL);
-            // Fallback to username (backwards compatibility)
+            // 回退用用户名（向后兼容）
             if (kerberosUsername == null) kerberosUsername = user.getUsername();
 
             return authenticator.validUser(kerberosUsername, password);
@@ -831,7 +838,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
                 ldapIdentityStore.validatePassword(ldapUser, password);
                 return true;
             } catch (PasswordPolicyPasswordChangeException e) {
-                // LDAP password policy requires a forced password change.
+                // LDAP 密码策略要求强制改密
                 // Check for edit mode writable, so that user can modify LDAP password.
                 if (editMode != EditMode.WRITABLE) {
                     logger.debugf("User '%s' in realm '%s' is forced to change password but editMode is not writable. Failing login.", user.getUsername(), realm.getName());
@@ -846,7 +853,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
                             authSession.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
                         }
                     } else {
-                        // Just a fallback. It should not happen during normal authentication process
+                        // 兜底路径，正常认证流程不应走到此处
                         logger.debugf("Adding requiredAction UPDATE_PASSWORD to the user %s", user.getUsername());
                         user.addRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
                     }
@@ -1005,6 +1012,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
     }
 
     /**
+     * Kerberos 认证成功后查找或创建 Keycloak 用户。
      * Called after successful kerberos authentication
      *
      * @param realm realm
@@ -1124,6 +1132,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
     }
 
     /**
+     * 利用 {@link LDAPQuery#getResultList()} 的分页能力，按 firstResult/maxResults 惰性填充结果流。
      * This method leverages existing pagination support in {@link LDAPQuery#getResultList()}. It sets the limit for the query
      * based on {@code firstResult}, {@code maxResults} and {@link LDAPConfig#getBatchSizeForSync()}.
      *
@@ -1155,7 +1164,7 @@ public class LDAPStorageProvider implements UserStorageProvider,
 
             return Stream.iterate(ldapQuery,
                     query -> {
-                        //the very 1st page - Pagination context might not yet be present
+                        // 首页：分页上下文可能尚未初始化
                         if (query.getPaginationContext() == null) {
                             try {
                                 query.initPagination();

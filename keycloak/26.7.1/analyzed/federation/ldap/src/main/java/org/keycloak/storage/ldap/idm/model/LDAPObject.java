@@ -30,6 +30,8 @@ import java.util.function.Consumer;
 import org.jboss.logging.Logger;
 
 /**
+ * LDAP 目录条目的内存表示：UUID、DN、objectClass、属性集、只读/range 属性及必填属性延迟提交。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LDAPObject {
@@ -39,23 +41,23 @@ public class LDAPObject {
     private String uuid;
     private LDAPDn dn;
 
-    // In most cases, there is single "rdnAttributeName" . Usually "uid" or "cn"
+    // 多数情况下 RDN 属性为 uid 或 cn
     private final List<String> rdnAttributeNames = new LinkedList<>();
 
     private final List<String> objectClasses = new LinkedList<>();
 
-    // NOTE: names of read-only attributes are lower-cased to avoid case sensitivity issues
+    // 只读属性名统一小写，避免大小写差异
     private final List<String> readOnlyAttributeNames = new LinkedList<>();
 
     private final Map<String, Set<String>> attributes = new HashMap<>();
 
-    // Copy of "attributes" containing lower-cased keys and original case-sensitive attribute name
+    // 属性名大小写不敏感索引，保留原始大小写键
     private final Map<String, Map.Entry<String, Set<String>>> lowerCasedAttributes = new HashMap<>();
 
-    // range attributes are always read from 0 to max so just saving the top value
+    // range 属性分段读取，仅记录当前已读上限
     private final Map<String, Integer> rangedAttributes = new HashMap<>();
 
-    // consumer to be executed when mandatory attributes are set
+    // 必填属性全部就绪后执行的回调
     private Consumer<LDAPObject> consumerOnMandatoryAttributesComplete;
 
     // mandatory attributes defined for the entry
@@ -64,6 +66,9 @@ public class LDAPObject {
     // mandatory attributes that remain not set
     private Set<String> mandatoryAttributeNamesRemaining;
 
+    /**
+     * 注册必填属性集合；全部赋值完成后执行 consumer（用于延迟 create/add）。
+     */
     public void executeOnMandatoryAttributesComplete(Set<String> mandatoryAttributeNames, Consumer<LDAPObject> consumer) {
         this.consumerOnMandatoryAttributesComplete = consumer;
         this.mandatoryAttributeNames = new LinkedHashSet<>();
@@ -132,7 +137,7 @@ public class LDAPObject {
     }
 
     /**
-     * Useful when single value will be used as the "RDN" attribute. Which will be most of the cases
+     * 设置单个 RDN 属性名（常见场景）。
      * @param rdnAttributeName The RDN of the ldap object
      */
     public void setRdnAttributeName(String rdnAttributeName) {
@@ -179,7 +184,7 @@ public class LDAPObject {
         }
     }
 
-    // Case-insensitive
+    // 属性名大小写不敏感
     public String getAttributeAsString(String name) {
         Map.Entry<String, Set<String>> entry = lowerCasedAttributes.get(name.toLowerCase());
         if (entry == null || entry.getValue().isEmpty()) {

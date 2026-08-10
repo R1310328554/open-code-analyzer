@@ -26,11 +26,9 @@ import org.keycloak.models.utils.UserModelDelegate;
 import org.keycloak.storage.ldap.mappers.LDAPTransaction;
 
 /**
- * User model delegate, which tracks what attributes were written to LDAP in this transaction. For those attributes, it will skip
- * calling delegate for doing any additional updates.
- *
- * It may be typically used together with Read-Only delegate. The result is that read-only exception will be thrown when attempt
- * to update any user attribute, which is NOT mapped to LDAP.
+ * 用户模型委托：记录本事务已写入 LDAP 的属性，避免对下层委托重复更新。
+ * <p>
+ * 常与只读委托组合：未映射到 LDAP 的属性修改将抛出 {@link org.keycloak.storage.ReadOnlyException}。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -134,14 +132,14 @@ public class LDAPWritesOnlyUserModelDelegate extends UserModelDelegate {
         }
     }
 
-    // Checks if attribute was updated in LDAP in this transaction
+    // 判断本事务内该属性是否已由 LDAP mapper 更新
     protected boolean isAttributeUpdatedInLDAP(String attributeName) {
         LDAPTransaction transaction = provider.getUserManager().getTransaction(getId());
         if (transaction == null) return false;
         return transaction.isAttributeUpdated(attributeName);
     }
 
-    // Checks if requiredAction was updated in LDAP in this transaction
+    // 判断本事务内该 requiredAction 是否已在 LDAP 侧处理
     protected boolean isRequiredActionUpdatedInLDAP(String requiredActionName) {
         LDAPTransaction transaction = provider.getUserManager().getTransaction(getId());
         if (transaction == null) return false;

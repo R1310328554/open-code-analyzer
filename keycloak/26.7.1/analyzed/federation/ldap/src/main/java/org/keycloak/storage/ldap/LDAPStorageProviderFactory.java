@@ -78,6 +78,8 @@ import org.keycloak.utils.CredentialHelper;
 import org.jboss.logging.Logger;
 
 /**
+ * LDAP 用户存储工厂：组件生命周期、配置校验、默认 mapper 创建及全量/增量同步。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
@@ -245,7 +247,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
     }
 
 
-    // Check if it's some performance overhead to create this map in every request. But probably not...
+    // 每次请求构建 decorator 映射的开销通常可忽略
     protected Map<ComponentModel, LDAPConfigDecorator> getLDAPConfigDecorators(KeycloakSession session, ComponentModel ldapModel) {
         RealmModel realm = session.realms().getRealm(ldapModel.getParentId());
         return realm.getComponentsStream(ldapModel.getId(), LDAPStorageMapper.class.getName())
@@ -300,17 +302,17 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
             }
         }
 
-        // This parses the configuration directly as cfg.getConnectionPooling() will take into account the current StartTLS setting
+        // 直接读原始配置：getConnectionPooling() 会结合 StartTLS 决定是否启用连接池
         if(cfg.isStartTls() && Boolean.parseBoolean(config.getConfig().getFirst(LDAPConstants.CONNECTION_POOLING))) {
             throw new ComponentValidationException("ldapErrorCantEnableStartTlsAndConnectionPooling");
         }
 
-        // editMode is mandatory
+        // editMode 为必填项
         if (config.get(LDAPConstants.EDIT_MODE) == null) {
             throw new ComponentValidationException("ldapErrorEditModeMandatory");
         }
 
-        // validatePasswordPolicy applicable only for WRITABLE mode
+        // validatePasswordPolicy 仅 WRITABLE 模式可用
         if (cfg.getEditMode() != UserStorageProvider.EditMode.WRITABLE) {
             if (cfg.isValidatePasswordPolicy()) {
                 throw new ComponentValidationException("ldapErrorValidatePasswordPolicyAvailableForWritableOnly");
@@ -322,7 +324,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
         }
 
         if (config.getId() == null) {
-            // the ldap component is being created, use short id for ldap components
+            // 新建组件时使用短 ID
             config.setId(KeycloakModelUtils.generateShortId());
         }
     }
@@ -335,7 +337,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
             logger.warnf("Insecure LDAP referrals are enabled. The option 'secure-referral' is deprecated and it will be removed in future releases.");
         }
 
-        // set connection pooling for plain and tls protocols by default
+        // 默认启用 plain/ssl 协议的 JNDI 连接池
         if (System.getProperty(LDAP_CONNECTION_POOL_PROTOCOL) == null) {
             System.setProperty(LDAP_CONNECTION_POOL_PROTOCOL, "plain ssl");
         }
@@ -369,7 +371,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
         return PROVIDER_NAME;
     }
 
-    // Best effort to create appropriate mappers according to our LDAP config
+    // 按 LDAP 配置尽力创建合适的默认 mapper
     @Override
     public void onCreate(KeycloakSession session, RealmModel realm, ComponentModel model) {
         LDAPConfig ldapConfig = new LDAPConfig(model.getConfig());
@@ -391,12 +393,12 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
                 UserAttributeLDAPStorageMapper.IS_MANDATORY_IN_LDAP, "true");
         realm.addComponentModel(mapperModel);
 
-        // CN is typically used as RDN for Active Directory deployments
+        // AD 部署通常以 CN 作为 RDN
         if (ldapConfig.getRdnLdapAttribute().equalsIgnoreCase(LDAPConstants.CN)) {
 
             if (usernameLdapAttribute.equalsIgnoreCase(LDAPConstants.CN)) {
 
-                // For AD deployments with "cn" as username, we will map "givenName" to first name
+                // AD 且用户名为 cn 时，givenName 映射到 firstName
                 mapperModel = KeycloakModelUtils.createComponentModel("first name", model.getId(), UserAttributeLDAPStorageMapperFactory.PROVIDER_ID,LDAPStorageMapper.class.getName(),
                         UserAttributeLDAPStorageMapper.USER_MODEL_ATTRIBUTE, UserModel.FIRST_NAME,
                         UserAttributeLDAPStorageMapper.LDAP_ATTRIBUTE, LDAPConstants.GIVENNAME,
@@ -463,7 +465,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
         String createTimestampLdapAttrName = activeDirectory ? "whenCreated" : LDAPConstants.CREATE_TIMESTAMP;
         String modifyTimestampLdapAttrName = activeDirectory ? "whenChanged" : LDAPConstants.MODIFY_TIMESTAMP;
 
-        // map createTimeStamp as read-only
+        // 创建时间戳只读映射
         mapperModel = KeycloakModelUtils.createComponentModel("creation date", model.getId(), UserAttributeLDAPStorageMapperFactory.PROVIDER_ID,LDAPStorageMapper.class.getName(),
                 UserAttributeLDAPStorageMapper.USER_MODEL_ATTRIBUTE, LDAPConstants.CREATE_TIMESTAMP,
                 UserAttributeLDAPStorageMapper.LDAP_ATTRIBUTE, createTimestampLdapAttrName,
@@ -481,7 +483,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
                 UserAttributeLDAPStorageMapper.IS_MANDATORY_IN_LDAP, "false");
         realm.addComponentModel(mapperModel);
 
-        // MSAD specific mapper for account state propagation
+        // MSAD 账户控制状态同步 mapper
         if (activeDirectory) {
             mapperModel = KeycloakModelUtils.createComponentModel("MSAD account controls", model.getId(), MSADUserAccountControlStorageMapperFactory.PROVIDER_ID,LDAPStorageMapper.class.getName(),
                     MSADUserAccountControlStorageMapper.ALWAYS_READ_ENABLED_VALUE_FROM_LDAP, alwaysReadValueFromLDAP);
@@ -505,7 +507,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
             realm.addComponentModel(mapperModel);
         }
 
-        // In case that "Sync Registration" is ON and the LDAP v3 Password-modify extension is ON, we will create hardcoded mapper to create
+        // 开启同步注册且使用 Password Modify 扩展时，写入随机 userPassword 以便用户可登录
         // random "userPassword" every time when creating user. Otherwise users won't be able to register and login
         if (!activeDirectory && syncRegistrations && ldapConfig.useExtendedPasswordModifyOp()) {
             mapperModel = KeycloakModelUtils.createComponentModel("random initial password", model.getId(), HardcodedLDAPAttributeMapperFactory.PROVIDER_ID,LDAPStorageMapper.class.getName(),
@@ -530,7 +532,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
         LDAPConfig oldConfig = new LDAPConfig(oldModel.getConfig());
         LDAPConfig newConfig = new LDAPConfig(newModel.getConfig());
         if (!oldConfig.getUsernameLdapAttribute().equals(newConfig.getUsernameLdapAttribute())) {
-            // propagate username LDAP attribute change to the username mapper.
+            // 用户名 LDAP 属性变更时同步到 username mapper
             ComponentModel usernameMapperModel = realm.getComponentsStream(oldModel.getId(), LDAPStorageMapper.class.getName())
                     .filter(mapper -> "username".equals(mapper.getName()))
                     .findFirst().orElse(null);
@@ -559,7 +561,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
         try (LDAPQuery userQuery = createQuery(sessionFactory, realmId, model)) {
             SynchronizationResult syncResult = syncImpl(sessionFactory, userQuery, realmId, model);
 
-            // TODO: Remove all existing keycloak users, which have federation links, but are not in LDAP. Perhaps don't check users, which were just added or updated during this sync?
+            // TODO: 清理 federationLink 存在但 LDAP 中已不存在的本地用户
 
             logger.infof("Sync all users finished: %s", syncResult.getStatus());
             return syncResult;
@@ -572,7 +574,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
 
         logger.infof("Sync changed users from LDAP to local store: realm: %s, federation provider: %s, last sync time: " + lastSync, realmId, model.getName());
 
-        // Sync newly created and updated users
+        // 同步自 lastSync 以来新建或修改的用户
         LDAPQueryConditionsBuilder conditionsBuilder = new LDAPQueryConditionsBuilder();
         Condition createCondition = conditionsBuilder.greaterThanOrEqualTo(LDAPConstants.CREATE_TIMESTAMP, lastSync);
         Condition modifyCondition = conditionsBuilder.greaterThanOrEqualTo(LDAPConstants.MODIFY_TIMESTAMP, lastSync);
@@ -627,7 +629,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
                 syncResult.add(currentPageSync);
             }
         } else {
-            // LDAP pagination not available. Do everything in single transaction
+            // 无 LDAP 分页时一次性拉取全部结果
             final List<LDAPObject> users = userQuery.getResultList();
             SynchronizationResult currentSync = importLdapUsers(sessionFactory, realmId, fedModel, users);
             syncResult.add(currentSync);
@@ -637,6 +639,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
     }
 
     /**
+     * 必须在 try-with-resources 中调用，否则 Vault 密钥可能泄漏。
      *  !! This function must be called from try-with-resources block, otherwise Vault secrets may be leaked !!
      * @param sessionFactory
      * @param realmId
@@ -676,7 +679,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
 
             try {
 
-                // Process each user in it's own transaction to avoid global fail
+                // 每个用户独立事务，避免单条失败导致整批回滚
                 KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
 
                     @Override
@@ -693,7 +696,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
                                 .searchForUserByUserAttributeStream(currentRealm, LDAPConstants.LDAP_ID, ldapUser.getUuid())
                                 .findFirst();
                         if (!userModelOptional.isPresent() && currentUserLocal == null) {
-                            // Add new user to Keycloak
+                            // 新用户写入 Keycloak 本地库
                             exists.value = false;
                             ldapFedProvider.importUserFromLDAP(session, currentRealm, ldapUser);
                             syncResult.increaseAdded();
@@ -702,7 +705,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
                             UserModel currentUser = userModelOptional.isPresent() ? userModelOptional.get() : currentUserLocal;
                             if ((fedModel.getId().equals(currentUser.getFederationLink())) && (ldapUser.getUuid().equals(currentUser.getFirstAttribute(LDAPConstants.LDAP_ID)))) {
 
-                                // Update keycloak user
+                                // 更新已有 Keycloak 用户属性
                                 LDAPMappersComparator ldapMappersComparator = new LDAPMappersComparator(ldapFedProvider.getLdapIdentityStore().getConfig());
                                 currentRealm.getComponentsStream(fedModel.getId(), LDAPStorageMapper.class.getName())
                                         .sorted(ldapMappersComparator.sortDesc())
@@ -729,7 +732,7 @@ public class LDAPStorageProviderFactory implements UserStorageProviderFactory<LD
                 logger.error("Failed during import user from LDAP", me);
                 syncResult.increaseFailed();
 
-                // Remove user if we already added him during this transaction
+                // 本事务中已添加的用户在失败时回滚删除
                 if (!exists.value) {
                     KeycloakModelUtils.runJobInTransaction(sessionFactory, new KeycloakSessionTask() {
 

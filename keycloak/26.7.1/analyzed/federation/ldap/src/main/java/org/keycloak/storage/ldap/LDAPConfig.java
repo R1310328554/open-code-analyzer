@@ -30,11 +30,13 @@ import org.keycloak.storage.UserStorageProvider;
 import static org.keycloak.storage.UserStorageProviderModel.IMPORT_ENABLED;
 
 /**
- * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
+ * LDAP 用户联邦存储的配置封装，从组件 {@link org.keycloak.common.util.MultivaluedHashMap} 读取连接、搜索、厂商与同步参数。
  *
+ * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LDAPConfig {
 
+    /** 默认 LDAP 连接超时（毫秒）。 */
     public static final String DEFAULT_CONNECTION_TIMEOUT = "5000";
 
     private final MultivaluedHashMap<String, String> config;
@@ -44,12 +46,13 @@ public class LDAPConfig {
         this.config = config;
     }
 
+    /** 返回 LDAP 连接 URL。 */
     public String getConnectionUrl() {
         return config.getFirst(LDAPConstants.CONNECTION_URL);
     }
 
     public String getFactoryName() {
-        // hardcoded for now
+        // 当前固定使用 Sun JNDI LDAP 上下文工厂
         return "com.sun.jndi.ldap.LdapCtxFactory";
     }
 
@@ -75,7 +78,7 @@ public class LDAPConfig {
         String usersDn = config.getFirst(LDAPConstants.USERS_DN);
 
         if (usersDn == null) {
-            // Just for the backwards compatibility 1.2 -> 1.3 . Should be removed later.
+            // 1.2 → 1.3 向后兼容：旧键 userDnSuffix
             usersDn = config.getFirst("userDnSuffix");
         }
 
@@ -101,7 +104,7 @@ public class LDAPConfig {
 
         String[] objectClasses = objClassesStr.split(",");
 
-        // Trim them
+        // 去除 objectClass 名称首尾空白
         Set<String> userObjClasses = new HashSet<>();
         for (int i=0 ; i<objectClasses.length ; i++) {
             userObjClasses.add(objectClasses[i].trim());
@@ -121,6 +124,7 @@ public class LDAPConfig {
         return config.getFirst(LDAPConstants.VENDOR);
     }
 
+    /** 当前配置是否指向 Active Directory。 */
     public boolean isActiveDirectory() {
         String vendor = getVendor();
         return vendor != null && vendor.equals(LDAPConstants.VENDOR_ACTIVE_DIRECTORY);
@@ -159,7 +163,7 @@ public class LDAPConfig {
     }
 
     public Properties getAdditionalConnectionProperties() {
-        // not supported for now
+        // 暂不支持额外连接属性
         return null;
     }
 
@@ -171,7 +175,7 @@ public class LDAPConfig {
     public String getUuidLDAPAttributeName() {
         String uuidAttrName = config.getFirst(LDAPConstants.UUID_LDAP_ATTRIBUTE);
         if (uuidAttrName == null) {
-            // Differences of unique attribute among various vendors
+            // 各 LDAP 厂商 UUID 属性名不同，按 vendor 推断默认值
             String vendor = getVendor();
             uuidAttrName = LDAPConstants.getUuidAttributeName(vendor);
         }
@@ -225,7 +229,7 @@ public class LDAPConfig {
             rdn = getUsernameLdapAttribute();
 
             if (rdn.equalsIgnoreCase(LDAPConstants.SAM_ACCOUNT_NAME)) {
-                // Just for the backwards compatibility 1.2 -> 1.3 . Should be removed later.
+                // 1.2 → 1.3 向后兼容：sAMAccountName 作 RDN 时回退为 cn
                 rdn = LDAPConstants.CN;
             }
 
@@ -249,6 +253,7 @@ public class LDAPConfig {
         return Boolean.parseBoolean(config.getFirst(LDAPConstants.START_TLS));
     }
 
+    /** 返回用户编辑模式（只读/可写/不同步）。 */
     public UserStorageProvider.EditMode getEditMode() {
         String editModeString = config.getFirst(LDAPConstants.EDIT_MODE);
         if (editModeString == null) {
@@ -295,6 +300,7 @@ public class LDAPConfig {
         return LDAPConstants.VENDOR_NOVELL_EDIRECTORY.equalsIgnoreCase(getVendor());
     }
 
+    /** 是否将 LDAP 用户导入 Keycloak 本地数据库。 */
     public boolean isImportEnabled() {
         return Boolean.parseBoolean(config.getFirstOrDefault(IMPORT_ENABLED, Boolean.TRUE.toString())) ;
     }

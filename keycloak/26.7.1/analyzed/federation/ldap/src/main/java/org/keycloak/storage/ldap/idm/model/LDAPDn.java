@@ -28,6 +28,8 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
 /**
+ * LDAP 可分辨名称（DN）的轻量封装，基于 {@link javax.naming.ldap.LdapName} 提供 RDN 访问与父子关系判断。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LDAPDn {
@@ -47,7 +49,7 @@ public class LDAPDn {
     }
 
     public static LDAPDn fromString(String dnString) {
-        // In certain OpenLDAP implementations the uniqueMember attribute is mandatory
+        // 部分 OpenLDAP 实现允许空 DN 字符串（uniqueMember 占位场景）
         // Thus, if a new group is created, it will contain an empty uniqueMember attribute
         // Later on, when adding members, this empty attribute will be kept
         // Keycloak must be able to process it, properly, w/o throwing an ArrayIndexOutOfBoundsException
@@ -86,6 +88,7 @@ public class LDAPDn {
     }
 
     /**
+     * 返回最左侧 RDN，例如 DN {@code uid=joe,dc=example,dc=org} 中的 {@code uid=joe}。
      * @return first entry. Usually entry corresponding to something like "uid=joe" from the DN like "uid=joe,dc=something,dc=org"
      */
     public RDN getFirstRdn() {
@@ -96,10 +99,9 @@ public class LDAPDn {
     }
 
     /**
-     *
+     * 返回去掉最左侧 RDN 后的父 DN 副本（与原实例独立）。
      * @return DN like "dc=something,dc=org" from the DN like "uid=joe,dc=something,dc=org".
      * Returned DN will be new clone not related to the original DN instance.
-     *
      */
     public LDAPDn getParentDn() {
         if (ldapName.size() > 0) {
@@ -109,6 +111,7 @@ public class LDAPDn {
         return null;
     }
 
+    /** 判断当前 DN 是否为 expectedParentDn 的后代（前缀匹配）。 */
     public boolean isDescendantOf(LDAPDn expectedParentDn) {
         LDAPDn parent = getParentDn();
         if (parent == null) {
@@ -130,6 +133,7 @@ public class LDAPDn {
     }
 
     /**
+     * DN 中的单个 RDN；常见为 {@code uid=john}，少数为多值 {@code uid=john+sn=Doe}。
      * Single RDN inside the DN. RDN usually consists of single item like "uid=john" . In some rare cases, it can have multiple
      * sub-entries like "uid=john+sn=Doe"
      */

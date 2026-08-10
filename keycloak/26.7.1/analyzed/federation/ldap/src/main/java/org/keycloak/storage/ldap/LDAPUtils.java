@@ -57,7 +57,7 @@ import org.keycloak.storage.ldap.mappers.membership.MembershipType;
 import org.jboss.logging.Logger;
 
 /**
- * Allow to directly call some operations against LDAPIdentityStore.
+ * LDAP 用户/组操作的静态工具：创建用户、构建查询、成员关系、分页加载与过滤器校验等。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -66,10 +66,7 @@ public class LDAPUtils {
     private static final Logger log = Logger.getLogger(LDAPUtils.class);
 
     /**
-     * Method to create a user in the LDAP. The user will be created when all
-     * mandatory attributes specified by the mappers are set. The method
-     * onRegisterUserToLDAP is first called in each mapper to set any default or
-     * initial value.
+     * 在 LDAP 中创建用户：各 mapper 先调用 onRegisterUserToLDAP，待必填属性齐备后写入目录。
      *
      * @param ldapProvider The ldap provider
      * @param realm The realm of the user
@@ -81,11 +78,7 @@ public class LDAPUtils {
     }
 
     /**
-     * Method that creates a user in the LDAP when all the attributes marked as
-     * mandatory by the mappers are set. The method onRegisterUserToLDAP is
-     * first called in each mapper to set any default or initial value. When
-     * the user is finally created the passed consumerOnCreated parameter is
-     * executed (can be null).
+     * 创建 LDAP 用户并在写入成功后执行 consumerOnCreated（可为 null）。
      *
      * @param ldapProvider The ldap provider
      * @param realm The realm of the user
@@ -130,6 +123,7 @@ public class LDAPUtils {
         return ldapUser;
     }
 
+    /** 构建用户搜索用的 {@link org.keycloak.storage.ldap.idm.query.internal.LDAPQuery}（含自定义过滤器与 mapper 属性）。 */
     public static LDAPQuery createQueryForUserSearch(LDAPStorageProvider ldapProvider, RealmModel realm) {
         LDAPQuery ldapQuery = new LDAPQuery(ldapProvider);
         LDAPConfig config = ldapProvider.getLdapIdentityStore().getConfig();
@@ -154,7 +148,7 @@ public class LDAPUtils {
             ldapQuery.addReturningReadOnlyLdapAttribute(kerberosPrincipalAttr);
         }
 
-        // Mark the password modification time attribute as read-only so it is not sent back on updates — it is an
+        // 密码修改时间属性标记为只读，更新时不回写（由 LDAP 服务端维护）
         // operational attribute managed by the LDAP server. Mappers that need to write it (e.g. the MSAD mapper writes
         // pwdLastSet to force password expiration) can call removeReadOnlyAttributeName to override this default.
         ldapQuery.addReturningLdapAttribute(ldapProvider.getLdapIdentityStore().getPasswordModificationTimeAttributeName());
@@ -163,7 +157,7 @@ public class LDAPUtils {
         return ldapQuery;
     }
 
-    // ldapUser has filled attributes, but doesn't have filled dn.
+    // ldapUser 已有属性但尚未设置 DN
     public static void computeAndSetDn(LDAPConfig config, LDAPObject ldapUser) {
         String rdnLdapAttrName = config.getRdnLdapAttribute();
         String rdnLdapAttrValue = ldapUser.getAttributeAsString(rdnLdapAttrName);
@@ -176,6 +170,7 @@ public class LDAPUtils {
         ldapUser.setDn(dn);
     }
 
+    /** 从 LDAP 条目读取 Keycloak 用户名（导入模式下转小写）。 */
     public static String getUsername(LDAPObject ldapUser, LDAPConfig config) {
         String usernameAttr = config.getUsernameLdapAttribute();
         String ldapUsername = ldapUser.getAttributeAsString(usernameAttr);
@@ -192,6 +187,7 @@ public class LDAPUtils {
         return  ldapUsername;
     }
 
+    /** 校验 LDAP 条目 UUID 非空，否则抛出配置错误。 */
     public static void checkUuid(LDAPObject ldapUser, LDAPConfig config) {
         if (ldapUser.getUuid() == null) {
             throw new ModelException("User returned from LDAP has null uuid! Check configuration of your LDAP settings. UUID Attribute must be unique among your LDAP records and available on all the LDAP user records. " +
@@ -201,7 +197,7 @@ public class LDAPUtils {
     }
 
 
-    // roles & groups
+    // 角色与组相关工具
 
     public static LDAPObject createLDAPGroup(LDAPStorageProvider ldapProvider, String groupName, String groupNameAttribute, Collection<String> objectClasses,
                                              String parentDn, Map<String, Set<String>> additionalAttributes, String membershipLdapAttribute) {
@@ -212,7 +208,7 @@ public class LDAPUtils {
         ldapObject.setSingleAttribute(groupNameAttribute, groupName);
 
         for (String objectClassValue : objectClasses) {
-            // On MSAD with object class "group", empty member must not be added. Specified object classes typically
+            // MSAD group 对象类不能写空 member；其他 groupOf* 类需占位空成员
             // require empty member attribute if no members have joined yet
             if ((objectClassValue.equalsIgnoreCase(LDAPConstants.GROUP_OF_NAMES)
                     || objectClassValue.equalsIgnoreCase(LDAPConstants.GROUP_OF_ENTRIES)
@@ -431,7 +427,7 @@ public class LDAPUtils {
     }
 
     /**
-     * Convert Generalized Time as defined in RFC4517 to the Date
+     * 将 RFC4517 Generalized Time 字符串转换为 {@link Date}。
      */
     static Date generalizedTimeToDate(String generalized) {
 

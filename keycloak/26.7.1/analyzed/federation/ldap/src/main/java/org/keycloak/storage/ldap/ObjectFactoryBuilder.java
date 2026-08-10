@@ -18,18 +18,17 @@ import org.keycloak.utils.KeycloakSessionUtil;
 import org.jboss.logging.Logger;
 
 /**
- * <p>A {@link javax.naming.spi.ObjectFactoryBuilder} implementation to filter out referral references if they do not
- * point to an LDAP URL.
- *
- * <p>When the LDAP provider encounters a referral, it tries to create an {@link ObjectFactory} from this builder.
- * If the referral reference contains an LDAP URL, a {@link DirContextObjectFactory} is created to handle the referral.
- * Otherwise, a {@link CommunicationException} is thrown to indicate that the referral cannot be processed.
+ * JNDI {@link javax.naming.spi.ObjectFactoryBuilder}：仅处理含 LDAP URL 的 referral，否则拒绝非安全转介。
+ * <p>
+ * 遇到 referral 时若引用含 LDAP URL，则创建 {@link DirContextObjectFactory} 建立 {@link org.keycloak.storage.ldap.idm.store.ldap.SessionBoundInitialLdapContext}；
+ * 否则抛出 {@link CommunicationException}。
  */
 final class ObjectFactoryBuilder implements javax.naming.spi.ObjectFactoryBuilder, ObjectFactory {
 
     private static final Logger logger = Logger.getLogger(ObjectFactoryBuilder.class);
     private static final String IS_KC_OBJECT_FACTORY_BUILDER = "kc.jndi.object.factory.builder";
 
+    /** 检测当前 JVM 是否已安装本 Keycloak ObjectFactoryBuilder。 */
     static boolean isSet() {
         Hashtable<Object, Object> env = new Hashtable<>();
 
@@ -112,6 +111,7 @@ final class ObjectFactoryBuilder implements javax.naming.spi.ObjectFactoryBuilde
         return null;
     }
 
+    /** 按 referral URL 克隆环境并打开会话绑定的 LDAP 上下文。 */
     private record DirContextObjectFactory(String ldapUrl) implements ObjectFactory {
 
         @Override

@@ -25,7 +25,7 @@ import org.keycloak.storage.ldap.idm.model.LDAPObject;
 import org.keycloak.storage.ldap.mappers.LDAPTransaction;
 
 /**
- * Track which LDAP users were already enlisted during this transaction
+ * 跟踪当前事务内已加载的 LDAP 用户与代理 {@link UserModel}，避免重复查询并持有 {@link org.keycloak.storage.ldap.mappers.LDAPTransaction}。
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -39,11 +39,13 @@ public class LDAPStorageUserManager {
         this.provider = provider;
     }
 
+    /** 返回事务内已建立的代理用户，未登记则 null。 */
     public UserModel getManagedProxiedUser(String userId) {
         ManagedUserEntry entry = managedUsers.get(userId);
         return entry==null ? null : entry.getManagedProxiedUser();
     }
 
+    /** 返回事务内缓存的 {@link LDAPObject}。 */
     public LDAPObject getManagedLDAPObject(String userId) {
         ManagedUserEntry entry = managedUsers.get(userId);
         if (entry != null) {
@@ -72,6 +74,7 @@ public class LDAPStorageUserManager {
 
     }
 
+    /** 登记代理用户、LDAP 对象及对应的 LDAP 写事务。 */
     public void setManagedProxiedUser(UserModel proxiedUser, LDAPObject ldapObject) {
         String userId = proxiedUser.getId();
         ManagedUserEntry entry = managedUsers.get(userId);
@@ -90,6 +93,7 @@ public class LDAPStorageUserManager {
 
 
 
+    /** 单用户事务条目：代理模型、LDAP 对象与写事务。 */
     private static class ManagedUserEntry {
 
         private final UserModel managedProxiedUser;

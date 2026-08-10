@@ -18,6 +18,8 @@
 package org.keycloak.storage.ldap.idm.query;
 
 /**
+ * LDAP 查询结果排序描述：属性名与升序/降序标志。
+ *
  * @author Pedro Igor
  */
 public class Sort {
@@ -30,10 +32,12 @@ public class Sort {
         this.asc = asc;
     }
 
+    /** 排序依据的 LDAP/模型属性名。 */
     public String getParameter() {
         return this.paramName;
     }
 
+    /** 是否升序排序。 */
     public boolean isAscending() {
         return asc;
     }

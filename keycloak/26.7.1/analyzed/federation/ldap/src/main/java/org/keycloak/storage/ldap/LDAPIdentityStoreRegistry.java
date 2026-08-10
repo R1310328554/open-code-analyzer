@@ -30,6 +30,8 @@ import org.keycloak.storage.ldap.mappers.LDAPConfigDecorator;
 import org.jboss.logging.Logger;
 
 /**
+ * 按 LDAP 组件 ID 缓存 {@link LDAPConfig}，并在配置变更时重建 {@link org.keycloak.storage.ldap.idm.store.ldap.LDAPIdentityStore}。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class LDAPIdentityStoreRegistry {
@@ -38,8 +40,12 @@ public class LDAPIdentityStoreRegistry {
 
     private final Map<String, LDAPConfig> ldapStores = new ConcurrentHashMap<>();
 
+    /**
+     * 获取或创建与给定 LDAP 组件对应的 {@link org.keycloak.storage.ldap.idm.store.ldap.LDAPIdentityStore}。
+     * 会先应用 mapper 提供的 {@link org.keycloak.storage.ldap.mappers.LDAPConfigDecorator} 再比较缓存。
+     */
     public LDAPIdentityStore getLdapStore(KeycloakSession session, ComponentModel ldapModel, Map<ComponentModel, LDAPConfigDecorator> configDecorators) {
-        // Ldap config might have changed for the realm. In this case, we must re-initialize
+        // realm 中 LDAP 配置可能已变更，需重新构建 LDAPConfig
         MultivaluedHashMap<String, String> configModel = ldapModel.getConfig();
         LDAPConfig ldapConfig = new LDAPConfig(configModel);
         for (Map.Entry<ComponentModel, LDAPConfigDecorator> entry : configDecorators.entrySet()) {
@@ -58,7 +64,7 @@ public class LDAPIdentityStoreRegistry {
         return new LDAPIdentityStore(session, ldapConfig);
     }
 
-    // Don't log LDAP password
+    // 日志中不输出 bind 密码（toString 已剔除 BIND_CREDENTIAL）
     private void logLDAPConfig(KeycloakSession session, ComponentModel ldapModel, LDAPConfig ldapConfig) {
         logger.infof("Creating new LDAP Store for the LDAP storage provider: '%s', LDAP Configuration: %s", ldapModel.getName(), ldapConfig.toString());
 

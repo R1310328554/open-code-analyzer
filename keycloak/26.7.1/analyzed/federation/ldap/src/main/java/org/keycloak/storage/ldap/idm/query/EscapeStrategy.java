@@ -20,13 +20,13 @@ package org.keycloak.storage.ldap.idm.query;
 import java.nio.charset.StandardCharsets;
 
 /**
+ * LDAP 过滤器值的转义策略：默认 UTF-8 转义或八位组（OCTET_STRING）十六进制形式。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public enum EscapeStrategy {
 
-    /**
-     * Escaping of LDAP special characters including non-ASCII characters like é.
-     */
+    /** 转义 LDAP 特殊字符及非 ASCII 字符（如 é）。 */
     DEFAULT {
 
 
@@ -62,7 +62,7 @@ public enum EscapeStrategy {
 
     },
 
-    // Escaping value as Octet-String
+    // 按八位组（Octet-String）十六进制转义
     OCTET_STRING {
         @Override
         public String escape(String input) {

@@ -18,8 +18,7 @@
 package org.keycloak.storage.ldap.idm.query;
 
 /**
- * <p>A {@link Condition} is used to specify how a specific query parameter
- * is defined in order to filter query results.</p>
+ * LDAP 过滤器条件：描述查询参数如何编码为 LDAP search filter 片段。
  *
  * @author Pedro Igor
  */
@@ -29,8 +28,9 @@ public interface Condition {
     void setParameterName(String parameterName);
 
     /**
-     * Will change the parameter name if it is "modelParamName" to "ldapParamName" . Implementation can apply this to subconditions as well.
+     * 将模型参数名（如 firstName）重写为 LDAP 属性名（如 givenName）；复合条件应递归更新子条件。
      *
+     * Will change the parameter name if it is "modelParamName" to "ldapParamName" . Implementation can apply this to subconditions as well.
      * It is used to update LDAP queries, which were created with model parameter name ( for example "firstName" ) and rewrite them to use real
      * LDAP mapped attribute (for example "givenName" )
      */
