@@ -1,3 +1,4 @@
+// Phi-3 转换：Microsoft Phi-3 小模型（含 LongRoPE/YaRN）到 GGUF。
 package convert
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// phi3Model 解析 Phi-3 配置（兼容 n_layers/n_head 等别名）。
 type phi3Model struct {
 	ModelParameters
 	NumHiddenLayers   uint32  `json:"num_hidden_layers"`
@@ -37,6 +39,7 @@ type phi3Model struct {
 
 var _ ModelConverter = (*phi3Model)(nil)
 
+// KV 写入 phi3 元数据并据 rope_scaling 类型计算 attn_factor。
 func (p *phi3Model) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "phi3"
@@ -56,6 +59,7 @@ func (p *phi3Model) KV(t *Tokenizer) KV {
 
 	switch p.RopeScaling.Type {
 	case "":
+		// 无 RoPE 缩放。
 		// no scaling
 	case "su", "longrope":
 		kv["phi3.rope.scaling.attn_factor"] = float32(max(math.Sqrt(1+math.Log(scale)/math.Log(float64(p.OriginalMaxPositionEmbeddings))), 1.0))
@@ -68,6 +72,7 @@ func (p *phi3Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 在首个 blk 张量前注入 long/short rope factor 权重。
 func (p *phi3Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	var addRopeFactors sync.Once
 
@@ -100,6 +105,7 @@ func (p *phi3Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Phi-3 HF 张量路径（含 QKV 合并）到 GGUF。
 func (p *phi3Model) Replacements() []string {
 	return []string{
 		"lm_head", "output",
@@ -115,8 +121,10 @@ func (p *phi3Model) Replacements() []string {
 	}
 }
 
+// ropeFactor 为 LongRoPE 因子序列，实现 io.WriterTo。
 type ropeFactor []float32
 
+// WriteTo 以小端 float32 序列写入 rope factor。
 func (r ropeFactor) WriteTo(w io.Writer) (int64, error) {
 	return 0, binary.Write(w, binary.LittleEndian, r)
 }

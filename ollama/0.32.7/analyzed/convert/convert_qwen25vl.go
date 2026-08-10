@@ -1,3 +1,4 @@
+// Qwen2.5-VL 转换：Qwen2 文本塔与视觉塔的 VL 多模态到 GGUF。
 package convert
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// qwen25VLModel 在 qwen2Model 基础上嵌入 vision_config。
 type qwen25VLModel struct {
 	qwen2Model
 
@@ -29,6 +31,7 @@ type qwen25VLModel struct {
 
 var _ ModelConverter = (*qwen25VLModel)(nil)
 
+// KV 写入 qwen25vl 元数据（复用 qwen2 并追加视觉塔参数）。
 func (q *qwen25VLModel) KV(t *Tokenizer) KV {
 	kv := q.ModelParameters.KV(t)
 	kv["general.architecture"] = "qwen25vl"
@@ -55,6 +58,7 @@ func (q *qwen25VLModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// fullAttentionBlocks 返回视觉塔全局注意力层索引（默认 7/15/23/31）。
 func (q *qwen25VLModel) fullAttentionBlocks() []int32 {
 	if len(q.VisionModel.FullAttentionBlocks) > 0 {
 		return q.VisionModel.FullAttentionBlocks
@@ -62,6 +66,7 @@ func (q *qwen25VLModel) fullAttentionBlocks() []int32 {
 	return []int32{7, 15, 23, 31}
 }
 
+// Tensors 拆分 patch_embed 与 attn_qkv 并调整 shape。
 func (q *qwen25VLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -93,6 +98,7 @@ func (q *qwen25VLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 在 qwen2 规则上追加视觉块路径映射。
 func (p *qwen25VLModel) Replacements() []string {
 	return append(
 		p.qwen2Model.Replacements(),

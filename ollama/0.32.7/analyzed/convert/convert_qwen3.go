@@ -1,3 +1,4 @@
+// Qwen3 转换：Qwen3 稠密/MoE 模型（Q/K norm、专家 FFN）到 GGUF。
 package convert
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/pdevine/tensor/native"
 )
 
+// qwen3Model 解析 Qwen3 文本配置（含 MoE 与 head_dim）。
 type qwen3Model struct {
 	ModelParameters
 	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
@@ -31,6 +33,7 @@ type qwen3Model struct {
 	RMSNormEPS float32 `json:"rms_norm_eps"`
 }
 
+// KV 写入 qwen3/qwen3moe 架构元数据。
 // KV implements ModelConverter.
 func (q *qwen3Model) KV(t *Tokenizer) KV {
 	arch := "qwen3"
@@ -72,10 +75,12 @@ func (q *qwen3Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 拆分 MoE gate_up 专家权重并转置 down 专家。
 // Tensors implements ModelConverter.
 func (q *qwen3Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
+	// 待处理：拆分专家张量。
 	// TODO: handle split experts
 
 	for _, t := range ts {
@@ -104,6 +109,7 @@ func (q *qwen3Model) Tensors(ts []Tensor) []*ggml.Tensor {
 					return nil, err
 				}
 
+				// 展平张量以便作为向量写入。
 				// flatten tensor so it can be written as a vector
 				if err := tt.Reshape(tt.Shape().TotalSize()); err != nil {
 					return nil, err
@@ -130,6 +136,7 @@ func (q *qwen3Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Qwen3 HF 层名（含 MoE 与 Q/K norm）到 GGUF。
 // Replacements implements ModelConverter.
 func (q *qwen3Model) Replacements() []string {
 	return []string{

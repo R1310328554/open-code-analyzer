@@ -1,3 +1,4 @@
+// Safetensors 读取：解析 header、FP8 缩放与多 dtype 解码写入 GGUF。
 package convert
 
 import (
@@ -18,12 +19,14 @@ import (
 	"github.com/x448/float16"
 )
 
+// safetensorMetadata 对应 safetensors JSON header 中的单张量条目。
 type safetensorMetadata struct {
 	Type    string   `json:"dtype"`
 	Shape   []uint64 `json:"shape"`
 	Offsets []int64  `json:"data_offsets"`
 }
 
+// parseSafetensors 读取一个或多个 .safetensors 文件并构建 Tensor 列表。
 func parseSafetensors(fsys fs.FS, replacer *strings.Replacer, ps ...string) ([]Tensor, error) {
 	fp8Block, err := safetensorsFP8BlockSize(fsys)
 	if err != nil {
@@ -68,6 +71,7 @@ func parseSafetensors(fsys fs.FS, replacer *strings.Replacer, ps ...string) ([]T
 					continue
 				}
 
+				// 标量张量（如 clamp min/max）在 safetensors 中为 0 维，提升为 1 维以便写入 GGUF。
 				// Scalar tensors (e.g. clipped linear min/max) are 0-dim in safetensors.
 				// Promote them to 1-dim so they can be stored in GGUF.
 				if len(value.Shape) == 0 {
@@ -110,11 +114,13 @@ func parseSafetensors(fsys fs.FS, replacer *strings.Replacer, ps ...string) ([]T
 	return ts, nil
 }
 
+// safetensorsPad 计算 safetensors 文件中给定 header 长度 n 与偏移 s 的对齐后绝对偏移。
 // safetensorsPad returns the padded size of the safetensors file given a length n and offset s
 func safetensorsPad(n, offset int64) int64 {
 	return 8 + n + offset
 }
 
+// safetensorScale 描述 FP8 权重对应的 scale 伴生张量。
 type safetensorScale struct {
 	name   string
 	dtype  string
@@ -123,6 +129,7 @@ type safetensorScale struct {
 	size   int64
 }
 
+// safetensor 实现 Tensor，从 safetensors 文件切片读取并解码。
 type safetensor struct {
 	fs       fs.FS
 	path     string
@@ -134,6 +141,7 @@ type safetensor struct {
 	*tensorBase
 }
 
+// Kind 覆盖 BF16/FP8 等 safetensors dtype 对应的 GGUF 类型。
 func (st safetensor) Kind() uint32 {
 	kind := st.tensorBase.Kind()
 	if st.dtype == "BF16" &&
@@ -151,10 +159,12 @@ func (st safetensor) Kind() uint32 {
 	return kind
 }
 
+// SourceDType 返回 safetensors header 中的原始 dtype 字符串。
 func (st safetensor) SourceDType() string {
 	return st.dtype
 }
 
+// Clone 深拷贝 safetensor（含 scale 与 repacker）。
 func (st safetensor) Clone() Tensor {
 	return &safetensor{
 		fs:       st.fs,
@@ -172,6 +182,7 @@ func (st safetensor) Clone() Tensor {
 	}
 }
 
+// Clone 复制 FP8 scale 元数据。
 func (ss *safetensorScale) Clone() *safetensorScale {
 	if ss == nil {
 		return nil
@@ -185,6 +196,7 @@ func (ss *safetensorScale) Clone() *safetensorScale {
 	}
 }
 
+// WriteTo 从文件读取字节并按 dtype 解码为 GGUF 所需格式。
 func (st safetensor) WriteTo(w io.Writer) (int64, error) {
 	f, err := st.fs.Open(st.path)
 	if err != nil {
@@ -281,11 +293,13 @@ func (st safetensor) WriteTo(w io.Writer) (int64, error) {
 	}
 }
 
+// safetensorsFP8Scales 索引 FP8 权重与 scale 张量的配对关系。
 type safetensorsFP8Scales struct {
 	byWeight map[string]*safetensorScale
 	consumed map[string]struct{}
 }
 
+// collectSafetensorsFP8Scales 扫描 header 收集 FP8 权重-scale 映射。
 func collectSafetensorsFP8Scales(n int64, headers map[string]safetensorMetadata) (safetensorsFP8Scales, error) {
 	scales := safetensorsFP8Scales{
 		byWeight: make(map[string]*safetensorScale),
@@ -397,6 +411,7 @@ type safetensorsModelConfig struct {
 	} `json:"text_config"`
 }
 
+// safetensorsFP8BlockSize 从 config 推断 FP8 块量化尺寸。
 func safetensorsFP8BlockSize(fsys fs.FS) (safetensorFP8BlockSize, error) {
 	bts, err := fs.ReadFile(fsys, "config.json")
 	if errors.Is(err, fs.ErrNotExist) {
@@ -467,6 +482,7 @@ func newSafetensorFP8BlockSize(rows, cols int) (safetensorFP8BlockSize, error) {
 	return safetensorFP8BlockSize{rows: rows, cols: cols, ok: true}, nil
 }
 
+// decodeFP8E4M3 将 FP8 E4M3 字节解码为 float32（配合 block scale）。
 func (st safetensor) decodeFP8E4M3(data []byte) ([]float32, error) {
 	if st.scale == nil {
 		return nil, fmt.Errorf("missing fp8 scale companion for tensor %q", st.name)
@@ -591,6 +607,7 @@ type readCloserReader struct {
 	io.Closer
 }
 
+// decodeFloat8E4M3FN 解码单个 float8_e4m3fn 字节为 float32。
 func decodeFloat8E4M3FN(v byte) float32 {
 	sign := float32(1)
 	if v&0x80 != 0 {

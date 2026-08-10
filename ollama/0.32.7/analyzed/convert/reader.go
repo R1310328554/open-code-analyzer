@@ -1,3 +1,4 @@
+// 张量读取抽象：Tensor 接口、dtype 推断与 checkpoint 格式分发。
 package convert
 
 import (
@@ -7,6 +8,7 @@ import (
 	"strings"
 )
 
+// Tensor 表示待写入 GGUF 的可读张量。
 type Tensor interface {
 	Name() string
 	Shape() []uint64
@@ -16,20 +18,24 @@ type Tensor interface {
 	Clone() Tensor
 }
 
+// tensorBase 实现 Tensor 的公共字段与默认方法。
 type tensorBase struct {
 	name     string
 	shape    []uint64
 	repacker Repacker
 }
 
+// Name 返回 GGUF 张量名。
 func (t tensorBase) Name() string {
 	return t.name
 }
 
+// Shape 返回张量维度。
 func (t tensorBase) Shape() []uint64 {
 	return t.shape
 }
 
+// 张量存储 dtype 常量（与 GGUF 类型码对应）。
 const (
 	tensorKindFP32 uint32 = iota
 	tensorKindFP16
@@ -37,6 +43,7 @@ const (
 	tensorKindMXFP4 = 39
 )
 
+// Kind 据张量名与 shape 推断 GGUF 量化/存储类型（F32/F16/BF16 等）。
 func (t tensorBase) Kind() uint32 {
 	if strings.HasSuffix(t.name, ".ffn_gate_inp.weight") ||
 		strings.HasSuffix(t.name, ".bias") ||
@@ -55,6 +62,7 @@ func (t tensorBase) Kind() uint32 {
 		t.name == "s.position_embd" ||
 		strings.HasSuffix(t.name, "rel_pos_h") ||
 		strings.HasSuffix(t.name, "rel_pos_w") {
+		// 以下张量始终保留 F32（Metal/BackendGet 等需求）。
 		// these tensors are always F32
 		return tensorKindFP32
 	}
@@ -69,12 +77,15 @@ func (t tensorBase) Kind() uint32 {
 	}
 }
 
+// SetRepacker 设置写入前对 float32 数据的重打包函数。
 func (t *tensorBase) SetRepacker(fn Repacker) {
 	t.repacker = fn
 }
 
+// Repacker 在写入 GGUF 前变换张量数据与 shape。
 type Repacker func(string, []float32, []uint64) ([]float32, error)
 
+// parseTensors 按 glob 匹配 safetensors 或 PyTorch 权重并解析为 Tensor 列表。
 func parseTensors(fsys fs.FS, replacer *strings.Replacer) ([]Tensor, error) {
 	patterns := []struct {
 		Pattern string

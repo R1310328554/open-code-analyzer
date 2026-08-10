@@ -1,3 +1,4 @@
+// Qwen3-VL 转换：Qwen3 文本塔与 DeepStack 视觉塔的多模态到 GGUF。
 package convert
 
 import (
@@ -15,6 +16,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// qwen3VLModel 在 qwen3Model 上嵌入 vision_config。
 type qwen3VLModel struct {
 	qwen3Model `json:"text_config"`
 
@@ -46,6 +48,7 @@ type qwen3VLModel struct {
 
 var _ MultimodalConverter = (*qwen3VLModel)(nil)
 
+// parseMore 从 preprocessor_config.json 补充视觉预处理参数。
 func (m *qwen3VLModel) parseMore(fsys fs.FS) error {
 	bts, err := fs.ReadFile(fsys, "preprocessor_config.json")
 	if err != nil {
@@ -55,6 +58,7 @@ func (m *qwen3VLModel) parseMore(fsys fs.FS) error {
 	return json.Unmarshal(bts, &m.VisionModel)
 }
 
+// KV 写入 qwen3vl/qwen3vlmoe 元数据（含 DeepStack 与 MRoPE sections）。
 func (m *qwen3VLModel) KV(t *Tokenizer) KV {
 	kv := m.qwen3Model.KV(t)
 
@@ -62,6 +66,7 @@ func (m *qwen3VLModel) KV(t *Tokenizer) KV {
 	if m.NumExperts > 0 {
 		arch += "moe"
 	}
+	// 覆盖架构名为 qwen3vl（或 moe 变体）。
 	// override architecture
 	kv["general.architecture"] = arch
 
@@ -97,6 +102,7 @@ func (m *qwen3VLModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// TextKV 返回纯文本 GGUF KV（剔除视觉相关键）。
 func (m *qwen3VLModel) TextKV(t *Tokenizer) KV {
 	kv := m.KV(t)
 	for _, key := range []string{
@@ -123,6 +129,7 @@ func (m *qwen3VLModel) TextKV(t *Tokenizer) KV {
 	return kv
 }
 
+// ProjectorKV 生成 clip mmproj 视觉投影器元数据。
 func (m *qwen3VLModel) ProjectorKV(*Tokenizer) KV {
 	depth := cmp.Or(m.VisionModel.Depth, uint32(32))
 	deepstack := make([]bool, depth)
@@ -189,10 +196,12 @@ func (m *qwen3VLModel) projectorImageSize() uint32 {
 	return uint32(768)
 }
 
+// qwen3VLVisionTensor 判断张量是否属于视觉塔。
 func qwen3VLVisionTensor(name string) bool {
 	return strings.HasPrefix(name, "v.") || strings.HasPrefix(name, "mm.")
 }
 
+// TextTensors 过滤视觉张量后导出文本权重。
 func (m *qwen3VLModel) TextTensors(ts []Tensor, _ *Tokenizer) []*ggml.Tensor {
 	var textOnly []Tensor
 	for _, t := range ts {
@@ -230,6 +239,7 @@ func (m *qwen3VLModel) qwen3VLProjectorRename(name string) string {
 	return name
 }
 
+// ProjectorTensors 重命名并导出视觉/mmproj 张量。
 func (m *qwen3VLModel) ProjectorTensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -325,6 +335,7 @@ func qwenTemporalPatchEmbedSlice(slice int) Repacker {
 	}
 }
 
+// Tensors 合并文本与视觉张量处理逻辑。
 func (m *qwen3VLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var rest []Tensor
 	var out []*ggml.Tensor
@@ -352,6 +363,7 @@ func (m *qwen3VLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return append(m.qwen3Model.Tensors(rest), out...)
 }
 
+// Replacements 覆盖 Qwen3 文本与 Qwen3-VL 视觉路径映射。
 func (m *qwen3VLModel) Replacements() []string {
 	return append(
 		m.qwen3Model.Replacements(),

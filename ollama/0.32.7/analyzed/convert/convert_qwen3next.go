@@ -1,3 +1,4 @@
+// Qwen3-Next 转换：混合注意力/线性注意力、MoE、MTP 草稿与 Qwen3-VL 视觉塔。
 package convert
 
 import (
@@ -23,12 +24,14 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// qwen3NextRopeScaling 描述 Qwen3-Next rope_scaling 字段。
 type qwen3NextRopeScaling struct {
 	Type         string     `json:"type"`
 	Factor       ropeFactor `json:"factor"`
 	MropeSection []int32    `json:"mrope_section"`
 }
 
+// qwen3NextRopeParams 描述 rope_parameters（MRoPE 等）。
 type qwen3NextRopeParams struct {
 	MRopeInterleaved    bool    `json:"mrope_interleaved"`
 	MropeSection        []int32 `json:"mrope_section"`
@@ -37,6 +40,7 @@ type qwen3NextRopeParams struct {
 	PartialRotaryFactor float32 `json:"partial_rotary_factor"`
 }
 
+// qwen3NextTextConfig 聚合文本塔、MoE、混合层与线性注意力配置。
 type qwen3NextTextConfig struct {
 	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
 	HiddenSize            uint32  `json:"hidden_size"`
@@ -50,6 +54,7 @@ type qwen3NextTextConfig struct {
 	RopeTheta             float32 `json:"rope_theta"`
 	RMSNormEPS            float32 `json:"rms_norm_eps"`
 
+	// MoE 专家数、Top-K 与共享专家 FFN。
 	// MoE config
 	NumExperts             uint32 `json:"num_experts"`
 	NumExpertsPerToken     uint32 `json:"num_experts_per_tok"`
@@ -57,10 +62,12 @@ type qwen3NextTextConfig struct {
 	MoEIntermediateSize    uint32 `json:"moe_intermediate_size"`
 	SharedExpertIntermSize uint32 `json:"shared_expert_intermediate_size"`
 
+	// 混合注意力：全注意力间隔与 layer_types。
 	// Hybrid attention config
 	FullAttentionInterval uint32   `json:"full_attention_interval"`
 	LayerTypes            []string `json:"layer_types"`
 
+	// 线性注意力（Gated Delta Net）卷积核与头维度。
 	// Linear attention (Gated Delta Net) config
 	LinearConvKernelDim uint32 `json:"linear_conv_kernel_dim"`
 	LinearKeyHeadDim    uint32 `json:"linear_key_head_dim"`
@@ -68,12 +75,14 @@ type qwen3NextTextConfig struct {
 	LinearNumValueHeads uint32 `json:"linear_num_value_heads"`
 	LinearValueHeadDim  uint32 `json:"linear_value_head_dim"`
 
+	// RoPE 部分旋转因子与缩放参数。
 	// RoPE config
 	PartialRotaryFactor float32              `json:"partial_rotary_factor"`
 	RopeScaling         qwen3NextRopeScaling `json:"rope_scaling"`
 	RopeParameters      qwen3NextRopeParams  `json:"rope_parameters"`
 }
 
+// qwen3NextVisionConfig 描述 Qwen3-VL 视觉塔配置。
 type qwen3NextVisionConfig struct {
 	Depth                  uint32  `json:"depth"`
 	HiddenSize             uint32  `json:"hidden_size"`
@@ -98,6 +107,7 @@ type qwen3NextVisionConfig struct {
 	ImageStd  []float32 `json:"image_std"`
 }
 
+// qwen3NextModel 实现 ModelConverter 与 MultimodalConverter。
 type qwen3NextModel struct {
 	ModelParameters
 	qwen3NextTextConfig
@@ -115,6 +125,7 @@ var (
 	_ MultimodalConverter = (*qwen3NextModel)(nil)
 )
 
+// parseMore 合并 text_config、推断 MTP 层数并校验视觉配置。
 func (q *qwen3NextModel) parseMore(fsys fs.FS) error {
 	if q.TextConfig != nil {
 		q.qwen3NextTextConfig = *q.TextConfig
@@ -209,6 +220,7 @@ func (q *qwen3NextModel) parseMore(fsys fs.FS) error {
 	return nil
 }
 
+// qwen3NextInferNextNPredictLayers 从 safetensors 推断 MTP 预测层数。
 func qwen3NextInferNextNPredictLayers(fsys fs.FS) (uint32, error) {
 	paths, err := fs.Glob(fsys, "*.safetensors")
 	if err != nil {
@@ -267,6 +279,7 @@ func qwen3NextInferNextNPredictLayers(fsys fs.FS) (uint32, error) {
 	return 0, nil
 }
 
+// ConvertQwen35MTPDraft 将 MTP 草稿 safetensors 合并写入 qwen3.5 基础 GGUF。
 func ConvertQwen35MTPDraft(fsys fs.FS, f *os.File, baseKV ggml.KV, baseTensors []*ggml.Tensor) error {
 	arch := baseKV.Architecture()
 	if arch != "qwen35" && arch != "qwen35moe" {
@@ -333,6 +346,7 @@ func ConvertQwen35MTPDraft(fsys fs.FS, f *os.File, baseKV ggml.KV, baseTensors [
 	return ggml.WriteGGUF(f, kv, tensors)
 }
 
+// qwen35RemoveSplitMetadata 移除分片相关 KV 元数据。
 func qwen35RemoveSplitMetadata(kv ggml.KV, arch string) {
 	for _, key := range []string{
 		"split.no",
@@ -344,6 +358,7 @@ func qwen35RemoveSplitMetadata(kv ggml.KV, arch string) {
 	}
 }
 
+// qwen35MTPDraftTensorName 判断张量是否属于 MTP 草稿层。
 func qwen35MTPDraftTensorName(name string, base, nextn uint32) bool {
 	for i := range nextn {
 		if strings.HasPrefix(name, fmt.Sprintf("blk.%d.", base+i)) {
@@ -353,6 +368,7 @@ func qwen35MTPDraftTensorName(name string, base, nextn uint32) bool {
 	return false
 }
 
+// kvHeadCounts 按 layer_types 或 full_attention_interval 计算每层 KV 头数。
 func (q *qwen3NextModel) kvHeadCounts() ([]uint32, error) {
 	if len(q.LayerTypes) > 0 {
 		kv := make([]uint32, q.NumHiddenLayers)
@@ -421,6 +437,7 @@ func (q *qwen3NextModel) shouldReorderVHeads() bool {
 	return true
 }
 
+// KV 写入 qwen3next/qwen35 完整元数据（文本、MoE、SSM、视觉 token）。
 func (q *qwen3NextModel) KV(t *Tokenizer) KV {
 	kv := q.ModelParameters.KV(t)
 
@@ -559,6 +576,7 @@ func (q *qwen3NextModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// TextKV 返回纯文本 GGUF 所需的 KV（剔除视觉字段）。
 func (q *qwen3NextModel) TextKV(t *Tokenizer) KV {
 	kv := q.KV(t)
 
@@ -592,6 +610,7 @@ func (q *qwen3NextModel) TextKV(t *Tokenizer) KV {
 	return kv
 }
 
+// ProjectorKV 生成 mmproj（clip）视觉投影器 GGUF 元数据。
 func (q *qwen3NextModel) ProjectorKV(*Tokenizer) KV {
 	depth := q.VisionModel.Depth
 	deepstack := make([]bool, depth)
@@ -647,6 +666,7 @@ func (q *qwen3NextModel) ProjectorKV(*Tokenizer) KV {
 	return kv
 }
 
+// TextTensors 过滤视觉张量后调用 Tensors。
 func (q *qwen3NextModel) TextTensors(ts []Tensor, _ *Tokenizer) []*ggml.Tensor {
 	var text []Tensor
 	for _, t := range ts {
@@ -659,6 +679,7 @@ func (q *qwen3NextModel) TextTensors(ts []Tensor, _ *Tokenizer) []*ggml.Tensor {
 	return q.Tensors(text)
 }
 
+// ProjectorTensors 重命名并导出视觉/mmproj 张量。
 func (q *qwen3NextModel) ProjectorTensors(ts []Tensor) []*ggml.Tensor {
 	if q.VisionModel.Depth == 0 {
 		return nil
@@ -709,6 +730,7 @@ func (q *qwen3NextModel) ProjectorTensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// qwen3NextVisionTensor 判断张量是否属于视觉塔。
 func qwen3NextVisionTensor(name string) bool {
 	return strings.HasPrefix(name, "v.")
 }
@@ -931,6 +953,7 @@ func safetensorFloat32Data(st safetensor) ([]float32, error) {
 	return out, nil
 }
 
+// Tensors 合并 MoE 专家、拆分 QKVZ/SSM 并重打包视觉 patch 与 norm。
 func (q *qwen3NextModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -1558,8 +1581,10 @@ func (*qwen3NextModel) addOne(_ string, data []float32, shape []uint64) ([]float
 	return f32s, nil
 }
 
+// Replacements 覆盖文本、视觉、线性注意力、MoE 与 MTP 张量路径。
 func (q *qwen3NextModel) Replacements() []string {
 	return []string{
+		// 嵌入与输出层。
 		// Embeddings and output
 		"lm_head", "output",
 		"model.language_model.embed_tokens", "token_embd",
@@ -1569,6 +1594,7 @@ func (q *qwen3NextModel) Replacements() []string {
 		"model.norm", "output_norm",
 		"model.layers", "blk",
 
+		// 视觉塔与 deepstack merger。
 		// Vision
 		"model.visual", "v",
 		"patch_embed.proj", "patch_embed",
@@ -1577,10 +1603,12 @@ func (q *qwen3NextModel) Replacements() []string {
 		"attn.proj", "attn_out",
 		"deepstack_merger_list", "deepstack_merger",
 
+		// 层归一化。
 		// Layer norms
 		"input_layernorm", "attn_norm",
 		"post_attention_layernorm", "post_attention_norm",
 
+		// 全注意力 self_attn 投影。
 		// Full attention (self_attn)
 		"self_attn.q_proj", "attn_q",
 		"self_attn.q_norm", "attn_q_norm",
@@ -1589,10 +1617,12 @@ func (q *qwen3NextModel) Replacements() []string {
 		"self_attn.v_proj", "attn_v",
 		"self_attn.o_proj", "attn_output",
 
+		// 旧版 qwen3next 线性注意力（QKVZ）。
 		// Linear attention (legacy qwen3next)
 		"linear_attn.in_proj_qkvz", "ssm_in",
 		"linear_attn.in_proj_ba", "ssm_ba",
 
+		// qwen3.5 线性注意力（拆分 QKV/Z/A/B）。
 		// Linear attention (qwen35)
 		"linear_attn.in_proj_qkv", "attn_qkv",
 		"linear_attn.in_proj_z", "attn_gate",
@@ -1606,6 +1636,7 @@ func (q *qwen3NextModel) Replacements() []string {
 		"linear_attn.norm", "ssm_norm",
 		"linear_attn.out_proj", "ssm_out",
 
+		// MoE 路由与共享专家。
 		// MoE
 		"mlp.gate.weight", "ffn_gate_inp.weight",
 		"mlp.shared_expert.down_proj", "ffn_down_shexp",
@@ -1613,6 +1644,7 @@ func (q *qwen3NextModel) Replacements() []string {
 		"mlp.shared_expert.up_proj", "ffn_up_shexp",
 		"mlp.shared_expert_gate", "ffn_gate_inp_shexp",
 
+		// 稠密 FFN。
 		// Dense FFN
 		"mlp.down_proj", "ffn_down",
 		"mlp.gate_proj", "ffn_gate",

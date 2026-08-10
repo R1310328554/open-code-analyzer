@@ -1,3 +1,4 @@
+// Nemotron-H 转换：Mamba/注意力混合层、MoE 与 NanoVL 多模态（视觉/音频）。
 package convert
 
 import (
@@ -13,8 +14,10 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// hybridPattern 兼容字符串或字符串数组形式的 hybrid_override_pattern。
 type hybridPattern string
 
+// UnmarshalJSON 接受单个字符串或字符串数组并拼接为模式。
 func (p *hybridPattern) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		*p = ""
@@ -36,6 +39,7 @@ func (p *hybridPattern) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("hybrid_override_pattern must be a string or string array")
 }
 
+// nemotronHModel 解析 Nemotron-H 文本/Mamba/MoE 配置。
 type nemotronHModel struct {
 	ModelParameters
 	MaxPositionEmbeddings uint32        `json:"max_position_embeddings"`
@@ -56,6 +60,7 @@ type nemotronHModel struct {
 	IntermediateSize      uint32        `json:"intermediate_size"`
 	HybridOverridePattern hybridPattern `json:"hybrid_override_pattern"`
 
+	// MoE 路由专家、共享专家与 Top-K 参数。
 	// MoE
 	NumExperts                  uint32  `json:"num_experts"`
 	NumSharedExperts            uint32  `json:"num_shared_experts"`
@@ -70,6 +75,7 @@ type nemotronHModel struct {
 	ExpertGroupUsedCount        uint32  `json:"topk_group"`
 }
 
+// nemotronHNanoVLModel 聚合 Nemotron-H Omni 文本、RADIO 视觉与 Parakeet 音频。
 type nemotronHNanoVLModel struct {
 	ModelParameters
 	MaxSequenceLength   uint32         `json:"max_sequence_length"`
@@ -101,6 +107,7 @@ type nemotronHNanoVLModel struct {
 	}
 }
 
+// soundConfig 描述 Parakeet 音频编码器子配置。
 type soundConfig struct {
 	ModelType                 string `json:"model_type"`
 	HiddenSize                uint32 `json:"hidden_size"`
@@ -118,6 +125,7 @@ type soundConfig struct {
 	ScaleInput                bool   `json:"scale_input"`
 }
 
+// radioConfig 描述 RADIO 视觉塔版本与 patch 范围。
 type radioConfig struct {
 	Version               string `json:"version"`
 	PatchSize             uint32 `json:"patch_size"`
@@ -136,6 +144,7 @@ var (
 	_ ModelConverter = (*nemotronHNanoVLModel)(nil)
 )
 
+// parseMore 合并 LLM 配置、读取预处理器并校验视觉/音频参数。
 func (n *nemotronHNanoVLModel) parseMore(fsys fs.FS) error {
 	if n.MaxSequenceLength > 0 {
 		n.LLMConfig.MaxPositionEmbeddings = n.MaxSequenceLength
@@ -184,6 +193,7 @@ func (n *nemotronHNanoVLModel) parseMore(fsys fs.FS) error {
 	return nil
 }
 
+// KV 写入 nemotron_h_omni 元数据（视觉、音频 token 与 ImageNet 归一化）。
 func (n *nemotronHNanoVLModel) KV(t *Tokenizer) KV {
 	kv := n.LLMConfig.KV(t)
 	kv["general.architecture"] = "nemotron_h_omni"
@@ -249,6 +259,7 @@ func (n *nemotronHNanoVLModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 拆分 attn_qkv、跳过无关张量并处理音频深度卷积 shape。
 func (n *nemotronHNanoVLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var textTensors []Tensor
 	var out []*ggml.Tensor
@@ -299,6 +310,7 @@ func (n *nemotronHNanoVLModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return append(n.LLMConfig.Tensors(textTensors), out...)
 }
 
+// Replacements 映射语言/视觉/音频/投影器 HF 路径到 GGUF 短名。
 func (n *nemotronHNanoVLModel) Replacements() []string {
 	return append([]string{
 		"language_model.", "",
@@ -354,12 +366,14 @@ func (n *nemotronHNanoVLModel) specialTokenTypes() []string {
 	return n.LLMConfig.specialTokenTypes()
 }
 
+// isNemotronHNanoVLOmittedTensor 判断应跳过的 BatchNorm 与视频嵌入张量。
 func isNemotronHNanoVLOmittedTensor(name string) bool {
 	return strings.HasSuffix(name, ".conv_bn.num_batches_tracked") ||
 		strings.HasPrefix(name, "vision_model.radio_model.input_conditioner.") ||
 		strings.HasPrefix(name, "vision_model.radio_model.model.patch_generator.video_embedder")
 }
 
+// squeezeLastDim 仅调整 shape，数据原样返回。
 func squeezeLastDim(_ string, data []float32, _ []uint64) ([]float32, error) {
 	return data, nil
 }
@@ -482,6 +496,7 @@ var (
 	imageNetStandardSTD  = []float32{0.26862954, 0.26130258, 0.27577711}
 )
 
+// parseMore 校验 Nemotron-H 必填超参、混合层模式与 MoE 配置。
 func (n *nemotronHModel) parseMore(_ fs.FS) error {
 	if n.NumHiddenLayers == 0 {
 		return fmt.Errorf("nemotron_h: num_hidden_layers must be set")
@@ -539,6 +554,7 @@ func (n *nemotronHModel) parseMore(_ fs.FS) error {
 	return nil
 }
 
+// isMoE 根据专家相关字段判断是否启用 MoE。
 func (n *nemotronHModel) isMoE() bool {
 	return cmp.Or(n.routedExpertCount(), n.NumExpertsPerTok, n.MoEIntermediateSize) > 0
 }
@@ -571,6 +587,7 @@ func (n *nemotronHModel) denseIntermediateSize() uint32 {
 	return cmp.Or(n.IntermediateSize, n.MoEIntermediateSize)
 }
 
+// layerArrays 按 hybrid_override_pattern 为每层分配 KV 头数与 FFN 宽度。
 func (n *nemotronHModel) layerArrays() (headCountKV []uint32, ffnLengths []uint32, err error) {
 	pattern := strings.TrimSpace(string(n.HybridOverridePattern))
 	if pattern == "" {
@@ -592,17 +609,21 @@ func (n *nemotronHModel) layerArrays() (headCountKV []uint32, ffnLengths []uint3
 	for i, layerType := range runes {
 		switch layerType {
 		case 'M':
+			// M 层（循环/Mamba）：无 KV 头且无 FFN。
 			// Recurrent layer: no KV heads and no FFN.
 		case '*', 'A':
+			// * / A 层：仅注意力，分配 KV 头。
 			// Attention-only layer.
 			headCountKV[i] = attnKVHeads
 		case 'E':
+			// E 层：MoE，分配专家 FFN 宽度。
 			// MoE layer.
 			if moeFFN == 0 {
 				return nil, nil, fmt.Errorf("nemotron_h: moe layer at index %d but moe_intermediate_size is zero", i)
 			}
 			ffnLengths[i] = moeFFN
 		case '-':
+			// - 层：稠密 FFN。
 			// Dense FFN layer.
 			if denseFFN == 0 {
 				return nil, nil, fmt.Errorf("nemotron_h: dense FFN layer at index %d but intermediate_size is zero", i)
@@ -616,6 +637,7 @@ func (n *nemotronHModel) layerArrays() (headCountKV []uint32, ffnLengths []uint3
 	return headCountKV, ffnLengths, nil
 }
 
+// KV 写入 nemotron_h 或 nemotron_h_moe 架构元数据（SSM 与 RoPE）。
 func (n *nemotronHModel) KV(t *Tokenizer) KV {
 	kv := n.ModelParameters.KV(t)
 
@@ -671,6 +693,7 @@ func (n *nemotronHModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// normalizeVectorShapeToColumn 将一维/行向量 shape 规范为列向量 [N,1]。
 func normalizeVectorShapeToColumn(shape []uint64) []uint64 {
 	switch len(shape) {
 	case 1:
@@ -687,6 +710,7 @@ func normalizeVectorShapeToColumn(shape []uint64) []uint64 {
 	return slices.Clone(shape)
 }
 
+// Tensors 合并 MoE 专家权重并对 SSM 参数做 shape 与 repack 处理。
 func (n *nemotronHModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 
@@ -757,14 +781,17 @@ func (n *nemotronHModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 backbone/mixer 张量到 GGUF blk 命名。
 func (n *nemotronHModel) Replacements() []string {
 	return []string{
+		// 嵌入与输出层。
 		// Embedding and output
 		"lm_head", "output",
 		"backbone.embeddings", "token_embd",
 		"backbone.norm_f", "output_norm",
 		"backbone.layers", "blk",
 
+		// Mamba2 循环（SSM）张量。
 		// Recurrent (Mamba2) tensors
 		"mixer.in_proj", "ssm_in",
 		"mixer.out_proj", "ssm_out",
@@ -774,12 +801,14 @@ func (n *nemotronHModel) Replacements() []string {
 		"mixer.conv1d", "ssm_conv1d",
 		"mixer.norm.weight", "ssm_norm.weight",
 
+		// 注意力投影张量。
 		// Attention tensors
 		"mixer.q_proj", "attn_q",
 		"mixer.k_proj", "attn_k",
 		"mixer.v_proj", "attn_v",
 		"mixer.o_proj", "attn_output",
 
+		// FFN 与 MoE 路由/专家张量。
 		// FFN / MoE tensors
 		"mixer.gate.e_score_correction_bias", "exp_probs_b.bias",
 		"mixer.gate", "ffn_gate_inp",
@@ -790,6 +819,7 @@ func (n *nemotronHModel) Replacements() []string {
 		"mixer.up_proj", "ffn_up",
 		"mixer.down_proj", "ffn_down",
 
+		// 每层 pre-norm。
 		// Per-layer pre-norm
 		".norm.weight", ".attn_norm.weight",
 	}

@@ -1,3 +1,4 @@
+// Nomic-BERT 转换：嵌入模型（含可选 MoE）到 GGUF，支持 pooling 与 WordPiece。
 package convert
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// nomicbertModel 解析 Nomic BERT 配置与 Sentence-Transformers 模块。
 type nomicbertModel struct {
 	ModelParameters
 	NLayers               uint32  `json:"n_layers"`
@@ -26,6 +28,7 @@ type nomicbertModel struct {
 	normalizeEmbeddings   bool
 	PoolingType           uint32
 
+	// MoE 参数（仅 v2 模型存在）。
 	// MoE parameters (only present in v2 models)
 	NumExperts      uint32 `json:"num_local_experts"`
 	NumExpertsUsed  uint32 `json:"num_experts_per_tok"`
@@ -37,6 +40,7 @@ var (
 	_ moreParser     = (*nomicbertModel)(nil)
 )
 
+// parseMore 从 modules.json 读取 pooling/normalize 配置。
 func (p *nomicbertModel) parseMore(fsys fs.FS) error {
 	bts, err := fs.ReadFile(fsys, "modules.json")
 	if err != nil {
@@ -87,9 +91,11 @@ func (p *nomicbertModel) parseMore(fsys fs.FS) error {
 	return nil
 }
 
+// KV 写入 nomic-bert 元数据并将 WordPiece token 转为 SentencePiece 风格。
 func (p *nomicbertModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 
+	// 按 MoE 字段决定架构名（同 qwen3 模式）。
 	// Determine architecture based on MoE parameters (following qwen3 pattern)
 	arch := "nomic-bert"
 	if p.MoEEveryNLayers > 0 {
@@ -131,6 +137,7 @@ func (p *nomicbertModel) KV(t *Tokenizer) KV {
 		kv["rope.freq_base"] = p.RopeFreqBase
 	}
 
+	// MoE 专用参数（仅启用 MoE 时写入）。
 	// MoE specific parameters (only if MoE is enabled)
 	if p.NumExperts > 0 {
 		kv["expert_count"] = p.NumExperts
@@ -147,10 +154,12 @@ func (p *nomicbertModel) KV(t *Tokenizer) KV {
 	kv["tokenizer.ggml.model"] = "bert"
 	kv["tokenizer.ggml.token_type_count"] = uint32(2)
 
+	// 将 WordPiece token 转为 ▁ 前缀的 phantom space 形式。
 	// convert to phantom space tokens
 	for i, e := range t.Tokens {
 		switch {
 		case strings.HasPrefix(e, "[") && strings.HasSuffix(e, "]"):
+			// 特殊 token 保持原样。
 			// noop - keep special tokens as-is
 		case strings.HasPrefix(e, "##"):
 			t.Tokens[i] = e[2:]
@@ -164,6 +173,7 @@ func (p *nomicbertModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 跳过 position_ids 与 pooler 等推理不需要的张量。
 func (p *nomicbertModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	out := make([]*ggml.Tensor, 0, len(ts))
 	for _, t := range ts {
@@ -186,6 +196,7 @@ func (p *nomicbertModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 BERT encoder 与 MoE 张量到 GGUF 短名。
 func (nomicbertModel) Replacements() []string {
 	return []string{
 		"encoder.layer", "blk",

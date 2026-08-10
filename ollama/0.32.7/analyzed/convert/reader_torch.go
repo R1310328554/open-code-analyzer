@@ -1,3 +1,4 @@
+// PyTorch 读取：从 .bin/.pth checkpoint 解析张量（gopickle）。
 package convert
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/nlpodyssey/gopickle/types"
 )
 
+// parseTorch 加载 PyTorch pickle 权重并构建 torch Tensor 列表。
 func parseTorch(fsys fs.FS, replacer *strings.Replacer, ps ...string) ([]Tensor, error) {
 	var ts []Tensor
 	for _, p := range ps {
@@ -38,11 +40,13 @@ func parseTorch(fsys fs.FS, replacer *strings.Replacer, ps ...string) ([]Tensor,
 	return ts, nil
 }
 
+// torch 实现 Tensor，从 PyTorch storage 懒读取（WriteTo 暂未实现）。
 type torch struct {
 	storage pytorch.StorageInterface
 	*tensorBase
 }
 
+// Clone 复制 torch 张量元数据。
 func (t torch) Clone() Tensor {
 	return torch{
 		storage: t.storage,
@@ -54,6 +58,7 @@ func (t torch) Clone() Tensor {
 	}
 }
 
+// WriteTo 占位实现（PyTorch 路径当前不写入数据）。
 func (pt torch) WriteTo(w io.Writer) (int64, error) {
 	return 0, nil
 }

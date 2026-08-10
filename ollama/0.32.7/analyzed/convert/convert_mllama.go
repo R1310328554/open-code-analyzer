@@ -1,3 +1,4 @@
+// MLlama 转换：Llama 文本塔与视觉塔的多模态 checkpoint 到 GGUF。
 package convert
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/pdevine/tensor/native"
 )
 
+// mllamaModel 聚合 MLlama 文本（Llama）与视觉子配置。
 type mllamaModel struct {
 	ModelParameters
 	TextModel struct {
@@ -34,6 +36,7 @@ type mllamaModel struct {
 	} `json:"vision_config"`
 }
 
+// KV 写入 mllama 架构元数据（交叉注意力层与视觉塔参数）。
 func (m *mllamaModel) KV(t *Tokenizer) KV {
 	kv := m.ModelParameters.KV(t)
 	kv["general.architecture"] = "mllama"
@@ -64,6 +67,7 @@ func (m *mllamaModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Replacements 映射 HF 语言/视觉张量路径到 GGUF 短名。
 func (m *mllamaModel) Replacements() []string {
 	return append(
 		m.TextModel.Replacements(),
@@ -90,6 +94,7 @@ func (m *mllamaModel) Replacements() []string {
 	)
 }
 
+// Tensors 分离文本/视觉张量，对门控位置嵌入与 Q/K 权重做重打包。
 func (m *mllamaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	var text []Tensor
@@ -128,6 +133,7 @@ func (m *mllamaModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return append(out, m.TextModel.Tensors(text)...)
 }
 
+// repack 按张量名对视觉注意力权重或门控嵌入做 tanh/转置等变换。
 func (m *mllamaModel) repack(name string) Repacker {
 	return func(_ string, data []float32, shape []uint64) (_ []float32, err error) {
 		dims := make([]int, len(shape))
@@ -169,6 +175,7 @@ func (m *mllamaModel) repack(name string) Repacker {
 		}
 
 		t = tensor.Materialize(t)
+		// 展平张量以便作为向量返回。
 		// flatten tensor so it can be return as a vector
 		if err := t.Reshape(t.Shape().TotalSize()); err != nil {
 			return nil, err

@@ -1,3 +1,4 @@
+// OLMo2 转换：Allen AI OLMo2 因果语言模型 checkpoint 到 GGUF。
 package convert
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/ollama/ollama/fs/ggml"
 )
 
+// ropeScaling 承载 OLMo2 YaRN/外推等 RoPE 缩放参数。
 type ropeScaling struct {
 	Factor                    float32 `json:"factor"`
 	OriginalMaxPositionEmbeds uint32  `json:"original_max_position_embeddings"`
@@ -16,6 +18,7 @@ type ropeScaling struct {
 	ExtrapolationFactor       float32 `json:"extrapolation_factor"`
 }
 
+// olmoModel 解析 OLMo2 HuggingFace 配置。
 type olmoModel struct {
 	ModelParameters
 
@@ -34,6 +37,7 @@ type olmoModel struct {
 
 var _ ModelConverter = (*olmoModel)(nil)
 
+// KV 写入 olmo2 元数据（滑动窗口模式与 RoPE 缩放）。
 func (p *olmoModel) KV(t *Tokenizer) KV {
 	kv := p.ModelParameters.KV(t)
 	kv["general.architecture"] = "olmo2"
@@ -82,6 +86,7 @@ func (p *olmoModel) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 原样导出各张量（无额外重打包）。
 func (p *olmoModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	out := make([]*ggml.Tensor, 0, len(ts))
 	for _, t := range ts {
@@ -96,6 +101,7 @@ func (p *olmoModel) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 OLMo2 HF 层名到 GGUF blk 命名。
 func (p *olmoModel) Replacements() []string {
 	return []string{
 		"lm_head", "output",

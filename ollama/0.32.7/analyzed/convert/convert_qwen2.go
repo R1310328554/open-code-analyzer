@@ -1,7 +1,9 @@
+// Qwen2 转换：Qwen2 因果语言模型（YaRN/MRoPE）到 GGUF。
 package convert
 
 import "github.com/ollama/ollama/fs/ggml"
 
+// qwen2Model 解析 Qwen2 文本配置与 rope_scaling。
 type qwen2Model struct {
 	ModelParameters
 	MaxPositionEmbeddings uint32  `json:"max_position_embeddings"`
@@ -22,6 +24,7 @@ type qwen2Model struct {
 
 var _ ModelConverter = (*qwen2Model)(nil)
 
+// KV 写入 qwen2 架构元数据（含 yarn/mrope 缩放）。
 func (q *qwen2Model) KV(t *Tokenizer) KV {
 	kv := q.ModelParameters.KV(t)
 	kv["general.architecture"] = "qwen2"
@@ -36,6 +39,7 @@ func (q *qwen2Model) KV(t *Tokenizer) KV {
 
 	switch q.RopeScaling.Type {
 	case "":
+		// 无 RoPE 缩放。
 		// no scaling
 	case "yarn":
 		kv["qwen2.rope.scaling.type"] = q.RopeScaling.Type
@@ -48,6 +52,7 @@ func (q *qwen2Model) KV(t *Tokenizer) KV {
 	return kv
 }
 
+// Tensors 原样导出各张量。
 func (q *qwen2Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	var out []*ggml.Tensor
 	for _, t := range ts {
@@ -62,6 +67,7 @@ func (q *qwen2Model) Tensors(ts []Tensor) []*ggml.Tensor {
 	return out
 }
 
+// Replacements 映射 Qwen2 HF 层名到 GGUF blk 命名。
 func (p *qwen2Model) Replacements() []string {
 	return []string{
 		"lm_head", "output",

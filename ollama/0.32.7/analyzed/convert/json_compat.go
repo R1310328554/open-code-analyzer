@@ -1,5 +1,7 @@
+// JSON 兼容：清洗 HuggingFace 配置中的非标准 JSON 数值 token。
 package convert
 
+// sanitizeNonFiniteJSON 将 HF 配置中的 Infinity/-Infinity/NaN 改写为标准 JSON 数字。
 // sanitizeNonFiniteJSON rewrites non-standard JSON numeric tokens that some
 // HF configs emit (Infinity, -Infinity, NaN) into standard JSON numbers.
 //
@@ -67,6 +69,7 @@ func sanitizeNonFiniteJSON(in []byte) []byte {
 	return out
 }
 
+// hasToken 在字节流指定位置检测完整 token（含边界校验）。
 func hasToken(in []byte, at int, tok string) bool {
 	end := at + len(tok)
 	if at < 0 || end > len(in) {
@@ -84,14 +87,17 @@ func hasToken(in []byte, at int, tok string) bool {
 	return true
 }
 
+// isJSONWhitespace 判断 JSON 空白字符。
 func isJSONWhitespace(b byte) bool {
 	return b == ' ' || b == '\t' || b == '\n' || b == '\r'
 }
 
+// isJSONValuePrefixBoundary 判断数值 token 左侧是否为合法边界。
 func isJSONValuePrefixBoundary(b byte) bool {
 	return isJSONWhitespace(b) || b == ':' || b == ',' || b == '['
 }
 
+// isJSONValueSuffixBoundary 判断数值 token 右侧是否为合法边界。
 func isJSONValueSuffixBoundary(b byte) bool {
 	return isJSONWhitespace(b) || b == ',' || b == ']' || b == '}'
 }
