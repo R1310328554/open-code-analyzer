@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T10:44:15Z",
-  "files": [
-    "server-spi-private/src/main/java/org/keycloak/models/utils/StripSecretsUtils.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/SystemClientUtil.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/TimeBasedOTP.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/UserSessionModelDelegate.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/AnnotatedPropertyCriteria.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/MethodProperty.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/MethodPropertyImpl.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/NamedPropertyCriteria.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/Properties.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/Property.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/PropertyCriteria.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/PropertyQueries.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/PropertyQuery.java",
-    "server-spi-private/src/main/java/org/keycloak/models/utils/reflection/TypedPropertyCriteria.java",
-    "server-spi-private/src/main/java/org/keycloak/models/workflow/AbstractWorkflowEventProvider.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 2698,
-  "done": 3285
+  "done": 3300
 }
