@@ -12,10 +12,11 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
-// Droid implements Runner and Editor for Droid integration
+// Droid 实现 Runner 与 Editor，向 Factory Droid 的 settings.json 注入 Ollama 自定义模型。
 type Droid struct{}
 
-// droidSettings represents the Droid settings.json file (only fields we use)
+// droidSettings 表示 Droid settings.json 中我们读写的字段子集。
+// droidSettings 映射 ~/.factory/settings.json 的结构化视图。
 type droidSettings struct {
 	CustomModels           []modelEntry    `json:"customModels"`
 	SessionDefaultSettings sessionSettings `json:"sessionDefaultSettings"`
@@ -64,6 +65,7 @@ func (d *Droid) Paths() []string {
 	return nil
 }
 
+// Edit 合并 Ollama customModels 条目并更新 sessionDefaultSettings.model。
 func (d *Droid) Edit(models []LaunchModel) error {
 	if len(models) == 0 {
 		return nil
@@ -79,6 +81,7 @@ func (d *Droid) Edit(models []LaunchModel) error {
 		return err
 	}
 
+	// 一次读取：map 保留未知字段；struct 提取已知字段
 	// Read file once, unmarshal twice:
 	// map preserves unknown fields for writing back (including extra fields in model entries)
 	settingsMap := make(map[string]any)
@@ -99,7 +102,9 @@ func (d *Droid) Edit(models []LaunchModel) error {
 	return fileutil.WriteWithBackup(settingsPath, data, "droid")
 }
 
+// updateDroidSettings 重建 Ollama 模型列表并保留非 Ollama 的 customModels 条目。
 func updateDroidSettings(settingsMap map[string]any, settings droidSettings, models []LaunchModel) map[string]any {
+	// 从原始 map 保留 apiKey 非 ollama 的条目（含额外字段）
 	// Keep only non-Ollama models from the raw map (preserves extra fields)
 	// Rebuild Ollama models
 	var nonOllamaModels []any
@@ -156,6 +161,7 @@ func updateDroidSettings(settingsMap map[string]any, settings droidSettings, mod
 	return settingsMap
 }
 
+// Models 返回 settings 中 apiKey=ollama 的自定义模型名称列表。
 func (d *Droid) Models() []string {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -183,6 +189,7 @@ func (d *Droid) Models() []string {
 
 var validReasoningEfforts = []string{"high", "medium", "low", "none"}
 
+// isValidReasoningEffort 校验 Droid reasoningEffort 枚举值。
 func isValidReasoningEffort(effort string) bool {
 	return slices.Contains(validReasoningEfforts, effort)
 }

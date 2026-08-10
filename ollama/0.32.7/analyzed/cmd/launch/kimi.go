@@ -15,7 +15,8 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
-// Kimi implements Runner for Kimi Code CLI integration.
+// Kimi 实现 Runner：为 Kimi Code CLI 生成内联 JSON 配置并指向 Ollama /v1。
+// Kimi 集成 Kimi Code 命令行工具。
 type Kimi struct{}
 
 const (
@@ -36,6 +37,7 @@ func (k *Kimi) args(config string, extra []string) []string {
 	return args
 }
 
+// Run 构建内联 --config JSON、确保 kimi 已安装后启动子进程。
 func (k *Kimi) Run(model string, _ []LaunchModel, args []string) error {
 	if strings.TrimSpace(model) == "" {
 		return fmt.Errorf("model is required")
@@ -61,6 +63,7 @@ func (k *Kimi) Run(model string, _ []LaunchModel, args []string) error {
 	return cmd.Run()
 }
 
+// findKimiBinary 在 PATH、uv 工具目录及 WSL 映射的 Windows 路径中查找 kimi。
 func findKimiBinary() (string, error) {
 	if path, err := exec.LookPath("kimi"); err == nil {
 		return path, nil
@@ -95,6 +98,7 @@ func findKimiBinary() (string, error) {
 			)
 		}
 
+		// WSL 用户从 Linux shell 启动时可能继承 Windows 环境变量中的路径
 		// WSL users can inherit Windows env vars while launching from Linux shells.
 		if profile := windowsPathToWSL(os.Getenv("USERPROFILE")); profile != "" {
 			candidates = appendWindowsKimiCandidates(candidates, filepath.Join(profile, ".local", "bin"))
@@ -144,6 +148,7 @@ func windowsPathToWSL(path string) string {
 	return filepath.Join("/mnt", drive, rest)
 }
 
+// validateKimiPassthroughArgs 禁止用户传入 launch 托管的 --config/--model 参数。
 func validateKimiPassthroughArgs(args []string) error {
 	for _, arg := range args {
 		switch {
@@ -160,6 +165,7 @@ func validateKimiPassthroughArgs(args []string) error {
 	return nil
 }
 
+// buildKimiInlineConfig 序列化含 ollama provider 与模型 context 上限的 JSON 字符串。
 func buildKimiInlineConfig(model string, maxContextSize int) (string, error) {
 	cfg := map[string]any{
 		"default_model": kimiDefaultModelAlias,
@@ -186,6 +192,7 @@ func buildKimiInlineConfig(model string, maxContextSize int) (string, error) {
 	return string(data), nil
 }
 
+// resolveKimiMaxContextSize 优先云端限额，其次 Show API 的 context_length。
 func resolveKimiMaxContextSize(model string) int {
 	if l, ok := lookupCloudModelLimit(model); ok {
 		return l.Context
@@ -233,6 +240,7 @@ func modelInfoContextLength(modelInfo map[string]any) (int, bool) {
 	return 0, false
 }
 
+// ensureKimiInstalled 若未找到二进制则运行官方安装脚本。
 func ensureKimiInstalled() (string, error) {
 	if path, err := findKimiBinary(); err == nil {
 		return path, nil
@@ -294,6 +302,7 @@ func checkKimiInstallerDependencies() error {
 	return nil
 }
 
+// kimiInstallerCommand 返回各平台安装 Kimi CLI 的命令。
 func kimiInstallerCommand(goos string) (string, []string, error) {
 	switch goos {
 	case "windows":

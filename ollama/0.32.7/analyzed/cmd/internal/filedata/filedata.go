@@ -15,11 +15,14 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// filedata 从用户输入中提取多模态文件路径、规范化 URL 并读取二进制内容。
+// File 表示已从输入中解析并成功读取的一个附件。
 type File struct {
 	Path string
 	Data api.ImageData
 }
 
+// NormalizePath 去除引号、还原转义字符，并将 file:// URL 转为本地路径。
 func NormalizePath(fp string) string {
 	fp = strings.Trim(fp, "\"")
 	fp = strings.NewReplacer(
@@ -49,16 +52,19 @@ func NormalizePath(fp string) string {
 	return fp
 }
 
+// fileExtractRe 匹配 file:// 或本地路径中的图片/音频扩展名；包级编译一次供每次按键补全复用。
 // fileExtractRe matches file:// URLs and filesystem paths ending in image/audio
 // extensions. Hoisted to package scope so the per-keystroke slash-completion
 // path (chat.slashInputIsMultimodalFile -> ExtractNames) doesn't recompile it
 // on every call.
 var fileExtractRe = regexp.MustCompile(`(?:file://\S+?\.(?i:jpg|jpeg|png|webp|wav)\b)|(?:(?:[a-zA-Z]:)?(?:\./|\.\\|/|\\)[\S\\ ]+?\.(?i:jpg|jpeg|png|webp|wav)\b)`)
 
+// ExtractNames 返回输入中出现的候选文件路径/URL 字符串。
 func ExtractNames(input string) []string {
 	return fileExtractRe.FindAllString(input, -1)
 }
 
+// Extract 解析附件并仅返回 api.ImageData 切片（不含路径元数据）。
 func Extract(input string) (string, []api.ImageData, error) {
 	cleaned, files, err := ExtractWithFiles(input)
 	if err != nil {
@@ -71,6 +77,7 @@ func Extract(input string) (string, []api.ImageData, error) {
 	return cleaned, data, nil
 }
 
+// ExtractWithFiles 解析附件并保留规范化后的路径与数据。
 func ExtractWithFiles(input string) (string, []File, error) {
 	filePaths := ExtractNames(input)
 	var files []File
@@ -93,6 +100,7 @@ func ExtractWithFiles(input string) (string, []File, error) {
 	return strings.TrimSpace(input), files, nil
 }
 
+// GetData 打开本地文件，校验允许的内容类型与大小后读入内存。
 func GetData(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -136,6 +144,7 @@ func GetData(filePath string) ([]byte, error) {
 	return buf, nil
 }
 
+// Kind 根据扩展名返回 "audio" 或 "image"。
 func Kind(path string) string {
 	if strings.EqualFold(filepath.Ext(path), ".wav") {
 		return "audio"
@@ -143,6 +152,7 @@ func Kind(path string) string {
 	return "image"
 }
 
+// normalizeFileURL 将标准 file:// URL 转为当前 OS 的文件路径。
 func normalizeFileURL(u *url.URL) string {
 	path := u.Path
 	if unescaped, err := url.PathUnescape(path); err == nil {
@@ -164,6 +174,7 @@ func normalizeFileURL(u *url.URL) string {
 	return filepath.FromSlash(path)
 }
 
+// normalizeMalformedFileURL 尝试修复缺少主机等常见畸形 file:// 字符串。
 func normalizeMalformedFileURL(raw string) (string, bool) {
 	const prefix = "file://"
 	if !strings.HasPrefix(strings.ToLower(raw), prefix) {
@@ -184,6 +195,7 @@ func normalizeMalformedFileURL(raw string) (string, bool) {
 	return "", false
 }
 
+// isASCIIAlpha 判断字节是否为 ASCII 字母（用于 Windows 盘符检测）。
 func isASCIIAlpha(b byte) bool {
 	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }

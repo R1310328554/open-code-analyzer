@@ -23,6 +23,7 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
+// hermes 配置 Hermes Agent 的 config.yaml，将默认 provider 指向本地 Ollama。
 const (
 	// https://github.com/NousResearch/hermes-agent/releases/tag/v2026.6.5
 	hermesDesktopMinVersion = "v0.16.0"
@@ -63,14 +64,17 @@ var hermesMessagingEnvGroups = [][]string{
 	{"WEBHOOK_ENABLED"},
 }
 
-// Hermes is intentionally not an Editor integration: launch owns one primary
+// Hermes 非 Editor 集成：launch 仅写入主模型与 Ollama 端点，模型切换由 Hermes 自身 UX 负责。
 // model and the local Ollama endpoint, while Hermes keeps its own discovery and
 // switching UX after startup.
+// Hermes 集成 Hermes Agent CLI。
 type Hermes struct{}
 
 func (h *Hermes) String() string { return "Hermes Agent" }
 
+// Run 确保已安装、可选运行 gateway setup 预检后启动 hermes 子命令。
 func (h *Hermes) Run(_ string, _ []LaunchModel, args []string) error {
+	// Hermes 从 config.yaml 读取主模型；launch 预先写入默认模型以简化运行时调用。
 	// Hermes reads its primary model from config.yaml. launch configures that
 	// default model ahead of time so we can keep runtime invocation simple and
 	// still let Hermes discover additional models later via its own UX.
@@ -86,6 +90,7 @@ func (h *Hermes) Run(_ string, _ []LaunchModel, args []string) error {
 	return hermesAttachedCommand(bin, args...).Run()
 }
 
+// HermesDesktop 在 Hermes 之上追加 desktop 子命令与最低版本检查。
 type HermesDesktop struct {
 	Hermes
 }
@@ -169,7 +174,7 @@ func (h *HermesDesktop) packagedAppExists() bool {
 	return false
 }
 
-// These roots mirror Hermes' own install layout:
+// 以下根目录与 Hermes 安装脚本布局一致，并支持 HERMES_HOME/HERMES_INSTALL_DIR 覆盖。
 // install.sh uses ~/.hermes/hermes-agent for user installs and
 // /usr/local/lib/hermes-agent for new Linux root installs; install.ps1
 // and the bootstrap installer use %LOCALAPPDATA%\hermes\hermes-agent on
@@ -265,6 +270,7 @@ func (h *Hermes) Paths() []string {
 	return []string{configPath}
 }
 
+// Configure 写入 model/provider 段、Ollama providers 表与 web toolsets。
 func (h *Hermes) Configure(model string) error {
 	configPath, err := hermesConfigPath()
 	if err != nil {
@@ -287,6 +293,7 @@ func (h *Hermes) Configure(model string) error {
 	models := h.listModels(model)
 	applyHermesManagedProviders(cfg, hermesBaseURL(), model, models)
 
+	// launch 仅写入启动 Hermes 所需的最小 provider/默认模型配置。
 	// launch writes the minimum provider/default-model settings needed to
 	// bootstrap Hermes against Ollama. The active provider stays on a
 	// launch-owned key so /model stays aligned with the launcher-managed entry,
@@ -297,6 +304,7 @@ func (h *Hermes) Configure(model string) error {
 	modelSection["api_key"] = hermesPlaceholderKey
 	cfg["model"] = modelSection
 
+	// 当前默认启用 Hermes 内置 web 工具集。
 	// use Hermes' built-in web toolset for now.
 	// TODO(parthsareen): move this to using Ollama web search
 	cfg["toolsets"] = mergeHermesToolsets(cfg["toolsets"])
@@ -336,6 +344,7 @@ func (h *Hermes) RequiresInteractiveOnboarding() bool {
 	return false
 }
 
+// RefreshRuntimeAfterConfigure 若 gateway 已在运行则提示并执行 restart。
 func (h *Hermes) RefreshRuntimeAfterConfigure() error {
 	running, err := h.gatewayRunning()
 	if err != nil {
@@ -688,12 +697,14 @@ func hermesParseEnvFile(data []byte) map[string]string {
 	return out
 }
 
+// hermesOllamaClient 使用与 config 相同的可连接 Ollama 主机做模型列举。
 func hermesOllamaClient() *api.Client {
 	// Hermes queries the same launch-resolved Ollama host that launch writes
 	// into config, so model discovery follows the configured endpoint.
 	return api.NewClient(hermesOllamaURL(), http.DefaultClient)
 }
 
+// applyHermesManagedProviders 写入 launch 托管的 ollama-launch provider 并清理 legacy 键。
 func applyHermesManagedProviders(cfg map[string]any, baseURL string, model string, models []string) {
 	providers := hermesUserProviders(cfg["providers"])
 	entry := hermesManagedProviderEntry(providers)
@@ -716,6 +727,7 @@ func applyHermesManagedProviders(cfg map[string]any, baseURL string, model strin
 	cfg["custom_providers"] = customProviders
 }
 
+// hermesManagedCurrentModel 仅在配置仍与 launch 写入一致时返回当前默认模型。
 func hermesManagedCurrentModel(cfg map[string]any, baseURL string) string {
 	modelCfg, _ := cfg["model"].(map[string]any)
 	if modelCfg == nil {
@@ -855,6 +867,7 @@ func hermesStringListAny(models []string) []any {
 	return out
 }
 
+// mergeHermesToolsets 确保 toolsets 列表包含 web（兼容多种 YAML 序列化形态）。
 func mergeHermesToolsets(current any) any {
 	added := false
 	switch existing := current.(type) {

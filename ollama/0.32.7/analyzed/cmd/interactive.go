@@ -23,14 +23,18 @@ import (
 	"github.com/ollama/ollama/types/model"
 )
 
+// 交互式 run 模式：readline 循环、斜杠命令与多模态附件处理。
+// MultilineState 表示 """ 多行输入模式的状态。
 type MultilineState int
 
+// 多行输入状态：无、用户消息、系统消息。
 const (
 	MultilineNone MultilineState = iota
 	MultilinePrompt
 	MultilineSystem
 )
 
+// generateInteractive 运行 REPL 式交互会话，处理 /set、/show、/load 等斜杠命令。
 func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 	usage := func() {
 		fmt.Fprintln(os.Stderr, "Available Commands:")
@@ -98,6 +102,7 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 		fmt.Fprintln(os.Stderr, "")
 	}
 
+	// 仅列出最常用的生成参数子集
 	// only list out the most common parameters
 	usageParameters := func() {
 		fmt.Fprintln(os.Stderr, "Available Parameters:")
@@ -169,6 +174,7 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 
 		switch {
 		case multiline != MultilineNone:
+			// 检查当前行是否包含多行输入结束标记 """
 			// check if there's a multiline terminating string
 			before, ok := strings.CutSuffix(line, `"""`)
 			sb.WriteString(before)
@@ -193,6 +199,7 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 			line, ok := strings.CutSuffix(line, `"""`)
 			sb.WriteString(line)
 			if !ok {
+				// 尚未遇到结束标记，继续读取多行
 				// no multiline terminating string; need more input
 				fmt.Fprintln(&sb)
 				multiline = MultilinePrompt
@@ -315,7 +322,8 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 						maybeLevel = args[2]
 					}
 					if maybeLevel != "" {
-						// TODO(drifkin): validate the level, could be model dependent
+						// TODO(drifkin): 校验 thinking 级别（可能因模型而异）
+					// TODO(drifkin): validate the level, could be model dependent
 						// though... It will also be validated on the server once a call is
 						// made.
 						thinkValue.Value = maybeLevel
@@ -373,7 +381,8 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 					if !ok {
 						multiline = MultilineNone
 					} else {
-						// only cut suffix if the line is multiline
+						// 仅在多行模式下才尝试截断尾部 """
+					// only cut suffix if the line is multiline
 						line, ok = strings.CutSuffix(line, `"""`)
 						if ok {
 							multiline = MultilineNone
@@ -386,10 +395,13 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 						continue
 					}
 
-					opts.System = sb.String() // for display in modelfile
+					opts.System = sb.String() // 供 modelfile 展示
+					// for display in modelfile
 					newMessage := api.Message{Role: "system", Content: sb.String()}
+					// 若最后一条已是 system 消息则就地替换，否则追加
 					// Check if the slice is not empty and the last message is from 'system'
 					if len(opts.Messages) > 0 && opts.Messages[len(opts.Messages)-1].Role == "system" {
+						// 替换末尾 system 消息
 						// Replace the last message
 						opts.Messages[len(opts.Messages)-1] = newMessage
 					} else {
@@ -545,6 +557,7 @@ func generateInteractive(cmd *cobra.Command, opts runOptions) error {
 	}
 }
 
+// NewCreateRequest 根据当前会话选项构造 /save 使用的 CreateRequest。
 func NewCreateRequest(name string, opts runOptions) *api.CreateRequest {
 	parentModel := opts.ParentModel
 
@@ -553,6 +566,7 @@ func NewCreateRequest(name string, opts runOptions) *api.CreateRequest {
 		parentModel = ""
 	}
 
+	// 保留以 :cloud 启动会话时的显式云端意图；避免 /save 误建本地衍生模型。
 	// Preserve explicit cloud intent for sessions started with `:cloud`.
 	// Cloud model metadata can return a source-less parent_model (for example
 	// "qwen3.5"), which would otherwise make `/save` create a local derivative.
@@ -582,9 +596,11 @@ func NewCreateRequest(name string, opts runOptions) *api.CreateRequest {
 	return req
 }
 
+// normalizeFilePath 还原用户输入中被转义的空格与括号等字符。
 func normalizeFilePath(fp string) string {
 	return strings.NewReplacer(
-		"\\ ", " ", // Escaped space
+		"\\ ", " ", // 转义空格
+		// Escaped space
 		"\\(", "(", // Escaped left parenthesis
 		"\\)", ")", // Escaped right parenthesis
 		"\\[", "[", // Escaped left square bracket
@@ -602,7 +618,9 @@ func normalizeFilePath(fp string) string {
 	).Replace(fp)
 }
 
+// extractFileNames 用正则从输入中提取可能的图片/音频路径。
 func extractFileNames(input string) []string {
+	// 匹配可选盘符、相对/绝对路径及 jpg/png/webp/wav 扩展名；非路径字符串可能误匹配，后续以文件存在性过滤。
 	// Regex to match file paths starting with optional drive letter, / ./ \ or .\ and include escaped or unescaped spaces (\ or %20)
 	// and followed by more characters and a file extension
 	// This will capture non filename strings, but we'll check for file existence to remove mismatches
@@ -612,6 +630,7 @@ func extractFileNames(input string) []string {
 	return re.FindAllString(input, -1)
 }
 
+// extractFileData 读取附件字节并从用户文本中移除对应路径片段。
 func extractFileData(input string) (string, []api.ImageData, error) {
 	filePaths := extractFileNames(input)
 	var imgs []api.ImageData
@@ -640,6 +659,7 @@ func extractFileData(input string) (string, []api.ImageData, error) {
 	return strings.TrimSpace(input), imgs, nil
 }
 
+// editInExternalEditor 在 $OLLAMA_EDITOR/$VISUAL/$EDITOR 指定的外部编辑器中编辑草稿。
 func editInExternalEditor(content string) (string, error) {
 	editor := envconfig.Editor()
 	if editor == "" {
@@ -652,6 +672,7 @@ func editInExternalEditor(content string) (string, error) {
 		editor = defaultEditor
 	}
 
+	// 确认编辑器可执行文件存在于 PATH
 	// Check that the editor binary exists
 	name := strings.Fields(editor)[0]
 	if _, err := exec.LookPath(name); err != nil {
@@ -691,6 +712,7 @@ func editInExternalEditor(content string) (string, error) {
 	return strings.TrimRight(string(data), "\n"), nil
 }
 
+// getImageData 读取本地图片或 wav 并校验 MIME 与 100MB 大小上限。
 func getImageData(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -715,7 +737,8 @@ func getImageData(filePath string) ([]byte, error) {
 		return nil, err
 	}
 
-	var maxSize int64 = 100 * 1024 * 1024 // 100MB
+	var maxSize int64 = 100 * 1024 * 1024 // 单文件最大 100MB
+	// 100MB
 	if info.Size() > maxSize {
 		return nil, errors.New("file size exceeds maximum limit (100MB)")
 	}

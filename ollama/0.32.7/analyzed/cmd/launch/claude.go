@@ -12,7 +12,8 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
-// Claude implements Runner for Claude Code integration.
+// Claude 实现 Runner，将 Claude Code CLI 路由到本地 Ollama 并提供安装引导。
+// Claude 集成 Claude Code 命令行工具。
 type Claude struct{}
 
 func (c *Claude) String() string { return "Claude Code" }
@@ -26,6 +27,7 @@ func (c *Claude) args(model string, extra []string) []string {
 	return args
 }
 
+// findPath 在 PATH 与常见安装目录中定位 claude 可执行文件。
 func (c *Claude) findPath() (string, error) {
 	if p, err := exec.LookPath("claude"); err == nil {
 		return p, nil
@@ -49,6 +51,7 @@ func (c *Claude) findPath() (string, error) {
 	return "", fmt.Errorf("claude binary not found")
 }
 
+// Run 确保 Claude 已安装后以 Ollama 后端环境变量启动子进程。
 func (c *Claude) Run(model string, _ []LaunchModel, args []string) error {
 	claudePath, err := ensureClaudeInstalled()
 	if err != nil {
@@ -64,6 +67,7 @@ func (c *Claude) Run(model string, _ []LaunchModel, args []string) error {
 	return cmd.Run()
 }
 
+// envVars 设置 ANTHROPIC_BASE_URL 等变量，使 Claude Code 走 Ollama 兼容 API。
 func (c *Claude) envVars(model string) []string {
 	env := []string{
 		"ANTHROPIC_BASE_URL=" + envconfig.Host().String(),
@@ -79,6 +83,7 @@ func (c *Claude) envVars(model string) []string {
 	return env
 }
 
+// ensureClaudeInstalled 若未安装则交互式运行官方安装脚本。
 func ensureClaudeInstalled() (string, error) {
 	if path, err := (&Claude{}).findPath(); err == nil {
 		return path, nil
@@ -119,6 +124,7 @@ func ensureClaudeInstalled() (string, error) {
 	return path, nil
 }
 
+// checkClaudeInstallerDependencies 检查 curl/bash 或 PowerShell 等安装依赖。
 func checkClaudeInstallerDependencies() error {
 	switch runtime.GOOS {
 	case "windows":
@@ -140,6 +146,7 @@ func checkClaudeInstallerDependencies() error {
 	return nil
 }
 
+// claudeInstallerCommand 返回各平台安装 Claude Code 的命令与参数。
 func claudeInstallerCommand(goos string) (string, []string, error) {
 	switch goos {
 	case "windows":
@@ -160,7 +167,7 @@ func claudeInstallerCommand(goos string) (string, []string, error) {
 	}
 }
 
-// modelEnvVars returns Claude Code env vars that route all model tiers through Ollama.
+// modelEnvVars 将所有 Claude 模型档位环境变量指向同一 Ollama 模型名。
 func (c *Claude) modelEnvVars(model string) []string {
 	env := []string{
 		"ANTHROPIC_DEFAULT_OPUS_MODEL=" + model,

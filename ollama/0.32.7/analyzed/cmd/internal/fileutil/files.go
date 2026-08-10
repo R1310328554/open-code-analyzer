@@ -1,5 +1,4 @@
-// Package fileutil provides small shared helpers for reading JSON files
-// and writing config files with backup-on-overwrite semantics.
+// Package fileutil 提供读取 JSON 配置文件以及在覆盖写入前自动备份的共享辅助函数。
 package fileutil
 
 import (
@@ -14,11 +13,11 @@ import (
 	"time"
 )
 
-// Keep a bounded number of backups per file so config backups do not grow
+// 每个目标文件最多保留 maxBackupsPerFile 份备份，避免无限增长。
 // without limit. We keep the 5 most recent backups and do not pin the oldest.
 const maxBackupsPerFile = 5
 
-// ReadJSON reads a JSON object file into a generic map.
+// ReadJSON 将 JSON 对象文件读入 map[string]any。
 func ReadJSON(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -31,6 +30,7 @@ func ReadJSON(path string) (map[string]any, error) {
 	return result, nil
 }
 
+// copyFile 按源文件权限复制字节内容。
 func copyFile(src, dst string) error {
 	info, err := os.Stat(src)
 	if err != nil {
@@ -43,7 +43,7 @@ func copyFile(src, dst string) error {
 	return os.WriteFile(dst, data, info.Mode().Perm())
 }
 
-// BackupDir returns the shared backup root used before overwriting files.
+// BackupDir 返回覆盖写入前使用的共享备份根目录（~/.ollama/backup 或临时目录）。
 func BackupDir() string {
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
 		return filepath.Join(home, ".ollama", "backup")
@@ -51,6 +51,7 @@ func BackupDir() string {
 	return filepath.Join(os.TempDir(), "ollama-backup")
 }
 
+// writeBackupCopy 将 srcPath 复制到带 Unix 时间戳的备份路径并修剪旧备份。
 func writeBackupCopy(srcPath string, integration string) (string, error) {
 	dir := BackupDir()
 	name := filepath.Base(srcPath)
@@ -70,7 +71,7 @@ func writeBackupCopy(srcPath string, integration string) (string, error) {
 	return backupPath, nil
 }
 
-// WriteWithBackup writes data to path via temp file + rename, backing up any
+// WriteWithBackup 先备份现有文件，经临时文件写入并 rename 原子替换目标路径。
 // existing file first. Callers may optionally pass one integration name to
 // store backups under BackupDir()/.../<integration>/.
 func WriteWithBackup(path string, data []byte, integration ...string) error {
@@ -80,6 +81,7 @@ func WriteWithBackup(path string, data []byte, integration ...string) error {
 	}
 
 	var backupPath string
+	// 必须在改写目标文件之前完成备份
 	// backup must be created before any writes to the target file
 	if existingContent, err := os.ReadFile(path); err == nil {
 		if bytes.Equal(existingContent, data) {
@@ -126,6 +128,7 @@ func WriteWithBackup(path string, data []byte, integration ...string) error {
 	return nil
 }
 
+// pruneOldBackups 按时间戳保留最新的 keep 份 name.* 备份文件。
 func pruneOldBackups(dir, name string, keep int) {
 	if keep < 1 {
 		return

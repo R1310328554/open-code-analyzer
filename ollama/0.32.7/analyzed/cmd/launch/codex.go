@@ -15,11 +15,12 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-// Codex implements Runner for Codex integration
+// Codex 实现 Runner：配置 ~/.codex 并通过 --profile ollama-launch 启动 CLI。
 type Codex struct{}
 
 func (c *Codex) String() string { return "Codex" }
 
+// codex 为 OpenAI Codex CLI 写入 ollama-launch profile 与 model.json 目录。
 const (
 	codexProfileName           = "ollama-launch"
 	codexProviderName          = "Ollama"
@@ -48,6 +49,7 @@ func (c *Codex) args(model, modelCatalogPath string, extra []string) ([]string, 
 	return args, nil
 }
 
+// Run 校验版本、写入 profile/catalog 后以 OPENAI_API_KEY=ollama 启动 codex。
 func (c *Codex) Run(model string, models []LaunchModel, args []string) error {
 	if err := checkCodexVersion(); err != nil {
 		return err
@@ -77,6 +79,7 @@ func (c *Codex) Run(model string, models []LaunchModel, args []string) error {
 	return cmd.Run()
 }
 
+// Restore 删除 ollama-launch profile 文件及未引用的 model.json。
 func (c *Codex) Restore() error {
 	configPath, err := codexConfigPath()
 	if err != nil {
@@ -143,6 +146,7 @@ func removeCodexFile(path string) error {
 	return nil
 }
 
+// codexValidateExtraArgs 禁止用户传入与 launch 托管冲突的 --profile/-m/-c 参数。
 func codexValidateExtraArgs(args []string) error {
 	for i, arg := range args {
 		switch {
@@ -203,7 +207,7 @@ func codexConfigOverrideConflicts(value string) bool {
 	return false
 }
 
-// ensureCodexConfig writes a Codex profile file and model catalog so Codex uses
+// ensureCodexConfig 写入 profile TOML 与 model.json，使 Codex 使用本地 Ollama 且不改根 config。
 // the local Ollama server without changing app-visible root config.
 func ensureCodexConfig(modelName string, models []LaunchModel) error {
 	configPath, err := codexConfigPath()
@@ -294,7 +298,7 @@ func cleanupCodexLegacyProfileConfig(configPath string) error {
 	return fileutil.WriteWithBackup(configPath, []byte(updated), "")
 }
 
-// writeCodexProfileConfig ensures ~/.codex/ollama-launch.config.toml selects
+// writeCodexProfileConfig 生成 ollama-launch.config.toml 指定 Ollama provider 与目录。
 // the Ollama provider and catalog for CLI launches without changing root config.
 func writeCodexProfileConfig(profilePath, model, modelCatalogPath string) error {
 	return writeCodexNamedProfileConfig(profilePath, codexProfileName, model, modelCatalogPath, "")
@@ -389,6 +393,7 @@ func codexValidateProfileConfigText(config codexParsedConfig, profileName, model
 	return nil
 }
 
+// codexUpsertSection 在 TOML 文本中插入或替换指定 table 区块。
 func codexUpsertSection(text, header string, lines []string) string {
 	block := strings.Join(append([]string{header}, lines...), "\n") + "\n"
 
@@ -419,6 +424,7 @@ func codexRemoveSection(text, header string) string {
 	return text[:start] + text[end:]
 }
 
+// codexParsedConfig 封装 TOML 解析结果以便路径式读取字符串字段。
 type codexParsedConfig struct {
 	values map[string]any
 }
@@ -687,6 +693,7 @@ func codexCatalogModel(modelName string, models []LaunchModel) LaunchModel {
 	return fallbackLaunchModel(modelName)
 }
 
+// writeCodexModelCatalog 根据 LaunchModel 元数据生成 Codex 所需的 model.json。
 func writeCodexModelCatalog(catalogPath string, model LaunchModel) error {
 	entry := buildCodexModelEntry(model)
 
@@ -752,6 +759,7 @@ func buildCodexModelEntry(launchModel LaunchModel) map[string]any {
 	}
 }
 
+// checkCodexVersion 要求 codex CLI >= v0.134.0 且已在 PATH 中。
 func checkCodexVersion() error {
 	if _, err := exec.LookPath("codex"); err != nil {
 		return fmt.Errorf("codex is not installed, install with: npm install -g @openai/codex")
@@ -762,6 +770,7 @@ func checkCodexVersion() error {
 		return fmt.Errorf("failed to get codex version: %w", err)
 	}
 
+	// 解析形如 "codex-cli 0.87.0" 的版本输出
 	// Parse output like "codex-cli 0.87.0"
 	fields := strings.Fields(strings.TrimSpace(string(out)))
 	if len(fields) < 2 {

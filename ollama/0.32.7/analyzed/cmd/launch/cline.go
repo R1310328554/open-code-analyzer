@@ -15,7 +15,8 @@ import (
 
 const clineLaunchProvider = "ollama"
 
-// Cline implements Runner and Editor for the Cline CLI integration
+// Cline 实现 Runner 与 Editor，配置 Cline 使用 Ollama OpenAI 兼容端点。
+// Cline 集成 Cline CLI 工具。
 type Cline struct{}
 
 func (c *Cline) String() string { return "Cline" }
@@ -34,6 +35,7 @@ func (c *Cline) Run(model string, _ []LaunchModel, args []string) error {
 	return cmd.Run()
 }
 
+// ensureClineInstalled 若 PATH 无 cline 则通过 npm 全局安装。
 func ensureClineInstalled() (string, error) {
 	if _, err := exec.LookPath("cline"); err == nil {
 		return "cline", nil
@@ -90,6 +92,7 @@ func (c *Cline) Paths() []string {
 	return paths
 }
 
+// Edit 更新 providers.json 与 legacy globalState 中的 Ollama 模型与 baseUrl。
 func (c *Cline) Edit(models []LaunchModel) error {
 	if len(models) == 0 {
 		return nil
@@ -146,6 +149,7 @@ func readClineConfig(configPath string) (map[string]any, error) {
 	return config, nil
 }
 
+// writeClineProvidersConfig 写入/合并 ollama provider 设置并带备份。
 func writeClineProvidersConfig(configPath string, config map[string]any, model string) error {
 	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 		return err
@@ -195,6 +199,7 @@ func writeClineProvidersConfig(configPath string, config map[string]any, model s
 	return fileutil.WriteWithBackup(configPath, data, "cline")
 }
 
+// writeClineLegacyGlobalState 同步旧版 act/plan 模式的 Ollama 字段。
 func writeClineLegacyGlobalState(configPath string, config map[string]any, model string) error {
 	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
 		return err
@@ -218,6 +223,7 @@ func writeClineLegacyGlobalState(configPath string, config map[string]any, model
 	return fileutil.WriteWithBackup(configPath, data, "cline")
 }
 
+// Models 从 Cline 配置中读取当前选中的 Ollama 模型名列表。
 func (c *Cline) Models() []string {
 	home, err := os.UserHomeDir()
 	if err != nil {

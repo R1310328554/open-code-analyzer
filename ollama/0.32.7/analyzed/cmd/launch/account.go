@@ -12,7 +12,9 @@ import (
 	"github.com/ollama/ollama/api"
 )
 
+// account 管理 launch 流程中的 Ollama 账号状态、套餐校验与升级引导。
 const (
+	// DefaultUpgradeURL 为订阅升级页面的固定跳转地址。
 	// DefaultUpgradeURL is the fixed destination for subscription upgrades.
 	DefaultUpgradeURL = "https://ollama.com/upgrade"
 
@@ -24,6 +26,7 @@ var (
 	errUpgradeCancelled            = errors.New("upgrade cancelled")
 )
 
+// accountStateStatus 表示账号探测结果：未知、未登录或已登录。
 type accountStateStatus int
 
 const (
@@ -32,16 +35,19 @@ const (
 	accountStateSignedIn
 )
 
+// AccountState 携带登录状态与当前套餐名称。
 type AccountState struct {
 	Status accountStateStatus
 	Plan   string
 }
 
+// AccountStatePrefetch 在后台异步预取账号状态，供 UI 非阻塞展示。
 type AccountStatePrefetch struct {
 	done  chan struct{}
 	state AccountState
 }
 
+// StartAccountStatePrefetch 启动 goroutine 预取 Whoami/云端禁用状态。
 func StartAccountStatePrefetch(ctx context.Context) *AccountStatePrefetch {
 	if ctx == nil {
 		ctx = context.Background()
@@ -63,6 +69,7 @@ func StartAccountStatePrefetch(ctx context.Context) *AccountStatePrefetch {
 	return p
 }
 
+// StateIfReady 若预取已完成则返回状态指针，否则返回 nil。
 func (p *AccountStatePrefetch) StateIfReady() *AccountState {
 	if p == nil {
 		return nil
@@ -76,6 +83,7 @@ func (p *AccountStatePrefetch) StateIfReady() *AccountState {
 	}
 }
 
+// StateUpdates 在预取完成后向 channel 发送一次状态（或随 ctx 取消）。
 func (p *AccountStatePrefetch) StateUpdates(ctx context.Context) <-chan *AccountState {
 	if p == nil {
 		return nil
@@ -102,6 +110,7 @@ func (p *AccountStatePrefetch) StateUpdates(ctx context.Context) <-chan *Account
 	return out
 }
 
+// launchAccountState 调用 Whoami 解析登录态与套餐字符串。
 func launchAccountState(ctx context.Context, client *api.Client) AccountState {
 	if client == nil {
 		return AccountState{Status: accountStateUnknown}
@@ -124,6 +133,7 @@ func launchAccountState(ctx context.Context, client *api.Client) AccountState {
 	}
 }
 
+// whoamiWithTimeout 在 accountCheckTimeout 内请求当前用户信息。
 func whoamiWithTimeout(ctx context.Context, client *api.Client) (*api.UserResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -133,6 +143,7 @@ func whoamiWithTimeout(ctx context.Context, client *api.Client) (*api.UserRespon
 	return client.Whoami(checkCtx)
 }
 
+// ApplyAccountStateToSelectionItems 为每个模型项附加 Sign in/Upgrade 徽标。
 func ApplyAccountStateToSelectionItems(items []ModelItem, state AccountState) []SelectionItem {
 	out := make([]SelectionItem, len(items))
 	for i, item := range items {
@@ -146,6 +157,7 @@ func ApplyAccountStateToSelectionItems(items []ModelItem, state AccountState) []
 	return out
 }
 
+// SelectionItemsWithAccountState 在需要账号信息时才应用真实 state。
 func SelectionItemsWithAccountState(items []ModelItem, state *AccountState) []SelectionItem {
 	if state == nil || !selectionItemsNeedAccountState(items) {
 		return ApplyAccountStateToSelectionItems(items, AccountState{Status: accountStateUnknown})
@@ -215,6 +227,7 @@ func (c *launcherClient) accountStateUpdateSource(ctx context.Context) <-chan *A
 	return out
 }
 
+// availabilityBadge 根据登录态与 RequiredPlan 生成可用性提示文案。
 func availabilityBadge(item ModelItem, state AccountState) string {
 	if !isCloudModelName(item.Name) {
 		return ""
@@ -236,6 +249,7 @@ func itemHasRecommendationMetadata(item ModelItem) bool {
 	return item.Recommended || strings.TrimSpace(item.RequiredPlan) != ""
 }
 
+// ensureCloudModelAccess 确保用户已登录且套餐满足云端模型要求，必要时引导升级。
 func (c *launcherClient) ensureCloudModelAccess(ctx context.Context, model string) error {
 	item, ok := c.modelRecommendationItem(ctx, model)
 	if !ok || strings.TrimSpace(item.RequiredPlan) == "" {
@@ -289,6 +303,7 @@ func (c *launcherClient) modelRecommendationItem(ctx context.Context, model stri
 	return ModelItem{}, false
 }
 
+// runUpgradeFlow 提示用户打开升级页并轮询直至套餐生效或取消。
 func (c *launcherClient) runUpgradeFlow(ctx context.Context, item ModelItem) error {
 	if DefaultUpgrade != nil {
 		if _, err := DefaultUpgrade(item.Name, item.RequiredPlan); err != nil {
@@ -356,7 +371,7 @@ func (c *launcherClient) runUpgradeFlow(ctx context.Context, item ModelItem) err
 	}
 }
 
-// PlanSatisfies reports whether currentPlan can use a model that has a requiredPlan.
+// PlanSatisfies 判断 currentPlan 是否满足模型所需的 requiredPlan（free 视为无要求）。
 func PlanSatisfies(currentPlan, requiredPlan string) bool {
 	required := normalizePlan(requiredPlan)
 	if required == "" || required == "free" {

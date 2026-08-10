@@ -19,6 +19,7 @@ import (
 	"golang.org/x/term"
 )
 
+// claude_desktop 将 Claude Desktop 配置为第三方推理模式，经 Ollama Cloud 网关访问模型。
 const (
 	claudeDesktopIntegrationName = "claude-desktop"
 	claudeDesktopProfileName     = "Ollama"
@@ -48,8 +49,9 @@ var (
 	claudeDesktopValidateAPIKey = validateClaudeDesktopAPIKey
 )
 
-// ClaudeDesktop configures and launches Claude Desktop in third-party
+// ClaudeDesktop 实现 Autodiscovery Runner：写入 3p 配置与 Ollama Cloud 网关 profile。
 // inference mode using Ollama Cloud as the gateway.
+// ClaudeDesktop 集成 Claude Desktop 桌面应用（macOS/Windows）。
 type ClaudeDesktop struct{}
 
 func (c *ClaudeDesktop) String() string { return "Claude Desktop" }
@@ -64,6 +66,7 @@ func (c *ClaudeDesktop) AutodiscoveredModel() string {
 	return claudeDesktopModelLabel
 }
 
+// ConfigureAutodiscovery 验证 API Key 并写入 deploymentMode=3p 与网关 profile。
 func (c *ClaudeDesktop) ConfigureAutodiscovery() error {
 	if err := claudeDesktopSupported(); err != nil {
 		return err
@@ -134,6 +137,7 @@ func (c *ClaudeDesktop) Run(_ string, _ []LaunchModel, _ []string) error {
 	return errClaudeDesktopUnsupported()
 }
 
+// Restore 恢复 1p 模式并移除 Ollama 注入的 profile 条目。
 func (c *ClaudeDesktop) Restore() error {
 	if err := claudeDesktopSupported(); err != nil {
 		return err
@@ -166,6 +170,7 @@ func errClaudeDesktopUnsupported() error {
 	return errors.New(claudeDesktopUnsupported)
 }
 
+// claudeDesktopSupported 仅允许 macOS 与 Windows。
 func claudeDesktopSupported() error {
 	switch claudeDesktopGOOS {
 	case "darwin", "windows":
@@ -263,6 +268,7 @@ func claudeDesktopDedupePaths(paths []string) []string {
 	return out
 }
 
+// claudeDesktopPaths 描述单套 Claude Desktop 配置文件的磁盘路径。
 type claudeDesktopPaths struct {
 	normalConfig  string
 	desktopConfig string
@@ -276,6 +282,7 @@ type claudeDesktopThirdPartyPaths struct {
 	profile       string
 }
 
+// claudeDesktopTargets 聚合需写入的所有 normal/3p 配置目标。
 type claudeDesktopTargets struct {
 	normalConfigs      []string
 	thirdPartyProfiles []claudeDesktopThirdPartyPaths
@@ -443,6 +450,7 @@ const (
 	claudeDesktopAPIKeySourceProfile
 )
 
+// claudeDesktopValidatedAPIKey 从环境或 profile 读取 key 并向 ollama.com 校验。
 func claudeDesktopValidatedAPIKey(ctx context.Context, profilePaths []string) (string, error) {
 	key, source, err := claudeDesktopAPIKey(profilePaths)
 	if err != nil {
@@ -604,6 +612,7 @@ func writeClaudeDesktopMeta(path, id, name string) error {
 	return writeClaudeDesktopJSON(path, meta)
 }
 
+// writeClaudeDesktopGatewayProfile 写入 inferenceProvider=gateway 与 Bearer API Key。
 func writeClaudeDesktopGatewayProfile(path string, apiKey string, forceChooser bool) error {
 	cfg, err := readClaudeDesktopJSONAllowMissing(path)
 	if err != nil {
@@ -687,6 +696,7 @@ func readClaudeDesktopDeploymentMode(path string) string {
 	return mode
 }
 
+// claudeDesktopTargetsConfigured 检查是否已全部处于 Ollama 托管的 3p 配置状态。
 func claudeDesktopTargetsConfigured(targets claudeDesktopTargets) bool {
 	if len(targets.normalConfigs) == 0 || len(targets.thirdPartyProfiles) == 0 {
 		return false
@@ -774,6 +784,7 @@ func claudeDesktopAnySlice(value any) []any {
 	}
 }
 
+// claudeDesktopLaunchOrRestart 若 Claude Desktop 已运行则询问是否重启以生效配置。
 func claudeDesktopLaunchOrRestart(prompt string) error {
 	if !claudeDesktopIsRunning() {
 		return claudeDesktopOpenApp()
@@ -804,6 +815,7 @@ func claudeDesktopLaunchOrRestart(prompt string) error {
 	return claudeDesktopOpenApp()
 }
 
+// waitForClaudeDesktopExit 轮询直至 Claude Desktop 进程退出或超时。
 func waitForClaudeDesktopExit(timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {

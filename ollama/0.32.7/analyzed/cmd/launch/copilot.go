@@ -10,7 +10,8 @@ import (
 	"github.com/ollama/ollama/envconfig"
 )
 
-// Copilot implements Runner for GitHub Copilot CLI integration.
+// Copilot 实现 Runner，将 GitHub Copilot CLI 指向 Ollama OpenAI 兼容 API。
+// Copilot 集成 GitHub Copilot 命令行工具。
 type Copilot struct{}
 
 func (c *Copilot) String() string { return "Copilot CLI" }
@@ -24,6 +25,7 @@ func (c *Copilot) args(model string, extra []string) []string {
 	return args
 }
 
+// findPath 在 PATH 与 ~/.local/bin 中查找 copilot 可执行文件。
 func (c *Copilot) findPath() (string, error) {
 	if p, err := exec.LookPath("copilot"); err == nil {
 		return p, nil
@@ -43,6 +45,7 @@ func (c *Copilot) findPath() (string, error) {
 	return fallback, nil
 }
 
+// Run 以 Ollama provider 环境变量启动 copilot 子进程。
 func (c *Copilot) Run(model string, _ []LaunchModel, args []string) error {
 	copilotPath, err := c.findPath()
 	if err != nil {
@@ -59,7 +62,7 @@ func (c *Copilot) Run(model string, _ []LaunchModel, args []string) error {
 	return cmd.Run()
 }
 
-// envVars returns the environment variables that configure Copilot CLI
+// envVars 返回 COPILOT_PROVIDER_* 变量，使 Copilot CLI 使用 Ollama 作为模型后端。
 // to use Ollama as its model provider.
 func (c *Copilot) envVars(model string) []string {
 	env := []string{

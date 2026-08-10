@@ -7,6 +7,8 @@ import (
 	"github.com/ollama/ollama/internal/modelref"
 )
 
+// deprecated_models 标记不适合 agent 启动的旧模型并在选择列表中过滤或警告。
+// deprecatedLaunchModels 按模型 family 名标记已弃用的 launch 目标。
 var deprecatedLaunchModels = map[string]struct{}{
 	"codellama":     {},
 	"qwen2.5":       {},
@@ -19,6 +21,7 @@ var deprecatedLaunchModels = map[string]struct{}{
 	"starcoder":     {},
 }
 
+// deprecatedLaunchModelTags 对特定 family 仅弃用部分 tag（如 deepseek-r1 小尺寸）。
 var deprecatedLaunchModelTags = map[string]map[string]struct{}{
 	"deepseek-r1": {
 		"":       {},
@@ -33,6 +36,7 @@ var deprecatedLaunchModelTags = map[string]map[string]struct{}{
 
 var errDeprecatedLaunchModelDeclined = fmt.Errorf("%w: deprecated launch model declined", ErrCancelled)
 
+// isDeprecatedLaunchModel 规范化模型引用后判断是否属于弃用集合。
 func isDeprecatedLaunchModel(name string) bool {
 	family, tag := normalizedLaunchModelRef(name)
 	if _, ok := deprecatedLaunchModels[family]; ok {
@@ -46,6 +50,7 @@ func isDeprecatedLaunchModel(name string) bool {
 	return ok
 }
 
+// deprecatedLaunchModelPrompt 生成弃用警告与推荐替代模型的确认提示语。
 func deprecatedLaunchModelPrompt(name, label, commandName, cloudRec, localRec string) string {
 	if !isDeprecatedLaunchModel(name) {
 		return ""
@@ -93,6 +98,7 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+// normalizedLaunchModelRef 解析为 (family, tag)，剥离 cloud 后缀与 namespace。
 func normalizedLaunchModelRef(name string) (string, string) {
 	name = strings.TrimSpace(strings.ToLower(name))
 	if name == "" {
@@ -112,6 +118,7 @@ func normalizedLaunchModelRef(name string) (string, string) {
 	return strings.TrimSpace(name), tag
 }
 
+// filterDeprecatedLaunchModelItems 从推荐列表中移除弃用模型项。
 func filterDeprecatedLaunchModelItems(items []ModelItem) []ModelItem {
 	filtered := items[:0]
 	for _, item := range items {
@@ -122,6 +129,7 @@ func filterDeprecatedLaunchModelItems(items []ModelItem) []ModelItem {
 	return filtered
 }
 
+// filterDeprecatedLaunchModelNames 从字符串模型名列表中过滤弃用项。
 func filterDeprecatedLaunchModelNames(models []string) []string {
 	filtered := models[:0]
 	for _, model := range models {

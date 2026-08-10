@@ -16,6 +16,7 @@ import (
 	"github.com/ollama/ollama/cmd/internal/fileutil"
 )
 
+// codex_app 配置 ChatGPT/Codex 桌面应用根 config.toml，注入 Ollama provider 与模型目录。
 const (
 	chatGPTIntegrationName       = "chatgpt"
 	codexAppIntegrationName      = "codex-app"
@@ -47,7 +48,7 @@ var (
 	codexAppForceExitTimeout = 5 * time.Second
 )
 
-// CodexApp configures the desktop Codex app with one launch-selected default
+// CodexApp 实现桌面 ChatGPT 集成：写入默认模型与 Ollama 网关 provider，保留应用内切模型能力。
 // model while leaving model discovery and switching to Codex's Ollama provider.
 type CodexApp struct{}
 
@@ -67,6 +68,7 @@ func (c *CodexApp) Configure(model string) error {
 	return c.ConfigureWithModels(model, launchModelsFromNames([]string{model}))
 }
 
+// ConfigureWithModels 备份原 config、写入 model.json 并更新根 TOML 的 provider 字段。
 func (c *CodexApp) ConfigureWithModels(primary string, models []LaunchModel) error {
 	primary = strings.TrimSpace(primary)
 	if primary == "" {
@@ -90,6 +92,7 @@ func (c *CodexApp) ConfigureWithModels(primary string, models []LaunchModel) err
 	return writeCodexAppConfig(configPath, primary, catalogPath)
 }
 
+// CurrentModel 当且仅当 config 仍由 launch 托管且 catalog 含该 slug 时返回模型名。
 func (c *CodexApp) CurrentModel() string {
 	configPath, err := codexConfigPath()
 	if err != nil {
@@ -178,7 +181,7 @@ func codexAppCatalogHealthy(config codexParsedConfig, profileName string) bool {
 	return len(catalog.Models) > 0
 }
 
-// codexAppCatalogContainsModel reports whether model appears as a slug in the
+// codexAppCatalogContainsModel 检查 slug 是否在 Ollama 托管 catalog 中；不在则视为用户已在 UI 切换离开。
 // Ollama-managed model catalog. When the configured model is not in the catalog
 // the user has drifted away from the launch-managed model (e.g. by selecting a
 // built-in OpenAI model in the Codex App UI), and the launch config should be
@@ -212,6 +215,7 @@ func codexAppCatalogContainsModel(model string) bool {
 	return false
 }
 
+// writeCodexAppConfig 移除 legacy profile 表并在根级设置 model/model_provider/catalog 路径。
 func writeCodexAppConfig(configPath, model, modelCatalogPath string) error {
 	baseURL := codexBaseURL()
 
@@ -305,6 +309,7 @@ func (c *CodexApp) Run(_ string, _ []LaunchModel, args []string) error {
 	return codexAppLaunchOrRestart("Restart ChatGPT to use Ollama?", nil)
 }
 
+// Restore 根据保存的 restore state 还原根 config 并清理 launch 写入的文件。
 func (c *CodexApp) Restore() error {
 	if err := codexAppSupported(); err != nil {
 		return err
@@ -666,6 +671,7 @@ func codexAppLocalAppData() (string, error) {
 	return filepath.Join(home, "AppData", "Local"), nil
 }
 
+// codexAppLaunchOrRestart 优雅退出/强杀 ChatGPT 进程后重新打开，支持 Ctrl+C 取消。
 func codexAppLaunchOrRestart(prompt string, launchArgs []string) error {
 	if !codexAppIsRunning() {
 		return codexAppOpenApp(launchArgs)
@@ -688,6 +694,7 @@ func codexAppLaunchOrRestart(prompt string, launchArgs []string) error {
 		return nil
 	}
 
+	// 单个 spinner 与取消 channel 覆盖整个重启流程，一次 Ctrl+C 可中止全部等待
 	// A single spinner and cancellation channel span the entire restart flow
 	// (quit, wait, force-quit, wait, reopen) so that one Ctrl+C aborts the
 	// whole sequence rather than just the currently-active wait. The bubbletea
@@ -771,11 +778,11 @@ func waitForCodexAppExit(timeout time.Duration, cancel <-chan struct{}) error {
 	})
 }
 
-// codexAppRestartMessage is the label shown next to the animated spinner while
+// codexAppRestartMessage 为桌面 ChatGPT 退出等待期间 spinner 旁显示的文案。
 // the ChatGPT desktop app is quitting before being reopened.
 const codexAppRestartMessage = "Restarting ChatGPT..."
 
-// waitForCodexAppCondition polls done at a 200ms cadence until it reports the
+// waitForCodexAppCondition 以 200ms 轮询直到 done 为真、超时或用户取消。
 // app has exited or timeout elapses. It watches cancel (closed by the spinner
 // when the user hits Ctrl+C) and returns ErrCancelled if the flow is aborted.
 // The spinner itself is owned by the caller so a single spinner spans the
@@ -1143,6 +1150,7 @@ func codexAppRestoreRootValues(text string, state codexAppRestoreState) string {
 	return text
 }
 
+// codexAppRestoreState 记录配置前根级 profile/model 字段以便 Restore 还原。
 type codexAppRestoreState struct {
 	HadProfile          bool   `json:"had_profile"`
 	Profile             string `json:"profile,omitempty"`
@@ -1154,6 +1162,7 @@ type codexAppRestoreState struct {
 	ModelCatalogJSON    string `json:"model_catalog_json,omitempty"`
 }
 
+// saveCodexAppRestoreState 在首次写入 launch 配置前快照用户原有根级设置。
 func saveCodexAppRestoreState(configPath string) error {
 	configText := ""
 	configExists := false
@@ -1189,6 +1198,7 @@ func saveCodexAppRestoreState(configPath string) error {
 		}
 		upgraded := codexAppRestoreStateFromText(configText)
 		if codexAppRootStillManaged(configText) {
+			// 旧版 restore state 未记录根级 model 字段；若当前仍为我们生成的配置则不覆盖为用户值。
 			// Legacy restore state did not record root model settings. If the
 			// current config is still ours, do not save our generated root
 			// values as the user's restore target.
