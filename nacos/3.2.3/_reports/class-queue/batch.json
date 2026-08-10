@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T04:30:48Z",
-  "files": [
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/publisher/NamingEventPublisher.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/publisher/NamingEventPublisherFactory.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/service/ServiceEvent.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/index/ClientServiceIndexesManager.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/index/NamingFuzzyWatchContextService.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/index/ServiceStorage.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/AbstractMetadataSnapshotOperation.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ClusterMetadata.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ExpiredMetadataInfo.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/InstanceMetadata.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/InstanceMetadataProcessor.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/InstanceMetadataSnapshotOperation.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/MetadataOperation.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/NamingMetadataManager.java",
-    "naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/NamingMetadataOperateService.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 587,
-  "done": 1935
+  "done": 1950
 }

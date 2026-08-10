@@ -1963,3 +1963,18 @@
 2026-08-10T04:32:17Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/client/ClientOperationEvent.java wave65a [0:15] naming v2 client factory/manager/events
 2026-08-10T04:32:17Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/metadata/InfoChangeEvent.java wave65a [0:15] naming v2 client factory/manager/events
 2026-08-10T04:32:17Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/metadata/MetadataEvent.java wave65a [0:15] naming v2 client factory/manager/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/publisher/NamingEventPublisher.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/publisher/NamingEventPublisherFactory.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/event/service/ServiceEvent.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/index/ClientServiceIndexesManager.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/index/NamingFuzzyWatchContextService.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/index/ServiceStorage.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/AbstractMetadataSnapshotOperation.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ClusterMetadata.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/ExpiredMetadataInfo.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/InstanceMetadata.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/InstanceMetadataProcessor.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/InstanceMetadataSnapshotOperation.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/MetadataOperation.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/NamingMetadataManager.java wave65b [15:30] naming v2 index/metadata/events
+2026-08-10T04:32:39Z DONE naming/src/main/java/com/alibaba/nacos/naming/core/v2/metadata/NamingMetadataOperateService.java wave65b [15:30] naming v2 index/metadata/events
