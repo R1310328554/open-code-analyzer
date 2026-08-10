@@ -26,13 +26,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.Collections;
 
 /**
- * The oracle implementation of ConfigInfoGrayMapper.
+ * {@link ConfigInfoGrayMapper} 的 Oracle 实现。
+ *
+ * <p>灰度配置表的 dump 分页与增量变更拉取，使用 Oracle OFFSET/FETCH 与 FETCH FIRST 语法。</p>
  *
  * @author liam.fu
  **/
 public class ConfigInfoGrayMapperByOracle extends AbstractMapperByOracle
     implements ConfigInfoGrayMapper {
     
+    /** 按修改时间与上次最大 id 增量拉取灰度配置变更。 */
     @Override
     public MapperResult findChangeConfig(MapperContext context) {
         String sql =
@@ -45,6 +48,7 @@ public class ConfigInfoGrayMapperByOracle extends AbstractMapperByOracle
                 context.getWhereParameter(FieldConstant.PAGE_SIZE)));
     }
     
+    /** 分页拉取灰度配置用于全量 dump。 */
     @Override
     public MapperResult findAllConfigInfoGrayForDumpAllFetchRows(MapperContext context) {
         String sql =
@@ -54,6 +58,7 @@ public class ConfigInfoGrayMapperByOracle extends AbstractMapperByOracle
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;

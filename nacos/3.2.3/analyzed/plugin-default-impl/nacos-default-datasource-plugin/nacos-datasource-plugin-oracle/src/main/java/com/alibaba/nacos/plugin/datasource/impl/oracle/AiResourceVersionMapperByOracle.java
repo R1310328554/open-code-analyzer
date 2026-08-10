@@ -25,13 +25,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The oracle implementation of {@link AiResourceVersionMapper}.
+ * {@link AiResourceVersionMapper} 的 Oracle 实现。
+ *
+ * <p>按命名空间、资源名及可选 type/status/version 过滤， 按修改时间倒序分页查询 AI 资源版本。</p>
  *
  * @author nacos
  */
 public class AiResourceVersionMapperByOracle extends AbstractMapperByOracle
     implements AiResourceVersionMapper {
     
+    /** 分页查询 AI 资源版本记录。 */
     @Override
     public MapperResult findAiResourceVersionFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -40,6 +43,7 @@ public class AiResourceVersionMapperByOracle extends AbstractMapperByOracle
         where.eq("namespace_id", context.getWhereParameter(FieldConstant.NAMESPACE_ID));
         where.and().eq("name", context.getWhereParameter(FieldConstant.NAME));
         
+        // 可选：按资源类型过滤
         Object type = context.getWhereParameter(FieldConstant.TYPE);
         if (type != null && StringUtils.isNotBlank(String.valueOf(type))) {
             where.and().eq("type", type);
@@ -59,6 +63,7 @@ public class AiResourceVersionMapperByOracle extends AbstractMapperByOracle
         return new MapperResult(sql, built.getParamList());
     }
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;

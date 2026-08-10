@@ -25,13 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The oracle implementation of ConfigInfoBetaMapper.
+ * {@link ConfigInfoBetaMapper} 的 Oracle 实现。
+ *
+ * <p>Beta 配置全量导出时使用子查询 + 关联方式分页，适配 Oracle OFFSET/FETCH 语法。</p>
  *
  * @author liam.fu
  **/
 public class ConfigInfoBetaMapperByOracle extends AbstractMapperByOracle
     implements ConfigInfoBetaMapper {
     
+    /** 分页拉取 Beta 配置用于全量 dump 导出。 */
     @Override
     public MapperResult findAllConfigInfoBetaForDumpAllFetchRows(MapperContext context) {
         int startRow = context.getStartRow();
@@ -48,6 +51,7 @@ public class ConfigInfoBetaMapperByOracle extends AbstractMapperByOracle
         return new MapperResult(sql, paramList);
     }
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;

@@ -24,7 +24,9 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The mysql implementation of HistoryConfigInfoMapper.
+ * {@link HistoryConfigInfoMapper} 的 MySQL 实现。
+ *
+ * <p>配置历史表 his_config_info 的过期清理与按 dataId/group/tenant 分页查询。</p>
  *
  * @author hyx
  **/
@@ -32,6 +34,7 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 public class HistoryConfigInfoMapperByMySql extends AbstractMapperByMysql
     implements HistoryConfigInfoMapper {
     
+    /** 分批删除早于指定时间的过期历史记录（LIMIT 控制批次大小）。 */
     @Override
     public MapperResult removeConfigHistory(MapperContext context) {
         String sql = "DELETE FROM his_config_info WHERE gmt_modified < ? LIMIT ?";
@@ -40,6 +43,7 @@ public class HistoryConfigInfoMapperByMySql extends AbstractMapperByMysql
                 context.getWhereParameter(FieldConstant.LIMIT_SIZE)));
     }
     
+    /** 按 dataId/group/tenant 倒序分页查询配置变更历史。 */
     @Override
     public MapperResult pageFindConfigHistoryFetchRows(MapperContext context) {
         String sql =
@@ -53,6 +57,7 @@ public class HistoryConfigInfoMapperByMySql extends AbstractMapperByMysql
                 context.getPageSize()));
     }
     
+    /** 返回 MySQL 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.MYSQL;

@@ -24,12 +24,15 @@ import com.alibaba.nacos.plugin.datasource.model.MapperContext;
 import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 
 /**
- * The oracle implementation of {@link AiResourceMapper}.
+ * {@link AiResourceMapper} 的 Oracle 实现。
+ *
+ * <p>使用 Oracle {@code OFFSET … ROWS FETCH NEXT … ROWS ONLY} 语法分页查询 AI 资源表。</p>
  *
  * @author nacos
  */
 public class AiResourceMapperByOracle extends AbstractMapperByOracle implements AiResourceMapper {
     
+    /** 按命名空间与扩展条件分页查询 AI 资源列表。 */
     @Override
     public MapperResult findAiResourceFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
@@ -38,6 +41,7 @@ public class AiResourceMapperByOracle extends AbstractMapperByOracle implements 
                 + "FROM ai_resource");
         where.eq("namespace_id", context.getWhereParameter(FieldConstant.NAMESPACE_ID));
         
+        // 追加可选扩展查询条件
         appendExtraQueryCondition(where, context);
         
         MapperResult built = where.build();
@@ -47,6 +51,7 @@ public class AiResourceMapperByOracle extends AbstractMapperByOracle implements 
         return new MapperResult(sql, built.getParamList());
     }
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;

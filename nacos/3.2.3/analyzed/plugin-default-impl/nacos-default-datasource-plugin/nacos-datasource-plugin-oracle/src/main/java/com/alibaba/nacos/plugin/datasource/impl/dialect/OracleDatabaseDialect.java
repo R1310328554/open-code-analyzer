@@ -20,17 +20,21 @@ import com.alibaba.nacos.plugin.datasource.constants.DatabaseTypeConstant;
 import com.alibaba.nacos.plugin.datasource.impl.enums.oracle.TrustedOracleFunctionEnum;
 
 /**
- * Oracle database dialect.
+ * Oracle 数据库方言实现。
+ *
+ * <p>注册 Oracle 类型标识，并通过 {@link TrustedOracleFunctionEnum} 解析可信 SQL 函数映射。</p>
  *
  * @author xiweng.yy
  */
 public class OracleDatabaseDialect extends AbstractDatabaseDialect {
     
+    /** 返回 Oracle 数据库类型常量。 */
     @Override
     public String getType() {
         return DatabaseTypeConstant.ORACLE;
     }
     
+    /** 将通用函数名映射为 Oracle 方言 SQL 片段（如 NOW → SYSDATE）。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedOracleFunctionEnum.getFunctionByName(functionName);

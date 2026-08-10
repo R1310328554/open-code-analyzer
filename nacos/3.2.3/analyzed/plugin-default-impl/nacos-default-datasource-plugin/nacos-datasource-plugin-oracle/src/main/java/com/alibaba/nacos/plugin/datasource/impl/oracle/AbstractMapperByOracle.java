@@ -20,12 +20,15 @@ import com.alibaba.nacos.plugin.datasource.impl.enums.oracle.TrustedOracleFuncti
 import com.alibaba.nacos.plugin.datasource.mapper.AbstractMapper;
 
 /**
- * The abstract oracle mapper contains CRUD methods.
+ * Oracle 数据源 Mapper 抽象基类。
+ *
+ * <p>继承 {@link com.alibaba.nacos.plugin.datasource.mapper.AbstractMapper}， 通过 {@link TrustedOracleFunctionEnum} 解析 Oracle 可信 SQL 函数。</p>
  *
  * @author liam.fu
  **/
 public abstract class AbstractMapperByOracle extends AbstractMapper {
     
+    /** 从 Oracle 可信函数白名单解析 SQL 函数片段。 */
     @Override
     public String getFunction(String functionName) {
         return TrustedOracleFunctionEnum.getFunctionByName(functionName);

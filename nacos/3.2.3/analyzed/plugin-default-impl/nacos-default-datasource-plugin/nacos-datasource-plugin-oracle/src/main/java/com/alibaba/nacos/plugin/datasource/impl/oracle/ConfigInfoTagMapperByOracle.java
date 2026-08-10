@@ -24,13 +24,16 @@ import com.alibaba.nacos.plugin.datasource.model.MapperResult;
 import java.util.Collections;
 
 /**
- * The oracle implementation of ConfigInfoTagMapper.
+ * {@link ConfigInfoTagMapper} 的 Oracle 实现。
+ *
+ * <p>配置标签表全量 dump 分页查询，采用子查询关联主表方式。</p>
  *
  * @author liam.fu
  **/
 public class ConfigInfoTagMapperByOracle extends AbstractMapperByOracle
     implements ConfigInfoTagMapper {
     
+    /** 分页拉取带标签配置用于全量 dump。 */
     @Override
     public MapperResult findAllConfigInfoTagForDumpAllFetchRows(MapperContext context) {
         String sql =
@@ -42,6 +45,7 @@ public class ConfigInfoTagMapperByOracle extends AbstractMapperByOracle
         return new MapperResult(sql, Collections.emptyList());
     }
     
+    /** 返回 Oracle 数据源标识。 */
     @Override
     public String getDataSource() {
         return DataSourceConstant.ORACLE;
