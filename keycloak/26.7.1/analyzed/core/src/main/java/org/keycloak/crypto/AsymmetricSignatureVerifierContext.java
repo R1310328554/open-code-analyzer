@@ -24,10 +24,17 @@ import java.security.Signature;
 import org.keycloak.common.VerificationException;
 import org.keycloak.common.crypto.CryptoIntegration;
 
+/**
+ * 基于非对称公钥的 JWS 验签上下文，将 {@link KeyWrapper} 中的公钥用于 {@link SignatureVerifierContext}。
+ */
 public class AsymmetricSignatureVerifierContext implements SignatureVerifierContext {
 
+    /** 封装待验签公钥及其元数据的包装对象。 */
     private final KeyWrapper key;
 
+    /**
+     * @param key 含公钥与算法信息的密钥包装
+     */
     public AsymmetricSignatureVerifierContext(KeyWrapper key) {
         this.key = key;
     }
@@ -42,6 +49,14 @@ public class AsymmetricSignatureVerifierContext implements SignatureVerifierCont
         return key.getAlgorithmOrDefault();
     }
 
+    /**
+     * 使用公钥验证给定数据与签名的匹配性。
+     *
+     * @param data 原始待验签字节
+     * @param signature 待验证的签名值
+     * @return 验签是否通过
+     * @throws VerificationException 验签过程失败时抛出
+     */
     @Override
     public boolean verify(byte[] data, byte[] signature) throws VerificationException {
         try {
@@ -54,12 +69,15 @@ public class AsymmetricSignatureVerifierContext implements SignatureVerifierCont
         }
     }
 
+    /**
+     * 获取 {@link Signature} 实例；标准 JCA 算法不可用时回退至 Crypto 提供者的实现。
+     */
     private Signature getSignature()
             throws NoSuchAlgorithmException, NoSuchProviderException {
         try {
             return Signature.getInstance(JavaAlgorithm.getJavaAlgorithm(key.getAlgorithmOrDefault(), key.getCurve()));
         } catch (NoSuchAlgorithmException e) {
-            // Retry using the current crypto provider's override implementation
+            // 使用当前 Crypto 提供者的覆盖实现重试
             return CryptoIntegration.getProvider().getSignature(key.getAlgorithmOrDefault());
         }
     }

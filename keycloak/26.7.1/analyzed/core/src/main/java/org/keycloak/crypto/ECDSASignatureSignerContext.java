@@ -17,15 +17,27 @@
 package org.keycloak.crypto;
 
 /**
+ * ECDSA 签名上下文：先以 JCA DER 格式签名，再转换为 JWS 要求的 R||S 拼接格式。
  *
  * @author rmartinc
  */
 public class ECDSASignatureSignerContext extends AsymmetricSignatureSignerContext {
 
+    /**
+     * @param key 含 ECDSA 私钥的密钥包装
+     * @throws SignatureException 密钥不可用或算法不支持时抛出
+     */
     public ECDSASignatureSignerContext(KeyWrapper key) throws SignatureException {
         super(key);
     }
 
+    /**
+     * 签名并将 DER 结果转换为 JWS 拼接格式。
+     *
+     * @param data 待签名原始字节
+     * @return JWS 格式的 ECDSA 签名
+     * @throws SignatureException 签名或格式转换失败时抛出
+     */
     @Override
     public byte[] sign(byte[] data) throws SignatureException {
         try {

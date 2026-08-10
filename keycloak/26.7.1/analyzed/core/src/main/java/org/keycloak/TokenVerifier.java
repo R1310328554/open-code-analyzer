@@ -42,6 +42,9 @@ import org.keycloak.representations.JsonWebToken;
 import org.keycloak.util.TokenUtil;
 
 /**
+ * JWT 令牌验证器：解析 JWS、验签并按可组合谓词链执行声明检查。
+ * 支持 RSA、ECDSA、HMAC 及自定义 {@link SignatureVerifierContext}。
+ *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @version $Revision: 1 $
  */
@@ -49,24 +52,24 @@ public class TokenVerifier<T extends JsonWebToken> {
 
     private static final Logger LOG = Logger.getLogger(TokenVerifier.class.getName());
 
-    // This interface is here as JDK 7 is a requirement for this project.
-    // Once JDK 8 would become mandatory, java.util.function.Predicate would be used instead.
+    // 本接口存在是因为项目要求 JDK 7；若强制 JDK 8 可改用 java.util.function.Predicate。
 
     /**
-     * Functional interface of checks that verify some part of a JWT.
-     * @param <T> Type of the token handled by this predicate.
+     * 对 JWT 某一部分执行单项检查的函数式接口。
+     * @param <T> 谓词处理的令牌类型
      */
     // @FunctionalInterface
     public static interface Predicate<T extends JsonWebToken> {
         /**
-         * Performs a single check on the given token verifier.
-         * @param t Token, guaranteed to be non-null.
-         * @return
-         * @throws VerificationException
+         * 对给定令牌执行一次检查。
+         * @param t 令牌，保证非 null
+         * @return 检查通过时返回 {@code true}
+         * @throws VerificationException 检查失败时抛出
          */
         boolean test(T t) throws VerificationException;
     }
 
+    /** 检查 {@code sub}（subject）声明必须存在。 */
     public static final Predicate<JsonWebToken> SUBJECT_EXISTS_CHECK = new Predicate<JsonWebToken>() {
         @Override
         public boolean test(JsonWebToken t) throws VerificationException {
@@ -80,7 +83,7 @@ public class TokenVerifier<T extends JsonWebToken> {
     };
 
     /**
-     * Check for token being neither expired nor used before it gets valid.
+     * 检查令牌既未过期也未早于生效时间（nbf）。
      * @see JsonWebToken#isActive()
      */
     public static final Predicate<JsonWebToken> IS_ACTIVE = new Predicate<JsonWebToken>() {
@@ -94,6 +97,7 @@ public class TokenVerifier<T extends JsonWebToken> {
         }
     };
 
+    /** 校验 JWT {@code iss}（issuer）与期望的领域 URL 一致。 */
     public static class RealmUrlCheck implements Predicate<JsonWebToken> {
 
         private static final RealmUrlCheck NULL_INSTANCE = new RealmUrlCheck(null);
@@ -118,6 +122,7 @@ public class TokenVerifier<T extends JsonWebToken> {
         }
     }
 
+    /** 校验 JWT {@code typ} 是否为允许的令牌类型之一。 */
     public static class TokenTypeCheck implements Predicate<JsonWebToken> {
 
         private static final TokenTypeCheck INSTANCE_DEFAULT_TOKEN_TYPE = new TokenTypeCheck(Arrays.asList(TokenUtil.TOKEN_TYPE_BEARER));
@@ -138,6 +143,7 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
 
+    /** 校验 JWT {@code aud}（audience）包含期望受众。 */
     public static class AudienceCheck implements Predicate<JsonWebToken> {
 
         private final String expectedAudience;
@@ -166,6 +172,7 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
 
+    /** 校验 JWT {@code azp}（issuedFor）与期望值一致。 */
     public static class IssuedForCheck implements Predicate<JsonWebToken> {
 
         private final String expectedIssuedFor;
@@ -204,6 +211,12 @@ public class TokenVerifier<T extends JsonWebToken> {
 
     private SignatureVerifierContext verifier = null;
 
+    /**
+     * 设置自定义验签上下文（替代内置 RSA/ECDSA/HMAC 验签）。
+     *
+     * @param verifier 验签上下文
+     * @return 当前验证器实例（链式调用）
+     */
     public TokenVerifier<T> verifierContext(SignatureVerifierContext verifier) {
         this.verifier = verifier;
         return this;
@@ -219,40 +232,38 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Creates an instance of {@code TokenVerifier} from the given string on a JWT of the given class.
-     * The token verifier has no checks defined. Note that the checks are only tested when
-     * {@link #verify()} method is invoked.
-     * @param <T> Type of the token
-     * @param tokenString String representation of JWT
-     * @param clazz Class of the token
-     * @return
+     * 由 JWT 字符串及目标类型创建 {@code TokenVerifier}，初始无任何检查项。
+     * 检查仅在调用 {@link #verify()} 时执行。
+     * @param <T> 令牌类型
+     * @param tokenString JWT 字符串
+     * @param clazz 令牌 POJO 类
+     * @return 新的验证器实例
      */
     public static <T extends JsonWebToken> TokenVerifier<T> create(String tokenString, Class<T> clazz) {
         return new TokenVerifier<>(tokenString, clazz);
     }
 
     /**
-     * Creates an instance of {@code TokenVerifier} for the given token.
-     * The token verifier has no checks defined. Note that the checks are only tested when
-     * {@link #verify()} method is invoked.
+     * 由已解析的令牌对象创建 {@code TokenVerifier}，初始无任何检查项。
+     * 检查仅在调用 {@link #verify()} 时执行。
      * <p>
-     * <b>NOTE:</b> The returned token verifier cannot verify token signature since
-     * that is not part of the {@link JsonWebToken} object.
-     * @return
+     * <b>注意：</b> 此方式无法验签，因为 {@link JsonWebToken} 不含原始 JWS 签名数据。
+     * @param token 已解析的令牌
+     * @return 新的验证器实例
      */
     public static <T extends JsonWebToken> TokenVerifier<T> createWithoutSignature(T token) {
         return new TokenVerifier<>(token);
     }
 
     /**
-     * Adds default checks to the token verification:
+     * 添加默认检查项：
      * <ul>
-     * <li>Realm URL (JWT issuer field: {@code iss}) has to be defined and match realm set via {@link #realmUrl(java.lang.String)} method</li>
-     * <li>Subject (JWT subject field: {@code sub}) has to be defined</li>
-     * <li>Token type (JWT type field: {@code typ}) has to be {@code Bearer}. The type can be set via {@link #tokenType(List)} method</li>
-     * <li>Token has to be active, ie. both not expired and not used before its validity (JWT issuer fields: {@code exp} and {@code nbf})</li>
+     * <li>领域 URL（JWT {@code iss}）须已设置且与 {@link #realmUrl(java.lang.String)} 一致</li>
+     * <li>Subject（JWT {@code sub}）须已定义</li>
+     * <li>令牌类型（JWT {@code typ}）须为 {@code Bearer}，可通过 {@link #tokenType(List)} 修改</li>
+     * <li>令牌须处于有效期内（{@code exp} 与 {@code nbf}）</li>
      * </ul>
-     * @return This token verifier.
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> withDefaultChecks()  {
         return withChecks(
@@ -293,9 +304,9 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Will test the given checks in {@link #verify()} method in addition to already set checks.
-     * @param checks
-     * @return
+     * 在 {@link #verify()} 中追加执行给定检查项（保留已有检查）。
+     * @param checks 追加的检查谓词
+     * @return 当前验证器实例
      */
     @SafeVarargs
     public final TokenVerifier<T> withChecks(Predicate<? super T>... checks) {
@@ -306,9 +317,9 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Sets the key for verification of RSA-based signature.
-     * @param publicKey
-     * @return
+     * 设置 RSA/ECDSA 验签公钥。
+     * @param publicKey 公钥
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> publicKey(PublicKey publicKey) {
         this.publicKey = publicKey;
@@ -316,9 +327,9 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Sets the key for verification of HMAC-based signature.
-     * @param secretKey
-     * @return
+     * 设置 HMAC 验签对称密钥。
+     * @param secretKey 对称密钥
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> secretKey(SecretKey secretKey) {
         this.secretKey = secretKey;
@@ -326,8 +337,10 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * @deprecated This method is here only for backward compatibility with previous version of {@code TokenVerifier}.
-     * @return This token verifier
+     * 设置期望的领域 URL 并启用/更新 {@link RealmUrlCheck}。
+     * @deprecated 仅为兼容旧版 {@code TokenVerifier} 保留。
+     * @param realmUrl 领域 issuer URL
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> realmUrl(String realmUrl) {
         this.realmUrl = realmUrl;
@@ -335,8 +348,10 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * @deprecated This method is here only for backward compatibility with previous version of {@code TokenVerifier}.
-     * @return This token verifier
+     * 启用或禁用令牌类型检查。
+     * @deprecated 仅为兼容旧版 {@code TokenVerifier} 保留。
+     * @param checkTokenType 是否检查 typ
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> checkTokenType(boolean checkTokenType) {
         this.checkTokenType = checkTokenType;
@@ -344,8 +359,9 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     *
-     * @return This token verifier
+     * 设置允许的令牌类型列表。
+     * @param tokenTypes 允许的 typ 值列表
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> tokenType(List<String> tokenTypes) {
         this.expectedTokenType = tokenTypes;
@@ -353,16 +369,20 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * @deprecated This method is here only for backward compatibility with previous version of {@code TokenVerifier}.
-     * @return This token verifier
+     * 启用或禁用令牌有效期检查。
+     * @deprecated 仅为兼容旧版 {@code TokenVerifier} 保留。
+     * @param checkActive 是否检查 exp/nbf
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> checkActive(boolean checkActive) {
         return replaceCheck(IS_ACTIVE, checkActive, IS_ACTIVE);
     }
 
     /**
-     * @deprecated This method is here only for backward compatibility with previous version of {@code TokenVerifier}.
-     * @return This token verifier
+     * 启用或禁用领域 URL 检查。
+     * @deprecated 仅为兼容旧版 {@code TokenVerifier} 保留。
+     * @param checkRealmUrl 是否检查 iss
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> checkRealmUrl(boolean checkRealmUrl) {
         this.checkRealmUrl = checkRealmUrl;
@@ -370,10 +390,10 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Add check for verifying that token contains the expectedAudience
+     * 添加受众（aud）检查：令牌须包含给定受众之一。
      *
-     * @param expectedAudiences Audiences, which needs to be in the target token. Can be <code>null</code>.
-     * @return This token verifier
+     * @param expectedAudiences 期望受众，可为 {@code null}
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> audience(String... expectedAudiences) {
         if (expectedAudiences == null || expectedAudiences.length == 0) {
@@ -387,15 +407,21 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Add check for verifying that token issuedFor (azp claim) is the expected value
+     * 添加 issuedFor（azp）检查：令牌授权方须与期望值一致。
      *
-     * @param expectedIssuedFor issuedFor, which needs to be in the target token. Can't be null
-     * @return This token verifier
+     * @param expectedIssuedFor 期望的 azp 值，不可为 null
+     * @return 当前验证器实例
      */
     public TokenVerifier<T> issuedFor(String expectedIssuedFor) {
         return this.replaceCheck(IssuedForCheck.class, true, new IssuedForCheck(expectedIssuedFor));
     }
 
+    /**
+     * 解析 JWT 字符串为 {@link JWSInput} 及目标类型 POJO（若尚未解析）。
+     *
+     * @return 当前验证器实例
+     * @throws VerificationException 解析失败时抛出
+     */
     public TokenVerifier<T> parse() throws VerificationException {
         if (jws == null) {
             if (tokenString == null) {
@@ -418,6 +444,12 @@ public class TokenVerifier<T extends JsonWebToken> {
         return this;
     }
 
+    /**
+     * 返回已解析的令牌 POJO，必要时先执行 {@link #parse()}。
+     *
+     * @return 令牌对象
+     * @throws VerificationException 解析失败时抛出
+     */
     public T getToken() throws VerificationException {
         if (token == null) {
             parse();
@@ -425,11 +457,22 @@ public class TokenVerifier<T extends JsonWebToken> {
         return token;
     }
 
+    /**
+     * 返回 JWS 头部，必要时先解析。
+     *
+     * @return JWS 头
+     * @throws VerificationException 解析失败时抛出
+     */
     public JWSHeader getHeader() throws VerificationException {
         parse();
         return jws.getHeader();
     }
 
+    /**
+     * 验证 JWS 签名：优先使用 {@link SignatureVerifierContext}，否则按 alg 选择 RSA/ECDSA/HMAC。
+     *
+     * @throws VerificationException 验签失败或密钥/算法未配置时抛出
+     */
     public void verifySignature() throws VerificationException {
         if (this.verifier != null) {
             try {
@@ -475,6 +518,12 @@ public class TokenVerifier<T extends JsonWebToken> {
         }
     }
 
+    /**
+     * 完整验证：解析（若需要）、验签并依次执行所有已注册检查谓词。
+     *
+     * @return 当前验证器实例
+     * @throws VerificationException 任一步骤失败时抛出
+     */
     public TokenVerifier<T> verify() throws VerificationException {
         if (getToken() == null) {
             parse();
@@ -493,10 +542,10 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Creates an optional predicate from a predicate that will proceed with check but always pass.
-     * @param <T>
-     * @param mandatoryPredicate
-     * @return
+     * 将必选谓词包装为可选谓词：仍执行检查，但失败时仅记录日志并始终返回通过。
+     * @param <T> 令牌类型
+     * @param mandatoryPredicate 原始必选谓词
+     * @return 可选谓词
      */
     public static <T extends JsonWebToken> Predicate<T> optional(final Predicate<T> mandatoryPredicate) {
         return new Predicate<T>() {
@@ -517,11 +566,10 @@ public class TokenVerifier<T extends JsonWebToken> {
     }
 
     /**
-     * Creates a predicate that will proceed with checks of the given predicates
-     * and will pass if and only if at least one of the given predicates passes.
-     * @param <T>
-     * @param predicates
-     * @return
+     * 组合多个谓词为“或”逻辑：依次尝试，任一通过即整体通过。
+     * @param <T> 令牌类型
+     * @param predicates 候选谓词数组
+     * @return 组合后的谓词
      */
     @SafeVarargs
     public static <T extends JsonWebToken> Predicate<T> alternative(final Predicate<? super T>... predicates) {

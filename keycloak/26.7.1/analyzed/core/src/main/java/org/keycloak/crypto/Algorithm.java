@@ -18,9 +18,12 @@ package org.keycloak.crypto;
 
 import org.keycloak.common.crypto.CryptoConstants;
 
+/**
+ * JOSE/JWA 算法标识符常量集合，涵盖 HMAC、RSA、ECDSA、EdDSA、RSA 加密、AES 及 ECDH 等。
+ */
 public interface Algorithm {
 
-    /* RSA signing algorithms  */
+    /* HMAC 与 RSA 签名算法 */
     String HS256 = "HS256";
     String HS384 = "HS384";
     String HS512 = "HS512";
@@ -31,30 +34,32 @@ public interface Algorithm {
     String PS384 = "PS384";
     String PS512 = "PS512";
 
-    /* ECDSA signing algorithms  */
+    /* ECDSA 签名算法 */
     String ES256 = "ES256";
     String ES384 = "ES384";
     String ES512 = "ES512";
 
-    /* EdDSA signing algorithms  */
+    /* EdDSA 签名算法 */
     String EdDSA = "EdDSA";
-    /* EdDSA Curve */
+    /* EdDSA 曲线名称 */
     String Ed25519 = "Ed25519";
     String Ed448 = "Ed448";
 
-    /* RSA Encryption Algorithms */
+    /* RSA 加密算法 */
     String RSA1_5 = CryptoConstants.RSA1_5;
     String RSA_OAEP = CryptoConstants.RSA_OAEP;
     String RSA_OAEP_256 = CryptoConstants.RSA_OAEP_256;
 
-    /* AES */
+    /* AES 对称加密 */
     String AES = "AES";
 
+    /* ECDH 密钥协商算法 */
     String ECDH_ES = CryptoConstants.ECDH_ES;
     String ECDH_ES_A128KW = CryptoConstants.ECDH_ES_A128KW;
     String ECDH_ES_A192KW = CryptoConstants.ECDH_ES_A192KW;
     String ECDH_ES_A256KW = CryptoConstants.ECDH_ES_A256KW;
 
+    /* 后量子 ML-DSA 签名算法（FIPS 204） */
     String ML_DSA_44 =  "ML-DSA-44";
     String ML_DSA_65 =  "ML-DSA-65";
     String ML_DSA_87 =  "ML-DSA-87";

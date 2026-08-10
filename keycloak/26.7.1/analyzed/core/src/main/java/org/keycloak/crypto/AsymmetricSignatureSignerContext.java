@@ -22,10 +22,18 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 基于非对称私钥的 JWS 签名上下文，将 {@link KeyWrapper} 中的密钥材料用于 {@link SignatureSignerContext}。
+ */
 public class AsymmetricSignatureSignerContext implements SignatureSignerContext {
 
+    /** 封装待签名密钥及其元数据的包装对象。 */
     protected final KeyWrapper key;
 
+    /**
+     * @param key 含私钥与算法信息的密钥包装
+     * @throws SignatureException 密钥不可用或算法不支持时抛出
+     */
     public AsymmetricSignatureSignerContext(KeyWrapper key) throws SignatureException {
         this.key = key;
     }
@@ -45,6 +53,13 @@ public class AsymmetricSignatureSignerContext implements SignatureSignerContext 
         return JavaAlgorithm.getJavaAlgorithmForHash(key.getAlgorithmOrDefault(), key.getCurve());
     }
 
+    /**
+     * 使用私钥对给定字节序列执行数字签名。
+     *
+     * @param data 待签名的原始字节
+     * @return 签名结果
+     * @throws SignatureException 签名过程失败时抛出
+     */
     @Override
     public byte[] sign(byte[] data) throws SignatureException {
         try {
@@ -57,6 +72,9 @@ public class AsymmetricSignatureSignerContext implements SignatureSignerContext 
         }
     }
 
+    /**
+     * @return 与密钥关联的 X.509 证书链；无链时返回单证书或 {@code null}
+     */
     @Override
     public List<X509Certificate> getCertificateChain() {
         if (key.getCertificateChain() != null && !key.getCertificateChain().isEmpty()) {

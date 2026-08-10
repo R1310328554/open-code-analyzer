@@ -16,12 +16,20 @@
  */
 package org.keycloak.crypto;
 
+/**
+ * JWK {@code kty}（密钥类型）字段的取值常量，对应 RFC 7517 定义的类型标识。
+ */
 public interface KeyType {
 
+    /** 椭圆曲线密钥（EC）。 */
     String EC = "EC";
+    /** RSA 密钥。 */
     String RSA = "RSA";
+    /** 对称/octet 序列密钥（OCT）。 */
     String OCT = "OCT";
+    /** Octet Key Pair（OKP，如 Ed25519）。 */
     String OKP = "OKP";
+    /** Asymmetric Key Pair（后量子等非传统类型）。 */
     String AKP = "AKP";
 
 }

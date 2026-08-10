@@ -16,10 +16,23 @@
  */
 package org.keycloak.crypto;
 
+/**
+ * 密钥在领域中的运行状态：活跃签发、被动保留或已禁用。
+ */
 public enum KeyStatus {
 
-    ACTIVE, PASSIVE, DISABLED;
+    /** 当前用于签发的活跃密钥。 */
+    ACTIVE, /** 已轮换但仍可用于验签的被动密钥。 */
+    PASSIVE, /** 已禁用、不可使用的密钥。 */
+    DISABLED;
 
+    /**
+     * 由布尔标志推导密钥状态。
+     *
+     * @param active 是否为活跃密钥
+     * @param enabled 是否启用
+     * @return 对应的 {@link KeyStatus}
+     */
     public static KeyStatus from(boolean active, boolean enabled) {
         if (!enabled) {
             return KeyStatus.DISABLED;
@@ -28,10 +41,16 @@ public enum KeyStatus {
         }
     }
 
+    /**
+     * @return 是否为活跃状态
+     */
     public boolean isActive() {
         return this.equals(ACTIVE);
     }
 
+    /**
+     * @return 是否处于可用状态（活跃或被动）
+     */
     public boolean isEnabled() {
         return this.equals(ACTIVE) || this.equals(PASSIVE);
     }

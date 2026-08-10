@@ -16,18 +16,28 @@
  */
 package org.keycloak.crypto;
 
+/**
+ * JWK {@code use}（密钥用途）枚举，映射 JOSE 规范中的 {@code sig}、{@code enc} 等取值。
+ */
 public enum KeyUse {
 
+    /** 签名用途（对应规范值 {@code sig}）。 */
     SIG("sig"),
+    /** 加密用途（对应规范值 {@code enc}）。 */
     ENC("enc"),
+    /** SPIFFE JWT-SVID 用途。 */
     JWT_SVID("jwt-svid");
 
+    /** JOSE/JWK 规范中的字符串表示。 */
     private String specName;
 
     KeyUse(String specName) {
         this.specName = specName;
     }
 
+    /**
+     * @return JOSE 规范中的 {@code use} 字符串
+     */
     public String getSpecName() {
         return specName;
     }

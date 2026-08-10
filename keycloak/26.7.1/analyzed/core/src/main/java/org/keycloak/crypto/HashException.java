@@ -18,14 +18,23 @@
 package org.keycloak.crypto;
 
 /**
+ * 哈希计算失败时抛出的运行时异常。
+ *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class HashException extends RuntimeException {
 
+    /**
+     * @param message 错误描述
+     */
     public HashException(String message) {
         super(message);
     }
 
+    /**
+     * @param message 错误描述
+     * @param cause 原始异常
+     */
     public HashException(String message, Throwable cause) {
         super(message, cause);
     }
