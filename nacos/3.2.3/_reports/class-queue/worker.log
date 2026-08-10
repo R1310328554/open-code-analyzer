@@ -2533,3 +2533,18 @@
 2026-08-10T05:19:02Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/tps/barrier/RuleBarrier.java wave83a [0:15] control spi + tps barriers
 2026-08-10T05:19:02Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/tps/barrier/SimpleCountRuleBarrier.java wave83a [0:15] control spi + tps barriers
 2026-08-10T05:19:02Z DONE plugin/control/src/main/java/com/alibaba/nacos/plugin/control/tps/barrier/TpsBarrier.java wave83a [0:15] control spi + tps barriers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/ContextConstant.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/DataSourceConstant.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/DatabaseTypeConstant.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/FieldConstant.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/PrimaryKeyConstant.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/TableConstant.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/dialect/DatabaseDialect.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/manager/DatabaseDialectManager.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/manager/DatasourceDialectPluginProvider.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/AbstractMapper.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/AiResourceMapper.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/AiResourceVersionMapper.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoBetaMapper.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoGrayMapper.java wave84a [0:15] datasource constants/dialect + mappers
+2026-08-10T05:21:04Z DONE plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoMapper.java wave84a [0:15] datasource constants/dialect + mappers

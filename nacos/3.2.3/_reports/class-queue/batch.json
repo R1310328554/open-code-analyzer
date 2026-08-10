@@ -1,21 +1,6 @@
 {
   "claimed_at": "2026-08-10T05:19:40Z",
   "files": [
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/ContextConstant.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/DataSourceConstant.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/DatabaseTypeConstant.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/FieldConstant.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/PrimaryKeyConstant.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/constants/TableConstant.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/dialect/DatabaseDialect.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/manager/DatabaseDialectManager.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/manager/DatasourceDialectPluginProvider.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/AbstractMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/AiResourceMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/AiResourceVersionMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoBetaMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoGrayMapper.java",
-    "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoMapper.java",
     "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigInfoTagMapper.java",
     "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigMigrateMapper.java",
     "plugin/datasource/src/main/java/com/alibaba/nacos/plugin/datasource/mapper/ConfigTagsRelationMapper.java",
@@ -33,5 +18,5 @@
     "plugin/encryption/src/main/java/com/alibaba/nacos/plugin/encryption/handler/EncryptionHandler.java"
   ],
   "remaining_pending": 17,
-  "done": 2490
+  "done": 2505
 }
