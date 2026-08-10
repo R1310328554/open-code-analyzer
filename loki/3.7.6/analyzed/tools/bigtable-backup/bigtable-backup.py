@@ -3,6 +3,8 @@ import subprocess
 import time
 import json
 
+# bigtable-backup.py 为 Loki 周期性 Bigtable 表备份运维脚本：封装 bigtable-backup CLI 子进程，并向 Prometheus Pushgateway 推送 Gauge 指标。
+
 from datetime import datetime, timedelta
 import pytz
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
@@ -21,6 +23,7 @@ def secs_to_periodic_table_number(periodic_secs):
     return time.time() / periodic_secs
 
 
+# backup_active_periodic_table 按当前时间片计算 table_id 并创建活跃表备份。
 def backup_active_periodic_table(args):
     push_job_started_metric(args.prom_push_gateway_endpoint, args.namespace, job_backup_active_periodic_table)
     start_time = time.time()
@@ -32,6 +35,7 @@ def backup_active_periodic_table(args):
     push_job_finished_metric(args.prom_push_gateway_endpoint, args.namespace, job_backup_active_periodic_table, int(time.time() - start_time))
 
 
+# ensure_backups 校验时间范围内每表至少一份备份，清理非活跃表冗余并可选删越界备份。
 def ensure_backups(args):
     push_job_started_metric(args.prom_push_gateway_endpoint, args.namespace, job_ensure_backups)
     start_time = time.time()
@@ -159,6 +163,7 @@ def valid_table_id_prefix(s):
         return str(s) + "_"
 
 
+# create_backup 调用 bigtable-backup create，成功时递增 bigtable_backup_job_backups_created。
 def create_backup(table_id, args):
     popen = subprocess.Popen(['bigtable-backup', 'create', '--bigtable-table-id-prefix', table_id,
                               '--temp-prefix', args.temp_prefix, '--bigtable-project-id', args.bigtable_project_id,
@@ -215,6 +220,7 @@ def delete_out_of_range_backups(oldest_table_number, newest_table_number, backup
     return num_backups_deleted
 
 
+# main 解析全局 Bigtable/GCS 参数与子命令 backup-active-periodic-table 或 ensure-backups。
 def main():
     parser = argparse.ArgumentParser()
     subparser = parser.add_subparsers(help="commands")
@@ -255,3 +261,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# 指标经 push_to_gateway 上报，失败仅打印错误不中断备份主流程。

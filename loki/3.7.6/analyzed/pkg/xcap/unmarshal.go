@@ -1,5 +1,7 @@
 package xcap
 
+// xcap 包 unmarshal 将 internal/proto Capture 反序列化为 Go Region 树：重建 Statistic 索引并按 proto 观测值恢复 AggregatedObservation。
+
 import (
 	"fmt"
 
@@ -38,6 +40,7 @@ func fromProtoCapture(protoCapture *proto.Capture, capture *Capture) error {
 }
 
 // fromProtoRegion converts a protobuf Region to its Go representation.
+// fromProtoRegion 反序列化观测并复制 id/parentID；proto 来源 region 标记 ended=true。
 func fromProtoRegion(protoRegion *proto.Region, statIndexToStat map[uint32]Statistic) (*Region, error) {
 	// Unmarshal observations
 	observations := make(map[StatisticKey]*AggregatedObservation, len(protoRegion.Observations))
@@ -96,6 +99,7 @@ func unmarshalObservationValue(protoValue *proto.ObservationValue) (any, error) 
 }
 
 // unmarshalStatistic converts a protobuf Statistic to a Go Statistic.
+// unmarshalStatistic 按 DataType 构造 Int64/Float64/Flag 统计量定义。
 func unmarshalStatistic(protoStat *proto.Statistic) (Statistic, error) {
 	dataType, err := unmarshalDataType(protoStat.DataType)
 	if err != nil {
@@ -154,3 +158,4 @@ func unmarshalAggregationType(protoType proto.AggregationType) (AggregationType,
 		return AggregationTypeInvalid, fmt.Errorf("unknown aggregation type: %v", protoType)
 	}
 }
+// unmarshalObservationValue 支持 int/float/bool oneof，未知类型返回明确错误。

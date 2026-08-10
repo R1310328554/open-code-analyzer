@@ -1,5 +1,7 @@
 package xcap
 
+// xcap 包 summary 从 Capture 的 Region 树收集观测：按 region 名称过滤/rollup/prefix，输出 logql stats.Result 与结构化日志键值。
+
 import (
 	"sort"
 	"strings"
@@ -14,6 +16,7 @@ import (
 //
 // All transformation methods (filter, prefix, normalizeKeys) return new instances,
 // leaving the original unchanged.
+// observations 为不可变变换（filter/prefix/normalizeKeys）与 merge 的中间容器。
 type observations struct {
 	data map[StatisticKey]*AggregatedObservation
 }
@@ -243,6 +246,7 @@ func (c *observationCollector) rollUpObservations(region *Region, excludedSet ma
 }
 
 // ToStatsSummary computes a stats.Result from observations in the capture.
+// ToStatsSummary 主要从 logs.Reader.Read region 映射 dataobj 行列/字节到 Querier.Store。
 func (c *Capture) ToStatsSummary(execTime, queueTime time.Duration, totalEntriesReturned int) stats.Result {
 	result := stats.Result{
 		Querier: stats.Querier{
@@ -295,6 +299,7 @@ func readInt64(o *observations, key StatisticKey) int64 {
 }
 
 // summarizeObservations collects and summarizes observations from the capture.
+// summarizeObservations 按 DataObjScan、metastore、Engine.Execute 等 region 名分组合并。
 func summarizeObservations(capture *Capture) *observations {
 	if capture == nil {
 		return nil
@@ -448,6 +453,7 @@ func summarizeObservations(capture *Capture) *observations {
 }
 
 // SummaryLogValues exports a Capture as a structured log line with aggregated statistics.
+// SummaryLogValues 导出 Capture 为 go-kit log 交替键值切片，字节/时长字段人类可读格式化。
 func SummaryLogValues(capture *Capture) []any {
 	if capture == nil {
 		return nil
@@ -455,3 +461,4 @@ func SummaryLogValues(capture *Capture) []any {
 
 	return summarizeObservations(capture).toLogValues()
 }
+// toLogValues 对 *_bytes 与 *duration 后缀键分别 humanize 与 time.Duration 字符串化。

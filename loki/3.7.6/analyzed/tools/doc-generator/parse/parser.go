@@ -5,6 +5,8 @@
 
 package parse
 
+// doc-generator/parse 包通过 reflect 遍历配置 struct：关联 flag 指针、解析 doc/yaml tag，产出 ConfigBlock 树供 Markdown 渲染。
+
 import (
 	"flag"
 	"fmt"
@@ -105,6 +107,7 @@ type RootBlock struct {
 	StructType []reflect.Type
 }
 
+// Flags 注册全部 CLI 并以 flag.Value 指针地址为键，供字段与 flag 一一匹配。
 func Flags(cfg flagext.Registerer) map[uintptr]*flag.Flag {
 	fs := flag.NewFlagSet("", flag.PanicOnError)
 	cfg.RegisterFlags(fs)
@@ -123,6 +126,7 @@ func Flags(cfg flagext.Registerer) map[uintptr]*flag.Flag {
 	return flags
 }
 
+// Config 入口返回顶层 block 及递归发现的 root/inline/slice 子块列表。
 // Config returns a slice of ConfigBlocks. The first ConfigBlock is a recursively expanded cfg.
 // The remaining entries in the slice are all (root or not) ConfigBlocks.
 func Config(cfg interface{}, flags map[uintptr]*flag.Flag, rootBlocks []RootBlock) ([]*ConfigBlock, error) {
@@ -343,6 +347,7 @@ func config(block *ConfigBlock, cfg interface{}, flags map[uintptr]*flag.Flag, r
 	return blocks, nil
 }
 
+// getFieldName 解析 yaml tag 首段；未导出且无 tag 的字段返回空名跳过文档。
 func getFieldName(field reflect.StructField) string {
 	name := field.Name
 	tag := field.Tag.Get("yaml")
@@ -626,6 +631,7 @@ func isFieldInline(f reflect.StructField) bool {
 	return yamlFieldInlineParser.MatchString(f.Tag.Get("yaml"))
 }
 
+// getFieldDescription 优先 doc tag 的 description/description_method，deprecated 加前缀。
 func getFieldDescription(cfg interface{}, field reflect.StructField, fallback string) string {
 	// Set prefix
 	prefix := ""
@@ -695,3 +701,4 @@ func parseDocTag(f reflect.StructField) map[string]string {
 
 	return cfg
 }
+// getFieldCustomType 映射 url、duration、relabel_config 等 Loki/Prometheus 特殊配置类型名。

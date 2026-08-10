@@ -1,5 +1,7 @@
 package main
 
+// dataobj-sort 开发工具：对本地 dataobj 文件执行 CopyAndSort，重建 section 顺序并写入临时 sorted 文件，用于调试与性能对比。
+
 import (
 	"context"
 	"io"
@@ -13,6 +15,7 @@ import (
 	"github.com/grafana/loki/v3/pkg/scratch"
 )
 
+// main 10 分钟超时内打开 dataobj，用 logsobj.Builder CopyAndSort 后 io.Copy 落盘。
 func main() {
 	args := os.Args[1:]
 	if len(args) < 1 {
@@ -100,3 +103,4 @@ func main() {
 
 	log.Printf("Written %d bytes to %s in %s\n", written, fw.Name(), duration)
 }
+// BuilderConfig 指定页大小、对象/section 目标尺寸与 stripe 合并上限等重建参数。

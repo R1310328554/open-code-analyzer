@@ -1,5 +1,8 @@
 package xcap
 
+// xcap 包预注册引擎各阶段通用统计量：pipeline、dataset、metastore、bucket、task 调度等，供 executor 节点 Record 与 summary 汇总。
+
+// StatPipeline* 跟踪算子输出行数、读调用次数与读/执行耗时（秒，AggregationTypeSum）。
 // Common pipeline statistics tracked across executor nodes.
 var (
 	StatPipelineRowsOut      = NewStatisticInt64("rows.out", AggregationTypeSum)
@@ -8,6 +11,7 @@ var (
 	StatPipelineExecDuration = NewStatisticFloat64("exec.duration", AggregationTypeSum)
 )
 
+// StatCompatCollisionFound 为 bool flag，记录列兼容检测是否发现 hash 冲突。
 // ColumnCompat statistics.
 var (
 	StatCompatCollisionFound = NewStatisticFlag("collision.found")
@@ -46,6 +50,7 @@ var (
 	StatDatasetReadCalls = NewStatisticInt64("dataset.read.calls", AggregationTypeSum)
 )
 
+// StatRangeIO* 描述 range 合并前后数量/字节及优化后最小吞吐（Min 聚合）。
 // Range IO statistics.
 var (
 	StatRangeIOInputCount     = NewStatisticInt64("input.ranges", AggregationTypeSum)
@@ -73,6 +78,7 @@ var (
 	StatMetastoreSectionPointersReadTime = NewStatisticFloat64("metastore.sections.pointers.read.duration", AggregationTypeSum)
 )
 
+// StatTask* 捕获排队、准入等待与 workflow 尾部分配延迟，单位均为秒。
 // Task scheduling statistics.
 var (
 	StatTaskCount = NewStatisticInt64("task.count", AggregationTypeFirst)
@@ -106,3 +112,4 @@ var (
 	TaskExternalSourcesCount    = NewStatisticInt64("task.external.sources.count", AggregationTypeFirst)
 	TaskExternalSinksCount      = NewStatisticInt64("task.external.sinks.count", AggregationTypeFirst)
 )
+// 各 Stat* 变量在 init 前即可引用，名称带点分隔便于 summary prefix/normalizeKeys。

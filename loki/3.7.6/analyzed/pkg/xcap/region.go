@@ -1,5 +1,7 @@
 package xcap
 
+// xcap 包 Region 表示一次 Capture 内子操作的观测窗口：可独立 StartRegion 收集指标，或与 Tracer.Start 配对写入 OTel span 属性。
+
 import (
 	"context"
 	"fmt"
@@ -9,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// Region 维护 parent/child 树与 StatisticKey→AggregatedObservation 映射，End 后拒绝写入。
 // Region captures the lifetime of a specific operation within a capture.
 //
 // A Region may be created standalone (via [StartRegion]) for observation
@@ -42,6 +45,7 @@ type Region struct {
 //
 // StartRegion does not create an OTel span. Use [Tracer.Start] when both
 // a span and observation aggregation are needed.
+// StartRegion 无 Capture 时返回 nil Region；否则注册到 Capture 并注入 context。
 func StartRegion(ctx context.Context, name string) (context.Context, *Region) {
 	capture := CaptureFromContext(ctx)
 	if capture == nil {
@@ -69,6 +73,7 @@ func StartRegion(ctx context.Context, name string) (context.Context, *Region) {
 // Record records the statistic Observation o into the region. Calling
 // Record multiple times for the same Statistic aggregates values based
 // on the aggregation type of the Statistic.
+// Record 对同 key 多次观测按 Sum/Min/Max/First/Last 规则合并到 AggregatedObservation。
 func (r *Region) Record(o Observation) {
 	if r == nil {
 		return
@@ -127,6 +132,7 @@ func (r *Region) End() {
 // and sets them on the provided span. It also marks the region as ended.
 //
 // This is called by [Span.End].
+// flushToSpan 将聚合结果转为 OTel attribute 并标记 ended，供 Span.End 调用。
 func (r *Region) flushToSpan(span trace.Span) {
 	if r == nil {
 		return
@@ -174,3 +180,4 @@ func observationToAttribute(key StatisticKey, obs *AggregatedObservation) attrib
 	// Fallback: convert to string.
 	return attrKey.String(fmt.Sprintf("%v", obs.Value))
 }
+// observationToAttribute 按 DataType 选择 Int64/Float64/Bool，无法转换时 fallback 字符串。

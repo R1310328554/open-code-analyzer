@@ -1,5 +1,8 @@
 package xcap
 
+// xcap 包定义统计量元数据：DataType、AggregationType、StatisticKey 与 StatisticInt64/Float64/Flag 工厂，Observe 产生 Observation。
+
+// DataType 决定 Region flush 到 span 时的 attribute 值类型与聚合比较语义。
 // DataType specifies the data type of a statistic's values.
 type DataType int
 
@@ -14,6 +17,7 @@ const (
 	DataTypeBool
 )
 
+// AggregationType 描述同 Statistic 多次 Record 的合并策略（求和/极值/首尾）。
 // AggregationType specifies how to combine multiple observations of the
 // same statistic.
 type AggregationType int
@@ -36,6 +40,7 @@ const (
 
 // StatisticKey is a comparable struct that uniquely identifies a statistic
 // by its definition (name, data type, and aggregation type).
+// StatisticKey 三元组（名称、类型、聚合）作为 Region observations map 的键。
 type StatisticKey struct {
 	Name        string
 	DataType    DataType
@@ -143,6 +148,7 @@ func NewStatisticFloat64(name string, aggregation AggregationType) *StatisticFlo
 	}
 }
 
+// NewStatisticFlag 固定 AggregationTypeMax，使 true 在多次 Record 中优先保留。
 // NewStatisticFlag creates a new bool statistic (flag) with the given name.
 // Flags always use AggregationTypeMax (true > false).
 func NewStatisticFlag(name string) *StatisticFlag {
@@ -154,3 +160,4 @@ func NewStatisticFlag(name string) *StatisticFlag {
 		},
 	}
 }
+// Statistic 接口统一 Name/DataType/Aggregation/Key，便于 proto 往返与 summary 过滤。

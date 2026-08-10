@@ -5,6 +5,8 @@
 
 package main
 
+// doc-generator 从 loki.Config 反射生成配置参考 Markdown：解析 CLI flag 与 YAML 字段映射，注入 template 后输出到 stdout。
+
 import (
 	"flag"
 	"fmt"
@@ -39,6 +41,7 @@ func removeFlagPrefix(block *parse.ConfigBlock, prefix string) {
 	}
 }
 
+// annotateFlagPrefix 处理重复 root block 的不同 CLI 前缀，文档中统一展示为 <prefix>。
 func annotateFlagPrefix(blocks []*parse.ConfigBlock) {
 	// Find duplicated blocks
 	groups := map[string][]*parse.ConfigBlock{}
@@ -118,6 +121,7 @@ func generateBlocksMarkdown(blocks []*parse.ConfigBlock) string {
 	return md.string()
 }
 
+// main 读取 template 路径，parse.Config 构建 blocks 再 Execute 模板写入标准输出。
 func main() {
 	// Parse the generator flags.
 	flag.Parse()
@@ -169,3 +173,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+// GeneratedFileWarning 注释提醒文档由 make doc 自动生成，勿手改生成文件。

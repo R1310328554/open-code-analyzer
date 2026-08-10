@@ -1,5 +1,7 @@
 package checker
 
+// deprecated-config-checker/checker 包：加载 deprecates/deletes YAML，递归比对用户 config 与 runtime overrides 中的废弃/删除字段。
+
 import (
 	"flag"
 	"fmt"
@@ -42,6 +44,7 @@ func (c *Config) Validate() error {
 
 type RawYaml map[string]interface{}
 
+// Checker 持有静态 deprecates/deletes 模板与用户 config、runtimeConfig 快照。
 type Checker struct {
 	config        RawYaml
 	runtimeConfig RawYaml
@@ -64,6 +67,7 @@ func loadYAMLFile(path string) (RawYaml, error) {
 	return out, nil
 }
 
+// NewChecker 读取三份 YAML；config 与 runtime 至少其一非空由 Config.Validate 保证。
 func NewChecker(cfg Config) (*Checker, error) {
 	deprecates, err := loadYAMLFile(cfg.DeprecatesFile)
 	if err != nil {
@@ -153,6 +157,7 @@ func getDeprecationAnnotation(value interface{}) (deprecationAnnotation, bool) {
 	return deprecationAnnotation{}, false
 }
 
+// DeprecationNotes 含路径、当前值与可选 DeprecatedValues 列表，String 格式化 CLI 输出。
 type DeprecationNotes struct {
 	deprecationAnnotation
 	ItemPath   string
@@ -234,6 +239,7 @@ func checkConfigDeprecated(deprecates, config RawYaml) []DeprecationNotes {
 	return enumerateDeprecatesFields(deprecates, config, "", []DeprecationNotes{})
 }
 
+// enumerateDeprecatesFields 深度优先遍历；叶子 _msg/_deprecated 匹配则生成 DeprecationNotes。
 func enumerateDeprecatesFields(deprecates, input RawYaml, rootPath string, deprecations []DeprecationNotes) []DeprecationNotes {
 	for key, deprecate := range deprecates {
 		inputValue, exists := input[key]
@@ -305,3 +311,4 @@ func enumerateDeprecatesFields(deprecates, input RawYaml, rootPath string, depre
 
 	return deprecations
 }
+// runtime 检查将 limits_config 模板套用到 overrides 下每个租户子树并前缀 overrides.<tenant>。

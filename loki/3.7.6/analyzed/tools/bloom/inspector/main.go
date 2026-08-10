@@ -1,5 +1,7 @@
 package main
 
+// bloom inspector 命令行工具：读取 bloom v1 块目录，打印 checksum、series 元数据及每个 stream 的 bloom 页容量/填充率。
+
 import (
 	"fmt"
 	"os"
@@ -66,3 +68,4 @@ func main() {
 	fmt.Println("")
 	fmt.Printf("Stream count: %4d\n", count)
 }
+// SimpleHeapAllocator 与 256MiB 上限用于 bloom 解码时的临时内存分配。

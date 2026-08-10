@@ -1,5 +1,7 @@
 package main
 
+// deprecated-config-checker 命令行入口：校验 Loki config/runtime-config，分色打印废弃与已删项，任一命中则 exit 1 并指向升级文档。
+
 import (
 	"flag"
 	"fmt"
@@ -16,6 +18,7 @@ func RegisterFlags(f *flag.FlagSet) {
 	f.BoolVar(&color.NoColor, "no-color", false, "Disable color output")
 }
 
+// main 解析 flag、构造 Checker，依次检查 static 与 runtime 四类 deprecate/delete 列表。
 func main() {
 	var cfg checker.Config
 
@@ -74,3 +77,4 @@ func main() {
 
 	fmt.Printf("No deprecated or deleted configs found.\n")
 }
+// upgradeGuideURL 指向 Grafana Loki setup/upgrade 页面供运维迁移参考。
