@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户模型 REST API：已添加模型列表、默认模型查询与设置。
+"""
+
 #
 import logging
 
@@ -27,6 +31,7 @@ from api.utils.api_utils import (
 )
 
 
+# ---------- 列出租户已添加的全部模型 ----------
 @manager.route("/models", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -69,6 +74,7 @@ def get_added_models(tenant_id: str):
                       enable:
                         type: boolean
     """
+    # 可选 type 过滤：chat/embedding/rerank 等
     model_type_filter = request.args.get("type")
     try:
         success, result = models_api_service.list_tenant_added_models(tenant_id, model_type_filter)
@@ -81,6 +87,7 @@ def get_added_models(tenant_id: str):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 查询各 model_type 的默认模型 ----------
 @manager.route("/models/default", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -134,6 +141,7 @@ def get_default_models(tenant_id: str):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 设置或清除某类型的默认模型 ----------
 @manager.route("/models/default", methods=["PATCH"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs

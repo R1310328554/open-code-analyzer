@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Agent 记忆 REST API：记忆库 CRUD、消息写入/检索/遗忘与向量搜索。
+"""
+
 #
 import logging
 import os
@@ -26,10 +30,12 @@ from api.apps.services import memory_api_service
 from api.utils.pagination_utils import validate_rest_api_page_size
 
 
+# ---------- 创建记忆库 ----------
 @manager.route("/memories", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("name", "memory_type", "embd_id", "llm_id")
 async def create_memory():
+    # 可选 API 耗时诊断（环境变量 RAGFLOW_API_TIMING）
     timing_enabled = os.getenv("RAGFLOW_API_TIMING")
     t_start = time.perf_counter() if timing_enabled else None
     req = await get_request_json()
@@ -75,6 +81,7 @@ async def create_memory():
         return get_json_result(code=RetCode.SERVER_ERROR, message="Internal server error")
 
 
+# ---------- 更新记忆库配置 ----------
 @manager.route("/memories/<memory_id>", methods=["PUT"])  # noqa: F821
 @login_required
 async def update_memory(memory_id):
@@ -181,6 +188,7 @@ async def get_memory_messages(memory_id):
         return get_json_result(code=RetCode.SERVER_ERROR, message="Internal server error")
 
 
+# ---------- 向记忆库写入对话消息 ----------
 @manager.route("/messages", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("memory_id", "agent_id", "session_id", "user_input", "agent_response")
@@ -188,7 +196,7 @@ async def add_message():
     req = await get_request_json()
     memory_ids = req["memory_id"]
 
-    # JWT / session users cannot spoof attribution; API-key callers may supply an external subject id.
+    # JWT/会话用户不可伪造 user_id；API Key 调用方可传入外部 subject
     try:
         trust_client_subject = bool(getattr(g, "auth_via_api_token", False))
     except RuntimeError:
@@ -213,6 +221,7 @@ async def add_message():
     return get_json_result(message="Some messages failed to add. Detail:" + msg, code=RetCode.SERVER_ERROR)
 
 
+# ---------- 遗忘单条消息 ----------
 @manager.route("/messages/<memory_id>:<message_id>", methods=["DELETE"])  # noqa: F821
 @login_required
 async def forget_message(memory_id: str, message_id: int):
@@ -250,6 +259,7 @@ async def update_message(memory_id: str, message_id: int):
         return get_json_result(code=RetCode.SERVER_ERROR, message="Internal server error")
 
 
+# ---------- 向量/关键词混合检索记忆消息 ----------
 @manager.route("/messages/search", methods=["GET"])  # noqa: F821
 @login_required
 async def search_message():

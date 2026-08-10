@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+系统统计 API：按日期范围聚合 Agent 对话的 PV/UV/Token 等指标。
+"""
+
 #
 from datetime import datetime, timedelta
 from quart import request
@@ -21,6 +25,7 @@ from api.utils.api_utils import get_data_error_result, get_json_result, server_e
 from api.apps import login_required, current_user
 
 
+# GET /system/stats：返回租户级对话使用统计时间序列
 @manager.route("/system/stats", methods=["GET"])  # noqa: F821
 @login_required
 def stats():
@@ -32,6 +37,7 @@ def stats():
             tenants[0].tenant_id,
             request.args.get("from_date", (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d 00:00:00")),
             request.args.get("to_date", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+            # 传入 canvas_id 时仅统计 Agent 画布对话
             "agent" if "canvas_id" in request.args else None,
         )
 
@@ -41,8 +47,9 @@ def stats():
             dt = obj["dt"]
             res["pv"].append((dt, obj["pv"]))
             res["uv"].append((dt, obj["uv"]))
+            # tokens/duration 估算吞吐；+0.1 避免除零
             res["speed"].append((dt, float(obj["tokens"]) / (float(obj["duration"]) + 0.1)))  # +0.1 to avoid division by zero
-            res["tokens"].append((dt, float(obj["tokens"]) / 1000.0))  # convert to thousands
+            res["tokens"].append((dt, float(obj["tokens"]) / 1000.0))  # 转换为千 token 单位
             res["round"].append((dt, obj["round"]))
             res["thumb_up"].append((dt, obj["thumb_up"]))
 

@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+OpenAI 兼容对话补全 API：将 RAGFlow Dialog 流式/非流式输出转为 chat/completions 格式。
+"""
+
 #
 
 import json
@@ -32,6 +36,7 @@ from rag.prompts.generator import chunks_format
 
 
 def _validate_llm_id(llm_id, tenant_id, llm_setting=None):
+    """校验请求指定的 llm_id 在租户下是否可用。"""
     if not llm_id:
         return None
 
@@ -56,6 +61,7 @@ from api.utils.reference_metadata_utils import enrich_chunks_with_document_metad
 
 
 def _build_reference_chunks(reference, include_metadata=False, metadata_fields=None):
+    """格式化引用分块，可选附加文档元数据。"""
     chunks = chunks_format(reference)
     if not include_metadata:
         logging.debug("Skipping document metadata enrichment (include_metadata=False)")
@@ -86,6 +92,7 @@ def _build_reference_chunks(reference, include_metadata=False, metadata_fields=N
 
 
 def _build_sse_response(body):
+    """构造 OpenAI 兼容 SSE 响应头。"""
     resp = Response(body, mimetype="text/event-stream")
     resp.headers.add_header("Cache-control", "no-cache")
     resp.headers.add_header("Connection", "keep-alive")
@@ -104,7 +111,9 @@ async def _stream_chat_completion_sse(
     include_reference_metadata=False,
     metadata_fields=None,
 ):
-    """Translate RAGFlow's chat event stream into OpenAI-compatible SSE chunks.
+    """将 RAGFlow 对话事件流翻译为 OpenAI 兼容 SSE chunk。
+
+    Translate RAGFlow's chat event stream into OpenAI-compatible SSE chunks.
 
     ``ans_iter`` yields RAGFlow dialog events. The body is streamed
     incrementally as ``delta.content`` chunks; the terminating ``final`` event
@@ -144,6 +153,7 @@ async def _stream_chat_completion_sse(
     try:
         async for ans in ans_iter:
             last_ans = ans
+            # final 事件仅通过 reference/final_content 字段暴露，避免重复推送全文
             if ans.get("final"):
                 # The `final` event carries the complete, decorated answer.
                 # Do NOT re-emit it as a content delta — the body was already
@@ -219,6 +229,7 @@ def _normalize_message_content(content):
 
 
 def _normalize_openai_messages(messages):
+    """规范化 OpenAI messages 数组，返回 (normalized, error_message)。"""
     """Return (normalized_messages, error_message). error_message is set on failure."""
     if not isinstance(messages, list):
         return None, "messages must be an array."
@@ -234,6 +245,7 @@ def _normalize_openai_messages(messages):
     return normalized, None
 
 
+# ---------- OpenAI 兼容 chat/completions 入口 ----------
 @manager.route("/openai/<chat_id>/chat/completions", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("model", "messages")
@@ -272,6 +284,7 @@ async def openai_chat_completions(chat_id):
         return get_error_data_result(f"You don't own the chat {chat_id}")
     dia = dia[0]
 
+    # 占位符 "model" 表示使用 Dialog 配置的默认 llm_id
     using_placeholder_model = requested_model == "model"
     if using_placeholder_model:
         requested_model = dia.llm_id or requested_model
@@ -296,6 +309,7 @@ async def openai_chat_completions(chat_id):
             convert_conditions(metadata_condition),
             metadata_condition.get("logic", "and"),
         )
+        # 元数据过滤无命中时用哨兵 doc_id 使检索为空
         if metadata_condition.get("conditions") and not filtered_doc_ids:
             filtered_doc_ids = ["-999"]
         doc_ids_str = ",".join(filtered_doc_ids) if filtered_doc_ids else None

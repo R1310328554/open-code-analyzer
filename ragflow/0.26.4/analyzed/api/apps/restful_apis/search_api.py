@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+搜索应用 REST API：Search App CRUD 与基于知识库的流式问答补全。
+"""
+
 #
 
 import json
@@ -34,11 +38,13 @@ from api.utils.pagination_utils import validate_rest_api_page_size
 
 
 def _full_text_weight(vector_similarity_weight):
+    """由向量权重推导全文检索权重（二者之和为 1）。"""
     if isinstance(vector_similarity_weight, Real):
         return 1 - vector_similarity_weight
     return None
 
 
+# ---------- 创建搜索应用 ----------
 @manager.route("/searches", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("name")
@@ -57,6 +63,7 @@ async def create():
         return get_data_error_result(message="Authorized identity.")
 
     search_name = search_name.strip()
+    # 重名时自动追加后缀
     search_name = duplicate_name(SearchService.query, name=search_name, tenant_id=current_user.id, status=StatusEnum.VALID.value)
 
     req["id"] = get_uuid()
@@ -190,6 +197,7 @@ def delete_search(search_id):
         return server_error_response(e)
 
 
+# ---------- 流式搜索问答（SSE） ----------
 @manager.route("/searches/<search_id>/completion", methods=["POST"])  # noqa: F821
 @manager.route("/searches/<search_id>/completions", methods=["POST"])  # noqa: F821
 @login_required
@@ -220,6 +228,7 @@ async def completion(search_id):
     if not kb_ids:
         return get_data_error_result(message="`kb_ids` is required.")
 
+    # 将 async_ask 迭代器包装为 SSE data: 行
     async def stream():
         nonlocal req, uid, kb_ids, search_config
         try:

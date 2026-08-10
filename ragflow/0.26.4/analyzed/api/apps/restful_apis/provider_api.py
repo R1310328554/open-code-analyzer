@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+LLM 提供商 REST API：工厂/实例/模型的增删改查、密钥校验与直连对话测试。
+"""
+
 #
 import logging
 
@@ -27,6 +31,7 @@ from api.utils.api_utils import (
 from api.apps.services import provider_api_service
 
 
+# ---------- 列出系统可用或租户已配置的提供商 ----------
 @manager.route("/providers", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -56,6 +61,7 @@ def list_providers(tenant_id: str = None):
               items:
                 type: object
     """
+    # available=true 时返回系统预置工厂列表
     available_only = request.args.get("available", "").lower() == "true"
     try:
         success, result = provider_api_service.list_providers(tenant_id, available_only)
@@ -68,6 +74,7 @@ def list_providers(tenant_id: str = None):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 为租户添加提供商 ----------
 @manager.route("/providers", methods=["PUT"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -285,6 +292,7 @@ def show_provider_model(provider_id_or_name: str, model_name: str):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 创建提供商实例（含 API Key） ----------
 @manager.route("/providers/<provider_id_or_name>/instances", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -356,6 +364,7 @@ async def create_provider_instance(tenant_id: str = None, provider_id_or_name: s
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 校验 API Key 连通性 ----------
 @manager.route("/providers/<provider_id_or_name>/connection", methods=["POST"])  # noqa: F821
 @login_required
 async def verify_provider_api_key(provider_id_or_name: str = None):
@@ -628,6 +637,7 @@ def list_instance_models(tenant_id: str = None, provider_id_or_name: str = None,
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 批量更新实例内模型的 model_type ----------
 @manager.route("/providers/<provider_id_or_name>/instances/<instance_id_or_name>/models", methods=["PUT"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -831,6 +841,7 @@ async def enable_or_disable_model(tenant_id: str = None, provider_id_or_name: st
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 向实例模型发起测试对话 ----------
 @manager.route("/providers/<provider_id_or_name>/instances/<instance_id_or_name>/models/<path:model_name>", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -901,7 +912,7 @@ async def chat_to_model(tenant_id: str = None, provider_id_or_name: str = None, 
             return get_error_data_result(message=result)
 
         if stream and isinstance(result, dict) and result.get("type") == "stream":
-            # Streaming response using SSE
+            # 流式响应：SSE 逐块推送模型输出
             from quart import Response
 
             llm = result["llm"]

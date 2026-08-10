@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+用户认证 REST API：登录/登出、OAuth、注册、资料修改与密码重置。
+"""
+
 #
 import logging
 import string
@@ -58,6 +62,7 @@ from api.utils.web_utils import (
 from common import settings
 
 
+# ---------- 邮箱密码登录 ----------
 @manager.route("/auth/login", methods=["POST"])  # noqa: F821
 async def login():
     """
@@ -162,6 +167,7 @@ async def get_login_channels():
         return get_json_result(data=[], message=f"Load channels failure, error: {str(e)}", code=RetCode.EXCEPTION_ERROR)
 
 
+# ---------- OAuth 授权跳转 ----------
 @manager.route("/auth/login/<channel>", methods=["GET"])  # noqa: F821
 async def oauth_login(channel):
     channel_config = settings.OAUTH_CONFIG.get(channel)
@@ -176,6 +182,7 @@ async def oauth_login(channel):
     return redirect(auth_url)
 
 
+# ---------- OAuth 回调：注册或登录 ----------
 @manager.route("/auth/oauth/<channel>/callback", methods=["GET"])  # noqa: F821
 async def oauth_callback(channel):
     """
@@ -187,7 +194,7 @@ async def oauth_callback(channel):
             raise ValueError(f"Invalid channel name: {channel}")
         auth_cli = get_auth_client(channel_config)
 
-        # Check the state
+        # 校验 OAuth state 防 CSRF
         state = request.args.get("state")
         if not state or state != session.get("oauth_state"):
             return redirect("/?error=invalid_state")
@@ -408,6 +415,7 @@ async def user_profile():
 
 
 def rollback_user_registration(user_id):
+    """注册失败时回滚 User/Tenant/File 等关联记录。"""
     try:
         UserService.delete_by_id(user_id)
     except Exception:
@@ -425,6 +433,7 @@ def rollback_user_registration(user_id):
 
 
 def user_register(user_id, user):
+    """创建用户、默认租户、根目录文件夹等初始化数据。"""
     user["id"] = user_id
     tenant = {
         "id": user_id,
@@ -465,6 +474,7 @@ def user_register(user_id, user):
     return UserService.query(email=user["email"])
 
 
+# ---------- 用户自助注册 ----------
 @manager.route("/users", methods=["POST"])  # noqa: F821
 @validate_request("nickname", "email", "password")
 async def user_add():
@@ -651,6 +661,7 @@ async def set_tenant_info():
         return server_error_response(e)
 
 
+# ---------- 忘记密码：生成图形验证码 ----------
 @manager.route("/auth/password/forgot/captcha", methods=["POST"])  # noqa: F821
 async def forget_get_captcha():
     """
@@ -680,6 +691,7 @@ async def forget_get_captcha():
     return response
 
 
+# ---------- 校验 captcha 后发送邮件 OTP ----------
 @manager.route("/auth/password/forgot/otp", methods=["POST"])  # noqa: F821
 async def forget_send_otp():
     """
@@ -811,6 +823,7 @@ async def forget_verify_otp():
     return get_json_result(data=True, code=RetCode.SUCCESS, message="otp verified")
 
 
+# ---------- OTP 验证通过后重置密码并自动登录 ----------
 @manager.route("/auth/password/reset", methods=["POST"])  # noqa: F821
 async def forget_reset_password():
     """

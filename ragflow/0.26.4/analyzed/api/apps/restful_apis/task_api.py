@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+后台任务 REST API：通过 Redis 取消标志停止文档解析等长时任务。
+"""
+
 #
 import logging
 from datetime import datetime
@@ -27,13 +31,15 @@ from common.constants import RetCode, TaskStatus
 from rag.utils.redis_conn import REDIS_CONN
 
 
+# ---------- 取消任务（POST 旧路径） ----------
 @manager.route("/tasks/<task_id>/cancel", methods=["POST"])  # noqa: F821
 @login_required
 async def cancel_task(task_id):
-    """Cancel a running task."""
+    """取消正在运行的任务。"""
     return await _cancel_task(task_id)
 
 
+# ---------- PATCH action=stop 统一取消入口 ----------
 @manager.route("/tasks/<task_id>", methods=["PATCH"])  # noqa: F821
 @login_required
 @validate_request("action")
@@ -52,10 +58,13 @@ async def patch_task(task_id):
 
 async def _cancel_task(task_id):
     """
+    设置 Redis 取消标志，将任务 progress 置为 -1，并同步更新关联文档 run 状态。
+
     Sets a Redis cancel flag, updates the task progress to -1 (cancelled),
         and marks the associated document's run status as CANCEL if applicable.
     """
     try:
+        # worker 轮询此 key 以协作式停止
         REDIS_CONN.set(f"{task_id}-cancel", "x")
     except Exception as e:
         logging.exception("Failed to set cancel flag for task %s: %s", task_id, str(e))

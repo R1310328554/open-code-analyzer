@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户文件管理 REST API：上传、目录浏览、移动/重命名、下载与祖先路径查询。
+"""
+
 #
 import logging
 import re
@@ -42,6 +46,7 @@ from common.misc_utils import thread_pool_exec
 from api.apps.services import file_api_service
 
 
+# ---------- 上传文件或创建文件夹 ----------
 @manager.route("/files", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -65,6 +70,7 @@ async def create_or_upload(tenant_id: str = None):
     """
     content_type = request.content_type or ""
     try:
+        # multipart 走上传；JSON 走 CreateFolderReq 创建目录
         if "multipart/form-data" in content_type:
             form = await request.form
             pf_id = form.get("parent_id")
@@ -96,6 +102,7 @@ async def create_or_upload(tenant_id: str = None):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 分页列出目录下文件 ----------
 @manager.route("/files", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -151,6 +158,7 @@ async def list_files(tenant_id: str = None):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 批量删除文件（支持部分成功） ----------
 @manager.route("/files", methods=["DELETE"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -185,7 +193,7 @@ async def delete(tenant_id: str = None):
         return get_error_argument_result(err)
 
     try:
-        # Get Authorization header to pass to Go backend
+        # 将 Authorization 透传给 Go 后端执行物理删除
         auth_header = request.headers.get("Authorization", "")
         success, result = await file_api_service.delete_files(tenant_id, req["ids"], auth_header)
         if success:
@@ -205,6 +213,7 @@ async def delete(tenant_id: str = None):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 移动/重命名（遵循 Linux mv 语义） ----------
 @manager.route("/files/move", methods=["POST"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -259,6 +268,7 @@ async def move(tenant_id: str = None):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 下载文件内容（含 File2Document 回退路径） ----------
 @manager.route("/files/<file_id>", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -290,6 +300,7 @@ async def download(tenant_id: str = None, file_id: str = None):
         file = result
         blob = await thread_pool_exec(settings.STORAGE_IMPL.get, file.parent_id, file.location)
         if not blob:
+            # 主存储未命中时，尝试通过文档关联定位 blob
             b, n = File2DocumentService.get_storage_address(file_id=file_id)
             blob = await thread_pool_exec(settings.STORAGE_IMPL.get, b, n)
         if not blob:
@@ -314,6 +325,7 @@ async def download(tenant_id: str = None, file_id: str = None):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 查询父文件夹 ----------
 @manager.route("/files/<file_id>/parent", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs
@@ -345,6 +357,7 @@ async def parent_folder(tenant_id: str = None, file_id: str = None):
         return get_error_data_result(message="Internal server error")
 
 
+# ---------- 查询全部祖先文件夹 ----------
 @manager.route("/files/<file_id>/ancestors", methods=["GET"])  # noqa: F821
 @login_required
 @add_tenant_id_to_kwargs

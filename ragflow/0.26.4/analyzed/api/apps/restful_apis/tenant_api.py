@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+租户团队 REST API：成员列表、邀请、移除与接受邀请。
+"""
+
 #
 import asyncio
 import logging
@@ -34,10 +38,11 @@ from common.constants import RetCode, StatusEnum
 from common.misc_utils import get_uuid
 from common.time_utils import delta_seconds
 
-# Keeps strong references to fire-and-forget tasks so they are not GC'd before completion.
+# 持有后台邮件任务强引用，防止 asyncio Task 被 GC 提前回收
 _background_tasks: Set[asyncio.Task] = set()
 
 
+# ---------- 列出租户成员 ----------
 @manager.route("/tenants/<tenant_id>/users", methods=["GET"])  # noqa: F821
 @login_required
 def user_list(tenant_id):
@@ -57,6 +62,7 @@ def user_list(tenant_id):
         return server_error_response(exc)
 
 
+# ---------- 邀请用户加入团队（异步发送邮件） ----------
 @manager.route("/tenants/<tenant_id>/users", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("email")
@@ -152,6 +158,7 @@ async def rm(tenant_id):
         return server_error_response(exc)
 
 
+# ---------- 当前用户所属的全部租户 ----------
 @manager.route("/tenants", methods=["GET"])  # noqa: F821
 @login_required
 def tenant_list():
@@ -164,6 +171,7 @@ def tenant_list():
         return server_error_response(exc)
 
 
+# ---------- 被邀请用户接受邀请（role → NORMAL） ----------
 @manager.route("/tenants/<tenant_id>", methods=["PATCH"])  # noqa: F821
 @login_required
 def agree(tenant_id):

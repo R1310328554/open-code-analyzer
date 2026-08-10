@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Langfuse 可观测性集成 API：租户级 API Key 的增删改查与连通性校验。
+"""
+
 #
 
 
@@ -23,6 +27,7 @@ from api.db.services.langfuse_service import TenantLangfuseService
 from api.utils.api_utils import get_error_data_result, get_json_result, get_request_json, server_error_response, validate_request
 
 
+# ---------- 设置或更新 Langfuse API Key ----------
 @manager.route("/langfuse/api-key", methods=["POST", "PUT"])  # noqa: F821
 @login_required
 @validate_request("secret_key", "public_key", "host")
@@ -43,6 +48,7 @@ async def set_api_key():
     )
 
     langfuse = Langfuse(public_key=langfuse_keys["public_key"], secret_key=langfuse_keys["secret_key"], host=langfuse_keys["host"])
+    # 写入前先调用 Langfuse SDK 校验密钥有效性
     if not langfuse.auth_check():
         return get_error_data_result(message="Invalid Langfuse keys")
 
@@ -58,6 +64,7 @@ async def set_api_key():
             return server_error_response(e)
 
 
+# ---------- 读取当前租户的 Langfuse 配置 ----------
 @manager.route("/langfuse/api-key", methods=["GET"])  # noqa: F821
 @login_required
 @validate_request()
@@ -82,6 +89,7 @@ def get_api_key():
     return get_json_result(data=langfuse_entry)
 
 
+# ---------- 删除 Langfuse 配置 ----------
 @manager.route("/langfuse/api-key", methods=["DELETE"])  # noqa: F821
 @login_required
 @validate_request()

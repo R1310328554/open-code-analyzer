@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+系统 REST API：健康检查、版本、配置、API Token 与日志级别管理。
+"""
+
 #
 
 import json
@@ -35,6 +39,7 @@ from common import settings
 from rag.utils.redis_conn import REDIS_CONN
 
 
+# ---------- 存活探测 ----------
 @manager.route("/system/ping", methods=["GET"])  # noqa: F821
 async def ping():
     return "pong", 200
@@ -62,6 +67,7 @@ def version():
     return get_json_result(data=get_ragflow_version())
 
 
+# ---------- 各子系统健康状态（doc_engine/storage/db/redis/task_executor） ----------
 @manager.route("/system/status", methods=["GET"])  # noqa: F821
 @login_required
 def status():
@@ -156,6 +162,7 @@ def status():
             "error": str(e),
         }
 
+    # 从 Redis 读取 task executor 近 30 分钟心跳
     task_executor_heartbeats = {}
     try:
         task_executors = REDIS_CONN.smembers("TASKEXE")
@@ -232,6 +239,7 @@ def healthz():
     return jsonify(result), (200 if all_ok else 500)
 
 
+# ---------- API Token 列表（懒填充 beta 字段） ----------
 @manager.route("/system/tokens", methods=["GET"])  # noqa: F821
 @login_required
 def token_list():
@@ -383,6 +391,7 @@ async def get_logger_levels():
     return get_json_result(data=get_log_levels())
 
 
+# ---------- 运行时调整指定包的日志级别 ----------
 @manager.route("/system/config/log", methods=["PUT"])  # noqa: F821
 @login_required
 async def set_logger_level():

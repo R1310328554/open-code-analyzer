@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+Agent 插件工具 API：列出 GlobalPluginManager 注册的全部 LLM 工具元数据。
+"""
+
 #
 
 
@@ -21,9 +25,11 @@ from api.utils.api_utils import get_json_result
 from agent.plugin import GlobalPluginManager
 
 
+# GET /plugin/tools：返回内置插件工具的 metadata 列表
 @manager.route("/plugin/tools", methods=["GET"])  # noqa: F821
 @login_required
 def llm_tools() -> Response:
+    # 从全局插件管理器收集 LLM 可调用工具
     tools = GlobalPluginManager.get_llm_tools()
     tools_metadata = [t.get_metadata() for t in tools]
 

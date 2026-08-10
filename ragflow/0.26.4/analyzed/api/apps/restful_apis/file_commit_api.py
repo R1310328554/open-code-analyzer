@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+文件提交（类 Git）REST API：为 workspace/dataset 等实体注册 8 组 commit 端点。
+"""
+
 #
 
 import logging
@@ -26,13 +30,15 @@ logger = logging.getLogger(__name__)
 
 _ENTITY_RESOLVERS = {}
 
-# Counter to give each generated route function a unique name,
+# 为动态生成的路由函数分配唯一后缀，避免 Quart Blueprint 端点名称冲突
 # preventing Quart Blueprint endpoint name collisions.
 _route_suffix = [0]
 
 
 def _register_resolver(entity_type):
-    """Decorator that registers a folder_id resolver for an entity type.
+    """注册实体类型 → folder_id 解析器的装饰器。
+
+    Decorator that registers a folder_id resolver for an entity type.
 
     The decorated function receives (entity_id) and must return a folder_id
     or None if the entity has no corresponding folder.
@@ -51,7 +57,7 @@ def _register_resolver(entity_type):
 
 
 def _resolve_folder_id(entity_type, entity_id):
-    """Resolve an entity (dataset/memory/skill) to its folder_id."""
+    """将 dataset/memory/skill 等实体解析为 folder_id。"""
     resolver = _ENTITY_RESOLVERS.get(entity_type)
     if resolver is None:
         return None
@@ -80,11 +86,13 @@ def _resolve_dataset_folder(dataset_id):
     return dataset_id
 
 
-# ── Route registration helper ─────────────────────────────────────────────
+# ── 路由注册辅助：为给定 URL 前缀批量挂载 8 个 commit 端点 ──
 
 
 def _register_commit_routes(prefix, param_name, resolver_type=None):
-    """Register all 8 commit endpoints for a given URL prefix.
+    """为指定 URL 前缀注册全部 8 个 commit 相关端点。
+
+    Register all 8 commit endpoints for a given URL prefix.
 
     Args:
         prefix: URL prefix like '/folders/<folder_id>'
@@ -103,7 +111,7 @@ def _register_commit_routes(prefix, param_name, resolver_type=None):
             raise ValueError(f"Could not resolve {resolver_type} '{entity_id}' to a folder")
         return folder_id
 
-    # ── Create commit ──────────────────────────────────────────────────────
+    # ── 创建提交 ──
     @manager.route(f"{prefix}/commits", methods=["POST"], endpoint=f"create_commit_{_n}")  # noqa: F821
     @login_required
     @validate_request("message", "files")
@@ -132,7 +140,7 @@ def _register_commit_routes(prefix, param_name, resolver_type=None):
         except Exception as e:
             return server_error_response(e)
 
-    # ── List commits ───────────────────────────────────────────────────────
+    # ── 列出提交（可选 slug 过滤 artifact 页历史） ──
     # Accepts an optional ``?slug=<page_type>/<name>`` filter to serve
     # per-artifact-page history. When ``slug`` is set we delegate to
     # ``list_page_commits`` (indexed join on FileCommitItem.slug_kwd);
@@ -148,6 +156,7 @@ def _register_commit_routes(prefix, param_name, resolver_type=None):
             desc = request.args.get("desc", "true").lower() != "false"
             slug = request.args.get("slug") or ""
 
+            # slug 非空时走 artifact 页提交索引
             if slug:
                 total, items = FileCommitService.list_page_commits(
                     tenant_id="",  # scoped implicitly via folder_id == kb_id
@@ -191,7 +200,7 @@ def _register_commit_routes(prefix, param_name, resolver_type=None):
         except Exception as e:
             return server_error_response(e)
 
-    # ── Get commit ─────────────────────────────────────────────────────────
+    # ── 获取单个提交详情（artifact 与工作区两种响应形态） ──
     # For artifact commits (folder_id == kb_id) we route through
     # ``get_page_commit_detail`` which resolves ``content_after`` from
     # the configured blob store and returns the flat shape the old
@@ -207,6 +216,7 @@ def _register_commit_routes(prefix, param_name, resolver_type=None):
             if commit.folder_id != folder_id:
                 return get_data_error_result("Commit not found in workspace")
 
+            # 以 title 非空区分 artifact 提交，返回 enriched 详情
             # Artifact commits carry a non-null ``title``; use that as
             # the discriminator to pick the enriched response shape.
             if getattr(commit, "title", None):
@@ -354,7 +364,7 @@ def _register_commit_routes(prefix, param_name, resolver_type=None):
     _g["get_commit_file_content"] = get_commit_file_content
 
 
-# ── Register routes for all entity types ──────────────────────────────────
+# ── 为 datasets/workspace/folders 注册 commit 路由 ──
 # All URL patterns use <entity_id> as the consistent param name.
 # For /folders/ entity_id IS the folder_id directly.
 # For other entity types entity_id is resolved via _resolve_folder_id().
@@ -363,10 +373,10 @@ def _register_commit_routes(prefix, param_name, resolver_type=None):
 _register_commit_routes("/datasets/<entity_id>", "entity_id", resolver_type="datasets")
 _register_commit_routes("/workspace/<entity_id>", "entity_id")  # alias — workspace_id == folder_id
 _register_commit_routes("/folders/<entity_id>", "entity_id")  # direct — entity_id == folder_id (wins)
-# /memories and /skills routes are not mounted until resolvers are implemented.
+# /memories 与 /skills 路由待解析器实现后再挂载。
 
 
-# ── File version history (shared across all entity types) ─────────────────
+# ── 文件版本历史（跨实体类型共享） ──
 @manager.route("/files/<file_id>/versions", methods=["GET"])  # noqa: F821
 @login_required
 async def get_file_version_history(file_id):

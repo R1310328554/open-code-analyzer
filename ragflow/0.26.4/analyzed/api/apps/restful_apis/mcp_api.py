@@ -12,6 +12,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+MCP（Model Context Protocol）服务器管理 API：CRUD、导入导出与连通性测试。
+"""
+
 #
 
 from quart import Response, request
@@ -30,6 +34,7 @@ from common.ssrf_guard import assert_url_is_safe, pin_dns_global
 
 
 def _get_mcp_ids_from_args() -> list[str]:
+    """从 query 参数解析 mcp_id / mcp_ids（支持逗号分隔）。"""
     mcp_ids = request.args.getlist("mcp_ids")
     if mcp_ids:
         return [mcp_id for item in mcp_ids for mcp_id in item.split(",") if mcp_id]
@@ -38,6 +43,7 @@ def _get_mcp_ids_from_args() -> list[str]:
 
 
 def _export_mcp_servers(mcp_ids: list[str]) -> dict | None:
+    """导出指定 MCP 服务器为 Claude Desktop 兼容 JSON 结构。"""
     exported_servers = {}
     for mcp_id in mcp_ids:
         e, mcp_server = MCPServerService.get_by_id(mcp_id)
@@ -58,6 +64,7 @@ def _export_mcp_servers(mcp_ids: list[str]) -> dict | None:
 
 
 def _assert_mcp_url_is_safe(url, invalid_message: str = "Invalid url.") -> tuple[str, str, str | None]:
+    """SSRF 防护：校验 MCP 服务器 URL 并返回解析后的 hostname/IP。"""
     if not isinstance(url, str) or not url:
         return "", "", invalid_message
     try:
@@ -67,6 +74,7 @@ def _assert_mcp_url_is_safe(url, invalid_message: str = "Invalid url.") -> tuple
     return hostname, resolved_ip, None
 
 
+# ---------- 列出 MCP 服务器 ----------
 @manager.route("/mcp/servers", methods=["GET"])  # noqa: F821
 @login_required
 async def list_mcp() -> Response:
@@ -112,6 +120,7 @@ def detail(mcp_id: str) -> Response:
         return server_error_response(e)
 
 
+# ---------- 创建 MCP 服务器（创建前拉取 tools 列表） ----------
 @manager.route("/mcp/servers", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("name", "url", "server_type")
@@ -151,6 +160,7 @@ async def create() -> Response:
             return get_data_error_result(message="Tenant not found.")
 
         mcp_server = MCPServer(id=server_name, name=server_name, url=url, server_type=server_type, variables=variables, headers=headers)
+        # pin DNS 防止 SSRF 重绑定
         with pin_dns_global(hostname, resolved_ip):
             server_tools, err_message = await thread_pool_exec(get_mcp_tools, [mcp_server], timeout)
         if err_message:
@@ -243,6 +253,7 @@ async def rm(mcp_id: str) -> Response:
         return server_error_response(e)
 
 
+# ---------- 批量导入 MCP 配置（重名自动加后缀） ----------
 @manager.route("/mcp/servers/import", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("mcpServers")
@@ -318,6 +329,7 @@ async def import_multiple() -> Response:
         return server_error_response(e)
 
 
+# ---------- 测试 MCP 连接并返回可用 tools ----------
 @manager.route("/mcp/servers/<mcp_id>/test", methods=["POST"])  # noqa: F821
 @login_required
 @validate_request("url", "server_type")
