@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T14:57:24Z",
-  "files": [
-    "core/template.go",
-    "core/transfer.go",
-    "core/trigger.go",
-    "core/user.go",
-    "core/validate.go",
-    "core/webhook.go",
-    "handler/api/acl/acl.go",
-    "handler/api/acl/check.go",
-    "handler/api/acl/org.go",
-    "handler/api/acl/repo.go",
-    "handler/api/api.go",
-    "handler/api/auth/auth.go",
-    "handler/api/badge/badge.go",
-    "handler/api/badge/status.go",
-    "handler/api/builds/builds.go"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 328,
-  "done": 45
+  "done": 60
 }
