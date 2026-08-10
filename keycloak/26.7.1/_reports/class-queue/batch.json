@@ -1,22 +1,6 @@
 {
-  "claimed_at": "2026-08-10T09:58:55Z",
-  "files": [
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/AbstractStaxXmlDSigParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/DsaKeyValueParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/KeyInfoParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/RsaKeyValueParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/X509DataParser.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/saml/xmldsig/XmlDSigQNames.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/util/HasQName.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/util/QNameEnumLookup.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/util/SAML11ParserUtil.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/parsers/util/SAMLParserUtil.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v1/SAML11Constants.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v1/writers/BaseSAML11Writer.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v1/writers/SAML11AssertionWriter.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v1/writers/SAML11RequestWriter.java",
-    "saml-core/src/main/java/org/keycloak/saml/processing/core/saml/v1/writers/SAML11ResponseWriter.java"
-  ],
+  "claimed_at": null,
+  "files": [],
   "remaining_pending": 3208,
-  "done": 2775
+  "done": 2790
 }
